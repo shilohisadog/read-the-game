@@ -126,7 +126,7 @@ T = r"""<style>
 <p class="lede">Press play and just <b>watch</b> — each play narrated in plain language, goals called with the <b>scorer and assists</b>, the pace easing for the big moments. That’s the base view. When you want to understand <em>why</em> a team is on top, <b>add a metric layer</b> below — Control (Corsi) or High-danger. Nothing is invented; every layer shows its work.</p>
 <div class="board">
   <div class="tm a"><span class="ab" id="aAb">MIN</span><span class="sc" id="aSc">0</span></div>
-  <div class="mid"><div class="gs"><span id="per">Pre-game</span> · <span class="cl" id="clk">00:00</span></div>
+  <div class="mid"><div class="gs"><span id="per">Pre-game</span> · <span class="cl" id="clk">20:00</span></div>
     <div class="cbar"><div class="bar"><span class="ba" id="ba" style="width:50%"></span><span class="bh" id="bh" style="width:50%"></span></div>
     <div class="pct"><span id="pa" style="color:var(--min)">50%</span><span style="color:var(--muted);font-size:.66rem;letter-spacing:.1em">CONTROL</span><span id="ph" style="color:var(--buf)">50%</span></div></div>
   </div>
@@ -192,7 +192,7 @@ function render(i,newest){
    const r=e.type==='goal'?2.7:hd?2.2:ATT.has(e.type)?1.7:1;
    const anim=(k===i&&newest)?(e.type==='goal'?' flare':' pop'):'';
    if(hd&&k===i&&newest)parts.push(`<circle class="hdring" cx="${SX(e.x).toFixed(1)}" cy="${SY(e.y).toFixed(1)}" r="4.5"/>`);
-   parts.push(`<circle class="ev ${cls} ${tk(e)}${anim}" data-i="${k}" cx="${SX(e.x).toFixed(1)}" cy="${SY(e.y).toFixed(1)}" r="${r}"><title>${e.clock} ${e.type}</title></circle>`);}
+   parts.push(`<circle class="ev ${cls} ${tk(e)}${anim}" data-i="${k}" cx="${SX(e.x).toFixed(1)}" cy="${SY(e.y).toFixed(1)}" r="${r}"><title>${e.rem} ${e.type}</title></circle>`);}
  $('events').innerHTML=parts.join('');
  let lh='';
  if(cur&&(cur.type==='shot-on-goal'||cur.type==='goal')&&cur.x!=null){const netx=(cur.own===HID)?89:-89;
@@ -208,7 +208,7 @@ function render(i,newest){
    if(cur&&cur.type==='goal'){flashNet(cur.own);caption(cur,'goal');}
    else if(cur&&hdOn&&isHD(cur)){lastHD=i;caption(cur,'hd');}}
  prevA=a;prevH=h;
- $('per').textContent=cur?'Period '+cur.per:'Pre-game';$('clk').textContent=cur?cur.clock:'00:00';
+ $('per').textContent=cur?'Period '+cur.per:'Pre-game';$('clk').textContent=cur?cur.rem:'20:00';
  if(goalieOn){const gs=goalieStats(evs);$('goaliePanel').innerHTML=G.goalies.map(id=>{const p=R[id];if(!p)return '';const tid=p.tid,col=tid===AID?'var(--min)':'var(--buf)',ab=tid===AID?AAB:HAB;const st=gs[id]||{f:0,s:0,gl:0,hf:0,hs:0};const svp=st.f?(st.s/st.f).toFixed(3).replace(/^0/,''):'—';return `<div class="gcard"><div class="gname" style="color:${col}">${p.nm} <span class="sub">${ab} · #${p.n}</span></div><div class="gsv">${svp}</div><div class="gline">${st.s} saves · ${st.gl} goals · ${st.f} shots faced${st.hf?` · high-danger ${st.hs}/${st.hf}`:''}</div></div>`;}).join('');}
  if(workOpen)renderWork(L,cur);
 }
@@ -222,7 +222,7 @@ let workOpen=false;
 function renderWork(L,cur){const a=L.t[AID],h=L.t[HID],tot=a+h||1,pa=Math.round(100*a/tot);
  const ex=['hit','faceoff','giveaway','takeaway','penalty'],exL={hit:'hits',faceoff:'faceoffs',giveaway:'giveaways',takeaway:'takeaways',penalty:'penalties'};
  const rows=ex.filter(t=>L.excluded[t]).map(t=>`<div>${L.excluded[t]}× ${exL[t]}</div>`).join('');
- $('workPanel').innerHTML=`<h2>How “control” is computed <span style="color:var(--muted);font-weight:400">(${cur?'through P'+cur.per+' '+cur.clock:'pre-game'})</span></h2>
+ $('workPanel').innerHTML=`<h2>How “control” is computed <span style="color:var(--muted);font-weight:400">(${cur?'through P'+cur.per+' '+cur.rem:'pre-game'})</span></h2>
  <div class="wg"><div class="wc"><h3>Counted <span class="n">${L.counted.length}</span></h3><p>Shots on goal, missed shots, and goals — every attempt, credited to the shooter.</p></div>
  <div class="wc flag"><h3>Counted, surprisingly <span class="n">${L.surprising.length}</span></h3><p>Blocked shots count as attempts — for the <b>shooter</b>, not the blocker. The feed credits the blocker; we flip it.</p></div>
  <div class="wc"><h3>Not counted</h3><p style="font-family:ui-monospace,Menlo,monospace;font-size:.82rem">${rows||'—'}</p><p style="margin-top:6px;color:var(--muted);font-size:.8rem">A hit feels like control, but it isn’t a shot attempt.</p></div></div>
@@ -255,7 +255,7 @@ function showWhy(idx){const e=EV[idx];if(e==null||e.x==null)return;
    <circle cx="${HX(e.x).toFixed(1)}" cy="${HY(e.y).toFixed(1)}" r="2.8" fill="${col}" stroke="#fff" stroke-width=".7"/>
    <text x="${Math.min(HX(e.x)+4,78).toFixed(1)}" y="${(HY(e.y)-2.5).toFixed(1)}" font-size="4.2" fill="var(--ink)" font-weight="700">${Math.round(dist)} ft</text></svg>`;
  $('whyContent').innerHTML=`<div class="whyhd" style="background:${col}"><div><div class="t">${isGoal?'🚨 A high-danger GOAL':'⚡ Why this was high-danger'}</div>
-   <div class="s">${p?'#'+p.n+' '+p.nm:ab} · ${ab} · P${e.per} ${e.clock} · ${e.type.replace(/-/g,' ')}</div></div><button class="whyclose" onclick="hideWhy()">✕</button></div>
+   <div class="s">${p?'#'+p.n+' '+p.nm:ab} · ${ab} · P${e.per} ${e.rem} · ${e.type.replace(/-/g,' ')}</div></div><button class="whyclose" onclick="hideWhy()">✕</button></div>
   <div class="whybody"><div class="whydiag">${diag}</div>
    <div class="factor"><span class="fv">${Math.round(dist)} ft</span><span class="fl">Distance to the net — <b>close</b>. Our rule: ≤ 33 ft. <span class="chk">✓</span></span></div>
    <div class="factor"><span class="fv">${Math.round(angle)}°</span><span class="fl">Angle off straight-on — ${angle<22?'<b>a clean look</b> at the net':'a slot-area angle'}. Lower = more net to shoot at.</span></div>
