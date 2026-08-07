@@ -1,0 +1,115 @@
+/**
+ * Rink geometry, and the `Math.abs(x)` distance defect.
+ *
+ * The defect measured to the NEARER net rather than the ATTACKING net. It never
+ * changed a high-danger classification in the reference game, because every
+ * mis-measured shot also failed the slot test independently -- the count was
+ * right by luck. These tests pin the distances, not just the count, so the luck
+ * is not what we are relying on.
+ */
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { attackDirection, distanceToNet, isHighDanger,
+         NET_X, HIGH_DANGER_FT, SLOT_HALF_WIDTH } from '../src/lib/rink.js';
+import { shootingTeam, SHOT_TYPES } from '../src/lib/attribution.js';
+
+const rich = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url)));
+const R = rich.roster;
+const HID = rich.teams.home.id;   // BUF, defends -x, attacks +x
+const AID = rich.teams.away.id;   // MIN, defends +x, attacks -x
+
+const dirOf = e => attackDirection(shootingTeam(e, R), HID);
+
+test('INVARIANT: normalization exactly matches the feed\'s ends-switch rule', () => {
+  // Everything else here depends on normalization. If extraction ever stops
+  // undoing the ends switch, every distance silently becomes wrong.
+  //
+  // The obvious assertion -- "every BUF shot has x > 0" -- is WRONG, and the
+  // first run of this test proved it. 90 of 91 shots obey it; one does not:
+  // P3 11:33, a BUF shot-on-goal at x = -70 from BUF's own end, which the raw
+  // feed independently marks zoneCode 'D'. Teams really do shoot from their own
+  // half. An earlier project note claimed the stronger version was "verified";
+  // it was not, and this test is the correction.
+  //
+  // So pin the actual rule instead: flip (x,y) when the home team defends
+  // 'right', leave it otherwise. Exact, and it catches a regression the
+  // statistical version would sleep through.
+  const raw = JSON.parse(readFileSync(new URL('../data/pbp_2023020204.json', import.meta.url)));
+  assert.equal(rich.events.length, raw.plays.length, 'extraction is lossless');
+
+  let checked = 0;
+  rich.events.forEach((e, i) => {
+    const p = raw.plays[i];
+    const d = p.details || {};
+    if (d.xCoord == null || e.x == null) return;
+    const flip = p.homeTeamDefendingSide === 'right';
+    // `|| 0` collapses -0 to 0: negating a zero coordinate yields -0, and
+    // strictEqual compares with Object.is, which treats -0 and 0 as different.
+    // JSON has no -0 either, so the extract can only ever hold 0.
+    const ex = (flip ? -d.xCoord : d.xCoord) || 0;
+    const ey = (flip ? -d.yCoord : d.yCoord) || 0;
+    assert.equal(e.x, ex, `x at index ${i} (P${e.per} ${e.clock})`);
+    assert.equal(e.y, ey, `y at index ${i} (P${e.per} ${e.clock})`);
+    checked++;
+  });
+  assert.ok(checked > 200, `checked ${checked} coordinate pairs`);
+});
+
+test('a shot from a team\'s own end is real data, not a normalization bug', () => {
+  // Guarding the finding above so nobody "fixes" it later. The feed marks this
+  // one zoneCode 'D' with the home team defending left, so x = -70 is exactly
+  // where it says the shot happened: BUF, 159 feet from the net it was aimed at.
+  const e = rich.events.find(x => x.per === 3 && x.clock === '11:33' && x.type === 'shot-on-goal');
+  assert.ok(e, 'the long shot exists');
+  assert.equal(e.own, HID);
+  assert.equal(e.x, -70);
+  assert.ok(distanceToNet(e.x, e.y, attackDirection(e.own, HID)) > 150,
+    'and it is genuinely a very long shot');
+});
+
+test('distance measures to the attacking net, not the nearer one', () => {
+  // The three events the old code got wrong, with both answers.
+  const cases = [
+    { per: 3, clock: '11:33', app: 39.8, real: 162.8 },
+    { per: 3, clock: '00:35', app: 34.7, real: 156.0 },
+    { per: 2, clock: '06:29', app: 45.2, real: 143.4 },
+  ];
+  for (const c of cases) {
+    const e = rich.events.find(x => x.per === c.per && x.clock === c.clock && x.x != null);
+    assert.ok(e, `event at P${c.per} ${c.clock} exists`);
+    const correct = distanceToNet(e.x, e.y, dirOf(e));
+    const buggy = Math.hypot(NET_X - Math.abs(e.x), e.y);   // the old code
+    assert.ok(Math.abs(correct - c.real) < 0.5,
+      `P${c.per} ${c.clock}: expected ~${c.real} ft, got ${correct.toFixed(1)}`);
+    assert.ok(Math.abs(buggy - c.app) < 0.5, 'the old value, for the record');
+    assert.ok(correct > buggy + 90, 'the defect understated distance badly');
+  }
+});
+
+test('high-danger count is unchanged by the fix, and that is a coincidence', () => {
+  const hd = e => SHOT_TYPES.has(e.type) && e.x != null && isHighDanger(e.x, e.y, dirOf(e));
+  const buggyHd = e => SHOT_TYPES.has(e.type) && e.x != null &&
+    Math.hypot(NET_X - Math.abs(e.x), e.y) <= HIGH_DANGER_FT && Math.abs(e.y) <= SLOT_HALF_WIDTH;
+  const now = rich.events.filter(hd).length;
+  assert.equal(rich.events.filter(buggyHd).length, now,
+    'same count both ways -- every mis-measured shot also failed the slot test');
+  assert.ok(now > 0, 'and the count is not trivially zero');
+});
+
+test('the geometric rule holds exactly at its boundaries', () => {
+  // Doctrine section 7: a rule a viewer can check with a ruler, so the edges
+  // must be exact rather than approximately right.
+  assert.equal(distanceToNet(NET_X - HIGH_DANGER_FT, 0, 1), HIGH_DANGER_FT);
+  assert.ok(isHighDanger(NET_X - HIGH_DANGER_FT, 0, 1), 'exactly 33 ft counts');
+  assert.ok(!isHighDanger(NET_X - HIGH_DANGER_FT - 0.01, 0, 1), 'just beyond does not');
+  assert.ok(isHighDanger(NET_X - 10, SLOT_HALF_WIDTH, 1), 'exactly |y|=22 counts');
+  assert.ok(!isHighDanger(NET_X - 10, SLOT_HALF_WIDTH + 0.01, 1), 'just outside does not');
+});
+
+test('direction is symmetric between the two ends', () => {
+  assert.equal(attackDirection(HID, HID), 1);
+  assert.equal(attackDirection(AID, HID), -1);
+  // Mirrored shots are equidistant from the nets they are aimed at.
+  assert.equal(distanceToNet(70, 12, 1), distanceToNet(-70, 12, -1));
+});

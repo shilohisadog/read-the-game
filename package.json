@@ -1,0 +1,10 @@
+{
+  "name": "read-the-game",
+  "private": true,
+  "type": "module",
+  "description": "Zero dependencies, deliberately. `npm test` runs node's built-in runner.",
+  "scripts": {
+    "test": "node --test test/",
+    "build": "python3 builders/build_main.py && python3 builders/build_main.py --verify"
+  }
+}

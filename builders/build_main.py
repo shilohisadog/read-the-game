@@ -151,12 +151,14 @@ T = r"""<style>
 const G=__DATA__, R=G.roster, HID=G.teams.home.id, AID=G.teams.away.id, HAB=G.teams.home.ab, AAB=G.teams.away.ab;
 const SKIP=new Set(['stoppage','period-start','period-end','game-end','delayed-penalty']);
 const EV=G.events.filter(e=>!SKIP.has(e.type));
-const ATT=new Set(['goal','shot-on-goal','missed-shot','blocked-shot']);
+__LIB__
+const ATT=ATTEMPT_TYPES;
 const SX=x=>x+100, SY=y=>42.5-y;
 let finalA=0,finalH=0; for(const e of EV){if(e.type==='goal')(e.own===HID?finalH++:finalA++);}
-function corsi(e){if(!ATT.has(e.type))return null;return e.type==='blocked-shot'?(HID+AID-e.own):e.own;}
+function corsi(e){return corsiTeam(e,R);}
 function tk(e){const c=corsi(e);return c===AID?'a':c===HID?'h':'x';}
-function isHD(e){if(!['shot-on-goal','goal','missed-shot'].includes(e.type)||e.x==null)return false;const d=Math.hypot(89-Math.abs(e.x),e.y);return d<=33&&Math.abs(e.y)<=22;}
+function shotDir(e){const t=shootingTeam(e,R);return t==null?null:attackDirection(t,HID);}
+function isHD(e){if(!SHOT_TYPES.has(e.type)||e.x==null)return false;const d=shotDir(e);return d==null?false:isHighDanger(e.x,e.y,d);}
 function lens(evs){const t={[HID]:0,[AID]:0},counted=[],surprising=[],excluded={};let hs=0,as=0;
  for(const e of evs){if(e.type==='goal')(e.own===HID?hs++:as++);const c=corsi(e);if(c==null){excluded[e.type]=(excluded[e.type]||0)+1;continue;}t[c]++;(e.type==='blocked-shot'?surprising:counted).push(e);}
  return{t,counted,surprising,excluded,hs,as};}
@@ -243,7 +245,7 @@ $('aAb').textContent=AAB;$('hAb').textContent=HAB;$('gl').textContent=`${AAB} at
 
 const HX=x=>11+Math.abs(x), HY=y=>42.5-y; let lastHD=null;
 function showWhy(idx){const e=EV[idx];if(e==null||e.x==null)return;
- const dLine=89-Math.abs(e.x), dist=Math.hypot(dLine,e.y), angle=Math.atan2(Math.abs(e.y),dLine)*180/Math.PI;
+ const _d=shotDir(e)||1, dLine=89-e.x*_d, dist=Math.hypot(dLine,e.y), angle=Math.atan2(Math.abs(e.y),dLine)*180/Math.PI;
  const inSlot=Math.abs(e.y)<=22, tid=e.own, ab=tid===AID?AAB:HAB, col=tid===AID?'var(--min)':'var(--buf)', p=R[e.actor], isGoal=e.type==='goal';
  const diag=`<svg viewBox="0 0 100 85"><rect x="1" y="1" width="98" height="83" rx="14" fill="#fff" stroke="var(--edge)"/>
    <polygon points="63,20.5 96,38 96,47 63,64.5" fill="var(--hd)" opacity=".3"/><text x="70" y="43.5" font-size="3.4" fill="#b07d17" text-anchor="middle">slot</text>
@@ -291,8 +293,20 @@ $('lyGoalie').addEventListener('click',()=>{goalieOn=!goalieOn;setGoalie();});
 drawRink();set(EV.length-1,false);
 </script>"""
 
+LIB = ["rink.js", "attribution.js"]
+
+def _lib():
+    """Inline src/lib/*.js. They are real ES modules so `node --test` can import
+    them; the browser gets them concatenated, with the export keyword stripped."""
+    out = []
+    for name in LIB:
+        src = (ROOT / "src" / "lib" / name).read_text()
+        out.append(f"/* --- src/lib/{name} --- */\n" + src.replace("export ", ""))
+    return "\n".join(out)
+
 def build():
-    return T.replace("__DATA__", json.dumps(DATA, separators=(",", ":")))
+    return (T.replace("__LIB__", _lib())
+             .replace("__DATA__", json.dumps(DATA, separators=(",", ":"))))
 
 def main():
     html = build()
