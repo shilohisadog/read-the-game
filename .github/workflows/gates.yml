@@ -1,0 +1,29 @@
+# The only thing that catches "works on the author's machine".
+#
+# `npm run gates` passed locally on node 20 for days while failing on node 22,
+# because `node --test test/` resolves a directory argument differently between
+# versions -- and since gates is an && chain, the four downstream gates never
+# ran at all. Every claim of "all gates pass" during that period was true only
+# of one machine.
+name: gates
+on: [push, pull_request]
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['20', '22']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      # Runs on a clean checkout, so a stale generated file cannot mask a
+      # broken builder: build reproducibility is part of the gate.
+      - run: npm run gates
+      - name: the working tree must be unchanged by a build
+        run: git diff --exit-code

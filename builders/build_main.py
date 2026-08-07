@@ -15,7 +15,10 @@ the file this template came from -- run with --verify to check it.
   python3 builders/build_main.py            -> src/read-the-game.html
   python3 builders/build_main.py --verify   -> build, compare, do not write
 """
-import hashlib, json, pathlib, re, sys, tempfile
+import hashlib, json, pathlib, re, subprocess, sys, tempfile
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from jscheck import check_script
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / "src" / "read-the-game.html"
@@ -302,7 +305,12 @@ def _lib():
         src = (ROOT / "src" / "lib" / name).read_text()
         # Strip ESM syntax: node imports these as modules for testing, the
         # browser gets them concatenated in dependency order.
-        body = "\n".join(l for l in src.split("\n") if not l.startswith("import "))
+        #
+        # Regex, not startswith(). The old line-prefix test required column zero
+        # and a trailing space, so an indented import -- what any formatter
+        # produces -- sailed straight through into the bundle. Tolerates leading
+        # whitespace and spans multi-line import blocks up to the semicolon.
+        body = re.sub(r"^[ \t]*import(?=[\s{\'\"*])[^;]*?;[ \t]*$", "", src, flags=re.M)
         out.append(f"/* --- src/lib/{name} --- */\n" + body.replace("export ", ""))
     return "\n".join(out)
 
@@ -313,9 +321,11 @@ def build():
 def main():
     html = build()
 
+    # Parse the bundle before anyone can ship it. Writing a temp file and
+    # printing the path is not a gate -- that is how an indented import reached
+    # a published artifact with every test green.
     script = re.search(r"<script>(.*)</script>", html, re.S).group(1)
-    chk = pathlib.Path(tempfile.gettempdir()) / "rtg.main.check.js"
-    chk.write_text(script)
+    check_script(script, "main")
 
     if "--verify" in sys.argv:
         current = OUT.read_text()
@@ -333,7 +343,7 @@ def main():
         return 0 if same else 1
 
     OUT.write_text(html)
-    print(f"wrote {OUT} {len(html.encode())} bytes; syntax check: {chk}")
+    print(f"wrote {OUT} {len(html.encode())} bytes; script parses OK")
     return 0
 
 if __name__ == "__main__":
