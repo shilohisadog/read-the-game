@@ -27,6 +27,12 @@
 #gv .seats .sl{font-size:.8rem;color:var(--muted);font-weight:700}
 #gv .sb{font:inherit;font-size:.82rem;font-weight:600;border-radius:8px;border:1px solid #24384a;background:#0e1b27;color:var(--muted);padding:8px 12px;cursor:pointer}
 #gv .sb[aria-pressed="true"]{border-color:#4aa3e0;color:#fff;background:#12283a}
+#gv .figpick{display:flex;gap:7px;align-items:center;margin-top:11px;flex-wrap:wrap}
+#gv .figpick .fl{font-size:.8rem;color:var(--muted);font-weight:700}
+#gv .fbtn{font:inherit;font-size:.82rem;font-weight:600;border-radius:8px;border:1px solid #24384a;
+ background:#0e1b27;color:var(--muted);padding:8px 12px;cursor:pointer}
+#gv .fbtn[aria-pressed="true"]{border-color:#4aa3e0;color:#fff;background:#12283a}
+#gv .fwhy{font-size:.75rem;color:var(--muted);margin:7px 2px 0;max-width:66ch;line-height:1.5}
 </style>
 <div id="gv"><div class="wrap">
 <p class="eyebrow">Prototype · the goalie's-eye view — real shots, honest limits</p>
@@ -46,6 +52,11 @@
   <div class="hint">drag to look around</div>
 </div>
 <div class="seats"><span class="sl">Your seat:</span><button class="sb" data-v="crease" aria-pressed="true">🥅 In the crease</button><button class="sb" data-v="net">Behind the net</button><button class="sb" data-v="glass">On the glass</button><button class="sb" data-v="center">Center ice</button><button class="sb" data-v="nose">Nosebleeds</button><button class="sb" data-v="tv">📺 TV angle</button></div>
+<div class="figpick"><span class="fl">Players:</span>
+<button class="fbtn" data-f="mascot" aria-pressed="true">Mascot</button>
+<button class="fbtn" data-f="tabletop" aria-pressed="false">Tabletop</button></div>
+<p class="fwhy">Same shots, same outcomes, same math &mdash; only the drawing changes.
+<b>Tabletop</b> is the rod-hockey player you grew up with.</p>
 <div class="legend"><span><i class="k-s"></i>saved <span style="opacity:.7">(shooting)</span></span><span><i class="k-g"></i>goal <span style="opacity:.7">(arms up)</span></span><span>bigger = closer / more dangerous</span></div>
 <div class="ctl"><button id="reset">Reset view</button><button id="hd" aria-pressed="false">Highlight high-danger</button></div>
 <p class="foot"><em>Why it's honest:</em> the position of every mark is a real shot coordinate; the color is the real outcome. The mask cage is decorative. We show <em>where</em> and <em>what</em>, never a fabricated <em>how</em>. The little players are a friendly <b>marker</b> for “a shot came from here” — a character, not a claim about how anyone actually stood.</p>
@@ -54,6 +65,7 @@
 const D={"goalies":[8479406,8482221],"roster":{"8479406":{"n":32,"nm":"Gustavsson","pos":"G","tid":30},"8482221":{"n":27,"nm":"Levi","pos":"G","tid":7}},"gshots":[{"g":8479406,"x":29,"y":0,"out":"save","sh":7},{"g":8479406,"x":60,"y":-21,"out":"save","sh":7},{"g":8479406,"x":55,"y":-14,"out":"save","sh":7},{"g":8479406,"x":83,"y":-11,"out":"save","sh":7},{"g":8482221,"x":-65,"y":28,"out":"save","sh":30},{"g":8482221,"x":-40,"y":-31,"out":"save","sh":30},{"g":8479406,"x":30,"y":-34,"out":"save","sh":7},{"g":8482221,"x":-86,"y":-9,"out":"save","sh":30},{"g":8482221,"x":-78,"y":-8,"out":"save","sh":30},{"g":8482221,"x":-82,"y":-7,"out":"save","sh":30},{"g":8482221,"x":-78,"y":-8,"out":"save","sh":30},{"g":8482221,"x":-65,"y":-27,"out":"save","sh":30},{"g":8482221,"x":-81,"y":-1,"out":"save","sh":30},{"g":8479406,"x":53,"y":22,"out":"save","sh":7},{"g":8479406,"x":78,"y":-2,"out":"save","sh":7},{"g":8479406,"x":59,"y":-21,"out":"save","sh":7},{"g":8479406,"x":80,"y":13,"out":"save","sh":7},{"g":8479406,"x":30,"y":7,"out":"goal","sh":7},{"g":8479406,"x":39,"y":24,"out":"save","sh":7},{"g":8482221,"x":-62,"y":-20,"out":"save","sh":30},{"g":8482221,"x":-74,"y":17,"out":"goal","sh":30},{"g":8482221,"x":-72,"y":11,"out":"save","sh":30},{"g":8482221,"x":-87,"y":-6,"out":"save","sh":30},{"g":8479406,"x":29,"y":-29,"out":"save","sh":7},{"g":8482221,"x":-82,"y":5,"out":"save","sh":30},{"g":8482221,"x":-48,"y":14,"out":"save","sh":30},{"g":8482221,"x":-70,"y":10,"out":"save","sh":30},{"g":8482221,"x":-57,"y":8,"out":"save","sh":30},{"g":8482221,"x":-66,"y":-6,"out":"save","sh":30},{"g":8482221,"x":-52,"y":18,"out":"save","sh":30},{"g":8482221,"x":-69,"y":-29,"out":"save","sh":30},{"g":8479406,"x":55,"y":33,"out":"save","sh":7},{"g":8482221,"x":-77,"y":-8,"out":"save","sh":30},{"g":8482221,"x":-57,"y":-15,"out":"save","sh":30},{"g":8479406,"x":71,"y":-14,"out":"save","sh":7},{"g":8482221,"x":-60,"y":19,"out":"save","sh":30},{"g":8482221,"x":-75,"y":-10,"out":"save","sh":30},{"g":8479406,"x":84,"y":4,"out":"goal","sh":7},{"g":8482221,"x":-58,"y":18,"out":"save","sh":30},{"g":8479406,"x":80,"y":30,"out":"save","sh":7},{"g":8479406,"x":78,"y":7,"out":"save","sh":7},{"g":8479406,"x":63,"y":33,"out":"save","sh":7},{"g":8479406,"x":42,"y":35,"out":"save","sh":7},{"g":8479406,"x":31,"y":-32,"out":"save","sh":7},{"g":8479406,"x":82,"y":-3,"out":"goal","sh":7},{"g":8482221,"x":-85,"y":-3,"out":"save","sh":30},{"g":8482221,"x":-78,"y":-23,"out":"save","sh":30},{"g":8479406,"x":53,"y":34,"out":"save","sh":7},{"g":8482221,"x":-41,"y":29,"out":"save","sh":30},{"g":8479406,"x":70,"y":26,"out":"save","sh":7},{"g":8479406,"x":-70,"y":35,"out":"save","sh":7},{"g":8482221,"x":-80,"y":-9,"out":"save","sh":30},{"g":8482221,"x":-82,"y":-3,"out":"save","sh":30},{"g":8482221,"x":-85,"y":7,"out":"goal","sh":30},{"g":8479406,"x":77,"y":-11,"out":"save","sh":7},{"g":8482221,"x":-72,"y":4,"out":"save","sh":30},{"g":8482221,"x":-80,"y":8,"out":"save","sh":30},{"g":8482221,"x":-80,"y":-2,"out":"save","sh":30},{"g":8482221,"x":-75,"y":4,"out":"save","sh":30},{"g":8482221,"x":-34,"y":-3,"out":"save","sh":30}],"teams":{"home":{"id":7,"ab":"BUF"},"away":{"id":30,"ab":"MIN"}}}, R=D.roster, MINID=D.teams.away.id, BUFID=D.teams.home.id;
 const TC={};TC[MINID]='#34d399';TC[BUFID]='#f3c249';let T=0;
 const cv=document.getElementById('cv'), ctx=cv.getContext('2d'), DPR=Math.min(devicePixelRatio||1,2);
+const REDUCED=matchMedia('(prefers-reduced-motion:reduce)').matches;
 let W,H,cx,cy,FOCAL,gi=0,hdOn=false;
 const cam={d:-8,w:0,h:5.2,yaw:0,pitch:0.02};
 function fit(){const r=cv.getBoundingClientRect();W=r.width;H=r.height;cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);ctx.setTransform(DPR,0,0,DPR,0,0);cx=W/2;cy=H*0.46;FOCAL=H*0.9;}
@@ -80,7 +92,7 @@ function draw(){ctx.clearRect(0,0,W,H);
    const size=Math.max(8,Math.min(p.s*1.3,40)), bob=Math.sin(T+s.d*0.35)*size*0.03, fy=p.y+bob;
    if(s.hd&&hdOn){ctx.strokeStyle='#f0c060';ctx.lineWidth=1.6;ctx.beginPath();ctx.ellipse(p.x,fy,size*0.6,size*0.22,0,0,7);ctx.stroke();}
    else{ctx.fillStyle='rgba(0,0,0,.28)';ctx.beginPath();ctx.ellipse(p.x,fy,size*0.42,size*0.14,0,0,7);ctx.fill();}
-   drawPlayer(p.x,fy,size,TC[s.sh]||'#7fb4dd',s.out);
+   FIG[figStyle](ctx,p.x,fy,size,TC[s.sh]||'#7fb4dd',s.out,{t:T,motion:!REDUCED,glow:true});
  }
  // crease hint at feet
  const cr=proj(3,0,0);if(cr){ctx.strokeStyle='#5aa0d055';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(cr.x,cr.y,cr.s*3,cr.s*1.1,0,Math.PI,2*Math.PI);ctx.stroke();}
@@ -106,21 +118,135 @@ const PRESETS={crease:{d:-8,w:0,h:5.2,yaw:0,pitch:0.02},net:{p:[-26,0,9]},glass:
 let seat='crease';
 function setView(k){seat=k;const pr=PRESETS[k];if(pr.yaw!==undefined){cam.d=pr.d;cam.w=pr.w;cam.h=pr.h;cam.yaw=pr.yaw;cam.pitch=pr.pitch;}else{cam.d=pr.p[0];cam.w=pr.p[1];cam.h=pr.p[2];lookAt(centroid());}document.querySelectorAll('#gv .sb').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===k));draw();}
 document.querySelectorAll('#gv .sb').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.v)));
-function roundRect(x,y,w,hh,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+hh,r);ctx.arcTo(x+w,y+hh,x,y+hh,r);ctx.arcTo(x,y+hh,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
-function drawPlayer(px,py,size,jersey,out){const u=size/10,goal=out==='goal';ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
- ctx.shadowColor=goal?'#ff4d5e':'#3f8fca';ctx.shadowBlur=goal?16:6;
- ctx.strokeStyle='#1b2833';ctx.lineWidth=u*1.0;ctx.beginPath();ctx.moveTo(px-u*1.2,py);ctx.lineTo(px-u*0.7,py-u*3.2);ctx.moveTo(px+u*1.2,py);ctx.lineTo(px+u*0.7,py-u*3.2);ctx.stroke();
- ctx.strokeStyle='#0a0e13';ctx.lineWidth=u*0.8;ctx.beginPath();ctx.moveTo(px-u*2.0,py);ctx.lineTo(px-u*0.7,py);ctx.moveTo(px+u*0.7,py);ctx.lineTo(px+u*2.0,py);ctx.stroke();
- ctx.fillStyle=jersey;roundRect(px-u*2.2,py-u*7.2,u*4.4,u*4.2,u*1.3);ctx.fill();ctx.shadowBlur=0;
- ctx.strokeStyle=jersey;ctx.lineWidth=u*1.15;
- if(goal){ctx.beginPath();ctx.moveTo(px-u*1.9,py-u*6.4);ctx.lineTo(px-u*3.4,py-u*9.6);ctx.moveTo(px+u*1.9,py-u*6.4);ctx.lineTo(px+u*3.4,py-u*9.6);ctx.stroke();
-   ctx.fillStyle='#f2d9a6';ctx.beginPath();ctx.arc(px-u*3.4,py-u*9.6,u*0.7,0,7);ctx.arc(px+u*3.4,py-u*9.6,u*0.7,0,7);ctx.fill();}
- else{ctx.beginPath();ctx.moveTo(px-u*1.9,py-u*6.2);ctx.lineTo(px+u*1.4,py-u*5.2);ctx.lineTo(px+u*4.2,py-u*4.4);ctx.stroke();
-   ctx.strokeStyle='#7a5230';ctx.lineWidth=u*0.65;ctx.beginPath();ctx.moveTo(px+u*4.2,py-u*4.4);ctx.lineTo(px+u*6.6,py-u*0.3);ctx.lineTo(px+u*8.2,py-u*0.3);ctx.stroke();}
- ctx.fillStyle='#f2d9a6';ctx.beginPath();ctx.arc(px,py-u*8.7,u*1.75,0,7);ctx.fill();
- ctx.fillStyle=jersey;ctx.beginPath();ctx.arc(px,py-u*9.0,u*1.85,Math.PI,2*Math.PI);ctx.fill();
- ctx.strokeStyle='rgba(30,20,10,.5)';ctx.lineWidth=u*0.22;ctx.beginPath();ctx.arc(px,py-u*8.5,u*1.55,0.15,Math.PI-0.15);ctx.stroke();
- ctx.restore();}
+
+/* ---- the player figure — see builders/figures.py ---------------------- */
+function _rr(g,x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);
+ g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath();}
+
+function figMascot(g,px,py,size,jersey,out,o){
+ o=o||{}; const t=o.t||0, motion=o.motion!==false, glow=o.glow!==false, light=!!o.light;
+ const u=size/10, goal=out==='goal', ink='#0d141b', skin='#f7dcb4', pants='#1d2a36';
+ g.save(); g.lineCap='round'; g.lineJoin='round';
+ g.fillStyle=light?'rgba(20,40,60,.20)':'rgba(0,0,0,.40)';
+ g.beginPath(); g.ellipse(px,py+u*0.35,u*2.7,u*0.75,0,0,7); g.fill();
+ const bob=motion?Math.sin(t*1.7+px*0.02)*u*0.30:0;
+ g.translate(px,py+bob); g.rotate(goal?-0.03:0.10);
+ g.strokeStyle=pants; g.lineWidth=u*1.5;
+ g.beginPath(); g.moveTo(-u*1.15,-u*0.3); g.lineTo(-u*1.35,-u*2.8);
+ g.moveTo(u*1.15,-u*0.3); g.lineTo(u*1.5,-u*2.8); g.stroke();
+ g.strokeStyle='#cfe0ee'; g.lineWidth=u*0.40;
+ g.beginPath(); g.moveTo(-u*2.1,0); g.lineTo(-u*0.5,0); g.moveTo(u*0.5,0); g.lineTo(u*2.3,0); g.stroke();
+ if(glow){g.shadowColor=goal?'#ff5566':'#4aa3e0'; g.shadowBlur=goal?u*5.0:u*2.4;}
+ g.fillStyle=jersey; _rr(g,-u*2.15,-u*5.9,u*4.3,u*3.5,u*1.6); g.fill();
+ g.shadowBlur=0;
+ g.fillStyle='rgba(255,255,255,.80)'; _rr(g,-u*2.1,-u*3.05,u*4.2,u*0.5,u*0.22); g.fill();
+ g.strokeStyle=jersey; g.lineWidth=u*1.25;
+ if(!goal){
+  g.beginPath(); g.moveTo(-u*1.5,-u*5.0); g.lineTo(u*1.5,-u*4.3); g.lineTo(u*3.2,-u*3.5); g.stroke();
+  g.fillStyle=jersey; g.strokeStyle=ink; g.lineWidth=u*0.26;
+  g.beginPath(); g.arc(u*3.3,-u*3.4,u*0.92,0,7); g.fill(); g.stroke();
+  g.strokeStyle='#8a5c33'; g.lineWidth=u*0.46;
+  g.beginPath(); g.moveTo(u*2.5,-u*4.3); g.lineTo(u*5.6,-u*0.35); g.stroke();
+  g.strokeStyle='#12181d'; g.lineWidth=u*0.60;
+  g.beginPath(); g.moveTo(u*5.4,-u*0.3); g.lineTo(u*7.0,-u*0.12); g.stroke();
+  g.fillStyle='#0b0f13'; g.beginPath(); g.ellipse(u*7.9,-u*0.08,u*0.52,u*0.26,0,0,7); g.fill();
+ }else{
+  g.beginPath(); g.moveTo(-u*1.7,-u*5.2); g.lineTo(-u*3.5,-u*8.7);
+  g.moveTo(u*1.7,-u*5.2); g.lineTo(u*3.5,-u*8.7); g.stroke();
+  g.fillStyle=jersey; g.strokeStyle=ink; g.lineWidth=u*0.26;
+  g.beginPath(); g.arc(-u*3.6,-u*9.0,u*0.92,0,7); g.fill(); g.stroke();
+  g.beginPath(); g.arc(u*3.6,-u*9.0,u*0.92,0,7); g.fill(); g.stroke();
+  g.strokeStyle='#8a5c33'; g.lineWidth=u*0.42;
+  g.beginPath(); g.moveTo(u*3.7,-u*9.1); g.lineTo(u*6.5,-u*11.7); g.stroke();
+ }
+ g.fillStyle=skin; g.beginPath(); g.arc(0,-u*7.9,u*2.55,0,7); g.fill();
+ g.fillStyle=jersey;
+ g.beginPath(); g.arc(0,-u*8.1,u*2.72,Math.PI*1.02,Math.PI*2-0.02); g.fill();
+ g.beginPath(); g.arc(-u*2.35,-u*7.75,u*0.72,0,7); g.fill();
+ g.beginPath(); g.arc(u*2.35,-u*7.75,u*0.72,0,7); g.fill();
+ if(size>20){
+  g.fillStyle=ink;
+  g.beginPath(); g.arc(-u*0.95,-u*7.95,u*0.34,0,7); g.fill();
+  g.beginPath(); g.arc(u*0.95,-u*7.95,u*0.34,0,7); g.fill();
+  g.fillStyle='rgba(255,255,255,.92)';
+  g.beginPath(); g.arc(-u*0.82,-u*8.10,u*0.12,0,7); g.fill();
+  g.beginPath(); g.arc(u*1.08,-u*8.10,u*0.12,0,7); g.fill();
+  if(goal){g.fillStyle='#41202a'; g.beginPath(); g.ellipse(0,-u*6.85,u*0.58,u*0.78,0,0,7); g.fill();}
+  else{g.strokeStyle=ink; g.lineWidth=u*0.24;
+       g.beginPath(); g.arc(0,-u*7.25,u*0.85,0.28,Math.PI-0.28); g.stroke();}
+ }
+ g.restore();
+}
+
+function figTabletop(g,px,py,size,jersey,out,o){
+ o=o||{}; const t=o.t||0, motion=o.motion!==false, glow=o.glow!==false, light=!!o.light;
+ const u=size/10, goal=out==='goal', ink='#080b0e', pants='#e7edf2', skin='#f2d3ad';
+ g.save(); g.lineJoin='miter'; g.lineCap='butt';
+ g.fillStyle=light?'rgba(20,40,60,.20)':'rgba(0,0,0,.42)';
+ g.beginPath(); g.ellipse(px,py+u*0.55,u*3.0,u*0.85,0,0,7); g.fill();
+ const wob=motion?Math.sin(t*1.25+px*0.03)*0.055:0;
+ g.translate(px,py); g.rotate(wob);
+ const O=(fill,lw)=>{g.fillStyle=fill;g.fill();g.strokeStyle=ink;g.lineWidth=u*(lw||0.52);g.stroke();};
+ g.fillStyle='#22323f'; g.beginPath(); g.ellipse(0,u*0.28,u*2.35,u*0.68,0,0,7); g.fill();
+ g.fillStyle='#33485c'; g.beginPath(); g.ellipse(0,u*0.06,u*1.95,u*0.52,0,0,7); g.fill();
+ g.beginPath(); g.moveTo(-u*1.72,u*0.05); g.lineTo(-u*0.38,u*0.05);
+ g.lineTo(-u*0.52,-u*3.4); g.lineTo(-u*1.62,-u*3.4); g.closePath(); O(pants);
+ g.beginPath(); g.moveTo(u*0.38,u*0.05); g.lineTo(u*1.72,u*0.05);
+ g.lineTo(u*1.62,-u*3.4); g.lineTo(u*0.52,-u*3.4); g.closePath(); O(pants);
+ if(glow){g.shadowColor=goal?'#ff5566':'#4aa3e0'; g.shadowBlur=goal?u*4.6:u*2.2;}
+ g.beginPath(); g.moveTo(-u*1.78,-u*3.2); g.lineTo(u*1.78,-u*3.2);
+ g.lineTo(u*2.52,-u*6.55); g.lineTo(-u*2.52,-u*6.55); g.closePath(); O(jersey);
+ g.shadowBlur=0;
+ g.save(); g.clip();
+ g.fillStyle='rgba(255,255,255,.88)';
+ g.fillRect(-u*3,-u*4.62,u*6,u*0.38); g.fillRect(-u*3,-u*4.02,u*6,u*0.38);
+ g.restore();
+ g.save(); g.globalAlpha=0.42; g.strokeStyle='#ff4d5e'; g.lineWidth=u*0.26;
+ g.beginPath(); g.moveTo(-u*2.02,-u*3.44); g.lineTo(u*1.54,-u*3.44);
+ g.lineTo(u*2.28,-u*6.79); g.lineTo(-u*2.76,-u*6.79); g.closePath(); g.stroke(); g.restore();
+ const arm=(x1,y1,x2,y2)=>{
+  g.lineCap='round';
+  g.strokeStyle=ink; g.lineWidth=u*1.52; g.beginPath(); g.moveTo(x1,y1); g.lineTo(x2,y2); g.stroke();
+  g.strokeStyle=jersey; g.lineWidth=u*0.92; g.beginPath(); g.moveTo(x1,y1); g.lineTo(x2,y2); g.stroke();
+  g.lineCap='butt';};
+ if(!goal){
+  arm(-u*2.15,-u*5.95, u*1.55,-u*4.65);
+  arm(u*2.15,-u*5.95, u*3.35,-u*3.95);
+  g.lineCap='round';
+  g.strokeStyle=ink; g.lineWidth=u*0.86;
+  g.beginPath(); g.moveTo(u*0.85,-u*5.15); g.lineTo(u*5.75,-u*0.28); g.stroke();
+  g.strokeStyle='#c98b45'; g.lineWidth=u*0.40;
+  g.beginPath(); g.moveTo(u*1.00,-u*5.02); g.lineTo(u*5.62,-u*0.34); g.stroke();
+  g.strokeStyle=ink; g.lineWidth=u*0.92;
+  g.beginPath(); g.moveTo(u*5.45,-u*0.22); g.lineTo(u*7.15,-u*0.10); g.stroke();
+  g.lineCap='butt';
+ }else{
+  arm(-u*2.25,-u*6.15, -u*4.05,-u*9.35);
+  arm(u*2.25,-u*6.15, u*4.05,-u*9.35);
+ }
+ g.beginPath(); g.arc(0,-u*7.85,u*1.55,0,7); O(skin,0.46);
+ g.beginPath(); g.arc(0,-u*7.95,u*1.63,Math.PI,0); g.closePath(); O(jersey,0.46);
+ if(size>20){
+  g.fillStyle=ink;
+  g.beginPath(); g.arc(-u*0.56,-u*7.55,u*0.19,0,7); g.fill();
+  g.beginPath(); g.arc(u*0.56,-u*7.55,u*0.19,0,7); g.fill();
+ }
+ g.restore();
+}
+
+const FIG={mascot:figMascot,tabletop:figTabletop};
+const FIG_LABEL={mascot:'Mascot',tabletop:'Tabletop'};
+/* ---- end figure module ------------------------------------------------ */
+
+
+let figStyle=(function(){try{return localStorage.getItem('rtg.fig')||'mascot'}catch(e){return 'mascot'}})();
+if(!FIG[figStyle])figStyle='mascot';
+function syncFig(){document.querySelectorAll('#gv .fbtn').forEach(b=>
+ b.setAttribute('aria-pressed',b.dataset.f===figStyle));}
+document.querySelectorAll('#gv .fbtn').forEach(b=>b.addEventListener('click',()=>{
+ figStyle=b.dataset.f; try{localStorage.setItem('rtg.fig',figStyle)}catch(e){} syncFig(); draw();}));
+syncFig();
+
 let raf;function loop(){T+=0.04;draw();raf=requestAnimationFrame(loop);}
 fit();updStat();setView('crease');loop();
 </script>
