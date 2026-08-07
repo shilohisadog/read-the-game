@@ -1,0 +1,153 @@
+import json
+RAW = json.load(open('terrain_data.json'))
+T = r'''<style>
+#t3d{--bg:#060c12;--ink:#eaf1f6;--muted:#8ba0ae;--min:#34d399;--buf:#f3c249;--edge:#20313f;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:
+  radial-gradient(130% 90% at 50% 8%,#0d1b26 0%,var(--bg) 62%);color:var(--ink);
+  min-height:100vh;padding:clamp(16px,3.5vw,34px) clamp(12px,4vw,24px);line-height:1.5}
+#t3d .wrap{max-width:960px;margin:0 auto}
+#t3d .eyebrow{font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+#t3d h1{font-size:clamp(1.5rem,3.4vw,2.1rem);line-height:1.08;letter-spacing:-.02em;font-weight:800;margin:0 0 10px;text-wrap:balance}
+#t3d .cap{font-size:.92rem;color:var(--muted);margin:0 0 16px;max-width:64ch}
+#t3d .cap b{color:var(--ink);font-weight:600}
+#t3d .stage{position:relative;border:1px solid var(--edge);border-radius:16px;overflow:hidden;
+  background:linear-gradient(180deg,#08131b,#050a0f);box-shadow:0 20px 60px rgba(0,0,0,.5)}
+#t3d canvas{display:block;width:100%;height:58vh;min-height:360px;touch-action:none;cursor:grab}
+#t3d canvas:active{cursor:grabbing}
+#t3d .hud{position:absolute;top:14px;left:16px;display:flex;gap:18px;pointer-events:none}
+#t3d .teamtag{display:flex;flex-direction:column;line-height:1}
+#t3d .teamtag .nm{font-weight:800;font-size:.85rem;letter-spacing:.04em}
+#t3d .teamtag .ct{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:1.5rem;font-weight:700;font-variant-numeric:tabular-nums}
+#t3d .tg-min .nm,#t3d .tg-min .ct{color:var(--min)} #t3d .tg-buf .nm,#t3d .tg-buf .ct{color:var(--buf)}
+#t3d .teamtag .lb{font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+#t3d .hint{position:absolute;bottom:12px;right:16px;font-size:.72rem;color:var(--muted);pointer-events:none;letter-spacing:.03em}
+#t3d .controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin-top:14px}
+#t3d .btn{font:inherit;font-size:.82rem;font-weight:600;color:var(--ink);background:#0f1e29;border:1px solid var(--edge);
+  border-radius:8px;padding:8px 13px;cursor:pointer}
+#t3d .btn[aria-pressed="false"]{opacity:.42}
+#t3d .btn.min[aria-pressed="true"]{border-color:var(--min);color:var(--min)}
+#t3d .btn.buf[aria-pressed="true"]{border-color:var(--buf);color:var(--buf)}
+#t3d .slider{display:flex;align-items:center;gap:9px;font-size:.78rem;color:var(--muted)}
+#t3d input[type=range]{-webkit-appearance:none;appearance:none;height:5px;width:130px;border-radius:99px;background:var(--edge)}
+#t3d input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--ink);cursor:pointer}
+#t3d input[type=range]::-moz-range-thumb{width:14px;height:14px;border:0;border-radius:50%;background:var(--ink);cursor:pointer}
+#t3d .foot{font-size:.76rem;color:var(--muted);margin-top:14px;max-width:64ch}
+#t3d .foot em{font-style:normal;color:var(--ink)}
+#t3d :focus-visible{outline:2px solid var(--min);outline-offset:2px}
+</style>
+<div id="t3d"><div class="wrap">
+  <p class="eyebrow">Honest 3D · height is real data</p>
+  <h1>Where the chances came from</h1>
+  <p class="cap">Each ridge is <b>shot-attempt density</b> — a kernel-density estimate computed in your browser from the game's <b>135 real shot coordinates</b>. Height means shot <b>volume</b> from that spot, not expected goals: we don't invent a dimension we don't have data for. Minnesota attacks left, Buffalo right — the two ranges are each team's shooting territory. Drag to orbit.</p>
+  <div class="stage">
+    <canvas id="cv"></canvas>
+    <div class="hud">
+      <div class="teamtag tg-min"><span class="nm">MIN</span><span class="ct" id="cMin">0</span><span class="lb">shot attempts</span></div>
+      <div class="teamtag tg-buf"><span class="nm">BUF</span><span class="ct" id="cBuf">0</span><span class="lb">shot attempts</span></div>
+    </div>
+    <div class="hint">drag to orbit · ○ = goals</div>
+  </div>
+  <div class="controls">
+    <button class="btn min" id="tMin" aria-pressed="true">Minnesota</button>
+    <button class="btn buf" id="tBuf" aria-pressed="true">Buffalo</button>
+    <button class="btn" id="spin" aria-pressed="true">Auto-orbit</button>
+    <button class="btn" id="reset">Reset view</button>
+    <label class="slider">Height <input type="range" id="hsc" min="26" max="92" value="54" aria-label="height exaggeration"></label>
+  </div>
+  <p class="foot"><em>Reading it:</em> tall green peaks in the slot = where Minnesota generated volume; Buffalo's gold range is lower and more spread. The rings are the game's 5 goals, sitting on the ice where each was shot. Every height is the same KDE, computed from the raw coordinates — no smoothing you can't reproduce.</p>
+</div></div>
+<script>
+const RAW = __DATA__;
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+const DPR=Math.min(window.devicePixelRatio||1,2);
+let W=0,H=0,cx=0,cy=0,scale=1;
+let yaw=-0.52, pitch=0.98, HSCALE=54, spin=true;
+const show={min:true,buf:true};
+
+// --- density grid, computed once from raw shots (inspectable) ---
+const BW=11, STEP=6, THR=0.07;
+function kde(pts,gx,gy){let s=0;const c=1/(2*BW*BW);for(let i=0;i<pts.length;i++){const dx=gx-pts[i][0],dy=gy-pts[i][1];s+=Math.exp(-(dx*dx+dy*dy)*c);}return s;}
+let COLS=[];
+function buildGrid(){
+  COLS=[];const cells=[];let gmax=1e-9;
+  for(let gx=-96;gx<=96;gx+=STEP)for(let gy=-42;gy<=42;gy+=STEP){
+    const dm=kde(RAW.min,gx,gy),db=kde(RAW.buf,gx,gy);
+    cells.push([gx,gy,dm,db]);if(dm>gmax)gmax=dm;if(db>gmax)gmax=db;
+  }
+  for(const[gx,gy,dm,db]of cells){
+    if(dm/gmax>THR)COLS.push({gx,gy,h:dm/gmax,team:'min'});
+    if(db/gmax>THR)COLS.push({gx,gy,h:db/gmax,team:'buf'});
+  }
+}
+// --- projection: yaw about vertical, fixed-ish pitch; height -> screen-up ---
+function proj(gx,gy,gz){
+  const ct=Math.cos(yaw),st=Math.sin(yaw),sp=Math.sin(pitch),cp=Math.cos(pitch);
+  const x1=gx*ct-gy*st, y1=gx*st+gy*ct;
+  return{sx:cx+x1*scale, sy:cy+y1*cp*scale-gz*sp*scale, depth:y1};
+}
+function fit(){
+  const r=cv.getBoundingClientRect();W=r.width;H=r.height;
+  cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);ctx.setTransform(DPR,0,0,DPR,0,0);
+  scale=(W*0.8)/200; cx=W/2; cy=H*0.62;
+}
+const COL={min:{a:'#0c3b2a',b:'#34d399'},buf:{a:'#3a2c08',b:'#f3c249'}};
+function drawIce(){
+  const c=[[-100,-42.5],[100,-42.5],[100,42.5],[-100,42.5]].map(p=>proj(p[0],p[1],0));
+  ctx.beginPath();ctx.moveTo(c[0].sx,c[0].sy);for(let i=1;i<4;i++)ctx.lineTo(c[i].sx,c[i].sy);ctx.closePath();
+  const g=ctx.createLinearGradient(0,cy-80,0,cy+120);g.addColorStop(0,'#0e2230');g.addColorStop(1,'#081018');
+  ctx.fillStyle=g;ctx.fill();ctx.strokeStyle='#24404f';ctx.lineWidth=1.2;ctx.stroke();
+  const lines=[[-89,'#c14257'],[-25,'#3f63b0'],[0,'#c14257'],[25,'#3f63b0'],[89,'#c14257']];
+  for(const[lx,col]of lines){const a=proj(lx,-42.5,0),b=proj(lx,42.5,0);
+    ctx.beginPath();ctx.moveTo(a.sx,a.sy);ctx.lineTo(b.sx,b.sy);ctx.strokeStyle=col;ctx.globalAlpha=.45;ctx.lineWidth=lx===0?1.6:1.1;ctx.stroke();ctx.globalAlpha=1;}
+}
+function drawBars(){
+  const list=COLS.filter(c=>show[c.team]).map(c=>({...c,d:proj(c.gx,c.gy,0).depth})).sort((a,b)=>a.d-b.d);
+  for(const c of list){
+    const base=proj(c.gx,c.gy,0), top=proj(c.gx,c.gy,c.h*HSCALE);
+    const col=COL[c.team];
+    // base shadow
+    ctx.globalAlpha=.28;ctx.fillStyle='#000';ctx.beginPath();ctx.ellipse(base.sx,base.sy,6,2.4,0,0,7);ctx.fill();ctx.globalAlpha=1;
+    // bar
+    const grad=ctx.createLinearGradient(0,base.sy,0,top.sy);grad.addColorStop(0,col.a);grad.addColorStop(1,col.b);
+    ctx.strokeStyle=grad;ctx.lineWidth=6.4;ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(base.sx,base.sy);ctx.lineTo(top.sx,top.sy);ctx.stroke();
+    // glow cap
+    ctx.save();ctx.shadowColor=col.b;ctx.shadowBlur=10+14*c.h;ctx.fillStyle=col.b;
+    ctx.beginPath();ctx.arc(top.sx,top.sy,2.1+2.4*c.h,0,7);ctx.fill();ctx.restore();
+  }
+}
+function drawGoals(){
+  for(const g of RAW.goals){ if(!show[g.t])continue;
+    const base=proj(g.x,g.y,0), top=proj(g.x,g.y,13);
+    ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=1.3;
+    ctx.beginPath();ctx.moveTo(base.sx,base.sy);ctx.lineTo(top.sx,top.sy);ctx.stroke();
+    ctx.save();ctx.shadowColor='#fff';ctx.shadowBlur=14;ctx.strokeStyle='#fff';ctx.lineWidth=1.6;
+    ctx.beginPath();ctx.arc(top.sx,top.sy,4.2,0,7);ctx.stroke();ctx.restore();
+    ctx.strokeStyle='rgba(255,255,255,.4)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.ellipse(base.sx,base.sy,5,2,0,0,7);ctx.stroke();
+  }
+}
+function draw(){ ctx.clearRect(0,0,W,H); drawIce(); drawBars(); drawGoals(); }
+function loop(){ if(spin){ yaw+=0.0035; draw(); } requestAnimationFrame(loop); }
+
+// interaction
+let drag=false,px=0,py=0;
+cv.addEventListener('pointerdown',e=>{drag=true;spin=false;setSpin();px=e.clientX;py=e.clientY;cv.setPointerCapture(e.pointerId);});
+cv.addEventListener('pointermove',e=>{if(!drag)return;yaw+=(e.clientX-px)*0.006;pitch=Math.max(0.32,Math.min(1.32,pitch-(e.clientY-py)*0.005));px=e.clientX;py=e.clientY;draw();});
+cv.addEventListener('pointerup',()=>drag=false);
+function setSpin(){document.getElementById('spin').setAttribute('aria-pressed',spin);}
+document.getElementById('spin').onclick=e=>{spin=!spin;setSpin();};
+document.getElementById('reset').onclick=()=>{yaw=-0.52;pitch=0.98;draw();};
+document.getElementById('hsc').oninput=e=>{HSCALE=+e.target.value;draw();};
+function tog(id,key){const b=document.getElementById(id);b.onclick=()=>{show[key]=!show[key];b.setAttribute('aria-pressed',show[key]);draw();};}
+tog('tMin','min');tog('tBuf','buf');
+window.addEventListener('resize',()=>{fit();draw();});
+
+// init
+document.getElementById('cMin').textContent=RAW.counts.min;
+document.getElementById('cBuf').textContent=RAW.counts.buf;
+buildGrid();fit();draw();loop();
+</script>'''
+html=T.replace('__DATA__',json.dumps(RAW,separators=(',',':')))
+open('terrain-3d.html','w').write(html)
+print("wrote terrain-3d.html",len(html),"bytes")

@@ -1,0 +1,9 @@
+# build output (regenerated from src/ + data/)
+dist/
+
+# scratch
+*.tmp
+*.bak
+.DS_Store
+__pycache__/
+*.pyc
