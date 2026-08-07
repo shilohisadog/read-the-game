@@ -188,7 +188,10 @@ function flashNet(scorer){ // scorer scores INTO opponent's net
  const net=scorer===AID?$('netL'):$('netR'); net.style.opacity='';net.classList.remove('netflash');void net.offsetWidth;net.classList.add('netflash');}
 let prevA=0,prevH=0;
 function render(i,newest){
- const L=lens(i),cur=EV[i];
+ // `evs` is the PLAYABLE prefix, used to draw the marks on the timeline.
+ // `lens(i)` reduces the FULL stream up to the same moment. Two different
+ // slices on purpose: the ice shows plays, the ledger accounts for everything.
+ const evs=EV.slice(0,i+1),L=lens(i),cur=EV[i];
  const parts=[];
  for(let k=0;k<evs.length;k++){const e=evs[k];if(e.x==null)continue;
    const hd=hdOn&&isHD(e);
