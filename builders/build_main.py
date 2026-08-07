@@ -153,17 +153,21 @@ T = r"""<style>
 <script>
 const G=__DATA__, R=G.roster, HID=G.teams.home.id, AID=G.teams.away.id, HAB=G.teams.home.ab, AAB=G.teams.away.ab;
 const SKIP=new Set(['stoppage','period-start','period-end','game-end','delayed-penalty']);
-const EV=G.events.filter(e=>!SKIP.has(e.type));
+const EV=[],EVI=[];
+G.events.forEach((e,n)=>{if(!SKIP.has(e.type)){EV.push(e);EVI.push(n);}});
+// The timeline is the playable events; the LEDGER is the whole game. Layers get
+// every event so the 51 non-plays are excluded with reasons instead of vanishing.
+const upto=k=>k<0?[]:G.events.slice(0,EVI[k]+1);
 __LIB__
 const ATT=ATTEMPT_TYPES;
 const SX=x=>x+100, SY=y=>42.5-y;
 let finalA=0,finalH=0; for(const e of EV){if(e.type==='goal')(e.own===HID?finalH++:finalA++);}
-function corsi(e){return corsiTeam(e,R);}
-function tk(e){const c=corsi(e);return c===AID?'a':c===HID?'h':'x';}
+function attemptTeam(e){return corsiTeam(e,R);}  // renamed: `corsi` is the layer object
+function tk(e){const c=attemptTeam(e);return c===AID?'a':c===HID?'h':'x';}
 function shotDir(e){const t=shootingTeam(e,R);return t==null?null:attackDirection(t,HID);}
 const CTX={roster:R,homeId:HID,awayId:AID};
 function isHD(e){return isHighDangerEvent(e,CTX);}
-function lens(evs){return corsiLens(evs,CTX);}
+function lens(k){return corsi.reduce(upto(k),CTX);}
 const $=id=>document.getElementById(id);
 function drawRink(){const P=[];P.push('<rect class="boards" x="1" y="1" width="198" height="83" rx="27"/>');
  for(const g of[-89,89])P.push(`<line class="ln red" x1="${SX(g)}" y1="3" x2="${SX(g)}" y2="82"/>`);
@@ -184,7 +188,7 @@ function flashNet(scorer){ // scorer scores INTO opponent's net
  const net=scorer===AID?$('netL'):$('netR'); net.style.opacity='';net.classList.remove('netflash');void net.offsetWidth;net.classList.add('netflash');}
 let prevA=0,prevH=0;
 function render(i,newest){
- const evs=EV.slice(0,i+1),L=lens(evs),cur=EV[i];
+ const L=lens(i),cur=EV[i];
  const parts=[];
  for(let k=0;k<evs.length;k++){const e=evs[k];if(e.x==null)continue;
    const hd=hdOn&&isHD(e);
@@ -211,7 +215,7 @@ function render(i,newest){
    else if(cur&&hdOn&&isHD(cur)){lastHD=i;caption(cur,'hd');}}
  prevA=a;prevH=h;
  $('per').textContent=cur?'Period '+cur.per:'Pre-game';$('clk').textContent=cur?cur.rem:'20:00';
- if(goalieOn){const gs=goalieStats(evs);$('goaliePanel').innerHTML=G.goalies.map(id=>{const p=R[id];if(!p)return '';const tid=p.tid,col=tid===AID?'var(--min)':'var(--buf)',ab=tid===AID?AAB:HAB;const st=gs[id]||{f:0,s:0,gl:0,hf:0,hs:0};const svp=st.f?(st.s/st.f).toFixed(3).replace(/^0/,''):'—';return `<div class="gcard"><div class="gname" style="color:${col}">${p.nm} <span class="sub">${ab} · #${p.n}</span></div><div class="gsv">${svp}</div><div class="gline">${st.s} saves · ${st.gl} goals · ${st.f} shots faced${st.hf?` · high-danger ${st.hs}/${st.hf}`:''}</div></div>`;}).join('');}
+ if(goalieOn){const gs=goalieStats(i);$('goaliePanel').innerHTML=G.goalies.map(id=>{const p=R[id];if(!p)return '';const tid=p.tid,col=tid===AID?'var(--min)':'var(--buf)',ab=tid===AID?AAB:HAB;const st=gs[id]||{f:0,s:0,gl:0,hf:0,hs:0};const svp=st.f?(st.s/st.f).toFixed(3).replace(/^0/,''):'—';return `<div class="gcard"><div class="gname" style="color:${col}">${p.nm} <span class="sub">${ab} · #${p.n}</span></div><div class="gsv">${svp}</div><div class="gline">${st.s} saves · ${st.gl} goals · ${st.f} shots faced${st.hf?` · high-danger ${st.hs}/${st.hf}`:''}</div></div>`;}).join('');}
  if(workOpen)renderWork(L,cur);
 }
 function flash(id){const el=$(id);el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump');}
@@ -222,13 +226,17 @@ function caption(e,kind){const c=$('caption');const tid=e.own;const ab=tid===AID
  c.classList.remove('on');void c.offsetWidth;c.classList.add('on');}
 let workOpen=false;
 function renderWork(L,cur){const a=L.t[AID],h=L.t[HID],tot=a+h||1,pa=Math.round(100*a/tot);
- const ex=['hit','faceoff','giveaway','takeaway','penalty'],exL={hit:'hits',faceoff:'faceoffs',giveaway:'giveaways',takeaway:'takeaways',penalty:'penalties'};
- const rows=ex.filter(t=>L.excluded[t]).map(t=>`<div>${L.excluded[t]}× ${exL[t]}</div>`).join('');
+ // Rendered from the ledger itself, not from a hand-written list. Every reason
+ // below was written by the layer that excluded the event, so a new layer gets
+ // this panel for free and a changed rule cannot leave stale copy behind.
+ const byWhy=summarise(L.excluded), rows=Object.entries(byWhy).sort((x,y)=>y[1]-x[1])
+   .map(([why,n])=>`<div><b>${n}×</b> ${why}</div>`).join('');
+ const sTotal=L.surprising.length, sWhy=sTotal?L.surprising[0].why:'';
  $('workPanel').innerHTML=`<h2>How “control” is computed <span style="color:var(--muted);font-weight:400">(${cur?'through P'+cur.per+' '+cur.rem:'pre-game'})</span></h2>
- <div class="wg"><div class="wc"><h3>Counted <span class="n">${L.counted.length}</span></h3><p>Shots on goal, missed shots, and goals — every attempt, credited to the shooter.</p></div>
- <div class="wc flag"><h3>Counted, surprisingly <span class="n">${L.surprising.length}</span></h3><p>Blocked shots count as attempts — for the <b>shooter</b>, not the blocker. The feed credits the blocker; we flip it.</p></div>
- <div class="wc"><h3>Not counted</h3><p style="font-family:ui-monospace,Menlo,monospace;font-size:.82rem">${rows||'—'}</p><p style="margin-top:6px;color:var(--muted);font-size:.8rem">A hit feels like control, but it isn’t a shot attempt.</p></div></div>
- <p class="wfoot"><em>${a} ${AAB} / ${h} ${HAB} → ${pa}% / ${100-pa}%.</em> Every mark that pulsed on the ice is one of these counted events — the animation and this list are the same data.</p>`;}
+ <div class="wg"><div class="wc"><h3>Counted <span class="n">${L.counted.length}</span></h3><p>Every attempt on goal — shots that hit the net, missed it, or were blocked. All credited to the shooter.</p></div>
+ <div class="wc flag"><h3>Counted, surprisingly <span class="n">${sTotal}</span></h3><p>${sWhy||'—'}</p></div>
+ <div class="wc"><h3>Not counted <span class="n">${L.excluded.length}</span></h3><p style="font-size:.82rem;line-height:1.6">${rows||'—'}</p></div></div>
+ <p class="wfoot"><em>${a} ${AAB} / ${h} ${HAB} → ${pa}% / ${100-pa}%.</em> ${L.counted.length} counted + ${L.excluded.length} not counted = <b>${L.counted.length+L.excluded.length}</b> events, which is every event in the game so far. Nothing is dropped quietly.</p>`;}
 let i=EV.length-1,playing=false,timer=null,mult=2;
 $('scrub').max=EV.length-1;
 function set(v,newest){i=Math.max(0,Math.min(EV.length-1,v));$('scrub').value=i;render(i,newest);}
@@ -289,13 +297,14 @@ function setCorsi(){document.getElementById('rg').classList.toggle('corsi',corsi
 function setHd(){$('lyHd').setAttribute('aria-pressed',hdOn);$('lyHd').textContent=(hdOn?'✓ ':'＋ ')+'High-danger';render(i,false);}
 $('lyCorsi').addEventListener('click',()=>{corsiOn=!corsiOn;setCorsi();});
 $('lyHd').addEventListener('click',()=>{hdOn=!hdOn;setHd();});
-function goalieStats(evs){return goaltendingLens(evs,CTX);}
+function goalieStats(k){return goaltending.reduce(upto(k),CTX).g;}
 function setGoalie(){document.getElementById('rg').classList.toggle('goalie',goalieOn);$('lyGoalie').setAttribute('aria-pressed',goalieOn);$('lyGoalie').textContent=(goalieOn?'✓ ':'＋ ')+'Goaltending';render(i,false);}
 $('lyGoalie').addEventListener('click',()=>{goalieOn=!goalieOn;setGoalie();});
 drawRink();set(EV.length-1,false);
 </script>"""
 
-LIB = ["rink.js", "attribution.js", "layers/corsi.js", "layers/goaltending.js"]
+LIB = ["rink.js", "attribution.js", "layer.js",
+       "layers/corsi.js", "layers/goaltending.js", "layers/danger.js"]
 
 def _lib():
     """Inline src/lib/*.js. They are real ES modules so `node --test` can import

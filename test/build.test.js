@@ -42,12 +42,18 @@ test('neither defect can reappear in the shipped app', () => {
 test('the app reduces through the extracted modules, not a copy', () => {
   // Phase 1's whole point. If someone reinlines a reducer here, the golden test
   // keeps passing -- it tests the modules -- while the app quietly diverges.
-  assert.ok(app.includes('function lens(evs){return corsiLens(evs,CTX);}'),
-    'Corsi goes through the module');
-  assert.ok(app.includes('function goalieStats(evs){return goaltendingLens(evs,CTX);}'),
-    'goaltending goes through the module');
+  assert.ok(app.includes('function lens(k){return corsi.reduce(upto(k),CTX);}'),
+    'Corsi goes through the layer');
+  assert.ok(app.includes('function goalieStats(k){return goaltending.reduce(upto(k),CTX).g;}'),
+    'goaltending goes through the layer');
   assert.ok(!/const t=\{\[HID\]:0,\[AID\]:0\}/.test(app),
     'the old inline reducer body is gone');
+  // Phase 2: the ledger must be rendered FROM the ledger, not from a hand-kept
+  // list of event types that can go stale when a rule changes.
+  assert.ok(app.includes('summarise(L.excluded)'),
+    'show-me-the-work reads the layer\'s own exclusion reasons');
+  assert.ok(!/exL=\{hit:/.test(app),
+    'the hardcoded exclusion labels are gone');
 });
 
 test('no ES module syntax leaks into the browser bundle', () => {
@@ -61,6 +67,15 @@ test('no ES module syntax leaks into the browser bundle', () => {
   // with its subject tests the assumption once, not twice.
   assert.ok(!/\bimport\s*[{'"(*]/.test(app), 'no import statements, indented or otherwise');
   assert.ok(!/\bexport\s+(default|const|function|class|\{)/.test(app), 'no export statements');
+});
+
+test('the app no longer tells the viewer we flip blocked-shot attribution', () => {
+  // This copy survived the code fix by three commits: "The feed credits the
+  // blocker; we flip it." The feed credits the SHOOTER and we flip nothing.
+  // A wrong explanation beside a right number is the failure this project
+  // exists to avoid, so it gets a test rather than a careful reading.
+  assert.ok(!app.includes('we flip it'), 'the false method claim is gone');
+  assert.ok(!/feed credits the blocker/i.test(app), 'and so is its premise');
 });
 
 test('the teaching label and the arithmetic agree', () => {
