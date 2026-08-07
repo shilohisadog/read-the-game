@@ -1,0 +1,324 @@
+#!/usr/bin/env python3
+"""Read the Game — the main app. THE generator; src/read-the-game.html is output.
+
+Phase 0 of the rework (docs/main-app-rework.md). This file was recovered by
+extracting the shipped HTML back into a template, because the original build
+chain could not produce it any more: build_v1 / build_alive / build_alive2 each
+carried a full independent template writing this same file, so running an
+earlier one silently reverted the later ones, and build_alive3.py had been
+abandoned mid-edit behind an `if False`. Those five now live in builders/legacy/
+and are not part of the build.
+
+No behaviour change is intended here. The gate is byte-identical output against
+the file this template came from -- run with --verify to check it.
+
+  python3 builders/build_main.py            -> src/read-the-game.html
+  python3 builders/build_main.py --verify   -> build, compare, do not write
+"""
+import hashlib, json, pathlib, re, sys, tempfile
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+OUT = ROOT / "src" / "read-the-game.html"
+
+# The embedded literal is byte-identical to json.dumps(rich.json,
+# separators=(",", ":")) -- verified during extraction, and the --verify gate
+# re-checks it on every build.
+DATA = json.loads((ROOT / "data" / "rich.json").read_text())
+
+T = r"""<style>
+#rg{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;--min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c;--flag:#d9662b;--hd:#e0932a;
+ font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg);min-height:100vh;padding:clamp(16px,3.5vw,36px) clamp(12px,4vw,22px);line-height:1.5}
+#rg .wrap{max-width:900px;margin:0 auto}
+#rg .eyebrow{font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+#rg h1{font-size:clamp(1.7rem,3.8vw,2.4rem);letter-spacing:-.025em;font-weight:800;margin:0 0 10px;text-wrap:balance}
+#rg .lede{font-size:1.02rem;color:var(--muted);margin:0 0 18px;max-width:62ch}#rg .lede b{color:var(--ink);font-weight:600}
+#rg .board{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;background:#fff;border:1px solid var(--edge);border-radius:13px;padding:12px 18px;box-shadow:0 5px 18px rgba(16,32,45,.07);margin-bottom:12px}
+#rg .tm{display:flex;flex-direction:column;align-items:center}#rg .tm .ab{font-weight:800;letter-spacing:.05em;font-size:.9rem}
+#rg .tm.a .ab{color:var(--min)}#rg .tm.h .ab{color:var(--buf)}
+#rg .sc{font-family:ui-monospace,Menlo,monospace;font-size:2.2rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+#rg .mid{min-width:150px}#rg .gs{text-align:center;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px}#rg .gs .cl{color:var(--ink);font-family:ui-monospace,Menlo,monospace}
+#rg .bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--edge)}#rg .bar span{transition:width .4s ease}#rg .ba{background:var(--min)}#rg .bh{background:var(--buf)}
+#rg .pct{display:flex;justify-content:space-between;font-size:.78rem;margin-top:5px;font-family:ui-monospace,Menlo,monospace;font-weight:600}
+#rg .rinkbox{position:relative;background:var(--ice);border:1px solid var(--edge);border-radius:15px;padding:10px;box-shadow:0 6px 22px rgba(16,32,45,.08)}
+#rg svg{display:block;width:100%;height:auto}
+#rg .boards{fill:var(--ice);stroke:var(--edge);stroke-width:1.1}
+#rg .ln{fill:none;stroke-linecap:round}#rg .ln.red{stroke:var(--red);stroke-width:.7;opacity:.42}#rg .ln.blue{stroke:var(--blue);stroke-width:.9;opacity:.42}#rg .ln.thick{stroke-width:1.1;opacity:.52}
+#rg .rdot{fill:var(--red);opacity:.5}
+#rg .crease{opacity:.5}#rg .netlab{font-size:3.1px;font-weight:700;letter-spacing:.4px;text-anchor:middle}
+#rg .netflash{animation:nf 1.3s ease}@keyframes nf{0%,100%{opacity:0}25%{opacity:.85}}
+#rg .ev{transform-box:fill-box;transform-origin:center}
+#rg .att.a{fill:var(--min)}#rg .att.h{fill:var(--buf)}#rg .att{opacity:.8}
+#rg .blk.a{fill:var(--min)}#rg .blk.h{fill:var(--buf)}#rg .blk{stroke:var(--flag);stroke-width:.8}
+#rg .goal.a{fill:var(--min)}#rg .goal.h{fill:var(--buf)}#rg .goal{stroke:#fff;stroke-width:.8}
+#rg .excl{fill:var(--muted);opacity:.2}
+#rg .hd{stroke:var(--hd);stroke-width:.9}
+#rg .hdring{fill:none;stroke:var(--hd);stroke-width:.5;opacity:.6}
+#rg .pop{animation:pop .34s cubic-bezier(.2,1.3,.4,1)}@keyframes pop{0%{transform:scale(2.6);opacity:.3}100%{transform:scale(1);opacity:1}}
+#rg .flare{animation:flare .7s ease-out}@keyframes flare{0%{transform:scale(3.6);opacity:.2}55%{opacity:1}100%{transform:scale(1)}}
+#rg .puck{fill:#0e1216;stroke:#fff;stroke-width:.55}#rg .puck.jump{animation:pj .3s ease}@keyframes pj{0%{transform:scale(2)}100%{transform:scale(1)}}
+#rg .shotline{stroke:var(--ink);stroke-width:.7;stroke-dasharray:2.2 2;opacity:.7;animation:sl 1s ease forwards}@keyframes sl{to{opacity:0}}
+#rg .caption{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;align-items:center;gap:8px;background:rgba(15,26,35,.94);color:#fff;padding:7px 15px;border-radius:99px;font-size:.86rem;font-weight:600;white-space:nowrap;opacity:0;pointer-events:none;max-width:92%}
+#rg .caption.on{animation:cap 2.2s ease}@keyframes cap{0%{opacity:0;transform:translateX(-50%) translateY(6px)}12%{opacity:1;transform:translateX(-50%) translateY(0)}82%{opacity:1}100%{opacity:0}}
+#rg .caption .tag{font-family:ui-monospace,Menlo,monospace;font-weight:700;font-size:.72rem;padding:2px 7px;border-radius:5px}
+#rg .caption .num{opacity:.65;font-family:ui-monospace,Menlo,monospace;margin-right:3px}
+#rg .counters{display:flex;justify-content:space-between;padding:2px 6px;margin-top:8px}
+#rg .cc{display:flex;align-items:baseline;gap:7px}#rg .cc .n{font-family:ui-monospace,Menlo,monospace;font-size:1.5rem;font-weight:700}#rg .cc.a .n{color:var(--min)}#rg .cc.h .n{color:var(--buf)}
+#rg .cc .lb{font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+#rg .bump{animation:bump .32s ease}@keyframes bump{40%{transform:scale(1.35);color:var(--flag)}}
+#rg .transport{display:flex;align-items:center;gap:10px;margin:14px 0 4px;flex-wrap:wrap}
+#rg button{font:inherit;font-size:.83rem;font-weight:600;border-radius:8px;border:1px solid var(--edge);background:#fff;color:var(--ink);padding:9px 14px;cursor:pointer}
+#rg .play{background:var(--ink);color:#fff;border-color:var(--ink)}
+#rg .spd{padding:7px 11px}#rg .spd[aria-pressed="true"]{border-color:var(--ink);background:#eef2f5}
+#rg .scrub{flex:1;accent-color:var(--ink);cursor:pointer;min-width:120px}
+#rg .legend{display:flex;flex-wrap:wrap;gap:7px 18px;font-size:.78rem;color:var(--muted);margin:6px 2px}
+#rg .legend i{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:-1px}
+#rg .k-a{background:var(--min)}#rg .k-hd{background:#fff;box-shadow:0 0 0 1.5px var(--hd)}#rg .k-blk{background:var(--buf);box-shadow:0 0 0 1.5px var(--flag)}#rg .k-p{background:#0e1216}
+#rg .work{background:#fff;border:1px solid var(--edge);border-radius:13px;padding:18px;margin-top:14px;box-shadow:0 5px 18px rgba(16,32,45,.06)}
+#rg .work h2{margin:0 0 10px;font-size:1.1rem}#rg .wg{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+#rg .wc{background:#f2f7fa;border:1px solid var(--edge);border-radius:10px;padding:13px}#rg .wc h3{margin:0 0 6px;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);display:flex;justify-content:space-between}#rg .wc h3 .n{font-family:ui-monospace,Menlo,monospace;font-size:1.2rem;color:var(--ink);font-weight:700}#rg .wc.flag{border-color:#e6b98f}#rg .wc.flag h3 .n{color:var(--flag)}#rg .wc p{margin:0;font-size:.87rem}
+#rg .wfoot{margin-top:13px;font-size:.8rem;color:var(--muted);border-top:1px solid var(--edge);padding-top:11px}#rg .wfoot em{font-style:normal;color:var(--ink)}
+#rg .foot{font-size:.78rem;color:var(--muted);margin-top:16px;text-align:center}
+#rg text{font-family:ui-monospace,Menlo,monospace}
+@media(prefers-reduced-motion:reduce){#rg *{animation:none!important;transition:none!important}}
+
+#rg .ev.clickable{cursor:pointer}
+#rg .hint{font-size:.76rem;color:#b07d17;margin:3px 2px 0;font-weight:600}
+#rg .caption{cursor:default}
+#rg .whybk{position:fixed;inset:0;background:rgba(10,18,26,.55);display:none;align-items:center;justify-content:center;z-index:60;padding:16px}
+#rg .whybk.on{display:flex}
+#rg .why{background:#fff;border-radius:15px;max-width:430px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.4);overflow:hidden;max-height:92vh;overflow-y:auto}
+#rg .whyhd{padding:15px 18px;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px}
+#rg .whyhd .t{font-weight:800;font-size:1.08rem}#rg .whyhd .s{font-size:.75rem;opacity:.92;font-family:ui-monospace,Menlo,monospace}
+#rg .whyclose{background:rgba(255,255,255,.22);border:0;color:#fff;border-radius:7px;padding:6px 10px;cursor:pointer;font-weight:700;line-height:1}
+#rg .whybody{padding:16px 18px}
+#rg .whydiag{background:var(--ice);border:1px solid var(--edge);border-radius:10px;padding:8px;margin-bottom:14px}
+#rg .whydiag svg{width:100%;height:auto;display:block}
+#rg .factor{display:flex;align-items:baseline;gap:12px;padding:9px 0;border-bottom:1px solid var(--edge)}
+#rg .factor .fv{font-family:ui-monospace,Menlo,monospace;font-weight:700;font-size:1.1rem;min-width:52px}
+#rg .factor .fl{font-size:.86rem;color:var(--muted)}#rg .factor .fl b{color:var(--ink)}
+#rg .chk{color:var(--min);font-weight:800}
+#rg .whyrule{background:#f2f7fa;border:1px solid var(--edge);border-radius:9px;padding:12px 13px;font-size:.83rem;margin-top:13px;line-height:1.5}#rg .whyrule b{color:var(--ink)}
+
+#rg .plabel{font-size:3.5px;font-weight:700;fill:var(--ink);stroke:#fff;stroke-width:1px;paint-order:stroke;font-family:system-ui,sans-serif}
+#rg .glab{font-size:4.8px;font-weight:800;stroke:#fff;stroke-width:1.2px;paint-order:stroke;font-family:system-ui,sans-serif}
+#rg .plabsub{font-size:2.8px;fill:var(--muted);stroke:#fff;stroke-width:.8px;paint-order:stroke;font-family:system-ui,sans-serif}
+#rg .plabgrp{animation:plfade .28s ease}@keyframes plfade{0%{opacity:0}100%{opacity:1}}
+
+#rg .cbar,#rg .counters,#rg #work{display:none}
+#rg.corsi .cbar{display:block}#rg.corsi .counters{display:flex}#rg.corsi #work{display:inline-block}
+#rg .layers{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 2px 4px;padding-top:12px;border-top:1px dashed var(--edge)}
+#rg .layers .ll{font-size:.8rem;color:var(--muted);font-weight:700}
+#rg .lyr{font:inherit;font-size:.83rem;font-weight:600;border-radius:8px;border:1px dashed #b7c6d0;background:#fff;color:var(--muted);padding:8px 13px;cursor:pointer}
+#rg .lyr[aria-pressed="true"]{border-style:solid;color:var(--ink);border-color:var(--ink);background:#eef2f5}
+
+#rg .goalies{display:none;gap:10px;margin-top:10px}
+#rg.goalie .goalies{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#rg .gcard{background:#fff;border:1px solid var(--edge);border-radius:11px;padding:12px 15px;box-shadow:0 4px 14px rgba(16,32,45,.06)}
+#rg .gcard .gname{font-weight:800;font-size:.98rem}
+#rg .gcard .gname .sub{color:var(--muted);font-weight:600;font-size:.68rem}
+#rg .gcard .gsv{font-family:ui-monospace,Menlo,monospace;font-size:1.75rem;font-weight:700;line-height:1.1}
+#rg .gcard .gline{font-size:.78rem;color:var(--muted);margin-top:2px}
+@media(max-width:520px){#rg.goalie .goalies{grid-template-columns:1fr}}
+</style>
+<div id="rg"><div class="wrap">
+<p class="eyebrow">Learn to read hockey · watch first, add metrics after</p>
+<h1>Watch the game</h1>
+<p class="lede">Press play and just <b>watch</b> — each play narrated in plain language, goals called with the <b>scorer and assists</b>, the pace easing for the big moments. That’s the base view. When you want to understand <em>why</em> a team is on top, <b>add a metric layer</b> below — Control (Corsi) or High-danger. Nothing is invented; every layer shows its work.</p>
+<div class="board">
+  <div class="tm a"><span class="ab" id="aAb">MIN</span><span class="sc" id="aSc">0</span></div>
+  <div class="mid"><div class="gs"><span id="per">Pre-game</span> · <span class="cl" id="clk">00:00</span></div>
+    <div class="cbar"><div class="bar"><span class="ba" id="ba" style="width:50%"></span><span class="bh" id="bh" style="width:50%"></span></div>
+    <div class="pct"><span id="pa" style="color:var(--min)">50%</span><span style="color:var(--muted);font-size:.66rem;letter-spacing:.1em">CONTROL</span><span id="ph" style="color:var(--buf)">50%</span></div></div>
+  </div>
+  <div class="tm h"><span class="ab" id="hAb">BUF</span><span class="sc" id="hSc">0</span></div>
+</div>
+<div class="rinkbox"><svg viewBox="0 0 200 85"><g id="rink"></g><g id="lines"></g><g id="events"></g><g id="puck"></g><g id="labels"></g></svg>
+  <div class="caption" id="caption"></div>
+  <div class="counters"><div class="cc a"><span class="n" id="cA">0</span><span class="lb">MIN attempts</span></div><div class="cc h"><span class="lb">BUF attempts</span><span class="n" id="cH">0</span></div></div>
+</div>
+<div class="goalies" id="goaliePanel"></div>
+<div class="transport"><button class="play" id="play">▶ Play from start</button>
+  <button class="spd" id="sp0" aria-pressed="false">🐢 Slower</button><button class="spd" id="sp1" aria-pressed="true">Teaching</button><button class="spd" id="sp2" aria-pressed="false">Faster</button><button class="spd" id="lbl" aria-pressed="true">💬 Explain plays</button>
+  <input class="scrub" id="scrub" type="range" min="0" max="1" value="0"><button id="work" aria-expanded="false">Show me the work</button></div>
+<div class="legend"><span><i class="k-a"></i>shot</span><span><i class="k-p"></i>puck (jumps between real events)</span><span>🚨 goal</span><span style="color:var(--muted)">metric-specific marks appear when you add a layer</span></div>
+<div class="layers"><span class="ll">Add a metric layer:</span><button class="lyr" id="lyCorsi" aria-pressed="false">＋ Control (Corsi)</button><button class="lyr" id="lyHd" aria-pressed="false">＋ High-danger</button><button class="lyr" id="lyGoalie" aria-pressed="false">＋ Goaltending</button></div>
+<div class="hint">Tip: click any ⚡ high-danger chance (amber ring) on the ice to see <b>why</b> it qualified.</div>
+<div class="work" id="workPanel" hidden></div>
+<div class="whybk" id="whyBk"><div class="why" id="whyContent"></div></div>
+<div class="foot" id="gl">—</div>
+</div></div>
+<script>
+const G=__DATA__, R=G.roster, HID=G.teams.home.id, AID=G.teams.away.id, HAB=G.teams.home.ab, AAB=G.teams.away.ab;
+const SKIP=new Set(['stoppage','period-start','period-end','game-end','delayed-penalty']);
+const EV=G.events.filter(e=>!SKIP.has(e.type));
+const ATT=new Set(['goal','shot-on-goal','missed-shot','blocked-shot']);
+const SX=x=>x+100, SY=y=>42.5-y;
+let finalA=0,finalH=0; for(const e of EV){if(e.type==='goal')(e.own===HID?finalH++:finalA++);}
+function corsi(e){if(!ATT.has(e.type))return null;return e.type==='blocked-shot'?(HID+AID-e.own):e.own;}
+function tk(e){const c=corsi(e);return c===AID?'a':c===HID?'h':'x';}
+function isHD(e){if(!['shot-on-goal','goal','missed-shot'].includes(e.type)||e.x==null)return false;const d=Math.hypot(89-Math.abs(e.x),e.y);return d<=33&&Math.abs(e.y)<=22;}
+function lens(evs){const t={[HID]:0,[AID]:0},counted=[],surprising=[],excluded={};let hs=0,as=0;
+ for(const e of evs){if(e.type==='goal')(e.own===HID?hs++:as++);const c=corsi(e);if(c==null){excluded[e.type]=(excluded[e.type]||0)+1;continue;}t[c]++;(e.type==='blocked-shot'?surprising:counted).push(e);}
+ return{t,counted,surprising,excluded,hs,as};}
+const $=id=>document.getElementById(id);
+function drawRink(){const P=[];P.push('<rect class="boards" x="1" y="1" width="198" height="83" rx="27"/>');
+ for(const g of[-89,89])P.push(`<line class="ln red" x1="${SX(g)}" y1="3" x2="${SX(g)}" y2="82"/>`);
+ for(const b of[-25,25])P.push(`<line class="ln blue" x1="${SX(b)}" y1="1" x2="${SX(b)}" y2="84"/>`);
+ P.push('<line class="ln red thick" x1="100" y1="1" x2="100" y2="84"/><circle class="ln blue" cx="100" cy="42.5" r="15"/>');
+ for(const zx of[-69,69])for(const zy of[-22,22])P.push(`<circle class="ln red" cx="${SX(zx)}" cy="${SY(zy)}" r="15"/>`);
+ P.push('<circle class="rdot" cx="100" cy="42.5" r="1.1"/>');
+ // nets: BUF(home) defends LEFT(-89), MIN(away) defends RIGHT(+89)
+ P.push(`<rect id="netL" class="crease netflash" x="${SX(-89)}" y="37" width="4" height="11" rx="1" fill="var(--buf)" opacity="0"/>`);
+ P.push(`<rect id="netR" class="crease netflash" x="${SX(89)-4}" y="37" width="4" height="11" rx="1" fill="var(--min)" opacity="0"/>`);
+ P.push(`<rect class="crease" x="${SX(-89)}" y="38" width="3" height="9" rx="1" fill="var(--buf)"/>`);
+ P.push(`<rect class="crease" x="${SX(89)-3}" y="38" width="3" height="9" rx="1" fill="var(--min)"/>`);
+ P.push(`<text class="netlab" x="${SX(-80)}" y="21" fill="var(--buf)">◄ ${HAB} net</text>`);
+ P.push(`<text class="netlab" x="${SX(80)}" y="21" fill="var(--min)">${AAB} net ►</text>`);
+ $('rink').innerHTML=P.join('');}
+function flashNet(scorer){ // scorer scores INTO opponent's net
+ const el=scorer===AID?$('netR'):$('netL'); // MIN scores into MIN's...no: MIN attacks left(-89)=BUF net
+ const net=scorer===AID?$('netL'):$('netR'); net.style.opacity='';net.classList.remove('netflash');void net.offsetWidth;net.classList.add('netflash');}
+let prevA=0,prevH=0;
+function render(i,newest){
+ const evs=EV.slice(0,i+1),L=lens(evs),cur=EV[i];
+ const parts=[];
+ for(let k=0;k<evs.length;k++){const e=evs[k];if(e.x==null)continue;
+   const hd=hdOn&&isHD(e);
+   let cls=e.type==='goal'?'goal':e.type==='blocked-shot'?'blk':ATT.has(e.type)?'att':'excl';
+   if(hd&&e.type!=='goal')cls+=' hd';
+   if(hd)cls+=' clickable';
+   const r=e.type==='goal'?2.7:hd?2.2:ATT.has(e.type)?1.7:1;
+   const anim=(k===i&&newest)?(e.type==='goal'?' flare':' pop'):'';
+   if(hd&&k===i&&newest)parts.push(`<circle class="hdring" cx="${SX(e.x).toFixed(1)}" cy="${SY(e.y).toFixed(1)}" r="4.5"/>`);
+   parts.push(`<circle class="ev ${cls} ${tk(e)}${anim}" data-i="${k}" cx="${SX(e.x).toFixed(1)}" cy="${SY(e.y).toFixed(1)}" r="${r}"><title>${e.clock} ${e.type}</title></circle>`);}
+ $('events').innerHTML=parts.join('');
+ let lh='';
+ if(cur&&(cur.type==='shot-on-goal'||cur.type==='goal')&&cur.x!=null){const netx=(cur.own===HID)?89:-89;
+   lh=`<line class="shotline" x1="${SX(cur.x).toFixed(1)}" y1="${SY(cur.y).toFixed(1)}" x2="${SX(netx)}" y2="42.5"/>`;}
+ $('lines').innerHTML=lh;
+ if(cur&&cur.x!=null)$('puck').innerHTML=`<circle class="puck${newest?' jump':''}" cx="${SX(cur.x).toFixed(1)}" cy="${SY(cur.y).toFixed(1)}" r="1.5"/>`;
+ drawLabel(cur);
+ $('aSc').textContent=L.as;$('hSc').textContent=L.hs;
+ const a=L.t[AID],h=L.t[HID],tot=a+h||1,pa=Math.round(100*a/tot);
+ $('ba').style.width=pa+'%';$('bh').style.width=(100-pa)+'%';$('pa').textContent=pa+'%';$('ph').textContent=(100-pa)+'%';
+ $('cA').textContent=a;$('cH').textContent=h;
+ if(newest){if(a>prevA)flash('cA');if(h>prevH)flash('cH');
+   if(cur&&cur.type==='goal'){flashNet(cur.own);caption(cur,'goal');}
+   else if(cur&&hdOn&&isHD(cur)){lastHD=i;caption(cur,'hd');}}
+ prevA=a;prevH=h;
+ $('per').textContent=cur?'Period '+cur.per:'Pre-game';$('clk').textContent=cur?cur.clock:'00:00';
+ if(goalieOn){const gs=goalieStats(evs);$('goaliePanel').innerHTML=G.goalies.map(id=>{const p=R[id];if(!p)return '';const tid=p.tid,col=tid===AID?'var(--min)':'var(--buf)',ab=tid===AID?AAB:HAB;const st=gs[id]||{f:0,s:0,gl:0,hf:0,hs:0};const svp=st.f?(st.s/st.f).toFixed(3).replace(/^0/,''):'—';return `<div class="gcard"><div class="gname" style="color:${col}">${p.nm} <span class="sub">${ab} · #${p.n}</span></div><div class="gsv">${svp}</div><div class="gline">${st.s} saves · ${st.gl} goals · ${st.f} shots faced${st.hf?` · high-danger ${st.hs}/${st.hf}`:''}</div></div>`;}).join('');}
+ if(workOpen)renderWork(L,cur);
+}
+function flash(id){const el=$(id);el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump');}
+function caption(e,kind){const c=$('caption');const tid=e.own;const ab=tid===AID?AAB:HAB;const col=tid===AID?'var(--min)':'var(--buf)';
+ const p=R[e.actor];const who=p?`<span class="num">#${p.n}</span>${p.nm}`:ab;
+ const label=kind==='goal'?'🚨 GOAL':'⚡ High-danger chance';
+ c.innerHTML=`<span class="tag" style="background:${col};color:#fff">${ab}</span><b>${label}</b> · ${who}${kind==='hd'?' from the slot':''}`;
+ c.classList.remove('on');void c.offsetWidth;c.classList.add('on');}
+let workOpen=false;
+function renderWork(L,cur){const a=L.t[AID],h=L.t[HID],tot=a+h||1,pa=Math.round(100*a/tot);
+ const ex=['hit','faceoff','giveaway','takeaway','penalty'],exL={hit:'hits',faceoff:'faceoffs',giveaway:'giveaways',takeaway:'takeaways',penalty:'penalties'};
+ const rows=ex.filter(t=>L.excluded[t]).map(t=>`<div>${L.excluded[t]}× ${exL[t]}</div>`).join('');
+ $('workPanel').innerHTML=`<h2>How “control” is computed <span style="color:var(--muted);font-weight:400">(${cur?'through P'+cur.per+' '+cur.clock:'pre-game'})</span></h2>
+ <div class="wg"><div class="wc"><h3>Counted <span class="n">${L.counted.length}</span></h3><p>Shots on goal, missed shots, and goals — every attempt, credited to the shooter.</p></div>
+ <div class="wc flag"><h3>Counted, surprisingly <span class="n">${L.surprising.length}</span></h3><p>Blocked shots count as attempts — for the <b>shooter</b>, not the blocker. The feed credits the blocker; we flip it.</p></div>
+ <div class="wc"><h3>Not counted</h3><p style="font-family:ui-monospace,Menlo,monospace;font-size:.82rem">${rows||'—'}</p><p style="margin-top:6px;color:var(--muted);font-size:.8rem">A hit feels like control, but it isn’t a shot attempt.</p></div></div>
+ <p class="wfoot"><em>${a} ${AAB} / ${h} ${HAB} → ${pa}% / ${100-pa}%.</em> Every mark that pulsed on the ice is one of these counted events — the animation and this list are the same data.</p>`;}
+let i=EV.length-1,playing=false,timer=null,mult=2;
+$('scrub').max=EV.length-1;
+function set(v,newest){i=Math.max(0,Math.min(EV.length-1,v));$('scrub').value=i;render(i,newest);}
+function dwell(e){let d=650;if(e.type==='goal')d=3000;else if(isHD(e))d=1700;else if(e.type==='shot-on-goal')d=850;return d*mult;}
+function step(){if(i>=EV.length-1){stop();return;}set(i+1,true);timer=setTimeout(step,dwell(EV[i]));}
+function play(){if(i>=EV.length-1){prevA=0;prevH=0;set(0,true);}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);timer=setTimeout(step,dwell(EV[i]));}
+function stop(){playing=false;$('play').textContent=i>=EV.length-1?'▶ Replay from start':'▶ Play';clearTimeout(timer);}
+$('play').onclick=()=>playing?stop():play();
+$('scrub').oninput=e=>{stop();set(+e.target.value,false);};
+function setSpeed(m,id){mult=m;['sp0','sp1','sp2'].forEach(x=>$(x).setAttribute('aria-pressed',x===id));}
+$('sp0').onclick=()=>setSpeed(2.9,'sp0');
+$('sp1').onclick=()=>setSpeed(2,'sp1');
+$('sp2').onclick=()=>setSpeed(1.1,'sp2');
+$('work').onclick=()=>{workOpen=!workOpen;$('workPanel').hidden=!workOpen;$('work').setAttribute('aria-expanded',workOpen);$('work').textContent=workOpen?'Hide the work':'Show me the work';if(workOpen)render(i,false);};
+$('aAb').textContent=AAB;$('hAb').textContent=HAB;$('gl').textContent=`${AAB} at ${HAB} · Nov 10 2023 · final ${AAB} ${finalA}–${finalH} ${HAB}`;
+
+const HX=x=>11+Math.abs(x), HY=y=>42.5-y; let lastHD=null;
+function showWhy(idx){const e=EV[idx];if(e==null||e.x==null)return;
+ const dLine=89-Math.abs(e.x), dist=Math.hypot(dLine,e.y), angle=Math.atan2(Math.abs(e.y),dLine)*180/Math.PI;
+ const inSlot=Math.abs(e.y)<=22, tid=e.own, ab=tid===AID?AAB:HAB, col=tid===AID?'var(--min)':'var(--buf)', p=R[e.actor], isGoal=e.type==='goal';
+ const diag=`<svg viewBox="0 0 100 85"><rect x="1" y="1" width="98" height="83" rx="14" fill="#fff" stroke="var(--edge)"/>
+   <polygon points="63,20.5 96,38 96,47 63,64.5" fill="var(--hd)" opacity=".3"/><text x="70" y="43.5" font-size="3.4" fill="#b07d17" text-anchor="middle">slot</text>
+   <rect x="90" y="37" width="6" height="11" rx="1.5" fill="${col}" opacity=".55"/><line x1="96" y1="29" x2="96" y2="56" stroke="var(--red)" stroke-width="1" opacity=".7"/>
+   <line x1="36" y1="1" x2="36" y2="84" stroke="var(--blue)" stroke-width=".8" opacity=".35"/>
+   <line x1="${HX(e.x).toFixed(1)}" y1="${HY(e.y).toFixed(1)}" x2="95" y2="42.5" stroke="var(--ink)" stroke-dasharray="2 1.5" stroke-width=".7"/>
+   <circle cx="${HX(e.x).toFixed(1)}" cy="${HY(e.y).toFixed(1)}" r="2.8" fill="${col}" stroke="#fff" stroke-width=".7"/>
+   <text x="${Math.min(HX(e.x)+4,78).toFixed(1)}" y="${(HY(e.y)-2.5).toFixed(1)}" font-size="4.2" fill="var(--ink)" font-weight="700">${Math.round(dist)} ft</text></svg>`;
+ $('whyContent').innerHTML=`<div class="whyhd" style="background:${col}"><div><div class="t">${isGoal?'🚨 A high-danger GOAL':'⚡ Why this was high-danger'}</div>
+   <div class="s">${p?'#'+p.n+' '+p.nm:ab} · ${ab} · P${e.per} ${e.clock} · ${e.type.replace(/-/g,' ')}</div></div><button class="whyclose" onclick="hideWhy()">✕</button></div>
+  <div class="whybody"><div class="whydiag">${diag}</div>
+   <div class="factor"><span class="fv">${Math.round(dist)} ft</span><span class="fl">Distance to the net — <b>close</b>. Our rule: ≤ 33 ft. <span class="chk">✓</span></span></div>
+   <div class="factor"><span class="fv">${Math.round(angle)}°</span><span class="fl">Angle off straight-on — ${angle<22?'<b>a clean look</b> at the net':'a slot-area angle'}. Lower = more net to shoot at.</span></div>
+   <div class="factor" style="border-bottom:0"><span class="fv">${inSlot?'Slot':'Wide'}</span><span class="fl">Lateral position — ${inSlot?'<b>in the slot</b> (within the faceoff dots) <span class="chk">✓</span>':'outside the slot'}</span></div>
+   <div class="whyrule"><b>The rule, and you can check it:</b> a shot is <b>high-danger</b> when it's <b>≤ 33 ft from the net</b> AND <b>central</b> (within ±22 ft of the middle — the slot). Both true here. This is a <b>transparent geometric rule</b> — a teaching stand-in for "dangerous," not a trained expected-goals model. Measure it yourself on the diagram.</div></div>`;
+ $('whyBk').classList.add('on');}
+function hideWhy(){$('whyBk').classList.remove('on');}
+$('events').addEventListener('click',ev=>{const t=ev.target;if(t&&t.dataset&&t.dataset.i!=null){const k=+t.dataset.i;if(hdOn&&isHD(EV[k]))showWhy(k);}});
+$('caption').addEventListener('click',()=>{if(lastHD!=null)showWhy(lastHD);});
+$('whyBk').addEventListener('click',e=>{if(e.target.id==='whyBk')hideWhy();});
+
+
+const LAB={faceoff:['Faceoff','puck dropped'],hit:['Hit','physical play — not a shot'],giveaway:['Giveaway','lost the puck'],takeaway:['Takeaway','won the puck back'],'blocked-shot':['Shot blocked','still an attempt — for the shooter'],'missed-shot':['Missed shot','wide/high — still an attempt'],'shot-on-goal':['Shot on goal','a shot attempt'],goal:['GOAL','the attempt that scored'],penalty:['Penalty','off to the box']};
+let labelsOn=true;
+function drawLabel(e){const g=$('labels');if(!labelsOn||!e||e.x==null){g.innerHTML='';return;}
+ const lx=SX(e.x),ly=SY(e.y);
+ if(e.type==='goal'){const tid=e.own,col=tid===AID?'#12885a':'#bd8c12',ab=tid===AID?AAB:HAB,p=R[e.actor];
+   const as=[R[e.a1],R[e.a2]].filter(Boolean).map(x=>x.nm).join(', ');
+   let tx=lx>100?lx-5:lx+5,anc=lx>100?'end':'start',ty=Math.max(15,ly-6);
+   g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${ty.toFixed(1)}" stroke="${col}" stroke-width=".4" opacity=".55"/><text class="glab" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}" fill="${col}">🚨 GOAL — ${p?p.nm:ab}</text><text class="plabsub" x="${tx.toFixed(1)}" y="${(ty+4).toFixed(1)}" text-anchor="${anc}">${as?'assists: '+as:'unassisted'}</text></g>`;return;}
+ if(!LAB[e.type]){g.innerHTML='';return;}
+ const info=LAB[e.type];let tx=lx+4,anc='start';if(lx>150){tx=lx-4;anc='end';}let ty=ly-4.5;if(ty<11)ty=ly+8;
+ const hd=(hdOn&&isHD(e))?' · high-danger':'';
+ g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${info[0]}${hd}</text><text class="plabsub" x="${tx.toFixed(1)}" y="${(ty+3.7).toFixed(1)}" text-anchor="${anc}">${info[1]}</text></g>`;}
+$('lbl').addEventListener('click',()=>{labelsOn=!labelsOn;$('lbl').setAttribute('aria-pressed',labelsOn);$('lbl').style.opacity=labelsOn?'1':'.5';drawLabel(EV[i]);});
+
+let corsiOn=false,hdOn=false,goalieOn=false;
+function setCorsi(){document.getElementById('rg').classList.toggle('corsi',corsiOn);$('lyCorsi').setAttribute('aria-pressed',corsiOn);$('lyCorsi').textContent=(corsiOn?'✓ ':'＋ ')+'Control (Corsi)';if(!corsiOn&&workOpen){workOpen=false;$('workPanel').hidden=true;$('work').setAttribute('aria-expanded',false);$('work').textContent='Show me the work';}}
+function setHd(){$('lyHd').setAttribute('aria-pressed',hdOn);$('lyHd').textContent=(hdOn?'✓ ':'＋ ')+'High-danger';render(i,false);}
+$('lyCorsi').addEventListener('click',()=>{corsiOn=!corsiOn;setCorsi();});
+$('lyHd').addEventListener('click',()=>{hdOn=!hdOn;setHd();});
+function goalieStats(evs){const g={};for(const e of evs){if((e.type==='shot-on-goal'||e.type==='goal')&&e.goalie){const id=e.goalie;g[id]=g[id]||{f:0,s:0,gl:0,hf:0,hs:0};g[id].f++;const hd=isHD(e);if(e.type==='goal'){g[id].gl++;if(hd)g[id].hf++;}else{g[id].s++;if(hd){g[id].hf++;g[id].hs++;}}}}return g;}
+function setGoalie(){document.getElementById('rg').classList.toggle('goalie',goalieOn);$('lyGoalie').setAttribute('aria-pressed',goalieOn);$('lyGoalie').textContent=(goalieOn?'✓ ':'＋ ')+'Goaltending';render(i,false);}
+$('lyGoalie').addEventListener('click',()=>{goalieOn=!goalieOn;setGoalie();});
+drawRink();set(EV.length-1,false);
+</script>"""
+
+def build():
+    return T.replace("__DATA__", json.dumps(DATA, separators=(",", ":")))
+
+def main():
+    html = build()
+
+    script = re.search(r"<script>(.*)</script>", html, re.S).group(1)
+    chk = pathlib.Path(tempfile.gettempdir()) / "rtg.main.check.js"
+    chk.write_text(script)
+
+    if "--verify" in sys.argv:
+        current = OUT.read_text()
+        same = current == html
+        h = lambda s: hashlib.sha256(s.encode()).hexdigest()[:16]
+        print(f"built  {len(html):>7} bytes  sha {h(html)}")
+        print(f"onDisk {len(current):>7} bytes  sha {h(current)}")
+        print("BYTE-IDENTICAL" if same else "DIFFERS -- gate FAILED")
+        if not same:
+            for i, (a, b) in enumerate(zip(current, html)):
+                if a != b:
+                    print(f"  first difference at byte {i}: "
+                          f"{current[i-40:i+40]!r} != {html[i-40:i+40]!r}")
+                    break
+        return 0 if same else 1
+
+    OUT.write_text(html)
+    print(f"wrote {OUT} {len(html)} bytes; syntax check: {chk}")
+    return 0
+
+if __name__ == "__main__":
+    raise SystemExit(main())

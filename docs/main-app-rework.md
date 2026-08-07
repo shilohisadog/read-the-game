@@ -360,3 +360,146 @@ The **teaching copy** for the stoppage rules is likewise parked. Drafts exist in
 ---
 
 *Every finding is reproducible from the repo at commit `ce23e25` using the commands quoted inline.*
+
+---
+
+# Amendment — 2026-08-07, after CHENG's review
+
+CHENG reviewed this document against a clone and ran the queries rather than
+reading the prose. Four findings, all reproduced independently before being
+accepted. Two of my findings above are **wrong and are withdrawn**; the record
+is amended here rather than silently rewritten.
+
+## Withdrawn: F2 was wrong in both mechanism and conclusion
+
+`build_alive3.py` is not broken by a missing template. Its last line is
+
+```python
+base=open('_alive2_template.txt').read() if False else None
+```
+
+`if False` — the read never executes. The script runs clean and writes nothing.
+It is **abandoned, not broken**, and the distinction matters because the asset
+is not lost: `WHY_CSS` and `WHY_JS` hold the full why-popup in readable form.
+F2 claimed its "only surviving copy is inside the generated HTML." There are
+two, and the builder's is the better one. Only the injection logic needs
+re-deriving.
+
+I grepped for `open(` and stopped at the match instead of reading 55 lines.
+
+## Corrected: F6 was substantially overstated
+
+Measured: longest line 66,139 chars — and it is the embedded data literal.
+Only **two** lines exceed 500 characters; the code is ~27.8KB across ~263
+normal-width lines. So "git cannot produce a meaningful diff" is false for the
+code, and "CHENG cannot review this file" was disproved by CHENG reviewing it —
+findings 1 and 4 below came out of reading it.
+
+**F3 and F5 are the real arguments for the rework and they stand alone.**
+F6 should not have been given the shop window in Part 5.
+
+## New, blocking: the blocked-shot flip is backwards
+
+`read-the-game.html` credits Corsi attempts on blocked shots to the **blocker**.
+`eventOwnerTeamId` is the **shooter's** team — 44/44 in this game, verified
+against `rosterSpots` rather than our own extract, so the check is not circular.
+
+```
+shipped  (flips):  MIN 72 / BUF 63  = 53.3%
+correct (no flip): MIN 80 / BUF 55  = 59.3%
+```
+
+The app labels the event "still an attempt — for the shooter" while the
+arithmetic credits the blocker. The teaching text and the math disagree, on the
+number the product exists to deliver.
+
+The claim originated in a project memory, propagated to `README.md`, to the
+code, and into this document — four artifacts, one untested premise. The README
+defended it with "38 of 44 blocks were recorded in the blocking team's defensive
+zone," which is **true and proves nothing**: `zoneCode` on a block is recorded
+from the defending side and carries no information about ownership. A true
+statistic was offered as evidence for a claim it cannot support.
+
+The tell that should have caught it: SOG is computed from the *same* field,
+unflipped, and reproduces the boxscore exactly. One field changing meaning for
+exactly one event type was the extraordinary claim.
+
+**Fix is cheaper than assumed:** `rich.json`'s `actor` on a blocked shot already
+*is* the shooter (44/44), so `R[e.actor].tid` gives robust per-event attribution
+with no re-extraction.
+
+## New, latent: `Math.abs(x)` in the danger rule
+
+`Math.hypot(89-Math.abs(e.x), e.y)` measures to the *nearer* net, not the
+*attacking* net, on already-normalized coordinates. **Three** events are
+mis-measured (CHENG found one; there are three):
+
+```
+P3 11:33 BUF  x=-70 y=+35   app 39.8 ft   true 162.8 ft
+P3 00:35 MIN  x= 65 y=+25   app 34.7 ft   true 156.0 ft
+P2 06:29 BUF  x=-52 y=+26   app 45.2 ft   true 143.4 ft
+```
+
+All three have |y| > 22, so the slot test rejects them independently and the
+high-danger count is unchanged. Correct by luck. Use `89 - x*dir(team)`.
+
+## Amendments to Part 2 — the acceptance contract
+
+Three features were missing, and a rework could have passed acceptance without
+them:
+
+| Feature | Surface |
+|---|---|
+| **Scrubber** | `<input class="scrub" id="scrub">`, seeks and halts playback — the control the whole reducer architecture is designed around |
+| **`caption` → `showWhy`** | a second entry point to the why-popup, besides clicking the event |
+| **Scoreboard state** | `gl`, `hSc`, `aSc`, `per`, `clk` update live |
+
+## Amendment to Q2 — conservation as specified could not fail
+
+Line 126 filters before the reducer ever runs:
+
+```js
+const SKIP=new Set(['stoppage','period-start','period-end','game-end','delayed-penalty']);
+const EV=G.events.filter(e=>!SKIP.has(e.type));
+```
+
+Measured: 320 events, **51 pre-filtered**, 269 reaching the reducer, and
+`counted 135 + excluded 134 = 269`. Conservation passes while 51 events are
+deleted upstream of the ledger. "Every event considered" is the loophole, since
+`SKIP` decides what is considered. **Bind the property to `loadGame()` output,
+not to `EV`** — then the 51 stoppages become `excluded` entries with reasons,
+which Doctrine §3 wants anyway and which is free material for the whistle layer.
+
+Also: `excluded` currently counts by type. Conserve over **IDs**, not counts.
+
+## Accepted without argument
+
+- `surprising` gains a `derivedFrom` field. An explanation that isn't checkable
+  is exactly how a wrong number ships with a confident caption.
+- Python stays the build language.
+- Ownership resolution goes through a feed adapter — justified by the
+  attribution question in hockey alone, before any second sport.
+- `G.shifts` is referenced **0 times**: 694 shifts embedded and never read.
+
+## Revised order of work
+
+1. ~~README and memory corrections~~ — done, commit `a11f265`.
+2. **Phase 0** — done, see below.
+3. Findings 1 and 4, in the builder, tests first, mutation-proven.
+4. Phase 1, then Phase 2 with conservation bound to `loadGame()`.
+
+## Phase 0 — complete
+
+`builders/build_main.py` regenerates `src/read-the-game.html` from
+`data/rich.json` plus the extracted template. The embedded literal proved to be
+byte-identical to `json.dumps(rich.json, separators=(",", ":"))`, so the builder
+is fully parameterized rather than carrying a frozen blob.
+
+**Gate: `python3 builders/build_main.py --verify` reports BYTE-IDENTICAL**, and
+regenerating over the working tree leaves `git diff` empty (sha256
+`8b8ece7c…`). The five superseded builders moved to `builders/legacy/` with a
+README recording why, and keeping `build_alive3.py` for the why-popup source.
+
+Still outstanding from F1: `build_A/B/C/3d.py` (the earlier 2D prototypes and
+the terrain view) retain the bare-path problem and cannot run from the repo
+root. Out of scope for Phase 0, which was the main app.
