@@ -65,10 +65,21 @@ These are real, verified against the boxscore, and every one of them is
 handled in the extraction. They're documented here because anyone building on
 this feed will hit them:
 
-- **Blocked shots are credited to the blocker's team.** For Corsi the attempt
-  belongs to the *shooter*, so attribution has to flip on blocks. The tell:
-  38 of 44 blocks in this game were recorded in the blocking team's own
-  defensive zone.
+- **Blocked shots are credited to the shooter, not the blocker** — despite what
+  a lot of older documentation says. On this endpoint `eventOwnerTeamId` is the
+  shooting team on all 44 blocks in this game, checked against `rosterSpots`.
+  Older NHL endpoints did credit the blocker, which is where the folklore comes
+  from, so verify it against the feed you're actually using rather than trusting
+  a write-up. Do not "correct" it by flipping.
+
+  > We got this wrong. An earlier version of this file claimed the opposite and
+  > offered as proof that 38 of 44 blocks were recorded in the blocking team's
+  > defensive zone. That statistic is true and proves nothing — `zoneCode` on a
+  > block is recorded from the defending side, so it says nothing about who the
+  > event is credited to. A true number was presented as evidence for a claim it
+  > could not support, and the one query that would have settled it was never
+  > run. The app shipped a Corsi count built on the flip. See
+  > [docs/main-app-rework.md](docs/main-app-rework.md).
 - **The running SOG counter excludes goals.** Official shots on goal =
   shot-on-goal events **+** goals. Getting this right is what reproduces the
   boxscore's 35–25.
