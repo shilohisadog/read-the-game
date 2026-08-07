@@ -171,7 +171,14 @@ const ATT=ATTEMPT_TYPES;
 const SX=x=>x+100, SY=y=>42.5-y;
 // Rink is 200 units long for 200 feet, so one unit is one foot: a ~6 ft player
 // is ~6 units. Goals get a little more presence.
-const FIG_SZ=5.6, FIG_BIG=7.2;
+// Only one figure is on the ice at a time, so it can afford presence and detail.
+const FIG_SZ=9, FIG_BIG=11.5;
+// The rink is 200 units wide and renders around 860px, so a unit is ~4.3px.
+// This only drives the figure's drop-detail-when-small threshold, never its
+// geometry, so an approximation is honest here -- but without it a 9-unit
+// figure is judged as "9 pixels" and loses its face on a screen where there is
+// plenty of room for one.
+const UNIT_PX=4.3;
 const MINCOL='#12885a', BUFCOL='#bd8c12';
 let T=0, REDUCED=matchMedia('(prefers-reduced-motion:reduce)').matches;
 let figStyle=(()=>{try{return localStorage.getItem('rtg.fig')||'mascot'}catch(e){return 'mascot'}})();
@@ -217,14 +224,20 @@ function render(i,newest){
    const anim=(k===i&&newest)?(e.type==='goal'?' flare':' pop'):'';
    if(hd&&k===i&&newest)parts.push(`<circle class="hdring" cx="${SX(e.x).toFixed(1)}" cy="${SY(e.y).toFixed(1)}" r="4.5"/>`);
    const cx=SX(e.x), cy=SY(e.y), title=`<title>${e.rem} ${e.type}</title>`;
-   if(ATT.has(e.type)){
-     // An attempt gets a PLAYER. Its feet stand on the real shot coordinate and
-     // its pose is the real outcome — arms up for a goal, shooting otherwise.
-     // Everything else stays a dot: a figure means "someone shot from here", so
-     // drawing one for a faceoff would be a claim we cannot make (Doctrine §5).
-     const pen=new SvgPen(`e${k}`);
+   if(ATT.has(e.type)&&k===i){
+     // Only the CURRENT attempt is a player. Once the shot has happened its
+     // location goes back to being a dot, so the eye is drawn to what is
+     // happening now rather than to a crowd of past figures — and one figure
+     // per frame instead of 135 is roughly an eighth of the markup.
+     //
+     // Its feet stand on the real shot coordinate and its pose is the real
+     // outcome: arms up for a goal, shooting otherwise. Non-attempts are never
+     // figures, because a figure means "someone shot from here" and drawing one
+     // for a faceoff would be a claim we cannot make (Doctrine §5).
+     const pen=new SvgPen('cur');
      FIG[figStyle](pen,cx,cy,e.type==='goal'?FIG_BIG:FIG_SZ,tk(e)==='a'?MINCOL:BUFCOL,
-                   e.type==='goal'?'goal':'save',{t:T,motion:!REDUCED,glow:false});
+                   e.type==='goal'?'goal':'save',
+                   {t:T,motion:!REDUCED,glow:false,px:(e.type==='goal'?FIG_BIG:FIG_SZ)*UNIT_PX});
      parts.push(pen.toSvg(`class="ev fig ${cls} ${tk(e)}${anim}" data-i="${k}"`).replace('</g>',title+'</g>'));
    } else {
      parts.push(`<circle class="ev ${cls} ${tk(e)}${anim}" data-i="${k}" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r}">${title}</circle>`);

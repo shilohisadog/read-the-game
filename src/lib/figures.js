@@ -51,6 +51,11 @@ export function _rr(g,x,y,w,h,r){
 
 export function figMascot(g,px,py,size,jersey,out,o){
  o=o||{}; const t=o.t||0, motion=o.motion!==false, glow=o.glow!==false, light=!!o.light;
+ // How large the figure will actually APPEAR, which is not `size` when drawing
+ // into a scaled SVG viewBox. Detail is dropped by apparent size, so a 9-unit
+ // figure on a rink that renders 4.3px per unit keeps its face.
+ // (Not named `px` -- that is already this function's x coordinate.)
+ const shownAt = o.px == null ? size : o.px;
  const u=size/10, goal=out==='goal', ink='#0d141b', skin='#f7dcb4', pants='#1d2a36';
  g.save(); g.lineCap='round'; g.lineJoin='round';
  g.fillStyle=light?'rgba(20,40,60,.20)':'rgba(0,0,0,.40)';
@@ -90,7 +95,7 @@ export function figMascot(g,px,py,size,jersey,out,o){
  g.beginPath(); g.arc(0,-u*8.1,u*2.72,Math.PI*1.02,Math.PI*2-0.02); g.fill();
  g.beginPath(); g.arc(-u*2.35,-u*7.75,u*0.72,0,7); g.fill();
  g.beginPath(); g.arc(u*2.35,-u*7.75,u*0.72,0,7); g.fill();
- if(size>20){
+ if(shownAt>20){
   g.fillStyle=ink;
   g.beginPath(); g.arc(-u*0.95,-u*7.95,u*0.34,0,7); g.fill();
   g.beginPath(); g.arc(u*0.95,-u*7.95,u*0.34,0,7); g.fill();
@@ -106,6 +111,11 @@ export function figMascot(g,px,py,size,jersey,out,o){
 
 export function figTabletop(g,px,py,size,jersey,out,o){
  o=o||{}; const t=o.t||0, motion=o.motion!==false, glow=o.glow!==false, light=!!o.light;
+ // How large the figure will actually APPEAR, which is not `size` when drawing
+ // into a scaled SVG viewBox. Detail is dropped by apparent size, so a 9-unit
+ // figure on a rink that renders 4.3px per unit keeps its face.
+ // (Not named `px` -- that is already this function's x coordinate.)
+ const shownAt = o.px == null ? size : o.px;
  const u=size/10, goal=out==='goal', ink='#080b0e', pants='#e7edf2', skin='#f2d3ad';
  g.save(); g.lineJoin='miter'; g.lineCap='butt';
  g.fillStyle=light?'rgba(20,40,60,.20)':'rgba(0,0,0,.42)';
@@ -151,7 +161,7 @@ export function figTabletop(g,px,py,size,jersey,out,o){
  }
  g.beginPath(); g.arc(0,-u*7.85,u*1.55,0,7); O(skin,0.46);
  g.beginPath(); g.arc(0,-u*7.95,u*1.63,Math.PI,0); g.closePath(); O(jersey,0.46);
- if(size>20){
+ if(shownAt>20){
   g.fillStyle=ink;
   g.beginPath(); g.arc(-u*0.56,-u*7.55,u*0.19,0,7); g.fill();
   g.beginPath(); g.arc(u*0.56,-u*7.55,u*0.19,0,7); g.fill();

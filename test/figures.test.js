@@ -105,6 +105,21 @@ test('detail drops out at small sizes, on purpose', () => {
   assert.ok(large > tiny, `and gains detail when there is room (${large} > ${tiny})`);
 });
 
+test('apparent size drives detail, not the raw size argument', () => {
+  // The rink draws into a viewBox where one unit renders as ~4.3 screen pixels,
+  // so a 9-unit figure appears at ~39px and has room for a face. Judging that
+  // by `size` alone would call it "9 pixels" and strip the detail on a screen
+  // with plenty of space. The canvas surfaces pass pixels and need no hint.
+  const shapes = (size, px) => {
+    const p = new SvgPen();
+    FIG.mascot(p, 0, 0, size, '#fff', 'save', { motion: false, glow: false, px });
+    return p.parts.length;
+  };
+  assert.ok(shapes(9, 9 * 4.3) > shapes(9, null),
+    'the hint must restore detail a raw size check would drop');
+  assert.equal(shapes(9, null), shapes(9, 9), 'no hint means judge by size');
+});
+
 test('the figure scales with its size argument', () => {
   const at = size => {
     const p = new SvgPen();
