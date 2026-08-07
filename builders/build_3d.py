@@ -1,5 +1,10 @@
 import json
-RAW = json.load(open('terrain_data.json'))
+import pathlib as _pl
+_ROOT = _pl.Path(__file__).resolve().parent.parent
+_D = lambda n: str(_ROOT / 'data' / n)
+_S = lambda n: str(_ROOT / 'src' / n)
+
+RAW = json.load(open(_D('terrain_data.json')))
 T = r'''<style>
 #t3d{--bg:#060c12;--ink:#eaf1f6;--muted:#8ba0ae;--min:#34d399;--buf:#f3c249;--edge:#20313f;
   font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:
@@ -149,5 +154,5 @@ document.getElementById('cBuf').textContent=RAW.counts.buf;
 buildGrid();fit();draw();loop();
 </script>'''
 html=T.replace('__DATA__',json.dumps(RAW,separators=(',',':')))
-open('terrain-3d.html','w').write(html)
+open(_S('terrain-3d.html'),'w').write(html)
 print("wrote terrain-3d.html",len(html),"bytes")

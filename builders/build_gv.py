@@ -144,4 +144,4 @@ out.write_text(html)
 script = re.search(r"<script>(.*)</script>", html, re.S).group(1)
 chk = pathlib.Path(tempfile.gettempdir()) / "rtg.gv.check.js"
 chk.write_text(script)
-print("wrote", out, len(html), "bytes; syntax check:", chk)
+print("wrote", out, len(html.encode()), "bytes; syntax check:", chk)

@@ -1,5 +1,10 @@
 import json
-G=json.load(open('rich.json'))
+import pathlib as _pl
+_ROOT = _pl.Path(__file__).resolve().parent.parent
+_D = lambda n: str(_ROOT / 'data' / n)
+_S = lambda n: str(_ROOT / 'src' / n)
+
+G=json.load(open(_D('rich.json')))
 sub={'roster':G['roster'],'teams':G['teams'],'gshots':G['gshots'],'goalies':G['goalies']}
 T=r'''<style>
 #pc{--ink:#0f1a23;--muted:#5d6f7c;--edge:#cdd9e1;--ice:#eef4f8;--min:#12885a;--buf:#c79212;--save:#4a6b86;--goal:#d92b3f;--hd:#f4d06a;
@@ -79,5 +84,5 @@ function panel(gid){
 }
 document.getElementById('grid').innerHTML=G.goalies.map(panel).join('');
 </script>'''
-open('goalie-view.html','w').write(T.replace('__DATA__',json.dumps(sub,separators=(',',':'))))
-print("wrote goalie-view.html",len(open('goalie-view.html').read()),"bytes")
+open(_S('goalie-view.html'),'w').write(T.replace('__DATA__',json.dumps(sub,separators=(',',':'))))
+print("wrote goalie-view.html",len(open(_S('goalie-view.html')).read().encode()),"bytes")

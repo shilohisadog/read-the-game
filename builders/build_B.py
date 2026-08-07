@@ -1,5 +1,10 @@
 import json
-G=json.load(open('rich.json'))
+import pathlib as _pl
+_ROOT = _pl.Path(__file__).resolve().parent.parent
+_D = lambda n: str(_ROOT / 'data' / n)
+_S = lambda n: str(_ROOT / 'src' / n)
+
+G=json.load(open(_D('rich.json')))
 T=r'''<style>
 #pb{--ice:#eef4f8;--ink:#0f1a23;--muted:#5d6f7c;--edge:#cdd9e1;--min:#12885a;--buf:#c79212;--red:#c8102e;--blue:#3a5a9c;
  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:#f4f7fa;min-height:100vh;padding:clamp(16px,3.5vw,34px) clamp(12px,4vw,22px);line-height:1.5}
@@ -82,5 +87,5 @@ document.getElementById('play').onclick=()=>playing?stop():play();
 sc.oninput=e=>{stop();set(+e.target.value);};
 rink();set(0);
 </script>'''
-open('on-the-ice.html','w').write(T.replace('__DATA__',json.dumps(G,separators=(',',':'))))
-print("wrote on-the-ice.html",len(open('on-the-ice.html').read()),"bytes")
+open(_S('on-the-ice.html'),'w').write(T.replace('__DATA__',json.dumps(G,separators=(',',':'))))
+print("wrote on-the-ice.html",len(open(_S('on-the-ice.html')).read().encode()),"bytes")

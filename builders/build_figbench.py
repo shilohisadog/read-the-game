@@ -195,4 +195,4 @@ out.write_text(html)
 script = re.search(r"<script>(.*)</script>", html, re.S).group(1)
 chk = pathlib.Path(tempfile.gettempdir()) / "rtg.figbench.check.js"
 chk.write_text(script)
-print("wrote", out, len(html), "bytes;", len(crowd), "crowd shots")
+print("wrote", out, len(html.encode()), "bytes;", len(crowd), "crowd shots")

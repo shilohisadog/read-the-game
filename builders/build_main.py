@@ -305,8 +305,8 @@ def main():
         current = OUT.read_text()
         same = current == html
         h = lambda s: hashlib.sha256(s.encode()).hexdigest()[:16]
-        print(f"built  {len(html):>7} bytes  sha {h(html)}")
-        print(f"onDisk {len(current):>7} bytes  sha {h(current)}")
+        print(f"built  {len(html.encode()):>7} bytes  sha {h(html)}")
+        print(f"onDisk {len(current.encode()):>7} bytes  sha {h(current)}")
         print("BYTE-IDENTICAL" if same else "DIFFERS -- gate FAILED")
         if not same:
             for i, (a, b) in enumerate(zip(current, html)):
@@ -317,7 +317,7 @@ def main():
         return 0 if same else 1
 
     OUT.write_text(html)
-    print(f"wrote {OUT} {len(html)} bytes; syntax check: {chk}")
+    print(f"wrote {OUT} {len(html.encode())} bytes; syntax check: {chk}")
     return 0
 
 if __name__ == "__main__":
