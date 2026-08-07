@@ -216,16 +216,136 @@ function corsiTeam(ev, roster) {
   return shootingTeam(ev, roster);
 }
 
+/* --- src/lib/layers/corsi.js --- */
+/**
+ * Control (Corsi) — shot attempts, as a reduction over the event stream.
+ *
+ * Lifted out of the app unchanged in Phase 1. Behaviour is pinned frame-by-frame
+ * against test/fixtures/phase1-golden.json, captured from the shipped
+ * implementation before the move, so "the refactor preserves behaviour" is a
+ * measurement rather than a belief.
+ *
+ * Corsi counts every attempt on goal: goals, shots on goal, shots that missed,
+ * and shots that were blocked. It is a rough proxy for which team had the puck
+ * in the other team's end, which is why the app calls it "control" rather than
+ * its real name -- a novice has no reason to know what a Corsi is.
+ *
+ * Three things about the shape, all of which Phase 2 changes deliberately:
+ *
+ *   - `excluded` counts by type rather than listing event ids. Conservation over
+ *     counts is weaker than conservation over ids, and Phase 2 fixes that.
+ *   - The caller passes an already-filtered event list. The app drops 51 events
+ *     upstream of this function, so the ledger here is honest about what it sees
+ *     and silent about what it never saw. Phase 2 binds it to the full game.
+ *   - `surprising` is populated by a hardcoded rule (blocked shots) rather than
+ *     carrying its own explanation. Phase 2 gives it {id, why, derivedFrom}.
+ *
+ * None of that is fixed here on purpose: Phase 1 moves code, it does not change
+ * what the screen says.
+ */
+
+/**
+ * @param events  the events to reduce, in order
+ * @param ctx     { roster, homeId, awayId }
+ * @returns { t, counted, surprising, excluded, hs, as }
+ *   t           attempts per team id
+ *   counted     attempts a novice would expect to count
+ *   surprising  attempts that count but look like they shouldn't -- blocked
+ *               shots, which belong to the SHOOTER (see attribution.js)
+ *   excluded    { eventType: count } for everything that is not an attempt
+ *   hs / as     goals, home and away, for the scoreboard
+ */
+function corsiLens(events, ctx) {
+  const { roster, homeId, awayId } = ctx;
+  const t = { [homeId]: 0, [awayId]: 0 };
+  const counted = [], surprising = [], excluded = {};
+  let hs = 0, as = 0;
+
+  for (const e of events) {
+    if (e.type === 'goal') (e.own === homeId ? hs++ : as++);
+
+    const team = corsiTeam(e, roster);
+    if (team == null) {
+      excluded[e.type] = (excluded[e.type] || 0) + 1;
+      continue;
+    }
+    t[team]++;
+    (e.type === 'blocked-shot' ? surprising : counted).push(e);
+  }
+  return { t, counted, surprising, excluded, hs, as };
+}
+
+/* --- src/lib/layers/goaltending.js --- */
+/**
+ * Goaltending — save percentage, built as the game plays.
+ *
+ * Lifted out of the app unchanged in Phase 1 and pinned frame-by-frame against
+ * test/fixtures/phase1-golden.json.
+ *
+ * The teaching point this layer exists for: in the reference game Minnesota
+ * outshot Buffalo 35-25 and lost, because Levi stopped 33 of 35 and Gustavsson
+ * stopped 22 of 25. The score is an outcome, not a description of the game.
+ *
+ * Note what a "shot faced" is here, because it is the same trap as the SOG
+ * counter: shots on goal PLUS goals. A goal is a shot the goalie faced and did
+ * not stop. Counting only shot-on-goal events would understate every workload
+ * by exactly the number of goals allowed.
+ *
+ * Doctrine section 8 applies to anything built on this: a save percentage
+ * displayed without a base rate is a story, not a measurement. Levi's 18-for-18
+ * at even strength is a normal night for a league-average goalie -- about one
+ * start in five -- and rendering it as `1.000` would invite a novice to read a
+ * rate where there is only a small sample.
+ */
+
+/** Is this a high-danger chance? Geometric rule, measured to the ATTACKING net. */
+function isHighDangerEvent(e, ctx) {
+  if (!SHOT_TYPES.has(e.type) || e.x == null) return false;
+  const team = shootingTeam(e, ctx.roster);
+  if (team == null) return false;
+  return isHighDanger(e.x, e.y, attackDirection(team, ctx.homeId));
+}
+
+/**
+ * @param events  the events to reduce, in order
+ * @param ctx     { roster, homeId }
+ * @returns { [goalieId]: { f, s, gl, hf, hs } }
+ *   f   shots faced      (shots on goal + goals)
+ *   s   saves
+ *   gl  goals allowed
+ *   hf  high-danger chances faced
+ *   hs  high-danger saves
+ */
+function goaltendingLens(events, ctx) {
+  const g = {};
+  for (const e of events) {
+    if (!(e.type === 'shot-on-goal' || e.type === 'goal') || !e.goalie) continue;
+
+    const id = e.goalie;
+    g[id] = g[id] || { f: 0, s: 0, gl: 0, hf: 0, hs: 0 };
+    g[id].f++;
+
+    const hd = isHighDangerEvent(e, ctx);
+    if (e.type === 'goal') {
+      g[id].gl++;
+      if (hd) g[id].hf++;
+    } else {
+      g[id].s++;
+      if (hd) { g[id].hf++; g[id].hs++; }
+    }
+  }
+  return g;
+}
+
 const ATT=ATTEMPT_TYPES;
 const SX=x=>x+100, SY=y=>42.5-y;
 let finalA=0,finalH=0; for(const e of EV){if(e.type==='goal')(e.own===HID?finalH++:finalA++);}
 function corsi(e){return corsiTeam(e,R);}
 function tk(e){const c=corsi(e);return c===AID?'a':c===HID?'h':'x';}
 function shotDir(e){const t=shootingTeam(e,R);return t==null?null:attackDirection(t,HID);}
-function isHD(e){if(!SHOT_TYPES.has(e.type)||e.x==null)return false;const d=shotDir(e);return d==null?false:isHighDanger(e.x,e.y,d);}
-function lens(evs){const t={[HID]:0,[AID]:0},counted=[],surprising=[],excluded={};let hs=0,as=0;
- for(const e of evs){if(e.type==='goal')(e.own===HID?hs++:as++);const c=corsi(e);if(c==null){excluded[e.type]=(excluded[e.type]||0)+1;continue;}t[c]++;(e.type==='blocked-shot'?surprising:counted).push(e);}
- return{t,counted,surprising,excluded,hs,as};}
+const CTX={roster:R,homeId:HID,awayId:AID};
+function isHD(e){return isHighDangerEvent(e,CTX);}
+function lens(evs){return corsiLens(evs,CTX);}
 const $=id=>document.getElementById(id);
 function drawRink(){const P=[];P.push('<rect class="boards" x="1" y="1" width="198" height="83" rx="27"/>');
  for(const g of[-89,89])P.push(`<line class="ln red" x1="${SX(g)}" y1="3" x2="${SX(g)}" y2="82"/>`);
@@ -351,7 +471,7 @@ function setCorsi(){document.getElementById('rg').classList.toggle('corsi',corsi
 function setHd(){$('lyHd').setAttribute('aria-pressed',hdOn);$('lyHd').textContent=(hdOn?'✓ ':'＋ ')+'High-danger';render(i,false);}
 $('lyCorsi').addEventListener('click',()=>{corsiOn=!corsiOn;setCorsi();});
 $('lyHd').addEventListener('click',()=>{hdOn=!hdOn;setHd();});
-function goalieStats(evs){const g={};for(const e of evs){if((e.type==='shot-on-goal'||e.type==='goal')&&e.goalie){const id=e.goalie;g[id]=g[id]||{f:0,s:0,gl:0,hf:0,hs:0};g[id].f++;const hd=isHD(e);if(e.type==='goal'){g[id].gl++;if(hd)g[id].hf++;}else{g[id].s++;if(hd){g[id].hf++;g[id].hs++;}}}}return g;}
+function goalieStats(evs){return goaltendingLens(evs,CTX);}
 function setGoalie(){document.getElementById('rg').classList.toggle('goalie',goalieOn);$('lyGoalie').setAttribute('aria-pressed',goalieOn);$('lyGoalie').textContent=(goalieOn?'✓ ':'＋ ')+'Goaltending';render(i,false);}
 $('lyGoalie').addEventListener('click',()=>{goalieOn=!goalieOn;setGoalie();});
 drawRink();set(EV.length-1,false);

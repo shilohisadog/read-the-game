@@ -158,10 +158,9 @@ let finalA=0,finalH=0; for(const e of EV){if(e.type==='goal')(e.own===HID?finalH
 function corsi(e){return corsiTeam(e,R);}
 function tk(e){const c=corsi(e);return c===AID?'a':c===HID?'h':'x';}
 function shotDir(e){const t=shootingTeam(e,R);return t==null?null:attackDirection(t,HID);}
-function isHD(e){if(!SHOT_TYPES.has(e.type)||e.x==null)return false;const d=shotDir(e);return d==null?false:isHighDanger(e.x,e.y,d);}
-function lens(evs){const t={[HID]:0,[AID]:0},counted=[],surprising=[],excluded={};let hs=0,as=0;
- for(const e of evs){if(e.type==='goal')(e.own===HID?hs++:as++);const c=corsi(e);if(c==null){excluded[e.type]=(excluded[e.type]||0)+1;continue;}t[c]++;(e.type==='blocked-shot'?surprising:counted).push(e);}
- return{t,counted,surprising,excluded,hs,as};}
+const CTX={roster:R,homeId:HID,awayId:AID};
+function isHD(e){return isHighDangerEvent(e,CTX);}
+function lens(evs){return corsiLens(evs,CTX);}
 const $=id=>document.getElementById(id);
 function drawRink(){const P=[];P.push('<rect class="boards" x="1" y="1" width="198" height="83" rx="27"/>');
  for(const g of[-89,89])P.push(`<line class="ln red" x1="${SX(g)}" y1="3" x2="${SX(g)}" y2="82"/>`);
@@ -287,13 +286,13 @@ function setCorsi(){document.getElementById('rg').classList.toggle('corsi',corsi
 function setHd(){$('lyHd').setAttribute('aria-pressed',hdOn);$('lyHd').textContent=(hdOn?'✓ ':'＋ ')+'High-danger';render(i,false);}
 $('lyCorsi').addEventListener('click',()=>{corsiOn=!corsiOn;setCorsi();});
 $('lyHd').addEventListener('click',()=>{hdOn=!hdOn;setHd();});
-function goalieStats(evs){const g={};for(const e of evs){if((e.type==='shot-on-goal'||e.type==='goal')&&e.goalie){const id=e.goalie;g[id]=g[id]||{f:0,s:0,gl:0,hf:0,hs:0};g[id].f++;const hd=isHD(e);if(e.type==='goal'){g[id].gl++;if(hd)g[id].hf++;}else{g[id].s++;if(hd){g[id].hf++;g[id].hs++;}}}}return g;}
+function goalieStats(evs){return goaltendingLens(evs,CTX);}
 function setGoalie(){document.getElementById('rg').classList.toggle('goalie',goalieOn);$('lyGoalie').setAttribute('aria-pressed',goalieOn);$('lyGoalie').textContent=(goalieOn?'✓ ':'＋ ')+'Goaltending';render(i,false);}
 $('lyGoalie').addEventListener('click',()=>{goalieOn=!goalieOn;setGoalie();});
 drawRink();set(EV.length-1,false);
 </script>"""
 
-LIB = ["rink.js", "attribution.js"]
+LIB = ["rink.js", "attribution.js", "layers/corsi.js", "layers/goaltending.js"]
 
 def _lib():
     """Inline src/lib/*.js. They are real ES modules so `node --test` can import
@@ -301,7 +300,10 @@ def _lib():
     out = []
     for name in LIB:
         src = (ROOT / "src" / "lib" / name).read_text()
-        out.append(f"/* --- src/lib/{name} --- */\n" + src.replace("export ", ""))
+        # Strip ESM syntax: node imports these as modules for testing, the
+        # browser gets them concatenated in dependency order.
+        body = "\n".join(l for l in src.split("\n") if not l.startswith("import "))
+        out.append(f"/* --- src/lib/{name} --- */\n" + body.replace("export ", ""))
     return "\n".join(out)
 
 def build():
