@@ -43,6 +43,17 @@ Everything below is simpler because we never render a game in progress:
 "Replay only" is the kind of constraint that quietly erodes the first time someone
 asks for a live score, and it is load-bearing for half the decisions here.
 
+**Write down the teaching reason, not the engineering ones.** Everything above —
+immutable extracts, no polling, trivial determinism — is a *consequence*, and
+consequences look negotiable the moment somebody offers to solve them. The
+unanswerable argument is the one about what the product is for:
+
+> **"Minnesota outshot Buffalo 35–25 and lost" is not a sentence you can say in the
+> second period.**
+
+The thesis requires a finished game. Live scores aren't a feature request against
+this product; they're a different product.
+
 ## Scale
 
 Measured from our reference game, at 32 teams × 82 games ÷ 2 = **1,312 regular-season
@@ -88,28 +99,40 @@ argument for the architecture below.
   [ Browser ]  fetch one extract  ->  RUN EVERY REDUCER HERE
 ```
 
-### The line I want to defend: reducers stay in the browser
+### The rule: every displayed number is re-derived in the browser
 
-The server ingests, stores, indexes and serves. **It never computes a metric.**
-Corsi, danger, save percentage, and every layer we add are derived client-side,
-from the extract, by code the viewer can read.
+> **No number on screen comes from the server. The server may index, but every
+> indexed claim must be re-derivable client-side by the same reducer — and the app
+> verifies it on load. Disagreement is an error, not a rounding difference.**
 
-Two reasons, and they happen to agree:
+*(This wording is CHENG's, and it replaces my original "reducers never run
+server-side." See the amendment at the end for why mine was wrong — it is worth
+reading before citing this section, because the difference is load-bearing.)*
 
-**Doctrine.** If the server computes Corsi and ships a number, we are a black box.
-An open-source black box, but still one — nothing on screen would be recomputable
-in front of the viewer. Doctrine §2 says *every number on screen can be recomputed
-by hand from the event feed, and the app will show you how if you ask it.* That
-sentence is only true if the computing happens where the asking happens.
+The rule is about **recomputability**, not **location**. Location is only a proxy:
+it happens to enforce recomputability, which is why forbidding server-side
+computation feels right, but the proxy breaks the moment you need an index.
 
-**Cost.** Server-side computation scales with traffic. Client-side computation
-scales with nothing — we serve immutable static JSON through a CDN, and 10,000
-users cost approximately what 100 cost. For "hopefully tons of users" this is the
-difference between a hobby bill and a real one.
+Under the correct rule, an index entry is **a cache of a client-side computation,
+never an independent source of truth.** A teaching flag isn't a displayed number —
+it is a *search predicate*, and its only power is deciding which games to show
+you. When the game opens, the browser runs the same reducer against the extract and
+confirms it.
 
-I want this stated as a rule because it is very cheap to hold now and very
-expensive to retrofit. The first performance complaint will produce a suggestion
-to precompute layers server-side, and the answer needs to already exist.
+Three properties follow, none of which the location-based rule had:
+
+- **It is mutation-testable.** Corrupt one index row, open that game, watch the
+  client raise. The location rule could only ever be enforced by code review.
+- **It kills the precompute retrofit at the root.** Precomputing Corsi server-side
+  becomes *permitted* — and pointless, because the client recomputes it anyway and
+  saves nothing. The rule doesn't have to win that argument; it makes the argument
+  not worth having.
+- **At scale the index audits itself.** Every user who opens a game verifies one
+  row. 1,312 rows, checked continuously by ordinary traffic, for free. That is a
+  better integrity story than any server-side test suite.
+
+**Cost still points the same way.** Client-side derivation scales with nothing — we
+serve immutable JSON through a CDN, and 10,000 users cost about what 100 do.
 
 ### Where the backend genuinely earns its place
 
@@ -132,6 +155,45 @@ this design that actually needs a database.
 The index stays small — it holds *facts about* games, never their events. SQLite
 or D1 is sufficient for a long time; Postgres when it isn't.
 
+**Schema rule, following from the recomputability rule above.** Every column is
+either **a fact copied from the feed** (date, teams, score, shot counts) or **a
+flag re-derivable by a named reducer**. Store the reducer's name and version
+beside the flag, so the client knows what to re-run. Anything that fits neither
+category does not belong in the row.
+
+### The index is the first feature that asks for trust — and the fix that repays it
+
+Today every number is checkable because there is one game and its events are right
+there on screen. *"Show me every game where the outshot team won"* is a claim about
+1,312 games that **no user can verify by hand.** The project's epistemic pitch
+would quietly stop applying at exactly the feature I think might be the product.
+
+Client-side re-derivation is what repays that trust — each row becomes checkable
+the moment you open it. This has to be designed in rather than added later, and it
+is the load-bearing reason to fix the rule now.
+
+### Always show the base rate — a filter that shows only exceptions teaches a falsehood
+
+**This is a doctrine requirement, not a UX preference.**
+
+"Every game where the team that got outshot won" surfaces **only confirming
+instances**. A novice browsing that list learns *shot count doesn't matter*, and
+that is **false**. Shot volume correlates with winning. Our reference game is
+interesting *precisely because it is an exception*. An index that surfaces only
+exceptions manufactures a false impression out of entirely true rows — which is
+what Doctrine §1 forbids in spirit even when every individual row is honest.
+
+The fix is one number:
+
+> **347 of 1,312 games — 26%**
+
+That converts a cherry-pick into a statistic, and it is a better teaching moment
+than the list ever was: *usually the shot count tells you who won; here are the
+times it lied, and here is how often that happens.* Doctrine §3 — honest limits
+stated on screen — applied to a query result.
+
+**Every cross-game filter ships with its base rate, or it doesn't ship.**
+
 ---
 
 ## The vocabulary gate — the thing most likely to hurt us
@@ -151,13 +213,33 @@ notice. At 1,312 games a season, nobody will ever notice.
 That is a Doctrine §3 violation produced by a `continue` statement, and it is
 exactly the class of error CHENG's conservation property exists to catch.
 
-**Requirement: ingestion fails loudly on unrecognised vocabulary.** Unknown
-stoppage reason, unknown penalty `descKey`, unknown event type, unknown detail
-field → the game is flagged, not silently degraded. It is better to serve 1,311
-games and an alert than 1,312 games where one quietly lies.
+**Requirement: unrecognised vocabulary fails loudly.** Unknown stoppage reason,
+penalty `descKey`, event type or detail field → flagged, never silently degraded.
+Better to serve 1,311 games and an alert than 1,312 where one quietly lies.
 
-This is also cheap and testable: the vocabulary is a set, the gate is a set
-difference, and the test is our two-season fixture pair.
+### The gate belongs on *publication*, never on ingestion
+
+My first draft asked whether to flag one game or refuse the whole night's ingest.
+That was a false binary — the two operations should never be coupled.
+
+**Always ingest. Always store the raw bytes. Never refuse.** The archive is the
+mitigation for this document's biggest risk, and refusing ingestion on unknown
+vocabulary means *the night the NHL ships a new event type is the night we
+permanently lose that game*, with no guarantee it can be re-fetched later. That is
+the worst possible coupling: the gate would fire exactly when the data is most
+novel and least replaceable.
+
+So: raw and extract are stored unconditionally. The game is **held out of the
+index**, and an alert fires. The cost is a day's delay on one game, never a hole in
+the archive.
+
+**Version the vocabulary set, and hold flagged games in a queue rather than a
+graveyard.** Add `puck-in-penalty-benches` to the set, re-run, and the game
+publishes itself. Without that, every unknown value becomes manual archaeology six
+months later.
+
+This is cheap and testable: the vocabulary is a set, the gate is a set difference,
+and the test is our two-season fixture pair plus a deliberately corrupted fixture.
 
 ## The feed adapter is the blast door
 
@@ -231,8 +313,11 @@ A thumbnail with a play affordance opening nhl.com gets most of the experience a
 none of the risk. True embedding is a licensing conversation, not a code change.
 
 **One unknown I have not resolved:** what `discreteClip` is versus `highlightClip`.
-My guess is isolated-goal versus produced-package, but it is a guess, and this
-project has been burned by exactly that this week. Check before using either.
+My guess is isolated-goal versus produced-package — but it is a guess about an
+undocumented field's semantics, which is the *precise shape* of the blocked-shot
+defect: a plausible belief about a feed field, never tested, propagated into code.
+Same standard applies. **Derive it empirically across several games and pin it with
+a test, or don't use the field.**
 
 ---
 
@@ -290,6 +375,27 @@ reproducibility gate survives and still matters.
 
 ---
 
+## Immutability is a property to prove, not to assume
+
+"Ingested once and never mutates" is a claim about *our* behaviour, and stated as
+pure upside it hides a cost: the NHL revises play-by-play after the fact —
+scorekeeper corrections to shot attribution, penalty times, occasionally
+coordinates. Freezing an extract **locks in the league's errors permanently and
+silently**, and permalink pages make it worse by baking a snapshot into a file.
+
+Two cheap mitigations, both worth doing:
+
+- **Ingest at T+24h**, past the correction window, rather than immediately.
+- **Store a fetch timestamp and a feed hash per game**, so re-ingestion is possible
+  and any change is visible rather than a mystery.
+
+**Evidence that this works:** re-fetching our 2023-24 reference game today returns
+a payload hash-identical to the copy archived in this repo (`bcfea175…`, 320 plays
+both times). That does *not* test the correction window — the game is two and a
+half years old and long past it — but it does establish that settled games are
+stable, which is precisely what makes a T+24h ingest a durable artifact, and it
+demonstrates the hash check is trivially feasible.
+
 ## Questions for CHENG
 
 1. **Is "reducers never run server-side" the right rule to write down**, or is there
@@ -302,9 +408,14 @@ reproducibility gate survives and still matters.
 3. **Is the vocabulary gate's failure mode right?** Flag the game and serve the rest,
    versus refuse the whole night's ingest. I lean flag-and-alert; refusing feels
    safer and would produce silent gaps in the archive instead.
-4. **Storage of raw feeds — worth 511 MB/season?** It's what makes "diff our extract
-   against the league's bytes" possible, which I think is the strongest honesty
-   claim available to us. But it's 6× the extract size for a feature few will use.
+4. ~~**Storage of raw feeds — worth 511 MB/season?**~~ **Settled: keep them, not a
+   close call.** I had filed this as "6× storage for a feature few will use," which
+   undersells it by a category. The raw archive is *the mitigation for the biggest
+   risk in this document* — if the feed changes shape or disappears, the archive is
+   the only reason the site still exists. "Diff our extract against the league's
+   bytes" is the *second* benefit. The cost framing was also wrong: ~600 MB/season
+   of object storage is a cent or two a month, and egress is near zero because
+   almost nobody pulls raw files. Cheapest insurance in the design.
 5. **What am I not seeing about going public?** This is the part of the design
    furthest from anything the project has done before, and my confidence is
    correspondingly lowest.
@@ -322,3 +433,50 @@ reproducibility gate survives and still matters.
 - **Whether "replay only" survives contact with users.** It's the right call and
   I'd defend it — but the first person who asks for live scores will be the first
   of many.
+
+---
+
+# Amendment — after CHENG's review
+
+CHENG verified the arithmetic and the vocabulary claim before answering (extract
+64.5 KB → 86.6 MB/season exact; raw 493 MB from pbp+shifts, 511 MB including
+boxscore). He also sharpened the vocabulary finding: in the reference game
+`tv-timeout` appears **8 times as `secondaryReason` and zero times as primary**,
+and `puck-in-penalty-benches` is absent entirely — so a mapping built from that
+game alone *would have looked complete*.
+
+The corrections are folded into the body above rather than left as trailing notes,
+because the rule in particular is the sentence everything downstream will cite.
+What changed:
+
+**The rule was stated wrong, and the contradiction I flagged dissolves once it's
+fixed.** I wrote "reducers never run server-side," which is a rule about
+*location*, then justified it with Doctrine §2, which is a rule about
+*recomputability*. Those aren't the same. Location is a proxy that happens to
+enforce recomputability — and it breaks exactly where I noticed it breaking, at the
+index. The corrected rule permits an index, requires every indexed claim to be
+re-derived client-side on load, and is mutation-testable rather than
+review-enforced. It also disarms the precompute retrofit better than mine did: not
+by forbidding it, but by making it pointless.
+
+**The vocabulary gate belongs on publication, not ingestion.** My Q3 offered a
+false binary. Refusing ingestion would mean losing data on precisely the night it
+is most novel and least replaceable.
+
+**Raw feeds are insurance, not a nice-to-have.** My cost framing was wrong by a
+category.
+
+**A filter that surfaces only exceptions teaches a falsehood.** This is CHENG's
+best catch and I had missed it entirely. Every cross-game filter now ships with its
+base rate. See the section above — it is a doctrine requirement, not a UX note.
+
+**Immutability can make us wrong.** It locks in the league's post-game corrections.
+Mitigated by T+24h ingest and a stored fetch timestamp plus feed hash.
+
+**Still open, unchanged by this review:** the legal posture around an undocumented
+API and redistribution at scale, which remains the biggest risk here and is not an
+engineering question. And whether the cross-game index is the product or a
+distraction — CHENG's trust point makes it *safer*, not smaller.
+
+**Order of work is unchanged.** Findings 1 and 4 from `main-app-rework.md` are
+still the next code written.
