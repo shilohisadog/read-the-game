@@ -91,6 +91,35 @@ buildable by us:
 **Event-replay is the ceiling.** The public feed also has no passes,
 dump-ins, or cycle play. We build at the ceiling and we say where it is.
 
+## 8. A rate without a base rate is a story, not a measurement.
+
+Any rate the app shows carries the number that says whether it is unusual.
+
+Levi stopped all 18 even-strength shots he faced in the reference game. True, and it
+sounds like the story of the night — until you ask how often that happens. A goalie
+at league average blanks 18 shots roughly **one start in five**. So the honest
+rendering is not a hedge about sample size, it is the actual figure:
+
+> Levi faced 18 even-strength shots and allowed none. A goalie at league average
+> does that in about one start in five.
+
+Two counts and a base rate. No adjectives. This teaches the thing a novice most
+needs and never gets told: **how to tell a real signal from a normal night.**
+
+The same rule governs any filter that surfaces exceptions. "Every game where the
+team that got outshot won" teaches that shots don't matter, unless it also says
+*347 of 1,312 — 26%*. A list of exceptions without its base rate manufactures a
+false impression out of entirely true rows.
+
+## 9. Selective honesty is worse than none, because it looks rigorous.
+
+A ledger that carefully enumerates why forty-nine events were excluded, while fifty-one
+others were silently dropped upstream, is not half-honest. It is misleading in a way
+that a plain omission would not be, because the visible rigour vouches for the
+invisible gap.
+
+Wherever we show our work, the work shown must be all of it.
+
 ## The bar
 
 > "Wow, this really helps me visualize and learn the game."

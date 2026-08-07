@@ -49,26 +49,64 @@ BUF, all in the last 1:40 of the third with MIN's own net empty. Seven were bloc
 which is a shrug. Any design that quietly promotes the even-strength number
 demolishes the hook. (CHENG's finding.)
 
-### And the fact that makes the filter worth building
+### The goalie fact, correctly sized
 
 | Goalie | All situations | Even strength |
 |---|---|---|
-| Gustavsson (MIN) | 22/25 = .880 | 12/15 = .800 |
+| Gustavsson (MIN) | 22/25 = .880 | 12/15 |
 | Levi (BUF) | 33/35 = .943 | **18/18** |
 
-**Both Minnesota goals came on the power play. All three Buffalo goals came at even
-strength.** Levi did not allow an even-strength goal.
+Both Minnesota goals came on the power play; all three Buffalo goals came at even
+strength. Levi allowed no even-strength goal.
 
-So the filter does not merely qualify the story — it tells a second one. At full
-strength Minnesota generated more and scored nothing; their offence was special
-teams. That is a *different* lesson from "Minnesota dominated and got robbed," and
-both are true of the same game. Showing a novice how one becomes the other is worth
-more than either alone.
+**I originally called this "the fact that makes the filter worth building" and
+described it as a second story: at full strength Minnesota generated more and scored
+nothing, so their offence was special teams. That does not survive contact, and the
+correction is more useful than the claim was.** (CHENG; every figure below
+reproduced independently.)
 
-**Caution, and it must be on screen:** 18 shots is a small sample. Rendering `1.000`
-invites reading it as a rate when it is really "he didn't allow one in eighteen." The
-same sample-size honesty CHENG required for cross-game base rates applies here at
-single-game scale.
+An 18-shot shutout is a normal night:
+
+```
+sv% .910  ->  P(zero on 18 shots) = 18.3%   ~1 start in 5.5
+sv% .920  ->                        22.3%   ~1 start in 4.5
+sv% .930  ->                        27.1%   ~1 start in 3.7
+```
+
+Gustavsson's line is the same story inverted — three or more against on 15 shots
+comes up about **1 game in 9**. And the clustering is equally ordinary: if goals fall
+in proportion to shots, P(both MIN goals non-even) = **23.6%** and P(all three BUF
+goals even) = **21.6%**. One-in-four outcomes, and we went looking *after* seeing
+them, in a five-goal game that offers dozens of such patterns.
+
+So the "second story" was a causal claim resting on **n = 2 goals**. It is the
+cross-game selection effect at single-game scale: true data arranged into a
+conclusion it cannot carry. Five goals cannot establish which strength state a
+team's offence lives in.
+
+**What survives:** *"Both Minnesota goals came on the power play"* is true, checkable
+and interesting, and belongs on screen **as a fact**. What does not survive is
+promoting it to an explanation.
+
+### This resolves Q3, and it was never a rendering question
+
+I had asked whether `1.000` is publishable and offered a fraction, a caveat, or
+"something else." It is something else: **the honest rendering is the base rate.**
+
+> Levi faced 18 even-strength shots and allowed none. A goalie at league average
+> does that in about one start in five.
+
+Two counts and a base rate. No adjectives, no hedge about sample size — the actual
+number. It teaches something durable, which is **how to tell a real signal from a
+normal night**, and that is a better novice lesson than "the goalie was unbeatable."
+
+It is also the same move required of cross-game filters in
+`docs/platform-architecture.md`: the base rate turns a cherry-pick into a statistic.
+**Generalized rule: any single-game rate the app displays carries a base rate.**
+
+This also dissolves my low-confidence worry that the second story would bury the
+first. It cannot, because there is no second story — there is a second *observation*,
+correctly sized. The hook is safe on the evidence, not on our restraint.
 
 ---
 
@@ -207,32 +245,71 @@ none**, because it looks rigorous. So: Phase 2's conservation fix — bind the p
 to `loadGame()` output, `excluded` as IDs rather than counts — comes first, or lands
 in the same change.
 
-## Open questions
+## The two ledgers are dimensions, not lists
 
-1. **How far does the filter reach?** I've argued view-level for coherence, which
-   means SOG becomes 18–15 and the goalie cards become 18/18 and 12/15. But SOG
-   35–25 is our boxscore anchor — the number a stranger can check against the
-   league's own summary. Does filtering it break "check our work", or does labelling
-   the mode adequately preserve it?
-2. **Should `empty net` be one state or two?** A pulled goalie means opposite things
-   trailing late (desperation) versus on a delayed penalty (free attack). The feed
-   records only the skater counts, so distinguishing them is inference from context —
-   which our doctrine treats with suspicion. One honest state, or two useful ones?
-3. **Is `1.000` publishable?** Levi's 18/18 is real and striking and a rate on 18
-   shots. What is the honest rendering — the fraction alone, a sample-size caveat, or
-   something else?
-4. **Does the default survive contact?** All-situations is right on the evidence, but
-   the even-strength view arguably describes the game better. I've defended the
-   default on "it's the complete count and it's verifiable by counting marks." Is that
-   the real reason, or am I protecting the hook?
+Not addressed in the first draft, and a naive implementation gets it wrong the same
+way it would get the intermission-crossing penalty wrong. (CHENG.)
+
+After Phase 2 binds conservation to `loadGame()`, the ledger covers all 320 events.
+A hit is excluded for being a hit. A power-play attempt is excluded for being on the
+power play. **A hit that happened on the power play is excluded for both** — and the
+ledger must neither double-count it nor silently pick one reason.
+
+Strength is a second **dimension** of exclusion, not a second list. Conservation must
+hold across both simultaneously, and that is the property test.
+
+## Questions, resolved
+
+**Q1 — how far does the filter reach? Filter SOG too.** Exempting it recreates the
+incoherence the filter exists to fix. The boxscore anchor is preserved by the
+**default**, not by exemption: a stranger opening the page sees 35–25 and can check
+the league's summary immediately, and all-situations is always one click away.
+
+> **Hard requirement:** the mode label is part of the number, not chrome around it.
+> `MIN 18 – BUF 15` with no adjacent label is unverifiable against any public source
+> and reads as an error. Render label and number as one unit — it must be impossible
+> to screenshot the number away from its scope.
+
+**Q2 — one state.** I framed this as inference-versus-honesty, but there is a data
+answer first: **this game contains no delayed-penalty goalie pull.** All 20
+pulled-goalie plays are `0651` in the last 1:40. I was designing a distinction
+against a case the corpus does not contain — which is exactly how the blocked-shot
+flip got in: a plausible rule with no counterexample available and nothing to catch
+it. When a game does show a delayed-penalty pull, it is distinguishable *without*
+inference, because a `delayed-penalty` event is live in the stream. Revisit then,
+with data.
+
+**Q4 — the self-test, answered in writing before implementing**, as required.
+
+> *Would you still default to all-situations if the even-strength number were more
+> dramatic — say MIN 70% even-strength against 59% overall?*
+
+**Yes.** The default's job is to be the complete, unfiltered, externally checkable
+record; the filter is the interpretive act. Defaulting to even strength would open
+the app on a view that excludes 36% of events and reconciles with no public source —
+worse on every axis I care about, and the drama of the number does not touch any of
+them.
+
+The deeper reason is that this is not a new principle but Doctrine §6 restated. The
+base view is *just the game*; every metric is an opt-in layer. **A strength filter is
+a lens, and lenses are opt-in.** That holds whichever number flatters the hook.
+
+The honest residual: the hook does benefit from this default, and I noticed that
+only after choosing. The reasons are independent of the benefit, but my *confidence*
+in them is not purely independent. The mitigation is that the reasons are written
+down and can be checked against — which is what this answer is for.
 
 ## Where I am least confident
 
-- **That the second story doesn't bury the first.** "Both MIN goals were power-play
-  goals" is a better fact than anything currently on screen. If the filter makes the
-  headline game look like an artefact of special teams, we have improved the analysis
-  and damaged the teaching. I don't know which way that lands, and I don't think I
-  can know it without Kevin's eyes on a build.
+- ~~That the second story doesn't bury the first.~~ **Dissolved by review.** There is
+  no second story — only a second observation, correctly sized. Worth recording *why*
+  I got this wrong, because the mechanism will recur: I found a striking pattern,
+  checked that it was true, and never asked whether it was *unusual*. True and
+  unusual are different tests, and only the second one licenses an explanation.
+- **That "any single-game rate carries a base rate" is affordable everywhere.** It is
+  clearly right for a goalie's save percentage. Whether every rate on screen can carry
+  one without the interface becoming a statistics lecture is a real design problem I
+  have not solved.
 - **Whether nine windows is legible or clutter** on a timeline this size.
 - **The empty-net copy above.** I got it wrong once already, and I am not confident
   the version I've written is clean rather than merely more careful.
