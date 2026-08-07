@@ -48,9 +48,12 @@ ACTOR = {
     "penalty":       "committedByPlayerId",
 }
 
-# NOTE: giveaway/takeaway carry a `playerId` in the feed that the original
-# extraction dropped. Preserving it would change rich.json and break the
-# byte-identical gate, so it stays dropped until that is a deliberate step.
+# NOTE: still dropped, deliberately, pending a decision on what needs them:
+#   zoneCode, shotType, losingPlayerId, hitteePlayerId, running awaySOG/homeSOG,
+#   and the penalty/stoppage detail (reason, secondaryReason, descKey, duration,
+#   drawnByPlayerId) that the parked whistle layer would want. Raw feeds are
+#   archived, so nothing is lost -- but re-extracting a season is not free, so
+#   these are worth deciding on rather than defaulting.
 
 def _secs(period, mmss):
     """timeInPeriod is ELAPSED, not remaining."""
@@ -86,13 +89,31 @@ def extract(pbp, shifts):
             "per": per,
             "s": _secs(per, p["timeInPeriod"]),
             "clock": p["timeInPeriod"],
+            # The broadcast clock counts DOWN. `clock` is elapsed, which is what
+            # the feed calls timeInPeriod and what the app was wrongly showing.
+            # Stored, not derived: the feed is authoritative and period lengths
+            # differ (regulation 20:00, regular-season OT 5:00).
+            "rem": p["timeRemaining"],
             "type": t,
             "own": d.get("eventOwnerTeamId"),
             "x": x,
             "y": y,
             "actor": d.get(ACTOR[t]) if t in ACTOR else None,
             "goalie": d.get("goalieInNetId"),
+            # [awayGoalie][awaySkaters][homeSkaters][homeGoalie]. The ONLY honest
+            # way to tell even strength from a power play from a pulled goalie --
+            # all three look identical without it, and 12 of MIN's 80 attempts in
+            # this game came 6-on-5 with their own net empty.
+            "sit": p.get("situationCode"),
         }
+        # Who blocked it. The shooter is `actor` (see attribution.js); dropping
+        # the blocker lost half of every blocked-shot event.
+        if t == "blocked-shot" and d.get("blockingPlayerId") is not None:
+            ev["blk"] = d["blockingPlayerId"]
+        # giveaway/takeaway carry a playerId the original extraction discarded,
+        # leaving `actor` null on 20 events for no reason.
+        if t in ("giveaway", "takeaway") and d.get("playerId") is not None:
+            ev["actor"] = d["playerId"]
         if t == "goal":
             if d.get("assist1PlayerId") is not None:
                 ev["a1"] = d["assist1PlayerId"]
@@ -219,6 +240,8 @@ def main():
     ap.add_argument("--verify", action="store_true")
     ap.add_argument("--validate", action="store_true")
     ap.add_argument("--vocab", action="store_true")
+    ap.add_argument("--additive", action="store_true",
+                    help="prove a schema change disturbed nothing that already existed")
     args = ap.parse_args()
 
     pbp = json.loads((DATA / f"pbp_{GAME}.json").read_text())
@@ -251,6 +274,45 @@ def main():
         return 1 if fails else 0
 
     current = (DATA / "rich.json").read_text()
+
+    if args.additive:
+        # A schema change must be provably additive: every value that already
+        # existed is unchanged, nulls may be filled, new keys may appear, and
+        # nothing may be removed or rewritten. Byte-identity cannot express
+        # "changed on purpose"; this can.
+        old = json.loads(current)
+        bad, added = [], set()
+        # Filling a null is allowed -- but filling one with garbage would also be
+        # "additive", so report which keys changed rather than only how many.
+        # (Found because a mutation test of mine passed when it should not have:
+        # `x or 0` only ever turned nulls into 0, which this gate permits.)
+        filled = {}
+        if len(old["events"]) != len(rich["events"]):
+            bad.append("event count changed")
+        for i, (o, n) in enumerate(zip(old["events"], rich["events"])):
+            for k, v in o.items():
+                if k not in n:
+                    bad.append(f"event {i}: key {k} REMOVED")
+                elif n[k] != v:
+                    if v is None:
+                        filled[k] = filled.get(k, 0) + 1
+                    else:
+                        bad.append(f"event {i}: {k} {v!r} -> {n[k]!r}")
+            added |= set(n) - set(o)
+        for key in ("teams", "roster", "shifts", "gshots", "goalies"):
+            if old[key] != rich[key]:
+                bad.append(f"{key} changed")
+        print(f"  new keys: {sorted(added)}")
+        print(f"  nulls filled by key: {filled or 'none'}")
+        print(f"  size {len(current.encode())} -> {len(out.encode())} bytes")
+        if bad:
+            print(f"  NOT ADDITIVE -- {len(bad)} problems")
+            for b in bad[:8]:
+                print(f"    {b}")
+            return 1
+        print("  ADDITIVE ONLY -- nothing existing was disturbed")
+        return 0
+
     if args.verify:
         h = lambda s: hashlib.sha256(s.encode()).hexdigest()[:16]
         print(f"  extracted {len(out.encode()):>7} bytes  sha {h(out)}")
