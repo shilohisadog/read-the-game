@@ -41,6 +41,19 @@ test('Corsi pins the raw pair, not the ratio', () => {
   assert.equal(t[AID] + t[HID], 135, 'total attempts');
 });
 
+/**
+ * NOTE ON THIS TEST'S FAILURE MODE (CHENG, on review).
+ *
+ * This is a mutation-check helper, not an invariant. It asserts what the OLD
+ * flip would have produced, and that arithmetic is only meaningful while the
+ * feed keeps crediting the shooter. If a future feed genuinely drifts to
+ * crediting the blocker, this test goes red too -- as noise beside the real
+ * signal, which is the INVARIANT test below.
+ *
+ * If you are here because several tests went red at once: read test 3 first.
+ * It tells you whether the feed changed. This one only tells you the historical
+ * defect's numbers no longer reproduce, which is a consequence, not a cause.
+ */
 test('the old flip would produce the old wrong numbers (mutation check)', () => {
   // Reintroduce the exact defect and prove the expected numbers move.
   const flipped = { [HID]: 0, [AID]: 0 };
