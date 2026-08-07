@@ -118,8 +118,33 @@ const PRESETS={crease:{d:-8,w:0,h:5.2,yaw:0,pitch:0.02},net:{p:[-26,0,9]},glass:
 let seat='crease';
 function setView(k){seat=k;const pr=PRESETS[k];if(pr.yaw!==undefined){cam.d=pr.d;cam.w=pr.w;cam.h=pr.h;cam.yaw=pr.yaw;cam.pitch=pr.pitch;}else{cam.d=pr.p[0];cam.w=pr.p[1];cam.h=pr.p[2];lookAt(centroid());}document.querySelectorAll('#gv .sb').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===k));draw();}
 document.querySelectorAll('#gv .sb').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.v)));
-
-/* ---- the player figure — see builders/figures.py ---------------------- */
+/**
+ * The player figure — one definition, two surfaces.
+ *
+ * Previously this lived as a JS string inside builders/figures.py, which meant
+ * node could not import it and nothing could test it. It is now a real module,
+ * and it draws through a PEN rather than a canvas context.
+ *
+ * A pen is the small subset of the canvas 2D API these figures actually use.
+ * A real CanvasRenderingContext2D is a pen, so the goalie's-eye view passes its
+ * context straight through. SvgPen (../svgpen.js) is also a pen, which is how
+ * the same figures appear on the 2D rink — where events must stay real DOM
+ * nodes, because "check our work" is made physical by being able to inspect
+ * them, and because the why-popup hangs off click handlers.
+ *
+ * Two styles ship and which one you see is a viewer setting:
+ *   mascot    the default — big head, soft shapes, a face. Legible small.
+ *   tabletop  the rod-hockey tin man — flat colour, heavy outline, on its peg.
+ *
+ * Both are MARKERS, not claims (Doctrine §5). A figure says "a real shot came
+ * from here, and this is what happened to it". The pose encodes the outcome the
+ * feed records — saved or scored — and nothing else. Neither asserts anything
+ * about how a player stood, moved or skated.
+ *
+ *   FIG[style](pen, px, py, size, jersey, out, { t, motion, glow, light })
+ *
+ * px,py is the figure's FEET. size is its height.
+ */
 /* A stick blade, taped. The blade used to be drawn in near-black on near-black
    ice, which made it vanish — you couldn't tell the sticks had blades at all.
    White tape is what a real blade actually wears, so it reads as hockey rather
@@ -134,8 +159,15 @@ function _blade(g,x1,y1,x2,y2,u,w){
  g.lineCap=cap;
 }
 
-function _rr(g,x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);
- g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath();}
+function _rr(g,x,y,w,h,r){
+ // Quadratic corners rather than arcTo: canvas supports both, and Q maps 1:1
+ // onto SVG so one figure definition can drive either surface.
+ g.beginPath();
+ g.moveTo(x+r,y);            g.lineTo(x+w-r,y);      g.quadraticCurveTo(x+w,y,x+w,y+r);
+ g.lineTo(x+w,y+h-r);        g.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+ g.lineTo(x+r,y+h);          g.quadraticCurveTo(x,y+h,x,y+h-r);
+ g.lineTo(x,y+r);            g.quadraticCurveTo(x,y,x+r,y);
+ g.closePath();}
 
 function figMascot(g,px,py,size,jersey,out,o){
  o=o||{}; const t=o.t||0, motion=o.motion!==false, glow=o.glow!==false, light=!!o.light;
@@ -249,7 +281,6 @@ function figTabletop(g,px,py,size,jersey,out,o){
 
 const FIG={mascot:figMascot,tabletop:figTabletop};
 const FIG_LABEL={mascot:'Mascot',tabletop:'Tabletop'};
-/* ---- end figure module ------------------------------------------------ */
 
 
 let figStyle=(function(){try{return localStorage.getItem('rtg.fig')||'mascot'}catch(e){return 'mascot'}})();

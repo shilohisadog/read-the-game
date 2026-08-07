@@ -109,6 +109,10 @@ T = r"""<style>
 
 #rg .cbar,#rg .counters,#rg #work{display:none}
 #rg.corsi .cbar{display:block}#rg.corsi .counters{display:flex}#rg.corsi #work{display:inline-block}
+#rg .figpick{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 2px 0}
+#rg .fbtn[aria-pressed="true"]{border-style:solid;color:var(--ink);border-color:var(--ink);background:#eef2f5}
+#rg .fnote{font-size:.76rem;color:var(--muted);flex:1;min-width:220px}
+#rg .fig{transform-box:fill-box;transform-origin:center}
 #rg .layers{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 2px 4px;padding-top:12px;border-top:1px dashed var(--edge)}
 #rg .layers .ll{font-size:.8rem;color:var(--muted);font-weight:700}
 #rg .lyr{font:inherit;font-size:.83rem;font-weight:600;border-radius:8px;border:1px dashed #b7c6d0;background:#fff;color:var(--muted);padding:8px 13px;cursor:pointer}
@@ -145,6 +149,10 @@ T = r"""<style>
   <input class="scrub" id="scrub" type="range" min="0" max="1" value="0"><button id="work" aria-expanded="false">Show me the work</button></div>
 <div class="legend"><span><i class="k-a"></i>shot</span><span><i class="k-p"></i>puck (jumps between real events)</span><span>🚨 goal</span><span style="color:var(--muted)">metric-specific marks appear when you add a layer</span></div>
 <div class="layers"><span class="ll">Add a metric layer:</span><button class="lyr" id="lyCorsi" aria-pressed="false">＋ Control (Corsi)</button><button class="lyr" id="lyHd" aria-pressed="false">＋ High-danger</button><button class="lyr" id="lyGoalie" aria-pressed="false">＋ Goaltending</button></div>
+<div class="figpick"><span class="ll">Players:</span>
+<button class="lyr fbtn" data-f="mascot" aria-pressed="true">Mascot</button>
+<button class="lyr fbtn" data-f="tabletop" aria-pressed="false">Tabletop</button>
+<span class="fnote">Same shots, same outcomes, same math — only the drawing changes. <b>Tabletop</b> is the rod-hockey player you grew up with.</span></div>
 <div class="hint">Tip: click any ⚡ high-danger chance (amber ring) on the ice to see <b>why</b> it qualified.</div>
 <div class="work" id="workPanel" hidden></div>
 <div class="whybk" id="whyBk"><div class="why" id="whyContent"></div></div>
@@ -161,6 +169,13 @@ const upto=k=>k<0?[]:G.events.slice(0,EVI[k]+1);
 __LIB__
 const ATT=ATTEMPT_TYPES;
 const SX=x=>x+100, SY=y=>42.5-y;
+// Rink is 200 units long for 200 feet, so one unit is one foot: a ~6 ft player
+// is ~6 units. Goals get a little more presence.
+const FIG_SZ=5.6, FIG_BIG=7.2;
+const MINCOL='#12885a', BUFCOL='#bd8c12';
+let T=0, REDUCED=matchMedia('(prefers-reduced-motion:reduce)').matches;
+let figStyle=(()=>{try{return localStorage.getItem('rtg.fig')||'mascot'}catch(e){return 'mascot'}})();
+if(!FIG[figStyle])figStyle='mascot';
 let finalA=0,finalH=0; for(const e of EV){if(e.type==='goal')(e.own===HID?finalH++:finalA++);}
 function attemptTeam(e){return corsiTeam(e,R);}  // renamed: `corsi` is the layer object
 function tk(e){const c=attemptTeam(e);return c===AID?'a':c===HID?'h':'x';}
@@ -201,7 +216,19 @@ function render(i,newest){
    const r=e.type==='goal'?2.7:hd?2.2:ATT.has(e.type)?1.7:1;
    const anim=(k===i&&newest)?(e.type==='goal'?' flare':' pop'):'';
    if(hd&&k===i&&newest)parts.push(`<circle class="hdring" cx="${SX(e.x).toFixed(1)}" cy="${SY(e.y).toFixed(1)}" r="4.5"/>`);
-   parts.push(`<circle class="ev ${cls} ${tk(e)}${anim}" data-i="${k}" cx="${SX(e.x).toFixed(1)}" cy="${SY(e.y).toFixed(1)}" r="${r}"><title>${e.rem} ${e.type}</title></circle>`);}
+   const cx=SX(e.x), cy=SY(e.y), title=`<title>${e.rem} ${e.type}</title>`;
+   if(ATT.has(e.type)){
+     // An attempt gets a PLAYER. Its feet stand on the real shot coordinate and
+     // its pose is the real outcome — arms up for a goal, shooting otherwise.
+     // Everything else stays a dot: a figure means "someone shot from here", so
+     // drawing one for a faceoff would be a claim we cannot make (Doctrine §5).
+     const pen=new SvgPen(`e${k}`);
+     FIG[figStyle](pen,cx,cy,e.type==='goal'?FIG_BIG:FIG_SZ,tk(e)==='a'?MINCOL:BUFCOL,
+                   e.type==='goal'?'goal':'save',{t:T,motion:!REDUCED,glow:false});
+     parts.push(pen.toSvg(`class="ev fig ${cls} ${tk(e)}${anim}" data-i="${k}"`).replace('</g>',title+'</g>'));
+   } else {
+     parts.push(`<circle class="ev ${cls} ${tk(e)}${anim}" data-i="${k}" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r}">${title}</circle>`);
+   }}
  $('events').innerHTML=parts.join('');
  let lh='';
  if(cur&&(cur.type==='shot-on-goal'||cur.type==='goal')&&cur.x!=null){const netx=(cur.own===HID)?89:-89;
@@ -299,6 +326,10 @@ let corsiOn=false,hdOn=false,goalieOn=false;
 function setCorsi(){document.getElementById('rg').classList.toggle('corsi',corsiOn);$('lyCorsi').setAttribute('aria-pressed',corsiOn);$('lyCorsi').textContent=(corsiOn?'✓ ':'＋ ')+'Control (Corsi)';if(!corsiOn&&workOpen){workOpen=false;$('workPanel').hidden=true;$('work').setAttribute('aria-expanded',false);$('work').textContent='Show me the work';}}
 function setHd(){$('lyHd').setAttribute('aria-pressed',hdOn);$('lyHd').textContent=(hdOn?'✓ ':'＋ ')+'High-danger';render(i,false);}
 $('lyCorsi').addEventListener('click',()=>{corsiOn=!corsiOn;setCorsi();});
+function syncFig(){document.querySelectorAll('#rg .fbtn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.f===figStyle));}
+document.querySelectorAll('#rg .fbtn').forEach(b=>b.addEventListener('click',()=>{
+ figStyle=b.dataset.f;try{localStorage.setItem('rtg.fig',figStyle)}catch(e){}syncFig();render(i,false);}));
+syncFig();
 $('lyHd').addEventListener('click',()=>{hdOn=!hdOn;setHd();});
 function goalieStats(k){return goaltending.reduce(upto(k),CTX).g;}
 function setGoalie(){document.getElementById('rg').classList.toggle('goalie',goalieOn);$('lyGoalie').setAttribute('aria-pressed',goalieOn);$('lyGoalie').textContent=(goalieOn?'✓ ':'＋ ')+'Goaltending';render(i,false);}
@@ -306,7 +337,7 @@ $('lyGoalie').addEventListener('click',()=>{goalieOn=!goalieOn;setGoalie();});
 drawRink();set(EV.length-1,false);
 </script>"""
 
-LIB = ["rink.js", "attribution.js", "layer.js",
+LIB = ["rink.js", "attribution.js", "layer.js", "svgpen.js", "figures.js",
        "layers/corsi.js", "layers/goaltending.js", "layers/danger.js"]
 
 def _lib():

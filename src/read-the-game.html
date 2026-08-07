@@ -79,6 +79,10 @@
 
 #rg .cbar,#rg .counters,#rg #work{display:none}
 #rg.corsi .cbar{display:block}#rg.corsi .counters{display:flex}#rg.corsi #work{display:inline-block}
+#rg .figpick{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 2px 0}
+#rg .fbtn[aria-pressed="true"]{border-style:solid;color:var(--ink);border-color:var(--ink);background:#eef2f5}
+#rg .fnote{font-size:.76rem;color:var(--muted);flex:1;min-width:220px}
+#rg .fig{transform-box:fill-box;transform-origin:center}
 #rg .layers{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 2px 4px;padding-top:12px;border-top:1px dashed var(--edge)}
 #rg .layers .ll{font-size:.8rem;color:var(--muted);font-weight:700}
 #rg .lyr{font:inherit;font-size:.83rem;font-weight:600;border-radius:8px;border:1px dashed #b7c6d0;background:#fff;color:var(--muted);padding:8px 13px;cursor:pointer}
@@ -115,6 +119,10 @@
   <input class="scrub" id="scrub" type="range" min="0" max="1" value="0"><button id="work" aria-expanded="false">Show me the work</button></div>
 <div class="legend"><span><i class="k-a"></i>shot</span><span><i class="k-p"></i>puck (jumps between real events)</span><span>🚨 goal</span><span style="color:var(--muted)">metric-specific marks appear when you add a layer</span></div>
 <div class="layers"><span class="ll">Add a metric layer:</span><button class="lyr" id="lyCorsi" aria-pressed="false">＋ Control (Corsi)</button><button class="lyr" id="lyHd" aria-pressed="false">＋ High-danger</button><button class="lyr" id="lyGoalie" aria-pressed="false">＋ Goaltending</button></div>
+<div class="figpick"><span class="ll">Players:</span>
+<button class="lyr fbtn" data-f="mascot" aria-pressed="true">Mascot</button>
+<button class="lyr fbtn" data-f="tabletop" aria-pressed="false">Tabletop</button>
+<span class="fnote">Same shots, same outcomes, same math — only the drawing changes. <b>Tabletop</b> is the rod-hockey player you grew up with.</span></div>
 <div class="hint">Tip: click any ⚡ high-danger chance (amber ring) on the ice to see <b>why</b> it qualified.</div>
 <div class="work" id="workPanel" hidden></div>
 <div class="whybk" id="whyBk"><div class="why" id="whyContent"></div></div>
@@ -302,6 +310,329 @@ function summarise(excluded) {
   for (const x of excluded) out[x.why] = (out[x.why] || 0) + 1;
   return out;
 }
+
+/* --- src/lib/svgpen.js --- */
+/**
+ * SvgPen — draws canvas-style, emits SVG.
+ *
+ * Implements the subset of CanvasRenderingContext2D that src/lib/figures.js
+ * uses, so one figure definition serves both surfaces: the goalie's-eye view
+ * passes a real canvas context, the 2D rink passes one of these.
+ *
+ * The 2D rink cannot simply overlay a canvas. Its events are SVG elements on
+ * purpose — a viewer can inspect them, which is "check our work" made physical,
+ * and the why-popup hangs off click handlers on those nodes. Rasterising the
+ * figures would cost both.
+ *
+ * DELIBERATE OMISSIONS, so nobody hunts for them:
+ *
+ *   shadowColor / shadowBlur are IGNORED. The canvas figures use them for the
+ *   outcome glow; in SVG that needs a filter per colour, and the rink already
+ *   applies its glow in CSS where it belongs. Accepting the property and doing
+ *   nothing is the honest behaviour here — the alternative is a filter stack
+ *   that duplicates styling the stylesheet already owns.
+ *
+ *   Transforms are tracked as a string and applied to runs of elements, since
+ *   canvas save/restore does not map onto SVG group nesting one-to-one.
+ *
+ * Everything else — paths, arcs, ellipses, clipping, alpha, line joins — is
+ * real, and figures.test.js asserts both pens accept the same calls.
+ */
+
+const f = n => Number.isFinite(n) ? +n.toFixed(2) : 0;
+const esc = s => String(s).replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
+
+class SvgPen {
+  constructor(idPrefix = 'f') {
+    this.parts = [];
+    this.defs = [];
+    this._id = 0;
+    this._prefix = idPrefix;
+    this._d = '';
+    this._tf = '';
+    this._clip = null;
+    this._stack = [];
+    this.fillStyle = '#000';
+    this.strokeStyle = '#000';
+    this.lineWidth = 1;
+    this.lineCap = 'butt';
+    this.lineJoin = 'miter';
+    this.globalAlpha = 1;
+    this.shadowColor = null;   // accepted, ignored — see header
+    this.shadowBlur = 0;
+  }
+
+  // ---- state -------------------------------------------------------------
+  save() {
+    this._stack.push({
+      tf: this._tf, clip: this._clip,
+      fillStyle: this.fillStyle, strokeStyle: this.strokeStyle,
+      lineWidth: this.lineWidth, lineCap: this.lineCap, lineJoin: this.lineJoin,
+      globalAlpha: this.globalAlpha,
+    });
+  }
+  restore() {
+    const s = this._stack.pop();
+    if (s) Object.assign(this, s, { _tf: s.tf, _clip: s.clip });
+    if (s) { this._tf = s.tf; this._clip = s.clip; }
+  }
+  translate(x, y) { this._tf += ` translate(${f(x)},${f(y)})`; }
+  rotate(r) { this._tf += ` rotate(${f(r * 180 / Math.PI)})`; }
+
+  // ---- path building -----------------------------------------------------
+  beginPath() { this._d = ''; }
+  moveTo(x, y) { this._d += `M${f(x)},${f(y)}`; }
+  lineTo(x, y) { this._d += `L${f(x)},${f(y)}`; }
+  quadraticCurveTo(cx, cy, x, y) { this._d += `Q${f(cx)},${f(cy)} ${f(x)},${f(y)}`; }
+  closePath() { this._d += 'Z'; }
+
+  arc(cx, cy, r, a0, a1) { this._sweep(cx, cy, r, r, a0, a1); }
+  ellipse(cx, cy, rx, ry, _rot, a0, a1) { this._sweep(cx, cy, rx, ry, a0, a1); }
+
+  /** Arc/ellipse as SVG A-commands. A full turn needs two halves — one A cannot
+   *  express 360°, since start and end would coincide. */
+  _sweep(cx, cy, rx, ry, a0, a1) {
+    const span = Math.abs(a1 - a0);
+    const p = (a) => [cx + rx * Math.cos(a), cy + ry * Math.sin(a)];
+    if (span >= Math.PI * 2 - 1e-6) {
+      const [x0, y0] = p(0), [x1, y1] = p(Math.PI);
+      this._d += `M${f(x0)},${f(y0)}A${f(rx)},${f(ry)} 0 1 1 ${f(x1)},${f(y1)}`
+               + `A${f(rx)},${f(ry)} 0 1 1 ${f(x0)},${f(y0)}Z`;
+      return;
+    }
+    const [x0, y0] = p(a0), [x1, y1] = p(a1);
+    const large = span > Math.PI ? 1 : 0;
+    const sweep = a1 > a0 ? 1 : 0;
+    this._d += `${this._d ? 'L' : 'M'}${f(x0)},${f(y0)}`
+             + `A${f(rx)},${f(ry)} 0 ${large} ${sweep} ${f(x1)},${f(y1)}`;
+  }
+
+  // ---- painting ----------------------------------------------------------
+  fill() { this._emit({ fill: this.fillStyle, stroke: 'none' }); }
+  stroke() {
+    this._emit({
+      fill: 'none', stroke: this.strokeStyle, 'stroke-width': f(this.lineWidth),
+      'stroke-linecap': this.lineCap, 'stroke-linejoin': this.lineJoin,
+    });
+  }
+  fillRect(x, y, w, h) {
+    this._el('rect', {
+      x: f(x), y: f(y), width: f(w), height: f(h), fill: this.fillStyle,
+    });
+  }
+  clip() {
+    const id = `${this._prefix}c${this._id++}`;
+    this.defs.push(`<clipPath id="${id}"><path d="${this._d}"/></clipPath>`);
+    this._clip = id;
+  }
+
+  _emit(attrs) {
+    if (!this._d) return;
+    this._el('path', { d: this._d, ...attrs });
+  }
+  _el(tag, attrs) {
+    const a = { ...attrs };
+    if (this._clip) a['clip-path'] = `url(#${this._clip})`;
+    if (this.globalAlpha !== 1) a.opacity = f(this.globalAlpha);
+    // Drop attributes that match the SVG default -- on ~2,300 nodes redrawn
+    // every tick, the bytes are the frame budget.
+    if (a['stroke-linecap'] === 'butt') delete a['stroke-linecap'];
+    if (a['stroke-linejoin'] === 'miter') delete a['stroke-linejoin'];
+    const body = Object.entries(a)
+      .filter(([, v]) => v !== undefined && v !== null)
+      .map(([k, v]) => `${k}="${esc(v)}"`).join(' ');
+    this.parts.push({ tf: this._tf.trim(), xml: `<${tag} ${body}/>` });
+  }
+
+  /**
+   * Everything drawn so far, as one group.
+   *
+   * Consecutive elements sharing a transform are wrapped in a `<g transform>`
+   * rather than each carrying its own copy. A figure applies one translate and
+   * one rotate up front, so nearly all of its shapes share a transform, and
+   * repeating that string per element cost about a third of the markup.
+   */
+  toSvg(groupAttrs = '') {
+    const defs = this.defs.length ? `<defs>${this.defs.join('')}</defs>` : '';
+    let out = '', run = null, buf = [];
+    const flush = () => {
+      if (!buf.length) return;
+      out += run ? `<g transform="${run}">${buf.join('')}</g>` : buf.join('');
+      buf = [];
+    };
+    for (const part of this.parts) {
+      if (part.tf !== run) { flush(); run = part.tf; }
+      buf.push(part.xml);
+    }
+    flush();
+    return `<g ${groupAttrs}>${defs}${out}</g>`;
+  }
+}
+
+/* --- src/lib/figures.js --- */
+/**
+ * The player figure — one definition, two surfaces.
+ *
+ * Previously this lived as a JS string inside builders/figures.py, which meant
+ * node could not import it and nothing could test it. It is now a real module,
+ * and it draws through a PEN rather than a canvas context.
+ *
+ * A pen is the small subset of the canvas 2D API these figures actually use.
+ * A real CanvasRenderingContext2D is a pen, so the goalie's-eye view passes its
+ * context straight through. SvgPen (../svgpen.js) is also a pen, which is how
+ * the same figures appear on the 2D rink — where events must stay real DOM
+ * nodes, because "check our work" is made physical by being able to inspect
+ * them, and because the why-popup hangs off click handlers.
+ *
+ * Two styles ship and which one you see is a viewer setting:
+ *   mascot    the default — big head, soft shapes, a face. Legible small.
+ *   tabletop  the rod-hockey tin man — flat colour, heavy outline, on its peg.
+ *
+ * Both are MARKERS, not claims (Doctrine §5). A figure says "a real shot came
+ * from here, and this is what happened to it". The pose encodes the outcome the
+ * feed records — saved or scored — and nothing else. Neither asserts anything
+ * about how a player stood, moved or skated.
+ *
+ *   FIG[style](pen, px, py, size, jersey, out, { t, motion, glow, light })
+ *
+ * px,py is the figure's FEET. size is its height.
+ */
+/* A stick blade, taped. The blade used to be drawn in near-black on near-black
+   ice, which made it vanish — you couldn't tell the sticks had blades at all.
+   White tape is what a real blade actually wears, so it reads as hockey rather
+   than as a highlight: dark edge underneath, tape over most of it. */
+function _blade(g,x1,y1,x2,y2,u,w){
+ const cap=g.lineCap; g.lineCap='butt';
+ g.strokeStyle='#0f151a'; g.lineWidth=u*w;
+ g.beginPath(); g.moveTo(x1,y1); g.lineTo(x2,y2); g.stroke();
+ const dx=(x2-x1)*0.09, dy=(y2-y1)*0.09;
+ g.strokeStyle='#eef4f8'; g.lineWidth=u*w*0.52;
+ g.beginPath(); g.moveTo(x1+dx,y1+dy); g.lineTo(x2-dx,y2-dy); g.stroke();
+ g.lineCap=cap;
+}
+
+function _rr(g,x,y,w,h,r){
+ // Quadratic corners rather than arcTo: canvas supports both, and Q maps 1:1
+ // onto SVG so one figure definition can drive either surface.
+ g.beginPath();
+ g.moveTo(x+r,y);            g.lineTo(x+w-r,y);      g.quadraticCurveTo(x+w,y,x+w,y+r);
+ g.lineTo(x+w,y+h-r);        g.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+ g.lineTo(x+r,y+h);          g.quadraticCurveTo(x,y+h,x,y+h-r);
+ g.lineTo(x,y+r);            g.quadraticCurveTo(x,y,x+r,y);
+ g.closePath();}
+
+function figMascot(g,px,py,size,jersey,out,o){
+ o=o||{}; const t=o.t||0, motion=o.motion!==false, glow=o.glow!==false, light=!!o.light;
+ const u=size/10, goal=out==='goal', ink='#0d141b', skin='#f7dcb4', pants='#1d2a36';
+ g.save(); g.lineCap='round'; g.lineJoin='round';
+ g.fillStyle=light?'rgba(20,40,60,.20)':'rgba(0,0,0,.40)';
+ g.beginPath(); g.ellipse(px,py+u*0.35,u*2.7,u*0.75,0,0,7); g.fill();
+ const bob=motion?Math.sin(t*1.7+px*0.02)*u*0.30:0;
+ g.translate(px,py+bob); g.rotate(goal?-0.03:0.10);
+ g.strokeStyle=pants; g.lineWidth=u*1.5;
+ g.beginPath(); g.moveTo(-u*1.15,-u*0.3); g.lineTo(-u*1.35,-u*2.8);
+ g.moveTo(u*1.15,-u*0.3); g.lineTo(u*1.5,-u*2.8); g.stroke();
+ g.strokeStyle='#cfe0ee'; g.lineWidth=u*0.40;
+ g.beginPath(); g.moveTo(-u*2.1,0); g.lineTo(-u*0.5,0); g.moveTo(u*0.5,0); g.lineTo(u*2.3,0); g.stroke();
+ if(glow){g.shadowColor=goal?'#ff5566':'#4aa3e0'; g.shadowBlur=goal?u*5.0:u*2.4;}
+ g.fillStyle=jersey; _rr(g,-u*2.15,-u*5.9,u*4.3,u*3.5,u*1.6); g.fill();
+ g.shadowBlur=0;
+ g.fillStyle='rgba(255,255,255,.80)'; _rr(g,-u*2.1,-u*3.05,u*4.2,u*0.5,u*0.22); g.fill();
+ g.strokeStyle=jersey; g.lineWidth=u*1.25;
+ if(!goal){
+  g.beginPath(); g.moveTo(-u*1.5,-u*5.0); g.lineTo(u*1.5,-u*4.3); g.lineTo(u*3.2,-u*3.5); g.stroke();
+  g.fillStyle=jersey; g.strokeStyle=ink; g.lineWidth=u*0.26;
+  g.beginPath(); g.arc(u*3.3,-u*3.4,u*0.92,0,7); g.fill(); g.stroke();
+  g.strokeStyle='#8a5c33'; g.lineWidth=u*0.46;
+  g.beginPath(); g.moveTo(u*2.5,-u*4.3); g.lineTo(u*5.45,-u*0.48); g.stroke();
+  _blade(g,u*5.20,-u*0.46,u*7.30,-u*0.08,u,0.80);
+  g.fillStyle='#0b0f13'; g.beginPath(); g.ellipse(u*8.15,-u*0.08,u*0.52,u*0.26,0,0,7); g.fill();
+ }else{
+  g.beginPath(); g.moveTo(-u*1.7,-u*5.2); g.lineTo(-u*3.5,-u*8.7);
+  g.moveTo(u*1.7,-u*5.2); g.lineTo(u*3.5,-u*8.7); g.stroke();
+  g.fillStyle=jersey; g.strokeStyle=ink; g.lineWidth=u*0.26;
+  g.beginPath(); g.arc(-u*3.6,-u*9.0,u*0.92,0,7); g.fill(); g.stroke();
+  g.beginPath(); g.arc(u*3.6,-u*9.0,u*0.92,0,7); g.fill(); g.stroke();
+  g.strokeStyle='#8a5c33'; g.lineWidth=u*0.42;
+  g.beginPath(); g.moveTo(u*3.7,-u*9.1); g.lineTo(u*6.35,-u*11.55); g.stroke();
+  _blade(g,u*6.20,-u*11.42,u*7.95,-u*12.55,u,0.74);
+ }
+ g.fillStyle=skin; g.beginPath(); g.arc(0,-u*7.9,u*2.55,0,7); g.fill();
+ g.fillStyle=jersey;
+ g.beginPath(); g.arc(0,-u*8.1,u*2.72,Math.PI*1.02,Math.PI*2-0.02); g.fill();
+ g.beginPath(); g.arc(-u*2.35,-u*7.75,u*0.72,0,7); g.fill();
+ g.beginPath(); g.arc(u*2.35,-u*7.75,u*0.72,0,7); g.fill();
+ if(size>20){
+  g.fillStyle=ink;
+  g.beginPath(); g.arc(-u*0.95,-u*7.95,u*0.34,0,7); g.fill();
+  g.beginPath(); g.arc(u*0.95,-u*7.95,u*0.34,0,7); g.fill();
+  g.fillStyle='rgba(255,255,255,.92)';
+  g.beginPath(); g.arc(-u*0.82,-u*8.10,u*0.12,0,7); g.fill();
+  g.beginPath(); g.arc(u*1.08,-u*8.10,u*0.12,0,7); g.fill();
+  if(goal){g.fillStyle='#41202a'; g.beginPath(); g.ellipse(0,-u*6.85,u*0.58,u*0.78,0,0,7); g.fill();}
+  else{g.strokeStyle=ink; g.lineWidth=u*0.24;
+       g.beginPath(); g.arc(0,-u*7.25,u*0.85,0.28,Math.PI-0.28); g.stroke();}
+ }
+ g.restore();
+}
+
+function figTabletop(g,px,py,size,jersey,out,o){
+ o=o||{}; const t=o.t||0, motion=o.motion!==false, glow=o.glow!==false, light=!!o.light;
+ const u=size/10, goal=out==='goal', ink='#080b0e', pants='#e7edf2', skin='#f2d3ad';
+ g.save(); g.lineJoin='miter'; g.lineCap='butt';
+ g.fillStyle=light?'rgba(20,40,60,.20)':'rgba(0,0,0,.42)';
+ g.beginPath(); g.ellipse(px,py+u*0.55,u*3.0,u*0.85,0,0,7); g.fill();
+ const wob=motion?Math.sin(t*1.25+px*0.03)*0.055:0;
+ g.translate(px,py); g.rotate(wob);
+ const O=(fill,lw)=>{g.fillStyle=fill;g.fill();g.strokeStyle=ink;g.lineWidth=u*(lw||0.52);g.stroke();};
+ g.fillStyle='#22323f'; g.beginPath(); g.ellipse(0,u*0.28,u*2.35,u*0.68,0,0,7); g.fill();
+ g.fillStyle='#33485c'; g.beginPath(); g.ellipse(0,u*0.06,u*1.95,u*0.52,0,0,7); g.fill();
+ g.beginPath(); g.moveTo(-u*1.72,u*0.05); g.lineTo(-u*0.38,u*0.05);
+ g.lineTo(-u*0.52,-u*3.4); g.lineTo(-u*1.62,-u*3.4); g.closePath(); O(pants);
+ g.beginPath(); g.moveTo(u*0.38,u*0.05); g.lineTo(u*1.72,u*0.05);
+ g.lineTo(u*1.62,-u*3.4); g.lineTo(u*0.52,-u*3.4); g.closePath(); O(pants);
+ if(glow){g.shadowColor=goal?'#ff5566':'#4aa3e0'; g.shadowBlur=goal?u*4.6:u*2.2;}
+ g.beginPath(); g.moveTo(-u*1.78,-u*3.2); g.lineTo(u*1.78,-u*3.2);
+ g.lineTo(u*2.52,-u*6.55); g.lineTo(-u*2.52,-u*6.55); g.closePath(); O(jersey);
+ g.shadowBlur=0;
+ g.save(); g.clip();
+ g.fillStyle='rgba(255,255,255,.88)';
+ g.fillRect(-u*3,-u*4.62,u*6,u*0.38); g.fillRect(-u*3,-u*4.02,u*6,u*0.38);
+ g.restore();
+ g.save(); g.globalAlpha=0.42; g.strokeStyle='#ff4d5e'; g.lineWidth=u*0.26;
+ g.beginPath(); g.moveTo(-u*2.02,-u*3.44); g.lineTo(u*1.54,-u*3.44);
+ g.lineTo(u*2.28,-u*6.79); g.lineTo(-u*2.76,-u*6.79); g.closePath(); g.stroke(); g.restore();
+ const arm=(x1,y1,x2,y2)=>{
+  g.lineCap='round';
+  g.strokeStyle=ink; g.lineWidth=u*1.52; g.beginPath(); g.moveTo(x1,y1); g.lineTo(x2,y2); g.stroke();
+  g.strokeStyle=jersey; g.lineWidth=u*0.92; g.beginPath(); g.moveTo(x1,y1); g.lineTo(x2,y2); g.stroke();
+  g.lineCap='butt';};
+ if(!goal){
+  arm(-u*2.15,-u*5.95, u*1.55,-u*4.65);
+  arm(u*2.15,-u*5.95, u*3.35,-u*3.95);
+  g.lineCap='round';
+  g.strokeStyle=ink; g.lineWidth=u*0.86;
+  g.beginPath(); g.moveTo(u*0.85,-u*5.15); g.lineTo(u*5.75,-u*0.28); g.stroke();
+  g.strokeStyle='#c98b45'; g.lineWidth=u*0.40;
+  g.beginPath(); g.moveTo(u*1.00,-u*5.02); g.lineTo(u*5.62,-u*0.34); g.stroke();
+  _blade(g,u*5.30,-u*0.30,u*7.40,-u*0.04,u,0.98);
+  g.lineCap='butt';
+ }else{
+  arm(-u*2.25,-u*6.15, -u*4.05,-u*9.35);
+  arm(u*2.25,-u*6.15, u*4.05,-u*9.35);
+ }
+ g.beginPath(); g.arc(0,-u*7.85,u*1.55,0,7); O(skin,0.46);
+ g.beginPath(); g.arc(0,-u*7.95,u*1.63,Math.PI,0); g.closePath(); O(jersey,0.46);
+ if(size>20){
+  g.fillStyle=ink;
+  g.beginPath(); g.arc(-u*0.56,-u*7.55,u*0.19,0,7); g.fill();
+  g.beginPath(); g.arc(u*0.56,-u*7.55,u*0.19,0,7); g.fill();
+ }
+ g.restore();
+}
+
+const FIG={mascot:figMascot,tabletop:figTabletop};
+const FIG_LABEL={mascot:'Mascot',tabletop:'Tabletop'};
 
 /* --- src/lib/layers/corsi.js --- */
 /**
@@ -520,6 +851,13 @@ const danger = {
 
 const ATT=ATTEMPT_TYPES;
 const SX=x=>x+100, SY=y=>42.5-y;
+// Rink is 200 units long for 200 feet, so one unit is one foot: a ~6 ft player
+// is ~6 units. Goals get a little more presence.
+const FIG_SZ=5.6, FIG_BIG=7.2;
+const MINCOL='#12885a', BUFCOL='#bd8c12';
+let T=0, REDUCED=matchMedia('(prefers-reduced-motion:reduce)').matches;
+let figStyle=(()=>{try{return localStorage.getItem('rtg.fig')||'mascot'}catch(e){return 'mascot'}})();
+if(!FIG[figStyle])figStyle='mascot';
 let finalA=0,finalH=0; for(const e of EV){if(e.type==='goal')(e.own===HID?finalH++:finalA++);}
 function attemptTeam(e){return corsiTeam(e,R);}  // renamed: `corsi` is the layer object
 function tk(e){const c=attemptTeam(e);return c===AID?'a':c===HID?'h':'x';}
@@ -560,7 +898,19 @@ function render(i,newest){
    const r=e.type==='goal'?2.7:hd?2.2:ATT.has(e.type)?1.7:1;
    const anim=(k===i&&newest)?(e.type==='goal'?' flare':' pop'):'';
    if(hd&&k===i&&newest)parts.push(`<circle class="hdring" cx="${SX(e.x).toFixed(1)}" cy="${SY(e.y).toFixed(1)}" r="4.5"/>`);
-   parts.push(`<circle class="ev ${cls} ${tk(e)}${anim}" data-i="${k}" cx="${SX(e.x).toFixed(1)}" cy="${SY(e.y).toFixed(1)}" r="${r}"><title>${e.rem} ${e.type}</title></circle>`);}
+   const cx=SX(e.x), cy=SY(e.y), title=`<title>${e.rem} ${e.type}</title>`;
+   if(ATT.has(e.type)){
+     // An attempt gets a PLAYER. Its feet stand on the real shot coordinate and
+     // its pose is the real outcome — arms up for a goal, shooting otherwise.
+     // Everything else stays a dot: a figure means "someone shot from here", so
+     // drawing one for a faceoff would be a claim we cannot make (Doctrine §5).
+     const pen=new SvgPen(`e${k}`);
+     FIG[figStyle](pen,cx,cy,e.type==='goal'?FIG_BIG:FIG_SZ,tk(e)==='a'?MINCOL:BUFCOL,
+                   e.type==='goal'?'goal':'save',{t:T,motion:!REDUCED,glow:false});
+     parts.push(pen.toSvg(`class="ev fig ${cls} ${tk(e)}${anim}" data-i="${k}"`).replace('</g>',title+'</g>'));
+   } else {
+     parts.push(`<circle class="ev ${cls} ${tk(e)}${anim}" data-i="${k}" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r}">${title}</circle>`);
+   }}
  $('events').innerHTML=parts.join('');
  let lh='';
  if(cur&&(cur.type==='shot-on-goal'||cur.type==='goal')&&cur.x!=null){const netx=(cur.own===HID)?89:-89;
@@ -658,6 +1008,10 @@ let corsiOn=false,hdOn=false,goalieOn=false;
 function setCorsi(){document.getElementById('rg').classList.toggle('corsi',corsiOn);$('lyCorsi').setAttribute('aria-pressed',corsiOn);$('lyCorsi').textContent=(corsiOn?'✓ ':'＋ ')+'Control (Corsi)';if(!corsiOn&&workOpen){workOpen=false;$('workPanel').hidden=true;$('work').setAttribute('aria-expanded',false);$('work').textContent='Show me the work';}}
 function setHd(){$('lyHd').setAttribute('aria-pressed',hdOn);$('lyHd').textContent=(hdOn?'✓ ':'＋ ')+'High-danger';render(i,false);}
 $('lyCorsi').addEventListener('click',()=>{corsiOn=!corsiOn;setCorsi();});
+function syncFig(){document.querySelectorAll('#rg .fbtn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.f===figStyle));}
+document.querySelectorAll('#rg .fbtn').forEach(b=>b.addEventListener('click',()=>{
+ figStyle=b.dataset.f;try{localStorage.setItem('rtg.fig',figStyle)}catch(e){}syncFig();render(i,false);}));
+syncFig();
 $('lyHd').addEventListener('click',()=>{hdOn=!hdOn;setHd();});
 function goalieStats(k){return goaltending.reduce(upto(k),CTX).g;}
 function setGoalie(){document.getElementById('rg').classList.toggle('goalie',goalieOn);$('lyGoalie').setAttribute('aria-pressed',goalieOn);$('lyGoalie').textContent=(goalieOn?'✓ ':'＋ ')+'Goaltending';render(i,false);}
