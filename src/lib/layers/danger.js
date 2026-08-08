@@ -11,6 +11,7 @@
 import { shootingTeam, SHOT_TYPES } from '../attribution.js';
 import { attackDirection, distanceToNet, HIGH_DANGER_FT, SLOT_HALF_WIDTH } from '../rink.js';
 import { NOT_A_PLAY } from '../layer.js';
+import { whyNotEven } from '../strength.js';
 
 export const danger = {
   id: 'danger',
@@ -19,19 +20,22 @@ export const danger = {
   reduce(events, ctx) {
     const counted = [], surprising = [], excluded = [];
 
+    const push = (id, dims) =>
+      excluded.push({ id, why: dims.type || dims.strength, dims });
+
     events.forEach((e, id) => {
+      const notEven = ctx.evenOnly ? whyNotEven(e, ctx) : null;
       if (!SHOT_TYPES.has(e.type) || e.x == null) {
-        excluded.push({
-          id,
-          why: e.type === 'blocked-shot'
+        push(id, { type: e.type === 'blocked-shot'
                  ? 'blocked before it got there — no shot location on the net'
                  : NOT_A_PLAY[e.type] || `not a shot on the net (${e.type})`,
-        });
+                   ...(notEven ? { strength: notEven } : {}) });
         return;
       }
+      if (notEven) { push(id, { strength: notEven }); return; }
       const team = shootingTeam(e, ctx.roster);
       if (team == null) {
-        excluded.push({ id, why: 'shooter not identified in the feed' });
+        push(id, { type: 'shooter not identified in the feed' });
         return;
       }
 
@@ -51,9 +55,8 @@ export const danger = {
         }
         return;
       }
-      excluded.push({
-        id,
-        why: !near && !central
+      push(id, {
+        type: !near && !central
                ? `${d.toFixed(0)} ft out and wide of the slot (|y|=${Math.abs(e.y)} ft)`
            : !near
                ? `${d.toFixed(0)} ft from the net — outside the ${HIGH_DANGER_FT} ft line`

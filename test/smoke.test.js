@@ -38,12 +38,24 @@ function makeDom() {
     click() { (this._on.click || []).forEach(f => f({})); if (this.onclick) this.onclick({}); },
     appendChild() {}, querySelectorAll: () => [],
   });
+  // querySelectorAll must return real nodes for the selectors the app uses to
+  // wire its pickers. Returning [] silently leaves every one of those buttons
+  // unwired -- which is how the strength toggle would have shipped untested.
+  const groups = {
+    '#rg .sbtn': [{ s: 'all' }, { s: 'even' }],
+    '#rg .fbtn': [{ f: 'mascot' }, { f: 'tabletop' }],
+  };
+  const made = {};
+  for (const [sel, list] of Object.entries(groups)) {
+    made[sel] = list.map(d => Object.assign(node(sel + JSON.stringify(d)), { dataset: d }));
+    made[sel].forEach((n, k) => nodes.set(`${sel}[${k}]`, n));
+  }
   const document = {
     getElementById(id) {
       if (!nodes.has(id)) nodes.set(id, node(id));
       return nodes.get(id);
     },
-    querySelectorAll: () => [],
+    querySelectorAll: sel => made[sel] || [],
     createElement: () => node(),
     addEventListener() {},
   };
@@ -110,6 +122,39 @@ test('turning on the Control layer renders the ledger, and it reconciles', () =>
   assert.equal(counted + notCounted, total, 'the panel\'s own arithmetic must close');
   assert.equal(total, expected, 'every event up to and including the last playable one');
   assert.equal(counted, 135, 'and the attempt count is the one we pin everywhere else');
+});
+
+test('the strength filter moves the numbers on screen, with the mode attached', () => {
+  // The end-to-end proof of docs/strength-filter.md: all situations by default,
+  // even-strength on demand, and the label travelling WITH the number so it
+  // cannot be screenshotted away from its scope.
+  const n = run();
+  assert.equal(String(n.get('cA').textContent), '80', 'opens at all situations');
+  assert.equal(String(n.get('mA').textContent), 'ALL SITUATIONS', 'and says so');
+
+  n.get('#rg .sbtn[1]').click();          // "Even strength only"
+  assert.equal(String(n.get('cA').textContent), '48', 'MIN drops to 48');
+  assert.equal(String(n.get('cH').textContent), '38', 'BUF drops to 38');
+  assert.equal(String(n.get('mA').textContent), 'EVEN STRENGTH', 'the label follows');
+
+  n.get('#rg .sbtn[0]').click();          // back to "All situations"
+  assert.equal(String(n.get('cA').textContent), '80', 'and it is reversible');
+});
+
+test('the ledger explains the filtered-out attempts, on screen', () => {
+  const n = run();
+  n.get('lyCorsi').click();
+  n.get('work').click();
+  n.get('#rg .sbtn[1]').click();
+  const w = String(n.get('workPanel').innerHTML);
+  assert.match(w, /even strength/i, 'the panel states the mode');
+  assert.match(w, /power play/i, 'and names the power-play exclusions');
+  assert.match(w, /pulled their goalie/i, 'and the empty-net ones');
+  // The reconciliation must still close under the filter.
+  const counted = +w.match(/Counted <span class="n">(\d+)<\/span>/)[1];
+  const not = +w.match(/Not counted <span class="n">(\d+)<\/span>/)[1];
+  const total = +w.match(/= <b>(\d+)<\/b> events/)[1];
+  assert.equal(counted + not, total, 'nothing is lost by filtering');
 });
 
 test('the clock shows time remaining, not elapsed', () => {

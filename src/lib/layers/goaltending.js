@@ -15,6 +15,7 @@
 import { shootingTeam, SHOT_TYPES } from '../attribution.js';
 import { attackDirection, isHighDanger } from '../rink.js';
 import { NOT_A_PLAY } from '../layer.js';
+import { whyNotEven } from '../strength.js';
 
 /** Geometric rule, measured to the ATTACKING net. */
 export function isHighDangerEvent(e, ctx) {
@@ -34,15 +35,17 @@ export const goaltending = {
 
     events.forEach((e, id) => {
       const faced = (e.type === 'shot-on-goal' || e.type === 'goal') && e.goalie;
-      if (!faced) {
-        excluded.push({
-          id,
-          why: e.type === 'missed-shot'
-                 ? 'missed the net — no goalie faced it'
-             : e.type === 'blocked-shot'
-                 ? 'blocked by a skater — it never reached the goalie'
-             : NOT_A_PLAY[e.type] || `not a shot the goalie faced (${e.type})`,
-        });
+      const notFaced = faced ? null
+        : e.type === 'missed-shot' ? 'missed the net — no goalie faced it'
+        : e.type === 'blocked-shot' ? 'blocked by a skater — it never reached the goalie'
+        : NOT_A_PLAY[e.type] || `not a shot the goalie faced (${e.type})`;
+      const notEven = ctx.evenOnly ? whyNotEven(e, ctx) : null;
+
+      if (notFaced || notEven) {
+        const dims = {};
+        if (notFaced) dims.type = notFaced;
+        if (notEven) dims.strength = notEven;
+        excluded.push({ id, why: notFaced || notEven, dims });
         return;
       }
       counted.push(id);

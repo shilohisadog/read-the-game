@@ -66,6 +66,7 @@ T = r"""<style>
 #rg .caption .num{opacity:.65;font-family:ui-monospace,Menlo,monospace;margin-right:3px}
 #rg .counters{display:flex;justify-content:space-between;padding:2px 6px;margin-top:8px}
 #rg .cc{display:flex;align-items:baseline;gap:7px}#rg .cc .n{font-family:ui-monospace,Menlo,monospace;font-size:1.5rem;font-weight:700}#rg .cc.a .n{color:var(--min)}#rg .cc.h .n{color:var(--buf)}
+#rg .cc .mode{display:block;font-size:.6rem;letter-spacing:.06em;color:var(--flag);font-weight:700}
 #rg .cc .lb{font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
 #rg .bump{animation:bump .32s ease}@keyframes bump{40%{transform:scale(1.35);color:var(--flag)}}
 #rg .transport{display:flex;align-items:center;gap:10px;margin:14px 0 4px;flex-wrap:wrap}
@@ -110,7 +111,7 @@ T = r"""<style>
 #rg .cbar,#rg .counters,#rg #work{display:none}
 #rg.corsi .cbar{display:block}#rg.corsi .counters{display:flex}#rg.corsi #work{display:inline-block}
 #rg .figpick{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 2px 0}
-#rg .fbtn[aria-pressed="true"]{border-style:solid;color:var(--ink);border-color:var(--ink);background:#eef2f5}
+#rg .sbtn[aria-pressed="true"],#rg .fbtn[aria-pressed="true"]{border-style:solid;color:var(--ink);border-color:var(--ink);background:#eef2f5}
 #rg .fnote{font-size:.76rem;color:var(--muted);flex:1;min-width:220px}
 #rg .fig{transform-box:fill-box;transform-origin:center}
 #rg .layers{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 2px 4px;padding-top:12px;border-top:1px dashed var(--edge)}
@@ -141,7 +142,7 @@ T = r"""<style>
 </div>
 <div class="rinkbox"><svg viewBox="0 0 200 85"><g id="rink"></g><g id="lines"></g><g id="events"></g><g id="puck"></g><g id="labels"></g></svg>
   <div class="caption" id="caption"></div>
-  <div class="counters"><div class="cc a"><span class="n" id="cA">0</span><span class="lb">MIN attempts</span></div><div class="cc h"><span class="lb">BUF attempts</span><span class="n" id="cH">0</span></div></div>
+  <div class="counters"><div class="cc a"><span class="n" id="cA">0</span><span class="lb">MIN attempts<span class="mode" id="mA">ALL SITUATIONS</span></span></div><div class="cc h"><span class="lb">BUF attempts<span class="mode" id="mH">ALL SITUATIONS</span></span><span class="n" id="cH">0</span></div></div>
 </div>
 <div class="goalies" id="goaliePanel"></div>
 <div class="transport"><button class="play" id="play">▶ Play from start</button>
@@ -149,6 +150,11 @@ T = r"""<style>
   <input class="scrub" id="scrub" type="range" min="0" max="1" value="0"><button id="work" aria-expanded="false">Show me the work</button></div>
 <div class="legend"><span><i class="k-a"></i>shot</span><span><i class="k-p"></i>puck (jumps between real events)</span><span>🚨 goal</span><span style="color:var(--muted)">metric-specific marks appear when you add a layer</span></div>
 <div class="layers"><span class="ll">Add a metric layer:</span><button class="lyr" id="lyCorsi" aria-pressed="false">＋ Control (Corsi)</button><button class="lyr" id="lyHd" aria-pressed="false">＋ High-danger</button><button class="lyr" id="lyGoalie" aria-pressed="false">＋ Goaltending</button></div>
+<div class="figpick"><span class="ll">Situations:</span>
+<button class="lyr sbtn" data-s="all" aria-pressed="true">All situations</button>
+<button class="lyr sbtn" data-s="even" aria-pressed="false">Even strength only</button>
+<span class="fnote">Power plays and an empty net are still hockey — but they aren't
+<b>even</b> hockey. Switch and watch which attempts drop out, and why.</span></div>
 <div class="figpick"><span class="ll">Players:</span>
 <button class="lyr fbtn" data-f="mascot" aria-pressed="true">Mascot</button>
 <button class="lyr fbtn" data-f="tabletop" aria-pressed="false">Tabletop</button>
@@ -187,7 +193,13 @@ let finalA=0,finalH=0; for(const e of EV){if(e.type==='goal')(e.own===HID?finalH
 function attemptTeam(e){return corsiTeam(e,R);}  // renamed: `corsi` is the layer object
 function tk(e){const c=attemptTeam(e);return c===AID?'a':c===HID?'h':'x';}
 function shotDir(e){const t=shootingTeam(e,R);return t==null?null:attackDirection(t,HID);}
-const CTX={roster:R,homeId:HID,awayId:AID};
+let evenOnly=false;
+// The mode is part of the CONTEXT, so every layer moves together. Filtering
+// Corsi while leaving shots faced on all situations would put two scopes on one
+// screen with no way for a viewer to reconcile them.
+const CTX={roster:R,homeId:HID,awayId:AID,homeAb:HAB,awayAb:AAB,
+           get evenOnly(){return evenOnly;}};
+const MODE=()=>evenOnly?'even strength':'all situations';
 function isHD(e){return isHighDangerEvent(e,CTX);}
 function lens(k){return corsi.reduce(upto(k),CTX);}
 const $=id=>document.getElementById(id);
@@ -258,7 +270,12 @@ function render(i,newest){
    else if(cur&&hdOn&&isHD(cur)){lastHD=i;caption(cur,'hd');}}
  prevA=a;prevH=h;
  $('per').textContent=cur?'Period '+cur.per:'Pre-game';$('clk').textContent=cur?cur.rem:'20:00';
- if(goalieOn){const gs=goalieStats(i);$('goaliePanel').innerHTML=G.goalies.map(id=>{const p=R[id];if(!p)return '';const tid=p.tid,col=tid===AID?'var(--min)':'var(--buf)',ab=tid===AID?AAB:HAB;const st=gs[id]||{f:0,s:0,gl:0,hf:0,hs:0};const svp=st.f?(st.s/st.f).toFixed(3).replace(/^0/,''):'—';return `<div class="gcard"><div class="gname" style="color:${col}">${p.nm} <span class="sub">${ab} · #${p.n}</span></div><div class="gsv">${svp}</div><div class="gline">${st.s} saves · ${st.gl} goals · ${st.f} shots faced${st.hf?` · high-danger ${st.hs}/${st.hf}`:''}</div></div>`;}).join('');}
+ if(goalieOn){const gs=goalieStats(i);$('goaliePanel').innerHTML=G.goalies.map(id=>{const p=R[id];if(!p)return '';const tid=p.tid,col=tid===AID?'var(--min)':'var(--buf)',ab=tid===AID?AAB:HAB;const st=gs[id]||{f:0,s:0,gl:0,hf:0,hs:0};const svp=st.f?(st.s/st.f).toFixed(3).replace(/^0/,''):'—';
+ // Doctrine §8 wants a base rate beside any rate. We cannot compute one from a
+ // single game, and importing a league average would introduce a number that is
+ // not in our feed. So under the filter we show the FRACTION and state the
+ // limit -- 18 shots is not a rate -- and leave the base rate to the archive.
+ const thin=st.f<20;return `<div class="gcard"><div class="gname" style="color:${col}">${p.nm} <span class="sub">${ab} · #${p.n}</span></div><div class="gsv">${thin?st.s+"/"+st.f:svp}</div><div class="gline">${st.s} saves · ${st.gl} goals · ${st.f} shots faced (${MODE()})${thin?'<br><span style="color:var(--flag)">too few shots to be a rate — we can tell you what happened, not how unusual it was</span>':''}${st.hf?` · high-danger ${st.hs}/${st.hf}`:''}</div></div>`;}).join('');}
  if(workOpen)renderWork(L,cur);
 }
 function flash(id){const el=$(id);el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump');}
@@ -275,11 +292,11 @@ function renderWork(L,cur){const a=L.t[AID],h=L.t[HID],tot=a+h||1,pa=Math.round(
  const byWhy=summarise(L.excluded), rows=Object.entries(byWhy).sort((x,y)=>y[1]-x[1])
    .map(([why,n])=>`<div><b>${n}×</b> ${why}</div>`).join('');
  const sTotal=L.surprising.length, sWhy=sTotal?L.surprising[0].why:'';
- $('workPanel').innerHTML=`<h2>How “control” is computed <span style="color:var(--muted);font-weight:400">(${cur?'through P'+cur.per+' '+cur.rem:'pre-game'})</span></h2>
+ $('workPanel').innerHTML=`<h2>How “control” is computed <span style="color:var(--muted);font-weight:400">(${MODE()}${cur?', through P'+cur.per+' '+cur.rem:', pre-game'})</span></h2>
  <div class="wg"><div class="wc"><h3>Counted <span class="n">${L.counted.length}</span></h3><p>Every attempt on goal — shots that hit the net, missed it, or were blocked. All credited to the shooter.</p></div>
  <div class="wc flag"><h3>Counted, surprisingly <span class="n">${sTotal}</span></h3><p>${sWhy||'—'}</p></div>
  <div class="wc"><h3>Not counted <span class="n">${L.excluded.length}</span></h3><p style="font-size:.82rem;line-height:1.6">${rows||'—'}</p></div></div>
- <p class="wfoot"><em>${a} ${AAB} / ${h} ${HAB} → ${pa}% / ${100-pa}%.</em> ${L.counted.length} counted + ${L.excluded.length} not counted = <b>${L.counted.length+L.excluded.length}</b> events, which is every event in the game so far. Nothing is dropped quietly.</p>`;}
+ <p class="wfoot"><em>${a} ${AAB} / ${h} ${HAB} → ${pa}% / ${100-pa}%.</em> ${L.counted.length} counted + ${L.excluded.length} not counted = <b>${L.counted.length+L.excluded.length}</b> events, which is every event in the game so far. Nothing is dropped quietly.${evenOnly?' <b>Even strength only</b> — the power-play and empty-net attempts are in the not-counted list above, with the situation that removed each one.':''}</p>`;}
 let i=EV.length-1,playing=false,timer=null,mult=2;
 $('scrub').max=EV.length-1;
 function set(v,newest){i=Math.max(0,Math.min(EV.length-1,v));$('scrub').value=i;render(i,newest);}
@@ -339,6 +356,15 @@ let corsiOn=false,hdOn=false,goalieOn=false;
 function setCorsi(){document.getElementById('rg').classList.toggle('corsi',corsiOn);$('lyCorsi').setAttribute('aria-pressed',corsiOn);$('lyCorsi').textContent=(corsiOn?'✓ ':'＋ ')+'Control (Corsi)';if(!corsiOn&&workOpen){workOpen=false;$('workPanel').hidden=true;$('work').setAttribute('aria-expanded',false);$('work').textContent='Show me the work';}}
 function setHd(){$('lyHd').setAttribute('aria-pressed',hdOn);$('lyHd').textContent=(hdOn?'✓ ':'＋ ')+'High-danger';render(i,false);}
 $('lyCorsi').addEventListener('click',()=>{corsiOn=!corsiOn;setCorsi();});
+// One code path owns the mode label, so the markup cannot drift from the state.
+// The static HTML carries a default only so the page reads correctly before JS.
+function syncStrength(){
+ const v=evenOnly?'even':'all';
+ document.querySelectorAll('#rg .sbtn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.s===v));
+ const lbl=MODE().toUpperCase();$('mA').textContent=lbl;$('mH').textContent=lbl;}
+function setStrength(v){evenOnly=(v==='even');syncStrength();render(i,false);}
+document.querySelectorAll('#rg .sbtn').forEach(b=>b.addEventListener('click',()=>setStrength(b.dataset.s)));
+syncStrength();
 function syncFig(){document.querySelectorAll('#rg .fbtn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.f===figStyle));}
 document.querySelectorAll('#rg .fbtn').forEach(b=>b.addEventListener('click',()=>{
  figStyle=b.dataset.f;try{localStorage.setItem('rtg.fig',figStyle)}catch(e){}syncFig();render(i,false);}));
@@ -350,7 +376,7 @@ $('lyGoalie').addEventListener('click',()=>{goalieOn=!goalieOn;setGoalie();});
 drawRink();set(EV.length-1,false);
 </script>"""
 
-LIB = ["rink.js", "attribution.js", "layer.js", "svgpen.js", "figures.js",
+LIB = ["rink.js", "attribution.js", "layer.js", "strength.js", "svgpen.js", "figures.js",
        "layers/corsi.js", "layers/goaltending.js", "layers/danger.js"]
 
 def _lib():

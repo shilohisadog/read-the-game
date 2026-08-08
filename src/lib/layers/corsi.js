@@ -11,6 +11,7 @@
  */
 import { corsiTeam, ATTEMPT_TYPES } from '../attribution.js';
 import { NOT_A_PLAY } from '../layer.js';
+import { whyNotEven } from '../strength.js';
 
 const NOT_AN_ATTEMPT = {
   hit: 'a hit — physical play, but not a shot attempt',
@@ -26,7 +27,12 @@ export const corsi = {
 
   /**
    * @param events  the whole game, in order
-   * @param ctx     { roster, homeId, awayId }
+   * @param ctx     { roster, homeId, awayId, homeAb, awayAb, evenOnly }
+   *
+   * `evenOnly` is a second DIMENSION of exclusion, not a second list. An event
+   * that is both a non-attempt and non-even-strength -- a hit on the power play
+   * -- appears once, carrying both reasons. Double-listing it would break
+   * conservation; picking one reason silently would hide the other.
    */
   reduce(events, ctx) {
     const { roster, homeId, awayId } = ctx;
@@ -38,11 +44,16 @@ export const corsi = {
       if (e.type === 'goal') (e.own === homeId ? hs++ : as++);
 
       const team = corsiTeam(e, roster);
-      if (team == null) {
-        excluded.push({
-          id,
-          why: NOT_AN_ATTEMPT[e.type] || NOT_A_PLAY[e.type] || `not an attempt (${e.type})`,
-        });
+      const notAttempt = team == null
+        ? (NOT_AN_ATTEMPT[e.type] || NOT_A_PLAY[e.type] || `not an attempt (${e.type})`)
+        : null;
+      const notEven = ctx.evenOnly ? whyNotEven(e, ctx) : null;
+
+      if (notAttempt || notEven) {
+        const dims = {};
+        if (notAttempt) dims.type = notAttempt;
+        if (notEven) dims.strength = notEven;
+        excluded.push({ id, why: notAttempt || notEven, dims });
         return;
       }
       t[team]++;
