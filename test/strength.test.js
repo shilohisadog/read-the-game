@@ -16,7 +16,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { conservation } from '../src/lib/layer.js';
-import { situation, isEven, whyNotEven, windows, EVEN, POWER_PLAY, EMPTY_NET } from '../src/lib/strength.js';
+import { situation, isEven, whyNotEven, windows, KNOWN_SITUATIONS, EVEN, POWER_PLAY, EMPTY_NET } from '../src/lib/strength.js';
 import { corsi } from '../src/lib/layers/corsi.js';
 import { goaltending } from '../src/lib/layers/goaltending.js';
 import { danger } from '../src/lib/layers/danger.js';
@@ -143,6 +143,83 @@ test('the special-teams windows are found, and one crosses the intermission', ()
   assert.equal(crossing[0].fromPer, 2);
   assert.equal(crossing[0].toPer, 3);
   assert.equal(crossing[0].kind, POWER_PLAY);
+});
+
+test('the skater counts are stated from the named team\'s side', () => {
+  // CHENG's finding. The sentence names one team, then quotes two numbers; if
+  // those are in the feed's away-then-home order the first number belongs to
+  // the named team only by luck. It did not, for 36 of this game's exclusions:
+  // "BUF were on the power play -- 4 skaters against 5", where BUF had 5.
+  //
+  // Exhaustive over KNOWN_SITUATIONS rather than over the codes this game
+  // happens to contain -- 1560, 1450 and 1540 never occur here, and those are
+  // exactly the branches nobody would notice were wrong.
+  for (const code of KNOWN_SITUATIONS) {
+    const s = situation(code, base);
+    if (s.kind === EVEN) continue;
+
+    const msg = whyNotEven({ sit: code }, base);
+    const m = msg.match(/^(\w+) .*— (\d+) skaters against (\d+)/);
+    assert.ok(m, `unparseable reason for ${code}: ${msg}`);
+    const [, ab, own, opp] = m;
+
+    // Whose sentence is this? Empty net names the team that pulled; a power
+    // play names the team with the extra skater.
+    const expectAb = s.kind === EMPTY_NET
+      ? (code[0] === '0' ? base.awayAb : base.homeAb)
+      : (s.advantage === base.homeId ? base.homeAb : base.awayAb);
+    assert.equal(ab, expectAb, `${code}: wrong team named — ${msg}`);
+
+    const isHome = ab === base.homeAb;
+    assert.equal(+own, +code[isHome ? 2 : 1],
+      `${code}: "${msg}" quotes ${own} for ${ab}, who had ${code[isHome ? 2 : 1]}`);
+    assert.equal(+opp, +code[isHome ? 1 : 2], `${code}: wrong opponent count — ${msg}`);
+  }
+});
+
+test('a team on the power play never reads as having fewer skaters', () => {
+  // The symptom, pinned separately from the rule above. This is the sentence a
+  // novice actually reads, and it must not contradict itself no matter how the
+  // ordering is implemented.
+  for (const code of KNOWN_SITUATIONS) {
+    const s = situation(code, base);
+    if (s.kind !== POWER_PLAY) continue;
+    const [, own, opp] = whyNotEven({ sit: code }, base)
+      .match(/— (\d+) skaters against (\d+)/);
+    assert.ok(+own > +opp,
+      `${code}: the team on the power play is quoted ${own} against ${opp}`);
+  }
+});
+
+for (const layer of LAYERS) {
+  test(`${layer.id}: no exclusion reason contains a placeholder`, () => {
+    // CHENG's suggested guard, and the class matters more than the instance.
+    // Every existing test asks whether a reason EXISTS; none read one. That is
+    // the same shape as the ESM leak guard -- checking structure while the
+    // failure lives in content. An unresolved template variable is invisible to
+    // a length check and glaring to a reader.
+    for (const ctx of [base, even]) {
+      for (const x of layer.reduce(EVENTS, ctx).excluded) {
+        for (const [dim, reason] of Object.entries(x.dims || {})) {
+          assert.doesNotMatch(String(reason), /undefined|\bnull\b|NaN|\[object/,
+            `event ${x.id} ${dim}: ${reason}`);
+        }
+      }
+    }
+  });
+}
+
+test('the placeholder guard fires when the context is missing a field', () => {
+  // TEST THE TEST'S REACH. The guard above passes on a correct build, which
+  // proves nothing on its own. Withhold the abbreviations -- the exact shape of
+  // a caller that reads the destructured `{ roster, homeId, awayId }` and
+  // supplies only those -- and the reasons must go visibly wrong.
+  const { homeAb, awayAb, ...starved } = even;
+  const reasons = corsi.reduce(EVENTS, starved).excluded
+    .filter(x => x.dims && x.dims.strength).map(x => x.dims.strength);
+  assert.ok(reasons.length > 0, 'there are strength reasons to inspect');
+  assert.ok(reasons.some(r => /undefined/.test(r)),
+    'a missing abbreviation must show up in the copy, or this guard is inert');
 });
 
 test('an unreadable situation code is refused rather than assumed even', () => {

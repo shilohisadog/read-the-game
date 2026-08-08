@@ -68,12 +68,24 @@ export function whyNotEven(e, ctx) {
   if (s == null) return `game state not recorded for this event`;
   if (s.kind === EVEN) return null;
 
-  const ab = id => id === ctx.homeId ? ctx.homeAb : ctx.awayAb;
+  // THE COUNTS ARE STATED RELATIVE TO THE TEAM THE SENTENCE NAMES, not in the
+  // feed's away-then-home order. Those coincide only when the named team is the
+  // away team, so half of these read backwards: with code 1451 the away side has
+  // 4 and the home side 5, and "BUF were on the power play -- 4 skaters against
+  // 5" says the team on the advantage has FEWER players. 36 of this game's 103
+  // strength exclusions were that sentence. Whoever reads it is a novice being
+  // told why 49 attempts vanished, so it has to survive being read literally.
+  const forTeam = id => id === ctx.homeId
+    ? { ab: ctx.homeAb, own: s.home, opp: s.away }
+    : { ab: ctx.awayAb, own: s.away, opp: s.home };
+
   if (s.kind === EMPTY_NET) {
-    const pulled = s.code[0] === '0' ? ctx.awayAb : ctx.homeAb;
-    return `${pulled} had pulled their goalie — ${s.away} skaters against ${s.home} with an empty net`;
+    // Name the team that pulled, and count from their side.
+    const { ab, own, opp } = forTeam(s.code[0] === '0' ? ctx.awayId : ctx.homeId);
+    return `${ab} had pulled their goalie — ${own} skaters against ${opp} with an empty net`;
   }
-  return `${ab(s.advantage)} were on the power play — ${s.away} skaters against ${s.home}`;
+  const { ab, own, opp } = forTeam(s.advantage);
+  return `${ab} were on the power play — ${own} skaters against ${opp}`;
 }
 
 /**

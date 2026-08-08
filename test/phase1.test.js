@@ -17,6 +17,15 @@
  * Those assertions were retired here and replaced by real conservation over all
  * 320 events in layers.test.js.
  *
+ * READ THE FIXTURE'S FIELDS WITH THAT IN MIND. `nCounted` and `nSurprising`
+ * were captured when the two were DISJOINT, so the fixture's 91 + 44 = 135 is
+ * not today's arithmetic: `surprising` is now a labelled SUBSET of `counted`,
+ * and today's counted is 135 with 44 of them flagged. Conservation is therefore
+ * `counted + excluded = 320` -- 135 + 185, and 86 + 234 under the even-strength
+ * filter -- with no third bucket. A reviewer holding this file open still
+ * summed it the old way and derived a total that did not reconcile, which is
+ * why this paragraph exists rather than a shorter note.
+ *
  * A golden file is a refactor gate, not a statement that the behaviour is
  * correct. Do not treat a passing golden test as evidence the numbers are
  * right; that is what attribution.test.js and rink.test.js are for.
