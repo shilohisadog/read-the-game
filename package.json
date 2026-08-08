@@ -5,7 +5,7 @@
   "description": "Zero dependencies, deliberately. `npm test` runs node's built-in runner.",
   "scripts": {
     "test": "node --test test/*.test.js",
-    "build": "python3 builders/build_main.py && python3 builders/build_main.py --verify",
+    "build": "python3 builders/build_main.py && python3 builders/build_main.py --verify && python3 builders/build_index.py && python3 builders/build_index.py --verify",
     "extract:verify": "python3 builders/extract.py --verify",
     "extract:validate": "python3 builders/extract.py --validate",
     "extract:vocab": "python3 builders/extract.py --vocab",

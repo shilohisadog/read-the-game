@@ -1,0 +1,132 @@
+# Publish src/ to Cloudflare Pages.
+#
+# WHY FROM CI AND NOT A LAPTOP. Wrangler requires Node >= 22 and the development
+# machine runs 20, so a local deploy would mean upgrading the runtime the test
+# suite is pinned against in order to ship a static folder. It would also put a
+# Cloudflare credential on a laptop. Here the token never leaves GitHub, and the
+# deploy always runs from a clean checkout -- so only committed files can be
+# published. Nothing untracked or gitignored can reach the public site by
+# accident, which has happened once already (builders/build_rules.py, f4a2c67).
+#
+# THE GATES RUN BEFORE THE DEPLOY, IN THIS JOB. gates.yml proves the commit is
+# sound, but a separate workflow is a separate run: relying on it would mean
+# publishing on the assumption that the other job passed. The check that guards
+# a deploy has to be the deploy's own.
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# One deploy at a time, and never cancel one midway -- a half-finished upload
+# to a live site is worse than a queued one.
+concurrency:
+  group: pages-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  deployments: write
+
+env:
+  PROJECT: read-the-game
+  WRANGLER: wrangler@4.120.0   # pinned: "whatever npx resolved to today" is not a build
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: gates
+        run: npm run gates
+
+      # A generated file that differs from what its builder produces means the
+      # HTML was hand-edited. Shipping that publishes something no builder can
+      # reproduce, and the next build silently reverts it.
+      - name: the working tree must be unchanged by a build
+        run: git diff --exit-code
+
+      # Belt and braces on the constraint that makes this hostable at all: the
+      # apps do their own arithmetic in the browser and fetch nothing. If a
+      # network call ever appears in a shipped page, the deploy is the wrong
+      # place to find out, so stop here instead.
+      - name: the published pages must not call out to anything
+        run: |
+          if grep -rniE 'fetch\(|XMLHttpRequest|new WebSocket|src="https?:|<link[^>]+https?:' src/*.html; then
+            echo "::error::a shipped page references the network"
+            exit 1
+          fi
+          echo "no outbound calls in $(ls src/*.html | wc -l) pages"
+
+      - name: ensure the Pages project exists
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # Creating an existing project is an error, so ask first rather than
+          # swallowing failures with `|| true` -- that would also hide a bad
+          # token, and the deploy would fail later with a confusing message.
+          if npx --yes "$WRANGLER" pages project list | grep -qw "$PROJECT"; then
+            echo "project $PROJECT already exists"
+          else
+            echo "creating project $PROJECT"
+            npx --yes "$WRANGLER" pages project create "$PROJECT" \
+              --production-branch main
+          fi
+
+      - name: deploy
+        id: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx --yes "$WRANGLER" pages deploy src \
+            --project-name "$PROJECT" \
+            --branch main \
+            --commit-dirty=true | tee deploy.log
+          echo "url=$(grep -oE 'https://[a-z0-9.-]+\.pages\.dev' deploy.log | tail -1)" >> "$GITHUB_OUTPUT"
+
+      # Deploying and assuming it worked is not verification. Fetch the site
+      # back over the public internet and confirm the root is a real page --
+      # a Pages project with no index.html answers / with a 404, which is what
+      # src/ would have done before builders/build_index.py existed.
+      - name: fetch the live site back
+        run: |
+          URL="https://${PROJECT}.pages.dev"
+          echo "checking $URL"
+          for i in $(seq 1 10); do
+            code=$(curl -sS -o body.html -w '%{http_code}' -L "$URL") && [ "$code" = "200" ] && break
+            echo "  attempt $i: HTTP $code — waiting for propagation"
+            sleep 6
+          done
+          [ "$code" = "200" ] || { echo "::error::root returned HTTP $code"; exit 1; }
+          grep -q "Read the Game" body.html || { echo "::error::root served, but it is not our page"; exit 1; }
+          echo "root OK ($(wc -c < body.html) bytes)"
+
+          for page in read-the-game.html goalie-view.html on-the-ice.html \
+                      active-play.html goalie-eye-view.html terrain-3d.html \
+                      figure-bench.html; do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' -L "$URL/$page")
+            echo "  $page -> $code"
+            [ "$code" = "200" ] || { echo "::error::$page returned HTTP $code"; exit 1; }
+          done
+
+      - name: summary
+        run: |
+          {
+            echo "### Deployed"
+            echo ""
+            echo "**https://${PROJECT}.pages.dev**"
+            echo ""
+            echo "Preview URL for this commit: ${{ steps.deploy.outputs.url }}"
+          } >> "$GITHUB_STEP_SUMMARY"
