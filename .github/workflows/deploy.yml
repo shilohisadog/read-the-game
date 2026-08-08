@@ -107,9 +107,25 @@ jobs:
       # pages once each, so the root spent six attempts waiting out propagation
       # and the very next request failed on the tail of the same cold start.
       # The deploy was fine; the check was shaped wrong.
+      #
+      # DIFF AGAINST THE DEPLOYMENT URL, NOT THE PRODUCTION HOSTNAME. Pages
+      # gives every deployment its own immutable <hash>.<project>.pages.dev,
+      # which is the artifact just uploaded with nothing aliased or cached in
+      # front of it. The production hostname is a moving pointer with an edge
+      # cache, and it served the previous build for minutes after a correct
+      # deploy -- `?cb=1` on the same URL returned the new bytes, so the alias
+      # had switched and only the cached object was stale. Diffing there tests
+      # Cloudflare's cache invalidation, which is not our invariant. Production
+      # is checked separately, for reachability, with the cache defeated.
       - name: fetch the live site back and diff it against the repo
+        env:
+          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
         run: |
-          URL="https://${PROJECT}.pages.dev"
+          if [ -z "$DEPLOY_URL" ]; then
+            echo "::error::no deployment URL was captured from wrangler — cannot verify"
+            exit 1
+          fi
+          URL="$DEPLOY_URL"
           echo "checking $URL"
 
           # Retries on 5xx (edge not ready) but NOT on 404 -- a missing file is
@@ -154,6 +170,19 @@ jobs:
           done
           [ "$fail" = 0 ] || exit 1
           echo "all $(ls src/*.html | wc -l) pages match the checkout byte for byte"
+
+          # Production is a separate question: does the public hostname resolve
+          # to this deployment at all? A unique query string defeats the edge
+          # cache without asking anything of Cloudflare's invalidation timing.
+          URL="https://${PROJECT}.pages.dev"
+          echo "checking the public hostname $URL"
+          fetch "?cb=${GITHUB_RUN_ID}" prod.html
+          if cmp -s prod.html src/index.html; then
+            echo "  $URL serves the current index"
+          else
+            echo "::error::$URL is reachable but is not serving this deployment"
+            exit 1
+          fi
 
       - name: summary
         run: |
