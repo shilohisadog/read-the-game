@@ -96,30 +96,64 @@ jobs:
             --commit-dirty=true | tee deploy.log
           echo "url=$(grep -oE 'https://[a-z0-9.-]+\.pages\.dev' deploy.log | tail -1)" >> "$GITHUB_OUTPUT"
 
-      # Deploying and assuming it worked is not verification. Fetch the site
-      # back over the public internet and confirm the root is a real page --
-      # a Pages project with no index.html answers / with a 404, which is what
-      # src/ would have done before builders/build_index.py existed.
-      - name: fetch the live site back
+      # Deploying and assuming it worked is not verification. Fetch every page
+      # back over the public internet and compare it byte for byte against the
+      # file in this checkout -- 200 OK only proves something answered, not that
+      # what is public is what we committed.
+      #
+      # RETRY EVERY PAGE, NOT JUST THE FIRST. A brand-new *.pages.dev hostname
+      # takes roughly 40 seconds to come up and answers 522 until it does. The
+      # first version of this step retried the root and then checked the other
+      # pages once each, so the root spent six attempts waiting out propagation
+      # and the very next request failed on the tail of the same cold start.
+      # The deploy was fine; the check was shaped wrong.
+      - name: fetch the live site back and diff it against the repo
         run: |
           URL="https://${PROJECT}.pages.dev"
           echo "checking $URL"
-          for i in $(seq 1 10); do
-            code=$(curl -sS -o body.html -w '%{http_code}' -L "$URL") && [ "$code" = "200" ] && break
-            echo "  attempt $i: HTTP $code — waiting for propagation"
-            sleep 6
-          done
-          [ "$code" = "200" ] || { echo "::error::root returned HTTP $code"; exit 1; }
-          grep -q "Read the Game" body.html || { echo "::error::root served, but it is not our page"; exit 1; }
-          echo "root OK ($(wc -c < body.html) bytes)"
 
-          for page in read-the-game.html goalie-view.html on-the-ice.html \
-                      active-play.html goalie-eye-view.html terrain-3d.html \
-                      figure-bench.html; do
-            code=$(curl -sS -o /dev/null -w '%{http_code}' -L "$URL/$page")
-            echo "  $page -> $code"
-            [ "$code" = "200" ] || { echo "::error::$page returned HTTP $code"; exit 1; }
+          # Retries on 5xx (edge not ready) but NOT on 404 -- a missing file is
+          # a real answer, and waiting 60s to report it just hides the cause.
+          fetch() {  # fetch <path> <destination>
+            local path="$1" dest="$2" code
+            for i in $(seq 1 12); do
+              # 000 is curl's code for a transport failure, which for a hostname
+              # minutes old usually means DNS has not propagated yet -- another
+              # thing to wait out rather than report as a broken site.
+              code=$(curl -sS -o "$dest" -w '%{http_code}' -L "$URL/$path") || code=000
+              case "$code" in
+                200)     return 0 ;;
+                5*|000)  echo "    attempt $i: HTTP $code — edge not ready"; sleep 6 ;;
+                *)       echo "::error::/$path returned HTTP $code"; return 1 ;;
+              esac
+            done
+            echo "::error::/$path never became available (last HTTP $code)"
+            return 1
+          }
+
+          # The root is its own case: it is not a file we deploy but a route
+          # Pages resolves to index.html, and getting that wrong is a 404 on
+          # the front page with every deep link still working.
+          fetch "" root.html
+          if ! cmp -s root.html src/index.html; then
+            echo "::error::the site root is not src/index.html"
+            exit 1
+          fi
+          echo "  /  ->  index.html  ($(wc -c < root.html) bytes, identical)"
+
+          fail=0
+          for f in src/*.html; do
+            page=$(basename "$f")
+            fetch "$page" live.html || { fail=1; continue; }
+            if cmp -s live.html "$f"; then
+              echo "  /$page  ($(wc -c < "$f") bytes, identical)"
+            else
+              echo "::error::/$page differs from $f — published bytes are not committed bytes"
+              fail=1
+            fi
           done
+          [ "$fail" = 0 ] || exit 1
+          echo "all $(ls src/*.html | wc -l) pages match the checkout byte for byte"
 
       - name: summary
         run: |
