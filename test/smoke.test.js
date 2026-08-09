@@ -20,6 +20,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { corsi } from '../src/lib/layers/corsi.js';
+
+/** The feed, for computing what the counter OUGHT to say at any point. */
+const rich = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url)));
 
 const html = readFileSync(new URL('../src/read-the-game.html', import.meta.url), 'utf8');
 const script = html.match(/<script>([\s\S]*)<\/script>/)[1];
@@ -29,15 +33,29 @@ const script = html.match(/<script>([\s\S]*)<\/script>/)[1];
  *  behind a button is unreachable, which is most of the app. */
 function makeDom() {
   const nodes = new Map();
-  const node = (id = '') => ({
+  const node = (id = '') => {
+    const n = {
     id, textContent: '', innerHTML: '', value: 0, max: 0, min: 0, hidden: false,
-    style: {}, dataset: {}, onclick: null, oninput: null, _on: {},
-    classList: { add() {}, remove() {}, toggle() {}, contains: () => false },
+    style: {}, dataset: {}, onclick: null, oninput: null, _on: {}, _cls: new Set(),
+    // A REAL class list, not a no-op. The stubbed version accepted every call
+    // and answered `false` to every question, so any behaviour the app expresses
+    // by toggling a class was untestable and looked fine -- the same shape as
+    // querySelectorAll returning [] and leaving every picker unwired.
+    classList: {
+      add(c) { this._o._cls.add(c); },
+      remove(c) { this._o._cls.delete(c); },
+      toggle(c, on) { const s = this._o._cls; const want = on === undefined ? !s.has(c) : on;
+                      want ? s.add(c) : s.delete(c); return want; },
+      contains(c) { return this._o._cls.has(c); },
+    },
     setAttribute() {}, getAttribute: () => null, removeAttribute() {},
     addEventListener(ev, fn) { (this._on[ev] = this._on[ev] || []).push(fn); },
     click() { (this._on.click || []).forEach(f => f({})); if (this.onclick) this.onclick({}); },
     appendChild() {}, querySelectorAll: () => [],
-  });
+    };
+    n.classList._o = n;   // the class list needs a handle on the node it belongs to
+    return n;
+  };
   // querySelectorAll must return real nodes for the selectors the app uses to
   // wire its pickers. Returning [] silently leaves every one of those buttons
   // unwired -- which is how the strength toggle would have shipped untested.
@@ -69,6 +87,10 @@ function run() {
     'document', 'addEventListener', 'setTimeout', 'clearTimeout',
     'requestAnimationFrame', 'matchMedia', 'console', script);
   fn(document, noop, noop, noop, noop, () => ({ matches: false }), console);
+  // `nodes` only holds ids the app has already asked for. Tests that drive the
+  // app need to reach elements it touches lazily -- #rg is only looked up when a
+  // layer is toggled -- so hand back the accessor too, not just the map.
+  nodes.el = id => document.getElementById(id);
   return nodes;
 }
 
@@ -111,7 +133,6 @@ test('turning on the Control layer renders the ledger, and it reconciles', () =>
   // event, and both period-end and game-end sort after it. I asserted 320, then
   // 319, and was wrong both times -- so derive it from the data rather than
   // guessing, which is what I should have done first.
-  const rich = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url)));
   const SKIP = new Set(['stoppage','period-start','period-end','game-end','delayed-penalty']);
   const lastPlayable = rich.events.reduce((acc, e, n) => SKIP.has(e.type) ? acc : n, -1);
   const expected = lastPlayable + 1;
@@ -163,4 +184,68 @@ test('the clock shows time remaining, not elapsed', () => {
   // rather than 00:00, and certainly not the 19:58 an elapsed clock would show.
   assert.equal(String(n.get('per').textContent), 'Period 3');
   assert.match(String(n.get('clk').textContent), /^00:0\d$/, 'counting down, near zero');
+});
+
+test('a metric added mid-replay catches up, tracks forward, and tears down', () => {
+  // Kevin's specification, 2026-08-09: "hit play and the software just works.
+  // During replay, if the user toggles on a metric, the software should catch
+  // up at that point to surface the actual values at that time of the game,
+  // and then keep track going forward. Toggle it off and it just goes away."
+  //
+  // That is what ships, and it was untested -- the existing coverage turns the
+  // layer on at the END of the game, where catching up and starting fresh are
+  // indistinguishable. Every number here is checked against the ledger computed
+  // independently over the same slice, so a "fix" that rebuilt from zero, or
+  // froze the counter at the join, or double-counted the events before the
+  // toggle, fails rather than merely looking different.
+  const n = run();
+  const el = n.el;
+  const scrub = el('scrub');
+  const at = k => { scrub.value = k; scrub.oninput({ target: { value: k } }); };
+  const shown = () => ({ a: +el('cA').textContent, h: +el('cH').textContent });
+  const visible = () => el('rg').classList.contains('corsi');
+
+  // The playable timeline, and the ledger truth at any point on it.
+  const SKIP = new Set(['stoppage', 'period-start', 'period-end', 'game-end', 'delayed-penalty']);
+  const EVI = [];
+  rich.events.forEach((e, idx) => { if (!SKIP.has(e.type)) EVI.push(idx); });
+  const CTX = {
+    roster: rich.roster,
+    homeId: rich.teams.home.id, awayId: rich.teams.away.id,
+    homeAb: rich.teams.home.ab, awayAb: rich.teams.away.ab,
+  };
+  const truth = k => {
+    const L = corsi.reduce(rich.events.slice(0, EVI[k] + 1), CTX);
+    return { a: L.t[CTX.awayId], h: L.t[CTX.homeId] };
+  };
+
+  assert.equal(visible(), false, 'no metric layer on load — press play and just watch');
+
+  // Watch a while with nothing on, THEN get curious.
+  at(120);
+  el('lyCorsi').click();
+  assert.equal(visible(), true, 'the layer appears');
+  assert.deepEqual(shown(), truth(120), 'and shows the count as it stood at that moment');
+
+  // Keep going: it must track, not freeze at the join.
+  for (const k of [150, 200, 268]) {
+    at(k);
+    assert.deepEqual(shown(), truth(k), `tracks forward through event ${k}`);
+  }
+
+  // Open the ledger, then turn the metric off: the whole layer goes away, and
+  // the button that opens the ledger resets rather than stranding "Hide the
+  // work" over a panel that is no longer reachable.
+  el('work').click();
+  assert.equal(el('workPanel').hidden, false, 'the ledger opens');
+  el('lyCorsi').click();
+  assert.equal(visible(), false, 'the layer is gone');
+  assert.equal(el('workPanel').hidden, true, 'and it takes the ledger with it');
+  assert.match(String(el('work').textContent), /Show me the work/, 'the button resets');
+
+  // Turning it back on somewhere else catches up again — not resumes from where
+  // it was, which would show a count that never happened.
+  at(60);
+  el('lyCorsi').click();
+  assert.deepEqual(shown(), truth(60), 're-entry catches up to the new position');
 });
