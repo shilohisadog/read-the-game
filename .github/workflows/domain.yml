@@ -71,6 +71,26 @@ jobs:
             fi
           done
 
+          # CLAIMING A HOSTNAME IS NOT THE SAME AS IT WORKING. The POST above
+          # succeeds as soon as Pages records the claim; the domain then sits at
+          # status "pending" until a DNS record points the name at the project
+          # and a certificate is issued. The first run of this workflow attached
+          # both names and reported success while readthegame.co still resolved
+          # to nothing, because a Pages-scoped token cannot write to the zone.
+          # So report what Cloudflare actually thinks, rather than inferring it
+          # from the POST having returned 200.
+          echo
+          echo "status according to Cloudflare:"
+          after=$(curl -sS "${auth[@]}" "$API")
+          echo "$after" | jq -r '.result[] | "  \(.name)  status=\(.status)  cert=\(.certificate_authority // "-")  validation=\(.validation_data.status // "-")"'
+
+          if echo "$after" | jq -e '.result[] | select(.status != "active")' >/dev/null; then
+            echo
+            echo "::warning::at least one hostname is claimed but not active — a DNS record is still needed"
+            echo "Each name needs a proxied CNAME to ${PROJECT}.pages.dev in the readthegame.co zone."
+            echo "This token is scoped to Pages only, so it cannot create that record."
+          fi
+
       - name: wait for DNS and the certificate, then check what is served
         env:
           DOMAINS: ${{ inputs.domains }}
