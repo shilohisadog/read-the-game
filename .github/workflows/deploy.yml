@@ -32,6 +32,10 @@ permissions:
 env:
   PROJECT: read-the-game
   WRANGLER: wrangler@4.120.0   # pinned: "whatever npx resolved to today" is not a build
+  # The hostnames people actually visit. Verifying only <project>.pages.dev
+  # would leave the gate proving a URL nobody uses, and a custom domain can
+  # come detached -- the binding lives in Cloudflare, not in this repo.
+  PUBLIC_HOSTS: readthegame.co www.readthegame.co read-the-game.pages.dev
 
 jobs:
   deploy:
@@ -171,25 +175,30 @@ jobs:
           [ "$fail" = 0 ] || exit 1
           echo "all $(ls src/*.html | wc -l) pages match the checkout byte for byte"
 
-          # Production is a separate question: does the public hostname resolve
+          # Production is a separate question: does each public hostname resolve
           # to this deployment at all? A unique query string defeats the edge
           # cache without asking anything of Cloudflare's invalidation timing.
-          URL="https://${PROJECT}.pages.dev"
-          echo "checking the public hostname $URL"
-          fetch "?cb=${GITHUB_RUN_ID}" prod.html
-          if cmp -s prod.html src/index.html; then
-            echo "  $URL serves the current index"
-          else
-            echo "::error::$URL is reachable but is not serving this deployment"
-            exit 1
-          fi
+          echo
+          for host in $PUBLIC_HOSTS; do
+            URL="https://${host}"
+            fetch "?cb=${GITHUB_RUN_ID}" prod.html || { fail=1; continue; }
+            if cmp -s prod.html src/index.html; then
+              echo "  https://${host} serves the current index"
+            else
+              echo "::error::https://${host} is reachable but is not serving this deployment"
+              fail=1
+            fi
+          done
+          [ "$fail" = 0 ] || exit 1
 
       - name: summary
         run: |
           {
             echo "### Deployed"
             echo ""
-            echo "**https://${PROJECT}.pages.dev**"
+            echo "**https://readthegame.co**"
             echo ""
-            echo "Preview URL for this commit: ${{ steps.deploy.outputs.url }}"
+            for host in $PUBLIC_HOSTS; do echo "- https://${host}"; done
+            echo ""
+            echo "Immutable URL for this commit: ${{ steps.deploy.outputs.url }}"
           } >> "$GITHUB_STEP_SUMMARY"
