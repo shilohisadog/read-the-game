@@ -327,3 +327,183 @@ sees a socket, only files, exactly as today.
    Bears directly on question 2.
 5. **What does the app show for a game that failed its gate?** "We have it but
    will not show it" is more honest than omission, and more confusing.
+
+---
+
+# Amendment — after CHENG's review, 2026-08-09
+
+CHENG found a defect in his own CSP proposal before it shipped, and answered all
+five open questions. Everything below is folded in. Two items are corrections to
+*his* corrections, found by testing them.
+
+## The CSP, corrected twice
+
+**CHENG's finding, confirmed.** The app is one inline `<script>`, one inline
+`<style>`, zero external references. `default-src 'self'` blocks inline
+execution, so the policy originally proposed here would have shipped a **white
+page** — the exact failure mode the ESM guard exists to prevent.
+
+**A second problem his count missed, found by grepping for it.** There is one
+inline event handler:
+
+```
+src/read-the-game.html:1155   <button class="whyclose" onclick="hideWhy()">
+```
+
+It sits inside a template literal in the script and reaches the DOM through
+`innerHTML`, but **CSP blocks inline handlers regardless of how they got there**.
+A hash-pinned `script-src` does not cover them; that needs `'unsafe-hashes'`.
+
+This one is worse than a blank page, and the difference matters. A blank page is
+noticed immediately. A dead close button *inside the why-popup* — the feature
+whose entire job is explaining the app's reasoning — fails silently, in one
+interaction, on the exact surface the project is built to defend.
+
+**Resolution: fix the code, not the policy.** The builder emits that button;
+attaching the handler with `addEventListener` instead costs a few lines and
+keeps the policy strict. Weakening the CSP to accommodate one handler would
+trade a browser-enforced guarantee for a convenience.
+
+**The surface, measured rather than assumed:**
+
+| Construct | Count | Consequence |
+|---|---|---|
+| `<script>` blocks | 1 | hash-pin it |
+| `<style>` blocks | 1 | + 13 `style=` attributes → `style-src 'unsafe-inline'` |
+| inline `on*` handlers | **1** | remove it |
+| `eval` / `new Function` | 0 | no `'unsafe-eval'` needed |
+| `data:` URIs, `<img>`, `<form>` | 0 | no `img-src`, lock `form-action` |
+| external references | 0 | `default-src 'none'` is reachable |
+
+```
+default-src 'none';
+script-src 'sha256-<hash of the inline script>';
+style-src 'unsafe-inline';
+connect-src 'self' https://data.readthegame.co;
+base-uri 'none';
+form-action 'none'
+```
+
+**Hash-pinning is a third integrity gate, and it is the strongest one we have.**
+`build_main.py` already hashes the artifact for the byte gate, so the script's
+SHA-256 is free. The result: any modification to the shipped script, by anyone,
+anywhere in the delivery path, and the browser **refuses to execute it**. That
+extends byte-identity past our CI and onto the user's machine.
+
+**Deliver as a `<meta>` tag in the page, not only via `_headers`** (CHENG). A
+response header vanishes the moment someone saves a permalink to disk, and
+"save it and it still works" is that page's whole reason to exist. Keep
+`_headers` for `X-Robots-Tag: noindex` on `raw/`, which genuinely is a serving
+concern.
+
+**The gate must assert the CSP EXECUTES, not that the string is present.** A
+hash-pinned policy with a stale hash is a blank page that passes a grep — which
+would be this project's failure signature repeated a fourth time. Load the built
+page in headless Chrome, assert zero CSP violations and that the app rendered.
+Mutation-prove by perturbing one byte of the script.
+
+## Q1 — the window is 14 days, derived
+
+**CHENG's evidence, recorded as his and not laundered into fact.** He cites
+ESPN's description of NHL official stat keeping: official stat keepers make
+retroactive updates, with the correction deadline being the Saturday following
+the week of the game. A Sunday game corrected by the following Saturday is ~13
+days, so **14 days covers the league's stated deadline with a day to spare.** He
+further cites SportRadar shipping a dedicated Daily Change Log feed for postgame
+stat corrections and event revisions — a commercial provider building a product
+around the phenomenon settles that it exists.
+
+**I cannot check these sources from this machine and have not.** They are
+secondary, they are not the NHL's own published rule, and whether *event*
+revisions follow the same deadline as *stat* corrections remains an assumption.
+
+So: **14 days, instrumented.** The instrumentation is what converts CHENG's
+secondary evidence into our own measurement — which was the point of proposing
+it before either of us had a number.
+
+**Raised stakes, and it argues for permanent raw retention:** CHENG notes the
+recording methodology has changed repeatedly — a staggered player-and-puck
+tracking rollout from 2019-20 affecting recorded shifts, event location and event
+frequency, and a further renewal of standards in 2022-23. The feed's semantics
+drift across seasons. That is the vocabulary gate's justification, arriving
+independently.
+
+## Q2 — both, and the fork dissolves
+
+**Hash the raw feeds for detection and logging. Re-extract every game in the
+window, unconditionally.** They answer different questions: hashing answers *did
+the league change this game* (Q1's instrumentation, free); re-extraction answers
+*does our current extractor still produce this output*.
+
+The decisive argument is a bug class in the caching option. **If extracts are
+cached on the raw feed's hash, changing `extract.py` leaves every previously
+published extract stale in R2.** A fix to normalization would reach only games
+ingested afterwards, leaving two extractor versions live at once with nothing
+recording which produced what — the subordinate-copy problem relocated into
+object storage, where no gate can see it.
+
+Re-extraction is 338 lines of Python over ~320 events. Pay it nightly.
+
+## Q3 — the axis is correlation, not scope
+
+Per-game versus whole-run was the wrong framing. **One game failing is that
+game's problem; every game failing the same way is a feed change**, and the
+signal separating them is already present: does the *same* unrecognized value
+recur across games in the run?
+
+So: refuse per-game and publish the rest, **plus a run-level assertion that fails
+the whole run when an unknown value appears in more than one game.** A single-game
+oddity is isolated; a league-wide vocabulary change stops the line. It cannot be
+gamed by the failure count, which was my worry about partial success reading as
+health.
+
+## Q4 — every version, content-addressed (and the doc contradicted itself)
+
+**CHENG caught a real inconsistency above.** The pseudocode says *"store raw
+bytes, unmodified, content-addressed by hash"* while the storage layout shows
+fixed paths at `raw/{gameId}/play-by-play.json`. Those are incompatible: a fixed
+path means each amendment **overwrites its predecessor**, destroying on write the
+very history Q1 sets out to measure.
+
+Resolved toward content-addressing:
+
+```
+raw/{gameId}/{sha256}/play-by-play.json     every version, immutable
+raw/{gameId}/latest.json                    pointer to the current hashes
+extract/{gameId}.json
+index.json
+```
+
+Storage checked against our own files rather than estimated: `pbp` 131,610 +
+`shifts` 244,378 + `boxscore` 13,243 = **380 KB per game**, so ~520 MB for a
+1,400-game season including playoffs. CHENG's ~600 MB is right and slightly
+conservative. Amendments are rare, so versioning adds little to that.
+
+## Q5 — show it, with the reason
+
+> **Nov 10, MIN @ BUF — not published.** Unrecognized event type
+> `puck-in-penalty-benches`.
+
+Structurally identical to an `excluded` entry with a `why`, which the app already
+renders, so consistency is free. **The second benefit is the real one: it makes
+the vocabulary gate visible to users**, so someone tells us the feed changed
+before our next scheduled look. Same principle as `lastIngest` on the front page
+— not building monitoring, refusing to hide state, and monitoring falls out.
+
+## One correction to CHENG's closing suggestion
+
+He proposes a test asserting *"the deployed pages contain no game data"* to
+protect the Pages-serves-code / R2-serves-data separation. The separation is
+right and worth a test. **That assertion is not, as written — it fails today and
+would fail by design.**
+
+`src/index.html` currently contains `2023020204`, `35 shots`, `25 shots` and
+`320 events`, all checked against `data/rich.json` by `test/index.test.js`. And
+permalink pages inline a whole game *on purpose*.
+
+The precise invariant is narrower: **the multi-game browser must not embed the
+event stream.** Summary facts about a game are fine and often necessary; the 320
+events are what must arrive over the wire from R2. That is checkable — assert the
+browser page contains no event-shaped keys (`"typeDescKey"`, `"per":`,
+`"sit":`) and no array of that size — and it stays true when the index legitimately
+shows a scoreboard.
