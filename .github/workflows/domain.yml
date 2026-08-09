@@ -1,0 +1,119 @@
+# Attach readthegame.co to the Pages project.
+#
+# Run manually: Actions -> "attach domain" -> Run workflow. It is idempotent, so
+# running it twice is not an error and re-running after a failure is safe.
+#
+# WHY A WORKFLOW FOR A ONE-TIME CLICK. The same reason we deploy from CI rather
+# than a laptop: this way the binding is declared in the repo instead of being a
+# thing someone did once in a dashboard that nobody can reconstruct later. The
+# Cloudflare token already lives here, so nothing new has to be issued.
+#
+# WHAT THIS IS NOT. A custom domain is a PAGES binding, not merely a DNS record.
+# Cloudflare creates the record and issues the certificate once the project
+# claims the hostname -- which is why readthegame.co resolved to nothing while
+# the zone itself was perfectly healthy. Adding a CNAME by hand instead would
+# produce a name that resolves and then fails TLS.
+name: attach domain
+
+on:
+  workflow_dispatch:
+    inputs:
+      domains:
+        description: 'Hostnames to attach, comma-separated'
+        default: 'readthegame.co,www.readthegame.co'
+        required: true
+
+permissions:
+  contents: read
+
+env:
+  PROJECT: read-the-game
+
+jobs:
+  attach:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: attach each hostname to the Pages project
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          DOMAINS: ${{ inputs.domains }}
+        run: |
+          API="https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/pages/projects/${PROJECT}/domains"
+          auth=(-H "Authorization: Bearer ${CF_TOKEN}" -H "Content-Type: application/json")
+
+          # Fail loudly on a token that cannot see the project, rather than
+          # reporting "already attached" because the list came back empty.
+          list=$(curl -sS "${auth[@]}" "$API")
+          if [ "$(echo "$list" | jq -r .success)" != "true" ]; then
+            echo "::error::cannot read the project's domains — check the token scope"
+            echo "$list" | jq -r '.errors[]? | "  \(.code): \(.message)"'
+            exit 1
+          fi
+          echo "currently attached: $(echo "$list" | jq -r '[.result[].name] | join(", ") // "(none)"')"
+
+          IFS=',' read -ra WANT <<< "$DOMAINS"
+          for raw in "${WANT[@]}"; do
+            d=$(echo "$raw" | tr -d '[:space:]')
+            [ -n "$d" ] || continue
+            if echo "$list" | jq -e --arg d "$d" '.result[] | select(.name == $d)' >/dev/null; then
+              echo "  $d — already attached"
+              continue
+            fi
+            echo "  $d — attaching"
+            res=$(curl -sS -X POST "${auth[@]}" --data "$(jq -nc --arg n "$d" '{name:$n}')" "$API")
+            if [ "$(echo "$res" | jq -r .success)" != "true" ]; then
+              echo "::error::failed to attach $d"
+              echo "$res" | jq -r '.errors[]? | "  \(.code): \(.message)"'
+              exit 1
+            fi
+          done
+
+      - name: wait for DNS and the certificate, then check what is served
+        env:
+          DOMAINS: ${{ inputs.domains }}
+        run: |
+          # Cloudflare provisions a certificate after the hostname is claimed.
+          # Until it exists, HTTPS fails at the TLS layer rather than returning
+          # a status code, so curl's 000 has to be treated as "not ready yet"
+          # exactly like a 5xx -- it is the normal state for the first minute.
+          IFS=',' read -ra WANT <<< "$DOMAINS"
+          fail=0
+          for raw in "${WANT[@]}"; do
+            d=$(echo "$raw" | tr -d '[:space:]')
+            [ -n "$d" ] || continue
+            echo "checking https://$d"
+            ok=0
+            for i in $(seq 1 20); do
+              code=$(curl -sS -m 20 -o served.html -w '%{http_code}' -L "https://$d/?cb=${GITHUB_RUN_ID}") || code=000
+              case "$code" in
+                200) ok=1; break ;;
+                5*|000|525|526) echo "    attempt $i: HTTP $code — DNS or certificate not ready"; sleep 15 ;;
+                *) echo "    attempt $i: HTTP $code"; sleep 15 ;;
+              esac
+            done
+            if [ "$ok" != 1 ]; then
+              echo "::error::https://$d never returned 200 (last HTTP $code)"
+              fail=1; continue
+            fi
+            # Serving SOMETHING is not serving OUR something.
+            if cmp -s served.html src/index.html; then
+              echo "  https://$d serves the current index ($(wc -c < served.html) bytes, identical)"
+            else
+              echo "::error::https://$d answered 200 but is not serving this site"
+              fail=1
+            fi
+          done
+          [ "$fail" = 0 ] || exit 1
+
+      - name: summary
+        run: |
+          {
+            echo "### Domain attached"
+            echo ""
+            for d in ${DOMAINS//,/ }; do echo "- https://$d"; done
+          } >> "$GITHUB_STEP_SUMMARY"
+        env:
+          DOMAINS: ${{ inputs.domains }}
