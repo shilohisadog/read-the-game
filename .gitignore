@@ -19,3 +19,6 @@ __pycache__/
 # here so it cannot happen a third time by accident.
 builders/build_rules.py
 src/why-the-whistle.html
+
+# fetch_nhl.py output — raw feeds belong in R2, never in the repo
+ingest/
