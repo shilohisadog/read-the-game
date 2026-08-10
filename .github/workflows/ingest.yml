@@ -130,6 +130,28 @@ jobs:
           echo "fetch exited ${code}"
           echo "code=${code}" >> "$GITHUB_OUTPUT"
 
+      # DERIVE WHAT WE JUST FETCHED, and nothing else.
+      #
+      # Only the games fetched or amended this run have raw bytes on this
+      # runner -- the rehydrate above pulls POINTERS ONLY. Those are exactly the
+      # games whose extracts are missing or stale, so the steady state costs one
+      # pass over one night of hockey. Everything else reports `absent`, which is
+      # not a fault: it is the shape of a partial view, and fetch_nhl's pointer
+      # audit is what asks whether the BUCKET is missing anything.
+      #
+      # Re-deriving the whole archive after the vocabulary grows is a different
+      # operation and lives in derive.yml, because it needs the raw and this
+      # does not.
+      #
+      # The window is passed for REPORTING only: refusedInWindow is a window
+      # figure and derivation has no window of its own.
+      - name: derive the games we just fetched
+        if: steps.fetch.outputs.code != '2'
+        run: |
+          END="${{ inputs.end }}"
+          [ -n "$END" ] || END=$(date -u +%F)
+          python3 builders/derive.py --out ingest --end "$END" --days "${WINDOW}"
+
       # Exit 2 is the vocabulary halt: the same unrecognised gameState appeared
       # in more than one game, which is a feed change rather than an oddity.
       # Nothing was fetched, so there is nothing to sync and the run stops here.
@@ -198,7 +220,7 @@ jobs:
             echo "  $n objects partition cleanly: $(wc -l < p1.txt) raw, $(wc -l < p2.txt) pointers, index"
           fi
 
-          echo "1/3 raw feeds"
+          echo "1/3 raw feeds and extracts"
           sync --exclude 'index.json' --exclude '*latest.json'
           echo "2/3 pointers"
           sync --exclude '*' --include '*latest.json'

@@ -1,0 +1,151 @@
+# Re-derive the whole archive from raw we already hold.
+#
+# WHY THIS IS SEPARATE FROM ingest.yml. The nightly derives only the games it
+# just fetched, because those are the only ones whose raw is on the runner --
+# the rehydrate there pulls pointers, not feeds. That is right for a night of
+# hockey and useless for the operation this workflow exists for.
+#
+# THE OPERATION: the vocabulary grew, so games we refused yesterday can be
+# published today. That is not a fetch. Raw feeds are archived permanently and
+# content-addressed, so every lesson we learn about the feed is a LOCAL
+# reprocessing pass over bytes already in the bucket, at zero cost to a league
+# we do not pay and cannot negotiate with. Fetch once, derive many times.
+#
+# Run it after any change to extract.py's vocabulary, its validation, or the
+# extract schema.
+name: derive
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ingest        # shares R2 with the nightly; never both at once
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  BUCKET: readthegame
+
+jobs:
+  derive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      # Gated like everything else. This writes the artifacts every number on
+      # the site is read from.
+      - name: gates
+        run: python3 -m unittest discover -s test -p 'test_*.py'
+
+      # PULL THE RAW, AND DELIBERATELY NOT THE EXTRACTS.
+      #
+      # derive skips a game whose extract already names the digests it holds --
+      # correct in the steady state, and a trap here. If the existing extracts
+      # were on disk, a run whose whole purpose is "the vocabulary improved"
+      # would skip every game and report a clean pass having changed nothing.
+      # The improvement would silently not apply, and the ledger would look
+      # healthy. Leaving them out makes that impossible by construction rather
+      # than by remembering a flag.
+      #
+      # Egress from R2 is free and both ends are in the cloud, so this is
+      # minutes. It is the whole archive on purpose: a partial pull would
+      # publish a partial answer.
+      - name: pull the raw archive
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: |
+          mkdir -p ingest
+          aws s3 sync "s3://${BUCKET}/" ingest/ \
+            --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" \
+            --exclude 'extract/*' --no-progress
+          echo "pulled $(find ingest/raw -name latest.json | wc -l) games, $(du -sh ingest | cut -f1)"
+
+      - name: derive everything
+        run: python3 builders/derive.py --out ingest | tee derived.json
+
+      # Same ordering discipline as the ingest: the document that ADVERTISES
+      # what we hold goes last, so index.json can never claim a game whose
+      # extract is not yet in the bucket. `set -e` is what makes it a guarantee.
+      - name: sync the extracts, then the index
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: |
+          # No --delete. A game that stops passing the gates keeps its old
+          # extract until a newer one replaces it, and removing published data
+          # because a gate got stricter is a decision for a human.
+          if [ ! -d ingest/extract ] || [ -z "$(ls -A ingest/extract)" ]; then
+            echo "::error::derive published nothing — refusing to advertise an empty archive"
+            exit 1
+          fi
+          aws s3 sync ingest/extract/ "s3://${BUCKET}/extract/" \
+            --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress
+          aws s3 cp ingest/index.json "s3://${BUCKET}/index.json" \
+            --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress
+          echo "synced"
+
+      # Syncing and assuming it landed is not verification. Read back the
+      # ledger AND one artifact it claims, because a correct-looking index over
+      # objects that are not there is exactly the failure the pointer audit
+      # exists for one layer down.
+      - name: read it back and check the ledger closes
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: |
+          aws s3 cp "s3://${BUCKET}/index.json" remote.json \
+            --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress
+          python3 - <<'PY'
+          import json, subprocess, sys, os
+          i = json.load(open('remote.json'))
+          e = i.get('extracts')
+          if not e:
+              sys.exit("::error::the index carries no extracts ledger")
+          if e['games'] != e['published'] + e['refused']:
+              sys.exit(f"::error::extract ledger does not close: {e}")
+          if e['pointers'] != e['games'] + e['absent']:
+              sys.exit(f"::error::pointer ledger does not close: {e}")
+          print(f"  {e['published']} published, {e['refused']} refused, {e['absent']} absent")
+          print(f"  by gate: {e['byGate']}")
+          print(f"  vocabulary forgiven but recorded: "
+                f"{sum(len(v) for v in e.get('noted', {}).values())} values")
+          local = json.load(open('derived.json'))
+          if local['published'] != e['published']:
+              sys.exit("::error::the index does not match what this run produced")
+          PY
+
+      - name: an extract a visitor can actually read
+        run: |
+          # The published artifact, over the public origin, as the site will get
+          # it. A 200 from the private API proves less than this does.
+          #
+          # PICK FROM WHAT WE PUBLISHED, not from the index's game list. The
+          # highest game id in the archive is an Olympic game, which we refuse on
+          # purpose -- so the obvious version of this check would fail on an
+          # extract that is correctly absent, and the fix would have been to
+          # weaken it.
+          gid=$(ls ingest/extract | sed 's/\.json$//' | sort -n | tail -1)
+          code=$(curl -sS -o one.json -w '%{http_code}' \
+                   "https://data.readthegame.co/extract/${gid}.json?cb=${GITHUB_RUN_ID}")
+          echo "  extract/${gid}.json -> HTTP ${code}, $(wc -c < one.json) bytes"
+          [ "$code" = 200 ] || { echo "::error::the newest extract is not readable"; exit 1; }
+          python3 -c "
+          import json; g=json.load(open('one.json'))
+          print(f\"  {g['teams']['away']['ab']} at {g['teams']['home']['ab']}, \"
+                f\"{len(g['events'])} events, from {g['game']['src']['play-by-play'][:12]}…\")"
+
+      - name: summary
+        if: always()
+        run: |
+          { echo "### Derive"; echo ""; echo '```json'; cat derived.json 2>/dev/null; echo '```'; } \
+            >> "$GITHUB_STEP_SUMMARY"
