@@ -153,6 +153,39 @@ class Classification(unittest.TestCase):
         self.assertEqual(len(got.unknown), 1)
 
 
+    def test_a_week_that_overhangs_the_window_does_not_inflate_the_count(self):
+        # CHENG's finding. /v1/schedule/{date} answers with a SEVEN-DAY week, so
+        # a window whose edges fall mid-week is assembled from responses that
+        # extend past it on both sides. Counting the games in the RESPONSES
+        # rather than the games in the WINDOW overstates permanently -- against
+        # the live feed, a 3-day window sits inside a week holding 47 games of
+        # which only 23 are in range, so coverage would report a phantom
+        # shortfall of 24 games forever. In season nobody notices, because a
+        # busy schedule makes the wrong number look plausible.
+        dates = ["2026-01-10", "2026-01-11"]
+        week = {"gameWeek": [
+            {"date": "2026-01-09", "games": [game(1)]},           # before
+            {"date": "2026-01-10", "games": [game(2), game(3)]},  # in
+            {"date": "2026-01-11", "games": [game(4)]},           # in
+            {"date": "2026-01-12", "games": [game(5), game(6)]},  # after
+        ]}
+        got = F.classify(week, dates)
+        self.assertEqual(sorted(g["id"] for g in got.final), [2, 3, 4],
+                         "only games inside the window may be counted")
+
+    def test_an_out_of_window_game_with_an_odd_state_is_not_refused_either(self):
+        # The mirror of the above: a game outside the window must not be counted
+        # as final OR as refused. Leaking it into `unknown` would halt the run on
+        # a vocabulary change in a week we were not asked to ingest.
+        week = {"gameWeek": [
+            {"date": "2026-01-09", "games": [game(1, state="WEIRD"), game(2, state="WEIRD")]},
+            {"date": "2026-01-10", "games": [game(3)]},
+        ]}
+        got = F.classify(week, ["2026-01-10"])
+        self.assertEqual([g["id"] for g in got.final], [3])
+        self.assertEqual(got.unknown, [], "an out-of-window oddity is not our business")
+
+
 class NeverInterprets(unittest.TestCase):
 
     def run_one(self, routes, store=None, **kw):

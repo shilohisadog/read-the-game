@@ -209,3 +209,163 @@ ships.
    stopped rather than guess* — and it is the single best advertisement for the
    vocabulary gate. But it also puts an internal failure in front of a novice
    who came to watch hockey.
+
+---
+
+# Amendment — after CHENG's review, 2026-08-10
+
+## Q2 — conceded. I re-derived my own bug one level up.
+
+The argument that settles it is the shape of the two definitions side by side:
+
+> `lastRun` — when the pipeline last completed **without halting**
+> `dataThrough` — the date of the most recent game held
+
+**One has an embedded exception and one does not, and a definition with a
+carve-out is a conflated field** — which is the exact diagnosis this document
+makes about `lastIngest`. Applying the document's own test: *a signal that cannot
+separate "nothing to do" from "not working" is not a health signal.* A halted run
+is a third condition — **working, looked, and deliberately stopped** — and under
+my proposed rule it would be byte-identical to a dead pipeline. Those are
+opposite conditions, precisely like rows 2 and 3 of the table that motivated the
+redesign.
+
+My objection was also true: a halted run did not establish the window's state, so
+advancing a field that implies coverage is current would lie. **Both being true is
+the signature of another conflation, and the answer is another fact rather than a
+choice.**
+
+## The state, revised
+
+```json
+{
+  "lastRun":     "2026-08-10T11:00:04Z",
+  "dataThrough": "2023-11-10",
+  "halted":      { "since": "2026-08-09T11:00:07Z",
+                   "reason": "gameState 'PPD' appeared in 4 games" },
+  "coverage":    { "finalInWindow": 7, "heldInWindow": 3, "refusedInWindow": 1,
+                   "windowDays": 14, "asOf": "2026-08-08T11:00:03Z" }
+}
+```
+
+- **`lastRun`** — the pipeline executed. **Always advances**, including on a halt.
+  A halt is running.
+- **`halted`** — `null`, or when and why it stopped on purpose.
+- **`coverage.asOf`** — when coverage was last actually established, so figures
+  from before a halt cannot read as current.
+
+Four independently observable facts, none derived from the others. That was this
+document's stated principle; it now survives one level deeper.
+
+## The `refused` vs `missing` finding — accepted, and it is the same bug again
+
+`heldInWindow` counts games we hold. A game that failed its vocabulary gate
+publishes nothing, so it is not held — and would render as:
+
+> Data through 8 August. 3 of 7 recent games are still loading.
+
+**That game is not loading. It will never load.** It was deliberately refused,
+and the copy tells a novice to wait for something that is not coming while the
+informative state stays invisible. One count asked to mean two things that
+diverge exactly where it matters: *fetch failed, a retry may fix it* and *we
+understood the feed well enough to refuse it* are opposite conditions with
+opposite implications for the reader.
+
+So `refusedInWindow` joins `heldInWindow` as a peer, and:
+
+```
+finalInWindow = heldInWindow + refusedInWindow + missing
+```
+
+**This is a conservation property, and it is the same ledger as
+`counted + excluded` in the layers.** It is testable, mutation-provable, and it
+fails loudly rather than silently mis-reporting — which is what the layer ledger
+already buys us one floor down. Consistency here is free.
+
+## The week/window boundary — real hazard, and the code was already right
+
+CHENG's finding: `finalInWindow` is assembled from seven-day week responses whose
+edges do not align with a 14-day window, so counting the games in the
+**responses** rather than the games in the **window** overstates permanently.
+
+**Measured against the live feed, the magnitude is not subtle:**
+
+| | |
+|---|---|
+| window | 2023-11-10 … 2023-11-12 (3 days) |
+| schedule calls | 1, returning 2023-11-10 … 2023-11-16 |
+| games in the returned week | **47** |
+| games actually in the window | **23** |
+| `classify()` returned | **23 final** — filters correctly |
+
+Had it counted the response, coverage would have read *23 of 47* — a permanent
+phantom shortfall of 24 games. In season nobody notices, because a busy schedule
+makes the wrong number plausible.
+
+**`classify()` already takes a `dates` argument and filters on it, so the
+behaviour was correct — and completely untested.** That is the "passes by
+accident" case, and the fix is the test rather than the code. Two added, both
+mutation-proven by disabling the filter:
+
+- a week overhanging the window on both sides contributes only in-window games
+- an out-of-window game with an unknown state is **not** counted as refused
+  either — leaking it into `unknown` would halt the run on a vocabulary change
+  in a week we were never asked to ingest
+
+## The remaining questions, resolved
+
+**Q1 — archive completeness is a separate weekly job.** All-time coverage is the
+more interesting question and does not belong on the critical path of a freshness
+check. The full season schedule is ~28 week-calls: trivial weekly, wasteful
+nightly.
+
+**Q3 — 36 hours stands, and the cadence is shown with it.** *"Last checked 4 days
+ago"* is uninterpretable without knowing what normal is — the reader cannot tell
+whether that is alarming. **This is the base-rate principle from the goalie card,
+turned on our own reliability**, and Doctrine §8 says a rate without a base rate
+is a story. So: *"Checked daily. Last checked 4 days ago."*
+
+**Q4 — "still loading" overstates, take the duller sentence.** It promises
+progress we cannot guarantee, which is the same class of error as *"Buffalo had
+stopped trying to score"* — a claim about a future or a motive rather than a
+count. With `refusedInWindow` split out, the honest line finally exists:
+
+> We have 3 of the 7 games played in the last 14 days. 1 is not published — the
+> league's feed contains something we don't recognize.
+
+**Q5 — yes, the halt goes on the front page.** The alternative is knowing our data
+is incomplete and not saying so, which is the one thing this project has never
+done. Stated as a fact rather than an apology it reads as competence:
+
+> **Updates paused 9 August.** The league's feed contains an event type we don't
+> recognize yet, so we stopped rather than guess.
+
+## Tests, revised
+
+Replacing items 1–8 above:
+
+1. A run that fetches nothing advances `lastRun` — the original regression.
+2. **A halted run also advances `lastRun`** (reversed from the first draft), and
+   sets `halted`.
+3. A halted run leaves `coverage.asOf` **behind** `lastRun`.
+4. A run with per-game errors advances `lastRun`; `heldInWindow` reflects it.
+5. `finalInWindow == heldInWindow + refusedInWindow + missing` — conservation,
+   in every state including halted.
+6. A refused game is counted in `refusedInWindow` and never in `missing`.
+7. `dataThrough` comes from the schedule's game date, not the run clock.
+8. `dataThrough` never moves backwards when an older window is backfilled.
+9. ~~A week overhanging the window does not inflate the count.~~ **Done** —
+   `test_fetch_nhl.py`, mutation-proven.
+10. Mutation: `dataThrough = lastRun` must fail.
+11. Mutation: folding `refusedInWindow` back into `missing` must fail.
+12. The empty state renders with no index present.
+
+## Doctrine
+
+CHENG proposes the migration reasoning belongs in `DOCTRINE.md`:
+
+> **"It will be fine after the next run" is how a broken empty state ships.**
+
+Agreed. It generalises past migrations — it is the same failure as a gate that
+only passes on a warm cache, or a page that only renders once localStorage has
+been written.
