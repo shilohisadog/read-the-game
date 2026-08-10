@@ -1,5 +1,11 @@
 # Read the Game
 
+**[readthegame.co](https://readthegame.co)** — live.
+
+[![gates](https://github.com/shilohisadog/read-the-game/actions/workflows/gates.yml/badge.svg)](https://github.com/shilohisadog/read-the-game/actions/workflows/gates.yml)
+[![deploy](https://github.com/shilohisadog/read-the-game/actions/workflows/deploy.yml/badge.svg)](https://github.com/shilohisadog/read-the-game/actions/workflows/deploy.yml)
+[![ingest](https://github.com/shilohisadog/read-the-game/actions/workflows/ingest.yml/badge.svg)](https://github.com/shilohisadog/read-the-game/actions/workflows/ingest.yml)
+
 A hockey **replay theater for the novice fan** — someone who loves the
 excitement but can't yet *read* the game.
 
