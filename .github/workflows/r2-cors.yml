@@ -1,0 +1,102 @@
+# Allow the site to read its own data.
+#
+# Run manually: Actions -> "r2 cors" -> Run workflow. Idempotent.
+#
+# WHY THIS IS NEEDED AND WAS NOT OBVIOUS. The site is served from readthegame.co
+# and its data lives at data.readthegame.co. Those are different origins, so the
+# browser applies CORS to the fetch -- and R2 sends no Access-Control-Allow-Origin
+# header unless the bucket is told to. Without it every visitor sees "No data
+# loaded yet", which is a true sentence about a broken situation: the file is
+# public, reachable, and correct, and the browser throws the response away.
+#
+# curl does not apply CORS, so every check we had passed. The deploy's browser
+# gate loaded the page over file://, where the fetch fails for a different
+# reason, so it proved the script executes and never that it works in
+# production. That gate now loads the live site instead.
+name: r2 cors
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BUCKET: readthegame
+
+jobs:
+  cors:
+    runs-on: ubuntu-latest
+    steps:
+      - name: allow the site's origins to read the bucket
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: |
+          # Named origins only. "*" would let any site on the internet read this
+          # data through a visitor's browser, and while the bucket is public by
+          # design, that is a decision about OUR pages rather than everyone's.
+          # Anyone wanting the raw feeds can still fetch them directly -- CORS
+          # governs browsers, not people.
+          cat > cors.json <<'JSON'
+          {
+            "CORSRules": [
+              {
+                "AllowedOrigins": [
+                  "https://readthegame.co",
+                  "https://www.readthegame.co",
+                  "https://read-the-game.pages.dev"
+                ],
+                "AllowedMethods": ["GET", "HEAD"],
+                "AllowedHeaders": ["*"],
+                "MaxAgeSeconds": 3600
+              }
+            ]
+          }
+          JSON
+          aws s3api put-bucket-cors \
+            --bucket "$BUCKET" \
+            --cors-configuration file://cors.json \
+            --endpoint-url "${{ secrets.S3_API_ENDPOINT }}"
+          echo "policy applied"
+
+          aws s3api get-bucket-cors --bucket "$BUCKET" \
+            --endpoint-url "${{ secrets.S3_API_ENDPOINT }}"
+
+      # Setting a policy and assuming it took is not verification. Ask as a
+      # browser would -- with an Origin header -- and require the answer to name
+      # that origin back.
+      - name: prove a browser would be allowed
+        run: |
+          fail=0
+          for origin in https://readthegame.co https://www.readthegame.co; do
+            for i in $(seq 1 10); do
+              acao=$(curl -sS -D - -o /dev/null -m 20 \
+                       -H "Origin: $origin" \
+                       "https://data.readthegame.co/index.json?cb=${GITHUB_RUN_ID}-${i}" \
+                     | grep -i '^access-control-allow-origin:' | tr -d '\r' | cut -d' ' -f2-)
+              [ -n "$acao" ] && break
+              echo "    $origin: no header yet — attempt $i"
+              sleep 6
+            done
+            if [ -n "$acao" ]; then
+              echo "  $origin -> access-control-allow-origin: $acao"
+            else
+              echo "::error::$origin would still be blocked by the browser"
+              fail=1
+            fi
+          done
+
+          # A disallowed origin must NOT be echoed back, or the policy is wider
+          # than it reads.
+          bad=$(curl -sS -D - -o /dev/null -m 20 -H "Origin: https://example.com" \
+                  "https://data.readthegame.co/index.json?cb=${GITHUB_RUN_ID}-x" \
+                | grep -i '^access-control-allow-origin:' || true)
+          if [ -n "$bad" ]; then
+            echo "::error::an unlisted origin was allowed: $bad"
+            fail=1
+          else
+            echo "  https://example.com -> correctly not allowed"
+          fi
+          [ "$fail" = 0 ] || exit 1

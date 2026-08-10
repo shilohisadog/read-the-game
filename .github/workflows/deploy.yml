@@ -77,38 +77,33 @@ jobs:
 
       # THE CSP MUST EXECUTE, NOT MERELY BE PRESENT. A hash-pinned policy with a
       # stale hash is a blank page that passes every grep we could write, so the
-      # only honest check is a real browser: load the page, let it run, and see
-      # whether the script that reports our data freshness actually replaced its
-      # placeholder. If Chrome refuses the script, the placeholder survives and
-      # this fails.
-      - name: the index runs under its own CSP, in a real browser
+      # only honest check is a real browser. This runs pre-deploy over file://
+      # and proves the script is PERMITTED TO RUN by the policy.
+      #
+      # It does NOT prove the page works, and the difference cost us: over
+      # file:// the fetch fails for its own reasons, so this passed while every
+      # real visitor would have seen "No data loaded yet" -- R2 was sending no
+      # Access-Control-Allow-Origin and the browser was discarding a response
+      # that was public, reachable and correct. curl does not apply CORS, so
+      # nothing else we had could see it either. The live check after the deploy
+      # is the one that closes that gap.
+      - name: the index is permitted to run under its own CSP
         run: |
           command -v google-chrome >/dev/null || { echo "::error::no Chrome on this runner"; exit 1; }
           before=$(grep -o 'id="state"[^>]*>[^<]*' src/index.html)
-          echo "  placeholder: $before"
           google-chrome --headless --no-sandbox --disable-gpu \
             --virtual-time-budget=8000 --dump-dom \
             "file://$PWD/src/index.html" > rendered.html 2> chrome.log || true
-
           after=$(grep -o 'id="state"[^>]*>[^<]*' rendered.html || true)
+          echo "  placeholder: $before"
           echo "  rendered   : $after"
-
           if grep -qi 'Content Security Policy\|Refused to execute\|Refused to load' chrome.log; then
             echo "::error::the browser refused something under our own CSP"
             grep -i 'refused\|Content Security Policy' chrome.log | head -5
             exit 1
           fi
-          if [ "$after" = "$before" ]; then
-            echo "::error::the freshness script never ran — the placeholder survived"
-            exit 1
-          fi
-          # Opened from file:// the fetch cannot succeed, so the honest state is
-          # "no data loaded yet". That it CHANGED at all is the proof the script
-          # executed under the policy.
-          case "$after" in
-            *"No data loaded yet"*|*"Data through"*) echo "  the script executed under the CSP" ;;
-            *) echo "::error::unexpected rendered state: $after"; exit 1 ;;
-          esac
+          [ "$after" != "$before" ] || { echo "::error::the script never ran"; exit 1; }
+          echo "  the script is permitted by the policy"
 
       - name: ensure the Pages project exists
         env:
@@ -247,6 +242,32 @@ jobs:
             fi
           done
           [ "$fail" = 0 ] || exit 1
+
+      # THE CHECK THAT WOULD HAVE CAUGHT THE CORS BUG. Everything above proves
+      # the bytes we published are the bytes we committed; none of it proves a
+      # BROWSER can use them. Load the live site as a visitor does and require
+      # the freshness line to say something real -- "No data loaded yet" on a
+      # site holding games means the data could not be read, whatever the reason.
+      - name: a visitor can actually read the data
+        run: |
+          fail=0
+          for i in $(seq 1 8); do
+            google-chrome --headless --no-sandbox --disable-gpu \
+              --virtual-time-budget=15000 --dump-dom \
+              "https://readthegame.co/?cb=${GITHUB_RUN_ID}-${i}" > live.html 2>/dev/null || true
+            state=$(grep -o 'id="state"[^>]*>[^<]*' live.html | sed 's/.*>//' || true)
+            case "$state" in
+              *"Data through"*) echo "  the live site reports: $state"; fail=0; break ;;
+              "") echo "    attempt $i: page not rendered yet"; fail=1 ;;
+              *) echo "    attempt $i: \"$state\""; fail=1 ;;
+            esac
+            sleep 8
+          done
+          if [ "$fail" != 0 ]; then
+            echo "::error::a visitor cannot read the data — last state: \"$state\""
+            echo "  if this says 'No data loaded yet', check the R2 CORS policy (r2-cors workflow)"
+            exit 1
+          fi
 
       - name: summary
         run: |
