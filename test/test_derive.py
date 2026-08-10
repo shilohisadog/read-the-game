@@ -494,3 +494,58 @@ class TheShootoutIsNotPlay(unittest.TestCase):
         ev = json.loads(store.get("extract/2025020001.json").decode())["events"]
         self.assertEqual([e["pt"] for e in ev][-2:], ["SO", "SO"])
         self.assertEqual(ev[0]["pt"], "REG", "and the run of play is still marked")
+
+
+class TheLedgerMustBeActionable(unittest.TestCase):
+    """A count tells you there is work. It does not tell you what the work is.
+
+    The first version published `refused: 113` and `byGate`, and the values that
+    actually caused those refusals existed only in a CI log — so the next
+    vocabulary pass would have started with log archaeology instead of the
+    artifact. What we publish should be enough to do the next piece of work.
+    """
+
+    def index(self, store):
+        return json.loads(store.get("index.json").decode())
+
+    def test_the_blocking_values_are_published_with_their_weight(self):
+        # Which value, and how many games it costs. One value blocking 40 games
+        # and 40 values blocking one game each are the same count and completely
+        # different jobs.
+        store = DictStore()
+        for gid in (2025020001, 2025020002, 2025020003):
+            seed(store, gid=gid, pbp=pbp_bytes(plays=[
+                play("teleportation", 0, xCoord=0, yCoord=0, eventOwnerTeamId=30)]))
+        seed(store, gid=2025020004, pbp=pbp_bytes(plays=[
+            play("time-travel", 0, xCoord=0, yCoord=0, eventOwnerTeamId=30)]))
+        D.derive(store, now="2026-01-11T11:30:00Z")
+        blocking = self.index(store)["extracts"]["blocking"]
+        self.assertEqual(blocking["typeDescKey"], {"teleportation": 3, "time-travel": 1})
+
+    def test_the_failing_checks_are_published_too(self):
+        store = DictStore()
+        seed(store, gid=2025020001, box=box_bytes(away_sog=99))
+        seed(store, gid=2025020002, box=box_bytes(away_sog=98))
+        D.derive(store, now="2026-01-11T11:30:00Z")
+        failed = self.index(store)["extracts"]["failedChecks"]
+        self.assertEqual(sum(failed.values()), 2)
+        self.assertTrue(any("SOG" in k for k in failed), f"named, not numbered: {failed}")
+
+    def test_the_refused_games_are_named_so_they_can_be_looked_at(self):
+        store = DictStore()
+        seed(store, gid=2025020001)
+        seed(store, gid=2025020002, box=box_bytes(away_sog=99))
+        D.derive(store, now="2026-01-11T11:30:00Z")
+        self.assertEqual(self.index(store)["extracts"]["refusedGames"], [2025020002])
+
+    def test_a_clean_archive_publishes_empty_evidence_not_missing_evidence(self):
+        # MUTATION GUARD. If these keys vanished when there was nothing to
+        # report, a consumer could not tell "we checked and found none" from
+        # "this version did not check" — the same distinction lastRun exists for.
+        store = DictStore()
+        seed(store, gid=2025020001)
+        D.derive(store, now="2026-01-11T11:30:00Z")
+        e = self.index(store)["extracts"]
+        for k in ("blocking", "failedChecks", "refusedGames", "noted"):
+            self.assertIn(k, e, f"{k} must be present even when empty")
+        self.assertEqual(e["refusedGames"], [])

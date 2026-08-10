@@ -70,15 +70,42 @@ class Report:
     def published(self):
         return self.derived + self.unchanged
 
+    def evidence(self):
+        """What the next piece of work needs, not merely that there is some.
+
+        A count says there is work; it cannot say what the work IS. One value
+        blocking forty games and forty values blocking one game each produce the
+        same number and are completely different jobs. The first version of this
+        published `refused: 113` and left the causes in a CI log, which is where
+        the next vocabulary pass would have had to start.
+        """
+        blocking, failed = {}, {}
+        for r in self.refused.values():
+            if r["gate"] == "vocabulary":
+                for field, values in r["detail"].items():
+                    per = blocking.setdefault(field, {})
+                    for v in values:
+                        per[v] = per.get(v, 0) + 1
+            elif r["gate"] == "validation":
+                for check in r["detail"]:
+                    # The message carries the numbers of one game; the CHECK is
+                    # what generalises, so key on its name.
+                    name = str(check).split(":")[0].split("(")[0].strip()
+                    failed[name] = failed.get(name, 0) + 1
+        return blocking, failed
+
     def as_dict(self):
         by_gate = {}
         for r in self.refused.values():
             by_gate[r["gate"]] = by_gate.get(r["gate"], 0) + 1
+        blocking, failed = self.evidence()
         return {"derived": self.derived, "unchanged": self.unchanged,
                 "published": self.published, "refused": len(self.refused),
                 "refusedInWindow": self.refused_in_window,
                 "absent": len(self.absent), "byGate": by_gate,
                 "noted": {k: sorted(v) for k, v in sorted(self.noted.items())},
+                "blocking": blocking, "failedChecks": failed,
+                "refusedGames": sorted(int(g) for g in self.refused),
                 "reasons": {g: r["detail"] for g, r in sorted(self.refused.items())}}
 
 
@@ -246,6 +273,12 @@ def _write_ledger(store, idx, rep, stamp):
         # cannot reach a number. Visible so the forgiveness is auditable, and so
         # the whistle layer inherits a list instead of a survey.
         "noted": d["noted"],
+        # Present even when empty, so a reader can tell "we checked and found
+        # none" from "this version did not check" -- the same distinction
+        # lastRun exists to make one layer up.
+        "blocking": d["blocking"],
+        "failedChecks": d["failedChecks"],
+        "refusedGames": d["refusedGames"],
         "asOf": stamp,
     }
     store.put("index.json", json.dumps(idx, indent=2, sort_keys=True).encode())
