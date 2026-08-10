@@ -13,10 +13,26 @@
 # gate loaded the page over file://, where the fetch fails for a different
 # reason, so it proved the script executes and never that it works in
 # production. That gate now loads the live site instead.
+#
+# THIS NEEDS AN ADMIN-SCOPED R2 TOKEN AND OURS IS NOT ONE. The first run failed
+# with AccessDenied on PutBucketCors, which is correct: the ingest credential is
+# scoped to objects, which is exactly the least privilege a nightly job should
+# hold. Setting a one-time bucket policy is not a reason to put a
+# bucket-administering credential in GitHub for every future run to carry.
+#
+# So the policy is applied once in the Cloudflare dashboard -- R2 -> readthegame
+# -> Settings -> CORS Policy -- and this workflow is kept for its SECOND half,
+# which verifies from the outside and needs no credentials at all. Run it any
+# time to confirm a browser would still be allowed.
 name: r2 cors
 
 on:
   workflow_dispatch:
+    inputs:
+      apply:
+        description: 'Attempt to apply the policy (needs an admin-scoped token). Verify runs either way.'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -29,6 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: allow the site's origins to read the bucket
+        if: inputs.apply
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
