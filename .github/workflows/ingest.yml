@@ -1,0 +1,173 @@
+# The nightly ingest. Fetches a rolling window from the NHL and syncs it to R2.
+#
+# Design: docs/nightly-ingest.md. Runs here rather than in a Cloudflare Worker
+# because the extraction produces every number on the site, and a Worker is code
+# that is not in the thing being audited.
+#
+# THE WINDOW IS 14 DAYS, AND THE JOB CONVERGES RATHER THAN FIRES. A missed night
+# is recovered by the next run with no operator action, so GitHub's scheduler
+# being less reliable than Cloudflare's costs nothing. The window also exists for
+# a reason independent of hosting: the league amends play-by-play after the fact,
+# and a job that only ingests yesterday would enshrine the first version of every
+# game forever.
+#
+# ON GITHUB DISABLING SCHEDULED WORKFLOWS AFTER 60 DAYS OF REPOSITORY INACTIVITY:
+# there is deliberately no keepalive commit here. A robot committing to keep a
+# cron alive is noise in a history that is meant to be readable, and it would be
+# guarding the wrong thing. What actually catches a stalled pipeline is the
+# `lastIngest` date rendered on the front page -- a stale date is visible to
+# users and to us, with no monitoring service in existence. Refuse to hide the
+# state and the monitoring falls out.
+name: ingest
+
+on:
+  schedule:
+    - cron: '0 11 * * *'   # 11:00 UTC — after the latest North American games finish
+  workflow_dispatch:
+    inputs:
+      end:
+        description: 'Last date of the window (YYYY-MM-DD). Blank = today.'
+        required: false
+      days:
+        description: 'Window length in days'
+        default: '14'
+        required: false
+
+concurrency:
+  group: ingest
+  cancel-in-progress: false   # never interrupt a run mid-sync
+
+permissions:
+  contents: read
+
+env:
+  BUCKET: readthegame
+  WINDOW: ${{ inputs.days || '14' }}
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      # The fetcher is gated like everything else. An ingest that runs with a
+      # broken fetcher writes bad data into an archive we intend to keep
+      # permanently, and object storage has no undo.
+      - name: gates
+        run: python3 -m unittest discover -s test -p 'test_*.py'
+
+      # REHYDRATE THE POINTERS BEFORE FETCHING. fetch_nhl.py decides
+      # unchanged-vs-amended by reading raw/{game}/latest.json, and a CI
+      # checkout starts empty -- so without this every run would call every game
+      # new and re-upload the whole archive nightly. Only the pointers are
+      # pulled, never the raw feeds: latest.json is a few hundred bytes per game,
+      # so a full season is under a megabyte, while the archive it describes is
+      # hundreds of megabytes.
+      - name: pull the state pointers from R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: |
+          mkdir -p ingest
+          aws s3 sync "s3://${BUCKET}/" ingest/ \
+            --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" \
+            --exclude '*' --include '*/latest.json' --include 'index.json' \
+            --no-progress
+          echo "rehydrated $(find ingest -name latest.json | wc -l) game pointers"
+
+      - name: fetch the window
+        id: fetch
+        run: |
+          END="${{ inputs.end }}"
+          [ -n "$END" ] || END=$(date -u +%F)
+          echo "window: ${WINDOW} days ending ${END}"
+          # PIPESTATUS, not $?. After a pipeline `$?` is TEE's exit code, which
+          # is always 0 -- so a halted or erroring fetch would report success and
+          # the run would sync and pass. This exact mistake is logged twice in
+          # this project's history against `| tail`; writing it a third time
+          # while implementing the design that warns about it would be quite
+          # something.
+          set +e
+          python3 builders/fetch_nhl.py --end "$END" --days "${WINDOW}" --out ingest | tee report.json
+          code=${PIPESTATUS[0]}
+          set -e
+          echo "fetch exited ${code}"
+          echo "code=${code}" >> "$GITHUB_OUTPUT"
+
+      # Exit 2 is the vocabulary halt: the same unrecognised gameState appeared
+      # in more than one game, which is a feed change rather than an oddity.
+      # Nothing was fetched, so there is nothing to sync and the run stops here.
+      - name: refuse to publish a run that halted
+        if: steps.fetch.outputs.code == '2'
+        run: |
+          echo "::error::the run halted on a feed vocabulary change — nothing published"
+          cat report.json
+          exit 1
+
+      # Exit 1 means some games failed to fetch. Those wrote nothing at all, so
+      # the games that DID succeed are complete and correct and should be
+      # published. The job still fails at the end so the failure is not silent.
+      - name: sync to R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: |
+          # No --delete, ever. Raw feeds are content-addressed and immutable;
+          # an amendment adds a version rather than replacing one, and deleting
+          # would destroy the history the window exists to measure.
+          aws s3 sync ingest/ "s3://${BUCKET}/" \
+            --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" \
+            --no-progress
+          echo "synced"
+
+      # Syncing and assuming it landed is not verification -- the same lesson the
+      # deploy gate learned. Read the index back out of the bucket and confirm it
+      # is the one we just wrote.
+      - name: read the index back from R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: |
+          if [ ! -f ingest/index.json ]; then
+            echo "nothing new this run — no index written, so nothing to verify"
+            exit 0
+          fi
+          aws s3 cp "s3://${BUCKET}/index.json" remote-index.json \
+            --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress
+          if ! cmp -s remote-index.json ingest/index.json; then
+            echo "::error::the index in R2 is not the index we just wrote"
+            exit 1
+          fi
+          python3 -c "
+          import json
+          i=json.load(open('remote-index.json'))
+          print(f\"  index holds {len(i['games'])} games, lastIngest={i['lastIngest']}\")
+          "
+
+      - name: summary
+        if: always()
+        run: |
+          {
+            echo "### Ingest"
+            echo ""
+            if [ -f report.json ]; then
+              echo '```json'
+              cat report.json
+              echo '```'
+            else
+              echo "The fetcher produced no report."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: fail the run if any game errored
+        if: steps.fetch.outputs.code != '0'
+        run: |
+          echo "::error::fetch exited ${{ steps.fetch.outputs.code }} — see the report above"
+          exit 1
