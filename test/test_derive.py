@@ -377,6 +377,23 @@ class TheSituationCodeIsARule(unittest.TestCase):
         for code in ("0101", "1010"):
             self.assertTrue(E.situation_ok(code, "SO"), f"{code} is a shootout attempt")
 
+    def test_one_shooter_against_one_goalie_is_legal_in_any_period(self):
+        # A PENALTY SHOT, and the rule was too narrow because the sample was.
+        # 0101 and 1010 were tied to periodType SO on the evidence of 62 games
+        # where they only appeared there — and across the full archive they block
+        # 44 games in REGULATION. Game 2025010011 settles it: at 19:44 of the
+        # second period, a penalty carrying descKey `ps-slash-on-breakaway`
+        # followed immediately by a goal at situationCode 0101.
+        #
+        # Structurally it is a shootout attempt; in every way that matters it is
+        # not. A penalty shot happens in play, counts toward the score and counts
+        # as a shot on goal — which is why the layers key on `pt`, not on the
+        # code, and already treat it correctly.
+        import extract as E
+        for pt in (None, "REG", "OT", "SO"):
+            self.assertTrue(E.situation_ok("0101", pt), f"0101 in {pt}")
+            self.assertTrue(E.situation_ok("1010", pt), f"1010 in {pt}")
+
     def test_the_rule_still_refuses_what_hockey_cannot_do(self):
         # MUTATION GUARD, and the whole risk of moving from a list to a rule: a
         # rule that accepts everything is not a gate. Nine skaters, two goalies
@@ -384,8 +401,12 @@ class TheSituationCodeIsARule(unittest.TestCase):
         import extract as E
         for code in ("1991", "1552", "155", "15A1", "", None, "9999"):
             self.assertFalse(E.situation_ok(code), f"{code!r} must not decode")
-        self.assertFalse(E.situation_ok("0101"), "a shootout code outside a shootout")
         self.assertFalse(E.situation_ok("1551", "SO"), "five aside inside a shootout")
+        # Three skaters against nobody is not a penalty shot and not a shift.
+        # Two games in the archive carry these; the gate holds them and says so
+        # rather than being widened until they fit.
+        self.assertFalse(E.situation_ok("0301"), "three skaters against no one")
+        self.assertFalse(E.situation_ok("1030"), "and its mirror")
 
     def test_an_unrecognisable_code_still_refuses_the_game(self):
         store = DictStore()

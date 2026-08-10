@@ -203,9 +203,23 @@ def situation_ok(code, period_type=None):
     a_goalie, a_skaters, h_skaters, h_goalie = (int(c) for c in code)
     if a_goalie not in (0, 1) or h_goalie not in (0, 1):
         return False
+    # ONE SHOOTER AGAINST ONE GOALIE, IN ANY PERIOD. This shape was tied to
+    # periodType SO on the evidence of 62 games where it only occurred there --
+    # and across the full archive it blocks 44 games in REGULATION, because it is
+    # also a PENALTY SHOT. Game 2025010011 settles it: at 19:44 of the second
+    # period a penalty with descKey `ps-slash-on-breakaway`, then a goal at 0101.
+    #
+    # A rule derived from a sample is still a sample. That is the same correction
+    # as FINAL_STATES, as the eight situation codes, and as "BUF shots +x".
+    #
+    # Structurally identical to a shootout attempt and materially nothing like
+    # one: a penalty shot happens in play, counts toward the score and counts as
+    # a shot on goal. The layers key on `pt` rather than on this code, so they
+    # already tell them apart.
+    if {a_skaters, h_skaters} == {0, 1}:
+        return True
     if period_type == "SO":
-        # One shooter against one goalie; the other four slots are empty.
-        return {a_skaters, h_skaters} == {0, 1}
+        return False    # only the one-against-one shape occurs in a shootout
     return a_skaters in SKATERS and h_skaters in SKATERS
 
 
