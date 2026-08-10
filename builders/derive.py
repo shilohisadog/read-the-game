@@ -63,6 +63,7 @@ class Report:
     unchanged: int = 0      # already current, from the same bytes
     refused: dict = field(default_factory=dict)   # gid -> {gate, detail}
     absent: dict = field(default_factory=dict)    # gid -> raw not in THIS store
+    noted: dict = field(default_factory=dict)     # field -> values seen but forgiven
     refused_in_window: int = 0
 
     @property
@@ -77,6 +78,7 @@ class Report:
                 "published": self.published, "refused": len(self.refused),
                 "refusedInWindow": self.refused_in_window,
                 "absent": len(self.absent), "byGate": by_gate,
+                "noted": {k: sorted(v) for k, v in sorted(self.noted.items())},
                 "reasons": {g: r["detail"] for g, r in sorted(self.refused.items())}}
 
 
@@ -85,7 +87,10 @@ def _refuse(gate, detail):
 
 
 def judge(pbp_raw, box_raw, shifts_raw):
-    """Decide a single game. Returns (rich, refusal) -- exactly one is None.
+    """Decide a single game. Returns (rich, refusal, noted).
+
+    Exactly one of rich/refusal is None. `noted` is vocabulary we recognised as
+    harmless -- unknown, recorded, and not a reason to withhold a game.
 
     Pure: bytes in, verdict out. No store, no clock, no network, so the whole
     decision is testable without any of them.
@@ -99,26 +104,39 @@ def judge(pbp_raw, box_raw, shifts_raw):
         # a 502 HTML error page from the league is archived verbatim under its
         # own hash. This is where that gets noticed, which is where refusals
         # belong.
-        return None, _refuse("parse", f"stored bytes are not JSON: {e}")
+        return None, _refuse("parse", f"stored bytes are not JSON: {e}"), {}
 
+    # REFUSE ON WHAT CAN CHANGE A NUMBER, RECORD THE REST.
+    #
+    # An unknown stoppage reason cannot alter anything we display, because the
+    # extract drops stoppage detail entirely -- so withholding a game over one
+    # is withholding it over a field we never read. Twelve of 48 refusals in a
+    # 62-game sample were exactly that and nothing else.
+    #
+    # They are still returned, because the parked whistle layer will need them
+    # and doctrine 9 says what we set aside stays visible. A gate that quietly
+    # forgets what it forgave is worse than one that never looked.
     _, unknown = E.vocabulary(pbp)
-    if unknown:
-        return None, _refuse("vocabulary",
-                             {k: sorted(v) for k, v in sorted(unknown.items())})
+    blocking = {k: sorted(v) for k, v in sorted(unknown.items())
+                if k in E.CONSEQUENTIAL}
+    noted = {k: sorted(v) for k, v in sorted(unknown.items())
+             if k not in E.CONSEQUENTIAL}
+    if blocking:
+        return None, _refuse("vocabulary", blocking), noted
 
     try:
         rich = E.extract(pbp, shifts)
     except (KeyError, TypeError, ValueError) as e:
-        return None, _refuse("extract", f"{type(e).__name__}: {e}")
+        return None, _refuse("extract", f"{type(e).__name__}: {e}"), noted
 
     # validate() reports to stdout for a human reading one game. Here it runs
     # fifteen hundred times and only its verdict is wanted.
     with contextlib.redirect_stdout(io.StringIO()):
         fails = E.validate(rich, pbp, shifts, box)
     if fails:
-        return None, _refuse("validation", fails)
+        return None, _refuse("validation", fails), noted
 
-    return rich, None
+    return rich, None, noted
 
 
 def derive(store, end=None, days=None, now=None):
@@ -176,8 +194,10 @@ def derive(store, end=None, days=None, now=None):
             except ValueError:
                 pass    # unreadable extract: derive it again
 
-        rich, refusal = judge(payloads["play-by-play"], payloads["boxscore"],
-                              payloads["shifts"])
+        rich, refusal, noted = judge(payloads["play-by-play"], payloads["boxscore"],
+                                     payloads["shifts"])
+        for field, values in noted.items():
+            rep.noted.setdefault(field, set()).update(values)
         if refusal is not None:
             rep.refused[gid] = refusal
             g = meta.get(gid, {})
@@ -222,6 +242,10 @@ def _write_ledger(store, idx, rep, stamp):
         "refusedInWindow": rep.refused_in_window,
         "absent": d["absent"],
         "byGate": d["byGate"],
+        # Vocabulary we did not understand and published anyway, because it
+        # cannot reach a number. Visible so the forgiveness is auditable, and so
+        # the whistle layer inherits a list instead of a survey.
+        "noted": d["noted"],
         "asOf": stamp,
     }
     store.put("index.json", json.dumps(idx, indent=2, sort_keys=True).encode())

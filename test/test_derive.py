@@ -353,3 +353,144 @@ class TheLedger(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TheSituationCodeIsARule(unittest.TestCase):
+    """It was eight strings — every code one November game happened to contain.
+
+    A season contains nineteen, and none of the missing ones were mysteries:
+    0641 is an away goalie pulled for a 6-on-4, 1331 is three-on-three overtime,
+    0440 is both goalies pulled at four aside, 0101 and 1010 are shootout
+    attempts. They were "unknown" only because we enumerated a sample and called
+    it a language — the same mistake as FINAL_STATES holding one word.
+
+    The decode was checked against 19,272 real events across 62 games spanning
+    preseason, regular season, overtime and shootouts: zero violations.
+    """
+
+    def test_every_code_the_archive_actually_contains_decodes(self):
+        import extract as E
+        for code in ("1551", "1541", "1451", "1441", "0651", "1560", "1450",
+                     "1540", "0431", "0440", "0551", "0641", "1331", "1340",
+                     "1341", "1351", "1431", "1460", "1531"):
+            self.assertTrue(E.situation_ok(code), f"{code} is real hockey")
+        for code in ("0101", "1010"):
+            self.assertTrue(E.situation_ok(code, "SO"), f"{code} is a shootout attempt")
+
+    def test_the_rule_still_refuses_what_hockey_cannot_do(self):
+        # MUTATION GUARD, and the whole risk of moving from a list to a rule: a
+        # rule that accepts everything is not a gate. Nine skaters, two goalies
+        # on one side, a short code and a non-numeric one must all still fail.
+        import extract as E
+        for code in ("1991", "1552", "155", "15A1", "", None, "9999"):
+            self.assertFalse(E.situation_ok(code), f"{code!r} must not decode")
+        self.assertFalse(E.situation_ok("0101"), "a shootout code outside a shootout")
+        self.assertFalse(E.situation_ok("1551", "SO"), "five aside inside a shootout")
+
+    def test_an_unrecognisable_code_still_refuses_the_game(self):
+        store = DictStore()
+        seed(store, pbp=pbp_bytes(plays=[
+            play("faceoff", 0, winningPlayerId=1, xCoord=0, yCoord=0,
+                 eventOwnerTeamId=30)]))
+        raw = json.loads(store.get(F.latest_key(2025020001)).decode())
+        pbp = json.loads(store.get(F.raw_key(2025020001, raw["play-by-play"],
+                                             "play-by-play")).decode())
+        pbp["plays"][0]["situationCode"] = "1991"
+        seed(store, pbp=json.dumps(pbp).encode())
+        rep = D.derive(store)
+        self.assertEqual(rep.refused["2025020001"]["gate"], "vocabulary")
+        self.assertIn("1991", str(rep.refused["2025020001"]["detail"]))
+
+
+class ForgivenessIsRecorded(unittest.TestCase):
+
+    def test_an_unknown_stoppage_reason_does_not_withhold_a_game(self):
+        # The extract drops stoppage detail entirely, so an unrecognised whistle
+        # reason cannot alter a number we display. Twelve of 48 refusals in a
+        # 62-game sample were exactly this and nothing else.
+        store = DictStore()
+        seed(store, pbp=pbp_bytes(plays=[
+            play("faceoff", 0, winningPlayerId=1, xCoord=0, yCoord=0, eventOwnerTeamId=30),
+            play("shot-on-goal", 60, shootingPlayerId=1, goalieInNetId=2,
+                 xCoord=-70, yCoord=3, eventOwnerTeamId=30),
+            play("goal", 120, scoringPlayerId=1, goalieInNetId=2,
+                 xCoord=-75, yCoord=0, eventOwnerTeamId=30),
+            play("stoppage", 150, reason="zamboni-on-fire", eventOwnerTeamId=30),
+        ]))
+        rep = D.derive(store)
+        self.assertEqual(rep.derived, 1, "a game is not withheld over a field we drop")
+        self.assertIn("zamboni-on-fire", rep.noted["stoppage reason"])
+
+    def test_what_was_forgiven_is_published_not_hidden(self):
+        # Doctrine 9: a gate that quietly forgets what it forgave is worse than
+        # one that never looked. The whistle layer inherits a list, not a survey.
+        store = DictStore()
+        seed(store, pbp=pbp_bytes(plays=[
+            play("faceoff", 0, winningPlayerId=1, xCoord=0, yCoord=0, eventOwnerTeamId=30),
+            play("shot-on-goal", 60, shootingPlayerId=1, goalieInNetId=2,
+                 xCoord=-70, yCoord=3, eventOwnerTeamId=30),
+            play("goal", 120, scoringPlayerId=1, goalieInNetId=2,
+                 xCoord=-75, yCoord=0, eventOwnerTeamId=30),
+            play("stoppage", 150, reason="rink-repair", eventOwnerTeamId=30),
+        ]))
+        D.derive(store, now="2026-01-11T11:30:00Z")
+        idx = json.loads(store.get("index.json").decode())
+        self.assertEqual(idx["extracts"]["noted"]["stoppage reason"], ["rink-repair"])
+
+
+class TheShootoutIsNotPlay(unittest.TestCase):
+    """Period 5 is a shootout in the regular season and a third overtime in the
+    playoffs, so the period NUMBER cannot tell them apart. `pt` can.
+
+    Both checks below were wrong in the same direction: they compared our count
+    of everything against a witness that counts only play, then reported the
+    difference as a fault. Six of 62 sampled games reached a shootout.
+    """
+
+    def so(self, t, secs, **d):
+        p = play(t, secs, **d)
+        p["periodDescriptor"] = {"number": 5, "periodType": "SO"}
+        return p
+
+    def game_with_shootout(self, scoring_attempts):
+        plays = [
+            play("faceoff", 0, winningPlayerId=1, xCoord=0, yCoord=0, eventOwnerTeamId=30),
+            play("shot-on-goal", 60, shootingPlayerId=1, goalieInNetId=2,
+                 xCoord=-70, yCoord=3, eventOwnerTeamId=30),
+            play("goal", 120, scoringPlayerId=1, goalieInNetId=2,
+                 xCoord=-75, yCoord=0, eventOwnerTeamId=30),
+        ]
+        for i in range(scoring_attempts):
+            plays.append(self.so("goal", 10 + i, scoringPlayerId=1, goalieInNetId=2,
+                                 xCoord=-80, yCoord=0, eventOwnerTeamId=30))
+        plays.append(self.so("shootout-complete", 60, eventOwnerTeamId=30))
+        return pbp_bytes(plays=plays)
+
+    def test_shootout_attempts_are_not_shots_on_goal(self):
+        # The boxscore excludes them, so counting them here compared two
+        # different quantities. Away takes 2 real shots and 1 shootout attempt;
+        # the witness says 2.
+        store = DictStore()
+        seed(store, pbp=self.game_with_shootout(1),
+             box=box_bytes(away_sog=2, home_sog=0, away_score=2, home_score=0))
+        self.assertEqual(D.derive(store).derived, 1)
+
+    def test_a_shootout_adds_exactly_one_goal_however_many_go_in(self):
+        # THE CORRECT-BY-ACCIDENT CASE. This check passed on shootout games only
+        # when exactly one attempt scored — true of three sampled games and
+        # false of a fourth, which carried nine goal events against a score of
+        # seven. Three attempts score here; the scoreboard moves by one.
+        store = DictStore()
+        seed(store, pbp=self.game_with_shootout(3),
+             box=box_bytes(away_sog=2, home_sog=0, away_score=2, home_score=0))
+        self.assertEqual(D.derive(store).derived, 1,
+                         "four goal events, and a final score of two")
+
+    def test_the_extract_carries_the_period_type_so_this_is_expressible(self):
+        store = DictStore()
+        seed(store, pbp=self.game_with_shootout(1),
+             box=box_bytes(away_sog=2, home_sog=0, away_score=2, home_score=0))
+        D.derive(store)
+        ev = json.loads(store.get("extract/2025020001.json").decode())["events"]
+        self.assertEqual([e["pt"] for e in ev][-2:], ["SO", "SO"])
+        self.assertEqual(ev[0]["pt"], "REG", "and the run of play is still marked")

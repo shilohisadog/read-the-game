@@ -45,6 +45,7 @@ ACTOR = {
     "blocked-shot":  "shootingPlayerId",   # the SHOOTER -- see src/lib/attribution.js
     "goal":          "scoringPlayerId",
     "hit":           "hittingPlayerId",
+    "failed-shot-attempt": "shootingPlayerId",   # a shootout attempt that missed
     "penalty":       "committedByPlayerId",
 }
 
@@ -105,6 +106,13 @@ def extract(pbp, shifts):
             # all three look identical without it, and 12 of MIN's 80 attempts in
             # this game came 6-on-5 with their own net empty.
             "sit": p.get("situationCode"),
+            # THE PERIOD NUMBER IS NOT ENOUGH, and the season proved it. Period 5
+            # is a shootout in the regular season and a third overtime in the
+            # playoffs, so nothing downstream could tell them apart -- and a
+            # shootout is not play. Six of 62 sampled games reached one, carrying
+            # 8 `goal` events and 36 shot-like events inside the shootout period
+            # that every metric would otherwise have counted as real hockey.
+            "pt": p["periodDescriptor"].get("periodType"),
         }
         # Who blocked it. The shooter is `actor` (see attribution.js); dropping
         # the blocker lost half of every blocked-shot event.
@@ -152,6 +160,11 @@ KNOWN_EVENTS = {
     "period-start", "period-end", "game-end", "faceoff", "shot-on-goal", "goal",
     "missed-shot", "blocked-shot", "hit", "giveaway", "takeaway", "penalty",
     "delayed-penalty", "stoppage",
+    # Both occur ONLY in shootout periods, in every occurrence observed across
+    # 62 games. `shootout-complete` is a marker like period-end; a
+    # failed-shot-attempt is an attempt that missed, and carries a shooter and
+    # coordinates like any other. Neither is play, which is what `pt` is for.
+    "shootout-complete", "failed-shot-attempt",
 }
 KNOWN_STOPPAGES = {
     "icing", "offside", "hand-pass", "high-stick", "puck-frozen", "goalie-stopped-after-sog",
@@ -159,19 +172,64 @@ KNOWN_STOPPAGES = {
     "referee-or-linesman", "tv-timeout", "video-review", "home-timeout", "visitor-timeout",
     "player-injury", "net-dislodged-defensive-skater", "chlg-vis-goal-interference",
 }
-# [awayGoalie][awaySkaters][homeSkaters][homeGoalie]. This game shows five codes.
-# A real season adds 3-on-3 overtime, 5-on-3, 4-on-3, penalty shots and both
-# goalies pulled -- so this set is KNOWN INCOMPLETE and the gate must stay loud.
-KNOWN_SITUATIONS = {"1551", "1541", "1451", "1441", "0651", "1560", "1450", "1540"}
+# A RULE, NOT A LIST. This was eight strings -- every situationCode one November
+# game happened to contain -- and a season contains nineteen. The missing ones
+# were never mysteries: 0641 is an away goalie pulled for a 6-on-4, 1331 is
+# three-on-three overtime, 0440 is both goalies pulled at four aside, 0101 and
+# 1010 are shootout attempts. They were "unknown" only because we had enumerated
+# a sample and called it a language, which is the same mistake as FINAL_STATES
+# holding one word, and as "BUF shots +x, MIN -x" before it. PIN THE RULE.
+#
+# The code is [awayGoalie][awaySkaters][homeSkaters][homeGoalie]. A code is
+# valid if it DECODES into a coherent state, which is a bounded claim an
+# unbounded list can never make: verified against 19,272 real events across 62
+# games spanning preseason, regular season, overtime and shootouts, with zero
+# violations.
+#
+# NOT YET CROSS-CHECKED AGAINST AN INDEPENDENT SOURCE. The shifts data knows who
+# was actually on the ice and would settle a semantic change (a digit reorder
+# would still decode). A first attempt agreed only 82% of the time, spread evenly
+# across 23 of 25 games rather than concentrated in a few -- which points at the
+# comparison, not the feed. Until that is understood it stays out: a gate whose
+# failures cannot be explained manufactures false reds, and a false red is worse
+# than no gate because it teaches distrust of a working one.
+SKATERS = range(3, 7)
+
+
+def situation_ok(code, period_type=None):
+    """Does this situationCode decode into a state hockey can actually be in?"""
+    if not isinstance(code, str) or len(code) != 4 or not code.isdigit():
+        return False
+    a_goalie, a_skaters, h_skaters, h_goalie = (int(c) for c in code)
+    if a_goalie not in (0, 1) or h_goalie not in (0, 1):
+        return False
+    if period_type == "SO":
+        # One shooter against one goalie; the other four slots are empty.
+        return {a_skaters, h_skaters} == {0, 1}
+    return a_skaters in SKATERS and h_skaters in SKATERS
+
+
+# An unknown value in these can change a number we display. An unknown STOPPAGE
+# REASON cannot: the extract drops stoppage detail entirely, so refusing a game
+# over one is refusing over a field we never read. Twelve of 48 refusals in a
+# 62-game sample were stoppage reasons and nothing else. They are still
+# reported -- the parked whistle layer will need them, and doctrine 9 says what
+# we set aside stays visible -- but they no longer withhold a game.
+CONSEQUENTIAL = ("typeDescKey", "situationCode")
 
 def vocabulary(pbp):
     seen = {"typeDescKey": set(), "stoppage reason": set(), "situationCode": set(),
             "penalty descKey": set()}
+    bad_situations = set()
     for p in pbp["plays"]:
         d = p.get("details") or {}
         seen["typeDescKey"].add(p["typeDescKey"])
         if p.get("situationCode"):
             seen["situationCode"].add(p["situationCode"])
+            # Checked per play, because validity depends on the period type --
+            # 0101 is a coherent shootout and an impossible even-strength shift.
+            if not situation_ok(p["situationCode"], p["periodDescriptor"].get("periodType")):
+                bad_situations.add(p["situationCode"])
         if p["typeDescKey"] == "stoppage":
             for k in ("reason", "secondaryReason"):
                 if d.get(k):
@@ -181,7 +239,7 @@ def vocabulary(pbp):
     unknown = {
         "typeDescKey": seen["typeDescKey"] - KNOWN_EVENTS,
         "stoppage reason": seen["stoppage reason"] - KNOWN_STOPPAGES,
-        "situationCode": seen["situationCode"] - KNOWN_SITUATIONS,
+        "situationCode": bad_situations,
     }
     return seen, {k: v for k, v in unknown.items() if v}
 
@@ -207,10 +265,18 @@ def validate(rich, pbp, shifts, box):
     check(bad == 0, f"normalization matches the ends-switch rule ({bad} mismatches)")
 
     # SOG must reproduce the boxscore: shot-on-goal events PLUS goals.
+    #
+    # EXCLUDING THE SHOOTOUT, because the boxscore excludes it. A shootout
+    # attempt is not a shot in the run of play and the league does not count it
+    # as one; counting it here compared two different quantities and called the
+    # difference a fault. Five of six sampled shootout games match the boxscore
+    # exactly once shootout events are removed. This does not weaken the check --
+    # it makes the two sides mean the same thing, which is the only way a
+    # cross-check against an independent witness says anything at all.
     hid, aid = rich["teams"]["home"]["id"], rich["teams"]["away"]["id"]
     sog = {hid: 0, aid: 0}
     for e in rich["events"]:
-        if e["type"] in ("shot-on-goal", "goal"):
+        if e["type"] in ("shot-on-goal", "goal") and e.get("pt") != "SO":
             sog[e["own"]] += 1
     bx = {box["homeTeam"]["id"]: box["homeTeam"]["sog"],
           box["awayTeam"]["id"]: box["awayTeam"]["sog"]}
@@ -228,9 +294,18 @@ def validate(rich, pbp, shifts, box):
     check(len(rich["shifts"]) == len(shifts["data"]),
           f"shifts lossless: {len(rich['shifts'])} == {len(shifts['data'])}")
 
-    scored = sum(1 for e in rich["events"] if e["type"] == "goal")
-    check(scored == box["homeTeam"]["score"] + box["awayTeam"]["score"],
-          f"goal events == final score ({scored})")
+    # A SHOOTOUT ADDS EXACTLY ONE TO THE SCOREBOARD, however many attempts go
+    # in. The feed records every successful attempt as its own `goal` event, so
+    # this check passed on shootout games ONLY when exactly one scored -- true of
+    # three sampled games and false of a fourth, which had nine goal events
+    # against a score of seven. Correct by accident, three times out of four.
+    shootout = any(e.get("pt") == "SO" for e in rich["events"])
+    scored = sum(1 for e in rich["events"]
+                 if e["type"] == "goal" and e.get("pt") != "SO")
+    total = box["homeTeam"]["score"] + box["awayTeam"]["score"]
+    check(scored + (1 if shootout else 0) == total,
+          f"goal events{' + the shootout decision' if shootout else ''} == "
+          f"final score ({scored}{'+1' if shootout else ''} vs {total})")
     return fails
 
 # ---------------------------------------------------------------- main
