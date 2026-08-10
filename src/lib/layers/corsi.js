@@ -10,7 +10,7 @@
  * ../layer.js for why that matters.
  */
 import { corsiTeam, ATTEMPT_TYPES } from '../attribution.js';
-import { NOT_A_PLAY } from '../layer.js';
+import { NOT_A_PLAY, inShootout, shootoutWinner } from '../layer.js';
 import { whyNotEven } from '../strength.js';
 
 const NOT_AN_ATTEMPT = {
@@ -41,19 +41,27 @@ export const corsi = {
     let hs = 0, as = 0;
 
     events.forEach((e, id) => {
-      if (e.type === 'goal') (e.own === homeId ? hs++ : as++);
+      // The scoreboard counts goals scored in PLAY. Every successful shootout
+      // attempt is its own `goal` event, but a shootout moves the scoreboard by
+      // exactly one — a sampled game had three attempts score. Counting them
+      // here would have put a 6-4 on screen for a game that finished 4-3.
+      if (e.type === 'goal' && e.pt !== 'SO') (e.own === homeId ? hs++ : as++);
 
+      // Before the type question, because a shootout goal is a perfectly good
+      // attempt BY TYPE and would otherwise be counted as one.
+      const notPlay = inShootout(e);
       const team = corsiTeam(e, roster);
       const notAttempt = team == null
         ? (NOT_AN_ATTEMPT[e.type] || NOT_A_PLAY[e.type] || `not an attempt (${e.type})`)
         : null;
       const notEven = ctx.evenOnly ? whyNotEven(e, ctx) : null;
 
-      if (notAttempt || notEven) {
+      if (notPlay || notAttempt || notEven) {
         const dims = {};
+        if (notPlay) dims.play = notPlay;
         if (notAttempt) dims.type = notAttempt;
         if (notEven) dims.strength = notEven;
-        excluded.push({ id, why: notAttempt || notEven, dims });
+        excluded.push({ id, why: notPlay || notAttempt || notEven, dims });
         return;
       }
       t[team]++;
@@ -72,6 +80,11 @@ export const corsi = {
         });
       }
     });
+
+    // Exactly one goal to whoever converted more attempts — never one per
+    // attempt, and never one to nobody.
+    const won = shootoutWinner(events, homeId, awayId);
+    if (won === homeId) hs++; else if (won === awayId) as++;
 
     return { t, counted, surprising, excluded, hs, as };
   },

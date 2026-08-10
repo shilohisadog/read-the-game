@@ -10,7 +10,7 @@
  */
 import { shootingTeam, SHOT_TYPES } from '../attribution.js';
 import { attackDirection, distanceToNet, HIGH_DANGER_FT, SLOT_HALF_WIDTH } from '../rink.js';
-import { NOT_A_PLAY } from '../layer.js';
+import { NOT_A_PLAY, inShootout } from '../layer.js';
 import { whyNotEven } from '../strength.js';
 
 export const danger = {
@@ -20,11 +20,25 @@ export const danger = {
   reduce(events, ctx) {
     const counted = [], surprising = [], excluded = [];
 
+    // `play` first, matching the precedence in the other two layers: an event
+    // that is outside play is excluded for THAT reason, whatever else is also
+    // true of it. Omitting it here left exclusions with no `why` at all, which
+    // the conservation check caught — it requires a human-written reason on
+    // every excluded event, not merely that the counts balance.
     const push = (id, dims) =>
-      excluded.push({ id, why: dims.type || dims.strength, dims });
+      excluded.push({ id, why: dims.play || dims.type || dims.strength, dims });
 
     events.forEach((e, id) => {
       const notEven = ctx.evenOnly ? whyNotEven(e, ctx) : null;
+      // First, and before the geometry. A shootout attempt is taken from the
+      // slot by definition, so every one of them would score as high-danger --
+      // the single worst place for this to leak, because the number would look
+      // entirely plausible.
+      const notPlay = inShootout(e);
+      if (notPlay) {
+        push(id, { play: notPlay, ...(notEven ? { strength: notEven } : {}) });
+        return;
+      }
       if (!SHOT_TYPES.has(e.type) || e.x == null) {
         push(id, { type: e.type === 'blocked-shot'
                  ? 'blocked before it got there — no shot location on the net'

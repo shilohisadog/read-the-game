@@ -113,3 +113,102 @@ test('summarise groups the ledger for display without losing the count', () => {
   const s = summarise(L.excluded);
   assert.equal(Object.values(s).reduce((a, b) => a + b, 0), L.excluded.length);
 });
+
+/* ------------------------------------------------------------------ shootout
+ *
+ * The reference game ended in regulation, so none of the tests above can see
+ * this: every layer would have counted shootout attempts as play, and the
+ * scoreboard would have counted every successful attempt as a goal.
+ *
+ * Six of 62 sampled games from the archive reach a shootout — roughly a tenth
+ * of a regular season, about 130 games a year. A shootout is a skills
+ * competition that decides the game, not play within it: the league excludes
+ * its attempts from shots on goal, and adds exactly ONE to the winner's score
+ * however many attempts go in.
+ */
+const SO = t => ({ ...t, pt: 'SO' });
+const HID = rich.teams.home.id, AID = rich.teams.away.id;
+// A shooter from each side, taken from the real roster so attribution works.
+const shooterOf = tid => Object.keys(rich.roster).find(p => rich.roster[p].tid === tid
+                                                        && rich.roster[p].pos !== 'G');
+
+const REG = EVENTS.filter(e => e.pt !== 'SO');
+const shootoutGame = attempts => [...REG, ...attempts];
+
+test('shootout events are excluded from every layer, with a reason', () => {
+  const attempts = [
+    SO({ per: 5, s: 3900, type: 'goal', own: AID, x: -80, y: 0,
+         actor: +shooterOf(AID), goalie: null, sit: '0101' }),
+    SO({ per: 5, s: 3910, type: 'shot-on-goal', own: HID, x: 80, y: 0,
+         actor: +shooterOf(HID), goalie: null, sit: '1010' }),
+  ];
+  const events = shootoutGame(attempts);
+  for (const layer of LAYERS) {
+    const r = layer.reduce(events, ctx);
+    const c = conservation(r, events.length);
+    assert.ok(c.ok, `${layer.id} must still conserve: ${JSON.stringify(c)}`);
+    for (let i = events.length - attempts.length; i < events.length; i++) {
+      assert.ok(!r.counted.includes(i), `${layer.id} counted a shootout event`);
+      const x = r.excluded.find(e => e.id === i);
+      assert.ok(x, `${layer.id} lost a shootout event entirely`);
+      assert.match(x.why, /shootout/i, `${layer.id} must say WHY, not just drop it`);
+    }
+  }
+});
+
+test('a shootout cannot change any metric the game produced', () => {
+  // MUTATION GUARD on the exclusion. Appending a shootout must leave the
+  // control, danger and goaltending numbers bit-for-bit identical to the game
+  // without one — that is the whole claim, and a count-based check would let a
+  // compensating error through.
+  const attempts = Array.from({ length: 6 }, (_, i) =>
+    SO({ per: 5, s: 3900 + i, type: i % 2 ? 'goal' : 'shot-on-goal',
+         own: i % 2 ? AID : HID, x: -80, y: 0,
+         actor: +shooterOf(i % 2 ? AID : HID), goalie: null, sit: '0101' }));
+  for (const layer of LAYERS) {
+    const before = layer.reduce(REG, ctx);
+    const after = layer.reduce(shootoutGame(attempts), ctx);
+    assert.deepEqual(after.t, before.t, `${layer.id} totals moved`);
+    assert.equal(after.counted.length, before.counted.length,
+      `${layer.id} counted something new`);
+  }
+});
+
+test('the scoreboard adds one for the shootout, not one per attempt', () => {
+  // Verified against the archive: for all six sampled shootout games, the
+  // non-shootout goals plus one to whoever converted more attempts reproduces
+  // the boxscore EXACTLY. Game 2025020419 is why this is not "count the goals":
+  // three attempts scored there, against a final score one higher than regulation.
+  const three = [
+    SO({ per: 5, s: 3900, type: 'goal', own: AID, x: -80, y: 0, actor: +shooterOf(AID), sit: '0101' }),
+    SO({ per: 5, s: 3910, type: 'goal', own: HID, x: 80, y: 0, actor: +shooterOf(HID), sit: '1010' }),
+    SO({ per: 5, s: 3920, type: 'goal', own: HID, x: 80, y: 0, actor: +shooterOf(HID), sit: '1010' }),
+  ];
+  const base = corsi.reduce(REG, ctx);
+  const r = corsi.reduce(shootoutGame(three), ctx);
+  assert.equal(r.hs, base.hs + 1, 'the side that converted more gets exactly one');
+  assert.equal(r.as, base.as, 'and the loser gets none');
+});
+
+test('a shootout that somehow ties adds nothing to either side', () => {
+  // A shootout runs until it is decided, so this should not occur — which is
+  // precisely why it must not silently award a goal to whoever the comparison
+  // happens to favour. No winner, no goal.
+  const drawn = [
+    SO({ per: 5, s: 3900, type: 'goal', own: AID, x: -80, y: 0, actor: +shooterOf(AID), sit: '0101' }),
+    SO({ per: 5, s: 3910, type: 'goal', own: HID, x: 80, y: 0, actor: +shooterOf(HID), sit: '1010' }),
+  ];
+  const base = corsi.reduce(REG, ctx);
+  const r = corsi.reduce(shootoutGame(drawn), ctx);
+  assert.equal(r.hs, base.hs);
+  assert.equal(r.as, base.as);
+});
+
+test('a game without a shootout is untouched by any of this', () => {
+  // The reference game, and every playoff game ever. Period 5 in the playoffs
+  // is a third overtime and is real hockey; only `pt` tells them apart.
+  const r = corsi.reduce(EVENTS, ctx);
+  assert.equal(r.hs, 3);
+  assert.equal(r.as, 2);
+  assert.ok(conservation(r, EVENTS.length).ok);
+});

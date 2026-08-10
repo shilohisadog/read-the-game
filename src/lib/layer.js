@@ -29,6 +29,47 @@
  * expensive failure available. An explanation that cannot be checked is decoration.
  */
 
+/**
+ * The shootout, which is not a TYPE of event but a PLACE in the game.
+ *
+ * A shootout is a skills competition that decides a tied game; it is not play
+ * within it. The league agrees in the only way that matters to us — its
+ * boxscore excludes shootout attempts from shots on goal, and adds exactly one
+ * goal to the winner however many attempts go in.
+ *
+ * This lives here rather than in each layer because all three need it and one
+ * of them getting it wrong is a wrong number on screen. It is checked BEFORE
+ * type-based reasons: a shootout goal is a perfectly good attempt by type, so
+ * asking "is this an attempt?" first would count it.
+ *
+ * Only `pt` can express this. Period 5 is a shootout in the regular season and
+ * a third overtime in the playoffs, so the period NUMBER cannot tell them apart
+ * — which is why the extract carries the period type at all.
+ */
+export function inShootout(e) {
+  return e.pt === 'SO'
+    ? 'the shootout — a skills competition that decides the game, not play in it'
+    : null;
+}
+
+/**
+ * Who won the shootout, or null if nobody did.
+ *
+ * The winner converted more attempts. Verified against the archive: for all six
+ * sampled shootout games, non-shootout goals plus one to this team reproduces
+ * the boxscore exactly. A shootout runs until it is decided, so a tie should be
+ * impossible — which is exactly why it returns null rather than picking a side.
+ */
+export function shootoutWinner(events, homeId, awayId) {
+  let h = 0, a = 0;
+  for (const e of events) {
+    if (e.pt !== 'SO' || e.type !== 'goal') continue;
+    if (e.own === homeId) h++; else if (e.own === awayId) a++;
+  }
+  if (h === a) return null;
+  return h > a ? homeId : awayId;
+}
+
 /** Every event type that is not a play — recorded, but nothing happened on the ice. */
 export const NOT_A_PLAY = {
   'period-start': 'period start — not a play',

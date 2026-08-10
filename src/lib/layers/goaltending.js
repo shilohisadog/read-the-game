@@ -14,7 +14,7 @@
  */
 import { shootingTeam, SHOT_TYPES } from '../attribution.js';
 import { attackDirection, isHighDanger } from '../rink.js';
-import { NOT_A_PLAY } from '../layer.js';
+import { NOT_A_PLAY, inShootout } from '../layer.js';
 import { whyNotEven } from '../strength.js';
 
 /** Geometric rule, measured to the ATTACKING net. */
@@ -34,6 +34,11 @@ export const goaltending = {
     const counted = [], surprising = [], excluded = [];
 
     events.forEach((e, id) => {
+      // A shootout attempt IS a shot a goalie faced, which is exactly why this
+      // has to come first: nothing about the event's type disqualifies it, and
+      // counting it would put shootout attempts into a save percentage the
+      // league does not compute that way.
+      const notPlay = inShootout(e);
       const faced = (e.type === 'shot-on-goal' || e.type === 'goal') && e.goalie;
       const notFaced = faced ? null
         : e.type === 'missed-shot' ? 'missed the net — no goalie faced it'
@@ -41,11 +46,12 @@ export const goaltending = {
         : NOT_A_PLAY[e.type] || `not a shot the goalie faced (${e.type})`;
       const notEven = ctx.evenOnly ? whyNotEven(e, ctx) : null;
 
-      if (notFaced || notEven) {
+      if (notPlay || notFaced || notEven) {
         const dims = {};
+        if (notPlay) dims.play = notPlay;
         if (notFaced) dims.type = notFaced;
         if (notEven) dims.strength = notEven;
-        excluded.push({ id, why: notFaced || notEven, dims });
+        excluded.push({ id, why: notPlay || notFaced || notEven, dims });
         return;
       }
       counted.push(id);

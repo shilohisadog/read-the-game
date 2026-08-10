@@ -266,6 +266,47 @@ function corsiTeam(ev, roster) {
  * expensive failure available. An explanation that cannot be checked is decoration.
  */
 
+/**
+ * The shootout, which is not a TYPE of event but a PLACE in the game.
+ *
+ * A shootout is a skills competition that decides a tied game; it is not play
+ * within it. The league agrees in the only way that matters to us — its
+ * boxscore excludes shootout attempts from shots on goal, and adds exactly one
+ * goal to the winner however many attempts go in.
+ *
+ * This lives here rather than in each layer because all three need it and one
+ * of them getting it wrong is a wrong number on screen. It is checked BEFORE
+ * type-based reasons: a shootout goal is a perfectly good attempt by type, so
+ * asking "is this an attempt?" first would count it.
+ *
+ * Only `pt` can express this. Period 5 is a shootout in the regular season and
+ * a third overtime in the playoffs, so the period NUMBER cannot tell them apart
+ * — which is why the extract carries the period type at all.
+ */
+function inShootout(e) {
+  return e.pt === 'SO'
+    ? 'the shootout — a skills competition that decides the game, not play in it'
+    : null;
+}
+
+/**
+ * Who won the shootout, or null if nobody did.
+ *
+ * The winner converted more attempts. Verified against the archive: for all six
+ * sampled shootout games, non-shootout goals plus one to this team reproduces
+ * the boxscore exactly. A shootout runs until it is decided, so a tie should be
+ * impossible — which is exactly why it returns null rather than picking a side.
+ */
+function shootoutWinner(events, homeId, awayId) {
+  let h = 0, a = 0;
+  for (const e of events) {
+    if (e.pt !== 'SO' || e.type !== 'goal') continue;
+    if (e.own === homeId) h++; else if (e.own === awayId) a++;
+  }
+  if (h === a) return null;
+  return h > a ? homeId : awayId;
+}
+
 /** Every event type that is not a play — recorded, but nothing happened on the ice. */
 const NOT_A_PLAY = {
   'period-start': 'period start — not a play',
@@ -812,19 +853,27 @@ const corsi = {
     let hs = 0, as = 0;
 
     events.forEach((e, id) => {
-      if (e.type === 'goal') (e.own === homeId ? hs++ : as++);
+      // The scoreboard counts goals scored in PLAY. Every successful shootout
+      // attempt is its own `goal` event, but a shootout moves the scoreboard by
+      // exactly one — a sampled game had three attempts score. Counting them
+      // here would have put a 6-4 on screen for a game that finished 4-3.
+      if (e.type === 'goal' && e.pt !== 'SO') (e.own === homeId ? hs++ : as++);
 
+      // Before the type question, because a shootout goal is a perfectly good
+      // attempt BY TYPE and would otherwise be counted as one.
+      const notPlay = inShootout(e);
       const team = corsiTeam(e, roster);
       const notAttempt = team == null
         ? (NOT_AN_ATTEMPT[e.type] || NOT_A_PLAY[e.type] || `not an attempt (${e.type})`)
         : null;
       const notEven = ctx.evenOnly ? whyNotEven(e, ctx) : null;
 
-      if (notAttempt || notEven) {
+      if (notPlay || notAttempt || notEven) {
         const dims = {};
+        if (notPlay) dims.play = notPlay;
         if (notAttempt) dims.type = notAttempt;
         if (notEven) dims.strength = notEven;
-        excluded.push({ id, why: notAttempt || notEven, dims });
+        excluded.push({ id, why: notPlay || notAttempt || notEven, dims });
         return;
       }
       t[team]++;
@@ -843,6 +892,11 @@ const corsi = {
         });
       }
     });
+
+    // Exactly one goal to whoever converted more attempts — never one per
+    // attempt, and never one to nobody.
+    const won = shootoutWinner(events, homeId, awayId);
+    if (won === homeId) hs++; else if (won === awayId) as++;
 
     return { t, counted, surprising, excluded, hs, as };
   },
@@ -888,6 +942,11 @@ const goaltending = {
     const counted = [], surprising = [], excluded = [];
 
     events.forEach((e, id) => {
+      // A shootout attempt IS a shot a goalie faced, which is exactly why this
+      // has to come first: nothing about the event's type disqualifies it, and
+      // counting it would put shootout attempts into a save percentage the
+      // league does not compute that way.
+      const notPlay = inShootout(e);
       const faced = (e.type === 'shot-on-goal' || e.type === 'goal') && e.goalie;
       const notFaced = faced ? null
         : e.type === 'missed-shot' ? 'missed the net — no goalie faced it'
@@ -895,11 +954,12 @@ const goaltending = {
         : NOT_A_PLAY[e.type] || `not a shot the goalie faced (${e.type})`;
       const notEven = ctx.evenOnly ? whyNotEven(e, ctx) : null;
 
-      if (notFaced || notEven) {
+      if (notPlay || notFaced || notEven) {
         const dims = {};
+        if (notPlay) dims.play = notPlay;
         if (notFaced) dims.type = notFaced;
         if (notEven) dims.strength = notEven;
-        excluded.push({ id, why: notFaced || notEven, dims });
+        excluded.push({ id, why: notPlay || notFaced || notEven, dims });
         return;
       }
       counted.push(id);
@@ -952,11 +1012,25 @@ const danger = {
   reduce(events, ctx) {
     const counted = [], surprising = [], excluded = [];
 
+    // `play` first, matching the precedence in the other two layers: an event
+    // that is outside play is excluded for THAT reason, whatever else is also
+    // true of it. Omitting it here left exclusions with no `why` at all, which
+    // the conservation check caught — it requires a human-written reason on
+    // every excluded event, not merely that the counts balance.
     const push = (id, dims) =>
-      excluded.push({ id, why: dims.type || dims.strength, dims });
+      excluded.push({ id, why: dims.play || dims.type || dims.strength, dims });
 
     events.forEach((e, id) => {
       const notEven = ctx.evenOnly ? whyNotEven(e, ctx) : null;
+      // First, and before the geometry. A shootout attempt is taken from the
+      // slot by definition, so every one of them would score as high-danger --
+      // the single worst place for this to leak, because the number would look
+      // entirely plausible.
+      const notPlay = inShootout(e);
+      if (notPlay) {
+        push(id, { play: notPlay, ...(notEven ? { strength: notEven } : {}) });
+        return;
+      }
       if (!SHOT_TYPES.has(e.type) || e.x == null) {
         push(id, { type: e.type === 'blocked-shot'
                  ? 'blocked before it got there — no shot location on the net'
