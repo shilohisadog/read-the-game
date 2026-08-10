@@ -443,6 +443,41 @@ class IngestState(unittest.TestCase):
         self.assertEqual(c["unknownStateInWindow"], 1)
         self.assertEqual(c["heldInWindow"], 1)
 
+
+    def test_an_index_written_by_the_old_schema_gains_dates(self):
+        # THE MIGRATION CASE, and it shipped broken. The live index held six
+        # games written under the old schema as bare {"id": ...} with no date.
+        # On the next run all six came back `unchanged`, so the entries were
+        # kept as-is, so no game carried a date, so dataThrough stayed null --
+        # on a pipeline that holds six games and knows exactly when they were
+        # played.
+        #
+        # This document warned about this exact shape: "it will be fine after
+        # the next run" is how a broken empty state ships. It was not fine after
+        # the next run, because `unchanged` is the steady state.
+        # Seed the POINTER too, or the game reads as new and the bug does not
+        # reproduce -- `unchanged` is the path that was broken, and it is the
+        # steady state of a converging pipeline.
+        store = DictStore({
+            "index.json": json.dumps({
+                "games": [{"id": 2026020001}],          # old shape: no date
+                "lastIngest": "2026-01-09T11:00:00Z",   # old field
+            }).encode(),
+            "raw/2026020001/latest.json": json.dumps({
+                "play-by-play": hashlib.sha256(PBP).hexdigest(),
+                "boxscore": hashlib.sha256(BOX).hexdigest(),
+                "shifts": hashlib.sha256(SHF).hexdigest(),
+            }).encode(),
+        })
+        rep = self.run_night(store, [game(2026020001)], now="2026-01-11T11:00:00Z")
+        self.assertEqual(rep.unchanged, 1, "this is the unchanged path, as live")
+        idx = self.index(store)
+        self.assertEqual(idx["dataThrough"], "2026-01-10",
+                         "a game we already hold still has a knowable date")
+        self.assertEqual(idx["games"][0]["date"], "2026-01-10")
+        self.assertNotIn("lastIngest", idx,
+                         "the conflated field is removed, not left beside its replacement")
+
     # ---- 7 & 8. dataThrough is a game date --------------------------------
 
     def test_data_through_comes_from_the_schedule_not_the_clock(self):

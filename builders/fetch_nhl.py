@@ -282,11 +282,23 @@ def _write_index(store, rep, now, coverage=True):
     prev_raw = store.get("index.json")
     idx = json.loads(prev_raw.decode()) if prev_raw else {}
 
-    by_id = {str(g["id"]): g for g in idx.get("games", [])}
+    # MERGE, never skip. The first version only rewrote an entry when the game
+    # had changed, so games already held under the old dateless schema kept
+    # their dateless entries forever -- `unchanged` is the steady state of a
+    # converging pipeline, so "it will be fine after the next run" was never
+    # going to come true. It shipped, and dataThrough read null on a pipeline
+    # holding six games whose dates it knew.
+    by_id = {str(g["id"]): dict(g) for g in idx.get("games", [])}
     for g in rep.games:
-        if g["state"] != "unchanged" or str(g["id"]) not in by_id:
-            by_id[str(g["id"])] = {"id": g["id"], "date": g.get("date")}
+        entry = by_id.setdefault(str(g["id"]), {"id": g["id"]})
+        entry["id"] = g["id"]
+        if g.get("date"):
+            entry["date"] = g["date"]
     idx["games"] = sorted(by_id.values(), key=lambda g: str(g["id"]))
+
+    # The replaced field is removed rather than left beside its replacement,
+    # where it would keep asserting the conflation this schema exists to end.
+    idx.pop("lastIngest", None)
 
     idx["lastRun"] = stamp
 
