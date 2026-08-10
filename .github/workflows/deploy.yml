@@ -214,16 +214,35 @@ jobs:
           echo "all $(ls src/*.html | wc -l) pages match the checkout byte for byte"
 
           # Production is a separate question: does each public hostname resolve
-          # to this deployment at all? A unique query string defeats the edge
-          # cache without asking anything of Cloudflare's invalidation timing.
+          # to this deployment at all?
+          #
+          # RETRY THE COMPARISON, NOT ONLY THE STATUS. The fetch helper retries
+          # 5xx and 000 -- "not ready yet" -- but a hostname that has just been
+          # deployed to can be perfectly ready and briefly serve the PREVIOUS
+          # bytes with a 200. That is what happened on the first run of this
+          # check: readthegame.co is tested first, seconds after the upload, and
+          # failed while www and pages.dev, tested moments later, passed. The
+          # deploy was correct and the site was correct within seconds.
+          #
+          # So a mismatch is not immediately a failure; it is "propagating"
+          # until it has been given a bounded amount of time to stop being one.
+          # A cache-busting query defeats the edge cache but cannot hurry the
+          # alias itself.
           echo
           for host in $PUBLIC_HOSTS; do
             URL="https://${host}"
-            fetch "?cb=${GITHUB_RUN_ID}" prod.html || { fail=1; continue; }
-            if cmp -s prod.html src/index.html; then
+            matched=0
+            for i in $(seq 1 10); do
+              if fetch "?cb=${GITHUB_RUN_ID}-${i}" prod.html && cmp -s prod.html src/index.html; then
+                matched=1; break
+              fi
+              echo "    $host: serving a different build — attempt $i, waiting"
+              sleep 6
+            done
+            if [ "$matched" = 1 ]; then
               echo "  https://${host} serves the current index"
             else
-              echo "::error::https://${host} is reachable but is not serving this deployment"
+              echo "::error::https://${host} never served this deployment"
               fail=1
             fi
           done
