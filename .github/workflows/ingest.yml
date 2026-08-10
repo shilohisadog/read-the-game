@@ -145,11 +145,30 @@ jobs:
             echo "::error::the index in R2 is not the index we just wrote"
             exit 1
           fi
-          python3 -c "
-          import json
-          i=json.load(open('remote-index.json'))
-          print(f\"  index holds {len(i['games'])} games, lastIngest={i['lastIngest']}\")
-          "
+          # ASSERT THE CONTRACT, do not print prose about it. The first version
+          # of this step ended in an f-string quoting `lastIngest`, and when that
+          # field was removed the step failed -- after cmp had already proved the
+          # sync was byte-correct. A green pipeline reported red because of a
+          # decoration, which is a false red, and false reds are how a working
+          # gate gets ignored. Anything worth printing here is worth checking.
+          python3 - <<'PY'
+          import json, sys
+          i = json.load(open('remote-index.json'))
+          missing = [k for k in ('lastRun', 'games', 'coverage') if k not in i]
+          if missing:
+              sys.exit(f"::error::index is missing {missing}")
+          c = i['coverage']
+          held, err = c['heldInWindow'], c['erroredInWindow']
+          refused = c['refusedInWindow']
+          if c['finalInWindow'] != held + err + refused:
+              sys.exit(f"::error::coverage ledger does not close: {c}")
+          undated = [g['id'] for g in i['games'] if not g.get('date')]
+          if undated:
+              sys.exit(f"::error::games without a date, so dataThrough is unreliable: {undated[:5]}")
+          print(f"  {len(i['games'])} games | dataThrough={i.get('dataThrough')} "
+                f"| lastRun={i['lastRun']} | halted={bool(i.get('halted'))}")
+          print(f"  ledger closes: {c['finalInWindow']} = {held} + {err} + {refused}")
+          PY
 
       - name: summary
         if: always()
