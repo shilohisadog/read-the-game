@@ -241,9 +241,14 @@ class Convergence(unittest.TestCase):
         first = len(store.writes)
         self.assertGreater(first, 0)
         rep = self.ingest(store)
-        self.assertEqual(len(store.writes), first, "idempotent: no rewrite on identical bytes")
+        raw_writes = [k for k in store.writes if k.startswith("raw/")]
+        self.assertEqual(len(raw_writes), len([k for k in store.writes[:first] if k.startswith("raw/")]),
+                         "idempotent: no raw feed is rewritten on identical bytes")
         self.assertEqual(rep.unchanged, 1)
         self.assertEqual(rep.fetched, 0)
+        # The index IS rewritten, deliberately: lastRun must advance to prove the
+        # pipeline is alive even when there was nothing to do.
+        self.assertIn("index.json", store.writes[first:])
 
     def test_an_amended_feed_is_kept_alongside_its_predecessor(self):
         # The whole reason for a rolling window. The league corrects shot
@@ -281,7 +286,7 @@ class VocabularyIsCorrelated(unittest.TestCase):
 
     def test_one_odd_game_is_isolated_and_the_rest_publish(self):
         rep, store = self.run_with([game(1), game(2, state="WEIRD"), game(3)])
-        self.assertEqual(rep.refused, 1)
+        self.assertEqual(rep.unknown_state, 1)
         self.assertEqual(rep.fetched, 2, "the other two still go through")
         self.assertFalse(rep.halted)
 
@@ -296,7 +301,7 @@ class VocabularyIsCorrelated(unittest.TestCase):
         # Correlation is the signal. Two unrelated oddities are two oddities.
         rep, store = self.run_with([game(1, state="ODD_A"), game(2, state="ODD_B"), game(3)])
         self.assertFalse(rep.halted)
-        self.assertEqual(rep.refused, 2)
+        self.assertEqual(rep.unknown_state, 2)
 
 
 class Report(unittest.TestCase):
@@ -304,11 +309,19 @@ class Report(unittest.TestCase):
     def test_the_report_states_what_happened_including_nothing(self):
         store = DictStore()
         t = transport_for({"/v1/schedule/": (200, schedule_payload("2026-01-10", []))})
-        rep = F.ingest("2026-01-10", 1, t, store)
+        rep = F.ingest("2026-01-10", 1, t, store, now="2026-01-11T11:00:00Z")
         self.assertEqual((rep.fetched, rep.unchanged, rep.amended, rep.refused), (0, 0, 0, 0))
-        self.assertEqual(store.writes, [], "an empty night writes nothing, not an empty index")
+        # An empty night writes the index and NOTHING ELSE. The earlier rule --
+        # write nothing at all -- existed only to stop one conflated field from
+        # advancing while no data arrived; lastRun and dataThrough being separate
+        # removes the need for it. A night with no hockey is a fact worth
+        # recording, and silence is what a dead pipeline looks like.
+        self.assertEqual(store.writes, ["index.json"])
+        idx = json.loads(store.get("index.json").decode())
+        self.assertEqual(idx["lastRun"], "2026-01-11T11:00:00Z")
+        self.assertEqual(idx["coverage"]["finalInWindow"], 0)
 
-    def test_last_ingest_is_recorded_so_staleness_can_be_shown(self):
+    def test_the_state_is_recorded_so_staleness_can_be_shown(self):
         # The front page renders this. A stalled pipeline becomes visible to
         # users and to us without any monitoring service existing.
         store = DictStore()
@@ -316,8 +329,138 @@ class Report(unittest.TestCase):
             "2026-01-10", [game(2026020001)]))})
         F.ingest("2026-01-10", 1, t, store, now="2026-01-11T09:00:00Z")
         idx = json.loads(store.get("index.json"))
-        self.assertEqual(idx["lastIngest"], "2026-01-11T09:00:00Z")
+        self.assertEqual(idx["lastRun"], "2026-01-11T09:00:00Z")
+        self.assertEqual(idx["dataThrough"], "2026-01-10", "the game date, not the run clock")
+        self.assertIsNone(idx["halted"])
         self.assertIn("2026020001", [str(g["id"]) for g in idx["games"]])
+
+
+
+class IngestState(unittest.TestCase):
+    """docs/ingest-state.md. One field was asked to mean both data freshness and
+    pipeline liveness, and those diverge exactly where it matters: a healthy
+    offseason run and a dead in-season pipeline are opposite conditions that look
+    identical through `lastIngest`."""
+
+    def run_night(self, store, games, now, pbp=PBP, end="2026-01-10", days=1):
+        t = transport_for({**feed_routes(pbp=pbp), "/v1/schedule/": (200, schedule_payload(
+            end, games))})
+        return F.ingest(end, days, t, store, now=now)
+
+    def index(self, store):
+        raw = store.get("index.json")
+        return json.loads(raw.decode()) if raw else None
+
+    # ---- 1. THE regression this document exists for -----------------------
+
+    def test_a_run_that_fetches_nothing_still_advances_last_run(self):
+        # Observed live: run 2 rehydrated 6 pointers, fetched 0, and lastIngest
+        # did not move -- while the run had completely succeeded. A field that
+        # cannot separate "nothing to do" from "not working" is not a health
+        # signal.
+        store = DictStore()
+        self.run_night(store, [game(1)], now="2026-01-11T11:00:00Z")
+        self.assertEqual(self.index(store)["lastRun"], "2026-01-11T11:00:00Z")
+
+        self.run_night(store, [game(1)], now="2026-01-12T11:00:00Z")
+        self.assertEqual(self.index(store)["lastRun"], "2026-01-12T11:00:00Z",
+                         "a successful no-op run must still prove the pipeline is alive")
+
+    # ---- 2 & 3. a halt is running -----------------------------------------
+
+    def test_a_halted_run_advances_last_run_and_records_why(self):
+        # CHENG's correction, conceded: a halt is a third condition -- working,
+        # looked, stopped on purpose -- and under the first draft it would have
+        # been byte-identical to a dead pipeline.
+        store = DictStore()
+        self.run_night(store, [game(1)], now="2026-01-11T11:00:00Z")
+        self.run_night(store, [game(2, state="PPD"), game(3, state="PPD")],
+                       now="2026-01-12T11:00:00Z")
+        idx = self.index(store)
+        self.assertEqual(idx["lastRun"], "2026-01-12T11:00:00Z", "a halt is still running")
+        self.assertIsNotNone(idx["halted"])
+        self.assertIn("PPD", idx["halted"]["reason"])
+        self.assertEqual(idx["halted"]["since"], "2026-01-12T11:00:00Z")
+
+    def test_a_halted_run_leaves_coverage_behind_last_run(self):
+        # Coverage from before a halt must not read as current -- the run
+        # refused to look, so it established nothing about the window.
+        store = DictStore()
+        self.run_night(store, [game(1)], now="2026-01-11T11:00:00Z")
+        self.run_night(store, [game(2, state="PPD"), game(3, state="PPD")],
+                       now="2026-01-12T11:00:00Z")
+        idx = self.index(store)
+        self.assertEqual(idx["coverage"]["asOf"], "2026-01-11T11:00:00Z")
+        self.assertLess(idx["coverage"]["asOf"], idx["lastRun"])
+
+    def test_a_later_clean_run_clears_the_halt(self):
+        store = DictStore()
+        self.run_night(store, [game(2, state="PPD"), game(3, state="PPD")],
+                       now="2026-01-12T11:00:00Z")
+        self.assertIsNotNone(self.index(store)["halted"])
+        self.run_night(store, [game(1)], now="2026-01-13T11:00:00Z")
+        self.assertIsNone(self.index(store)["halted"], "a clean run means we are no longer stopped")
+
+    # ---- 4, 5, 6. the ledger ----------------------------------------------
+
+    def test_a_run_with_fetch_errors_advances_last_run_and_reports_the_shortfall(self):
+        store = DictStore()
+        routes = feed_routes()
+        routes["shiftcharts"] = (500, b"")
+        t = transport_for({**routes, "/v1/schedule/": (200, schedule_payload(
+            "2026-01-10", [game(1), game(2)]))})
+        F.ingest("2026-01-10", 1, t, store, now="2026-01-11T11:00:00Z")
+        idx = self.index(store)
+        self.assertEqual(idx["lastRun"], "2026-01-11T11:00:00Z", "the pipeline itself worked")
+        c = idx["coverage"]
+        self.assertEqual(c["finalInWindow"], 2)
+        self.assertEqual(c["heldInWindow"], 0)
+        self.assertEqual(c["erroredInWindow"], 2)
+
+    def test_coverage_conserves(self):
+        # finalInWindow = held + errored + refused, in every state. The same
+        # ledger as counted + excluded, pointed at the pipeline instead of the
+        # game -- so it fails loudly rather than mis-reporting quietly.
+        store = DictStore()
+        routes = feed_routes()
+        t = transport_for({**routes, "/v1/schedule/": (200, schedule_payload(
+            "2026-01-10", [game(1), game(2), game(3, state="ODD")]))})
+        F.ingest("2026-01-10", 1, t, store, now="2026-01-11T11:00:00Z")
+        c = self.index(store)["coverage"]
+        self.assertEqual(c["finalInWindow"],
+                         c["heldInWindow"] + c["erroredInWindow"] + c["refusedInWindow"],
+                         f"the ledger must close: {c}")
+
+    def test_a_game_whose_state_we_do_not_know_is_not_in_the_final_ledger(self):
+        # A refusal on gameState is NOT the same as a refusal on event
+        # vocabulary. We do not know whether an unrecognised state means final,
+        # so counting it against finalInWindow would assert something we cannot
+        # support. It is reported alongside, not inside.
+        store = DictStore()
+        self.run_night(store, [game(1), game(2, state="ODD")], now="2026-01-11T11:00:00Z")
+        c = self.index(store)["coverage"]
+        self.assertEqual(c["finalInWindow"], 1, "only the game we know is final")
+        self.assertEqual(c["unknownStateInWindow"], 1)
+        self.assertEqual(c["heldInWindow"], 1)
+
+    # ---- 7 & 8. dataThrough is a game date --------------------------------
+
+    def test_data_through_comes_from_the_schedule_not_the_clock(self):
+        # A game starting 22:00 Pacific belongs to the league's date, not to the
+        # following UTC day. Deriving it from the ingest clock would mislabel
+        # every late West Coast game.
+        store = DictStore()
+        self.run_night(store, [game(1)], now="2026-06-30T04:00:00Z", end="2026-01-10")
+        self.assertEqual(self.index(store)["dataThrough"], "2026-01-10")
+
+    def test_data_through_never_moves_backwards_when_backfilling(self):
+        store = DictStore()
+        self.run_night(store, [game(1)], now="2026-01-11T11:00:00Z", end="2026-01-10")
+        self.assertEqual(self.index(store)["dataThrough"], "2026-01-10")
+        self.run_night(store, [game(2)], now="2026-01-12T11:00:00Z", end="2025-12-01")
+        self.assertEqual(self.index(store)["dataThrough"], "2026-01-10",
+                         "ingesting an older window must not make the data look older")
+
 
 
 if __name__ == "__main__":

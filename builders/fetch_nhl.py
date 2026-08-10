@@ -116,6 +116,11 @@ def classify(schedule, dates=None):
         if dates is not None and week.get("date") not in dates:
             continue
         for g in week.get("games", []):
+            # The league's own labelling of which day this game belongs to.
+            # Carried on the game so dataThrough never has to be derived from
+            # our clock -- a 22:00 Pacific game belongs to its game date, not to
+            # the following UTC day.
+            g = {**g, "date": week.get("date")}
             (got.final if g.get("gameState") in FINAL_STATES else got.unknown).append(g)
     return got
 
@@ -128,7 +133,11 @@ class Report:
     fetched: int = 0        # games stored for the first time
     unchanged: int = 0      # games whose bytes were already held
     amended: int = 0        # games the league has changed since we stored them
-    refused: int = 0        # games whose state we do not recognise
+    refused: int = 0        # games rejected by the extraction vocabulary gate
+    unknown_state: int = 0  # games whose gameState we do not recognise
+    final_in_window: int = 0
+    errored: int = 0
+    window_days: int = 0
     errors: list = field(default_factory=list)
     unknown_states: dict = field(default_factory=dict)
     halted: bool = False
@@ -138,7 +147,9 @@ class Report:
     def as_dict(self):
         return {"fetched": self.fetched, "unchanged": self.unchanged,
                 "amended": self.amended, "refused": self.refused,
-                "errors": self.errors, "unknownStates": self.unknown_states,
+                "unknownState": self.unknown_state, "finalInWindow": self.final_in_window,
+                "errored": self.errored, "errors": self.errors,
+                "unknownStates": self.unknown_states,
                 "halted": self.halted, "haltReason": self.halt_reason}
 
 
@@ -160,7 +171,7 @@ def latest_key(game_id):
 
 
 def ingest(end, days, transport, store, now=None):
-    rep = Report()
+    rep = Report(window_days=days)
     dates = dates_in_window(end, days)
 
     schedule_games, seen = [], set()
@@ -178,7 +189,7 @@ def ingest(end, days, transport, store, now=None):
         for g in got.unknown:
             if g["id"] not in seen:
                 seen.add(g["id"])
-                rep.refused += 1
+                rep.unknown_state += 1
                 st = g.get("gameState")
                 rep.unknown_states.setdefault(st, []).append(g["id"])
 
@@ -187,12 +198,19 @@ def ingest(end, days, transport, store, now=None):
     # more than one game is a feed change, and publishing 6 of 7 games while
     # quietly dropping the 7th is the kind of partial success that reads as
     # health. So a recurring unknown stops the line before anything is fetched.
+    rep.final_in_window = len(schedule_games)
+
     for st, ids in rep.unknown_states.items():
         if len(ids) > 1:
             rep.halted = True
             rep.halt_reason = (f"gameState {st!r} appeared in {len(ids)} games "
                                f"({', '.join(str(i) for i in ids)}) — the feed's "
                                f"vocabulary has changed; refusing the whole run")
+            # A HALT IS RUNNING. lastRun advances, because the alternative makes
+            # a deliberate stop byte-identical to a dead pipeline -- the same
+            # conflation this state model was written to remove. Coverage is NOT
+            # refreshed: the run refused to look, so it established nothing.
+            _write_index(store, rep, now, coverage=False)
             return rep
 
     for g in schedule_games:
@@ -209,6 +227,7 @@ def ingest(end, days, transport, store, now=None):
         if failed:
             # No partial writes. Two of three feeds stored is a game that looks
             # present and is not, and nothing downstream could tell.
+            rep.errored += 1
             continue
 
         digests = {n: sha256(b) for n, b in payloads.items()}
@@ -217,7 +236,7 @@ def ingest(end, days, transport, store, now=None):
 
         if prev and all(prev.get(n) == d for n, d in digests.items()):
             rep.unchanged += 1
-            rep.games.append({"id": gid, "state": "unchanged"})
+            rep.games.append({"id": gid, "date": g.get("date"), "state": "unchanged"})
             continue
 
         for name, body in payloads.items():
@@ -228,30 +247,67 @@ def ingest(end, days, transport, store, now=None):
 
         if prev:
             rep.amended += 1
-            rep.games.append({"id": gid, "state": "amended"})
+            rep.games.append({"id": gid, "date": g.get("date"), "state": "amended"})
         else:
             rep.fetched += 1
-            rep.games.append({"id": gid, "state": "new"})
+            rep.games.append({"id": gid, "date": g.get("date"), "state": "new"})
 
-    # An empty night writes nothing at all -- not an index recording that
-    # nothing happened. Rewriting the index every run would make lastIngest
-    # advance while the pipeline was silently fetching zero games, which is the
-    # precise failure staleness-on-screen exists to expose.
-    if rep.fetched or rep.amended:
-        _write_index(store, rep, now)
+    # The index is written on EVERY completed run, including one that fetched
+    # nothing. The earlier rule -- an empty night writes nothing -- existed only
+    # to stop a single conflated field from advancing while no data arrived, and
+    # splitting lastRun from dataThrough removes the need for it rather than
+    # working around it.
+    _write_index(store, rep, now)
     return rep
 
 
-def _write_index(store, rep, now):
+def _write_index(store, rep, now, coverage=True):
+    """Four independently observable facts, none derived from the others.
+
+    `lastRun`     the pipeline executed. Always advances, halt included.
+    `dataThrough` the game DATE of the most recent game held, from the league.
+    `halted`      null, or when and why we stopped on purpose.
+    `coverage`    what the window expected against what we hold, with its own
+                  `asOf` so figures from before a halt cannot read as current.
+
+    The ledger closes: finalInWindow = held + errored + refused. That is the
+    same conservation discipline as `counted + excluded` in the layers, pointed
+    at the pipeline instead of the game, so it fails loudly in the same way.
+
+    Games whose `gameState` we do not recognise are reported ALONGSIDE that
+    ledger and never inside it -- we cannot say whether such a game is final, so
+    counting it against `finalInWindow` would assert something unsupported.
+    """
     stamp = now or datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    prev = store.get("index.json")
-    idx = json.loads(prev.decode()) if prev else {"games": []}
+    prev_raw = store.get("index.json")
+    idx = json.loads(prev_raw.decode()) if prev_raw else {}
+
     by_id = {str(g["id"]): g for g in idx.get("games", [])}
     for g in rep.games:
-        if g["state"] != "unchanged":
-            by_id[str(g["id"])] = {"id": g["id"]}
+        if g["state"] != "unchanged" or str(g["id"]) not in by_id:
+            by_id[str(g["id"])] = {"id": g["id"], "date": g.get("date")}
     idx["games"] = sorted(by_id.values(), key=lambda g: str(g["id"]))
-    idx["lastIngest"] = stamp
+
+    idx["lastRun"] = stamp
+
+    # max(), so backfilling an older window can never make the data look older.
+    dates = [g["date"] for g in idx["games"] if g.get("date")]
+    if dates:
+        idx["dataThrough"] = max(dates)
+
+    idx["halted"] = ({"since": stamp, "reason": rep.halt_reason} if rep.halted else None)
+
+    if coverage:
+        idx["coverage"] = {
+            "windowDays": rep.window_days,
+            "finalInWindow": rep.final_in_window,
+            "heldInWindow": rep.fetched + rep.amended + rep.unchanged,
+            "erroredInWindow": rep.errored,
+            "refusedInWindow": rep.refused,
+            "unknownStateInWindow": rep.unknown_state,
+            "asOf": stamp,
+        }
+
     store.put("index.json", json.dumps(idx, indent=2, sort_keys=True).encode())
 
 
