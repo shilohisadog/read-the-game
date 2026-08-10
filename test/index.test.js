@@ -16,6 +16,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { shootingTeam } from '../src/lib/attribution.js';
 
 const SRC = new URL('../src/', import.meta.url);
@@ -109,15 +110,88 @@ test('the event total quoted in the copy matches the feed', () => {
   assert.equal(+m[1], rich.events.length, 'and it is the real one');
 });
 
-test('the page loads nothing from the network', () => {
-  // Doctrine: nothing fetches at render time. External anchors are fine -- a
-  // link to the repo is not a subresource -- but a stylesheet, script, font or
-  // image pulled from another host would make the page depend on someone else
-  // staying up, and would leak a visit to them.
-  assert.doesNotMatch(html, /<script/i, 'the index needs no script at all');
-  assert.doesNotMatch(html, /\bsrc=/i, 'no subresources');
-  assert.doesNotMatch(html, /@import/i, 'no imported stylesheets');
-  assert.doesNotMatch(html, /<link[^>]+stylesheet/i, 'CSS is inline');
+test('the no-network claim is enforced by the browser, not asserted by us', () => {
+  // This page fetches its own freshness from R2, so the old grep for `fetch(`
+  // could no longer express the rule. It was the wrong shape anyway: a
+  // blacklist over an open vocabulary, blind to import(), EventSource,
+  // sendBeacon, new Image().src and window["fetch"] -- the same failure class
+  // as the ESM guard that could only fail on inputs the builder had handled.
+  //
+  // `default-src 'none'` permits nothing by default and names exactly one
+  // network destination, so a page trying to reach anywhere else is stopped by
+  // the browser rather than by our confidence.
+  const csp = html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/);
+  assert.ok(csp, 'the page must carry a CSP');
+  const p = csp[1];
+  assert.match(p, /default-src 'none'/);
+  assert.match(p, /connect-src 'self' https:\/\/data\.readthegame\.co/);
+  assert.match(p, /base-uri 'none'/);
+  assert.match(p, /form-action 'none'/);
+  assert.doesNotMatch(p, /unsafe-inline|unsafe-eval|\*/,
+    'nothing is allowed by being inline; everything is pinned');
+});
+
+test('the CSP hashes match the bytes actually shipped', () => {
+  // A hash-pinned CSP with a stale hash is a BLANK PAGE THAT PASSES A GREP.
+  // Recompute both digests from the shipped file rather than trusting the
+  // builder that wrote them -- a check that shares its input with the thing it
+  // checks is testing one assumption twice.
+  const p = html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/)[1];
+  for (const [label, re_, directive] of [
+    ['script', /<script>([\s\S]*?)<\/script>/, 'script-src'],
+    ['style', /<style>([\s\S]*?)<\/style>/, 'style-src'],
+  ]) {
+    const body = html.match(re_)[1];
+    const want = `'sha256-${createHash('sha256').update(body).digest('base64')}'`;
+    const got = p.match(new RegExp(`${directive} ([^;]+)`))[1];
+    assert.equal(got, want, `${directive} does not match the ${label} it ships`);
+  }
+});
+
+test('the freshness script runs, and every state reaches the page', () => {
+  // Proves the script EXECUTES and renders -- not that the CSP is enforced,
+  // which needs a real browser and runs in CI against headless Chrome.
+  const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+
+  const run = payload => {
+    const el = { textContent: '', attrs: {},
+                 setAttribute(k, v) { this.attrs[k] = v; } };
+    const document = { getElementById: () => el };
+    const fetch = () => Promise.resolve({
+      ok: payload !== null,
+      json: () => Promise.resolve(payload),
+    });
+    new Function('document', 'fetch', script)(document, fetch);
+    return el;
+  };
+
+  const fresh = run({
+    dataThrough: '2026-01-14',
+    lastRun: new Date().toISOString(),
+    halted: null,
+    coverage: { windowDays: 14, finalInWindow: 7, heldInWindow: 7,
+                erroredInWindow: 0, refusedInWindow: 0 },
+  });
+  return new Promise(r => setImmediate(r)).then(() => {
+    assert.match(String(fresh.textContent), /Data through 14 January 2026\./);
+    assert.equal(fresh.attrs['data-state'], 'current');
+
+    const dead = run(null);
+    return new Promise(r => setImmediate(r)).then(() => {
+      assert.match(String(dead.textContent), /No data loaded yet\./,
+        'an unreachable index is a state, not a silent placeholder');
+      assert.equal(dead.attrs['data-state'], 'empty');
+    });
+  });
+});
+
+test('the page never ships a baked-in freshness claim', () => {
+  // Pages serves code, R2 serves data. A state compiled into the deployed page
+  // would be a lie by the next morning, and the ingest deliberately does not
+  // trigger a deploy -- so the placeholder must not assert anything.
+  const el = html.match(/<p class="state"[^>]*>([^<]*)</)[1];
+  assert.doesNotMatch(el, /\d{4}|through|checked \d/i,
+    `the static placeholder must claim nothing: "${el}"`);
 });
 
 test('no league logos or marks are referenced', () => {

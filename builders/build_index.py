@@ -17,10 +17,59 @@ test/index.test.js exist to make that impossible to ship.
   python3 builders/build_index.py            -> src/index.html
   python3 builders/build_index.py --verify   -> build, compare, do not write
 """
-import hashlib, pathlib, sys
+import base64, hashlib, pathlib, re, sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / "src" / "index.html"
+
+# The page fetches its own freshness from R2 at load time. It must NOT be baked
+# in at build time: Pages serves code and R2 serves data, and a state baked into
+# a deployed page would be a lie by the following morning. It is also why this
+# is the one page that makes a network request, and why it carries a CSP.
+DATA_ORIGIN = "https://data.readthegame.co"
+
+
+def _lib(name="ingest-state.js"):
+    """Inline a real ES module for the browser. node imports it for tests; the
+    browser gets it with the module syntax stripped."""
+    src = (ROOT / "src" / "lib" / name).read_text()
+    body = re.sub(r"^[ \t]*import(?=[\s{'\"*])[^;]*?;[ \t]*$", "", src, flags=re.M)
+    return body.replace("export ", "")
+
+
+def _csp(html):
+    """A Content-Security-Policy the BROWSER enforces, replacing a grep we wrote.
+
+    The deploy gate used to assert this page calls nobody by grepping for
+    `fetch(`, `XMLHttpRequest` and friends. That is a blacklist over an open
+    vocabulary and cannot close -- it misses import(), EventSource, sendBeacon,
+    new Image().src and window["fetch"]. Same failure class as the ESM guard
+    that could only fail on inputs the builder already handled.
+
+    So the claim stops being ours to assert. `default-src 'none'` permits
+    nothing by default, and the only network destination named is the data
+    origin. A page that tried to call anywhere else would be stopped by the
+    browser, not by our confidence.
+
+    THE SCRIPT AND STYLE ARE HASH-PINNED rather than allowed with
+    'unsafe-inline'. The builder already hashes this artifact for the byte gate,
+    so this costs nothing -- and it is a third integrity gate, enforced past our
+    CI and onto the reader's machine: any modification to the shipped script, by
+    anyone, anywhere in the delivery path, and the browser refuses to run it.
+    """
+    def h(pattern):
+        m = re.search(pattern, html, re.S)
+        digest = hashlib.sha256(m.group(1).encode()).digest()
+        return "'sha256-" + base64.b64encode(digest).decode() + "'"
+
+    return "; ".join([
+        "default-src 'none'",
+        f"script-src {h(r'<script>(.*?)</script>')}",
+        f"style-src {h(r'<style>(.*?)</style>')}",
+        f"connect-src 'self' {DATA_ORIGIN}",
+        "base-uri 'none'",
+        "form-action 'none'",
+    ])
 
 # The reference game, stated in one place. These are facts from data/rich.json,
 # not decoration -- the index makes claims about them and the tests check them.
@@ -86,6 +135,7 @@ T = r"""<!doctype html>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Read the Game — hockey, made legible</title>
 <meta name="description" content="A single NHL game, replayed so a new fan can see what the numbers are made of. Nothing modelled, nothing invented.">
+<meta http-equiv="Content-Security-Policy" content="__CSP__">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -136,6 +186,13 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .limits b{display:block;font-size:.93rem;margin-bottom:2px}
 .limits span{font-size:.87rem;color:var(--muted)}
 
+.state{font-size:.83rem;color:var(--muted);margin:0 0 22px;padding:9px 14px;
+ background:#fff;border:1px solid var(--edge);border-left:3px solid var(--edge);
+ border-radius:0 9px 9px 0;max-width:70ch}
+.state[data-state="stalled"],.state[data-state="halted"]{border-left-color:var(--flag,#d9662b)}
+.state[data-state="behind"]{border-left-color:var(--buf)}
+.state[data-state="current"],.state[data-state="quiet"]{border-left-color:var(--min)}
+.state b{color:var(--ink);font-weight:600}
 a:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
 footer{margin-top:38px;padding-top:18px;border-top:1px solid var(--edge);
  font-size:.79rem;color:var(--muted);max-width:70ch}
@@ -149,6 +206,8 @@ footer p{margin:0 0 8px}
 <p class="eyebrow">Read the Game</p>
 <h1>__H1__</h1>
 <p class="lede">__LEDE__</p>
+
+<p class="state" id="state" data-state="empty">Checking how current this data is&hellip;</p>
 
 <div class="board">
   <div class="tm a"><span class="ab">__AWAY__</span><span class="sh">__AWAY_SHOTS__ shots</span></div>
@@ -180,6 +239,31 @@ and colours are used to identify the teams; no league or club logos or marks app
 <a href="https://github.com/shilohisadog/read-the-game">github.com/shilohisadog/read-the-game</a></p>
 </footer>
 </div>
+<script>
+__LIB__
+/* The freshness of this page is fetched, never baked in. Pages serves code and
+   R2 serves data; a state compiled into a deployed page would be a lie by the
+   next morning, and the nightly ingest deliberately does not trigger a deploy.
+
+   A failure here is a state, not an exception: no answer means we cannot say
+   how current the data is, and the page says exactly that rather than staying
+   silent or guessing. Opened from disk, fetch fails and the same line appears,
+   which is honest -- a saved copy genuinely has no idea. */
+(function () {
+  var el = document.getElementById('state');
+  function render(index) {
+    var r = describe(index, new Date().toISOString());
+    el.setAttribute('data-state', r.state);
+    el.textContent = r.lines.join(' ');
+  }
+  try {
+    fetch(__ORIGIN__ + '/index.json', { cache: 'no-store' })
+      .then(function (res) { return res.ok ? res.json() : null; })
+      .then(render)
+      .catch(function () { render(null); });
+  } catch (e) { render(null); }
+})();
+</script>
 </body>
 </html>
 """
@@ -206,7 +290,9 @@ def _limits():
 
 
 def build():
-    return (T.replace("__H1__", H1)
+    html = (T.replace("__LIB__", _lib())
+             .replace("__ORIGIN__", repr(DATA_ORIGIN).replace("'", '"'))
+             .replace("__H1__", H1)
              .replace("__LEDE__", LEDE)
              .replace("__AWAY_SHOTS__", str(GAME["away_shots"]))
              .replace("__HOME_SHOTS__", str(GAME["home_shots"]))
@@ -220,6 +306,9 @@ def build():
              .replace("__VIEWS__", _views())
              .replace("__LIMITS__", _limits())
              .replace("__GAME_ID__", GAME["id"]))
+    # Stamped last: the hashes must cover the final bytes of the script and
+    # style, and the CSP itself sits in <head>, outside both.
+    return html.replace("__CSP__", _csp(html))
 
 
 def main():
