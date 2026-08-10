@@ -32,6 +32,10 @@ on:
         description: 'Window length in days'
         default: '14'
         required: false
+      delay:
+        description: 'Seconds to wait after each request. Use ~0.3 for a season backfill.'
+        default: '0'
+        required: false
 
 concurrency:
   group: ingest
@@ -80,6 +84,32 @@ jobs:
             --no-progress
           echo "rehydrated $(find ingest -name latest.json | wc -l) game pointers"
 
+      # PROVE THE POINTERS RESOLVE, rather than believing them.
+      #
+      # A pointer names three content-addressed objects. Nothing here is
+      # transactional, so a job killed mid-sync can leave a pointer whose bytes
+      # are still queued -- and the convergence loop would then trust it forever:
+      # re-fetch, hash, digests match, report `unchanged`, write nothing. The
+      # hole would be invisible and permanent, because `unchanged` is the steady
+      # state of a pipeline that is working.
+      #
+      # This rides on the rehydrate that already happened, so it costs one
+      # listing and no per-object requests. A dangling pointer is dropped
+      # locally, which makes that game read as new in the fetch below and
+      # repairs itself on this same run. Nothing is ever deleted from R2.
+      - name: every pointer must name bytes that are really there
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: |
+          aws s3api list-objects-v2 --bucket "$BUCKET" \
+            --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" \
+            --query 'Contents[].Key' --output text \
+            | tr '\t' '\n' | grep -v '^None$' | sed '/^$/d' > bucket-keys.txt || true
+          echo "bucket holds $(wc -l < bucket-keys.txt) objects"
+          python3 builders/fetch_nhl.py --audit bucket-keys.txt --out ingest | head -40
+
       - name: fetch the window
         id: fetch
         run: |
@@ -93,7 +123,8 @@ jobs:
           # while implementing the design that warns about it would be quite
           # something.
           set +e
-          python3 builders/fetch_nhl.py --end "$END" --days "${WINDOW}" --out ingest | tee report.json
+          python3 builders/fetch_nhl.py --end "$END" --days "${WINDOW}" \
+            --delay "${{ inputs.delay || '0' }}" --out ingest | tee report.json
           code=${PIPESTATUS[0]}
           set -e
           echo "fetch exited ${code}"
@@ -121,9 +152,61 @@ jobs:
           # No --delete, ever. Raw feeds are content-addressed and immutable;
           # an amendment adds a version rather than replacing one, and deleting
           # would destroy the history the window exists to measure.
-          aws s3 sync ingest/ "s3://${BUCKET}/" \
-            --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" \
-            --no-progress
+          #
+          # THREE PASSES, STRICTLY ORDERED, BECAUSE NOTHING HERE IS
+          # TRANSACTIONAL. A pointer must never name bytes the bucket does not
+          # hold, and `index.json` must never advertise a game that cannot be
+          # served. One sync gives no ordering between a game's raw objects and
+          # its latest.json, so a job killed midway could publish the pointer
+          # first -- and the convergence loop would then believe it forever.
+          #
+          # `set -e` is what makes this a guarantee rather than a hope: a pass
+          # that fails stops the ones after it, so a pointer in the bucket
+          # implies its bytes are in the bucket. Dying during pass 1 leaves
+          # orphaned raw objects with no pointers, which is the harmless
+          # direction -- the game reads as new next run and is simply rewritten.
+          #
+          # The filters discriminate by FILENAME. AWS CLI wildcards match across
+          # '/', so `--include 'raw/*/*.json'` would also match the three-segment
+          # content paths and defeat the whole point.
+          sync() { aws s3 sync ingest/ "s3://${BUCKET}/" \
+                     --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress "$@"; }
+
+          # PROVE THE FILTERS PARTITION BEFORE TRUSTING THEM. The ordering above
+          # is only a guarantee if every file lands in exactly one pass: a file
+          # in no pass is silently never uploaded, and a raw object that leaked
+          # into the pointer pass would break the very ordering this exists to
+          # create. --dryrun answers with the real CLI's own wildcard semantics
+          # rather than my reading of them.
+          dry() { sync --dryrun "$@" | sed -n "s|.*to s3://${BUCKET}/||p" | sort; }
+          dry --exclude 'index.json' --exclude '*latest.json' > p1.txt
+          dry --exclude '*' --include '*latest.json'          > p2.txt
+          dry                                                 > all.txt
+          grep -vx 'index.json' all.txt > expected.txt || true
+          if [ -s p1.txt ] && [ -s p2.txt ] && [ -n "$(comm -12 p1.txt p2.txt)" ]; then
+            echo "::error::a file is claimed by two passes — ordering is not guaranteed"
+            comm -12 p1.txt p2.txt | head; exit 1
+          fi
+          if ! cmp -s <(sort -u p1.txt p2.txt) <(sort -u expected.txt); then
+            echo "::error::the passes do not cover everything that needs uploading"
+            diff <(sort -u p1.txt p2.txt) <(sort -u expected.txt) | head; exit 1
+          fi
+          n=$(wc -l < all.txt)
+          if [ "$n" = 0 ]; then
+            echo "  nothing to upload this run — the partition check is vacuous"
+          else
+            echo "  $n objects partition cleanly: $(wc -l < p1.txt) raw, $(wc -l < p2.txt) pointers, index"
+          fi
+
+          echo "1/3 raw feeds"
+          sync --exclude 'index.json' --exclude '*latest.json'
+          echo "2/3 pointers"
+          sync --exclude '*' --include '*latest.json'
+          echo "3/3 index"
+          if [ -f ingest/index.json ]; then
+            aws s3 cp ingest/index.json "s3://${BUCKET}/index.json" \
+              --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress
+          fi
           echo "synced"
 
       # Syncing and assuming it landed is not verification -- the same lesson the

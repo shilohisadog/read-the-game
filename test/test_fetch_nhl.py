@@ -46,6 +46,12 @@ class DictStore:
         self.obj[key] = data
         self.writes.append(key)
 
+    def keys(self, prefix=""):
+        return [k for k in self.obj if k.startswith(prefix)]
+
+    def delete(self, key):
+        self.obj.pop(key, None)
+
 
 def schedule_payload(date, games):
     """A schedule response shaped like the real one: a WEEK, keyed by date."""
@@ -225,6 +231,109 @@ class Classification(unittest.TestCase):
         ]).decode()))
         self.assertEqual(got.final[0]["gameType"], 1)
         self.assertEqual(got.final[0]["date"], "2025-09-21")
+
+
+class PointersMustResolve(unittest.TestCase):
+    """A pointer naming bytes the bucket does not hold is invisible and permanent.
+
+    `latest.json` names three digests; the objects live at content-addressed
+    paths. Nothing is transactional, so a job killed mid-sync can land a pointer
+    whose targets are still queued. What makes that nasty is not the dangling
+    pointer -- it is that the convergence loop TRUSTS the pointer without ever
+    checking it. Next run re-fetches the game, hashes it, matches the digests,
+    reports `unchanged` and writes nothing. The self-healing property we rely on
+    everywhere else is exactly what makes this hole permanent, because
+    `unchanged` is the steady state.
+
+    Ordering the sync (raw, then pointers, then index) prevents it. This is the
+    other half: proving we would notice if it happened for a reason we did not
+    think of.
+    """
+
+    def pointer(self, gid="1", **digests):
+        d = {"play-by-play": "aa", "boxscore": "bb", "shifts": "cc"}
+        d.update(digests)
+        return {F.latest_key(gid): json.dumps(d).encode()}
+
+    def keys_for(self, gid="1", feeds=("play-by-play", "boxscore", "shifts")):
+        d = {"play-by-play": "aa", "boxscore": "bb", "shifts": "cc"}
+        return {F.raw_key(gid, d[f], f) for f in feeds}
+
+    def test_an_intact_pointer_is_left_alone(self):
+        # MUTATION GUARD, and the important one. An over-eager audit that drops
+        # healthy pointers would make every run re-fetch the entire archive --
+        # turning a safety check into the most expensive bug we could ship.
+        store = DictStore(self.pointer())
+        dangling = F.audit_pointers(store, self.keys_for())
+        self.assertEqual(dangling, {})
+        self.assertIn(F.latest_key("1"), store.obj, "an intact pointer must survive")
+
+    def test_a_pointer_missing_one_of_its_three_feeds_is_caught(self):
+        # Two of three stored is a game that looks present and is not -- the
+        # same failure the no-partial-writes rule prevents on the fetch side.
+        store = DictStore(self.pointer())
+        dangling = F.audit_pointers(store, self.keys_for(feeds=("play-by-play", "boxscore")))
+        self.assertEqual(list(dangling), ["1"])
+        self.assertEqual(dangling["1"], [F.raw_key("1", "cc", "shifts")])
+
+    def test_the_repair_is_to_forget_the_pointer_not_to_delete_data(self):
+        # Dropping the LOCAL pointer makes the game read as new on this same
+        # run, so it is re-fetched and re-written. Nothing in the bucket is ever
+        # deleted -- the sync runs without --delete for the same reason.
+        store = DictStore(self.pointer())
+        F.audit_pointers(store, self.keys_for(feeds=("play-by-play",)), repair=True)
+        self.assertNotIn(F.latest_key("1"), store.obj)
+
+    def test_a_repaired_game_is_re_fetched_rather_than_reported_unchanged(self):
+        # THE END TO END CLAIM. Without the audit this game reports `unchanged`
+        # forever and its bytes are never restored.
+        digests = {n: hashlib.sha256(b).hexdigest()
+                   for n, b in (("play-by-play", PBP), ("boxscore", BOX), ("shifts", SHF))}
+        store = DictStore({F.latest_key("1"): json.dumps(digests).encode()})
+        t = transport_for({**feed_routes(), "/v1/schedule/": (200, schedule_payload(
+            "2026-01-10", [game(1)]))})
+
+        before = F.ingest("2026-01-10", 1, t, store)
+        self.assertEqual(before.unchanged, 1, "the pointer is believed, and nothing is written")
+        self.assertNotIn(F.raw_key(1, digests["shifts"], "shifts"), store.obj,
+                         "the bytes really are absent")
+
+        F.audit_pointers(store, present=set(), repair=True)
+        after = F.ingest("2026-01-10", 1, t, store)
+        self.assertEqual(after.fetched, 1, "after the repair it is new again")
+        self.assertIn(F.raw_key(1, digests["shifts"], "shifts"), store.obj,
+                      "and the missing bytes are restored")
+
+    def test_a_bucket_holding_unrelated_keys_does_not_confuse_the_audit(self):
+        store = DictStore(self.pointer())
+        present = self.keys_for() | {"index.json", "raw/999/latest.json", "catalog/2025.json"}
+        self.assertEqual(F.audit_pointers(store, present), {})
+
+
+class Pacing(unittest.TestCase):
+    """Politeness is a wrapper, not a change to the run.
+
+    `ingest` sees no clock for the same reason it sees no socket: the moment it
+    can sleep, every test that exercises it can sleep too. Pacing wraps the
+    transport instead, so the loop is unchanged and the delay is testable
+    without one second passing.
+    """
+
+    def test_a_delay_sleeps_once_per_request(self):
+        slept = []
+        t = F.paced(lambda u: (200, b"x"), 0.4, sleep=slept.append)
+        t("a"); t("b")
+        self.assertEqual(slept, [0.4, 0.4])
+
+    def test_no_delay_never_sleeps(self):
+        slept = []
+        t = F.paced(lambda u: (200, b"x"), 0, sleep=slept.append)
+        t("a")
+        self.assertEqual(slept, [], "the nightly run must not pay for the backfill's manners")
+
+    def test_pacing_does_not_alter_the_response(self):
+        t = F.paced(lambda u: (503, b"nope"), 0.1, sleep=lambda s: None)
+        self.assertEqual(t("u"), (503, b"nope"))
 
 
 class NeverInterprets(unittest.TestCase):

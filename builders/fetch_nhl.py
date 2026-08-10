@@ -190,6 +190,62 @@ def latest_key(game_id):
     return f"raw/{game_id}/latest.json"
 
 
+def audit_pointers(store, present, repair=False):
+    """Every pointer must name bytes the bucket actually holds.
+
+    `present` is the set of object keys really in the bucket, from a listing.
+    Returns {game_id: [missing keys]} and, with repair=True, forgets the local
+    pointer for each -- which makes that game read as NEW on this same run, so
+    it is re-fetched and re-written. Nothing in the bucket is ever deleted; the
+    sync runs without --delete for the same reason.
+
+    WHY THIS EXISTS. Nothing here is transactional. A job killed mid-sync can
+    land a pointer whose targets are still queued, and the damage is not the
+    dangling pointer -- it is that the convergence loop trusts the pointer
+    without checking it. The next run re-fetches the game, hashes it, matches
+    the digests, reports `unchanged` and writes nothing, so the hole is
+    invisible and permanent. `unchanged` is the steady state of a converging
+    pipeline, which is exactly what makes it a good place for a bug to live.
+
+    Ordering the sync (raw, then pointers, then index) prevents this. This is
+    the half that would catch it happening for a reason we did not think of.
+    """
+    dangling = {}
+    for key in sorted(store.keys("raw/")):
+        if not key.endswith("/latest.json"):
+            continue
+        raw = store.get(key)
+        if raw is None:
+            continue
+        gid = key.split("/")[1]
+        digests = json.loads(raw.decode())
+        missing = sorted(raw_key(gid, d, name) for name, d in digests.items()
+                         if raw_key(gid, d, name) not in present)
+        if missing:
+            dangling[gid] = missing
+            if repair:
+                store.delete(key)
+    return dangling
+
+
+def paced(transport, delay, sleep=None):
+    """Wrap a transport so it waits after each request.
+
+    A WRAPPER, NOT A PARAMETER TO `ingest`. The run sees no clock for the same
+    reason it sees no socket: the moment the loop can sleep, every test that
+    exercises the loop sleeps too. Here the delay is injectable and one line.
+    """
+    import time
+    sleep = sleep or time.sleep
+
+    def t(url):
+        r = transport(url)
+        if delay:
+            sleep(delay)
+        return r
+    return t
+
+
 def ingest(end, days, transport, store, now=None):
     rep = Report(window_days=days)
     dates = dates_in_window(end, days)
@@ -425,16 +481,54 @@ class FileStore:
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_bytes(data)
 
+    def keys(self, prefix=""):
+        base = self.root
+        if not base.exists():
+            return []
+        return [str(f.relative_to(base)) for f in base.rglob("*")
+                if f.is_file() and str(f.relative_to(base)).startswith(prefix)]
+
+    def delete(self, key):
+        p = self._p(key)
+        if p.exists():
+            p.unlink()
+
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--end", default=date.today().isoformat(), help="last date of the window")
     ap.add_argument("--days", type=int, default=14, help="window length")
     ap.add_argument("--out", default="ingest", help="directory to write")
+    ap.add_argument("--delay", type=float, default=0.0,
+                    help="seconds to wait after each request (backfills; the "
+                         "nightly window is small enough not to need it)")
+    ap.add_argument("--audit", metavar="KEYFILE",
+                    help="a listing of the keys the bucket really holds, one per "
+                         "line. Pointers naming anything absent are forgotten, so "
+                         "those games are re-fetched on this run.")
     a = ap.parse_args()
 
     store = FileStore(a.out)
-    rep = ingest(a.end, a.days, http, store)
+
+    # A MODE, NOT A PREFIX. Falling through into the run would fetch a window
+    # nobody asked for and rewrite index.json with its coverage -- an audit that
+    # damages the ledger it exists to protect.
+    if a.audit:
+        present = {ln.strip() for ln in pathlib.Path(a.audit).read_text().split() if ln.strip()}
+        checked = sum(1 for k in store.keys("raw/") if k.endswith("/latest.json"))
+        dangling = audit_pointers(store, present, repair=True)
+        print(f"audit: {len(present)} keys in the bucket, {checked} pointers checked, "
+              f"{len(dangling)} dangling")
+        for gid, missing in sorted(dangling.items()):
+            extra = f" (+{len(missing) - 1} more)" if len(missing) > 1 else ""
+            print(f"  game {gid} claimed bytes that are not there: {missing[0]}{extra}")
+        if dangling:
+            print("  those pointers were forgotten; those games will be re-fetched")
+        # Not a failure. A repair is the system working, and failing here would
+        # stop the very run that fixes it.
+        return 0
+
+    rep = ingest(a.end, a.days, paced(http, a.delay), store)
 
     print(json.dumps(rep.as_dict(), indent=2))
     if rep.halted:
