@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Read the Game — hockey, made legible</title>
 <meta name="description" content="A single NHL game, replayed so a new fan can see what the numbers are made of. Nothing modelled, nothing invented.">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-I/SZDa1yFt1QhtpQoZmr2XIxqkmPDRD/N58WkPdcFXU='; style-src 'sha256-l37t5dJq8N7RAXk10n6QzGlWrjLORgKth2uyqN6kGFs='; connect-src 'self' https://data.readthegame.co; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-n5PReQFNFF/lyw+/Ns+y/oMTbGt66kNUIAtpVQmYkCE='; style-src 'sha256-l37t5dJq8N7RAXk10n6QzGlWrjLORgKth2uyqN6kGFs='; connect-src 'self' https://data.readthegame.co; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -221,18 +221,47 @@ function describe(index, now) {
   const c = index.coverage;
   if (c && Number.isFinite(c.finalInWindow)) {
     const held = c.heldInWindow || 0;
-    if (c.finalInWindow === 0) {
+    const unread = c.unknownStateInWindow || 0;
+
+    // THE DENOMINATOR IS THE HOCKEY, NOT OUR COMPREHENSION OF IT.
+    //
+    // `finalInWindow` counts games we recognised as final, so games in a state
+    // we cannot read are excluded from it — correctly, since we cannot claim
+    // they are over. Using it as the denominator meant the page compared what we
+    // hold against what we managed to understand, which flatters us exactly when
+    // we are doing worst: "we have 10 of the 10 games played" with ninety more
+    // played and dropped. At the limit it produced an outright false sentence —
+    // every game unreadable gives zero, and the page announced "no games in the
+    // last 14 days" over a full slate. Preseason guaranteed that: all 56 sit in
+    // state FINAL, which we had never observed.
+    //
+    // Older indexes predate `gamesInWindow`, so reconstruct it rather than
+    // defaulting to zero — defaulting would reintroduce the false sentence on
+    // precisely the indexes written before the fix.
+    const played = Number.isFinite(c.gamesInWindow)
+      ? c.gamesInWindow
+      : c.finalInWindow + unread;
+
+    if (played === 0) {
       lines.push(`No games in the last ${c.windowDays} days.`);
       return { state: 'quiet', lines };
     }
-    if (held < c.finalInWindow) {
+    if (held < played) {
       // "Still loading" would promise progress we cannot guarantee — a claim
       // about a future rather than a count. The duller sentence is the true one.
-      lines.push(`We have ${held} of the ${c.finalInWindow} games played in ` +
+      lines.push(`We have ${held} of the ${played} games played in ` +
         `the last ${c.windowDays} days.`);
+      // Two different facts, so two sentences. Refused means we hold the bytes
+      // and the event vocabulary defeated us; unreadable means we never fetched,
+      // because the league lists the game in a state we cannot interpret as
+      // over. Folding them together would report a cause we have not established.
       if (c.refusedInWindow > 0) {
         lines.push(`${c.refusedInWindow} ${c.refusedInWindow === 1 ? 'is' : 'are'} ` +
           `not published — the league's feed contains something we don't recognise.`);
+      }
+      if (unread > 0) {
+        lines.push(`${unread} ${unread === 1 ? 'is' : 'are'} listed in a ` +
+          `state we don't recognise yet, so we haven't read ${unread === 1 ? 'it' : 'them'}.`);
       }
       return { state: 'behind', lines };
     }

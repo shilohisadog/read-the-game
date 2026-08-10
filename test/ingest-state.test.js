@@ -107,6 +107,76 @@ test('a refused game is reported separately from a missing one', () => {
     'a fetch that may retry must not be described as a refusal');
 });
 
+test('a night we could not read never reports as "no games"', () => {
+  // THE FALSE SENTENCE. `finalInWindow` counts games we RECOGNISED as final, so
+  // a window where every game sits in a state we don't know gives zero — and the
+  // page said "No games in the last 14 days" while the league played 56. That is
+  // not a missing claim, it is a wrong one, generated entirely by our own
+  // ignorance, and it was guaranteed to ship the moment preseason was ingested:
+  // all 56 preseason games are in state FINAL, which we had never seen.
+  const r = describe(idx({
+    coverage: { windowDays: 14, gamesInWindow: 56, finalInWindow: 0, heldInWindow: 0,
+                erroredInWindow: 0, refusedInWindow: 0, unknownStateInWindow: 56 },
+  }), NOW);
+  assert.equal(r.state, 'behind', 'games were played; this is not a quiet night');
+  assert.doesNotMatch(text(r), /No games in the last/,
+    'the league played 56 games — saying otherwise is a false claim about the world');
+  assert.match(text(r), /0 of the 56 games/);
+  assert.match(text(r), /56 .*state we don't recognise/);
+});
+
+test('the denominator is what the league played, not what we understood', () => {
+  // The old sentence compared what we hold against what we managed to read,
+  // which flatters us exactly when we are doing worst: 10 of 10, while 90 more
+  // were played and silently dropped. A reader asking "how much of the hockey do
+  // you have" is asking about the hockey.
+  const r = describe(idx({
+    coverage: { windowDays: 14, gamesInWindow: 100, finalInWindow: 10, heldInWindow: 10,
+                erroredInWindow: 0, refusedInWindow: 0, unknownStateInWindow: 90 },
+  }), NOW);
+  assert.equal(r.state, 'behind');
+  assert.match(text(r), /10 of the 100 games/);
+});
+
+test('a genuinely quiet window still reads as quiet', () => {
+  // MUTATION GUARD. If the fix above were "never say quiet", the offseason — the
+  // state the live site is in right now — would start reporting a shortfall
+  // against zero games. Nothing was played, so nothing is missing.
+  const r = describe(idx({
+    coverage: { windowDays: 14, gamesInWindow: 0, finalInWindow: 0, heldInWindow: 0,
+                erroredInWindow: 0, refusedInWindow: 0, unknownStateInWindow: 0 },
+  }), NOW);
+  assert.equal(r.state, 'quiet');
+  assert.match(text(r), /No games in the last 14 days/);
+});
+
+test('an index written before gamesInWindow existed still renders truthfully', () => {
+  // The live index has no `gamesInWindow` and will not until the next run. The
+  // fallback must be derived from what such an index does carry, not assumed to
+  // be zero — assuming would reintroduce the false sentence on exactly the
+  // indexes that predate the fix.
+  const r = describe(idx({
+    coverage: { windowDays: 14, finalInWindow: 4, heldInWindow: 4,
+                erroredInWindow: 0, refusedInWindow: 0, unknownStateInWindow: 3 },
+  }), NOW);
+  assert.equal(r.state, 'behind');
+  assert.match(text(r), /4 of the 7 games/, 'reconstructed as final + unknown');
+});
+
+test('refused and unreadable are different facts and get different sentences', () => {
+  // Refused: we hold the bytes and the event vocabulary defeated us.
+  // Unknown state: we never fetched, because we could not tell the game was over.
+  // Folding them together would report a cause we have not established.
+  const r = describe(idx({
+    coverage: { windowDays: 14, gamesInWindow: 10, finalInWindow: 8, heldInWindow: 6,
+                erroredInWindow: 0, refusedInWindow: 2, unknownStateInWindow: 2 },
+  }), NOW);
+  const t = text(r);
+  assert.match(t, /6 of the 10 games/);
+  assert.match(t, /2 are not published/);
+  assert.match(t, /2 .*state we don't recognise/);
+});
+
 test('halted explains itself, and outranks staleness', () => {
   const r = describe(idx({
     halted: { since: '2026-01-09T11:00:00Z', reason: "gameState 'PPD' in 4 games" },

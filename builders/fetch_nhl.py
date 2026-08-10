@@ -47,17 +47,28 @@ FEEDS = {
 
 # Game states known to mean "this game is over and its feed is complete".
 #
-# EXACTLY ONE VALUE, BECAUSE EXACTLY ONE HAS BEEN OBSERVED -- `OFF`, across 133
-# completed games sampled from three separate weeks (2023-11, 2024-04, 2025-01).
-# It is the offseason; nothing unfinished is reachable from here, so the states
-# meaning "scheduled", "in progress" or "final but not yet official" are unseen.
+# TWO VALUES, BECAUSE TWO HAVE BEEN OBSERVED. This set grows only with the value
+# in front of us, and it grew once already -- which is worth reading, because the
+# way it was wrong is the way an allowlist is always wrong.
 #
-# Writing down a larger set would be guessing at the feed, which is the one thing
-# this project does not do. The first in-season run is therefore EXPECTED to
-# refuse games and report their states, and that report is how this set grows --
-# deliberately, with the value in front of us. Same contract as extract.py
-# --vocab, applied one layer earlier.
-FINAL_STATES = frozenset({"OFF"})
+#   `OFF`    133 completed games across 2023-11, 2024-04 and 2025-01.
+#   `FINAL`  found by sampling the 2025-26 season end to end instead of three
+#            regular-season weeks: 395 games over ten spread weeks came back 339
+#            `OFF` and 56 `FINAL`. The split is exact -- all 56 are gameType 1,
+#            every gameType 2 and 3 game is `OFF`, no crossover either way.
+#            Preseason games are never officialised. They rest in `FINAL`
+#            permanently, still carrying complete scores eleven months on.
+#
+# `FINAL` was never new. It has always been there and the first sample could not
+# see it, because it was drawn entirely from the part of the calendar where it
+# does not occur. OUR IGNORANCE IS NOT THE LEAGUE'S CHANGE -- the distinction
+# this whole file now turns on, and the reason the halt below was rewritten.
+#
+# STILL UNOBSERVABLE UNTIL OCTOBER: whether a regular-season game passes through
+# `FINAL` between the final horn and being officialised. If it does, the 11:00
+# UTC run now recognises it rather than refusing it, and the 14-day window
+# re-checks it either way, so an early read costs nothing.
+FINAL_STATES = frozenset({"OFF", "FINAL"})
 
 SCHEDULE_SPAN = 7   # /v1/schedule/{date} answers with a seven-day week (verified)
 
@@ -120,6 +131,13 @@ def classify(schedule, dates=None):
             # Carried on the game so dataThrough never has to be derived from
             # our clock -- a 22:00 Pacific game belongs to its game date, not to
             # the following UTC day.
+            #
+            # `gameType` rides along for the same reason (1 preseason, 2 regular
+            # season, 3 playoffs). NOTHING HERE FILTERS ON IT -- everything the
+            # league calls final is ingested, including exhibition hockey on
+            # half-AHL rosters that we may well never show. A filter here would
+            # cost a request to the league to undo; a filter at render time costs
+            # a line of code, and the asymmetry only points one way.
             g = {**g, "date": week.get("date")}
             (got.final if g.get("gameState") in FINAL_STATES else got.unknown).append(g)
     return got
@@ -136,6 +154,7 @@ class Report:
     refused: int = 0        # games rejected by the extraction vocabulary gate
     unknown_state: int = 0  # games whose gameState we do not recognise
     final_in_window: int = 0
+    games_in_window: int = 0  # every game the league listed, read or not
     errored: int = 0
     window_days: int = 0
     errors: list = field(default_factory=list)
@@ -148,6 +167,7 @@ class Report:
         return {"fetched": self.fetched, "unchanged": self.unchanged,
                 "amended": self.amended, "refused": self.refused,
                 "unknownState": self.unknown_state, "finalInWindow": self.final_in_window,
+                "gamesInWindow": self.games_in_window,
                 "errored": self.errored, "errors": self.errors,
                 "unknownStates": self.unknown_states,
                 "halted": self.halted, "haltReason": self.halt_reason}
@@ -193,25 +213,49 @@ def ingest(end, days, transport, store, now=None):
                 st = g.get("gameState")
                 rep.unknown_states.setdefault(st, []).append(g["id"])
 
-    # CORRELATION, NOT SCOPE. One game with an odd state is that game's problem
-    # and the rest of the night should publish. The SAME unknown value across
-    # more than one game is a feed change, and publishing 6 of 7 games while
-    # quietly dropping the 7th is the kind of partial success that reads as
-    # health. So a recurring unknown stops the line before anything is fetched.
     rep.final_in_window = len(schedule_games)
+    rep.games_in_window = rep.final_in_window + rep.unknown_state
 
-    for st, ids in rep.unknown_states.items():
-        if len(ids) > 1:
-            rep.halted = True
-            rep.halt_reason = (f"gameState {st!r} appeared in {len(ids)} games "
-                               f"({', '.join(str(i) for i in ids)}) — the feed's "
-                               f"vocabulary has changed; refusing the whole run")
-            # A HALT IS RUNNING. lastRun advances, because the alternative makes
-            # a deliberate stop byte-identical to a dead pipeline -- the same
-            # conflation this state model was written to remove. Coverage is NOT
-            # refreshed: the run refused to look, so it established nothing.
-            _write_index(store, rep, now, coverage=False)
-            return rep
+    # TOTAL INCOMPREHENSION, NOT CORRELATION.
+    #
+    # The rule here used to be: the same unknown state in more than one game is
+    # a feed change, so stop. It was well argued and it was calibrated on a
+    # sample that could not contain its own counterexample. `FINAL` sits on all
+    # 56 preseason games in a sampled season, so a backfill halted before
+    # fetching a byte -- and if regular-season games ever rest in `FINAL` briefly
+    # after the horn, two of them would have destroyed a whole night's ingest.
+    #
+    # The flaw is that it read "a value we have not enumerated" as "a value the
+    # league has changed". Those are different claims and only one of them is
+    # about the league. A rare state repeating is not evidence of anything
+    # except that the state is rare.
+    #
+    # What we actually cannot survive is losing the ability to read finality at
+    # all: the window holds games and NOT ONE of them is in a state we know. Then
+    # we have no evidence the feed still means what we think it means, and
+    # publishing our reading of it would be a guess. That is a rule rather than a
+    # threshold, so no rare value can trip it, and one recognised game is enough
+    # to disprove it.
+    #
+    # THIS NARROWING IS ONLY SAFE BECAUSE OF `gamesInWindow`. The old halt was
+    # quietly load-bearing for something it was never described as doing: an
+    # unrecognised game is excluded from finalInWindow, so it fell outside the
+    # only equation that could fail, and a night we mostly could not parse
+    # reported as healthy. Refusals are inside an equation now, and the front
+    # page says what it did not understand. Remove that and this halt is too
+    # weak; they ship together or not at all.
+    if rep.games_in_window and not schedule_games:
+        seen = ", ".join(f"{st!r}×{len(ids)}" for st, ids in sorted(rep.unknown_states.items()))
+        rep.halted = True
+        rep.halt_reason = (f"none of the {rep.games_in_window} games in the window are in a "
+                           f"state we recognise as final (saw {seen}) — we can no longer read "
+                           f"this feed; refusing the whole run")
+        # A HALT IS RUNNING. lastRun advances, because the alternative makes
+        # a deliberate stop byte-identical to a dead pipeline -- the same
+        # conflation this state model was written to remove. Coverage is NOT
+        # refreshed: the run refused to look, so it established nothing.
+        _write_index(store, rep, now, coverage=False)
+        return rep
 
     for g in schedule_games:
         gid = g["id"]
@@ -236,7 +280,8 @@ def ingest(end, days, transport, store, now=None):
 
         if prev and all(prev.get(n) == d for n, d in digests.items()):
             rep.unchanged += 1
-            rep.games.append({"id": gid, "date": g.get("date"), "state": "unchanged"})
+            rep.games.append({"id": gid, "date": g.get("date"),
+                              "type": g.get("gameType"), "state": "unchanged"})
             continue
 
         for name, body in payloads.items():
@@ -247,10 +292,12 @@ def ingest(end, days, transport, store, now=None):
 
         if prev:
             rep.amended += 1
-            rep.games.append({"id": gid, "date": g.get("date"), "state": "amended"})
+            rep.games.append({"id": gid, "date": g.get("date"),
+                              "type": g.get("gameType"), "state": "amended"})
         else:
             rep.fetched += 1
-            rep.games.append({"id": gid, "date": g.get("date"), "state": "new"})
+            rep.games.append({"id": gid, "date": g.get("date"),
+                              "type": g.get("gameType"), "state": "new"})
 
     # The index is written on EVERY completed run, including one that fetched
     # nothing. The earlier rule -- an empty night writes nothing -- existed only
@@ -270,13 +317,28 @@ def _write_index(store, rep, now, coverage=True):
     `coverage`    what the window expected against what we hold, with its own
                   `asOf` so figures from before a halt cannot read as current.
 
-    The ledger closes: finalInWindow = held + errored + refused. That is the
-    same conservation discipline as `counted + excluded` in the layers, pointed
-    at the pipeline instead of the game, so it fails loudly in the same way.
+    TWO LEDGERS, BECAUSE THERE ARE TWO QUESTIONS:
 
-    Games whose `gameState` we do not recognise are reported ALONGSIDE that
-    ledger and never inside it -- we cannot say whether such a game is final, so
-    counting it against `finalInWindow` would assert something unsupported.
+        gamesInWindow = finalInWindow + unknownStateInWindow
+        finalInWindow = heldInWindow + erroredInWindow + refusedInWindow
+
+    The second is the original, the same conservation discipline as
+    `counted + excluded` in the layers, pointed at the pipeline instead of the
+    game so it fails loudly in the same way.
+
+    The first is new, and it closes a hole the second could not see. A game
+    whose `gameState` we cannot read is deliberately kept OUT of
+    `finalInWindow` -- we do not know whether it is final, so counting it there
+    would assert something unsupported. That is still right, and it meant such
+    games sat outside the only equation that could fail: ninety refusals in a
+    hundred left held == finalInWindow, the ledger closing perfectly, and the
+    front page reading a night we mostly could not parse as entirely healthy.
+
+    One equation could not carry it, because "how many games did the league
+    play" and "of the ones we could read, how many did we get" are different
+    questions and folding them together is the conflation this schema exists to
+    end. So `gamesInWindow` counts every game the league listed, read or not,
+    and nothing can now fall outside both equations.
     """
     stamp = now or datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     prev_raw = store.get("index.json")
@@ -294,6 +356,8 @@ def _write_index(store, rep, now, coverage=True):
         entry["id"] = g["id"]
         if g.get("date"):
             entry["date"] = g["date"]
+        if g.get("type") is not None:
+            entry["type"] = g["type"]
     idx["games"] = sorted(by_id.values(), key=lambda g: str(g["id"]))
 
     # The replaced field is removed rather than left beside its replacement,
@@ -312,6 +376,7 @@ def _write_index(store, rep, now, coverage=True):
     if coverage:
         idx["coverage"] = {
             "windowDays": rep.window_days,
+            "gamesInWindow": rep.games_in_window,
             "finalInWindow": rep.final_in_window,
             "heldInWindow": rep.fetched + rep.amended + rep.unchanged,
             "erroredInWindow": rep.errored,

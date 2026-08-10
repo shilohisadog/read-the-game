@@ -129,12 +129,27 @@ class Classification(unittest.TestCase):
         self.assertIn("OFF", F.FINAL_STATES)
 
     def test_the_allowlist_holds_only_what_has_been_observed(self):
-        # 133 completed games sampled across three weeks showed exactly one
-        # value. It is August; nothing unfinished is reachable. Writing down a
-        # larger set would be guessing at the feed, which is the one thing this
-        # project does not do -- so the first in-season run is EXPECTED to refuse
-        # and report, and that report is how the set grows.
-        self.assertEqual(set(F.FINAL_STATES), {"OFF"})
+        # The set grows ONLY against observation, and it just grew.
+        #
+        # The original 133-game sample was drawn from regular-season weeks and
+        # showed exactly one value, `OFF`. Sampling the whole 2025-26 season
+        # instead -- preseason through the final -- showed a second: 395 games
+        # across ten spread weeks came back 339 `OFF` and 56 `FINAL`, and the
+        # split is not random. All 56 are gameType 1 and every gameType 2 and 3
+        # game is `OFF`, with no crossover in either direction. Preseason games
+        # are never officialised; they rest in `FINAL` permanently, still
+        # carrying complete scores eleven months later.
+        #
+        # So `FINAL` was never new. It has always been there and our sample
+        # could not see it, which is the distinction this whole class of bug
+        # turns on: OUR IGNORANCE IS NOT THE LEAGUE'S CHANGE.
+        #
+        # STILL OPEN, and only October can answer it: whether a regular-season
+        # game passes through `FINAL` transiently between the final horn and
+        # being officialised. If it does, the 11:00 UTC run meets last night's
+        # games in a state it now recognises -- which is the right outcome
+        # either way, and the 14-day window re-checks them regardless.
+        self.assertEqual(set(F.FINAL_STATES), {"OFF", "FINAL"})
 
     def test_an_unknown_state_is_refused_and_named(self):
         got = F.classify(json.loads(schedule_payload("2026-01-10", [
@@ -184,6 +199,32 @@ class Classification(unittest.TestCase):
         got = F.classify(week, ["2026-01-10"])
         self.assertEqual([g["id"] for g in got.final], [3])
         self.assertEqual(got.unknown, [], "an out-of-window oddity is not our business")
+
+    def test_preseason_is_ingested_like_any_other_game(self):
+        # A DELIBERATE SCOPE DECISION, recorded here because the alternative is
+        # invisible. Preseason is exhibition hockey on half-AHL rosters and we
+        # may well never show it -- but a filter at ingest time costs a request
+        # to the league to undo, and a filter at render time costs a line of
+        # code. So we take everything the league calls final and choose later.
+        #
+        # This test also exists because excluding preseason would have made the
+        # `FINAL` problem disappear from view without fixing it, which is
+        # letting a broken gate decide what the product is.
+        got = F.classify(json.loads(schedule_payload("2025-09-21", [
+            game(1, state="FINAL", gtype=1), game(2, state="OFF", gtype=2),
+        ]).decode()))
+        self.assertEqual(sorted(g["id"] for g in got.final), [1, 2])
+        self.assertEqual(got.unknown, [])
+
+    def test_the_game_type_is_carried_like_the_date(self):
+        # Carried from the schedule for the same reason `date` is: so the
+        # decision about what to SHOW can be made downstream, off data we hold,
+        # rather than by re-deriving it or going back to the feed.
+        got = F.classify(json.loads(schedule_payload("2025-09-21", [
+            game(1, state="FINAL", gtype=1),
+        ]).decode()))
+        self.assertEqual(got.final[0]["gameType"], 1)
+        self.assertEqual(got.final[0]["date"], "2025-09-21")
 
 
 class NeverInterprets(unittest.TestCase):
@@ -274,9 +315,33 @@ class Convergence(unittest.TestCase):
         self.assertEqual(latest["play-by-play"], hashlib.sha256(amended).hexdigest())
 
 
-class VocabularyIsCorrelated(unittest.TestCase):
-    """CHENG: the axis is correlation, not scope. One game failing is that
-    game's problem; every game failing the same way is a feed change."""
+class TheHaltIsForTotalIncomprehension(unittest.TestCase):
+    """The rule was CORRELATION -- the same unknown state in more than one game
+    halts the run. It was CHENG's, it was well argued, and it was calibrated on
+    a sample that could not see the case that breaks it.
+
+    WHY IT CHANGED. `FINAL` appears on all 56 preseason games in a sampled
+    season. Under the correlation rule a backfill halts before fetching a single
+    byte, and if regular-season games ever sit in `FINAL` briefly after the horn,
+    the 11:00 UTC run destroys a whole night's ingest over two games. The rule
+    treats "a value we have not enumerated" as "a value the league has changed",
+    and those are different things -- 133 offseason games taught us one word of a
+    vocabulary and we wrote it down as the whole language.
+
+    WHAT REPLACES IT. Halt when the window holds games and we recognise NOTHING
+    in it as final. That is the actual catastrophe -- the feed's word for
+    finality moved and we can no longer read it at all -- and unlike a threshold
+    it is a rule, so a rare state can never trip it.
+
+    WHY THIS IS ONLY SAFE NOW. The correlation halt was load-bearing for
+    something it was never described as doing: an unrecognised game is excluded
+    from `finalInWindow`, so it sat outside the one equation that can fail, and
+    the front page read a 90%-refused night as healthy. Narrowing the halt
+    before closing that hole would have traded a loud wrong stop for a quiet
+    wrong success. `gamesInWindow` closes it (see CoverageConserves), and the
+    front page now says what it does not understand. The gate is narrowed only
+    because the thing it was silently compensating for is fixed.
+    """
 
     def run_with(self, games):
         store = DictStore()
@@ -290,18 +355,57 @@ class VocabularyIsCorrelated(unittest.TestCase):
         self.assertEqual(rep.fetched, 2, "the other two still go through")
         self.assertFalse(rep.halted)
 
-    def test_the_same_unknown_value_across_games_stops_the_run(self):
-        # Publishing 6 of 7 games silently is the kind of partial success that
-        # reads as health. A recurring unknown is a feed change, not an oddity.
-        rep, store = self.run_with([game(1, state="NEWSTATE"), game(2, state="NEWSTATE"), game(3)])
-        self.assertTrue(rep.halted, "a recurring unknown state must halt the run")
-        self.assertIn("NEWSTATE", str(rep.halt_reason))
-
-    def test_two_different_unknowns_do_not_halt(self):
-        # Correlation is the signal. Two unrelated oddities are two oddities.
-        rep, store = self.run_with([game(1, state="ODD_A"), game(2, state="ODD_B"), game(3)])
-        self.assertFalse(rep.halted)
+    def test_a_recurring_unknown_refuses_those_games_and_publishes_the_rest(self):
+        # THE INVERSION. This is the test that used to assert a halt. Two games
+        # in a state we cannot read is two games we cannot read -- the other one
+        # is complete, correct, and has no reason to be withheld. What made the
+        # old behaviour defensible was that the refusal was otherwise invisible;
+        # it is not invisible any more.
+        rep, store = self.run_with([game(1, state="NEWSTATE"),
+                                    game(2, state="NEWSTATE"), game(3)])
+        self.assertFalse(rep.halted, "a state we have not seen is not a feed change")
+        self.assertEqual(rep.fetched, 1, "the game we understand still publishes")
         self.assertEqual(rep.unknown_state, 2)
+        self.assertIn("NEWSTATE", rep.unknown_states)
+        self.assertEqual(sorted(rep.unknown_states["NEWSTATE"]), [1, 2],
+                         "and it is named, by state, with the games listed")
+
+    def test_understanding_nothing_in_a_window_that_has_games_halts(self):
+        # The catastrophe the halt is actually for: every game in the window is
+        # in a state we cannot read, so we have no evidence the feed still means
+        # what we think it means, and publishing our reading of it would be a
+        # guess.
+        rep, store = self.run_with([game(1, state="NEWSTATE"), game(2, state="OTHER")])
+        self.assertTrue(rep.halted)
+        self.assertEqual(rep.fetched, 0, "nothing may be fetched after a halt")
+        self.assertIn("NEWSTATE", str(rep.halt_reason))
+        self.assertIn("OTHER", str(rep.halt_reason))
+
+    def test_one_recognised_game_is_enough_to_prove_the_feed_still_reads(self):
+        # MUTATION GUARD on the rule above. If the halt were "most games are
+        # unknown" or any other threshold, this would trip it -- one game in
+        # fifty is a rounding error. It must not, because the claim being tested
+        # is "can we still read this feed at all", and one game answers it.
+        rep, store = self.run_with([game(i, state="NEWSTATE") for i in range(1, 50)]
+                                   + [game(99)])
+        self.assertFalse(rep.halted, "the halt is total incomprehension, not a majority")
+        self.assertEqual(rep.fetched, 1)
+        self.assertEqual(rep.unknown_state, 49)
+
+    def test_an_empty_window_is_not_a_catastrophe(self):
+        # August. No games were played, so understanding none of them is not
+        # evidence of anything. Without this the offseason halts every night.
+        rep, store = self.run_with([])
+        self.assertFalse(rep.halted)
+        self.assertEqual(rep.fetched, 0)
+
+    def test_preseason_no_longer_halts_the_run(self):
+        # The case that started this. Before `FINAL` was known, these two games
+        # were a correlated unknown and stopped everything.
+        rep, store = self.run_with([game(1, state="FINAL", gtype=1),
+                                    game(2, state="FINAL", gtype=1)])
+        self.assertFalse(rep.halted)
+        self.assertEqual(rep.fetched, 2)
 
 
 class Report(unittest.TestCase):
@@ -430,6 +534,47 @@ class IngestState(unittest.TestCase):
         self.assertEqual(c["finalInWindow"],
                          c["heldInWindow"] + c["erroredInWindow"] + c["refusedInWindow"],
                          f"the ledger must close: {c}")
+
+    def test_the_second_law_puts_unrecognised_games_inside_an_equation(self):
+        # THE HOLE THIS CLOSES, and it was a real one. A game whose state we
+        # cannot read is deliberately kept out of `finalInWindow` -- we do not
+        # know whether it is final, so counting it there would assert something
+        # unsupported. Correct, and it meant such games sat outside the ONLY
+        # equation that can fail. Ninety refusals out of a hundred left
+        # held == finalInWindow, the ledger closing perfectly, and the front page
+        # reading a night we mostly could not parse as entirely healthy.
+        #
+        # One equation could not express this, because the two questions are
+        # different: "how many games did the league play" and "of the ones we
+        # could read, how many did we get". So there are two.
+        #
+        #     gamesInWindow = finalInWindow + unknownStateInWindow
+        #     finalInWindow = heldInWindow + erroredInWindow + refusedInWindow
+        store = DictStore()
+        t = transport_for({**feed_routes(), "/v1/schedule/": (200, schedule_payload(
+            "2026-01-10", [game(1), game(2, state="ODD_A"), game(3, state="ODD_B")]))})
+        F.ingest("2026-01-10", 1, t, store, now="2026-01-11T11:00:00Z")
+        c = self.index(store)["coverage"]
+        self.assertEqual(c["gamesInWindow"], 3, "every game the league listed")
+        self.assertEqual(c["gamesInWindow"],
+                         c["finalInWindow"] + c["unknownStateInWindow"],
+                         f"no game may fall outside both equations: {c}")
+
+    def test_a_window_we_mostly_could_not_read_cannot_report_as_complete(self):
+        # MUTATION GUARD. The bug was not that a number was wrong -- every
+        # number was right. It was that no number moved. Drive the case that
+        # used to look healthy and require the evidence of it to be present.
+        store = DictStore()
+        games = [game(1)] + [game(i, state="ODD") for i in range(2, 11)]
+        t = transport_for({**feed_routes(), "/v1/schedule/": (200, schedule_payload(
+            "2026-01-10", games))})
+        F.ingest("2026-01-10", 1, t, store, now="2026-01-11T11:00:00Z")
+        c = self.index(store)["coverage"]
+        self.assertEqual(c["heldInWindow"], c["finalInWindow"],
+                         "the old ledger closes and looks perfect")
+        self.assertEqual(c["gamesInWindow"], 10)
+        self.assertEqual(c["unknownStateInWindow"], 9,
+                         "and the second law is the only thing that says otherwise")
 
     def test_a_game_whose_state_we_do_not_know_is_not_in_the_final_ledger(self):
         # A refusal on gameState is NOT the same as a refusal on event

@@ -101,18 +101,47 @@ export function describe(index, now) {
   const c = index.coverage;
   if (c && Number.isFinite(c.finalInWindow)) {
     const held = c.heldInWindow || 0;
-    if (c.finalInWindow === 0) {
+    const unread = c.unknownStateInWindow || 0;
+
+    // THE DENOMINATOR IS THE HOCKEY, NOT OUR COMPREHENSION OF IT.
+    //
+    // `finalInWindow` counts games we recognised as final, so games in a state
+    // we cannot read are excluded from it — correctly, since we cannot claim
+    // they are over. Using it as the denominator meant the page compared what we
+    // hold against what we managed to understand, which flatters us exactly when
+    // we are doing worst: "we have 10 of the 10 games played" with ninety more
+    // played and dropped. At the limit it produced an outright false sentence —
+    // every game unreadable gives zero, and the page announced "no games in the
+    // last 14 days" over a full slate. Preseason guaranteed that: all 56 sit in
+    // state FINAL, which we had never observed.
+    //
+    // Older indexes predate `gamesInWindow`, so reconstruct it rather than
+    // defaulting to zero — defaulting would reintroduce the false sentence on
+    // precisely the indexes written before the fix.
+    const played = Number.isFinite(c.gamesInWindow)
+      ? c.gamesInWindow
+      : c.finalInWindow + unread;
+
+    if (played === 0) {
       lines.push(`No games in the last ${c.windowDays} days.`);
       return { state: 'quiet', lines };
     }
-    if (held < c.finalInWindow) {
+    if (held < played) {
       // "Still loading" would promise progress we cannot guarantee — a claim
       // about a future rather than a count. The duller sentence is the true one.
-      lines.push(`We have ${held} of the ${c.finalInWindow} games played in ` +
+      lines.push(`We have ${held} of the ${played} games played in ` +
         `the last ${c.windowDays} days.`);
+      // Two different facts, so two sentences. Refused means we hold the bytes
+      // and the event vocabulary defeated us; unreadable means we never fetched,
+      // because the league lists the game in a state we cannot interpret as
+      // over. Folding them together would report a cause we have not established.
       if (c.refusedInWindow > 0) {
         lines.push(`${c.refusedInWindow} ${c.refusedInWindow === 1 ? 'is' : 'are'} ` +
           `not published — the league's feed contains something we don't recognise.`);
+      }
+      if (unread > 0) {
+        lines.push(`${unread} ${unread === 1 ? 'is' : 'are'} listed in a ` +
+          `state we don't recognise yet, so we haven't read ${unread === 1 ? 'it' : 'them'}.`);
       }
       return { state: 'behind', lines };
     }
