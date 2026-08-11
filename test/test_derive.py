@@ -705,3 +705,61 @@ class TheCatalog(unittest.TestCase):
         self.assertEqual(sorted(rows), [2025020001, 2025020002, 2025020003])
         self.assertEqual([rows[2025020002]["r"], rows[2025020003]["r"]],
                          ["validation", "vocabulary"])
+
+
+class TheCatalogMerges(unittest.TestCase):
+    """MERGE, NEVER REPLACE — the third time this project has paid for it.
+
+    `_write_index` shipped broken for exactly this reason: it only rewrote
+    entries for games that had changed, and `unchanged` is the steady state of a
+    converging pipeline. The catalog had the mirror-image bug and it was worse,
+    because a nightly run holds POINTERS for the whole archive and RAW for one
+    night of it — so every run would have republished a catalog containing only
+    that night's games and deleted 1,500 rows a visitor could otherwise reach.
+
+    A game absent from this store is a game we said nothing about. Saying
+    nothing must not read as "it is gone."
+    """
+
+    def rows(self, store):
+        return {r["id"]: r for r in json.loads(store.get("catalog.json").decode())["games"]}
+
+    def test_a_partial_run_keeps_the_games_it_did_not_look_at(self):
+        store = DictStore()
+        seed(store, gid=2025020001)
+        D.derive(store)
+
+        # the archive's raw is not on this runner; only its pointer is
+        d = json.loads(store.get(F.latest_key(2025020001)).decode())
+        for name, dig in d.items():
+            store.delete(F.raw_key(2025020001, dig, name))
+
+        seed(store, gid=2025020002)
+        rep = D.derive(store)
+        self.assertEqual(list(rep.absent), ["2025020001"], "we said nothing about it")
+        self.assertEqual(sorted(self.rows(store)), [2025020001, 2025020002],
+                         "and it must still be reachable")
+
+    def test_a_re_judged_game_is_replaced_not_duplicated(self):
+        store = DictStore()
+        seed(store, gid=2025020001, box=box_bytes(away_sog=99))
+        D.derive(store)
+        self.assertEqual(self.rows(store)[2025020001]["v"], 0)
+
+        # the same game, now with a boxscore it reconciles against
+        seed(store, gid=2025020001, box=box_bytes(away_sog=2, home_sog=0,
+                                                 away_score=1, home_score=0))
+        D.derive(store)
+        r = self.rows(store)
+        self.assertEqual(len(r), 1, "one row per game, not one per verdict")
+        self.assertEqual(r[2025020001]["v"], 1, "the newer verdict wins")
+        self.assertNotIn("r", r[2025020001], "and the stale refusal reason is gone")
+
+    def test_the_merged_catalog_stays_ordered(self):
+        store = DictStore()
+        seed(store, gid=2025020005)
+        D.derive(store)
+        seed(store, gid=2025020001)
+        D.derive(store)
+        ids = [r["id"] for r in json.loads(store.get("catalog.json").decode())["games"]]
+        self.assertEqual(ids, sorted(ids))

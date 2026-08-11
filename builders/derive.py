@@ -99,9 +99,30 @@ def _write_catalog(store, rows):
 
     No timestamp: same bytes in, same bytes out, so any diff on a re-derive is a
     real change. Freshness is index.json's job and it has a field for it.
+
+    MERGE, NEVER REPLACE -- and this is the THIRD time this project has paid for
+    that sentence. `_write_index` shipped broken for the mirror-image reason, and
+    the comment warning about it is thirty lines away in fetch_nhl.py.
+
+    A nightly run holds POINTERS for the whole archive and RAW for one night of
+    it, so a run only ever judges a handful of games. Writing just those would
+    have republished a catalog containing one night of hockey and silently
+    deleted fifteen hundred rows a visitor could otherwise reach. A game this run
+    said NOTHING about must not read as a game that is gone.
     """
+    prev = store.get(CATALOG_KEY)
+    merged = {}
+    if prev:
+        try:
+            merged = {r["id"]: r for r in json.loads(prev.decode()).get("games", [])}
+        except (ValueError, KeyError, TypeError):
+            merged = {}    # an unreadable catalog is rebuilt, not preserved
+    # This run's verdicts win outright: a row is REPLACED rather than updated, so
+    # a stale `r` cannot survive a game that now publishes.
+    for gid, row in rows.items():
+        merged[int(gid)] = row
     store.put(CATALOG_KEY, json.dumps(
-        {"games": [rows[k] for k in sorted(rows)]},
+        {"games": [merged[k] for k in sorted(merged)]},
         sort_keys=True, separators=(",", ":")).encode())
 
 
