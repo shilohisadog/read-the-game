@@ -350,6 +350,43 @@ def validate(rich, pbp, shifts, box):
     check(scored + (1 if shootout else 0) == total,
           f"goal events{' + the shootout decision' if shootout else ''} == "
           f"final score ({scored}{'+1' if shootout else ''} vs {total})")
+
+    # THE SCORE SEQUENCE, WHICH THE TOTAL ABOVE CANNOT SEE.
+    #
+    # The check above validates a SUM. Two goals swapped in order leave that sum
+    # exactly right and move every tied/leading/trailing boundary underneath it --
+    # and the featured game on the homepage is ranked on attempts taken while the
+    # score was LEVEL, so each attempt is bucketed by the score at that instant.
+    # A wrong sequence is a wrong ranking with a correct-looking total below it.
+    # Proven by mutation in test_derive.py: swap two goals scored by different
+    # teams and the total check still passes.
+    #
+    # The witness is the league's own running score, carried on every goal in the
+    # play-by-play -- 198 of 198 across three sampled seasons. It costs no fetch
+    # and no schema change, because validate() is handed the raw feed. It does NOT
+    # go into the extract: that document carries what it cannot reconstruct, and a
+    # running score is its own arithmetic over goals it already holds.
+    seq, unwitnessed, disagreed = {hid: 0, aid: 0}, 0, []
+    for e, p in zip(rich["events"], pbp["plays"]):
+        if e["type"] != "goal" or e.get("pt") == "SO" or e["own"] not in seq:
+            continue
+        seq[e["own"]] += 1
+        d = p.get("details") or {}
+        said = (d.get("awayScore"), d.get("homeScore"))
+        if said[0] is None or said[1] is None:
+            # A CHECK THAT SILENTLY DOES NOT RUN is this project's named failure
+            # mode. The field is universal in what we hold, so its absence is an
+            # anomaly and gets said out loud rather than shrugged off.
+            unwitnessed += 1
+            continue
+        if said != (seq[aid], seq[hid]):
+            disagreed.append(f"{e['per']}/{e['clock']} league {said[0]}-{said[1]} "
+                             f"vs ours {seq[aid]}-{seq[hid]}")
+    check(unwitnessed == 0,
+          f"every goal carries the league's running score ({unwitnessed} without)")
+    check(not disagreed,
+          f"the score sequence matches the league at every goal "
+          f"({len(disagreed)} disagree{': ' + '; '.join(disagreed[:2]) if disagreed else ''})")
     return fails
 
 # ---------------------------------------------------------------- main

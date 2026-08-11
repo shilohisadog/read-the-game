@@ -81,7 +81,11 @@ def pbp_bytes(plays=None):
         play("shot-on-goal", 60, shootingPlayerId=1, goalieInNetId=2,
              xCoord=-70, yCoord=3, eventOwnerTeamId=30),
         play("goal", 120, scoringPlayerId=1, goalieInNetId=2,
-             xCoord=-75, yCoord=0, eventOwnerTeamId=30),
+             xCoord=-75, yCoord=0, eventOwnerTeamId=30,
+             # The league's running score after this goal. Real feeds carry it on
+             # every goal — 198 of 198 across three sampled seasons — so a fixture
+             # without it is not a smaller game, it is an impossible one.
+             awayScore=1, homeScore=0),
     ]
     return json.dumps({"homeTeam": HOME, "awayTeam": AWAY,
                        "rosterSpots": ROSTER, "plays": plays}).encode()
@@ -174,7 +178,11 @@ class ADerivedGame(unittest.TestCase):
             play("shot-on-goal", 60, shootingPlayerId=1, goalieInNetId=2,
                  xCoord=-70, yCoord=3, eventOwnerTeamId=30),
             play("goal", 120, scoringPlayerId=1, goalieInNetId=2,
-                 xCoord=-75, yCoord=0, eventOwnerTeamId=30),
+                 xCoord=-75, yCoord=0, eventOwnerTeamId=30,
+                 # The league's running score after this goal. Real feeds carry it on
+                 # every goal — 198 of 198 across three sampled seasons — so a fixture
+                 # without it is not a smaller game, it is an impossible one.
+                 awayScore=1, homeScore=0),
             play("hit", 150, hittingPlayerId=1, xCoord=10, yCoord=1, eventOwnerTeamId=30),
         ]), box=box_bytes())
         rep = D.derive(store)
@@ -435,7 +443,11 @@ class ForgivenessIsRecorded(unittest.TestCase):
             play("shot-on-goal", 60, shootingPlayerId=1, goalieInNetId=2,
                  xCoord=-70, yCoord=3, eventOwnerTeamId=30),
             play("goal", 120, scoringPlayerId=1, goalieInNetId=2,
-                 xCoord=-75, yCoord=0, eventOwnerTeamId=30),
+                 xCoord=-75, yCoord=0, eventOwnerTeamId=30,
+                 # The league's running score after this goal. Real feeds carry it on
+                 # every goal — 198 of 198 across three sampled seasons — so a fixture
+                 # without it is not a smaller game, it is an impossible one.
+                 awayScore=1, homeScore=0),
             play("stoppage", 150, reason="zamboni-on-fire", eventOwnerTeamId=30),
         ]))
         rep = D.derive(store)
@@ -451,7 +463,11 @@ class ForgivenessIsRecorded(unittest.TestCase):
             play("shot-on-goal", 60, shootingPlayerId=1, goalieInNetId=2,
                  xCoord=-70, yCoord=3, eventOwnerTeamId=30),
             play("goal", 120, scoringPlayerId=1, goalieInNetId=2,
-                 xCoord=-75, yCoord=0, eventOwnerTeamId=30),
+                 xCoord=-75, yCoord=0, eventOwnerTeamId=30,
+                 # The league's running score after this goal. Real feeds carry it on
+                 # every goal — 198 of 198 across three sampled seasons — so a fixture
+                 # without it is not a smaller game, it is an impossible one.
+                 awayScore=1, homeScore=0),
             play("stoppage", 150, reason="rink-repair", eventOwnerTeamId=30),
         ]))
         D.derive(store, now="2026-01-11T11:30:00Z")
@@ -479,7 +495,11 @@ class TheShootoutIsNotPlay(unittest.TestCase):
             play("shot-on-goal", 60, shootingPlayerId=1, goalieInNetId=2,
                  xCoord=-70, yCoord=3, eventOwnerTeamId=30),
             play("goal", 120, scoringPlayerId=1, goalieInNetId=2,
-                 xCoord=-75, yCoord=0, eventOwnerTeamId=30),
+                 xCoord=-75, yCoord=0, eventOwnerTeamId=30,
+                 # The league's running score after this goal. Real feeds carry it on
+                 # every goal — 198 of 198 across three sampled seasons — so a fixture
+                 # without it is not a smaller game, it is an impossible one.
+                 awayScore=1, homeScore=0),
         ]
         for i in range(scoring_attempts):
             plays.append(self.so("goal", 10 + i, scoringPlayerId=1, goalieInNetId=2,
@@ -830,3 +850,108 @@ class TheMergeNeedsItsBaseline(unittest.TestCase):
         guard = wf.find("would LOSE")
         upload = wf.find("aws s3 cp \"ingest/$f\"")
         self.assertLess(guard, upload, "and refuse it BEFORE uploading, not after")
+
+
+# --------------------------------------------------------------------------
+# A two-goal game, scored by DIFFERENT teams, carrying the league's own running
+# score on each goal. Two goals by the same team cannot express the defect this
+# exists to catch -- swapping them is a no-op.
+
+SEQ_ROSTER = ROSTER + [
+    {"playerId": 3, "sweaterNumber": 21, "lastName": {"default": "Tuch"},
+     "positionCode": "R", "teamId": 7},
+]
+
+
+def seq_pbp(goals=None):
+    """goals: [(scorer_id, team_id, away_said, home_said)] in order."""
+    goals = goals if goals is not None else [(1, 30, 1, 0), (3, 7, 1, 1)]
+    plays = []
+    for i, (pid, tid, a_said, h_said) in enumerate(goals):
+        plays.append(play("goal", 60 * (i + 1), scoringPlayerId=pid, goalieInNetId=2,
+                          xCoord=-75, yCoord=0, eventOwnerTeamId=tid,
+                          awayScore=a_said, homeScore=h_said))
+    return json.dumps({"homeTeam": HOME, "awayTeam": AWAY,
+                       "rosterSpots": SEQ_ROSTER, "plays": plays}).encode()
+
+
+SEQ_BOX = box_bytes(away_sog=1, home_sog=1, away_score=1, home_score=1)
+
+
+class TheScoreSequenceHasAWitness(unittest.TestCase):
+    """`goal events == final score` validates a TOTAL. Nothing validated ORDER.
+
+    The featured game on the homepage is ranked on attempts taken while the score
+    was level, so every attempt is bucketed by the score AT THAT MOMENT. Two goals
+    swapped in sequence leave the final score correct and move every
+    tied/leading/trailing boundary — a wrong number with a correct-looking total
+    underneath it.
+
+    The witness costs no fetch and no schema change: `details.awayScore` and
+    `details.homeScore` ride on every goal in the play-by-play (198 of 198 across
+    three sampled seasons), and `validate()` is handed the raw feed. It does NOT
+    go in the extract — that document carries what it cannot reconstruct, and a
+    running score is its own arithmetic over goals it already holds.
+    """
+
+    def judge(self, pbp):
+        return D.judge(pbp, SEQ_BOX, shifts_bytes())
+
+    def test_a_game_whose_goals_agree_with_the_league_publishes(self):
+        rich, refusal, _ = self.judge(seq_pbp())
+        self.assertIsNone(refusal, refusal)
+        self.assertIsNotNone(rich)
+
+    def test_two_goals_swapped_are_caught_though_the_final_score_is_right(self):
+        """THE MUTATION. Without it this check has never failed and might be
+        incapable of failing."""
+        # Same two goals, opposite order of scorer. The league still says 1-0 then
+        # 1-1; we now derive 0-1 then 1-1. Final total identical, and the SOG
+        # check is untouched because each side still has exactly one goal.
+        swapped = seq_pbp([(3, 7, 1, 0), (1, 30, 1, 1)])
+        rich, refusal, _ = self.judge(swapped)
+        self.assertIsNotNone(refusal, "a scrambled score sequence must not publish")
+        self.assertEqual(refusal["gate"], "validation")
+        self.assertTrue(any("score sequence" in c for c in refusal["detail"]),
+                        f"the failing check must name itself: {refusal['detail']}")
+
+    def test_the_old_total_check_still_passes_on_the_swapped_game(self):
+        """The mutation is only meaningful if the EXISTING check is blind to it.
+        If `goal events == final score` also fired, this would prove nothing about
+        the new one."""
+        import extract as E
+        rich = E.extract(json.loads(seq_pbp([(3, 7, 1, 0), (1, 30, 1, 1)])),
+                         json.loads(shifts_bytes()), json.loads(SEQ_BOX))
+        fails = E.validate(rich, json.loads(seq_pbp([(3, 7, 1, 0), (1, 30, 1, 1)])),
+                           json.loads(shifts_bytes()), json.loads(SEQ_BOX))
+        self.assertFalse([f for f in fails if "final score" in f],
+                         "the total check is blind to order — that is why the new one exists")
+        self.assertTrue([f for f in fails if "score sequence" in f])
+
+    def test_a_goal_with_no_running_score_is_visible_not_skipped(self):
+        """A check that silently does not run is this project's named failure mode.
+
+        198 of 198 goals across three seasons carry the field, so its absence is an
+        anomaly and gets said out loud rather than shrugged off.
+        """
+        naked = json.loads(seq_pbp())
+        del naked["plays"][0]["details"]["awayScore"]
+        rich, refusal, _ = self.judge(json.dumps(naked).encode())
+        self.assertIsNotNone(refusal, "we cannot witness it, so we do not claim it")
+        self.assertTrue(any("running score" in c for c in refusal["detail"]),
+                        f"and it says which: {refusal['detail']}")
+
+    def test_the_shootout_is_not_part_of_the_sequence(self):
+        """The shootout moves the scoreboard by one, at the end. Its goals are not
+        in the run of play and the league's running score does not count them."""
+        p = json.loads(seq_pbp())
+        so = play("goal", 0, scoringPlayerId=1, goalieInNetId=2, xCoord=-75, yCoord=0,
+                  eventOwnerTeamId=30)
+        so["periodDescriptor"] = {"number": 5, "periodType": "SO"}
+        p["plays"].append(so)
+        rich, refusal, _ = self.judge(json.dumps(p).encode())
+        # The shootout changes the expected final score, so the total check moves;
+        # what matters here is that the SEQUENCE check does not fire on it.
+        detail = refusal["detail"] if refusal else []
+        self.assertFalse([c for c in detail if "score sequence" in c],
+                         f"a shootout goal must not disturb the sequence: {detail}")
