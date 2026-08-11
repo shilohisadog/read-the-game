@@ -365,7 +365,7 @@ jobs:
           python3 -m http.server 8099 >/dev/null 2>&1 &
           sleep 2
           fail=0
-          for f in index game; do
+          for f in index game canary; do   # canary LAST: it must fail, and it proves the two above can
             dom=$(google-chrome --headless --no-sandbox --disable-gpu \
                     --virtual-time-budget=15000 --dump-dom \
                     "http://localhost:8099/probe-$f.html" 2>/dev/null)
