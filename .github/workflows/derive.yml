@@ -17,6 +17,16 @@ name: derive
 
 on:
   workflow_dispatch:
+  # WEEKLY, because measures.json is an ARCHIVE-level document and this is the
+  # only job that sees the whole archive. The nightly holds raw for one night and
+  # extracts for none, so a nightly that wrote this file would publish a ranking
+  # over a handful of games -- the identical shape to the catalog bug that took
+  # the site down, and the reason that one is guarded here rather than trusted.
+  #
+  # It also exercises the full pipeline on a schedule instead of only when
+  # someone remembers, which is the cheapest October de-risking available.
+  schedule:
+    - cron: '20 9 * * 1'
 
 concurrency:
   group: ingest        # shares R2 with the nightly; never both at once
@@ -37,11 +47,20 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
+      # Node is here because the ANALYSIS runs in it. `measure.mjs` imports the
+      # same reducers the browser does rather than restating them in Python --
+      # see docs/architecture.md §2. The language boundary is the price of one
+      # implementation, and it is cheaper than two.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
 
       # Gated like everything else. This writes the artifacts every number on
       # the site is read from.
       - name: gates
-        run: python3 -m unittest discover -s test -p 'test_*.py'
+        run: |
+          python3 -m unittest discover -s test -p 'test_*.py'
+          npm test
 
       # PULL THE RAW, AND DELIBERATELY NOT THE EXTRACTS.
       #
@@ -70,6 +89,13 @@ jobs:
 
       - name: derive everything
         run: python3 builders/derive.py --out ingest | tee derived.json
+
+      # MEASURE AFTER DERIVE, over the extracts derive just wrote. This ranks the
+      # whole archive and produces the number that decides what a novice sees
+      # first, so it runs on every extract or not at all -- a partial ranking is
+      # worse than none, because it looks like an answer.
+      - name: measure the archive
+        run: node builders/measure.mjs --out ingest | tee measured.json
 
       # Same ordering discipline as the ingest: the document that ADVERTISES
       # what we hold goes last, so index.json can never claim a game whose
@@ -108,7 +134,7 @@ jobs:
                        f"({was} -> {now}); refusing to publish it")
           PY
           # Both advertising documents go after the extracts they point at.
-          for f in catalog.json index.json; do
+          for f in catalog.json measures.json index.json; do
             aws s3 cp "ingest/$f" "s3://${BUCKET}/$f" \
               --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress
           done
@@ -143,6 +169,39 @@ jobs:
           local = json.load(open('derived.json'))
           if local['published'] != e['published']:
               sys.exit("::error::the index does not match what this run produced")
+          PY
+
+      # The measurement is the thing that decides what a novice sees first, so it
+      # is checked the way every other published claim is: read back, and asserted
+      # to carry the sentence that produced it. A featured game with no rule
+      # attached is a number we are asking to be trusted.
+      - name: the measurement is published with its rule and its denominators
+        run: |
+          curl -sS --fail "https://data.readthegame.co/measures.json?cb=${GITHUB_RUN_ID}" \
+            -o live-measures.json
+          python3 - <<'PY'
+          import json, sys
+          m = json.load(open('live-measures.json'))
+          if not m.get('rule'):
+              sys.exit("::error::measures.json carries numbers with no stated rule")
+          if not m.get('featured'):
+              sys.exit("::error::no game was featured — the homepage would have no hero")
+          f = m['featured'][0]
+          print(f"  featured: {f['ab']} controlled by {f['edge']} while level and lost "
+                f"(game {f['id']})")
+          print(f"  rule: {m['rule']}")
+          for k, r in m['baseRates'].items():
+              if r['rate'] is None:
+                  continue
+              # A RATE WITHOUT ITS DENOMINATOR IS THE THING THIS SITE TEACHES
+              # AGAINST. It is not enough that we computed n -- it has to be
+              # published beside the number, or a reader cannot check it.
+              if not r.get('n') or not r.get('population'):
+                  sys.exit(f"::error::{k} published without n or population: {r}")
+              print(f"  {r['what']}: {r['rate']*100:.1f}% of {r['n']} ({r['population']})")
+          if m['measured'] < 3000:
+              sys.exit(f"::error::only {m['measured']} games measured — that is not "
+                       f"the whole archive, and a partial ranking looks like an answer")
           PY
 
       - name: an extract a visitor can actually read
