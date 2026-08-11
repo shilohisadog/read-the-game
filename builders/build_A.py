@@ -1,5 +1,8 @@
 import json
 import pathlib as _pl
+import sys, pathlib as _pl
+sys.path.insert(0, str(_pl.Path(__file__).resolve().parent))
+import page as _page
 _ROOT = _pl.Path(__file__).resolve().parent.parent
 _D = lambda n: str(_ROOT / 'data' / n)
 _S = lambda n: str(_ROOT / 'src' / n)
@@ -85,5 +88,5 @@ document.getElementById('play').onclick=()=>playing?stop():play();
 sc.oninput=e=>{stop();set(+e.target.value);};
 rink();set(0);
 </script>'''
-open(_S('active-play.html'),'w').write(T.replace('__DATA__',json.dumps(G,separators=(',',':'))))
+open(_S('active-play.html'),'w').write(_page.document(T.replace('__DATA__',json.dumps(G,separators=(',',':'))), title='Active play — Read the Game', description='Following the puck between whistles in one NHL game, and who touched it.'))
 print("wrote active-play.html",len(open(_S('active-play.html')).read().encode()),"bytes")

@@ -1,5 +1,8 @@
 import json
 import pathlib as _pl
+import sys, pathlib as _pl
+sys.path.insert(0, str(_pl.Path(__file__).resolve().parent))
+import page as _page
 _ROOT = _pl.Path(__file__).resolve().parent.parent
 _D = lambda n: str(_ROOT / 'data' / n)
 _S = lambda n: str(_ROOT / 'src' / n)
@@ -84,5 +87,5 @@ function panel(gid){
 }
 document.getElementById('grid').innerHTML=G.goalies.map(panel).join('');
 </script>'''
-open(_S('goalie-view.html'),'w').write(T.replace('__DATA__',json.dumps(sub,separators=(',',':'))))
+open(_S('goalie-view.html'),'w').write(_page.document(T.replace('__DATA__',json.dumps(sub,separators=(',',':'))), title='The goalie view — Read the Game', description='Minnesota outshot Buffalo and lost. The save-by-save reason why.'))
 print("wrote goalie-view.html",len(open(_S('goalie-view.html')).read().encode()),"bytes")

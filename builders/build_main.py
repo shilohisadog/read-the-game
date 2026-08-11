@@ -19,6 +19,7 @@ import base64, hashlib, json, pathlib, re, subprocess, sys, tempfile
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from jscheck import check_script
+import page as P
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / "src" / "read-the-game.html"
@@ -463,11 +464,17 @@ def _csp(html):
     ])
 
 
+TITLE = "Read the Game — watch a hockey game and see what the numbers are made of"
+DESC = ("An NHL game replayed so a new fan can see what the numbers are made of. "
+        "Nothing modelled, nothing invented.")
+
+
 def build():
     """The reference game, inlined. Works with the network unplugged."""
-    return (T.replace("__LIB__", _lib())
+    body = (T.replace("__LIB__", _lib())
              .replace("__BOOT__",
                       "boot(" + json.dumps(DATA, separators=(",", ":")) + ");"))
+    return P.document(body, title=TITLE, description=DESC)
 
 
 def build_shell():
@@ -476,14 +483,18 @@ def build_shell():
     This is the page a link points at -- the shareable unit -- so it is also the
     page that must state plainly when it cannot load, rather than spinning.
     """
-    html = (T.replace("__LIB__", _lib())
+    body = (T.replace("__LIB__", _lib())
              .replace("__BOOT__", BOOTSTRAP.replace(
                  "__ORIGIN__", json.dumps(DATA_ORIGIN))))
     # The inlined page reaches nothing and needs no policy beyond the deploy
     # grep; this one legitimately fetches, so the promise has to be enforced by
     # the browser rather than asserted by us.
-    head = '<meta http-equiv="Content-Security-Policy" content="__CSP__">\n'
-    html = head + html
+    #
+    # STAMPED LAST, AND THE WRAPPER CANNOT DISTURB IT: the hashes cover the bytes
+    # of the <script> and <style>, which live in the body and are untouched by
+    # adding a head around them.
+    html = P.document(body, title=TITLE, description=DESC,
+                      head='<meta http-equiv="Content-Security-Policy" content="__CSP__">')
     return html.replace("__CSP__", _csp(html))
 
 def main():

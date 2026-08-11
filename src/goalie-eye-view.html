@@ -1,3 +1,12 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>From the crease — Read the Game</title>
+<meta name="description" content="One NHL game's shots, seen from where the goalie stood.">
+</head>
+<body>
 <style>
 #gv{--bg:#05090e;--ink:#e9f0f6;--muted:#8ba0ae;--save:#4aa3e0;--goal:#ff4d5e;--ice:#16extcc;
  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:radial-gradient(120% 90% at 50% 0%,#0d1a26,#05090e 65%);color:var(--ink);min-height:100vh;padding:clamp(16px,3.5vw,32px) clamp(12px,4vw,20px)}
@@ -304,3 +313,5 @@ syncFig();
 let raf;function loop(){T+=0.04;draw();raf=requestAnimationFrame(loop);}
 fit();updStat();setView('crease');loop();
 </script>
+</body>
+</html>

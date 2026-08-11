@@ -12,6 +12,9 @@ import json, pathlib, re, sys, tempfile
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from figures import FIGURES_JS
+import sys, pathlib as _pl
+sys.path.insert(0, str(_pl.Path(__file__).resolve().parent))
+import page as _page
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 rich = json.loads((ROOT / "data" / "rich.json").read_text())
@@ -189,7 +192,7 @@ fitAll();
 
 html = TEMPLATE.replace("__FIGURES__", FIGURES_JS).replace("__N__", str(len(crowd))).replace("__CROWD__", json.dumps(crowd, separators=(",", ":")))
 out = ROOT / "src" / "figure-bench.html"
-out.write_text(html)
+out.write_text(_page.document(html, title='Figure bench — Read the Game', description='A development tool: two player styles side by side on blank ice.'))
 
 # extract the script for an external syntax check
 script = re.search(r"<script>(.*)</script>", html, re.S).group(1)

@@ -19,6 +19,9 @@ test/index.test.js exist to make that impossible to ship.
 """
 import base64, hashlib, pathlib, re, sys
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import page as P
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / "src" / "index.html"
 
@@ -121,15 +124,14 @@ LIMITS = [
      "them. A schedule that hid them would be a map of our successes."),
 ]
 
-T = r"""<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Read the Game — hockey, made legible</title>
-<meta name="description" content="A single NHL game, replayed so a new fan can see what the numbers are made of. Nothing modelled, nothing invented.">
-<meta http-equiv="Content-Security-Policy" content="__CSP__">
-<style>
+TITLE = "Read the Game — hockey, made legible"
+DESC = ("Three seasons of NHL games, replayed so a new fan can see what the numbers are made of. Nothing modelled, nothing invented.")
+
+# The style and the policy are page-specific head content; the document
+# shell itself lives in builders/page.py so there is one definition of
+# what a complete, mobile-correct page is. Eight copies of a head is
+# eight places for the next missing meta to hide.
+STYLE = r"""<style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
 *{box-sizing:border-box}
@@ -215,11 +217,28 @@ footer{margin-top:38px;padding-top:18px;border-top:1px solid var(--edge);
  font-size:.79rem;color:var(--muted);max-width:70ch}
 footer a{color:var(--blue)}
 footer p{margin:0 0 8px}
+/* NARROW SCREENS. The three-column game row is 8.5rem of date plus a result plus
+   a score — about 300px of content before it starts squeezing, which is most of a
+   360px phone once padding is taken off. Below 30rem it stacks, and the chips get
+   smaller so a row of them still fits without the grid forcing a scrollbar.
+
+   This is where the whole site was wrong until Kevin asked about phones: not the
+   CSS, but the missing viewport meta above it. Without that, none of this applies
+   at all -- the phone lays out at ~980px and scales the result down. */
+@media (max-width:30rem){
+  .games a,.games .off{grid-template-columns:1fr auto;gap:2px 10px;padding:10px 12px}
+  .games .d{grid-column:1/-1;order:-1}
+  .games .m{font-size:.92rem}
+  .games li.first .m::after{content:""}
+  .games li.first .m::before{content:"▶ ";color:var(--blue)}
+  .teams{grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:6px}
+  .chip{height:42px;font-size:.82rem}
+  .rates li{flex-direction:column;gap:2px}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
-</style>
-</head>
-<body>
-<div class="wrap">
+</style>"""
+
+BODY = r"""<div class="wrap">
 <p class="eyebrow">Read the Game</p>
 <h1>__H1__</h1>
 
@@ -466,11 +485,7 @@ __LIB__
       $('state').textContent = s.lines.join(' ');
     });
 })();
-</script>
-</body>
-</html>
-"""
-
+</script>"""
 H1 = "Watch a hockey game and see what the numbers are made of"
 
 # THE THESIS, and it is the best sentence this project has earned. It is not a
@@ -507,7 +522,7 @@ def _limits():
 
 
 def build():
-    html = (T.replace("__LIB__", _lib())
+    html = (BODY.replace("__LIB__", _lib())
              .replace("__ORIGIN__", repr(DATA_ORIGIN).replace("'", '"'))
              .replace("__H1__", H1)
              .replace("__THESIS__", THESIS)
@@ -515,6 +530,9 @@ def build():
              .replace("__LIMITS__", _limits()))
     # Stamped last: the hashes must cover the final bytes of the script and
     # style, and the CSP itself sits in <head>, outside both.
+    html = P.document(html, title=TITLE, description=DESC,
+                      head='<meta http-equiv="Content-Security-Policy" content="__CSP__">\n'
+                           + STYLE)
     return html.replace("__CSP__", _csp(html))
 
 

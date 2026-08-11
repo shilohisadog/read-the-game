@@ -287,6 +287,62 @@ jobs:
       # The byte-diff step already knows a production hostname briefly answers
       # 200 with the old build — this step has to know it too, or it is testing
       # a page nobody just deployed.
+      # THE PAGES FIT A PHONE, MEASURED IN A BROWSER.
+      #
+      # Eight of nine pages shipped with no viewport meta, so a phone laid them
+      # out at ~980px and scaled the result down until the text was unreadable.
+      # NOTHING FAILED. Every test passed, every page rendered, and the only
+      # symptom was on a device the author was not using -- which is exactly the
+      # kind of defect that needs a check rather than more care.
+      #
+      # A static CSS audit would be the tempting version and would announce a
+      # wider claim than it tests. This renders the real page at 360x740 and asks
+      # the browser for the one number that cannot be argued with: does the
+      # document need more horizontal room than the screen has.
+      #
+      # It runs against LOCAL copies of the live pages, with the data fetched
+      # alongside and the origin rewritten, because R2's CORS policy does not
+      # name localhost and the team grid would otherwise render empty -- an empty
+      # page overflows nothing and would pass while proving nothing.
+      - name: the pages fit a phone
+        run: |
+          mkdir -p phone && cd phone
+          curl -sSL "https://readthegame.co/?cb=${GITHUB_RUN_ID}" -o index.html
+          curl -sSL "https://readthegame.co/game?cb=${GITHUB_RUN_ID}" -o game.html
+          for d in catalog.json measures.json index.json; do
+            curl -sS --fail "https://data.readthegame.co/$d" -o "$d"
+          done
+          # The policy is hash-pinned and separately tested; it is stripped here
+          # only so the measurement below is allowed to run.
+          sed -i 's#<meta http-equiv="Content-Security-Policy"[^>]*>##' index.html game.html
+          sed -i 's#https://data\.readthegame\.co##g' index.html game.html
+          for f in index game; do
+            printf '%s' '<script>setTimeout(function(){document.title="FIT "+
+              document.documentElement.scrollWidth+" "+window.innerWidth;},1200)</script>' \
+              | tr -d "\n" >> "$f.html"
+          done
+          python3 -m http.server 8099 >/dev/null 2>&1 &
+          sleep 2
+          fail=0
+          for f in index game; do
+            dom=$(google-chrome --headless --no-sandbox --disable-gpu \
+                    --window-size=360,740 --virtual-time-budget=6000 --dump-dom \
+                    "http://localhost:8099/$f.html" 2>/dev/null)
+            read -r _ w vw <<<"$(echo "$dom" | grep -o 'FIT [0-9]* [0-9]*' | head -1)"
+            if [ -z "$w" ]; then
+              echo "::error::$f.html did not report a width — the page did not run"
+              fail=1; continue
+            fi
+            echo "  $f.html at 360px: content ${w}px, viewport ${vw}px"
+            # 1px of slack for sub-pixel rounding; anything more is a real overflow.
+            if [ "$w" -gt $((vw + 1)) ]; then
+              echo "::error::$f.html needs ${w}px on a ${vw}px screen — it will scroll sideways"
+              fail=1
+            fi
+          done
+          kill %1 2>/dev/null || true
+          exit $fail
+
       - name: a visitor can actually watch a game
         run: |
           for i in $(seq 1 12); do

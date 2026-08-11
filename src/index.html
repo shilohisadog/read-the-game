@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Read the Game — hockey, made legible</title>
-<meta name="description" content="A single NHL game, replayed so a new fan can see what the numbers are made of. Nothing modelled, nothing invented.">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-3oggebhIWb/lCQYxKm1cn9Q3us6mwILyNDBuB+Jio7A='; style-src 'sha256-4V4Y1PwD8q8U5DBUVAjTPB00dH+cuGZFTFfJMAZfGvQ='; connect-src 'self' https://data.readthegame.co; base-uri 'none'; form-action 'none'">
+<meta name="description" content="Three seasons of NHL games, replayed so a new fan can see what the numbers are made of. Nothing modelled, nothing invented.">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-3oggebhIWb/lCQYxKm1cn9Q3us6mwILyNDBuB+Jio7A='; style-src 'sha256-euPft+3xVJWAIqh74DWisbr0AExbsOypYkrgn0/oIb8='; connect-src 'self' https://data.readthegame.co; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -92,6 +92,24 @@ footer{margin-top:38px;padding-top:18px;border-top:1px solid var(--edge);
  font-size:.79rem;color:var(--muted);max-width:70ch}
 footer a{color:var(--blue)}
 footer p{margin:0 0 8px}
+/* NARROW SCREENS. The three-column game row is 8.5rem of date plus a result plus
+   a score — about 300px of content before it starts squeezing, which is most of a
+   360px phone once padding is taken off. Below 30rem it stacks, and the chips get
+   smaller so a row of them still fits without the grid forcing a scrollbar.
+
+   This is where the whole site was wrong until Kevin asked about phones: not the
+   CSS, but the missing viewport meta above it. Without that, none of this applies
+   at all -- the phone lays out at ~980px and scales the result down. */
+@media (max-width:30rem){
+  .games a,.games .off{grid-template-columns:1fr auto;gap:2px 10px;padding:10px 12px}
+  .games .d{grid-column:1/-1;order:-1}
+  .games .m{font-size:.92rem}
+  .games li.first .m::after{content:""}
+  .games li.first .m::before{content:"▶ ";color:var(--blue)}
+  .teams{grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:6px}
+  .chip{height:42px;font-size:.82rem}
+  .rates li{flex-direction:column;gap:2px}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>

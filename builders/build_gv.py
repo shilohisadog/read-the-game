@@ -11,6 +11,9 @@ import json, pathlib, re, sys, tempfile
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from figures import FIGURES_JS, PICKER_CSS, PICKER_HTML, PICKER_JS
+import sys, pathlib as _pl
+sys.path.insert(0, str(_pl.Path(__file__).resolve().parent))
+import page as _page
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 D = json.loads((ROOT / "data" / "goalie_sub.json").read_text())
@@ -139,7 +142,7 @@ html = (T.replace("__DATA__", json.dumps(D, separators=(",", ":")))
          .replace("__PICKJS__", PICKER_JS))
 
 out = ROOT / "src" / "goalie-eye-view.html"
-out.write_text(html)
+out.write_text(_page.document(html, title='From the crease — Read the Game', description="One NHL game's shots, seen from where the goalie stood."))
 
 script = re.search(r"<script>(.*)</script>", html, re.S).group(1)
 chk = pathlib.Path(tempfile.gettempdir()) / "rtg.gv.check.js"

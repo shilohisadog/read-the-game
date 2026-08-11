@@ -1,3 +1,12 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The goalie view — Read the Game</title>
+<meta name="description" content="Minnesota outshot Buffalo and lost. The save-by-save reason why.">
+</head>
+<body>
 <style>
 #pc{--ink:#0f1a23;--muted:#5d6f7c;--edge:#cdd9e1;--ice:#eef4f8;--min:#12885a;--buf:#c79212;--save:#4a6b86;--goal:#d92b3f;--hd:#f4d06a;
  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:#f4f7fa;min-height:100vh;padding:clamp(16px,3.5vw,34px) clamp(12px,4vw,22px);line-height:1.5}
@@ -76,3 +85,5 @@ function panel(gid){
 }
 document.getElementById('grid').innerHTML=G.goalies.map(panel).join('');
 </script>
+</body>
+</html>

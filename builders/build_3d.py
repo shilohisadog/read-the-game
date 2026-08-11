@@ -1,5 +1,8 @@
 import json
 import pathlib as _pl
+import sys, pathlib as _pl
+sys.path.insert(0, str(_pl.Path(__file__).resolve().parent))
+import page as _page
 _ROOT = _pl.Path(__file__).resolve().parent.parent
 _D = lambda n: str(_ROOT / 'data' / n)
 _S = lambda n: str(_ROOT / 'src' / n)
@@ -154,5 +157,5 @@ document.getElementById('cBuf').textContent=RAW.counts.buf;
 buildGrid();fit();draw();loop();
 </script>'''
 html=T.replace('__DATA__',json.dumps(RAW,separators=(',',':')))
-open(_S('terrain-3d.html'),'w').write(html)
+open(_S('terrain-3d.html'),'w').write(_page.document(html, title='Where the chances came from — Read the Game', description='Shot locations from one NHL game as terrain. Height is attempts, not danger.'))
 print("wrote terrain-3d.html",len(html),"bytes")
