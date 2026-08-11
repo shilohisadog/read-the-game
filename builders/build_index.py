@@ -493,8 +493,14 @@ H1 = "Watch a hockey game and see what the numbers are made of"
 # 4,119 games: counted the obvious way the leader loses more often than not, and
 # counted properly the leader wins. The numbers themselves are fetched, never
 # typed, so this text must not contain any of them.
+# NO MAGNITUDE IN THE PROSE. It read "loses SLIGHTLY more often" -- a claim about
+# effect size, made in words, three lines above the exact figure and its
+# denominator. The publication rule was applied to the digits and then walked
+# around by the sentence, which is the same assertion with the error bars removed
+# and no way for a reader to check it. CHENG caught it. The number says how much;
+# the sentence only has to say which way.
 THESIS = ("Count shot attempts the obvious way and the team with more of them loses "
-          "slightly more often than it wins &mdash; because falling behind is what makes "
+          "more often than it wins &mdash; because falling behind is what makes "
           "a team shoot. Count only the attempts taken at even strength while the score "
           "was level, and the picture reverses. <b>Which number you count changes the "
           "answer.</b> That is what this site is for.")
@@ -531,6 +537,7 @@ def build():
     # Stamped last: the hashes must cover the final bytes of the script and
     # style, and the CSP itself sits in <head>, outside both.
     html = P.document(html, title=TITLE, description=DESC,
+                      url="https://readthegame.co/",
                       head='<meta http-equiv="Content-Security-Policy" content="__CSP__">\n'
                            + STYLE)
     return html.replace("__CSP__", _csp(html))

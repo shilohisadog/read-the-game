@@ -494,6 +494,7 @@ def build_shell():
     # of the <script> and <style>, which live in the body and are untouched by
     # adding a head around them.
     html = P.document(body, title=TITLE, description=DESC,
+                      url="https://readthegame.co/game",
                       head='<meta http-equiv="Content-Security-Policy" content="__CSP__">')
     return html.replace("__CSP__", _csp(html))
 

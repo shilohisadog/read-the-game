@@ -31,7 +31,7 @@ definition, one place to fix, and `test/document.test.js` asserts every page in
 """
 
 
-def document(body, *, title, description=None, head="", lang="en"):
+def document(body, *, title, description=None, url=None, head="", lang="en"):
     """Wrap a fragment in a complete, mobile-correct HTML document.
 
     `head` is for anything page-specific — the hash-pinned Content-Security-Policy
@@ -51,6 +51,21 @@ def document(body, *, title, description=None, head="", lang="en"):
     ]
     if description:
         parts.append(f'<meta name="description" content="{description}">')
+        # SHARING IS THE DISTRIBUTION MODEL. The shareable unit is a game, so the
+        # link someone posts in a hockey forum IS the front door -- and without
+        # these it arrives as a naked URL instead of a card. CHENG's point, and it
+        # is product rather than doctrine. No og:image yet: we have no artwork we
+        # are allowed to ship, since club marks are off the table by design.
+        parts += [
+            '<meta property="og:type" content="website">',
+            f'<meta property="og:title" content="{title}">',
+            f'<meta property="og:description" content="{description}">',
+            '<meta name="twitter:card" content="summary">',
+            f'<meta name="twitter:title" content="{title}">',
+            f'<meta name="twitter:description" content="{description}">',
+        ]
+        if url:
+            parts.append(f'<meta property="og:url" content="{url}">')
     if head:
         parts.append(head.rstrip("\n"))
     parts += ["</head>", "<body>", body.rstrip("\n"), "</body>", "</html>", ""]

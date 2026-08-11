@@ -75,3 +75,42 @@ test('the shell is defined once', () => {
   assert.deepEqual(offenders, [],
     'a builder writing its own doctype has forked the document shell');
 });
+
+/**
+ * Metadata is copy, and it is the copy nobody looks at.
+ *
+ * CHENG found the homepage's meta description still reading "A single NHL game"
+ * long after the archive held three seasons — the IDENTICAL stale claim the
+ * homepage audit was created to remove from the limits block, surviving one layer
+ * out because it is invisible on the page. It is also the copy that appears in a
+ * search result and in every shared link.
+ *
+ * It had in fact been corrected an hour earlier, but BY ACCIDENT, as a side
+ * effect of moving the head into builders/page.py. Nothing would have caught it
+ * and nothing would have caught it coming back. That is the whole argument for
+ * this test existing rather than for being more careful.
+ */
+for (const f of PAGES) {
+  const html = readFileSync(new URL(f, SRC), 'utf8');
+  const desc = (html.match(/<meta name="description" content="([^"]+)"/) || [])[1];
+
+  test(`${f} describes itself for a search result and a shared link`, () => {
+    assert.ok(desc && desc.length > 40, 'no usable description');
+    for (const p of ['og:title', 'og:description', 'twitter:card', 'twitter:title']) {
+      assert.ok(html.includes(p), `no ${p} — a shared link arrives as a naked URL`);
+    }
+    const og = html.match(/property="og:description" content="([^"]+)"/)[1];
+    assert.equal(og, desc, 'the two descriptions must not be able to disagree');
+  });
+}
+
+test('the homepage does not describe an archive as one game', () => {
+  // The page serves 4,553 games across three seasons. Any metadata claiming a
+  // single game is the stale-claim bug, and it is worse in metadata than in the
+  // body because no reader of the page can see it to notice.
+  const html = readFileSync(new URL('index.html', SRC), 'utf8');
+  const desc = html.match(/<meta name="description" content="([^"]+)"/)[1];
+  assert.doesNotMatch(desc, /\b(a single|one) (NHL )?game\b/i,
+    `the homepage description claims one game: "${desc}"`);
+  assert.match(desc, /seasons|archive|games/i, 'and it should say what it is');
+});
