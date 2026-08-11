@@ -63,21 +63,19 @@ builder-is-the-only-source discipline.
 The page opens with two games, always, in this order:
 
 **"Start here" — the archive's sharpest lesson.** By a rule stated on the page:
-*the biggest shot advantage that still lost.* Run against the live catalog today,
-in regular season and playoffs only, that is:
+**the biggest shot-attempt advantage accrued while the score was tied, in a loss.**
 
-| | |
-|---|---|
-| **FLA outshot TBL 50–16 and lost 3–5** | 16 March 2024 |
-| TBL outshot EDM 57–24 and lost 4–7 | 14 December 2023 |
-| NJD outshot ANA 55–23 and lost 3–4 | 1 March 2024 |
+*This rule replaced a simpler one — "the biggest shot advantage that still lost" —
+after CHENG challenged it and the challenge was run. §3.7 has the measurement and
+§3.7a has the units, which is where the first version went wrong. The superseded
+rule returned FLA outshooting TBL 50–16 and losing.*
 
-Our current hero is MIN 35–25 and a two-goal loss. **Fifty shots to sixteen** is a
-different order of hook, and it is the league's own two numbers side by side.
-
-**"The most recent game we hold."** Which in August is the Cup final and in
+**"The most recent game we can show."** Which in August is the Cup final and in
 January is last night. This is what makes the page feel alive in season without a
-conditional in the code.
+conditional in the code. *"Can show," not "hold"* — the newest game we hold may be
+refused, and given the preseason failure rate it will be; a slot that falls back is
+a slot with a branch in it, which is what the two-slot design exists to avoid
+(CHENG).
 
 Two fixed slots, both always present, no branching. The seasonal-liveness problem
 gets solved by structure rather than by an `if`.
@@ -185,7 +183,9 @@ shot advantage comes while trailing.
 140 random in-scope games, and the reference game. Corsi definition, shootout
 excluded, `own` is the shooter on all four attempt types.
 
-Attempt differential for the team that **outshot and lost**, pooled:
+**Attempt** differential for the team that outshot and lost, pooled. The pools were
+*selected* on shots on goal and *measured* in attempts — see §3.7a, which is the
+correction Kevin caught:
 
 | pool | while tied | while trailing | per game, tied |
 |---|---|---|---|
@@ -210,15 +210,16 @@ in a sample deliberately stuffed with extremes.
 attempt differential accrued while the score was tied — the quantity that actually
 means "controlled play." What it returns from the sample:
 
-| | tied | score / shots |
+| | tied (attempts) | boxscore line |
 |---|---|---|
 | **FLA controlled the Cup Final at +39 while tied and lost** | +39 | EDM 5–4 FLA, sog 35–40, 12 Jun 2025 |
 | NJD +36 while tied, lost | +36 | TOR 2–1 NJD, sog 17–39, 10 Dec 2024 |
 | EDM +31 while tied, lost | +31 | EDM 3–5 OTT, sog 36–16, 24 Mar 2024 |
 
-Compare the shot lines. The raw rule returned 50–16 and 57–24 — games nobody needs
-a site to interpret. This returns **40–35 in a Stanley Cup Final**, where the shot
-counts are close and the story is genuinely hidden. That is the product.
+Compare the shot lines. The superseded rule returned 50–16 and 57–24 — games
+nobody needs a site to interpret. This returns **a Stanley Cup Final that was 35–40
+on the scoreboard's own measure**, where the counts are close and the story is
+genuinely hidden. That is the product.
 
 **Cost, stated:** this is a derive-stage computation, because derive is the only
 stage that has read every event of every game. One integer per catalog row. It is
@@ -231,6 +232,56 @@ game would rank in a random sample. The percentage-of-total figures I first
 computed were unstable (leading-state differential is negative, so shares exceed
 100%); the absolute numbers above are the meaningful ones. The full ranking needs
 the derive pass.
+
+## 3.7a WHICH SHOT COUNT — the question that changed the answer
+
+**Kevin's question: are these shot attempts or shots on goal? They were both, and
+I had not said so.** The candidates in §3.7 were *selected* on shots on goal — the
+catalog's `ash`/`hsh`, quoted from the boxscore — and then *measured* in shot
+attempts (Corsi: goals + shots on goal + missed + blocked). Two different
+quantities, presented in one table without a label. The gap is not small:
+
+| | SOG (quoted) | attempts (our count) |
+|---|---|---|
+| EDM 5–4 FLA, Cup Final | 35 – **40** | 67 – **89** |
+| TBL 5–3 FLA | 16 – **50** | 37 – **80** |
+| MIN 2–3 BUF | **35** – 25 | **80** – 55 |
+
+Checking it produced the most important number in this document. On the unbiased
+140-game control:
+
+| measure | the team with more … LOST |
+|---|---|
+| shots on goal | 48.2% *(full catalog: **45.8%**)* |
+| **shot attempts** | **60.3%** — 82 of 136, ±4.2% |
+
+**The team with more shot attempts loses more often than it wins.** Not noise and
+not a bug: score effects at full strength. Falling behind is what makes you attempt
+more, and raw attempt totals absorb that so completely that they invert. This is
+the ground CHENG was standing on, and it is a stronger effect than either of us
+said.
+
+Three things follow.
+
+**The tied-score restriction is load-bearing, not a refinement.** Raw attempt
+differential is *anti*-predictive within a game. Restricting to tied score is the
+only thing that makes the number mean "controlled play" rather than "was behind."
+
+**The two measures name a different dominant team in 28 of 136 games — 21%.** So
+"which shot count" is not a detail; it changes the answer in one game in five, and
+every surface has to say which one it is showing.
+
+**It is probably the best single lesson on the site:** *the team with more shot
+attempts loses about 60% of the time, because falling behind is what makes you
+shoot — which is why we count while the score is tied.* Honest, counterintuitive,
+explains the site's own method, and it inoculates against the "shot counts are
+meaningless" reading in a way the bare 54/46 does not.
+
+**Decision: rank on tied-state ATTEMPTS, display BOTH lines, label which is which.**
+Attempts is the correct measure of control and is what the Corsi layer already
+shows. SOG stays visible because it is the league's number and the one a reader can
+verify in any box score. **State the asymmetry on the page:** SOG is cross-checked
+against the boxscore by `validate()`; our attempt count has no independent witness.
 
 ## 3.8 The base rate — CHENG's best suggestion, and his number was wrong
 
@@ -246,11 +297,15 @@ base-rate claim. **But 54/46 needs careful handling**, because a novice reading
 "barely better than a coin flip" draws exactly the conclusion CHENG was trying to
 prevent: that shot counts are meaningless. The honest frame is that a shot count
 **describes** what happened rather than **predicts** who won — which is the site's
-thesis, not a hedge against it.
+thesis, not a hedge against it. The attempts figure in §3.7a does that job far
+better and should be the headline once it can be stated over the full population.
 
-Once §3.7's tied-state number exists for every game, the sharper reference class
-falls out of it: how often the team that controlled play while tied lost. That is
-the claim the hero actually makes, so that is the base rate it should carry.
+**What may be published, and when.** The SOG rate is computed over all 3,957
+in-scope decided games and can go on the page now. **The 60.3% attempts rate is
+from 140 games and may NOT** — publishing a sampled number as a site-wide base rate
+is precisely what Doctrine §8 exists to stop, and it would be this project
+committing its own named failure mode in the paragraph where it teaches base rates.
+It goes up after the derive pass computes it over all 4,119.
 
 ## 3.9 Scope: NHL regular season and playoffs only, on every user-visible surface
 
@@ -308,6 +363,15 @@ The page makes checkable claims, so the tests are the same shape as
   while trailing — pinned against a fixture built from a known chasing game
 - the tied-state count reconciles: `tied + leading + trailing` equals the game's
   total attempt differential, for every game
+- **no surface shows a shot number without saying which one it is.** Attempts and
+  shots on goal name a different dominant team in 21% of games, and the first
+  version of this plan mixed them in a single table. A test that greps the built
+  page for a bare "shots" next to a count is cheap and pins the lesson
+- **an attempt count is never presented as cross-checked.** SOG is quoted and
+  validated against the boxscore; attempts are ours and have no independent
+  witness. The page must not blur the two provenances
+- **the published base rate is computed over the full in-scope population**, never
+  a sample — asserted by counting the rows the figure was derived from
 - **no out-of-scope game reaches a user-visible surface** — not the finder, not
   the featured rule, not `game.html`'s landing pick, not the deploy gate — and the
   scope is stated in the limits block
