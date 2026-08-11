@@ -169,6 +169,121 @@ The five prototypes and the figure bench move to a labelled section at the botto
 Kept — each answers a question the main app does not — but they stop competing
 with the front door.
 
+---
+
+## 3.7 CHENG's score-effects challenge, RUN — and what it actually showed
+
+He argued the featured rule selects for score effects: a team that fell behind
+spends the game chasing, so the biggest shot advantages in losses are consequences
+of losing rather than evidence of control. He proposed the discriminating test —
+split attempts by score state — and he was right that it was computable from
+extracts we already hold. **So I ran it, with a control**, because "most of the
+advantage came while trailing" means nothing until you know how much of a *normal*
+shot advantage comes while trailing.
+
+185 extracts: the top 30 by the proposed rule, the top 30 among one-goal losses,
+140 random in-scope games, and the reference game. Corsi definition, shootout
+excluded, `own` is the shooter on all four attempt types.
+
+Attempt differential for the team that **outshot and lost**, pooled:
+
+| pool | while tied | while trailing | per game, tied |
+|---|---|---|---|
+| **control — 81 random outshooting losers** | +192 | +2,899 | **+2.4** |
+| top 30 by raw shot advantage | +186 | +1,788 | **+6.2** |
+| top 30 among one-goal losses | +308 | +1,542 | **+10.3** |
+| MIN at BUF (the reference game) | +14 | +33 | **+14** |
+
+**The mechanism is real and the discriminator does not discriminate.** Score
+effects dominate *everywhere* — in the control they account for more of the
+advantage (trailing +2,899 against a total of +1,379) than in the extreme games.
+That is close to tautological: a team that outshot and lost was, by definition,
+behind for some of it. A trailing-share test would have *cleared* the games CHENG
+wanted it to catch.
+
+**What separates them is the absolute differential while tied**, and on that
+measure his instinct about the reference game is vindicated. MIN's +14 while tied
+is larger than the *average* of either extreme pool, and MIN@BUF ranks 26th of 185
+in a sample deliberately stuffed with extremes.
+
+**So: option 2, and it is now measurable rather than aspirational.** Rank on
+attempt differential accrued while the score was tied — the quantity that actually
+means "controlled play." What it returns from the sample:
+
+| | tied | score / shots |
+|---|---|---|
+| **FLA controlled the Cup Final at +39 while tied and lost** | +39 | EDM 5–4 FLA, sog 35–40, 12 Jun 2025 |
+| NJD +36 while tied, lost | +36 | TOR 2–1 NJD, sog 17–39, 10 Dec 2024 |
+| EDM +31 while tied, lost | +31 | EDM 3–5 OTT, sog 36–16, 24 Mar 2024 |
+
+Compare the shot lines. The raw rule returned 50–16 and 57–24 — games nobody needs
+a site to interpret. This returns **40–35 in a Stanley Cup Final**, where the shot
+counts are close and the story is genuinely hidden. That is the product.
+
+**Cost, stated:** this is a derive-stage computation, because derive is the only
+stage that has read every event of every game. One integer per catalog row. It is
+counting real events against a real running score — no model, same class as the
+Corsi count the app already shows.
+
+**Honest limits of this analysis:** the ranking sample is 185 games and biased
+toward extremes by construction, so "26th of 185" understates where the reference
+game would rank in a random sample. The percentage-of-total figures I first
+computed were unstable (leading-state differential is negative, so shares exceed
+100%); the absolute numbers above are the meaningful ones. The full ranking needs
+the derive pass.
+
+## 3.8 The base rate — CHENG's best suggestion, and his number was wrong
+
+He proposed putting the reference class on the page and gave 41%. Computed over
+the live catalog, in-scope, viewable, decided games:
+
+**The team with more shots on goal lost 1,811 of 3,957 — 45.8%.** (2,146 won,
+54.2%; 162 games had equal shots.)
+
+He is right that this belongs on the page and right that §4's "defer base rates"
+was wrong for this specific case — a hero that asserts a game was unusual *is* a
+base-rate claim. **But 54/46 needs careful handling**, because a novice reading
+"barely better than a coin flip" draws exactly the conclusion CHENG was trying to
+prevent: that shot counts are meaningless. The honest frame is that a shot count
+**describes** what happened rather than **predicts** who won — which is the site's
+thesis, not a hedge against it.
+
+Once §3.7's tied-state number exists for every game, the sharper reference class
+falls out of it: how often the team that controlled play while tied lost. That is
+the claim the hero actually makes, so that is the base rate it should carry.
+
+## 3.9 Scope: NHL regular season and playoffs only, on every user-visible surface
+
+**Settled with Kevin, 2026-08-11.** Preseason, the Olympics, the 4 Nations
+Face-Off and the All-Star game are archived, derived and kept — and not shown.
+This is not a new rule; it is the existing `gameType` 2-and-3 rule, already
+governing every calculation, applied consistently to the surfaces too.
+
+The reason is not tidiness. A base rate over preseason split squads, an All-Star
+game and national teams under different roster rules is not a claim about NHL
+hockey — it is an average over four different competitions. The moment the site
+started making cross-game claims, scope stopped being cosmetic.
+
+Four conditions:
+
+1. **State the scope, once, in the limits block.** "Regular season and playoffs,
+   2023–24 through 2025–26." An unstated scope *is* concealment; a stated one is
+   not. This is the whole difference and it lives in the limits block.
+2. **Nothing changes in ingest, derive or storage.** A view filter, reversible in
+   one line — which is the entire point of extracts being a cache.
+3. **The refused count must not quietly improve.** In-scope, we hold 4,192 and
+   show 4,119: **73 refused, not 136.** Preseason fails six times as often, so
+   cutting it makes the number drop for reasons that are not progress. The greyed
+   rows and their reasons stay, inside the scope.
+4. **`game.html` and the deploy gate pick from the catalog too.** Scope the view
+   without scoping them and they diverge — the landing game and the gate's
+   expectation would come from a different population than the finder shows.
+
+Consequence, and it is an improvement: the calendar becomes a **season** calendar.
+October to June is the whole story and September is legitimately empty. It also
+dissolves the 52-code problem — 32 clubs, no national teams, no explanatory
+grouping to design.
+
 ## 4. What this does not include
 
 - No "three things to notice in this game" on the game page. That needs base
@@ -187,6 +302,15 @@ The page makes checkable claims, so the tests are the same shape as
 - the featured rule is applied to in-scope games only (`gameType` 2 and 3)
 - **the rule can return a boring answer and the page states it** — a mutation
   test with a fixture whose sharpest paradox is +1
+- **and the other end, which CHENG is right that the first test misses**: a
+  spectacular answer that is unrepresentative. The tied-state split is the guard,
+  so the test is that the featured game's advantage is not overwhelmingly accrued
+  while trailing — pinned against a fixture built from a known chasing game
+- the tied-state count reconciles: `tied + leading + trailing` equals the game's
+  total attempt differential, for every game
+- **no out-of-scope game reaches a user-visible surface** — not the finder, not
+  the featured rule, not `game.html`'s landing pick, not the deploy gate — and the
+  scope is stated in the limits block
 - the limits block contains no count that belongs to a single game
 - the finder lists refused games with a reason
 - CSP still hash-pins, `connect-src` still names only the data origin
