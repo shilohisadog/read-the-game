@@ -272,11 +272,20 @@ def situation_ok(code, period_type=None):
 
 
 # An unknown value in these can change a number we display. An unknown STOPPAGE
-# REASON cannot: the extract drops stoppage detail entirely, so refusing a game
-# over one is refusing over a field we never read. Twelve of 48 refusals in a
-# 62-game sample were stoppage reasons and nothing else. They are still
-# reported -- the parked whistle layer will need them, and doctrine 9 says what
-# we set aside stays visible -- but they no longer withhold a game.
+# REASON cannot. Twelve of 48 refusals in a 62-game sample were stoppage reasons
+# and nothing else. They are still reported -- doctrine 9 says what we set aside
+# stays visible -- but they no longer withhold a game.
+#
+# THE JUSTIFICATION CHANGED WHEN `rsn` WAS ADDED, and the old wording is worth
+# recording because it went stale the moment it stopped being true. It read: "the
+# extract drops stoppage detail entirely, so refusing a game over one is refusing
+# over a field we never read." We read it now.
+#
+# The decision is unchanged and the reason is better: a reason is a LABEL WE
+# CARRY VERBATIM AND NEVER COMPUTE ON. Nothing downstream branches on its value,
+# so an unfamiliar one renders as itself and explains nothing rather than
+# explaining something wrong. That is a different and stronger argument than "we
+# never look at it", and it is the one that survives the whistle layer existing.
 CONSEQUENTIAL = ("typeDescKey", "situationCode")
 
 def vocabulary(pbp):

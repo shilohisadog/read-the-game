@@ -38,6 +38,25 @@ no gate on them. Every number on this site has a check that can fail. No prose d
 
 > **Explain the rule. Never narrate the moment.**
 
+**CHENG sharpened this and he is right: the banned-words test is a BLACKLIST OVER
+AN OPEN VOCABULARY** — the same form as the `fetch(` grep and the ESM guard, both
+of which passed while the thing they guarded was broken. `tired` is banned;
+*gassed*, *worn down*, *been out there a while*, *looking for a change* are not.
+And a green blacklist reads as "the copy was checked", which is the false assurance
+that let the ESM leak ship.
+
+**The positive form is the standard, and it cannot be evaded by synonym:**
+
+> **Every sentence's subject is a rule, a recorded field, or a count. Never a
+> player, a team, or a moment.**
+
+That explains *why* `tired` fails instead of listing it. The blacklist stays as a
+regression test for one known defect; it is not the gate.
+
+**And the copy table carries provenance, like `surprising` does** — each row states
+what it derives from (`rule: NHL Rule 81`, `field: rsn`, `count: attempts`). A row
+with no source is the one to look at hardest.
+
 ## 1. What shipped already
 
 `extract.py` now carries `rsn` and `rsn2` on stoppage events. Reason: it is the one
@@ -74,12 +93,49 @@ events later, behind a penalty.
 So a whistle CAN be placed on the ice: *what* from the stoppage, *where* from the
 restart. That is a sequence fact from the feed, not an inference about play.
 
-**Two things I want attacked here.** First, "the next faceoff within five events"
-is a window **fitted to this sample** — the honest rule is *the next faceoff before
-the period ends*, with no window at all, and the data merely says it is never far.
-Second, 1,279/1,279 is a rule with no counterexample in it, which reads as
-confirmation and is actually silence. It needs a mutation: a stoppage with no
-following faceoff must produce an unplaced whistle, not a wrong one.
+### 2a. The counterexample exists, and the 30-game sample could not contain it
+
+CHENG predicted a period can end on a whistle — an icing at the horn, a freeze with
+two seconds left — leaving a stoppage with no faceoff after it. Run against **185
+games, 8,400 stoppages**:
+
+```
+NO faceoff before the period ended: 3  (0.04%)
+  2024020638  P4 00:48  stoppage -> period-end -> game-end
+  2024021022  P3 20:00  stoppage -> period-end -> game-end
+  2024021083  P4 02:32  stoppage -> period-end -> game-end
+```
+
+Thirty games said 1,279/1,279 and were silent. A hundred and eighty-five found it,
+three times, at four hundredths of a per cent. **A rule calibrated on a sample
+cannot be validated by that sample**, demonstrated on the rule I wrote yesterday.
+
+**Decisions taken:**
+
+- **The five-event window is dropped.** The rule is *the next faceoff before the
+  period ends, or unplaced.* The 1,236/43 split is a fact about the data, not a
+  parameter to encode.
+- **Unplaced is a FIRST-CLASS STATE, not a fallback** (CHENG). *We know this
+  happened and cannot place it* is a different claim from *nothing happened* — the
+  same distinction as `refused` versus `absent` one layer down. An unplaced whistle
+  appears on the timeline and not on the ice, and says which it is.
+- The mutation must still be **synthesised**, not sampled. Three real cases exist,
+  but a test that depends on finding one in the corpus is a test that passes for a
+  reason unrelated to the code.
+
+### 2b. The mapping only runs one way
+
+CHENG also noticed a goal is followed by a faceoff with no stoppage between. Over
+the same 185 games, what precedes a faceoff:
+
+```
+stoppage 8139 · goal 1114 · penalty 889 · period-start 584
+hit 7 · missed-shot 3 · shot-on-goal 2 · takeaway 2 · giveaway 1 · failed-shot 1
+```
+
+So **faceoff → why is not a clean inverse** and must never be built: sixteen
+faceoffs follow a play event with no stoppage at all. The direction that holds is
+stoppage → the faceoff that restarts it.
 
 ## 3. The layer
 
@@ -94,10 +150,17 @@ to count and then defending it. An icing is not a metric — it is a rule the no
 has watched a hundred times and never had named. That makes it the cheapest
 genuinely-novice-facing thing on the list, and the one most exposed to §0.
 
-**Delayed penalties overlap it.** `docs/strength-filter.md` notes the feed emits
-`delayed-penalty` then `penalty` four seconds apart; as two rows it teaches nothing,
-as one moment with the gap explained it teaches the referee's-arm-up rule. Whose
-layer that belongs to is an open question, not a resolved one.
+**This is the first honest execution of the layer contract** (CHENG). Corsi and
+goaltending were built together; the strength filter is a dimension of an existing
+reducer. The whistle layer is the first genuinely independent one, so it is the
+first evidence that the contract is an *abstraction* rather than a description of
+two things that happened to look alike. **We should be willing to hear that it
+fails** — better at the fourth layer than the tenth.
+
+**Delayed penalties belong here**, settled: the referee's-arm-up rule is a *rule*,
+which is what this layer teaches, and Corsi has no opinion about it. The
+four-second gap between `delayed-penalty` and `penalty` is a recorded fact, so
+explaining it needs no narration.
 
 ## 4. The ice gets crowded — Kevin's observation, and it is a doctrine question
 
@@ -113,13 +176,21 @@ A permanent map of every attempt is a shot chart, and nobody turned it on.
 | trails | what you see |
 |---|---|
 | **off** *(default)* | the current moment. The base view keeps its promise |
-| **recent** | the last N attempts, fading with age |
 | **all** | today's behaviour, on purpose |
 
-*Recent* is the one to attack. A fade encodes **time**, which is real data and not a
-fabrication — but it is also the first visual encoding on this site that is not a
-recorded value, and "discreteness IS the honesty" was a hard-won rule. It may be
-that only off/all are defensible.
+**`recent` is dropped, and CHENG's reason is better than mine.** I argued a fade
+encodes time, which is real. The deciding problem is that **`recent` requires
+choosing N, and N has no source in the data.** Last ten attempts? Last thirty
+seconds? Whatever the number, it is ours, and the visitor sees a shot chart whose
+contents were set by a threshold nobody stated — a model wearing a UI control, and
+the same failure class as the five-event window in §2a.
+
+`off` and `all` need no parameter. Both are complete statements: *this moment*, or
+*everything so far*.
+
+If a middle ground is wanted later, the honest one is **`all`, scoped to the current
+period** — because the period is a boundary the *game* defines rather than one we
+chose. Same visual benefit, no free parameter.
 
 Deliberately **not** proposing: retention that switches itself on when the Control
 layer is enabled. A default that depends on another toggle is a conflated field
@@ -146,6 +217,16 @@ changing a count.
   in** — the copy may describe the rule and the recorded fact, never the state of
   the players
 - **an unrecognised reason renders as the reason itself**, never as silence and
-  never as a guessed sentence
+  never as a guessed sentence. CHENG asked whether an unknown `rsn` should halt the
+  run or pass through. **It is already decided in code and his answer matches it:**
+  `CONSEQUENTIAL` covers `typeDescKey` and `situationCode` only, so an unfamiliar
+  stoppage reason is *noted and forgiven*, never blocking.
+
+  What his question did surface is that **the recorded justification went stale the
+  moment `rsn` shipped.** The comment read *"the extract drops stoppage detail
+  entirely, so refusing a game over one is refusing over a field we never read."*
+  We read it now. The decision is unchanged and the reason is stronger: a reason is
+  **a label we carry verbatim and never compute on**, so an unfamiliar one explains
+  nothing rather than explaining something wrong. Corrected in `extract.py`
 - **the layer can say nothing happened.** A game with no icings shows no icings,
   and does not reach for something else to say
