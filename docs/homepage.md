@@ -63,12 +63,14 @@ builder-is-the-only-source discipline.
 The page opens with two games, always, in this order:
 
 **"Start here" — the archive's sharpest lesson.** By a rule stated on the page:
-**the biggest shot-attempt advantage accrued while the score was tied, in a loss.**
+**the biggest EVEN-STRENGTH shot-attempt advantage accrued while the score was
+tied in regulation, in a loss.**
 
-*This rule replaced a simpler one — "the biggest shot advantage that still lost" —
-after CHENG challenged it and the challenge was run. §3.7 has the measurement and
-§3.7a has the units, which is where the first version went wrong. The superseded
-rule returned FLA outshooting TBL 50–16 and losing.*
+*The rule has been rewritten twice under review and each rewrite changed the
+answer. §3.7 is the score-effects measurement, §3.7a is the units (attempts, not
+shots on goal), §3.7b is the strength and overtime correction. The first version —
+"the biggest shot advantage that still lost" — returned FLA outshooting TBL 50–16
+and losing, a game nobody needs a site to interpret.*
 
 **"The most recent game we can show."** Which in August is the Cup final and in
 January is last night. This is what makes the page feel alive in season without a
@@ -283,6 +285,80 @@ shows. SOG stays visible because it is the league's number and the one a reader 
 verify in any box score. **State the asymmetry on the page:** SOG is cross-checked
 against the boxscore by `validate()`; our attempt count has no independent witness.
 
+## 3.7b Tied is not even, and overtime is tied by definition — RUN
+
+CHENG's second finding, and both confounds are real:
+
+**Overtime is always tied**, so every OT attempt lands in the tied bucket — and
+regular-season OT is **3-on-3**, where attempt rates are far above 5-on-5. Playoff
+OT is 5-on-5, so the bias is *uneven across `gameType`*, and the hero rule spans
+both. **Power plays while tied are not control** — an extra skater is not
+dictating play.
+
+**His claim that the fix already shipped is verified**: `evenOnly` is a parameter
+on the existing Corsi reducer (`src/lib/layers/corsi.js:30`) over
+`whyNotEven`/`KNOWN_SITUATIONS` in `src/lib/strength.js`. No new code — the
+measurement below mirrors those eight codes and that rule exactly rather than
+approximating it.
+
+He predicted the rankings would move. **They moved:**
+
+| game | was (tied, any strength, OT in) | now (even strength, regulation) |
+|---|---|---|
+| **TOR 2–1 NJD**, sog 17–39 | +36 → *2nd* | **+29 → 1st** |
+| EDM 5–4 FLA, Cup Final, sog 35–40 | +39 → *1st* | **+28 → 2nd** |
+| EDM 3–5 OTT, sog 36–16 | +31 → *3rd* | **+19 → 10th** |
+| BOS 4–3 FLA, sog 18–43 | +28 → *5th* | **+17 → out of the top 12** |
+| **BOS 3–4 SEA**, sog 32–27 | +8 → *invisible* | **+22 → 6th** |
+
+The last row is the one that matters. A game the previous rule could not see rises
+to sixth once special teams come out — meaning the earlier ranking was partly
+measuring *who drew penalties*. The Cup Final survives at second, which is the
+outcome to be most suspicious of, since it is the one I wanted.
+
+**The new first place is a better hero than either candidate before it:** New
+Jersey were outshot-for 39–17 on the league's own count *and* controlled play by
++29 attempts at even strength while the score was tied — and lost 1–2. The two
+measures agree, so the game is not a score-effects artifact, and the scoreboard
+still disagrees with both. That is the entire thesis in one row.
+
+## 3.7c The score-sequence witness — CHENG's find, with one correction and a mutation
+
+He is right that the tied-state number depends on something `validate()` does not
+check. `validate()` asserts **goal events == final score**: a total. The bucketing
+depends on the **order and timing** of goals, and two goals swapped leave the total
+correct while moving every tied/leading/trailing boundary.
+
+**Correction to his claim that the witness "is already in the payload we hold."**
+It is in the **raw**, not in the extract. `details.awayScore` / `details.homeScore`
+ride on every goal in the play-by-play, and `extract.py` drops them — the extract's
+goal events carry `a1`, `actor`, `clock`, `goalie`, `own`, `per`, `pt`, `rem`, `s`,
+`sit`, `type`, `x`, `y` and no score. So the cost is not zero: an `extract.py`
+schema change plus a full re-derive of 4,553 games. Cheap, and we have now run that
+pass twice, but it should be stated rather than assumed.
+
+**Run against 30 raw feeds: 30 agree, 0 disagree.** Which on its own proves
+nothing — a check that has never failed may be incapable of failing, which is this
+project's most-repeated lesson. **So I mutated it.** Swapping two adjacent goals
+scored by *different* teams (same-team swaps are a no-op, and using one would have
+made the mutation vacuous — the same trap one level up):
+
+```
+original : final 1-8   per-goal mismatches 0
+mutated  : final 1-8   per-goal mismatches 1
+
+FINAL TOTAL unchanged by the swap: True   <- the check we have today PASSES
+per-goal witness fires:            True   <- the proposed check CATCHES it
+```
+
+The witness discriminates. It goes in as a `validate()` check, gating the
+tied-state number before it reaches a catalog row.
+
+**And it changes the provenance story in §3.7a.** The attempt *count* still has no
+independent witness. The **score state it is bucketed by** now does — per goal, in
+order, from the league. That is a real narrowing of the asymmetry and the page can
+say so.
+
 ## 3.8 The base rate — CHENG's best suggestion, and his number was wrong
 
 He proposed putting the reference class on the page and gave 41%. Computed over
@@ -306,6 +382,20 @@ from 140 games and may NOT** — publishing a sampled number as a site-wide base
 is precisely what Doctrine §8 exists to stop, and it would be this project
 committing its own named failure mode in the paragraph where it teaches base rates.
 It goes up after the derive pass computes it over all 4,119.
+
+**State the denominator** (CHENG). 45.8% is **1,811 of 3,957**, with 162 equal-shot
+games excluded — so the page says *"in games where one team had more shots on
+goal."* A reader who checks against a different denominator will get a different
+number and be right to. Every published rate carries its **n and its population**:
+*even strength, tied score, in-scope decided games, n = …*. A base rate without its
+reference class is the thing this site exists to teach against.
+
+**The framing, settled.** CHENG's pair is stronger than either number alone: the
+two measures **point in opposite directions**. More shots on goal — the leader
+loses 45.8%. More attempts — the leader loses about 60%. Neither predicts; both
+describe; and *which one you count changes the answer in one game in five.* That is
+not a hedge against the site's thesis, it is the thesis, stated more precisely than
+the homepage has ever managed.
 
 ## 3.9 Scope: NHL regular season and playoffs only, on every user-visible surface
 
@@ -363,6 +453,16 @@ The page makes checkable claims, so the tests are the same shape as
   while trailing — pinned against a fixture built from a known chasing game
 - the tied-state count reconciles: `tied + leading + trailing` equals the game's
   total attempt differential, for every game
+- **the per-goal score witness, with its mutation.** `validate()` gains: the score
+  derived from the event sequence equals the league's `awayScore`/`homeScore` at
+  *every* goal, in order. The test that matters is the mutation — swap two adjacent
+  goals scored by **different** teams, assert the final-total check still passes
+  and the per-goal check fires. A same-team swap is a no-op and would make the
+  mutation vacuous
+- **the featured rule excludes overtime and non-even-strength attempts**, pinned
+  against a fixture containing a 3-on-3 OT and a tied-score power play, so a
+  regression that silently re-admits either is caught by a changed ranking rather
+  than by a changed count
 - **no surface shows a shot number without saying which one it is.** Attempts and
   shots on goal name a different dominant team in 21% of games, and the first
   version of this plan mixed them in a single table. A test that greps the built
