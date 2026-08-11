@@ -61,31 +61,41 @@ test('no page in src/ ships unlinked', () => {
   assert.deepEqual(orphans, [], `unreachable page(s): ${orphans.join(', ')}`);
 });
 
-test('the scoreboard on the index is derived from the feed, not typed', () => {
-  // Re-derive rather than assert a remembered number. Shots on goal are
-  // shot-on-goal plus goal, attributed to the shooter's team -- a goal is a
-  // shot that went in, and counting it separately would understate both totals.
-  const sog = {}, goals = {};
-  for (const e of rich.events) {
-    if (e.type !== 'shot-on-goal' && e.type !== 'goal') continue;
-    const tid = shootingTeam(e, rich.roster);
-    assert.ok(tid != null, `event has no attributable team: ${JSON.stringify(e)}`);
-    sog[tid] = (sog[tid] || 0) + 1;
-    if (e.type === 'goal') goals[tid] = (goals[tid] || 0) + 1;
-  }
-  const away = rich.teams.away, home = rich.teams.home;
+test('outside the workshop, the page names no game and no team', () => {
+  // THE DEFECT THIS PAGE SHIPPED. It compiled MIN at BUF into the markup — the
+  // score, the shot counts, the date, and "all 320 events in the game". Every one
+  // was a claim that went stale the moment the archive held a second game, and
+  // two earlier tests here re-derived those numbers to keep them honest. The
+  // right fix was not better checking. It was to stop typing them.
+  //
+  // The workshop is exempt and that exemption is the point: those blurbs describe
+  // frozen prototypes that genuinely are pinned to one game, so naming it there is
+  // true. Everywhere else, a team abbreviation is a bug.
+  // Two exemptions, both narrow and both named. The workshop blurbs describe
+  // frozen prototypes that genuinely ARE pinned to one game. The inlined team
+  // table is reference data listing all 33 clubs — it is not a claim about a
+  // game, and cutting the whole script instead would stop this test noticing a
+  // team hard-coded as a default, which is the failure mode it exists for.
+  const workshopAt = html.indexOf('<h2>Workshop</h2>');
+  assert.ok(workshopAt > -1, 'the workshop section must still exist');
+  const cut = (s, from, to) => {
+    const i = s.indexOf(from);
+    if (i === -1) return s;
+    return s.slice(0, i) + s.slice(s.indexOf(to, i) + to.length);
+  };
+  let page = html.slice(0, workshopAt) + html.slice(html.indexOf('</div>', workshopAt));
+  page = cut(page, 'const TEAMS = {', '};');
+  page = cut(page, 'const NOTES = {', '};');
+  assert.ok(page.includes('drawTeam'), 'the script is still in scope after the cuts');
+  // Comments may legitimately quote a date — the inlined date formatter documents
+  // itself with "2023-11-10 -> 10 November 2023". Prose about code is not a claim
+  // the page makes to a reader.
+  page = page.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*|<!--[\s\S]*?-->/g, '');
 
-  const board = html.match(/<div class="board">[\s\S]*?<\/div>\s*<\/div>/)[0];
-  const nums = [...board.matchAll(/>(\d+) shots</g)].map(m => +m[1]);
-  const score = board.match(/class="sc">(\d+)&ndash;(\d+)</);
-
-  assert.deepEqual(nums, [sog[away.id], sog[home.id]],
-    `page shows ${nums} shots; feed gives ${sog[away.id]}/${sog[home.id]}`);
-  assert.equal(+score[1], goals[away.id], 'away goals');
-  assert.equal(+score[2], goals[home.id], 'home goals');
-
-  assert.ok(board.includes(`>${away.ab}<`), 'away abbreviation');
-  assert.ok(board.includes(`>${home.ab}<`), 'home abbreviation');
+  assert.doesNotMatch(page, /\b(MIN|BUF)\b(?![A-Z])/, 'a team abbreviation is typed in');
+  assert.doesNotMatch(page, /10 November 2023|Nov 10 2023/, 'a date is typed in');
+  assert.doesNotMatch(page, /all \d+ events/, 'a per-game event total is typed in');
+  assert.doesNotMatch(page, /\d+ shots</, 'a shot count is typed in');
 });
 
 test('the teaching hook survives: more shots, fewer goals', () => {
@@ -102,12 +112,6 @@ test('the teaching hook survives: more shots, fewer goals', () => {
   const a = rich.teams.away.id, h = rich.teams.home.id;
   assert.ok(sog[a] > sog[h], 'the away team took more shots');
   assert.ok(goals[a] < goals[h], 'and scored fewer goals');
-});
-
-test('the event total quoted in the copy matches the feed', () => {
-  const m = html.match(/all (\d+) events/);
-  assert.ok(m, 'the copy states an event total');
-  assert.equal(+m[1], rich.events.length, 'and it is the real one');
 });
 
 test('the no-network claim is enforced by the browser, not asserted by us', () => {
@@ -146,43 +150,6 @@ test('the CSP hashes match the bytes actually shipped', () => {
     const got = p.match(new RegExp(`${directive} ([^;]+)`))[1];
     assert.equal(got, want, `${directive} does not match the ${label} it ships`);
   }
-});
-
-test('the freshness script runs, and every state reaches the page', () => {
-  // Proves the script EXECUTES and renders -- not that the CSP is enforced,
-  // which needs a real browser and runs in CI against headless Chrome.
-  const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
-
-  const run = payload => {
-    const el = { textContent: '', attrs: {},
-                 setAttribute(k, v) { this.attrs[k] = v; } };
-    const document = { getElementById: () => el };
-    const fetch = () => Promise.resolve({
-      ok: payload !== null,
-      json: () => Promise.resolve(payload),
-    });
-    new Function('document', 'fetch', script)(document, fetch);
-    return el;
-  };
-
-  const fresh = run({
-    dataThrough: '2026-01-14',
-    lastRun: new Date().toISOString(),
-    halted: null,
-    coverage: { windowDays: 14, finalInWindow: 7, heldInWindow: 7,
-                erroredInWindow: 0, refusedInWindow: 0 },
-  });
-  return new Promise(r => setImmediate(r)).then(() => {
-    assert.match(String(fresh.textContent), /Data through 14 January 2026\./);
-    assert.equal(fresh.attrs['data-state'], 'current');
-
-    const dead = run(null);
-    return new Promise(r => setImmediate(r)).then(() => {
-      assert.match(String(dead.textContent), /No data loaded yet\./,
-        'an unreachable index is a state, not a silent placeholder');
-      assert.equal(dead.attrs['data-state'], 'empty');
-    });
-  });
 });
 
 test('the page never ships a baked-in freshness claim', () => {

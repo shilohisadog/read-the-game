@@ -29,7 +29,7 @@ OUT = ROOT / "src" / "index.html"
 DATA_ORIGIN = "https://data.readthegame.co"
 
 
-def _lib(name="ingest-state.js"):
+def _module(name):
     """Inline a real ES module for the browser. node imports it for tests; the
     browser gets it with the module syntax stripped."""
     src = (ROOT / "src" / "lib" / name).read_text()
@@ -71,42 +71,19 @@ def _csp(html):
         "form-action 'none'",
     ])
 
-# The reference game, stated in one place. These are facts from data/rich.json,
-# not decoration -- the index makes claims about them and the tests check them.
-GAME = {
-    "id": "2023020204",
-    "date": "10 November 2023",
-    "away": "MIN", "home": "BUF",
-    "away_goals": 2, "home_goals": 3,
-    "away_shots": 35, "home_shots": 25,
-}
-
-# THE app. Everything else on the page is secondary to this link.
-MAIN = {
-    "href": "read-the-game.html",
-    "title": "Watch the game",
-    "blurb": "Press play. The game replays shot by shot on the ice, with a running "
-             "count of who is generating chances and why each event does or does not "
-             "count toward it.",
-}
-
-# The same app over the whole archive, rather than the one game compiled into it.
+# THE PAGE NAMES NO GAME AND NO TEAM.
 #
-# It is listed as a VIEW rather than as the hero on purpose. The hero is a
-# lesson -- a specific game with a specific paradox in it -- and that is what
-# acquires a novice. The archive is what brings them back. Front-loading 1,463
-# games on somebody who cannot read one of them yet is a reference product
-# wearing a teaching product's clothes.
-ARCHIVE = ("game.html", "Any game in the archive",
-           "The same replay, over every game we hold — most recent by default, or "
-           "add ?game= and an id. Games we cannot show are listed too, with the "
-           "reason, rather than quietly left out.")
+# It used to compile MIN at BUF into the markup -- score, shots, date -- because
+# there was one game. There are 4,553 now, and every one of those literals was a
+# claim that went stale. The page is a SHELL: it reads the catalog and the
+# measurement at load time and renders whatever the archive currently holds.
+# Same rule game.html already follows, and the same reason.
 
-# The earlier views. These are kept because each one answers a question the main
-# app does not, but they are explorations and the page says so rather than
-# presenting seven equal front doors.
-VIEWS = [
-    ARCHIVE,
+# The workshop. Kept, because each answers a question the main app does not, and
+# demoted, because they were competing with the front door.
+WORKSHOP = [
+    ("read-the-game.html", "The reference game",
+     "MIN at BUF, 10 November 2023, compiled in — the one page that works offline."),
     ("goalie-view.html", "The goalie view",
      "Minnesota outshot Buffalo and lost. This is the save-by-save reason why."),
     ("on-the-ice.html", "On the ice",
@@ -117,28 +94,31 @@ VIEWS = [
      "The same shots, seen from where the goalie stood."),
     ("terrain-3d.html", "Where the chances came from",
      "Shot locations as terrain — height is attempts, not danger."),
+    ("figure-bench.html", "Figure bench",
+     "A development tool: the two player styles side by side on blank ice."),
 ]
 
-# Not a view of the game at all. Labelled as what it is so nobody clicks it
-# expecting hockey.
-BENCH = ("figure-bench.html", "Figure bench",
-         "A development tool: the two player styles side by side on blank ice.")
-
 # The honest limits, on the page rather than in a README nobody opens.
-# Doctrine §9 -- selective honesty is worse than none, because it looks rigorous.
+# Doctrine 9 -- selective honesty is worse than none, because it looks rigorous.
+#
+# THE FIRST ONE USED TO BE FALSE. It read "One game, not a season. Everything here
+# is MIN at BUF" long after the archive held three seasons -- a stale claim inside
+# the block whose entire job is stating limits, which is the worst place for one.
 LIMITS = [
-    ("One game, not a season.",
-     f"Everything here is {GAME['away']} at {GAME['home']}, {GAME['date']}. "
-     "A single game cannot tell you what is normal, so nothing here claims to."),
+    ("Regular season and playoffs, three seasons.",
+     "2023-24 through 2025-26. Preseason, the Olympics and the 4 Nations Face-Off "
+     "are in the archive and are deliberately left out of every number here — they "
+     "are different competitions, and averaging across them would describe none."),
     ("A replay, not live coverage.",
-     "The game is over. Nothing on this site fetches anything while you watch it — "
-     "the events were pulled once, checked, and built into the page."),
+     "Every game here is over. Nothing is fetched from the league while you watch; "
+     "the events were pulled once, checked against the league's own boxscore, and "
+     "stored."),
     ("Nothing is modelled or invented.",
      "Every mark traces to a recorded event. There is no expected-goals number, "
      "because that would be our estimate presented as the game's fact."),
-    ("The counting is shown, including what it drops.",
-     "Each layer accounts for all 320 events in the game: the ones it counts, and "
-     "the ones it excludes with the reason. The totals have to reconcile."),
+    ("We say what we could not read.",
+     "Games we hold but cannot show are listed anyway, with the check that stopped "
+     "them. A schedule that hid them would be a map of our successes."),
 ]
 
 T = r"""<!doctype html>
@@ -164,34 +144,52 @@ h1{font-size:clamp(1.8rem,4vw,2.5rem);letter-spacing:-.025em;font-weight:800;mar
 h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
  font-weight:700;margin:34px 0 12px}
 
-/* The scoreboard is the hook: 35 shots to 25, and the team with 25 won. */
-.board{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;
- background:#fff;border:1px solid var(--edge);border-radius:13px;padding:13px 18px;
- box-shadow:0 5px 18px rgba(16,32,45,.07);margin-bottom:26px}
-.tm{display:flex;flex-direction:column;align-items:center;gap:3px}
-.tm .ab{font-weight:800;letter-spacing:.05em;font-size:.9rem}
-.tm.a .ab{color:var(--min)}.tm.h .ab{color:var(--buf)}
-.tm .sh{font-size:.72rem;color:var(--muted);font-variant-numeric:tabular-nums}
-.sc{font-family:ui-monospace,Menlo,monospace;font-size:2.1rem;font-weight:700;
- font-variant-numeric:tabular-nums;line-height:1}
-.mid{text-align:center;font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+/* THE TEAM GRID IS ONE OBJECT, not thirty-three. Uniform chips, no typing, one
+   click. Google-clean was the brief: above the fold is this and one link. */
+.teams{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));
+ gap:7px;margin:0 0 26px}
+.chip{display:flex;align-items:center;justify-content:center;height:46px;
+ border-radius:9px;text-decoration:none;font-weight:800;letter-spacing:.06em;
+ font-size:.9rem;border:1px solid rgba(0,0,0,.12);
+ transition:transform .12s ease,box-shadow .12s ease}
+.chip:hover,.chip:focus-visible{transform:translateY(-2px);box-shadow:0 6px 16px rgba(16,32,45,.18)}
+.start{margin:0 0 4px;font-size:.95rem}
+.start a{color:var(--blue);font-weight:600;text-decoration:none}
+.start a:hover{text-decoration:underline}
 
-.hero{display:block;text-decoration:none;color:inherit;background:#fff;
- border:1px solid var(--edge);border-radius:15px;padding:22px 24px;
- box-shadow:0 6px 22px rgba(16,32,45,.08);transition:transform .15s ease,box-shadow .15s ease}
-.hero:hover,.hero:focus-visible{transform:translateY(-2px);box-shadow:0 12px 30px rgba(16,32,45,.13)}
-.hero .t{font-size:1.35rem;font-weight:800;letter-spacing:-.015em;margin:0 0 7px}
-.hero .t::after{content:" \2192";color:var(--blue)}
-.hero p{margin:0;color:var(--muted);max-width:58ch}
+/* A team's games. The top row is the thing you press play on -- two clicks from
+   a cold load to watching, which is the number this page was rebuilt for. */
+.crumb{margin:0 0 14px;font-size:.85rem}
+.crumb a{color:var(--blue);text-decoration:none}
+.teamhead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:0 0 4px}
+.teamhead h2{margin:0;font-size:1.4rem;letter-spacing:-.02em;text-transform:none;
+ color:var(--ink);font-weight:800}
+.note{font-size:.86rem;color:var(--muted);margin:0 0 16px;max-width:62ch}
+.games{list-style:none;margin:0 0 26px;padding:0;display:grid;gap:6px}
+.games li{background:#fff;border:1px solid var(--edge);border-radius:10px}
+.games a,.games .off{display:grid;grid-template-columns:8.5rem 1fr auto;gap:12px;
+ align-items:center;padding:11px 15px;text-decoration:none;color:inherit;font-size:.9rem}
+.games a:hover,.games a:focus-visible{border-radius:10px;background:var(--ice)}
+.games .d{color:var(--muted);font-variant-numeric:tabular-nums;font-size:.83rem}
+.games .m{font-weight:600}
+.games .r{font-variant-numeric:tabular-nums;color:var(--muted);font-size:.83rem}
+.games li.first{border-color:var(--blue);box-shadow:0 4px 16px rgba(58,90,156,.14)}
+.games li.first .m::after{content:" — press play";color:var(--blue);font-weight:600}
+.games li.no{background:#f1f4f6}
+.games .off{color:var(--muted)}
+
+.rates{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.rates li{background:#fff;border:1px solid var(--edge);border-radius:10px;padding:11px 15px;
+ display:flex;justify-content:space-between;gap:14px;align-items:baseline;font-size:.9rem}
+.rates .v{font-variant-numeric:tabular-nums;font-weight:700;font-size:1.05rem}
+.rates .n{display:block;font-size:.76rem;color:var(--muted);font-weight:400}
 
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:12px}
 .card{display:block;text-decoration:none;color:inherit;background:#fff;
- border:1px solid var(--edge);border-radius:12px;padding:15px 17px;
- box-shadow:0 4px 14px rgba(16,32,45,.06);transition:border-color .15s ease,transform .15s ease}
-.card:hover,.card:focus-visible{border-color:var(--blue);transform:translateY(-1px)}
+ border:1px solid var(--edge);border-radius:12px;padding:15px 17px}
+.card:hover,.card:focus-visible{border-color:var(--blue)}
 .card .t{font-weight:700;margin:0 0 5px}
 .card p{margin:0;font-size:.86rem;color:var(--muted)}
-.card.tool{background:#eef2f5;border-style:dashed}
 
 .limits{display:grid;gap:11px;margin:0;padding:0;list-style:none}
 .limits li{background:#fff;border:1px solid var(--edge);border-left:3px solid var(--blue);
@@ -218,34 +216,37 @@ footer p{margin:0 0 8px}
 <div class="wrap">
 <p class="eyebrow">Read the Game</p>
 <h1>__H1__</h1>
-<p class="lede">__LEDE__</p>
 
-<p class="state" id="state" data-state="empty">Checking how current this data is&hellip;</p>
+<!-- ABOVE THE FOLD: one object and one link.
+     Rendered by script from the catalog, because the team set is a fact about
+     the archive and not a list to type. Thirty-three today: Arizona relocated to
+     Utah inside the window this archive covers. -->
+<main id="main">
+  <div class="teams" id="teams"></div>
+  <p class="start"><a id="start" href="game.html">New to hockey? Start here &rarr;</a></p>
+</main>
 
-<div class="board">
-  <div class="tm a"><span class="ab">__AWAY__</span><span class="sh">__AWAY_SHOTS__ shots</span></div>
-  <div class="mid"><div class="sc">__AWAY_G__&ndash;__HOME_G__</div>Final</div>
-  <div class="tm h"><span class="ab">__HOME__</span><span class="sh">__HOME_SHOTS__ shots</span></div>
-</div>
-
-<a class="hero" href="__MAIN_HREF__">
-  <p class="t">__MAIN_TITLE__</p>
-  <p>__MAIN_BLURB__</p>
-</a>
-
-<h2>Other ways to look at the same game</h2>
-<div class="grid">
-__VIEWS__
-</div>
+<h2>What the archive says</h2>
+<ul class="rates" id="rates"><li>Reading the archive&hellip;</li></ul>
+<p class="lede" id="thesis">__THESIS__</p>
 
 <h2>What this does and does not claim</h2>
 <ul class="limits">
 __LIMITS__
 </ul>
 
+<p class="state" id="state" data-state="empty">Checking how current this data is&hellip;</p>
+
+<h2>Workshop</h2>
+<p class="note">Earlier views, each answering a question the main app does not.
+They are explorations, not front doors, and several are pinned to one game.</p>
+<div class="grid">
+__WORKSHOP__
+</div>
+
 <footer>
-<p>Play-by-play and shift data for NHL game __GAME_ID__, retrieved once from the
-league&rsquo;s public game-feed endpoints and built into these pages. Not affiliated with,
+<p>Play-by-play, shift and boxscore data for NHL games, retrieved from the
+league&rsquo;s public game-feed endpoints and stored once. Not affiliated with,
 endorsed by, or a product of the National Hockey League or any club. Team abbreviations
 and colours are used to identify the teams; no league or club logos or marks appear here.</p>
 <p>Source, method and the rules this is built under:
@@ -254,27 +255,179 @@ and colours are used to identify the teams; no league or club logos or marks app
 </div>
 <script>
 __LIB__
-/* The freshness of this page is fetched, never baked in. Pages serves code and
-   R2 serves data; a state compiled into a deployed page would be a lie by the
-   next morning, and the nightly ingest deliberately does not trigger a deploy.
+/* NOTHING ON THIS PAGE IS BAKED IN.
+   Pages serves CODE and R2 serves DATA. The team set, the games, the freshness
+   line and the three rates are all read at load time, because the nightly
+   deliberately does not trigger a deploy -- so anything compiled in here would be
+   a lie by the next morning. The page shipped a hard-coded date once already.
 
-   A failure here is a state, not an exception: no answer means we cannot say
-   how current the data is, and the page says exactly that rather than staying
-   silent or guessing. Opened from disk, fetch fails and the same line appears,
-   which is honest -- a saved copy genuinely has no idea. */
+   A failure is a STATE, not an exception. If a document does not arrive the page
+   says which one and why, rather than rendering an empty shell that looks broken
+   for no stated reason. Opened from disk, every fetch fails and the page says so,
+   which is honest: a saved copy genuinely has no archive behind it. */
 (function () {
-  var el = document.getElementById('state');
-  function render(index) {
-    var r = describe(index, new Date().toISOString());
-    el.setAttribute('data-state', r.state);
-    el.textContent = r.lines.join(' ');
+  var $ = function (id) { return document.getElementById(id); };
+  var ORIGIN = __ORIGIN__;
+  var MON = ['January','February','March','April','May','June','July','August',
+             'September','October','November','December'];
+
+  function when(d) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || '');
+    return m ? (+m[3]) + ' ' + MON[+m[2] - 1] + ' ' + m[1] : (d || '');
   }
-  try {
-    fetch(__ORIGIN__ + '/index.json', { cache: 'no-store' })
-      .then(function (res) { return res.ok ? res.json() : null; })
-      .then(render)
-      .catch(function () { render(null); });
-  } catch (e) { render(null); }
+  function grab(name) {
+    return fetch(ORIGIN + '/' + name, { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function () { return null; });
+  }
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+
+  /* THE TEAM SET IS A FACT ABOUT THE ARCHIVE, never a typed list. It is 33 today
+     because Arizona relocated to Utah inside our window, and a "32 NHL clubs"
+     constant would have been wrong on the first day. */
+  function teamsIn(games) {
+    var seen = {};
+    games.forEach(function (g) {
+      if (!inScope(g.id)) return;
+      seen[g.a] = 1; seen[g.h] = 1;
+    });
+    return Object.keys(seen).sort();
+  }
+
+  function chip(ab) {
+    var t = TEAMS[ab] || { colour: '#5b6d7a' };
+    var a = el('a', 'chip', ab);
+    a.href = '?team=' + ab;
+    a.style.background = t.colour;
+    a.style.color = inkOn(t.colour);
+    a.setAttribute('aria-label', nameOf(ab));
+    return a;
+  }
+
+  function drawGrid(games) {
+    var box = $('teams');
+    box.textContent = '';
+    teamsIn(games).forEach(function (ab) { box.appendChild(chip(ab)); });
+  }
+
+  /* A team's games, newest first. The first VIEWABLE one is the thing you press
+     play on, so a cold visitor reaches a game in two clicks.
+
+     REFUSED GAMES ARE LISTED, greyed, with the check that stopped them. Hiding
+     them would make this a map of our successes -- Doctrine 9 -- and inside the
+     scope that argument is unchanged. */
+  function drawTeam(ab, games) {
+    var mine = games.filter(function (g) {
+      return inScope(g.id) && (g.a === ab || g.h === ab);
+    }).sort(function (x, y) { return x.d === y.d ? y.id - x.id : (x.d < y.d ? 1 : -1); });
+
+    var main = $('main');
+    main.textContent = '';
+    var crumb = el('p', 'crumb');
+    var back = el('a', null, '← All teams');
+    back.href = '.';
+    crumb.appendChild(back);
+    main.appendChild(crumb);
+
+    var head = el('div', 'teamhead');
+    head.appendChild(el('h2', null, nameOf(ab)));
+    head.appendChild(el('span', 'd', mine.length + (mine.length === 1 ? ' game' : ' games')
+                                    + ' in the archive'));
+    main.appendChild(head);
+    if (NOTES[ab]) main.appendChild(el('p', 'note', NOTES[ab]));
+
+    if (!mine.length) {
+      main.appendChild(el('p', 'note',
+        'We hold no regular-season or playoff games for ' + nameOf(ab) + '.'));
+      return;
+    }
+
+    var list = el('ul', 'games'), first = true;
+    mine.forEach(function (g) {
+      var li = el('li');
+      var them = g.a === ab ? g.h : g.a;
+      var home = g.h === ab;
+      var us = home ? g.hs : g.as, they = home ? g.as : g.hs;
+      var line = (us > they ? 'Beat ' : 'Lost to ') + nameOf(them);
+      var row;
+      if (g.v) {
+        row = el('a', null);
+        row.href = 'game.html?game=' + g.id;
+        if (first) { li.className = 'first'; first = false; }
+      } else {
+        li.className = 'no';
+        row = el('div', 'off');
+        line = 'We hold this game but cannot show it';
+      }
+      row.appendChild(el('span', 'd', when(g.d)));
+      row.appendChild(el('span', 'm', g.v ? line : line));
+      row.appendChild(el('span', 'r', g.v
+        ? (home ? g.hs + '–' + g.as : g.as + '–' + g.hs)
+            + '  ·  ' + (home ? g.hsh + '–' + g.ash : g.ash + '–' + g.hsh) + ' shots'
+        : (g.r || 'refused')));
+      li.appendChild(row);
+      list.appendChild(li);
+    });
+    main.appendChild(list);
+  }
+
+  /* THE THESIS, in the league's numbers and ours. Every rate carries its
+     denominator: a rate without its reference class is the thing this site
+     teaches against, and publishing one bare would be us doing it. */
+  function drawRates(m) {
+    var box = $('rates');
+    box.textContent = '';
+    if (!m || !m.baseRates) {
+      box.appendChild(el('li', null, 'The archive measurement could not be loaded.'));
+      return;
+    }
+    var order = ['moreShotsOnGoalLost', 'moreAttemptsLost', 'moreLevelControlLost'];
+    order.forEach(function (k) {
+      var r = m.baseRates[k];
+      if (!r || r.rate == null) return;
+      var li = el('li');
+      var left = el('span');
+      left.appendChild(el('span', 'w', r.what.charAt(0).toUpperCase() + r.what.slice(1)));
+      left.appendChild(el('span', 'n', r.count + ' of ' + r.n + ' · ' + r.population));
+      li.appendChild(left);
+      /* COMPUTED FROM THE COUNT AND THE DENOMINATOR PRINTED BESIDE IT, never
+         from the stored `rate`. A reader who checks 1811 of 3957 must get the
+         number we show; if the stored rate were ever rounded or stale the two
+         would disagree on screen and the reader would be right. Caught by a test
+         whose fixture carried a rounded rate and rendered 54.4 against 54.5. */
+      li.appendChild(el('span', 'v', (r.count / r.n * 100).toFixed(1) + '%'));
+      box.appendChild(li);
+    });
+    if (m.featured && m.featured.length) {
+      $('start').href = 'game.html?game=' + m.featured[0].id;
+    }
+  }
+
+  var team = (/[?&]team=([A-Za-z]{2,3})/.exec(location.search) || [])[1];
+  if (team) team = team.toUpperCase();
+
+  Promise.all([grab('catalog.json'), grab('measures.json'), grab('index.json')])
+    .then(function (r) {
+      var cat = r[0], measures = r[1], index = r[2];
+      var games = (cat && cat.games) || [];
+      if (!games.length) {
+        $('teams').appendChild(el('p', 'note',
+          'The archive could not be loaded, so there are no teams to show.'));
+      } else if (team) {
+        drawTeam(team, games);
+      } else {
+        drawGrid(games);
+      }
+      drawRates(measures);
+      var s = describe(index, new Date().toISOString());
+      $('state').setAttribute('data-state', s.state);
+      $('state').textContent = s.lines.join(' ');
+    });
 })();
 </script>
 </body>
@@ -283,19 +436,33 @@ __LIB__
 
 H1 = "Watch a hockey game and see what the numbers are made of"
 
-LEDE = ("Hockey is fast, and most of what decides a game is invisible unless someone "
-        "points at it. This replays <b>one real game</b> slowly enough to follow, and "
-        "shows its work: every count is traceable to a recorded event, and every event "
-        "it leaves out says why.")
+# THE THESIS, and it is the best sentence this project has earned. It is not a
+# hedge against "shot counts are meaningless" -- it is the finding, measured over
+# 4,119 games: counted the obvious way the leader loses more often than not, and
+# counted properly the leader wins. The numbers themselves are fetched, never
+# typed, so this text must not contain any of them.
+THESIS = ("Count shot attempts the obvious way and the team with more of them loses "
+          "slightly more often than it wins &mdash; because falling behind is what makes "
+          "a team shoot. Count only the attempts taken at even strength while the score "
+          "was level, and the picture reverses. <b>Which number you count changes the "
+          "answer.</b> That is what this site is for.")
 
 
-def _views():
-    out = []
-    for href, title, blurb in VIEWS:
-        out.append(f'  <a class="card" href="{href}"><p class="t">{title}</p><p>{blurb}</p></a>')
-    href, title, blurb = BENCH
-    out.append(f'  <a class="card tool" href="{href}"><p class="t">{title}</p><p>{blurb}</p></a>')
-    return "\n".join(out)
+def _lib():
+    """Inline the analysis modules the browser needs, as real source.
+
+    THE SAME FILES THE PIPELINE IMPORTS. `inScope` decides which games count here
+    and in builders/measure.mjs; re-typing it in page script would be the second
+    implementation this project keeps almost building. See docs/architecture.md.
+    """
+    return "\n".join(_module(n) for n in
+                      ("ingest-state.js", "teams.js", "archive.js"))
+
+
+def _workshop():
+    return "\n".join(
+        f'  <a class="card" href="{href}"><p class="t">{title}</p><p>{blurb}</p></a>'
+        for href, title, blurb in WORKSHOP)
 
 
 def _limits():
@@ -306,19 +473,9 @@ def build():
     html = (T.replace("__LIB__", _lib())
              .replace("__ORIGIN__", repr(DATA_ORIGIN).replace("'", '"'))
              .replace("__H1__", H1)
-             .replace("__LEDE__", LEDE)
-             .replace("__AWAY_SHOTS__", str(GAME["away_shots"]))
-             .replace("__HOME_SHOTS__", str(GAME["home_shots"]))
-             .replace("__AWAY_G__", str(GAME["away_goals"]))
-             .replace("__HOME_G__", str(GAME["home_goals"]))
-             .replace("__AWAY__", GAME["away"])
-             .replace("__HOME__", GAME["home"])
-             .replace("__MAIN_HREF__", MAIN["href"])
-             .replace("__MAIN_TITLE__", MAIN["title"])
-             .replace("__MAIN_BLURB__", MAIN["blurb"])
-             .replace("__VIEWS__", _views())
-             .replace("__LIMITS__", _limits())
-             .replace("__GAME_ID__", GAME["id"]))
+             .replace("__THESIS__", THESIS)
+             .replace("__WORKSHOP__", _workshop())
+             .replace("__LIMITS__", _limits()))
     # Stamped last: the hashes must cover the final bytes of the script and
     # style, and the CSP itself sits in <head>, outside both.
     return html.replace("__CSP__", _csp(html))
@@ -329,8 +486,7 @@ def main():
 
     # A link to a file that does not exist is a 404 in production. Cheapest
     # possible gate, run on every build, before the byte comparison.
-    missing = [h for h, *_ in [(MAIN["href"],), *VIEWS, BENCH]
-               if not (ROOT / "src" / h).exists()]
+    missing = [h for h, *_ in WORKSHOP if not (ROOT / "src" / h).exists()]
     if missing:
         print("BROKEN LINKS -- these files do not exist: " + ", ".join(missing))
         return 1
@@ -345,7 +501,7 @@ def main():
         return 0 if same else 1
 
     OUT.write_text(html)
-    print(f"wrote {OUT} {len(html.encode())} bytes; {len(VIEWS) + 2} links checked")
+    print(f"wrote {OUT} {len(html.encode())} bytes; {len(WORKSHOP)} links checked")
     return 0
 
 
