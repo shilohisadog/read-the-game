@@ -121,6 +121,33 @@ the backfill was worth doing early.
 
 ---
 
+## 7. What counts, once anything is computed
+
+**Settled (Kevin, 2026-08-11): base rates — and any other calculation — cover NHL
+regular season and playoffs only.** `gameType` 2 and 3. Preseason, the Olympics,
+the 4 Nations Face-Off and any other offshoot are archived, listed and viewable,
+and never enter a computed number.
+
+The archive holds them because the ingest deliberately does not filter — a
+decision made at fetch time costs a request to the league to undo, one made at
+the point of use costs a line. This is that line, and it is the second time
+carrying `gameType` has paid: we would otherwise have silently dropped the
+Olympics without knowing, and will meet the 4 Nations Face-Off in 2024-25.
+
+A base rate is also **scoped to the season the game was played in**, not pooled
+across the archive. Precision is not the reason — one season is 71,266 shots and
+gives a save-percentage base rate to ±0.0011, against an effect size of .038, so
+it is already 35 standard errors and three seasons would only take it to
+±0.0006. Pooling seasons instead introduces a bias more data cannot fix: hockey
+is not stationary, and a normal averaged across eras describes no season in
+particular.
+
+Where more seasons genuinely help is CONDITIONAL base rates, which slice thin —
+a high-danger 5-on-3 normal is ±0.017 on a single season, an order of magnitude
+worse and unstable year to year.
+
+---
+
 ## Appendix: decisions taken today that have not been reviewed
 
 Flagged because they were unilateral and several rewrote things CHENG designed.
