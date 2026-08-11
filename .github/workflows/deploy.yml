@@ -325,8 +325,21 @@ jobs:
           sed -i 's#<meta http-equiv="Content-Security-Policy"[^>]*>##' index.html game.html
           sed -i 's#https://data\.readthegame\.co##g' index.html game.html
 
+          # A CANARY, because a check that has never failed may be incapable of
+          # failing. This one is deliberately 900px wide in a 360px frame, and the
+          # step FAILS IF IT PASSES. Without it, "both pages fit" is
+          # indistinguishable from "the comparison is broken" -- and the first
+          # version of this gate went green while measuring the wrong screen, so
+          # that is not a hypothetical here.
+          cat > canary.html <<'HTML'
+          <!doctype html><html><head><meta charset="utf-8">
+          <title>canary</title></head><body style="margin:0">
+          <div style="width:900px;height:20px;background:#c00"></div>
+          </body></html>
+          HTML
+
           WIDTH=360
-          for f in index game; do
+          for f in index game canary; do
             cat > "probe-$f.html" <<HTML
           <!doctype html><html><head><meta charset="utf-8"><title>pending</title></head>
           <body style="margin:0">
@@ -372,8 +385,21 @@ jobs:
               echo "::error::$f.html was framed at ${frame}px, not the ${WIDTH}px this check claims"
               fail=1; continue
             fi
+            over=0
+            [ "$scroll" -gt $((client + 1)) ] && over=1
+            if [ "$f" = canary ]; then
+              # The mutation. It MUST overflow; if it does not, the comparison
+              # above is not working and every green above it means nothing.
+              if [ "$over" = 1 ]; then
+                echo "  canary: 900px in ${client}px correctly reported as overflow — the check can fail"
+              else
+                echo "::error::the canary did NOT report overflow — this gate cannot detect one"
+                fail=1
+              fi
+              continue
+            fi
             echo "  $f.html: framed ${WIDTH}px, laid out at ${client}px, content needs ${scroll}px"
-            if [ "$scroll" -gt $((client + 1)) ]; then
+            if [ "$over" = 1 ]; then
               echo "::error::$f.html needs ${scroll}px in a ${client}px viewport — it scrolls sideways"
               fail=1
             fi
