@@ -1,10 +1,12 @@
 # The homepage
 
-*A plan, for review. Nothing here is built. Written against the live page and the
-live catalog, not against intentions.*
+*Written against the live page and the live catalog, not against intentions.
+Sections 3.7-3.9 are MEASURED and their numbers are live; section 3 is the design,
+rewritten after Kevin named the primary use case and it was not the one I had been
+designing for.*
 
 The site holds three seasons. The homepage still describes a single game, and one
-of its honesty claims is now false. This is the audit and what I propose to do.
+of its honesty claims is now false. This is the audit and what we are building.
 
 ---
 
@@ -40,134 +42,123 @@ compiled into it — but it is the same shape as the hard-coded date we just pul
 out of `game.html`. The moment the hero becomes "a game from the archive," it has
 to be read from the catalog, never typed.
 
-## 2. The thing I do NOT want to change
+## 2. The argument I lost, and it changes the whole page
 
-I argued in the builder's own comments that the archive should not be the hero:
+I argued in the builder's own comments that the archive must not be the hero:
 
 > Front-loading 1,463 games on somebody who cannot read one of them yet is a
 > reference product wearing a teaching product's clothes.
 
-That is still right, and it is the main constraint on this rework. **A search box
-is not a welcome.** A novice does not know which game they want; they do not know
-what a Corsi is; they have no reason to type "Buffalo." The finder is the second
-thing on the page, not the first.
+**Kevin, 2026-08-11:** *"I think the normal use case will be for a team fan to come
+to the site and load their team's last game and watch it."*
 
-Also keeping: the freshness line fetched live from `index.json`, the limits block
-(rewritten), the attribution and no-marks statement, the hash-pinned CSP, and the
-builder-is-the-only-source discipline.
+He is right, and my argument was answering a question nobody asked. It defended
+against **a search box**, which is indeed a bad welcome — a novice does not know
+which game they want. But the team path is not a search box and not a featured
+game. **It is a fan who knows exactly what they want, blocked by a page that makes
+them look for it.**
+
+The evidence was already on the table and I did not join it up: *learner =
+acquisition, team fan = retention.* A featured game serves a first-time visitor
+once. A team fan comes back eighty-two times a season. And since the shareable
+unit is a game, a stranger lands on `game.html` — so the homepage hero was being
+designed for people who type the domain in cold, which is the smallest audience we
+have.
+
+**The design target is now a number: two clicks from cold to watching your team's
+last game.**
+
+Also settled (Kevin): **clean and uncluttered, at google.com scale.** Above the
+fold is one object and one link. Everything else earns its way below, or goes.
+
+Keeping regardless: the freshness line fetched live from `index.json`, the limits
+block (rewritten), the attribution and no-marks statement, the hash-pinned CSP,
+and the builder-is-the-only-source discipline.
 
 ## 3. Proposed structure
 
-### 3.1 Two heroes, not one
+### 3.1 Above the fold: one object and one link
 
-The page opens with two games, always, in this order:
+```
+                      Read the Game
+        Watch a hockey game and see what the numbers are made of
 
-**"Start here" — the archive's sharpest lesson.** By a rule stated on the page:
-**the biggest EVEN-STRENGTH shot-attempt advantage accrued while the score was
-tied in regulation, in a loss.**
+   ANA  ARI  BOS  BUF  CAR  CBJ  CGY  CHI  COL  DAL  DET
+   EDM  FLA  LAK  MIN  MTL  NJD  NSH  NYI  NYR  OTT  PHI
+   PIT  SEA  SJS  STL  TBL  TOR  UTA  VAN  VGK  WPG  WSH
 
-*The rule has been rewritten twice under review and each rewrite changed the
-answer. §3.7 is the score-effects measurement, §3.7a is the units (attempts, not
-shots on goal), §3.7b is the strength and overtime correction. The first version —
-"the biggest shot advantage that still lost" — returned FLA outshooting TBL 50–16
-and losing, a game nobody needs a site to interpret.*
+                 New to hockey? Start here →
+```
 
-**"The most recent game we can show."** Which in August is the Cup final and in
-January is last night. This is what makes the page feel alive in season without a
-conditional in the code. *"Can show," not "hold"* — the newest game we hold may be
-refused, and given the preseason failure rate it will be; a slot that falls back is
-a slot with a branch in it, which is what the two-slot design exists to avoid
-(CHENG).
+That is the whole of it. The grid is **one object**, not thirty-three — uniform
+chips in team colours, scannable, no typing. A type-ahead box would be closer to
+google.com literally and worse for the use case: a fan wants one click, not a
+click and a word.
 
-Two fixed slots, both always present, no branching. The seasonal-liveness problem
-gets solved by structure rather than by an `if`.
+**THIRTY-THREE, NOT THIRTY-TWO.** Arizona relocated to Utah inside our window —
+ARI played 82 games in 2023-24 and none after; UTA begins in 2024-25. A
+hardcoded 32-club list would have been wrong on the first day. **The set is read
+from the catalog**, and a test asserts every team in it has a colour, so the next
+relocation or expansion fails loudly instead of rendering a blank chip.
 
-### 3.2 Is the featured paradox on-doctrine?
+ARI's team view says what happened, because that is a fact and it costs no page
+furniture: *"relocated to Utah after 2023-24; 82 games in this archive."*
 
-This is the decision I most want attacked, because it is "three things to notice"
-wearing a hat.
+### 3.2 What a team click does
 
-**The case that it is honest.** It is a sort, not a model. Both inputs are the
-league's own quoted numbers, already in every catalog row (`as/hs`, `ash/hsh`).
-The rule is one line, it is stated on the page, it is applied identically to all
-4,192 in-scope games, and the ranked list is linkable so a visitor can check that
-we did not hand-pick. Nothing is estimated. Doctrine §8 does not bite — 50–16 is
-a count, not a rate.
+`/?team=BUF` — the same page, filtered. No new page, no new build target, and the
+URL is shareable and stateless.
 
-**The case that it is not.** We are still choosing *which* dimension of "unusual"
-to lead with, and shot differential is one of many. A visitor cannot tell from the
-page whether we tried nine rules and shipped the flattering one.
+The team view is that team's games, newest first, with the most recent one
+presented as the thing you press play on. **Two clicks from cold to watching.**
+Older games are right underneath, so browsing is not traded away for speed.
 
-**How that resolves, per the position already taken:** the dimension is chosen
-**once, in public**, rather than 4,417 times invisibly. One rule, named on the
-page, in the shipped source. That is the honest form of the thing, and it is why
-this is a *stated sort* rather than an "interestingness score."
+Refused games appear in the list, greyed, with the reason. Inside the scope, the
+calendar is still not a map of our successes.
 
-**Constraint that falls out:** the rule must be able to return a boring answer,
-and the page must print it when it does. If the sharpest paradox in the archive
-were +3 shots, the page has to say +3.
+Optional and Kevin's call: remember the choice in `localStorage` so a return visit
+lands on your team. Still holds-nothing — *we* hold nothing; the browser does.
 
-### 3.3 "What you'll see" — three ideas, not seven features
+### 3.3 "New to hockey? Start here"
 
-Between the heroes and the finder, three plain-language cards. Not a feature list
-— the three *ideas* the layers exist to teach:
+One link, not a hero. It opens the featured game — the archive's sharpest example
+by the rule in §3.7b — with the sentence that makes it a lesson rather than a
+curiosity.
 
-- **Shots are not goals.** Who was generating chances, and why the scoreboard
-  often disagrees.
-- **Not every shot is a chance.** Where it was taken from, by a geometric rule you
-  can check — never an expected-goals number.
-- **Sometimes a goalie just decides it.** Save by save, as it happens.
+This is a demotion and it is deliberate. Three rewrites of the featured rule went
+into a slot that serves one visitor once. The measurement was worth building for a
+different reason (§3.4); its placement on this page was not.
 
-This is the welcome. It is also the only part of the page that speaks to somebody
-who does not yet know they want any of this.
+### 3.4 Where the measurement actually pays off
 
-### 3.4 The finder
+Not on the homepage. **On the game page, for the returning fan:**
 
-Below the fold, and it is three features that are one array in memory:
+> Buffalo controlled play while the score was level — 12 more attempts — and lost.
 
-- **search** — team or date
-- **filter by team** — the retention mechanic, and nearly free
-- **the season calendar** — as a *coverage map*, which is the part nobody else's
-  schedule page can do, because nobody else has anything to admit
+That is the sentence a team fan comes back for, and it costs nothing new: the
+browser already loads the extract and imports the same `tied.js` the pipeline
+does, so it is computed client-side with no extra document and no extra fetch.
+That is the payoff of not writing a Python copy (docs/architecture.md §2).
 
-Refused games appear, greyed, with the reason. September shows 320 preseason
-games we hold, 33 of which we cannot show.
+**It must be able to say nothing happened.** A fan will load plenty of ordinary
+4–1 games, and the page has to admit that rather than manufacture a story.
 
-**One real cost to decide.** The catalog is **453 KB raw, 55 KB gzipped**, served
-brotli — measured, not estimated. That is a fine number for a data file and a
-noticeable one for a landing page. Options, in the order I would take them:
+### 3.5 Below the fold, in this order
 
-1. **Fetch it once, lazily, when the finder is first opened.** The two heroes need
-   only a handful of rows, so the top of the page can be served from a tiny
-   `featured.json` written by `derive`. Costs a second document that can disagree
-   with the first — which CHENG rightly killed for sharding.
-2. **Fetch the whole catalog on load** and take the ~45 KB. Simple, one document,
-   no disagreement possible.
+Everything here is content Kevin wants kept — moved, not deleted, and quieter.
 
-I lean to **(2)**, on the grounds that a second document is the more expensive
-mistake and we have paid for it twice. Worth arguing.
+1. **The thesis, in three numbers** (§3.8). The best single thing we can say.
+2. **What this does and does not claim** — the limits block, rewritten true.
+3. **The archive** — what we hold, and what we cannot show, with the reason.
+4. **Attribution and no-marks.**
+5. **The workshop** — the five prototypes and the figure bench, labelled as
+   explorations rather than front doors.
 
-**A detail the filter has to handle:** the catalog contains **52 team codes**, not
-32 — the Olympics and the 4 Nations Face-Off brought national teams. `SVK` is a
-real row. The filter must not present them as NHL clubs, and must not hide them
-either.
+### 3.6 The catalog fetch
 
-### 3.5 The limits, rewritten to be true
-
-- ~~One game, not a season~~ → **Three seasons, and we say what we could not
-  read.** 4,553 games held, 4,417 shown, 136 refused with the gate that stopped
-  them. Preseason fails six times as often as the regular season and we do not yet
-  know why.
-- **A replay, not live coverage.** Unchanged and still true.
-- **Nothing is modelled or invented.** Unchanged.
-- **The counting is shown, including what it drops.** Reword off "all 320 events
-  in the game," which is a fact about one game.
-
-### 3.6 The workshop
-
-The five prototypes and the figure bench move to a labelled section at the bottom.
-Kept — each answers a question the main app does not — but they stop competing
-with the front door.
+Take the whole file: **453 KB raw, 55 KB gzipped, brotli on the wire** — measured.
+The team grid, the team view and the archive counts all read it, so a second
+smaller document would buy nothing and cost drift. One document (CHENG).
 
 ---
 
@@ -380,43 +371,38 @@ independent witness. The **score state it is bucketed by** now does — per goal
 order, from the league. That is a real narrowing of the asymmetry and the page can
 say so.
 
-## 3.8 The base rate — CHENG's best suggestion, and his number was wrong
+## 3.8 The base rates — MEASURED, over the whole archive
 
-He proposed putting the reference class on the page and gave 41%. Computed over
-the live catalog, in-scope, viewable, decided games:
+Superseded twice. CHENG proposed publishing a reference class and gave **41%**,
+with no query behind it. I computed **45.8%** from the catalog, then **60.3%** for
+attempts from a 140-game sample — and refused to publish that one because it was a
+sample. That refusal was right: the real figure is **54.5%**, inflated by a third
+in my sample.
 
-**The team with more shots on goal lost 1,811 of 3,957 — 45.8%.** (2,146 won,
-54.2%; 162 games had equal shots.)
+Run by `builders/measure.mjs` over all 4,119 in-scope published games:
 
-He is right that this belongs on the page and right that §4's "defer base rates"
-was wrong for this specific case — a hero that asserts a game was unusual *is* a
-base-rate claim. **But 54/46 needs careful handling**, because a novice reading
-"barely better than a coin flip" draws exactly the conclusion CHENG was trying to
-prevent: that shot counts are meaningless. The honest frame is that a shot count
-**describes** what happened rather than **predicts** who won — which is the site's
-thesis, not a hedge against it. The attempts figure in §3.7a does that job far
-better and should be the headline once it can be stated over the full population.
+| the team with more … | lost | of |
+|---|---|---|
+| shots on goal | **45.8%** | 3,957 |
+| shot attempts | **54.5%** | 4,029 |
+| **control while the score was level** | **39.6%** | 3,855 |
 
-**What may be published, and when.** The SOG rate is computed over all 3,957
-in-scope decided games and can go on the page now. **The 60.3% attempts rate is
-from 140 games and may NOT** — publishing a sampled number as a site-wide base rate
-is precisely what Doctrine §8 exists to stop, and it would be this project
-committing its own named failure mode in the paragraph where it teaches base rates.
-It goes up after the derive pass computes it over all 4,119.
+**The third row is why the narrowing exists, and it is now measured rather than
+argued.** Counted raw, the attempts leader *loses* more often than not — score
+effects swamp the signal. Narrowed to even strength, tied score, regulation, the
+leader **wins 60.4%**. Three rounds of review argued that from first principles;
+this is the evidence.
 
-**State the denominator** (CHENG). 45.8% is **1,811 of 3,957**, with 162 equal-shot
-games excluded — so the page says *"in games where one team had more shots on
-goal."* A reader who checks against a different denominator will get a different
-number and be right to. Every published rate carries its **n and its population**:
-*even strength, tied score, in-scope decided games, n = …*. A base rate without its
-reference class is the thing this site exists to teach against.
+It also gives the page a teaching sequence instead of a hedge: **count it the
+obvious way and you learn nothing; count it properly and the pattern appears.**
+That is a far better answer to "shot counts are meaningless" than 54/46 was, and
+it is the thesis stated more precisely than the homepage has ever managed.
 
-**The framing, settled.** CHENG's pair is stronger than either number alone: the
-two measures **point in opposite directions**. More shots on goal — the leader
-loses 45.8%. More attempts — the leader loses about 60%. Neither predicts; both
-describe; and *which one you count changes the answer in one game in five.* That is
-not a hedge against the site's thesis, it is the thesis, stated more precisely than
-the homepage has ever managed.
+**Publication rules, unchanged and now satisfiable.** Every rate ships with its
+numerator, denominator and population — *"1,811 of 3,957 games where one team had
+more shots on goal, NHL regular season and playoffs"*. `measures.json` carries all
+three, and `derive.yml` fails if any rate is published without its `n` or its
+population.
 
 ## 3.9 Scope: NHL regular season and playoffs only, on every user-visible surface
 
@@ -458,6 +444,16 @@ grouping to design.
 - No change to `game.html` or the renderer.
 
 ## 5. What gets tested
+
+**The design target is a number, so it is a test:** from a cold load, choosing a
+team and pressing play is two clicks. A page that drifts to three has lost the
+thing it was rebuilt for.
+
+- **the team set comes from the catalog, never a typed list** — 33 today, because
+  Arizona relocated to Utah inside our window. Every team present must have a
+  colour, so the next relocation fails loudly instead of rendering a blank chip
+- `?team=BUF` filters to Buffalo and nothing else, and an unknown team says so
+  rather than showing an empty page
 
 The page makes checkable claims, so the tests are the same shape as
 `test/index.test.js` today:
