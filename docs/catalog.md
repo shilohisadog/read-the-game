@@ -1,9 +1,10 @@
 # The catalog
 
-*Design artifact for review. Nothing here is built yet.*
+*Reviewed by CHENG and BUILT. Live at `https://data.readthegame.co/catalog.json`.*
+*Sections 1–7 describe what shipped; §6 records the four points he argued and how
+they were resolved.*
 
-The archive holds 1,534 games and publishes 1,463 of them as extracts. Nothing
-reads any of it. The catalog is the document that makes the archive navigable —
+The archive holds 1,534 games and publishes 1,463 of them as extracts. The catalog is the document that makes the archive navigable —
 the spine that search, team filtering and the season calendar all hang off.
 
 Written against the live archive, not against intentions:
@@ -34,8 +35,10 @@ index, no search service, no D1, and the holds-nothing property survives intact.
 
 ## 2. Where it lives
 
-`catalog/{season}.json`, one per season, plus `catalog/seasons.json` naming what
-exists.
+**A single `catalog.json`.** 1,534 rows, 149 KB raw and 18 KB gzipped — one
+fetch. No sharding and no manifest: CHENG's point is that a second document is
+one that can disagree with the first, and it would buy nothing at 100 KB that it
+does not also cost at 1 MB.
 
 **Not in `index.json`.** That document is the *pipeline's* health record — it has
 a contract, a test, and a live consumer on the front page. The catalog is
@@ -48,9 +51,15 @@ needs no separate lookup and cannot disagree with the id.
 
 ## 3. The row, and the one decision I most want attacked
 
+```json
+{"id":2025030416,"d":"2026-06-14","a":"CAR","h":"VGK",
+ "as":3,"hs":0,"ash":23,"hsh":22,"t":3,"v":1}
+{"id":2025090001,"d":"2026-02-11","a":"SVK","h":"FIN",
+ "as":4,"hs":1,"ash":25,"hsh":40,"t":9,"v":0,"r":"validation"}
 ```
-id  d(ate)  a(way ab)  h(ome ab)  as/hs (score)  t(ype)  v(iewable)
-```
+
+`as/hs` score and `ash/hsh` shots on goal, both quoted from the boxscore;
+`v` viewable; `r` which gate refused it.
 
 **Where does the score come from?**
 
@@ -75,9 +84,10 @@ show you. A disagreement between them is a refusal, not a silent choice.
 
 ## 4. Refused games are IN the catalog
 
-A game appears with `v: 0` and a stated reason when we hold it but cannot show
-it — 71 games today, of which 30 are Olympic stubs and 40 fail one boxscore
-check.
+A game appears with `v: 0` and which gate stopped it when we hold it but cannot
+show it — 71 games today: 39 truncated feeds (30 of them the 2026 Winter
+Olympics) and 32 that fail one boxscore check for reasons recorded in the
+memory note on the refusal gap.
 
 The tempting design is to list only what is viewable, so every row is a working
 link. That would make the calendar a **map of our successes**, and September
@@ -99,25 +109,29 @@ Neither is authoritative and both are rebuildable — so a field we want in thre
 months is a reprocessing pass, not a re-fetch. That property is the whole reason
 the backfill was worth doing early.
 
-## 6. What I want argued against
+## 6. The four points argued, and how they resolved
 
-1. **Quoting the boxscore rather than deriving the score.** It avoids a second
-   implementation, and it means the catalog and the game view could show
-   different numbers if our extraction is wrong. Is a check that can fail
-   genuinely better here than one source of truth?
+1. **Quoting the boxscore** — ACCEPTED, and CHENG sharpened it: quoting the
+   authority is not a compromise against one source of truth, it *is* the source
+   of truth and the correct direction of dependency. It also converts a silent
+   disagreement into a loud one. His requirement was taken too: the quote is
+   stored IN the extract as a `quoted` block tagged with its source, so the
+   catalog builder and the validator cannot reach for the boxscore independently
+   and drift over which field.
 
-2. **Refused games in the catalog.** Honest, and it puts dead entries in a
-   navigation surface. Does a `v: 0` row help a novice or just confuse them?
+2. **Refused rows** — KEPT, with his correction: `v: 0` alone would re-merge
+   refused with absent at the surface after they were split upstream. The row
+   carries which gate stopped it. The confusion risk lives entirely in the copy,
+   not in the decision.
 
-3. **Per-season sharding at 100 KB.** Probably premature. One file for
-   everything is simpler until roughly ten seasons. Am I optimising for a scale
-   we may never reach, at the cost of a second document (`seasons.json`) that
-   can drift?
+3. **Sharding** — DROPPED. Premature, and a manifest is a second document that
+   can disagree with the first. One file until it hurts.
 
-4. **The row omits shots on goal.** A game card showing "CAR 3–0 VGK, shots
-   23–22" is a better card, and it is 12 more bytes. But shots are exactly the
-   number the site exists to make you distrust, and putting them on a browse
-   card states them without their base rate — Doctrine §8. Is that too precious?
+4. **Shots on goal** — ADDED. Doctrine §8 governs *rates*, not counts, and
+   23–22 is a count. It is also the count the site exists to explain: "MIN
+   outshot BUF 35–25 and lost" is the thesis, so withholding it from the browse
+   surface would hide the number the game view answers. My instinct here was
+   precious rather than principled.
 
 ---
 
