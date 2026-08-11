@@ -763,3 +763,70 @@ class TheCatalogMerges(unittest.TestCase):
         D.derive(store)
         ids = [r["id"] for r in json.loads(store.get("catalog.json").decode())["games"]]
         self.assertEqual(ids, sorted(ids))
+
+
+class TheMergeNeedsItsBaseline(unittest.TestCase):
+    """THE MERGE IS ONLY AS GOOD AS THE THING IT MERGES INTO.
+
+    `TheCatalogMerges` above proves `_write_catalog` adds to the previous
+    catalog instead of replacing it. That is true, it is tested, and the site
+    still published a catalog of zero games the first night the fixed code ran —
+    because the nightly rehydrates POINTERS and `index.json` from R2 and had
+    never been asked to bring `catalog.json` down. The merge found nothing,
+    merged into nothing, and advertised an empty archive.
+
+    A fix that repairs a narrower claim than it announces is the failure mode
+    this project keeps paying for, and here it repaired a function while the
+    behaviour it existed to protect stayed broken. So the requirement is pinned
+    where it can fail: the ORDERING between the pull and the derive, not the
+    correctness of the merge.
+    """
+
+    WF = pathlib.Path(__file__).resolve().parent.parent / ".github/workflows/ingest.yml"
+
+    def test_deriving_without_the_previous_catalog_publishes_only_this_run(self):
+        # The hazard itself, stated as behaviour rather than as a comment. This
+        # is not a bug in `_write_catalog` — it is what merging into an empty
+        # store MEANS, which is precisely why the baseline has to be delivered.
+        store = DictStore()
+        seed(store, gid=2025020001)
+        D.derive(store)
+        prev = store.get("catalog.json")
+
+        # A NIGHTLY RUNNER, faithfully: it holds the pointer for every game in
+        # the archive and the raw for none of them — and, as it shipped, no
+        # catalog either.
+        cold = DictStore()
+        for k in store.keys(""):
+            if k != "catalog.json" and not k.startswith("raw/"):
+                cold.put(k, store.get(k))
+        cold.put(F.latest_key(2025020001), store.get(F.latest_key(2025020001)))
+        seed(cold, gid=2025020002)
+        D.derive(cold)
+
+        self.assertEqual(len(json.loads(prev.decode())["games"]), 1)
+        ids = [r["id"] for r in json.loads(cold.get("catalog.json").decode())["games"]]
+        self.assertNotIn(2025020001, ids,
+                         "no in-process guard can save a merge with no baseline")
+
+    def test_the_nightly_puts_the_catalog_on_the_runner_before_it_derives(self):
+        wf = self.WF.read_text()
+        pull = wf.find("--include 'catalog.json'")
+        self.assertNotEqual(pull, -1,
+                            "ingest.yml must rehydrate catalog.json — the merge needs it")
+        derive_at = wf.find("builders/derive.py")
+        self.assertNotEqual(derive_at, -1, "ingest.yml must still run derive")
+        self.assertLess(pull, derive_at,
+                        "the baseline has to arrive BEFORE the run that merges into it")
+
+    def test_the_nightly_will_not_publish_a_catalog_that_lost_games(self):
+        # The backstop, for the next way the baseline goes missing. Nothing is
+        # ever removed from the catalog — a refused game keeps its row — so
+        # monotonic row count is an invariant of the design, not a threshold
+        # fitted to today's archive.
+        wf = self.WF.read_text()
+        self.assertIn("would LOSE", wf,
+                      "the sync must refuse a catalog smaller than the one in the bucket")
+        guard = wf.find("would LOSE")
+        upload = wf.find("aws s3 cp \"ingest/$f\"")
+        self.assertLess(guard, upload, "and refuse it BEFORE uploading, not after")

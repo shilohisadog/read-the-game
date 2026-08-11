@@ -81,8 +81,19 @@ jobs:
           aws s3 sync "s3://${BUCKET}/" ingest/ \
             --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" \
             --exclude '*' --include '*/latest.json' --include 'index.json' \
+            --include 'catalog.json' \
             --no-progress
           echo "rehydrated $(find ingest -name latest.json | wc -l) game pointers"
+          # CATALOG.JSON IS PULLED BECAUSE THE MERGE HAS NOTHING TO MERGE INTO
+          # WITHOUT IT. `_write_catalog` reads the previous catalog out of the
+          # store and adds this run's verdicts to it -- correct code, and it
+          # published an EMPTY catalog on its first live run because the store on
+          # this runner had never been given the file. A run that judges nothing
+          # then merges nothing into nothing and advertises an archive of zero
+          # games, which is what a visitor's game page reads to find anything at
+          # all. Fixing the merge without giving it its baseline fixed a narrower
+          # claim than it announced. index.json is regenerated whole and does not
+          # need this; the catalog is CUMULATIVE and does.
 
       # PROVE THE POINTERS RESOLVE, rather than believing them.
       #
@@ -232,6 +243,28 @@ jobs:
           # `if`, not `[ -f ] &&`. Under `set -e` a failing test on the left of
           # && fails the whole step, so a run with nothing to publish -- a halt,
           # or a night with no hockey -- would report a broken sync.
+          # THE CATALOG NEVER SHRINKS, so a smaller one is a bug and not a
+          # verdict. Refusals stay listed and nothing is ever removed, so the
+          # row count is monotonic by construction -- which makes this a real
+          # invariant rather than a threshold tuned to today's numbers. It is
+          # checked HERE, against the bucket, because that is the only place
+          # both numbers exist: a runner whose baseline never arrived cannot
+          # tell "first run" from "the file did not come down".
+          if [ -f ingest/catalog.json ]; then
+            aws s3 cp "s3://${BUCKET}/catalog.json" was-catalog.json \
+              --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress || : > was-catalog.json
+            python3 - <<'PY'
+          import json, os, sys
+          def rows(p):
+              try:    return len(json.load(open(p))['games'])
+              except Exception: return 0
+          now, was = rows('ingest/catalog.json'), rows('was-catalog.json')
+          print(f"  catalog {was} -> {now} rows")
+          if now < was:
+              sys.exit(f"::error::the catalog would LOSE {was - now} games "
+                       f"({was} -> {now}); refusing to publish it")
+          PY
+          fi
           for f in catalog.json index.json; do
             if [ -f "ingest/$f" ]; then
               aws s3 cp "ingest/$f" "s3://${BUCKET}/$f" \
@@ -282,6 +315,37 @@ jobs:
           print(f"  {len(i['games'])} games | dataThrough={i.get('dataThrough')} "
                 f"| lastRun={i['lastRun']} | halted={bool(i.get('halted'))}")
           print(f"  ledger closes: {c['finalInWindow']} = {held} + {err} + {refused}")
+          PY
+
+      # CHECK WHAT A VISITOR GETS, NOT WHAT THE LEDGER SAYS.
+      #
+      # Every check above this one passed on the night the site went dark. The
+      # ledger closed, the index round-tripped, the sync was byte-correct -- and
+      # the catalog we published named zero games, so the game page had nothing
+      # to open. The one check that would have caught it lived in the DEPLOY, and
+      # deploy runs on push while the damage arrived on a schedule.
+      #
+      # So it runs unconditionally, over the public origin, and it asks the
+      # question the visitor asks: is there a game I can watch. `if: always()`
+      # because a run that failed earlier still leaves a live site behind it.
+      - name: a visitor can still find a game
+        if: always()
+        run: |
+          curl -sS --fail "https://data.readthegame.co/catalog.json?cb=${GITHUB_RUN_ID}" \
+            -o live-catalog.json
+          python3 - <<'PY'
+          import json, sys, urllib.request
+          c = json.load(open('live-catalog.json'))['games']
+          watchable = [g for g in c if g.get('v')]
+          print(f"  {len(c)} games listed, {len(watchable)} watchable")
+          if not watchable:
+              sys.exit("::error::the published catalog names no game a visitor can open")
+          newest = max(watchable, key=lambda g: (g['d'], g['id']))
+          url = f"https://data.readthegame.co/extract/{newest['id']}.json"
+          with urllib.request.urlopen(url) as r:
+              g = json.load(r)
+          print(f"  landing game: {newest['a']} at {newest['h']} · {newest['d']} "
+                f"· {len(g['events'])} events")
           PY
 
       - name: summary

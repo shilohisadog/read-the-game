@@ -89,6 +89,24 @@ jobs:
           fi
           aws s3 sync ingest/extract/ "s3://${BUCKET}/extract/" \
             --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress
+          # THE CATALOG NEVER SHRINKS. Nothing is ever removed from it -- a
+          # refused game keeps its row and says which gate stopped it -- so a
+          # smaller catalog is a bug, never a verdict. This run rebuilds it from
+          # the whole archive, which is exactly the run that could replace
+          # thousands of rows with a handful if the derive went wrong.
+          aws s3 cp "s3://${BUCKET}/catalog.json" was-catalog.json \
+            --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress || : > was-catalog.json
+          python3 - <<'PY'
+          import json, sys
+          def rows(p):
+              try:    return len(json.load(open(p))['games'])
+              except Exception: return 0
+          now, was = rows('ingest/catalog.json'), rows('was-catalog.json')
+          print(f"  catalog {was} -> {now} rows")
+          if now < was:
+              sys.exit(f"::error::the catalog would LOSE {was - now} games "
+                       f"({was} -> {now}); refusing to publish it")
+          PY
           # Both advertising documents go after the extracts they point at.
           for f in catalog.json index.json; do
             aws s3 cp "ingest/$f" "s3://${BUCKET}/$f" \
