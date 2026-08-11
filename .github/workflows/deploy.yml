@@ -333,9 +333,16 @@ jobs:
           <iframe id="f" src="$f.html" style="width:${WIDTH}px;height:740px;border:0"></iframe>
           <script>
           setTimeout(function () {
-            var d = document.getElementById('f').contentDocument;
-            document.title = 'FIT ' + d.documentElement.scrollWidth + ' ' +
-                             d.documentElement.clientWidth;
+            var f = document.getElementById('f');
+            var d = f.contentDocument.documentElement;
+            /* Three numbers, because two of them are different claims. The FRAME
+               is what we imposed. The CLIENT width is the layout viewport inside
+               it, which a desktop scrollbar makes ~15px narrower -- a phone uses
+               an overlay scrollbar and takes none, so measuring against the
+               client width is STRICTER than a real device, not looser. SCROLL is
+               what the content actually needs. */
+            document.title = 'FIT ' + f.clientWidth + ' ' + d.clientWidth + ' ' +
+                             d.scrollWidth;
           }, 4000);
           </script>
           </body></html>
@@ -349,21 +356,25 @@ jobs:
             dom=$(google-chrome --headless --no-sandbox --disable-gpu \
                     --virtual-time-budget=15000 --dump-dom \
                     "http://localhost:8099/probe-$f.html" 2>/dev/null)
-            read -r _ w vw <<<"$(echo "$dom" | grep -o 'FIT [0-9]* [0-9]*' | head -1)"
-            if [ -z "$w" ]; then
+            read -r _ frame client scroll <<<"$(echo "$dom" | grep -o 'FIT [0-9]* [0-9]* [0-9]*' | head -1)"
+            if [ -z "$scroll" ]; then
               echo "::error::$f.html never reported a width — the probe did not run"
               fail=1; continue
             fi
-            # THE MEASUREMENT MUST BE AT THE WIDTH WE CLAIMED. Without this the
-            # step can silently grade a different screen, which is exactly what it
-            # did on its first run.
-            if [ "$vw" -ne "$WIDTH" ]; then
-              echo "::error::$f.html was measured at ${vw}px, not the ${WIDTH}px this check claims"
+            # THE MEASUREMENT MUST HAPPEN AT THE WIDTH WE CLAIMED. Without this
+            # the step can silently grade a different screen, which is exactly
+            # what it did on its first run at a 500px window.
+            #
+            # The FRAME is the assertion; the client width is allowed to be a
+            # little narrower because a desktop scrollbar eats ~15px, and that
+            # makes the test harder rather than easier.
+            if [ "$frame" -ne "$WIDTH" ]; then
+              echo "::error::$f.html was framed at ${frame}px, not the ${WIDTH}px this check claims"
               fail=1; continue
             fi
-            echo "  $f.html at ${WIDTH}px: content ${w}px"
-            if [ "$w" -gt $((WIDTH + 1)) ]; then
-              echo "::error::$f.html needs ${w}px on a ${WIDTH}px screen — it will scroll sideways"
+            echo "  $f.html: framed ${WIDTH}px, laid out at ${client}px, content needs ${scroll}px"
+            if [ "$scroll" -gt $((client + 1)) ]; then
+              echo "::error::$f.html needs ${scroll}px in a ${client}px viewport — it scrolls sideways"
               fail=1
             fi
           done
