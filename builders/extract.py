@@ -114,6 +114,24 @@ def extract(pbp, shifts, box=None):
             # that every metric would otherwise have counted as real hockey.
             "pt": p["periodDescriptor"].get("periodType"),
         }
+        # WHY THE WHISTLE WENT. 16% of a game's events are stoppages, and until
+        # now the extract kept the stoppage and threw away the only field it
+        # carries -- so every layer could say "play stopped" and nothing more.
+        #
+        # This is the one thing on a stoppage that is NOT reconstructible from
+        # anything else we hold, which is exactly the test for whether a field
+        # belongs in the extract (docs/architecture.md 4.5). Measured over 30 real
+        # games: 240 icings, 125 offsides, 433 goalie freezes.
+        #
+        # `secondaryReason` is carried separately when it differs -- a TV timeout
+        # rides along 208 times in those 30 games, and it is the difference
+        # between a whistle and a two-minute break. Dropping it would mean never
+        # being able to explain a long one.
+        if t == "stoppage":
+            if d.get("reason"):
+                ev["rsn"] = d["reason"]
+            if d.get("secondaryReason") and d["secondaryReason"] != d.get("reason"):
+                ev["rsn2"] = d["secondaryReason"]
         # Who blocked it. The shooter is `actor` (see attribution.js); dropping
         # the blocker lost half of every blocked-shot event.
         if t == "blocked-shot" and d.get("blockingPlayerId") is not None:

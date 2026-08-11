@@ -955,3 +955,62 @@ class TheScoreSequenceHasAWitness(unittest.TestCase):
         detail = refusal["detail"] if refusal else []
         self.assertFalse([c for c in detail if "score sequence" in c],
                          f"a shootout goal must not disturb the sequence: {detail}")
+
+
+class TheWhistleCarriesItsReason(unittest.TestCase):
+    """16% of a game's events are stoppages, and the extract kept every one of
+    them while throwing away the only field they carry.
+
+    So every layer could say "play stopped — the whistle, not an event on the
+    ice" and nothing else, for one event in six. `reason` is the one thing on a
+    stoppage that cannot be reconstructed from anything else we hold, which is
+    the test for whether a field belongs in the extract at all.
+
+    Measured over 30 real games: 240 icings, 125 offsides, 433 goalie freezes.
+    """
+
+    def stop(self, **details):
+        plays = [play("stoppage", 30, **details),
+                 play("goal", 120, scoringPlayerId=1, goalieInNetId=2,
+                      xCoord=-75, yCoord=0, eventOwnerTeamId=30,
+                      awayScore=1, homeScore=0)]
+        rich, refusal, _ = D.judge(pbp_bytes(plays), box_bytes(away_sog=1, home_sog=0),
+                                   shifts_bytes())
+        self.assertIsNone(refusal, refusal)
+        return rich["events"][0]
+
+    def test_a_stoppage_says_why_it_happened(self):
+        self.assertEqual(self.stop(reason="icing")["rsn"], "icing")
+        self.assertEqual(self.stop(reason="offside")["rsn"], "offside")
+
+    def test_a_second_reason_is_kept_when_it_adds_something(self):
+        # A TV timeout rides along 208 times in 30 games, and it is the difference
+        # between a whistle and a two-minute break.
+        e = self.stop(reason="icing", secondaryReason="tv-timeout")
+        self.assertEqual(e["rsn"], "icing")
+        self.assertEqual(e["rsn2"], "tv-timeout")
+
+    def test_a_second_reason_that_repeats_the_first_is_not_stored_twice(self):
+        # The feed does this constantly. Storing it would put the same fact in
+        # two fields, which is how two fields start disagreeing.
+        e = self.stop(reason="icing", secondaryReason="icing")
+        self.assertNotIn("rsn2", e)
+
+    def test_only_stoppages_carry_a_reason(self):
+        plays = [play("goal", 120, scoringPlayerId=1, goalieInNetId=2, xCoord=-75,
+                      yCoord=0, eventOwnerTeamId=30, reason="icing",
+                      awayScore=1, homeScore=0)]
+        rich, refusal, _ = D.judge(pbp_bytes(plays), box_bytes(away_sog=1, home_sog=0),
+                                   shifts_bytes())
+        self.assertNotIn("rsn", rich["events"][0],
+                         "a reason on a non-stoppage is not ours to invent a meaning for")
+
+    def test_an_unknown_reason_still_publishes_and_is_recorded(self):
+        # The vocabulary gate forgives stoppage reasons and NAMES them, because a
+        # whistle we cannot explain must not withhold a whole game. The draft
+        # whistle layer did `if not reason: continue`, which would have dropped
+        # `tv-timeout`-as-primary and `puck-in-penalty-benches` silently -- both
+        # real, both absent from the reference game.
+        e = self.stop(reason="a-reason-nobody-has-seen")
+        self.assertEqual(e["rsn"], "a-reason-nobody-has-seen",
+                         "carry it verbatim; interpreting it is the layer's job")
