@@ -12,7 +12,7 @@
 <meta name="twitter:title" content="Read the Game — watch a hockey game and see what the numbers are made of">
 <meta name="twitter:description" content="An NHL game replayed so a new fan can see what the numbers are made of. Nothing modelled, nothing invented.">
 <meta property="og:url" content="https://readthegame.co/game">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-H8EEvyNu2hJXx/X/wRG6PItRSQJrP1nFk3yHZGSufAg='; style-src 'sha256-wKUHsgpEBAJdhZp/rzfutRCtjDJOGnhJTuZSiT3eayU='; connect-src 'self' https://data.readthegame.co; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-49EUdkUQygUJoSAC0iRSLxuaLctGeWpOuoaLIuCzy/0='; style-src 'sha256-C4NE/kikcAS0HcnakQPXVqCDNSAJEzsp1sA/E9xkaNw='; connect-src 'self' https://data.readthegame.co; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <style>
@@ -106,6 +106,19 @@
 #rg .lyr{font:inherit;font-size:.83rem;font-weight:600;border-radius:8px;border:1px dashed #b7c6d0;background:#fff;color:var(--muted);padding:8px 13px;cursor:pointer}
 #rg .lyr[aria-pressed="true"]{border-style:solid;color:var(--ink);border-color:var(--ink);background:#eef2f5}
 
+#rg .wh{fill:none;stroke:var(--ink);stroke-width:.5;stroke-dasharray:1.5 1.3;opacity:.5}
+#rg .wh.now{stroke:var(--flag);stroke-width:.9;stroke-dasharray:none;opacity:.95}
+#rg .whn{font-size:3.2px;font-weight:700;fill:var(--ink);text-anchor:middle;opacity:.7}
+#rg .whistlepanel{display:none}
+#rg.whistle .whistlepanel{display:block;background:#fff;border:1px solid var(--edge);border-radius:11px;padding:13px 15px;margin-top:10px;box-shadow:0 4px 14px rgba(16,32,45,.06)}
+#rg .whsay{margin:0;font-size:.9rem;line-height:1.5}
+#rg .whsay .rsn{font-weight:800;text-transform:capitalize}
+#rg .whsay .at{font-family:ui-monospace,Menlo,monospace;color:var(--muted);font-size:.78rem}
+#rg .whsay .none{color:var(--flag)}
+#rg .whmeta{font-size:.74rem;color:var(--muted);margin-top:7px}
+#rg .whmeta .src{font-family:ui-monospace,Menlo,monospace}
+#rg .whtally{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:10px;padding-top:9px;border-top:1px solid var(--edge);font-size:.76rem;color:var(--muted);text-transform:capitalize}
+#rg .whtally b{color:var(--ink);font-family:ui-monospace,Menlo,monospace}
 #rg .goalies{display:none;gap:10px;margin-top:10px}
 #rg.goalie .goalies{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 #rg .gcard{background:#fff;border:1px solid var(--edge);border-radius:11px;padding:12px 15px;box-shadow:0 4px 14px rgba(16,32,45,.06)}
@@ -127,16 +140,23 @@
   </div>
   <div class="tm h"><span class="ab" id="hAb">BUF</span><span class="sc" id="hSc">0</span></div>
 </div>
-<div class="rinkbox"><svg viewBox="0 0 200 85"><g id="rink"></g><g id="lines"></g><g id="events"></g><g id="puck"></g><g id="labels"></g></svg>
+<div class="rinkbox"><svg viewBox="0 0 200 85"><g id="rink"></g><g id="lines"></g><g id="whistles"></g><g id="events"></g><g id="puck"></g><g id="labels"></g></svg>
   <div class="caption" id="caption"></div>
   <div class="counters"><div class="cc a"><span class="n" id="cA">0</span><span class="lb">MIN attempts<span class="mode" id="mA">ALL SITUATIONS</span></span></div><div class="cc h"><span class="lb">BUF attempts<span class="mode" id="mH">ALL SITUATIONS</span></span><span class="n" id="cH">0</span></div></div>
 </div>
+<div class="whistlepanel" id="whistlePanel"></div>
 <div class="goalies" id="goaliePanel"></div>
 <div class="transport"><button class="play" id="play">▶ Play from start</button>
   <button class="spd" id="sp0" aria-pressed="false">🐢 Slower</button><button class="spd" id="sp1" aria-pressed="true">Teaching</button><button class="spd" id="sp2" aria-pressed="false">Faster</button><button class="spd" id="lbl" aria-pressed="true">💬 Explain plays</button>
   <input class="scrub" id="scrub" type="range" min="0" max="1" value="0"><button id="work" aria-expanded="false">Show me the work</button></div>
 <div class="legend"><span><i class="k-a"></i>shot</span><span><i class="k-p"></i>puck (jumps between real events)</span><span>🚨 goal</span><span style="color:var(--muted)">metric-specific marks appear when you add a layer</span></div>
-<div class="layers"><span class="ll">Add a metric layer:</span><button class="lyr" id="lyCorsi" aria-pressed="false">＋ Control (Corsi)</button><button class="lyr" id="lyHd" aria-pressed="false">＋ High-danger</button><button class="lyr" id="lyGoalie" aria-pressed="false">＋ Goaltending</button></div>
+<div class="layers"><span class="ll">Add a metric layer:</span><button class="lyr" id="lyCorsi" aria-pressed="false">＋ Control (Corsi)</button><button class="lyr" id="lyHd" aria-pressed="false">＋ High-danger</button><button class="lyr" id="lyGoalie" aria-pressed="false">＋ Goaltending</button><button class="lyr" id="lyWhistle" aria-pressed="false">＋ Why play stopped</button></div>
+<div class="figpick"><span class="ll">Trails:</span>
+<button class="lyr tbtn" data-t="off" aria-pressed="true">Current moment</button>
+<button class="lyr tbtn" data-t="all" aria-pressed="false">Keep every mark</button>
+<span class="fnote">Every attempt used to stay on the ice for the rest of the game, so by
+the third period the surface is a shot chart nobody asked for. <b>Current moment</b>
+shows what is happening now; <b>keep every mark</b> is that older behaviour, on purpose.</span></div>
 <div class="figpick"><span class="ll">Situations:</span>
 <button class="lyr sbtn" data-s="all" aria-pressed="true">All situations</button>
 <button class="lyr sbtn" data-s="even" aria-pressed="false">Even strength only</button>
@@ -146,7 +166,7 @@
 <button class="lyr fbtn" data-f="mascot" aria-pressed="true">Mascot</button>
 <button class="lyr fbtn" data-f="tabletop" aria-pressed="false">Tabletop</button>
 <span class="fnote">Same shots, same outcomes, same math — only the drawing changes. <b>Tabletop</b> is the rod-hockey player you grew up with.</span></div>
-<div class="hint">Tip: click any ⚡ high-danger chance (amber ring) on the ice to see <b>why</b> it qualified.</div>
+<div class="hint">Tip: click a ⚡ high-danger chance (amber ring) on the ice to see <b>why</b> it qualified — with trails set to <b>keep every mark</b>, earlier ones stay clickable too.</div>
 <div class="work" id="workPanel" hidden></div>
 <div class="whybk" id="whyBk"><div class="why" id="whyContent"></div></div>
 <div class="foot" id="gl">—</div>
@@ -1092,6 +1112,270 @@ const danger = {
   },
 };
 
+/* --- src/lib/layers/whistle.js --- */
+/**
+ * The whistle — why play stopped, and where it restarted.
+ *
+ * THE INVERSION. Every other layer treats a stoppage as "not a play" and discards
+ * it; roughly one event in six. This layer makes them the subject and discards the
+ * shots. It is the first genuinely independent reducer — corsi and goaltending were
+ * built together, and the strength filter is a dimension of an existing one — so it
+ * is also the first real evidence that the layer contract is an abstraction rather
+ * than a description of two things that happened to look alike.
+ *
+ * IT NEEDS NO MEASUREMENT AND NO BASE RATE. Corsi, danger and control-while-level
+ * each required deciding what to count and then defending it. An icing is not a
+ * metric; it is a rule a novice has watched a hundred times and never had named.
+ * That makes this the cheapest genuinely novice-facing thing we can build, and the
+ * most exposed to the one failure this file is really about.
+ *
+ * WHAT THE FEED ACTUALLY GIVES US, because it is less than it feels like:
+ *
+ *   a stoppage carries `reason` AND NOTHING ELSE. No team, no player, no
+ *   coordinates (0 of 43 in a real game). So "Buffalo iced the puck" is not
+ *   something we know — only that an icing happened.
+ *
+ *   the faceoff that restarts play carries coordinates (63 of 63). So a whistle
+ *   can be placed: WHAT from the stoppage, WHERE from the restart.
+ *
+ *   and sometimes there is no restart. 3 of 8,400 stoppages across 185 games end
+ *   a period — an icing at the horn. Those are UNPLACED, which is a first-class
+ *   answer and not a fallback: "we know this happened and cannot place it" is a
+ *   different claim from "nothing happened".
+ *
+ * THE COPY IS DATA, NOT CODE, and that is the point. This layer is made almost
+ * entirely of sentences, and sentences were the one artifact here with no gate on
+ * them. The defect that produced this design was a sentence of mine — "they aren't
+ * allowed to change TIRED players" — where three clauses are the rulebook and one
+ * is a state of those players on that shift that the feed never recorded.
+ *
+ *     Every sentence's subject is a rule, a recorded field, or a count.
+ *     Never a player, a team, or a moment.
+ *
+ * Enforced by `from` on every row: a sentence that cannot name its source is the
+ * one to look at hardest. A banned-word list cannot be the gate — it is a
+ * blacklist over an open vocabulary, and a green one reads as "the copy was
+ * checked" — so it survives in the tests only as a regression guard.
+ */
+
+
+/** reason -> what it means, and where that meaning comes from. */
+const WHY = {
+  icing: {
+    say: 'Icing — the puck was sent from behind the centre line all the way past '
+       + 'the far goal line untouched. The faceoff comes back to the offending '
+       + 'end, and that team may not change players before it.',
+    from: 'rule: NHL Rule 81',
+  },
+  offside: {
+    say: 'Offside — an attacking player crossed the blue line ahead of the puck, '
+       + 'so the zone entry does not count and the faceoff goes back outside.',
+    from: 'rule: NHL Rule 83',
+  },
+  'goalie-stopped-after-sog': {
+    say: 'The goaltender caught or covered the puck after a shot, which stops play '
+       + 'and brings a faceoff.',
+    from: 'field: rsn',
+  },
+  'puck-frozen': {
+    say: 'The puck was covered and play stopped.',
+    from: 'field: rsn',
+  },
+  'skater-puck-frozen': {
+    say: 'A skater, not the goaltender, froze the puck against the boards or the '
+       + 'net, and play stopped.',
+    from: 'field: rsn',
+  },
+  'puck-in-netting': {
+    say: 'The puck was shot out of play into the netting above the glass.',
+    from: 'field: rsn',
+  },
+  'puck-in-crowd': {
+    say: 'The puck left the ice into the crowd.',
+    from: 'field: rsn',
+  },
+  'puck-in-benches': {
+    say: 'The puck went into a player bench and play stopped.',
+    from: 'field: rsn',
+  },
+  'hand-pass': {
+    say: 'Hand pass — the puck was directed to a teammate with a hand in a zone '
+       + 'where that is not allowed, so possession does not carry.',
+    from: 'rule: NHL Rule 79',
+  },
+  'high-stick': {
+    say: 'The puck was played with a stick above shoulder height, which is not '
+       + 'allowed, so play stopped.',
+    from: 'rule: NHL Rule 80',
+  },
+  'net-dislodged-defensive-skater': {
+    say: 'The net came off its moorings, and play stopped.',
+    from: 'field: rsn',
+  },
+  'referee-or-linesman': {
+    say: 'The puck struck an official, and play stopped.',
+    from: 'field: rsn',
+  },
+  'tv-timeout': {
+    say: 'A scheduled broadcast break. Play was already stopped.',
+    from: 'field: rsn',
+  },
+  'video-review': {
+    say: 'The play was reviewed on video before the result was confirmed.',
+    from: 'field: rsn',
+  },
+  'delayed-penalty': {
+    say: 'A penalty has been signalled and play continues until the offending team '
+       + 'touches the puck — which is why the arm stays up and no whistle comes '
+       + 'yet. The other side may pull its goaltender for an extra skater until '
+       + 'then.',
+    from: 'rule: NHL Rule 15.2',
+  },
+};
+
+/** Events that stop play, or announce that it is about to. */
+const SUBJECT = new Set(['stoppage', 'delayed-penalty']);
+
+/** These end the search for a restart: the next faceoff is not this whistle's. */
+const CLOSES_PLAY = new Set(['period-end', 'game-end', 'period-start']);
+
+const whistle = {
+  id: 'whistle',
+  label: '＋ Why play stopped',
+
+  /**
+   * @param events  the whole game, in order
+   * @param ctx     { homeId, awayId, ... } — unused for attribution ON PURPOSE:
+   *                a stoppage names no team and we must not supply one.
+   */
+  reduce(events, ctx) {
+    const counted = [], excluded = [], whistles = [], tally = {};
+
+    events.forEach((e, id) => {
+      if (!SUBJECT.has(e.type)) {
+        excluded.push({
+          id,
+          why: NOT_A_PLAY[e.type] && e.type !== 'stoppage'
+            ? NOT_A_PLAY[e.type]
+            : `${e.type} — play on the ice, not a whistle`,
+          dims: { type: `not a stoppage (${e.type})` },
+        });
+        return;
+      }
+
+      // A delayed penalty has no `rsn`; the event type IS the reason.
+      const rsn = e.type === 'delayed-penalty' ? 'delayed-penalty' : e.rsn;
+      const copy = rsn ? WHY[rsn] : null;
+
+      // WHERE. Walk forward to the faceoff that restarts play, stopping dead at a
+      // period boundary. Without that stop, a whistle at the horn would be placed
+      // on the first faceoff of the NEXT period -- a plausible dot in the wrong
+      // period, which is the worst kind of wrong.
+      //
+      // NO WINDOW. An earlier draft searched "the next five events" because 1,279
+      // of 1,279 sampled restarts were within five. That number is a fact about
+      // the sample, not a rule, and encoding it would have been a threshold with
+      // no source.
+      let spot = null, unplaced = null;
+      for (let j = id + 1; j < events.length; j++) {
+        const t = events[j].type;
+        if (CLOSES_PLAY.has(t)) {
+          unplaced = 'the period ended before play restarted, so there is no '
+                   + 'faceoff to place this on';
+          break;
+        }
+        if (t === 'faceoff') {
+          if (events[j].x == null) {
+            unplaced = 'the restarting faceoff has no recorded location';
+          } else {
+            spot = events[j];
+          }
+          break;
+        }
+      }
+      if (!spot && !unplaced) {
+        unplaced = 'no faceoff follows this whistle in the recorded events';
+      }
+
+      counted.push(id);
+      tally[rsn || 'unrecorded'] = (tally[rsn || 'unrecorded'] || 0) + 1;
+      whistles.push({
+        id,
+        per: e.per,
+        // `rem`, NOT `clock`. `clock` is elapsed and every display site on the
+        // page reads remaining, so carrying elapsed here would have put a
+        // whistle at 01:40 beside a scoreboard reading 18:20 — a mixed clock,
+        // which is worse than a consistently wrong one. Caught by the guard in
+        // test/clock.test.js the moment this layer entered the bundle, which is
+        // the first time that guard has reached into a reducer.
+        rem: e.rem,
+        rsn: rsn || null,
+        rsn2: e.rsn2 || null,
+        // NULL, NOT A GUESS. The draft mapped reason -> copy and did
+        // `if (!copy) continue`, which would have silently dropped
+        // `tv-timeout`-as-primary and `puck-in-penalty-benches` -- both real, both
+        // absent from the reference game. At 1,312 games a season nobody notices.
+        say: copy ? copy.say : null,
+        from: copy ? copy.from : null,
+        known: Boolean(copy),
+        placed: Boolean(spot),
+        x: spot ? spot.x : null,
+        y: spot ? spot.y : null,
+        unplaced,
+      });
+    });
+
+    return { counted, excluded, whistles, tally };
+  },
+};
+
+/**
+ * The most recent whistle, or null if play has not stopped yet.
+ *
+ * Null is the answer the page needs to be able to say "no whistle yet" instead
+ * of reaching for the last one it happens to hold.
+ */
+function latest(result) {
+  const w = result.whistles;
+  return w.length ? w[w.length - 1] : null;
+}
+
+/**
+ * What to DRAW, given a trails setting. Here rather than in the page because a
+ * drawing decision with no test is how a mark ends up on the wrong dot.
+ *
+ * WHISTLES STACK, and that is the whole reason this groups. A faceoff happens at
+ * one of nine dots, so `all` puts forty-three marks on nine spots and a viewer
+ * sees nine — one circle drawn nine times looks exactly like one circle. Grouping
+ * with a count is the difference between "play restarted here" and "play
+ * restarted here EIGHT times", and only one of those is what the ice is showing.
+ *
+ * `off` is the current moment: the newest whistle, and nothing else. If the
+ * newest whistle is UNPLACED the ice shows nothing at all — the panel still says
+ * what happened. Falling back to the previous whistle would put a mark on the
+ * ice for a stoppage that is no longer the one being explained.
+ *
+ * There is no `recent`. It would need an N — last ten? last thirty seconds? —
+ * and no N has a source in the data.
+ */
+function marks(result, { trails }) {
+  const newest = latest(result);
+  const show = trails === 'all'
+    ? result.whistles.filter(w => w.placed)
+    : (newest && newest.placed ? [newest] : []);
+
+  const by = new Map();
+  for (const w of show) {
+    const k = `${w.x},${w.y}`;
+    if (!by.has(k)) by.set(k, { x: w.x, y: w.y, n: 0, now: false, reasons: [] });
+    const g = by.get(k);
+    g.n++;
+    g.now = g.now || w === newest;
+    if (!g.reasons.includes(w.rsn)) g.reasons.push(w.rsn);
+  }
+  return [...by.values()];
+}
+
 const ATT=ATTEMPT_TYPES;
 const SX=x=>x+100, SY=y=>42.5-y;
 // Rink is 200 units long for 200 feet, so one unit is one foot: a ~6 ft player
@@ -1113,6 +1397,13 @@ function attemptTeam(e){return corsiTeam(e,R);}  // renamed: `corsi` is the laye
 function tk(e){const c=attemptTeam(e);return c===AID?'a':c===HID?'h':'x';}
 function shotDir(e){const t=shootingTeam(e,R);return t==null?null:attackDirection(t,HID);}
 let evenOnly=false;
+// TRAILS. Every attempt used to persist for the rest of the game, which makes a
+// permanent shot chart the base view shows by default -- and Doctrine §6 says the
+// base view is just watch the game, every metric opt-in. `off` is the current
+// moment; `all` is that older behaviour, chosen. There is deliberately no middle
+// setting: it would need an N -- last ten attempts? last thirty seconds? -- and
+// no N has a source in the data.
+let trails='off';
 // The mode is part of the CONTEXT, so every layer moves together. Filtering
 // Corsi while leaving shots faced on all situations would put two scopes on one
 // screen with no way for a viewer to reconcile them.
@@ -1147,6 +1438,7 @@ function render(i,newest){
  const evs=EV.slice(0,i+1),L=lens(i),cur=EV[i];
  const parts=[];
  for(let k=0;k<evs.length;k++){const e=evs[k];if(e.x==null)continue;
+   if(trails==='off'&&k!==i)continue;
    const hd=hdOn&&isHD(e);
    let cls=e.type==='goal'?'goal':e.type==='blocked-shot'?'blk':ATT.has(e.type)?'att':'excl';
    if(hd&&e.type!=='goal')cls+=' hd';
@@ -1174,6 +1466,8 @@ function render(i,newest){
      parts.push(`<circle class="ev ${cls} ${tk(e)}${anim}" data-i="${k}" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r}">${title}</circle>`);
    }}
  $('events').innerHTML=parts.join('');
+ if(whistleOn)drawWhistles(whistle.reduce(upto(i),CTX));
+ else{$('whistles').innerHTML='';$('whistlePanel').innerHTML='';}
  let lh='';
  if(cur&&(cur.type==='shot-on-goal'||cur.type==='goal')&&cur.x!=null){const netx=(cur.own===HID)?89:-89;
    lh=`<line class="shotline" x1="${SX(cur.x).toFixed(1)}" y1="${SY(cur.y).toFixed(1)}" x2="${SX(netx)}" y2="42.5"/>`;}
@@ -1279,7 +1573,42 @@ function drawLabel(e){const g=$('labels');if(!labelsOn||!e||e.x==null){g.innerHT
  g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${info[0]}${hd}</text><text class="plabsub" x="${tx.toFixed(1)}" y="${(ty+3.7).toFixed(1)}" text-anchor="${anc}">${info[1]}</text></g>`;}
 $('lbl').addEventListener('click',()=>{labelsOn=!labelsOn;$('lbl').setAttribute('aria-pressed',labelsOn);$('lbl').style.opacity=labelsOn?'1':'.5';drawLabel(EV[i]);});
 
-let corsiOn=false,hdOn=false,goalieOn=false;
+// THE WHISTLE LAYER, DRAWN. What from the stoppage, where from the faceoff that
+// restarts play -- and the sentence is the point, so it lives in a panel that
+// stays put rather than in the caption, which animates away in two seconds.
+//
+// `marks` and `latest` are the layer's own, not this page's: a whistle mark on
+// the wrong dot is the kind of wrong that looks completely right, so the grouping
+// rule is tested in test/whistle.test.js rather than eyeballed here.
+const RSN=r=>r?String(r).replace(/-/g,' '):'unrecorded';
+const ESC=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+function drawWhistles(W){
+ const g=[];
+ for(const m of marks(W,{trails:trails})){const cx=SX(m.x),cy=SY(m.y);
+  g.push(`<circle class="wh${m.now?' now':''}" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3.4"><title>play restarted here — ${ESC(m.reasons.map(RSN).join(', '))}</title></circle>`);
+  // A COUNT, BECAUSE THE MARKS STACK. Nine faceoff dots hold every restart in the
+  // game, so eight icings at one dot draw as one circle and the ice would be
+  // showing a number it is not saying.
+  if(m.n>1)g.push(`<text class="whn" x="${cx.toFixed(1)}" y="${(cy+1.2).toFixed(1)}">${m.n}</text>`);}
+ $('whistles').innerHTML=g.join('');
+ const w=latest(W);
+ if(!w){$('whistlePanel').innerHTML='<p class="whsay">No whistle yet — play has not stopped in what you have watched so far.</p>';return;}
+ // An unfamiliar reason is carried verbatim and named as unexplained. The draft
+ // dropped it; a guessed sentence would be worse than dropping it.
+ const say=w.say?ESC(w.say)
+   :`<span class="none">The feed recorded this stoppage as “${ESC(w.rsn||'no reason given')}”, which is one we have no sentence for. We are not guessing at one.</span>`;
+ const where=w.placed?'Play restarted at the ringed faceoff dot.'
+   :`Not shown on the ice — ${ESC(w.unplaced)}.`;
+ const n=W.tally[w.rsn||'unrecorded'];
+ const tal=Object.entries(W.tally).sort((a,b)=>b[1]-a[1]||(a[0]<b[0]?-1:1))
+   .map(([r,c])=>`<span>${ESC(RSN(r))} <b>${c}</b></span>`).join('');
+ $('whistlePanel').innerHTML=
+   `<p class="whsay"><span class="rsn">${ESC(RSN(w.rsn))}</span> <span class="at">· P${w.per} ${ESC(w.rem)}</span><br>${say}</p>`
+  +`<div class="whmeta">${where}${w.rsn2?' Also recorded: '+ESC(RSN(w.rsn2))+'.':''} · `
+  +`${n===1?'the first this game':n+' so far this game'}${w.from?' · <span class="src">'+ESC(w.from)+'</span>':''}</div>`
+  +`<div class="whtally">${tal}</div>`;}
+
+let corsiOn=false,hdOn=false,goalieOn=false,whistleOn=false;
 function setCorsi(){document.getElementById('rg').classList.toggle('corsi',corsiOn);$('lyCorsi').setAttribute('aria-pressed',corsiOn);$('lyCorsi').textContent=(corsiOn?'✓ ':'＋ ')+'Control (Corsi)';if(!corsiOn&&workOpen){workOpen=false;$('workPanel').hidden=true;$('work').setAttribute('aria-expanded',false);$('work').textContent='Show me the work';}}
 function setHd(){$('lyHd').setAttribute('aria-pressed',hdOn);$('lyHd').textContent=(hdOn?'✓ ':'＋ ')+'High-danger';render(i,false);}
 $('lyCorsi').addEventListener('click',()=>{corsiOn=!corsiOn;setCorsi();});
@@ -1292,6 +1621,10 @@ function syncStrength(){
 function setStrength(v){evenOnly=(v==='even');syncStrength();render(i,false);}
 document.querySelectorAll('#rg .sbtn').forEach(b=>b.addEventListener('click',()=>setStrength(b.dataset.s)));
 syncStrength();
+function syncTrails(){document.querySelectorAll('#rg .tbtn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===trails));}
+document.querySelectorAll('#rg .tbtn').forEach(b=>b.addEventListener('click',()=>{
+ trails=b.dataset.t;syncTrails();render(i,false);}));
+syncTrails();
 function syncFig(){document.querySelectorAll('#rg .fbtn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.f===figStyle));}
 document.querySelectorAll('#rg .fbtn').forEach(b=>b.addEventListener('click',()=>{
  figStyle=b.dataset.f;try{localStorage.setItem('rtg.fig',figStyle)}catch(e){}syncFig();render(i,false);}));
@@ -1300,6 +1633,8 @@ $('lyHd').addEventListener('click',()=>{hdOn=!hdOn;setHd();});
 function goalieStats(k){return goaltending.reduce(upto(k),CTX).g;}
 function setGoalie(){document.getElementById('rg').classList.toggle('goalie',goalieOn);$('lyGoalie').setAttribute('aria-pressed',goalieOn);$('lyGoalie').textContent=(goalieOn?'✓ ':'＋ ')+'Goaltending';render(i,false);}
 $('lyGoalie').addEventListener('click',()=>{goalieOn=!goalieOn;setGoalie();});
+function setWhistle(){document.getElementById('rg').classList.toggle('whistle',whistleOn);$('lyWhistle').setAttribute('aria-pressed',whistleOn);$('lyWhistle').textContent=(whistleOn?'✓ ':'＋ ')+'Why play stopped';render(i,false);}
+$('lyWhistle').addEventListener('click',()=>{whistleOn=!whistleOn;setWhistle();});
 drawRink();set(EV.length-1,false);
 }
 

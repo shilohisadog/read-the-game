@@ -109,6 +109,80 @@ jobs:
           [ "$after" != "$before" ] || { echo "::error::the script never ran"; exit 1; }
           echo "  the script is permitted by the policy"
 
+      # WHAT A LAYER DRAWS, checked in an engine that has a stylesheet.
+      #
+      # test/render.test.js boots the same bundle against a fake document and
+      # covers the markup: that marks appear only when the layer is on, that the
+      # sentence and its provenance are written, that trails do what they say. It
+      # is deliberately not repeated here. What that test STRUCTURALLY CANNOT SEE
+      # is CSS -- a panel it calls "rendered" can still be `display:none`, and the
+      # whistle panel is revealed by exactly such a rule. This step exists for
+      # that one claim, and it says so rather than re-asserting the cheap half.
+      #
+      # Conditions imposed, not requested, as with the phone gate: the probe
+      # clicks the real button and measures the real box.
+      #
+      # read-the-game.html, because it carries its game inside it: no network, no
+      # CORS, no catalog. Served over http rather than file:// so the probe may
+      # reach into the frame.
+      - name: the whistle panel is visible to an engine with a stylesheet
+        run: |
+          mkdir -p ice && cp src/read-the-game.html ice/app.html && cd ice
+          cat > probe.html <<'HTML'
+          <!doctype html><html><head><meta charset="utf-8"><title>pending</title></head>
+          <body style="margin:0">
+          <iframe id="f" src="app.html" style="width:1100px;height:900px;border:0"></iframe>
+          <script>
+          setTimeout(function () {
+            var d = document.getElementById('f').contentDocument;
+            var p = d.getElementById('whistlePanel');
+            /* Height of the box as laid out, which is the number no fake document
+               can produce. Zero means the stylesheet is hiding it, however
+               correct the markup inside it is. */
+            var h = function () { return Math.round(p.getBoundingClientRect().height); };
+            var shut = h();
+            d.getElementById('lyWhistle').click();
+            /* Sweep rather than pick a moment. A whistle is placed by the faceoff
+               that restarts play, so any single frame is entitled to hold none --
+               a fixed 70%-through index would make this gate's colour depend on
+               which event the reference game happens to have there. */
+            var s = d.getElementById('scrub'), open = 0, rings = 0, text = 0;
+            for (var k = 1; k <= 20; k++) {
+              s.value = Math.round(+s.max * k / 20);
+              s.dispatchEvent(new Event('input'));
+              open = Math.max(open, h());
+              rings = Math.max(rings, d.getElementById('whistles').querySelectorAll('circle').length);
+              text = Math.max(text, (p.textContent || '').trim().length);
+            }
+            document.title = 'ICE ' + shut + ' ' + open + ' ' + rings + ' ' + text;
+          }, 4000);
+          </script>
+          </body></html>
+          HTML
+          python3 -m http.server 8098 >/dev/null 2>&1 &
+          sleep 2
+          dom=$(google-chrome --headless --no-sandbox --disable-gpu \
+                  --virtual-time-budget=25000 --dump-dom \
+                  "http://localhost:8098/probe.html" 2>/dev/null)
+          read -r _ shut open rings text \
+            <<<"$(echo "$dom" | grep -o 'ICE [0-9 ]*' | head -1)"
+          if [ -z "$text" ]; then
+            echo "::error::the probe never reported — the app did not run in the frame"
+            echo "$dom" | head -20; exit 1
+          fi
+          echo "  layer off: the panel is ${shut}px tall"
+          echo "  layer on : the panel is ${open}px tall, holding $text characters"
+          echo "             and $rings whistle marks are on the ice"
+          fail=0
+          # THE PAIR IS THE POINT. A panel that is always visible passes the
+          # second check alone, and a stylesheet that hides it always passes the
+          # first alone. Neither is worth anything without the other.
+          [ "$shut" -eq 0 ] || { echo "::error::the panel is on screen with the layer OFF (${shut}px)"; fail=1; }
+          [ "$open" -gt 20 ] || { echo "::error::the layer is on and the panel is ${open}px tall — the CSS is hiding it"; fail=1; }
+          [ "$text" -ge 40 ] || { echo "::error::the panel is visible and explains nothing ($text chars)"; fail=1; }
+          [ "$rings" -ge 1 ] || { echo "::error::no whistle mark reached the ice in a real browser"; fail=1; }
+          exit $fail
+
       - name: ensure the Pages project exists
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

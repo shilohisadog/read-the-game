@@ -23,7 +23,8 @@ test('the shipped app carries the library verbatim, not a copy', () => {
     .filter(l => l.trim() && !/^\s*import\s/.test(l))
     .map(l => l.replace(/^export /, ''));
 
-  for (const name of ['rink.js', 'attribution.js', 'layers/corsi.js', 'layers/goaltending.js']) {
+  for (const name of ['rink.js', 'attribution.js', 'layers/corsi.js', 'layers/goaltending.js',
+                      'layers/whistle.js']) {
     for (const line of substantive(read(`../src/lib/${name}`))) {
       assert.ok(app.includes(line),
         `${name}: line missing from the bundle, so the shipped code has drifted `
@@ -46,6 +47,13 @@ test('the app reduces through the extracted modules, not a copy', () => {
     'Corsi goes through the layer');
   assert.ok(app.includes('function goalieStats(k){return goaltending.reduce(upto(k),CTX).g;}'),
     'goaltending goes through the layer');
+  assert.ok(app.includes('drawWhistles(whistle.reduce(upto(i),CTX))'),
+    'the whistle layer goes through the layer, on the full stream');
+  // The GROUPING is the layer's, not the page's. A mark on the wrong dot is the
+  // kind of wrong that looks completely right, so the rule that decides where
+  // marks go must be the one test/whistle.test.js exercises.
+  assert.ok(app.includes('marks(W,{trails:trails})'),
+    'and the page asks the layer what to draw rather than deciding for itself');
   assert.ok(!/const t=\{\[HID\]:0,\[AID\]:0\}/.test(app),
     'the old inline reducer body is gone');
   // Phase 2: the ledger must be rendered FROM the ledger, not from a hand-kept

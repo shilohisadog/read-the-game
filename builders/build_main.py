@@ -121,6 +121,19 @@ T = r"""<style>
 #rg .lyr{font:inherit;font-size:.83rem;font-weight:600;border-radius:8px;border:1px dashed #b7c6d0;background:#fff;color:var(--muted);padding:8px 13px;cursor:pointer}
 #rg .lyr[aria-pressed="true"]{border-style:solid;color:var(--ink);border-color:var(--ink);background:#eef2f5}
 
+#rg .wh{fill:none;stroke:var(--ink);stroke-width:.5;stroke-dasharray:1.5 1.3;opacity:.5}
+#rg .wh.now{stroke:var(--flag);stroke-width:.9;stroke-dasharray:none;opacity:.95}
+#rg .whn{font-size:3.2px;font-weight:700;fill:var(--ink);text-anchor:middle;opacity:.7}
+#rg .whistlepanel{display:none}
+#rg.whistle .whistlepanel{display:block;background:#fff;border:1px solid var(--edge);border-radius:11px;padding:13px 15px;margin-top:10px;box-shadow:0 4px 14px rgba(16,32,45,.06)}
+#rg .whsay{margin:0;font-size:.9rem;line-height:1.5}
+#rg .whsay .rsn{font-weight:800;text-transform:capitalize}
+#rg .whsay .at{font-family:ui-monospace,Menlo,monospace;color:var(--muted);font-size:.78rem}
+#rg .whsay .none{color:var(--flag)}
+#rg .whmeta{font-size:.74rem;color:var(--muted);margin-top:7px}
+#rg .whmeta .src{font-family:ui-monospace,Menlo,monospace}
+#rg .whtally{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:10px;padding-top:9px;border-top:1px solid var(--edge);font-size:.76rem;color:var(--muted);text-transform:capitalize}
+#rg .whtally b{color:var(--ink);font-family:ui-monospace,Menlo,monospace}
 #rg .goalies{display:none;gap:10px;margin-top:10px}
 #rg.goalie .goalies{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 #rg .gcard{background:#fff;border:1px solid var(--edge);border-radius:11px;padding:12px 15px;box-shadow:0 4px 14px rgba(16,32,45,.06)}
@@ -142,16 +155,23 @@ T = r"""<style>
   </div>
   <div class="tm h"><span class="ab" id="hAb">BUF</span><span class="sc" id="hSc">0</span></div>
 </div>
-<div class="rinkbox"><svg viewBox="0 0 200 85"><g id="rink"></g><g id="lines"></g><g id="events"></g><g id="puck"></g><g id="labels"></g></svg>
+<div class="rinkbox"><svg viewBox="0 0 200 85"><g id="rink"></g><g id="lines"></g><g id="whistles"></g><g id="events"></g><g id="puck"></g><g id="labels"></g></svg>
   <div class="caption" id="caption"></div>
   <div class="counters"><div class="cc a"><span class="n" id="cA">0</span><span class="lb">MIN attempts<span class="mode" id="mA">ALL SITUATIONS</span></span></div><div class="cc h"><span class="lb">BUF attempts<span class="mode" id="mH">ALL SITUATIONS</span></span><span class="n" id="cH">0</span></div></div>
 </div>
+<div class="whistlepanel" id="whistlePanel"></div>
 <div class="goalies" id="goaliePanel"></div>
 <div class="transport"><button class="play" id="play">▶ Play from start</button>
   <button class="spd" id="sp0" aria-pressed="false">🐢 Slower</button><button class="spd" id="sp1" aria-pressed="true">Teaching</button><button class="spd" id="sp2" aria-pressed="false">Faster</button><button class="spd" id="lbl" aria-pressed="true">💬 Explain plays</button>
   <input class="scrub" id="scrub" type="range" min="0" max="1" value="0"><button id="work" aria-expanded="false">Show me the work</button></div>
 <div class="legend"><span><i class="k-a"></i>shot</span><span><i class="k-p"></i>puck (jumps between real events)</span><span>🚨 goal</span><span style="color:var(--muted)">metric-specific marks appear when you add a layer</span></div>
-<div class="layers"><span class="ll">Add a metric layer:</span><button class="lyr" id="lyCorsi" aria-pressed="false">＋ Control (Corsi)</button><button class="lyr" id="lyHd" aria-pressed="false">＋ High-danger</button><button class="lyr" id="lyGoalie" aria-pressed="false">＋ Goaltending</button></div>
+<div class="layers"><span class="ll">Add a metric layer:</span><button class="lyr" id="lyCorsi" aria-pressed="false">＋ Control (Corsi)</button><button class="lyr" id="lyHd" aria-pressed="false">＋ High-danger</button><button class="lyr" id="lyGoalie" aria-pressed="false">＋ Goaltending</button><button class="lyr" id="lyWhistle" aria-pressed="false">＋ Why play stopped</button></div>
+<div class="figpick"><span class="ll">Trails:</span>
+<button class="lyr tbtn" data-t="off" aria-pressed="true">Current moment</button>
+<button class="lyr tbtn" data-t="all" aria-pressed="false">Keep every mark</button>
+<span class="fnote">Every attempt used to stay on the ice for the rest of the game, so by
+the third period the surface is a shot chart nobody asked for. <b>Current moment</b>
+shows what is happening now; <b>keep every mark</b> is that older behaviour, on purpose.</span></div>
 <div class="figpick"><span class="ll">Situations:</span>
 <button class="lyr sbtn" data-s="all" aria-pressed="true">All situations</button>
 <button class="lyr sbtn" data-s="even" aria-pressed="false">Even strength only</button>
@@ -161,7 +181,7 @@ T = r"""<style>
 <button class="lyr fbtn" data-f="mascot" aria-pressed="true">Mascot</button>
 <button class="lyr fbtn" data-f="tabletop" aria-pressed="false">Tabletop</button>
 <span class="fnote">Same shots, same outcomes, same math — only the drawing changes. <b>Tabletop</b> is the rod-hockey player you grew up with.</span></div>
-<div class="hint">Tip: click any ⚡ high-danger chance (amber ring) on the ice to see <b>why</b> it qualified.</div>
+<div class="hint">Tip: click a ⚡ high-danger chance (amber ring) on the ice to see <b>why</b> it qualified — with trails set to <b>keep every mark</b>, earlier ones stay clickable too.</div>
 <div class="work" id="workPanel" hidden></div>
 <div class="whybk" id="whyBk"><div class="why" id="whyContent"></div></div>
 <div class="foot" id="gl">—</div>
@@ -197,6 +217,13 @@ function attemptTeam(e){return corsiTeam(e,R);}  // renamed: `corsi` is the laye
 function tk(e){const c=attemptTeam(e);return c===AID?'a':c===HID?'h':'x';}
 function shotDir(e){const t=shootingTeam(e,R);return t==null?null:attackDirection(t,HID);}
 let evenOnly=false;
+// TRAILS. Every attempt used to persist for the rest of the game, which makes a
+// permanent shot chart the base view shows by default -- and Doctrine §6 says the
+// base view is just watch the game, every metric opt-in. `off` is the current
+// moment; `all` is that older behaviour, chosen. There is deliberately no middle
+// setting: it would need an N -- last ten attempts? last thirty seconds? -- and
+// no N has a source in the data.
+let trails='off';
 // The mode is part of the CONTEXT, so every layer moves together. Filtering
 // Corsi while leaving shots faced on all situations would put two scopes on one
 // screen with no way for a viewer to reconcile them.
@@ -231,6 +258,7 @@ function render(i,newest){
  const evs=EV.slice(0,i+1),L=lens(i),cur=EV[i];
  const parts=[];
  for(let k=0;k<evs.length;k++){const e=evs[k];if(e.x==null)continue;
+   if(trails==='off'&&k!==i)continue;
    const hd=hdOn&&isHD(e);
    let cls=e.type==='goal'?'goal':e.type==='blocked-shot'?'blk':ATT.has(e.type)?'att':'excl';
    if(hd&&e.type!=='goal')cls+=' hd';
@@ -258,6 +286,8 @@ function render(i,newest){
      parts.push(`<circle class="ev ${cls} ${tk(e)}${anim}" data-i="${k}" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r}">${title}</circle>`);
    }}
  $('events').innerHTML=parts.join('');
+ if(whistleOn)drawWhistles(whistle.reduce(upto(i),CTX));
+ else{$('whistles').innerHTML='';$('whistlePanel').innerHTML='';}
  let lh='';
  if(cur&&(cur.type==='shot-on-goal'||cur.type==='goal')&&cur.x!=null){const netx=(cur.own===HID)?89:-89;
    lh=`<line class="shotline" x1="${SX(cur.x).toFixed(1)}" y1="${SY(cur.y).toFixed(1)}" x2="${SX(netx)}" y2="42.5"/>`;}
@@ -363,7 +393,42 @@ function drawLabel(e){const g=$('labels');if(!labelsOn||!e||e.x==null){g.innerHT
  g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${info[0]}${hd}</text><text class="plabsub" x="${tx.toFixed(1)}" y="${(ty+3.7).toFixed(1)}" text-anchor="${anc}">${info[1]}</text></g>`;}
 $('lbl').addEventListener('click',()=>{labelsOn=!labelsOn;$('lbl').setAttribute('aria-pressed',labelsOn);$('lbl').style.opacity=labelsOn?'1':'.5';drawLabel(EV[i]);});
 
-let corsiOn=false,hdOn=false,goalieOn=false;
+// THE WHISTLE LAYER, DRAWN. What from the stoppage, where from the faceoff that
+// restarts play -- and the sentence is the point, so it lives in a panel that
+// stays put rather than in the caption, which animates away in two seconds.
+//
+// `marks` and `latest` are the layer's own, not this page's: a whistle mark on
+// the wrong dot is the kind of wrong that looks completely right, so the grouping
+// rule is tested in test/whistle.test.js rather than eyeballed here.
+const RSN=r=>r?String(r).replace(/-/g,' '):'unrecorded';
+const ESC=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+function drawWhistles(W){
+ const g=[];
+ for(const m of marks(W,{trails:trails})){const cx=SX(m.x),cy=SY(m.y);
+  g.push(`<circle class="wh${m.now?' now':''}" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3.4"><title>play restarted here — ${ESC(m.reasons.map(RSN).join(', '))}</title></circle>`);
+  // A COUNT, BECAUSE THE MARKS STACK. Nine faceoff dots hold every restart in the
+  // game, so eight icings at one dot draw as one circle and the ice would be
+  // showing a number it is not saying.
+  if(m.n>1)g.push(`<text class="whn" x="${cx.toFixed(1)}" y="${(cy+1.2).toFixed(1)}">${m.n}</text>`);}
+ $('whistles').innerHTML=g.join('');
+ const w=latest(W);
+ if(!w){$('whistlePanel').innerHTML='<p class="whsay">No whistle yet — play has not stopped in what you have watched so far.</p>';return;}
+ // An unfamiliar reason is carried verbatim and named as unexplained. The draft
+ // dropped it; a guessed sentence would be worse than dropping it.
+ const say=w.say?ESC(w.say)
+   :`<span class="none">The feed recorded this stoppage as “${ESC(w.rsn||'no reason given')}”, which is one we have no sentence for. We are not guessing at one.</span>`;
+ const where=w.placed?'Play restarted at the ringed faceoff dot.'
+   :`Not shown on the ice — ${ESC(w.unplaced)}.`;
+ const n=W.tally[w.rsn||'unrecorded'];
+ const tal=Object.entries(W.tally).sort((a,b)=>b[1]-a[1]||(a[0]<b[0]?-1:1))
+   .map(([r,c])=>`<span>${ESC(RSN(r))} <b>${c}</b></span>`).join('');
+ $('whistlePanel').innerHTML=
+   `<p class="whsay"><span class="rsn">${ESC(RSN(w.rsn))}</span> <span class="at">· P${w.per} ${ESC(w.rem)}</span><br>${say}</p>`
+  +`<div class="whmeta">${where}${w.rsn2?' Also recorded: '+ESC(RSN(w.rsn2))+'.':''} · `
+  +`${n===1?'the first this game':n+' so far this game'}${w.from?' · <span class="src">'+ESC(w.from)+'</span>':''}</div>`
+  +`<div class="whtally">${tal}</div>`;}
+
+let corsiOn=false,hdOn=false,goalieOn=false,whistleOn=false;
 function setCorsi(){document.getElementById('rg').classList.toggle('corsi',corsiOn);$('lyCorsi').setAttribute('aria-pressed',corsiOn);$('lyCorsi').textContent=(corsiOn?'✓ ':'＋ ')+'Control (Corsi)';if(!corsiOn&&workOpen){workOpen=false;$('workPanel').hidden=true;$('work').setAttribute('aria-expanded',false);$('work').textContent='Show me the work';}}
 function setHd(){$('lyHd').setAttribute('aria-pressed',hdOn);$('lyHd').textContent=(hdOn?'✓ ':'＋ ')+'High-danger';render(i,false);}
 $('lyCorsi').addEventListener('click',()=>{corsiOn=!corsiOn;setCorsi();});
@@ -376,6 +441,10 @@ function syncStrength(){
 function setStrength(v){evenOnly=(v==='even');syncStrength();render(i,false);}
 document.querySelectorAll('#rg .sbtn').forEach(b=>b.addEventListener('click',()=>setStrength(b.dataset.s)));
 syncStrength();
+function syncTrails(){document.querySelectorAll('#rg .tbtn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===trails));}
+document.querySelectorAll('#rg .tbtn').forEach(b=>b.addEventListener('click',()=>{
+ trails=b.dataset.t;syncTrails();render(i,false);}));
+syncTrails();
 function syncFig(){document.querySelectorAll('#rg .fbtn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.f===figStyle));}
 document.querySelectorAll('#rg .fbtn').forEach(b=>b.addEventListener('click',()=>{
  figStyle=b.dataset.f;try{localStorage.setItem('rtg.fig',figStyle)}catch(e){}syncFig();render(i,false);}));
@@ -384,13 +453,15 @@ $('lyHd').addEventListener('click',()=>{hdOn=!hdOn;setHd();});
 function goalieStats(k){return goaltending.reduce(upto(k),CTX).g;}
 function setGoalie(){document.getElementById('rg').classList.toggle('goalie',goalieOn);$('lyGoalie').setAttribute('aria-pressed',goalieOn);$('lyGoalie').textContent=(goalieOn?'✓ ':'＋ ')+'Goaltending';render(i,false);}
 $('lyGoalie').addEventListener('click',()=>{goalieOn=!goalieOn;setGoalie();});
+function setWhistle(){document.getElementById('rg').classList.toggle('whistle',whistleOn);$('lyWhistle').setAttribute('aria-pressed',whistleOn);$('lyWhistle').textContent=(whistleOn?'✓ ':'＋ ')+'Why play stopped';render(i,false);}
+$('lyWhistle').addEventListener('click',()=>{whistleOn=!whistleOn;setWhistle();});
 drawRink();set(EV.length-1,false);
 }
 __BOOT__
 </script>"""
 
 LIB = ["rink.js", "attribution.js", "layer.js", "strength.js", "svgpen.js", "figures.js",
-       "layers/corsi.js", "layers/goaltending.js", "layers/danger.js"]
+       "layers/corsi.js", "layers/goaltending.js", "layers/danger.js", "layers/whistle.js"]
 
 def _lib():
     """Inline src/lib/*.js. They are real ES modules so `node --test` can import

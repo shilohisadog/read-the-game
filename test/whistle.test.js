@@ -26,13 +26,13 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { whistle, WHY } from '../src/lib/layers/whistle.js';
+import { whistle, WHY, marks, latest } from '../src/lib/layers/whistle.js';
 
 const HOME = 10, AWAY = 20;
 const CTX = { roster: { 1: { nm: 'A', tid: AWAY, pos: 'C' } },
               homeId: HOME, awayId: AWAY, homeAb: 'HME', awayAb: 'AWY' };
 
-const ev = (type, o = {}) => ({ type, per: 1, s: 100, clock: '01:40',
+const ev = (type, o = {}) => ({ type, per: 1, s: 100, rem: '18:20',
                                 pt: 'REG', sit: '1551', own: null, actor: null,
                                 x: null, y: null, ...o });
 const stop = (rsn, o = {}) => ev('stoppage', { rsn, ...o });
@@ -82,6 +82,18 @@ test('an unrecognised reason renders as itself — never a guess, never silence'
   assert.equal(w.rsn, 'a-reason-nobody-has-seen');
   assert.equal(w.say, null, 'we do not invent a sentence for it');
   assert.equal(w.known, false, 'and the page can tell that we could not explain it');
+});
+
+test('a whistle is stamped with the clock a viewer reads — remaining, never elapsed', () => {
+  // CAUGHT BY test/clock.test.js, not by me. This layer first carried `clock`,
+  // which is elapsed, so the panel would have said 01:40 beside a scoreboard
+  // reading 18:20. The guard is written over the shipped bundle, so it only fired
+  // once the layer reached the page — a reducer with no renderer is a reducer
+  // nothing checks. Pinned here too, at the source of the field.
+  const r = run([stop('icing', { rem: '04:12', clock: '15:48' }), faceoff(-69, 22)]);
+  assert.equal(r.whistles[0].rem, '04:12');
+  assert.equal(r.whistles[0].clock, undefined,
+    'elapsed must not ride along either — a display site would eventually reach for it');
 });
 
 test('a second reason is surfaced when the feed gives one', () => {
@@ -170,6 +182,61 @@ test('EVERY copy row states what it derives from', () => {
     assert.match(row.from, /^(rule|field|count):/,
       `${k}: provenance must be a rule, a recorded field, or a count — got "${row.from}"`);
   }
+});
+
+/* ------------------------------------------------------------------ *
+ * What gets DRAWN. The reducer was right and invisible for a day; these
+ * cover the half that decides what a viewer actually sees.
+ * ------------------------------------------------------------------ */
+
+test('with trails off the ice shows the current moment and nothing else', () => {
+  const r = run([stop('icing'), faceoff(-69, 22), stop('offside'), faceoff(69, -22)]);
+  const m = marks(r, { trails: 'off' });
+  assert.equal(m.length, 1);
+  assert.deepEqual([m[0].x, m[0].y], [69, -22], 'the newest whistle, not the first');
+  assert.equal(m[0].now, true);
+});
+
+test('an unplaced newest whistle draws nothing, and does not fall back to the last placed one', () => {
+  // THE FALLBACK IS THE BUG. Drawing the previous whistle would leave a mark on
+  // the ice for a stoppage that is no longer the one being explained — a dot in
+  // the right place for the wrong event, which reads as perfectly correct.
+  const r = run([stop('offside'), faceoff(69, -22), stop('icing'), ev('period-end')]);
+  assert.equal(latest(r).placed, false, 'the fixture must actually end unplaced');
+  assert.deepEqual(marks(r, { trails: 'off' }), []);
+});
+
+test('whistles that share a faceoff dot are ONE mark carrying its count', () => {
+  // Nine dots, forty-three stoppages. Drawn one per whistle, eight icings at the
+  // same dot look exactly like one icing — the ice would be showing a number it
+  // is not saying.
+  const r = run([stop('icing'), faceoff(-69, 22),
+                 stop('icing'), faceoff(-69, 22),
+                 stop('goalie-stopped-after-sog'), faceoff(-69, 22),
+                 stop('offside'), faceoff(69, -22)]);
+  const m = marks(r, { trails: 'all' });
+  assert.equal(m.length, 2, 'two dots were used, so two marks');
+  const left = m.find(g => g.x === -69);
+  assert.equal(left.n, 3);
+  assert.deepEqual(left.reasons, ['icing', 'goalie-stopped-after-sog'],
+    'each distinct reason once, in the order it first happened');
+  assert.equal(left.now, false);
+  assert.equal(m.find(g => g.x === 69).now, true, 'the newest is still marked as now');
+});
+
+test('unplaced whistles never reach the ice, however trails are set', () => {
+  const r = run([stop('icing'), ev('period-end'), ev('period-start', { per: 2 }),
+                 stop('offside'), faceoff(0, 0)]);
+  const all = marks(r, { trails: 'all' });
+  assert.equal(all.length, 1, 'only the placed one is drawable');
+  assert.deepEqual([all[0].x, all[0].y], [0, 0]);
+});
+
+test('no whistles is an empty ice and an explicit nothing', () => {
+  const r = run([ev('shot-on-goal', { actor: 1 })]);
+  assert.equal(latest(r), null, 'null, so the page can say "no whistle yet"');
+  assert.deepEqual(marks(r, { trails: 'all' }), []);
+  assert.deepEqual(marks(r, { trails: 'off' }), []);
 });
 
 test('the words we actually shipped once do not come back', () => {

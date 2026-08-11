@@ -187,7 +187,13 @@ export const whistle = {
       whistles.push({
         id,
         per: e.per,
-        clock: e.clock,
+        // `rem`, NOT `clock`. `clock` is elapsed and every display site on the
+        // page reads remaining, so carrying elapsed here would have put a
+        // whistle at 01:40 beside a scoreboard reading 18:20 — a mixed clock,
+        // which is worse than a consistently wrong one. Caught by the guard in
+        // test/clock.test.js the moment this layer entered the bundle, which is
+        // the first time that guard has reached into a reducer.
+        rem: e.rem,
         rsn: rsn || null,
         rsn2: e.rsn2 || null,
         // NULL, NOT A GUESS. The draft mapped reason -> copy and did
@@ -207,3 +213,50 @@ export const whistle = {
     return { counted, excluded, whistles, tally };
   },
 };
+
+/**
+ * The most recent whistle, or null if play has not stopped yet.
+ *
+ * Null is the answer the page needs to be able to say "no whistle yet" instead
+ * of reaching for the last one it happens to hold.
+ */
+export function latest(result) {
+  const w = result.whistles;
+  return w.length ? w[w.length - 1] : null;
+}
+
+/**
+ * What to DRAW, given a trails setting. Here rather than in the page because a
+ * drawing decision with no test is how a mark ends up on the wrong dot.
+ *
+ * WHISTLES STACK, and that is the whole reason this groups. A faceoff happens at
+ * one of nine dots, so `all` puts forty-three marks on nine spots and a viewer
+ * sees nine — one circle drawn nine times looks exactly like one circle. Grouping
+ * with a count is the difference between "play restarted here" and "play
+ * restarted here EIGHT times", and only one of those is what the ice is showing.
+ *
+ * `off` is the current moment: the newest whistle, and nothing else. If the
+ * newest whistle is UNPLACED the ice shows nothing at all — the panel still says
+ * what happened. Falling back to the previous whistle would put a mark on the
+ * ice for a stoppage that is no longer the one being explained.
+ *
+ * There is no `recent`. It would need an N — last ten? last thirty seconds? —
+ * and no N has a source in the data.
+ */
+export function marks(result, { trails }) {
+  const newest = latest(result);
+  const show = trails === 'all'
+    ? result.whistles.filter(w => w.placed)
+    : (newest && newest.placed ? [newest] : []);
+
+  const by = new Map();
+  for (const w of show) {
+    const k = `${w.x},${w.y}`;
+    if (!by.has(k)) by.set(k, { x: w.x, y: w.y, n: 0, now: false, reasons: [] });
+    const g = by.get(k);
+    g.n++;
+    g.now = g.now || w === newest;
+    if (!g.reasons.includes(w.rsn)) g.reasons.push(w.rsn);
+  }
+  return [...by.values()];
+}

@@ -1,8 +1,9 @@
 # The whistle layer, and the clutter it exposes
 
-*For CHENG. The extract change is BUILT and shipped; the layer and the ice-surface
-design are proposals. Measured against 30 real games and the live archive, not
-against intentions.*
+*For CHENG. §0–§5 were written while the extract change was shipped and the layer
+was a proposal; they are left as they were argued. **§6 records what was then
+built**, including the one thing the build found that the argument did not.
+Measured against 30 real games and the live archive, not against intentions.*
 
 ---
 
@@ -230,3 +231,80 @@ changing a count.
   nothing rather than explaining something wrong. Corrected in `extract.py`
 - **the layer can say nothing happened.** A game with no icings shows no icings,
   and does not reach for something else to say
+
+---
+
+## 6. What was built, and what building it found
+
+### 6.1 The defect the renderer exposed on contact
+
+The layer stamped each whistle with `clock`, which is **elapsed**. Every other
+display site on the page shows `rem`, which is **remaining**. So the panel would
+have read *P2 01:40* beside a scoreboard reading *18:20* — a mixed clock, which
+the guard that caught it calls worse than a consistently wrong one.
+
+It was caught by `test/clock.test.js`, a check written months earlier for a
+different reason, and it fired **the moment the layer entered the bundle** — not
+when the layer was written, not when its twenty tests went green. The guard is
+written over the shipped page, so a reducer nothing renders is a reducer it cannot
+see.
+
+> **A reducer with no renderer is a reducer nothing checks.**
+
+Fixed at the source (`rem` in the record, not `clock` at the display), and pinned
+in `test/whistle.test.js` so the field cannot drift back.
+
+### 6.2 Whistles stack, and the argument never noticed
+
+§2 established that a whistle is placed by the faceoff that restarts play. What it
+did not follow through: **a faceoff happens at one of nine dots.** Forty-three
+stoppages therefore land on nine spots, and forty-three circles drawn on nine
+spots look exactly like nine circles.
+
+So `marks()` groups by dot and carries the count. Eight icings at one dot draw as
+one ring labelled **8**. Without it the ice would be showing a number it was not
+saying — the same defect class as a metric with no denominator.
+
+`marks()` and `latest()` live in the layer, not the page, and the page is asserted
+to call them (`test/build.test.js`). A mark on the wrong dot is the kind of wrong
+that looks completely right, so the rule that places it is tested rather than
+eyeballed.
+
+### 6.3 Trails shipped as `off` / `all`, default `off`
+
+As argued in §4, with no middle setting. The default is the change Kevin has to
+look at, because it is the one that alters what he sees before he touches
+anything: the base view now shows the current moment, and the shot chart is one
+click away under **keep every mark**.
+
+One consequence worth stating plainly rather than discovering: with trails off,
+**only the current high-danger chance is clickable**, because the earlier dots are
+no longer on the ice. The tip line says so. The alternative — retaining marks
+automatically when the High-danger layer is on — is refused for the reason §4
+already gives: a default that depends on another toggle is a conflated field
+wearing a UI hat.
+
+Unplaced whistles never reach the ice under either setting, and the newest
+whistle being unplaced draws **nothing** rather than falling back to the previous
+one. A mark in the right place for the wrong stoppage reads as perfectly correct.
+
+### 6.4 The renderer now has a gate, in two halves that check different things
+
+| check | what it can see | what it cannot |
+|---|---|---|
+| `test/render.test.js` | boots the **shipped bundle** against a fake document, drives the real buttons and drags the real scrubber, reads the markup back | **CSS.** It has no stylesheet, so a panel it calls rendered may be `display:none` |
+| `deploy.yml` browser step | the panel's **laid-out height** in an engine with a stylesheet | little else, and it deliberately asserts little else |
+
+The second exists only for the claim the first structurally cannot make, and says
+so in place rather than re-asserting the cheap half.
+
+Both are paired against their own inverse — the ice must hold **zero** whistle
+marks with the layer off, the panel must be **0px** tall with the layer off —
+because "marks appear when it is on" is equally satisfied by a page that draws
+them always, and "the panel is visible" by a panel that is never hidden.
+
+**The render tests were mutation-checked before being believed**, all eight having
+passed on their first run, which is when this project trusts a test least. Four
+mutations to the shipped bundle — draw whistles unconditionally, remove the trails
+skip, return no marks, drop the teaching sentence — each killed the test written
+for it, and only that one.
