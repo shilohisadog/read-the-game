@@ -90,10 +90,23 @@ MAIN = {
              "count toward it.",
 }
 
+# The same app over the whole archive, rather than the one game compiled into it.
+#
+# It is listed as a VIEW rather than as the hero on purpose. The hero is a
+# lesson -- a specific game with a specific paradox in it -- and that is what
+# acquires a novice. The archive is what brings them back. Front-loading 1,463
+# games on somebody who cannot read one of them yet is a reference product
+# wearing a teaching product's clothes.
+ARCHIVE = ("game.html", "Any game in the archive",
+           "The same replay, over every game we hold — most recent by default, or "
+           "add ?game= and an id. Games we cannot show are listed too, with the "
+           "reason, rather than quietly left out.")
+
 # The earlier views. These are kept because each one answers a question the main
 # app does not, but they are explorations and the page says so rather than
 # presenting seven equal front doors.
 VIEWS = [
+    ARCHIVE,
     ("goalie-view.html", "The goalie view",
      "Minnesota outshot Buffalo and lost. This is the save-by-save reason why."),
     ("on-the-ice.html", "On the ice",

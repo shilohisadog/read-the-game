@@ -15,13 +15,14 @@ the file this template came from -- run with --verify to check it.
   python3 builders/build_main.py            -> src/read-the-game.html
   python3 builders/build_main.py --verify   -> build, compare, do not write
 """
-import hashlib, json, pathlib, re, subprocess, sys, tempfile
+import base64, hashlib, json, pathlib, re, subprocess, sys, tempfile
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from jscheck import check_script
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / "src" / "read-the-game.html"
+SHELL = ROOT / "src" / "game.html"
 
 # The embedded literal is byte-identical to json.dumps(rich.json,
 # separators=(",", ":")) -- verified during extraction, and the --verify gate
@@ -165,7 +166,8 @@ T = r"""<style>
 <div class="foot" id="gl">—</div>
 </div></div>
 <script>
-const G=__DATA__, R=G.roster, HID=G.teams.home.id, AID=G.teams.away.id, HAB=G.teams.home.ab, AAB=G.teams.away.ab;
+function boot(G){
+const R=G.roster, HID=G.teams.home.id, AID=G.teams.away.id, HAB=G.teams.home.ab, AAB=G.teams.away.ab;
 const SKIP=new Set(['stoppage','period-start','period-end','game-end','delayed-penalty']);
 const EV=[],EVI=[];
 G.events.forEach((e,n)=>{if(!SKIP.has(e.type)){EV.push(e);EVI.push(n);}});
@@ -374,6 +376,8 @@ function goalieStats(k){return goaltending.reduce(upto(k),CTX).g;}
 function setGoalie(){document.getElementById('rg').classList.toggle('goalie',goalieOn);$('lyGoalie').setAttribute('aria-pressed',goalieOn);$('lyGoalie').textContent=(goalieOn?'✓ ':'＋ ')+'Goaltending';render(i,false);}
 $('lyGoalie').addEventListener('click',()=>{goalieOn=!goalieOn;setGoalie();});
 drawRink();set(EV.length-1,false);
+}
+__BOOT__
 </script>"""
 
 LIB = ["rink.js", "attribution.js", "layer.js", "strength.js", "svgpen.js", "figures.js",
@@ -396,22 +400,100 @@ def _lib():
         out.append(f"/* --- src/lib/{name} --- */\n" + body.replace("export ", ""))
     return "\n".join(out)
 
+# The origin the shell reads its games from. Pages serves CODE, R2 serves DATA,
+# so this page ships with no game in it and the archive can grow without a deploy.
+DATA_ORIGIN = "https://data.readthegame.co"
+
+# THE SHELL'S ONLY EXTRA CODE. Everything else -- every reducer, every pixel --
+# is the same `boot(G)` the inlined page runs, from the same template. A second
+# renderer is where the wrong number hides, so there is exactly one.
+#
+# No game is baked in and "most recent" is never compiled: it is read from the
+# catalog at load, the same rule the front page's freshness line follows. A
+# featured game frozen at build time would be a lie by the next morning.
+BOOTSTRAP = r"""
+var ORIGIN=__ORIGIN__;
+function say(m){var el=document.getElementById('gl');if(el)el.textContent=m;}
+function grab(u){return fetch(u).then(function(r){
+  if(!r.ok)throw new Error(u.split('/').pop()+' — HTTP '+r.status);return r.json();});}
+function pick(c){
+  // Most recent VIEWABLE game. A refused game is listed in the catalog on
+  // purpose, and landing on one would be an empty theatre.
+  var v=c.games.filter(function(g){return g.v;});
+  if(!v.length)throw new Error('the catalog lists no game we can show');
+  v.sort(function(a,b){return a.d===b.d?a.id-b.id:(a.d<b.d?-1:1);});
+  return v[v.length-1].id;
+}
+var want=(location.search.match(/[?&]game=(\d+)/)||[])[1];
+say('Loading…');
+(want?Promise.resolve(want):grab(ORIGIN+'/catalog.json').then(pick))
+  .then(function(id){return grab(ORIGIN+'/extract/'+id+'.json');})
+  .then(function(g){boot(g);})
+  .catch(function(e){
+    // A true sentence about a broken situation beats a spinner that never ends.
+    say('This game could not be loaded — '+e.message);
+  });
+"""
+
+
+def _csp(html):
+    """Hash-pinned, and stamped LAST so it covers the bytes actually shipped.
+
+    A hash-pinned policy with a stale hash is a blank page that passes every
+    grep we could write, so the digests are computed from the finished document.
+    """
+    def h(pattern):
+        m = re.search(pattern, html, re.S)
+        return "'sha256-" + base64.b64encode(
+            hashlib.sha256(m.group(1).encode()).digest()).decode() + "'"
+    return "; ".join([
+        "default-src 'none'",
+        f"script-src {h(r'<script>(.*?)</script>')}",
+        f"style-src {h(r'<style>(.*?)</style>')}",
+        f"connect-src 'self' {DATA_ORIGIN}",
+        "base-uri 'none'", "form-action 'none'",
+    ])
+
+
 def build():
+    """The reference game, inlined. Works with the network unplugged."""
     return (T.replace("__LIB__", _lib())
-             .replace("__DATA__", json.dumps(DATA, separators=(",", ":"))))
+             .replace("__BOOT__",
+                      "boot(" + json.dumps(DATA, separators=(",", ":")) + ");"))
+
+
+def build_shell():
+    """The same app, any game, fetched at load.
+
+    This is the page a link points at -- the shareable unit -- so it is also the
+    page that must state plainly when it cannot load, rather than spinning.
+    """
+    html = (T.replace("__LIB__", _lib())
+             .replace("__BOOT__", BOOTSTRAP.replace(
+                 "__ORIGIN__", json.dumps(DATA_ORIGIN))))
+    # The inlined page reaches nothing and needs no policy beyond the deploy
+    # grep; this one legitimately fetches, so the promise has to be enforced by
+    # the browser rather than asserted by us.
+    head = '<meta http-equiv="Content-Security-Policy" content="__CSP__">\n'
+    html = head + html
+    return html.replace("__CSP__", _csp(html))
 
 def main():
     html = build()
+    shell = build_shell()
 
     # Parse the bundle before anyone can ship it. Writing a temp file and
     # printing the path is not a gate -- that is how an indented import reached
     # a published artifact with every test green.
-    script = re.search(r"<script>(.*)</script>", html, re.S).group(1)
-    check_script(script, "main")
+    # Parse BOTH before either can ship. They share a template, so a syntax
+    # error in the shared body would otherwise be caught on one page and
+    # published on the other.
+    check_script(re.search(r"<script>(.*)</script>", html, re.S).group(1), "main")
+    check_script(re.search(r"<script>(.*)</script>", shell, re.S).group(1), "shell")
 
     if "--verify" in sys.argv:
         current = OUT.read_text()
-        same = current == html
+        same = current == html and SHELL.read_text() == shell
         h = lambda s: hashlib.sha256(s.encode()).hexdigest()[:16]
         print(f"built  {len(html.encode()):>7} bytes  sha {h(html)}")
         print(f"onDisk {len(current.encode()):>7} bytes  sha {h(current)}")
@@ -425,7 +507,9 @@ def main():
         return 0 if same else 1
 
     OUT.write_text(html)
+    SHELL.write_text(shell)
     print(f"wrote {OUT} {len(html.encode())} bytes; script parses OK")
+    print(f"wrote {SHELL} {len(shell.encode())} bytes; fetches its game, CSP stamped")
     return 0
 
 if __name__ == "__main__":

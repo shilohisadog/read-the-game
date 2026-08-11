@@ -68,7 +68,11 @@ jobs:
       # enforces, checked in the step below.
       - name: the inlined pages must not call out to anything
         run: |
-          pages=$(ls src/*.html | grep -v 'src/index.html')
+          # index.html fetches its own freshness and game.html fetches its game;
+          # both are exempt here and both carry a hash-pinned CSP the BROWSER
+          # enforces, which is a stronger promise than this grep can make. The
+          # grep stays for the pages that genuinely reach nothing.
+          pages=$(ls src/*.html | grep -vE 'src/(index|game)\.html')
           if grep -rniE 'fetch\(|XMLHttpRequest|new WebSocket|src="https?:|<link[^>]+https?:' $pages; then
             echo "::error::a shipped page references the network"
             exit 1

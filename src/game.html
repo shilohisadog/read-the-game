@@ -1,0 +1,1304 @@
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Kq0t275inxG0JzXRKX7npmvmTvgacb/t7Go44mabbK4='; style-src 'sha256-wKUHsgpEBAJdhZp/rzfutRCtjDJOGnhJTuZSiT3eayU='; connect-src 'self' https://data.readthegame.co; base-uri 'none'; form-action 'none'">
+<style>
+#rg{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;--min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c;--flag:#d9662b;--hd:#e0932a;
+ font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg);min-height:100vh;padding:clamp(16px,3.5vw,36px) clamp(12px,4vw,22px);line-height:1.5}
+#rg .wrap{max-width:900px;margin:0 auto}
+#rg .eyebrow{font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+#rg h1{font-size:clamp(1.7rem,3.8vw,2.4rem);letter-spacing:-.025em;font-weight:800;margin:0 0 10px;text-wrap:balance}
+#rg .lede{font-size:1.02rem;color:var(--muted);margin:0 0 18px;max-width:62ch}#rg .lede b{color:var(--ink);font-weight:600}
+#rg .board{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;background:#fff;border:1px solid var(--edge);border-radius:13px;padding:12px 18px;box-shadow:0 5px 18px rgba(16,32,45,.07);margin-bottom:12px}
+#rg .tm{display:flex;flex-direction:column;align-items:center}#rg .tm .ab{font-weight:800;letter-spacing:.05em;font-size:.9rem}
+#rg .tm.a .ab{color:var(--min)}#rg .tm.h .ab{color:var(--buf)}
+#rg .sc{font-family:ui-monospace,Menlo,monospace;font-size:2.2rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+#rg .mid{min-width:150px}#rg .gs{text-align:center;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px}#rg .gs .cl{color:var(--ink);font-family:ui-monospace,Menlo,monospace}
+#rg .bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--edge)}#rg .bar span{transition:width .4s ease}#rg .ba{background:var(--min)}#rg .bh{background:var(--buf)}
+#rg .pct{display:flex;justify-content:space-between;font-size:.78rem;margin-top:5px;font-family:ui-monospace,Menlo,monospace;font-weight:600}
+#rg .rinkbox{position:relative;background:var(--ice);border:1px solid var(--edge);border-radius:15px;padding:10px;box-shadow:0 6px 22px rgba(16,32,45,.08)}
+#rg svg{display:block;width:100%;height:auto}
+#rg .boards{fill:var(--ice);stroke:var(--edge);stroke-width:1.1}
+#rg .ln{fill:none;stroke-linecap:round}#rg .ln.red{stroke:var(--red);stroke-width:.7;opacity:.42}#rg .ln.blue{stroke:var(--blue);stroke-width:.9;opacity:.42}#rg .ln.thick{stroke-width:1.1;opacity:.52}
+#rg .rdot{fill:var(--red);opacity:.5}
+#rg .crease{opacity:.5}#rg .netlab{font-size:3.1px;font-weight:700;letter-spacing:.4px;text-anchor:middle}
+#rg .netflash{animation:nf 1.3s ease}@keyframes nf{0%,100%{opacity:0}25%{opacity:.85}}
+#rg .ev{transform-box:fill-box;transform-origin:center}
+#rg .att.a{fill:var(--min)}#rg .att.h{fill:var(--buf)}#rg .att{opacity:.8}
+#rg .blk.a{fill:var(--min)}#rg .blk.h{fill:var(--buf)}#rg .blk{stroke:var(--flag);stroke-width:.8}
+#rg .goal.a{fill:var(--min)}#rg .goal.h{fill:var(--buf)}#rg .goal{stroke:#fff;stroke-width:.8}
+#rg .excl{fill:var(--muted);opacity:.2}
+#rg .hd{stroke:var(--hd);stroke-width:.9}
+#rg .hdring{fill:none;stroke:var(--hd);stroke-width:.5;opacity:.6}
+#rg .pop{animation:pop .34s cubic-bezier(.2,1.3,.4,1)}@keyframes pop{0%{transform:scale(2.6);opacity:.3}100%{transform:scale(1);opacity:1}}
+#rg .flare{animation:flare .7s ease-out}@keyframes flare{0%{transform:scale(3.6);opacity:.2}55%{opacity:1}100%{transform:scale(1)}}
+#rg .puck{fill:#0e1216;stroke:#fff;stroke-width:.55}#rg .puck.jump{animation:pj .3s ease}@keyframes pj{0%{transform:scale(2)}100%{transform:scale(1)}}
+#rg .shotline{stroke:var(--ink);stroke-width:.7;stroke-dasharray:2.2 2;opacity:.7;animation:sl 1s ease forwards}@keyframes sl{to{opacity:0}}
+#rg .caption{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;align-items:center;gap:8px;background:rgba(15,26,35,.94);color:#fff;padding:7px 15px;border-radius:99px;font-size:.86rem;font-weight:600;white-space:nowrap;opacity:0;pointer-events:none;max-width:92%}
+#rg .caption.on{animation:cap 2.2s ease}@keyframes cap{0%{opacity:0;transform:translateX(-50%) translateY(6px)}12%{opacity:1;transform:translateX(-50%) translateY(0)}82%{opacity:1}100%{opacity:0}}
+#rg .caption .tag{font-family:ui-monospace,Menlo,monospace;font-weight:700;font-size:.72rem;padding:2px 7px;border-radius:5px}
+#rg .caption .num{opacity:.65;font-family:ui-monospace,Menlo,monospace;margin-right:3px}
+#rg .counters{display:flex;justify-content:space-between;padding:2px 6px;margin-top:8px}
+#rg .cc{display:flex;align-items:baseline;gap:7px}#rg .cc .n{font-family:ui-monospace,Menlo,monospace;font-size:1.5rem;font-weight:700}#rg .cc.a .n{color:var(--min)}#rg .cc.h .n{color:var(--buf)}
+#rg .cc .mode{display:block;font-size:.6rem;letter-spacing:.06em;color:var(--flag);font-weight:700}
+#rg .cc .lb{font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+#rg .bump{animation:bump .32s ease}@keyframes bump{40%{transform:scale(1.35);color:var(--flag)}}
+#rg .transport{display:flex;align-items:center;gap:10px;margin:14px 0 4px;flex-wrap:wrap}
+#rg button{font:inherit;font-size:.83rem;font-weight:600;border-radius:8px;border:1px solid var(--edge);background:#fff;color:var(--ink);padding:9px 14px;cursor:pointer}
+#rg .play{background:var(--ink);color:#fff;border-color:var(--ink)}
+#rg .spd{padding:7px 11px}#rg .spd[aria-pressed="true"]{border-color:var(--ink);background:#eef2f5}
+#rg .scrub{flex:1;accent-color:var(--ink);cursor:pointer;min-width:120px}
+#rg .legend{display:flex;flex-wrap:wrap;gap:7px 18px;font-size:.78rem;color:var(--muted);margin:6px 2px}
+#rg .legend i{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:-1px}
+#rg .k-a{background:var(--min)}#rg .k-hd{background:#fff;box-shadow:0 0 0 1.5px var(--hd)}#rg .k-blk{background:var(--buf);box-shadow:0 0 0 1.5px var(--flag)}#rg .k-p{background:#0e1216}
+#rg .work{background:#fff;border:1px solid var(--edge);border-radius:13px;padding:18px;margin-top:14px;box-shadow:0 5px 18px rgba(16,32,45,.06)}
+#rg .work h2{margin:0 0 10px;font-size:1.1rem}#rg .wg{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+#rg .wc{background:#f2f7fa;border:1px solid var(--edge);border-radius:10px;padding:13px}#rg .wc h3{margin:0 0 6px;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);display:flex;justify-content:space-between}#rg .wc h3 .n{font-family:ui-monospace,Menlo,monospace;font-size:1.2rem;color:var(--ink);font-weight:700}#rg .wc.flag{border-color:#e6b98f}#rg .wc.flag h3 .n{color:var(--flag)}#rg .wc p{margin:0;font-size:.87rem}
+#rg .wfoot{margin-top:13px;font-size:.8rem;color:var(--muted);border-top:1px solid var(--edge);padding-top:11px}#rg .wfoot em{font-style:normal;color:var(--ink)}
+#rg .foot{font-size:.78rem;color:var(--muted);margin-top:16px;text-align:center}
+#rg text{font-family:ui-monospace,Menlo,monospace}
+@media(prefers-reduced-motion:reduce){#rg *{animation:none!important;transition:none!important}}
+
+#rg .ev.clickable{cursor:pointer}
+#rg .hint{font-size:.76rem;color:#b07d17;margin:3px 2px 0;font-weight:600}
+#rg .caption{cursor:default}
+#rg .whybk{position:fixed;inset:0;background:rgba(10,18,26,.55);display:none;align-items:center;justify-content:center;z-index:60;padding:16px}
+#rg .whybk.on{display:flex}
+#rg .why{background:#fff;border-radius:15px;max-width:430px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.4);overflow:hidden;max-height:92vh;overflow-y:auto}
+#rg .whyhd{padding:15px 18px;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px}
+#rg .whyhd .t{font-weight:800;font-size:1.08rem}#rg .whyhd .s{font-size:.75rem;opacity:.92;font-family:ui-monospace,Menlo,monospace}
+#rg .whyclose{background:rgba(255,255,255,.22);border:0;color:#fff;border-radius:7px;padding:6px 10px;cursor:pointer;font-weight:700;line-height:1}
+#rg .whybody{padding:16px 18px}
+#rg .whydiag{background:var(--ice);border:1px solid var(--edge);border-radius:10px;padding:8px;margin-bottom:14px}
+#rg .whydiag svg{width:100%;height:auto;display:block}
+#rg .factor{display:flex;align-items:baseline;gap:12px;padding:9px 0;border-bottom:1px solid var(--edge)}
+#rg .factor .fv{font-family:ui-monospace,Menlo,monospace;font-weight:700;font-size:1.1rem;min-width:52px}
+#rg .factor .fl{font-size:.86rem;color:var(--muted)}#rg .factor .fl b{color:var(--ink)}
+#rg .chk{color:var(--min);font-weight:800}
+#rg .whyrule{background:#f2f7fa;border:1px solid var(--edge);border-radius:9px;padding:12px 13px;font-size:.83rem;margin-top:13px;line-height:1.5}#rg .whyrule b{color:var(--ink)}
+
+#rg .plabel{font-size:3.5px;font-weight:700;fill:var(--ink);stroke:#fff;stroke-width:1px;paint-order:stroke;font-family:system-ui,sans-serif}
+#rg .glab{font-size:4.8px;font-weight:800;stroke:#fff;stroke-width:1.2px;paint-order:stroke;font-family:system-ui,sans-serif}
+#rg .plabsub{font-size:2.8px;fill:var(--muted);stroke:#fff;stroke-width:.8px;paint-order:stroke;font-family:system-ui,sans-serif}
+#rg .plabgrp{animation:plfade .28s ease}@keyframes plfade{0%{opacity:0}100%{opacity:1}}
+
+#rg .cbar,#rg .counters,#rg #work{display:none}
+#rg.corsi .cbar{display:block}#rg.corsi .counters{display:flex}#rg.corsi #work{display:inline-block}
+#rg .figpick{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 2px 0}
+#rg .sbtn[aria-pressed="true"],#rg .fbtn[aria-pressed="true"]{border-style:solid;color:var(--ink);border-color:var(--ink);background:#eef2f5}
+#rg .fnote{font-size:.76rem;color:var(--muted);flex:1;min-width:220px}
+#rg .fig{transform-box:fill-box;transform-origin:center}
+#rg .layers{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 2px 4px;padding-top:12px;border-top:1px dashed var(--edge)}
+#rg .layers .ll{font-size:.8rem;color:var(--muted);font-weight:700}
+#rg .lyr{font:inherit;font-size:.83rem;font-weight:600;border-radius:8px;border:1px dashed #b7c6d0;background:#fff;color:var(--muted);padding:8px 13px;cursor:pointer}
+#rg .lyr[aria-pressed="true"]{border-style:solid;color:var(--ink);border-color:var(--ink);background:#eef2f5}
+
+#rg .goalies{display:none;gap:10px;margin-top:10px}
+#rg.goalie .goalies{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#rg .gcard{background:#fff;border:1px solid var(--edge);border-radius:11px;padding:12px 15px;box-shadow:0 4px 14px rgba(16,32,45,.06)}
+#rg .gcard .gname{font-weight:800;font-size:.98rem}
+#rg .gcard .gname .sub{color:var(--muted);font-weight:600;font-size:.68rem}
+#rg .gcard .gsv{font-family:ui-monospace,Menlo,monospace;font-size:1.75rem;font-weight:700;line-height:1.1}
+#rg .gcard .gline{font-size:.78rem;color:var(--muted);margin-top:2px}
+@media(max-width:520px){#rg.goalie .goalies{grid-template-columns:1fr}}
+</style>
+<div id="rg"><div class="wrap">
+<p class="eyebrow">Learn to read hockey · watch first, add metrics after</p>
+<h1>Watch the game</h1>
+<p class="lede">Press play and just <b>watch</b> — each play narrated in plain language, goals called with the <b>scorer and assists</b>, the pace easing for the big moments. That’s the base view. When you want to understand <em>why</em> a team is on top, <b>add a metric layer</b> below — Control (Corsi) or High-danger. Nothing is invented; every layer shows its work.</p>
+<div class="board">
+  <div class="tm a"><span class="ab" id="aAb">MIN</span><span class="sc" id="aSc">0</span></div>
+  <div class="mid"><div class="gs"><span id="per">Pre-game</span> · <span class="cl" id="clk">20:00</span></div>
+    <div class="cbar"><div class="bar"><span class="ba" id="ba" style="width:50%"></span><span class="bh" id="bh" style="width:50%"></span></div>
+    <div class="pct"><span id="pa" style="color:var(--min)">50%</span><span style="color:var(--muted);font-size:.66rem;letter-spacing:.1em">CONTROL</span><span id="ph" style="color:var(--buf)">50%</span></div></div>
+  </div>
+  <div class="tm h"><span class="ab" id="hAb">BUF</span><span class="sc" id="hSc">0</span></div>
+</div>
+<div class="rinkbox"><svg viewBox="0 0 200 85"><g id="rink"></g><g id="lines"></g><g id="events"></g><g id="puck"></g><g id="labels"></g></svg>
+  <div class="caption" id="caption"></div>
+  <div class="counters"><div class="cc a"><span class="n" id="cA">0</span><span class="lb">MIN attempts<span class="mode" id="mA">ALL SITUATIONS</span></span></div><div class="cc h"><span class="lb">BUF attempts<span class="mode" id="mH">ALL SITUATIONS</span></span><span class="n" id="cH">0</span></div></div>
+</div>
+<div class="goalies" id="goaliePanel"></div>
+<div class="transport"><button class="play" id="play">▶ Play from start</button>
+  <button class="spd" id="sp0" aria-pressed="false">🐢 Slower</button><button class="spd" id="sp1" aria-pressed="true">Teaching</button><button class="spd" id="sp2" aria-pressed="false">Faster</button><button class="spd" id="lbl" aria-pressed="true">💬 Explain plays</button>
+  <input class="scrub" id="scrub" type="range" min="0" max="1" value="0"><button id="work" aria-expanded="false">Show me the work</button></div>
+<div class="legend"><span><i class="k-a"></i>shot</span><span><i class="k-p"></i>puck (jumps between real events)</span><span>🚨 goal</span><span style="color:var(--muted)">metric-specific marks appear when you add a layer</span></div>
+<div class="layers"><span class="ll">Add a metric layer:</span><button class="lyr" id="lyCorsi" aria-pressed="false">＋ Control (Corsi)</button><button class="lyr" id="lyHd" aria-pressed="false">＋ High-danger</button><button class="lyr" id="lyGoalie" aria-pressed="false">＋ Goaltending</button></div>
+<div class="figpick"><span class="ll">Situations:</span>
+<button class="lyr sbtn" data-s="all" aria-pressed="true">All situations</button>
+<button class="lyr sbtn" data-s="even" aria-pressed="false">Even strength only</button>
+<span class="fnote">Power plays and an empty net are still hockey — but they aren't
+<b>even</b> hockey. Switch and watch which attempts drop out, and why.</span></div>
+<div class="figpick"><span class="ll">Players:</span>
+<button class="lyr fbtn" data-f="mascot" aria-pressed="true">Mascot</button>
+<button class="lyr fbtn" data-f="tabletop" aria-pressed="false">Tabletop</button>
+<span class="fnote">Same shots, same outcomes, same math — only the drawing changes. <b>Tabletop</b> is the rod-hockey player you grew up with.</span></div>
+<div class="hint">Tip: click any ⚡ high-danger chance (amber ring) on the ice to see <b>why</b> it qualified.</div>
+<div class="work" id="workPanel" hidden></div>
+<div class="whybk" id="whyBk"><div class="why" id="whyContent"></div></div>
+<div class="foot" id="gl">—</div>
+</div></div>
+<script>
+function boot(G){
+const R=G.roster, HID=G.teams.home.id, AID=G.teams.away.id, HAB=G.teams.home.ab, AAB=G.teams.away.ab;
+const SKIP=new Set(['stoppage','period-start','period-end','game-end','delayed-penalty']);
+const EV=[],EVI=[];
+G.events.forEach((e,n)=>{if(!SKIP.has(e.type)){EV.push(e);EVI.push(n);}});
+// The timeline is the playable events; the LEDGER is the whole game. Layers get
+// every event so the 51 non-plays are excluded with reasons instead of vanishing.
+const upto=k=>k<0?[]:G.events.slice(0,EVI[k]+1);
+/* --- src/lib/rink.js --- */
+/**
+ * Rink geometry.
+ *
+ * Coordinates in the extract are already normalized so the HOME team defends the
+ * -x end and the AWAY team defends +x, in every period. (Teams switch ends each
+ * period in the raw feed; extraction undoes that using `homeTeamDefendingSide`.)
+ *
+ * A team's *attacking* net therefore sits at x = +89 for home and x = -89 for
+ * away, and distance has to be measured to the net a team is shooting AT.
+ *
+ * The bug this replaces used `89 - Math.abs(x)`, which measures to whichever net
+ * is *nearer*. That is correct for shots taken in the attacking half and wrong
+ * for every shot taken in a team's own half -- three events in the reference
+ * game were mis-measured by up to 123 feet. It happened not to change any
+ * high-danger classification, because all three also failed the slot test, so
+ * the count was right by luck. Luck is not a test.
+ */
+
+const NET_X = 89;
+const SLOT_HALF_WIDTH = 22;   // feet either side of centre
+const HIGH_DANGER_FT = 33;    // Doctrine section 7: a rule, not a model
+
+/** +1 if this team attacks toward +x, -1 if toward -x. */
+function attackDirection(teamId, homeTeamId) {
+  return teamId === homeTeamId ? 1 : -1;
+}
+
+/** Feet from (x,y) to the net this team is shooting at. */
+function distanceToNet(x, y, dir) {
+  return Math.hypot(NET_X - x * dir, y);
+}
+
+/**
+ * Doctrine section 7: high danger is a geometric RULE, not an expected-goals
+ * model -- inside 33 feet and inside the slot -- so that a viewer can check it
+ * with a ruler.
+ */
+function isHighDanger(x, y, dir) {
+  return distanceToNet(x, y, dir) <= HIGH_DANGER_FT && Math.abs(y) <= SLOT_HALF_WIDTH;
+}
+
+/* --- src/lib/attribution.js --- */
+/**
+ * Whose attempt is this?
+ *
+ * This module exists because getting it wrong shipped a wrong number on the
+ * project's flagship claim, so the reasoning is written down rather than assumed.
+ *
+ * On `api-web.nhle.com`, a blocked shot's `eventOwnerTeamId` is the SHOOTER's
+ * team. Verified against `rosterSpots` -- an independent source, not our own
+ * extract, so the check is not circular:
+ *
+ *     2023-24  MIN @ BUF   44/44 blocks credited to the shooter
+ *     2025-26  MTL @ BUF   25/25
+ *     2025-26  NYR @ MIN   34/34
+ *
+ * Older NHL endpoints credited the BLOCKER, which is where the folklore comes
+ * from. It was true once; it is not true here. The app previously "corrected"
+ * for it by flipping attribution on blocks, which turned a correct number into
+ * an incorrect one: Corsi read MIN 72 / BUF 63 when it should read MIN 80 /
+ * BUF 55.
+ *
+ * The defence against that happening again is not to trust the team field at
+ * all. We resolve attribution from the SHOOTING PLAYER, so this stays correct
+ * even if `eventOwnerTeamId` semantics drift a third time. `actor` on a blocked
+ * shot is the shooter (44/44 in the reference game).
+ */
+
+const ATTEMPT_TYPES = new Set(['goal', 'shot-on-goal', 'missed-shot', 'blocked-shot']);
+
+/** Attempts that reached the net area -- everything except blocked shots. */
+const SHOT_TYPES = new Set(['goal', 'shot-on-goal', 'missed-shot']);
+
+/**
+ * The team that took the shot, resolved through the player.
+ * Returns null when the actor is unknown -- callers must decide, never guess.
+ */
+function shootingTeam(ev, roster) {
+  const p = roster[ev.actor];
+  return p ? p.tid : null;
+}
+
+/**
+ * The team credited with a Corsi attempt, or null if this event is not an
+ * attempt at all. No flip. See the module comment for why.
+ */
+function corsiTeam(ev, roster) {
+  if (!ATTEMPT_TYPES.has(ev.type)) return null;
+  return shootingTeam(ev, roster);
+}
+
+/* --- src/lib/layer.js --- */
+/**
+ * The layer contract — Doctrine §6 made into a type.
+ *
+ *   "each layer is a deterministic reducer over the event stream that returns
+ *    something renderable plus its own countedEvents breakdown … That seam is
+ *    why 'show me the work' and the teaching layer come for free."
+ *
+ * A layer reduces the WHOLE game and accounts for every event in it:
+ *
+ *   counted     [eventIndex]              what this metric counts
+ *   surprising  [{id, why, derivedFrom}]  counted, but a novice's intuition
+ *                                         predicts the opposite -- a subset of
+ *                                         `counted`, never a fourth bucket
+ *   excluded    [{id, why}]               and never silently
+ *
+ * Two rules, both learned the hard way.
+ *
+ * `excluded` holds IDS, not counts. Conservation over counts is weaker: you can
+ * balance a ledger of totals while losing track of which events they were.
+ *
+ * The reducer is handed the FULL event stream, not a pre-filtered one. The app
+ * used to drop 51 of 320 events before any layer ran, so conservation held
+ * trivially over what survived and said nothing about what never arrived. A
+ * property that cannot fail is worse than no property, because it looks like
+ * rigour. (Doctrine §9.)
+ *
+ * `derivedFrom` exists because of the blocked-shot defect: the app shipped a
+ * wrong number with a confident explanation attached, which is the most
+ * expensive failure available. An explanation that cannot be checked is decoration.
+ */
+
+/**
+ * The shootout, which is not a TYPE of event but a PLACE in the game.
+ *
+ * A shootout is a skills competition that decides a tied game; it is not play
+ * within it. The league agrees in the only way that matters to us — its
+ * boxscore excludes shootout attempts from shots on goal, and adds exactly one
+ * goal to the winner however many attempts go in.
+ *
+ * This lives here rather than in each layer because all three need it and one
+ * of them getting it wrong is a wrong number on screen. It is checked BEFORE
+ * type-based reasons: a shootout goal is a perfectly good attempt by type, so
+ * asking "is this an attempt?" first would count it.
+ *
+ * Only `pt` can express this. Period 5 is a shootout in the regular season and
+ * a third overtime in the playoffs, so the period NUMBER cannot tell them apart
+ * — which is why the extract carries the period type at all.
+ */
+function inShootout(e) {
+  return e.pt === 'SO'
+    ? 'the shootout — a skills competition that decides the game, not play in it'
+    : null;
+}
+
+/**
+ * Who won the shootout, or null if nobody did.
+ *
+ * The winner converted more attempts. Verified against the archive: for all six
+ * sampled shootout games, non-shootout goals plus one to this team reproduces
+ * the boxscore exactly. A shootout runs until it is decided, so a tie should be
+ * impossible — which is exactly why it returns null rather than picking a side.
+ */
+function shootoutWinner(events, homeId, awayId) {
+  let h = 0, a = 0;
+  for (const e of events) {
+    if (e.pt !== 'SO' || e.type !== 'goal') continue;
+    if (e.own === homeId) h++; else if (e.own === awayId) a++;
+  }
+  if (h === a) return null;
+  return h > a ? homeId : awayId;
+}
+
+/** Every event type that is not a play — recorded, but nothing happened on the ice. */
+const NOT_A_PLAY = {
+  'period-start': 'period start — not a play',
+  'period-end': 'period end — not a play',
+  'game-end': 'game over — not a play',
+  'stoppage': 'play stopped — the whistle, not an event on the ice',
+  'delayed-penalty': 'delayed penalty signalled — play continued',
+};
+
+/**
+ * Does this result account for every event exactly once?
+ *
+ * Returns the evidence, not a boolean, so a failure says WHICH events were lost
+ * or double-counted rather than only that the sums disagree.
+ */
+function conservation(result, totalEvents) {
+  const counted = new Set(result.counted);
+  const excluded = new Set(result.excluded.map(x => x.id));
+
+  const both = [...counted].filter(i => excluded.has(i));
+  const missing = [];
+  for (let i = 0; i < totalEvents; i++) {
+    if (!counted.has(i) && !excluded.has(i)) missing.push(i);
+  }
+  // `surprising` annotates counted events; it must never introduce new ones.
+  const strayS = result.surprising.map(s => s.id).filter(i => !counted.has(i));
+  const noWhy = [
+    ...result.excluded.filter(x => !x.why),
+    ...result.surprising.filter(s => !s.why || !s.derivedFrom),
+  ];
+
+  return {
+    ok: !both.length && !missing.length && !strayS.length && !noWhy.length
+        && counted.size + excluded.size === totalEvents,
+    total: totalEvents,
+    counted: counted.size,
+    excluded: excluded.size,
+    inBoth: both,
+    unaccounted: missing,
+    surprisingNotCounted: strayS,
+    missingExplanation: noWhy.length,
+  };
+}
+
+/** Group an excluded list into {why: count} for display. */
+function summarise(excluded) {
+  const out = {};
+  for (const x of excluded) out[x.why] = (out[x.why] || 0) + 1;
+  return out;
+}
+
+/* --- src/lib/strength.js --- */
+/**
+ * Game state — even strength, a power play, or an empty net.
+ *
+ * `situationCode` is four digits: [awayGoalie][awaySkaters][homeSkaters][homeGoalie].
+ * A goalie digit of 0 means that net is empty. Until this was extracted the app
+ * could not tell those three situations apart, and in the reference game that
+ * mattered: 12 of Minnesota's 80 attempts came 6-on-5 with their own net empty,
+ * which is the entire gap between 59.3% control and 55.8%.
+ *
+ * THE SET OF CODES IS KNOWN-INCOMPLETE. This game shows five. A real season adds
+ * 3-on-3 overtime, 5-on-3, 4-on-3, penalty shots and both goalies pulled. So an
+ * unrecognised code returns `null` and the caller must refuse to classify rather
+ * than guess — the same gate `extract.py --vocab` applies at ingestion.
+ *
+ * ONE empty-net state, deliberately. A pulled goalie means opposite things
+ * trailing late (desperation) and on a delayed penalty (free attack), but this
+ * game contains no delayed-penalty pull, so a second state would be designed
+ * against a case the data does not contain — which is exactly how the
+ * blocked-shot flip got in. When a game shows one, it is distinguishable
+ * without inference, because a `delayed-penalty` event is live in the stream.
+ */
+
+const EVEN = 'even';
+const POWER_PLAY = 'power-play';
+const EMPTY_NET = 'empty-net';
+
+/** Codes this module knows how to read. Anything else is a refusal, not a guess. */
+const KNOWN_SITUATIONS = new Set([
+  '1551', '1541', '1451', '1441', '0651', '1560', '1450', '1540',
+]);
+
+/**
+ * @returns {{kind, advantage, away, home, code}} or null if unrecognised.
+ *   kind       EVEN | POWER_PLAY | EMPTY_NET
+ *   advantage  team id with the extra skater, or null
+ */
+function situation(code, ctx) {
+  if (!code || !KNOWN_SITUATIONS.has(code)) return null;
+
+  const awayGoalie = code[0] !== '0';
+  const away = +code[1];
+  const home = +code[2];
+  const homeGoalie = code[3] !== '0';
+
+  // An empty net dominates: 6-on-5 with a net empty is not a power play, and
+  // calling it one would put desperation time in the same bucket as a penalty.
+  if (!awayGoalie || !homeGoalie) {
+    return { kind: EMPTY_NET, code, away, home,
+             advantage: !awayGoalie ? ctx.awayId : ctx.homeId };
+  }
+  if (away === home) return { kind: EVEN, code, away, home, advantage: null };
+  return { kind: POWER_PLAY, code, away, home,
+           advantage: away > home ? ctx.awayId : ctx.homeId };
+}
+
+/** True when play was at even strength — 5v5, 4v4 or 3v3, both goalies in. */
+function isEven(code, ctx) {
+  const s = situation(code, ctx);
+  return s != null && s.kind === EVEN;
+}
+
+/**
+ * Why this event is not even-strength play, in a sentence a novice can use.
+ * Returns null when it IS even strength, or when the code is unreadable.
+ */
+function whyNotEven(e, ctx) {
+  const s = situation(e.sit, ctx);
+  if (s == null) return `game state not recorded for this event`;
+  if (s.kind === EVEN) return null;
+
+  // THE COUNTS ARE STATED RELATIVE TO THE TEAM THE SENTENCE NAMES, not in the
+  // feed's away-then-home order. Those coincide only when the named team is the
+  // away team, so half of these read backwards: with code 1451 the away side has
+  // 4 and the home side 5, and "BUF were on the power play -- 4 skaters against
+  // 5" says the team on the advantage has FEWER players. 36 of this game's 103
+  // strength exclusions were that sentence. Whoever reads it is a novice being
+  // told why 49 attempts vanished, so it has to survive being read literally.
+  const forTeam = id => id === ctx.homeId
+    ? { ab: ctx.homeAb, own: s.home, opp: s.away }
+    : { ab: ctx.awayAb, own: s.away, opp: s.home };
+
+  if (s.kind === EMPTY_NET) {
+    // Name the team that pulled, and count from their side.
+    const { ab, own, opp } = forTeam(s.code[0] === '0' ? ctx.awayId : ctx.homeId);
+    return `${ab} had pulled their goalie — ${own} skaters against ${opp} with an empty net`;
+  }
+  const { ab, own, opp } = forTeam(s.advantage);
+  return `${ab} were on the power play — ${own} skaters against ${opp}`;
+}
+
+/**
+ * The windows in which play was not even strength, for marking a timeline.
+ *
+ * A penalty can carry across the intermission — in the reference game one runs
+ * from P2 00:36 to P3 18:43 — so a window is NOT period-local and callers must
+ * not assume it is.
+ */
+function windows(events, ctx) {
+  const out = [];
+  let cur = null;
+  events.forEach((e, id) => {
+    if (!e.sit) return;
+    const s = situation(e.sit, ctx);
+    const kind = s == null ? null : s.kind;
+    if (kind == null || kind === EVEN) { cur = null; return; }
+    const key = `${kind}:${s.advantage}`;
+    if (!cur || cur.key !== key) {
+      cur = { key, kind, advantage: s.advantage, from: id, to: id,
+              fromPer: e.per, fromRem: e.rem, toPer: e.per, toRem: e.rem };
+      out.push(cur);
+    } else {
+      Object.assign(cur, { to: id, toPer: e.per, toRem: e.rem });
+    }
+  });
+  return out;
+}
+
+/* --- src/lib/svgpen.js --- */
+/**
+ * SvgPen — draws canvas-style, emits SVG.
+ *
+ * Implements the subset of CanvasRenderingContext2D that src/lib/figures.js
+ * uses, so one figure definition serves both surfaces: the goalie's-eye view
+ * passes a real canvas context, the 2D rink passes one of these.
+ *
+ * The 2D rink cannot simply overlay a canvas. Its events are SVG elements on
+ * purpose — a viewer can inspect them, which is "check our work" made physical,
+ * and the why-popup hangs off click handlers on those nodes. Rasterising the
+ * figures would cost both.
+ *
+ * DELIBERATE OMISSIONS, so nobody hunts for them:
+ *
+ *   shadowColor / shadowBlur are IGNORED. The canvas figures use them for the
+ *   outcome glow; in SVG that needs a filter per colour, and the rink already
+ *   applies its glow in CSS where it belongs. Accepting the property and doing
+ *   nothing is the honest behaviour here — the alternative is a filter stack
+ *   that duplicates styling the stylesheet already owns.
+ *
+ *   Transforms are tracked as a string and applied to runs of elements, since
+ *   canvas save/restore does not map onto SVG group nesting one-to-one.
+ *
+ * Everything else — paths, arcs, ellipses, clipping, alpha, line joins — is
+ * real, and figures.test.js asserts both pens accept the same calls.
+ */
+
+const f = n => Number.isFinite(n) ? +n.toFixed(2) : 0;
+const esc = s => String(s).replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
+
+class SvgPen {
+  constructor(idPrefix = 'f') {
+    this.parts = [];
+    this.defs = [];
+    this._id = 0;
+    this._prefix = idPrefix;
+    this._d = '';
+    this._tf = '';
+    this._clip = null;
+    this._stack = [];
+    this.fillStyle = '#000';
+    this.strokeStyle = '#000';
+    this.lineWidth = 1;
+    this.lineCap = 'butt';
+    this.lineJoin = 'miter';
+    this.globalAlpha = 1;
+    this.shadowColor = null;   // accepted, ignored — see header
+    this.shadowBlur = 0;
+  }
+
+  // ---- state -------------------------------------------------------------
+  save() {
+    this._stack.push({
+      tf: this._tf, clip: this._clip,
+      fillStyle: this.fillStyle, strokeStyle: this.strokeStyle,
+      lineWidth: this.lineWidth, lineCap: this.lineCap, lineJoin: this.lineJoin,
+      globalAlpha: this.globalAlpha,
+    });
+  }
+  restore() {
+    const s = this._stack.pop();
+    if (s) Object.assign(this, s, { _tf: s.tf, _clip: s.clip });
+    if (s) { this._tf = s.tf; this._clip = s.clip; }
+  }
+  translate(x, y) { this._tf += ` translate(${f(x)},${f(y)})`; }
+  rotate(r) { this._tf += ` rotate(${f(r * 180 / Math.PI)})`; }
+
+  // ---- path building -----------------------------------------------------
+  beginPath() { this._d = ''; }
+  moveTo(x, y) { this._d += `M${f(x)},${f(y)}`; }
+  lineTo(x, y) { this._d += `L${f(x)},${f(y)}`; }
+  quadraticCurveTo(cx, cy, x, y) { this._d += `Q${f(cx)},${f(cy)} ${f(x)},${f(y)}`; }
+  closePath() { this._d += 'Z'; }
+
+  arc(cx, cy, r, a0, a1) { this._sweep(cx, cy, r, r, a0, a1); }
+  ellipse(cx, cy, rx, ry, _rot, a0, a1) { this._sweep(cx, cy, rx, ry, a0, a1); }
+
+  /** Arc/ellipse as SVG A-commands. A full turn needs two halves — one A cannot
+   *  express 360°, since start and end would coincide. */
+  _sweep(cx, cy, rx, ry, a0, a1) {
+    const span = Math.abs(a1 - a0);
+    const p = (a) => [cx + rx * Math.cos(a), cy + ry * Math.sin(a)];
+    if (span >= Math.PI * 2 - 1e-6) {
+      const [x0, y0] = p(0), [x1, y1] = p(Math.PI);
+      this._d += `M${f(x0)},${f(y0)}A${f(rx)},${f(ry)} 0 1 1 ${f(x1)},${f(y1)}`
+               + `A${f(rx)},${f(ry)} 0 1 1 ${f(x0)},${f(y0)}Z`;
+      return;
+    }
+    const [x0, y0] = p(a0), [x1, y1] = p(a1);
+    const large = span > Math.PI ? 1 : 0;
+    const sweep = a1 > a0 ? 1 : 0;
+    this._d += `${this._d ? 'L' : 'M'}${f(x0)},${f(y0)}`
+             + `A${f(rx)},${f(ry)} 0 ${large} ${sweep} ${f(x1)},${f(y1)}`;
+  }
+
+  // ---- painting ----------------------------------------------------------
+  fill() { this._emit({ fill: this.fillStyle, stroke: 'none' }); }
+  stroke() {
+    this._emit({
+      fill: 'none', stroke: this.strokeStyle, 'stroke-width': f(this.lineWidth),
+      'stroke-linecap': this.lineCap, 'stroke-linejoin': this.lineJoin,
+    });
+  }
+  fillRect(x, y, w, h) {
+    this._el('rect', {
+      x: f(x), y: f(y), width: f(w), height: f(h), fill: this.fillStyle,
+    });
+  }
+  clip() {
+    const id = `${this._prefix}c${this._id++}`;
+    this.defs.push(`<clipPath id="${id}"><path d="${this._d}"/></clipPath>`);
+    this._clip = id;
+  }
+
+  _emit(attrs) {
+    if (!this._d) return;
+    this._el('path', { d: this._d, ...attrs });
+  }
+  _el(tag, attrs) {
+    const a = { ...attrs };
+    if (this._clip) a['clip-path'] = `url(#${this._clip})`;
+    if (this.globalAlpha !== 1) a.opacity = f(this.globalAlpha);
+    // Drop attributes that match the SVG default -- on ~2,300 nodes redrawn
+    // every tick, the bytes are the frame budget.
+    if (a['stroke-linecap'] === 'butt') delete a['stroke-linecap'];
+    if (a['stroke-linejoin'] === 'miter') delete a['stroke-linejoin'];
+    const body = Object.entries(a)
+      .filter(([, v]) => v !== undefined && v !== null)
+      .map(([k, v]) => `${k}="${esc(v)}"`).join(' ');
+    this.parts.push({ tf: this._tf.trim(), xml: `<${tag} ${body}/>` });
+  }
+
+  /**
+   * Everything drawn so far, as one group.
+   *
+   * Consecutive elements sharing a transform are wrapped in a `<g transform>`
+   * rather than each carrying its own copy. A figure applies one translate and
+   * one rotate up front, so nearly all of its shapes share a transform, and
+   * repeating that string per element cost about a third of the markup.
+   */
+  toSvg(groupAttrs = '') {
+    const defs = this.defs.length ? `<defs>${this.defs.join('')}</defs>` : '';
+    let out = '', run = null, buf = [];
+    const flush = () => {
+      if (!buf.length) return;
+      out += run ? `<g transform="${run}">${buf.join('')}</g>` : buf.join('');
+      buf = [];
+    };
+    for (const part of this.parts) {
+      if (part.tf !== run) { flush(); run = part.tf; }
+      buf.push(part.xml);
+    }
+    flush();
+    return `<g ${groupAttrs}>${defs}${out}</g>`;
+  }
+}
+
+/* --- src/lib/figures.js --- */
+/**
+ * The player figure — one definition, two surfaces.
+ *
+ * Previously this lived as a JS string inside builders/figures.py, which meant
+ * node could not import it and nothing could test it. It is now a real module,
+ * and it draws through a PEN rather than a canvas context.
+ *
+ * A pen is the small subset of the canvas 2D API these figures actually use.
+ * A real CanvasRenderingContext2D is a pen, so the goalie's-eye view passes its
+ * context straight through. SvgPen (../svgpen.js) is also a pen, which is how
+ * the same figures appear on the 2D rink — where events must stay real DOM
+ * nodes, because "check our work" is made physical by being able to inspect
+ * them, and because the why-popup hangs off click handlers.
+ *
+ * Two styles ship and which one you see is a viewer setting:
+ *   mascot    the default — big head, soft shapes, a face. Legible small.
+ *   tabletop  the rod-hockey tin man — flat colour, heavy outline, on its peg.
+ *
+ * Both are MARKERS, not claims (Doctrine §5). A figure says "a real shot came
+ * from here, and this is what happened to it". The pose encodes the outcome the
+ * feed records — saved or scored — and nothing else. Neither asserts anything
+ * about how a player stood, moved or skated.
+ *
+ *   FIG[style](pen, px, py, size, jersey, out, { t, motion, glow, light })
+ *
+ * px,py is the figure's FEET. size is its height.
+ */
+/* A stick blade, taped. The blade used to be drawn in near-black on near-black
+   ice, which made it vanish — you couldn't tell the sticks had blades at all.
+   White tape is what a real blade actually wears, so it reads as hockey rather
+   than as a highlight: dark edge underneath, tape over most of it. */
+function _blade(g,x1,y1,x2,y2,u,w){
+ const cap=g.lineCap; g.lineCap='butt';
+ g.strokeStyle='#0f151a'; g.lineWidth=u*w;
+ g.beginPath(); g.moveTo(x1,y1); g.lineTo(x2,y2); g.stroke();
+ const dx=(x2-x1)*0.09, dy=(y2-y1)*0.09;
+ g.strokeStyle='#eef4f8'; g.lineWidth=u*w*0.52;
+ g.beginPath(); g.moveTo(x1+dx,y1+dy); g.lineTo(x2-dx,y2-dy); g.stroke();
+ g.lineCap=cap;
+}
+
+function _rr(g,x,y,w,h,r){
+ // Quadratic corners rather than arcTo: canvas supports both, and Q maps 1:1
+ // onto SVG so one figure definition can drive either surface.
+ g.beginPath();
+ g.moveTo(x+r,y);            g.lineTo(x+w-r,y);      g.quadraticCurveTo(x+w,y,x+w,y+r);
+ g.lineTo(x+w,y+h-r);        g.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+ g.lineTo(x+r,y+h);          g.quadraticCurveTo(x,y+h,x,y+h-r);
+ g.lineTo(x,y+r);            g.quadraticCurveTo(x,y,x+r,y);
+ g.closePath();}
+
+function figMascot(g,px,py,size,jersey,out,o){
+ o=o||{}; const t=o.t||0, motion=o.motion!==false, glow=o.glow!==false, light=!!o.light;
+ // How large the figure will actually APPEAR, which is not `size` when drawing
+ // into a scaled SVG viewBox. Detail is dropped by apparent size, so a 9-unit
+ // figure on a rink that renders 4.3px per unit keeps its face.
+ // (Not named `px` -- that is already this function's x coordinate.)
+ const shownAt = o.px == null ? size : o.px;
+ const u=size/10, goal=out==='goal', ink='#0d141b', skin='#f7dcb4', pants='#1d2a36';
+ g.save(); g.lineCap='round'; g.lineJoin='round';
+ g.fillStyle=light?'rgba(20,40,60,.20)':'rgba(0,0,0,.40)';
+ g.beginPath(); g.ellipse(px,py+u*0.35,u*2.7,u*0.75,0,0,7); g.fill();
+ const bob=motion?Math.sin(t*1.7+px*0.02)*u*0.30:0;
+ g.translate(px,py+bob); g.rotate(goal?-0.03:0.10);
+ g.strokeStyle=pants; g.lineWidth=u*1.5;
+ g.beginPath(); g.moveTo(-u*1.15,-u*0.3); g.lineTo(-u*1.35,-u*2.8);
+ g.moveTo(u*1.15,-u*0.3); g.lineTo(u*1.5,-u*2.8); g.stroke();
+ g.strokeStyle='#cfe0ee'; g.lineWidth=u*0.40;
+ g.beginPath(); g.moveTo(-u*2.1,0); g.lineTo(-u*0.5,0); g.moveTo(u*0.5,0); g.lineTo(u*2.3,0); g.stroke();
+ if(glow){g.shadowColor=goal?'#ff5566':'#4aa3e0'; g.shadowBlur=goal?u*5.0:u*2.4;}
+ g.fillStyle=jersey; _rr(g,-u*2.15,-u*5.9,u*4.3,u*3.5,u*1.6); g.fill();
+ g.shadowBlur=0;
+ g.fillStyle='rgba(255,255,255,.80)'; _rr(g,-u*2.1,-u*3.05,u*4.2,u*0.5,u*0.22); g.fill();
+ g.strokeStyle=jersey; g.lineWidth=u*1.25;
+ if(!goal){
+  g.beginPath(); g.moveTo(-u*1.5,-u*5.0); g.lineTo(u*1.5,-u*4.3); g.lineTo(u*3.2,-u*3.5); g.stroke();
+  g.fillStyle=jersey; g.strokeStyle=ink; g.lineWidth=u*0.26;
+  g.beginPath(); g.arc(u*3.3,-u*3.4,u*0.92,0,7); g.fill(); g.stroke();
+  g.strokeStyle='#8a5c33'; g.lineWidth=u*0.46;
+  g.beginPath(); g.moveTo(u*2.5,-u*4.3); g.lineTo(u*5.45,-u*0.48); g.stroke();
+  _blade(g,u*5.20,-u*0.46,u*7.30,-u*0.08,u,0.80);
+  g.fillStyle='#0b0f13'; g.beginPath(); g.ellipse(u*8.15,-u*0.08,u*0.52,u*0.26,0,0,7); g.fill();
+ }else{
+  g.beginPath(); g.moveTo(-u*1.7,-u*5.2); g.lineTo(-u*3.5,-u*8.7);
+  g.moveTo(u*1.7,-u*5.2); g.lineTo(u*3.5,-u*8.7); g.stroke();
+  g.fillStyle=jersey; g.strokeStyle=ink; g.lineWidth=u*0.26;
+  g.beginPath(); g.arc(-u*3.6,-u*9.0,u*0.92,0,7); g.fill(); g.stroke();
+  g.beginPath(); g.arc(u*3.6,-u*9.0,u*0.92,0,7); g.fill(); g.stroke();
+  g.strokeStyle='#8a5c33'; g.lineWidth=u*0.42;
+  g.beginPath(); g.moveTo(u*3.7,-u*9.1); g.lineTo(u*6.35,-u*11.55); g.stroke();
+  _blade(g,u*6.20,-u*11.42,u*7.95,-u*12.55,u,0.74);
+ }
+ g.fillStyle=skin; g.beginPath(); g.arc(0,-u*7.9,u*2.55,0,7); g.fill();
+ g.fillStyle=jersey;
+ g.beginPath(); g.arc(0,-u*8.1,u*2.72,Math.PI*1.02,Math.PI*2-0.02); g.fill();
+ g.beginPath(); g.arc(-u*2.35,-u*7.75,u*0.72,0,7); g.fill();
+ g.beginPath(); g.arc(u*2.35,-u*7.75,u*0.72,0,7); g.fill();
+ if(shownAt>20){
+  g.fillStyle=ink;
+  g.beginPath(); g.arc(-u*0.95,-u*7.95,u*0.34,0,7); g.fill();
+  g.beginPath(); g.arc(u*0.95,-u*7.95,u*0.34,0,7); g.fill();
+  g.fillStyle='rgba(255,255,255,.92)';
+  g.beginPath(); g.arc(-u*0.82,-u*8.10,u*0.12,0,7); g.fill();
+  g.beginPath(); g.arc(u*1.08,-u*8.10,u*0.12,0,7); g.fill();
+  if(goal){g.fillStyle='#41202a'; g.beginPath(); g.ellipse(0,-u*6.85,u*0.58,u*0.78,0,0,7); g.fill();}
+  else{g.strokeStyle=ink; g.lineWidth=u*0.24;
+       g.beginPath(); g.arc(0,-u*7.25,u*0.85,0.28,Math.PI-0.28); g.stroke();}
+ }
+ g.restore();
+}
+
+function figTabletop(g,px,py,size,jersey,out,o){
+ o=o||{}; const t=o.t||0, motion=o.motion!==false, glow=o.glow!==false, light=!!o.light;
+ // How large the figure will actually APPEAR, which is not `size` when drawing
+ // into a scaled SVG viewBox. Detail is dropped by apparent size, so a 9-unit
+ // figure on a rink that renders 4.3px per unit keeps its face.
+ // (Not named `px` -- that is already this function's x coordinate.)
+ const shownAt = o.px == null ? size : o.px;
+ const u=size/10, goal=out==='goal', ink='#080b0e', pants='#e7edf2', skin='#f2d3ad';
+ g.save(); g.lineJoin='miter'; g.lineCap='butt';
+ g.fillStyle=light?'rgba(20,40,60,.20)':'rgba(0,0,0,.42)';
+ g.beginPath(); g.ellipse(px,py+u*0.55,u*3.0,u*0.85,0,0,7); g.fill();
+ const wob=motion?Math.sin(t*1.25+px*0.03)*0.055:0;
+ g.translate(px,py); g.rotate(wob);
+ const O=(fill,lw)=>{g.fillStyle=fill;g.fill();g.strokeStyle=ink;g.lineWidth=u*(lw||0.52);g.stroke();};
+ g.fillStyle='#22323f'; g.beginPath(); g.ellipse(0,u*0.28,u*2.35,u*0.68,0,0,7); g.fill();
+ g.fillStyle='#33485c'; g.beginPath(); g.ellipse(0,u*0.06,u*1.95,u*0.52,0,0,7); g.fill();
+ g.beginPath(); g.moveTo(-u*1.72,u*0.05); g.lineTo(-u*0.38,u*0.05);
+ g.lineTo(-u*0.52,-u*3.4); g.lineTo(-u*1.62,-u*3.4); g.closePath(); O(pants);
+ g.beginPath(); g.moveTo(u*0.38,u*0.05); g.lineTo(u*1.72,u*0.05);
+ g.lineTo(u*1.62,-u*3.4); g.lineTo(u*0.52,-u*3.4); g.closePath(); O(pants);
+ if(glow){g.shadowColor=goal?'#ff5566':'#4aa3e0'; g.shadowBlur=goal?u*4.6:u*2.2;}
+ g.beginPath(); g.moveTo(-u*1.78,-u*3.2); g.lineTo(u*1.78,-u*3.2);
+ g.lineTo(u*2.52,-u*6.55); g.lineTo(-u*2.52,-u*6.55); g.closePath(); O(jersey);
+ g.shadowBlur=0;
+ g.save(); g.clip();
+ g.fillStyle='rgba(255,255,255,.88)';
+ g.fillRect(-u*3,-u*4.62,u*6,u*0.38); g.fillRect(-u*3,-u*4.02,u*6,u*0.38);
+ g.restore();
+ g.save(); g.globalAlpha=0.42; g.strokeStyle='#ff4d5e'; g.lineWidth=u*0.26;
+ g.beginPath(); g.moveTo(-u*2.02,-u*3.44); g.lineTo(u*1.54,-u*3.44);
+ g.lineTo(u*2.28,-u*6.79); g.lineTo(-u*2.76,-u*6.79); g.closePath(); g.stroke(); g.restore();
+ const arm=(x1,y1,x2,y2)=>{
+  g.lineCap='round';
+  g.strokeStyle=ink; g.lineWidth=u*1.52; g.beginPath(); g.moveTo(x1,y1); g.lineTo(x2,y2); g.stroke();
+  g.strokeStyle=jersey; g.lineWidth=u*0.92; g.beginPath(); g.moveTo(x1,y1); g.lineTo(x2,y2); g.stroke();
+  g.lineCap='butt';};
+ if(!goal){
+  arm(-u*2.15,-u*5.95, u*1.55,-u*4.65);
+  arm(u*2.15,-u*5.95, u*3.35,-u*3.95);
+  g.lineCap='round';
+  g.strokeStyle=ink; g.lineWidth=u*0.86;
+  g.beginPath(); g.moveTo(u*0.85,-u*5.15); g.lineTo(u*5.75,-u*0.28); g.stroke();
+  g.strokeStyle='#c98b45'; g.lineWidth=u*0.40;
+  g.beginPath(); g.moveTo(u*1.00,-u*5.02); g.lineTo(u*5.62,-u*0.34); g.stroke();
+  _blade(g,u*5.30,-u*0.30,u*7.40,-u*0.04,u,0.98);
+  g.lineCap='butt';
+ }else{
+  arm(-u*2.25,-u*6.15, -u*4.05,-u*9.35);
+  arm(u*2.25,-u*6.15, u*4.05,-u*9.35);
+ }
+ g.beginPath(); g.arc(0,-u*7.85,u*1.55,0,7); O(skin,0.46);
+ g.beginPath(); g.arc(0,-u*7.95,u*1.63,Math.PI,0); g.closePath(); O(jersey,0.46);
+ if(shownAt>20){
+  g.fillStyle=ink;
+  g.beginPath(); g.arc(-u*0.56,-u*7.55,u*0.19,0,7); g.fill();
+  g.beginPath(); g.arc(u*0.56,-u*7.55,u*0.19,0,7); g.fill();
+ }
+ g.restore();
+}
+
+const FIG={mascot:figMascot,tabletop:figTabletop};
+const FIG_LABEL={mascot:'Mascot',tabletop:'Tabletop'};
+
+/* --- src/lib/layers/corsi.js --- */
+/**
+ * Control (Corsi) — shot attempts, as a reduction over the whole game.
+ *
+ * Corsi counts every attempt on goal: goals, shots on goal, shots that missed,
+ * and shots that were blocked. It is a rough proxy for which team had the puck
+ * in the other team's end, which is why the app calls it "control" rather than
+ * its real name — a novice has no reason to know what a Corsi is.
+ *
+ * Phase 2: reduces the FULL event stream and accounts for every event. See
+ * ../layer.js for why that matters.
+ */
+
+
+
+
+const NOT_AN_ATTEMPT = {
+  hit: 'a hit — physical play, but not a shot attempt',
+  faceoff: 'a faceoff — possession changes, no attempt on goal',
+  giveaway: 'a giveaway — losing the puck is not a shot',
+  takeaway: 'a takeaway — winning the puck is not a shot',
+  penalty: 'a penalty — changes the game, but is not an attempt',
+};
+
+const corsi = {
+  id: 'corsi',
+  label: '＋ Control (Corsi)',
+
+  /**
+   * @param events  the whole game, in order
+   * @param ctx     { roster, homeId, awayId, homeAb, awayAb, evenOnly }
+   *
+   * `evenOnly` is a second DIMENSION of exclusion, not a second list. An event
+   * that is both a non-attempt and non-even-strength -- a hit on the power play
+   * -- appears once, carrying both reasons. Double-listing it would break
+   * conservation; picking one reason silently would hide the other.
+   */
+  reduce(events, ctx) {
+    const { roster, homeId, awayId } = ctx;
+    const t = { [homeId]: 0, [awayId]: 0 };
+    const counted = [], surprising = [], excluded = [];
+    let hs = 0, as = 0;
+
+    events.forEach((e, id) => {
+      // The scoreboard counts goals scored in PLAY. Every successful shootout
+      // attempt is its own `goal` event, but a shootout moves the scoreboard by
+      // exactly one — a sampled game had three attempts score. Counting them
+      // here would have put a 6-4 on screen for a game that finished 4-3.
+      if (e.type === 'goal' && e.pt !== 'SO') (e.own === homeId ? hs++ : as++);
+
+      // Before the type question, because a shootout goal is a perfectly good
+      // attempt BY TYPE and would otherwise be counted as one.
+      const notPlay = inShootout(e);
+      const team = corsiTeam(e, roster);
+      const notAttempt = team == null
+        ? (NOT_AN_ATTEMPT[e.type] || NOT_A_PLAY[e.type] || `not an attempt (${e.type})`)
+        : null;
+      const notEven = ctx.evenOnly ? whyNotEven(e, ctx) : null;
+
+      if (notPlay || notAttempt || notEven) {
+        const dims = {};
+        if (notPlay) dims.play = notPlay;
+        if (notAttempt) dims.type = notAttempt;
+        if (notEven) dims.strength = notEven;
+        excluded.push({ id, why: notPlay || notAttempt || notEven, dims });
+        return;
+      }
+      t[team]++;
+      counted.push(id);
+
+      if (e.type === 'blocked-shot') {
+        // The one place a novice's intuition points the wrong way — and the
+        // place this project once shipped a wrong number with a confident
+        // explanation attached. `derivedFrom` is what makes it checkable.
+        const p = roster[e.actor];
+        surprising.push({
+          id,
+          why: `blocked, but it still counts — an attempt belongs to the SHOOTER`
+             + `${p ? `, ${p.nm}` : ''}, not the player who blocked it`,
+          derivedFrom: `roster[event.actor].tid (actor=${e.actor})`,
+        });
+      }
+    });
+
+    // Exactly one goal to whoever converted more attempts — never one per
+    // attempt, and never one to nobody.
+    const won = shootoutWinner(events, homeId, awayId);
+    if (won === homeId) hs++; else if (won === awayId) as++;
+
+    return { t, counted, surprising, excluded, hs, as };
+  },
+};
+
+/** Attempt types, re-exported so callers need not reach into attribution. */
+{ ATTEMPT_TYPES };
+
+/* --- src/lib/layers/goaltending.js --- */
+/**
+ * Goaltending — save percentage, built as the game plays.
+ *
+ * The teaching point: Minnesota outshot Buffalo 35–25 and lost, because Levi
+ * stopped 33 of 35 and Gustavsson stopped 22 of 25. The score is an outcome,
+ * not a description of the game.
+ *
+ * A "shot faced" is shots on goal PLUS goals — the same trap as the SOG counter.
+ * A goal is a shot the goalie faced and did not stop; counting only
+ * shot-on-goal events understates every workload by the goals allowed.
+ *
+ * Doctrine §8 governs anything displayed from this: a save percentage without a
+ * base rate is a story, not a measurement.
+ */
+
+
+
+
+
+/** Geometric rule, measured to the ATTACKING net. */
+function isHighDangerEvent(e, ctx) {
+  if (!SHOT_TYPES.has(e.type) || e.x == null) return false;
+  const team = shootingTeam(e, ctx.roster);
+  if (team == null) return false;
+  return isHighDanger(e.x, e.y, attackDirection(team, ctx.homeId));
+}
+
+const goaltending = {
+  id: 'goaltending',
+  label: '＋ Goaltending',
+
+  reduce(events, ctx) {
+    const g = {};
+    const counted = [], surprising = [], excluded = [];
+
+    events.forEach((e, id) => {
+      // A shootout attempt IS a shot a goalie faced, which is exactly why this
+      // has to come first: nothing about the event's type disqualifies it, and
+      // counting it would put shootout attempts into a save percentage the
+      // league does not compute that way.
+      const notPlay = inShootout(e);
+      const faced = (e.type === 'shot-on-goal' || e.type === 'goal') && e.goalie;
+      const notFaced = faced ? null
+        : e.type === 'missed-shot' ? 'missed the net — no goalie faced it'
+        : e.type === 'blocked-shot' ? 'blocked by a skater — it never reached the goalie'
+        : NOT_A_PLAY[e.type] || `not a shot the goalie faced (${e.type})`;
+      const notEven = ctx.evenOnly ? whyNotEven(e, ctx) : null;
+
+      if (notPlay || notFaced || notEven) {
+        const dims = {};
+        if (notPlay) dims.play = notPlay;
+        if (notFaced) dims.type = notFaced;
+        if (notEven) dims.strength = notEven;
+        excluded.push({ id, why: notPlay || notFaced || notEven, dims });
+        return;
+      }
+      counted.push(id);
+
+      const k = e.goalie;
+      g[k] = g[k] || { f: 0, s: 0, gl: 0, hf: 0, hs: 0 };
+      g[k].f++;
+      const hd = isHighDangerEvent(e, ctx);
+      if (e.type === 'goal') {
+        g[k].gl++;
+        if (hd) g[k].hf++;
+      } else {
+        g[k].s++;
+        if (hd) { g[k].hf++; g[k].hs++; }
+      }
+
+      if (e.type === 'goal') {
+        surprising.push({
+          id,
+          why: 'a goal counts as a shot faced — it is a shot the goalie did not stop',
+          derivedFrom: `event.type === 'goal', goalie=${e.goalie}`,
+        });
+      }
+    });
+
+    return { g, counted, surprising, excluded };
+  },
+};
+
+/* --- src/lib/layers/danger.js --- */
+/**
+ * High danger — a geometric RULE, not a model.
+ *
+ * Doctrine §7: inside 33 feet of the attacking net and inside the slot (|y| ≤ 22).
+ * A rule, because a viewer can check it with a ruler; expected goals is a model
+ * and is the thing this project exists as an alternative to.
+ *
+ * The exclusions carry the measurement, not just the verdict — "48 ft from the
+ * net" teaches where the line is, "not high danger" teaches nothing.
+ */
+
+
+
+
+
+const danger = {
+  id: 'danger',
+  label: '＋ High-danger',
+
+  reduce(events, ctx) {
+    const counted = [], surprising = [], excluded = [];
+
+    // `play` first, matching the precedence in the other two layers: an event
+    // that is outside play is excluded for THAT reason, whatever else is also
+    // true of it. Omitting it here left exclusions with no `why` at all, which
+    // the conservation check caught — it requires a human-written reason on
+    // every excluded event, not merely that the counts balance.
+    const push = (id, dims) =>
+      excluded.push({ id, why: dims.play || dims.type || dims.strength, dims });
+
+    events.forEach((e, id) => {
+      const notEven = ctx.evenOnly ? whyNotEven(e, ctx) : null;
+      // First, and before the geometry. A shootout attempt is taken from the
+      // slot by definition, so every one of them would score as high-danger --
+      // the single worst place for this to leak, because the number would look
+      // entirely plausible.
+      const notPlay = inShootout(e);
+      if (notPlay) {
+        push(id, { play: notPlay, ...(notEven ? { strength: notEven } : {}) });
+        return;
+      }
+      if (!SHOT_TYPES.has(e.type) || e.x == null) {
+        push(id, { type: e.type === 'blocked-shot'
+                 ? 'blocked before it got there — no shot location on the net'
+                 : NOT_A_PLAY[e.type] || `not a shot on the net (${e.type})`,
+                   ...(notEven ? { strength: notEven } : {}) });
+        return;
+      }
+      if (notEven) { push(id, { strength: notEven }); return; }
+      const team = shootingTeam(e, ctx.roster);
+      if (team == null) {
+        push(id, { type: 'shooter not identified in the feed' });
+        return;
+      }
+
+      const d = distanceToNet(e.x, e.y, attackDirection(team, ctx.homeId));
+      const near = d <= HIGH_DANGER_FT;
+      const central = Math.abs(e.y) <= SLOT_HALF_WIDTH;
+
+      if (near && central) {
+        counted.push(id);
+        if (e.type === 'missed-shot') {
+          surprising.push({
+            id,
+            why: 'it missed the net and still counts — danger is about where the '
+               + 'chance came from, not whether it went in',
+            derivedFrom: `distance=${d.toFixed(1)}ft, |y|=${Math.abs(e.y)}`,
+          });
+        }
+        return;
+      }
+      push(id, {
+        type: !near && !central
+               ? `${d.toFixed(0)} ft out and wide of the slot (|y|=${Math.abs(e.y)} ft)`
+           : !near
+               ? `${d.toFixed(0)} ft from the net — outside the ${HIGH_DANGER_FT} ft line`
+               : `in close but wide — |y|=${Math.abs(e.y)} ft, outside the ${SLOT_HALF_WIDTH} ft slot`,
+      });
+    });
+
+    return { counted, surprising, excluded };
+  },
+};
+
+const ATT=ATTEMPT_TYPES;
+const SX=x=>x+100, SY=y=>42.5-y;
+// Rink is 200 units long for 200 feet, so one unit is one foot: a ~6 ft player
+// is ~6 units. Goals get a little more presence.
+// Only one figure is on the ice at a time, so it can afford presence and detail.
+const FIG_SZ=9, FIG_BIG=11.5;
+// The rink is 200 units wide and renders around 860px, so a unit is ~4.3px.
+// This only drives the figure's drop-detail-when-small threshold, never its
+// geometry, so an approximation is honest here -- but without it a 9-unit
+// figure is judged as "9 pixels" and loses its face on a screen where there is
+// plenty of room for one.
+const UNIT_PX=4.3;
+const MINCOL='#12885a', BUFCOL='#bd8c12';
+let T=0, REDUCED=matchMedia('(prefers-reduced-motion:reduce)').matches;
+let figStyle=(()=>{try{return localStorage.getItem('rtg.fig')||'mascot'}catch(e){return 'mascot'}})();
+if(!FIG[figStyle])figStyle='mascot';
+let finalA=0,finalH=0; for(const e of EV){if(e.type==='goal')(e.own===HID?finalH++:finalA++);}
+function attemptTeam(e){return corsiTeam(e,R);}  // renamed: `corsi` is the layer object
+function tk(e){const c=attemptTeam(e);return c===AID?'a':c===HID?'h':'x';}
+function shotDir(e){const t=shootingTeam(e,R);return t==null?null:attackDirection(t,HID);}
+let evenOnly=false;
+// The mode is part of the CONTEXT, so every layer moves together. Filtering
+// Corsi while leaving shots faced on all situations would put two scopes on one
+// screen with no way for a viewer to reconcile them.
+const CTX={roster:R,homeId:HID,awayId:AID,homeAb:HAB,awayAb:AAB,
+           get evenOnly(){return evenOnly;}};
+const MODE=()=>evenOnly?'even strength':'all situations';
+function isHD(e){return isHighDangerEvent(e,CTX);}
+function lens(k){return corsi.reduce(upto(k),CTX);}
+const $=id=>document.getElementById(id);
+function drawRink(){const P=[];P.push('<rect class="boards" x="1" y="1" width="198" height="83" rx="27"/>');
+ for(const g of[-89,89])P.push(`<line class="ln red" x1="${SX(g)}" y1="3" x2="${SX(g)}" y2="82"/>`);
+ for(const b of[-25,25])P.push(`<line class="ln blue" x1="${SX(b)}" y1="1" x2="${SX(b)}" y2="84"/>`);
+ P.push('<line class="ln red thick" x1="100" y1="1" x2="100" y2="84"/><circle class="ln blue" cx="100" cy="42.5" r="15"/>');
+ for(const zx of[-69,69])for(const zy of[-22,22])P.push(`<circle class="ln red" cx="${SX(zx)}" cy="${SY(zy)}" r="15"/>`);
+ P.push('<circle class="rdot" cx="100" cy="42.5" r="1.1"/>');
+ // nets: BUF(home) defends LEFT(-89), MIN(away) defends RIGHT(+89)
+ P.push(`<rect id="netL" class="crease netflash" x="${SX(-89)}" y="37" width="4" height="11" rx="1" fill="var(--buf)" opacity="0"/>`);
+ P.push(`<rect id="netR" class="crease netflash" x="${SX(89)-4}" y="37" width="4" height="11" rx="1" fill="var(--min)" opacity="0"/>`);
+ P.push(`<rect class="crease" x="${SX(-89)}" y="38" width="3" height="9" rx="1" fill="var(--buf)"/>`);
+ P.push(`<rect class="crease" x="${SX(89)-3}" y="38" width="3" height="9" rx="1" fill="var(--min)"/>`);
+ P.push(`<text class="netlab" x="${SX(-80)}" y="21" fill="var(--buf)">◄ ${HAB} net</text>`);
+ P.push(`<text class="netlab" x="${SX(80)}" y="21" fill="var(--min)">${AAB} net ►</text>`);
+ $('rink').innerHTML=P.join('');}
+function flashNet(scorer){ // scorer scores INTO opponent's net
+ const el=scorer===AID?$('netR'):$('netL'); // MIN scores into MIN's...no: MIN attacks left(-89)=BUF net
+ const net=scorer===AID?$('netL'):$('netR'); net.style.opacity='';net.classList.remove('netflash');void net.offsetWidth;net.classList.add('netflash');}
+let prevA=0,prevH=0;
+function render(i,newest){
+ // `evs` is the PLAYABLE prefix, used to draw the marks on the timeline.
+ // `lens(i)` reduces the FULL stream up to the same moment. Two different
+ // slices on purpose: the ice shows plays, the ledger accounts for everything.
+ const evs=EV.slice(0,i+1),L=lens(i),cur=EV[i];
+ const parts=[];
+ for(let k=0;k<evs.length;k++){const e=evs[k];if(e.x==null)continue;
+   const hd=hdOn&&isHD(e);
+   let cls=e.type==='goal'?'goal':e.type==='blocked-shot'?'blk':ATT.has(e.type)?'att':'excl';
+   if(hd&&e.type!=='goal')cls+=' hd';
+   if(hd)cls+=' clickable';
+   const r=e.type==='goal'?2.7:hd?2.2:ATT.has(e.type)?1.7:1;
+   const anim=(k===i&&newest)?(e.type==='goal'?' flare':' pop'):'';
+   if(hd&&k===i&&newest)parts.push(`<circle class="hdring" cx="${SX(e.x).toFixed(1)}" cy="${SY(e.y).toFixed(1)}" r="4.5"/>`);
+   const cx=SX(e.x), cy=SY(e.y), title=`<title>${e.rem} ${e.type}</title>`;
+   if(ATT.has(e.type)&&k===i){
+     // Only the CURRENT attempt is a player. Once the shot has happened its
+     // location goes back to being a dot, so the eye is drawn to what is
+     // happening now rather than to a crowd of past figures — and one figure
+     // per frame instead of 135 is roughly an eighth of the markup.
+     //
+     // Its feet stand on the real shot coordinate and its pose is the real
+     // outcome: arms up for a goal, shooting otherwise. Non-attempts are never
+     // figures, because a figure means "someone shot from here" and drawing one
+     // for a faceoff would be a claim we cannot make (Doctrine §5).
+     const pen=new SvgPen('cur');
+     FIG[figStyle](pen,cx,cy,e.type==='goal'?FIG_BIG:FIG_SZ,tk(e)==='a'?MINCOL:BUFCOL,
+                   e.type==='goal'?'goal':'save',
+                   {t:T,motion:!REDUCED,glow:false,px:(e.type==='goal'?FIG_BIG:FIG_SZ)*UNIT_PX});
+     parts.push(pen.toSvg(`class="ev fig ${cls} ${tk(e)}${anim}" data-i="${k}"`).replace('</g>',title+'</g>'));
+   } else {
+     parts.push(`<circle class="ev ${cls} ${tk(e)}${anim}" data-i="${k}" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r}">${title}</circle>`);
+   }}
+ $('events').innerHTML=parts.join('');
+ let lh='';
+ if(cur&&(cur.type==='shot-on-goal'||cur.type==='goal')&&cur.x!=null){const netx=(cur.own===HID)?89:-89;
+   lh=`<line class="shotline" x1="${SX(cur.x).toFixed(1)}" y1="${SY(cur.y).toFixed(1)}" x2="${SX(netx)}" y2="42.5"/>`;}
+ $('lines').innerHTML=lh;
+ if(cur&&cur.x!=null)$('puck').innerHTML=`<circle class="puck${newest?' jump':''}" cx="${SX(cur.x).toFixed(1)}" cy="${SY(cur.y).toFixed(1)}" r="1.5"/>`;
+ drawLabel(cur);
+ $('aSc').textContent=L.as;$('hSc').textContent=L.hs;
+ const a=L.t[AID],h=L.t[HID],tot=a+h||1,pa=Math.round(100*a/tot);
+ $('ba').style.width=pa+'%';$('bh').style.width=(100-pa)+'%';$('pa').textContent=pa+'%';$('ph').textContent=(100-pa)+'%';
+ $('cA').textContent=a;$('cH').textContent=h;
+ if(newest){if(a>prevA)flash('cA');if(h>prevH)flash('cH');
+   if(cur&&cur.type==='goal'){flashNet(cur.own);caption(cur,'goal');}
+   else if(cur&&hdOn&&isHD(cur)){lastHD=i;caption(cur,'hd');}}
+ prevA=a;prevH=h;
+ $('per').textContent=cur?'Period '+cur.per:'Pre-game';$('clk').textContent=cur?cur.rem:'20:00';
+ if(goalieOn){const gs=goalieStats(i);$('goaliePanel').innerHTML=G.goalies.map(id=>{const p=R[id];if(!p)return '';const tid=p.tid,col=tid===AID?'var(--min)':'var(--buf)',ab=tid===AID?AAB:HAB;const st=gs[id]||{f:0,s:0,gl:0,hf:0,hs:0};const svp=st.f?(st.s/st.f).toFixed(3).replace(/^0/,''):'—';
+ // Doctrine §8 wants a base rate beside any rate. We cannot compute one from a
+ // single game, and importing a league average would introduce a number that is
+ // not in our feed. So under the filter we show the FRACTION and state the
+ // limit -- 18 shots is not a rate -- and leave the base rate to the archive.
+ const thin=st.f<20;return `<div class="gcard"><div class="gname" style="color:${col}">${p.nm} <span class="sub">${ab} · #${p.n}</span></div><div class="gsv">${thin?st.s+"/"+st.f:svp}</div><div class="gline">${st.s} saves · ${st.gl} goals · ${st.f} shots faced (${MODE()})${thin?'<br><span style="color:var(--flag)">too few shots to be a rate — we can tell you what happened, not how unusual it was</span>':''}${st.hf?` · high-danger ${st.hs}/${st.hf}`:''}</div></div>`;}).join('');}
+ if(workOpen)renderWork(L,cur);
+}
+function flash(id){const el=$(id);el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump');}
+function caption(e,kind){const c=$('caption');const tid=e.own;const ab=tid===AID?AAB:HAB;const col=tid===AID?'var(--min)':'var(--buf)';
+ const p=R[e.actor];const who=p?`<span class="num">#${p.n}</span>${p.nm}`:ab;
+ const label=kind==='goal'?'🚨 GOAL':'⚡ High-danger chance';
+ c.innerHTML=`<span class="tag" style="background:${col};color:#fff">${ab}</span><b>${label}</b> · ${who}${kind==='hd'?' from the slot':''}`;
+ c.classList.remove('on');void c.offsetWidth;c.classList.add('on');}
+let workOpen=false;
+function renderWork(L,cur){const a=L.t[AID],h=L.t[HID],tot=a+h||1,pa=Math.round(100*a/tot);
+ // Rendered from the ledger itself, not from a hand-written list. Every reason
+ // below was written by the layer that excluded the event, so a new layer gets
+ // this panel for free and a changed rule cannot leave stale copy behind.
+ const byWhy=summarise(L.excluded), rows=Object.entries(byWhy).sort((x,y)=>y[1]-x[1])
+   .map(([why,n])=>`<div><b>${n}×</b> ${why}</div>`).join('');
+ const sTotal=L.surprising.length, sWhy=sTotal?L.surprising[0].why:'';
+ $('workPanel').innerHTML=`<h2>How “control” is computed <span style="color:var(--muted);font-weight:400">(${MODE()}${cur?', through P'+cur.per+' '+cur.rem:', pre-game'})</span></h2>
+ <div class="wg"><div class="wc"><h3>Counted <span class="n">${L.counted.length}</span></h3><p>Every attempt on goal — shots that hit the net, missed it, or were blocked. All credited to the shooter.</p></div>
+ <div class="wc flag"><h3>Counted, surprisingly <span class="n">${sTotal}</span></h3><p>${sWhy||'—'}</p></div>
+ <div class="wc"><h3>Not counted <span class="n">${L.excluded.length}</span></h3><p style="font-size:.82rem;line-height:1.6">${rows||'—'}</p></div></div>
+ <p class="wfoot"><em>${a} ${AAB} / ${h} ${HAB} → ${pa}% / ${100-pa}%.</em> ${L.counted.length} counted + ${L.excluded.length} not counted = <b>${L.counted.length+L.excluded.length}</b> events, which is every event in the game so far. Nothing is dropped quietly.${evenOnly?' <b>Even strength only</b> — the power-play and empty-net attempts are in the not-counted list above, with the situation that removed each one.':''}</p>`;}
+let i=EV.length-1,playing=false,timer=null,mult=2;
+$('scrub').max=EV.length-1;
+function set(v,newest){i=Math.max(0,Math.min(EV.length-1,v));$('scrub').value=i;render(i,newest);}
+function dwell(e){let d=650;if(e.type==='goal')d=3000;else if(isHD(e))d=1700;else if(e.type==='shot-on-goal')d=850;return d*mult;}
+function step(){if(i>=EV.length-1){stop();return;}set(i+1,true);timer=setTimeout(step,dwell(EV[i]));}
+function play(){if(i>=EV.length-1){prevA=0;prevH=0;set(0,true);}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);timer=setTimeout(step,dwell(EV[i]));}
+function stop(){playing=false;$('play').textContent=i>=EV.length-1?'▶ Replay from start':'▶ Play';clearTimeout(timer);}
+$('play').onclick=()=>playing?stop():play();
+$('scrub').oninput=e=>{stop();set(+e.target.value,false);};
+function setSpeed(m,id){mult=m;['sp0','sp1','sp2'].forEach(x=>$(x).setAttribute('aria-pressed',x===id));}
+$('sp0').onclick=()=>setSpeed(2.9,'sp0');
+$('sp1').onclick=()=>setSpeed(2,'sp1');
+$('sp2').onclick=()=>setSpeed(1.1,'sp2');
+$('work').onclick=()=>{workOpen=!workOpen;$('workPanel').hidden=!workOpen;$('work').setAttribute('aria-expanded',workOpen);$('work').textContent=workOpen?'Hide the work':'Show me the work';if(workOpen)render(i,false);};
+$('aAb').textContent=AAB;$('hAb').textContent=HAB;$('gl').textContent=`${AAB} at ${HAB} · Nov 10 2023 · final ${AAB} ${finalA}–${finalH} ${HAB}`;
+
+const HX=x=>11+Math.abs(x), HY=y=>42.5-y; let lastHD=null;
+function showWhy(idx){const e=EV[idx];if(e==null||e.x==null)return;
+ const _d=shotDir(e)||1, dLine=89-e.x*_d, dist=Math.hypot(dLine,e.y), angle=Math.atan2(Math.abs(e.y),dLine)*180/Math.PI;
+ const inSlot=Math.abs(e.y)<=22, tid=e.own, ab=tid===AID?AAB:HAB, col=tid===AID?'var(--min)':'var(--buf)', p=R[e.actor], isGoal=e.type==='goal';
+ const diag=`<svg viewBox="0 0 100 85"><rect x="1" y="1" width="98" height="83" rx="14" fill="#fff" stroke="var(--edge)"/>
+   <polygon points="63,20.5 96,38 96,47 63,64.5" fill="var(--hd)" opacity=".3"/><text x="70" y="43.5" font-size="3.4" fill="#b07d17" text-anchor="middle">slot</text>
+   <rect x="90" y="37" width="6" height="11" rx="1.5" fill="${col}" opacity=".55"/><line x1="96" y1="29" x2="96" y2="56" stroke="var(--red)" stroke-width="1" opacity=".7"/>
+   <line x1="36" y1="1" x2="36" y2="84" stroke="var(--blue)" stroke-width=".8" opacity=".35"/>
+   <line x1="${HX(e.x).toFixed(1)}" y1="${HY(e.y).toFixed(1)}" x2="95" y2="42.5" stroke="var(--ink)" stroke-dasharray="2 1.5" stroke-width=".7"/>
+   <circle cx="${HX(e.x).toFixed(1)}" cy="${HY(e.y).toFixed(1)}" r="2.8" fill="${col}" stroke="#fff" stroke-width=".7"/>
+   <text x="${Math.min(HX(e.x)+4,78).toFixed(1)}" y="${(HY(e.y)-2.5).toFixed(1)}" font-size="4.2" fill="var(--ink)" font-weight="700">${Math.round(dist)} ft</text></svg>`;
+ $('whyContent').innerHTML=`<div class="whyhd" style="background:${col}"><div><div class="t">${isGoal?'🚨 A high-danger GOAL':'⚡ Why this was high-danger'}</div>
+   <div class="s">${p?'#'+p.n+' '+p.nm:ab} · ${ab} · P${e.per} ${e.rem} · ${e.type.replace(/-/g,' ')}</div></div><button class="whyclose" onclick="hideWhy()">✕</button></div>
+  <div class="whybody"><div class="whydiag">${diag}</div>
+   <div class="factor"><span class="fv">${Math.round(dist)} ft</span><span class="fl">Distance to the net — <b>close</b>. Our rule: ≤ 33 ft. <span class="chk">✓</span></span></div>
+   <div class="factor"><span class="fv">${Math.round(angle)}°</span><span class="fl">Angle off straight-on — ${angle<22?'<b>a clean look</b> at the net':'a slot-area angle'}. Lower = more net to shoot at.</span></div>
+   <div class="factor" style="border-bottom:0"><span class="fv">${inSlot?'Slot':'Wide'}</span><span class="fl">Lateral position — ${inSlot?'<b>in the slot</b> (within the faceoff dots) <span class="chk">✓</span>':'outside the slot'}</span></div>
+   <div class="whyrule"><b>The rule, and you can check it:</b> a shot is <b>high-danger</b> when it's <b>≤ 33 ft from the net</b> AND <b>central</b> (within ±22 ft of the middle — the slot). Both true here. This is a <b>transparent geometric rule</b> — a teaching stand-in for "dangerous," not a trained expected-goals model. Measure it yourself on the diagram.</div></div>`;
+ $('whyBk').classList.add('on');}
+function hideWhy(){$('whyBk').classList.remove('on');}
+$('events').addEventListener('click',ev=>{const t=ev.target;if(t&&t.dataset&&t.dataset.i!=null){const k=+t.dataset.i;if(hdOn&&isHD(EV[k]))showWhy(k);}});
+$('caption').addEventListener('click',()=>{if(lastHD!=null)showWhy(lastHD);});
+$('whyBk').addEventListener('click',e=>{if(e.target.id==='whyBk')hideWhy();});
+
+
+const LAB={faceoff:['Faceoff','puck dropped'],hit:['Hit','physical play — not a shot'],giveaway:['Giveaway','lost the puck'],takeaway:['Takeaway','won the puck back'],'blocked-shot':['Shot blocked','still an attempt — for the shooter'],'missed-shot':['Missed shot','wide/high — still an attempt'],'shot-on-goal':['Shot on goal','a shot attempt'],goal:['GOAL','the attempt that scored'],penalty:['Penalty','off to the box']};
+let labelsOn=true;
+function drawLabel(e){const g=$('labels');if(!labelsOn||!e||e.x==null){g.innerHTML='';return;}
+ const lx=SX(e.x),ly=SY(e.y);
+ if(e.type==='goal'){const tid=e.own,col=tid===AID?'#12885a':'#bd8c12',ab=tid===AID?AAB:HAB,p=R[e.actor];
+   const as=[R[e.a1],R[e.a2]].filter(Boolean).map(x=>x.nm).join(', ');
+   let tx=lx>100?lx-5:lx+5,anc=lx>100?'end':'start',ty=Math.max(15,ly-6);
+   g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${ty.toFixed(1)}" stroke="${col}" stroke-width=".4" opacity=".55"/><text class="glab" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}" fill="${col}">🚨 GOAL — ${p?p.nm:ab}</text><text class="plabsub" x="${tx.toFixed(1)}" y="${(ty+4).toFixed(1)}" text-anchor="${anc}">${as?'assists: '+as:'unassisted'}</text></g>`;return;}
+ if(!LAB[e.type]){g.innerHTML='';return;}
+ const info=LAB[e.type];let tx=lx+4,anc='start';if(lx>150){tx=lx-4;anc='end';}let ty=ly-4.5;if(ty<11)ty=ly+8;
+ const hd=(hdOn&&isHD(e))?' · high-danger':'';
+ g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${info[0]}${hd}</text><text class="plabsub" x="${tx.toFixed(1)}" y="${(ty+3.7).toFixed(1)}" text-anchor="${anc}">${info[1]}</text></g>`;}
+$('lbl').addEventListener('click',()=>{labelsOn=!labelsOn;$('lbl').setAttribute('aria-pressed',labelsOn);$('lbl').style.opacity=labelsOn?'1':'.5';drawLabel(EV[i]);});
+
+let corsiOn=false,hdOn=false,goalieOn=false;
+function setCorsi(){document.getElementById('rg').classList.toggle('corsi',corsiOn);$('lyCorsi').setAttribute('aria-pressed',corsiOn);$('lyCorsi').textContent=(corsiOn?'✓ ':'＋ ')+'Control (Corsi)';if(!corsiOn&&workOpen){workOpen=false;$('workPanel').hidden=true;$('work').setAttribute('aria-expanded',false);$('work').textContent='Show me the work';}}
+function setHd(){$('lyHd').setAttribute('aria-pressed',hdOn);$('lyHd').textContent=(hdOn?'✓ ':'＋ ')+'High-danger';render(i,false);}
+$('lyCorsi').addEventListener('click',()=>{corsiOn=!corsiOn;setCorsi();});
+// One code path owns the mode label, so the markup cannot drift from the state.
+// The static HTML carries a default only so the page reads correctly before JS.
+function syncStrength(){
+ const v=evenOnly?'even':'all';
+ document.querySelectorAll('#rg .sbtn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.s===v));
+ const lbl=MODE().toUpperCase();$('mA').textContent=lbl;$('mH').textContent=lbl;}
+function setStrength(v){evenOnly=(v==='even');syncStrength();render(i,false);}
+document.querySelectorAll('#rg .sbtn').forEach(b=>b.addEventListener('click',()=>setStrength(b.dataset.s)));
+syncStrength();
+function syncFig(){document.querySelectorAll('#rg .fbtn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.f===figStyle));}
+document.querySelectorAll('#rg .fbtn').forEach(b=>b.addEventListener('click',()=>{
+ figStyle=b.dataset.f;try{localStorage.setItem('rtg.fig',figStyle)}catch(e){}syncFig();render(i,false);}));
+syncFig();
+$('lyHd').addEventListener('click',()=>{hdOn=!hdOn;setHd();});
+function goalieStats(k){return goaltending.reduce(upto(k),CTX).g;}
+function setGoalie(){document.getElementById('rg').classList.toggle('goalie',goalieOn);$('lyGoalie').setAttribute('aria-pressed',goalieOn);$('lyGoalie').textContent=(goalieOn?'✓ ':'＋ ')+'Goaltending';render(i,false);}
+$('lyGoalie').addEventListener('click',()=>{goalieOn=!goalieOn;setGoalie();});
+drawRink();set(EV.length-1,false);
+}
+
+var ORIGIN="https://data.readthegame.co";
+function say(m){var el=document.getElementById('gl');if(el)el.textContent=m;}
+function grab(u){return fetch(u).then(function(r){
+  if(!r.ok)throw new Error(u.split('/').pop()+' — HTTP '+r.status);return r.json();});}
+function pick(c){
+  // Most recent VIEWABLE game. A refused game is listed in the catalog on
+  // purpose, and landing on one would be an empty theatre.
+  var v=c.games.filter(function(g){return g.v;});
+  if(!v.length)throw new Error('the catalog lists no game we can show');
+  v.sort(function(a,b){return a.d===b.d?a.id-b.id:(a.d<b.d?-1:1);});
+  return v[v.length-1].id;
+}
+var want=(location.search.match(/[?&]game=(\d+)/)||[])[1];
+say('Loading…');
+(want?Promise.resolve(want):grab(ORIGIN+'/catalog.json').then(pick))
+  .then(function(id){return grab(ORIGIN+'/extract/'+id+'.json');})
+  .then(function(g){boot(g);})
+  .catch(function(e){
+    // A true sentence about a broken situation beats a spinner that never ends.
+    say('This game could not be loaded — '+e.message);
+  });
+
+</script>
