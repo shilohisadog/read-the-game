@@ -175,3 +175,22 @@ test('the static markup may hold placeholders, but the script overwrites them', 
   assert.match(s, /\.cc\.a \.lb/, 'and the script rewrites it from the data');
   assert.match(s, /\.cc\.h \.lb/);
 });
+
+test('the deploy gate cannot pass on a blank expectation', () => {
+  // THE HOLE THAT WAS IN IT. The gate derives what the page should say from
+  // catalog.json, then greps the rendered line for it — which is right, and was
+  // built precisely so no expectation is typed by hand. But the derivation ran
+  // inside `$(...)` feeding `read`, and `read` succeeds on empty input: an empty
+  // catalog threw, printed a traceback, and left the expectation blank. `case
+  // "$line" in *""*` matches EVERY string, so the check below it became
+  // vacuous. It went red anyway, on a different branch — correct by accident,
+  // which is indistinguishable from correct by design until the accident stops.
+  const wf = readFileSync(new URL('../.github/workflows/deploy.yml', import.meta.url), 'utf8');
+  const step = wf.slice(wf.indexOf('a visitor can actually watch a game'));
+  assert.match(step, /would pass on anything/,
+    'a blank expectation must be an error, not a match-all');
+  const blank = step.indexOf('would pass on anything');
+  const compare = step.indexOf('which does not contain');
+  assert.ok(blank !== -1 && compare !== -1 && blank < compare,
+    'and it must be rejected BEFORE the comparison it would defeat');
+});

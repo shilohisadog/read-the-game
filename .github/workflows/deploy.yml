@@ -304,9 +304,19 @@ jobs:
           # not a string typed here. A hard-coded expectation is the defect this
           # check exists to catch, one level up.
           curl -sS -o cat.json "https://data.readthegame.co/catalog.json?cb=${GITHUB_RUN_ID}"
-          read -r WANT_AB WANT_DATE <<<"$(python3 - <<'PY'
-          import json
+          # A CRASH HERE USED TO BE SILENT. This ran inside `$(...)` feeding
+          # `read`, and `read` succeeds on empty input, so an empty catalog threw
+          # an IndexError, printed a traceback, and the step carried on with a
+          # blank expectation -- which then made the glob match at the bottom
+          # VACUOUS, because `case "$line" in *""*` matches every string alive.
+          # The step still went red, but only because a different branch caught
+          # the error text. Correct by accident is indistinguishable from correct
+          # by design until the accident stops happening.
+          if ! python3 - > want.txt <<'PY'
+          import json, sys
           v = [g for g in json.load(open('cat.json'))['games'] if g.get('v')]
+          if not v:
+              sys.exit("the published catalog names no viewable game")
           v.sort(key=lambda g: (g['d'], g['id']))
           g = v[-1]
           M = ['January','February','March','April','May','June','July','August',
@@ -314,8 +324,17 @@ jobs:
           y, m, d = g['d'].split('-')
           print(f"{g['a']}|{g['h']}", f"{int(d)} {M[int(m)-1]} {y}")
           PY
-          )"
+          then
+            echo "::error::cannot derive what the page should say from catalog.json"
+            exit 1
+          fi
+          read -r WANT_AB WANT_DATE < want.txt
           A=${WANT_AB%%|*}; H=${WANT_AB##*|}
+          # AN EMPTY EXPECTATION IS NOT A PASSING ONE.
+          if [ -z "$A" ] || [ -z "$H" ] || [ -z "$WANT_DATE" ]; then
+            echo "::error::the expectation is blank, so the check below would pass on anything"
+            exit 1
+          fi
           echo "  the catalog says the newest viewable game is $A at $H on $WANT_DATE"
 
           fail=1
