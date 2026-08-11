@@ -173,16 +173,88 @@ renderer. Not now.
 
 ---
 
+## 4.5 THE MISSING RULE — what goes in which document
+
+Kevin asked two questions in a row and they have the same root:
+
+> *Why does something called "extract" carry a game score?*
+> *Why is a metric in the catalog?*
+
+Both are right, and neither is about module size. **We have never written down what
+each document is for**, so new facts land in whichever one is nearest. That is the
+actual architectural gap.
+
+The rule, derived from what each document already is:
+
+| document | carries | does NOT carry |
+|---|---|---|
+| **raw** | the league's bytes, unaltered | anything of ours |
+| **extract** | events as the feed records them, plus quotes from **other** documents | anything reconstructible from its own contents |
+| **catalog** | identity, the league's quoted line, our verdict | our measurements |
+| **index** | the pipeline's health | content |
+| **measures** *(new)* | our analysis of the archive | identity, quotes, verdicts |
+
+**Extract — "carries what it cannot reconstruct."** Events, because the feed is
+authoritative. `quoted` belongs precisely because it is the **boxscore's** number:
+a different document's fact, carried so the catalog builder and the validator
+cannot reach for the boxscore independently and drift over which field (CHENG's
+requirement, and the reason it exists). A per-goal running score is this document's
+own arithmetic over goal events it already holds — so it stays out, and the witness
+in §3.7c of the homepage plan reads it from the **raw**, which `validate()` is
+already handed.
+
+*Pre-existing violations, stated rather than hidden: `gshots` and `goalies` are
+projections of `events` built in the same pass. Weaker than carrying a second
+number, and not worth churn — but they are the same shape and must not grow.*
+
+**Catalog — identity, quotes and verdicts.** Every field in a row today is one of
+those three: `id/d/a/h/t` is what the game IS, `as/hs/ash/hsh` is the league's own
+line, `v/r` is our verdict on whether we can show it. **A metric is none of them.**
+
+Two reasons it must not go in, and the second is the decisive one:
+
+1. **Provenance blurs.** Quoted-from-the-league fields would sit beside
+   derived-by-us fields with nothing marking which is which — the exact defect
+   §3.7a says no *surface* may commit. A document should not commit it either.
+2. **Different lifecycles.** The catalog changes when a game is added or
+   re-judged. A metric changes when **we change our minds about what "control"
+   means** — and it will, since the rule has already been rewritten twice under
+   review. Folding them together means a rule change rewrites all 4,553 rows of the
+   document whose only job is to say what exists, and every diff stops being
+   readable.
+
+**Does this contradict CHENG's "no second document"?** No, and the distinction is
+worth keeping. He killed **sharding** — splitting *the same* data across files, so
+the same game can appear twice with different values. A measures document holds
+*different* data under the same ids: a **join**, not a duplicate. The failure mode
+is staleness relative to the catalog, which is the ordering discipline we already
+run for `index.json` — advertise last, and let the ledger close.
+
+**And start with the answer, not the table.** The homepage needs *the featured
+game* and *the base rate*, not a per-game metric for 4,553 games. So the first
+`measures.json` is ~1 KB: the winner, the runners-up, the **rule as text**, and the
+base rate **with its n and population**. A per-game column gets added when a surface
+actually needs to rank client-side — not before.
+
 ## 5. What actually changes, in order
 
 1. **Node bridge for pipeline-time analysis** — `builders/measure.mjs` importing
    the same reducers the browser uses; `derive.py` calls it; a test asserts the
    analysis tier is DOM-free so it stays callable from both.
-2. **Then** the extract/validate work from `docs/homepage.md` §3.7c — carry the
-   per-goal running score, add the witness with its mutation test.
-3. **Then** the tied-state metric into the catalog, computed by (1).
+2. **The score-sequence witness in `validate()`**, read from the **raw** — no
+   extract schema change, no re-derive for the check itself. With its mutation
+   test. *Watch the refusal count: a new check can newly refuse games, and the
+   settled position is to refuse rather than widen. `failedChecks` names it by
+   check, so the first re-derive tells us the number immediately.*
+3. **`measures.json`**, written by (1) — the featured game, the rule as text, and
+   the base rate with its n and population. **Not a column in the catalog.**
 4. **Then** the homepage.
 5. `builders/store.py`, when convenient. Not blocking anything.
 
-The ordering matters: doing (2) and (3) first is what produces the Python copy of
-the reducers, and once it exists it will be cheaper to keep than to remove.
+The ordering matters: doing the metric work before (1) is what produces the Python
+copy of the reducers, and once it exists it will be cheaper to keep than to remove.
+
+**Two things dropped from the previous plan** because the document rule above
+removed the need: carrying the per-goal running score in the extract, and adding a
+metric column to the catalog row. Both were me putting a new fact in the nearest
+document rather than the right one.

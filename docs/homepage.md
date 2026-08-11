@@ -329,13 +329,34 @@ check. `validate()` asserts **goal events == final score**: a total. The bucketi
 depends on the **order and timing** of goals, and two goals swapped leave the total
 correct while moving every tied/leading/trailing boundary.
 
-**Correction to his claim that the witness "is already in the payload we hold."**
-It is in the **raw**, not in the extract. `details.awayScore` / `details.homeScore`
-ride on every goal in the play-by-play, and `extract.py` drops them — the extract's
-goal events carry `a1`, `actor`, `clock`, `goalie`, `own`, `per`, `pt`, `rem`, `s`,
-`sit`, `type`, `x`, `y` and no score. So the cost is not zero: an `extract.py`
-schema change plus a full re-derive of 4,553 games. Cheap, and we have now run that
-pass twice, but it should be stated rather than assumed.
+**Where the witness lives — and the answer is NOT the extract.** `details.awayScore`
+/ `details.homeScore` ride on every goal in the raw play-by-play; `extract.py` does
+not carry them. My first answer was that we should add them and re-derive.
+
+**Kevin: why would something called "extract" carry a game score?** It should not,
+and it does not have to. `validate(rich, pbp, shifts, box)` **is handed the raw
+play-by-play**, and its own docstring says the checks run *"against the raw feed and
+the boxscore — never against our own extract."* The witness reads the league's
+running score straight from `pbp`. **No schema change and no re-derive for the
+check** — my §3.7c cost estimate was wrong.
+
+And the metric does not need the field either: `measure.mjs` reconstructs score
+state from the extract's goal events, which is precisely the derivation the witness
+certifies against the league, per goal, in order. Carrying the number as well would
+store a fact we have *proven* we can rebuild, and put two sources for it inside one
+document.
+
+**The principle this settles, and it is worth stating once:** *the extract carries
+what it cannot reconstruct* — events as the feed records them, plus quotes from
+**other** documents. `quoted` belongs for exactly that reason: it is the
+**boxscore's** number, carried so the catalog builder and the validator cannot reach
+for the boxscore independently and drift over which field. A running score is this
+document's own arithmetic.
+
+*Honest caveat: the extract already breaks this mildly. `gshots` and `goalies` are
+projections of `events`, built in the same pass from the same source. Weaker than
+carrying a second number, pre-dating the principle, and not worth churn now — but
+they are the same shape and should not grow.*
 
 **Run against 30 raw feeds: 30 agree, 0 disagree.** Which on its own proves
 nothing — a check that has never failed may be incapable of failing, which is this
