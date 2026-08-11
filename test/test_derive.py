@@ -570,3 +570,138 @@ class TheLedgerMustBeActionable(unittest.TestCase):
         for k in ("blocking", "failedChecks", "refusedGames", "noted"):
             self.assertIn(k, e, f"{k} must be present even when empty")
         self.assertEqual(e["refusedGames"], [])
+
+
+class TheLeaguesNumbersAreQuotedOnce(unittest.TestCase):
+    """CHENG's sharpening of the catalog design.
+
+    The score is NOT in the extract — it is derived from events, and deriving it
+    correctly now means goals in play plus one to whoever won the shootout, a
+    rule that lives in layer.js. A catalog built in Python from extracts would
+    need a SECOND implementation of that rule, in a second language.
+
+    So the catalog quotes the league instead of recomputing it. But if the
+    boxscore is only ever read inside validate() as a transient, the catalog
+    builder and the validator each reach for it independently and are one
+    refactor from disagreeing about WHICH boxscore field. It goes in the
+    extract, tagged as quoted, so there is exactly one place the league's
+    number enters the system.
+    """
+
+    def test_the_extract_carries_the_leagues_own_numbers_tagged_as_quoted(self):
+        store = DictStore()
+        seed(store, box=box_bytes(away_sog=2, home_sog=0, away_score=1, home_score=0))
+        D.derive(store)
+        g = json.loads(store.get("extract/2025020001.json").decode())
+        q = g["quoted"]
+        self.assertEqual(q["src"], "boxscore", "the field says where it came from")
+        self.assertEqual(q["away"], {"score": 1, "sog": 2})
+        self.assertEqual(q["home"], {"score": 0, "sog": 0})
+
+    def test_quoted_is_copied_not_recomputed(self):
+        # MUTATION GUARD, and the whole point. If this field were derived from
+        # events it would agree with our count by construction and could never
+        # contradict it — which is exactly the property that makes it worth
+        # storing. A game that FAILS validation still quotes the league
+        # faithfully, because quoting is not judging.
+        pbp = pbp_bytes()
+        rich_events = 2   # our SOG for the away side: one shot + one goal
+        store = DictStore()
+        seed(store, box=box_bytes(away_sog=99, home_sog=0, away_score=1, home_score=0))
+        rich, refusal, _ = D.judge(pbp, box_bytes(away_sog=99, home_sog=0,
+                                                  away_score=1, home_score=0),
+                                   shifts_bytes())
+        self.assertIsNotNone(refusal, "99 shots against our 2 must not reconcile")
+        self.assertEqual(refusal["gate"], "validation")
+
+
+class TheCatalog(unittest.TestCase):
+    """One document the browser reads to know what exists.
+
+    Single file, no sharding, no manifest — CHENG: a second document is one that
+    can disagree with the first, and the season is derivable from the game id, so
+    a manifest buys nothing at 100 KB that it does not cost at 1 MB.
+    """
+
+    def rows(self, store):
+        return {r["id"]: r for r in json.loads(store.get("catalog.json").decode())["games"]}
+
+    def test_a_published_game_is_listed_with_the_leagues_numbers(self):
+        store = DictStore()
+        seed(store, box=box_bytes(away_sog=2, home_sog=0, away_score=1, home_score=0))
+        D.derive(store)
+        r = self.rows(store)[2025020001]
+        self.assertEqual([r["a"], r["h"]], ["MIN", "BUF"])
+        self.assertEqual([r["as"], r["hs"]], [1, 0], "score, quoted")
+        self.assertEqual([r["ash"], r["hsh"]], [2, 0], "shots on goal, quoted")
+        self.assertEqual(r["v"], 1)
+        self.assertEqual(r["d"], "2026-01-10")
+
+    def test_shots_on_goal_are_on_the_card(self):
+        # CHENG, and he is right: doctrine 8 governs RATES, not counts. 23-22 is
+        # a count, and it is the count the whole site exists to complicate --
+        # "MIN outshot BUF 35-25 and lost" is the thesis. Withholding it from the
+        # browse surface would hide the number the game view is there to explain.
+        store = DictStore()
+        seed(store, box=box_bytes(away_sog=35, home_sog=25, away_score=2, home_score=3))
+        D.derive(store)
+        r = self.rows(store)[2025020001]
+        self.assertEqual([r["ash"], r["hsh"]], [35, 25])
+
+    def test_a_refused_game_is_listed_too_and_says_which_gate(self):
+        # Listing only what works would make the calendar a MAP OF OUR SUCCESSES,
+        # with September blank where 56 preseason games were played. And `v: 0`
+        # alone would re-merge refused with absent at the surface, after we split
+        # them upstream -- three different sentences to a visitor.
+        store = DictStore()
+        seed(store, gid=2025020002, box=box_bytes(away_sog=99))
+        D.derive(store)
+        r = self.rows(store)[2025020002]
+        self.assertEqual(r["v"], 0)
+        self.assertEqual(r["r"], "validation")
+
+    def test_a_refused_game_still_quotes_the_league(self):
+        # It is the only claim we can make about a game we cannot show, and it is
+        # honest precisely BECAUSE it is quoted rather than derived -- we are
+        # repeating the league, not asserting our own reading of a feed we just
+        # refused.
+        store = DictStore()
+        seed(store, gid=2025020002, box=box_bytes(away_sog=99, home_sog=7,
+                                                  away_score=4, home_score=2))
+        D.derive(store)
+        r = self.rows(store)[2025020002]
+        self.assertEqual([r["as"], r["hs"], r["ash"], r["hsh"]], [4, 2, 99, 7])
+
+    def test_the_catalog_is_deterministic(self):
+        # No timestamp, for the same reason an extract has none: same bytes in,
+        # same bytes out, so any diff on a re-derive is a real change. Freshness
+        # is index.json's job and it already has a field for it.
+        store = DictStore()
+        seed(store)
+        D.derive(store, now="2026-01-11T11:30:00Z")
+        first = store.get("catalog.json")
+        D.derive(store, now="2026-02-02T02:02:02Z")
+        self.assertEqual(store.get("catalog.json"), first)
+
+    def test_rows_are_ordered_by_id_so_the_file_diffs_cleanly(self):
+        store = DictStore()
+        for gid in (2025020003, 2025020001, 2025020002):
+            seed(store, gid=gid)
+        D.derive(store)
+        ids = [r["id"] for r in json.loads(store.get("catalog.json").decode())["games"]]
+        self.assertEqual(ids, sorted(ids))
+
+    def test_the_catalog_covers_every_game_we_hold_raw_for(self):
+        # The conservation habit, pointed at the browse surface: a game that is
+        # in the archive and in neither the published nor the refused rows has
+        # vanished from the only place a visitor could find it.
+        store = DictStore()
+        seed(store, gid=2025020001)
+        seed(store, gid=2025020002, box=box_bytes(away_sog=99))
+        seed(store, gid=2025020003, pbp=pbp_bytes(plays=[
+            play("teleportation", 0, xCoord=0, yCoord=0, eventOwnerTeamId=30)]))
+        D.derive(store)
+        rows = self.rows(store)
+        self.assertEqual(sorted(rows), [2025020001, 2025020002, 2025020003])
+        self.assertEqual([rows[2025020002]["r"], rows[2025020003]["r"]],
+                         ["validation", "vocabulary"])

@@ -201,10 +201,10 @@ jobs:
           # create. --dryrun answers with the real CLI's own wildcard semantics
           # rather than my reading of them.
           dry() { sync --dryrun "$@" | sed -n "s|.*to s3://${BUCKET}/||p" | sort; }
-          dry --exclude 'index.json' --exclude '*latest.json' > p1.txt
+          dry --exclude 'index.json' --exclude 'catalog.json' --exclude '*latest.json' > p1.txt
           dry --exclude '*' --include '*latest.json'          > p2.txt
           dry                                                 > all.txt
-          grep -vx 'index.json' all.txt > expected.txt || true
+          grep -vxE 'index\.json|catalog\.json' all.txt > expected.txt || true
           if [ -s p1.txt ] && [ -s p2.txt ] && [ -n "$(comm -12 p1.txt p2.txt)" ]; then
             echo "::error::a file is claimed by two passes — ordering is not guaranteed"
             comm -12 p1.txt p2.txt | head; exit 1
@@ -221,14 +221,23 @@ jobs:
           fi
 
           echo "1/3 raw feeds and extracts"
-          sync --exclude 'index.json' --exclude '*latest.json'
+          sync --exclude 'index.json' --exclude 'catalog.json' --exclude '*latest.json'
           echo "2/3 pointers"
           sync --exclude '*' --include '*latest.json'
-          echo "3/3 index"
-          if [ -f ingest/index.json ]; then
-            aws s3 cp ingest/index.json "s3://${BUCKET}/index.json" \
-              --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress
-          fi
+          # 3/3 THE DOCUMENTS THAT ADVERTISE. catalog.json names games a visitor
+          # can open and index.json states what we hold, so both must land after
+          # the extracts they point at -- the same rule that puts the pointer
+          # after its bytes, one level up.
+          echo "3/3 catalog and index"
+          # `if`, not `[ -f ] &&`. Under `set -e` a failing test on the left of
+          # && fails the whole step, so a run with nothing to publish -- a halt,
+          # or a night with no hockey -- would report a broken sync.
+          for f in catalog.json index.json; do
+            if [ -f "ingest/$f" ]; then
+              aws s3 cp "ingest/$f" "s3://${BUCKET}/$f" \
+                --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress
+            fi
+          done
           echo "synced"
 
       # Syncing and assuming it landed is not verification -- the same lesson the

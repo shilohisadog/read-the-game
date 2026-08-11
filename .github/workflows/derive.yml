@@ -65,7 +65,7 @@ jobs:
           mkdir -p ingest
           aws s3 sync "s3://${BUCKET}/" ingest/ \
             --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" \
-            --exclude 'extract/*' --no-progress
+            --exclude 'extract/*' --exclude 'catalog.json' --no-progress
           echo "pulled $(find ingest/raw -name latest.json | wc -l) games, $(du -sh ingest | cut -f1)"
 
       - name: derive everything
@@ -89,8 +89,11 @@ jobs:
           fi
           aws s3 sync ingest/extract/ "s3://${BUCKET}/extract/" \
             --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress
-          aws s3 cp ingest/index.json "s3://${BUCKET}/index.json" \
-            --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress
+          # Both advertising documents go after the extracts they point at.
+          for f in catalog.json index.json; do
+            aws s3 cp "ingest/$f" "s3://${BUCKET}/$f" \
+              --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress
+          done
           echo "synced"
 
       # Syncing and assuming it landed is not verification. Read back the

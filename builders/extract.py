@@ -67,7 +67,7 @@ def _norm(x, y, side):
         return None, None
     return (-x, -y) if side == "right" else (x, y)
 
-def extract(pbp, shifts):
+def extract(pbp, shifts, box=None):
     home, away = pbp["homeTeam"], pbp["awayTeam"]
 
     roster = {}
@@ -142,7 +142,7 @@ def extract(pbp, shifts):
            "e": _secs(s["period"], s["endTime"])}
           for s in shifts["data"]]
 
-    return {
+    out = {
         "teams": {"home": {"id": home["id"], "ab": home["abbrev"]},
                   "away": {"id": away["id"], "ab": away["abbrev"]}},
         "roster": roster,
@@ -151,6 +151,29 @@ def extract(pbp, shifts):
         "gshots": gshots,
         "goalies": goalies,
     }
+
+    # THE LEAGUE'S OWN NUMBERS, COPIED AND NOT COMPUTED.
+    #
+    # The score is not otherwise in here -- it is derived from events, and
+    # deriving it correctly means goals in play PLUS ONE to whoever won the
+    # shootout, a rule that lives in layer.js. Anything else needing a score
+    # would have to reimplement that, in whatever language it happens to be
+    # written in, and the two would drift into two plausible numbers with no
+    # signal between them. (CHENG: quoting the authority is not a compromise
+    # against having one source of truth -- it IS the source of truth, and the
+    # correct direction of dependency.)
+    #
+    # It lives HERE rather than inside validate() as a transient so there is
+    # exactly one place the league's number enters the system. `src` names where
+    # it came from, on the artifact, so a reader never has to guess whether a
+    # field was observed or calculated.
+    if box is not None:
+        out["quoted"] = {
+            "src": "boxscore",
+            "home": {"score": box["homeTeam"]["score"], "sog": box["homeTeam"]["sog"]},
+            "away": {"score": box["awayTeam"]["score"], "sog": box["awayTeam"]["sog"]},
+        }
+    return out
 
 # ---------------------------------------------------------------- vocabulary
 
@@ -335,7 +358,9 @@ def main():
 
     pbp = json.loads((DATA / f"pbp_{GAME}.json").read_text())
     shifts = json.loads((DATA / "shifts.json").read_text())
-    rich = extract(pbp, shifts)
+    boxfile = DATA / f"box_{GAME}.json"
+    rich = extract(pbp, shifts,
+                   json.loads(boxfile.read_text()) if boxfile.exists() else None)
     out = json.dumps(rich, separators=(",", ":"))
 
     if args.vocab:

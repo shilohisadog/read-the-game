@@ -57,6 +57,54 @@ def extract_key(game_id):
     return f"extract/{game_id}.json"
 
 
+CATALOG_KEY = "catalog.json"
+
+
+def _quote(box_raw):
+    """The league's own numbers for a game, even one we are about to refuse.
+
+    Quoting is not judging. A game we cannot show still has a score, and
+    repeating the league's statement of it is the only honest claim available --
+    honest precisely BECAUSE it is quoted rather than derived from a feed we
+    just declined to trust.
+    """
+    try:
+        b = json.loads(box_raw.decode())
+        return {"a": b["awayTeam"]["abbrev"], "h": b["homeTeam"]["abbrev"],
+                "as": b["awayTeam"]["score"], "hs": b["homeTeam"]["score"],
+                "ash": b["awayTeam"]["sog"], "hsh": b["homeTeam"]["sog"]}
+    except (ValueError, KeyError, AttributeError, UnicodeDecodeError):
+        # A game whose boxscore is unreadable is exactly the game we cannot
+        # quote. It still gets a row -- see _write_catalog.
+        return {}
+
+
+def _write_catalog(store, rows):
+    """One document the browser reads to know what exists.
+
+    ONE FILE. No sharding and no manifest: a season is ~100 KB and derivable
+    from the game id, so a `seasons.json` would be a second document that can
+    disagree with the first, bought to solve a problem that does not exist at
+    ten seasons either. (CHENG.)
+
+    REFUSED GAMES ARE IN IT, carrying which gate stopped them. Listing only what
+    works would make the calendar a map of our SUCCESSES -- September blank where
+    56 preseason games were played -- and `v: 0` alone would re-merge refused
+    with absent at the surface after we split them upstream. Doctrine 9.
+
+    SHOTS ON GOAL ARE ON THE CARD. Doctrine 8 governs rates, not counts, and
+    23-22 is a count. It is also THE count this site exists to complicate --
+    "MIN outshot BUF 35-25 and lost" is the thesis -- so hiding it from the
+    browse surface would hide the number the game view is there to explain.
+
+    No timestamp: same bytes in, same bytes out, so any diff on a re-derive is a
+    real change. Freshness is index.json's job and it has a field for it.
+    """
+    store.put(CATALOG_KEY, json.dumps(
+        {"games": [rows[k] for k in sorted(rows)]},
+        sort_keys=True, separators=(",", ":")).encode())
+
+
 @dataclass
 class Report:
     derived: int = 0        # extracts written this run
@@ -152,7 +200,7 @@ def judge(pbp_raw, box_raw, shifts_raw):
         return None, _refuse("vocabulary", blocking), noted
 
     try:
-        rich = E.extract(pbp, shifts)
+        rich = E.extract(pbp, shifts, box)
     except (KeyError, TypeError, ValueError) as e:
         return None, _refuse("extract", f"{type(e).__name__}: {e}"), noted
 
@@ -181,6 +229,7 @@ def derive(store, end=None, days=None, now=None):
     # ledger exists to prevent.
     in_window = set(F.dates_in_window(end, days)) if end and days else None
 
+    rows = {}
     for key in sorted(store.keys("raw/")):
         if not key.endswith("/latest.json"):
             continue
@@ -209,6 +258,10 @@ def derive(store, end=None, days=None, now=None):
             rep.absent[gid] = f"raw not in this store for {sorted(missing)}"
             continue
 
+        g = meta.get(gid, {})
+        row = {"id": int(gid), "d": g.get("date"), "t": g.get("type"),
+               **_quote(payloads["boxscore"])}
+
         # Decidable from the artifact itself, with no timestamp and no mtime --
         # so the check survives the archive being copied, and re-derivation
         # stays a pure function of the bytes.
@@ -217,6 +270,7 @@ def derive(store, end=None, days=None, now=None):
             try:
                 if json.loads(prev.decode()).get("game", {}).get("src") == digests:
                     rep.unchanged += 1
+                    rows[gid] = {**row, "v": 1}
                     continue
             except ValueError:
                 pass    # unreadable extract: derive it again
@@ -227,12 +281,13 @@ def derive(store, end=None, days=None, now=None):
             rep.noted.setdefault(field, set()).update(values)
         if refusal is not None:
             rep.refused[gid] = refusal
+            rows[gid] = {**row, "v": 0, "r": refusal["gate"]}
             g = meta.get(gid, {})
             if in_window is not None and g.get("date") in in_window:
                 rep.refused_in_window += 1
             continue
 
-        g = meta.get(gid, {})
+        rows[gid] = {**row, "v": 1}
         rich["game"] = {"id": int(gid), "date": g.get("date"),
                         "type": g.get("type"), "src": digests}
         # sort_keys, and NO TIMESTAMP ANYWHERE. Determinism is a gate we can
@@ -242,6 +297,7 @@ def derive(store, end=None, days=None, now=None):
                   json.dumps(rich, sort_keys=True, separators=(",", ":")).encode())
         rep.derived += 1
 
+    _write_catalog(store, rows)
     _write_ledger(store, idx, rep, stamp)
     return rep
 
