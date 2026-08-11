@@ -273,6 +273,42 @@ jobs:
             exit 1
           fi
 
+      # THE SHELL IS THE PAGE A LINK POINTS AT, so it is the page a stranger
+      # meets first — and it is the only one that fetches a GAME rather than a
+      # freshness line. Everything above proves the bytes are ours; this proves
+      # a browser can turn them into hockey.
+      #
+      # The CORS bug is the reason this exists in this shape. curl cannot see a
+      # CORS failure, and a file:// render fails for its own reasons, so the only
+      # check that would have caught it is a real browser against the live site.
+      - name: a visitor can actually watch a game
+        run: |
+          fail=1
+          for i in $(seq 1 8); do
+            google-chrome --headless --no-sandbox --disable-gpu \
+              --virtual-time-budget=20000 --dump-dom \
+              "https://readthegame.co/game?cb=${GITHUB_RUN_ID}-${i}" > g.html 2>/dev/null || true
+            line=$(grep -o 'id="gl"[^>]*>[^<]*' g.html | sed 's/.*>//' || true)
+            case "$line" in
+              *" at "*final*) echo "  the live shell reports: $line"; fail=0; break ;;
+              *"could not be loaded"*) echo "::error::the shell says: $line"; exit 1 ;;
+              *) echo "    attempt $i: \"$line\"" ;;
+            esac
+            sleep 8
+          done
+          if [ "$fail" != 0 ]; then
+            echo "::error::the shell never rendered a game — last line: \"$line\""
+            echo "  it fetches catalog.json and extract/*.json from data.readthegame.co;"
+            echo "  if this is silent, check the R2 CORS policy (r2-cors workflow)"
+            exit 1
+          fi
+          # A game that renders with the reference game's date would mean the
+          # page is showing one game's facts over another's data.
+          if grep -q '10 November 2023' g.html && ! grep -q '2023020204' g.html; then
+            echo "::error::the shell rendered a date that is not this game's"
+            exit 1
+          fi
+
       - name: summary
         run: |
           {

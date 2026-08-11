@@ -313,7 +313,15 @@ $('sp0').onclick=()=>setSpeed(2.9,'sp0');
 $('sp1').onclick=()=>setSpeed(2,'sp1');
 $('sp2').onclick=()=>setSpeed(1.1,'sp2');
 $('work').onclick=()=>{workOpen=!workOpen;$('workPanel').hidden=!workOpen;$('work').setAttribute('aria-expanded',workOpen);$('work').textContent=workOpen?'Hide the work':'Show me the work';if(workOpen)render(i,false);};
-$('aAb').textContent=AAB;$('hAb').textContent=HAB;$('gl').textContent=`${AAB} at ${HAB} · Nov 10 2023 · final ${AAB} ${finalA}–${finalH} ${HAB}`;
+$('aAb').textContent=AAB;$('hAb').textContent=HAB;
+// Hand-formatted from the ISO date, never Date.parse: '2023-11-10' is UTC
+// midnight and a western timezone would render it as the 9th.
+const MON=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const GD=(G.game&&G.game.date||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+const WHEN=GD?`${+GD[3]} ${MON[+GD[2]-1]} ${GD[1]}`:'';
+$('gl').textContent=`${AAB} at ${HAB}${WHEN?' · '+WHEN:''} · final ${AAB} ${finalA}–${finalH} ${HAB}`;
+document.querySelectorAll('#rg .cc.a .lb').forEach(n=>n.childNodes[0].nodeValue=AAB+' attempts');
+document.querySelectorAll('#rg .cc.h .lb').forEach(n=>n.childNodes[0].nodeValue=HAB+' attempts');
 
 const HX=x=>11+Math.abs(x), HY=y=>42.5-y; let lastHD=null;
 function showWhy(idx){const e=EV[idx];if(e==null||e.x==null)return;

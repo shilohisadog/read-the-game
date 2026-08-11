@@ -1,4 +1,4 @@
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Kq0t275inxG0JzXRKX7npmvmTvgacb/t7Go44mabbK4='; style-src 'sha256-wKUHsgpEBAJdhZp/rzfutRCtjDJOGnhJTuZSiT3eayU='; connect-src 'self' https://data.readthegame.co; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-H8EEvyNu2hJXx/X/wRG6PItRSQJrP1nFk3yHZGSufAg='; style-src 'sha256-wKUHsgpEBAJdhZp/rzfutRCtjDJOGnhJTuZSiT3eayU='; connect-src 'self' https://data.readthegame.co; base-uri 'none'; form-action 'none'">
 <style>
 #rg{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;--min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c;--flag:#d9662b;--hd:#e0932a;
  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg);min-height:100vh;padding:clamp(16px,3.5vw,36px) clamp(12px,4vw,22px);line-height:1.5}
@@ -1214,7 +1214,15 @@ $('sp0').onclick=()=>setSpeed(2.9,'sp0');
 $('sp1').onclick=()=>setSpeed(2,'sp1');
 $('sp2').onclick=()=>setSpeed(1.1,'sp2');
 $('work').onclick=()=>{workOpen=!workOpen;$('workPanel').hidden=!workOpen;$('work').setAttribute('aria-expanded',workOpen);$('work').textContent=workOpen?'Hide the work':'Show me the work';if(workOpen)render(i,false);};
-$('aAb').textContent=AAB;$('hAb').textContent=HAB;$('gl').textContent=`${AAB} at ${HAB} · Nov 10 2023 · final ${AAB} ${finalA}–${finalH} ${HAB}`;
+$('aAb').textContent=AAB;$('hAb').textContent=HAB;
+// Hand-formatted from the ISO date, never Date.parse: '2023-11-10' is UTC
+// midnight and a western timezone would render it as the 9th.
+const MON=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const GD=(G.game&&G.game.date||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+const WHEN=GD?`${+GD[3]} ${MON[+GD[2]-1]} ${GD[1]}`:'';
+$('gl').textContent=`${AAB} at ${HAB}${WHEN?' · '+WHEN:''} · final ${AAB} ${finalA}–${finalH} ${HAB}`;
+document.querySelectorAll('#rg .cc.a .lb').forEach(n=>n.childNodes[0].nodeValue=AAB+' attempts');
+document.querySelectorAll('#rg .cc.h .lb').forEach(n=>n.childNodes[0].nodeValue=HAB+' attempts');
 
 const HX=x=>11+Math.abs(x), HY=y=>42.5-y; let lastHD=null;
 function showWhy(idx){const e=EV[idx];if(e==null||e.x==null)return;

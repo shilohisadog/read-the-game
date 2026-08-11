@@ -143,6 +143,13 @@ def extract(pbp, shifts, box=None):
           for s in shifts["data"]]
 
     out = {
+        # WHICH GAME THIS IS, from the feed rather than from the builder.
+        # The app used to print "Nov 10 2023" as a literal, which was invisible
+        # while one game was compiled into one page and becomes a wrong date on
+        # every game the moment a shell renders any of them. derive adds `type`
+        # and `src` on top of this; the committed reference extract carries the
+        # same two fields, so both pages read one shape.
+        "game": {"id": pbp.get("id"), "date": pbp.get("gameDate")},
         "teams": {"home": {"id": home["id"], "ab": home["abbrev"]},
                   "away": {"id": away["id"], "ab": away["abbrev"]}},
         "roster": roster,

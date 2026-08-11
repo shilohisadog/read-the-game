@@ -146,3 +146,32 @@ test('an empty catalog is a stated condition, not a crash', () => {
     assert.match(r.said[r.said.length - 1], /no game we can show/i);
   });
 });
+
+test('no page hard-codes a fact about one particular game', () => {
+  // THE DEFECT THE SHELL EXPOSED. The game line printed "Nov 10 2023" as a
+  // literal. Invisible while one game was compiled into one page; a wrong date
+  // on every game in the archive the moment a shell renders any of them.
+  //
+  // The same shape as the counter labels reading "MIN attempts" above a
+  // Carolina–Vegas game. Both were noted days before this page existed and both
+  // were harmless right up until they weren't.
+  const code = h => scriptOf(h).replace(/boot\(\{[\s\S]*\}\);\s*$/, '');  // drop the inlined data
+  for (const [name, html] of [['game.html', shell], ['read-the-game.html', inlined]]) {
+    const s = code(html);
+    assert.doesNotMatch(s, /Nov 10 2023|November 10, 2023/, `${name}: a typed date`);
+    assert.doesNotMatch(s, /'MIN attempts'|"MIN attempts"|`MIN attempts`/,
+      `${name}: a typed team label`);
+    assert.match(s, /G\.game\s*&&\s*G\.game\.date|G\.game\.date/,
+      `${name}: the date must come from the extract`);
+  }
+});
+
+test('the static markup may hold placeholders, but the script overwrites them', () => {
+  // The placeholder in the HTML is fine — it is what a reader sees for the few
+  // milliseconds before boot runs, and the deploy's browser gate proves the
+  // script executes. What matters is that nothing SURVIVES it.
+  assert.match(shell, /MIN attempts/, 'the placeholder is still in the markup');
+  const s = scriptOf(shell);
+  assert.match(s, /\.cc\.a \.lb/, 'and the script rewrites it from the data');
+  assert.match(s, /\.cc\.h \.lb/);
+});
