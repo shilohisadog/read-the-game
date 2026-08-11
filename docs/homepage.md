@@ -1,0 +1,192 @@
+# The homepage
+
+*A plan, for review. Nothing here is built. Written against the live page and the
+live catalog, not against intentions.*
+
+The site holds three seasons. The homepage still describes a single game, and one
+of its honesty claims is now false. This is the audit and what I propose to do.
+
+---
+
+## 1. What the page says today, and what is wrong with it
+
+The current page is well-written and was correct when it shipped. Four things
+have gone stale, and one of them matters more than the rest.
+
+**A false claim, in the honesty block.** Under *"What this does and does not
+claim"*, the first item reads:
+
+> **One game, not a season.** Everything here is MIN at BUF, 10 November 2023.
+
+That is no longer true. The site holds 4,553 games across three seasons. A stale
+claim anywhere is a bug; a stale claim inside the section whose whole job is
+stating limits is the failure mode Doctrine §9 is about — **selective honesty is
+worse than none, because it looks rigorous.** This one has to go first.
+
+**The archive is filed under the wrong heading.** `game.html` — every game we
+hold — is the first item beneath a heading that reads *"Other ways to look at the
+same game."* It is not a view of the same game. It is the product.
+
+**Developer copy on a novice's landing page.** The archive blurb says *"most
+recent by default, or add `?game=` and an id."* Nobody we are building for
+appends a query parameter.
+
+**The figure bench is on the front page**, labelled *"a development tool."*
+Honest, and it spends prime shelf space telling a novice what not to click.
+
+**One structural note.** The hero game is typed into `build_index.py` as a
+literal. That is *correct today* — `read-the-game.html` genuinely has that game
+compiled into it — but it is the same shape as the hard-coded date we just pulled
+out of `game.html`. The moment the hero becomes "a game from the archive," it has
+to be read from the catalog, never typed.
+
+## 2. The thing I do NOT want to change
+
+I argued in the builder's own comments that the archive should not be the hero:
+
+> Front-loading 1,463 games on somebody who cannot read one of them yet is a
+> reference product wearing a teaching product's clothes.
+
+That is still right, and it is the main constraint on this rework. **A search box
+is not a welcome.** A novice does not know which game they want; they do not know
+what a Corsi is; they have no reason to type "Buffalo." The finder is the second
+thing on the page, not the first.
+
+Also keeping: the freshness line fetched live from `index.json`, the limits block
+(rewritten), the attribution and no-marks statement, the hash-pinned CSP, and the
+builder-is-the-only-source discipline.
+
+## 3. Proposed structure
+
+### 3.1 Two heroes, not one
+
+The page opens with two games, always, in this order:
+
+**"Start here" — the archive's sharpest lesson.** By a rule stated on the page:
+*the biggest shot advantage that still lost.* Run against the live catalog today,
+in regular season and playoffs only, that is:
+
+| | |
+|---|---|
+| **FLA outshot TBL 50–16 and lost 3–5** | 16 March 2024 |
+| TBL outshot EDM 57–24 and lost 4–7 | 14 December 2023 |
+| NJD outshot ANA 55–23 and lost 3–4 | 1 March 2024 |
+
+Our current hero is MIN 35–25 and a two-goal loss. **Fifty shots to sixteen** is a
+different order of hook, and it is the league's own two numbers side by side.
+
+**"The most recent game we hold."** Which in August is the Cup final and in
+January is last night. This is what makes the page feel alive in season without a
+conditional in the code.
+
+Two fixed slots, both always present, no branching. The seasonal-liveness problem
+gets solved by structure rather than by an `if`.
+
+### 3.2 Is the featured paradox on-doctrine?
+
+This is the decision I most want attacked, because it is "three things to notice"
+wearing a hat.
+
+**The case that it is honest.** It is a sort, not a model. Both inputs are the
+league's own quoted numbers, already in every catalog row (`as/hs`, `ash/hsh`).
+The rule is one line, it is stated on the page, it is applied identically to all
+4,192 in-scope games, and the ranked list is linkable so a visitor can check that
+we did not hand-pick. Nothing is estimated. Doctrine §8 does not bite — 50–16 is
+a count, not a rate.
+
+**The case that it is not.** We are still choosing *which* dimension of "unusual"
+to lead with, and shot differential is one of many. A visitor cannot tell from the
+page whether we tried nine rules and shipped the flattering one.
+
+**How that resolves, per the position already taken:** the dimension is chosen
+**once, in public**, rather than 4,417 times invisibly. One rule, named on the
+page, in the shipped source. That is the honest form of the thing, and it is why
+this is a *stated sort* rather than an "interestingness score."
+
+**Constraint that falls out:** the rule must be able to return a boring answer,
+and the page must print it when it does. If the sharpest paradox in the archive
+were +3 shots, the page has to say +3.
+
+### 3.3 "What you'll see" — three ideas, not seven features
+
+Between the heroes and the finder, three plain-language cards. Not a feature list
+— the three *ideas* the layers exist to teach:
+
+- **Shots are not goals.** Who was generating chances, and why the scoreboard
+  often disagrees.
+- **Not every shot is a chance.** Where it was taken from, by a geometric rule you
+  can check — never an expected-goals number.
+- **Sometimes a goalie just decides it.** Save by save, as it happens.
+
+This is the welcome. It is also the only part of the page that speaks to somebody
+who does not yet know they want any of this.
+
+### 3.4 The finder
+
+Below the fold, and it is three features that are one array in memory:
+
+- **search** — team or date
+- **filter by team** — the retention mechanic, and nearly free
+- **the season calendar** — as a *coverage map*, which is the part nobody else's
+  schedule page can do, because nobody else has anything to admit
+
+Refused games appear, greyed, with the reason. September shows 320 preseason
+games we hold, 33 of which we cannot show.
+
+**One real cost to decide.** The catalog is **453 KB raw, 55 KB gzipped**, served
+brotli — measured, not estimated. That is a fine number for a data file and a
+noticeable one for a landing page. Options, in the order I would take them:
+
+1. **Fetch it once, lazily, when the finder is first opened.** The two heroes need
+   only a handful of rows, so the top of the page can be served from a tiny
+   `featured.json` written by `derive`. Costs a second document that can disagree
+   with the first — which CHENG rightly killed for sharding.
+2. **Fetch the whole catalog on load** and take the ~45 KB. Simple, one document,
+   no disagreement possible.
+
+I lean to **(2)**, on the grounds that a second document is the more expensive
+mistake and we have paid for it twice. Worth arguing.
+
+**A detail the filter has to handle:** the catalog contains **52 team codes**, not
+32 — the Olympics and the 4 Nations Face-Off brought national teams. `SVK` is a
+real row. The filter must not present them as NHL clubs, and must not hide them
+either.
+
+### 3.5 The limits, rewritten to be true
+
+- ~~One game, not a season~~ → **Three seasons, and we say what we could not
+  read.** 4,553 games held, 4,417 shown, 136 refused with the gate that stopped
+  them. Preseason fails six times as often as the regular season and we do not yet
+  know why.
+- **A replay, not live coverage.** Unchanged and still true.
+- **Nothing is modelled or invented.** Unchanged.
+- **The counting is shown, including what it drops.** Reword off "all 320 events
+  in the game," which is a fact about one game.
+
+### 3.6 The workshop
+
+The five prototypes and the figure bench move to a labelled section at the bottom.
+Kept — each answers a question the main app does not — but they stop competing
+with the front door.
+
+## 4. What this does not include
+
+- No "three things to notice in this game" on the game page. That needs base
+  rates, and base rates are the next build, not this one.
+- No accounts, no saved teams, no email. Nothing that breaks holds-nothing.
+- No change to `game.html` or the renderer.
+
+## 5. What gets tested
+
+The page makes checkable claims, so the tests are the same shape as
+`test/index.test.js` today:
+
+- every link names a file that exists (existing gate, extended)
+- **no number or team on the page is typed** — the heroes must come from the
+  catalog, asserted the way `shell.test.js` asserts it for `game.html`
+- the featured rule is applied to in-scope games only (`gameType` 2 and 3)
+- **the rule can return a boring answer and the page states it** — a mutation
+  test with a fixture whose sharpest paradox is +1
+- the limits block contains no count that belongs to a single game
+- the finder lists refused games with a reason
+- CSP still hash-pins, `connect-src` still names only the data origin
