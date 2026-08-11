@@ -91,6 +91,16 @@ function run({ search = '', docs = {} } = {}) {
 
 const ALL = { 'catalog.json': CATALOG, 'measures.json': MEASURES, 'index.json': INDEX };
 
+/** BUF across three seasons; ARI stops after 2023-24, as it really does. */
+const MULTI = { games: [
+  { id: 2023020100, d: '2024-01-05', a: 'BUF', h: 'TOR', as: 2, hs: 5, ash: 30, hsh: 20, t: 2, v: 1 },
+  { id: 2024020100, d: '2025-01-05', a: 'BUF', h: 'TOR', as: 3, hs: 1, ash: 28, hsh: 26, t: 2, v: 1 },
+  { id: 2025020100, d: '2026-01-05', a: 'TOR', h: 'BUF', as: 0, hs: 2, ash: 19, hsh: 35, t: 2, v: 1 },
+  { id: 2025020101, d: '2026-01-09', a: 'BUF', h: 'OTT', as: 1, hs: 2, ash: 41, hsh: 18, t: 2, v: 1 },
+  { id: 2023020400, d: '2024-01-20', a: 'ARI', h: 'BUF', as: 1, hs: 2, ash: 20, hsh: 30, t: 2, v: 1 },
+]};
+const MULTI_DOCS = { ...ALL, 'catalog.json': MULTI };
+
 test('the team grid is read from the archive, never typed', () => {
   const r = run({ docs: ALL });
   return r.settle().then(() => {
@@ -240,5 +250,62 @@ test('the freshness line is fetched, and reports what it was given', () => {
   return r.settle().then(() => {
     assert.match(String(r.ids.state.textContent), /Data through 14 June 2026\./);
     assert.equal(r.ids.state.attrs['data-state'], 'quiet');
+  });
+});
+
+
+test('a team opens on its most recent season, not on 259 rows', () => {
+  // WHAT THE LIVE DATA SHOWED. Buffalo have 259 games in the archive, and the
+  // first build rendered every one of them — a wall, and the opposite of the
+  // brief. The season is the unit a hockey fan thinks in, so it is the unit here.
+  const r = run({ search: '?team=BUF', docs: MULTI_DOCS });
+  return r.settle().then(() => {
+    const rows = walk(r.ids.main).filter(n => n.tag === 'li');
+    assert.equal(rows.length, 2, 'only 2025-26');
+    // FIVE, not four: the ARI-at-BUF row is a Buffalo game too. Counting the
+    // fixture by eye got this wrong before the code did.
+    assert.match(textOf(r.ids.main), /5 games in the archive/,
+      'the full count is still stated, so nothing looks hidden');
+  });
+});
+
+test('another season is one click, and the URL carries it', () => {
+  const r = run({ search: '?team=BUF&season=2023', docs: MULTI_DOCS });
+  return r.settle().then(() => {
+    const ids = linksOf(r.ids.main).filter(h => h.startsWith('game.html'));
+    assert.deepEqual(ids, ['game.html?game=2023020400', 'game.html?game=2023020100'],
+      'both 2023-24 games, newest first — including the one Arizona visited for');
+    const bar = walk(r.ids.main).filter(n => /season=/.test(n.href));
+    assert.deepEqual(bar.map(a => a.textContent), ['2025-26', '2024-25', '2023-24'],
+      'newest first, and every season this team played is reachable');
+    assert.equal(bar.find(a => a.className === 'on').textContent, '2023-24',
+      'the one you are looking at is marked');
+  });
+});
+
+test('a team defaults to ITS newest season, not the archive\'s', () => {
+  // MUTATION GUARD, and it is the Arizona case. Defaulting to the newest season
+  // in the archive would show a fan an empty page for a club we hold 82 games of
+  // — and the empty page would look like a bug in the data, not in the default.
+  const r = run({ search: '?team=ARI', docs: MULTI_DOCS });
+  return r.settle().then(() => {
+    assert.equal(walk(r.ids.main).filter(n => n.tag === 'li').length, 1);
+    assert.match(textOf(r.ids.main), /relocated to utah/i);
+  });
+});
+
+test('a season switcher does not appear for a team with one season', () => {
+  const r = run({ search: '?team=OTT', docs: MULTI_DOCS });
+  return r.settle().then(() => {
+    assert.equal(walk(r.ids.main).filter(n => /season=/.test(n.href)).length, 0,
+      'one season needs no switcher — furniture with nothing to do');
+  });
+});
+
+test('an unknown season falls back rather than showing nothing', () => {
+  const r = run({ search: '?team=BUF&season=1998', docs: MULTI_DOCS });
+  return r.settle().then(() => {
+    assert.equal(walk(r.ids.main).filter(n => n.tag === 'li').length, 2,
+      'a season we do not hold lands on the newest we do');
   });
 });

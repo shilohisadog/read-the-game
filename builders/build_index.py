@@ -165,6 +165,12 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .teamhead h2{margin:0;font-size:1.4rem;letter-spacing:-.02em;text-transform:none;
  color:var(--ink);font-weight:800}
 .note{font-size:.86rem;color:var(--muted);margin:0 0 16px;max-width:62ch}
+.seasons{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
+.seasons a{font-size:.8rem;text-decoration:none;color:var(--muted);padding:4px 10px;
+ border:1px solid var(--edge);border-radius:999px;background:#fff}
+.seasons a.on{color:#fff;background:var(--blue);border-color:var(--blue);font-weight:700}
+.seasons a:hover{border-color:var(--blue);color:var(--blue)}
+.seasons a.on:hover{color:#fff}
 .games{list-style:none;margin:0 0 26px;padding:0;display:grid;gap:6px}
 .games li{background:#fff;border:1px solid var(--edge);border-radius:10px}
 .games a,.games .off{display:grid;grid-template-columns:8.5rem 1fr auto;gap:12px;
@@ -321,10 +327,30 @@ __LIB__
      REFUSED GAMES ARE LISTED, greyed, with the check that stopped them. Hiding
      them would make this a map of our successes -- Doctrine 9 -- and inside the
      scope that argument is unchanged. */
-  function drawTeam(ab, games) {
-    var mine = games.filter(function (g) {
+  /* THE SEASON IS THE UNIT A HOCKEY FAN THINKS IN, and it is also what keeps this
+     page to the brief. Buffalo have 259 games in the archive; rendering all of
+     them is a wall, which is the opposite of what was asked for. Read from the
+     game id -- 2025020123 is season 2025-26 -- so it needs no lookup and cannot
+     disagree with the id. */
+  function seasonOf(id) { return +String(id).slice(0, 4); }
+  function seasonLabel(y) { return y + '-' + String(y + 1).slice(2); }
+
+  function drawTeam(ab, games, want) {
+    var all = games.filter(function (g) {
       return inScope(g.id) && (g.a === ab || g.h === ab);
     }).sort(function (x, y) { return x.d === y.d ? y.id - x.id : (x.d < y.d ? 1 : -1); });
+
+    var seasons = [];
+    all.forEach(function (g) {
+      var s = seasonOf(g.id);
+      if (seasons.indexOf(s) === -1) seasons.push(s);
+    });
+    seasons.sort(function (a, b) { return b - a; });
+    /* Default to the newest season this team actually has, not to the newest in
+       the archive: Arizona's last is 2023-24, and defaulting to 2025-26 would
+       show a fan an empty page for a team we hold 82 games of. */
+    var season = seasons.indexOf(want) === -1 ? seasons[0] : want;
+    var mine = all.filter(function (g) { return seasonOf(g.id) === season; });
 
     var main = $('main');
     main.textContent = '';
@@ -336,10 +362,20 @@ __LIB__
 
     var head = el('div', 'teamhead');
     head.appendChild(el('h2', null, nameOf(ab)));
-    head.appendChild(el('span', 'd', mine.length + (mine.length === 1 ? ' game' : ' games')
+    head.appendChild(el('span', 'd', all.length + (all.length === 1 ? ' game' : ' games')
                                     + ' in the archive'));
     main.appendChild(head);
     if (NOTES[ab]) main.appendChild(el('p', 'note', NOTES[ab]));
+
+    if (seasons.length > 1) {
+      var bar = el('p', 'seasons');
+      seasons.forEach(function (s) {
+        var a = el('a', s === season ? 'on' : null, seasonLabel(s));
+        a.href = '?team=' + ab + '&season=' + s;
+        bar.appendChild(a);
+      });
+      main.appendChild(bar);
+    }
 
     if (!mine.length) {
       main.appendChild(el('p', 'note',
@@ -410,6 +446,7 @@ __LIB__
 
   var team = (/[?&]team=([A-Za-z]{2,3})/.exec(location.search) || [])[1];
   if (team) team = team.toUpperCase();
+  var season = +(/[?&]season=(\d{4})/.exec(location.search) || [])[1] || 0;
 
   Promise.all([grab('catalog.json'), grab('measures.json'), grab('index.json')])
     .then(function (r) {
@@ -419,7 +456,7 @@ __LIB__
         $('teams').appendChild(el('p', 'note',
           'The archive could not be loaded, so there are no teams to show.'));
       } else if (team) {
-        drawTeam(team, games);
+        drawTeam(team, games, season);
       } else {
         drawGrid(games);
       }
