@@ -113,7 +113,18 @@ test('first paint puts the right numbers in the DOM', () => {
   assert.equal(String(n.get('cH').textContent), '55', 'BUF attempts counter');
   assert.equal(String(n.get('aSc').textContent), '2', 'MIN score');
   assert.equal(String(n.get('hSc').textContent), '3', 'BUF score');
-  assert.equal(String(n.get('pa').textContent), '59%', 'control share');
+  // THE BAR CARRIES THE PROPORTION; THE NUMBERS CARRY THE COUNT. This asserted
+  // '59%' until the scoreboard stopped printing a bare percentage over a
+  // denominator it did not show (CHENG). What replaces it is stronger: the two
+  // numbers must be the same two the counters show, and the bar must be the
+  // proportion they make — so the picture and the arithmetic cannot drift.
+  assert.equal(String(n.get('pa').textContent), '80', 'control, visitor side');
+  assert.equal(String(n.get('ph').textContent), '55', 'control, host side');
+  assert.equal(n.get('ba').style.width, `${Math.round(100 * 80 / 135)}%`,
+    'the bar is the proportion of the numbers beside it');
+  assert.equal(n.get('bh').style.width, `${100 - Math.round(100 * 80 / 135)}%`);
+  assert.equal(String(n.get('pMode').textContent), 'ALL SITUATIONS',
+    'and it says what it was measured under, like the counters below it');
 });
 
 test('the scrubber is wired to the timeline', () => {

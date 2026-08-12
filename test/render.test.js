@@ -386,3 +386,80 @@ test('a goal is a bullseye, so it cannot be read as an attempt', () => {
     assert.match(core.cls, /\b[ah]\b/, 'and the core takes its colour from the team');
   }
 });
+
+test('the base view is the game — every layer off, no trails, at boot', () => {
+  // CHENG could not tell from a screenshot whether Control and Keep-every-mark
+  // were defaults or clicks, and "you probably clicked it" is not an answer.
+  // Doctrine §6 and the page's own headline (watch first, add metrics after)
+  // both depend on this, so it is asserted rather than remembered.
+  const a = boot();
+  for (const id of ['lyCorsi', 'lyHd', 'lyGoalie', 'lyWhistle']) {
+    assert.equal(a.$(id)['aria-pressed'], undefined,
+      `${id} announced a state before anyone touched it`);
+  }
+  assert.equal(a.$('rg').classList.contains('corsi'), false, 'no control panel');
+  assert.equal(a.$('rg').classList.contains('goalie'), false, 'no goalie cards');
+  assert.equal(a.$('rg').classList.contains('whistle'), false, 'no whistle panel');
+  assert.equal(a.GROUPS['#rg .tbtn'][0]['aria-pressed'], true, 'trails: current moment');
+  assert.equal(a.$('whistles').innerHTML, '', 'and nothing metric-specific is drawn');
+});
+
+test('no bare percentage survives on the scoreboard', () => {
+  // The rule the goalie card and the per-game sentence already follow, applied
+  // to the surface where the denominator is smallest and moves fastest: early in
+  // a game one attempt swings the share ~2.5 points, and "58%" asserts a
+  // precision that "11 – 8" does not claim (CHENG).
+  const a = boot();
+  a.$('lyCorsi').click();
+  for (const [pa, ph, mode] of a.sweep(d => [d.$('pa').textContent, d.$('ph').textContent,
+                                             d.$('pMode').textContent])) {
+    assert.match(String(pa), /^\d+$/, `the control figure reads "${pa}"`);
+    assert.match(String(ph), /^\d+$/, `the control figure reads "${ph}"`);
+    assert.equal(mode, 'ALL SITUATIONS', 'every site carrying this number carries its mode');
+  }
+});
+
+test('the strength mode reaches the scoreboard, not only the counters', () => {
+  const a = boot();
+  a.$('lyCorsi').click();
+  a.GROUPS['#rg .sbtn'][1].click();                 // even strength only
+  assert.equal(a.$('pMode').textContent, 'EVEN STRENGTH');
+  assert.equal(a.$('mA').textContent, 'EVEN STRENGTH', 'and the two agree');
+});
+
+test('the page states that it holds the ends fixed', () => {
+  // A REAL TRANSFORMATION OF RECORDED COORDINATES, undisclosed on a page whose
+  // thesis is that nothing is transformed silently (CHENG). Teams switch ends
+  // every period in the arena; here each attacks the same net all game.
+  assert.match(app, /Ends are held fixed/);
+  assert.match(app, /switch every period/);
+});
+
+test('the legend shows the mark the ice actually draws', () => {
+  // The legend advertised a siren for a goal. The ice draws a bullseye; the
+  // siren appears only in the caption for the current event, so a viewer looking
+  // for it on the rink is looking for something that is not there.
+  const legend = app.match(/<div class="legend">([\s\S]*?)<\/div>/)[1];
+  assert.doesNotMatch(legend, /🚨/, 'no mark the rink does not draw');
+  assert.match(legend, /class="k-g"/, 'a swatch for the goal instead');
+});
+
+/**
+ * What a VISITOR reads: the markup, with the stylesheet and the script removed.
+ *
+ * A copy gate over the whole file is a copy gate over the source comments, which
+ * legitimately discuss the app's own history — the first version of the test
+ * below failed on a comment explaining why trails have two settings.
+ */
+const prose = app.slice(app.indexOf('</style>'), app.indexOf('<script>'));
+
+test('the controls explain themselves without referring to their own history', () => {
+  // Changelog voice: "a shot chart nobody asked for", "that older behaviour, on
+  // purpose". A first-time visitor has no idea there was an older behaviour
+  // (CHENG). The explanation of what each control DOES was the good part and
+  // stays; the apology for the past comes out.
+  assert.doesNotMatch(prose, /used to stay on the ice|older behaviour|nobody asked for/,
+    'the page is apologising to itself');
+  assert.match(prose, /Keep every mark<\/b> leaves every attempt on the ice/,
+    'and it still says what the control does');
+});
