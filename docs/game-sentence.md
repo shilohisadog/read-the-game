@@ -1,8 +1,9 @@
 # The per-game sentence
 
-*For CHENG. Nothing here is built. The numbers are from the live
-`measures.json` over **4,119 in-scope games**, not from a sample — every count
-below is derivable from the published file and can be checked against it.*
+*For CHENG. §1–§7 were the design argument, put to him before anything was
+built; §8 records what the MEASUREMENT then said, including that a figure used
+five times in §3 was one I invented. Every number now in this file is measured,
+over **4,119 in-scope games**, and derivable from the published `measures.json`.*
 
 The ask, from Kevin's open list:
 
@@ -77,7 +78,7 @@ Do not bucket. Publish the rate as a function of every cutoff, and let **this
 game's own number** pick the row:
 
 > *Buffalo controlled play while the score was level, **+12**, and lost. Of the
-> games where a team led that count by **12 or more**, it lost **88 of 214**.*
+> games where a team led that count by **12 or more**, it lost **243 of 708**.*
 
 The properties I like:
 
@@ -94,20 +95,22 @@ The properties I like:
 
 ### 3b. Where it gets thin, stated rather than hidden
 
-The largest edges in the archive are 33, 33, 32, 32, 31, 31, 29, 29, 29, 28. So at
-k=28 the population is about ten games, and **"41%" over ten games is
-overprecision wearing a percent sign.**
+The archive runs to a maximum edge of **41**, and the population falls away fast:
+k=22 is the last cutoff with n≥100, and by k=28 it is 36 games. At the far end
+the archive says **0 of 4** at k≥35 — which as a percentage is "0%", *teams that
+dominant never lose*, and is in fact four coin flips.
 
 My proposal, and it is a doctrine tightening rather than a workaround: **this
-sentence always prints the fraction and never a bare percentage.** *88 of 214.*
-*6 of 10.* The fraction carries its own denominator, which is the whole of what
+sentence always prints the fraction and never a bare percentage.** *243 of 708.*
+*0 of 4.* The fraction carries its own denominator, which is the whole of what
 Doctrine §8 asks for, and it needs **no minimum-n threshold** — which would be
 another parameter with no source.
 
-Related debt, found while writing this and not fixed here: the goalie card already
-does `thin = st.f < 20` and switches from a save percentage to a fraction. Twenty
-is a number we chose. It has the same defect, it is shipped, and it should be
-argued separately.
+Related debt, found while writing this: the goalie card did `thin = st.f < 20` and
+switched from a save percentage to a fraction below it. Twenty was a number we
+chose. **Fixed under this same rule rather than argued separately** (CHENG): the
+card now prints "33 of 35" always, and the stated limit moved onto every card,
+because showing it only when the number was small was selective honesty.
 
 ## 4. Placement, and a spoiler question that answers itself
 
@@ -124,11 +127,12 @@ nearly designed around a problem that does not exist.
 
 | the game | the sentence |
 |---|---|
-| an edge, and that team lost | *BUF controlled play while the score was level, +12, and lost. Of the games where a team led that count by 12 or more, it lost 88 of 214.* |
-| an edge, and that team won | *BUF controlled play while the score was level, +12, and won. Of the games where a team led that count by 12 or more, it lost 88 of 214.* |
+| an edge, and that team lost | *BUF controlled play while the score was level, +12, and lost. Of the games where a team led that count by 12 or more, it lost 243 of 708.* |
+| an edge, and that team won | *BUF controlled play while the score was level, +12, and won. Of the games where a team led that count by 12 or more, it lost 243 of 708.* |
 | no edge (264 games) | *Neither team controlled play while the score was level.* |
-| out of scope (preseason, 4 Nations, Olympics) | *the game's own number, and NO base rate* — the population is NHL regular season and playoffs, and quoting it beside a preseason game would be the pooling error `archive.js` exists to prevent |
-| `measures.json` did not load | *the game's own number, and no base rate.* Never a spinner, never a silent zero |
+| out of scope (preseason, 4 Nations, Olympics) | *…+12. **No comparison shown — this is a preseason game, and the archive's rate covers the regular season and playoffs.*** Quoting it here would be the pooling error `archive.js` exists to prevent, and SAYING SO is required: a bare number with no reference class is the thing Doctrine §8 warns about, and silence about an omission is the failure the ingest-state work spent two rounds fixing (CHENG) |
+| `measures.json` did not load | *…+12. **No comparison shown — the archive's rates could not be loaded.*** Never a spinner, never a silent zero, and never a missing clause that looks deliberate |
+| an edge bigger than the archive holds | the same wording. Only reachable for a game measured since the last derive run, and "0 of 0" is not a base rate |
 
 The won-row deliberately carries the **same** base rate as the lost-row. Showing
 the rate only when the story is surprising is selective honesty, which Doctrine §9
@@ -137,8 +141,8 @@ calls worse than none because it looks rigorous.
 ## 6. What I want challenged
 
 1. **Is the cumulative-k rate honest, or is it a significance test in a trench
-   coat?** Reading "88 of 214" at k=12 invites *this is meaningful*, and I have not
-   made any claim about whether 41% differs from 39.6% in a way that matters. My
+   coat?** Reading "243 of 708" at k=12 invites *this is meaningful*, and I have not
+   made any claim about whether 34.3% differs from 39.6% in a way that matters. My
    position: we are reporting a conditional count, not testing anything, and the
    fraction with its denominator is the whole claim. I am not certain that is how
    a novice reads it.
@@ -164,7 +168,83 @@ calls worse than none because it looks rigorous.
 - **The cumulative table is checked against the summary it must agree with**: the
   row at k=1 must equal `moreLevelControlLost` exactly. Two paths to one number,
   and if they disagree one of them is wrong.
+- **The cumulative table is monotone in `n`** — the population can only shrink as
+  the cutoff rises (CHENG). A structural invariant of a cumulative count, cheap,
+  and it catches an off-by-one in the tail where the rates wobble on sample size
+  alone and nobody could tell a wrong row from a small one by looking.
+- **No causal connective may sit between the game's number and the rate** — no
+  "so", no "which means". A copy gate, in the shape of the whistle layer's word
+  list: a regression guard, not the standard. §8.3 is why it is a requirement
+  rather than a style note.
 - **The sentence is rendered, not just computed.** `test/render.test.js` boots the
   shipped bundle; this sentence goes in it. The whistle layer was correct and
   invisible for a day, and the defect that found it was in the half no unit test
   could see.
+
+
+---
+
+## 8. The measured curve, and the number in §3a that I made up
+
+`88 of 214` appeared five times above as an illustration of the shape a row would
+take. **It was invented, it was not marked as invented, and CHENG's review
+computed a 95% confidence band around n=214 as though it were measured.** His
+finding survives untouched — the band arithmetic demonstrates the variance point
+at any n, and I checked it: at n=10 Wilson gives 16.6%–68.4% against his normal
+approximation's 9.3%–69.9%, and the conclusion is the same either way. But this is
+[[verify-inherited-claims]] running in the opposite direction, and the last time it
+happened the invented number was CHENG's 41% against a real 45.8%.
+
+The figures above are now the measured ones, from `measures.json` over **4,119
+in-scope games**. What the measurement changed:
+
+### 8.1 The invented number pointed the wrong way
+
+| | at k=12 | against the 39.6% base |
+|---|---|---|
+| what I illustrated | 88 of 214 = **41.1%** | **above** — implies the more lopsided the control, the more likely the loss |
+| what is true | **243 of 708 = 34.3%** | **below** — the opposite |
+
+**The rate FALLS as the edge grows.** 39.6% at k≥1, 34.3% at k≥12, 30.4% at k≥17.
+Control while level does not merely fail to guarantee a win — it does predict one,
+and it predicts better the larger it is. Had the illustration shipped it would have
+taught the reverse of the data.
+
+### 8.2 CHENG's non-monotone tail is real, and worse than "wobble"
+
+```
+ k     n   lost   rate        k    n  lost   rate
+ 1  3855   1527  39.6%       25   62    24  38.7%
+12   708    243  34.3%       30   26     6  23.1%
+17   286     87  30.4%       33   11     2  18.2%
+18   238     73  30.7%       35    4     0   0.0%
+20   170     54  31.8%       38    3     0   0.0%
+22   113     37  32.7%       41    1     0   0.0%
+```
+
+The decline to k≈17 is smooth and over large n. After that the rate turns around
+and wobbles — 30.7, 31.6, 31.8, 32.1, 32.7, 33.7, 34.2, **38.7** — on nothing but
+sample size, exactly as predicted. **k=22 is the last cutoff with n≥100.**
+
+And the far tail is worse than uninformative, it is *actively misleading*: at k≥35
+the archive says **0 of 4**. Rendered as a percentage that is "0%" — teams that
+dominant never lose — which is four coin flips. The fraction-always rule is what
+makes it read as four coin flips, and this is the concrete case for it.
+
+### 8.3 A confound the sentence must not invite the reader to cross
+
+`level` counts attempts taken **while the score was level**, so its size depends on
+how long the game stayed level. A team that goes up 3–0 in the first period has
+few level attempts available to it, whatever it then does. A large edge therefore
+means *the game stayed close AND one team ran it* — two things, not one.
+
+This does not make the sentence false. *"Of the games where a team led that count
+by 12 or more, it lost 243 of 708"* is a true description of the archive, and we
+are describing rather than predicting. But it means **the reference class is
+selected on a variable that is itself related to the outcome**, so a causal reading
+is not merely unsupported, it is specifically wrong.
+
+CHENG's defence — *never put the game's number and the rate in a causal sequence,
+no "so", no "which means"* — was offered as a grammatical precaution. It has a
+mechanism behind it, and that makes it a requirement rather than a style note. It
+is enforced as a copy gate.
