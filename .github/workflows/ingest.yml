@@ -328,24 +328,71 @@ jobs:
       # So it runs unconditionally, over the public origin, and it asks the
       # question the visitor asks: is there a game I can watch. `if: always()`
       # because a run that failed earlier still leaves a live site behind it.
+      # ONE CLIENT, AND IT IDENTIFIES ITSELF. This step used to curl the catalog
+      # and then urlopen the extract, which put TWO HTTP clients in one check --
+      # and on 2026-08-12 the edge started answering 403 to the default
+      # `Python-urllib/3.14` User-Agent while serving curl a 200. Nothing about
+      # the archive had changed: the object was there, 87,358 bytes, and every
+      # browser could read it. The run went red anyway, and the message it
+      # printed was about a game a visitor could not open.
+      #
+      # `fetch_nhl.py` had sent an explicit User-Agent since the day it was
+      # written. The rule existed in the fetcher and was not carried into a gate
+      # written months later, which is how it comes back.
       - name: a visitor can still find a game
         if: always()
+        env:
+          UA: read-the-game ingest gate (+https://readthegame.co)
         run: |
-          curl -sS --fail "https://data.readthegame.co/catalog.json?cb=${GITHUB_RUN_ID}" \
-            -o live-catalog.json
-          python3 - <<'PY'
-          import json, sys, urllib.request
+          get() {  # url, outfile -> prints the HTTP status, always exits 0
+            curl -sS -A "$UA" -o "$2" -w '%{http_code}' "$1" || echo 000
+          }
+          code=$(get "https://data.readthegame.co/catalog.json?cb=${GITHUB_RUN_ID}" \
+                     live-catalog.json)
+          # A REFUSAL IS NOT A FINDING ABOUT THE ARCHIVE, and must not be reported
+          # as one. 403 says the edge would not talk to US; it says nothing about
+          # whether a visitor can watch a game, and the two need different words
+          # or the next person spends an hour looking at the data.
+          if [ "$code" = 403 ]; then
+            echo "::error::the edge refused THIS CHECK (403) — that is a fact about"
+            echo "  our own request, not about the archive. Check the Cloudflare bot"
+            echo "  rules for data.readthegame.co before touching the pipeline."
+            exit 1
+          fi
+          [ "$code" = 200 ] || { echo "::error::catalog.json answered HTTP $code"; exit 1; }
+
+          id=$(python3 - <<'PY'
+          import json, sys
           c = json.load(open('live-catalog.json'))['games']
-          watchable = [g for g in c if g.get('v')]
-          print(f"  {len(c)} games listed, {len(watchable)} watchable")
-          if not watchable:
+          w = [g for g in c if g.get('v')]
+          print(f"  {len(c)} games listed, {len(w)} watchable", file=sys.stderr)
+          if not w:
               sys.exit("::error::the published catalog names no game a visitor can open")
-          newest = max(watchable, key=lambda g: (g['d'], g['id']))
-          url = f"https://data.readthegame.co/extract/{newest['id']}.json"
-          with urllib.request.urlopen(url) as r:
-              g = json.load(r)
-          print(f"  landing game: {newest['a']} at {newest['h']} · {newest['d']} "
-                f"· {len(g['events'])} events")
+          n = max(w, key=lambda g: (g['d'], g['id']))
+          print(f"  landing game: {n['a']} at {n['h']} · {n['d']}", file=sys.stderr)
+          print(n['id'])
+          PY
+          ) || exit 1
+          [ -n "$id" ] || { echo "::error::no landing game was chosen"; exit 1; }
+
+          code=$(get "https://data.readthegame.co/extract/$id.json" landing.json)
+          if [ "$code" = 403 ]; then
+            echo "::error::the edge refused this check's request for extract/$id.json"
+            echo "  (403) — our request, not the archive. See the note above."
+            exit 1
+          fi
+          [ "$code" = 200 ] || {
+            echo "::error::the catalog names game $id and the archive answered HTTP $code"
+            echo "  for it — a visitor landing on that game would get nothing"
+            exit 1; }
+          python3 - "$id" <<'PY'
+          import json, sys
+          g = json.load(open('landing.json'))
+          # 200 AND EMPTY IS STILL BROKEN. The object existing is not the claim;
+          # the claim is that a visitor gets a game to watch.
+          if not g.get('events'):
+              sys.exit(f"::error::extract/{sys.argv[1]}.json served 200 with no events")
+          print(f"  it opens: {len(g['events'])} events")
           PY
 
       - name: summary
