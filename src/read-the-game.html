@@ -130,7 +130,7 @@
 #rg .gcard .gname{font-weight:800;font-size:.98rem}
 #rg .gcard .gname .sub{color:var(--muted);font-weight:600;font-size:.68rem}
 #rg .gcard .gsv{font-family:ui-monospace,Menlo,monospace;font-size:1.75rem;font-weight:700;line-height:1.1}
-#rg .gcard .gline{font-size:.78rem;color:var(--muted);margin-top:2px}
+#rg .gcard .gline{font-size:.78rem;color:var(--muted);margin-top:2px}#rg .gcard .lim{color:var(--flag)}
 @media(max-width:520px){#rg.goalie .goalies{grid-template-columns:1fr}}
 </style>
 <div id="rg"><div class="wrap">
@@ -1643,12 +1643,19 @@ function render(i,newest){
    else if(cur&&hdOn&&isHD(cur)){lastHD=i;caption(cur,'hd');}}
  prevA=a;prevH=h;
  $('per').textContent=cur?'Period '+cur.per:'Pre-game';$('clk').textContent=cur?cur.rem:'20:00';
- if(goalieOn){const gs=goalieStats(i);$('goaliePanel').innerHTML=G.goalies.map(id=>{const p=R[id];if(!p)return '';const tid=p.tid,col=readableInk(tid===AID?AWAYCOL:HOMECOL),ab=tid===AID?AAB:HAB;const st=gs[id]||{f:0,s:0,gl:0,hf:0,hs:0};const svp=st.f?(st.s/st.f).toFixed(3).replace(/^0/,''):'—';
- // Doctrine §8 wants a base rate beside any rate. We cannot compute one from a
- // single game, and importing a league average would introduce a number that is
- // not in our feed. So under the filter we show the FRACTION and state the
- // limit -- 18 shots is not a rate -- and leave the base rate to the archive.
- const thin=st.f<20;return `<div class="gcard"><div class="gname" style="color:${col}">${p.nm} <span class="sub">${ab} · #${p.n}</span></div><div class="gsv">${thin?st.s+"/"+st.f:svp}</div><div class="gline">${st.s} saves · ${st.gl} goals · ${st.f} shots faced (${MODE()})${thin?'<br><span style="color:var(--flag)">too few shots to be a rate — we can tell you what happened, not how unusual it was</span>':''}${st.hf?` · high-danger ${st.hs}/${st.hf}`:''}</div></div>`;}).join('');}
+ if(goalieOn){const gs=goalieStats(i);$('goaliePanel').innerHTML=G.goalies.map(id=>{const p=R[id];if(!p)return '';const tid=p.tid,col=readableInk(tid===AID?AWAYCOL:HOMECOL),ab=tid===AID?AAB:HAB;const st=gs[id]||{f:0,s:0,gl:0,hf:0,hs:0};
+ // A FRACTION, ALWAYS, AND THE THRESHOLD IS GONE. This used to print .943 and
+ // switch to "18/20" below twenty shots faced -- and twenty was a number we
+ // chose, the same defect this project refuses everywhere else. A fraction
+ // carries its own denominator, so it needs no cutoff to be honest at: 33 of 35
+ // and 18 of 18 both say exactly what they are, and 1.000 does not.
+ //
+ // The limit is stated on EVERY card for the same reason. Showing it only when
+ // the number was small was selective honesty (Doctrine §9) -- it made a
+ // 35-shot game look like a rate you could compare, which is the belief the
+ // whole site exists to correct. One game is one game.
+ const faced=st.f?`${st.s} of ${st.f}`:'—';
+ return `<div class="gcard"><div class="gname" style="color:${col}">${p.nm} <span class="sub">${ab} · #${p.n}</span></div><div class="gsv">${faced}</div><div class="gline">${st.s} saves · ${st.gl} goals · ${st.f} shots faced (${MODE()})${st.hf?` · high-danger ${st.hs} of ${st.hf}`:''}<br><span class="lim">one game — what happened, not how unusual it was</span></div></div>`;}).join('');}
  if(workOpen)renderWork(L,cur);
 }
 function flash(id){const el=$(id);el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump');}

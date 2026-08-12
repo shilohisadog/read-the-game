@@ -37,16 +37,90 @@ const POPULATION = 'NHL regular season and playoffs';
  * finding, and "we measured nothing" is a different statement from "it never
  * happened".
  */
+function eligible(g, pick) {
+  const [h, a] = pick(g);
+  if (h === a) return null;                 // no edge — not a case, either way
+  if (g.score.h === g.score.a) return null; // no winner; NHL games always have one
+  // `edge` is the size of the lead on the measure, sign discarded: the question
+  // is how lopsided the game was, not which bench it favoured.
+  return { edge: Math.abs(h - a), lost: (h > a) !== (g.score.h > g.score.a) };
+}
+
 function rateOf(records, pick, what) {
   let n = 0, count = 0;
   for (const g of records) {
-    const [h, a] = pick(g);
-    if (h === a) continue;                 // no edge — not a case, either way
-    if (g.score.h === g.score.a) continue; // no winner; NHL games always have one
+    const e = eligible(g, pick);
+    if (!e) continue;
     n++;
-    if ((h > a) !== (g.score.h > g.score.a)) count++;   // led the measure, lost
+    if (e.lost) count++;                    // led the measure, lost
   }
   return { what, population: POPULATION, n, count, rate: n ? count / n : null };
+}
+
+/**
+ * The same question asked at every cutoff: of the games where a team led control
+ * while level BY k OR MORE, how many did it lose?
+ *
+ * WHY A CURVE AND NOT A BUCKETING. The per-game sentence needs a reference class
+ * for THIS game's edge, and +1 and +33 cannot honestly share one — the published
+ * 39.6% counts them the same. Buckets (1–3, 4–7, 8+) would be boundaries WE chose;
+ * "k or more, for every k" is a complete function with no choices in it, and the
+ * game supplies k. That is the difference between a threshold and a lookup.
+ *
+ * WHAT THE TAIL IS, said here because the number will be read without this file.
+ * `n` falls away fast, and a fraction over ten games carries almost no
+ * information: at n=10 a 95% interval around the base rate spans roughly 17% to
+ * 68%. Shrinking `n` does not bias the estimate — it widens it — so the tail is
+ * not "thin", it is UNINFORMATIVE, and the danger is that it reads as specific
+ * (CHENG). Two consequences, both binding on anything that renders this:
+ *
+ *   the rate is printed as a FRACTION, never a bare percentage. "6 of 10" is
+ *   self-limiting in a way "41%" is not, and it needs no minimum-n threshold —
+ *   which would be a parameter with no source.
+ *
+ *   it is never drawn as a CHART. The tail will not be monotone in RATE and will
+ *   wobble on sample size alone; plotted, the eye interpolates and the wobble
+ *   reads as a trend. One row at a time, as a sentence, it cannot.
+ *
+ * `n` IS monotone — it can only fall as k rises, because the population is nested
+ * — and that is asserted in the tests as a structural invariant.
+ *
+ * Each game is counted in its own reference class. This describes the archive
+ * rather than predicting anything, so removing a game from the population it
+ * belongs to would make the count wrong to avoid a problem it does not have.
+ */
+export function levelCurve(records) {
+  const cases = [];
+  for (const g of records) {
+    const e = eligible(g, x => [x.level, 0]);
+    if (e) cases.push(e);
+  }
+  const max = cases.reduce((m, c) => Math.max(m, c.edge), 0);
+  const rows = [];
+  for (let k = 1; k <= max; k++) {
+    let n = 0, count = 0;
+    for (const c of cases) {
+      if (c.edge < k) continue;
+      n++;
+      if (c.lost) count++;
+    }
+    rows.push({ k, n, count });
+  }
+  return rows;
+}
+
+/**
+ * The row a game with this edge should be read against, or null.
+ *
+ * Null when the archive holds no game that lopsided — which happens only for a
+ * game the measured set does not contain, such as one ingested since the last
+ * derive. A page that gets null must SAY the comparison is missing rather than
+ * printing "0 of 0" or quietly dropping the clause.
+ */
+export function rowFor(curve, diff) {
+  const k = Math.abs(diff);
+  if (!k) return null;
+  return curve.find(r => r.k === k) || null;
 }
 
 /**
@@ -77,6 +151,8 @@ export function summarise(records) {
     rule: 'even-strength shot attempts taken while the score was level, in regulation',
     scope: POPULATION,
     featured: featured.slice(0, 10),
+    // The reference class for a single game's edge. See levelCurve.
+    levelCurve: levelCurve(games),
     baseRates: {
       moreShotsOnGoalLost:
         rateOf(games, g => [g.sog.h, g.sog.a], 'the team with more shots on goal lost'),

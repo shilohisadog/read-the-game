@@ -19,7 +19,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { inScope, summarise } from '../src/lib/archive.js';
+import { inScope, summarise, levelCurve, rowFor } from '../src/lib/archive.js';
 
 /** A per-game measurement, as builders/measure.mjs produces it. */
 const rec = (id, o = {}) => ({
@@ -144,4 +144,74 @@ test('the rule travels with the numbers it produced', () => {
   const s = summarise([rec(2023020001, { level: 3, score: { h: 0, a: 1 } })]);
   assert.match(s.rule, /even-strength.*level.*regulation/i,
     'the featured number is meaningless without the sentence that made it');
+});
+
+/* ------------------------------------------------------------------ *
+ * The reference class for ONE game's edge (docs/game-sentence.md §3a).
+ * ------------------------------------------------------------------ */
+
+/** A game with a given level-control edge and a given outcome for its leader. */
+const lvl = (level, leaderLost, id = 2023020001) => ({
+  id, homeAb: 'HME', awayAb: 'AWY',
+  // home leads the measure when level > 0; make home lose when the leader lost.
+  score: (level > 0) === leaderLost ? { h: 1, a: 2 } : { h: 2, a: 1 },
+  sog: { h: 0, a: 0 }, attempts: { h: 0, a: 0 }, level,
+});
+
+test('the curve at k=1 is the published base rate, by two paths', () => {
+  // The one assertion that ties the new number to the old one. An off-by-one in
+  // the accumulation shows up here and nowhere else, because every other row has
+  // nothing independent to be checked against.
+  const games = [lvl(5, true), lvl(-3, true), lvl(12, false), lvl(1, false),
+                 lvl(0, true), lvl(-20, true)];
+  const s = summarise(games);
+  const first = s.levelCurve[0];
+  assert.equal(first.k, 1);
+  assert.equal(first.n, s.baseRates.moreLevelControlLost.n);
+  assert.equal(first.count, s.baseRates.moreLevelControlLost.count);
+});
+
+test('the population can only shrink as the cutoff rises', () => {
+  // A STRUCTURAL INVARIANT of a cumulative count, and cheap. It catches an
+  // off-by-one in the tail, where the rates wobble on sample size alone and
+  // nobody could tell a wrong row from a small one by looking (CHENG).
+  const games = [lvl(1, true), lvl(2, false), lvl(2, true), lvl(7, true),
+                 lvl(-7, false), lvl(-15, true), lvl(31, true)];
+  const curve = summarise(games).levelCurve;
+  assert.equal(curve.length, 31, 'a row for every cutoff up to the largest edge');
+  for (let i = 1; i < curve.length; i++) {
+    assert.ok(curve[i].n <= curve[i - 1].n,
+      `k=${curve[i].k} has n=${curve[i].n} against k=${curve[i - 1].k}'s ${curve[i - 1].n}`);
+    assert.ok(curve[i].count <= curve[i - 1].count, 'and so can the losses');
+    assert.ok(curve[i].count <= curve[i].n, 'losses never exceed the population');
+  }
+  assert.equal(curve[curve.length - 1].n, 1, 'the largest edge is its own class');
+});
+
+test('the sign of the edge is discarded — lopsided is lopsided', () => {
+  // +12 for the home side and +12 for the visitors are the same question.
+  const a = summarise([lvl(12, true), lvl(3, false)]).levelCurve;
+  const b = summarise([lvl(-12, true), lvl(-3, false)]).levelCurve;
+  assert.deepEqual(a, b);
+});
+
+test('a game with no edge has no reference class, and is told so', () => {
+  const curve = summarise([lvl(4, true), lvl(9, false)]).levelCurve;
+  assert.equal(rowFor(curve, 0), null, 'zero is not a cutoff — there is nothing to compare');
+  assert.equal(rowFor(curve, 4).n, 2);
+  assert.equal(rowFor(curve, 9).n, 1);
+});
+
+test('an edge the archive has never seen returns null, not an empty fraction', () => {
+  // A game ingested since the last derive can be more lopsided than anything in
+  // the measured set. "0 of 0" is not a base rate; the page must say the
+  // comparison is missing.
+  const curve = summarise([lvl(4, true)]).levelCurve;
+  assert.equal(rowFor(curve, 40), null);
+});
+
+test('the curve is empty when nothing is measurable, rather than absent', () => {
+  const curve = summarise([lvl(0, true)]).levelCurve;
+  assert.deepEqual(curve, []);
+  assert.equal(rowFor(curve, 3), null);
 });

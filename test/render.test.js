@@ -281,3 +281,23 @@ test('light primaries do not become unreadable text', () => {
   assert.equal(v['--home-text'], '#0f1a23', 'the text does not');
   assert.equal(v['--home-ink'], '#0f1a23', 'and the chip ink is dark, on gold');
 });
+
+test('a goalie line is a fraction, on every card, with no chosen cutoff', () => {
+  // The card used to print .943 and switch to a fraction below TWENTY shots
+  // faced. Twenty was ours. A fraction carries its own denominator, so the
+  // threshold dissolves rather than needing a better value (CHENG).
+  const a = boot();
+  a.$('lyGoalie').click();
+  const cards = a.sweep(d => d.$('goaliePanel').innerHTML);
+  const full = cards[cards.length - 1];
+  assert.match(full, /\d+ of \d+/, 'the headline number is a fraction');
+  assert.doesNotMatch(full, /class="gsv">\.\d/, 'never a bare save percentage');
+  assert.ok(!app.includes('st.f<20'), 'and the cutoff itself is gone');
+
+  // The limit is on EVERY card, not only the small ones. Stating it selectively
+  // made a 35-shot game look like a rate you could compare.
+  const cardCount = (full.match(/class="gcard"/g) || []).length;
+  const limits = (full.match(/class="lim"/g) || []).length;
+  assert.ok(cardCount >= 2, `both goalies should have a card, got ${cardCount}`);
+  assert.equal(limits, cardCount, 'one stated limit per card');
+});
