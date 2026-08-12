@@ -43,10 +43,12 @@
    fill is a second channel that never collides, matches what the viewer sees on a
    broadcast, and does not depend on colour vision. */
 #rg .att.h{fill:var(--home)}#rg .att.a{fill:#fff;stroke:var(--away);stroke-width:.7}#rg .att{opacity:.85}
-#rg .blk.h{fill:var(--home)}#rg .blk.a{fill:#fff}#rg .blk{stroke:var(--flag);stroke-width:.8}
 #rg .goal.h{fill:var(--home);stroke:#fff}#rg .goal.a{fill:#fff;stroke:var(--away)}#rg .goal{stroke-width:.9}
 #rg .excl{fill:var(--muted);opacity:.2}
-#rg .hd{stroke:var(--hd);stroke-width:.9}
+#rg .ring{fill:none;pointer-events:none}
+#rg .ring.blk{stroke:var(--flag);stroke-width:.7}
+#rg .ring.hd{stroke:var(--hd);stroke-width:.8}
+#rg .core{pointer-events:none}#rg .core.h{fill:#fff}#rg .core.a{fill:var(--away)}
 #rg .hdring{fill:none;stroke:var(--hd);stroke-width:.5;opacity:.6}
 #rg .pop{animation:pop .34s cubic-bezier(.2,1.3,.4,1)}@keyframes pop{0%{transform:scale(2.6);opacity:.3}100%{transform:scale(1);opacity:1}}
 #rg .flare{animation:flare .7s ease-out}@keyframes flare{0%{transform:scale(3.6);opacity:.2}55%{opacity:1}100%{transform:scale(1)}}
@@ -136,7 +138,7 @@
 <div id="rg"><div class="wrap">
 <p class="eyebrow">Learn to read hockey · watch first, add metrics after</p>
 <h1>Watch the game</h1>
-<p class="lede">Press play and just <b>watch</b> — each play narrated in plain language, goals called with the <b>scorer and assists</b>, the pace easing for the big moments. That’s the base view. When you want to understand <em>why</em> a team is on top, <b>add a metric layer</b> below — Control (Corsi) or High-danger. Nothing is invented; every layer shows its work.</p>
+<p class="lede">Press play and just <b>watch</b> — each play narrated in plain language, goals called with the <b>scorer and assists</b>, the pace easing for the big moments. That’s the base view. When you want to understand <em>why</em> a team is on top, <b>add a metric layer</b> below — control, high-danger chances, goaltending, or why play stopped. Nothing is invented; every layer shows its work.</p>
 <div class="board">
   <div class="tm a"><span class="ab" id="aAb">MIN</span><span class="sc" id="aSc">0</span></div>
   <div class="mid"><div class="gs"><span id="per">Pre-game</span> · <span class="cl" id="clk">20:00</span></div>
@@ -1600,13 +1602,25 @@ function render(i,newest){
  for(let k=0;k<evs.length;k++){const e=evs[k];if(e.x==null)continue;
    if(trails==='off'&&k!==i)continue;
    const hd=hdOn&&isHD(e);
-   let cls=e.type==='goal'?'goal':e.type==='blocked-shot'?'blk':ATT.has(e.type)?'att':'excl';
-   if(hd&&e.type!=='goal')cls+=' hd';
+   // A BLOCKED SHOT IS AN ATTEMPT, ANNOTATED, and the annotation is a separate
+   // ring rather than the mark's own stroke. THE STROKE NOW CARRIES TEAM
+   // IDENTITY: drawn the old way a visitor's blocked shot is a white dot with an
+   // orange ring and no team colour anywhere on it, which on the ice reads as a
+   // third club. Seen in a real game (SJS at CHI) and invisible to every test
+   // here, because none of them can see a pixel.
+   let cls=e.type==='goal'?'goal':ATT.has(e.type)?'att':'excl';
    if(hd)cls+=' clickable';
    const r=e.type==='goal'?2.7:hd?2.2:ATT.has(e.type)?1.7:1;
    const anim=(k===i&&newest)?(e.type==='goal'?' flare':' pop'):'';
    if(hd&&k===i&&newest)parts.push(`<circle class="hdring" cx="${SX(e.x).toFixed(1)}" cy="${SY(e.y).toFixed(1)}" r="4.5"/>`);
    const cx=SX(e.x), cy=SY(e.y), title=`<title>${e.rem} ${e.type}</title>`;
+   // Annotations ride OUTSIDE the mark, so the mark keeps saying whose it is.
+   // `data-i` on the ring as well as the mark: it says WHICH event this annotates,
+   // so the pairing is in the DOM rather than inferred from two identical
+   // coordinates -- and the current attempt is drawn as a figure, which has no
+   // coordinates to infer from.
+   if(e.type==='blocked-shot')parts.push(`<circle class="ring blk" data-i="${k}" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${(r+1).toFixed(1)}"/>`);
+   if(hd&&e.type!=='goal')parts.push(`<circle class="ring hd" data-i="${k}" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${(r+2).toFixed(1)}"/>`);
    if(ATT.has(e.type)&&k===i){
      // Only the CURRENT attempt is a player. Once the shot has happened its
      // location goes back to being a dot, so the eye is drawn to what is
@@ -1624,6 +1638,11 @@ function render(i,newest){
      parts.push(pen.toSvg(`class="ev fig ${cls} ${tk(e)}${anim}" data-i="${k}"`).replace('</g>',title+'</g>'));
    } else {
      parts.push(`<circle class="ev ${cls} ${tk(e)}${anim}" data-i="${k}" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r}">${title}</circle>`);
+     // A GOAL IS A BULLSEYE, not a slightly larger dot. Under the sweater
+     // convention a visitor's goal and a visitor's attempt were both hollow
+     // rings separated only by radius -- and the goal is the one mark on this
+     // rink that must never be mistaken for anything else.
+     if(e.type==='goal')parts.push(`<circle class="core ${tk(e)}" data-i="${k}" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="1.15"/>`);
    }}
  $('events').innerHTML=parts.join('');
  if(whistleOn)drawWhistles(whistle.reduce(upto(i),CTX));

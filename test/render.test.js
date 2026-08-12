@@ -108,7 +108,15 @@ function boot(game) {
 }
 
 const rings = d => (d.$('whistles').innerHTML.match(/class="wh[\s"]/g) || []).length;
-const evMarks = d => (d.$('events').innerHTML.match(/data-i="/g) || []).length;
+/**
+ * How many EVENTS are on the ice — not how many elements.
+ *
+ * One event can now draw up to three: the mark, an annotation ring, and a goal's
+ * core. Counting elements made "the ice holds one mark" mean "three", which the
+ * trails test caught the moment annotations became separate nodes.
+ */
+const evMarks = d => new Set(
+  [...d.$('events').innerHTML.matchAll(/data-i="(\d+)"/g)].map(m => m[1])).size;
 const panel = d => d.$('whistlePanel').innerHTML;
 
 test('the shipped app boots, and the reference game is in it', () => {
@@ -300,4 +308,81 @@ test('a goalie line is a fraction, on every card, with no chosen cutoff', () => 
   const limits = (full.match(/class="lim"/g) || []).length;
   assert.ok(cardCount >= 2, `both goalies should have a card, got ${cardCount}`);
   assert.equal(limits, cardCount, 'one stated limit per card');
+});
+
+/* ------------------------------------------------------------------ *
+ * Found by LOOKING AT IT. Kevin sent a screen capture of SJS at CHI
+ * and two marks near San Jose's zone belonged to no team: a visitor's
+ * blocked shot was a white dot with an orange ring, because the
+ * annotation had taken the stroke that now carries identity. Nothing
+ * in this file could see it — a fake document has no pixels — so what
+ * follows is the structural claim underneath the pixels.
+ * ------------------------------------------------------------------ */
+
+/**
+ * Every element the ice drew, paired to the event it belongs to.
+ *
+ * BY `data-i`, NOT BY COORDINATE. The current attempt is drawn as a figure with
+ * no cx/cy at all, so a coordinate match silently skips exactly the mark most
+ * likely to be wrong — the one the viewer is looking at.
+ */
+const marksAt = html => {
+  const out = [];
+  for (const m of html.matchAll(/<(circle|g) class="([^"]+)"[^>]*data-i="(\d+)"/g)) {
+    out.push({ cls: m[2], i: m[3] });
+  }
+  return out;
+};
+
+test('an annotation ring never carries a team, and never replaces the mark', () => {
+  const a = boot();
+  a.GROUPS['#rg .tbtn'][1].click();                 // keep every mark
+  const html = a.sweep(d => d.$('events').innerHTML).pop();
+  const all = marksAt(html);
+  const blocked = all.filter(m => /\bring\b/.test(m.cls) && /\bblk\b/.test(m.cls));
+  assert.ok(blocked.length > 5, `the reference game has blocked shots, found ${blocked.length}`);
+
+  for (const ring of blocked) {
+    // THE RING IS AN ANNOTATION. The mark under it still has to say whose it is.
+    const mark = all.find(m => m.i === ring.i && /\bev\b/.test(m.cls));
+    assert.ok(mark, `a blocked ring for event ${ring.i} with no mark under it`);
+    assert.match(mark.cls, /\b(att|goal)\b/, 'a blocked shot is an ATTEMPT, annotated');
+    assert.match(mark.cls, /\b[ah]\b/, `the mark for event ${ring.i} names no team`);
+  }
+  // And the ring itself must stay out of the identity business.
+  for (const m of all.filter(x => /\bring\b/.test(x.cls))) {
+    assert.doesNotMatch(m.cls, /\b[ah]\b/,
+      `an annotation ring is wearing a team class: "${m.cls}"`);
+  }
+});
+
+test('the high-danger ring is an annotation too, not a repainted mark', () => {
+  const a = boot();
+  a.$('lyHd').click();
+  a.GROUPS['#rg .tbtn'][1].click();
+  const html = a.sweep(d => d.$('events').innerHTML).pop();
+  const all = marksAt(html);
+  const hd = all.filter(m => /\bring\b/.test(m.cls) && /\bhd\b/.test(m.cls));
+  assert.ok(hd.length > 0, 'the layer is on and no high-danger ring was drawn');
+  for (const ring of hd) {
+    const mark = all.find(m => m.i === ring.i && /\bev\b/.test(m.cls));
+    assert.ok(mark && /\b[ah]\b/.test(mark.cls),
+      `a high-danger ring for event ${ring.i} sits over a mark with no team`);
+  }
+});
+
+test('a goal is a bullseye, so it cannot be read as an attempt', () => {
+  // Under the sweater convention a visitor's goal and a visitor's attempt are
+  // both hollow rings, separated only by radius.
+  const a = boot();
+  a.GROUPS['#rg .tbtn'][1].click();
+  const html = a.sweep(d => d.$('events').innerHTML).pop();
+  const all = marksAt(html);
+  const goals = all.filter(m => /\bgoal\b/.test(m.cls) && /\bev\b/.test(m.cls));
+  assert.ok(goals.length > 0, 'the reference game has goals');
+  for (const g of goals) {
+    const core = all.find(m => m.i === g.i && /\bcore\b/.test(m.cls));
+    assert.ok(core, `the goal for event ${g.i} has no core — it is just a larger dot`);
+    assert.match(core.cls, /\b[ah]\b/, 'and the core takes its colour from the team');
+  }
 });
