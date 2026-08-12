@@ -115,9 +115,16 @@ jobs:
       # covers the markup: that marks appear only when the layer is on, that the
       # sentence and its provenance are written, that trails do what they say. It
       # is deliberately not repeated here. What that test STRUCTURALLY CANNOT SEE
-      # is CSS -- a panel it calls "rendered" can still be `display:none`, and the
-      # whistle panel is revealed by exactly such a rule. This step exists for
-      # that one claim, and it says so rather than re-asserting the cheap half.
+      # is CSS. Two claims live only there, and this step exists for exactly those
+      # two rather than re-asserting the cheap half:
+      #
+      #   the whistle panel is REVEALED by a stylesheet rule, so a fake document
+      #   calling it "rendered" cannot tell you a visitor sees it;
+      #
+      #   and which team's mark is white. The markup says only `class="att a"`
+      #   and `class="att h"` -- the sweater convention is entirely a stylesheet
+      #   decision, and it is the only thing separating two clubs that wear the
+      #   same hex.
       #
       # Conditions imposed, not requested, as with the phone gate: the probe
       # clicks the real button and measures the real box.
@@ -125,7 +132,7 @@ jobs:
       # read-the-game.html, because it carries its game inside it: no network, no
       # CORS, no catalog. Served over http rather than file:// so the probe may
       # reach into the frame.
-      - name: the whistle panel is visible to an engine with a stylesheet
+      - name: what only a stylesheet can settle
         run: |
           mkdir -p ice && cp src/read-the-game.html ice/app.html && cd ice
           cat > probe.html <<'HTML'
@@ -154,7 +161,22 @@ jobs:
               rings = Math.max(rings, d.getElementById('whistles').querySelectorAll('circle').length);
               text = Math.max(text, (p.textContent || '').trim().length);
             }
-            document.title = 'ICE ' + shut + ' ' + open + ' ' + rings + ' ' + text;
+            /* THE SWEATER CONVENTION, in the only place it is real. The markup
+               says only class="att a" and class="att h"; which of them ends up
+               white is decided entirely by the stylesheet, so a fake document
+               cannot check it and this is the one engine that can. Trails on, so
+               both teams have marks in the same frame. */
+            d.querySelector('#rg .tbtn[data-t="all"]').click();
+            s.value = Math.round(+s.max * 0.55);
+            s.dispatchEvent(new Event('input'));
+            var paint = function (sel) {
+              var n = d.querySelector('#rg #events ' + sel);
+              if (!n) return 'absent';
+              var c = getComputedStyle(n);
+              return (c.fill + '|' + c.stroke).replace(/ /g, '');
+            };
+            document.title = 'ICE ' + shut + ' ' + open + ' ' + rings + ' ' + text
+                           + ' VIS ' + paint('.att.a') + ' HOST ' + paint('.att.h');
           }, 4000);
           </script>
           </body></html>
@@ -164,8 +186,8 @@ jobs:
           dom=$(google-chrome --headless --no-sandbox --disable-gpu \
                   --virtual-time-budget=25000 --dump-dom \
                   "http://localhost:8098/probe.html" 2>/dev/null)
-          read -r _ shut open rings text \
-            <<<"$(echo "$dom" | grep -o 'ICE [0-9 ]*' | head -1)"
+          read -r _ shut open rings text _ vis _ host \
+            <<<"$(echo "$dom" | grep -o 'ICE [0-9 ]* VIS [^ ]* HOST [^ <]*' | head -1)"
           if [ -z "$text" ]; then
             echo "::error::the probe never reported — the app did not run in the frame"
             echo "$dom" | head -20; exit 1
@@ -181,6 +203,27 @@ jobs:
           [ "$open" -gt 20 ] || { echo "::error::the layer is on and the panel is ${open}px tall — the CSS is hiding it"; fail=1; }
           [ "$text" -ge 40 ] || { echo "::error::the panel is visible and explains nothing ($text chars)"; fail=1; }
           [ "$rings" -ge 1 ] || { echo "::error::no whistle mark reached the ice in a real browser"; fail=1; }
+
+          # The visitor wears white and the host wears its colour. Asserted as a
+          # PAIR: "the visitor is white" is also satisfied by a page that paints
+          # everything white, which is the same defect being fixed -- both teams
+          # the same colour.
+          echo "  visitor mark: $vis"
+          echo "  host mark   : $host"
+          case "$vis" in
+            rgb'(255,255,255)'*) ;;
+            absent*) echo "::error::no visitor mark was drawn, so nothing was checked"; fail=1 ;;
+            *) echo "::error::the visitor mark is painted $vis, not white — the sweater"
+               echo "  convention is not reaching the ice, and the five matchups whose"
+               echo "  clubs share a hex (FLA/WSH, DET/NJD, BOS/NSH, EDM/WPG, TOR/VAN)"
+               echo "  would render as one colour"
+               fail=1 ;;
+          esac
+          if [ "$vis" = "$host" ]; then
+            echo "::error::both teams are painted identically ($vis) — the page cannot"
+            echo "  tell them apart, which is the defect this convention exists to fix"
+            fail=1
+          fi
           exit $fail
 
       - name: ensure the Pages project exists

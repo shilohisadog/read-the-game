@@ -17,7 +17,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { TEAMS, NOTES, inkOn, nameOf } from '../src/lib/teams.js';
+import { TEAMS, NOTES, inkOn, nameOf, colourOf, NEUTRAL } from '../src/lib/teams.js';
 
 /**
  * Every team appearing in an in-scope game of the live archive, 2026-08-11.
@@ -82,4 +82,31 @@ test('an unknown abbreviation degrades to itself rather than to nothing', () => 
   // possible. Rendering "undefined" would be worse than rendering the code.
   assert.equal(nameOf('ZZZ'), 'ZZZ');
   assert.equal(nameOf('BUF'), 'Buffalo Sabres');
+});
+
+test('a team the table cannot answer for gets nobody\'s colour, never undefined', () => {
+  // 42 games in the archive are national sides or All-Star squads. They open on
+  // the game page, and `undefined` reaching a CSS custom property is an INVISIBLE
+  // MARK -- a failure that looks like a rendering choice.
+  assert.equal(colourOf('FIN'), NEUTRAL);
+  assert.equal(colourOf('MCD'), NEUTRAL);
+  assert.equal(colourOf('WSH'), TEAMS.WSH.colour);
+  for (const ab of Object.keys(TEAMS)) {
+    assert.match(colourOf(ab), /^#[0-9A-F]{6}$/i, `${ab}: no colour`);
+  }
+});
+
+test('the identical-colour matchups are real, so colour alone cannot carry identity', () => {
+  // THE REASON THE GAME PAGE PAINTS THE VISITOR AS AN OUTLINE. Five matchups in
+  // the archive have byte-identical primaries -- 45 games where a page that
+  // distinguishes teams BY COLOUR distinguishes nothing at all. Pinned here so
+  // that a future edit "fixing" one of these colours does not quietly remove the
+  // only evidence for the design.
+  const clashes = [['BOS', 'NSH'], ['DET', 'NJD'], ['EDM', 'WPG'],
+                   ['FLA', 'WSH'], ['TOR', 'VAN']];
+  for (const [x, y] of clashes) {
+    assert.equal(colourOf(x), colourOf(y),
+      `${x} and ${y} no longer share a colour — if that is a deliberate correction, `
+      + `the second channel is still required for the others`);
+  }
 });

@@ -22,7 +22,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { TEAMS, colourOf } from '../src/lib/layers/../teams.js';
 
+const rich = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url)));
 const app = readFileSync(new URL('../src/read-the-game.html', import.meta.url), 'utf8');
 const SCRIPT = app.match(/<script>([\s\S]*)<\/script>/)[1];
 
@@ -30,7 +32,11 @@ const SCRIPT = app.match(/<script>([\s\S]*)<\/script>/)[1];
 function fakeDom() {
   const el = () => ({
     innerHTML: '', textContent: '', value: '', hidden: false,
-    style: {}, dataset: {}, childNodes: [{ nodeValue: '' }],
+    // The app paints each team's real colour onto #rg as a custom property at
+    // boot, so the fake has to record them to be able to check them.
+    style: { _v: {}, setProperty(k, v) { this._v[k] = v; },
+             getPropertyValue(k) { return this._v[k] || ''; } },
+    dataset: {}, childNodes: [{ nodeValue: '' }],
     _on: {},
     classList: {
       _c: new Set(),
@@ -68,13 +74,21 @@ function fakeDom() {
   return { document, byId, GROUPS, $: id => document.getElementById(id) };
 }
 
-/** Boot the shipped app and hand back the controls. */
-function boot() {
+/**
+ * Boot the shipped app and hand back the controls.
+ *
+ * `game` re-runs the SAME boot with different data. The script ends by calling
+ * boot() on the game compiled into it, so it is handed back and called again --
+ * which is the only way to put a matchup this page was never built around
+ * (two clubs wearing the same hex) through the real renderer.
+ */
+function boot(game) {
   const dom = fakeDom();
-  new Function('document', 'matchMedia', 'setTimeout', 'clearTimeout', 'localStorage',
-               SCRIPT)(
+  const b = new Function('document', 'matchMedia', 'setTimeout', 'clearTimeout',
+                         'localStorage', SCRIPT + '\nreturn boot;')(
     dom.document, () => ({ matches: true }), () => 0, () => {},
     { getItem: () => null, setItem: () => {} });
+  if (game) b(game);
   const scrub = dom.$('scrub');
   assert.ok(+scrub.max > 100, `the reference game should have hundreds of plays, not ${scrub.max}`);
   return {
@@ -170,4 +184,100 @@ test('the whistle layer changes no other layer\'s numbers', () => {
   const read = d => [d.$('cA').textContent, d.$('cH').textContent,
                      d.$('aSc').textContent, d.$('hSc').textContent].join('/');
   assert.deepEqual(b.sweep(read), a.sweep(read));
+});
+
+/* ------------------------------------------------------------------ *
+ * Team colour. Kevin: "WSH is Red on the home page, but then Green on
+ * the game page." Every visitor was green, because the page carried
+ * Minnesota's and Buffalo's colours as literals and used them as roles.
+ * ------------------------------------------------------------------ */
+
+test('the page paints THE TEAMS IN THIS GAME, not the two it was built from', () => {
+  // The reference game is MIN at BUF. Minnesota's colour is forest green
+  // (#154734) and Buffalo's is navy (#003087) -- and the page used to paint
+  // #12885a and #bd8c12, which are neither club's colour and never changed
+  // whoever was playing.
+  const a = boot();
+  const v = a.$('rg').style._v;
+  assert.equal(v['--away'], TEAMS.MIN.colour, 'the visitor is Minnesota');
+  assert.equal(v['--home'], TEAMS.BUF.colour, 'the host is Buffalo');
+  assert.equal(colourOf('MIN'), '#154734');
+  assert.equal(colourOf('BUF'), '#003087');
+});
+
+test('no team is painted from anything but the teams table', () => {
+  // The literals had spread to the goal label and the figure jersey as well as
+  // the stylesheet, so removing them from one place proves nothing.
+  //
+  // Buffalo's old gold must be gone outright. Minnesota's old green survives ONCE,
+  // renamed `--ok`, because it was also doing duty as the why-popup's success tick
+  // — which is exactly how a team's colour comes to mean "correct". The test is
+  // therefore about ROLES, not about a hex disappearing.
+  assert.ok(!app.includes('#bd8c12'), "Buffalo's stand-in gold is gone");
+  assert.ok(!app.includes('MINCOL') && !app.includes('BUFCOL'),
+    'and so are the variables that made two clubs into roles');
+  assert.match(app, /--ok:#12885a/, 'the green that remains is named for its meaning');
+  assert.ok(app.includes('const AWAYCOL=colourOf(AAB), HOMECOL=colourOf(HAB);'),
+    'both colours are looked up from the abbreviation in the data');
+
+  // No rule that selects a team may name a colour of its own.
+  const css = app.match(/<style>([\s\S]*?)<\/style>/)[1];
+  for (const rule of css.split('}')) {
+    if (!/\.(att|blk|goal|cc|tm|ba|bh|k-a|k-h)\b/.test(rule)) continue;
+    const lit = rule.match(/#[0-9a-f]{6}\b/i);
+    // #fff is the visiting sweater, not a team's colour, and is allowed.
+    assert.ok(!lit, `a team rule names its own colour: ${rule.trim().slice(0, 70)}`);
+  }
+});
+
+test('two clubs wearing the SAME hex are still told apart on the ice', () => {
+  // FLA and WSH are both #C8102E. Five such matchups exist, 45 games. A page that
+  // separates teams by colour separates nothing in any of them, which is why the
+  // visitor wears white.
+  const clash = JSON.parse(JSON.stringify(rich));
+  clash.teams.home.ab = 'WSH';
+  clash.teams.away.ab = 'FLA';
+  assert.equal(colourOf('WSH'), colourOf('FLA'), 'the fixture must actually clash');
+
+  const a = boot(clash);
+  const v = a.$('rg').style._v;
+  assert.equal(v['--home'], v['--away'], 'and the page is holding one colour twice');
+
+  // So identity has to come from somewhere else. Sweep for a frame that drew a
+  // visitor mark and one that drew a host mark, and require them to differ.
+  const seen = a.sweep(d => d.$('events').innerHTML).join('');
+  assert.match(seen, /class="[^"]*\ba\b[^"]*"/, 'the visitor took a shot at some point');
+  assert.ok(/fill:#fff|\.att\.a/.test(app) || app.includes('.att.a{fill:#fff'),
+    'the visitor mark is white-filled in the stylesheet');
+  assert.ok(app.includes('#rg .att.a{fill:#fff;stroke:var(--away)'),
+    'and it carries the club colour as its outline, so the colour is still true');
+});
+
+test('a team the colour table cannot answer for still renders', () => {
+  // 42 games in the archive are national sides or All-Star squads.
+  const olympic = JSON.parse(JSON.stringify(rich));
+  olympic.teams.home.ab = 'FIN';
+  olympic.teams.away.ab = 'SWE';
+  const a = boot(olympic);
+  const v = a.$('rg').style._v;
+  assert.match(v['--home'], /^#[0-9a-f]{6}$/i, 'a colour, not undefined');
+  assert.equal(v['--home'], v['--away'], 'both neutral — we do not guess at flags');
+});
+
+test('the play label names the team, so identity never rests on a hue', () => {
+  const a = boot();
+  const labels = a.sweep(d => d.$('labels').innerHTML).join('');
+  assert.match(labels, /MIN · |BUF · /, 'the label says whose play it was');
+});
+
+test('light primaries do not become unreadable text', () => {
+  // Boston gold is 1.73:1 on white. Six clubs fail WCAG 2.1's 3:1, and the page
+  // paints counters and percentages as text.
+  const gold = JSON.parse(JSON.stringify(rich));
+  gold.teams.home.ab = 'BOS';
+  const a = boot(gold);
+  const v = a.$('rg').style._v;
+  assert.equal(v['--home'], TEAMS.BOS.colour, 'the chip still gets the true gold');
+  assert.equal(v['--home-text'], '#0f1a23', 'the text does not');
+  assert.equal(v['--home-ink'], '#0f1a23', 'and the chip ink is dark, on gold');
 });

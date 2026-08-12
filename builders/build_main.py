@@ -31,7 +31,7 @@ SHELL = ROOT / "src" / "game.html"
 DATA = json.loads((ROOT / "data" / "rich.json").read_text())
 
 T = r"""<style>
-#rg{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;--min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c;--flag:#d9662b;--hd:#e0932a;
+#rg{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;--away:#5b6d7a;--home:#3a4a56;--red:#c8102e;--blue:#3a5a9c;--ok:#12885a;--flag:#d9662b;--hd:#e0932a;
  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg);min-height:100vh;padding:clamp(16px,3.5vw,36px) clamp(12px,4vw,22px);line-height:1.5}
 #rg .wrap{max-width:900px;margin:0 auto}
 #rg .eyebrow{font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
@@ -39,10 +39,10 @@ T = r"""<style>
 #rg .lede{font-size:1.02rem;color:var(--muted);margin:0 0 18px;max-width:62ch}#rg .lede b{color:var(--ink);font-weight:600}
 #rg .board{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;background:#fff;border:1px solid var(--edge);border-radius:13px;padding:12px 18px;box-shadow:0 5px 18px rgba(16,32,45,.07);margin-bottom:12px}
 #rg .tm{display:flex;flex-direction:column;align-items:center}#rg .tm .ab{font-weight:800;letter-spacing:.05em;font-size:.9rem}
-#rg .tm.a .ab{color:var(--min)}#rg .tm.h .ab{color:var(--buf)}
+#rg .tm .ab{padding:2px 8px;border-radius:5px}#rg .tm.a .ab{background:var(--away);color:var(--away-ink)}#rg .tm.h .ab{background:var(--home);color:var(--home-ink)}
 #rg .sc{font-family:ui-monospace,Menlo,monospace;font-size:2.2rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
 #rg .mid{min-width:150px}#rg .gs{text-align:center;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px}#rg .gs .cl{color:var(--ink);font-family:ui-monospace,Menlo,monospace}
-#rg .bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--edge)}#rg .bar span{transition:width .4s ease}#rg .ba{background:var(--min)}#rg .bh{background:var(--buf)}
+#rg .bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--edge)}#rg .bar span{transition:width .4s ease}#rg .ba{background:#fff;box-shadow:inset 0 0 0 2px var(--away)}#rg .bh{background:var(--home)}
 #rg .pct{display:flex;justify-content:space-between;font-size:.78rem;margin-top:5px;font-family:ui-monospace,Menlo,monospace;font-weight:600}
 #rg .rinkbox{position:relative;background:var(--ice);border:1px solid var(--edge);border-radius:15px;padding:10px;box-shadow:0 6px 22px rgba(16,32,45,.08)}
 #rg svg{display:block;width:100%;height:auto}
@@ -52,9 +52,16 @@ T = r"""<style>
 #rg .crease{opacity:.5}#rg .netlab{font-size:3.1px;font-weight:700;letter-spacing:.4px;text-anchor:middle}
 #rg .netflash{animation:nf 1.3s ease}@keyframes nf{0%,100%{opacity:0}25%{opacity:.85}}
 #rg .ev{transform-box:fill-box;transform-origin:center}
-#rg .att.a{fill:var(--min)}#rg .att.h{fill:var(--buf)}#rg .att{opacity:.8}
-#rg .blk.a{fill:var(--min)}#rg .blk.h{fill:var(--buf)}#rg .blk{stroke:var(--flag);stroke-width:.8}
-#rg .goal.a{fill:var(--min)}#rg .goal.h{fill:var(--buf)}#rg .goal{stroke:#fff;stroke-width:.8}
+/* THE SWEATER CONVENTION. Home teams wear their colours, visitors wear white,
+   and the marks follow the sweaters. It exists because COLOUR ALONE CANNOT CARRY
+   IDENTITY HERE: five matchups in the archive have byte-identical primaries --
+   BOS/NSH, DET/NJD, EDM/WPG, FLA/WSH, TOR/VAN, 45 games -- and 264 games are
+   within a deltaE of 10, which is two indistinguishable dots on one rink. A white
+   fill is a second channel that never collides, matches what the viewer sees on a
+   broadcast, and does not depend on colour vision. */
+#rg .att.h{fill:var(--home)}#rg .att.a{fill:#fff;stroke:var(--away);stroke-width:.7}#rg .att{opacity:.85}
+#rg .blk.h{fill:var(--home)}#rg .blk.a{fill:#fff}#rg .blk{stroke:var(--flag);stroke-width:.8}
+#rg .goal.h{fill:var(--home);stroke:#fff}#rg .goal.a{fill:#fff;stroke:var(--away)}#rg .goal{stroke-width:.9}
 #rg .excl{fill:var(--muted);opacity:.2}
 #rg .hd{stroke:var(--hd);stroke-width:.9}
 #rg .hdring{fill:none;stroke:var(--hd);stroke-width:.5;opacity:.6}
@@ -67,7 +74,7 @@ T = r"""<style>
 #rg .caption .tag{font-family:ui-monospace,Menlo,monospace;font-weight:700;font-size:.72rem;padding:2px 7px;border-radius:5px}
 #rg .caption .num{opacity:.65;font-family:ui-monospace,Menlo,monospace;margin-right:3px}
 #rg .counters{display:flex;justify-content:space-between;padding:2px 6px;margin-top:8px}
-#rg .cc{display:flex;align-items:baseline;gap:7px}#rg .cc .n{font-family:ui-monospace,Menlo,monospace;font-size:1.5rem;font-weight:700}#rg .cc.a .n{color:var(--min)}#rg .cc.h .n{color:var(--buf)}
+#rg .cc{display:flex;align-items:baseline;gap:7px}#rg .cc .n{font-family:ui-monospace,Menlo,monospace;font-size:1.5rem;font-weight:700}#rg .cc.a .n{color:var(--away-text)}#rg .cc.h .n{color:var(--home-text)}
 #rg .cc .mode{display:block;font-size:.6rem;letter-spacing:.06em;color:var(--flag);font-weight:700}
 #rg .cc .lb{font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
 #rg .bump{animation:bump .32s ease}@keyframes bump{40%{transform:scale(1.35);color:var(--flag)}}
@@ -78,7 +85,7 @@ T = r"""<style>
 #rg .scrub{flex:1;accent-color:var(--ink);cursor:pointer;min-width:120px}
 #rg .legend{display:flex;flex-wrap:wrap;gap:7px 18px;font-size:.78rem;color:var(--muted);margin:6px 2px}
 #rg .legend i{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:-1px}
-#rg .k-a{background:var(--min)}#rg .k-hd{background:#fff;box-shadow:0 0 0 1.5px var(--hd)}#rg .k-blk{background:var(--buf);box-shadow:0 0 0 1.5px var(--flag)}#rg .k-p{background:#0e1216}
+#rg .k-a{background:#fff;box-shadow:0 0 0 1.5px var(--away)}#rg .k-h{background:var(--home)}#rg .k-hd{background:#fff;box-shadow:0 0 0 1.5px var(--hd)}#rg .k-blk{background:var(--home);box-shadow:0 0 0 1.5px var(--flag)}#rg .k-p{background:#0e1216}
 #rg .work{background:#fff;border:1px solid var(--edge);border-radius:13px;padding:18px;margin-top:14px;box-shadow:0 5px 18px rgba(16,32,45,.06)}
 #rg .work h2{margin:0 0 10px;font-size:1.1rem}#rg .wg{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
 #rg .wc{background:#f2f7fa;border:1px solid var(--edge);border-radius:10px;padding:13px}#rg .wc h3{margin:0 0 6px;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);display:flex;justify-content:space-between}#rg .wc h3 .n{font-family:ui-monospace,Menlo,monospace;font-size:1.2rem;color:var(--ink);font-weight:700}#rg .wc.flag{border-color:#e6b98f}#rg .wc.flag h3 .n{color:var(--flag)}#rg .wc p{margin:0;font-size:.87rem}
@@ -95,14 +102,14 @@ T = r"""<style>
 #rg .why{background:#fff;border-radius:15px;max-width:430px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.4);overflow:hidden;max-height:92vh;overflow-y:auto}
 #rg .whyhd{padding:15px 18px;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px}
 #rg .whyhd .t{font-weight:800;font-size:1.08rem}#rg .whyhd .s{font-size:.75rem;opacity:.92;font-family:ui-monospace,Menlo,monospace}
-#rg .whyclose{background:rgba(255,255,255,.22);border:0;color:#fff;border-radius:7px;padding:6px 10px;cursor:pointer;font-weight:700;line-height:1}
+#rg .whyclose{background:rgba(0,0,0,.14);border:0;color:inherit;border-radius:7px;padding:6px 10px;cursor:pointer;font-weight:700;line-height:1}
 #rg .whybody{padding:16px 18px}
 #rg .whydiag{background:var(--ice);border:1px solid var(--edge);border-radius:10px;padding:8px;margin-bottom:14px}
 #rg .whydiag svg{width:100%;height:auto;display:block}
 #rg .factor{display:flex;align-items:baseline;gap:12px;padding:9px 0;border-bottom:1px solid var(--edge)}
 #rg .factor .fv{font-family:ui-monospace,Menlo,monospace;font-weight:700;font-size:1.1rem;min-width:52px}
 #rg .factor .fl{font-size:.86rem;color:var(--muted)}#rg .factor .fl b{color:var(--ink)}
-#rg .chk{color:var(--min);font-weight:800}
+#rg .chk{color:var(--ok);font-weight:800}
 #rg .whyrule{background:#f2f7fa;border:1px solid var(--edge);border-radius:9px;padding:12px 13px;font-size:.83rem;margin-top:13px;line-height:1.5}#rg .whyrule b{color:var(--ink)}
 
 #rg .plabel{font-size:3.5px;font-weight:700;fill:var(--ink);stroke:#fff;stroke-width:1px;paint-order:stroke;font-family:system-ui,sans-serif}
@@ -151,7 +158,7 @@ T = r"""<style>
   <div class="tm a"><span class="ab" id="aAb">MIN</span><span class="sc" id="aSc">0</span></div>
   <div class="mid"><div class="gs"><span id="per">Pre-game</span> · <span class="cl" id="clk">20:00</span></div>
     <div class="cbar"><div class="bar"><span class="ba" id="ba" style="width:50%"></span><span class="bh" id="bh" style="width:50%"></span></div>
-    <div class="pct"><span id="pa" style="color:var(--min)">50%</span><span style="color:var(--muted);font-size:.66rem;letter-spacing:.1em">CONTROL</span><span id="ph" style="color:var(--buf)">50%</span></div></div>
+    <div class="pct"><span id="pa" style="color:var(--away-text)">50%</span><span style="color:var(--muted);font-size:.66rem;letter-spacing:.1em">CONTROL</span><span id="ph" style="color:var(--home-text)">50%</span></div></div>
   </div>
   <div class="tm h"><span class="ab" id="hAb">BUF</span><span class="sc" id="hSc">0</span></div>
 </div>
@@ -164,7 +171,7 @@ T = r"""<style>
 <div class="transport"><button class="play" id="play">▶ Play from start</button>
   <button class="spd" id="sp0" aria-pressed="false">🐢 Slower</button><button class="spd" id="sp1" aria-pressed="true">Teaching</button><button class="spd" id="sp2" aria-pressed="false">Faster</button><button class="spd" id="lbl" aria-pressed="true">💬 Explain plays</button>
   <input class="scrub" id="scrub" type="range" min="0" max="1" value="0"><button id="work" aria-expanded="false">Show me the work</button></div>
-<div class="legend"><span><i class="k-a"></i>shot</span><span><i class="k-p"></i>puck (jumps between real events)</span><span>🚨 goal</span><span style="color:var(--muted)">metric-specific marks appear when you add a layer</span></div>
+<div class="legend"><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span>🚨 goal</span><span style="color:var(--muted)">metric-specific marks appear when you add a layer</span></div>
 <div class="layers"><span class="ll">Add a metric layer:</span><button class="lyr" id="lyCorsi" aria-pressed="false">＋ Control (Corsi)</button><button class="lyr" id="lyHd" aria-pressed="false">＋ High-danger</button><button class="lyr" id="lyGoalie" aria-pressed="false">＋ Goaltending</button><button class="lyr" id="lyWhistle" aria-pressed="false">＋ Why play stopped</button></div>
 <div class="figpick"><span class="ll">Trails:</span>
 <button class="lyr tbtn" data-t="off" aria-pressed="true">Current moment</button>
@@ -208,7 +215,21 @@ const FIG_SZ=9, FIG_BIG=11.5;
 // figure is judged as "9 pixels" and loses its face on a screen where there is
 // plenty of room for one.
 const UNIT_PX=4.3;
-const MINCOL='#12885a', BUFCOL='#bd8c12';
+// THE TEAMS' OWN COLOURS, and this is the whole defect being fixed. These were
+// literals -- Minnesota green and Buffalo gold, from the one game that used to be
+// compiled into this page -- used as "the away colour" and "the home colour" for
+// every game in the archive. Washington was green on this page and red on the
+// front page, because on this page EVERY visitor was green. Buffalo was gold here
+// and navy there, and neither page was reading the club's actual colour.
+const AWAYCOL=colourOf(AAB), HOMECOL=colourOf(HAB);
+(function paint(){const el=document.getElementById('rg');if(!el)return;
+ // Two properties per team on purpose. The CHIP gets the true colour with ink
+ // chosen for contrast against it; TEXT on white gets the colour only when it can
+ // be read there, because six primaries cannot (Boston gold is 1.73:1).
+ el.style.setProperty('--away',AWAYCOL);          el.style.setProperty('--home',HOMECOL);
+ el.style.setProperty('--away-ink',inkOn(AWAYCOL));el.style.setProperty('--home-ink',inkOn(HOMECOL));
+ el.style.setProperty('--away-text',readableInk(AWAYCOL));
+ el.style.setProperty('--home-text',readableInk(HOMECOL));})();
 let T=0, REDUCED=matchMedia('(prefers-reduced-motion:reduce)').matches;
 let figStyle=(()=>{try{return localStorage.getItem('rtg.fig')||'mascot'}catch(e){return 'mascot'}})();
 if(!FIG[figStyle])figStyle='mascot';
@@ -240,12 +261,12 @@ function drawRink(){const P=[];P.push('<rect class="boards" x="1" y="1" width="1
  for(const zx of[-69,69])for(const zy of[-22,22])P.push(`<circle class="ln red" cx="${SX(zx)}" cy="${SY(zy)}" r="15"/>`);
  P.push('<circle class="rdot" cx="100" cy="42.5" r="1.1"/>');
  // nets: BUF(home) defends LEFT(-89), MIN(away) defends RIGHT(+89)
- P.push(`<rect id="netL" class="crease netflash" x="${SX(-89)}" y="37" width="4" height="11" rx="1" fill="var(--buf)" opacity="0"/>`);
- P.push(`<rect id="netR" class="crease netflash" x="${SX(89)-4}" y="37" width="4" height="11" rx="1" fill="var(--min)" opacity="0"/>`);
- P.push(`<rect class="crease" x="${SX(-89)}" y="38" width="3" height="9" rx="1" fill="var(--buf)"/>`);
- P.push(`<rect class="crease" x="${SX(89)-3}" y="38" width="3" height="9" rx="1" fill="var(--min)"/>`);
- P.push(`<text class="netlab" x="${SX(-80)}" y="21" fill="var(--buf)">◄ ${HAB} net</text>`);
- P.push(`<text class="netlab" x="${SX(80)}" y="21" fill="var(--min)">${AAB} net ►</text>`);
+ P.push(`<rect id="netL" class="crease netflash" x="${SX(-89)}" y="37" width="4" height="11" rx="1" fill="var(--home)" opacity="0"/>`);
+ P.push(`<rect id="netR" class="crease netflash" x="${SX(89)-4}" y="37" width="4" height="11" rx="1" fill="#fff" stroke="var(--away)" stroke-width=".6" opacity="0"/>`);
+ P.push(`<rect class="crease" x="${SX(-89)}" y="38" width="3" height="9" rx="1" fill="var(--home)"/>`);
+ P.push(`<rect class="crease" x="${SX(89)-3}" y="38" width="3" height="9" rx="1" fill="#fff" stroke="var(--away)" stroke-width=".5"/>`);
+ P.push(`<text class="netlab" x="${SX(-80)}" y="21" fill="${readableInk(HOMECOL)}">◄ ${HAB} net</text>`);
+ P.push(`<text class="netlab" x="${SX(80)}" y="21" fill="${readableInk(AWAYCOL)}">${AAB} net ►</text>`);
  $('rink').innerHTML=P.join('');}
 function flashNet(scorer){ // scorer scores INTO opponent's net
  const el=scorer===AID?$('netR'):$('netL'); // MIN scores into MIN's...no: MIN attacks left(-89)=BUF net
@@ -278,7 +299,7 @@ function render(i,newest){
      // figures, because a figure means "someone shot from here" and drawing one
      // for a faceoff would be a claim we cannot make (Doctrine §5).
      const pen=new SvgPen('cur');
-     FIG[figStyle](pen,cx,cy,e.type==='goal'?FIG_BIG:FIG_SZ,tk(e)==='a'?MINCOL:BUFCOL,
+     FIG[figStyle](pen,cx,cy,e.type==='goal'?FIG_BIG:FIG_SZ,tk(e)==='a'?AWAYCOL:HOMECOL,
                    e.type==='goal'?'goal':'save',
                    {t:T,motion:!REDUCED,glow:false,px:(e.type==='goal'?FIG_BIG:FIG_SZ)*UNIT_PX});
      parts.push(pen.toSvg(`class="ev fig ${cls} ${tk(e)}${anim}" data-i="${k}"`).replace('</g>',title+'</g>'));
@@ -303,7 +324,7 @@ function render(i,newest){
    else if(cur&&hdOn&&isHD(cur)){lastHD=i;caption(cur,'hd');}}
  prevA=a;prevH=h;
  $('per').textContent=cur?'Period '+cur.per:'Pre-game';$('clk').textContent=cur?cur.rem:'20:00';
- if(goalieOn){const gs=goalieStats(i);$('goaliePanel').innerHTML=G.goalies.map(id=>{const p=R[id];if(!p)return '';const tid=p.tid,col=tid===AID?'var(--min)':'var(--buf)',ab=tid===AID?AAB:HAB;const st=gs[id]||{f:0,s:0,gl:0,hf:0,hs:0};const svp=st.f?(st.s/st.f).toFixed(3).replace(/^0/,''):'—';
+ if(goalieOn){const gs=goalieStats(i);$('goaliePanel').innerHTML=G.goalies.map(id=>{const p=R[id];if(!p)return '';const tid=p.tid,col=readableInk(tid===AID?AWAYCOL:HOMECOL),ab=tid===AID?AAB:HAB;const st=gs[id]||{f:0,s:0,gl:0,hf:0,hs:0};const svp=st.f?(st.s/st.f).toFixed(3).replace(/^0/,''):'—';
  // Doctrine §8 wants a base rate beside any rate. We cannot compute one from a
  // single game, and importing a league average would introduce a number that is
  // not in our feed. So under the filter we show the FRACTION and state the
@@ -312,10 +333,10 @@ function render(i,newest){
  if(workOpen)renderWork(L,cur);
 }
 function flash(id){const el=$(id);el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump');}
-function caption(e,kind){const c=$('caption');const tid=e.own;const ab=tid===AID?AAB:HAB;const col=tid===AID?'var(--min)':'var(--buf)';
+function caption(e,kind){const c=$('caption');const tid=e.own;const ab=tid===AID?AAB:HAB;const col=tid===AID?AWAYCOL:HOMECOL;
  const p=R[e.actor];const who=p?`<span class="num">#${p.n}</span>${p.nm}`:ab;
  const label=kind==='goal'?'🚨 GOAL':'⚡ High-danger chance';
- c.innerHTML=`<span class="tag" style="background:${col};color:#fff">${ab}</span><b>${label}</b> · ${who}${kind==='hd'?' from the slot':''}`;
+ c.innerHTML=`<span class="tag" style="background:${col};color:${inkOn(col)}">${ab}</span><b>${label}</b> · ${who}${kind==='hd'?' from the slot':''}`;
  c.classList.remove('on');void c.offsetWidth;c.classList.add('on');}
 let workOpen=false;
 function renderWork(L,cur){const a=L.t[AID],h=L.t[HID],tot=a+h||1,pa=Math.round(100*a/tot);
@@ -357,7 +378,7 @@ document.querySelectorAll('#rg .cc.h .lb').forEach(n=>n.childNodes[0].nodeValue=
 const HX=x=>11+Math.abs(x), HY=y=>42.5-y; let lastHD=null;
 function showWhy(idx){const e=EV[idx];if(e==null||e.x==null)return;
  const _d=shotDir(e)||1, dLine=89-e.x*_d, dist=Math.hypot(dLine,e.y), angle=Math.atan2(Math.abs(e.y),dLine)*180/Math.PI;
- const inSlot=Math.abs(e.y)<=22, tid=e.own, ab=tid===AID?AAB:HAB, col=tid===AID?'var(--min)':'var(--buf)', p=R[e.actor], isGoal=e.type==='goal';
+ const inSlot=Math.abs(e.y)<=22, tid=e.own, ab=tid===AID?AAB:HAB, col=tid===AID?AWAYCOL:HOMECOL, p=R[e.actor], isGoal=e.type==='goal';
  const diag=`<svg viewBox="0 0 100 85"><rect x="1" y="1" width="98" height="83" rx="14" fill="#fff" stroke="var(--edge)"/>
    <polygon points="63,20.5 96,38 96,47 63,64.5" fill="var(--hd)" opacity=".3"/><text x="70" y="43.5" font-size="3.4" fill="#b07d17" text-anchor="middle">slot</text>
    <rect x="90" y="37" width="6" height="11" rx="1.5" fill="${col}" opacity=".55"/><line x1="96" y1="29" x2="96" y2="56" stroke="var(--red)" stroke-width="1" opacity=".7"/>
@@ -365,7 +386,7 @@ function showWhy(idx){const e=EV[idx];if(e==null||e.x==null)return;
    <line x1="${HX(e.x).toFixed(1)}" y1="${HY(e.y).toFixed(1)}" x2="95" y2="42.5" stroke="var(--ink)" stroke-dasharray="2 1.5" stroke-width=".7"/>
    <circle cx="${HX(e.x).toFixed(1)}" cy="${HY(e.y).toFixed(1)}" r="2.8" fill="${col}" stroke="#fff" stroke-width=".7"/>
    <text x="${Math.min(HX(e.x)+4,78).toFixed(1)}" y="${(HY(e.y)-2.5).toFixed(1)}" font-size="4.2" fill="var(--ink)" font-weight="700">${Math.round(dist)} ft</text></svg>`;
- $('whyContent').innerHTML=`<div class="whyhd" style="background:${col}"><div><div class="t">${isGoal?'🚨 A high-danger GOAL':'⚡ Why this was high-danger'}</div>
+ $('whyContent').innerHTML=`<div class="whyhd" style="background:${col};color:${inkOn(col)}"><div><div class="t">${isGoal?'🚨 A high-danger GOAL':'⚡ Why this was high-danger'}</div>
    <div class="s">${p?'#'+p.n+' '+p.nm:ab} · ${ab} · P${e.per} ${e.rem} · ${e.type.replace(/-/g,' ')}</div></div><button class="whyclose" onclick="hideWhy()">✕</button></div>
   <div class="whybody"><div class="whydiag">${diag}</div>
    <div class="factor"><span class="fv">${Math.round(dist)} ft</span><span class="fl">Distance to the net — <b>close</b>. Our rule: ≤ 33 ft. <span class="chk">✓</span></span></div>
@@ -383,14 +404,18 @@ const LAB={faceoff:['Faceoff','puck dropped'],hit:['Hit','physical play — not 
 let labelsOn=true;
 function drawLabel(e){const g=$('labels');if(!labelsOn||!e||e.x==null){g.innerHTML='';return;}
  const lx=SX(e.x),ly=SY(e.y);
- if(e.type==='goal'){const tid=e.own,col=tid===AID?'#12885a':'#bd8c12',ab=tid===AID?AAB:HAB,p=R[e.actor];
+ if(e.type==='goal'){const tid=e.own,col=tid===AID?AWAYCOL:HOMECOL,ab=tid===AID?AAB:HAB,p=R[e.actor];
    const as=[R[e.a1],R[e.a2]].filter(Boolean).map(x=>x.nm).join(', ');
    let tx=lx>100?lx-5:lx+5,anc=lx>100?'end':'start',ty=Math.max(15,ly-6);
    g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${ty.toFixed(1)}" stroke="${col}" stroke-width=".4" opacity=".55"/><text class="glab" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}" fill="${col}">🚨 GOAL — ${p?p.nm:ab}</text><text class="plabsub" x="${tx.toFixed(1)}" y="${(ty+4).toFixed(1)}" text-anchor="${anc}">${as?'assists: '+as:'unassisted'}</text></g>`;return;}
  if(!LAB[e.type]){g.innerHTML='';return;}
  const info=LAB[e.type];let tx=lx+4,anc='start';if(lx>150){tx=lx-4;anc='end';}let ty=ly-4.5;if(ty<11)ty=ly+8;
+ // THE TEAM, IN WORDS. The figure on the ice is one colour and two clubs can
+ // wear the same one, so the label says whose play it was rather than leaving
+ // the answer to a hue. Costs nothing and works without colour vision.
+ const lab=e.own===AID?AAB:e.own===HID?HAB:null;
  const hd=(hdOn&&isHD(e))?' · high-danger':'';
- g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${info[0]}${hd}</text><text class="plabsub" x="${tx.toFixed(1)}" y="${(ty+3.7).toFixed(1)}" text-anchor="${anc}">${info[1]}</text></g>`;}
+ g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${lab?lab+" · ":""}${info[0]}${hd}</text><text class="plabsub" x="${tx.toFixed(1)}" y="${(ty+3.7).toFixed(1)}" text-anchor="${anc}">${info[1]}</text></g>`;}
 $('lbl').addEventListener('click',()=>{labelsOn=!labelsOn;$('lbl').setAttribute('aria-pressed',labelsOn);$('lbl').style.opacity=labelsOn?'1':'.5';drawLabel(EV[i]);});
 
 // THE WHISTLE LAYER, DRAWN. What from the stoppage, where from the faceoff that
@@ -461,7 +486,8 @@ __BOOT__
 </script>"""
 
 LIB = ["rink.js", "attribution.js", "layer.js", "strength.js", "svgpen.js", "figures.js",
-       "layers/corsi.js", "layers/goaltending.js", "layers/danger.js", "layers/whistle.js"]
+       "layers/corsi.js", "layers/goaltending.js", "layers/danger.js", "layers/whistle.js",
+       "teams.js"]
 
 def _lib():
     """Inline src/lib/*.js. They are real ES modules so `node --test` can import

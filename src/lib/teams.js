@@ -79,3 +79,61 @@ export function inkOn(hex) {
 export function nameOf(ab) {
   return (TEAMS[ab] && TEAMS[ab].name) || ab;
 }
+
+/**
+ * Nobody's colour. Used for the 42 games in the archive whose teams this table
+ * cannot answer for — national sides at the 4 Nations Face-Off and the Olympics
+ * (CAN, USA, FIN, SWE, SVK, SUI, CZE, GER, ITA, FRA, LAT, DEN) and the All-Star
+ * squads (MCD, MAT, MKN, HGS, KNG, KLS, MUN).
+ *
+ * A slate grey ON PURPOSE and not a guess at a flag. Those competitions are
+ * deliberately outside every computed number on this site, and inventing colours
+ * for them would be adding reference data for teams we have decided not to make
+ * claims about. The game page can still open them; it just does not pretend to
+ * know what colour they wear.
+ */
+export const NEUTRAL = '#5b6d7a';
+
+/**
+ * The colour to paint this team, or NEUTRAL if it is not one of the 33 clubs.
+ *
+ * NEVER THROWS AND NEVER RETURNS UNDEFINED. `nameOf` falls back to the
+ * abbreviation, which reads fine as text; a colour has no such fallback, and
+ * `undefined` reaching a CSS custom property is an invisible mark rather than a
+ * loud failure.
+ */
+export function colourOf(ab) {
+  return (TEAMS[ab] && TEAMS[ab].colour) || NEUTRAL;
+}
+
+/** WCAG 2.1 relative luminance, and the contrast ratio built from it. */
+function luminance(hex) {
+  const c = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255)
+    .map(v => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+}
+export function contrast(a, b) {
+  const [x, y] = [luminance(a) + 0.05, luminance(b) + 0.05];
+  return Math.max(x, y) / Math.min(x, y);
+}
+
+/**
+ * A team's colour when it can be READ as text on white, and plain ink when it
+ * cannot.
+ *
+ * Six of the 33 primaries fail: Boston and Nashville gold at 1.73:1, Pittsburgh
+ * 1.79, Utah 2.34, Anaheim 2.73, Vegas 2.79. Gold text on a white card is a
+ * decision to make a number harder to read in order to decorate it.
+ *
+ * THE THRESHOLD IS NOT OURS. 3:1 is WCAG 2.1's minimum for large text and for
+ * graphical objects (SC 1.4.3, 1.4.11) — a published standard, cited, in the way
+ * a stoppage sentence cites NHL Rule 81. This project refuses numbers it chose
+ * itself; this is a number somebody else chose and wrote down.
+ *
+ * Identity does not depend on this. The abbreviation chip carries the true colour
+ * with `inkOn` deciding its ink, so a team whose gold cannot be read as text is
+ * still shown IN gold — on a chip, where it has a background to be read against.
+ */
+export function readableInk(hex, on = '#ffffff') {
+  return contrast(hex, on) >= 3 ? hex : '#0f1a23';
+}

@@ -36,7 +36,12 @@ function makeDom() {
   const node = (id = '') => {
     const n = {
     id, textContent: '', innerHTML: '', value: 0, max: 0, min: 0, hidden: false,
-    style: {}, dataset: {}, onclick: null, oninput: null, _on: {}, _cls: new Set(),
+    // setProperty because the app paints the two teams' real colours onto #rg as
+    // custom properties at boot. Recorded rather than ignored, so a test can read
+    // back WHICH colour was set.
+    style: { _v: {}, setProperty(k, v) { this._v[k] = v; },
+             getPropertyValue(k) { return this._v[k] || ''; } },
+    dataset: {}, onclick: null, oninput: null, _on: {}, _cls: new Set(),
     // A REAL class list, not a no-op. The stubbed version accepted every call
     // and answered `false` to every question, so any behaviour the app expresses
     // by toggling a class was untestable and looked fine -- the same shape as
