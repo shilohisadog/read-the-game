@@ -604,6 +604,45 @@ function withShootout() {
   return { game: g, added: at.length };
 }
 
+test('overtime is NAMED, and says how many skaters are on the ice', () => {
+  // Kevin: if overtime is not surfaced, show something for the fourth period.
+  // Overtime IS surfaced — its events are real play, drawn and counted. What was
+  // never said is that it is overtime, or the thing that actually changes:
+  // measured over 219 raw feeds, regular-season overtime is 3-on-3 in 82.3% of
+  // its events. Four skaters leave and the page said "Period 4".
+  const g = JSON.parse(JSON.stringify(rich));
+  const shot = g.events.find(e => e.type === 'shot-on-goal' && e.x != null);
+  //                     per  pt     sit     what the label must say
+  const CASES = [[4, 'OT', '1331', 'Overtime · 3-on-3'],
+                 [4, 'OT', '1551', 'Overtime · 5-on-5'],   // playoff overtime
+                 [4, 'OT', '1431', 'Overtime · 4-on-3'],   // a penalty in overtime
+                 [5, 'OT', '1551', '2OT · 5-on-5'],        // playoffs run past one
+                 [6, 'OT', '1551', '3OT · 5-on-5']];
+  for (const [per, pt, sit, want] of CASES)
+    g.events.push({ ...shot, per, pt, sit, s: 3600 + per * 60, rem: '05:00' });
+  g.events.push({ ...shot, per: 5, pt: 'SO', sit: '1010', s: 4800, rem: '00:00' });
+
+  const a = boot(g);
+  const labels = a.every(d => d.$('per').textContent);
+  const tail = labels.slice(-(CASES.length + 1));
+  for (let k = 0; k < CASES.length; k++)
+    assert.equal(tail[k], CASES[k][3], `period ${CASES[k][0]} ${CASES[k][2]}`);
+  assert.equal(tail[CASES.length], 'Shootout', 'and the shootout is named, not "Period 5"');
+
+  // REGULATION IS UNTOUCHED, and it carries no skater count — the strength layer
+  // is what explains a power play, and two answers to one question is worse than
+  // one. Without this the fix could have been "always append the situation".
+  assert.equal(labels[0], 'Period 1');
+  for (const l of labels.slice(0, -(CASES.length + 1)))
+    assert.match(l, /^Period [123]$/, `regulation label became "${l}"`);
+
+  // THE COUNT IS AWAY-THEN-HOME, the scoreboard's own order. `sit` is
+  // [awayGoalie][awaySkaters][homeSkaters][homeGoalie], so 1431 is 4 away
+  // skaters against 3 home — reading it the other way names the wrong side of a
+  // power play, which this project has shipped once already.
+  assert.equal(tail[2], 'Overtime · 4-on-3');
+});
+
 test('a shootout attempt NEVER becomes a mark on the ice', () => {
   // THE COUNTING PATHS ALREADY KNEW. `inShootout` lives in layer.js and its own
   // comment says it is there "because all three need it". Three reducers called

@@ -322,6 +322,37 @@ const $=id=>document.getElementById(id);
  * So scope is decided ONCE, here, and the drawing path is not given the
  * opportunity to disagree: it cannot read a coordinate except through this.
  */
+/**
+ * WHAT PERIOD THIS IS, IN THE GAME'S OWN WORDS -- and the skater count when
+ * overtime changes how many players are on the ice.
+ *
+ * The page said "Period 4". Overtime IS surfaced here: its events are real play
+ * at real coordinates, drawn like any other and counted in the attempts. What
+ * was never said is that it is overtime at all, or the thing that actually
+ * changes -- MEASURED over 219 raw feeds, regular-season overtime is 3-on-3 in
+ * **82.3%** of its events, while playoff overtime is 5-on-5 in **93.8%**. Four
+ * skaters leave the ice and the page's only comment was to increment a number.
+ *
+ * `pt` and `sit` are both recorded fields, so none of this is inferred. The
+ * period NUMBER cannot do this job: period 5 is a shootout in the regular season
+ * and a third overtime in the playoffs.
+ *
+ * THE COUNT READS AWAY-THEN-HOME, which is the scoreboard's own order. Quoting
+ * skater counts in one order while naming a team by another is a defect this
+ * project has already shipped once, in 36 of 103 strength reasons; here no team
+ * is named at all, and matching the scoreboard is what keeps the two readable
+ * together.
+ */
+function periodLabel(e){
+ if(!e)return 'Pre-game';
+ if(e.pt==='SO')return 'Shootout';
+ if(e.pt!=='OT')return 'Period '+e.per;
+ // Playoff games run 2OT, 3OT and beyond; regulation is three periods, so the
+ // overtime's own number is the period minus three.
+ const n=e.per-3, name=n>1?n+'OT':'Overtime';
+ const s=e.sit;
+ return (s&&s.length===4)?name+' · '+s[1]+'-on-'+s[2]:name;
+}
 function place(e){
  if(!e||e.x==null)return null;
  if(inShootout(e))return null;
@@ -580,7 +611,7 @@ function render(i,newest){
    if(cur&&cur.type==='goal'){flashNet(cur.own);caption(cur,'goal');}
    else if(cur&&hdOn&&isHD(cur)){lastHD=i;caption(cur,'hd');}}
  prevA=a;prevH=h;
- $('per').textContent=cur?'Period '+cur.per:'Pre-game';$('clk').textContent=cur?cur.rem:'20:00';
+ $('per').textContent=periodLabel(cur);$('clk').textContent=cur?cur.rem:'20:00';
  if(goalieOn){const gs=goalieStats(i);$('goaliePanel').innerHTML=G.goalies.map(id=>{const p=R[id];if(!p)return '';const tid=p.tid,col=readableInk(tid===AID?AWAYCOL:HOMECOL),ab=tid===AID?AAB:HAB;const st=gs[id]||{f:0,s:0,gl:0,hf:0,hs:0};
  // A FRACTION, ALWAYS, AND THE THRESHOLD IS GONE. This used to print .943 and
  // switch to "18/20" below twenty shots faced -- and twenty was a number we

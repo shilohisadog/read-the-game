@@ -12,10 +12,27 @@
  *                 while trailing is evidence of the scoreboard, not of play.
  *   even strength an extra skater is not dictating play. Without this the
  *                 ranking partly measured who drew penalties.
- *   regulation    overtime is ALWAYS level, and regular-season OT is 3-on-3 at
- *                 attempt rates far above 5-on-5. Playoff OT is 5-on-5, so
- *                 including it biased the two game types differently — and the
- *                 rule that uses this number spans both.
+ *   regulation    overtime is ALWAYS level, so every overtime attempt would land
+ *                 in the "while level" bucket for no reason but the game having
+ *                 gone there. That is the whole reason, and it is definitional.
+ *
+ *                 THIS LINE USED TO CARRY A SECOND REASON AND IT WAS WRONG.
+ *                 It said regular-season OT runs "at attempt rates far above
+ *                 5-on-5", and built the game-type bias argument on top of that.
+ *                 Measured over 219 raw feeds (50 reaching overtime):
+ *
+ *                   regular regulation  24,239 attempts / 12,420 min = 1.95/min
+ *                   regular overtime       284 attempts /   143.9 min = 1.97/min
+ *                   playoff regulation   1,466 attempts /     720 min = 2.04/min
+ *                   playoff overtime       135 attempts /    69.5 min = 1.94/min
+ *
+ *                 Regular-season overtime runs at 1.01x its own regulation, not
+ *                 "far above" it. The STRUCTURAL half of the claim is true and
+ *                 measured — regular-season OT is 3-on-3 in 82.3% of events,
+ *                 playoff OT is 5-on-5 in 93.8% — but the rate difference the
+ *                 exclusion was partly justified on does not exist. An unmeasured
+ *                 claim propped up a correct decision, which is the arrangement
+ *                 that survives review longest and teaches the least.
  *
  * TWO CONSUMERS, ONE IMPLEMENTATION. builders/measure.mjs ranks the whole archive
  * with this module; the browser can show the same number on a game page. See
