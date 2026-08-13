@@ -280,9 +280,14 @@ function drawRink(){const P=[];P.push('<rect class="boards" x="1" y="1" width="1
  //
  // The ink follows the sweater convention it sits on: contrasting ink on the
  // host's filled net, the club's own colour on the visitor's white one.
- const netTag=(x,ab,ink)=>`<text class="netlab" transform="rotate(-90 ${x} 42.5)" x="${x}" y="42.5" fill="${ink}">${ab}</text>`;
- P.push(netTag(SX(-89)+2,HAB,inkOn(HOMECOL)));
- P.push(netTag(SX(89)-2,AAB,readableInk(AWAYCOL)));
+ // MIRRORED, NOT PARALLEL. Both tags read bottom-to-top at first, which makes
+ // the far one look rotated rather than placed. Turning them opposite ways is the
+ // dual-axis convention -- a left-hand label reads up, a right-hand label reads
+ // down -- and on a rink it puts the two abbreviations face to face across the
+ // ice instead of both pointing the same way (Kevin).
+ const netTag=(x,ab,ink,deg)=>`<text class="netlab" transform="rotate(${deg} ${x} 42.5)" x="${x}" y="42.5" fill="${ink}">${ab}</text>`;
+ P.push(netTag(SX(-89)+2,HAB,inkOn(HOMECOL),-90));
+ P.push(netTag(SX(89)-2,AAB,readableInk(AWAYCOL),90));
  $('rink').innerHTML=P.join('');}
 function flashNet(scorer){ // scorer scores INTO opponent's net
  const el=scorer===AID?$('netR'):$('netL'); // MIN scores into MIN's...no: MIN attacks left(-89)=BUF net

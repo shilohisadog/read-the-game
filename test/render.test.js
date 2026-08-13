@@ -477,8 +477,8 @@ test('each net wears the name of the team defending it', () => {
   // would need re-aiming the moment the ends switch.
   const a = boot();
   const rink = a.$('rink').innerHTML;
-  const tags = [...rink.matchAll(/<text class="netlab" transform="rotate\(-90 ([\d.]+) 42\.5\)"[^>]*>(\w+)</g)]
-    .map(m => ({ x: +m[1], ab: m[2] }));
+  const tags = [...rink.matchAll(/<text class="netlab" transform="rotate\((-?\d+) ([\d.]+) 42\.5\)"[^>]*>(\w+)</g)]
+    .map(m => ({ deg: +m[1], x: +m[2], ab: m[3] }));
   assert.equal(tags.length, 2, 'one tag per net');
 
   // The HOST defends the -x end (rink.js), so the left tag is the home club.
@@ -486,6 +486,12 @@ test('each net wears the name of the team defending it', () => {
   assert.equal(left.ab, 'BUF', 'the host defends the left net');
   assert.equal(right.ab, 'MIN', 'the visitor defends the right net');
   assert.ok(left.x < 20 && right.x > 180, 'and both sit ON their net, not in open ice');
+
+  // MIRRORED ACROSS CENTRE ICE, not parallel: a left-hand label reads up and a
+  // right-hand one reads down, so the two abbreviations face each other.
+  assert.equal(left.deg, -90, 'the near tag reads up');
+  assert.equal(right.deg, 90, 'the far tag reads down');
+  assert.equal(left.deg, -right.deg, 'and the pair is symmetric about the rink');
 
   // The old floating captions are gone, not merely duplicated.
   assert.doesNotMatch(rink, /net ►|◄ \w+ net/, 'the caption in open ice is gone');
@@ -505,7 +511,7 @@ test('EACH net tag is legible against the net it is written on', () => {
     g.teams.home.ab = home; g.teams.away.ab = away;
     const a = boot(g);
     const tags = [...a.$('rink').innerHTML.matchAll(
-      /class="netlab" transform="rotate\(-90 ([\d.]+) 42\.5\)"[^>]*fill="([^"]+)"/g)]
+      /class="netlab" transform="rotate\(-?\d+ ([\d.]+) 42\.5\)"[^>]*fill="([^"]+)"/g)]
       .map(m => ({ x: +m[1], fill: m[2] })).sort((p, q) => p.x - q.x);
     assert.equal(tags.length, 2, `${away} at ${home}: one tag per net`);
     const hostBg = colourOf(home), visitorBg = '#ffffff';
