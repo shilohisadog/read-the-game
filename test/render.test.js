@@ -527,3 +527,15 @@ test('EACH net tag is legible against the net it is written on', () => {
       `${away}'s tag is ${contrast(tags[1].fill, visitorBg).toFixed(2)}:1 on a white net`);
   }
 });
+
+test('the legend shows a goal for EITHER sweater, because the ice draws two', () => {
+  // The siren was replaced by a bullseye in the host's colour — which is half the
+  // truth: a visitor's goal is white with a coloured ring and a coloured core, and
+  // a viewer looking for the swatch they were shown would not find it. Same
+  // defect as the siren, one level smaller.
+  const legend = app.match(/<div class="legend">([\s\S]*?)<\/div>/)[1];
+  for (const [cls, who] of [['k-h', 'home shot'], ['k-a', 'visitor shot'],
+                            ['k-g', 'home goal'], ['k-gv', 'visitor goal']]) {
+    assert.match(legend, new RegExp(`class="${cls}"`), `no swatch for the ${who}`);
+  }
+});
