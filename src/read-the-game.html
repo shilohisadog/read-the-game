@@ -1656,9 +1656,21 @@ function readableInk(hex, on = '#ffffff') {
  *                 while trailing is evidence of the scoreboard, not of play.
  *   even strength an extra skater is not dictating play. Without this the
  *                 ranking partly measured who drew penalties.
- *   regulation    overtime is ALWAYS level, so every overtime attempt would land
- *                 in the "while level" bucket for no reason but the game having
- *                 gone there. That is the whole reason, and it is definitional.
+ *   regulation    TWO reasons, and "level" here means THE SCORE, never the
+ *                 skater count — dropping that subject is what made this comment
+ *                 read as a claim that overtime is always even strength, which
+ *                 it is not: 8.6% of overtime is a power play.
+ *
+ *                 One, the score is level throughout overtime, so every overtime
+ *                 attempt would land in the "while level" bucket for no reason
+ *                 but the game having gone there. Measured over 1,029 overtime
+ *                 events: **zero** attempts taken while the score was not level.
+ *                 (The 74 untied overtime events are all period-end/game-end,
+ *                 the bookkeeping after the winning goal.)
+ *
+ *                 Two, 3-on-3 PASSES the even-strength test — three equals three
+ *                 — so without this the metric would silently mix two different
+ *                 games under one label.
  *
  *                 THIS LINE USED TO CARRY A SECOND REASON AND IT WAS WRONG.
  *                 It said regular-season OT runs "at attempt rates far above
@@ -1728,7 +1740,13 @@ const tiedControl = {
       // Regulation only. `pt` is the only field that can say this: period 5 is a
       // shootout in the regular season and a third overtime in the playoffs.
       const notReg = e.pt && e.pt !== 'REG' && e.pt !== 'SO'
-        ? `overtime — always level, and regular-season overtime is 3-on-3`
+        // "LEVEL" MEANS THE SCORE, and this line dropped the subject. Kevin read
+        // it as even strength and objected that overtime has 4-on-3 — which is
+        // true, 8.6% of overtime is a power play. Both statements are correct
+        // about different things, and the copy is what made them collide. If a
+        // reader who knows hockey reads it that way, a novice will.
+        ? `overtime — the SCORE is level throughout it, so every attempt would `
+          + `count; and regular-season overtime is 3-on-3, not 5-on-5`
         : null;
       const notLevel = level ? null
         : `the score was not level — an attempt taken while behind is evidence `
