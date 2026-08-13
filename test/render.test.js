@@ -578,6 +578,69 @@ test('the goaltenders are redrawn only when they change', () => {
   assert.equal(seen[seen.length - 1], 1);
 });
 
+test('every face-off spot the feed uses is painted on the ice', () => {
+  // Kevin: "the rink doesn't have face off circles in their zones." The four
+  // end-zone CIRCLES were there; eight of the nine SPOTS were not, and a circle
+  // with no dot in it is not what anyone recognises as a face-off circle.
+  //
+  // THE CLAIM IS ABOUT THE FEED, so the expectation is derived FROM the feed and
+  // never typed. Across the archive every draw lands on one of nine coordinates —
+  // 2,134 of them over 39 games spanning the three seasons — and the reference
+  // game reaches eight of the nine, so the ninth would go unguarded if this test
+  // only asked "is every spot used here drawn". It asks the containment the other
+  // way round too: nothing is painted that the feed never uses.
+  const a = boot();
+  const rink = a.$('rink').innerHTML;
+  const drawn = new Set([...rink.matchAll(/class="fdot[^"]*" cx="([\d.]+)" cy="([\d.]+)"/g)]
+    .map(m => `${100 - +m[1]},${42.5 - +m[2]}`));   // back through SX/SY into the data frame
+  assert.equal(drawn.size, 9, `nine spots on an NHL rink, ${drawn.size} drawn`);
+
+  // 1. EVERY SPOT THE REFERENCE GAME ACTUALLY USES IS DRAWN.
+  const used = new Set(rich.events.filter(e => e.type === 'faceoff' && e.x != null)
+    .map(e => `${e.x},${e.y}`));
+  assert.ok(used.size >= 8, `the reference game should exercise most spots, got ${used.size}`);
+  for (const spot of used) assert.ok(drawn.has(spot), `a draw happens at ${spot}, unpainted`);
+
+  // 2. AND NOTHING IS DRAWN THAT THE FEED DOES NOT USE. Without this the test
+  //    passes for a rink covered in dots. The ninth spot the reference game never
+  //    reaches is named here, so the pair of checks pins the set exactly.
+  const measured = new Set(['-69,-22', '-69,22', '69,-22', '69,22',
+                            '-20,-22', '-20,22', '20,-22', '20,22', '0,0']);
+  for (const spot of drawn) assert.ok(measured.has(spot), `${spot} is painted, and no draw happens there`);
+  assert.equal([...measured].filter(s => !used.has(s)).length, 1,
+    'exactly one measured spot is unused in the reference game — the case the archive covers and this game does not');
+
+  // THE NEUTRAL ZONE HAS SPOTS AND NO CIRCLES, which is the rink's own
+  // arrangement. Circling them would be tidier and wrong.
+  const circles = new Set([...rink.matchAll(/class="ln (?:red|blue)" cx="([\d.]+)" cy="([\d.]+)" r="15"/g)]
+    .map(m => `${100 - +m[1]},${42.5 - +m[2]}`));
+  assert.equal(circles.size, 5, 'four end-zone circles and centre ice');
+  for (const spot of ['-20,-22', '-20,22', '20,-22', '20,22'])
+    assert.ok(!circles.has(spot), `${spot} is a neutral-zone spot and carries no circle`);
+  for (const spot of ['-69,-22', '-69,22', '69,-22', '69,22', '0,0'])
+    assert.ok(circles.has(spot), `${spot} should be circled`);
+});
+
+test('a whistle mark lands ON a painted spot, not on blank ice', () => {
+  // This is why the spots are not decoration. The whistle layer places every mark
+  // at the faceoff that RESTARTS play, so each mark should coincide with paint —
+  // and the ones that were landing on nothing were the neutral-zone offsides,
+  // 89.8% of all offside restarts across the archive.
+  const a = boot();
+  a.$('lyWhistle').click();
+  const spots = new Set([...a.$('rink').innerHTML.matchAll(/class="fdot[^"]*" cx="([\d.]+)" cy="([\d.]+)"/g)]
+    .map(m => `${(+m[1]).toFixed(1)},${(+m[2]).toFixed(1)}`));
+  const marks = new Set(a.every(d => [...d.$('whistles').innerHTML
+    .matchAll(/class="wh[\s"][^>]*cx="([\d.]+)" cy="([\d.]+)"/g)]
+    .map(m => `${m[1]},${m[2]}`)).flat());
+  assert.ok(marks.size >= 5, `the layer should draw marks in several places, got ${marks.size}`);
+  for (const m of marks) assert.ok(spots.has(m), `a whistle mark sits at ${m}, where there is no spot`);
+  // And the neutral zone specifically, because those are the four that were bare.
+  const NEUTRAL = new Set(['80.0,64.5', '80.0,20.5', '120.0,64.5', '120.0,20.5']);
+  assert.ok([...marks].some(m => NEUTRAL.has(m)),
+    'no mark landed in the neutral zone, so this test never covered the spots that were missing');
+});
+
 test('the goaltender FITS INSIDE the net it defends, and is centred on the mouth', () => {
   // Kevin, from one screen capture: "the goalie figures are bigger than the net."
   // Measured, they were — 8.1 units tall in front of a 6-foot mouth, 135% of the

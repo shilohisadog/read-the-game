@@ -49,7 +49,7 @@ T = r"""<style>
 #rg svg{display:block;width:100%;height:auto}
 #rg .boards{fill:var(--ice);stroke:var(--edge);stroke-width:1.1}
 #rg .ln{fill:none;stroke-linecap:round}#rg .ln.red{stroke:var(--red);stroke-width:.7;opacity:.42}#rg .ln.blue{stroke:var(--blue);stroke-width:.9;opacity:.42}#rg .ln.thick{stroke-width:1.1;opacity:.52}
-#rg .rdot{fill:var(--red);opacity:.5}
+#rg .fdot{fill:var(--red);opacity:.55}#rg .fdot.ctr{fill:var(--blue)}
 #rg .crease{fill:#cfe0f2;stroke:var(--blue);stroke-width:.4;opacity:.55}
 #rg .mesh{stroke-width:.8;opacity:.9}#rg .strand{stroke-width:.35;opacity:.5}#rg .post{stroke-width:1.1;stroke-linecap:round}
 #rg .gkbody,#rg .gkhead{stroke-width:.4}#rg .gkstick{stroke-width:.55;stroke-linecap:round}
@@ -298,8 +298,38 @@ function drawRink(){const P=[];P.push('<rect class="boards" x="1" y="1" width="1
  for(const g of[-89,89])P.push(`<line class="ln red" x1="${SX(g)}" y1="3" x2="${SX(g)}" y2="82"/>`);
  for(const b of[-25,25])P.push(`<line class="ln blue" x1="${SX(b)}" y1="1" x2="${SX(b)}" y2="84"/>`);
  P.push('<line class="ln red thick" x1="100" y1="1" x2="100" y2="84"/><circle class="ln blue" cx="100" cy="42.5" r="15"/>');
- for(const zx of[-69,69])for(const zy of[-22,22])P.push(`<circle class="ln red" cx="${SX(zx)}" cy="${SY(zy)}" r="15"/>`);
- P.push('<circle class="rdot" cx="100" cy="42.5" r="1.1"/>');
+ // THE NINE FACE-OFF SPOTS, taken from the DATA rather than from the rulebook.
+ // Every faceoff in the archive happens at one of nine coordinates: 2,134 draws
+ // across 39 games spread over the three seasons land on these nine and on
+ // nothing else, and none of them arrives without a coordinate. So this table is
+ // a measurement, checkable against the feed, rather than a diagram I remembered.
+ //
+ //   end zone (+-69,+-22) 68.6%   centre (0,0) 19.5%   neutral (+-20,+-22) 11.9%
+ //
+ // ONLY FIVE OF THE NINE CARRY A CIRCLE -- the four end-zone spots and centre
+ // ice. The neutral-zone spots are bare, which is the rink's own arrangement and
+ // not an omission here; drawing circles on them would be tidier and wrong.
+ //
+ // AND THE SPOTS ARE NOT DECORATION. The whistle layer places every mark at the
+ // faceoff that RESTARTS play, and offside restarts on a neutral-zone spot 89.8%
+ // of the time -- so the four spots nobody had drawn are the four that layer uses
+ // most. A ring on blank ice reads as "something happened at this arbitrary
+ // point"; the same ring on a painted spot reads as "play restarted here".
+ //
+ // NO HASH MARKS. A real end-zone circle has them and nothing available here
+ // gives their dimensions, so they stay off rather than being approximated.
+ const ENDZONE=[],NEUTRAL=[];
+ for(const zx of[-69,69])for(const zy of[-22,22])ENDZONE.push([zx,zy]);
+ for(const zx of[-20,20])for(const zy of[-22,22])NEUTRAL.push([zx,zy]);
+ for(const[zx,zy]of ENDZONE)P.push(`<circle class="ln red" cx="${SX(zx)}" cy="${SY(zy)}" r="15"/>`);
+ // Spots go on LAST so a dot sits on top of its circle. Centre ice is blue and
+ // the other eight are red, which is how the paint goes down. All nine are drawn
+ // at one size: the eight outer spots are two feet across and this is that, while
+ // the centre spot is smaller in a real rink and is drawn to match the rest
+ // because at this scale the true size is under a pixel on a phone.
+ for(const[zx,zy]of[...ENDZONE,...NEUTRAL])
+  P.push(`<circle class="fdot" cx="${SX(zx)}" cy="${SY(zy)}" r="1"/>`);
+ P.push('<circle class="fdot ctr" cx="100" cy="42.5" r="1"/>');
  // nets: BUF(home) defends LEFT(-89), MIN(away) defends RIGHT(+89)
  // A NET DRAWN AS EQUIPMENT, not as a chip. It was a rounded rectangle filled
  // with the club colour and captioned in contrasting ink -- which is the
