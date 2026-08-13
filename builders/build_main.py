@@ -226,7 +226,22 @@ G.events.forEach((e,n)=>{if(!SKIP.has(e.type)){EV.push(e);EVI.push(n);}});
 const upto=k=>k<0?[]:G.events.slice(0,EVI[k]+1);
 __LIB__
 const ATT=ATTEMPT_TYPES;
-const SX=x=>x+100, SY=y=>42.5-y;
+// THE HOST DEFENDS THE RIGHT-HAND END, which is the arrangement a television
+// viewer expects (Kevin) -- and it is ours to choose, because the feed does not
+// have one: across 14 raw play-by-plays `homeTeamDefendingSide` in period one
+// splits 7 left, 7 right. It is fixed to the arena, not to the league.
+//
+// It also removes a real confusion. The scoreboard reads away-then-host, so the
+// host's badge sits on the RIGHT; with the host defending the left end, the same
+// three letters appeared on opposite sides of one screen. Kevin read the pair as
+// swapped and CHENG independently found the cause -- the rink and the scoreboard
+// speaking one visual language with two meanings. Now they agree.
+//
+// A DISPLAY TRANSFORM AND NOTHING MORE. The extract keeps the host on -x, every
+// reducer keeps reading it that way, and `distanceToNet` still measures to the
+// net a team attacks. Only the mapping from rink feet to screen units is
+// reflected, in this one line.
+const SX=x=>100-x, SY=y=>42.5-y;
 // Rink is 200 units long for 200 feet, so one unit is one foot: a ~6 ft player
 // is ~6 units. Goals get a little more presence.
 // Only one figure is on the ice at a time, so it can afford presence and detail.
@@ -298,8 +313,11 @@ function drawRink(){const P=[];P.push('<rect class="boards" x="1" y="1" width="1
  //
  // The sweater convention carries over: the host's mesh is filled with its
  // colour, the visitor's is white inside its own frame.
- const netGlyph=(id,gx,dir,col,fill)=>{
-  const back=gx-4*dir, top=42.5-3, bot=42.5+3;
+ const netGlyph=(id,gx,col,fill)=>{
+  // Which way is "behind" is read from where the goal line sits on screen, so a
+  // reflection of SX carries the whole net with it and cannot leave one end
+  // pointing the wrong way.
+  const dir=gx<100?1:-1, back=gx-4*dir, top=42.5-3, bot=42.5+3;
   const body=`M ${gx} ${top} L ${back} ${top+0.8} L ${back} ${bot-0.8} L ${gx} ${bot} Z`;
   return `<g class="netg">`
    + `<path class="crease" d="M ${gx} ${42.5-6} A 6 6 0 0 ${dir>0?1:0} ${gx} ${42.5+6}"/>`
@@ -312,8 +330,10 @@ function drawRink(){const P=[];P.push('<rect class="boards" x="1" y="1" width="1
    + `<path id="${id}" class="flashpath" d="${body}" fill="${col}" opacity="0"/>`
    + `</g>`;};
  // dir points from the goal line toward CENTRE ice, so the body goes the other way.
- P.push(netGlyph('netL',SX(-89),1,HOMECOL,HOMECOL));
- P.push(netGlyph('netR',SX(89),-1,AWAYCOL,'#fff'));
+ // Ids by ROLE, not by side. `netL`/`netR` were screen names for data facts, and
+ // a reflection turns that kind of name into a lie without changing a character.
+ P.push(netGlyph('netHome',SX(-89),HOMECOL,HOMECOL));
+ P.push(netGlyph('netAway',SX(89),AWAYCOL,'#fff'));
  // THE LABEL MOVES BEHIND THE GOAL LINE, into dead ice where there is room for
  // the word that was doing the disambiguating work. "CBJ" alone can be read as
  // "CBJ's net" or "where CBJ shoots", and those are opposites (CHENG); "CBJ net"
@@ -329,15 +349,21 @@ function drawRink(){const P=[];P.push('<rect class="boards" x="1" y="1" width="1
  // and it answers a different question than the one a viewer is asking: which way
  // a label appears to face is not settled by where its ascenders point. Kevin read
  // the screen; the screen wins.
- const netTag=(x,ab,ink,deg)=>`<text class="netlab" transform="rotate(${deg} ${x} 42.5)" x="${x}" y="42.5" fill="${ink}">${ab} net</text>`;
- P.push(netTag(SX(-89)-6,HAB,readableInk(HOMECOL),-90));
- P.push(netTag(SX(89)+6,AAB,readableInk(AWAYCOL),90));
+ // Placement and rotation both follow the SCREEN side: the label sits further
+ // from centre than its net, and the near one reads up while the far one reads
+ // down. Derived rather than written twice, so the reflection above needs no
+ // second edit here.
+ const netTag=(gx,ab,ink)=>{const dir=gx<100?1:-1, x=gx-6*dir;
+  return `<text class="netlab" transform="rotate(${dir>0?-90:90} ${x} 42.5)" x="${x}" y="42.5" fill="${ink}">${ab} net</text>`;};
+ P.push(netTag(SX(-89),HAB,readableInk(HOMECOL)));
+ P.push(netTag(SX(89),AAB,readableInk(AWAYCOL)));
  $('rink').innerHTML=P.join('');}
 function flashNet(scorer){
- // A team scores INTO the net it is attacking, which is the OTHER team's. The
- // host defends -x, so a visitor goal lights the near net and a host goal the far
- // one. Restarting the animation needs the class off, a reflow, then on.
- const net=scorer===AID?$('netL'):$('netR');
+ // A team scores INTO the net it is attacking, which is the OTHER team's: a
+ // visitor goal lights the HOST's net. Stated by role, so which side of the
+ // screen that is stays a rendering question. Restarting the animation needs the
+ // class off, a reflow, then on.
+ const net=scorer===AID?$('netHome'):$('netAway');
  net.classList.remove('netflash');void net.offsetWidth;net.classList.add('netflash');}
 let prevA=0,prevH=0;
 function render(i,newest){

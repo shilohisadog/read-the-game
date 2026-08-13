@@ -495,10 +495,13 @@ test('each net wears the name of the team defending it', () => {
     .map(m => ({ deg: +m[1], x: +m[2], ab: m[3] }));
   assert.equal(tags.length, 2, 'one tag per net');
 
-  // The HOST defends the -x end (rink.js), so the left tag is the home club.
+  // THE HOST IS ON THE RIGHT, which is the television arrangement and the one
+  // that agrees with the scoreboard: it reads away-then-host, so the host's badge
+  // is on the right too. The same three letters appearing on opposite sides of
+  // one screen is what made Kevin read the pair as swapped.
   const [left, right] = tags.sort((p, q) => p.x - q.x);
-  assert.equal(left.ab, 'BUF', 'the host defends the left net');
-  assert.equal(right.ab, 'MIN', 'the visitor defends the right net');
+  assert.equal(left.ab, 'MIN', 'the visitor defends the left net');
+  assert.equal(right.ab, 'BUF', 'the host defends the right net');
   // BEHIND THE GOAL LINE, in dead ice. On the net itself the label was a pill in
   // the scoreboard's own visual language, and "CBJ" alone reads as either "CBJ's
   // net" or "where CBJ shoots" — opposites (CHENG). The word `net` is back, and
@@ -506,6 +509,10 @@ test('each net wears the name of the team defending it', () => {
   assert.ok(left.x < 11 && right.x > 189,
     `the tags must sit BEHIND the goal lines (11 and 189), got ${left.x} and ${right.x}`);
   assert.match(rink, /BUF net</, 'the possessive word is back');
+  // The scoreboard and the rink must name the same side for the same club.
+  assert.equal(a.$('hAb').textContent, right.ab,
+    'the host is on the right of the scoreboard AND the right of the rink');
+  assert.equal(a.$('aAb').textContent, left.ab, 'and the visitor on the left of both');
 
   // THEY FACE EACH OTHER, which is a claim about WHICH WAY, not merely that the
   // two differ — symmetry alone is equally satisfied by the pair facing outward,
@@ -688,7 +695,7 @@ test('the goal flash is its own element, so the net cannot vanish', () => {
   // back, which reads as a rendering fault rather than a celebration.
   const a = boot();
   const rink = a.$('rink').innerHTML;
-  for (const id of ['netL', 'netR']) {
+  for (const id of ['netHome', 'netAway']) {
     const m = rink.match(new RegExp(`<path id="${id}"[^>]*>`));
     assert.ok(m, `${id} must exist for flashNet to find`);
     assert.match(m[0], /class="flashpath"/, 'the flash is a separate path');
@@ -696,6 +703,9 @@ test('the goal flash is its own element, so the net cannot vanish', () => {
   }
   // The net's own body must NOT be the thing carrying the id.
   assert.doesNotMatch(rink, /<path class="mesh" id=/, 'the net itself is never flashed');
-  assert.match(app, /const net=scorer===AID\?\$\('netL'\):\$\('netR'\)/,
-    'a visitor goal lights the near net, because the host defends -x');
+  // BY ROLE, NOT BY SIDE. `netL`/`netR` were screen names for data facts, and
+  // reflecting the rink turns that kind of name into a lie without changing a
+  // character of it.
+  assert.match(app, /const net=scorer===AID\?\$\('netHome'\):\$\('netAway'\)/,
+    "a visitor goal lights the HOST's net, whichever side that is drawn on");
 });
