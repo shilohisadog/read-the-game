@@ -260,3 +260,107 @@ And the thing that would beat both reviewers' opinions: **do we have any
 analytics?** Referrers and landing pages would settle in five minutes whether
 people arrive at `/` or at `/game` — which is the question §2 and §6 are both
 guessing at.
+
+---
+
+## 12. CHENG's rulings, and what they changed
+
+**§2 needs no evidence to act on.** *"Whatever the referrers say, a landing page
+with no way out is wrong. Fix it now, measure after."* Accepted, and it removes
+analytics from the critical path entirely.
+
+He also named why both reviewers missed it, which is worth more than the finding:
+**we each reviewed the page we were shown.** Kevin pasted a homepage screenshot; I
+read `index.html`; neither of us asked which page receives traffic. That the
+shareable unit is a game was settled months ago, and neither of us joined it to
+*"therefore `game.html` is the landing page."* It was in the architecture the
+whole time.
+
+### 12.1 Game-page chrome — my question was malformed
+
+I asked "converting a stranger versus interrupting a viewer" and CHENG's answer is
+that **the tension is false, because the two moments are not simultaneous.** The
+stranger arrives *before* the game; the viewer exists *during* it; and the moment
+that matters is **neither — it is when the game ends.** Someone who has just
+watched a replay and understood why twelve attempts did not count is at peak
+curiosity, and that surface is *below* the rink.
+
+So §5 is replaced:
+
+- **Above the rink:** wordmark plus one *"What is this?"* link. **Not sticky** —
+  the rink is wide, the 360px gate is tight, and a sticky header eats the viewport
+  on exactly the device that can least afford it.
+- **Below the rink:** the funnel, and **specific to the game just watched** —
+  *More WSH games · More CBJ games · How this works · The archive.* A generic nav
+  bar cannot do that; a per-game block can, and the teams are already in scope.
+
+This is better than what I proposed and it dissolves the evidence gap rather than
+arguing past it: minimal chrome where interruption is possible, the real ask where
+attention already lands.
+
+**Implementation consequence.** `game.html` fetches its game at runtime, so the
+team links cannot be built by `page.py` — the shell provides the container and
+`boot()` fills it. The chrome stays generic; the per-game block belongs to
+`build_main.py`.
+
+### 12.2 Three points on a scale — approved, with two conditions
+
+CHENG restated what the original defect actually was rather than defending his own
+suggestion, and the line is principled:
+
+The cumulative curve was unsafe because **its tail values were uninformative**
+(n=10 gives a 9%–70% band, so adjacent points wobble and the wobble reads as
+signal) and because **its domain was continuous**, so a line invites reading a
+value at k=17 that was never computed.
+
+Neither holds here. n is 3,957 / 4,029 / 3,855 — standard errors under a point.
+And the domain is **nominal**: there is no measure *between* "shots on goal" and
+"shot attempts", so interpolation is not misleading, it is meaningless — which is
+what makes it safe.
+
+**Two conditions, binding:**
+
+1. **No connecting line.** Dots on a scale, never a line chart. The segment is
+   what asserts a continuum, and the continuum does not exist.
+2. **Every point carries its own fraction** — `1811 of 3957` beside `45.8%`, as
+   the rows already do.
+
+Plus: **mark 50%**, since one of them crossing it is the entire point. Ordered
+crudest-to-most-refined the values run 45.8 → 54.5 → 39.6, which is
+**non-monotone — and that is a feature**, because it cannot be misread as
+"counting better makes the number go down."
+
+### 12.3 Analytics — parked, and the reason is a property we advertise
+
+Confirmed by audit: **nothing is configured** — no beacon, no analytics key
+anywhere in the repo.
+
+The standard Cloudflare Pages setup injects a JS beacon calling
+`cloudflareinsights.com`, which needs a new `script-src` hash **and** a
+third-party `connect-src` entry. This site makes zero third-party calls, enforced
+by CSP and stated in the limits block. A beacon means a visitor's browser phones a
+company they did not come to visit, on the page that advertises the opposite.
+
+CHENG's lean, which I share: **the property is worth more than the data**, because
+the data can be got another way — once `game.html` has exits, whether anyone uses
+them is observable in whatever logs exist, and if none exist the answer was never
+going to change the decision. Before any of that, someone should check whether a
+**beacon-free** server-side option exists for Pages; neither reviewer can verify
+that from here.
+
+**And the limit worth stating:** referrers tell you where people land and whether
+they leave. They will **not** tell you whether the homepage is novice-friendly.
+§11 stands unchanged — nobody has watched a novice use this site, and no volume of
+traffic data substitutes for that.
+
+### 12.4 One note promoted to a test
+
+*"Chrome CSS must be inline, never a separate stylesheet"* was written as a note,
+and CHENG is right that a note is what gets violated the first time somebody wants
+to reuse it. The CSP already makes it fail loudly in a browser — but that is after
+deploy. **It becomes a build-time assertion** in §9.
+
+And his one-sentence case for §4, which is the best summary of the whole document:
+the `goalie-eye-view.html` gap **nobody found by looking, and which appeared
+because the rule got a home.** Same shape as `place()`, and the third instance
+this week.

@@ -11,8 +11,25 @@
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="From the crease — Read the Game">
 <meta name="twitter:description" content="One NHL game's shots, seen from where the goalie stood.">
+<style>
+.sitehdr,.sitefoot{font:500 .9rem/1.5 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+ background:#f4f7fa;color:#0f1a23;-webkit-text-size-adjust:100%}
+.sitehdr{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 18px;
+ padding:12px 16px;border-bottom:1px solid #ccd8e0}
+.sitehdr a{color:#0f1a23;text-decoration:none}
+.sitehdr .mark{font-weight:800;letter-spacing:.02em;margin-right:auto}
+.sitehdr nav{display:flex;flex-wrap:wrap;gap:6px 16px}
+.sitehdr nav a{color:#2a5d86;text-decoration:none;padding:2px 0;border-bottom:1px solid transparent}
+.sitehdr nav a:hover,.sitehdr nav a:focus{border-bottom-color:#2a5d86}
+.sitehdr nav a[aria-current="page"]{color:#0f1a23;border-bottom-color:#0f1a23}
+.sitefoot{border-top:1px solid #ccd8e0;padding:18px 16px 28px;color:#5b6d7a;font-size:.82rem}
+.sitefoot p{margin:0 0 7px;max-width:70ch}
+.sitefoot a{color:#2a5d86}
+@media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
+</style>
 </head>
 <body>
+<header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">Watch a game</a><a href="/#teams">Teams</a></nav></header>
 <style>
 #gv{--bg:#05090e;--ink:#e9f0f6;--muted:#8ba0ae;--save:#4aa3e0;--goal:#ff4d5e;--ice:#16extcc;
  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:radial-gradient(120% 90% at 50% 0%,#0d1a26,#05090e 65%);color:var(--ink);min-height:100vh;padding:clamp(16px,3.5vw,32px) clamp(12px,4vw,20px)}
@@ -319,5 +336,6 @@ syncFig();
 let raf;function loop(){T+=0.04;draw();raf=requestAnimationFrame(loop);}
 fit();updStat();setView('crease');loop();
 </script>
+<footer class="sitefoot"><p>Game data from the NHL's public play-by-play feed, fetched once and stored. Not affiliated with or endorsed by the NHL. <strong>No NHL or club logos, wordmarks or crests appear anywhere on this site</strong> — teams are identified by colour and three-letter abbreviation only.</p><p><a href="https://github.com/shilohisadog/read-the-game">Source on GitHub</a> — every number here is a function of stored events, and you can read the function.</p></footer>
 </body>
 </html>

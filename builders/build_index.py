@@ -61,9 +61,24 @@ def _csp(html):
     anyone, anywhere in the delivery path, and the browser refuses to run it.
     """
     def h(pattern):
-        m = re.search(pattern, html, re.S)
-        digest = hashlib.sha256(m.group(1).encode()).digest()
-        return "'sha256-" + base64.b64encode(digest).decode() + "'"
+        # EVERY BLOCK, NOT THE FIRST. This was `re.search`, which silently
+        # assumed a document contains exactly one <style> and one <script> --
+        # true of every page here until the shared chrome added a second <style>
+        # in <head>. The policy then pinned the CHROME's 957 bytes and left the
+        # page's own 14 KB stylesheet unhashed, so a real browser would have
+        # refused it and rendered the game page entirely unstyled. Nothing in the
+        # node suite can see that: the fake DOM has no CSS at all.
+        #
+        # A hash-pinned policy with a MISSING hash is the same failure as a stale
+        # one -- a blank page that passes every grep we could write -- which is
+        # what the docstring above already said, one instance narrower than it
+        # needed to be.
+        blocks = re.findall(pattern, html, re.S)
+        assert blocks, f"CSP found nothing matching {pattern!r} to pin"
+        return " ".join(
+            "'sha256-" + base64.b64encode(
+                hashlib.sha256(b.encode()).digest()).decode() + "'"
+            for b in blocks)
 
     return "; ".join([
         "default-src 'none'",
@@ -537,7 +552,7 @@ def build():
     # Stamped last: the hashes must cover the final bytes of the script and
     # style, and the CSP itself sits in <head>, outside both.
     html = P.document(html, title=TITLE, description=DESC,
-                      url="https://readthegame.co/",
+                      url="https://readthegame.co/", current="/",
                       head='<meta http-equiv="Content-Security-Policy" content="__CSP__">\n'
                            + STYLE)
     return html.replace("__CSP__", _csp(html))

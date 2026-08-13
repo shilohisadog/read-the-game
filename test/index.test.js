@@ -135,20 +135,31 @@ test('the no-network claim is enforced by the browser, not asserted by us', () =
     'nothing is allowed by being inline; everything is pinned');
 });
 
-test('the CSP hashes match the bytes actually shipped', () => {
+test('the CSP pins EVERY block it ships, and pins nothing else', () => {
   // A hash-pinned CSP with a stale hash is a BLANK PAGE THAT PASSES A GREP.
-  // Recompute both digests from the shipped file rather than trusting the
+  // Recompute the digests from the shipped file rather than trusting the
   // builder that wrote them -- a check that shares its input with the thing it
   // checks is testing one assumption twice.
+  //
+  // THIS USED TO READ THE FIRST <style> AND THE FIRST <script> AND COMPARE THE
+  // DIRECTIVE TO IT EXACTLY, which encoded the same assumption as the builder it
+  // was checking: that a document holds exactly one of each. The shared chrome
+  // added a second <style> in <head>, the builder's `re.search` pinned that one
+  // and left the page's own stylesheet unhashed, and a browser would have
+  // refused it -- the page rendering completely unstyled.
+  //
+  // So this is now SET EQUALITY, which is strictly stronger than what it
+  // replaces: every shipped block must be pinned (or the browser refuses it),
+  // AND nothing may be pinned that is not shipped (or a stale hash survives,
+  // which is the failure the original sentence above is about).
   const p = html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/)[1];
-  for (const [label, re_, directive] of [
-    ['script', /<script>([\s\S]*?)<\/script>/, 'script-src'],
-    ['style', /<style>([\s\S]*?)<\/style>/, 'style-src'],
-  ]) {
-    const body = html.match(re_)[1];
-    const want = `'sha256-${createHash('sha256').update(body).digest('base64')}'`;
-    const got = p.match(new RegExp(`${directive} ([^;]+)`))[1];
-    assert.equal(got, want, `${directive} does not match the ${label} it ships`);
+  for (const [tag, directive] of [['script', 'script-src'], ['style', 'style-src']]) {
+    const shipped = [...html.matchAll(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, 'g'))]
+      .map(m => `'sha256-${createHash('sha256').update(m[1]).digest('base64')}'`);
+    assert.ok(shipped.length, `no <${tag}> found to check`);
+    const pinned = p.match(new RegExp(`${directive} ([^;]+)`))[1].trim().split(/\s+/);
+    assert.deepEqual(new Set(pinned), new Set(shipped),
+      `${directive} pins ${pinned.length} hashes for ${shipped.length} shipped <${tag}> blocks`);
   }
 });
 

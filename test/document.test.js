@@ -20,6 +20,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 
 const SRC = new URL('../src/', import.meta.url);
 const PAGES = readdirSync(SRC).filter(f => f.endsWith('.html'));
@@ -113,4 +114,104 @@ test('the homepage does not describe an archive as one game', () => {
   assert.doesNotMatch(desc, /\b(a single|one) (NHL )?game\b/i,
     `the homepage description claims one game: "${desc}"`);
   assert.match(desc, /seasons|archive|games/i, 'and it should say what it is');
+});
+
+/**
+ * THE CHROME: a header and a footer no page can be without.
+ *
+ * `game.html` shipped with ZERO href attributes — not one link on the whole
+ * page. It is the LANDING page, because the shareable unit of this site is a
+ * game, so the stranger arriving from a shared link hit a dead end with no route
+ * to the archive, to a team, or to any explanation of what they were looking at.
+ * Two reviewers redesigned the homepage in the same week without noticing,
+ * because each of us reviewed the page we were shown rather than asking which
+ * page receives traffic.
+ *
+ * These live in `page.py::document` for the same reason the viewport tag does:
+ * a rule that must be re-applied in every builder is the defect this whole file
+ * exists to catch, one level up.
+ */
+test('every page carries the site header, with a route home', () => {
+  for (const f of PAGES) {
+    const h = readFileSync(new URL(f, SRC), 'utf8');
+    assert.match(h, /<header class="sitehdr">/, `${f} has no site header`);
+    assert.match(h, /<a class="mark" href="\/">Read the Game<\/a>/,
+      `${f} has no route back to the front page`);
+  }
+});
+
+test('every page carries the footer, so the attribution is not optional', () => {
+  // goalie-eye-view.html carried NO no-marks statement at all. Nobody found that
+  // by looking; it fell out of the rule getting a home.
+  for (const f of PAGES) {
+    const h = readFileSync(new URL(f, SRC), 'utf8');
+    assert.match(h, /<footer class="sitefoot">/, `${f} has no site footer`);
+    assert.match(h, /No NHL or club logos, wordmarks or crests/,
+      `${f} does not say that no club marks appear`);
+    assert.match(h, /Not affiliated with or endorsed by the NHL/, `${f} lacks attribution`);
+  }
+});
+
+test('NO PAGE IS A DEAD END — the one this work exists to fix', () => {
+  // Asserted by counting, because "game.html has links now" is satisfied by one
+  // broken anchor. It was exactly zero.
+  for (const f of PAGES) {
+    const h = readFileSync(new URL(f, SRC), 'utf8');
+    const links = (h.match(/href="/g) || []).length;
+    assert.ok(links >= 3, `${f} offers ${links} links — a visitor who lands here is stuck`);
+  }
+});
+
+test('every chrome link resolves to a page that exists', () => {
+  // A nav link to a page we have not built is a 404 wearing a plan. This is what
+  // stops the nav being extended ahead of its destinations.
+  const have = new Set(PAGES);
+  for (const f of PAGES) {
+    const h = readFileSync(new URL(f, SRC), 'utf8');
+    const chrome = h.match(/<header class="sitehdr">[\s\S]*?<\/header>/)[0]
+                 + h.match(/<footer class="sitefoot">[\s\S]*?<\/footer>/)[0];
+    for (const [, href] of chrome.matchAll(/href="([^"]+)"/g)) {
+      if (/^https?:/.test(href)) continue;
+      const path = href.split('#')[0].split('?')[0];
+      if (path === '/' || path === '') continue;        // the front page
+      assert.ok(have.has(path.replace(/^\//, '')), `${f} links to ${href}, which does not exist`);
+    }
+  }
+});
+
+test('THE CSP PINS EVERY INLINE BLOCK, not the first one it finds', () => {
+  // THIS TEST EXISTS BECAUSE ADDING THE CHROME BROKE IT. `_csp` used re.search,
+  // which silently assumed a document holds exactly one <style> and one
+  // <script> — true of every page here until the shared chrome added a second
+  // <style> in <head>. The policy then pinned the CHROME's 957 bytes and left
+  // the page's own 14 KB stylesheet unhashed, and a real browser would have
+  // refused it: the game page would have rendered completely unstyled.
+  //
+  // Nothing in the node suite could see that — the fake DOM has no CSS — and the
+  // failure would have surfaced as "the site looks broken" after deploy. A
+  // hash-pinned policy with a MISSING hash is the same failure as a stale one.
+  for (const f of PAGES) {
+    const h = readFileSync(new URL(f, SRC), 'utf8');
+    const csp = h.match(/http-equiv="Content-Security-Policy" content="([^"]*)"/);
+    if (!csp) continue;                       // only the two hash-pinned pages
+    const pinned = new Set([...csp[1].matchAll(/'sha256-([A-Za-z0-9+/=]+)'/g)].map(m => m[1]));
+    const blocks = [...h.matchAll(/<(style|script)[^>]*>([\s\S]*?)<\/\1>/g)];
+    assert.ok(blocks.length >= 3, `${f} should carry chrome CSS plus its own script and style`);
+    for (const [, tag, body] of blocks) {
+      const digest = createHash('sha256').update(body).digest('base64');
+      assert.ok(pinned.has(digest),
+        `${f}: a <${tag}> of ${body.length} bytes is not pinned by the CSP — the browser will refuse it`);
+    }
+  }
+});
+
+test('the chrome CSS is INLINE, never a stylesheet the CSP would refuse', () => {
+  // Promoted from a note in docs/site-chrome.md §12.4 at CHENG's suggestion: a
+  // note is what gets violated the first time somebody wants to reuse it. The
+  // CSP already makes this fail in a browser — which is after deploy.
+  for (const f of PAGES) {
+    const h = readFileSync(new URL(f, SRC), 'utf8');
+    assert.doesNotMatch(h, /<link[^>]+rel="stylesheet"/i,
+      `${f} links an external stylesheet, which default-src 'none' forbids`);
+  }
 });
