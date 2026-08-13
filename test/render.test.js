@@ -578,6 +578,70 @@ test('the goaltenders are redrawn only when they change', () => {
   assert.equal(seen[seen.length - 1], 1);
 });
 
+/**
+ * A SYNTHESISED shootout, and synthesised on purpose (CHENG).
+ *
+ * The reference game carries `pt: 'REG'` on all 320 events, so every local test,
+ * every fixture and every mutation ever run here has been on a game with no
+ * shootout — which is exactly why the defect survived. Reaching into the archive
+ * for `2023020510` would fix that today and leave the test depending on a game
+ * remaining published tomorrow. So the case is built here.
+ *
+ * The coordinates are the ones the feed really produces, taken from that game:
+ * attempts at BOTH ends (+75, -73, +76, -83), which is the thing that cannot be
+ * true — every shootout attempt is taken at one end.
+ */
+function withShootout() {
+  const g = JSON.parse(JSON.stringify(rich));
+  const shot = g.events.find(e => e.type === 'shot-on-goal' && e.x != null);
+  const HID = g.teams.home.id, AID = g.teams.away.id;
+  const at = [[75, 1, 'missed-shot', AID], [-73, 0, 'missed-shot', HID],
+              [76, -1, 'goal', AID], [-83, -7, 'missed-shot', HID]];
+  for (const [x, y, type, own] of at) {
+    g.events.push({ ...shot, per: 5, pt: 'SO', type, own, x, y,
+                    s: 4800, clock: '00:00', rem: '00:00' });
+  }
+  return { game: g, added: at.length };
+}
+
+test('a shootout attempt NEVER becomes a mark on the ice', () => {
+  // THE COUNTING PATHS ALREADY KNEW. `inShootout` lives in layer.js and its own
+  // comment says it is there "because all three need it". Three reducers called
+  // it; the DRAWING path never did, and painted attempts at coordinates that are
+  // not positions on the ~6% of games that reach a shootout.
+  const { game, added } = withShootout();
+  const a = boot(game);
+  const last = +a.$('scrub').max;
+  // The four appended events are all drawable types, so they occupy the final
+  // timeline slots. Identifying them by INDEX rather than by coordinate keeps
+  // this from accidentally passing because a regulation play sat elsewhere.
+  const soIdx = new Set(Array.from({ length: added }, (_, k) => String(last - k)));
+  assert.equal(soIdx.size, added);
+
+  const frames = a.every(d => d.$('events').innerHTML);
+  for (const html of frames)
+    for (const m of html.matchAll(/data-i="(\d+)"/g))
+      assert.ok(!soIdx.has(m[1]), `a shootout attempt was drawn on the ice (data-i=${m[1]})`);
+
+  // The puck is the third site that read a coordinate directly, so it moved to a
+  // place the puck had not been.
+  const pucks = a.every(d => d.$('puck').innerHTML);
+  for (let k = last - added + 1; k <= last; k++)
+    assert.equal(pucks[k], '', `the puck jumped to a shootout coordinate at frame ${k}`);
+  assert.ok(pucks[last - added] !== '', 'and the puck is still drawn for real play');
+
+  // AND THE ICE SAYS SO, rather than going quietly blank. Removing the marks
+  // without a word would leave the replay ending level while the scoreboard
+  // reads a goal higher, with nothing accounting for the difference.
+  const notes = a.every(d => d.$('noplace').innerHTML);
+  assert.equal(notes[last - added], '', 'nothing is said during ordinary play');
+  for (let k = last - added + 1; k <= last; k++) {
+    assert.match(notes[k], /skills competition that decides the game, not play in it/);
+    assert.match(notes[k], /coordinates the feed records for them are not positions/,
+      'the disclosure has to say what we did, not only what a shootout is');
+  }
+});
+
 test('every face-off spot the feed uses is painted on the ice', () => {
   // Kevin: "the rink doesn't have face off circles in their zones." The four
   // end-zone CIRCLES were there; eight of the nine SPOTS were not, and a circle

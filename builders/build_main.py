@@ -50,6 +50,8 @@ T = r"""<style>
 #rg .boards{fill:var(--ice);stroke:var(--edge);stroke-width:1.1}
 #rg .ln{fill:none;stroke-linecap:round}#rg .ln.red{stroke:var(--red);stroke-width:.7;opacity:.42}#rg .ln.blue{stroke:var(--blue);stroke-width:.9;opacity:.42}#rg .ln.thick{stroke-width:1.1;opacity:.52}
 #rg .fdot{fill:var(--red);opacity:.55}#rg .fdot.ctr{fill:var(--blue)}
+#rg .npl{font-size:3.4px;font-weight:700;text-anchor:middle;fill:var(--ink)}
+#rg .nplsub{font-size:2.9px;text-anchor:middle;fill:var(--ink);opacity:.72}
 #rg .crease{fill:#cfe0f2;stroke:var(--blue);stroke-width:.4;opacity:.55}
 #rg .mesh{stroke-width:.8;opacity:.9}#rg .strand{stroke-width:.35;opacity:.5}#rg .post{stroke-width:1.1;stroke-linecap:round}
 #rg .gkbody,#rg .gkhead{stroke-width:.4}#rg .gkstick{stroke-width:.55;stroke-linecap:round}
@@ -175,7 +177,7 @@ T = r"""<style>
   </div>
   <div class="tm h"><span class="ab" id="hAb">BUF</span><span class="sc" id="hSc">0</span></div>
 </div>
-<div class="rinkbox"><svg viewBox="0 0 200 85"><g id="rink"></g><g id="netmen"></g><g id="lines"></g><g id="whistles"></g><g id="events"></g><g id="puck"></g><g id="labels"></g></svg>
+<div class="rinkbox"><svg viewBox="0 0 200 85"><g id="rink"></g><g id="netmen"></g><g id="lines"></g><g id="whistles"></g><g id="events"></g><g id="puck"></g><g id="labels"></g><g id="noplace"></g></svg>
   <div class="caption" id="caption"></div>
   <div class="counters"><div class="cc a"><span class="n" id="cA">0</span><span class="lb">MIN attempts<span class="mode" id="mA">ALL SITUATIONS</span></span></div><div class="cc h"><span class="lb">BUF attempts<span class="mode" id="mH">ALL SITUATIONS</span></span><span class="n" id="cH">0</span></div></div>
 </div>
@@ -294,6 +296,37 @@ const MODE=()=>evenOnly?'even strength':'all situations';
 function isHD(e){return isHighDangerEvent(e,CTX);}
 function lens(k){return corsi.reduce(upto(k),CTX);}
 const $=id=>document.getElementById(id);
+/**
+ * WHERE AN EVENT HAPPENED, in screen coordinates -- or null when the feed does
+ * not record a position for it.
+ *
+ * ONE DECISION, UPSTREAM OF BOTH PATHS, and that is the whole point of it.
+ * `inShootout` already existed in layer.js and its own comment says it lives
+ * there "because all three need it and one of them getting it wrong is a wrong
+ * number on screen". Three counting paths called it. The DRAWING path never did,
+ * so shootout attempts were painted on the ice at coordinates that are not
+ * positions: measured over 13 shootouts, the feed places attempts at BOTH ends
+ * of the rink, and the split does not follow the shooting team either (94
+ * attempts: away 27/18, home 20/29). Every shootout attempt is taken at one end.
+ * Confirmed live on game 2023020510, which drew five of them at x = +75, -73,
+ * +76, -83, +75.
+ *
+ * The reference game has no shootout -- `pt` is REG on all 320 events -- so no
+ * local test, fixture or mutation could ever have seen it. ~6% of games reach a
+ * shootout (13 of 219 sampled).
+ *
+ * THE STRUCTURAL LESSON (CHENG) is not "remember to filter in both places". It
+ * is that the counting path and the drawing path were each given the rule
+ * separately and only one got it -- the same shape as the conservation loophole,
+ * where the ledger and the pre-filter disagreed about what "every event" meant.
+ * So scope is decided ONCE, here, and the drawing path is not given the
+ * opportunity to disagree: it cannot read a coordinate except through this.
+ */
+function place(e){
+ if(!e||e.x==null)return null;
+ if(inShootout(e))return null;
+ return {x:SX(e.x),y:SY(e.y)};
+}
 function drawRink(){const P=[];P.push('<rect class="boards" x="1" y="1" width="198" height="83" rx="27"/>');
  for(const g of[-89,89])P.push(`<line class="ln red" x1="${SX(g)}" y1="3" x2="${SX(g)}" y2="82"/>`);
  for(const b of[-25,25])P.push(`<line class="ln blue" x1="${SX(b)}" y1="1" x2="${SX(b)}" y2="84"/>`);
@@ -473,7 +506,7 @@ function render(i,newest){
  // slices on purpose: the ice shows plays, the ledger accounts for everything.
  const evs=EV.slice(0,i+1),L=lens(i),cur=EV[i];
  const parts=[];
- for(let k=0;k<evs.length;k++){const e=evs[k];if(e.x==null)continue;
+ for(let k=0;k<evs.length;k++){const e=evs[k];const pos=place(e);if(!pos)continue;
    if(trails==='off'&&k!==i)continue;
    const hd=hdOn&&isHD(e);
    // A BLOCKED SHOT IS AN ATTEMPT, ANNOTATED, and the annotation is a separate
@@ -486,8 +519,8 @@ function render(i,newest){
    if(hd)cls+=' clickable';
    const r=e.type==='goal'?3.2:hd?2.2:ATT.has(e.type)?1.7:1;
    const anim=(k===i&&newest)?(e.type==='goal'?' flare':' pop'):'';
-   if(hd&&k===i&&newest)parts.push(`<circle class="hdring" cx="${SX(e.x).toFixed(1)}" cy="${SY(e.y).toFixed(1)}" r="4.5"/>`);
-   const cx=SX(e.x), cy=SY(e.y), title=`<title>${e.rem} ${e.type}</title>`;
+   if(hd&&k===i&&newest)parts.push(`<circle class="hdring" cx="${pos.x.toFixed(1)}" cy="${pos.y.toFixed(1)}" r="4.5"/>`);
+   const cx=pos.x, cy=pos.y, title=`<title>${e.rem} ${e.type}</title>`;
    // Annotations ride OUTSIDE the mark, so the mark keeps saying whose it is.
    // `data-i` on the ring as well as the mark: it says WHICH event this annotates,
    // so the pairing is in the DOM rather than inferred from two identical
@@ -522,10 +555,14 @@ function render(i,newest){
  if(whistleOn)drawWhistles(whistle.reduce(upto(i),CTX));
  else{$('whistles').innerHTML='';$('whistlePanel').innerHTML='';}
  let lh='';
- if(cur&&(cur.type==='shot-on-goal'||cur.type==='goal')&&cur.x!=null){const netx=(cur.own===HID)?89:-89;
-   lh=`<line class="shotline" x1="${SX(cur.x).toFixed(1)}" y1="${SY(cur.y).toFixed(1)}" x2="${SX(netx)}" y2="42.5"/>`;}
+ const cp=place(cur);
+ if(cp&&(cur.type==='shot-on-goal'||cur.type==='goal')){const netx=(cur.own===HID)?89:-89;
+   lh=`<line class="shotline" x1="${cp.x.toFixed(1)}" y1="${cp.y.toFixed(1)}" x2="${SX(netx)}" y2="42.5"/>`;}
  $('lines').innerHTML=lh;
- if(cur&&cur.x!=null)$('puck').innerHTML=`<circle class="puck${newest?' jump':''}" cx="${SX(cur.x).toFixed(1)}" cy="${SY(cur.y).toFixed(1)}" r="1.5"/>`;
+ // THE PUCK GOES WITH THEM. It was the third drawing site reading `e.x`
+ // directly, so a shootout attempt moved the puck to a place it had not been.
+ $('puck').innerHTML=cp?`<circle class="puck${newest?' jump':''}" cx="${cp.x.toFixed(1)}" cy="${cp.y.toFixed(1)}" r="1.5"/>`:'';
+ drawNoPlace(cur);
  drawLabel(cur);
  drawNetmen(cur);
  $('aSc').textContent=L.as;$('hSc').textContent=L.hs;
@@ -659,8 +696,30 @@ $('whyBk').addEventListener('click',e=>{if(e.target.id==='whyBk')hideWhy();});
 
 const LAB={faceoff:['Faceoff','puck dropped'],hit:['Hit','physical play — not a shot'],giveaway:['Giveaway','lost the puck'],takeaway:['Takeaway','won the puck back'],'blocked-shot':['Shot blocked','still an attempt — for the shooter'],'missed-shot':['Missed shot','wide/high — still an attempt'],'shot-on-goal':['Shot on goal','a shot attempt'],goal:['GOAL','the attempt that scored'],penalty:['Penalty','off to the box']};
 let labelsOn=true;
-function drawLabel(e){const g=$('labels');if(!labelsOn||!e||e.x==null){g.innerHTML='';return;}
- const lx=SX(e.x),ly=SY(e.y);
+/**
+ * WHAT THE ICE SAYS WHEN IT IS SHOWING NOTHING.
+ *
+ * Removing the shootout marks without saying so would trade a wrong mark for a
+ * silent gap: the replay would reach the end of overtime level, the scoreboard
+ * would read one goal higher, and nothing would account for the difference.
+ * Silence about an omission is the failure the ingest-state work spent two
+ * rounds fixing, and it is the same reason the per-game sentence states why a
+ * comparison is missing rather than dropping it.
+ *
+ * TWO SENTENCES, TWO KINDS. The first is about hockey and its subject is a rule.
+ * The second is about US -- what we did to the data and why -- which is a
+ * category the copy table did not have: every provenance tag we own (`rule:`,
+ * `field:`) points into the game or the feed, and this one points at the
+ * renderer. It is the first `display:` row, and the normalization disclosure the
+ * page still owes belongs in the same family.
+ */
+function drawNoPlace(e){
+ const g=$('noplace');
+ if(!e||!inShootout(e)){g.innerHTML='';return;}
+ g.innerHTML=`<text class="npl" x="100" y="39">Shootout — a skills competition that decides the game, not play in it.</text>`
+   + `<text class="nplsub" x="100" y="46">Attempts are not drawn: the coordinates the feed records for them are not positions.</text>`;}
+function drawLabel(e){const g=$('labels');const p=place(e);if(!labelsOn||!p){g.innerHTML='';return;}
+ const lx=p.x,ly=p.y;
  if(e.type==='goal'){const tid=e.own,col=tid===AID?AWAYCOL:HOMECOL,ab=tid===AID?AAB:HAB,p=R[e.actor];
    const as=[R[e.a1],R[e.a2]].filter(Boolean).map(x=>x.nm).join(', ');
    let tx=lx>100?lx-5:lx+5,anc=lx>100?'end':'start',ty=Math.max(15,ly-6);
