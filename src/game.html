@@ -12,7 +12,7 @@
 <meta name="twitter:title" content="Read the Game — watch a hockey game and see what the numbers are made of">
 <meta name="twitter:description" content="An NHL game replayed so a new fan can see what the numbers are made of. Nothing modelled, nothing invented.">
 <meta property="og:url" content="https://readthegame.co/game">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-vzHGtruhAbOCTwlR7v0HeUMJA5RGViN5qu2nAJT3wb8='; style-src 'sha256-39R3Ezq2kJt+H/Iqkpd0HMvivGzOyc1TRaGe8FrN0Q4='; connect-src 'self' https://data.readthegame.co; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-26kpifLMOUpz7Bu8H2z+9uphR/SjJcollIazXELIfXA='; style-src 'sha256-vUnh9BsLIUdqXLs1PtdMSO28wZAGG8DMAO5W79Ehg/g='; connect-src 'self' https://data.readthegame.co; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <style>
@@ -35,9 +35,10 @@
 #rg .boards{fill:var(--ice);stroke:var(--edge);stroke-width:1.1}
 #rg .ln{fill:none;stroke-linecap:round}#rg .ln.red{stroke:var(--red);stroke-width:.7;opacity:.42}#rg .ln.blue{stroke:var(--blue);stroke-width:.9;opacity:.42}#rg .ln.thick{stroke-width:1.1;opacity:.52}
 #rg .rdot{fill:var(--red);opacity:.5}
-#rg .crease{opacity:.5}
+#rg .crease{fill:#cfe0f2;stroke:var(--blue);stroke-width:.4;opacity:.55}
+#rg .mesh{stroke-width:.7;opacity:.85}#rg .post{stroke-width:1.1;stroke-linecap:round}
 #rg .netlab{font-size:3.4px;font-weight:800;letter-spacing:.55px;text-anchor:middle;dominant-baseline:central}
-#rg .netflash{animation:nf 1.3s ease}@keyframes nf{0%,100%{opacity:0}25%{opacity:.85}}
+#rg .flashpath.netflash{animation:nf 1.3s ease}@keyframes nf{0%,100%{opacity:0}25%{opacity:.85}}
 #rg .ev{transform-box:fill-box;transform-origin:center}
 /* THE SWEATER CONVENTION. Home teams wear their colours, visitors wear white,
    and the marks follow the sweaters. It exists because COLOUR ALONE CANNOT CARRY
@@ -1957,18 +1958,41 @@ function drawRink(){const P=[];P.push('<rect class="boards" x="1" y="1" width="1
  for(const zx of[-69,69])for(const zy of[-22,22])P.push(`<circle class="ln red" cx="${SX(zx)}" cy="${SY(zy)}" r="15"/>`);
  P.push('<circle class="rdot" cx="100" cy="42.5" r="1.1"/>');
  // nets: BUF(home) defends LEFT(-89), MIN(away) defends RIGHT(+89)
- P.push(`<rect id="netL" class="crease netflash" x="${SX(-89)}" y="37" width="4" height="11" rx="1" fill="var(--home)" opacity="0"/>`);
- P.push(`<rect id="netR" class="crease netflash" x="${SX(89)-4}" y="37" width="4" height="11" rx="1" fill="#fff" stroke="var(--away)" stroke-width=".6" opacity="0"/>`);
- P.push(`<rect class="crease" x="${SX(-89)}" y="37" width="4" height="11" rx="1" fill="var(--home)"/>`);
- P.push(`<rect class="crease" x="${SX(89)-4}" y="37" width="4" height="11" rx="1" fill="#fff" stroke="var(--away)" stroke-width=".5"/>`);
- // THE NET WEARS THE NAME OF THE TEAM THAT DEFENDS IT, written down the net
- // itself rather than floated beside it as "◄ CHI net". A viewer glancing at an
- // end gets the answer where they are already looking, and the mark travels with
- // the net -- which matters the moment the ends switch, where a caption pointing
- // at a net would have to be re-aimed every period.
+ // A NET DRAWN AS EQUIPMENT, not as a chip. It was a rounded rectangle filled
+ // with the club colour and captioned in contrasting ink -- which is the
+ // scoreboard badge's exact treatment, in mirrored positions, so the same visual
+ // language meant "this team" at the top of the page and "this team's net" on the
+ // ice with nothing distinguishing the two (CHENG). Kevin read the pair as
+ // swapped, and he knows the sport cold.
  //
- // The ink follows the sweater convention it sits on: contrasting ink on the
- // host's filled net, the club's own colour on the visitor's white one.
+ // DRAWING IT PROPERLY FOUND A PLAIN ERROR. The old rectangles sat on the ICE
+ // side of the goal line -- x = 11..15 at the near end -- and a real net stands
+ // ON the line with its body BEHIND it. They were also 11 units across where a
+ // net is 6 feet, nearly double. Both are fixed here: 6 wide, 4 deep, behind the
+ // line, with the mouth facing centre ice, plus the crease it sits in.
+ //
+ // The sweater convention carries over: the host's mesh is filled with its
+ // colour, the visitor's is white inside its own frame.
+ const netGlyph=(id,gx,dir,col,fill)=>{
+  const back=gx-4*dir, top=42.5-3, bot=42.5+3;
+  const body=`M ${gx} ${top} L ${back} ${top+0.8} L ${back} ${bot-0.8} L ${gx} ${bot} Z`;
+  return `<g class="netg">`
+   + `<path class="crease" d="M ${gx} ${42.5-6} A 6 6 0 0 ${dir>0?1:0} ${gx} ${42.5+6}"/>`
+   + `<path class="mesh" d="${body}" fill="${fill}" stroke="${col}"/>`
+   + `<line class="post" x1="${gx}" y1="${top}" x2="${gx}" y2="${bot}" stroke="${col}"/>`
+   // THE FLASH IS ITS OWN ELEMENT, over the net rather than being it. The old
+   // markup put the animation on a hidden duplicate; putting it on the net now
+   // that the net is always visible would make the net VANISH and return on
+   // every goal, because the keyframes run 0 -> .85 -> 0.
+   + `<path id="${id}" class="flashpath" d="${body}" fill="${col}" opacity="0"/>`
+   + `</g>`;};
+ // dir points from the goal line toward CENTRE ice, so the body goes the other way.
+ P.push(netGlyph('netL',SX(-89),1,HOMECOL,HOMECOL));
+ P.push(netGlyph('netR',SX(89),-1,AWAYCOL,'#fff'));
+ // THE LABEL MOVES BEHIND THE GOAL LINE, into dead ice where there is room for
+ // the word that was doing the disambiguating work. "CBJ" alone can be read as
+ // "CBJ's net" or "where CBJ shoots", and those are opposites (CHENG); "CBJ net"
+ // is what the original caption said before it was shortened to fit on a post.
  // THE TAGS FACE EACH OTHER ACROSS THE RINK (Kevin). The near net reads UP and
  // the far net reads DOWN, which puts the near tag's first letter at the BOTTOM
  // and the far tag's at the top.
@@ -1980,13 +2004,16 @@ function drawRink(){const P=[];P.push('<rect class="boards" x="1" y="1" width="1
  // and it answers a different question than the one a viewer is asking: which way
  // a label appears to face is not settled by where its ascenders point. Kevin read
  // the screen; the screen wins.
- const netTag=(x,ab,ink,deg)=>`<text class="netlab" transform="rotate(${deg} ${x} 42.5)" x="${x}" y="42.5" fill="${ink}">${ab}</text>`;
- P.push(netTag(SX(-89)+2,HAB,inkOn(HOMECOL),-90));
- P.push(netTag(SX(89)-2,AAB,readableInk(AWAYCOL),90));
+ const netTag=(x,ab,ink,deg)=>`<text class="netlab" transform="rotate(${deg} ${x} 42.5)" x="${x}" y="42.5" fill="${ink}">${ab} net</text>`;
+ P.push(netTag(SX(-89)-6,HAB,readableInk(HOMECOL),-90));
+ P.push(netTag(SX(89)+6,AAB,readableInk(AWAYCOL),90));
  $('rink').innerHTML=P.join('');}
-function flashNet(scorer){ // scorer scores INTO opponent's net
- const el=scorer===AID?$('netR'):$('netL'); // MIN scores into MIN's...no: MIN attacks left(-89)=BUF net
- const net=scorer===AID?$('netL'):$('netR'); net.style.opacity='';net.classList.remove('netflash');void net.offsetWidth;net.classList.add('netflash');}
+function flashNet(scorer){
+ // A team scores INTO the net it is attacking, which is the OTHER team's. The
+ // host defends -x, so a visitor goal lights the near net and a host goal the far
+ // one. Restarting the animation needs the class off, a reflow, then on.
+ const net=scorer===AID?$('netL'):$('netR');
+ net.classList.remove('netflash');void net.offsetWidth;net.classList.add('netflash');}
 let prevA=0,prevH=0;
 function render(i,newest){
  // `evs` is the PLAYABLE prefix, used to draw the marks on the timeline.

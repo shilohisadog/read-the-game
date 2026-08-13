@@ -491,7 +491,7 @@ test('each net wears the name of the team defending it', () => {
   // would need re-aiming the moment the ends switch.
   const a = boot();
   const rink = a.$('rink').innerHTML;
-  const tags = [...rink.matchAll(/<text class="netlab" transform="rotate\((-?\d+) ([\d.]+) 42\.5\)"[^>]*>(\w+)</g)]
+  const tags = [...rink.matchAll(/<text class="netlab" transform="rotate\((-?\d+) ([\d.]+) 42\.5\)"[^>]*>(\w+) net</g)]
     .map(m => ({ deg: +m[1], x: +m[2], ab: m[3] }));
   assert.equal(tags.length, 2, 'one tag per net');
 
@@ -499,7 +499,13 @@ test('each net wears the name of the team defending it', () => {
   const [left, right] = tags.sort((p, q) => p.x - q.x);
   assert.equal(left.ab, 'BUF', 'the host defends the left net');
   assert.equal(right.ab, 'MIN', 'the visitor defends the right net');
-  assert.ok(left.x < 20 && right.x > 180, 'and both sit ON their net, not in open ice');
+  // BEHIND THE GOAL LINE, in dead ice. On the net itself the label was a pill in
+  // the scoreboard's own visual language, and "CBJ" alone reads as either "CBJ's
+  // net" or "where CBJ shoots" — opposites (CHENG). The word `net` is back, and
+  // it fits because the label is no longer squeezed onto a post.
+  assert.ok(left.x < 11 && right.x > 189,
+    `the tags must sit BEHIND the goal lines (11 and 189), got ${left.x} and ${right.x}`);
+  assert.match(rink, /BUF net</, 'the possessive word is back');
 
   // THEY FACE EACH OTHER, which is a claim about WHICH WAY, not merely that the
   // two differ — symmetry alone is equally satisfied by the pair facing outward,
@@ -515,7 +521,31 @@ test('each net wears the name of the team defending it', () => {
   assert.equal(left.deg, -right.deg, 'mirrored, as a consequence rather than as the claim');
 
   // The old floating captions are gone, not merely duplicated.
-  assert.doesNotMatch(rink, /net ►|◄ \w+ net/, 'the caption in open ice is gone');
+  assert.doesNotMatch(rink, /net ►|◄ \w+ net/, 'the old floating caption is gone');
+  // And the net is drawn as EQUIPMENT: a mouth on the goal line, a body behind
+  // it, posts, and the crease it stands in.
+  assert.match(rink, /class="mesh"/, 'the net has a body');
+  assert.match(rink, /class="post"/, 'and posts');
+  assert.match(rink, /class="crease"/, 'and it stands in a crease');
+  assert.doesNotMatch(rink, /class="crease" x=/, 'the rounded-rectangle chip is gone');
+
+  // AND IT STANDS BEHIND THE GOAL LINE. The rectangles this replaced sat on the
+  // ICE side of the line — x = 11..15 at the near end — which is a plain error
+  // about where a net is, and nothing here would have caught it coming back. A
+  // net whose body reaches into the playing surface swallows every shot mark in
+  // front of it.
+  const bodies = [...rink.matchAll(/class="mesh" d="M ([\d.]+) [\d.]+ L ([\d.]+) /g)]
+    .map(m => ({ mouth: +m[1], back: +m[2] })).sort((p, q) => p.mouth - q.mouth);
+  assert.equal(bodies.length, 2, 'one body per net');
+  assert.equal(bodies[0].mouth, 11, 'the near mouth is on the goal line');   // SX(-89)
+  assert.ok(bodies[0].back < bodies[0].mouth,
+    `the near net reaches to ${bodies[0].back}, on the ice side of ${bodies[0].mouth}`);
+  assert.equal(bodies[1].mouth, 189, 'the far mouth is on the goal line');   // SX(89)
+  assert.ok(bodies[1].back > bodies[1].mouth,
+    `the far net reaches to ${bodies[1].back}, on the ice side of ${bodies[1].mouth}`);
+  // Six feet across, which is what a net is. It was eleven.
+  const across = rink.match(/class="post"[^>]*y1="([\d.]+)" x2="[\d.]+" y2="([\d.]+)"/);
+  assert.equal(+across[2] - +across[1], 6, 'a net is 6 feet wide, not 11');
 });
 
 test('EACH net tag is legible against the net it is written on', () => {
@@ -535,11 +565,12 @@ test('EACH net tag is legible against the net it is written on', () => {
       /class="netlab" transform="rotate\(-?\d+ ([\d.]+) 42\.5\)"[^>]*fill="([^"]+)"/g)]
       .map(m => ({ x: +m[1], fill: m[2] })).sort((p, q) => p.x - q.x);
     assert.equal(tags.length, 2, `${away} at ${home}: one tag per net`);
-    const hostBg = colourOf(home), visitorBg = '#ffffff';
-    assert.ok(contrast(tags[0].fill, hostBg) >= 4.5,
-      `${home}'s tag is ${contrast(tags[0].fill, hostBg).toFixed(2)}:1 on its own net`);
-    assert.ok(contrast(tags[1].fill, visitorBg) >= 3,
-      `${away}'s tag is ${contrast(tags[1].fill, visitorBg).toFixed(2)}:1 on a white net`);
+    // BOTH TAGS NOW SIT ON ICE, not on a coloured net, so both are measured
+    // against the ice — which is what moving them behind the goal line changed.
+    for (const [t, who] of [[tags[0], home], [tags[1], away]]) {
+      assert.ok(contrast(t.fill, '#eef4f8') >= 3,
+        `${who}'s tag is ${contrast(t.fill, '#eef4f8').toFixed(2)}:1 against the ice`);
+    }
   }
 });
 
@@ -648,4 +679,23 @@ test('the zone is named for icing ONLY, where the rule makes it mean something',
       assert.match(f, /class="rsn">icing/, `a non-icing named a zone: ${f.slice(0, 90)}`);
     }
   }
+});
+
+test('the goal flash is its own element, so the net cannot vanish', () => {
+  // The old markup put the flash animation on a HIDDEN duplicate of the net.
+  // Once the net became always-visible, animating it would have run the net's
+  // own opacity 0 -> .85 -> 0 on every goal: the net disappearing and coming
+  // back, which reads as a rendering fault rather than a celebration.
+  const a = boot();
+  const rink = a.$('rink').innerHTML;
+  for (const id of ['netL', 'netR']) {
+    const m = rink.match(new RegExp(`<path id="${id}"[^>]*>`));
+    assert.ok(m, `${id} must exist for flashNet to find`);
+    assert.match(m[0], /class="flashpath"/, 'the flash is a separate path');
+    assert.match(m[0], /opacity="0"/, 'and it starts invisible');
+  }
+  // The net's own body must NOT be the thing carrying the id.
+  assert.doesNotMatch(rink, /<path class="mesh" id=/, 'the net itself is never flashed');
+  assert.match(app, /const net=scorer===AID\?\$\('netL'\):\$\('netR'\)/,
+    'a visitor goal lights the near net, because the host defends -x');
 });
