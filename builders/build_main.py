@@ -181,7 +181,7 @@ T = r"""<style>
 <div class="transport"><button class="play" id="play">▶ Play from start</button>
   <button class="spd" id="sp0" aria-pressed="false">🐢 Slower</button><button class="spd" id="sp1" aria-pressed="true">Teaching</button><button class="spd" id="sp2" aria-pressed="false">Faster</button><button class="spd" id="lbl" aria-pressed="true">💬 Explain plays</button>
   <input class="scrub" id="scrub" type="range" min="0" max="1" value="0"><button id="work" aria-expanded="false">Show me the work</button></div>
-<div class="legend"><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span><i class="k-g"></i><i class="k-gv"></i>goal — either sweater</span><span style="color:var(--muted)">metric-specific marks appear when you add a layer</span></div>
+<div class="legend"><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white-filled, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span><i class="k-g"></i><i class="k-gv"></i>goal — either sweater</span><span style="color:var(--muted)">metric-specific marks appear when you add a layer</span></div>
 <div class="layers"><span class="ll">Add a metric layer:</span><button class="lyr" id="lyCorsi" aria-pressed="false">＋ Control (Corsi)</button><button class="lyr" id="lyHd" aria-pressed="false">＋ High-danger</button><button class="lyr" id="lyGoalie" aria-pressed="false">＋ Goaltending</button><button class="lyr" id="lyWhistle" aria-pressed="false">＋ Why play stopped</button></div>
 <div class="figpick"><span class="ll">Trails:</span>
 <button class="lyr tbtn" data-t="off" aria-pressed="true">Current moment</button>
@@ -294,22 +294,20 @@ function drawRink(){const P=[];P.push('<rect class="boards" x="1" y="1" width="1
  //
  // The ink follows the sweater convention it sits on: contrasting ink on the
  // host's filled net, the club's own colour on the visitor's white one.
- // THE TAGS FACE EACH OTHER: each one's letters stand with their tops pointing
- // toward centre ice, so the two read inward across the rink (Kevin).
+ // THE TAGS FACE EACH OTHER ACROSS THE RINK (Kevin). The near net reads UP and
+ // the far net reads DOWN, which puts the near tag's first letter at the BOTTOM
+ // and the far tag's at the top.
  //
- // My first attempt at "facing" was the dual-axis chart convention -- left label
- // reads up, right label reads down -- which is mirrored, and mirrored the WRONG
- // WAY: it points both sets of letter-tops OUTWARD, at the boards. Symmetric and
- // back to back is not facing. A rink is not a chart, and the convention was my
- // inference rather than the thing that was asked for.
- //
- // In SVG the y-axis points down, so a positive rotation is clockwise and carries
- // a glyph's top to +x. The near net therefore takes +90 and the far net -90 --
- // which also puts the near tag's FIRST letter at the top and the far tag's at
- // the bottom, the quickest way to tell the two versions apart by eye.
+ // ESTABLISHED BY LOOKING, NOT BY DERIVING, and that is the note worth keeping. I
+ // reasoned this out from the transform algebra twice -- SVG's y-axis points down,
+ // a positive rotation is clockwise, so +90 carries a glyph's top toward +x -- and
+ // shipped the opposite of what was asked for both times. The algebra is correct
+ // and it answers a different question than the one a viewer is asking: which way
+ // a label appears to face is not settled by where its ascenders point. Kevin read
+ // the screen; the screen wins.
  const netTag=(x,ab,ink,deg)=>`<text class="netlab" transform="rotate(${deg} ${x} 42.5)" x="${x}" y="42.5" fill="${ink}">${ab}</text>`;
- P.push(netTag(SX(-89)+2,HAB,inkOn(HOMECOL),90));
- P.push(netTag(SX(89)-2,AAB,readableInk(AWAYCOL),-90));
+ P.push(netTag(SX(-89)+2,HAB,inkOn(HOMECOL),-90));
+ P.push(netTag(SX(89)-2,AAB,readableInk(AWAYCOL),90));
  $('rink').innerHTML=P.join('');}
 function flashNet(scorer){ // scorer scores INTO opponent's net
  const el=scorer===AID?$('netR'):$('netL'); // MIN scores into MIN's...no: MIN attacks left(-89)=BUF net
@@ -332,7 +330,7 @@ function render(i,newest){
    // here, because none of them can see a pixel.
    let cls=e.type==='goal'?'goal':ATT.has(e.type)?'att':'excl';
    if(hd)cls+=' clickable';
-   const r=e.type==='goal'?2.7:hd?2.2:ATT.has(e.type)?1.7:1;
+   const r=e.type==='goal'?3.2:hd?2.2:ATT.has(e.type)?1.7:1;
    const anim=(k===i&&newest)?(e.type==='goal'?' flare':' pop'):'';
    if(hd&&k===i&&newest)parts.push(`<circle class="hdring" cx="${SX(e.x).toFixed(1)}" cy="${SY(e.y).toFixed(1)}" r="4.5"/>`);
    const cx=SX(e.x), cy=SY(e.y), title=`<title>${e.rem} ${e.type}</title>`;
