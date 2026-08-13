@@ -578,6 +578,55 @@ test('the goaltenders are redrawn only when they change', () => {
   assert.equal(seen[seen.length - 1], 1);
 });
 
+test('the goaltender FITS INSIDE the net it defends, and is centred on the mouth', () => {
+  // Kevin, from one screen capture: "the goalie figures are bigger than the net."
+  // Measured, they were — 8.1 units tall in front of a 6-foot mouth, 135% of the
+  // thing they defend, and centred at 41.8 against the mouth's 42.5, so high as
+  // well as large. THIS IS THE THIRD TIME PIXELS FOUND WHAT THE SUITE COULD NOT.
+  //
+  // The size of a glyph has no source in the feed, so there is no number here to
+  // assert as correct. The RELATIONSHIP is assertable: a goaltender defending a
+  // net fits in it. Both sides of the comparison are read out of the rendered
+  // markup — the mouth from the POST, the figure from its own parts — so this
+  // cannot pass by agreeing with a constant it copied from the code.
+  const a = boot();
+  const posts = [...a.$('rink').innerHTML.matchAll(
+    /class="post"[^>]*y1="([\d.]+)" x2="[\d.]+" y2="([\d.]+)"/g)]
+    .map(m => ({ top: +m[1], bot: +m[2] }));
+  assert.equal(posts.length, 2, 'two nets to be measured against');
+
+  const opening = a.every(d => d.$('netmen').innerHTML)[0];
+  const body = [...opening.matchAll(/class="gkbody"[^>]*y="([\d.]+)"[^>]*height="([\d.]+)"/g)]
+    .map(m => ({ top: +m[1], bot: +m[1] + +m[2] }));
+  const head = [...opening.matchAll(/class="gkhead"[^>]*cy="([\d.]+)" r="([\d.]+)"/g)]
+    .map(m => ({ top: +m[1] - +m[2], bot: +m[1] + +m[2] }));
+  const stick = [...opening.matchAll(/class="gkstick"[^>]*y1="([\d.]+)"[^>]*y2="([\d.]+)"/g)]
+    .map(m => ({ top: Math.min(+m[1], +m[2]), bot: Math.max(+m[1], +m[2]) }));
+  assert.equal(body.length, 2, 'both goaltenders present at the opening faceoff');
+  assert.equal(head.length, 2);
+  assert.equal(stick.length, 2);
+
+  for (let i = 0; i < 2; i++) {
+    const mouth = posts[i];
+    const parts = [body[i], head[i], stick[i]];
+    const top = Math.min(...parts.map(p => p.top));
+    const bot = Math.max(...parts.map(p => p.bot));
+    assert.ok(top >= mouth.top,
+      `goaltender ${i} reaches ${top}, above the crossbar at ${mouth.top}`);
+    assert.ok(bot <= mouth.bot,
+      `goaltender ${i} reaches ${bot}, past the post at ${mouth.bot}`);
+    // And it must be CLEARLY smaller, not merely non-overflowing — a figure that
+    // exactly filled the mouth would pass the two checks above and still read as
+    // a goaltender wearing the net.
+    const fill = (bot - top) / (mouth.bot - mouth.top);
+    assert.ok(fill < 0.9, `goaltender ${i} fills ${(fill * 100).toFixed(0)}% of the mouth`);
+    // CENTRED. The old figure sat 0.68 high, which is what made it read as
+    // standing above the net rather than in it.
+    const off = Math.abs((top + bot) / 2 - (mouth.top + mouth.bot) / 2);
+    assert.ok(off <= 0.2, `goaltender ${i} sits ${off.toFixed(2)} off the mouth's centre`);
+  }
+});
+
 test('the net is equipment: behind the goal line, six feet across, with netting', () => {
   // THESE ASSERTIONS EXISTED AND I DELETED THEM, by rewriting the test they lived
   // in into the goaltender test above. They guard an error that was actually
