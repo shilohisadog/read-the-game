@@ -22,7 +22,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { TEAMS, colourOf } from '../src/lib/layers/../teams.js';
+import { TEAMS, colourOf, contrast } from '../src/lib/teams.js';
 
 const rich = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url)));
 const app = readFileSync(new URL('../src/read-the-game.html', import.meta.url), 'utf8');
@@ -431,8 +431,14 @@ test('the page states that it holds the ends fixed', () => {
   // A REAL TRANSFORMATION OF RECORDED COORDINATES, undisclosed on a page whose
   // thesis is that nothing is transformed silently (CHENG). Teams switch ends
   // every period in the arena; here each attacks the same net all game.
-  assert.match(app, /Ends are held fixed/);
-  assert.match(app, /switch every period/);
+  // Whitespace-collapsed, because HTML collapses it and the source wraps: the
+  // first version of this test failed on a line break inside its own sentence,
+  // which is a test asserting a fact about the source file rather than the page.
+  const said = prose.replace(/\s+/g, ' ');
+  assert.match(said, /Ends are held fixed/);
+  assert.match(said, /switch every period/);
+  assert.match(said, /Each net carries the name of the team defending it/,
+    'and the vertical net tag is explained rather than left to be guessed at');
 });
 
 test('the legend shows the mark the ice actually draws', () => {
@@ -462,4 +468,50 @@ test('the controls explain themselves without referring to their own history', (
     'the page is apologising to itself');
   assert.match(prose, /Keep every mark<\/b> leaves every attempt on the ice/,
     'and it still says what the control does');
+});
+
+test('each net wears the name of the team defending it', () => {
+  // Kevin: "locate CHI and SJS vertically in the net, so the watcher has better
+  // SA on which side is which." The old form floated "◄ CHI net" in open ice,
+  // which puts the answer somewhere other than where the eye already is — and
+  // would need re-aiming the moment the ends switch.
+  const a = boot();
+  const rink = a.$('rink').innerHTML;
+  const tags = [...rink.matchAll(/<text class="netlab" transform="rotate\(-90 ([\d.]+) 42\.5\)"[^>]*>(\w+)</g)]
+    .map(m => ({ x: +m[1], ab: m[2] }));
+  assert.equal(tags.length, 2, 'one tag per net');
+
+  // The HOST defends the -x end (rink.js), so the left tag is the home club.
+  const [left, right] = tags.sort((p, q) => p.x - q.x);
+  assert.equal(left.ab, 'BUF', 'the host defends the left net');
+  assert.equal(right.ab, 'MIN', 'the visitor defends the right net');
+  assert.ok(left.x < 20 && right.x > 180, 'and both sit ON their net, not in open ice');
+
+  // The old floating captions are gone, not merely duplicated.
+  assert.doesNotMatch(rink, /net ►|◄ \w+ net/, 'the caption in open ice is gone');
+});
+
+test('EACH net tag is legible against the net it is written on', () => {
+  // THIS TEST FIRST CHECKED "at least one tag is dark" while announcing that
+  // both were legible — so painting the visitor's tag white on a white net left
+  // it green, because the host's tag still supplied the dark ink it looked for.
+  // A mutation that did not fire is how it was caught, and it is this project's
+  // most-repeated defect: a check testing a narrower claim than its own name.
+  //
+  // Each tag is now checked against ITS OWN background: the host's net is filled
+  // with the club colour, the visitor's is white.
+  for (const [home, away] of [['BOS', 'ANA'], ['LAK', 'PIT'], ['BUF', 'MIN']]) {
+    const g = JSON.parse(JSON.stringify(rich));
+    g.teams.home.ab = home; g.teams.away.ab = away;
+    const a = boot(g);
+    const tags = [...a.$('rink').innerHTML.matchAll(
+      /class="netlab" transform="rotate\(-90 ([\d.]+) 42\.5\)"[^>]*fill="([^"]+)"/g)]
+      .map(m => ({ x: +m[1], fill: m[2] })).sort((p, q) => p.x - q.x);
+    assert.equal(tags.length, 2, `${away} at ${home}: one tag per net`);
+    const hostBg = colourOf(home), visitorBg = '#ffffff';
+    assert.ok(contrast(tags[0].fill, hostBg) >= 4.5,
+      `${home}'s tag is ${contrast(tags[0].fill, hostBg).toFixed(2)}:1 on its own net`);
+    assert.ok(contrast(tags[1].fill, visitorBg) >= 3,
+      `${away}'s tag is ${contrast(tags[1].fill, visitorBg).toFixed(2)}:1 on a white net`);
+  }
 });

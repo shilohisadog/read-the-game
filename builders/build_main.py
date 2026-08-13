@@ -50,7 +50,8 @@ T = r"""<style>
 #rg .boards{fill:var(--ice);stroke:var(--edge);stroke-width:1.1}
 #rg .ln{fill:none;stroke-linecap:round}#rg .ln.red{stroke:var(--red);stroke-width:.7;opacity:.42}#rg .ln.blue{stroke:var(--blue);stroke-width:.9;opacity:.42}#rg .ln.thick{stroke-width:1.1;opacity:.52}
 #rg .rdot{fill:var(--red);opacity:.5}
-#rg .crease{opacity:.5}#rg .netlab{font-size:3.1px;font-weight:700;letter-spacing:.4px;text-anchor:middle}
+#rg .crease{opacity:.5}
+#rg .netlab{font-size:3.4px;font-weight:800;letter-spacing:.55px;text-anchor:middle;dominant-baseline:central}
 #rg .netflash{animation:nf 1.3s ease}@keyframes nf{0%,100%{opacity:0}25%{opacity:.85}}
 #rg .ev{transform-box:fill-box;transform-origin:center}
 /* THE SWEATER CONVENTION. Home teams wear their colours, visitors wear white,
@@ -192,7 +193,8 @@ by the third period — good to study, busy to watch.</span></div>
 <button class="lyr fbtn" data-f="mascot" aria-pressed="true">Mascot</button>
 <button class="lyr fbtn" data-f="tabletop" aria-pressed="false">Tabletop</button>
 <span class="fnote">Same shots, same outcomes, same math — only the drawing changes. <b>Tabletop</b> is the rod-hockey player you grew up with.</span></div>
-<p class="ends">Ends are held fixed here, so each team always attacks the same net. In the arena they switch every period — this is the one thing on the rink we move, and the coordinates are the league’s own.</p>
+<p class="ends">Each net carries the name of the team defending it. Ends are held
+fixed here, so each team always attacks the same net. In the arena they switch every period — this is the one thing on the rink we move, and the coordinates are the league’s own.</p>
 <div class="hint">Tip: click a ⚡ high-danger chance (amber ring) on the ice to see <b>why</b> it qualified — with trails set to <b>keep every mark</b>, earlier ones stay clickable too.</div>
 <div class="work" id="workPanel" hidden></div>
 <div class="whybk" id="whyBk"><div class="why" id="whyContent"></div></div>
@@ -268,10 +270,19 @@ function drawRink(){const P=[];P.push('<rect class="boards" x="1" y="1" width="1
  // nets: BUF(home) defends LEFT(-89), MIN(away) defends RIGHT(+89)
  P.push(`<rect id="netL" class="crease netflash" x="${SX(-89)}" y="37" width="4" height="11" rx="1" fill="var(--home)" opacity="0"/>`);
  P.push(`<rect id="netR" class="crease netflash" x="${SX(89)-4}" y="37" width="4" height="11" rx="1" fill="#fff" stroke="var(--away)" stroke-width=".6" opacity="0"/>`);
- P.push(`<rect class="crease" x="${SX(-89)}" y="38" width="3" height="9" rx="1" fill="var(--home)"/>`);
- P.push(`<rect class="crease" x="${SX(89)-3}" y="38" width="3" height="9" rx="1" fill="#fff" stroke="var(--away)" stroke-width=".5"/>`);
- P.push(`<text class="netlab" x="${SX(-80)}" y="21" fill="${readableInk(HOMECOL)}">◄ ${HAB} net</text>`);
- P.push(`<text class="netlab" x="${SX(80)}" y="21" fill="${readableInk(AWAYCOL)}">${AAB} net ►</text>`);
+ P.push(`<rect class="crease" x="${SX(-89)}" y="37" width="4" height="11" rx="1" fill="var(--home)"/>`);
+ P.push(`<rect class="crease" x="${SX(89)-4}" y="37" width="4" height="11" rx="1" fill="#fff" stroke="var(--away)" stroke-width=".5"/>`);
+ // THE NET WEARS THE NAME OF THE TEAM THAT DEFENDS IT, written down the net
+ // itself rather than floated beside it as "◄ CHI net". A viewer glancing at an
+ // end gets the answer where they are already looking, and the mark travels with
+ // the net -- which matters the moment the ends switch, where a caption pointing
+ // at a net would have to be re-aimed every period.
+ //
+ // The ink follows the sweater convention it sits on: contrasting ink on the
+ // host's filled net, the club's own colour on the visitor's white one.
+ const netTag=(x,ab,ink)=>`<text class="netlab" transform="rotate(-90 ${x} 42.5)" x="${x}" y="42.5" fill="${ink}">${ab}</text>`;
+ P.push(netTag(SX(-89)+2,HAB,inkOn(HOMECOL)));
+ P.push(netTag(SX(89)-2,AAB,readableInk(AWAYCOL)));
  $('rink').innerHTML=P.join('');}
 function flashNet(scorer){ // scorer scores INTO opponent's net
  const el=scorer===AID?$('netR'):$('netL'); // MIN scores into MIN's...no: MIN attacks left(-89)=BUF net

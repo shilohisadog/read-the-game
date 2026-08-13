@@ -17,7 +17,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { TEAMS, NOTES, inkOn, nameOf, colourOf, NEUTRAL } from '../src/lib/teams.js';
+import { TEAMS, NOTES, inkOn, nameOf, colourOf, NEUTRAL, contrast } from '../src/lib/teams.js';
 
 /**
  * Every team appearing in an in-scope game of the live archive, 2026-08-11.
@@ -58,23 +58,32 @@ test('no entry carries a league or club mark', () => {
   assert.doesNotMatch(blob, /logo|svg|\.png|\.jpg|http/i);
 });
 
-test('every chip is legible — checked per team, not sampled', () => {
+test('every chip is legible — MEASURED, per team, not sampled', () => {
+  // This asserted a Rec. 601 luma GAP of 0.35, which is a proxy for contrast and
+  // not contrast. It passed while Anaheim's chip sat at 2.73:1 — under WCAG's
+  // 3:1 floor for even large text — because the proxy and the standard disagree
+  // in exactly the mid-luma region where the hard cases live. Assert the
+  // published measure instead of a stand-in for it.
   for (const [ab, t] of Object.entries(TEAMS)) {
     assert.match(t.colour, /^#[0-9A-F]{6}$/, `${ab}: colour must be a 6-digit hex`);
-    const ink = inkOn(t.colour);
-    const [r, g, b] = [1, 3, 5].map(i => parseInt(t.colour.slice(i, i + 2), 16));
-    const bg = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    const fg = ink === '#ffffff' ? 1 : 0.06;
-    assert.ok(Math.abs(bg - fg) > 0.35,
-      `${ab}: ${t.colour} on ${ink} is too close to read`);
+    const c = contrast(inkOn(t.colour), t.colour);
+    assert.ok(c >= 4.5,
+      `${ab}: ${inkOn(t.colour)} on ${t.colour} is ${c.toFixed(2)}:1, under WCAG's 4.5`);
   }
 });
 
-test('ink flips on both sides of the threshold', () => {
+test('the ink is the one that measurably contrasts more, with no threshold', () => {
   // A guard against a function that returns one constant and passes the loop
-  // above by luck. Boston gold and Buffalo navy are real cases from the table.
+  // above by luck, and against the luma heuristic coming back. The three clubs
+  // below are the ones the heuristic got wrong.
   assert.equal(inkOn('#FFB81C'), '#0f1a23', 'dark ink on a light chip');
   assert.equal(inkOn('#003087'), '#ffffff', 'light ink on a dark chip');
+  for (const [ab, hex, was] of [['ANA', '#F47A38', 2.73], ['VGK', '#B4975A', 2.79],
+                                ['PHI', '#F74902', 3.55]]) {
+    const now = contrast(inkOn(hex), hex);
+    assert.ok(now > was + 1,
+      `${ab}: ${now.toFixed(2)}:1 is no better than the ${was}:1 the heuristic gave`);
+  }
 });
 
 test('an unknown abbreviation degrades to itself rather than to nothing', () => {

@@ -67,12 +67,37 @@ export const NOTES = {
   UTA: 'Began play in 2024-25, after the Arizona club relocated.',
 };
 
-/** Readable ink for a chip of this colour — contrast, not taste. */
+/** WCAG 2.1 relative luminance, and the contrast ratio built from it. */
+function luminance(hex) {
+  const c = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255)
+    .map(v => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+}
+export function contrast(a, b) {
+  const [x, y] = [luminance(a) + 0.05, luminance(b) + 0.05];
+  return Math.max(x, y) / Math.min(x, y);
+}
+
+/**
+ * Readable ink for a chip of this colour — MEASURED, not guessed.
+ *
+ * This used to pick by Rec. 601 luma against a threshold of 0.6, and 0.6 was a
+ * number we chose. It cost real contrast: Anaheim's orange got white ink at
+ * **2.73:1**, below WCAG's 3:1 floor for even large text, and Vegas 2.79 and
+ * Philadelphia 3.55 were not much better. The heuristic was answering a question
+ * ("is this colour light?") next to the one that matters ("which ink can be read
+ * on it?").
+ *
+ * Asking the real question needs no threshold at all: take whichever ink
+ * contrasts more. The worst case across the 33 clubs goes from 2.73:1 to
+ * **4.96:1**, and three clubs change ink — Anaheim 2.73 → 6.45, Vegas 2.79 →
+ * 6.30, Philadelphia 3.55 → 4.96.
+ *
+ * Same species of fix as the goalie card's `thin = f < 20`: a chosen constant
+ * dissolves when you measure the thing it was standing in for.
+ */
 export function inkOn(hex) {
-  const n = parseInt(hex.slice(1), 16);
-  // Rec. 601 luma. The threshold is where black stops being the readable choice.
-  const luma = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
-  return luma > 0.6 ? '#0f1a23' : '#ffffff';
+  return contrast('#0f1a23', hex) >= contrast('#ffffff', hex) ? '#0f1a23' : '#ffffff';
 }
 
 /** The label for a team, falling back to the abbreviation we were given. */
@@ -104,17 +129,6 @@ export const NEUTRAL = '#5b6d7a';
  */
 export function colourOf(ab) {
   return (TEAMS[ab] && TEAMS[ab].colour) || NEUTRAL;
-}
-
-/** WCAG 2.1 relative luminance, and the contrast ratio built from it. */
-function luminance(hex) {
-  const c = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255)
-    .map(v => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
-  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
-}
-export function contrast(a, b) {
-  const [x, y] = [luminance(a) + 0.05, luminance(b) + 0.05];
-  return Math.max(x, y) / Math.min(x, y);
 }
 
 /**

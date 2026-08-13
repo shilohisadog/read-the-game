@@ -12,7 +12,7 @@
 <meta name="twitter:title" content="Read the Game — watch a hockey game and see what the numbers are made of">
 <meta name="twitter:description" content="An NHL game replayed so a new fan can see what the numbers are made of. Nothing modelled, nothing invented.">
 <meta property="og:url" content="https://readthegame.co/game">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-K7IYzfRlvHcn4Uo3eQser64+SXaVeT8ondAwtriHLPI='; style-src 'sha256-geolCqfGornF04LVz9fHWnGFVyBcnm+GuRHfcU10dKc='; connect-src 'self' https://data.readthegame.co; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-xlvtYgp7kPfc0rIW9j4VoXQL//6EIUTsIV4uIC78pVs='; style-src 'sha256-9HbFjID+M02qmJP42mKhc6D60puw6zIuwTyVrKraiBw='; connect-src 'self' https://data.readthegame.co; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <style>
@@ -35,7 +35,8 @@
 #rg .boards{fill:var(--ice);stroke:var(--edge);stroke-width:1.1}
 #rg .ln{fill:none;stroke-linecap:round}#rg .ln.red{stroke:var(--red);stroke-width:.7;opacity:.42}#rg .ln.blue{stroke:var(--blue);stroke-width:.9;opacity:.42}#rg .ln.thick{stroke-width:1.1;opacity:.52}
 #rg .rdot{fill:var(--red);opacity:.5}
-#rg .crease{opacity:.5}#rg .netlab{font-size:3.1px;font-weight:700;letter-spacing:.4px;text-anchor:middle}
+#rg .crease{opacity:.5}
+#rg .netlab{font-size:3.4px;font-weight:800;letter-spacing:.55px;text-anchor:middle;dominant-baseline:central}
 #rg .netflash{animation:nf 1.3s ease}@keyframes nf{0%,100%{opacity:0}25%{opacity:.85}}
 #rg .ev{transform-box:fill-box;transform-origin:center}
 /* THE SWEATER CONVENTION. Home teams wear their colours, visitors wear white,
@@ -177,7 +178,8 @@ by the third period — good to study, busy to watch.</span></div>
 <button class="lyr fbtn" data-f="mascot" aria-pressed="true">Mascot</button>
 <button class="lyr fbtn" data-f="tabletop" aria-pressed="false">Tabletop</button>
 <span class="fnote">Same shots, same outcomes, same math — only the drawing changes. <b>Tabletop</b> is the rod-hockey player you grew up with.</span></div>
-<p class="ends">Ends are held fixed here, so each team always attacks the same net. In the arena they switch every period — this is the one thing on the rink we move, and the coordinates are the league’s own.</p>
+<p class="ends">Each net carries the name of the team defending it. Ends are held
+fixed here, so each team always attacks the same net. In the arena they switch every period — this is the one thing on the rink we move, and the coordinates are the league’s own.</p>
 <div class="hint">Tip: click a ⚡ high-danger chance (amber ring) on the ice to see <b>why</b> it qualified — with trails set to <b>keep every mark</b>, earlier ones stay clickable too.</div>
 <div class="work" id="workPanel" hidden></div>
 <div class="whybk" id="whyBk"><div class="why" id="whyContent"></div></div>
@@ -1458,12 +1460,37 @@ const NOTES = {
   UTA: 'Began play in 2024-25, after the Arizona club relocated.',
 };
 
-/** Readable ink for a chip of this colour — contrast, not taste. */
+/** WCAG 2.1 relative luminance, and the contrast ratio built from it. */
+function luminance(hex) {
+  const c = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255)
+    .map(v => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+}
+function contrast(a, b) {
+  const [x, y] = [luminance(a) + 0.05, luminance(b) + 0.05];
+  return Math.max(x, y) / Math.min(x, y);
+}
+
+/**
+ * Readable ink for a chip of this colour — MEASURED, not guessed.
+ *
+ * This used to pick by Rec. 601 luma against a threshold of 0.6, and 0.6 was a
+ * number we chose. It cost real contrast: Anaheim's orange got white ink at
+ * **2.73:1**, below WCAG's 3:1 floor for even large text, and Vegas 2.79 and
+ * Philadelphia 3.55 were not much better. The heuristic was answering a question
+ * ("is this colour light?") next to the one that matters ("which ink can be read
+ * on it?").
+ *
+ * Asking the real question needs no threshold at all: take whichever ink
+ * contrasts more. The worst case across the 33 clubs goes from 2.73:1 to
+ * **4.96:1**, and three clubs change ink — Anaheim 2.73 → 6.45, Vegas 2.79 →
+ * 6.30, Philadelphia 3.55 → 4.96.
+ *
+ * Same species of fix as the goalie card's `thin = f < 20`: a chosen constant
+ * dissolves when you measure the thing it was standing in for.
+ */
 function inkOn(hex) {
-  const n = parseInt(hex.slice(1), 16);
-  // Rec. 601 luma. The threshold is where black stops being the readable choice.
-  const luma = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
-  return luma > 0.6 ? '#0f1a23' : '#ffffff';
+  return contrast('#0f1a23', hex) >= contrast('#ffffff', hex) ? '#0f1a23' : '#ffffff';
 }
 
 /** The label for a team, falling back to the abbreviation we were given. */
@@ -1495,17 +1522,6 @@ const NEUTRAL = '#5b6d7a';
  */
 function colourOf(ab) {
   return (TEAMS[ab] && TEAMS[ab].colour) || NEUTRAL;
-}
-
-/** WCAG 2.1 relative luminance, and the contrast ratio built from it. */
-function luminance(hex) {
-  const c = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255)
-    .map(v => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
-  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
-}
-function contrast(a, b) {
-  const [x, y] = [luminance(a) + 0.05, luminance(b) + 0.05];
-  return Math.max(x, y) / Math.min(x, y);
 }
 
 /**
@@ -1589,10 +1605,19 @@ function drawRink(){const P=[];P.push('<rect class="boards" x="1" y="1" width="1
  // nets: BUF(home) defends LEFT(-89), MIN(away) defends RIGHT(+89)
  P.push(`<rect id="netL" class="crease netflash" x="${SX(-89)}" y="37" width="4" height="11" rx="1" fill="var(--home)" opacity="0"/>`);
  P.push(`<rect id="netR" class="crease netflash" x="${SX(89)-4}" y="37" width="4" height="11" rx="1" fill="#fff" stroke="var(--away)" stroke-width=".6" opacity="0"/>`);
- P.push(`<rect class="crease" x="${SX(-89)}" y="38" width="3" height="9" rx="1" fill="var(--home)"/>`);
- P.push(`<rect class="crease" x="${SX(89)-3}" y="38" width="3" height="9" rx="1" fill="#fff" stroke="var(--away)" stroke-width=".5"/>`);
- P.push(`<text class="netlab" x="${SX(-80)}" y="21" fill="${readableInk(HOMECOL)}">◄ ${HAB} net</text>`);
- P.push(`<text class="netlab" x="${SX(80)}" y="21" fill="${readableInk(AWAYCOL)}">${AAB} net ►</text>`);
+ P.push(`<rect class="crease" x="${SX(-89)}" y="37" width="4" height="11" rx="1" fill="var(--home)"/>`);
+ P.push(`<rect class="crease" x="${SX(89)-4}" y="37" width="4" height="11" rx="1" fill="#fff" stroke="var(--away)" stroke-width=".5"/>`);
+ // THE NET WEARS THE NAME OF THE TEAM THAT DEFENDS IT, written down the net
+ // itself rather than floated beside it as "◄ CHI net". A viewer glancing at an
+ // end gets the answer where they are already looking, and the mark travels with
+ // the net -- which matters the moment the ends switch, where a caption pointing
+ // at a net would have to be re-aimed every period.
+ //
+ // The ink follows the sweater convention it sits on: contrasting ink on the
+ // host's filled net, the club's own colour on the visitor's white one.
+ const netTag=(x,ab,ink)=>`<text class="netlab" transform="rotate(-90 ${x} 42.5)" x="${x}" y="42.5" fill="${ink}">${ab}</text>`;
+ P.push(netTag(SX(-89)+2,HAB,inkOn(HOMECOL)));
+ P.push(netTag(SX(89)-2,AAB,readableInk(AWAYCOL)));
  $('rink').innerHTML=P.join('');}
 function flashNet(scorer){ // scorer scores INTO opponent's net
  const el=scorer===AID?$('netR'):$('netL'); // MIN scores into MIN's...no: MIN attacks left(-89)=BUF net
