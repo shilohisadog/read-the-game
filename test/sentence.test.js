@@ -15,6 +15,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { sentenceFor, describeType } from '../src/lib/sentence.js';
 
 const HOME = 10, AWAY = 20;
@@ -103,6 +104,8 @@ test('NO CAUSAL CONNECTIVE joins the game to the rate', () => {
     { curve: null, noCurveReason: 'this page makes no network requests' },
     { diff: 9, curve: [{ k: 9, n: 0, count: 0 }] },           // empty population
     { diff: 35, curve: [{ k: 35, n: 4, count: 0 }] },         // the thin tail
+    { shootout: true },                                       // decided in a shootout
+    { shootout: true, score: { h: 3, a: 2 } },                // ... the other way
   ];
   const seen = new Set();
   for (const o of MATRIX) {
@@ -118,6 +121,58 @@ test('NO CAUSAL CONNECTIVE joins the game to the rate', () => {
   // with a conjunction without deleting a field.
   const r = say({});
   assert.ok(r.lead && r.rate && !r.lead.includes(r.rate));
+});
+
+test('a shootout is never reported as what the PLAY produced', () => {
+  // MEASURED, on game 2023020510: DET 7 PHI 6 on the scoreboard, 6-6 in play,
+  // and this sentence said "DET won." Every count on the site already excludes
+  // the shootout; the OUTCOME clause did not, because it reads the league's
+  // final score — which in these games IS the shootout result.
+  //
+  // The mirror case is the damaging one and it is asserted below: had the
+  // control leader lost the shootout, the page would have said "DET lost" and
+  // recruited a coin-flip tiebreaker as evidence for the site's own thesis.
+  const lostIt = say({ shootout: true });                    // BUF led level, 2-3
+  const wonIt = say({ shootout: true, score: { h: 3, a: 2 } });
+
+  for (const r of [lostIt, wonIt]) {
+    assert.match(r.lead, /The game was level when play ended/);
+    assert.doesNotMatch(r.lead, /BUF (won|lost)\./,
+      'the control leader is never said to have won or lost a shootout game');
+    assert.doesNotMatch(r.lead, /MIN (won|lost)\.$/);
+    // The game still says what it WAS — the counts are unaffected, and they are
+    // the honest part.
+    assert.match(r.lead, /BUF led the attempts 55–47/);
+    assert.match(r.lead, /led 30–18 while the score was level/);
+  }
+  // And the shootout's winner is named, because it is a fact and the reader can
+  // see it on the scoreboard. MIN won 3-2 in the first, BUF won 3-2 in the second.
+  assert.match(lostIt.lead, /MIN won the shootout\./);
+  assert.match(wonIt.lead, /BUF won the shootout\./);
+
+  // A NON-SHOOTOUT GAME IS UNTOUCHED. Without this the fix could have been
+  // "never say won or lost", which would delete the sentence's whole point.
+  assert.match(say({}).lead, /BUF lost\./);
+  assert.match(say({ score: { h: 3, a: 2 } }).lead, /BUF won\./);
+});
+
+test('the shootout clause is never reached by the period NUMBER', () => {
+  // Period 5 is a shootout in the regular season and a THIRD OVERTIME in the
+  // playoffs, so the number cannot tell them apart — which is why the extract
+  // carries `pt` at all. This module is handed the answer rather than deriving
+  // it, and the guard is that it takes no period input to get wrong.
+  // COMMENTS STRIPPED FIRST. The first version of this ran over the whole file
+  // and matched `per` inside the phrase "per-game sentence" in the doc comment —
+  // a gate that fires on prose is a gate nobody can keep green, and it would
+  // have been "fixed" by loosening the pattern until it caught nothing.
+  const src = readFileSync(new URL('../src/lib/sentence.js', import.meta.url), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  assert.doesNotMatch(src, /\bper\b|periodDescriptor|[=!]= *5\b/,
+    'sentence.js must not reason about periods');
+  assert.match(src, /shootout/, 'and the stripper did not just delete the file');
+  // Absent or false both mean "not a shootout", and neither may invent the clause.
+  for (const o of [{}, { shootout: false }, { shootout: undefined }])
+    assert.doesNotMatch(say(o).lead, /shootout/i);
 });
 
 test('an out-of-scope game gets its own numbers and is TOLD why there is no rate', () => {

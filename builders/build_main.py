@@ -655,6 +655,9 @@ $('gl').textContent=`${AAB} at ${HAB}${WHEN?' · '+WHEN:''} · final ${AAB} ${fi
    // built from. Falling back to our own count keeps a game with no quoted
    // boxscore readable rather than blank.
    score:q?{h:q.home.score,a:q.away.score}:{h:finalH,a:finalA},
+   // THE SAME PREDICATE THE COUNTS USE, and not `per===5`: period five is a
+   // shootout in the regular season and a THIRD OVERTIME in the playoffs.
+   shootout:G.events.some(inShootout),
    gameId:(G.game&&G.game.id)||0,
    curve:(RATES&&RATES.levelCurve)||null,
    // undefined = never asked for (the inlined page, which reaches nothing);

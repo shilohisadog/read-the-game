@@ -12,7 +12,7 @@
 <meta name="twitter:title" content="Read the Game — watch a hockey game and see what the numbers are made of">
 <meta name="twitter:description" content="An NHL game replayed so a new fan can see what the numbers are made of. Nothing modelled, nothing invented.">
 <meta property="og:url" content="https://readthegame.co/game">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-DqAuF6WFfitwQ+6Tf9uwzpjOaSGeDftv7aDUZ2lUqJ0='; style-src 'sha256-nusmVuRANfh1lwLqvTmTJ65A11C3d8Fu3hqGcIwJlU4='; connect-src 'self' https://data.readthegame.co; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Oi0IO7m2PtgW13RtUjbEnHEaDKKHctQFUqeX9EC4vK8='; style-src 'sha256-nusmVuRANfh1lwLqvTmTJ65A11C3d8Fu3hqGcIwJlU4='; connect-src 'self' https://data.readthegame.co; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <style>
@@ -1828,6 +1828,12 @@ const pair = (a, b) => `${a}–${b}`;
  * @param o.score           { h, a } final, the league's own line
  * @param o.gameId          for scope
  * @param o.curve           measures.json `levelCurve`, or null if unavailable
+ * @param o.shootout        true when the game was decided by a shootout, so the
+ *                          scoreboard's winner is not what the play produced.
+ *                          Caller supplies it from `inShootout`, the same
+ *                          predicate every count uses — never from the period
+ *                          number, which is a shootout in the regular season and
+ *                          a third overtime in the playoffs.
  *
  * Returns `{ lead, rate, absent }`. `rate` and `absent` are mutually exclusive
  * and one of them is always present when there is an edge — a missing comparison
@@ -1836,7 +1842,7 @@ const pair = (a, b) => `${a}–${b}`;
  */
 function sentenceFor(o) {
   const { homeAb, awayAb, homeId, awayId, diff, attempts, levelCounts,
-          score, gameId, curve } = o;
+          score, gameId, curve, shootout } = o;
   const level = Math.abs(diff);
 
   // NO EDGE IS A REAL ANSWER, and it is 264 of 4,119 games — one in sixteen.
@@ -1871,9 +1877,32 @@ function sentenceFor(o) {
     lead = `${ledAttempts} led the attempts ${att}, but ${ledLevel} led ${lvl} `
          + `while the score was level.`;
   }
-  lead += won === null ? ' The game ended level.'
-        : won === ledLevel ? ` ${ledLevel} won.`
-        : ` ${ledLevel} lost.`;
+  // A SHOOTOUT IS NOT PLAY, SO IT CANNOT BE REPORTED AS WHAT THE PLAY PRODUCED.
+  //
+  // Every count on this site already excludes the shootout — `inShootout` guards
+  // Corsi, level control and the goal tally, and the league agrees, since its own
+  // boxscore keeps shootout attempts out of shots on goal and adds exactly one
+  // goal to the winner however many go in. The OUTCOME did not exclude it: the
+  // won/lost clause reads the league's final score, which in these games IS the
+  // shootout result. Measured on a real game, `2023020510`: DET 7 PHI 6 on the
+  // scoreboard, **6–6 in play**, and this sentence said *"DET won."*
+  //
+  // The mirror case is the damaging one. Had the control leader lost that
+  // shootout the sentence would have said *"DET lost"* — presenting a
+  // coin-flip tiebreaker as an instance of the very thing the site exists to
+  // demonstrate. That is not a small overstatement; it is recruiting a
+  // non-hockey event as evidence about hockey.
+  //
+  // "Level when play ended" is a RULE, not an observation about this game: a
+  // shootout happens only when the score is tied after overtime. ~6% of games
+  // reach one (13 of 219 sampled), so this is roughly 250 games in the archive.
+  if (shootout && won) {
+    lead += ` The game was level when play ended; ${won} won the shootout.`;
+  } else {
+    lead += won === null ? ' The game ended level.'
+          : won === ledLevel ? ` ${ledLevel} won.`
+          : ` ${ledLevel} lost.`;
+  }
 
   // THE REFERENCE CLASS, and the game supplies its own cutoff.
   const why = describeType(gameId);
@@ -2330,6 +2359,9 @@ $('gl').textContent=`${AAB} at ${HAB}${WHEN?' · '+WHEN:''} · final ${AAB} ${fi
    // built from. Falling back to our own count keeps a game with no quoted
    // boxscore readable rather than blank.
    score:q?{h:q.home.score,a:q.away.score}:{h:finalH,a:finalA},
+   // THE SAME PREDICATE THE COUNTS USE, and not `per===5`: period five is a
+   // shootout in the regular season and a THIRD OVERTIME in the playoffs.
+   shootout:G.events.some(inShootout),
    gameId:(G.game&&G.game.id)||0,
    curve:(RATES&&RATES.levelCurve)||null,
    // undefined = never asked for (the inlined page, which reaches nothing);
