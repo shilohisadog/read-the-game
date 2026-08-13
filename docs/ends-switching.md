@@ -77,8 +77,15 @@ The bias is fixed to the **arena** and does not track the teams at all. Across
 20 feeds it is 59.9% / 40.1% on one diagonal, 5.5σ from even, and **17 of the 20
 games favour the same diagonal individually** — broad, not a few outliers.
 
+**And it is not uniform.** CHENG checked the reference game and found **21 / 20 —
+essentially even**, which I verified independently: 41 end-zone draws, 21 on the
+diagonal. It does not contradict the 59.9/40.1 (n=41 here, and three of the
+twenty games run the other way) but it is worth knowing that **the flagship game
+is not an example of the thing**, and that whatever this is, it varies by game.
+
 Why the league's coordinates have it, I do not know, and I am not going to fit a
-story to it. The conclusion that matters here is narrow and it is good news: **a
+story to it. **It is FILED, not resolved** — see §9.1. The conclusion that
+matters here is narrow and it is good news: **a
 diagonal bias is invariant under 180° rotation, which is exactly what `_norm`
 is, so it must survive normalization untouched — and it does** (1.51/1.54
 normalized against 1.41–1.59 raw). `_norm` is faithfully preserving an
@@ -169,12 +176,27 @@ wrong.
 
 ## 6. What I think the default should be, and the argument against it
 
-I lean **one-direction stays the default**, and I want this argued.
+**one-direction stays the default.** I asked for this to be argued and CHENG
+supplied the argument I had missed, which is the one that settles it.
 
-For as-played: it is what the fan sees on television, this site is for novices,
-and matching the broadcast is the whole reason the host defends the right today.
+**As-played is not more real. It is more like the broadcast.** The camera shows
+one building's fixed perspective, and §1 already proved that perspective is not
+a fact about this game: first periods split 12 right / 8 left with no league
+convention. Mirroring the rink changes nothing about how the game was played.
 
-Against, and it is what decides it for me:
+So my own framing — *"the less realistic default on a site whose pitch is
+showing you the real game"* — conceded too much, and I am striking it. The
+honest statement of the trade is symmetric:
+
+> **One-direction discards a fact about the building. As-played discards
+> comparability across periods.** Both are exact transforms of the same data.
+> The question is which loss costs the viewer more, and for a novice learning to
+> read control, comparability wins easily.
+
+For as-played: it is what the fan sees on television, and matching the broadcast
+is the whole reason the host defends the right today.
+
+Against:
 
 1. **It re-breaks the thing we just fixed.** In period two the host is on the
    left while the scoreboard still reads away-then-host. That is the exact
@@ -183,35 +205,153 @@ Against, and it is what decides it for me:
    site's thesis.
 3. **The gain is smallest for the audience we build for.** A novice does not yet
    know the ends switch; that is a thing to be *told*, which a sentence does
-   better than a silently mirroring rink.
+   better than a silently mirroring rink — where a novice is at least as likely
+   to conclude the site glitched. CHENG would elevate this one, and I agree.
 
-If as-played is off by default, the honest move is that the page **says the ends
-switched** at each period boundary — one line in the whistle panel's voice,
-subject a rule — rather than staying silent about a fact it has chosen not to
-draw. Silence about an omission is the failure the ingest-state work spent two
-rounds fixing.
+**A fourth argument, ACCEPTED BUT MARKED.** CHENG offers: one-direction is the
+frame every hockey analytics surface uses, so teaching a novice to read one
+transfers to everything they see afterward, and teaching them to read a mirroring
+rink does not. I think this is probably true and it points the same way as the
+rest. **It is also entirely untested.** Nobody has watched a novice use this
+site, nobody has checked what a novice actually encounters afterward, and
+"transferable" is a claim about learning, not about hockey. It goes in the record
+as a plausible argument rather than a supporting fact, because the thing this
+project keeps doing is letting an unchecked figure harden into evidence by being
+repeated — `88 of 214` did exactly that, through four artifacts — and I have
+already been caught once this week inventing a fact about users to argue about a
+layer. The conclusion does not depend on it.
+
+**THE LOAD-BEARING COMMITMENT, and CHENG is right that it survives even if the
+rest of §6 changes: the page SAYS THE ENDS SWITCHED, in both modes.** That is
+what converts one-direction from a silent transform into a stated one, which is
+the difference between a convention and a concealment. Silence about an omission
+is the failure the ingest-state work spent two rounds fixing. See §7.5 for what
+the sentence has to say, which turns out to be harder than it looks.
 
 ## 7. Open questions, in the order I would settle them
 
-**7.1 — Does the side really alternate into overtime, and through a shootout?**
-The only measurement here with n=3. It should be n≈300: overtime games are
-plentiful and `derive.py` can count this over the whole archive without a single
-new fetch. It also decides whether P5 — a shootout in the regular season, a
-third overtime in the playoffs — has a meaningful defending side at all. **I
-would take this measurement before writing any render code**, because the answer
-changes whether the flip is driven by recorded data or by period parity, and I
-do not want to discover it from a screenshot.
+**7.1 — Does the side really alternate into overtime?** The only measurement
+here with n=3, and it should be n in the hundreds.
+
+I had framed this as deciding *"whether the flip is driven by recorded data or
+by period parity"*, and **CHENG is right that this framing is wrong: §3 already
+settles the schema regardless of the answer.** Store the per-period array either
+way; it costs a few bytes and does not depend on the measurement. The outcome
+must not be allowed to reopen §3.
+
+What it actually decides is narrower: **is there any period where the feed's
+`homeTeamDefendingSide` and period parity disagree?** If yes, parity is a false
+rule and anything computing from it is broken. If no over several hundred
+overtime games, parity is at least *descriptive* — which is worth having for
+validation, and still not safe to compute from.
+
+**MEASURED — 219 games, and 7.1 is settled.** Raw feeds spread across the three
+seasons, 50 reaching overtime:
+
+| | |
+|---|---|
+| non-shootout periods examined | **709** |
+| plays missing `homeTeamDefendingSide` | **0** |
+| periods where the feed disagrees with parity | **0** |
+| overtime periods, all agreeing | **52** |
+
+So parity is descriptive over 52 overtime periods, and my n=3 surprise in §1
+holds up: **the ends really do change again for overtime.** Still not safe to
+compute from — §3 stands unchanged, which is the outcome CHENG insisted the
+measurement must not be allowed to reopen.
+
+**7.1b — The shootout, as its own row.** CHENG's addition, on the grounds that
+it was the case most likely to be weird. **He was right that it breaks, and both
+of us guessed the wrong way.** The prediction was that "defending side" would be
+absent, meaningless or arbitrary. It is none of those: all 13 shootout periods
+carry a side on every play, none missing, and all 13 continue the alternation.
+
+**The coordinates are the problem.** In a shootout every attempt is taken at one
+end. The feed puts them at **both ends, in all 13 shootouts**, and the split does
+not follow the shooting team either (away `x+` 27 / `x−` 18, home `x+` 20 /
+`x−` 29 over 94 attempts). Whatever those coordinates are, they are not where
+the puck was.
+
+**And we draw them.** Confirmed on a real game rather than inferred — `2023020510`
+carries 5 shootout attempts on the timeline with coordinates, at
+x = +75, −73, +76, −83, +75. **The site currently renders a shootout as
+attempts coming from both ends of the ice**, on the ~6% of games that reach one
+(13 of 219). `extract.py` already excludes `pt == "SO"` from the SOG and goal
+counting, so the numbers are right; nothing excludes it from the ICE.
+
+This is a live defect and it is **not part of ends switching** — it was found by
+CHENG's suggested measurement and it belongs in its own change, before this one.
+Filed in §9.2. The reference game has no shootout, which is why nothing local
+ever showed it.
 
 **7.2 — What does an as-played rink do at a period boundary?** An instant mirror
 is cheap and reads as a glitch. An animated one is motion that traces a real
 event (Doctrine §4 permits it — the period ending is a real event) but costs
 work. Undecided.
 
-**7.3 — Does anything else read the display frame?** The high-danger diagram,
-the goalie view, and the icing/offside line geometry all compute in the
-normalized frame today. The rule I want held: **all computation stays normalized;
-as-played is a render-time transform and nothing else.** If any reducer ends up
-needing to know which way the screen points, the design is wrong.
+**7.3 — Make the display frame UNAVAILABLE to reducers, not merely forbidden.**
+The rule I wanted held was *all computation stays normalized; as-played is a
+render-time transform and nothing else.* CHENG's improvement is that a rule
+enforced by a test can only catch the leak after someone makes it, whereas a
+scope that does not contain `SX` cannot leak.
+
+**Measured, today:** `CTX` carries `roster, homeId, awayId, homeAb, awayAb,
+evenOnly` — no display frame — and none of the 13 inlined library modules
+references `SX` or `SY`. So the rule holds right now. **But it holds by habit.**
+`SX` is defined at char 74,924, after every library block (which span 1,126 to
+66,541), **in one shared script scope**: the bundler inlines the modules by
+stripping `export`, so a reducer that named `SX` would find it at call time.
+Unused, not unavailable — exactly CHENG's distinction, and the measurement says
+he is describing the real state rather than a hypothetical.
+
+The structural fix is lexical: put the render code in a function scope with `SX`
+inside it and leave the library blocks outside, so an inner name is invisible to
+outer code. **And it is mutation-provable**, which the grep-flavoured version
+never was: drop a reference to `SX` into a library block in the shipped bundle
+and assert the page fails. A guard that can be seen to fire.
+
+**7.5 — What does the period-boundary sentence SAY in one-direction mode?**
+CHENG's, and it is the sharpest thing in his review because it is the one the
+doc had no answer to at all. §6 commits the page to saying the ends switched in
+both modes. In one-direction, that sentence **asserts something the screen
+visibly contradicts** — the teams switched ends, and nothing moved. On its own it
+reads as a bug.
+
+His fix is a second clause, and it is right: two facts, one about the game and
+one about the display, with the second making the first honest.
+
+> *"The teams switched ends. This rink holds them in place so the whole game can
+> be compared."*
+
+**Two problems with it, both mine to solve rather than reasons to reject it.**
+
+*First, the subject.* The whistle layer's copy standard is positive and
+deliberately strict: **every sentence's subject is a rule, a recorded field, or a
+count — never a player, a team, or a moment.** *"The teams switched ends"* has a
+team as its subject. The provenance is real (`field: homeTeamDefendingSide`), so
+this is a grammar collision rather than an honesty failure, and it is cheap to
+avoid:
+
+> *"Ends change at every period break."* — subject is a rule
+
+**The rule NUMBER has to be looked up, not typed.** Every other teaching row on
+this site cites one (`rule: NHL Rule 81`), and I do not have this one to hand. It
+gets verified against the rulebook before it ships or the row carries
+`field: homeTeamDefendingSide` instead, which is a citation we can actually
+stand behind.
+
+*Second, and more interesting: the display clause is a NEW KIND OF SENTENCE.*
+*"This rink holds them in place"* is not a claim about hockey at all — it is a
+disclosure about our own rendering, and the copy standard has no category for
+it. Every provenance tag we have (`rule:`, `field:`) points into the game or the
+feed. A disclosure points at us. It needs its own form — `display:
+one-direction` — and once that exists it should be applied to every convention
+the page currently applies silently.
+
+**Which is where CHENG's other point lands: this sentence is the natural home
+for the normalization disclosure the page still does not make** — raised on the
+first screenshot and never built. Same fact, said once, in the one place a
+viewer is already being told the ends changed.
 
 **7.4 — Do the net and goaltender ids survive?** I think yes, and by luck rather
 than foresight: they were renamed from `netL`/`netR` to `netHome`/`netAway` two
@@ -233,6 +373,38 @@ A per-period reflection is the case that rename was for.
    trails hold no cross-period mark in as-played; and the mode is stated on
    screen. Each mutation-proven before it is believed.
 
-**Step 1 is a measurement and steps 2–5 are not started.** The thing I would
-most like challenged is §6 — I have argued for keeping the less realistic
-default on a site whose whole pitch is that it shows you the real game.
+**Step 1 is done (§7.1). Steps 2–5 are not started**, and §9.2 comes before all
+of them.
+
+---
+
+## 9. Filed, not chased
+
+CHENG's instruction on both of these was *file it, don't chase it*, and the
+reason to write them down here is that this document is where they were found.
+
+**9.1 — The diagonal skew in end-zone faceoff coordinates.** §2 proves it is not
+ours and then moves on, which leaves it **unexplained rather than resolved**.
+59.9/40.1 over 20 feeds, 5.5σ, 17 of 20 games individually — but the reference
+game is 21/20, so it is not uniform. It is either a recording artifact (one
+scorer's habit, one side of the press box, a default when the spot is ambiguous)
+or something real about play. **The reason to have it on a list: a future layer
+that uses faceoff location would inherit it silently**, and we would rather know
+what it is before that layer exists than after.
+
+**9.2 — Shootout attempts are drawn on the ice at coordinates that are not
+positions.** §7.1b, measured and confirmed live on `2023020510`. This one is
+**not** filed-and-parked: it is a defect on ~6% of games, the fix is small, and
+it should ship before any ends work. Two candidate fixes, and I would want the
+first:
+
+- **Exclude `pt == "SO"` from the ice**, the way `extract.py` already excludes it
+  from the counts. The shootout is not play — that is settled doctrine here —
+  and a mark whose coordinate is not a position fails the "nothing synthesized"
+  rule from the other direction: we did not invent it, but we are presenting it
+  as something it is not.
+- Draw them, and say what they are. Weaker, because we cannot say what they are.
+
+The thing I would still most like challenged is §6 — but the framing is no
+longer the one I asked to be challenged on, because CHENG replaced it and I
+think his version is correct.
