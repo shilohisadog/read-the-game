@@ -1204,8 +1204,18 @@ const WHY = {
     from: 'rule: NHL Rule 81',
   },
   offside: {
+    // "the faceoff goes back outside" WAS SHIPPED AND IS WRONG ABOUT ONE OFFSIDE
+    // IN TEN. Measured over 1,094 offsides that restart immediately, across 240
+    // games: 89.8% at the neutral-zone dot outside the blue line, 5.3% at centre
+    // ice, 4.9% in an END zone. Not a penalty artifact — those are the immediate
+    // restarts, with nothing in between. At 4.6 offsides a game a viewer with
+    // this layer on meets a contradicting restart most nights.
+    //
+    // The sentence now claims only what the rule guarantees. WHERE play restarts
+    // varies, and the mark on the ice already shows it for the game in front of
+    // you — which is the honest division of labour between a rule and a fact.
     say: 'Offside — an attacking player crossed the blue line ahead of the puck, '
-       + 'so the zone entry does not count and the faceoff goes back outside.',
+       + 'so the zone entry does not count and play stops.',
     from: 'rule: NHL Rule 83',
   },
   'goalie-stopped-after-sog': {

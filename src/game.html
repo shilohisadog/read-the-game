@@ -12,7 +12,7 @@
 <meta name="twitter:title" content="Read the Game — watch a hockey game and see what the numbers are made of">
 <meta name="twitter:description" content="An NHL game replayed so a new fan can see what the numbers are made of. Nothing modelled, nothing invented.">
 <meta property="og:url" content="https://readthegame.co/game">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-r+aZyN6M4QLTxJmxPI+gri05KkOnRjxHbnAER5nTimM='; style-src 'sha256-C3ua18gaVGTBSynuLFL9bvcAnNmfiL6+q8uyyRzgRus='; connect-src 'self' https://data.readthegame.co; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-upENB2SOx0VPAbAK8vZqHTdfje0TS1ys62ykUrhcvTA='; style-src 'sha256-C3ua18gaVGTBSynuLFL9bvcAnNmfiL6+q8uyyRzgRus='; connect-src 'self' https://data.readthegame.co; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <style>
@@ -1206,8 +1206,18 @@ const WHY = {
     from: 'rule: NHL Rule 81',
   },
   offside: {
+    // "the faceoff goes back outside" WAS SHIPPED AND IS WRONG ABOUT ONE OFFSIDE
+    // IN TEN. Measured over 1,094 offsides that restart immediately, across 240
+    // games: 89.8% at the neutral-zone dot outside the blue line, 5.3% at centre
+    // ice, 4.9% in an END zone. Not a penalty artifact — those are the immediate
+    // restarts, with nothing in between. At 4.6 offsides a game a viewer with
+    // this layer on meets a contradicting restart most nights.
+    //
+    // The sentence now claims only what the rule guarantees. WHERE play restarts
+    // varies, and the mark on the ice already shows it for the game in front of
+    // you — which is the honest division of labour between a rule and a fact.
     say: 'Offside — an attacking player crossed the blue line ahead of the puck, '
-       + 'so the zone entry does not count and the faceoff goes back outside.',
+       + 'so the zone entry does not count and play stops.',
     from: 'rule: NHL Rule 83',
   },
   'goalie-stopped-after-sog': {

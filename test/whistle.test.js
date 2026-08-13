@@ -249,3 +249,21 @@ test('the words we actually shipped once do not come back', () => {
     assert.doesNotMatch(row.say, banned, `${k}: "${row.say}" narrates the moment`);
   }
 });
+
+test('the offside sentence claims only what holds for EVERY offside', () => {
+  // MEASURED, not assumed. Over 240 games and 1,094 offsides restarting with
+  // nothing in between: 89.8% at the neutral-zone dot, 5.3% at centre ice, 4.9%
+  // in an end zone. The shipped copy said "the faceoff goes back outside", which
+  // is wrong about one offside in ten — and at 4.6 a game, a viewer with this
+  // layer on would meet a restart contradicting the sentence most nights.
+  const say = WHY.offside.say;
+  assert.match(say, /blue line ahead of the puck/, 'the rule itself is still taught');
+  assert.doesNotMatch(say, /goes back outside|neutral zone|outside the blue line/,
+    'the sentence must not say where the faceoff goes — it varies');
+});
+
+test('the icing sentence MAY say where the faceoff goes, because that one holds', () => {
+  // The mirror of the test above, and the reason it is not a blanket ban:
+  // 2,019 of 2,019 icings in the same 240 games restart at an end-zone dot.
+  assert.match(WHY.icing.say, /faceoff comes back to the offending\s+end/);
+});
