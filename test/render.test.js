@@ -487,11 +487,17 @@ test('each net wears the name of the team defending it', () => {
   assert.equal(right.ab, 'MIN', 'the visitor defends the right net');
   assert.ok(left.x < 20 && right.x > 180, 'and both sit ON their net, not in open ice');
 
-  // MIRRORED ACROSS CENTRE ICE, not parallel: a left-hand label reads up and a
-  // right-hand one reads down, so the two abbreviations face each other.
-  assert.equal(left.deg, -90, 'the near tag reads up');
-  assert.equal(right.deg, 90, 'the far tag reads down');
-  assert.equal(left.deg, -right.deg, 'and the pair is symmetric about the rink');
+  // THEY FACE EACH OTHER, which is a claim about WHICH WAY, not merely that the
+  // two differ. The first version of this asserted only symmetry — and symmetry
+  // is equally satisfied by the pair pointing outward at the boards, which is
+  // what it was actually holding in place. Assert the direction.
+  //
+  // SVG's y-axis points down, so a positive rotation is clockwise and takes a
+  // glyph's top toward +x. Tops must point toward centre ice from both ends.
+  const topsPointToward = t => (t.deg === 90 ? +1 : -1);   // +1 = toward +x
+  assert.equal(topsPointToward(left), +1, 'the near tag leans in toward centre ice');
+  assert.equal(topsPointToward(right), -1, 'and so does the far one');
+  assert.equal(left.deg, -right.deg, 'which makes the pair mirrored, as a consequence');
 
   // The old floating captions are gone, not merely duplicated.
   assert.doesNotMatch(rink, /net ►|◄ \w+ net/, 'the caption in open ice is gone');
