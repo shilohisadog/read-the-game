@@ -451,8 +451,10 @@ test('the page states that it holds the ends fixed', () => {
   const said = prose.replace(/\s+/g, ' ');
   assert.match(said, /Ends are held fixed/);
   assert.match(said, /switch every period/);
-  assert.match(said, /Each net carries the name of the team defending it/,
-    'and the vertical net tag is explained rather than left to be guessed at');
+  assert.match(said, /A goaltender stands in each crease/,
+    'the figure that replaced the text tag is explained');
+  assert.match(said, /pulled for an extra attacker/,
+    'including the one moment it is absent');
 });
 
 test('the legend shows the mark the ice actually draws', () => {
@@ -484,208 +486,58 @@ test('the controls explain themselves without referring to their own history', (
     'and it still says what the control does');
 });
 
-test('each net wears the name of the team defending it', () => {
-  // Kevin: "locate CHI and SJS vertically in the net, so the watcher has better
-  // SA on which side is which." The old form floated "◄ CHI net" in open ice,
-  // which puts the answer somewhere other than where the eye already is — and
-  // would need re-aiming the moment the ends switch.
+test('a goaltender stands in each crease, and the sides agree with the scoreboard', () => {
+  // THE FIGURE REPLACED THE TEXT. "WSH net" written up the post was clutter doing
+  // a job a figure does better (Kevin): a goaltender in the crease says the net is
+  // defended, and the club's colour says whose — which is how a viewer reads a
+  // real rink rather than a labelled diagram.
+  // AT THE FIRST EVENT, not at boot: the app opens on the LAST event of the game,
+  // where Minnesota has already pulled its goalie — so reading the boot state
+  // would have been reading the one frame in the game with an empty net.
   const a = boot();
-  const rink = a.$('rink').innerHTML;
-  const tags = [...rink.matchAll(/<text class="netlab" transform="rotate\((-?\d+) ([\d.]+) 42\.5\)"[^>]*>(\w+) net</g)]
-    .map(m => ({ deg: +m[1], x: +m[2], ab: m[3] }));
-  assert.equal(tags.length, 2, 'one tag per net');
+  const opening = a.every(d => d.$('netmen').innerHTML)[0];
+  const gks = [...opening.matchAll(
+    /<rect class="gkbody" x="([-\d.]+)"[^>]*fill="([^"]+)" stroke="([^"]+)"/g)]
+    .map(m => ({ x: +m[1], fill: m[2], stroke: m[3] })).sort((p, q) => p.x - q.x);
+  assert.equal(gks.length, 2, 'both nets are defended at the opening faceoff');
 
-  // THE HOST IS ON THE RIGHT, which is the television arrangement and the one
-  // that agrees with the scoreboard: it reads away-then-host, so the host's badge
-  // is on the right too. The same three letters appearing on opposite sides of
-  // one screen is what made Kevin read the pair as swapped.
-  const [left, right] = tags.sort((p, q) => p.x - q.x);
-  assert.equal(left.ab, 'MIN', 'the visitor defends the left net');
-  assert.equal(right.ab, 'BUF', 'the host defends the right net');
-  // BEHIND THE GOAL LINE, in dead ice. On the net itself the label was a pill in
-  // the scoreboard's own visual language, and "CBJ" alone reads as either "CBJ's
-  // net" or "where CBJ shoots" — opposites (CHENG). The word `net` is back, and
-  // it fits because the label is no longer squeezed onto a post.
-  assert.ok(left.x < 11 && right.x > 189,
-    `the tags must sit BEHIND the goal lines (11 and 189), got ${left.x} and ${right.x}`);
-  assert.match(rink, /BUF net</, 'the possessive word is back');
-  // The scoreboard and the rink must name the same side for the same club.
-  assert.equal(a.$('hAb').textContent, right.ab,
-    'the host is on the right of the scoreboard AND the right of the rink');
-  assert.equal(a.$('aAb').textContent, left.ab, 'and the visitor on the left of both');
+  // The host is on the RIGHT, and so is the host's badge on the scoreboard. The
+  // agreement is the point: the same club on the same side of one screen.
+  const [visitor, host] = gks;
+  assert.equal(host.fill, colourOf(a.$('hAb').textContent), "the host's own colour");
+  assert.equal(visitor.fill, '#fff', 'the visitor wears white, like the sweaters');
+  assert.equal(visitor.stroke, colourOf(a.$('aAb').textContent), 'trimmed in its club colour');
+  assert.ok(host.x > 100 && visitor.x < 100, 'host right, visitor left');
 
-  // THEY FACE EACH OTHER, which is a claim about WHICH WAY, not merely that the
-  // two differ — symmetry alone is equally satisfied by the pair facing outward,
-  // which is what an earlier version of this test held in place while the screen
-  // showed the wrong thing.
-  //
-  // THE DIRECTION IS PINNED AS AN OBSERVATION. Deriving it from the transform
-  // algebra produced the wrong answer twice; which way a label appears to face is
-  // not settled by where its ascenders point. What a reader can check in one
-  // glance is where the FIRST LETTER sits, so that is what this asserts.
-  assert.equal(left.deg, -90, 'the near tag reads up, so its first letter is at the bottom');
-  assert.equal(right.deg, 90, 'the far tag reads down, first letter at the top');
-  assert.equal(left.deg, -right.deg, 'mirrored, as a consequence rather than as the claim');
-
-  // The old floating captions are gone, not merely duplicated.
-  assert.doesNotMatch(rink, /net ►|◄ \w+ net/, 'the old floating caption is gone');
-  // And the net is drawn as EQUIPMENT: a mouth on the goal line, a body behind
-  // it, posts, and the crease it stands in.
-  assert.match(rink, /class="mesh"/, 'the net has a body');
-  assert.match(rink, /class="post"/, 'and posts');
-  assert.match(rink, /class="crease"/, 'and it stands in a crease');
-  assert.doesNotMatch(rink, /class="crease" x=/, 'the rounded-rectangle chip is gone');
-
-  // AND IT STANDS BEHIND THE GOAL LINE. The rectangles this replaced sat on the
-  // ICE side of the line — x = 11..15 at the near end — which is a plain error
-  // about where a net is, and nothing here would have caught it coming back. A
-  // net whose body reaches into the playing surface swallows every shot mark in
-  // front of it.
-  const bodies = [...rink.matchAll(/class="mesh" d="M ([\d.]+) [\d.]+ L ([\d.]+) /g)]
-    .map(m => ({ mouth: +m[1], back: +m[2] })).sort((p, q) => p.mouth - q.mouth);
-  assert.equal(bodies.length, 2, 'one body per net');
-  assert.equal(bodies[0].mouth, 11, 'the near mouth is on the goal line');   // SX(-89)
-  assert.ok(bodies[0].back < bodies[0].mouth,
-    `the near net reaches to ${bodies[0].back}, on the ice side of ${bodies[0].mouth}`);
-  assert.equal(bodies[1].mouth, 189, 'the far mouth is on the goal line');   // SX(89)
-  assert.ok(bodies[1].back > bodies[1].mouth,
-    `the far net reaches to ${bodies[1].back}, on the ice side of ${bodies[1].mouth}`);
-  // Six feet across, which is what a net is. It was eleven.
-  const across = rink.match(/class="post"[^>]*y1="([\d.]+)" x2="[\d.]+" y2="([\d.]+)"/);
-  assert.equal(+across[2] - +across[1], 6, 'a net is 6 feet wide, not 11');
+  // And no text tag survives.
+  assert.doesNotMatch(a.$('rink').innerHTML, /class="netlab"/, 'the vertical tag is gone');
+  assert.doesNotMatch(app, /\$\{ab\} net</, 'and so is the copy that built it');
 });
 
-test('EACH net tag is legible against the net it is written on', () => {
-  // THIS TEST FIRST CHECKED "at least one tag is dark" while announcing that
-  // both were legible — so painting the visitor's tag white on a white net left
-  // it green, because the host's tag still supplied the dark ink it looked for.
-  // A mutation that did not fire is how it was caught, and it is this project's
-  // most-repeated defect: a check testing a narrower claim than its own name.
-  //
-  // Each tag is now checked against ITS OWN background: the host's net is filled
-  // with the club colour, the visitor's is white.
-  for (const [home, away] of [['BOS', 'ANA'], ['LAK', 'PIT'], ['BUF', 'MIN']]) {
-    const g = JSON.parse(JSON.stringify(rich));
-    g.teams.home.ab = home; g.teams.away.ab = away;
-    const a = boot(g);
-    const tags = [...a.$('rink').innerHTML.matchAll(
-      /class="netlab" transform="rotate\(-?\d+ ([\d.]+) 42\.5\)"[^>]*fill="([^"]+)"/g)]
-      .map(m => ({ x: +m[1], fill: m[2] })).sort((p, q) => p.x - q.x);
-    assert.equal(tags.length, 2, `${away} at ${home}: one tag per net`);
-    // BOTH TAGS NOW SIT ON ICE, not on a coloured net, so both are measured
-    // against the ice — which is what moving them behind the goal line changed.
-    for (const [t, who] of [[tags[0], home], [tags[1], away]]) {
-      assert.ok(contrast(t.fill, '#eef4f8') >= 3,
-        `${who}'s tag is ${contrast(t.fill, '#eef4f8').toFixed(2)}:1 against the ice`);
-    }
-  }
-});
-
-test('the legend shows a goal for EITHER sweater, because the ice draws two', () => {
-  // The siren was replaced by a bullseye in the host's colour — which is half the
-  // truth: a visitor's goal is white with a coloured ring and a coloured core, and
-  // a viewer looking for the swatch they were shown would not find it. Same
-  // defect as the siren, one level smaller.
-  const legend = app.match(/<div class="legend">([\s\S]*?)<\/div>/)[1];
-  for (const [cls, who] of [['k-h', 'home shot'], ['k-a', 'visitor shot'],
-                            ['k-g', 'home goal'], ['k-gv', 'visitor goal']]) {
-    assert.match(legend, new RegExp(`class="${cls}"`), `no swatch for the ${who}`);
-  }
-});
-
-test('the sentence reaches the page, in two elements that cannot be joined', () => {
-  // The separation is not layout. Two elements is what makes it impossible for a
-  // later edit to run the game's number into the archive's rate with a "so" —
-  // and §8.3 of docs/game-sentence.md is why that matters mechanically rather
-  // than stylistically.
+test('the goaltender LEAVES when the feed says the goalie was pulled', () => {
+  // NOT DECORATION. `sit` is [awayGoalie][awaySkaters][homeSkaters][homeGoalie] on
+  // every event — all 320 of them in the reference game — and Minnesota pulls at
+  // 01:40 of the third, the code reading 0651 for the last twenty events. The
+  // emptiest net in hockey stops being something a novice has to be told about.
   const a = boot();
-  const v = a.$('verdict').innerHTML;
-  assert.match(v, /class="lead"/, 'the game says what it was');
-  assert.match(v, /MIN led the attempts 80–55/, 'with the counts the layers computed');
-  assert.match(v, /class="rate"/, 'and the reference class is its own element');
-  assert.doesNotMatch(v.replace(/<[^>]+>/g, ' '), /\d\s*%/, 'never a bare percentage');
+  const counts = new Set(a.every(d =>
+    (d.$('netmen').innerHTML.match(/class="gkbody"/g) || []).length));
+  assert.ok(counts.has(2), 'both goalies are in net for most of the game');
+  assert.ok(counts.has(1), 'and one net is empty at the end — the pull is in the data');
+  assert.ok(!counts.has(0), 'never both, which no situation code in this game says');
+
+  // The one that leaves is the VISITOR's, which is what 0651 means.
+  const last = a.every(d => d.$('netmen').innerHTML).pop();
+  assert.equal((last.match(/class="gkbody"/g) || []).length, 1);
+  assert.match(last, new RegExp(`fill="${colourOf(a.$('hAb').textContent)}"`),
+    'the host keeps its goaltender');
 });
 
-test('the inlined page says the truth about why it has no rates', () => {
-  // It reaches nothing — the deploy greps it for `fetch(` — so "could not be
-  // loaded" would be a small untruth on the one page whose whole claim is that
-  // it makes no requests.
-  const a = boot();
-  assert.match(a.$('verdict').innerHTML, /makes no network requests/);
-  assert.doesNotMatch(a.$('verdict').innerHTML, /could not be loaded/);
-});
-
-test('the rates are handed to boot, never fetched inside the shared renderer', () => {
-  // THE CONSTRAINT THAT SHAPED THIS. Both pages share one renderer byte for
-  // byte; read-the-game.html carries its whole game and must call nobody. If the
-  // sentence fetched its own rates, the shared body would carry `fetch(` into a
-  // page the deploy gate rejects.
-  const shared = app.slice(app.indexOf('function boot('),
-                           app.indexOf('drawRink();set(EV.length-1,false);'));
-  assert.doesNotMatch(shared, /\bfetch\s*\(/, 'the renderer reaches nothing');
-  assert.match(app, /function boot\(G,RATES\)/, 'the rates arrive as an argument');
-});
-
-test('an icing lights the FAR goal line, at both ends of the rink', () => {
-  // 8.4 icings and 4.6 offsides a game — 13 stoppages a novice meets twice as
-  // often as a goal and understands neither. The sentence teaches the rule; the
-  // lit lines say which lines on THIS rink it is about.
-  //
-  // THE FIRST VERSION ACCEPTED EITHER GOAL LINE, to avoid depending on which end
-  // the reference game's icings restart in — and a mutation forcing every whistle
-  // to light [0, +89] survived it untouched. A loose assertion written to dodge a
-  // fact about the fixture is an assertion about nothing. The game has icings at
-  // BOTH ends (five in Buffalo's, three in Minnesota's), so the relationship can
-  // be checked in both directions, and coverage of both is asserted rather than
-  // hoped for.
-  const a = boot();
-  a.$('lyWhistle').click();
-  const seen = new Set();
-  for (const f of a.every(d => ({ ice: d.$('whistles').innerHTML,
-                                  said: d.$('whistlePanel').innerHTML }))) {
-    if (!/class="rsn">icing/.test(f.said)) continue;
-    const ring = f.ice.match(/class="wh now"[^>]*cx="([\d.]+)"/);
-    if (!ring) continue;                       // an unplaced icing lights nothing
-    const lit = [...f.ice.matchAll(/class="rulel[^"]*"[^>]*x1="([\d.]+)"/g)].map(m => +m[1]);
-    assert.equal(lit.length, 2, 'the centre line and one goal line');
-    assert.ok(lit.includes(100), 'centre ice is always one of them');   // SX(0)
-    const goal = lit.find(x => x !== 100);
-    // THE FAR ONE. Play restarts in the offending team's end; the puck crossed
-    // the goal line at the other end.
-    const far = +ring[1] < 100 ? 189 : 11;                             // SX(±89)
-    assert.equal(goal, far,
-      `restart at cx=${ring[1]} lit the goal line at ${goal}, not the far one at ${far}`);
-    seen.add(far);
-    assert.match(f.said, /The faceoff came back into (MIN|BUF)'s end\./);
-  }
-  assert.equal(seen.size, 2,
-    `icings were only checked at ${seen.size} end(s) of the rink, so a mark fixed `
-    + `to one end would pass`);
-});
-
-test('nothing is lit for a stoppage whose rule names no line', () => {
-  // MUTATION GUARD. Lines drawn for every whistle would satisfy the test above
-  // while telling a viewer that a frozen puck is about the blue line.
-  const a = boot();
-  a.$('lyWhistle').click();
-  const frames = a.sweep(d => ({ ice: d.$('whistles').innerHTML,
-                                 said: d.$('whistlePanel').innerHTML }));
-  const frozen = frames.find(f => /class="rsn">(puck frozen|goalie stopped)/.test(f.said));
-  assert.ok(frozen, 'the reference game has one');
-  assert.doesNotMatch(frozen.ice, /class="rulel/, 'and it lights nothing');
-});
-
-test('the zone is named for icing ONLY, where the rule makes it mean something', () => {
-  // Rule 81 sends the faceoff to the offending team's end. No other stoppage
-  // reason has a rule that makes the restart zone mean anything, so naming it
-  // elsewhere would be a fact with no rule attached to it.
-  const a = boot();
-  a.$('lyWhistle').click();
-  for (const f of a.sweep(d => d.$('whistlePanel').innerHTML)) {
-    if (/came back into/.test(f)) {
-      assert.match(f, /class="rsn">icing/, `a non-icing named a zone: ${f.slice(0, 90)}`);
-    }
-  }
+test('a missing situation code never empties a net', () => {
+  // An empty net drawn on a guess would be the most dramatic thing on the ice
+  // invented from nothing. Absent evidence is not evidence of absence.
+  assert.match(app, /if\(!sit\|\|sit\[3\]!=='0'\)/, 'the host goalie stays when sit is missing');
+  assert.match(app, /if\(!sit\|\|sit\[0\]!=='0'\)/, 'and so does the visitor');
 });
 
 test('the goal flash is its own element, so the net cannot vanish', () => {
@@ -708,4 +560,20 @@ test('the goal flash is its own element, so the net cannot vanish', () => {
   // character of it.
   assert.match(app, /const net=scorer===AID\?\$\('netHome'\):\$\('netAway'\)/,
     "a visitor goal lights the HOST's net, whichever side that is drawn on");
+});
+
+test('the goaltenders are redrawn only when they change', () => {
+  // Rewriting them every frame restarts the entrance animation on every event —
+  // a goaltender flickering three hundred times a game. It also makes the
+  // animation mean something: it fires when a goalie arrives or leaves, and at
+  // no other moment.
+  assert.match(app, /if\(now===netmenAre\)return;/, 'unchanged frames touch no DOM');
+
+  // And the state still tracks the game: two, then one after the pull.
+  const a = boot();
+  const seen = a.every(d => (d.$('netmen').innerHTML.match(/class="gkbody"/g) || []).length);
+  assert.deepEqual([...new Set(seen)].sort(), [1, 2],
+    'exactly two states across the whole game');
+  assert.equal(seen[0], 2);
+  assert.equal(seen[seen.length - 1], 1);
 });
