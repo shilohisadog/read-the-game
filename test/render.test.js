@@ -539,3 +539,36 @@ test('the legend shows a goal for EITHER sweater, because the ice draws two', ()
     assert.match(legend, new RegExp(`class="${cls}"`), `no swatch for the ${who}`);
   }
 });
+
+test('the sentence reaches the page, in two elements that cannot be joined', () => {
+  // The separation is not layout. Two elements is what makes it impossible for a
+  // later edit to run the game's number into the archive's rate with a "so" —
+  // and §8.3 of docs/game-sentence.md is why that matters mechanically rather
+  // than stylistically.
+  const a = boot();
+  const v = a.$('verdict').innerHTML;
+  assert.match(v, /class="lead"/, 'the game says what it was');
+  assert.match(v, /MIN led the attempts 80–55/, 'with the counts the layers computed');
+  assert.match(v, /class="rate"/, 'and the reference class is its own element');
+  assert.doesNotMatch(v.replace(/<[^>]+>/g, ' '), /\d\s*%/, 'never a bare percentage');
+});
+
+test('the inlined page says the truth about why it has no rates', () => {
+  // It reaches nothing — the deploy greps it for `fetch(` — so "could not be
+  // loaded" would be a small untruth on the one page whose whole claim is that
+  // it makes no requests.
+  const a = boot();
+  assert.match(a.$('verdict').innerHTML, /makes no network requests/);
+  assert.doesNotMatch(a.$('verdict').innerHTML, /could not be loaded/);
+});
+
+test('the rates are handed to boot, never fetched inside the shared renderer', () => {
+  // THE CONSTRAINT THAT SHAPED THIS. Both pages share one renderer byte for
+  // byte; read-the-game.html carries its whole game and must call nobody. If the
+  // sentence fetched its own rates, the shared body would carry `fetch(` into a
+  // page the deploy gate rejects.
+  const shared = app.slice(app.indexOf('function boot('),
+                           app.indexOf('drawRink();set(EV.length-1,false);'));
+  assert.doesNotMatch(shared, /\bfetch\s*\(/, 'the renderer reaches nothing');
+  assert.match(app, /function boot\(G,RATES\)/, 'the rates arrive as an argument');
+});

@@ -24,16 +24,9 @@
  * which is a claim with no check behind it.
  */
 import { corsiTeam } from '../attribution.js';
-import { NOT_A_PLAY, inShootout } from '../layer.js';
+import { NOT_A_PLAY, NOT_AN_ATTEMPT, inShootout } from '../layer.js';
 import { whyNotEven } from '../strength.js';
 
-const NOT_AN_ATTEMPT = {
-  hit: 'a hit — physical play, but not a shot attempt',
-  faceoff: 'a faceoff — possession changes, no attempt on goal',
-  giveaway: 'a giveaway — losing the puck is not a shot',
-  takeaway: 'a takeaway — winning the puck is not a shot',
-  penalty: 'a penalty — changes the game, but is not an attempt',
-};
 
 export const tiedControl = {
   id: 'tied-control',

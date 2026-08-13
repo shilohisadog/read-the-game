@@ -70,6 +70,25 @@ export function shootoutWinner(events, homeId, awayId) {
   return h > a ? homeId : awayId;
 }
 
+/**
+ * Every event type that IS a play but is not a shot attempt.
+ *
+ * LIVED IN TWO FILES, BYTE-IDENTICAL, until `tied.js` joined the browser bundle
+ * and the syntax gate refused a script declaring `NOT_AN_ATTEMPT` twice. The
+ * duplication was harmless only for as long as one of the two copies stayed out
+ * of the page — which is the same shape as every other duplicated rule this
+ * project has removed, and the reason the analysis tier has one implementation
+ * of each. A collision that a build catches is the cheap version of a rule that
+ * two files disagree about.
+ */
+export const NOT_AN_ATTEMPT = {
+  hit: 'a hit — physical play, but not a shot attempt',
+  faceoff: 'a faceoff — possession changes, no attempt on goal',
+  giveaway: 'a giveaway — losing the puck is not a shot',
+  takeaway: 'a takeaway — winning the puck is not a shot',
+  penalty: 'a penalty — changes the game, but is not an attempt',
+};
+
 /** Every event type that is not a play — recorded, but nothing happened on the ice. */
 export const NOT_A_PLAY = {
   'period-start': 'period start — not a play',

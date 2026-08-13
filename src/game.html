@@ -12,7 +12,7 @@
 <meta name="twitter:title" content="Read the Game — watch a hockey game and see what the numbers are made of">
 <meta name="twitter:description" content="An NHL game replayed so a new fan can see what the numbers are made of. Nothing modelled, nothing invented.">
 <meta property="og:url" content="https://readthegame.co/game">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ZDyEFyHtYL0MhJUxIHKcSLuyYCE3CkW8TodqdGLwiok='; style-src 'sha256-fysKYJ8JNzU9YJhiIh+uyBT3Thd2n6lU+rnhc07miOs='; connect-src 'self' https://data.readthegame.co; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-r+aZyN6M4QLTxJmxPI+gri05KkOnRjxHbnAER5nTimM='; style-src 'sha256-C3ua18gaVGTBSynuLFL9bvcAnNmfiL6+q8uyyRzgRus='; connect-src 'self' https://data.readthegame.co; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <style>
@@ -80,6 +80,9 @@
 #rg .wc{background:#f2f7fa;border:1px solid var(--edge);border-radius:10px;padding:13px}#rg .wc h3{margin:0 0 6px;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);display:flex;justify-content:space-between}#rg .wc h3 .n{font-family:ui-monospace,Menlo,monospace;font-size:1.2rem;color:var(--ink);font-weight:700}#rg .wc.flag{border-color:#e6b98f}#rg .wc.flag h3 .n{color:var(--flag)}#rg .wc p{margin:0;font-size:.87rem}
 #rg .wfoot{margin-top:13px;font-size:.8rem;color:var(--muted);border-top:1px solid var(--edge);padding-top:11px}#rg .wfoot em{font-style:normal;color:var(--ink)}
 #rg .foot{font-size:.78rem;color:var(--muted);margin-top:16px;text-align:center}
+#rg .verdict{max-width:62ch;margin:20px auto 0;font-size:.95rem;line-height:1.55;text-align:center}
+#rg .verdict .lead{color:var(--ink)}#rg .verdict b{font-weight:700}
+#rg .verdict .rate{display:block;margin-top:7px;font-size:.85rem;color:var(--muted)}
 #rg text{font-family:ui-monospace,Menlo,monospace}
 @media(prefers-reduced-motion:reduce){#rg *{animation:none!important;transition:none!important}}
 
@@ -183,10 +186,19 @@ fixed here, so each team always attacks the same net. In the arena they switch e
 <div class="hint">Tip: click a ⚡ high-danger chance (amber ring) on the ice to see <b>why</b> it qualified — with trails set to <b>keep every mark</b>, earlier ones stay clickable too.</div>
 <div class="work" id="workPanel" hidden></div>
 <div class="whybk" id="whyBk"><div class="why" id="whyContent"></div></div>
+<p class="verdict" id="verdict"></p>
 <div class="foot" id="gl">—</div>
 </div></div>
 <script>
-function boot(G){
+function boot(G,RATES){
+// RATES ARRIVES AS AN ARGUMENT AND IS NEVER REQUESTED IN THIS FUNCTION. Both
+// pages share this body byte for byte, and read-the-game.html carries its whole
+// game inside it and must reach nothing -- the deploy greps the inlined pages for
+// outbound calls, and that grep reads comments too, which is how this sentence
+// came to be phrased around the word it is about. The shell requests
+// measures.json in its own bootstrap and passes it down; the inlined page passes
+// nothing, and the sentence then says the comparison is missing -- which is true
+// of a page that makes no requests at all.
 const R=G.roster, HID=G.teams.home.id, AID=G.teams.away.id, HAB=G.teams.home.ab, AAB=G.teams.away.ab;
 const SKIP=new Set(['stoppage','period-start','period-end','game-end','delayed-penalty']);
 const EV=[],EVI=[];
@@ -358,6 +370,25 @@ function shootoutWinner(events, homeId, awayId) {
   if (h === a) return null;
   return h > a ? homeId : awayId;
 }
+
+/**
+ * Every event type that IS a play but is not a shot attempt.
+ *
+ * LIVED IN TWO FILES, BYTE-IDENTICAL, until `tied.js` joined the browser bundle
+ * and the syntax gate refused a script declaring `NOT_AN_ATTEMPT` twice. The
+ * duplication was harmless only for as long as one of the two copies stayed out
+ * of the page — which is the same shape as every other duplicated rule this
+ * project has removed, and the reason the analysis tier has one implementation
+ * of each. A collision that a build catches is the cheap version of a rule that
+ * two files disagree about.
+ */
+const NOT_AN_ATTEMPT = {
+  hit: 'a hit — physical play, but not a shot attempt',
+  faceoff: 'a faceoff — possession changes, no attempt on goal',
+  giveaway: 'a giveaway — losing the puck is not a shot',
+  takeaway: 'a takeaway — winning the puck is not a shot',
+  penalty: 'a penalty — changes the game, but is not an attempt',
+};
 
 /** Every event type that is not a play — recorded, but nothing happened on the ice. */
 const NOT_A_PLAY = {
@@ -877,13 +908,6 @@ const FIG_LABEL={mascot:'Mascot',tabletop:'Tabletop'};
 
 
 
-const NOT_AN_ATTEMPT = {
-  hit: 'a hit — physical play, but not a shot attempt',
-  faceoff: 'a faceoff — possession changes, no attempt on goal',
-  giveaway: 'a giveaway — losing the puck is not a shot',
-  takeaway: 'a takeaway — winning the puck is not a shot',
-  penalty: 'a penalty — changes the game, but is not an attempt',
-};
 
 const corsi = {
   id: 'corsi',
@@ -1545,6 +1569,268 @@ function readableInk(hex, on = '#ffffff') {
   return contrast(hex, on) >= 3 ? hex : '#0f1a23';
 }
 
+/* --- src/lib/layers/tied.js --- */
+/**
+ * Control while the score was level — even-strength shot attempts, tied score,
+ * regulation only.
+ *
+ * WHAT THIS MEASURES AND WHY IT IS NARROWED THREE TIMES. Raw shot attempts do not
+ * measure control; they measure who was behind. Over a 140-game sample the team
+ * with more attempts LOST about 60% of the time, because falling behind is what
+ * makes a team shoot. So each exclusion below exists because it changed the
+ * answer, not because it felt rigorous:
+ *
+ *   score level   removes the chasing. This is the whole point: an attempt taken
+ *                 while trailing is evidence of the scoreboard, not of play.
+ *   even strength an extra skater is not dictating play. Without this the
+ *                 ranking partly measured who drew penalties.
+ *   regulation    overtime is ALWAYS level, and regular-season OT is 3-on-3 at
+ *                 attempt rates far above 5-on-5. Playoff OT is 5-on-5, so
+ *                 including it biased the two game types differently — and the
+ *                 rule that uses this number spans both.
+ *
+ * TWO CONSUMERS, ONE IMPLEMENTATION. builders/measure.mjs ranks the whole archive
+ * with this module; the browser can show the same number on a game page. See
+ * docs/architecture.md §2 — a Python copy in derive.py was the plan, and the
+ * scratch script it grew from opened by promising to "mirror strength.js exactly",
+ * which is a claim with no check behind it.
+ */
+
+
+
+
+
+const tiedControl = {
+  id: 'tied-control',
+  label: 'control while the score was level',
+
+  /** The rule, in one sentence, for printing next to the number it produced. */
+  rule: 'even-strength shot attempts taken while the score was level, in regulation',
+
+  /**
+   * @param events  the whole game, in order
+   * @param ctx     { roster, homeId, awayId, homeAb, awayAb }
+   *
+   * `evenOnly` is NOT a parameter here. Even strength is part of the definition
+   * of this measurement, and making it optional would let a caller ask for a
+   * number that has this one's name and not its meaning.
+   */
+  reduce(events, ctx) {
+    const { roster, homeId, awayId } = ctx;
+    const t = { [homeId]: 0, [awayId]: 0 };
+    const counted = [], excluded = [];
+    let hs = 0, as = 0;
+
+    events.forEach((e, id) => {
+      // THE SCORE IS READ BEFORE IT IS UPDATED. A goal is taken while the game
+      // is still level — it is the thing that ends the tie. Applying it first
+      // would drop one attempt per lead change and leave a plausible-looking
+      // count, which is the kind of error nothing downstream can see.
+      const level = hs === as;
+
+      // Before the type question: a shootout goal is a perfectly good attempt BY
+      // TYPE, and asking "is this an attempt?" first counts it. That is exactly
+      // how the shootout contaminated all three layers once already.
+      const notPlay = inShootout(e);
+      const team = corsiTeam(e, roster);
+      const notAttempt = team == null
+        ? (NOT_AN_ATTEMPT[e.type] || NOT_A_PLAY[e.type] || `not an attempt (${e.type})`)
+        : null;
+      // Regulation only. `pt` is the only field that can say this: period 5 is a
+      // shootout in the regular season and a third overtime in the playoffs.
+      const notReg = e.pt && e.pt !== 'REG' && e.pt !== 'SO'
+        ? `overtime — always level, and regular-season overtime is 3-on-3`
+        : null;
+      const notLevel = level ? null
+        : `the score was not level — an attempt taken while behind is evidence `
+          + `of the scoreboard, not of control`;
+      const notEven = whyNotEven(e, ctx);
+
+      // The shootout moves the scoreboard by exactly one, at the end. Counting
+      // its goals into the running score would retroactively un-level a game
+      // that was tied when every one of its attempts was taken.
+      if (e.type === 'goal' && e.pt !== 'SO') (e.own === homeId ? hs++ : as++);
+
+      if (notPlay || notAttempt || notReg || notLevel || notEven) {
+        // ALL applicable dimensions, one entry. Picking a single reason hides
+        // the others; listing the event once per reason breaks conservation.
+        const dims = {};
+        if (notPlay) dims.play = notPlay;
+        if (notAttempt) dims.type = notAttempt;
+        if (notReg) dims.period = notReg;
+        if (notLevel) dims.state = notLevel;
+        if (notEven) dims.strength = notEven;
+        excluded.push({ id, why: notPlay || notAttempt || notReg || notLevel || notEven, dims });
+        return;
+      }
+      t[team]++;
+      counted.push(id);
+    });
+
+    // Stated from the HOME side, the way a scoreboard reads. A caller comparing
+    // two teams must not have to remember which way the sign points.
+    return { t, counted, excluded, diff: t[homeId] - t[awayId] };
+  },
+};
+
+/* --- src/lib/sentence.js --- */
+/**
+ * The per-game sentence — what this game was, and how ordinary that is.
+ *
+ * THE FINDING THAT SHAPES IT (docs/game-sentence.md §1). "They controlled play
+ * and lost" happens in **1,527 of 3,855 games**. It is not a strange night; it is
+ * hockey. So this sentence must not frame a game as remarkable, and the base rate
+ * is not decoration hung off it — the rate IS the lesson. The novice's actual
+ * misconception is *the team that played better wins*, and the archive refutes it
+ * four times in ten.
+ *
+ * TWO NUMBERS, ONE CLAUSE (CHENG). Raw attempts and level control disagree often,
+ * and the narrowing between them is the site's whole thesis at single-game scale:
+ * 54.5% of games are lost by the team with more attempts, against 39.6% by the
+ * team that controlled play while level. A sentence carrying only the second
+ * hides the comparison that makes it mean anything.
+ *
+ * A FRACTION, NEVER A BARE PERCENTAGE. "243 of 708" carries its own denominator;
+ * "34.3%" does not. This is what lets the reference class shrink safely as the
+ * cutoff rises — at the far end the archive says **0 of 4**, which as a percentage
+ * reads "0%: teams that dominant never lose" and is in fact four coin flips. It
+ * also means no minimum-n threshold is needed, and a threshold would be a
+ * parameter with no source.
+ *
+ * NEVER RENDERED AS A CHART, for the same reason. `n` falls monotonically but the
+ * RATE does not: past k≈17 it drifts 30.7, 31.6, 31.8, 32.1, 32.7, 33.7, 34.2,
+ * 38.7 on nothing but sample size. One row at a time, as a sentence, that cannot
+ * mislead. Plotted, the eye interpolates and the wobble becomes a trend.
+ *
+ * AND NO CAUSAL CONNECTIVE BETWEEN THE GAME'S NUMBER AND THE RATE — no "so", no
+ * "which means". CHENG offered this as a grammatical precaution; §8.3 gives it a
+ * mechanism, which makes it a requirement. `level` counts attempts taken while
+ * the score was level, so its size depends on how long the game STAYED level: a
+ * team leading 3-0 early has few level attempts available to it whatever it then
+ * does. A large edge means the game stayed close AND one team ran it — two
+ * things. The description remains true; the reference class is selected on a
+ * variable related to the outcome, so a causal reading is not merely unsupported,
+ * it is specifically wrong. The two clauses are returned SEPARATELY so no edit can
+ * join them with a conjunction.
+ */
+
+/**
+ * Regular season (02) and playoffs (03) — the population every rate covers.
+ *
+ * Counted over the published catalog, 4,553 games:
+ *
+ *   01  preseason      320        04  All-Star squads      3
+ *   02  regular      3,936        09  national sides      30
+ *   03  playoffs       256        12                       1
+ *                                 19  national sides       6
+ *                                 20  national sides       1
+ *
+ * ONLY PRESEASON IS NAMED. The others are recognisable from the clubs they carry
+ * — 09 is thirty games between national teams, 19 and 20 are CAN/FIN/SWE/USA —
+ * but "this is the Olympics" is an inference from a roster, and a wrong one costs
+ * more than the generic phrase saves. `not an NHL league game` is a claim the id
+ * itself supports.
+ */
+const TYPE = {
+  '01': 'a preseason game',
+  '02': null,                        // in scope
+  '03': null,                        // in scope
+};
+
+/** What kind of game this id names, for saying why a rate is absent. */
+function describeType(gameId) {
+  const t = String(gameId).slice(4, 6);
+  return t in TYPE ? TYPE[t] : 'not an NHL league game';
+}
+
+/** "30–18", never "62%". An en dash, because it is a score line and not a range. */
+const pair = (a, b) => `${a}–${b}`;
+
+/**
+ * @param o.homeAb,awayAb   three-letter clubs
+ * @param o.homeId,awayId   ids, so `diff`'s sign can be read
+ * @param o.diff            level-control differential, HOME minus away
+ * @param o.attempts        { [teamId]: count } over the whole game, all situations
+ * @param o.score           { h, a } final, the league's own line
+ * @param o.gameId          for scope
+ * @param o.curve           measures.json `levelCurve`, or null if unavailable
+ *
+ * Returns `{ lead, rate, absent }`. `rate` and `absent` are mutually exclusive
+ * and one of them is always present when there is an edge — a missing comparison
+ * is stated, never silently dropped (CHENG). Silence about an omission is the
+ * failure the ingest-state work spent two rounds fixing.
+ */
+function sentenceFor(o) {
+  const { homeAb, awayAb, homeId, awayId, diff, attempts, levelCounts,
+          score, gameId, curve } = o;
+  const level = Math.abs(diff);
+
+  // NO EDGE IS A REAL ANSWER, and it is 264 of 4,119 games — one in sixteen.
+  // There is nothing to compare, so nothing is compared.
+  if (!level) {
+    return { lead: 'Neither team controlled play while the score was level.',
+             rate: null, absent: null };
+  }
+
+  const ledLevel = diff > 0 ? homeAb : awayAb;
+  const lh = attempts[homeId], la = attempts[awayId];
+  const ledAttempts = lh === la ? null : (lh > la ? homeAb : awayAb);
+  const won = score.h === score.a ? null : (score.h > score.a ? homeAb : awayAb);
+
+  // Both counts are stated from the side that LED them, so a reader never has to
+  // work out which way a differential points.
+  const lvl = diff > 0
+    ? pair(levelCounts[homeId], levelCounts[awayId])
+    : pair(levelCounts[awayId], levelCounts[homeId]);
+  const att = ledAttempts === homeAb ? pair(lh, la) : pair(la, lh);
+
+  // BOTH NUMBERS, and the copy changes shape when they disagree — which is the
+  // instructive case and the one the site exists to show.
+  let lead;
+  if (!ledAttempts) {
+    lead = `The attempts were even at ${pair(lh, la)}. ${ledLevel} led ${lvl} `
+         + `while the score was level.`;
+  } else if (ledAttempts === ledLevel) {
+    lead = `${ledLevel} led the attempts ${att}, and led ${lvl} while the score `
+         + `was level.`;
+  } else {
+    lead = `${ledAttempts} led the attempts ${att}, but ${ledLevel} led ${lvl} `
+         + `while the score was level.`;
+  }
+  lead += won === null ? ' The game ended level.'
+        : won === ledLevel ? ` ${ledLevel} won.`
+        : ` ${ledLevel} lost.`;
+
+  // THE REFERENCE CLASS, and the game supplies its own cutoff.
+  const why = describeType(gameId);
+  if (why) {
+    return { lead, rate: null,
+             absent: `No comparison shown — this is ${why}, and the archive's `
+                   + `rates cover the NHL regular season and playoffs.` };
+  }
+  if (!curve || !curve.length) {
+    // WHY IT IS ABSENT IS THE CALLER'S FACT, NOT OURS. A page that makes no
+    // network requests at all has not "failed to load" anything, and saying so
+    // would be a small untruth on the one page whose whole claim is that it
+    // reaches nothing.
+    return { lead, rate: null,
+             absent: `No comparison shown — ${o.noCurveReason
+                   || `the archive's rates could not be loaded`}.` };
+  }
+  const row = curve.find(r => r.k === level);
+  if (!row || !row.n) {
+    return { lead, rate: null,
+             absent: `No comparison shown — the archive holds no other game with a `
+                   + `lead this large.` };
+  }
+  return {
+    lead,
+    rate: `Of the games where a team led that count by ${level} or more, it lost `
+        + `${row.count} of ${row.n}.`,
+    absent: null,
+  };
+}
+
 const ATT=ATTEMPT_TYPES;
 const SX=x=>x+100, SY=y=>42.5-y;
 // Rink is 200 units long for 200 feet, so one unit is one foot: a ~6 ft player
@@ -1767,6 +2053,36 @@ const MON=['January','February','March','April','May','June','July','August','Se
 const GD=(G.game&&G.game.date||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
 const WHEN=GD?`${+GD[3]} ${MON[+GD[2]-1]} ${GD[1]}`:'';
 $('gl').textContent=`${AAB} at ${HAB}${WHEN?' · '+WHEN:''} · final ${AAB} ${finalA}–${finalH} ${HAB}`;
+// THE PER-GAME SENTENCE. A summary of a FINISHED game, so it sits with the game
+// line at the foot rather than beside the scoreboard, which counts up as the
+// replay plays. It discloses nothing the page has not already said -- #gl states
+// the result on first paint.
+//
+// The two clauses are written into SEPARATE ELEMENTS. That is not layout: it is
+// what makes it impossible for a later edit to join the game's number to the
+// archive's rate with a "so" or a "which means", and the reason that matters is
+// mechanical rather than stylistic -- see src/lib/sentence.js.
+(function verdict(){
+ const all=corsi.reduce(G.events,{...CTX,evenOnly:false});
+ const lvl=tiedControl.reduce(G.events,CTX);
+ const q=G.quoted;
+ const V=sentenceFor({homeAb:HAB,awayAb:AAB,homeId:HID,awayId:AID,
+   diff:lvl.diff, attempts:all.t, levelCounts:lvl.t,
+   // The LEAGUE'S OWN LINE when we hold it, which is what the archive's rows were
+   // built from. Falling back to our own count keeps a game with no quoted
+   // boxscore readable rather than blank.
+   score:q?{h:q.home.score,a:q.away.score}:{h:finalH,a:finalA},
+   gameId:(G.game&&G.game.id)||0,
+   curve:(RATES&&RATES.levelCurve)||null,
+   // undefined = never asked for (the inlined page, which reaches nothing);
+   // null = asked for and did not arrive. Two different true sentences.
+   noCurveReason:RATES===undefined
+     ?'this page carries a single game and makes no network requests'
+     :undefined});
+ const p=[`<span class="lead">${V.lead}</span>`];
+ if(V.rate)p.push(`<span class="rate">${V.rate}</span>`);
+ if(V.absent)p.push(`<span class="rate">${V.absent}</span>`);
+ $('verdict').innerHTML=p.join('');})();
 document.querySelectorAll('#rg .cc.a .lb').forEach(n=>n.childNodes[0].nodeValue=AAB+' attempts');
 document.querySelectorAll('#rg .cc.h .lb').forEach(n=>n.childNodes[0].nodeValue=HAB+' attempts');
 
@@ -1897,7 +2213,15 @@ var want=(location.search.match(/[?&]game=(\d+)/)||[])[1];
 say('Loading…');
 (want?Promise.resolve(want):grab(ORIGIN+'/catalog.json').then(pick))
   .then(function(id){return grab(ORIGIN+'/extract/'+id+'.json');})
-  .then(function(g){boot(g);})
+  // THE RATES ARE OPTIONAL AND MUST NEVER BLOCK THE GAME. measures.json is an
+  // archive-level document written weekly; the game is what the visitor came
+  // for. If it 404s, times out or arrives malformed, the page still plays and
+  // the sentence says the comparison is missing -- which is the same branch a
+  // preseason game takes, and is stated rather than left as a gap.
+  .then(function(g){
+    return grab(ORIGIN+'/measures.json')
+      .catch(function(){return null;})
+      .then(function(rates){boot(g,rates);});})
   .catch(function(e){
     // A true sentence about a broken situation beats a spinner that never ends.
     say('This game could not be loaded — '+e.message);

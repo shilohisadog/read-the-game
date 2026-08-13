@@ -95,6 +95,9 @@ T = r"""<style>
 #rg .wc{background:#f2f7fa;border:1px solid var(--edge);border-radius:10px;padding:13px}#rg .wc h3{margin:0 0 6px;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);display:flex;justify-content:space-between}#rg .wc h3 .n{font-family:ui-monospace,Menlo,monospace;font-size:1.2rem;color:var(--ink);font-weight:700}#rg .wc.flag{border-color:#e6b98f}#rg .wc.flag h3 .n{color:var(--flag)}#rg .wc p{margin:0;font-size:.87rem}
 #rg .wfoot{margin-top:13px;font-size:.8rem;color:var(--muted);border-top:1px solid var(--edge);padding-top:11px}#rg .wfoot em{font-style:normal;color:var(--ink)}
 #rg .foot{font-size:.78rem;color:var(--muted);margin-top:16px;text-align:center}
+#rg .verdict{max-width:62ch;margin:20px auto 0;font-size:.95rem;line-height:1.55;text-align:center}
+#rg .verdict .lead{color:var(--ink)}#rg .verdict b{font-weight:700}
+#rg .verdict .rate{display:block;margin-top:7px;font-size:.85rem;color:var(--muted)}
 #rg text{font-family:ui-monospace,Menlo,monospace}
 @media(prefers-reduced-motion:reduce){#rg *{animation:none!important;transition:none!important}}
 
@@ -198,10 +201,19 @@ fixed here, so each team always attacks the same net. In the arena they switch e
 <div class="hint">Tip: click a ⚡ high-danger chance (amber ring) on the ice to see <b>why</b> it qualified — with trails set to <b>keep every mark</b>, earlier ones stay clickable too.</div>
 <div class="work" id="workPanel" hidden></div>
 <div class="whybk" id="whyBk"><div class="why" id="whyContent"></div></div>
+<p class="verdict" id="verdict"></p>
 <div class="foot" id="gl">—</div>
 </div></div>
 <script>
-function boot(G){
+function boot(G,RATES){
+// RATES ARRIVES AS AN ARGUMENT AND IS NEVER REQUESTED IN THIS FUNCTION. Both
+// pages share this body byte for byte, and read-the-game.html carries its whole
+// game inside it and must reach nothing -- the deploy greps the inlined pages for
+// outbound calls, and that grep reads comments too, which is how this sentence
+// came to be phrased around the word it is about. The shell requests
+// measures.json in its own bootstrap and passes it down; the inlined page passes
+// nothing, and the sentence then says the comparison is missing -- which is true
+// of a page that makes no requests at all.
 const R=G.roster, HID=G.teams.home.id, AID=G.teams.away.id, HAB=G.teams.home.ab, AAB=G.teams.away.ab;
 const SKIP=new Set(['stoppage','period-start','period-end','game-end','delayed-penalty']);
 const EV=[],EVI=[];
@@ -432,6 +444,36 @@ const MON=['January','February','March','April','May','June','July','August','Se
 const GD=(G.game&&G.game.date||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
 const WHEN=GD?`${+GD[3]} ${MON[+GD[2]-1]} ${GD[1]}`:'';
 $('gl').textContent=`${AAB} at ${HAB}${WHEN?' · '+WHEN:''} · final ${AAB} ${finalA}–${finalH} ${HAB}`;
+// THE PER-GAME SENTENCE. A summary of a FINISHED game, so it sits with the game
+// line at the foot rather than beside the scoreboard, which counts up as the
+// replay plays. It discloses nothing the page has not already said -- #gl states
+// the result on first paint.
+//
+// The two clauses are written into SEPARATE ELEMENTS. That is not layout: it is
+// what makes it impossible for a later edit to join the game's number to the
+// archive's rate with a "so" or a "which means", and the reason that matters is
+// mechanical rather than stylistic -- see src/lib/sentence.js.
+(function verdict(){
+ const all=corsi.reduce(G.events,{...CTX,evenOnly:false});
+ const lvl=tiedControl.reduce(G.events,CTX);
+ const q=G.quoted;
+ const V=sentenceFor({homeAb:HAB,awayAb:AAB,homeId:HID,awayId:AID,
+   diff:lvl.diff, attempts:all.t, levelCounts:lvl.t,
+   // The LEAGUE'S OWN LINE when we hold it, which is what the archive's rows were
+   // built from. Falling back to our own count keeps a game with no quoted
+   // boxscore readable rather than blank.
+   score:q?{h:q.home.score,a:q.away.score}:{h:finalH,a:finalA},
+   gameId:(G.game&&G.game.id)||0,
+   curve:(RATES&&RATES.levelCurve)||null,
+   // undefined = never asked for (the inlined page, which reaches nothing);
+   // null = asked for and did not arrive. Two different true sentences.
+   noCurveReason:RATES===undefined
+     ?'this page carries a single game and makes no network requests'
+     :undefined});
+ const p=[`<span class="lead">${V.lead}</span>`];
+ if(V.rate)p.push(`<span class="rate">${V.rate}</span>`);
+ if(V.absent)p.push(`<span class="rate">${V.absent}</span>`);
+ $('verdict').innerHTML=p.join('');})();
 document.querySelectorAll('#rg .cc.a .lb').forEach(n=>n.childNodes[0].nodeValue=AAB+' attempts');
 document.querySelectorAll('#rg .cc.h .lb').forEach(n=>n.childNodes[0].nodeValue=HAB+' attempts');
 
@@ -550,7 +592,7 @@ __BOOT__
 
 LIB = ["rink.js", "attribution.js", "layer.js", "strength.js", "svgpen.js", "figures.js",
        "layers/corsi.js", "layers/goaltending.js", "layers/danger.js", "layers/whistle.js",
-       "teams.js"]
+       "teams.js", "layers/tied.js", "sentence.js"]
 
 def _lib():
     """Inline src/lib/*.js. They are real ES modules so `node --test` can import
@@ -597,7 +639,15 @@ var want=(location.search.match(/[?&]game=(\d+)/)||[])[1];
 say('Loading…');
 (want?Promise.resolve(want):grab(ORIGIN+'/catalog.json').then(pick))
   .then(function(id){return grab(ORIGIN+'/extract/'+id+'.json');})
-  .then(function(g){boot(g);})
+  // THE RATES ARE OPTIONAL AND MUST NEVER BLOCK THE GAME. measures.json is an
+  // archive-level document written weekly; the game is what the visitor came
+  // for. If it 404s, times out or arrives malformed, the page still plays and
+  // the sentence says the comparison is missing -- which is the same branch a
+  // preseason game takes, and is stated rather than left as a gap.
+  .then(function(g){
+    return grab(ORIGIN+'/measures.json')
+      .catch(function(){return null;})
+      .then(function(rates){boot(g,rates);});})
   .catch(function(e){
     // A true sentence about a broken situation beats a spinner that never ends.
     say('This game could not be loaded — '+e.message);
