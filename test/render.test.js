@@ -577,3 +577,39 @@ test('the goaltenders are redrawn only when they change', () => {
   assert.equal(seen[0], 2);
   assert.equal(seen[seen.length - 1], 1);
 });
+
+test('the net is equipment: behind the goal line, six feet across, with netting', () => {
+  // THESE ASSERTIONS EXISTED AND I DELETED THEM, by rewriting the test they lived
+  // in into the goaltender test above. They guard an error that was actually
+  // shipped for the rink's whole life — the nets drawn on the ICE side of the
+  // goal line, 11 feet across — so they get their own test now rather than riding
+  // along inside one about something else.
+  const rink = boot().$('rink').innerHTML;
+  assert.match(rink, /class="mesh"/, 'the net has a body');
+  assert.match(rink, /class="strand"/, 'with netting in it, not a solid slab');
+  assert.match(rink, /class="post"/, 'and posts');
+  assert.match(rink, /class="crease"/, 'and it stands in a crease');
+  assert.doesNotMatch(rink, /class="crease" x=/, 'the rounded-rectangle chip is gone');
+
+  // BOTH nets are open. Filled with the club colour the host's rendered as a solid
+  // block while the visitor's read as equipment, so the sweater convention moved
+  // to the goaltender, where it does identity work.
+  const fills = [...rink.matchAll(/class="mesh"[^>]*fill="([^"]+)"/g)].map(m => m[1]);
+  assert.deepEqual(fills, ['#fff', '#fff'], 'neither net is a coloured slab');
+
+  // BEHIND THE GOAL LINE. A net whose body reaches into the playing surface
+  // swallows every shot mark in front of it.
+  const bodies = [...rink.matchAll(/class="mesh" d="M ([\d.]+) [\d.]+ L ([\d.]+) /g)]
+    .map(m => ({ mouth: +m[1], back: +m[2] })).sort((p, q) => p.mouth - q.mouth);
+  assert.equal(bodies.length, 2, 'one body per net');
+  assert.equal(bodies[0].mouth, 11, 'the left mouth is on the goal line');    // SX(89)
+  assert.ok(bodies[0].back < bodies[0].mouth,
+    `the left net reaches to ${bodies[0].back}, on the ice side of ${bodies[0].mouth}`);
+  assert.equal(bodies[1].mouth, 189, 'the right mouth is on the goal line');  // SX(-89)
+  assert.ok(bodies[1].back > bodies[1].mouth,
+    `the right net reaches to ${bodies[1].back}, on the ice side of ${bodies[1].mouth}`);
+
+  // Six feet across, which is what a net is. It was eleven.
+  const across = rink.match(/class="post"[^>]*y1="([\d.]+)" x2="[\d.]+" y2="([\d.]+)"/);
+  assert.equal(+across[2] - +across[1], 6, 'a net is 6 feet wide, not 11');
+});

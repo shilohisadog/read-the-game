@@ -34,7 +34,7 @@
 #rg .ln{fill:none;stroke-linecap:round}#rg .ln.red{stroke:var(--red);stroke-width:.7;opacity:.42}#rg .ln.blue{stroke:var(--blue);stroke-width:.9;opacity:.42}#rg .ln.thick{stroke-width:1.1;opacity:.52}
 #rg .rdot{fill:var(--red);opacity:.5}
 #rg .crease{fill:#cfe0f2;stroke:var(--blue);stroke-width:.4;opacity:.55}
-#rg .mesh{stroke-width:.7;opacity:.85}#rg .post{stroke-width:1.1;stroke-linecap:round}
+#rg .mesh{stroke-width:.8;opacity:.9}#rg .strand{stroke-width:.35;opacity:.5}#rg .post{stroke-width:1.1;stroke-linecap:round}
 #rg .gkbody,#rg .gkhead{stroke-width:.55}#rg .gkstick{stroke-width:.7;stroke-linecap:round}
 #rg .gk{transform-box:fill-box;transform-origin:center;animation:gkin .35s ease}
 @keyframes gkin{0%{opacity:0}100%{opacity:1}}
@@ -1989,15 +1989,26 @@ function drawRink(){const P=[];P.push('<rect class="boards" x="1" y="1" width="1
  //
  // The sweater convention carries over: the host's mesh is filled with its
  // colour, the visitor's is white inside its own frame.
- const netGlyph=(id,gx,col,fill)=>{
+ const netGlyph=(id,gx,col)=>{
   // Which way is "behind" is read from where the goal line sits on screen, so a
   // reflection of SX carries the whole net with it and cannot leave one end
   // pointing the wrong way.
   const dir=gx<100?1:-1, back=gx-4*dir, top=42.5-3, bot=42.5+3;
   const body=`M ${gx} ${top} L ${back} ${top+0.8} L ${back} ${bot-0.8} L ${gx} ${bot} Z`;
+  // NETTING, NOT A BLOCK. Filled with the club's colour the host's net rendered as
+  // a solid slab -- the visitor's, being white inside its own frame, read far
+  // better as equipment. So the sweater convention comes OFF the net: both are
+  // open, both carry their colour in the frame and the strands, and the goalie
+  // standing in front keeps the host-filled / visitor-white distinction where it
+  // is doing identity work.
+  let strands='';
+  for(let k=1;k<=2;k++){const t=k/3, mx=gx+(back-gx)*t;
+   strands+=`<line class="strand" x1="${mx.toFixed(1)}" y1="${(top+0.8*t).toFixed(1)}" `
+          + `x2="${mx.toFixed(1)}" y2="${(bot-0.8*t).toFixed(1)}" stroke="${col}"/>`;}
   return `<g class="netg">`
    + `<path class="crease" d="M ${gx} ${42.5-6} A 6 6 0 0 ${dir>0?1:0} ${gx} ${42.5+6}"/>`
-   + `<path class="mesh" d="${body}" fill="${fill}" stroke="${col}"/>`
+   + `<path class="mesh" d="${body}" fill="#fff" fill-opacity=".5" stroke="${col}"/>`
+   + strands
    + `<line class="post" x1="${gx}" y1="${top}" x2="${gx}" y2="${bot}" stroke="${col}"/>`
    // THE FLASH IS ITS OWN ELEMENT, over the net rather than being it. The old
    // markup put the animation on a hidden duplicate; putting it on the net now
@@ -2008,8 +2019,8 @@ function drawRink(){const P=[];P.push('<rect class="boards" x="1" y="1" width="1
  // dir points from the goal line toward CENTRE ice, so the body goes the other way.
  // Ids by ROLE, not by side. `netL`/`netR` were screen names for data facts, and
  // a reflection turns that kind of name into a lie without changing a character.
- P.push(netGlyph('netHome',SX(-89),HOMECOL,HOMECOL));
- P.push(netGlyph('netAway',SX(89),AWAYCOL,'#fff'));
+ P.push(netGlyph('netHome',SX(-89),HOMECOL));
+ P.push(netGlyph('netAway',SX(89),AWAYCOL));
  // THE LABEL MOVES BEHIND THE GOAL LINE, into dead ice where there is room for
  // the word that was doing the disambiguating work. "CBJ" alone can be read as
  // "CBJ's net" or "where CBJ shoots", and those are opposites (CHENG); "CBJ net"
