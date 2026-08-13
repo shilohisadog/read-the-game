@@ -17,6 +17,9 @@
  */
 
 export const NET_X = 89;
+export const GOAL_LINE_X = 89;      // the same line; named for the rule that uses it
+export const BLUE_LINE_X = 25;      // zone boundary, and what an offside is about
+export const CENTRE_X = 0;
 export const SLOT_HALF_WIDTH = 22;   // feet either side of centre
 export const HIGH_DANGER_FT = 33;    // Doctrine section 7: a rule, not a model
 

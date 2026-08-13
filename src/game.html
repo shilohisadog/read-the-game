@@ -12,7 +12,7 @@
 <meta name="twitter:title" content="Read the Game — watch a hockey game and see what the numbers are made of">
 <meta name="twitter:description" content="An NHL game replayed so a new fan can see what the numbers are made of. Nothing modelled, nothing invented.">
 <meta property="og:url" content="https://readthegame.co/game">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-upENB2SOx0VPAbAK8vZqHTdfje0TS1ys62ykUrhcvTA='; style-src 'sha256-C3ua18gaVGTBSynuLFL9bvcAnNmfiL6+q8uyyRzgRus='; connect-src 'self' https://data.readthegame.co; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-IiHB2kfZlbE1MPYWPteksXGChY932GJ3rQjdIn1Kalw='; style-src 'sha256-39R3Ezq2kJt+H/Iqkpd0HMvivGzOyc1TRaGe8FrN0Q4='; connect-src 'self' https://data.readthegame.co; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <style>
@@ -49,6 +49,8 @@
 #rg .att.h{fill:var(--home)}#rg .att.a{fill:#fff;stroke:var(--away);stroke-width:.7}#rg .att{opacity:.85}
 #rg .goal.h{fill:var(--home);stroke:#fff}#rg .goal.a{fill:#fff;stroke:var(--away)}#rg .goal{stroke-width:.9}
 #rg .excl{fill:var(--muted);opacity:.2}
+#rg .rulel{stroke:var(--flag);stroke-width:1.5;opacity:.75;pointer-events:none}
+#rg .rulel.dim{opacity:.35;stroke-dasharray:3 2}
 #rg .ring{fill:none;pointer-events:none}
 #rg .ring.blk{stroke:var(--flag);stroke-width:.7}
 #rg .ring.hd{stroke:var(--hd);stroke-width:.8}
@@ -226,6 +228,9 @@ const upto=k=>k<0?[]:G.events.slice(0,EVI[k]+1);
  */
 
 const NET_X = 89;
+const GOAL_LINE_X = 89;      // the same line; named for the rule that uses it
+const BLUE_LINE_X = 25;      // zone boundary, and what an offside is about
+const CENTRE_X = 0;
 const SLOT_HALF_WIDTH = 22;   // feet either side of centre
 const HIGH_DANGER_FT = 33;    // Doctrine section 7: a rule, not a model
 
@@ -1197,6 +1202,54 @@ const danger = {
  */
 
 
+
+/**
+ * Which team's end play restarted in, from the coordinate and the rink alone.
+ *
+ * Coordinates are normalized so the HOME side defends -x, so a restart inside a
+ * blue line is in that team's defensive zone. No threshold of ours: the blue line
+ * is where the zone begins.
+ */
+function zoneOf(x, homeAb, awayAb) {
+  if (x == null) return null;
+  if (x <= -BLUE_LINE_X) return homeAb;
+  if (x >= BLUE_LINE_X) return awayAb;
+  return null;                                  // the neutral zone belongs to nobody
+}
+
+/**
+ * The lines the rule NAMES, so the ice can show the geometry a sentence cannot.
+ *
+ * THIS IS A DERIVATION AND IT IS WORTH BEING EXPLICIT ABOUT. Nothing here draws a
+ * path: the feed records no puck trajectory, and inventing one is the thing
+ * Doctrine §4 exists to forbid. What is drawn is the line or lines the rulebook
+ * refers to, positioned by rink geometry and selected by a RECORDED coordinate.
+ *
+ *   icing    Rule 81 is about the centre line and the far goal line. Which goal
+ *            line follows from which end play restarted in, because the faceoff
+ *            returns to the offending team's zone — measured across 240 games,
+ *            2,019 of 2,019 icings restart at an end-zone dot, with no exceptions.
+ *
+ *   offside  Rule 83 is about a blue line: the one nearest the restart. Only when
+ *            play restarts in the NEUTRAL zone, which is 89.8% of them. The other
+ *            10% restart at centre ice or inside an end zone, and there we cannot
+ *            say which line it was — so nothing is highlighted, rather than the
+ *            nearer of two guesses.
+ */
+function linesFor(rsn, x) {
+  if (x == null) return [];
+  if (rsn === 'icing') {
+    // The puck crossed the goal line at the FAR end from the restart.
+    return [CENTRE_X, x < 0 ? GOAL_LINE_X : -GOAL_LINE_X];
+  }
+  if (rsn === 'offside') {
+    if (Math.abs(x) >= BLUE_LINE_X) return [];   // an end-zone restart names no line
+    if (x === CENTRE_X) return [];               // nor does centre ice
+    return [x < 0 ? -BLUE_LINE_X : BLUE_LINE_X];
+  }
+  return [];
+}
+
 /** reason -> what it means, and where that meaning comes from. */
 const WHY = {
   icing: {
@@ -1369,6 +1422,11 @@ const whistle = {
         placed: Boolean(spot),
         x: spot ? spot.x : null,
         y: spot ? spot.y : null,
+        // WHOSE END play restarted in, and the lines the rule is about. Both are
+        // read from the restart coordinate, which is why they are null when there
+        // is no restart to read.
+        zone: spot ? zoneOf(spot.x, ctx.homeAb, ctx.awayAb) : null,
+        lines: spot ? linesFor(rsn, spot.x) : [],
         unplaced,
       });
     });
@@ -2156,6 +2214,16 @@ function drawWhistles(W){
   // game, so eight icings at one dot draw as one circle and the ice would be
   // showing a number it is not saying.
   if(m.n>1)g.push(`<text class="whn" x="${cx.toFixed(1)}" y="${(cy+1.2).toFixed(1)}">${m.n}</text>`);}
+ // THE LINES THE RULE NAMES, for the whistle being explained. A novice is told
+ // an icing is about the centre line and the far goal line; this is the only way
+ // to say WHICH lines those are on the ice in front of them. Nothing here draws a
+ // path -- the feed records no puck trajectory, and Doctrine §4 forbids inventing
+ // one -- so what is lit is rink geometry the rulebook refers to, selected by the
+ // recorded restart coordinate.
+ const cur=latest(W);
+ if(cur&&cur.lines&&cur.lines.length){
+  for(const lx of cur.lines)
+   g.push(`<line class="rulel${lx===0?' dim':''}" x1="${SX(lx)}" y1="2" x2="${SX(lx)}" y2="83"/>`);}
  $('whistles').innerHTML=g.join('');
  const w=latest(W);
  if(!w){$('whistlePanel').innerHTML='<p class="whsay">No whistle yet — play has not stopped in what you have watched so far.</p>';return;}
@@ -2163,8 +2231,17 @@ function drawWhistles(W){
  // dropped it; a guessed sentence would be worse than dropping it.
  const say=w.say?ESC(w.say)
    :`<span class="none">The feed recorded this stoppage as “${ESC(w.rsn||'no reason given')}”, which is one we have no sentence for. We are not guessing at one.</span>`;
- const where=w.placed?'Play restarted at the ringed faceoff dot.'
-   :`Not shown on the ice — ${ESC(w.unplaced)}.`;
+ // THE ZONE, AND THIS IS A COMPOSITION worth naming. The layer was built saying
+ // it must not supply a team, because a stoppage carries none -- and that was
+ // right for the only input it had. The restart coordinate is a different input:
+ // Rule 81 sends the faceoff to the offending team's end, and 2,019 of 2,019
+ // icings across 240 games restart at an end-zone dot. So the page states the
+ // RECORDED fact (which end the dot is in) beside the RULE (where that dot goes),
+ // and leaves the reader to put them together. It does not assert who iced it.
+ const zone=(w.rsn==='icing'&&w.zone)
+   ?` The faceoff came back into ${ESC(w.zone)}'s end.`:'';
+ const where=(w.placed?'Play restarted at the ringed faceoff dot.'
+   :`Not shown on the ice — ${ESC(w.unplaced)}.`)+zone;
  const n=W.tally[w.rsn||'unrecorded'];
  const tal=Object.entries(W.tally).sort((a,b)=>b[1]-a[1]||(a[0]<b[0]?-1:1))
    .map(([r,c])=>`<span>${ESC(RSN(r))} <b>${c}</b></span>`).join('');

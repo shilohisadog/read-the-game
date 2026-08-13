@@ -267,3 +267,61 @@ test('the icing sentence MAY say where the faceoff goes, because that one holds'
   // 2,019 of 2,019 icings in the same 240 games restart at an end-zone dot.
   assert.match(WHY.icing.say, /faceoff comes back to the offending\s+end/);
 });
+
+/* ------------------------------------------------------------------ *
+ * WHERE, in the terms the rules use. Kevin: icing and offside are the
+ * two hardest concepts for a novice, and they happen 13 times a game —
+ * twice as often as a goal. Measured over 240 games: 8.4 icings and 4.6
+ * offsides, against 6.4 goals and 7.1 penalties.
+ * ------------------------------------------------------------------ */
+
+test('the restart names a zone, from the coordinate and the blue line', () => {
+  // Coordinates are normalized so HOME defends -x. No threshold of ours: a zone
+  // begins at the blue line, which is where the rink says it begins.
+  const inHome = run([stop('icing'), faceoff(-69, 22)]).whistles[0];
+  const inAway = run([stop('icing'), faceoff(69, -22)]).whistles[0];
+  const neutral = run([stop('offside'), faceoff(-20, 22)]).whistles[0];
+  assert.equal(inHome.zone, 'HME');
+  assert.equal(inAway.zone, 'AWY');
+  assert.equal(neutral.zone, null, 'the neutral zone belongs to nobody');
+});
+
+test('an icing lights the centre line and the FAR goal line', () => {
+  // Rule 81's geometry. Which goal line follows from which end play restarted
+  // in — 2,019 of 2,019 icings across 240 games restart at an end-zone dot.
+  // Nothing draws a path: the feed records no trajectory and Doctrine §4 forbids
+  // inventing one. These are the two lines the rulebook refers to.
+  assert.deepEqual(run([stop('icing'), faceoff(-69, 22)]).whistles[0].lines, [0, 89],
+    'restart in the home end — the puck crossed the away goal line');
+  assert.deepEqual(run([stop('icing'), faceoff(69, -22)]).whistles[0].lines, [0, -89],
+    'and the mirror');
+});
+
+test('an offside lights ONE blue line, and only when it can know which', () => {
+  // 89.8% of offsides restart at a neutral-zone dot, where the nearest blue line
+  // is unambiguous. The other 10% restart at centre ice or inside an end zone —
+  // there we cannot say which line it was, so nothing is lit rather than the
+  // nearer of two guesses.
+  assert.deepEqual(run([stop('offside'), faceoff(-20, 22)]).whistles[0].lines, [-25]);
+  assert.deepEqual(run([stop('offside'), faceoff(20, -22)]).whistles[0].lines, [25]);
+  assert.deepEqual(run([stop('offside'), faceoff(0, 0)]).whistles[0].lines, [],
+    'centre ice names no blue line');
+  assert.deepEqual(run([stop('offside'), faceoff(-69, 22)]).whistles[0].lines, [],
+    'nor does an end-zone restart, which is 4.9% of them');
+});
+
+test('a whistle with no restart has no zone and no lines', () => {
+  // Both are read from the restart coordinate, so both must be absent when there
+  // is no restart to read — and absent is not the same as zero.
+  const w = run([stop('icing'), ev('period-end')]).whistles[0];
+  assert.equal(w.placed, false);
+  assert.equal(w.zone, null);
+  assert.deepEqual(w.lines, []);
+});
+
+test('other stoppages light nothing, because their rules name no line', () => {
+  for (const r of ['puck-frozen', 'high-stick', 'goalie-stopped-after-sog']) {
+    assert.deepEqual(run([stop(r), faceoff(-69, 22)]).whistles[0].lines, [],
+      `${r} lit a line it has no rule about`);
+  }
+});

@@ -93,6 +93,20 @@ function boot(game) {
   assert.ok(+scrub.max > 100, `the reference game should have hundreds of plays, not ${scrub.max}`);
   return {
     ...dom,
+    /**
+     * Every frame in the game, for claims that need COVERAGE rather than a
+     * sample — "the far goal line, at both ends" cannot be checked by a walk
+     * that may only ever land on one end.
+     */
+    every(read) {
+      const out = [];
+      for (let k = 0; k <= +scrub.max; k++) {
+        scrub.value = String(k);
+        scrub.oninput({ target: { value: scrub.value } });
+        out.push(read(dom));
+      }
+      return out;
+    },
     /** Drag the scrubber the way a viewer does, and report what got drawn. */
     sweep(read) {
       const out = [];
@@ -571,4 +585,66 @@ test('the rates are handed to boot, never fetched inside the shared renderer', (
                            app.indexOf('drawRink();set(EV.length-1,false);'));
   assert.doesNotMatch(shared, /\bfetch\s*\(/, 'the renderer reaches nothing');
   assert.match(app, /function boot\(G,RATES\)/, 'the rates arrive as an argument');
+});
+
+test('an icing lights the FAR goal line, at both ends of the rink', () => {
+  // 8.4 icings and 4.6 offsides a game — 13 stoppages a novice meets twice as
+  // often as a goal and understands neither. The sentence teaches the rule; the
+  // lit lines say which lines on THIS rink it is about.
+  //
+  // THE FIRST VERSION ACCEPTED EITHER GOAL LINE, to avoid depending on which end
+  // the reference game's icings restart in — and a mutation forcing every whistle
+  // to light [0, +89] survived it untouched. A loose assertion written to dodge a
+  // fact about the fixture is an assertion about nothing. The game has icings at
+  // BOTH ends (five in Buffalo's, three in Minnesota's), so the relationship can
+  // be checked in both directions, and coverage of both is asserted rather than
+  // hoped for.
+  const a = boot();
+  a.$('lyWhistle').click();
+  const seen = new Set();
+  for (const f of a.every(d => ({ ice: d.$('whistles').innerHTML,
+                                  said: d.$('whistlePanel').innerHTML }))) {
+    if (!/class="rsn">icing/.test(f.said)) continue;
+    const ring = f.ice.match(/class="wh now"[^>]*cx="([\d.]+)"/);
+    if (!ring) continue;                       // an unplaced icing lights nothing
+    const lit = [...f.ice.matchAll(/class="rulel[^"]*"[^>]*x1="([\d.]+)"/g)].map(m => +m[1]);
+    assert.equal(lit.length, 2, 'the centre line and one goal line');
+    assert.ok(lit.includes(100), 'centre ice is always one of them');   // SX(0)
+    const goal = lit.find(x => x !== 100);
+    // THE FAR ONE. Play restarts in the offending team's end; the puck crossed
+    // the goal line at the other end.
+    const far = +ring[1] < 100 ? 189 : 11;                             // SX(±89)
+    assert.equal(goal, far,
+      `restart at cx=${ring[1]} lit the goal line at ${goal}, not the far one at ${far}`);
+    seen.add(far);
+    assert.match(f.said, /The faceoff came back into (MIN|BUF)'s end\./);
+  }
+  assert.equal(seen.size, 2,
+    `icings were only checked at ${seen.size} end(s) of the rink, so a mark fixed `
+    + `to one end would pass`);
+});
+
+test('nothing is lit for a stoppage whose rule names no line', () => {
+  // MUTATION GUARD. Lines drawn for every whistle would satisfy the test above
+  // while telling a viewer that a frozen puck is about the blue line.
+  const a = boot();
+  a.$('lyWhistle').click();
+  const frames = a.sweep(d => ({ ice: d.$('whistles').innerHTML,
+                                 said: d.$('whistlePanel').innerHTML }));
+  const frozen = frames.find(f => /class="rsn">(puck frozen|goalie stopped)/.test(f.said));
+  assert.ok(frozen, 'the reference game has one');
+  assert.doesNotMatch(frozen.ice, /class="rulel/, 'and it lights nothing');
+});
+
+test('the zone is named for icing ONLY, where the rule makes it mean something', () => {
+  // Rule 81 sends the faceoff to the offending team's end. No other stoppage
+  // reason has a rule that makes the restart zone mean anything, so naming it
+  // elsewhere would be a fact with no rule attached to it.
+  const a = boot();
+  a.$('lyWhistle').click();
+  for (const f of a.sweep(d => d.$('whistlePanel').innerHTML)) {
+    if (/came back into/.test(f)) {
+      assert.match(f, /class="rsn">icing/, `a non-icing named a zone: ${f.slice(0, 90)}`);
+    }
+  }
 });

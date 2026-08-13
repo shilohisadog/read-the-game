@@ -43,6 +43,54 @@
  * checked" — so it survives in the tests only as a regression guard.
  */
 import { NOT_A_PLAY } from '../layer.js';
+import { BLUE_LINE_X, GOAL_LINE_X, CENTRE_X } from '../rink.js';
+
+/**
+ * Which team's end play restarted in, from the coordinate and the rink alone.
+ *
+ * Coordinates are normalized so the HOME side defends -x, so a restart inside a
+ * blue line is in that team's defensive zone. No threshold of ours: the blue line
+ * is where the zone begins.
+ */
+function zoneOf(x, homeAb, awayAb) {
+  if (x == null) return null;
+  if (x <= -BLUE_LINE_X) return homeAb;
+  if (x >= BLUE_LINE_X) return awayAb;
+  return null;                                  // the neutral zone belongs to nobody
+}
+
+/**
+ * The lines the rule NAMES, so the ice can show the geometry a sentence cannot.
+ *
+ * THIS IS A DERIVATION AND IT IS WORTH BEING EXPLICIT ABOUT. Nothing here draws a
+ * path: the feed records no puck trajectory, and inventing one is the thing
+ * Doctrine §4 exists to forbid. What is drawn is the line or lines the rulebook
+ * refers to, positioned by rink geometry and selected by a RECORDED coordinate.
+ *
+ *   icing    Rule 81 is about the centre line and the far goal line. Which goal
+ *            line follows from which end play restarted in, because the faceoff
+ *            returns to the offending team's zone — measured across 240 games,
+ *            2,019 of 2,019 icings restart at an end-zone dot, with no exceptions.
+ *
+ *   offside  Rule 83 is about a blue line: the one nearest the restart. Only when
+ *            play restarts in the NEUTRAL zone, which is 89.8% of them. The other
+ *            10% restart at centre ice or inside an end zone, and there we cannot
+ *            say which line it was — so nothing is highlighted, rather than the
+ *            nearer of two guesses.
+ */
+function linesFor(rsn, x) {
+  if (x == null) return [];
+  if (rsn === 'icing') {
+    // The puck crossed the goal line at the FAR end from the restart.
+    return [CENTRE_X, x < 0 ? GOAL_LINE_X : -GOAL_LINE_X];
+  }
+  if (rsn === 'offside') {
+    if (Math.abs(x) >= BLUE_LINE_X) return [];   // an end-zone restart names no line
+    if (x === CENTRE_X) return [];               // nor does centre ice
+    return [x < 0 ? -BLUE_LINE_X : BLUE_LINE_X];
+  }
+  return [];
+}
 
 /** reason -> what it means, and where that meaning comes from. */
 export const WHY = {
@@ -216,6 +264,11 @@ export const whistle = {
         placed: Boolean(spot),
         x: spot ? spot.x : null,
         y: spot ? spot.y : null,
+        // WHOSE END play restarted in, and the lines the rule is about. Both are
+        // read from the restart coordinate, which is why they are null when there
+        // is no restart to read.
+        zone: spot ? zoneOf(spot.x, ctx.homeAb, ctx.awayAb) : null,
+        lines: spot ? linesFor(rsn, spot.x) : [],
         unplaced,
       });
     });

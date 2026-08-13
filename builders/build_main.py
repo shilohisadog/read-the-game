@@ -64,6 +64,8 @@ T = r"""<style>
 #rg .att.h{fill:var(--home)}#rg .att.a{fill:#fff;stroke:var(--away);stroke-width:.7}#rg .att{opacity:.85}
 #rg .goal.h{fill:var(--home);stroke:#fff}#rg .goal.a{fill:#fff;stroke:var(--away)}#rg .goal{stroke-width:.9}
 #rg .excl{fill:var(--muted);opacity:.2}
+#rg .rulel{stroke:var(--flag);stroke-width:1.5;opacity:.75;pointer-events:none}
+#rg .rulel.dim{opacity:.35;stroke-dasharray:3 2}
 #rg .ring{fill:none;pointer-events:none}
 #rg .ring.blk{stroke:var(--flag);stroke-width:.7}
 #rg .ring.hd{stroke:var(--hd);stroke-width:.8}
@@ -537,6 +539,16 @@ function drawWhistles(W){
   // game, so eight icings at one dot draw as one circle and the ice would be
   // showing a number it is not saying.
   if(m.n>1)g.push(`<text class="whn" x="${cx.toFixed(1)}" y="${(cy+1.2).toFixed(1)}">${m.n}</text>`);}
+ // THE LINES THE RULE NAMES, for the whistle being explained. A novice is told
+ // an icing is about the centre line and the far goal line; this is the only way
+ // to say WHICH lines those are on the ice in front of them. Nothing here draws a
+ // path -- the feed records no puck trajectory, and Doctrine §4 forbids inventing
+ // one -- so what is lit is rink geometry the rulebook refers to, selected by the
+ // recorded restart coordinate.
+ const cur=latest(W);
+ if(cur&&cur.lines&&cur.lines.length){
+  for(const lx of cur.lines)
+   g.push(`<line class="rulel${lx===0?' dim':''}" x1="${SX(lx)}" y1="2" x2="${SX(lx)}" y2="83"/>`);}
  $('whistles').innerHTML=g.join('');
  const w=latest(W);
  if(!w){$('whistlePanel').innerHTML='<p class="whsay">No whistle yet — play has not stopped in what you have watched so far.</p>';return;}
@@ -544,8 +556,17 @@ function drawWhistles(W){
  // dropped it; a guessed sentence would be worse than dropping it.
  const say=w.say?ESC(w.say)
    :`<span class="none">The feed recorded this stoppage as “${ESC(w.rsn||'no reason given')}”, which is one we have no sentence for. We are not guessing at one.</span>`;
- const where=w.placed?'Play restarted at the ringed faceoff dot.'
-   :`Not shown on the ice — ${ESC(w.unplaced)}.`;
+ // THE ZONE, AND THIS IS A COMPOSITION worth naming. The layer was built saying
+ // it must not supply a team, because a stoppage carries none -- and that was
+ // right for the only input it had. The restart coordinate is a different input:
+ // Rule 81 sends the faceoff to the offending team's end, and 2,019 of 2,019
+ // icings across 240 games restart at an end-zone dot. So the page states the
+ // RECORDED fact (which end the dot is in) beside the RULE (where that dot goes),
+ // and leaves the reader to put them together. It does not assert who iced it.
+ const zone=(w.rsn==='icing'&&w.zone)
+   ?` The faceoff came back into ${ESC(w.zone)}'s end.`:'';
+ const where=(w.placed?'Play restarted at the ringed faceoff dot.'
+   :`Not shown on the ice — ${ESC(w.unplaced)}.`)+zone;
  const n=W.tally[w.rsn||'unrecorded'];
  const tal=Object.entries(W.tally).sort((a,b)=>b[1]-a[1]||(a[0]<b[0]?-1:1))
    .map(([r,c])=>`<span>${ESC(RSN(r))} <b>${c}</b></span>`).join('');
