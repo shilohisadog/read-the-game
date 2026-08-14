@@ -828,3 +828,40 @@ test('the net is equipment: behind the goal line, six feet across, with netting'
   const across = rink.match(/class="post"[^>]*y1="([\d.]+)" x2="[\d.]+" y2="([\d.]+)"/);
   assert.equal(+across[2] - +across[1], 6, 'a net is 6 feet wide, not 11');
 });
+
+test('the game page offers a way onward, and it is about THIS game', () => {
+  // THE DEFECT THIS EXISTS FOR: game.html shipped with zero href attributes. It
+  // is the LANDING page — the shareable unit of this site is a game — so a
+  // stranger arriving from a shared link had no route to anything.
+  //
+  // CHENG's ruling put the funnel BELOW the rink rather than in a nav bar above
+  // it: the stranger arrives before the game, the viewer exists during it, and
+  // the moment that matters is when the game ENDS, at peak curiosity.
+  const a = boot();
+  const nav = a.$('nextup').innerHTML;
+  const links = [...nav.matchAll(/href="([^"]+)"/g)].map(m => m[1]);
+  assert.ok(links.length >= 3, `only ${links.length} ways onward from a game page`);
+
+  // BOTH CLUBS IN THIS GAME, named — not a generic "browse teams". A visitor has
+  // been given a reason to care about exactly two teams and these are they.
+  const home = a.$('hAb').textContent, away = a.$('aAb').textContent;
+  assert.ok(links.includes(`/?team=${home}`), `no route to more ${home} games`);
+  assert.ok(links.includes(`/?team=${away}`), `no route to more ${away} games`);
+  assert.match(nav, new RegExp(`More ${home} games`));
+  assert.match(nav, new RegExp(`More ${away} games`));
+  assert.ok(links.includes('/'), 'no route to the archive');
+
+  // THE TEAMS ARE READ, NEVER ASSUMED. A block that hard-coded the reference
+  // game's two clubs would satisfy everything above on this fixture and be wrong
+  // on all 4,552 others — the same defect class as the hero game typed into a
+  // builder as a literal.
+  assert.doesNotMatch(app, /More BUF games|More MIN games/,
+    'the club names are compiled in rather than read from the game');
+
+  // And the swatches carry each club's own colour, so the two rows are
+  // distinguishable without reading — the sweater convention, applied here.
+  const colours = [...nav.matchAll(/class="sw" style="background:([^"]+)"/g)].map(m => m[1]);
+  assert.equal(colours.length, 2);
+  assert.equal(new Set(colours).size, 2, 'both teams painted the same colour');
+  assert.ok(colours.includes(colourOf(home)) && colours.includes(colourOf(away)));
+});

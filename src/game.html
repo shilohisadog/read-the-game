@@ -28,7 +28,7 @@
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-JgZpYNJEl4yAA2xtTai672SHCcBAiGJqzkC+/eQHe4E='; style-src 'sha256-lnrmibk1XRd4mSSsX6P2RhstUetji/NA/zTJVSQOhLk=' 'sha256-nusmVuRANfh1lwLqvTmTJ65A11C3d8Fu3hqGcIwJlU4='; connect-src 'self' https://data.readthegame.co; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-By6MO18m5UhYQCKQtJECdZ3lYGfhIMfVVLgbJQyZLlk='; style-src 'sha256-lnrmibk1XRd4mSSsX6P2RhstUetji/NA/zTJVSQOhLk=' 'sha256-aIE0uiWKUXUBCUNBVwb0EL0R04ZHcmf301OXD7h04EA='; connect-src 'self' https://data.readthegame.co; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">What is this?</a></nav></header>
@@ -51,6 +51,10 @@
 #rg svg{display:block;width:100%;height:auto}
 #rg .boards{fill:var(--ice);stroke:var(--edge);stroke-width:1.1}
 #rg .ln{fill:none;stroke-linecap:round}#rg .ln.red{stroke:var(--red);stroke-width:.7;opacity:.42}#rg .ln.blue{stroke:var(--blue);stroke-width:.9;opacity:.42}#rg .ln.thick{stroke-width:1.1;opacity:.52}
+#rg .nextup{display:flex;flex-wrap:wrap;gap:9px;margin:16px 0 4px;padding-top:15px;border-top:1px solid var(--edge)}
+#rg .nextup a{display:inline-block;padding:9px 14px;border-radius:9px;border:1px solid var(--edge);background:#fff;color:var(--ink);text-decoration:none;font-weight:650;font-size:.9rem}
+#rg .nextup a:hover,#rg .nextup a:focus{border-color:var(--ink)}
+#rg .nextup a .sw{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:7px;vertical-align:baseline}
 #rg .fdot{fill:var(--red);opacity:.55}#rg .fdot.ctr{fill:var(--blue)}
 #rg .npl{font-size:3.4px;font-weight:700;text-anchor:middle;fill:var(--ink)}
 #rg .nplsub{font-size:2.9px;text-anchor:middle;fill:var(--ink);opacity:.72}
@@ -213,6 +217,7 @@ fixed here, so each team always attacks the same net. In the arena they switch e
 <div class="whybk" id="whyBk"><div class="why" id="whyContent"></div></div>
 <p class="verdict" id="verdict"></p>
 <div class="foot" id="gl">—</div>
+<nav class="nextup" id="nextup" aria-label="Where to go next"></nav>
 </div></div>
 <script>
 function boot(G,RATES){
@@ -2456,6 +2461,40 @@ $('gl').textContent=`${AAB} at ${HAB}${WHEN?' · '+WHEN:''} · final ${AAB} ${fi
  if(V.rate)p.push(`<span class="rate">${V.rate}</span>`);
  if(V.absent)p.push(`<span class="rate">${V.absent}</span>`);
  $('verdict').innerHTML=p.join('');})();
+/**
+ * WHERE TO GO NEXT, AND IT IS ABOUT THIS GAME.
+ *
+ * The shareable unit of this site is a game, so this page is where a stranger
+ * arrives -- and until the chrome landed it had no links at all. The header
+ * answers "where am I"; this answers "what else is here", and it sits BELOW the
+ * rink on purpose.
+ *
+ * CHENG's ruling, and it dissolved a question asked badly. "Converting a
+ * stranger versus interrupting a viewer" treats the two as simultaneous. They
+ * are not: the stranger arrives BEFORE the game and the viewer exists DURING
+ * it, and the moment that matters is neither -- it is when the game ENDS.
+ * Someone who has just watched a replay and understood why twelve attempts did
+ * not count is at peak curiosity, and that is here rather than in a navigation
+ * bar above the ice.
+ *
+ * SPECIFIC TO THE GAME JUST WATCHED, which a generic nav cannot be. The two
+ * clubs are already in scope, so their names cost nothing -- and they are the
+ * only two teams this visitor has been given a reason to care about.
+ *
+ * BUILT AT RUNTIME, not by page.py: game.html learns its teams when it fetches,
+ * so the shell can only supply the container. Both pages run this identically.
+ *
+ * Every destination exists today. A link to a page we have not built yet is a
+ * 404 wearing a plan, which is the rule the chrome nav is held to as well.
+ */
+(function nextUp(){
+ const el=$('nextup'); if(!el)return;
+ const dot=c=>`<span class="sw" style="background:${c}"></span>`;
+ el.innerHTML=[
+  `<a href="/?team=${encodeURIComponent(AAB)}">${dot(AWAYCOL)}More ${AAB} games</a>`,
+  `<a href="/?team=${encodeURIComponent(HAB)}">${dot(HOMECOL)}More ${HAB} games</a>`,
+  `<a href="/">Every game in the archive</a>`,
+ ].join('');})();
 document.querySelectorAll('#rg .cc.a .lb').forEach(n=>n.childNodes[0].nodeValue=AAB+' attempts');
 document.querySelectorAll('#rg .cc.h .lb').forEach(n=>n.childNodes[0].nodeValue=HAB+' attempts');
 
