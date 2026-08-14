@@ -15,6 +15,7 @@ import { conservation, summarise } from '../src/lib/layer.js';
 import { corsi } from '../src/lib/layers/corsi.js';
 import { goaltending } from '../src/lib/layers/goaltending.js';
 import { danger } from '../src/lib/layers/danger.js';
+import { SHOT_TYPES, ATTEMPT_TYPES } from '../src/lib/attribution.js';
 
 const rich = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url)));
 const ctx = { roster: rich.roster, homeId: rich.teams.home.id, awayId: rich.teams.away.id };
@@ -69,6 +70,42 @@ test('corsi still produces the numbers the app has been showing', () => {
   assert.equal(L.surprising.length, 44, 'every blocked shot is surprising');
   assert.equal(L.hs, 3);
   assert.equal(L.as, 2);
+});
+
+test('a blocked shot is NEVER from the slot, however slot-shaped its coordinate', () => {
+  // THE BEHAVIOUR WAS ALREADY RIGHT AND THE REASON WAS INHERITED, which is how a
+  // correct behaviour gets refactored away by somebody tidying up (CHENG). This
+  // pins the reason.
+  //
+  // A blocked shot's (x, y) is where the puck was STOPPED, not where it was
+  // shot — the block point sits between the shooter and the net, so it is
+  // systematically nearer the net than the shot that produced it. Over an
+  // 80-game random sample: median 24.2 ft against 33.4 for a shot on goal, and
+  // only 6.1% beyond 50 ft, while the point shot is the most-blocked shot in
+  // hockey and the blue line is ~64 ft out (docs/blocked-shots-layer.md §3).
+  //
+  // So the geometry can be satisfied by a coordinate that describes the BLOCKER.
+  // The event below is the adversarial case: 20 ft out, dead centre, which the
+  // slot rule would accept on any other attempt type. It must not be counted,
+  // and the ledger must say why in words rather than dropping it silently.
+  const shooter = EVENTS.find(e => e.type === 'blocked-shot' && e.actor);
+  assert.ok(shooter, 'the fixture has no blocked shot to build from');
+  const slotShaped = { ...shooter, x: 69, y: 0 };     // 20 ft from the net, centred
+
+  const before = danger.reduce(EVENTS, ctx);
+  const after = danger.reduce(EVENTS.map((e, i) => (i === EVENTS.indexOf(shooter) ? slotShaped : e)), ctx);
+  assert.equal(after.counted.length, before.counted.length,
+    'a blocked shot moved into the slot changed the count — the block point is being read as a shot origin');
+
+  const why = new Map(after.excluded.map(x => [x.id, x.why]));
+  const id = EVENTS.indexOf(shooter);
+  assert.ok(why.has(id), 'the slot-shaped blocked shot vanished from the ledger instead of being excluded');
+  assert.match(why.get(id), /block|reach|not a shot|type/i,
+    `the exclusion must say it is a blocked shot, not merely that it missed the geometry — got "${why.get(id)}"`);
+
+  // And the set itself, so the pin survives a rewrite of the layer.
+  assert.ok(!SHOT_TYPES.has('blocked-shot'), 'SHOT_TYPES admitted blocked shots');
+  assert.ok(ATTEMPT_TYPES.has('blocked-shot'), 'a blocked shot is still an ATTEMPT — that half must not move');
 });
 
 test('goaltending still produces the numbers the app has been showing', () => {

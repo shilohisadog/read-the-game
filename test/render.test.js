@@ -865,6 +865,30 @@ test('the net is equipment: behind the goal line, six feet across, with netting'
   assert.equal(+across[2] - +across[1], 6, 'a net is 6 feet wide, not 11');
 });
 
+test('every mark the stylesheet cuts a key for is NAMED to the reader', () => {
+  // AN UNEXPLAINED MARK ON THE ICE IS A DOCTRINE VIOLATION, and two were
+  // shipping. `.k-blk` and `.k-hd` were both defined in the stylesheet and
+  // appeared nowhere in the markup: the blocked-shot ring and the slot ring were
+  // drawn on every game and named in no legend. CHENG confirmed `k-blk`
+  // independently — "styled, drawn, and never named".
+  //
+  // The blocked-shot one was the worse of the two, because the mark is not where
+  // a reader will think it is. See docs/blocked-shots-layer.md §3: the
+  // coordinate on a blocked shot is the BLOCK POINT, a median 24.2 ft from the
+  // net against 33.4 for a shot on goal, so the ring sits nearer the net than
+  // the shot that produced it — around a mark whose label names the shooter.
+  //
+  // The rule is read off the stylesheet rather than kept in a list here, so a
+  // key added for a mark nobody explains fails on the day it is added. That is
+  // the only version of this check that closes; a hand-maintained list is the
+  // same defect with more steps.
+  const keys = [...new Set([...PAGE_CSS.matchAll(/\.(k-[a-z]+)\s*\{/g)].map(m => m[1]))];
+  assert.ok(keys.length >= 7, `only ${keys.length} legend keys found — the sweep is broken`);
+  for (const k of keys)
+    assert.match(app, new RegExp(`class="${k}"`),
+      `.${k} is styled and drawn, and the reader is never told what it means`);
+});
+
 test('the game page offers a way onward, and it is about THIS game', () => {
   // THE DEFECT THIS EXISTS FOR: game.html shipped with zero href attributes. It
   // is the LANDING page — the shareable unit of this site is a game — so a

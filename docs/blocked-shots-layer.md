@@ -207,3 +207,110 @@ Offered so there is something concrete to attack, not as a plan.
 
 Question 4 is the one I am least sure of and it is a sequencing question: **R**
 may need to land first, or B will be built into a shape R then has to undo.
+
+---
+
+## 7. CHENG's rulings — 2026-08-14
+
+He confirmed §3's `k-blk` finding independently ("styled, drawn, and never
+named") and ruled on all four questions. **The rulings below supersede §6**,
+which is left above as the proposal they were made against.
+
+### §3 — disclosure is NOT sufficient
+
+> *"Everywhere else, provenance travels with the number — the mode label welded
+> to the attempt count, the `display:` category, the strength reason attached to
+> each exclusion. A one-line honesty statement in a layer panel is provenance
+> living somewhere other than the mark it describes."*
+
+The mark itself has to carry it. His preferred fix is the cheap one: **name the
+BLOCKER on the label rather than the shooter.** The current label is *correct
+about attribution and wrong about location*, and swapping which player it names
+inverts that — the mark stops reading as "where Dahlin shot from" and starts
+reading as "where the puck was stopped."
+
+**And the legend gap is fixed now, not under any design.** *"An unexplained mark
+on the ice is a doctrine violation that's shipping."*
+
+**Done, in the same pass as this ruling.** Two keys were styled and never used,
+not one: `.k-blk` and `.k-hd`, the slot ring. Both are now named in the legend,
+and `test/render.test.js` reads the rule off the stylesheet — **every `k-*` key
+defined must appear in the markup** — so the next mark drawn without an
+explanation fails on the day it is added. A hand-maintained list would have been
+the same defect with more steps.
+
+### §3, the exclusion — pin the reason, not the behaviour
+
+> *"`SHOT_TYPES` already excludes them — by an inherited decision nobody has
+> justified. Pin the reason, not the behaviour. Same class as the boot-state test
+> riding on an incidental default."*
+
+**Done.** `attribution.js` now states why the exclusion is load-bearing, and
+`test/layers.test.js` moves a real blocked shot to (69, 0) — 20 ft out, dead
+centre, which the slot rule accepts on any other attempt type — and requires it
+to stay uncounted *with a reason naming its type*. Seen to fire: admitting
+`blocked-shot` into `SHOT_TYPES` turns it red.
+
+### §5 — the win rate is NOT publishable, and `measure.mjs` does not change that
+
+He goes further than the audit did, and he is right:
+
+> *"So the 63.2% is **uninterpretable, not merely uncertain.** With a mechanism
+> that strong, a bigger sample buys precision on a number that still doesn't mean
+> what a reader will take it to mean."*
+
+The reference class for a blocks-leader win rate is *"teams that were being
+outshot"*, and once stated honestly the sentence says nothing a novice can use.
+So the layer ships **no win rate at all** — not a worse one, none.
+
+What it ships instead is §4, which he called the layer's reason to exist:
+
+> **More than half of every team's attempts never reach the goalie at all.
+> Roughly one in four is blocked by a body.**
+
+A **share of a population**, not an outcome rate: no confound, no causal reading
+available, and it reframes a number already on the screen. **Requirement: it
+carries its n and its scope, and the figure comes from `measure.mjs` over the
+archive** — the 51.5% above is the 80-game sample and may not ship.
+
+### §2 — the teammate case reaches the copy
+
+Naming the blocker (his §3 fix) collides with the 7.8%: sometimes the blocker is
+**on the shooting team**, so the label would read as a teammate stopping his own
+side's shot. Which is what happened, and is *"a genuinely interesting thing a
+novice has never considered"* — a `surprising` entry if the layer wants one,
+never a silent wrong-sounding label.
+
+### §2 gating — follow, don't gate
+
+The boxscore reconciliation validates a field we already hold and already check
+against `rosterSpots`; its failure mode is *"we learn something about the feed"*,
+not *"the layer is wrong"*. Ship on the existing gate, add the reconciliation as
+its own commit.
+
+### §4 sequencing — R FIRST, and the audit supplies the argument
+
+> *"The blocked-shot mark is already on the ice, already unexplained, and already
+> misleading. That's an R problem — legend, label, provenance-at-the-mark — and it
+> exists whether or not a fifth layer ever ships."*
+
+And on the vehicle he leans **inside control, not a fifth toggle**: this is not a
+new metric, it is *"58 attempts sounds like 58 chances, and about 28 of them never
+got there"* — a correction to a number the control layer already shows. A fifth
+toggle presents it as an alternative lens; folding it into control's *"Show me
+the work"* presents it as **what the count is made of**, which is the site's
+thesis applied one level down.
+
+**This reorders Kevin's list from B · R to R · B and is his call, not ours.**
+
+### One general form, worth keeping
+
+> *"A sample chosen to stress-test a mechanism cannot also measure a rate."*
+
+The adversarial 167-game set was the right tool for *"does `blk` ever go
+missing"* and the wrong one for *"how often are shots blocked"*. Two questions,
+two sampling frames, and the second was borrowed from the first.
+
+He also suggests the numbers-checking script that caught the four typed counts in
+§3 should run over **every** doc, not just this one. **Not built** — noted here
+rather than done, because it is a new instrument and belongs on the list.

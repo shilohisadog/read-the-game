@@ -26,7 +26,27 @@
 
 export const ATTEMPT_TYPES = new Set(['goal', 'shot-on-goal', 'missed-shot', 'blocked-shot']);
 
-/** Attempts that reached the net area -- everything except blocked shots. */
+/**
+ * Attempts that reached the net area -- everything except blocked shots.
+ *
+ * AND THE EXCLUSION IS LOAD-BEARING, not tidiness. The slot rule is geometric:
+ * within 33 ft of the net and inside +/-22 ft of centre. A blocked shot's
+ * coordinate is NOT where the shot was taken -- it is where the puck was
+ * stopped, which is between the shooter and the net and therefore nearer the
+ * net than the shot itself. Measured over an 80-game random sample
+ * (docs/blocked-shots-layer.md §3): a blocked shot records a median 24.2 ft
+ * against 33.4 for a shot on goal, and only 6.1% beyond 50 ft -- while the point
+ * shot is the most-blocked shot in hockey and the blue line is ~64 ft out.
+ *
+ * So including blocked shots here would let a point shot stopped 24 ft out
+ * satisfy "from the slot" on a coordinate that describes the BLOCKER's
+ * position. The rule would still be checkable with a ruler and it would be
+ * measuring the wrong thing, which is the worst kind of wrong this site can be.
+ *
+ * The behaviour was already correct; the REASON was inherited and unstated,
+ * which is how a correct behaviour gets refactored away by someone tidying up
+ * (CHENG). `test/layers.test.js` pins it.
+ */
 export const SHOT_TYPES = new Set(['goal', 'shot-on-goal', 'missed-shot']);
 
 /**
