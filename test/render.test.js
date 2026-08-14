@@ -1133,7 +1133,12 @@ test('the homepage gives a narrow frame the extra height its rink needs', () => 
    because the next row added to the table will be argued from whatever is
    already there. */
 
-const COUNTS = ['hit', 'blocked-shot', 'missed-shot'];
+// A second line is earned ONLY by correcting a misreading of a counter the
+// viewer can see moving. The attempts counter goes up on a block and on a miss,
+// which is the surprise. `hit` was in this list and should not have been: there
+// is no hits counter on the page, so "not a shot" answered a question nobody
+// had -- explaining a metric we do not show is noise wearing the shape of rigour.
+const COUNTS = ['blocked-shot', 'missed-shot'];
 
 test('a play label carries a second line only when it says whether it counts', () => {
   const table = app.match(/const LAB=\{(.*?)\};/s)[1];

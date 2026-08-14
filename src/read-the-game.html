@@ -2929,21 +2929,27 @@ $('whyBk').addEventListener('click',e=>{if(e.target.id==='whyBk')hideWhy();});
    the box", "Shot on goal / a shot attempt" all say the label again in other
    words. On a phone they were the smallest text on the ice and they said
    nothing.
-   THE THREE THAT STAY ARE NOT DESCRIPTIONS, THEY ARE THE THESIS. A novice
-   watching "Shot blocked" appear while the attempt counter GOES UP has just met
+   THE TWO THAT STAY ARE NOT DESCRIPTIONS, THEY ARE THE THESIS. A novice
+   watching "Shot blocked" appear while the attempts counter GOES UP has just met
    the site's whole argument, and the line is the only thing on screen that
    accounts for it -- and blocked-shot attribution is the exact defect that once
    shipped a wrong flagship number, so "for the shooter" is load-bearing rather
-   than decorative. Same for a miss that still counts, and for a hit that looks
-   like a shot in the run of play and is not one.
-   The rule, so the next row does not have to be argued from scratch: a second
-   line that rephrases the label is noise; a second line that says whether the
-   event COUNTS is the work.
+   than decorative. Same for a miss that still counts.
+   HIT LOST ITS LINE TOO, and the reason sharpened the rule. I had kept it under
+   "says whether it counts", but Kevin: "I don't think it adds any value (except
+   to the 'hits' counter that we don't track anyway)". He is right, and the
+   distinction is exact -- "not a shot" corrects a misreading of a number THAT IS
+   NOT ON THE SCREEN. Nothing on this page ever suggested a hit might be an
+   attempt, so the line answered a question nobody had.
+   The rule, sharpened, so the next row is not argued from scratch: a second line
+   is earned only when it corrects a misreading of a counter the viewer CAN SEE
+   MOVING. Rephrasing the label is noise; explaining a metric we do not show is
+   noise wearing the shape of rigour.
    `goal` is gone entirely. Goals take the branch above -- scorer and assists --
    so its row had never once rendered: dead weight inside a table, reading as
    coverage. Third instance of that shape (test/shell.test.js had a dead
    "rosterSpots" pattern, homepage.test.js an assertion that read undefined). */
-const LAB={faceoff:['Faceoff'],hit:['Hit','physical play — not a shot'],giveaway:['Giveaway'],takeaway:['Takeaway'],'blocked-shot':['Shot blocked','still an attempt — for the shooter'],'missed-shot':['Missed shot','wide/high — still an attempt'],'shot-on-goal':['Shot on goal'],penalty:['Penalty']};
+const LAB={faceoff:['Faceoff'],hit:['Hit'],giveaway:['Giveaway'],takeaway:['Takeaway'],'blocked-shot':['Shot blocked','still an attempt — for the shooter'],'missed-shot':['Missed shot','wide/high — still an attempt'],'shot-on-goal':['Shot on goal'],penalty:['Penalty']};
 let labelsOn=true;
 /**
  * WHAT THE ICE SAYS WHEN IT IS SHOWING NOTHING.
