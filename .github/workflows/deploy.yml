@@ -95,7 +95,18 @@ jobs:
         run: |
           command -v google-chrome >/dev/null || { echo "::error::no Chrome on this runner"; exit 1; }
           before=$(grep -o 'id="state"[^>]*>[^<]*' src/index.html)
+          # --enable-logging=stderr --log-level=0 OR THE GREP BELOW IS BLIND.
+          # Without them Chrome writes dbus noise to stderr and NOTHING ELSE:
+          # console messages, including every CSP refusal, are simply not routed
+          # there. This grep could not match, and had never matched, in the whole
+          # time it has been described as a check. It was found by the canary in
+          # the policy-refusal step at the foot of this file, which is the entire
+          # argument for canaries.
+          #
+          # The OTHER assertion here — that the placeholder changed — is real and
+          # is what has actually been proving the script may run.
           google-chrome --headless --no-sandbox --disable-gpu \
+            --enable-logging=stderr --log-level=0 \
             --virtual-time-budget=8000 --dump-dom \
             "file://$PWD/src/index.html" > rendered.html 2> chrome.log || true
           after=$(grep -o 'id="state"[^>]*>[^<]*' rendered.html || true)
@@ -920,6 +931,7 @@ jobs:
           <body><p style="color:#c00">this style must be refused</p></body></html>
           HTML
           google-chrome --headless --no-sandbox --disable-gpu \
+            --enable-logging=stderr --log-level=0 \
             --virtual-time-budget=4000 --dump-dom \
             "file://$PWD/canary-csp.html" > /dev/null 2> canary.log || true
           if ! grep -qi 'Refused to apply inline style' canary.log; then
@@ -931,6 +943,7 @@ jobs:
           echo "  canary: a refused inline style is visible to this step"
 
           google-chrome --headless --no-sandbox --disable-gpu \
+            --enable-logging=stderr --log-level=0 \
             --virtual-time-budget=20000 --dump-dom \
             "https://readthegame.co/game?cb=${GITHUB_RUN_ID}-csp" > /dev/null 2> live.log || true
           # The implicit /favicon.ico request is browser-initiated and browsers
