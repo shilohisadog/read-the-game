@@ -38,14 +38,43 @@ test('the shell and the inlined page are the same renderer', () => {
   assert.equal(a, b, 'the two pages must share one renderer, byte for byte');
 });
 
-test('the shell ships no game inside it', () => {
+test('the shell ships no game inside it, and the inlined page does', () => {
   // If a game were compiled in, the page would be a lie by the next morning and
   // the archive could not grow without a deploy. Pages serves CODE, R2 serves
   // DATA.
-  const s = scriptOf(shell);
-  assert.doesNotMatch(s, /"rosterSpots"|"shifts":\[\{/, 'no embedded feed');
-  assert.ok(shell.length < inlined.length / 1.5,
-    `the shell is ${shell.length} bytes against ${inlined.length} inlined`);
+  //
+  // THIS TEST HAD TWO PROBLEMS AND THE RENAME SURFACED BOTH.
+  //
+  // One: it matched `"rosterSpots"|"shifts":[{`, and `"rosterSpots"` is a key
+  // from the RAW feed. `rich.json` has no such key, so that half could never
+  // match either page — dead weight sitting inside an assertion, reading as
+  // coverage. Only the second pattern was working.
+  //
+  // Two: the size check was `shell < inlined / 1.5`, and 1.5 is a number we
+  // chose. Both pages share the whole app, so as the app grows the ratio drifts
+  // toward 1 and the test fails for reasons that have nothing to do with an
+  // embedded game — it went red on a copy change that renamed a layer. Loosening
+  // the constant would buy a few months and teach nothing.
+  //
+  // So the claim is asserted STRUCTURALLY instead, and PAIRED: the inlined page
+  // must trip every check the shell must pass, or none of them discriminate.
+  const s = scriptOf(shell), inl = scriptOf(inlined);
+
+  assert.match(inl, /boot\(\{"game"/, 'the inlined page should carry its game as a literal');
+  assert.doesNotMatch(s, /boot\(\{/, 'the shell compiles a game into itself');
+
+  assert.match(inl, /"shifts":\[\{/, 'the inlined page should carry the shift charts');
+  assert.doesNotMatch(s, /"shifts":\[\{/, 'the shell carries an embedded feed');
+
+  // And the size gap is DERIVED from the artifact rather than chosen: the
+  // difference between the two pages is the game, so it must be the same order
+  // as the game. Half of it is a wide margin that still collapses to a failure
+  // the moment a game is compiled in.
+  const game = JSON.stringify(JSON.parse(
+    readFileSync(new URL('../data/rich.json', import.meta.url), 'utf8')));
+  assert.ok(inlined.length - shell.length > game.length / 2,
+    `the two pages differ by ${inlined.length - shell.length} bytes, `
+    + `against a game of ${game.length} — the shell may be carrying one`);
 });
 
 test('the no-network promise is enforced by the browser, not by a grep', () => {

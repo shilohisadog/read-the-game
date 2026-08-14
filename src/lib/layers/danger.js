@@ -7,6 +7,25 @@
  *
  * The exclusions carry the measurement, not just the verdict — "48 ft from the
  * net" teaches where the line is, "not high danger" teaches nothing.
+
+ * THE NAME CHANGED, AND THE REASON IS NOT COSMETIC.
+ *
+ * This was called "high-danger", which is a TERM OF ART already in use with
+ * definitions that are not ours. Ours is a pure location test — an unblocked
+ * shot (goal, shot on goal or miss) taken within 33 ft of the attacking net and
+ * inside ±22 ft of centre — with no rush bonus, no rebound bonus and no shot
+ * quality weighting. Published definitions elsewhere score attempts on a point
+ * system and adjust for those things, so our count will disagree with a count a
+ * curious reader looks up, and they will conclude we are WRONG rather than
+ * DIFFERENT. That is the exact opposite of what this site trades on (CHENG).
+ *
+ * "Shots from the slot" says what the rule does, a novice can picture it, and it
+ * borrows nobody's authority. "Chance" is avoided for the same reason
+ * "high-danger" is: "scoring chance" is loaded in the same way.
+ *
+ * The INTERNAL names stay — `isHighDangerEvent`, `isHighDanger`, `HIGH_DANGER_FT`
+ * are vocabulary between our own modules, and only the user-facing label makes a
+ * claim to a reader.
  */
 import { shootingTeam, SHOT_TYPES } from '../attribution.js';
 import { attackDirection, distanceToNet, HIGH_DANGER_FT, SLOT_HALF_WIDTH } from '../rink.js';
@@ -15,7 +34,7 @@ import { whyNotEven } from '../strength.js';
 
 export const danger = {
   id: 'danger',
-  label: '＋ High-danger',
+  label: '＋ Shots from the slot',
 
   reduce(events, ctx) {
     const counted = [], surprising = [], excluded = [];

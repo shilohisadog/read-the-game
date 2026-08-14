@@ -42,11 +42,11 @@ T=r'''<style>
 <div id="pc"><div class="wrap">
 <p class="eyebrow">Prototype C · goalies — real shots, real outcomes</p>
 <h1>The goalie view: who actually stole the game</h1>
-<p class="cap">Every dot is a <b>real shot on goal</b> at its <b>real coordinate</b> — <b class="k">saved</b> or a <b>goal</b>. No model, no estimate: just where each shot came from and what happened. The shaded slot is a <b>high-danger</b> zone we define geometrically (shown below), so you can see it, not trust it.</p>
+<p class="cap">Every dot is a <b>real shot on goal</b> at its <b>real coordinate</b> — <b class="k">saved</b> or a <b>goal</b>. No model, no estimate: just where each shot came from and what happened. The shaded area is the <b>slot</b>, which we define geometrically (shown below), so you can see it rather than trust it.</p>
 <p class="lede">Minnesota outshot Buffalo <b>35–25</b> and lost <b>2–3</b>. This is why: <b>Ukko-Pekka Levi stopped 33 of 35 (.943)</b> — he stole a game his team was outplayed in. The scoreboard says Buffalo was better; the goalie view says Buffalo's <em>goalie</em> was.</p>
 <div class="grid" id="grid"></div>
-<div class="legend"><span><i class="save"></i>save</span><span><i class="goal"></i>goal</span><span><i class="hdsw"></i>high-danger slot (dist ≤ 33 ft &amp; within the faceoff dots)</span></div>
-<p class="foot"><em>What it teaches:</em> shots aren't equal, and a hot goalie can flip a game the run-of-play "should" have decided — the single most important thing a novice can learn about why the score and the play often disagree. <em>Every number is real counts;</em> "high-danger" is a transparent geometric rule, not a black box.</p>
+<div class="legend"><span><i class="save"></i>save</span><span><i class="goal"></i>goal</span><span><i class="hdsw"></i>the slot (dist &le; 33 ft &amp; within the faceoff dots)</span></div>
+<p class="foot"><em>What it teaches:</em> shots aren't equal, and a hot goalie can flip a game the run-of-play "should" have decided — the single most important thing a novice can learn about why the score and the play often disagree. <em>Every number is a real count;</em> "the slot" is our own geometric rule, not a black box and not anybody else's statistic.</p>
 </div></div>
 <script>
 const G=__DATA__,R=G.roster;
@@ -80,7 +80,7 @@ function panel(gid){
      <div class="stat"><div class="v">${sog}</div><div class="l">shots faced</div></div>
      <div class="stat"><div class="v">${saves}</div><div class="l">saves</div></div>
      <div class="stat"><div class="v" style="color:var(--goal)">${goals}</div><div class="l">goals</div></div>
-     <div class="stat"><div class="v">${hdF}</div><div class="l">high-danger</div></div>
+     <div class="stat"><div class="v">${hdF}</div><div class="l">from the slot</div></div>
      <div class="stat"><div class="v">${hdS}</div><div class="l">HD saves</div></div>
      <div class="stat"><div class="v">${hdpct}</div><div class="l">HD save%</div></div>
    </div></div>`;

@@ -77,7 +77,7 @@ __PICKCSS__
 <div class="seats"><span class="sl">Your seat:</span><button class="sb" data-v="crease" aria-pressed="true">🥅 In the crease</button><button class="sb" data-v="net">Behind the net</button><button class="sb" data-v="glass">On the glass</button><button class="sb" data-v="center">Center ice</button><button class="sb" data-v="nose">Nosebleeds</button><button class="sb" data-v="tv">📺 TV angle</button></div>
 __PICKHTML__
 <div class="legend"><span><i class="k-s"></i>saved <span style="opacity:.7">(shooting)</span></span><span><i class="k-g"></i>goal <span style="opacity:.7">(arms up)</span></span><span>bigger = closer / more dangerous</span></div>
-<div class="ctl"><button id="play">&#9654; Play the shots</button><button id="reset">Reset view</button><button id="hd" aria-pressed="false">Highlight high-danger</button></div>
+<div class="ctl"><button id="play">&#9654; Play the shots</button><button id="reset">Reset view</button><button id="hd" aria-pressed="false">Highlight shots from the slot</button></div>
 <p class="foot"><em>Why it's honest:</em> the position of every mark is a real shot coordinate; the color is the real outcome. The mask cage is decorative. We show <em>where</em> and <em>what</em>, never a fabricated <em>how</em>. The little players are a friendly <b>marker</b> for “a shot came from here” — a character, not a claim about how anyone actually stood.</p>
 </div></div>
 <script>

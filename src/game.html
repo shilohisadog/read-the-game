@@ -28,7 +28,7 @@
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-WJXCwFOoTNaytVyKUSIP6i7psJ9LDkb7/KIac4BKuOA='; style-src 'sha256-lnrmibk1XRd4mSSsX6P2RhstUetji/NA/zTJVSQOhLk=' 'sha256-n+VPbxsmuUY6w2GNMvEYzr2RVzXBbD6WHSr8fpqnbIY='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-mwrY2cnnL4p5RosatjkZuFZ48uIUaPqXMUSW+PX8seY='; style-src 'sha256-lnrmibk1XRd4mSSsX6P2RhstUetji/NA/zTJVSQOhLk=' 'sha256-n+VPbxsmuUY6w2GNMvEYzr2RVzXBbD6WHSr8fpqnbIY='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">What is this?</a></nav></header>
@@ -219,7 +219,7 @@
 <div id="rg"><div class="wrap">
 <p class="eyebrow">Learn to read hockey · watch first, add metrics after</p>
 <h1>Watch the game</h1>
-<p class="lede">Press play and just <b>watch</b> — each play narrated in plain language, goals called with the <b>scorer and assists</b>, the pace easing for the big moments. That’s the base view. When you want to understand <em>why</em> a team is on top, <b>add a metric layer</b> below — control, high-danger chances, goaltending, or why play stopped. Nothing is invented; every layer shows its work.</p>
+<p class="lede">Press play and just <b>watch</b> — each play narrated in plain language, goals called with the <b>scorer and assists</b>, the pace easing for the big moments. That’s the base view. When you want to understand <em>why</em> a team is on top, <b>add a metric layer</b> below — control, shots from the slot, goaltending, or why play stopped. Nothing is invented; every layer shows its work.</p>
 <div class="board">
   <div class="tm a"><span class="ab" id="aAb">MIN</span><span class="sc" id="aSc">0</span></div>
   <div class="mid"><div class="gs"><span id="per">Pre-game</span> · <span class="cl" id="clk">20:00</span> <i class="clw">left</i></div>
@@ -238,7 +238,7 @@
   <button class="spd" id="sp0" aria-pressed="false">🐢 Slower</button><button class="spd" id="sp1" aria-pressed="true">Teaching</button><button class="spd" id="sp2" aria-pressed="false">Faster</button><button class="spd" id="lbl" aria-pressed="true">💬 Explain plays</button>
   <input class="scrub" id="scrub" type="range" min="0" max="1" value="0"><button id="work" aria-expanded="false">Show me the work</button></div>
 <div class="legend"><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white-filled, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span><i class="k-g"></i><i class="k-gv"></i>goal — either sweater</span><span style="color:var(--muted)">metric-specific marks appear when you add a layer</span></div>
-<div class="layers"><span class="ll">Add a metric layer:</span><button class="lyr" id="lyCorsi" aria-pressed="false">＋ Control (Corsi)</button><button class="lyr" id="lyHd" aria-pressed="false">＋ High-danger</button><button class="lyr" id="lyGoalie" aria-pressed="false">＋ Goaltending</button><button class="lyr" id="lyWhistle" aria-pressed="false">＋ Why play stopped</button></div>
+<div class="layers"><span class="ll">Add a metric layer:</span><button class="lyr" id="lyCorsi" aria-pressed="false">＋ Control (Corsi)</button><button class="lyr" id="lyHd" aria-pressed="false">＋ Shots from the slot</button><button class="lyr" id="lyGoalie" aria-pressed="false">＋ Goaltending</button><button class="lyr" id="lyWhistle" aria-pressed="false">＋ Why play stopped</button></div>
 <div class="figpick"><span class="ll">Trails:</span>
 <button class="lyr tbtn" data-t="off" aria-pressed="true">Current moment</button>
 <button class="lyr tbtn" data-t="all" aria-pressed="false">Keep every mark</button>
@@ -257,7 +257,7 @@ by the third period — good to study, busy to watch.</span></div>
 <p class="ends">A goaltender stands in each crease, in that team’s colour — and
 leaves when the feed says the goalie was pulled for an extra attacker. Ends are held
 fixed here, so each team always attacks the same net. In the arena they switch every period — this is the one thing on the rink we move, and the coordinates are the league’s own.</p>
-<div class="hint">Tip: click a ⚡ high-danger chance (amber ring) on the ice to see <b>why</b> it qualified — with trails set to <b>keep every mark</b>, earlier ones stay clickable too.</div>
+<div class="hint">Tip: click a ⚡ slot shot (amber ring) on the ice to see <b>why</b> it qualified — with trails set to <b>keep every mark</b>, earlier ones stay clickable too.</div>
 <div class="work" id="workPanel" hidden></div>
 <div class="whybk" id="whyBk"><div class="why" id="whyContent"></div></div>
 <p class="verdict" id="verdict"></p>
@@ -1157,6 +1157,25 @@ const goaltending = {
  *
  * The exclusions carry the measurement, not just the verdict — "48 ft from the
  * net" teaches where the line is, "not high danger" teaches nothing.
+
+ * THE NAME CHANGED, AND THE REASON IS NOT COSMETIC.
+ *
+ * This was called "high-danger", which is a TERM OF ART already in use with
+ * definitions that are not ours. Ours is a pure location test — an unblocked
+ * shot (goal, shot on goal or miss) taken within 33 ft of the attacking net and
+ * inside ±22 ft of centre — with no rush bonus, no rebound bonus and no shot
+ * quality weighting. Published definitions elsewhere score attempts on a point
+ * system and adjust for those things, so our count will disagree with a count a
+ * curious reader looks up, and they will conclude we are WRONG rather than
+ * DIFFERENT. That is the exact opposite of what this site trades on (CHENG).
+ *
+ * "Shots from the slot" says what the rule does, a novice can picture it, and it
+ * borrows nobody's authority. "Chance" is avoided for the same reason
+ * "high-danger" is: "scoring chance" is loaded in the same way.
+ *
+ * The INTERNAL names stay — `isHighDangerEvent`, `isHighDanger`, `HIGH_DANGER_FT`
+ * are vocabulary between our own modules, and only the user-facing label makes a
+ * claim to a reader.
  */
 
 
@@ -1165,7 +1184,7 @@ const goaltending = {
 
 const danger = {
   id: 'danger',
-  label: '＋ High-danger',
+  label: '＋ Shots from the slot',
 
   reduce(events, ctx) {
     const counted = [], surprising = [], excluded = [];
@@ -2441,13 +2460,13 @@ function render(i,newest){
  // 35-shot game look like a rate you could compare, which is the belief the
  // whole site exists to correct. One game is one game.
  const faced=st.f?`${st.s} of ${st.f}`:'—';
- return `<div class="gcard"><div class="gname" style="color:${col}">${p.nm} <span class="sub">${ab} · #${p.n}</span></div><div class="gsv">${faced}</div><div class="gline">${st.s} saves · ${st.gl} goals · ${st.f} shots faced (${MODE()})${st.hf?` · high-danger ${st.hs} of ${st.hf}`:''}<br><span class="lim">one game — what happened, not how unusual it was</span></div></div>`;}).join('');}
+ return `<div class="gcard"><div class="gname" style="color:${col}">${p.nm} <span class="sub">${ab} · #${p.n}</span></div><div class="gsv">${faced}</div><div class="gline">${st.s} saves · ${st.gl} goals · ${st.f} shots faced (${MODE()})${st.hf?` · from the slot ${st.hs} of ${st.hf}`:''}<br><span class="lim">one game — what happened, not how unusual it was</span></div></div>`;}).join('');}
  if(workOpen)renderWork(L,cur);
 }
 function flash(id){const el=$(id);el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump');}
 function caption(e,kind){const c=$('caption');const tid=e.own;const ab=tid===AID?AAB:HAB;const col=tid===AID?AWAYCOL:HOMECOL;
  const p=R[e.actor];const who=p?`<span class="num">#${p.n}</span>${p.nm}`:ab;
- const label=kind==='goal'?'🚨 GOAL':'⚡ High-danger chance';
+ const label=kind==='goal'?'🚨 GOAL':'⚡ Shot from the slot';
  c.innerHTML=`<span class="tag" style="background:${col};color:${inkOn(col)}">${ab}</span><b>${label}</b> · ${who}${kind==='hd'?' from the slot':''}`;
  c.classList.remove('on');void c.offsetWidth;c.classList.add('on');}
 let workOpen=false;
@@ -2575,13 +2594,13 @@ function showWhy(idx){const e=EV[idx];if(e==null||e.x==null)return;
    <line x1="${HX(e.x).toFixed(1)}" y1="${HY(e.y).toFixed(1)}" x2="95" y2="42.5" stroke="var(--ink)" stroke-dasharray="2 1.5" stroke-width=".7"/>
    <circle cx="${HX(e.x).toFixed(1)}" cy="${HY(e.y).toFixed(1)}" r="2.8" fill="${col}" stroke="#fff" stroke-width=".7"/>
    <text x="${Math.min(HX(e.x)+4,78).toFixed(1)}" y="${(HY(e.y)-2.5).toFixed(1)}" font-size="4.2" fill="var(--ink)" font-weight="700">${Math.round(dist)} ft</text></svg>`;
- $('whyContent').innerHTML=`<div class="whyhd" style="background:${col};color:${inkOn(col)}"><div><div class="t">${isGoal?'🚨 A high-danger GOAL':'⚡ Why this was high-danger'}</div>
+ $('whyContent').innerHTML=`<div class="whyhd" style="background:${col};color:${inkOn(col)}"><div><div class="t">${isGoal?'🚨 A GOAL from the slot':'⚡ Why this counts as a slot shot'}</div>
    <div class="s">${p?'#'+p.n+' '+p.nm:ab} · ${ab} · P${e.per} ${e.rem} · ${e.type.replace(/-/g,' ')}</div></div><button class="whyclose" onclick="hideWhy()">✕</button></div>
   <div class="whybody"><div class="whydiag">${diag}</div>
    <div class="factor"><span class="fv">${Math.round(dist)} ft</span><span class="fl">Distance to the net — <b>close</b>. Our rule: ≤ 33 ft. <span class="chk">✓</span></span></div>
    <div class="factor"><span class="fv">${Math.round(angle)}°</span><span class="fl">Angle off straight-on — ${angle<22?'<b>a clean look</b> at the net':'a slot-area angle'}. Lower = more net to shoot at.</span></div>
    <div class="factor" style="border-bottom:0"><span class="fv">${inSlot?'Slot':'Wide'}</span><span class="fl">Lateral position — ${inSlot?'<b>in the slot</b> (within the faceoff dots) <span class="chk">✓</span>':'outside the slot'}</span></div>
-   <div class="whyrule"><b>The rule, and you can check it:</b> a shot is <b>high-danger</b> when it's <b>≤ 33 ft from the net</b> AND <b>central</b> (within ±22 ft of the middle — the slot). Both true here. This is a <b>transparent geometric rule</b> — a teaching stand-in for "dangerous," not a trained expected-goals model. Measure it yourself on the diagram.</div></div>`;
+   <div class="whyrule"><b>The rule, and you can check it:</b> a shot counts as <b>from the slot</b> when it is <b>≤ 33 ft from the net</b> AND <b>within ±22 ft of the middle</b>. Both true here. This is <b>our own geometric rule</b>, not a model and not anybody else's statistic — it says where the shot came from, and nothing about how likely it was to go in. Measure it yourself on the diagram.</div></div>`;
  $('whyBk').classList.add('on');}
 function hideWhy(){$('whyBk').classList.remove('on');}
 $('events').addEventListener('click',ev=>{const t=ev.target;if(t&&t.dataset&&t.dataset.i!=null){const k=+t.dataset.i;if(hdOn&&isHD(EV[k]))showWhy(k);}});
@@ -2625,7 +2644,7 @@ function drawLabel(e){const g=$('labels');const p=place(e);if(!labelsOn||!p){g.i
  // wear the same one, so the label says whose play it was rather than leaving
  // the answer to a hue. Costs nothing and works without colour vision.
  const lab=e.own===AID?AAB:e.own===HID?HAB:null;
- const hd=(hdOn&&isHD(e))?' · high-danger':'';
+ const hd=(hdOn&&isHD(e))?' · from the slot':'';
  g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${lab?lab+" · ":""}${info[0]}${hd}</text><text class="plabsub" x="${tx.toFixed(1)}" y="${(ty+3.7).toFixed(1)}" text-anchor="${anc}">${info[1]}</text></g>`;}
 $('lbl').addEventListener('click',()=>{labelsOn=!labelsOn;$('lbl').setAttribute('aria-pressed',labelsOn);$('lbl').style.opacity=labelsOn?'1':'.5';drawLabel(EV[i]);});
 
@@ -2685,7 +2704,7 @@ function drawWhistles(W){
 
 let corsiOn=false,hdOn=false,goalieOn=false,whistleOn=false;
 function setCorsi(){document.getElementById('rg').classList.toggle('corsi',corsiOn);$('lyCorsi').setAttribute('aria-pressed',corsiOn);$('lyCorsi').textContent=(corsiOn?'✓ ':'＋ ')+'Control (Corsi)';if(!corsiOn&&workOpen){workOpen=false;$('workPanel').hidden=true;$('work').setAttribute('aria-expanded',false);$('work').textContent='Show me the work';}}
-function setHd(){$('lyHd').setAttribute('aria-pressed',hdOn);$('lyHd').textContent=(hdOn?'✓ ':'＋ ')+'High-danger';render(i,false);}
+function setHd(){$('lyHd').setAttribute('aria-pressed',hdOn);$('lyHd').textContent=(hdOn?'✓ ':'＋ ')+'Shots from the slot';render(i,false);}
 $('lyCorsi').addEventListener('click',()=>{corsiOn=!corsiOn;setCorsi();});
 // One code path owns the mode label, so the markup cannot drift from the state.
 // The static HTML carries a default only so the page reads correctly before JS.
