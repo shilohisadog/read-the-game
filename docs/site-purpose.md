@@ -303,7 +303,55 @@ uninterpretable without knowing how far apart the clubs are; the honest form
 states the spread — *"52.1%, and the 32 clubs run from 46.8 to 54.3"* — which is
 distance from normal WITH its scale, and still supplies no inference.
 
-### 7.3 How thin is too thin, measured instead of chosen
+### 7.3 What goes on the card: the same three things the game page teaches
+
+Kevin: *"Don't forget high danger scoring chances and goalie information too."*
+
+Adding them gives the card a property worth naming, because it answers "which
+categories?" without anyone choosing: **the card carries the same three layers
+the game page already teaches — control, high-danger chances, goaltending — at
+season scale.** A fan learns the three watching one game and then meets the same
+three for their next opponent. No fourth concept to explain, no new analysis
+tier, and nothing on the card that the site has not already taught how to read.
+
+Each has one hazard, and they are different hazards.
+
+**Control** — the least dangerous. Counts and a position, per §7.1–§7.2.
+
+**High-danger chances** — the danger is the NAME, not the number. It is a
+transparent geometric rule (within 33 ft of the net and inside ±22 ft of centre),
+not a trained model, and a reader who meets "high-danger chances: 214" on a card
+will read it as expected goals unless told otherwise. `read-the-game.html` already
+says this in the why-popup — *"a teaching stand-in for 'dangerous', not a trained
+expected-goals model"* — and that provenance has to travel WITH the number onto
+the card, not live one page away. This is the `display:` provenance category from
+`docs/site-chrome.md` §12.1 doing real work: a statement about how *we* defined
+something rather than about what happened.
+
+**Goaltending** — the noisiest thing on the card, and the one with an ambiguity
+underneath it. "Goalie information" for a *team* is not one number: clubs use two
+or three, and **we must not name a probable starter.** That is a prediction, and
+it depends on news we do not hold and would not be allowed to invent. So the
+honest form is per goaltender, each with their own fraction and their own games
+played — *"saved 412 of 450 across 17 starts"* — never a bare `.916`, and never
+a team save percentage that silently pools a starter with a backup who played
+twice.
+
+The old goalie card's `thin = f < 20` is the precedent here: a chosen cutoff that
+dissolved the moment the fraction was shown instead. Same answer applies.
+
+**And nothing may combine them.** Save percentage adjusted for high-danger
+workload is a model, however reasonable it sounds, and it is exactly the line
+`DOCTRINE.md` draws. The three sit beside each other and the reader does whatever
+joining they wish.
+
+**Cost:** `measure.mjs` writes `sog`, `attempts` and `level` per game and nothing
+else, so danger and goaltending are new fields there. Both come from modules that
+already exist (`danger.js`, `goaltending.js`) and both are store-to-store, so it
+is **one derive run and no re-fetch** — the same price every extract change has
+paid.
+
+### 7.4 How thin is too thin, measured instead of chosen
 
 The remaining question is when any of this is worth showing at all, and a
 minimum-games threshold would be a parameter with no source in the data — the
