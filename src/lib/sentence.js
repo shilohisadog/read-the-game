@@ -181,5 +181,12 @@ export function sentenceFor(o) {
     rate: `Of the games where a team led that count by ${level} or more, it lost `
         + `${row.count} of ${row.n}.`,
     absent: null,
+    // THE ROW THAT PRODUCED THE SENTENCE, handed back rather than looked up
+    // again by the caller. The game page draws this rate as well as saying it,
+    // and the alternative was either a second `curve.find` on the page — one
+    // domain rule in two places, which is the shape this project keeps removing
+    // — or pulling all of archive.js into the game bundle for five lines.
+    // Callers that only want the prose can ignore it; nothing may recompute it.
+    row,
   };
 }

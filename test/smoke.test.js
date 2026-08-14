@@ -85,6 +85,23 @@ function makeDom() {
   return { document, nodes };
 }
 
+/**
+ * Drive the app to the final event, the way a viewer who watched it would.
+ *
+ * The page now BOOTS AT THE OPENING FACEOFF rather than the final whistle
+ * (Kevin: defaulting to the end spoils the surprise), so first paint is
+ * legitimately all zeros. The golden numbers below are still the point of this
+ * file, so they are asserted after a full render at the END — which is the same
+ * claim the old test made, reached deliberately instead of by accident of where
+ * the app happened to start.
+ */
+function toEnd(nodes) {
+  const scrub = nodes.el('scrub');
+  scrub.value = String(scrub.max);
+  scrub.oninput({ target: { value: scrub.value } });
+  return nodes;
+}
+
 function run() {
   const { document, nodes } = makeDom();
   const noop = () => {};
@@ -103,12 +120,24 @@ test('the app executes without throwing', () => {
   assert.doesNotThrow(run, 'the bundle must run, not merely parse');
 });
 
-test('first paint puts the right numbers in the DOM', () => {
-  // The app ends with set(EV.length-1) -- a full render at the end of the game.
-  // Same numbers the golden fixture pins, read off the elements a viewer looks
-  // at. String() because the app assigns numbers to textContent, and a real DOM
-  // would coerce them.
+test('first paint is the OPENING faceoff, not the final score', () => {
+  // The page used to open on the last event, so the final score and the finished
+  // counters were on screen before a viewer pressed anything. This pins the new
+  // behaviour rather than leaving it to be re-broken quietly.
   const n = run();
+  assert.equal(String(n.get('cA').textContent), '0', 'a counter is already running');
+  assert.equal(String(n.get('cH').textContent), '0');
+  assert.equal(String(n.get('aSc').textContent), '0', 'the score is already shown');
+  assert.equal(String(n.get('hSc').textContent), '0');
+  assert.equal(String(n.el('scrub').value), '0', 'the scrubber is not at the start');
+});
+
+test('a full render at the end puts the right numbers in the DOM', () => {
+  // Same claim the old 'first paint' test made — a complete render producing the
+  // golden numbers — now reached deliberately rather than by accident of where
+  // the app happened to start. String() because the app assigns numbers to
+  // textContent, and a real DOM would coerce them.
+  const n = toEnd(run());
   assert.equal(String(n.get('cA').textContent), '80', 'MIN attempts counter');
   assert.equal(String(n.get('cH').textContent), '55', 'BUF attempts counter');
   assert.equal(String(n.get('aSc').textContent), '2', 'MIN score');
@@ -135,7 +164,7 @@ test('the scrubber is wired to the timeline', () => {
 test('turning on the Control layer renders the ledger, and it reconciles', () => {
   // Exercises the path behind the button, which is where renderWork lives and
   // where Phase 2's ledger is actually shown to anyone.
-  const n = run();
+  const n = toEnd(run());   // these read a WATCHED game, so drive it there
   n.get('lyCorsi').click();   // add the Control layer
   n.get('work').click();      // then open "Show me the work"
   const w = String(n.get('workPanel').innerHTML);
@@ -165,7 +194,7 @@ test('the strength filter moves the numbers on screen, with the mode attached', 
   // The end-to-end proof of docs/strength-filter.md: all situations by default,
   // even-strength on demand, and the label travelling WITH the number so it
   // cannot be screenshotted away from its scope.
-  const n = run();
+  const n = toEnd(run());   // these read a WATCHED game, so drive it there
   assert.equal(String(n.get('cA').textContent), '80', 'opens at all situations');
   assert.equal(String(n.get('mA').textContent), 'ALL SITUATIONS', 'and says so');
 
@@ -179,7 +208,7 @@ test('the strength filter moves the numbers on screen, with the mode attached', 
 });
 
 test('the ledger explains the filtered-out attempts, on screen', () => {
-  const n = run();
+  const n = toEnd(run());   // these read a WATCHED game, so drive it there
   n.get('lyCorsi').click();
   n.get('work').click();
   n.get('#rg .sbtn[1]').click();
@@ -195,7 +224,7 @@ test('the ledger explains the filtered-out attempts, on screen', () => {
 });
 
 test('the clock shows time remaining, not elapsed', () => {
-  const n = run();
+  const n = toEnd(run());   // these read a WATCHED game, so drive it there
   // The last PLAYABLE event, not the period-end marker -- so a small remainder
   // rather than 00:00, and certainly not the 19:58 an elapsed clock would show.
   assert.equal(String(n.get('per').textContent), 'Period 3');

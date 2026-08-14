@@ -27,7 +27,7 @@ test('the shell and the inlined page are the same renderer', () => {
   // boot's last statement rather than on a brace: the shell's tail contains its
   // own closing braces, so `lastIndexOf('}')` lands inside the bootstrap and
   // compares the wrong thing. (It did, on the first run of this test.)
-  const END = 'drawRink();set(EV.length-1,false);';
+  const END = 'drawRink();set(0,false);';
   const body = s => {
     const at = s.indexOf(END);
     assert.notEqual(at, -1, 'boot must still end where this test thinks it does');

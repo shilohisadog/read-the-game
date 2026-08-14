@@ -19,14 +19,21 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 D = json.loads((ROOT / "data" / "goalie_sub.json").read_text())
 
 T = r"""<style>
-#gv{--bg:#05090e;--ink:#e9f0f6;--muted:#8ba0ae;--save:#4aa3e0;--goal:#ff4d5e;--ice:#16extcc;
- font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:radial-gradient(120% 90% at 50% 0%,#0d1a26,#05090e 65%);color:var(--ink);min-height:100vh;padding:clamp(16px,3.5vw,32px) clamp(12px,4vw,20px)}
+/* THE PAGE IS THE SITE'S; THE CANVAS IS THE ARENA'S.
+   This view was a black page with dark chrome, which read as a different site
+   from every other page (Kevin). The document now carries the same palette as
+   the homepage and the game page -- same ground, same ink, same edges -- and the
+   canvas keeps its dark arena, because that is a rendered scene rather than page
+   furniture. A first-person view out of a lit room into a dark rink is the
+   arrangement a television gives you. */
+#gv{--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;--save:#2a6ea8;--goal:#c02338;
+ font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;padding:clamp(16px,3.5vw,32px) clamp(12px,4vw,20px)}
 #gv .wrap{max-width:920px;margin:0 auto}
 #gv .eyebrow{font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
 #gv h1{font-size:clamp(1.5rem,3.4vw,2.1rem);letter-spacing:-.02em;font-weight:800;margin:0 0 8px}
 #gv .cap{font-size:.9rem;color:var(--muted);margin:0 0 14px;max-width:66ch}#gv .cap b{color:var(--ink);font-weight:600}
 #gv .pick{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
-#gv .gb{font:inherit;font-size:.85rem;font-weight:700;border-radius:9px;border:1px solid #24384a;background:#0e1b27;color:var(--muted);padding:9px 15px;cursor:pointer}
+#gv .gb{font:inherit;font-size:.85rem;font-weight:700;border-radius:9px;border:1px solid var(--edge);background:#fff;color:var(--muted);padding:9px 15px;cursor:pointer}
 #gv .gb[aria-pressed="true"]{color:#fff}
 #gv .gb.min[aria-pressed="true"]{border-color:#34d399;color:#34d399}#gv .gb.buf[aria-pressed="true"]{border-color:#f3c249;color:#f3c249}
 #gv .stat{margin-left:auto;font-size:.82rem;color:var(--muted)}#gv .stat b{color:var(--ink);font-family:ui-monospace,Menlo,monospace;font-size:1.1rem}
@@ -41,12 +48,13 @@ T = r"""<style>
 #gv .k-s{background:var(--save)}#gv .k-g{background:var(--goal)}
 #gv .foot{font-size:.77rem;color:var(--muted);margin-top:13px;max-width:66ch}#gv .foot em{font-style:normal;color:var(--ink)}
 #gv .ctl{display:flex;gap:10px;margin-top:12px;align-items:center;flex-wrap:wrap}
-#gv .ctl button{font:inherit;font-size:.8rem;font-weight:600;border-radius:8px;border:1px solid #24384a;background:#0e1b27;color:var(--ink);padding:8px 12px;cursor:pointer}
+#gv .ctl button{font:inherit;font-size:.8rem;font-weight:600;border-radius:8px;border:1px solid var(--edge);background:#fff;color:var(--ink);padding:8px 12px;cursor:pointer}
+#gv .ctl button#play{background:var(--ink);color:#fff;border-color:var(--ink);font-size:.88rem;padding:10px 18px}
 
 #gv .seats{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:13px}
 #gv .seats .sl{font-size:.8rem;color:var(--muted);font-weight:700}
-#gv .sb{font:inherit;font-size:.82rem;font-weight:600;border-radius:8px;border:1px solid #24384a;background:#0e1b27;color:var(--muted);padding:8px 12px;cursor:pointer}
-#gv .sb[aria-pressed="true"]{border-color:#4aa3e0;color:#fff;background:#12283a}
+#gv .sb{font:inherit;font-size:.82rem;font-weight:600;border-radius:8px;border:1px solid var(--edge);background:#fff;color:var(--muted);padding:8px 12px;cursor:pointer}
+#gv .sb[aria-pressed="true"]{border-color:var(--ink);color:#fff;background:var(--ink)}
 __PICKCSS__
 </style>
 <div id="gv"><div class="wrap">
@@ -69,7 +77,7 @@ __PICKCSS__
 <div class="seats"><span class="sl">Your seat:</span><button class="sb" data-v="crease" aria-pressed="true">🥅 In the crease</button><button class="sb" data-v="net">Behind the net</button><button class="sb" data-v="glass">On the glass</button><button class="sb" data-v="center">Center ice</button><button class="sb" data-v="nose">Nosebleeds</button><button class="sb" data-v="tv">📺 TV angle</button></div>
 __PICKHTML__
 <div class="legend"><span><i class="k-s"></i>saved <span style="opacity:.7">(shooting)</span></span><span><i class="k-g"></i>goal <span style="opacity:.7">(arms up)</span></span><span>bigger = closer / more dangerous</span></div>
-<div class="ctl"><button id="reset">Reset view</button><button id="hd" aria-pressed="false">Highlight high-danger</button></div>
+<div class="ctl"><button id="play">&#9654; Play the shots</button><button id="reset">Reset view</button><button id="hd" aria-pressed="false">Highlight high-danger</button></div>
 <p class="foot"><em>Why it's honest:</em> the position of every mark is a real shot coordinate; the color is the real outcome. The mask cage is decorative. We show <em>where</em> and <em>what</em>, never a fabricated <em>how</em>. The little players are a friendly <b>marker</b> for “a shot came from here” — a character, not a claim about how anyone actually stood.</p>
 </div></div>
 <script>
@@ -86,7 +94,19 @@ function proj(d,w,hgt){let vd=d-cam.d,vw=w-cam.w,vh=hgt-cam.h;
  if(d2<1.2)return null;return{x:cx+FOCAL*w2/d2,y:cy-FOCAL*h2/d2,s:FOCAL/d2,depth:d2};}
 function line(d1,w1,d2,w2,col,wd){const a=proj(d1,w1,0),b=proj(d2,w2,0);if(!a||!b)return;ctx.strokeStyle=col;ctx.lineWidth=wd||1;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}
 function dist(x,y){return Math.hypot(89-Math.abs(x),y);}
-function shots(){const gid=D.goalies[gi];return D.gshots.filter(s=>s.g===gid).map(s=>({d:89-Math.abs(s.x),w:s.y,out:s.out,hd:dist(s.x,s.y)<=33&&Math.abs(s.y)<=22,sh:s.sh}));}
+/* EVERY SHOT THIS GOALIE FACED, IN THE ORDER THEY CAME.
+   `gshots` is written in event order by the extract, so index order is the order
+   they were taken. Nothing is sorted here; the drawing pass sorts a COPY
+   far-to-near for the painter's algorithm, which is a fact about painting and
+   must not be confused with a fact about time. */
+function allShots(){const gid=D.goalies[gi];return D.gshots.filter(s=>s.g===gid).map(s=>({d:89-Math.abs(s.x),w:s.y,out:s.out,hd:dist(s.x,s.y)<=33&&Math.abs(s.y)<=22,sh:s.sh}));}
+/* THE ICE STARTS EMPTY. It opened with every shot already on it -- "a mass of
+   figures in front of the goalie which doesn't create any interest" (Kevin) --
+   which is the same defect the game page had by opening on the final whistle:
+   arriving at the finished picture is arriving after the thing you came for.
+   `shown` is how many have been faced so far, and it starts at zero. */
+let shown=0;
+function shots(){return allShots().slice(0,shown);}
 function draw(){ctx.clearRect(0,0,W,H);
  // ice fill (trapezoid to horizon)
  const c=[proj(0,-42.5,0),proj(120,-42.5,0),proj(120,42.5,0),proj(0,42.5,0)].filter(Boolean);
@@ -108,9 +128,17 @@ function draw(){ctx.clearRect(0,0,W,H);
  // crease hint at feet
  const cr=proj(3,0,0);if(cr){ctx.strokeStyle='#5aa0d055';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(cr.x,cr.y,cr.s*3,cr.s*1.1,0,Math.PI,2*Math.PI);ctx.stroke();}
 }
-function updStat(){const gid=D.goalies[gi],p=R[gid],ab=p.tid===MINID?'MIN':'BUF';const S=D.gshots.filter(s=>s.g===gid);
+/* THE LINE IS BUILT, NOT ANNOUNCED. It used to print the goalie's finished
+   save percentage while the ice was still filling, which is the finished number
+   sitting above an unfinished picture. It now counts only what has been faced,
+   so a viewer watches the same arithmetic the main app's goalie cards show --
+   and a fraction, never a bare percentage, until there is something to divide. */
+function updStat(){const gid=D.goalies[gi],p=R[gid],ab=p.tid===MINID?'MIN':'BUF';const S=shots();
  const sv=S.filter(s=>s.out==='save').length,gl=S.filter(s=>s.out==='goal').length,f=sv+gl;
- document.getElementById('stat').innerHTML=`${p.nm} (${ab}) faced <b>${f}</b> · saved <b>${sv}</b> · sv% <b>${(sv/f).toFixed(3).replace(/^0/,'')}</b>`;
+ const total=allShots().length;
+ document.getElementById('stat').innerHTML=f
+   ? `${p.nm} (${ab}) has faced <b>${f}</b> of ${total} · saved <b>${sv}</b> of ${f}`
+   : `${p.nm} (${ab}) — ${total} shots to come. Press play.`;
  document.getElementById('g0').textContent=R[D.goalies[0]].nm; document.getElementById('g1').textContent=R[D.goalies[1]].nm;
  for(const[id,k]of[['g0',0],['g1',1]]){const b=document.getElementById(id);const t=R[D.goalies[k]].tid;b.className='gb '+(t===MINID?'min':'buf');b.setAttribute('aria-pressed',k===gi);}
 }
@@ -118,8 +146,21 @@ let drag=false,px,py;
 cv.addEventListener('pointerdown',e=>{drag=true;px=e.clientX;py=e.clientY;cv.setPointerCapture(e.pointerId);});
 cv.addEventListener('pointermove',e=>{if(!drag)return;cam.yaw=Math.max(-0.9,Math.min(0.9,cam.yaw+(e.clientX-px)*0.004));cam.pitch=Math.max(-0.25,Math.min(0.4,cam.pitch-(e.clientY-py)*0.003));px=e.clientX;py=e.clientY;draw();});
 cv.addEventListener('pointerup',()=>drag=false);
-document.getElementById('g0').onclick=()=>{gi=0;updStat();setView(seat);};
-document.getElementById('g1').onclick=()=>{gi=1;updStat();setView(seat);};
+/* Switching goalies resets the count: the two faced different shots, and
+   carrying one's progress onto the other's ice would be a number about nobody. */
+document.getElementById('g0').onclick=()=>{gi=0;rewind();};
+document.getElementById('g1').onclick=()=>{gi=1;rewind();};
+let shotTimer=null;
+function rewind(){clearTimeout(shotTimer);shotTimer=null;shown=0;setPlayLabel();updStat();setView(seat);}
+function setPlayLabel(){const b=document.getElementById('play');const n=allShots().length;
+ b.textContent=shotTimer?'\u23F8 Pause':(shown>=n?'\u25B6 Replay the shots':'\u25B6 Play the shots');}
+function stepShot(){const n=allShots().length;
+ if(shown>=n){clearTimeout(shotTimer);shotTimer=null;setPlayLabel();return;}
+ shown++;updStat();draw();shotTimer=setTimeout(stepShot,420);setPlayLabel();}
+document.getElementById('play').onclick=()=>{
+ if(shotTimer){clearTimeout(shotTimer);shotTimer=null;setPlayLabel();return;}
+ if(shown>=allShots().length)shown=0;
+ stepShot();};
 document.getElementById('reset').onclick=()=>setView('crease');
 document.getElementById('hd').onclick=()=>{hdOn=!hdOn;document.getElementById('hd').setAttribute('aria-pressed',hdOn);draw();};
 addEventListener('resize',()=>{fit();draw();});
@@ -132,7 +173,7 @@ document.querySelectorAll('#gv .sb').forEach(b=>b.addEventListener('click',()=>s
 __FIGURES__
 __PICKJS__
 let raf;function loop(){T+=0.04;draw();raf=requestAnimationFrame(loop);}
-fit();updStat();setView('crease');loop();
+fit();setPlayLabel();updStat();setView('crease');loop();
 </script>"""
 
 html = (T.replace("__DATA__", json.dumps(D, separators=(",", ":")))

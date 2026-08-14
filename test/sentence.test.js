@@ -240,3 +240,24 @@ test('why the comparison is missing is the caller\'s fact, not a default', () =>
   const failed = say({ curve: null });
   assert.match(failed.absent, /could not be loaded/, 'and the default still covers a real failure');
 });
+
+test('the row that produced the sentence is handed back, never re-derived', () => {
+  // The game page draws this rate as well as saying it. The alternatives were a
+  // second `curve.find` on the page — one domain rule in two places, which is the
+  // shape this project keeps removing — or pulling all of archive.js into the
+  // game bundle for five lines.
+  const r = say({});
+  assert.deepEqual(r.row, { k: 12, n: 708, count: 243 });
+  // And the row must be the one the SENTENCE used, not merely a row: the prose
+  // says 243 of 708, so anything else here is two numbers for one fact.
+  assert.match(r.rate, new RegExp(`${r.row.count} of ${r.row.n}`));
+
+  // NO ROW WHERE THERE IS NO RATE — every branch that suppresses the comparison
+  // must suppress the picture too, or the page draws a chart of nothing.
+  for (const o of [{ diff: 0 }, { curve: null }, { gameId: 2023010001 },
+                   { diff: 9, curve: [{ k: 9, n: 0, count: 0 }] }]) {
+    const x = say(o);
+    assert.equal(x.rate, null, 'fixture no longer suppresses the rate');
+    assert.ok(!x.row || !x.row.n, `a row survived on a game with no rate: ${JSON.stringify(x.row)}`);
+  }
+});

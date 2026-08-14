@@ -49,7 +49,7 @@ T = r"""<style>
 #rg svg{display:block;width:100%;height:auto}
 #rg .boards{fill:var(--ice);stroke:var(--edge);stroke-width:1.1}
 #rg .ln{fill:none;stroke-linecap:round}#rg .ln.red{stroke:var(--red);stroke-width:.7;opacity:.42}#rg .ln.blue{stroke:var(--blue);stroke-width:.9;opacity:.42}#rg .ln.thick{stroke-width:1.1;opacity:.52}
-#rg .nextup{display:flex;flex-wrap:wrap;gap:9px;margin:16px 0 4px;padding-top:15px;border-top:1px solid var(--edge)}
+#rg .nextup{display:flex;flex-wrap:wrap;justify-content:center;gap:9px;margin:16px 0 4px;padding-top:15px;border-top:1px solid var(--edge)}
 #rg .nextup a{display:inline-block;padding:9px 14px;border-radius:9px;border:1px solid var(--edge);background:#fff;color:var(--ink);text-decoration:none;font-weight:650;font-size:.9rem}
 #rg .nextup a:hover,#rg .nextup a:focus{border-color:var(--ink)}
 #rg .nextup a .sw{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:7px;vertical-align:baseline}
@@ -106,9 +106,33 @@ T = r"""<style>
 #rg .wc{background:#f2f7fa;border:1px solid var(--edge);border-radius:10px;padding:13px}#rg .wc h3{margin:0 0 6px;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);display:flex;justify-content:space-between}#rg .wc h3 .n{font-family:ui-monospace,Menlo,monospace;font-size:1.2rem;color:var(--ink);font-weight:700}#rg .wc.flag{border-color:#e6b98f}#rg .wc.flag h3 .n{color:var(--flag)}#rg .wc p{margin:0;font-size:.87rem}
 #rg .wfoot{margin-top:13px;font-size:.8rem;color:var(--muted);border-top:1px solid var(--edge);padding-top:11px}#rg .wfoot em{font-style:normal;color:var(--ink)}
 #rg .foot{font-size:.78rem;color:var(--muted);margin-top:16px;text-align:center}
-#rg .verdict{max-width:62ch;margin:20px auto 0;font-size:.95rem;line-height:1.55;text-align:center}
-#rg .verdict .lead{color:var(--ink)}#rg .verdict b{font-weight:700}
-#rg .verdict .rate{display:block;margin-top:7px;font-size:.85rem;color:var(--muted)}
+/* THE GAME SUMMARY, GIVEN A SURFACE (Kevin liked it and could not find it).
+   It was a small centred paragraph in muted type, sitting between the ledger and
+   the footer -- the one sentence on the page that says what the game WAS, styled
+   like a caption. It is a card now, and it stays at the BOTTOM: it names the
+   result, and the same afternoon we stopped the page opening on the final
+   whistle would be a poor time to move the outcome above the rink. */
+#rg .verdict{max-width:56ch;margin:22px auto 0;background:#fff;border:1px solid var(--edge);
+ border-radius:13px;padding:17px 20px 18px;box-shadow:0 4px 16px rgba(16,32,45,.06);
+ font-size:.95rem;line-height:1.55}
+#rg .verdict .vk{display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);font-weight:700;margin-bottom:8px}
+#rg .verdict .lead{color:var(--ink);font-size:1.02rem}#rg .verdict b{font-weight:700}
+#rg .verdict .rate{display:block;margin-top:9px;font-size:.85rem;color:var(--muted)}
+/* THE REFERENCE CLASS, DRAWN. "Of the games where a team led that count by 12 or
+   more, it lost 243 of 708" is a true sentence a reader has to do arithmetic on
+   to feel (Kevin asked for a visual, not more words). One dot on a 0-100 track
+   with 50% marked -- the same idiom the homepage uses for the three base rates,
+   so the site has ONE way of showing a rate rather than two.
+   The two conditions carry over: no connecting line (there is nothing to connect
+   -- it is a single point), and the fraction stays printed beside it. */
+#rg .vscale{margin:11px 0 2px}
+#rg .vtrack{position:relative;height:14px;border-radius:7px;background:#e6edf3}
+#rg .vhalf{position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;background:var(--muted);opacity:.55}
+#rg .vpt{position:absolute;top:50%;width:13px;height:13px;border-radius:50%;transform:translate(-50%,-50%);
+ border:2px solid #fff;box-shadow:0 1px 3px rgba(16,32,45,.3);background:#1f7a4d}
+#rg .vpt.hi{background:#b3341f}
+#rg .vends{display:flex;justify-content:space-between;font-size:.7rem;color:var(--muted);margin-top:4px}
 #rg text{font-family:ui-monospace,Menlo,monospace}
 @media(prefers-reduced-motion:reduce){#rg *{animation:none!important;transition:none!important}}
 
@@ -701,9 +725,19 @@ $('gl').textContent=`${AAB} at ${HAB}${WHEN?' · '+WHEN:''} · final ${AAB} ${fi
    noCurveReason:RATES===undefined
      ?'this page carries a single game and makes no network requests'
      :undefined});
- const p=[`<span class="lead">${V.lead}</span>`];
+ const p=[`<span class="vk">What this game was</span>`,
+          `<span class="lead">${V.lead}</span>`];
  if(V.rate)p.push(`<span class="rate">${V.rate}</span>`);
  if(V.absent)p.push(`<span class="rate">${V.absent}</span>`);
+ // THE RATE, DRAWN AS WELL AS SAID. Only when there IS one: an absent
+ // comparison gets its sentence and no picture, because a track with no dot on
+ // it would be a chart of nothing.
+ if(V.rate&&V.row&&V.row.n){
+  const pct=V.row.count/V.row.n*100;
+  p.push(`<span class="vscale"><span class="vtrack"><span class="vhalf"></span>`
+   + `<span class="vpt${pct>50?' hi':''}" style="left:${pct.toFixed(1)}%"></span></span>`
+   + `<span class="vends"><span>0% — that team always won</span>`
+   + `<span>always lost — 100%</span></span></span>`);}
  $('verdict').innerHTML=p.join('');})();
 /**
  * WHERE TO GO NEXT, AND IT IS ABOUT THIS GAME.
@@ -891,7 +925,17 @@ function setGoalie(){document.getElementById('rg').classList.toggle('goalie',goa
 $('lyGoalie').addEventListener('click',()=>{goalieOn=!goalieOn;setGoalie();});
 function setWhistle(){document.getElementById('rg').classList.toggle('whistle',whistleOn);$('lyWhistle').setAttribute('aria-pressed',whistleOn);$('lyWhistle').textContent=(whistleOn?'✓ ':'＋ ')+'Why play stopped';render(i,false);}
 $('lyWhistle').addEventListener('click',()=>{whistleOn=!whistleOn;setWhistle();});
-drawRink();set(EV.length-1,false);
+/* THE GAME OPENS AT THE OPENING FACEOFF.
+   It used to open on the LAST event, which put the final score, the finished
+   counters and -- on a shootout game -- the shootout notice on screen before a
+   viewer had pressed anything. "Defaulting to the end kinda spoils the surprise"
+   (Kevin), and it is worse than a spoiler on a replay site: the whole product is
+   watching a count get MADE, and arriving at the made count is arriving after
+   the thing you came for.
+   It also fixes the shootout narrative appearing first on game 2025021235 --
+   that notice belongs at the end of the replay because that is when it happens,
+   and it was only ever early because the page started there. */
+drawRink();set(0,false);
 }
 __BOOT__
 </script>"""

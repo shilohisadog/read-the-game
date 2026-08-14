@@ -272,23 +272,16 @@ BODY = r"""<div class="wrap">
      them: 54.5% sits on the OTHER SIDE OF 50% from 39.6%. The heading is now
      the finding and the numbers are what backs it, rather than data followed by
      an explanation in small grey type. -->
-<h2 id="what">Which number you count changes the answer</h2>
-<p class="lede" id="thesis">__THESIS__</p>
-<div class="scale" id="scale" hidden></div>
-<ul class="rates" id="rates"><li>Reading the archive&hellip;</li></ul>
-
 <h2 id="teams-h">Watch your team</h2>
 <p class="note">Every game each club played, newest first. Arizona became Utah in
 2024 &mdash; both are here, because both played.</p>
 <div class="teams" id="teams"></div>
-<p class="start"><a id="start" href="game.html">New to hockey? Start with the game above &rarr;</a></p>
+<p class="start"><a id="start" href="game.html">New to hockey? Start with the game at the top &rarr;</a></p>
 
 <h2>What this does and does not claim</h2>
 <ul class="limits">
 __LIMITS__
 </ul>
-
-<p class="state" id="state" data-state="empty">Checking how current this data is&hellip;</p>
 
 <h2>Workshop</h2>
 <p class="note">Earlier views, each answering a question the main app does not.
@@ -296,6 +289,14 @@ They are explorations, not front doors, and several are pinned to one game.</p>
 <div class="grid">
 __WORKSHOP__
 </div>
+
+<h2 id="what">Which number you count changes the answer</h2>
+<p class="lede" id="thesis">__THESIS__</p>
+<div class="scale" id="scale" hidden></div>
+<ul class="rates" id="rates"><li>Reading the archive&hellip;</li></ul>
+
+<p class="state" id="state" data-state="empty">Checking how current this data is&hellip;</p>
+
 
 <footer>
 <p>Play-by-play, shift and boxscore data for NHL games, retrieved from the

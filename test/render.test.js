@@ -82,13 +82,17 @@ function fakeDom() {
  * which is the only way to put a matchup this page was never built around
  * (two clubs wearing the same hex) through the real renderer.
  */
-function boot(game) {
+function boot(game, rates) {
   const dom = fakeDom();
   const b = new Function('document', 'matchMedia', 'setTimeout', 'clearTimeout',
                          'localStorage', SCRIPT + '\nreturn boot;')(
     dom.document, () => ({ matches: true }), () => 0, () => {},
     { getItem: () => null, setItem: () => {} });
-  if (game) b(game);
+  // `rates` is what the SHELL fetches and the inlined page never has. Without it
+  // this harness can only ever see the "no comparison shown" branch, which is
+  // how a test for the drawn rate first went red against a page structurally
+  // incapable of having one.
+  if (game || rates) b(game || rich, rates);
   const scrub = dom.$('scrub');
   assert.ok(+scrub.max > 100, `the reference game should have hundreds of plays, not ${scrub.max}`);
   return {
@@ -864,4 +868,47 @@ test('the game page offers a way onward, and it is about THIS game', () => {
   assert.equal(colours.length, 2);
   assert.equal(new Set(colours).size, 2, 'both teams painted the same colour');
   assert.ok(colours.includes(colourOf(home)) && colours.includes(colourOf(away)));
+});
+
+test('the game summary is a card, and its rate is DRAWN as well as said', () => {
+  // Kevin: the summary is the best thing on the page and nobody can find it. It
+  // was a small centred paragraph in muted type between the ledger and the
+  // footer. And "Of the games where a team led that count by 12 or more, it lost
+  // 243 of 708" is a true sentence a reader has to do arithmetic on to feel — so
+  // it gets one dot on a 0–100 track with 50% marked, the same idiom the
+  // homepage uses, rather than a second visual language for the same kind of
+  // number.
+  // The reference game's level-control differential, and a curve row for it. The
+  // shell fetches this; the inlined page never does, so it is supplied here.
+  const CURVE = [{ k: 12, n: 708, count: 243 }, { k: 1, n: 3855, count: 1527 }];
+  const a = boot(rich, { levelCurve: CURVE });
+  const v = a.$('verdict').innerHTML;
+  assert.match(v, /class="vk">What this game was</, 'the card does not say what it is');
+  assert.match(v, /class="lead"/);
+
+  const pt = v.match(/class="vpt[^"]*" style="left:([\d.]+)%"/);
+  assert.ok(pt, 'the rate is stated but never drawn');
+  // THE DOT IS THE FRACTION IN THE SENTENCE. Read both out of the markup and
+  // reconcile them, so a dot that drifts from its own prose fails here.
+  const frac = v.match(/it lost (\d+) of (\d+)/);
+  assert.ok(frac, 'the fraction left the sentence');
+  assert.equal(pt[1], (+frac[1] / +frac[2] * 100).toFixed(1),
+    'the dot sits somewhere the sentence does not say');
+  assert.match(v, /class="vhalf"/, '50% is not marked, which is the whole point of the track');
+
+  // NO CONNECTING LINE — one point cannot have one, and the rule that forbids it
+  // on the homepage is the same rule here.
+  for (const tag of ['line', 'path', 'polyline'])
+    assert.doesNotMatch(v, new RegExp(`<${tag}\\b`), `the card drew a <${tag}>`);
+});
+
+test('a game with no comparison gets no picture of one', () => {
+  // The absent branch: a preseason game keeps its own numbers, is told why there
+  // is no rate, and must not be given a track with nothing on it.
+  const g = JSON.parse(JSON.stringify(rich));
+  g.game = { ...(g.game || {}), id: 2023010001 };          // preseason
+  const v = boot(g).$('verdict').innerHTML;
+  assert.match(v, /No comparison shown — this is a preseason game/);
+  assert.doesNotMatch(v, /class="vtrack"/, 'an empty track was drawn anyway');
+  assert.match(v, /class="vk">What this game was</, 'and the card still says what it is');
 });
