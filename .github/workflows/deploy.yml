@@ -533,22 +533,18 @@ jobs:
       # stayed green through all three, because the fake document the unit tests
       # run against has no CSS and no layout.
       #
-      # THIS IS NOT A GATE YET, AND SAYING SO IS THE POINT. `continue-on-error`
-      # is on and every assertion is a WARNING. Two versions of this step have
-      # now gone red in CI with "the probe never reported", at every width,
-      # while the identical shell body -- extracted from this file and run
-      # against the local build with chromium standing in for google-chrome --
-      # passes, rejects a deliberately fixed-size scoreboard, and rejects its own
-      # canary. The difference is in the runner and I do not have it yet, so this
-      # run exists to PRINT THE DOM rather than to judge it.
+      # IT TOOK TWO RED DEPLOYS AND A DIAGNOSTIC RUN TO GET HERE, and the cause
+      # was not the probe, the nesting, or the browser. It was the PORT: the step
+      # at "a page nobody can style" already runs `http.server 8098` and never
+      # stops it, so this step's own server died with EADDRINUSE (silenced by
+      # `>/dev/null 2>&1`) and Chrome dutifully measured 404s from somebody
+      # else's directory. I had copied the port from that step without checking
+      # it was free.
       #
-      # A step that cannot fail must never be described as protection. What
-      # actually holds the line today is test/render.test.js, which pins the
-      # mechanism (min(Xvw,<today>) chrome, a bounded flex column, the media
-      # query) and was mutation-checked six ways. That is weaker than pixels and
-      # it is what we have until this step earns its exit code back.
-      - name: (diagnostic) what the front door's preview measures
-        continue-on-error: true
+      # So it uses its own port AND PROVES THE SERVER IS ITS OWN before believing
+      # anything, because "a server answered" and "my server answered" are
+      # different facts and only one of them was true.
+      - name: the front door's preview fits its frame
         run: |
           cd phone
           mkdir -p extract
@@ -557,15 +553,20 @@ jobs:
           g=[x for x in json.load(open('catalog.json'))['games'] if x.get('v') and x.get('t') in (2,3)]
           g.sort(key=lambda x:(x['d'],x['id']))
           print(g[-1]['id'])")
+          # A real extract, because the shell fetches its game and a page that
+          # failed to load renders NO PREVIEW AT ALL: boot() never runs, the
+          # preview class is never added, and the probe reports tidy numbers for
+          # the error state. `cls` is therefore checked before any geometry.
           curl -sS --fail "https://data.readthegame.co/extract/$ID.json" -o "extract/$ID.json"
-          ls -l extract/ | tail -2
           echo "  newest viewable game is $ID"
 
-          cat > prev.html <<HTML
+          for box in 287x184 856x462 canary:287x60; do
+            wh=${box##*:}; W=${wh%x*}; H=${wh#*x}
+            cat > "prev-$W-$H.html" <<HTML
           <!doctype html><html><head><meta charset="utf-8"><title>pending</title></head>
           <body style="margin:0">
           <iframe id="f" src="game.html?game=$ID&preview=1"
-                  style="width:287px;height:184px;border:0"></iframe>
+                  style="width:${W}px;height:${H}px;border:0"></iframe>
           <script>
           window.onerror = function (m) { document.title = 'PREVERR ' + m; };
           setTimeout(function () {
@@ -580,39 +581,67 @@ jobs:
           }, 6000);
           </script></body></html>
           HTML
+          done
 
-          # THE FIRST DIAGNOSTIC ANSWERED THE QUESTION AND IT WAS NOT THE PROBE:
-          # 404 on prev.html, on game.html and on the extract. Chrome was fine;
-          # it was handed a server with nothing behind it. So this run says
-          # WHERE it is and WHAT it can see, and stops hiding the server's own
-          # complaint -- `>/dev/null 2>&1` would have swallowed "Address already
-          # in use", which is the leading candidate given the step above runs a
-          # server too.
-          echo "  --- where am I ---"
-          pwd
-          ls -1 | head -20
-          echo "  --- starting the server (stderr NOT suppressed) ---"
-          python3 -m http.server 8098 >server.log 2>&1 &
+          PORT=8123
+          SENTINEL="mine-${GITHUB_RUN_ID}.txt"
+          echo "$GITHUB_RUN_ID" > "$SENTINEL"
+          python3 -m http.server "$PORT" >server.log 2>&1 &
           sleep 3
-          cat server.log || true
-          ss -ltnp 2>/dev/null | grep -E ':(8098|8099)' || echo "    nothing listening on 8098/8099"
-          echo "  --- does the server serve the page and the game? ---"
-          curl -sS -o /dev/null -w "    prev.html %{http_code}\n" http://localhost:8098/prev.html
-          curl -sS -o /dev/null -w "    game.html %{http_code}\n" http://localhost:8098/game.html
-          curl -sS -o /dev/null -w "    extract   %{http_code}\n" "http://localhost:8098/extract/$ID.json"
-          echo "  --- chrome version ---"
-          google-chrome --version || true
-          echo "  --- dumped DOM, first 700 chars ---"
-          google-chrome --headless --no-sandbox --disable-gpu \
-            --virtual-time-budget=20000 --dump-dom \
-            "http://localhost:8098/prev.html" 2>&1 | head -c 700
-          echo
-          echo "  --- any PREV token found ---"
-          google-chrome --headless --no-sandbox --disable-gpu \
-            --virtual-time-budget=20000 --dump-dom \
-            "http://localhost:8098/prev.html" 2>/dev/null | grep -o 'PREV[A-Z]* [^<]*' | head -3 \
-            || echo "    none"
+          # THE CHECK THAT WOULD HAVE SAVED TWO DEPLOYS. A file only this run
+          # wrote, in the directory this run means to serve.
+          if [ "$(curl -sS "http://localhost:$PORT/$SENTINEL" || true)" != "$GITHUB_RUN_ID" ]; then
+            echo "::error::port $PORT is not serving this step's directory — something else holds it"
+            cat server.log || true
+            ss -ltnp 2>/dev/null | grep ":$PORT" || true
+            exit 1
+          fi
+
+          fail=0
+          for box in 287x184 856x462 canary:287x60; do
+            kind=${box%%:*}; [ "$kind" = "$box" ] && kind=real
+            wh=${box##*:}; W=${wh%x*}; H=${wh#*x}
+            dom=$(google-chrome --headless --no-sandbox --disable-gpu \
+                    --virtual-time-budget=15000 --dump-dom \
+                    "http://localhost:$PORT/prev-$W-$H.html" 2>/dev/null)
+            read -r _ cls fw fh sw sh bh <<<"$(echo "$dom" \
+                 | grep -o 'PREV [a-z]* [0-9]* [0-9]* [0-9]* [0-9]* [0-9]*' | head -1)" || true
+            if [ -z "$bh" ]; then
+              echo "::error::the preview probe never reported at ${W}x${H}"
+              echo "$dom" | grep -o 'PREV[A-Z]* [^<]*' | head -2 || true
+              fail=1; continue
+            fi
+            if [ "$cls" != "preview" ]; then
+              echo "::error::at ${W}x${H} the frame is not in preview mode (#rg class \"$cls\") — it never booted"
+              fail=1; continue
+            fi
+            bad=0
+            [ "$sw" -gt $((fw + 1)) ] && bad=1
+            [ "$sh" -gt $((fh + 1)) ] && bad=1
+            # THE SCOREBOARD MAY NOT EAT THE ICE. It was 87px of a 155px frame on
+            # a phone (56%) while being 87px of 462px on a desktop -- the same
+            # absolute height in both, which was the whole defect. A third is
+            # generous and still catches that by a wide margin.
+            [ $((bh * 3)) -gt "$fh" ] && bad=1
+            if [ "$kind" = canary ]; then
+              # The mutation, and the step FAILS IF IT PASSES. Three greens are
+              # otherwise indistinguishable from a probe measuring nothing --
+              # which is exactly what the first two versions of this step did.
+              if [ "$bad" = 1 ]; then
+                echo "  canary: ${bh}px of chrome in a ${fh}px frame correctly rejected — this gate can fail"
+              else
+                echo "::error::the canary was accepted — this gate cannot detect a crowded frame"
+                fail=1
+              fi
+              continue
+            fi
+            echo "  ${W}x${H}: content needs ${sw}x${sh}, scoreboard ${bh}px"
+            [ "$sw" -gt $((fw + 1)) ] && { echo "::error::the preview scrolls sideways inside its own frame"; fail=1; }
+            [ "$sh" -gt $((fh + 1)) ] && { echo "::error::the preview is taller than its frame — the rink is cropped"; fail=1; }
+            [ $((bh * 3)) -gt "$fh" ] && { echo "::error::the scoreboard is ${bh}px of a ${fh}px frame — over a third of the taste is chrome"; fail=1; }
+          done
           kill %1 2>/dev/null || true
+          exit $fail
 
       - name: a visitor can actually watch a game
         run: |
