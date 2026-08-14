@@ -530,22 +530,26 @@ jobs:
       # inside it, or cropped by the frame's height, costs the outer page not one
       # pixel of width. Three separate renderings of this feature shipped broken
       # -- a blur, a crop, and a scoreboard eating 56% of a phone frame -- and
-      # every test in the suite stayed green through all three, because the fake
-      # document the unit tests run against has no CSS and no layout.
+      # the whole suite stayed green through all three, because the fake document
+      # the unit tests run against has no CSS and no layout.
       #
-      # So this reaches INTO the frame and asks it about itself. The width is
-      # imposed by an outer iframe for the same reason as the step above:
-      # headless Chrome enforces a minimum window width and would otherwise
-      # grade a screen wider than the one this claims.
+      # ONE LEVEL OF NESTING, DELIBERATELY. The first version of this step framed
+      # index.html and reached through it into the hero -- two nested iframes,
+      # the inner one `loading=lazy` and below the fold. It worked locally and
+      # reported nothing at all in CI, twice, and chasing that difference is a
+      # CI round-trip per guess. So this frames game.html's preview directly at
+      # the box the homepage would give it. Which ratio the homepage uses is a
+      # separate claim and is asserted in test/render.test.js; this step asks
+      # only whether the page FITS the box it is handed, which is what broke.
       - name: the front door's preview fits its frame
         run: |
           cd phone
-          # `extract/` and a real game, because the shell fetches its game and a
-          # page that failed to load renders NO PREVIEW AT ALL -- boot() never
-          # runs, the preview class is never added, and the probe would report
-          # tidy numbers for the error state. That is exactly what happened while
-          # this check was being developed locally: three "no change" runs after
-          # a real CSS edit, on a page that had never started.
+          # A real extract, because the shell fetches its game and a page that
+          # failed to load renders NO PREVIEW AT ALL: boot() never runs, the
+          # preview class is never added, and the probe reports tidy numbers for
+          # the error state. That happened while this was being written locally
+          # -- three "no change" runs after a real CSS edit, on a page that had
+          # never started -- which is why `cls` is checked before anything else.
           mkdir -p extract
           ID=$(python3 -c "
           import json
@@ -555,58 +559,72 @@ jobs:
           curl -sS --fail "https://data.readthegame.co/extract/$ID.json" -o "extract/$ID.json"
           echo "  newest viewable game is $ID"
 
-          for W in 360 1100; do
-            cat > "prev-$W.html" <<HTML
+          # w:h pairs. The first two are the hero's real box at a phone and a
+          # desktop; the third is the CANARY -- the same width in a third of the
+          # height, which MUST trip the chrome check. Without it, three greens
+          # are indistinguishable from a probe that measures nothing, and the
+          # sibling step above went green once while grading the wrong screen.
+          for box in 287x184 856x462 canary:287x60; do
+            name=${box%%:*}; [ "$name" = "$box" ] && name=box
+            wh=${box##*:}; W=${wh%x*}; H=${wh#*x}
+            cat > "prev-$W-$H.html" <<HTML
           <!doctype html><html><head><meta charset="utf-8"><title>pending</title></head>
           <body style="margin:0">
-          <iframe id="f" src="index.html" style="width:${W}px;height:1200px;border:0"></iframe>
+          <iframe id="f" src="game.html?game=$ID&preview=1"
+                  style="width:${W}px;height:${H}px;border:0"></iframe>
           <script>
           setTimeout(function () {
-            var outer = document.getElementById('f').contentDocument;
-            var hero = outer.querySelector('.heroframe iframe');
-            if (!hero) { document.title = 'PREV none 0 0 0 0 0 0'; return; }
-            var d = hero.contentDocument, w = hero.contentWindow;
-            var rg = d.getElementById('rg');
-            var board = d.querySelector('.board');
-            var r = board ? Math.round(board.getBoundingClientRect().height) : 0;
+            var f = document.getElementById('f'), d = f.contentDocument, w = f.contentWindow;
+            var rg = d.getElementById('rg'), b = d.querySelector('.board');
             document.title = 'PREV ' + (rg ? (rg.className || 'noclass') : 'norg') + ' ' +
               w.innerWidth + ' ' + w.innerHeight + ' ' +
-              d.documentElement.scrollWidth + ' ' + d.documentElement.scrollHeight + ' ' + r;
-          }, 9000);
-          </script>
-          </body></html>
+              d.documentElement.scrollWidth + ' ' + d.documentElement.scrollHeight + ' ' +
+              (b ? Math.round(b.getBoundingClientRect().height) : 0);
+          }, 6000);
+          </script></body></html>
           HTML
           done
 
           python3 -m http.server 8098 >/dev/null 2>&1 &
           sleep 2
           fail=0
-          for W in 360 1100; do
+          for box in 287x184 856x462 canary:287x60; do
+            kind=${box%%:*}; [ "$kind" = "$box" ] && kind=real
+            wh=${box##*:}; W=${wh%x*}; H=${wh#*x}
             dom=$(google-chrome --headless --no-sandbox --disable-gpu \
-                    --virtual-time-budget=20000 --dump-dom \
-                    "http://localhost:8098/prev-$W.html" 2>/dev/null)
-            read -r _ cls fw fh sw sh bh <<<"$(echo "$dom" | grep -o 'PREV [a-z]* [0-9]* [0-9]* [0-9]* [0-9]* [0-9]*' | head -1)"
+                    --virtual-time-budget=15000 --dump-dom \
+                    "http://localhost:8098/prev-$W-$H.html" 2>/dev/null)
+            read -r _ cls fw fh sw sh bh <<<"$(echo "$dom" \
+                 | grep -o 'PREV [a-z]* [0-9]* [0-9]* [0-9]* [0-9]* [0-9]*' | head -1)" || true
             if [ -z "$bh" ]; then
-              echo "::error::the preview probe never reported at ${W}px"; fail=1; continue
+              echo "::error::the preview probe never reported at ${W}x${H}"; fail=1; continue
             fi
-            # WITHOUT THIS THE REST MEANS NOTHING. A page that failed to fetch its
-            # game has no preview class, lays out as an ordinary error page, and
-            # would sail through every measurement below.
             if [ "$cls" != "preview" ]; then
-              echo "::error::at ${W}px the hero frame is not in preview mode (#rg class \"$cls\") — it never booted"
+              echo "::error::at ${W}x${H} the frame is not in preview mode (#rg class \"$cls\") — it never booted"
               fail=1; continue
             fi
-            echo "  ${W}px: frame ${fw}x${fh}, content needs ${sw}x${sh}, scoreboard ${bh}px"
+            bad=0
+            [ "$sw" -gt $((fw + 1)) ] && bad=1
+            [ "$sh" -gt $((fh + 1)) ] && bad=1
+            # THE SCOREBOARD MAY NOT EAT THE ICE. It was 87px of a 155px frame on
+            # a phone (56%) while being 87px of 462px on a desktop -- the same
+            # absolute height in both, which was the whole defect. A third is
+            # generous and still catches that by a wide margin.
+            [ $((bh * 3)) -gt "$fh" ] && bad=1
+            if [ "$kind" = canary ]; then
+              # The mutation, and the step FAILS IF IT PASSES.
+              if [ "$bad" = 1 ]; then
+                echo "  canary: ${bh}px of chrome in a ${fh}px frame correctly rejected — this gate can fail"
+              else
+                echo "::error::the canary was accepted — this gate cannot detect a crowded frame"
+                fail=1
+              fi
+              continue
+            fi
+            echo "  ${W}x${H}: content needs ${sw}x${sh}, scoreboard ${bh}px"
             [ "$sw" -gt $((fw + 1)) ] && { echo "::error::the preview scrolls sideways inside its own frame"; fail=1; }
             [ "$sh" -gt $((fh + 1)) ] && { echo "::error::the preview is taller than its frame — the rink is cropped"; fail=1; }
-            # THE SCOREBOARD IS NOT ALLOWED TO EAT THE ICE. It was 87px of a
-            # 155px frame on a phone (56%) while being 87px of 462px on a desktop
-            # -- the same absolute height in both, which is the whole defect. A
-            # third is generous and still catches that by a wide margin.
-            if [ $((bh * 3)) -gt "$fh" ]; then
-              echo "::error::the scoreboard is ${bh}px of a ${fh}px frame — over a third of the taste is chrome"
-              fail=1
-            fi
+            [ $((bh * 3)) -gt "$fh" ] && { echo "::error::the scoreboard is ${bh}px of a ${fh}px frame — over a third of the taste is chrome"; fail=1; }
           done
           kill %1 2>/dev/null || true
           exit $fail
