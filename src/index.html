@@ -28,7 +28,7 @@
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-jWdl6dzjQMxx3gT9xLcTxktRd8qLfXPNISg+lEAqowU='; style-src 'sha256-lnrmibk1XRd4mSSsX6P2RhstUetji/NA/zTJVSQOhLk=' 'sha256-iDzEV0KlQYDlRexuu1OGLmS4827pp/pwooksC8B/Nso='; connect-src 'self' https://data.readthegame.co; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-t6x2lJ5ZR7UFQO4hSMjFWHy9qHgbhv3DQ0aKNELoqPw='; style-src 'sha256-lnrmibk1XRd4mSSsX6P2RhstUetji/NA/zTJVSQOhLk=' 'sha256-C/JWXk91HnC4NGoRTZqfc2Qnb6EgloRbCmJJ1zOEED0='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -132,6 +132,12 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
  padding:18px 20px 20px;margin:0 0 26px;box-shadow:0 4px 16px rgba(16,32,45,.06)}
 .herokick{margin:0 0 7px;font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;
  color:var(--muted);font-weight:700}
+/* The frame carries the rink's own aspect, so it does not letterbox on a phone
+   or crop on a desktop. 200x85 is the rink; the scoreboard above it takes the
+   rest, measured from the rendered page rather than guessed. */
+.heroframe{margin:0 0 13px;background:var(--ice);border:1px solid var(--edge);
+ border-radius:10px;overflow:hidden}
+.heroframe iframe{display:block;width:100%;aspect-ratio:200/108;border:0}
 .heroline{margin:0 0 6px;font-size:1.22rem;line-height:1.35;font-weight:700;max-width:34ch}
 .herosub{margin:0 0 15px;font-size:.9rem;color:var(--muted);max-width:56ch}
 .herogo{display:inline-block;background:var(--ink);color:#fff;text-decoration:none;
@@ -203,10 +209,16 @@ footer p{margin:0 0 8px}
        LOST, sorted by edge) and the catalog is fetched anyway for the grid. So
        this costs zero extra requests and cannot go stale. -->
   <div class="hero" id="hero" hidden>
-    <p class="herokick">One game from the archive</p>
+    <p class="herokick">The most recent game in the archive</p>
+    <!-- THE REAL RENDERER, FRAMED. Not a recorded video: no binary asset to go
+         stale, no media-src in the policy, nothing to re-record when the rink
+         changes, and every mark still traces to a recorded event. The frame is
+         created in script AFTER the catalog says which game is newest, which
+         also means it never loads for a visitor who does not reach it. -->
+    <div class="heroframe" id="heroframe"></div>
     <p class="heroline" id="heroline"></p>
     <p class="herosub" id="herosub"></p>
-    <a class="herogo" id="herogo" href="game.html">Watch it happen &rarr;</a>
+    <a class="herogo" id="herogo" href="game.html">Watch the whole game &rarr;</a>
   </div>
 </main>
 
@@ -994,22 +1006,60 @@ function summarise(records) {
      catalog is already in memory for the grid, so the opponent, the date and
      the score cost nothing. A hero compiled into this builder would be the same
      defect as the hard-coded date we pulled out of game.html. */
-  function drawHero(m, cat) {
-    if (!m || !m.featured || !m.featured.length) return;
-    var f = m.featured[0], g = null;
-    for (var i = 0; i < cat.games.length; i++) {
-      if (cat.games[i].id === f.id) { g = cat.games[i]; break; }
+  /* THE MOST RECENT GAME, NOT THE SHARPEST ONE.
+     The hero used to be `featured[0]` -- the archive's largest level-control
+     upset -- and only 2 games in 4,119 clear that threshold, so the slot would
+     have read "19 February 2024" for years. A rule that updates twice per three
+     seasons is a literal with extra steps, which is the exact defect
+     docs/homepage.md §1 flagged in the hard-coded hero before it.
+     Recency is MORE deterministic, not less: it is the same rule the game page
+     already uses to choose a game, it cannot be typed, and it refreshes itself
+     nightly with no deploy. And choosing what to SHOW by date biases no
+     measurement -- the base rates still run over all 4,119 in-scope games, and
+     nothing is computed from the selection. */
+  function newest(games) {
+    var v = games.filter(function (g) { return g.v && inScope(g.id); });
+    if (!v.length) return null;
+    v.sort(function (a, b) { return a.d === b.d ? a.id - b.id : (a.d < b.d ? -1 : 1); });
+    return v[v.length - 1];
+  }
+
+  function drawHero(cat) {
+    var g = newest((cat && cat.games) || []);
+    if (!g) return;
+
+    /* THE FIVE-SECOND TASTE, and it is this site's own renderer in a frame.
+       Created here rather than in the markup so it cannot load for a visitor who
+       never gets a game, and so the id comes from the catalog instead of being
+       typed. */
+    var f = document.createElement('iframe');
+    f.src = 'game.html?game=' + g.id + '&preview=1';
+    f.setAttribute('title', 'A few seconds of ' + g.a + ' at ' + g.h + ', playing');
+    f.setAttribute('loading', 'lazy');
+    f.setAttribute('scrolling', 'no');
+    f.setAttribute('tabindex', '-1');
+    $('heroframe').appendChild(f);
+
+    $('heroline').textContent = g.a + ' ' + g.as + ', ' + g.h + ' ' + g.hs
+      + ' — ' + when(g.d);
+
+    /* THE SHOT LINE, AND IT IS SAID BOTH WAYS ROUND. This is the site's thesis
+       at its smallest: the team with more shots on goal lost 45.8% of the time,
+       so whether the shot leader won or lost, the sentence is the same shape and
+       the reader is not being shown only the surprising half. Showing the
+       comparison only when it is striking is what Doctrine §9 calls selective
+       honesty -- worse than none, because it looks rigorous.
+       Everything here is a catalog field. No extra request, nothing modelled. */
+    var lead = g.ash === g.hsh ? null : (g.ash > g.hsh ? g.a : g.h);
+    var won = g.as === g.hs ? null : (g.as > g.hs ? g.a : g.h);
+    if (lead == null) {
+      $('herosub').textContent = 'Both teams put ' + g.ash + ' shots on goal.';
+    } else {
+      var hi = Math.max(g.ash, g.hsh), lo = Math.min(g.ash, g.hsh);
+      $('herosub').textContent = lead + ' put more shots on goal, ' + hi + ' to ' + lo
+        + ', and ' + (won === null ? 'the game was level' : (won === lead ? 'won' : 'lost')) + '.';
     }
-    if (!g || !g.v) return;
-    var lost = f.ab === g.h ? g.a : g.h;
-    var ours = f.ab === g.h ? g.hs : g.as, theirs = f.ab === g.h ? g.as : g.hs;
-    $('heroline').textContent = f.ab + ' controlled play and lost.';
-    /* NO CAUSAL CONNECTIVE, and no adjective about how unusual it was. The
-       numbers say the size; the sentence only says what happened. */
-    $('herosub').textContent = f.ab + ' led the count of even-strength attempts taken '
-      + 'while the score was level by ' + f.edge + ', and lost to ' + lost + ' '
-      + theirs + '–' + ours + ' on ' + when(g.d) + '.';
-    $('herogo').href = 'game.html?game=' + f.id;
+    $('herogo').href = 'game.html?game=' + g.id;
     $('hero').hidden = false;
   }
 
@@ -1030,7 +1080,7 @@ function summarise(records) {
         drawGrid(games);
         /* ONLY ON THE FRONT DOOR. A fan who asked for BUF is not looking for a
            Dallas game; the hero exists for the visitor who has not chosen. */
-        drawHero(measures, cat);
+        drawHero(cat);
       }
       drawRates(measures);
       var s = describe(index, new Date().toISOString());

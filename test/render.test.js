@@ -82,12 +82,15 @@ function fakeDom() {
  * which is the only way to put a matchup this page was never built around
  * (two clubs wearing the same hex) through the real renderer.
  */
-function boot(game, rates) {
+function boot(game, rates, search = '') {
   const dom = fakeDom();
+  // `location` is part of the environment this bundle runs in — the preview loop
+  // and the shell's game selector both read the query string — so the fake
+  // models it rather than the code defending against its absence.
   const b = new Function('document', 'matchMedia', 'setTimeout', 'clearTimeout',
-                         'localStorage', SCRIPT + '\nreturn boot;')(
+                         'localStorage', 'location', SCRIPT + '\nreturn boot;')(
     dom.document, () => ({ matches: true }), () => 0, () => {},
-    { getItem: () => null, setItem: () => {} });
+    { getItem: () => null, setItem: () => {} }, { search });
   // `rates` is what the SHELL fetches and the inlined page never has. Without it
   // this harness can only ever see the "no comparison shown" branch, which is
   // how a test for the drawn rate first went red against a page structurally
@@ -911,4 +914,43 @@ test('a game with no comparison gets no picture of one', () => {
   assert.match(v, /No comparison shown — this is a preseason game/);
   assert.doesNotMatch(v, /class="vtrack"/, 'an empty track was drawn anyway');
   assert.match(v, /class="vk">What this game was</, 'and the card still says what it is');
+});
+
+test('PREVIEW hides everything but the game, and plays by itself', () => {
+  // The homepage had no motion at all, on a site whose product is animation, so
+  // a visitor had to click through to discover the thing existed (CHENG). This
+  // is the five-second taste — and it is an iframe of THIS renderer rather than
+  // a recorded video, so there is no second drawing path to keep in step.
+  const a = boot(rich, null, '?game=2023020204&preview=1');
+  assert.ok(a.$('rg').classList.contains('preview'), 'the preview class never went on');
+
+  // ONE RENDERER STILL: preview must be a class and a loop, not a different
+  // drawing path. The rink and the marks are drawn by exactly the same code, so
+  // they are present as usual.
+  assert.match(a.$('rink').innerHTML, /class="mesh"/, 'the rink is not drawn in preview');
+  assert.ok(a.$('netmen').innerHTML.length > 0, 'the goaltenders are missing');
+
+  // And the ordinary page is NOT in preview, which is the paired half.
+  const plain = boot();
+  assert.equal(plain.$('rg').classList.contains('preview'), false);
+});
+
+test('the preview asks for nothing it does not show', () => {
+  // measures.json exists to feed the verdict card, and the card is hidden in
+  // preview — so fetching it would be a request on a homepage for bytes nobody
+  // reads. Asserted against the shell's bootstrap, which is where the fetching
+  // lives.
+  const shell = readFileSync(new URL('../src/game.html', import.meta.url), 'utf8');
+  assert.match(shell, /preview=1[^}]*\{boot\(g,null\);return null;\}/,
+    'the preview still fetches the archive-wide measurement');
+});
+
+test('the preview is hidden by CSS, not by deleting the app', () => {
+  // If preview removed elements rather than hiding them, every other test in
+  // this file would be asserting against a page that no longer exists in the
+  // shipped bundle. Pin the mechanism: one rule, hiding the controls.
+  const hides = app.match(/#rg\.preview [^{]*\{display:none!important\}/);
+  assert.ok(hides, 'preview does not hide the controls with CSS');
+  for (const cls of ['.transport', '.layers', '.verdict', '.nextup', '.lede'])
+    assert.ok(hides[0].includes(cls), `preview leaves ${cls} on screen`);
 });

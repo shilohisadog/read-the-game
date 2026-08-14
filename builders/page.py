@@ -77,6 +77,11 @@ def csp(html, *, connect):
         f"script-src {h(r'<script>(.*?)</script>')}",
         f"style-src {h(r'<style>(.*?)</style>')}",
         f"connect-src 'self' {connect}",
+        # The homepage frames the game page for its five-second preview, and
+        # `frame-src` has no fallback to default-src -- 'none' would block it.
+        # `frame-ancestors 'self'` is the other half and is a tightening: nobody
+        # else's page may put this one in a frame.
+        "frame-src 'self'", "frame-ancestors 'self'",
         "base-uri 'none'", "form-action 'none'",
     ])
 

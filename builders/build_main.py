@@ -49,6 +49,22 @@ T = r"""<style>
 #rg svg{display:block;width:100%;height:auto}
 #rg .boards{fill:var(--ice);stroke:var(--edge);stroke-width:1.1}
 #rg .ln{fill:none;stroke-linecap:round}#rg .ln.red{stroke:var(--red);stroke-width:.7;opacity:.42}#rg .ln.blue{stroke:var(--blue);stroke-width:.9;opacity:.42}#rg .ln.thick{stroke-width:1.1;opacity:.52}
+/* PREVIEW: THE FIVE-SECOND TASTE, AND IT IS THE REAL RENDERER.
+   The homepage had no motion at all, on a site whose product is animation, so a
+   visitor had to click through to discover the thing existed (CHENG). This is
+   that taste -- and it is an iframe of THIS page rather than a recorded video:
+   no binary asset to go stale, no media-src in the policy, nothing to re-record
+   when the rink changes, and every mark still traces to a recorded event. It is
+   not a trailer for the product, it is the product.
+   ONE RENDERER, still. Preview is a class on #rg and a play loop; there is no
+   second drawing path and nothing here is reimplemented. */
+#rg.preview .lede,#rg.preview h1,#rg.preview .transport,#rg.preview .layers,
+#rg.preview .figpick,#rg.preview .hint,#rg.preview .ends,#rg.preview .whistlepanel,
+#rg.preview .verdict,#rg.preview .nextup,#rg.preview .foot,#rg.preview .work,
+#rg.preview .counters{display:none!important}
+#rg.preview{padding:0;min-height:0}
+#rg.preview .wrap{max-width:none;padding:0}
+#rg.preview .board{margin:0 0 6px}
 #rg .nextup{display:flex;flex-wrap:wrap;justify-content:center;gap:9px;margin:16px 0 4px;padding-top:15px;border-top:1px solid var(--edge)}
 #rg .nextup a{display:inline-block;padding:9px 14px;border-radius:9px;border:1px solid var(--edge);background:#fff;color:var(--ink);text-decoration:none;font-weight:650;font-size:.9rem}
 #rg .nextup a:hover,#rg .nextup a:focus{border-color:var(--ink)}
@@ -257,6 +273,10 @@ function boot(G,RATES){
 // nothing, and the sentence then says the comparison is missing -- which is true
 // of a page that makes no requests at all.
 const R=G.roster, HID=G.teams.home.id, AID=G.teams.away.id, HAB=G.teams.home.ab, AAB=G.teams.away.ab;
+/* Read once, from the URL, so both pages behave identically when framed. The
+   inlined page can be previewed too -- it is the same renderer and the same
+   query string. */
+const PREVIEW=/[?&]preview=1\b/.test(location.search);
 const SKIP=new Set(['stoppage','period-start','period-end','game-end','delayed-penalty']);
 const EV=[],EVI=[];
 G.events.forEach((e,n)=>{if(!SKIP.has(e.type)){EV.push(e);EVI.push(n);}});
@@ -941,6 +961,23 @@ $('lyWhistle').addEventListener('click',()=>{whistleOn=!whistleOn;setWhistle();}
    that notice belongs at the end of the replay because that is when it happens,
    and it was only ever early because the page started there. */
 drawRink();set(0,false);
+/* THE PREVIEW LOOP.
+   Deliberately NOT the ordinary play loop: `dwell()` paces a game for someone
+   watching it, easing for the big moments, and a taste has about five seconds.
+   So preview steps at a fixed interval and restarts, and it starts where the
+   game starts -- the same reason the page itself no longer opens at the final
+   whistle.
+   IT STOPS FOR prefers-reduced-motion. Doctrine §4 permits motion that traces a
+   real event; it does not require inflicting it. Reduced motion gets a still
+   frame partway in, so the rink is populated rather than blank. */
+if(PREVIEW){
+ $('rg').classList.add('preview');
+ const WINDOW=Math.min(EV.length-1,44);
+ if(REDUCED){set(WINDOW,false);}
+ else{let k=0;
+  const tick=()=>{set(k,k>0);k++;if(k>WINDOW){k=0;prevA=0;prevH=0;}
+                  setTimeout(tick,k>WINDOW?900:115);};
+  tick();}}
 }
 __BOOT__
 </script>"""
@@ -1000,6 +1037,10 @@ say('Loading…');
   // the sentence says the comparison is missing -- which is the same branch a
   // preseason game takes, and is stated rather than left as a gap.
   .then(function(g){
+    // A PREVIEW ASKS FOR NOTHING IT DOES NOT SHOW. The verdict card is hidden in
+    // preview, and measures.json exists only to feed it, so fetching it would be
+    // a request on a homepage for bytes nobody reads.
+    if(/[?&]preview=1\b/.test(location.search)){boot(g,null);return null;}
     return grab(ORIGIN+'/measures.json')
       .catch(function(){return null;})
       .then(function(rates){boot(g,rates);});})

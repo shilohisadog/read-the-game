@@ -311,55 +311,85 @@ test('an unknown season falls back rather than showing nothing', () => {
 });
 
 /**
- * THE HERO IS A GAME, AND IT IS READ FROM THE ARCHIVE.
+ * THE HERO IS A GAME, PLAYING — and it is the MOST RECENT one.
  *
- * The page opened with 33 team chips and three percentages and never showed the
- * thing it is for. A site whose product is *watch this game* had no game on its
- * front door — and `docs/homepage.md` §1 had already flagged the previous typed-in
- * hero as "the same shape as the hard-coded date we just pulled out of game.html".
+ * It used to be `featured[0]`, the archive's largest level-control upset. Only 2
+ * games in 4,119 clear that threshold, so the slot would have read "19 February
+ * 2024" for years: a rule that updates twice per three seasons is a literal with
+ * extra steps, which is the defect docs/homepage.md §1 flagged in the hard-coded
+ * hero before it. Recency is MORE deterministic — the same rule the game page
+ * already uses, unable to be typed, refreshing nightly with no deploy.
  *
- * `featured` is the archive's own ranking: teams that controlled play while the
- * score was level AND LOST, sorted by that edge. Both it and the catalog are
- * already fetched, so the hero costs no extra request and cannot go stale.
+ * WHAT THE OLD TESTS HELD, and where each went, because a rewrite is where
+ * coverage disappears silently:
+ *   - "named from the catalog"        → kept, below, against the new rule
+ *   - "reads the score home or away"  → kept as the SHOT LEADER, home or away.
+ *                                       That test existed because a mutation
+ *                                       survived; the mutation still applies.
+ *   - "names no game when none"       → kept: an archive with nothing in scope
+ *   - "a hero the catalog cannot confirm" → GONE BY CONSTRUCTION. The hero is now
+ *                                       read FROM the catalog, so it cannot name
+ *                                       a game the catalog lacks. The half that
+ *                                       still bites — a REFUSED game must never
+ *                                       be chosen — is asserted below.
  */
-const HERO = { ...MEASURES, featured: [{ id: 2023020200, ab: 'BUF', edge: 17 }] };
-const HERO_DOCS = { ...ALL, 'measures.json': HERO };
-
-test('the front door leads with a real game, named from the catalog', () => {
-  const r = run({ docs: HERO_DOCS });
+test('the front door leads with the most recent game, and it PLAYS', () => {
+  const r = run({ docs: ALL });
   return r.settle().then(() => {
-    const hero = r.ids.hero;
-    assert.equal(hero.hidden, false, 'the hero never appeared');
-    assert.match(r.ids.heroline.textContent, /^BUF controlled play and lost\.$/);
+    assert.equal(r.ids.hero.hidden, false, 'the hero never appeared');
+    // 2023020200 is the newest in-scope viewable game in the fixture: TOR at BUF,
+    // BUF 4-1. Not 2023020300 (refused, and later) and not the Olympics game
+    // (later still, and out of scope).
+    assert.match(r.ids.heroline.textContent, /^TOR 1, BUF 4 — 9 February 2024$/);
+    assert.equal(r.ids.herogo.href, 'game.html?game=2023020200');
 
-    // EVERY FACT IN THE SUBTITLE COMES FROM THE TWO DOCUMENTS. Game 2023020200 is
-    // TOR at BUF, BUF won 4–1 — so a hero that read the winner, the wrong side of
-    // the score, or the wrong opponent would be caught here rather than by a
-    // reader who knows the game.
-    const sub = r.ids.herosub.textContent;
-    assert.match(sub, /by 17\b/, 'the edge is the measured one');
-    assert.match(sub, /lost to TOR/, 'the opponent comes from the catalog');
-    assert.match(sub, /1–4/, "the score reads from the featured team's side");
-    assert.match(sub, /9 February 2024/);
-    assert.equal(r.ids.herogo.href, 'game.html?game=2023020200', 'and it plays THAT game');
+    // THE FRAME IS THE REAL RENDERER, not a recording — and it is built in
+    // script, so its id comes from the catalog and it never loads for a visitor
+    // who does not reach a game.
+    const frame = walk(r.ids.heroframe).find(n => n.tag === 'iframe');
+    assert.ok(frame, 'the hero has no moving picture at all');
+    assert.equal(frame.src, 'game.html?game=2023020200&preview=1');
+    assert.equal(frame.attrs.loading, 'lazy', 'the frame loads eagerly on every visit');
+    assert.ok(frame.attrs.title && /TOR/.test(frame.attrs.title), 'the frame is unnamed to a screen reader');
   });
 });
 
-test('the hero reads the score from the FEATURED team, home or away', () => {
-  // THIS TEST EXISTS BECAUSE A MUTATION SURVIVED. Replacing the featured team's
-  // side of the score with the home side changed nothing, because in the fixture
-  // above the featured team IS the home side — so the assertion was calibrated on
-  // a sample that could not disconfirm it.
-  //
-  // Game 2023020100 is BUF at TOR, TOR 5 BUF 2: the featured club is the AWAY
-  // side and lost. Reading the home side here prints "lost to TOR 2–5", which
-  // reverses the score in a sentence that already names the loser.
-  const away = { ...MEASURES, featured: [{ id: 2023020100, ab: 'BUF', edge: 11 }] };
-  const r = run({ docs: { ...ALL, 'measures.json': away } });
+test('the shot line reads the LEADER, home or away, and says it both ways round', () => {
+  // THE MUTATION THAT SURVIVED ONCE ALREADY, in the same slot: the fixture's
+  // newest game has the HOME side leading shots, so reading the home side is
+  // indistinguishable from reading the leader. The second fixture has the away
+  // side leading, and losing.
+  const home = run({ docs: ALL });
+  const p1 = home.settle().then(() => {
+    assert.match(home.ids.herosub.textContent, /^BUF put more shots on goal, 33 to 22, and won\.$/);
+  });
+
+  // BUF away, 30 shots to 20, and lost 2-5. The shot leader losing is the site's
+  // thesis at its smallest — and it must be said in the same shape as the
+  // winning case, or we are only showing the surprising half (Doctrine §9).
+  const AWAY = { games: [CATALOG.games[0]] };
+  const away = run({ docs: { ...ALL, 'catalog.json': AWAY } });
+  const p2 = away.settle().then(() => {
+    assert.match(away.ids.herosub.textContent, /^BUF put more shots on goal, 30 to 20, and lost\.$/);
+  });
+
+  // And an even shot count says so rather than picking a side.
+  const EVEN = { games: [{ ...CATALOG.games[1], ash: 27, hsh: 27 }] };
+  const even = run({ docs: { ...ALL, 'catalog.json': EVEN } });
+  const p3 = even.settle().then(() => {
+    assert.match(even.ids.herosub.textContent, /^Both teams put 27 shots on goal\.$/);
+  });
+  return Promise.all([p1, p2, p3]);
+});
+
+test('a refused or out-of-scope game is never the hero', () => {
+  // The fixture is built for this: the refused game (2024-03-11) and the Olympic
+  // game (2026-02-22) are both LATER than the one that should win, so a `newest`
+  // that forgot either filter would pick the wrong game rather than none.
+  const r = run({ docs: ALL });
   return r.settle().then(() => {
-    assert.match(r.ids.heroline.textContent, /^BUF controlled play and lost\.$/);
-    assert.match(r.ids.herosub.textContent, /lost to TOR 5–2/,
-      'the score is printed from the home side rather than the featured team');
+    assert.doesNotMatch(r.ids.herogo.href, /2023020300/, 'a refused game became the front door');
+    assert.doesNotMatch(r.ids.herogo.href, /2025090030/, 'an Olympic game became the front door');
   });
 });
 
@@ -368,36 +398,20 @@ test('the hero reads the score from the FEATURED team, home or away', () => {
  *  for, so `!ids.hero` and `ids.hero.hidden` are the same fact. */
 const heroShown = r => !!(r.ids.hero && r.ids.hero.hidden === false);
 
-test('the hero names no game when the archive names none', () => {
+test('the hero names no game when the archive holds none it may show', () => {
   // A hero with a typed fallback is a claim that outlives its data. Absent is the
   // honest state, and the rest of the page still works.
-  const r = run({ docs: { ...ALL, 'measures.json': { ...MEASURES, featured: [] } } });
+  const NONE = { games: CATALOG.games.filter(g => !g.v || String(g.id).slice(4, 6) !== '02') };
+  const r = run({ docs: { ...ALL, 'catalog.json': NONE } });
   return r.settle().then(() => {
     assert.equal(heroShown(r), false, 'a hero appeared with nothing behind it');
-    assert.ok(walk(r.ids.teams).some(n => n.className === 'chip'), 'the grid still renders');
+    assert.equal(walk(r.ids.heroframe).filter(n => n.tag === 'iframe').length, 0,
+      'a frame was created for a game that cannot be shown');
   });
 });
 
-test('a hero the catalog cannot confirm is not shown', () => {
-  // measures.json and catalog.json are written by different runs. A featured id
-  // the catalog does not hold — or holds as refused — must not become a link to
-  // a game that will not open.
-  //
-  // THE FIRST VERSION OF THIS TEST COULD NOT FAIL: it called `.then()` inside a
-  // loop and returned nothing, so node finished the test before any assertion
-  // ran. A test whose assertions are unreachable is worse than no test, because
-  // it reports coverage it does not have.
-  return Promise.all([[{ id: 2099999999, ab: 'BUF', edge: 9 }],
-                      [{ id: 2023020300, ab: 'BUF', edge: 9 }]]      // refused
-    .map(featured => {
-      const r = run({ docs: { ...ALL, 'measures.json': { ...MEASURES, featured } } });
-      return r.settle().then(() => assert.equal(heroShown(r), false,
-        `hero shown for ${featured[0].id}, which the catalog cannot confirm`));
-    }));
-});
-
 test('a team view shows no hero — that visitor already chose', () => {
-  const r = run({ search: '?team=BUF', docs: HERO_DOCS });
+  const r = run({ search: '?team=BUF', docs: ALL });
   return r.settle().then(() => {
     assert.equal(heroShown(r), false, 'a featured game on a page the fan already chose');
     // Paired, so "no hero" cannot pass because the page rendered nothing at all.
