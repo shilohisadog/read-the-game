@@ -277,97 +277,139 @@ second column means nothing for the eye to difference, so the forecast reading
 has nowhere to come from. Four of the five formats are already the conventions
 this site enforces everywhere. **The fifth needs changing.**
 
-### 7.2 "Top/bottom x%" hides the one thing every other number here carries
+### 7.2 My fix was half right, and CHENG caught which half
 
-A percentile is the only format on that list that **does not carry its own
-reference class**, which is the single rule this project has broken and repaired
-more often than any other.
+I argued that `"top 10%"` should become `"4th of 32"` because **a position is a
+fraction, so it carries its denominator**. CHENG's correction is exact and I am
+recording it rather than quietly editing the sentence:
 
-- *"4 of 6"* is visibly thin. *"Top 10%"* over the same six games is not — it
-  reads like a finding and conceals that it rests on six games.
-- With 32 clubs one rank step is roughly three percentage points, so a percentile
-  **amplifies** small differences in the underlying number rather than damping
-  them. Two teams separated by a single attempt can sit two "deciles" apart.
+```
+"controlled play in 4 of 6"   numerator AND denominator describe the evidence
+"4th of 32"                   the 32 describes the FIELD, and is constant
+```
 
-The fix costs nothing and keeps everything Kevin wants from it:
+**Thirty-two is always thirty-two.** It is the number of clubs, not the number of
+games, so `4th of 32` on six games renders identically to `4th of 32` on sixty —
+which is precisely the defect I diagnosed in `top 10%`, surviving my own fix.
 
-> **"4th of 32", not "top 10%".**
+The convention's content was never "show a fraction". It is **show the sample
+size**, and a rank never does. My fix addressed the shape of the thing while
+missing what the shape was for — the same failure this project catalogues
+everywhere else, committed inside the argument correcting it.
 
-A position IS a fraction. It carries its denominator, it matches the convention
-already enforced on every rate on the site, and it says the same thing to a
-reader. Printed beside the count it ranks, so both the value and the position are
-checkable.
+> **"4th of 32, after 6 games" — never a bare rank.**
 
-**"Distance from average" needs the same treatment.** *"2.1 above average"* is
-uninterpretable without knowing how far apart the clubs are; the honest form
-states the spread — *"52.1%, and the 32 clubs run from 46.8 to 54.3"* — which is
-distance from normal WITH its scale, and still supplies no inference.
+**And my amplification argument was wrong too.** I said a percentile exaggerates
+small differences because one rank step is roughly three points. That is a
+property of **ranking**, not of expressing a rank as a percentile: two clubs
+separated by one attempt sit two positions apart whether you print `4th of 32` or
+`top 10%`. So the swap fixed denominator visibility and left instability exactly
+where it was.
 
-### 7.3 What goes on the card: the same three things the game page teaches
+**Which makes value-with-spread the primary format, not the garnish.**
+*"52.1%, and the 32 clubs run from 46.8 to 54.3"* is continuous, stable, tells a
+reader they are near the top, and supplies no inference — it contains everything
+a rank conveys without the discontinuity. So: **value and spread always; rank
+only once §7.4's measurement says it means something.**
 
-Kevin: *"Don't forget high danger scoring chances and goalie information too."*
+### 7.3 "High-danger" is somebody else's term, and we should stop using it
 
-Adding them gives the card a property worth naming, because it answers "which
-categories?" without anyone choosing: **the card carries the same three layers
-the game page already teaches — control, high-danger chances, goaltending — at
-season scale.** A fan learns the three watching one game and then meets the same
-three for their next opponent. No fourth concept to explain, no new analysis
-tier, and nothing on the card that the site has not already taught how to read.
+I wrote that the hazard was a reader mistaking our number for expected goals.
+CHENG's point is worse and better founded: **the term is already taken**, by a
+specific published rule, at the sites a curious reader will cross-check against.
 
-Each has one hazard, and they are different hazards.
+**What our rule actually is**, read out of the code rather than remembered —
+`isHighDangerEvent` in `src/lib/layers/goaltending.js` over `isHighDanger` in
+`rink.js`:
 
-**Control** — the least dangerous. Counts and a position, per §7.1–§7.2.
+> an **unblocked** shot attempt (`goal`, `shot-on-goal` or `missed-shot`), taken
+> within **33 ft** of the attacking net and inside **±22 ft** of centre.
 
-**High-danger chances** — the danger is the NAME, not the number. It is a
-transparent geometric rule (within 33 ft of the net and inside ±22 ft of centre),
-not a trained model, and a reader who meets "high-danger chances: 214" on a card
-will read it as expected goals unless told otherwise. `read-the-game.html` already
-says this in the why-popup — *"a teaching stand-in for 'dangerous', not a trained
-expected-goals model"* — and that provenance has to travel WITH the number onto
-the card, not live one page away. This is the `display:` provenance category from
-`docs/site-chrome.md` §12.1 doing real work: a statement about how *we* defined
-something rather than about what happened.
+No rush bonus, no rebound bonus, no shot-quality weighting. A pure location test.
 
-**Goaltending** — the noisiest thing on the card, and the one with an ambiguity
-underneath it. "Goalie information" for a *team* is not one number: clubs use two
-or three, and **we must not name a probable starter.** That is a prediction, and
-it depends on news we do not hold and would not be allowed to invent. So the
-honest form is per goaltender, each with their own fraction and their own games
-played — *"saved 412 of 450 across 17 starts"* — never a bare `.916`, and never
-a team save percentage that silently pools a starter with a backup who played
-twice.
+**One correction to CHENG's version of the discrepancy.** He wrote that Natural
+Stat Trick *"subtracts blocked shots from danger while we count them"* — **we do
+not count them.** `SHOT_TYPES` is `{goal, shot-on-goal, missed-shot}`, so a
+blocked attempt is never high-danger under our rule. His characterisation of
+NST's point system is also **his, and unverified by us**; nobody here has read
+their methodology page, and this project has been burned once by taking a third
+party's documented figure at face value.
 
-The old goalie card's `thin = f < 20` is the precedent here: a chosen cutoff that
-dissolved the moment the fraction was shown instead. Same answer applies.
+**The recommendation survives all of that, because it does not depend on it.**
+The term is in common use with definitions that are not ours, our number will
+therefore disagree with numbers published elsewhere, and a reader who checks will
+conclude we are wrong rather than different. That is the exact opposite of what
+this site trades on.
 
-**And nothing may combine them.** Save percentage adjusted for high-danger
-workload is a model, however reasonable it sounds, and it is exactly the line
-`DOCTRINE.md` draws. The three sit beside each other and the reader does whatever
-joining they wish.
+> **Rename it. Proposed: "shots from the slot".**
 
-**Cost:** `measure.mjs` writes `sog`, `attempts` and `level` per game and nothing
-else, so danger and goaltending are new fields there. Both come from modules that
-already exist (`danger.js`, `goaltending.js`) and both are store-to-store, so it
-is **one derive run and no re-fetch** — the same price every extract change has
-paid.
+Accurate (it is a location test), novice-legible (a novice can picture the slot
+in a way they cannot picture a danger tier), and collision-free. I would avoid
+"chance" as well as "high-danger" — "scoring chance" is loaded in the same way
+and borrows the same authority. The rule line travels with it: *an unblocked
+shot taken from within 33 feet, inside the slot.*
 
-### 7.4 How thin is too thin, measured instead of chosen
+**Cost, stated:** the term appears **13 times** in each shipped game page — the
+layer button, the why-popup, the legend, the ledger reasons. This is a copy
+change across `build_main.py` plus its tests, not a one-line rename, and the
+module and function names can stay as they are: `isHighDangerEvent` is internal
+vocabulary and only the user-facing label is making a claim.
 
-The remaining question is when any of this is worth showing at all, and a
+**Worth keeping from CHENG:** Evolving-Hockey declines to publish scoring-chance
+data at all, on the grounds that it forces a continuous quantity into discrete
+buckets. That is a real critique of the metric family, and it is the strongest
+argument for ours being a **transparent rule** rather than a model — which is
+another reason not to name it after somebody else's.
+
+### 7.4 How thin is too thin — measured, and measured THREE times
+
+The remaining question is when any of this is worth showing, and a
 minimum-games threshold would be a parameter with no source in the data — the
-shape CHENG calls *a model wearing a UI control*, which has already killed
-`recent` trails and the five-event placement window.
+shape CHENG calls *a model wearing a UI control*, which already killed `recent`
+trails and the five-event placement window.
 
 It does not have to be chosen, because **it can be measured.** The archive holds
-three complete seasons: take each club's rank after 6, 10 and 20 games and
-compare it with where that club finished. That produces a real sentence —
-*"after six games a club's position typically moves N places by the end of the
-season"* — which lets the reader discount an early rank by the right amount
-instead of by our guess, and lets "not enough data" be a measurement rather than
-an opinion.
+three complete seasons: take each club's value after 6, 10 and 20 games and
+compare with where it finished. That yields a sentence a reader can discount by —
+*"after six games a club's position typically moves N places"* — rather than a
+cutoff we picked.
 
-It also gives the empty state its exact wording, and the empty state is the
-default for the first fortnight of a season rather than an edge case.
+**And it must be measured per metric, not once (CHENG).** Stability differs
+sharply by how much evidence a game supplies: attempt share gets ~60 events a
+night, while a goaltender faces ~30 shots and one bad evening moves a save
+percentage a long way. A single "after N games" answer would be right for one of
+the three and wrong for the other two. Same query, three times.
+
+### 7.5 This is the first thing on the site that can go wrong by itself
+
+CHENG's finding, and it is the one with a consequence nothing else here has.
+
+The limits block says *"A replay, not live coverage. Every game here is over."*
+A next-opponent card is the first statement on this site about a game that has
+not happened. That is defensible — a published schedule is a recorded fact, not
+a prediction — but it breaks a property every other page relies on:
+
+> **Every other number here is fixed once ingested. This one can become wrong
+> without anyone touching it.** Games are postponed, rescheduled, relocated.
+
+So three things ship with the card, not after it:
+
+- a **postponed/changed state**, designed alongside the empty state rather than
+  discovered in November
+- the **freshness line covering the schedule**, not only the archive — the
+  `lastRun`/`dataThrough` discipline from `docs/ingest-state.md`, applied to a
+  surface that faces a reader
+- a **sentence in the limits block**: *"the next game is from the league's
+  published schedule and can change"* — another `display:` row, a statement about
+  what we are doing rather than about hockey
+
+### 7.6 Goaltender ordering is an implicit prediction
+
+Listing by appearances is the neutral, factual choice — and **the first name will
+still read as "the one who is playing".** The fix is not to reorder but to say
+what the order is: *"in order of appearances this season"*. Then the ordering is
+a stated fact rather than an inference the reader supplies on our behalf. The
+refusal to name a probable starter stands.
 
 ## 8. What the site should say it is
 
@@ -403,16 +445,36 @@ not to guess harder, but to say which decisions should not be guessed at all.
 That second list is where I would otherwise write eight sections on a hunch, and
 where being wrong is expensive to undo.
 
-## 10. Proposed order
+## 10. The todo list
 
-1. **The loop**, with the most recent game (§5). Serves the audience with nothing.
-2. **Name the concepts and say what the site is** (§8). Small, and the gap is measured.
-3. **The deep-link seam** (§6). A mechanism; unblocks everything written later.
-4. **"How it works"** (§3) — methodology, which also lets the four limits boxes
-   shrink to one line, and gives the chrome nav a second destination.
-5. **The novice test.**
-6. **"New to hockey"** (§6), written against what the test showed.
-7. **Schedule storage** (§7), then the look-ahead surface and its card (§7.1) in October.
+Both reviews are folded in, so this is the sequence. **Nothing below is started.**
+
+### Before the novice test
+
+| # | what | why now | cost |
+|---|---|---|---|
+| 1 | **The loop** — most recent game, real renderer in a lazy-loaded frame (§5) | the only audience with no surface at all | preview mode in `build_main.py`, `frame-src` in the CSP |
+| 2 | **Say what the site is, and name the concepts** (§8) | measured gap: six concepts, zero mentions | copy on `index.html` |
+| 3 | **Rename "high-danger" → "shots from the slot"** (§7.3) | a term collision that makes us look wrong rather than different | 13 strings per game page, plus tests |
+| 4 | **The deep-link seam** — `?game=&at=&layer=` (§6) | a mechanism; every later teaching claim becomes checkable | `build_main.py` URL parsing, plus the out-of-range state |
+| 5 | **"How it works"** (§3) | gives the chrome nav a second destination and lets the four limits boxes shrink to one line | new page |
+
+### The test
+
+| 6 | **Kevin's tester** | turns §9's second list from guesses into findings |
+
+### After it
+
+| 7 | **"New to hockey"** (§6), written against what the test showed |
+| 8 | **Schedule storage** (§7) — forward window, `schedule.json`, one extra request a night |
+| 9 | **Rank-stability measurement** (§7.4), three metrics separately — gates whether rank appears at all |
+| 10 | **`measure.mjs` carries danger and goaltending per game** (§7.3) — one derive run, no re-fetch |
+| 11 | **The next-opponent card** (§7.1–§7.6), with its empty, thin and postponed states designed first |
+
+**Dependencies worth stating:** 9 gates the format of 11, not its existence. 10
+must land before 11 or the card has two of its three rows. 8 must land before 11
+or it has nothing to point at. And 3 should happen before 5 and 7, so the new
+name is written once rather than written and then corrected.
 
 ## 11. What I want argued
 
