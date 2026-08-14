@@ -214,6 +214,63 @@ a forecast even when every number in it is descriptive.
 **Sequenced for October**, because that is when it is both correct and useful. It
 should be in the plan now so it is not rediscovered as a surprise.
 
+### 7.1 The card, which is the hard part
+
+Kevin: *"Then we'll need to pull relevant stats for that team and provide a card
+for the interested viewers."*
+
+**The plumbing is the easy half and the framing is the whole risk.** Every number
+such a card could carry already exists: `builders/measure.mjs` writes a record per
+game (`attempts`, `sog`, `level`, `score`) using the same modules the browser
+imports, so season-to-date figures for any club are an aggregation of data we
+already hold. **No new analysis tier, and nothing fetched from the league.**
+`measures.json` currently publishes nothing per-team; that is the gap.
+
+**"Relevant stats for that team" is where this goes wrong if it goes wrong.**
+Two hazards, and they compound:
+
+**A side-by-side implies a forecast even when every number in it is
+descriptive.** Put BUF's column next to OTT's and the reader does the subtraction
+we refused to do, and attributes the conclusion to us. This is not hypothetical
+prudishness — it is the whole reason the roadmap rule reads *show the distance
+from normal, never supply the inference*, and a matchup card is the single
+easiest place to break it.
+
+**And base rates go thin fast.** 4,119 games is a reference class; a team's
+first six are not. In October every one of these numbers is small-n, and that is
+precisely when the card is new and most likely to be read. The fraction
+convention is what saves it — *"controlled play in 4 of 6"* is visibly thin in a
+way *"67%"* is not — which is the same argument that removed the need for a
+minimum-n threshold on the per-game sentence.
+
+**What I would put on it**, and the shape matters more than the choice of stat:
+
+- **One team's numbers at a time**, not two columns. The opponent is named and
+  identified; it does not get a rival column for the eye to difference.
+- **Counts with denominators**, never rates alone, and never a rank.
+- **The one that is pure counting and is the site's thesis personalised:** their
+  record when they controlled play versus when they did not. It needs no model,
+  it is the thing the whole archive is about, and it reads as a fact rather than
+  a projection.
+- **An honest empty state that is the DEFAULT in October**, not an edge case.
+  *"They have played two games. That is not enough to say anything yet"* is the
+  correct card for the first fortnight of a season and must be designed first,
+  because it is what most visitors will see when this ships.
+
+**What it must refuse**, stated on the page as the limits block already does:
+expected goals, "due for regression", playoff odds, strength-of-schedule
+adjustment, and any sentence with a comparative in it.
+
+**Where it lives:** the team view (`/?team=BUF`), because that is the retention
+surface and the bookmark a returning fan lands on. Not the front page, which is
+serving a stranger who has no team.
+
+**Open, and I do not have a good answer:** how to name the opponent without
+inviting the comparison. *"Ottawa on Thursday"* plus Buffalo's own numbers is the
+safest thing I can construct, and it is also the least useful version of what
+Kevin asked for. That tension is real and I would rather have it argued than
+resolve it by quietly adding a second column.
+
 ## 8. What the site should say it is
 
 One sentence, above the fold, that the page currently lacks entirely. Something
@@ -257,7 +314,7 @@ where being wrong is expensive to undo.
    shrink to one line, and gives the chrome nav a second destination.
 5. **The novice test.**
 6. **"New to hockey"** (§6), written against what the test showed.
-7. **Schedule storage** (§7), then the look-ahead surface in October.
+7. **Schedule storage** (§7), then the look-ahead surface and its card (§7.1) in October.
 
 ## 11. What I want argued
 
