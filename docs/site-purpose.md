@@ -265,11 +265,61 @@ adjustment, and any sentence with a comparative in it.
 surface and the bookmark a returning fan lands on. Not the front page, which is
 serving a stranger who has no team.
 
-**Open, and I do not have a good answer:** how to name the opponent without
-inviting the comparison. *"Ottawa on Thursday"* plus Buffalo's own numbers is the
-safest thing I can construct, and it is also the least useful version of what
-Kevin asked for. That tension is real and I would rather have it argued than
-resolve it by quietly adding a second column.
+**SETTLED BY KEVIN, and it removes the tension above:** there is no matchup card.
+
+> *"I don't envision a matchup card. I want a card that states exactly what we
+> state — 'not enough data', 'distance from average', 'x of y', 'r of z',
+> 'top/bottom x% in this category'. Just our straightforward data sets,
+> presented cleanly, without any hint of matchup or attribution."*
+
+That is the right call and it dissolves the problem rather than balancing it: no
+second column means nothing for the eye to difference, so the forecast reading
+has nowhere to come from. Four of the five formats are already the conventions
+this site enforces everywhere. **The fifth needs changing.**
+
+### 7.2 "Top/bottom x%" hides the one thing every other number here carries
+
+A percentile is the only format on that list that **does not carry its own
+reference class**, which is the single rule this project has broken and repaired
+more often than any other.
+
+- *"4 of 6"* is visibly thin. *"Top 10%"* over the same six games is not — it
+  reads like a finding and conceals that it rests on six games.
+- With 32 clubs one rank step is roughly three percentage points, so a percentile
+  **amplifies** small differences in the underlying number rather than damping
+  them. Two teams separated by a single attempt can sit two "deciles" apart.
+
+The fix costs nothing and keeps everything Kevin wants from it:
+
+> **"4th of 32", not "top 10%".**
+
+A position IS a fraction. It carries its denominator, it matches the convention
+already enforced on every rate on the site, and it says the same thing to a
+reader. Printed beside the count it ranks, so both the value and the position are
+checkable.
+
+**"Distance from average" needs the same treatment.** *"2.1 above average"* is
+uninterpretable without knowing how far apart the clubs are; the honest form
+states the spread — *"52.1%, and the 32 clubs run from 46.8 to 54.3"* — which is
+distance from normal WITH its scale, and still supplies no inference.
+
+### 7.3 How thin is too thin, measured instead of chosen
+
+The remaining question is when any of this is worth showing at all, and a
+minimum-games threshold would be a parameter with no source in the data — the
+shape CHENG calls *a model wearing a UI control*, which has already killed
+`recent` trails and the five-event placement window.
+
+It does not have to be chosen, because **it can be measured.** The archive holds
+three complete seasons: take each club's rank after 6, 10 and 20 games and
+compare it with where that club finished. That produces a real sentence —
+*"after six games a club's position typically moves N places by the end of the
+season"* — which lets the reader discount an early rank by the right amount
+instead of by our guess, and lets "not enough data" be a measurement rather than
+an opinion.
+
+It also gives the empty state its exact wording, and the empty state is the
+default for the first fortnight of a season rather than an edge case.
 
 ## 8. What the site should say it is
 
