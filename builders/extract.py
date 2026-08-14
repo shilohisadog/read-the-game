@@ -27,7 +27,7 @@ Three modes, and the distinction between the first two is the whole point:
 
     python3 builders/extract.py --verify
 """
-import argparse, hashlib, json, pathlib, sys
+import argparse, hashlib, json, pathlib, re, sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
@@ -327,6 +327,28 @@ def validate(rich, pbp, shifts, box):
 
     check(len(rich["events"]) == len(pbp["plays"]),
           f"lossless: {len(rich['events'])} events == {len(pbp['plays'])} plays")
+
+    # THE CLOCK IS AN ADDRESS NOW, NOT ONLY A LABEL.
+    #
+    # Deep links name a moment as `?at=<period>-<mm:ss>` and resolve against
+    # `rem`, so a game whose events lack a clock is a game every link into it
+    # resolves wrongly -- silently, because the resolver would find nothing at
+    # that clock and fall back to the last event before it. Nothing asserted
+    # `rem` was there at all; it arrived with the countdown-clock commit and has
+    # been trusted ever since, which is the same shape as `own` carrying a
+    # meaning nobody had checked.
+    #
+    # THE FORMAT IS CHECKED, NOT ONLY THE PRESENCE, and that is the half that
+    # earns its place. The ordinal that disambiguates a shared clock rides on a
+    # dot -- `?at=2-14:32.3` -- which is unambiguous only while a clock is
+    # strictly MM:SS. The NHL scoreboard shows tenths under a minute; if the
+    # feed ever exposed `14:32.7`, the separator would collide with a time
+    # component and every link into that game would land on the wrong event
+    # while looking entirely correct. This turns that into a refusal.
+    bad_clock = [e["clock"] for e in rich["events"]
+                 if not re.fullmatch(r"\d{2}:\d{2}", e.get("rem") or "")]
+    check(not bad_clock,
+          f"every event carries an MM:SS clock ({len(bad_clock)} do not)")
 
     # Coordinates: the RULE, not the pattern. See test/rink.test.js.
     bad = sum(1 for e, p in zip(rich["events"], pbp["plays"])

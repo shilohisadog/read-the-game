@@ -51,19 +51,56 @@ export function measureGame(g) {
   };
 }
 
+/**
+ * A property of how the LEAGUE records hockey, watched across the whole archive.
+ *
+ * A faceoff always follows the stoppage that caused it, recorded at the SAME
+ * second — so a faceoff is never the first event at its clock. 0 of 4,851 in
+ * one sample and 0 of 4,874 in an independent playoff sample
+ * (docs/deep-link-seam.md §4). The deep-link resolver relies on it: a bare
+ * `?at=2-14:32` naming a draw lands on the stoppage, which is why the grammar
+ * carries an ordinal at all.
+ *
+ * IT REPORTS AND DOES NOT REFUSE, and the distinction is the whole reason it
+ * lives here rather than in extract.py's --validate. Every check in --validate
+ * asks whether OUR EXTRACT is wrong about the game, and failing one means we
+ * must not publish. This asks whether the LEAGUE'S RECORDING CONVENTION still
+ * holds. A game that broke it would be perfectly good hockey, correctly
+ * extracted, where only our link resolution degrades — and refusing to show it
+ * would be exactly the overreach derive.py warns against: "a refusal is a
+ * statement about what we can SHOW".
+ */
+export function firstAtClock(events) {
+  const first = new Map();
+  const offenders = [];
+  events.forEach((e, i) => {
+    const k = e.per + '|' + e.rem;
+    if (!first.has(k)) first.set(k, i);
+    else return;
+    if (e.type === 'faceoff') offenders.push(i);
+  });
+  return offenders;
+}
+
 export function measureAll(dir) {
   const records = [];
   const skipped = [];
+  const drawFirst = [];
   for (const f of readdirSync(dir).sort()) {
     if (!f.endsWith('.json')) continue;
     const g = JSON.parse(readFileSync(join(dir, f), 'utf8'));
+    // Watched on EVERY extract, in scope or not: the recording convention is
+    // not a rule about which games count, and a deep link into a preseason
+    // game resolves through the same code as any other.
+    const bad = firstAtClock(g.events);
+    if (bad.length) drawFirst.push({ id: g.game.id, at: bad });
     // Out of scope is not a fault and not a skip — it is the settled rule that
     // preseason, the Olympics and the 4 Nations never enter a computed number.
     if (!inScope(g.game.id)) continue;
     if (!g.quoted) { skipped.push(g.game.id); continue; }
     records.push(measureGame(g));
   }
-  return { records, skipped };
+  return { records, skipped, drawFirst };
 }
 
 /** JSON with object keys sorted, so the file is a function of its input alone. */
@@ -84,7 +121,7 @@ function main(argv) {
     console.error(`::error::no extracts at ${dir} — nothing to measure`);
     process.exit(1);
   }
-  const { records, skipped } = measureAll(dir);
+  const { records, skipped, drawFirst } = measureAll(dir);
   const doc = { ...summarise(records), measured: records.length };
   // NO TIMESTAMP, and KEYS SORTED. Same extracts in, same bytes out, so any diff
   // on a re-run is a real change of opinion or of data — the same property
@@ -98,6 +135,14 @@ function main(argv) {
     rates: Object.fromEntries(Object.entries(r).map(([k, v]) =>
       [k, v.rate == null ? null : `${(v.rate * 100).toFixed(1)}% of ${v.n}`])),
   }, null, 2));
+  // LOUD, because a silent change here is a wrong landing on every teaching
+  // link into the affected game rather than a missing number.
+  if (drawFirst.length) {
+    console.log(`::warning::a faceoff was recorded before its own stoppage in `
+              + `${drawFirst.length} game(s) — deep links resolving on a bare `
+              + `clock will land on the draw instead of the whistle: `
+              + `${drawFirst.slice(0, 5).map(d => d.id).join(', ')}`);
+  }
   if (skipped.length) {
     console.log(`  ${skipped.length} in-scope extracts carry no quoted boxscore `
               + `and were NOT measured: ${skipped.slice(0, 5).join(', ')}…`);

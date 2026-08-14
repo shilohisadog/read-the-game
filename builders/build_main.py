@@ -45,6 +45,11 @@ T = r"""<style>
 #rg .bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--edge)}#rg .bar span{transition:width .4s ease}#rg .ba{background:#fff;box-shadow:inset 0 0 0 2px var(--away)}#rg .bh{background:var(--home)}
 #rg .pct{display:flex;justify-content:space-between;align-items:center;font-size:.9rem;margin-top:5px;font-family:ui-monospace,Menlo,monospace;font-weight:700}
 #rg .plab{display:flex;flex-direction:column;align-items:center;font-size:.66rem;letter-spacing:.1em;color:var(--muted);font-weight:600;line-height:1.35}
+/* The deep-link notice. `:empty` rather than a `hidden` attribute, so the one
+   place that writes the sentence is the only place that controls whether it
+   shows -- a second switch is a second thing to get out of step. */
+#rg .atnote:empty{display:none}
+#rg .atnote{margin:0 0 10px;padding:9px 13px;border-radius:9px;border:1px solid var(--edge);background:#fbf6ee;color:var(--ink);font-size:.88rem}
 #rg .rinkbox{position:relative;background:var(--ice);border:1px solid var(--edge);border-radius:15px;padding:10px;box-shadow:0 6px 22px rgba(16,32,45,.08)}
 #rg svg{display:block;width:100%;height:auto}
 #rg .boards{fill:var(--ice);stroke:var(--edge);stroke-width:1.1}
@@ -226,6 +231,7 @@ T = r"""<style>
   </div>
   <div class="tm h"><span class="ab" id="hAb">BUF</span><span class="sc" id="hSc">0</span></div>
 </div>
+<p class="atnote" id="atnote"></p>
 <div class="rinkbox"><svg viewBox="0 0 200 85"><g id="rink"></g><g id="netmen"></g><g id="lines"></g><g id="whistles"></g><g id="events"></g><g id="puck"></g><g id="labels"></g><g id="noplace"></g></svg>
   <div class="caption" id="caption"></div>
   <div class="counters"><div class="cc a"><span class="n" id="cA">0</span><span class="lb">MIN attempts<span class="mode" id="mA">ALL SITUATIONS</span></span></div><div class="cc h"><span class="lb">BUF attempts<span class="mode" id="mH">ALL SITUATIONS</span></span><span class="n" id="cH">0</span></div></div>
@@ -263,6 +269,12 @@ fixed here, so each team always attacks the same net. In the arena they switch e
 <nav class="nextup" id="nextup" aria-label="Where to go next"></nav>
 </div></div>
 <script>
+/* THE LIBRARY SITS OUTSIDE boot(), because the SHELL needs it too. It used to
+   be inlined inside the function, which meant the bootstrap that chooses WHICH
+   game to load could not use the same URL parser the renderer uses -- and so it
+   grew its own regex, and then a second one for preview. Hoisting it is what
+   makes "one place reads the URL" true of both pages rather than one. */
+__LIB__
 function boot(G,RATES){
 // RATES ARRIVES AS AN ARGUMENT AND IS NEVER REQUESTED IN THIS FUNCTION. Both
 // pages share this body byte for byte, and read-the-game.html carries its whole
@@ -273,17 +285,24 @@ function boot(G,RATES){
 // nothing, and the sentence then says the comparison is missing -- which is true
 // of a page that makes no requests at all.
 const R=G.roster, HID=G.teams.home.id, AID=G.teams.away.id, HAB=G.teams.home.ab, AAB=G.teams.away.ab;
-/* Read once, from the URL, so both pages behave identically when framed. The
-   inlined page can be previewed too -- it is the same renderer and the same
-   query string. */
-const PREVIEW=/[?&]preview=1\b/.test(location.search);
 const SKIP=new Set(['stoppage','period-start','period-end','game-end','delayed-penalty']);
 const EV=[],EVI=[];
 G.events.forEach((e,n)=>{if(!SKIP.has(e.type)){EV.push(e);EVI.push(n);}});
 // The timeline is the playable events; the LEDGER is the whole game. Layers get
 // every event so the 51 non-plays are excluded with reasons instead of vanishing.
 const upto=k=>k<0?[]:G.events.slice(0,EVI[k]+1);
-__LIB__
+/* THE URL, READ ONCE. Both pages behave identically when framed, because both
+   run this line -- the inlined page can be previewed too, it is the same
+   renderer and the same query string. There used to be three reads of
+   location.search and two hand-written regexes, one of them the same preview
+   test spelled twice; see src/lib/deeplink.js for why that became a module. */
+const LINK=parse(location.search),PREVIEW=LINK.preview;
+/* A MOMENT NAMES AN EVENT IN THE GAME; THE SCRUBBER INDEXES THE PLAYABLE ONES.
+   EV drops 51 of 320 -- stoppages among them -- so the whistle layer's own
+   teaching case ("here is an icing, watch this one") names an event that has no
+   frame of its own. It is shown in the window of the next playable event, which
+   is exactly where `upto()` puts it, so that is where the link lands. */
+function frameOf(n){for(let k=0;k<EVI.length;k++)if(EVI[k]>=n)return k;return EV.length-1;}
 const ATT=ATTEMPT_TYPES;
 // THE HOST DEFENDS THE RIGHT-HAND END, which is the arrangement a television
 // viewer expects (Kevin) -- and it is ours to choose, because the feed does not
@@ -960,23 +979,62 @@ $('lyWhistle').addEventListener('click',()=>{whistleOn=!whistleOn;setWhistle();}
    It also fixes the shootout narrative appearing first on game 2025021235 --
    that notice belongs at the end of the replay because that is when it happens,
    and it was only ever early because the page started there. */
-drawRink();set(0,false);
+drawRink();
+/* THE LINK, APPLIED — and keyed off the layers' OWN ids, so a rename cannot
+   leave this table pointing at a token nothing answers to. `?layer=slot` is the
+   public name of the slot layer for the same reason the label is: a URL
+   survives copy-paste and forum posts long after page copy changes. */
+const LAYER_APPLY={
+ [corsi.id]:()=>{corsiOn=true;setCorsi();},
+ [danger.id]:()=>{hdOn=true;setHd();},
+ [goaltending.id]:()=>{goalieOn=true;setGoalie();},
+ [whistle.id]:()=>{whistleOn=true;setWhistle();},
+};
+if(LINK.strength==='even'){evenOnly=true;syncStrength();}
+LINK.layers.forEach(t=>{const f=LAYER_APPLY[t];if(f)f();});
+const AT=resolve(G.events,LINK.at);
+/* A SENTENCE ONLY WHEN WE COULD NOT HONOUR THE LINK. `exact:false` on its own
+   is silent: a clock nothing happened at is a perfectly good moment and the
+   page shows the last thing that did happen. Apologising for every inexact
+   landing would apologise on most honest links. */
+$('atnote').textContent=AT.why?AT.why.text
+ :(LINK.problems.some(p=>/^at[:.]/.test(p))?LINK_NOTES.unreadable.text:'');
+prevA=0;prevH=0;
+set(frameOf(AT.index),false);
 /* THE PREVIEW LOOP.
    Deliberately NOT the ordinary play loop: `dwell()` paces a game for someone
    watching it, easing for the big moments, and a taste has about five seconds.
    So preview steps at a fixed interval and restarts, and it starts where the
    game starts -- the same reason the page itself no longer opens at the final
    whistle.
-   IT STOPS FOR prefers-reduced-motion. Doctrine §4 permits motion that traces a
+
+   HOW MANY EVENTS, AND HOW FAST, IS THE WHOLE DESIGN. The first version fitted
+   44 events into five seconds -- 115ms each -- and Kevin read it exactly right:
+   "a blur of activity, looks like it's 100x real-time". It was. A play-by-play
+   event lands roughly every nine seconds of real hockey, so 115ms is about 78x,
+   and it is ELEVEN times faster than this same page's own teaching pace
+   (dwell's 650ms x2). The front door was advertising the product at a speed the
+   product does not run at.
+
+   So the budget stayed five seconds and the CONTENT of it shrank: fewer events,
+   each one long enough to be a thing that happened rather than a flicker.
+   PREVIEW_MS is a third of the teaching pace -- brisk, still legible -- and the
+   window is whatever fits.
+
+   These two numbers are a VISUAL judgement and cannot be derived; they are set
+   here to be looked at, not proved. (docs/site-purpose.md 5.)
+
+   IT STOPS FOR prefers-reduced-motion. Doctrine 4 permits motion that traces a
    real event; it does not require inflicting it. Reduced motion gets a still
    frame partway in, so the rink is populated rather than blank. */
+const PREVIEW_MS=430,PREVIEW_S=5.2;
 if(PREVIEW){
  $('rg').classList.add('preview');
- const WINDOW=Math.min(EV.length-1,44);
+ const WINDOW=Math.min(EV.length-1,Math.round(PREVIEW_S*1000/PREVIEW_MS));
  if(REDUCED){set(WINDOW,false);}
  else{let k=0;
   const tick=()=>{set(k,k>0);k++;if(k>WINDOW){k=0;prevA=0;prevH=0;}
-                  setTimeout(tick,k>WINDOW?900:115);};
+                  setTimeout(tick,k>WINDOW?1200:PREVIEW_MS);};
   tick();}}
 }
 __BOOT__
@@ -984,7 +1042,10 @@ __BOOT__
 
 LIB = ["rink.js", "attribution.js", "layer.js", "strength.js", "svgpen.js", "figures.js",
        "layers/corsi.js", "layers/goaltending.js", "layers/danger.js", "layers/whistle.js",
-       "teams.js", "layers/tied.js", "sentence.js"]
+       "teams.js", "layers/tied.js", "sentence.js",
+       # LAST, and it has to be: deeplink.js derives its URL vocabulary from the
+       # layer objects themselves, so all four must already exist in the bundle.
+       "deeplink.js"]
 
 def _lib():
     """Inline src/lib/*.js. They are real ES modules so `node --test` can import
@@ -1027,7 +1088,11 @@ function pick(c){
   v.sort(function(a,b){return a.d===b.d?a.id-b.id:(a.d<b.d?-1:1);});
   return v[v.length-1].id;
 }
-var want=(location.search.match(/[?&]game=(\d+)/)||[])[1];
+// THE SAME PARSER THE RENDERER USES. This was `location.search.match(/[?&]game=
+// (\d+)/)` here and a preview regex twice more below and above -- three reads,
+// two of them the same test spelled out again. src/lib/deeplink.js is why.
+var LINK0=parse(location.search);
+var want=LINK0.game;
 say('Loading…');
 (want?Promise.resolve(want):grab(ORIGIN+'/catalog.json').then(pick))
   .then(function(id){return grab(ORIGIN+'/extract/'+id+'.json');})
@@ -1040,7 +1105,7 @@ say('Loading…');
     // A PREVIEW ASKS FOR NOTHING IT DOES NOT SHOW. The verdict card is hidden in
     // preview, and measures.json exists only to feed it, so fetching it would be
     // a request on a homepage for bytes nobody reads.
-    if(/[?&]preview=1\b/.test(location.search)){boot(g,null);return null;}
+    if(LINK0.preview){boot(g,null);return null;}
     return grab(ORIGIN+'/measures.json')
       .catch(function(){return null;})
       .then(function(rates){boot(g,rates);});})

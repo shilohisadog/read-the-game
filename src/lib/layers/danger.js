@@ -26,6 +26,13 @@
  * The INTERNAL names stay — `isHighDangerEvent`, `isHighDanger`, `HIGH_DANGER_FT`
  * are vocabulary between our own modules, and only the user-facing label makes a
  * claim to a reader.
+ *
+ * EXCEPT `id`, WHICH STOPPED BEING INTERNAL. The deep-link seam spends layer
+ * ids as URL tokens (`?layer=slot`), and a URL is the most public surface we
+ * have: it survives copy-paste, screenshots and forum posts long after page
+ * copy changes. Shipping `danger` and renaming it later is a broken bookmark,
+ * and an id is not exempt from carrying somebody else's definition just because
+ * it is not rendered. So this one moved with the label; the rest did not.
  */
 import { shootingTeam, SHOT_TYPES } from '../attribution.js';
 import { attackDirection, distanceToNet, HIGH_DANGER_FT, SLOT_HALF_WIDTH } from '../rink.js';
@@ -33,7 +40,7 @@ import { NOT_A_PLAY, inShootout } from '../layer.js';
 import { whyNotEven } from '../strength.js';
 
 export const danger = {
-  id: 'danger',
+  id: 'slot',
   label: '＋ Shots from the slot',
 
   reduce(events, ctx) {

@@ -456,7 +456,7 @@ Both reviews are folded in, so this is the sequence. **Nothing below is started.
 | 1 | **The loop** — most recent game, real renderer in a lazy-loaded frame (§5) | the only audience with no surface at all | preview mode in `build_main.py`, `frame-src` in the CSP |
 | 2 | **Say what the site is, and name the concepts** (§8) | measured gap: six concepts, zero mentions | copy on `index.html` |
 | 3 | **Rename "high-danger" → "shots from the slot"** (§7.3) | a term collision that makes us look wrong rather than different | 13 strings per game page, plus tests |
-| 4 | **The deep-link seam** — `?game=&at=&layer=` (§6) — designed in [`deep-link-seam.md`](deep-link-seam.md) | a mechanism; every later teaching claim becomes checkable | `build_main.py` URL parsing, plus the out-of-range state |
+| ~~4~~ | ~~**The deep-link seam**~~ **DONE** — `?game=&at=&layer=&strength=`, built and reviewed in [`deep-link-seam.md`](deep-link-seam.md) | a mechanism; every later teaching claim becomes checkable | shipped with the `danger`→`slot` rename and a clock-format gate |
 | 5 | **"How it works"** (§3) | gives the chrome nav a second destination and lets the four limits boxes shrink to one line | new page |
 
 ### The test

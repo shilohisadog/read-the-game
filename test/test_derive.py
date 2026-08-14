@@ -228,6 +228,34 @@ class TwoGates(unittest.TestCase):
         self.assertEqual(D.derive(good).derived, 1)
         self.assertEqual(D.derive(bad).derived, 0)
 
+    def test_a_clock_that_is_not_mm_ss_refuses_the_game(self):
+        # THE DEEP-LINK ORDINAL RIDES ON A DOT. `?at=2-14:32.3` names the third
+        # event at that clock, and it is unambiguous only while a clock is
+        # strictly MM:SS. The NHL scoreboard shows tenths under a minute; a feed
+        # that ever exposed `14:32.7` would make the separator collide with a
+        # time component and land every link into that game on the wrong event
+        # while looking entirely correct. So it is a refusal, not a surprise.
+        store = DictStore()
+        plays = json.loads(pbp_bytes().decode())["plays"]
+        plays[1]["timeRemaining"] = "18:00.7"
+        seed(store, pbp=pbp_bytes(plays=plays))
+        rep = D.derive(store)
+        self.assertEqual(rep.derived, 0)
+        self.assertEqual(rep.refused["2025020001"]["gate"], "validation")
+        self.assertIn("MM:SS", str(rep.refused["2025020001"]["detail"]))
+
+    def test_the_clock_gate_is_about_the_clock_and_nothing_else(self):
+        # PAIRED with the test above, because a gate that refuses everything is
+        # not a gate. Hold the game constant and move ONLY the clock format.
+        good, bad = DictStore(), DictStore()
+        plays = json.loads(pbp_bytes().decode())["plays"]
+        seed(good, pbp=pbp_bytes(plays=plays))
+        broken = json.loads(pbp_bytes().decode())["plays"]
+        broken[1]["timeRemaining"] = "8:00"          # minutes not zero-padded
+        seed(bad, pbp=pbp_bytes(plays=broken))
+        self.assertEqual(D.derive(good).derived, 1)
+        self.assertEqual(D.derive(bad).derived, 0)
+
     def test_a_refused_game_keeps_its_raw_bytes(self):
         # Refusal is a statement about what we can SHOW, never about what we
         # keep. The archive is the thing we cannot re-create; a gate that

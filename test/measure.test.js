@@ -15,7 +15,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { measureGame, stable } from '../builders/measure.mjs';
+import { measureGame, stable, firstAtClock } from '../builders/measure.mjs';
 
 /**
  * The analysis tier: the modules the PIPELINE imports, directly or transitively.
@@ -128,4 +128,37 @@ test('only the full-archive job may publish the measurement', () => {
   assert.ok(at(/node builders\/measure\.mjs/) > -1, 'derive.yml is where it runs');
   assert.ok(at(/python3 builders\/derive\.py/) < at(/node builders\/measure\.mjs/),
     'and it runs AFTER derive, over the extracts derive just wrote');
+});
+
+/* ------------------------------------------------- the recording convention
+   `firstAtClock` watches every extract for a faceoff recorded before its own
+   stoppage. It went into measure.mjs untested, and a mutation that blanked it
+   survived a full suite run -- which is the finding, not the fix. */
+
+const RICH = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url), 'utf8'));
+
+test('a real game has no draw recorded before its own whistle', () => {
+  assert.deepEqual(firstAtClock(RICH.events), []);
+});
+
+test('and a game that did would be reported — the half that proves the above', () => {
+  // MUTATION IN THE DATA, not in the code. Move ONE stoppage to sit after the
+  // draw it caused, at the same clock, and the watcher must name it. Without
+  // this, "no game in the archive breaks the convention" and "the function
+  // always returns nothing" are the same green.
+  const evs = RICH.events.map(e => ({ ...e }));
+  const i = evs.findIndex((e, k) => e.type === 'faceoff' && k > 0
+                                  && evs[k - 1].type === 'stoppage'
+                                  && evs[k - 1].rem === e.rem);
+  assert.ok(i > 0, 'the reference game should hold a stoppage-then-draw pair at one clock');
+  [evs[i - 1], evs[i]] = [evs[i], evs[i - 1]];
+  assert.deepEqual(firstAtClock(evs), [i - 1],
+    'the draw is now first at its clock and must be named, by index');
+});
+
+test('a draw that is genuinely alone at its clock is still reported', () => {
+  // The convention says a draw follows a whistle. A draw with nothing before it
+  // at that second is the same defect wearing a different shape, and a watcher
+  // that only looked for reordering would miss it.
+  assert.deepEqual(firstAtClock([{ per: 1, rem: '20:00', type: 'faceoff' }]), [0]);
 });

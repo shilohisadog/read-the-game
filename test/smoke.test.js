@@ -35,7 +35,12 @@ function makeDom() {
   const nodes = new Map();
   const node = (id = '') => {
     const n = {
-    id, textContent: '', innerHTML: '', value: 0, max: 0, min: 0, hidden: false,
+    // `hidden` IS DELIBERATELY ABSENT, not `false`. A fake that invents the
+    // default makes `assert.equal(el.hidden, false)` pass against a page that
+    // never wrote the element at all -- the assertion reads as coverage and
+    // proves nothing. Left undefined, the same assertion requires a real write.
+    // (homepage.test.js already worked this way and says so at its heroShown.)
+    id, textContent: '', innerHTML: '', value: 0, max: 0, min: 0,
     // setProperty because the app paints the two teams' real colours onto #rg as
     // custom properties at boot. Recorded rather than ignored, so a test can read
     // back WHICH colour was set.

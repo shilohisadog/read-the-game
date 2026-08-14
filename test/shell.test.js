@@ -22,20 +22,41 @@ const shell = readFileSync(new URL('game.html', SRC), 'utf8');
 const inlined = readFileSync(new URL('read-the-game.html', SRC), 'utf8');
 const scriptOf = h => h.match(/<script>([\s\S]*?)<\/script>/)[1];
 
+/**
+ * Everything from the top of the script to the closing brace of `boot`.
+ *
+ * FOUND BY COUNTING BRACES, NOT BY A LITERAL. This used to anchor on boot's
+ * last statement — `drawRink();set(0,false);` — which meant the test failed the
+ * next time that statement changed, and failed with "boot must still end where
+ * this test thinks it does" rather than with anything about the two pages. A
+ * test whose anchor is a line of the implementation is a test that goes red for
+ * edits it has no opinion about, and the temptation each time is to re-anchor
+ * it, which is how a check quietly loses its subject.
+ *
+ * `lastIndexOf('}')` is not the answer either: the shell's tail carries its own
+ * braces, so it lands inside the bootstrap and compares the wrong thing. (It
+ * did, on the first run of this test.)
+ */
+function rendererOf(script) {
+  const start = script.indexOf('function boot(');
+  assert.notEqual(start, -1, 'no boot() in this page');
+  let depth = 0;
+  for (let i = script.indexOf('{', start); i < script.length; i++) {
+    if (script[i] === '{') depth++;
+    else if (script[i] === '}' && --depth === 0) return script.slice(0, i + 1);
+  }
+  throw new Error('boot() is never closed');
+}
+
 test('the shell and the inlined page are the same renderer', () => {
-  // Both scripts are `function boot(G){…}` plus a tail that calls it. Anchor on
-  // boot's last statement rather than on a brace: the shell's tail contains its
-  // own closing braces, so `lastIndexOf('}')` lands inside the bootstrap and
-  // compares the wrong thing. (It did, on the first run of this test.)
-  const END = 'drawRink();set(0,false);';
-  const body = s => {
-    const at = s.indexOf(END);
-    assert.notEqual(at, -1, 'boot must still end where this test thinks it does');
-    return s.slice(0, at + END.length);
-  };
-  const a = body(scriptOf(shell)), b = body(scriptOf(inlined));
+  const a = rendererOf(scriptOf(shell)), b = rendererOf(scriptOf(inlined));
   assert.ok(a.length > 10000, 'the shared body is the whole app, not a stub');
   assert.equal(a, b, 'the two pages must share one renderer, byte for byte');
+  // The library is hoisted above boot() so the bootstrap can use the same URL
+  // parser the renderer does; that hoist must not have left one page behind.
+  for (const [name, s] of [['shell', a], ['inlined', b]])
+    assert.ok(s.indexOf('src/lib/deeplink.js') < s.indexOf('function boot('),
+      `${name}: the library must sit above boot(), where both halves can reach it`);
 });
 
 test('the shell ships no game inside it, and the inlined page does', () => {
@@ -118,7 +139,24 @@ test('the CSP pins EVERY block it ships, and pins nothing else', () => {
 function run({ search = '', responses = {} } = {}) {
   const asked = [];
   const said = [];
-  const el = { set textContent(v) { said.push(String(v)); }, setAttribute() {} };
+  // RICH ENOUGH FOR boot() TO FINISH. It used to be two properties, which was
+  // all the bootstrap's error paths needed -- but a test that supplies an
+  // extract makes the bootstrap call the real renderer, and the renderer
+  // touches style, classList and the rest. With the thin element it threw, the
+  // chain's own .catch reported "could not be loaded", and any assertion about
+  // what was NOT fetched would have passed because nothing got that far.
+  const el = {
+    set textContent(v) { said.push(String(v)); }, get textContent() { return ''; },
+    // `hidden` IS DELIBERATELY ABSENT, not `false`. A fake that invents the
+    // default makes `assert.equal(el.hidden, false)` pass against a page that
+    // never wrote the element at all -- the assertion reads as coverage and
+    // proves nothing. Left undefined, the same assertion requires a real write.
+    // (homepage.test.js already worked this way and says so at its heroShown.)
+    innerHTML: '', value: '', dataset: {}, childNodes: [{ nodeValue: '' }],
+    style: { setProperty() {}, getPropertyValue() { return ''; } },
+    classList: { add() {}, remove() {}, toggle() {}, contains() { return false; } },
+    setAttribute() {}, getAttribute() { return null; }, addEventListener() {},
+  };
   const document = { getElementById: () => el, querySelectorAll: () => [] };
   const fetch = url => {
     asked.push(url);
@@ -127,8 +165,15 @@ function run({ search = '', responses = {} } = {}) {
     return Promise.resolve({ ok: true, status: 200,
                              json: () => Promise.resolve(responses[key]) });
   };
-  new Function('document', 'fetch', 'location', scriptOf(shell))(
-    document, fetch, { search });
+  // `matchMedia` is part of the browser this bundle runs in -- the renderer asks
+  // it about prefers-reduced-motion -- so the fake supplies it rather than the
+  // app defending against its absence.
+  // The timers are NO-OPS on purpose: with the real ones the preview loop
+  // reschedules itself forever and the runner never exits, which is a hang
+  // rather than a failure and therefore worse.
+  new Function('document', 'fetch', 'location', 'matchMedia', 'setTimeout', 'clearTimeout',
+               scriptOf(shell))(
+    document, fetch, { search }, () => ({ matches: false }), () => 0, () => {});
   return { asked, said, settle: () => new Promise(r => setTimeout(r, 0)) };
 }
 
@@ -236,4 +281,40 @@ test('the deploy gate cannot pass on a blank expectation', () => {
   const compare = step.indexOf('which does not contain');
   assert.ok(blank !== -1 && compare !== -1 && blank < compare,
     'and it must be rejected BEFORE the comparison it would defeat');
+});
+
+/* --------------------------------------------------------------- preview
+   Moved here from render.test.js, where it was a regex over the shell's own
+   source: /preview=1[^}]*\{boot\(g,null\);return null;\}/. That check knew one
+   SPELLING of the branch, so it went red the moment the page started reading
+   preview through the shared parser -- and it had never observed a request in
+   its life. This runs the bootstrap and watches the network. */
+
+const EXTRACT = JSON.parse(
+  readFileSync(new URL('../data/rich.json', import.meta.url), 'utf8'));
+
+test('preview asks for nothing it does not show', () => {
+  // measures.json exists to feed the verdict card, and the card is hidden in
+  // preview -- so fetching it would be a request on a homepage for bytes nobody
+  // reads.
+  const r = run({ search: '?game=2023020204&preview=1',
+                  responses: { 'extract/': EXTRACT, 'measures.json': { games: [] } } });
+  return r.settle().then(() => {
+    assert.ok(r.asked.some(u => /extract\//.test(u)), 'the game itself must still be fetched');
+    assert.deepEqual(r.asked.filter(u => /measures\.json/.test(u)), [],
+      'preview fetched the archive-wide measurement it does not render');
+    // PAIRED, so the assertion above cannot be satisfied by the bootstrap
+    // falling over before it got that far -- which is exactly how this test
+    // would pass while telling us nothing.
+    assert.deepEqual(r.said.filter(s => /could not be loaded/.test(s)), []);
+  });
+});
+
+test('and without preview it does ask, which is the half that proves the above', () => {
+  const r = run({ search: '?game=2023020204',
+                  responses: { 'extract/': EXTRACT, 'measures.json': { games: [] } } });
+  return r.settle().then(() => {
+    assert.ok(r.asked.some(u => /measures\.json/.test(u)),
+      'the ordinary page needs the rates for its verdict card');
+  });
 });

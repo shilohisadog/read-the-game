@@ -413,3 +413,93 @@ What should be tested instead:
    and a third overtime in the playoffs, so **the resolver must read `pt`, never
    the period number** — the same rule `inShootout()` exists to enforce, now
    with a third caller.
+
+---
+
+# Built — and five things the design got wrong
+
+*Appended after implementation. §1–§10 above are the design as reviewed; this
+records where building it disagreed with designing it. `src/lib/deeplink.js`,
+`test/deeplink.test.js`, `test/deeplink-render.test.js`.*
+
+## 1. The grammar had an encoding bug, and it was the worst one available
+
+§5 proposed `at=2-14:32+1`. **In a query string `+` IS a space.** Any consumer
+using `URLSearchParams` — a browser, a link shortener, anything that re-encodes
+— hands back `"2-14:32 1"`. The ordinal would have silently stopped
+disambiguating, landing readers on the wrong event of a shared clock, which is
+*precisely* what it exists to prevent.
+
+It ships as **`at=2-14:32.3`**, `.` being unreserved in RFC 3986, and **1-based**
+— `.1` meaning "the second one" is a trap for whoever hand-writes teaching copy.
+`at=2-14:32 1` is refused rather than repaired.
+
+`.` is unambiguous only while a clock is `MM:SS`. That is now **asserted per game
+in `extract.py --validate`**, so a feed that ever exposed tenths (`14:32.7`)
+refuses at ingest instead of quietly resolving every link into that game to the
+wrong event. Nothing had ever asserted `rem` was present at all.
+
+## 2. A moment names an event; the scrubber indexes a different list
+
+`EV` drops 51 of 320 events — stoppages among them — so **the whistle layer's own
+teaching case names an event with no frame of its own.** The resolver answers in
+extract indices and the page maps through `frameOf()` to the first playable
+event at or after it, which is exactly the window `upto()` already builds. The
+design never noticed the two lists.
+
+This also corrected a test: asserting a scrubber position against an extract
+index asserts the app's internal mapping. It now reads the **scoreboard** — the
+clock the link promised, which is what a reader checks.
+
+## 3. Where the archive-wide invariant lives
+
+CHENG asked for the faceoff property to run in `--validate`. **It runs in
+`measure.mjs` instead**, and the distinction is load-bearing: every `--validate`
+check asks whether *our extract is wrong about the game*, and failing one
+**refuses publication**. A game where the league recorded a draw before its own
+whistle is perfectly good hockey, correctly extracted, where only our link
+resolution degrades. Refusing it is the overreach `derive.py` warns against —
+*"a refusal is a statement about what we can SHOW."* So it warns, per run,
+across every extract.
+
+## 4. The penalty tie-break, decided
+
+**One uniform rule: the first event at that clock, no type-specific case.** That
+no measurement can settle it is the argument for the *simplest* rule, not a
+clever one — a penalty-only branch is a rule someone has to remember, which is
+how the shootout got missed at three of six sites. Exactness comes from the
+generator, which emits the ordinal whenever the clock is shared. Coincidental
+minors are one incident recorded twice; landing on the first is landing on the
+incident.
+
+## 5. What the tests found that reading did not
+
+- **Eleven mutations, all killed** — including dropping the out-of-range period
+  guard, reintroducing the `+` bug, and keeping `danger` as a working alias.
+  The twelfth **survived**: `firstAtClock` went into `measure.mjs` untested, and
+  blanking it passed a full suite. *A mutation that does not fire is a finding.*
+- **A test I wrote would have forced the implementation to be wrong.** It used
+  `?at=3-00:00.99` — a real clock — to assert "no spoiler", so it passed while
+  `at` was ignored and would have failed against a correct resolver. Replaced
+  with the risk nobody was covering: **an implementation that apologises on
+  every inexact landing apologises on most honest links.**
+- **`hidden: false` is gone from four test fakes.** A fake that invents the
+  default makes `assert.equal(el.hidden, false)` pass against a page that never
+  wrote the element. Undefined by default, the same assertion requires a real
+  write, and the whole class is structurally impossible rather than a thing to
+  stay vigilant about. All 407 tests still pass, which is the proof none of them
+  were leaning on it.
+- **`shell.test.js` stopped anchoring on a line of the implementation.** It
+  pinned `drawRink();set(0,false);` and went red when that statement changed,
+  with a message about itself rather than about the two pages. It now finds
+  `boot()` by counting braces.
+- **The `preview` test stopped being a regex over the shell's source** and now
+  runs the bootstrap and watches the network — paired with the ordinary page,
+  which must ask for the file preview must not.
+
+## 6. Not built, deliberately
+
+The **"copy link to this moment" control**. `format()` exists and is tested, but
+nothing on the page calls it yet: the seam is the mechanism and the control is a
+policy on top of it. It needs a place in the transport row and a word, and both
+are better decided once §5's "How it works" page exists to link *from*.

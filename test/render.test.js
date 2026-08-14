@@ -31,7 +31,12 @@ const SCRIPT = app.match(/<script>([\s\S]*)<\/script>/)[1];
 /** The smallest document `boot()` will run against. */
 function fakeDom() {
   const el = () => ({
-    innerHTML: '', textContent: '', value: '', hidden: false,
+    // `hidden` IS DELIBERATELY ABSENT, not `false`. A fake that invents the
+    // default makes `assert.equal(el.hidden, false)` pass against a page that
+    // never wrote the element at all -- the assertion reads as coverage and
+    // proves nothing. Left undefined, the same assertion requires a real write.
+    // (homepage.test.js already worked this way and says so at its heroShown.)
+    innerHTML: '', textContent: '', value: '',
     // The app paints each team's real colour onto #rg as a custom property at
     // boot, so the fake has to record them to be able to check them.
     style: { _v: {}, setProperty(k, v) { this._v[k] = v; },
@@ -935,15 +940,12 @@ test('PREVIEW hides everything but the game, and plays by itself', () => {
   assert.equal(plain.$('rg').classList.contains('preview'), false);
 });
 
-test('the preview asks for nothing it does not show', () => {
-  // measures.json exists to feed the verdict card, and the card is hidden in
-  // preview — so fetching it would be a request on a homepage for bytes nobody
-  // reads. Asserted against the shell's bootstrap, which is where the fetching
-  // lives.
-  const shell = readFileSync(new URL('../src/game.html', import.meta.url), 'utf8');
-  assert.match(shell, /preview=1[^}]*\{boot\(g,null\);return null;\}/,
-    'the preview still fetches the archive-wide measurement');
-});
+// `the preview asks for nothing it does not show` used to live here as a regex
+// over the shell's source, pinned to the exact expression that tested for
+// preview. It now runs the bootstrap and watches the network instead — see
+// test/shell.test.js. A behaviour a test can OBSERVE beats a spelling it has to
+// recognise, and the move was forced by the spelling changing.
+
 
 test('the preview is hidden by CSS, not by deleting the app', () => {
   // If preview removed elements rather than hiding them, every other test in
