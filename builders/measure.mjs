@@ -39,9 +39,20 @@ export function measureGame(g) {
   // deliberately not a parameter in tiedControl.
   const all = corsi.reduce(g.events, { ...ctx, evenOnly: false });
   const level = tiedControl.reduce(g.events, ctx);
+  // WHAT THE ATTEMPTS WERE MADE OF, read back off corsi's OWN counted set.
+  //
+  // Not off `g.events` by type, and the difference is not cosmetic: corsi
+  // decides what an attempt IS — it drops shootout attempts, delayed-penalty
+  // events and everything else that is not a play. Counting raw types here
+  // would be a second answer to a question src/lib already answers, which is
+  // the one thing this file exists not to do. It would also silently include
+  // the shootout, where every attempt is unblocked and from the slot.
+  const mix = { goal: 0, 'shot-on-goal': 0, 'missed-shot': 0, 'blocked-shot': 0 };
+  for (const id of all.counted) mix[g.events[id].type]++;
   return {
     id: g.game.id,
     homeAb: ctx.homeAb, awayAb: ctx.awayAb,
+    mix,
     // THE LEAGUE'S OWN LINE, quoted from the boxscore and stored in the extract
     // so nothing here re-derives a score. If it is missing we do not guess.
     score: { h: g.quoted.home.score, a: g.quoted.away.score },

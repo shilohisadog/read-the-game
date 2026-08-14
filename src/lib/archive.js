@@ -124,6 +124,56 @@ export function rowFor(curve, diff) {
 }
 
 /**
+ * WHAT AN ATTEMPT TURNED INTO, over every attempt in the archive.
+ *
+ * A DIFFERENT KIND OF NUMBER FROM `rateOf`, and the difference is the whole
+ * reason it is publishable. Every other figure in this file is an OUTCOME rate:
+ * a team led some measure, and won or lost. This is a SHARE OF A POPULATION —
+ * of all the attempts taken, this many were stopped by a body. There is no
+ * winner in it, so there is no causal reading available to misread.
+ *
+ * That distinction is what killed the number this was written instead of.
+ * "The team that blocked more won X% of the time" was the obvious rate and it is
+ * not publishable at any sample size: the team that blocks more is the team that
+ * attempted fewer 81.7% of the time, and the archive already says the attempts
+ * leader loses 54.5%. The reference class is "teams that were being outshot", and
+ * once stated honestly the sentence teaches nothing (CHENG,
+ * docs/blocked-shots-layer.md §5 and §7).
+ *
+ * `n` HERE COUNTS ATTEMPTS, NOT GAMES, which is a different unit from every
+ * other `n` in this file. It is named in `what` for that reason: a reader who
+ * carries the games meaning across will be out by a factor of 120.
+ */
+function attemptMix(records) {
+  const t = { goal: 0, 'shot-on-goal': 0, 'missed-shot': 0, 'blocked-shot': 0 };
+  let games = 0;
+  for (const g of records) {
+    if (!g.mix) continue;      // an older record shape: counted, never guessed at
+    games++;
+    for (const k of Object.keys(t)) t[k] += g.mix[k] || 0;
+  }
+  const n = t.goal + t['shot-on-goal'] + t['missed-shot'] + t['blocked-shot'];
+  // `rate: null` over an empty population, for the reason stated at `rateOf`:
+  // 0 reads as a finding, and "we measured nothing" is a different statement.
+  const share = (count, what) => ({ what, population: POPULATION, n, count,
+                                    rate: n ? count / n : null });
+  const reached = t.goal + t['shot-on-goal'];
+  return {
+    games,
+    byType: t,
+    // The goalie faced it: a goal or a save. The league's "shots on goal" is
+    // exactly this pair, which is why goals are added rather than counted apart.
+    reachedTheGoalie: share(reached,
+      'of all shot attempts, this many reached the goalie (n counts ATTEMPTS, not games)'),
+    neverReachedTheGoalie: share(n - reached,
+      'of all shot attempts, this many never reached the goalie — blocked or missed '
+      + '(n counts ATTEMPTS, not games)'),
+    blocked: share(t['blocked-shot'],
+      'of all shot attempts, this many were blocked by a body (n counts ATTEMPTS, not games)'),
+  };
+}
+
+/**
  * @param records  per-game measurements from builders/measure.mjs:
  *                 { id, homeAb, awayAb, score{h,a}, sog{h,a}, attempts{h,a}, level }
  *                 `level` is home-minus-away control while the score was level.
@@ -153,6 +203,9 @@ export function summarise(records) {
     featured: featured.slice(0, 10),
     // The reference class for a single game's edge. See levelCurve.
     levelCurve: levelCurve(games),
+    // What those attempts turned into. A share of a population, not an outcome
+    // rate — see attemptMix for why that distinction is load-bearing.
+    attemptMix: attemptMix(games),
     baseRates: {
       moreShotsOnGoalLost:
         rateOf(games, g => [g.sog.h, g.sog.a], 'the team with more shots on goal lost'),
