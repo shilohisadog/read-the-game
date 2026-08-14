@@ -132,7 +132,12 @@ T = r"""<style>
 #rg .vpt{position:absolute;top:50%;width:13px;height:13px;border-radius:50%;transform:translate(-50%,-50%);
  border:2px solid #fff;box-shadow:0 1px 3px rgba(16,32,45,.3);background:#1f7a4d}
 #rg .vpt.hi{background:#b3341f}
-#rg .vends{display:flex;justify-content:space-between;font-size:.7rem;color:var(--muted);margin-top:4px}
+/* Same order of sacrifice as the homepage: these end labels wrap and shrink
+   before anything else, and the card's fraction lives in the SENTENCE above the
+   track, where it is prose and wraps like prose. */
+#rg .vends{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 10px;
+ font-size:.7rem;color:var(--muted);margin-top:4px}
+#rg .verdict .rate{overflow-wrap:break-word}
 #rg text{font-family:ui-monospace,Menlo,monospace}
 @media(prefers-reduced-motion:reduce){#rg *{animation:none!important;transition:none!important}}
 

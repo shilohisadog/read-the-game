@@ -28,7 +28,7 @@
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-jWdl6dzjQMxx3gT9xLcTxktRd8qLfXPNISg+lEAqowU='; style-src 'sha256-lnrmibk1XRd4mSSsX6P2RhstUetji/NA/zTJVSQOhLk=' 'sha256-XWdZg2v4HBlbF8H2FmEZ8XP0rjRZKsw481cCCgVZpFg='; connect-src 'self' https://data.readthegame.co; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-jWdl6dzjQMxx3gT9xLcTxktRd8qLfXPNISg+lEAqowU='; style-src 'sha256-lnrmibk1XRd4mSSsX6P2RhstUetji/NA/zTJVSQOhLk=' 'sha256-iDzEV0KlQYDlRexuu1OGLmS4827pp/pwooksC8B/Nso='; connect-src 'self' https://data.readthegame.co; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -101,16 +101,29 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
    every point carries its own fraction. */
 .scale{margin:0 0 18px}
 .scale .row{display:grid;grid-template-columns:1fr;gap:3px;padding:9px 0}
-.scale .rl{font-size:.86rem;display:flex;justify-content:space-between;gap:12px;align-items:baseline}
-.scale .rl b{font-weight:650}
-.scale .rl .f{color:var(--muted);font-size:.76rem;font-variant-numeric:tabular-nums}
+/* THE FRACTION IS THE PART THAT MUST SURVIVE (CHENG).
+   Label and fraction share one row, and the label is the long one -- "the team
+   that controlled play while the score was level lost". On a 360px screen a
+   space-between row squeezes whichever child can give, and the one that can give
+   is the number. So the row WRAPS, the fraction never breaks across lines
+   mid-way, and below 30rem the two stack outright: the label takes the width it
+   needs and the fraction sits underneath at full size. The track is decoration
+   around the number; the number is the claim. */
+.scale .rl{font-size:.86rem;display:flex;flex-wrap:wrap;justify-content:space-between;
+ gap:2px 12px;align-items:baseline}
+.scale .rl b{font-weight:650;min-width:0}
+.scale .rl .f{color:var(--muted);font-size:.76rem;font-variant-numeric:tabular-nums;
+ white-space:nowrap;flex-shrink:0}
 .scale .track{position:relative;height:16px;border-radius:8px;background:#e6edf3}
 .scale .half{position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;background:var(--muted);opacity:.55}
 .scale .pt{position:absolute;top:50%;width:13px;height:13px;border-radius:50%;
  transform:translate(-50%,-50%);border:2px solid #fff;box-shadow:0 1px 3px rgba(16,32,45,.3)}
 .scale .pt.lo{background:#1f7a4d}.scale .pt.hi{background:#b3341f}
-.scale .axis{display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted);
- margin-top:2px;font-variant-numeric:tabular-nums}
+/* The axis ends are the least load-bearing thing here, so they are the ones
+   allowed to shrink and wrap. Order of sacrifice: end labels, then the track,
+   never the fraction. */
+.scale .axis{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 10px;
+ font-size:.72rem;color:var(--muted);margin-top:2px;font-variant-numeric:tabular-nums}
 .scale .key{font-size:.8rem;color:var(--muted);margin:9px 0 0;max-width:62ch}
 .scale .key b{color:var(--ink)}
 

@@ -215,3 +215,35 @@ test('the chrome CSS is INLINE, never a stylesheet the CSP would refuse', () => 
       `${f} links an external stylesheet, which default-src 'none' forbids`);
   }
 });
+
+test('NO NUMBER ON THIS SITE CAN BE TRUNCATED', () => {
+  // CHENG, on the 360px screen neither reviewer can check: the drawn rate is a
+  // dot on a track with a fraction beside it, and if something has to give at
+  // narrow widths the track should go before the fraction does — because the
+  // fraction is what carries the honesty. A rate without its denominator is the
+  // thing this whole site teaches against.
+  //
+  // `text-overflow: ellipsis` is how that goes wrong silently: "1811 of 3957"
+  // becomes "1811 of 39…" and still looks deliberate. Today no page uses it, so
+  // this pins a property that already holds rather than repairing one that does
+  // not — which is the cheapest moment to write a rule down.
+  for (const f of PAGES) {
+    const h = readFileSync(new URL(f, SRC), 'utf8');
+    assert.doesNotMatch(h, /text-overflow/i,
+      `${f} can truncate text, and some of its text is measurements`);
+  }
+});
+
+test('the fraction never breaks across lines, and the label yields first', () => {
+  // The ordering, asserted where it is decided. `.f` is the fraction beside each
+  // point on the homepage scale; it must not wrap mid-number and must not be the
+  // element that shrinks when the row runs out of room.
+  const home = readFileSync(new URL('index.html', SRC), 'utf8');
+  const rule = home.match(/\.scale \.rl \.f\{[^}]*\}/);
+  assert.ok(rule, 'the fraction has no styling of its own to protect it');
+  assert.match(rule[0], /white-space:nowrap/, 'the fraction can break across lines');
+  assert.match(rule[0], /flex-shrink:0/, 'the fraction is the element that gives');
+  // And the row must be able to wrap, or nowrap on a child forces overflow.
+  assert.match(home.match(/\.scale \.rl\{[^}]*\}/)[0], /flex-wrap:wrap/,
+    'a nowrap fraction inside a non-wrapping row pushes the page sideways');
+});
