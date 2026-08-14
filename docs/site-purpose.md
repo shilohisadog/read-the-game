@@ -459,6 +459,23 @@ Both reviews are folded in, so this is the sequence. **Nothing below is started.
 | ~~4~~ | ~~**The deep-link seam**~~ **DONE** — `?game=&at=&layer=&strength=`, built and reviewed in [`deep-link-seam.md`](deep-link-seam.md) | a mechanism; every later teaching claim becomes checkable | shipped with the `danger`→`slot` rename and a clock-format gate |
 | 5 | **"How it works"** (§3) | gives the chrome nav a second destination and lets the four limits boxes shrink to one line | new page |
 
+**Re-ordered 2026-08-14, by Kevin, ahead of everything above except the two
+defects.** *"I can view the site as a (relative) novice and want to see that
+added before handing off to my wife for testing."* Items 1–3 are done; 5 waits.
+
+| # | what | why now | cost |
+|---|---|---|---|
+| **D1** | **The CSP blocks every inline `style` attribute** | **live defect.** Hashes do not apply to style attributes, so all 13 in each game page are refused: the team-colour dots beside "More CAR games" never render, and the control percentages lose their team colours. Confirmed by rendering the live page with and without its own policy. | one rule — *the shipped HTML carries no `style=` at all*; static styling to CSS, dynamic through the CSSOM, plus a grep test |
+| **D2** | **The verdict scale draws every game at 0%** | **live defect, and worse than D1.** `.vscale` and `.vtrack` are spans with no `display:block`, so the track has zero width and the dot pins to the far left — while the sentence beside it reads "lost 1307 of 3327" (39.3%). A wrong picture next to a right number, on the flagship card, for every game in the archive. | two CSS declarations, then the browser gate to prove it |
+| **B** | **Blocked shots as a metric layer** | `blk` — who blocked it — is stored in every extract and surfaced nowhere; 28.6% of attempts are blocked (34.9 a game). It re-reads an event already on screen from the other side, and it carries the site's own inversion in a stat novices already hear. | a fifth layer: reducer, toggle, copy, and the archive rate through `measure.mjs` |
+| **R** | **The area below the rink is clunky** (Kevin) | five control groups in three visual treatments, and Trails/Situations/Players each carry a permanent paragraph — ~120 words that matter once and then never again. The verdict card, the most valuable thing down there, sits below all of it. | a layout and copy pass; wants the pixels harness, not reasoning |
+
+**Why D1 and D2 go first:** both are on the page the novice tester will be
+handed, both are invisible to 423 passing tests (no CSS, no layout in the fake
+document), and both are small. **Why B goes before 5:** Kevin's call, and his
+reason is the strongest kind — he is the closest thing to a novice we have had
+look at it so far.
+
 ### The test
 
 | 6 | **Kevin's tester** | turns §9's second list from guesses into findings |
