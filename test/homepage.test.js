@@ -309,3 +309,154 @@ test('an unknown season falls back rather than showing nothing', () => {
       'a season we do not hold lands on the newest we do');
   });
 });
+
+/**
+ * THE HERO IS A GAME, AND IT IS READ FROM THE ARCHIVE.
+ *
+ * The page opened with 33 team chips and three percentages and never showed the
+ * thing it is for. A site whose product is *watch this game* had no game on its
+ * front door — and `docs/homepage.md` §1 had already flagged the previous typed-in
+ * hero as "the same shape as the hard-coded date we just pulled out of game.html".
+ *
+ * `featured` is the archive's own ranking: teams that controlled play while the
+ * score was level AND LOST, sorted by that edge. Both it and the catalog are
+ * already fetched, so the hero costs no extra request and cannot go stale.
+ */
+const HERO = { ...MEASURES, featured: [{ id: 2023020200, ab: 'BUF', edge: 17 }] };
+const HERO_DOCS = { ...ALL, 'measures.json': HERO };
+
+test('the front door leads with a real game, named from the catalog', () => {
+  const r = run({ docs: HERO_DOCS });
+  return r.settle().then(() => {
+    const hero = r.ids.hero;
+    assert.equal(hero.hidden, false, 'the hero never appeared');
+    assert.match(r.ids.heroline.textContent, /^BUF controlled play and lost\.$/);
+
+    // EVERY FACT IN THE SUBTITLE COMES FROM THE TWO DOCUMENTS. Game 2023020200 is
+    // TOR at BUF, BUF won 4–1 — so a hero that read the winner, the wrong side of
+    // the score, or the wrong opponent would be caught here rather than by a
+    // reader who knows the game.
+    const sub = r.ids.herosub.textContent;
+    assert.match(sub, /by 17\b/, 'the edge is the measured one');
+    assert.match(sub, /lost to TOR/, 'the opponent comes from the catalog');
+    assert.match(sub, /1–4/, "the score reads from the featured team's side");
+    assert.match(sub, /9 February 2024/);
+    assert.equal(r.ids.herogo.href, 'game.html?game=2023020200', 'and it plays THAT game');
+  });
+});
+
+test('the hero reads the score from the FEATURED team, home or away', () => {
+  // THIS TEST EXISTS BECAUSE A MUTATION SURVIVED. Replacing the featured team's
+  // side of the score with the home side changed nothing, because in the fixture
+  // above the featured team IS the home side — so the assertion was calibrated on
+  // a sample that could not disconfirm it.
+  //
+  // Game 2023020100 is BUF at TOR, TOR 5 BUF 2: the featured club is the AWAY
+  // side and lost. Reading the home side here prints "lost to TOR 2–5", which
+  // reverses the score in a sentence that already names the loser.
+  const away = { ...MEASURES, featured: [{ id: 2023020100, ab: 'BUF', edge: 11 }] };
+  const r = run({ docs: { ...ALL, 'measures.json': away } });
+  return r.settle().then(() => {
+    assert.match(r.ids.heroline.textContent, /^BUF controlled play and lost\.$/);
+    assert.match(r.ids.herosub.textContent, /lost to TOR 5–2/,
+      'the score is printed from the home side rather than the featured team');
+  });
+});
+
+/** Shown means the code REVEALED it. An untouched element is not shown either —
+ *  the markup ships it `hidden`, and the fake only creates ids the script asks
+ *  for, so `!ids.hero` and `ids.hero.hidden` are the same fact. */
+const heroShown = r => !!(r.ids.hero && r.ids.hero.hidden === false);
+
+test('the hero names no game when the archive names none', () => {
+  // A hero with a typed fallback is a claim that outlives its data. Absent is the
+  // honest state, and the rest of the page still works.
+  const r = run({ docs: { ...ALL, 'measures.json': { ...MEASURES, featured: [] } } });
+  return r.settle().then(() => {
+    assert.equal(heroShown(r), false, 'a hero appeared with nothing behind it');
+    assert.ok(walk(r.ids.teams).some(n => n.className === 'chip'), 'the grid still renders');
+  });
+});
+
+test('a hero the catalog cannot confirm is not shown', () => {
+  // measures.json and catalog.json are written by different runs. A featured id
+  // the catalog does not hold — or holds as refused — must not become a link to
+  // a game that will not open.
+  //
+  // THE FIRST VERSION OF THIS TEST COULD NOT FAIL: it called `.then()` inside a
+  // loop and returned nothing, so node finished the test before any assertion
+  // ran. A test whose assertions are unreachable is worse than no test, because
+  // it reports coverage it does not have.
+  return Promise.all([[{ id: 2099999999, ab: 'BUF', edge: 9 }],
+                      [{ id: 2023020300, ab: 'BUF', edge: 9 }]]      // refused
+    .map(featured => {
+      const r = run({ docs: { ...ALL, 'measures.json': { ...MEASURES, featured } } });
+      return r.settle().then(() => assert.equal(heroShown(r), false,
+        `hero shown for ${featured[0].id}, which the catalog cannot confirm`));
+    }));
+});
+
+test('a team view shows no hero — that visitor already chose', () => {
+  const r = run({ search: '?team=BUF', docs: HERO_DOCS });
+  return r.settle().then(() => {
+    assert.equal(heroShown(r), false, 'a featured game on a page the fan already chose');
+    // Paired, so "no hero" cannot pass because the page rendered nothing at all.
+    assert.ok(linksOf(r.ids.main).some(h => /^game\.html/.test(h)),
+      'the team view itself did not render');
+  });
+});
+
+/**
+ * THREE POINTS ON ONE SCALE, WITH 50% MARKED — and the two conditions that keep
+ * it on the right side of the rule we wrote against plotting the cumulative
+ * curve. That curve had ~35 points, a continuous domain and an uninformative
+ * tail; this has three, a NOMINAL domain and n in the thousands.
+ */
+test('the scale marks 50% and places every point at its own measured rate', () => {
+  const r = run({ docs: ALL });
+  return r.settle().then(() => {
+    const scale = r.ids.scale;
+    assert.equal(scale.hidden, false, 'the scale never rendered');
+    const pts = walk(scale).filter(n => /(^| )pt( |$)/.test(n.className));
+    assert.equal(pts.length, 3, 'one point per rate');
+    // Positions are the rates themselves, recomputed here from count and n.
+    const want = ['moreShotsOnGoalLost', 'moreAttemptsLost', 'moreLevelControlLost']
+      .map(k => (MEASURES.baseRates[k].count / MEASURES.baseRates[k].n * 100).toFixed(1) + '%');
+    assert.deepEqual(pts.map(p => p.style.left), want);
+    // The 50% mark, once per row, is the whole point of the picture.
+    assert.equal(walk(scale).filter(n => n.className === 'half').length, 3);
+    // And the side of 50% each falls on is encoded, not left to the eye alone.
+    assert.deepEqual(pts.map(p => /hi/.test(p.className)), [false, true, false],
+      'only "more shot attempts" is above 50%');
+  });
+});
+
+test('NO CONNECTING LINE, and every point keeps its own fraction', () => {
+  // The two conditions, asserted rather than remembered. A segment between the
+  // points is what asserts a continuum, and there is no measure BETWEEN "shots on
+  // goal" and "shot attempts" for a continuum to run through.
+  const r = run({ docs: ALL });
+  return r.settle().then(() => {
+    const nodes = walk(r.ids.scale);
+    for (const n of nodes)
+      assert.ok(!/^(line|path|polyline|svg)$/.test(n.tag),
+        `the scale drew a <${n.tag}>, which asserts a continuum that does not exist`);
+    const fracs = nodes.filter(n => n.className === 'f').map(n => n.textContent);
+    assert.equal(fracs.length, 3, 'every point carries its own fraction');
+    for (const f of fracs)
+      assert.match(f, /^\d+ of \d+ — \d+\.\d%$/, `"${f}" lost its denominator`);
+  });
+});
+
+test('the payoff is stated, and it is computed from the count and the denominator', () => {
+  // All three rates are published as "lost", which keeps them comparable — and
+  // means the site never once says the thing a newcomer came for. 3855 − 1527.
+  const r = run({ docs: ALL });
+  return r.settle().then(() => {
+    const key = walk(r.ids.scale).find(n => n.className === 'key');
+    assert.ok(key, 'the payoff line is missing');
+    assert.match(textOf(key), /won 2328 of 3855 — 60\.4%\./);
+    assert.doesNotMatch(textOf(key), /\bso\b|\btherefore\b|\bbecause\b|\bproving\b/i,
+      'the payoff argues instead of reporting');
+  });
+});
