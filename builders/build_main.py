@@ -962,37 +962,8 @@ say('Loading…');
 
 
 def _csp(html):
-    """Hash-pinned, and stamped LAST so it covers the bytes actually shipped.
-
-    A hash-pinned policy with a stale hash is a blank page that passes every
-    grep we could write, so the digests are computed from the finished document.
-    """
-    def h(pattern):
-        # EVERY BLOCK, NOT THE FIRST. This was `re.search`, which silently
-        # assumed a document contains exactly one <style> and one <script> --
-        # true of every page here until the shared chrome added a second <style>
-        # in <head>. The policy then pinned the CHROME's 957 bytes and left the
-        # page's own 14 KB stylesheet unhashed, so a real browser would have
-        # refused it and rendered the game page entirely unstyled. Nothing in the
-        # node suite can see that: the fake DOM has no CSS at all.
-        #
-        # A hash-pinned policy with a MISSING hash is the same failure as a stale
-        # one -- a blank page that passes every grep we could write -- which is
-        # what the docstring above already said, one instance narrower than it
-        # needed to be.
-        blocks = re.findall(pattern, html, re.S)
-        assert blocks, f"CSP found nothing matching {pattern!r} to pin"
-        return " ".join(
-            "'sha256-" + base64.b64encode(
-                hashlib.sha256(b.encode()).digest()).decode() + "'"
-            for b in blocks)
-    return "; ".join([
-        "default-src 'none'",
-        f"script-src {h(r'<script>(.*?)</script>')}",
-        f"style-src {h(r'<style>(.*?)</style>')}",
-        f"connect-src 'self' {DATA_ORIGIN}",
-        "base-uri 'none'", "form-action 'none'",
-    ])
+    """Delegates to page.csp — see there for why there is only one copy."""
+    return P.csp(html, connect=DATA_ORIGIN)
 
 
 TITLE = "Read the Game — watch a hockey game and see what the numbers are made of"

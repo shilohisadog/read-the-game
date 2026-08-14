@@ -28,7 +28,7 @@
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ZC/ykUiDOgFrlYF5CyOO3KHnw56ItMBHG9DtXmt8DSQ='; style-src 'sha256-lnrmibk1XRd4mSSsX6P2RhstUetji/NA/zTJVSQOhLk=' 'sha256-XWdZg2v4HBlbF8H2FmEZ8XP0rjRZKsw481cCCgVZpFg='; connect-src 'self' https://data.readthegame.co; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-jWdl6dzjQMxx3gT9xLcTxktRd8qLfXPNISg+lEAqowU='; style-src 'sha256-lnrmibk1XRd4mSSsX6P2RhstUetji/NA/zTJVSQOhLk=' 'sha256-XWdZg2v4HBlbF8H2FmEZ8XP0rjRZKsw481cCCgVZpFg='; connect-src 'self' https://data.readthegame.co; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -958,11 +958,17 @@ function summarise(records) {
     var lc = rates.moreLevelControlLost;
     if (lc && lc.n) {
       var won = lc.n - lc.count;
+      /* MIXED POLARITY ON ONE PAGE, made explicit rather than left to the
+         reader (CHENG). The three rows read "lost", which is what keeps them
+         comparable; this line reads "won". Scanning 45.8 / 54.5 / 39.6 and then
+         60.4 means tracking which direction each runs — so the sentence names
+         the row it inverts and says it is the same games counted the other way,
+         rather than arriving as a fourth number. */
       var key = el('p', 'key');
-      key.appendChild(el('span', null, 'Read the other way round: the team that '
-        + 'controlled play while the score was level '));
-      key.appendChild(el('b', null, 'won ' + won + ' of ' + lc.n
-        + ' — ' + (won / lc.n * 100).toFixed(1) + '%.'));
+      key.appendChild(el('span', null, 'That last row is the same games counted '
+        + 'the other way: the other '));
+      key.appendChild(el('b', null, (won / lc.n * 100).toFixed(1) + '% — '
+        + won + ' of ' + lc.n + ' — they won.'));
       box.appendChild(key);
     }
     box.hidden = false;

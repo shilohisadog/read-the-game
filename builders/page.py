@@ -29,6 +29,56 @@ So the shell is centralised rather than copied into eight builders: one
 definition, one place to fix, and `test/document.test.js` asserts every page in
 `src/` came through here.
 """
+import base64, hashlib, re
+
+
+def csp(html, *, connect):
+    """A Content-Security-Policy the BROWSER enforces, replacing a grep we wrote.
+
+    ONE COPY, AND THE BUG IS THE ARGUMENT FOR IT. This lived in `build_main.py`
+    and `build_index.py`, differing by a single blank line, and when the shared
+    chrome added a second <style> both copies were wrong in the same way and both
+    had to be found. If only one had been, one page ships unstyled. The second
+    copy is where the wrong number hides -- this project's own repeated lesson --
+    and it belongs beside `document()` for exactly the reason the chrome does
+    (CHENG).
+
+    The deploy gate used to assert a page calls nobody by grepping for `fetch(`,
+    `XMLHttpRequest` and friends. That is a blacklist over an open vocabulary and
+    cannot close -- it misses import(), EventSource, sendBeacon, new Image().src
+    and window["fetch"]. So the claim stops being ours to assert:
+    `default-src 'none'` permits nothing, and the only destination named is the
+    data origin. A page calling anywhere else is stopped by the browser, not by
+    our confidence.
+
+    HASH-PINNED rather than 'unsafe-inline', which makes it a third integrity
+    gate -- enforced past our CI and onto the reader's machine.
+    """
+    def h(pattern):
+        # EVERY BLOCK, NOT THE FIRST. This was `re.search`, which silently
+        # assumed a document holds exactly one <style> and one <script> -- true
+        # of every page here until the shared chrome added a second <style> in
+        # <head>. The policy then pinned the CHROME's 957 bytes and left the
+        # page's own 14 KB stylesheet unhashed, so a browser would have refused
+        # it and rendered the page entirely unstyled. Nothing in the node suite
+        # can see that: the fake DOM has no CSS at all.
+        #
+        # A MISSING hash is worse than a stale one. A stale hash blanks the page;
+        # a missing hash unstyles it, so it renders and merely looks broken.
+        blocks = re.findall(pattern, html, re.S)
+        assert blocks, f"CSP found nothing matching {pattern!r} to pin"
+        return " ".join(
+            "'sha256-" + base64.b64encode(
+                hashlib.sha256(b.encode()).digest()).decode() + "'"
+            for b in blocks)
+
+    return "; ".join([
+        "default-src 'none'",
+        f"script-src {h(r'<script>(.*?)</script>')}",
+        f"style-src {h(r'<style>(.*?)</style>')}",
+        f"connect-src 'self' {connect}",
+        "base-uri 'none'", "form-action 'none'",
+    ])
 
 
 

@@ -455,7 +455,11 @@ test('the payoff is stated, and it is computed from the count and the denominato
   return r.settle().then(() => {
     const key = walk(r.ids.scale).find(n => n.className === 'key');
     assert.ok(key, 'the payoff line is missing');
-    assert.match(textOf(key), /won 2328 of 3855 — 60\.4%\./);
+    // The payoff must name the row it inverts, not arrive as a fourth number:
+    // three rows read "lost" and this reads "won", and a reader scanning
+    // 45.8 / 54.5 / 39.6 / 60.4 should not have to work out which way each runs.
+    assert.match(textOf(key), /the same games counted the other way/);
+    assert.match(textOf(key), /60\.4% — 2328 of 3855 — they won\./);
     assert.doesNotMatch(textOf(key), /\bso\b|\btherefore\b|\bbecause\b|\bproving\b/i,
       'the payoff argues instead of reporting');
   });

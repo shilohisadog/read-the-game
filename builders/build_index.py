@@ -41,53 +41,8 @@ def _module(name):
 
 
 def _csp(html):
-    """A Content-Security-Policy the BROWSER enforces, replacing a grep we wrote.
-
-    The deploy gate used to assert this page calls nobody by grepping for
-    `fetch(`, `XMLHttpRequest` and friends. That is a blacklist over an open
-    vocabulary and cannot close -- it misses import(), EventSource, sendBeacon,
-    new Image().src and window["fetch"]. Same failure class as the ESM guard
-    that could only fail on inputs the builder already handled.
-
-    So the claim stops being ours to assert. `default-src 'none'` permits
-    nothing by default, and the only network destination named is the data
-    origin. A page that tried to call anywhere else would be stopped by the
-    browser, not by our confidence.
-
-    THE SCRIPT AND STYLE ARE HASH-PINNED rather than allowed with
-    'unsafe-inline'. The builder already hashes this artifact for the byte gate,
-    so this costs nothing -- and it is a third integrity gate, enforced past our
-    CI and onto the reader's machine: any modification to the shipped script, by
-    anyone, anywhere in the delivery path, and the browser refuses to run it.
-    """
-    def h(pattern):
-        # EVERY BLOCK, NOT THE FIRST. This was `re.search`, which silently
-        # assumed a document contains exactly one <style> and one <script> --
-        # true of every page here until the shared chrome added a second <style>
-        # in <head>. The policy then pinned the CHROME's 957 bytes and left the
-        # page's own 14 KB stylesheet unhashed, so a real browser would have
-        # refused it and rendered the game page entirely unstyled. Nothing in the
-        # node suite can see that: the fake DOM has no CSS at all.
-        #
-        # A hash-pinned policy with a MISSING hash is the same failure as a stale
-        # one -- a blank page that passes every grep we could write -- which is
-        # what the docstring above already said, one instance narrower than it
-        # needed to be.
-        blocks = re.findall(pattern, html, re.S)
-        assert blocks, f"CSP found nothing matching {pattern!r} to pin"
-        return " ".join(
-            "'sha256-" + base64.b64encode(
-                hashlib.sha256(b.encode()).digest()).decode() + "'"
-            for b in blocks)
-
-    return "; ".join([
-        "default-src 'none'",
-        f"script-src {h(r'<script>(.*?)</script>')}",
-        f"style-src {h(r'<style>(.*?)</style>')}",
-        f"connect-src 'self' {DATA_ORIGIN}",
-        "base-uri 'none'",
-        "form-action 'none'",
-    ])
+    """Delegates to page.csp — see there for why there is only one copy."""
+    return P.csp(html, connect=DATA_ORIGIN)
 
 # THE PAGE NAMES NO GAME AND NO TEAM.
 #
@@ -588,11 +543,17 @@ __LIB__
     var lc = rates.moreLevelControlLost;
     if (lc && lc.n) {
       var won = lc.n - lc.count;
+      /* MIXED POLARITY ON ONE PAGE, made explicit rather than left to the
+         reader (CHENG). The three rows read "lost", which is what keeps them
+         comparable; this line reads "won". Scanning 45.8 / 54.5 / 39.6 and then
+         60.4 means tracking which direction each runs — so the sentence names
+         the row it inverts and says it is the same games counted the other way,
+         rather than arriving as a fourth number. */
       var key = el('p', 'key');
-      key.appendChild(el('span', null, 'Read the other way round: the team that '
-        + 'controlled play while the score was level '));
-      key.appendChild(el('b', null, 'won ' + won + ' of ' + lc.n
-        + ' — ' + (won / lc.n * 100).toFixed(1) + '%.'));
+      key.appendChild(el('span', null, 'That last row is the same games counted '
+        + 'the other way: the other '));
+      key.appendChild(el('b', null, (won / lc.n * 100).toFixed(1) + '% — '
+        + won + ' of ' + lc.n + ' — they won.'));
       box.appendChild(key);
     }
     box.hidden = false;
