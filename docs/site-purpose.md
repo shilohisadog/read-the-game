@@ -472,6 +472,8 @@ added before handing off to my wife for testing."* Items 1–3 are done; 5 waits
 
 | **H** | **`frame-ancestors` needs an HTTP header to exist at all** | found while fixing D1. The directive is **ignored in a `<meta>` policy** — the spec says so and Chrome says so on every page load — so the comment in `page.py` calling it "the other half: nobody else's page may put this one in a frame" was describing protection we did not have. The claim is now removed and a test forbids all three meta-inert directives. Whether we *want* the protection is a separate question. | a `_headers` file on Cloudflare Pages, plus a live check that the header arrives — deploy-shaped, so not smuggled into a CSS fix |
 
+| **C** | **Cloudflare injects an analytics beacon into every browser request** | found while fixing D1, by reading the live page's console. Cloudflare adds `static.cloudflareinsights.com/beacon.min.js` to our HTML — **only for browser user-agents**, which is why `fetch the live site back and diff it against the repo` has never seen it: curl gets byte-identical HTML, Chrome gets an extra `<script>`. Our own `script-src` refuses it, so the "this page calls nobody" promise holds *because of the CSP*. Verified both ways with curl. | either turn Web Analytics off in the Cloudflare dashboard (Kevin's, one-time) **or** decide we want it and stop calling the page network-free. Meanwhile the deploy reports it every run as a `::warning::` |
+
 **Why D1 and D2 go first:** both are on the page the novice tester will be
 handed, both are invisible to 423 passing tests (no CSS, no layout in the fake
 document), and both are small. **Why B goes before 5:** Kevin's call, and his

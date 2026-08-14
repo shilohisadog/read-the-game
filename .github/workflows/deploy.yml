@@ -112,14 +112,20 @@ jobs:
           after=$(grep -o 'id="state"[^>]*>[^<]*' rendered.html || true)
           echo "  placeholder: $before"
           echo "  rendered   : $after"
-          # "Refused to", not "Content Security Policy". The moment the console
-          # was actually being captured, the broader pattern matched an
-          # INFORMATIONAL message — 'frame-ancestors' is ignored when delivered
-          # via <meta> — which is a true and useful thing for the browser to say
-          # and not a refusal. The console carries warnings as well as denials
-          # and a gate has to tell them apart. (That warning was a real finding
-          # and is fixed at its source in page.py; this is about the pattern.)
-          if grep -i 'Refused to' chrome.log | grep -vi favicon; then
+          # THE CLAUSE, NOT THE VERB, and not the bare phrase either. This grep
+          # has been through three patterns in one afternoon and each one was
+          # wrong in an instructive way:
+          #
+          #   'Content Security Policy'  — matched the frame-ancestors WARNING,
+          #     which is information, not a denial. The console carries both.
+          #   'Refused to'               — Chrome no longer says it. Today's
+          #     wording is "Applying inline style violates the following ...".
+          #   the clause below           — shared by both wordings, absent from
+          #     the warnings. Established by reading a real browser's output.
+          #
+          # See the policy-refusal step at the foot of this file for the full
+          # account; the same VIOLATION clause is used there.
+          if grep -i 'violates the following Content Security Policy' chrome.log | grep -viE 'favicon|cloudflareinsights'; then
             echo "::error::the browser refused something under our own CSP"
             exit 1
           fi
@@ -940,10 +946,32 @@ jobs:
             --enable-logging=stderr --log-level=0 \
             --virtual-time-budget=4000 --dump-dom \
             "file://$PWD/canary-csp.html" > /dev/null 2> canary.log || true
-          if ! grep -qi 'Refused to apply inline style' canary.log; then
+          # "violates the following Content Security Policy", NOT "Refused to".
+          #
+          # This canary went red twice on two different causes, and it was right
+          # both times. First: Chrome routes console output nowhere without
+          # --enable-logging (fixed above, and it exposed the same blindness in
+          # the index step). Then, with the console finally captured, it went red
+          # again — because CHROME CHANGED THE WORDING. What it says today is
+          #
+          #   "Applying inline style violates the following Content Security
+          #    Policy directive 'style-src ...'"
+          #
+          # and the old "Refused to apply inline style ... because it violates
+          # the following ..." is gone. Grepping for the verb was grepping for a
+          # sentence Chrome no longer writes. The clause both wordings share is
+          # the one below, and it also excludes the INFORMATIONAL messages —
+          # "The Content Security Policy directive 'frame-ancestors' is ignored"
+          # is a warning, not a denial, and matched the pattern this replaced.
+          #
+          # Established by running it: playwright's chromium locally, printing
+          # every console message verbatim, rather than a third guess in CI.
+          VIOLATION='violates the following Content Security Policy'
+          if ! grep -qi "$VIOLATION" canary.log; then
             echo "::error::the canary's refusal was never captured — this step cannot see a violation"
             echo "  an inline style under a hash-only style-src MUST be reported, and was not."
-            head -20 canary.log
+            echo "  either the console is not reaching stderr, or the wording moved again."
+            grep -i 'CONSOLE' canary.log | head -5 || echo "  (no CONSOLE lines at all)"
             exit 1
           fi
           echo "  canary: a refused inline style is visible to this step"
@@ -952,16 +980,34 @@ jobs:
             --enable-logging=stderr --log-level=0 \
             --virtual-time-budget=20000 --dump-dom \
             "https://readthegame.co/game?cb=${GITHUB_RUN_ID}-csp" > /dev/null 2> live.log || true
-          # The implicit /favicon.ico request is browser-initiated and browsers
-          # report it inconsistently; it is not something the page asked for.
-          # Everything else refused here is ours, and is a defect.
-          if grep -i 'Refused to' live.log | grep -vi favicon; then
+          # TWO EXCEPTIONS, BOTH NAMED, BOTH FOR A STATED REASON.
+          #
+          # favicon: the implicit /favicon.ico request is browser-initiated and
+          # reported inconsistently. The page did not ask for it.
+          #
+          # cloudflareinsights: CLOUDFLARE INJECTS A WEB ANALYTICS BEACON INTO
+          # EVERY BROWSER REQUEST FOR THIS SITE, and our own script-src refuses
+          # it. That is the policy doing exactly its job on a site whose stated
+          # promise is that it calls nobody — the promise holds BECAUSE of the
+          # CSP, not because the HTML is clean.
+          #
+          # It is invisible to `fetch the live site back and diff it against the
+          # repo`, because that step uses curl and the injection is UA-gated:
+          # curl's default agent gets byte-identical HTML, a Chrome agent gets an
+          # extra <script>. Verified both ways. Turning it off is a Cloudflare
+          # dashboard action and is on the build list; until then this is a
+          # KNOWN refusal rather than a new one, and it is reported every run so
+          # it cannot quietly become normal.
+          if grep -qi 'cloudflareinsights' live.log; then
+            echo "::warning::Cloudflare is injecting its analytics beacon into this page; the CSP is refusing it"
+          fi
+          if grep -i "$VIOLATION" live.log | grep -viE 'favicon|cloudflareinsights'; then
             echo "::error::the live game page was refused something by its own CSP"
             echo "  static styling belongs in the stylesheet; dynamic styling goes"
             echo "  through the CSSOM (el.style.x = y), which no policy restricts."
             exit 1
           fi
-          echo "  the live game page ran under its real policy with nothing refused"
+          echo "  the live game page ran under its real policy with nothing unexpected refused"
 
       - name: summary
         run: |
