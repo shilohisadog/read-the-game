@@ -219,8 +219,16 @@ T = r"""<style>
    so the site has ONE way of showing a rate rather than two.
    The two conditions carry over: no connecting line (there is nothing to connect
    -- it is a single point), and the fraction stays printed beside it. */
-#rg .vscale{margin:11px 0 2px}
-#rg .vtrack{position:relative;height:14px;border-radius:7px;background:#e6edf3}
+/* `display:block` ON BOTH, AND ITS ABSENCE WAS THE DEFECT. The card is a <p>,
+   so every part of it has to be a <span> -- and a span is inline, which means it
+   ignores `height` and takes its width from its CONTENT. `.vtrack`'s two
+   children are both absolutely positioned, so it had no content, so it was
+   14px of nothing 0px wide. `left:39.3%` of zero is zero: the dot sat hard
+   against the left edge of an invisible track on every game in the archive.
+   `.vk` and `.rate` above carry the same declaration; these two were simply
+   forgotten, and nothing in the node suite has a stylesheet to notice with. */
+#rg .vscale{display:block;margin:11px 0 2px}
+#rg .vtrack{display:block;position:relative;height:14px;border-radius:7px;background:#e6edf3}
 #rg .vhalf{position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;background:var(--muted);opacity:.55}
 #rg .vpt{position:absolute;top:50%;width:13px;height:13px;border-radius:50%;transform:translate(-50%,-50%);
  border:2px solid #fff;box-shadow:0 1px 3px rgba(16,32,45,.3);background:#1f7a4d}

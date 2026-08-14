@@ -643,6 +643,126 @@ jobs:
           kill %1 2>/dev/null || true
           exit $fail
 
+      # THE DOT MUST LAND WHERE THE SENTENCE SAYS, and only a stylesheet can
+      # settle that. `test/render.test.js` already reconciles the two — it reads
+      # "it lost 243 of 708" out of the prose and requires the dot's own position
+      # to be 34.3% — and it was GREEN while every visitor saw the dot pinned to
+      # the far left of the track on every game in the archive.
+      #
+      # Because the card is a <p>, every part of it must be a <span>, and a span
+      # is inline: it ignores `height` and takes its width from its content.
+      # `.vtrack`'s only two children are absolutely positioned, so it had no
+      # content and no width, and `left:34.3%` of zero pixels is zero. `.vk` and
+      # `.rate` beside it carry `display:block`; these two did not.
+      #
+      # The markup was right and the pixels were wrong, which is precisely the
+      # gap the fake document cannot see across. So this step measures BOXES:
+      # the width of the track, and where in it the dot's centre actually is.
+      - name: the verdict dot lands where the sentence says
+        run: |
+          cd phone
+          # Up to five recent games, because the card legitimately shows no track
+          # when the archive holds no comparable lead — and a step that silently
+          # accepted that state would be measuring nothing. If none of five draw
+          # one, that is itself worth a red.
+          IDS=$(python3 -c "
+          import json
+          g=[x for x in json.load(open('catalog.json'))['games'] if x.get('v') and x.get('t') in (2,3)]
+          g.sort(key=lambda x:(x['d'],x['id']))
+          print(' '.join(str(x['id']) for x in g[-5:][::-1]))")
+          mkdir -p extract
+
+          # THE CANARY IS THE DEFECT ITSELF. A copy of the page with `.vtrack`
+          # put back to inline, appended after the stylesheet so it wins. The
+          # step FAILS IF THIS ONE PASSES — otherwise a green here is
+          # indistinguishable from a probe that measured an element it never
+          # found. The CSP is already stripped in this directory, so the extra
+          # block is permitted; on the real page it would be refused.
+          sed 's|</head>|<style>#rg .vtrack{display:inline}</style></head>|' \
+            game.html > game-canary.html
+
+          cat > probe-verdict.html <<'HTML'
+          <!doctype html><html><head><meta charset="utf-8"><title>pending</title></head>
+          <body style="margin:0">
+          <iframe id="f" style="width:900px;height:2400px;border:0"></iframe>
+          <script>
+          var q = new URLSearchParams(location.search);
+          document.getElementById('f').src = q.get('page') + '?game=' + q.get('game');
+          setTimeout(function () {
+            try {
+              var d = document.getElementById('f').contentDocument;
+              var v = d.getElementById('verdict');
+              var tr = d.querySelector('#rg .vtrack'), pt = d.getElementById('vpt');
+              if (!v) { document.title = 'VERD norg'; return; }
+              if (!tr || !pt) { document.title = 'VERD notrack'; return; }
+              var a = tr.getBoundingClientRect(), b = pt.getBoundingClientRect();
+              var m = (v.textContent || '').match(/it lost (\d+) of (\d+)/);
+              /* The CENTRE of the dot, as a fraction of the track it sits in.
+                 `.vpt` is translate(-50%,-50%) so its left edge is not its
+                 position, and reading `style.left` back would only re-report
+                 what the script wrote — which is the number that was already
+                 green while the pixels were wrong. */
+              var pct = a.width ? ((b.left + b.width / 2 - a.left) / a.width * 100) : -1;
+              document.title = 'VERD ok ' + Math.round(a.width) + ' ' +
+                pct.toFixed(1) + ' ' + (m ? m[1] + ' ' + m[2] : '0 0');
+            } catch (e) { document.title = 'VERD throw ' + e.message; }
+          }, 7000);
+          </script></body></html>
+          HTML
+
+          PORT=8137
+          SENTINEL="verdict-${GITHUB_RUN_ID}.txt"
+          echo "$GITHUB_RUN_ID" > "$SENTINEL"
+          python3 -m http.server "$PORT" >verdict-server.log 2>&1 &
+          sleep 3
+          if [ "$(curl -sS "http://localhost:$PORT/$SENTINEL" || true)" != "$GITHUB_RUN_ID" ]; then
+            echo "::error::port $PORT is not serving this step's directory — something else holds it"
+            cat verdict-server.log || true
+            ss -ltnp 2>/dev/null | grep ":$PORT" || true
+            exit 1
+          fi
+
+          measure() {   # $1 = page, $2 = game id  ->  echoes "state width pct count n"
+            google-chrome --headless --no-sandbox --disable-gpu \
+              --virtual-time-budget=16000 --dump-dom \
+              "http://localhost:$PORT/probe-verdict.html?page=$1&game=$2" 2>/dev/null \
+              | grep -o 'VERD [a-z]*[ 0-9.-]*' | head -1
+          }
+
+          ID=""
+          for g in $IDS; do
+            curl -sS --fail "https://data.readthegame.co/extract/$g.json" -o "extract/$g.json" || continue
+            read -r _ state width pct count n <<<"$(measure game.html "$g")" || true
+            [ "$state" = ok ] || { echo "    $g: probe said \"$state\""; continue; }
+            [ -n "$count" ] && [ "$count" != 0 ] && { ID=$g; break; }
+            echo "    $g: the card shows no comparison, so there is no dot to place"
+          done
+          if [ -z "$ID" ]; then
+            echo "::error::none of the five newest games drew a rate — nothing was measured"
+            kill %1 2>/dev/null || true; exit 1
+          fi
+
+          want=$(python3 -c "print(f'{$count/$n*100:.1f}')")
+          echo "  game $ID: the card says it lost $count of $n, which is ${want}%"
+          echo "  the track is ${width}px wide and the dot's centre is at ${pct}%"
+
+          fail=0
+          # A track narrower than this is the inline-span defect, not a layout
+          # choice: the card is 56ch inside a 900px frame.
+          [ "$width" -ge 200 ] || { echo "::error::the track is ${width}px wide — it has collapsed"; fail=1; }
+          off=$(python3 -c "print(1 if abs($pct-$want)>1.5 else 0)")
+          [ "$off" = 0 ] || { echo "::error::the dot sits at ${pct}% of the track; the sentence says ${want}%"; fail=1; }
+
+          read -r _ cstate cwidth cpct _ _ <<<"$(measure game-canary.html "$ID")" || true
+          if [ "$cstate" = ok ] && [ "${cwidth:-0}" -ge 200 ]; then
+            echo "::error::the canary's collapsed track measured ${cwidth}px — this step cannot detect the defect"
+            fail=1
+          else
+            echo "  canary: an inline .vtrack reports \"$cstate\" width ${cwidth:-0}px — this gate can fail"
+          fi
+          kill %1 2>/dev/null || true
+          exit $fail
+
       - name: a visitor can actually watch a game
         run: |
           for i in $(seq 1 12); do
