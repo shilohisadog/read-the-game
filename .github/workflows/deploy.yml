@@ -125,7 +125,7 @@ jobs:
           #
           # See the policy-refusal step at the foot of this file for the full
           # account; the same VIOLATION clause is used there.
-          if grep -i 'violates the following Content Security Policy' chrome.log | grep -viE 'favicon|cloudflareinsights'; then
+          if grep -i 'violates the following Content Security Policy' chrome.log | grep -vi favicon; then
             echo "::error::the browser refused something under our own CSP"
             exit 1
           fi
@@ -309,6 +309,26 @@ jobs:
           URL="$DEPLOY_URL"
           echo "checking $URL"
 
+          # AS A BROWSER, NOT AS CURL, AND THAT IS NOT A DETAIL.
+          #
+          # This step compares published bytes to committed bytes and passed
+          # every run while Cloudflare injected a Web Analytics beacon into the
+          # HTML — because the injection was USER-AGENT GATED. curl's default
+          # agent got bytes identical to the repo; a Chrome agent got an extra
+          # <script>. The step was measuring something no visitor receives, which
+          # is this project's most-repeated defect, found inside the step written
+          # to close it. Found by reading the live page's console in a real
+          # browser, not by reading this file.
+          #
+          # The edge may rewrite HTML for a browser in other ways too (Rocket
+          # Loader, email obfuscation, auto-minify are all UA- and content-type
+          # sensitive). Asking as a browser is the only version of this question
+          # whose answer is about the site people actually load.
+          #
+          # Checked before this line was written: all nine pages byte-identical
+          # under a Chrome agent, the day after the beacon was turned off.
+          VISITOR_UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'
+
           # Retries on 5xx (edge not ready) but NOT on 404 -- a missing file is
           # a real answer, and waiting 60s to report it just hides the cause.
           fetch() {  # fetch <path> <destination>
@@ -317,7 +337,8 @@ jobs:
               # 000 is curl's code for a transport failure, which for a hostname
               # minutes old usually means DNS has not propagated yet -- another
               # thing to wait out rather than report as a broken site.
-              code=$(curl -sS -o "$dest" -w '%{http_code}' -L "$URL/$path") || code=000
+              code=$(curl -sS -A "$VISITOR_UA" -H 'Accept: text/html' \
+                          -o "$dest" -w '%{http_code}' -L "$URL/$path") || code=000
               case "$code" in
                 200)     return 0 ;;
                 5*|000)  echo "    attempt $i: HTTP $code — edge not ready"; sleep 6 ;;
@@ -980,28 +1001,31 @@ jobs:
             --enable-logging=stderr --log-level=0 \
             --virtual-time-budget=20000 --dump-dom \
             "https://readthegame.co/game?cb=${GITHUB_RUN_ID}-csp" > /dev/null 2> live.log || true
-          # TWO EXCEPTIONS, BOTH NAMED, BOTH FOR A STATED REASON.
+          # ONE EXCEPTION, AND IT USED TO BE TWO.
           #
           # favicon: the implicit /favicon.ico request is browser-initiated and
           # reported inconsistently. The page did not ask for it.
           #
-          # cloudflareinsights: CLOUDFLARE INJECTS A WEB ANALYTICS BEACON INTO
-          # EVERY BROWSER REQUEST FOR THIS SITE, and our own script-src refuses
-          # it. That is the policy doing exactly its job on a site whose stated
-          # promise is that it calls nobody — the promise holds BECAUSE of the
-          # CSP, not because the HTML is clean.
+          # `cloudflareinsights` WAS the second, and its removal is the point of
+          # this comment. Cloudflare was injecting a Web Analytics beacon into
+          # every BROWSER request for this site — invisible to `fetch the live
+          # site back and diff it against the repo`, because that step uses curl
+          # and the injection is user-agent gated: curl's default agent got bytes
+          # identical to the repo, a Chrome agent got an extra <script>. Our own
+          # script-src refused it, so "this page calls nobody" was being held by
+          # the CSP rather than by the HTML being clean.
           #
-          # It is invisible to `fetch the live site back and diff it against the
-          # repo`, because that step uses curl and the injection is UA-gated:
-          # curl's default agent gets byte-identical HTML, a Chrome agent gets an
-          # extra <script>. Verified both ways. Turning it off is a Cloudflare
-          # dashboard action and is on the build list; until then this is a
-          # KNOWN refusal rather than a new one, and it is reported every run so
-          # it cannot quietly become normal.
-          if grep -qi 'cloudflareinsights' live.log; then
-            echo "::warning::Cloudflare is injecting its analytics beacon into this page; the CSP is refusing it"
-          fi
-          if grep -i "$VIOLATION" live.log | grep -viE 'favicon|cloudflareinsights'; then
+          # Kevin turned Web Analytics off (it was set to "Enable, excluding
+          # visitor data in the EU", which still injects outside the EU). Verified
+          # both ways afterwards: zero occurrences in the HTML under a Chrome
+          # user-agent, and ZERO console messages on / and /game in a real
+          # browser, where there had been two and one.
+          #
+          # So the exception goes with it. A named exception that outlives its
+          # reason is an allowance nobody remembers granting, and it would let the
+          # NEXT injection through in silence — which is the entire failure this
+          # step exists to catch.
+          if grep -i "$VIOLATION" live.log | grep -vi favicon; then
             echo "::error::the live game page was refused something by its own CSP"
             echo "  static styling belongs in the stylesheet; dynamic styling goes"
             echo "  through the CSSOM (el.style.x = y), which no policy restricts."
