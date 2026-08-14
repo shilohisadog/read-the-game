@@ -681,34 +681,54 @@ jobs:
           sed 's|</head>|<style>#rg .vtrack{display:inline}</style></head>|' \
             game.html > game-canary.html
 
-          cat > probe-verdict.html <<'HTML'
+          # THE SRC IS BAKED IN, one probe file per page and game.
+          #
+          # The first version of this step set `iframe.src` from `location.search`
+          # after load, and every game came back "no track" — including three
+          # that provably have a rate. Under `--virtual-time-budget` the clock
+          # runs ahead of a navigation the document did not start with, so the
+          # measurement fired against a frame that had never booted. The preview
+          # gate above writes its src into the markup and works; this now does the
+          # same thing for the same reason.
+          probe () {   # $1 = tag, $2 = page, $3 = game id
+            cat > "probe-$1-$3.html" <<HTML
           <!doctype html><html><head><meta charset="utf-8"><title>pending</title></head>
           <body style="margin:0">
-          <iframe id="f" style="width:900px;height:2400px;border:0"></iframe>
+          <iframe id="f" src="$2?game=$3" style="width:900px;height:2400px;border:0"></iframe>
           <script>
-          var q = new URLSearchParams(location.search);
-          document.getElementById('f').src = q.get('page') + '?game=' + q.get('game');
+          window.onerror = function (m) { document.title = 'VERD throw ' + m; };
           setTimeout(function () {
             try {
               var d = document.getElementById('f').contentDocument;
-              var v = d.getElementById('verdict');
+              /* BOOTED IS ITS OWN FIELD, and the last version had no such field.
+                 It asked whether #verdict existed — but #verdict is in the static
+                 markup, so an empty one answers yes. Every failure then looked
+                 like "this game has no rate", which is a legitimate state, and
+                 the step reported the wrong reason five times in a row. #gl is
+                 written by boot() and is the same marker the live-watch step
+                 below uses. */
+              var gl = d.getElementById('gl'), v = d.getElementById('verdict');
+              var booted = gl && /final/.test(gl.textContent || '') ? 1 : 0;
               var tr = d.querySelector('#rg .vtrack'), pt = d.getElementById('vpt');
-              if (!v) { document.title = 'VERD norg'; return; }
-              if (!tr || !pt) { document.title = 'VERD notrack'; return; }
+              var m = (v && v.textContent || '').match(/it lost (\d+) of (\d+)/);
+              if (!booted || !tr || !pt) {
+                document.title = 'VERD ' + booted + ' 0 0 0 0 0';
+                return;
+              }
               var a = tr.getBoundingClientRect(), b = pt.getBoundingClientRect();
-              var m = (v.textContent || '').match(/it lost (\d+) of (\d+)/);
               /* The CENTRE of the dot, as a fraction of the track it sits in.
-                 `.vpt` is translate(-50%,-50%) so its left edge is not its
-                 position, and reading `style.left` back would only re-report
+                 \`.vpt\` is translate(-50%,-50%) so its left edge is not its
+                 position, and reading \`style.left\` back would only re-report
                  what the script wrote — which is the number that was already
                  green while the pixels were wrong. */
               var pct = a.width ? ((b.left + b.width / 2 - a.left) / a.width * 100) : -1;
-              document.title = 'VERD ok ' + Math.round(a.width) + ' ' +
+              document.title = 'VERD 1 1 ' + Math.round(a.width) + ' ' +
                 pct.toFixed(1) + ' ' + (m ? m[1] + ' ' + m[2] : '0 0');
             } catch (e) { document.title = 'VERD throw ' + e.message; }
-          }, 7000);
+          }, 6000);
           </script></body></html>
           HTML
+          }
 
           PORT=8137
           SENTINEL="verdict-${GITHUB_RUN_ID}.txt"
@@ -722,23 +742,32 @@ jobs:
             exit 1
           fi
 
-          measure() {   # $1 = page, $2 = game id  ->  echoes "state width pct count n"
+          measure() {   # $1 = tag, $2 = game id -> "booted hastrack width pct count n"
             google-chrome --headless --no-sandbox --disable-gpu \
-              --virtual-time-budget=16000 --dump-dom \
-              "http://localhost:$PORT/probe-verdict.html?page=$1&game=$2" 2>/dev/null \
-              | grep -o 'VERD [a-z]*[ 0-9.-]*' | head -1
+              --virtual-time-budget=15000 --dump-dom \
+              "http://localhost:$PORT/probe-$1-$2.html" 2>/dev/null \
+              | grep -o 'VERD [0-9a-z]*[ 0-9.-]*' | head -1
           }
 
-          ID=""
+          ID=""; anyboot=0
           for g in $IDS; do
             curl -sS --fail "https://data.readthegame.co/extract/$g.json" -o "extract/$g.json" || continue
-            read -r _ state width pct count n <<<"$(measure game.html "$g")" || true
-            [ "$state" = ok ] || { echo "    $g: probe said \"$state\""; continue; }
-            [ -n "$count" ] && [ "$count" != 0 ] && { ID=$g; break; }
-            echo "    $g: the card shows no comparison, so there is no dot to place"
+            probe real game.html "$g"
+            read -r _ booted hastrack width pct count n <<<"$(measure real "$g")" || true
+            [ "$booted" = 1 ] && anyboot=1
+            if [ "$booted" != 1 ]; then echo "    $g: the page never booted (probe: $booted)"; continue; fi
+            if [ "$hastrack" != 1 ] || [ "${count:-0}" = 0 ]; then
+              echo "    $g: the card shows no comparison, so there is no dot to place"
+              continue
+            fi
+            ID=$g; break
           done
+          if [ "$anyboot" != 1 ]; then
+            echo "::error::not one of the five pages booted — this step measured nothing at all"
+            kill %1 2>/dev/null || true; exit 1
+          fi
           if [ -z "$ID" ]; then
-            echo "::error::none of the five newest games drew a rate — nothing was measured"
+            echo "::error::the pages booted but none drew a rate — nothing was measured"
             kill %1 2>/dev/null || true; exit 1
           fi
 
@@ -753,12 +782,16 @@ jobs:
           off=$(python3 -c "print(1 if abs($pct-$want)>1.5 else 0)")
           [ "$off" = 0 ] || { echo "::error::the dot sits at ${pct}% of the track; the sentence says ${want}%"; fail=1; }
 
-          read -r _ cstate cwidth cpct _ _ <<<"$(measure game-canary.html "$ID")" || true
-          if [ "$cstate" = ok ] && [ "${cwidth:-0}" -ge 200 ]; then
+          probe canary game-canary.html "$ID"
+          read -r _ cboot _ cwidth _ _ _ <<<"$(measure canary "$ID")" || true
+          if [ "$cboot" != 1 ]; then
+            echo "::error::the canary page never booted, so its verdict proves nothing"
+            fail=1
+          elif [ "${cwidth:-0}" -ge 200 ]; then
             echo "::error::the canary's collapsed track measured ${cwidth}px — this step cannot detect the defect"
             fail=1
           else
-            echo "  canary: an inline .vtrack reports \"$cstate\" width ${cwidth:-0}px — this gate can fail"
+            echo "  canary: an inline .vtrack measures ${cwidth:-0}px — this gate can fail"
           fi
           kill %1 2>/dev/null || true
           exit $fail

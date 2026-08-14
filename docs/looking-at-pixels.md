@@ -137,3 +137,35 @@ Both halves were run locally before it was pushed — with a decoy already holdi
 the port (exit 1, naming the port) and with the port free (exit 0, canary
 correctly rejected). Which is the same discipline as the rest of this file:
 **look at it, rather than reason about it.**
+
+## 7. A third probe, and the same lie in a new costume
+
+The gate for the verdict dot (§D2) went red on its first run with *"none of the
+five newest games drew a rate"* — five games in a row, which is a suspicious
+number. Three of the five provably have one: running `sentenceFor` against the
+live `measures.json` and the real extracts returns a rate for `2025030416`,
+`2025030413` and `2025030412`.
+
+So the message was wrong, and it was wrong in a way this file has already named
+once. The probe asked `if (!document.getElementById('verdict'))` to decide
+whether the page had loaded — but **`<p id="verdict">` is in the static markup**,
+so an empty one answers *yes*. Every failure, whatever its cause, came out
+labelled "this game has no comparison to show", which is a legitimate state. The
+step reported the wrong reason five times and I nearly believed it.
+
+The cause underneath was different again: the probe set `iframe.src` from
+`location.search` **after** load, and under `--virtual-time-budget` the clock
+runs ahead of a navigation the document did not start with. The measurement
+fired against a frame that had never booted. The preview gate in §6 bakes its
+`src` into the markup and works; this one now does the same.
+
+Two rules fall out, and neither is about iframes:
+
+- **A probe needs a field for "did the thing under test run at all"**, separate
+  from every field about what it found. `booted` is now its own number in the
+  reported tuple, read off `#gl` — which `boot()` writes and the static page
+  leaves as `—`. Without it, a broken harness and a legitimate empty state are
+  the same observation.
+- **A diagnostic that can only produce one explanation is not a diagnostic.**
+  Five identical messages should have been read as "this probe has one exit",
+  not as five facts about hockey.
