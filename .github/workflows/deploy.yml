@@ -725,6 +725,64 @@ jobs:
           done
           echo "  and it matches the catalog on both teams and date"
 
+      # THE POLICY'S OWN VERDICT, READ BACK.
+      #
+      # Every other browser step in this file STRIPS the CSP, and has to: framing
+      # the page or rewriting the data origin changes the script's bytes, so the
+      # pinned hash no longer matches and the browser blanks the page. Which
+      # means nothing we had could see a violation — and thirteen of them were
+      # live. `game.html` shipped thirteen `style=` attributes under a `style-src`
+      # that names only hashes, and there is no such thing as a hash for an
+      # attribute. The browser refused all thirteen, said so in a console nobody
+      # was reading, and rendered the page: the team swatches beside "More MIN
+      # games" computed to rgba(0, 0, 0, 0) and the verdict dot sat at the far
+      # left of its track on every game in the archive.
+      #
+      # `test/document.test.js` forbids the attribute at build time, which closes
+      # that instance. This step closes the CLASS: it asks the browser whether the
+      # live page, under its real policy and with its real data, was refused
+      # anything at all — a question no grep of ours can answer.
+      - name: the live game raises no policy refusal
+        run: |
+          # A CANARY FIRST, and it is not decoration here. A console grep that has
+          # never matched is indistinguishable from a console that is not being
+          # captured, and this whole step is one grep of one log. So: a page with
+          # the same SHAPE of policy — hashes only, no 'unsafe-inline' — and one
+          # inline style on it. The step FAILS IF THIS COMES BACK CLEAN. The hash
+          # below is arbitrary and that is the point: no attribute can ever match
+          # any hash, which is exactly the situation on the real page.
+          cat > canary-csp.html <<'HTML'
+          <!doctype html><html><head><meta charset="utf-8">
+          <meta http-equiv="Content-Security-Policy"
+                content="default-src 'none'; style-src 'sha256-3w1CAvQ0dwQ8i7dr8jNAwLnzsQpx8bLTPjB7C4yRcVs='">
+          <title>canary</title></head>
+          <body><p style="color:#c00">this style must be refused</p></body></html>
+          HTML
+          google-chrome --headless --no-sandbox --disable-gpu \
+            --virtual-time-budget=4000 --dump-dom \
+            "file://$PWD/canary-csp.html" > /dev/null 2> canary.log || true
+          if ! grep -qi 'Refused to apply inline style' canary.log; then
+            echo "::error::the canary's refusal was never captured — this step cannot see a violation"
+            echo "  an inline style under a hash-only style-src MUST be reported, and was not."
+            head -20 canary.log
+            exit 1
+          fi
+          echo "  canary: a refused inline style is visible to this step"
+
+          google-chrome --headless --no-sandbox --disable-gpu \
+            --virtual-time-budget=20000 --dump-dom \
+            "https://readthegame.co/game?cb=${GITHUB_RUN_ID}-csp" > /dev/null 2> live.log || true
+          # The implicit /favicon.ico request is browser-initiated and browsers
+          # report it inconsistently; it is not something the page asked for.
+          # Everything else refused here is ours, and is a defect.
+          if grep -i 'Refused to' live.log | grep -vi favicon; then
+            echo "::error::the live game page was refused something by its own CSP"
+            echo "  static styling belongs in the stylesheet; dynamic styling goes"
+            echo "  through the CSSOM (el.style.x = y), which no policy restricts."
+            exit 1
+          fi
+          echo "  the live game page ran under its real policy with nothing refused"
+
       - name: summary
         run: |
           {

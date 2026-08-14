@@ -42,8 +42,9 @@ T = r"""<style>
 #rg .tm .ab{padding:2px 8px;border-radius:5px}#rg .tm.a .ab{background:var(--away);color:var(--away-ink)}#rg .tm.h .ab{background:var(--home);color:var(--home-ink)}
 #rg .sc{font-family:ui-monospace,Menlo,monospace;font-size:2.2rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
 #rg .mid{min-width:150px}#rg .gs{text-align:center;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px}#rg .gs .cl{color:var(--ink);font-family:ui-monospace,Menlo,monospace}#rg .gs .clw{font-style:normal;font-size:.62rem;letter-spacing:.08em}
-#rg .bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--edge)}#rg .bar span{transition:width .4s ease}#rg .ba{background:#fff;box-shadow:inset 0 0 0 2px var(--away)}#rg .bh{background:var(--home)}
+#rg .bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--edge)}#rg .bar span{transition:width .4s ease}#rg .ba{background:#fff;box-shadow:inset 0 0 0 2px var(--away);width:50%}#rg .bh{background:var(--home);width:50%}
 #rg .pct{display:flex;justify-content:space-between;align-items:center;font-size:.9rem;margin-top:5px;font-family:ui-monospace,Menlo,monospace;font-weight:700}
+#rg .pct #pa{color:var(--away-text)}#rg .pct #ph{color:var(--home-text)}
 #rg .plab{display:flex;flex-direction:column;align-items:center;font-size:.66rem;letter-spacing:.1em;color:var(--muted);font-weight:600;line-height:1.35}
 /* The deep-link notice. `:empty` rather than a `hidden` attribute, so the one
    place that writes the sentence is the only place that controls whether it
@@ -131,6 +132,18 @@ T = r"""<style>
 #rg .nextup a{display:inline-block;padding:9px 14px;border-radius:9px;border:1px solid var(--edge);background:#fff;color:var(--ink);text-decoration:none;font-weight:650;font-size:.9rem}
 #rg .nextup a:hover,#rg .nextup a:focus{border-color:var(--ink)}
 #rg .nextup a .sw{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:7px;vertical-align:baseline}
+/* WHICH TEAM, NOT WHICH HEX. Four places used to interpolate the club's colour
+   into a `style` attribute -- and this page's own CSP refuses every one of them,
+   because a hash can cover a stylesheet block and there is no such thing as a
+   hash for an attribute. So the markup says only WHICH SIDE, and colour arrives
+   through the custom properties `paint()` already sets on #rg at boot. That is
+   the same seam the sweater convention uses for the marks on the ice, and it
+   deletes four copies of the away/home ternary at the same time.
+
+   `--away` for a chip with `--away-ink` on it; `--away-text` for type on white,
+   which is a DIFFERENT colour for the six clubs whose primary cannot be read
+   there. The distinction is `paint()`'s and is documented at its definition. */
+#rg .nextup a .sw.a{background:var(--away)}#rg .nextup a .sw.h{background:var(--home)}
 #rg .fdot{fill:var(--red);opacity:.55}#rg .fdot.ctr{fill:var(--blue)}
 #rg .npl{font-size:3.4px;font-weight:700;text-anchor:middle;fill:var(--ink)}
 #rg .nplsub{font-size:2.9px;text-anchor:middle;fill:var(--ink);opacity:.72}
@@ -165,6 +178,7 @@ T = r"""<style>
 #rg .caption{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;align-items:center;gap:8px;background:rgba(15,26,35,.94);color:#fff;padding:7px 15px;border-radius:99px;font-size:.86rem;font-weight:600;white-space:nowrap;opacity:0;pointer-events:none;max-width:92%}
 #rg .caption.on{animation:cap 2.2s ease}@keyframes cap{0%{opacity:0;transform:translateX(-50%) translateY(6px)}12%{opacity:1;transform:translateX(-50%) translateY(0)}82%{opacity:1}100%{opacity:0}}
 #rg .caption .tag{font-family:ui-monospace,Menlo,monospace;font-weight:700;font-size:.72rem;padding:2px 7px;border-radius:5px}
+#rg .caption .tag.a{background:var(--away);color:var(--away-ink)}#rg .caption .tag.h{background:var(--home);color:var(--home-ink)}
 #rg .caption .num{opacity:.65;font-family:ui-monospace,Menlo,monospace;margin-right:3px}
 #rg .counters{display:flex;justify-content:space-between;padding:2px 6px;margin-top:8px}
 #rg .cc{display:flex;align-items:baseline;gap:7px}#rg .cc .n{font-family:ui-monospace,Menlo,monospace;font-size:1.5rem;font-weight:700}#rg .cc.a .n{color:var(--away-text)}#rg .cc.h .n{color:var(--home-text)}
@@ -180,7 +194,8 @@ T = r"""<style>
 #rg .legend i{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:-1px}
 #rg .k-a{background:#fff;box-shadow:0 0 0 1.5px var(--away)}#rg .k-h{background:var(--home)}#rg .k-hd{background:#fff;box-shadow:0 0 0 1.5px var(--hd)}#rg .k-blk{background:var(--home);box-shadow:0 0 0 1.5px var(--flag)}#rg .k-p{background:#0e1216}#rg .k-g{background:radial-gradient(circle,#fff 0 2.5px,var(--home) 2.5px)}#rg .k-gv{background:radial-gradient(circle,var(--away) 0 2.5px,#fff 2.5px);box-shadow:0 0 0 1.5px var(--away);margin-left:-3px}
 #rg .work{background:#fff;border:1px solid var(--edge);border-radius:13px;padding:18px;margin-top:14px;box-shadow:0 5px 18px rgba(16,32,45,.06)}
-#rg .work h2{margin:0 0 10px;font-size:1.1rem}#rg .wg{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+#rg .work h2{margin:0 0 10px;font-size:1.1rem}#rg .work h2 .wsub{color:var(--muted);font-weight:400}
+#rg .wc .wexc{font-size:.82rem;line-height:1.6}#rg .wg{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
 #rg .wc{background:#f2f7fa;border:1px solid var(--edge);border-radius:10px;padding:13px}#rg .wc h3{margin:0 0 6px;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);display:flex;justify-content:space-between}#rg .wc h3 .n{font-family:ui-monospace,Menlo,monospace;font-size:1.2rem;color:var(--ink);font-weight:700}#rg .wc.flag{border-color:#e6b98f}#rg .wc.flag h3 .n{color:var(--flag)}#rg .wc p{margin:0;font-size:.87rem}
 #rg .wfoot{margin-top:13px;font-size:.8rem;color:var(--muted);border-top:1px solid var(--edge);padding-top:11px}#rg .wfoot em{font-style:normal;color:var(--ink)}
 #rg .foot{font-size:.78rem;color:var(--muted);margin-top:16px;text-align:center}
@@ -227,6 +242,7 @@ T = r"""<style>
 #rg .whybk.on{display:flex}
 #rg .why{background:#fff;border-radius:15px;max-width:430px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.4);overflow:hidden;max-height:92vh;overflow-y:auto}
 #rg .whyhd{padding:15px 18px;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px}
+#rg .whyhd.a{background:var(--away);color:var(--away-ink)}#rg .whyhd.h{background:var(--home);color:var(--home-ink)}
 #rg .whyhd .t{font-weight:800;font-size:1.08rem}#rg .whyhd .s{font-size:.75rem;opacity:.92;font-family:ui-monospace,Menlo,monospace}
 #rg .whyclose{background:rgba(0,0,0,.14);border:0;color:inherit;border-radius:7px;padding:6px 10px;cursor:pointer;font-weight:700;line-height:1}
 #rg .whybody{padding:16px 18px}
@@ -235,6 +251,9 @@ T = r"""<style>
 #rg .factor{display:flex;align-items:baseline;gap:12px;padding:9px 0;border-bottom:1px solid var(--edge)}
 #rg .factor .fv{font-family:ui-monospace,Menlo,monospace;font-weight:700;font-size:1.1rem;min-width:52px}
 #rg .factor .fl{font-size:.86rem;color:var(--muted)}#rg .factor .fl b{color:var(--ink)}
+/* The last of the three, which has the rule below it and needs no line. Named
+   rather than `:last-of-type`, because the sibling after it is a <div> too. */
+#rg .factor.last{border-bottom:0}
 #rg .chk{color:var(--ok);font-weight:800}
 #rg .whyrule{background:#f2f7fa;border:1px solid var(--edge);border-radius:9px;padding:12px 13px;font-size:.83rem;margin-top:13px;line-height:1.5}#rg .whyrule b{color:var(--ink)}
 
@@ -271,6 +290,7 @@ T = r"""<style>
 #rg.goalie .goalies{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 #rg .gcard{background:#fff;border:1px solid var(--edge);border-radius:11px;padding:12px 15px;box-shadow:0 4px 14px rgba(16,32,45,.06)}
 #rg .gcard .gname{font-weight:800;font-size:.98rem}
+#rg .gcard .gname.a{color:var(--away-text)}#rg .gcard .gname.h{color:var(--home-text)}
 #rg .gcard .gname .sub{color:var(--muted);font-weight:600;font-size:.68rem}
 #rg .gcard .gsv{font-family:ui-monospace,Menlo,monospace;font-size:1.75rem;font-weight:700;line-height:1.1}
 #rg .gcard .gline{font-size:.78rem;color:var(--muted);margin-top:2px}#rg .gcard .lim{color:var(--flag)}
@@ -283,8 +303,8 @@ T = r"""<style>
 <div class="board">
   <div class="tm a"><span class="ab" id="aAb">MIN</span><span class="sc" id="aSc">0</span></div>
   <div class="mid"><div class="gs"><span id="per">Pre-game</span> · <span class="cl" id="clk">20:00</span> <i class="clw">left</i></div>
-    <div class="cbar"><div class="bar"><span class="ba" id="ba" style="width:50%"></span><span class="bh" id="bh" style="width:50%"></span></div>
-    <div class="pct"><span id="pa" style="color:var(--away-text)">0</span><span class="plab">CONTROL<i class="mode" id="pMode">ALL SITUATIONS</i></span><span id="ph" style="color:var(--home-text)">0</span></div></div>
+    <div class="cbar"><div class="bar"><span class="ba" id="ba"></span><span class="bh" id="bh"></span></div>
+    <div class="pct"><span id="pa">0</span><span class="plab">CONTROL<i class="mode" id="pMode">ALL SITUATIONS</i></span><span id="ph">0</span></div></div>
   </div>
   <div class="tm h"><span class="ab" id="hAb">BUF</span><span class="sc" id="hSc">0</span></div>
 </div>
@@ -298,7 +318,7 @@ T = r"""<style>
 <div class="transport"><button class="play" id="play">▶ Play from start</button>
   <button class="spd" id="sp0" aria-pressed="false">🐢 Slower</button><button class="spd" id="sp1" aria-pressed="true">Teaching</button><button class="spd" id="sp2" aria-pressed="false">Faster</button><button class="spd" id="lbl" aria-pressed="true">💬 Explain plays</button>
   <input class="scrub" id="scrub" type="range" min="0" max="1" value="0"><button id="work" aria-expanded="false">Show me the work</button></div>
-<div class="legend"><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white-filled, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span><i class="k-g"></i><i class="k-gv"></i>goal — either sweater</span><span style="color:var(--muted)">metric-specific marks appear when you add a layer</span></div>
+<div class="legend"><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white-filled, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span><i class="k-g"></i><i class="k-gv"></i>goal — either sweater</span><span>metric-specific marks appear when you add a layer</span></div>
 <div class="layers"><span class="ll">Add a metric layer:</span><button class="lyr" id="lyCorsi" aria-pressed="false">＋ Control (Corsi)</button><button class="lyr" id="lyHd" aria-pressed="false">＋ Shots from the slot</button><button class="lyr" id="lyGoalie" aria-pressed="false">＋ Goaltending</button><button class="lyr" id="lyWhistle" aria-pressed="false">＋ Why play stopped</button></div>
 <div class="figpick"><span class="ll">Trails:</span>
 <button class="lyr tbtn" data-t="off" aria-pressed="true">Current moment</button>
@@ -742,7 +762,7 @@ function render(i,newest){
    else if(cur&&hdOn&&isHD(cur)){lastHD=i;caption(cur,'hd');}}
  prevA=a;prevH=h;
  $('per').textContent=periodLabel(cur);$('clk').textContent=cur?cur.rem:'20:00';
- if(goalieOn){const gs=goalieStats(i);$('goaliePanel').innerHTML=G.goalies.map(id=>{const p=R[id];if(!p)return '';const tid=p.tid,col=readableInk(tid===AID?AWAYCOL:HOMECOL),ab=tid===AID?AAB:HAB;const st=gs[id]||{f:0,s:0,gl:0,hf:0,hs:0};
+ if(goalieOn){const gs=goalieStats(i);$('goaliePanel').innerHTML=G.goalies.map(id=>{const p=R[id];if(!p)return '';const tid=p.tid,side=tid===AID?'a':'h',ab=tid===AID?AAB:HAB;const st=gs[id]||{f:0,s:0,gl:0,hf:0,hs:0};
  // A FRACTION, ALWAYS, AND THE THRESHOLD IS GONE. This used to print .943 and
  // switch to "18/20" below twenty shots faced -- and twenty was a number we
  // chose, the same defect this project refuses everywhere else. A fraction
@@ -754,14 +774,14 @@ function render(i,newest){
  // 35-shot game look like a rate you could compare, which is the belief the
  // whole site exists to correct. One game is one game.
  const faced=st.f?`${st.s} of ${st.f}`:'—';
- return `<div class="gcard"><div class="gname" style="color:${col}">${p.nm} <span class="sub">${ab} · #${p.n}</span></div><div class="gsv">${faced}</div><div class="gline">${st.s} saves · ${st.gl} goals · ${st.f} shots faced (${MODE()})${st.hf?` · from the slot ${st.hs} of ${st.hf}`:''}<br><span class="lim">one game — what happened, not how unusual it was</span></div></div>`;}).join('');}
+ return `<div class="gcard"><div class="gname ${side}">${p.nm} <span class="sub">${ab} · #${p.n}</span></div><div class="gsv">${faced}</div><div class="gline">${st.s} saves · ${st.gl} goals · ${st.f} shots faced (${MODE()})${st.hf?` · from the slot ${st.hs} of ${st.hf}`:''}<br><span class="lim">one game — what happened, not how unusual it was</span></div></div>`;}).join('');}
  if(workOpen)renderWork(L,cur);
 }
 function flash(id){const el=$(id);el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump');}
-function caption(e,kind){const c=$('caption');const tid=e.own;const ab=tid===AID?AAB:HAB;const col=tid===AID?AWAYCOL:HOMECOL;
+function caption(e,kind){const c=$('caption');const tid=e.own;const ab=tid===AID?AAB:HAB;const side=tid===AID?'a':'h';
  const p=R[e.actor];const who=p?`<span class="num">#${p.n}</span>${p.nm}`:ab;
  const label=kind==='goal'?'🚨 GOAL':'⚡ Shot from the slot';
- c.innerHTML=`<span class="tag" style="background:${col};color:${inkOn(col)}">${ab}</span><b>${label}</b> · ${who}${kind==='hd'?' from the slot':''}`;
+ c.innerHTML=`<span class="tag ${side}">${ab}</span><b>${label}</b> · ${who}${kind==='hd'?' from the slot':''}`;
  c.classList.remove('on');void c.offsetWidth;c.classList.add('on');}
 let workOpen=false;
 function renderWork(L,cur){const a=L.t[AID],h=L.t[HID],tot=a+h||1,pa=Math.round(100*a/tot);
@@ -771,10 +791,10 @@ function renderWork(L,cur){const a=L.t[AID],h=L.t[HID],tot=a+h||1,pa=Math.round(
  const byWhy=summarise(L.excluded), rows=Object.entries(byWhy).sort((x,y)=>y[1]-x[1])
    .map(([why,n])=>`<div><b>${n}×</b> ${why}</div>`).join('');
  const sTotal=L.surprising.length, sWhy=sTotal?L.surprising[0].why:'';
- $('workPanel').innerHTML=`<h2>How “control” is computed <span style="color:var(--muted);font-weight:400">(${MODE()}${cur?', through P'+cur.per+' '+cur.rem:', pre-game'})</span></h2>
+ $('workPanel').innerHTML=`<h2>How “control” is computed <span class="wsub">(${MODE()}${cur?', through P'+cur.per+' '+cur.rem:', pre-game'})</span></h2>
  <div class="wg"><div class="wc"><h3>Counted <span class="n">${L.counted.length}</span></h3><p>Every attempt on goal — shots that hit the net, missed it, or were blocked. All credited to the shooter.</p></div>
  <div class="wc flag"><h3>Counted, surprisingly <span class="n">${sTotal}</span></h3><p>${sWhy||'—'}</p></div>
- <div class="wc"><h3>Not counted <span class="n">${L.excluded.length}</span></h3><p style="font-size:.82rem;line-height:1.6">${rows||'—'}</p></div></div>
+ <div class="wc"><h3>Not counted <span class="n">${L.excluded.length}</span></h3><p class="wexc">${rows||'—'}</p></div></div>
  <p class="wfoot"><em>${a} ${AAB} / ${h} ${HAB} → ${pa}% / ${100-pa}%.</em> ${L.counted.length} counted + ${L.excluded.length} not counted = <b>${L.counted.length+L.excluded.length}</b> events, which is every event in the game so far. Nothing is dropped quietly.${evenOnly?' <b>Even strength only</b> — the power-play and empty-net attempts are in the not-counted list above, with the situation that removed each one.':''}</p>`;}
 let i=EV.length-1,playing=false,timer=null,mult=2;
 $('scrub').max=EV.length-1;
@@ -833,13 +853,20 @@ $('gl').textContent=`${AAB} at ${HAB}${WHEN?' · '+WHEN:''} · final ${AAB} ${fi
  // THE RATE, DRAWN AS WELL AS SAID. Only when there IS one: an absent
  // comparison gets its sentence and no picture, because a track with no dot on
  // it would be a chart of nothing.
+ let pct=null;
  if(V.rate&&V.row&&V.row.n){
-  const pct=V.row.count/V.row.n*100;
+  pct=V.row.count/V.row.n*100;
   p.push(`<span class="vscale"><span class="vtrack"><span class="vhalf"></span>`
-   + `<span class="vpt${pct>50?' hi':''}" style="left:${pct.toFixed(1)}%"></span></span>`
+   + `<span class="vpt${pct>50?' hi':''}" id="vpt"></span></span>`
    + `<span class="vends"><span>0% — that team always won</span>`
    + `<span>always lost — 100%</span></span></span>`);}
- $('verdict').innerHTML=p.join('');})();
+ $('verdict').innerHTML=p.join('');
+ // THE ONE POSITION HERE THAT IS GENUINELY CONTINUOUS, and the only one that
+ // cannot become a class. Written through the CSSOM, which no policy restricts;
+ // as a `style` attribute this page's own CSP refused it and the dot sat at 0%
+ // on every game in the archive. It must come AFTER innerHTML -- the element
+ // does not exist until then.
+ if(pct!==null)$('vpt').style.left=pct.toFixed(1)+'%';})();
 /**
  * WHERE TO GO NEXT, AND IT IS ABOUT THIS GAME.
  *
@@ -868,10 +895,10 @@ $('gl').textContent=`${AAB} at ${HAB}${WHEN?' · '+WHEN:''} · final ${AAB} ${fi
  */
 (function nextUp(){
  const el=$('nextup'); if(!el)return;
- const dot=c=>`<span class="sw" style="background:${c}"></span>`;
+ const dot=s=>`<span class="sw ${s}"></span>`;
  el.innerHTML=[
-  `<a href="/?team=${encodeURIComponent(AAB)}">${dot(AWAYCOL)}More ${AAB} games</a>`,
-  `<a href="/?team=${encodeURIComponent(HAB)}">${dot(HOMECOL)}More ${HAB} games</a>`,
+  `<a href="/?team=${encodeURIComponent(AAB)}">${dot('a')}More ${AAB} games</a>`,
+  `<a href="/?team=${encodeURIComponent(HAB)}">${dot('h')}More ${HAB} games</a>`,
   `<a href="/">Every game in the archive</a>`,
  ].join('');})();
 document.querySelectorAll('#rg .cc.a .lb').forEach(n=>n.childNodes[0].nodeValue=AAB+' attempts');
@@ -888,12 +915,12 @@ function showWhy(idx){const e=EV[idx];if(e==null||e.x==null)return;
    <line x1="${HX(e.x).toFixed(1)}" y1="${HY(e.y).toFixed(1)}" x2="95" y2="42.5" stroke="var(--ink)" stroke-dasharray="2 1.5" stroke-width=".7"/>
    <circle cx="${HX(e.x).toFixed(1)}" cy="${HY(e.y).toFixed(1)}" r="2.8" fill="${col}" stroke="#fff" stroke-width=".7"/>
    <text x="${Math.min(HX(e.x)+4,78).toFixed(1)}" y="${(HY(e.y)-2.5).toFixed(1)}" font-size="4.2" fill="var(--ink)" font-weight="700">${Math.round(dist)} ft</text></svg>`;
- $('whyContent').innerHTML=`<div class="whyhd" style="background:${col};color:${inkOn(col)}"><div><div class="t">${isGoal?'🚨 A GOAL from the slot':'⚡ Why this counts as a slot shot'}</div>
+ $('whyContent').innerHTML=`<div class="whyhd ${tid===AID?'a':'h'}"><div><div class="t">${isGoal?'🚨 A GOAL from the slot':'⚡ Why this counts as a slot shot'}</div>
    <div class="s">${p?'#'+p.n+' '+p.nm:ab} · ${ab} · P${e.per} ${e.rem} · ${e.type.replace(/-/g,' ')}</div></div><button class="whyclose" onclick="hideWhy()">✕</button></div>
   <div class="whybody"><div class="whydiag">${diag}</div>
    <div class="factor"><span class="fv">${Math.round(dist)} ft</span><span class="fl">Distance to the net — <b>close</b>. Our rule: ≤ 33 ft. <span class="chk">✓</span></span></div>
    <div class="factor"><span class="fv">${Math.round(angle)}°</span><span class="fl">Angle off straight-on — ${angle<22?'<b>a clean look</b> at the net':'a slot-area angle'}. Lower = more net to shoot at.</span></div>
-   <div class="factor" style="border-bottom:0"><span class="fv">${inSlot?'Slot':'Wide'}</span><span class="fl">Lateral position — ${inSlot?'<b>in the slot</b> (within the faceoff dots) <span class="chk">✓</span>':'outside the slot'}</span></div>
+   <div class="factor last"><span class="fv">${inSlot?'Slot':'Wide'}</span><span class="fl">Lateral position — ${inSlot?'<b>in the slot</b> (within the faceoff dots) <span class="chk">✓</span>':'outside the slot'}</span></div>
    <div class="whyrule"><b>The rule, and you can check it:</b> a shot counts as <b>from the slot</b> when it is <b>≤ 33 ft from the net</b> AND <b>within ±22 ft of the middle</b>. Both true here. This is <b>our own geometric rule</b>, not a model and not anybody else's statistic — it says where the shot came from, and nothing about how likely it was to go in. Measure it yourself on the diagram.</div></div>`;
  $('whyBk').classList.add('on');}
 function hideWhy(){$('whyBk').classList.remove('on');}

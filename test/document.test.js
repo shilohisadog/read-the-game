@@ -205,6 +205,48 @@ test('THE CSP PINS EVERY INLINE BLOCK, not the first one it finds', () => {
   }
 });
 
+test('a page whose own policy forbids inline style carries none', () => {
+  // THE DEFECT THIS CATCHES WAS LIVE, AND THE WHOLE SUITE WAS GREEN THROUGH IT.
+  // `game.html` shipped thirteen `style=` attributes under a hash-pinned CSP.
+  // Hashes cover <style> BLOCKS ONLY — there is no way to hash an attribute —
+  // so `style-src 'sha256-…'` without `'unsafe-inline'` refuses every one of
+  // them. The browser said so thirteen times in a console nobody was reading,
+  // and the page rendered: the team swatches beside "More MIN games" computed to
+  // rgba(0, 0, 0, 0), the control percentages lost their club colour, and the
+  // verdict dot sat at the far left of its track on every game in the archive.
+  //
+  // Nothing in this suite could see it — the fake document has no CSS — and no
+  // browser step could either, because both of them STRIP the policy in order to
+  // frame the page. A defect can hide in the exact gap between two instruments.
+  //
+  // So the rule is read off the page rather than kept in a list here: if a
+  // document names a `style-src` that does not permit inline, the document must
+  // contain no inline style. Give another page a CSP and this starts holding it.
+  // Static styling belongs in the stylesheet, dynamic styling goes through the
+  // CSSOM (`el.style.x = y`), which no policy restricts.
+  let checked = 0;
+  for (const f of PAGES) {
+    const h = readFileSync(new URL(f, SRC), 'utf8');
+    const csp = h.match(/http-equiv="Content-Security-Policy" content="([^"]*)"/);
+    if (!csp) continue;
+    const style = csp[1].match(/style-src-attr ([^;"]*)/) || csp[1].match(/style-src ([^;"]*)/);
+    if (!style || style[1].includes("'unsafe-inline'")) continue;
+    checked++;
+
+    // `(?<![-\w])` so `font-style="italic"` on an SVG is not mistaken for one.
+    const attrs = [...h.matchAll(/(?<![-\w])style\s*=\s*["'][^"']*["']/g)];
+    assert.equal(attrs.length, 0,
+      `${f}: ${attrs.length} inline style attribute(s) the browser will refuse — ` +
+      `first is ${attrs[0] && attrs[0][0]}`);
+
+    // The same refusal reached through a different door. `el.style.left = …` is
+    // permitted; writing the whole attribute is the thing the policy stops.
+    assert.doesNotMatch(h, /setAttribute\(\s*["']style["']/,
+      `${f} sets a style attribute from script, which the policy refuses too`);
+  }
+  assert.ok(checked >= 2, `only ${checked} pages carry a restrictive style-src`);
+});
+
 test('the chrome CSS is INLINE, never a stylesheet the CSP would refuse', () => {
   // Promoted from a note in docs/site-chrome.md §12.4 at CHENG's suggestion: a
   // note is what gets violated the first time somebody wants to reuse it. The

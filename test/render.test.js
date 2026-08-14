@@ -28,6 +28,22 @@ const rich = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.ur
 const app = readFileSync(new URL('../src/read-the-game.html', import.meta.url), 'utf8');
 const SCRIPT = app.match(/<script>([\s\S]*)<\/script>/)[1];
 
+/**
+ * EVERY stylesheet on the page, not the first one.
+ *
+ * This exists because a test below was reading `app.match(/<style>…/)[1]` and
+ * getting the SHARED CHROME — 900 bytes of header and footer CSS that the page
+ * gained in <head> some time after the test was written. It then looped over
+ * rules looking for `.att`, `.tm`, `.ba` and friends, found none of them, and
+ * asserted nothing at all. Green, and structurally incapable of failing.
+ *
+ * `builders/page.py::csp` was bitten by exactly this — `re.search` where
+ * `re.findall` was meant — and the comment there says so. Same mistake, same
+ * document, second instrument. Joining every block is also the stronger claim:
+ * a team's colour must not be named in ANY stylesheet the page carries.
+ */
+const PAGE_CSS = [...app.matchAll(/<style>([\s\S]*?)<\/style>/g)].map(m => m[1]).join('\n');
+
 /** The smallest document `boot()` will run against. */
 function fakeDom() {
   const el = () => ({
@@ -259,13 +275,17 @@ test('no team is painted from anything but the teams table', () => {
     'both colours are looked up from the abbreviation in the data');
 
   // No rule that selects a team may name a colour of its own.
-  const css = app.match(/<style>([\s\S]*?)<\/style>/)[1];
-  for (const rule of css.split('}')) {
-    if (!/\.(att|blk|goal|cc|tm|ba|bh|k-a|k-h)\b/.test(rule)) continue;
+  let inspected = 0;
+  for (const rule of PAGE_CSS.split('}')) {
+    if (!/\.(att|blk|goal|cc|tm|ba|bh|k-a|k-h|sw\.[ah]|tag\.[ah]|whyhd\.[ah]|gname\.[ah])\b/.test(rule)) continue;
+    inspected++;
     const lit = rule.match(/#[0-9a-f]{6}\b/i);
     // #fff is the visiting sweater, not a team's colour, and is allowed.
     assert.ok(!lit, `a team rule names its own colour: ${rule.trim().slice(0, 70)}`);
   }
+  // THE LOOP MUST HAVE RUN. Without this the test passed for months against the
+  // wrong stylesheet, matching nothing and reporting success — see PAGE_CSS.
+  assert.ok(inspected >= 8, `only ${inspected} team-selecting rules found to inspect`);
 });
 
 test('two clubs wearing the SAME hex are still told apart on the ice', () => {
@@ -876,10 +896,21 @@ test('the game page offers a way onward, and it is about THIS game', () => {
 
   // And the swatches carry each club's own colour, so the two rows are
   // distinguishable without reading — the sweater convention, applied here.
-  const colours = [...nav.matchAll(/class="sw" style="background:([^"]+)"/g)].map(m => m[1]);
-  assert.equal(colours.length, 2);
-  assert.equal(new Set(colours).size, 2, 'both teams painted the same colour');
-  assert.ok(colours.includes(colourOf(home)) && colours.includes(colourOf(away)));
+  //
+  // THREE HOPS, BECAUSE THE COLOUR NO LONGER TRAVELS IN THE MARKUP. It used to
+  // be `style="background:#154734"`, which this page's CSP refuses — the live
+  // swatches computed to rgba(0, 0, 0, 0). So the markup names a SIDE, the
+  // stylesheet maps that side to a custom property, and `paint()` sets the
+  // property to the club's colour. Each hop is checked here, because a chain
+  // is only as good as the link nobody looked at.
+  const sides = [...nav.matchAll(/class="sw ([ah])"/g)].map(m => m[1]);
+  assert.deepEqual(sides, ['a', 'h'], 'the swatches do not name a side');
+  assert.match(PAGE_CSS, /#rg \.nextup a \.sw\.a\{background:var\(--away\)\}/);
+  assert.match(PAGE_CSS, /#rg \.nextup a \.sw\.h\{background:var\(--home\)\}/);
+  const v = a.$('rg').style._v;
+  assert.equal(v['--away'], colourOf(away));
+  assert.equal(v['--home'], colourOf(home));
+  assert.notEqual(colourOf(away), colourOf(home), 'this fixture cannot tell the two apart');
 });
 
 test('the game summary is a card, and its rate is DRAWN as well as said', () => {
@@ -898,13 +929,20 @@ test('the game summary is a card, and its rate is DRAWN as well as said', () => 
   assert.match(v, /class="vk">What this game was</, 'the card does not say what it is');
   assert.match(v, /class="lead"/);
 
-  const pt = v.match(/class="vpt[^"]*" style="left:([\d.]+)%"/);
-  assert.ok(pt, 'the rate is stated but never drawn');
-  // THE DOT IS THE FRACTION IN THE SENTENCE. Read both out of the markup and
+  assert.match(v, /class="vpt[^"]*" id="vpt"/, 'the rate is stated but never drawn');
+  // AND ITS POSITION COMES THROUGH THE CSSOM, not a style attribute the page's
+  // own CSP refuses. Written as an attribute, this dot sat at the far left of
+  // its track on every game in the archive while this test read the number it
+  // was supposed to have. The markup was right and the pixels were wrong, which
+  // is the only reason a defect that obvious survived — so the assertion now
+  // reads the property the browser actually applies.
+  const left = a.$('vpt').style.left;
+  assert.ok(left, 'the dot was never positioned');
+  // THE DOT IS THE FRACTION IN THE SENTENCE. Read both out of the page and
   // reconcile them, so a dot that drifts from its own prose fails here.
   const frac = v.match(/it lost (\d+) of (\d+)/);
   assert.ok(frac, 'the fraction left the sentence');
-  assert.equal(pt[1], (+frac[1] / +frac[2] * 100).toFixed(1),
+  assert.equal(left, (+frac[1] / +frac[2] * 100).toFixed(1) + '%',
     'the dot sits somewhere the sentence does not say');
   assert.match(v, /class="vhalf"/, '50% is not marked, which is the whole point of the track');
 
