@@ -1008,33 +1008,51 @@ set(frameOf(AT.index),false);
    game starts -- the same reason the page itself no longer opens at the final
    whistle.
 
-   HOW MANY EVENTS, AND HOW FAST, IS THE WHOLE DESIGN. The first version fitted
-   44 events into five seconds -- 115ms each -- and Kevin read it exactly right:
-   "a blur of activity, looks like it's 100x real-time". It was. A play-by-play
-   event lands roughly every nine seconds of real hockey, so 115ms is about 78x,
-   and it is ELEVEN times faster than this same page's own teaching pace
-   (dwell's 650ms x2). The front door was advertising the product at a speed the
-   product does not run at.
+   THE PACE IS NOT A NUMBER WE PICK. IT IS `dwell`, WHICH IS THE PRODUCT'S.
 
-   So the budget stayed five seconds and the CONTENT of it shrank: fewer events,
-   each one long enough to be a thing that happened rather than a flicker.
-   PREVIEW_MS is a third of the teaching pace -- brisk, still legible -- and the
-   window is whatever fits.
+   Two wrong answers came first, and the second is the instructive one. The
+   original fitted 44 events into five seconds -- 115ms each -- and Kevin read it
+   exactly right: "a blur of activity, looks like it's 100x real-time". It was.
+   A play-by-play event lands roughly every nine seconds of real hockey, so 115ms
+   is about 78x, and eleven times this page's own teaching pace.
 
-   These two numbers are a VISUAL judgement and cannot be derived; they are set
-   here to be looked at, not proved. (docs/site-purpose.md 5.)
+   The fix was a slower chosen constant, 430ms. Kevin again: "definitely better,
+   still 2 or 3x too fast". Which lands almost exactly on `dwell` -- and that is
+   the answer, not a third guess. A preview slower than the replay misrepresents
+   it and a preview faster than the replay misrepresents it, so the preview runs
+   at the replay's pace, full stop. `dwell` also EASES for the big moments, so
+   five seconds of taste has the product's rhythm rather than a metronome's.
+
+   THE COUNT IS THEN DERIVED, NOT CHOSEN. One number survives -- how long the
+   loop runs before it restarts -- and the window is however many events fit in
+   it at the real pace. Change `dwell` and the window follows on its own; the two
+   can no longer drift apart, which is what a second constant would guarantee.
+
+   BUDGET_MS is still a visual judgement and cannot be derived. It is here to be
+   looked at, not proved. (docs/site-purpose.md 5.)
 
    IT STOPS FOR prefers-reduced-motion. Doctrine 4 permits motion that traces a
    real event; it does not require inflicting it. Reduced motion gets a still
    frame partway in, so the rink is populated rather than blank. */
-const PREVIEW_MS=430,PREVIEW_S=5.2;
+const BUDGET_MS=14000;
 if(PREVIEW){
  $('rg').classList.add('preview');
- const WINDOW=Math.min(EV.length-1,Math.round(PREVIEW_S*1000/PREVIEW_MS));
+ let acc=0,W=0;
+ while(W<EV.length-1&&acc+dwell(EV[W])<=BUDGET_MS){acc+=dwell(EV[W]);W++;}
+ const WINDOW=Math.max(1,W);
  if(REDUCED){set(WINDOW,false);}
  else{let k=0;
-  const tick=()=>{set(k,k>0);k++;if(k>WINDOW){k=0;prevA=0;prevH=0;}
-                  setTimeout(tick,k>WINDOW?1200:PREVIEW_MS);};
+  /* THE RESTART PAUSE USED TO BE DEAD CODE. It read
+       set(k);k++;if(k>WINDOW){k=0;}
+       setTimeout(tick,k>WINDOW?900:115)
+     -- and k had already been reset to 0 by the time the ternary asked, so the
+     900 never fired once. The loop restarted at full speed, which is its own
+     small contribution to the blur. Decide the wait BEFORE moving k. */
+  const tick=()=>{
+   const shown=EV[k],last=k>=WINDOW,wait=last?1500:dwell(shown);
+   set(k,k>0);
+   if(last){k=0;prevA=0;prevH=0;}else{k++;}
+   setTimeout(tick,wait);};
   tick();}}
 }
 __BOOT__

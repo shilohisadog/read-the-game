@@ -956,3 +956,89 @@ test('the preview is hidden by CSS, not by deleting the app', () => {
   for (const cls of ['.transport', '.layers', '.verdict', '.nextup', '.lede'])
     assert.ok(hides[0].includes(cls), `preview leaves ${cls} on screen`);
 });
+
+/* ------------------------------------------------- the preview's PACE
+   Kevin, twice. On 115ms an event: "a blur of activity, looks like it's 100x
+   real-time." On a slower chosen constant of 430ms: "definitely better, still
+   2 or 3x too fast." The answer was never a third guess -- it was to stop
+   choosing. The preview now waits `dwell(e)`, the same function the replay
+   waits, so it cannot be fast or slow RELATIVE TO THE PRODUCT and it eases for
+   the big moments instead of ticking.
+
+   THIS TEST DOES NOT RESTATE dwell, and that is the point of it. A test
+   asserting "the delay is 1300ms" would be a second copy of the pace, free to
+   agree with a wrong first copy. So it measures the ORDINARY PLAY LOOP with the
+   same recorder and asserts the preview draws from what it saw -- which stays
+   true if dwell changes, and goes red the moment a constant reappears. */
+
+/** Boot with a recording clock and return the delays the page asked for. */
+function delaysOf(search, ticks) {
+  const dom = fakeDom();
+  const delays = [];
+  let n = 0;
+  const at = [];
+  const timer = (fn, ms) => {
+    delays.push(ms); at.push(+dom.$('scrub').value);
+    if (n++ < ticks) fn();
+    return 0;
+  };
+  const b = new Function('document', 'matchMedia', 'setTimeout', 'clearTimeout',
+                         'localStorage', 'location', SCRIPT + '\nreturn boot;')(
+    dom.document, () => ({ matches: false }), timer, () => {},
+    { getItem: () => null, setItem: () => {} }, { search });
+  b(rich, null);
+  return { dom, delays, at };
+}
+
+test('the preview waits on the replay, not on a number somebody picked', () => {
+  const TICKS = 6;
+  const preview = delaysOf('?preview=1', TICKS).delays;
+  assert.ok(preview.length >= TICKS, `the preview never scheduled: ${preview}`);
+
+  // What the ORDINARY transport waits over the same opening events, measured
+  // with the same recorder. `play()` is what a viewer presses, so this is the
+  // product's pace observed rather than described.
+  // TICKS, not 0: the recorder's budget is what lets the transport STEP, and
+  // with 0 it schedules once and stops -- one dwell value, which the preview's
+  // second wait would then fail against for no reason but the harness.
+  const plain = delaysOf('', TICKS);
+  plain.dom.$('play').onclick();
+  const replay = new Set(plain.delays);
+  assert.ok(replay.size > 0, 'the ordinary play loop never scheduled anything');
+
+  for (const d of preview.slice(0, TICKS)) {
+    assert.ok(replay.has(d),
+      `the preview waited ${d}ms, which the replay never waits: ${[...replay].join(', ')}`);
+  }
+});
+
+test('and the preview is not a metronome — it eases, because dwell does', () => {
+  // A single repeated value is exactly what a chosen constant looks like, and
+  // is what both rejected versions produced.
+  const preview = delaysOf('?preview=1', 14).delays.slice(0, 14);
+  assert.ok(new Set(preview).size > 1,
+    `every wait was ${preview[0]}ms — that is a constant wearing dwell's name`);
+});
+
+test('the preview is a taste: it restarts inside a quarter-minute', () => {
+  // The pace tests above cannot see the WINDOW, and a mutation proved it --
+  // replacing the time-derived window with a fixed 44 events survived them
+  // both. At the replay's pace that is a 57-second loop on the front door: not
+  // a blur, but not a taste either, and nothing said so.
+  //
+  // THE RESTART IS FOUND BY THE SCRUBBER GOING BACK TO ZERO, not by matching
+  // the pause's value. Recognising it by `=== 1500` would put a second copy of
+  // that constant in here, free to agree with a wrong first copy.
+  //
+  // A RANGE, NOT A VALUE. How long the loop runs is a visual judgement and the
+  // one number left in the preview; pinning it exactly would just be that same
+  // second copy. The bounds are what the thing has to be to be the thing: long
+  // enough to read as hockey, short enough that a stranger sees it loop.
+  const { delays, at } = delaysOf('?preview=1', 40);
+  const back = at.findIndex((v, k) => k > 0 && v === 0);
+  assert.ok(back > 0, `the preview never looped in 40 ticks: ${at.join(',')}`);
+  assert.ok(back >= 4, `only ${back} events fit — that is a slideshow, not a replay`);
+  const playing = delays.slice(0, back - 1).reduce((a, b) => a + b, 0);
+  assert.ok(playing > 5000 && playing < 15000,
+    `the preview window runs ${(playing / 1000).toFixed(1)}s before looping`);
+});
