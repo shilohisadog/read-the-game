@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-t6x2lJ5ZR7UFQO4hSMjFWHy9qHgbhv3DQ0aKNELoqPw='; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-xN/BjYU7EzylI0mO5QmT0Draeht20WAEw/JTUq3XOVI='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-t6x2lJ5ZR7UFQO4hSMjFWHy9qHgbhv3DQ0aKNELoqPw='; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-XYSAF/1dCU8NDk6MwU3nOiETyQGMeJzaRrxvEM8t41w='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -159,6 +159,13 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .heroframe{margin:0 0 13px;background:var(--ice);border:1px solid var(--edge);
  border-radius:10px;overflow:hidden}
 .heroframe iframe{display:block;width:100%;aspect-ratio:200/108;border:0}
+/* A TALLER FRAME ON A PHONE, because the scoreboard inside it is not
+   proportional even after it was made to shrink. Measured in a real browser:
+   the chrome is 87px of an 856px-wide frame (10%) and 49px of a 287px one
+   (17%), so one ratio cannot serve both -- at 200/108 the phone's rink fits
+   the height and leaves empty ice down both sides. 200/128 gives the narrow
+   frame the room its rink actually wants; the wide one is already exact. */
+@media (max-width:520px){.heroframe iframe{aspect-ratio:200/128}}
 .heroline{margin:0 0 6px;font-size:1.22rem;line-height:1.35;font-weight:700;max-width:34ch}
 .herosub{margin:0 0 15px;font-size:.9rem;color:var(--muted);max-width:56ch}
 .herogo{display:inline-block;background:var(--ink);color:#fff;text-decoration:none;

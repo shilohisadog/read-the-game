@@ -99,6 +99,35 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg.preview .atnote{flex:0 0 auto}
 #rg.preview .rinkbox{flex:1 1 auto;min-height:0;padding:6px;display:flex}
 #rg.preview .rinkbox svg{width:100%;height:100%}
+/* AND THE SCOREBOARD HAS TO SHRINK WITH THE FRAME, which is the half the flex
+   column could not fix on its own. Measured in a real browser at two widths:
+
+     frame 856x462 (desktop)   board 87px tall   19% of the box
+     frame 287x155 (phone)     board 87px tall   56% of the box
+
+   The board is the SAME HEIGHT at both, because its type is set in rem and rem
+   does not care how wide the frame is. So the rink dutifully shrank into what
+   was left -- 96px of a 155px box -- and the phone got a sliver of ice under a
+   full-size scoreboard. `min-width:150px` on the middle column overflowed the
+   grid at the same time, which is why the second club's badge was cut off the
+   right edge.
+
+   `min(Xvw, <today>)` rather than a plain vw: the desktop rendering is already
+   right and must not move, so every value is capped at what it is now and only
+   ever gets smaller. vw inside the frame IS the frame's width, so the chrome
+   now scales on exactly the axis the rink does.
+
+   The eyebrow goes entirely. It is the page's tagline, it wrapped to two lines
+   at 360, and a taste does not need to be introduced twice. */
+#rg.preview .eyebrow{display:none!important}
+#rg.preview .board{padding:min(1.5vw,12px) min(2.4vw,18px);gap:min(2vw,14px);
+ border-radius:min(1.8vw,13px);box-shadow:none}
+#rg.preview .mid{min-width:0}
+#rg.preview .tm .ab{font-size:min(3.4vw,.9rem);padding:min(.4vw,2px) min(1.4vw,8px);
+ border-radius:min(.9vw,5px)}
+#rg.preview .sc{font-size:min(7.4vw,2.2rem)}
+#rg.preview .gs{font-size:min(2.9vw,.78rem);margin-bottom:min(1vw,6px)}
+#rg.preview .gs .clw{font-size:min(2.3vw,.62rem)}
 #rg .nextup{display:flex;flex-wrap:wrap;justify-content:center;gap:9px;margin:16px 0 4px;padding-top:15px;border-top:1px solid var(--edge)}
 #rg .nextup a{display:inline-block;padding:9px 14px;border-radius:9px;border:1px solid var(--edge);background:#fff;color:var(--ink);text-decoration:none;font-weight:650;font-size:.9rem}
 #rg .nextup a:hover,#rg .nextup a:focus{border-color:var(--ink)}

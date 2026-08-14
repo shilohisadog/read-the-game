@@ -1091,3 +1091,35 @@ test('preview takes the shared chrome off, from where the chrome is defined', ()
   assert.equal(plain.document.body.classList.contains('previewing'), false,
     'the ordinary page must keep its chrome — the paired half');
 });
+
+test('the preview chrome scales with the frame, so the ice cannot be crowded out', () => {
+  // MEASURED IN A REAL BROWSER, then pinned here as a mechanism. At 200/108 the
+  // scoreboard was 87px inside an 856px-wide frame and 87px inside a 287px one
+  // -- the same absolute height in both, because its type is set in rem and rem
+  // does not care how wide the frame is. The rink then shrank into what was
+  // left: 96px of a 155px box on a phone.
+  //
+  // `min(Xvw, <today>)` is the shape that matters. vw inside the frame IS the
+  // frame's width, so the chrome scales on the same axis the rink does; the cap
+  // is today's value, so the desktop rendering cannot move. A plain vw would
+  // have changed both, and only one of them was wrong.
+  for (const sel of ['\\.sc', '\\.tm \\.ab', '\\.gs']) {
+    const re = new RegExp(`#rg\\.preview [^{]*${sel}\\{[^}]*font-size:min\\(`);
+    assert.match(app, re, `the preview does not scale ${sel} with its frame`);
+  }
+  assert.match(app, /#rg\.preview \.eyebrow\{display:none/,
+    'the tagline is still introducing a five-second taste');
+  assert.match(app, /#rg\.preview \.mid\{min-width:0\}/,
+    'the middle column still has a px floor, which overflows a 360px frame');
+  // A cap that is not a cap would let the desktop drift, so check one by value.
+  assert.match(app, /#rg\.preview \.sc\{font-size:min\([^)]*,2\.2rem\)/,
+    'the score is no longer capped at the size it renders today');
+});
+
+test('the homepage gives a narrow frame the extra height its rink needs', () => {
+  const index = readFileSync(new URL('../src/index.html', import.meta.url), 'utf8');
+  assert.match(index, /@media \(max-width:520px\)\{\.heroframe iframe\{aspect-ratio:200\/128\}\}/,
+    'one aspect ratio cannot serve both — the chrome is 10% of a wide frame and 17% of a narrow one');
+  assert.match(index, /\.heroframe iframe\{[^}]*aspect-ratio:200\/108/,
+    'the wide frame lost its ratio');
+});
