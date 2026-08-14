@@ -673,13 +673,21 @@ jobs:
           mkdir -p extract
 
           # THE CANARY IS THE DEFECT ITSELF. A copy of the page with `.vtrack`
-          # put back to inline, appended after the stylesheet so it wins. The
-          # step FAILS IF THIS ONE PASSES — otherwise a green here is
-          # indistinguishable from a probe that measured an element it never
-          # found. The CSP is already stripped in this directory, so the extra
-          # block is permitted; on the real page it would be refused.
-          sed 's|</head>|<style>#rg .vtrack{display:inline}</style></head>|' \
+          # put back to inline. The step FAILS IF THIS ONE PASSES — otherwise a
+          # green here is indistinguishable from a probe that measured an element
+          # it never found. The CSP is already stripped in this directory, so the
+          # extra block is permitted; on the real page it would be refused.
+          #
+          # BEFORE </body>, NOT </head>, and the first version got this wrong: it
+          # injected at </head> and the canary measured a healthy 541px, because
+          # the page's own stylesheet is at line 44 — INSIDE the body. Both rules
+          # are `#rg .vtrack`, so specificity is a tie and document order decides,
+          # and the override was arriving first. A canary placed where it cannot
+          # win is a canary that always sings.
+          sed 's|</body>|<style>#rg .vtrack{display:inline}</style></body>|' \
             game.html > game-canary.html
+          grep -q 'vtrack{display:inline}' game-canary.html || {
+            echo "::error::the canary override was never injected"; exit 1; }
 
           # THE SRC IS BAKED IN, one probe file per page and game.
           #
