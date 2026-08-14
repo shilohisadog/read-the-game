@@ -470,6 +470,8 @@ added before handing off to my wife for testing."* Items 1–3 are done; 5 waits
 | **B** | **Blocked shots as a metric layer** | `blk` — who blocked it — is stored in every extract and surfaced nowhere; 28.6% of attempts are blocked (34.9 a game). It re-reads an event already on screen from the other side, and it carries the site's own inversion in a stat novices already hear. | a fifth layer: reducer, toggle, copy, and the archive rate through `measure.mjs` |
 | **R** | **The area below the rink is clunky** (Kevin) | five control groups in three visual treatments, and Trails/Situations/Players each carry a permanent paragraph — ~120 words that matter once and then never again. The verdict card, the most valuable thing down there, sits below all of it. | a layout and copy pass; wants the pixels harness, not reasoning |
 
+| **H** | **`frame-ancestors` needs an HTTP header to exist at all** | found while fixing D1. The directive is **ignored in a `<meta>` policy** — the spec says so and Chrome says so on every page load — so the comment in `page.py` calling it "the other half: nobody else's page may put this one in a frame" was describing protection we did not have. The claim is now removed and a test forbids all three meta-inert directives. Whether we *want* the protection is a separate question. | a `_headers` file on Cloudflare Pages, plus a live check that the header arrives — deploy-shaped, so not smuggled into a CSS fix |
+
 **Why D1 and D2 go first:** both are on the page the novice tester will be
 handed, both are invisible to 423 passing tests (no CSS, no layout in the fake
 document), and both are small. **Why B goes before 5:** Kevin's call, and his

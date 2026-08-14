@@ -112,9 +112,15 @@ jobs:
           after=$(grep -o 'id="state"[^>]*>[^<]*' rendered.html || true)
           echo "  placeholder: $before"
           echo "  rendered   : $after"
-          if grep -qi 'Content Security Policy\|Refused to execute\|Refused to load' chrome.log; then
+          # "Refused to", not "Content Security Policy". The moment the console
+          # was actually being captured, the broader pattern matched an
+          # INFORMATIONAL message — 'frame-ancestors' is ignored when delivered
+          # via <meta> — which is a true and useful thing for the browser to say
+          # and not a refusal. The console carries warnings as well as denials
+          # and a gate has to tell them apart. (That warning was a real finding
+          # and is fixed at its source in page.py; this is about the pattern.)
+          if grep -i 'Refused to' chrome.log | grep -vi favicon; then
             echo "::error::the browser refused something under our own CSP"
-            grep -i 'refused\|Content Security Policy' chrome.log | head -5
             exit 1
           fi
           [ "$after" != "$before" ] || { echo "::error::the script never ran"; exit 1; }

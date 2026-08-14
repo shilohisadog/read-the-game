@@ -105,6 +105,20 @@ test('the no-network promise is enforced by the browser, not by a grep', () => {
   assert.match(p, /default-src 'none'/);
   assert.match(p, /connect-src 'self' https:\/\/data\.readthegame\.co/);
   assert.doesNotMatch(p, /unsafe-inline|unsafe-eval/);
+
+  // NO DIRECTIVE THAT A <meta> POLICY SILENTLY DROPS. The spec names exactly
+  // three that are ignored outside an HTTP header, and we shipped one of them
+  // for months: `frame-ancestors 'self'`, with a comment in page.py describing
+  // it as protection against other sites framing us. It was doing nothing, and
+  // Chrome said so on every page load — "ignored when delivered via a <meta>
+  // element" — into a console nothing was reading.
+  //
+  // A directive that cannot take effect is the CSP-shaped version of a check
+  // that cannot fail, and it is worse than an absent one: it reads as a promise.
+  // If we want any of these, they have to be sent as headers.
+  for (const dead of ['frame-ancestors', 'report-uri', 'sandbox'])
+    assert.doesNotMatch(p, new RegExp(`\\b${dead}\\b`),
+      `${dead} is ignored in a <meta> policy — it is a promise the browser drops`);
 });
 
 test('the CSP pins EVERY block it ships, and pins nothing else', () => {

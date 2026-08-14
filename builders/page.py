@@ -79,9 +79,26 @@ def csp(html, *, connect):
         f"connect-src 'self' {connect}",
         # The homepage frames the game page for its five-second preview, and
         # `frame-src` has no fallback to default-src -- 'none' would block it.
-        # `frame-ancestors 'self'` is the other half and is a tightening: nobody
-        # else's page may put this one in a frame.
-        "frame-src 'self'", "frame-ancestors 'self'",
+        #
+        # `frame-ancestors 'self'` USED TO SIT HERE, described in this comment as
+        # "the other half: nobody else's page may put this one in a frame". It
+        # never did that. The directive is IGNORED when the policy is delivered
+        # in a <meta> element -- the spec says so, and Chrome says so out loud on
+        # every single page load:
+        #
+        #   "The Content Security Policy directive 'frame-ancestors' is ignored
+        #    when delivered via a <meta> element."
+        #
+        # Nobody heard it because nothing was reading the console; the gate that
+        # claimed to read it was greping a log Chrome was not writing to. Fixing
+        # THAT is what surfaced this, on the first run where the grep could match.
+        #
+        # So the claim goes rather than being softened. Making it real needs an
+        # HTTP header, which on Cloudflare Pages means a `_headers` file -- a
+        # deploy-shaped change, on the build list, not smuggled in here. What
+        # remains is true: `frame-src 'self'` governs what WE may frame, and it
+        # does work in <meta>.
+        "frame-src 'self'",
         "base-uri 'none'", "form-action 'none'",
     ])
 
