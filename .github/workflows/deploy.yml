@@ -581,8 +581,21 @@ jobs:
           </script></body></html>
           HTML
 
-          python3 -m http.server 8098 >/dev/null 2>&1 &
-          sleep 2
+          # THE FIRST DIAGNOSTIC ANSWERED THE QUESTION AND IT WAS NOT THE PROBE:
+          # 404 on prev.html, on game.html and on the extract. Chrome was fine;
+          # it was handed a server with nothing behind it. So this run says
+          # WHERE it is and WHAT it can see, and stops hiding the server's own
+          # complaint -- `>/dev/null 2>&1` would have swallowed "Address already
+          # in use", which is the leading candidate given the step above runs a
+          # server too.
+          echo "  --- where am I ---"
+          pwd
+          ls -1 | head -20
+          echo "  --- starting the server (stderr NOT suppressed) ---"
+          python3 -m http.server 8098 >server.log 2>&1 &
+          sleep 3
+          cat server.log || true
+          ss -ltnp 2>/dev/null | grep -E ':(8098|8099)' || echo "    nothing listening on 8098/8099"
           echo "  --- does the server serve the page and the game? ---"
           curl -sS -o /dev/null -w "    prev.html %{http_code}\n" http://localhost:8098/prev.html
           curl -sS -o /dev/null -w "    game.html %{http_code}\n" http://localhost:8098/game.html

@@ -120,6 +120,14 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    The eyebrow goes entirely. It is the page's tagline, it wrapped to two lines
    at 360, and a taste does not need to be introduced twice. */
 #rg.preview .eyebrow{display:none!important}
+/* AND THE SECOND LINE GOES IN PREVIEW TOO -- everywhere, not just the six that
+   lost it. `.plabsub` is 2.8 SVG units, which is about 6 real pixels once the
+   rink is scaled into a phone-sized frame: legible in the replay, where a
+   novice is reading, and unreadable ink in a five-second loop nobody is reading
+   at all. Kevin's argument for cutting the six applies with more force here,
+   because in preview it applies to all nine. The three that carry a counting
+   claim keep it on the GAME page, which is where the claim can be read. */
+#rg.preview .plabsub{display:none}
 #rg.preview .board{padding:min(1.5vw,12px) min(2.4vw,18px);gap:min(2vw,14px);
  border-radius:min(1.8vw,13px);box-shadow:none}
 #rg.preview .mid{min-width:0}
@@ -2911,7 +2919,31 @@ $('caption').addEventListener('click',()=>{if(lastHD!=null)showWhy(lastHD);});
 $('whyBk').addEventListener('click',e=>{if(e.target.id==='whyBk')hideWhy();});
 
 
-const LAB={faceoff:['Faceoff','puck dropped'],hit:['Hit','physical play — not a shot'],giveaway:['Giveaway','lost the puck'],takeaway:['Takeaway','won the puck back'],'blocked-shot':['Shot blocked','still an attempt — for the shooter'],'missed-shot':['Missed shot','wide/high — still an attempt'],'shot-on-goal':['Shot on goal','a shot attempt'],goal:['GOAL','the attempt that scored'],penalty:['Penalty','off to the box']};
+/* THE LABEL SAYS WHAT HAPPENED. A SECOND LINE IS ONLY EARNED BY SAYING WHETHER
+   IT COUNTS.
+   Kevin, watching the preview: "we don't need the subtext on the event, just the
+   event itself I think is enough. It states what the event was, and the
+   descriptive elements of the site should provide the clarifying details."
+   True of six of the nine, and they are gone: "Faceoff / puck dropped",
+   "Giveaway / lost the puck", "Takeaway / won the puck back", "Penalty / off to
+   the box", "Shot on goal / a shot attempt" all say the label again in other
+   words. On a phone they were the smallest text on the ice and they said
+   nothing.
+   THE THREE THAT STAY ARE NOT DESCRIPTIONS, THEY ARE THE THESIS. A novice
+   watching "Shot blocked" appear while the attempt counter GOES UP has just met
+   the site's whole argument, and the line is the only thing on screen that
+   accounts for it -- and blocked-shot attribution is the exact defect that once
+   shipped a wrong flagship number, so "for the shooter" is load-bearing rather
+   than decorative. Same for a miss that still counts, and for a hit that looks
+   like a shot in the run of play and is not one.
+   The rule, so the next row does not have to be argued from scratch: a second
+   line that rephrases the label is noise; a second line that says whether the
+   event COUNTS is the work.
+   `goal` is gone entirely. Goals take the branch above -- scorer and assists --
+   so its row had never once rendered: dead weight inside a table, reading as
+   coverage. Third instance of that shape (test/shell.test.js had a dead
+   "rosterSpots" pattern, homepage.test.js an assertion that read undefined). */
+const LAB={faceoff:['Faceoff'],hit:['Hit','physical play — not a shot'],giveaway:['Giveaway'],takeaway:['Takeaway'],'blocked-shot':['Shot blocked','still an attempt — for the shooter'],'missed-shot':['Missed shot','wide/high — still an attempt'],'shot-on-goal':['Shot on goal'],penalty:['Penalty']};
 let labelsOn=true;
 /**
  * WHAT THE ICE SAYS WHEN IT IS SHOWING NOTHING.
@@ -2948,7 +2980,11 @@ function drawLabel(e){const g=$('labels');const p=place(e);if(!labelsOn||!p){g.i
  // the answer to a hue. Costs nothing and works without colour vision.
  const lab=e.own===AID?AAB:e.own===HID?HAB:null;
  const hd=(hdOn&&isHD(e))?' · from the slot':'';
- g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${lab?lab+" · ":""}${info[0]}${hd}</text><text class="plabsub" x="${tx.toFixed(1)}" y="${(ty+3.7).toFixed(1)}" text-anchor="${anc}">${info[1]}</text></g>`;}
+ // No second line means no second <text>, rather than an empty one: an empty
+ // element still occupies the label's height and would push the next mark's
+ // spacing around for a string nobody can read.
+ const sub=info[1]?`<text class="plabsub" x="${tx.toFixed(1)}" y="${(ty+3.7).toFixed(1)}" text-anchor="${anc}">${info[1]}</text>`:'';
+ g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${lab?lab+" · ":""}${info[0]}${hd}</text>${sub}</g>`;}
 $('lbl').addEventListener('click',()=>{labelsOn=!labelsOn;$('lbl').setAttribute('aria-pressed',labelsOn);$('lbl').style.opacity=labelsOn?'1':'.5';drawLabel(EV[i]);});
 
 // THE WHISTLE LAYER, DRAWN. What from the stoppage, where from the faceoff that

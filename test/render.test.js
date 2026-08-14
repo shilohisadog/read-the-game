@@ -1123,3 +1123,73 @@ test('the homepage gives a narrow frame the extra height its rink needs', () => 
   assert.match(index, /\.heroframe iframe\{[^}]*aspect-ratio:200\/108/,
     'the wide frame lost its ratio');
 });
+
+/* ---------------------------------------------- what a play label may say
+   Kevin: "we don't need the subtext on the event, just the event itself... the
+   descriptive elements of the site should provide the clarifying details."
+   True of six of nine. The three that stayed are not descriptions -- they say
+   whether the event COUNTS, which is the only claim on the ice that a novice
+   cannot get from the label. The rule is asserted rather than remembered,
+   because the next row added to the table will be argued from whatever is
+   already there. */
+
+const COUNTS = ['hit', 'blocked-shot', 'missed-shot'];
+
+test('a play label carries a second line only when it says whether it counts', () => {
+  const table = app.match(/const LAB=\{(.*?)\};/s)[1];
+  const rows = [...table.matchAll(/'?([a-z-]+)'?:\[([^\]]*)\]/g)]
+    .map(m => [m[1], m[2].split(',').length]);
+  assert.ok(rows.length >= 8, `only ${rows.length} labels parsed`);
+  for (const [type, fields] of rows) {
+    const wanted = COUNTS.includes(type) ? 2 : 1;
+    assert.equal(fields, wanted,
+      COUNTS.includes(type)
+        ? `${type} lost the line that says it still counts`
+        : `${type} has a second line that only rephrases its label`);
+  }
+});
+
+test('the goal row is gone, and goals still get their scorer and assists', () => {
+  // It had never rendered: goals take an earlier branch. Dead weight inside a
+  // table reads as coverage -- the third instance of that shape here.
+  assert.doesNotMatch(app, /const LAB=\{[^}]*goal:\[/,
+    'the dead goal row is back in the label table');
+  assert.match(app, /🚨 GOAL — /, 'goals lost their own label');
+  assert.match(app, /assists: /, 'goals lost their assists');
+});
+
+test('on the ice: a faceoff draws one line, a blocked shot draws two', () => {
+  // Through the real renderer, because the table is only half the claim -- the
+  // other half is that an absent second line means no <text> at all rather than
+  // an empty one taking up the same room.
+  const a = boot();
+  const seen = { faceoff: null, 'blocked-shot': null };
+  a.every(d => {
+    const cur = d.$('labels').innerHTML;
+    for (const t of Object.keys(seen)) {
+      if (seen[t] === null && new RegExp(t === 'faceoff' ? '>Faceoff<|· Faceoff<' : 'Shot blocked').test(cur)) {
+        seen[t] = cur;
+      }
+    }
+    return null;
+  });
+  assert.ok(seen.faceoff, 'no faceoff label was ever drawn');
+  assert.ok(seen['blocked-shot'], 'no blocked-shot label was ever drawn');
+  assert.doesNotMatch(seen.faceoff, /plabsub/, 'the faceoff still draws a second line');
+  assert.match(seen['blocked-shot'], /plabsub[^>]*>still an attempt/,
+    'the blocked shot lost the line that says it counts');
+});
+
+test('preview drops the second line entirely, including the three that keep it', () => {
+  // 2.8 SVG units is about 6 real pixels once the rink is scaled into a phone
+  // frame. The counting claims are for the replay, where someone is reading.
+  assert.match(app, /#rg\.preview \.plabsub\{display:none\}/,
+    'the preview still draws label subtext nobody can read at that size');
+  // PAIRED: the game page must still carry them, or this is a deletion wearing
+  // a media query.
+  const a = boot();
+  let sub = null;
+  a.every(d => { const h = d.$('labels').innerHTML;
+                 if (sub === null && /plabsub/.test(h)) sub = h; return null; });
+  assert.ok(sub, 'the ordinary replay lost its counting lines too');
+});
