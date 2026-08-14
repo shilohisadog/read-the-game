@@ -20,6 +20,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const html = readFileSync(new URL('../src/index.html', import.meta.url), 'utf8');
+const PAGES_TO_CHECK = Object.fromEntries(['index.html','game.html','read-the-game.html','goalie-view.html','goalie-eye-view.html']
+  .map(f => [f, readFileSync(new URL('../src/' + f, import.meta.url), 'utf8')]));
 const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
 
 /** The smallest DOM that can answer what this page asks of one. */
@@ -477,4 +479,67 @@ test('the payoff is stated, and it is computed from the count and the denominato
     assert.doesNotMatch(textOf(key), /\bso\b|\btherefore\b|\bbecause\b|\bproving\b/i,
       'the payoff argues instead of reporting');
   });
+});
+
+/**
+ * THE PAGE SAYS WHAT IT IS, AND NAMES WHAT IT TEACHES.
+ *
+ * Kevin: "the home page doesn't give much of a clue as to what the purpose of
+ * the website is — no mention of icing, offsides, faceoffs, corsi, high danger
+ * shots, goalie views." Counted on the shipped page before this change: icing 0,
+ * offside 0, Corsi 0, high-danger 0, empty net 0, penalty 0. That is a measured
+ * gap, not a matter of taste — a site that teaches you to read hockey named
+ * almost nothing it teaches.
+ */
+test('the page states what it is, above everything else', () => {
+  const body = html.match(/<h1>([\s\S]*?)<h2/)[1];
+  assert.match(body, /class="says"/, 'nothing above the fold says what this is');
+  const says = body.match(/class="says">([\s\S]*?)<\/p>/)[1];
+  assert.ok(says.length > 60, `"${says}" is not a sentence`);
+  // NO TYPED NUMBERS, the same rule the thesis paragraph carries: every count on
+  // this page is fetched and rendered, so a number in static copy is a claim
+  // that goes stale between deploys. "since 2023" is a scope claim, and scope
+  // does not move.
+  assert.doesNotMatch(says.replace(/since 2023/, ''), /\d[\d,]{2,}/,
+    'a count was typed into copy that cannot be re-derived');
+});
+
+test('every concept the site teaches is NAMED on the front page', () => {
+  // The list is the layers and the whistle rules that actually exist. If one is
+  // added or removed, this is where the page and the product fall out of step.
+  for (const word of ['Icing', 'Offside', 'Faceoffs', 'Penalties', 'empty net',
+                      'Control', 'Shots from the slot', 'Goaltending'])
+    assert.ok(html.includes(word), `the front page never mentions ${word}`);
+});
+
+test('the rules and OUR measurements are kept apart', () => {
+  // Merging them would let our measurements borrow the rulebook's authority.
+  // Icing is the NHL's; "shots from the slot" is a rule we wrote, and the page
+  // has to say which is which.
+  const block = html.match(/<div class="conc">([\s\S]*?)<\/div>/)[1];
+  const heads = [...block.matchAll(/class="ck">([\s\S]*?)<\/p>/g)].map(m => m[1]);
+  assert.equal(heads.length, 2, 'the two kinds of concept are not separated');
+  assert.match(heads[0], /rules/i, 'the first group is not named as the league\'s');
+  assert.match(heads[1], /we count|our own/i, 'the second group does not say it is ours');
+
+  // And each concept sits under the right heading.
+  const [game, ours] = block.split(heads[1]);
+  for (const w of ['Icing', 'Offside', 'Penalties']) assert.ok(game.includes(w), `${w} is not under the rules`);
+  for (const w of ['Control', 'Shots from the slot', 'Goaltending'])
+    assert.ok(ours.includes(w), `${w} is not listed as ours`);
+});
+
+test('the borrowed term is gone from every page a reader sees', () => {
+  // "High-danger" is a term of art with published definitions that are not ours,
+  // so our count would disagree with a count a reader looks up and they would
+  // conclude we are wrong rather than different. Internal identifiers keep the
+  // old name; only user-facing copy changed, so this checks the copy.
+  for (const [name, page] of Object.entries(PAGES_TO_CHECK)) {
+    const visible = page
+      .replace(/<script>[\s\S]*?<\/script>/g, '')   // identifiers and comments
+      .replace(/<style>[\s\S]*?<\/style>/g, '')
+      .replace(/<!--[\s\S]*?-->/g, '');
+    assert.doesNotMatch(visible, /high[- ]danger/i,
+      `${name} still shows a reader the borrowed term`);
+  }
 });

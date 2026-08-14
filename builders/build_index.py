@@ -111,6 +111,18 @@ body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
 .wrap{max-width:900px;margin:0 auto}
 .eyebrow{font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
 h1{font-size:clamp(1.8rem,4vw,2.5rem);letter-spacing:-.025em;font-weight:800;margin:0 0 12px;text-wrap:balance}
+.says{font-size:1.06rem;line-height:1.5;color:var(--ink);margin:0 0 22px;max-width:56ch}
+.says b{font-weight:700}
+.conc{margin:0 0 26px}
+.conc .ck{margin:0 0 7px;font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;
+ color:var(--muted);font-weight:700}
+.conc .ck+ul{margin:0 0 18px}
+.clist{list-style:none;padding:0;display:grid;gap:6px;
+ grid-template-columns:repeat(auto-fill,minmax(255px,1fr))}
+.clist li{background:#fff;border:1px solid var(--edge);border-radius:9px;
+ padding:9px 13px;font-size:.86rem;color:var(--muted)}
+.clist li b{color:var(--ink);font-weight:650}
+.cnote{font-size:.84rem;color:var(--muted);margin:0;max-width:62ch}
 .lede{font-size:1.05rem;color:var(--muted);margin:0 0 22px;max-width:62ch}
 .lede b{color:var(--ink);font-weight:600}
 h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
@@ -265,6 +277,10 @@ footer p{margin:0 0 8px}
 BODY = r"""<div class="wrap">
 <p class="eyebrow">Read the Game</p>
 <h1>__H1__</h1>
+<!-- WHAT THIS IS, IN ONE SENTENCE, WHICH THE PAGE DID NOT SAY AT ALL.
+     A stranger's questions are, in order: what is this, why should I care, what
+     do I do. Only the third had an answer above the fold, and it was a button. -->
+<p class="says">__SAYS__</p>
 
 <!-- ABOVE THE FOLD: one object and one link.
      Rendered by script from the catalog, because the team set is a fact about
@@ -297,6 +313,36 @@ BODY = r"""<div class="wrap">
      them: 54.5% sits on the OTHER SIDE OF 50% from 39.6%. The heading is now
      the finding and the numbers are what backs it, rather than data followed by
      an explanation in small grey type. -->
+<!-- NAME WHAT THE SITE TEACHES, because it named none of it.
+     Counted on the shipped page before this: icing 0, offside 0, Corsi 0,
+     high-danger 0, empty net 0, penalty 0. A site that teaches you to read
+     hockey mentioned almost nothing it teaches, and a visitor deciding whether
+     to look around decides on whether we appear to cover what they wondered
+     about.
+     TWO KINDS, KEPT APART. The first row is HOCKEY — rules a novice needs in
+     order to watch. The second is OURS — what we count, which is a different
+     claim and carries a different obligation. Merging them would let our
+     measurements borrow the rulebook's authority. -->
+<h2 id="learn">What you can see here</h2>
+<div class="conc">
+  <p class="ck">The game itself &mdash; the league&rsquo;s rules, named as they happen</p>
+  <ul class="clist">
+    <li><b>Icing</b> &mdash; and why the faceoff goes back</li>
+    <li><b>Offside</b> &mdash; why a goal gets waved off</li>
+    <li><b>Faceoffs</b> &mdash; all nine spots, and which one play restarts at</li>
+    <li><b>Penalties</b> &mdash; and the delayed whistle</li>
+    <li><b>The empty net</b> &mdash; when a goaltender leaves, read from the feed</li>
+  </ul>
+  <p class="ck">What we count &mdash; our own measurements, each showing its work</p>
+  <ul class="clist">
+    <li><b>Control</b> &mdash; shot attempts, and the narrower count that predicts</li>
+    <li><b>Shots from the slot</b> &mdash; a geometric rule of ours, not a model</li>
+    <li><b>Goaltending</b> &mdash; saves as a fraction, built while you watch</li>
+  </ul>
+  <p class="cnote">Every one of them is a toggle on a real game, and every one
+  shows the events it counted and the events it did not.</p>
+</div>
+
 <h2 id="teams-h">Watch your team</h2>
 <p class="note">Every game each club played, newest first. Arizona became Utah in
 2024 &mdash; both are here, because both played.</p>
@@ -676,6 +722,17 @@ __LIB__
 </script>"""
 H1 = "Watch a hockey game and see what the numbers are made of"
 
+# WHAT THE SITE IS, IN ONE SENTENCE. The page never said it.
+#
+# NO NUMBERS IN THIS TEXT, the same rule the thesis paragraph carries: the
+# archive's size is fetched and rendered, never typed, so a sentence claiming a
+# count would be a claim that goes stale between deploys. "Every NHL game since
+# 2023" is a claim about SCOPE, which the limits block below states exactly and
+# which does not move.
+SAYS = ("Every NHL game since 2023, replayed play by play &mdash; with the counts "
+        "built in front of you, so you can see <b>where a number comes from</b> "
+        "instead of taking it on faith.")
+
 # THE THESIS, and it is the best sentence this project has earned. It is not a
 # hedge against "shot counts are meaningless" -- it is the finding, measured over
 # 4,119 games: counted the obvious way the leader loses more often than not, and
@@ -718,6 +775,7 @@ def build():
     html = (BODY.replace("__LIB__", _lib())
              .replace("__ORIGIN__", repr(DATA_ORIGIN).replace("'", '"'))
              .replace("__H1__", H1)
+             .replace("__SAYS__", SAYS)
              .replace("__THESIS__", THESIS)
              .replace("__WORKSHOP__", _workshop())
              .replace("__LIMITS__", _limits()))
