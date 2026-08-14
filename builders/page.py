@@ -126,6 +126,15 @@ CHROME_CSS = """<style>
 .sitehdr nav a:hover,.sitehdr nav a:focus{border-bottom-color:#2a5d86}
 .sitehdr nav a[aria-current="page"]{color:#0f1a23;border-bottom-color:#0f1a23}
 .sitefoot{border-top:1px solid #ccd8e0;padding:18px 16px 28px;color:#5b6d7a;font-size:.82rem}
+/* PREVIEW HAS NO ROOM FOR CHROME. The five-second loop on the front door is an
+   iframe of the game page, and the shared header and footer are real height
+   inside a box sized for a rink -- they push the ice past the bottom edge, and
+   `scrolling=no` crops it. The class is set by the page at runtime (there is no
+   build-time preview variant; one file serves both), and the rule lives HERE
+   because this is where the chrome is defined. A rule in build_main.py reaching
+   across to style .sitehdr would be the second place chrome is decided. */
+body.previewing{margin:0}
+body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot p{margin:0 0 7px;max-width:70ch}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}

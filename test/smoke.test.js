@@ -79,6 +79,10 @@ function makeDom() {
     made[sel].forEach((n, k) => nodes.set(`${sel}[${k}]`, n));
   }
   const document = {
+    // `body` is modelled because preview hides the shared chrome through a
+    // class on it -- the environment, not something the app should defend
+    // against.
+    body: node('body'),
     getElementById(id) {
       if (!nodes.has(id)) nodes.set(id, node(id));
       return nodes.get(id);

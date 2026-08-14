@@ -67,6 +67,10 @@ function fakeDom() {
     '#rg .cc.h .lb': [el()],
   };
   const document = {
+    // `document.body` is part of the document this bundle runs in -- preview
+    // hides the shared chrome through a class on it -- so the fake models it
+    // rather than the app defending against its absence.
+    body: el(),
     getElementById(id) {
       if (!byId.has(id)) byId.set(id, el());
       return byId.get(id);
@@ -953,7 +957,11 @@ test('the preview is hidden by CSS, not by deleting the app', () => {
   // shipped bundle. Pin the mechanism: one rule, hiding the controls.
   const hides = app.match(/#rg\.preview [^{]*\{display:none!important\}/);
   assert.ok(hides, 'preview does not hide the controls with CSS');
-  for (const cls of ['.transport', '.layers', '.verdict', '.nextup', '.lede'])
+  for (const cls of ['.transport', '.layers', '.verdict', '.nextup', '.lede',
+                     // Added when Kevin found the rink cropped: these are real
+                     // height in a box sized for a rink, and neither is part of
+                     // a five-second taste.
+                     '.legend', '.goalies'])
     assert.ok(hides[0].includes(cls), `preview leaves ${cls} on screen`);
 });
 
@@ -1041,4 +1049,45 @@ test('the preview is a taste: it restarts inside a quarter-minute', () => {
   const playing = delays.slice(0, back - 1).reduce((a, b) => a + b, 0);
   assert.ok(playing > 5000 && playing < 15000,
     `the preview window runs ${(playing / 1000).toFixed(1)}s before looping`);
+});
+
+/* ------------------------------------------- the preview CANNOT crop the rink
+   Kevin: "the bottom 1/3 of the rink is clipped off within the frame."
+   The frame is sized by aspect-ratio on the homepage, and that arithmetic
+   cannot hold: the rink scales with WIDTH while the scoreboard's height is set
+   in points, so at a narrow column the fixed chrome takes a bigger share of a
+   smaller box and pushes the ice past the edge. A ratio measured at one width
+   is a constant that drifts with the viewport.
+
+   WHAT THESE TESTS CAN AND CANNOT SEE, stated so the green is not read as more
+   than it is: the fake document has no CSS and no layout, so nothing here has
+   ever seen a pixel. They pin the MECHANISM -- that the page is built to fit
+   whatever box it is handed, rather than to be handed the right one -- and
+   whether it looks right is a question for a browser and for Kevin. */
+
+test('the preview fits the rink to its box instead of trusting the box', () => {
+  // A viewBox with the default preserveAspectRatio letterboxes rather than
+  // crops, so an svg told to fill a bounded height always draws the WHOLE rink.
+  // The default rule is `height:auto`, which is exactly what cannot be bounded.
+  assert.match(app, /#rg\.preview \.rinkbox svg\{[^}]*height:100%/,
+    'the preview rink is still free to grow past its container');
+  assert.match(app, /#rg\.preview \.rinkbox\{[^}]*min-height:0/,
+    'a flex child without min-height:0 refuses to shrink, which is the crop');
+  assert.match(app, /#rg\.preview \.wrap\{[^}]*flex-direction:column/,
+    'nothing gives the rink box a bounded height to fit into');
+});
+
+test('preview takes the shared chrome off, from where the chrome is defined', () => {
+  // The header and footer live in page.py and are OUTSIDE #rg, so no #rg rule
+  // can reach them. The page sets a class on <body> and page.py owns the rule --
+  // a .sitehdr selector inside build_main.py would be a second place chrome is
+  // decided.
+  assert.match(app, /body\.previewing \.sitehdr,body\.previewing \.sitefoot\{display:none\}/,
+    'the chrome rule is missing or has moved out of page.py');
+  const d = boot(null, null, '?preview=1');
+  assert.ok(d.document.body.classList.contains('previewing'),
+    'the page never told the document it was a preview');
+  const plain = boot(null, null, '');
+  assert.equal(plain.document.body.classList.contains('previewing'), false,
+    'the ordinary page must keep its chrome — the paired half');
 });

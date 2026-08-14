@@ -60,6 +60,10 @@ function fakeDom() {
     '#rg .cc.h .lb': [el()],
   };
   const document = {
+    // `document.body` is part of the document this bundle runs in -- preview
+    // hides the shared chrome through a class on it -- so the fake models it
+    // rather than the app defending against its absence.
+    body: el(),
     getElementById(id) { if (!byId.has(id)) byId.set(id, el()); return byId.get(id); },
     querySelectorAll(sel) {
       assert.ok(GROUPS[sel], `the page queried "${sel}", which this fake does not model`);

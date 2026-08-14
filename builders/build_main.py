@@ -66,10 +66,30 @@ T = r"""<style>
 #rg.preview .lede,#rg.preview h1,#rg.preview .transport,#rg.preview .layers,
 #rg.preview .figpick,#rg.preview .hint,#rg.preview .ends,#rg.preview .whistlepanel,
 #rg.preview .verdict,#rg.preview .nextup,#rg.preview .foot,#rg.preview .work,
+#rg.preview .legend,#rg.preview .goalies,
 #rg.preview .counters{display:none!important}
-#rg.preview{padding:0;min-height:0}
-#rg.preview .wrap{max-width:none;padding:0}
-#rg.preview .board{margin:0 0 6px}
+/* THE PREVIEW FITS ITSELF TO WHATEVER BOX IT IS GIVEN.
+   Kevin: "the bottom 1/3 of the rink is clipped off within the frame."
+   The homepage sizes the frame by aspect-ratio -- 200x108, the rink's 200x85
+   plus room for the scoreboard -- and that arithmetic cannot hold, because the
+   rink scales with WIDTH while the scoreboard's height is set in points. At a
+   narrow column the fixed chrome eats a larger share of a smaller box, the rink
+   is pushed past the bottom edge, and `scrolling=no` crops it. A ratio measured
+   at one width is a constant that drifts with the viewport -- the same mistake
+   as the preview's pace, in a second dimension.
+   So the page stops depending on being given the right height. The wrap is a
+   flex column, the rink box takes whatever is left, and the SVG fits inside it:
+   a viewBox with the default preserveAspectRatio letterboxes rather than crops,
+   so THE WHOLE RINK IS ALWAYS DRAWN and only its size varies. The frame's ratio
+   now decides how much empty ice sits beside it, never whether a goal line is
+   on screen. */
+#rg.preview{padding:0;min-height:0;height:100vh;overflow:hidden}
+#rg.preview .wrap{max-width:none;padding:0;height:100%;
+ display:flex;flex-direction:column;min-height:0}
+#rg.preview .board{margin:0 0 4px;flex:0 0 auto}
+#rg.preview .atnote{flex:0 0 auto}
+#rg.preview .rinkbox{flex:1 1 auto;min-height:0;padding:6px;display:flex}
+#rg.preview .rinkbox svg{width:100%;height:100%}
 #rg .nextup{display:flex;flex-wrap:wrap;justify-content:center;gap:9px;margin:16px 0 4px;padding-top:15px;border-top:1px solid var(--edge)}
 #rg .nextup a{display:inline-block;padding:9px 14px;border-radius:9px;border:1px solid var(--edge);background:#fff;color:var(--ink);text-decoration:none;font-weight:650;font-size:.9rem}
 #rg .nextup a:hover,#rg .nextup a:focus{border-color:var(--ink)}
@@ -1037,6 +1057,9 @@ set(frameOf(AT.index),false);
 const BUDGET_MS=14000;
 if(PREVIEW){
  $('rg').classList.add('preview');
+ /* AND THE CHROME GOES, from the one place chrome is defined (page.py). The
+    shared header and footer are real height inside a box sized for a rink. */
+ document.body.classList.add('previewing');
  let acc=0,W=0;
  while(W<EV.length-1&&acc+dwell(EV[W])<=BUDGET_MS){acc+=dwell(EV[W]);W++;}
  const WINDOW=Math.max(1,W);

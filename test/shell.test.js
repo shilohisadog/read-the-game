@@ -157,7 +157,9 @@ function run({ search = '', responses = {} } = {}) {
     classList: { add() {}, remove() {}, toggle() {}, contains() { return false; } },
     setAttribute() {}, getAttribute() { return null; }, addEventListener() {},
   };
-  const document = { getElementById: () => el, querySelectorAll: () => [] };
+  // `body` is modelled for the same reason as the rest: preview hides the
+  // shared chrome through a class on it.
+  const document = { body: el, getElementById: () => el, querySelectorAll: () => [] };
   const fetch = url => {
     asked.push(url);
     const key = Object.keys(responses).find(k => url.includes(k));

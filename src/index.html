@@ -24,11 +24,20 @@
 .sitehdr nav a:hover,.sitehdr nav a:focus{border-bottom-color:#2a5d86}
 .sitehdr nav a[aria-current="page"]{color:#0f1a23;border-bottom-color:#0f1a23}
 .sitefoot{border-top:1px solid #ccd8e0;padding:18px 16px 28px;color:#5b6d7a;font-size:.82rem}
+/* PREVIEW HAS NO ROOM FOR CHROME. The five-second loop on the front door is an
+   iframe of the game page, and the shared header and footer are real height
+   inside a box sized for a rink -- they push the ice past the bottom edge, and
+   `scrolling=no` crops it. The class is set by the page at runtime (there is no
+   build-time preview variant; one file serves both), and the rule lives HERE
+   because this is where the chrome is defined. A rule in build_main.py reaching
+   across to style .sitehdr would be the second place chrome is decided. */
+body.previewing{margin:0}
+body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot p{margin:0 0 7px;max-width:70ch}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-t6x2lJ5ZR7UFQO4hSMjFWHy9qHgbhv3DQ0aKNELoqPw='; style-src 'sha256-lnrmibk1XRd4mSSsX6P2RhstUetji/NA/zTJVSQOhLk=' 'sha256-xN/BjYU7EzylI0mO5QmT0Draeht20WAEw/JTUq3XOVI='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-t6x2lJ5ZR7UFQO4hSMjFWHy9qHgbhv3DQ0aKNELoqPw='; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-xN/BjYU7EzylI0mO5QmT0Draeht20WAEw/JTUq3XOVI='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
