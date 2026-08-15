@@ -443,13 +443,15 @@ test('the base view is the game — every layer off, no trails, at boot', () => 
   // Doctrine §6 and the page's own headline (watch first, add metrics after)
   // both depend on this, so it is asserted rather than remembered.
   const a = boot();
-  for (const id of ['lyCorsi', 'lyHd', 'lyGoalie', 'lyWhistle']) {
+  for (const id of ['lyCorsi', 'lyHd', 'lyGoalie', 'lyWhistle', 'lyBlock']) {
     assert.equal(a.$(id)['aria-pressed'], undefined,
       `${id} announced a state before anyone touched it`);
   }
   assert.equal(a.$('rg').classList.contains('corsi'), false, 'no control panel');
   assert.equal(a.$('rg').classList.contains('goalie'), false, 'no goalie cards');
   assert.equal(a.$('rg').classList.contains('whistle'), false, 'no whistle panel');
+  assert.equal(a.$('rg').classList.contains('blocked'), false, 'no blocked-shots panel');
+  assert.equal(a.$('blockPanel').innerHTML, '', 'the blocked panel wrote before it was asked');
   assert.equal(a.GROUPS['#rg .tbtn'][0]['aria-pressed'], true, 'trails: current moment');
   assert.equal(a.$('whistles').innerHTML, '', 'and nothing metric-specific is drawn');
 });
@@ -1259,4 +1261,118 @@ test('preview drops the second line entirely, including the three that keep it',
   a.every(d => { const h = d.$('labels').innerHTML;
                  if (sub === null && /plabsub/.test(h)) sub = h; return null; });
   assert.ok(sub, 'the ordinary replay lost its counting lines too');
+});
+
+/* ------------------------------------------------------ the blocked-shots layer
+ *
+ * The reducer's arithmetic is tested in layers.test.js. These are about what
+ * reaches the reader — which is where this layer's actual risk lives, because
+ * the mark it annotates is NOT where a reader will assume it is.
+ */
+
+const CURVE_AND_MIX = {
+  levelCurve: [{ k: 12, n: 708, count: 243 }, { k: 1, n: 3855, count: 1527 }],
+  attemptMix: {
+    games: 4119,
+    byType: { goal: 25105, 'shot-on-goal': 211764, 'missed-shot': 118557, 'blocked-shot': 136545 },
+    reachedTheGoalie: { n: 491971, count: 236869, rate: 236869 / 491971, population: 'NHL regular season and playoffs' },
+    neverReachedTheGoalie: { n: 491971, count: 255102, rate: 255102 / 491971, population: 'NHL regular season and playoffs' },
+    blocked: { n: 491971, count: 136545, rate: 136545 / 491971, population: 'NHL regular season and playoffs' },
+  },
+};
+
+test('the blocked layer draws nothing until it is asked, then says who stopped what', () => {
+  const a = boot(rich, CURVE_AND_MIX);
+  assert.equal(a.$('blockPanel').innerHTML, '');
+  a.$('lyBlock').click();
+  assert.equal(String(a.$('lyBlock')['aria-pressed']), 'true');
+  assert.ok(a.$('rg').classList.contains('blocked'), 'the panel is revealed by a class and the class is absent');
+
+  const v = a.$('blockPanel').innerHTML;
+  assert.match(v, /shots blocked/, 'the panel never says what its numbers are');
+  // The two clubs, by their own abbreviations read from the game.
+  const away = a.$('aAb').textContent, home = a.$('hAb').textContent;
+  assert.match(v, new RegExp(`${away}[^<]*·[^<]*${home}`), 'the panel does not name the two clubs');
+});
+
+test('THE PANEL PUBLISHES NO WIN RATE — the whole design turns on this', () => {
+  // CHENG's ruling: "the team that blocked more won X% of the time" is
+  // uninterpretable, not merely uncertain, because the blocks leader is the
+  // attempts trailer 81.7% of the time. A share of a population is publishable;
+  // an outcome rate is not. If one ever appears here it will arrive as a
+  // plausible-sounding sentence, so the test is on the PROSE.
+  const a = boot(rich, CURVE_AND_MIX);
+  a.$('lyBlock').click();
+  const v = a.$('blockPanel').innerHTML;
+  assert.doesNotMatch(v, /\bwon\b|\blost\b|\bwins\b|\bloses\b|win rate/i,
+    'the blocked-shots panel is describing an outcome');
+  // And the archive number it DOES publish carries its n and its scope.
+  assert.match(v, /491,971 attempts/, 'the archive share ships without its n');
+  assert.match(v, /4,119 games/, 'the archive share ships without its population size');
+  assert.match(v, /NHL regular season and playoffs/, 'the archive share ships without its scope');
+  assert.match(v, /51\.9%/, 'the never-reached share is not stated');
+  assert.match(v, /27\.8%/, 'the blocked share is not stated');
+});
+
+test('a page that reaches nothing says SO, rather than implying a failure', () => {
+  // The inlined page carries one game and makes no network requests, so there is
+  // no archive to compare against. "Could not be loaded" would be a small untruth
+  // on the one page whose whole claim is that it reaches nobody — the same
+  // distinction the verdict card draws with noCurveReason.
+  const a = boot();                       // no rates at all
+  a.$('lyBlock').click();
+  const v = a.$('blockPanel').innerHTML;
+  assert.match(v, /makes no network requests/, 'the reason given is not the true one');
+  assert.doesNotMatch(v, /could not be loaded/);
+});
+
+test('the label names the BLOCKER once the layer is on, and says what the mark is', () => {
+  // The defect this exists for: the coordinate is the BLOCK POINT — a median
+  // 24.2 ft from the net against 33.4 for a shot on goal — and the label used to
+  // name the shooter beside it, which invites reading the dot as his.
+  const a = boot();
+  a.$('lyBlock').click();
+  const labels = a.every(d => d.$('labels').innerHTML)
+                  .filter(h => /not where the shot was taken|neither team is credited/.test(h));
+  assert.ok(labels.length > 0, 'no blocked shot ever labelled itself as a block point');
+  // Somebody is named, and it is a person rather than a club abbreviation.
+  assert.ok(labels.some(h => /blocked it|Blocked by a teammate/.test(h)),
+    'the label never names who stopped it');
+});
+
+test('with the layer off, no label claims to be a block point', () => {
+  // The corollary, and it is what makes the test above mean something: if the
+  // block-point sentence appeared on every game regardless, it would be page
+  // furniture rather than the layer's disclosure.
+  const a = boot();
+  const any = a.every(d => d.$('labels').innerHTML).join('');
+  assert.doesNotMatch(any, /not where the shot was taken/);
+});
+
+test('the CURRENT play is marked as such, so no layer can dim it away', () => {
+  // FOUND BY RENDERING IT, and not findable here — the fake document has no CSS,
+  // so the defect was a computed opacity rather than anything in the markup.
+  //
+  // The blocked layer dims attempts it does not count, to make the stopped ones
+  // carry the frame. With trails on "Current moment" — the DEFAULT — the only
+  // mark on the ice is the current one, so the layer was dimming the very play
+  // the viewer is watching to 20% and leaving the rink otherwise empty.
+  //
+  // The stylesheet exempts `.cur`. What this test can see is that the class is
+  // there to be exempted, on exactly one mark, and that it is the right one.
+  const a = boot();
+  const frames = a.every(d => d.$('events').innerHTML);
+  let seen = 0;
+  for (const html of frames) {
+    const marks = [...html.matchAll(/class="([^"]*\b(?:att|goal)\b[^"]*)"/g)].map(m => m[1]);
+    if (!marks.length) continue;
+    const cur = marks.filter(c => /\bcur\b/.test(c));
+    assert.ok(cur.length <= 1, `${cur.length} marks claim to be the current play`);
+    if (cur.length) seen++;
+  }
+  assert.ok(seen > 20, `only ${seen} frames marked a current play — the class is not being written`);
+
+  // And the stylesheet must actually spend it, or the class is decoration.
+  assert.match(PAGE_CSS, /#rg\.blocked \.att:not\(\.blkd\):not\(\.cur\)/,
+    'the dimming rule does not exempt the current play');
 });

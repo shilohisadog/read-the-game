@@ -65,7 +65,7 @@ T = r"""<style>
    ONE RENDERER, still. Preview is a class on #rg and a play loop; there is no
    second drawing path and nothing here is reimplemented. */
 #rg.preview .lede,#rg.preview h1,#rg.preview .transport,#rg.preview .layers,
-#rg.preview .figpick,#rg.preview .hint,#rg.preview .ends,#rg.preview .whistlepanel,
+#rg.preview .figpick,#rg.preview .hint,#rg.preview .ends,#rg.preview .whistlepanel,#rg.preview .blockpanel,
 #rg.preview .verdict,#rg.preview .nextup,#rg.preview .foot,#rg.preview .work,
 #rg.preview .legend,#rg.preview .goalies,
 #rg.preview .counters{display:none!important}
@@ -284,6 +284,24 @@ T = r"""<style>
 #rg .wh{fill:none;stroke:var(--ink);stroke-width:.5;stroke-dasharray:1.5 1.3;opacity:.5}
 #rg .wh.now{stroke:var(--flag);stroke-width:.9;stroke-dasharray:none;opacity:.95}
 #rg .whn{font-size:3.2px;font-weight:700;fill:var(--ink);text-anchor:middle;opacity:.7}
+/* THE BLOCKED-SHOTS LAYER. The ring is drawn on every game already; what the
+   layer adds is emphasis, the blocker's name, and the archive share. Attempts
+   that were NOT blocked drop back so the stopped ones carry the frame -- the
+   same device the slot layer uses, and the reason the mark needed a class of
+   its own rather than being found by its ring. */
+#rg.blocked .att:not(.blkd):not(.cur),#rg.blocked .goal:not(.cur){opacity:.2}
+#rg.blocked .ring.blk{stroke-width:1.3;opacity:1}
+#rg .blockpanel{display:none}
+#rg.blocked .blockpanel{display:block;background:#fff;border:1px solid var(--edge);border-radius:11px;padding:13px 15px;margin-top:10px;box-shadow:0 4px 14px rgba(16,32,45,.06)}
+#rg .bkrow{display:flex;align-items:baseline;justify-content:center;gap:18px;font-family:ui-monospace,Menlo,monospace;font-weight:700;font-size:1.35rem}
+#rg .bkrow .bkt{font-size:.7rem;letter-spacing:.06em;color:var(--muted);font-family:inherit}
+#rg .bkrow .a{color:var(--away-text)}#rg .bkrow .h{color:var(--home-text)}
+#rg .bklab{text-align:center;font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-top:2px}
+#rg .bksay{margin:9px 0 0;font-size:.88rem;line-height:1.5}
+#rg .bkmate{margin:7px 0 0;font-size:.82rem;line-height:1.5;color:var(--flag)}
+#rg .bkarch{margin:9px 0 0;padding-top:9px;border-top:1px solid var(--edge);font-size:.82rem;line-height:1.55;color:var(--muted)}
+#rg .bkarch b{color:var(--ink)}
+#rg .bkarch .lim{display:block;margin-top:3px;font-size:.75rem}
 #rg .whistlepanel{display:none}
 #rg.whistle .whistlepanel{display:block;background:#fff;border:1px solid var(--edge);border-radius:11px;padding:13px 15px;margin-top:10px;box-shadow:0 4px 14px rgba(16,32,45,.06)}
 #rg .whsay{margin:0;font-size:.9rem;line-height:1.5}
@@ -322,12 +340,13 @@ T = r"""<style>
   <div class="counters"><div class="cc a"><span class="n" id="cA">0</span><span class="lb">MIN attempts<span class="mode" id="mA">ALL SITUATIONS</span></span></div><div class="cc h"><span class="lb">BUF attempts<span class="mode" id="mH">ALL SITUATIONS</span></span><span class="n" id="cH">0</span></div></div>
 </div>
 <div class="whistlepanel" id="whistlePanel"></div>
+<div class="blockpanel" id="blockPanel"></div>
 <div class="goalies" id="goaliePanel"></div>
 <div class="transport"><button class="play" id="play">▶ Play from start</button>
   <button class="spd" id="sp0" aria-pressed="false">🐢 Slower</button><button class="spd" id="sp1" aria-pressed="true">Teaching</button><button class="spd" id="sp2" aria-pressed="false">Faster</button><button class="spd" id="lbl" aria-pressed="true">💬 Explain plays</button>
   <input class="scrub" id="scrub" type="range" min="0" max="1" value="0"><button id="work" aria-expanded="false">Show me the work</button></div>
 <div class="legend"><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white-filled, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span><i class="k-g"></i><i class="k-gv"></i>goal — either sweater</span><span><i class="k-blk"></i>blocked — the ring is where the puck was <b>stopped</b>, not where the shot was taken</span><span><i class="k-hd"></i>from the slot, once that layer is on</span><span>other metric-specific marks appear when you add a layer</span></div>
-<div class="layers"><span class="ll">Add a metric layer:</span><button class="lyr" id="lyCorsi" aria-pressed="false">＋ Control (Corsi)</button><button class="lyr" id="lyHd" aria-pressed="false">＋ Shots from the slot</button><button class="lyr" id="lyGoalie" aria-pressed="false">＋ Goaltending</button><button class="lyr" id="lyWhistle" aria-pressed="false">＋ Why play stopped</button></div>
+<div class="layers"><span class="ll">Add a metric layer:</span><button class="lyr" id="lyCorsi" aria-pressed="false">＋ Control (Corsi)</button><button class="lyr" id="lyHd" aria-pressed="false">＋ Shots from the slot</button><button class="lyr" id="lyGoalie" aria-pressed="false">＋ Goaltending</button><button class="lyr" id="lyWhistle" aria-pressed="false">＋ Why play stopped</button><button class="lyr" id="lyBlock" aria-pressed="false">＋ Blocked shots</button></div>
 <div class="figpick"><span class="ll">Trails:</span>
 <button class="lyr tbtn" data-t="off" aria-pressed="true">Current moment</button>
 <button class="lyr tbtn" data-t="all" aria-pressed="false">Keep every mark</button>
@@ -705,6 +724,13 @@ function render(i,newest){
    // third club. Seen in a real game (SJS at CHI) and invisible to every test
    // here, because none of them can see a pixel.
    let cls=e.type==='goal'?'goal':ATT.has(e.type)?'att':'excl';
+   if(e.type==='blocked-shot')cls+=' blkd';   // so the layer can dim what was NOT blocked
+   // AND THE CURRENT PLAY IS NEVER DIMMED BY A LAYER. With trails on
+   // "Current moment" -- the default -- the only mark on the ice IS the
+   // current one, so a layer that dims everything it does not count leaves
+   // the play a viewer is watching at 20% and the rink otherwise empty.
+   // Found by rendering it, not by reading it: the node suite has no CSS.
+   if(k===i)cls+=' cur';
    if(hd)cls+=' clickable';
    const r=e.type==='goal'?3.2:hd?2.2:ATT.has(e.type)?1.7:1;
    const anim=(k===i&&newest)?(e.type==='goal'?' flare':' pop'):'';
@@ -743,6 +769,8 @@ function render(i,newest){
  $('events').innerHTML=parts.join('');
  if(whistleOn)drawWhistles(whistle.reduce(upto(i),CTX));
  else{$('whistles').innerHTML='';$('whistlePanel').innerHTML='';}
+ if(blockOn)drawBlocked(blocked.reduce(upto(i),CTX),L);
+ else $('blockPanel').innerHTML='';
  let lh='';
  const cp=place(cur);
  if(cp&&(cur.type==='shot-on-goal'||cur.type==='goal')){const netx=(cur.own===HID)?89:-89;
@@ -1004,6 +1032,26 @@ function drawLabel(e){const g=$('labels');const p=place(e);if(!labelsOn||!p){g.i
  // the answer to a hue. Costs nothing and works without colour vision.
  const lab=e.own===AID?AAB:e.own===HID?HAB:null;
  const hd=(hdOn&&isHD(e))?' · from the slot':'';
+ // WITH THE LAYER ON, THE LABEL NAMES THE BLOCKER, and the reason is the mark's
+ // position rather than a preference for one name over the other. A blocked
+ // shot's (x, y) is the BLOCK POINT -- where the puck was stopped, between the
+ // shooter and the net, a median 24.2 ft out against 33.4 for a shot on goal.
+ // A label naming the shooter beside a dot that is the BLOCKER's position
+ // invites the reading that the dot is the shooter's, which is the one thing
+ // this mark must not say. Naming the blocker inverts it at no cost, and the
+ // attribution of the ATTEMPT is untouched: it is still the shooter's, which is
+ // corsi's business and correct there (CHENG).
+ if(blockOn&&e.type==='blocked-shot'){
+   const b=R[e.blk],sh=R[e.actor];
+   const bt=b?(b.tid===AID?AAB:b.tid===HID?HAB:null):null;
+   const mate=b&&sh&&b.tid===sh.tid;
+   const head=!b?'Blocked — no blocker recorded'
+     :mate?`Blocked by a teammate — ${b.nm}`
+     :`${bt?bt+' · ':''}${b.nm} blocked it`;
+   const why=mate?'nobody defended it, so neither team is credited'
+     :'where the puck stopped — not where the shot was taken';
+   g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${ESC(head)}</text><text class="plabsub" x="${tx.toFixed(1)}" y="${(ty+3.7).toFixed(1)}" text-anchor="${anc}">${why}</text></g>`;
+   return;}
  // No second line means no second <text>, rather than an empty one: an empty
  // element still occupies the label's height and would push the next mark's
  // spacing around for a string nobody can read.
@@ -1065,7 +1113,47 @@ function drawWhistles(W){
   +`${n===1?'the first this game':n+' so far this game'}${w.from?' · <span class="src">'+ESC(w.from)+'</span>':''}</div>`
   +`<div class="whtally">${tal}</div>`;}
 
-let corsiOn=false,hdOn=false,goalieOn=false,whistleOn=false;
+
+// THE BLOCKED-SHOTS PANEL. Three things, in the order they are worth knowing:
+// who stopped what, the teammate case when there is one, and the archive share
+// that makes the per-game number mean anything.
+//
+// NO WIN RATE, AND THAT IS A RULING RATHER THAN AN OVERSIGHT. "The team that
+// blocked more won X% of the time" is not publishable at any sample size: the
+// blocks leader is the attempts trailer 81.7% of the time and the archive
+// already says the attempts leader loses 54.5%, so the reference class is
+// "teams that were being outshot" and the sentence teaches nothing once that is
+// stated. What ships is a SHARE OF A POPULATION, which has no winner in it and
+// so no causal reading to misread (CHENG, docs/blocked-shots-layer.md §5, §7).
+function drawBlocked(B,L){
+ const a=B.t[AID],h=B.t[HID],blk=B.counted.length,att=L.counted.length;
+ const mate=B.teammate.length,unk=B.unknown.length;
+ // The credited blocks are the two numbers; the teammate and unattributed ones
+ // are counted blocks with no bench to put them on, and saying so is the point.
+ const rows=`<div class="bkrow"><span class="a">${a}</span><span class="bkt">${AAB} · ${HAB}</span><span class="h">${h}</span></div>`
+   +`<div class="bklab">shots blocked</div>`;
+ const share=att?`<p class="bksay"><b>${blk}</b> of the <b>${att}</b> attempts in this game so far were stopped by a body — `
+   +`${(100*blk/att).toFixed(0)}% of them, and they never reached a goalie.</p>`
+   :`<p class="bksay">Nothing blocked yet — no shots have been attempted in what you have watched so far.</p>`;
+ // 7.8% of blocks across the archive are by the shooter's own side. It is real
+ // hockey and it is the thing a novice has never considered, so it is stated
+ // rather than folded into a total nobody can take apart.
+ const mates=mate?`<p class="bkmate">${mate===1?'One was':mate+' were'} blocked by a TEAMMATE — a shot that hit `
+   +`${mate===1?'a player':'players'} on the shooter's own side. Still a blocked shot, `
+   +`but nobody defended ${mate===1?'it':'them'}, so ${mate===1?'it is':'they are'} in neither total above.</p>`:'';
+ const un=unk?`<p class="bkmate">${unk} carried no blocker we could resolve, and ${unk===1?'is':'are'} in neither total.</p>`:'';
+ // THE ARCHIVE, AND IT CARRIES ITS n AND ITS SCOPE. Absent on the inlined page,
+ // which reaches nothing -- and says which of those two it is rather than
+ // implying a failure. Same rule as the verdict card's `noCurveReason`.
+ const M=RATES&&RATES.attemptMix;
+ const arch=M&&M.blocked&&M.blocked.n
+  ?`<p class="bkarch">Across the archive, <b>${(100*M.neverReachedTheGoalie.rate).toFixed(1)}%</b> of all shot attempts `
+   +`never reach the goalie at all, and <b>${(100*M.blocked.rate).toFixed(1)}%</b> are blocked by a body.`
+   +`<span class="lim">${M.blocked.n.toLocaleString()} attempts across ${M.games.toLocaleString()} games · ${ESC(M.blocked.population)}. `
+   +`A share of the attempts taken — not a rate of winning, which blocked shots cannot honestly be turned into.</span></p>`
+  :`<p class="bkarch">No archive comparison shown — ${RATES===undefined?'this page carries a single game and makes no network requests':'the archive shares could not be loaded'}.</p>`;
+ $('blockPanel').innerHTML=rows+share+mates+un+arch;}
+let corsiOn=false,hdOn=false,goalieOn=false,whistleOn=false,blockOn=false;
 function setCorsi(){document.getElementById('rg').classList.toggle('corsi',corsiOn);$('lyCorsi').setAttribute('aria-pressed',corsiOn);$('lyCorsi').textContent=(corsiOn?'✓ ':'＋ ')+'Control (Corsi)';if(!corsiOn&&workOpen){workOpen=false;$('workPanel').hidden=true;$('work').setAttribute('aria-expanded',false);$('work').textContent='Show me the work';}}
 function setHd(){$('lyHd').setAttribute('aria-pressed',hdOn);$('lyHd').textContent=(hdOn?'✓ ':'＋ ')+'Shots from the slot';render(i,false);}
 $('lyCorsi').addEventListener('click',()=>{corsiOn=!corsiOn;setCorsi();});
@@ -1095,6 +1183,8 @@ function setGoalie(){document.getElementById('rg').classList.toggle('goalie',goa
 $('lyGoalie').addEventListener('click',()=>{goalieOn=!goalieOn;setGoalie();});
 function setWhistle(){document.getElementById('rg').classList.toggle('whistle',whistleOn);$('lyWhistle').setAttribute('aria-pressed',whistleOn);$('lyWhistle').textContent=(whistleOn?'✓ ':'＋ ')+'Why play stopped';render(i,false);}
 $('lyWhistle').addEventListener('click',()=>{whistleOn=!whistleOn;setWhistle();});
+function setBlock(){document.getElementById('rg').classList.toggle('blocked',blockOn);$('lyBlock').setAttribute('aria-pressed',blockOn);$('lyBlock').textContent=(blockOn?'✓ ':'＋ ')+'Blocked shots';render(i,false);}
+$('lyBlock').addEventListener('click',()=>{blockOn=!blockOn;setBlock();});
 /* THE GAME OPENS AT THE OPENING FACEOFF.
    It used to open on the LAST event, which put the final score, the finished
    counters and -- on a shootout game -- the shootout notice on screen before a
@@ -1115,6 +1205,7 @@ const LAYER_APPLY={
  [danger.id]:()=>{hdOn=true;setHd();},
  [goaltending.id]:()=>{goalieOn=true;setGoalie();},
  [whistle.id]:()=>{whistleOn=true;setWhistle();},
+ [blocked.id]:()=>{blockOn=true;setBlock();},
 };
 if(LINK.strength==='even'){evenOnly=true;syncStrength();}
 LINK.layers.forEach(t=>{const f=LAYER_APPLY[t];if(f)f();});
@@ -1189,9 +1280,10 @@ __BOOT__
 
 LIB = ["rink.js", "attribution.js", "layer.js", "strength.js", "svgpen.js", "figures.js",
        "layers/corsi.js", "layers/goaltending.js", "layers/danger.js", "layers/whistle.js",
+       "layers/blocked.js",
        "teams.js", "layers/tied.js", "sentence.js",
        # LAST, and it has to be: deeplink.js derives its URL vocabulary from the
-       # layer objects themselves, so all four must already exist in the bundle.
+       # layer objects themselves, so all FIVE must already exist in the bundle.
        "deeplink.js"]
 
 def _lib():

@@ -197,7 +197,8 @@ test('a link with a layer opens with that layer on, and the others off', () => {
    whose token nothing answers to -- is a red test rather than a link that
    silently does nothing. The whistle case above is the same claim in detail;
    this is the one that will notice the FIFTH layer. */
-const BUTTON_OF = { corsi: 'lyCorsi', slot: 'lyHd', goaltending: 'lyGoalie', whistle: 'lyWhistle' };
+const BUTTON_OF = { corsi: 'lyCorsi', slot: 'lyHd', goaltending: 'lyGoalie', whistle: 'lyWhistle',
+                    blocked: 'lyBlock' };
 
 test('every layer token has a button, and every button a token', () => {
   assert.deepEqual(Object.keys(BUTTON_OF).sort(), [...LAYER_TOKENS].sort());
