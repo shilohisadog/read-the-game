@@ -1,0 +1,125 @@
+/**
+ * Blocked shots — the same event the control layer already counts, read from the
+ * other side of it.
+ *
+ * WHY THIS LAYER EXISTS, AND IT IS ONE SENTENCE. Over the whole archive —
+ * 491,971 attempts in 4,119 games — **51.9% of shot attempts never reach the
+ * goalie at all, and 27.8% are blocked by a body.** A novice reading "58
+ * attempts" on the scoreboard hears 58 chances; about thirty of them never got
+ * there. This layer is that correction, made visible on the ice.
+ *
+ * WHAT IT DELIBERATELY DOES NOT SHOW, and this is the design decision the layer
+ * was built around. The obvious number is "the team that blocked more won X% of
+ * the time", and it is not publishable at any sample size. The team that blocks
+ * more is the team that ATTEMPTED FEWER 81.7% of the time, and the archive
+ * already reports that the attempts leader loses 54.5%. So the reference class
+ * for a blocks-leader win rate is "teams that were being outshot", and once
+ * that is said honestly the sentence teaches nothing. CHENG's ruling was that it
+ * is *uninterpretable, not merely uncertain* — a bigger sample buys precision on
+ * a number that still does not mean what a reader will take it to mean.
+ * (docs/blocked-shots-layer.md §5, §7.)
+ *
+ * A SHARE OF A POPULATION IS NOT AN OUTCOME RATE. What ships instead has no
+ * winner in it, so there is no causal reading available to misread. That is the
+ * whole difference, and `archive.js::attemptMix` states it at the source.
+ *
+ * THE COORDINATE IS NOT WHERE THE SHOT WAS TAKEN. A blocked shot's (x, y) is the
+ * BLOCK POINT — where the puck was stopped, between the shooter and the net, so
+ * systematically nearer the net than the shot that produced it. Measured over an
+ * 80-game random sample: a median 24.2 ft against 33.4 for a shot on goal, and
+ * only 6.1% recorded beyond 50 ft, while the point shot is the most-blocked shot
+ * in hockey and the blue line is ~64 ft out. Which is why this layer names the
+ * BLOCKER rather than the shooter: the mark is the blocker's position, and a
+ * label naming the shooter invites the reading that it is his. The attribution
+ * of the ATTEMPT is unchanged and still belongs to the shooter — that is
+ * corsi's business and it is correct there.
+ */
+import { NOT_A_PLAY, inShootout } from '../layer.js';
+import { whyNotEven } from '../strength.js';
+
+/**
+ * Why an attempt that happened was not blocked. Its own vocabulary, because
+ * "not an attempt" is the wrong sentence for a shot that reached the goalie —
+ * it was an attempt, and it got through.
+ */
+const NOT_BLOCKED = {
+  goal: 'a goal — it beat every stick and every body in the way',
+  'shot-on-goal': 'reached the goalie — nothing stopped it on the way',
+  'missed-shot': 'missed the net on its own — wide or high, not blocked',
+  hit: 'a hit — physical play, but nothing was shot',
+  faceoff: 'a faceoff — possession changes, nothing was shot',
+  giveaway: 'a giveaway — losing the puck is not a shot',
+  takeaway: 'a takeaway — winning the puck is not a shot',
+  penalty: 'a penalty — changes the game, but nothing was shot',
+};
+
+export const blocked = {
+  id: 'blocked',
+  label: '＋ Blocked shots',
+
+  /**
+   * @param events  the whole game, in order
+   * @param ctx     { roster, homeId, awayId, evenOnly }
+   *
+   * Returns, beyond the contract:
+   *   t          blocks CREDITED to each team — the team that did the blocking,
+   *              which is the defending team and therefore NOT `e.own`
+   *   teammate   ids where the blocker was on the SHOOTING team
+   *   unknown    ids where the blocker cannot be resolved from the roster
+   */
+  reduce(events, ctx) {
+    const { roster, homeId, awayId } = ctx;
+    const t = { [homeId]: 0, [awayId]: 0 };
+    const counted = [], surprising = [], excluded = [], teammate = [], unknown = [];
+
+    events.forEach((e, id) => {
+      // Before the type question, exactly as corsi does it: a shootout attempt
+      // can be blocked by type and is not play.
+      const notPlay = inShootout(e) || NOT_A_PLAY[e.type];
+      const notBlocked = e.type === 'blocked-shot'
+        ? null
+        : (NOT_BLOCKED[e.type] || `nothing was blocked (${e.type})`);
+      const notEven = ctx.evenOnly ? whyNotEven(e, ctx) : null;
+
+      if (notPlay || notBlocked || notEven) {
+        const dims = {};
+        if (notPlay) dims.play = notPlay;
+        if (notBlocked) dims.type = notBlocked;
+        if (notEven) dims.strength = notEven;
+        excluded.push({ id, why: notPlay || notBlocked || notEven, dims });
+        return;
+      }
+
+      counted.push(id);
+
+      // WHO STOPPED IT. `blk` is the blocking player, and it is present on
+      // 2,599 of 2,599 blocked shots across an 80-game random sample — but
+      // "always so far" is not "always", so an unresolvable blocker is recorded
+      // rather than assumed away or silently credited to the defending side.
+      const shooter = roster[e.actor], blocker = roster[e.blk];
+      if (e.blk == null || !blocker) { unknown.push(id); return; }
+
+      // 7.8% OF BLOCKS ARE BY A TEAMMATE — 202 of 2,599 — and they are real
+      // hockey: a point shot hits the winger screening the goalie. The shot is
+      // still blocked and still an attempt, but NOBODY DEFENDED IT, so crediting
+      // a team here would hand the shooting side a defensive block of its own
+      // shot. It is counted, uncredited, and said out loud.
+      if (shooter && blocker.tid === shooter.tid) {
+        teammate.push(id);
+        surprising.push({
+          id,
+          why: `blocked by a teammate — ${blocker.nm} was in front of his own`
+             + ` side's shot, so no defender stopped this one and neither team`
+             + ` is credited with the block`,
+          derivedFrom: `roster[event.blk].tid === roster[event.actor].tid `
+                     + `(blk=${e.blk}, actor=${e.actor})`,
+        });
+        return;
+      }
+
+      t[blocker.tid]++;
+    });
+
+    return { t, counted, surprising, excluded, teammate, unknown };
+  },
+};

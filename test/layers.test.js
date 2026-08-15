@@ -15,12 +15,13 @@ import { conservation, summarise } from '../src/lib/layer.js';
 import { corsi } from '../src/lib/layers/corsi.js';
 import { goaltending } from '../src/lib/layers/goaltending.js';
 import { danger } from '../src/lib/layers/danger.js';
+import { blocked } from '../src/lib/layers/blocked.js';
 import { SHOT_TYPES, ATTEMPT_TYPES } from '../src/lib/attribution.js';
 
 const rich = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url)));
 const ctx = { roster: rich.roster, homeId: rich.teams.home.id, awayId: rich.teams.away.id };
 const EVENTS = rich.events;
-const LAYERS = [corsi, goaltending, danger];
+const LAYERS = [corsi, goaltending, danger, blocked];
 
 test('the game has the events we think it has', () => {
   assert.equal(EVENTS.length, 320);
@@ -248,4 +249,120 @@ test('a game without a shootout is untouched by any of this', () => {
   assert.equal(r.hs, 3);
   assert.equal(r.as, 2);
   assert.ok(conservation(r, EVENTS.length).ok);
+});
+
+/* ------------------------------------------------------- the blocked-shots layer
+ *
+ * It re-reads an event corsi already counts, from the other side. The tests that
+ * matter are about WHO GETS CREDIT, because that is the half a novice's
+ * intuition gets wrong and the half this project has already shipped wrong once.
+ */
+
+test('a block is credited to the team that DEFENDED, never to the shooter\'s', () => {
+  // THE INVERSION THAT MAKES THIS LAYER WORTH HAVING. `e.own` is the SHOOTING
+  // team — corsi credits the attempt there and is right to. The block belongs to
+  // the other bench. Getting this backwards is the blocked-shot flip that once
+  // shipped a wrong flagship number, in mirror image.
+  //
+  // AND THE FIRST VERSION OF THIS TEST DID NOT CATCH IT. It looped the counted
+  // set asserting `roster[e.blk].tid !== e.own` — which is a fact about the
+  // DATA, not about the tally. It never read `L.t`, so replacing
+  // `t[blocker.tid]++` with `t[e.own]++` left it green. A check built from the
+  // input's own model, reading as coverage. The tally must be compared against
+  // an expectation derived independently of the reducer, which is this:
+  const L = blocked.reduce(EVENTS, ctx);
+  const want = { [ctx.homeId]: 0, [ctx.awayId]: 0 };
+  for (const e of EVENTS) {
+    if (e.type !== 'blocked-shot' || e.pt === 'SO') continue;
+    const b = rich.roster[e.blk], s = rich.roster[e.actor];
+    if (!b || (s && b.tid === s.tid)) continue;      // unattributable, or a teammate
+    want[b.tid]++;
+  }
+  assert.deepEqual(L.t, want,
+    'the per-team tally is not the blocks each team actually made');
+  assert.notDeepEqual(L.t, { [ctx.homeId]: want[ctx.awayId], [ctx.awayId]: want[ctx.homeId] },
+    'the fixture is symmetric, so a flipped tally would be indistinguishable here');
+
+  const credited = L.t[ctx.homeId] + L.t[ctx.awayId];
+  assert.equal(credited + L.teammate.length + L.unknown.length, L.counted.length,
+    'every counted block is either credited, a teammate block, or unattributable');
+  assert.ok(credited > 0, 'no block was credited to anyone — the tally is dead');
+});
+
+test('every counted event is a blocked shot, and every blocked shot in play is counted', () => {
+  const L = blocked.reduce(EVENTS, ctx);
+  for (const id of L.counted)
+    assert.equal(EVENTS[id].type, 'blocked-shot',
+      `event ${id} is a ${EVENTS[id].type}, not a block`);
+
+  // The other direction, which is the one that catches a filter that silently
+  // drops events: a blocked shot in play may not go missing.
+  const inPlay = EVENTS.map((e, i) => (e.type === 'blocked-shot' && e.pt !== 'SO') ? i : -1)
+                       .filter(i => i >= 0);
+  assert.deepEqual(L.counted, inPlay,
+    'the counted set is not exactly the blocked shots that happened in play');
+  assert.ok(inPlay.length > 20, `only ${inPlay.length} blocked shots — the fixture is too thin`);
+});
+
+test('a TEAMMATE block credits nobody, and says so in words', () => {
+  // 7.8% of blocks across an 80-game sample (202 of 2,599) are by the shooter's
+  // own teammate — a point shot hitting the winger screening the goalie. It is
+  // a real block and a real attempt, but nobody DEFENDED it, so crediting the
+  // shooting side would hand a team a defensive stop of its own shot.
+  //
+  // Built rather than hunted, so the test does not depend on the reference game
+  // happening to contain one.
+  const real = EVENTS.findIndex(e => e.type === 'blocked-shot' && e.blk && e.actor);
+  assert.ok(real > 0, 'the fixture has no blocked shot to rebuild');
+  const shooter = rich.roster[EVENTS[real].actor];
+  const mate = Object.keys(rich.roster)
+    .find(id => rich.roster[id].tid === shooter.tid && +id !== EVENTS[real].actor);
+  assert.ok(mate, 'no teammate in the roster to attribute the block to');
+
+  const evs = EVENTS.map((e, i) => i === real ? { ...e, blk: +mate } : e);
+  const before = blocked.reduce(EVENTS, ctx);
+  const after = blocked.reduce(evs, ctx);
+
+  assert.ok(after.teammate.includes(real), 'a teammate block was not recognised as one');
+  assert.equal(after.counted.length, before.counted.length,
+    'a teammate block is still a blocked shot and must still be counted');
+  assert.equal(after.t[ctx.homeId] + after.t[ctx.awayId],
+               before.t[ctx.homeId] + before.t[ctx.awayId] - 1,
+    'the teammate block was credited to a team anyway');
+
+  const why = after.surprising.find(s => s.id === real);
+  assert.ok(why, 'a teammate block is exactly the counter-intuitive case — it must be surprising');
+  assert.match(why.why, /teammate/i);
+  assert.match(why.why, /neither team is credited/i,
+    'the reader is not told that nobody got the block');
+  assert.match(why.derivedFrom, /roster\[event\.blk\]\.tid/,
+    'the claim is not checkable against the data that produced it');
+});
+
+test('a block with no resolvable blocker is counted and NOT credited', () => {
+  // `blk` was present on 2,599 of 2,599 blocked shots in the sample. "Always so
+  // far" is not "always", and the failure mode of assuming it is a block silently
+  // credited to whichever team the code reached for first.
+  const real = EVENTS.findIndex(e => e.type === 'blocked-shot' && e.blk);
+  const evs = EVENTS.map((e, i) => i === real ? { ...e, blk: undefined } : e);
+  const after = blocked.reduce(evs, ctx);
+  assert.ok(after.unknown.includes(real), 'a block with no blocker was not recorded as unattributable');
+  assert.ok(after.counted.includes(real), 'it is still a blocked shot and must still be counted');
+  const before = blocked.reduce(EVENTS, ctx);
+  assert.equal(after.t[ctx.homeId] + after.t[ctx.awayId],
+               before.t[ctx.homeId] + before.t[ctx.awayId] - 1,
+    'a block with no known blocker was credited to somebody');
+});
+
+test('the shootout is not blocking, and even-strength filtering reaches this layer too', () => {
+  const L = blocked.reduce(EVENTS, ctx);
+  for (const id of L.counted)
+    assert.notEqual(EVENTS[id].pt, 'SO', 'a shootout attempt was counted as a block');
+
+  // The Situations toggle must do something here, or it silently lies on this
+  // layer while working on the others.
+  const even = blocked.reduce(EVENTS, { ...ctx, evenOnly: true });
+  assert.ok(even.counted.length <= L.counted.length);
+  assert.ok(even.excluded.some(x => x.dims && x.dims.strength),
+    'even-strength-only excluded nothing for a strength reason — the toggle is inert here');
 });
