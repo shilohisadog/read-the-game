@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-h0llDYMEWQsV1IDAjHC0Lp7nKo+Fu7Ya1x52JIACugE='; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-XTg7fTrd/7w4aaPnFXRx6BVGcZiCd5oPzFHYob6gpsE='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-X1BG6tPSXmfZQTDP4O1AjO0+R3ct/y0qcdm4PspTnOo='; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-qBBPXyz+8ofSchGB0IhgUF+ZAmnljLv8afNpLp+4MtQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">What is this?</a></nav></header>
@@ -200,7 +200,19 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg button{font:inherit;font-size:.83rem;font-weight:600;border-radius:8px;border:1px solid var(--edge);background:#fff;color:var(--ink);padding:9px 14px;cursor:pointer}
 #rg .play{background:var(--ink);color:#fff;border-color:var(--ink)}
 #rg .spd{padding:7px 11px}#rg .spd[aria-pressed="true"]{border-color:var(--ink);background:#eef2f5}
-#rg .scrub{flex:1;accent-color:var(--ink);cursor:pointer;min-width:120px}
+/* THE STEP BUTTONS BORROW `.spd`'s size and add one thing: an end state. They
+   move the playhead rather than change how fast it moves, so they sit beside
+   Play in the markup; everything else about them is already a speed button. */
+#rg .stepb:disabled{opacity:.38;cursor:default}
+/* THE SLIDER GETS ITS OWN ROW, and it is a measurement rather than a taste.
+   `flex:1` made it share a line with the buttons, so adding Back and Next took
+   169px straight out of it: 306px -> 137px at a 1100px viewport, which is 2.0
+   plays per pixel -- COARSER than the 1.7 that made the phone case a defect in
+   docs/event-index.md §1. The step buttons fix aim, and they had quietly made
+   the drag worse to do it. On its own row the track is the full width of the
+   controls at every viewport instead of whatever flex-wrap happens to leave,
+   and it stops being a function of how many buttons sit beside it. */
+#rg .scrub{flex:1 0 100%;accent-color:var(--ink);cursor:pointer;min-width:120px}
 #rg .legend{display:flex;flex-wrap:wrap;gap:7px 18px;font-size:.78rem;color:var(--muted);margin:6px 2px}
 #rg .legend i{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:-1px}
 /* A LEGEND MAY NOT DESCRIBE A MARK THAT IS NOT ON THE ICE. "from the slot, once
@@ -421,8 +433,10 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 <div class="blockpanel" id="blockPanel"></div>
 <div class="goalies" id="goaliePanel"></div>
 <div class="transport"><button class="play" id="play">▶ Play from start</button>
+  <button class="spd stepb" id="back" aria-label="Back one play">◀ Back</button><button class="spd stepb" id="fwd" aria-label="Forward one play">Next ▶</button>
   <button class="spd" id="sp0" aria-pressed="false">🐢 Slower</button><button class="spd" id="sp1" aria-pressed="true">Teaching</button><button class="spd" id="sp2" aria-pressed="false">Faster</button><button class="spd" id="lbl" aria-pressed="true">💬 Explain plays</button>
-  <input class="scrub" id="scrub" type="range" min="0" max="1" value="0"><button id="work" aria-expanded="false">Show me the work</button></div>
+  <button id="work" aria-expanded="false">Show me the work</button>
+  <input class="scrub" id="scrub" type="range" min="0" max="1" value="0"></div>
 <p class="verdict" id="verdict"></p>
 <div class="legend"><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white-filled, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span><i class="k-g"></i><i class="k-gv"></i>goal — either sweater</span><span><i class="k-blk"></i>blocked — ringed where the puck was <b>stopped</b></span><span class="lkey lk-hd"><i class="k-hd"></i>from the slot</span><span class="lkey lk-blk">blocked shots are dimmed unless a body stopped them</span><span class="lkey lk-wh"><i class="k-wh"></i>play restarted here — brightest at the most recent stoppage</span><span class="lkey lk-ends">ends are held fixed — in the arena the teams switch each period</span></div>
 <div class="newcomer nwhy2" id="newcomerWhy"></div><div class="layers"><span class="ll">Add a metric layer:</span><button class="lyr" id="lyCorsi" aria-pressed="false">＋ Control (Corsi)</button><button class="lyr" id="lyHd" aria-pressed="false">＋ Shots from the slot</button><button class="lyr" id="lyGoalie" aria-pressed="false">＋ Goaltending</button><button class="lyr" id="lyWhistle" aria-pressed="false">＋ Why play stopped</button><button class="lyr" id="lyBlock" aria-pressed="false">＋ Blocked shots</button></div>
@@ -2987,7 +3001,26 @@ function flashNet(scorer){
  const net=scorer===AID?$('netHome'):$('netAway');
  net.classList.remove('netflash');void net.offsetWidth;net.classList.add('netflash');}
 let prevA=0,prevH=0;
-function render(i,newest){
+/**
+ * WHAT JUST HAPPENED TO THE PLAYHEAD — which is not the same question as
+ * "is this the newest event", and the two used to share one boolean.
+ *
+ *   'play'  the replay advanced by one: mark the moment AND bump the counters.
+ *   'jump'  the viewer went somewhere: mark the moment, and do NOT bump.
+ *   ''      a redraw of the same frame — a layer toggled, the work panel
+ *           opened, the scrubber dragged THROUGH here on the way somewhere
+ *           else. Mark nothing.
+ *
+ * THE SPLIT IS NOT COSMETIC. `prevA`/`prevH` hold the attempt counts at the
+ * previous frame, so `a>prevA` means "one more attempt than a moment ago" only
+ * when the playhead moved a moment. Jump forward across a period and forty
+ * attempts arrive at once, and the counter would flash exactly as it does for a
+ * single shot -- a bump that says "that just happened" about something that
+ * happened forty times, minutes ago. The caption is the opposite case: calling
+ * the goal again is the whole reason to jump to it.
+ */
+function render(i,how){
+ const moment=how==='play'||how==='jump';
  // `evs` is the PLAYABLE prefix, used to draw the marks on the timeline.
  // `lens(i)` reduces the FULL stream up to the same moment. Two different
  // slices on purpose: the ice shows plays, the ledger accounts for everything.
@@ -3012,8 +3045,8 @@ function render(i,newest){
    if(k===i)cls+=' cur';
    if(hd)cls+=' clickable';
    const r=e.type==='goal'?3.2:hd?2.2:ATT.has(e.type)?1.7:1;
-   const anim=(k===i&&newest)?(e.type==='goal'?' flare':' pop'):'';
-   if(hd&&k===i&&newest)parts.push(`<circle class="hdring" cx="${pos.x.toFixed(1)}" cy="${pos.y.toFixed(1)}" r="4.5"/>`);
+   const anim=(k===i&&moment)?(e.type==='goal'?' flare':' pop'):'';
+   if(hd&&k===i&&moment)parts.push(`<circle class="hdring" cx="${pos.x.toFixed(1)}" cy="${pos.y.toFixed(1)}" r="4.5"/>`);
    const cx=pos.x, cy=pos.y, title=`<title>${e.rem} ${e.type}</title>`;
    // Annotations ride OUTSIDE the mark, so the mark keeps saying whose it is.
    // `data-i` on the ring as well as the mark: it says WHICH event this annotates,
@@ -3102,7 +3135,7 @@ function render(i,newest){
  $('lines').innerHTML=lh;
  // THE PUCK GOES WITH THEM. It was the third drawing site reading `e.x`
  // directly, so a shootout attempt moved the puck to a place it had not been.
- $('puck').innerHTML=cp?`<circle class="puck${newest?' jump':''}" cx="${cp.x.toFixed(1)}" cy="${cp.y.toFixed(1)}" r="1.5"/>`:'';
+ $('puck').innerHTML=cp?`<circle class="puck${moment?' jump':''}" cx="${cp.x.toFixed(1)}" cy="${cp.y.toFixed(1)}" r="1.5"/>`:'';
  drawNoPlace(cur);
  drawLabel(cur);
  drawNetmen(cur);
@@ -3117,8 +3150,23 @@ function render(i,newest){
  // minimum-n threshold is needed, because a fraction carries its own.
  $('pa').textContent=a;$('ph').textContent=h;
  $('cA').textContent=a;$('cH').textContent=h;
- if(newest){if(a>prevA)flash('cA');if(h>prevH)flash('cH');
+ if(how==='play'){if(a>prevA)flash('cA');if(h>prevH)flash('cH');}
+ if(moment){
    if(cur&&cur.type==='goal'){flashNet(cur.own);caption(cur,'goal');}
+   // THE PENALTY IS CALLED, and it is the only event here that changes the
+   // CONDITIONS of the game rather than the count. It is why `Even strength
+   // only` exists as a control at all, and until now the ice marked it exactly
+   // as loudly as a giveaway -- a `LAB[]` label and nothing else. Found by
+   // asking the index's question ("which events does this page give a moment of
+   // their own?") of a renderer that turned out to have only two answers.
+   //
+   // `own` IS THE OFFENDING TEAM, checked rather than assumed: across the
+   // reference game's eight penalties, the skater count in `sit` drops for
+   // `own`'s side on the very next event, eight times out of eight. The caption
+   // says who took it and stops there -- at THIS frame the team is not yet a
+   // skater short (`sit` still reads 1551), so any sentence about the power play
+   // would be a claim about the future dressed as a description.
+   else if(cur&&cur.type==='penalty'){caption(cur,'penalty');}
    else if(cur&&hdOn&&isHD(cur)){lastHD=i;caption(cur,'hd');}}
  prevA=a;prevH=h;
  $('per').textContent=periodLabel(cur);$('clk').textContent=cur?cur.rem:'20:00';
@@ -3140,7 +3188,7 @@ function render(i,newest){
 function flash(id){const el=$(id);el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump');}
 function caption(e,kind){const c=$('caption');const tid=e.own;const ab=tid===AID?AAB:HAB;const side=tid===AID?'a':'h';
  const p=R[e.actor];const who=p?`<span class="num">#${p.n}</span>${p.nm}`:ab;
- const label=kind==='goal'?'🚨 GOAL':'⚡ Shot from the slot';
+ const label=kind==='goal'?'🚨 GOAL':kind==='penalty'?'⛔ Penalty':'⚡ Shot from the slot';
  c.innerHTML=`<span class="tag ${side}">${ab}</span><b>${label}</b> · ${who}${kind==='hd'?' from the slot':''}`;
  c.classList.remove('on');void c.offsetWidth;c.classList.add('on');}
 let workOpen=false;
@@ -3158,18 +3206,48 @@ function renderWork(L,cur){const a=L.t[AID],h=L.t[HID],tot=a+h||1,pa=Math.round(
  <p class="wfoot"><em>${a} ${AAB} / ${h} ${HAB} → ${pa}% / ${100-pa}%.</em> ${L.counted.length} counted + ${L.excluded.length} not counted = <b>${L.counted.length+L.excluded.length}</b> events, which is every event in the game so far. Nothing is dropped quietly.${evenOnly?' <b>Even strength only</b> — the power-play and empty-net attempts are in the not-counted list above, with the situation that removed each one.':''}</p>`;}
 let i=EV.length-1,playing=false,timer=null,mult=2;
 $('scrub').max=EV.length-1;
-function set(v,newest){i=Math.max(0,Math.min(EV.length-1,v));$('scrub').value=i;render(i,newest);}
+function set(v,how){i=Math.max(0,Math.min(EV.length-1,v));$('scrub').value=i;render(i,how);syncStep();}
+/* THE ENDS ARE STATED BY THE CONTROL, not discovered by pressing it. `set`
+   clamps, so a press at either end is already harmless -- but a button that
+   accepts a press and does nothing is a button that says the page is broken. */
+function syncStep(){$('back').disabled=i<=0;$('fwd').disabled=i>=EV.length-1;}
 function dwell(e){let d=650;if(e.type==='goal')d=3000;else if(isHD(e))d=1700;else if(e.type==='shot-on-goal')d=850;return d*mult;}
-function step(){if(i>=EV.length-1){stop();return;}set(i+1,true);timer=setTimeout(step,dwell(EV[i]));}
-function play(){if(i>=EV.length-1){prevA=0;prevH=0;set(0,true);}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);timer=setTimeout(step,dwell(EV[i]));}
+function step(){if(i>=EV.length-1){stop();return;}set(i+1,'play');timer=setTimeout(step,dwell(EV[i]));}
+function play(){if(i>=EV.length-1){prevA=0;prevH=0;set(0,'play');}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);timer=setTimeout(step,dwell(EV[i]));}
 function stop(){playing=false;$('play').textContent=i>=EV.length-1?'▶ Replay from start':'▶ Play';clearTimeout(timer);}
 $('play').onclick=()=>playing?stop():play();
-$('scrub').oninput=e=>{stop();set(+e.target.value,false);};
+/**
+ * ONE PLAY AT A TIME, IN EITHER DIRECTION — the control this transport did not
+ * have, and the slider is measurably unable to substitute for.
+ *
+ * Measured in a real browser (docs/event-index.md §1): the scrub track is 166px
+ * over 281 plays at a 360px viewport, so one pixel of drag is 1.7 plays and a
+ * 40px fingertip spans 68 of them -- a quarter of the game. Landing on a chosen
+ * play by dragging is not a matter of care; it is below the resolution of the
+ * input device. On a desktop a mouse CAN address one play per pixel, and the
+ * complaint survives anyway, because the track carries no marks: there is
+ * nothing on it that says where the goals are, so the viewer drags, reads the
+ * clock, overshoots and drags back. Two defects, both of which present as
+ * "moving the slider back and forth" (Kevin).
+ *
+ * A STEP IS A JUMP, SO THE MOMENT IS CALLED AGAIN. That is the whole point of
+ * pressing Back: not to arrive at a frame, but to see the goal called a second
+ * time. One argument to `set`.
+ */
+function jump(d){stop();set(i+d,'jump');}
+$('back').addEventListener('click',()=>jump(-1));
+$('fwd').addEventListener('click',()=>jump(1));
+/* A DRAG PASSES THROUGH PLAYS; A RELEASE LANDS ON ONE. `oninput` fires at every
+   value the slider crosses, so calling the moment there would fire a hundred
+   captions on one drag. `onchange` fires once, when the viewer lets go -- which
+   is the frame they actually chose, and it gets called like any other jump. */
+$('scrub').oninput=e=>{stop();set(+e.target.value,'');};
+$('scrub').onchange=e=>{set(+e.target.value,'jump');};
 function setSpeed(m,id){mult=m;['sp0','sp1','sp2'].forEach(x=>$(x).setAttribute('aria-pressed',x===id));}
 $('sp0').onclick=()=>setSpeed(2.9,'sp0');
 $('sp1').onclick=()=>setSpeed(2,'sp1');
 $('sp2').onclick=()=>setSpeed(1.1,'sp2');
-$('work').onclick=()=>{workOpen=!workOpen;$('workPanel').hidden=!workOpen;$('work').setAttribute('aria-expanded',workOpen);$('work').textContent=workOpen?'Hide the work':'Show me the work';if(workOpen)render(i,false);};
+$('work').onclick=()=>{workOpen=!workOpen;$('workPanel').hidden=!workOpen;$('work').setAttribute('aria-expanded',workOpen);$('work').textContent=workOpen?'Hide the work':'Show me the work';if(workOpen)render(i,'');};
 $('aAb').textContent=AAB;$('hAb').textContent=HAB;
 // Hand-formatted from the ISO date, never Date.parse: '2023-11-10' is UTC
 // midnight and a western timezone would render it as the 9th.
@@ -3285,7 +3363,17 @@ function showWhy(idx){const e=EV[idx];if(e==null||e.x==null)return;
  $('whyBk').classList.add('on');}
 function hideWhy(){$('whyBk').classList.remove('on');}
 $('events').addEventListener('click',ev=>{const t=ev.target;if(t&&t.dataset&&t.dataset.i!=null){const k=+t.dataset.i;if(hdOn&&isHD(EV[k]))showWhy(k);}});
-$('caption').addEventListener('click',()=>{if(lastHD!=null)showWhy(lastHD);});
+/* THE CAPTION'S CLICK HANDLER IS GONE, AND IT HAD NEVER ONCE FIRED. `#rg
+   .caption` carries `pointer-events:none` -- it has to, it floats over the ice
+   and would otherwise swallow clicks meant for the marks underneath -- and
+   nothing anywhere overrode it. So this listener was unreachable from the day
+   it was written: dead weight that read as an affordance.
+   Fourth instance of that shape (the dead `goal` row in `LAB`, `rosterSpots` in
+   shell.test.js, an assertion on `undefined` in homepage.test.js), and the
+   first one found by a stylesheet rather than by reading the script -- which is
+   the same lesson `text-transform:capitalize` taught: the CSS is part of the
+   program. It was also WRONG on its own terms, opening the why-card for the
+   last slot shot no matter which event the caption was describing. */
 $('whyBk').addEventListener('click',e=>{if(e.target.id==='whyBk')hideWhy();});
 
 
@@ -3562,7 +3650,7 @@ document.getElementById('rg').classList.toggle('newcomer',NEWCOMER);
 drawNewcomer();
 let corsiOn=false,hdOn=false,goalieOn=false,whistleOn=false,blockOn=false;
 function setCorsi(){document.getElementById('rg').classList.toggle('corsi',corsiOn);$('lyCorsi').setAttribute('aria-pressed',corsiOn);$('lyCorsi').textContent=(corsiOn?'✓ ':'＋ ')+'Control (Corsi)';if(!corsiOn&&workOpen){workOpen=false;$('workPanel').hidden=true;$('work').setAttribute('aria-expanded',false);$('work').textContent='Show me the work';}}
-function setHd(){document.getElementById('rg').classList.toggle('slot',hdOn);$('lyHd').setAttribute('aria-pressed',hdOn);$('lyHd').textContent=(hdOn?'✓ ':'＋ ')+'Shots from the slot';render(i,false);}
+function setHd(){document.getElementById('rg').classList.toggle('slot',hdOn);$('lyHd').setAttribute('aria-pressed',hdOn);$('lyHd').textContent=(hdOn?'✓ ':'＋ ')+'Shots from the slot';render(i,'');}
 $('lyCorsi').addEventListener('click',()=>{corsiOn=!corsiOn;setCorsi();});
 // One code path owns the mode label, so the markup cannot drift from the state.
 // The static HTML carries a default only so the page reads correctly before JS.
@@ -3573,24 +3661,24 @@ function syncStrength(){
  // prominent one and was the unqualified one -- same number, two places, one
  // of them saying what it was measured under (CHENG).
  const lbl=MODE().toUpperCase();$('mA').textContent=lbl;$('mH').textContent=lbl;$('pMode').textContent=lbl;}
-function setStrength(v){evenOnly=(v==='even');syncStrength();render(i,false);}
+function setStrength(v){evenOnly=(v==='even');syncStrength();render(i,'');}
 document.querySelectorAll('#rg .sbtn').forEach(b=>b.addEventListener('click',()=>setStrength(b.dataset.s)));
 syncStrength();
 function syncTrails(){document.querySelectorAll('#rg .tbtn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===trails));}
 document.querySelectorAll('#rg .tbtn').forEach(b=>b.addEventListener('click',()=>{
- trails=b.dataset.t;syncTrails();render(i,false);}));
+ trails=b.dataset.t;syncTrails();render(i,'');}));
 syncTrails();
 function syncFig(){document.querySelectorAll('#rg .fbtn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.f===figStyle));}
 document.querySelectorAll('#rg .fbtn').forEach(b=>b.addEventListener('click',()=>{
- figStyle=b.dataset.f;try{localStorage.setItem('rtg.fig',figStyle)}catch(e){}syncFig();render(i,false);}));
+ figStyle=b.dataset.f;try{localStorage.setItem('rtg.fig',figStyle)}catch(e){}syncFig();render(i,'');}));
 syncFig();
 $('lyHd').addEventListener('click',()=>{hdOn=!hdOn;setHd();});
 function goalieStats(k){return goaltending.reduce(upto(k),CTX).g;}
-function setGoalie(){document.getElementById('rg').classList.toggle('goalie',goalieOn);$('lyGoalie').setAttribute('aria-pressed',goalieOn);$('lyGoalie').textContent=(goalieOn?'✓ ':'＋ ')+'Goaltending';render(i,false);}
+function setGoalie(){document.getElementById('rg').classList.toggle('goalie',goalieOn);$('lyGoalie').setAttribute('aria-pressed',goalieOn);$('lyGoalie').textContent=(goalieOn?'✓ ':'＋ ')+'Goaltending';render(i,'');}
 $('lyGoalie').addEventListener('click',()=>{goalieOn=!goalieOn;setGoalie();});
-function setWhistle(){document.getElementById('rg').classList.toggle('whistle',whistleOn);$('lyWhistle').setAttribute('aria-pressed',whistleOn);$('lyWhistle').textContent=(whistleOn?'✓ ':'＋ ')+'Why play stopped';render(i,false);}
+function setWhistle(){document.getElementById('rg').classList.toggle('whistle',whistleOn);$('lyWhistle').setAttribute('aria-pressed',whistleOn);$('lyWhistle').textContent=(whistleOn?'✓ ':'＋ ')+'Why play stopped';render(i,'');}
 $('lyWhistle').addEventListener('click',()=>{whistleOn=!whistleOn;setWhistle();});
-function setBlock(){document.getElementById('rg').classList.toggle('blocked',blockOn);$('lyBlock').setAttribute('aria-pressed',blockOn);$('lyBlock').textContent=(blockOn?'✓ ':'＋ ')+'Blocked shots';render(i,false);}
+function setBlock(){document.getElementById('rg').classList.toggle('blocked',blockOn);$('lyBlock').setAttribute('aria-pressed',blockOn);$('lyBlock').textContent=(blockOn?'✓ ':'＋ ')+'Blocked shots';render(i,'');}
 $('lyBlock').addEventListener('click',()=>{blockOn=!blockOn;setBlock();});
 /* THE GAME OPENS AT THE OPENING FACEOFF.
    It used to open on the LAST event, which put the final score, the finished
@@ -3624,7 +3712,7 @@ const AT=resolve(G.events,LINK.at);
 $('atnote').textContent=AT.why?AT.why.text
  :(LINK.problems.some(p=>/^at[:.]/.test(p))?LINK_NOTES.unreadable.text:'');
 prevA=0;prevH=0;
-set(frameOf(AT.index),false);
+set(frameOf(AT.index),'jump');
 /* THE PREVIEW LOOP.
    Deliberately NOT the ordinary play loop: `dwell()` paces a game for someone
    watching it, easing for the big moments, and a taste has about five seconds.
@@ -3667,7 +3755,7 @@ if(PREVIEW){
  let acc=0,W=0;
  while(W<EV.length-1&&acc+dwell(EV[W])<=BUDGET_MS){acc+=dwell(EV[W]);W++;}
  const WINDOW=Math.max(1,W);
- if(REDUCED){set(WINDOW,false);}
+ if(REDUCED){set(WINDOW,'');}
  else{let k=0;
   /* THE RESTART PAUSE USED TO BE DEAD CODE. It read
        set(k);k++;if(k>WINDOW){k=0;}
@@ -3677,7 +3765,7 @@ if(PREVIEW){
      small contribution to the blur. Decide the wait BEFORE moving k. */
   const tick=()=>{
    const shown=EV[k],last=k>=WINDOW,wait=last?1500:dwell(shown);
-   set(k,k>0);
+   set(k,k>0?'play':'');
    if(last){k=0;prevA=0;prevH=0;}else{k++;}
    setTimeout(tick,wait);};
   tick();}}

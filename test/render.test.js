@@ -68,7 +68,16 @@ function fakeDom() {
     },
     setAttribute(k, v) { this[k] = v; },
     addEventListener(t, fn) { (this._on[t] = this._on[t] || []).push(fn); },
-    click() { (this._on.click || []).forEach(fn => fn({ target: this })); },
+    // BOTH WAYS A HANDLER GETS ATTACHED, because the page uses both and this
+    // fake only knew one. The layer buttons use addEventListener; the whole
+    // TRANSPORT — play, the three speeds, the work toggle — assigns `.onclick`,
+    // so `.click()` on any of them fired nothing at all. Not a vacuous
+    // assertion: a test that pressed Play and then checked the page had not
+    // started would have passed against a page that never started anything.
+    click() {
+      (this._on.click || []).forEach(fn => fn({ target: this }));
+      if (typeof this.onclick === 'function') this.onclick({ target: this });
+    },
   });
 
   const byId = new Map();
@@ -110,12 +119,25 @@ function fakeDom() {
  */
 function boot(game, rates, search = '', store = null) {
   const dom = fakeDom();
+  /**
+   * THE REPLAY CLOCK, CAPTURED RATHER THAN STUBBED OUT.
+   *
+   * `setTimeout` used to answer 0 and drop the callback, so `play()` set a
+   * timer that never fired and the PLAY LOOP had never run once in this file —
+   * every test drove the page by dragging the scrubber instead, which is a
+   * different code path with different arguments to `render`. One slot, not a
+   * queue: the page has exactly one timer in flight, and `clearTimeout` really
+   * cancels it, so a queue would let a cancelled frame fire later.
+   */
+  let pending = null;
+  const setTimeout_ = fn => { pending = fn; return 1; };
+  const clearTimeout_ = () => { pending = null; };
   // `location` is part of the environment this bundle runs in — the preview loop
   // and the shell's game selector both read the query string — so the fake
   // models it rather than the code defending against its absence.
   const b = new Function('document', 'matchMedia', 'setTimeout', 'clearTimeout',
                          'localStorage', 'location', SCRIPT + '\nreturn boot;')(
-    dom.document, () => ({ matches: true }), () => 0, () => {},
+    dom.document, () => ({ matches: true }), setTimeout_, clearTimeout_,
     // A FAKE THAT CANNOT EXPRESS THE OTHER STATE MAKES ASSERTIONS ABOUT IT
     // VACUOUS — the same reason `hidden` is absent from `el()` rather than false.
     // This stub always answered null, so every boot was a first visit and
@@ -131,6 +153,17 @@ function boot(game, rates, search = '', store = null) {
   assert.ok(+scrub.max > 100, `the reference game should have hundreds of plays, not ${scrub.max}`);
   return {
     ...dom,
+    /**
+     * Run the replay the way a viewer who presses Play does — the real loop,
+     * `render(i,'play')`, one frame per `dwell`. Returns how many frames
+     * actually advanced, so a test cannot mistake a dead timer for a finished
+     * game.
+     */
+    advance(n) {
+      let moved = 0;
+      for (let k = 0; k < n; k++) { if (!pending) break; const f = pending; pending = null; f(); moved++; }
+      return moved;
+    },
     /**
      * Every frame in the game, for claims that need COVERAGE rather than a
      * sample — "the far goal line, at both ends" cannot be checked by a walk
@@ -1973,4 +2006,217 @@ test('each half of the greeting sits beside the thing it is about', () => {
   a.$('nDone').click();
   assert.equal(a.$('rg').classList.contains('newcomer'), false,
     'dismissing left one half of the greeting on screen');
+});
+
+/* ────────────────────────────────────────────────────────────────────────────
+   THE TRANSPORT CAN BE AIMED
+
+   Kevin, watching: "once an event fires, there's no easy way to go back to that
+   event, we'd have to move the slider back and forth". The measurement behind
+   these tests is in docs/event-index.md §1 and it is not a usability opinion —
+   at a 360px viewport the scrub track is 166px over 281 plays, so a 40px
+   fingertip spans 68 of them. Nothing here can see a pixel, so what is checked
+   below is the BEHAVIOUR the geometry made necessary.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/** Read the playhead the way the page publishes it, rather than from a closure. */
+const at = d => +d.$('scrub').value;
+
+test('the transport can step ONE play, in both directions', () => {
+  const a = boot();
+  a.$('scrub').oninput({ target: { value: '40' } });
+  const from = at(a);
+  a.$('fwd').click();
+  assert.equal(at(a), from + 1, 'Next moved by something other than one play');
+  a.$('back').click();
+  a.$('back').click();
+  assert.equal(at(a), from - 1, 'Back does not undo Next');
+});
+
+test('the step buttons say where the game ends, instead of accepting a dead press', () => {
+  const a = boot();
+  const last = +a.$('scrub').max;
+
+  a.$('scrub').oninput({ target: { value: '0' } });
+  assert.equal(a.$('back').disabled, true, 'Back is live at the first play');
+  assert.equal(a.$('fwd').disabled, false);
+  // And pressing it anyway is harmless — `set` clamps.
+  a.$('back').click();
+  assert.equal(at(a), 0);
+
+  a.$('scrub').oninput({ target: { value: String(last) } });
+  assert.equal(a.$('fwd').disabled, true, 'Next is live at the last play');
+  assert.equal(a.$('back').disabled, false);
+  a.$('fwd').click();
+  assert.equal(at(a), last);
+
+  // The state is a FUNCTION of the playhead, not a thing set once at an end:
+  // step off the edge and it must come back.
+  a.$('back').click();
+  assert.equal(a.$('fwd').disabled, false, 'Next stayed disabled after leaving the end');
+});
+
+test('stepping takes the replay off automatic', () => {
+  const a = boot();
+  a.$('play').click();
+  assert.match(a.$('play').textContent, /Pause/, 'the harness never started the replay');
+  a.$('fwd').click();
+  assert.doesNotMatch(a.$('play').textContent, /Pause/,
+    'the replay kept playing while the viewer was stepping through it by hand');
+});
+
+/**
+ * WHICH FRAME CALLED SOMETHING — and it cannot be read off the caption's text.
+ *
+ * `caption()` writes innerHTML and NOTHING EVER CLEARS IT. In a browser the
+ * `.on` animation fades it out after 2.2s and it is invisible; in the DOM the
+ * words stay there for the rest of the game. So a test that asks "does the
+ * caption say GOAL at this frame" is asking how long ago the last goal was, and
+ * the first draft of these tests counted 84 goals in a game with five.
+ *
+ * A call is therefore a CHANGE, which is what the viewer sees too.
+ */
+function callsWhileStepping(a, read) {
+  const out = [];
+  let last = a.$('caption').innerHTML;
+  a.$('scrub').oninput({ target: { value: '0' } });
+  for (let k = 0; k < +a.$('scrub').max; k++) {
+    a.$('fwd').click();
+    const now = a.$('caption').innerHTML;
+    if (now !== last) out.push(read(now, a));
+    last = now;
+  }
+  return out;
+}
+
+/**
+ * THE DIFFERENCE BETWEEN ARRIVING AT A FRAME AND SEEING A MOMENT AGAIN.
+ *
+ * One argument to `set()`, and it is the reason to press Back at all. The same
+ * frames reached two ways: dragged through (silent) and stepped onto (called).
+ */
+test('a step CALLS the moment again; dragging through it does not', () => {
+  const goals = rich.events.filter(e => e.type === 'goal').length;
+  assert.ok(goals > 1, 'the reference game should contain goals');
+
+  const dragged = boot();
+  const before = dragged.$('caption').innerHTML;
+  dragged.every(d => d.$('caption').innerHTML);
+  assert.equal(dragged.$('caption').innerHTML, before,
+    'dragging the scrubber across the whole game called a moment');
+
+  const stepped = boot();
+  const called = callsWhileStepping(stepped, h => h);
+  assert.equal(called.filter(h => /GOAL/.test(h)).length, goals,
+    'stepping through the game called a different number of goals than it contains');
+});
+
+/** The scrub index of the first frame whose current mark is a goal. */
+function firstGoalFrame(a) {
+  // The space is load-bearing: `shot-on-goal` also ends in "goal", and without
+  // it this helper found the first SHOT and the test then asserted that landing
+  // on a shot called a goal — which it correctly did not.
+  const k = a.every(d => /<title>[^<]* goal<\/title>/.test(d.$('events').innerHTML)).indexOf(true);
+  assert.ok(k > 0, 'no frame in the reference game draws a goal');
+  return k;
+}
+
+test('a deep link lands without pretending the whole game just happened', () => {
+  // THE CASE THE SPLIT EXISTS FOR, and the first draft of this test missed it by
+  // jumping to a frame it had already rendered — where `a > prevA` is false
+  // whatever the code does, so the assertion held under the mutation too.
+  //
+  // `?at=` is the real one: boot zeroes prevA/prevH and then lands the playhead
+  // in the third period, where fifty attempts are already on the board. Under
+  // one shared boolean both counters flash on arrival — "that just happened" —
+  // about fifty shots spread over an hour.
+  const bumped = d => d.$('cA').classList.contains('bump') || d.$('cH').classList.contains('bump');
+  const a = boot(rich, null, '?at=3-05:00');
+  const arrived = +a.$('cA').textContent + +a.$('cH').textContent;
+  assert.ok(arrived > 20,
+    `the link landed on ${arrived} attempts — too few for this test to be about anything`);
+  assert.equal(bumped(a), false, 'arriving somewhere bumped the counters as if a shot had just been taken');
+  // And it is a JUMP, not a silent seek: the moment it lands on is still called.
+  assert.ok(a.$('atnote').textContent !== undefined);
+
+  // THE CONTROL, AND IT HAS TO BE THE REAL LOOP. Without it this passes against
+  // a page whose counters never flash at any time, which is not the claim.
+  // `advance` returns how many frames the play loop really ran, so a dead timer
+  // cannot be mistaken for a quiet one.
+  const player = boot();
+  const far = Math.floor(+player.$('scrub').max * 0.8);
+  player.$('play').click();
+  assert.equal(player.advance(far), far, 'the replay did not run');
+  assert.equal(bumped(player), true,
+    'playing forward through 80% of a game never bumped a counter');
+});
+
+test('letting go of the scrubber calls the play you landed on', () => {
+  // A drag passes THROUGH plays and lands on one. `oninput` fires at every value
+  // the slider crosses, so the moment is called on `onchange` — once, when the
+  // viewer lets go — and the frame they chose gets called like any other jump.
+  const a = boot();
+  const goal = firstGoalFrame(a);
+  a.$('scrub').oninput({ target: { value: String(goal - 1) } });
+  a.$('scrub').oninput({ target: { value: String(goal) } });
+  const during = a.$('caption').innerHTML;
+  a.$('scrub').onchange({ target: { value: String(goal) } });
+  const after = a.$('caption').innerHTML;
+  assert.notEqual(after, during, 'letting go of the scrubber on a goal called nothing');
+  assert.match(after, /🚨 GOAL/, 'the release called something other than the goal it landed on');
+});
+
+test('a penalty is CALLED on the ice, like a goal and unlike a giveaway', () => {
+  // The finding that came out of asking the index's question of the renderer:
+  // a penalty is the one event that changes the CONDITIONS of the game — it is
+  // why `Even strength only` exists — and it was marked exactly as loudly as a
+  // giveaway. What follows is a RELATIONSHIP, not a list: whatever the game
+  // holds, the events that get called must be exactly its goals and penalties.
+  const a = boot();
+  const marks = callsWhileStepping(a, (h) =>
+    /🚨 GOAL/.test(h) ? 'goal' : /⛔ Penalty/.test(h) ? 'penalty' : 'other');
+  const got = { goal: 0, penalty: 0, other: 0 };
+  marks.forEach(m => got[m]++);
+  const want = t => rich.events.filter(e => e.type === t).length;
+  assert.deepEqual(got, { goal: want('goal'), penalty: want('penalty'), other: 0 },
+    'with no layers on, exactly the goals and the penalties get a moment of their own');
+  assert.ok(got.penalty > 0 && got.goal > 0, 'the walk found neither kind');
+});
+
+test('the penalty caption names the team that TOOK it', () => {
+  // `own` is the offending team — checked against the situation code rather than
+  // assumed: across the reference game's penalties the skater count drops for
+  // `own`'s side on the very next event that carries one.
+  const pens = rich.events.map((e, n) => [e, n]).filter(([e]) => e.type === 'penalty');
+  assert.ok(pens.length >= 4, 'the reference game should carry several penalties');
+  const side = e => (e.own === rich.teams.home.id ? 2 : 1);   // sit = [aG][aSk][hSk][hG]
+  for (const [e, n] of pens) {
+    const next = rich.events.slice(n + 1).find(x => x.sit);
+    assert.ok(+next.sit[side(e)] < +e.sit[side(e)],
+      `P${e.per} ${e.rem}: the skater count did not drop for the team the feed calls \`own\``);
+  }
+  // And the caption says so, in the same order the game does.
+  const abs = { [rich.teams.home.id]: rich.teams.home.ab, [rich.teams.away.id]: rich.teams.away.ab };
+  const called = callsWhileStepping(boot(), h => {
+    const m = h.match(/<span class="tag ([ah])">([A-Z]{3})<\/span><b>⛔/);
+    return m && m[2];
+  }).filter(Boolean);
+  assert.deepEqual(called, pens.map(([e]) => abs[e.own]),
+    'the penalty captions name a different set of teams, or a different order, than the feed does');
+  // BOTH clubs must appear, or a page that always printed the away side passes.
+  assert.equal(new Set(called).size, 2, 'only one club ever took a penalty in this walk');
+});
+
+test('the caption is not clickable, and nothing pretends it is', () => {
+  // `#rg .caption` carries pointer-events:none — it floats over the ice and
+  // would otherwise swallow clicks meant for the marks. A listener on it could
+  // never fire, and one sat there unreachable until it was found by reading the
+  // stylesheet rather than the script.
+  const rule = PAGE_CSS.match(/#rg \.caption\{([^}]*)\}/);
+  assert.ok(rule, 'the caption lost its rule');
+  assert.match(rule[1], /pointer-events:\s*none/, 'the caption became clickable');
+  assert.doesNotMatch(PAGE_CSS, /\.caption[^{]*\{[^}]*pointer-events:\s*(auto|all)/,
+    'something re-enabled clicks on the caption');
+  assert.doesNotMatch(SCRIPT, /\$\('caption'\)\.addEventListener/,
+    'a listener was added to an element that cannot receive events');
 });

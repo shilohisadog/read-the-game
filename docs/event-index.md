@@ -372,4 +372,84 @@ better single answer. The decision gets *cheaper* by waiting, which is rare.
 
 ## 13. Built 2026-08-16
 
-Items 1 and 2 of §9, plus the `newest` split from §7.
+Items 1 and 2 of §9, plus the `newest` split from §7. The strip and the
+scrub-track marks are held, per §12.
+
+### What shipped
+
+| | |
+|---|---|
+| `◀ Back` / `Next ▶` | one play at a time, either direction, disabled at the ends. A step is a **jump**, so the moment is called again. |
+| a caption for penalties | `CAR ⛔ Penalty · #53 Blake`. `own` is the offending team, checked against `sit` rather than assumed — the skater count drops for that side on the next event, 8 times out of 8 in the reference game. |
+| the `newest` split | `render(i, how)` where `how` is `'play'`, `'jump'` or `''`. The caption fires on both of the first two; **the counter bump fires only on `'play'`.** |
+| the slider on its own row | see below — a regression the tests could not see |
+| a dead listener removed | see below |
+
+### The measurement that changed the design after it was built
+
+The step buttons went into the transport's single row, and **took 169px straight
+out of the slider**: 306px → 137px at 1100px, which is **2.04 plays per pixel —
+coarser than the 1.69 that made the phone case a defect in §1.** The fix for aim
+had quietly made the drag worse, and nothing in 479 tests could see it, because
+the fake document has no layout.
+
+The slider now takes its own row (`flex:1 0 100%`), which costs 30px of page
+height and is better than the state before this work at every width:
+
+```
+                 before        buttons added      slider on its own row
+1100px    306px  0.92/px    137px  2.04/px        900px  0.31/px
+ 390px    339px  0.83/px    194px  1.44/px        343px  0.82/px
+ 360px    166px  1.69/px    311px  0.90/px        315px  0.89/px
+```
+
+It is also no longer a function of **how many buttons happen to sit beside it** —
+which is why the three widths disagreed about whether adding the buttons helped
+or hurt.
+
+### A fourth dead-code instance, and the first one found by a stylesheet
+
+`$('caption').addEventListener('click', …)` — opening the slot explainer — **had
+never fired once.** `#rg .caption` carries `pointer-events:none`, because it
+floats over the ice and would otherwise swallow clicks meant for the marks
+underneath, and nothing overrode it. It was also wrong on its own terms: it
+opened the why-card for the last *slot shot* regardless of which event the
+caption was describing.
+
+Fourth instance of that shape (the dead `goal` row in `LAB`, `rosterSpots` in
+`shell.test.js`, an assertion on `undefined` in `homepage.test.js`) and the first
+found by reading the **stylesheet** rather than the script — the same lesson
+`text-transform:capitalize` taught in the whistle work. The CSS is part of the
+program.
+
+### Two things the test harness could not do, and now can
+
+Both were making assertions vacuous rather than merely absent, which is the
+failure mode this project keeps finding.
+
+1. **`.click()` fired only `addEventListener` handlers.** The whole transport —
+   play, the three speeds, the work toggle — assigns `.onclick`, so clicking any
+   of them did nothing at all. A test that pressed Play and checked the page had
+   not started would have passed against a page that never started anything.
+2. **`setTimeout` answered `0` and dropped the callback**, so `play()` set a
+   timer that never fired and **the play loop had never run once in this file.**
+   Every test drove the page by dragging the scrubber — a different path, with
+   different arguments to `render`. `advance(n)` now runs the real loop and
+   returns how many frames actually moved, so a dead timer cannot be mistaken
+   for a quiet one.
+
+### Ten mutations, ten kills
+
+Including the one that survived the first pass and mattered most: *a jump bumps
+the counters, as the old shared boolean did.* The test had jumped to a frame it
+had **already rendered**, where `a > prevA` is false whatever the code does — a
+test that was true for a reason unrelated to its subject. The real case is the
+**deep link**: `?at=3-05:00` zeroes `prevA`/`prevH` and lands the playhead where
+fifty attempts are already on the board, so under one shared boolean both
+counters flash on arrival. The test now lands there and asserts the arrival
+carries more than twenty attempts, so it cannot pass by landing somewhere
+nothing had happened.
+
+Also caught in review: `firstGoalFrame` matched `<title>… goal</title>` without
+the space, so it found the first **shot-on-goal** and then asserted that landing
+on a shot called a goal — which it correctly did not.
