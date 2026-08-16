@@ -160,3 +160,124 @@ Plus the trim:
 4. **Does the bar belong to the blocked layer at all?** It is really a picture of
    *what happens to a shot attempt*, which is corsi's subject. It is here because
    this is the layer whose headline claim it answers.
+
+---
+
+## 7. Kevin's amendment: two cards, this game against the archive
+
+> *"Maybe there's 2 cards under the rink, what the current game is showing vs.
+> what the archive indicates is 'normal'? And, as you describe, having the
+> current game data updating, pulling closer to normal or farther away from
+> normal might be interesting and educating."*
+
+This is better than §5 and it should replace it. §5 drew the split; **this makes
+the COMPARISON the subject**, which is the thing a novice cannot get anywhere
+else and the thing the card currently asserts in prose and never shows.
+
+**It is also newly cheap.** `measures.json` already carries `attemptMix.byType`,
+so the archive can be drawn with **the same three segments as the game** — not a
+different chart beside it, the same picture at two sample sizes.
+
+### 7.1 One word has to go, and it is "normal"
+
+This is the objection I would want made if I were proposing it.
+
+**Every card on this site says one game is one game** — the goalie card
+(*"one game — what happened, not how unusual it was"*), the verdict, the
+newcomer block (*"one game is still one game"*). Calling the archive **normal**
+and describing the game as *pulling closer to or farther from* it does two things
+this project spent a lot of work refusing:
+
+1. It makes a gap read as **a fact about this game** — that a game away from the
+   archive share is abnormal and has something to explain.
+2. It invites that reading **when the gap is noise.** At the fourth attempt the
+   game's share is `1 of 4`. A viewer watching that "move away from normal" is
+   watching sampling variance, narrated as meaning.
+
+### 7.2 The reframe that keeps the whole idea
+
+Not *this game versus normal*. **The same quantity, at two sample sizes: one
+still assembling, one settled.**
+
+That is the site's own h1 — *see what the numbers are made of* — and it is a
+better lesson than "unusual", because **it is the lesson that makes "unusual"
+learnable later.** A novice who has watched 51.9% assemble out of 94 attempts
+knows what a rate is. Then, and only then, can they judge a gap.
+
+So: **show both, and never characterise the difference.** No "closer", no
+"farther", no colour for good or bad. The motion Kevin wants is inherent — one
+bar moves and the other does not — and it needs no sentence at all. Same reason
+the counters bump rather than announce.
+
+### 7.3 And the data says be careful, in this exact game
+
+I claimed in §4 that the game converges on the archive. **Component-wise it does
+not**, and a design built on "watch it converge" would be wrong about two
+segments out of three:
+
+```
+              archive                this game            gap
+ reached     236,869 = 48.1%        45 = 47.9%          -0.3 pts
+ blocked     136,545 = 27.8%        21 = 22.3%          -5.4 pts
+ missed      118,557 = 24.1%        28 = 29.8%          +5.7 pts
+ never       255,102 = 51.9%        49 = 52.1%          +0.3 pts
+```
+
+**The headline matches to a third of a point while two of the three parts are off
+by more than five, in opposite directions.** That is real hockey — this game
+missed the net more and got blocked less — and it is exactly the honest reason
+not to write a sentence about convergence. **Two aligned bars say all of that
+without claiming any of it.** Prose would have had to pick one story and would
+have picked the wrong one.
+
+This also retires my own §4 phrasing: *"watch it converge"* is a claim, and the
+right design shows the reader something and makes no claim at all.
+
+### 7.4 Two cards, or one card with two rows?
+
+I would take **one card, two rows on a shared axis** — and the reason is not
+space, though it is cheaper.
+
+**Alignment IS the comparison.** Two cards side by side make a reader compare
+numbers; two bars on the same axis make them *see* the difference, with the
+segment boundaries landing in visibly different places. That is the whole
+argument for drawing it rather than writing it, and putting the two in separate
+boxes throws it away.
+
+```
+   THIS GAME · 94 attempts so far
+   ███████████████████ ▓▓▓▓▓▓▓▓ ░░░░░░░░░░
+   45 reached the goalie · 21 blocked · 28 missed
+
+   THE ARCHIVE · 491,971 attempts, 4,119 games
+   ███████████████████ ▓▓▓▓▓▓▓▓▓▓ ░░░░░░░
+   48.1% reached · 27.8% blocked · 24.1% missed
+```
+
+**Counts on the game row, percentages on the archive row**, and that asymmetry is
+deliberate rather than untidy: §2 is exactly why. A percentage on 16 attempts
+swings 50 points and asserts precision that is not there; a percentage on 491,971
+is the honest form. **The row that can carry a percentage does, and the row that
+cannot does not** — which teaches the difference between the two by showing it.
+
+### 7.5 Revised questions for CHENG
+
+Replacing §6.
+
+1. **Is §7.1 too strict?** I am refusing the word "normal" and refusing to
+   characterise the gap at all. The case against: the site is trying to teach
+   what is usual, and a reader who is never told which way the difference points
+   may not notice there is one.
+2. **One card two rows (§7.4), or Kevin's two cards?** I have argued alignment is
+   the comparison. His version is more obviously two things and may read as two
+   ideas rather than one being made of the other.
+3. **Counts on one row and percentages on the other** — honest, or does it look
+   like a mistake?
+4. **Three segments or two?** Still open from §6. §7.3 is now the strongest
+   argument for three: the interesting disagreement in this game is entirely
+   inside the split, and two segments would have shown a 0.3-point match and
+   hidden it.
+5. **Where does the archive row's read-once material go?** The population and the
+   *"a share of attempts, not a rate of winning"* limit are 71–148px on every
+   frame (§1). The archive ROW is now the thing that needs them, and it is no
+   longer read-once — it is half the picture.
