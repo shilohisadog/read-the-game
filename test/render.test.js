@@ -1382,19 +1382,20 @@ test('the homepage gives a narrow frame the extra height its rink needs', () => 
 // which is the surprise. `hit` was in this list and should not have been: there
 // is no hits counter on the page, so "not a shot" answered a question nobody
 // had -- explaining a metric we do not show is noise wearing the shape of rigour.
-const COUNTS = ['blocked-shot', 'missed-shot'];
-
-test('a play label carries a second line only when it says whether it counts', () => {
+test('a play label is a NAME and nothing else — the table cannot hold a second line', () => {
+  // Kevin, 2026-08-16: "I think we can retire the subtext on the event displayed
+  // on the ice, it still looks crowded to me." Six of the nine went earlier for
+  // saying the label again in other words; the last two went for taking room.
+  //
+  // THE TABLE'S SHAPE IS THE GUARD. It holds strings, not pairs, so there is
+  // nowhere to put a second line without changing the renderer too — which is
+  // stronger than counting fields and finding one.
   const table = app.match(/const LAB=\{(.*?)\};/s)[1];
-  const rows = [...table.matchAll(/'?([a-z-]+)'?:\[([^\]]*)\]/g)]
-    .map(m => [m[1], m[2].split(',').length]);
+  const rows = [...table.matchAll(/'?([a-z-]+)'?:('[^']*'|\[[^\]]*\])/g)];
   assert.ok(rows.length >= 8, `only ${rows.length} labels parsed`);
-  for (const [type, fields] of rows) {
-    const wanted = COUNTS.includes(type) ? 2 : 1;
-    assert.equal(fields, wanted,
-      COUNTS.includes(type)
-        ? `${type} lost the line that says it still counts`
-        : `${type} has a second line that only rephrases its label`);
+  for (const [, type, value] of rows) {
+    assert.ok(!value.startsWith('['),
+      `${type} is a list again — the label table has grown a second line`);
   }
 });
 
@@ -1407,26 +1408,66 @@ test('the goal row is gone, and goals still get their scorer and assists', () =>
   assert.match(app, /assists: /, 'goals lost their assists');
 });
 
-test('on the ice: a faceoff draws one line, a blocked shot draws two', () => {
-  // Through the real renderer, because the table is only half the claim -- the
-  // other half is that an absent second line means no <text> at all rather than
-  // an empty one taking up the same room.
-  const a = boot();
-  const seen = { faceoff: null, 'blocked-shot': null };
-  a.every(d => {
-    const cur = d.$('labels').innerHTML;
-    for (const t of Object.keys(seen)) {
-      if (seen[t] === null && new RegExp(t === 'faceoff' ? '>Faceoff<|· Faceoff<' : 'Shot blocked').test(cur)) {
-        seen[t] = cur;
-      }
+test('on the ice, the ONLY second line left is a goal\u2019s assists', () => {
+  // Through the real renderer and across every frame, because the table is only
+  // half the claim: the goal takes an earlier branch and never reads `LAB` at
+  // all, so a table of plain strings does not by itself empty the ice.
+  //
+  // A RELATIONSHIP, not a list of types. Whatever the game holds, a second line
+  // on the ice must always be the assists line and never anything else.
+  // ACROSS EVERY LAYER STATE, because a layer can draw its own label: the
+  // blocked layer replaces the whole thing, and a mutation restoring ITS second
+  // line survived a walk that had left the layer switched off. The base view is
+  // walked too, or turning every layer on would hide a regression in neither.
+  const LAYERS = ['lyCorsi', 'lyHd', 'lyGoalie', 'lyWhistle', 'lyBlock'];
+  for (const on of [[], LAYERS]) {
+    const a = boot();
+    on.forEach(id => a.$(id).click());
+    const subs = new Set();
+    const heads = new Set();
+    a.every(d => {
+      const h = d.$('labels').innerHTML;
+      for (const m of h.matchAll(/class="plabsub"[^>]*>([^<]*)</g)) subs.add(m[1]);
+      for (const m of h.matchAll(/class="(?:plabel|glab)"[^>]*>([^<]*)</g)) heads.add(m[1]);
+      return null;
+    });
+    const where = on.length ? 'with every layer on' : 'in the base view';
+    assert.ok(heads.size > 4, `only ${heads.size} distinct labels were ever drawn ${where}`);
+    assert.ok(subs.size > 0, `no second line at all ${where} — the goal lost its assists`);
+    for (const t of subs) {
+      assert.match(t, /^(assists: |unassisted$)/,
+        `"${t}" is a second line on the ice ${where} that is not a goal\u2019s assists`);
     }
+  }
+});
+
+test('the greeting promises assists, and the ice is what has to deliver them', () => {
+  // THE DEPENDENCY THAT NEARLY COST THE ASSISTS LINE. Retiring every second line
+  // on the ice would have made a sentence at the top of the page false, and
+  // nothing in a text file can see that. So the two ends are held together here
+  // rather than by a comment — the same failure that broke "start with the game
+  // at the top" and "Press Play below", where the fix was to stop making the
+  // claim. Here the claim is worth keeping, so the test is.
+  const a = boot(rich, CURVE_AND_MIX);
+  const promise = a.$('newcomer').innerHTML;
+  assert.match(promise, /scorer and assists/, 'the greeting stopped promising assists');
+  // THE NAMES, NOT THE COUNT. Counting goals-with-an-assist survived a mutation
+  // that dropped the SECOND assist entirely: how many goals have an `a1` does not
+  // change when `a2` stops being read.
+  const want = rich.events.filter(e => e.type === 'goal')
+    .map(e => [rich.roster[e.a1], rich.roster[e.a2]].filter(Boolean).map(x => x.nm).join(', '))
+    .filter(Boolean);
+  assert.ok(want.length > 0, 'no goal in the reference game has an assist to print');
+  assert.ok(want.some(t => t.includes(', ')),
+    'no goal in the reference game has TWO assists, so this test cannot see a dropped one');
+  const drawn = [];
+  a.every(d => {
+    for (const m of d.$('labels').innerHTML.matchAll(/class="plabsub"[^>]*>assists: ([^<]*)</g))
+      if (!drawn.includes(m[1])) drawn.push(m[1]);
     return null;
   });
-  assert.ok(seen.faceoff, 'no faceoff label was ever drawn');
-  assert.ok(seen['blocked-shot'], 'no blocked-shot label was ever drawn');
-  assert.doesNotMatch(seen.faceoff, /plabsub/, 'the faceoff still draws a second line');
-  assert.match(seen['blocked-shot'], /plabsub[^>]*>still an attempt/,
-    'the blocked shot lost the line that says it counts');
+  assert.deepEqual(drawn.sort(), want.sort(),
+    'the ice named different assists than the game records');
 });
 
 test('preview drops the second line entirely, including the three that keep it', () => {
@@ -1513,27 +1554,42 @@ test('a page that reaches nothing says SO, rather than implying a failure', () =
   assert.doesNotMatch(v, /could not be loaded/);
 });
 
-test('the label names the BLOCKER once the layer is on, and says what the mark is', () => {
+test('the label names the BLOCKER once the layer is on', () => {
   // The defect this exists for: the coordinate is the BLOCK POINT — a median
   // 24.2 ft from the net against 33.4 for a shot on goal — and the label used to
   // name the shooter beside it, which invites reading the dot as his.
   const a = boot();
   a.$('lyBlock').click();
   const labels = a.every(d => d.$('labels').innerHTML)
-                  .filter(h => /not where the shot was taken|neither team is credited/.test(h));
-  assert.ok(labels.length > 0, 'no blocked shot ever labelled itself as a block point');
-  // Somebody is named, and it is a person rather than a club abbreviation.
+                  .filter(h => /blocked it|Blocked by a teammate|no blocker recorded/.test(h));
+  assert.ok(labels.length > 0, 'no blocked shot ever named who stopped it');
+  // A person, rather than a club abbreviation.
   assert.ok(labels.some(h => /blocked it|Blocked by a teammate/.test(h)),
-    'the label never names who stopped it');
+    'every blocked shot fell back to "no blocker recorded"');
 });
 
-test('with the layer off, no label claims to be a block point', () => {
+test('with the layer off, no label names a blocker', () => {
   // The corollary, and it is what makes the test above mean something: if the
-  // block-point sentence appeared on every game regardless, it would be page
-  // furniture rather than the layer's disclosure.
+  // blocker's name appeared on every game regardless, it would be page furniture
+  // rather than the layer's disclosure.
   const a = boot();
   const any = a.every(d => d.$('labels').innerHTML).join('');
-  assert.doesNotMatch(any, /not where the shot was taken/);
+  assert.doesNotMatch(any, /blocked it|Blocked by a teammate/);
+});
+
+test('the block-point fact survives the line that used to carry it', () => {
+  // THE ICE LOST A SENTENCE AND SOMETHING HAD TO STILL SAY IT. The mark sits
+  // where the puck was STOPPED, not where the shot was taken, and that is the one
+  // thing about this layer a reader cannot guess. The ice label said it until
+  // Kevin retired the second lines; the legend says it permanently and always
+  // did, which is why deleting the duplicate was safe.
+  //
+  // The other half — a block by a teammate credits nobody — is a paragraph of
+  // the blocked panel, so it is checked there too rather than assumed.
+  assert.match(app, /blocked — ringed where the puck was <b>stopped<\/b>/,
+    'the legend stopped saying where the blocked-shot mark actually is');
+  assert.match(app, /nobody defended/,
+    'the teammate-block disclosure went with the ice line instead of staying in the panel');
 });
 
 test('the CURRENT play is marked as such, so no layer can dim it away', () => {
@@ -2219,4 +2275,24 @@ test('the caption is not clickable, and nothing pretends it is', () => {
     'something re-enabled clicks on the caption');
   assert.doesNotMatch(SCRIPT, /\$\('caption'\)\.addEventListener/,
     'a listener was added to an element that cannot receive events');
+});
+
+test('the step buttons say what they step THROUGH, in words a reader can see', () => {
+  // Kevin: "don't we need to state what the prev and next arrows are for?"
+  // `◀ Back` beside a slider does not answer "back to what", and the answer was
+  // only in an aria-label, which a sighted viewer never gets.
+  const btn = id => app.match(new RegExp(`<button[^>]*id="${id}"[^>]*>([^<]*)<`))[1];
+  for (const id of ['back', 'fwd']) {
+    const visible = btn(id);
+    assert.match(visible, /\bplay\b/,
+      `#${id} reads "${visible}" — it names a direction but not what it moves through`);
+    // The accessible name must not be poorer than the visible one, and the
+    // arrow glyph must not be the only thing a screen reader is handed.
+    const aria = app.match(new RegExp(`<button[^>]*id="${id}"[^>]*aria-label="([^"]*)"`))[1];
+    assert.match(aria, /\bplay\b/, `#${id}'s accessible name lost the unit`);
+  }
+  // And the unit is THE PAGE'S OWN WORD for an event, not a new one introduced
+  // in the transport: a viewer who reads "Explain plays" and "every play is
+  // named as it happens" must meet the same noun here.
+  assert.match(app, /Explain plays/, 'the page stopped calling events "plays" elsewhere');
 });

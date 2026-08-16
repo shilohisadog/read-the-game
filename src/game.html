@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-X1BG6tPSXmfZQTDP4O1AjO0+R3ct/y0qcdm4PspTnOo='; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-qBBPXyz+8ofSchGB0IhgUF+ZAmnljLv8afNpLp+4MtQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-tzJcicBd+pUTM+hTrMM3M4Ce1gz3uFmpeaJ6mJD9wqU='; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-KOCVdsoDDHoX9QFKRpcfXqd1GzDoAbngR4iUwAoAWsQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">What is this?</a></nav></header>
@@ -202,7 +202,24 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .spd{padding:7px 11px}#rg .spd[aria-pressed="true"]{border-color:var(--ink);background:#eef2f5}
 /* THE STEP BUTTONS BORROW `.spd`'s size and add one thing: an end state. They
    move the playhead rather than change how fast it moves, so they sit beside
-   Play in the markup; everything else about them is already a speed button. */
+   Play in the markup; everything else about them is already a speed button.
+
+   AND THEY SAY WHAT THEY STEP THROUGH. Kevin: "don't we need to state what the
+   prev and next arrows are for?" -- and `◀ Back` next to a slider does not
+   answer "back to what". The unit is written INTO EACH BUTTON rather than into a
+   group label above the pair, because this row wraps: at 360px the transport
+   already breaks over several lines, and a label can end up on a different line
+   from the buttons it names. That is the same defect as "Press ▶ Play from start
+   below" -- prose whose truth depends on where something else landed.
+   "play" is the page's own word for an event: `💬 Explain plays`, and the
+   greeting's "every play is named as it happens".
+
+   AND THE WORDING IS SHORT BECAUSE THE FIRST ONE WAS MEASURED AND WAS NOT.
+   `◀ Back one play` / `Forward one play ▶` reads better and cost 46px of
+   transport height at EVERY width -- it wrapped the button row at 1100px, where
+   the pair had previously fit. `Prev`/`Next` are Kevin's own words for them and
+   cost nothing: 70px at 1100 and 162px at 390 and 360, which is exactly what the
+   transport measured with the buttons UNNAMED. Naming them is free. */
 #rg .stepb:disabled{opacity:.38;cursor:default}
 /* THE SLIDER GETS ITS OWN ROW, and it is a measurement rather than a taste.
    `flex:1` made it share a line with the buttons, so adding Back and Next took
@@ -433,7 +450,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 <div class="blockpanel" id="blockPanel"></div>
 <div class="goalies" id="goaliePanel"></div>
 <div class="transport"><button class="play" id="play">▶ Play from start</button>
-  <button class="spd stepb" id="back" aria-label="Back one play">◀ Back</button><button class="spd stepb" id="fwd" aria-label="Forward one play">Next ▶</button>
+  <button class="spd stepb" id="back" aria-label="Prev play">◀ Prev play</button><button class="spd stepb" id="fwd" aria-label="Next play">Next play ▶</button>
   <button class="spd" id="sp0" aria-pressed="false">🐢 Slower</button><button class="spd" id="sp1" aria-pressed="true">Teaching</button><button class="spd" id="sp2" aria-pressed="false">Faster</button><button class="spd" id="lbl" aria-pressed="true">💬 Explain plays</button>
   <button id="work" aria-expanded="false">Show me the work</button>
   <input class="scrub" id="scrub" type="range" min="0" max="1" value="0"></div>
@@ -3406,8 +3423,29 @@ $('whyBk').addEventListener('click',e=>{if(e.target.id==='whyBk')hideWhy();});
    `goal` is gone entirely. Goals take the branch above -- scorer and assists --
    so its row had never once rendered: dead weight inside a table, reading as
    coverage. Third instance of that shape (test/shell.test.js had a dead
-   "rosterSpots" pattern, homepage.test.js an assertion that read undefined). */
-const LAB={faceoff:['Faceoff'],hit:['Hit'],giveaway:['Giveaway'],takeaway:['Takeaway'],'blocked-shot':['Shot blocked','still an attempt — for the shooter'],'missed-shot':['Missed shot','wide/high — still an attempt'],'shot-on-goal':['Shot on goal'],penalty:['Penalty']};
+   "rosterSpots" pattern, homepage.test.js an assertion that read undefined).
+
+   AND THEN THE LAST TWO WENT, so `LAB` is strings rather than pairs. Kevin,
+   looking at it again: "I think we can retire the subtext on the event displayed
+   on the ice, it still looks crowded to me". The rule above survives him -- the
+   two that stayed were the ones that DID correct a misreading of a moving
+   counter -- but it was never the whole test. A line can be earned and still not
+   be worth the crowding, and which of those is true is a judgement about pixels,
+   which is his to make and not one this file can argue from.
+
+   THE BLOCKED LAYER'S SECOND LINE WENT WITH THEM, and that one is not a
+   judgement call: both halves of it were already said somewhere permanent. "where
+   the puck stopped -- not where the shot was taken" is the legend key, verbatim
+   ("blocked -- ringed where the puck was stopped"), and "nobody defended it, so
+   neither team is credited" is a whole paragraph of the blocked panel. It was
+   redundancy on the most crowded surface on the page.
+
+   WHAT STAYS IS THE GOAL'S ASSISTS, and it stays because THE GREETING PROMISES
+   IT BY NAME: "goals are called with the scorer and assists". Cutting it would
+   have made a sentence elsewhere on the page false -- the same dependency that
+   broke "start with the game at the top" and "Press Play below", and this time
+   a test holds the two ends together rather than a comment. */
+const LAB={faceoff:'Faceoff',hit:'Hit',giveaway:'Giveaway',takeaway:'Takeaway','blocked-shot':'Shot blocked','missed-shot':'Missed shot','shot-on-goal':'Shot on goal',penalty:'Penalty'};
 let labelsOn=true;
 /**
  * WHAT THE ICE SAYS WHEN IT IS SHOWING NOTHING.
@@ -3460,15 +3498,9 @@ function drawLabel(e){const g=$('labels');const p=place(e);if(!labelsOn||!p){g.i
    const head=!b?'Blocked — no blocker recorded'
      :mate?`Blocked by a teammate — ${b.nm}`
      :`${bt?bt+' · ':''}${b.nm} blocked it`;
-   const why=mate?'nobody defended it, so neither team is credited'
-     :'where the puck stopped — not where the shot was taken';
-   g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${ESC(head)}</text><text class="plabsub" x="${tx.toFixed(1)}" y="${(ty+3.7).toFixed(1)}" text-anchor="${anc}">${why}</text></g>`;
+   g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${ESC(head)}</text></g>`;
    return;}
- // No second line means no second <text>, rather than an empty one: an empty
- // element still occupies the label's height and would push the next mark's
- // spacing around for a string nobody can read.
- const sub=info[1]?`<text class="plabsub" x="${tx.toFixed(1)}" y="${(ty+3.7).toFixed(1)}" text-anchor="${anc}">${info[1]}</text>`:'';
- g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${lab?lab+" · ":""}${info[0]}${hd}</text>${sub}</g>`;}
+ g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${lab?lab+" · ":""}${info}${hd}</text></g>`;}
 $('lbl').addEventListener('click',()=>{labelsOn=!labelsOn;$('lbl').setAttribute('aria-pressed',labelsOn);$('lbl').style.opacity=labelsOn?'1':'.5';drawLabel(EV[i]);});
 
 // THE WHISTLE LAYER, DRAWN. What from the stoppage, where from the faceoff that

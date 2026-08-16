@@ -86,13 +86,20 @@ test('the app no longer tells the viewer we flip blocked-shot attribution', () =
   assert.ok(!/feed credits the blocker/i.test(app), 'and so is its premise');
 });
 
-test('the teaching label and the arithmetic agree', () => {
-  // This line was true-in-intent and false-in-fact for the app's entire life:
+test('the teaching claim and the arithmetic agree', () => {
+  // This claim was true-in-intent and false-in-fact for the app's entire life:
   // it told the viewer a blocked shot counts for the shooter while the code
-  // credited the blocker. It is only allowed to exist because the code now
-  // matches it -- so tie the two together.
-  assert.ok(app.includes('still an attempt — for the shooter'),
-    'the label is present');
+  // credited the blocker, and it shipped a wrong flagship number. It is only
+  // allowed to exist because the code now matches it -- so tie the two together.
+  //
+  // IT MOVED SURFACES ON 2026-08-16 and this test moved with it. The claim used
+  // to be a second line on the ice ("still an attempt — for the shooter") and
+  // went when Kevin retired the ice subtext; it lives in the work panel now.
+  // The SAFEGUARD is not about a surface -- it is that the page must not tell a
+  // reader how attribution works while the reducer does something else -- so what
+  // this test follows is the sentence, wherever the sentence is.
+  assert.ok(app.includes('All credited to the shooter.'),
+    'nothing on the page still tells the reader who a blocked attempt belongs to');
   assert.ok(app.includes('corsiTeam(e,R)'),
-    'and Corsi resolves through the shooter, which is what makes the label true');
+    'and Corsi resolves through the shooter, which is what makes the claim true');
 });
