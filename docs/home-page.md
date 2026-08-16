@@ -553,3 +553,94 @@ holds.
 A tenth "survivor" was not a test gap: `id="what"` is referenced by nothing, so
 there was nothing to assert. It is dead markup, recorded here rather than covered
 by a test written to make a number go up.
+
+---
+
+## 10. `?team=` gets the front door's argument, and the reorder in §9 caused it
+
+**Kevin, 2026-08-16, with a screenshot:** *"the home page info crept onto the
+game page, which I don't care for."*
+
+It is not the game page — it is **this** page with `?team=WSH`, which is exactly
+where `More WSH games` on a game page sends you. The complaint is right anyway,
+and it is about the journey rather than the file.
+
+### 10.1 Measured, live, at two widths
+
+| | 1100×900 | 390×844 |
+|---|---|---|
+| front-door argument above `← All teams` | **811px — 0.90 screens** | **1,049px — 1.24 screens** |
+| "Washington Capitals" lands at | screen **0.94** | screen **1.28** |
+| the first Washington game lands at | screen **1.03** | screen **1.42** |
+
+**On a phone, a visitor who clicked *More WSH games* scrolls past a screen and a
+quarter of the site's pitch before seeing one Washington game — and the club's
+name is below the fold at both widths.** They had already told the page what they
+wanted, in the URL, before it loaded.
+
+### 10.2 The rule already exists, and is applied to one element of two
+
+```js
+} else {
+  drawGrid(games);
+  /* ONLY ON THE FRONT DOOR. A fan who asked for BUF is not looking for a
+     Dallas game; the hero exists for the visitor who has not chosen. */
+  drawHero(cat, measures);
+}
+drawRates(measures);          // <-- and this one is not asked
+```
+
+**The hero is already suppressed for `?team=`, and the reason is written down
+correctly.** The thesis and the three-rate scale are not, for two structural
+reasons rather than one decision:
+
+1. `drawTeam` works by `main.textContent = ''`. **The thesis, the `#what`
+   heading and `#scale` sit OUTSIDE `#main`**, so the wipe cannot reach them —
+   the team view has no way to express "and not that".
+2. `drawRates(measures)` is called **after** the branch, unconditionally, so it
+   un-hides `#scale` on a page that never wanted it.
+
+### 10.3 §9 is what put it on top
+
+Before the reorder the thesis sat at screen **4.53** — *below* the suppressed
+hero — so a `?team=` visitor got h1 → says → the club. Moving it to screen
+**0.50** was right for the front door and put it in front of everyone else too.
+
+**One page, two audiences, and I measured the order for one of them.** The
+reorder was checked at three viewports and never once at `?team=`, which is not
+an exotic route: it is the only link out of a game page into a list.
+
+### 10.4 What I would propose
+
+**Extend the rule that is already there: `?team=` suppresses the thesis and the
+scale, exactly as it suppresses the hero.**
+
+The line I would draw is **what the site IS** versus **the argument for why you
+should care**:
+
+| keep | drop |
+|---|---|
+| `<h1>` and `.says` — *"Every NHL game since 2023, replayed play by play…"* — 76px at 1100, 127px at 390. Answers "what is this?" for a stranger arriving on a shared team link | `#what` + `#thesis` + `#scale` — 414px / 622px. The read-once argument, which is why R exists |
+
+That is the same split R made below the rink: a sentence that orients costs
+little and earns its place; an argument is read once.
+
+**Rejected: moving the thesis below the club's games.** It is CHENG's *rank, not
+hide* instinct in the wrong place — that ruling was about which clubs to show,
+not about read-once prose. Below a 260-game list it is hidden anyway, and
+pretending otherwise is worse than hiding it on purpose.
+
+**Rejected: reusing the game page's returning-viewer memory.** `?team=` is an
+**intent** signal, not a **returning** signal. Someone who names a club in the
+URL has told you what they want whether or not they have been here before, and
+intent should not have to wait for `localStorage` to agree.
+
+### 10.5 For CHENG
+
+1. **Is the keep/drop line right** — h1 + `.says` stay, `#what` + thesis + scale
+   go? The case against: a cold visitor arriving on a shared `?team=` link now
+   gets one sentence of orientation instead of the argument.
+2. **Should the `<h1>` become the club on a team view?** The page is *about*
+   Washington and its `<h1>` is generic while an `<h2>` carries the club name,
+   which is backwards. Adjacent, cheap, and a separate decision — flagged rather
+   than folded in.
