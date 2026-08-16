@@ -565,9 +565,6 @@ __LIB__
       li.appendChild(el('span', 'v', (r.count / r.n * 100).toFixed(1) + '%'));
       box.appendChild(li);
     });
-    if (m.featured && m.featured.length) {
-      $('start').href = 'game.html?game=' + m.featured[0].id;
-    }
     drawScale(m);
   }
 
@@ -698,6 +695,20 @@ __LIB__
         + ', and ' + (won === null ? 'the game was level' : (won === lead ? 'won' : 'lost')) + '.';
     }
     $('herogo').href = 'game.html?game=' + g.id;
+
+    /* "NEW TO HOCKEY? START WITH THE GAME AT THE TOP" — and it has to be THIS
+       game, so it is set from THIS `g` and from nowhere else.
+       It used to be set in drawRates from `featured[0]`, which was correct when
+       the hero WAS featured[0]. The hero became `newest` (see above) and the
+       href did not move with it, so the live page told a novice to start with
+       "the game at the top" and sent them to a different game two and a half
+       screens above — CAR at VGK in the frame, MIN at BUF through the link.
+       Both halves were individually right; only the RELATIONSHIP was broken,
+       which is why nothing went red and why the test now pins the relationship
+       rather than an id. A sentence that refers to another element's identity
+       has a dependency on it, and the only fix that cannot rot again is for the
+       two to have ONE source. */
+    $('start').href = 'game.html?game=' + g.id;
     $('hero').hidden = false;
   }
 

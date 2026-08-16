@@ -215,10 +215,27 @@ test('every rate is published with its denominator and population', () => {
   });
 });
 
-test('the start-here link points at the measured featured game', () => {
+test('"start with the game at the top" goes to the game at the top', () => {
+  // THIS TEST USED TO ASSERT `game.html?game=2023020867`, AND IT WAS RIGHT WHEN
+  // WRITTEN: the hero was `featured[0]` and so was this link. The hero became
+  // the most recent game (build_index.py::newest) and the href stayed behind,
+  // so the live page told a novice to start with "the game at the top" and sent
+  // them to a different game — CAR at VGK in the frame, MIN at BUF through the
+  // link. The test went green through the whole thing, because a literal id
+  // cannot see a relationship; it only knew the answer, not the question.
+  //
+  // So the subject changes. What the sentence claims is that three things name
+  // ONE game, and that is what is asserted — no id appears below, and the
+  // selection rule can be replaced again without this rotting a second time.
   const r = run({ docs: ALL });
   return r.settle().then(() => {
-    assert.equal(r.ids.start.href, 'game.html?game=2023020867');
+    const id = h => { const m = String(h || '').match(/game=(\d+)/); return m && m[1]; };
+    const frame = walk(r.ids.heroframe).find(n => n.tag === 'iframe');
+    const top = id(frame.src);
+    assert.ok(top, 'the hero frame names no game, so there is no game at the top');
+    assert.equal(id(r.ids.herogo.href), top, "the hero's own button leaves its own game");
+    assert.equal(id(r.ids.start.href), top,
+      'the novice link points somewhere other than the game the page is showing');
   });
 });
 
@@ -230,11 +247,18 @@ test('a missing measurement is stated, and the rest of the page still works', ()
     assert.match(textOf(r.ids.rates), /could not be loaded/i);
     assert.equal(walk(r.ids.teams).filter(n => n.className === 'chip').length, 3,
       'the team grid is unaffected');
-    // The script must not have touched start-here at all — its fallback lives in
-    // the markup, so a page with no measurement still offers a game to watch.
-    assert.equal(r.ids.start, undefined, 'the script left start-here alone');
+    // AND THE NOVICE LINK STILL OFFERS A GAME. It used to be set from the
+    // measurement, so a missing measurement left it on the markup's fallback;
+    // it is now set from the CATALOG, beside the hero it names, so it survives
+    // exactly what the hero survives. That is the point of the move — the
+    // archive-wide rates being unavailable has nothing to do with which game is
+    // at the top of the page.
+    const frame = walk(r.ids.heroframe).find(n => n.tag === 'iframe');
+    assert.ok(frame, 'no measurement took the hero down with it');
+    assert.equal(r.ids.start.href, r.ids.herogo.href,
+      'the novice link and the hero disagree when the measurement is missing');
     assert.match(html, /id="start" href="game\.html"/,
-      'and the markup carries a working fallback');
+      'and the markup still carries a fallback for a page that gets no catalog either');
   });
 });
 

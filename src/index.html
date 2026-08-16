@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-+Xn2gQNmHXndqpmurva8HUa2tNw3qI3wWuV/7HVBNck='; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-XYSAF/1dCU8NDk6MwU3nOiETyQGMeJzaRrxvEM8t41w='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-DpYe60CuSoQuaGfkC4zUyRfBoXugiFYBh8kQ8LlARpY='; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-XYSAF/1dCU8NDk6MwU3nOiETyQGMeJzaRrxvEM8t41w='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -1042,9 +1042,6 @@ function summarise(records) {
       li.appendChild(el('span', 'v', (r.count / r.n * 100).toFixed(1) + '%'));
       box.appendChild(li);
     });
-    if (m.featured && m.featured.length) {
-      $('start').href = 'game.html?game=' + m.featured[0].id;
-    }
     drawScale(m);
   }
 
@@ -1175,6 +1172,20 @@ function summarise(records) {
         + ', and ' + (won === null ? 'the game was level' : (won === lead ? 'won' : 'lost')) + '.';
     }
     $('herogo').href = 'game.html?game=' + g.id;
+
+    /* "NEW TO HOCKEY? START WITH THE GAME AT THE TOP" — and it has to be THIS
+       game, so it is set from THIS `g` and from nowhere else.
+       It used to be set in drawRates from `featured[0]`, which was correct when
+       the hero WAS featured[0]. The hero became `newest` (see above) and the
+       href did not move with it, so the live page told a novice to start with
+       "the game at the top" and sent them to a different game two and a half
+       screens above — CAR at VGK in the frame, MIN at BUF through the link.
+       Both halves were individually right; only the RELATIONSHIP was broken,
+       which is why nothing went red and why the test now pins the relationship
+       rather than an id. A sentence that refers to another element's identity
+       has a dependency on it, and the only fix that cannot rot again is for the
+       two to have ONE source. */
+    $('start').href = 'game.html?game=' + g.id;
     $('hero').hidden = false;
   }
 
