@@ -317,3 +317,114 @@ than the page has ever offered, on a page still shorter than it was.
 **The copy is a draft; the seam is the point** (Kevin's own rule: mechanism, not
 policy). The novice test should revise these words. It should not have to revise
 the machinery.
+
+## 9. The last two prose blocks — built 2026-08-16
+
+The remainder of proposal (5). CHENG ruled a disclosure was the wrong home:
+
+> *"The place that sentence actually pays off is the moment someone flips the
+> switch and 49 attempts vanish. That's when a novice has a question and the
+> sentence is the answer."*
+
+And gave the test for whether a sentence has a home at all: **if it cannot find
+a moment of use, that is the signal it belongs on the How-it-works page rather
+than under the rink.** Three blocks, three different answers.
+
+### The goaltender half — an empty net is a STATE, so the note lasts as long as it
+
+*"A goaltender stands in each crease, in that team's colour — and leaves when the
+feed says the goalie was pulled for an extra attacker."*
+
+Two claims fused. The first went nowhere: the code's own comment at `drawNetmen`
+already argues that **a goaltender standing in a crease says "this net is
+defended" without a label**, which is how a viewer reads a real rink. A legend key
+restating it would contradict the reason the text tag was removed.
+
+The second has the best moment on the page — a figure vanishes off the ice — and
+it is not an instant. `sit` is `[awayGoalie][awaySkaters][homeSkaters][homeGoalie]`
+and an empty net is a **durable state**, so the note is up for exactly as long as
+the fact and no chosen number is involved. Measured in a real browser on
+`2025030416` (CAR at VGK):
+
+```
+18 of 281 frames carry the note, in two runs, 56px each
+  frames  85- 86   Period 1 01:24 → 01:22   (a delayed penalty)
+  frames 262-277   Period 3 02:50 → 01:08   (the goalie returns; the note leaves)
+```
+
+The assembled sentence, read back out of the running page rather than the
+builder:
+
+> *"VGK has pulled the goaltender for an extra attacker. An empty net here is
+> the feed's own situation code, never a guess."*
+
+**One sentence per pulled team, mapped rather than branched.** Both nets empty at
+once is legal and rare, and a `has`/`have` ternary for it would be an arm no
+game in the archive can reach — an untestable branch, which is the defect this
+project treats as worse than the verbosity it avoids.
+
+### The ends half — a legend key, at the first period it did not happen
+
+*"Ends are held fixed here… in the arena they switch every period."*
+
+**This is not novice copy, and I had it backwards.** A novice watching period two
+does not notice that the teams failed to switch; the reader who notices is the
+one who **already knows hockey** and would otherwise conclude our rink is wrong.
+So it is honesty copy for the informed viewer, and gating it on first-visit would
+have aimed it at the only audience that cannot use it.
+
+Its moment is the first period change — when the switch would have happened and
+did not. Before that, nothing has yet failed to occur. **A one-event flash is
+unreadable** (`dwell` is 650ms × 2 at teaching pace, so ~1.3s for a 13-word
+sentence), so it is a *state*, not an instant: the key is up from period two to
+the horn, and scrubbing back into the first period takes it away.
+
+It reuses the progressive-legend mechanism Q2 built rather than inventing a
+second one. **`the coordinates are the league's own` came out** — the newcomer
+block already says *"every number here comes from the league's own record of the
+game"*, so it was a second copy of a claim the page makes better elsewhere.
+
+### The amber tip — the legend's defect, in a different block
+
+*"Tip: click a ⚡ slot shot (amber ring)…"* — 55px of permanent instruction about
+a mark that **does not exist unless a layer draws it**. That is precisely the
+defect §3 identified in the legend, committed a second time twenty pixels lower
+and missed by the audit that found the first one. It is now gated on `#rg.slot`
+and sits directly under the button that turns the layer on.
+
+### Measured, 390px phone, returning viewer, game `2025030416`
+
+| | before | after |
+|---|---|---|
+| read-once prose, **Period 1** | 305px | **122px** (the legend alone) |
+| read-once prose, later periods | 305px | 166px |
+| document, mid-game | 2.02 screens | **1.80 / 1.85** |
+| document, at the final horn | 2.33 screens | **2.16** |
+| the empty-net note | — | 56px, on 6% of frames |
+
+The audit's original figure was **576px of read-once prose**. It is now **122px
+in the first period** — the legend, naming the five marks the base view actually
+draws — and nothing else on the page is written for a reader who has already read
+it once.
+
+### What the tests can and cannot say
+
+Twelve mutations, all killed. **Two survived the first pass and both were real:**
+
+- **A deleted host-goalie branch survived every test.** The reference game only
+  ever empties the *visitor's* net, so no fixture built on `rich.json` could
+  reach the other arm — a branch no green can speak for. Fixed by re-coding
+  `sit` on a copy of the game rather than stubbing the renderer: the codes are
+  ones the league emits, and the host branch is now checked, as is both-pulled.
+  The live browser run then confirmed it against real data — `1560` on VGK, the
+  **host**, twice in that game.
+- **`#rg .icenote:empty{display:none}` could be deleted with nothing going red**,
+  because the fake document has no CSS. Covered the only way it can be at this
+  level, by asserting the rule in the stylesheet; the browser step in
+  `deploy.yml` is what checks the rendering.
+
+The behavioural claims read through the **scoreboard**, not through `cur.per` and
+`cur.sit` — `#per` is written by `periodLabel`, a different function with its own
+rules for overtime and the shootout. Asserting the class against the same field
+that sets it would have been a check built from the implementation's own model of
+its input.

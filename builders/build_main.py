@@ -65,7 +65,7 @@ T = r"""<style>
    ONE RENDERER, still. Preview is a class on #rg and a play loop; there is no
    second drawing path and nothing here is reimplemented. */
 #rg.preview .newcomer,#rg.preview h1,#rg.preview .transport,#rg.preview .layers,
-#rg.preview .figpick,#rg.preview .hint,#rg.preview .ends,#rg.preview .whistlepanel,#rg.preview .blockpanel,
+#rg.preview .figpick,#rg.preview .hint,#rg.preview .icenote,#rg.preview .whistlepanel,#rg.preview .blockpanel,
 #rg.preview .verdict,#rg.preview .nextup,#rg.preview .foot,#rg.preview .work,
 #rg.preview .legend,#rg.preview .goalies,
 #rg.preview .counters{display:none!important}
@@ -200,7 +200,7 @@ T = r"""<style>
    A legend is a READ surface, not a control: things you click must not move,
    things you read may. Nobody builds muscle memory for a key. */
 #rg .legend .lkey{display:none}
-#rg.slot .legend .lk-hd,#rg.blocked .legend .lk-blk{display:inline}
+#rg.slot .legend .lk-hd,#rg.blocked .legend .lk-blk,#rg.heldends .legend .lk-ends{display:inline}
 #rg .k-a{background:#fff;box-shadow:0 0 0 1.5px var(--away)}#rg .k-h{background:var(--home)}#rg .k-hd{background:#fff;box-shadow:0 0 0 1.5px var(--hd)}#rg .k-blk{background:var(--home);box-shadow:0 0 0 1.5px var(--flag)}#rg .k-p{background:#0e1216}#rg .k-g{background:radial-gradient(circle,#fff 0 2.5px,var(--home) 2.5px)}#rg .k-gv{background:radial-gradient(circle,var(--away) 0 2.5px,#fff 2.5px);box-shadow:0 0 0 1.5px var(--away);margin-left:-3px}
 #rg .work{background:#fff;border:1px solid var(--edge);border-radius:13px;padding:18px;margin-top:14px;box-shadow:0 5px 18px rgba(16,32,45,.06)}
 #rg .work h2{margin:0 0 10px;font-size:1.1rem}#rg .work h2 .wsub{color:var(--muted);font-weight:400}
@@ -263,8 +263,19 @@ T = r"""<style>
 @media(prefers-reduced-motion:reduce){#rg *{animation:none!important;transition:none!important}}
 
 #rg .ev.clickable{cursor:pointer}
-#rg .hint{font-size:.76rem;color:#b07d17;margin:3px 2px 0;font-weight:600}
-#rg .ends{font-size:.76rem;color:var(--muted);margin:6px 2px 0}
+/* THE TIP IS ABOUT A MARK THAT DOES NOT EXIST UNTIL A LAYER DRAWS IT. Amber
+   rings arrive with "Shots from the slot" and with nothing else, so a permanent
+   tip telling a reader to click one is 55px of instruction about something not
+   on their screen -- the same defect the legend had before it went progressive,
+   in a different block. It now appears with the layer, directly under the
+   button that turned it on. */
+#rg .hint{display:none;font-size:.76rem;color:#b07d17;margin:3px 2px 0;font-weight:600}
+#rg.slot .hint{display:block}
+/* A NOTE ABOUT WHAT THE ICE IS DOING RIGHT NOW, under the ice. Empty when there
+   is nothing true to say, and `:empty` rather than a class because the only
+   state is "is there text" -- a class would be a second copy of that fact. */
+#rg .icenote{font-size:.78rem;color:var(--muted);margin:7px 2px 0;text-align:center}
+#rg .icenote:empty{display:none}
 #rg .caption{cursor:default}
 #rg .whybk{position:fixed;inset:0;background:rgba(10,18,26,.55);display:none;align-items:center;justify-content:center;z-index:60;padding:16px}
 #rg .whybk.on{display:flex}
@@ -385,6 +396,7 @@ T = r"""<style>
   <div class="caption" id="caption"></div>
   <div class="counters"><div class="cc a"><span class="n" id="cA">0</span><span class="lb">MIN attempts<span class="mode" id="mA">ALL SITUATIONS</span></span></div><div class="cc h"><span class="lb">BUF attempts<span class="mode" id="mH">ALL SITUATIONS</span></span><span class="n" id="cH">0</span></div></div>
 </div>
+<p class="icenote" id="iceNote"></p>
 <div class="whistlepanel" id="whistlePanel"></div>
 <div class="blockpanel" id="blockPanel"></div>
 <div class="goalies" id="goaliePanel"></div>
@@ -392,8 +404,9 @@ T = r"""<style>
   <button class="spd" id="sp0" aria-pressed="false">🐢 Slower</button><button class="spd" id="sp1" aria-pressed="true">Teaching</button><button class="spd" id="sp2" aria-pressed="false">Faster</button><button class="spd" id="lbl" aria-pressed="true">💬 Explain plays</button>
   <input class="scrub" id="scrub" type="range" min="0" max="1" value="0"><button id="work" aria-expanded="false">Show me the work</button></div>
 <p class="verdict" id="verdict"></p>
-<div class="legend"><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white-filled, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span><i class="k-g"></i><i class="k-gv"></i>goal — either sweater</span><span><i class="k-blk"></i>blocked — ringed where the puck was <b>stopped</b></span><span class="lkey lk-hd"><i class="k-hd"></i>from the slot</span><span class="lkey lk-blk">blocked shots are dimmed unless a body stopped them</span></div>
+<div class="legend"><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white-filled, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span><i class="k-g"></i><i class="k-gv"></i>goal — either sweater</span><span><i class="k-blk"></i>blocked — ringed where the puck was <b>stopped</b></span><span class="lkey lk-hd"><i class="k-hd"></i>from the slot</span><span class="lkey lk-blk">blocked shots are dimmed unless a body stopped them</span><span class="lkey lk-ends">ends are held fixed — in the arena the teams switch each period</span></div>
 <div class="newcomer nwhy2" id="newcomerWhy"></div><div class="layers"><span class="ll">Add a metric layer:</span><button class="lyr" id="lyCorsi" aria-pressed="false">＋ Control (Corsi)</button><button class="lyr" id="lyHd" aria-pressed="false">＋ Shots from the slot</button><button class="lyr" id="lyGoalie" aria-pressed="false">＋ Goaltending</button><button class="lyr" id="lyWhistle" aria-pressed="false">＋ Why play stopped</button><button class="lyr" id="lyBlock" aria-pressed="false">＋ Blocked shots</button></div>
+<div class="hint">Tip: click any shot ringed in amber to see <b>why</b> it counts as a slot shot — with trails set to <b>keep every mark</b>, earlier ones stay clickable too.</div>
 <div class="figpick"><span class="ll">Trails:</span>
 <button class="lyr tbtn" data-t="off" aria-pressed="true">Current moment</button>
 <button class="lyr tbtn" data-t="all" aria-pressed="false">Keep every mark</button>
@@ -406,10 +419,6 @@ T = r"""<style>
 <button class="lyr fbtn" data-f="mascot" aria-pressed="true">Mascot</button>
 <button class="lyr fbtn" data-f="tabletop" aria-pressed="false">Tabletop</button>
 <span class="fnote" id="nFig"></span></div>
-<p class="ends">A goaltender stands in each crease, in that team’s colour — and
-leaves when the feed says the goalie was pulled for an extra attacker. Ends are held
-fixed here, so each team always attacks the same net. In the arena they switch every period — this is the one thing on the rink we move, and the coordinates are the league’s own.</p>
-<div class="hint">Tip: click a ⚡ slot shot (amber ring) on the ice to see <b>why</b> it qualified — with trails set to <b>keep every mark</b>, earlier ones stay clickable too.</div>
 <div class="work" id="workPanel" hidden></div>
 <div class="whybk" id="whyBk"><div class="why" id="whyContent"></div></div>
 <div class="foot" id="gl">—</div>
@@ -853,6 +862,31 @@ function render(i,newest){
    ?'Same shots, same outcomes, same math — only the drawing changes.'
    :'';
  document.getElementById('rg').classList.toggle('ended',i>=EV.length-1);
+ /* AN EMPTY NET IS A STATE, NOT AN INSTANT, so the sentence explaining it lasts
+    exactly as long as the fact. This is half of the permanent paragraph that
+    used to sit under the controls saying a goaltender "leaves when the feed says
+    the goalie was pulled" -- drawn on every game and every visit, and read at
+    every moment except the one where it meant something. CHENG: "the place that
+    sentence pays off is the moment someone watches it happen."
+    `sit` is [awayGoalie][awaySkaters][homeSkaters][homeGoalie], the same code
+    drawNetmen draws by, and a MISSING code is not evidence of an empty net --
+    so no note either, on the same rule.
+    ONE SENTENCE PER PULLED TEAM, mapped rather than branched. Both nets empty at
+    once is legal and rare, and a `has`/`have` ternary for it would be a branch no
+    game in the archive can reach, which is a branch no test can honestly kill. */
+ const st=cur&&cur.sit, pulled=[];
+ if(st&&st[0]==='0')pulled.push(AAB);
+ if(st&&st[3]==='0')pulled.push(HAB);
+ $('iceNote').textContent=pulled.length
+   ?pulled.map(ab=>`${ab} has pulled the goaltender for an extra attacker.`).join(' ')
+    +' An empty net here is the feed’s own situation code, never a guess.'
+   :'';
+ /* THE ENDS KEY, at the first moment the claim can be doubted. Every team
+    attacks the same net all game here and switches every period in the arena,
+    and the reader who NOTICES is the one who already knows hockey -- so the key
+    arrives when the game leaves the first period, which is when the switch would
+    have happened and did not. Before that, nothing has yet failed to occur. */
+ document.getElementById('rg').classList.toggle('heldends',!!cur&&cur.per>1);
  if(blockOn)drawBlocked(blocked.reduce(upto(i),CTX),L);
  else $('blockPanel').innerHTML='';
  let lh='';

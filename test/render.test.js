@@ -484,20 +484,21 @@ test('the strength mode reaches the scoreboard, not only the counters', () => {
   assert.equal(a.$('mA').textContent, 'EVEN STRENGTH', 'and the two agree');
 });
 
-test('the page states that it holds the ends fixed', () => {
+test('the page still discloses that it holds the ends fixed', () => {
   // A REAL TRANSFORMATION OF RECORDED COORDINATES, undisclosed on a page whose
   // thesis is that nothing is transformed silently (CHENG). Teams switch ends
   // every period in the arena; here each attacks the same net all game.
-  // Whitespace-collapsed, because HTML collapses it and the source wraps: the
-  // first version of this test failed on a line break inside its own sentence,
-  // which is a test asserting a fact about the source file rather than the page.
+  //
+  // The sentence used to be a 128px permanent paragraph under the controls and
+  // is now a legend key that arrives at the first period change — but THE CLAIM
+  // MUST SURVIVE THE MOVE, which is what this asserts and the tests below do
+  // not. Whitespace-collapsed, because HTML collapses it and the source wraps:
+  // the first version of this test failed on a line break inside its own
+  // sentence, which is a test asserting a fact about the source file rather
+  // than the page.
   const said = prose.replace(/\s+/g, ' ');
-  assert.match(said, /Ends are held fixed/);
-  assert.match(said, /switch every period/);
-  assert.match(said, /A goaltender stands in each crease/,
-    'the figure that replaced the text tag is explained');
-  assert.match(said, /pulled for an extra attacker/,
-    'including the one moment it is absent');
+  assert.match(said, /ends are held fixed/i, 'the transformation is no longer disclosed anywhere');
+  assert.match(said, /switch each period/i, 'and what the arena does instead is not said');
 });
 
 test('the legend shows the mark the ice actually draws', () => {
@@ -1431,11 +1432,20 @@ test('the CURRENT play is marked as such, so no layer can dim it away', () => {
 
 /** Every legend key, with the layer class that must be present for it to show. */
 const CONDITIONAL_KEYS = { 'lk-hd': 'slot', 'lk-blk': 'blocked' };
+/**
+ * And the keys gated on the GAME's state rather than on a button.
+ *
+ * Kept separate because the button test below drives a control, and `lk-ends`
+ * has no control to drive — folding it into the map above would have made that
+ * test look for a `lyEnds` that does not exist. The stylesheet claim is the
+ * same for both, so that one iterates over the pair.
+ */
+const GAME_STATE_KEYS = { 'lk-ends': 'heldends' };
 
 test('a legend key is hidden until the layer that draws its mark is on', () => {
   // The markup ships every key — this is a stylesheet decision, so the assertion
   // is on the rule, in the one instrument that can see it at build time.
-  for (const [key, cls] of Object.entries(CONDITIONAL_KEYS)) {
+  for (const [key, cls] of Object.entries({ ...CONDITIONAL_KEYS, ...GAME_STATE_KEYS })) {
     assert.match(app, new RegExp(`class="lkey ${key}"`), `${key} is not in the legend at all`);
     assert.match(PAGE_CSS, new RegExp(`#rg\\.${cls} \\.legend \\.${key}`),
       `${key} has no rule revealing it when the ${cls} layer is on`);
@@ -1471,6 +1481,143 @@ test('the permanent keys are the marks the BASE view actually draws', () => {
     assert.match(drawn, new RegExp(`\\b${cls}\\b`), `the legend names ${why}, and the base view never draws them`);
   // And no conditional mark is drawn with every layer off.
   assert.doesNotMatch(drawn, /\bring hd\b/, 'a slot ring is drawn with the slot layer off');
+});
+
+test('the ends key arrives at the first period the ends did NOT switch', () => {
+  // CHENG's R Q3: a sentence with no moment of use belongs on a how-it-works
+  // page, not under the rink. This one HAS a moment — the first period change,
+  // when a reader who knows hockey expects the teams to swap and they do not.
+  // Before that nothing has yet failed to happen, so there is nothing to defend.
+  //
+  // READ THROUGH THE SCOREBOARD, not through `cur.per`. The class is set from
+  // the event's period, so asserting it against the same field would be the
+  // check built from the implementation's own model of its input. `#per` is
+  // written by `periodLabel`, a different function with its own rules for
+  // overtime and the shootout, and it is what a viewer actually sees.
+  const a = boot();
+  const frames = a.every(d => ({ per: d.$('per').textContent,
+                                 key: d.$('rg').classList.contains('heldends') }));
+  const first = frames.filter(f => f.per === 'Period 1');
+  const later = frames.filter(f => f.per !== 'Period 1');
+  assert.ok(first.length > 20 && later.length > 20,
+    `the walk needs both sides of a period change, got ${first.length}/${later.length}`);
+  assert.ok(first.every(f => !f.key), 'the key is up in the first period, before anything is owed');
+  assert.ok(later.every(f => f.key), 'the game left the first period and the key never came');
+
+  // And scrubbing BACK takes it away again, or it is a one-way latch dressed as
+  // a condition — the same defect the verdict card's own test guards against.
+  const scrub = a.$('scrub');
+  scrub.value = '0'; scrub.oninput({ target: { value: '0' } });
+  assert.equal(a.$('rg').classList.contains('heldends'), false,
+    'the key stayed after the replay went back to the first period');
+});
+
+test('the empty-net note is present exactly while a net is really empty', () => {
+  // The other half of the paragraph that came out, and the half with the real
+  // moment: a figure vanishes off the ice and a novice has a question. An empty
+  // net is a STATE, so the sentence lasts as long as the fact rather than
+  // flashing for one 1.3-second frame.
+  //
+  // THE INSTRUMENT IS THE OTHER RENDERER. `drawNetmen` decides how many
+  // goaltenders to draw and the note decides what to say; they read the same
+  // recorded field through separate code, so disagreement is a real defect.
+  // Counting figures also cannot be satisfied by the note's own logic.
+  const a = boot();
+  const frames = a.every(d => ({
+    note: d.$('iceNote').textContent,
+    gks: (d.$('netmen').innerHTML.match(/class="gkbody"/g) || []).length,
+    per: d.$('per').textContent, clk: d.$('clk').textContent }));
+
+  const withNote = frames.filter(f => f.note);
+  assert.ok(withNote.length > 5, `only ${withNote.length} frames carry the note — it never fires`);
+  assert.ok(frames.length - withNote.length > 200, 'the note is up for most of the game');
+  for (const f of frames)
+    assert.equal(!!f.note, f.gks < 2,
+      `${f.per} ${f.clk}: ${f.gks} goaltenders drawn and the note says "${f.note}"`);
+
+  // WHERE THE WINDOW IS, derived from the raw file rather than from the page.
+  // clock.test.js pins the same window independently: Minnesota pulls at 01:40
+  // of the third, and the situation code reads 0651 to the horn.
+  const toSecs = s => { const [m, x] = String(s).split(':').map(Number); return m * 60 + x; };
+  assert.ok(withNote.every(f => f.per === 'Period 3'), 'the note appears outside the third period');
+  assert.ok(withNote.every(f => toSecs(f.clk) <= 100),
+    'the note appears earlier than the pull the feed records');
+
+  // AND IT NAMES THE TEAM THAT PULLED. `sit` is 0651 here: the AWAY goalie is
+  // out, so a note naming the host would be the note pointing at the wrong net.
+  const away = a.$('aAb').textContent, home = a.$('hAb').textContent;
+  for (const f of withNote) {
+    assert.match(f.note, new RegExp(`^${away} has pulled the goaltender`),
+      'the note does not name the team the code says pulled');
+    assert.doesNotMatch(f.note, new RegExp(`\\b${home}\\b`), 'it names the team that did not');
+    assert.match(f.note, /situation code/, 'the note claims an empty net and cites nothing');
+  }
+
+  // AND IT TAKES NO ROOM WHEN IT HAS NOTHING TO SAY. Invisible to a fake
+  // document with no CSS, so the claim is made against the stylesheet — the
+  // same instrument, and the same limit, as the verdict card's own gate.
+  assert.match(PAGE_CSS, /#rg \.icenote:empty\{display:none\}/,
+    'a note with no text still occupies the page for the other 300 events');
+});
+
+test('the note follows the situation code, whichever net the code empties', () => {
+  // THE REFERENCE GAME ONLY EVER EMPTIES THE VISITOR'S NET. A mutation that
+  // deleted the host branch entirely survived the test above, and would have
+  // survived any test built only on `rich.json` — a branch no fixture can reach
+  // is a branch no green can speak for. Host teams pull goaltenders constantly;
+  // this game just never does.
+  //
+  // So the GAME is re-coded, not the renderer stubbed. `sit` is a recorded
+  // four-character field, [awayGoalie][awaySkaters][homeSkaters][homeGoalie],
+  // and every code below is one the league emits.
+  const recoded = code => {
+    const g = JSON.parse(JSON.stringify(rich));
+    for (const e of g.events) if (e.sit) e.sit = code;
+    return g;
+  };
+  const noteAtTheHorn = code => {
+    const a = boot(recoded(code));
+    const scrub = a.$('scrub');
+    scrub.value = scrub.max; scrub.oninput({ target: { value: scrub.max } });
+    return { note: a.$('iceNote').textContent,
+             away: a.$('aAb').textContent, home: a.$('hAb').textContent };
+  };
+
+  const v = noteAtTheHorn('0651');                       // the visitor pulls
+  assert.match(v.note, new RegExp(`^${v.away} has pulled`));
+  assert.doesNotMatch(v.note, new RegExp(`\\b${v.home}\\b`));
+
+  const h = noteAtTheHorn('1560');                       // the HOST pulls
+  assert.match(h.note, new RegExp(`^${h.home} has pulled`),
+    'a host that pulled its goaltender is not named');
+  assert.doesNotMatch(h.note, new RegExp(`\\b${h.away}\\b`), 'and the visitor is named instead');
+
+  // BOTH NETS EMPTY. Legal, vanishingly rare, and the reason the note is mapped
+  // over the pulled teams rather than branched on a count: a `has`/`have`
+  // ternary here would be a second unreachable arm, which is the defect this
+  // whole test exists to close rather than to repeat.
+  const b = noteAtTheHorn('0660');
+  assert.match(b.note, new RegExp(`\\b${b.away}\\b`), 'both goalies are out and one is unmentioned');
+  assert.match(b.note, new RegExp(`\\b${b.home}\\b`));
+  assert.equal((b.note.match(/has pulled the goaltender/g) || []).length, 2,
+    'two empty nets, and the page states it once');
+
+  // The control: a code with both goaltenders in says nothing at all.
+  assert.equal(noteAtTheHorn('1551').note, '',
+    'the note fires on a game where nobody pulled anybody');
+});
+
+test('the amber-ring tip is absent until the slot layer draws an amber ring', () => {
+  // 55px of permanent instruction about a mark that does not exist unless a
+  // layer is on — the same defect the legend had before it went progressive,
+  // in a different block. The fake document has no CSS, so the claim is made
+  // against the stylesheet, and the class it keys on is the one `setHd` already
+  // toggles under test above.
+  assert.match(PAGE_CSS, /#rg \.hint\{display:none/,
+    'the tip shows before its mark exists');
+  assert.match(PAGE_CSS, /#rg\.slot \.hint\{display:block\}/,
+    'nothing brings the tip back when the layer is on');
+  assert.match(prose, /class="hint"/, 'the tip is not on the page at all');
 });
 
 test('there is NO VERDICT until the replay reaches the end', () => {
