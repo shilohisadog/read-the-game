@@ -136,3 +136,102 @@ reachable in one scroll rather than two.**
    are build-before — they are density, not decisions — and that (3) and (4)
    should be held**, because "where does the summary belong" is exactly the
    question a novice's behaviour answers better than our taste.
+
+---
+
+## 6. CHENG's rulings — 2026-08-16
+
+All four questions answered, and **Q1 came back with a reframe that the audit had
+missed**. His rulings supersede §4 and §5.
+
+### Q1 — move the card, and "result-first" was the wrong worry
+
+> *"The card isn't a metric — it's the conclusion, and it's only true once the
+> game has ended. Position on the page and position in time are different axes,
+> and they're being conflated."*
+
+So the card should be **empty or absent until the replay reaches the end**, and
+then appear under the transport, in view. That kills both objections at once:
+nothing to spoil, because there is no verdict until there is one; and nothing
+shown first, because nothing is shown. It is structurally the same move as
+*"first paint is the opening faceoff, not the final score"* — **the card is the
+last frame's content and should behave like it.**
+
+Note for whoever builds it: the deploy gate *"the verdict dot lands where the
+sentence says"* measures the card's track in a real browser, so it will have to
+scrub to the end before measuring or it will go red on an absent card. That is
+the gate working, not breaking.
+
+### Q2 — progressive legend: a truthfulness fix, not a density one — **DONE**
+
+> *"The legend is asserting a property of the ice that the ice doesn't currently
+> have."* Same defect as a check that cannot fail, in a different medium. And on
+> the instability worry: *"a legend is a READ surface, not a control. Things you
+> click shouldn't move; things you read may."*
+
+**Built.** A key now appears with the layer that draws its mark, and the
+blocked-shot line is shortened to the correction that matters (*"blocked — ringed
+where the puck was stopped"*), with the fuller disclosure travelling with the
+layer. Measured on the same phone and game:
+
+| | legend height |
+|---|---|
+| before naming the marks at all (Friday) | 122px — and two marks were unexplained |
+| after naming them permanently (Saturday) | 210px |
+| **progressive (now)** | **122px base · 147px +slot · 192px +blocked** |
+
+**The 88px regression is repaid in full and the marks are still named** — in the
+states where they exist, which is a stronger claim than the permanent list made.
+Three mutations killed: making the key permanent again, removing the class the
+key waits for, and dropping the reveal rule.
+
+### Q3 — collapsing DOES hide a teaching surface, and a disclosure is the wrong home
+
+> *"The place that sentence actually pays off is the moment someone flips the
+> switch and 49 attempts vanish. That's when a novice has a question and the
+> sentence is the answer."*
+
+So: collapse the configure block, but **move the instructive sentences to the
+moment of use** rather than behind a fold. The strength copy belongs in the
+exclusion ledger, which already renders per-event reasons; the goaltender/ends
+paragraph explains the rink and belongs on the rink. *"A disclosure box is
+provenance parked somewhere convenient"* — and provenance travelling with the
+thing it describes is the site's own pattern.
+
+**The test for whether a sentence has a home:** if it cannot find a moment of
+use, that is the signal it belongs on the How-it-works page rather than under the
+rink.
+
+### Q4 — sequencing: agreed, and one item added to the hold list
+
+Build (1), (2), (5) now. **But the reframed Q1 is not a hold either** — "does the
+card appear when the game ends" is a correctness question about what the card
+asserts, not a taste question about where it sits. What the novice test should
+answer is narrower: *once the game ends and the card appears, does she read it,
+and does it land?*
+
+Added to the hold list, and it is the real structural problem behind every
+density number in §1:
+
+> **The 230 words are all first-visit words, and the page has no idea whether it
+> is a first visit.** Everything under the rink is written for someone who has
+> never been here, and redrawn forever.
+
+A novice test can inform that directly: which words she needs, once, and which
+she never reads at all.
+
+## 7. Not in the audit, and bigger than R
+
+> *"21 interactive controls below the rink, and the count is the same on desktop
+> and phone. That number is doing more damage than the pixels."*
+
+Five layer toggles plus three configure groups plus the transport is a control
+panel, and the doctrine says the base view is just the game. His question, which
+is **not** R's to answer:
+
+> **Do all five layers need to be visible at once, or does the page open with
+> control and offer the others?**
+
+And the measurement he would want next is not pixels: **how many of the five a
+first-time viewer ever turns on.** That is the novice test's to produce, and it
+is now on the hold list with the first-visit question above.

@@ -1376,3 +1376,57 @@ test('the CURRENT play is marked as such, so no layer can dim it away', () => {
   assert.match(PAGE_CSS, /#rg\.blocked \.att:not\(\.blkd\):not\(\.cur\)/,
     'the dimming rule does not exempt the current play');
 });
+
+/* ------------------------------------------------------- the legend, progressively
+ *
+ * CHENG's ruling on R Q2: a legend naming a mark that is not drawn is the legend
+ * ASSERTING A PROPERTY OF THE ICE THAT THE ICE DOES NOT HAVE — the same defect
+ * as a check that cannot fail, in a different medium. "From the slot, once that
+ * layer is on" was conditional copy in a permanent list. A key that appears with
+ * its layer is a STRONGER claim than a permanent one, and unlike prose it can be
+ * tested.
+ */
+
+/** Every legend key, with the layer class that must be present for it to show. */
+const CONDITIONAL_KEYS = { 'lk-hd': 'slot', 'lk-blk': 'blocked' };
+
+test('a legend key is hidden until the layer that draws its mark is on', () => {
+  // The markup ships every key — this is a stylesheet decision, so the assertion
+  // is on the rule, in the one instrument that can see it at build time.
+  for (const [key, cls] of Object.entries(CONDITIONAL_KEYS)) {
+    assert.match(app, new RegExp(`class="lkey ${key}"`), `${key} is not in the legend at all`);
+    assert.match(PAGE_CSS, new RegExp(`#rg\\.${cls} \\.legend \\.${key}`),
+      `${key} has no rule revealing it when the ${cls} layer is on`);
+  }
+  assert.match(PAGE_CSS, /#rg \.legend \.lkey\{display:none\}/,
+    'conditional keys are not hidden by default, so they are not conditional');
+});
+
+test('the class each conditional key waits for is REALLY toggled by its button', () => {
+  // The half that makes the rule above mean something. A key gated on a class
+  // nothing sets is a key nobody ever sees — the mirror of the defect being
+  // fixed, and exactly as invisible.
+  const a = boot();
+  for (const [, cls] of Object.entries(CONDITIONAL_KEYS))
+    assert.equal(a.$('rg').classList.contains(cls), false, `${cls} is on before anyone asked`);
+
+  a.$('lyHd').click();
+  assert.ok(a.$('rg').classList.contains('slot'), 'the slot layer sets no class, so its key can never appear');
+  a.$('lyBlock').click();
+  assert.ok(a.$('rg').classList.contains('blocked'));
+
+  a.$('lyHd').click();
+  assert.equal(a.$('rg').classList.contains('slot'), false, 'the key would stay after its marks left');
+});
+
+test('the permanent keys are the marks the BASE view actually draws', () => {
+  // The other direction: what is left in the permanent legend must be drawn
+  // without any layer on, or it is the same defect the conditional keys just
+  // stopped committing.
+  const a = boot();
+  const drawn = a.every(d => d.$('events').innerHTML).join('') + a.every(d => d.$('puck').innerHTML).join('');
+  for (const [cls, why] of [['att', 'attempt marks'], ['blkd', 'blocked-shot marks'], ['puck', 'the puck']])
+    assert.match(drawn, new RegExp(`\\b${cls}\\b`), `the legend names ${why}, and the base view never draws them`);
+  // And no conditional mark is drawn with every layer off.
+  assert.doesNotMatch(drawn, /\bring hd\b/, 'a slot ring is drawn with the slot layer off');
+});

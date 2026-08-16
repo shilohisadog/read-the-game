@@ -201,6 +201,15 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .scrub{flex:1;accent-color:var(--ink);cursor:pointer;min-width:120px}
 #rg .legend{display:flex;flex-wrap:wrap;gap:7px 18px;font-size:.78rem;color:var(--muted);margin:6px 2px}
 #rg .legend i{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:-1px}
+/* A LEGEND MAY NOT DESCRIBE A MARK THAT IS NOT ON THE ICE. "from the slot, once
+   that layer is on" was conditional copy in a permanent list -- the legend
+   asserting a property of the rink the rink did not have, which is the same
+   defect as a check that cannot fail wearing a different coat (CHENG). A key
+   now appears WITH the layer that draws its mark.
+   A legend is a READ surface, not a control: things you click must not move,
+   things you read may. Nobody builds muscle memory for a key. */
+#rg .legend .lkey{display:none}
+#rg.slot .legend .lk-hd,#rg.blocked .legend .lk-blk{display:inline}
 #rg .k-a{background:#fff;box-shadow:0 0 0 1.5px var(--away)}#rg .k-h{background:var(--home)}#rg .k-hd{background:#fff;box-shadow:0 0 0 1.5px var(--hd)}#rg .k-blk{background:var(--home);box-shadow:0 0 0 1.5px var(--flag)}#rg .k-p{background:#0e1216}#rg .k-g{background:radial-gradient(circle,#fff 0 2.5px,var(--home) 2.5px)}#rg .k-gv{background:radial-gradient(circle,var(--away) 0 2.5px,#fff 2.5px);box-shadow:0 0 0 1.5px var(--away);margin-left:-3px}
 #rg .work{background:#fff;border:1px solid var(--edge);border-radius:13px;padding:18px;margin-top:14px;box-shadow:0 5px 18px rgba(16,32,45,.06)}
 #rg .work h2{margin:0 0 10px;font-size:1.1rem}#rg .work h2 .wsub{color:var(--muted);font-weight:400}
@@ -354,7 +363,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 <div class="transport"><button class="play" id="play">▶ Play from start</button>
   <button class="spd" id="sp0" aria-pressed="false">🐢 Slower</button><button class="spd" id="sp1" aria-pressed="true">Teaching</button><button class="spd" id="sp2" aria-pressed="false">Faster</button><button class="spd" id="lbl" aria-pressed="true">💬 Explain plays</button>
   <input class="scrub" id="scrub" type="range" min="0" max="1" value="0"><button id="work" aria-expanded="false">Show me the work</button></div>
-<div class="legend"><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white-filled, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span><i class="k-g"></i><i class="k-gv"></i>goal — either sweater</span><span><i class="k-blk"></i>blocked — the ring is where the puck was <b>stopped</b>, not where the shot was taken</span><span><i class="k-hd"></i>from the slot, once that layer is on</span><span>other metric-specific marks appear when you add a layer</span></div>
+<div class="legend"><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white-filled, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span><i class="k-g"></i><i class="k-gv"></i>goal — either sweater</span><span><i class="k-blk"></i>blocked — ringed where the puck was <b>stopped</b></span><span class="lkey lk-hd"><i class="k-hd"></i>from the slot</span><span class="lkey lk-blk">blocked shots are dimmed unless a body stopped them</span></div>
 <div class="layers"><span class="ll">Add a metric layer:</span><button class="lyr" id="lyCorsi" aria-pressed="false">＋ Control (Corsi)</button><button class="lyr" id="lyHd" aria-pressed="false">＋ Shots from the slot</button><button class="lyr" id="lyGoalie" aria-pressed="false">＋ Goaltending</button><button class="lyr" id="lyWhistle" aria-pressed="false">＋ Why play stopped</button><button class="lyr" id="lyBlock" aria-pressed="false">＋ Blocked shots</button></div>
 <div class="figpick"><span class="ll">Trails:</span>
 <button class="lyr tbtn" data-t="off" aria-pressed="true">Current moment</button>
@@ -3320,7 +3329,7 @@ function drawBlocked(B,L){
  $('blockPanel').innerHTML=rows+share+mates+un+arch;}
 let corsiOn=false,hdOn=false,goalieOn=false,whistleOn=false,blockOn=false;
 function setCorsi(){document.getElementById('rg').classList.toggle('corsi',corsiOn);$('lyCorsi').setAttribute('aria-pressed',corsiOn);$('lyCorsi').textContent=(corsiOn?'✓ ':'＋ ')+'Control (Corsi)';if(!corsiOn&&workOpen){workOpen=false;$('workPanel').hidden=true;$('work').setAttribute('aria-expanded',false);$('work').textContent='Show me the work';}}
-function setHd(){$('lyHd').setAttribute('aria-pressed',hdOn);$('lyHd').textContent=(hdOn?'✓ ':'＋ ')+'Shots from the slot';render(i,false);}
+function setHd(){document.getElementById('rg').classList.toggle('slot',hdOn);$('lyHd').setAttribute('aria-pressed',hdOn);$('lyHd').textContent=(hdOn?'✓ ':'＋ ')+'Shots from the slot';render(i,false);}
 $('lyCorsi').addEventListener('click',()=>{corsiOn=!corsiOn;setCorsi();});
 // One code path owns the mode label, so the markup cannot drift from the state.
 // The static HTML carries a default only so the page reads correctly before JS.
