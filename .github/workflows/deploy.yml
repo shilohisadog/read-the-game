@@ -761,6 +761,15 @@ jobs:
                  below uses. */
               var gl = d.getElementById('gl'), v = d.getElementById('verdict');
               var booted = gl && /final/.test(gl.textContent || '') ? 1 : 0;
+              /* THE CARD IS THE LAST FRAME'S CONTENT, so the probe has to reach
+                 the last frame before it can measure one. The page opens at the
+                 opening faceoff and the card is display:none until the replay
+                 ends — a game in the first period has no verdict, which is the
+                 point of the design and would otherwise read here as a collapsed
+                 track. Drive the real scrubber, not a class: the class is what is
+                 under test. */
+              var sc = d.getElementById('scrub');
+              if (sc) { sc.value = sc.max; sc.oninput({ target: { value: sc.value } }); }
               var tr = d.querySelector('#rg .vtrack'), pt = d.getElementById('vpt');
               var m = (v && v.textContent || '').match(/it lost (\d+) of (\d+)/);
               if (!booted || !tr || !pt) {

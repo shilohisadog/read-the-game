@@ -214,7 +214,18 @@ T = r"""<style>
    like a caption. It is a card now, and it stays at the BOTTOM: it names the
    result, and the same afternoon we stopped the page opening on the final
    whistle would be a poor time to move the outcome above the rink. */
-#rg .verdict{max-width:56ch;margin:22px auto 0;background:#fff;border:1px solid var(--edge);
+/* THE CARD IS THE LAST FRAME'S CONTENT, so it is absent until the replay
+   reaches the last frame.
+   IT USED TO SIT NEXT-TO-LAST ON THE PAGE -- 1,156px below the rink on a phone,
+   screen 2.18 of 2.99 -- and the objection to moving it up was that the page
+   would read result-first against its own "watch first" headline. CHENG:
+   position on the PAGE and position in TIME are different axes, and the audit
+   was conflating them. The card is not a metric, it is the CONCLUSION, and there
+   is no conclusion in the first period. Absent until there is one kills the
+   spoiler objection and the result-first objection together, and it is the same
+   move as making first paint the opening faceoff rather than the final score. */
+#rg .verdict{display:none}
+#rg.ended .verdict{display:block;max-width:56ch;margin:22px auto 0;background:#fff;border:1px solid var(--edge);
  border-radius:13px;padding:17px 20px 18px;box-shadow:0 4px 16px rgba(16,32,45,.06);
  font-size:.95rem;line-height:1.55}
 #rg .verdict .vk{display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
@@ -354,6 +365,7 @@ T = r"""<style>
 <div class="transport"><button class="play" id="play">▶ Play from start</button>
   <button class="spd" id="sp0" aria-pressed="false">🐢 Slower</button><button class="spd" id="sp1" aria-pressed="true">Teaching</button><button class="spd" id="sp2" aria-pressed="false">Faster</button><button class="spd" id="lbl" aria-pressed="true">💬 Explain plays</button>
   <input class="scrub" id="scrub" type="range" min="0" max="1" value="0"><button id="work" aria-expanded="false">Show me the work</button></div>
+<p class="verdict" id="verdict"></p>
 <div class="legend"><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white-filled, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span><i class="k-g"></i><i class="k-gv"></i>goal — either sweater</span><span><i class="k-blk"></i>blocked — ringed where the puck was <b>stopped</b></span><span class="lkey lk-hd"><i class="k-hd"></i>from the slot</span><span class="lkey lk-blk">blocked shots are dimmed unless a body stopped them</span></div>
 <div class="layers"><span class="ll">Add a metric layer:</span><button class="lyr" id="lyCorsi" aria-pressed="false">＋ Control (Corsi)</button><button class="lyr" id="lyHd" aria-pressed="false">＋ Shots from the slot</button><button class="lyr" id="lyGoalie" aria-pressed="false">＋ Goaltending</button><button class="lyr" id="lyWhistle" aria-pressed="false">＋ Why play stopped</button><button class="lyr" id="lyBlock" aria-pressed="false">＋ Blocked shots</button></div>
 <div class="figpick"><span class="ll">Trails:</span>
@@ -377,7 +389,6 @@ fixed here, so each team always attacks the same net. In the arena they switch e
 <div class="hint">Tip: click a ⚡ slot shot (amber ring) on the ice to see <b>why</b> it qualified — with trails set to <b>keep every mark</b>, earlier ones stay clickable too.</div>
 <div class="work" id="workPanel" hidden></div>
 <div class="whybk" id="whyBk"><div class="why" id="whyContent"></div></div>
-<p class="verdict" id="verdict"></p>
 <div class="foot" id="gl">—</div>
 <nav class="nextup" id="nextup" aria-label="Where to go next"></nav>
 </div></div>
@@ -778,6 +789,10 @@ function render(i,newest){
  $('events').innerHTML=parts.join('');
  if(whistleOn)drawWhistles(whistle.reduce(upto(i),CTX));
  else{$('whistles').innerHTML='';$('whistlePanel').innerHTML='';}
+ // The replay is AT the end, not merely near it. `i` is the frame index and
+ // EV.length-1 is the last playable event; a game paused one shot short has
+ // no verdict, and saying so is the whole point.
+ document.getElementById('rg').classList.toggle('ended',i>=EV.length-1);
  if(blockOn)drawBlocked(blocked.reduce(upto(i),CTX),L);
  else $('blockPanel').innerHTML='';
  let lh='';

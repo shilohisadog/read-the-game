@@ -1430,3 +1430,41 @@ test('the permanent keys are the marks the BASE view actually draws', () => {
   // And no conditional mark is drawn with every layer off.
   assert.doesNotMatch(drawn, /\bring hd\b/, 'a slot ring is drawn with the slot layer off');
 });
+
+test('there is NO VERDICT until the replay reaches the end', () => {
+  // CHENG's reframe of R Q1. The card is not a metric, it is the CONCLUSION —
+  // and a game in the first period does not have one. Position on the page and
+  // position in TIME are different axes, and the audit conflated them: the
+  // objection to moving the card up was that the page would read result-first,
+  // which stops being true once there is nothing to read until the end.
+  //
+  // The fake document has no CSS, so `display:none` is invisible to it. What it
+  // CAN see is the class the stylesheet keys on — and the rule that spends it.
+  const a = boot();
+  assert.match(PAGE_CSS, /#rg \.verdict\{display:none\}/,
+    'the card is visible before the game has produced a verdict');
+  assert.match(PAGE_CSS, /#rg\.ended \.verdict\{display:block/,
+    'nothing reveals the card once the game HAS produced one');
+
+  const scrub = a.$('scrub'), last = +scrub.max;
+  const at = k => { scrub.value = String(k); scrub.oninput({ target: { value: scrub.value } });
+                    return a.$('rg').classList.contains('ended'); };
+  assert.equal(at(0), false, 'the opening faceoff already has a verdict');
+  assert.equal(at(Math.floor(last / 2)), false, 'a game at the midpoint already has a verdict');
+  assert.equal(at(last - 1), false, 'one event short of the end is not the end');
+  assert.equal(at(last), true, 'the game ended and the card never arrived');
+  assert.equal(at(3), false, 'the card stayed after scrubbing back into the game');
+});
+
+test('the card sits above the controls, not below them', () => {
+  // The other half of Q1, and it is a claim about DOM order rather than pixels,
+  // so it is checkable here. It was next-to-last: 1,156px below the rink on a
+  // phone, screen 2.18 of 2.99, behind 230 words of read-once prose.
+  const order = ['class="transport"', 'class="verdict"', 'class="legend"', 'class="layers"', 'class="figpick"'];
+  let at = -1;
+  for (const marker of order) {
+    const k = app.indexOf(marker);
+    assert.ok(k > at, `${marker} is out of order — the card has slipped back below the controls`);
+    at = k;
+  }
+});
