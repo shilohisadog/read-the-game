@@ -76,7 +76,10 @@ test('outside the workshop, the page names no game and no team', () => {
   // table is reference data listing all 33 clubs — it is not a claim about a
   // game, and cutting the whole script instead would stop this test noticing a
   // team hard-coded as a default, which is the failure mode it exists for.
-  const workshopAt = html.indexOf('<h2>Workshop</h2>');
+  // The heading gained an id when Workshop moved behind the chrome nav, and this
+  // marker is the section's identity rather than its exact markup — a literal
+  // that describes one spelling of the thing is the defect this batch is full of.
+  const workshopAt = html.search(/<h2[^>]*>Workshop<\/h2>/);
   assert.ok(workshopAt > -1, 'the workshop section must still exist');
   const cut = (s, from, to) => {
     const i = s.indexOf(from);

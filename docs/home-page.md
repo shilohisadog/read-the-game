@@ -477,3 +477,79 @@ your club             33 chips
 the limits            what this does and does not claim
                       nav → Workshop, nav → Teams
 ```
+
+---
+
+## 9. Built 2026-08-16 — and my §5 arithmetic was wrong
+
+The ruled order shipped. Measured live in a browser, 390×844 and 1100×900:
+
+| | before | after |
+|---|---|---|
+| **the thesis starts at** | **screen 4.53** | **screen 0.50** |
+| the hero starts at | screen 0.46 | screen 1.24 |
+| document, phone | 6.29 screens | **5.92** |
+| document, desktop | 4.28 screens | 4.03 |
+| links | 47 | 47 |
+
+**§5 claimed "(3)+(4)+(5) reclaim ~1,500px … under 3 screens". That was wrong,
+and the error is worth naming: I counted moves as deletions.** CHENG's rulings
+*rank* Workshop and the club directory rather than removing them — deliberately,
+because hiding the directory reverses one of Kevin's own decisions — so only
+(3) deletes anything. The real saving is `ul.rates` (318px) plus the novice link
+(47px) less the new hero caption (56px): **309px.**
+
+**The ordering was the defect and the ordering is fixed.** The thesis moved four
+screens; the page is 6% shorter. Stating both is the point — a document that
+quietly kept the 1,500px estimate next to a 309px result would be doing exactly
+what this file criticises elsewhere.
+
+**What could still come out, and neither is mine to decide:** Workshop is 861px
+and would need its own page (this build gives it a nav anchor, which satisfies
+*reachable* and *not outranking the thesis*, but is not the same as off the
+page). The limits block is 707px and shrinks when item 5, "How it works", exists.
+The concepts block is 657px and is §5.7 — **held for the novice test**, so it was
+left exactly where the ranking put it rather than moved on my taste.
+
+### The hero caption, computed, read back from the running page
+
+> **That is the usual outcome.** Across 3,957 games the shot leader wins 54.2% of
+> the time.
+
+Every part derived: the verdict from this game's own leader and winner, the verb
+from which side of 50% the rate falls, and the percentage as the complement —
+the archive publishes every rate as *lost*, so a sentence saying *wins* must show
+`100 −` that or it is a correct sentence with the wrong number welded on.
+
+### The fake document was hiding a crash, and the deletion found it
+
+`#start` came out of the markup. The script still assigned `$('start').href`.
+**In a browser that throws and takes the entire hero down with it** — and all 463
+tests stayed green, because the fake's `getElementById` read
+
+```js
+getElementById(id) { return (ids[id] = ids[id] || make('div#' + id)); },
+```
+
+**It manufactured an element for any id ever asked for.** Not merely vacuous —
+actively concealing. The fake now parses the ids out of the built page and
+returns `null` for anything else, exactly as a browser does; it caught the crash
+on the next run, in the real artifact.
+
+Same family as the game page's fake, whose `hidden` is deliberately *absent*
+rather than `false`: **a fake that cannot express the failing state makes every
+assertion about it worthless.** Two fakes, two shapes, one rule.
+
+### Mutations
+
+**Nine, all killed — after five survived the first pass.** The survivors were all
+in the new code: the caption's polarity, the rate's direction being read rather
+than assumed, a tied game being classified anyway, and a disagreeing population
+hidden behind the first one. Three of the four are **unreachable from the default
+fixture** — the reference game has a leader and a winner and one population — so
+the tests build the states instead, from codes and rates the archive really
+holds.
+
+A tenth "survivor" was not a test gap: `id="what"` is referenced by nothing, so
+there was nothing to assert. It is dead markup, recorded here rather than covered
+by a test written to make a number go up.

@@ -24,6 +24,9 @@ const PAGES_TO_CHECK = Object.fromEntries(['index.html','game.html','read-the-ga
   .map(f => [f, readFileSync(new URL('../src/' + f, import.meta.url), 'utf8')]));
 const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
 
+/** Every id the built page actually carries. See getElementById below. */
+const PAGE_IDS = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]));
+
 /** The smallest DOM that can answer what this page asks of one. */
 function fakeDom() {
   const make = (tag) => ({
@@ -36,7 +39,21 @@ function fakeDom() {
     ids,
     document: {
       createElement: make,
-      getElementById(id) { return (ids[id] = ids[id] || make('div#' + id)); },
+      /* A DOCUMENT THAT INVENTS ELEMENTS CANNOT SEE A REFERENCE TO A DELETED
+         ONE. This returned a fresh div for ANY id, so `$('start').href = …`
+         against markup with no #start assigned happily to a phantom here and
+         threw `Cannot set property of null` in a browser -- taking the whole
+         hero down with it, silently, with every test green. Caught the day
+         #start was deleted, by the deletion, and not by anything here.
+         So the fake now models the REAL document: the ids it answers to are
+         parsed out of the built page, and anything else is null, exactly as a
+         browser reports it. Same rule as the absent `hidden` on the game page's
+         fake — a fake that can only express one state makes every assertion
+         about the other one vacuous. */
+      getElementById(id) {
+        if (!PAGE_IDS.has(id)) return null;
+        return (ids[id] = ids[id] || make('div#' + id));
+      },
     },
   };
 }
@@ -200,7 +217,12 @@ test('every rate is published with its denominator and population', () => {
   // Shipping one bare would be us committing it on our own front page.
   const r = run({ docs: ALL });
   return r.settle().then(() => {
-    const t = textOf(r.ids.rates);
+    // READ FROM THE SCALE, which is now the only place the rates are drawn. The
+    // three-row list this used to read differed from the scale by one string —
+    // the population — repeated three times, and is deleted. The claim is
+    // unchanged and is the one that matters: nothing here is published without
+    // its denominator and its reference class.
+    const t = textOf(r.ids.scale);
     // The percentages must agree with the counts printed beside them, so they are
     // recomputed here rather than copied from the fixture. The first version of
     // this test asserted 54.5% against a fixture whose stored `rate` was rounded
@@ -215,18 +237,118 @@ test('every rate is published with its denominator and population', () => {
   });
 });
 
-test('"start with the game at the top" goes to the game at the top', () => {
-  // THIS TEST USED TO ASSERT `game.html?game=2023020867`, AND IT WAS RIGHT WHEN
-  // WRITTEN: the hero was `featured[0]` and so was this link. The hero became
-  // the most recent game (build_index.py::newest) and the href stayed behind,
-  // so the live page told a novice to start with "the game at the top" and sent
-  // them to a different game — CAR at VGK in the frame, MIN at BUF through the
-  // link. The test went green through the whole thing, because a literal id
-  // cannot see a relationship; it only knew the answer, not the question.
+/**
+ * IS THIS GAME THE USUAL CASE — the caption CHENG required to be computed.
+ *
+ * The thesis now sits directly above the hero, so the hero reads as an instance
+ * of it. The hero is the most recent game, which means some nights confirm the
+ * rate and some contradict it: "the caption must handle both, which means the
+ * relationship has to be computed, not written." A hand-authored clause here
+ * would be the #start defect a third time — copy asserting a relationship the
+ * data is free to invert overnight.
+ *
+ * So the fixtures invert it deliberately. Every arm below is reachable from real
+ * data, and three of them are unreachable from the default fixture, which is
+ * exactly how the first pass left them untested.
+ */
+function heroRelation({ ash, hsh, as, hs, count, n }) {
+  const cat = { games: [{ id: 2023020200, d: '2024-02-09', a: 'TOR', h: 'BUF',
+                          as, hs, ash, hsh, t: 2, v: 1 }] };
+  const measures = { ...MEASURES, baseRates: { ...MEASURES.baseRates,
+    moreShotsOnGoalLost: { what: 'the team with more shots on goal lost',
+      population: 'NHL regular season and playoffs', n, count } } };
+  const r = run({ docs: { ...ALL, 'catalog.json': cat, 'measures.json': measures } });
+  return r.settle().then(() => textOf(r.ids.herorel));
+}
+// The shot leader loses 20% of the time — so the leader USUALLY WINS, 80%.
+const LEADERS_WIN = { count: 200, n: 1000 };
+// And the mirror: the leader loses 80% of the time.
+const LEADERS_LOSE = { count: 800, n: 1000 };
+// TOR away, BUF home. `ash`/`hsh` are shots, `as`/`hs` goals.
+const BUF_LED_SHOTS = { ash: 22, hsh: 33 };
+
+test('the hero caption says whether THIS game went the usual way, both ways round', () =>
+  Promise.all([
+    heroRelation({ ...BUF_LED_SHOTS, as: 1, hs: 4, ...LEADERS_WIN }),
+    heroRelation({ ...BUF_LED_SHOTS, as: 4, hs: 1, ...LEADERS_WIN }),
+    heroRelation({ ...BUF_LED_SHOTS, as: 4, hs: 1, ...LEADERS_LOSE }),
+    heroRelation({ ...BUF_LED_SHOTS, as: 1, hs: 4, ...LEADERS_LOSE }),
+  ]).then(([winnerLed, winnerTrailed, ledAndLost, ledAndWon]) => {
+    // Leader won, and leaders usually win.
+    assert.match(winnerLed, /That is the usual outcome\./);
+    // Leader lost, and leaders usually win. Same rate, opposite game.
+    assert.match(winnerTrailed, /That is not the usual outcome\./);
+    // THE RATE'S OWN DIRECTION IS READ, NOT ASSUMED. Same two games again
+    // against a rate that runs the other way, and both verdicts must flip —
+    // which a hard-coded "leaders usually lose" cannot do.
+    assert.match(ledAndLost, /That is the usual outcome\./,
+      'the leader lost and leaders usually lose, and the page called it unusual');
+    assert.match(ledAndWon, /That is not the usual outcome\./);
+
+    // AND THE PERCENTAGE IS THE ONE IT JUST NAMED. The archive publishes every
+    // rate as "lost"; a caption that says the leader WINS must show 100 − that,
+    // or it is a correct sentence with the wrong number welded to it.
+    assert.match(winnerLed, /wins 80\.0% of the time/);
+    assert.match(ledAndLost, /loses 80\.0% of the time/);
+    for (const t of [winnerLed, ledAndLost])
+      assert.ok(t.includes('1,000 games'), `the denominator is missing: ${t}`);
+  }));
+
+test('a game the rate cannot classify gets silence, not a guess', () =>
+  Promise.all([
+    // Equal shots: there is no leader, so there is no relationship to state.
+    heroRelation({ ash: 30, hsh: 30, as: 1, hs: 4, ...LEADERS_WIN }),
+    // A game that ended level: no outcome to compare the rate against. The
+    // archive holds these, and neither arm is reachable from the default
+    // fixture — which is why both survived the first mutation pass.
+    heroRelation({ ...BUF_LED_SHOTS, as: 3, hs: 3, ...LEADERS_WIN }),
+  ]).then(([noLeader, noWinner]) => {
+    assert.equal(noLeader, '', `equal shots were classified anyway: ${noLeader}`);
+    assert.equal(noWinner, '', `a level game was classified anyway: ${noWinner}`);
+  }));
+
+test('the rates share one reference class, and a disagreement is SHOWN', () => {
+  // The population used to ride on every row of a list that no longer exists.
+  // Stating it once is only honest while the three rows agree — if they ever
+  // differ, printing the first would publish two rates under a reference class
+  // belonging to one of them, which is the thing this site teaches against.
+  const same = run({ docs: ALL });
+  return same.settle().then(() => {
+    const t = textOf(same.ids.scale);
+    assert.equal((t.match(/NHL regular season and playoffs/g) || []).length, 1,
+      'the population is repeated, which is what the deleted list was doing');
+
+    const split = { ...MEASURES, baseRates: { ...MEASURES.baseRates,
+      moreLevelControlLost: { ...MEASURES.baseRates.moreLevelControlLost,
+                              population: 'NHL regular season only' } } };
+    const r = run({ docs: { ...ALL, 'measures.json': split } });
+    return r.settle().then(() => {
+      const u = textOf(r.ids.scale);
+      assert.match(u, /NHL regular season and playoffs/);
+      assert.match(u, /NHL regular season only/,
+        'two reference classes, and the page showed one of them');
+    });
+  });
+});
+
+test('the hero is the ONLY route to the game it shows, and both halves agree', () => {
+  // THIS TEST HAS BEEN WRONG TWICE AND THE HISTORY IS THE POINT.
   //
-  // So the subject changes. What the sentence claims is that three things name
-  // ONE game, and that is what is asserted — no id appears below, and the
-  // selection rule can be replaced again without this rotting a second time.
+  // v1 asserted `game.html?game=2023020867` — right when written, because the
+  // hero WAS featured[0] and so was a second "New to hockey? Start with the game
+  // at the top" link. §5.2 made the hero most-recent, the link's href stayed on
+  // featured[0], and this test went green straight through it: a literal id
+  // cannot see a relationship, it only ever knew the answer.
+  //
+  // v2 pinned the relationship instead — frame, hero button and novice link name
+  // ONE game. Correct, and it outlived its subject by a day: CHENG's reorder put
+  // the thesis above the hero, which made the second link a button to the same
+  // place 2.4 screens lower, and it was deleted.
+  //
+  // So v3 asserts what is now true and is the reason the link went: there is one
+  // route to this game, the frame and the button agree on which game it is, and
+  // NOTHING ELSE ON THE PAGE offers a second door to it. That last clause is the
+  // part a literal could never have carried.
   const r = run({ docs: ALL });
   return r.settle().then(() => {
     const id = h => { const m = String(h || '').match(/game=(\d+)/); return m && m[1]; };
@@ -234,8 +356,21 @@ test('"start with the game at the top" goes to the game at the top', () => {
     const top = id(frame.src);
     assert.ok(top, 'the hero frame names no game, so there is no game at the top');
     assert.equal(id(r.ids.herogo.href), top, "the hero's own button leaves its own game");
-    assert.equal(id(r.ids.start.href), top,
-      'the novice link points somewhere other than the game the page is showing');
+
+    // NO SECOND DOOR TO IT, from anywhere on the page. Collected across EVERY id
+    // the script touched rather than by walking `main`: this fake stores ids
+    // flat, so #herogo is not a child of #main here even though it is in the
+    // real document, and a walk from one root would have missed the very link
+    // the deleted one used to duplicate.
+    const routes = [...new Set(Object.values(r.ids).flatMap(n => walk(n))
+      .map(x => x.href).filter(h => id(h) === top))];
+    assert.equal(routes.length, 1,
+      `${routes.length} doors to the same game: ${routes.join(', ')}`);
+
+    // And the deleted element is really gone, markup and script both, so it
+    // cannot come back as a phantom the fake would have invented.
+    assert.doesNotMatch(html, /id="start"/, 'the second link is back in the markup');
+    assert.doesNotMatch(script, /\$\('start'\)/, 'the script still reaches for it');
   });
 });
 
@@ -244,7 +379,7 @@ test('a missing measurement is stated, and the rest of the page still works', ()
   // not care that the archive-wide rates are unavailable.
   const r = run({ docs: { 'catalog.json': CATALOG, 'index.json': INDEX } });
   return r.settle().then(() => {
-    assert.match(textOf(r.ids.rates), /could not be loaded/i);
+    assert.match(textOf(r.ids.scale), /could not be loaded/i);
     assert.equal(walk(r.ids.teams).filter(n => n.className === 'chip').length, 3,
       'the team grid is unaffected');
     // AND THE NOVICE LINK STILL OFFERS A GAME. It used to be set from the
@@ -253,12 +388,16 @@ test('a missing measurement is stated, and the rest of the page still works', ()
     // exactly what the hero survives. That is the point of the move — the
     // archive-wide rates being unavailable has nothing to do with which game is
     // at the top of the page.
+    // AND THE HERO SURVIVES IT. The hero is built from the CATALOG; the rates
+    // come from the measurement. A visitor who cannot be told the archive-wide
+    // finding can still be handed a game to watch, which is the conversion.
     const frame = walk(r.ids.heroframe).find(n => n.tag === 'iframe');
-    assert.ok(frame, 'no measurement took the hero down with it');
-    assert.equal(r.ids.start.href, r.ids.herogo.href,
-      'the novice link and the hero disagree when the measurement is missing');
-    assert.match(html, /id="start" href="game\.html"/,
-      'and the markup still carries a fallback for a page that gets no catalog either');
+    assert.ok(frame, 'a missing measurement took the hero down with it');
+    assert.match(r.ids.herogo.href, /^game\.html\?game=\d+$/, 'and its button still names a game');
+    // The caption that COMPARES this game to the rate cannot be written without
+    // the rate, so it says nothing rather than guessing.
+    assert.equal(textOf(r.ids.herorel), '',
+      'the page claimed this game was usual or unusual with no rate to judge by');
   });
 });
 

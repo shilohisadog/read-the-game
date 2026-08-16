@@ -160,7 +160,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 # Only destinations that EXIST. A nav link to a page we have not built yet is a
 # 404 wearing a plan, and `test/document.test.js` resolves every one of these
 # against `src/` so it cannot be added ahead of its page.
-_NAV = [("/", "Watch a game"), ("/#teams", "Teams")]
+_NAV = [("/", "Watch a game"), ("/#teams", "Teams"), ("/#workshop", "Workshop")]
 
 
 def _header(current=None, minimal=False):
