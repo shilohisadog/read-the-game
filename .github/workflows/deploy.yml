@@ -617,7 +617,20 @@ jobs:
             try {
               var f = document.getElementById('f'), d = f.contentDocument, w = f.contentWindow;
               var rg = d.getElementById('rg'), b = d.querySelector('.board');
-              document.title = 'PREV ' + (rg ? (rg.className || 'noclass') : 'norg') + ' ' +
+              /* ONE TOKEN, ALWAYS. This reported `rg.className` straight, and the
+                 shell parses the title positionally — so the day #rg carried a
+                 SECOND class ("newcomer preview") the title became
+                 `PREV newcomer preview 287 184 ...`, the regex stopped matching,
+                 and all three boxes failed with "the probe never reported"
+                 including the canary. The gate was right and its parser was
+                 brittle: a probe that emits a STATE for the shell to interpret
+                 will break on any state it did not anticipate. Emit the ANSWER —
+                 whether it is in preview mode — and keep the class list only as
+                 a diagnostic, space-free so it can never split a field again. */
+              var mode = !rg ? 'norg'
+                : rg.classList.contains('preview') ? 'preview'
+                : ((rg.className || 'noclass').replace(/\s+/g, '+'));
+              document.title = 'PREV ' + mode + ' ' +
                 w.innerWidth + ' ' + w.innerHeight + ' ' +
                 d.documentElement.scrollWidth + ' ' + d.documentElement.scrollHeight + ' ' +
                 (b ? Math.round(b.getBoundingClientRect().height) : 0);
@@ -645,14 +658,29 @@ jobs:
           for box in 287x184 856x462 canary:287x60; do
             kind=${box%%:*}; [ "$kind" = "$box" ] && kind=real
             wh=${box##*:}; W=${wh%x*}; H=${wh#*x}
+            # STDERR IS KEPT, because "the probe never reported" names a
+            # symptom and cannot name a cause. This step went red on all three
+            # boxes at once -- including the canary, which is a different page --
+            # and the only honest reading of that is "something failed before any
+            # measuring happened", which the message could not say. Chrome's own
+            # output is the difference between a diagnosis and another guess.
+            # Same family as the swallowed "Address already in use" that cost two
+            # deploys (docs/looking-at-pixels.md §6) and the one-exit probe in §7.
             dom=$(google-chrome --headless --no-sandbox --disable-gpu \
                     --virtual-time-budget=15000 --dump-dom \
-                    "http://localhost:$PORT/prev-$W-$H.html" 2>/dev/null)
+                    "http://localhost:$PORT/prev-$W-$H.html" 2>chrome-$W-$H.log)
             read -r _ cls fw fh sw sh bh <<<"$(echo "$dom" \
-                 | grep -o 'PREV [a-z]* [0-9]* [0-9]* [0-9]* [0-9]* [0-9]*' | head -1)" || true
+                 | grep -o 'PREV [a-z+]* [0-9]* [0-9]* [0-9]* [0-9]* [0-9]*' | head -1)" || true
             if [ -z "$bh" ]; then
               echo "::error::the preview probe never reported at ${W}x${H}"
-              echo "$dom" | grep -o 'PREV[A-Z]* [^<]*' | head -2 || true
+              echo "  the probe's own title, if it set one:"
+              echo "$dom" | grep -o '<title>[^<]*</title>' | head -1 || echo "    (no title at all)"
+              echo "  what the browser said:"
+              grep -viE 'dbus|UPower|vaapi|drmGetDevices|sandbox_linux|cloud_management' \
+                "chrome-$W-$H.log" | head -8 || echo "    (nothing on stderr)"
+              echo "  and whether the page was served at all:"
+              curl -sS -o /dev/null -w "    prev-$W-$H.html %{http_code}\n" \
+                "http://localhost:$PORT/prev-$W-$H.html" || true
               fail=1; continue
             fi
             if [ "$cls" != "preview" ]; then
