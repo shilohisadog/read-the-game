@@ -235,3 +235,85 @@ is **not** R's to answer:
 And the measurement he would want next is not pixels: **how many of the five a
 first-time viewer ever turns on.** That is the novice test's to produce, and it
 is now on the hold list with the first-visit question above.
+
+---
+
+## 8. The first-visit mechanism — built 2026-08-16
+
+**Kevin, on being told this should be held for the novice test:**
+
+> *"I believe she'll visit and say 'well, where should I click', 'why should I
+> click there', 'what's corsi (and why do I care)'. We absolutely need the
+> first-visit mechanism in place before showing to a casual fan."*
+
+He is right, and the reason is sharper than convenience: **he predicted the
+findings.** A test whose outcome can be written down in advance produces no
+information, and a first visit is not renewable — one person has exactly one.
+Running it against a page with no orientation would buy a result that was free.
+
+### It is the same mechanism R was arguing about
+
+Three lines of reasoning arrived at one gap:
+
+| | said |
+|---|---|
+| R (§1) | 230 words of permanent prose stand in front of the verdict card |
+| CHENG | *"they are all first-visit words, and the page has no idea whether it's a first visit"* |
+| Kevin | a casual fan needs their hand held for the first few visits |
+
+The resolution was never *"these words are bad"*. It is *"these words are not for
+everybody, forever."* R took them out of permanent residence; this puts them in
+front of the people they were written for.
+
+### "Unusual" was rejected, and the reason is worth keeping
+
+The earlier proposal was to surface the layer *this game* is unusual on, measured
+against the archive so the choice was derived rather than chosen. Kevin killed
+it:
+
+> *"Let's not decide for the viewer what they should/shouldn't consider unusual
+> (even if the data backs up the statement) — the initial viewer doesn't know
+> what they don't know."*
+
+Three things wrong with it, and I had defended it on the wrong axis. *Derived,
+not chosen* answers **is this claim true?**; it does not answer **can this reader
+use it?**
+
+1. **"Unusual" is stated in a vocabulary the viewer has not learned.** It
+   presupposes a baseline they do not have.
+2. **A filter teaches absence.** On an ordinary game the prompt vanishes, so the
+   viewer sees nothing and learns nothing, by a rule they cannot perceive.
+3. **It inverts the learning order.** You learn what an attempt is, then that the
+   team with more of them usually loses, and only then can you judge one game.
+   Usualness is the LAST thing learned.
+
+So the hook is **a fact about hockey, true of every game, needing no prior
+knowledge** — which is precisely what eventually lets a viewer judge unusual for
+themselves.
+
+### And the flagship finding was missing from the page that demonstrates it
+
+`the team with more shot attempts loses more often than it wins` — 2,194 of
+4,029 — is the site's reason to exist. Measured: it appears **zero** times in
+`game.html`'s visible prose and zero times in its runtime strings. The three
+matches in the file are source comments. It was on the homepage and nowhere near
+the button that shows it.
+
+### The mechanism
+
+- **Distinct days, not page loads.** Three games in one sitting is one visit;
+  retiring the help mid-lesson is the defect this exists to avoid.
+- **Storage refused means NEWCOMER.** Private browsing throws, and the two errors
+  are not equal: a returning viewer re-reading a tip loses a glance, a novice
+  shown nothing is the visitor we lose.
+- **Dismissible, and the dismissal is remembered.** A tip you cannot turn off is
+  an advert.
+- **Retires after three days.**
+
+Measured on a 390px phone: **2.69 screens for a newcomer, 2.33 for a returning
+viewer** — against the audit's 2.99 for everyone. The newcomer now gets more help
+than the page has ever offered, on a page still shorter than it was.
+
+**The copy is a draft; the seam is the point** (Kevin's own rule: mechanism, not
+policy). The novice test should revise these words. It should not have to revise
+the machinery.

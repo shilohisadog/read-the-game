@@ -107,7 +107,7 @@ function fakeDom() {
  * which is the only way to put a matchup this page was never built around
  * (two clubs wearing the same hex) through the real renderer.
  */
-function boot(game, rates, search = '') {
+function boot(game, rates, search = '', store = null) {
   const dom = fakeDom();
   // `location` is part of the environment this bundle runs in — the preview loop
   // and the shell's game selector both read the query string — so the fake
@@ -115,7 +115,12 @@ function boot(game, rates, search = '') {
   const b = new Function('document', 'matchMedia', 'setTimeout', 'clearTimeout',
                          'localStorage', 'location', SCRIPT + '\nreturn boot;')(
     dom.document, () => ({ matches: true }), () => 0, () => {},
-    { getItem: () => null, setItem: () => {} }, { search });
+    // A FAKE THAT CANNOT EXPRESS THE OTHER STATE MAKES ASSERTIONS ABOUT IT
+    // VACUOUS — the same reason `hidden` is absent from `el()` rather than false.
+    // This stub always answered null, so every boot was a first visit and
+    // "a returning viewer sees no tips" could not have been tested. `store` is
+    // a real object when a test needs the page to remember something.
+    store || { getItem: () => null, setItem: () => {} }, { search });
   // `rates` is what the SHELL fetches and the inlined page never has. Without it
   // this harness can only ever see the "no comparison shown" branch, which is
   // how a test for the drawn rate first went red against a page structurally
@@ -1299,6 +1304,13 @@ test('preview drops the second line entirely, including the three that keep it',
 
 const CURVE_AND_MIX = {
   levelCurve: [{ k: 12, n: 708, count: 243 }, { k: 1, n: 3855, count: 1527 }],
+  // The published figures, copied from measures.json rather than invented — a
+  // fixture with a made-up rate tests the formatting and nothing else.
+  baseRates: {
+    moreAttemptsLost: { what: 'the team with more shot attempts lost',
+                        population: 'NHL regular season and playoffs',
+                        n: 4029, count: 2194, rate: 2194 / 4029 },
+  },
   attemptMix: {
     games: 4119,
     byType: { goal: 25105, 'shot-on-goal': 211764, 'missed-shot': 118557, 'blocked-shot': 136545 },
@@ -1546,4 +1558,91 @@ test('the even-strength note counts what actually dropped out, and agrees with t
 
   a.GROUPS['#rg .sbtn'].find(b => b.dataset.s === 'all').click();
   assert.equal(a.$('nSit').textContent, '', 'the note outlived the setting that produced it');
+});
+
+/* --------------------------------------------------------------- the first visit
+ *
+ * Kevin: "she'll visit and say 'well, where should I click', 'why should I click
+ * there', 'what's corsi (and why do I care)'. We absolutely need the first-visit
+ * mechanism in place before showing it to a casual fan."
+ *
+ * And the reason that is not merely nice: he PREDICTED those responses. A test
+ * whose outcome you can write down in advance produces no information — and a
+ * first visit is not renewable, so spending the one novice we have on a page
+ * with no orientation buys a finding that was free.
+ */
+
+/** A localStorage the page can actually remember things in. */
+const memStore = (seed = {}) => {
+  const m = { ...seed };
+  return { getItem: k => (k in m ? m[k] : null), setItem: (k, v) => { m[k] = String(v); }, _m: m };
+};
+
+test('a first-time viewer is told where to click, and why', () => {
+  const a = boot(rich, CURVE_AND_MIX);
+  assert.ok(a.$('rg').classList.contains('newcomer'), 'a page with no memory greets nobody');
+  const t = a.$('newcomer').innerHTML;
+  assert.match(t, /Play from start/, 'never says where to click');
+  assert.match(t, /why<\/b> one team was on top/i, 'never says why to click there');
+  // "What's Corsi and why do I care" — answered with the archive's own inversion,
+  // which is the site's reason to exist and had appeared NOWHERE a visitor to
+  // this page could read it: three matches in game.html, all source comments.
+  assert.match(t, /more shot attempts loses more often than it wins/,
+    "the site's flagship finding is still absent from the page that demonstrates it");
+  assert.match(t, /2,194 of 4,029/, 'the claim ships without its count');
+  assert.match(t, /NHL regular season and playoffs/, 'the claim ships without its scope');
+  assert.match(t, /one game is still one game/, 'the limit is dropped');
+});
+
+test('a returning viewer is not greeted', () => {
+  const store = memStore({ 'rtg.seen': '1999-01-01|9' });
+  const a = boot(rich, CURVE_AND_MIX, '', store);
+  assert.equal(a.$('rg').classList.contains('newcomer'), false,
+    'the ninth visit still gets the beginner tips');
+});
+
+test('the greeting survives a second game on the same day, and retires after a few days', () => {
+  // DISTINCT DAYS, NOT PAGE LOADS. Watching three games in one sitting is still
+  // one visit, and retiring the help mid-lesson is the defect this avoids.
+  const store = memStore();
+  const first = boot(rich, CURVE_AND_MIX, '', store);
+  assert.ok(first.$('rg').classList.contains('newcomer'));
+  const after = store._m['rtg.seen'];
+  const again = boot(rich, CURVE_AND_MIX, '', store);
+  assert.ok(again.$('rg').classList.contains('newcomer'), 'a second game the same day retired the tips');
+  assert.equal(store._m['rtg.seen'], after, 'the same day was counted twice');
+
+  const old = boot(rich, CURVE_AND_MIX, '', memStore({ 'rtg.seen': '1999-01-01|3' }));
+  assert.equal(old.$('rg').classList.contains('newcomer'), false,
+    'the counter never retires the tips');
+});
+
+test('the tips can be dismissed, and stay dismissed', () => {
+  // A tip you cannot turn off is an advert.
+  const store = memStore();
+  const a = boot(rich, CURVE_AND_MIX, '', store);
+  assert.ok(a.$('rg').classList.contains('newcomer'));
+  a.$('nDone').click();
+  assert.equal(a.$('rg').classList.contains('newcomer'), false, 'dismissing did nothing');
+  const back = boot(rich, CURVE_AND_MIX, '', store);
+  assert.equal(back.$('rg').classList.contains('newcomer'), false,
+    'the dismissal was forgotten on the next visit');
+});
+
+test('storage refused means NEWCOMER, because the two errors are not equal', () => {
+  // Private browsing throws. A returning viewer re-reading a tip loses a glance;
+  // a novice shown nothing is the visitor we lose.
+  const hostile = { getItem() { throw new Error('denied'); }, setItem() { throw new Error('denied'); } };
+  const a = boot(rich, CURVE_AND_MIX, '', hostile);
+  assert.ok(a.$('rg').classList.contains('newcomer'),
+    'a browser that refuses storage turns every novice into a veteran');
+});
+
+test('a page that reaches no archive still says where to click', () => {
+  // The inlined page has no rates, so it cannot quote the inversion. The
+  // orientation must survive without it rather than vanishing with it.
+  const a = boot();
+  const t = a.$('newcomer').innerHTML;
+  assert.match(t, /Play from start/);
+  assert.doesNotMatch(t, /loses more often/, 'an archive claim was made with no archive');
 });

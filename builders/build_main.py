@@ -307,6 +307,20 @@ T = r"""<style>
 #rg .fnote{font-size:.76rem;color:var(--muted);flex:1;min-width:220px}
 #rg .fnote:empty{display:none}
 #rg .fig{transform-box:fill-box;transform-origin:center}
+/* SHOWN TO THE PEOPLE IT WAS WRITTEN FOR, and retired for everyone else. This
+   is the same copy R took OUT of permanent residence -- the resolution of that
+   argument was never "these words are bad", it was "these words are not for
+   everybody, forever". */
+#rg .newcomer{display:none}
+#rg.newcomer .newcomer{display:block;background:#eef4f8;border:1px solid var(--edge);
+ border-left:3px solid var(--blue);border-radius:9px;padding:11px 14px;margin:12px 2px 0;
+ font-size:.86rem;line-height:1.55}
+#rg .newcomer b{color:var(--ink)}
+#rg .newcomer .nwhy{display:block;margin-top:6px;color:var(--muted)}
+#rg .newcomer .nwhy .lim{display:block;font-size:.76rem;margin-top:2px}
+#rg .newcomer .ndone{margin-top:9px;font-size:.76rem;background:none;border:0;padding:0;
+ color:var(--muted);text-decoration:underline;cursor:pointer}
+#rg.preview .newcomer{display:none}
 #rg .layers{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 2px 4px;padding-top:12px;border-top:1px dashed var(--edge)}
 #rg .layers .ll{font-size:.8rem;color:var(--muted);font-weight:700}
 #rg .lyr{font:inherit;font-size:.83rem;font-weight:600;border-radius:8px;border:1px dashed #b7c6d0;background:#fff;color:var(--muted);padding:8px 13px;cursor:pointer}
@@ -378,7 +392,7 @@ T = r"""<style>
   <input class="scrub" id="scrub" type="range" min="0" max="1" value="0"><button id="work" aria-expanded="false">Show me the work</button></div>
 <p class="verdict" id="verdict"></p>
 <div class="legend"><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white-filled, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span><i class="k-g"></i><i class="k-gv"></i>goal — either sweater</span><span><i class="k-blk"></i>blocked — ringed where the puck was <b>stopped</b></span><span class="lkey lk-hd"><i class="k-hd"></i>from the slot</span><span class="lkey lk-blk">blocked shots are dimmed unless a body stopped them</span></div>
-<div class="layers"><span class="ll">Add a metric layer:</span><button class="lyr" id="lyCorsi" aria-pressed="false">＋ Control (Corsi)</button><button class="lyr" id="lyHd" aria-pressed="false">＋ Shots from the slot</button><button class="lyr" id="lyGoalie" aria-pressed="false">＋ Goaltending</button><button class="lyr" id="lyWhistle" aria-pressed="false">＋ Why play stopped</button><button class="lyr" id="lyBlock" aria-pressed="false">＋ Blocked shots</button></div>
+<div class="newcomer" id="newcomer"></div><div class="layers"><span class="ll">Add a metric layer:</span><button class="lyr" id="lyCorsi" aria-pressed="false">＋ Control (Corsi)</button><button class="lyr" id="lyHd" aria-pressed="false">＋ Shots from the slot</button><button class="lyr" id="lyGoalie" aria-pressed="false">＋ Goaltending</button><button class="lyr" id="lyWhistle" aria-pressed="false">＋ Why play stopped</button><button class="lyr" id="lyBlock" aria-pressed="false">＋ Blocked shots</button></div>
 <div class="figpick"><span class="ll">Trails:</span>
 <button class="lyr tbtn" data-t="off" aria-pressed="true">Current moment</button>
 <button class="lyr tbtn" data-t="all" aria-pressed="false">Keep every mark</button>
@@ -479,6 +493,27 @@ const AWAYCOL=colourOf(AAB), HOMECOL=colourOf(HAB);
  el.style.setProperty('--home-text',readableInk(HOMECOL));})();
 let T=0, REDUCED=matchMedia('(prefers-reduced-motion:reduce)').matches;
 let figStyle=(()=>{try{return localStorage.getItem('rtg.fig')||'mascot'}catch(e){return 'mascot'}})();
+/* WHETHER THIS IS A FIRST VISIT — a fact the page has never had, and the reason
+   230 words of teaching copy were either permanent furniture or absent.
+   Kevin: "what they don't know, they have no idea what it means... they need to
+   have their hand held for the first few times." CHENG arrived at the same gap
+   from the other side: every one of those words is a FIRST-VISIT word, and the
+   page could not tell.
+   DISTINCT DAYS, NOT PAGE LOADS. Someone watching three games in one sitting is
+   still on their first visit, and retiring the help mid-lesson is the failure
+   this is built to avoid.
+   STORAGE REFUSED MEANS NEWCOMER. Private browsing throws here, and the two
+   errors are not equal: a returning viewer occasionally re-reading a tip costs
+   them a glance, a novice shown nothing costs us the visitor. */
+const NEWCOMER_DAYS=3;
+let visits=1;
+const NEWCOMER=(()=>{try{
+  const today=new Date().toISOString().slice(0,10);
+  const [day,n]=(localStorage.getItem('rtg.seen')||'').split('|');
+  visits=+n||0;
+  if(day!==today){visits++;localStorage.setItem('rtg.seen',today+'|'+visits);}
+  return visits<=NEWCOMER_DAYS;
+ }catch(e){return true;}})();
 if(!FIG[figStyle])figStyle='mascot';
 let finalA=0,finalH=0; for(const e of EV){if(e.type==='goal')(e.own===HID?finalH++:finalA++);}
 function attemptTeam(e){return corsiTeam(e,R);}  // renamed: `corsi` is the layer object
@@ -1201,6 +1236,44 @@ function drawBlocked(B,L){
    +`A share of the attempts taken — not a rate of winning, which blocked shots cannot honestly be turned into.</span></p>`
   :`<p class="bkarch">No archive comparison shown — ${RATES===undefined?'this page carries a single game and makes no network requests':'the archive shares could not be loaded'}.</p>`;
  $('blockPanel').innerHTML=rows+share+mates+un+arch;}
+
+/* WHAT A FIRST-TIME VIEWER IS TOLD, and it answers three questions Kevin
+   predicted a casual fan would ask, in his words:
+     "where should I click"          -> press play, then add a layer
+     "why should I click there"      -> to see WHY one team was on top
+     "what's corsi (and why do I care)" -> the archive's own inversion
+   THE HOOK IS A FACT ABOUT HOCKEY, NOT ABOUT THIS GAME. "This game is unusual"
+   was the earlier proposal and Kevin killed it: unusual is stated in a
+   vocabulary a novice has not learned, and it is the LAST thing you learn, not
+   the first. You learn what an attempt is, then that the team with more of them
+   usually loses, and only then can you judge one game against that. So the line
+   below is true of every game and needs no prior knowledge -- which is exactly
+   what eventually lets a viewer decide for themselves what is unusual.
+   THE COPY IS A DRAFT AND THE SEAM IS THE POINT (Kevin's own rule: mechanism,
+   not policy). The novice test revises these words; it should not have to
+   revise the machinery. */
+function drawNewcomer(){
+ const el=$('newcomer'); if(!el)return;
+ const R2=RATES&&RATES.baseRates&&RATES.baseRates.moreAttemptsLost;
+ // The site's whole reason to exist, stated on the page that DEMONSTRATES it.
+ // It has been on the homepage and nowhere a visitor to this page could read it.
+ const why=R2&&R2.n
+   ?`<span class="nwhy">Here is why that is worth doing: <b>the team with more shot `
+    +`attempts loses more often than it wins</b> — ${R2.count.toLocaleString()} of `
+    +`${R2.n.toLocaleString()} games. <b>Control</b> counts those attempts, so you can `
+    +`watch it happen.<span class="lim">${ESC(R2.population)} · one game is still one game.</span></span>`
+   :'';
+ el.innerHTML=`<b>New here?</b> Press <b>▶ Play from start</b> and just watch — every play is `
+  +`named as it happens. When you want to know <b>why</b> one team was on top, add a layer below.`
+  +why
+  +`<button class="ndone" id="nDone">I have got the hang of it — hide this</button>`;
+ $('nDone').addEventListener('click',()=>{
+  // An explicit dismissal outranks the counter, and it is remembered. A tip you
+  // cannot turn off is an advert.
+  try{localStorage.setItem('rtg.seen',new Date().toISOString().slice(0,10)+'|99');}catch(e){}
+  document.getElementById('rg').classList.remove('newcomer');});}
+document.getElementById('rg').classList.toggle('newcomer',NEWCOMER);
+drawNewcomer();
 let corsiOn=false,hdOn=false,goalieOn=false,whistleOn=false,blockOn=false;
 function setCorsi(){document.getElementById('rg').classList.toggle('corsi',corsiOn);$('lyCorsi').setAttribute('aria-pressed',corsiOn);$('lyCorsi').textContent=(corsiOn?'✓ ':'＋ ')+'Control (Corsi)';if(!corsiOn&&workOpen){workOpen=false;$('workPanel').hidden=true;$('work').setAttribute('aria-expanded',false);$('work').textContent='Show me the work';}}
 function setHd(){document.getElementById('rg').classList.toggle('slot',hdOn);$('lyHd').setAttribute('aria-pressed',hdOn);$('lyHd').textContent=(hdOn?'✓ ':'＋ ')+'Shots from the slot';render(i,false);}
