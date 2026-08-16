@@ -2296,3 +2296,88 @@ test('the step buttons say what they step THROUGH, in words a reader can see', (
   // named as it happens" must meet the same noun here.
   assert.match(app, /Explain plays/, 'the page stopped calling events "plays" elsewhere');
 });
+
+test('the blocked card states its share as a FRACTION, never a percentage', () => {
+  // THIRD INSTANCE. The control bar and the goalie card each had a percentage
+  // removed, for the reason both of their comments give: a denominator this
+  // small cannot carry three significant figures. This card shipped BOTH — the
+  // fraction and the percentage — and the percentage changed 21 times across a
+  // game with a biggest jump of fifty points.
+  //
+  // WALKED, NOT GREPPED. The claim is about what a reader sees at every frame,
+  // and the string is assembled at render time from numbers the source does not
+  // contain.
+  // WITH THE ARCHIVE FIXTURE, because the control below is about the archive
+  // line — and without rates this page correctly renders "no comparison shown"
+  // instead, which has no percentage in it and would have made the control pass
+  // for the wrong reason.
+  const a = boot(rich, CURVE_AND_MIX);
+  a.$('lyBlock').click();
+  const says = new Set();
+  a.every(d => {
+    const m = d.$('blockPanel').innerHTML.match(/<p class="bksay">([\s\S]*?)<\/p>/);
+    if (m) says.add(m[1]);
+    return null;
+  });
+  assert.ok(says.size > 2, `only ${says.size} distinct sentences — the walk saw nothing change`);
+  for (const t of says) {
+    assert.doesNotMatch(t, /%/,
+      `the game-scoped sentence carries a percentage: "${t.replace(/<[^>]*>/g, '')}"`);
+  }
+
+  // AND THE CONTROL, or this passes against a card that says nothing at all —
+  // and it has to check the archive line CARRIES A PERCENTAGE, not merely that
+  // the element exists. Asserting the element survived a mutation that gutted
+  // its text and left the tag: a control that cannot fail is not a control.
+  // The rule is about the DENOMINATOR, not about the symbol: 491,971 attempts
+  // can carry three significant figures and sixteen cannot.
+  const arch = a.$('blockPanel').innerHTML.match(/<p class="bkarch">([\s\S]*?)<\/p>/);
+  assert.ok(arch, 'the archive comparison vanished');
+  assert.match(arch[1], /\d+\.\d%/,
+    'the archive line lost its percentage, so this test now reads as "no percentages anywhere"');
+});
+
+test('the blocked card counts one attempt without calling it "attempts"', () => {
+  // The opening frames are where a first-time viewer meets this card, and they
+  // read "0 of the 1 attempts". Found by walking the game rather than by reading
+  // the template, which is where it had been hiding in plain sight.
+  const a = boot();
+  a.$('lyBlock').click();
+  const says = [];
+  a.every(d => {
+    const m = d.$('blockPanel').innerHTML.match(/<p class="bksay">([\s\S]*?)<\/p>/);
+    if (m) says.push(m[1].replace(/<[^>]*>/g, ''));
+    return null;
+  });
+  // READ THE WHOLE SENTENCE APART, rather than pattern-matching a fragment of it.
+  // The first draft asked whether `/1 (was|were) stopped/` matched — and the
+  // count and the verb sit TEN WORDS apart ("1 of the 5 attempts in this game so
+  // far was stopped"), so that regex could never match anything and the
+  // assertion inside it never ran. A mutation replacing the agreement with a
+  // flat "were" survived it.
+  // TWO SENTENCES, NOT ONE. Before any attempt exists the card says "Nothing
+  // blocked yet" — which has no numbers to agree with and is a CONDITION at the
+  // playhead, exactly like the whistle card's "No whistle yet" branch that the
+  // retrospective test had to be split for. Folding it in here would have meant
+  // relaxing the shape check until it caught nothing.
+  const NONE = /^Nothing blocked yet/;
+  const SHAPE = /^(\d+) of the (\d+) (attempt|attempts) in this game so far (was|were) stopped/;
+  assert.ok(says.some(t => NONE.test(t)), 'the empty state never appeared in the walk');
+  let sawOne = 0, sawSingularVerb = 0;
+  for (const t of says.filter(t => !NONE.test(t))) {
+    const m = t.match(SHAPE);
+    assert.ok(m, `the sentence changed shape and this test can no longer read it: "${t}"`);
+    const [, blk, att, noun, verb] = m;
+    assert.equal(noun, +att === 1 ? 'attempt' : 'attempts',
+      `"${t}" — the noun does not agree with ${att}`);
+    // Zero and plurals take "were"; exactly one takes "was".
+    assert.equal(verb, +blk === 1 ? 'was' : 'were',
+      `"${t}" — the verb does not agree with ${blk}`);
+    if (+att === 1) sawOne++;
+    if (+blk === 1) sawSingularVerb++;
+  }
+  // BOTH AGREEMENTS MUST HAVE BEEN EXERCISED, or the loop above is a shape check
+  // wearing a grammar check's name.
+  assert.ok(sawOne > 0, 'the walk never reached a frame with exactly one attempt');
+  assert.ok(sawSingularVerb > 0, 'the walk never reached a frame with exactly one block');
+});

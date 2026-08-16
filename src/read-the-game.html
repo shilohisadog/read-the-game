@@ -3597,8 +3597,20 @@ function drawBlocked(B,L){
  // are counted blocks with no bench to put them on, and saying so is the point.
  const rows=`<div class="bkrow"><span class="a">${a}</span><span class="bkt">${AAB} · ${HAB}</span><span class="h">${h}</span></div>`
    +`<div class="bklab">shots blocked</div>`;
- const share=att?`<p class="bksay"><b>${blk}</b> of the <b>${att}</b> attempts in this game so far were stopped by a body — `
-   +`${(100*blk/att).toFixed(0)}% of them, and they never reached a goalie.</p>`
+ // THE PERCENTAGE IS GONE, AND IT IS THE THIRD INSTANCE OF THIS EXACT DEFECT.
+ // The sentence stated the same quantity twice -- `4 of the 16` and then `25% of
+ // them` -- and the second is the form the control bar and the goalie card each
+ // had removed, for a reason both of their comments spell out: a percentage on a
+ // denominator this small asserts precision that is not there. Walked across a
+ // whole game it changed 21 times with a biggest jump of FIFTY POINTS, and it
+ // opened at `0 of the 1 attempts = 0%`. The fraction was always the honest form
+ // and was already right there; deleting the percentage costs no information.
+ //
+ // AND THE PLURAL, which the same string got wrong at the same place: at one
+ // attempt it read "the 1 attempts". Both bugs lived in the opening frames,
+ // where a first-time viewer meets this card.
+ const share=att?`<p class="bksay"><b>${blk}</b> of the <b>${att}</b> ${att===1?'attempt':'attempts'} in this game so far `
+   +`${blk===1?'was':'were'} stopped by a body, and never reached a goalie.</p>`
    :`<p class="bksay">Nothing blocked yet — no shots have been attempted in what you have watched so far.</p>`;
  // 7.8% of blocks across the archive are by the shooter's own side. It is real
  // hockey and it is the thing a novice has never considered, so it is stated
