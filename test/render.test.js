@@ -24,6 +24,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { TEAMS, colourOf, contrast } from '../src/lib/teams.js';
 import { WHY } from '../src/lib/layers/whistle.js';
+import { corsi } from '../src/lib/layers/corsi.js';
 
 const rich = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url)));
 const app = readFileSync(new URL('../src/read-the-game.html', import.meta.url), 'utf8');
@@ -2297,87 +2298,194 @@ test('the step buttons say what they step THROUGH, in words a reader can see', (
   assert.match(app, /Explain plays/, 'the page stopped calling events "plays" elsewhere');
 });
 
-test('the blocked card states its share as a FRACTION, never a percentage', () => {
-  // THIRD INSTANCE. The control bar and the goalie card each had a percentage
-  // removed, for the reason both of their comments give: a denominator this
-  // small cannot carry three significant figures. This card shipped BOTH — the
-  // fraction and the percentage — and the percentage changed 21 times across a
-  // game with a biggest jump of fifty points.
+/**
+ * The two rows, each cut off where the next one starts.
+ *
+ * Splitting on a row's OWN class (`<div class="mix game">`) matches once and
+ * leaves everything after it — so "the game row" included the archive row, and a
+ * test asserting the game row carries no percentage failed against a page where
+ * it carries none. Splitting on the SHARED prefix is what makes the boundary
+ * real, because `split` cuts at every delimiter rather than the first.
+ */
+function rowsOf(html) {
+  const out = {};
+  html.split('<div class="mix ').slice(1).forEach(seg => {
+    out[seg.slice(0, seg.indexOf('"'))] = seg;
+  });
+  return out;
+}
+
+test('the GAME row states its share as a fraction and the ARCHIVE row as a percentage', () => {
+  // THE RULE IS ABOUT THE DENOMINATOR, NOT THE SYMBOL. A percentage on sixteen
+  // attempts swings fifty points and asserts precision that is not there — it was
+  // deleted from this card for exactly that, the third instance of a defect the
+  // control bar and the goalie card had each already had removed. On 491,971
+  // attempts it is the honest form. So the two rows must differ, and the test is
+  // that they differ rather than that either one is a particular string.
   //
-  // WALKED, NOT GREPPED. The claim is about what a reader sees at every frame,
-  // and the string is assembled at render time from numbers the source does not
+  // WALKED, NOT GREPPED: the claim is about what a reader sees at every frame,
+  // and both rows are assembled at render time from numbers the source does not
   // contain.
-  // WITH THE ARCHIVE FIXTURE, because the control below is about the archive
-  // line — and without rates this page correctly renders "no comparison shown"
-  // instead, which has no percentage in it and would have made the control pass
-  // for the wrong reason.
   const a = boot(rich, CURVE_AND_MIX);
   a.$('lyBlock').click();
-  const says = new Set();
+  const games = new Set(), archs = new Set();
   a.every(d => {
-    const m = d.$('blockPanel').innerHTML.match(/<p class="bksay">([\s\S]*?)<\/p>/);
-    if (m) says.add(m[1]);
+    const r = rowsOf(d.$('blockPanel').innerHTML);
+    if (r.game) games.add(r.game);
+    if (r.arch) archs.add(r.arch);
     return null;
   });
-  assert.ok(says.size > 2, `only ${says.size} distinct sentences — the walk saw nothing change`);
-  for (const t of says) {
-    assert.doesNotMatch(t, /%/,
-      `the game-scoped sentence carries a percentage: "${t.replace(/<[^>]*>/g, '')}"`);
+  assert.ok(games.size > 5, `only ${games.size} distinct game rows — the walk saw nothing change`);
+  for (const t of games) {
+    assert.doesNotMatch(t, /%/, `the game row carries a percentage: "${t.replace(/<[^>]*>/g, ' ')}"`);
   }
-
-  // AND THE CONTROL, or this passes against a card that says nothing at all —
-  // and it has to check the archive line CARRIES A PERCENTAGE, not merely that
-  // the element exists. Asserting the element survived a mutation that gutted
-  // its text and left the tag: a control that cannot fail is not a control.
-  // The rule is about the DENOMINATOR, not about the symbol: 491,971 attempts
-  // can carry three significant figures and sixteen cannot.
-  const arch = a.$('blockPanel').innerHTML.match(/<p class="bkarch">([\s\S]*?)<\/p>/);
-  assert.ok(arch, 'the archive comparison vanished');
-  assert.match(arch[1], /\d+\.\d%/,
-    'the archive line lost its percentage, so this test now reads as "no percentages anywhere"');
+  // THE CONTROL, and it checks the archive row CARRIES a percentage rather than
+  // that its element exists — asserting the element survived a mutation that
+  // gutted the text and left the tag.
+  assert.equal(archs.size, 1, 'the archive row changed during the game, which it cannot');
+  assert.match([...archs][0], /\d+\.\d%/,
+    'the archive row lost its percentage, so this test now reads as "no percentages anywhere"');
 });
 
-test('the blocked card counts one attempt without calling it "attempts"', () => {
-  // The opening frames are where a first-time viewer meets this card, and they
-  // read "0 of the 1 attempts". Found by walking the game rather than by reading
-  // the template, which is where it had been hiding in plain sight.
-  const a = boot();
+test('the game row names the whole it is a split OF, in counts', () => {
+  // The first build of this card drew the three segments and dropped the headline
+  // — "over half never reach the goalie" — which is the number the whole layer
+  // exists to make checkable. A composition with no total is a chart with no axis.
+  // The panel's win-rate test caught it on the archive side; this is the game side,
+  // which nothing else was watching.
+  const a = boot(rich, CURVE_AND_MIX);
   a.$('lyBlock').click();
-  const says = [];
+  const SHAPE = /(\d+)<\/b> of <b>(\d+)<\/b> never reached the goalie/;
+  let checked = 0;
   a.every(d => {
-    const m = d.$('blockPanel').innerHTML.match(/<p class="bksay">([\s\S]*?)<\/p>/);
-    if (m) says.push(m[1].replace(/<[^>]*>/g, ''));
+    const h = d.$('blockPanel').innerHTML;
+    const m = h.match(SHAPE);
+    if (!m) return null;
+    const [, never, att] = m;
+    // The claim must be the sum of the two segments the bar draws as "not
+    // reached", read back out of the key rather than recomputed here.
+    const key = rowsOf(h).game.split('mixkey')[1];
+    const nums = [...key.matchAll(/<b>(\d+)<\/b>/g)].map(x => +x[1]);
+    assert.equal(nums.length, 3, 'the game row stopped drawing three segments');
+    assert.equal(+never, nums[1] + nums[2],
+      `"${never} of ${att} never reached" disagrees with ${nums[1]} blocked + ${nums[2]} missed`);
+    assert.equal(+att, nums[0] + nums[1] + nums[2],
+      `the total ${att} is not the three segments (${nums.join(' + ')})`);
+    checked++;
     return null;
   });
-  // READ THE WHOLE SENTENCE APART, rather than pattern-matching a fragment of it.
-  // The first draft asked whether `/1 (was|were) stopped/` matched — and the
-  // count and the verb sit TEN WORDS apart ("1 of the 5 attempts in this game so
-  // far was stopped"), so that regex could never match anything and the
-  // assertion inside it never ran. A mutation replacing the agreement with a
-  // flat "were" survived it.
-  // TWO SENTENCES, NOT ONE. Before any attempt exists the card says "Nothing
-  // blocked yet" — which has no numbers to agree with and is a CONDITION at the
-  // playhead, exactly like the whistle card's "No whistle yet" branch that the
-  // retrospective test had to be split for. Folding it in here would have meant
-  // relaxing the shape check until it caught nothing.
-  const NONE = /^Nothing blocked yet/;
-  const SHAPE = /^(\d+) of the (\d+) (attempt|attempts) in this game so far (was|were) stopped/;
-  assert.ok(says.some(t => NONE.test(t)), 'the empty state never appeared in the walk');
-  let sawOne = 0, sawSingularVerb = 0;
-  for (const t of says.filter(t => !NONE.test(t))) {
-    const m = t.match(SHAPE);
-    assert.ok(m, `the sentence changed shape and this test can no longer read it: "${t}"`);
-    const [, blk, att, noun, verb] = m;
-    assert.equal(noun, +att === 1 ? 'attempt' : 'attempts',
-      `"${t}" — the noun does not agree with ${att}`);
-    // Zero and plurals take "were"; exactly one takes "was".
-    assert.equal(verb, +blk === 1 ? 'was' : 'were',
-      `"${t}" — the verb does not agree with ${blk}`);
-    if (+att === 1) sawOne++;
-    if (+blk === 1) sawSingularVerb++;
-  }
-  // BOTH AGREEMENTS MUST HAVE BEEN EXERCISED, or the loop above is a shape check
-  // wearing a grammar check's name.
-  assert.ok(sawOne > 0, 'the walk never reached a frame with exactly one attempt');
-  assert.ok(sawSingularVerb > 0, 'the walk never reached a frame with exactly one block');
+  assert.ok(checked > 5, `the headline was only checkable on ${checked} frames`);
+});
+
+test('the BAR draws the counts — the widths are the numbers', () => {
+  // THE MUTATION THAT FOUND THIS: give every segment the same width. Every other
+  // test still passed, because they all read the LABELS. The bar is the whole
+  // claim of this card and nothing was looking at it — a picture whose geometry
+  // is unchecked is decoration.
+  const a = boot(rich, CURVE_AND_MIX);
+  a.$('lyBlock').click();
+  let checked = 0;
+  a.every(d => {
+    const row = rowsOf(d.$('blockPanel').innerHTML).game;
+    if (!row) return null;
+    const rects = [...row.matchAll(/<rect class="(\w)" x="([\d.]+)" y="0" width="([\d.]+)"/g)]
+      .map(m => ({ k: m[1], x: +m[2], w: +m[3] }));
+    const counts = [...row.split('mixkey')[1].matchAll(/<b>(\d+)<\/b>/g)].map(m => +m[1]);
+    assert.equal(rects.length, 3, 'the bar stopped drawing three segments');
+    const tot = counts.reduce((t, n) => t + n, 0);
+    let x = 0;
+    rects.forEach((r, i) => {
+      assert.ok(Math.abs(r.w - 100 * counts[i] / tot) < 0.01,
+        `segment ${r.k} is ${r.w}% wide for ${counts[i]} of ${tot}`);
+      assert.ok(Math.abs(r.x - x) < 0.01, `segment ${r.k} starts at ${r.x}, not ${x}`);
+      x += r.w;
+    });
+    assert.ok(Math.abs(x - 100) < 0.01, `the segments cover ${x}% of the bar, not 100`);
+    checked++;
+    return null;
+  });
+  assert.ok(checked > 5, `the bar was only checkable on ${checked} frames`);
+});
+
+test('what counts as REACHING the goalie is the feed’s own event types', () => {
+  // Internal consistency is not correctness: classifying a goal as blocked keeps
+  // "never = blocked + missed" and "total = the three segments" both true, and a
+  // mutation doing exactly that survived every other test here.
+  //
+  // So the expected split is derived INDEPENDENTLY — the same ledger the page
+  // uses, classified here rather than read back from the page's own answer.
+  const ctx = { roster: rich.roster, homeId: rich.teams.home.id,
+                awayId: rich.teams.away.id, evenOnly: false };
+  const want = { r: 0, b: 0, m: 0 };
+  corsi.reduce(rich.events, ctx).counted.forEach(id => {
+    const t = rich.events[id].type;
+    if (t === 'blocked-shot') want.b++;
+    else if (t === 'missed-shot') want.m++;
+    else want.r++;
+  });
+  assert.ok(want.r > 0 && want.b > 0 && want.m > 0, 'the reference game misses a category');
+  // A goal must be on the REACHED side, or this test cannot see the mutation
+  // that motivated it.
+  assert.ok(rich.events.some(e => e.type === 'goal'), 'the reference game has no goal');
+
+  const a = boot(rich, CURVE_AND_MIX);
+  a.$('lyBlock').click();
+  const scrub = a.$('scrub');
+  scrub.value = String(+scrub.max);
+  scrub.oninput({ target: { value: scrub.value } });
+  const counts = [...rowsOf(a.$('blockPanel').innerHTML).game.split('mixkey')[1]
+    .matchAll(/<b>(\d+)<\/b>/g)].map(m => +m[1]);
+  assert.deepEqual(counts, [want.r, want.b, want.m],
+    'at the final frame the card splits the attempts differently than their event types do');
+});
+
+test('each row states its own scope, because the two can disagree', () => {
+  // The game row honours `Even strength only`; the archive figure has no strength
+  // split and is all situations. The OLD card had that mismatch too and said
+  // nothing — and putting the two side by side turns an unstated mismatch into an
+  // invited comparison, which is worse.
+  const a = boot(rich, CURVE_AND_MIX);
+  a.$('lyBlock').click();
+  // Away from the opening frames: at zero attempts there is no game row to read a
+  // scope off, and the first draft of this test crashed there rather than
+  // failing, which is the same thing wearing a worse message.
+  const scrub = a.$('scrub');
+  scrub.value = String(+scrub.max);
+  scrub.oninput({ target: { value: scrub.value } });
+  const read = () => {
+    const r = rowsOf(a.$('blockPanel').innerHTML);
+    assert.ok(r.game && r.arch, 'a row is missing at the frame this test reads');
+    return { game: r.game.split('</p>')[0], arch: r.arch.split('</p>')[0] };
+  };
+  const all = read();
+  assert.match(all.game, /all situations/, 'the game row does not say what it counted');
+  assert.match(all.arch, /all situations/, 'the archive row does not say what it counted');
+
+  a.GROUPS['#rg .sbtn'][1].click();          // Even strength only
+  const even = read();
+  assert.match(even.game, /even strength/, 'the game row ignored the strength filter');
+  assert.match(even.arch, /all situations/,
+    'the archive row followed the strength filter, which it cannot — there is no such archive figure');
+  assert.notEqual(even.game, all.game, 'the two strength states render identically');
+});
+
+test('the card says so before a single attempt exists, and stops once one does', () => {
+  // A CONDITION at the playhead, exactly like the whistle card's "No whistle yet"
+  // branch — there is no bar to draw and no fraction to state, and the empty state
+  // must not survive into frames where there is.
+  const a = boot(rich, CURVE_AND_MIX);
+  a.$('lyBlock').click();
+  let empty = 0, drawn = 0, overlap = 0;
+  a.every(d => {
+    const h = d.$('blockPanel').innerHTML;
+    const isEmpty = /Nothing shot yet/.test(h);
+    const hasRow = !!rowsOf(h).game;
+    if (isEmpty) empty++;
+    if (hasRow) drawn++;
+    if (isEmpty && hasRow) overlap++;
+    return null;
+  });
+  assert.ok(empty > 0, 'the empty state never appeared in the walk');
+  assert.ok(drawn > 0, 'the game row never appeared in the walk');
+  assert.equal(overlap, 0, 'the empty state and the bar were on screen at the same time');
 });

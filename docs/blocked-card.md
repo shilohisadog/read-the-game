@@ -281,3 +281,73 @@ Replacing §6.
    *"a share of attempts, not a rate of winning"* limit are 71–148px on every
    frame (§1). The archive ROW is now the thing that needs them, and it is no
    longer read-once — it is half the picture.
+
+---
+
+## 8. Built 2026-08-16 — and the trim was not delivered
+
+One card, two rows, per §7.4. Counts on the game row, percentages on the archive
+row. Each row states its own scope. Nothing characterises the difference.
+
+**The row's title is the claim; the bar is what the claim is made of.** The first
+build drew the three segments and **dropped the headline** — *over half never
+reach the goalie* — which is the one number §4 says this card exists to make
+checkable. A composition with no total is a chart with no axis. It was caught by
+the panel's existing win-rate test, which asks for `51.9%` by value.
+
+**An SVG, not divs with widths**, because this page's CSP refuses every inline
+`style` attribute — a rect's `width` is a presentation attribute, not a style.
+
+### The size, measured, before and after
+
+| | 1100×900 | 390×844 |
+|---|---|---|
+| before | 234px (26% of viewport) | 394px (47%) |
+| **after** | **332px (37%)** | **547px (65%)** |
+
+**Kevin asked for two things and this delivered one.** The card is more
+impactful and it is 98px and 153px *bigger*. Two bars, two headers and two keys
+is inherently more than one sentence, and no amount of copy trimming closes that
+— the teammate note went from four lines to one and the archive header shed its
+games count, which recovered only 19px and 18px.
+
+**Two cuts are available and both are judgement calls rather than defects:**
+
+1. **The per-team counter row — 48px at every width.** With the bar naming
+   `21 blocked by a body`, what the counters add is *who blocked them*. But they
+   read `12 · 7` where the bar reads `21`, and that gap is the only reason the
+   teammate note exists at all. There is also a doctrine argument: the panel's
+   own test forbids an outcome rate here because **the blocks leader is the
+   attempts trailer 81.7% of the time** — and a per-team block scoreboard invites
+   that same inference in numerals rather than prose. Not deleted, because it is
+   a surface Kevin has never objected to and the argument is mine, not measured.
+2. **The archive row's key labels — about 40px on a phone.** They repeat the game
+   row's three labels verbatim. Dropping them makes the archive key depend on the
+   row above for its meaning, which is the *"prose that refers to another
+   element"* failure this project keeps finding — and it breaks outright at zero
+   attempts, when there is no game row.
+
+### A copy defect the bar created
+
+The teammate note read *"…so they are in neither total above."* True of the two
+per-team counters; **false of the bar, where those blocks are among its 21.** The
+sentence was not touched — the element it refers to arrived above it and made it
+wrong. Third instance of a sentence with a dependency nothing in a text file can
+see, and the first where a *new* element broke an old sentence rather than an
+edit breaking it.
+
+### Eight mutations, eight kills — after four survivors
+
+Every one was a real gap:
+
+- **the bar segments stop being proportional** — every other test read the
+  labels. *The bar is the whole claim of this card and nothing was looking at
+  it.*
+- **a goal is classified as never reaching the goalie** — internal consistency is
+  not correctness: `never = blocked + missed` and `total = the three segments`
+  both stay true. The expected split is now derived independently through
+  `corsi.reduce` and compared.
+- **the game row stops honouring the even-strength filter** — the scope labels
+  existed and nothing checked they followed anything.
+- **the archive row loses its scope** — my own mutation had a bad anchor and
+  never applied. *A mutation not seen to fire is not a mutation.*

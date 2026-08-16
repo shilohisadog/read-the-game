@@ -389,6 +389,26 @@ T = r"""<style>
 #rg .bkarch{margin:9px 0 0;padding-top:9px;border-top:1px solid var(--edge);font-size:.82rem;line-height:1.55;color:var(--muted)}
 #rg .bkarch b{color:var(--ink)}
 #rg .bkarch .lim{display:block;margin-top:3px;font-size:.75rem}
+/* TWO ROWS ON ONE AXIS, AND THE ALIGNMENT IS THE COMPARISON. Two separate cards
+   make a reader compare numbers; two bars sharing a left edge make them SEE the
+   reached/never boundary land in different places, which is the whole reason to
+   draw this instead of writing it (Kevin's amendment, docs/blocked-card.md §7).
+   AN SVG, NOT DIVS WITH WIDTHS. This page's own CSP refuses every inline `style`
+   attribute -- it cost the team-colour dots and the verdict scale once already
+   -- and a rect's `width` is a presentation attribute, not a style. So the
+   proportions are in the markup where they can be read, with no CSSOM pass. */
+#rg .mix{margin:11px 0 0}
+#rg .mixhd{font-size:.71rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:700;display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline}
+#rg .mixhd .cl{letter-spacing:0;text-transform:none;font-weight:600;font-size:.86rem;color:var(--ink)}
+#rg .mixhd .cl b{font-weight:800}
+#rg .mixhd .n{letter-spacing:.02em;text-transform:none;font-weight:600;font-family:ui-monospace,Menlo,monospace;font-size:.72rem}
+#rg .mixbar{height:14px;border-radius:7px;overflow:hidden;margin:5px 0;background:#e6edf3}
+#rg .mixbar svg{display:block;width:100%;height:100%}
+#rg .mixbar .r{fill:var(--blue)}#rg .mixbar .b{fill:var(--flag)}#rg .mixbar .m{fill:#b8c6d0}
+#rg .mixkey{display:flex;flex-wrap:wrap;gap:2px 14px;font-size:.78rem;color:var(--muted)}
+#rg .mixkey b{color:var(--ink);font-variant-numeric:tabular-nums}
+#rg .mixkey i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px}
+#rg .mixkey .r{background:var(--blue)}#rg .mixkey .b{background:var(--flag)}#rg .mixkey .m{background:#b8c6d0}
 #rg .whistlepanel{display:none}
 #rg.whistle .whistlepanel{display:block;background:#fff;border:1px solid var(--edge);border-radius:11px;padding:13px 15px;margin-top:10px;box-shadow:0 4px 14px rgba(16,32,45,.06)}
 #rg .whsay{margin:0;font-size:.9rem;line-height:1.5}
@@ -946,7 +966,7 @@ function render(i,how){
     arrives when the game leaves the first period, which is when the switch would
     have happened and did not. Before that, nothing has yet failed to occur. */
  document.getElementById('rg').classList.toggle('heldends',!!cur&&cur.per>1);
- if(blockOn)drawBlocked(blocked.reduce(upto(i),CTX),L);
+ if(blockOn){const sl=upto(i);drawBlocked(blocked.reduce(sl,CTX),L,sl);}
  else $('blockPanel').innerHTML='';
  let lh='';
  const cp=place(cur);
@@ -1395,46 +1415,120 @@ function drawWhistles(W){
 // "teams that were being outshot" and the sentence teaches nothing once that is
 // stated. What ships is a SHARE OF A POPULATION, which has no winner in it and
 // so no causal reading to misread (CHENG, docs/blocked-shots-layer.md §5, §7).
-function drawBlocked(B,L){
- const a=B.t[AID],h=B.t[HID],blk=B.counted.length,att=L.counted.length;
+/**
+ * ONE PICTURE, TWICE — the game assembling, the archive settled.
+ *
+ * Kevin: "the shots blocked card needs to be trimmed down and somehow made more
+ * impactful... 2½ lines of text that doesn't provide the educating moment."
+ * Measured first (docs/blocked-card.md): the card was 26% of a 1100x900
+ * viewport and 47% of a phone, and 30-38% of it was archive prose re-rendering
+ * identically on all 281 frames.
+ *
+ * WHAT WAS MISSING WAS NOT STYLING, IT WAS THE OTHER HALF OF THE CLAIM. The
+ * archive line asserts TWO things -- 51.9% never reach the goalie, 27.8% are
+ * blocked -- and the game-scoped sentence mirrored only the smaller one. A
+ * novice was told a startling number about 491,971 attempts and handed nothing
+ * to check it against.
+ *
+ * AND THE MOMENT IS THE BAR, in the only form the EVENT/CONDITION rule allows.
+ * A sentence re-reads identically at every frame; a bar MOVES when the thing it
+ * measures happens -- the same grammar as the attempt counters bumping, which is
+ * already how this page says "that just happened" without narrating it. Both
+ * rows are conditions: recomputable from the state at the playhead alone.
+ *
+ * IT SAYS NOTHING ABOUT THE DIFFERENCE, and that is the load-bearing decision.
+ * "Normal" was the obvious word and is the one word this cannot use: every card
+ * here says one game is one game, and describing a game as pulling toward or
+ * away from normal makes a gap read as a fact ABOUT THIS GAME -- at the fourth
+ * attempt the share is 1 of 4 and the gap is noise. The data settles it too. In
+ * game 2025030416 the headline matches to a third of a point (52.1 against
+ * 51.9) while blocked runs 5.4 low and missed 5.7 high, in opposite directions.
+ * Any sentence about converging would have had to pick a story and would have
+ * picked the wrong one. Two aligned bars say all of it and claim none of it.
+ *
+ * COUNTS ON THE GAME ROW, PERCENTAGES ON THE ARCHIVE ROW, and the asymmetry is
+ * the point rather than untidiness: a percentage on sixteen attempts swings
+ * fifty points (it was deleted from this very card for that), and on 491,971 it
+ * is the honest form. The row that can carry one does; the row that cannot does
+ * not.
+ *
+ * EACH ROW STATES ITS OWN SCOPE, because they can disagree. `L` is the corsi
+ * ledger and honours `Even strength only`; the archive figure has no strength
+ * split and is all situations. The old card had that mismatch too and said
+ * nothing -- putting the two side by side would have made an unstated mismatch
+ * into an invited comparison.
+ */
+/* THE ROW'S TITLE IS THE CLAIM; THE BAR IS WHAT THE CLAIM IS MADE OF.
+   The first build of this drew the three segments and DROPPED the headline --
+   "over half never reach the goalie" -- which is the one number §4 of the audit
+   says the card exists to make checkable. The split was visible and the thing it
+   was a split OF had vanished. Caught by the panel's own win-rate test, which
+   asks for `51.9%` by value; a design that shows a composition and never names
+   the total it composes is the same defect as a chart with no axis. */
+function mixRow(cls,title,claim,scope,parts){
+ const tot=parts.reduce((t,p)=>t+p.v,0)||1;
+ let x=0;
+ const rects=parts.map(p=>{const w=100*p.v/tot;
+   const r=`<rect class="${p.k}" x="${x.toFixed(3)}" y="0" width="${w.toFixed(3)}" height="8"/>`;
+   x+=w;return r;}).join('');
+ const keys=parts.map(p=>`<span><i class="${p.k}"></i>${p.pct
+   ?`<b>${(100*p.v/tot).toFixed(1)}%</b> ${p.lab}`
+   :`<b>${p.v}</b> ${p.lab}`}</span>`).join('');
+ return `<div class="mix ${cls}"><p class="mixhd">${title}<span class="cl">${claim}</span><span class="n">${scope}</span></p>`
+  +`<div class="mixbar"><svg viewBox="0 0 100 8" preserveAspectRatio="none">${rects}</svg></div>`
+  +`<p class="mixkey">${keys}</p></div>`;}
+function drawBlocked(B,L,slice){
+ const a=B.t[AID],h=B.t[HID];
  const mate=B.teammate.length,unk=B.unknown.length;
  // The credited blocks are the two numbers; the teammate and unattributed ones
  // are counted blocks with no bench to put them on, and saying so is the point.
  const rows=`<div class="bkrow"><span class="a">${a}</span><span class="bkt">${AAB} · ${HAB}</span><span class="h">${h}</span></div>`
    +`<div class="bklab">shots blocked</div>`;
- // THE PERCENTAGE IS GONE, AND IT IS THE THIRD INSTANCE OF THIS EXACT DEFECT.
- // The sentence stated the same quantity twice -- `4 of the 16` and then `25% of
- // them` -- and the second is the form the control bar and the goalie card each
- // had removed, for a reason both of their comments spell out: a percentage on a
- // denominator this small asserts precision that is not there. Walked across a
- // whole game it changed 21 times with a biggest jump of FIFTY POINTS, and it
- // opened at `0 of the 1 attempts = 0%`. The fraction was always the honest form
- // and was already right there; deleting the percentage costs no information.
- //
- // AND THE PLURAL, which the same string got wrong at the same place: at one
- // attempt it read "the 1 attempts". Both bugs lived in the opening frames,
- // where a first-time viewer meets this card.
- const share=att?`<p class="bksay"><b>${blk}</b> of the <b>${att}</b> ${att===1?'attempt':'attempts'} in this game so far `
-   +`${blk===1?'was':'were'} stopped by a body, and never reached a goalie.</p>`
-   :`<p class="bksay">Nothing blocked yet — no shots have been attempted in what you have watched so far.</p>`;
+ // WHAT HAPPENED TO EVERY ATTEMPT, from the SAME ledger the counters come from,
+ // classified by the feed's own event type. `reached the goalie` is a shot on
+ // goal or a goal, which is exactly how the archive's `reachedTheGoalie` is
+ // derived -- so the two rows are the same quantity and not two similar ones.
+ const g={r:0,b:0,m:0};
+ L.counted.forEach(id=>{const t=slice[id].type;
+   if(t==='blocked-shot')g.b++;else if(t==='missed-shot')g.m++;else g.r++;});
+ const att=L.counted.length;
+ const game=att?mixRow('game','This game',
+   `<b>${g.b+g.m}</b> of <b>${att}</b> never reached the goalie`,
+   `${MODE()}`,
+   [{k:'r',lab:'reached the goalie',v:g.r},
+    {k:'b',lab:'blocked by a body',v:g.b},
+    {k:'m',lab:'missed the net',v:g.m}])
+  :`<p class="bksay">Nothing shot yet — no attempts in what you have watched so far.</p>`;
  // 7.8% of blocks across the archive are by the shooter's own side. It is real
  // hockey and it is the thing a novice has never considered, so it is stated
  // rather than folded into a total nobody can take apart.
- const mates=mate?`<p class="bkmate">${mate===1?'One was':mate+' were'} blocked by a TEAMMATE — a shot that hit `
-   +`${mate===1?'a player':'players'} on the shooter's own side. Still a blocked shot, `
-   +`but nobody defended ${mate===1?'it':'them'}, so ${mate===1?'it is':'they are'} in neither total above.</p>`:'';
+ // AND THE WORDING HAD TO CHANGE WITH THE BAR, not just shorten. It said these
+ // were "in neither total above", which was true of the two per-team counters
+ // and is FALSE of the bar -- they ARE among its blocked shots. A sentence that
+ // refers to another element by what it contains has a dependency nothing in a
+ // text file can see; the bar arriving above it made the sentence wrong without
+ // touching it.
+ const mates=mate?`<p class="bkmate">${mate} of ${mate===1?'those blocks hit':'those blocks hit'} a teammate — `
+   +`still blocked, but nobody defended ${mate===1?'it':'them'}, so neither bench is credited.</p>`:'';
  const un=unk?`<p class="bkmate">${unk} carried no blocker we could resolve, and ${unk===1?'is':'are'} in neither total.</p>`:'';
- // THE ARCHIVE, AND IT CARRIES ITS n AND ITS SCOPE. Absent on the inlined page,
- // which reaches nothing -- and says which of those two it is rather than
- // implying a failure. Same rule as the verdict card's `noCurveReason`.
- const M=RATES&&RATES.attemptMix;
- const arch=M&&M.blocked&&M.blocked.n
-  ?`<p class="bkarch">Across the archive, <b>${(100*M.neverReachedTheGoalie.rate).toFixed(1)}%</b> of all shot attempts `
-   +`never reach the goalie at all, and <b>${(100*M.blocked.rate).toFixed(1)}%</b> are blocked by a body.`
-   +`<span class="lim">${M.blocked.n.toLocaleString()} attempts across ${M.games.toLocaleString()} games · ${ESC(M.blocked.population)}. `
-   +`A share of the attempts taken — not a rate of winning, which blocked shots cannot honestly be turned into.</span></p>`
+ // THE ARCHIVE ROW IS NO LONGER READ-ONCE PROSE, so it is no longer a candidate
+ // for R's treatment: it is half the picture, and gating it would delete the
+ // comparison rather than trim it. What shrank instead is its limit line, from a
+ // paragraph to one line -- the population and the one caveat that a share of
+ // attempts is not a rate of winning.
+ // Absent on the inlined page, which reaches nothing -- and it says WHICH of
+ // those two it is rather than implying a failure. Same rule as `noCurveReason`.
+ const M=RATES&&RATES.attemptMix, BT=M&&M.byType;
+ const arch=BT&&M.blocked&&M.blocked.n
+  ?mixRow('arch','The archive',
+    `<b>${(100*M.neverReachedTheGoalie.rate).toFixed(1)}%</b> never reach the goalie`,
+    `${M.blocked.n.toLocaleString()} attempts · all situations`,
+    [{k:'r',lab:'reached the goalie',v:(BT['shot-on-goal']||0)+(BT.goal||0),pct:1},
+     {k:'b',lab:'blocked by a body',v:BT['blocked-shot']||0,pct:1},
+     {k:'m',lab:'missed the net',v:BT['missed-shot']||0,pct:1}])
+   +`<p class="bkarch"><span class="lim">${M.games.toLocaleString()} games · ${ESC(M.blocked.population)} — a share of the attempts taken, not a rate of winning.</span></p>`
   :`<p class="bkarch">No archive comparison shown — ${RATES===undefined?'this page carries a single game and makes no network requests':'the archive shares could not be loaded'}.</p>`;
- $('blockPanel').innerHTML=rows+share+mates+un+arch;}
+ $('blockPanel').innerHTML=rows+game+mates+un+arch;}
 
 /* WHAT A FIRST-TIME VIEWER IS TOLD, and it answers three questions Kevin
    predicted a casual fan would ask, in his words:
