@@ -424,19 +424,62 @@ program.
 
 ### Two things the test harness could not do, and now can
 
-Both were making assertions vacuous rather than merely absent, which is the
-failure mode this project keeps finding.
-
-1. **`.click()` fired only `addEventListener` handlers.** The whole transport —
-   play, the three speeds, the work toggle — assigns `.onclick`, so clicking any
-   of them did nothing at all. A test that pressed Play and checked the page had
-   not started would have passed against a page that never started anything.
+1. **`.click()` fired only `addEventListener` handlers.** The transport — play,
+   the three speeds, the work toggle — assigns `.onclick`, so clicking any of
+   them through `boot()` did nothing at all.
 2. **`setTimeout` answered `0` and dropped the callback**, so `play()` set a
-   timer that never fired and **the play loop had never run once in this file.**
-   Every test drove the page by dragging the scrubber — a different path, with
-   different arguments to `render`. `advance(n)` now runs the real loop and
-   returns how many frames actually moved, so a dead timer cannot be mistaken
-   for a quiet one.
+   timer that never fired. `advance(n)` now runs the real loop and returns how
+   many frames actually moved, so a dead timer cannot be mistaken for a quiet
+   one.
+
+### CORRECTION — both of those were overstated, and a probe says so
+
+CHENG asked the right follow-up: *which existing assertions were passing only
+because the harness was inert?* It is answerable mechanically rather than by
+reasoning, so it was: **`throw` inside `step()`, and inside the `play` and
+`work` onclick handlers, rebuild, and read off which tests fail.**
+
+**The answer is none.** Every pre-existing test that reaches those handlers
+reaches them for real:
+
+| test | file | how it gets there |
+|---|---|---|
+| *the preview waits on the replay…* | `render.test.js` | `delaysOf` — a **second, older recorder in the same file** that captures timers and calls `.onclick()` directly |
+| *turning on the Control layer renders the ledger…* | `smoke.test.js` | its fake already fired `onclick` |
+| *the ledger explains the filtered-out attempts…* | `smoke.test.js` | as above |
+| *a metric added mid-replay catches up…* | `smoke.test.js` | as above |
+
+So two claims in the commit message above are **wrong**, and this is the
+correction:
+
+- *"the play loop had never run once in this file"* — **it had.** `delaysOf` has
+  been running it for the pacing tests all along. What is true is narrower: the
+  loop had never run through **`boot()`**, the harness the other hundred-odd
+  render tests use, so nothing had ever observed what the loop **draws** — the
+  counter bump, the caption — as opposed to **how long it waits.**
+- *"the whole transport was unclickable in tests"* — **only through `boot()`.**
+  `goalie-view.test.js` and `smoke.test.js` both fire `onclick`, and
+  `goalie-view.test.js` already had **exactly** the capture-and-drain timer this
+  work "added" to `boot()`.
+
+### The finding that survives, and it is a different one
+
+**Four hand-written fakes of the same document, at four different fidelities**,
+and the one repaired here was the least faithful:
+
+| fake | fires `onclick` | runs timers |
+|---|---|---|
+| `goalie-view.test.js` | yes | yes — `timers.push` + `tick(n)` |
+| `smoke.test.js` | yes | no (`noop`) |
+| `delaysOf` (inside `render.test.js`) | called directly | yes — with a tick budget |
+| **`boot()` (`render.test.js`)** | **no** | **no** |
+
+The capability was not missing from the project. It was **missing from one copy
+of the document**, three feet from a copy that had it — which is the same shape
+as builder drift, and the reason `src/*.html` is generated rather than edited.
+Nothing checks that four fakes of one document agree, and nothing here proposes
+that it should; what this pays for is knowing the gap was a *divergence* and not
+an *absence*, because the two suggest completely different fixes.
 
 ### Ten mutations, ten kills
 
