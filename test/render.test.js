@@ -23,6 +23,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { TEAMS, colourOf, contrast } from '../src/lib/teams.js';
+import { WHY } from '../src/lib/layers/whistle.js';
 
 const rich = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url)));
 const app = readFileSync(new URL('../src/read-the-game.html', import.meta.url), 'utf8');
@@ -205,6 +206,116 @@ test('the sentence on screen is the rule, and it names where it comes from', () 
   assert.match(seen, /centre line|blue line ahead of the puck|goaltender/i,
     'no whistle in a whole NHL game produced a teaching sentence');
   assert.match(seen, /rule: NHL Rule|field: rsn/, 'and the provenance travels with it');
+});
+
+test('every known stoppage is CALLED something, on all three surfaces', () => {
+  // "Goalie Stopped After Sog" — the raw feed key with its hyphens swapped and
+  // then title-cased by the stylesheet, in front of the one audience that does
+  // not know what SOG means. `say` existed and was correct the whole time; it is
+  // a full teaching sentence and the wrong length for a heading, which is why
+  // WHY gained a third field rather than the heading being re-pointed at `say`.
+  //
+  // THREE SURFACES, AND ONLY ONE OF THEM IS THE HEADING (CHENG). The tally
+  // repeats every reason in the game so far, and each ring carries a <title>.
+  // A heading-only fix leaves two of the three rendering `Sog`, and nobody would
+  // have found the tooltip, because nobody hovers while watching.
+  const a = boot();
+  a.$('lyWhistle').click();
+  const seen = a.every(d => panel(d) + d.$('whistles').innerHTML).join('\n');
+
+  // Whatever this game happened to contain, every reason it showed must be a
+  // written label — read out of WHY rather than listed here, so a reason added
+  // to the vocabulary without a name is caught rather than missed.
+  const named = Object.entries(WHY).filter(([, v]) => v.name);
+  assert.ok(named.length >= 12, `WHY carries ${named.length} written names`);
+  for (const [key, v] of named) {
+    if (!seen.includes(v.name) && !seen.includes(key.replace(/-/g, ' '))) continue;
+    assert.ok(seen.includes(v.name),
+      `${key} reached a surface as the raw key rather than "${v.name}"`);
+    assert.ok(!seen.includes(key.replace(/-/g, ' ')),
+      `${key} still renders as the raw feed key somewhere`);
+  }
+  // And the specific one from the screenshot, so this cannot pass vacuously on a
+  // game that happens to contain none of the ugly keys.
+  assert.match(seen, /Goaltender covered the puck/, 'the reference game has these stoppages');
+  assert.doesNotMatch(seen, /goalie stopped after sog/i, 'and it still shows the key');
+  assert.doesNotMatch(seen, /\bsog\b/i, 'unexpanded jargon reached the page');
+
+  // THE STYLESHEET WAS DOING THE TITLE-CASING, and on a written label
+  // `capitalize` gives "Goaltender Covered The Puck".
+  assert.doesNotMatch(PAGE_CSS, /\.rsn\{[^}]*text-transform:capitalize/,
+    'the heading still title-cases every word of a written label');
+  assert.doesNotMatch(PAGE_CSS, /\.whtally\{[^}]*text-transform:capitalize/,
+    'the tally still title-cases every word');
+});
+
+test('a reason we have never seen still renders, and renders raw', () => {
+  // The fallback is the HONEST branch, not the default one: the feed can emit a
+  // reason absent from WHY, and a label we invented for it would be a guess in
+  // our own voice. Unreachable from the reference game, so the game is re-coded
+  // — the same fix as the host-goalie branch on the game page.
+  const g = JSON.parse(JSON.stringify(rich));
+  let touched = 0;
+  for (const e of g.events) if (e.type === 'stoppage' && e.rsn) { e.rsn = 'krakens-on-ice'; touched++; }
+  assert.ok(touched > 5, `only ${touched} stoppages to re-code`);
+  const a = boot(g);
+  a.$('lyWhistle').click();
+  const seen = a.every(d => panel(d)).join('\n');
+  assert.match(seen, /krakens on ice/, 'an unknown reason vanished instead of falling back');
+  assert.doesNotMatch(seen, /undefined|\[object/, 'and it fell back to something broken');
+});
+
+test('the card says it is looking BACKWARDS, because it usually is', () => {
+  // Kevin: "the card becomes disjointed with the event by event action." Measured
+  // live across a game: the event the card describes is a median 29 SECONDS
+  // behind the playhead, 102s at the 90th percentile, and more than five seconds
+  // behind on 78% of frames — while the card sat in present tense, in the
+  // position of a caption, with a timestamp a reader had to compare against the
+  // scoreboard to discover was history. The card was never wrong; its currency
+  // was invisible.
+  const a = boot();
+  a.$('lyWhistle').click();
+  //
+  // AND THE EXEMPTION IS CHENG'S OWN RULE, NOT A HOLE IN THE TEST. Before the
+  // first whistle the card reads "No whistle yet — play has not stopped in what
+  // you have watched so far", which is a CONDITION: recomputable from the state
+  // at the playhead, with no reference to when it started. It cannot drift, so
+  // it needs no retrospective framing. Every card that names a past stoppage
+  // does. The two are separated here by whether they name one.
+  const frames = a.every(d => panel(d)).filter(Boolean);
+  assert.ok(frames.length > 50, `only ${frames.length} frames carry a card`);
+  const naming = frames.filter(p => /class="rsn"/.test(p));
+  const waiting = frames.filter(p => !/class="rsn"/.test(p));
+  assert.ok(naming.length > 40, `only ${naming.length} cards name a stoppage`);
+  assert.ok(waiting.length > 0, 'the pre-whistle state is unreachable, so its arm is untested');
+  for (const p of naming)
+    assert.match(p, /Last stoppage/,
+      'a card naming a past event competes with the scoreboard for "now"');
+  for (const p of waiting) {
+    assert.match(p, /No whistle yet/);
+    assert.doesNotMatch(p, /Last stoppage/,
+      'a condition that cannot drift was labelled as history');
+  }
+});
+
+test('the whistle ring is NAMED, and only while the layer draws it', () => {
+  // below-the-rink.md §3 found this for k-blk and k-hd and fixed those two; the
+  // whistle layer kept drawing a ring on every game with nothing naming it. The
+  // only naming was an SVG <title> — no hover on a phone, and nobody hovers
+  // while watching, which is why it read as clutter beside a card that spent
+  // three sentences on the same stoppage.
+  assert.match(app, /class="lkey lk-wh"/, 'the ring has no legend key at all');
+  assert.match(PAGE_CSS, /#rg\.whistle \.legend \.lk-wh/,
+    'nothing reveals the key when the layer is on');
+  assert.match(PAGE_CSS, /#rg \.k-wh\{/, 'the key has no swatch');
+
+  const a = boot();
+  assert.equal(a.$('rg').classList.contains('whistle'), false);
+  a.$('lyWhistle').click();
+  assert.ok(a.$('rg').classList.contains('whistle'), 'the key can never appear');
+  a.$('lyWhistle').click();
+  assert.equal(a.$('rg').classList.contains('whistle'), false,
+    'the key would stay after its marks left');
 });
 
 test('with trails off the ice holds the current moment and nothing else', () => {

@@ -304,3 +304,99 @@ Offered to be attacked. Split by whether it needs a decision.
 - **and the measurement worth taking during the test**: does she ever look at the
   card mid-play? If the answer is no, the drift never mattered and the naming
   work was the whole fix.
+
+---
+
+## 10. Built 2026-08-16 — §7 items 1–3
+
+CHENG's sequencing: **the label table first**, because the heading and the legend
+key both consume it, and building them in the other order means writing two
+temporary strings you then delete.
+
+### The label table
+
+`WHY` gains `name` beside `say` and `from`. Fifteen reasons, and the point of a
+third field rather than a re-pointing is that **`name` is not a shorter `say` —
+it is a different job.** The heading names the stoppage; the body teaches it.
+
+```
+Goalie Stopped After Sog   →  Goaltender covered the puck
+Net Dislodged Defensive Skater →  Net off its moorings
+Referee Or Linesman        →  Puck hit an official
+Tv Timeout                 →  TV timeout
+Puck In Netting            →  Puck into the netting
+```
+
+**Three surfaces, one table.** Read back off the running page, the heading, the
+tally and the ring `<title>` now all render written English — and a mutation
+removing a single `name` is caught, because the test reads the vocabulary out of
+`WHY` rather than listing the labels it expects.
+
+**And the stylesheet was doing the title-casing.** `.rsn` and `.whtally` carried
+`text-transform:capitalize`, which is what produced `Goalie Stopped After Sog`
+from the raw key — and would have produced **`Goaltender Covered The Puck`** from
+a written label. Replaced with `::first-letter`, which suits both a written name
+and the raw string an unrecognised reason still falls back to. **The fix would
+have silently half-worked without looking at it.**
+
+### The retrospective heading
+
+```
+LAST STOPPAGE
+Offside · P3 01:13
+Offside — an attacking player crossed the blue line ahead of the puck…
+```
+
+The kicker, not the heading: **the reason keeps the heading**, because what
+stopped play is what a reader came to the card for. The kicker ranks the card as
+a ledger rather than a second narrator.
+
+### The legend key
+
+```
+play restarted here — brightest at the most recent stoppage
+```
+
+Gated on `#rg.whistle`, using the progressive machinery from R Q2. It names the
+mark **and** the `.now` distinction, which is the thing the ring was using colour
+to say and never saying.
+
+### The EVENT/CONDITION rule, and the test that survived it
+
+CHENG's mechanical form:
+
+> **A statement is a condition if, and only if, it can be recomputed from the
+> game state at the playhead alone — with no reference to when it started.**
+
+It has already earned its keep. The whistle panel has a second branch — *"No
+whistle yet — play has not stopped in what you have watched so far"* — and the
+first version of the retrospective test failed on it. That is **not** an
+exemption to paper over: "no whistle yet" is recomputable from the playhead, it
+cannot drift, and it correctly carries no retrospective framing. The test now
+separates the two by whether the card names a stoppage, which is the rule
+expressed as an assertion.
+
+**And his added requirement is proven rather than assumed.** *"If the empty-net
+note persists after the goalie returns, it becomes an event narration wearing a
+condition's clothes."* Mutated the note to persist: **killed**, by the `1551`
+control case — both goaltenders on the ice, and the note must be empty.
+
+*(The first attempt at that mutation used `window`, which the fake document does
+not have, so boot threw and 96 tests "failed" for a reason with nothing to do
+with the claim. A mutation that breaks the harness measures the harness. Redone
+with a module-scoped variable.)*
+
+### Mutations
+
+**Seven, all killed:** bypassing the label table, an unknown reason rendering as
+nothing, the card dropping its kicker, the stylesheet title-casing labels again,
+the legend key losing the class its rule keys on, nothing revealing that key, and
+a single reason losing its written name. Plus the persistence mutation above.
+
+### Still open
+
+**§7 item 4 — labelling the `.wh.now` ring on the ice.** The overlay Kevin asked
+for. CHENG has endorsed the mechanism (*"not a workaround — it's the correct
+surface"*) but listed only 1–3 as build-now, so this waits on an explicit go. It
+is cheaper after this work than before it: **the ring now has a short written
+sentence to show**, which it did not have an hour ago.

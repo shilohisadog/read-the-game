@@ -92,15 +92,32 @@ function linesFor(rsn, x) {
   return [];
 }
 
-/** reason -> what it means, and where that meaning comes from. */
+/**
+ * reason -> what to CALL it, what it means, and where that meaning comes from.
+ *
+ * `name` IS NOT A SHORTER `say`, IT IS A DIFFERENT JOB. The heading names the
+ * stoppage; the body teaches it. One string cannot do both, which is why the
+ * page shipped for weeks rendering `String(rsn).replace(/-/g,' ')` -- the raw
+ * feed key with its hyphens swapped -- into every heading, every tally cell and
+ * every ring tooltip: "Goalie Stopped After Sog", "Tv Timeout", "Net Dislodged
+ * Defensive Skater". `say` existed and was correct the whole time and was the
+ * wrong length to use.
+ *
+ * KNOWN KEYS ONLY. A reason absent from this table still renders raw, because
+ * the feed can emit one we have never seen and inventing a label for it would be
+ * the guess this project refuses everywhere else. The fallback is the honest
+ * branch, not the default one.
+ */
 export const WHY = {
   icing: {
+    name: 'Icing',
     say: 'Icing — the puck was sent from behind the centre line all the way past '
        + 'the far goal line untouched. The faceoff comes back to the offending '
        + 'end, and that team may not change players before it.',
     from: 'rule: NHL Rule 81',
   },
   offside: {
+    name: 'Offside',
     // "the faceoff goes back outside" WAS SHIPPED AND IS WRONG ABOUT ONE OFFSIDE
     // IN TEN. Measured over 1,094 offsides that restart immediately, across 240
     // games: 89.8% at the neutral-zone dot outside the blue line, 5.3% at centre
@@ -116,58 +133,71 @@ export const WHY = {
     from: 'rule: NHL Rule 83',
   },
   'goalie-stopped-after-sog': {
+    name: 'Goaltender covered the puck',
     say: 'The goaltender caught or covered the puck after a shot, which stops play '
        + 'and brings a faceoff.',
     from: 'field: rsn',
   },
   'puck-frozen': {
+    name: 'Puck frozen',
     say: 'The puck was covered and play stopped.',
     from: 'field: rsn',
   },
   'skater-puck-frozen': {
+    name: 'Puck frozen by a skater',
     say: 'A skater, not the goaltender, froze the puck against the boards or the '
        + 'net, and play stopped.',
     from: 'field: rsn',
   },
   'puck-in-netting': {
+    name: 'Puck into the netting',
     say: 'The puck was shot out of play into the netting above the glass.',
     from: 'field: rsn',
   },
   'puck-in-crowd': {
+    name: 'Puck into the crowd',
     say: 'The puck left the ice into the crowd.',
     from: 'field: rsn',
   },
   'puck-in-benches': {
+    name: 'Puck into a bench',
     say: 'The puck went into a player bench and play stopped.',
     from: 'field: rsn',
   },
   'hand-pass': {
+    name: 'Hand pass',
     say: 'Hand pass — the puck was directed to a teammate with a hand in a zone '
        + 'where that is not allowed, so possession does not carry.',
     from: 'rule: NHL Rule 79',
   },
   'high-stick': {
+    name: 'High stick',
     say: 'The puck was played with a stick above shoulder height, which is not '
        + 'allowed, so play stopped.',
     from: 'rule: NHL Rule 80',
   },
   'net-dislodged-defensive-skater': {
+    name: 'Net off its moorings',
     say: 'The net came off its moorings, and play stopped.',
     from: 'field: rsn',
   },
   'referee-or-linesman': {
+    name: 'Puck hit an official',
     say: 'The puck struck an official, and play stopped.',
     from: 'field: rsn',
   },
   'tv-timeout': {
+    name: 'TV timeout',
     say: 'A scheduled broadcast break. Play was already stopped.',
     from: 'field: rsn',
   },
   'video-review': {
+    name: 'Video review',
     say: 'The play was reviewed on video before the result was confirmed.',
     from: 'field: rsn',
   },
   'delayed-penalty': {
+    name: 'Delayed penalty',
     say: 'A penalty has been signalled and play continues until the offending team '
        + 'touches the puck — which is why the arm stays up and no whistle comes '
        + 'yet. The other side may pull its goaltender for an extra skater until '

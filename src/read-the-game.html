@@ -209,8 +209,9 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    A legend is a READ surface, not a control: things you click must not move,
    things you read may. Nobody builds muscle memory for a key. */
 #rg .legend .lkey{display:none}
-#rg.slot .legend .lk-hd,#rg.blocked .legend .lk-blk,#rg.heldends .legend .lk-ends{display:inline}
-#rg .k-a{background:#fff;box-shadow:0 0 0 1.5px var(--away)}#rg .k-h{background:var(--home)}#rg .k-hd{background:#fff;box-shadow:0 0 0 1.5px var(--hd)}#rg .k-blk{background:var(--home);box-shadow:0 0 0 1.5px var(--flag)}#rg .k-p{background:#0e1216}#rg .k-g{background:radial-gradient(circle,#fff 0 2.5px,var(--home) 2.5px)}#rg .k-gv{background:radial-gradient(circle,var(--away) 0 2.5px,#fff 2.5px);box-shadow:0 0 0 1.5px var(--away);margin-left:-3px}
+#rg.slot .legend .lk-hd,#rg.blocked .legend .lk-blk,#rg.heldends .legend .lk-ends,
+#rg.whistle .legend .lk-wh{display:inline}
+#rg .k-a{background:#fff;box-shadow:0 0 0 1.5px var(--away)}#rg .k-h{background:var(--home)}#rg .k-hd{background:#fff;box-shadow:0 0 0 1.5px var(--hd)}#rg .k-wh{background:transparent;box-shadow:0 0 0 1.5px var(--flag)}#rg .k-blk{background:var(--home);box-shadow:0 0 0 1.5px var(--flag)}#rg .k-p{background:#0e1216}#rg .k-g{background:radial-gradient(circle,#fff 0 2.5px,var(--home) 2.5px)}#rg .k-gv{background:radial-gradient(circle,var(--away) 0 2.5px,#fff 2.5px);box-shadow:0 0 0 1.5px var(--away);margin-left:-3px}
 #rg .work{background:#fff;border:1px solid var(--edge);border-radius:13px;padding:18px;margin-top:14px;box-shadow:0 5px 18px rgba(16,32,45,.06)}
 #rg .work h2{margin:0 0 10px;font-size:1.1rem}#rg .work h2 .wsub{color:var(--muted);font-weight:400}
 #rg .wc .wexc{font-size:.82rem;line-height:1.6}#rg .wg{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
@@ -371,12 +372,20 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .whistlepanel{display:none}
 #rg.whistle .whistlepanel{display:block;background:#fff;border:1px solid var(--edge);border-radius:11px;padding:13px 15px;margin-top:10px;box-shadow:0 4px 14px rgba(16,32,45,.06)}
 #rg .whsay{margin:0;font-size:.9rem;line-height:1.5}
-#rg .whsay .rsn{font-weight:800;text-transform:capitalize}
+#rg .whsay .rsn{font-weight:800}
+/* CAPITALISE THE SENTENCE, NOT EVERY WORD. `text-transform:capitalize` is what
+   rendered the raw feed key as "Goalie Stopped After Sog"; on a written label it
+   gives "Goaltender Covered The Puck". ::first-letter suits both the labels and
+   the raw string an unknown reason still falls back to. */
+#rg .whsay .rsn::first-letter,#rg .whtally span::first-letter{text-transform:uppercase}
+/* THE CARD IS RETROSPECTIVE AND SAYS SO. Small, muted, above the reason: it
+   ranks the card below the rink as a ledger rather than a second narrator. */
+#rg .whsay .wkick{display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:2px}
 #rg .whsay .at{font-family:ui-monospace,Menlo,monospace;color:var(--muted);font-size:.78rem}
 #rg .whsay .none{color:var(--flag)}
 #rg .whmeta{font-size:.74rem;color:var(--muted);margin-top:7px}
 #rg .whmeta .src{font-family:ui-monospace,Menlo,monospace}
-#rg .whtally{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:10px;padding-top:9px;border-top:1px solid var(--edge);font-size:.76rem;color:var(--muted);text-transform:capitalize}
+#rg .whtally{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:10px;padding-top:9px;border-top:1px solid var(--edge);font-size:.76rem;color:var(--muted)}
 #rg .whtally b{color:var(--ink);font-family:ui-monospace,Menlo,monospace}
 #rg .goalies{display:none;gap:10px;margin-top:10px}
 #rg.goalie .goalies{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -413,7 +422,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
   <button class="spd" id="sp0" aria-pressed="false">🐢 Slower</button><button class="spd" id="sp1" aria-pressed="true">Teaching</button><button class="spd" id="sp2" aria-pressed="false">Faster</button><button class="spd" id="lbl" aria-pressed="true">💬 Explain plays</button>
   <input class="scrub" id="scrub" type="range" min="0" max="1" value="0"><button id="work" aria-expanded="false">Show me the work</button></div>
 <p class="verdict" id="verdict"></p>
-<div class="legend"><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white-filled, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span><i class="k-g"></i><i class="k-gv"></i>goal — either sweater</span><span><i class="k-blk"></i>blocked — ringed where the puck was <b>stopped</b></span><span class="lkey lk-hd"><i class="k-hd"></i>from the slot</span><span class="lkey lk-blk">blocked shots are dimmed unless a body stopped them</span><span class="lkey lk-ends">ends are held fixed — in the arena the teams switch each period</span></div>
+<div class="legend"><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white-filled, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span><i class="k-g"></i><i class="k-gv"></i>goal — either sweater</span><span><i class="k-blk"></i>blocked — ringed where the puck was <b>stopped</b></span><span class="lkey lk-hd"><i class="k-hd"></i>from the slot</span><span class="lkey lk-blk">blocked shots are dimmed unless a body stopped them</span><span class="lkey lk-wh"><i class="k-wh"></i>play restarted here — brightest at the most recent stoppage</span><span class="lkey lk-ends">ends are held fixed — in the arena the teams switch each period</span></div>
 <div class="newcomer nwhy2" id="newcomerWhy"></div><div class="layers"><span class="ll">Add a metric layer:</span><button class="lyr" id="lyCorsi" aria-pressed="false">＋ Control (Corsi)</button><button class="lyr" id="lyHd" aria-pressed="false">＋ Shots from the slot</button><button class="lyr" id="lyGoalie" aria-pressed="false">＋ Goaltending</button><button class="lyr" id="lyWhistle" aria-pressed="false">＋ Why play stopped</button><button class="lyr" id="lyBlock" aria-pressed="false">＋ Blocked shots</button></div>
 <div class="hint">Tip: click any shot ringed in amber to see <b>why</b> it counts as a slot shot — with trails set to <b>keep every mark</b>, earlier ones stay clickable too.</div>
 <div class="figpick"><span class="ll">Trails:</span>
@@ -1527,15 +1536,32 @@ function linesFor(rsn, x) {
   return [];
 }
 
-/** reason -> what it means, and where that meaning comes from. */
+/**
+ * reason -> what to CALL it, what it means, and where that meaning comes from.
+ *
+ * `name` IS NOT A SHORTER `say`, IT IS A DIFFERENT JOB. The heading names the
+ * stoppage; the body teaches it. One string cannot do both, which is why the
+ * page shipped for weeks rendering `String(rsn).replace(/-/g,' ')` -- the raw
+ * feed key with its hyphens swapped -- into every heading, every tally cell and
+ * every ring tooltip: "Goalie Stopped After Sog", "Tv Timeout", "Net Dislodged
+ * Defensive Skater". `say` existed and was correct the whole time and was the
+ * wrong length to use.
+ *
+ * KNOWN KEYS ONLY. A reason absent from this table still renders raw, because
+ * the feed can emit one we have never seen and inventing a label for it would be
+ * the guess this project refuses everywhere else. The fallback is the honest
+ * branch, not the default one.
+ */
 const WHY = {
   icing: {
+    name: 'Icing',
     say: 'Icing — the puck was sent from behind the centre line all the way past '
        + 'the far goal line untouched. The faceoff comes back to the offending '
        + 'end, and that team may not change players before it.',
     from: 'rule: NHL Rule 81',
   },
   offside: {
+    name: 'Offside',
     // "the faceoff goes back outside" WAS SHIPPED AND IS WRONG ABOUT ONE OFFSIDE
     // IN TEN. Measured over 1,094 offsides that restart immediately, across 240
     // games: 89.8% at the neutral-zone dot outside the blue line, 5.3% at centre
@@ -1551,58 +1577,71 @@ const WHY = {
     from: 'rule: NHL Rule 83',
   },
   'goalie-stopped-after-sog': {
+    name: 'Goaltender covered the puck',
     say: 'The goaltender caught or covered the puck after a shot, which stops play '
        + 'and brings a faceoff.',
     from: 'field: rsn',
   },
   'puck-frozen': {
+    name: 'Puck frozen',
     say: 'The puck was covered and play stopped.',
     from: 'field: rsn',
   },
   'skater-puck-frozen': {
+    name: 'Puck frozen by a skater',
     say: 'A skater, not the goaltender, froze the puck against the boards or the '
        + 'net, and play stopped.',
     from: 'field: rsn',
   },
   'puck-in-netting': {
+    name: 'Puck into the netting',
     say: 'The puck was shot out of play into the netting above the glass.',
     from: 'field: rsn',
   },
   'puck-in-crowd': {
+    name: 'Puck into the crowd',
     say: 'The puck left the ice into the crowd.',
     from: 'field: rsn',
   },
   'puck-in-benches': {
+    name: 'Puck into a bench',
     say: 'The puck went into a player bench and play stopped.',
     from: 'field: rsn',
   },
   'hand-pass': {
+    name: 'Hand pass',
     say: 'Hand pass — the puck was directed to a teammate with a hand in a zone '
        + 'where that is not allowed, so possession does not carry.',
     from: 'rule: NHL Rule 79',
   },
   'high-stick': {
+    name: 'High stick',
     say: 'The puck was played with a stick above shoulder height, which is not '
        + 'allowed, so play stopped.',
     from: 'rule: NHL Rule 80',
   },
   'net-dislodged-defensive-skater': {
+    name: 'Net off its moorings',
     say: 'The net came off its moorings, and play stopped.',
     from: 'field: rsn',
   },
   'referee-or-linesman': {
+    name: 'Puck hit an official',
     say: 'The puck struck an official, and play stopped.',
     from: 'field: rsn',
   },
   'tv-timeout': {
+    name: 'TV timeout',
     say: 'A scheduled broadcast break. Play was already stopped.',
     from: 'field: rsn',
   },
   'video-review': {
+    name: 'Video review',
     say: 'The play was reviewed on video before the result was confirmed.',
     from: 'field: rsn',
   },
   'delayed-penalty': {
+    name: 'Delayed penalty',
     say: 'A penalty has been signalled and play continues until the offending team '
        + 'touches the puck — which is why the arm stays up and no whistle comes '
        + 'yet. The other side may pull its goaltender for an extra skater until '
@@ -3349,7 +3388,18 @@ $('lbl').addEventListener('click',()=>{labelsOn=!labelsOn;$('lbl').setAttribute(
 // `marks` and `latest` are the layer's own, not this page's: a whistle mark on
 // the wrong dot is the kind of wrong that looks completely right, so the grouping
 // rule is tested in test/whistle.test.js rather than eyeballed here.
-const RSN=r=>r?String(r).replace(/-/g,' '):'unrecorded';
+/* ONE LABEL TABLE, THREE SURFACES. The heading, the tally and the <title> on
+   every ring all came through here, and here was `String(r).replace(/-/g,' ')`
+   -- the raw feed key with its hyphens swapped. "Goalie Stopped After Sog",
+   "Tv Timeout", "Net Dislodged Defensive Skater", and `Sog` unexpanded in front
+   of the one audience that does not know the term.
+   FIXING THE HEADING ALONE WOULD HAVE LEFT THE OTHER TWO, and nobody would have
+   noticed the tooltip, because nobody hovers while watching (CHENG). So the
+   written name goes in WHY beside `say` and `from`, and every surface reads it
+   from the one place -- the same argument as `place()` and `page.csp`.
+   AN UNKNOWN REASON STILL RENDERS RAW. The feed can emit one we have never seen
+   and a label we invented for it would be a guess wearing our own voice. */
+const RSN=r=>{if(!r)return 'unrecorded';const w=WHY[r];return w&&w.name?w.name:String(r).replace(/-/g,' ');};
 const ESC=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
 function drawWhistles(W){
  const g=[];
@@ -3391,7 +3441,19 @@ function drawWhistles(W){
  const tal=Object.entries(W.tally).sort((a,b)=>b[1]-a[1]||(a[0]<b[0]?-1:1))
    .map(([r,c])=>`<span>${ESC(RSN(r))} <b>${c}</b></span>`).join('');
  $('whistlePanel').innerHTML=
-   `<p class="whsay"><span class="rsn">${ESC(RSN(w.rsn))}</span> <span class="at">· P${w.per} ${ESC(w.rem)}</span><br>${say}</p>`
+   /* THE CARD SAYS IT IS LOOKING BACKWARDS, which is the whole of Kevin's
+      complaint. Measured across a game: the event this card describes is a
+      median 29 SECONDS behind the playhead, 102s at the 90th percentile, and
+      more than five seconds behind on 78% of frames -- while the card sat in
+      present tense, in the position of a caption, with a timestamp a reader had
+      to compare against the scoreboard to discover was history.
+      The card was never wrong. Its currency was invisible. "Last stoppage"
+      states the relationship the timestamp only implied, and turns a surface
+      competing with the rink for `now` into a ledger entry.
+      THE KICKER IS NOT THE HEADING. The reason keeps the heading, because what
+      stopped play is what the reader came to the card for; the kicker ranks it. */
+   `<p class="whsay"><span class="wkick">Last stoppage</span>`
+  +`<span class="rsn">${ESC(RSN(w.rsn))}</span> <span class="at">· P${w.per} ${ESC(w.rem)}</span><br>${say}</p>`
   +`<div class="whmeta">${where}${w.rsn2?' Also recorded: '+ESC(RSN(w.rsn2))+'.':''} · `
   +`${n===1?'the first this game':n+' so far this game'}${w.from?' · <span class="src">'+ESC(w.from)+'</span>':''}</div>`
   +`<div class="whtally">${tal}</div>`;}
