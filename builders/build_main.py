@@ -64,7 +64,7 @@ T = r"""<style>
    not a trailer for the product, it is the product.
    ONE RENDERER, still. Preview is a class on #rg and a play loop; there is no
    second drawing path and nothing here is reimplemented. */
-#rg.preview .lede,#rg.preview h1,#rg.preview .transport,#rg.preview .layers,
+#rg.preview .newcomer,#rg.preview h1,#rg.preview .transport,#rg.preview .layers,
 #rg.preview .figpick,#rg.preview .hint,#rg.preview .ends,#rg.preview .whistlepanel,#rg.preview .blockpanel,
 #rg.preview .verdict,#rg.preview .nextup,#rg.preview .foot,#rg.preview .work,
 #rg.preview .legend,#rg.preview .goalies,
@@ -313,10 +313,11 @@ T = r"""<style>
    everybody, forever". */
 #rg .newcomer{display:none}
 #rg.newcomer .newcomer{display:block;background:#eef4f8;border:1px solid var(--edge);
- border-left:3px solid var(--blue);border-radius:9px;padding:11px 14px;margin:12px 2px 0;
- font-size:.86rem;line-height:1.55}
+ border-left:3px solid var(--blue);border-radius:9px;padding:13px 16px;margin:0 0 16px;
+ font-size:.92rem;line-height:1.6}
 #rg .newcomer b{color:var(--ink)}
 #rg .newcomer .nwhy{display:block;margin-top:6px;color:var(--muted)}
+#rg.newcomer .nwhy2{font-size:.86rem;margin:12px 2px 0}
 #rg .newcomer .nwhy .lim{display:block;font-size:.76rem;margin-top:2px}
 #rg .newcomer .ndone{margin-top:9px;font-size:.76rem;background:none;border:0;padding:0;
  color:var(--muted);text-decoration:underline;cursor:pointer}
@@ -370,7 +371,7 @@ T = r"""<style>
 <div id="rg"><div class="wrap">
 <p class="eyebrow">Learn to read hockey · watch first, add metrics after</p>
 <h1>Watch the game</h1>
-<p class="lede">Press play and just <b>watch</b> — each play narrated in plain language, goals called with the <b>scorer and assists</b>, the pace easing for the big moments. That’s the base view. When you want to understand <em>why</em> a team is on top, <b>add a metric layer</b> below — control, shots from the slot, goaltending, or why play stopped. Nothing is invented; every layer shows its work.</p>
+<div class="newcomer" id="newcomer"></div>
 <div class="board">
   <div class="tm a"><span class="ab" id="aAb">MIN</span><span class="sc" id="aSc">0</span></div>
   <div class="mid"><div class="gs"><span id="per">Pre-game</span> · <span class="cl" id="clk">20:00</span> <i class="clw">left</i></div>
@@ -392,7 +393,7 @@ T = r"""<style>
   <input class="scrub" id="scrub" type="range" min="0" max="1" value="0"><button id="work" aria-expanded="false">Show me the work</button></div>
 <p class="verdict" id="verdict"></p>
 <div class="legend"><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white-filled, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span><i class="k-g"></i><i class="k-gv"></i>goal — either sweater</span><span><i class="k-blk"></i>blocked — ringed where the puck was <b>stopped</b></span><span class="lkey lk-hd"><i class="k-hd"></i>from the slot</span><span class="lkey lk-blk">blocked shots are dimmed unless a body stopped them</span></div>
-<div class="newcomer" id="newcomer"></div><div class="layers"><span class="ll">Add a metric layer:</span><button class="lyr" id="lyCorsi" aria-pressed="false">＋ Control (Corsi)</button><button class="lyr" id="lyHd" aria-pressed="false">＋ Shots from the slot</button><button class="lyr" id="lyGoalie" aria-pressed="false">＋ Goaltending</button><button class="lyr" id="lyWhistle" aria-pressed="false">＋ Why play stopped</button><button class="lyr" id="lyBlock" aria-pressed="false">＋ Blocked shots</button></div>
+<div class="newcomer nwhy2" id="newcomerWhy"></div><div class="layers"><span class="ll">Add a metric layer:</span><button class="lyr" id="lyCorsi" aria-pressed="false">＋ Control (Corsi)</button><button class="lyr" id="lyHd" aria-pressed="false">＋ Shots from the slot</button><button class="lyr" id="lyGoalie" aria-pressed="false">＋ Goaltending</button><button class="lyr" id="lyWhistle" aria-pressed="false">＋ Why play stopped</button><button class="lyr" id="lyBlock" aria-pressed="false">＋ Blocked shots</button></div>
 <div class="figpick"><span class="ll">Trails:</span>
 <button class="lyr tbtn" data-t="off" aria-pressed="true">Current moment</button>
 <button class="lyr tbtn" data-t="all" aria-pressed="false">Keep every mark</button>
@@ -1263,10 +1264,22 @@ function drawNewcomer(){
     +`${R2.n.toLocaleString()} games. <b>Control</b> counts those attempts, so you can `
     +`watch it happen.<span class="lim">${ESC(R2.population)} · one game is still one game.</span></span>`
    :'';
- el.innerHTML=`<b>New here?</b> Press <b>▶ Play from start</b> and just watch — every play is `
-  +`named as it happens. When you want to know <b>why</b> one team was on top, add a layer below.`
-  +why
+ // SPLIT BY SUBJECT, and measuring is what forced it. Whole, above the rink,
+ // this block ran to 478px on a 390px phone -- the rink ended at 899 and the
+ // play button at 914, against a fold of 844. It told a first-time viewer to
+ // press a button that was not on their screen.
+ // So the instruction lives where PLAY is, and the reason to add a layer lives
+ // where the LAYERS are. Same rule as the control notes, one level up: a
+ // sentence belongs beside the thing it is about.
+ el.innerHTML=`<b>New here?</b> Press <b>▶ Play from start</b> below and just watch — every play `
+  +`is named as it happens, and goals are called with the <b>scorer and assists</b>. `
+  +`Nothing is invented: every number here comes from the league's own record of the game.`
   +`<button class="ndone" id="nDone">I have got the hang of it — hide this</button>`;
+ const w=$('newcomerWhy');
+ if(w)w.innerHTML=`<b>Why add a layer?</b> Because the obvious reading of a game is often `
+  +`the wrong one.`+why
+  +`<span class="nwhy">Every layer shows its work — the events it counted, the ones it did `
+  +`not, and why.</span>`;
  $('nDone').addEventListener('click',()=>{
   // An explicit dismissal outranks the counter, and it is remembered. A tip you
   // cannot turn off is an advert.

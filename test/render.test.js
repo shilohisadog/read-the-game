@@ -1053,7 +1053,10 @@ test('the preview is hidden by CSS, not by deleting the app', () => {
   // shipped bundle. Pin the mechanism: one rule, hiding the controls.
   const hides = app.match(/#rg\.preview [^{]*\{display:none!important\}/);
   assert.ok(hides, 'preview does not hide the controls with CSS');
-  for (const cls of ['.transport', '.layers', '.verdict', '.nextup', '.lede',
+  // `.lede` was here until the paragraph it named was replaced by the
+  // first-visit block (it duplicated that block's job, went stale naming
+  // four layers when there were five, and cost 245px above the rink).
+  for (const cls of ['.transport', '.layers', '.verdict', '.nextup', '.newcomer',
                      // Added when Kevin found the rink cropped: these are real
                      // height in a box sized for a rink, and neither is part of
                      // a five-second taste.
@@ -1581,17 +1584,21 @@ const memStore = (seed = {}) => {
 test('a first-time viewer is told where to click, and why', () => {
   const a = boot(rich, CURVE_AND_MIX);
   assert.ok(a.$('rg').classList.contains('newcomer'), 'a page with no memory greets nobody');
-  const t = a.$('newcomer').innerHTML;
+  // SPLIT BY SUBJECT: the instruction sits with the play button, the reason sits
+  // with the layer buttons. Whole and above the rink it ran to 478px on a phone
+  // and pushed the play button itself below the fold — the block told a first-
+  // time viewer to press something that was not on their screen.
+  const t = a.$('newcomer').innerHTML, w = a.$('newcomerWhy').innerHTML;
   assert.match(t, /Play from start/, 'never says where to click');
-  assert.match(t, /why<\/b> one team was on top/i, 'never says why to click there');
+  assert.match(w, /Why add a layer\?/, 'never says why to click there');
   // "What's Corsi and why do I care" — answered with the archive's own inversion,
   // which is the site's reason to exist and had appeared NOWHERE a visitor to
   // this page could read it: three matches in game.html, all source comments.
-  assert.match(t, /more shot attempts loses more often than it wins/,
+  assert.match(w, /more shot attempts loses more often than it wins/,
     "the site's flagship finding is still absent from the page that demonstrates it");
-  assert.match(t, /2,194 of 4,029/, 'the claim ships without its count');
-  assert.match(t, /NHL regular season and playoffs/, 'the claim ships without its scope');
-  assert.match(t, /one game is still one game/, 'the limit is dropped');
+  assert.match(w, /2,194 of 4,029/, 'the claim ships without its count');
+  assert.match(w, /NHL regular season and playoffs/, 'the claim ships without its scope');
+  assert.match(w, /one game is still one game/, 'the limit is dropped');
 });
 
 test('a returning viewer is not greeted', () => {
@@ -1645,4 +1652,54 @@ test('a page that reaches no archive still says where to click', () => {
   const t = a.$('newcomer').innerHTML;
   assert.match(t, /Play from start/);
   assert.doesNotMatch(t, /loses more often/, 'an archive claim was made with no archive');
+});
+
+test('the opening paragraph is the first-visit block, and it carries what the lede carried', () => {
+  // KEVIN'S CALL: "they both give intro type info and I like the new bits much
+  // better than the existing phrasing." Measured before agreeing — the block was
+  // at y=953 on a 390px phone against a fold of 844, so the orientation a
+  // newcomer needs was BELOW the game they had not been told how to start. And
+  // the lede had gone stale: it named four layers when there were five.
+  //
+  // Two things it said that the block did not, and both had to survive.
+  const a = boot(rich, CURVE_AND_MIX);
+  const t = a.$('newcomer').innerHTML, w = a.$('newcomerWhy').innerHTML;
+  assert.match(t, /scorer and assists/, 'the lede said what a goal call contains; nothing does now');
+  assert.match(t, /Nothing is invented/, 'the trust claim died with the paragraph that carried it');
+  assert.match(w, /shows its work/, 'the layers no longer promise to show their work');
+
+  // AND IT MAY NEVER ENUMERATE THE LAYERS AGAIN. That list is what rotted: prose
+  // naming four layers survived the arrival of a fifth because nothing checked
+  // it. The block says "add a layer below" and lets the buttons be the list.
+  const named = ['goaltending', 'why play stopped', 'shots from the slot']
+    .filter(x => (t + w).toLowerCase().includes(x.toLowerCase()));
+  assert.deepEqual(named, [], `the opening paragraph enumerates layers again: ${named}`);
+});
+
+test('the lede is gone, for everyone, and nothing still points at it', () => {
+  assert.doesNotMatch(app, /class="lede"/, 'the game page still ships the old opening paragraph');
+  // A returning viewer now meets the rink 245px sooner than a first-time one —
+  // which is the right way round, and was not true of the paragraph it replaced.
+  const veteran = boot(rich, CURVE_AND_MIX, '', { getItem: () => '1999-01-01|9', setItem: () => {} });
+  assert.equal(veteran.$('rg').classList.contains('newcomer'), false);
+});
+
+test('each half of the greeting sits beside the thing it is about', () => {
+  // The fix for a defect only a browser could show: whole and above the rink,
+  // the block pushed the play button it names below the fold (rink ended 899,
+  // button 914, fold 844 on a 390px phone). DOM order is the half checkable
+  // here; the geometry is checked by looking.
+  const order = ['id="newcomer"', 'class="transport"', 'id="newcomerWhy"', 'class="layers"'];
+  let at = -1;
+  for (const marker of order) {
+    const k = app.indexOf(marker);
+    assert.ok(k > at, `${marker} is out of order — a greeting has drifted from its subject`);
+    at = k;
+  }
+  // Both halves retire together: one class, one dismissal, no half-greeted state.
+  const a = boot(rich, CURVE_AND_MIX);
+  assert.ok(a.$('newcomer').innerHTML && a.$('newcomerWhy').innerHTML);
+  a.$('nDone').click();
+  assert.equal(a.$('rg').classList.contains('newcomer'), false,
+    'dismissing left one half of the greeting on screen');
 });
