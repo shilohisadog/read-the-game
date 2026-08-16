@@ -316,3 +316,164 @@ Unchanged from `site-purpose.md` §9, plus two:
   reorder this entire document. **Worth deciding before the test rather than
   discovering afterwards**, because it is a property of how the test is run and
   we control it.
+
+---
+
+## 8. CHENG's rulings — 2026-08-16
+
+### The lint that came before the rulings, and it is the most useful thing here
+
+> *"Both halves stayed individually right and only the relationship broke — and
+> the test asserted the literal id, so it certified the break. **A literal id
+> can't see a relationship; it only ever knew the answer, not the question.**
+> That's a general lint: any test whose subject is a constant is testing the
+> answer. Worth a sweep — there will be others."*
+
+**The sweep was run and it found one, on the page the novice tester will be
+handed.** The first-visit greeting said *"Press ▶ Play from start **below**"*.
+Measured in a browser at three viewports:
+
+```
+390x844   play button 171px ABOVE the fold      the claim holds
+360x640   play button  21px BELOW the fold      the claim is FALSE
+1100x900  play button  84px above the fold      the claim holds
+```
+
+**Splitting that block was the fix for exactly this defect at 390, and nobody
+re-measured it smaller.** A margin that survives one viewport is a constant that
+drifts with the next — this project's oldest recorded mistake, committed inside
+the fix for its own earlier instance.
+
+The repair is structural rather than a re-measurement: **the sentence stops
+claiming a position.** The button's label is quoted verbatim, which is what a
+reader searches for, and a sentence that asserts no position cannot have a stale
+one at any width. A test now forbids positional words in that block, the same
+shape as the one forbidding it from enumerating the layers. Two mutations, both
+killed.
+
+**Generalised, for `mechanize-the-review`:** *prose that refers to another
+element — by position, identity, or count — has a dependency nothing in a text
+file can see.* Three instances now: four layers when there were five; "the game
+at the top" pointing at a different game; "below" for a button off the screen.
+
+### Q1 — thesis ABOVE the hero, and my objection was aimed at the wrong target
+
+I worried this repeated the R Q1 mistake. **CHENG's correction is that I took R's
+mechanism for its principle.** R's answer was not *"time gates it"*; it was **do
+not show a conclusion before the thing it concludes about exists.**
+
+> *"On the home page the thesis is about 3,855 **other** games. It isn't a
+> conclusion about the hero, it's the reason the hero is interesting."*
+
+His test — read the two orders aloud:
+
+> *Here's a game. …Also, across 3,855 games, the team that controlled play won 60.4%.*
+> *Shot counts don't tell you who won as often as you'd think — here's a game where that happened.*
+
+**The second is an argument. The first is two facts in a pile.** And *watch
+first, add metrics after* is a rule about the game page's layer stack, not about
+the home page's rhetorical order — applying it here is the borrowed conclusion I
+was right to be wary of, aimed at the wrong thing.
+
+**Ruling: thesis above hero**, not merely earlier than it is.
+
+### Q2 — keep the contradiction, and make it explicit **and computed**
+
+The hero currently reads *"CAR put more shots on goal, 23 to 22, and won"*,
+sitting inertly beside a rate about losing. Once the thesis is above it, the
+contradiction stops being a silent inconsistency and becomes the second
+sentence: **"most of the time. Not this time."**
+
+The requirement, and it is the part with teeth:
+
+> *"Most-recent selection means some nights confirm and some contradict. **The
+> caption must handle both, which means the relationship has to be computed, not
+> written.**"*
+
+Both ingredients are already on the page — the rate and the game's own outcome —
+so this is a caption that states *whether this game is the usual case*, derived.
+**A hand-written clause here would be the `#start` defect a third time**: copy
+asserting a relationship that the data is free to invert overnight.
+
+### Q3 — Workshop behind nav; my counter-argument was answered with the §4 rule
+
+I argued Workshop is evidence of real work and that "show the archive's own
+scale" supports keeping it.
+
+> *"That convention says show **the thing**, not links to explorations of it.
+> 4,553 games is the archive. Seven prototypes are process."*
+
+And the credibility is better supplied by two things already in hand: the archive
+size, and **the provenance hashes**. Move Workshop behind nav — reachable, and no
+longer outranking the thesis.
+
+### Q4 — the directory stays on the page, and this is where I was overruled hardest
+
+I proposed hiding it behind the existing "Teams" nav link.
+
+> *"**Kevin's own ruling created it**: 'the normal use case will be for a team fan
+> to come to the site and load their team's last game.' Hiding it reverses a
+> decision made on a real audience premise, in order to save pixels."*
+
+**The fix is rank, not location.** `thesis → hero → directory → the rest`. The fan
+scrolls once and finds their club; the newcomer meets the argument first and never
+needs the grid. This supersedes §5.5.
+
+### The conversion — accepted, with the refinement that keeps it honest
+
+> **A visitor watches one game with one metric layer turned on.**
+
+CHENG: *"the first time this project has stated what success looks like… it ranks
+every element on the page by distance from that outcome, which settles Q3 and Q4
+without appeal to taste."*
+
+**And the refinement is not optional.** As stated it is **unobservable** — we have
+no analytics and the layer toggle is client-side, so nothing anywhere records it.
+
+> **It is a design north star, not a metric.** Recorded here so that nobody later
+> quotes it as something we measured.
+
+The only direct evidence that will ever exist is the novice test: hand her a link
+and watch whether she turns a layer on unprompted. **n=1**, and it is all there is.
+
+### Provenance — right idea, wrong page
+
+The three SHA-256 digests per game (`game.src.boxscore` / `play-by-play` /
+`shifts`) are *don't trust, verify*, already shipped and currently invisible.
+CHENG puts them on the **game page**, not the home page:
+
+> *"next to 'check our work,' where a skeptic is already standing."*
+
+### Scroll-driven animation — agreed, with one rule that must land with it
+
+Order first; the page produced by §5 is the one worth animating. And when it
+lands:
+
+> **It must not animate *between* the three rates.** Three nominal categories, no
+> continuum — a dot sliding from 45.8 to 54.5 to 39.6 asserts a path that does not
+> exist. **Each dot arrives at its own position independently**, or it breaks the
+> rule that permitted the scale in the first place.
+
+### The one for Kevin
+
+Which page the tester lands on first.
+
+> *"Hand her a **game** link. The conversion is 'watches one game with one layer
+> on', and a game link tests exactly that with nothing in the way. The home
+> page's job is to produce that click — testing the page and the product in one
+> session confounds them, and if she stalls you won't know which failed. Test the
+> home page separately, afterwards, with a different question: **from here, what
+> would you do?**"*
+
+### Resulting order
+
+```
+what is this          headline + one sentence
+why should I care     THE THESIS — three rates on one scale
+                      ↳ population, once
+here is one           the five-second loop, captioned as usual-or-not (computed)
+                      ▶ watch the whole game
+your club             33 chips
+the limits            what this does and does not claim
+                      nav → Workshop, nav → Teams
+```

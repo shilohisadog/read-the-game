@@ -1305,7 +1305,17 @@ function drawNewcomer(){
  // So the instruction lives where PLAY is, and the reason to add a layer lives
  // where the LAYERS are. Same rule as the control notes, one level up: a
  // sentence belongs beside the thing it is about.
- el.innerHTML=`<b>New here?</b> Press <b>▶ Play from start</b> below and just watch — every play `
+ // NO POSITIONAL WORD. It read "Press ▶ Play from start BELOW", and measured in
+ // a browser that claim holds at 390x844 with 171px to spare and FAILS at
+ // 360x640 by 21px -- the button entirely off screen for the one reader the
+ // sentence addresses. Splitting this block was the fix for exactly that defect
+ // at 390; nobody re-measured it smaller, and a margin that survives one
+ // viewport is a constant that drifts with the next one.
+ // The structural fix is to stop making the claim. The button's own label is
+ // quoted verbatim, which is what a reader searches for, and a sentence that
+ // asserts no position cannot have a stale one at any width. Same rule that
+ // stopped this paragraph enumerating the layers.
+ el.innerHTML=`<b>New here?</b> Press <b>▶ Play from start</b> and just watch — every play `
   +`is named as it happens, and goals are called with the <b>scorer and assists</b>. `
   +`Nothing is invented: every number here comes from the league's own record of the game.`
   +`<button class="ndone" id="nDone">I have got the hang of it — hide this</button>`;

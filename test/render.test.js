@@ -1821,6 +1821,19 @@ test('the opening paragraph is the first-visit block, and it carries what the le
   const named = ['goaltending', 'why play stopped', 'shots from the slot']
     .filter(x => (t + w).toLowerCase().includes(x.toLowerCase()));
   assert.deepEqual(named, [], `the opening paragraph enumerates layers again: ${named}`);
+
+  // AND IT MAY NOT SAY WHERE ANYTHING IS. Same family, found by the sweep CHENG
+  // asked for after the #start defect: a sentence that refers to another element
+  // has a dependency on that element, and no test can see it.
+  // "Press ▶ Play from start BELOW" was true at 390x844 with 171px to spare and
+  // FALSE at 360x640 by 21px, with the button entirely off screen for the one
+  // reader it addresses. A margin measured at one viewport is a constant that
+  // drifts with the next, which is this project's oldest recorded mistake.
+  // The button's label is quoted verbatim; that is what a reader looks for.
+  const positional = ['below', 'above', 'at the top', 'at the bottom', 'to the right', 'to the left']
+    .filter(x => (t + w).toLowerCase().includes(x));
+  assert.deepEqual(positional, [],
+    `the greeting tells a newcomer where to look, and layout decides whether that is true: ${positional}`);
 });
 
 test('the lede is gone, for everyone, and nothing still points at it', () => {
