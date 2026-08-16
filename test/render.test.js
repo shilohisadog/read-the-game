@@ -520,8 +520,35 @@ test('the controls explain themselves without referring to their own history', (
   // stays; the apology for the past comes out.
   assert.doesNotMatch(prose, /used to stay on the ice|older behaviour|nobody asked for/,
     'the page is apologising to itself');
-  assert.match(prose, /Keep every mark<\/b> leaves every attempt on the ice/,
-    'and it still says what the control does');
+  // AND THE RENDERED NOTES, now that the copy lives there. The notes moved out
+  // of permanent markup into the moment of use (R Q3), so a gate reading only
+  // the markup would have quietly stopped covering the sentences it was written
+  // for. NOT a grep over the whole script: this file's own comment above says
+  // why — the source comments legitimately discuss the app's history, and the
+  // first version of this test failed on one. Read what a VISITOR is shown.
+
+  // The explanation of what the control DOES is the good part, and it still
+  // exists — but it is now shown when the control is USED rather than always.
+  const a = boot();
+  assert.equal(a.$('nTrails').textContent, '',
+    'the trails note is present before anyone chose the setting it explains');
+  a.GROUPS['#rg .tbtn'].find(b => b.dataset.t === 'all').click();
+  assert.match(a.$('nTrails').textContent, /every attempt stays on the ice/i,
+    'flipping to Keep every mark explains nothing');
+  a.GROUPS['#rg .tbtn'].find(b => b.dataset.t === 'off').click();
+  assert.equal(a.$('nTrails').textContent, '', 'the note stayed after the setting left');
+
+  // Every note a visitor can actually be shown, in the state that shows it.
+  const shown = [];
+  a.GROUPS['#rg .tbtn'].find(b => b.dataset.t === 'all').click();
+  a.GROUPS['#rg .sbtn'].find(b => b.dataset.s === 'even').click();
+  a.GROUPS['#rg .fbtn'].find(b => b.dataset.f === 'tabletop').click();
+  for (const id of ['nTrails', 'nSit', 'nFig']) shown.push(a.$(id).textContent);
+  for (const text of shown) {
+    assert.ok(text, 'a control was switched and explained nothing');
+    assert.doesNotMatch(text, /used to|older behaviour|nobody asked for|no longer/i,
+      `the changelog voice reached a visitor: "${text}"`);
+  }
 });
 
 test('a goaltender stands in each crease, and the sides agree with the scoreboard', () => {
@@ -1467,4 +1494,56 @@ test('the card sits above the controls, not below them', () => {
     assert.ok(k > at, `${marker} is out of order — the card has slipped back below the controls`);
     at = k;
   }
+});
+
+test('the even-strength note counts what actually dropped out, and agrees with the ledger', () => {
+  // "Switch and watch which attempts drop out" asked the reader to go and look.
+  // The note now says HOW MANY did, in the game in front of them — a claim with
+  // its own evidence attached, which is the difference the whole site trades on.
+  //
+  // And the number is reconciled against the ledger rather than recomputed here:
+  // a test that re-derived it from the events would be a second implementation
+  // agreeing with the first, which is the defect measure.mjs exists to avoid.
+  const a = boot();
+  assert.equal(a.$('nSit').textContent, '', 'the note appears before even-strength is chosen');
+
+  a.GROUPS['#rg .sbtn'].find(b => b.dataset.s === 'even').click();
+  const scrub = a.$('scrub');
+  scrub.value = scrub.max; scrub.oninput({ target: { value: scrub.value } });
+
+  const note = a.$('nSit').textContent;
+  const n = +(note.match(/^(\d+)/) || [])[1];
+  assert.ok(n > 0, `the note reports ${n} attempts dropped over a whole game at even strength only`);
+
+  // RECONCILED AGAINST THE COUNTERS THE PAGE ITSELF SHOWS, in both modes, at the
+  // same frame. Not against a re-derivation from the events: a test that
+  // recomputed the number would be a second implementation agreeing with the
+  // first, which is the defect measure.mjs exists to avoid. The attempts the
+  // page stops counting when even-strength is chosen ARE the attempts the note
+  // says dropped out.
+  const total = d => +d.$('cA').textContent + +d.$('cH').textContent;
+  const even = total(a);
+  a.GROUPS['#rg .sbtn'].find(b => b.dataset.s === 'all').click();
+  const all = total(a);
+  assert.equal(all - even, n,
+    `the note says ${n} dropped, but the counters fall by ${all - even} (${all} → ${even})`);
+  a.GROUPS['#rg .sbtn'].find(b => b.dataset.s === 'even').click();
+
+  // SINGULAR AND PLURAL, BOTH SEEN. "1 attempts have dropped out" is the kind of
+  // thing that ships and then gets screenshotted, and a ternary read at ONE
+  // frame only ever exercises one of its branches — the reference game drops 49,
+  // so the singular arm was never run and a mutation collapsing it survived.
+  // Walk to the frame where exactly one has gone.
+  assert.match(note, /attempts have dropped out/, 'plural, at the end of the game');
+  let sawOne = false;
+  for (let k = 0; k <= +scrub.max; k++) {
+    scrub.value = String(k); scrub.oninput({ target: { value: scrub.value } });
+    const t = a.$('nSit').textContent;
+    if (/^1 /.test(t)) { assert.match(t, /^1 attempt has dropped out/, 'singular is written as a plural'); sawOne = true; break; }
+  }
+  assert.ok(sawOne, 'no frame in this game drops exactly one attempt — the singular arm is untested');
+  scrub.value = scrub.max; scrub.oninput({ target: { value: scrub.value } });
+
+  a.GROUPS['#rg .sbtn'].find(b => b.dataset.s === 'all').click();
+  assert.equal(a.$('nSit').textContent, '', 'the note outlived the setting that produced it');
 });

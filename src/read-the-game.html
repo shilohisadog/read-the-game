@@ -303,7 +303,18 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg.corsi .cbar{display:block}#rg.corsi .counters{display:flex}#rg.corsi #work{display:inline-block}
 #rg .figpick{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 2px 0}
 #rg .sbtn[aria-pressed="true"],#rg .fbtn[aria-pressed="true"]{border-style:solid;color:var(--ink);border-color:var(--ink);background:#eef2f5}
+/* A NOTE APPEARS WHEN THE THING IT EXPLAINS HAPPENS, and not before. These
+   three were permanent -- 183px on a phone, 93 words -- each describing a state
+   the reader was not in. CHENG: "the place that sentence actually pays off is
+   the moment someone flips the switch and 49 attempts vanish. That's when a
+   novice has a question and the sentence is the answer." A disclosure box would
+   have been provenance parked somewhere convenient; this is provenance
+   travelling with the thing it describes, which is the site's own pattern.
+   `:empty` rather than a class, so a note with nothing to say cannot leave a
+   gap behind -- the same reason drawLabel writes no second <text> when there is
+   no second line. */
 #rg .fnote{font-size:.76rem;color:var(--muted);flex:1;min-width:220px}
+#rg .fnote:empty{display:none}
 #rg .fig{transform-box:fill-box;transform-origin:center}
 #rg .layers{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 2px 4px;padding-top:12px;border-top:1px dashed var(--edge)}
 #rg .layers .ll{font-size:.8rem;color:var(--muted);font-weight:700}
@@ -380,18 +391,15 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 <div class="figpick"><span class="ll">Trails:</span>
 <button class="lyr tbtn" data-t="off" aria-pressed="true">Current moment</button>
 <button class="lyr tbtn" data-t="all" aria-pressed="false">Keep every mark</button>
-<span class="fnote"><b>Current moment</b> shows only what is happening now.
-<b>Keep every mark</b> leaves every attempt on the ice, which builds into a shot chart
-by the third period — good to study, busy to watch.</span></div>
+<span class="fnote" id="nTrails"></span></div>
 <div class="figpick"><span class="ll">Situations:</span>
 <button class="lyr sbtn" data-s="all" aria-pressed="true">All situations</button>
 <button class="lyr sbtn" data-s="even" aria-pressed="false">Even strength only</button>
-<span class="fnote">Power plays and an empty net are still hockey — but they aren't
-<b>even</b> hockey. Switch and watch which attempts drop out, and why.</span></div>
+<span class="fnote" id="nSit"></span></div>
 <div class="figpick"><span class="ll">Players:</span>
 <button class="lyr fbtn" data-f="mascot" aria-pressed="true">Mascot</button>
 <button class="lyr fbtn" data-f="tabletop" aria-pressed="false">Tabletop</button>
-<span class="fnote">Same shots, same outcomes, same math — only the drawing changes. <b>Tabletop</b> is the rod-hockey player you grew up with.</span></div>
+<span class="fnote" id="nFig"></span></div>
 <p class="ends">A goaltender stands in each crease, in that team’s colour — and
 leaves when the feed says the goalie was pulled for an extra attacker. Ends are held
 fixed here, so each team always attacks the same net. In the arena they switch every period — this is the one thing on the rink we move, and the coordinates are the league’s own.</p>
@@ -2957,6 +2965,22 @@ function render(i,newest){
  // The replay is AT the end, not merely near it. `i` is the frame index and
  // EV.length-1 is the last playable event; a game paused one shot short has
  // no verdict, and saying so is the whole point.
+ // THE SITUATIONS NOTE CARRIES A NUMBER, which is the difference between a
+ // claim and evidence. "Watch which attempts drop out" asked the reader to go
+ // and look; this says how many did, in the game in front of them, so far.
+ // Counted as: excluded for STRENGTH and for no other reason -- an event that
+ // was also not an attempt was never going to count, and including it would
+ // inflate the number with things even strength did not remove.
+ const dropped=L.excluded.filter(x=>x.dims&&x.dims.strength&&!x.dims.type&&!x.dims.play).length;
+ $('nSit').textContent=evenOnly
+   ?`${dropped} ${dropped===1?'attempt has':'attempts have'} dropped out so far. Power plays and an empty net are still hockey — but they aren't even hockey.`
+   :'';
+ $('nTrails').textContent=trails==='all'
+   ?'Every attempt stays on the ice, which builds into a shot chart by the third period — good to study, busy to watch.'
+   :'';
+ $('nFig').textContent=figStyle!=='mascot'
+   ?'Same shots, same outcomes, same math — only the drawing changes.'
+   :'';
  document.getElementById('rg').classList.toggle('ended',i>=EV.length-1);
  if(blockOn)drawBlocked(blocked.reduce(upto(i),CTX),L);
  else $('blockPanel').innerHTML='';
