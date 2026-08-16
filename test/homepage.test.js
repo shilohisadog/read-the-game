@@ -706,3 +706,72 @@ test('the borrowed term is gone from every page a reader sees', () => {
       `${name} still shows a reader the borrowed term`);
   }
 });
+
+/* ────────────────────────────────────────────────────────────────────────────
+   A URL THAT NAMES A CLUB HAS ALREADY ASKED
+
+   Kevin, with a screenshot of `?team=WSH`: "the home page info crept onto the
+   game page, which I don't care for." Measured live before it was changed:
+   0.90 screens of front-door argument above "← All teams" at 1100px, 1.24 at
+   390px, with the club's own name below the fold at both. `More WSH games` on
+   a game page is the only route into that view.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+test('naming a club in the URL retires the argument, and not naming one keeps it', async () => {
+  // A RELATIONSHIP, not two separate assertions each pinning its own answer:
+  // the SAME element, the SAME docs, and the only difference is the URL.
+  const front = run({ search: '', docs: ALL });
+  const team = run({ search: '?team=BUF', docs: ALL });
+  await front.settle(); await team.settle();
+  // `ids` only holds what the app ASKED FOR, so an untouched element is absent
+  // rather than present-and-false. That is the fake being honest, not a gap:
+  // the front door must never hide this, by any route including not looking.
+  assert.notEqual(front.ids.argument && front.ids.argument.hidden, true,
+    'the front door hid the argument it exists to make');
+  assert.equal(team.ids.argument && team.ids.argument.hidden, true,
+    'a visitor who asked for BUF still gets the whole pitch first');
+});
+
+test('the argument is ONE element, so it cannot be half-retired', async () => {
+  // The way this broke: the rule was written down for the hero and never
+  // extended, because the three pieces above `#main` had no single subject to
+  // apply it to. A wrapper is what makes "and not that" expressible — and what
+  // stops the next thing added here from being missed the same way.
+  const wrap = html.match(/<section id="argument">([\s\S]*?)<\/section>/);
+  assert.ok(wrap, 'the argument lost its wrapper — the rule has no subject again');
+  for (const id of ['what', 'thesis', 'scale']) {
+    assert.match(wrap[1], new RegExp(`id="${id}"`),
+      `#${id} is outside the argument, which is exactly how this went wrong`);
+  }
+  // And it is NOT the whole page above the fold: what the site IS must survive,
+  // or a stranger arriving on a shared team link is told nothing at all.
+  assert.doesNotMatch(wrap[1], /<h1/, 'the h1 went inside — a team page with no title');
+  assert.doesNotMatch(wrap[1], /class="says"/,
+    'the one sentence saying what this site is went with the argument');
+});
+
+test('the rates are not drawn onto a page whose thesis is hidden', async () => {
+  // The rates are the EVIDENCE for the thesis. Drawing them where the claim
+  // they support has been retired leaves a chart of nothing — and `#scale`
+  // ships `hidden`, so the only thing that can un-hide it is `drawRates`.
+  const team = run({ search: '?team=BUF', docs: ALL });
+  await team.settle();
+  assert.ok(!team.ids.scale || !team.ids.scale.kids.length,
+    'the three-rate scale was rendered on a team page');
+
+  // THE CONTROL, or this passes against a page that never draws rates at all.
+  const front = run({ search: '', docs: ALL });
+  await front.settle();
+  assert.ok(front.ids.scale.kids.length > 0, 'the front door stopped drawing the rates');
+  assert.equal(front.ids.scale.hidden, false, 'the front door left its scale hidden');
+});
+
+test('an archive that fails to load still gets its rates, team or no team', async () => {
+  // measures.json is a DIFFERENT FILE and can arrive when the catalog does not,
+  // so the failure branch was deliberately left outside the front-door `else`.
+  // Without this, folding one line into the wrong block is invisible.
+  const broken = run({ search: '', docs: { 'measures.json': MEASURES, 'index.json': INDEX } });
+  await broken.settle();
+  assert.ok(broken.ids.scale.kids.length > 0,
+    'a failed catalog took the rates down with it, though they come from another file');
+});

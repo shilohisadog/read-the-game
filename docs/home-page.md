@@ -644,3 +644,37 @@ intent should not have to wait for `localStorage` to agree.
    Washington and its `<h1>` is generic while an `<h2>` carries the club name,
    which is backwards. Adjacent, cheap, and a separate decision — flagged rather
    than folded in.
+
+### 10.6 Built 2026-08-16
+
+The three pieces are wrapped in **one `<section id="argument">`**, and `?team=`
+hides it — the same rule the hero already followed, now with a subject it can be
+applied to. `drawRates` moved behind `if (!team)`, because the rates are the
+evidence *for* the thesis and a chart supporting a hidden claim is a chart of
+nothing. The archive-failure branch deliberately keeps its rates: `measures.json`
+is a different file and can arrive when the catalog does not.
+
+Measured in a browser, before and after:
+
+| | 1100×900 | 390×844 |
+|---|---|---|
+| "Washington Capitals" | screen 0.94 → **0.43** | screen 1.28 → **0.53** |
+| the first Washington game | screen 1.03 → **0.53** | screen 1.42 → **0.67** |
+
+**Both are above the fold at both widths now**, and six of the club's games are
+visible on a 900px-tall desktop frame. The front door is byte-for-byte unchanged
+in layout: argument at 367px, hero at 811px, `#teams` at 1639px, exactly as
+before.
+
+**The wrapper is the durable half.** Hiding three elements would have worked and
+would have left the next thing added above `#main` to be missed the same way —
+which is precisely how this happened, since the rule was written down for the
+hero and never extended. A test asserts `#what`, `#thesis` and `#scale` are all
+*inside* it, and that the `<h1>` and `.says` are *not*.
+
+Six mutations, six kills — including the two that matter most: retiring the
+argument for everybody, and folding `drawRates` into the front-door branch so a
+failed catalog silently loses rates that had loaded fine.
+
+§10.5's second question — **should the `<h1>` become the club on a team view** —
+is untouched and still open.

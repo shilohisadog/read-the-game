@@ -306,9 +306,21 @@ BODY = r"""<div class="wrap">
      was "never a replacement for the denominator", which stopped being true
      when the axis gained the denominators. The list is gone; the population is
      stated once, below. -->
+<!-- ONE ELEMENT, BECAUSE THE TEAM VIEW HAD NO WAY TO SAY "AND NOT THAT".
+     `drawTeam` clears the page by wiping `#main`, and these three sat OUTSIDE
+     it, so a fan who had already named a club in the URL got 0.90 screens of
+     front-door argument at 1100px and 1.24 at 390px before "← All teams" --
+     with the club's own name below the fold at both widths. The rule was
+     already written down one branch away ("a fan who asked for BUF is not
+     looking for a Dallas game") and applied to the hero alone.
+     A WRAPPER RATHER THAN THREE HIDDEN CHILDREN, so the rule has one subject
+     and cannot be applied to two of three the next time something is added
+     here -- which is the exact way this broke. -->
+<section id="argument">
 <h2 id="what">Which number you count changes the answer</h2>
 <p class="lede" id="thesis">__THESIS__</p>
 <div class="scale" id="scale" hidden></div>
+</section>
 <!-- HERE IS ONE. The argument above is about 3,855 games; this is a game.
      Rendered by script from the catalog, because the team set is a fact about
      the archive and not a list to type. Thirty-three today: Arizona relocated to
@@ -759,6 +771,16 @@ __LIB__
 
   var team = (/[?&]team=([A-Za-z]{2,3})/.exec(location.search) || [])[1];
   if (team) team = team.toUpperCase();
+  /* A URL THAT NAMES A CLUB HAS ALREADY ASKED. This is an INTENT signal, not a
+     returning-visitor one -- which is why it is read here and not out of
+     localStorage the way the game page retires its greeting. Someone who names
+     a club has told us what they want whether or not they have been here
+     before, and intent should not have to wait for storage to agree.
+     WHAT STAYS IS WHAT THE SITE *IS*: the h1 and the one sentence under it,
+     76px at 1100 and 127px at 390. What goes is the ARGUMENT FOR WHY YOU
+     SHOULD CARE, 414px and 622px, which is read once. Same split R made below
+     the rink. Set before the fetch, so it does not depend on a network. */
+  if (team) $('argument').hidden = true;
   var season = +(/[?&]season=(\d{4})/.exec(location.search) || [])[1] || 0;
 
   Promise.all([grab('catalog.json'), grab('measures.json'), grab('index.json')])
@@ -776,7 +798,14 @@ __LIB__
            Dallas game; the hero exists for the visitor who has not chosen. */
         drawHero(cat, measures);
       }
-      drawRates(measures);
+      /* AND THE ARGUMENT IS THE FRONT DOOR'S TOO. Same reason, one line later,
+         and it took Kevin's screenshot to notice it had never been extended:
+         the rates are the evidence FOR the thesis, so drawing them onto a page
+         whose thesis is hidden would leave a chart of nothing.
+         NOT FOLDED INTO THE `else` ABOVE: the archive-failed branch still gets
+         its rates, because measures.json is a different file and can arrive
+         when the catalog does not. */
+      if (!team) drawRates(measures);
       var s = describe(index, new Date().toISOString());
       $('state').setAttribute('data-state', s.state);
       $('state').textContent = s.lines.join(' ');
