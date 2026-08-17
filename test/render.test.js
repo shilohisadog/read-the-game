@@ -2355,7 +2355,7 @@ test('the game row names the whole it is a split OF, in counts', () => {
   // which nothing else was watching.
   const a = boot(rich, CURVE_AND_MIX);
   a.$('lyBlock').click();
-  const SHAPE = /(\d+)<\/b> of <b>(\d+)<\/b> never reached the goalie/;
+  const SHAPE = /(\d+)<\/b> of <b>(\d+) attempts?<\/b> never reached the goalie/;
   let checked = 0;
   a.every(d => {
     const h = d.$('blockPanel').innerHTML;
@@ -2488,4 +2488,44 @@ test('the card says so before a single attempt exists, and stops once one does',
   assert.ok(empty > 0, 'the empty state never appeared in the walk');
   assert.ok(drawn > 0, 'the game row never appeared in the walk');
   assert.equal(overlap, 0, 'the empty state and the bar were on screen at the same time');
+});
+
+test('both rows state their claim in the SAME frame, and each names its denominator', () => {
+  // Kevin: "this game shows 5 of 12 and the archive shows a percentage — two
+  // different units expressing the information." The units cannot be unified —
+  // 12 and 491,971 do not take the same one — so the FRAME is unified instead,
+  // and each row states the denominator that forces its unit.
+  //
+  // The test is the RELATIONSHIP: whatever the numbers are, both headlines parse
+  // with one pattern, and the value differs in kind while the frame does not.
+  const FRAME = /^(.+?) of ([\d,]+ attempts?) never reach(?:ed)? the goalie$/;
+  const a = boot(rich, CURVE_AND_MIX);
+  a.$('lyBlock').click();
+  const scrub = a.$('scrub');
+  scrub.value = String(+scrub.max);
+  scrub.oninput({ target: { value: scrub.value } });
+
+  const claim = row => {
+    const m = row.match(/<span class="mixcl">([\s\S]*?)<\/span>/);
+    assert.ok(m, 'a row lost its claim');
+    return m[1].replace(/<[^>]*>/g, '');
+  };
+  const r = rowsOf(a.$('blockPanel').innerHTML);
+  const g = claim(r.game).match(FRAME), c = claim(r.arch).match(FRAME);
+  assert.ok(g, `the game claim does not fit the shared frame: "${claim(r.game)}"`);
+  assert.ok(c, `the archive claim does not fit the shared frame: "${claim(r.arch)}"`);
+
+  // The units differ, and that is the point rather than an oversight: a count on
+  // the row whose denominator cannot carry a percentage, a percentage on the one
+  // that can. Asserting they differ is what stops a later "tidy-up" unifying them
+  // and reintroducing the defect deleted from this card the day before.
+  assert.match(g[1], /^\d+$/, `the game claim carries "${g[1]}" where a plain count belongs`);
+  assert.match(c[1], /^\d+\.\d%$/, `the archive claim carries "${c[1]}" where a percentage belongs`);
+
+  // And the denominators are the real ones, not decoration. The game's is checked
+  // against the bar's own segments; the archive's against the published n.
+  const segs = [...r.game.split('mixkey')[1].matchAll(/<b>(\d+)<\/b>/g)].map(m => +m[1]);
+  assert.equal(+g[2].replace(/[^\d]/g, ''), segs.reduce((t, n) => t + n, 0),
+    `the game claim says "${g[2]}" while its own bar draws ${segs.join(' + ')}`);
+  assert.match(c[2], /^491,971 attempts$/, 'the archive denominator is not the archive n');
 });

@@ -408,8 +408,8 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    proportions are in the markup where they can be read, with no CSSOM pass. */
 #rg .mix{margin:11px 0 0}
 #rg .mixhd{font-size:.71rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:700;display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline}
-#rg .mixhd .cl{letter-spacing:0;text-transform:none;font-weight:600;font-size:.86rem;color:var(--ink)}
-#rg .mixhd .cl b{font-weight:800}
+#rg .mixcl{letter-spacing:0;text-transform:none;font-size:.87rem;font-weight:600;color:var(--ink)}
+#rg .mixcl b{font-weight:800}
 #rg .mixhd .n{letter-spacing:.02em;text-transform:none;font-weight:600;font-family:ui-monospace,Menlo,monospace;font-size:.72rem}
 #rg .mixbar{height:14px;border-radius:7px;overflow:hidden;margin:5px 0;background:#e6edf3}
 #rg .mixbar svg{display:block;width:100%;height:100%}
@@ -3669,7 +3669,13 @@ function mixRow(cls,title,claim,scope,parts){
  const keys=parts.map(p=>`<span><i class="${p.k}"></i>${p.pct
    ?`<b>${(100*p.v/tot).toFixed(1)}%</b> ${p.lab}`
    :`<b>${p.v}</b> ${p.lab}`}</span>`).join('');
- return `<div class="mix ${cls}"><p class="mixhd">${title}<span class="cl">${claim}</span><span class="n">${scope}</span></p>`
+ /* TITLE, CLAIM AND SCOPE ON ONE WRAPPING LINE, and both alternatives were
+    measured rather than argued. Giving the claim its own line reads better and
+    trades 41px of DESKTOP height for 38px of phone -- 332->373 at 1100px against
+    588->550 at 390px. Kevin's stated viewing perspective is the laptop, so the
+    trade goes his way; the phone keeps the ragged wrap. Neither is free, and
+    pretending one was would have been the whole point of measuring. */
+ return `<div class="mix ${cls}"><p class="mixhd">${title}<span class="mixcl">${claim}</span><span class="n">${scope}</span></p>`
   +`<div class="mixbar"><svg viewBox="0 0 100 8" preserveAspectRatio="none">${rects}</svg></div>`
   +`<p class="mixkey">${keys}</p></div>`;}
 function drawBlocked(B,L,slice){
@@ -3687,8 +3693,19 @@ function drawBlocked(B,L,slice){
  L.counted.forEach(id=>{const t=slice[id].type;
    if(t==='blocked-shot')g.b++;else if(t==='missed-shot')g.m++;else g.r++;});
  const att=L.counted.length;
+ // THE SAME FRAME, EACH IN ITS OWN UNIT, AND BOTH NAMING THEIR DENOMINATOR.
+ // Kevin: "this game shows 5 of 12 and the archive shows a percentage — two
+ // different units expressing the information." True, and it cannot be fixed by
+ // picking one unit: the denominators are 12 and 491,971, and a percentage lies
+ // about the small one (one block moves it eight points; that exact defect was
+ // deleted from this card a day earlier, its third instance) while a raw
+ // fraction is unreadable on the big one.
+ // So the FRAME is made identical -- `<value> of <n> attempts never reach...` in
+ // both -- and each denominator is stated inside the claim rather than off in the
+ // scope. The units then differ visibly BECAUSE the denominators do, which is the
+ // thing worth teaching rather than a puzzle left for the reader.
  const game=att?mixRow('game','This game',
-   `<b>${g.b+g.m}</b> of <b>${att}</b> never reached the goalie`,
+   `<b>${g.b+g.m}</b> of <b>${att} ${att===1?'attempt':'attempts'}</b> never reached the goalie`,
    `${MODE()}`,
    [{k:'r',lab:'reached the goalie',v:g.r},
     {k:'b',lab:'blocked by a body',v:g.b},
@@ -3716,8 +3733,8 @@ function drawBlocked(B,L,slice){
  const M=RATES&&RATES.attemptMix, BT=M&&M.byType;
  const arch=BT&&M.blocked&&M.blocked.n
   ?mixRow('arch','The archive',
-    `<b>${(100*M.neverReachedTheGoalie.rate).toFixed(1)}%</b> never reach the goalie`,
-    `${M.blocked.n.toLocaleString()} attempts · all situations`,
+    `<b>${(100*M.neverReachedTheGoalie.rate).toFixed(1)}%</b> of <b>${M.blocked.n.toLocaleString()} attempts</b> never reach the goalie`,
+    `all situations`,
     [{k:'r',lab:'reached the goalie',v:(BT['shot-on-goal']||0)+(BT.goal||0),pct:1},
      {k:'b',lab:'blocked by a body',v:BT['blocked-shot']||0,pct:1},
      {k:'m',lab:'missed the net',v:BT['missed-shot']||0,pct:1}])

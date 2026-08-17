@@ -351,3 +351,42 @@ Every one was a real gap:
   existed and nothing checked they followed anything.
 - **the archive row loses its scope** — my own mutation had a bad anchor and
   never applied. *A mutation not seen to fire is not a mutation.*
+
+## 9. The two units, and why they cannot be one
+
+**Kevin, on the built card:** *"My only quibble is that this game shows 5 of 12
+and the archive shows a percentage — two different units expressing the
+information."*
+
+Fair, and it is a call I made deliberately in §7.4. **But it cannot be fixed by
+picking a unit, because the denominators are 12 and 491,971.**
+
+| | |
+|---|---|
+| both as percentages | at 12 attempts one block moves the figure **8 points**. That is the defect deleted from this card the day before, its third instance — and it would be the fourth |
+| both as fractions | *"255,102 of 491,971 never reach the goalie"* is not a number anybody reads |
+
+So the **frame** was unified instead of the unit, and each row now names the
+denominator that forces its unit:
+
+```
+THIS GAME     49 of 94 attempts never reached the goalie        all situations
+THE ARCHIVE   51.9% of 491,971 attempts never reach the goalie  all situations
+```
+
+Identical grammar, and the units then differ **visibly because the denominators
+do** — which is the thing worth teaching, rather than a puzzle left for the
+reader. A test asserts both claims parse with one pattern **and that the two
+values differ in kind**, so a later tidy-up cannot unify them and quietly
+reintroduce the defect.
+
+### The layout was measured, not argued
+
+Giving the claim its own line reads better and costs **41px of desktop to save
+38px of phone** — 332→373 at 1100px against 588→550 at 390px. Kevin's stated
+viewing perspective is the laptop, so the trade goes that way and the phone keeps
+the ragged wrap. Neither option was free.
+
+**Final: 332px at 1100×900 (37% of the viewport), 589px at 390×844 (70%).**
+Still larger than the 234/394 it replaced — §8's two cuts remain the only ways to
+close that, and both are still Kevin's call.
