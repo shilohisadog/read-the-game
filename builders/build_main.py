@@ -128,6 +128,16 @@ T = r"""<style>
 #rg.preview .sc{font-size:min(7.4vw,2.2rem)}
 #rg.preview .gs{font-size:min(2.9vw,.78rem);margin-bottom:min(1vw,6px)}
 #rg.preview .gs .clw{font-size:min(2.3vw,.62rem)}
+/* AND THE CONTROL ROW SCALES TOO, which it never had to before the hero started
+   running a layer. Every other child of the board above is already `min(Xvw, its
+   own size)`; `.cbar` was simply never in preview, so it kept absolute rem and
+   the board grew to 68px of a 184px frame -- over the third that the deploy's
+   own gate allows, and it said so. THAT IS THE rem-DOES-NOT-SCALE FAILURE THE
+   PIXEL TOOL WAS BUILT AFTER, arriving in the one element that had been exempt.
+   These are not new judgements, they are the existing pattern finished. */
+#rg.preview .bar{height:min(1.8vw,8px)}
+#rg.preview .pct{font-size:min(3.3vw,.9rem);margin-top:min(1.2vw,5px)}
+#rg.preview .plab{font-size:min(2.4vw,.66rem);line-height:1.25;letter-spacing:.06em}
 #rg .nextup{display:flex;flex-wrap:wrap;justify-content:center;gap:9px;margin:16px 0 4px;padding-top:15px;border-top:1px solid var(--edge)}
 #rg .nextup a{display:inline-block;padding:9px 14px;border-radius:9px;border:1px solid var(--edge);background:#fff;color:var(--ink);text-decoration:none;font-weight:650;font-size:.9rem}
 #rg .nextup a:hover,#rg .nextup a:focus{border-color:var(--ink)}
