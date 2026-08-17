@@ -162,6 +162,12 @@ class Report:
     halted: bool = False
     halt_reason: str = ""
     games: list = field(default_factory=list)
+    # The scheduled games the week payloads already contained. On the Report
+    # rather than local to `ingest` because `_write_index` is called from two
+    # places -- the normal end and the HALT -- and a halted run leaving last
+    # week's fixtures on the site is the exact failure this file is designed
+    # against. A run that looked and found nothing must say so.
+    upcoming: dict = field(default_factory=dict)
 
     def as_dict(self):
         return {"fetched": self.fetched, "unchanged": self.unchanged,
@@ -251,13 +257,47 @@ def ingest(end, days, transport, store, now=None):
     dates = dates_in_window(end, days)
 
     schedule_games, seen = [], set()
+    upcoming = rep.upcoming
     for url in schedule_urls(dates):
         status, body = transport(url)
         if status != 200:
             rep.errors.append({"url": url, "status": status})
             continue
         # The schedule is parsed: it is routing, not interpretation.
-        got = classify(json.loads(body.decode()), dates)
+        payload = json.loads(body.decode())
+        got = classify(payload, dates)
+
+        # ⭐ THE FIXTURES WE WERE ALREADY BEING HANDED, AND THROWING AWAY.
+        #
+        # `/v1/schedule/{date}` answers with the WEEK STARTING at that date, so
+        # the last request of a backwards window carries up to six days of games
+        # that have not been played. `classify(payload, dates)` above drops them
+        # -- not because we did not fetch them, but because `dates` is a
+        # backwards list and the filter is by date. Verified by asking the live
+        # endpoint: 2026-10-08 answers with 52 games, every one `state=FUT`.
+        #
+        # So looking ahead costs a WRITE, NOT A REQUEST. That matters: a feed we
+        # do not pay for and are not licensed to hammer should not be asked
+        # twice for bytes it already sent.
+        #
+        # NOTHING IS INTERPRETED HERE. What is kept is what the league recorded
+        # -- the id, the date, the start time, the type, the two abbrevs and the
+        # venue. "Which game is a team's next one" is a min() over start times
+        # and belongs where it is read, not in a module whose whole discipline
+        # is that it never decides anything.
+        for g in classify(payload).unknown:
+            if g["id"] in upcoming:
+                continue
+            upcoming[g["id"]] = {
+                "id": g["id"],
+                "startTimeUTC": g.get("startTimeUTC"),
+                "gameType": g.get("gameType"),
+                "state": g.get("gameState"),
+                "away": (g.get("awayTeam") or {}).get("abbrev"),
+                "home": (g.get("homeTeam") or {}).get("abbrev"),
+                "venue": (g.get("venue") or {}).get("default"),
+            }
+
         for g in got.final:
             if g["id"] not in seen:
                 seen.add(g["id"])
@@ -442,6 +482,32 @@ def _write_index(store, rep, now, coverage=True):
         }
 
     store.put("index.json", json.dumps(idx, indent=2, sort_keys=True).encode())
+
+    # ⭐ SCHEDULE.JSON IS WRITTEN ON EVERY RUN, INCLUDING WHEN IT IS EMPTY, AND
+    # INCLUDING WHEN THE RUN HALTED.
+    #
+    # This is the first document here whose CONTENT GOES WRONG WITH NOBODY
+    # TOUCHING ANYTHING. Every other artifact describes completed games and is
+    # true forever; a fixture list is true only until the game is played. So the
+    # failure to design against is not a bad write, it is NO write -- a run that
+    # skipped this because it found nothing would leave last week's fixtures in
+    # place, advertising a game that has already happened.
+    #
+    # It lives in `_write_index` for that reason: both exit paths call this, so
+    # there is no route out of a run that leaves the file untouched.
+    #
+    # Writing an empty list is the point, not an edge case. The league answers
+    # 2026-08-17 with seven days and ZERO games, so empty is what this file holds
+    # for the next five weeks and is the first state any reader will meet.
+    #
+    # `asOf` rides along for the same reason index.json carries it: a reader
+    # cannot tell a quiet night from a broken pipeline without it, and this is
+    # the one file where "we last looked on Tuesday" changes what a page may say.
+    sched = {"asOf": stamp,
+             "upcoming": sorted(rep.upcoming.values(),
+                                key=lambda g: (g["startTimeUTC"] or "", g["id"]))}
+    store.put("schedule.json", json.dumps(sched, indent=2, sort_keys=True).encode())
+
 
 
 # --------------------------------------------------------------------------

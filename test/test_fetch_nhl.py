@@ -233,6 +233,84 @@ class Classification(unittest.TestCase):
         self.assertEqual(got.final[0]["date"], "2025-09-21")
 
 
+class UpcomingFixtures(unittest.TestCase):
+    """schedule.json — the first document whose content goes wrong untouched.
+
+    Every other artifact here describes completed games and is true forever. A
+    fixture list stops being true the moment the game is played, so the failure
+    to design against is not a bad write but NO write: a run that found nothing
+    and skipped would leave last week's fixtures advertising a game already
+    played.
+    """
+
+    def _run(self, games, store=None, date="2026-10-08"):
+        store = store if store is not None else DictStore()
+        payload = schedule_payload(date, games)
+        F.ingest(date, 1, lambda url: (200, payload), store,
+                 now="2026-10-08T11:00:00Z")
+        return json.loads(store.obj["schedule.json"].decode())
+
+    def _fixture(self, gid, away, home, when, state="FUT", gtype=2):
+        return {"id": gid, "gameState": state, "gameType": gtype,
+                "gameDate": "2026-10-08", "startTimeUTC": when,
+                "awayTeam": {"abbrev": away}, "homeTeam": {"abbrev": home},
+                "venue": {"default": "Somewhere Arena"}}
+
+    def test_a_scheduled_game_is_kept_with_what_the_league_recorded(self):
+        got = self._run([self._fixture(2026020056, "UTA", "BOS", "2026-10-08T23:00:00Z")])
+        self.assertEqual(len(got["upcoming"]), 1)
+        g = got["upcoming"][0]
+        self.assertEqual(g["id"], 2026020056)
+        self.assertEqual((g["away"], g["home"]), ("UTA", "BOS"))
+        self.assertEqual(g["startTimeUTC"], "2026-10-08T23:00:00Z")
+        self.assertEqual(g["gameType"], 2)
+        self.assertEqual(g["venue"], "Somewhere Arena")
+
+    def test_a_finished_game_is_not_an_upcoming_one(self):
+        """The whole point of the split. A FINAL game belongs to the archive."""
+        got = self._run([self._fixture(1, "CBJ", "BUF", "2026-10-08T23:00:00Z", state="FINAL")])
+        self.assertEqual(got["upcoming"], [])
+
+    def test_the_empty_offseason_is_WRITTEN_not_skipped(self):
+        """Not a synthesised case: the live endpoint answers 2026-08-17 with
+        seven days and zero games. A run that skipped the write here would
+        leave a stale fixture on the site for the length of an offseason."""
+        store = DictStore({"schedule.json": b'{"upcoming": [{"id": 999}]}'})
+        got = self._run([], store=store)
+        self.assertEqual(got["upcoming"], [], "a stale fixture survived an empty run")
+        self.assertIn("schedule.json", store.writes)
+
+    def test_it_says_when_it_last_looked(self):
+        got = self._run([self._fixture(1, "CBJ", "BUF", "2026-10-08T23:00:00Z")])
+        self.assertEqual(got["asOf"], "2026-10-08T11:00:00Z")
+
+    def test_fixtures_are_ordered_by_start_time_so_next_is_the_first_one(self):
+        """`upcoming[0]` must be the soonest game, or every reader has to sort."""
+        got = self._run([
+            self._fixture(3, "TOR", "MTL", "2026-10-10T23:00:00Z"),
+            self._fixture(1, "UTA", "BOS", "2026-10-08T23:00:00Z"),
+            self._fixture(2, "CGY", "EDM", "2026-10-09T23:00:00Z"),
+        ])
+        self.assertEqual([g["id"] for g in got["upcoming"]], [1, 2, 3])
+
+    def test_preseason_rides_along_and_says_which_it_is(self):
+        """A 22 September fixture is a real game a fan may attend, and every
+        number this site holds deliberately excludes preseason. The reader
+        cannot keep them apart unless the type is carried."""
+        got = self._run([self._fixture(9, "CBJ", "BUF", "2026-09-22T23:00:00Z", gtype=1)])
+        self.assertEqual(got["upcoming"][0]["gameType"], 1)
+
+    def test_the_same_game_in_two_overlapping_weeks_is_stored_once(self):
+        """Windows longer than seven days make overlapping calls by design."""
+        payload = schedule_payload("2026-10-08", [
+            self._fixture(1, "UTA", "BOS", "2026-10-08T23:00:00Z")])
+        store = DictStore()
+        F.ingest("2026-10-20", 14, lambda url: (200, payload), store,
+                 now="2026-10-20T11:00:00Z")
+        got = json.loads(store.obj["schedule.json"].decode())
+        self.assertEqual(len(got["upcoming"]), 1)
+
+
 class PointersMustResolve(unittest.TestCase):
     """A pointer naming bytes the bucket does not hold is invisible and permanent.
 
@@ -524,12 +602,21 @@ class Report(unittest.TestCase):
         t = transport_for({"/v1/schedule/": (200, schedule_payload("2026-01-10", []))})
         rep = F.ingest("2026-01-10", 1, t, store, now="2026-01-11T11:00:00Z")
         self.assertEqual((rep.fetched, rep.unchanged, rep.amended, rep.refused), (0, 0, 0, 0))
-        # An empty night writes the index and NOTHING ELSE. The earlier rule --
-        # write nothing at all -- existed only to stop one conflated field from
-        # advancing while no data arrived; lastRun and dataThrough being separate
-        # removes the need for it. A night with no hockey is a fact worth
-        # recording, and silence is what a dead pipeline looks like.
-        self.assertEqual(store.writes, ["index.json"])
+        # An empty night writes the two documents that describe TIME, and no
+        # game data. The earlier rule -- write nothing at all -- existed only to
+        # stop one conflated field advancing while no data arrived; lastRun and
+        # dataThrough being separate removes the need for it. A night with no
+        # hockey is a fact worth recording, and silence is what a dead pipeline
+        # looks like.
+        #
+        # schedule.json JOINED THIS LIST DELIBERATELY. It used to read
+        # ["index.json"] and that was right while nothing else was time-bound.
+        # A fixture list is true only until the game is played, so an empty run
+        # that skipped the write would leave last week's fixtures advertising a
+        # game already finished -- the one failure mode this file has that no
+        # other artifact here does.
+        self.assertEqual(store.writes, ["index.json", "schedule.json"])
+        self.assertEqual(json.loads(store.get("schedule.json").decode())["upcoming"], [])
         idx = json.loads(store.get("index.json").decode())
         self.assertEqual(idx["lastRun"], "2026-01-11T11:00:00Z")
         self.assertEqual(idx["coverage"]["finalInWindow"], 0)
