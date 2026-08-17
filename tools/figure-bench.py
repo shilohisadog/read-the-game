@@ -6,17 +6,30 @@ outcomes we actually have in the feed (save / goal) at the sizes the goalie's
 eye view actually uses, and against a real cluster of shot coordinates so the
 crowded case is judged honestly rather than in isolation.
 
-  python3 builders/build_figbench.py   ->  src/figure-bench.html
+  python3 tools/figure-bench.py   ->  a temp file, printed; open it in a browser
+
+NOT A BUILDER, AND IT LIVES HERE FOR THAT REASON. It used to sit in builders/
+and write src/figure-bench.html, which the Workshop linked and the deploy
+published -- a card whose own blurb told the visitor it was a development tool.
+Kevin: "that really doesn't belong on a production site".
+
+The card and the page are gone; the tool is not, because the source being
+readable is the thing this site sells and a bench we designed the figures on is
+part of that. But a builder in builders/ that `npm run build` does not run is
+EXACTLY the condition that left seven pages stale for days, so the intent is
+structural rather than commented: it is in tools/ beside pixels.sh, it writes
+outside src/, and nothing can publish what it makes.
 """
 import json, pathlib, re, sys, tempfile
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from figures import FIGURES_JS
-import sys, pathlib as _pl
-sys.path.insert(0, str(_pl.Path(__file__).resolve().parent))
-import page as _page
-
+# THE SHARED PIECES STILL LIVE IN builders/, and this file no longer does -- so
+# the path it adds is that directory, not its own. Two inserts of the SAME path
+# used to sit here, one of them redundant; they are one now, and it is the only
+# line that had to change when the tool moved.
 ROOT = pathlib.Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "builders"))
+from figures import FIGURES_JS
+import page as _page
 rich = json.loads((ROOT / "data" / "rich.json").read_text())
 
 LEVI = 8482221  # BUF goalie; shots faced were taken by MIN
@@ -191,7 +204,7 @@ fitAll();
 """
 
 html = TEMPLATE.replace("__FIGURES__", FIGURES_JS).replace("__N__", str(len(crowd))).replace("__CROWD__", json.dumps(crowd, separators=(",", ":")))
-out = ROOT / "src" / "figure-bench.html"
+out = pathlib.Path(tempfile.gettempdir()) / "rtg-figure-bench.html"
 out.write_text(_page.document(html, title='Figure bench — Read the Game', description='A development tool: two player styles side by side on blank ice.'))
 
 # extract the script for an external syntax check
@@ -199,3 +212,4 @@ script = re.search(r"<script>(.*)</script>", html, re.S).group(1)
 chk = pathlib.Path(tempfile.gettempdir()) / "rtg.figbench.check.js"
 chk.write_text(script)
 print("wrote", out, len(html.encode()), "bytes;", len(crowd), "crowd shots")
+print("open it in a browser -- it is a bench, not part of the site")

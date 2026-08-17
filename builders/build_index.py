@@ -65,8 +65,6 @@ WORKSHOP = [
      "The same shots, seen from where the goalie stood."),
     ("terrain-3d.html", "Where the chances came from",
      "Shot locations as terrain — height is attempts, not danger."),
-    ("figure-bench.html", "Figure bench",
-     "A development tool: the two player styles side by side on blank ice."),
 ]
 
 # The honest limits, on the page rather than in a README nobody opens.
