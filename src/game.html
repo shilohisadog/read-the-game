@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-i8QZseTKlApMXfDWDhVAjSglTyY506XgC2UjJ8hOITc=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-Z5/++nl5Q5TtpSjY2V7hh0AgnwasomVUUDpFm9qXD38='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-qb/Oo3tDmNdCsg6L3/X4OSs01ep7zoKGe6dinEZZMAA=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-Z5/++nl5Q5TtpSjY2V7hh0AgnwasomVUUDpFm9qXD38='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">What is this?</a></nav></header>
@@ -4032,10 +4032,22 @@ set(frameOf(AT.index),'jump');
    BUDGET_MS is still a visual judgement and cannot be derived. It is here to be
    looked at, not proved. (docs/site-purpose.md 5.)
 
+   RAISED 14s -> 30s BY KEVIN, LOOKING AT IT: "too short of a replay -- more time
+   to process what's happening". What that buys, measured over 230 games at the
+   real pace rather than argued: the median loop goes from 7 plays showing 3
+   attempts to 16 plays showing 7. The counter stops being a number that twitches
+   once and becomes one a stranger can watch accumulate, which is the entire
+   reason a layer is running here.
+
+   The upper limit this is still bounded by is the 57-second loop that a fixed
+   44-event window once produced -- long enough to stop reading as a taste. Half
+   a minute is a judgement between those two, and the test below states the range
+   rather than this number, so the two cannot quietly become one constant twice.
+
    IT STOPS FOR prefers-reduced-motion. Doctrine 4 permits motion that traces a
    real event; it does not require inflicting it. Reduced motion gets a still
    frame partway in, so the rink is populated rather than blank. */
-const BUDGET_MS=14000;
+const BUDGET_MS=30000;
 if(PREVIEW){
  $('rg').classList.add('preview');
  /* AND THE CHROME GOES, from the one place chrome is defined (page.py). The

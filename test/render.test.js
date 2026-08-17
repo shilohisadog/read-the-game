@@ -1435,7 +1435,7 @@ test('⭐ the preview begins where the layer first counts something', () => {
     'the second frame still counts nothing — the start is not adjacent to the first attempt');
 });
 
-test('the preview is a taste: it restarts inside a quarter-minute', () => {
+test('the preview is a taste: it restarts inside about half a minute', () => {
   // The pace tests above cannot see the WINDOW, and a mutation proved it --
   // replacing the time-derived window with a fixed 44 events survived them
   // both. At the replay's pace that is a 57-second loop on the front door: not
@@ -1463,7 +1463,12 @@ test('the preview is a taste: it restarts inside a quarter-minute', () => {
   assert.equal(at[back], at[0],
     `the loop restarts at ${at[back]} but began at ${at[0]} — it rewinds past its own start`);
   const playing = delays.slice(0, back - 1).reduce((a, b) => a + b, 0);
-  assert.ok(playing > 5000 && playing < 15000,
+  // THE UPPER BOUND IS WHAT THIS TEST IS FOR, and it moved once, deliberately:
+  // Kevin raised the budget from 14s to 30s because the loop was too short to
+  // follow. The bound is not "the current value plus a bit" -- it is set to keep
+  // rejecting the 57-second loop that a fixed 44-event window produced, which is
+  // the drift that motivated the test in the first place.
+  assert.ok(playing > 5000 && playing < 35000,
     `the preview window runs ${(playing / 1000).toFixed(1)}s before looping`);
 });
 

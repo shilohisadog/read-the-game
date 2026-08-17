@@ -4030,10 +4030,22 @@ set(frameOf(AT.index),'jump');
    BUDGET_MS is still a visual judgement and cannot be derived. It is here to be
    looked at, not proved. (docs/site-purpose.md 5.)
 
+   RAISED 14s -> 30s BY KEVIN, LOOKING AT IT: "too short of a replay -- more time
+   to process what's happening". What that buys, measured over 230 games at the
+   real pace rather than argued: the median loop goes from 7 plays showing 3
+   attempts to 16 plays showing 7. The counter stops being a number that twitches
+   once and becomes one a stranger can watch accumulate, which is the entire
+   reason a layer is running here.
+
+   The upper limit this is still bounded by is the 57-second loop that a fixed
+   44-event window once produced -- long enough to stop reading as a taste. Half
+   a minute is a judgement between those two, and the test below states the range
+   rather than this number, so the two cannot quietly become one constant twice.
+
    IT STOPS FOR prefers-reduced-motion. Doctrine 4 permits motion that traces a
    real event; it does not require inflicting it. Reduced motion gets a still
    frame partway in, so the rink is populated rather than blank. */
-const BUDGET_MS=14000;
+const BUDGET_MS=30000;
 if(PREVIEW){
  $('rg').classList.add('preview');
  /* AND THE CHROME GOES, from the one place chrome is defined (page.py). The
