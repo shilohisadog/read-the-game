@@ -212,31 +212,6 @@ test('a relocated team explains itself rather than trailing off', () => {
   });
 });
 
-test('every rate is published with its denominator and population', () => {
-  // A rate without its reference class is the thing this site teaches against.
-  // Shipping one bare would be us committing it on our own front page.
-  const r = run({ docs: ALL });
-  return r.settle().then(() => {
-    // READ FROM THE SCALE, which is now the only place the rates are drawn. The
-    // three-row list this used to read differed from the scale by one string —
-    // the population — repeated three times, and is deleted. The claim is
-    // unchanged and is the one that matters: nothing here is published without
-    // its denominator and its reference class.
-    const t = textOf(r.ids.scale);
-    // The percentages must agree with the counts printed beside them, so they are
-    // recomputed here rather than copied from the fixture. The first version of
-    // this test asserted 54.5% against a fixture whose stored `rate` was rounded
-    // to 0.5445, and the page — which trusted that field — rendered 54.4%.
-    for (const k of Object.keys(MEASURES.baseRates)) {
-      const r = MEASURES.baseRates[k];
-      assert.ok(t.includes((r.count / r.n * 100).toFixed(1) + '%'),
-        `${k}: the shown percentage must follow from ${r.count} of ${r.n}`);
-      assert.ok(t.includes(`${r.count} of ${r.n}`), `${k}: denominator`);
-    }
-    assert.match(t, /NHL regular season and playoffs/);
-  });
-});
-
 /**
  * IS THIS GAME THE USUAL CASE — the caption CHENG required to be computed.
  *
@@ -307,30 +282,6 @@ test('a game the rate cannot classify gets silence, not a guess', () =>
     assert.equal(noWinner, '', `a level game was classified anyway: ${noWinner}`);
   }));
 
-test('the rates share one reference class, and a disagreement is SHOWN', () => {
-  // The population used to ride on every row of a list that no longer exists.
-  // Stating it once is only honest while the three rows agree — if they ever
-  // differ, printing the first would publish two rates under a reference class
-  // belonging to one of them, which is the thing this site teaches against.
-  const same = run({ docs: ALL });
-  return same.settle().then(() => {
-    const t = textOf(same.ids.scale);
-    assert.equal((t.match(/NHL regular season and playoffs/g) || []).length, 1,
-      'the population is repeated, which is what the deleted list was doing');
-
-    const split = { ...MEASURES, baseRates: { ...MEASURES.baseRates,
-      moreLevelControlLost: { ...MEASURES.baseRates.moreLevelControlLost,
-                              population: 'NHL regular season only' } } };
-    const r = run({ docs: { ...ALL, 'measures.json': split } });
-    return r.settle().then(() => {
-      const u = textOf(r.ids.scale);
-      assert.match(u, /NHL regular season and playoffs/);
-      assert.match(u, /NHL regular season only/,
-        'two reference classes, and the page showed one of them');
-    });
-  });
-});
-
 test('the hero is the ONLY route to the game it shows, and both halves agree', () => {
   // THIS TEST HAS BEEN WRONG TWICE AND THE HISTORY IS THE POINT.
   //
@@ -371,33 +322,6 @@ test('the hero is the ONLY route to the game it shows, and both halves agree', (
     // cannot come back as a phantom the fake would have invented.
     assert.doesNotMatch(html, /id="start"/, 'the second link is back in the markup');
     assert.doesNotMatch(script, /\$\('start'\)/, 'the script still reaches for it');
-  });
-});
-
-test('a missing measurement is stated, and the rest of the page still works', () => {
-  // Partial failure must not be total failure: a fan looking for their team does
-  // not care that the archive-wide rates are unavailable.
-  const r = run({ docs: { 'catalog.json': CATALOG, 'index.json': INDEX } });
-  return r.settle().then(() => {
-    assert.match(textOf(r.ids.scale), /could not be loaded/i);
-    assert.equal(walk(r.ids.teams).filter(n => n.className === 'chip').length, 3,
-      'the team grid is unaffected');
-    // AND THE NOVICE LINK STILL OFFERS A GAME. It used to be set from the
-    // measurement, so a missing measurement left it on the markup's fallback;
-    // it is now set from the CATALOG, beside the hero it names, so it survives
-    // exactly what the hero survives. That is the point of the move — the
-    // archive-wide rates being unavailable has nothing to do with which game is
-    // at the top of the page.
-    // AND THE HERO SURVIVES IT. The hero is built from the CATALOG; the rates
-    // come from the measurement. A visitor who cannot be told the archive-wide
-    // finding can still be handed a game to watch, which is the conversion.
-    const frame = walk(r.ids.heroframe).find(n => n.tag === 'iframe');
-    assert.ok(frame, 'a missing measurement took the hero down with it');
-    assert.match(r.ids.herogo.href, /^game\.html\?game=\d+$/, 'and its button still names a game');
-    // The caption that COMPARES this game to the rate cannot be written without
-    // the rate, so it says nothing rather than guessing.
-    assert.equal(textOf(r.ids.herorel), '',
-      'the page claimed this game was usual or unusual with no rate to judge by');
   });
 });
 
@@ -591,59 +515,6 @@ test('a team view shows no hero — that visitor already chose', () => {
  * curve. That curve had ~35 points, a continuous domain and an uninformative
  * tail; this has three, a NOMINAL domain and n in the thousands.
  */
-test('the scale marks 50% and places every point at its own measured rate', () => {
-  const r = run({ docs: ALL });
-  return r.settle().then(() => {
-    const scale = r.ids.scale;
-    assert.equal(scale.hidden, false, 'the scale never rendered');
-    const pts = walk(scale).filter(n => /(^| )pt( |$)/.test(n.className));
-    assert.equal(pts.length, 3, 'one point per rate');
-    // Positions are the rates themselves, recomputed here from count and n.
-    const want = ['moreShotsOnGoalLost', 'moreAttemptsLost', 'moreLevelControlLost']
-      .map(k => (MEASURES.baseRates[k].count / MEASURES.baseRates[k].n * 100).toFixed(1) + '%');
-    assert.deepEqual(pts.map(p => p.style.left), want);
-    // The 50% mark, once per row, is the whole point of the picture.
-    assert.equal(walk(scale).filter(n => n.className === 'half').length, 3);
-    // And the side of 50% each falls on is encoded, not left to the eye alone.
-    assert.deepEqual(pts.map(p => /hi/.test(p.className)), [false, true, false],
-      'only "more shot attempts" is above 50%');
-  });
-});
-
-test('NO CONNECTING LINE, and every point keeps its own fraction', () => {
-  // The two conditions, asserted rather than remembered. A segment between the
-  // points is what asserts a continuum, and there is no measure BETWEEN "shots on
-  // goal" and "shot attempts" for a continuum to run through.
-  const r = run({ docs: ALL });
-  return r.settle().then(() => {
-    const nodes = walk(r.ids.scale);
-    for (const n of nodes)
-      assert.ok(!/^(line|path|polyline|svg)$/.test(n.tag),
-        `the scale drew a <${n.tag}>, which asserts a continuum that does not exist`);
-    const fracs = nodes.filter(n => n.className === 'f').map(n => n.textContent);
-    assert.equal(fracs.length, 3, 'every point carries its own fraction');
-    for (const f of fracs)
-      assert.match(f, /^\d+ of \d+ — \d+\.\d%$/, `"${f}" lost its denominator`);
-  });
-});
-
-test('the payoff is stated, and it is computed from the count and the denominator', () => {
-  // All three rates are published as "lost", which keeps them comparable — and
-  // means the site never once says the thing a newcomer came for. 3855 − 1527.
-  const r = run({ docs: ALL });
-  return r.settle().then(() => {
-    const key = walk(r.ids.scale).find(n => n.className === 'key');
-    assert.ok(key, 'the payoff line is missing');
-    // The payoff must name the row it inverts, not arrive as a fourth number:
-    // three rows read "lost" and this reads "won", and a reader scanning
-    // 45.8 / 54.5 / 39.6 / 60.4 should not have to work out which way each runs.
-    assert.match(textOf(key), /the same games counted the other way/);
-    assert.match(textOf(key), /60\.4% — 2328 of 3855 — they won\./);
-    assert.doesNotMatch(textOf(key), /\bso\b|\btherefore\b|\bbecause\b|\bproving\b/i,
-      'the payoff argues instead of reporting');
-  });
-});
-
 /**
  * THE PAGE SAYS WHAT IT IS, AND NAMES WHAT IT TEACHES.
  *
@@ -655,17 +526,65 @@ test('the payoff is stated, and it is computed from the count and the denominato
  * almost nothing it teaches.
  */
 test('the page states what it is, above everything else', () => {
-  const body = html.match(/<h1>([\s\S]*?)<h2/)[1];
-  assert.match(body, /class="says"/, 'nothing above the fold says what this is');
-  const says = body.match(/class="says">([\s\S]*?)<\/p>/)[1];
-  assert.ok(says.length > 60, `"${says}" is not a sentence`);
-  // NO TYPED NUMBERS, the same rule the thesis paragraph carries: every count on
-  // this page is fetched and rendered, so a number in static copy is a claim
-  // that goes stale between deploys. "since 2023" is a scope claim, and scope
-  // does not move.
-  assert.doesNotMatch(says.replace(/since 2023/, ''), /\d[\d,]{2,}/,
+  // RETARGETED, NOT DELETED. This used to read the paragraph under an <h1>; the
+  // <h1> is gone and the sentence became it. Kevin: "I think we lead with the
+  // 'Every game since 2023' [sentence]". The claim is unchanged — the first
+  // thing on the page says what the page is — so the test follows the sentence,
+  // the same move as the attribution guard when the ice sublines were retired.
+  const h1 = html.match(/<h1 class="says">([\s\S]*?)<\/h1>/);
+  assert.ok(h1, 'the one sentence is no longer the page\'s heading');
+  assert.ok(h1[1].length > 60, `"${h1[1]}" is not a sentence`);
+  // AND IT IS FIRST. Anything above it is chrome, not content.
+  const body = html.slice(html.indexOf('<div class="wrap">'));
+  assert.ok(body.indexOf('<h1 class="says">') < body.indexOf('<main'),
+    'something content-shaped sits above the sentence that says what this is');
+  // NO TYPED NUMBERS: every count here is fetched and rendered, so a number in
+  // static copy is a claim that goes stale between deploys. "since 2023" is a
+  // scope claim, and scope does not move.
+  assert.doesNotMatch(h1[1].replace(/since 2023/, ''), /\d[\d,]{2,}/,
     'a count was typed into copy that cannot be re-derived');
 });
+
+test('the one figure left on the front page carries its denominator', () => {
+  // ALSO RETARGETED. "Every rate is published with its denominator and
+  // population" read the three-bar scale, which Kevin cut. The DOCTRINE does not
+  // retire with the element that happened to carry it — a rate without its
+  // reference class is the thing this site teaches against. The hero caption is
+  // now the only place the front page prints a figure, and it is computed:
+  // "That is the usual outcome. Across 3,957 games the shot leader wins 54.2%."
+  const r = run({ docs: ALL });
+  return r.settle().then(() => {
+    const cap = textOf(r.ids.herorel);   // #herorel is where drawHero writes it
+    const pct = cap.match(/(\d+\.\d)%/);
+    assert.ok(pct, `the hero caption prints no rate: "${cap.slice(0, 120)}"`);
+    // The denominator must be in the SAME sentence, not merely on the page.
+    const sentence = cap.split(/(?<=\.)\s/).find(x => x.includes(pct[0]));
+    assert.match(sentence, /Across [\d,]+ games/,
+      `"${sentence}" prints a rate with no reference class`);
+  });
+});
+
+/* ------------------------------------------------------------------------
+   TEN TESTS RETIRED HERE ON 2026-08-17, WITH THEIR SUBJECT.
+
+   Kevin, with a screenshot of everything above the rink: "this is the area I
+   would like removed... I think we lead with the 'Every game since 2023'
+   [sentence], and then the promo rink, then the teams, then 'What this site
+   does and does not claim', then the footer."
+
+   So the <h1>, the thesis, and the three-bar scale are gone from the front
+   door, and every assertion whose subject was one of those went with them:
+   the published rates and their denominators, the 50% mark, the shared
+   reference class, the payoff line, the missing-measurement statement, and
+   the argument wrapper with its team-page hiding.
+
+   NOT SILENTLY, AND NOT ALL OF THEM. Two were RETARGETED rather than deleted,
+   because their subject survived somewhere else on the page: "the page states
+   what it is" now reads the <h1> the one sentence became, and the
+   denominator rule now reads the hero caption, which is the only place a
+   figure is still printed. A doctrine does not retire because the element
+   that happened to carry it did.
+   --------------------------------------------------------------------- */
 
 test('every concept the site teaches is NAMED on the front page', () => {
   // The list is the layers and the whistle rules that actually exist. If one is
@@ -717,61 +636,3 @@ test('the borrowed term is gone from every page a reader sees', () => {
    a game page is the only route into that view.
    ──────────────────────────────────────────────────────────────────────────── */
 
-test('naming a club in the URL retires the argument, and not naming one keeps it', async () => {
-  // A RELATIONSHIP, not two separate assertions each pinning its own answer:
-  // the SAME element, the SAME docs, and the only difference is the URL.
-  const front = run({ search: '', docs: ALL });
-  const team = run({ search: '?team=BUF', docs: ALL });
-  await front.settle(); await team.settle();
-  // `ids` only holds what the app ASKED FOR, so an untouched element is absent
-  // rather than present-and-false. That is the fake being honest, not a gap:
-  // the front door must never hide this, by any route including not looking.
-  assert.notEqual(front.ids.argument && front.ids.argument.hidden, true,
-    'the front door hid the argument it exists to make');
-  assert.equal(team.ids.argument && team.ids.argument.hidden, true,
-    'a visitor who asked for BUF still gets the whole pitch first');
-});
-
-test('the argument is ONE element, so it cannot be half-retired', async () => {
-  // The way this broke: the rule was written down for the hero and never
-  // extended, because the three pieces above `#main` had no single subject to
-  // apply it to. A wrapper is what makes "and not that" expressible — and what
-  // stops the next thing added here from being missed the same way.
-  const wrap = html.match(/<section id="argument">([\s\S]*?)<\/section>/);
-  assert.ok(wrap, 'the argument lost its wrapper — the rule has no subject again');
-  for (const id of ['what', 'thesis', 'scale']) {
-    assert.match(wrap[1], new RegExp(`id="${id}"`),
-      `#${id} is outside the argument, which is exactly how this went wrong`);
-  }
-  // And it is NOT the whole page above the fold: what the site IS must survive,
-  // or a stranger arriving on a shared team link is told nothing at all.
-  assert.doesNotMatch(wrap[1], /<h1/, 'the h1 went inside — a team page with no title');
-  assert.doesNotMatch(wrap[1], /class="says"/,
-    'the one sentence saying what this site is went with the argument');
-});
-
-test('the rates are not drawn onto a page whose thesis is hidden', async () => {
-  // The rates are the EVIDENCE for the thesis. Drawing them where the claim
-  // they support has been retired leaves a chart of nothing — and `#scale`
-  // ships `hidden`, so the only thing that can un-hide it is `drawRates`.
-  const team = run({ search: '?team=BUF', docs: ALL });
-  await team.settle();
-  assert.ok(!team.ids.scale || !team.ids.scale.kids.length,
-    'the three-rate scale was rendered on a team page');
-
-  // THE CONTROL, or this passes against a page that never draws rates at all.
-  const front = run({ search: '', docs: ALL });
-  await front.settle();
-  assert.ok(front.ids.scale.kids.length > 0, 'the front door stopped drawing the rates');
-  assert.equal(front.ids.scale.hidden, false, 'the front door left its scale hidden');
-});
-
-test('an archive that fails to load still gets its rates, team or no team', async () => {
-  // measures.json is a DIFFERENT FILE and can arrive when the catalog does not,
-  // so the failure branch was deliberately left outside the front-door `else`.
-  // Without this, folding one line into the wrong block is invisible.
-  const broken = run({ search: '', docs: { 'measures.json': MEASURES, 'index.json': INDEX } });
-  await broken.settle();
-  assert.ok(broken.ids.scale.kids.length > 0,
-    'a failed catalog took the rates down with it, though they come from another file');
-});

@@ -209,21 +209,3 @@ test('no league logos or marks are referenced', () => {
   assert.match(html, /Not affiliated with/i, 'and the disclaimer is present');
 });
 
-test('the prose does not characterise an effect size the page already prints', () => {
-  // IT SAID "loses SLIGHTLY more often than it wins". The publication rule was
-  // applied carefully to the digits — no sampled figure ships — and then walked
-  // around by an adverb, which is the same assertion with the error bars removed
-  // and no way for a reader to check it. CHENG caught it on the live page.
-  //
-  // The exact rate, its numerator, its denominator and its population render
-  // three lines below that sentence. The number says how much; the sentence only
-  // has to say which way.
-  //
-  // This test exists because the first fix SILENTLY DID NOTHING — the phrase was
-  // split across two Python string literals, so a replace on the whole sentence
-  // matched nothing, the build succeeded and every test still passed.
-  const thesis = html.match(/<p class="lede" id="thesis">([\s\S]*?)<\/p>/)[1];
-  assert.ok(thesis.length > 100, 'the thesis copy must still be there');
-  assert.doesNotMatch(thesis, /\b(slightly|barely|marginally|hugely|dramatically|vastly)\b/i,
-    'prose is asserting a magnitude that the measured figure beside it should carry');
-});

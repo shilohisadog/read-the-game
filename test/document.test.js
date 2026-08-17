@@ -331,16 +331,3 @@ test('NO NUMBER ON THIS SITE CAN BE TRUNCATED', () => {
   }
 });
 
-test('the fraction never breaks across lines, and the label yields first', () => {
-  // The ordering, asserted where it is decided. `.f` is the fraction beside each
-  // point on the homepage scale; it must not wrap mid-number and must not be the
-  // element that shrinks when the row runs out of room.
-  const home = readFileSync(new URL('index.html', SRC), 'utf8');
-  const rule = home.match(/\.scale \.rl \.f\{[^}]*\}/);
-  assert.ok(rule, 'the fraction has no styling of its own to protect it');
-  assert.match(rule[0], /white-space:nowrap/, 'the fraction can break across lines');
-  assert.match(rule[0], /flex-shrink:0/, 'the fraction is the element that gives');
-  // And the row must be able to wrap, or nowrap on a child forces overflow.
-  assert.match(home.match(/\.scale \.rl\{[^}]*\}/)[0], /flex-wrap:wrap/,
-    'a nowrap fraction inside a non-wrapping row pushes the page sideways');
-});

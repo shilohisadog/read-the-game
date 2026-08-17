@@ -109,6 +109,7 @@ body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
 .wrap{max-width:900px;margin:0 auto}
 .eyebrow{font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
 h1{font-size:clamp(1.8rem,4vw,2.5rem);letter-spacing:-.025em;font-weight:800;margin:0 0 12px;text-wrap:balance}
+h1.says{font-weight:400;letter-spacing:normal}
 .says{font-size:1.06rem;line-height:1.5;color:var(--ink);margin:0 0 22px;max-width:56ch}
 .says b{font-weight:700}
 .conc{margin:0 0 26px}
@@ -172,8 +173,6 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
    misleading, it is meaningless, which is what makes it safe (CHENG).
    Two conditions, and they are enforced by a test: no connecting segment, and
    every point carries its own fraction. */
-.scale{margin:0 0 18px}
-.scale .row{display:grid;grid-template-columns:1fr;gap:3px;padding:9px 0}
 /* THE FRACTION IS THE PART THAT MUST SURVIVE (CHENG).
    Label and fraction share one row, and the label is the long one -- "the team
    that controlled play while the score was level lost". On a 360px screen a
@@ -182,26 +181,15 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
    mid-way, and below 30rem the two stack outright: the label takes the width it
    needs and the fraction sits underneath at full size. The track is decoration
    around the number; the number is the claim. */
-.scale .rl{font-size:.86rem;display:flex;flex-wrap:wrap;justify-content:space-between;
  gap:2px 12px;align-items:baseline}
-.scale .rl b{font-weight:650;min-width:0}
-.scale .rl .f{color:var(--muted);font-size:.76rem;font-variant-numeric:tabular-nums;
  white-space:nowrap;flex-shrink:0}
-.scale .track{position:relative;height:16px;border-radius:8px;background:#e6edf3}
-.scale .half{position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;background:var(--muted);opacity:.55}
-.scale .pt{position:absolute;top:50%;width:13px;height:13px;border-radius:50%;
  transform:translate(-50%,-50%);border:2px solid #fff;box-shadow:0 1px 3px rgba(16,32,45,.3)}
-.scale .pt.lo{background:#1f7a4d}.scale .pt.hi{background:#b3341f}
 /* The axis ends are the least load-bearing thing here, so they are the ones
    allowed to shrink and wrap. Order of sacrifice: end labels, then the track,
    never the fraction. */
-.scale .axis{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 10px;
  font-size:.72rem;color:var(--muted);margin-top:2px;font-variant-numeric:tabular-nums}
-.scale .key{font-size:.8rem;color:var(--muted);margin:9px 0 0;max-width:62ch}
-.scale .key b{color:var(--ink)}
 /* ONE REFERENCE CLASS FOR ALL THREE ROWS, said once. It used to ride on every
    row of a list that no longer exists. */
-.scale .pop{font-size:.76rem;color:var(--muted);margin:7px 0 0}
 
 /* THE HERO IS A GAME. Read from the archive, never typed. */
 .hero{background:#fff;border:1px solid var(--edge);border-radius:13px;
@@ -282,46 +270,15 @@ footer p{margin:0 0 8px}
 
 BODY = r"""<div class="wrap">
 <p class="eyebrow">Read the Game</p>
-<h1>__H1__</h1>
 <!-- WHAT THIS IS, IN ONE SENTENCE, WHICH THE PAGE DID NOT SAY AT ALL.
      A stranger's questions are, in order: what is this, why should I care, what
      do I do. Only the third had an answer above the fold, and it was a button. -->
-<p class="says">__SAYS__</p>
+<h1 class="says">__SAYS__</h1>
 
-<!-- WHY SHOULD I CARE, AND IT IS NOW WHERE THAT QUESTION IS ASKED.
-     §4 of docs/site-purpose.md states the front page's job as "what is this ->
-     why should I care -> what do I do", and this block used to sit at screen
-     4.53 of 6.29 on a phone, four screens after the invitation it justifies.
-     CHENG's ruling: "the thesis is about 3,855 OTHER games. It isn't a
-     conclusion about the hero, it's the reason the hero is interesting." Read
-     the two orders aloud and only one of them is an argument:
-       "Here's a game. Also, across 3,855 games, the leader won 60.4%."
-       "Shot counts don't tell you who won as often as you'd think -- here's a
-        game where that happened."
-     THE RATES ARE THE EVIDENCE, AND THEY ARE DRAWN ONCE. Three equally weighted
-     rows flattened the only interesting thing about them: 54.5% sits on the
-     OTHER SIDE OF 50% from 39.6%. There used to be a second copy of all three,
-     318px lower, differing by one string -- the population -- repeated three
-     times. drawScale's own comment justified the duplicate by saying the axis
-     was "never a replacement for the denominator", which stopped being true
-     when the axis gained the denominators. The list is gone; the population is
-     stated once, below. -->
-<!-- ONE ELEMENT, BECAUSE THE TEAM VIEW HAD NO WAY TO SAY "AND NOT THAT".
-     `drawTeam` clears the page by wiping `#main`, and these three sat OUTSIDE
-     it, so a fan who had already named a club in the URL got 0.90 screens of
-     front-door argument at 1100px and 1.24 at 390px before "← All teams" --
-     with the club's own name below the fold at both widths. The rule was
-     already written down one branch away ("a fan who asked for BUF is not
-     looking for a Dallas game") and applied to the hero alone.
-     A WRAPPER RATHER THAN THREE HIDDEN CHILDREN, so the rule has one subject
-     and cannot be applied to two of three the next time something is added
-     here -- which is the exact way this broke. -->
-<section id="argument">
-<h2 id="what">Which number you count changes the answer</h2>
-<p class="lede" id="thesis">__THESIS__</p>
-<div class="scale" id="scale" hidden></div>
-</section>
-<!-- HERE IS ONE. The argument above is about 3,855 games; this is a game.
+<!-- THE PAGE NOW LEADS WITH THE GAME. Kevin, with a screenshot of everything
+     above the rink: "this is the area I would like removed... I think we lead
+     with the 'Every game since 2023' [sentence]". So one sentence says what this
+     is, and the next thing a visitor meets is hockey moving.
      Rendered by script from the catalog, because the team set is a fact about
      the archive and not a list to type. Thirty-three today: Arizona relocated to
      Utah inside the window this archive covers. -->
@@ -473,7 +430,7 @@ __LIB__
 
      REFUSED GAMES ARE LISTED, greyed, with the check that stopped them. Hiding
      them would make this a map of our successes -- Doctrine 9 -- and inside the
-     scope that argument is unchanged. */
+     scope that reasoning is unchanged. */
   /* THE SEASON IS THE UNIT A HOCKEY FAN THINKS IN, and it is also what keeps this
      page to the brief. Buffalo have 259 games in the archive; rendering all of
      them is a wall, which is the opposite of what was asked for. Read from the
@@ -559,111 +516,6 @@ __LIB__
     main.appendChild(list);
   }
 
-  /* THE THESIS, in the league's numbers and ours. Every rate carries its
-     denominator: a rate without its reference class is the thing this site
-     teaches against, and publishing one bare would be us doing it.
-
-     THE SECOND COPY IS GONE. This used to build a three-row list of exactly the
-     rows drawScale already draws, 318px lower on a phone, differing by one
-     string: the population, repeated three times. drawScale's own comment
-     defended keeping both -- "the axis is never a replacement for the
-     denominator" -- which was true when written and stopped being true when the
-     axis started printing "1811 of 3957" on every row. A justification anchored
-     to a property of something else, which is this batch's recurring defect.
-     WHAT SURVIVES IS THE FAILURE STATE. A missing measurement is a thing to say
-     out loud, not an empty box, and it now says it where the scale would be. */
-  function drawRates(m) {
-    if (!m || !m.baseRates) {
-      var box = $('scale');
-      box.textContent = '';
-      box.appendChild(el('p', 'key', 'The archive measurement could not be loaded.'));
-      box.hidden = false;
-      return;
-    }
-    drawScale(m);
-  }
-
-  /* THREE POINTS ON ONE SCALE, WITH 50% MARKED, AND NO LINE BETWEEN THEM.
-     The interesting thing is not any of the three numbers -- it is that one of
-     them sits on the OTHER SIDE OF 50% from the others, and three equally
-     weighted rows flatten exactly that. Ordered crudest to most refined the
-     values are non-monotone, which is a feature: it cannot be misread as
-     "counting better makes the number go down".
-     Every point still carries its own fraction, because the axis is a second
-     way of saying what the rows say and never a replacement for the
-     denominator. */
-  function drawScale(m) {
-    var box = $('scale'), rates = m && m.baseRates;
-    if (!rates) return;
-    var order = ['moreShotsOnGoalLost', 'moreAttemptsLost', 'moreLevelControlLost'];
-    box.textContent = '';
-    var any = false;
-    order.forEach(function (k) {
-      var r = rates[k];
-      if (!r || !r.n) return;
-      any = true;
-      var pct = r.count / r.n * 100;
-      var row = el('div', 'row');
-      var lab = el('div', 'rl');
-      lab.appendChild(el('b', null, r.what.charAt(0).toUpperCase() + r.what.slice(1)));
-      lab.appendChild(el('span', 'f', r.count + ' of ' + r.n + ' — ' + pct.toFixed(1) + '%'));
-      row.appendChild(lab);
-      var track = el('div', 'track');
-      track.appendChild(el('span', 'half'));
-      var pt = el('span', 'pt ' + (pct > 50 ? 'hi' : 'lo'));
-      pt.style.left = pct.toFixed(1) + '%';
-      track.appendChild(pt);
-      row.appendChild(track);
-      box.appendChild(row);
-    });
-    if (!any) return;
-    var ax = el('div', 'axis');
-    /* BOTH ENDS NAMED IN FULL. The first draft read "never lost →" on the
-       right-hand end, which is the OPPOSITE of what that end means: 100% is the
-       leader losing every time. An axis label that inverts the axis is worse
-       than no label. */
-    ax.appendChild(el('span', null, '0% — the leader always won'));
-    ax.appendChild(el('span', null, 'the leader always lost — 100%'));
-    box.appendChild(ax);
-
-    /* THE PAYOFF, COMPUTED. Every rate on this page is published as "lost",
-       which is right -- it keeps the three comparable. It also means the site
-       never once says the thing a newcomer came for. The complement is
-       arithmetic on the two numbers already printed, so it is derived here
-       rather than typed, like everything else on this page. */
-    var lc = rates.moreLevelControlLost;
-    if (lc && lc.n) {
-      var won = lc.n - lc.count;
-      /* MIXED POLARITY ON ONE PAGE, made explicit rather than left to the
-         reader (CHENG). The three rows read "lost", which is what keeps them
-         comparable; this line reads "won". Scanning 45.8 / 54.5 / 39.6 and then
-         60.4 means tracking which direction each runs — so the sentence names
-         the row it inverts and says it is the same games counted the other way,
-         rather than arriving as a fourth number. */
-      var key = el('p', 'key');
-      key.appendChild(el('span', null, 'That last row is the same games counted '
-        + 'the other way: the other '));
-      key.appendChild(el('b', null, (won / lc.n * 100).toFixed(1) + '% — '
-        + won + ' of ' + lc.n + ' — they won.'));
-      box.appendChild(key);
-    }
-
-    /* THE POPULATION, ONCE. It was printed on every row of the deleted list --
-       the same string three times, 318px of a phone screen. Stating it once is
-       not a weaker claim: it is one reference class governing all three rows,
-       which is what makes them comparable in the first place.
-       DISTINCT VALUES, NOT THE FIRST ONE. If the three rates ever disagreed
-       about their population, printing the first would publish a rate under
-       somebody else's reference class -- the exact thing this site teaches
-       against. So they are collected, and a disagreement is SHOWN. */
-    var pops = [];
-    order.forEach(function (k) {
-      var r = rates[k];
-      if (r && r.n && r.population && pops.indexOf(r.population) < 0) pops.push(r.population);
-    });
-    if (pops.length) box.appendChild(el('p', 'pop', pops.join(' · ')));
-    box.hidden = false;
-  }
 
   /* ONE GAME, READ FROM THE ARCHIVE, NEVER TYPED.
      `featured` is the archive's own ranking -- teams that controlled play while
@@ -763,9 +615,9 @@ __LIB__
        telling the reader to scroll back up -- a page apologising for its own
        order. It also spent a week pointing at a DIFFERENT game, because its
        href was set from featured[0] while the hero moved to most-recent.
-       With the thesis above and the game here, the argument and the invitation
-       are adjacent and one button is the whole funnel. Whether a novice needs
-       to be addressed by name is a question for the tester, not a leftover. */
+       With the one sentence above and the game here, the claim and the
+       invitation are adjacent and one button is the whole funnel. Whether a
+       novice needs to be addressed by name is for the tester, not a leftover. */
     $('hero').hidden = false;
   }
 
@@ -780,7 +632,6 @@ __LIB__
      76px at 1100 and 127px at 390. What goes is the ARGUMENT FOR WHY YOU
      SHOULD CARE, 414px and 622px, which is read once. Same split R made below
      the rink. Set before the fetch, so it does not depend on a network. */
-  if (team) $('argument').hidden = true;
   var season = +(/[?&]season=(\d{4})/.exec(location.search) || [])[1] || 0;
 
   Promise.all([grab('catalog.json'), grab('measures.json'), grab('index.json')])
@@ -798,21 +649,12 @@ __LIB__
            Dallas game; the hero exists for the visitor who has not chosen. */
         drawHero(cat, measures);
       }
-      /* AND THE ARGUMENT IS THE FRONT DOOR'S TOO. Same reason, one line later,
-         and it took Kevin's screenshot to notice it had never been extended:
-         the rates are the evidence FOR the thesis, so drawing them onto a page
-         whose thesis is hidden would leave a chart of nothing.
-         NOT FOLDED INTO THE `else` ABOVE: the archive-failed branch still gets
-         its rates, because measures.json is a different file and can arrive
-         when the catalog does not. */
-      if (!team) drawRates(measures);
       var s = describe(index, new Date().toISOString());
       $('state').setAttribute('data-state', s.state);
       $('state').textContent = s.lines.join(' ');
     });
 })();
 </script>"""
-H1 = "Watch a hockey game and see what the numbers are made of"
 
 # WHAT THE SITE IS, IN ONE SENTENCE. The page never said it.
 #
@@ -825,21 +667,6 @@ SAYS = ("Every NHL game since 2023, replayed play by play &mdash; with the count
         "built in front of you, so you can see <b>where a number comes from</b> "
         "instead of taking it on faith.")
 
-# THE THESIS, and it is the best sentence this project has earned. It is not a
-# hedge against "shot counts are meaningless" -- it is the finding, measured over
-# 4,119 games: counted the obvious way the leader loses more often than not, and
-# counted properly the leader wins. The numbers themselves are fetched, never
-# typed, so this text must not contain any of them.
-# NO MAGNITUDE IN THE PROSE. It read "loses SLIGHTLY more often" -- a claim about
-# effect size, made in words, three lines above the exact figure and its
-# denominator. The publication rule was applied to the digits and then walked
-# around by the sentence, which is the same assertion with the error bars removed
-# and no way for a reader to check it. CHENG caught it. The number says how much;
-# the sentence only has to say which way.
-THESIS = ("Count shot attempts the obvious way and the team with more of them loses "
-          "more often than it wins &mdash; because falling behind is what makes "
-          "a team shoot. Count only the attempts taken at even strength while the score "
-          "was level, and the picture reverses.")
 
 def _lib():
     """Inline the analysis modules the browser needs, as real source.
@@ -862,9 +689,7 @@ def _limits():
 def build():
     html = (BODY.replace("__LIB__", _lib())
              .replace("__ORIGIN__", repr(DATA_ORIGIN).replace("'", '"'))
-             .replace("__H1__", H1)
              .replace("__SAYS__", SAYS)
-             .replace("__THESIS__", THESIS)
              .replace("__WORKSHOP__", _workshop())
              .replace("__LIMITS__", _limits()))
     # Stamped last: the hashes must cover the final bytes of the script and
