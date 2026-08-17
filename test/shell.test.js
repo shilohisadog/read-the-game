@@ -163,7 +163,9 @@ test('the CSP pins EVERY block it ships, and pins nothing else', () => {
   }
   // connect-src is not hash-pinnable, so it is enumerated outright.
   const conn = p.match(/connect-src ([^;]+)/)[1].trim().split(/\s+/);
-  assert.deepEqual(conn, ["'self'", 'https://data.readthegame.co', 'https://cloudflareinsights.com'],
+  // The analytics beacon reports SAME-ORIGIN (POST /cdn-cgi/rum), watched in a
+  // browser — so no vendor origin belongs here. Enumerated, not pattern-matched.
+  assert.deepEqual(conn, ["'self'", 'https://data.readthegame.co'],
     `connect-src admits ${JSON.stringify(conn)}`);
 });
 

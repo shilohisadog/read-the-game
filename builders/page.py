@@ -89,20 +89,30 @@ def csp(html, *, connect):
     #
     # THE INLINE PINNING IS UNTOUCHED. Every <script> and <style> block this
     # site writes is still matched by SHA-256; a host source is a union with the
-    # hashes, not a replacement for them. What widens is exactly: scripts served
-    # by static.cloudflareinsights.com, and connections to cloudflareinsights.com.
+    # hashes, not a replacement for them. What widens is exactly one thing:
+    # scripts served by static.cloudflareinsights.com. Nothing else moved.
     #
     # AND THE SITE STOPS SAYING IT CALLS NOBODY. That claim was true and is not
     # any more -- see the README and the standalone game page's archive note,
     # both corrected in the same commit. Kevin: "we don't need to make the claim
     # of no network egress."
+    # ONE ORIGIN, NOT TWO, AND THE SECOND WAS REMOVED BY MEASUREMENT. The first
+    # version of this also put https://cloudflareinsights.com in connect-src, on
+    # the assumption the beacon reports to the vendor. IT DOES NOT: watched in a
+    # real browser, the report is
+    #     POST https://readthegame.co/cdn-cgi/rum?
+    # which is SAME-ORIGIN and already covered by connect-src 'self'. The extra
+    # entry admitted a third party for nothing.
+    #
+    # Safe to remove because a mistake here is LOUD: the deploy's policy-refusal
+    # step fails on any CSP violation on the live page, so if the beacon ever
+    # needs that origin the gate says so rather than the data quietly stopping.
     beacon_script = "https://static.cloudflareinsights.com"
-    beacon_connect = "https://cloudflareinsights.com"
     return "; ".join([
         "default-src 'none'",
         f"script-src {h(r'<script>(.*?)</script>')} {beacon_script}",
         f"style-src {h(r'<style>(.*?)</style>')}",
-        f"connect-src 'self' {connect} {beacon_connect}",
+        f"connect-src 'self' {connect}",
         # The homepage frames the game page for its five-second preview, and
         # `frame-src` has no fallback to default-src -- 'none' would block it.
         #
