@@ -380,13 +380,22 @@ reader. A test asserts both claims parse with one pattern **and that the two
 values differ in kind**, so a later tidy-up cannot unify them and quietly
 reintroduce the defect.
 
-### The layout was measured, not argued
+### The layout was measured — and then decided on the wrong reader
 
-Giving the claim its own line reads better and costs **41px of desktop to save
-38px of phone** — 332→373 at 1100px against 588→550 at 390px. Kevin's stated
-viewing perspective is the laptop, so the trade goes that way and the phone keeps
-the ragged wrap. Neither option was free.
+Giving the claim its own line costs desktop height to save phone height. Both
+were measured: **inline 320px / 538px; stacked 341px / 516px.**
 
-**Final: 332px at 1100×900 (37% of the viewport), 589px at 390×844 (70%).**
-Still larger than the 234/394 it replaced — §8's two cuts remain the only ways to
-close that, and both are still Kevin's call.
+I took the inline one *"because Kevin's stated viewing perspective is the
+laptop"*. Then Kevin: **"I use a laptop but my wife will use her phone to view
+the site."** She is the novice tester
+([`novice-tester-scheduled`](site-purpose.md#9)), and the audience this whole
+site exists for is on the smaller screen. **21px of laptop buys 22px of phone,
+and the trade reverses.** Now stacked.
+
+**A layout optimised for the reader who already understands the product is the
+wrong optimisation**, and it was one question away from shipping. The measurement
+was right and the objective function was wrong — which is not something more
+measuring would have caught.
+
+**Final: 341px at 1100×900 (38%), 516px at 390×844 (61%).** Still larger than the
+234/394 it replaced.

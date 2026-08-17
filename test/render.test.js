@@ -2506,7 +2506,7 @@ test('both rows state their claim in the SAME frame, and each names its denomina
   scrub.oninput({ target: { value: scrub.value } });
 
   const claim = row => {
-    const m = row.match(/<span class="mixcl">([\s\S]*?)<\/span>/);
+    const m = row.match(/<p class="mixcl">([\s\S]*?)<\/p>/);
     assert.ok(m, 'a row lost its claim');
     return m[1].replace(/<[^>]*>/g, '');
   };

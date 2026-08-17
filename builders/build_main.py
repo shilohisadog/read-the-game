@@ -399,7 +399,7 @@ T = r"""<style>
    proportions are in the markup where they can be read, with no CSSOM pass. */
 #rg .mix{margin:11px 0 0}
 #rg .mixhd{font-size:.71rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:700;display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline}
-#rg .mixcl{letter-spacing:0;text-transform:none;font-size:.87rem;font-weight:600;color:var(--ink)}
+#rg .mixcl{margin:1px 0 0;font-size:.87rem;font-weight:600;color:var(--ink);line-height:1.35}
 #rg .mixcl b{font-weight:800}
 #rg .mixhd .n{letter-spacing:.02em;text-transform:none;font-weight:600;font-family:ui-monospace,Menlo,monospace;font-size:.72rem}
 #rg .mixbar{height:14px;border-radius:7px;overflow:hidden;margin:5px 0;background:#e6edf3}
@@ -1474,13 +1474,17 @@ function mixRow(cls,title,claim,scope,parts){
  const keys=parts.map(p=>`<span><i class="${p.k}"></i>${p.pct
    ?`<b>${(100*p.v/tot).toFixed(1)}%</b> ${p.lab}`
    :`<b>${p.v}</b> ${p.lab}`}</span>`).join('');
- /* TITLE, CLAIM AND SCOPE ON ONE WRAPPING LINE, and both alternatives were
-    measured rather than argued. Giving the claim its own line reads better and
-    trades 41px of DESKTOP height for 38px of phone -- 332->373 at 1100px against
-    588->550 at 390px. Kevin's stated viewing perspective is the laptop, so the
-    trade goes his way; the phone keeps the ragged wrap. Neither is free, and
-    pretending one was would have been the whole point of measuring. */
- return `<div class="mix ${cls}"><p class="mixhd">${title}<span class="mixcl">${claim}</span><span class="n">${scope}</span></p>`
+ /* THE CLAIM GETS ITS OWN LINE, AND THE REASON IS WHO IS HOLDING THE DEVICE.
+    Title, claim and scope in one wrapping flex gives four ragged lines on a
+    phone. Both layouts were measured: inline is 320px at 1100 and 538 at 390;
+    stacked is 341 and 516. The first version of this comment took the inline
+    one because "Kevin's stated viewing perspective is the laptop" -- and then
+    Kevin: "I use a laptop but my wife will use her phone to view the site."
+    SHE IS THE NOVICE TESTER. The audience this whole site is built for is on the
+    smaller screen, so 21px of laptop buys 22px of phone and the trade reverses.
+    A layout optimised for the person who already understands the product is the
+    wrong optimisation, and it was one question away from being caught. */
+ return `<div class="mix ${cls}"><p class="mixhd">${title}<span class="n">${scope}</span></p><p class="mixcl">${claim}</p>`
   +`<div class="mixbar"><svg viewBox="0 0 100 8" preserveAspectRatio="none">${rects}</svg></div>`
   +`<p class="mixkey">${keys}</p></div>`;}
 function drawBlocked(B,L,slice){
