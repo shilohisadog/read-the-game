@@ -378,8 +378,14 @@ jobs:
           # printed. A gate that silently deletes injected scripts cannot do its
           # job; this one deletes exactly one known tag and reports that it did.
           strip() {
+            # THE WHOLE LINE, ANCHORED. Substituting the tag alone left the
+            # newline Cloudflare wrote with it, so the compare failed by exactly
+            # one byte and the printed diff showed a blank line -- which reads as
+            # nothing at all. The beacon is injected on its own line before
+            # </body>; ^…$ means an inline one, or a moved one, does NOT get
+            # deleted and fails the comparison instead. Canaried both ways.
             sed -e 's|<!--/\?email_off-->||g' \
-                -e 's|<script type="module" src="https://static\.cloudflareinsights\.com/beacon\.min\.js/[^>]*></script>||g' "$1"
+                -e '\%^<script type="module" src="https://static\.cloudflareinsights\.com/beacon\.min\.js/[^>]*></script>$%d' "$1"
           }
           beacon_note() {
             grep -q 'static\.cloudflareinsights\.com' "$1" \
@@ -959,8 +965,14 @@ jobs:
           # printed. A gate that silently deletes injected scripts cannot do its
           # job; this one deletes exactly one known tag and reports that it did.
           strip() {
+            # THE WHOLE LINE, ANCHORED. Substituting the tag alone left the
+            # newline Cloudflare wrote with it, so the compare failed by exactly
+            # one byte and the printed diff showed a blank line -- which reads as
+            # nothing at all. The beacon is injected on its own line before
+            # </body>; ^…$ means an inline one, or a moved one, does NOT get
+            # deleted and fails the comparison instead. Canaried both ways.
             sed -e 's|<!--/\?email_off-->||g' \
-                -e 's|<script type="module" src="https://static\.cloudflareinsights\.com/beacon\.min\.js/[^>]*></script>||g' "$1"
+                -e '\%^<script type="module" src="https://static\.cloudflareinsights\.com/beacon\.min\.js/[^>]*></script>$%d' "$1"
           }
           beacon_note() {
             grep -q 'static\.cloudflareinsights\.com' "$1" \
