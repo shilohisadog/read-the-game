@@ -2529,3 +2529,33 @@ test('both rows state their claim in the SAME frame, and each names its denomina
     `the game claim says "${g[2]}" while its own bar draws ${segs.join(' + ')}`);
   assert.match(c[2], /^491,971 attempts$/, 'the archive denominator is not the archive n');
 });
+
+test('nothing on the blocked card is a bare percentage — every number names its OF', () => {
+  // THE CAVEAT THAT SAID "a share of the attempts taken, not a rate of winning"
+  // is gone, and this is what replaced it. It existed because a bare `27.8%`
+  // beside two team names can be read as a win rate, which is the misreading
+  // CHENG's ruling on this panel exists to prevent. It is safe to delete only
+  // while every figure states its own denominator — so that is the thing tested,
+  // not the sentence.
+  const a = boot(rich, CURVE_AND_MIX);
+  a.$('lyBlock').click();
+  const scrub = a.$('scrub');
+  scrub.value = String(+scrub.max);
+  scrub.oninput({ target: { value: scrub.value } });
+  const r = rowsOf(a.$('blockPanel').innerHTML);
+
+  // Each row's CLAIM carries "of <n>", checked by the shared-frame test above.
+  // Here it is the KEYS, which are the other place numbers appear: a percentage
+  // there is read against the row's own stated denominator, so the row must have
+  // one on screen at the same time.
+  for (const [name, row] of Object.entries(r)) {
+    const key = row.split('mixkey')[1];
+    if (!/%/.test(key)) continue;
+    assert.match(row, /of <b>[\d,]+ attempts?<\/b>/,
+      `the ${name} row shows percentages with no denominator anywhere on it`);
+  }
+  // And the doctrine the deleted line carried has to still be somewhere.
+  const v = a.$('blockPanel').innerHTML;
+  assert.match(v, /4,119 games/, 'the archive lost its games count with the caveat');
+  assert.match(v, /NHL regular season and playoffs/, 'the archive lost its population');
+});

@@ -1539,11 +1539,22 @@ function drawBlocked(B,L,slice){
  const arch=BT&&M.blocked&&M.blocked.n
   ?mixRow('arch','The archive',
     `<b>${(100*M.neverReachedTheGoalie.rate).toFixed(1)}%</b> of <b>${M.blocked.n.toLocaleString()} attempts</b> never reach the goalie`,
-    `all situations`,
+    `${M.games.toLocaleString()} games · ${ESC(M.blocked.population)} · all situations`,
     [{k:'r',lab:'reached the goalie',v:(BT['shot-on-goal']||0)+(BT.goal||0),pct:1},
      {k:'b',lab:'blocked by a body',v:BT['blocked-shot']||0,pct:1},
      {k:'m',lab:'missed the net',v:BT['missed-shot']||0,pct:1}])
-   +`<p class="bkarch"><span class="lim">${M.games.toLocaleString()} games · ${ESC(M.blocked.population)} — a share of the attempts taken, not a rate of winning.</span></p>`
+   /* THE CAVEAT IS GONE, AND NOT FOR SPACE. "A share of the attempts taken, not
+      a rate of winning" was compensating for an ambiguity THE NEW FRAME REMOVED.
+      It was written when the line read "27.8% are blocked by a body" and never
+      said what the 27.8% was OF -- a bare percentage beside two team names can be
+      misread as a win rate, and CHENG's ruling on this panel exists because that
+      misreading is the one a novice makes. `51.9% of 491,971 attempts never reach
+      the goalie` cannot be read that way: every number on this card now names its
+      own denominator. The guard survives it -- the panel's win-rate test is on
+      the PROSE, and asks that no outcome verb appears here at all.
+      What the line also carried -- the games count and the population -- was
+      doctrine and has moved into the row's scope, where it is always visible
+      rather than in a paragraph below the fold on a phone. */
   :`<p class="bkarch">No archive comparison shown — ${RATES===undefined?'this page carries a single game and makes no network requests':'the archive shares could not be loaded'}.</p>`;
  $('blockPanel').innerHTML=rows+game+mates+un+arch;}
 
