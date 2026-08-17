@@ -312,45 +312,10 @@ BODY = r"""<div class="wrap">
 <p class="note">Every game each club played, newest first. Arizona became Utah in
 2024 &mdash; both are here, because both played.</p>
 <div class="teams" id="teams"></div>
-<!-- NAME WHAT THE SITE TEACHES, because it named none of it.
-     Counted on the shipped page before this: icing 0, offside 0, Corsi 0,
-     high-danger 0, empty net 0, penalty 0. A site that teaches you to read
-     hockey mentioned almost nothing it teaches, and a visitor deciding whether
-     to look around decides on whether we appear to cover what they wondered
-     about.
-     TWO KINDS, KEPT APART. The first row is HOCKEY — rules a novice needs in
-     order to watch. The second is OURS — what we count, which is a different
-     claim and carries a different obligation. Merging them would let our
-     measurements borrow the rulebook's authority. -->
-<h2 id="learn">What you can see here</h2>
-<div class="conc">
-  <p class="ck">The game itself &mdash; the league&rsquo;s rules, named as they happen</p>
-  <ul class="clist">
-    <li><b>Icing</b> &mdash; and why the faceoff goes back</li>
-    <li><b>Offside</b> &mdash; why a goal gets waved off</li>
-    <li><b>Faceoffs</b> &mdash; all nine spots, and which one play restarts at</li>
-    <li><b>Penalties</b> &mdash; and the delayed whistle</li>
-    <li><b>The empty net</b> &mdash; when a goaltender leaves, read from the feed</li>
-  </ul>
-  <p class="ck">What we count &mdash; our own measurements, each showing its work</p>
-  <ul class="clist">
-    <li><b>Control</b> &mdash; shot attempts, and the narrower count that predicts</li>
-    <li><b>Shots from the slot</b> &mdash; a geometric rule of ours, not a model</li>
-    <li><b>Goaltending</b> &mdash; saves as a fraction, built while you watch</li>
-  </ul>
-  <p class="cnote">Every one of them is a toggle on a real game, and every one
-  shows the events it counted and the events it did not.</p>
-</div>
 <h2>What this does and does not claim</h2>
 <ul class="limits">
 __LIMITS__
 </ul>
-<h2 id="workshop">Workshop</h2>
-<p class="note">Earlier views, each answering a question the main app does not.
-They are explorations, not front doors, and several are pinned to one game.</p>
-<div class="grid">
-__WORKSHOP__
-</div>
 
 <p class="state" id="state" data-state="empty">Checking how current this data is&hellip;</p>
 
@@ -663,9 +628,8 @@ __LIB__
 # count would be a claim that goes stale between deploys. "Every NHL game since
 # 2023" is a claim about SCOPE, which the limits block below states exactly and
 # which does not move.
-SAYS = ("Every NHL game since 2023, replayed play by play &mdash; with the counts "
-        "built in front of you, so you can see <b>where a number comes from</b> "
-        "instead of taking it on faith.")
+SAYS = ("Every NHL game since 2023, replayed event by event &mdash; with the counts "
+        "built in front of you, so you can see <b>where a number comes from</b>.")
 
 
 def _lib():
@@ -686,11 +650,105 @@ def _workshop():
 def _limits():
     return "\n".join(f"  <li><b>{h}</b><span>{b}</span></li>" for h, b in LIMITS)
 
+
+LEARN = r"""<!-- NAME WHAT THE SITE TEACHES, because it named none of it.
+     Counted on the shipped page before this: icing 0, offside 0, Corsi 0,
+     high-danger 0, empty net 0, penalty 0. A site that teaches you to read
+     hockey mentioned almost nothing it teaches, and a visitor deciding whether
+     to look around decides on whether we appear to cover what they wondered
+     about.
+     TWO KINDS, KEPT APART. The first row is HOCKEY — rules a novice needs in
+     order to watch. The second is OURS — what we count, which is a different
+     claim and carries a different obligation. Merging them would let our
+     measurements borrow the rulebook's authority. -->
+<h1>What you can see here</h1>
+<div class="conc">
+  <p class="ck">The game itself &mdash; the league&rsquo;s rules, named as they happen</p>
+  <ul class="clist">
+    <li><b>Icing</b> &mdash; and why the faceoff goes back</li>
+    <li><b>Offside</b> &mdash; why a goal gets waved off</li>
+    <li><b>Faceoffs</b> &mdash; all nine spots, and which one play restarts at</li>
+    <li><b>Penalties</b> &mdash; and the delayed whistle</li>
+    <li><b>The empty net</b> &mdash; when a goaltender leaves, read from the feed</li>
+  </ul>
+  <p class="ck">What we count &mdash; our own measurements, each showing its work</p>
+  <ul class="clist">
+    <li><b>Control</b> &mdash; shot attempts, and the narrower count that predicts</li>
+    <li><b>Shots from the slot</b> &mdash; a geometric rule of ours, not a model</li>
+    <li><b>Goaltending</b> &mdash; saves as a fraction, built while you watch</li>
+  </ul>
+  <p class="cnote">Every one of them is a toggle on a real game, and every one
+  shows the events it counted and the events it did not.</p>
+</div>"""
+
+WORKSHOP_PAGE = r"""<h1>Workshop</h1>
+<p class="note">Earlier views, each answering a question the main app does not.
+They are explorations, not front doors, and several are pinned to one game.</p>
+<div class="grid">
+__WORKSHOP__
+</div>"""
+
+# ---------------------------------------------------------------------------
+# TWO PAGES THAT USED TO BE SECTIONS.
+#
+# Kevin: "What I want below Teams is the 'What this site does and does not
+# claim' section then the footer, remove the other bits... Let's remove them
+# from the home page and make them their own pages. I like the content, but not
+# on the home page. Like we have the Workshop link in the header area, we can
+# have 'What you can see here' on its own page."
+#
+# So the content is unchanged and only its address moves. Both go in the nav,
+# because a page nothing links to is a page nobody reads -- and `page.py`'s
+# chrome test already forbids linking to a page we have not built, which is the
+# guard that keeps those two facts in step.
+#
+# THEY SHARE THE HOME PAGE'S STYLESHEET rather than growing their own. The
+# selectors they need (.conc, .ck, .clist, .grid, .note) are defined once, and a
+# second copy is where the next divergence hides -- the same argument that put
+# `csp` and the chrome in page.py.
+LEARN_BODY = r"""<div class="wrap">
+<p class="eyebrow">Read the Game</p>
+__LEARN__
+</div>"""
+
+WORKSHOP_BODY = r"""<div class="wrap">
+<p class="eyebrow">Read the Game</p>
+__WORKSHOP_PAGE__
+</div>"""
+
+LEARN_TITLE = "What you can see here \u2014 Read the Game"
+LEARN_DESC = ("The hockey rules this site names as they happen \u2014 icing, offside, "
+              "faceoffs, penalties, the empty net \u2014 and the measurements it counts "
+              "itself, each one showing the events behind it.")
+WORKSHOP_TITLE = "Workshop \u2014 Read the Game"
+WORKSHOP_DESC = ("Earlier views of the same NHL data, each answering a question the main "
+                 "app does not. Explorations rather than front doors.")
+
+
+def build_learn():
+    html = LEARN_BODY.replace("__LEARN__", LEARN)
+    html = P.document(html, title=LEARN_TITLE, description=LEARN_DESC,
+                      url="https://readthegame.co/what-you-can-see.html",
+                      current="/what-you-can-see.html",
+                      head='<meta http-equiv="Content-Security-Policy" content="__CSP__">\n'
+                           + STYLE)
+    return html.replace("__CSP__", _csp(html))
+
+
+def build_workshop():
+    html = WORKSHOP_BODY.replace("__WORKSHOP_PAGE__", WORKSHOP_PAGE.replace("__WORKSHOP__", _workshop()))
+    html = P.document(html, title=WORKSHOP_TITLE, description=WORKSHOP_DESC,
+                      url="https://readthegame.co/workshop.html",
+                      current="/workshop.html",
+                      head='<meta http-equiv="Content-Security-Policy" content="__CSP__">\n'
+                           + STYLE)
+    return html.replace("__CSP__", _csp(html))
+
+
 def build():
     html = (BODY.replace("__LIB__", _lib())
              .replace("__ORIGIN__", repr(DATA_ORIGIN).replace("'", '"'))
              .replace("__SAYS__", SAYS)
-             .replace("__WORKSHOP__", _workshop())
              .replace("__LIMITS__", _limits()))
     # Stamped last: the hashes must cover the final bytes of the script and
     # style, and the CSP itself sits in <head>, outside both.
@@ -701,7 +759,13 @@ def build():
     return html.replace("__CSP__", _csp(html))
 
 def main():
-    html = build()
+    # THREE PAGES, ONE BUILDER, AND THE VERIFY COVERS ALL OF THEM. Two sections
+    # of the home page became pages of their own; emitting them from a second
+    # builder would put the shared stylesheet and the workshop list in two
+    # places, which is where the next divergence hides.
+    pages = [(OUT, build()),
+             (ROOT / "src" / "what-you-can-see.html", build_learn()),
+             (ROOT / "src" / "workshop.html", build_workshop())]
 
     # A link to a file that does not exist is a 404 in production. Cheapest
     # possible gate, run on every build, before the byte comparison.
@@ -710,17 +774,21 @@ def main():
         print("BROKEN LINKS -- these files do not exist: " + ", ".join(missing))
         return 1
 
+    h = lambda s: hashlib.sha256(s.encode()).hexdigest()[:16]
     if "--verify" in sys.argv:
-        current = OUT.read_text() if OUT.exists() else ""
-        same = current == html
-        h = lambda s: hashlib.sha256(s.encode()).hexdigest()[:16]
-        print(f"built  {len(html.encode()):>7} bytes  sha {h(html)}")
-        print(f"onDisk {len(current.encode()):>7} bytes  sha {h(current)}")
-        print("BYTE-IDENTICAL" if same else "DIFFERS -- gate FAILED")
-        return 0 if same else 1
+        ok = True
+        for path, html in pages:
+            current = path.read_text() if path.exists() else ""
+            same = current == html
+            ok = ok and same
+            print(f"  {path.name:<24} built {len(html.encode()):>7}  sha {h(html)}  "
+                  + ("BYTE-IDENTICAL" if same else f"DIFFERS from {len(current.encode())} on disk -- gate FAILED"))
+        return 0 if ok else 1
 
-    OUT.write_text(html)
-    print(f"wrote {OUT} {len(html.encode())} bytes; {len(WORKSHOP)} links checked")
+    for path, html in pages:
+        path.write_text(html)
+    print(f"wrote {OUT} {len(pages[0][1].encode())} bytes; {len(WORKSHOP)} links checked; "
+          f"plus {', '.join(p.name for p, _ in pages[1:])}")
     return 0
 
 if __name__ == "__main__":

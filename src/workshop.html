@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Workshop — Read the Game</title>
+<meta name="description" content="Earlier views of the same NHL data, each answering a question the main app does not. Explorations rather than front doors.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Workshop — Read the Game">
+<meta property="og:description" content="Earlier views of the same NHL data, each answering a question the main app does not. Explorations rather than front doors.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Workshop — Read the Game">
+<meta name="twitter:description" content="Earlier views of the same NHL data, each answering a question the main app does not. Explorations rather than front doors.">
+<meta property="og:url" content="https://readthegame.co/workshop.html">
+<style>
+.sitehdr,.sitefoot{font:500 .9rem/1.5 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+ background:#f4f7fa;color:#0f1a23;-webkit-text-size-adjust:100%}
+.sitehdr{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 18px;
+ padding:12px 16px;border-bottom:1px solid #ccd8e0}
+.sitehdr a{color:#0f1a23;text-decoration:none}
+.sitehdr .mark{font-weight:800;letter-spacing:.02em;margin-right:auto}
+.sitehdr nav{display:flex;flex-wrap:wrap;gap:6px 16px}
+.sitehdr nav a{color:#2a5d86;text-decoration:none;padding:2px 0;border-bottom:1px solid transparent}
+.sitehdr nav a:hover,.sitehdr nav a:focus{border-bottom-color:#2a5d86}
+.sitehdr nav a[aria-current="page"]{color:#0f1a23;border-bottom-color:#0f1a23}
+.sitefoot{border-top:1px solid #ccd8e0;padding:18px 16px 28px;color:#5b6d7a;font-size:.82rem}
+/* PREVIEW HAS NO ROOM FOR CHROME. The five-second loop on the front door is an
+   iframe of the game page, and the shared header and footer are real height
+   inside a box sized for a rink -- they push the ice past the bottom edge, and
+   `scrolling=no` crops it. The class is set by the page at runtime (there is no
+   build-time preview variant; one file serves both), and the rule lives HERE
+   because this is where the chrome is defined. A rule in build_main.py reaching
+   across to style .sitehdr would be the second place chrome is decided. */
+body.previewing{margin:0}
+body.previewing .sitehdr,body.previewing .sitefoot{display:none}
+.sitefoot p{margin:0 0 7px;max-width:70ch}
+.sitefoot a{color:#2a5d86}
+@media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
+</style>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-CiWqRzQPLXZohtgVJ01YSL/YOOo3JgZYi4YQ34VcWFU='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<style>
+:root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
+ --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+ color:var(--ink);background:var(--bg);line-height:1.55;
+ padding:clamp(18px,4vw,44px) clamp(14px,4vw,22px)}
+.wrap{max-width:900px;margin:0 auto}
+.eyebrow{font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+h1{font-size:clamp(1.8rem,4vw,2.5rem);letter-spacing:-.025em;font-weight:800;margin:0 0 12px;text-wrap:balance}
+h1.says{font-weight:400;letter-spacing:normal}
+.says{font-size:1.06rem;line-height:1.5;color:var(--ink);margin:0 0 22px;max-width:56ch}
+.says b{font-weight:700}
+.conc{margin:0 0 26px}
+.conc .ck{margin:0 0 7px;font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;
+ color:var(--muted);font-weight:700}
+.conc .ck+ul{margin:0 0 18px}
+.clist{list-style:none;padding:0;display:grid;gap:6px;
+ grid-template-columns:repeat(auto-fill,minmax(255px,1fr))}
+.clist li{background:#fff;border:1px solid var(--edge);border-radius:9px;
+ padding:9px 13px;font-size:.86rem;color:var(--muted)}
+.clist li b{color:var(--ink);font-weight:650}
+.cnote{font-size:.84rem;color:var(--muted);margin:0;max-width:62ch}
+.lede{font-size:1.05rem;color:var(--muted);margin:0 0 22px;max-width:62ch}
+.lede b{color:var(--ink);font-weight:600}
+h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
+ font-weight:700;margin:34px 0 12px}
+
+/* THE TEAM GRID IS ONE OBJECT, not thirty-three. Uniform chips, no typing, one
+   click. Google-clean was the brief: above the fold is this and one link. */
+.teams{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));
+ gap:7px;margin:0 0 26px}
+.chip{display:flex;align-items:center;justify-content:center;height:46px;
+ border-radius:9px;text-decoration:none;font-weight:800;letter-spacing:.06em;
+ font-size:.9rem;border:1px solid rgba(0,0,0,.12);
+ transition:transform .12s ease,box-shadow .12s ease}
+.chip:hover,.chip:focus-visible{transform:translateY(-2px);box-shadow:0 6px 16px rgba(16,32,45,.18)}
+
+/* A team's games. The top row is the thing you press play on -- two clicks from
+   a cold load to watching, which is the number this page was rebuilt for. */
+.crumb{margin:0 0 14px;font-size:.85rem}
+.crumb a{color:var(--blue);text-decoration:none}
+.teamhead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:0 0 4px}
+.teamhead h2{margin:0;font-size:1.4rem;letter-spacing:-.02em;text-transform:none;
+ color:var(--ink);font-weight:800}
+.note{font-size:.86rem;color:var(--muted);margin:0 0 16px;max-width:62ch}
+.seasons{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
+.seasons a{font-size:.8rem;text-decoration:none;color:var(--muted);padding:4px 10px;
+ border:1px solid var(--edge);border-radius:999px;background:#fff}
+.seasons a.on{color:#fff;background:var(--blue);border-color:var(--blue);font-weight:700}
+.seasons a:hover{border-color:var(--blue);color:var(--blue)}
+.seasons a.on:hover{color:#fff}
+.games{list-style:none;margin:0 0 26px;padding:0;display:grid;gap:6px}
+.games li{background:#fff;border:1px solid var(--edge);border-radius:10px}
+.games a,.games .off{display:grid;grid-template-columns:8.5rem 1fr auto;gap:12px;
+ align-items:center;padding:11px 15px;text-decoration:none;color:inherit;font-size:.9rem}
+.games a:hover,.games a:focus-visible{border-radius:10px;background:var(--ice)}
+.games .d{color:var(--muted);font-variant-numeric:tabular-nums;font-size:.83rem}
+.games .m{font-weight:600}
+.games .r{font-variant-numeric:tabular-nums;color:var(--muted);font-size:.83rem}
+.games li.first{border-color:var(--blue);box-shadow:0 4px 16px rgba(58,90,156,.14)}
+.games li.first .m::after{content:" — press play";color:var(--blue);font-weight:600}
+.games li.no{background:#f1f4f6}
+.games .off{color:var(--muted)}
+
+/* THREE POINTS ON ONE SCALE, AND DELIBERATELY NOT A LINE CHART.
+   We refuse to plot the cumulative curve because its tail values are
+   uninformative (n=10 gives a 9%-70% band) and its domain is continuous, so a
+   line invites reading a value at k=17 that was never computed. Neither holds
+   here: n is 3,957 / 4,029 / 3,855, and the domain is NOMINAL -- there is no
+   measure BETWEEN "shots on goal" and "shot attempts", so interpolation is not
+   misleading, it is meaningless, which is what makes it safe (CHENG).
+   Two conditions, and they are enforced by a test: no connecting segment, and
+   every point carries its own fraction. */
+/* THE FRACTION IS THE PART THAT MUST SURVIVE (CHENG).
+   Label and fraction share one row, and the label is the long one -- "the team
+   that controlled play while the score was level lost". On a 360px screen a
+   space-between row squeezes whichever child can give, and the one that can give
+   is the number. So the row WRAPS, the fraction never breaks across lines
+   mid-way, and below 30rem the two stack outright: the label takes the width it
+   needs and the fraction sits underneath at full size. The track is decoration
+   around the number; the number is the claim. */
+ gap:2px 12px;align-items:baseline}
+ white-space:nowrap;flex-shrink:0}
+ transform:translate(-50%,-50%);border:2px solid #fff;box-shadow:0 1px 3px rgba(16,32,45,.3)}
+/* The axis ends are the least load-bearing thing here, so they are the ones
+   allowed to shrink and wrap. Order of sacrifice: end labels, then the track,
+   never the fraction. */
+ font-size:.72rem;color:var(--muted);margin-top:2px;font-variant-numeric:tabular-nums}
+/* ONE REFERENCE CLASS FOR ALL THREE ROWS, said once. It used to ride on every
+   row of a list that no longer exists. */
+
+/* THE HERO IS A GAME. Read from the archive, never typed. */
+.hero{background:#fff;border:1px solid var(--edge);border-radius:13px;
+ padding:18px 20px 20px;margin:0 0 26px;box-shadow:0 4px 16px rgba(16,32,45,.06)}
+.herokick{margin:0 0 7px;font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;
+ color:var(--muted);font-weight:700}
+/* The frame carries the rink's own aspect, so it does not letterbox on a phone
+   or crop on a desktop. 200x85 is the rink; the scoreboard above it takes the
+   rest, measured from the rendered page rather than guessed. */
+.heroframe{margin:0 0 13px;background:var(--ice);border:1px solid var(--edge);
+ border-radius:10px;overflow:hidden}
+.heroframe iframe{display:block;width:100%;aspect-ratio:200/108;border:0}
+/* A TALLER FRAME ON A PHONE, because the scoreboard inside it is not
+   proportional even after it was made to shrink. Measured in a real browser:
+   the chrome is 87px of an 856px-wide frame (10%) and 49px of a 287px one
+   (17%), so one ratio cannot serve both -- at 200/108 the phone's rink fits
+   the height and leaves empty ice down both sides. 200/128 gives the narrow
+   frame the room its rink actually wants; the wide one is already exact. */
+@media (max-width:520px){.heroframe iframe{aspect-ratio:200/128}}
+.heroline{margin:0 0 6px;font-size:1.22rem;line-height:1.35;font-weight:700;max-width:34ch}
+.herosub{margin:0 0 4px;font-size:.9rem;color:var(--muted);max-width:56ch}
+/* THE HERO'S RELATION TO THE RATE ABOVE IT. Same size and colour as .herosub,
+   because it is the second half of the same thought and a louder treatment would
+   make one game argue with 3,957. The verdict itself is bold; the rate that
+   settles it is not. */
+.herorel:empty{display:none}
+.herorel{margin:0 0 15px;font-size:.9rem;color:var(--muted);max-width:56ch}
+.herorel b{color:var(--ink);font-weight:650}
+.herogo{display:inline-block;background:var(--ink);color:#fff;text-decoration:none;
+ font-weight:700;padding:11px 18px;border-radius:9px;font-size:.95rem}
+.herogo:hover,.herogo:focus{background:var(--blue)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:12px}
+.card{display:block;text-decoration:none;color:inherit;background:#fff;
+ border:1px solid var(--edge);border-radius:12px;padding:15px 17px}
+.card:hover,.card:focus-visible{border-color:var(--blue)}
+.card .t{font-weight:700;margin:0 0 5px}
+.card p{margin:0;font-size:.86rem;color:var(--muted)}
+
+.limits{display:grid;gap:11px;margin:0;padding:0;list-style:none}
+.limits li{background:#fff;border:1px solid var(--edge);border-left:3px solid var(--blue);
+ border-radius:0 10px 10px 0;padding:12px 16px}
+.limits b{display:block;font-size:.93rem;margin-bottom:2px}
+.limits span{font-size:.87rem;color:var(--muted)}
+
+.state{font-size:.83rem;color:var(--muted);margin:0 0 22px;padding:9px 14px;
+ background:#fff;border:1px solid var(--edge);border-left:3px solid var(--edge);
+ border-radius:0 9px 9px 0;max-width:70ch}
+.state[data-state="stalled"],.state[data-state="halted"]{border-left-color:var(--flag,#d9662b)}
+.state[data-state="behind"]{border-left-color:var(--buf)}
+.state[data-state="current"],.state[data-state="quiet"]{border-left-color:var(--min)}
+.state b{color:var(--ink);font-weight:600}
+a:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+footer{margin-top:38px;padding-top:18px;border-top:1px solid var(--edge);
+ font-size:.79rem;color:var(--muted);max-width:70ch}
+footer a{color:var(--blue)}
+footer p{margin:0 0 8px}
+/* NARROW SCREENS. The three-column game row is 8.5rem of date plus a result plus
+   a score — about 300px of content before it starts squeezing, which is most of a
+   360px phone once padding is taken off. Below 30rem it stacks, and the chips get
+   smaller so a row of them still fits without the grid forcing a scrollbar.
+
+   This is where the whole site was wrong until Kevin asked about phones: not the
+   CSS, but the missing viewport meta above it. Without that, none of this applies
+   at all -- the phone lays out at ~980px and scales the result down. */
+@media (max-width:30rem){
+  .games a,.games .off{grid-template-columns:1fr auto;gap:2px 10px;padding:10px 12px}
+  .games .d{grid-column:1/-1;order:-1}
+  .games .m{font-size:.92rem}
+  .games li.first .m::after{content:""}
+  .games li.first .m::before{content:"▶ ";color:var(--blue)}
+  .teams{grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:6px}
+  .chip{height:42px;font-size:.82rem}
+  .rates li{flex-direction:column;gap:2px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">Watch a game</a><a href="/#teams">Teams</a><a href="/what-you-can-see.html">What you can see</a><a href="/workshop.html" aria-current="page">Workshop</a></nav></header>
+<div class="wrap">
+<p class="eyebrow">Read the Game</p>
+<h1>Workshop</h1>
+<p class="note">Earlier views, each answering a question the main app does not.
+They are explorations, not front doors, and several are pinned to one game.</p>
+<div class="grid">
+  <a class="card" href="read-the-game.html"><p class="t">The reference game</p><p>MIN at BUF, 10 November 2023, compiled in — the one page that works offline.</p></a>
+  <a class="card" href="goalie-view.html"><p class="t">The goalie view</p><p>Minnesota outshot Buffalo and lost. This is the save-by-save reason why.</p></a>
+  <a class="card" href="on-the-ice.html"><p class="t">On the ice</p><p>Who was actually out there, read from the shift charts.</p></a>
+  <a class="card" href="active-play.html"><p class="t">Active play</p><p>Following the puck between whistles, and who touched it.</p></a>
+  <a class="card" href="goalie-eye-view.html"><p class="t">From the crease</p><p>The same shots, seen from where the goalie stood.</p></a>
+  <a class="card" href="terrain-3d.html"><p class="t">Where the chances came from</p><p>Shot locations as terrain — height is attempts, not danger.</p></a>
+  <a class="card" href="figure-bench.html"><p class="t">Figure bench</p><p>A development tool: the two player styles side by side on blank ice.</p></a>
+</div>
+</div>
+<footer class="sitefoot"><p>Game data from the NHL's public play-by-play feed, fetched once and stored. Not affiliated with or endorsed by the NHL. <strong>No NHL or club logos, wordmarks or crests appear anywhere on this site</strong> — teams are identified by colour and three-letter abbreviation only.</p><p><a href="https://github.com/shilohisadog/read-the-game">Source on GitHub</a> — every number here is a function of stored events, and you can read the function. Found one that looks wrong? <!--email_off--><a href="mailto:ReadTheGameOfHockey@gmail.com">ReadTheGameOfHockey@gmail.com</a><!--/email_off--></p><p>Nothing here is paywalled. If it helped you read a game, you can <a href="https://buymeacoffee.com/readthegameofhockey">buy me a coffee</a>.</p></footer>
+</body>
+</html>

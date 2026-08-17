@@ -208,13 +208,13 @@ footer p{margin:0 0 8px}
 </style>
 </head>
 <body>
-<header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/" aria-current="page">Watch a game</a><a href="/#teams">Teams</a><a href="/#workshop">Workshop</a></nav></header>
+<header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/" aria-current="page">Watch a game</a><a href="/#teams">Teams</a><a href="/what-you-can-see.html">What you can see</a><a href="/workshop.html">Workshop</a></nav></header>
 <div class="wrap">
 <p class="eyebrow">Read the Game</p>
 <!-- WHAT THIS IS, IN ONE SENTENCE, WHICH THE PAGE DID NOT SAY AT ALL.
      A stranger's questions are, in order: what is this, why should I care, what
      do I do. Only the third had an answer above the fold, and it was a button. -->
-<h1 class="says">Every NHL game since 2023, replayed play by play &mdash; with the counts built in front of you, so you can see <b>where a number comes from</b> instead of taking it on faith.</h1>
+<h1 class="says">Every NHL game since 2023, replayed event by event &mdash; with the counts built in front of you, so you can see <b>where a number comes from</b>.</h1>
 
 <!-- THE PAGE NOW LEADS WITH THE GAME. Kevin, with a screenshot of everything
      above the rink: "this is the area I would like removed... I think we lead
@@ -253,35 +253,6 @@ footer p{margin:0 0 8px}
 <p class="note">Every game each club played, newest first. Arizona became Utah in
 2024 &mdash; both are here, because both played.</p>
 <div class="teams" id="teams"></div>
-<!-- NAME WHAT THE SITE TEACHES, because it named none of it.
-     Counted on the shipped page before this: icing 0, offside 0, Corsi 0,
-     high-danger 0, empty net 0, penalty 0. A site that teaches you to read
-     hockey mentioned almost nothing it teaches, and a visitor deciding whether
-     to look around decides on whether we appear to cover what they wondered
-     about.
-     TWO KINDS, KEPT APART. The first row is HOCKEY — rules a novice needs in
-     order to watch. The second is OURS — what we count, which is a different
-     claim and carries a different obligation. Merging them would let our
-     measurements borrow the rulebook's authority. -->
-<h2 id="learn">What you can see here</h2>
-<div class="conc">
-  <p class="ck">The game itself &mdash; the league&rsquo;s rules, named as they happen</p>
-  <ul class="clist">
-    <li><b>Icing</b> &mdash; and why the faceoff goes back</li>
-    <li><b>Offside</b> &mdash; why a goal gets waved off</li>
-    <li><b>Faceoffs</b> &mdash; all nine spots, and which one play restarts at</li>
-    <li><b>Penalties</b> &mdash; and the delayed whistle</li>
-    <li><b>The empty net</b> &mdash; when a goaltender leaves, read from the feed</li>
-  </ul>
-  <p class="ck">What we count &mdash; our own measurements, each showing its work</p>
-  <ul class="clist">
-    <li><b>Control</b> &mdash; shot attempts, and the narrower count that predicts</li>
-    <li><b>Shots from the slot</b> &mdash; a geometric rule of ours, not a model</li>
-    <li><b>Goaltending</b> &mdash; saves as a fraction, built while you watch</li>
-  </ul>
-  <p class="cnote">Every one of them is a toggle on a real game, and every one
-  shows the events it counted and the events it did not.</p>
-</div>
 <h2>What this does and does not claim</h2>
 <ul class="limits">
   <li><b>Regular season and playoffs, three seasons.</b><span>2023-24 through 2025-26. Preseason, the Olympics and the 4 Nations Face-Off are in the archive and are deliberately left out of every number here — they are different competitions, and averaging across them would describe none.</span></li>
@@ -289,18 +260,6 @@ footer p{margin:0 0 8px}
   <li><b>Nothing is modelled or invented.</b><span>Every mark traces to a recorded event. There is no expected-goals number, because that would be our estimate presented as the game's fact.</span></li>
   <li><b>We say what we could not read.</b><span>Games we hold but cannot show are listed anyway, with the check that stopped them. A schedule that hid them would be a map of our successes.</span></li>
 </ul>
-<h2 id="workshop">Workshop</h2>
-<p class="note">Earlier views, each answering a question the main app does not.
-They are explorations, not front doors, and several are pinned to one game.</p>
-<div class="grid">
-  <a class="card" href="read-the-game.html"><p class="t">The reference game</p><p>MIN at BUF, 10 November 2023, compiled in — the one page that works offline.</p></a>
-  <a class="card" href="goalie-view.html"><p class="t">The goalie view</p><p>Minnesota outshot Buffalo and lost. This is the save-by-save reason why.</p></a>
-  <a class="card" href="on-the-ice.html"><p class="t">On the ice</p><p>Who was actually out there, read from the shift charts.</p></a>
-  <a class="card" href="active-play.html"><p class="t">Active play</p><p>Following the puck between whistles, and who touched it.</p></a>
-  <a class="card" href="goalie-eye-view.html"><p class="t">From the crease</p><p>The same shots, seen from where the goalie stood.</p></a>
-  <a class="card" href="terrain-3d.html"><p class="t">Where the chances came from</p><p>Shot locations as terrain — height is attempts, not danger.</p></a>
-  <a class="card" href="figure-bench.html"><p class="t">Figure bench</p><p>A development tool: the two player styles side by side on blank ice.</p></a>
-</div>
 
 <p class="state" id="state" data-state="empty">Checking how current this data is&hellip;</p>
 

@@ -251,7 +251,13 @@ test('THE CSP PINS EVERY INLINE BLOCK, not the first one it finds', () => {
     if (!csp) continue;                       // only the two hash-pinned pages
     const pinned = new Set([...csp[1].matchAll(/'sha256-([A-Za-z0-9+/=]+)'/g)].map(m => m[1]));
     const blocks = [...h.matchAll(/<(style|script)[^>]*>([\s\S]*?)<\/\1>/g)];
-    assert.ok(blocks.length >= 3, `${f} should carry chrome CSS plus its own script and style`);
+    // AT LEAST THE CHROME CSS AND THE PAGE'S OWN. It read `>= 3` — chrome CSS,
+    // page CSS, page script — which stopped being true when two sections of the
+    // home page became pages of their own with nothing to run. The claim that
+    // matters is not "three blocks exist", it is "every block present is
+    // pinned", which the loop below asserts. `>= 2` keeps the guard against the
+    // regex silently matching nothing.
+    assert.ok(blocks.length >= 2, `${f} should carry chrome CSS and its own style`);
     for (const [, tag, body] of blocks) {
       const digest = createHash('sha256').update(body).digest('base64');
       assert.ok(pinned.has(digest),

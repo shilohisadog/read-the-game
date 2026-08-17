@@ -586,29 +586,43 @@ test('the one figure left on the front page carries its denominator', () => {
    that happened to carry it did.
    --------------------------------------------------------------------- */
 
-test('every concept the site teaches is NAMED on the front page', () => {
+/* THESE TWO FOLLOWED THE CONTENT TO ITS OWN PAGE (2026-08-17).
+   Kevin moved "What you can see here" off the home page: "I like the content,
+   but not on the home page." The claims are unchanged and neither is about the
+   FRONT page specifically — one says the site names what it teaches, the other
+   says the league's rules and our own measurements are never merged. So they
+   read what-you-can-see.html now. Deleting them because the markup moved would
+   have retired a doctrine over an address. */
+const learn = readFileSync(new URL('../src/what-you-can-see.html', import.meta.url), 'utf8');
+
+test('every concept the site teaches is NAMED, on the page that exists to name them', () => {
   // The list is the layers and the whistle rules that actually exist. If one is
   // added or removed, this is where the page and the product fall out of step.
   for (const word of ['Icing', 'Offside', 'Faceoffs', 'Penalties', 'empty net',
                       'Control', 'Shots from the slot', 'Goaltending'])
-    assert.ok(html.includes(word), `the front page never mentions ${word}`);
+    assert.ok(learn.includes(word), `the concepts page never mentions ${word}`);
+});
+
+test('and the page is REACHABLE, or naming them is worth nothing', () => {
+  // A page nothing links to is a page nobody reads. The concepts used to be on
+  // the front door; now they are one click away, and that click has to exist.
+  assert.match(html, /href="\/what-you-can-see\.html"/,
+    'the home page does not link to the page that names what the site teaches');
 });
 
 test('the rules and OUR measurements are kept apart', () => {
   // Merging them would let our measurements borrow the rulebook's authority.
   // Icing is the NHL's; "shots from the slot" is a rule we wrote, and the page
   // has to say which is which.
-  const block = html.match(/<div class="conc">([\s\S]*?)<\/div>/)[1];
+  const block = learn.match(/<div class="conc">([\s\S]*?)<\/div>/)[1];
   const heads = [...block.matchAll(/class="ck">([\s\S]*?)<\/p>/g)].map(m => m[1]);
   assert.equal(heads.length, 2, 'the two kinds of concept are not separated');
-  assert.match(heads[0], /rules/i, 'the first group is not named as the league\'s');
+  assert.match(heads[0], /rules/i, "the first group is not named as the league's");
   assert.match(heads[1], /we count|our own/i, 'the second group does not say it is ours');
 
-  // And each concept sits under the right heading.
   const [game, ours] = block.split(heads[1]);
   for (const w of ['Icing', 'Offside', 'Penalties']) assert.ok(game.includes(w), `${w} is not under the rules`);
-  for (const w of ['Control', 'Shots from the slot', 'Goaltending'])
-    assert.ok(ours.includes(w), `${w} is not listed as ours`);
+  for (const w of ['Control', 'Goaltending']) assert.ok(ours.includes(w), `${w} is not under our own`);
 });
 
 test('the borrowed term is gone from every page a reader sees', () => {

@@ -36,7 +36,13 @@ test('the site root is answered by a file, not a 404', () => {
 test('every link on the index resolves to a file that exists', () => {
   assert.ok(local.length >= 6, `${local.length} local links found`);
   for (const h of local) {
-    assert.ok(existsSync(new URL(h, SRC)), `index links to src/${h}, which does not exist`);
+    // A LEADING SLASH IS STILL A PATH INTO src/. The nav gained root-relative
+    // links when Workshop and "What you can see" became pages, and `new URL()`
+    // resolves "/workshop.html" against the ORIGIN, not against SRC — so the
+    // check looked in the wrong directory and reported a file that exists as
+    // missing. Same shape as the chrome checker reading `mailto:` as a page.
+    const rel = h.replace(/^\//, '');
+    assert.ok(existsSync(new URL(rel, SRC)), `index links to src/${rel}, which does not exist`);
   }
 });
 
@@ -44,9 +50,17 @@ test('the test can actually fail — a bogus link is caught', () => {
   // TEST THE TEST'S REACH. The check above passes trivially if the href regex
   // silently matches nothing, which is how a green suite has covered a blank
   // page before. Prove the mechanism fires.
-  const bogus = html.replace('read-the-game.html', 'no-such-app.html');
+  // `read-the-game.html` used to be the mutated link; the workshop list that
+  // named it moved to its own page, so mutating it here changed nothing and the
+  // canary would have reported the check was broken. The link has to be one the
+  // page ACTUALLY carries — and the leading slash has to be stripped the same
+  // way the check strips it, or every nav entry reads as missing.
+  assert.ok(html.includes('href="game.html"'), 'the index no longer links to a game');
+  const bogus = html.replace('href="game.html"', 'href="no-such-app.html"');
   const found = [...bogus.matchAll(/href="([^"]+)"/g)].map(m => m[1])
     .filter(h => !/^(https?:|mailto:|#)/.test(h))
+    .map(h => h.replace(/^\//, ''))
+    .filter(h => h.endsWith('.html'))
     .filter(h => !existsSync(new URL(h, SRC)));
   assert.deepEqual(found, ['no-such-app.html'], 'the broken-link check must detect it');
 });
@@ -56,7 +70,18 @@ test('no page in src/ ships unlinked', () => {
   // page is deliberately unlisted, this test is where that decision gets made
   // explicitly rather than by omission.
   const pages = readdirSync(new URL(SRC)).filter(f => f.endsWith('.html') && f !== 'index.html');
-  const linked = new Set(local);
+  // LINKED FROM ANYWHERE THE READER CAN GET TO, not from the index alone. The
+  // workshop list moved to its own page, so the prototypes are no longer named
+  // on the front door — and they are not orphans, they are one click further.
+  // Scanning only index.html would have called nine reachable pages unreachable.
+  const linked = new Set();
+  for (const f of readdirSync(new URL(SRC)).filter(f => f.endsWith('.html'))) {
+    const h = readFileSync(new URL(f, SRC), 'utf8');
+    for (const m of h.matchAll(/href="([^"#?]+)/g)) {
+      const t = m[1].replace(/^\//, '');
+      if (t.endsWith('.html')) linked.add(t);
+    }
+  }
   const orphans = pages.filter(p => !linked.has(p));
   assert.deepEqual(orphans, [], `unreachable page(s): ${orphans.join(', ')}`);
 });
@@ -79,8 +104,11 @@ test('outside the workshop, the page names no game and no team', () => {
   // The heading gained an id when Workshop moved behind the chrome nav, and this
   // marker is the section's identity rather than its exact markup — a literal
   // that describes one spelling of the thing is the defect this batch is full of.
-  const workshopAt = html.search(/<h2[^>]*>Workshop<\/h2>/);
-  assert.ok(workshopAt > -1, 'the workshop section must still exist');
+  // THE WORKSHOP MOVED TO ITS OWN PAGE, so the exemption moves with it: this
+  // reads the index, which no longer contains the blurbs, and the workshop page
+  // is checked for the same property separately below. The rule is unchanged —
+  // a team abbreviation outside the workshop is a bug.
+  const workshopAt = html.length;
   const cut = (s, from, to) => {
     const i = s.indexOf(from);
     if (i === -1) return s;

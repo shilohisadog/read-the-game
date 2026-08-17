@@ -54,7 +54,7 @@ def csp(html, *, connect):
     HASH-PINNED rather than 'unsafe-inline', which makes it a third integrity
     gate -- enforced past our CI and onto the reader's machine.
     """
-    def h(pattern):
+    def h(pattern, open_tag):
         # EVERY BLOCK, NOT THE FIRST. This was `re.search`, which silently
         # assumed a document holds exactly one <style> and one <script> -- true
         # of every page here until the shared chrome added a second <style> in
@@ -66,7 +66,17 @@ def csp(html, *, connect):
         # A MISSING hash is worse than a stale one. A stale hash blanks the page;
         # a missing hash unstyles it, so it renders and merely looks broken.
         blocks = re.findall(pattern, html, re.S)
-        assert blocks, f"CSP found nothing matching {pattern!r} to pin"
+        # COUNT, DON'T JUST REQUIRE ONE. `assert blocks` was protecting against
+        # the REGEX failing to match, and it read as "every page has a script" --
+        # which stopped being true the moment two sections of the home page
+        # became pages of their own, with nothing to run. Comparing the matches
+        # to the number of opening tags is the claim that was always meant: the
+        # policy pins ALL of them, and a page with none is a legitimate state
+        # rather than a build failure. A missing hash is worse than a stale one
+        # (a stale hash blanks the page; a missing one lets it render broken),
+        # so this stays an assert and not a warning.
+        assert len(blocks) == html.count(open_tag), (
+            f"CSP matched {len(blocks)} of {html.count(open_tag)} {open_tag} blocks")
         return " ".join(
             "'sha256-" + base64.b64encode(
                 hashlib.sha256(b.encode()).digest()).decode() + "'"
@@ -110,8 +120,8 @@ def csp(html, *, connect):
     beacon_script = "https://static.cloudflareinsights.com"
     return "; ".join([
         "default-src 'none'",
-        f"script-src {h(r'<script>(.*?)</script>')} {beacon_script}",
-        f"style-src {h(r'<style>(.*?)</style>')}",
+        f"script-src {h(r'<script>(.*?)</script>', '<script>')} {beacon_script}".strip(),
+        f"style-src {h(r'<style>(.*?)</style>', '<style>')}",
         f"connect-src 'self' {connect}",
         # The homepage frames the game page for its five-second preview, and
         # `frame-src` has no fallback to default-src -- 'none' would block it.
@@ -196,7 +206,15 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 # Only destinations that EXIST. A nav link to a page we have not built yet is a
 # 404 wearing a plan, and `test/document.test.js` resolves every one of these
 # against `src/` so it cannot be added ahead of its page.
-_NAV = [("/", "Watch a game"), ("/#teams", "Teams"), ("/#workshop", "Workshop")]
+# THE NAV NAMES PAGES NOW, NOT ANCHORS INTO ONE PAGE. "What you can see here"
+# and "Workshop" were sections of the home page until Kevin moved them out:
+# "I like the content, but not on the home page." An anchor into a page that
+# no longer holds the section is a link that silently goes nowhere, so both
+# entries point at real files -- and `document.test.js` already refuses a
+# chrome link whose target is not in src/, which is what keeps this honest.
+_NAV = [("/", "Watch a game"), ("/#teams", "Teams"),
+        ("/what-you-can-see.html", "What you can see"),
+        ("/workshop.html", "Workshop")]
 
 
 def _header(current=None, minimal=False):
