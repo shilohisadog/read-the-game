@@ -415,7 +415,7 @@ jobs:
             URL="https://${host}"
             matched=0
             for i in $(seq 1 10); do
-              if fetch "?cb=${GITHUB_RUN_ID}-${i}" prod.html && cmp -s prod.html src/index.html; then
+              if fetch "?cb=${GITHUB_RUN_ID}-${i}" prod.html && cmp -s <(strip prod.html) <(strip src/index.html); then
                 matched=1; break
               fi
               echo "    $host: serving a different build — attempt $i, waiting"
@@ -909,13 +909,20 @@ jobs:
 
       - name: a visitor can actually watch a game
         run: |
+          # The zone eats `<!--email_off-->`; see the long note at the diff step.
+          # THIS IS THE THIRD COMPARISON SITE and the reason they are being
+          # listed rather than fixed one at a time: the first pass normalised two
+          # of five, the production-hostname check failed on the third, and
+          # `grep -n 'cmp -s'` found the rest. Applying a rule to the instance
+          # that failed is how the `?team=` defect got shipped.
+          strip() { sed 's|<!--/\?email_off-->||g' "$1"; }
           for i in $(seq 1 12); do
             curl -sSL -o live-shell.html "https://readthegame.co/game?cb=${GITHUB_RUN_ID}-w${i}" || true
-            cmp -s live-shell.html src/game.html && break
+            cmp -s <(strip live-shell.html) <(strip src/game.html) && break
             echo "    attempt $i: production is still serving a different build"
             sleep 6
           done
-          if ! cmp -s live-shell.html src/game.html; then
+          if ! cmp -s <(strip live-shell.html) <(strip src/game.html); then
             echo "::error::production never served this build of game.html"; exit 1
           fi
           echo "  production is serving this build; loading it in a browser"

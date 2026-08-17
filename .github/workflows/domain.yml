@@ -119,7 +119,11 @@ jobs:
               fail=1; continue
             fi
             # Serving SOMETHING is not serving OUR something.
-            if cmp -s served.html src/index.html; then
+            # The zone consumes `<!--email_off-->`, so the served bytes are 33
+            # shorter than the committed ones by design — see deploy.yml's diff
+            # step for why the fence is there. Fifth and last comparison site.
+            if cmp -s <(sed 's|<!--/\?email_off-->||g' served.html) \
+                      <(sed 's|<!--/\?email_off-->||g' src/index.html); then
               echo "  https://$d serves the current index ($(wc -c < served.html) bytes, identical)"
             else
               echo "::error::https://$d answered 200 but is not serving this site"
