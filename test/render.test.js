@@ -1210,6 +1210,21 @@ test('⭐ the preview runs with the Control layer ON, so the hero shows what the
   assert.match(a.$('lyCorsi').textContent, /^✓ /,
     'the layer button still says the layer is off');
 
+  // ⭐ AND THE BOARD NAMES ITS UNIT. In preview `.counters` is hidden, so this is
+  // the ONLY element that can say what the two figures count. Without it the
+  // board said CONTROL, the sentence under the rink said shots on goal, and a
+  // reader had no way to know those were different quantities -- which reads as
+  // an error rather than a distinction.
+  assert.match(a.$('pName').textContent, /attempt/i,
+    'the preview board names no unit — CONTROL is a name, not a unit');
+  // AND THE GAME PAGE IS UNCHANGED, which is the paired half. Checked in the
+  // MARKUP, not through a boot: the default label is a text node the document
+  // ships with, and this fake's elements start empty -- so asserting it through
+  // `boot()` would only be measuring what the harness cannot see.
+  assert.match(app, /id="pName">CONTROL</,
+    'the game page no longer names the layer — CONTROL is the useful word there, '
+    + 'because .counters carries the unit two inches below it');
+
   // EXACTLY ONE, because the conversion is stated as one metric layer turned on.
   // Three layers at once is a different claim about the product, and without
   // this the preview could quietly acquire them one at a time with nothing

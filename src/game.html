@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-qb/Oo3tDmNdCsg6L3/X4OSs01ep7zoKGe6dinEZZMAA=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-Z5/++nl5Q5TtpSjY2V7hh0AgnwasomVUUDpFm9qXD38='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-dQymM8ZY0B6ID164XYWpUzLQ+TIpsB/7qloomR+J0HA=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-UsX9DdncAZYeCdu91BrbSfODGq7D37KnqJ9Jo/S0+RE='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">What is this?</a></nav></header>
@@ -56,6 +56,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--edge)}#rg .bar span{transition:width .4s ease}#rg .ba{background:#fff;box-shadow:inset 0 0 0 2px var(--away);width:50%}#rg .bh{background:var(--home);width:50%}
 #rg .pct{display:flex;justify-content:space-between;align-items:center;font-size:.9rem;margin-top:5px;font-family:ui-monospace,Menlo,monospace;font-weight:700}
 #rg .pct #pa{color:var(--away-text)}#rg .pct #ph{color:var(--home-text)}
+#rg .plab i{font-style:normal}
 #rg .plab{display:flex;flex-direction:column;align-items:center;font-size:.66rem;letter-spacing:.1em;color:var(--muted);font-weight:600;line-height:1.35}
 /* The deep-link notice. `:empty` rather than a `hidden` attribute, so the one
    place that writes the sentence is the only place that controls whether it
@@ -477,7 +478,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
   <div class="tm a"><span class="ab" id="aAb">MIN</span><span class="sc" id="aSc">0</span></div>
   <div class="mid"><div class="gs"><span id="per">Pre-game</span> · <span class="cl" id="clk">20:00</span> <i class="clw">left</i></div>
     <div class="cbar"><div class="bar"><span class="ba" id="ba"></span><span class="bh" id="bh"></span></div>
-    <div class="pct"><span id="pa">0</span><span class="plab">CONTROL<i class="mode" id="pMode">ALL SITUATIONS</i></span><span id="ph">0</span></div></div>
+    <div class="pct"><span id="pa">0</span><span class="plab"><i class="pname" id="pName">CONTROL</i><i class="mode" id="pMode">ALL SITUATIONS</i></span><span id="ph">0</span></div></div>
   </div>
   <div class="tm h"><span class="ab" id="hAb">BUF</span><span class="sc" id="hSc">0</span></div>
 </div>
@@ -4080,6 +4081,17 @@ if(PREVIEW){
     percentage -- CHENG's ruling that `11` beside `8` claims exactly what it is --
     so the compact form is not a rate that has lost its denominator. */
  corsiOn=true;setCorsi();
+ /* ⭐ AND THE BOARD NAMES ITS UNIT, because in preview nothing else does.
+    On the game page `.counters` says "MIN attempts / BUF attempts" and the unit
+    is named; preview hides that element on purpose, so the board said CONTROL,
+    the sentence below the rink said shots on goal, and NOTHING on screen said
+    those were different quantities. Two unlabelled numbers that look like they
+    contradict each other, which a reader takes for an error rather than a
+    distinction (CHENG).
+    ONLY IN PREVIEW, and only because that is the only place the companion label
+    is missing. The game page keeps CONTROL, where the layer's own name is the
+    useful word and the counters carry the unit two inches below. */
+ $('pName').textContent='SHOT ATTEMPTS';
  /* ⭐ AND IT BEGINS WHERE THE LAYER FIRST HAS SOMETHING TO SAY.
     Kevin refreshed the front door and the counter sat at 0-0 for the whole loop.
     Measured over 230 games rather than guessed at: the counter is still empty
