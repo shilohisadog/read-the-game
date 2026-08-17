@@ -92,17 +92,79 @@ The cost is honest and should be said out loud: **the retention surface is empty
 for the first three weeks of a season**, which is the period with the most
 attention on it. The alternative was ruling 1, and ruling 1 is right.
 
-### 0.4 Two questions the rulings do not settle, for Kevin
+### 0.4 RULED — W-L-OTL, and the goalies get their own rows
 
-1. **W-L, or W-L-OTL?** Every standings table a fan has ever seen carries three
-   numbers. A bare `26-18` would be a record no other source shows, which is a
-   legibility cost on a site whose whole job is legibility. The third number is
-   countable — a regular-season game reaching period 4 did not end in
-   regulation — so this is a display decision, not a data one. **I would show
-   W-L-OTL.**
-2. **Whose save fraction?** §3 refuses a probable starter, so it must be **the
-   team's**, all goalies pooled, which is the honest form and also the one a
-   reader may misread as "their goalie". The label has to carry it.
+Both questions went to Kevin and CHENG and both are settled.
+
+**W-L-OTL.** Kevin: *"W-L-OTL, my bad on just the W-L reference."* It is the form
+the league publishes and every standings table a fan has seen. The third number
+is read from the league's own **period type**, never from a period number — a
+number past 3 cannot tell a shootout from an overtime, and the OTL bucket turns
+on exactly that. **The bucket also exists only in the regular season**: the same
+game lost in the playoffs is a loss, so the record is split by game type rather
+than pooled into a fourth kind of result the league does not recognise.
+
+**Every goalie gets a row, and the team line is their sum.** CHENG's ruling, and
+the argument that carried it is not lossiness:
+
+> **A team save fraction is not a property of a team. A team does not stop
+> pucks** — five different people did, in proportions set by coaching, injury and
+> a trade deadline. It is a sentence whose subject does not do the verb.
+
+The obvious objection is that this proves too much: a team Corsi share is not a
+property of a team either. **It does not, and the difference is measurable —
+32 teams, 325 games, 2023-24:**
+
+| busiest individual's share of the team's total | median | range |
+|---|---|---|
+| **goalie**, of shots faced | **61.9%** | 30.4 – 90.1% |
+| **skater**, of shot attempts | **10.5%** | 8.1 – 16.3% |
+
+**A factor of six.** A goalie is a *single point of substitution* — one of five
+people, on the ice for 100% of the minutes when they play and 0% otherwise. No
+skater comes close to dominating a team's attempts. So pooling costs goaltending
+something it does not cost the other four figures, and **goaltending is the one
+multi-row item on the card for a measured reason rather than an editorial one.**
+
+**No tap, no threshold, no top-N.** Any "show the best N" rule needs an N, and an
+N with no source in the data is the shape that already killed `recent` trails.
+The worst case in six sampled teams is five short lines.
+
+**Raw counts are what make it honest, which is ruling 4 arriving where it was
+needed most.** Carolina's five goalies average to **92.2%** against a true
+**90.5%**, because Perets went *1 of 1*. Percentages do not sum; counts do, and
+`1,851 of 2,046` is checkable against the rows above it by eye.
+
+**Sorted by shots faced** — the fact. Sorting by rate would be a ranking, and a
+one-shot goalie would top every list in the league.
+
+#### 0.4.1 The roster residue, and where CHENG's rule was widened
+
+3 of 90 goalies tended net for two teams in 2023-24, and **two of six sampled
+teams are affected**: San Jose's #2 carries 996 shots faced and left in March;
+Carolina's Martin arrived from Columbus in January. The asymmetry that survives:
+
+> **A move can be stated, because we watched him tend net somewhere else. An
+> absence never can** — traded, injured, benched and waived are indistinguishable
+> in what we hold.
+
+CHENG proposed dating the last appearance on **departures**. That was widened to
+**every row**, because a rule that dates only departures has to classify a row
+before it can render one, and it can only classify the departures we happened to
+observe elsewhere — missing the case it is most needed for: *last seen in
+December, never seen again, still listed as though available.* Dating every row
+states the observation and needs no classification at all.
+
+#### 0.4.2 Levi belongs on the teaching page, not the card
+
+CHENG is right that Levi is the thesis rather than a caveat: **.943 stealing a
+game from Minnesota, and 89.9% over that season against Luukkonen's 91.1%** —
+one game and eighty-two say opposite things and neither is wrong.
+
+But the card is generated per team per fixture, and a fixed 2023-24 Buffalo
+anecdote cannot ride on Vancouver's card in 2027. **The mechanism belongs on the
+card** — rows visible, so the split is always there to be seen. **The worked
+example belongs on *What you can see here*,** where it stays true.
 
 ## 1. The resolution: the game is the OCCASION, not the subject
 
@@ -333,6 +395,44 @@ and never recounted by event type.
 scoped to a single season and never pooled across them, which is the standing
 rule for base rates — and ruling 1 makes it load-bearing rather than tidy.
 
+### 9.2 ✅ BUILT — `teams.json`
+
+Shipped in `src/lib/team-season.js` and `builders/measure.mjs`. What it holds,
+per season, per team: the split record, attempts for and against, blocks with
+the opponent's attempts as their denominator, slot shots over located unblocked
+attempts, and one row per goalie carrying counts, appearances, last appearance
+and any other team he tended for. The archive baseline travels **inside the same
+document**, computed from the same records in the same pass — a card puts the two
+on one line and they are comparable only if one function produced both.
+
+**Three constraints the reducers imposed, none of them chosen here:**
+
+1. **A block belongs to the team that made it**, which is not the event's owner.
+2. **The slot's denominator is unblocked located attempts**, because a blocked
+   shot's coordinate is where it was *stopped*. Over 229 real extracts that is
+   **46.36% of 19,398** — which is **33.24% of all attempts**, and the gap
+   between those two numbers is exactly why the denominator is stated.
+3. **The OTL bucket is regular-season only**, read from the period type.
+
+**Verified rather than asserted.** Eight rules mutated, eight caught, baseline
+clean — including crediting the block to the shooter, pooling the seasons, and
+sorting goalies by rate. Run end to end over 229 extracts across three seasons:
+every team's record conserves, the goalie rows sum to the team save line, and
+the same extracts produce the same bytes twice. `derive.yml` re-checks all three
+against the live document after publishing.
+
+**One cost, stated.** `build_index.py` inlines `archive.js` into the home page as
+real source, so the aggregator would have cost the front door 3.6 KB gzipped —
+16% of that page's transfer — to run nothing. It lives in its own module for
+that reason. What stayed behind is **+1,079 bytes gzipped** of exported helpers
+and the save-fraction explanation. Stripping comments from the shipped copy would
+recover more and is refused: the page being readable is the thing the site sells.
+
+**What is still missing before a card can be drawn:** nothing in the data. The
+remaining work is §8 q1 and q4 — whether the card survives being read as a
+forecast at all, and where it can sit without the layout reconstituting the
+matchup that §0.1's single column avoids.
+
 ### 9.1 ⚠️ The save fraction cannot be computed from the quoted boxscore
 
 The obvious arithmetic is *shots faced = the opponent's SOG, goals allowed = the
@@ -372,6 +472,30 @@ across 14 of the 25 (56%)**. Those are the close games a fan looks up.
 
 Both are already visible in the extract: an empty-net goal simply carries no
 `goalie`, and a shootout event carries `pt: "SO"`.
+
+#### 9.1.1 ⭐ The shape, corrected — there is no bypass to remove
+
+CHENG read this as the project's signature bug for the seventh time: *two paths
+to one quantity, one carries the rule*, and prescribed removing the bypass.
+**Checked, and it is not that shape.** `attemptMix.byType` is built from corsi's
+counted set, and an empty-net goal genuinely *is* a shot attempt — **9 of 9 in
+8 sampled games are inside it**, correctly. Corsi would be defective if it
+dropped them. The two paths do not disagree about anything; they answer
+different questions and one of them is not being asked.
+
+> **The shape is new: two published figures, each correct, whose ratio is a
+> third quantity nobody computed or sanctioned — and the division is available,
+> plausible, and wrong.** Both operands are blameless. There is nothing to
+> delete.
+
+That changes the fix. You cannot remove a bypass that does not exist, so **the
+repair is to publish the sanctioned number in the same object as the counts that
+invite the wrong one** — supply the right figure rather than warn against the
+wrong one, which is *an invariant instead of a disclaimer* again.
+
+**CHENG's other question, answered by measurement:** the shootout is **not** in
+`byType` — 0 of 20 shootout events across two shootout games are inside corsi's
+counted set. Contaminated once, not twice.
 
 **`goaltending.js` already gets both right, and did before this card existed:**
 its `faced` test is `(shot-on-goal || goal) && e.goalie`, so a goal with no
