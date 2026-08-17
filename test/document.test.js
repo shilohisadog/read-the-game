@@ -156,6 +156,41 @@ test('every page carries the footer, so the attribution is not optional', () => 
   }
 });
 
+test('the tip jar asks for support and never sells access', () => {
+  // Kevin's constraint, verbatim: "it has to be 'donate' or 'buy me a coffee'
+  // type of surface, so I minimize the chance of any scrutiny from the NHL."
+  // The risk is not the link, it is a link that implies you are BUYING
+  // something — so this asserts the framing, not just the href.
+  const forbidden = /\b(subscribe|subscription|member(s|ship)?|premium|pro plan|unlock|supporters? only|paywall(?!ed)|upgrade)\b/i;
+  for (const f of PAGES) {
+    const h = readFileSync(new URL(f, SRC), 'utf8');
+    const foot = h.match(/<footer class="sitefoot">[\s\S]*?<\/footer>/)[0];
+    assert.match(foot, /href="https:\/\/buymeacoffee\.com\//, `${f} has no tip jar`);
+    assert.doesNotMatch(foot, forbidden,
+      `${f} offers a tier or gated access — this must read as a tip, not a product`);
+    // It must come AFTER the not-affiliated sentence, so a reader meets the
+    // disclaimer before the ask. Position is the whole of Kevin's constraint.
+    assert.ok(foot.indexOf('Not affiliated') < foot.indexOf('buymeacoffee.com'),
+      `${f} asks for money above its own disclaimer`);
+  }
+});
+
+test('the tip jar is one link to one canonical URL, and it is not a script', () => {
+  // The widget is a third-party script; the policy admits exactly one external
+  // origin and it was spent on analytics deliberately. A refused donate button
+  // is not hypothetical — the email decoder was refused the same afternoon.
+  const urls = new Set();
+  for (const f of PAGES) {
+    const h = readFileSync(new URL(f, SRC), 'utf8');
+    for (const m of h.matchAll(/https:\/\/(?:www\.)?buymeacoffee\.com\/[^"']*/g)) urls.add(m[0]);
+    assert.doesNotMatch(h, /<script[^>]+buymeacoffee/i, `${f} embeds the Buy Me a Coffee widget`);
+  }
+  assert.equal(urls.size, 1, `the site names ${urls.size} tip-jar URLs: ${[...urls].join(', ')}`);
+  // Lowercase is the canonical path — the mixed-case form 301s to it, so
+  // linking it directly saves every reader a redirect.
+  assert.deepEqual([...urls], ['https://buymeacoffee.com/readthegameofhockey']);
+});
+
 test('the contact address is spelt one way, in one place', () => {
   // A second copy is a second thing to get wrong, and an address that differs
   // between pages is worse than none: it looks like a typo in the one you read.

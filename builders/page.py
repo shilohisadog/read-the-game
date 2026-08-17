@@ -266,6 +266,27 @@ def _footer():
         '<a href="mailto:ReadTheGameOfHockey@gmail.com">ReadTheGameOfHockey@gmail.com</a>'
         "<!--/email_off-->"
         "</p>"
+        # THE TIP JAR, AND EVERY WORD OF ITS FRAMING IS A CONSTRAINT KEVIN SET:
+        # "it has to be 'donate' or 'buy me a coffee' type of surface, so I
+        # minimize the chance of any scrutiny from the NHL."
+        #
+        # So it supports THE WORK and never sells access. Nothing on this site is
+        # gated, there are no tiers, and no supporter gets a number a visitor
+        # cannot see -- which is what keeps it a tip and not a product built on
+        # somebody else's feed. It sits directly under the not-affiliated
+        # sentence for the same reason, so a reader meets the disclaimer first.
+        #
+        # A PLAIN LINK, NOT THE WIDGET. Buy Me a Coffee's button is a third-party
+        # script; the policy admits exactly one external origin and that one was
+        # bought deliberately for analytics. A link costs nothing, cannot break in
+        # a reader's browser, and cannot be refused -- which is not hypothetical,
+        # it is what happened to the email decoder the same afternoon.
+        #
+        # The lowercase host path is the CANONICAL one: the mixed-case form Kevin
+        # gave 301s to this, checked rather than assumed, so linking it directly
+        # saves every reader a redirect.
+        '<p>Nothing here is paywalled. If it helped you read a game, you can '
+        '<a href="https://buymeacoffee.com/readthegameofhockey">buy me a coffee</a>.</p>'
         "</footer>")
 
 
