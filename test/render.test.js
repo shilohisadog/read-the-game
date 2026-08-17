@@ -1243,6 +1243,37 @@ function delaysOf(search, ticks) {
   return { dom, delays, at };
 }
 
+/**
+ * WALK THE REAL PLAY LOOP AND RECORD WHAT EACH FRAME WAS GIVEN.
+ *
+ * One row per scheduled frame: the wait the page asked for, the frame it was
+ * asked for, the caption's animation duration at that moment, and the caption's
+ * markup so a CHANGE identifies the frames that actually spoke. The recorder
+ * fires before the callback runs, so every row describes the frame on screen.
+ */
+function paceOf(ticks, setup) {
+  const dom = fakeDom();
+  const rows = [];
+  let n = 0;
+  const timer = (fn, ms) => {
+    rows.push({ ms, i: +dom.$('scrub').value,
+                dur: dom.$('caption').style.animationDuration,
+                html: dom.$('caption').innerHTML });
+    if (n++ < ticks) fn();
+    return 0;
+  };
+  const b = new Function('document', 'matchMedia', 'setTimeout', 'clearTimeout',
+                         'localStorage', 'location', SCRIPT + '\nreturn boot;')(
+    dom.document, () => ({ matches: false }), timer, () => {},
+    { getItem: () => null, setItem: () => {} }, { search: '' });
+  b(rich, null);
+  if (setup) setup(dom);
+  dom.$('play').onclick();
+  // A frame SPOKE if the caption's markup differs from the frame before it.
+  rows.forEach((r, k) => { r.spoke = k > 0 && r.html !== rows[k - 1].html; });
+  return { dom, rows };
+}
+
 test('the preview waits on the replay, not on a number somebody picked', () => {
   const TICKS = 6;
   const preview = delaysOf('?preview=1', TICKS).delays;
@@ -1265,12 +1296,39 @@ test('the preview waits on the replay, not on a number somebody picked', () => {
   }
 });
 
-test('and the preview is not a metronome — it eases, because dwell does', () => {
-  // A single repeated value is exactly what a chosen constant looks like, and
-  // is what both rejected versions produced.
-  const preview = delaysOf('?preview=1', 14).delays.slice(0, 14);
-  assert.ok(new Set(preview).size > 1,
-    `every wait was ${preview[0]}ms — that is a constant wearing dwell's name`);
+/* THIS GUARD MOVED OFF THE PREVIEW, AND THE REASON IS A MEASUREMENT.
+ *
+ * It used to read the preview's first 14 waits and assert they were not all the
+ * same value -- "a constant wearing dwell's name". Under the tier list that was
+ * robust: a shot on goal was enough to break the tie, and 43 of 59 games across
+ * the archive (72.9%) carry one inside the preview's opening window.
+ *
+ * Under the pacing rule in docs/event-timing.md the frame is long only when it
+ * carries a caption, and captions are goals and penalties. MEASURED over the
+ * same 59 games: a goal or a penalty lands inside the first 7 plays in 9 of them
+ * -- 15.3% -- and the median index of the first captioned event is 26, four
+ * times the window. So on roughly six nights in seven the front door's loop is
+ * legitimately uniform, and the old assertion would have failed for a page that
+ * was working exactly as designed.
+ *
+ * It passed on the reference game, which has a penalty at index 2 -- the MINIMUM
+ * of that distribution. A test that arrives where it already was is true for the
+ * wrong reason, and this one would have been.
+ *
+ * THE PROPERTY IT PROTECTS IS REAL AND STILL WORTH A TEST: `dwell` must not
+ * collapse to one number, because the test above (the preview draws from the
+ * replay) passes trivially if both sides return the same constant. So the guard
+ * now watches the WHOLE REPLAY, where a captioned frame is guaranteed by the
+ * game rather than by luck of the opening. */
+test('dwell does not collapse to a constant — the whole replay, not the opening', () => {
+  const { rows } = paceOf(160);
+  const seen = new Set(rows.map(r => r.ms));
+  assert.ok(seen.size > 1,
+    `every wait in the walk was ${rows[0].ms}ms — that is a constant wearing dwell's name`);
+  // AND the two values must be the two the rule produces, not any two: a stray
+  // third tier creeping back in is the thing this replaced.
+  assert.equal(seen.size, 2,
+    `the pace produced ${seen.size} distinct waits (${[...seen].sort((a, b) => a - b).join(', ')}); the rule has two states`);
 });
 
 test('the preview is a taste: it restarts inside a quarter-minute', () => {
@@ -2269,6 +2327,106 @@ test('the penalty caption names the team that TOOK it', () => {
     'the penalty captions name a different set of teams, or a different order, than the feed does');
   // BOTH clubs must appear, or a page that always printed the away side passes.
   assert.equal(new Set(called).size, 2, 'only one club ever took a penalty in this walk');
+});
+
+/* ------------------------------------------------------- THE PACE, MEASURED
+   Both tests below pin a defect that was found by WALKING A REPLAY IN A BROWSER
+   and was invisible to 496 passing tests. docs/event-timing.md carries the walk. */
+
+test('no frame pauses without saying something', () => {
+  // DEFECT ONE, and this is the invariant that makes it impossible rather than
+  // guarded. Measured live at Teaching: 55 of 280 frames (19.6%) held 1.3x to
+  // 2.6x the base with nothing on screen to tell them apart, because `dwell`
+  // asked `isHD(e)` while the caption asked `hdOn && isHD(cur)`. The slot tier
+  // fired with the layer OFF -- a pause built to give a caption room, arriving
+  // without one.
+  //
+  // THE ASSERTION IS THE BICONDITIONAL, not "long frames are rare". A frame is
+  // long if and only if it spoke.
+  const { rows } = paceOf(160);
+  const base = Math.min(...rows.map(r => r.ms));
+  const long = rows.filter(r => r.ms > base);
+  assert.ok(long.length > 0, 'no frame in the walk was ever given extra time');
+  assert.ok(long.length < rows.length, 'every frame was long — there is no base pace left');
+  for (const r of rows) {
+    assert.equal(r.ms > base, r.spoke,
+      r.spoke ? `frame ${r.i} carried a caption and got the ordinary ${r.ms}ms`
+              : `frame ${r.i} paused for ${r.ms}ms with nothing on screen to explain it`);
+  }
+});
+
+test('the caption lasts exactly as long as the frame it describes', () => {
+  // DEFECT TWO. The caption was `animation:cap 2.2s` in the stylesheet and the
+  // pace was a setTimeout, so they were never related and only one of them heard
+  // the speed buttons. Measured: 2067ms visible at every speed, so a 1300ms
+  // penalty frame let its caption finish ON THE NEXT PLAY (6 of 6, and two plays
+  // later at Faster) while a 6000ms goal frame spent 3933ms with it already gone.
+  //
+  // ONE NUMBER, READ TWICE. Asserting a literal here would be a second copy of
+  // the pace, free to agree with a wrong first copy -- the same reason the
+  // preview test above measures the replay instead of restating dwell.
+  const { rows } = paceOf(160);
+  const spoke = rows.filter(r => r.spoke);
+  assert.ok(spoke.length >= 3, `only ${spoke.length} frames spoke in the walk`);
+  for (const r of spoke) {
+    assert.equal(r.dur, r.ms + 'ms',
+      `frame ${r.i} runs ${r.ms}ms and its caption runs ${r.dur} — two clocks again`);
+  }
+});
+
+test('the speed control moves the caption too, not just the frame', () => {
+  // The half of defect two the biconditional above cannot see: both could scale
+  // together and still be wrong if the caption ignored the speed buttons, which
+  // is precisely what shipped. Read at two settings and require BOTH to move.
+  const at = id => {
+    const { rows } = paceOf(160, dom => { if (id) dom.$(id).onclick(); });
+    const spoke = rows.filter(r => r.spoke);
+    return { frame: Math.min(...rows.map(r => r.ms)), cap: spoke[0].dur };
+  };
+  const teaching = at(null), faster = at('sp2');
+  assert.ok(faster.frame < teaching.frame,
+    `Faster waits ${faster.frame}ms and Teaching waits ${teaching.frame}ms`);
+  assert.notEqual(faster.cap, teaching.cap,
+    `the caption ran ${teaching.cap} at both speeds — it is a constant beside the pace again`);
+});
+
+test('no caption says the same thing twice', () => {
+  // `⚡ Shot from the slot · #16 Dorofeyev from the slot` — 31 of 31 slot
+  // captions, live, and nothing in 496 tests read that string. The trailing
+  // clause was written when the label said "high danger"; the rename left the
+  // sentence naming the slot in both halves.
+  //
+  // CHENG's assertion, and the crudeness is the point: a rename is verified by
+  // grepping for the term that LEFT, which cannot see the redundancy the
+  // departure created. This reads the rendered output instead.
+  //
+  // EVERY LAYER STATE, because the defect only appeared with one of them on —
+  // the caption for a slot shot does not exist until the slot layer does.
+  const a = boot();
+  const seen = [];
+  for (const on of [false, true]) {
+    if (on) a.$('lyHd').click();
+    seen.push(...callsWhileStepping(a, h => h));
+  }
+  assert.ok(seen.length > 0, 'the walk found no captions at all');
+  assert.ok(seen.some(h => /Shot from the slot/.test(h)),
+    'the walk never turned the slot layer on — the defect this test exists for is unreachable');
+
+  for (const html of seen) {
+    // Words only: the tag element repeats the club abbreviation by design
+    // (`<span class="tag">CAR</span>` beside `#53 Blake`), so this looks for a
+    // repeated PHRASE, which is what a duplicated clause is.
+    const words = html.replace(/<[^>]*>/g, ' ').replace(/[·#]/g, ' ')
+                      .toLowerCase().split(/\s+/).filter(Boolean);
+    const grams = new Map();
+    for (let k = 0; k + 3 <= words.length; k++) {
+      const g = words.slice(k, k + 3).join(' ');
+      grams.set(g, (grams.get(g) || 0) + 1);
+    }
+    for (const [g, n] of grams) {
+      assert.equal(n, 1, `a caption says "${g}" ${n} times: ${words.join(' ')}`);
+    }
+  }
 });
 
 test('the caption is not clickable, and nothing pretends it is', () => {

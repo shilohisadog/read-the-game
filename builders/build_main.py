@@ -176,6 +176,13 @@ T = r"""<style>
 #rg .puck{fill:#0e1216;stroke:#fff;stroke-width:.55}#rg .puck.jump{animation:pj .3s ease}@keyframes pj{0%{transform:scale(2)}100%{transform:scale(1)}}
 #rg .shotline{stroke:var(--ink);stroke-width:.7;stroke-dasharray:2.2 2;opacity:.7;animation:sl 1s ease forwards}@keyframes sl{to{opacity:0}}
 #rg .caption{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;align-items:center;gap:8px;background:rgba(15,26,35,.94);color:#fff;padding:7px 15px;border-radius:99px;font-size:.86rem;font-weight:600;white-space:nowrap;opacity:0;pointer-events:none;max-width:92%}
+/* THE DURATION HERE IS A PLACEHOLDER AND NEVER APPLIES. `caption()` sets
+   `style.animationDuration` from `dwell(e)` on every call, so the caption lasts
+   exactly as long as the frame it describes. This number used to be the real
+   one, and being a CSS constant beside a setTimeout is what made the two
+   disagree at every speed -- the subject of docs/event-timing.md. The shorthand
+   still needs A duration to be valid; `render.test.js` pins that the script
+   overwrites it, so if the assignment ever goes, a test does too. */
 #rg .caption.on{animation:cap 2.2s ease}@keyframes cap{0%{opacity:0;transform:translateX(-50%) translateY(6px)}12%{opacity:1;transform:translateX(-50%) translateY(0)}82%{opacity:1}100%{opacity:0}}
 #rg .caption .tag{font-family:ui-monospace,Menlo,monospace;font-weight:700;font-size:.72rem;padding:2px 7px;border-radius:5px}
 #rg .caption .tag.a{background:var(--away);color:var(--away-ink)}#rg .caption .tag.h{background:var(--home);color:var(--home-ink)}
@@ -1033,7 +1040,27 @@ function flash(id){const el=$(id);el.classList.remove('bump');void el.offsetWidt
 function caption(e,kind){const c=$('caption');const tid=e.own;const ab=tid===AID?AAB:HAB;const side=tid===AID?'a':'h';
  const p=R[e.actor];const who=p?`<span class="num">#${p.n}</span>${p.nm}`:ab;
  const label=kind==='goal'?'🚨 GOAL':kind==='penalty'?'⛔ Penalty':'⚡ Shot from the slot';
- c.innerHTML=`<span class="tag ${side}">${ab}</span><b>${label}</b> · ${who}${kind==='hd'?' from the slot':''}`;
+ // THE TRAILING CLAUSE IS GONE, and it is the residue of a rename. When the
+ // label read "⚡ High danger" a suffix naming the slot was the sentence's only
+ // mention of it; after the rename to "Shot from the slot" the caption said it
+ // twice -- "⚡ Shot from the slot · #16 Dorofeyev from the slot", on 31 of 31
+ // slot captions in a walked replay. The rename was verified by grepping for
+ // the OLD term, which can prove a word is gone and cannot see that removing it
+ // left a sentence saying the same thing in both halves. Found by watching the
+ // layer play; the assertion below it is in `render.test.js`.
+ c.innerHTML=`<span class="tag ${side}">${ab}</span><b>${label}</b> · ${who}`;
+ /* THE CAPTION LASTS EXACTLY AS LONG AS THE FRAME IT DESCRIBES. It used to be
+    `animation:cap 2.2s` in the stylesheet -- a second clock, beside the pace and
+    unrelated to it, and the speed buttons moved one of them. Driving the
+    duration from `dwell(e)` is what makes "coordinated with the captions" a
+    property of the code rather than a pair of numbers somebody keeps in step.
+
+    THROUGH THE CSSOM, WHICH THE CSP PERMITS. The policy refuses inline `style`
+    attributes in the shipped markup (see docs and `document.test.js`); assigning
+    to `.style` at runtime is how the verdict dot and the team colours already
+    work. A duration living only in CSS would also be invisible to every test we
+    have, because the render harness has no stylesheet. */
+ c.style.animationDuration=dwell(e)+'ms';
  c.classList.remove('on');void c.offsetWidth;c.classList.add('on');}
 let workOpen=false;
 function renderWork(L,cur){const a=L.t[AID],h=L.t[HID],tot=a+h||1,pa=Math.round(100*a/tot);
@@ -1048,14 +1075,51 @@ function renderWork(L,cur){const a=L.t[AID],h=L.t[HID],tot=a+h||1,pa=Math.round(
  <div class="wc flag"><h3>Counted, surprisingly <span class="n">${sTotal}</span></h3><p>${sWhy||'—'}</p></div>
  <div class="wc"><h3>Not counted <span class="n">${L.excluded.length}</span></h3><p class="wexc">${rows||'—'}</p></div></div>
  <p class="wfoot"><em>${a} ${AAB} / ${h} ${HAB} → ${pa}% / ${100-pa}%.</em> ${L.counted.length} counted + ${L.excluded.length} not counted = <b>${L.counted.length+L.excluded.length}</b> events, which is every event in the game so far. Nothing is dropped quietly.${evenOnly?' <b>Even strength only</b> — the power-play and empty-net attempts are in the not-counted list above, with the situation that removed each one.':''}</p>`;}
-let i=EV.length-1,playing=false,timer=null,mult=2;
+/* THE PACE, AND IT IS ONE RULE INSTEAD OF FOUR TIERS.
+   docs/event-timing.md carries the walk this came out of. What it measured, at
+   Teaching, over 280 frames of a real replay:
+
+     55 of 280 frames (19.6%) held 1.3x to 2.6x the base with NOTHING on screen
+     to tell them apart, because `dwell` asked `isHD(e)` while the caption asked
+     `hdOn && isHD(cur)`. A pause that exists to give a caption room, firing
+     when there is no caption. Proven by contrast rather than argument: the same
+     31 frame indices, 0 captioned in the base view and 31 at `?layer=slot`.
+
+   Kevin: "I'm not sure we should linger on certain events longer than others...
+   a consistent replay speed, and definitely coordinated with the captions."
+
+   THE RULE IS NOW: A FRAME LASTS AS LONG AS WHAT IS ON IT TAKES TO READ.
+   Which quantizes to two states, because the page has two -- a frame carries a
+   caption or it does not. Both are OBSERVABLE PROPERTIES OF THE FRAME rather
+   than a taxonomy someone chose, and the old ladder was the latter: a goal was
+   worth 4.6 ordinary plays because somebody decided so.
+
+   AND IT MAKES THE 19.6% STRUCTURALLY IMPOSSIBLE rather than guarded. The frame
+   is long BECAUSE there is a caption, so a layer that is off cannot leave a
+   pause behind -- `captioned()` is the single source both the schedule and the
+   renderer read. Same move as `place()`: remove the opportunity to disagree
+   instead of adding a third check that has to agree.
+
+   FRAME_MS IS A TASTE AND IS HERE TO BE LOOKED AT. Kevin reported Teaching too
+   fast; 1800 is his call to move, and the consequence of moving it is the
+   replay's length (about 8.5 minutes for a 281-event game) and the number of
+   events in the home page's loop, which runs on this same function. */
+const FRAME_MS={sp0:2600,sp1:1800,sp2:1000};
+const CAPTION_BONUS=900;
+let i=EV.length-1,playing=false,timer=null,frameMs=FRAME_MS.sp1;
 $('scrub').max=EV.length-1;
 function set(v,how){i=Math.max(0,Math.min(EV.length-1,v));$('scrub').value=i;render(i,how);syncStep();}
 /* THE ENDS ARE STATED BY THE CONTROL, not discovered by pressing it. `set`
    clamps, so a press at either end is already harmless -- but a button that
    accepts a press and does nothing is a button that says the page is broken. */
 function syncStep(){$('back').disabled=i<=0;$('fwd').disabled=i>=EV.length-1;}
-function dwell(e){let d=650;if(e.type==='goal')d=3000;else if(isHD(e))d=1700;else if(e.type==='shot-on-goal')d=850;return d*mult;}
+/* WHICH FRAMES SPEAK. The ONE place that answers it -- `render` calls this to
+   decide whether to caption, and `dwell` calls it to decide how long the frame
+   lasts. Two readers, one answer, so they cannot drift: that drift is the whole
+   subject of docs/event-timing.md. `hdOn` is in here on purpose; a slot shot
+   with the layer off is a frame that says nothing, and it must be paced as one. */
+function captioned(e){return !!e&&(e.type==='goal'||e.type==='penalty'||(hdOn&&isHD(e)));}
+function dwell(e){return captioned(e)?frameMs+CAPTION_BONUS:frameMs;}
 function step(){if(i>=EV.length-1){stop();return;}set(i+1,'play');timer=setTimeout(step,dwell(EV[i]));}
 function play(){if(i>=EV.length-1){prevA=0;prevH=0;set(0,'play');}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);timer=setTimeout(step,dwell(EV[i]));}
 function stop(){playing=false;$('play').textContent=i>=EV.length-1?'▶ Replay from start':'▶ Play';clearTimeout(timer);}
@@ -1087,10 +1151,17 @@ $('fwd').addEventListener('click',()=>jump(1));
    is the frame they actually chose, and it gets called like any other jump. */
 $('scrub').oninput=e=>{stop();set(+e.target.value,'');};
 $('scrub').onchange=e=>{set(+e.target.value,'jump');};
-function setSpeed(m,id){mult=m;['sp0','sp1','sp2'].forEach(x=>$(x).setAttribute('aria-pressed',x===id));}
-$('sp0').onclick=()=>setSpeed(2.9,'sp0');
-$('sp1').onclick=()=>setSpeed(2,'sp1');
-$('sp2').onclick=()=>setSpeed(1.1,'sp2');
+/* THE SPEED CONTROL NOW GOVERNS THE CAPTION TOO, and until this change it did
+   not govern anything but the frame. Measured: the caption ran 2067ms visible at
+   every speed, because it was a CSS constant and the pace was a setTimeout, so a
+   penalty frame (1300ms) let its caption finish ON THE NEXT PLAY six times out
+   of six -- two plays later at Faster -- while a goal frame (6000ms) spent 3933ms
+   with the caption already gone. Opposite directions, one missing relation.
+   The id is passed rather than the number so there is one table, not two. */
+function setSpeed(id){frameMs=FRAME_MS[id];['sp0','sp1','sp2'].forEach(x=>$(x).setAttribute('aria-pressed',x===id));}
+$('sp0').onclick=()=>setSpeed('sp0');
+$('sp1').onclick=()=>setSpeed('sp1');
+$('sp2').onclick=()=>setSpeed('sp2');
 $('work').onclick=()=>{workOpen=!workOpen;$('workPanel').hidden=!workOpen;$('work').setAttribute('aria-expanded',workOpen);$('work').textContent=workOpen?'Hide the work':'Show me the work';if(workOpen)render(i,'');};
 $('aAb').textContent=AAB;$('hAb').textContent=HAB;
 // Hand-formatted from the ISO date, never Date.parse: '2023-11-10' is UTC

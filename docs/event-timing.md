@@ -391,7 +391,104 @@ saying that the test agrees with the argument in §7.3 and disagrees with §7.2.
 
 ---
 
-## 10. What is already known and needs no re-derivation
+## 10. BUILT 2026-08-17 — CHENG's ruling, and the one place he was wrong
+
+CHENG took the reframe (§7.3) with one requirement that completes it: **the
+caption's duration must become a function of the frame's duration, not a constant
+beside it** — otherwise the reframe fixes defect one and leaves defect two
+exactly as it was. Sequenced 1 → 2 → 3, on the grounds that landing the reframe
+first means tuning durations while the caption still disagrees with all of them.
+
+**One correction to that sequencing, made in the build:** step 2 alone is a
+regression if shipped alone. Deriving the caption from today's tiers gives a
+penalty a 1300 ms caption, which is not long enough to read a name. 2 and 3 are
+two halves of one coherent change and were verified together.
+
+### The shape that shipped
+
+```js
+function captioned(e){return !!e&&(e.type==='goal'||e.type==='penalty'||(hdOn&&isHD(e)));}
+function dwell(e){return captioned(e)?frameMs+CAPTION_BONUS:frameMs;}
+```
+
+`captioned()` is the **single source both the schedule and the renderer read**,
+so defect one is structurally impossible rather than guarded — the same move as
+`place()`. `FRAME_MS = {sp0:2600, sp1:1800, sp2:1000}`, `CAPTION_BONUS = 900`,
+and `caption()` sets `style.animationDuration = dwell(e)+'ms'` through the CSSOM.
+The stylesheet's `2.2s` survives as a placeholder the script always overwrites,
+with a test pinning that it does.
+
+### Measured after, in a browser, same method as §2
+
+| | before | after |
+|---|---|---|
+| distinct frame durations | 4 | **2** |
+| frames longer than base **with no caption** | **55 of 280 (19.6%)** | **0** |
+| captions finishing on a later play | **6 of 9** | **0 of 9** |
+| caption visible vs its frame | 2067 ms in 1300 / 6000 | **2534 ms in 2701 ms** |
+| ordinary play | 1300 ms | **1800 ms** |
+| replay length | 7.6 min | **8.5 min** |
+| slot layer on: long frames captioned | 31 of 31 | 19 of 19, and none silent |
+
+The caption now fades out at 94% of its own frame, at every speed, because there
+is one number. **500 JS + 105 Python green. Five mutations, five kills**, each by
+the test written for it — including restoring the unguarded `isHD`, which the
+biconditional (*a frame is long if and only if it spoke*) catches.
+
+### ⭐ CHENG PREDICTED THE METRONOME TEST SURVIVES. IT PASSES, FOR THE WRONG REASON.
+
+> *"Two-state quantization is still not a metronome — the preview still eases and
+> the test still passes… If it did fail, that would be the signal to stop and ask."*
+
+It passes. **Measured over 59 games spread across the archive**, the preview's
+opening window (the first 7 plays, which is what fits in `BUDGET_MS` at the new
+pace):
+
+| | a non-base frame inside the first 7 plays |
+|---|---|
+| the old tier list | 43 of 59 — **72.9%** |
+| the reframe | 9 of 59 — **15.3%** |
+
+**Median index of the first captioned event: 26** — four times the window. So on
+roughly six nights in seven the front door's loop is *legitimately* uniform, and
+the old assertion would have gone red against a page working exactly as designed.
+
+It passed here because the reference game carries a penalty at **index 2, the
+minimum of that distribution.** A test that arrives where it already was is true
+for the wrong reason, and this one would have been.
+
+**So the guard moved rather than died.** The property worth protecting is that
+`dwell` must not collapse to one number — because if it did, the surviving test
+(*the preview draws from the replay*) would pass trivially with both sides
+returning the same constant. It now watches the **whole replay**, where a
+captioned frame is guaranteed by the game rather than by luck of the opening, and
+additionally asserts there are exactly **two** distinct waits, so a third tier
+creeping back is caught.
+
+**CHENG's larger flag stands and gets stronger.** Measured live in the hero
+iframe at both viewports: **the loop reaches event 7 and restarts at 10.3 s
+(1100px) / 12.1 s (390px)** — down from 9 events. And it now also loses its
+easing on most nights. If 7 events no longer reads as hockey, **the fix is
+`BUDGET_MS`, not a faster replay** — decoupling the preview from `dwell` would
+reintroduce exactly the chosen parameter Kevin rejected twice.
+
+### The duplicated clause
+
+`⚡ Shot from the slot · #16 Dorofeyev from the slot` — gone, confirmed live.
+CHENG's lesson, recorded: **a rename verified by grepping for the term that LEFT
+cannot see the redundancy its departure created.** The assertion is his — no
+caption may contain a repeated three-word phrase — checked across both layer
+states, and it fails with the exact string when the clause is restored.
+
+### Still Kevin's to rule
+
+**`FRAME_MS.sp1 = 1800` is the taste call** (§8.1) and no data of ours can set
+it. The consequences are the table above: the replay runs 8.5 minutes and the
+front door shows 7 plays. **And a goal now holds 2701 ms where it held 6000** —
+the biggest single change a viewer will feel, and the one most likely to want
+a second look.
+
+## 11. What is already known and needs no re-derivation
 
 - `step()` is drivable in tests: `boot()` captures the timer and `advance(n)`
   runs the real loop, returning frames moved.
