@@ -209,7 +209,26 @@ def _footer():
         # before it -- so it costs a phrase and not a third paragraph on every
         # page. In the shared chrome for the reason the rest of it is: a contact
         # address on most pages is the `goalie-eye-view` defect again.
+        #
+        # ⭐ THE `email_off` FENCE IS LOAD-BEARING AND WAS BOUGHT WITH A RED DEPLOY.
+        # Cloudflare's Scrape Shield rewrites every mailto in the served HTML to
+        # `/cdn-cgi/l/email-protection#<hex>` and injects a decoder script to put
+        # it back. Our script-src is hash-pinned over the page's own inline block,
+        # so the browser REFUSES the decoder -- and the footer then reads, to a
+        # real visitor, the literal string "[email protected]". Measured in a
+        # browser on the live site, not inferred.
+        #
+        # This fence is Cloudflare's documented per-block opt-out and is preferred
+        # over the two alternatives: turning obfuscation off zone-wide gives up
+        # the protection on any address we ever add, and adding 'self' to
+        # script-src to admit the decoder would let ANY same-origin script run --
+        # trading the policy that has actually caught bugs here for a convenience.
+        # The deploy's byte-diff against the live domain is what noticed, and is
+        # the instrument that will notice again: no unit test can see a rewrite
+        # that happens between the repo and the reader.
+        "<!--email_off-->"
         '<a href="mailto:ReadTheGameOfHockey@gmail.com">ReadTheGameOfHockey@gmail.com</a>'
+        "<!--/email_off-->"
         "</p>"
         "</footer>")
 
