@@ -349,11 +349,33 @@ jobs:
             return 1
           }
 
+          # THE ONE NORMALISATION, AND IT IS NARROW ON PURPOSE.
+          #
+          # Cloudflare's Scrape Shield rewrites every mailto in the served HTML
+          # into /cdn-cgi/l/email-protection#<hex> and injects a decoder script
+          # to put it back. script-src here is hash-pinned, so the browser
+          # REFUSES the decoder and the footer reads, to a real visitor, the
+          # literal string "[email protected]". `<!--email_off-->` is
+          # Cloudflare's documented per-block opt-out and it works -- the address
+          # arrives intact -- but the zone CONSUMES the two marker comments, so
+          # the served bytes are 33 shorter than the committed bytes.
+          #
+          # BOTH SIDES, not just the live one. This same step checks the
+          # *.pages.dev deployment, which is not on the zone and therefore keeps
+          # the markers. Stripping only the repo side would pass on the custom
+          # domain and fail on the preview.
+          #
+          # What this can hide is exactly two literal comment strings that we put
+          # in for the CDN to eat, and nothing else -- every other byte is still
+          # compared. It comes out the moment Email Address Obfuscation is turned
+          # off in the dashboard, which is the cleaner end state and Kevin's call.
+          strip() { sed 's|<!--/\?email_off-->||g' "$1"; }
+
           # The root is its own case: it is not a file we deploy but a route
           # Pages resolves to index.html, and getting that wrong is a 404 on
           # the front page with every deep link still working.
           fetch "" root.html
-          if ! cmp -s root.html src/index.html; then
+          if ! cmp -s <(strip root.html) <(strip src/index.html); then
             echo "::error::the site root is not src/index.html"
             exit 1
           fi
@@ -363,7 +385,7 @@ jobs:
           for f in src/*.html; do
             page=$(basename "$f")
             fetch "$page" live.html || { fail=1; continue; }
-            if cmp -s live.html "$f"; then
+            if cmp -s <(strip live.html) <(strip "$f"); then
               echo "  /$page  ($(wc -c < "$f") bytes, identical)"
             else
               echo "::error::/$page differs from $f — published bytes are not committed bytes"
