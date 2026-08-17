@@ -72,11 +72,37 @@ def csp(html, *, connect):
                 hashlib.sha256(b.encode()).digest()).decode() + "'"
             for b in blocks)
 
+    # ⭐ THE ONE THIRD PARTY, NAMED, AND IT IS A DELIBERATE PURCHASE.
+    #
+    # Kevin turned Cloudflare Web Analytics on. The zone then injects
+    #   <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/…"
+    #           data-cf-beacon='{"token":"…"}' integrity="sha512-…" crossorigin>
+    # into every BROWSER request -- user-agent gated, which is why a plain curl
+    # sees nothing and the deploy gate's Chrome agent sees it.
+    #
+    # Until now `script-src` was hashes only, so the browser REFUSED it: the
+    # beacon collected nothing, logged a violation on every page load, and broke
+    # the published-bytes check. Turning it on properly is one named origin, not
+    # 'self' -- 'self' would admit ANY same-origin script, and the value of this
+    # policy is that it has caught real defects (13 refused inline styles that
+    # were silently killing team colours).
+    #
+    # THE INLINE PINNING IS UNTOUCHED. Every <script> and <style> block this
+    # site writes is still matched by SHA-256; a host source is a union with the
+    # hashes, not a replacement for them. What widens is exactly: scripts served
+    # by static.cloudflareinsights.com, and connections to cloudflareinsights.com.
+    #
+    # AND THE SITE STOPS SAYING IT CALLS NOBODY. That claim was true and is not
+    # any more -- see the README and the standalone game page's archive note,
+    # both corrected in the same commit. Kevin: "we don't need to make the claim
+    # of no network egress."
+    beacon_script = "https://static.cloudflareinsights.com"
+    beacon_connect = "https://cloudflareinsights.com"
     return "; ".join([
         "default-src 'none'",
-        f"script-src {h(r'<script>(.*?)</script>')}",
+        f"script-src {h(r'<script>(.*?)</script>')} {beacon_script}",
         f"style-src {h(r'<style>(.*?)</style>')}",
-        f"connect-src 'self' {connect}",
+        f"connect-src 'self' {connect} {beacon_connect}",
         # The homepage frames the game page for its five-second preview, and
         # `frame-src` has no fallback to default-src -- 'none' would block it.
         #

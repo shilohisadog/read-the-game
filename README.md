@@ -35,7 +35,7 @@ Everything in this repo is a different way of making that visible.
 
 | Path | What it is |
 |---|---|
-| `src/` | Self-contained HTML apps. Each one opens standalone — no build, no CDN, no network. |
+| `src/` | Self-contained HTML apps. Each one opens standalone — no build step, no bundler, no library. The files ask for nothing beyond their game data; the live site's host injects a Cloudflare Web Analytics beacon, which is named in each page's Content-Security-Policy. |
 | `data/` | The extracted game data plus the raw NHL API responses it came from. |
 | `builders/` | Python that extracts the raw feeds into `rich.json` and generates the apps. |
 

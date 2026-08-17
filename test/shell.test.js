@@ -143,10 +143,28 @@ test('the CSP pins EVERY block it ships, and pins nothing else', () => {
     const shipped = [...shell.matchAll(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, 'g'))]
       .map(m => `'sha256-${createHash('sha256').update(m[1]).digest('base64')}'`);
     assert.ok(shipped.length, `no <${tag}> found to check`);
-    const pinned = p.match(new RegExp(`${directive} ([^;]+)`))[1].trim().split(/\s+/);
+    const listed = p.match(new RegExp(`${directive} ([^;]+)`))[1].trim().split(/\s+/);
+    // HASHES AND HOSTS ARE SEPARATE CLAIMS, and splitting them is what keeps
+    // this test as strong as it was. `script-src` gained one host source when
+    // Kevin turned Cloudflare Web Analytics on -- the beacon is a third-party
+    // script the edge injects and the policy has to name it or the browser
+    // refuses it. Counting every token as a hash reported "2 hashes for 1
+    // block", which is the test being right about a change it could not
+    // describe.
+    const pinned = listed.filter(t => t.startsWith("'sha256-"));
     assert.deepEqual(new Set(pinned), new Set(shipped),
       `${directive} pins ${pinned.length} hashes for ${shipped.length} shipped <${tag}> blocks`);
+    // AND THE HOSTS ARE ENUMERATED, so a second origin cannot arrive unnoticed.
+    // This is the half that makes admitting one third party safe: the policy is
+    // still a closed list, it just has one more name on it than it did.
+    const hosts = listed.filter(t => !t.startsWith("'"));
+    assert.deepEqual(hosts, directive === 'script-src' ? ['https://static.cloudflareinsights.com'] : [],
+      `${directive} admits ${JSON.stringify(hosts)} — every host source must be named in this test`);
   }
+  // connect-src is not hash-pinnable, so it is enumerated outright.
+  const conn = p.match(/connect-src ([^;]+)/)[1].trim().split(/\s+/);
+  assert.deepEqual(conn, ["'self'", 'https://data.readthegame.co', 'https://cloudflareinsights.com'],
+    `connect-src admits ${JSON.stringify(conn)}`);
 });
 
 /** Run the shell's script against fakes and record what it asks the network for. */

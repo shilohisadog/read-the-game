@@ -1609,15 +1609,22 @@ test('THE PANEL PUBLISHES NO WIN RATE — the whole design turns on this', () =>
 });
 
 test('a page that reaches nothing says SO, rather than implying a failure', () => {
-  // The inlined page carries one game and makes no network requests, so there is
-  // no archive to compare against. "Could not be loaded" would be a small untruth
-  // on the one page whose whole claim is that it reaches nobody — the same
-  // distinction the verdict card draws with noCurveReason.
+  // The inlined page carries one game and NEVER ASKS FOR THE ARCHIVE, so there
+  // is no comparison to show. "Could not be loaded" would be a small untruth —
+  // the same distinction the verdict card draws with noCurveReason.
+  //
+  // IT USED TO SAY "makes no network requests" AND THAT STOPPED BEING TRUE.
+  // Kevin turned Cloudflare Web Analytics on, so the edge injects a beacon into
+  // every browser request and the page does reach somebody — just not for this.
+  // The claim is now about what the PAGE asks for, which is what the sentence
+  // was always there to explain and is true whatever the host adds.
   const a = boot();                       // no rates at all
   a.$('lyBlock').click();
   const v = a.$('blockPanel').innerHTML;
-  assert.match(v, /makes no network requests/, 'the reason given is not the true one');
+  assert.match(v, /never asks for the archive/, 'the reason given is not the true one');
   assert.doesNotMatch(v, /could not be loaded/);
+  assert.doesNotMatch(v, /no network requests/,
+    'the page claims it calls nobody, which the analytics beacon makes false');
 });
 
 test('the label names the BLOCKER once the layer is on', () => {

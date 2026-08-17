@@ -3392,7 +3392,7 @@ $('gl').textContent=`${AAB} at ${HAB}${WHEN?' · '+WHEN:''} · final ${AAB} ${fi
    // undefined = never asked for (the inlined page, which reaches nothing);
    // null = asked for and did not arrive. Two different true sentences.
    noCurveReason:RATES===undefined
-     ?'this page carries a single game and makes no network requests'
+     ?'this page carries a single game and never asks for the archive'
      :undefined});
  const p=[`<span class="vk">What this game was</span>`,
           `<span class="lead">${V.lead}</span>`];
@@ -3851,7 +3851,7 @@ function drawBlocked(B,L,slice){
       What the line also carried -- the games count and the population -- was
       doctrine and has moved into the row's scope, where it is always visible
       rather than in a paragraph below the fold on a phone. */
-  :`<p class="bkarch">No archive comparison shown — ${RATES===undefined?'this page carries a single game and makes no network requests':'the archive shares could not be loaded'}.</p>`;
+  :`<p class="bkarch">No archive comparison shown — ${RATES===undefined?'this page carries a single game and never asks for the archive':'the archive shares could not be loaded'}.</p>`;
  $('blockPanel').innerHTML=game+why+mates+un+arch;}
 
 /* WHAT A FIRST-TIME VIEWER IS TOLD, and it answers three questions Kevin

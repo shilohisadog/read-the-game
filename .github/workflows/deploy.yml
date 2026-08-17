@@ -369,7 +369,22 @@ jobs:
           # in for the CDN to eat, and nothing else -- every other byte is still
           # compared. It comes out the moment Email Address Obfuscation is turned
           # off in the dashboard, which is the cleaner end state and Kevin's call.
-          strip() { sed 's|<!--/\?email_off-->||g' "$1"; }
+          # TWO EDGE REWRITES, BOTH NAMED. (1) `<!--email_off-->` is a marker WE
+          # add for Scrape Shield to eat so the mailto survives. (2) The Web
+          # Analytics beacon is a THIRD-PARTY SCRIPT in the reader's page, on
+          # deliberately, named in script-src so it runs — but never in our bytes.
+          # Removed by an EXACT pattern, so anything else the edge adds, or any
+          # change to the beacon's shape, still fails this comparison and is
+          # printed. A gate that silently deletes injected scripts cannot do its
+          # job; this one deletes exactly one known tag and reports that it did.
+          strip() {
+            sed -e 's|<!--/\?email_off-->||g' \
+                -e 's|<script type="module" src="https://static\.cloudflareinsights\.com/beacon\.min\.js/[^>]*></script>||g' "$1"
+          }
+          beacon_note() {
+            grep -q 'static\.cloudflareinsights\.com' "$1" \
+              && echo "      (edge injected the Web Analytics beacon — in script-src, stripped for this diff)" || true
+          }
 
           # The root is its own case: it is not a file we deploy but a route
           # Pages resolves to index.html, and getting that wrong is a 404 on
@@ -380,6 +395,7 @@ jobs:
             exit 1
           fi
           echo "  /  ->  index.html  ($(wc -c < root.html) bytes, identical)"
+          beacon_note root.html
 
           fail=0
           for f in src/*.html; do
@@ -387,6 +403,7 @@ jobs:
             fetch "$page" live.html || { fail=1; continue; }
             if cmp -s <(strip live.html) <(strip "$f"); then
               echo "  /$page  ($(wc -c < "$f") bytes, identical)"
+              beacon_note live.html
             else
               echo "::error::/$page differs from $f — published bytes are not committed bytes"
               fail=1
@@ -423,6 +440,7 @@ jobs:
             done
             if [ "$matched" = 1 ]; then
               echo "  https://${host} serves the current index"
+              beacon_note prod.html
             else
               # ONE MESSAGE WAS STANDING FOR TWO DIFFERENT FAILURES, and it cost
               # a wasted re-run to find that out. The loop breaks only when the
@@ -932,7 +950,22 @@ jobs:
           # of five, the production-hostname check failed on the third, and
           # `grep -n 'cmp -s'` found the rest. Applying a rule to the instance
           # that failed is how the `?team=` defect got shipped.
-          strip() { sed 's|<!--/\?email_off-->||g' "$1"; }
+          # TWO EDGE REWRITES, BOTH NAMED. (1) `<!--email_off-->` is a marker WE
+          # add for Scrape Shield to eat so the mailto survives. (2) The Web
+          # Analytics beacon is a THIRD-PARTY SCRIPT in the reader's page, on
+          # deliberately, named in script-src so it runs — but never in our bytes.
+          # Removed by an EXACT pattern, so anything else the edge adds, or any
+          # change to the beacon's shape, still fails this comparison and is
+          # printed. A gate that silently deletes injected scripts cannot do its
+          # job; this one deletes exactly one known tag and reports that it did.
+          strip() {
+            sed -e 's|<!--/\?email_off-->||g' \
+                -e 's|<script type="module" src="https://static\.cloudflareinsights\.com/beacon\.min\.js/[^>]*></script>||g' "$1"
+          }
+          beacon_note() {
+            grep -q 'static\.cloudflareinsights\.com' "$1" \
+              && echo "      (edge injected the Web Analytics beacon — in script-src, stripped for this diff)" || true
+          }
           for i in $(seq 1 12); do
             curl -sSL -o live-shell.html "https://readthegame.co/game?cb=${GITHUB_RUN_ID}-w${i}" || true
             cmp -s <(strip live-shell.html) <(strip src/game.html) && break
