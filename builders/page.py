@@ -202,7 +202,15 @@ def _footer():
         "identified by colour and three-letter abbreviation only.</p>"
         '<p><a href="https://github.com/shilohisadog/read-the-game">Source on GitHub</a>'
         " — every number here is a function of stored events, and you can read the "
-        "function.</p>"
+        "function. Found one that looks wrong? "
+        # THE ADDRESS RIDES THE CHECKABILITY SENTENCE RATHER THAN GETTING ITS OWN
+        # BLOCK. A site whose whole trade is "read our work" needs a way to be
+        # told the work is wrong, and that is the same thought as the clause
+        # before it -- so it costs a phrase and not a third paragraph on every
+        # page. In the shared chrome for the reason the rest of it is: a contact
+        # address on most pages is the `goalie-eye-view` defect again.
+        '<a href="mailto:ReadTheGameOfHockey@gmail.com">ReadTheGameOfHockey@gmail.com</a>'
+        "</p>"
         "</footer>")
 
 

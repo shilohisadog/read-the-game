@@ -149,7 +149,22 @@ test('every page carries the footer, so the attribution is not optional', () => 
     assert.match(h, /No NHL or club logos, wordmarks or crests/,
       `${f} does not say that no club marks appear`);
     assert.match(h, /Not affiliated with or endorsed by the NHL/, `${f} lacks attribution`);
+    // AND A WAY TO BE TOLD THE WORK IS WRONG. A site whose whole trade is "read
+    // our work" is incomplete without one, and it belongs to the same rule as
+    // everything else here: in the chrome, so no page can lack it.
+    assert.match(h, /href="mailto:[^"]+@[^"]+"/, `${f} offers no way to report a wrong number`);
   }
+});
+
+test('the contact address is spelt one way, in one place', () => {
+  // A second copy is a second thing to get wrong, and an address that differs
+  // between pages is worse than none: it looks like a typo in the one you read.
+  const seen = new Set();
+  for (const f of PAGES) {
+    const h = readFileSync(new URL(f, SRC), 'utf8');
+    for (const m of h.matchAll(/mailto:([^"?]+)/g)) seen.add(m[1]);
+  }
+  assert.equal(seen.size, 1, `the site names ${seen.size} addresses: ${[...seen].join(', ')}`);
 });
 
 test('NO PAGE IS A DEAD END — the one this work exists to fix', () => {
@@ -171,7 +186,12 @@ test('every chrome link resolves to a page that exists', () => {
     const chrome = h.match(/<header class="sitehdr">[\s\S]*?<\/header>/)[0]
                  + h.match(/<footer class="sitefoot">[\s\S]*?<\/footer>/)[0];
     for (const [, href] of chrome.matchAll(/href="([^"]+)"/g)) {
-      if (/^https?:/.test(href)) continue;
+      // ANY SCHEME IS SOMEBODY ELSE'S NAMESPACE, not a path into this site.
+      // It read `^https?:` and reported `mailto:…@gmail.com` as a missing page —
+      // the check was right that it is not a file and wrong about what that
+      // means. The address is asserted separately, by the test above that
+      // requires one on every page and requires it to be spelt once.
+      if (/^[a-z][a-z0-9+.-]*:/i.test(href)) continue;
       const path = href.split('#')[0].split('?')[0];
       if (path === '/' || path === '') continue;        // the front page
       assert.ok(have.has(path.replace(/^\//, '')), `${f} links to ${href}, which does not exist`);
