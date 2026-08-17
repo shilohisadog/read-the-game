@@ -4066,11 +4066,49 @@ if(PREVIEW){
     percentage -- CHENG's ruling that `11` beside `8` claims exactly what it is --
     so the compact form is not a rate that has lost its denominator. */
  corsiOn=true;setCorsi();
- let acc=0,W=0;
+ /* ⭐ AND IT BEGINS WHERE THE LAYER FIRST HAS SOMETHING TO SAY.
+    Kevin refreshed the front door and the counter sat at 0-0 for the whole loop.
+    Measured over 230 games rather than guessed at: the counter is still empty
+    after 14 seconds in 6% of games -- but the hero is THE MOST RECENT GAME, and
+    between June and October that is one frozen fixture, so a 6% tail is 100% of
+    the experience for four months. This game opens with EIGHT plays that count
+    for nothing: faceoffs, hits and giveaways.
+
+    THE START IS THE FIX, NOT THE LENGTH, and the measurement is unambiguous. At
+    the same 14s budget this hero goes from a counter of 0 to a counter of 4;
+    stretching the loop to 30 seconds from the faceoff only reaches 4 as well. The
+    start rule buys more than doubling the loop and costs no wall time at all.
+    (Kevin's other idea, the whole first period, is 2.7 minutes at the median --
+    and running the preview faster to fit it is the one thing settled above as
+    never allowed.)
+
+    NOTHING COUNTED IS SKIPPED, so the provenance argument survives intact: by
+    construction no attempt happened before the first attempt, and the counter is
+    still 0-0 on the opening frame and still moves in front of you. What IS given
+    up is the game's opening dead air, and that trade should be said out loud --
+    the taste shows hockey slightly denser than hockey is. It stands because the
+    frame is already 14 seconds standing for two and a half hours, with `Watch the
+    whole game` underneath it.
+
+    DERIVED FROM THE LAYER, NOT A CHOSEN OFFSET. There is no "start two plays
+    early" constant here, because a chosen constant drifts. The definition is
+    THE LAST FRAME ON WHICH THE COUNT IS STILL ZERO -- one before the layer's
+    first counted event -- and that is the frame the provenance argument actually
+    needs. Opening ON the first attempt would show a counter that reads 1 before
+    a viewer has seen anything happen, which is the number-you-did-not-watch-being
+    -built problem in miniature. Opening one frame earlier means the first thing
+    on screen is 0-0 and the very next thing is it moving.
+
+    One reduce over the whole game, the same call `lens` makes per frame, so the
+    index cannot disagree with the number the board shows when it gets there. */
+ const START=(()=>{const c=new Set(corsi.reduce(G.events,CTX).counted);
+  for(let k=0;k<EV.length;k++)if(c.has(EVI[k]))return Math.max(0,k-1);
+  return 0;})();
+ let acc=0,W=START;
  while(W<EV.length-1&&acc+dwell(EV[W])<=BUDGET_MS){acc+=dwell(EV[W]);W++;}
- const WINDOW=Math.max(1,W);
+ const WINDOW=Math.max(START,W);
  if(REDUCED){set(WINDOW,'');}
- else{let k=0;
+ else{let k=START;
   /* THE RESTART PAUSE USED TO BE DEAD CODE. It read
        set(k);k++;if(k>WINDOW){k=0;}
        setTimeout(tick,k>WINDOW?900:115)
@@ -4080,7 +4118,7 @@ if(PREVIEW){
   const tick=()=>{
    const shown=EV[k],last=k>=WINDOW,wait=last?1500:dwell(shown);
    set(k,k>0?'play':'');
-   if(last){k=0;prevA=0;prevH=0;}else{k++;}
+   if(last){k=START;prevA=0;prevH=0;}else{k++;}
    setTimeout(tick,wait);};
   tick();}}
 }

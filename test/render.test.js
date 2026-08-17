@@ -1404,24 +1404,64 @@ test('dwell does not collapse to a constant — the whole replay, not the openin
     `the pace produced ${seen.size} distinct waits (${[...seen].sort((a, b) => a - b).join(', ')}); the rule has two states`);
 });
 
+test('⭐ the preview begins where the layer first counts something', () => {
+  // KEVIN REFRESHED THE FRONT DOOR AND THE COUNTER SAT AT 0-0 FOR THE WHOLE LOOP.
+  // Measured over 230 games: the counter is still empty after 14s in 6% of them
+  // -- and the hero is the most recent game, so between June and October that is
+  // one frozen fixture and the tail is the whole experience. The reference game
+  // here opens with plays that count for nothing, exactly as the live one did.
+  //
+  // THE START IS THE FIX, NOT THE LENGTH: at the same budget the live hero went
+  // from a counter of 0 to a counter of 4, while stretching the loop to 30s from
+  // the faceoff also only reached 4.
+  const { at } = delaysOf('?preview=1', 40);
+  assert.ok(at[0] > 0,
+    'the preview still opens at the faceoff — if the game happens to start with '
+    + 'attempts this is vacuous, so the assertion below says it is not');
+
+  // AND IT SKIPS NOTHING THE LAYER COUNTS, which is what keeps the counter
+  // honest: it is still 0-0 on the first frame and still moves in front of you.
+  const a = boot(rich, null, '?game=2023020204&preview=1');
+  const sc = a.$('scrub');
+  const countAt = k => { sc.value = String(k); sc.oninput({ target: { value: sc.value } });
+                         return +a.$('cA').textContent + +a.$('cH').textContent; };
+
+  // IT OPENS ON ZERO AND MOVES ON THE VERY NEXT FRAME. Both halves matter and
+  // neither is sufficient: opening on the first attempt shows a counter reading
+  // 1 before the viewer has seen anything happen, and opening any earlier is the
+  // dead air this whole change exists to skip.
+  assert.equal(countAt(at[0]), 0, 'the loop opens with the count already moved');
+  assert.notEqual(countAt(at[0] + 1), 0,
+    'the second frame still counts nothing — the start is not adjacent to the first attempt');
+});
+
 test('the preview is a taste: it restarts inside a quarter-minute', () => {
   // The pace tests above cannot see the WINDOW, and a mutation proved it --
   // replacing the time-derived window with a fixed 44 events survived them
   // both. At the replay's pace that is a 57-second loop on the front door: not
   // a blur, but not a taste either, and nothing said so.
   //
-  // THE RESTART IS FOUND BY THE SCRUBBER GOING BACK TO ZERO, not by matching
-  // the pause's value. Recognising it by `=== 1500` would put a second copy of
-  // that constant in here, free to agree with a wrong first copy.
+  // THE RESTART IS FOUND BY THE SCRUBBER GOING BACKWARDS, not by matching the
+  // pause's value. Recognising it by `=== 1500` would put a second copy of that
+  // constant in here, free to agree with a wrong first copy.
+  //
+  // It used to look for a return to ZERO, and that stopped being the marker when
+  // the loop began starting at the layer's first counted event instead of the
+  // opening faceoff. Zero was never the property -- going back was.
   //
   // A RANGE, NOT A VALUE. How long the loop runs is a visual judgement and the
   // one number left in the preview; pinning it exactly would just be that same
   // second copy. The bounds are what the thing has to be to be the thing: long
   // enough to read as hockey, short enough that a stranger sees it loop.
   const { delays, at } = delaysOf('?preview=1', 40);
-  const back = at.findIndex((v, k) => k > 0 && v === 0);
+  const back = at.findIndex((v, k) => k > 0 && v < at[k - 1]);
   assert.ok(back > 0, `the preview never looped in 40 ticks: ${at.join(',')}`);
   assert.ok(back >= 4, `only ${back} events fit — that is a slideshow, not a replay`);
+  // AND IT RESTARTS WHERE IT BEGAN, not at the faceoff. A loop that rewinds past
+  // its own start replays the dead plays the start rule exists to skip -- every
+  // pass after the first -- and a mutation proved nothing else here noticed.
+  assert.equal(at[back], at[0],
+    `the loop restarts at ${at[back]} but began at ${at[0]} — it rewinds past its own start`);
   const playing = delays.slice(0, back - 1).reduce((a, b) => a + b, 0);
   assert.ok(playing > 5000 && playing < 15000,
     `the preview window runs ${(playing / 1000).toFixed(1)}s before looping`);
