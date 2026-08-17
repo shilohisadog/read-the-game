@@ -25,7 +25,34 @@ import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { corsi } from '../src/lib/layers/corsi.js';
 import { tiedControl } from '../src/lib/layers/tied.js';
+import { blocked } from '../src/lib/layers/blocked.js';
+import { danger } from '../src/lib/layers/danger.js';
+import { goaltending } from '../src/lib/layers/goaltending.js';
+import { shootingTeam, SHOT_TYPES } from '../src/lib/attribution.js';
 import { inScope, summarise } from '../src/lib/archive.js';
+import { teamSeasons } from '../src/lib/team-season.js';
+
+/**
+ * How the game ended, read from the league's own period type.
+ *
+ * NOT from the period NUMBER, and the difference is the whole point: a regular
+ * season shootout is recorded in a period past 3 and so is an overtime that
+ * ended in a goal, which makes the number ambiguous exactly where the W-L-OTL
+ * split needs it to be sharp. `pt` says which it was.
+ *
+ * The field is present on 33,202 of 33,202 events across a 103-game sample and
+ * takes three values, and on every one of them it agrees with the period number
+ * about REG versus past-REG — so the two witnesses are checked against each
+ * other in test/measure.test.js rather than one being trusted.
+ */
+export function endedIn(events) {
+  let ot = false;
+  for (const e of events) {
+    if (e.pt === 'SO') return 'SO';        // a shootout outranks the overtime it followed
+    if (e.pt === 'OT') ot = true;
+  }
+  return ot ? 'OT' : 'REG';
+}
 
 /** One game's measurements, in the shape src/lib/archive.js consumes. */
 export function measureGame(g) {
@@ -49,10 +76,56 @@ export function measureGame(g) {
   // the shootout, where every attempt is unblocked and from the slot.
   const mix = { goal: 0, 'shot-on-goal': 0, 'missed-shot': 0, 'blocked-shot': 0 };
   for (const id of all.counted) mix[g.events[id].type]++;
+
+  // THE OTHER THREE LAYERS, IMPORTED AND NOT RESTATED. Every rule below —
+  // who is credited with a block, what counts as the slot, what a goalie
+  // actually faced — lives in src/lib and is called here exactly as the browser
+  // calls it. `evenOnly: false` is stated on each rather than inherited, because
+  // a season aggregate that silently dropped special teams would look right.
+  const lay = { ...ctx, evenOnly: false };
+  const blk = blocked.reduce(g.events, lay);
+  const slotted = danger.reduce(g.events, lay);
+  const nets = goaltending.reduce(g.events, lay);
+  const sideOf = tid => tid === ctx.homeId ? 'h' : tid === ctx.awayId ? 'a' : null;
+
+  const slot = { h: 0, a: 0 };
+  for (const id of slotted.counted) {
+    const s = sideOf(shootingTeam(g.events[id], g.roster));
+    if (s) slot[s]++;
+  }
+  // THE SLOT'S OWN DENOMINATOR, counted over the same events danger.js could
+  // have counted: an unblocked attempt whose location the feed records. Using
+  // total attempts would divide by a population containing blocked shots, whose
+  // origin is not in the feed at all — the numerator and the denominator have to
+  // mean the same thing, which is the lesson extract.py's SOG check paid for.
+  const located = { h: 0, a: 0 };
+  for (const id of all.counted) {
+    const e = g.events[id];
+    if (!SHOT_TYPES.has(e.type) || e.x == null) continue;
+    const s = sideOf(shootingTeam(e, g.roster));
+    if (s) located[s]++;
+  }
+
+  const goalies = [];
+  for (const [pid, v] of Object.entries(nets.g)) {
+    const p = g.roster[pid];
+    const s = p ? sideOf(p.tid) : null;
+    if (!s) continue;                  // unresolvable, and never guessed at
+    goalies.push({ pid: Number(pid), nm: p.nm || p.n, side: s,
+                   faced: v.f, saves: v.s, date: g.game.date || null });
+  }
+  goalies.sort((x, y) => x.pid - y.pid);
+
   return {
     id: g.game.id,
+    date: g.game.date || null,
+    end: endedIn(g.events),
     homeAb: ctx.homeAb, awayAb: ctx.awayAb,
     mix,
+    // Blocks CREDITED to each side — the team that did the blocking, which is
+    // the defending team and therefore NOT the event's owner.
+    blocks: { h: blk.t[ctx.homeId], a: blk.t[ctx.awayId] },
+    slot, located, goalies,
     // THE LEAGUE'S OWN LINE, quoted from the boxscore and stored in the extract
     // so nothing here re-derives a score. If it is missing we do not guess.
     score: { h: g.quoted.home.score, a: g.quoted.away.score },
@@ -138,6 +211,12 @@ function main(argv) {
   // on a re-run is a real change of opinion or of data — the same property
   // catalog.json holds through `sort_keys=True`. Freshness is index.json's job.
   writeFileSync(join(out, 'measures.json'), stable(doc));
+  // A SECOND DOCUMENT, and deliberately not a bigger first one. measures.json is
+  // fetched by the home page and by every game page; the per-team seasons are
+  // read by one surface that neither of them shows. Freshness is index.json's
+  // job here too — no timestamp, keys sorted, same extracts in, same bytes out.
+  const teams = teamSeasons(records);
+  writeFileSync(join(out, 'teams.json'), stable(teams));
   const r = doc.baseRates;
   console.log(JSON.stringify({
     measured: records.length,
@@ -145,6 +224,10 @@ function main(argv) {
     featured: doc.featured[0],
     rates: Object.fromEntries(Object.entries(r).map(([k, v]) =>
       [k, v.rate == null ? null : `${(v.rate * 100).toFixed(1)}% of ${v.n}`])),
+    seasons: Object.fromEntries(Object.entries(teams.seasons).map(([y, t]) =>
+      [y, `${Object.keys(t).length} teams`])),
+    archive: Object.fromEntries(Object.entries(teams.archive).map(([k, v]) =>
+      [k, v.rate == null ? null : `${(v.rate * 100).toFixed(2)}% of ${v.n}`])),
   }, null, 2));
   // LOUD, because a silent change here is a wrong landing on every teaching
   // link into the affected game rather than a missing number.

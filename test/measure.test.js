@@ -15,8 +15,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { measureGame, stable, firstAtClock } from '../builders/measure.mjs';
+import { measureGame, stable, firstAtClock, endedIn } from '../builders/measure.mjs';
 import { summarise } from '../src/lib/archive.js';
+import { teamSeasons } from '../src/lib/team-season.js';
 
 /**
  * The analysis tier: the modules the PIPELINE imports, directly or transitively.
@@ -25,8 +26,9 @@ import { summarise } from '../src/lib/archive.js';
  * keeps paying for.
  */
 const TIER = [
-  'archive.js', 'attribution.js', 'layer.js', 'rink.js', 'strength.js',
-  'layers/corsi.js', 'layers/danger.js', 'layers/goaltending.js', 'layers/tied.js',
+  'archive.js', 'attribution.js', 'layer.js', 'rink.js', 'strength.js', 'team-season.js', 
+  'layers/blocked.js', 'layers/corsi.js', 'layers/danger.js', 'layers/goaltending.js',
+  'layers/tied.js',
 ];
 
 test('the analysis tier runs outside a browser', () => {
@@ -51,7 +53,14 @@ test('the tier list covers every module the pipeline actually pulls in', () => {
       if (p.endsWith('.js')) walk(p);
     }
   };
-  walk('layers/corsi.js'); walk('layers/tied.js'); walk('archive.js');
+  // THE ROOTS ARE READ FROM THE DRIVER, not typed here. They used to be three
+  // hand-written entry points, which is the same staleness this test exists to
+  // catch, one level up: measure.mjs grew three imports and the roots would have
+  // gone on walking the old graph and reporting nothing missing.
+  const driver = readFileSync(new URL('../builders/measure.mjs', import.meta.url), 'utf8');
+  const roots = [...driver.matchAll(/from '\.\.\/src\/lib\/([^']+)'/g)].map(m => m[1]);
+  assert.ok(roots.length >= 4, `only ${roots.length} lib imports found in the driver`);
+  for (const r of roots) walk(r);
   const missing = [...seen].filter(f => !TIER.includes(f));
   assert.deepEqual(missing, [], `TIER is missing modules the pipeline imports`);
 });
@@ -253,4 +262,250 @@ test('an empty archive measures NOTHING rather than zero', () => {
   assert.equal(mix.reachedTheGoalie.n, 0);
   assert.equal(mix.reachedTheGoalie.rate, null);
   assert.equal(mix.games, 0);
+});
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * PER-TEAM SEASONS — the document a next-opponent card reads.
+ *
+ * These protect four properties the design discussion settled, each of which is
+ * a thing an ordinary-looking simplification would break:
+ *   1. counts sum, fractions do not
+ *   2. the slot's denominator excludes what has no location
+ *   3. a block belongs to whoever made it
+ *   4. seasons never pool
+ * ────────────────────────────────────────────────────────────────────────────*/
+
+/**
+ * A game built to make the measures DISAGREE, for the same reason GAME above
+ * contains a blocked shot: a fixture where every count coincides tests nothing.
+ *
+ * HOME shoots from the slot (x=70 is 19 ft out) and from the point (x=20 is
+ * 69 ft out); AWAY's only located shot is wide of the slot. HOME's blocked
+ * attempt is at slot coordinates ON PURPOSE — a blocked shot's (x,y) is the
+ * block point, so if it ever reaches the slot count the numbers will look
+ * plausible and be wrong.
+ */
+const SEASON_GAME = {
+  game: { id: 2023020001, date: '2023-10-11' },
+  teams: { home: { id: 10, ab: 'HME' }, away: { id: 20, ab: 'AWY' } },
+  roster: {
+    1: { nm: 'Hshooter', tid: 10, pos: 'C' },
+    2: { nm: 'Ashooter', tid: 20, pos: 'L' },
+    3: { nm: 'Ablocker', tid: 20, pos: 'D' },
+    8: { nm: 'Hgoalie', tid: 10, pos: 'G' },
+    9: { nm: 'Agoalie', tid: 20, pos: 'G' },
+  },
+  quoted: { src: 'boxscore', home: { score: 2, sog: 2 }, away: { score: 1, sog: 1 } },
+  events: [
+    // HOME, from the slot, saved by AWAY's goalie
+    { type: 'shot-on-goal', actor: 1, own: 10, x: 70, y: 0, goalie: 9, per: 1, s: 10, sit: '1551', pt: 'REG' },
+    // HOME, from the point — an attempt, located, and NOT the slot
+    { type: 'missed-shot', actor: 1, own: 10, x: 20, y: 0, per: 1, s: 15, sit: '1551', pt: 'REG' },
+    // HOME, blocked by an AWAY defender, recorded AT SLOT COORDINATES
+    { type: 'blocked-shot', actor: 1, own: 10, blk: 3, x: 72, y: 2, per: 1, s: 20, sit: '1551', pt: 'REG' },
+    // AWAY, wide of the slot, beats HOME's goalie
+    { type: 'goal', actor: 2, own: 20, x: -70, y: 40, goalie: 8, per: 1, s: 30, sit: '1551', pt: 'REG' },
+    // HOME, from the slot, scores
+    { type: 'goal', actor: 1, own: 10, x: 75, y: 5, goalie: 9, per: 2, s: 1300, sit: '1551', pt: 'REG' },
+    // HOME's empty-net goal — no goalie in net, so NOT a shot anyone faced.
+    // Placed at x=40 (49 ft out) rather than x=60, which is 29 ft and therefore
+    // genuinely IN the slot: the danger layer counts an empty-net goal as a slot
+    // shot and is right to, since it measures where the chance came from and has
+    // no opinion about the net. The first draft of this fixture put it there by
+    // accident and the test read as a bug in the layer.
+    { type: 'goal', actor: 1, own: 10, x: 40, y: 0, per: 3, s: 3500, sit: '1551', pt: 'REG' },
+  ],
+};
+
+test('the slot is counted over located UNBLOCKED attempts, never over all attempts', () => {
+  const r = measureGame(SEASON_GAME);
+  assert.deepEqual(r.slot, { h: 2, a: 0 },
+    'home scored and shot from the slot; the blocked attempt at x=72,y=2 is NOT '
+    + 'a slot shot, because that coordinate is where it was stopped');
+  assert.deepEqual(r.located, { h: 4, a: 1 },
+    'four located home attempts — slot shot, point shot, slot goal, empty-net '
+    + 'goal — and the blocked one is in neither part of the fraction');
+  assert.ok(r.located.h < r.attempts.h,
+    'the slot denominator must be SMALLER than attempts, or the blocked shot leaked in');
+});
+
+test('a block is credited to the team that made it, not the team that took the shot', () => {
+  const r = measureGame(SEASON_GAME);
+  assert.deepEqual(r.blocks, { h: 0, a: 1 },
+    'HOME shot it and an AWAY defender blocked it — the block is AWAY’s');
+  // The event's own owner points the other way, which is what makes this worth
+  // a test: reading `own` would credit the wrong bench and look reasonable.
+  assert.equal(r.attempts.h, 5,
+    'and the ATTEMPT still belongs to the shooter — all five home attempts, '
+    + 'including the blocked one the block was credited against');
+});
+
+test('an empty-net goal is an attempt and is not a shot the goalie faced', () => {
+  const r = measureGame(SEASON_GAME);
+  const away = r.goalies.find(k => k.side === 'a');
+  assert.equal(away.faced, 2, 'AWAY’s goalie faced the slot shot and the slot goal — not the empty-netter');
+  assert.equal(away.saves, 1);
+  assert.equal(r.mix.goal, 3, 'while all three goals are still shot ATTEMPTS');
+});
+
+test('⭐ the goalie rows SUM to the team line, and the mean of their fractions does not', () => {
+  // THE PROPERTY THE WHOLE PRESENTATION RESTS ON. Carolina 2023-24: five goalies
+  // whose fractions average to 92.2% against a true 90.5%, because Perets went
+  // 1 of 1. Counts sum; percentages do not. A future simplification to
+  // `mean(rows)` would be wrong by up to 1.7 points and would look fine.
+  const busy = { pid: 8, nm: 'Busy', side: 'h', faced: 100, saves: 90, date: '2023-10-11' };
+  const cameo = { pid: 9, nm: 'Cameo', side: 'h', faced: 1, saves: 1, date: '2023-10-12' };
+  const rec = d => ({ id: 2023020001, date: d, end: 'REG', homeAb: 'HME', awayAb: 'AWY',
+    score: { h: 1, a: 0 }, sog: { h: 1, a: 0 }, attempts: { h: 1, a: 0 },
+    blocks: { h: 0, a: 0 }, slot: { h: 0, a: 0 }, located: { h: 0, a: 0 }, level: 0, goalies: [] });
+  const a = { ...rec('2023-10-11'), goalies: [busy] };
+  const b = { ...rec('2023-10-12'), id: 2023020002, goalies: [cameo] };
+  const t = teamSeasons([a, b]).seasons['2023'].HME;
+
+  assert.equal(t.saves.count, 91, 'saves add');
+  assert.equal(t.saves.n, 101, 'and so do shots faced');
+  assert.equal(t.saves.count, t.goalies.reduce((n, k) => n + k.saves, 0),
+    'the team line IS the column sum — not a separate computation of it');
+
+  const team = t.saves.count / t.saves.n;
+  const mean = t.goalies.reduce((n, k) => n + k.saves / k.faced, 0) / t.goalies.length;
+  assert.notEqual(team.toFixed(4), mean.toFixed(4),
+    'if these ever agree the fixture has stopped testing anything — the whole '
+    + 'reason rows carry raw counts is that averaging them gives a different number');
+  assert.ok(mean > team, 'and the cameo flatters the average, which is the direction that misleads');
+});
+
+test('goalie rows are ordered by shots faced — a fact — and never by rate', () => {
+  const t = teamSeasons([{
+    id: 2023020001, date: '2023-10-11', end: 'REG', homeAb: 'HME', awayAb: 'AWY',
+    score: { h: 1, a: 0 }, sog: { h: 1, a: 0 }, attempts: { h: 1, a: 0 },
+    blocks: { h: 0, a: 0 }, slot: { h: 0, a: 0 }, located: { h: 0, a: 0 }, level: 0,
+    goalies: [
+      { pid: 9, nm: 'Perfect', side: 'h', faced: 1, saves: 1, date: '2023-10-11' },
+      { pid: 8, nm: 'Workhorse', side: 'h', faced: 100, saves: 90, date: '2023-10-11' },
+    ],
+  }]).seasons['2023'].HME;
+  assert.deepEqual(t.goalies.map(k => k.nm), ['Workhorse', 'Perfect'],
+    'by workload. By rate, the one-shot goalie would top every list in the league '
+    + 'and the ordering would be a claim the feed never made');
+});
+
+test('every goalie row is dated, not only the ones we can tell moved', () => {
+  const g = (id, d, pid) => ({ id, date: d, end: 'REG', homeAb: 'HME', awayAb: 'AWY',
+    score: { h: 1, a: 0 }, sog: { h: 1, a: 0 }, attempts: { h: 1, a: 0 },
+    blocks: { h: 0, a: 0 }, slot: { h: 0, a: 0 }, located: { h: 0, a: 0 }, level: 0,
+    goalies: [{ pid, nm: 'G' + pid, side: 'h', faced: 10, saves: 9, date: d }] });
+  const t = teamSeasons([g(2023020001, '2023-10-11', 8), g(2023020002, '2023-12-20', 8),
+                         g(2023020003, '2023-11-01', 9)]).seasons['2023'].HME;
+  const by = Object.fromEntries(t.goalies.map(k => [k.pid, k]));
+  assert.equal(by[8].last, '2023-12-20', 'the LAST appearance, not the first');
+  assert.equal(by[8].games, 2);
+  // The row that no rule would have dated: never seen elsewhere, so we cannot
+  // say he left — and he is exactly the row that misleads without a date.
+  assert.equal(by[9].last, '2023-11-01');
+  assert.ok(!('alsoFor' in by[9]), 'and we claim nothing about why he stopped appearing');
+});
+
+test('a goalie who tended for two teams is stated on both — from the other appearance, not a guess', () => {
+  const g = (id, homeAb, pid) => ({ id, date: '2023-10-11', end: 'REG', homeAb, awayAb: 'OPP',
+    score: { h: 1, a: 0 }, sog: { h: 1, a: 0 }, attempts: { h: 1, a: 0 },
+    blocks: { h: 0, a: 0 }, slot: { h: 0, a: 0 }, located: { h: 0, a: 0 }, level: 0,
+    goalies: [{ pid, nm: 'Mover', side: 'h', faced: 10, saves: 9, date: '2023-10-11' }] });
+  const s = teamSeasons([g(2023020001, 'SJS', 7), g(2023020002, 'NJD', 7)]).seasons['2023'];
+  assert.deepEqual(s.SJS.goalies[0].alsoFor, ['NJD']);
+  assert.deepEqual(s.NJD.goalies[0].alsoFor, ['SJS']);
+});
+
+const wl = (id, end, hs, as) => ({ id, date: '2024-01-01', end, homeAb: 'HME', awayAb: 'AWY',
+  score: { h: hs, a: as }, sog: { h: 1, a: 0 }, attempts: { h: 1, a: 0 },
+  blocks: { h: 0, a: 0 }, slot: { h: 0, a: 0 }, located: { h: 0, a: 0 }, level: 0, goalies: [] });
+
+test('⭐ an overtime loss is an OTL in the regular season and a plain L in the playoffs', () => {
+  // THE RELATIONSHIP, IN ONE TEST. Splitting this across two tests that each pin
+  // their own constant would leave the thing that matters — that the bucket
+  // depends on the game TYPE — unchecked by either of them.
+  const reg = teamSeasons([wl(2023020001, 'OT', 1, 2)]).seasons['2023'].HME.record;
+  const post = teamSeasons([wl(2023030001, 'OT', 1, 2)]).seasons['2023'].HME.record;
+  assert.deepEqual(reg.reg, { w: 0, l: 0, otl: 1, undecided: 0 }, 'regular season: an OTL');
+  assert.deepEqual(post.post, { w: 0, l: 1, undecided: 0 }, 'playoffs: the league has no OTL');
+  assert.ok(!('otl' in post.post), 'and no bucket that could quietly receive one');
+});
+
+test('a shootout loss is an OTL, and the ending is read from the period TYPE', () => {
+  const t = teamSeasons([wl(2023020001, 'SO', 1, 2)]).seasons['2023'].HME.record.reg;
+  assert.equal(t.otl, 1);
+  // `endedIn` is the reason this works, and it is checked against a second
+  // witness: the period NUMBER, which cannot tell a shootout from an overtime.
+  assert.equal(endedIn([{ per: 4, pt: 'OT' }, { per: 5, pt: 'SO' }]), 'SO');
+  assert.equal(endedIn([{ per: 4, pt: 'OT' }]), 'OT');
+  assert.equal(endedIn([{ per: 3, pt: 'REG' }]), 'REG');
+});
+
+test('the record conserves — every game a team played lands in exactly one bucket', () => {
+  const t = teamSeasons([
+    wl(2023020001, 'REG', 3, 1), wl(2023020002, 'REG', 0, 2),
+    wl(2023020003, 'OT', 1, 2), wl(2023020004, 'SO', 1, 2), wl(2023030005, 'OT', 0, 1),
+  ]).seasons['2023'].HME;
+  const sum = o => Object.values(o).reduce((a, b) => a + b, 0);
+  assert.equal(sum(t.record.reg) + sum(t.record.post), t.games,
+    'a game that reached no bucket, or two, is a silently wrong record');
+  assert.deepEqual(t.record.reg, { w: 1, l: 1, otl: 2, undecided: 0 });
+});
+
+test('a game with no winner is counted as undecided, never bucketed as a loss', () => {
+  // It cannot happen in NHL data. If it ever does, the honest outcome is a
+  // visible zero-sum failure rather than a record that is quietly out by one.
+  const t = teamSeasons([wl(2023020001, 'REG', 2, 2)]).seasons['2023'].HME;
+  assert.equal(t.record.reg.undecided, 1);
+  assert.equal(t.record.reg.l, 0);
+});
+
+test('seasons never pool, and out-of-scope games never enter', () => {
+  const t = teamSeasons([
+    wl(2023020001, 'REG', 3, 1),
+    wl(2024020001, 'REG', 3, 1),
+    wl(2023010001, 'REG', 3, 1),     // preseason
+  ]);
+  assert.deepEqual(Object.keys(t.seasons).sort(), ['2023', '2024']);
+  assert.equal(t.seasons['2023'].HME.games, 1,
+    'the preseason game is archived and viewable and enters no computed number');
+  assert.equal(t.seasons['2024'].HME.games, 1);
+});
+
+test('⭐ the archive baseline is the SAME number in both documents', () => {
+  // Two documents publishing one quantity is the shape this project keeps
+  // repairing. They are equal because one function computes it, and this test
+  // fails the moment somebody re-derives either side.
+  const rs = [{ ...measureGame(SEASON_GAME) }];
+  assert.deepEqual(teamSeasons(rs).archive.saveFraction,
+                   summarise(rs).attemptMix.saveFraction);
+});
+
+test('⭐ the archive save fraction is NOT the division the counts beside it invite', () => {
+  // 5.0% of goals in play are scored into an empty net. SEASON_GAME contains
+  // exactly one, so the seductive division is available here and must not match.
+  const mix = summarise([measureGame(SEASON_GAME)]).attemptMix;
+  const seductive = mix.byType['shot-on-goal'] / (mix.byType['shot-on-goal'] + mix.byType.goal);
+  assert.notEqual(mix.saveFraction.rate, seductive,
+    'goal + shot-on-goal counts the empty-netter as a shot somebody could have saved');
+  assert.equal(mix.saveFraction.n, 3, 'three shots were actually faced');
+  assert.equal(mix.saveFraction.count, 1);
+  assert.match(mix.saveFraction.what, /n counts SHOTS FACED, not games/);
+  assert.match(mix.saveFraction.what, /NOT goals \+ shots on goal/,
+    'the wrong division has to be named where the right answer is published');
+});
+
+test('every published team share states the unit its n counts', () => {
+  const arch = teamSeasons([measureGame(SEASON_GAME)]).archive;
+  for (const [k, v] of Object.entries(arch)) {
+    assert.match(v.what, /n counts (ATTEMPTS|SHOTS FACED), not games/, `${k} does not say what its n counts`);
+    assert.doesNotMatch(v.what, /\bwon\b|\blost\b|\bwin\b/i, `${k} describes an outcome`);
+  }
+});
+
+test('an empty archive measures NOTHING per team, rather than zero', () => {
+  const t = teamSeasons([]);
+  assert.deepEqual(t.seasons, {});
+  assert.equal(t.archive.saveFraction.rate, null);
+  assert.equal(t.archive.slotShare.rate, null);
 });

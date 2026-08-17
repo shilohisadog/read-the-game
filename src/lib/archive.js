@@ -23,7 +23,21 @@ export function inScope(gameId) {
   return t === '02' || t === '03';
 }
 
-const POPULATION = 'NHL regular season and playoffs';
+/** Playoffs (03), read from the same field, because the OTL bucket turns on it. */
+export function isPlayoff(gameId) {
+  return String(gameId).slice(4, 6) === '03';
+}
+
+/**
+ * The season a game belongs to, read from the id — never a lookup and never a
+ * date. A season spans two calendar years, so a date would need a cutover rule
+ * and the cutover moves; the id's first four digits are the league's own answer.
+ */
+export function season(gameId) {
+  return String(gameId).slice(0, 4);
+}
+
+export const POPULATION = 'NHL regular season and playoffs';
 
 /**
  * A base rate, stated so it cannot be quoted without its reference class.
@@ -144,6 +158,54 @@ export function rowFor(curve, diff) {
  * other `n` in this file. It is named in `what` for that reason: a reader who
  * carries the games meaning across will be out by a factor of 120.
  */
+/**
+ * A share of a population, stated with the unit its `n` counts.
+ *
+ * Extracted because three different populations now need one — attempts, shots
+ * a goalie faced, unblocked attempts with a location — and a second spelling of
+ * `{ what, population, n, count, rate }` is a second chance to omit the `what`.
+ */
+export function share(count, n, what) {
+  // `rate: null` over an empty population, for the reason stated at `rateOf`:
+  // 0 reads as a finding, and "we measured nothing" is a different statement.
+  return { what, population: POPULATION, n, count, rate: n ? count / n : null };
+}
+
+/**
+ * ⭐ THE SAVE FRACTION, AND IT IS NOT A DIVISION OF THE TWO COUNTS BESIDE IT.
+ *
+ * `attemptMix.byType` publishes 211,764 shots on goal and 25,105 goals. Dividing
+ * them looks exactly like the archive save fraction and is wrong by 0.47 points:
+ * 5.0% of goals in play are scored into an EMPTY NET (101 of 2,028 over a
+ * 325-game sample), and a goal nobody was in position to save is not a save
+ * chance. The league excludes them and so must we.
+ *
+ * THERE IS NO BAD CODE PATH TO DELETE, which is what makes this shape new.
+ * `byType` is correct — corsi is obliged to count an empty-net goal as a shot
+ * attempt, and would be defective if it did not. Both operands are right; their
+ * ratio is a third quantity nobody sanctioned. The defect is not a rule that
+ * went missing from a second implementation, it is a plausible division left
+ * available with no answer published next to it.
+ *
+ * So the fix is to publish the sanctioned number HERE, in the same object as
+ * the counts that invite the wrong one — supply the right figure rather than
+ * warn against the wrong one, the same move as an invariant instead of a
+ * disclaimer. The arithmetic comes from `goaltending.js`, whose `&& e.goalie`
+ * guard has excluded the empty net since long before anything read it, and
+ * which is the ONLY place that rule is allowed to live.
+ */
+export function saveShare(records) {
+  let faced = 0, saves = 0;
+  for (const g of records) {
+    if (!g.goalies) continue;         // an older record shape: counted, never guessed at
+    for (const k of g.goalies) { faced += k.faced; saves += k.saves; }
+  }
+  return share(saves, faced,
+    'of the shots a goalie actually faced, this many were saved — an empty-net '
+    + 'goal is not among them, and neither is a shootout attempt '
+    + '(n counts SHOTS FACED, not games, and is NOT goals + shots on goal)');
+}
+
 function attemptMix(records) {
   const t = { goal: 0, 'shot-on-goal': 0, 'missed-shot': 0, 'blocked-shot': 0 };
   let games = 0;
@@ -153,23 +215,24 @@ function attemptMix(records) {
     for (const k of Object.keys(t)) t[k] += g.mix[k] || 0;
   }
   const n = t.goal + t['shot-on-goal'] + t['missed-shot'] + t['blocked-shot'];
-  // `rate: null` over an empty population, for the reason stated at `rateOf`:
-  // 0 reads as a finding, and "we measured nothing" is a different statement.
-  const share = (count, what) => ({ what, population: POPULATION, n, count,
-                                    rate: n ? count / n : null });
   const reached = t.goal + t['shot-on-goal'];
+  const of = (count, what) => share(count, n, what);
   return {
     games,
     byType: t,
     // The goalie faced it: a goal or a save. The league's "shots on goal" is
     // exactly this pair, which is why goals are added rather than counted apart.
-    reachedTheGoalie: share(reached,
+    reachedTheGoalie: of(reached,
       'of all shot attempts, this many reached the goalie (n counts ATTEMPTS, not games)'),
-    neverReachedTheGoalie: share(n - reached,
+    neverReachedTheGoalie: of(n - reached,
       'of all shot attempts, this many never reached the goalie — blocked or missed '
       + '(n counts ATTEMPTS, not games)'),
-    blocked: share(t['blocked-shot'],
+    blocked: of(t['blocked-shot'],
       'of all shot attempts, this many were blocked by a body (n counts ATTEMPTS, not games)'),
+    // Deliberately in THIS object and not a tidier one. See saveShare: it exists
+    // to stand next to `byType`, whose two counts invite a division that is
+    // wrong by half a point of save percentage.
+    saveFraction: saveShare(records),
   };
 }
 

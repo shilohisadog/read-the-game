@@ -134,7 +134,7 @@ jobs:
                        f"({was} -> {now}); refusing to publish it")
           PY
           # Both advertising documents go after the extracts they point at.
-          for f in catalog.json measures.json index.json; do
+          for f in catalog.json measures.json teams.json index.json; do
             aws s3 cp "ingest/$f" "s3://${BUCKET}/$f" \
               --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress
           done
@@ -169,6 +169,45 @@ jobs:
           local = json.load(open('derived.json'))
           if local['published'] != e['published']:
               sys.exit("::error::the index does not match what this run produced")
+          PY
+
+      # THE PER-TEAM SEASONS, checked for the property that cannot be checked by
+      # looking at one number: a team's row and the archive row it sits beside
+      # must be the same quantity. A card puts them on the same line, and two
+      # documents computed by two paths is the shape this project keeps repairing
+      # -- so the baseline travels IN this document, and the fractions it
+      # publishes are asserted to be fractions of something.
+      - name: the per-team seasons carry their own reference class
+        run: |
+          curl -sS --fail "https://data.readthegame.co/teams.json?cb=${GITHUB_RUN_ID}" \
+            -o live-teams.json
+          python3 - <<'PY'
+          import json, sys
+          t = json.load(open('live-teams.json'))
+          if not t.get('seasons'):
+              sys.exit("::error::teams.json carries no seasons")
+          for k, r in t['archive'].items():
+              if not r.get('what'):
+                  sys.exit(f"::error::{k} is published with no statement of what it counts")
+              if r['rate'] is not None and not r['n']:
+                  sys.exit(f"::error::{k} has a rate over an empty population")
+              print(f"  archive {k}: {r['count']} of {r['n']}")
+          for yr, teams in sorted(t['seasons'].items()):
+              # Every game a team played must land in exactly one bucket. A record
+              # that is quietly out by one is the failure this cannot see any
+              # other way -- the numbers all look like plausible records.
+              for ab, s in teams.items():
+                  played = sum(s['record']['reg'].values()) + sum(s['record']['post'].values())
+                  if played != s['games']:
+                      sys.exit(f"::error::{yr} {ab}: {s['games']} games but {played} results")
+                  if s['record']['reg']['undecided'] or s['record']['post']['undecided']:
+                      sys.exit(f"::error::{yr} {ab} has a game with no winner")
+                  # The goalie rows ARE the team line. Not a second computation
+                  # of it -- if these ever diverge the card's arithmetic is a lie
+                  # a reader can check by eye.
+                  if sum(g['saves'] for g in s['goalies']) != s['saves']['count']:
+                      sys.exit(f"::error::{yr} {ab}: goalie rows do not sum to the team save line")
+              print(f"  {yr}: {len(teams)} teams")
           PY
 
       # The measurement is the thing that decides what a novice sees first, so it
