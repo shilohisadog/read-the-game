@@ -122,6 +122,23 @@ function fakeDom() {
  * which is the only way to put a matchup this page was never built around
  * (two clubs wearing the same hex) through the real renderer.
  */
+/**
+ * THE BUNDLE, CONSTRUCTED IN ONE PLACE.
+ *
+ * There were two of these, listing the injected globals separately, and they
+ * drifted the moment the page reached for a new one: `window.parent` was added
+ * so the preview could hand its attempt totals to the home page, `boot()` grew a
+ * `window` and `delaysOf` did not, and three tests failed with "window is not
+ * defined" against a page that was correct. A harness assembled twice is the
+ * same defect as a rule implemented twice, and this file already carries the
+ * scar of four fakes of one document at four fidelities.
+ */
+function bundle(globals) {
+  const names = ['document', 'matchMedia', 'setTimeout', 'clearTimeout',
+                 'localStorage', 'location', 'window'];
+  return new Function(...names, SCRIPT + '\nreturn boot;')(...names.map(n => globals[n]));
+}
+
 function boot(game, rates, search = '', store = null) {
   const dom = fakeDom();
   /**
@@ -140,21 +157,33 @@ function boot(game, rates, search = '', store = null) {
   // `location` is part of the environment this bundle runs in — the preview loop
   // and the shell's game selector both read the query string — so the fake
   // models it rather than the code defending against its absence.
-  const b = new Function('document', 'matchMedia', 'setTimeout', 'clearTimeout',
-                         'localStorage', 'location', SCRIPT + '\nreturn boot;')(
-    dom.document, () => ({ matches: true }), setTimeout_, clearTimeout_,
-    // A FAKE THAT CANNOT EXPRESS THE OTHER STATE MAKES ASSERTIONS ABOUT IT
-    // VACUOUS — the same reason `hidden` is absent from `el()` rather than false.
-    // This stub always answered null, so every boot was a first visit and
-    // "a returning viewer sees no tips" could not have been tested. `store` is
-    // a real object when a test needs the page to remember something.
-    store || { getItem: () => null, setItem: () => {} }, { search });
+  /* THE FRAME RELATIONSHIP, MODELLED RATHER THAN DEFENDED AGAINST.
+     The preview hands the parent its attempt totals, and it asks `window.parent`
+     whether it is framed at all. This fake had no `window`, so that expression
+     threw -- and a harness that cannot express the state makes every assertion
+     about it vacuous, which is the reason `localStorage` stopped being a stub
+     that always answered null. `posted` records what was sent so a test can read
+     it; `parent` is a DIFFERENT object from `window`, because the page decides
+     whether it is framed by comparing them. */
+  const posted = [];
+  const win = { postMessage: () => { throw new Error('the page posted to itself'); } };
+  win.parent = { postMessage: (msg, origin) => posted.push({ msg, origin }) };
+  // A FAKE THAT CANNOT EXPRESS THE OTHER STATE MAKES ASSERTIONS ABOUT IT
+  // VACUOUS — the same reason `hidden` is absent from `el()` rather than false.
+  // `localStorage` always answered null, so every boot was a first visit and
+  // "a returning viewer sees no tips" could not have been tested.
+  const b = bundle({
+    document: dom.document, matchMedia: () => ({ matches: true }),
+    setTimeout: setTimeout_, clearTimeout: clearTimeout_,
+    localStorage: store || { getItem: () => null, setItem: () => {} },
+    location: { search, origin: 'https://x' }, window: win });
   // `rates` is what the SHELL fetches and the inlined page never has. Without it
   // this harness can only ever see the "no comparison shown" branch, which is
   // how a test for the drawn rate first went red against a page structurally
   // incapable of having one.
   if (game || rates) b(game || rich, rates);
   const scrub = dom.$('scrub');
+  dom.posted = posted;
   assert.ok(+scrub.max > 100, `the reference game should have hundreds of plays, not ${scrub.max}`);
   return {
     ...dom,
@@ -1323,10 +1352,12 @@ function delaysOf(search, ticks) {
     if (n++ < ticks) fn();
     return 0;
   };
-  const b = new Function('document', 'matchMedia', 'setTimeout', 'clearTimeout',
-                         'localStorage', 'location', SCRIPT + '\nreturn boot;')(
-    dom.document, () => ({ matches: false }), timer, () => {},
-    { getItem: () => null, setItem: () => {} }, { search });
+  const b = bundle({
+    document: dom.document, matchMedia: () => ({ matches: false }),
+    setTimeout: timer, clearTimeout: () => {},
+    localStorage: { getItem: () => null, setItem: () => {} },
+    location: { search, origin: 'https://x' },
+    window: { parent: { postMessage: () => {} } } });
   b(rich, null);
   return { dom, delays, at };
 }

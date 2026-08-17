@@ -207,10 +207,16 @@ function run({ search = '', responses = {} } = {}) {
   // The timers are NO-OPS on purpose: with the real ones the preview loop
   // reschedules itself forever and the runner never exits, which is a hang
   // rather than a failure and therefore worse.
+  /* `window` is injected because a framed preview posts its attempt totals to
+     the parent. `posted` is kept so a test can assert the shell -- the page a
+     visitor is actually served -- really sends them, rather than only the
+     inlined build doing so. */
+  const posted = [];
   new Function('document', 'fetch', 'location', 'matchMedia', 'setTimeout', 'clearTimeout',
-               scriptOf(shell))(
-    document, fetch, { search }, () => ({ matches: false }), () => 0, () => {});
-  return { asked, said, settle: () => new Promise(r => setTimeout(r, 0)) };
+               'window', scriptOf(shell))(
+    document, fetch, { search, origin: 'https://x' }, () => ({ matches: false }),
+    () => 0, () => {}, { parent: { postMessage: (m, o) => posted.push({ m, o }) } });
+  return { asked, said, posted, settle: () => new Promise(r => setTimeout(r, 0)) };
 }
 
 const CATALOG = { games: [
@@ -343,6 +349,26 @@ test('preview asks for nothing it does not show', () => {
     // falling over before it got that far -- which is exactly how this test
     // would pass while telling us nothing.
     assert.deepEqual(r.said.filter(s => /could not be loaded/.test(s)), []);
+  });
+});
+
+test('⭐ the SHELL posts its attempt totals, because the home page reads them', () => {
+  // THE PAGE A VISITOR IS SERVED. The hero's sentence is about shot attempts and
+  // only this frame can compute them -- so if the shipped shell does not post,
+  // the front door has a silent empty sentence and nothing else notices. The
+  // inlined build passing is not evidence about this one; they are two files.
+  const r = run({ search: '?game=2023020204&preview=1',
+                  responses: { 'extract/': EXTRACT } });
+  return r.settle().then(() => {
+    assert.equal(r.posted.length, 1, 'the framed preview posted nothing');
+    const { m, o } = r.posted[0];
+    assert.equal(m.rtg, 'attempts');
+    assert.equal(m.game, 2023020204);
+    // THE REFERENCE GAME'S OWN TOTALS: MIN 80, BUF 55, pinned in memory and in
+    // test/rink.test.js. A message carrying zeroes would satisfy a shape check.
+    assert.deepEqual({ a: m.a, h: m.h }, { a: 80, h: 55 },
+      'the totals are not this game — the reducer ran on the wrong thing');
+    assert.equal(o, 'https://x', 'posted to a wildcard target rather than our own origin');
   });
 });
 

@@ -161,6 +161,35 @@ a reader who carries the box-score meaning across is out by a factor of two.
 - **Look at it.** `tools/pixels.sh`, both widths. The suite cannot see whether the
   sentence and the bar say the same number.
 
+## 6.5 ✅ RULED AND BUILT — the message, not the catalog
+
+**CHENG rejected §4 outright and was right.** The frame already holds the extract
+and has already run the reducer; the parent needs one number from a game it is
+already displaying. Storing attempts in the catalog would have made it carry one
+of **our** computed metrics for the first time — today it carries only the
+league's quoted numbers — and bought that with weight on every visit.
+
+**But his two alternatives are not equivalent, and the doc should say which.**
+He offered postMessage *or* the parent re-fetching the extract "which by then is
+an HTTP cache hit". Measured: that extract is **13,023 bytes gzipped**, which is
+**5.5× the 2,378 he had just rejected the catalog over** — and the frame carries
+`loading="lazy"`, so the ordering that would make it a hit is not ours to assume.
+It is postMessage, and the fetch route should not be kept as an option.
+
+**Shipped:** the preview posts `{rtg, game, a, h}` to its parent at its own
+origin; the parent accepts it only from the frame it made, at its own origin, for
+the game it is showing. The sentence is **absent until it arrives**, which is the
+site's idiom rather than a compromise — the verdict card is absent until the horn.
+
+**The cost, recorded:** the hero sentence now depends on the preview frame having
+booted. That is a real coupling and it is the one this project has flagged
+hardest before. If the frame ever goes, the sentence goes with it.
+
+**And six test files constructed the page bundle separately.** Adding one global
+broke three of them against a page that was correct. `render.test.js` now builds
+it in one place for both of its harnesses; the rest were widened. A harness
+assembled twice is the same defect as a rule implemented twice.
+
 ## 7. What I want ruled
 
 1. **Is the augmentation step in the right place?** It runs after a Python

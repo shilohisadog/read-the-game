@@ -31,6 +31,11 @@ const PAGE_IDS = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]));
 function fakeDom() {
   const make = (tag) => ({
     tag, className: '', href: '', textContent: '', style: {}, attrs: {}, kids: [],
+    // ONLY AN IFRAME HAS A contentWindow. The hero accepts its attempt totals
+    // only from the frame it made, and giving every element one would have made
+    // that check pass for any sender -- the invents-elements defect above, in a
+    // property instead of an id.
+    ...(tag === 'iframe' ? { contentWindow: { isFrame: true } } : {}),
     appendChild(n) { this.kids.push(n); return n; },
     setAttribute(k, v) { this.attrs[k] = v; },
   });
@@ -77,6 +82,15 @@ const CATALOG = { games: [
   { id: 2025090030, d: '2026-02-22', a: 'SVK', h: 'FIN', as: 4, hs: 1, ash: 25, hsh: 40, t: 9, v: 1 },
 ]};
 
+/* THE GAME THE HERO PICKS, DERIVED THE WAY THE PAGE DERIVES IT -- newest, in
+   scope, published. A typed literal here would be a test pinning its own answer:
+   add a newer row to the fixture and the constant silently names the wrong game
+   while every assertion still passes. */
+const NEWEST_ID = CATALOG.games
+  .filter(g => g.v && /^(02|03)$/.test(String(g.id).slice(4, 6)))
+  .sort((a, b) => (a.d === b.d ? a.id - b.id : (a.d < b.d ? -1 : 1)))
+  .pop().id;
+
 const MEASURES = {
   rule: 'even-strength shot attempts taken while the score was level, in regulation',
   featured: [{ id: 2023020867, ab: 'DAL', edge: 33 }],
@@ -96,6 +110,8 @@ const INDEX = {
               heldInWindow: 0, erroredInWindow: 0, refusedInWindow: 0 },
 };
 
+const ORIGIN = 'https://readthegame.co';
+
 function run({ search = '', docs = {} } = {}) {
   const { ids, document } = fakeDom();
   const fetch = url => {
@@ -104,8 +120,24 @@ function run({ search = '', docs = {} } = {}) {
       ? { ok: true, json: () => Promise.resolve(docs[key]) }
       : { ok: false, json: () => Promise.resolve(null) });
   };
-  new Function('document', 'fetch', 'location', script)(document, fetch, { search });
-  return { ids, settle: () => new Promise(r => setTimeout(r, 0)) };
+  /* THE FRAME TALKS BACK. The hero's sentence is about shot attempts, which only
+     the preview frame can compute -- so the page listens, and a harness with no
+     `window` could not boot it at all, let alone see the message. */
+  const heard = {};
+  const win = { addEventListener: (t, fn) => (heard[t] = heard[t] || []).push(fn) };
+  new Function('document', 'fetch', 'location', 'window', script)(
+    document, fetch, { search, origin: ORIGIN }, win);
+  const frame = () => (ids.heroframe && ids.heroframe.kids[0]) || null;
+  return {
+    ids,
+    settle: () => new Promise(r => setTimeout(r, 0)),
+    /** Deliver what the preview frame posts. Defaults are the honest case; a
+        test overrides them to check that a forged sender is refused. */
+    post: (data, o = {}) => (heard.message || []).forEach(fn => fn({
+      origin: 'origin' in o ? o.origin : ORIGIN,
+      source: 'source' in o ? o.source : (frame() && frame().contentWindow),
+      data })),
+  };
 }
 
 const ALL = { 'catalog.json': CATALOG, 'measures.json': MEASURES, 'index.json': INDEX };
@@ -226,21 +258,30 @@ test('a relocated team explains itself rather than trailing off', () => {
  * data, and three of them are unreachable from the default fixture, which is
  * exactly how the first pass left them untested.
  */
-function heroRelation({ ash, hsh, as, hs, count, n }) {
+/* THE MEASURE IS ATTEMPTS NOW, AND IT ARRIVES FROM THE FRAME. The catalog's
+   shots are deliberately NOT what this reads: the loop above the sentence counts
+   attempts, so the sentence counts attempts, and the only thing that can compute
+   them is the preview. `ash`/`hsh` stay on the row and are ignored on purpose --
+   if the page ever reads them again this fixture makes the wrong number
+   obvious, because they disagree with the posted totals. */
+function heroRelation({ aAtt, hAtt, as, hs, count, n }) {
   const cat = { games: [{ id: 2023020200, d: '2024-02-09', a: 'TOR', h: 'BUF',
-                          as, hs, ash, hsh, t: 2, v: 1 }] };
+                          as, hs, ash: 9, hsh: 9, t: 2, v: 1 }] };
   const measures = { ...MEASURES, baseRates: { ...MEASURES.baseRates,
-    moreShotsOnGoalLost: { what: 'the team with more shots on goal lost',
+    moreAttemptsLost: { what: 'the team with more shot attempts lost',
       population: 'NHL regular season and playoffs', n, count } } };
   const r = run({ docs: { ...ALL, 'catalog.json': cat, 'measures.json': measures } });
-  return r.settle().then(() => textOf(r.ids.herorel));
+  return r.settle().then(() => {
+    r.post({ rtg: 'attempts', game: 2023020200, a: aAtt, h: hAtt });
+    return textOf(r.ids.herorel);
+  });
 }
-// The shot leader loses 20% of the time — so the leader USUALLY WINS, 80%.
+// The attempts leader loses 20% of the time — so the leader USUALLY WINS, 80%.
 const LEADERS_WIN = { count: 200, n: 1000 };
 // And the mirror: the leader loses 80% of the time.
 const LEADERS_LOSE = { count: 800, n: 1000 };
-// TOR away, BUF home. `ash`/`hsh` are shots, `as`/`hs` goals.
-const BUF_LED_SHOTS = { ash: 22, hsh: 33 };
+// TOR away, BUF home. `aAtt`/`hAtt` are attempts, `as`/`hs` goals.
+const BUF_LED_SHOTS = { aAtt: 22, hAtt: 33 };
 
 test('the hero caption says whether THIS game went the usual way, both ways round', () =>
   Promise.all([
@@ -272,13 +313,13 @@ test('the hero caption says whether THIS game went the usual way, both ways roun
 test('a game the rate cannot classify gets silence, not a guess', () =>
   Promise.all([
     // Equal shots: there is no leader, so there is no relationship to state.
-    heroRelation({ ash: 30, hsh: 30, as: 1, hs: 4, ...LEADERS_WIN }),
+    heroRelation({ aAtt: 30, hAtt: 30, as: 1, hs: 4, ...LEADERS_WIN }),
     // A game that ended level: no outcome to compare the rate against. The
     // archive holds these, and neither arm is reachable from the default
     // fixture — which is why both survived the first mutation pass.
     heroRelation({ ...BUF_LED_SHOTS, as: 3, hs: 3, ...LEADERS_WIN }),
   ]).then(([noLeader, noWinner]) => {
-    assert.equal(noLeader, '', `equal shots were classified anyway: ${noLeader}`);
+    assert.equal(noLeader, '', `equal attempts were classified anyway: ${noLeader}`);
     assert.equal(noWinner, '', `a level game was classified anyway: ${noWinner}`);
   }));
 
@@ -450,7 +491,17 @@ test('the shot line reads the LEADER, home or away, and says it both ways round'
   // side leading, and losing.
   const home = run({ docs: ALL });
   const p1 = home.settle().then(() => {
-    assert.match(home.ids.herosub.textContent, /^BUF put more shots on goal, 33 to 22, and won\.$/);
+    // ABSENT UNTIL THE FRAME SPEAKS, which is the site's own idiom -- the verdict
+    // card is absent until the horn. Asserted before posting, because a sentence
+    // that rendered on the catalog's shots and then rewrote itself would be
+    // worse than either version.
+    // NOT-YET-WRITTEN IS STRONGER THAN EMPTY HERE. This fake registers an id the
+    // first time the page asks for it, so an untouched #herosub is absent from
+    // `ids` entirely -- which proves the page never even reached for it.
+    assert.ok(!home.ids.herosub || home.ids.herosub.textContent === '',
+      'the sentence rendered before any measure existed');
+    home.post({ rtg: 'attempts', game: NEWEST_ID, a: 22, h: 33 });
+    assert.match(home.ids.herosub.textContent, /^BUF took more shot attempts, 33 to 22, and won\.$/);
   });
 
   // BUF away, 30 shots to 20, and lost 2-5. The shot leader losing is the site's
@@ -459,16 +510,34 @@ test('the shot line reads the LEADER, home or away, and says it both ways round'
   const AWAY = { games: [CATALOG.games[0]] };
   const away = run({ docs: { ...ALL, 'catalog.json': AWAY } });
   const p2 = away.settle().then(() => {
-    assert.match(away.ids.herosub.textContent, /^BUF put more shots on goal, 30 to 20, and lost\.$/);
+    away.post({ rtg: 'attempts', game: AWAY.games[0].id, a: 30, h: 20 });
+    assert.match(away.ids.herosub.textContent, /^BUF took more shot attempts, 30 to 20, and lost\.$/);
   });
 
   // And an even shot count says so rather than picking a side.
   const EVEN = { games: [{ ...CATALOG.games[1], ash: 27, hsh: 27 }] };
   const even = run({ docs: { ...ALL, 'catalog.json': EVEN } });
   const p3 = even.settle().then(() => {
-    assert.match(even.ids.herosub.textContent, /^Both teams put 27 shots on goal\.$/);
+    even.post({ rtg: 'attempts', game: EVEN.games[0].id, a: 27, h: 27 });
+    assert.match(even.ids.herosub.textContent, /^Both teams took 27 shot attempts\.$/);
   });
-  return Promise.all([p1, p2, p3]);
+
+  /* ⭐ AND IT IS REFUSED FROM ANYWHERE ELSE. The totals decide a sentence on the
+     front door, so the page takes them only from the frame it made, at its own
+     origin. Without this the checks are three lines nothing exercises. */
+  const forged = run({ docs: ALL });
+  const p4 = forged.settle().then(() => {
+    forged.post({ rtg: 'attempts', game: NEWEST_ID, a: 99, h: 1 }, { origin: 'https://evil.example' });
+    assert.ok(!forged.ids.herosub || forged.ids.herosub.textContent === '',
+      'a cross-origin sender was believed');
+    forged.post({ rtg: 'attempts', game: NEWEST_ID, a: 99, h: 1 }, { source: { isFrame: true } });
+    assert.ok(!forged.ids.herosub || forged.ids.herosub.textContent === '',
+      'a sender that is not our frame was believed');
+    forged.post({ rtg: 'attempts', game: NEWEST_ID + 1, a: 99, h: 1 });
+    assert.ok(!forged.ids.herosub || forged.ids.herosub.textContent === '',
+      'totals for a DIFFERENT game were used');
+  });
+  return Promise.all([p1, p2, p3, p4]);
 });
 
 test('a refused or out-of-scope game is never the hero', () => {
@@ -554,6 +623,7 @@ test('the one figure left on the front page carries its denominator', () => {
   // "That is the usual outcome. Across 3,957 games the shot leader wins 54.2%."
   const r = run({ docs: ALL });
   return r.settle().then(() => {
+    r.post({ rtg: 'attempts', game: NEWEST_ID, a: 22, h: 33 });
     const cap = textOf(r.ids.herorel);   // #herorel is where drawHero writes it
     const pct = cap.match(/(\d+\.\d)%/);
     assert.ok(pct, `the hero caption prints no rate: "${cap.slice(0, 120)}"`);

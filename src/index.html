@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-KUc+E87u/uhC8VRFxztn2K9Y7Y9s4j/niw780DgNb8w=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-CiWqRzQPLXZohtgVJ01YSL/YOOo3JgZYi4YQ34VcWFU='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-/sH6FrvCRNuxLrjGBAGcNyjvGnYtbHeepNPce3hID0k=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-CiWqRzQPLXZohtgVJ01YSL/YOOo3JgZYi4YQ34VcWFU='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -1042,6 +1042,63 @@ function summarise(records) {
     return v[v.length - 1];
   }
 
+
+  /* THE SENTENCE UNDER THE RINK, ON THE MEASURE THE BAR ABOVE IT SHOWS.
+     Kevin: "we show Control in the replay loop but describe shots on goal in the
+     text below the rink, those should be consistent... they need to be the same
+     measure." It used to read off `ash`/`hsh`, which are the LEAGUE's shots on
+     goal quoted into the catalog, while the loop counted attempts -- two
+     measures on one screen with nothing saying they were different.
+
+     IT IS ABSENT UNTIL THE NUMBER EXISTS, and that is the site's own idiom
+     rather than a compromise: the verdict card is absent until the horn, the
+     whistle layer's why-line stays empty. A sentence that renders on shots and
+     then rewrites itself to attempts would be worse than either.
+
+     THE COST, STATED: this sentence now depends on the preview frame having
+     booted. That is a real coupling and it is the one this project has flagged
+     hardest before -- if the frame ever goes, this goes with it. */
+  function sayHero(g, measures, att) {
+    var a = att.a, h = att.h;
+    if (!a && !h) return;                 /* nothing counted: say nothing */
+    var lead = a === h ? null : (a > h ? g.a : g.h);
+    var won  = g.as === g.hs ? null : (g.as > g.hs ? g.a : g.h);
+    if (lead == null) {
+      $('herosub').textContent = 'Both teams took ' + a + ' shot attempts.';
+    } else {
+      var hi = Math.max(a, h), lo = Math.min(a, h);
+      $('herosub').textContent = lead + ' took more shot attempts, ' + hi + ' to ' + lo
+        + ', and ' + (won === null ? 'the game was level' : (won === lead ? 'won' : 'lost')) + '.';
+    }
+
+    /* IS THIS THE USUAL CASE? COMPUTED, NEVER WRITTEN -- unchanged in shape from
+       the shots version, because the reason for that shape did not change. The
+       hero is the most recent game, so some nights the attempts leader won and
+       some nights it lost; a hand-written clause here would be copy asserting a
+       relationship the data is free to invert overnight.
+       SAID EITHER WAY ROUND, because naming the relationship only when the game
+       is the exception is Doctrine 9's selective honesty.
+       NOTHING IS SAID WHEN NOTHING CAN BE: a tie in the measure has no leader
+       and a tie on the scoreboard has no outcome.
+       AND THE RATE APPLIES HERE. It is conditioned on FINAL totals, which is
+       what this is -- the game is over. (CHENG: that is why this does not
+       collide with his ruling that the rate must not sit beside a LIVE count.) */
+    var at = measures && measures.baseRates && measures.baseRates.moreAttemptsLost;
+    var rel = $('herorel');
+    rel.textContent = '';                 /* a second message must not append twice */
+    if (lead != null && won != null && at && at.n) {
+      var lostPct = at.count / at.n * 100;
+      var usuallyLoses = lostPct > 50;
+      var thisLost = won !== lead;
+      var usualPct = (usuallyLoses ? lostPct : 100 - lostPct).toFixed(1);
+      rel.appendChild(el('b', null, thisLost === usuallyLoses
+        ? 'That is the usual outcome.' : 'That is not the usual outcome.'));
+      rel.appendChild(el('span', null, ' Across ' + at.n.toLocaleString()
+        + ' games the team with more shot attempts '
+        + (usuallyLoses ? 'loses' : 'wins') + ' ' + usualPct + '% of the time.'));
+    }
+  }
+
   function drawHero(cat, measures) {
     var g = newest((cat && cat.games) || []);
     if (!g) return;
@@ -1056,58 +1113,20 @@ function summarise(records) {
     f.setAttribute('loading', 'lazy');
     f.setAttribute('scrolling', 'no');
     f.setAttribute('tabindex', '-1');
+    /* THE NUMBER ARRIVES FROM THE FRAME, and the listener is attached BEFORE the
+       frame is, so a fast boot cannot beat it. Origin and source are both
+       checked: same-origin only, and only from the frame we made. */
+    window.addEventListener('message', function (e) {
+      if (e.origin !== location.origin || e.source !== f.contentWindow) return;
+      var m = e.data;
+      if (!m || m.rtg !== 'attempts' || m.game !== g.id) return;
+      sayHero(g, measures, m);
+    });
     $('heroframe').appendChild(f);
 
     $('heroline').textContent = g.a + ' ' + g.as + ', ' + g.h + ' ' + g.hs
       + ' — ' + when(g.d);
 
-    /* THE SHOT LINE, AND IT IS SAID BOTH WAYS ROUND. This is the site's thesis
-       at its smallest: the team with more shots on goal lost 45.8% of the time,
-       so whether the shot leader won or lost, the sentence is the same shape and
-       the reader is not being shown only the surprising half. Showing the
-       comparison only when it is striking is what Doctrine §9 calls selective
-       honesty -- worse than none, because it looks rigorous.
-       Everything here is a catalog field. No extra request, nothing modelled. */
-    var lead = g.ash === g.hsh ? null : (g.ash > g.hsh ? g.a : g.h);
-    var won = g.as === g.hs ? null : (g.as > g.hs ? g.a : g.h);
-    if (lead == null) {
-      $('herosub').textContent = 'Both teams put ' + g.ash + ' shots on goal.';
-    } else {
-      var hi = Math.max(g.ash, g.hsh), lo = Math.min(g.ash, g.hsh);
-      $('herosub').textContent = lead + ' put more shots on goal, ' + hi + ' to ' + lo
-        + ', and ' + (won === null ? 'the game was level' : (won === lead ? 'won' : 'lost')) + '.';
-    }
-
-    /* IS THIS THE USUAL CASE? COMPUTED, NEVER WRITTEN.
-       The thesis now sits directly above this game, so the hero is read as an
-       INSTANCE of it -- and the hero is the most recent game, which means some
-       nights confirm the rate and some contradict it. CHENG: "the caption must
-       handle both, which means the relationship has to be computed, not
-       written." A hand-written clause here would be the #start defect a third
-       time: copy asserting a relationship the data is free to invert overnight.
-       BOTH INGREDIENTS ARE ALREADY ON THE PAGE -- the rate three inches above
-       and this game's own outcome in the line before -- so nothing is fetched
-       and nothing is modelled. It is a comparison, not a prediction.
-       SAID EITHER WAY ROUND. Naming the relationship only when the game is the
-       exception is Doctrine §9's selective honesty: it looks rigorous and shows
-       the reader one half of the evidence. If tonight's game is ordinary, the
-       caption says so, and the rate is the same sentence either way.
-       NOTHING IS SAID WHEN NOTHING CAN BE. A tie in shots has no leader and a
-       tie on the scoreboard has no outcome; a rate cannot classify either, and
-       an unclassifiable game gets silence rather than a guess. */
-    var sog = measures && measures.baseRates && measures.baseRates.moreShotsOnGoalLost;
-    if (lead != null && won != null && sog && sog.n) {
-      var lostPct = sog.count / sog.n * 100;
-      var usuallyLoses = lostPct > 50;
-      var thisLost = won !== lead;
-      var usualPct = (usuallyLoses ? lostPct : 100 - lostPct).toFixed(1);
-      var rel = $('herorel');
-      rel.appendChild(el('b', null, thisLost === usuallyLoses
-        ? 'That is the usual outcome.' : 'That is not the usual outcome.'));
-      rel.appendChild(el('span', null, ' Across ' + sog.n.toLocaleString()
-        + ' games the shot leader ' + (usuallyLoses ? 'loses' : 'wins') + ' '
-        + usualPct + '% of the time.'));
-    }
     $('herogo').href = 'game.html?game=' + g.id;
 
     /* THERE IS NO SECOND LINK TO THIS GAME, and that is the fix rather than an

@@ -4090,6 +4090,29 @@ if(PREVIEW){
     is missing. The game page keeps CONTROL, where the layer's own name is the
     useful word and the counters carry the unit two inches below. */
  $('pName').textContent='SHOT ATTEMPTS';
+ /* ⭐ AND THE FRAME HANDS THE PARENT THE NUMBER IT ALREADY HAS.
+    The home page describes this game in a sentence under the rink, and that
+    sentence has to be about the SAME measure the bar above it shows -- Kevin:
+    "they need to be the same measure". The parent cannot compute it: attempts
+    are decided by `corsi`, the catalog is built in Python, and it carries the
+    LEAGUE's quoted numbers rather than any of ours.
+
+    IT DOES NOT NEED TO. This frame already holds the extract and has already run
+    the reducer on it (CHENG). Storing attempts in the catalog would have cost
+    2,378 bytes gzipped on every visit to both pages, and made the catalog carry
+    one of our own computed metrics for the first time; the parent re-fetching
+    the extract costs 13,023 gzipped whenever the cache misses, and with
+    `loading="lazy"` on the frame the ordering that would make it hit is not ours
+    to assume. A message costs nothing and assumes nothing.
+
+    WHOLE GAME, NOT THE LOOP'S WINDOW. The sentence is about the game the way the
+    score is; `evenOnly:false` is stated for the same reason it is stated above.
+    Same origin both ways -- the target is named rather than '*', and the parent
+    checks the origin it came from. */
+ if(window.parent!==window){
+  const fin=corsi.reduce(G.events,{...CTX,evenOnly:false});
+  window.parent.postMessage({rtg:'attempts',game:(G.game&&G.game.id)||0,
+   a:fin.t[AID]||0,h:fin.t[HID]||0},location.origin);}
  /* ⭐ AND IT BEGINS WHERE THE LAYER FIRST HAS SOMETHING TO SAY.
     Kevin refreshed the front door and the counter sat at 0-0 for the whole loop.
     Measured over 230 games rather than guessed at: the counter is still empty

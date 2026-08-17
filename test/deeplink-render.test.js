@@ -75,10 +75,14 @@ function fakeDom() {
 
 function open(search) {
   const dom = fakeDom();
+  /* `window` is injected because the preview hands its attempt totals to the
+     parent, and a harness that cannot express being framed cannot boot the page
+     at all. Posting is accepted and discarded: this file is about the parser. */
   const b = new Function('document', 'matchMedia', 'setTimeout', 'clearTimeout',
-                         'localStorage', 'location', SCRIPT + '\nreturn boot;')(
+                         'localStorage', 'location', 'window', SCRIPT + '\nreturn boot;')(
     dom.document, () => ({ matches: true }), () => 0, () => {},
-    { getItem: () => null, setItem: () => {} }, { search });
+    { getItem: () => null, setItem: () => {} }, { search, origin: 'https://x' },
+    { parent: { postMessage: () => {} } });
   b(rich, null);
   return dom;
 }

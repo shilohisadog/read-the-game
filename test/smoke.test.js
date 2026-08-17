@@ -116,8 +116,9 @@ function run() {
   const noop = () => {};
   const fn = new Function(
     'document', 'addEventListener', 'setTimeout', 'clearTimeout',
-    'requestAnimationFrame', 'matchMedia', 'console', 'location', script);
-  fn(document, noop, noop, noop, noop, () => ({ matches: false }), console, { search: '' });
+    'requestAnimationFrame', 'matchMedia', 'console', 'location', 'window', script);
+  fn(document, noop, noop, noop, noop, () => ({ matches: false }), console,
+     { search: '', origin: 'https://x' }, { parent: { postMessage: () => {} } });
   // `nodes` only holds ids the app has already asked for. Tests that drive the
   // app need to reach elements it touches lazily -- #rg is only looked up when a
   // layer is toggled -- so hand back the accessor too, not just the map.
