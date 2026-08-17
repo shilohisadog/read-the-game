@@ -409,6 +409,10 @@ T = r"""<style>
 #rg .mixkey b{color:var(--ink);font-variant-numeric:tabular-nums}
 #rg .mixkey i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px}
 #rg .mixkey .r{background:var(--blue)}#rg .mixkey .b{background:var(--flag)}#rg .mixkey .m{background:#b8c6d0}
+/* THE ONE SENTENCE ON THIS CARD THAT SAYS WHY ANY OF IT MATTERS, so it is set
+   as text rather than as a caption -- it is the point, not an annotation. */
+#rg .mixwhy{margin:9px 0 0;font-size:.88rem;line-height:1.45}
+#rg .mixwhy b{font-weight:800}
 #rg .whistlepanel{display:none}
 #rg.whistle .whistlepanel{display:block;background:#fff;border:1px solid var(--edge);border-radius:11px;padding:13px 15px;margin-top:10px;box-shadow:0 4px 14px rgba(16,32,45,.06)}
 #rg .whsay{margin:0;font-size:.9rem;line-height:1.5}
@@ -1488,12 +1492,16 @@ function mixRow(cls,title,claim,scope,parts){
   +`<div class="mixbar"><svg viewBox="0 0 100 8" preserveAspectRatio="none">${rects}</svg></div>`
   +`<p class="mixkey">${keys}</p></div>`;}
 function drawBlocked(B,L,slice){
- const a=B.t[AID],h=B.t[HID];
  const mate=B.teammate.length,unk=B.unknown.length;
- // The credited blocks are the two numbers; the teammate and unattributed ones
- // are counted blocks with no bench to put them on, and saying so is the point.
- const rows=`<div class="bkrow"><span class="a">${a}</span><span class="bkt">${AAB} · ${HAB}</span><span class="h">${h}</span></div>`
-   +`<div class="bklab">shots blocked</div>`;
+ /* THE PER-TEAM COUNTER ROW IS GONE, AND ON MERIT RATHER THAN FOR SPACE (CHENG).
+    `12 · 7 · SHOTS BLOCKED` is the confounded comparison rendered as a
+    scoreboard. This layer's own audit established that blocks are a near-mirror
+    of the attempt count -- the team blocking more was the team attempting fewer
+    81.7% of the time -- so a reader seeing 12 against 7 concludes something about
+    grit or defensive commitment when they are looking at the attempt
+    differential backwards. That is the reading the audit spent its length
+    killing, and cutting the row removes it structurally instead of disclaiming
+    it. It was also the largest single saving on the list: 48px at every width. */
  // WHAT HAPPENED TO EVERY ATTEMPT, from the SAME ledger the counters come from,
  // classified by the feed's own event type. `reached the goalie` is a shot on
  // goal or a goal, which is exactly how the archive's `reachedTheGoalie` is
@@ -1513,6 +1521,24 @@ function drawBlocked(B,L,slice){
  // both -- and each denominator is stated inside the claim rather than off in the
  // scope. The units then differ visibly BECAUSE the denominators do, which is the
  // thing worth teaching rather than a puzzle left for the reader.
+ /* WHY IT COULD MATTER, AND IT IS A DISAGREEMENT RATHER THAN AN IMPLICATION.
+    Kevin: "we provide the data but we don't offer why it could matter." The one
+    shape that survives this project's constraints is not "this predicts the
+    winner" but "this counts something the familiar number does not"
+    (docs/why-it-matters.md §2). Both numbers are already on the card; the
+    sentence is what turns a subtraction most readers will not perform into the
+    point of the layer.
+    THE NUMBER IS THE BOX SCORE'S OWN. The NHL's `shots on goal` is saves plus
+    goals, which is `shot-on-goal + goal` -- exactly how this card already defines
+    `reached the goalie`. So it is the same quantity, not a near-equivalent.
+    ONLY AT ALL SITUATIONS. With the even-strength filter on, `g.r` is the
+    even-strength shots on goal and no box score reports that, so the sentence
+    would be false about the thing it names. It says nothing then rather than
+    saying it loosely -- the same answer the whistle layer gets in §3 of the
+    audit, for the same reason. */
+ const why=(att&&!evenOnly)?`<p class="mixwhy">A box score would show <b>${g.r}</b> `
+   +`${g.r===1?'shot':'shots'}. This game has had <b>${att}</b> `
+   +`${att===1?'attempt':'attempts'}.</p>`:'';
  const game=att?mixRow('game','This game',
    `<b>${g.b+g.m}</b> of <b>${att} ${att===1?'attempt':'attempts'}</b> never reached the goalie`,
    `${MODE()}`,
@@ -1560,7 +1586,7 @@ function drawBlocked(B,L,slice){
       doctrine and has moved into the row's scope, where it is always visible
       rather than in a paragraph below the fold on a phone. */
   :`<p class="bkarch">No archive comparison shown — ${RATES===undefined?'this page carries a single game and makes no network requests':'the archive shares could not be loaded'}.</p>`;
- $('blockPanel').innerHTML=rows+game+mates+un+arch;}
+ $('blockPanel').innerHTML=game+why+mates+un+arch;}
 
 /* WHAT A FIRST-TIME VIEWER IS TOLD, and it answers three questions Kevin
    predicted a casual fan would ask, in his words:

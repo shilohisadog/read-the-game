@@ -128,3 +128,76 @@ Three options, and I would take the third:
    leader loses 54.5%"* while a viewer watches one team lead attempts is one
    inference away from a forecast. The verdict card is gated to the horn for
    exactly this reason.
+
+
+---
+
+## 7. CHENG's rulings, 2026-08-17
+
+### The Control card does NOT get 54.5%, and the reason is stronger than proximity
+
+I had this as an open question on grounds of *"one inference away from a
+forecast."* CHENG's argument is decisive and different:
+
+> **`moreAttemptsLost` is conditioned on FINAL attempt totals, and a mid-game
+> lead is a different variable.** A team up 12–7 in the first period is not a
+> team that finished ahead in attempts — they are a team that *might become* one.
+> The number would not describe the situation it is displayed beside.
+
+**That is a category error, not a risk of misreading** — it would be wrong even
+if no reader ever drew an inference.
+
+**And the tell was already in §3's table.** Every other row's disagreement is
+per-frame; Control was the only one reaching for an archive rate. That
+inconsistency was the signal that the shape was wrong, and I did not read it.
+
+Control's per-frame disagreement is available and better:
+
+> **The scoreboard says 0–0. Attempts say 12–7.**
+
+Two live numbers, recomputable from state, no forecast, no archive — and it *is*
+the site's thesis rather than a statistic about other games.
+
+### The whistle row stays empty — and the candidate is recorded as DECLINED
+
+CHENG found one that would work: the familiar number is **sixty minutes**, and we
+hold stoppage counts. *"The game is sixty minutes long. Play has stopped 41
+times."* A count against a duration, no invented duration data, and a genuine
+disagreement — a novice does think sixty minutes means sixty minutes of hockey.
+
+**Declined deliberately.** A rule that produced a sentence for all five would be
+indistinguishable from a sentence generator, and the empty row is the proof that
+this one constrains rather than generates. Recorded here so the option survives
+without being taken.
+
+### ⭐ The general rule the caveat deletion was an instance of
+
+> **When a sentence exists to prevent a misreading, ask whether an INVARIANT can
+> prevent it instead.**
+
+A disclaimer decays — it gets edited, shortened, falls below a fold, or stops
+matching the thing it guards. *"No figure without a denominator on the same row"*
+cannot. Same shape as the CSP replacing the `fetch(` grep, and `place()`
+replacing three filter sites.
+
+### The per-team counter row: cut, on merit
+
+Three of the four available cuts are taste. This one is not: **blocks are a
+near-mirror of the attempt count — the team blocking more was the team attempting
+fewer 81.7% of the time** — so `12 · 7 · SHOTS BLOCKED` is the confounded
+comparison rendered as a scoreboard. A reader sees grit; they are looking at the
+attempt differential backwards. Cutting removes the reading structurally instead
+of disclaiming it, and it was the biggest single saving on the list.
+
+The teammate note stays when it fires: 7.8% is common enough to be real and
+genuinely surprising — the closest thing this card has to a `surprising` entry.
+
+## 8. Built 2026-08-17
+
+The counter row is gone and the sentence is in. **318px at 1100×900 (35%), 514px
+at 390×844 (61%)** — against 234/394 before any of this work, and 320/538 an hour
+ago.
+
+Six mutations, six kills, after one survivor that was **a mutation not seen to
+fire**: restoring the counter row as a variable the render never used. Dead code
+is not a mutation.

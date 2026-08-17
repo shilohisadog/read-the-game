@@ -1518,10 +1518,17 @@ test('the blocked layer draws nothing until it is asked, then says who stopped w
   assert.ok(a.$('rg').classList.contains('blocked'), 'the panel is revealed by a class and the class is absent');
 
   const v = a.$('blockPanel').innerHTML;
-  assert.match(v, /shots blocked/, 'the panel never says what its numbers are');
-  // The two clubs, by their own abbreviations read from the game.
+  assert.match(v, /blocked by a body/, 'the panel never says what its numbers are');
+
+  // AND IT NAMES NEITHER CLUB, which is the point of the cut rather than an
+  // omission. `12 · 7 · SHOTS BLOCKED` was the confounded comparison rendered as
+  // a scoreboard: the team blocking more was the team attempting fewer 81.7% of
+  // the time, so a reader saw grit where the attempt differential was showing
+  // through backwards. Removing the row kills that reading structurally; this
+  // assertion is what stops it coming back as a convenience.
   const away = a.$('aAb').textContent, home = a.$('hAb').textContent;
-  assert.match(v, new RegExp(`${away}[^<]*·[^<]*${home}`), 'the panel does not name the two clubs');
+  assert.doesNotMatch(v, new RegExp(`${away}[^<]{0,40}·[^<]{0,40}${home}`),
+    'the per-team block counter is back, and with it the reading it invites');
 });
 
 test('THE PANEL PUBLISHES NO WIN RATE — the whole design turns on this', () => {
@@ -2315,6 +2322,20 @@ function rowsOf(html) {
   return out;
 }
 
+/**
+ * A row's KEY paragraph, and nothing after it.
+ *
+ * `keyOf(row)` ran to the END OF THE PANEL, so the moment a sentence
+ * was added below the game row its numbers were counted as bar segments — three
+ * tests failed claiming the bar had stopped drawing three of them. The defect was
+ * in the reading, not the page. Bounded at the closing tag it cannot recur.
+ */
+function keyOf(row) {
+  const m = row.match(/<p class="mixkey">([\s\S]*?)<\/p>/);
+  assert.ok(m, 'a row lost its key');
+  return m[1];
+}
+
 test('the GAME row states its share as a fraction and the ARCHIVE row as a percentage', () => {
   // THE RULE IS ABOUT THE DENOMINATOR, NOT THE SYMBOL. A percentage on sixteen
   // attempts swings fifty points and asserts precision that is not there — it was
@@ -2364,7 +2385,7 @@ test('the game row names the whole it is a split OF, in counts', () => {
     const [, never, att] = m;
     // The claim must be the sum of the two segments the bar draws as "not
     // reached", read back out of the key rather than recomputed here.
-    const key = rowsOf(h).game.split('mixkey')[1];
+    const key = keyOf(rowsOf(h).game);
     const nums = [...key.matchAll(/<b>(\d+)<\/b>/g)].map(x => +x[1]);
     assert.equal(nums.length, 3, 'the game row stopped drawing three segments');
     assert.equal(+never, nums[1] + nums[2],
@@ -2390,7 +2411,7 @@ test('the BAR draws the counts — the widths are the numbers', () => {
     if (!row) return null;
     const rects = [...row.matchAll(/<rect class="(\w)" x="([\d.]+)" y="0" width="([\d.]+)"/g)]
       .map(m => ({ k: m[1], x: +m[2], w: +m[3] }));
-    const counts = [...row.split('mixkey')[1].matchAll(/<b>(\d+)<\/b>/g)].map(m => +m[1]);
+    const counts = [...keyOf(row).matchAll(/<b>(\d+)<\/b>/g)].map(m => +m[1]);
     assert.equal(rects.length, 3, 'the bar stopped drawing three segments');
     const tot = counts.reduce((t, n) => t + n, 0);
     let x = 0;
@@ -2433,7 +2454,7 @@ test('what counts as REACHING the goalie is the feed’s own event types', () =>
   const scrub = a.$('scrub');
   scrub.value = String(+scrub.max);
   scrub.oninput({ target: { value: scrub.value } });
-  const counts = [...rowsOf(a.$('blockPanel').innerHTML).game.split('mixkey')[1]
+  const counts = [...keyOf(rowsOf(a.$('blockPanel').innerHTML).game)
     .matchAll(/<b>(\d+)<\/b>/g)].map(m => +m[1]);
   assert.deepEqual(counts, [want.r, want.b, want.m],
     'at the final frame the card splits the attempts differently than their event types do');
@@ -2524,7 +2545,7 @@ test('both rows state their claim in the SAME frame, and each names its denomina
 
   // And the denominators are the real ones, not decoration. The game's is checked
   // against the bar's own segments; the archive's against the published n.
-  const segs = [...r.game.split('mixkey')[1].matchAll(/<b>(\d+)<\/b>/g)].map(m => +m[1]);
+  const segs = [...keyOf(r.game).matchAll(/<b>(\d+)<\/b>/g)].map(m => +m[1]);
   assert.equal(+g[2].replace(/[^\d]/g, ''), segs.reduce((t, n) => t + n, 0),
     `the game claim says "${g[2]}" while its own bar draws ${segs.join(' + ')}`);
   assert.match(c[2], /^491,971 attempts$/, 'the archive denominator is not the archive n');
@@ -2549,7 +2570,7 @@ test('nothing on the blocked card is a bare percentage — every number names it
   // there is read against the row's own stated denominator, so the row must have
   // one on screen at the same time.
   for (const [name, row] of Object.entries(r)) {
-    const key = row.split('mixkey')[1];
+    const key = keyOf(row);
     if (!/%/.test(key)) continue;
     assert.match(row, /of <b>[\d,]+ attempts?<\/b>/,
       `the ${name} row shows percentages with no denominator anywhere on it`);
@@ -2558,4 +2579,59 @@ test('nothing on the blocked card is a bare percentage — every number names it
   const v = a.$('blockPanel').innerHTML;
   assert.match(v, /4,119 games/, 'the archive lost its games count with the caveat');
   assert.match(v, /NHL regular season and playoffs/, 'the archive lost its population');
+});
+
+test('the card says WHY it matters, as a disagreement rather than an implication', () => {
+  // Kevin: "we provide the data but we don't offer why it could matter." The one
+  // shape that survives this project's constraints is not "this predicts the
+  // winner" but "this counts something the familiar number does not" — always
+  // available, never a forecast, and a CONDITION at the playhead so it moves as
+  // the game moves (docs/why-it-matters.md §2).
+  //
+  // THE TEST IS THE RELATIONSHIP: both numbers in the sentence must be the card's
+  // own, read back out of the bar it sits under. A sentence carrying numbers
+  // nobody can check is the thing this site exists as an alternative to.
+  const a = boot(rich, CURVE_AND_MIX);
+  a.$('lyBlock').click();
+  const SHAPE = /A box score would show <b>(\d+)<\/b> shots?\. This game has had <b>(\d+)<\/b> attempts?\./;
+  let checked = 0;
+  a.every(d => {
+    const h = d.$('blockPanel').innerHTML;
+    const m = h.match(SHAPE);
+    const row = rowsOf(h).game;
+    if (!row) { assert.equal(m, null, 'the sentence outlived the bar it describes'); return null; }
+    assert.ok(m, 'the game row is drawn and nothing says why it matters');
+    const segs = [...keyOf(row).matchAll(/<b>(\d+)<\/b>/g)].map(x => +x[1]);
+    assert.equal(+m[1], segs[0],
+      `the sentence says a box score shows ${m[1]} where the bar draws ${segs[0]} reaching the goalie`);
+    assert.equal(+m[2], segs.reduce((t, n) => t + n, 0),
+      `the sentence says ${m[2]} attempts where the bar draws ${segs.join(' + ')}`);
+    // AND IT IS A DISAGREEMENT, not an implication: no outcome anywhere in it.
+    assert.doesNotMatch(m[0], /\bwin|\blos|\bshould|\blikely|\bexpect/i,
+      'the why-it-matters sentence turned into a forecast');
+    checked++;
+    return null;
+  });
+  assert.ok(checked > 5, `the sentence was only checkable on ${checked} frames`);
+});
+
+test('and it says nothing at even strength, because a box score has no such column', () => {
+  // With the filter on, the reached-the-goalie count is the EVEN-STRENGTH shots
+  // on goal, and no box score reports that — so the sentence would be false about
+  // the very number it names. Silence is the same answer the whistle layer gets
+  // in the audit, for the same reason: we hold no figure that makes it true.
+  const a = boot(rich, CURVE_AND_MIX);
+  a.$('lyBlock').click();
+  const scrub = a.$('scrub');
+  scrub.value = String(+scrub.max);
+  scrub.oninput({ target: { value: scrub.value } });
+  assert.match(a.$('blockPanel').innerHTML, /A box score would show/, 'it is absent at all situations too');
+
+  a.GROUPS['#rg .sbtn'][1].click();                       // Even strength only
+  assert.doesNotMatch(a.$('blockPanel').innerHTML, /A box score would show/,
+    'the sentence survived into even strength, where it is false about its own number');
+  assert.ok(rowsOf(a.$('blockPanel').innerHTML).game, 'the bar went with it, which was not the claim');
+
+  a.GROUPS['#rg .sbtn'][0].click();                       // and back
+  assert.match(a.$('blockPanel').innerHTML, /A box score would show/, 'it did not come back');
 });
