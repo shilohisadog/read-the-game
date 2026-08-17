@@ -991,8 +991,20 @@ function render(i,how){
  drawLabel(cur);
  drawNetmen(cur);
  $('aSc').textContent=L.as;$('hSc').textContent=L.hs;
- const a=L.t[AID],h=L.t[HID],tot=a+h||1,pa=Math.round(100*a/tot);
- $('ba').style.width=pa+'%';$('bh').style.width=(100-pa)+'%';
+ const a=L.t[AID],h=L.t[HID],tot=a+h,pa=tot?Math.round(100*a/tot):0;
+ /* ⭐ NO BAR OVER AN EMPTY POPULATION, and this was a real defect on the front
+    door. `tot=a+h||1` avoided the division by zero and then DREW THE RESULT
+    ANYWAY: at 0-0 it made pa=0, so the whole bar rendered in the home colour and
+    the opening faceoff of every game announced that one team had all of the
+    control before a puck had been shot. Seen only by looking -- it is a
+    rendering, and the suite has no pixels.
+
+    The rule already exists one file over. archive.js refuses a rate over an
+    empty population and says why: "0 reads as a finding, and 'we measured
+    nothing' is a different statement from 'it never happened'." A proportion of
+    nothing drawn as certainty is that sentence in paint. Both segments stay at
+    zero width, so what shows is the empty track -- which is what we know. */
+ $('ba').style.width=(tot?pa:0)+'%';$('bh').style.width=(tot?100-pa:0)+'%';
  // A FRACTION, NOT A PERCENTAGE, and the bar carries the proportion (CHENG).
  // `58%` over nineteen attempts asserts three significant figures on a
  // denominator that moves 2.5 points per shot, and it swings visibly through
@@ -1822,6 +1834,33 @@ if(PREVIEW){
  /* AND THE CHROME GOES, from the one place chrome is defined (page.py). The
     shared header and footer are real height inside a box sized for a rink. */
  document.body.classList.add('previewing');
+ /* ⭐ THE PREVIEW RUNS WITH A LAYER ON, and Control is the one.
+
+    THE HERO USED TO CONTRADICT THE HEADLINE ABOVE IT. The h1 promises "the
+    counts built in front of you, so you can see where a number comes from" and
+    the frame under it showed plays with no counts anywhere. The stated
+    conversion is a visitor watching one game WITH ONE METRIC LAYER TURNED ON, so
+    the front door was demonstrating the single configuration that is not it.
+
+    IT STARTS AT ZERO ON PURPOSE, and the small number is the point rather than a
+    cost. The persuasive Corsi sentence is "the scoreboard says 0-0, attempts say
+    12-7" and none of it fits in seven plays -- but the headline does not promise
+    a big number, it promises PROVENANCE, and a counter you join at 24-11 is a
+    number you did not watch being built. Zero is the only honest place for
+    "where a number comes from" to begin, which is the same reason the loop opens
+    at the faceoff instead of the final whistle.
+
+    CALLED THROUGH setCorsi() RATHER THAN SETTING THE CLASS. The layer's on-state
+    is a class, a button label and an aria-pressed value, and reaching past the
+    function for the one part the preview happens to need is how the two drift.
+
+    THIS DELIBERATELY DOES NOT UNHIDE `.counters`. The board's `.cbar` carries the
+    bar and both counts already and is outside the preview's hide list; the
+    counters repeat the same two numbers larger, INSIDE the rink box, where the
+    only thing they can spend is ice. And the board figures are counts, not a
+    percentage -- CHENG's ruling that `11` beside `8` claims exactly what it is --
+    so the compact form is not a rate that has lost its denominator. */
+ corsiOn=true;setCorsi();
  let acc=0,W=0;
  while(W<EV.length-1&&acc+dwell(EV[W])<=BUDGET_MS){acc+=dwell(EV[W]);W++;}
  const WINDOW=Math.max(1,W);

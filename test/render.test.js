@@ -68,6 +68,10 @@ function fakeDom() {
       contains(c) { return this._c.has(c); },
     },
     setAttribute(k, v) { this[k] = v; },
+    // Reading back what was written. Absent returns null, as the real DOM does,
+    // rather than undefined -- a fake that answers a question differently from
+    // the thing it stands in for is a test that passes for its own reasons.
+    getAttribute(k) { return k in this ? this[k] : null; },
     addEventListener(t, fn) { (this._on[t] = this._on[t] || []).push(fn); },
     // BOTH WAYS A HANDLER GETS ATTACHED, because the page uses both and this
     // fake only knew one. The layer buttons use addEventListener; the whole
@@ -1185,6 +1189,75 @@ test('PREVIEW hides everything but the game, and plays by itself', () => {
   const plain = boot();
   assert.equal(plain.$('rg').classList.contains('preview'), false);
 });
+
+test('⭐ the preview runs with the Control layer ON, so the hero shows what the h1 promises', () => {
+  // THE HEADLINE AND THE HERO USED TO DISAGREE. The h1 offers "the counts built
+  // in front of you, so you can see where a number comes from" and the frame
+  // below it ran with no layer at all -- the one configuration that is not the
+  // stated conversion. Nothing failed; the front door simply advertised the
+  // base view.
+  const a = boot(rich, null, '?game=2023020204&preview=1');
+  assert.ok(a.$('rg').classList.contains('corsi'),
+    'the preview is running the base view — the counts are nowhere on the hero');
+
+  // THROUGH setCorsi, NOT PAST IT. The on-state is a class, a button label and
+  // an aria value; a preview that set only the class would look right and leave
+  // the other two saying the layer is off. This is the half that catches it.
+  // String() because the fake stores what setCorsi passed -- a boolean -- while
+  // a real DOM stores "true". Asserting either spelling would pin the harness
+  // rather than the behaviour.
+  assert.equal(String(a.$('lyCorsi').getAttribute('aria-pressed')), 'true');
+  assert.match(a.$('lyCorsi').textContent, /^✓ /,
+    'the layer button still says the layer is off');
+
+  // EXACTLY ONE, because the conversion is stated as one metric layer turned on.
+  // Three layers at once is a different claim about the product, and without
+  // this the preview could quietly acquire them one at a time with nothing
+  // failing -- which a mutation adding a second layer proved.
+  for (const off of ['slot', 'goalie', 'whistle', 'blocked']) {
+    assert.equal(a.$('rg').classList.contains(off), false,
+      `the preview turned on ${off} as well — the taste is one layer, not a pile`);
+  }
+
+  // AND THE ORDINARY PAGE IS UNTOUCHED, which is the paired half: turning it on
+  // for the hero must not turn it on for a visitor who opened a game to watch it.
+  assert.equal(plainOff().$('rg').classList.contains('corsi'), false,
+    'the full page now opens with a layer already applied');
+});
+
+test('⭐ the control bar claims nothing before anything has been counted', () => {
+  // A REAL DEFECT, FOUND BY LOOKING AT THE FRONT DOOR. `tot=a+h||1` avoided the
+  // division by zero and then drew the result anyway: at 0-0 it made pa=0, so
+  // the whole bar rendered in the HOME colour and the opening faceoff announced
+  // that one team held all of the control before a puck had been shot. It was
+  // on the hero, in the first frame of every visit.
+  //
+  // NOT A PREVIEW BUG -- it is what the layer does at the start of any game, so
+  // it is checked on the ordinary page where a visitor meets it.
+  const a = boot();
+  a.$('lyCorsi').click();
+  // Numeric, because the fake stores what the page assigned -- a number -- and
+  // a real DOM stores a string. Pinning either spelling would test the harness.
+  assert.equal(+a.$('cA').textContent, 0, 'the fixture is past the opening faceoff');
+  assert.equal(+a.$('cH').textContent, 0, 'and this test is no longer about zero');
+  assert.equal(a.$('ba').style.width, '0%', 'the away segment claims a share of nothing');
+  assert.equal(a.$('bh').style.width, '0%', 'the home segment claims a share of nothing');
+
+  // THE PAIRED HALF: once there IS a population, the bar is drawn and the two
+  // segments account for all of it. Without this the rule above is satisfied by
+  // a bar that never renders at all.
+  const sc = a.$('scrub');
+  sc.value = sc.max;
+  sc.oninput({ target: { value: sc.value } });
+  assert.notEqual(+a.$('cA').textContent + +a.$('cH').textContent, 0,
+    'nothing was counted, so the paired half proves nothing');
+  const w = s => +String(s).replace('%', '');
+  assert.equal(w(a.$('ba').style.width) + w(a.$('bh').style.width), 100,
+    'the bar no longer accounts for the whole population');
+});
+
+/** A plain boot, named because two tests want the same negative half. */
+function plainOff() { return boot(); }
 
 // `the preview asks for nothing it does not show` used to live here as a regex
 // over the shell's source, pinned to the exact expression that tested for
