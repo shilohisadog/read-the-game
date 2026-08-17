@@ -251,7 +251,14 @@ def _footer():
     return (
         '<footer class="sitefoot">'
         "<p>Game data from the NHL's public play-by-play feed, fetched once and "
-        "stored. Not affiliated with or endorsed by the NHL. <strong>No NHL or club "
+        # WIDENED ON KEVIN'S INSTRUCTION, 2026-08-17. The home page used to carry a
+# second, older footer whose disclaimer was broader than this one -- "or a
+# PRODUCT OF the National Hockey League OR ANY CLUB". Removing the duplicate
+# would have quietly narrowed the claim on the only page that made it, so the
+# wider wording moves here instead and now covers all nine pages rather than
+# one. Three refusals and two subjects, because a club is not the league.
+        "stored. Not affiliated with, endorsed by, or a product of the National "
+        "Hockey League or any club. <strong>No NHL or club "
         "logos, wordmarks or crests appear anywhere on this site</strong> — teams are "
         "identified by colour and three-letter abbreviation only.</p>"
         '<p><a href="https://github.com/shilohisadog/read-the-game">Source on GitHub</a>'
