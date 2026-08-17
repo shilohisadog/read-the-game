@@ -424,7 +424,24 @@ jobs:
             if [ "$matched" = 1 ]; then
               echo "  https://${host} serves the current index"
             else
-              echo "::error::https://${host} never served this deployment"
+              # ONE MESSAGE WAS STANDING FOR TWO DIFFERENT FAILURES, and it cost
+              # a wasted re-run to find that out. The loop breaks only when the
+              # fetch AND the compare both succeed, so content that never matches
+              # exhausts the retries and reports "never served this deployment" --
+              # which reads as a DNS or alias problem and sends you to the wrong
+              # dashboard. Same shape as the caption's `on` class: a single signal
+              # that cannot distinguish the two states it is asked about.
+              if [ -s prod.html ]; then
+                echo "::error::https://${host} answers, but serves bytes we did not commit"
+                echo "  fetched $(wc -c < prod.html) bytes, repo has $(wc -c < src/index.html)"
+                echo "  --- what the edge added or changed (first 20 lines) ---"
+                diff <(sed 's/></>\n</g' prod.html) <(sed 's/></>\n</g' src/index.html) | head -20 || true
+                echo "  Injected <script> here usually means a Cloudflare feature was"
+                echo "  re-enabled in the dashboard. The CSP refuses them, so they do"
+                echo "  nothing except break this check and log an error for every visitor."
+              else
+                echo "::error::https://${host} never served this deployment (no response body)"
+              fi
               fail=1
             fi
           done
