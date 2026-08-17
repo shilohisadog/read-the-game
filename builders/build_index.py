@@ -319,14 +319,14 @@ __LIMITS__
 
 <p class="state" id="state" data-state="empty">Checking how current this data is&hellip;</p>
 
-<footer>
-<p>Play-by-play, shift and boxscore data for NHL games, retrieved from the
-league&rsquo;s public game-feed endpoints and stored once. Not affiliated with,
-endorsed by, or a product of the National Hockey League or any club. Team abbreviations
-and colours are used to identify the teams; no league or club logos or marks appear here.</p>
-<p>Source, method and the rules this is built under:
-<a href="https://github.com/shilohisadog/read-the-game">github.com/shilohisadog/read-the-game</a></p>
-</footer>
+<!-- THE PAGE'S OWN FOOTER IS GONE, and it was a leftover rather than a choice.
+     It predates the shared chrome: when `page.py` grew a site footer this page
+     kept its old one, so the home page said the attribution TWICE, in two
+     wordings, and only one of them was on the other eight pages. Kevin: "please
+     remove this section, since the footer contains the disclaimer."
+     Every claim it made survives in `page.py::_footer` -- the source of the
+     data, the not-affiliated line, the no-marks line, and the link to the
+     source -- which is the only copy any page can be missing. -->
 </div>
 <script>
 __LIB__

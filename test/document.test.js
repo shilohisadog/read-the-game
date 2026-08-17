@@ -156,6 +156,24 @@ test('every page carries the footer, so the attribution is not optional', () => 
   }
 });
 
+test('a page has ONE footer, so the attribution cannot disagree with itself', () => {
+  // The home page carried two: the shared chrome's, and its own from before the
+  // chrome existed. Both stated the attribution, in different words, and only
+  // one of them was on the other eight pages — so the wording a reader saw
+  // depended on which page they landed on, and only one version was under test.
+  // Kevin: "please remove this section, since the footer contains the
+  // disclaimer."
+  //
+  // A COUNT, NOT A SEARCH FOR THAT PARTICULAR LEFTOVER. Asserting the old
+  // paragraph is absent would guard one spelling of the mistake; this forbids
+  // the shape, which is the same trade as `no figure without a denominator`.
+  for (const f of PAGES) {
+    const h = readFileSync(new URL(f, SRC), 'utf8');
+    const n = (h.match(/<footer\b/g) || []).length;
+    assert.equal(n, 1, `${f} carries ${n} footers — the attribution can disagree with itself`);
+  }
+});
+
 test('the tip jar asks for support and never sells access', () => {
   // Kevin's constraint, verbatim: "it has to be 'donate' or 'buy me a coffee'
   // type of surface, so I minimize the chance of any scrutiny from the NHL."
