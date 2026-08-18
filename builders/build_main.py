@@ -1538,7 +1538,16 @@ function drawLabel(e){const g=$('labels');const p=place(e);if(!labelsOn||!p){g.i
    const mate=b&&sh&&b.tid===sh.tid;
    const head=!b?'Blocked — no blocker recorded'
      :mate?(blockOn?`Blocked by a teammate — ${b.nm}`:'Blocked by a teammate')
-     :`${bt?bt+' · ':''}${blockOn?b.nm+' blocked it':'Blocked it'}`;
+     // "IT" HAD NO ANTECEDENT. Kevin, watching a CAR–VGK game: `VGK · Blocked
+     // it` -- "but what is 'it'?" Nothing on the label says a SHOT, and the mark
+     // beside it is a dot like every other mark on the ice. The pronoun was
+     // carried over from a sentence that used to name the shooter first, and it
+     // lost its referent when the wording inverted to name the blocker.
+     //
+     // The inversion above is preserved: the team is still the one that DID the
+     // blocking, and the verb is still active, so `VGK · Blocked a shot` cannot
+     // be read as VGK's shot being blocked.
+     :`${bt?bt+' · ':''}${blockOn?b.nm+' blocked a shot':'Blocked a shot'}`;
    g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${ESC(head)}</text></g>`;
    return;}
  // AND THE TABLE NO LONGER CARRIES A BLOCKED ROW. It would never be reached, and

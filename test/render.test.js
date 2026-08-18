@@ -1817,10 +1817,10 @@ test('the label names the BLOCKER once the layer is on', () => {
   const a = boot();
   a.$('lyBlock').click();
   const labels = a.every(d => d.$('labels').innerHTML)
-                  .filter(h => /blocked it|Blocked by a teammate|no blocker recorded/.test(h));
+                  .filter(h => /blocked a shot|Blocked by a teammate|no blocker recorded/.test(h));
   assert.ok(labels.length > 0, 'no blocked shot ever named who stopped it');
   // A person, rather than a club abbreviation.
-  assert.ok(labels.some(h => /blocked it|Blocked by a teammate/.test(h)),
+  assert.ok(labels.some(h => /blocked a shot|Blocked by a teammate/.test(h)),
     'every blocked shot fell back to "no blocker recorded"');
 });
 
@@ -1833,7 +1833,7 @@ test('with the layer off, no label names a blocker BY NAME', () => {
   // base view now names the blocking TEAM — the mark is the block point in every
   // view, so the shooter's abbreviation beside it invited the same misreading
   // the layer was built to prevent — while the PERSON stays layer-only. Matching
-  // /blocked it/ could no longer tell a team label from a named one, so the test
+  // /blocked a shot/ could no longer tell a team label from a named one, so the test
   // asks the question it always meant: does a player's name reach the ice?
   // PLAY LABELS ONLY. A goal names its scorer and assists in every view and
   // always has — that is `glab`/`plabsub`, a different surface with a different
@@ -1851,7 +1851,7 @@ test('with the layer off, no label names a blocker BY NAME', () => {
   // AND THE TEAM IS NAMED, which is the whole of the fix. Dropping the
   // abbreviation left every other assertion here green while removing the only
   // thing that answers "who blocked it" — the question that started this.
-  const blocked = (any.match(/[^>]*Blocked it/g) || []);
+  const blocked = (any.match(/[^>]*Blocked a shot/g) || []);
   assert.ok(blocked.length > 0, 'the base view never says a shot was blocked');
 
   // WHICH team, not merely a team. Naming the SHOOTER's club instead of the
