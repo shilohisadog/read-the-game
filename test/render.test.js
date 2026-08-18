@@ -2964,3 +2964,31 @@ test('and it says nothing at even strength, because a box score has no such colu
   a.GROUPS['#rg .sbtn'][0].click();                       // and back
   assert.match(a.$('blockPanel').innerHTML, /A box score would show/, 'it did not come back');
 });
+
+test('the whistle layer actually draws the line its rule names', () => {
+  // THE SOURCE-GREP VERSION OF THIS SURVIVED COMMENTING THE DRAW OUT, because
+  // `class="rulel` was still present inside the comment. Only the rendered SVG
+  // can tell markup from a mention of markup, so the claim lives here and the
+  // legend half lives in whistle.test.js.
+  //
+  // `linesFor()` lights the centre line and a goal line for an icing, and a blue
+  // line for an offside — the only visual answer we have for offside at all,
+  // since the feed records the call and nothing else.
+  const a = boot();
+  a.$('lyWhistle').click();
+  const drawn = a.every(d => d.$('whistles').innerHTML).join('\n');
+  // ANCHORED TO `<line`, NOT TO THE CLASS NAME. The fake document keeps
+  // innerHTML as a string and parses nothing, so `class="rulel` matches happily
+  // inside `<!--line class="rulel ...-->`. Commenting the draw out survived this
+  // test until the regex required the element to actually open.
+  const lines = (drawn.match(/<line class="rulel/g) || []).length;
+  assert.ok(lines > 0,
+            'the whistle layer never lit a line — the rule geometry is not on the ice');
+
+  // AND ONLY WHILE THE LAYER IS ON. A line left behind after the layer is off
+  // would be unexplained geometry: its legend key is hidden with the group.
+  const b = boot();
+  const off = b.every(d => d.$('whistles').innerHTML).join('\n');
+  assert.ok(!/<line class="rulel/.test(off),
+            'the rule line is drawn with the whistle layer off, where nothing explains it');
+});

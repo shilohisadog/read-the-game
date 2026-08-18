@@ -761,9 +761,20 @@ LEARN_CARDS = [
      "Nine spots on the ice and the rule picks one. This is the restart the "
      "icing above forces &mdash; same second as the whistle, and deep in the "
      "offending team&rsquo;s own end."),
+    # "WHY A GOAL GETS WAVED OFF" WAS SHIPPED AND IS NOT SHOWABLE ANYWHERE.
+    # Checked against the raw feed, not inferred: an offside stoppage carries
+    # `reason` and `secondaryReason` and NOTHING else -- no coordinates, no zone,
+    # no players. Zero of 4,160 offsides carry a video review, and the feed has
+    # no event type meaning "goal disallowed" at all, so a waved-off goal never
+    # appears in our data in any form. The card promised the one thing this rule
+    # cannot show, on a page whose whole repair was removing a false promise.
+    #
+    # It now says what we have and admits what we do not, which is also the more
+    # useful instruction: watch the line, because the crossing is not there.
     ("rules", "offside", "Offside",
-     "Why a goal gets waved off. The feed names the call; the restart shows you "
-     "where play is allowed to begin again."),
+     "An attacking player crossed the blue line ahead of the puck, so the entry "
+     "does not count. The feed records the call and the restart, never the "
+     "crossing &mdash; so watch the line, not the play."),
     ("rules", "penalties", "Penalties",
      "The arm goes up and play carries on until the offending team touches the "
      "puck. This is that gap &mdash; the delayed call, before the whistle."),

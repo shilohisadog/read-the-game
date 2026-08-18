@@ -325,3 +325,49 @@ test('other stoppages light nothing, because their rules name no line', () => {
       `${r} lit a line it has no rule about`);
   }
 });
+
+// ---------------------------------------------------------------------------
+// A MARK ON THE ICE WITH NO KEY IS A MARK NOBODY CAN READ.
+//
+// The layer derives WHICH line the rule names and lights it -- honest work, and
+// the only visual answer we have for offside, because the feed records the call
+// and nothing else. It shipped with no legend entry, so a novice on the offside
+// card met an unexplained orange stripe. The rings were explained; the line was
+// not, and no test could tell the difference.
+//
+// This asserts the RELATIONSHIP -- if the page can draw the line, the page must
+// name it -- rather than either half. A test pinning the legend text alone would
+// pass on a page that had stopped drawing the line at all.
+import { readFileSync } from 'node:fs';
+const SHELL = readFileSync(new URL('../src/game.html', import.meta.url), 'utf8');
+
+test('the line the rule names is explained where it is drawn', () => {
+  // THE "IS IT DRAWN" HALF LIVES IN render.test.js, because it needs the SVG.
+  // Asserting `SHELL.includes('class="rulel')` here SURVIVED commenting the
+  // draw out -- the string was still in the file, inside the comment. A source
+  // grep cannot tell markup from a mention of markup.
+  assert.match(SHELL, /\.rulel\{[^}]*stroke:var\(--flag\)/,
+               'the rule line lost its colour');
+
+  const legend = /<div class="legend">([\s\S]*?)<\/div>/.exec(SHELL)[1];
+  assert.match(legend, /k-rl/, 'the rule line has no legend swatch');
+  assert.match(legend, /the line the rule names/,
+               'the legend does not say what the lit line is');
+
+  // IT MUST APPEAR WITH THE LAYER THAT DRAWS IT. The whistle keys are hidden
+  // until the layer is on; a rule-line key outside that group would explain a
+  // line that is not on the ice.
+  const entry = /<span class="lkey ([^"]*)"><i class="k-rl">/.exec(legend);
+  assert.ok(entry, 'the rule-line key is not a layer key');
+  assert.match(entry[1], /lk-wh/, 'the rule-line key must belong to the whistle group');
+});
+
+test('and the legend names both rules the line serves', () => {
+  // linesFor() answers for icing AND offside, and they name different lines --
+  // the centre line and a goal line for one, a blue line for the other. A key
+  // that mentioned only icing would be wrong half the time it is on screen.
+  const legend = /<div class="legend">([\s\S]*?)<\/div>/.exec(SHELL)[1];
+  const key = /the line the rule names[^<]*/.exec(legend)[0];
+  for (const w of ['icing', 'offside', 'centre line', 'blue line'])
+    assert.ok(key.includes(w), `the rule-line key never mentions ${w}: "${key}"`);
+});
