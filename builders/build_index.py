@@ -17,7 +17,7 @@ test/index.test.js exist to make that impossible to ship.
   python3 builders/build_index.py            -> src/index.html
   python3 builders/build_index.py --verify   -> build, compare, do not write
 """
-import base64, hashlib, pathlib, re, sys
+import base64, hashlib, json, pathlib, re, sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import page as P
@@ -226,6 +226,16 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .card:hover,.card:focus-visible{border-color:var(--blue)}
 .card .t{font-weight:700;margin:0 0 5px}
 .card p{margin:0;font-size:.86rem;color:var(--muted)}
+
+/* THE TWO GROUPS ARE MADE TO LOOK DIFFERENT, not merely ordered. The split is
+   the page's whole argument -- what the league does, against what we chose to
+   count -- and a uniform grid flattens two kinds of claim into one row of
+   cards. The measurement group takes the blue left edge that already means
+   "our claim" on `.limits`, so the distinction is one a reader has met before. */
+.grid.learn{margin:0 0 20px}
+.grid.learn.ours .card{border-left:3px solid var(--blue)}
+.card .at{margin-top:8px;font-size:.72rem;letter-spacing:.05em;color:var(--muted);
+ font-variant-numeric:tabular-nums}
 
 .limits{display:grid;gap:11px;margin:0;padding:0;list-style:none}
 .limits li{background:#fff;border:1px solid var(--edge);border-left:3px solid var(--blue);
@@ -668,35 +678,124 @@ def _limits():
     return "\n".join(f"  <li><b>{h}</b><span>{b}</span></li>" for h, b in LIMITS)
 
 
-LEARN = r"""<!-- NAME WHAT THE SITE TEACHES, because it named none of it.
-     Counted on the shipped page before this: icing 0, offside 0, Corsi 0,
-     high-danger 0, empty net 0, penalty 0. A site that teaches you to read
-     hockey mentioned almost nothing it teaches, and a visitor deciding whether
-     to look around decides on whether we appear to cover what they wondered
-     about.
-     TWO KINDS, KEPT APART. The first row is HOCKEY — rules a novice needs in
-     order to watch. The second is OURS — what we count, which is a different
-     claim and carries a different obligation. Merging them would let our
-     measurements borrow the rulebook's authority. -->
-<h1>What you can see here</h1>
-<div class="conc">
-  <p class="ck">The game itself &mdash; the league&rsquo;s rules, named as they happen</p>
-  <ul class="clist">
-    <li><b>Icing</b> &mdash; and why the faceoff goes back</li>
-    <li><b>Offside</b> &mdash; why a goal gets waved off</li>
-    <li><b>Faceoffs</b> &mdash; all nine spots, and which one play restarts at</li>
-    <li><b>Penalties</b> &mdash; and the delayed whistle</li>
-    <li><b>The empty net</b> &mdash; when a goaltender leaves, read from the feed</li>
-  </ul>
-  <p class="ck">What we count &mdash; our own measurements, each showing its work</p>
-  <ul class="clist">
-    <li><b>Control</b> &mdash; shot attempts, and the narrower count that predicts</li>
-    <li><b>Shots from the slot</b> &mdash; a geometric rule of ours, not a model</li>
-    <li><b>Goaltending</b> &mdash; saves as a fraction, built while you watch</li>
-  </ul>
-  <p class="cnote">Every one of them is a toggle on a real game, and every one
-  shows the events it counted and the events it did not.</p>
-</div>"""
+def _learn():
+    """The learn page, where every claim is a door into a real game.
+
+    THE CARDS AND THE DOORS MUST CORRESPOND EXACTLY, and this is the only place
+    that can check it. Prose lives here because every other page's prose does;
+    the moments live in `data/learn-doors.json` because the URL grammar is
+    JavaScript and restating it in Python is the defect `measure.mjs` exists to
+    prevent. Two documents meeting over a shared set of ids is a seam, so the
+    seam is asserted rather than assumed: a card with no door would render a
+    dead link, and a door with no card would be a moment nobody can reach.
+
+    THE COUNTS IN THE CLOSING SENTENCE ARE COUNTED, NOT TYPED. The old sentence
+    was false because prose promised something no test could see. A sentence
+    that states how many cards there are has a dependency on the card list, and
+    the only fix that cannot rot is to derive it from the list being rendered.
+    """
+    d = json.loads((ROOT / "data" / "learn-doors.json").read_text())
+    doors, g, fig = d["doors"], d["game"], d["figures"]
+
+    ids, want = {c[1] for c in LEARN_CARDS}, set(doors)
+    if ids != want:
+        raise SystemExit("learn: cards and doors disagree -- "
+                         f"cards without a door: {sorted(ids - want)}; "
+                         f"doors without a card: {sorted(want - ids)}")
+
+    out = []
+    for kind, heading in LEARN_GROUPS:
+        cards = [c for c in LEARN_CARDS if c[0] == kind]
+        out.append(f'  <p class="ck">{heading}</p>')
+        out.append(f'  <div class="grid learn {kind}">')
+        for _, cid, title, blurb in cards:
+            door = doors[cid]
+            blurb = (blurb.replace("__UNREACHED__", str(fig["unreached"]["count"]))
+                          .replace("__ATTEMPTS__", str(fig["unreached"]["n"])))
+            # The moment is shown, not just linked: a reader can see the card
+            # points somewhere specific before spending a click on it.
+            out.append(f'    <a class="card" href="/game.html{door["href"]}">'
+                       f'<p class="t">{title}</p><p>{blurb}</p>'
+                       f'<p class="at">Period {door["per"]} &middot; {door["rem"]} left</p></a>')
+        out.append("  </div>")
+
+    p1 = sum(1 for c in LEARN_CARDS if doors[c[1]]["per"] == 1)
+    y, m, day = g["date"].split("-")
+    when = f"{int(day)} {MONTHS[int(m) - 1]} {y}"
+    out.append(
+        f'  <p class="cnote">Every one of them is a toggle on a real game, and '
+        f'every one shows the events it counted and the events it did not. '
+        f'These {len(LEARN_CARDS)} moments are all from one night &mdash; '
+        f'{g["away"]} at {g["home"]}, {when} &mdash; and {p1} of them '
+        f'happen in the first period alone. Every other game we hold is '
+        f'reachable from <a href="/">the front page</a>.</p>')
+    return ('<h1>What you can see here</h1>\n<div class="conc">\n'
+            + "\n".join(out) + "\n</div>")
+
+
+# NAME WHAT THE SITE TEACHES, because it named none of it. Counted on the
+# shipped page before this: icing 0, offside 0, Corsi 0, high-danger 0, empty
+# net 0, penalty 0.
+#
+# AND THEN THE PAGE PROMISED SOMETHING IT DID NOT DELIVER. It ended with "every
+# one of them is a toggle on a real game" and carried ZERO links to any game --
+# every href on it was chrome. A false sentence on the production site, not a
+# missing feature. Each item is now a door, and the moments come from
+# `data/learn-doors.json`, which node writes by asking the layers themselves.
+#
+# TWO KINDS, KEPT APART, AND THE SPLIT IS THE PAGE'S BEST IDEA. The first group
+# is HOCKEY -- rules a novice needs in order to watch. The second is OURS -- what
+# we chose to count, which is a different claim carrying a different obligation.
+# Merging them would let our measurements borrow the rulebook's authority. The
+# groups get headings AND a visual difference: the measurement cards take the
+# blue left edge that already means "our claim" on `.limits`.
+LEARN_CARDS = [
+    ("rules", "icing", "Icing",
+     "The puck is sent the length of the ice and play comes straight back. "
+     "Watch where the faceoff goes &mdash; that dot is the whole punishment."),
+    # NAMED "Faceoffs", not "the faceoff it forces". A card title is also the
+    # word a visitor scans for, and the concept has to survive the copy -- the
+    # page exists to name what the site teaches. The pairing lives in the blurb,
+    # where it can also say the thing that matters: the punishment is WHERE.
+    ("rules", "faceoffs", "Faceoffs",
+     "Nine spots on the ice and the rule picks one. This is the restart the "
+     "icing above forces &mdash; same second as the whistle, and deep in the "
+     "offending team&rsquo;s own end."),
+    ("rules", "offside", "Offside",
+     "Why a goal gets waved off. The feed names the call; the restart shows you "
+     "where play is allowed to begin again."),
+    ("rules", "penalties", "Penalties",
+     "The arm goes up and play carries on until the offending team touches the "
+     "puck. This is that gap &mdash; the delayed call, before the whistle."),
+    ("rules", "empty-net", "The empty net",
+     "Losing late, a team trades its goaltender for a sixth skater. Nothing is "
+     "toggled here &mdash; the goalie is simply no longer on the ice."),
+    ("ours", "control", "Control",
+     "Every shot attempt, counted for both teams as it happens. This is the "
+     "first one of the game."),
+    ("ours", "blocked", "The attempt that never arrived",
+     "One event after that shot and at the same second, blocked. Both are "
+     "attempts; only one is a shot on goal &mdash; __UNREACHED__ of __ATTEMPTS__ "
+     "attempts in this game never reached the goaltender at all."),
+    ("ours", "slot", "Shots from the slot",
+     "A geometric rule of ours, not a model: close in, and between the faceoff "
+     "dots. This is the first shot that qualifies."),
+    ("ours", "goaltending", "Goaltending",
+     "Saves as a fraction, built while you watch. This is the first shot the "
+     "goaltender had to deal with."),
+]
+
+# Spelled out rather than via strftime("%B"): this builder gates on BYTES, and
+# strftime's month name follows the process locale. A table cannot be a rule
+# that drifts -- which is what the one-implementation doctrine is about -- but a
+# locale-dependent build very much can.
+MONTHS = ("January", "February", "March", "April", "May", "June", "July",
+          "August", "September", "October", "November", "December")
+
+LEARN_GROUPS = [
+    ("rules", "The game itself &mdash; the league&rsquo;s rules, named as they happen"),
+    ("ours", "What we count &mdash; our own measurements, each showing its work"),
+]
 
 WORKSHOP_PAGE = r"""<h1>Workshop</h1>
 <p class="note">Earlier views, each answering a question the main app does not.
@@ -743,7 +842,7 @@ WORKSHOP_DESC = ("Earlier views of the same NHL data, each answering a question 
 
 
 def build_learn():
-    html = LEARN_BODY.replace("__LEARN__", LEARN)
+    html = LEARN_BODY.replace("__LEARN__", _learn())
     html = P.document(html, title=LEARN_TITLE, description=LEARN_DESC,
                       url="https://readthegame.co/what-you-can-see.html",
                       current="/what-you-can-see.html",

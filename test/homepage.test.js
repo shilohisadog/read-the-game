@@ -684,7 +684,12 @@ test('the rules and OUR measurements are kept apart', () => {
   // Merging them would let our measurements borrow the rulebook's authority.
   // Icing is the NHL's; "shots from the slot" is a rule we wrote, and the page
   // has to say which is which.
-  const block = learn.match(/<div class="conc">([\s\S]*?)<\/div>/)[1];
+  // READ THE WHOLE PAGE, NOT A SLICE OF IT. This used to cut `.conc` out with a
+  // non-greedy match up to the first `</div>`, which was correct while the
+  // groups were flat `<ul>`s and silently truncated to the FIRST group the day
+  // they became grids of cards -- so the test failed on a page that was right.
+  // `.ck` appears nowhere else on this page, so the slice bought nothing.
+  const block = learn;
   const heads = [...block.matchAll(/class="ck">([\s\S]*?)<\/p>/g)].map(m => m[1]);
   assert.equal(heads.length, 2, 'the two kinds of concept are not separated');
   assert.match(heads[0], /rules/i, "the first group is not named as the league's");

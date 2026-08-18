@@ -497,6 +497,51 @@ jobs:
             exit 1
           fi
 
+      # THE LEARN PAGE'S DOORS POINT AT ONE GAME, so that game being published
+      # is a production dependency of nine links on a page a stranger reads.
+      #
+      # Nothing offline can check it. The builder proves each moment exists in
+      # data/rich.json, and the tests prove every href parses -- but "the archive
+      # still publishes this game" is a fact about the live bucket, and a
+      # re-judge that refused it would break all nine at once with every test
+      # green. build_B.py and build_rules.py already carry this exposure; the
+      # learn page is the first to put it in front of a visitor.
+      #
+      # AND STATUS TELLS YOU NOTHING HERE. Unknown paths on this deployment
+      # answer 200 with the home page, so fetching a door and seeing 200 is not
+      # evidence -- the check has to be that the id is in the catalog with a
+      # publishable verdict, and that its extract parses as the game we named.
+      - name: the game the learn page opens is still published
+        run: |
+          id=$(python3 -c "import json;print(json.load(open('data/learn-doors.json'))['game']['id'])")
+          echo "  the doors name game $id"
+          curl -sS --fail "https://data.readthegame.co/catalog.json?cb=${GITHUB_RUN_ID}" -o cat.json
+          curl -sS --fail "https://data.readthegame.co/extract/$id.json?cb=${GITHUB_RUN_ID}" -o ex.json
+          python3 - "$id" <<'PYCHECK'
+          import json, sys
+          gid = int(sys.argv[1])
+          row = {r["id"]: r for r in json.load(open("cat.json"))["games"]}.get(gid)
+          if not row:
+              sys.exit(f"::error::game {gid} is not in the published catalog — "
+                       "every door on the learn page is broken")
+          if row.get("v") != 1:
+              sys.exit(f"::error::game {gid} is in the catalog but refused "
+                       f"(r={row.get('r')}) — the learn page opens onto nothing")
+          g = json.load(open("ex.json"))
+          if g["game"]["id"] != gid:
+              sys.exit(f"::error::extract/{gid}.json describes game {g['game']['id']}")
+          print(f"  published: {row['a']} at {row['h']}, {row['d']}, "
+                f"{len(g['events'])} events — the doors have somewhere to open")
+          PYCHECK
+          # THE CHECK MUST BE ABLE TO FAIL. A catalog lookup that silently found
+          # nothing would pass this step by printing nothing at all.
+          python3 - <<'PYCANARY'
+          import json
+          rows = {r["id"]: r for r in json.load(open("cat.json"))["games"]}
+          assert 1 not in rows, "game id 1 exists — pick another impossible id"
+          print("  canary: an absent id is absent, so the lookup can miss")
+          PYCANARY
+
       # THE SHELL IS THE PAGE A LINK POINTS AT, so it is the page a stranger
       # meets first — and the only one that fetches a GAME rather than a
       # freshness line. Everything above proves the bytes are ours; this proves

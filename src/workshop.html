@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-CiWqRzQPLXZohtgVJ01YSL/YOOo3JgZYi4YQ34VcWFU='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-+ukoa9STG6A+h/agGAuFfrLQh642K66ae9ixY6jz1WI='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -167,6 +167,16 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .card:hover,.card:focus-visible{border-color:var(--blue)}
 .card .t{font-weight:700;margin:0 0 5px}
 .card p{margin:0;font-size:.86rem;color:var(--muted)}
+
+/* THE TWO GROUPS ARE MADE TO LOOK DIFFERENT, not merely ordered. The split is
+   the page's whole argument -- what the league does, against what we chose to
+   count -- and a uniform grid flattens two kinds of claim into one row of
+   cards. The measurement group takes the blue left edge that already means
+   "our claim" on `.limits`, so the distinction is one a reader has met before. */
+.grid.learn{margin:0 0 20px}
+.grid.learn.ours .card{border-left:3px solid var(--blue)}
+.card .at{margin-top:8px;font-size:.72rem;letter-spacing:.05em;color:var(--muted);
+ font-variant-numeric:tabular-nums}
 
 .limits{display:grid;gap:11px;margin:0;padding:0;list-style:none}
 .limits li{background:#fff;border:1px solid var(--edge);border-left:3px solid var(--blue);

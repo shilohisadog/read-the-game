@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-CiWqRzQPLXZohtgVJ01YSL/YOOo3JgZYi4YQ34VcWFU='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-+ukoa9STG6A+h/agGAuFfrLQh642K66ae9ixY6jz1WI='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -168,6 +168,16 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .card .t{font-weight:700;margin:0 0 5px}
 .card p{margin:0;font-size:.86rem;color:var(--muted)}
 
+/* THE TWO GROUPS ARE MADE TO LOOK DIFFERENT, not merely ordered. The split is
+   the page's whole argument -- what the league does, against what we chose to
+   count -- and a uniform grid flattens two kinds of claim into one row of
+   cards. The measurement group takes the blue left edge that already means
+   "our claim" on `.limits`, so the distinction is one a reader has met before. */
+.grid.learn{margin:0 0 20px}
+.grid.learn.ours .card{border-left:3px solid var(--blue)}
+.card .at{margin-top:8px;font-size:.72rem;letter-spacing:.05em;color:var(--muted);
+ font-variant-numeric:tabular-nums}
+
 .limits{display:grid;gap:11px;margin:0;padding:0;list-style:none}
 .limits li{background:#fff;border:1px solid var(--edge);border-left:3px solid var(--blue);
  border-radius:0 10px 10px 0;padding:12px 16px}
@@ -211,34 +221,24 @@ footer p{margin:0 0 8px}
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">Watch a game</a><a href="/#teams">Teams</a><a href="/what-you-can-see.html" aria-current="page">What you can see</a><a href="/workshop.html">Workshop</a></nav></header>
 <div class="wrap">
 <p class="eyebrow">Read the Game</p>
-<!-- NAME WHAT THE SITE TEACHES, because it named none of it.
-     Counted on the shipped page before this: icing 0, offside 0, Corsi 0,
-     high-danger 0, empty net 0, penalty 0. A site that teaches you to read
-     hockey mentioned almost nothing it teaches, and a visitor deciding whether
-     to look around decides on whether we appear to cover what they wondered
-     about.
-     TWO KINDS, KEPT APART. The first row is HOCKEY — rules a novice needs in
-     order to watch. The second is OURS — what we count, which is a different
-     claim and carries a different obligation. Merging them would let our
-     measurements borrow the rulebook's authority. -->
 <h1>What you can see here</h1>
 <div class="conc">
   <p class="ck">The game itself &mdash; the league&rsquo;s rules, named as they happen</p>
-  <ul class="clist">
-    <li><b>Icing</b> &mdash; and why the faceoff goes back</li>
-    <li><b>Offside</b> &mdash; why a goal gets waved off</li>
-    <li><b>Faceoffs</b> &mdash; all nine spots, and which one play restarts at</li>
-    <li><b>Penalties</b> &mdash; and the delayed whistle</li>
-    <li><b>The empty net</b> &mdash; when a goaltender leaves, read from the feed</li>
-  </ul>
+  <div class="grid learn rules">
+    <a class="card" href="/game.html?game=2023020204&at=1-15%3A02.1&layer=whistle&strength=all"><p class="t">Icing</p><p>The puck is sent the length of the ice and play comes straight back. Watch where the faceoff goes &mdash; that dot is the whole punishment.</p><p class="at">Period 1 &middot; 15:02 left</p></a>
+    <a class="card" href="/game.html?game=2023020204&at=1-15%3A02.2&layer=whistle&strength=all"><p class="t">Faceoffs</p><p>Nine spots on the ice and the rule picks one. This is the restart the icing above forces &mdash; same second as the whistle, and deep in the offending team&rsquo;s own end.</p><p class="at">Period 1 &middot; 15:02 left</p></a>
+    <a class="card" href="/game.html?game=2023020204&at=1-04%3A48.1&layer=whistle&strength=all"><p class="t">Offside</p><p>Why a goal gets waved off. The feed names the call; the restart shows you where play is allowed to begin again.</p><p class="at">Period 1 &middot; 04:48 left</p></a>
+    <a class="card" href="/game.html?game=2023020204&at=1-19%3A39&layer=whistle&strength=all"><p class="t">Penalties</p><p>The arm goes up and play carries on until the offending team touches the puck. This is that gap &mdash; the delayed call, before the whistle.</p><p class="at">Period 1 &middot; 19:39 left</p></a>
+    <a class="card" href="/game.html?game=2023020204&at=3-01%3A40&strength=all"><p class="t">The empty net</p><p>Losing late, a team trades its goaltender for a sixth skater. Nothing is toggled here &mdash; the goalie is simply no longer on the ice.</p><p class="at">Period 3 &middot; 01:40 left</p></a>
+  </div>
   <p class="ck">What we count &mdash; our own measurements, each showing its work</p>
-  <ul class="clist">
-    <li><b>Control</b> &mdash; shot attempts, and the narrower count that predicts</li>
-    <li><b>Shots from the slot</b> &mdash; a geometric rule of ours, not a model</li>
-    <li><b>Goaltending</b> &mdash; saves as a fraction, built while you watch</li>
-  </ul>
-  <p class="cnote">Every one of them is a toggle on a real game, and every one
-  shows the events it counted and the events it did not.</p>
+  <div class="grid learn ours">
+    <a class="card" href="/game.html?game=2023020204&at=1-18%3A40.1&layer=corsi&strength=all"><p class="t">Control</p><p>Every shot attempt, counted for both teams as it happens. This is the first one of the game.</p><p class="at">Period 1 &middot; 18:40 left</p></a>
+    <a class="card" href="/game.html?game=2023020204&at=1-18%3A40.2&layer=corsi&strength=all"><p class="t">The attempt that never arrived</p><p>One event after that shot and at the same second, blocked. Both are attempts; only one is a shot on goal &mdash; 75 of 135 attempts in this game never reached the goaltender at all.</p><p class="at">Period 1 &middot; 18:40 left</p></a>
+    <a class="card" href="/game.html?game=2023020204&at=1-16%3A03&layer=slot&strength=all"><p class="t">Shots from the slot</p><p>A geometric rule of ours, not a model: close in, and between the faceoff dots. This is the first shot that qualifies.</p><p class="at">Period 1 &middot; 16:03 left</p></a>
+    <a class="card" href="/game.html?game=2023020204&at=1-18%3A40.1&layer=goaltending&strength=all"><p class="t">Goaltending</p><p>Saves as a fraction, built while you watch. This is the first shot the goaltender had to deal with.</p><p class="at">Period 1 &middot; 18:40 left</p></a>
+  </div>
+  <p class="cnote">Every one of them is a toggle on a real game, and every one shows the events it counted and the events it did not. These 9 moments are all from one night &mdash; MIN at BUF, 10 November 2023 &mdash; and 8 of them happen in the first period alone. Every other game we hold is reachable from <a href="/">the front page</a>.</p>
 </div>
 </div>
 <footer class="sitefoot"><p>Game data from the NHL's public play-by-play feed, fetched once and stored. Not affiliated with, endorsed by, or a product of the National Hockey League or any club. <strong>No NHL or club logos, wordmarks or crests appear anywhere on this site</strong> — teams are identified by colour and three-letter abbreviation only.</p><p><a href="https://github.com/shilohisadog/read-the-game">Source on GitHub</a> — every number here is a function of stored events, and you can read the function. Found one that looks wrong? <!--email_off--><a href="mailto:ReadTheGameOfHockey@gmail.com">ReadTheGameOfHockey@gmail.com</a><!--/email_off--></p><p>Nothing here is paywalled. If it helped you read a game, you can <a href="https://buymeacoffee.com/readthegameofhockey">buy me a coffee</a>.</p></footer>
