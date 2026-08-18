@@ -23,7 +23,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { TEAMS, colourOf, contrast } from '../src/lib/teams.js';
-import { WHY } from '../src/lib/layers/whistle.js';
+import { WHY, whistle } from '../src/lib/layers/whistle.js';
 import { corsi } from '../src/lib/layers/corsi.js';
 
 const rich = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url)));
@@ -211,6 +211,16 @@ function boot(game, rates, search = '', store = null) {
         out.push(read(dom));
       }
       return out;
+    },
+    /**
+     * One named frame. `every` and `sweep` answer "across the game"; some
+     * claims are about a SPECIFIC event — the faceoff after a goal is not the
+     * faceoff after a whistle, and only that frame can tell them apart.
+     */
+    at(k, read) {
+      scrub.value = String(k);
+      scrub.oninput({ target: { value: scrub.value } });
+      return read(dom);
     },
     /** Drag the scrubber the way a viewer does, and report what got drawn. */
     sweep(read) {
@@ -2991,4 +3001,68 @@ test('the whistle layer actually draws the line its rule names', () => {
   const off = b.every(d => d.$('whistles').innerHTML).join('\n');
   assert.ok(!/<line class="rulel/.test(off),
             'the rule line is drawn with the whistle layer off, where nothing explains it');
+});
+
+test('the restart faceoff says which rule it is restarting after', () => {
+  // THE ONLY THING THE ICE CAN HONESTLY SAY ABOUT AN OFFSIDE. The stoppage
+  // carries a reason and a time and nothing else — no coordinates, no zone, no
+  // players — so the infraction cannot be drawn. The restart IS recorded, and so
+  // is the fact that it belongs to that whistle, which makes this a recorded
+  // relationship rather than an inference.
+  //
+  // Driven from the reducer, never from a literal: whatever this game stopped
+  // for, the faceoff the layer paired with a whistle must carry that whistle's
+  // written name.
+  const a = boot();
+  a.$('lyWhistle').click();
+  const seen = a.every(d => d.$('labels').innerHTML).join('\n');
+  const said = [...seen.matchAll(/ after ([^<·]+)/g)].map(m => m[1].trim());
+  assert.ok(said.length > 0, 'no restart ever named the rule that caused it');
+
+  // Every reason it named must be one the vocabulary actually holds — a raw
+  // feed key leaking onto the ice is the defect WHY was built to end.
+  const names = new Set(Object.values(WHY).map(v => v.name).filter(Boolean));
+  for (const s of said) {
+    assert.ok(names.has(s) || s === 'an unrecorded stoppage',
+              `the ice named "${s}", which is not a written reason`);
+  }
+
+  // AND ONLY THE FACEOFFS THAT ACTUALLY RESTART A WHISTLE. Taking "the most
+  // recent whistle" instead of the paired one survived every check above,
+  // because at a restart they are usually the same event. They come apart at a
+  // faceoff that follows a GOAL: play stopped for the goal, not for a whistle,
+  // so that dot must say nothing — and the loose version would hand it whatever
+  // stopped play last, several minutes earlier.
+  const wctx = { roster: rich.roster, homeId: rich.teams.home.id,
+                 awayId: rich.teams.away.id, evenOnly: false };
+  const paired = new Set(whistle.reduce(rich.events, wctx).whistles
+    .map(w => w.spotId).filter(x => x != null));
+  const afterGoal = rich.events.findIndex((e, k) =>
+    e.type === 'faceoff' && k > 0 && rich.events[k - 1].type === 'goal');
+  assert.ok(afterGoal > 0, 'this game has no faceoff following a goal to test with');
+  assert.ok(!paired.has(afterGoal),
+            'the reducer paired a whistle with the faceoff after a goal');
+
+  // ONE LABEL PER PAIRED RESTART, EXACTLY. This is the assertion that separates
+  // the right answer from a coincidental one. `i` indexes EV (the playable
+  // events, 269 of this game's 320) and `spotId` indexes the whole game, so
+  // `spotId === i` compares two different spaces -- and still matched often
+  // enough to produce plausible labels and survive three mutations. Counting
+  // them catches it: the coincidences do not add up to the real total.
+  const placed = whistle.reduce(rich.events, wctx).whistles.filter(w => w.spotId != null);
+  const labelled = a.every(d => d.$('labels').innerHTML).filter(h => / after /.test(h)).length;
+  assert.equal(labelled, placed.length,
+    `${labelled} frames name a restarting rule but ${placed.length} whistles were placed`);
+
+  const c = boot();
+  c.$('lyWhistle').click();
+  const atGoalRestart = c.at(afterGoal, d => d.$('labels').innerHTML);
+  assert.ok(!/ after /.test(atGoalRestart),
+            `the faceoff after a goal claims to be restarting a whistle: ${atGoalRestart}`);
+
+  // AND ONLY WITH THE LAYER ON, like the ring and the legend key it belongs to.
+  const b = boot();
+  const off = b.every(d => d.$('labels').innerHTML).join('\n');
+  assert.ok(!/ after /.test(off),
+            'the restart names its rule with the whistle layer off');
 });

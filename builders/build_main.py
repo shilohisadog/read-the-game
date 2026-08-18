@@ -1404,6 +1404,34 @@ function drawLabel(e){const g=$('labels');const p=place(e);if(!labelsOn||!p){g.i
  // the answer to a hue. Costs nothing and works without colour vision.
  const lab=e.own===AID?AAB:e.own===HID?HAB:null;
  const hd=(hdOn&&isHD(e))?' · from the slot':'';
+ // WHY THIS FACEOFF IS HAPPENING, on the ice rather than only under it.
+ //
+ // The rules a novice most needs are the ones the feed records LEAST: an offside
+ // stoppage carries a reason and a time and nothing else -- no coordinates, no
+ // zone, no players -- so the infraction itself can never be drawn. What IS
+ // recorded is the restart, and that the restart belongs to that whistle. Naming
+ // the rule on the dot is therefore a RECORDED RELATIONSHIP, not an inference,
+ // and it is the only thing the ice can honestly say about an offside.
+ //
+ // The reducer already paired them to place the ring and now publishes `spotId`,
+ // so the pairing is read here rather than worked out a second time.
+ //
+ // TWO INDEX SPACES, AND THE FIRST DRAFT CROSSED THEM. `i` indexes EV -- the
+ // PLAYABLE events, which drops 51 of 320 in this game -- while the reducer runs
+ // over `upto(i)`, a slice of G.events, so its `spotId` is a G.events index.
+ // Comparing `spotId === i` matched anyway, often enough to look right and to
+ // survive a mutation that swapped the field for another one. It was true by
+ // coincidence. `EVI[i]` is the same moment expressed in the reducer's space.
+ //
+ // ONE LINE, NOT TWO. The first draft made it a `plabsub` and a test caught it:
+ // Kevin retired on-ice subtext on 2026-08-16 for taking room, and this label
+ // sits on a faceoff dot that already carries a ring and sometimes a count. It
+ // rides the same suffix seam `hd` uses, so the ice gains a clause and not a row.
+ const why=(()=>{
+   if(!whistleOn||e.type!=='faceoff')return '';
+   const w=whistle.reduce(upto(i),CTX).whistles.find(x=>x.spotId===EVI[i]);
+   if(!w)return '';
+   return ' after '+(w.rsn?RSN(w.rsn):'an unrecorded stoppage');})();
  // WITH THE LAYER ON, THE LABEL NAMES THE BLOCKER, and the reason is the mark's
  // position rather than a preference for one name over the other. A blocked
  // shot's (x, y) is the BLOCK POINT -- where the puck was stopped, between the
@@ -1422,7 +1450,7 @@ function drawLabel(e){const g=$('labels');const p=place(e);if(!labelsOn||!p){g.i
      :`${bt?bt+' · ':''}${b.nm} blocked it`;
    g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${ESC(head)}</text></g>`;
    return;}
- g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${lab?lab+" · ":""}${info}${hd}</text></g>`;}
+ g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${lab?lab+" · ":""}${info}${ESC(why)}${hd}</text></g>`;}
 $('lbl').addEventListener('click',()=>{labelsOn=!labelsOn;$('lbl').setAttribute('aria-pressed',labelsOn);$('lbl').style.opacity=labelsOn?'1':'.5';drawLabel(EV[i]);});
 
 // THE WHISTLE LAYER, DRAWN. What from the stoppage, where from the faceoff that

@@ -249,7 +249,7 @@ export const whistle = {
       // of 1,279 sampled restarts were within five. That number is a fact about
       // the sample, not a rule, and encoding it would have been a threshold with
       // no source.
-      let spot = null, unplaced = null;
+      let spot = null, spotId = null, unplaced = null;
       for (let j = id + 1; j < events.length; j++) {
         const t = events[j].type;
         if (CLOSES_PLAY.has(t)) {
@@ -262,6 +262,7 @@ export const whistle = {
             unplaced = 'the restarting faceoff has no recorded location';
           } else {
             spot = events[j];
+            spotId = j;
           }
           break;
         }
@@ -292,6 +293,13 @@ export const whistle = {
         from: copy ? copy.from : null,
         known: Boolean(copy),
         placed: Boolean(spot),
+        // WHICH EVENT THE RESTART IS, not merely where it was. The walk above
+        // already found it in order to place the ring; publishing the index lets
+        // the renderer label that faceoff with the rule that caused it instead
+        // of pairing them a second time on its own. The ring has carried the
+        // reason in a <title> since it shipped, and this layer's own notes say
+        // why that was never enough: nobody hovers while watching.
+        spotId,
         x: spot ? spot.x : null,
         y: spot ? spot.y : null,
         // WHOSE END play restarted in, and the lines the rule is about. Both are
