@@ -18,6 +18,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 import { stints, occupants } from '../src/lib/box.js';
+import { ENDS_NOTE, endsNoteShowing } from '../src/lib/rink.js';
 
 const rich = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url)));
 const CTX = { homeId: rich.teams.home.id, awayId: rich.teams.away.id };
@@ -287,4 +288,63 @@ test('the occupancy the reference game actually shows, counted', () => {
     const up = goal.own === AWAY ? +goal.sit[1] : +goal.sit[2];
     assert.ok(short < up, 'and the serving team really was short at that instant');
   }
+});
+
+// ---------------------------------------------------------- the ends disclosure
+//
+// THE SENTENCE THE PAGE HAS OWED SINCE THE ENDS DECISION. docs/ends-switching.md
+// committed to it in section 6, worded it in 7.5 and listed it as step 4 in 8 --
+// and it was never built, which meant every argument since compared
+// one-direction WITHOUT its mitigation against as-played.
+
+test('the disclosure says nothing in the first period, because nothing has changed', () => {
+  assert.equal(endsNoteShowing({ per: 1, s: 0 }, 0), false);
+  assert.equal(endsNoteShowing({ per: 1, s: 1100 }, 0), false);
+  assert.equal(endsNoteShowing(null, 0), false);
+});
+
+test('it stands at the top of every LATER period, and stands down again', () => {
+  // A NOTE APPEARS WHEN THE THING IT EXPLAINS HAPPENS. The moment a viewer asks
+  // "why didn't they switch?" is the start of the second period.
+  assert.equal(endsNoteShowing({ per: 2, s: 1200 }, 1200), true);
+  assert.equal(endsNoteShowing({ per: 2, s: 1289 }, 1200), true);
+  assert.equal(endsNoteShowing({ per: 2, s: 1290 }, 1200), false, 'and then it is furniture');
+  assert.equal(endsNoteShowing({ per: 3, s: 2400 }, 2400), true);
+  assert.equal(endsNoteShowing({ per: 4, s: 3600 }, 3600), true, 'overtime too');
+  // THE BOUNDARY IS THE PERIOD'S OWN START, not a multiple of anything. Passing
+  // a different start moves the window with it, which is what makes the
+  // parameter real rather than decorative.
+  assert.equal(endsNoteShowing({ per: 2, s: 1289 }, 1250), true);
+  assert.equal(endsNoteShowing({ per: 2, s: 1345 }, 1250), false);
+});
+
+test('two sentences, two kinds, and the tag says which', () => {
+  // Every other provenance tag points into the game or the feed. This one points
+  // at the renderer, and that is the whole reason the category exists.
+  assert.match(ENDS_NOTE.from, /^display:/);
+  assert.ok(/chang\w+ ends/.test(ENDS_NOTE.rule), 'the first sentence is about hockey');
+  assert.ok(/\bwe\b/i.test(ENDS_NOTE.display), 'the second is about us');
+  assert.notEqual(ENDS_NOTE.rule, ENDS_NOTE.display);
+  // It must not claim the teams stayed put -- the rink does, they did not.
+  assert.ok(!/didn.t change|stay(ed)? (on )?the same end/i.test(ENDS_NOTE.rule),
+            'the sentence must not deny a thing the feed records');
+});
+
+test('the page carries the disclosure, and it is empty until it is earned', () => {
+  const page = readFileSync(new URL('../src/read-the-game.html', import.meta.url), 'utf8');
+  assert.ok(page.includes('class="endnote"'), 'the element is on the page');
+  assert.ok(page.includes('function drawEndsNote'), 'and something fills it');
+  // `:empty` rather than a class, so a note with nothing to say leaves no gap --
+  // the page's own pattern, and asserted because a stylesheet cannot be seen by
+  // any other test here.
+  assert.ok(/#rg \.endnote:empty\{display:none\}/.test(page),
+            'an empty note must collapse rather than leave a band of padding');
+  // THE SOURCE IS NOT THE RENDERING, and this assertion learned it the hard way:
+  // the display sentence is written as two concatenated string literals, so it
+  // never appears verbatim in the bundle and a `page.includes(...)` on it fails
+  // while the page is perfectly correct. What reaches the SCREEN is asserted in
+  // render.test.js, through the real renderer. Here we check only that both
+  // halves are carried, on a fragment short enough to survive the concatenation.
+  assert.ok(page.includes('changed ends'), 'the rule sentence is in the bundle');
+  assert.ok(page.includes('hold the rink the same way'), 'and so is the display half');
 });

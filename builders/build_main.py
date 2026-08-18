@@ -51,6 +51,13 @@ T = r"""<style>
 /* The deep-link notice. `:empty` rather than a `hidden` attribute, so the one
    place that writes the sentence is the only place that controls whether it
    shows -- a second switch is a second thing to get out of step. */
+/* THE ENDS DISCLOSURE. `:empty` rather than a class, for the same reason every
+   other note on this page uses it: a note with nothing to say must not leave a
+   gap behind. It sits directly under the scoreboard because that is where the
+   `ATTACKS →` arrows are, and this sentence is what those arrows mean. */
+#rg .endnote:empty{display:none}
+#rg .endnote{margin:0 0 10px;padding:9px 13px;border-radius:9px;border:1px solid var(--edge);border-left:3px solid var(--blue);background:#fff;color:var(--ink);font-size:.84rem;line-height:1.45}
+#rg .endnote .disp{color:var(--muted)}
 #rg .atnote:empty{display:none}
 #rg .atnote{margin:0 0 10px;padding:9px 13px;border-radius:9px;border:1px solid var(--edge);background:#fbf6ee;color:var(--ink);font-size:.88rem}
 #rg .rinkbox{position:relative;background:var(--ice);border:1px solid var(--edge);border-radius:15px;padding:10px;box-shadow:0 6px 22px rgba(16,32,45,.08)}
@@ -504,6 +511,7 @@ T = r"""<style>
   </div>
   <div class="tm h"><span class="ab" id="hAb">BUF</span><span class="sc" id="hSc">0</span><i class="atk" id="hAtk"></i></div>
 </div>
+<p class="endnote" id="endnote"></p>
 <p class="atnote" id="atnote"></p>
 <div class="rinkbox"><svg viewBox="0 0 200 85"><g id="rink"></g><g id="netmen"></g><g id="lines"></g><g id="whistles"></g><g id="events"></g><g id="puck"></g><g id="labels"></g><g id="noplace"></g></svg>
   <div class="pboxes" id="pboxes"><span class="pblab">Penalty box</span><span class="pb a" id="pbA"></span><span class="pb h" id="pbH"></span></div>
@@ -665,6 +673,19 @@ const MODE=()=>evenOnly?'even strength':'all situations';
 // not a correctness one, and it is written down that way rather than dressed up
 // as a bug it does not fix.
 const PBOX=stints(G.events,CTX);
+// WHEN EACH PERIOD BEGAN, read from the events.
+//
+// AND NOT BECAUSE THE ARITHMETIC WOULD BE WRONG -- the first draft of this
+// comment said `(per-1)*1200` would break in overtime, and that is false.
+// `extract.py::_secs` BUILDS `s` as `(period-1)*1200 + elapsed`, so the two
+// agree by construction, in overtime as everywhere else. Writing down a reason
+// that sounds right and is not is worse than writing none.
+//
+// The real reason is smaller and true: this way the renderer does not need to
+// know how `s` was constructed. If the extract's clock convention ever changes,
+// this follows it instead of silently disagreeing with it.
+const PSTART=(()=>{const m={};for(const e of G.events)
+  if(m[e.per]==null||e.s<m[e.per])m[e.per]=e.s;return m;})();
 function isHD(e){return isHighDangerEvent(e,CTX);}
 function lens(k){return corsi.reduce(upto(k),CTX);}
 const $=id=>document.getElementById(id);
@@ -943,6 +964,15 @@ function drawBoxes(secs){
          return `<span class="man">${ESC(p?p.nm:'—')}</span><span class="srv">${s.min}:00</span>`;}).join('')
      : '<span class="srv">empty</span>';}}
 
+/* THE SENTENCE THE PAGE HAS OWED SINCE THE ENDS DECISION -- see rink.js.
+   Two sentences, two kinds: the first is about hockey, the second is about what
+   WE did to the data, and the `display:` tag says which. */
+function drawEndsNote(e){
+ const el=$('endnote');if(!el)return;
+ if(!e||!endsNoteShowing(e,PSTART[e.per]??0)){el.innerHTML='';return;}
+ // The `from` provenance string is deliberately NOT painted here -- see rink.js.
+ el.innerHTML=`${ESC(ENDS_NOTE.rule)} <span class="disp">${ESC(ENDS_NOTE.display)}</span>`;}
+
 function render(i,how){
  const moment=how==='play'||how==='jump';
  // `evs` is the PLAYABLE prefix, used to draw the marks on the timeline.
@@ -950,6 +980,7 @@ function render(i,how){
  // slices on purpose: the ice shows plays, the ledger accounts for everything.
  const evs=EV.slice(0,i+1),L=lens(i),cur=EV[i];
  drawBoxes(cur?cur.s:null);   // null before the first play: both boxes empty
+ drawEndsNote(cur);
  const parts=[];
  for(let k=0;k<evs.length;k++){const e=evs[k];const pos=place(e);if(!pos)continue;
    if(trails==='off'&&k!==i)continue;

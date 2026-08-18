@@ -3223,3 +3223,35 @@ test('the scoreboard says which way each team attacks, and they disagree', () =>
   assert.equal(arrow(home), mean < 100 ? 'left' : 'right',
     `the host's ${xs.length} shots average x=${mean.toFixed(1)} but the board says it attacks ${arrow(home)}`);
 });
+
+test('the ends disclosure appears at a period boundary and nowhere else', () => {
+  // THE SENTENCE docs/ends-switching.md AGREED IN SECTION 6 AND NEVER BUILT.
+  // Asserted through the real renderer, because the bundle holds it as two
+  // concatenated literals -- a source-text check on it fails while the page is
+  // right, which is exactly the difference between the source and the rendering.
+  const a = boot();
+  const notes = a.every(d => d.$('endnote').innerHTML);
+  const shown = notes.filter(Boolean);
+
+  assert.ok(shown.length > 0, 'the disclosure never appears at all');
+  assert.ok(shown.length < notes.length,
+            'it is permanent furniture, which is the thing it must not be');
+  assert.equal(notes[0], '', 'nothing to disclose at the opening faceoff');
+
+  for (const h of shown) {
+    assert.ok(/changed ends/.test(h), 'the hockey sentence');
+    assert.ok(/hold the rink the same way/.test(h), 'and the one about what we did');
+    // The `display:` tag is DATA and stays off the ice -- asserted on the object
+    // in box.test.js. Painting it here cost 176px on a 390px phone.
+    assert.ok(!/display:/.test(h), 'the provenance string must not reach the ice');
+  }
+
+  // IT IS A BLOCK PER PERIOD, NOT A SCATTER. A count of shown frames alone would
+  // pass if the note blinked on and off at random moments; what makes it a
+  // period-boundary disclosure is that it occupies one contiguous run at the top
+  // of each period after the first. Three periods in the reference game, so two.
+  let runs = 0;
+  for (let k = 0; k < notes.length; k++) if (notes[k] && !notes[k - 1]) runs++;
+  assert.equal(runs, 2,
+    `the disclosure appears in ${runs} runs; a 3-period game has 2 later periods`);
+});
