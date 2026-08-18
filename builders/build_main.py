@@ -54,6 +54,28 @@ T = r"""<style>
 #rg .atnote:empty{display:none}
 #rg .atnote{margin:0 0 10px;padding:9px 13px;border-radius:9px;border:1px solid var(--edge);background:#fbf6ee;color:var(--ink);font-size:.88rem}
 #rg .rinkbox{position:relative;background:var(--ice);border:1px solid var(--edge);border-radius:15px;padding:10px;box-shadow:0 6px 22px rgba(16,32,45,.08)}
+/* THE PENALTY BOX, AND IT IS OUTSIDE THE viewBox ON PURPOSE. Put inside it, the
+   rink would shrink to make room -- and the rink is 136px tall on a 390px phone
+   against 373px on a laptop, measured, so the band would cost most where there
+   is least. Same failure as the scoreboard that was 87px in both frames: 19% of
+   a desktop hero and 56% of a phone one. A label does not scale with the
+   viewport; the rink does.
+
+   ALWAYS PRESENT, EMPTY OR NOT. A band that appears only when occupied moves
+   everything below it twice a period, and a viewer never learns what the space
+   is for. Kevin: "enough vertical pixels to be super obvious." */
+#rg .pboxes{margin-top:9px;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+#rg .pblab{grid-column:1/-1;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:center}
+#rg .pb{display:flex;align-items:center;gap:7px;min-height:30px;padding:5px 9px;border:1px solid var(--edge);border-radius:9px;background:#fff;font-size:.79rem;line-height:1.25}
+#rg .pb::before{content:attr(data-ab);font-size:.62rem;font-weight:750;letter-spacing:.04em;padding:2px 5px;border-radius:4px}
+#rg .pb.a::before{background:var(--away);color:var(--away-ink)}
+#rg .pb.h::before{background:var(--home);color:var(--home-ink)}
+#rg .pb.empty{color:var(--muted);background:transparent;border-style:dashed}
+/* A NAME AND A NUMBER, never the raw `descKey`. `high-sticking-double-minor` is
+   a key, and the one thing a stylesheet must not do to it is `capitalize` it --
+   that was half the damage the last time a raw key reached a screen. */
+#rg .pb .man{font-weight:600}#rg .pb .srv{font-family:ui-monospace,Menlo,monospace;color:var(--muted);font-size:.72rem}
+#rg .pb .man+.man{margin-left:6px}
 #rg svg{display:block;width:100%;height:auto}
 #rg .boards{fill:var(--ice);stroke:var(--edge);stroke-width:1.1}
 #rg .ln{fill:none;stroke-linecap:round}#rg .ln.red{stroke:var(--red);stroke-width:.7;opacity:.42}#rg .ln.blue{stroke:var(--blue);stroke-width:.9;opacity:.42}#rg .ln.thick{stroke-width:1.1;opacity:.52}
@@ -484,6 +506,7 @@ T = r"""<style>
 </div>
 <p class="atnote" id="atnote"></p>
 <div class="rinkbox"><svg viewBox="0 0 200 85"><g id="rink"></g><g id="netmen"></g><g id="lines"></g><g id="whistles"></g><g id="events"></g><g id="puck"></g><g id="labels"></g><g id="noplace"></g></svg>
+  <div class="pboxes" id="pboxes"><span class="pblab">Penalty box</span><span class="pb a" id="pbA"></span><span class="pb h" id="pbH"></span></div>
   <div class="caption" id="caption"></div>
   <div class="counters"><div class="cc a"><span class="n" id="cA">0</span><span class="lb">MIN attempts<span class="mode" id="mA">ALL SITUATIONS</span></span></div><div class="cc h"><span class="lb">BUF attempts<span class="mode" id="mH">ALL SITUATIONS</span></span><span class="n" id="cH">0</span></div></div>
 </div>
@@ -636,6 +659,12 @@ let trails='off';
 const CTX={roster:R,homeId:HID,awayId:AID,homeAb:HAB,awayAb:AAB,
            get evenOnly(){return evenOnly;}};
 const MODE=()=>evenOnly?'even strength':'all situations';
+// COMPUTED ONCE, because a stint is a property of the GAME and only the query is
+// a property of the moment. A prefix would give the same answer -- any goal at
+// or before the current second is already in it -- so this is a cost decision,
+// not a correctness one, and it is written down that way rather than dressed up
+// as a bug it does not fix.
+const PBOX=stints(G.events,CTX);
 function isHD(e){return isHighDangerEvent(e,CTX);}
 function lens(k){return corsi.reduce(upto(k),CTX);}
 const $=id=>document.getElementById(id);
@@ -892,12 +921,35 @@ let prevA=0,prevH=0;
  * happened forty times, minutes ago. The caption is the opposite case: calling
  * the goal again is the whole reason to jump to it.
  */
+/* WHO IS SITTING, at one instant. The names come from the penalty events and
+   the seat is emptied by src/lib/box.js -- which consults `sit` about GOALS and
+   about nothing else, because occupancy and strength are different questions.
+   Coincidental majors after a fight fill both boxes at five a side, and a band
+   driven by the strength code would show them empty.
+
+   THE ASSESSED TIME, NOT A COUNTDOWN. `2:00` is what the referee gave him; what
+   he serves can be less, and it is the ice that says so. Kevin ruled a static
+   label for this build. */
+function drawBoxes(secs){
+ for(const [tm,id,ab] of [[AID,'pbA',AAB],[HID,'pbH',HAB]]){
+   const el=$(id);if(!el)continue;
+   const men=secs==null?[]:occupants(PBOX,secs,tm);
+   el.setAttribute('data-ab',ab);
+   el.classList.toggle('empty',!men.length);
+   // The infraction is a raw feed key (`high-sticking-double-minor`) and stays
+   // out of here; the caption already names it in words when the call is made.
+   el.innerHTML=men.length
+     ? men.map(s=>{const p=R[s.player];
+         return `<span class="man">${ESC(p?p.nm:'—')}</span><span class="srv">${s.min}:00</span>`;}).join('')
+     : '<span class="srv">empty</span>';}}
+
 function render(i,how){
  const moment=how==='play'||how==='jump';
  // `evs` is the PLAYABLE prefix, used to draw the marks on the timeline.
  // `lens(i)` reduces the FULL stream up to the same moment. Two different
  // slices on purpose: the ice shows plays, the ledger accounts for everything.
  const evs=EV.slice(0,i+1),L=lens(i),cur=EV[i];
+ drawBoxes(cur?cur.s:null);   // null before the first play: both boxes empty
  const parts=[];
  for(let k=0;k<evs.length;k++){const e=evs[k];const pos=place(e);if(!pos)continue;
    if(trails==='off'&&k!==i)continue;
@@ -2063,7 +2115,7 @@ if(PREVIEW){
 __BOOT__
 </script>"""
 
-LIB = ["rink.js", "attribution.js", "layer.js", "strength.js", "svgpen.js", "figures.js",
+LIB = ["rink.js", "attribution.js", "layer.js", "strength.js", "box.js", "svgpen.js", "figures.js",
        "layers/corsi.js", "layers/goaltending.js", "layers/danger.js", "layers/whistle.js",
        "layers/blocked.js",
        "teams.js", "layers/tied.js", "sentence.js",
