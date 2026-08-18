@@ -29,7 +29,10 @@ import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "builders"))
 import derive as D
+import extract as E
 import fetch_nhl as F
+
+DATA = pathlib.Path(__file__).resolve().parent.parent / "data"
 
 
 class DictStore:
@@ -1146,3 +1149,196 @@ class TheWhistleCarriesItsReason(unittest.TestCase):
         e = self.stop(reason="a-reason-nobody-has-seen")
         self.assertEqual(e["rsn"], "a-reason-nobody-has-seen",
                          "carry it verbatim; interpreting it is the layer's job")
+
+
+# --------------------------------------------------- the penalty box, and the ends
+#
+# THE SCHEMA CHANGE OF 2026-08-18. Kevin ruled penalty boxes IN and benches OUT,
+# which meant the extract had to stop discarding two things: what a penalty
+# actually WAS, and which end each team defended in each period.
+#
+# These read the REAL reference feed rather than a synthetic fixture, because
+# what is under test is what the LEAGUE means by its own fields. A fixture
+# written by the same hand that wrote the extractor can only confirm what its
+# author already believed -- which is how `own` carried the SHOOTER on a blocked
+# shot for months without anybody noticing.
+
+
+def reference():
+    """The one real game committed to the repo, extracted."""
+    pbp = json.loads((DATA / "pbp_2023020204.json").read_text())
+    shifts = json.loads((DATA / "shifts.json").read_text())
+    box = json.loads((DATA / "box_2023020204.json").read_text())
+    return pbp, shifts, box, E.extract(pbp, shifts, box)
+
+
+def validate_quietly(rich, pbp, shifts, box):
+    """validate() prints for a human; here only the verdict is wanted."""
+    import contextlib, io
+    with contextlib.redirect_stdout(io.StringIO()):
+        return E.validate(rich, pbp, shifts, box)
+
+
+class ThePenaltyCarriesItsOwnMeaning(unittest.TestCase):
+    """The box fills on one side of the ice, and both sides look plausible."""
+
+    def setUp(self):
+        self.pbp, self.shifts, self.box, self.rich = reference()
+        self.team_of = {s["playerId"]: s["teamId"] for s in self.pbp["rosterSpots"]}
+        self.pens = [e for e in self.rich["events"] if e["type"] == "penalty"]
+
+    def test_own_is_the_offending_team_and_the_drawer_is_never_on_it(self):
+        # THE SECOND HALF IS THE TEST. "own == the committer's team" is satisfied
+        # by a feed where both players are on the same team, and then it
+        # discriminates nothing -- the same defect as asserting a border exists
+        # without asserting it differs. So the two teams are asserted APART on
+        # every penalty, which is what makes the first assertion mean something.
+        self.assertEqual(len(self.pens), 8)
+        for e in self.pens:
+            self.assertEqual(e["own"], self.team_of[e["actor"]],
+                             f"P{e['per']} {e['clock']}: own must be the offender's team")
+            self.assertNotEqual(e["own"], self.team_of[e["drew"]],
+                                f"P{e['per']} {e['clock']}: the drawer is on the other team")
+
+    def test_the_gate_fires_when_the_box_would_fill_on_the_wrong_side(self):
+        # A MUTATION NOT SEEN TO FIRE IS NOT A MUTATION. Credit each penalty to
+        # the team that DREW it -- the single most plausible way to get this
+        # backwards -- and validate() must refuse the game.
+        ids = [self.rich["teams"]["home"]["id"], self.rich["teams"]["away"]["id"]]
+        for e in self.rich["events"]:
+            if e["type"] == "penalty":
+                e["own"] = ids[0] if e["own"] == ids[1] else ids[1]
+        fails = validate_quietly(self.rich, self.pbp, self.shifts, self.box)
+        self.assertTrue(any("offending team" in f for f in fails),
+                        f"the penalty check did not fire; got {fails}")
+
+    def test_what_the_referee_assessed_is_not_what_the_player_served(self):
+        # THE REASON `min` ALONE CANNOT DRAW THE BOX, as a fact rather than an
+        # argument. BUF are penalised at 18:34 of the first period and the code
+        # goes 1551 -> 1541; MIN score at 19:30 and the very next event reads
+        # 1551 again. Two minutes were assessed and FIFTY-SIX SECONDS were
+        # served, so a box driven by `min` holds a player on screen for another
+        # 64 seconds while the ice shows him back over the boards.
+        pen = next(e for e in self.pens if e["per"] == 1 and e["clock"] == "18:34")
+        self.assertEqual(pen["min"], 2, "two minutes were assessed")
+
+        after = [e for e in self.rich["events"] if e["s"] > pen["s"]]
+        back = next(e for e in after if e["sit"][1] == e["sit"][2])
+        served = back["s"] - pen["s"]
+        self.assertEqual(served, 56, "and 56 seconds were served")
+        self.assertLess(served, pen["min"] * 60,
+                        "the whole point: the ice disagrees with the assessment")
+
+        # And it ended the way it did for the reason claimed -- a goal, by the
+        # team that was NOT penalised. Without this the 56 seconds could be any
+        # coincidence, and three other penalties in this game return to even
+        # strength because of an OFFSETTING call rather than a goal.
+        goal = next(e for e in after if e["type"] == "goal")
+        self.assertEqual(goal["s"], back["s"], "strength returns on the goal")
+        self.assertNotEqual(goal["own"], pen["own"],
+                            "scored by the team on the power play")
+
+    def test_the_severity_is_carried_because_duration_is_not_a_power_play(self):
+        # A 10-MINUTE MISCONDUCT IS BOX TIME AT EVEN STRENGTH, and a penalty shot
+        # is no box time at all. Neither occurs in the reference game, so this
+        # asserts the CAPABILITY rather than pretending the evidence is here:
+        # `sev` and `min` are separate fields, so a consumer can tell a
+        # four-minute double minor from four minutes of anything else.
+        dbl = next(e for e in self.pens if e["min"] == 4)
+        self.assertEqual((dbl["sev"], dbl["pen"]), ("MIN", "high-sticking-double-minor"))
+        self.assertEqual({e["sev"] for e in self.pens}, {"MIN"},
+                         "this game is all minors -- said out loud so a game "
+                         "with a misconduct is a new case, not a silent one")
+
+        pbp = {"homeTeam": HOME, "awayTeam": AWAY, "rosterSpots": ROSTER,
+               "plays": [play("penalty", 10, committedByPlayerId=1,
+                              drawnByPlayerId=2, eventOwnerTeamId=30,
+                              typeCode="MIS", descKey="misconduct", duration=10)]}
+        got = E.extract(pbp, json.loads(shifts_bytes()))["events"][0]
+        self.assertEqual((got["sev"], got["min"]), ("MIS", 10),
+                         "ten minutes and not a power play, and the two are "
+                         "distinguishable only because both fields are here")
+
+    def test_a_delayed_penalty_carries_what_it_has_and_invents_nothing(self):
+        # It names the offending team and nothing else -- no player, no
+        # coordinates, no duration. Doctrine: carry what is there.
+        d = [e for e in self.rich["events"] if e["type"] == "delayed-penalty"]
+        self.assertEqual(len(d), 4)
+        for e in d:
+            self.assertIsNotNone(e["own"])
+            for absent in ("pen", "min", "sev", "drew"):
+                self.assertNotIn(absent, e,
+                                 "a delayed penalty must not acquire fields the feed "
+                                 "does not give it")
+
+
+class TheEndsTheyDefended(unittest.TestCase):
+    """The one fact _norm consumes and destroys."""
+
+    def setUp(self):
+        self.pbp, self.shifts, self.box, self.rich = reference()
+
+    def test_the_record_is_the_alternation_not_three_separate_strings(self):
+        # PIN THE RELATIONSHIP. Three assertions each naming a literal side would
+        # all pass while the periods stopped alternating, because a constant
+        # cannot see a relationship -- so what is asserted is that they SWAP, and
+        # that the swap comes back.
+        s = self.rich["sides"]
+        self.assertEqual(sorted(s), ["1", "2", "3"])
+        self.assertNotEqual(s["1"], s["2"], "they change ends between periods")
+        self.assertNotEqual(s["2"], s["3"], "and change back")
+        self.assertEqual(s["1"], s["3"], "so one and three share an end")
+
+    def test_it_is_read_from_the_feed_and_not_computed_from_the_period_number(self):
+        # THE TEMPTING SHORTCUT, MADE FALSIFIABLE. Period one splits 7 left /
+        # 7 right across the raw feeds -- it is fixed to the ARENA -- so a parity
+        # rule would have to choose a phase and would be silently wrong in half
+        # of all buildings. It is not detectable in the reference game, where
+        # parity happens to agree; it is detectable here.
+        plays = [{"periodDescriptor": {"number": p, "periodType": "REG"},
+                  "timeInPeriod": "05:00", "timeRemaining": "15:00",
+                  "typeDescKey": "faceoff", "homeTeamDefendingSide": side,
+                  "details": {"winningPlayerId": 1, "eventOwnerTeamId": 30}}
+                 for p, side in ((1, "right"), (2, "left"), (3, "right"))]
+        got = E.extract({"homeTeam": HOME, "awayTeam": AWAY, "rosterSpots": ROSTER,
+                         "plays": plays}, json.loads(shifts_bytes()))
+        self.assertEqual(got["sides"], {"1": "right", "2": "left", "3": "right"},
+                         "the arena decides period one, and we copy it")
+
+    def test_a_period_the_feed_disagrees_with_itself_about_carries_no_entry(self):
+        # NO MAJORITY VOTE. A renderer must be able to tell "they swapped" from
+        # "we do not know", so an inconsistent period is absent rather than
+        # guessed -- and the periods around it are unaffected, which is what
+        # makes this a rule and not a panic.
+        plays = [{"periodDescriptor": {"number": p, "periodType": "REG"},
+                  "timeInPeriod": "05:00", "timeRemaining": "15:00",
+                  "typeDescKey": "faceoff", "homeTeamDefendingSide": side,
+                  "details": {"winningPlayerId": 1, "eventOwnerTeamId": 30}}
+                 for p, side in ((1, "left"), (1, "right"), (2, "right"))]
+        got = E.extract({"homeTeam": HOME, "awayTeam": AWAY, "rosterSpots": ROSTER,
+                         "plays": plays}, json.loads(shifts_bytes()))
+        self.assertEqual(got["sides"], {"2": "right"},
+                         "the contradicted period drops out; its neighbour stays")
+
+    def test_the_gate_fires_when_a_period_claims_the_wrong_end(self):
+        # A wrong side mirrors a whole period of hockey and renders perfectly.
+        self.rich["sides"]["2"] = self.rich["sides"]["1"]
+        fails = validate_quietly(self.rich, self.pbp, self.shifts, self.box)
+        self.assertTrue(any("recorded ends" in f for f in fails),
+                        f"the ends check did not fire; got {fails}")
+
+    def test_normalization_still_undoes_the_switch_it_now_also_records(self):
+        # RECORDING IT MUST NOT CHANGE IT. Every coordinate still reads as though
+        # the host defended -x all night -- that is what every layer and every
+        # base rate is computed on -- and the new field is a note beside it, not
+        # a change to it. Checked against the raw, per play.
+        bad = 0
+        for e, p in zip(self.rich["events"], self.pbp["plays"]):
+            raw = (p.get("details") or {}).get("xCoord")
+            if raw is None:
+                continue
+            want = -raw if p["homeTeamDefendingSide"] == "right" else raw
+            bad += (e["x"] != (want or 0))
+        self.assertEqual(bad, 0)
+        self.assertEqual(self.rich["sides"]["2"], "right",
+                         "and period two is the one that was flipped")

@@ -517,3 +517,149 @@ and silent failures are the ones this project spends its effort on.
    building — which §1 explicitly says we do not do.
 4. **Does the penalty box ride on this decision or is it independent?** I think
    independent: box occupancy reads from `sit` and is correct in either mode.
+
+# 11. RULED, and the first half built — 2026-08-18
+
+## 11.1 What Kevin ruled
+
+> *"I'm leaning toward benches, penalty boxes and having the teams swap sides
+> between periods. If we are going to be 'replay theater', shouldn't we be true
+> to the actual shape of the game?"* … *"I agree on the benches, that's a
+> tough(er) one. I am tending towards penalty boxes yes, benches no. But we'll
+> measure that when the time comes."*
+
+**Boxes in. Benches out, pending a measurement rather than an argument. Ends
+switching: leaning as-played, default still Kevin's to call.**
+
+## 11.2 The correction that unblocked it — doctrine is a floor, not a chooser
+
+CC opened by arguing *against* the fidelity framing and then, three paragraphs
+later, said ends switching was the strongest of the three because it is in the
+data. Kevin caught the contradiction. It was real, and the repair matters more
+than the slip:
+
+> **"Is it in the feed?" is a PERMISSION test, not an instruction.** It says what
+> we are allowed to render. It never says what we should.
+
+So **doctrine cannot referee this decision, because both renderings are already
+inside it.** The fixed rink is not an invention — `build_main.py` calls it *"a
+display transform and nothing more"* in its own comment — and flipping at the
+period break is the same kind of thing over the same coordinates. Neither adds
+nor hides a fact. There was never a doctrinal objection to make.
+
+**And the burden is not where §6 put it.** The status quo does two separable
+things: it *exercises a freedom the data leaves open* (which end the host
+defends first — period one splits 7 left / 7 right across 14 raw feeds, so the
+feed has no opinion, and the app picks for the television convention) and it
+*suppresses a fact the data records* (that they swapped, on every play). Of the
+two arrangements, the one discarding a recorded fact is the one that owes an
+argument.
+
+**What is still open is only the DEFAULT, and only on one axis:** which reading
+serves a novice on a phone. That is CHENG's counter — the reader who asks *"why
+didn't they switch sides"* is a fan, and a novice who does not know ends switch
+may read a mid-game mirror as the glitch. It is a prediction about a user nobody
+has watched, and it gets settled by watching her.
+
+One argument moved toward as-played that §7.5 had backwards: **as-played makes
+the hard copy problem easy.** The disclosure sentence was called *"harder than it
+looks"* because in the fixed rink it must explain why the screen did **not** do
+what the game did. In as-played it only has to say what just happened. The
+sentence that was one-direction's weak point is the flip's natural caption.
+
+## 11.3 Built: the extract now carries what it was destroying
+
+`_norm` consumes `homeTeamDefendingSide` and throws it away, so after
+normalization the feed's record that the teams changed ends is gone. It is not
+reconstructible from anything else we hold — the test for belonging in the
+extract (architecture 4.5), the same one `rsn` passed.
+
+**Recorded, never computed from the period number.** Parity would be a rule with
+no source in the data, and it is *unfalsifiable in exactly the games where it is
+wrong*: on the reference game a parity rule agrees with the record perfectly, and
+a parity rule with the opposite phase disagrees on all 320 plays. A period whose
+plays contradict each other carries **no entry** rather than a majority vote, so
+a renderer can tell *"they swapped"* from *"we do not know"*.
+
+    "sides": {"1": "left", "2": "right", "3": "left"}
+
+**And the penalty, which was being reduced to the bare fact that one happened.**
+`pen` (descKey), `min` (duration), `sev` (MIN/MAJ/MIS/…), `drew`, `srv` where
+present, `zone`. `own` was already there and **means the OFFENDING team —
+verified 8 of 8 against `rosterSpots`, and re-checked on every game by
+`validate()` rather than trusted**, because `own` is the field that already
+carried an unexpected meaning once (the *shooter* on a blocked shot).
+
+Cost: **+577 bytes per game, additive only**, proven by `extract.py --additive`,
+which was extended to notice top-level keys — it compared five hand-typed names
+and could not see a new document appear beside them.
+
+## 11.4 ⭐ The finding that decides how the box is drawn
+
+**`min` is what the referee assessed. It is not what the player served, and a box
+driven by it puts a man on screen who is not on the ice.**
+
+In the reference game, first period: BUF are penalised at 18:34 and the situation
+code goes `1551` → `1541`. MIN score at 19:30. The very next event reads `1551`.
+
+> **Two minutes were assessed. Fifty-six seconds were served.**
+
+A box driven by `duration` holds Johnson for another 64 seconds, through the end
+of the period, while the ice shows him back over the boards. Nothing on the
+penalty event records the early release — **`sit` is the only witness**. Nor is
+duration a power play: a 10-minute misconduct is box time at even strength and a
+penalty shot is no box time at all, which is why `sev` is carried beside `min`.
+
+**Two fields, two questions.** `sev`/`min` say what the referee assessed; `sit`
+says what the ice looked like. Draw the box from either alone and it lies.
+
+(Three other penalties in this game also return to even strength early, and for a
+*different* reason — an offsetting call, not a goal. The test pins the 18:34 case
+specifically, and asserts the releasing goal was scored by the team that was not
+penalised, so it cannot pass by coincidence.)
+
+## 11.5 How this is defended
+
+Ten tests in `test_derive.py` — `ThePenaltyCarriesItsOwnMeaning` and
+`TheEndsTheyDefended` — reading the **real** reference feed, because what is
+under test is what the *league* means by its fields and a fixture written by the
+extractor's own author can only confirm what he already believed.
+
+Two new `validate()` checks run on every game in the archive: penalties credited
+to the offending team, and the recorded ends matching the feed on every play.
+
+**Every one of them was seen to fire.** Four mutations of the implementation —
+drop the penalty detail, compute sides by parity, majority-vote a contradicted
+period, credit the penalty to the drawer — each killed by the suite; and the
+gate mutations (`own` flipped, a period claiming the wrong end) each produce
+exactly one named failure. The second half of the `own` test is the load-bearing
+half: *the drawer is never on the offending team*, asserted on all 8, because
+"own == the committer's team" is satisfied by a feed where both players are on
+the same team and then discriminates nothing.
+
+## 11.6 The sequencing this imposes
+
+`derive.py` calls a game current when its extract names the same input digests —
+and **a schema change alters no digest**. The trap is already defended and by
+construction: `derive.yml` syncs the archive with `--exclude 'extract/*'`
+precisely so there is no extract on disk to skip against, and its header says to
+run it after any change to the extract schema.
+
+So the order is fixed: **land the schema change → dispatch `derive.yml` → only
+then build anything that reads the new fields.** Until that run completes, the
+4,417 published extracts carry neither `sides` nor the penalty detail.
+
+## 11.7 §10.5's four questions, as they now stand
+
+1. **Default** — still open, and now the *only* open part. Not a doctrine
+   question; a question about a novice on a phone.
+2. **The disclosure sentence** — a prerequisite, not an alternative (CHENG). It
+   is needed in both modes and is still unbuilt.
+3. **Benches** — out, by Kevin's ruling, on a pixel argument rather than a
+   doctrinal one: they live outside the boards and every pixel they take comes
+   off the rink on the device the novice tester is holding. Not un-derivable —
+   `shifts` gives roster-minus-on-ice — so this is a decision to be *measured*
+   later, not a limit of the data.
+4. **The penalty box** — independent, confirmed, and now more so: it needs
+   `sev`/`min` from the extract and `sit` from the ice, neither of which has any
+   bearing on which way the rink faces.

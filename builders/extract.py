@@ -50,11 +50,15 @@ ACTOR = {
 }
 
 # NOTE: still dropped, deliberately, pending a decision on what needs them:
-#   zoneCode, shotType, losingPlayerId, hitteePlayerId, running awaySOG/homeSOG,
-#   and the penalty/stoppage detail (reason, secondaryReason, descKey, duration,
-#   drawnByPlayerId) that the parked whistle layer would want. Raw feeds are
-#   archived, so nothing is lost -- but re-extracting a season is not free, so
-#   these are worth deciding on rather than defaulting.
+#   shotType, losingPlayerId, hitteePlayerId, running awaySOG/homeSOG, and
+#   zoneCode on events other than penalties. Raw feeds are archived, so nothing
+#   is lost -- but re-extracting a season is not free, so these are worth
+#   deciding on rather than defaulting.
+#
+# DECIDED 2026-08-18 and no longer dropped: the stoppage detail (reason,
+# secondaryReason -- carried as `rsn`/`rsn2` since the whistle layer) and the
+# penalty detail (descKey, duration, typeCode, drawnByPlayerId, zoneCode), for
+# the penalty box. Kevin ruled boxes in and benches out.
 
 def _secs(period, mmss):
     """timeInPeriod is ELAPSED, not remaining."""
@@ -80,11 +84,14 @@ def extract(pbp, shifts, box=None):
         }
 
     events, gshots, goalies = [], [], []
+    seen_sides = {}
     for p in pbp["plays"]:
         d = p.get("details") or {}
         per = p["periodDescriptor"]["number"]
         x, y = _norm(d.get("xCoord"), d.get("yCoord"), p.get("homeTeamDefendingSide"))
         t = p["typeDescKey"]
+        if p.get("homeTeamDefendingSide"):
+            seen_sides.setdefault(per, set()).add(p["homeTeamDefendingSide"])
 
         ev = {
             "per": per,
@@ -136,6 +143,36 @@ def extract(pbp, shifts, box=None):
         # the blocker lost half of every blocked-shot event.
         if t == "blocked-shot" and d.get("blockingPlayerId") is not None:
             ev["blk"] = d["blockingPlayerId"]
+        # THE PENALTY, BEYOND THE FACT THAT ONE HAPPENED. `own` is the OFFENDING
+        # team -- verified 8 of 8 against rosterSpots, and re-checked on every
+        # game by validate() rather than trusted, because `own` is the field that
+        # already meant something unexpected once (the SHOOTER on a blocked shot).
+        # `actor` is the player who committed it. So the extract could say a
+        # penalty happened and to whom, and nothing about what it was.
+        #
+        # `min` IS WHAT WAS ASSESSED, NEVER WHAT WAS SERVED, and the penalty box
+        # cannot be drawn from it alone. A power-play goal ends a minor early and
+        # no field on this event records that; `sit` is the only witness to when
+        # a player actually came out. Nor is duration a power play -- a 10-minute
+        # misconduct is box time at even strength, and a penalty shot is no box
+        # time at all -- which is why `sev` comes along. Two fields, two
+        # questions: `sev`/`min` say what the referee assessed, `sit` says what
+        # the ice looked like, and drawing the box from either one alone puts a
+        # player on screen who is not there.
+        #
+        # `delayed-penalty` carries the offending team and nothing else -- no
+        # player, no coordinates -- so it gets whatever is present and stays
+        # honest about the rest.
+        if t in ("penalty", "delayed-penalty"):
+            for src, dst in (("descKey", "pen"), ("duration", "min"),
+                             ("typeCode", "sev"), ("drawnByPlayerId", "drew"),
+                             # Bench minors and goalie penalties are served by
+                             # someone other than the offender. Absent in the
+                             # reference game, so carried where present rather
+                             # than assumed into existence.
+                             ("servedByPlayerId", "srv"), ("zoneCode", "zone")):
+                if d.get(src) is not None:
+                    ev[dst] = d[src]
         # giveaway/takeaway carry a playerId the original extraction discarded,
         # leaving `actor` null on 20 events for no reason.
         if t in ("giveaway", "takeaway") and d.get("playerId") is not None:
@@ -160,6 +197,29 @@ def extract(pbp, shifts, box=None):
            "e": _secs(s["period"], s["endTime"])}
           for s in shifts["data"]]
 
+    # WHICH END THE HOST DEFENDED, PERIOD BY PERIOD. This is the one fact _norm
+    # consumes and then destroys: after normalization every coordinate reads as
+    # though the host defended -x all night, and the feed's own record that the
+    # teams changed ends is gone. It is not reconstructible from anything else we
+    # hold, which is the test for belonging in the extract (docs/architecture.md
+    # 4.5) -- the same test `rsn` passed.
+    #
+    # WHICH END THEY DEFEND FIRST IS OURS AND THAT THEY SWAP IS NOT. Period one
+    # splits 7 left / 7 right across 14 raw play-by-plays, so it is arena-fixed
+    # and the feed has no opinion we could be contradicting -- the app picks the
+    # host's end for the television convention (build_main.py). The ALTERNATION
+    # is recorded on every play, and until now we threw it away and rendered a
+    # rink that never changed ends.
+    #
+    # RECORDED, NOT COMPUTED FROM THE PERIOD NUMBER. Parity would be a rule with
+    # no source in the data -- a model wearing a UI control -- and it would be
+    # unfalsifiable in exactly the games where it was wrong. A period whose plays
+    # disagree gets NO entry rather than a majority vote, so a renderer can tell
+    # "they swapped" from "we do not know", and validate() says how many periods
+    # carry one.
+    sides = {str(k): next(iter(v)) for k, v in sorted(seen_sides.items())
+             if len(v) == 1}
+
     out = {
         # WHICH GAME THIS IS, from the feed rather than from the builder.
         # The app used to print "Nov 10 2023" as a literal, which was invisible
@@ -171,6 +231,7 @@ def extract(pbp, shifts, box=None):
         "teams": {"home": {"id": home["id"], "ab": home["abbrev"]},
                   "away": {"id": away["id"], "ab": away["abbrev"]}},
         "roster": roster,
+        "sides": sides,
         "events": events,
         "shifts": sh,
         "gshots": gshots,
@@ -384,6 +445,37 @@ def validate(rich, pbp, shifts, box):
              for e, p in blocks)
     check(ok, f"blocked shots credited to the shooter ({len(blocks)} checked vs rosterSpots)")
 
+    # A PENALTY IS CREDITED TO THE TEAM THAT COMMITTED IT, and the penalty box is
+    # built on that sentence -- get it backwards and every box fills on the wrong
+    # side of the ice, on a screen where both boxes look equally plausible. `own`
+    # has already meant something unexpected once in this feed (the SHOOTER on a
+    # blocked shot, not the blocker), so it is checked here against rosterSpots
+    # rather than inherited from a comment. See docs/ends-switching.md.
+    pens = [(e, p) for e, p in zip(rich["events"], pbp["plays"])
+            if e["type"] == "penalty"]
+    wrong = [f"{e['per']}/{e['clock']}" for e, p in pens
+             if team_of.get((p["details"] or {}).get("committedByPlayerId")) != e["own"]]
+    check(not wrong,
+          f"penalties credited to the offending team "
+          f"({len(pens)} checked vs rosterSpots"
+          f"{', wrong at ' + ', '.join(wrong[:3]) if wrong else ''})")
+
+    # WHAT WE RECORDED THE ENDS TO BE, against the feed that recorded them. The
+    # value is one string per period and a wrong one mirrors a whole period of
+    # hockey, which is the kind of error that renders perfectly and reads as a
+    # different game. A period the feed disagrees with itself about carries no
+    # entry by construction, so this only ever checks what we actually claimed.
+    side_bad = [f"P{p['periodDescriptor']['number']}" for p in pbp["plays"]
+                if p.get("homeTeamDefendingSide")
+                and str(p["periodDescriptor"]["number"]) in rich["sides"]
+                and rich["sides"][str(p["periodDescriptor"]["number"])]
+                    != p["homeTeamDefendingSide"]]
+    played = {str(p["periodDescriptor"]["number"]) for p in pbp["plays"]}
+    check(not side_bad,
+          f"the recorded ends match the feed on every play "
+          f"({len(rich['sides'])} of {len(played)} periods carry one"
+          f"{', ' + str(len(side_bad)) + ' disagree' if side_bad else ''})")
+
     check(len(rich["shifts"]) == len(shifts["data"]),
           f"shifts lossless: {len(rich['shifts'])} == {len(shifts['data'])}")
 
@@ -506,10 +598,21 @@ def main():
                     else:
                         bad.append(f"event {i}: {k} {v!r} -> {n[k]!r}")
             added |= set(n) - set(o)
-        for key in ("teams", "roster", "shifts", "gshots", "goalies"):
+        # TOP-LEVEL KEYS WERE INVISIBLE HERE, and `sides` is the first schema
+        # change that adds one. The list was five names typed out by hand, so a
+        # new document could appear beside them -- or an old one vanish -- and
+        # the gate would print ADDITIVE ONLY having never looked. Derived from the
+        # documents themselves now, which is the same correction as FINAL_STATES
+        # and the eight situation codes: pin the rule, not the sample.
+        gone = sorted(set(old) - set(rich))
+        if gone:
+            bad.append(f"top-level keys REMOVED: {gone}")
+        new_top = sorted(set(rich) - set(old))
+        for key in sorted((set(old) & set(rich)) - {"events"}):
             if old[key] != rich[key]:
                 bad.append(f"{key} changed")
-        print(f"  new keys: {sorted(added)}")
+        print(f"  new top-level keys: {new_top or 'none'}")
+        print(f"  new event keys: {sorted(added)}")
         print(f"  nulls filled by key: {filled or 'none'}")
         print(f"  size {len(current.encode())} -> {len(out.encode())} bytes")
         if bad:
