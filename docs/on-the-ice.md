@@ -56,9 +56,16 @@ taught in a single row, with the sample size visible rather than explained.
 
 ## 3. ⭐ Zone starts — yes, and cleanly
 
-**All 55 faceoffs in the reference game carry coordinates, and across the
-230-game sample it is 12,864 of 12,864 — 100%.** There is no zone *field* in the
-extract and none is needed: the coordinate **is** the dot.
+**All 55 faceoffs in the reference game carry coordinates, and across 928
+extracts covering every one of the 715 dates in the archive it is 52,742 of
+52,742 — 100%.** There is no zone *field* in the extract and none is needed: the
+coordinate **is** the dot.
+
+*(This was first checked on the same 230-game sample that got §4.1 wrong —
+12,864 of 12,864, also 100%. It was re-run with the date-covering instrument
+because a uniform sample cannot see a clustered absence, and the answer held at
+four times the size. A claim that survives a better instrument is worth more
+than the same claim asserted twice.)*
 
 They land on the real dots and nowhere else:
 
