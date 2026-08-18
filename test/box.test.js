@@ -348,3 +348,24 @@ test('the page carries the disclosure, and it is empty until it is earned', () =
   assert.ok(page.includes('changed ends'), 'the rule sentence is in the bundle');
   assert.ok(page.includes('hold the rink the same way'), 'and so is the display half');
 });
+
+test('the preview hides what it cannot lay out — the front door is a different mode', () => {
+  // THE BUG THIS EXISTS FOR SHIPPED TO THE FRONT PAGE. `.rinkbox` becomes
+  // `display:flex` in preview, so a block added inside it does not stack under
+  // the rink -- it becomes a flex SIBLING and lands beside it. The penalty boxes
+  // rendered in the right-hand margin of the ice on the homepage hero, with the
+  // label floating above them, while every one of these tests stayed green.
+  // Found by Kevin looking at the page, which is the only instrument that sees
+  // layout at all.
+  const page = readFileSync(new URL('../src/read-the-game.html', import.meta.url), 'utf8');
+  const hide = /#rg\.preview[^{]*\{display:none!important\}/.exec(page);
+  assert.ok(hide, 'the preview hide-list must exist');
+  for (const sel of ['.pboxes', '.endnote']) {
+    assert.ok(hide[0].includes(`#rg.preview ${sel}`),
+              `${sel} is inside .rinkbox and must be hidden in preview, or laid out for flex`);
+  }
+  // And the flex rule is still what makes that necessary — if it ever goes away
+  // this test is guarding a hazard that no longer exists, which is worth knowing.
+  assert.ok(/#rg\.preview \.rinkbox\{[^}]*display:flex/.test(page),
+            'the preview still lays .rinkbox out as a flex row');
+});

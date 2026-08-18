@@ -109,6 +109,15 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg.preview .verdict,#rg.preview .nextup,#rg.preview .foot,#rg.preview .work,
 #rg.preview .legend,#rg.preview .goalies,
 #rg.preview .atk,
+/* THE PENALTY BOX AND THE ENDS NOTE ARE GAME-VIEW CHROME, and the box had to be
+   hidden here for a second reason that is worth writing down: `.rinkbox` becomes
+   `display:flex` in preview (below), so a block added inside it does not stack
+   UNDER the rink -- it becomes a flex sibling and lands BESIDE it. On the front
+   door the boxes rendered in the right-hand margin of the ice with the label
+   floating above them, which no test here can see and which I did not look at,
+   having measured only game.html.
+   ANYTHING ADDED INSIDE .rinkbox HAS TO ANSWER THIS QUESTION. */
+#rg.preview .pboxes,#rg.preview .endnote,
 #rg.preview .counters{display:none!important}
 /* THE PREVIEW FITS ITSELF TO WHATEVER BOX IT IS GIVEN.
    Kevin: "the bottom 1/3 of the rink is clipped off within the frame."
