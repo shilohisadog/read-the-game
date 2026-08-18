@@ -3592,7 +3592,7 @@ $('whyBk').addEventListener('click',e=>{if(e.target.id==='whyBk')hideWhy();});
    have made a sentence elsewhere on the page false -- the same dependency that
    broke "start with the game at the top" and "Press Play below", and this time
    a test holds the two ends together rather than a comment. */
-const LAB={faceoff:'Won the faceoff',hit:'Hit',giveaway:'Giveaway',takeaway:'Takeaway','blocked-shot':'Shot blocked','missed-shot':'Missed shot','shot-on-goal':'Shot on goal',penalty:'Penalty'};
+const LAB={faceoff:'Won the faceoff',hit:'Hit',giveaway:'Giveaway',takeaway:'Takeaway','missed-shot':'Missed shot','shot-on-goal':'Shot on goal',penalty:'Penalty'};
 let labelsOn=true;
 /**
  * WHAT THE ICE SAYS WHEN IT IS SHOWING NOTHING.
@@ -3622,8 +3622,7 @@ function drawLabel(e){const g=$('labels');const p=place(e);if(!labelsOn||!p){g.i
    const as=[R[e.a1],R[e.a2]].filter(Boolean).map(x=>x.nm).join(', ');
    let tx=lx>100?lx-5:lx+5,anc=lx>100?'end':'start',ty=Math.max(15,ly-6);
    g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${ty.toFixed(1)}" stroke="${col}" stroke-width=".4" opacity=".55"/><text class="glab" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}" fill="${col}">🚨 GOAL — ${p?p.nm:ab}</text><text class="plabsub" x="${tx.toFixed(1)}" y="${(ty+4).toFixed(1)}" text-anchor="${anc}">${as?'assists: '+as:'unassisted'}</text></g>`;return;}
- if(!LAB[e.type]){g.innerHTML='';return;}
- const info=LAB[e.type];let tx=lx+4,anc='start';if(lx>150){tx=lx-4;anc='end';}let ty=ly-4.5;if(ty<11)ty=ly+8;
+ let tx=lx+4,anc='start';if(lx>150){tx=lx-4;anc='end';}let ty=ly-4.5;if(ty<11)ty=ly+8;
  // THE TEAM, IN WORDS. The figure on the ice is one colour and two clubs can
  // wear the same one, so the label says whose play it was rather than leaving
  // the answer to a hue. Costs nothing and works without colour vision.
@@ -3666,15 +3665,35 @@ function drawLabel(e){const g=$('labels');const p=place(e);if(!labelsOn||!p){g.i
  // this mark must not say. Naming the blocker inverts it at no cost, and the
  // attribution of the ATTEMPT is untouched: it is still the shooter's, which is
  // corsi's business and correct there (CHENG).
- if(blockOn&&e.type==='blocked-shot'){
+ // IN EVERY VIEW, NOT ONLY WITH THE LAYER ON. The paragraph above was right and
+ // was applied to half the page: the mark is the BLOCK POINT wherever it is
+ // drawn, so a label naming the shooter beside it invites the same misreading in
+ // the base view, where most visitors meet it. Kevin found it from the teams
+ // page with no layer on -- "that means Toronto took the shot, but WSH blocked
+ // it... that should say what team did the blocking" -- which is this comment's
+ // own argument, arrived at from the screen.
+ //
+ // THE WORDING HAD TO INVERT WITH THE TEAM. "WSH · Shot blocked" would read as
+ // WSH's shot being blocked, by the same grammar that makes "BUF · Shot on goal"
+ // BUF's shot. Swapping the team without swapping the verb would have replaced
+ // one wrong reading with another.
+ //
+ // The player's NAME stays layer-only: the base view labels events with a team
+ // and a play, never a person, and blocked shots do not get to be the exception.
+ if(e.type==='blocked-shot'){
    const b=R[e.blk],sh=R[e.actor];
    const bt=b?(b.tid===AID?AAB:b.tid===HID?HAB:null):null;
    const mate=b&&sh&&b.tid===sh.tid;
    const head=!b?'Blocked — no blocker recorded'
-     :mate?`Blocked by a teammate — ${b.nm}`
-     :`${bt?bt+' · ':''}${b.nm} blocked it`;
+     :mate?(blockOn?`Blocked by a teammate — ${b.nm}`:'Blocked by a teammate')
+     :`${bt?bt+' · ':''}${blockOn?b.nm+' blocked it':'Blocked it'}`;
    g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${ESC(head)}</text></g>`;
    return;}
+ // AND THE TABLE NO LONGER CARRIES A BLOCKED ROW. It would never be reached, and
+ // a dead row inside a table reads as coverage -- the fourth time this file has
+ // paid for that shape.
+ if(!LAB[e.type]){g.innerHTML='';return;}
+ const info=LAB[e.type];
  g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${lab?lab+" · ":""}${info}${ESC(why)}${hd}</text></g>`;}
 $('lbl').addEventListener('click',()=>{labelsOn=!labelsOn;$('lbl').setAttribute('aria-pressed',labelsOn);$('lbl').style.opacity=labelsOn?'1':'.5';drawLabel(EV[i]);});
 

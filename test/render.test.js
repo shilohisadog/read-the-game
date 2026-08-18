@@ -1631,7 +1631,10 @@ test('a play label is a NAME and nothing else — the table cannot hold a second
   // stronger than counting fields and finding one.
   const table = app.match(/const LAB=\{(.*?)\};/s)[1];
   const rows = [...table.matchAll(/'?([a-z-]+)'?:('[^']*'|\[[^\]]*\])/g)];
-  assert.ok(rows.length >= 8, `only ${rows.length} labels parsed`);
+  // SEVEN, NOT EIGHT. `blocked-shot` left the table when the blocker label
+  // started running in every view: its row could never be reached again, and a
+  // dead row inside a table reads as coverage. The floor moved with the fact.
+  assert.ok(rows.length >= 7, `only ${rows.length} labels parsed`);
   for (const [, type, value] of rows) {
     assert.ok(!value.startsWith('['),
       `${type} is a list again — the label table has grown a second line`);
@@ -1821,13 +1824,55 @@ test('the label names the BLOCKER once the layer is on', () => {
     'every blocked shot fell back to "no blocker recorded"');
 });
 
-test('with the layer off, no label names a blocker', () => {
+test('with the layer off, no label names a blocker BY NAME', () => {
   // The corollary, and it is what makes the test above mean something: if the
   // blocker's name appeared on every game regardless, it would be page furniture
   // rather than the layer's disclosure.
+  //
+  // IT USED TO MATCH ON THE PHRASE, and the phrase stopped discriminating. The
+  // base view now names the blocking TEAM — the mark is the block point in every
+  // view, so the shooter's abbreviation beside it invited the same misreading
+  // the layer was built to prevent — while the PERSON stays layer-only. Matching
+  // /blocked it/ could no longer tell a team label from a named one, so the test
+  // asks the question it always meant: does a player's name reach the ice?
+  // PLAY LABELS ONLY. A goal names its scorer and assists in every view and
+  // always has — that is `glab`/`plabsub`, a different surface with a different
+  // rule. Scanning every label caught nine forwards and proved nothing.
   const a = boot();
-  const any = a.every(d => d.$('labels').innerHTML).join('');
-  assert.doesNotMatch(any, /blocked it|Blocked by a teammate/);
+  const any = a.every(d => (d.$('labels').innerHTML.match(
+    /<text class="plabel"[^>]*>([^<]*)</g) || []).join(' ')).join(' ');
+  const names = [...new Set(Object.values(rich.roster).map(r => r.nm))]
+    .filter(n => n && n.length > 3);
+  assert.ok(names.length > 20, `only ${names.length} surnames to look for`);
+  const leaked = names.filter(n => any.includes(n));
+  assert.deepEqual(leaked, [],
+    `the base view named ${leaked.join(', ')} — a person, without the layer that discloses people`);
+
+  // AND THE TEAM IS NAMED, which is the whole of the fix. Dropping the
+  // abbreviation left every other assertion here green while removing the only
+  // thing that answers "who blocked it" — the question that started this.
+  const blocked = (any.match(/[^>]*Blocked it/g) || []);
+  assert.ok(blocked.length > 0, 'the base view never says a shot was blocked');
+
+  // WHICH team, not merely a team. Naming the SHOOTER's club instead of the
+  // blocker's is the exact defect that started this, and it satisfies "an
+  // abbreviation is present" perfectly. The two are separable only by count:
+  // in this game one side blocked 18 and the other 22, so the wrong attribution
+  // swaps the totals. Derived from the roster, never typed.
+  const want = { [rich.teams.home.ab]: 0, [rich.teams.away.ab]: 0 };
+  for (const e of rich.events) {
+    if (e.type !== 'blocked-shot') continue;
+    const b2 = rich.roster[e.blk], sh = rich.roster[e.actor];
+    if (!b2 || (sh && b2.tid === sh.tid)) continue;      // teammate blocks say no club
+    want[b2.tid === rich.teams.home.id ? rich.teams.home.ab : rich.teams.away.ab]++;
+  }
+  assert.notEqual(want[rich.teams.home.ab], want[rich.teams.away.ab],
+    'this game blocks evenly, so the check below cannot tell blocker from shooter');
+  for (const ab of Object.keys(want)) {
+    const saw = blocked.filter(t => t.includes(ab)).length;
+    assert.equal(saw, want[ab],
+      `${saw} labels credit ${ab} with a block; the roster says ${want[ab]}`);
+  }
 });
 
 test('the block-point fact survives the line that used to carry it', () => {
