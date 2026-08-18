@@ -81,27 +81,73 @@ boundary case to argue about and no constant that can drift.
 
 ### 3.1 What it is for, and why it is not the modelling we refuse
 
-| | OZ | DZ | NZ | OZ% | on-ice attempts |
-|---|---|---|---|---|---|
-| **Kaprizov** | 16 | 4 | 3 | **80%** | **48 for / 20 against** |
-| Dahlin | 11 | 7 | 8 | 61% | 31 / 37 |
-| Spurgeon | 9 | 11 | 6 | 45% | 30 / 22 |
-| **Power** | 5 | 12 | 4 | **29%** | **22 / 29** |
+| | started OZ | started DZ | NZ | on-ice attempts |
+|---|---|---|---|---|
+| **Kaprizov** | **16 of 20** | 4 | 3 | **48 for / 20 against** |
+| Dahlin | 11 of 18 | 7 | 8 | 31 / 37 |
+| Spurgeon | 9 of 20 | 11 | 6 | 30 / 22 |
+| **Power** | **5 of 17** | 12 | 4 | **22 / 29** |
 
 **This is the missing context for on-ice attempts, and it arrives with nothing
-modelled.** Kaprizov was sent out to attack and the attempts followed; Power was
-sent out to defend and was underwater. Two columns side by side, and the reader
-draws the connection.
+modelled.** Two columns, counts and denominators, no reading supplied. The column
+*labels* carry the relationship as a question — *where he started* and *what
+happened while he was out there* — and the reader does whatever joining they
+wish.
 
 That is the standing rule — *show the distance from normal, never supply the
 inference*. What we must NOT build is a zone-start-**adjusted** attempt number:
 that is a model, it hides its own assumptions inside a single figure, and it is
 the thing this project refuses everywhere else.
 
-**And the data argues against its own easy reading, which is what keeps it
-honest.** Dahlin started 61% in the offensive zone and was still 31–37. A reader
-cannot come away with "good zone starts → good numbers", because the table
-contains the counterexample.
+> **⚠️ This section previously ended with a sentence that broke its own rule.**
+> It read: *"Kaprizov was sent out to attack and the attempts followed; Power was
+> sent out to defend and was underwater."* **"Sent out to attack" is a claim
+> about coaching intent and "the attempts followed" is a causal claim — neither
+> is in the feed.** It is the `tired` class exactly, in the document arguing
+> against the `tired` class. (CHENG.)
+>
+> **And the four rows do not support it.** 16/20 → +28, 11/18 → −6, 9/20 → +8,
+> 5/17 → −7. That is not monotone: Spurgeon starts *below* half and is
+> comfortably positive while Dahlin starts above it and is negative. The table
+> was more honest than the paragraph interpreting it, and the paragraph is gone.
+
+**The percentages went with it.** `61%` on eighteen faceoffs is exactly what the
+fraction rule exists to prevent, and §3.2.3 said so while the table above it led
+with a percentage column.
+
+### 3.1.1 ⭐ Measured before building: the column does separate
+
+CHENG's objection was that the reference game may simply contain extremes — *"if
+a typical game has everyone between 45% and 55%, the column is noise wearing a
+header."* Taken as a measurement rather than an argument, over **847 games with
+shifts, 21,667 player-games** with at least 8 end-zone faceoffs:
+
+| | median | IQR | ≥70% | ≤35% | 45–55% |
+|---|---|---|---|---|---|
+| all situations | 50.0% | **36.4 – 66.7** | 21.9% | 23.3% | **17.2%** |
+| even strength only | 50.0% | 37.5 – 63.6 | 18.3% | 22.4% | 18.5% |
+
+**Roughly 45% of player-games sit at an extreme and only ~17% land in the dead
+band.** The column separates, so it is a feature and not a coincidence.
+
+**And the spread is not a small-denominator artifact** — the obvious way this
+result could be fake. Raising the minimum from 8 to 20 end-zone faceoffs cuts the
+population from 21,667 to 1,732 and the IQR moves from 36.4–66.7 to **38.1–66.7**:
+
+| min faceoffs | player-games | IQR | ≥70% |
+|---|---|---|---|
+| 8 | 21,667 | 36.4 – 66.7 | 21.9% |
+| 12 | 12,583 | 38.5 – 66.7 | 20.8% |
+| 16 | 5,324 | 38.9 – 66.7 | 21.2% |
+| 20 | 1,732 | 38.1 – 66.7 | 22.2% |
+
+**The reference game is a good example, not a freak one.** Kaprizov's 16-of-20 is
+about the 90th percentile and Power's 5-of-17 about the 20th — unusual enough to
+teach with, common enough that the next game will have someone like them.
+
+**The special-teams confound is real and small.** Restricting to even strength
+drops the ≥70% share from 21.9% to 18.3% (and to 14.9% at a minimum of 12), so
+penalty-killers inflate the extremes without creating them.
 
 ### 3.2 Three precisions the label has to carry
 
@@ -169,17 +215,42 @@ would not be seen elsewhere. The 96.5% is therefore an upper bound on coverage,
 and the page's "we do not hold it" branch is what makes the difference not
 matter.
 
-## 5. The artifact that is also the lesson
+## 5. The artifact — shown as an overlap, never as a state
 
 Second by second, the feed says **5v5 for 70.0%** of the reference game — which
 is what a real game looks like. It also says **7v5 for 22 seconds**, which is
-impossible.
+impossible: the shift chart records a changing player as on the ice until he
+reaches the bench.
 
-That is the shift chart recording a changing player as on the ice until he
-reaches the bench. **Show it, with the reason.** Same principle as the puck
-hopping between real events: the discreteness is the honesty, and here the
-artifact teaches exactly what a novice most needs — that hockey substitutes on
-the fly and never stops for it.
+**This section originally said "show it, with the reason", on the grounds that
+the puck hopping between real events is honest for the same reason. CHENG killed
+the analogy and he is right:**
+
+> *"The puck hopping is honest because every position it occupies is real. 7v5
+> is not a position anything occupied — it's an artifact of two intervals
+> overlapping."*
+
+Printing `7v5 — 22 seconds` in a strength breakdown publishes a number we know is
+false, and *"with the reason attached"* is a disclaimer doing work an invariant
+should do — the pattern we replaced everywhere else.
+
+**Ruled: show it as an overlap, in the timeline, where it visibly is one.** Two
+bars overlapping by 22 seconds, captioned *"the chart records a changing player
+as on the ice until he reaches the bench"*, is a recording artifact shown with
+its cause — the same treatment as the blocked ring. **The visual form is
+self-explanatory; the tabular form looks like a claim.**
+
+**And at faceoffs specifically the artifact is small**, measured across 847 games
+— skaters per team recorded on the ice at a faceoff:
+
+| 5 skaters | 4 | 6 | 3 |
+|---|---|---|---|
+| **87.1%** | 10.6% | 1.2% | 1.0% |
+
+The 4s are penalty kills and the 6s are mostly a pulled goalie, both real. Only a
+fraction of the 1.2% is overlap, so **zone starts are not materially damaged by
+it** — which is a different question from whether a strength breakdown should
+print the artifact, and it is why §3 can proceed while §5 changes shape.
 
 ## 6. What to refuse
 
@@ -204,16 +275,82 @@ the fly and never stops for it.
 - **Look at it.** `tools/pixels.sh`, both widths, since none of the above sees a
   pixel.
 
-## 8. What I want ruled
+## 8. ✅ RULED (CHENG, 2026-08-18)
 
-1. **Does this stay a Workshop page or become a main-app view?** Everything in §4
-   argues it is too useful to leave filed under "earlier views, each answering a
-   question the main app does not" — it answers a question the main app *should*
-   ask. But that is a product call.
-2. **Is the interaction a popup, a selected row, or a timeline?** The shifts are
-   intervals; a per-player timeline is the shape the data actually has, and a
-   popup is the shape a table suggests.
-3. **Do the shifts become doors?** A shift is a moment, and `?at=` exists. A
-   click could open the main app at the second that shift began, which is the
-   same thing `what-you-can-see.html` needs and does not have.
-4. **Even-strength split for zone starts — one column or two?**
+**1 — Stay in the Workshop, but release from the single game.** The two halves of
+the question were fused and only one fails. *Releasing* it from `rich.json` is
+right — §4 shows the pin is an artifact of `build_B.py`, not a data constraint.
+*Promoting* it to the main app is wrong, for three reasons the doc did not make:
+
+- **The phone kills it.** A shift chart is forty rows of names. There are already
+  1,840px and 21 controls below the rink, and the header fight was over 22
+  pixels. Forty rows at 360px is not a density problem, it is a different
+  product.
+- **It presumes the knowledge the site exists to build.** *"Dahlin 26:19"* means
+  nothing to someone who does not know Dahlin. Every other layer teaches a
+  *concept*; this one teaches about *people*.
+- **It is reading, not watching.** A roster table is the boxscore competing with
+  the replay — the argument that made the event index past-only.
+
+The deep-link seam (ruling 3) is what connects it to the main app without the
+density cost.
+
+**2 — A timeline.** The data is intervals and only a timeline shows them as
+intervals. The stronger argument is §2.1: *688 shifts, average 51.3 seconds* is
+the most educational fact on the page, and **a timeline shows it — a novice sees
+the bars are short — where a table asserts it.** Forty timeline rows also need
+width, which is a second argument for keeping it on the desktop Workshop.
+
+**3 — Yes, and it is the cheapest high-value thing here.** A shift start is a
+moment, `?at=` exists, and this is exactly what `what-you-can-see.html` lacks. It
+turns a table into a set of doors and keeps the page from being a dead end.
+
+**4 — A toggle, not two columns.** Consistent with the shipped strength filter:
+two columns invite the reader to difference them, a filter re-runs the count in
+front of them. Default all-situations. §3.1.1 measures what the toggle does —
+≥70% falls from 21.9% to 18.3% — and the confound it addresses is real:
+**a penalty-killer collects defensive-zone starts by definition**, which hits
+hardest exactly the players whose deployment is most extreme.
+
+## 9. ⭐ The instrument lesson generalizes — and then breaks
+
+§4.1's correction produced a rule, and CHENG stated it as:
+
+> **Coverage failures in this feed are date-shaped, because they are endpoint
+> outages. So any claim of the form "X is present in N of N sampled games" needs
+> a date-covering probe, not a uniform one.**
+
+Four existing presence claims were named as suspect and all four were re-probed
+over **928 extracts, 299,981 events, covering all 715 dates**:
+
+| claim | as stated | measured | shape |
+|---|---|---|---|
+| `rem` on every event | never gated | **299,981 of 299,981** | — |
+| `sit` present | "all 320 in one game" | 299,958 of 299,981 | **date-shaped** |
+| `blk` on a blocked shot | "2,599 of 2,599, 80-game sample" | 30,546 of 30,550 | **event-shaped** |
+| `homeTeamDefendingSide` | "6,333 plays, never missing" | not in the extract — needs a raw probe | unknown |
+
+**The 23 missing `sit` values fall on exactly the 15 dates of the 2023 preseason
+outage** — the same population that has no shifts. That is the rule working.
+
+**But `blk` breaks the rule, and this is the more useful finding.** Its four
+absences are on 2023-10-30, 2025-01-07, 2025-01-14 and 2026-01-16 — four dates,
+three seasons, no cluster. **A per-date probe cannot find four events in 300,000;
+only reading every event does.** So there are (at least) two shapes, and the
+generalization is too strong as stated:
+
+> Coverage failures here are **date-shaped when they are endpoint outages and
+> event-shaped when they are individual records.** The instrument must match the
+> shape being claimed, and *"which shape is this?"* is now the first question,
+> not *"how big is my sample?"*
+
+**The code already survived this**, which is the part worth keeping.
+`src/lib/layers/blocked.js` reads:
+
+> *"`blk` … is present on 2,599 of 2,599 blocked shots across an 80-game random
+> sample — but 'always so far' is not 'always', so an unresolvable blocker is
+> recorded rather than assumed away."*
+
+The evidence was from the weak instrument; **the caution was right anyway, and
+its defensive branch is exercised by four real archived events.** A comment that
+distrusts its own evidence is worth more than one that quotes a bigger number.

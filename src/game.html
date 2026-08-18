@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-xc5lLmhjPyqgxRzhNjbKta4ZgPaL0EMxeCbfL12dK68=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-UsX9DdncAZYeCdu91BrbSfODGq7D37KnqJ9Jo/S0+RE='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-RItULXJgPSxWABtOYtoUGiPo6atcHY6arVdhjw53h5E=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-UsX9DdncAZYeCdu91BrbSfODGq7D37KnqJ9Jo/S0+RE='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">What is this?</a></nav></header>
@@ -1968,10 +1968,18 @@ const blocked = {
 
       counted.push(id);
 
-      // WHO STOPPED IT. `blk` is the blocking player, and it is present on
-      // 2,599 of 2,599 blocked shots across an 80-game random sample — but
-      // "always so far" is not "always", so an unresolvable blocker is recorded
-      // rather than assumed away or silently credited to the defending side.
+      // WHO STOPPED IT. `blk` is the blocking player. This comment used to say
+      // it was present on 2,599 of 2,599 blocked shots across an 80-game random
+      // sample, and reasoned that "always so far" is not "always" -- so an
+      // unresolvable blocker is recorded rather than assumed away or silently
+      // credited to the defending side.
+      //
+      // THE CAUTION WAS RIGHT AND THE EVIDENCE WAS NOT. Re-probed over 928
+      // extracts covering all 715 dates in the archive: 30,546 of 30,550, and
+      // the four exceptions are real -- 2023-10-30, 2025-01-07, 2025-01-14,
+      // 2026-01-16, four dates across three seasons. This branch is not
+      // hypothetical; it fires in production, and no per-date probe could have
+      // found four events in 300,000. See docs/on-the-ice.md section 9.
       const shooter = roster[e.actor], blocker = roster[e.blk];
       if (e.blk == null || !blocker) { unknown.push(id); return; }
 
