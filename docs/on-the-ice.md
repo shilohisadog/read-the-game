@@ -120,26 +120,47 @@ on every event, so an even-strength split is available if it earns a column.
 `on-the-ice.html`. That is why it is a Workshop card described as "pinned to one
 game".
 
-**But shifts are in the published extracts.** 846 in the Cup final, and **227 of
-230 sampled extracts carry them.** The page could run on any of the 4,417
-published games with the same fetch `game.html` already makes.
+**But shifts are in the published extracts.** 846 in the Cup final, and **4,262
+of the 4,417 published games carry them — 96.5%.** The page could run on almost
+any of them with the same fetch `game.html` already makes.
 
 This reframes "the Workshop items need updating": this one does not need
 updating so much as **releasing**.
 
-### 4.1 The three that do not, and they are not random
+### 4.1 ⭐ The 155 that do not — and the first version of this section was wrong
 
-| game | date | |
-|---|---|---|
-| `2024021251` | 2025-04-10 | DET @ FLA |
-| `2024021270` | 2025-04-12 | WSH @ CBJ |
-| `2024021288` | 2025-04-14 | UTA @ NSH |
+**This section originally read "the three that do not", from a 230-game sample.
+It named one five-day cluster. There are three populations and the largest is 97
+games.** The sample was not too small; it was the **wrong instrument**. Shift
+absence is *date-shaped* — when it happens, it takes every game that night — and
+a uniform random sample of an archive answers "how often", which was never the
+question. Re-probed **one published game per date, all 715 dates**:
 
-**All regular season, all inside five days, all with normal event counts
-(324–335).** That is a clustered outage on the shift endpoint, not a property of
-those games — which means it is probably repairable by a targeted backfill rather
-than a permanent hole, and the page must say "we do not hold the shift chart for
-this game" rather than render an empty rink.
+| population | dates | published games | |
+|---|---|---|---|
+| **2023 preseason** | 2023-09-23 → 2023-10-07 | **97** | every one, 10 of 10 spot-checked at game level |
+| **regular season** | 2025-04-08 → 2025-04-14 | **55** | every game on all seven dates, plus one on 04-15 |
+| **all-star exhibition** | 2024-02-01, 2024-02-03 | **2** | `gameType` 12 and 4 |
+| | | **155 (3.5%)** | |
+
+**Preseason is not the category it looks like.** 2024 and 2025 preseason carry
+shifts — 10 of 10 sampled in each — so 2023's is an outage, not a rule about
+exhibition hockey. It also sits inside a population that already fails us at 6×
+the regular-season rate for reasons we have not explained, and this is the first
+hard fact about that population that is not a refusal.
+
+**Both big populations are contiguous and complete**, which is what an endpoint
+outage looks like and not what a property of a game looks like — so a targeted
+backfill is the likely repair. The page must still say **"we do not hold the
+shift chart for this game"** rather than render an empty rink, because 155 games
+is one every twenty-eight.
+
+**What this check did NOT do:** a per-game sweep of all 4,417. It probed one game
+per date, so an isolated single-game gap — exactly like the 2025-04-15 straggler,
+found only because the window around it was already being read game by game —
+would not be seen elsewhere. The 96.5% is therefore an upper bound on coverage,
+and the page's "we do not hold it" branch is what makes the difference not
+matter.
 
 ## 5. The artifact that is also the lesson
 
@@ -167,7 +188,9 @@ the fly and never stops for it.
   reconstruction — driven against a real extract, with the 5v5 share asserted to
   be in a plausible band rather than pinned to a value.
 - **A test that a game with no shifts says so** rather than rendering a page that
-  looks like nobody played. The three games above are real fixtures for it.
+  looks like nobody played. §4.1 supplies 155 real fixtures, and they are not
+  interchangeable: a 2023 preseason game, a game from the April window, and the
+  2024-02-01 exhibition exercise three different reasons for the same absence.
 - **A test that zone is read through `attackDirection`** — a mutation flipping
   home and away must fail, or the column is right by luck on one bench.
 - **A test that the counts sit beside every percentage.**
