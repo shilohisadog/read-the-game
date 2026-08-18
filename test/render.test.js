@@ -285,20 +285,26 @@ test('the sentence on screen is the rule, and it names where it comes from', () 
   assert.match(seen, /rule: NHL Rule|field: rsn/, 'and the provenance travels with it');
 });
 
-test('every known stoppage is CALLED something, on all three surfaces', () => {
+test('every known stoppage is CALLED something, on every surface that shows one', () => {
   // "Goalie Stopped After Sog" — the raw feed key with its hyphens swapped and
   // then title-cased by the stylesheet, in front of the one audience that does
   // not know what SOG means. `say` existed and was correct the whole time; it is
   // a full teaching sentence and the wrong length for a heading, which is why
   // WHY gained a third field rather than the heading being re-pointed at `say`.
   //
-  // THREE SURFACES, AND ONLY ONE OF THEM IS THE HEADING (CHENG). The tally
-  // repeats every reason in the game so far, and each ring carries a <title>.
-  // A heading-only fix leaves two of the three rendering `Sog`, and nobody would
-  // have found the tooltip, because nobody hovers while watching.
+  // MORE THAN ONE SURFACE, AND ONLY ONE OF THEM IS THE HEADING (CHENG). A
+  // heading-only fix would have left the others rendering `Sog`, and nobody
+  // would have found the ring's <title>, because nobody hovers while watching.
+  //
+  // IT WAS THREE UNTIL THE TALLY WENT. Kevin removed the running count of every
+  // reason from the card on 2026-08-18, so the surfaces are now the heading, the
+  // ring titles, and the restart label on the ice. The name of this test said
+  // "three" and would have kept saying it — a count of other elements inside a
+  // test's own title is the same rotting dependency as one in prose.
   const a = boot();
   a.$('lyWhistle').click();
-  const seen = a.every(d => panel(d) + d.$('whistles').innerHTML).join('\n');
+  const seen = a.every(d => panel(d) + d.$('whistles').innerHTML
+                          + d.$('labels').innerHTML).join('\n');
 
   // Whatever this game happened to contain, every reason it showed must be a
   // written label — read out of WHY rather than listed here, so a reason added

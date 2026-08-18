@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-qkuW6V36uJCL1BmNiPnt6rLKU6qY060XXBhcJjMMn6U=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-547Nww2HKm/uEPeNTA7AqKb3WaLbe1ohcRSk0kKZlOI='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-689swkIwRQN5kb789kDgjFuPl1zj7C0kLhPbjlbhLLg=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-4VE0az62D4CaxvK3hpXfLVkTYH7OzKuNzXs/kE+vCAo='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">What is this?</a></nav></header>
@@ -451,7 +451,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    rendered the raw feed key as "Goalie Stopped After Sog"; on a written label it
    gives "Goaltender Covered The Puck". ::first-letter suits both the labels and
    the raw string an unknown reason still falls back to. */
-#rg .whsay .rsn::first-letter,#rg .whtally span::first-letter{text-transform:uppercase}
+#rg .whsay .rsn::first-letter{text-transform:uppercase}
 /* THE CARD IS RETROSPECTIVE AND SAYS SO. Small, muted, above the reason: it
    ranks the card below the rink as a ledger rather than a second narrator. */
 #rg .whsay .wkick{display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:2px}
@@ -459,8 +459,6 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .whsay .none{color:var(--flag)}
 #rg .whmeta{font-size:.74rem;color:var(--muted);margin-top:7px}
 #rg .whmeta .src{font-family:ui-monospace,Menlo,monospace}
-#rg .whtally{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:10px;padding-top:9px;border-top:1px solid var(--edge);font-size:.76rem;color:var(--muted)}
-#rg .whtally b{color:var(--ink);font-family:ui-monospace,Menlo,monospace}
 #rg .goalies{display:none;gap:10px;margin-top:10px}
 #rg.goalie .goalies{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 #rg .gcard{background:#fff;border:1px solid var(--edge);border-radius:11px;padding:12px 15px;box-shadow:0 4px 14px rgba(16,32,45,.06)}
@@ -3580,7 +3578,7 @@ $('whyBk').addEventListener('click',e=>{if(e.target.id==='whyBk')hideWhy();});
    have made a sentence elsewhere on the page false -- the same dependency that
    broke "start with the game at the top" and "Press Play below", and this time
    a test holds the two ends together rather than a comment. */
-const LAB={faceoff:'Faceoff',hit:'Hit',giveaway:'Giveaway',takeaway:'Takeaway','blocked-shot':'Shot blocked','missed-shot':'Missed shot','shot-on-goal':'Shot on goal',penalty:'Penalty'};
+const LAB={faceoff:'Won the faceoff',hit:'Hit',giveaway:'Giveaway',takeaway:'Takeaway','blocked-shot':'Shot blocked','missed-shot':'Missed shot','shot-on-goal':'Shot on goal',penalty:'Penalty'};
 let labelsOn=true;
 /**
  * WHAT THE ICE SAYS WHEN IT IS SHOWING NOTHING.
@@ -3722,9 +3720,6 @@ function drawWhistles(W){
    ?` The faceoff came back into ${ESC(w.zone)}'s end.`:'';
  const where=(w.placed?'Play restarted at the ringed faceoff dot.'
    :`Not shown on the ice — ${ESC(w.unplaced)}.`)+zone;
- const n=W.tally[w.rsn||'unrecorded'];
- const tal=Object.entries(W.tally).sort((a,b)=>b[1]-a[1]||(a[0]<b[0]?-1:1))
-   .map(([r,c])=>`<span>${ESC(RSN(r))} <b>${c}</b></span>`).join('');
  $('whistlePanel').innerHTML=
    /* THE CARD SAYS IT IS LOOKING BACKWARDS, which is the whole of Kevin's
       complaint. Measured across a game: the event this card describes is a
@@ -3739,9 +3734,15 @@ function drawWhistles(W){
       stopped play is what the reader came to the card for; the kicker ranks it. */
    `<p class="whsay"><span class="wkick">Last stoppage</span>`
   +`<span class="rsn">${ESC(RSN(w.rsn))}</span> <span class="at">· P${w.per} ${ESC(w.rem)}</span><br>${say}</p>`
-  +`<div class="whmeta">${where}${w.rsn2?' Also recorded: '+ESC(RSN(w.rsn2))+'.':''} · `
-  +`${n===1?'the first this game':n+' so far this game'}${w.from?' · <span class="src">'+ESC(w.from)+'</span>':''}</div>`
-  +`<div class="whtally">${tal}</div>`;}
+  /* TRIMMED TO THE RESTART AND ITS SOURCE. Kevin, looking at the live offside
+     card: "remove all text after 'Play restarted at the ringed faceoff dot.' We
+     don't need 'TV timeout' or the 'Goalie covered the puck....' line."
+     So the secondary reason, the running count and the whole tally row are gone.
+     THE RULE CITATION STAYED, and that is a flag rather than a decision: it is
+     provenance, test/render.test.js asserts "the provenance travels with it" as
+     doctrine, and deleting it would have quietly weakened a check rather than
+     answered it. One line removes it if that is the call. */
+  +`<div class="whmeta">${where}${w.from?' · <span class="src">'+ESC(w.from)+'</span>':''}</div>`;}
 
 
 // THE BLOCKED-SHOTS PANEL. Three things, in the order they are worth knowing:
