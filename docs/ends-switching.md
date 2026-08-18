@@ -590,7 +590,9 @@ verified 8 of 8 against `rosterSpots`, and re-checked on every game by
 `validate()` rather than trusted**, because `own` is the field that already
 carried an unexpected meaning once (the *shooter* on a blocked shot).
 
-Cost: **+577 bytes per game, additive only**, proven by `extract.py --additive`,
+Cost on the reference game: **+577 bytes, or 0.7%, additive only** — 8 penalties
+and 3 periods, so a game with more penalties costs proportionally more and the
+figure is a scale, not a constant. Proven by `extract.py --additive`,
 which was extended to notice top-level keys — it compared five hand-typed names
 and could not see a new document appear beside them.
 
