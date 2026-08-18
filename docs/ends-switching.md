@@ -408,3 +408,112 @@ first:
 The thing I would still most like challenged is §6 — but the framing is no
 longer the one I asked to be challenged on, because CHENG replaced it and I
 think his version is correct.
+
+---
+
+# 10. REOPENED — 2026-08-18, on an axis §6 never argued
+
+**Kevin, after the attacking-direction indicator shipped:**
+
+> *"We need to revisit the 'never changing sides' decision. That's going to
+> confuse a viewer, because the teams DO change sides. The natural question for a
+> viewer is 'why didn't the teams change sides, what's wrong with this
+> website' — a question I would like to avoid."*
+
+**This is not a better version of §5's argument. It is a different axis, and the
+document never measured it.** Everything above weighs one-direction against
+as-played on *legibility of accumulated marks* — an analyst's question. Kevin is
+raising **trust**: a viewer who knows hockey reads a rink that never flips as a
+BUG, and stops asking about the game to ask about the site. That failure happens
+before any of §5's advantages can be collected.
+
+This project has a name for this shape already: **the measurement right and the
+objective function wrong.** No technique in the review catalogue catches it — the
+only defence is *state who the reader is before you measure* — and §1–§8 were
+measured for a reader who is not the one we built the site for.
+
+## 10.1 ⭐ The indicator shipped this week made it sharper, not safer
+
+`ATTACKS →` / `ATTACKS ←` now sit under the team abbreviations, derived from
+`attackDirection` and constant for the whole game. **Before, the fixed ends were
+an implicit convention a viewer might not notice. Now the page states a claim,
+in words, that contradicts what hockey does at every intermission.** That is a
+straightforward worsening of exactly the confusion Kevin names, caused by a fix
+for a different confusion, and it argues for settling this rather than leaving it
+filed.
+
+## 10.2 The long change — a hockey fact one-direction cannot show, and it is real
+
+Not in §1–§9 anywhere. In the second period each team's defensive zone is the one
+FARTHER from its bench, so a pinned unit cannot change. Measured over 852
+regulation games, regular season and playoffs:
+
+| period | goals per game | attempts per game |
+|---|---|---|
+| 1 | 1.80 | 38.3 |
+| **2** | 1.98 | **40.5** |
+| 3 | **2.14** | 38.5 |
+
+**Attempts peak in the second period, +5.7% over the first** — the long change's
+signature. Goals rise monotonically instead, which is a different pattern and
+more likely score effects than geometry, and should not be claimed as the long
+change.
+
+So there is a real teaching moment that **one-direction makes unshowable**, and
+it is the moment Kevin's benches-and-penalty-box question was reaching for.
+
+## 10.3 The cost is smaller than §5 assumed, and this is checkable
+
+**As-played is a RENDER-TIME transform.** The reducers consume normalized
+coordinates and would not move:
+
+| | uses `e.x` |
+|---|---|
+| corsi, blocked, whistle, tied | **0** |
+| danger, goaltending | 2 each — high-danger geometry, on normalized input |
+
+Every count, every layer, every base rate, every published figure is untouched.
+The casualties are exactly three, and only the first is a real loss:
+
+1. **`trails === 'all'` across a period boundary** — which §5 already answered:
+   scope to the current period, *because the frame ended*, not as a preference.
+2. **Fixed furniture** — nets, goaltenders, and the new arrows, all of which
+   would flip with the ice. The arrows becoming period-aware is the fix
+   *working*, not a cost.
+3. **`grep` says `trails` is the only spatial accumulation in the app.**
+
+## 10.4 What I would recommend, and the case against it
+
+**Build the control; let the novice test choose the default.** That is
+mechanism-not-policy, and the default is precisely the question a real novice
+answers in one sitting — she is scheduled, and this is the cheapest possible
+experiment to run on her.
+
+**I lean as-played as the default**, because a trust failure outranks an
+analytical convenience for this audience, and because §5's loss is now known to
+be confined to one control.
+
+**The case against, stated properly:** *nobody has watched a novice use this site
+yet.* "A viewer will ask what is wrong" is a **prediction**, and §1–§8 are
+**measurements**. Rebuilding a core rendering decision on a hunch is the shape
+this project distrusts everywhere else, and the disclosure already exists in the
+legend.
+
+**What breaks the tie is the asymmetry of being wrong.** Ship the control and
+default wrong analytically → flip a default. Keep one-direction and Kevin is
+right → a novice bounces and never tells us why. The second failure is silent,
+and silent failures are the ones this project spends its effort on.
+
+## 10.5 What I want ruled
+
+1. **Does the trust argument beat §5's legibility argument for the DEFAULT**, or
+   only justify the control?
+2. **Is a period-boundary disclosure a real alternative** — announcing "the teams
+   change ends here; we hold them fixed so the marks stay comparable" at the
+   moment of confusion rather than in a legend nobody reads? It is much cheaper
+   and it targets the exact instant Kevin describes.
+3. **Do the benches belong on the ice at all?** They are the reason the long
+   change exists, they are not in the feed, and drawing them is drawing the
+   building — which §1 explicitly says we do not do.
+4. **Does the penalty box ride on this decision or is it independent?** I think
+   independent: box occupancy reads from `sit` and is correct in either mode.
