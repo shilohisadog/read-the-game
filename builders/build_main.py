@@ -175,8 +175,18 @@ T = r"""<style>
 #rg .att.h{fill:var(--home)}#rg .att.a{fill:#fff;stroke:var(--away);stroke-width:.7}#rg .att{opacity:.85}
 #rg .goal.h{fill:var(--home);stroke:#fff}#rg .goal.a{fill:#fff;stroke:var(--away)}#rg .goal{stroke-width:.9}
 #rg .excl{fill:var(--muted);opacity:.2}
-#rg .rulel{stroke:var(--flag);stroke-width:1.5;opacity:.75;pointer-events:none}
-#rg .rulel.dim{opacity:.35;stroke-dasharray:3 2}
+/* A HIGHLIGHTER, NOT A LINE ON TOP OF A LINE. At 1.5 wide the mark was about
+   the weight of the rink lines it was marking, so it read as a highlight over
+   the THIN goal line and as stripes over the THICK red centre line -- and the
+   dash on the secondary line made that worse, not better (Kevin: "the
+   highlighting isn't obvious like it is on the end zone line").
+   AND THE HIERARCHY IS GONE, because it was answering a question nobody asked.
+   The centre line was drawn dimmer and narrower than the goal line, which is
+   backwards twice over: the rule names BOTH lines equally, and the centre line
+   is the THICKER one on the ice, so it needed a wider band to show at all, not a
+   fainter one. One band, wider than anything under it, for every line a rule
+   names. */
+#rg .rulel{stroke:var(--flag);stroke-width:4.6;opacity:.4;stroke-linecap:butt;pointer-events:none}
 #rg .ring{fill:none;pointer-events:none}
 #rg .ring.blk{stroke:var(--flag);stroke-width:.7}
 #rg .ring.hd{stroke:var(--hd);stroke-width:.8}
@@ -1488,7 +1498,7 @@ function drawWhistles(W){
  const cur=latest(W);
  if(cur&&cur.lines&&cur.lines.length){
   for(const lx of cur.lines)
-   g.push(`<line class="rulel${lx===0?' dim':''}" x1="${SX(lx)}" y1="2" x2="${SX(lx)}" y2="83"/>`);}
+   g.push(`<line class="rulel" x1="${SX(lx)}" y1="2" x2="${SX(lx)}" y2="83"/>`);}
  $('whistles').innerHTML=g.join('');
  const w=latest(W);
  if(!w){$('whistlePanel').innerHTML='<p class="whsay">No whistle yet — play has not stopped in what you have watched so far.</p>';return;}
@@ -1520,7 +1530,17 @@ function drawWhistles(W){
       THE KICKER IS NOT THE HEADING. The reason keeps the heading, because what
       stopped play is what the reader came to the card for; the kicker ranks it. */
    `<p class="whsay"><span class="wkick">Last stoppage</span>`
-  +`<span class="rsn">${ESC(RSN(w.rsn))}</span> <span class="at">· P${w.per} ${ESC(w.rem)}</span><br>${say}</p>`
+  /* HOW FAR BACK, BESIDE THE TIMESTAMP THAT ONLY IMPLIED IT. "Last stoppage"
+     told the reader the card looks backwards; it never said how far, so the
+     arithmetic -- card 15:02 against a scoreboard reading 14:12 -- was left to
+     them while the rink moved on (Kevin: "the card stays on Last Stoppage,
+     creating a bit of a disconnect"). Same period only: across a period break
+     the difference in `s` is not an elapsed time, and saying so is cheaper than
+     computing one. */
+  +`<span class="rsn">${ESC(RSN(w.rsn))}</span> <span class="at">· P${w.per} ${ESC(w.rem)}${(()=>{
+      const c=EV[i]; if(!c||c.per!==w.per)return '';
+      const d=c.s-w.s; if(!(d>0))return '';
+      return ' · '+(d<60?d+'s':Math.floor(d/60)+':'+String(d%60).padStart(2,'0'))+' earlier';})()}</span><br>${say}</p>`
   /* TRIMMED TO THE RESTART AND ITS SOURCE. Kevin, looking at the live offside
      card: "remove all text after 'Play restarted at the ringed faceoff dot.' We
      don't need 'TV timeout' or the 'Goalie covered the puck....' line."

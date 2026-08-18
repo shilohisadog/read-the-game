@@ -3072,3 +3072,62 @@ test('the restart faceoff says which rule it is restarting after', () => {
   assert.ok(!/ after /.test(off),
             'the restart names its rule with the whistle layer off');
 });
+
+test('the stoppage card says how far back it is looking', () => {
+  // Kevin: "when I tap next play the rink activity moves forward, but the card
+  // stays on Last Stoppage, creating a bit of a disconnect." The card was never
+  // wrong — it is a median 29 seconds behind the playhead and more than five
+  // behind on 78% of frames — but the distance was left as arithmetic between a
+  // card reading 15:02 and a scoreboard reading 14:12.
+  const a = boot();
+  a.$('lyWhistle').click();
+  const stamps = a.every(d => {
+    const at = d.$('whistlePanel').innerHTML.match(/class="at">([^<]*)</);
+    return at ? at[1] : null;
+  }).filter(Boolean);
+
+  assert.ok(stamps.some(s => /earlier/.test(s)),
+            'the card never says how far back the stoppage was');
+  // AT THE STOPPAGE ITSELF THERE IS NO DISTANCE TO STATE, and saying "0s
+  // earlier" would be noise dressed as precision.
+  assert.ok(stamps.some(s => !/earlier/.test(s)),
+            'every frame claims a gap, including the ones with none');
+
+  // THE GAP MUST BE THE RIGHT ONE, not merely present and varying. Publishing
+  // `s: 0` from the reducer makes the card show time-into-the-period instead of
+  // time-since-the-whistle — always positive, always changing, and always wrong.
+  // Only checking it against the page's own clock catches that, so this compares
+  // two surfaces a reader can compare themselves: the stoppage's timestamp on
+  // the card and the scoreboard's running clock.
+  const toSec = t => { const [m, s2] = t.split(':').map(Number); return m * 60 + s2; };
+  let checked = 0;
+  a.every(d => {
+    const at = d.$('whistlePanel').innerHTML.match(/class="at">· P(\d+) (\d+:\d+)([^<]*)</);
+    if (!at) return null;
+    const shown = /· (?:(\d+):)?(\d+)s? earlier/.exec(at[3]);
+    if (!shown) return null;
+    const board = d.$('clk').textContent;
+    const gap = toSec(at[2]) - toSec(board);        // both are time REMAINING
+    const said = (shown[1] ? +shown[1] * 60 : 0) + +shown[2];
+    assert.equal(said, gap,
+      `the card says ${said}s since the whistle at ${at[2]}, but the clock reads ${board}`);
+    checked++;
+    return null;
+  });
+  assert.ok(checked > 20, `only ${checked} frames carried a gap to check`);
+});
+
+test('a line a rule names is marked wider than the line it marks', () => {
+  // Kevin: "the highlighting isn't obvious like it is on the end zone line."
+  // The mark was about the weight of the rink lines themselves, so it read as a
+  // highlight over the THIN goal line and vanished into the THICK centre line.
+  // The invariant is not a chosen width — it is that the band must exceed
+  // anything it is drawn over, which is a relationship the stylesheet can hold.
+  const band = /#rg \.rulel\{[^}]*stroke-width:([\d.]+)/.exec(app);
+  assert.ok(band, 'the rule line has no width of its own');
+  const widths = [...app.matchAll(/stroke-width[:=]"?([\d.]+)/g)]
+    .map(m => +m[1]).filter(w => w > 0 && w < 4.6);
+  assert.ok(widths.length > 3, 'no rink line widths found to compare against');
+  assert.ok(+band[1] > Math.max(...widths),
+    `the rule band is ${band[1]} but something on the ice is drawn at ${Math.max(...widths)}`);
+});

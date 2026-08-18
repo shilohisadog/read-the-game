@@ -283,6 +283,12 @@ export const whistle = {
         // test/clock.test.js the moment this layer entered the bundle, which is
         // the first time that guard has reached into a reducer.
         rem: e.rem,
+        // SECONDS INTO THE PERIOD, so a reader can be told how far back this is
+        // without the page re-parsing `rem` to work it out. The card is a median
+        // 29 seconds behind the playhead and more than five behind on 78% of
+        // frames; "Last stoppage" states that it looks backwards, and this is
+        // what lets it state HOW FAR.
+        s: e.s,
         rsn: rsn || null,
         rsn2: e.rsn2 || null,
         // NULL, NOT A GUESS. The draft mapped reason -> copy and did
