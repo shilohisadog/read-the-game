@@ -813,6 +813,110 @@ class TheCatalogMerges(unittest.TestCase):
         self.assertEqual(ids, sorted(ids))
 
 
+class TheReplacedRowIsWholesale(unittest.TestCase):
+    """REPLACEMENT IS TOTAL, AND THAT IS THE SHARP EDGE UNDER THE MERGE.
+
+    `TheCatalogMerges` proves the two halves that make the document safe: rows
+    this run said nothing about survive, and a row it did judge is replaced
+    rather than updated. Both are right. Together they mean a field that is not
+    produced by the row builder is deleted for EXACTLY the games this run
+    re-judged -- silently, and only for those games.
+
+    That is the worst available shape. A field bolted on downstream is present
+    on the whole archive the day it is written and decays game by game as the
+    pipeline works through them, so it reads as working right up until the games
+    a reader is most likely to open are the ones missing it.
+
+    This is not hypothetical. `docs/one-measure.md` §4 proposed exactly such a
+    step -- a node pass adding attempts to the catalog after derive.py wrote it
+    -- and §3.1 is the paragraph that killed it. CHENG asked for the test so the
+    next person meets the rule before the pipeline does.
+
+    THE RULE: a field on a catalog row must be produced by `derive()`. There is
+    no other writer, and `test_the_row_carries_exactly_the_fields_it_promises`
+    below is the tripwire -- you cannot add one without reading this.
+    """
+
+    def rows(self, store):
+        return {r["id"]: r for r in json.loads(store.get("catalog.json").decode())["games"]}
+
+    def test_the_three_row_sites_agree_on_the_field_set(self):
+        """`rows[gid] = ...` happens in three places and one of them is forever.
+
+        A game derives ONCE and is `unchanged` every night after, so a field
+        added to the fresh-publish site alone would appear for one night and
+        vanish permanently -- which looks like the merge losing it and is not.
+        """
+        store = DictStore()
+        seed(store, gid=2025020001)
+        rep = D.derive(store)
+        self.assertEqual((rep.derived, rep.unchanged), (1, 0), "the fresh path ran")
+        fresh = set(self.rows(store)[2025020001])
+
+        rep = D.derive(store)          # same bytes: the steady state of the archive
+        self.assertEqual((rep.derived, rep.unchanged), (0, 1), "the unchanged path ran")
+        self.assertEqual(set(self.rows(store)[2025020001]), fresh,
+                         "the row a game keeps for years must be the row it published")
+
+        refused = DictStore()
+        seed(refused, gid=2025020001, box=box_bytes(away_sog=99))
+        rep = D.derive(refused)
+        self.assertEqual(list(rep.refused), ["2025020001"], "the refusal path ran")
+        self.assertEqual(set(self.rows(refused)[2025020001]) - fresh, {"r"},
+                         "a refused row carries the gate that stopped it and nothing else")
+
+    def test_a_field_written_outside_derive_decays_game_by_game(self):
+        """The asymmetry IS the assertion, not either half of it.
+
+        Assert only the deletion and this reads as a fixable bug. Assert only
+        the survival and it reads as the merge working. The two together are the
+        failure mode: a document in which the same field is present or absent
+        depending on which night a game was last touched.
+        """
+        store = DictStore()
+        seed(store, gid=2025020001)         # an old game
+        seed(store, gid=2025020002)         # tonight's
+        D.derive(store)
+
+        # A later writer -- any later writer -- adds a field to every row.
+        doc = json.loads(store.get("catalog.json").decode())
+        for r in doc["games"]:
+            r["aa"] = 94
+        store.put("catalog.json", json.dumps(doc).encode())
+
+        # The nightly's real shape: raw for tonight, pointers only for the rest.
+        digests = json.loads(store.get(F.latest_key(2025020001)).decode())
+        for name, dig in digests.items():
+            store.delete(F.raw_key(2025020001, dig, name))
+
+        rep = D.derive(store)
+        self.assertEqual(list(rep.absent), ["2025020001"], "the archive was not re-judged")
+
+        rows = self.rows(store)
+        self.assertEqual(rows[2025020001].get("aa"), 94,
+                         "the game nobody looked at kept it -- so the damage is invisible")
+        self.assertNotIn("aa", rows[2025020002],
+                         "and the game that WAS judged lost it, because the row is replaced")
+
+    def test_the_row_carries_exactly_the_fields_it_promises(self):
+        """The tripwire. Adding a field to a catalog row must fail this test.
+
+        A pinned set is normally the shape this project distrusts -- a constant
+        standing in for a relationship. Here the set IS the relationship: it is
+        the contract the browser destructures, written by one function and read
+        by a page in another language, and nothing else in the suite fails when
+        it changes.
+        """
+        store = DictStore()
+        seed(store, gid=2025020001)
+        D.derive(store)
+        self.assertEqual(set(self.rows(store)[2025020001]),
+                         {"id", "d", "t",              # what game, when, which kind
+                          "a", "h", "as", "hs", "ash", "hsh",   # the league's quote
+                          "v"},                        # our verdict, and `r` when 0
+                         "read this class's docstring before widening this set")
+
+
 class TheMergeNeedsItsBaseline(unittest.TestCase):
     """THE MERGE IS ONLY AS GOOD AS THE THING IT MERGES INTO.
 
