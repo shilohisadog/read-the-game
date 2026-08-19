@@ -1345,9 +1345,14 @@ class SvgPen {
  *   mascot    the default — big head, soft shapes, a face. Legible small.
  *   tabletop  the rod-hockey tin man — flat colour, heavy outline, on its peg.
  *
- * Both are MARKERS, not claims (Doctrine §5). A figure says "a real shot came
- * from here, and this is what happened to it". The pose encodes the outcome the
- * feed records — saved or scored — and nothing else. Neither asserts anything
+ * Both are MARKERS, not claims (Doctrine §5). A figure says "the player this
+ * coordinate belongs to was here, and this is what happened". USUALLY that is
+ * the shooter — but on a BLOCKED SHOT the coordinate is the BLOCKER's position,
+ * a median 25.0 ft from the attacked net against 34.3 for a shot on goal, so the
+ * figure is the blocker and wears his sweater. This sentence used to read "a
+ * real shot came from here", which was false for every blocked shot on the site.
+ * The pose encodes the outcome the feed records — saved or scored — and nothing
+ * else; it does not claim the figure was shooting. Neither asserts anything
  * about how a player stood, moved or skated.
  *
  *   FIG[style](pen, px, py, size, jersey, out, { t, motion, glow, light })
@@ -3457,7 +3462,31 @@ function render(i,how){
    // coordinates to infer from.
    if(e.type==='blocked-shot')parts.push(`<circle class="ring blk" data-i="${k}" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${(r+1).toFixed(1)}"/>`);
    if(hd&&e.type!=='goal')parts.push(`<circle class="ring hd" data-i="${k}" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${(r+2).toFixed(1)}"/>`);
-   if(ATT.has(e.type)&&k===i){
+   // WHOSE POSITION IS THIS? On every event but one the answer is the same team
+   // that gets the count, so the question never came up. A BLOCKED SHOT SPLITS
+   // THEM: the attempt is the shooter's and the COORDINATE IS THE BLOCKER'S --
+   // measured across 39 archive games, a median 25.0 ft from the attacked net
+   // against 34.3 for a shot on goal, because it is where the defender was
+   // standing, not where the puck was shot from.
+   //
+   // Kevin found it on the ice: "text says CAR, visual shows Vegas." The label
+   // names the blocker (his earlier call, and right) while the figure was drawn
+   // in the SHOOTER's colours -- so a VGK player stood on a CAR defender's
+   // skates, nine feet closer to the net than VGK actually shot from. The figure
+   // is the one mark on this rink that depicts a PERSON, which is exactly the
+   // claim Doctrine 5 governs, and the module's own comment already said a
+   // figure means "someone was here".
+   //
+   // The dot keeps the shooter's colour deliberately. A dot marks an EVENT and
+   // carries the attempt where Control counts it; a figure marks a PERSON and
+   // has to stand in the right place. That is the distinction, and it is why
+   // only one of the two moved.
+   const bt=(e.type==='blocked-shot'&&e.blk!=null&&R[e.blk])?R[e.blk].tid:null;
+   const ft=e.type!=='blocked-shot'?tk(e):(bt===AID?'a':bt===HID?'h':null);
+   // NO BLOCKER RECORDED, NO FIGURE. Four blocked shots in 30,550 carry no
+   // blocking player, and for those we cannot say whose position the coordinate
+   // is -- so it stays a dot rather than becoming a guess with a face on it.
+   if(ATT.has(e.type)&&k===i&&ft!==null){
      // Only the CURRENT attempt is a player. Once the shot has happened its
      // location goes back to being a dot, so the eye is drawn to what is
      // happening now rather than to a crowd of past figures — and one figure
@@ -3468,10 +3497,10 @@ function render(i,how){
      // figures, because a figure means "someone shot from here" and drawing one
      // for a faceoff would be a claim we cannot make (Doctrine §5).
      const pen=new SvgPen('cur');
-     FIG[figStyle](pen,cx,cy,e.type==='goal'?FIG_BIG:FIG_SZ,tk(e)==='a'?AWAYCOL:HOMECOL,
+     FIG[figStyle](pen,cx,cy,e.type==='goal'?FIG_BIG:FIG_SZ,ft==='a'?AWAYCOL:HOMECOL,
                    e.type==='goal'?'goal':'save',
                    {t:T,motion:!REDUCED,glow:false,px:(e.type==='goal'?FIG_BIG:FIG_SZ)*UNIT_PX});
-     parts.push(pen.toSvg(`class="ev fig ${cls} ${tk(e)}${anim}" data-i="${k}"`).replace('</g>',title+'</g>'));
+     parts.push(pen.toSvg(`class="ev fig ${cls} ${ft}${anim}" data-i="${k}"`).replace('</g>',title+'</g>'));
    } else {
      parts.push(`<circle class="ev ${cls} ${tk(e)}${anim}" data-i="${k}" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r}">${title}</circle>`);
      // A GOAL IS A BULLSEYE, not a slightly larger dot. Under the sweater

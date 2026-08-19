@@ -218,9 +218,14 @@ document.querySelectorAll('#gv .sb').forEach(b=>b.addEventListener('click',()=>s
  *   mascot    the default — big head, soft shapes, a face. Legible small.
  *   tabletop  the rod-hockey tin man — flat colour, heavy outline, on its peg.
  *
- * Both are MARKERS, not claims (Doctrine §5). A figure says "a real shot came
- * from here, and this is what happened to it". The pose encodes the outcome the
- * feed records — saved or scored — and nothing else. Neither asserts anything
+ * Both are MARKERS, not claims (Doctrine §5). A figure says "the player this
+ * coordinate belongs to was here, and this is what happened". USUALLY that is
+ * the shooter — but on a BLOCKED SHOT the coordinate is the BLOCKER's position,
+ * a median 25.0 ft from the attacked net against 34.3 for a shot on goal, so the
+ * figure is the blocker and wears his sweater. This sentence used to read "a
+ * real shot came from here", which was false for every blocked shot on the site.
+ * The pose encodes the outcome the feed records — saved or scored — and nothing
+ * else; it does not claim the figure was shooting. Neither asserts anything
  * about how a player stood, moved or skated.
  *
  *   FIG[style](pen, px, py, size, jersey, out, { t, motion, glow, light })

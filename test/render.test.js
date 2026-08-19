@@ -3276,3 +3276,104 @@ test('the ends disclosure appears at a period boundary and nowhere else', () => 
   assert.equal(runs, 2,
     `the disclosure appears in ${runs} runs; a 3-period game has 2 later periods`);
 });
+
+test('on a blocked shot the figure wears the BLOCKER’s sweater, not the shooter’s', () => {
+  // KEVIN, WATCHING THE HERO: "text says CAR, visual shows Vegas." The label
+  // named the blocker and the figure was drawn in the shooter's colours, so the
+  // two halves of one play named two different teams.
+  //
+  // The deeper fault was that the figure is the only mark on this rink that
+  // depicts a PERSON, and the coordinate on a blocked shot is the BLOCKER's --
+  // a median 25.0 ft from the attacked net against 34.3 for a shot on goal.
+  // A shooter figure there stands on the wrong player's skates.
+  const a = boot();
+  const rows = a.every(d => ({ ev: d.$('events').innerHTML, lab: d.$('labels').innerHTML }));
+  const AB = { a: rich.teams.away.ab, h: rich.teams.home.ab };
+
+  let checked = 0;
+  const drawn = { a: 0, h: 0 };
+  for (const r of rows) {
+    const m = /<g class="ev fig ([^"]*)"/.exec(r.ev);
+    if (!m || !/\bblkd\b/.test(m[1])) continue;
+    const cls = m[1].split(/\s+/);
+    const side = cls.includes('a') ? 'a' : cls.includes('h') ? 'h' : null;
+    assert.ok(side, `a blocked-shot figure carries no team class: ${m[1]}`);
+    drawn[side]++;
+    // THE RELATIONSHIP, which is the thing that was broken. Two tests each
+    // pinning its own half would both pass while they disagreed with each other.
+    const named = /\b([A-Z]{3})\b/.exec(r.lab);
+    if (named) {
+      assert.equal(named[1], AB[side],
+        `the label says ${named[1]} and the figure wears ${AB[side]}`);
+      checked++;
+    }
+  }
+  assert.ok(checked > 0, 'no blocked shot was ever drawn as a figure with a label');
+
+  // THE CLASS IS NOT THE SWEATER. A mutation that fixed the class and left the
+  // JERSEY COLOUR as the shooter's survived every assertion above -- which is
+  // precisely the symptom Kevin reported, a figure in the wrong team's colours.
+  // So the colour is tied to the class here: each side must use exactly one
+  // jersey across ALL figures, blocked and unblocked alike, and the two sides
+  // must differ. Drawing a blocked shot in the other team's colour puts two
+  // jerseys under one side and fails.
+  const jerseys = { a: new Set(), h: new Set() };
+  for (const r of rows) {
+    const m = /<g class="ev fig ([^"]*)"[\s\S]*?<\/g>/.exec(r.ev);
+    if (!m) continue;
+    const cls = m[1].split(/\s+/);
+    const side = cls.includes('a') ? 'a' : cls.includes('h') ? 'h' : null;
+    if (!side) continue;
+    for (const c of m[0].matchAll(/fill="(#[0-9a-fA-F]{6})"/g)) jerseys[side].add(c[1]);
+  }
+  const only = s => [...s].filter(c => !jerseys[s === jerseys.a ? 'h' : 'a'].has(c));
+  const aOnly = [...jerseys.a].filter(c => !jerseys.h.has(c));
+  const hOnly = [...jerseys.h].filter(c => !jerseys.a.has(c));
+  assert.equal(aOnly.length, 1, `the away figures use ${aOnly.length} distinct jerseys: ${aOnly}`);
+  assert.equal(hOnly.length, 1, `the home figures use ${hOnly.length} distinct jerseys: ${hOnly}`);
+  assert.notEqual(aOnly[0], hOnly[0], 'the two sides must not share a sweater');
+
+  // A COUNT DISCRIMINATES WHERE A PREDICATE CANNOT. "The figure has a team
+  // class" is satisfied by the shooter's team just as happily. In this game the
+  // two sides block different numbers, so drawing the shooter instead of the
+  // blocker swaps these totals -- derived from the roster, never typed.
+  const want = { a: 0, h: 0 }, shooters = { a: 0, h: 0 };
+  for (const e of rich.events) {
+    if (e.type !== 'blocked-shot' || e.blk == null) continue;
+    const b = rich.roster[String(e.blk)], s = rich.roster[String(e.actor)];
+    if (!b) continue;
+    want[b.tid === rich.teams.away.id ? 'a' : 'h']++;
+    if (s) shooters[s.tid === rich.teams.away.id ? 'a' : 'h']++;
+  }
+  // THE GUARD THAT MADE THIS TEST HONEST. The first version asserted the two
+  // SIDES blocked different amounts, and they do not -- this game is 22-22, so
+  // it failed and said so rather than passing vacuously. What separates blocker
+  // from shooter is that the two DISTRIBUTIONS differ: 22-22 against 26-18.
+  assert.notDeepEqual(want, shooters,
+    'blocker and shooter split identically here, so no count can tell them apart');
+  assert.deepEqual(drawn, want,
+    `figures drawn ${JSON.stringify(drawn)}, blockers are ${JSON.stringify(want)}, `
+    + `shooters are ${JSON.stringify(shooters)}`);
+});
+
+test('a blocked shot with no blocker recorded stays a dot, not a guess with a face', () => {
+  // Four blocked shots in 30,550 carry no blocking player. For those we cannot
+  // say whose position the coordinate is, so no figure is drawn -- and this is
+  // the one case the reference game cannot exercise, because all 44 of its
+  // blocks name a blocker. Constructed rather than hoped for.
+  const stripped = JSON.parse(JSON.stringify(rich));
+  const target = stripped.events.find(e => e.type === 'blocked-shot');
+  assert.ok(target, 'the reference game has a blocked shot to strip');
+  delete target.blk;
+  const a = boot(stripped);
+  const figs = a.every(d => d.$('events').innerHTML)
+                .flatMap(h => [...h.matchAll(/<g class="ev fig ([^"]*)"/g)].map(m => m[1]));
+  for (const cls of figs) {
+    assert.ok(!/\bnull\b|\bundefined\b/.test(cls),
+              `a figure was drawn with no team: "${cls}"`);
+  }
+  // AND THE OTHER BLOCKED SHOTS STILL GET THEIR FIGURE -- otherwise "no figure"
+  // would pass by drawing none at all.
+  assert.ok(figs.some(c => /\bblkd\b/.test(c)),
+            'stripping one blocker must not silence every blocked-shot figure');
+});
