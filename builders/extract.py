@@ -451,13 +451,28 @@ def validate(rich, pbp, shifts, box):
     # has already meant something unexpected once in this feed (the SHOOTER on a
     # blocked shot, not the blocker), so it is checked here against rosterSpots
     # rather than inherited from a comment. See docs/ends-switching.md.
+    # NOT EVERY PENALTY HAS A COMMITTING PLAYER, and this check refused 864 games
+    # before it learned that. A BENCH MINOR -- too many men on the ice is the
+    # common one -- is committed by the TEAM: the feed carries `servedByPlayerId`
+    # and no `committedByPlayerId`, so `team_of.get(None)` compared against a real
+    # team id failed every game that contained one. Verified 8 of 8 on the
+    # reference game and shipped across 4,553; the reference game has no bench
+    # minor, so the sample could not contain the case that breaks it.
+    #
+    # The right move is to check what CAN be checked and say how many could not,
+    # rather than to weaken the comparison -- a skipped case that is counted is
+    # visible, and a comparison loosened until it passes is not.
     pens = [(e, p) for e, p in zip(rich["events"], pbp["plays"])
             if e["type"] == "penalty"]
-    wrong = [f"{e['per']}/{e['clock']}" for e, p in pens
-             if team_of.get((p["details"] or {}).get("committedByPlayerId")) != e["own"]]
+    named = [(e, p) for e, p in pens
+             if (p["details"] or {}).get("committedByPlayerId") is not None]
+    wrong = [f"{e['per']}/{e['clock']}" for e, p in named
+             if team_of.get(p["details"]["committedByPlayerId"]) != e["own"]]
     check(not wrong,
           f"penalties credited to the offending team "
-          f"({len(pens)} checked vs rosterSpots"
+          f"({len(named)} of {len(pens)} checked vs rosterSpots; "
+          f"{len(pens) - len(named)} have no committing player -- a bench minor is "
+          f"served, not committed"
           f"{', wrong at ' + ', '.join(wrong[:3]) if wrong else ''})")
 
     # WHAT WE RECORDED THE ENDS TO BE, against the feed that recorded them. The

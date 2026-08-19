@@ -1200,6 +1200,45 @@ class ThePenaltyCarriesItsOwnMeaning(unittest.TestCase):
             self.assertNotEqual(e["own"], self.team_of[e["drew"]],
                                 f"P{e['per']} {e['clock']}: the drawer is on the other team")
 
+    def test_a_bench_minor_has_no_committing_player_and_must_not_refuse_the_game(self):
+        """THE REGRESSION THAT REFUSED 864 GAMES.
+
+        Too many men on the ice is committed by the TEAM: the feed carries
+        `servedByPlayerId` and no `committedByPlayerId`. The first version of
+        this check compared `team_of.get(None)` against a real team id, failed,
+        and withheld every game containing one -- 843 games that had been
+        published the day before. The reference game has no bench minor, so
+        8 of 8 passing locally could not see it.
+
+        The check now verifies what it CAN and counts what it cannot, which is
+        doctrine 9: what we set aside stays visible.
+        """
+        plays = [play("penalty", 10, eventOwnerTeamId=30, typeCode="BEN",
+                      descKey="too-many-men-on-the-ice", duration=2,
+                      servedByPlayerId=1),
+                 play("penalty", 20, committedByPlayerId=1, drawnByPlayerId=2,
+                      eventOwnerTeamId=30, typeCode="MIN", descKey="tripping",
+                      duration=2)]
+        pbp = {"homeTeam": HOME, "awayTeam": AWAY, "rosterSpots": ROSTER,
+               "plays": plays}
+        rich = E.extract(pbp, json.loads(shifts_bytes()))
+        fails = validate_quietly(rich, pbp, json.loads(shifts_bytes()),
+                                 json.loads(box_bytes(away_sog=0, home_sog=0,
+                                                      away_score=0, home_score=0)))
+        self.assertFalse([f for f in fails if "offending team" in f],
+                         "a bench minor must not refuse the game")
+        # AND THE ONE THAT CAN BE CHECKED STILL IS -- otherwise the repair is
+        # just the gate switched off. Break the checkable penalty and it fires.
+        rich["events"][1]["own"] = 7
+        again = validate_quietly(rich, pbp, json.loads(shifts_bytes()),
+                                 json.loads(box_bytes(away_sog=0, home_sog=0,
+                                                      away_score=0, home_score=0)))
+        self.assertTrue([f for f in again if "offending team" in f],
+                        "the check stopped checking the penalties it still can")
+        # The bench minor is still box time -- it is served by somebody.
+        self.assertEqual(rich["events"][0]["sev"], "BEN")
+        self.assertEqual(rich["events"][0]["srv"], 1)
+
     def test_the_gate_fires_when_the_box_would_fill_on_the_wrong_side(self):
         # A MUTATION NOT SEEN TO FIRE IS NOT A MUTATION. Credit each penalty to
         # the team that DREW it -- the single most plausible way to get this
