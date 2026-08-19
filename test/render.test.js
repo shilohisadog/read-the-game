@@ -1552,8 +1552,18 @@ test('the preview fits the rink to its box instead of trusting the box', () => {
   // A viewBox with the default preserveAspectRatio letterboxes rather than
   // crops, so an svg told to fill a bounded height always draws the WHOLE rink.
   // The default rule is `height:auto`, which is exactly what cannot be bounded.
-  assert.match(app, /#rg\.preview \.rinkbox svg\{[^}]*height:100%/,
+  // THE BOUNDING MECHANISM CHANGED WHEN THE PENALTY BAND ARRIVED, and the
+  // PROPERTY did not. `height:100%` bounded the svg against the rink box while
+  // the svg was its only child. It is not any more: `.rinkbox` is now a flex
+  // COLUMN holding the ice and the band, and `height:100%` there makes the svg
+  // demand the whole box and push the band out of it. `flex:1 1 auto` with
+  // `min-height:0` bounds it against what is LEFT, which is the same guarantee
+  // over a container that now has two children. Verified in a browser: 343x141
+  // at 390px, 884x389 at 1100px, whole rink drawn, nothing cropped.
+  assert.match(app, /#rg\.preview \.rinkbox svg\{[^}]*flex:1 1 auto/,
     'the preview rink is still free to grow past its container');
+  assert.match(app, /#rg\.preview \.rinkbox svg\{[^}]*min-height:0/,
+    'and a flex child without min-height:0 refuses to shrink');
   assert.match(app, /#rg\.preview \.rinkbox\{[^}]*min-height:0/,
     'a flex child without min-height:0 refuses to shrink, which is the crop');
   assert.match(app, /#rg\.preview \.wrap\{[^}]*flex-direction:column/,
@@ -1601,10 +1611,21 @@ test('the preview chrome scales with the frame, so the ice cannot be crowded out
 
 test('the homepage gives a narrow frame the extra height its rink needs', () => {
   const index = readFileSync(new URL('../src/index.html', import.meta.url), 'utf8');
-  assert.match(index, /@media \(max-width:520px\)\{\.heroframe iframe\{aspect-ratio:200\/128\}\}/,
-    'one aspect ratio cannot serve both — the chrome is 10% of a wide frame and 17% of a narrow one');
-  assert.match(index, /\.heroframe iframe\{[^}]*aspect-ratio:200\/108/,
+  // BOTH RATIOS GREW WHEN THE PENALTY BAND JOINED THE CHROME, and the reason the
+  // narrow one grew MORE is the reason this test exists: a fixed cost eats a
+  // larger share of a narrow frame. At 200/128 the ice was 27px short of its own
+  // aspect and letterboxed -- white space either side, which reads as a smaller
+  // rink rather than a tighter one.
+  assert.match(index, /@media \(max-width:520px\)\{\.heroframe iframe\{aspect-ratio:200\/140\}\}/,
+    'one aspect ratio cannot serve both — the chrome is a bigger share of a narrow frame');
+  assert.match(index, /\.heroframe iframe\{[^}]*aspect-ratio:200\/117/,
     'the wide frame lost its ratio');
+  // AND THE NARROW FRAME MUST STAY THE TALLER OF THE TWO. Two literals cannot
+  // see that relationship; if a later edit moves one, this is what notices.
+  const wide = +/\.heroframe iframe\{[^}]*aspect-ratio:200\/(\d+)/.exec(index)[1];
+  const narrow = +/max-width:520px\)\{\.heroframe iframe\{aspect-ratio:200\/(\d+)/.exec(index)[1];
+  assert.ok(narrow > wide,
+    `the narrow frame (${narrow}) must be relatively taller than the wide one (${wide})`);
 });
 
 /* ---------------------------------------------- what a play label may say

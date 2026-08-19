@@ -349,23 +349,33 @@ test('the page carries the disclosure, and it is empty until it is earned', () =
   assert.ok(page.includes('hold the rink the same way'), 'and so is the display half');
 });
 
-test('the preview hides what it cannot lay out — the front door is a different mode', () => {
-  // THE BUG THIS EXISTS FOR SHIPPED TO THE FRONT PAGE. `.rinkbox` becomes
-  // `display:flex` in preview, so a block added inside it does not stack under
-  // the rink -- it becomes a flex SIBLING and lands beside it. The penalty boxes
-  // rendered in the right-hand margin of the ice on the homepage hero, with the
-  // label floating above them, while every one of these tests stayed green.
-  // Found by Kevin looking at the page, which is the only instrument that sees
-  // layout at all.
+test('the preview STACKS the band under the ice rather than beside it', () => {
+  // THE BUG THIS EXISTS FOR SHIPPED TO THE FRONT PAGE. `.rinkbox` is `display:flex`
+  // under `#rg.preview`, so a block added inside it does not stack under the rink
+  // -- it becomes a flex SIBLING and lands beside it. The penalty boxes rendered
+  // in the right-hand margin of the ice on the homepage, with the label floating
+  // above them, while every test here stayed green. Kevin found it by looking.
+  //
+  // THE FIRST FIX WAS TO HIDE THEM, AND THAT WAS THE WRONG CALL -- mine, not his.
+  // Kevin: the hero should show "the general vibe of the rink plus the penalty
+  // box... more representative of what the rest of the games on the site have as
+  // a base layer." So the layout is fixed instead of the element removed, and
+  // this test asserts the fix rather than the workaround.
   const page = readFileSync(new URL('../src/read-the-game.html', import.meta.url), 'utf8');
+
+  assert.ok(/#rg\.preview \.rinkbox\{[^}]*flex-direction:column/.test(page),
+    'a flex ROW is what put the band beside the ice; the column is the actual fix');
+  assert.ok(/#rg\.preview \.pboxes\{[^}]*flex:0 0 auto/.test(page),
+    'the band must never stretch — the preview is height-capped, so anything it '
+    + 'takes comes straight out of the rink');
+  assert.ok(/#rg\.preview \.rinkbox svg\{[^}]*flex:1 1 auto/.test(page),
+    'and the ice is what absorbs the remaining space');
+
+  // The disclosure stays out: it is a transient sentence, not part of the base
+  // layer the hero is meant to represent.
   const hide = /#rg\.preview[^{]*\{display:none!important\}/.exec(page);
-  assert.ok(hide, 'the preview hide-list must exist');
-  for (const sel of ['.pboxes', '.endnote']) {
-    assert.ok(hide[0].includes(`#rg.preview ${sel}`),
-              `${sel} is inside .rinkbox and must be hidden in preview, or laid out for flex`);
-  }
-  // And the flex rule is still what makes that necessary — if it ever goes away
-  // this test is guarding a hazard that no longer exists, which is worth knowing.
-  assert.ok(/#rg\.preview \.rinkbox\{[^}]*display:flex/.test(page),
-            'the preview still lays .rinkbox out as a flex row');
+  assert.ok(hide && hide[0].includes('#rg.preview .endnote'),
+            'the ends note is not base-layer furniture and stays out of the hero');
+  assert.ok(!hide[0].includes('#rg.preview .pboxes'),
+            'the penalty box is base-layer furniture and belongs in the hero');
 });

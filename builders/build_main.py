@@ -108,7 +108,7 @@ T = r"""<style>
    floating above them, which no test here can see and which I did not look at,
    having measured only game.html.
    ANYTHING ADDED INSIDE .rinkbox HAS TO ANSWER THIS QUESTION. */
-#rg.preview .pboxes,#rg.preview .endnote,
+#rg.preview .endnote,
 #rg.preview .counters{display:none!important}
 /* THE PREVIEW FITS ITSELF TO WHATEVER BOX IT IS GIVEN.
    Kevin: "the bottom 1/3 of the rink is clipped off within the frame."
@@ -130,8 +130,28 @@ T = r"""<style>
  display:flex;flex-direction:column;min-height:0}
 #rg.preview .board{margin:0 0 4px;flex:0 0 auto}
 #rg.preview .atnote{flex:0 0 auto}
-#rg.preview .rinkbox{flex:1 1 auto;min-height:0;padding:6px;display:flex}
-#rg.preview .rinkbox svg{width:100%;height:100%}
+#rg.preview .rinkbox{flex:1 1 auto;min-height:0;padding:6px;display:flex;flex-direction:column}
+/* THE BAND STACKS UNDER THE ICE, AND NEVER STRETCHES. Kevin: the hero should
+   show "the general vibe of the rink plus the penalty box... more
+   representative of what the rest of the games on the site have as a base
+   layer." So it is laid out rather than hidden -- a flex ROW is what put it
+   beside the ice, and a column is the actual fix.
+   `1 1 auto` on the rink and `0 0 auto` on the band decides who absorbs the
+   shrink, and here that matters: the preview is height-capped (100vh,
+   overflow hidden), so unlike the game page there is no spare room and the
+   band can only come out of the ice. It is set smaller here for that reason,
+   in vw so it scales with the frame -- a fixed rem size is what made the
+   scoreboard 19% of a desktop hero and 56% of a phone one. */
+/* ONE ROW IN THE HERO. Stacked, the label took its own line and the band cost
+   43px of a 146px rink -- the ice letterboxed and visibly shrank, which is the
+   thing the band was never allowed to do. Inline, the label sits beside the
+   boxes and the whole band is one row. Measured both ways. */
+#rg.preview .pboxes{flex:0 0 auto;margin-top:5px;gap:5px;grid-template-columns:auto 1fr 1fr;align-items:center}
+#rg.preview .pblab{grid-column:auto;text-align:left;white-space:nowrap}
+#rg.preview .pblab{font-size:min(2.1vw,.54rem);letter-spacing:.08em}
+#rg.preview .pb{min-height:0;padding:3px 7px;font-size:min(2.7vw,.72rem);border-radius:7px}
+#rg.preview .pb::before{font-size:min(2.1vw,.56rem);padding:1px 4px}
+#rg.preview .rinkbox svg{width:100%;height:auto;flex:1 1 auto;min-height:0}
 /* AND THE SCOREBOARD HAS TO SHRINK WITH THE FRAME, which is the half the flex
    column could not fix on its own. Measured in a real browser at two widths:
 

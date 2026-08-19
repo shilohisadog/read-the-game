@@ -199,14 +199,21 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
    rest, measured from the rendered page rather than guessed. */
 .heroframe{margin:0 0 13px;background:var(--ice);border:1px solid var(--edge);
  border-radius:10px;overflow:hidden}
-.heroframe iframe{display:block;width:100%;aspect-ratio:200/108;border:0}
+.heroframe iframe{display:block;width:100%;aspect-ratio:200/117;border:0}
 /* A TALLER FRAME ON A PHONE, because the scoreboard inside it is not
    proportional even after it was made to shrink. Measured in a real browser:
    the chrome is 87px of an 856px-wide frame (10%) and 49px of a 287px one
    (17%), so one ratio cannot serve both -- at 200/108 the phone's rink fits
    the height and leaves empty ice down both sides. 200/128 gives the narrow
    frame the room its rink actually wants; the wide one is already exact. */
-@media (max-width:520px){.heroframe iframe{aspect-ratio:200/128}}
+/* TALLER WHERE THE CHROME COSTS MORE -- and this breakpoint already existed,
+   which is why a second query for the same job lost to it silently. The
+   scoreboard and the penalty band are the frame's fixed furniture; the rink is
+   what is left, and a fixed cost eats proportionally more of a narrow frame.
+   128 left the ice 27px short of its own aspect, so it letterboxed -- narrower
+   than the frame with white space either side, which reads as a SMALLER rink
+   rather than a tighter one. Measured at 390 and 1100, not reasoned. */
+@media (max-width:520px){.heroframe iframe{aspect-ratio:200/140}}
 .heroline{margin:0 0 6px;font-size:1.22rem;line-height:1.35;font-weight:700;max-width:34ch}
 .herosub{margin:0 0 4px;font-size:.9rem;color:var(--muted);max-width:56ch}
 /* THE HERO'S RELATION TO THE RATE ABOVE IT. Same size and colour as .herosub,
