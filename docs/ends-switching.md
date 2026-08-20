@@ -665,3 +665,133 @@ then build anything that reads the new fields.** Until that run completes, the
 4. **The penalty box** — independent, confirmed, and now more so: it needs
    `sev`/`min` from the extract and `sit` from the ice, neither of which has any
    bearing on which way the rink faces.
+
+# 12. FOR CHENG — what the build audit found, 2026-08-20
+
+**Status: Kevin ruled AS-PLAYED (§11), and the build has started.** This section
+is the review artifact for the work itself. Nothing here reopens the ruling; all
+of it is inside it. Four things were not visible when §10–§11 were written.
+
+## 12.1 Condition 1 is done — and its premise was half wrong
+
+CHENG held that `SX` must be made **lexically** unreachable from library scope,
+"not merely unused, because the modules share one inlined scope", and said to
+sequence it first.
+
+**They share one SCRIPT, not one SCOPE.** `build_main.py` inlines `__LIB__`
+*above* `function boot(G,RATES){`, and `SX` is a `const` in boot's body. A
+function declared at top level can never see a binding inside another function's
+body, whenever it is called. The guard already existed by construction.
+
+Which is exactly why it needed a test, and it now has a two-sided one: a probe
+in library position must throw `ReferenceError`, **and** the same probe inside
+`boot` must return 100. Without the second half, "it threw" is satisfied by a
+probe that is simply broken. Mutation-checked by hoisting `SX` to library scope —
+the realistic change someone reaching for it would make. Exactly one test fires.
+(`be3cc50`)
+
+## 12.2 ⭐ §7's argument-against names the wrong period, in 63% of games
+
+§7 lists as the first cost: *"In period two the host is on the left while the
+scoreboard still reads away-then-host."*
+
+Measured over **60 random published games**, the host's raw period-one defending
+side splits:
+
+| host's raw P1 end | games | as-played puts the host's net |
+|---|---|---|
+| `right` | **38 (63%)** | screen **LEFT**, from the opening faceoff |
+| `left` | 22 (37%) | screen right |
+
+`_norm` flips when the side is `right`, and `SX(x)=100-x`, so a `right` P1 means
+the host defends screen-left as played. **So the contradiction usually starts in
+period ONE, not period two** — before any switch has happened and before any
+sentence about switching could honestly be shown.
+
+The sequence alternates strictly in **60 of 60** — `(right,left,right)` or
+`(left,right,left)`. That also settles why `sides` had to be recorded rather than
+derived: parity gets the alternation right and the **starting side** wrong 63% of
+the time.
+
+## 12.3 THREE pieces of copy invert, not one
+
+§11 treats the period-boundary sentence as the disclosure. There are three, and
+all three currently assert the one-direction convention:
+
+1. **`rink.js::ENDS_NOTE`** — `display:` reads *"We hold the rink the same way
+   all game, so the marks stay comparable,"* and `from:` reads *"the extract
+   normalizes it away, so the rink is held in one direction."* Both become false.
+2. **The legend, `lk-ends`** — *"ends are held fixed — in the arena the teams
+   switch each period."* Also false.
+3. **`endsNoteShowing`'s `per > 1` gate**, whose stated reason is *"nothing has
+   changed yet."* True in both modes, but 12.2 shows the orientation a viewer
+   must read is already unusual at P1 in most games.
+
+Because CHENG's condition 2 keeps one-direction as a control, **each of these
+needs two honest forms, not one rewrite.** §7.5 already warned the wording is
+harder than it looks, and CHENG's own plan made this sentence the instrument
+one-direction is judged by — so a weak sentence damages the control, not just the
+default.
+
+## 12.4 ⭐ A deep link arrives outside the explanation
+
+`ENDS_NOTE_SECONDS` is 90, so the disclosure stands for 90 seconds of play after
+a period begins. **The learn page's nine doors do not land there.** `empty-net`
+resolves to `3-01:40` — about eighteen minutes into period three.
+
+Under one-direction this cost nothing: the rink looked the same everywhere. Under
+as-played, a reader who arrives through a door lands on a rink whose orientation
+depends on a period boundary they did not watch, with nothing on screen saying
+why. Two doors from the same learn page can show the same teams attacking
+opposite ways.
+
+The `ATTACKS →` arrows are present on every frame and are derived from
+`attackDirection`, so **the fact is always carried**. What is time-boxed is the
+**reason**. This is the same shape as the B2 ruling — a door must not open onto a
+state the reader cannot interpret — and it is the one item here CC would most
+like a second opinion on.
+
+## 12.5 The render surface, enumerated
+
+Eight sites read a coordinate for drawing. The rink furniture (goal lines, blue
+lines, end-zone circles, faceoff dots) is symmetric, so the flip is a no-op there
+and is deliberately not touched.
+
+1. `place(e)` — every mark, the puck, every label, every figure
+2. `netGlyph('netHome', SX(-89))` and `netAway` at `SX(89)`
+3. `goalieGlyph` — the same two ends
+4. the shot line to the attacked net
+5. the whistle layer's restart marks
+6. the whistle layer's rule lines (icing's centre and far goal line, offside's blue line)
+7. `ATK` — already derived through `attackDirection` and `SX`, so it follows for free once the transform is period-aware
+8. `showWhy`'s slot diagram — its own half-rink `HX/HY`. **CC proposes leaving it
+   fixed**: it is a schematic of "the slot", not a picture of the live rink.
+   Flagged rather than assumed.
+
+Plus `trails` scoped to the period, which §5 already answered: the frame ended.
+
+## 12.6 Scope — the flip is the replay's, not the site's
+
+`build_A.py` and `build_B.py` carry their own `SX = x => x + 100`, the **opposite**
+orientation from the game page's `100 - x`. Those surfaces already have their own
+frame and are not touched. That is CHENG's condition 2 in practice: **one-direction
+stays the analytic frame**, and the flip is a property of the replay alone.
+
+## 12.7 The invariance test, and why it is last
+
+The claim is that every reducer's output is byte-identical across the toggle.
+That is only testable once the toggle exists, so it cannot be sequenced before
+the flip — it is written **with** it, not before it.
+
+Its content is not "reducers ignore `x`": `danger` and `goaltending` legitimately
+read `x`, on normalized input. The claim is that **the toggle never reaches a
+reducer at all** — the flip is applied at render, downstream of every count.
+
+## 12.8 What CC would like ruled
+
+1. **12.4** — does a deep link need the reason, not just the arrows? Options: an
+   ends note that stands whenever the orientation differs from the previous
+   period, a permanent legend line, or accept the arrows as sufficient.
+2. **12.3** — is a two-form disclosure right, or should the control mode say
+   nothing and let the default carry the sentence?
+3. **12.5.8** — leave the slot diagram fixed?
