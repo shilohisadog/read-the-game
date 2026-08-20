@@ -37,11 +37,11 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 
 | id | decision | state | what it needs |
 |---|---|---|---|
-| **B1** | **Ends switching: as-played, or hold the rink?** | **DECIDE** | Everything is in place for the first time. `sides` is carried (A1), the disclosure exists (A6), and the cost is a render-time transform — no reducer, count or base rate moves. **Every earlier argument compared one-direction *without* its mitigation.** Only `trails` needs scoping to the period. |
-| **B2** | **Move the layers off the "watch the game" page?** | **DECIDE / HOLD** | Your attention argument. **Blocker:** the learn page's nine doors link *into* the game with a layer already on — strip the controls and a door becomes a one-way trip. Decide where the control lives once a layer is active. |
-| **B3** | **Whistle layer default on?** | **DECIDE** | Surfaced days ago, never settled. Cheap either way. |
-| **B4** | **A per-event card below the rink?** | **DECIDE** | You asked *"isn't that an event-by-event card and not just stoppages?"* — never answered. Today it only speaks on stoppages. |
-| **B5** | **Missed-shot wording** | **DECIDE** | You proposed "Missed net with shot". I recommend carrying the dropped `reason` field instead — see C2 — because *both* your wording and mine are wrong for the 2-in-31 that **hit the post**. Needs your ruling on which. |
+| **B1** | **Ends switching → AS-PLAYED** | **RULED, ready** | Everything is in place for the first time. `sides` is carried (A1), the disclosure exists (A6), and the cost is a render-time transform — no reducer, count or base rate moves. **Every earlier argument compared one-direction *without* its mitigation.** CHENG changed his ruling to match: *replay theater that transforms the geometry isn't replaying.* **Two conditions he holds:** (1) an invariance test — every reducer's output byte-identical across the toggle — and `SX` made *lexically* unreachable from library scope, not merely unused, because the modules share one inlined scope; (2) **keep one-direction as a control**, since the whole-game shot map is the frame every other analytics surface uses. Only `trails` needs scoping to the period. |
+| **B2** | **Layers: the controls FOLLOW the layer** | **RULED, ready** | Do **not** move them wholesale — the learn page's nine doors land with a layer already on, and stripping the controls makes a door a one-way trip: *that is the feature breaking, not a side effect.* CHENG's resolution answers your attention complaint anyway: **when a layer is active its control lives with it; the base view carries none.** The progressive-legend principle applied to controls — name what is on, nothing else. |
+| **B3** | **Whistle layer → default OFF** | **RULED, ready** | §6: the base view is just the game and every metric is opt-in — the whistle layer is a metric by that definition even though it counts nothing. 63 faceoffs is a wall, and the base view is the one surface that has stayed clean. Cheap to reverse, which argues for shipping the doctrinal default and letting the tester move it. |
+| **B4** | **Per-event card → NO. Generalise the existing one** | **RULED, ready** | The governing rule already exists: **one narrator, many ledgers.** The rink narrates *now*; anything below it is retrospective and never a competing "now". A second narrator is the drift we just spent a week removing — median 29s behind, 78% of frames over 5s. **What is defensible:** a card showing the most recent event *of the active layer*, headed retrospectively, exactly as the whistle card is now. If the answer is "every event", the caption already does that and does not drift. |
+| **B5** | **Missed shot → carry the `reason`** | **DONE (`a849f22`), labels pending** | Settled by your own framing: **the event is a shot that did not force a save** — the league's typeDescKey, not a category of ours — and `reason` is that same event at finer resolution. One phrase was covering **six** outcomes and is false for two: a post *hit* the net, and `short` never reached it. Field now carried. **Labels still blocked** on the archive-wide vocabulary — see C2. |
 | **B6** | **Penalty box: add the interrupted countdown later?** | **HOLD** | You ruled static now, evolve if necessary. The teaching case is real: a power-play goal ends the penalty early. |
 | **B7** | **Benches on the ice** | **HOLD** | You ruled no for now — "we'll measure that when the time comes." Not a data limit: `shifts` gives roster-minus-on-ice. |
 
@@ -51,12 +51,15 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 
 | id | item | why it is ready | size |
 |---|---|---|---|
-| **C1** | **⭐ Discovery — search, calendar, date browse** | **The largest structural gap on the site.** Three paths reach a game and **4,553 cannot be asked for**. Nothing else on this list matters as much. No design exists yet. | large |
+| **C1** | **⭐ Discovery — search, calendar, date browse** | **The largest structural gap on the site.** Three paths reach a game and **4,553 cannot be asked for**. Nothing else on this list matters as much. No design exists yet. **Settle this before designing:** the catalog is already a static file the browser downloads, so search, calendar and date browse are `Array.filter` — **no index service, no query API, no database.** That constraint is the design's biggest gift and stating it up front stops anyone proposing infrastructure. And the standing rule carries over: **any filtered list shows its base rate** — *"games where the outshot team won"* teaches the opposite of the truth unless *"347 of 4,417 — 26%"* sits beside it. | large |
 | **C2** | **Missed-shot `reason`** → `Shot went wide` / `Hit the post` / `Shot went high` | The feed carries `reason` on **31 of 31**; **2 of 31 hit a post**. Identical ten-line extract change to A2, then a label change. Gated on B5. | small |
 | **C3** | **On-the-ice / zone starts** | Fully specified in `docs/on-the-ice.md`, CHENG-reviewed. **The coordinate *is* the dot** — 12,864 of 12,864 faceoffs, no threshold to choose. Kaprizov 80% OZ → 48/20 vs Power 29% → 22/29. Never an adjusted number. | medium |
 | **C4** | **Merge-hazard mechanism** | Ruled in principle — record it, don't fail. Unbuilt. | small |
 | **C5** | **OZ/DZ faceoff split** | Aggregate faceoff share is the site's cleanest null (**50.4%**); the zone split is where a real effect could hide. Newly answerable because of C3's finding. **Not measured — assert nothing until it is.** | small |
 | **C6** | **Offside rule diagram** | Parked for the novice test. | small |
+| **C7** | **⭐ Two rates on one screen** (was D4) | **A live front-door defect, not a gap.** The hero says *4,029 / 54.5%*, the verdict card *3,250 / 55.5%* — two figures that look like one claim, differing in both numerator and denominator, with nothing saying they measure different populations. *A reader who notices concludes we cannot count.* Identical shape to CONTROL-vs-shots-on-goal and to MIN 18–BUF 15 with no mode label, and the fix that worked twice works here: **the population is welded to the number, on the same line, not adjacent to it.** | small |
+| **C9** | **Regenerate the health line** | The reconciliation that caught A9. A typed number that can drift from the live site is the defect; make the top of this file a build artifact. | small |
+| **C8** | **Missed-shot labels** | Blocked on the archive vocabulary (C2). Then: caption **describes** the moment — *Hit the post · Shot went wide · Over the crossbar · Shot came up short* — and the ledger **classifies**, keeping the universal clause *"no goalie faced it"*, which is true for all six values. One narrator, many ledgers, applied to a label. Known values get written labels; unknown ones render raw. | small |
 
 ---
 
@@ -64,10 +67,8 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 
 | id | item | state |
 |---|---|---|
-| **D1** | **135 games refused on `SOG reproduces boxscore`** | **OPEN.** Pre-existing, unexplained, and distinct from A9. Two hypotheses already killed — both fitted to the failures and never tested against the successes. **Read `refusal-gap-32-games` before hypothesising again.** |
-| **D2** | **Preseason fails at ~6× the regular-season rate** | **OPEN.** A population, not a coincidence. |
+| **D1** | **136 refusals — measured 2026-08-19, and the shape is now known** | **Three populations, not one mystery.** (a) **Olympics: 30 of 30, 100%** — documented and correct, 9 plays against a boxscore claiming 62 shots. (b) **Preseason: 33 of 320 = 10.3% against 1.7% in the regular season — exactly 6.0×.** A real population. (c) The remaining **106 are event-shaped, not date-shaped.** **The date-covering probe was run and it killed the clustering hypothesis, stratified by game type:** preseason refusals touch 24 dates where random scatter predicts 24 (20–27); regular season 64 against 63 (60–66); playoffs 5 against 5. *Consistent with scatter in every stratum.* So the next instrument is per-GAME, not per-date — all 106 fail `SOG reproduces boxscore`, and the question is what those individual games have in common. Preseason at 6× says the property is commoner where coverage is thinner. |
 | **D3** | **Soft 404** — unknown URLs return 200 with the home page | Status-based link checks are useless; the build-time filesystem check is what protects, and it is canaried. |
-| **D4** | **Two different game counts on one screen** | The hero says *4,029 games / 54.5%*, the verdict card *3,250 / 55.5%*. Both honest, different documents, visible together. Unresolved. |
 | **D5** | **Rule 19 coincidental-penalty manpower** | **Deliberately not modelled.** A penalty queue predicts `sit` at only 98.9% over 39 games. The box reads occupancy; `sit` keeps strength. Written down so nobody "fixes" it into a model. |
 | **D6** | Dropped feed fields — `shotType`, `zoneCode` outside penalties, `losingPlayerId`, `hitteePlayerId` | Deliberate. Raw feeds are archived, so nothing is lost. |
 | **D7** | `homeTeamDefendingSide` alternation at archive scale | **Now covered** by a per-game `validate()` check (A1). Previously an open risk. |
@@ -107,6 +108,18 @@ None was caught by the suite. The through-line is one sentence.
 > **A check that passes on the sample cannot see the case the sample does not
 > contain.** It applies identically to test fixtures, to layout modes, and to the
 > reference game.
+
+**A stated policy, not a habit:** Kevin found two of the four (A7, A10) and
+**both were visual**. Neither is findable from code and the suite is structurally
+blind to both. So — **any change that alters what is on screen gets LOOKED AT, at
+both widths, before it is called done**, and A7's specific lesson rides with it:
+*the same component had two layout modes and I rendered one.*
+
+**And the document caught the fifth.** Reconciling a live 3,574 against a
+remembered 4,417 found what a green pipeline did not. Which argues for one cheap
+change: **the health line should be regenerated, not typed** — a number in this
+file that disagrees with the live site is exactly the reconciliation that just
+paid off, and automating it makes it pay off every time. Tracked as C9.
 
 Two tests this week were wrong before they were right, and both said so out loud
 rather than passing quietly: the blocked-figure test read the CSS class and never
