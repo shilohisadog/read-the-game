@@ -795,3 +795,110 @@ reducer at all** — the flip is applied at render, downstream of every count.
 2. **12.3** — is a two-form disclosure right, or should the control mode say
    nothing and let the default carry the sentence?
 3. **12.5.8** — leave the slot diagram fixed?
+
+# 13. CHENG's answers, and what checking them turned up — 2026-08-20
+
+## 13.1 The three rulings, as they will be built
+
+**Q1 — split the rule from the event.** Three layers, not one sentence:
+
+| layer | provenance | when |
+|---|---|---|
+| the `ATTACKS →` arrows | derived | every frame |
+| **the rule** — *the teams switch ends every period, as they do in the arena* | `rule:` | **always, ungated** |
+| the boundary note — *they just changed* | `rule:` | 90s after a period begins |
+
+CHENG's diagnosis was narrower than §12.4's and is right: **a single cold deep
+link is fine** — a reader landing at `3-01:40` has no prior orientation to
+contradict. The disclosure exists for someone who *watched* the change. And
+option (a) — "whenever the orientation differs from the previous period" — is
+**undefined on a cold arrival**, because no previous period was rendered.
+
+**It also dissolves §12.2 as a side effect.** No sentence about switching can
+explain an orientation set at the opening faceoff; an ungated rules line needs no
+switch to have happened. And the underlying mismatch may need no fixing at all:
+the scoreboard's away-then-host order is a **league convention** and the rink
+position is a **recorded fact**. Different kinds of thing; they are not obliged
+to agree.
+
+**Q2 — both modes keep a sentence, and they are different KINDS of sentence:**
+
+```
+one-direction   display:  we hold the rink fixed so the marks stay comparable
+as-played       rule:     the teams switch ends every period
+```
+
+One is about **us**, the other about **hockey** — the `display:` category doing
+exactly the work it was invented for. The control cannot go silent: §6's
+commitment was load-bearing because **one-direction without a sentence is the
+silent transform that started all of this**, and A6 was owed since §6 and unbuilt.
+
+**Q3 — leave `showWhy` fixed, and for a better reason than "schematic".** Its
+half-rink is **attack-relative, not arena-relative**: it shows a shot with
+respect to the net being attacked, which is the frame the danger rule is
+*defined* in. As-played is an arena-relative choice and has no meaning in a frame
+containing one net and no arena. **Generalised, and this replaces §12.5's
+enumeration with a rule:**
+
+> **Anything drawn in the ATTACKING frame is untouched by the flip. Only
+> arena-frame drawings follow it.**
+
+That decides the ninth site nobody has thought of yet.
+
+## 13.2 ⭐ CC checked the permanent sentence, because permanent sentences cannot be quietly wrong
+
+A time-boxed note that is wrong is wrong for 90 seconds. **An ungated rules line
+that is wrong is wrong on every frame of every game**, so *"the teams switch ends
+every period"* was tested rather than accepted.
+
+CC's recollection was that NHL regular-season 3-on-3 overtime **keeps** the long
+change — teams staying at the ends they defended in the third. If true, the
+sentence is false in every regular-season overtime game.
+
+**The data says otherwise, and the recollection was wrong.** Over published
+extracts, `sides` at period 4 against period 3:
+
+| | switched | same |
+|---|---|---|
+| regular season OT | **25 of 25** | 0 |
+| playoff OT | **19 of 19** | 0 |
+
+So the sentence is safe for every period of hockey the site draws.
+
+**But the check turned up something to write down: `sides` also carries period
+FIVE, and alternates it.** In the regular season period five is the shootout,
+which has no ends to defend — so that entry is not a record of anything. It is
+harmless to the flip, because `place()` already refuses every shootout
+coordinate through `inShootout`, but **nobody should read `sides['5']` as a
+fact.** It is also mild evidence that the league's own field may be partly
+generated rather than observed; the *starting* side still varies 38/22, which
+parity cannot produce, so `sides` remains worth recording.
+
+## 13.3 Two additions to CHENG's answers
+
+**On Q1 — the sequence problem is bigger than two doors, which strengthens his
+fix.** §12.4 framed it as a learn-page sequence. It is not only that: **any scrub
+across a period boundary flips the rink**, and the boundary note fires only
+within 90 seconds of a period start. Dragging from `2-05:00` to `3-01:40` turns
+the ice over with nothing said. A time-boxed sentence cannot cover a timeline the
+reader can move through freely; an ungated rules line can.
+
+**On Q2 — this puts an item on the novice-test list.** CHENG: the control's
+sentence carries all the load, because nothing on screen shows the ends changing,
+and its weakness *"would be invisible in testing — because you'd be testing the
+default."* That is only true if the test runs the default. So: **the novice test
+must include the one-direction control, not only as-played.** Filed as E2.
+
+## 13.4 Build order, per 12.7 — red first
+
+CHENG: *"a test written WITH the thing it tests is the shape that has repeatedly
+produced tests certifying their own subject."* So the invariance test is written
+**mutation-first**:
+
+1. the mode flag and a `sides`-driven direction, applied nowhere
+2. **the flip applied inside a reducer, on purpose** — write the invariance test,
+   watch it go red
+3. move the flip to render — watch it go green
+4. `trails` scoped to the period *when as-played is on* (under the control the
+   whole-game map must survive: deleting it costs the Control layer its picture)
+5. the copy of 13.1

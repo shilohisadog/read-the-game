@@ -91,6 +91,12 @@ B1 ends default · B2 layers on the game page · B6 countdown · B7 benches ·
 C6 offside diagram · and the below-rink layout generally, which is the
 "visual gymnastics" complaint behind B2.
 
+**E2 — the novice test must include the ONE-DIRECTION control, not only the
+as-played default (CHENG, 2026-08-20).** The control's sentence carries all the
+load, because nothing on screen shows the ends changing — and its weakness would
+be invisible in a test that only ran the default. See `docs/ends-switching.md`
+§13.3.
+
 **E1 — names on the pre-game frame (Kevin, 2026-08-20).** Looking at A11's
 empty ice: *"doesn't our data tell us who is on the ice?"* It does — 6 per team
 at s=0, 25 of 25 games. **Figures are refused on doctrine** (see C3: no
