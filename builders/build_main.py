@@ -40,7 +40,21 @@ T = r"""<style>
 #rg .board{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;background:#fff;border:1px solid var(--edge);border-radius:13px;padding:12px 18px;box-shadow:0 5px 18px rgba(16,32,45,.07);margin-bottom:12px}
 #rg .tm{display:flex;flex-direction:column;align-items:center}#rg .tm .ab{font-weight:800;letter-spacing:.05em;font-size:.9rem}
 #rg .tm .ab{padding:2px 8px;border-radius:5px}
-.tm .atk{font-style:normal;font-size:.63rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:1px;white-space:nowrap}#rg .tm.a .ab{background:var(--away);color:var(--away-ink)}#rg .tm.h .ab{background:var(--home);color:var(--home-ink)}
+.tm .atk{font-style:normal;font-size:.63rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:1px;white-space:nowrap}
+/* ⭐ THE ARROW IS THE DATUM; "ATTACKS" IS ITS LABEL. Set identically they were
+   both 10.08px of muted grey beside a 35.2px score -- the smallest text on the
+   board carrying the one fact that now CHANGES EVERY PERIOD, which is what
+   as-played did to this line's job. Kevin: "rather hard to read... yet I don't
+   want it to be too overwhelming."
+   SIZE AND INK, NOT COLOUR, and that was settled by measuring rather than taste:
+   the team's own colour would bind the arrow to the badge above it, but 7 of 33
+   club colours fall below 4.5:1 on this white board and 6 below even the 3:1
+   large-text floor -- BOS and PIT at 1.73 and 1.79, and VGK at 2.79. Position
+   already says whose arrow it is; it sits under that team's badge and score.
+   The label keeps its size and its grey, so the line gains no bulk: what changes
+   is which half of it you see first. */
+.tm .atk .ar{font-size:1.15rem;line-height:1;font-weight:700;color:var(--ink);
+ letter-spacing:0;margin-left:.34em;vertical-align:-.1em}#rg .tm.a .ab{background:var(--away);color:var(--away-ink)}#rg .tm.h .ab{background:var(--home);color:var(--home-ink)}
 #rg .sc{font-family:ui-monospace,Menlo,monospace;font-size:2.2rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
 #rg .mid{min-width:150px}#rg .gs{text-align:center;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px}#rg .gs .cl{color:var(--ink);font-family:ui-monospace,Menlo,monospace}#rg .gs .clw{font-style:normal;font-size:.62rem;letter-spacing:.08em}
 #rg .bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--edge)}#rg .bar span{transition:width .4s ease}#rg .ba{background:#fff;box-shadow:inset 0 0 0 2px var(--away);width:50%}#rg .bh{background:var(--home);width:50%}
@@ -533,12 +547,12 @@ T = r"""<style>
 <h1>Watch the game</h1>
 <div class="newcomer" id="newcomer"></div>
 <div class="board">
-  <div class="tm a"><span class="ab" id="aAb">MIN</span><span class="sc" id="aSc">0</span><i class="atk" id="aAtk"></i></div>
+  <div class="tm a"><span class="ab" id="aAb">MIN</span><span class="sc" id="aSc">0</span><i class="atk"><span class="aw">attacks</span><b class="ar" id="aAtk"></b></i></div>
   <div class="mid"><div class="gs"><span id="per">Pre-game</span> · <span class="cl" id="clk">20:00</span> <i class="clw">left</i></div>
     <div class="cbar"><div class="bar"><span class="ba" id="ba"></span><span class="bh" id="bh"></span></div>
     <div class="pct"><span id="pa">0</span><span class="plab"><i class="pname" id="pName">CONTROL</i><i class="mode" id="pMode">ALL SITUATIONS</i></span><span id="ph">0</span></div></div>
   </div>
-  <div class="tm h"><span class="ab" id="hAb">BUF</span><span class="sc" id="hSc">0</span><i class="atk" id="hAtk"></i></div>
+  <div class="tm h"><span class="ab" id="hAb">BUF</span><span class="sc" id="hSc">0</span><i class="atk"><span class="aw">attacks</span><b class="ar" id="hAtk"></b></i></div>
 </div>
 <p class="endnote" id="endnote"></p>
 <p class="atnote" id="atnote"></p>
@@ -1388,7 +1402,7 @@ $('aAb').textContent=AAB;$('hAb').textContent=HAB;
    DERIVED, NOT TYPED. The arrow comes from the same `attackDirection` the slot
    layer and the rule lines use, put through the same SX the ice is drawn with,
    so a change to either moves the arrow with it. */
-const ATK=(t,per)=>AX(attackDirection(t,HID)*89,per)<100?'attacks \u2190':'attacks \u2192';
+const ATK=(t,per)=>AX(attackDirection(t,HID)*89,per)<100?'\u2190':'\u2192';
 drawAtk(1);
 function drawAtk(per){$('aAtk').textContent=ATK(AID,per);$('hAtk').textContent=ATK(HID,per);}
 // Hand-formatted from the ISO date, never Date.parse: '2023-11-10' is UTC
