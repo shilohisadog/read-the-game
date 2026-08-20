@@ -139,6 +139,25 @@ def extract(pbp, shifts, box=None):
                 ev["rsn"] = d["reason"]
             if d.get("secondaryReason") and d["secondaryReason"] != d.get("reason"):
                 ev["rsn2"] = d["secondaryReason"]
+        # WHY IT MISSED, WHICH IS THE SAME EVENT AT A FINER RESOLUTION.
+        #
+        # `missed-shot` is the league's own typeDescKey: a shot that did not force
+        # the goalie to play the puck. That is the EVENT, not a category we
+        # invented -- and `reason` is that same event recorded more precisely.
+        # Both are `field:` provenance; neither is a `display:` claim of ours.
+        #
+        # THE COLLAPSE THIS FIXES. One phrase, "missed the net", was standing in
+        # for six distinct outcomes and is wrong for two of them: a puck off the
+        # POST did not miss the net, it hit it, and a shot recorded `short` never
+        # reached the net at all. In the reference game: wide-left 14, wide-right
+        # 9, above-crossbar 5, hit-left-post 1, hit-right-post 1, short 1.
+        #
+        # A SEPARATE KEY FROM `rsn` ON PURPOSE. A stoppage reason and a missed-shot
+        # reason are different vocabularies, and `whistle.js` only reads `rsn`
+        # behind a `SUBJECT.has(e.type)` gate today -- so sharing the key would be
+        # safe now and a latent collision the moment that gate widens.
+        if t == "missed-shot" and d.get("reason"):
+            ev["miss"] = d["reason"]
         # Who blocked it. The shooter is `actor` (see attribution.js); dropping
         # the blocker lost half of every blocked-shot event.
         if t == "blocked-shot" and d.get("blockingPlayerId") is not None:
@@ -347,11 +366,18 @@ def situation_ok(code, period_type=None):
 # so an unfamiliar one renders as itself and explains nothing rather than
 # explaining something wrong. That is a different and stronger argument than "we
 # never look at it", and it is the one that survives the whistle layer existing.
+# Observed in the reference game and nowhere else yet. Deliberately NOT padded
+# with guesses -- see vocabulary().
+KNOWN_MISSES = {
+    "wide-left", "wide-right", "above-crossbar",
+    "hit-left-post", "hit-right-post", "short",
+}
+
 CONSEQUENTIAL = ("typeDescKey", "situationCode")
 
 def vocabulary(pbp):
     seen = {"typeDescKey": set(), "stoppage reason": set(), "situationCode": set(),
-            "penalty descKey": set()}
+            "penalty descKey": set(), "missed-shot reason": set()}
     bad_situations = set()
     for p in pbp["plays"]:
         d = p.get("details") or {}
@@ -366,12 +392,26 @@ def vocabulary(pbp):
             for k in ("reason", "secondaryReason"):
                 if d.get(k):
                     seen["stoppage reason"].add(d[k])
+        if p["typeDescKey"] == "missed-shot" and d.get("reason"):
+            seen["missed-shot reason"].add(d["reason"])
         if d.get("descKey"):
             seen["penalty descKey"].add(d["descKey"])
     unknown = {
         "typeDescKey": seen["typeDescKey"] - KNOWN_EVENTS,
         "stoppage reason": seen["stoppage reason"] - KNOWN_STOPPAGES,
         "situationCode": bad_situations,
+        # NOTED, NEVER BLOCKING -- the same standing as a stoppage reason, and for
+        # the same reason: a value we carry verbatim and never compute on renders
+        # as itself and explains nothing, rather than explaining something wrong.
+        #
+        # THE SET IS STRICTLY WHAT HAS BEEN OBSERVED, and that is the point.
+        # Adding a plausible-looking `hit-crossbar` would HIDE it from this
+        # report, and whether the feed has one is exactly the open question:
+        # `above-crossbar` exists and no `hit-crossbar` appeared in 31 attempts,
+        # so a puck off the bar is being recorded as SOMETHING and we do not yet
+        # know what. One game cannot answer it; the archive can, on the next
+        # derive, through `index.json`'s `noted`.
+        "missed-shot reason": seen["missed-shot reason"] - KNOWN_MISSES,
     }
     return seen, {k: v for k, v in unknown.items() if v}
 

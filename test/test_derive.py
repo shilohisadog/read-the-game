@@ -21,6 +21,7 @@ single check would have shipped it.
 
 So: a game is publishable only if we understand it AND it agrees with a witness.
 """
+import collections
 import hashlib
 import json
 import pathlib
@@ -1309,6 +1310,62 @@ class ThePenaltyCarriesItsOwnMeaning(unittest.TestCase):
                 self.assertNotIn(absent, e,
                                  "a delayed penalty must not acquire fields the feed "
                                  "does not give it")
+
+
+class WhyTheShotMissed(unittest.TestCase):
+    """`missed-shot` is the EVENT — a shot that did not force a save. `reason` is
+    that same event, finer. Neither is a category we invented; both are the
+    league's own taxonomy, which is why they carry `field:` provenance and not
+    `display:`."""
+
+    def setUp(self):
+        self.pbp, self.shifts, self.box, self.rich = reference()
+
+    def test_every_missed_shot_carries_why_it_missed(self):
+        miss = [e for e in self.rich["events"] if e["type"] == "missed-shot"]
+        self.assertEqual(len(miss), 31)
+        self.assertTrue(all("miss" in e for e in miss),
+                        "the reason is on the event 31 of 31, so nothing has to guess")
+        self.assertEqual(
+            collections.Counter(e["miss"] for e in miss),
+            collections.Counter({"wide-left": 14, "wide-right": 9, "above-crossbar": 5,
+                                 "hit-left-post": 1, "hit-right-post": 1, "short": 1}))
+
+    def test_one_phrase_cannot_cover_six_outcomes(self):
+        """THE ARGUMENT FOR THE FIELD, as a fact rather than a preference.
+
+        "Missed the net" was standing in for all of these and is FALSE for two:
+        a puck off the post hit the net, and a `short` shot never reached it.
+        """
+        vals = {e["miss"] for e in self.rich["events"] if e["type"] == "missed-shot"}
+        self.assertGreaterEqual(len(vals), 6, "six distinct outcomes, one phrase")
+        wrong = {v for v in vals if "post" in v or v == "short"}
+        self.assertTrue(wrong, "the cases the old phrase got wrong must be present")
+
+    def test_the_known_set_is_observed_and_not_padded_with_guesses(self):
+        """THE POINT OF THE GATE. Adding a plausible `hit-crossbar` would HIDE it
+        from the archive report -- and whether the feed has one is the open
+        question: `above-crossbar` exists, no `hit-crossbar` appeared in 31
+        attempts, so a puck off the bar is being recorded as SOMETHING we cannot
+        name yet. One game cannot answer it; `noted` over the archive can."""
+        self.assertNotIn("hit-crossbar", E.KNOWN_MISSES)
+        seen = {e["miss"] for e in self.rich["events"] if e["type"] == "missed-shot"}
+        self.assertEqual(E.KNOWN_MISSES, seen,
+                         "the known set must be exactly what has been observed")
+
+    def test_an_unfamiliar_reason_is_noted_and_never_refuses_the_game(self):
+        # Same standing as a stoppage reason: we carry it verbatim and compute on
+        # nothing, so an unknown renders as itself rather than explaining wrongly.
+        plays = [play("missed-shot", 10, shootingPlayerId=1, xCoord=70, yCoord=3,
+                      eventOwnerTeamId=30, reason="hit-crossbar")]
+        pbp = {"homeTeam": HOME, "awayTeam": AWAY, "rosterSpots": ROSTER,
+               "plays": plays}
+        _, unknown = E.vocabulary(pbp)
+        self.assertEqual(unknown.get("missed-shot reason"), {"hit-crossbar"})
+        self.assertNotIn("missed-shot reason", E.CONSEQUENTIAL,
+                         "an unfamiliar reason must not withhold a game")
+        self.assertEqual(E.extract(pbp, json.loads(shifts_bytes()))["events"][0]["miss"],
+                         "hit-crossbar", "carried verbatim")
 
 
 class TheEndsTheyDefended(unittest.TestCase):
