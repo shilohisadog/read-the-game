@@ -51,7 +51,14 @@ the flip and the rotation test reddens while invariance stays green; move the
 flip into a reducer and invariance reddens while the rotation test stays green.
 Verified in a browser on CAR @ VGK (`{1:right, 2:left, 3:right}`): 91 and 86
 frames rotated in periods 1 and 3, 97 unchanged in period 2, **0 frames moved
-anywhere but the exact 180°**. **Still open: the copy of §13.1, and `trails`.** (2) **keep one-direction as a control**, since the whole-game shot map is the frame every other analytics surface uses. Only `trails` needs scoping to the period. |
+anywhere but the exact 180°**. **⭐ AND THE COPY OF §13.1 IS BUILT** — the rule split from the event. The
+standing key is **ungated** in as-played (*"the teams switch ends every period,
+as they do in the arena"*, a `rule:`) and stays earned-at-period-two in the
+control (*"ends are held fixed…"*, a `display:`). The boundary note is one
+caption sentence in as-played — it captions something the reader just watched —
+and both sentences in the control, where nothing on screen shows the change and
+the sentence carries all the load. Both mutation-checked. **Still open:
+`trails`.** (2) **keep one-direction as a control**, since the whole-game shot map is the frame every other analytics surface uses. Only `trails` needs scoping to the period. |
 | **B2** | **Layers: the controls FOLLOW the layer** | **RULED, ready** | Do **not** move them wholesale — the learn page's nine doors land with a layer already on, and stripping the controls makes a door a one-way trip: *that is the feature breaking, not a side effect.* CHENG's resolution answers your attention complaint anyway: **when a layer is active its control lives with it; the base view carries none.** The progressive-legend principle applied to controls — name what is on, nothing else. |
 | **B3** | **Whistle layer → default OFF** | **RULED, ready** | §6: the base view is just the game and every metric is opt-in — the whistle layer is a metric by that definition even though it counts nothing. 63 faceoffs is a wall, and the base view is the one surface that has stayed clean. Cheap to reverse, which argues for shipping the doctrinal default and letting the tester move it. |
 | **B4** | **Per-event card → NO. Generalise the existing one** | **RULED, ready** | The governing rule already exists: **one narrator, many ledgers.** The rink narrates *now*; anything below it is retrospective and never a competing "now". A second narrator is the drift we just spent a week removing — median 29s behind, 78% of frames over 5s. **What is defensible:** a card showing the most recent event *of the active layer*, headed retrospectively, exactly as the whistle card is now. If the answer is "every event", the caption already does that and does not drift. |

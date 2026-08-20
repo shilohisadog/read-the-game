@@ -78,11 +78,70 @@ export function isHighDanger(x, y, dir) {
  * question somebody is actually asking.
  */
 export const ENDS_NOTE = {
-  rule: 'The teams just changed ends, as they do every period.',
-  display: 'We hold the rink the same way all game, so the marks stay comparable.',
-  from: 'display: the feed records which end each team defended and the extract '
-      + 'normalizes it away, so the rink is held in one direction',
+  /* AS-PLAYED: A CAPTION ON SOMETHING VISIBLE. The rink has just turned over in
+     front of the reader, so the sentence names what they saw and stops. There is
+     no `display:` half because we did nothing to the geometry worth disclosing —
+     following the record is not a transform. */
+  'as-played': {
+    rule: 'The teams have just changed ends, as they do every period.',
+    from: 'rule: the feed records which end each team defended in each period, '
+        + 'and the rink follows it',
+  },
+  /* ONE-DIRECTION: THE SENTENCE CARRIES ALL THE LOAD, and CHENG's point is that
+     this makes it the harder of the two to write and the one whose weakness
+     would be invisible in testing — because a test of the default never runs it.
+     Nothing on screen shows the ends changing, so if this sentence fails, the
+     silent transform is back and nothing else catches it. */
+  fixed: {
+    rule: 'The teams just changed ends, as they do every period.',
+    display: 'We hold the rink the same way all game, so the marks stay comparable.',
+    from: 'display: the feed records which end each team defended and the extract '
+        + 'normalizes it away, so the rink is held in one direction',
+  },
 };
+
+/**
+ * THE STANDING KEY — the half of the disclosure that never expires.
+ *
+ * CHENG, splitting the rule from the event: a note about a switch cannot explain
+ * an orientation that was set at the OPENING FACEOFF, and under as-played that is
+ * the usual case — the host's raw period-one end is `right` in 38 of 60 games, so
+ * its net is on the screen's left while its badge sits on the board's right,
+ * before anything has changed.
+ *
+ * A time-boxed sentence also cannot cover a timeline a reader moves through
+ * freely: a learn-page door lands at 3-01:40, and a scrub from 2-05:00 to
+ * 3-01:40 turns the ice over with nothing said.
+ *
+ * So the RULE is permanent and the EVENT is time-boxed. The permanent half is a
+ * fact about hockey rather than a disclaimer about us, which is why it can be
+ * ungated: rules cards do not expire.
+ */
+export const ENDS_KEY = {
+  'as-played': {
+    rule: 'the teams switch ends every period, as they do in the arena',
+    from: 'rule: a fact about hockey, not a claim about this page',
+  },
+  fixed: {
+    display: 'ends are held fixed — in the arena the teams switch each period',
+    from: 'display: the extract normalizes the switch away, so the rink is held '
+        + 'in one direction',
+  },
+};
+
+/**
+ * Should the standing key be showing?
+ *
+ * ASYMMETRIC ON PURPOSE, and the asymmetry is the argument. Under as-played the
+ * orientation is already unusual in the first period, so the key is ungated.
+ * Under one-direction nothing has yet failed to occur until the game leaves the
+ * first period — which is the gate's original reason, and it survives unchanged
+ * for the mode it was written about.
+ */
+export function endsKeyShowing(mode, e) {
+  if (mode === 'as-played') return true;
+  return !!e && e.per > 1;
+}
 
 /** How long the disclosure stands, in seconds of play after a period begins. */
 export const ENDS_NOTE_SECONDS = 90;

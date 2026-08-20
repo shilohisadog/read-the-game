@@ -331,7 +331,7 @@ T = r"""<style>
    A legend is a READ surface, not a control: things you click must not move,
    things you read may. Nobody builds muscle memory for a key. */
 #rg .legend .lkey{display:none}
-#rg.slot .legend .lk-hd,#rg.blocked .legend .lk-blk,#rg.heldends .legend .lk-ends,
+#rg.slot .legend .lk-hd,#rg.blocked .legend .lk-blk,#rg.endskey .legend .lk-ends,
 #rg.whistle .legend .lk-wh{display:inline}
 #rg .k-a{background:#fff;box-shadow:0 0 0 1.5px var(--away)}#rg .k-h{background:var(--home)}#rg .k-hd{background:#fff;box-shadow:0 0 0 1.5px var(--hd)}#rg .k-wh{background:transparent;box-shadow:0 0 0 1.5px var(--flag)}
 .k-rl{width:3px;height:12px;border-radius:1px;background:var(--flag);opacity:.75}#rg .k-blk{background:var(--home);box-shadow:0 0 0 1.5px var(--flag)}#rg .k-p{background:#0e1216}#rg .k-g{background:radial-gradient(circle,#fff 0 2.5px,var(--home) 2.5px)}#rg .k-gv{background:radial-gradient(circle,var(--away) 0 2.5px,#fff 2.5px);box-shadow:0 0 0 1.5px var(--away);margin-left:-3px}
@@ -571,7 +571,7 @@ T = r"""<style>
   <button id="work" aria-expanded="false">Show me the work</button>
   <input class="scrub" id="scrub" type="range" min="-1" max="1" value="-1"></div>
 <p class="verdict" id="verdict"></p>
-<div class="legend"><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white-filled, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span><i class="k-g"></i><i class="k-gv"></i>goal — either sweater</span><span><i class="k-blk"></i>blocked — ringed where the puck was <b>stopped</b></span><span class="lkey lk-hd"><i class="k-hd"></i>from the slot</span><span class="lkey lk-blk">blocked shots are dimmed unless a body stopped them</span><span class="lkey lk-wh"><i class="k-wh"></i>play restarted here — brightest at the most recent stoppage</span><span class="lkey lk-wh"><i class="k-rl"></i>the line the rule names — for icing the centre line and the far goal line, for offside the blue line</span><span class="lkey lk-ends">ends are held fixed — in the arena the teams switch each period</span></div>
+<div class="legend"><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white-filled, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span><i class="k-g"></i><i class="k-gv"></i>goal — either sweater</span><span><i class="k-blk"></i>blocked — ringed where the puck was <b>stopped</b></span><span class="lkey lk-hd"><i class="k-hd"></i>from the slot</span><span class="lkey lk-blk">blocked shots are dimmed unless a body stopped them</span><span class="lkey lk-wh"><i class="k-wh"></i>play restarted here — brightest at the most recent stoppage</span><span class="lkey lk-wh"><i class="k-rl"></i>the line the rule names — for icing the centre line and the far goal line, for offside the blue line</span><span class="lkey lk-ends" id="endsKey"></span></div>
 <div class="newcomer nwhy2" id="newcomerWhy"></div><div class="layers"><span class="ll">Add a metric layer:</span><button class="lyr" id="lyCorsi" aria-pressed="false">＋ Control (Corsi)</button><button class="lyr" id="lyHd" aria-pressed="false">＋ Shots from the slot</button><button class="lyr" id="lyGoalie" aria-pressed="false">＋ Goaltending</button><button class="lyr" id="lyWhistle" aria-pressed="false">＋ Why play stopped</button><button class="lyr" id="lyBlock" aria-pressed="false">＋ Blocked shots</button></div>
 <div class="hint">Tip: click any shot ringed in amber to see <b>why</b> it counts as a slot shot — with trails set to <b>keep every mark</b>, earlier ones stay clickable too.</div>
 <div class="figpick"><span class="ll">Trails:</span>
@@ -664,6 +664,7 @@ const SX=x=>100-x, SY=y=>42.5-y;
    has no meaning there. Only arena-frame drawings take AX/AY. */
 const SIDES=G.sides||{};
 const ASPLAYED=LINK.ends!=='fixed';
+const ENDSMODE=ASPLAYED?'as-played':'fixed';
 const DIR=per=>(ASPLAYED&&SIDES[per]==='right')?-1:1;
 const AX=(x,per)=>SX(x*DIR(per)), AY=(y,per)=>SY(y*DIR(per));
 // Rink is 200 units long for 200 feet, so one unit is one foot: a ~6 ft player
@@ -1043,7 +1044,12 @@ function drawEndsNote(e){
  const el=$('endnote');if(!el)return;
  if(!e||!endsNoteShowing(e,PSTART[e.per]??0)){el.innerHTML='';return;}
  // The `from` provenance string is deliberately NOT painted here -- see rink.js.
- el.innerHTML=`${ESC(ENDS_NOTE.rule)} <span class="disp">${ESC(ENDS_NOTE.display)}</span>`;}
+ // TWO SENTENCES IN ONE MODE AND ONE IN THE OTHER, because as-played captions
+ // something the reader just watched and one-direction has to carry the whole
+ // explanation on its own. The `from` provenance string is deliberately NOT
+ // painted -- see rink.js; it cost 176px on a 390px phone.
+ const N=ENDS_NOTE[ENDSMODE];
+ el.innerHTML=ESC(N.rule)+(N.display?` <span class="disp">${ESC(N.display)}</span>`:'');}
 
 function render(i,how){
  const moment=how==='play'||how==='jump';
@@ -1179,7 +1185,7 @@ function render(i,how){
     and the reader who NOTICES is the one who already knows hockey -- so the key
     arrives when the game leaves the first period, which is when the switch would
     have happened and did not. Before that, nothing has yet failed to occur. */
- document.getElementById('rg').classList.toggle('heldends',!!cur&&cur.per>1);
+ document.getElementById('rg').classList.toggle('endskey',endsKeyShowing(ENDSMODE,cur));
  if(blockOn){const sl=upto(i);drawBlocked(blocked.reduce(sl,CTX),L,sl);}
  else $('blockPanel').innerHTML='';
  let lh='';
@@ -1404,6 +1410,11 @@ $('aAb').textContent=AAB;$('hAb').textContent=HAB;
    so a change to either moves the arrow with it. */
 const ATK=(t,per)=>AX(attackDirection(t,HID)*89,per)<100?'\u2190':'\u2192';
 drawAtk(1);
+/* THE STANDING KEY'S WORDS COME FROM THE MODE, and only its VISIBILITY is a
+   per-frame question. Written once here rather than each frame: a sentence that
+   cannot change during a visit should not be rebuilt three hundred times. */
+(()=>{const k=$('endsKey');if(!k)return;const K=ENDS_KEY[ENDSMODE];
+ k.textContent=K.rule||K.display;})();
 function drawAtk(per){$('aAtk').textContent=ATK(AID,per);$('hAtk').textContent=ATK(HID,per);}
 // Hand-formatted from the ISO date, never Date.parse: '2023-11-10' is UTC
 // midnight and a western timezone would render it as the 9th.

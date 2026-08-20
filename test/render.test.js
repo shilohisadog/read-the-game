@@ -678,7 +678,7 @@ test('the strength mode reaches the scoreboard, not only the counters', () => {
   assert.equal(a.$('mA').textContent, 'EVEN STRENGTH', 'and the two agree');
 });
 
-test('the page still discloses that it holds the ends fixed', () => {
+test('each mode discloses what it actually does, and neither borrows the other', () => {
   // A REAL TRANSFORMATION OF RECORDED COORDINATES, undisclosed on a page whose
   // thesis is that nothing is transformed silently (CHENG). Teams switch ends
   // every period in the arena; here each attacks the same net all game.
@@ -690,9 +690,21 @@ test('the page still discloses that it holds the ends fixed', () => {
   // the first version of this test failed on a line break inside its own
   // sentence, which is a test asserting a fact about the source file rather
   // than the page.
-  const said = prose.replace(/\s+/g, ' ');
-  assert.match(said, /ends are held fixed/i, 'the transformation is no longer disclosed anywhere');
-  assert.match(said, /switch each period/i, 'and what the arena does instead is not said');
+  // ASSERTED THROUGH THE RENDERER, NOT THE SOURCE. This read the markup between
+  // </style> and <script>, and the sentence now comes from rink.js by way of the
+  // mode -- so a source check would fail while the page was right. That is the
+  // same lesson the boundary-note test below already carries, applied here.
+  const fixedKey = boot(null, null, '?ends=fixed').$('endsKey').textContent;
+  assert.match(fixedKey, /ends are held fixed/i, 'the transformation is no longer disclosed');
+  assert.match(fixedKey, /switch each period/i, 'and what the arena does instead is not said');
+
+  // AND THE DEFAULT MUST NOT INHERIT IT. As-played holds nothing fixed, so
+  // saying it would be a disclosure of a transform that is not happening --
+  // which is worse than silence, because it reads as rigour.
+  const playedKey = boot(null, null, '?ends=as-played').$('endsKey').textContent;
+  assert.doesNotMatch(playedKey, /held fixed/i,
+    'as-played claims to hold the ends fixed, and it turns the rink over');
+  assert.match(playedKey, /switch ends every period/i);
 });
 
 test('the legend shows the mark the ice actually draws', () => {
@@ -1959,7 +1971,7 @@ const CONDITIONAL_KEYS = { 'lk-hd': 'slot', 'lk-blk': 'blocked' };
  * test look for a `lyEnds` that does not exist. The stylesheet claim is the
  * same for both, so that one iterates over the pair.
  */
-const GAME_STATE_KEYS = { 'lk-ends': 'heldends' };
+const GAME_STATE_KEYS = { 'lk-ends': 'endskey' };
 
 test('a legend key is hidden until the layer that draws its mark is on', () => {
   // The markup ships every key — this is a stylesheet decision, so the assertion
@@ -2002,6 +2014,20 @@ test('the permanent keys are the marks the BASE view actually draws', () => {
   assert.doesNotMatch(drawn, /\bring hd\b/, 'a slot ring is drawn with the slot layer off');
 });
 
+test('in as-played the standing key is up from the very first frame', () => {
+  // IT CANNOT BE EARNED BY A SWITCH, because the orientation it explains was set
+  // at the opening faceoff. The host's raw period-one end is `right` in 38 of 60
+  // games, which puts its net on the screen's left while its badge sits on the
+  // board's right -- before anything has changed. That is why the permanent half
+  // is a RULE about hockey and not a disclosure about us: a rules card does not
+  // need a moment to have arrived.
+  const a = boot(null, null, '?ends=as-played');
+  const frames = a.every(d => d.$('rg').classList.contains('endskey'));
+  assert.ok(frames.length > 100, 'the walk must cover the game');
+  assert.ok(frames.every(Boolean), 'the key went away at some point, so a reader can lose it');
+  assert.match(a.$('endsKey').textContent, /switch ends/, 'and it says the hockey');
+});
+
 test('the ends key arrives at the first period the ends did NOT switch', () => {
   // CHENG's R Q3: a sentence with no moment of use belongs on a how-it-works
   // page, not under the rink. This one HAS a moment — the first period change,
@@ -2013,9 +2039,12 @@ test('the ends key arrives at the first period the ends did NOT switch', () => {
   // check built from the implementation's own model of its input. `#per` is
   // written by `periodLabel`, a different function with its own rules for
   // overtime and the shootout, and it is what a viewer actually sees.
-  const a = boot();
+  // THE CONTROL, EXPLICITLY. This gate is one-direction's, and its reason -- that
+  // nothing has yet failed to occur -- is true only of the mode that holds the
+  // rink still. Booting the default here would test the wrong sentence.
+  const a = boot(null, null, '?ends=fixed');
   const frames = a.every(d => ({ per: d.$('per').textContent,
-                                 key: d.$('rg').classList.contains('heldends') }));
+                                 key: d.$('rg').classList.contains('endskey') }));
   const first = frames.filter(f => f.per === 'Period 1');
   const later = frames.filter(f => f.per !== 'Period 1');
   assert.ok(first.length > 20 && later.length > 20,
@@ -2027,7 +2056,7 @@ test('the ends key arrives at the first period the ends did NOT switch', () => {
   // a condition — the same defect the verdict card's own test guards against.
   const scrub = a.$('scrub');
   scrub.value = '0'; scrub.oninput({ target: { value: '0' } });
-  assert.equal(a.$('rg').classList.contains('heldends'), false,
+  assert.equal(a.$('rg').classList.contains('endskey'), false,
     'the key stayed after the replay went back to the first period');
 });
 
@@ -3269,9 +3298,25 @@ test('the ends disclosure appears at a period boundary and nowhere else', () => 
 
   for (const h of shown) {
     assert.ok(/changed ends/.test(h), 'the hockey sentence');
-    assert.ok(/hold the rink the same way/.test(h), 'and the one about what we did');
     // The `display:` tag is DATA and stays off the ice -- asserted on the object
     // in box.test.js. Painting it here cost 176px on a 390px phone.
+    assert.ok(!/display:/.test(h), 'the provenance string must not reach the ice');
+    // AND THE DEFAULT SAYS NOTHING ABOUT WHAT WE DID, because it did nothing:
+    // the rink just turned over in front of the reader and this captions it.
+    assert.ok(!/hold the rink the same way/.test(h),
+      'as-played disclosed a transform it did not make');
+  }
+
+  // THE CONTROL CARRIES BOTH SENTENCES, and this is the half CHENG warned would
+  // be invisible if only the default were tested. One-direction shows the reader
+  // nothing changing, so its sentence is the ONLY thing standing between the
+  // page and the silent transform its whole thesis is against.
+  const fixed = boot(null, null, '?ends=fixed')
+    .every(d => d.$('endnote').innerHTML).filter(Boolean);
+  assert.ok(fixed.length > 0, 'the control never discloses anything at all');
+  for (const h of fixed) {
+    assert.ok(/changed ends/.test(h), 'the control lost the hockey sentence');
+    assert.ok(/hold the rink the same way/.test(h), 'the control lost the one about what we did');
     assert.ok(!/display:/.test(h), 'the provenance string must not reach the ice');
   }
 

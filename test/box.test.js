@@ -18,7 +18,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 import { stints, occupants } from '../src/lib/box.js';
-import { ENDS_NOTE, endsNoteShowing } from '../src/lib/rink.js';
+import { ENDS_NOTE, ENDS_KEY, endsNoteShowing, endsKeyShowing } from '../src/lib/rink.js';
 
 const rich = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url)));
 const CTX = { homeId: rich.teams.home.id, awayId: rich.teams.away.id };
@@ -318,16 +318,58 @@ test('it stands at the top of every LATER period, and stands down again', () => 
   assert.equal(endsNoteShowing({ per: 2, s: 1345 }, 1250), false);
 });
 
-test('two sentences, two kinds, and the tag says which', () => {
-  // Every other provenance tag points into the game or the feed. This one points
-  // at the renderer, and that is the whole reason the category exists.
-  assert.match(ENDS_NOTE.from, /^display:/);
-  assert.ok(/chang\w+ ends/.test(ENDS_NOTE.rule), 'the first sentence is about hockey');
-  assert.ok(/\bwe\b/i.test(ENDS_NOTE.display), 'the second is about us');
-  assert.notEqual(ENDS_NOTE.rule, ENDS_NOTE.display);
-  // It must not claim the teams stayed put -- the rink does, they did not.
-  assert.ok(!/didn.t change|stay(ed)? (on )?the same end/i.test(ENDS_NOTE.rule),
-            'the sentence must not deny a thing the feed records');
+test('the boundary note is two sentences in one mode and one in the other', () => {
+  // ONE-DIRECTION IS THE MODE WITH SOMETHING TO DISCLOSE. Every other provenance
+  // tag on this site points into the game or the feed; `display:` points at the
+  // renderer, and holding the rink still while the arena turned over is the
+  // reason that category exists.
+  const F = ENDS_NOTE.fixed;
+  assert.match(F.from, /^display:/);
+  assert.ok(/chang\w+ ends/.test(F.rule), 'the first sentence is about hockey');
+  assert.ok(/\bwe\b/i.test(F.display), 'the second is about us');
+  assert.notEqual(F.rule, F.display);
+
+  // AS-PLAYED HAS NOTHING TO DISCLOSE, so it gets no `display:` half. Following
+  // the record is not a transform, and inventing a sentence about what we did
+  // would be an apology for doing nothing.
+  const A = ENDS_NOTE['as-played'];
+  assert.match(A.from, /^rule:/);
+  assert.ok(/chang\w+ ends/.test(A.rule), 'it still names the hockey');
+  assert.equal(A.display, undefined, 'as-played must not claim a transform it did not make');
+
+  // Neither may deny a thing the feed records.
+  for (const N of [F, A])
+    assert.ok(!/didn.t change|stay(ed)? (on )?the same end/i.test(N.rule),
+              `"${N.rule}" denies something the feed records`);
+});
+
+test('the standing key is a RULE in as-played and a DISCLOSURE in one-direction', () => {
+  // CHENG: they are not two wordings of one sentence, they are two sentences
+  // with different provenance -- one about hockey, one about us. Tagging them
+  // differently is what keeps each honest, and it is the whole argument for the
+  // permanent half being ungated: a rules card does not expire, a disclaimer
+  // about the renderer would.
+  assert.match(ENDS_KEY['as-played'].from, /^rule:/);
+  assert.equal(ENDS_KEY['as-played'].display, undefined);
+  assert.match(ENDS_KEY.fixed.from, /^display:/);
+  assert.equal(ENDS_KEY.fixed.rule, undefined);
+  assert.notEqual(ENDS_KEY['as-played'].rule, ENDS_KEY.fixed.display);
+});
+
+test('the standing key is ungated in as-played and earned in one-direction', () => {
+  // The asymmetry IS the argument. Under as-played the orientation is already
+  // unusual in period one -- the host's raw P1 end is `right` in 38 of 60 games,
+  // putting its net on the screen's left while its badge sits on the board's
+  // right -- so there is no moment at which the key has not yet been earned.
+  // Under one-direction nothing has failed to occur until the game leaves the
+  // first period, which is the gate's original reason and survives untouched.
+  assert.equal(endsKeyShowing('as-played', null), true, 'even before the first play');
+  assert.equal(endsKeyShowing('as-played', { per: 1, s: 0 }), true);
+  assert.equal(endsKeyShowing('as-played', { per: 3, s: 2500 }), true);
+
+  assert.equal(endsKeyShowing('fixed', null), false);
+  assert.equal(endsKeyShowing('fixed', { per: 1, s: 900 }), false, 'nothing has failed to occur yet');
+  assert.equal(endsKeyShowing('fixed', { per: 2, s: 1200 }), true);
 });
 
 test('the page carries the disclosure, and it is empty until it is earned', () => {
