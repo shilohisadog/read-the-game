@@ -1,0 +1,510 @@
+#rg{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;--away:#5b6d7a;--home:#3a4a56;--red:#c8102e;--blue:#3a5a9c;--ok:#12885a;--flag:#d9662b;--hd:#e0932a;
+ font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg);min-height:100vh;padding:clamp(16px,3.5vw,36px) clamp(12px,4vw,22px);line-height:1.5}
+#rg .wrap{max-width:900px;margin:0 auto}
+#rg .eyebrow{font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+#rg h1{font-size:clamp(1.7rem,3.8vw,2.4rem);letter-spacing:-.025em;font-weight:800;margin:0 0 10px;text-wrap:balance}
+#rg .lede{font-size:1.02rem;color:var(--muted);margin:0 0 18px;max-width:62ch}#rg .lede b{color:var(--ink);font-weight:600}
+#rg .board{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;background:#fff;border:1px solid var(--edge);border-radius:13px;padding:12px 18px;box-shadow:0 5px 18px rgba(16,32,45,.07);margin-bottom:12px}
+#rg .tm{display:flex;flex-direction:column;align-items:center}#rg .tm .ab{font-weight:800;letter-spacing:.05em;font-size:.9rem}
+#rg .tm .ab{padding:2px 8px;border-radius:5px}
+.tm .atk{font-style:normal;font-size:.63rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:1px;white-space:nowrap}
+/* ⭐ THE ARROW IS THE DATUM; "ATTACKS" IS ITS LABEL. Set identically they were
+   both 10.08px of muted grey beside a 35.2px score -- the smallest text on the
+   board carrying the one fact that now CHANGES EVERY PERIOD, which is what
+   as-played did to this line's job. Kevin: "rather hard to read... yet I don't
+   want it to be too overwhelming."
+   SIZE AND INK, NOT COLOUR, and that was settled by measuring rather than taste:
+   the team's own colour would bind the arrow to the badge above it, but 7 of 33
+   club colours fall below 4.5:1 on this white board and 6 below even the 3:1
+   large-text floor -- BOS and PIT at 1.73 and 1.79, and VGK at 2.79. Position
+   already says whose arrow it is; it sits under that team's badge and score.
+   The label keeps its size and its grey, so the line gains no bulk: what changes
+   is which half of it you see first. */
+.tm .atk .ar{font-size:1.15rem;line-height:1;font-weight:700;color:var(--ink);
+ letter-spacing:0;margin-left:.34em;vertical-align:-.1em}#rg .tm.a .ab{background:var(--away);color:var(--away-ink)}#rg .tm.h .ab{background:var(--home);color:var(--home-ink)}
+#rg .sc{font-family:ui-monospace,Menlo,monospace;font-size:2.2rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+#rg .mid{min-width:150px}#rg .gs{text-align:center;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px}#rg .gs .cl{color:var(--ink);font-family:ui-monospace,Menlo,monospace}#rg .gs .clw{font-style:normal;font-size:.62rem;letter-spacing:.08em}
+#rg .bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--edge)}#rg .bar span{transition:width .4s ease}#rg .ba{background:#fff;box-shadow:inset 0 0 0 2px var(--away);width:50%}#rg .bh{background:var(--home);width:50%}
+#rg .pct{display:flex;justify-content:space-between;align-items:center;font-size:.9rem;margin-top:5px;font-family:ui-monospace,Menlo,monospace;font-weight:700}
+#rg .pct #pa{color:var(--away-text)}#rg .pct #ph{color:var(--home-text)}
+#rg .plab i{font-style:normal}
+#rg .plab{display:flex;flex-direction:column;align-items:center;font-size:.66rem;letter-spacing:.1em;color:var(--muted);font-weight:600;line-height:1.35}
+/* The deep-link notice. `:empty` rather than a `hidden` attribute, so the one
+   place that writes the sentence is the only place that controls whether it
+   shows -- a second switch is a second thing to get out of step. */
+/* THE ENDS DISCLOSURE. `:empty` rather than a class, for the same reason every
+   other note on this page uses it: a note with nothing to say must not leave a
+   gap behind. It sits directly under the scoreboard because that is where the
+   `ATTACKS →` arrows are, and this sentence is what those arrows mean. */
+#rg .endnote:empty{display:none}
+#rg .endnote{margin:0 0 10px;padding:9px 13px;border-radius:9px;border:1px solid var(--edge);border-left:3px solid var(--blue);background:#fff;color:var(--ink);font-size:.84rem;line-height:1.45}
+#rg .endnote .disp{color:var(--muted)}
+#rg .atnote:empty{display:none}
+#rg .atnote{margin:0 0 10px;padding:9px 13px;border-radius:9px;border:1px solid var(--edge);background:#fbf6ee;color:var(--ink);font-size:.88rem}
+#rg .rinkbox{position:relative;background:var(--ice);border:1px solid var(--edge);border-radius:15px;padding:10px;box-shadow:0 6px 22px rgba(16,32,45,.08)}
+/* THE PENALTY BOX, AND IT IS OUTSIDE THE viewBox ON PURPOSE. Put inside it, the
+   rink would shrink to make room -- and the rink is 136px tall on a 390px phone
+   against 373px on a laptop, measured, so the band would cost most where there
+   is least. Same failure as the scoreboard that was 87px in both frames: 19% of
+   a desktop hero and 56% of a phone one. A label does not scale with the
+   viewport; the rink does.
+
+   ALWAYS PRESENT, EMPTY OR NOT. A band that appears only when occupied moves
+   everything below it twice a period, and a viewer never learns what the space
+   is for. Kevin: "enough vertical pixels to be super obvious." */
+#rg .pboxes{margin-top:9px;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+#rg .pblab{grid-column:1/-1;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:center}
+#rg .pb{display:flex;align-items:center;gap:7px;min-height:30px;padding:5px 9px;border:1px solid var(--edge);border-radius:9px;background:#fff;font-size:.79rem;line-height:1.25}
+#rg .pb::before{content:attr(data-ab);font-size:.62rem;font-weight:750;letter-spacing:.04em;padding:2px 5px;border-radius:4px}
+#rg .pb.a::before{background:var(--away);color:var(--away-ink)}
+#rg .pb.h::before{background:var(--home);color:var(--home-ink)}
+#rg .pb.empty{color:var(--muted);background:transparent;border-style:dashed}
+/* A NAME AND A NUMBER, never the raw `descKey`. `high-sticking-double-minor` is
+   a key, and the one thing a stylesheet must not do to it is `capitalize` it --
+   that was half the damage the last time a raw key reached a screen. */
+#rg .pb .man{font-weight:600}#rg .pb .srv{font-family:ui-monospace,Menlo,monospace;color:var(--muted);font-size:.72rem}
+#rg .pb .man+.man{margin-left:6px}
+#rg svg{display:block;width:100%;height:auto}
+#rg .boards{fill:var(--ice);stroke:var(--edge);stroke-width:1.1}
+#rg .ln{fill:none;stroke-linecap:round}#rg .ln.red{stroke:var(--red);stroke-width:.7;opacity:.42}#rg .ln.blue{stroke:var(--blue);stroke-width:.9;opacity:.42}#rg .ln.thick{stroke-width:1.1;opacity:.52}
+/* PREVIEW: THE FIVE-SECOND TASTE, AND IT IS THE REAL RENDERER.
+   The homepage had no motion at all, on a site whose product is animation, so a
+   visitor had to click through to discover the thing existed (CHENG). This is
+   that taste -- and it is an iframe of THIS page rather than a recorded video:
+   no binary asset to go stale, no media-src in the policy, nothing to re-record
+   when the rink changes, and every mark still traces to a recorded event. It is
+   not a trailer for the product, it is the product.
+   ONE RENDERER, still. Preview is a class on #rg and a play loop; there is no
+   second drawing path and nothing here is reimplemented. */
+#rg.preview .newcomer,#rg.preview h1,#rg.preview .transport,#rg.preview .layers,
+#rg.preview .figpick,#rg.preview .hint,#rg.preview .icenote,#rg.preview .whistlepanel,#rg.preview .blockpanel,
+#rg.preview .verdict,#rg.preview .nextup,#rg.preview .foot,#rg.preview .work,
+#rg.preview .legend,#rg.preview .goalies,
+#rg.preview .atk,
+/* THE PENALTY BOX AND THE ENDS NOTE ARE GAME-VIEW CHROME, and the box had to be
+   hidden here for a second reason that is worth writing down: `.rinkbox` becomes
+   `display:flex` in preview (below), so a block added inside it does not stack
+   UNDER the rink -- it becomes a flex sibling and lands BESIDE it. On the front
+   door the boxes rendered in the right-hand margin of the ice with the label
+   floating above them, which no test here can see and which I did not look at,
+   having measured only game.html.
+   ANYTHING ADDED INSIDE .rinkbox HAS TO ANSWER THIS QUESTION. */
+#rg.preview .endnote,
+#rg.preview .counters{display:none!important}
+/* THE PREVIEW FITS ITSELF TO WHATEVER BOX IT IS GIVEN.
+   Kevin: "the bottom 1/3 of the rink is clipped off within the frame."
+   The homepage sizes the frame by aspect-ratio -- 200x108, the rink's 200x85
+   plus room for the scoreboard -- and that arithmetic cannot hold, because the
+   rink scales with WIDTH while the scoreboard's height is set in points. At a
+   narrow column the fixed chrome eats a larger share of a smaller box, the rink
+   is pushed past the bottom edge, and `scrolling=no` crops it. A ratio measured
+   at one width is a constant that drifts with the viewport -- the same mistake
+   as the preview's pace, in a second dimension.
+   So the page stops depending on being given the right height. The wrap is a
+   flex column, the rink box takes whatever is left, and the SVG fits inside it:
+   a viewBox with the default preserveAspectRatio letterboxes rather than crops,
+   so THE WHOLE RINK IS ALWAYS DRAWN and only its size varies. The frame's ratio
+   now decides how much empty ice sits beside it, never whether a goal line is
+   on screen. */
+#rg.preview{padding:0;min-height:0;height:100vh;overflow:hidden}
+#rg.preview .wrap{max-width:none;padding:0;height:100%;
+ display:flex;flex-direction:column;min-height:0}
+#rg.preview .board{margin:0 0 4px;flex:0 0 auto}
+#rg.preview .atnote{flex:0 0 auto}
+#rg.preview .rinkbox{flex:1 1 auto;min-height:0;padding:6px;display:flex;flex-direction:column}
+/* THE BAND STACKS UNDER THE ICE, AND NEVER STRETCHES. Kevin: the hero should
+   show "the general vibe of the rink plus the penalty box... more
+   representative of what the rest of the games on the site have as a base
+   layer." So it is laid out rather than hidden -- a flex ROW is what put it
+   beside the ice, and a column is the actual fix.
+   `1 1 auto` on the rink and `0 0 auto` on the band decides who absorbs the
+   shrink, and here that matters: the preview is height-capped (100vh,
+   overflow hidden), so unlike the game page there is no spare room and the
+   band can only come out of the ice. It is set smaller here for that reason,
+   in vw so it scales with the frame -- a fixed rem size is what made the
+   scoreboard 19% of a desktop hero and 56% of a phone one. */
+/* ONE ROW IN THE HERO. Stacked, the label took its own line and the band cost
+   43px of a 146px rink -- the ice letterboxed and visibly shrank, which is the
+   thing the band was never allowed to do. Inline, the label sits beside the
+   boxes and the whole band is one row. Measured both ways. */
+#rg.preview .pboxes{flex:0 0 auto;margin-top:5px;gap:5px;grid-template-columns:auto 1fr 1fr;align-items:center}
+#rg.preview .pblab{grid-column:auto;text-align:left;white-space:nowrap}
+#rg.preview .pblab{font-size:min(2.1vw,.54rem);letter-spacing:.08em}
+#rg.preview .pb{min-height:0;padding:3px 7px;font-size:min(2.7vw,.72rem);border-radius:7px}
+#rg.preview .pb::before{font-size:min(2.1vw,.56rem);padding:1px 4px}
+#rg.preview .rinkbox svg{width:100%;height:auto;flex:1 1 auto;min-height:0}
+/* AND THE SCOREBOARD HAS TO SHRINK WITH THE FRAME, which is the half the flex
+   column could not fix on its own. Measured in a real browser at two widths:
+
+     frame 856x462 (desktop)   board 87px tall   19% of the box
+     frame 287x155 (phone)     board 87px tall   56% of the box
+
+   The board is the SAME HEIGHT at both, because its type is set in rem and rem
+   does not care how wide the frame is. So the rink dutifully shrank into what
+   was left -- 96px of a 155px box -- and the phone got a sliver of ice under a
+   full-size scoreboard. `min-width:150px` on the middle column overflowed the
+   grid at the same time, which is why the second club's badge was cut off the
+   right edge.
+
+   `min(Xvw, <today>)` rather than a plain vw: the desktop rendering is already
+   right and must not move, so every value is capped at what it is now and only
+   ever gets smaller. vw inside the frame IS the frame's width, so the chrome
+   now scales on exactly the axis the rink does.
+
+   The eyebrow goes entirely. It is the page's tagline, it wrapped to two lines
+   at 360, and a taste does not need to be introduced twice. */
+#rg.preview .eyebrow{display:none!important}
+/* AND THE SECOND LINE GOES IN PREVIEW TOO -- everywhere, not just the six that
+   lost it. `.plabsub` is 2.8 SVG units, which is about 6 real pixels once the
+   rink is scaled into a phone-sized frame: legible in the replay, where a
+   novice is reading, and unreadable ink in a five-second loop nobody is reading
+   at all. Kevin's argument for cutting the six applies with more force here,
+   because in preview it applies to all nine. The three that carry a counting
+   claim keep it on the GAME page, which is where the claim can be read. */
+#rg.preview .plabsub{display:none}
+#rg.preview .board{padding:min(1.5vw,12px) min(2.4vw,18px);gap:min(2vw,14px);
+ border-radius:min(1.8vw,13px);box-shadow:none}
+#rg.preview .mid{min-width:0}
+#rg.preview .tm .ab{font-size:min(3.4vw,.9rem);padding:min(.4vw,2px) min(1.4vw,8px);
+ border-radius:min(.9vw,5px)}
+#rg.preview .sc{font-size:min(7.4vw,2.2rem)}
+#rg.preview .gs{font-size:min(2.9vw,.78rem);margin-bottom:min(1vw,6px)}
+#rg.preview .gs .clw{font-size:min(2.3vw,.62rem)}
+/* AND THE CONTROL ROW SCALES TOO, which it never had to before the hero started
+   running a layer. Every other child of the board above is already `min(Xvw, its
+   own size)`; `.cbar` was simply never in preview, so it kept absolute rem and
+   the board grew to 68px of a 184px frame -- over the third that the deploy's
+   own gate allows, and it said so. THAT IS THE rem-DOES-NOT-SCALE FAILURE THE
+   PIXEL TOOL WAS BUILT AFTER, arriving in the one element that had been exempt.
+   These are not new judgements, they are the existing pattern finished. */
+#rg.preview .bar{height:min(1.8vw,8px)}
+#rg.preview .pct{font-size:min(3.3vw,.9rem);margin-top:min(1.2vw,5px)}
+#rg.preview .plab{font-size:min(2.4vw,.66rem);line-height:1.25;letter-spacing:.06em}
+#rg .nextup{display:flex;flex-wrap:wrap;justify-content:center;gap:9px;margin:16px 0 4px;padding-top:15px;border-top:1px solid var(--edge)}
+#rg .nextup a{display:inline-block;padding:9px 14px;border-radius:9px;border:1px solid var(--edge);background:#fff;color:var(--ink);text-decoration:none;font-weight:650;font-size:.9rem}
+#rg .nextup a:hover,#rg .nextup a:focus{border-color:var(--ink)}
+#rg .nextup a .sw{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:7px;vertical-align:baseline}
+/* WHICH TEAM, NOT WHICH HEX. Four places used to interpolate the club's colour
+   into a `style` attribute -- and this page's own CSP refuses every one of them,
+   because a hash can cover a stylesheet block and there is no such thing as a
+   hash for an attribute. So the markup says only WHICH SIDE, and colour arrives
+   through the custom properties `paint()` already sets on #rg at boot. That is
+   the same seam the sweater convention uses for the marks on the ice, and it
+   deletes four copies of the away/home ternary at the same time.
+
+   `--away` for a chip with `--away-ink` on it; `--away-text` for type on white,
+   which is a DIFFERENT colour for the six clubs whose primary cannot be read
+   there. The distinction is `paint()`'s and is documented at its definition. */
+#rg .nextup a .sw.a{background:var(--away)}#rg .nextup a .sw.h{background:var(--home)}
+#rg .fdot{fill:var(--red);opacity:.55}#rg .fdot.ctr{fill:var(--blue)}
+#rg .npl{font-size:3.4px;font-weight:700;text-anchor:middle;fill:var(--ink)}
+#rg .nplsub{font-size:2.9px;text-anchor:middle;fill:var(--ink);opacity:.72}
+#rg .crease{fill:#cfe0f2;stroke:var(--blue);stroke-width:.4;opacity:.55}
+#rg .mesh{stroke-width:.8;opacity:.9}#rg .strand{stroke-width:.35;opacity:.5}#rg .post{stroke-width:1.1;stroke-linecap:round}
+#rg .gkbody,#rg .gkhead{stroke-width:.4}#rg .gkstick{stroke-width:.55;stroke-linecap:round}
+#rg .gk{transform-box:fill-box;transform-origin:center;animation:gkin .35s ease}
+@keyframes gkin{0%{opacity:0}100%{opacity:1}}
+#rg .flashpath.netflash{animation:nf 1.3s ease}@keyframes nf{0%,100%{opacity:0}25%{opacity:.85}}
+#rg .ev{transform-box:fill-box;transform-origin:center}
+/* THE SWEATER CONVENTION. Home teams wear their colours, visitors wear white,
+   and the marks follow the sweaters. It exists because COLOUR ALONE CANNOT CARRY
+   IDENTITY HERE: five matchups in the archive have byte-identical primaries --
+   BOS/NSH, DET/NJD, EDM/WPG, FLA/WSH, TOR/VAN, 45 games -- and 264 games are
+   within a deltaE of 10, which is two indistinguishable dots on one rink. A white
+   fill is a second channel that never collides, matches what the viewer sees on a
+   broadcast, and does not depend on colour vision. */
+#rg .att.h{fill:var(--home)}#rg .att.a{fill:#fff;stroke:var(--away);stroke-width:.7}#rg .att{opacity:.85}
+#rg .goal.h{fill:var(--home);stroke:#fff}#rg .goal.a{fill:#fff;stroke:var(--away)}#rg .goal{stroke-width:.9}
+#rg .excl{fill:var(--muted);opacity:.2}
+/* A HIGHLIGHTER, NOT A LINE ON TOP OF A LINE. At 1.5 wide the mark was about
+   the weight of the rink lines it was marking, so it read as a highlight over
+   the THIN goal line and as stripes over the THICK red centre line -- and the
+   dash on the secondary line made that worse, not better (Kevin: "the
+   highlighting isn't obvious like it is on the end zone line").
+   AND THE HIERARCHY IS GONE, because it was answering a question nobody asked.
+   The centre line was drawn dimmer and narrower than the goal line, which is
+   backwards twice over: the rule names BOTH lines equally, and the centre line
+   is the THICKER one on the ice, so it needed a wider band to show at all, not a
+   fainter one. One band, wider than anything under it, for every line a rule
+   names. */
+#rg .rulel{stroke:var(--flag);stroke-width:4.6;opacity:.4;stroke-linecap:butt;pointer-events:none}
+#rg .ring{fill:none;pointer-events:none}
+#rg .ring.blk{stroke:var(--flag);stroke-width:.7}
+#rg .ring.hd{stroke:var(--hd);stroke-width:.8}
+#rg .core{pointer-events:none}#rg .core.h{fill:#fff}#rg .core.a{fill:var(--away)}
+#rg .hdring{fill:none;stroke:var(--hd);stroke-width:.5;opacity:.6}
+#rg .pop{animation:pop .34s cubic-bezier(.2,1.3,.4,1)}@keyframes pop{0%{transform:scale(2.6);opacity:.3}100%{transform:scale(1);opacity:1}}
+#rg .flare{animation:flare .7s ease-out}@keyframes flare{0%{transform:scale(3.6);opacity:.2}55%{opacity:1}100%{transform:scale(1)}}
+#rg .puck{fill:#0e1216;stroke:#fff;stroke-width:.55}#rg .puck.jump{animation:pj .3s ease}@keyframes pj{0%{transform:scale(2)}100%{transform:scale(1)}}
+#rg .shotline{stroke:var(--ink);stroke-width:.7;stroke-dasharray:2.2 2;opacity:.7;animation:sl 1s ease forwards}@keyframes sl{to{opacity:0}}
+#rg .caption{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;align-items:center;gap:8px;background:rgba(15,26,35,.94);color:#fff;padding:7px 15px;border-radius:99px;font-size:.86rem;font-weight:600;white-space:nowrap;opacity:0;pointer-events:none;max-width:92%}
+/* THE DURATION HERE IS A PLACEHOLDER AND NEVER APPLIES. `caption()` sets
+   `style.animationDuration` from `dwell(e)` on every call, so the caption lasts
+   exactly as long as the frame it describes. This number used to be the real
+   one, and being a CSS constant beside a setTimeout is what made the two
+   disagree at every speed -- the subject of docs/event-timing.md. The shorthand
+   still needs A duration to be valid; `render-transport.test.js` pins that the script
+   overwrites it, so if the assignment ever goes, a test does too. */
+#rg .caption.on{animation:cap 2.2s ease}@keyframes cap{0%{opacity:0;transform:translateX(-50%) translateY(6px)}12%{opacity:1;transform:translateX(-50%) translateY(0)}82%{opacity:1}100%{opacity:0}}
+#rg .caption .tag{font-family:ui-monospace,Menlo,monospace;font-weight:700;font-size:.72rem;padding:2px 7px;border-radius:5px}
+#rg .caption .tag.a{background:var(--away);color:var(--away-ink)}#rg .caption .tag.h{background:var(--home);color:var(--home-ink)}
+#rg .caption .num{opacity:.65;font-family:ui-monospace,Menlo,monospace;margin-right:3px}
+#rg .counters{display:flex;justify-content:space-between;padding:2px 6px;margin-top:8px}
+#rg .cc{display:flex;align-items:baseline;gap:7px}#rg .cc .n{font-family:ui-monospace,Menlo,monospace;font-size:1.5rem;font-weight:700}#rg .cc.a .n{color:var(--away-text)}#rg .cc.h .n{color:var(--home-text)}
+#rg .cc .mode{display:block;font-size:.6rem;letter-spacing:.06em;color:var(--flag);font-weight:700}
+#rg .cc .lb{font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+#rg .bump{animation:bump .32s ease}@keyframes bump{40%{transform:scale(1.35);color:var(--flag)}}
+#rg .transport{display:flex;align-items:center;gap:10px;margin:14px 0 4px;flex-wrap:wrap}
+#rg button{font:inherit;font-size:.83rem;font-weight:600;border-radius:8px;border:1px solid var(--edge);background:#fff;color:var(--ink);padding:9px 14px;cursor:pointer}
+#rg .play{background:var(--ink);color:#fff;border-color:var(--ink)}
+#rg .spd{padding:7px 11px}#rg .spd[aria-pressed="true"]{border-color:var(--ink);background:#eef2f5}
+/* THE STEP BUTTONS BORROW `.spd`'s size and add one thing: an end state. They
+   move the playhead rather than change how fast it moves, so they sit beside
+   Play in the markup; everything else about them is already a speed button.
+
+   AND THEY SAY WHAT THEY STEP THROUGH. Kevin: "don't we need to state what the
+   prev and next arrows are for?" -- and `◀ Back` next to a slider does not
+   answer "back to what". The unit is written INTO EACH BUTTON rather than into a
+   group label above the pair, because this row wraps: at 360px the transport
+   already breaks over several lines, and a label can end up on a different line
+   from the buttons it names. That is the same defect as "Press ▶ Play from start
+   below" -- prose whose truth depends on where something else landed.
+   "play" is the page's own word for an event: `💬 Explain plays`, and the
+   greeting's "every play is named as it happens".
+
+   AND THE WORDING IS SHORT BECAUSE THE FIRST ONE WAS MEASURED AND WAS NOT.
+   `◀ Back one play` / `Forward one play ▶` reads better and cost 46px of
+   transport height at EVERY width -- it wrapped the button row at 1100px, where
+   the pair had previously fit. `Prev`/`Next` are Kevin's own words for them and
+   cost nothing: 70px at 1100 and 162px at 390 and 360, which is exactly what the
+   transport measured with the buttons UNNAMED. Naming them is free. */
+#rg .stepb:disabled{opacity:.38;cursor:default}
+/* THE SLIDER GETS ITS OWN ROW, and it is a measurement rather than a taste.
+   `flex:1` made it share a line with the buttons, so adding Back and Next took
+   169px straight out of it: 306px -> 137px at a 1100px viewport, which is 2.0
+   plays per pixel -- COARSER than the 1.7 that made the phone case a defect in
+   docs/event-index.md §1. The step buttons fix aim, and they had quietly made
+   the drag worse to do it. On its own row the track is the full width of the
+   controls at every viewport instead of whatever flex-wrap happens to leave,
+   and it stops being a function of how many buttons sit beside it. */
+#rg .scrub{flex:1 0 100%;accent-color:var(--ink);cursor:pointer;min-width:120px}
+#rg .legend{display:flex;flex-wrap:wrap;gap:7px 18px;font-size:.78rem;color:var(--muted);margin:6px 2px}
+#rg .legend i{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:-1px}
+/* A LEGEND MAY NOT DESCRIBE A MARK THAT IS NOT ON THE ICE. "from the slot, once
+   that layer is on" was conditional copy in a permanent list -- the legend
+   asserting a property of the rink the rink did not have, which is the same
+   defect as a check that cannot fail wearing a different coat (CHENG). A key
+   now appears WITH the layer that draws its mark.
+   A legend is a READ surface, not a control: things you click must not move,
+   things you read may. Nobody builds muscle memory for a key. */
+#rg .legend .lkey{display:none}
+#rg.slot .legend .lk-hd,#rg.blocked .legend .lk-blk,#rg.endskey .legend .lk-ends,
+#rg.whistle .legend .lk-wh{display:inline}
+#rg .k-a{background:#fff;box-shadow:0 0 0 1.5px var(--away)}#rg .k-h{background:var(--home)}#rg .k-hd{background:#fff;box-shadow:0 0 0 1.5px var(--hd)}#rg .k-wh{background:transparent;box-shadow:0 0 0 1.5px var(--flag)}
+.k-rl{width:3px;height:12px;border-radius:1px;background:var(--flag);opacity:.75}#rg .k-blk{background:var(--home);box-shadow:0 0 0 1.5px var(--flag)}#rg .k-p{background:#0e1216}#rg .k-g{background:radial-gradient(circle,#fff 0 2.5px,var(--home) 2.5px)}#rg .k-gv{background:radial-gradient(circle,var(--away) 0 2.5px,#fff 2.5px);box-shadow:0 0 0 1.5px var(--away);margin-left:-3px}
+#rg .work{background:#fff;border:1px solid var(--edge);border-radius:13px;padding:18px;margin-top:14px;box-shadow:0 5px 18px rgba(16,32,45,.06)}
+#rg .work h2{margin:0 0 10px;font-size:1.1rem}#rg .work h2 .wsub{color:var(--muted);font-weight:400}
+#rg .wc .wexc{font-size:.82rem;line-height:1.6}#rg .wg{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+#rg .wc{background:#f2f7fa;border:1px solid var(--edge);border-radius:10px;padding:13px}#rg .wc h3{margin:0 0 6px;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);display:flex;justify-content:space-between}#rg .wc h3 .n{font-family:ui-monospace,Menlo,monospace;font-size:1.2rem;color:var(--ink);font-weight:700}#rg .wc.flag{border-color:#e6b98f}#rg .wc.flag h3 .n{color:var(--flag)}#rg .wc p{margin:0;font-size:.87rem}
+#rg .wfoot{margin-top:13px;font-size:.8rem;color:var(--muted);border-top:1px solid var(--edge);padding-top:11px}#rg .wfoot em{font-style:normal;color:var(--ink)}
+#rg .foot{font-size:.78rem;color:var(--muted);margin-top:16px;text-align:center}
+/* THE GAME SUMMARY, GIVEN A SURFACE (Kevin liked it and could not find it).
+   It was a small centred paragraph in muted type, sitting between the ledger and
+   the footer -- the one sentence on the page that says what the game WAS, styled
+   like a caption. It is a card now, and it stays at the BOTTOM: it names the
+   result, and the same afternoon we stopped the page opening on the final
+   whistle would be a poor time to move the outcome above the rink. */
+/* THE CARD IS THE LAST FRAME'S CONTENT, so it is absent until the replay
+   reaches the last frame.
+   IT USED TO SIT NEXT-TO-LAST ON THE PAGE -- 1,156px below the rink on a phone,
+   screen 2.18 of 2.99 -- and the objection to moving it up was that the page
+   would read result-first against its own "watch first" headline. CHENG:
+   position on the PAGE and position in TIME are different axes, and the audit
+   was conflating them. The card is not a metric, it is the CONCLUSION, and there
+   is no conclusion in the first period. Absent until there is one kills the
+   spoiler objection and the result-first objection together, and it is the same
+   move as making first paint the opening faceoff rather than the final score. */
+#rg .verdict{display:none}
+#rg.ended .verdict{display:block;max-width:56ch;margin:22px auto 0;background:#fff;border:1px solid var(--edge);
+ border-radius:13px;padding:17px 20px 18px;box-shadow:0 4px 16px rgba(16,32,45,.06);
+ font-size:.95rem;line-height:1.55}
+#rg .verdict .vk{display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--muted);font-weight:700;margin-bottom:8px}
+#rg .verdict .lead{color:var(--ink);font-size:1.02rem}#rg .verdict b{font-weight:700}
+#rg .verdict .rate{display:block;margin-top:9px;font-size:.85rem;color:var(--muted)}
+/* THE REFERENCE CLASS, DRAWN. "Of the games where a team led that count by 12 or
+   more, it lost 243 of 708" is a true sentence a reader has to do arithmetic on
+   to feel (Kevin asked for a visual, not more words). One dot on a 0-100 track
+   with 50% marked -- the same idiom the homepage uses for the three base rates,
+   so the site has ONE way of showing a rate rather than two.
+   The two conditions carry over: no connecting line (there is nothing to connect
+   -- it is a single point), and the fraction stays printed beside it. */
+/* `display:block` ON BOTH, AND ITS ABSENCE WAS THE DEFECT. The card is a <p>,
+   so every part of it has to be a <span> -- and a span is inline, which means it
+   ignores `height` and takes its width from its CONTENT. `.vtrack`'s two
+   children are both absolutely positioned, so it had no content, so it was
+   14px of nothing 0px wide. `left:39.3%` of zero is zero: the dot sat hard
+   against the left edge of an invisible track on every game in the archive.
+   `.vk` and `.rate` above carry the same declaration; these two were simply
+   forgotten, and nothing in the node suite has a stylesheet to notice with. */
+#rg .vscale{display:block;margin:11px 0 2px}
+#rg .vtrack{display:block;position:relative;height:14px;border-radius:7px;background:#e6edf3}
+#rg .vhalf{position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;background:var(--muted);opacity:.55}
+#rg .vpt{position:absolute;top:50%;width:13px;height:13px;border-radius:50%;transform:translate(-50%,-50%);
+ border:2px solid #fff;box-shadow:0 1px 3px rgba(16,32,45,.3);background:#1f7a4d}
+#rg .vpt.hi{background:#b3341f}
+/* Same order of sacrifice as the homepage: these end labels wrap and shrink
+   before anything else, and the card's fraction lives in the SENTENCE above the
+   track, where it is prose and wraps like prose. */
+#rg .vends{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 10px;
+ font-size:.7rem;color:var(--muted);margin-top:4px}
+#rg .verdict .rate{overflow-wrap:break-word}
+#rg text{font-family:ui-monospace,Menlo,monospace}
+@media(prefers-reduced-motion:reduce){#rg *{animation:none!important;transition:none!important}}
+
+#rg .ev.clickable{cursor:pointer}
+/* THE TIP IS ABOUT A MARK THAT DOES NOT EXIST UNTIL A LAYER DRAWS IT. Amber
+   rings arrive with "Shots from the slot" and with nothing else, so a permanent
+   tip telling a reader to click one is 55px of instruction about something not
+   on their screen -- the same defect the legend had before it went progressive,
+   in a different block. It now appears with the layer, directly under the
+   button that turned it on. */
+#rg .hint{display:none;font-size:.76rem;color:#b07d17;margin:3px 2px 0;font-weight:600}
+#rg.slot .hint{display:block}
+/* A NOTE ABOUT WHAT THE ICE IS DOING RIGHT NOW, under the ice. Empty when there
+   is nothing true to say, and `:empty` rather than a class because the only
+   state is "is there text" -- a class would be a second copy of that fact. */
+#rg .icenote{font-size:.78rem;color:var(--muted);margin:7px 2px 0;text-align:center}
+#rg .icenote:empty{display:none}
+#rg .caption{cursor:default}
+#rg .whybk{position:fixed;inset:0;background:rgba(10,18,26,.55);display:none;align-items:center;justify-content:center;z-index:60;padding:16px}
+#rg .whybk.on{display:flex}
+#rg .why{background:#fff;border-radius:15px;max-width:430px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.4);overflow:hidden;max-height:92vh;overflow-y:auto}
+#rg .whyhd{padding:15px 18px;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px}
+#rg .whyhd.a{background:var(--away);color:var(--away-ink)}#rg .whyhd.h{background:var(--home);color:var(--home-ink)}
+#rg .whyhd .t{font-weight:800;font-size:1.08rem}#rg .whyhd .s{font-size:.75rem;opacity:.92;font-family:ui-monospace,Menlo,monospace}
+#rg .whyclose{background:rgba(0,0,0,.14);border:0;color:inherit;border-radius:7px;padding:6px 10px;cursor:pointer;font-weight:700;line-height:1}
+#rg .whybody{padding:16px 18px}
+#rg .whydiag{background:var(--ice);border:1px solid var(--edge);border-radius:10px;padding:8px;margin-bottom:14px}
+#rg .whydiag svg{width:100%;height:auto;display:block}
+#rg .factor{display:flex;align-items:baseline;gap:12px;padding:9px 0;border-bottom:1px solid var(--edge)}
+#rg .factor .fv{font-family:ui-monospace,Menlo,monospace;font-weight:700;font-size:1.1rem;min-width:52px}
+#rg .factor .fl{font-size:.86rem;color:var(--muted)}#rg .factor .fl b{color:var(--ink)}
+/* The last of the three, which has the rule below it and needs no line. Named
+   rather than `:last-of-type`, because the sibling after it is a <div> too. */
+#rg .factor.last{border-bottom:0}
+#rg .chk{color:var(--ok);font-weight:800}
+#rg .whyrule{background:#f2f7fa;border:1px solid var(--edge);border-radius:9px;padding:12px 13px;font-size:.83rem;margin-top:13px;line-height:1.5}#rg .whyrule b{color:var(--ink)}
+
+#rg .plabel{font-size:3.5px;font-weight:700;fill:var(--ink);stroke:#fff;stroke-width:1px;paint-order:stroke;font-family:system-ui,sans-serif}
+#rg .glab{font-size:4.8px;font-weight:800;stroke:#fff;stroke-width:1.2px;paint-order:stroke;font-family:system-ui,sans-serif}
+#rg .plabsub{font-size:2.8px;fill:var(--muted);stroke:#fff;stroke-width:.8px;paint-order:stroke;font-family:system-ui,sans-serif}
+#rg .plabgrp{animation:plfade .28s ease}@keyframes plfade{0%{opacity:0}100%{opacity:1}}
+
+#rg .cbar,#rg .counters,#rg #work{display:none}
+#rg.corsi .cbar{display:block}#rg.corsi .counters{display:flex}#rg.corsi #work{display:inline-block}
+#rg .figpick{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 2px 0}
+#rg .sbtn[aria-pressed="true"],#rg .fbtn[aria-pressed="true"]{border-style:solid;color:var(--ink);border-color:var(--ink);background:#eef2f5}
+/* A NOTE APPEARS WHEN THE THING IT EXPLAINS HAPPENS, and not before. These
+   three were permanent -- 183px on a phone, 93 words -- each describing a state
+   the reader was not in. CHENG: "the place that sentence actually pays off is
+   the moment someone flips the switch and 49 attempts vanish. That's when a
+   novice has a question and the sentence is the answer." A disclosure box would
+   have been provenance parked somewhere convenient; this is provenance
+   travelling with the thing it describes, which is the site's own pattern.
+   `:empty` rather than a class, so a note with nothing to say cannot leave a
+   gap behind -- the same reason drawLabel writes no second <text> when there is
+   no second line. */
+#rg .fnote{font-size:.76rem;color:var(--muted);flex:1;min-width:220px}
+#rg .fnote:empty{display:none}
+#rg .fig{transform-box:fill-box;transform-origin:center}
+/* SHOWN TO THE PEOPLE IT WAS WRITTEN FOR, and retired for everyone else. This
+   is the same copy R took OUT of permanent residence -- the resolution of that
+   argument was never "these words are bad", it was "these words are not for
+   everybody, forever". */
+#rg .newcomer{display:none}
+#rg.newcomer .newcomer{display:block;background:#eef4f8;border:1px solid var(--edge);
+ border-left:3px solid var(--blue);border-radius:9px;padding:13px 16px;margin:0 0 16px;
+ font-size:.92rem;line-height:1.6}
+#rg .newcomer b{color:var(--ink)}
+#rg .newcomer .nwhy{display:block;margin-top:6px;color:var(--muted)}
+#rg.newcomer .nwhy2{font-size:.86rem;margin:12px 2px 0}
+#rg .newcomer .nwhy .lim{display:block;font-size:.76rem;margin-top:2px}
+#rg .newcomer .ndone{margin-top:9px;font-size:.76rem;background:none;border:0;padding:0;
+ color:var(--muted);text-decoration:underline;cursor:pointer}
+#rg.preview .newcomer{display:none}
+#rg .layers{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 2px 4px;padding-top:12px;border-top:1px dashed var(--edge)}
+#rg .layers .ll{font-size:.8rem;color:var(--muted);font-weight:700}
+#rg .lyr{font:inherit;font-size:.83rem;font-weight:600;border-radius:8px;border:1px dashed #b7c6d0;background:#fff;color:var(--muted);padding:8px 13px;cursor:pointer}
+#rg .lyr[aria-pressed="true"]{border-style:solid;color:var(--ink);border-color:var(--ink);background:#eef2f5}
+
+#rg .wh{fill:none;stroke:var(--ink);stroke-width:.5;stroke-dasharray:1.5 1.3;opacity:.5}
+#rg .wh.now{stroke:var(--flag);stroke-width:.9;stroke-dasharray:none;opacity:.95}
+#rg .whn{font-size:3.2px;font-weight:700;fill:var(--ink);text-anchor:middle;opacity:.7}
+/* THE BLOCKED-SHOTS LAYER. The ring is drawn on every game already; what the
+   layer adds is emphasis, the blocker's name, and the archive share. Attempts
+   that were NOT blocked drop back so the stopped ones carry the frame -- the
+   same device the slot layer uses, and the reason the mark needed a class of
+   its own rather than being found by its ring. */
+#rg.blocked .att:not(.blkd):not(.cur),#rg.blocked .goal:not(.cur){opacity:.2}
+#rg.blocked .ring.blk{stroke-width:1.3;opacity:1}
+#rg .blockpanel{display:none}
+#rg.blocked .blockpanel{display:block;background:#fff;border:1px solid var(--edge);border-radius:11px;padding:13px 15px;margin-top:10px;box-shadow:0 4px 14px rgba(16,32,45,.06)}
+#rg .bkrow{display:flex;align-items:baseline;justify-content:center;gap:18px;font-family:ui-monospace,Menlo,monospace;font-weight:700;font-size:1.35rem}
+#rg .bkrow .bkt{font-size:.7rem;letter-spacing:.06em;color:var(--muted);font-family:inherit}
+#rg .bkrow .a{color:var(--away-text)}#rg .bkrow .h{color:var(--home-text)}
+#rg .bklab{text-align:center;font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-top:2px}
+#rg .bksay{margin:9px 0 0;font-size:.88rem;line-height:1.5}
+#rg .bkmate{margin:7px 0 0;font-size:.82rem;line-height:1.5;color:var(--flag)}
+#rg .bkarch{margin:9px 0 0;padding-top:9px;border-top:1px solid var(--edge);font-size:.82rem;line-height:1.55;color:var(--muted)}
+#rg .bkarch b{color:var(--ink)}
+#rg .bkarch .lim{display:block;margin-top:3px;font-size:.75rem}
+/* TWO ROWS ON ONE AXIS, AND THE ALIGNMENT IS THE COMPARISON. Two separate cards
+   make a reader compare numbers; two bars sharing a left edge make them SEE the
+   reached/never boundary land in different places, which is the whole reason to
+   draw this instead of writing it (Kevin's amendment, docs/blocked-card.md §7).
+   AN SVG, NOT DIVS WITH WIDTHS. This page's own CSP refuses every inline `style`
+   attribute -- it cost the team-colour dots and the verdict scale once already
+   -- and a rect's `width` is a presentation attribute, not a style. So the
+   proportions are in the markup where they can be read, with no CSSOM pass. */
+#rg .mix{margin:11px 0 0}
+#rg .mixhd{font-size:.71rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:700;display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline}
+#rg .mixcl{margin:1px 0 0;font-size:.87rem;font-weight:600;color:var(--ink);line-height:1.35}
+#rg .mixcl b{font-weight:800}
+#rg .mixhd .n{letter-spacing:.02em;text-transform:none;font-weight:600;font-family:ui-monospace,Menlo,monospace;font-size:.72rem}
+#rg .mixbar{height:14px;border-radius:7px;overflow:hidden;margin:5px 0;background:#e6edf3}
+#rg .mixbar svg{display:block;width:100%;height:100%}
+#rg .mixbar .r{fill:var(--blue)}#rg .mixbar .b{fill:var(--flag)}#rg .mixbar .m{fill:#b8c6d0}
+#rg .mixkey{display:flex;flex-wrap:wrap;gap:2px 14px;font-size:.78rem;color:var(--muted)}
+#rg .mixkey b{color:var(--ink);font-variant-numeric:tabular-nums}
+#rg .mixkey i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px}
+#rg .mixkey .r{background:var(--blue)}#rg .mixkey .b{background:var(--flag)}#rg .mixkey .m{background:#b8c6d0}
+/* THE ONE SENTENCE ON THIS CARD THAT SAYS WHY ANY OF IT MATTERS, so it is set
+   as text rather than as a caption -- it is the point, not an annotation. */
+#rg .mixwhy{margin:9px 0 0;font-size:.88rem;line-height:1.45}
+#rg .mixwhy b{font-weight:800}
+#rg .whistlepanel{display:none}
+#rg.whistle .whistlepanel{display:block;background:#fff;border:1px solid var(--edge);border-radius:11px;padding:13px 15px;margin-top:10px;box-shadow:0 4px 14px rgba(16,32,45,.06)}
+#rg .whsay{margin:0;font-size:.9rem;line-height:1.5}
+#rg .whsay .rsn{font-weight:800}
+/* CAPITALISE THE SENTENCE, NOT EVERY WORD. `text-transform:capitalize` is what
+   rendered the raw feed key as "Goalie Stopped After Sog"; on a written label it
+   gives "Goaltender Covered The Puck". ::first-letter suits both the labels and
+   the raw string an unknown reason still falls back to. */
+#rg .whsay .rsn::first-letter{text-transform:uppercase}
+/* THE CARD IS RETROSPECTIVE AND SAYS SO. Small, muted, above the reason: it
+   ranks the card below the rink as a ledger rather than a second narrator. */
+#rg .whsay .wkick{display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:2px}
+#rg .whsay .at{font-family:ui-monospace,Menlo,monospace;color:var(--muted);font-size:.78rem}
+#rg .whsay .none{color:var(--flag)}
+#rg .whmeta{font-size:.74rem;color:var(--muted);margin-top:7px}
+#rg .whmeta .src{font-family:ui-monospace,Menlo,monospace}
+#rg .goalies{display:none;gap:10px;margin-top:10px}
+#rg.goalie .goalies{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#rg .gcard{background:#fff;border:1px solid var(--edge);border-radius:11px;padding:12px 15px;box-shadow:0 4px 14px rgba(16,32,45,.06)}
+#rg .gcard .gname{font-weight:800;font-size:.98rem}
+#rg .gcard .gname.a{color:var(--away-text)}#rg .gcard .gname.h{color:var(--home-text)}
+#rg .gcard .gname .sub{color:var(--muted);font-weight:600;font-size:.68rem}
+#rg .gcard .gsv{font-family:ui-monospace,Menlo,monospace;font-size:1.75rem;font-weight:700;line-height:1.1}
+#rg .gcard .gline{font-size:.78rem;color:var(--muted);margin-top:2px}#rg .gcard .lim{color:var(--flag)}
+@media(max-width:520px){#rg.goalie .goalies{grid-template-columns:1fr}}
