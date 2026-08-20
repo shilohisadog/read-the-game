@@ -342,7 +342,7 @@ import { readFileSync } from 'node:fs';
 const SHELL = readFileSync(new URL('../src/game.html', import.meta.url), 'utf8');
 
 test('the line the rule names is explained where it is drawn', () => {
-  // THE "IS IT DRAWN" HALF LIVES IN render.test.js, because it needs the SVG.
+  // THE "IS IT DRAWN" HALF LIVES IN render-whistle.test.js, because it needs the SVG.
   // Asserting `SHELL.includes('class="rulel')` here SURVIVED commenting the
   // draw out -- the string was still in the file, inside the comment. A source
   // grep cannot tell markup from a mention of markup.

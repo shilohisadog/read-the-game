@@ -134,7 +134,7 @@ jobs:
 
       # WHAT A LAYER DRAWS, checked in an engine that has a stylesheet.
       #
-      # test/render.test.js boots the same bundle against a fake document and
+      # test/render-*.test.js boot the same bundle against a fake document and
       # covers the markup: that marks appear only when the layer is on, that the
       # sentence and its provenance are written, that trails do what they say. It
       # is deliberately not repeated here. What that test STRUCTURALLY CANNOT SEE
@@ -824,7 +824,7 @@ jobs:
           exit $fail
 
       # THE DOT MUST LAND WHERE THE SENTENCE SAYS, and only a stylesheet can
-      # settle that. `test/render.test.js` already reconciles the two — it reads
+      # settle that. `test/render-preview.test.js` already reconciles the two — it reads
       # "it lost 243 of 708" out of the prose and requires the dot's own position
       # to be 34.3% — and it was GREEN while every visitor saw the dot pinned to
       # the far left of the track on every game in the archive.

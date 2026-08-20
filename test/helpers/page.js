@@ -245,3 +245,86 @@ export const evMarks = d => new Set(
 export const panel = d => d.$('whistlePanel').innerHTML;
 
 export const prose = app.slice(app.indexOf('</style>'), app.indexOf('<script>'));
+
+/**
+ * THE RATES THE SHELL FETCHES, which the inlined page never has. Without them a
+ * harness can only ever see the "no comparison shown" branch — which is how a
+ * test for the drawn rate first went red against a page structurally incapable
+ * of having one. Published figures copied from measures.json rather than
+ * invented: a fixture with a made-up rate tests the formatting and nothing else.
+ */
+export const CURVE_AND_MIX = {
+  levelCurve: [{ k: 12, n: 708, count: 243 }, { k: 1, n: 3855, count: 1527 }],
+  // The published figures, copied from measures.json rather than invented — a
+  // fixture with a made-up rate tests the formatting and nothing else.
+  baseRates: {
+    moreAttemptsLost: { what: 'the team with more shot attempts lost',
+                        population: 'NHL regular season and playoffs',
+                        n: 4029, count: 2194, rate: 2194 / 4029 },
+  },
+  attemptMix: {
+    games: 4119,
+    byType: { goal: 25105, 'shot-on-goal': 211764, 'missed-shot': 118557, 'blocked-shot': 136545 },
+    reachedTheGoalie: { n: 491971, count: 236869, rate: 236869 / 491971, population: 'NHL regular season and playoffs' },
+    neverReachedTheGoalie: { n: 491971, count: 255102, rate: 255102 / 491971, population: 'NHL regular season and playoffs' },
+    blocked: { n: 491971, count: 136545, rate: 136545 / 491971, population: 'NHL regular season and playoffs' },
+  },
+};
+
+/* ------------------------------------------------------------- THE CLOCK
+ * Driving the replay by its own timer rather than by dragging the scrubber.
+ * These were local to the preview tests, and the split is what showed they
+ * were not: the transport tests reach for `paceOf` across a file boundary,
+ * which is the difference between a subject and a harness.
+ */
+/** Boot with a recording clock and return the delays the page asked for. */
+export function delaysOf(search, ticks) {
+  const dom = fakeDom();
+  const delays = [];
+  let n = 0;
+  const at = [];
+  const timer = (fn, ms) => {
+    delays.push(ms); at.push(+dom.$('scrub').value);
+    if (n++ < ticks) fn();
+    return 0;
+  };
+  const b = bundle({
+    document: dom.document, matchMedia: () => ({ matches: false }),
+    setTimeout: timer, clearTimeout: () => {},
+    localStorage: { getItem: () => null, setItem: () => {} },
+    location: { search, origin: 'https://x' },
+    window: { parent: { postMessage: () => {} } } });
+  b(rich, null);
+  return { dom, delays, at };
+}
+
+/**
+ * WALK THE REAL PLAY LOOP AND RECORD WHAT EACH FRAME WAS GIVEN.
+ *
+ * One row per scheduled frame: the wait the page asked for, the frame it was
+ * asked for, the caption's animation duration at that moment, and the caption's
+ * markup so a CHANGE identifies the frames that actually spoke. The recorder
+ * fires before the callback runs, so every row describes the frame on screen.
+ */
+export function paceOf(ticks, setup) {
+  const dom = fakeDom();
+  const rows = [];
+  let n = 0;
+  const timer = (fn, ms) => {
+    rows.push({ ms, i: +dom.$('scrub').value,
+                dur: dom.$('caption').style.animationDuration,
+                html: dom.$('caption').innerHTML });
+    if (n++ < ticks) fn();
+    return 0;
+  };
+  const b = new Function('document', 'matchMedia', 'setTimeout', 'clearTimeout',
+                         'localStorage', 'location', SCRIPT + '\nreturn boot;')(
+    dom.document, () => ({ matches: false }), timer, () => {},
+    { getItem: () => null, setItem: () => {} }, { search: '' });
+  b(rich, null);
+  if (setup) setup(dom);
+  dom.$('play').onclick();
+  // A frame SPOKE if the caption's markup differs from the frame before it.
+  rows.forEach((r, k) => { r.spoke = k > 0 && r.html !== rows[k - 1].html; });
+  return { dom, rows };
+}

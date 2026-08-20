@@ -292,7 +292,7 @@ one. A mark in the right place for the wrong stoppage reads as perfectly correct
 
 | check | what it can see | what it cannot |
 |---|---|---|
-| `test/render.test.js` | boots the **shipped bundle** against a fake document, drives the real buttons and drags the real scrubber, reads the markup back | **CSS.** It has no stylesheet, so a panel it calls rendered may be `display:none` |
+| `test/render-*.test.js` (harness: `test/helpers/page.js`) | boot the **shipped bundle** against a fake document, drives the real buttons and drags the real scrubber, reads the markup back | **CSS.** It has no stylesheet, so a panel it calls rendered may be `display:none` |
 | `deploy.yml` browser step | the panel's **laid-out height** in an engine with a stylesheet | little else, and it deliberately asserts little else |
 
 The second exists only for the claim the first structurally cannot make, and says

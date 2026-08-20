@@ -234,7 +234,7 @@ on the ice is a doctrine violation that's shipping."*
 
 **Done, in the same pass as this ruling.** Two keys were styled and never used,
 not one: `.k-blk` and `.k-hd`, the slot ring. Both are now named in the legend,
-and `test/render.test.js` reads the rule off the stylesheet — **every `k-*` key
+and `test/render-board.test.js` reads the rule off the stylesheet — **every `k-*` key
 defined must appear in the markup** — so the next mark drawn without an
 explanation fails on the day it is added. A hand-maintained list would have been
 the same defect with more steps.

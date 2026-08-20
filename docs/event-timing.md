@@ -300,7 +300,7 @@ have rebuilt the defect with better numbers.
 
 The CSP forbids inline `style` attributes but permits the CSSOM (established by
 D1). So: **the number lives in JS and is pushed to a CSS custom property at
-boot.** That way `test/render.test.js` — which structurally cannot see CSS — can
+boot.** That way `test/render-*.test.js` — which structurally cannot see CSS — can
 still assert the relationship, and the browser gate in `deploy.yml` can assert
 the animation really lasts that long. A number that lived only in CSS would be
 invisible to every test we have.

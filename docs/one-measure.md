@@ -186,8 +186,8 @@ booted. That is a real coupling and it is the one this project has flagged
 hardest before. If the frame ever goes, the sentence goes with it.
 
 **And six test files constructed the page bundle separately.** Adding one global
-broke three of them against a page that was correct. `render.test.js` now builds
-it in one place for both of its harnesses; the rest were widened. A harness
+broke three of them against a page that was correct. `test/helpers/page.js` now
+builds it in one place for every suite that needs it; the rest were widened. A harness
 assembled twice is the same defect as a rule implemented twice.
 
 ## 7. What I want ruled

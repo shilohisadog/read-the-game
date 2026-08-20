@@ -385,7 +385,7 @@ test('the page carries the disclosure, and it is empty until it is earned', () =
   // the display sentence is written as two concatenated string literals, so it
   // never appears verbatim in the bundle and a `page.includes(...)` on it fails
   // while the page is perfectly correct. What reaches the SCREEN is asserted in
-  // render.test.js, through the real renderer. Here we check only that both
+  // render-ends.test.js, through the real renderer. Here we check only that both
   // halves are carried, on a fragment short enough to survive the concatenation.
   assert.ok(page.includes('changed ends'), 'the rule sentence is in the bundle');
   assert.ok(page.includes('hold the rink the same way'), 'and so is the display half');

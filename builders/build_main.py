@@ -276,7 +276,7 @@ T = r"""<style>
    exactly as long as the frame it describes. This number used to be the real
    one, and being a CSS constant beside a setTimeout is what made the two
    disagree at every speed -- the subject of docs/event-timing.md. The shorthand
-   still needs A duration to be valid; `render.test.js` pins that the script
+   still needs A duration to be valid; `render-transport.test.js` pins that the script
    overwrites it, so if the assignment ever goes, a test does too. */
 #rg .caption.on{animation:cap 2.2s ease}@keyframes cap{0%{opacity:0;transform:translateX(-50%) translateY(6px)}12%{opacity:1;transform:translateX(-50%) translateY(0)}82%{opacity:1}100%{opacity:0}}
 #rg .caption .tag{font-family:ui-monospace,Menlo,monospace;font-weight:700;font-size:.72rem;padding:2px 7px;border-radius:5px}
@@ -657,7 +657,7 @@ const SX=x=>100-x, SY=y=>42.5-y;
    whole-game shot map is the frame every other analytics surface uses.
    ONLY THESE TWO FUNCTIONS KNOW THE MODE. That is the whole invariance claim:
    the flip is applied at DRAW time, downstream of every count, so no reducer can
-   see it. `test/render.test.js` boots both modes and compares every count.
+   see it. `test/render-ends.test.js` boots both modes and compares every count.
    ANYTHING DRAWN IN THE ATTACKING FRAME IS UNTOUCHED (CHENG). `showWhy`'s
    half-rink shows a shot with respect to the net being attacked, which is the
    frame the danger rule is DEFINED in; as-played is an arena-relative choice and
@@ -1286,7 +1286,7 @@ function caption(e,kind){const c=$('caption');const tid=e.own;const ab=tid===AID
  // slot captions in a walked replay. The rename was verified by grepping for
  // the OLD term, which can prove a word is gone and cannot see that removing it
  // left a sentence saying the same thing in both halves. Found by watching the
- // layer play; the assertion below it is in `render.test.js`.
+ // layer play; the assertion below it is in `render-transport.test.js`.
  c.innerHTML=`<span class="tag ${side}">${ab}</span><b>${label}</b> · ${who}`;
  /* THE CAPTION LASTS EXACTLY AS LONG AS THE FRAME IT DESCRIBES. It used to be
     `animation:cap 2.2s` in the stylesheet -- a second clock, beside the pace and
@@ -1818,7 +1818,7 @@ function drawWhistles(W){
      don't need 'TV timeout' or the 'Goalie covered the puck....' line."
      So the secondary reason, the running count and the whole tally row are gone.
      THE RULE CITATION STAYED, and that is a flag rather than a decision: it is
-     provenance, test/render.test.js asserts "the provenance travels with it" as
+     provenance, test/render-whistle.test.js asserts "the provenance travels with it" as
      doctrine, and deleting it would have quietly weakened a check rather than
      answered it. One line removes it if that is the call. */
   +`<div class="whmeta">${where}${w.from?' · <span class="src">'+ESC(w.from)+'</span>':''}</div>`;}

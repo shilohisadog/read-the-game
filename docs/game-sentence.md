@@ -176,7 +176,7 @@ calls worse than none because it looks rigorous.
   "so", no "which means". A copy gate, in the shape of the whistle layer's word
   list: a regression guard, not the standard. §8.3 is why it is a requirement
   rather than a style note.
-- **The sentence is rendered, not just computed.** `test/render.test.js` boots the
+- **The sentence is rendered, not just computed.** `test/render-preview.test.js` boots the
   shipped bundle; this sentence goes in it. The whistle layer was correct and
   invisible for a day, and the defect that found it was in the half no unit test
   could see.

@@ -444,7 +444,7 @@ reaches them for real:
 
 | test | file | how it gets there |
 |---|---|---|
-| *the preview waits on the replay…* | `render.test.js` | `delaysOf` — a **second, older recorder in the same file** that captures timers and calls `.onclick()` directly |
+| *the preview waits on the replay…* | `render-preview.test.js` | `delaysOf` — a **second, older recorder**, now beside `paceOf` in `test/helpers/page.js`, that captures timers and calls `.onclick()` directly |
 | *turning on the Control layer renders the ledger…* | `smoke.test.js` | its fake already fired `onclick` |
 | *the ledger explains the filtered-out attempts…* | `smoke.test.js` | as above |
 | *a metric added mid-replay catches up…* | `smoke.test.js` | as above |
@@ -471,8 +471,8 @@ and the one repaired here was the least faithful:
 |---|---|---|
 | `goalie-view.test.js` | yes | yes — `timers.push` + `tick(n)` |
 | `smoke.test.js` | yes | no (`noop`) |
-| `delaysOf` (inside `render.test.js`) | called directly | yes — with a tick budget |
-| **`boot()` (`render.test.js`)** | **no** | **no** |
+| `delaysOf` (`test/helpers/page.js`) | called directly | yes — with a tick budget |
+| **`boot()` (`test/helpers/page.js`)** | **no** | **no** |
 
 The capability was not missing from the project. It was **missing from one copy
 of the document**, three feet from a copy that had it — which is the same shape
