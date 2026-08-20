@@ -91,6 +91,21 @@ B1 ends default · B2 layers on the game page · B6 countdown · B7 benches ·
 C6 offside diagram · and the below-rink layout generally, which is the
 "visual gymnastics" complaint behind B2.
 
+**E1 — names on the pre-game frame (Kevin, 2026-08-20).** Looking at A11's
+empty ice: *"doesn't our data tell us who is on the ice?"* It does — 6 per team
+at s=0, 25 of 25 games. **Figures are refused on doctrine** (see C3: no
+coordinate exists, and the first invented figure makes every honest one
+unverifiable). **The NAMES are a record and were still declined, for now**, on
+three grounds: twelve surnames are unusable by a reader who knows none of them,
+and they land on the one frame we just cleared of a premature sentence; the
+starting six is a 35-second shift, so calling it "the lineup" implies a
+permanence hockey does not have; and the value pays off DURING play, where a
+name arrives attached to a mark — which is C3's continuous version, not this.
+**It is on this list rather than C because it is the objective-function trap:**
+a fan wants the starting units and can use them; the stated reader is a novice
+on a phone who has heard of none of them. If she opens the page and asks *"who
+are these guys?"*, that is a measurement and it gets built that afternoon.
+
 ---
 
 ## F. What this week cost — four defects reached production
