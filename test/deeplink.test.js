@@ -366,3 +366,33 @@ test('ROUND TRIP — and what it cannot see', () => {
     }
   }
 });
+
+/**
+ * ⭐ WHICH RINK — the `ends` vocabulary (B1).
+ *
+ * as-played is the ruled DEFAULT and `fixed` is the control CHENG held must
+ * survive. The parser is the only thing that knows the words, so this is where
+ * they are pinned: a default that drifts silently would change what every
+ * unadorned visit draws.
+ */
+test('ends defaults to as-played, which is the ruling', () => {
+  assert.equal(parse('').ends, 'as-played');
+  assert.equal(parse('?game=123').ends, 'as-played');
+});
+
+test('ends=fixed reaches the control, and is not an error', () => {
+  const p = parse('?ends=fixed');
+  assert.equal(p.ends, 'fixed');
+  assert.deepEqual(p.problems, [], 'the control is a supported destination, not a mistake');
+});
+
+test('an unreadable ends is named and defaulted, never silently repaired', () => {
+  const p = parse('?ends=sideways');
+  assert.equal(p.ends, 'as-played', 'a bad value must fall back to the ruled default');
+  assert.equal(p.problems.length, 1);
+  assert.match(p.problems[0], /ends: "sideways" is not as-played or fixed/);
+});
+
+test('ends is case- and space-tolerant, like strength', () => {
+  assert.equal(parse('?ends=%20FIXED%20').ends, 'fixed');
+});

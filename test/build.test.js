@@ -52,7 +52,7 @@ test('the app reduces through the extracted modules, not a copy', () => {
   // The GROUPING is the layer's, not the page's. A mark on the wrong dot is the
   // kind of wrong that looks completely right, so the rule that decides where
   // marks go must be the one test/whistle.test.js exercises.
-  assert.ok(app.includes('marks(W,{trails:trails})'),
+  assert.ok(app.includes('marks(W,{trails:trails,dir:DIR})'),
     'and the page asks the layer what to draw rather than deciding for itself');
   assert.ok(!/const t=\{\[HID\]:0,\[AID\]:0\}/.test(app),
     'the old inline reducer body is gone');

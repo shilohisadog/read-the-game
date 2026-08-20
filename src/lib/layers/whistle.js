@@ -350,16 +350,34 @@ export function latest(result) {
  * There is no `recent`. It would need an N — last ten? last thirty seconds? —
  * and no N has a source in the data.
  */
-export function marks(result, { trails }) {
+export function marks(result, { trails, dir }) {
   const newest = latest(result);
   const show = trails === 'all'
     ? result.whistles.filter(w => w.placed)
     : (newest && newest.placed ? [newest] : []);
 
+  /* THE KEY IS THE ARENA POSITION, NOT THE STORED ONE.
+   *
+   * `dir` un-normalizes a period's coordinates when the replay draws the rink as
+   * played. It defaults to the identity, so a fixed rink groups exactly as it
+   * always did -- byte for byte, which is what keeps the control a control.
+   *
+   * It cannot be left out under as-played. The extract normalizes every
+   * coordinate so the host defends one end, which means TWO RESTARTS AT OPPOSITE
+   * ENDS OF THE BUILDING are stored under the same numbers in alternating
+   * periods. Grouping on those numbers would stack marks that were 180 feet
+   * apart into one circle carrying a count of both -- a number the ice would be
+   * showing and not saying. Keyed on the arena position, eight icings at one
+   * physical dot still stack into one mark with n=8, which is the thing the
+   * count exists to say.
+   */
+  const d = typeof dir === 'function' ? dir : () => 1;
   const by = new Map();
   for (const w of show) {
-    const k = `${w.x},${w.y}`;
-    if (!by.has(k)) by.set(k, { x: w.x, y: w.y, n: 0, now: false, reasons: [] });
+    const s = d(w.per);
+    const x = w.x * s, y = w.y * s;
+    const k = `${x},${y}`;
+    if (!by.has(k)) by.set(k, { x, y, n: 0, now: false, reasons: [] });
     const g = by.get(k);
     g.n++;
     g.now = g.now || w === newest;

@@ -2143,16 +2143,34 @@ function latest(result) {
  * There is no `recent`. It would need an N — last ten? last thirty seconds? —
  * and no N has a source in the data.
  */
-function marks(result, { trails }) {
+function marks(result, { trails, dir }) {
   const newest = latest(result);
   const show = trails === 'all'
     ? result.whistles.filter(w => w.placed)
     : (newest && newest.placed ? [newest] : []);
 
+  /* THE KEY IS THE ARENA POSITION, NOT THE STORED ONE.
+   *
+   * `dir` un-normalizes a period's coordinates when the replay draws the rink as
+   * played. It defaults to the identity, so a fixed rink groups exactly as it
+   * always did -- byte for byte, which is what keeps the control a control.
+   *
+   * It cannot be left out under as-played. The extract normalizes every
+   * coordinate so the host defends one end, which means TWO RESTARTS AT OPPOSITE
+   * ENDS OF THE BUILDING are stored under the same numbers in alternating
+   * periods. Grouping on those numbers would stack marks that were 180 feet
+   * apart into one circle carrying a count of both -- a number the ice would be
+   * showing and not saying. Keyed on the arena position, eight icings at one
+   * physical dot still stack into one mark with n=8, which is the thing the
+   * count exists to say.
+   */
+  const d = typeof dir === 'function' ? dir : () => 1;
   const by = new Map();
   for (const w of show) {
-    const k = `${w.x},${w.y}`;
-    if (!by.has(k)) by.set(k, { x: w.x, y: w.y, n: 0, now: false, reasons: [] });
+    const s = d(w.per);
+    const x = w.x * s, y = w.y * s;
+    const k = `${x},${y}`;
+    if (!by.has(k)) by.set(k, { x, y, n: 0, now: false, reasons: [] });
     const g = by.get(k);
     g.n++;
     g.now = g.now || w === newest;
@@ -2840,6 +2858,21 @@ const DEFAULT_STRENGTH = 'all';
 const STRENGTHS = ['all', 'even'];
 
 /**
+ * WHICH RINK THE REPLAY DRAWS. `as-played` follows the arena and turns the ice
+ * over every period; `fixed` holds one direction all game.
+ *
+ * A LINK PARAMETER RATHER THAN A BUTTON, and deliberately so. Kevin ruled
+ * as-played the default and CHENG held that one-direction must survive as a
+ * CONTROL, because the whole-game shot map is the frame every other analytics
+ * surface uses. A control nobody can reach is not a control -- and a URL is the
+ * cheapest reachable one, shareable and quotable, with no decision yet made
+ * about where a button would live (that is B2's ground: the controls follow the
+ * layer). Mechanism now, policy later.
+ */
+const ENDS = ['as-played', 'fixed'];
+const DEFAULT_ENDS = 'as-played';
+
+/**
  * WHAT WE DID, NOT WHAT HAPPENED.
  *
  * Both sentences describe OUR resolution of a link, not an event on the ice,
@@ -2930,7 +2963,16 @@ function parse(search) {
     else problems.push(`strength: "${rawStrength}" is not ${STRENGTHS.join(' or ')}`);
   }
 
-  return { game, at, layers, strength, preview: once('preview') === '1', problems };
+  let ends = DEFAULT_ENDS;
+  const rawEnds = once('ends');
+  if (rawEnds !== null) {
+    const e = rawEnds.trim().toLowerCase();
+    if (ENDS.includes(e)) ends = e;
+    else problems.push(`ends: "${rawEnds}" is not ${ENDS.join(' or ')}`);
+  }
+
+  return { game, at, layers, strength, ends,
+           preview: once('preview') === '1', problems };
 }
 
 /**
@@ -3051,6 +3093,29 @@ const ATT=ATTEMPT_TYPES;
 // net a team attacks. Only the mapping from rink feet to screen units is
 // reflected, in this one line.
 const SX=x=>100-x, SY=y=>42.5-y;
+/* ⭐ THE ARENA FRAME — B1. `SX`/`SY` are the pure screen transform and know
+   nothing about which way anyone is facing. `AX`/`AY` add the one thing that
+   varies, which is the PERIOD.
+   `extract.py::_norm` rotates a period's coordinates 180 degrees when the host
+   defended `right`, so the host always defends -x in storage. Applying the same
+   rotation again puts a play back where it happened in the building -- which is
+   all "as played" is. Both x and y, because _norm negates both: the rink is
+   rotationally symmetric about centre ice, so this is a rotation and never a
+   mirror.
+   THE MODE IS A LINK PARAMETER (deeplink.js::ENDS). Kevin ruled as-played the
+   default; CHENG held one-direction must survive as a control, because the
+   whole-game shot map is the frame every other analytics surface uses.
+   ONLY THESE TWO FUNCTIONS KNOW THE MODE. That is the whole invariance claim:
+   the flip is applied at DRAW time, downstream of every count, so no reducer can
+   see it. `test/render.test.js` boots both modes and compares every count.
+   ANYTHING DRAWN IN THE ATTACKING FRAME IS UNTOUCHED (CHENG). `showWhy`'s
+   half-rink shows a shot with respect to the net being attacked, which is the
+   frame the danger rule is DEFINED in; as-played is an arena-relative choice and
+   has no meaning there. Only arena-frame drawings take AX/AY. */
+const SIDES=G.sides||{};
+const ASPLAYED=LINK.ends!=='fixed';
+const DIR=per=>(ASPLAYED&&SIDES[per]==='right')?-1:1;
+const AX=(x,per)=>SX(x*DIR(per)), AY=(y,per)=>SY(y*DIR(per));
 // Rink is 200 units long for 200 feet, so one unit is one foot: a ~6 ft player
 // is ~6 units. Goals get a little more presence.
 // Only one figure is on the ice at a time, so it can afford presence and detail.
@@ -3200,9 +3265,14 @@ function periodLabel(e){
 function place(e){
  if(!e||e.x==null)return null;
  if(inShootout(e))return null;
- return {x:SX(e.x),y:SY(e.y)};
+ return {x:AX(e.x,e.per),y:AY(e.y,e.per)};
 }
-function drawRink(){const P=[];P.push('<rect class="boards" x="1" y="1" width="198" height="83" rx="27"/>');
+let rinkPer=null;
+/* REDRAWN ONLY WHEN THE PERIOD CHANGES, which is three times a game. Everything
+   here except the nets is symmetric about centre ice, so the flip is a no-op on
+   the boards, the lines, the circles and the dots -- they are rebuilt only
+   because the nets share the group. */
+function drawRink(per){if(per===rinkPer)return;rinkPer=per;const P=[];P.push('<rect class="boards" x="1" y="1" width="198" height="83" rx="27"/>');
  for(const g of[-89,89])P.push(`<line class="ln red" x1="${SX(g)}" y1="3" x2="${SX(g)}" y2="82"/>`);
  for(const b of[-25,25])P.push(`<line class="ln blue" x1="${SX(b)}" y1="1" x2="${SX(b)}" y2="84"/>`);
  P.push('<line class="ln red thick" x1="100" y1="1" x2="100" y2="84"/><circle class="ln blue" cx="100" cy="42.5" r="15"/>');
@@ -3284,8 +3354,8 @@ function drawRink(){const P=[];P.push('<rect class="boards" x="1" y="1" width="1
  // dir points from the goal line toward CENTRE ice, so the body goes the other way.
  // Ids by ROLE, not by side. `netL`/`netR` were screen names for data facts, and
  // a reflection turns that kind of name into a lie without changing a character.
- P.push(netGlyph('netHome',SX(-89),HOMECOL));
- P.push(netGlyph('netAway',SX(89),AWAYCOL));
+ P.push(netGlyph('netHome',AX(-89,per),HOMECOL));
+ P.push(netGlyph('netAway',AX(89,per),AWAYCOL));
  // THE LABEL MOVES BEHIND THE GOAL LINE, into dead ice where there is room for
  // the word that was doing the disambiguating work. "CBJ" alone can be read as
  // "CBJ's net" or "where CBJ shoots", and those are opposites (CHENG); "CBJ net"
@@ -3357,8 +3427,9 @@ function drawNetmen(e){
  // net, and an empty net drawn on a guess would be the most dramatic thing on the
  // ice invented from nothing.
  const out=[];
- if(!sit||sit[3]!=='0')out.push(goalieGlyph(SX(-89),HOMECOL,HOMECOL));
- if(!sit||sit[0]!=='0')out.push(goalieGlyph(SX(89),AWAYCOL,'#fff'));
+ const gper=(e&&e.per)||1;
+ if(!sit||sit[3]!=='0')out.push(goalieGlyph(AX(-89,gper),HOMECOL,HOMECOL));
+ if(!sit||sit[0]!=='0')out.push(goalieGlyph(AX(89,gper),AWAYCOL,'#fff'));
  const now=out.join('');
  // ONLY ON CHANGE. Rewriting this every frame would rebuild both figures on every
  // event, restarting their entrance animation each time -- a goaltender flickering
@@ -3430,6 +3501,8 @@ function render(i,how){
  // `lens(i)` reduces the FULL stream up to the same moment. Two different
  // slices on purpose: the ice shows plays, the ledger accounts for everything.
  const evs=EV.slice(0,i+1),L=lens(i),cur=EV[i];
+ const PER=cur?cur.per:1;     // pre-game shows the first period's arrangement
+ drawRink(PER);drawAtk(PER);
  drawBoxes(cur?cur.s:null);   // null before the first play: both boxes empty
  drawEndsNote(cur);
  const parts=[];
@@ -3562,7 +3635,7 @@ function render(i,how){
  let lh='';
  const cp=place(cur);
  if(cp&&(cur.type==='shot-on-goal'||cur.type==='goal')){const netx=(cur.own===HID)?89:-89;
-   lh=`<line class="shotline" x1="${cp.x.toFixed(1)}" y1="${cp.y.toFixed(1)}" x2="${SX(netx)}" y2="42.5"/>`;}
+   lh=`<line class="shotline" x1="${cp.x.toFixed(1)}" y1="${cp.y.toFixed(1)}" x2="${AX(netx,cur.per)}" y2="42.5"/>`;}
  $('lines').innerHTML=lh;
  // THE PUCK GOES WITH THEM. It was the third drawing site reading `e.x`
  // directly, so a shootout attempt moved the puck to a place it had not been.
@@ -3779,8 +3852,9 @@ $('aAb').textContent=AAB;$('hAb').textContent=HAB;
    DERIVED, NOT TYPED. The arrow comes from the same `attackDirection` the slot
    layer and the rule lines use, put through the same SX the ice is drawn with,
    so a change to either moves the arrow with it. */
-const ATK=t=>SX(attackDirection(t,HID)*89)<100?'attacks \u2190':'attacks \u2192';
-$('aAtk').textContent=ATK(AID);$('hAtk').textContent=ATK(HID);
+const ATK=(t,per)=>AX(attackDirection(t,HID)*89,per)<100?'attacks \u2190':'attacks \u2192';
+drawAtk(1);
+function drawAtk(per){$('aAtk').textContent=ATK(AID,per);$('hAtk').textContent=ATK(HID,per);}
 // Hand-formatted from the ISO date, never Date.parse: '2023-11-10' is UTC
 // midnight and a western timezone would render it as the 9th.
 const MON=['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -4096,7 +4170,7 @@ const RSN=r=>{if(!r)return 'unrecorded';const w=WHY[r];return w&&w.name?w.name:S
 const ESC=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
 function drawWhistles(W){
  const g=[];
- for(const m of marks(W,{trails:trails})){const cx=SX(m.x),cy=SY(m.y);
+ for(const m of marks(W,{trails:trails,dir:DIR})){const cx=SX(m.x),cy=SY(m.y);
   g.push(`<circle class="wh${m.now?' now':''}" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3.4"><title>play restarted here — ${ESC(m.reasons.map(RSN).join(', '))}</title></circle>`);
   // A COUNT, BECAUSE THE MARKS STACK. Nine faceoff dots hold every restart in the
   // game, so eight icings at one dot draw as one circle and the ice would be
@@ -4111,7 +4185,7 @@ function drawWhistles(W){
  const cur=latest(W);
  if(cur&&cur.lines&&cur.lines.length){
   for(const lx of cur.lines)
-   g.push(`<line class="rulel" x1="${SX(lx)}" y1="2" x2="${SX(lx)}" y2="83"/>`);}
+   g.push(`<line class="rulel" x1="${AX(lx,cur.per)}" y1="2" x2="${AX(lx,cur.per)}" y2="83"/>`);}
  $('whistles').innerHTML=g.join('');
  const w=latest(W);
  if(!w){$('whistlePanel').innerHTML='<p class="whsay">No whistle yet — play has not stopped in what you have watched so far.</p>';return;}
@@ -4473,7 +4547,7 @@ $('lyBlock').addEventListener('click',()=>{blockOn=!blockOn;setBlock();});
    arriving, and the frame before them is the end of the previous period, so
    nothing there claims that nothing has happened. Whether they earn a beat of
    their own is a period-boundary question, which is B1's ground. */
-drawRink();
+drawRink(1);
 /* THE LINK, APPLIED — and keyed off the layers' OWN ids, so a rename cannot
    leave this table pointing at a token nothing answers to. `?layer=slot` is the
    public name of the slot layer for the same reason the label is: a URL

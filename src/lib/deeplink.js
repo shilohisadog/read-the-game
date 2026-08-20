@@ -53,6 +53,21 @@ const DEFAULT_STRENGTH = 'all';
 const STRENGTHS = ['all', 'even'];
 
 /**
+ * WHICH RINK THE REPLAY DRAWS. `as-played` follows the arena and turns the ice
+ * over every period; `fixed` holds one direction all game.
+ *
+ * A LINK PARAMETER RATHER THAN A BUTTON, and deliberately so. Kevin ruled
+ * as-played the default and CHENG held that one-direction must survive as a
+ * CONTROL, because the whole-game shot map is the frame every other analytics
+ * surface uses. A control nobody can reach is not a control -- and a URL is the
+ * cheapest reachable one, shareable and quotable, with no decision yet made
+ * about where a button would live (that is B2's ground: the controls follow the
+ * layer). Mechanism now, policy later.
+ */
+export const ENDS = ['as-played', 'fixed'];
+export const DEFAULT_ENDS = 'as-played';
+
+/**
  * WHAT WE DID, NOT WHAT HAPPENED.
  *
  * Both sentences describe OUR resolution of a link, not an event on the ice,
@@ -143,7 +158,16 @@ export function parse(search) {
     else problems.push(`strength: "${rawStrength}" is not ${STRENGTHS.join(' or ')}`);
   }
 
-  return { game, at, layers, strength, preview: once('preview') === '1', problems };
+  let ends = DEFAULT_ENDS;
+  const rawEnds = once('ends');
+  if (rawEnds !== null) {
+    const e = rawEnds.trim().toLowerCase();
+    if (ENDS.includes(e)) ends = e;
+    else problems.push(`ends: "${rawEnds}" is not ${ENDS.join(' or ')}`);
+  }
+
+  return { game, at, layers, strength, ends,
+           preview: once('preview') === '1', problems };
 }
 
 /**

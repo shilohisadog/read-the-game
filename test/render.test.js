@@ -3552,3 +3552,81 @@ test('...and the same probe inside boot resolves, so the test above is not passi
   assert.equal(win.__probe(), 100,
     'the probe cannot read SX even from inside boot, so the throw above is about the probe, not the scope');
 });
+
+/**
+ * ⭐ B1 — THE RINK TURNS OVER, AND NOTHING THAT COUNTS MOVES.
+ *
+ * Two tests, and neither is safe alone. Invariance is trivially satisfied by a
+ * flip that does nothing, and "it flipped" is satisfied by a flip that also
+ * moved the arithmetic. They are written as a pair on purpose.
+ *
+ * The reference game's `sides` is {1:left, 2:right, 3:left}. `_norm` rotated the
+ * `right` period, so as-played rotates it back and leaves periods one and three
+ * alone -- which is what makes this fixture able to express the flip at all, and
+ * why the second period is asserted separately from the first and third.
+ */
+const puckAt = d => {
+  const m = /cx="(-?[\d.]+)" cy="(-?[\d.]+)"/.exec(d.$('puck').innerHTML);
+  return m ? { x: +m[1], y: +m[2] } : null;
+};
+
+function walkRink(search) {
+  const a = boot(null, null, search);
+  return a.every(d => ({ per: d.$('per').textContent, puck: puckAt(d),
+                         nets: d.$('rink').innerHTML.length && d.$('netmen').innerHTML }));
+}
+
+test('as-played rotates the periods the arena rotated, and only those', () => {
+  const played = walkRink('?ends=as-played');
+  const fixed = walkRink('?ends=fixed');
+  assert.equal(played.length, fixed.length);
+
+  let rotated = 0, held = 0;
+  for (let k = 0; k < fixed.length; k++) {
+    const p = played[k], f = fixed[k];
+    if (!p.puck || !f.puck) continue;
+    if (p.per === 'Period 2') {
+      // THE EXACT RELATIONSHIP, NOT MERELY "DIFFERENT". SX(x)=100-x, and the
+      // rotation sends x to -x, so SX(-x)=100+x and the two screen positions
+      // must SUM to 200. Likewise SY(y)=42.5-y, so the pair sums to 85. A flip
+      // that moved a mark anywhere else would satisfy "differs" and fail here.
+      assert.equal(p.puck.x + f.puck.x, 200, `frame ${k}: x did not rotate about centre ice`);
+      assert.equal(p.puck.y + f.puck.y, 85, `frame ${k}: y did not rotate about centre ice`);
+      rotated++;
+    } else {
+      assert.deepEqual(p.puck, f.puck,
+        `frame ${k} (${p.per}) moved, and the feed says that period was not rotated`);
+      held++;
+    }
+  }
+  assert.ok(rotated > 20, `only ${rotated} rotated frames — the fixture is not exercising the flip`);
+  assert.ok(held > 20, `only ${held} held frames — the control is not being exercised`);
+});
+
+test('the ends toggle never reaches a count', () => {
+  // THE INVARIANCE CLAIM, END TO END. Not "reducers ignore x" -- `danger` and
+  // `goaltending` legitimately read it, on normalized input. The claim is that
+  // the MODE is applied at draw time, downstream of every count, so no reducer
+  // can see it. Every layer is switched on, because a reducer nobody rendered is
+  // a reducer this cannot speak for.
+  const walk = search => {
+    const a = boot(null, null, search);
+    ['lyCorsi', 'lyHd', 'lyGoalie', 'lyWhistle', 'lyBlock'].forEach(id => a.$(id).click());
+    return a.every(d => JSON.stringify({
+      aSc: String(d.$('aSc').textContent), hSc: String(d.$('hSc').textContent),
+      cA: String(d.$('cA').textContent), cH: String(d.$('cH').textContent),
+      pa: String(d.$('pa').textContent), ph: String(d.$('ph').textContent),
+      nSit: d.$('nSit').textContent,
+      goalies: d.$('goaliePanel').innerHTML,
+      whistle: d.$('whistlePanel').innerHTML,
+      block: d.$('blockPanel').innerHTML,
+    }));
+  };
+  const played = walk('?ends=as-played'), fixed = walk('?ends=fixed');
+  assert.equal(played.length, fixed.length);
+  assert.ok(played.length > 100, 'the walk must cover the game, not a sample');
+  for (let k = 0; k < fixed.length; k++) {
+    assert.equal(played[k], fixed[k],
+      `frame ${k}: a count moved when the rink turned over, so the mode reached a reducer`);
+  }
+});
