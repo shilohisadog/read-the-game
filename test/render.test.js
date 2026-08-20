@@ -2412,12 +2412,20 @@ test('the step buttons say where the game ends, instead of accepting a dead pres
   const a = boot();
   const last = +a.$('scrub').max;
 
+  // THE FIRST PLAY IS NO LONGER THE FIRST FRAME. The pre-game state sits behind
+  // it, so Back is live here and dead one frame earlier: the edge moved with the
+  // playhead's floor instead of staying at zero because zero is where it was.
   a.$('scrub').oninput({ target: { value: '0' } });
-  assert.equal(a.$('back').disabled, true, 'Back is live at the first play');
+  assert.equal(a.$('back').disabled, false, 'Back is dead at the first play');
+  assert.equal(a.$('fwd').disabled, false);
+  a.$('back').click();
+  assert.equal(at(a), -1, 'Back from the opening draw is the pre-game frame');
+
+  assert.equal(a.$('back').disabled, true, 'Back is live before the game has started');
   assert.equal(a.$('fwd').disabled, false);
   // And pressing it anyway is harmless — `set` clamps.
   a.$('back').click();
-  assert.equal(at(a), 0);
+  assert.equal(at(a), -1);
 
   a.$('scrub').oninput({ target: { value: String(last) } });
   assert.equal(a.$('fwd').disabled, true, 'Next is live at the last play');
@@ -3376,4 +3384,112 @@ test('a blocked shot with no blocker recorded stays a dot, not a guess with a fa
   // would pass by drawing none at all.
   assert.ok(figs.some(c => /\bblkd\b/.test(c)),
             'stripping one blocker must not silence every blocked-shot figure');
+});
+
+/**
+ * ⭐ THE FIRST FRAME IS A STATE, NOT A PLAY.
+ *
+ * Kevin, on a BUF @ WSH replay he had just opened: "we identify WSH as 'won the
+ * faceoff', even before the game has started." The board read PERIOD 1 · 20:00
+ * LEFT -- the clock a period carries before it starts -- and the ice already
+ * announced who had won the draw.
+ *
+ * NOTHING THERE IS FALSE, which is why it survived. The league stamps the
+ * opening faceoff at 00:00 elapsed and a real clock reads 20:00 until the puck
+ * is dropped, so "won the draw" and "20:00 left" are the league's own record of
+ * one instant. What was wrong is that this frame was the RESTING state: the
+ * thing a visitor is handed before pressing anything, presented as the state of
+ * the world rather than as a play they chose to watch. The page's own headline
+ * is "watch first", and it was opening on a result.
+ *
+ * IT IS THE SAME RULE THE VERDICT CARD ALREADY FOLLOWS -- absent until there is
+ * one. build_main.py's comment for that card claimed opening on the faceoff was
+ * "the same move", and it was not: the card became absent, the caption did not.
+ *
+ * The answer was already written down and unreachable. `upto()` has a `k<0`
+ * branch, every read of `cur` in `render` is guarded, `drawBoxes(null)` empties
+ * both boxes and `periodLabel(null)` returns 'Pre-game' -- all of it dead code,
+ * because `set()` clamped the playhead at zero and boot went straight to the
+ * first play.
+ */
+test('the game opens before the first play, and narrates nothing', () => {
+  const a = boot();
+  assert.equal(a.$('per').textContent, 'Pre-game');
+  assert.equal(a.$('clk').textContent, '20:00');
+  // THE DEFECT ITSELF is this one line. Everything below is the state that
+  // sentence was sitting on top of.
+  assert.equal(a.$('labels').innerHTML, '',
+               'the ice narrated a play before the viewer asked for one');
+  assert.equal(a.$('events').innerHTML, '', 'a mark was on the ice before the first play');
+  assert.equal(a.$('puck').innerHTML, '', 'the puck was placed before the draw');
+  assert.equal(String(a.$('aSc').textContent), '0');
+  assert.equal(String(a.$('hSc').textContent), '0');
+  assert.ok(a.$('pbA').classList.contains('empty'), 'a penalty was served before the game');
+  assert.ok(a.$('pbH').classList.contains('empty'), 'a penalty was served before the game');
+  // AND IT IS NOT A BLANK PAGE. Both goaltenders are in their creases, so the
+  // frame says "about to start" rather than "nothing loaded" -- which is the
+  // whole reason to have one. A novice gets two teams, two nets, two directions
+  // and two empty boxes to read before anything moves.
+  assert.ok(a.$('netmen').innerHTML.length > 0,
+            'the goaltenders left the ice along with the puck');
+  assert.equal(a.$('back').disabled, true, 'there is nothing behind the first frame');
+});
+
+test('a link to the opening faceoff still lands on it', () => {
+  // THE NINE DOORS. What changed is the ABSENCE of `at=`, never `at=` itself.
+  // A learn-page door asks for a moment; if it now landed one frame early the
+  // door would open onto an empty rink, which is the failure mode B2 was ruled
+  // against for the same reason -- the feature breaking, not a side effect.
+  const a = boot(null, null, '?at=1-20:00');
+  assert.match(a.$('labels').innerHTML, /Won the faceoff/,
+               'an explicit link to 20:00 in the first period stopped showing the draw');
+  assert.equal(a.$('per').textContent, 'Period 1');
+});
+
+test('the first step forward lands on the opening draw', () => {
+  const a = boot();
+  a.$('fwd').click();
+  assert.match(a.$('labels').innerHTML, /Won the faceoff/);
+  assert.equal(a.$('per').textContent, 'Period 1');
+  // THE PAIRING IS KEPT, DELIBERATELY. The draw really is won at 20:00, and
+  // moving the clock to make the sentence sit better would be inventing a time.
+  // What changed is who asked for the frame.
+  assert.equal(a.$('clk').textContent, '20:00');
+});
+
+test('pressing play starts the hockey, it does not wait out an empty frame', () => {
+  // A viewer who presses Play has asked for the game. Resting on the pre-game
+  // frame for a full dwell would answer that with 1.8 seconds of empty ice: the
+  // opening frame is an orientation, not a countdown.
+  const a = boot();
+  a.$('play').click();
+  assert.match(a.$('labels').innerHTML, /Won the faceoff/,
+               'Play left the viewer looking at an empty rink');
+});
+
+test('the pre-game frame is not on the timeline — frame zero is still a play', () => {
+  // The lazy version of this fix promotes `period-start` into EV. That would put
+  // a second empty frame at index 0, shift every index behind it, and move the
+  // frames the scrubber addresses. The guard is what frame zero DRAWS rather
+  // than how many frames there are: a period-start carries no coordinate, so it
+  // can place no puck and write no label, and it would fail both reads here.
+  const a = boot();
+  const first = a.at(0, d => ({ lab: d.$('labels').innerHTML, puck: d.$('puck').innerHTML }));
+  assert.match(first.lab, /Won the faceoff/, 'frame zero stopped being the opening draw');
+  assert.match(first.puck, /class="puck/, 'frame zero drew no puck, so it is not a play');
+});
+
+test('the hero opens on hockey, never on the pre-game frame', () => {
+  // WHAT THIS DOES AND DOES NOT CHECK, because the first version of it checked
+  // nothing. It was written to protect a `|| PREVIEW` term in the boot's opening
+  // frame, and removing that term left it green: the preview loop sets its own
+  // frame synchronously in both branches, so the pre-game state is overwritten
+  // before this can ever observe it. The term was deleted as dead.
+  //
+  // What survives is the claim worth having, and it has a real instrument: the
+  // hero must open on a PLAY. Silence the preview loop's opening call and this
+  // goes red, because the boot frame underneath it is now the empty rink.
+  const a = boot(null, null, '?preview=1');
+  assert.notEqual(a.$('per').textContent, 'Pre-game', 'the hero opened on an empty rink');
+  assert.ok(a.$('events').innerHTML.length > 0, 'the hero drew no hockey');
 });

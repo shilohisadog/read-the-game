@@ -1,4 +1,4 @@
-# The build list — 2026-08-19
+# The build list — 2026-08-20
 
 Kevin: *"a comprehensive status of everything we have discussed over the last
 couple of days… a sort of build list, just so we can identify what's what."*
@@ -8,7 +8,12 @@ Every number was read from the live site or the repo on 2026-08-19, not recalled
 Anything unverified says so.
 
 **Health right now:** 4,553 archived · **4,417 published** · 136 refused ·
-**561 JS + 126 Python tests** · gates and deploy green at `f9e852b`.
+**567 JS + 130 Python tests** · gates green 2026-08-20.
+
+⚠️ **This line is still typed, and it was already wrong when you read it: it said
+561 + 126 at `f9e852b` while the repo was at 130 Python tests and `0ecb636`.**
+That is C9 making its own case within a day of being written. Until C9 lands,
+re-derive these before quoting them.
 
 State key: **DONE** shipped and verified live · **READY** specified, nothing
 blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test ·
@@ -30,6 +35,7 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 | A8 | Hero shows the box as base layer, laid out rather than hidden | `0384500` |
 | A9 | **Bench-minor repair** — my check had refused 864 games | `c815236` |
 | A10 | **Blocked-shot figure is the blocker**, not the shooter | `f9e852b` |
+| A11 | **⭐ C10 — the game opens BEFORE the first play**; the resting frame is a state, not a play | see below |
 
 ---
 
@@ -57,7 +63,7 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 | **C4** | **Merge-hazard mechanism** | Ruled in principle — record it, don't fail. Unbuilt. | small |
 | **C5** | **OZ/DZ faceoff split** | Aggregate faceoff share is the site's cleanest null (**50.4%**); the zone split is where a real effect could hide. Newly answerable because of C3's finding. **Not measured — assert nothing until it is.** | small |
 | **C6** | **Offside rule diagram** | Parked for the novice test. | small |
-| **C7** | **⭐ Two rates on one screen** (was D4) | **A live front-door defect, not a gap.** The hero says *4,029 / 54.5%*, the verdict card *3,250 / 55.5%* — two figures that look like one claim, differing in both numerator and denominator, with nothing saying they measure different populations. *A reader who notices concludes we cannot count.* Identical shape to CONTROL-vs-shots-on-goal and to MIN 18–BUF 15 with no mode label, and the fix that worked twice works here: **the population is welded to the number, on the same line, not adjacent to it.** | small |
+| **C7** | **⭐ Two rates on one screen** (was D4) | ⚠️ **RE-DERIVE BEFORE BUILDING — the figures below do not reproduce.** *3,250 / 55.5%* appears exactly once in the whole repo: in this cell. It is not in `measures.json` (whose three base rates are 4,029/54.5%, 3,957/45.8%, 3,855/39.6%), not in any builder, not on any page; the nearest `levelCurve` row is n=3,327 at 39.3%. **And "front-door" is the wrong surface:** `#rg.preview .verdict` is in the hide list, so the verdict card cannot render in the hero frame. Where two rates genuinely co-occur is the GAME page — `#rg.newcomer .newcomer` and `#rg.ended .verdict` are independent classes, so a first-time visitor who watches to the end sees both. The defect shape is probably still real; the citation is not. Original text follows. ~~The hero says *4,029 / 54.5%*, the verdict card *3,250 / 55.5%* — two figures that look like one claim, differing in both numerator and denominator, with nothing saying they measure different populations. *A reader who notices concludes we cannot count.* Identical shape to CONTROL-vs-shots-on-goal and to MIN 18–BUF 15 with no mode label, and the fix that worked twice works here: **the population is welded to the number, on the same line, not adjacent to it.**~~ | small |
 | **C9** | **Regenerate the health line** | The reconciliation that caught A9. A typed number that can drift from the live site is the defect; make the top of this file a build artifact. | small |
 | **C8** | **Missed-shot labels** | **UNBLOCKED — the archive vocabulary is measured.** **Ten values, not six.** Over 2,574 missed shots in 89 games: wide-left 38.3%, wide-right 35.0%, above-crossbar 5.6%, high-and-wide-right 5.4%, high-and-wide-left 5.0%, hit-left-post 2.7%, hit-right-post 2.6%, short 2.5%, **hit-crossbar 2.0%**, failed-bank-attempt 0.9%. **Iron is 7.3% and `short` another 2.5% — about one missed shot in ten is something "missed the net" describes falsely.** Kevin predicted `hit-crossbar` from its absence in a 31-event sample and the derive found it. `failed-bank-attempt` is **behind the net** — 23 of 24 at or past the goal line, median 3 ft past and 8 ft off centre, against 1.4% for every other miss — and it is **season-bounded**: zero in 2023 across 881 missed shots, then 9 and 15. *The league's vocabulary changes under us.* Rare values render raw rather than earning hand-written copy. Then: caption **describes** the moment — *Hit the post · Shot went wide · Over the crossbar · Shot came up short* — and the ledger **classifies**, keeping the universal clause *"no goalie faced it"*, which is true for all six values. One narrator, many ledgers, applied to a label. Known values get written labels; unknown ones render raw. | small |
 

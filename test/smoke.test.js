@@ -130,16 +130,18 @@ test('the app executes without throwing', () => {
   assert.doesNotThrow(run, 'the bundle must run, not merely parse');
 });
 
-test('first paint is the OPENING faceoff, not the final score', () => {
+test('first paint is the PRE-GAME state, not the final score and not a play', () => {
   // The page used to open on the last event, so the final score and the finished
-  // counters were on screen before a viewer pressed anything. This pins the new
-  // behaviour rather than leaving it to be re-broken quietly.
+  // counters were on screen before a viewer pressed anything. It then opened on
+  // the opening faceoff, which was still a play nobody had asked for -- the ice
+  // named the winner of a draw on a clock reading 20:00. This pins the frame
+  // rather than leaving it to be re-broken quietly.
   const n = run();
   assert.equal(String(n.get('cA').textContent), '0', 'a counter is already running');
   assert.equal(String(n.get('cH').textContent), '0');
   assert.equal(String(n.get('aSc').textContent), '0', 'the score is already shown');
   assert.equal(String(n.get('hSc').textContent), '0');
-  assert.equal(String(n.el('scrub').value), '0', 'the scrubber is not at the start');
+  assert.equal(String(n.el('scrub').value), '-1', 'the scrubber is not at the pre-game frame');
 });
 
 test('a full render at the end puts the right numbers in the DOM', () => {

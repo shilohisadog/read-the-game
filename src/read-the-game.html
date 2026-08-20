@@ -564,7 +564,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
   <button class="spd stepb" id="back" aria-label="Prev play">◀ Prev play</button><button class="spd stepb" id="fwd" aria-label="Next play">Next play ▶</button>
   <button class="spd" id="sp0" aria-pressed="false">🐢 Slower</button><button class="spd" id="sp1" aria-pressed="true">Teaching</button><button class="spd" id="sp2" aria-pressed="false">Faster</button><button class="spd" id="lbl" aria-pressed="true">💬 Explain plays</button>
   <button id="work" aria-expanded="false">Show me the work</button>
-  <input class="scrub" id="scrub" type="range" min="0" max="1" value="0"></div>
+  <input class="scrub" id="scrub" type="range" min="-1" max="1" value="-1"></div>
 <p class="verdict" id="verdict"></p>
 <div class="legend"><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white-filled, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span><i class="k-g"></i><i class="k-gv"></i>goal — either sweater</span><span><i class="k-blk"></i>blocked — ringed where the puck was <b>stopped</b></span><span class="lkey lk-hd"><i class="k-hd"></i>from the slot</span><span class="lkey lk-blk">blocked shots are dimmed unless a body stopped them</span><span class="lkey lk-wh"><i class="k-wh"></i>play restarted here — brightest at the most recent stoppage</span><span class="lkey lk-wh"><i class="k-rl"></i>the line the rule names — for icing the centre line and the far goal line, for offside the blue line</span><span class="lkey lk-ends">ends are held fixed — in the arena the teams switch each period</span></div>
 <div class="newcomer nwhy2" id="newcomerWhy"></div><div class="layers"><span class="ll">Add a metric layer:</span><button class="lyr" id="lyCorsi" aria-pressed="false">＋ Control (Corsi)</button><button class="lyr" id="lyHd" aria-pressed="false">＋ Shots from the slot</button><button class="lyr" id="lyGoalie" aria-pressed="false">＋ Goaltending</button><button class="lyr" id="lyWhistle" aria-pressed="false">＋ Why play stopped</button><button class="lyr" id="lyBlock" aria-pressed="false">＋ Blocked shots</button></div>
@@ -3700,11 +3700,17 @@ const FRAME_MS={sp0:2600,sp1:1800,sp2:1000};
 const CAPTION_BONUS=900;
 let i=EV.length-1,playing=false,timer=null,frameMs=FRAME_MS.sp1;
 $('scrub').max=EV.length-1;
-function set(v,how){i=Math.max(0,Math.min(EV.length-1,v));$('scrub').value=i;render(i,how);syncStep();}
+/* THE PLAYHEAD FLOOR IS -1, AND -1 IS A FRAME. Every read of the current event
+   in `render` is already guarded, `upto(-1)` already answers `[]`, `drawBoxes`
+   already empties both boxes on a null, `periodLabel(null)` already says
+   'Pre-game' and `renderWork` already writes ', pre-game' -- so index -1 draws
+   the rink, both goaltenders, a 0-0 board and two empty boxes. All of that was
+   written and unreachable until this clamp stopped stopping at zero. */
+function set(v,how){i=Math.max(-1,Math.min(EV.length-1,v));$('scrub').value=i;render(i,how);syncStep();}
 /* THE ENDS ARE STATED BY THE CONTROL, not discovered by pressing it. `set`
    clamps, so a press at either end is already harmless -- but a button that
    accepts a press and does nothing is a button that says the page is broken. */
-function syncStep(){$('back').disabled=i<=0;$('fwd').disabled=i>=EV.length-1;}
+function syncStep(){$('back').disabled=i<=-1;$('fwd').disabled=i>=EV.length-1;}
 /* WHICH FRAMES SPEAK. The ONE place that answers it -- `render` calls this to
    decide whether to caption, and `dwell` calls it to decide how long the frame
    lasts. Two readers, one answer, so they cannot drift: that drift is the whole
@@ -3713,8 +3719,12 @@ function syncStep(){$('back').disabled=i<=0;$('fwd').disabled=i>=EV.length-1;}
 function captioned(e){return !!e&&(e.type==='goal'||e.type==='penalty'||(hdOn&&isHD(e)));}
 function dwell(e){return captioned(e)?frameMs+CAPTION_BONUS:frameMs;}
 function step(){if(i>=EV.length-1){stop();return;}set(i+1,'play');timer=setTimeout(step,dwell(EV[i]));}
-function play(){if(i>=EV.length-1){prevA=0;prevH=0;set(0,'play');}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);timer=setTimeout(step,dwell(EV[i]));}
-function stop(){playing=false;$('play').textContent=i>=EV.length-1?'▶ Replay from start':'▶ Play';clearTimeout(timer);}
+/* PLAY MEANS GO. A viewer who presses it has asked for the game, and resting on
+   the pre-game frame for a full dwell would answer that with 1.8 seconds of empty
+   ice. The opening frame is an orientation, not a countdown -- so Play leaves it
+   at once, from either end. */
+function play(){if(i>=EV.length-1||i<0){prevA=0;prevH=0;set(0,'play');}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);timer=setTimeout(step,dwell(EV[i]));}
+function stop(){playing=false;$('play').textContent=i<0?'▶ Play from start':i>=EV.length-1?'▶ Replay from start':'▶ Play';clearTimeout(timer);}
 $('play').onclick=()=>playing?stop():play();
 /**
  * ONE PLAY AT A TIME, IN EITHER DIRECTION — the control this transport did not
@@ -4426,16 +4436,43 @@ function setWhistle(){document.getElementById('rg').classList.toggle('whistle',w
 $('lyWhistle').addEventListener('click',()=>{whistleOn=!whistleOn;setWhistle();});
 function setBlock(){document.getElementById('rg').classList.toggle('blocked',blockOn);$('lyBlock').setAttribute('aria-pressed',blockOn);$('lyBlock').textContent=(blockOn?'✓ ':'＋ ')+'Blocked shots';render(i,'');}
 $('lyBlock').addEventListener('click',()=>{blockOn=!blockOn;setBlock();});
-/* THE GAME OPENS AT THE OPENING FACEOFF.
+/* ⭐ THE GAME OPENS BEFORE THE FIRST PLAY -- on the state, not on a play.
    It used to open on the LAST event, which put the final score, the finished
    counters and -- on a shootout game -- the shootout notice on screen before a
    viewer had pressed anything. "Defaulting to the end kinda spoils the surprise"
    (Kevin), and it is worse than a spoiler on a replay site: the whole product is
    watching a count get MADE, and arriving at the made count is arriving after
    the thing you came for.
-   It also fixes the shootout narrative appearing first on game 2025021235 --
+   It also fixed the shootout narrative appearing first on game 2025021235 --
    that notice belongs at the end of the replay because that is when it happens,
-   and it was only ever early because the page started there. */
+   and it was only ever early because the page started there.
+
+   THEN IT OPENED ON THE OPENING FACEOFF, AND THAT WAS STILL ONE PLAY TOO FAR.
+   Kevin, on a BUF @ WSH replay he had just opened: "we identify WSH as 'won the
+   faceoff', even before the game has started." The board read PERIOD 1 · 20:00
+   LEFT -- the clock a period carries before it starts -- and the ice already
+   named the winner of the draw.
+   NOTHING IN THAT PAIR IS FALSE, which is why it survived so long: the league
+   stamps the opening faceoff at 00:00 elapsed and a real clock reads 20:00 until
+   the puck is dropped, so the draw IS won at 20:00. Moving the clock to make the
+   sentence sit better would be inventing a time. What was wrong is that this
+   frame was the RESTING state -- handed to a visitor who had pressed nothing, so
+   a play nobody asked for read as the state of the world. A page whose headline
+   is "watch first" was opening on a result.
+   THE RULE IS THE VERDICT CARD'S, and it is already written one screen up:
+   absent until there is one. That card's own comment claims opening at the
+   faceoff was "the same move" -- it was not. The card became absent; the caption
+   did not.
+   SO THE ABSENCE OF `at` IS NOT A REQUEST FOR THE FIRST PLAY. A link that names
+   a moment is honoured exactly as before: the learn page's nine doors each ask
+   for one, and landing them a frame early would open a door onto an empty rink.
+   The preview keeps its own opening (below) for the same reason in reverse --
+   five seconds of hockey on the front page cannot start with a blank rink.
+   PERIODS 2 AND 3 ARE DELIBERATELY UNCHANGED. Their opening draws carry the same
+   20:00 stamp, but they are reached by moving THROUGH time rather than by
+   arriving, and the frame before them is the end of the previous period, so
+   nothing there claims that nothing has happened. Whether they earn a beat of
+   their own is a period-boundary question, which is B1's ground. */
 drawRink();
 /* THE LINK, APPLIED — and keyed off the layers' OWN ids, so a rename cannot
    leave this table pointing at a token nothing answers to. `?layer=slot` is the
@@ -4458,7 +4495,21 @@ const AT=resolve(G.events,LINK.at);
 $('atnote').textContent=AT.why?AT.why.text
  :(LINK.problems.some(p=>/^at[:.]/.test(p))?LINK_NOTES.unreadable.text:'');
 prevA=0;prevH=0;
-set(frameOf(AT.index),'jump');
+/* WHERE THE PAGE OPENS. `resolve` answers index 0 both when a link asked for the
+   first play and when no link asked for anything, so the question is put to
+   `LINK.at` -- did a URL name a moment at all -- and never to the frame it
+   resolved to. An `at=` we could not read leaves `LINK.at` null and has already
+   written its own sentence into `atnote` above, so that visit opens where every
+   unadorned visit opens and says why it is not where it was sent. */
+/* NOT `|| PREVIEW`. The first draft carried one, on the reasoning that a blank
+   rink must never reach the front page -- and a mutation proved the term was
+   unobservable: `if(PREVIEW)` below sets its own opening frame synchronously in
+   BOTH of its branches, before anything is painted. A test written to protect
+   the term passed with the term removed, which is the check-with-no-instrument
+   this project keeps finding. The hero's opening is the preview loop's business
+   and is asserted there instead. */
+const OPEN=LINK.at?frameOf(AT.index):-1;
+set(OPEN,OPEN<0?'':'jump');
 /* THE PREVIEW LOOP.
    Deliberately NOT the ordinary play loop: `dwell()` paces a game for someone
    watching it, easing for the big moments, and a taste has about five seconds.

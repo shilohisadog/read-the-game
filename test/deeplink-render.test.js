@@ -126,9 +126,13 @@ test('a link to a moment opens there, and says nothing', () => {
   assert.notEqual(+d.$('scrub').value, 0, 'a mid-game link is not the start of the game');
 });
 
-test('no link at all still opens at the opening faceoff, silently', () => {
+test('no link at all opens BEFORE the first play, silently', () => {
+  // THE ABSENCE OF `at` IS NOT A REQUEST FOR THE FIRST PLAY. `resolve` answers
+  // index 0 for both, so the page asks `LINK.at` -- was a moment named at all --
+  // rather than reading the answer off the frame it resolved to. Silently: an
+  // unadorned visit has nothing to explain.
   const d = open('');
-  assert.equal(+d.$('scrub').value, 0);
+  assert.equal(+d.$('scrub').value, -1);
   assert.equal(d.$('atnote').textContent, '');
 });
 
@@ -143,8 +147,14 @@ test('a link to a period the game never reached opens at the START and says so',
 });
 
 test('a malformed link opens at the start and says so', () => {
+  // AND IT LANDS SOMEWHERE DIFFERENT FROM THE TEST ABOVE IT, on purpose.
+  // `?at=4-03:00` NAMED a moment we could resolve to the earliest one we hold,
+  // so it lands on the opening draw with a sentence. `?at=banana` named nothing
+  // readable, so there is no request to honour and it opens where every
+  // unadorned visit opens -- and still says why it is not where it was sent.
+  // Two honest answers to two different questions; do not make them uniform.
   const d = open('?at=banana');
-  assert.equal(+d.$('scrub').value, 0);
+  assert.equal(+d.$('scrub').value, -1);
   assert.ok(d.$('atnote').textContent.length > 10);
 });
 
