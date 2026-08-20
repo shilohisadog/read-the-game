@@ -133,10 +133,10 @@ function fakeDom() {
  * same defect as a rule implemented twice, and this file already carries the
  * scar of four fakes of one document at four fidelities.
  */
-function bundle(globals) {
+function bundle(globals, src = SCRIPT, give = 'boot') {
   const names = ['document', 'matchMedia', 'setTimeout', 'clearTimeout',
                  'localStorage', 'location', 'window'];
-  return new Function(...names, SCRIPT + '\nreturn boot;')(...names.map(n => globals[n]));
+  return new Function(...names, src + `\nreturn ${give};`)(...names.map(n => globals[n]));
 }
 
 function boot(game, rates, search = '', store = null) {
@@ -3492,4 +3492,63 @@ test('the hero opens on hockey, never on the pre-game frame', () => {
   const a = boot(null, null, '?preview=1');
   assert.notEqual(a.$('per').textContent, 'Pre-game', 'the hero opened on an empty rink');
   assert.ok(a.$('events').innerHTML.length > 0, 'the hero drew no hockey');
+});
+
+/**
+ * ⭐ WHAT LIBRARY CODE CAN AND CANNOT REACH — B1's first condition, instrumented.
+ *
+ * CHENG, ruling on as-played ends: `SX` must be made LEXICALLY unreachable from
+ * library scope, "not merely unused", because §7.3 measured that it holds by
+ * habit and the modules are inlined into one shared scope. A reducer that named
+ * `SX` would find it, and a reducer that reads screen coordinates is a reducer
+ * whose counts move when the rink flips -- which is the one thing as-played must
+ * not be able to do.
+ *
+ * AUDITED FIRST, AND THE PREMISE WAS HALF WRONG. The modules do share one
+ * SCRIPT, but not one SCOPE: build_main.py inlines `__LIB__` ABOVE
+ * `function boot(G,RATES){`, and `SX` is a `const` in boot's body. A function
+ * declared at top level can never see a binding inside another function's body,
+ * whenever it is called. So the guard already exists.
+ *
+ * WHICH IS EXACTLY WHY IT NEEDED A TEST. A rule nobody has broken is not a
+ * guard; it is a habit that has not been tested. This is the instrument, and it
+ * is two-sided ON PURPOSE: a probe in library position must throw, AND the same
+ * probe inside boot must resolve. Without the second half, "it threw" would be
+ * satisfied by a probe that was simply broken -- the mutation-that-measures-the-
+ * harness this file has been bitten by before.
+ */
+const PROBE_AT = 'function boot(G,RATES){';
+
+function probeGlobals() {
+  const dom = fakeDom();
+  const win = { postMessage: () => {} };
+  win.parent = { postMessage: () => {} };
+  return { globals: {
+    document: dom.document, matchMedia: () => ({ matches: true }),
+    setTimeout: () => 1, clearTimeout: () => {},
+    localStorage: { getItem: () => null, setItem: () => {} },
+    location: { search: '', origin: 'https://x' }, window: win }, win };
+}
+
+test('a library module cannot reach SX — the rink transform is not in its scope', () => {
+  assert.equal(SCRIPT.split(PROBE_AT).length - 1, 1,
+               'the probe anchor must appear exactly once, or it is being inserted somewhere else');
+  const { globals } = probeGlobals();
+  // Inserted immediately BEFORE boot, which is where every src/lib module lands.
+  const src = SCRIPT.replace(PROBE_AT, 'function __probe(){return SX(0);}\n' + PROBE_AT);
+  const probe = bundle(globals, src, '__probe');
+  assert.throws(probe, ReferenceError,
+    'a module in library position resolved SX — the rink transform leaks into reducer scope, '
+    + 'and a reducer that can read screen coordinates is one whose counts move when the rink flips');
+});
+
+test('...and the same probe inside boot resolves, so the test above is not passing on a broken probe', () => {
+  const { globals, win } = probeGlobals();
+  const src = SCRIPT.replace(PROBE_AT, PROBE_AT + 'window.__probe=function(){return SX(0);};');
+  const b = bundle(globals, src);
+  b(rich);
+  assert.equal(typeof win.__probe, 'function', 'the probe was never installed, so this proves nothing');
+  // SX(x)=100-x, so the centre-ice line lands at 100 on a 200-wide viewBox.
+  assert.equal(win.__probe(), 100,
+    'the probe cannot read SX even from inside boot, so the throw above is about the probe, not the scope');
 });
