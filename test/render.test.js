@@ -745,8 +745,11 @@ test('the controls explain themselves without referring to their own history', (
   assert.equal(a.$('nTrails').textContent, '',
     'the trails note is present before anyone chose the setting it explains');
   a.GROUPS['#rg .tbtn'].find(b => b.dataset.t === 'all').click();
-  assert.match(a.$('nTrails').textContent, /every attempt stays on the ice/i,
-    'flipping to Keep every mark explains nothing');
+  // NOT PINNED TO ONE MODE'S WORDING. What this test is about is that using the
+  // control explains the control; WHICH promise each mode makes is asserted
+  // below, where the promise and the behaviour are checked together.
+  assert.match(a.$('nTrails').textContent, /stays on the ice/i,
+    'flipping the trails control explains nothing');
   a.GROUPS['#rg .tbtn'].find(b => b.dataset.t === 'off').click();
   assert.equal(a.$('nTrails').textContent, '', 'the note stayed after the setting left');
 
@@ -3674,4 +3677,85 @@ test('the ends toggle never reaches a count', () => {
     assert.equal(played[k], fixed[k],
       `frame ${k}: a count moved when the rink turned over, so the mode reached a reducer`);
   }
+});
+
+/**
+ * ⭐ B1 — THE TRAIL ENDS WITH THE PERIOD, BUT ONLY WHEN THE ENDS DO.
+ *
+ * A mark says "this team attempted from here". Accumulated on a rink that turns
+ * over, one team's attempts pile up at BOTH ends and the picture stops being a
+ * shot chart. §5 of docs/ends-switching.md answered this before the flip
+ * existed: scope to the period, because the frame ended.
+ *
+ * The control keeps the whole game, and that is not symmetry for its own sake —
+ * one-direction never changed frames, so its whole-game map is exactly what it
+ * claims to be, and CHENG's condition 2 keeps that picture because the Control
+ * layer has no other one.
+ */
+function trailPeriods(search) {
+  const a = boot(null, null, search);
+  a.GROUPS['#rg .tbtn'].find(b => b.dataset.t === 'all').click();
+  // The LAST frame of the game: every earlier period is behind it, so if any
+  // mark from one survives, this is where it shows.
+  const max = +a.$('scrub').max;
+  a.$('scrub').oninput({ target: { value: String(max) } });
+  const ids = [...a.$('events').innerHTML.matchAll(/data-i="(\d+)"/g)].map(m => +m[1]);
+  const per = new Set(ids.map(k => EV_PLAYABLE[k] && EV_PLAYABLE[k].per).filter(Boolean));
+  return { per: [...per].sort(), marks: ids.length, label: a.GROUPS['#rg .tbtn']
+    .find(b => b.dataset.t === 'all').textContent };
+}
+// The page's own playable timeline, rebuilt here from the fixture so the test
+// can say which PERIOD a `data-i` belongs to without asking the page.
+const SKIPPED = new Set(['stoppage', 'period-start', 'period-end', 'game-end', 'delayed-penalty']);
+const EV_PLAYABLE = rich.events.filter(e => !SKIPPED.has(e.type));
+
+test('as-played clears the trail at each period change; the control keeps the game', () => {
+  const played = trailPeriods('?ends=as-played');
+  const fixed = trailPeriods('?ends=fixed');
+
+  assert.deepEqual(played.per, [3],
+    `at the last frame as-played still shows marks from periods ${played.per.join(',')}`);
+  assert.deepEqual(fixed.per, [1, 2, 3],
+    `the control lost its whole-game map — it shows only ${fixed.per.join(',')}`);
+  assert.ok(fixed.marks > played.marks * 2,
+    `the control holds ${fixed.marks} marks and as-played ${played.marks}; that is not a whole game`);
+});
+
+test('the button says what it does, in each mode', () => {
+  // "Keep every mark" is FALSE under as-played. A note explaining a label that
+  // contradicts itself is the decaying disclaimer this project prefers an
+  // invariant to, so the label states the truth instead.
+  assert.match(trailPeriods('?ends=as-played').label, /this period/i);
+  assert.match(trailPeriods('?ends=fixed').label, /every mark/i);
+});
+
+test('each mode promises only what it delivers', () => {
+  const note = search => {
+    const a = boot(null, null, search);
+    a.GROUPS['#rg .tbtn'].find(b => b.dataset.t === 'all').click();
+    return a.$('nTrails').textContent;
+  };
+  const played = note('?ends=as-played'), fixed = note('?ends=fixed');
+  assert.match(played, /clears when the teams change ends/i);
+  assert.match(played, /shooting the other way/i, 'and says why, in hockey terms');
+  assert.doesNotMatch(played, /by the third period/i,
+    'as-played promises a whole-game chart it clears three times');
+  assert.match(fixed, /by the third period/i, 'the control stopped promising its chart');
+});
+
+test('the whistle layer is exempt, because its marks carry no direction', () => {
+  // "Play restarted at this dot" is a fact about a PLACE -- no team, no
+  // attacking end -- and `marks()` already keys on the arena position, so
+  // accumulating across periods counts one physical dot correctly. Scoping it
+  // would throw away a true count to be consistent with a rule that does not
+  // apply to it.
+  const a = boot(null, null, '?ends=as-played');
+  a.$('lyWhistle').click();
+  a.GROUPS['#rg .tbtn'].find(b => b.dataset.t === 'all').click();
+  a.$('scrub').oninput({ target: { value: a.$('scrub').max } });
+  const counts = [...a.$('whistles').innerHTML.matchAll(/class="whn"[^>]*>(\d+)</g)].map(m => +m[1]);
+  const total = (a.$('whistles').innerHTML.match(/class="wh[\s"]/g) || []).length;
+  assert.ok(total > 5, `only ${total} restart marks survived to the last frame`);
+  assert.ok(counts.some(n => n > 2),
+    `no dot stacked past 2 (${counts.join(',')}) — the whole-game count did not survive`);
 });

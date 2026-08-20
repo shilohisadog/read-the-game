@@ -3587,6 +3587,21 @@ function render(i,how){
  const parts=[];
  for(let k=0;k<evs.length;k++){const e=evs[k];const pos=place(e);if(!pos)continue;
    if(trails==='off'&&k!==i)continue;
+   /* ⭐ THE TRAIL ENDS WITH THE PERIOD, BUT ONLY WHEN THE ENDS DO (§5).
+      A mark says "this team attempted from here". Accumulated on a rink that
+      turns over, one team's attempts pile up at BOTH ends and the picture stops
+      being a shot chart -- it becomes a map of the building with the team
+      attribution scattered across it. §5 answered this before the flip existed:
+      scope to the period, because the frame ended.
+      NOT IN THE CONTROL. One-direction never changed frames, so the whole-game
+      map is exactly what it claims to be -- and CHENG's condition 2 keeps that
+      picture precisely because the Control layer has no other one.
+      THE WHISTLE LAYER IS DELIBERATELY EXEMPT. Its marks carry no team and no
+      direction: "play restarted at this dot" is a fact about a place, and
+      `marks()` already keys on the arena position, so accumulating across
+      periods counts one physical dot correctly. Only direction-dependent,
+      team-attributed marks lose their meaning at a period change. */
+   if(ASPLAYED&&trails==='all'&&cur&&e.per!==cur.per)continue;
    const hd=hdOn&&isHD(e);
    // A BLOCKED SHOT IS AN ATTEMPT, ANNOTATED, and the annotation is a separate
    // ring rather than the mark's own stroke. THE STROKE NOW CARRIES TEAM
@@ -3677,9 +3692,12 @@ function render(i,how){
  $('nSit').textContent=evenOnly
    ?`${dropped} ${dropped===1?'attempt has':'attempts have'} dropped out so far. Power plays and an empty net are still hockey — but they aren't even hockey.`
    :'';
- $('nTrails').textContent=trails==='all'
-   ?'Every attempt stays on the ice, which builds into a shot chart by the third period — good to study, busy to watch.'
-   :'';
+ // THE NOTE FOLLOWS THE MODE, because the old sentence promised a whole-game
+ // chart and as-played cannot deliver one.
+ $('nTrails').textContent=trails!=='all'?''
+   :ASPLAYED
+   ?'Every attempt in this period stays on the ice. It clears when the teams change ends, because after that they are shooting the other way.'
+   :'Every attempt stays on the ice, which builds into a shot chart by the third period — good to study, busy to watch.';
  $('nFig').textContent=figStyle!=='mascot'
    ?'Same shots, same outcomes, same math — only the drawing changes.'
    :'';
@@ -3938,6 +3956,12 @@ drawAtk(1);
    cannot change during a visit should not be rebuilt three hundred times. */
 (()=>{const k=$('endsKey');if(!k)return;const K=ENDS_KEY[ENDSMODE];
  k.textContent=K.rule||K.display;})();
+/* AND THE BUTTON SAYS WHAT IT DOES. "Keep every mark" is false under as-played,
+   where the trail clears at each period change -- and a note explaining a label
+   that contradicts itself is the decaying-disclaimer shape this project prefers
+   an invariant to. The label states the truth instead. */
+document.querySelectorAll('#rg .tbtn').forEach(b=>{
+ if(b.dataset.t==='all')b.textContent=ASPLAYED?'Keep this period':'Keep every mark';});
 function drawAtk(per){$('aAtk').textContent=ATK(AID,per);$('hAtk').textContent=ATK(HID,per);}
 // Hand-formatted from the ISO date, never Date.parse: '2023-11-10' is UTC
 // midnight and a western timezone would render it as the 9th.
