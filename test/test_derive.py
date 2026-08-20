@@ -1348,24 +1348,38 @@ class WhyTheShotMissed(unittest.TestCase):
         question: `above-crossbar` exists, no `hit-crossbar` appeared in 31
         attempts, so a puck off the bar is being recorded as SOMETHING we cannot
         name yet. One game cannot answer it; `noted` over the archive can."""
-        self.assertNotIn("hit-crossbar", E.KNOWN_MISSES)
         seen = {e["miss"] for e in self.rich["events"] if e["type"] == "missed-shot"}
-        self.assertEqual(E.KNOWN_MISSES, seen,
-                         "the known set must be exactly what has been observed")
+        self.assertTrue(seen < E.KNOWN_MISSES,
+                        "the reference game's six are a strict SUBSET of the ten the "
+                        "archive contains -- one game is not the vocabulary")
+        # THE FOUR THE ARCHIVE ADDED, and the gate is what surfaced them. Kevin
+        # predicted `hit-crossbar` from its absence; the derive found it.
+        self.assertEqual(E.KNOWN_MISSES - seen,
+                         {"hit-crossbar", "high-and-wide-left",
+                          "high-and-wide-right", "failed-bank-attempt"})
+        # Still not padded: a value nobody has seen must not be pre-approved into
+        # silence. `wide-high` is invented here on purpose.
+        self.assertNotIn("wide-high", E.KNOWN_MISSES)
 
     def test_an_unfamiliar_reason_is_noted_and_never_refuses_the_game(self):
         # Same standing as a stoppage reason: we carry it verbatim and compute on
         # nothing, so an unknown renders as itself rather than explaining wrongly.
+        # THE STAND-IN HAD TO CHANGE. This test used `hit-crossbar` as its
+        # "unfamiliar" value and the archive then proved it real -- so the test
+        # started asserting that a KNOWN value was unknown. A fixture pinned to a
+        # value the world can promote is a fixture with an expiry date; this one
+        # is invented and will stay invented.
         plays = [play("missed-shot", 10, shootingPlayerId=1, xCoord=70, yCoord=3,
-                      eventOwnerTeamId=30, reason="hit-crossbar")]
+                      eventOwnerTeamId=30, reason="ricocheted-off-the-zamboni")]
         pbp = {"homeTeam": HOME, "awayTeam": AWAY, "rosterSpots": ROSTER,
                "plays": plays}
         _, unknown = E.vocabulary(pbp)
-        self.assertEqual(unknown.get("missed-shot reason"), {"hit-crossbar"})
+        self.assertEqual(unknown.get("missed-shot reason"),
+                         {"ricocheted-off-the-zamboni"})
         self.assertNotIn("missed-shot reason", E.CONSEQUENTIAL,
                          "an unfamiliar reason must not withhold a game")
         self.assertEqual(E.extract(pbp, json.loads(shifts_bytes()))["events"][0]["miss"],
-                         "hit-crossbar", "carried verbatim")
+                         "ricocheted-off-the-zamboni", "carried verbatim")
 
 
 class TheEndsTheyDefended(unittest.TestCase):

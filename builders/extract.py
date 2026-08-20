@@ -366,11 +366,37 @@ def situation_ok(code, period_type=None):
 # so an unfamiliar one renders as itself and explains nothing rather than
 # explaining something wrong. That is a different and stronger argument than "we
 # never look at it", and it is the one that survives the whistle layer existing.
-# Observed in the reference game and nowhere else yet. Deliberately NOT padded
-# with guesses -- see vocabulary().
+# THE TEN THE ARCHIVE ACTUALLY CONTAINS, and the six-value version of this set
+# was the reference game talking. A derive over 4,553 games reported four more
+# through `noted`, exactly as designed -- including the `hit-crossbar` Kevin
+# predicted from its absence. Weights measured over 2,574 missed shots in 89
+# sampled games:
+#
+#   wide-left            38.3%      hit-left-post         2.7%
+#   wide-right           35.0%      hit-right-post        2.6%
+#   above-crossbar        5.6%      short                 2.5%
+#   high-and-wide-right   5.4%      hit-crossbar          2.0%
+#   high-and-wide-left    5.0%      failed-bank-attempt   0.9%
+#
+# IRON IS 7.3% AND `short` IS ANOTHER 2.5%, so about one missed shot in ten is
+# something the phrase "missed the net" describes FALSELY -- a puck off the post
+# or bar hit the net, and a `short` shot never reached it.
+#
+# `failed-bank-attempt` IS A POSITION, NOT A GUESS: 23 of 24 are at or past the
+# goal line, a median 3 ft past it and 8 ft off centre -- behind the net --
+# against 1.4% for every other missed shot. What the scorer meant by it is not
+# something the feed defines and not something we should invent.
+#
+# AND IT IS SEASON-BOUNDED: zero in 2023 across 881 missed shots, then 9 and 15.
+# The league's vocabulary changes under us -- the same shape as `tv-timeout`
+# becoming a primary reason in 2025-26 -- which is the whole argument for `noted`
+# existing. Still deliberately NOT padded with guesses; the next new value has to
+# surface the same way this one did.
 KNOWN_MISSES = {
-    "wide-left", "wide-right", "above-crossbar",
-    "hit-left-post", "hit-right-post", "short",
+    "wide-left", "wide-right", "above-crossbar", "short",
+    "high-and-wide-left", "high-and-wide-right",
+    "hit-left-post", "hit-right-post", "hit-crossbar",
+    "failed-bank-attempt",
 }
 
 CONSEQUENTIAL = ("typeDescKey", "situationCode")
