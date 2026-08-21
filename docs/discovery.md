@@ -226,3 +226,113 @@ is the C7 defect.
    selection on an outcome.
 4. Is the count-what-we-hold rule of **§4** right, or should a refused game be
    counted separately in the cell (`12 · 2 unshowable`) rather than silently?
+
+
+---
+
+# 10. CHENG's rulings — 2026-08-21, and two things the measurement changed
+
+All four accepted. Recorded with what checking them found.
+
+## 10.1 §5 — include them, as a SEPARATE MARK that is never summed
+
+> *The front door says out-of-scope games are "left out of every number here."
+> So don't put them in a number.*
+
+```
+Oct 3, 2023      · 3 preseason
+Nov 10, 2023   9 · 2 preseason
+```
+
+Not `12`, not `9 (3 preseason)`. **Two marks that never add**, which is the site's
+existing `counted` / `excluded` idiom applied to a cell. The 60 invisible dates
+become visible, 298 held games become reachable, an October night stops reading
+as *no hockey* — and the disclosure stays literally true, unedited.
+
+**⭐ AND THE STANDING RULE THAT FALLS OUT OF IT, which is worth more than the
+feature:** *when a feature needs a disclosure edited, that is a signal to
+redesign the feature first. If no design satisfies the sentence, the sentence
+gets revisited on its own merits, in the open — never as a step inside shipping
+something else.*
+
+### ⚠️ But "preseason" is the wrong word on 38 of those dates
+
+CHENG's example says `preseason`, and the bucket is not all preseason:
+
+| `t` | games | span | what it is |
+|---|---|---|---|
+| 1 | 320 | 2023-09-23 → 2025-10-04 | preseason |
+| 9 | 30 | 2026-02-11 → 2026-02-22 | **the Olympics** |
+| 19 | 6 | 2025-02-12 → 2025-02-17 | **4 Nations** |
+| 4 | 3 | 2024-02-03 | all-star |
+| 12 | 1 | 2024-02-01 | all-star |
+| 20 | 1 | 2025-02-20 | 4 Nations final |
+
+**No date carries more than one out-of-scope type** (checked: 0 of 60), so the
+second mark is always a single label — a real simplification. But it has to be
+the *right* label, and a known-values map with **unknown types rendered raw** is
+the answer C8 already reached for missed-shot reasons: *the league's vocabulary
+changes under us.*
+
+**Noted, not fixed:** the front-door disclosure names *"Preseason, the Olympics
+and the 4 Nations Face-Off"* and **does not name the all-star games** (4 of
+4,553). Small, real, and by 10.1's own rule it gets looked at on its own merits
+rather than inside this.
+
+## 10.2 §4 — count what we hold, and the dead end needs a STATE
+
+Accepted: the cell counts the archive, the leaf says what cannot be shown and
+why. On a night where nothing is showable the leaf gets **a state, not rows** —
+*"2 games · neither can be shown yet — the league's feed contains something we
+don't recognise."*
+
+**⚠️ The population is not the one either of us had.** CHENG wrote this against
+"the 2 fully-refused nights", which were in-scope and are now published. Measured
+on the live catalog:
+
+- **10 nights where nothing can be shown — and all 10 are out-of-scope only**,
+  every one of them an Olympic night (2026-02-11 → 2026-02-17).
+- **0 in-scope.**
+
+So the dead-end leaf **exists entirely because of the 10.1 inclusion ruling.**
+Without §5 it would be unreachable; with §5 it is the first thing a reader
+clicking February 2026 will hit. That moves it from an edge case to a case on the
+happy path, and it is the vocabulary gate's best advertisement.
+
+## 10.3 The base-rate rule, stated precisely
+
+> **The base-rate requirement attaches to selection on an OUTCOME, not to
+> selection.**
+
+A date selects on nothing about hockey, so there is no claim to contextualise and
+a percentage would be the C7 defect — a comparison the reader did not ask for.
+**The boundary:** if a cell or a night list ever surfaces an outcome marker
+(*"the outshot team won this one"*), it is back in scope.
+
+## 10.4 §6 — own page, plus the cheap half of Kevin's instinct
+
+Accepted, and **CHENG's argument is better than the one in §6.** Mine was about
+attention; his is that **a home-page month grid needs a rule for which month, and
+every rule has an ugly case.** Most recent with games, in August, is a month with
+nothing in it on the front door — in the season a newcomer is most likely to
+arrive from a summer link. The calendar's whole value is *navigable range*, and
+one month is the one form that cannot provide it.
+
+**But Kevin's instinct gets the cheap half:** one line under the chips — *"Or
+browse by date →"*, about 40px — makes the calendar discoverable from the front
+door and adds no second index to the page.
+
+## 10.5 Search — deferred, with better reasoning than §7 had
+
+§7 argued from the chip count. **The honest version:** the date case is what the
+calendar is for, and the matchup case is covered by the team page's own game
+list — so once this ships, **no known lookup is uncovered.** That names what
+would reopen the question: a lookup nobody can perform. *First typed input on the
+site* stays in the doc as a real cost.
+
+## 10.6 And the correction belongs to the ranking, not just the entry
+
+CHENG: *"I called C1 the largest structural gap and repeated 4,553 games cannot
+be asked for — straight from `status.md`, unverified. That was a summary I
+treated as a measurement."* 93.3% already reachable makes C1 **real but smaller
+than billed**, and `docs/status.md` should re-rank rather than only re-word.
