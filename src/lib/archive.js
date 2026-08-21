@@ -37,6 +37,20 @@ export function season(gameId) {
   return String(gameId).slice(0, 4);
 }
 
+/**
+ * How a season is WRITTEN: 2023 -> '2023-24'. Takes the season, not a game.
+ *
+ * HERE RATHER THAN IN A PAGE because two pages now print it — the team browse
+ * and the calendar's season tabs — and a season written '2023-2024' on one and
+ * '2023-24' on the other is the kind of divergence nobody files a bug about and
+ * everybody notices. Accepts a string or a number, because `season()` above
+ * returns a string and a page reading the id itself has a number.
+ */
+export function seasonLabel(y) {
+  const n = Number(y);
+  return `${n}-${String(n + 1).slice(2)}`;
+}
+
 export const POPULATION = 'NHL regular season and playoffs';
 
 /**

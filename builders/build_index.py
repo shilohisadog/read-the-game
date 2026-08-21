@@ -244,6 +244,67 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .card .at{margin-top:8px;font-size:.72rem;letter-spacing:.05em;color:var(--muted);
  font-variant-numeric:tabular-nums}
 
+/* THE CALENDAR (C1). In the shared sheet because the learn page's selectors
+   already are: one stylesheet for the pages this builder emits, so there is one
+   place a colour or an edge is defined. */
+.months{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 14px}
+.months a{font-size:.76rem;text-decoration:none;color:var(--muted);padding:3px 8px;
+ border:1px solid var(--edge);border-radius:999px;background:#fff}
+.months a.on{color:#fff;background:var(--ink);border-color:var(--ink);font-weight:700}
+.months a.nil{opacity:.55}
+.months a:hover{border-color:var(--blue);color:var(--blue)}
+.months a.on:hover{color:#fff}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:0 0 14px}
+.cal .dow{font-size:.62rem;letter-spacing:.07em;text-transform:uppercase;
+ color:var(--muted);text-align:center;padding:2px 0}
+.cell{position:relative;display:flex;flex-direction:column;align-items:center;
+ justify-content:center;gap:2px;min-height:54px;padding:12px 2px 4px;
+ background:#fff;border:1px solid var(--edge);border-radius:8px;
+ text-decoration:none;color:inherit}
+.cell .dy{position:absolute;top:2px;left:5px;font-size:.6rem;color:var(--muted);
+ font-variant-numeric:tabular-nums;line-height:1}
+/* THE COUNT WE MAKE CLAIMS ABOUT: full ink, and the only thing in the cell that
+   is ever summed anywhere on this site. */
+.cell .n{font-size:1.1rem;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+/* AND THE ONE WE DO NOT. A dashed edge rather than only a colour, so the
+   difference survives a reader who cannot separate the two hues -- the label
+   itself is under the grid, where there is room to be right about which
+   competition it is. */
+.cell .o{font-size:.64rem;font-weight:700;line-height:1.5;color:var(--muted);
+ border:1px dashed #9fb3c0;border-radius:5px;padding:0 4px;
+ font-variant-numeric:tabular-nums}
+.cell.pad{background:transparent;border:0}
+.cell.void{background:transparent;border-color:transparent}
+a.cell:hover,a.cell:focus-visible{border-color:var(--blue);
+ box-shadow:0 4px 12px rgba(58,90,156,.14)}
+/* A cell is 48px square-ish on a phone, which is all there is. Given room it
+   should look like a calendar rather than a row of flat slots -- 125x54 read as
+   a table with the lines rubbed out. */
+@media (min-width:700px){.cell{min-height:78px}.cell .n{font-size:1.3rem}}
+.offnote{font-size:.84rem;color:var(--muted);margin:0 0 22px;max-width:62ch}
+.offnote b{color:var(--ink);font-weight:650}
+.gk{margin:0 0 7px;font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;
+ color:var(--muted);font-weight:700}
+/* The NAME shouts; the qualifier after it does not. A whole sentence in
+   letter-spaced capitals wrapped to two lines of shouting at 390px. */
+.gk span{text-transform:none;letter-spacing:normal;font-weight:400}
+/* A DEAD END, WHICH IS A STATE AND NOT A LIST. Same furniture as `.limits` --
+   a claim of ours, on the blue edge -- because that is what it is. */
+.dead{background:#fff;border:1px solid var(--edge);border-left:3px solid var(--blue);
+ border-radius:10px;padding:12px 14px;margin:0 0 22px;font-size:.88rem;
+ color:var(--muted);max-width:62ch}
+.dead b{display:block;color:var(--ink);font-weight:650;margin-bottom:2px}
+/* The night list is a MATCHUP and a RESULT; the team page's list leads with a
+   date, which on a page whose heading IS the date would be the same word twice. */
+.games.night a,.games.night .off{grid-template-columns:1fr auto}
+/* A REFUSED ROW STACKS. Its right-hand cell is a sentence, not a score, and
+   `auto` gave it whatever it asked for -- which squeezed "Arizona Coyotes at
+   Los Angeles Kings" into a five-line column beside it. */
+.games.night .off{grid-template-columns:1fr;gap:3px}
+.games.night li.uncounted{border-left:3px dashed #9fb3c0}
+.bydate{margin:14px 0 0;font-size:.9rem}
+.bydate a{color:var(--blue);text-decoration:none;font-weight:600}
+.bydate a:hover{text-decoration:underline}
 .limits{display:grid;gap:11px;margin:0;padding:0;list-style:none}
 .limits li{background:#fff;border:1px solid var(--edge);border-left:3px solid var(--blue);
  border-radius:0 10px 10px 0;padding:12px 16px}
@@ -282,6 +343,37 @@ footer p{margin:0 0 8px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>"""
+
+# THE FOUR THINGS EVERY PAGE SCRIPT ON THIS SITE NEEDS, DEFINED ONCE.
+#
+# They were inline in BODY until the calendar page needed the same four, and a
+# second `when()` in the same file is precisely the divergence this builder's
+# own docstring argues against for the stylesheet. `MON` in particular: two
+# spellings of the month names is how one page says "Feb" and another "February"
+# for a reason nobody can find.
+#
+# ES5 ON PURPOSE, like the page scripts they live in. The inlined modules above
+# them are modern; these are hand-written and match their surroundings.
+HELPERS = r"""  var $ = function (id) { return document.getElementById(id); };
+  var ORIGIN = __ORIGIN__;
+  var MON = ['January','February','March','April','May','June','July','August',
+             'September','October','November','December'];
+
+  function when(d) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || '');
+    return m ? (+m[3]) + ' ' + MON[+m[2] - 1] + ' ' + m[1] : (d || '');
+  }
+  function grab(name) {
+    return fetch(ORIGIN + '/' + name, { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function () { return null; });
+  }
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }"""
 
 BODY = r"""<div class="wrap">
 <p class="eyebrow">Read the Game</p>
@@ -327,6 +419,16 @@ BODY = r"""<div class="wrap">
 <p class="note">Every game each club played, newest first. Arizona became Utah in
 2024 &mdash; both are here, because both played.</p>
 <div class="teams" id="teams"></div>
+<!-- THE SECOND WAY IN, and it is a LINE rather than a second index.
+     CHENG's ruling (docs/discovery.md §10.4): a month grid on the home page
+     needs a rule for which month and every rule has an ugly case -- "most
+     recent" is an empty August on the front door for the newcomer arriving from
+     a summer link, and a calendar's whole value is navigable RANGE, which one
+     month cannot provide. So the grid gets its own page and the front door gets
+     the cheap half: about 40px, discoverable, no second index to attend to.
+     Revealed by drawGrid, so it appears exactly where the chips do and never
+     dangles under an empty div on a team page. -->
+<p class="bydate" id="bydate" hidden><a href="calendar.html">Or browse by date &rarr;</a></p>
 <h2>What this does and does not claim</h2>
 <ul class="limits">
 __LIMITS__
@@ -356,27 +458,7 @@ __LIB__
    for no stated reason. Opened from disk, every fetch fails and the page says so,
    which is honest: a saved copy genuinely has no archive behind it. */
 (function () {
-  var $ = function (id) { return document.getElementById(id); };
-  var ORIGIN = __ORIGIN__;
-  var MON = ['January','February','March','April','May','June','July','August',
-             'September','October','November','December'];
-
-  function when(d) {
-    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || '');
-    return m ? (+m[3]) + ' ' + MON[+m[2] - 1] + ' ' + m[1] : (d || '');
-  }
-  function grab(name) {
-    return fetch(ORIGIN + '/' + name, { cache: 'no-store' })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .catch(function () { return null; });
-  }
-  function el(tag, cls, text) {
-    var n = document.createElement(tag);
-    if (cls) n.className = cls;
-    if (text != null) n.textContent = text;
-    return n;
-  }
-
+__HELPERS__
   /* THE TEAM SET IS A FACT ABOUT THE ARCHIVE, never a typed list. It is 33 today
      because Arizona relocated to Utah inside our window, and a "32 NHL clubs"
      constant would have been wrong on the first day. */
@@ -403,6 +485,7 @@ __LIB__
     var box = $('teams');
     box.textContent = '';
     teamsIn(games).forEach(function (ab) { box.appendChild(chip(ab)); });
+    $('bydate').hidden = false;
   }
 
   /* A team's games, newest first. The first VIEWABLE one is the thing you press
@@ -417,7 +500,8 @@ __LIB__
      game id -- 2025020123 is season 2025-26 -- so it needs no lookup and cannot
      disagree with the id. */
   function seasonOf(id) { return +String(id).slice(0, 4); }
-  function seasonLabel(y) { return y + '-' + String(y + 1).slice(2); }
+  /* `seasonLabel` is in archive.js, because the calendar's season tabs print
+     the same string and two spellings of it is one page saying 2023-2024. */
 
   function drawTeam(ab, games, want) {
     var all = games.filter(function (g) {
@@ -666,7 +750,7 @@ SAYS = ("Every NHL game since 2023, replayed event by event &mdash; with the cou
         "built in front of you, so you can see <b>where a number comes from</b>.")
 
 
-def _lib():
+def _lib(*names):
     """Inline the analysis modules the browser needs, as real source.
 
     THE SAME FILES THE PIPELINE IMPORTS. `inScope` decides which games count here
@@ -674,7 +758,20 @@ def _lib():
     implementation this project keeps almost building. See docs/architecture.md.
     """
     return "\n".join(_module(n) for n in
-                      ("ingest-state.js", "teams.js", "archive.js"))
+                      (names or ("ingest-state.js", "teams.js", "archive.js")))
+
+
+def _competitions():
+    """The gameType table, inlined as JSON for the page.
+
+    THE SAME FILE derive.py READS, never a second copy. derive.py walks the whole
+    archive and is the only thing that can catch a new competition the day it
+    lands -- and it exits non-zero when it finds one this table does not name.
+    A table re-typed in JavaScript would be the copy that quietly disagrees.
+    The `_` key is the file's own explanation of itself and is dropped here.
+    """
+    names = json.loads((ROOT / "data" / "competitions.json").read_text())["names"]
+    return json.dumps(names, sort_keys=True, separators=(",", ":"))
 
 def _workshop():
     return "\n".join(
@@ -879,8 +976,397 @@ def build_workshop():
     return html.replace("__CSP__", _csp(html))
 
 
+# ---------------------------------------------------------------------------
+# THE ARCHIVE BY DATE (C1). docs/discovery.md, and §10 for CHENG's four rulings.
+#
+# WHY A GRID HERE AND A LIST ON THE TEAM PAGE, measured rather than chosen: a
+# team's season fills 40% of a calendar at a maximum of ONE game per cell, so
+# the cell would carry a single bit where the existing list row already carries
+# opponent, result, score and shots. The league fills 68% at a median of 5 and a
+# maximum of 16, where a cell carries a COUNT -- which is what a small box is
+# good at, and whose variation is itself information. So: calendar as the date
+# index, list as the leaf, and no toggle between them.
+#
+# WHY ITS OWN PAGE. A month grid on the home page needs a rule for WHICH month
+# and every rule has an ugly case -- most-recent is an empty August for the
+# newcomer arriving from a summer link, and a calendar's whole value is
+# navigable RANGE, which one month cannot provide (CHENG, §10.4). The front door
+# gets the cheap half instead: one line under the chips.
+#
+# NO BASE RATE ANYWHERE ON IT. The rule, stated precisely in §10.3: the
+# base-rate requirement attaches to selection on an OUTCOME, not to selection. A
+# date selects on nothing about hockey, so there is no claim to contextualise
+# and a percentage here would be the C7 defect -- a comparison the reader did
+# not ask for. The boundary is named in that section: if a cell or a night row
+# ever surfaces an outcome marker, it is back in scope.
+CAL_TITLE = "Every night in the archive — Read the Game"
+CAL_DESC = ("Three seasons of NHL hockey, night by night. Pick a date to see the games "
+            "played on it, including the ones we hold but cannot show.")
+
+CAL_BODY = r"""<div class="wrap">
+<p class="eyebrow">Read the Game</p>
+<h1>Every night in the archive</h1>
+<p class="note">Three seasons of NHL hockey, night by night. Pick a date to see
+the games played on it.</p>
+<main id="main"></main>
+</div>
+<script>
+__LIB__
+/* NOTHING ON THIS PAGE IS BAKED IN -- same rule as the front door, same reason.
+   Pages serves CODE and R2 serves DATA, the nightly moves the archive with no
+   deploy, and a month compiled in here would be a lie by the morning. A failure
+   is a STATE: if the catalog does not arrive the page says so rather than
+   rendering an empty grid that looks like an empty archive. */
+(function () {
+__HELPERS__
+  var NAMES = __NAMES__;
+  var DOW = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  var DAY = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+  /* WHAT A REFUSAL MEANS, IN WORDS. `r` on a catalog row is the GATE that
+     stopped the game, and the gate names are ours -- derive.py mints exactly
+     these two. That is why an unknown one degrades to the raw key here instead
+     of failing a build the way an unknown gameType does: a value the LEAGUE can
+     invent needs a guard where the whole archive is walked, and a value only we
+     can invent is a bug in our own pipeline, which the pipeline is the place to
+     catch. Rendering the key is still better than rendering nothing. */
+  var GATE = {
+    validation: 'a check on the league’s own data did not pass',
+    vocabulary: 'the league’s feed uses a word we have not read yet'
+  };
+  function gateOf(r) { return GATE[r] || ('the ' + (r || 'refused') + ' check stopped it'); }
+
+  /* ⭐ A NAME FROM data/competitions.json IS NEVER INFLECTED, and the first
+     draft of this page inflected it three ways. `plural(n, name + ' game')`
+     printed "4 Olympics games", and the same shape would print "3 playoffs
+     games"; an article gives "in the Olympics" against "in the preseason"; and
+     an adjective would need "Olympic", a word that is not in the table.
+     Those names are DISPLAY names and the table owes us nothing else — adding
+     an adjectival column would be inventing grammar for a value the league can
+     mint at any time, which is the copy version of the same defect.
+     So every sentence here sets the name off with punctuation and lets it stand
+     exactly as written: "not counted here: Olympics", "The dashed count:
+     preseason." It costs a colon and it cannot be wrong for a name we have not
+     seen yet. */
+
+  /* Oxford-free, because these lists are two items long in practice and three
+     at most; "a, b and c" is the site's existing voice. */
+  function join(xs) {
+    return xs.length < 2 ? (xs[0] || '')
+      : xs.slice(0, -1).join(', ') + ' and ' + xs[xs.length - 1];
+  }
+  function plural(n, one) { return n + ' ' + one + (n === 1 ? '' : 's'); }
+
+  /* THE URL GRAMMAR IS READ THE WAY THE FRONT DOOR READS ITS OWN -- a regex over
+     location.search. src/lib/deeplink.js is the GAME page's grammar (period,
+     clock, layer, mode) and means nothing here; borrowing it would make this
+     page depend on a vocabulary it does not speak. */
+  function param(re) { return (re.exec(location.search) || [])[1] || ''; }
+
+  function monthName(m) { return MON[+m.slice(5, 7) - 1] + ' ' + m.slice(0, 4); }
+
+  function crumbTo(href, text) {
+    var p = el('p', 'crumb'), a = el('a', null, text);
+    a.href = href; p.appendChild(a); return p;
+  }
+  function headline(text, aside) {
+    var h = el('div', 'teamhead');
+    h.appendChild(el('h2', null, text));
+    if (aside) h.appendChild(el('span', 'd', aside));
+    return h;
+  }
+
+  /* ---- the month ------------------------------------------------------- */
+
+  function drawMonth(games, month, months, asked) {
+    var main = $('main');
+    main.textContent = '';
+    /* NO CRUMB ON THE MONTH VIEW. The chrome directly above it already says
+       "Watch a game", and a second copy of the same link 40px lower is the
+       home page's old duplicate-funnel defect at smaller scale. The LEAF keeps
+       its crumb, because "back to February 2026" is somewhere the nav cannot
+       take you. */
+    var nights = nightsOf(games);
+    var weeks = monthGrid(games, month, nights);
+    var nhl = 0, held = 0;
+    weeks.forEach(function (w) {
+      w.forEach(function (c) { if (c) { nhl += c.count; held += c.held; } });
+    });
+    main.appendChild(headline(monthName(month),
+      held ? plural(nhl, 'NHL game') + ' this month' : null));
+
+    /* A URL WE CANNOT ANSWER IS SAID OUT LOUD, not silently redirected. A month
+       outside the archive's span has no season tab and no month row to sit in,
+       so the page snaps to one it can draw -- and a snap nobody is told about is
+       a page quietly ignoring what was asked for. */
+    if (asked && asked !== month) {
+      main.appendChild(el('p', 'note',
+        'We hold nothing for ' + monthName(asked) + '. This is ' + monthName(month) + '.'));
+    }
+
+    var withGames = {};
+    nights.forEach(function (n, d) { withGames[monthOf(d)] = 1; });
+
+    var seasons = [], cur = seasonOfMonth(month);
+    months.forEach(function (m) {
+      var y = seasonOfMonth(m);
+      if (seasons.indexOf(y) === -1) seasons.push(y);
+    });
+    seasons.sort(function (a, b) { return b - a; });   /* newest first, as the team page does */
+    var bar = el('p', 'seasons');
+    seasons.forEach(function (y) {
+      var a = el('a', y === cur ? 'on' : null, seasonLabel(y));
+      /* Land on the first month of that season we actually hold a game in --
+         landing on an empty July would make the tab look broken. */
+      var mine = months.filter(function (m) { return seasonOfMonth(m) === y; });
+      var full = mine.filter(function (m) { return withGames[m]; });
+      a.href = '?month=' + (full[0] || mine[0]);
+      bar.appendChild(a);
+    });
+    main.appendChild(bar);
+
+    /* THE OFFSEASON IS SHOWN, NOT SKIPPED. 4 of the 34 months in the span hold
+       no games, and a stepper that hid July would tell a reader the season runs
+       continuously. They are muted and still clickable, and the month they open
+       says plainly that nothing is there. */
+    var row = el('p', 'months');
+    months.filter(function (m) { return seasonOfMonth(m) === cur; }).forEach(function (m) {
+      var cls = (m === month ? 'on' : '') + (withGames[m] ? '' : ' nil');
+      var a = el('a', cls.trim() || null, MON[+m.slice(5, 7) - 1].slice(0, 3));
+      a.href = '?month=' + m;
+      a.setAttribute('aria-label', monthName(m) + (withGames[m] ? '' : ' — no games'));
+      if (m === month) a.setAttribute('aria-current', 'page');
+      row.appendChild(a);
+    });
+    main.appendChild(row);
+
+    /* SAID BEFORE THE GRID, NOT AFTER IT. An empty August is 31 grey day
+       numbers and about 380px of nothing on a phone; a reader should not have
+       to scroll past all of it to be told. The grid still renders, because the
+       offseason IS the fact this stepper exists to show. */
+    if (!held) {
+      main.appendChild(el('p', 'note', 'No games in the archive this month.'));
+    }
+
+    var cal = el('div', 'cal');
+    DOW.forEach(function (d, i) {
+      var s = el('span', 'dow', d);
+      s.setAttribute('aria-label', DAY[i]);
+      cal.appendChild(s);
+    });
+    weeks.forEach(function (week) {
+      week.forEach(function (c) {
+        if (!c) { cal.appendChild(el('span', 'cell pad')); return; }
+        if (!c.held) {
+          var v = el('span', 'cell void');
+          v.appendChild(el('span', 'dy', String(c.day)));
+          cal.appendChild(v);
+          return;
+        }
+        var a = el('a', 'cell');
+        a.href = '?date=' + c.date;
+        a.appendChild(el('span', 'dy', String(c.day)));
+        /* TWO MARKS THAT NEVER ADD (§10.1). The front door promises preseason,
+           the Olympics and the 4 Nations Face-Off are "left out of every number
+           here", so they are a separate mark rather than a term in the count --
+           which keeps 60 otherwise-invisible dates reachable without editing a
+           disclosure to fit a feature. A cell is about 48 CSS px wide on a 390px
+           phone, which holds a number and no label at all, so the competition is
+           named ONCE under the grid. */
+        if (c.count) a.appendChild(el('span', 'n', String(c.count)));
+        if (c.other) a.appendChild(el('span', 'o', String(c.other)));
+        /* THE SCREEN READER GETS THE SENTENCE, not "11 2 2" -- the two counts
+           are distinguished by a dashed border, which is nothing at all to a
+           reader who is not looking at it. Sentences rather than dashes, so the
+           reader hears a full stop where the eye sees a separate box. */
+        var says = [when(c.date)];
+        if (c.count) says.push(plural(c.count, 'NHL game'));
+        if (c.other) {
+          says.push(plural(c.other, 'game') + ' not counted here: '
+            + join(c.types.map(function (t) { return competitionOf(t, NAMES); })));
+        }
+        a.setAttribute('aria-label', says.join('. ') + '.');
+        cal.appendChild(a);
+      });
+    });
+    main.appendChild(cal);
+
+    /* THE DASHED COUNT, NAMED. Nine months in the archive hold out-of-scope
+       games and every one of them holds exactly ONE competition (0 of 9 mix,
+       measured 2026-08-21) -- which is what makes a single sentence enough.
+       It is still built from a list, because that is a fact about today's
+       archive and not a rule the league has agreed to. "Preseason" would be the
+       tempting shorthand and it is wrong on 38 of the 60 dates this makes
+       visible at all. */
+    var oth = otherInMonth(games, month);
+    if (oth.length) {
+      var total = 0;
+      var named = oth.map(function (r) {
+        total += r.games;
+        return competitionOf(r.type, NAMES) + (oth.length > 1 ? ' (' + r.games + ')' : '');
+      });
+      var p = el('p', 'offnote');
+      p.appendChild(el('b', null, 'The dashed count: ' + join(named) + '.'));
+      p.appendChild(el('span', null, ' ' + plural(total, 'game')
+        + ' this month that are in the archive and left out of every number on '
+        + 'this site — so they are never added to the count beside them.'));
+      main.appendChild(p);
+    }
+  }
+
+  /* ---- one night ------------------------------------------------------- */
+
+  function rowsOf(list) {
+    var ul = el('ul', 'games night');
+    list.forEach(function (g) {
+      var li = el('li'), row;
+      if (g.shown) {
+        row = el('a', null);
+        row.href = 'game.html?game=' + g.id;
+      } else {
+        li.className = 'no';
+        row = el('div', 'off');
+      }
+      /* THE SAME DASHED MARK THE CELL USES. A heading scrolls off the top of a
+         twelve-row list; the mark travels with the row, and it is the visual
+         language the grid already taught two clicks ago. */
+      if (g.scope !== 'nhl') li.className += ' uncounted';
+      row.appendChild(el('span', 'm', nameOf(g.a) + ' at ' + nameOf(g.h)));
+      row.appendChild(el('span', 'r', g.shown
+        ? g.as + '–' + g.hs + '  ·  ' + g.ash + '–' + g.hsh + ' shots'
+        : 'Cannot be shown — ' + gateOf(g.r)));
+      li.appendChild(row);
+      ul.appendChild(li);
+    });
+    return ul;
+  }
+
+  function drawNight(games, date, months) {
+    var main = $('main');
+    main.textContent = '';
+    var m = monthOf(date);
+    main.appendChild(crumbTo('?month=' + m, '← ' + monthName(m)));
+
+    var n = nightOf(games, date);
+    main.appendChild(headline(DAY[weekdayOf(date)] + ' ' + when(date),
+      n.held ? plural(n.held, 'game') : null));
+
+    if (!n.held) {
+      main.appendChild(el('p', 'note', 'No games in the archive on this date.'));
+      return;
+    }
+
+    /* A DEAD END IS A STATE, NOT ROWS (CHENG, §10.2). A list of rows nobody can
+       click is a dead end wearing the clothes of a working list. This is on the
+       happy path rather than an edge case: 10 nights hold games and can open
+       none, all 10 are Olympic, and all 10 are reachable only BECAUSE the
+       out-of-scope games are shown at all -- so it is the first thing a reader
+       clicking February 2026 will hit. */
+    /* ONE STRUCTURE FOR BOTH STATES: NHL first, then one group per
+       competition. The rows and the dead state share it so that "none of these"
+       always has the heading directly above it as its antecedent -- the first
+       draft printed the state with no heading whenever the night held a single
+       group, which is 10 of the 10 nights it actually happens on. */
+    var gs = grouped(n.rows);
+    gs.forEach(function (g) {
+      /* ⭐ AN OUT-OF-SCOPE GROUP IS ALWAYS LABELLED, and the first draft got
+         this wrong in the case that matters most. The rule was "a heading when
+         there is more than one group", which is fine for the NHL heading -- a
+         lone "NHL" above the only list names nothing -- and WRONG for the other
+         one, because that label is a DISCLOSURE and not a convenience. 24
+         September 2023 is twelve preseason games and nothing else, so it
+         rendered twelve rows with no statement anywhere that none of them
+         counts. 60 of the 62 out-of-scope dates are that shape.
+         The NHL heading stays conditional; a dead night forces both, because
+         the state sentence below needs an antecedent. */
+      if (!g.nhl || gs.length > 1 || n.dead) {
+        main.appendChild(heading(g));
+      }
+      if (!n.dead) { main.appendChild(rowsOf(g.rows)); return; }
+      var gates = [];
+      g.rows.forEach(function (r) {
+        var t = gateOf(r.r);
+        if (gates.indexOf(t) === -1) gates.push(t);
+      });
+      var p = el('p', 'dead');
+      /* The count is in the heading line above when there is one group, so it
+         is said here only when a group is not the whole night. */
+      p.appendChild(el('b', null, gs.length > 1
+        ? plural(g.rows.length, 'game') + ' · none can be shown'
+        : 'None of these can be shown'));
+      p.appendChild(el('span', null, ' — ' + join(gates)
+        + '. They stay in the archive, because a schedule that hid them would be '
+        + 'a map of our successes.'));
+      main.appendChild(p);
+    });
+  }
+
+  /* The name in the site's group-label voice, with the qualifier after it in
+     ordinary case: a full sentence set in letter-spaced capitals wraps to two
+     lines of shouting, which is what "PRESEASON — IN THE ARCHIVE, AND NOT
+     COUNTED IN ANY NUMBER HERE" looked like at 390px. */
+  function heading(g) {
+    var p = el('p', 'gk', g.nhl ? 'NHL' : g.label);
+    if (!g.nhl) {
+      p.appendChild(el('span', null,
+        ' — in the archive, and not counted in any number here'));
+    }
+    return p;
+  }
+
+  /* NHL first, then one group per competition, in the order the rows arrive --
+     which nightOf has already sorted. */
+  function grouped(rows) {
+    var order = [], by = {};
+    rows.forEach(function (r) {
+      var k = r.scope === 'nhl' ? 'NHL' : competitionOf(r.type, NAMES);
+      if (!by[k]) { by[k] = []; order.push(k); }
+      by[k].push(r);
+    });
+    return order.map(function (k) {
+      return { label: k, nhl: k === 'NHL', rows: by[k] };
+    });
+  }
+
+  /* ---- what was asked for ---------------------------------------------- */
+
+  var askedMonth = param(/[?&]month=(\d{4}-\d{2})(?!\d)/);
+  var askedDate = param(/[?&]date=(\d{4}-\d{2}-\d{2})/);
+
+  grab('catalog.json').then(function (cat) {
+    var games = (cat && cat.games) || [];
+    if (!games.length) {
+      $('main').appendChild(el('p', 'note',
+        'The archive could not be loaded, so there are no dates to show.'));
+      return;
+    }
+    var months = monthsIn(games);
+    if (askedDate) { drawNight(games, askedDate, months); return; }
+    /* THE DEFAULT IS THE MOST RECENT MONTH WE HOLD A GAME IN. `monthsIn` spans
+       the archive, so its last entry is that month by construction -- the rule
+       cannot be typed, and it moves itself when the nightly lands. */
+    var month = months.indexOf(askedMonth) === -1 ? months[months.length - 1] : askedMonth;
+    drawMonth(games, month, months, askedMonth);
+  });
+})();
+</script>"""
+
+
+def build_calendar():
+    html = (CAL_BODY.replace("__LIB__", _lib("teams.js", "archive.js", "calendar.js"))
+                    .replace("__HELPERS__", HELPERS)
+                    .replace("__ORIGIN__", repr(DATA_ORIGIN).replace("'", '"'))
+                    .replace("__NAMES__", _competitions()))
+    html = P.document(html, title=CAL_TITLE, description=CAL_DESC,
+                      url="https://readthegame.co/calendar.html",
+                      current="/calendar.html",
+                      head='<meta http-equiv="Content-Security-Policy" content="__CSP__">\n'
+                           + STYLE)
+    return html.replace("__CSP__", _csp(html))
+
 def build():
     html = (BODY.replace("__LIB__", _lib())
+             .replace("__HELPERS__", HELPERS)
              .replace("__ORIGIN__", repr(DATA_ORIGIN).replace("'", '"'))
              .replace("__SAYS__", SAYS)
              .replace("__LIMITS__", _limits()))
@@ -893,19 +1379,36 @@ def build():
     return html.replace("__CSP__", _csp(html))
 
 def main():
-    # THREE PAGES, ONE BUILDER, AND THE VERIFY COVERS ALL OF THEM. Two sections
+    # FOUR PAGES, ONE BUILDER, AND THE VERIFY COVERS ALL OF THEM. Two sections
     # of the home page became pages of their own; emitting them from a second
     # builder would put the shared stylesheet and the workshop list in two
     # places, which is where the next divergence hides.
     pages = [(OUT, build()),
              (ROOT / "src" / "what-you-can-see.html", build_learn()),
-             (ROOT / "src" / "workshop.html", build_workshop())]
+             (ROOT / "src" / "workshop.html", build_workshop()),
+             (ROOT / "src" / "calendar.html", build_calendar())]
 
     # A link to a file that does not exist is a 404 in production. Cheapest
     # possible gate, run on every build, before the byte comparison.
     missing = [h for h, *_ in WORKSHOP if not (ROOT / "src" / h).exists()]
     if missing:
         print("BROKEN LINKS -- these files do not exist: " + ", ".join(missing))
+        return 1
+
+    # A PLACEHOLDER THAT SURVIVES THE BUILD IS A PAGE WITH A HOLE IN IT, and
+    # this builder shipped one: extracting HELPERS out of BODY substituted it
+    # into the new page and not the old one, so index.html went to disk with the
+    # literal `__HELPERS__` where its script should be. The build said nothing --
+    # `str.replace` cannot fail, it just does not happen. `--verify` could not
+    # see it either, because the byte comparison is against a file built the
+    # same wrong way. test/homepage.test.js caught it, which is luck about which
+    # page broke; this is the check that does not depend on that.
+    left = {n: sorted(set(re.findall(r"__[A-Z][A-Z_]*__", html)))
+            for n, html in ((p.name, h) for p, h in pages)}
+    left = {n: v for n, v in left.items() if v}
+    if left:
+        for name, holes in left.items():
+            print(f"UNSUBSTITUTED PLACEHOLDER in {name}: {', '.join(holes)}")
         return 1
 
     h = lambda s: hashlib.sha256(s.encode()).hexdigest()[:16]

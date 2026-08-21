@@ -336,3 +336,134 @@ CHENG: *"I called C1 the largest structural gap and repeated 4,553 games cannot
 be asked for — straight from `status.md`, unverified. That was a summary I
 treated as a measurement."* 93.3% already reachable makes C1 **real but smaller
 than billed**, and `docs/status.md` should re-rank rather than only re-word.
+
+---
+
+# 11. BUILT — 2026-08-21
+
+`src/calendar.html`, a fourth page from `builders/build_index.py`, plus one line
+under the chips on the front door. Everything in §10 is implemented as ruled.
+Live gates: **637 JS + 148 Python**, `npm run gates` exit 0.
+
+## 11.1 What shipped
+
+| | |
+|---|---|
+| the index | `calendar.html`, month grid, Sunday-first, one cell per day |
+| the leaf | `?date=YYYY-MM-DD` — the night's games, NHL first, out-of-scope grouped and labelled |
+| the stepper | season tabs (newest first, as the team page does) over a month row for that season |
+| the URL | `?month=YYYY-MM` and `?date=YYYY-MM-DD`, read by regex over `location.search` — the front door's grammar, **not** `src/lib/deeplink.js`, which is the GAME page's vocabulary |
+| the front door | *"Or browse by date →"*, revealed by `drawGrid` so it can never dangle under an empty chips div on a team page |
+| the table | `data/competitions.json` inlined at build time — the same file `derive.py` reads, never a second copy |
+
+Two new pure functions, tested in `test/calendar.test.js`: `seasonOfMonth` and
+`otherInMonth`. Thirteen new page tests in `test/calendar-page.test.js`, which
+runs the real inlined script against a fake document; **six mutations were run
+and each was caught by exactly the test named for it.**
+
+## 11.2 Measurements taken before deciding, not after
+
+| | |
+|---|---|
+| dates in the archive | **727** |
+| dates holding out-of-scope games | **62**, of which **60 hold nothing else** |
+| dates mixing two competitions | **0 of 62** |
+| ⭐ **months** mixing two competitions | **0 of 9** |
+| nights holding games where none can be shown | **10**, all Olympic, **0 in scope** |
+| nights holding a shown game and a refused one | **24** |
+| `t` disagreeing with characters 4–6 of the game id | **0 of 4,553** |
+| the month→season rule disagreeing with the id | **0 of 4,553** |
+| a cell at 390px CSS | **48 × 54** · at 1100px, **125 × 78** |
+| the front-door line | **22px**, 26px under the chips (§10.4 estimated ~40px) |
+
+**The 0-of-9 months figure is the one that changed a design.** A cell 48px wide
+holds a number and no label; "3 preseason" needs about 55px and would be false
+on 38 of the 60 dates besides. Because no month mixes competitions, the label
+can be named ONCE under the grid in a single exact sentence — *"The dashed
+count: Olympics."* — and the cell carries only the count. That is a measurement
+buying a simplification, not a compromise chosen to fit a box.
+
+`otherInMonth` still returns a LIST, because 0-of-9 is a fact about today's
+archive and not a rule the league has agreed to.
+
+## 11.3 ⚠️ Two corrections to §10
+
+**§10.2's dead-night span was wrong.** It said the 10 dead nights run
+2026-02-11 → **02-17**. Measured on the live catalog today: 2026-02-11 →
+**02-22**, with 02-16 and 02-19 not among them. The count (10), the cause
+(Olympic) and the ruling are unchanged; the span was not re-derived when it was
+written. Same failure mode as C1's own false premise — see [§10.6].
+
+**§10.1's example is not renderable as written.** CHENG's sketch reads
+`Nov 10, 2023   9 · 2 preseason`. At 390px a cell is 48px and the label does not
+fit. The RULING is implemented exactly — two marks, never summed — and the
+label moved to the one place there is room to be right about it.
+
+## 11.4 ⭐ A name from `competitions.json` is never inflected
+
+The first draft printed **"4 Olympics games"**. The same shape would print
+"3 playoffs games"; an article gives "in the preseason" against "in the
+Olympics"; an adjective would need "Olympic", which is not in the table.
+
+Those are DISPLAY names and the table owes us nothing else. Adding an adjectival
+column would be **inventing grammar for a value the league can mint at any
+time** — the copy version of the defect the gameType guard exists to stop.
+
+So every sentence sets the name off with punctuation and lets it stand exactly
+as written: *"not counted here: Olympics"*, *"The dashed count: preseason."* It
+costs a colon and it cannot be wrong for a name nobody has seen yet.
+
+**It is an invariant, not a style note.** `test/calendar-page.test.js` renders a
+night for **every** name in the table and asserts none is ever followed by
+" game" — including "preseason games", which reads perfectly well. A rule that
+is right for some names by luck is the one that breaks on the next name.
+
+## 11.5 What looking found that the suite could not
+
+Five of these six were invisible to 623 green tests.
+
+1. **⭐ THE DISCLOSURE WENT MISSING ON THE DATES THAT NEED IT.** The group
+   heading rendered only when a night held more than one group — correct for the
+   "NHL" label, wrong for the other one, **because that label is a disclosure
+   and not a convenience.** 24 September 2023 is twelve preseason games and
+   nothing else, so it rendered twelve rows with no statement anywhere that none
+   of them counts. **60 of the 62 out-of-scope dates are that shape**, so the
+   sentence was absent from almost every date §10.1 exists to make visible.
+   Found by opening the page, not by reasoning about it.
+2. **"4 Olympics games"** — §11.4.
+3. **A refused row squeezed the matchup into five lines.** Its right-hand cell
+   is a sentence, not a score, and `grid-template-columns:1fr auto` gave `auto`
+   whatever it asked for. Refused rows now stack.
+4. **A whole sentence in letter-spaced capitals.** `PRESEASON — IN THE ARCHIVE,
+   AND NOT COUNTED IN ANY NUMBER HERE`, wrapping to two lines of shouting. The
+   name shouts; the qualifier after it does not.
+5. **An empty month told you after 31 blank boxes** — about 380px of nothing on
+   a phone before the sentence explaining it. The note moved above the grid; the
+   grid stays, because the offseason IS the fact the stepper exists to show.
+6. **⭐ A PLACEHOLDER SHIPPED, AND NOTHING COULD SEE IT.** Extracting the shared
+   page helpers out of `BODY` substituted them into the new page and not the old
+   one, so `index.html` went to disk with the literal `__HELPERS__` where its
+   script belongs. `str.replace` cannot fail — it just does not happen. **And
+   `--verify` could not catch it, because the byte comparison is against a file
+   built the same wrong way.** `test/homepage.test.js` caught it, which is luck
+   about which page broke. `build_index.py` now refuses to write any page still
+   carrying a `__NAME__` placeholder, and that guard was mutation-checked.
+
+## 11.6 Deliberately not built
+
+- **`u` (unreconciled) is not marked in the night list.** The catalog carries it
+  so a list *can*, and the team page's list does not. Marking it here alone
+  would be a new divergence between two lists of the same archive; the standing
+  disclosure on the game page is where the number is actually read. If it is
+  wanted, it is one change to BOTH lists.
+- **No nav entry.** §10.4 ruled the entry point is the line under the chips.
+  Adding a fifth chrome item changes all ten pages and is a separate call.
+- **No search.** §10.5, unchanged: once this ships, no known lookup is
+  uncovered.
+
+## 11.7 Still open
+
+- **The re-ranking (§10.6) is Kevin's call and has not been touched.**
+- **The front-door disclosure does not name the all-star games** (4 of 4,553).
+  Named in §10.1 as something that gets looked at on its own merits, and it
+  still has not been.

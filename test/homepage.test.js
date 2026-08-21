@@ -152,6 +152,27 @@ const MULTI = { games: [
 ]};
 const MULTI_DOCS = { ...ALL, 'catalog.json': MULTI };
 
+test('the date browse arrives WITH the chips, and never dangles without them', async () => {
+  // C1's front-door entry (docs/discovery.md §10.4). It is revealed by drawGrid
+  // rather than sitting in the markup, and this test is why: `#teams-h`, its
+  // note and the empty `.teams` div all stay on screen when a team is chosen,
+  // so a statically-visible line would hang under an empty box on every team
+  // page saying "or browse by date" for no reason.
+  //
+  // TWO HALVES, AND EITHER ALONE IS SATISFIED BY A BUG. "The script never
+  // touched it" only means hidden if the markup says hidden — so the markup is
+  // asserted too, in the same test, rather than trusted.
+  assert.match(html, /<p class="bydate" id="bydate" hidden>/,
+    'the line is hidden until something reveals it');
+  const front = run({ docs: ALL });
+  await front.settle();
+  assert.equal(front.ids.bydate.hidden, false, 'shown on the front door');
+  const team = run({ search: '?team=BUF', docs: ALL });
+  await team.settle();
+  assert.equal(team.ids.bydate, undefined,
+    'never even asked for on a team page, so the markup’s hidden stands');
+});
+
 test('the team grid is read from the archive, never typed', () => {
   const r = run({ docs: ALL });
   return r.settle().then(() => {

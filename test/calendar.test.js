@@ -10,8 +10,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   competitionOf, monthOf, weekdayOf, daysInMonth,
-  nightsOf, monthsIn, monthGrid, nightOf,
+  nightsOf, monthsIn, monthGrid, nightOf, seasonOfMonth, otherInMonth,
 } from '../src/lib/calendar.js';
+import { season, seasonLabel } from '../src/lib/archive.js';
 
 /**
  * The one table, read from the file derive.py reads.
@@ -231,4 +232,69 @@ test('nightsOf keeps held and shown apart rather than deriving one at the end', 
 test('monthOf is string arithmetic and never a Date', () => {
   assert.equal(monthOf('2023-11-10'), '2023-11');
   assert.equal(monthOf('2024-01-01'), '2024-01');
+});
+
+
+/* ---------------------------------------------------------------------------
+   THE STEPPER: which season a month belongs to, and what a month holds that is
+   never counted. Both exist for the PAGE, and both are arithmetic, so they are
+   tested here rather than looked at.
+   --------------------------------------------------------------------------- */
+
+test('⭐ the month→season rule agrees with the game id, at both boundaries', () => {
+  // THE ONLY ANSWER THAT IS NOT OURS is the one in the id, and this rule is
+  // allowed to disagree with it — silently, filing a game under a tab nobody
+  // will think to check. So the two are compared rather than each pinned to a
+  // literal: a test whose subject is a constant is testing the answer.
+  const june = { id: 2023030417, d: '2024-06-24' };     // a playoff final
+  const july = { id: 2024010001, d: '2024-07-02' };     // hypothetical, and the point
+  for (const g of [june, july]) {
+    assert.equal(seasonOfMonth(monthOf(g.d)), Number(season(g.id)),
+      `${g.d} filed under ${seasonLabel(seasonOfMonth(monthOf(g.d)))}, `
+      + `id says ${seasonLabel(season(g.id))}`);
+  }
+  // And the cutover is where it is claimed to be, not one month either side.
+  assert.equal(seasonOfMonth('2024-06'), 2023);
+  assert.equal(seasonOfMonth('2024-07'), 2024);
+});
+
+test('an out-of-scope count is per GAME, never apportioned between competitions', () => {
+  // THE ARCHIVE HAS NEVER MIXED — 0 of 9 months, measured 2026-08-21 — so this
+  // is the case reality does not supply and the code must still be right for.
+  // An earlier version summed the NIGHT's count once per type present, which
+  // divides: two competitions on one night would have printed 1.5 each.
+  //
+  // THE FIXTURE IS DELIBERATELY LOPSIDED, and it was not the first time. With
+  // 2 preseason and 1 Olympic, biggest-first and lowest-type-first produce the
+  // SAME order, so dropping the count from the sort left this green — a test
+  // that arrives where it already was. The bigger group is now the higher type.
+  const games = [
+    OLY(1, '2024-02-01'), OLY(2, '2024-02-01'), PRE(3, '2024-02-01'),
+    NHL(4, '2024-02-02'),
+  ];
+  assert.deepEqual(otherInMonth(games, '2024-02'),
+    [{ type: 9, games: 2 }, { type: 1, games: 1 }]);
+  // The NHL game is in neither row, and the two rows do not sum to the night.
+  assert.equal(otherInMonth(games, '2024-02').reduce((n, r) => n + r.games, 0), 3);
+});
+
+test('a month with nothing out of scope says so with an empty list, not a zero row', () => {
+  const games = [NHL(1, '2024-03-01'), NHL(2, '2024-03-02')];
+  assert.deepEqual(otherInMonth(games, '2024-03'), []);
+});
+
+test('otherInMonth names no competition — the caller does', () => {
+  // Same guard as the grid's. A label baked in here would be a second copy of
+  // data/competitions.json, which is the whole reason competitionOf takes it.
+  const rows = otherInMonth([PRE(1, '2024-09-24')], '2024-09');
+  assert.deepEqual(Object.keys(rows[0]).sort(), ['games', 'type']);
+  assert.equal(competitionOf(rows[0].type, NAMES), 'preseason');
+});
+
+test('the month a game is in decides its column, not the month asked for', () => {
+  // A row from a neighbouring month must not leak into the count — the same
+  // rule the grid holds for borrowed days, asserted where the arithmetic is.
+  const games = [PRE(1, '2024-09-30'), PRE(2, '2024-10-01')];
+  assert.deepEqual(otherInMonth(games, '2024-09'), [{ type: 1, games: 1 }]);
+  assert.deepEqual(otherInMonth(games, '2024-10'), [{ type: 1, games: 1 }]);
 });

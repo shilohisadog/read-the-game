@@ -186,3 +186,59 @@ export function nightOf(games, date) {
     dead: rows.length > 0 && shown === 0,
   };
 }
+
+/**
+ * The season a MONTH belongs to: '2023-09' -> 2023, '2024-06' -> 2023.
+ *
+ * A DATE RULE, WHICH THE REST OF THIS SITE REFUSES TO USE, and the exception is
+ * earned rather than convenient. `archive.season()` reads the season off the
+ * game id because a date needs a cutover and the cutover is ours to get wrong.
+ * The stepper walks the EMPTY months too — 4 of the 34 in the span have no
+ * games at all — and July has no game to ask, so a rule is the only thing that
+ * can answer for it.
+ *
+ * SO IT WAS CHECKED AGAINST THE ONE ANSWER THAT IS NOT OURS: for every game in
+ * the live catalog, does this rule agree with the season in its id? **0 of 4,553
+ * disagree** (2026-08-21). A disagreement would not crash anything — it would
+ * quietly file a game under the wrong tab, which is the failure that never gets
+ * reported. test/calendar.test.js pins the two boundaries, June and July.
+ */
+export function seasonOfMonth(month) {
+  const [y, m] = String(month).split('-').map(Number);
+  return m >= 7 ? y : y - 1;
+}
+
+/**
+ * What a month holds that is NOT counted anywhere on this site — by raw type.
+ *
+ * WHY THE MONTH AND NOT THE CELL. A cell is about 48 CSS px wide on a 390px
+ * phone (measured: 4vw body padding, 7 columns, 4px gaps), which holds a number
+ * and no label at all. "3 preseason" needs about 55px and would be false on 38
+ * of the 60 dates besides. So the label is named ONCE, under the grid, and the
+ * cell carries only the count.
+ *
+ * THAT ONLY WORKS BECAUSE THE ARCHIVE ALLOWS IT, and it was measured before it
+ * was designed: 9 months hold out-of-scope games and **every one of them holds
+ * exactly one competition** — 0 of 9 mix (2026-08-21). The same is true per
+ * date, 0 of 62. This still returns a LIST, because that is a fact about
+ * today's archive and not a rule the league has agreed to; a month that ever
+ * mixes gets both names printed rather than one of them silently winning.
+ *
+ * COUNTED PER GAME, NOT PER NIGHT, which is why this walks the rows again
+ * instead of summing `nights`. A night carries a SET of types and a single
+ * held-count, so attributing that count to its types means dividing — and
+ * dividing a game count between two competitions would print "1.5 preseason".
+ * Every game knows its own type; nothing has to be apportioned.
+ *
+ * Raw types, never labels — see nightsOf. Sorted by count, then by type, so the
+ * order is stable and the biggest thing is named first.
+ */
+export function otherInMonth(games, month) {
+  const by = new Map();
+  for (const g of games || []) {
+    if (!g || !g.d || inScope(g.id) || monthOf(g.d) !== month) continue;
+    by.set(g.t, (by.get(g.t) || 0) + 1);
+  }
+  return [...by].map(([type, games]) => ({ type, games }))
+    .sort((a, b) => b.games - a.games || a.type - b.type);
+}

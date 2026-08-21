@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-9EDVH9T9sJ520ZKHuRiUKj/2HSMzDxnSmuYTSVfc2Ic='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-W+n/hedlX+fGyW6n1NdbV5hnxDJajbSpyV/BrwEbWFM='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -185,6 +185,67 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .card .at{margin-top:8px;font-size:.72rem;letter-spacing:.05em;color:var(--muted);
  font-variant-numeric:tabular-nums}
 
+/* THE CALENDAR (C1). In the shared sheet because the learn page's selectors
+   already are: one stylesheet for the pages this builder emits, so there is one
+   place a colour or an edge is defined. */
+.months{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 14px}
+.months a{font-size:.76rem;text-decoration:none;color:var(--muted);padding:3px 8px;
+ border:1px solid var(--edge);border-radius:999px;background:#fff}
+.months a.on{color:#fff;background:var(--ink);border-color:var(--ink);font-weight:700}
+.months a.nil{opacity:.55}
+.months a:hover{border-color:var(--blue);color:var(--blue)}
+.months a.on:hover{color:#fff}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:0 0 14px}
+.cal .dow{font-size:.62rem;letter-spacing:.07em;text-transform:uppercase;
+ color:var(--muted);text-align:center;padding:2px 0}
+.cell{position:relative;display:flex;flex-direction:column;align-items:center;
+ justify-content:center;gap:2px;min-height:54px;padding:12px 2px 4px;
+ background:#fff;border:1px solid var(--edge);border-radius:8px;
+ text-decoration:none;color:inherit}
+.cell .dy{position:absolute;top:2px;left:5px;font-size:.6rem;color:var(--muted);
+ font-variant-numeric:tabular-nums;line-height:1}
+/* THE COUNT WE MAKE CLAIMS ABOUT: full ink, and the only thing in the cell that
+   is ever summed anywhere on this site. */
+.cell .n{font-size:1.1rem;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+/* AND THE ONE WE DO NOT. A dashed edge rather than only a colour, so the
+   difference survives a reader who cannot separate the two hues -- the label
+   itself is under the grid, where there is room to be right about which
+   competition it is. */
+.cell .o{font-size:.64rem;font-weight:700;line-height:1.5;color:var(--muted);
+ border:1px dashed #9fb3c0;border-radius:5px;padding:0 4px;
+ font-variant-numeric:tabular-nums}
+.cell.pad{background:transparent;border:0}
+.cell.void{background:transparent;border-color:transparent}
+a.cell:hover,a.cell:focus-visible{border-color:var(--blue);
+ box-shadow:0 4px 12px rgba(58,90,156,.14)}
+/* A cell is 48px square-ish on a phone, which is all there is. Given room it
+   should look like a calendar rather than a row of flat slots -- 125x54 read as
+   a table with the lines rubbed out. */
+@media (min-width:700px){.cell{min-height:78px}.cell .n{font-size:1.3rem}}
+.offnote{font-size:.84rem;color:var(--muted);margin:0 0 22px;max-width:62ch}
+.offnote b{color:var(--ink);font-weight:650}
+.gk{margin:0 0 7px;font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;
+ color:var(--muted);font-weight:700}
+/* The NAME shouts; the qualifier after it does not. A whole sentence in
+   letter-spaced capitals wrapped to two lines of shouting at 390px. */
+.gk span{text-transform:none;letter-spacing:normal;font-weight:400}
+/* A DEAD END, WHICH IS A STATE AND NOT A LIST. Same furniture as `.limits` --
+   a claim of ours, on the blue edge -- because that is what it is. */
+.dead{background:#fff;border:1px solid var(--edge);border-left:3px solid var(--blue);
+ border-radius:10px;padding:12px 14px;margin:0 0 22px;font-size:.88rem;
+ color:var(--muted);max-width:62ch}
+.dead b{display:block;color:var(--ink);font-weight:650;margin-bottom:2px}
+/* The night list is a MATCHUP and a RESULT; the team page's list leads with a
+   date, which on a page whose heading IS the date would be the same word twice. */
+.games.night a,.games.night .off{grid-template-columns:1fr auto}
+/* A REFUSED ROW STACKS. Its right-hand cell is a sentence, not a score, and
+   `auto` gave it whatever it asked for -- which squeezed "Arizona Coyotes at
+   Los Angeles Kings" into a five-line column beside it. */
+.games.night .off{grid-template-columns:1fr;gap:3px}
+.games.night li.uncounted{border-left:3px dashed #9fb3c0}
+.bydate{margin:14px 0 0;font-size:.9rem}
+.bydate a{color:var(--blue);text-decoration:none;font-weight:600}
+.bydate a:hover{text-decoration:underline}
 .limits{display:grid;gap:11px;margin:0;padding:0;list-style:none}
 .limits li{background:#fff;border:1px solid var(--edge);border-left:3px solid var(--blue);
  border-radius:0 10px 10px 0;padding:12px 16px}
