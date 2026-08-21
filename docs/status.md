@@ -36,6 +36,33 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 | A9 | **Bench-minor repair** — my check had refused 864 games | `c815236` |
 | A10 | **Blocked-shot figure is the blocker**, not the shooter | `f9e852b` |
 | A11 | **⭐ C10 — the game opens BEFORE the first play**; the resting frame is a state, not a play | see below |
+| A12 | **⭐ The data was already being cached — in the one form that can be WRONG** | `4285ccc` |
+
+**A12, because it reverses a claim this file's own source made.** Every object in
+R2 carried `Last-Modified` and none carried `Cache-Control`, which is the
+precondition for **heuristic freshness**: RFC 9111 §4.2.2 lets a cache invent a
+lifetime when we decline to state one, and Chrome's is **10% of the object's
+age**. Measured in a real Chromium against production — **5 of 5 data files
+answered with the origin never asked**, 1 ms against a 59–68 ms forced-network
+control on the same URL in the same session.
+
+`derive.yml` **rewrote the whole archive three times in one week**, so a
+returning visitor could hold a number we had already corrected — for up to
+**9 days** on an extract untouched for three months. And `index.json` is where
+the freshness line is read from, so **the site could state a stale claim about
+its own currency**. That is the exact objection CHENG raised *against* caching
+the index; it described the state we were already in.
+
+`no-cache` on every upload plus `r2-cache.yml` to backfill what was already in
+the bucket. **It is not `no-store`:** the response is stored, the body is not
+re-sent, and it is revalidated before every use. **Stated honestly, it COSTS a
+round trip on repeat views** and buys the guarantee that nobody sees a number we
+have fixed — a trade that was invisible while the change was ranked as free.
+
+⚠️ **`docs/asset-caching.md` §8.1 is wrong and is marked so in place.** It read a
+`200` as proof of a download; a response served from the browser's own store is
+reported as `200` too. **The instrument could not separate "fetched again" from
+"never asked for" — opposite states — and the write-up picked one.**
 
 ---
 
