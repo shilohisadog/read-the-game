@@ -1,5 +1,21 @@
 # The per-game sentence
 
+> ⚠️ **EVERY FIGURE BELOW IS FROM AN ARCHIVE OF 4,417 PUBLISHED GAMES AND THE
+> ARCHIVE IS NOW 4,490** (2026-08-21). 73 regular-season and playoff games were
+> being refused because the league's boxscore contradicts the league's own event
+> log; see `docs/status.md` D1. Re-derived, the three base rates are:
+>
+> | | was | now |
+> |---|---|---|
+> | more shot attempts lost | 54.5% of 4,029 | **54.3% of 4,100** |
+> | more shots on goal lost | 45.8% of 3,957 | **45.7% of 4,026** |
+> | more control while level lost | 39.6% of 3,855 | **39.7% of 3,925** |
+>
+> **The reasoning below is unaffected and the numbers in it are not restated** —
+> it is a record of a decision taken against the archive as it stood, and every
+> rate moved by 0.2 points or less. The live figures come from `measures.json`
+> at load time; nothing on the site quotes these.
+
 *For CHENG. §1–§7 were the design argument, put to him before anything was
 built; §8 records what the MEASUREMENT then said, including that a figure used
 five times in §3 was one I invented. Every number now in this file is measured,
