@@ -202,7 +202,28 @@ jobs:
           # The filters discriminate by FILENAME. AWS CLI wildcards match across
           # '/', so `--include 'raw/*/*.json'` would also match the three-segment
           # content paths and defeat the whole point.
+          #
+          # --cache-control ON EVERY UPLOAD, INCLUDING THE RAW FEEDS NOBODY
+          # FETCHES. Measured 2026-08-21: with no Cache-Control at all, a
+          # browser applies HEURISTIC freshness -- 10% of the object's age --
+          # and answers from its own store WITHOUT asking us. Five of five data
+          # files did (1ms against a 59-72ms forced-network control). So a
+          # visitor could be shown a number we had already corrected, and
+          # `derive.yml` rewrote the whole archive three times in one week.
+          #
+          # `no-cache` is not `no-store`: the response is still stored, still
+          # served without re-sending the body, and revalidated before EVERY
+          # use. It is the only setting that is both cheap and never stale, and
+          # it is the only one that requires us to choose no number.
+          #
+          # It goes on the raw objects too. They are content-addressed and could
+          # honestly be `immutable`, but no browser ever fetches them -- so the
+          # header is inert there, while a fourth filter dimension over a
+          # three-pass partition we had to PROVE partitions is a real hazard.
+          # A header that is merely conservative on an object nobody reads costs
+          # nothing; getting the filters wrong costs the ordering guarantee.
           sync() { aws s3 sync ingest/ "s3://${BUCKET}/" \
+                     --cache-control no-cache \
                      --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress "$@"; }
 
           # PROVE THE FILTERS PARTITION BEFORE TRUSTING THEM. The ordering above
@@ -268,6 +289,7 @@ jobs:
           for f in catalog.json index.json; do
             if [ -f "ingest/$f" ]; then
               aws s3 cp "ingest/$f" "s3://${BUCKET}/$f" \
+                --cache-control no-cache \
                 --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress
             fi
           done

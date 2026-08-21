@@ -1,0 +1,138 @@
+# Make the data files revalidate instead of going stale.
+#
+# Run manually: Actions -> "r2 cache" -> Run workflow. Idempotent.
+#
+# WHY THIS IS NEEDED AND WAS NOT OBVIOUS. Every object in R2 carries
+# Last-Modified and none carried Cache-Control. That is the exact precondition
+# for HEURISTIC freshness (RFC 9111 4.2.2): with no explicit policy a browser
+# invents one, and Chrome's is 10% of the object's age. So the data was already
+# being cached -- silently, for a window nobody chose, and in the one form that
+# can be WRONG. A repeat visitor was served our copy without the origin ever
+# being asked.
+#
+# Measured 2026-08-21 in a real Chromium, five of five files, each against a
+# forced-network control on the same URL in the same session:
+#
+#     catalog.json    control 63ms   default 1ms     origin never asked
+#     index.json      control 64ms   default 1ms     origin never asked
+#     measures.json   control 72ms   default 1ms     origin never asked
+#     teams.json      control 59ms   default 1ms     origin never asked
+#     extract/…json   control 61ms   default 1ms     origin never asked
+#
+# `derive.yml` rewrote the whole archive three times in one week -- `sides`, the
+# penalty detail, `miss`. Each rewrite corrects numbers a visitor may be
+# holding, and index.json is the file the freshness line is read from, so the
+# site could state a stale claim about its own currency.
+#
+# WHY curl COULD NOT SEE IT, which is the same trap as r2-cors.yml. curl has no
+# HTTP cache. Hand it an ETag and the origin answers 304 with an empty body --
+# it always could. What that proves is that the capability exists, not that a
+# visitor reaches it. Both times the check we had was blind to the axis in
+# question. The browser probe is `tools/cache-probe.mjs`.
+#
+# WHAT `no-cache` DOES, since the name reads like the opposite. It is not
+# `no-store`. The response IS stored and the body is NOT re-sent; it is simply
+# revalidated before every use. Never stale, still cheap, and it is the only
+# setting that requires us to choose no number -- which matters on a site whose
+# claim is that the numbers are right.
+#
+# WHY A BACKFILL EXISTS AT ALL. `--cache-control` on the nightly upload only
+# stamps objects written after it, and `aws s3 sync` compares size and mtime,
+# not metadata -- so it will never revisit the 4,553 extracts already in the
+# bucket. Those need one deliberate rewrite, which is this.
+#
+# UNLIKE THE CORS POLICY, OUR CREDENTIAL CAN DO THIS. Object metadata is an
+# object write, and the ingest key is scoped to objects. Nothing here needs a
+# bucket-administering token, so nothing here argues for putting one in GitHub.
+name: r2 cache
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: 'Rewrite existing objects to carry Cache-Control. Verify runs either way.'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+env:
+  BUCKET: readthegame
+  DATA: https://data.readthegame.co
+
+jobs:
+  cache:
+    runs-on: ubuntu-latest
+    steps:
+      - name: stamp the objects a browser actually fetches
+        if: inputs.apply
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: |
+          set -euo pipefail
+          ep="--endpoint-url ${{ secrets.S3_API_ENDPOINT }}"
+
+          # ⚠️ --metadata-directive REPLACE REPLACES ALL OF IT, not just the
+          # field named. Omit --content-type here and every one of these files
+          # is rewritten as binary/octet-stream, the fetch stops parsing as
+          # JSON, and the whole site goes dark -- a header change that breaks
+          # the pages it was meant to speed up. It is restated, not preserved.
+          copy() {
+            aws s3 cp "$1" "$1" $ep --no-progress \
+              --metadata-directive REPLACE \
+              --content-type application/json \
+              --cache-control no-cache "${@:2}"
+          }
+
+          # RAW FEEDS ARE DELIBERATELY NOT TOUCHED. They are content-addressed
+          # and immutable, no browser fetches them, and rewriting hundreds of
+          # megabytes of an append-only archive to add a header nobody reads is
+          # the wrong trade. The nightly stamps new ones because that is free;
+          # the old ones stay as they are, inert either way.
+          echo "== the four documents"
+          for f in catalog.json index.json measures.json teams.json; do
+            copy "s3://${BUCKET}/$f"
+            echo "   $f"
+          done
+
+          echo "== the extracts (this is the slow one)"
+          copy "s3://${BUCKET}/extract/" --recursive
+          echo "   done"
+
+      # Rewriting and assuming it took is not verification -- the lesson the
+      # deploy gate and the CORS policy both had to learn. Ask from outside.
+      - name: prove the header is there
+        run: |
+          set -uo pipefail
+          fail=0
+          probe() {
+            h=$(curl -sS -D - -o /dev/null -m 20 "${DATA}/$1?cb=${GITHUB_RUN_ID}" | tr -d '\r')
+            cc=$(echo "$h" | grep -i '^cache-control:' | cut -d' ' -f2-)
+            ct=$(echo "$h" | grep -i '^content-type:'  | cut -d' ' -f2-)
+            et=$(echo "$h" | grep -ic '^etag:')
+            printf '  %-30s cache-control=%-12s content-type=%-18s etag=%s\n' "$1" "${cc:-<none>}" "${ct:-<none>}" "$et"
+            case "$cc" in *no-cache*) ;; *) echo "::error::$1 carries no no-cache"; fail=1 ;; esac
+            # THE CONTENT-TYPE CHECK IS NOT DECORATION. It is the thing the
+            # REPLACE directive can silently destroy, and a wrong one breaks
+            # every page while every cache header still reads correct.
+            case "$ct" in application/json*) ;; *) echo "::error::$1 lost its content-type: $ct"; fail=1 ;; esac
+            # A validator is what makes no-cache cheap rather than merely
+            # correct: with no ETag the revalidation cannot answer 304 and the
+            # whole body crosses the wire every single time.
+            [ "$et" = 1 ] || { echo "::error::$1 has no ETag — revalidation would re-send the body"; fail=1; }
+          }
+          for f in catalog.json index.json measures.json teams.json; do probe "$f"; done
+          probe "extract/$(curl -sS -m 30 "${DATA}/catalog.json" \
+            | python3 -c 'import json,sys; print(next(g["id"] for g in json.load(sys.stdin)["games"] if g.get("v")==1))').json"
+
+          # AND SAY WHAT THIS CANNOT SEE. curl has no cache, so every line above
+          # would print identically whether or not a real browser benefits. This
+          # step proves the header is served. Only tools/cache-probe.mjs proves
+          # a visitor revalidates instead of going stale, and it needs a browser.
+          echo
+          echo "  headers verified. BROWSER BEHAVIOUR IS NOT VERIFIED HERE —"
+          echo "  run: node tools/cache-probe.mjs   (see the file for why curl cannot)"
+          [ "$fail" = 0 ] || exit 1

@@ -113,7 +113,14 @@ jobs:
             echo "::error::derive published nothing — refusing to advertise an empty archive"
             exit 1
           fi
+          # `no-cache` because THIS is the workflow that corrects numbers. It
+          # rewrites extracts a visitor may already be holding, and with no
+          # Cache-Control a browser serves its copy for 10% of the object's age
+          # without ever asking -- measured, 1ms against a 61ms network control.
+          # The correction would land in the bucket and not on the screen.
+          # See docs/asset-caching.md §9.
           aws s3 sync ingest/extract/ "s3://${BUCKET}/extract/" \
+            --cache-control no-cache \
             --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress
           # THE CATALOG NEVER SHRINKS. Nothing is ever removed from it -- a
           # refused game keeps its row and says which gate stopped it -- so a
@@ -136,6 +143,7 @@ jobs:
           # Both advertising documents go after the extracts they point at.
           for f in catalog.json measures.json teams.json index.json; do
             aws s3 cp "ingest/$f" "s3://${BUCKET}/$f" \
+              --cache-control no-cache \
               --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress
           done
           echo "synced"

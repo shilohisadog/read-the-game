@@ -120,6 +120,12 @@ was right, and closing it changed the recommendation more than his review did.
 
 ## 8.1 ⭐ `no-cache` dissolves Q1 entirely — it is not `no-store`
 
+> ⚠️ **THE SECOND HALF OF THIS SECTION IS WRONG AND §9 CORRECTS IT.** The
+> conclusion — use `no-cache` — survives; the reason given for it does not.
+> *"The response is not stored"* was inferred from a 200, and it is false: the
+> responses **are** stored and served without revalidating. Left standing
+> rather than edited, because the shape of the error is the lesson.
+
 Two measurements, and they only mean something together.
 
 **The origin honours conditional requests.** Hand it the ETag and it answers:
@@ -132,6 +138,11 @@ If-Modified-Since: <lastmod>  -> HTTP 304, body 0 bytes
 **The browser never sends one.** Three navigations in one context — including
 the *same* extract URL twice — and every data request was a **200 with a full
 body**. Nothing 304s in practice.
+
+⚠️ **That last sentence reads a 200 as proof of a download, and it is not one.**
+A response served from the browser's own store is *also* reported as 200. The
+measurement could not tell "fetched again" from "never asked for", and §9 shows
+it was the second one all along.
 
 The cause is the absence of `Cache-Control`: with no freshness directive the
 response is not stored, and a response that was never stored has nothing to
@@ -241,3 +252,97 @@ Discovery makes (b) worth more: almost nobody navigates game-to-game today
 because there is no way to find a second game. C1 makes (b) matter; (b) does
 nothing for C1. Add the ETag on HTML alongside (a) — it is nearly free and it
 helps the one URL everybody hits.
+
+
+---
+
+# 9. ⭐ The premise was wrong: it was already cached, in the dangerous way
+
+**Measured 2026-08-21, in a real Chromium, before any change was made.** This
+reverses §8.1's diagnosis, and with it the *reason* for doing (a). The action is
+unchanged; the cost is not.
+
+## 9.1 What is actually happening
+
+Every object in R2 carries `Last-Modified`. None carried `Cache-Control`. That is
+the precondition for **heuristic freshness** — RFC 9111 §4.2.2 lets a cache
+invent a lifetime when we decline to state one, and Chrome's is **10% of the
+object's age**.
+
+So the data was never uncacheable. It was cached **for a window nobody chose**,
+and served **without the origin being asked at all**:
+
+| file | forced-network control | default fetch | the origin was |
+|---|---|---|---|
+| `catalog.json` | 63 ms | **1 ms** | never asked |
+| `index.json` | 68 ms | **1 ms** | never asked |
+| `measures.json` | 66 ms | **1 ms** | never asked |
+| `teams.json` | 59 ms | **1 ms** | never asked |
+| `extract/<id>.json` | 59 ms | **1 ms** | never asked |
+
+**5 of 5.** One millisecond is not a network round trip. The control column is
+the same URL in the same session forced to the network, so the probe is shown to
+be able to see a fetch on every row it reports.
+
+## 9.2 Why this is a correctness problem, not a performance one
+
+`derive.yml` **rewrote the whole archive three times in one week** — `sides`, the
+penalty detail, `miss`. Each rewrite corrects numbers for games already
+published. Under heuristic freshness a returning visitor keeps our previous
+answer, and the window grows with the file's age:
+
+| the object was last written | it can be served stale for up to |
+|---|---|
+| 7 days ago | 0.7 days |
+| 30 days ago | 3 days |
+| 90 days ago | 9 days |
+
+**And `index.json` is where the freshness line is read from** — so the site can
+state a stale claim about its own currency. That is precisely the objection
+CHENG raised against caching the index in his Q1 answer. It turns out to
+describe **the state we were already in**, arrived at by not choosing.
+
+## 9.3 What (a) actually buys, stated honestly
+
+`no-cache` does not add caching here. **It bounds caching that was already
+happening.**
+
+| | today (heuristic) | with `no-cache` | content-hashed + `immutable` |
+|---|---|---|---|
+| repeat fetch cost | ~0 ms | **one round trip** | ~0 ms |
+| can serve a corrected number stale | **yes, silently** | no | no |
+| requires us to choose a number | no — Chrome chooses | no | no |
+
+So (a) **costs a round trip per data file on repeat views** and buys the
+guarantee that nobody is ever shown a number we have already fixed. That trade
+was not visible when the change was ranked as free, and it is the trade to
+weigh — but the round trip lands next to a **106 KB HTML document that carries
+no validator at all** (§8.5), so it is a small term beside one we cannot remove.
+
+**The right end state is the third column**, and this finding promotes it from an
+optimisation to the actual goal: content-hashed data URLs are the only option
+that is both free and never stale.
+
+## 9.4 Two instrument failures on the way here, both worth keeping
+
+**`transferSize` read 0 for a fetch that provably hit the network.** Resource
+Timing blanks every *size* field for a cross-origin response with no
+`Timing-Allow-Origin`, and R2 sends none — so the field reads 0 whether the
+bytes crossed an ocean or came from disk. Two measurements built on it said
+"zero bytes" and meant nothing. **Duration is not blanked**, and it separates the
+two cases by sixty times.
+
+**And the deeper one: a 200 was read as proof of a download.** A response served
+from the browser's own store is reported as 200 as well. §8.1 concluded *"nothing
+is stored"* from an observation that is equally consistent with *"everything is
+stored and never revalidated"* — the exact opposite state. **The instrument could
+not distinguish the two hypotheses, and the write-up picked one.**
+
+The fix is the same one that worked on the ends flip: **a control that must
+differ.** Forcing `cache: 'reload'` on the same URL in the same session gives a
+row whose answer is known in advance, so a probe that cannot see the network is
+caught in the output rather than in a conclusion.
+
+> Same shape as the CORS defect, and this is now the second time: **curl has no
+> browser cache, exactly as curl applies no CORS.** Both times the check we had
+> was blind to the axis in question, went green, and read as coverage.
