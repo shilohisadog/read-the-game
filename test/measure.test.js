@@ -15,7 +15,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { measureGame, stable, firstAtClock, endedIn } from '../builders/measure.mjs';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { measureGame, stable, firstAtClock, endedIn, measureAll } from '../builders/measure.mjs';
+import { TEAMS } from '../src/lib/teams.js';
 import { summarise } from '../src/lib/archive.js';
 import { teamSeasons } from '../src/lib/team-season.js';
 
@@ -26,7 +30,11 @@ import { teamSeasons } from '../src/lib/team-season.js';
  * keeps paying for.
  */
 const TIER = [
-  'archive.js', 'attribution.js', 'layer.js', 'rink.js', 'strength.js', 'team-season.js', 
+  'archive.js', 'attribution.js', 'layer.js', 'rink.js', 'strength.js', 'team-season.js',
+  // teams.js joined the tier when measure.mjs started checking that every club
+  // in the archive has an entry. THIS TEST CAUGHT THAT IMPORT, which is the
+  // list working: the guard was added and the tier went stale in the same edit.
+  'teams.js',
   'layers/blocked.js', 'layers/corsi.js', 'layers/danger.js', 'layers/goaltending.js',
   'layers/tied.js',
 ];
@@ -508,4 +516,55 @@ test('an empty archive measures NOTHING per team, rather than zero', () => {
   assert.deepEqual(t.seasons, {});
   assert.equal(t.archive.saveFraction.rate, null);
   assert.equal(t.archive.slotShare.rate, null);
+});
+
+
+/* ---------------------------------------------------------------------------
+ * THE TABLE NOBODY DERIVES, CHECKED WHERE THE ARCHIVE IS
+ *
+ * teams.js claimed "the next relocation or expansion team fails loudly instead
+ * of rendering a blank chip". It did not: the completeness test in
+ * test/teams.test.js compares TEAMS to a hand-pinned fixture, so a new club
+ * would have rendered grey and left every check green until a human re-pinned
+ * the list. Same hole an unnamed gameType sat in, one file over.
+ *
+ * The driver is the only thing that walks every extract, so the day-it-happens
+ * half of the guard lives here.
+ * ------------------------------------------------------------------------- */
+
+test('a club the team table has never heard of is reported by name', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'rtg-clubs-'));
+  const g = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url), 'utf8'));
+  g.game = { id: 2025020001, date: '2026-01-10', type: 2, src: {} };
+  g.teams.home.ab = 'PDX';            // an expansion club, exactly the case
+  writeFileSync(join(dir, '2025020001.json'), JSON.stringify(g));
+  const { unnamedClubs } = measureAll(dir);
+  assert.deepEqual(unnamedClubs, ['PDX']);
+});
+
+test('and a full archive of known clubs reports none', () => {
+  // MUTATION GUARD. A check that fired on every run would be turned off within
+  // a week, and then the expansion team would arrive invisibly.
+  const dir = mkdtempSync(join(tmpdir(), 'rtg-clubs-'));
+  const g = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url), 'utf8'));
+  g.game = { id: 2025020001, date: '2026-01-10', type: 2, src: {} };
+  writeFileSync(join(dir, '2025020001.json'), JSON.stringify(g));
+  const { unnamedClubs } = measureAll(dir);
+  assert.deepEqual(unnamedClubs, []);
+  assert.ok(TEAMS[g.teams.home.ab] && TEAMS[g.teams.away.ab],
+            'the fixture must use clubs the table names, or this proves nothing');
+});
+
+test('a club is collected even from a game that is OUT OF SCOPE', () => {
+  // A relocation is likeliest to show up first in preseason, and those games
+  // never enter a computed number — so collecting only measured games would
+  // make the check blindest exactly where the club first appears.
+  const dir = mkdtempSync(join(tmpdir(), 'rtg-clubs-'));
+  const g = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url), 'utf8'));
+  g.game = { id: 2025010001, date: '2025-09-24', type: 1, src: {} };   // preseason
+  g.teams.away.ab = 'PDX';
+  writeFileSync(join(dir, '2025010001.json'), JSON.stringify(g));
+  const { records, unnamedClubs } = measureAll(dir);
+  assert.equal(records.length, 0, 'the preseason game is correctly not measured');
+  assert.deepEqual(unnamedClubs, ['PDX'], 'and its club is still seen');
 });

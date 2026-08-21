@@ -65,6 +65,21 @@ def _competitions():
     """
     return json.loads((ROOT / "data" / "competitions.json").read_text())["names"]
 
+
+def _vocabulary_seen():
+    """Values we have looked at and deliberately left unnamed, by field.
+
+    `noted` forgives a value that cannot reach a number and records it -- correct,
+    and for a long time the whole story: 23 stoppage reasons were forgiven on
+    every run while the workflow printed a count and stayed green. A record
+    nobody is alerted by is the gap an unnamed gameType sat in, one field over.
+
+    So the alarm is on DRIFT. Twenty-three known values are not news; a
+    twenty-fourth is.
+    """
+    return {k: set(v) for k, v in json.loads(
+        (ROOT / "data" / "vocabulary-seen.json").read_text())["seen"].items()}
+
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import extract as E
 import fetch_nhl as F   # the storage layout, defined once. Imports open no socket.
@@ -200,6 +215,14 @@ class Report:
                     self.types.items(), key=lambda kv: (kv[0] is None, kv[0]))},
                 "unnamedTypes": sorted(str(k) for k in self.types
                                        if str(k) not in _competitions()),
+                # Forgiven values NOBODY HAS LOOKED AT YET, as opposed to the
+                # ones in data/vocabulary-seen.json that we decided to render
+                # raw on purpose. This is the difference between a ledger and
+                # an alarm.
+                "unseenVocabulary": {
+                    k: sorted(set(v) - _vocabulary_seen().get(k, set()))
+                    for k, v in sorted(self.noted.items())
+                    if set(v) - _vocabulary_seen().get(k, set())},
                 "blocking": blocking, "failedChecks": failed,
                 "refusedGames": sorted(int(g) for g in self.refused),
                 "reasons": {g: r["detail"] for g, r in sorted(self.refused.items())}}
@@ -418,6 +441,7 @@ def _write_ledger(store, idx, rep, stamp):
         "unreconciled": rep.unreconciled,
         "gameTypes": d["gameTypes"],
         "unnamedTypes": d["unnamedTypes"],
+        "unseenVocabulary": d["unseenVocabulary"],
         # Present even when empty, so a reader can tell "we checked and found
         # none" from "this version did not check" -- the same distinction
         # lastRun exists to make one layer up.
@@ -463,13 +487,24 @@ def main():
     # published in full and the RUN goes red, the same shape the ingest uses for
     # a partial fetch. Withholding real hockey over a missing display name is
     # the mistake the 73 refused games already were.
+    #
+    # THE SAME RULE, ONE FIELD OVER. A vocabulary value the feed has never shown
+    # us before is news; the ones we have already looked at and chose to render
+    # verbatim are not. Alarm on drift, never on the count -- a check that fired
+    # on all 23 every night would be switched off within a week, and then the
+    # twenty-fourth would arrive invisibly.
+    bad = bool(out.get("unnamedTypes")) or bool(out.get("unseenVocabulary"))
     if out.get("unnamedTypes"):
         print(f"\n::error::the archive holds gameType {out['unnamedTypes']} and "
               f"data/competitions.json does not name it. The games are published; "
               f"add the name so the calendar stops rendering it raw.",
               file=sys.stderr)
-        return 1
-    return 0
+    if out.get("unseenVocabulary"):
+        print(f"\n::error::the feed used vocabulary we have never seen: "
+              f"{json.dumps(out['unseenVocabulary'])}. The games are published and "
+              f"the value renders verbatim; look at it, then either give it prose "
+              f"or add it to data/vocabulary-seen.json.", file=sys.stderr)
+    return 1 if bad else 0
 
 
 if __name__ == "__main__":

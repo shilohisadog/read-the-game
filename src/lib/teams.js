@@ -14,9 +14,25 @@
  * archive covers: ARI played 82 games in 2023-24 and none after, UTA begins in
  * 2024-25. A "32 NHL clubs" list would have been wrong on the first day. The set
  * the page renders is read from the CATALOG, never from this file — this file only
- * has to be able to answer for whatever the catalog contains, and the test asserts
- * exactly that. The next relocation or expansion team fails loudly instead of
- * rendering a blank chip.
+ * has to be able to answer for whatever the catalog contains.
+ *
+ * ⚠️ THIS PARAGRAPH USED TO END "the next relocation or expansion team fails
+ * loudly instead of rendering a blank chip", AND THAT WAS NOT TRUE. The
+ * completeness test compares this table to a hand-pinned fixture, so a new club
+ * would have rendered as a grey chip and every check would have stayed green
+ * until a human re-pinned the list. It failed loudly only AFTER somebody noticed,
+ * which is the opposite of what the sentence promised.
+ *
+ * It is true now, and not because of that test. `builders/measure.mjs` walks
+ * every extract, collects the abbreviations the archive actually contains, and
+ * exits non-zero naming any club with no entry here — after writing measures.json
+ * and teams.json, because a missing NAME cannot change a number and withholding
+ * the archive over one would be the mistake the 73 refused games already were.
+ * The unit test below is the edit-time half; that is the day-it-happens half.
+ *
+ * The rule it came from, which cost a day to learn: A VALUE THE LEAGUE CAN
+ * INVENT NEEDS A CHECK WHERE THE WHOLE ARCHIVE IS WALKED, not a unit test
+ * holding a copy of last year's answer. See data/competitions.json.
  */
 
 /** ab -> { name, colour }. `colour` is the club's primary, for a chip background. */

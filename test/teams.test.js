@@ -24,6 +24,14 @@ import { TEAMS, NOTES, inkOn, nameOf, colourOf, NEUTRAL, contrast } from '../src
  * Pinned as a fixture rather than fetched: a test that reaches the network fails
  * for reasons that are not about the code. When the league adds a team this list
  * is what has to change, deliberately, alongside TEAMS.
+ *
+ * ⚠️ AND THAT IS THE LIMIT OF WHAT THIS FILE CAN DO. A pinned list cannot notice
+ * a club it has never been told about: an expansion team would arrive, render as
+ * a grey chip, and leave every test here green until a human re-pinned the list
+ * above. This is the EDIT-TIME half of the guard, and it was mistaken for the
+ * whole of it — teams.js said so in a sentence that has now been corrected.
+ * The day-it-happens half is in `builders/measure.mjs`, which walks the real
+ * archive and exits non-zero on a club with no entry.
  */
 const IN_ARCHIVE = [
   'ANA', 'ARI', 'BOS', 'BUF', 'CAR', 'CBJ', 'CGY', 'CHI', 'COL', 'DAL', 'DET',

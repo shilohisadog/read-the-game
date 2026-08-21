@@ -1,0 +1,53 @@
+{
+  "_": [
+    "VALUES THE FEED HAS SHOWN US THAT WE DELIBERATELY DID NOT NAME.",
+    "",
+    "Not the same thing as KNOWN_STOPPAGES and friends in builders/extract.py.",
+    "Those are VETTED: a value there has been read, understood, and given prose",
+    "somewhere. This file is ACKNOWLEDGED: we have seen it, it cannot change any",
+    "number, and rendering it verbatim is more honest than inventing a label --",
+    "which is what src/lib/layers/whistle.js already says about its own table.",
+    "",
+    "WHY IT HAS TO EXIST AT ALL. derive.py forgives these and records them in",
+    "index.json under `noted`, and for a long time that was the whole story: 23",
+    "values were being forgiven on every run and the workflow printed a count.",
+    "A record nobody is alerted by is the same gap an unnamed gameType sat in.",
+    "",
+    "So the alarm is on DRIFT, not on the count. Twenty-three known values are",
+    "not news; a twenty-fourth is. derive.py exits non-zero when `noted` holds",
+    "anything absent from this file -- after publishing, because none of this can",
+    "reach a number and withholding the archive over a label is the mistake the",
+    "73 refused games already were.",
+    "",
+    "TO ADD ONE: look at it first. If it deserves prose it belongs in extract.py",
+    "and whistle.js instead, and this file is where it goes only once you have",
+    "decided that rendering it raw is the right answer."
+  ],
+  "seen": {
+    "stoppage reason": [
+      "chlg-hm-goal-interference",
+      "chlg-hm-missed-stoppage",
+      "chlg-hm-off-side",
+      "chlg-hm-puck-over-glass",
+      "chlg-league-goal-interference",
+      "chlg-league-missed-stoppage",
+      "chlg-league-off-side",
+      "chlg-vis-missed-stoppage",
+      "chlg-vis-off-side",
+      "chlg-vis-puck-over-glass",
+      "clock-problem",
+      "goalie-puck-frozen-played-from-beyond-center",
+      "ice-problem",
+      "ice-scrape",
+      "net-dislodged-by-goaltender",
+      "net-dislodged-offensive-skater",
+      "objects-on-ice",
+      "official-injury",
+      "player-equipment",
+      "premature-substitution",
+      "rink-repair",
+      "skater-puck-frozen",
+      "switch-sides"
+    ]
+  }
+}

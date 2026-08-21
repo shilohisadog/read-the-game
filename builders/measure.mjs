@@ -31,6 +31,7 @@ import { goaltending } from '../src/lib/layers/goaltending.js';
 import { shootingTeam, SHOT_TYPES } from '../src/lib/attribution.js';
 import { inScope, summarise } from '../src/lib/archive.js';
 import { teamSeasons } from '../src/lib/team-season.js';
+import { TEAMS } from '../src/lib/teams.js';
 
 /**
  * How the game ended, read from the league's own period type.
@@ -170,6 +171,19 @@ export function measureAll(dir) {
   const records = [];
   const skipped = [];
   const drawFirst = [];
+  /* EVERY CLUB THE ARCHIVE CONTAINS, so the one table nobody derives can be
+     checked against it HERE rather than against a hand-pinned list in a unit
+     test. teams.js claims "the next relocation or expansion team fails loudly
+     instead of rendering a blank chip" and that was not true: its completeness
+     test compares TEAMS to a fixture a human has to re-pin, so a new club
+     renders as a grey chip and everything stays green until someone notices.
+
+     This is the same hole `gameType` sat in. The rule it cost us: a value the
+     LEAGUE can invent needs a check where the whole archive is walked, not in a
+     unit test holding a copy of last year's answer. Collected over every
+     extract, in scope or not — a club that only ever played a preseason game
+     still gets a chip. */
+  const clubs = new Set();
   for (const f of readdirSync(dir).sort()) {
     if (!f.endsWith('.json')) continue;
     const g = JSON.parse(readFileSync(join(dir, f), 'utf8'));
@@ -178,13 +192,14 @@ export function measureAll(dir) {
     // game resolves through the same code as any other.
     const bad = firstAtClock(g.events);
     if (bad.length) drawFirst.push({ id: g.game.id, at: bad });
+    clubs.add(g.teams.home.ab); clubs.add(g.teams.away.ab);
     // Out of scope is not a fault and not a skip — it is the settled rule that
     // preseason, the Olympics and the 4 Nations never enter a computed number.
     if (!inScope(g.game.id)) continue;
     if (!g.quoted) { skipped.push(g.game.id); continue; }
     records.push(measureGame(g));
   }
-  return { records, skipped, drawFirst };
+  return { records, skipped, drawFirst, unnamedClubs: [...clubs].filter(ab => !TEAMS[ab]).sort() };
 }
 
 /** JSON with object keys sorted, so the file is a function of its input alone. */
@@ -205,7 +220,7 @@ function main(argv) {
     console.error(`::error::no extracts at ${dir} — nothing to measure`);
     process.exit(1);
   }
-  const { records, skipped, drawFirst } = measureAll(dir);
+  const { records, skipped, drawFirst, unnamedClubs } = measureAll(dir);
   const doc = { ...summarise(records), measured: records.length };
   // NO TIMESTAMP, and KEYS SORTED. Same extracts in, same bytes out, so any diff
   // on a re-run is a real change of opinion or of data — the same property
@@ -217,6 +232,16 @@ function main(argv) {
   // job here too — no timestamp, keys sorted, same extracts in, same bytes out.
   const teams = teamSeasons(records);
   writeFileSync(join(out, 'teams.json'), stable(teams));
+  /* LOUD, AND AFTER EVERYTHING IS WRITTEN. A club with no entry cannot change a
+     number — the rates are computed from ids, not abbreviations — so this is a
+     naming gap and not a data fault, and withholding the archive over one would
+     be the mistake the 73 refused games already were. Same shape and same
+     reason as the unnamed gameType check in derive.py. */
+  if (unnamedClubs.length) {
+    console.error(`::error::the archive contains ${unnamedClubs.join(', ')} and `
+      + 'src/lib/teams.js has no entry — they render as grey chips with no name. '
+      + 'Add them; the measures are written and correct.');
+  }
   const r = doc.baseRates;
   console.log(JSON.stringify({
     measured: records.length,
@@ -226,6 +251,8 @@ function main(argv) {
       [k, v.rate == null ? null : `${(v.rate * 100).toFixed(1)}% of ${v.n}`])),
     seasons: Object.fromEntries(Object.entries(teams.seasons).map(([y, t]) =>
       [y, `${Object.keys(t).length} teams`])),
+    clubs: [...new Set(records.flatMap(r => [r.homeAb, r.awayAb]))].length,
+    unnamedClubs,
     archive: Object.fromEntries(Object.entries(teams.archive).map(([k, v]) =>
       [k, v.rate == null ? null : `${(v.rate * 100).toFixed(2)}% of ${v.n}`])),
   }, null, 2));
@@ -241,6 +268,11 @@ function main(argv) {
     console.log(`  ${skipped.length} in-scope extracts carry no quoted boxscore `
               + `and were NOT measured: ${skipped.slice(0, 5).join(', ')}…`);
   }
+  // THE EXIT CODE IS THE ALERT. An `::error::` line with a zero exit is a green
+  // check with a red message in it, which is the same "recorded but nobody is
+  // told" gap this guard exists to close — measures.json and teams.json are
+  // already on disk by the time we get here.
+  if (unnamedClubs.length) process.exit(1);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) main(process.argv.slice(2));

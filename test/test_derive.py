@@ -814,6 +814,77 @@ class ANewCompetitionIsAnEventNotNoise(unittest.TestCase):
         self.assertEqual(names["19"], "4 Nations")
 
 
+class ForgivenessIsRecordedAndDriftIsLOUD(unittest.TestCase):
+    """`noted` was a ledger. It needed to also be an alarm.
+
+    23 stoppage reasons are forgiven on every live run -- `ice-scrape`,
+    `switch-sides`, ten flavours of coach's challenge -- and each renders
+    verbatim, which whistle.js is right about: inventing a rule explanation for
+    a value nobody has read would be the guess this project refuses everywhere
+    else. What was missing is that nothing was TOLD. The workflow printed a
+    count and stayed green, which is exactly the hole an unnamed gameType sat in.
+
+    So the alarm is on DRIFT. Twenty-three known values are not news; a
+    twenty-fourth is. A check that fired on all 23 every night would be switched
+    off within a week and the twenty-fourth would arrive invisibly.
+    """
+
+    def index(self, store):
+        return json.loads(store.get("index.json").decode())
+
+    def stoppage(self, reason):
+        return pbp_bytes(plays=regulation_plays() + [
+            play("stoppage", 150, reason=reason, eventOwnerTeamId=30)])
+
+    def test_a_value_we_have_already_looked_at_is_silent(self):
+        # `ice-scrape` is in data/vocabulary-seen.json: seen, understood, and
+        # deliberately left to render verbatim.
+        store = DictStore()
+        seed(store, pbp=self.stoppage("ice-scrape"))
+        rep = D.derive(store, now="2026-01-11T11:30:00Z")
+        self.assertEqual(rep.published, 1)
+        self.assertEqual(self.index(store)["extracts"]["unseenVocabulary"], {})
+        self.assertIn("ice-scrape",
+                      self.index(store)["extracts"]["noted"]["stoppage reason"],
+                      "still recorded — the ledger does not stop being a ledger")
+
+    def test_a_value_NOBODY_HAS_LOOKED_AT_is_reported(self):
+        store = DictStore()
+        seed(store, pbp=self.stoppage("zamboni-on-fire"))
+        rep = D.derive(store, now="2026-01-11T11:30:00Z")
+        self.assertEqual(
+            self.index(store)["extracts"]["unseenVocabulary"],
+            {"stoppage reason": ["zamboni-on-fire"]})
+        self.assertEqual(rep.published, 1, "and the game is still published")
+
+    def test_the_run_goes_RED_without_withholding_the_game(self):
+        # None of this can reach a number — the extract drops stoppage detail
+        # entirely — so withholding the archive over a label would be the
+        # mistake the 73 refused games already were.
+        store = DictStore()
+        seed(store, pbp=self.stoppage("zamboni-on-fire"))
+        rep = D.derive(store, now="2026-01-11T11:30:00Z")
+        d = rep.as_dict()
+        self.assertTrue(d["unseenVocabulary"])
+        self.assertIsNotNone(store.get("extract/2025020001.json"))
+
+    def test_the_key_is_present_when_empty(self):
+        store = DictStore()
+        seed(store)
+        D.derive(store, now="2026-01-11T11:30:00Z")
+        self.assertIn("unseenVocabulary", self.index(store)["extracts"])
+
+    def test_every_value_the_LIVE_archive_forgives_is_acknowledged(self):
+        # The 23 read off index.json on 2026-08-21. If this list and the live
+        # ledger disagree, one of them is stale — and the point of the file is
+        # that a human looked at each one.
+        seen = D._vocabulary_seen()["stoppage reason"]
+        for v in ("ice-scrape", "switch-sides", "official-injury",
+                  "chlg-league-off-side", "premature-substitution"):
+            self.assertIn(v, seen)
+        self.assertEqual(len(seen), 23)
+
+
 class WhatTheLeagueCouldNotReconcile(unittest.TestCase):
     """Published, and the league's two documents disagree about it.
 
