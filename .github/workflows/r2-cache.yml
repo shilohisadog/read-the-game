@@ -28,7 +28,7 @@
 # HTTP cache. Hand it an ETag and the origin answers 304 with an empty body --
 # it always could. What that proves is that the capability exists, not that a
 # visitor reaches it. Both times the check we had was blind to the axis in
-# question. The browser probe is `tools/cache-probe.mjs`.
+# question. The browser probe is `tools/cache-probe.sh`.
 #
 # WHAT `no-cache` DOES, since the name reads like the opposite. It is not
 # `no-store`. The response IS stored and the body is NOT re-sent; it is simply
@@ -106,13 +106,21 @@ jobs:
       # deploy gate and the CORS policy both had to learn. Ask from outside.
       - name: prove the header is there
         run: |
-          set -uo pipefail
+          # `set +e` DELIBERATELY, AGAINST THE RUNNER'S DEFAULT `bash -e`. Every
+          # capture below is a grep for a header that may be ABSENT -- which is
+          # the whole finding this step reports. Under -e the first missing
+          # header kills the step before it prints a single line, so the run
+          # fails for the right reason and says nothing about which file or why.
+          # That happened on the first dispatch. A gate whose output vanishes
+          # exactly when it has something to say is not a gate.
+          set +e
+          set -u
           fail=0
           probe() {
             h=$(curl -sS -D - -o /dev/null -m 20 "${DATA}/$1?cb=${GITHUB_RUN_ID}" | tr -d '\r')
-            cc=$(echo "$h" | grep -i '^cache-control:' | cut -d' ' -f2-)
-            ct=$(echo "$h" | grep -i '^content-type:'  | cut -d' ' -f2-)
-            et=$(echo "$h" | grep -ic '^etag:')
+            cc=$(echo "$h" | grep -i '^cache-control:' | cut -d' ' -f2- || true)
+            ct=$(echo "$h" | grep -i '^content-type:'  | cut -d' ' -f2- || true)
+            et=$(echo "$h" | grep -ic '^etag:' || true)
             printf '  %-30s cache-control=%-12s content-type=%-18s etag=%s\n' "$1" "${cc:-<none>}" "${ct:-<none>}" "$et"
             case "$cc" in *no-cache*) ;; *) echo "::error::$1 carries no no-cache"; fail=1 ;; esac
             # THE CONTENT-TYPE CHECK IS NOT DECORATION. It is the thing the
@@ -130,9 +138,9 @@ jobs:
 
           # AND SAY WHAT THIS CANNOT SEE. curl has no cache, so every line above
           # would print identically whether or not a real browser benefits. This
-          # step proves the header is served. Only tools/cache-probe.mjs proves
+          # step proves the header is served. Only tools/cache-probe.sh proves
           # a visitor revalidates instead of going stale, and it needs a browser.
           echo
-          echo "  headers verified. BROWSER BEHAVIOUR IS NOT VERIFIED HERE —"
-          echo "  run: node tools/cache-probe.mjs   (see the file for why curl cannot)"
+          echo "  headers checked. BROWSER BEHAVIOUR IS NOT VERIFIED HERE —"
+          echo "  run: tools/cache-probe.sh   (see the file for why curl cannot)"
           [ "$fail" = 0 ] || exit 1
