@@ -95,21 +95,35 @@ says is strictly worse — spending the reader's attention on a decision that ha
 wrong answer. Same reasoning as **B2**, pointed at the objective function: a
 novice on a phone.
 
-## 4. ⭐ What does a cell COUNT? Doctrine 9 answers it
+## 4. ⭐ What does a cell COUNT? — and §5 now decides this, not Doctrine 9
 
-Refusals are not spread evenly, so this is not a rounding question:
+**This section was written against numbers that have since moved, and the change
+collapses it into §5.** When it was drafted, 69 of 667 in-scope nights contained
+a refused game and 2 were refused entirely — so a cell counting only showable
+games would have printed `0` on a night hockey was played.
 
-- **69 of 667 in-scope nights (10.3%) contain at least one refused game.**
-- **2 nights are refused ENTIRELY.**
+**Every one of those refusals was one of the 73 the league disagreed with itself
+about** (`docs/status.md` D1). After that fix:
 
-A cell counting only what we can *show* would print `0` — or vanish — on two
-nights when hockey was played and we hold the feed. That is precisely *"a
-schedule that hid them would be a map of our successes"*, which the team browse
-already refuses to be.
+| | before | after |
+|---|---|---|
+| in-scope nights containing a refusal | 69 of 667 | **0** |
+| in-scope nights refused entirely | 2 | **0** |
+| published in-scope games | 4,119 | **4,192** |
 
-> **Proposed: the cell counts games we HOLD; the leaf list marks which cannot be
-> shown and why**, exactly as the team page already does. The count is a fact
-> about the archive, not a claim about our success rate.
+**So for an in-scope calendar, "games we hold" and "games we can show" are now
+the same number on every single night, and the question does not arise.**
+
+It only arises if the calendar shows the out-of-scope games — where 33 of 320
+preseason and 30 of 30 gameType 9 are still refused, correctly, because their
+feeds contain no shot events at all. **That makes §4 a consequence of §5 rather
+than a separate decision.** If the answer to §5 is "in-scope only", there is
+nothing to design here; if it is "include them", the cell must count what we hold
+and the leaf list must say which cannot be shown, exactly as the team page does.
+
+> ⚠️ **And this is a live example of the risk in designing against a number.**
+> Two days of build-list text rested on "69 of 667", which was really a statement
+> about a bug in a validation gate. Re-derive before building.
 
 ## 5. ⭐ Does the calendar show the out-of-scope games? The sharpest question here
 

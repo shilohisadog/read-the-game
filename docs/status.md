@@ -37,6 +37,7 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 | A10 | **Blocked-shot figure is the blocker**, not the shooter | `f9e852b` |
 | A11 | **⭐ C10 — the game opens BEFORE the first play**; the resting frame is a state, not a play | see below |
 | A12 | **⭐ The data was already being cached — in the one form that can be WRONG** | `4285ccc` |
+| A13 | **⭐ 73 games were refused because the LEAGUE disagrees with itself** | see D1 |
 
 **A12, because it reverses a claim this file's own source made.** Every object in
 R2 carried `Last-Modified` and none carried `Cache-Control`, which is the
@@ -120,7 +121,48 @@ the whole game. **B1 IS COMPLETE — all of CHENG's conditions met.** (2) **keep
 
 | id | item | state |
 |---|---|---|
-| **D1** | **136 refusals — measured 2026-08-19, and the shape is now known** | **Three populations, not one mystery.** (a) **Olympics: 30 of 30, 100%** — documented and correct, 9 plays against a boxscore claiming 62 shots. (b) **Preseason: 33 of 320 = 10.3% against 1.7% in the regular season — exactly 6.0×.** A real population. (c) The remaining **106 are event-shaped, not date-shaped.** **The date-covering probe was run and it killed the clustering hypothesis, stratified by game type:** preseason refusals touch 24 dates where random scatter predicts 24 (20–27); regular season 64 against 63 (60–66); playoffs 5 against 5. *Consistent with scatter in every stratum.* So the next instrument is per-GAME, not per-date — all 106 fail `SOG reproduces boxscore`, and the question is what those individual games have in common. Preseason at 6× says the property is commoner where coverage is thinner. |
+| **D1** | **✅ SOLVED 2026-08-21 — and it was never one population** | **One symptom, two unrelated causes, and the gate could only report one thing.**
+All 136 failed `SOG reproduces boxscore`, so they read as one population. They
+are not.
+
+**73 were refused wrongly** — 68 regular season and 5 playoff, including **both
+2024 conference finals** (FLA@NYR 22 May, DAL@EDM 27 May). Their feeds are
+indistinguishable from what we publish: median **317 plays**, against 331 for a
+published control. Measured against the league's **own running shot counter**,
+carried on every shot-on-goal play and previously dropped:
+
+| | refused, in-scope | published control |
+|---|---|---|
+| our shot events == the league's running counter | **73/73** | 25/25 |
+| our total == the play-by-play's own total | **73/73** | 25/25 |
+| our total == the BOXSCORE | **0/73** | 25/25 |
+| play-by-play total == the BOXSCORE | **0/73** | 25/25 |
+
+**We reproduce the NHL's event log exactly and the NHL's boxscore disagrees with
+the NHL's event log by one shot.** We were withholding games because the league's
+summary contradicted the league's own record — and the record is the document a
+replay *is*.
+
+**63 were refused correctly, and are a different thing entirely.** Preseason
+**33/33** and gameType 9 **30/30** carry goals and **NO SHOT EVENTS AT ALL** —
+a median of **12 to 15 plays** against a boxscore claiming forty shots. A summary
+wearing a play-by-play's name, with nothing in it to replay.
+
+**The fix, with no chosen threshold.** Refuse when our count disagrees with the
+league's own counter (*ours* to fix); refuse when the boxscore disagrees **and**
+the event log holds no shots (nothing to replay); **record** the rest. The stub
+condition is presence, never magnitude — *"off by one is fine, off by twenty is
+not"* would be a threshold tuned to today's failures. It is also not simply "no
+shot events": a game where every shot on goal went in has none and is perfectly
+consistent.
+
+`derive.py` already stated this rule for vocabulary — **refuse on what can change
+a number, record the rest** — so this is a second gate learning it, not new
+doctrine. Published games now carry `unreconciled` on the artifact, `u` on the
+catalog row so a *list* can mark it without opening an extract, and a count in
+the ledger so the forgiveness stays auditable. **The disclosure is one standing
+sentence** rather than a patch at each site, because the shot count reaches a
+reader in more than one place. |
 | **D3** | **Soft 404** — unknown URLs return 200 with the home page | Status-based link checks are useless; the build-time filesystem check is what protects, and it is canaried. |
 | **D5** | **Rule 19 coincidental-penalty manpower** | **Deliberately not modelled.** A penalty queue predicts `sit` at only 98.9% over 39 games. The box reads occupancy; `sit` keeps strength. Written down so nobody "fixes" it into a model. |
 | **D6** | Dropped feed fields — `shotType`, `zoneCode` outside penalties, `losingPlayerId`, `hitteePlayerId` | Deliberate. Raw feeds are archived, so nothing is lost. |
