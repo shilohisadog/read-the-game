@@ -500,3 +500,37 @@ must be the same set of pages, and either alone fails. `page.py::csp` now takes
 
 Mutation-checked in both directions: an undeclared `fetch(` on `workshop.html`
 fails, and widening every page's policy fails.
+
+## 11.9 ⭐ And the same shape again, one step further down
+
+`calendar.html` also shipped past *"the index is permitted to run under its own
+CSP"* — a real-browser check that names `index.html`, with the live checks below
+it naming `index` and `game`. **A third page with a hash-pinned policy and
+nothing anywhere asserting a browser would honour it.**
+
+That matters more than it sounds: the step's own comment says a stale hash is a
+**blank page that passes every grep we could write.** So the failure mode is a
+page that is live, 200, byte-identical to the repo, and completely inert.
+
+Verified by hand against production the day it shipped — **0 CSP violations on
+`/calendar`, `/calendar?month=2026-02` and `/calendar?date=2026-02-12` in a real
+Chromium at 390px**, catalog fetched, dead-night state rendered. Then made
+permanent: the gate now walks **every** page in `src/`, so it cannot go stale as
+pages are added. **11 pages, 7.7 seconds.**
+
+**AND IT CANARIES ITSELF, WHICH PAID ON THE FIRST RUN.** That grep spent months
+unable to match anything: without `--enable-logging=stderr --log-level=0` Chrome
+routes no console message to stderr at all, so *0 violations* was
+indistinguishable from *0 observations*. So every run now breaks one page on
+purpose — a script block edited without the policy restamped, the realistic
+failure — and **requires the red before trusting the green.**
+
+The canary immediately caught a defect in the probe I had just written: the walk
+loaded `file://$f` with a **relative** path, so Chrome read `canary` as a
+HOSTNAME, fetched nothing, and reported eleven clean pages in a row. Green,
+fast, and measuring nothing.
+
+> **Three defects in one afternoon with the same shape:** a check that names the
+> pages it covers, and a page arriving that nobody added to the list. The
+> filename exemption (§11.8), the CSP probe (here), and the group heading
+> (§11.5) are all *"the rule was written against the cases that existed."*

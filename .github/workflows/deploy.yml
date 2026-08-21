@@ -112,6 +112,70 @@ jobs:
             echo "::error::every page landed in one bucket -- this gate stopped separating anything"; fail=1; }
           exit $fail
 
+      # ⭐ EVERY PAGE, NOT THE TWO WE REMEMBERED TO NAME.
+      #
+      # The step below proves index.html may run under its own policy, and the
+      # live checks further down name index and game. calendar.html shipped in
+      # between them: a third page with a hash-pinned CSP and nothing anywhere
+      # asserting a browser would honour it. A stale hash is a BLANK PAGE that
+      # passes every grep in this file, so "we did not think to add it to the
+      # list" is the same defect as the filename exemption two steps up.
+      #
+      # So this walks src/ and asks a real browser, once per page. It is cheap
+      # (about a second each) and it cannot go stale as pages are added.
+      #
+      # AND IT CANARIES ITSELF, because that grep spent months unable to match:
+      # without --enable-logging=stderr --log-level=0 Chrome routes no console
+      # message to stderr at all, so "0 violations" was indistinguishable from
+      # "0 observations". A run that cannot produce a red is not evidence of
+      # green, so every run breaks one page on purpose and requires the red.
+      - name: every page is permitted to run under its own CSP
+        run: |
+          command -v google-chrome >/dev/null || { echo "::error::no Chrome on this runner"; exit 1; }
+          CLAUSE='violates the following Content Security Policy directive'
+          walk() {                       # $1 = a directory of pages; 0 = all clean
+            local bad=0
+            for f in "$1"/*.html; do
+              google-chrome --headless --no-sandbox --disable-gpu \
+                --enable-logging=stderr --log-level=0 --virtual-time-budget=6000 \
+                --dump-dom "file://$(realpath "$f")" >/dev/null 2> csp.log || true
+              if grep -qF "$CLAUSE" csp.log; then
+                echo "  REFUSED: $(basename "$f")"
+                grep -F "$CLAUSE" csp.log | head -1 | cut -c1-200 | sed 's/^/    /'
+                bad=1
+              fi
+            done
+            return $bad
+          }
+
+          # THE CANARY FIRST, so a blind probe cannot report the site is fine.
+          # The break is the realistic one: a script block edited without the
+          # policy being restamped, which is exactly what a hand-edited page or
+          # a half-run builder produces.
+          # ONE PAGE IN THE CANARY DIRECTORY, because proving the probe can see
+          # a refusal takes one refusal; walking all eleven twice doubles the
+          # step for nothing.
+          rm -rf canary && mkdir canary && cp src/calendar.html canary/
+          sed -i '0,/<script>/s//<script>\/*canary*\//' canary/calendar.html
+          cmp -s canary/calendar.html src/calendar.html \
+            && { echo "::error::the canary did not change the page it was meant to break"; exit 1; }
+          if walk canary; then
+            echo "::error::a page with a deliberately stale hash raised NO violation — this probe is blind, and its green means nothing"
+            exit 1
+          fi
+          # AND THE CANARY EARNED ITS KEEP ON ITS FIRST RUN. The walk was
+          # loading "file://$f" with a RELATIVE path, so Chrome read `canary`
+          # as a HOSTNAME, fetched nothing, and reported no violations for
+          # eleven pages in a row. Green, fast, and measuring nothing --
+          # indistinguishable from a clean site without this line.
+          echo "  canary fired, so the probe can see a refusal"
+
+          if ! walk src; then
+            echo "::error::a shipped page is refused by its own policy — that is a blank page for every visitor"
+            exit 1
+          fi
+          echo "  all $(ls src/*.html | wc -l) pages run under their own policy"
+
       # THE CSP MUST EXECUTE, NOT MERELY BE PRESENT. A hash-pinned policy with a
       # stale hash is a blank page that passes every grep we could write, so the
       # only honest check is a real browser. This runs pre-deploy over file://
