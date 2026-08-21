@@ -11,7 +11,8 @@
     "extract:verify": "python3 builders/extract.py --verify",
     "extract:validate": "python3 builders/extract.py --validate",
     "extract:vocab": "python3 builders/extract.py --vocab",
-    "gates": "npm run build && npm test && npm run test:py && npm run extract:verify && npm run extract:validate && npm run extract:vocab && npm run build",
+    "health": "node builders/health.mjs",
+    "gates": "npm run build && npm test && npm run test:py && npm run health -- --check && npm run extract:verify && npm run extract:validate && npm run extract:vocab && npm run build",
     "test:py": "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s test -p 'test_*.py'"
   }
 }
