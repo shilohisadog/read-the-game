@@ -446,11 +446,26 @@ def vocabulary(pbp):
 def validate(rich, pbp, shifts, box):
     """Independent checks, against the raw feed and the boxscore -- never against
     our own extract. Byte-identity cannot catch anything in here."""
-    fails = []
+    fails, notes = [], []
     def check(ok, msg):
         print(f"  {'PASS' if ok else 'FAIL'}  {msg}")
         if not ok:
             fails.append(msg)
+
+    # REFUSE ON WHAT WE COULD HAVE GOT WRONG; RECORD WHAT THE LEAGUE GOT WRONG.
+    # derive.py already states this rule for vocabulary -- "refuse on what can
+    # change a number, record the rest" -- and a disagreement between two of the
+    # league's OWN documents is not something withholding the game can fix.
+    def note(ok, msg, detail=None):
+        print(f"  {'PASS' if ok else 'NOTE'}  {msg}")
+        if not ok:
+            # THE NUMBERS TRAVEL WITH THE SENTENCE. `check` is the audit trail,
+            # in the same wording the ledger counts refusals by; the rest is what
+            # a PAGE needs to say this to a reader. Without it the renderer would
+            # have to re-derive which team disagreed and by how much -- a second
+            # implementation of a rule that already has one, in a language where
+            # nothing tests it.
+            notes.append({"check": msg, **(detail or {})})
 
     check(len(rich["events"]) == len(pbp["plays"]),
           f"lossless: {len(rich['events'])} events == {len(pbp['plays'])} plays")
@@ -484,15 +499,23 @@ def validate(rich, pbp, shifts, box):
                               else p["details"]["xCoord"]) or 0))
     check(bad == 0, f"normalization matches the ends-switch rule ({bad} mismatches)")
 
-    # SOG must reproduce the boxscore: shot-on-goal events PLUS goals.
+    # SHOTS ON GOAL, AGAINST TWO WITNESSES THAT ARE NOT THE SAME WITNESS.
+    #
+    # This check used to compare our count to the BOXSCORE alone and refuse on
+    # any difference. That treats the boxscore as ground truth, and it cannot
+    # tell "we parsed it wrong" from "the league's two documents disagree" --
+    # which need opposite responses and were getting the same one.
+    #
+    # Measured 2026-08-21 over every refused game: 73 in-scope games (68 regular
+    # season, 5 playoff, including two conference finals) reproduce the
+    # play-by-play EXACTLY and differ from the boxscore by exactly one shot on
+    # exactly one team, 73 of 73. We were withholding games because the league
+    # disagreed with itself, and the event log is the document we replay.
     #
     # EXCLUDING THE SHOOTOUT, because the boxscore excludes it. A shootout
     # attempt is not a shot in the run of play and the league does not count it
     # as one; counting it here compared two different quantities and called the
-    # difference a fault. Five of six sampled shootout games match the boxscore
-    # exactly once shootout events are removed. This does not weaken the check --
-    # it makes the two sides mean the same thing, which is the only way a
-    # cross-check against an independent witness says anything at all.
+    # difference a fault.
     hid, aid = rich["teams"]["home"]["id"], rich["teams"]["away"]["id"]
     sog = {hid: 0, aid: 0}
     for e in rich["events"]:
@@ -500,8 +523,67 @@ def validate(rich, pbp, shifts, box):
             sog[e["own"]] += 1
     bx = {box["homeTeam"]["id"]: box["homeTeam"]["sog"],
           box["awayTeam"]["id"]: box["awayTeam"]["sog"]}
-    check(sog[hid] == bx[hid] and sog[aid] == bx[aid],
-          f"SOG reproduces boxscore: home {sog[hid]}=={bx[hid]}, away {sog[aid]}=={bx[aid]}")
+
+    # WITNESS ONE, AND THIS IS THE ONE THAT CATCHES US. The league stamps its own
+    # running shot counter on every shot-on-goal play -- `details.homeSOG` and
+    # `awaySOG` -- and it counts shot events only, never goals. It is the same
+    # trick the score-sequence check already uses: a witness inside the very
+    # document we are parsing, so it can only ever be testing OUR reading of it.
+    # Costs no fetch and no schema change. It does NOT go in the extract.
+    shot_ev = {hid: 0, aid: 0}
+    for e in rich["events"]:
+        if e["type"] == "shot-on-goal" and e.get("pt") != "SO":
+            shot_ev[e["own"]] += 1
+    run = {hid: 0, aid: 0}
+    seen = plays = 0
+    for p in pbp["plays"]:
+        if p["typeDescKey"] != "shot-on-goal": continue
+        if (p["periodDescriptor"] or {}).get("periodType") == "SO": continue
+        plays += 1
+        d = p.get("details") or {}
+        if d.get("homeSOG") is None or d.get("awaySOG") is None: continue
+        seen += 1
+        run[hid] = max(run[hid], d["homeSOG"])
+        run[aid] = max(run[aid], d["awaySOG"])
+
+    # A CHECK THAT SILENTLY DOES NOT RUN is this project's named failure mode,
+    # and this one is built to be vacuous: with no shot plays at all, `run` and
+    # `shot_ev` are both zero and the comparison below passes having compared
+    # nothing. So the witness is required to be PRESENT before it is believed.
+    check(seen == plays,
+          f"every shot-on-goal carries the league's running count "
+          f"({plays - seen} of {plays} without)")
+    check(shot_ev[hid] == run[hid] and shot_ev[aid] == run[aid],
+          f"shot events match the league's own running count: "
+          f"home {shot_ev[hid]}=={run[hid]}, away {shot_ev[aid]}=={run[aid]}")
+
+    # WITNESS TWO, AND IT IS NOT OURS TO FIX. The boxscore is a separate document
+    # produced by the same league, and where it disagrees with the event log the
+    # disagreement is a fact about their data. Refusing the game hides one we can
+    # replay faithfully; recording it says what we could not reconcile, which is
+    # what Doctrine 9 asks for. `quoted` already carries the boxscore's own
+    # numbers into the extract, so a page can show both with no schema change.
+    #
+    # WITH ONE EXCEPTION, AND IT IS STRUCTURAL RATHER THAN NUMERIC. Preseason
+    # (33 of 33) and gameType 9 (30 of 30) arrive with GOALS AND NO SHOT EVENTS
+    # AT ALL -- a median of 12 to 15 plays against a boxscore claiming forty
+    # shots. That is a summary wearing a play-by-play's name and there is nothing
+    # in it to replay, so it stays refused.
+    #
+    # The condition is "the boxscore disagrees AND the event log holds no shots",
+    # never "the gap is larger than N". A magnitude test would be a threshold
+    # tuned to today's failures. It is also not simply "no shot events": a game
+    # in which every shot on goal WENT IN has none and is perfectly consistent,
+    # and refusing it would be refusing arithmetic we agree with.
+    agrees = sog[hid] == bx[hid] and sog[aid] == bx[aid]
+    check(agrees or plays > 0,
+          f"a boxscore disagreement with NOTHING to replay: {plays} shot events "
+          f"against a boxscore of home {bx[hid]}, away {bx[aid]}")
+    note(agrees,
+         f"SOG reproduces boxscore: home {sog[hid]}=={bx[hid]}, away {sog[aid]}=={bx[aid]}",
+         {"kind": "sog",
+          "home": {"ours": sog[hid], "league": bx[hid]},
+          "away": {"ours": sog[aid], "league": bx[aid]}})
 
     # Blocked shots are credited to the SHOOTER. Checked against rosterSpots,
     # an independent source -- not against our own roster map.
@@ -609,7 +691,7 @@ def validate(rich, pbp, shifts, box):
     check(not disagreed,
           f"the score sequence matches the league at every goal "
           f"({len(disagreed)} disagree{': ' + '; '.join(disagreed[:2]) if disagreed else ''})")
-    return fails
+    return fails, notes
 
 # ---------------------------------------------------------------- main
 
@@ -649,8 +731,13 @@ def main():
         if box is None:
             print("  SKIP  boxscore not committed; fetch it to enable SOG/score checks")
             return 2
-        fails = validate(rich, pbp, shifts, box)
-        print(f"\n  {'ALL CHECKS PASS' if not fails else str(len(fails)) + ' FAILED'}")
+        fails, unreconciled = validate(rich, pbp, shifts, box)
+        # A NOTE IS NOT A PASS AND IT IS NOT A FAILURE. Printing only the
+        # failure count would let a human reading one game conclude the two
+        # documents agreed, when what happened is that we decided the
+        # disagreement was the league's rather than ours.
+        print(f"\n  {'ALL CHECKS PASS' if not fails else str(len(fails)) + ' FAILED'}"
+              f"{'; ' + str(len(unreconciled)) + ' RECORDED, NOT REFUSED' if unreconciled else ''}")
         return 1 if fails else 0
 
     current = (DATA / "rich.json").read_text()

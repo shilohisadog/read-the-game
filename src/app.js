@@ -839,6 +839,34 @@ drawAtk(1);
    cannot change during a visit should not be rebuilt three hundred times. */
 (()=>{const k=$('endsKey');if(!k)return;const K=ENDS_KEY[ENDSMODE];
  k.textContent=K.rule||K.display;})();
+/* ⭐ WHERE THE LEAGUE DISAGREES WITH ITSELF, SAID ONCE, COVERING EVERYWHERE.
+   73 in-scope games reproduce the NHL's play-by-play exactly and differ from the
+   NHL's own boxscore by one shot. We used to withhold them; now we show the
+   event log -- which is the document a replay IS -- and state the disagreement.
+
+   ONE SENTENCE RATHER THAN A PATCH AT EACH SITE. The shot count reaches the
+   reader in more than one place (the blocked-shots panel says "a box score would
+   show N"), and amending each one would leave the next one to be written
+   unamended. A standing fact about the game covers every number derived from it.
+
+   ABSENT WHEN THERE IS NOTHING TO SAY -- the verdict card's rule. `unreconciled`
+   is only on the artifact when derive.py found a disagreement, so this is not a
+   sentence a reader learns to skip. */
+(()=>{const k=$('unrecKey');if(!k)return;
+ const n=(G.unreconciled||[]).find(x=>x&&x.kind==='sog');if(!n)return;
+ // Name the side that actually disagrees. Both are carried; usually one differs.
+ const sides=[[HAB,n.home],[AAB,n.away]].filter(([,v])=>v&&v.ours!==v.league);
+ if(!sides.length)return;
+ // SHORT, BECAUSE THE READER IS ON A PHONE. The first wording ran to 75px at
+ // 390px wide and pushed the legend from 173px to 248px -- the same mistake as
+ // the ends disclosure, which shipped at 176px and had to come back to 78px.
+ // Every fact survives the trim: which two documents, both numbers, whose, and
+ // which one we chose.
+ k.textContent='the league\u2019s boxscore says '
+  +sides.map(([ab,v])=>`${v.league} shots on goal for ${ab}`).join(' and ')
+  +'; its event log says '+sides.map(([,v])=>v.ours).join(' and ')
+  +' \u2014 we show the event log';
+ document.getElementById('rg').classList.add('unrec');})();
 /* AND THE BUTTON SAYS WHAT IT DOES. "Keep every mark" is false under as-played,
    where the trail clears at each period change -- and a note explaining a label
    that contradicts itself is the decaying-disclaimer shape this project prefers

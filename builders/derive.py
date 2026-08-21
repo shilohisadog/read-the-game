@@ -133,6 +133,7 @@ class Report:
     refused: dict = field(default_factory=dict)   # gid -> {gate, detail}
     absent: dict = field(default_factory=dict)    # gid -> raw not in THIS store
     noted: dict = field(default_factory=dict)     # field -> values seen but forgiven
+    unreconciled: int = 0                        # published, but the league disagrees with itself
     refused_in_window: int = 0
 
     @property
@@ -228,9 +229,22 @@ def judge(pbp_raw, box_raw, shifts_raw):
     # validate() reports to stdout for a human reading one game. Here it runs
     # fifteen hundred times and only its verdict is wanted.
     with contextlib.redirect_stdout(io.StringIO()):
-        fails = E.validate(rich, pbp, shifts, box)
+        fails, unreconciled = E.validate(rich, pbp, shifts, box)
     if fails:
         return None, _refuse("validation", fails), noted
+
+    # WHAT THE LEAGUE COULD NOT RECONCILE WITH ITSELF, carried on the artifact.
+    #
+    # Not a refusal: these are games we replay faithfully from the event log,
+    # where the league's separate boxscore reports a different shot total. The
+    # game is showable and the disagreement is real, so the honest move is to
+    # show it and say so -- Doctrine 9, the same reason a refused game keeps its
+    # row instead of vanishing.
+    #
+    # ABSENT WHEN THERE IS NOTHING TO SAY, which is the verdict card's rule: a
+    # key that is always present and usually empty teaches a reader to skip it.
+    if unreconciled:
+        rich["unreconciled"] = unreconciled
 
     return rich, None, noted
 
@@ -289,9 +303,18 @@ def derive(store, end=None, days=None, now=None):
         prev = store.get(extract_key(gid))
         if prev is not None:
             try:
-                if json.loads(prev.decode()).get("game", {}).get("src") == digests:
+                was = json.loads(prev.decode())
+                if was.get("game", {}).get("src") == digests:
                     rep.unchanged += 1
-                    rows[gid] = {**row, "v": 1}
+                    # READ `u` BACK OFF THE STORED EXTRACT. This path skips
+                    # judge() entirely, so the flag has to come from the artifact
+                    # rather than from a variable this branch never computes --
+                    # otherwise every unchanged game loses its disclosure on the
+                    # next nightly, and the catalog would quietly heal itself
+                    # into looking cleaner than the archive is.
+                    rows[gid] = {**row, "v": 1,
+                                 **({"u": 1} if was.get("unreconciled") else {})}
+                    rep.unreconciled += 1 if was.get("unreconciled") else 0
                     continue
             except ValueError:
                 pass    # unreadable extract: derive it again
@@ -308,7 +331,11 @@ def derive(store, end=None, days=None, now=None):
                 rep.refused_in_window += 1
             continue
 
-        rows[gid] = {**row, "v": 1}
+        # `u` so a LIST can mark it without opening the extract. The calendar
+        # and the team page both show many games at once and neither fetches an
+        # extract to draw a row; without this the disclosure would exist only on
+        # the page you already committed to opening.
+        rows[gid] = {**row, "v": 1, **({"u": 1} if rich.get("unreconciled") else {})}
         rich["game"] = {"id": int(gid), "date": g.get("date"),
                         "type": g.get("type"), "src": digests}
         # sort_keys, and NO TIMESTAMP ANYWHERE. Determinism is a gate we can
@@ -317,6 +344,8 @@ def derive(store, end=None, days=None, now=None):
         store.put(extract_key(gid),
                   json.dumps(rich, sort_keys=True, separators=(",", ":")).encode())
         rep.derived += 1
+        if rich.get("unreconciled"):
+            rep.unreconciled += 1
 
     _write_catalog(store, rows)
     _write_ledger(store, idx, rep, stamp)
@@ -350,6 +379,11 @@ def _write_ledger(store, idx, rep, stamp):
         # cannot reach a number. Visible so the forgiveness is auditable, and so
         # the whistle layer inherits a list instead of a survey.
         "noted": d["noted"],
+        # Published games where the league's event log and its own boxscore
+        # disagree. Counted so the forgiveness is auditable, exactly as `noted`
+        # is -- a gate that quietly forgets what it forgave is worse than one
+        # that never looked.
+        "unreconciled": rep.unreconciled,
         # Present even when empty, so a reader can tell "we checked and found
         # none" from "this version did not check" -- the same distinction
         # lastRun exists to make one layer up.

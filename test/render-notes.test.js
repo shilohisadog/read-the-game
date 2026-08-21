@@ -19,7 +19,7 @@ const CONDITIONAL_KEYS = { 'lk-hd': 'slot', 'lk-blk': 'blocked' };
  * test look for a `lyEnds` that does not exist. The stylesheet claim is the
  * same for both, so that one iterates over the pair.
  */
-const GAME_STATE_KEYS = { 'lk-ends': 'endskey' };
+const GAME_STATE_KEYS = { 'lk-ends': 'endskey', 'lk-unrec': 'unrec' };
 
 test('a legend key is hidden until the layer that draws its mark is on', () => {
   // The markup ships every key — this is a stylesheet decision, so the assertion
@@ -472,3 +472,88 @@ test('each half of the greeting sits beside the thing it is about', () => {
    ──────────────────────────────────────────────────────────────────────────── */
 
 /** Read the playhead the way the page publishes it, rather than from a closure. */
+
+
+/* ---------------------------------------------------------------------------
+ * WHERE THE LEAGUE DISAGREES WITH ITSELF
+ *
+ * 73 in-scope games reproduce the NHL's play-by-play exactly and differ from the
+ * NHL's own boxscore by one shot. They were being withheld; they are now
+ * published with the disagreement stated. `unreconciled` rides on the artifact
+ * and is ABSENT when there is nothing to say.
+ * ------------------------------------------------------------------------- */
+
+const UNREC = {
+  ...rich,
+  unreconciled: [{ check: 'SOG reproduces boxscore: home 37==36, away 31==31',
+                   kind: 'sog',
+                   home: { ours: 37, league: 36 },
+                   away: { ours: 31, league: 31 } }],
+};
+
+test('a game the league cannot reconcile says so, with both numbers and the side', () => {
+  const a = boot(UNREC, CURVE_AND_MIX);
+  assert.ok(a.$('rg').classList.contains('unrec'), 'the stylesheet gate must be open');
+  const t = a.$('unrecKey').textContent;
+  assert.match(t, /boxscore/, 'it must name which document');
+  assert.match(t, /36 shots on goal for BUF/, "the league's number, against the side it is about");
+  assert.match(t, /event log says 37/, 'and ours, so the reader can see the size of it');
+});
+
+test('the side that AGREES is not named, or the sentence teaches the wrong thing', () => {
+  // MUTATION GUARD. Printing both sides unconditionally would pass the test
+  // above — it looks for BUF and would find it — while telling a reader the
+  // visitor's count is disputed when it is not. 31==31 is not a disagreement.
+  const t = boot(UNREC, CURVE_AND_MIX).$('unrecKey').textContent;
+  assert.doesNotMatch(t, /MIN/, 'the agreeing side must not appear');
+  assert.doesNotMatch(t, /31/, 'nor its numbers');
+});
+
+test('a reconciled game carries no class and no sentence', () => {
+  // ABSENT UNTIL THERE IS ONE. Without this the test above is satisfied by a
+  // sentence printed on every game in the archive, which a reader learns to
+  // skip — and a disclosure nobody reads is not a disclosure.
+  const a = boot(rich, CURVE_AND_MIX);
+  assert.equal(rich.unreconciled, undefined, 'the fixture must be a clean game');
+  assert.ok(!a.$('rg').classList.contains('unrec'));
+  assert.equal(a.$('unrecKey').textContent, '');
+});
+
+test('a note of some OTHER kind does not open the shots sentence', () => {
+  const a = boot({ ...rich, unreconciled: [{ check: 'something else', kind: 'clock' }] },
+                 CURVE_AND_MIX);
+  assert.ok(!a.$('rg').classList.contains('unrec'));
+  assert.equal(a.$('unrecKey').textContent, '');
+});
+
+test('the shots note is found wherever it sits in the list', () => {
+  /* THE TEST ABOVE DOES NOT PROVE THIS, and I checked rather than assumed:
+     replacing `find(kind === 'sog')` with `unreconciled[0]` left the whole suite
+     green. With one non-sog note, both readings return nothing and the outcome
+     is identical — so the test passed without exercising the thing it names.
+
+     `unreconciled` is a LIST because the vocabulary will grow, and the failure
+     `[0]` produces is the quiet one: a real shots disagreement, silently not
+     disclosed, because something unrelated happened to be recorded first. */
+  const a = boot({ ...rich, unreconciled: [
+    { check: 'something else', kind: 'clock' },
+    { check: 'SOG reproduces boxscore: home 37==36, away 31==31', kind: 'sog',
+      home: { ours: 37, league: 36 }, away: { ours: 31, league: 31 } },
+  ] }, CURVE_AND_MIX);
+  assert.ok(a.$('rg').classList.contains('unrec'), 'a later note must still be found');
+  assert.match(a.$('unrecKey').textContent, /36 shots on goal for BUF/);
+});
+
+test('a shots note whose sides all AGREE prints nothing', () => {
+  /* The other guard the suite was not reaching. derive.py only records the note
+     when a side differs, so this artifact should not exist — which is exactly
+     why the renderer must not build a sentence out of it. Deleting the guard
+     also left the suite green, and it produces "its boxscore reports  , its
+     event log ." on screen. */
+  const a = boot({ ...rich, unreconciled: [
+    { check: 'SOG reproduces boxscore: home 30==30, away 20==20', kind: 'sog',
+      home: { ours: 30, league: 30 }, away: { ours: 20, league: 20 } },
+  ] }, CURVE_AND_MIX);
+  assert.ok(!a.$('rg').classList.contains('unrec'));
+  assert.equal(a.$('unrecKey').textContent, '');
+});

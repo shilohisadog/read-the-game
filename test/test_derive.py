@@ -79,11 +79,25 @@ def play(t, secs, **details):
             "details": details}
 
 
-def pbp_bytes(plays=None):
-    plays = plays if plays is not None else [
+def regulation_plays():
+    """THE ONE definition of a well-formed game, because there used to be two.
+
+    `game_with_shootout` re-typed these three plays instead of calling this, so
+    when the running-SOG witness was added to the feed the copy did not get it
+    and three shootout tests failed for a reason that had nothing to do with
+    shootouts. A fixture duplicated is a fixture that will disagree with itself
+    eventually; this is that eventually.
+    """
+    return [
         play("faceoff", 0, winningPlayerId=1, xCoord=0, yCoord=0, eventOwnerTeamId=30),
         play("shot-on-goal", 60, shootingPlayerId=1, goalieInNetId=2,
-             xCoord=-70, yCoord=3, eventOwnerTeamId=30),
+             xCoord=-70, yCoord=3, eventOwnerTeamId=30,
+             # The league's own running SHOT counter. Every shot-on-goal play
+             # carries it and it counts shot events only, never goals. It is the
+             # witness that separates "we parsed it wrong" from "the league's two
+             # documents disagree" — so a fixture without it is not a smaller
+             # game, it is an impossible one, exactly as with the running score.
+             awaySOG=1, homeSOG=0),
         play("goal", 120, scoringPlayerId=1, goalieInNetId=2,
              xCoord=-75, yCoord=0, eventOwnerTeamId=30,
              # The league's running score after this goal. Real feeds carry it on
@@ -91,6 +105,28 @@ def pbp_bytes(plays=None):
              # without it is not a smaller game, it is an impossible one.
              awayScore=1, homeScore=0),
     ]
+
+
+def stub_pbp():
+    """THE OLYMPIC SHAPE, and the fixture that stood in for it did not have it.
+
+    The real stubs — 33 of 33 preseason refusals and 30 of 30 gameType 9 — carry
+    GOALS AND NO SHOT-ON-GOAL EVENTS AT ALL, a median of 12 to 15 plays against a
+    boxscore claiming forty shots. The old fixture used a wildly wrong boxscore
+    over a feed that DID contain a shot event, so it tested "the boxscore
+    disagrees" and was read as testing "there is nothing to replay". Those are
+    now different verdicts, and only one of them is a refusal.
+    """
+    return json.dumps({"homeTeam": HOME, "awayTeam": AWAY, "rosterSpots": ROSTER,
+                       "plays": [
+        play("faceoff", 0, winningPlayerId=1, xCoord=0, yCoord=0, eventOwnerTeamId=30),
+        play("goal", 120, scoringPlayerId=1, goalieInNetId=2,
+             xCoord=-75, yCoord=0, eventOwnerTeamId=30, awayScore=1, homeScore=0),
+    ]}).encode()
+
+
+def pbp_bytes(plays=None):
+    plays = plays if plays is not None else regulation_plays()
     return json.dumps({"homeTeam": HOME, "awayTeam": AWAY,
                        "rosterSpots": ROSTER, "plays": plays}).encode()
 
@@ -177,16 +213,7 @@ class ADerivedGame(unittest.TestCase):
         store = DictStore()
         seed(store)
         D.derive(store)
-        seed(store, pbp=pbp_bytes(plays=[
-            play("faceoff", 0, winningPlayerId=1, xCoord=0, yCoord=0, eventOwnerTeamId=30),
-            play("shot-on-goal", 60, shootingPlayerId=1, goalieInNetId=2,
-                 xCoord=-70, yCoord=3, eventOwnerTeamId=30),
-            play("goal", 120, scoringPlayerId=1, goalieInNetId=2,
-                 xCoord=-75, yCoord=0, eventOwnerTeamId=30,
-                 # The league's running score after this goal. Real feeds carry it on
-                 # every goal — 198 of 198 across three sampled seasons — so a fixture
-                 # without it is not a smaller game, it is an impossible one.
-                 awayScore=1, homeScore=0),
+        seed(store, pbp=pbp_bytes(plays=regulation_plays() + [
             play("hit", 150, hittingPlayerId=1, xCoord=10, yCoord=1, eventOwnerTeamId=30),
         ]), box=box_bytes())
         rep = D.derive(store)
@@ -209,28 +236,72 @@ class TwoGates(unittest.TestCase):
                           "a refused game must publish nothing")
 
     def test_a_stub_that_parses_perfectly_is_still_refused(self):
-        # THE OLYMPIC CASE, and the reason this class exists. 9 plays against a
+        # THE OLYMPIC CASE, and the reason this class exists. 12 plays against a
         # boxscore reporting 62 shots. Every value is recognised, extract()
         # succeeds, and the result is a confident-looking game that is not one.
-        # Only the independent witness says so.
+        #
+        # THE FIXTURE HAD TO CHANGE TO KEEP MEANING THIS. It used to be a normal
+        # feed with a wildly wrong boxscore, which tested "the boxscore
+        # disagrees" while reading as "there is nothing to replay". Those are now
+        # different verdicts and only one is a refusal, so the fixture has to
+        # carry the property that actually defines a stub: NO SHOT EVENTS AT ALL,
+        # which is true of 33 of 33 preseason and 30 of 30 gameType 9 refusals.
         store = DictStore()
-        seed(store, box=box_bytes(away_sog=26, home_sog=36, away_score=1, home_score=0))
+        seed(store, pbp=stub_pbp(),
+             box=box_bytes(away_sog=26, home_sog=36, away_score=1, home_score=0))
         rep = D.derive(store)
         self.assertEqual(rep.derived, 0)
         self.assertEqual(rep.refused["2025020001"]["gate"], "validation")
-        self.assertIn("SOG", str(rep.refused["2025020001"]["detail"]))
+        self.assertIn("NOTHING to replay", str(rep.refused["2025020001"]["detail"]))
         self.assertIsNone(store.get("extract/2025020001.json"))
 
+    def test_a_full_feed_with_a_wrong_boxscore_is_PUBLISHED_and_says_so(self):
+        """THE OTHER HALF, and without it the test above is satisfied by a rule
+        that refuses every boxscore disagreement — which is the rule we removed.
+
+        Measured over the whole archive: 73 in-scope games (68 regular season, 5
+        playoff, two of them conference finals) reproduce the play-by-play
+        exactly and differ from the boxscore by one shot. Same disagreement as
+        the stub above, opposite verdict, and the feed is what separates them.
+        """
+        store = DictStore()
+        seed(store, box=box_bytes(away_sog=99, home_sog=0, away_score=1, home_score=0))
+        rep = D.derive(store)
+        self.assertEqual(rep.derived, 1, "a game we can replay is not withheld")
+        self.assertEqual(rep.unreconciled, 1)
+        got = json.loads(store.get("extract/2025020001.json").decode())
+        self.assertTrue(got["unreconciled"], "and the artifact has to SAY so")
+        self.assertIn("SOG", str(got["unreconciled"]))
+
     def test_the_witness_must_be_independent_or_it_proves_nothing(self):
-        # MUTATION GUARD on the gate above. If validation compared the extract
-        # against the play-by-play it came from, a stub would agree with itself
-        # perfectly and pass. Prove the boxscore is what decides: hold the feed
-        # constant and move ONLY the witness.
+        # MUTATION GUARD on the gate above, pointed at the check that is now
+        # FATAL. If validation compared the extract against the play-by-play it
+        # came from with no third party, a misparse would agree with itself
+        # perfectly and pass. The witness is the league's own running shot
+        # counter, carried on every shot-on-goal play; hold the feed constant and
+        # move ONLY that number.
         good, bad = DictStore(), DictStore()
-        seed(good, box=box_bytes(away_sog=2, home_sog=0))
-        seed(bad, box=box_bytes(away_sog=26, home_sog=36))
+        seed(good)
+        wrong = regulation_plays()
+        wrong[1]["details"]["awaySOG"] = 7     # the feed still holds one shot
+        seed(bad, pbp=pbp_bytes(plays=wrong))
         self.assertEqual(D.derive(good).derived, 1)
-        self.assertEqual(D.derive(bad).derived, 0)
+        self.assertEqual(D.derive(bad).derived, 0,
+                         "our count disagreeing with the league's own counter is OURS to fix")
+        self.assertIn("running count", str(D.derive(bad).refused["2025020001"]["detail"]))
+
+    def test_a_shot_that_never_carried_the_counter_is_refused_not_skipped(self):
+        """A CHECK THAT SILENTLY DOES NOT RUN is this project's named failure
+        mode, and this one is built to be vacuous: with the field absent, our
+        count and the league's are both compared against zero and agree."""
+        store = DictStore()
+        blind = regulation_plays()
+        del blind[1]["details"]["awaySOG"]
+        del blind[1]["details"]["homeSOG"]
+        seed(store, pbp=pbp_bytes(plays=blind))
+        rep = D.derive(store)
+        self.assertEqual(rep.derived, 0, "an absent witness is an anomaly, not a pass")
+        self.assertIn("without", str(rep.refused["2025020001"]["detail"]))
 
     def test_a_clock_that_is_not_mm_ss_refuses_the_game(self):
         # THE DEEP-LINK ORDINAL RIDES ON A DOT. `?at=2-14:32.3` names the third
@@ -265,7 +336,7 @@ class TwoGates(unittest.TestCase):
         # keep. The archive is the thing we cannot re-create; a gate that
         # deleted from it would be trading the irreplaceable for the cheap.
         store = DictStore()
-        digests = seed(store, box=box_bytes(away_sog=99))
+        digests = seed(store, pbp=stub_pbp(), box=box_bytes(away_sog=99))
         D.derive(store)
         for name, d in digests.items():
             self.assertIsNotNone(store.get(F.raw_key(2025020001, d, name)))
@@ -274,7 +345,7 @@ class TwoGates(unittest.TestCase):
     def test_one_bad_game_does_not_stop_the_others(self):
         store = DictStore()
         seed(store, gid=2025020001)
-        seed(store, gid=2025020002, box=box_bytes(away_sog=99))
+        seed(store, gid=2025020002, pbp=stub_pbp(), box=box_bytes(away_sog=99))
         seed(store, gid=2025020003)
         rep = D.derive(store)
         self.assertEqual(rep.derived, 2)
@@ -303,8 +374,8 @@ class TheLedger(unittest.TestCase):
         # different questions; conflating them is what the second ledger exists
         # to prevent.
         store = DictStore()
-        seed(store, gid=2025020001, date="2026-01-10", box=box_bytes(away_sog=99))
-        seed(store, gid=2025020002, date="2020-01-01", box=box_bytes(away_sog=99))
+        seed(store, gid=2025020001, date="2026-01-10", pbp=stub_pbp(), box=box_bytes(away_sog=99))
+        seed(store, gid=2025020002, date="2020-01-01", pbp=stub_pbp(), box=box_bytes(away_sog=99))
         rep = D.derive(store, end="2026-01-10", days=14)
         self.assertEqual(len(rep.refused), 2, "both are refused")
         self.assertEqual(rep.refused_in_window, 1, "only one is in the window")
@@ -315,7 +386,7 @@ class TheLedger(unittest.TestCase):
         # would be the exact conflation ingest-state.md was written about.
         store = DictStore()
         seed(store, gid=2025020001)
-        seed(store, gid=2025020002, box=box_bytes(away_sog=99))
+        seed(store, gid=2025020002, pbp=stub_pbp(), box=box_bytes(away_sog=99))
         D.derive(store, now="2026-01-11T11:30:00Z")
         idx = self.index(store)
         self.assertNotIn("refused", idx.get("coverage", {}))
@@ -332,8 +403,8 @@ class TheLedger(unittest.TestCase):
         # reasons is a mess. The difference decides what to fix next, and a bare
         # count cannot express it.
         store = DictStore()
-        seed(store, gid=2025020001, box=box_bytes(away_sog=99))
-        seed(store, gid=2025020002, box=box_bytes(away_sog=99))
+        seed(store, gid=2025020001, pbp=stub_pbp(), box=box_bytes(away_sog=99))
+        seed(store, gid=2025020002, pbp=stub_pbp(), box=box_bytes(away_sog=99))
         seed(store, gid=2025020003, pbp=pbp_bytes(plays=[
             play("teleportation", 0, xCoord=0, yCoord=0, eventOwnerTeamId=30)]))
         D.derive(store, now="2026-01-11T11:30:00Z")
@@ -470,16 +541,7 @@ class ForgivenessIsRecorded(unittest.TestCase):
         # reason cannot alter a number we display. Twelve of 48 refusals in a
         # 62-game sample were exactly this and nothing else.
         store = DictStore()
-        seed(store, pbp=pbp_bytes(plays=[
-            play("faceoff", 0, winningPlayerId=1, xCoord=0, yCoord=0, eventOwnerTeamId=30),
-            play("shot-on-goal", 60, shootingPlayerId=1, goalieInNetId=2,
-                 xCoord=-70, yCoord=3, eventOwnerTeamId=30),
-            play("goal", 120, scoringPlayerId=1, goalieInNetId=2,
-                 xCoord=-75, yCoord=0, eventOwnerTeamId=30,
-                 # The league's running score after this goal. Real feeds carry it on
-                 # every goal — 198 of 198 across three sampled seasons — so a fixture
-                 # without it is not a smaller game, it is an impossible one.
-                 awayScore=1, homeScore=0),
+        seed(store, pbp=pbp_bytes(plays=regulation_plays() + [
             play("stoppage", 150, reason="zamboni-on-fire", eventOwnerTeamId=30),
         ]))
         rep = D.derive(store)
@@ -522,17 +584,7 @@ class TheShootoutIsNotPlay(unittest.TestCase):
         return p
 
     def game_with_shootout(self, scoring_attempts):
-        plays = [
-            play("faceoff", 0, winningPlayerId=1, xCoord=0, yCoord=0, eventOwnerTeamId=30),
-            play("shot-on-goal", 60, shootingPlayerId=1, goalieInNetId=2,
-                 xCoord=-70, yCoord=3, eventOwnerTeamId=30),
-            play("goal", 120, scoringPlayerId=1, goalieInNetId=2,
-                 xCoord=-75, yCoord=0, eventOwnerTeamId=30,
-                 # The league's running score after this goal. Real feeds carry it on
-                 # every goal — 198 of 198 across three sampled seasons — so a fixture
-                 # without it is not a smaller game, it is an impossible one.
-                 awayScore=1, homeScore=0),
-        ]
+        plays = regulation_plays()
         for i in range(scoring_attempts):
             plays.append(self.so("goal", 10 + i, scoringPlayerId=1, goalieInNetId=2,
                                  xCoord=-80, yCoord=0, eventOwnerTeamId=30))
@@ -597,17 +649,17 @@ class TheLedgerMustBeActionable(unittest.TestCase):
 
     def test_the_failing_checks_are_published_too(self):
         store = DictStore()
-        seed(store, gid=2025020001, box=box_bytes(away_sog=99))
-        seed(store, gid=2025020002, box=box_bytes(away_sog=98))
+        seed(store, gid=2025020001, pbp=stub_pbp(), box=box_bytes(away_sog=99))
+        seed(store, gid=2025020002, pbp=stub_pbp(), box=box_bytes(away_sog=98))
         D.derive(store, now="2026-01-11T11:30:00Z")
         failed = self.index(store)["extracts"]["failedChecks"]
         self.assertEqual(sum(failed.values()), 2)
-        self.assertTrue(any("SOG" in k for k in failed), f"named, not numbered: {failed}")
+        self.assertTrue(any("replay" in k for k in failed), f"named, not numbered: {failed}")
 
     def test_the_refused_games_are_named_so_they_can_be_looked_at(self):
         store = DictStore()
         seed(store, gid=2025020001)
-        seed(store, gid=2025020002, box=box_bytes(away_sog=99))
+        seed(store, gid=2025020002, pbp=stub_pbp(), box=box_bytes(away_sog=99))
         D.derive(store, now="2026-01-11T11:30:00Z")
         self.assertEqual(self.index(store)["extracts"]["refusedGames"], [2025020002])
 
@@ -663,8 +715,83 @@ class TheLeaguesNumbersAreQuotedOnce(unittest.TestCase):
         rich, refusal, _ = D.judge(pbp, box_bytes(away_sog=99, home_sog=0,
                                                   away_score=1, home_score=0),
                                    shifts_bytes())
-        self.assertIsNotNone(refusal, "99 shots against our 2 must not reconcile")
-        self.assertEqual(refusal["gate"], "validation")
+        # THE OBSERVABLE MOVED, AND THE POINT DID NOT. This used to assert a
+        # refusal, because any boxscore disagreement was fatal. The game now
+        # publishes and carries the disagreement — which demonstrates the very
+        # property the test is named for MORE directly: `quoted` says 99 while
+        # our own events say 2, in the same document, and it was stored anyway.
+        self.assertIsNone(refusal, "a replayable game is not withheld over the league's arithmetic")
+        self.assertEqual(rich["quoted"]["away"]["sog"], 99, "copied, not recomputed")
+        self.assertEqual(sum(1 for e in rich["events"]
+                             if e["type"] in ("shot-on-goal", "goal") and e["own"] == 30),
+                         rich_events, "and our own count still disagrees with it")
+        self.assertTrue(rich["unreconciled"], "the disagreement is recorded, not swallowed")
+
+
+class WhatTheLeagueCouldNotReconcile(unittest.TestCase):
+    """Published, and the league's two documents disagree about it.
+
+    73 in-scope games were being WITHHELD for this: our extraction reproduces the
+    play-by-play exactly — checked against the league's own running shot counter,
+    73 of 73 — and the league's separate boxscore reports one shot more or fewer.
+    Refusing them hid games we can replay faithfully because their summary
+    document was wrong, and it hid the fact that it was wrong.
+    """
+
+    def rows(self, store):
+        return {str(g["id"]): g for g in
+                json.loads(store.get("catalog.json").decode())["games"]}
+
+    def test_the_row_is_flagged_so_a_LIST_can_say_it(self):
+        # The calendar and the team page both draw many games at once and neither
+        # opens an extract to draw a row. Without a flag on the row, the
+        # disclosure would exist only on the page you already chose to open.
+        store = DictStore()
+        seed(store, box=box_bytes(away_sog=99, home_sog=0, away_score=1, home_score=0))
+        D.derive(store)
+        self.assertEqual(self.rows(store)["2025020001"].get("u"), 1)
+
+    def test_a_reconciled_game_carries_NO_flag_and_no_key(self):
+        # MUTATION GUARD, and the verdict card's rule: a key that is always
+        # present and usually empty teaches a reader to skip it. If `u` were
+        # always emitted the test above would pass on every game in the archive
+        # and discriminate nothing.
+        store = DictStore()
+        seed(store)
+        D.derive(store)
+        self.assertNotIn("u", self.rows(store)["2025020001"])
+        self.assertNotIn("unreconciled",
+                         json.loads(store.get("extract/2025020001.json").decode()))
+
+    def test_the_flag_survives_a_run_that_re_derives_nothing(self):
+        """THE PATH THAT ALMOST LOST IT. An unchanged game skips judge() entirely,
+        so the flag cannot come from a variable that branch never computes — it
+        has to be read back off the stored extract. Get this wrong and every
+        nightly quietly heals the catalog into looking cleaner than the archive
+        is, which is the exact failure a disclosure exists to prevent."""
+        store = DictStore()
+        seed(store, box=box_bytes(away_sog=99, home_sog=0, away_score=1, home_score=0))
+        first = D.derive(store)
+        self.assertEqual(first.derived, 1)
+        again = D.derive(store)
+        self.assertEqual(again.derived, 0, "nothing changed, so nothing re-derives")
+        self.assertEqual(again.unchanged, 1)
+        self.assertEqual(self.rows(store)["2025020001"].get("u"), 1,
+                         "the second run must not quietly drop the disclosure")
+        self.assertEqual(again.unreconciled, 1, "and it must still be counted")
+
+    def test_the_ledger_counts_them_so_the_forgiveness_is_auditable(self):
+        # Same reason `noted` is published: a gate that quietly forgets what it
+        # forgave is worse than one that never looked.
+        store = DictStore()
+        seed(store, gid=2025020001, box=box_bytes(away_sog=99, home_sog=0,
+                                                  away_score=1, home_score=0))
+        seed(store, gid=2025020002)
+        D.derive(store, now="2026-01-11T11:30:00Z")
+        idx = json.loads(store.get("index.json").decode())
+        self.assertEqual(idx["extracts"]["unreconciled"], 1)
+        self.assertEqual(idx["extracts"]["published"], 2, "both are published")
+        self.assertEqual(idx["extracts"]["refused"], 0)
 
 
 class TheCatalog(unittest.TestCase):
@@ -706,7 +833,7 @@ class TheCatalog(unittest.TestCase):
         # alone would re-merge refused with absent at the surface, after we split
         # them upstream -- three different sentences to a visitor.
         store = DictStore()
-        seed(store, gid=2025020002, box=box_bytes(away_sog=99))
+        seed(store, gid=2025020002, pbp=stub_pbp(), box=box_bytes(away_sog=99))
         D.derive(store)
         r = self.rows(store)[2025020002]
         self.assertEqual(r["v"], 0)
@@ -718,7 +845,7 @@ class TheCatalog(unittest.TestCase):
         # repeating the league, not asserting our own reading of a feed we just
         # refused.
         store = DictStore()
-        seed(store, gid=2025020002, box=box_bytes(away_sog=99, home_sog=7,
+        seed(store, gid=2025020002, pbp=stub_pbp(), box=box_bytes(away_sog=99, home_sog=7,
                                                   away_score=4, home_score=2))
         D.derive(store)
         r = self.rows(store)[2025020002]
@@ -749,7 +876,7 @@ class TheCatalog(unittest.TestCase):
         # vanished from the only place a visitor could find it.
         store = DictStore()
         seed(store, gid=2025020001)
-        seed(store, gid=2025020002, box=box_bytes(away_sog=99))
+        seed(store, gid=2025020002, pbp=stub_pbp(), box=box_bytes(away_sog=99))
         seed(store, gid=2025020003, pbp=pbp_bytes(plays=[
             play("teleportation", 0, xCoord=0, yCoord=0, eventOwnerTeamId=30)]))
         D.derive(store)
@@ -794,7 +921,7 @@ class TheCatalogMerges(unittest.TestCase):
 
     def test_a_re_judged_game_is_replaced_not_duplicated(self):
         store = DictStore()
-        seed(store, gid=2025020001, box=box_bytes(away_sog=99))
+        seed(store, gid=2025020001, pbp=stub_pbp(), box=box_bytes(away_sog=99))
         D.derive(store)
         self.assertEqual(self.rows(store)[2025020001]["v"], 0)
 
@@ -863,7 +990,7 @@ class TheReplacedRowIsWholesale(unittest.TestCase):
                          "the row a game keeps for years must be the row it published")
 
         refused = DictStore()
-        seed(refused, gid=2025020001, box=box_bytes(away_sog=99))
+        seed(refused, gid=2025020001, pbp=stub_pbp(), box=box_bytes(away_sog=99))
         rep = D.derive(refused)
         self.assertEqual(list(rep.refused), ["2025020001"], "the refusal path ran")
         self.assertEqual(set(self.rows(refused)[2025020001]) - fresh, {"r"},
@@ -1058,8 +1185,8 @@ class TheScoreSequenceHasAWitness(unittest.TestCase):
         import extract as E
         rich = E.extract(json.loads(seq_pbp([(3, 7, 1, 0), (1, 30, 1, 1)])),
                          json.loads(shifts_bytes()), json.loads(SEQ_BOX))
-        fails = E.validate(rich, json.loads(seq_pbp([(3, 7, 1, 0), (1, 30, 1, 1)])),
-                           json.loads(shifts_bytes()), json.loads(SEQ_BOX))
+        fails, _ = E.validate(rich, json.loads(seq_pbp([(3, 7, 1, 0), (1, 30, 1, 1)])),
+                              json.loads(shifts_bytes()), json.loads(SEQ_BOX))
         self.assertFalse([f for f in fails if "final score" in f],
                          "the total check is blind to order — that is why the new one exists")
         self.assertTrue([f for f in fails if "score sequence" in f])
@@ -1174,7 +1301,13 @@ def reference():
 
 
 def validate_quietly(rich, pbp, shifts, box):
-    """validate() prints for a human; here only the verdict is wanted."""
+    """validate() prints for a human; here only the verdict is wanted.
+
+    Returns (fails, notes). They are handed back SEPARATELY on purpose: a note
+    is a disagreement between two of the league's own documents and does not
+    withhold a game, so a test that lumped them together could not tell
+    "we refuse this" from "we publish this and say so".
+    """
     import contextlib, io
     with contextlib.redirect_stdout(io.StringIO()):
         return E.validate(rich, pbp, shifts, box)
@@ -1223,7 +1356,7 @@ class ThePenaltyCarriesItsOwnMeaning(unittest.TestCase):
         pbp = {"homeTeam": HOME, "awayTeam": AWAY, "rosterSpots": ROSTER,
                "plays": plays}
         rich = E.extract(pbp, json.loads(shifts_bytes()))
-        fails = validate_quietly(rich, pbp, json.loads(shifts_bytes()),
+        fails, _ = validate_quietly(rich, pbp, json.loads(shifts_bytes()),
                                  json.loads(box_bytes(away_sog=0, home_sog=0,
                                                       away_score=0, home_score=0)))
         self.assertFalse([f for f in fails if "offending team" in f],
@@ -1231,7 +1364,7 @@ class ThePenaltyCarriesItsOwnMeaning(unittest.TestCase):
         # AND THE ONE THAT CAN BE CHECKED STILL IS -- otherwise the repair is
         # just the gate switched off. Break the checkable penalty and it fires.
         rich["events"][1]["own"] = 7
-        again = validate_quietly(rich, pbp, json.loads(shifts_bytes()),
+        again, _ = validate_quietly(rich, pbp, json.loads(shifts_bytes()),
                                  json.loads(box_bytes(away_sog=0, home_sog=0,
                                                       away_score=0, home_score=0)))
         self.assertTrue([f for f in again if "offending team" in f],
@@ -1248,7 +1381,7 @@ class ThePenaltyCarriesItsOwnMeaning(unittest.TestCase):
         for e in self.rich["events"]:
             if e["type"] == "penalty":
                 e["own"] = ids[0] if e["own"] == ids[1] else ids[1]
-        fails = validate_quietly(self.rich, self.pbp, self.shifts, self.box)
+        fails, _ = validate_quietly(self.rich, self.pbp, self.shifts, self.box)
         self.assertTrue(any("offending team" in f for f in fails),
                         f"the penalty check did not fire; got {fails}")
 
@@ -1433,7 +1566,7 @@ class TheEndsTheyDefended(unittest.TestCase):
     def test_the_gate_fires_when_a_period_claims_the_wrong_end(self):
         # A wrong side mirrors a whole period of hockey and renders perfectly.
         self.rich["sides"]["2"] = self.rich["sides"]["1"]
-        fails = validate_quietly(self.rich, self.pbp, self.shifts, self.box)
+        fails, _ = validate_quietly(self.rich, self.pbp, self.shifts, self.box)
         self.assertTrue(any("recorded ends" in f for f in fails),
                         f"the ends check did not fire; got {fails}")
 
