@@ -728,6 +728,92 @@ class TheLeaguesNumbersAreQuotedOnce(unittest.TestCase):
         self.assertTrue(rich["unreconciled"], "the disagreement is recorded, not swallowed")
 
 
+class ANewCompetitionIsAnEventNotNoise(unittest.TestCase):
+    """The league mints a `gameType` whenever it invents a competition.
+
+    19 and 20 arrived in February 2025 for a 4 Nations tournament that had never
+    been held; 9 arrived in February 2026 for the Olympics. Both AFTER this
+    archive started, and **nothing watched for either** — the vocabulary gate
+    covers five fields inside the play-by-play and `gameType` is a property of
+    the game, so an unknown code flowed straight into the catalog. The first
+    thing that would have rendered it is a calendar cell reading "game type 21".
+
+    It must be LOUD and it must not withhold a game. `inScope` keys on 02 and 03
+    read off the id, so an unrecognised type cannot enter any rate; refusing real
+    hockey over a missing display name is the mistake the 73 already were.
+    """
+
+    def index(self, store):
+        return json.loads(store.get("index.json").decode())
+
+    def test_every_type_the_run_walked_is_counted(self):
+        store = DictStore()
+        seed(store, gid=2025020001, gtype=2)
+        seed(store, gid=2025010002, gtype=1)
+        seed(store, gid=2025010003, gtype=1)
+        D.derive(store, now="2026-01-11T11:30:00Z")
+        self.assertEqual(self.index(store)["extracts"]["gameTypes"], {"1": 2, "2": 1})
+
+    def test_a_type_nobody_has_named_is_reported(self):
+        store = DictStore()
+        seed(store, gid=2025210001, gtype=21)
+        D.derive(store, now="2026-01-11T11:30:00Z")
+        self.assertEqual(self.index(store)["extracts"]["unnamedTypes"], ["21"])
+
+    def test_and_the_run_goes_RED_rather_than_only_recording_it(self):
+        """A line in index.json nobody reads is not "loudly". The exit code is.
+
+        AFTER everything is written, never instead of it — the same shape the
+        ingest uses for a partial fetch, and the reason is the same: the failure
+        must be impossible to miss without costing anyone the data.
+        """
+        store = DictStore()
+        seed(store, gid=2025210001, gtype=21)
+        rep = D.derive(store, now="2026-01-11T11:30:00Z")
+        self.assertEqual(rep.as_dict()["unnamedTypes"], ["21"])
+        self.assertEqual(rep.published, 1, "the game is still published")
+        self.assertIsNotNone(store.get("extract/2025210001.json"),
+                             "and its extract is still written")
+
+    def test_a_named_type_is_silent(self):
+        # MUTATION GUARD. A check that fired on every run would be turned off
+        # within a week, and then the one that mattered would be invisible.
+        store = DictStore()
+        seed(store, gid=2025020001, gtype=2)
+        seed(store, gid=2025090002, gtype=9)
+        D.derive(store, now="2026-01-11T11:30:00Z")
+        self.assertEqual(self.index(store)["extracts"]["unnamedTypes"], [])
+
+    def test_the_key_is_present_when_empty(self):
+        # "We looked and found none" and "this version did not look" are
+        # different sentences — the same reason `blocking` is published empty.
+        store = DictStore()
+        seed(store, gid=2025020001, gtype=2)
+        D.derive(store, now="2026-01-11T11:30:00Z")
+        self.assertIn("unnamedTypes", self.index(store)["extracts"])
+
+    def test_a_type_is_counted_even_when_the_game_is_REFUSED(self):
+        # A new competition is likeliest to arrive in a feed we cannot parse —
+        # the Olympics did, 30 of 30. Counting only published games would make
+        # the check blindest exactly where it is needed.
+        store = DictStore()
+        seed(store, gid=2025210001, gtype=21, pbp=stub_pbp(),
+             box=box_bytes(away_sog=99))
+        rep = D.derive(store, now="2026-01-11T11:30:00Z")
+        self.assertEqual(rep.published, 0, "the stub is still refused")
+        self.assertEqual(self.index(store)["extracts"]["unnamedTypes"], ["21"])
+
+    def test_the_table_names_every_type_the_LIVE_archive_holds(self):
+        # The pinned set, from the live catalog on 2026-08-21. This is the half
+        # that catches drift at edit time; derive.py is the half that catches it
+        # the day the league invents something, because it sees the archive.
+        names = D._competitions()
+        for t in ("1", "2", "3", "4", "9", "12", "19", "20"):
+            self.assertIn(t, names, f"gameType {t} is in the archive and unnamed")
+        self.assertEqual(names["9"], "Olympics")
+        self.assertEqual(names["19"], "4 Nations")
+
+
 class WhatTheLeagueCouldNotReconcile(unittest.TestCase):
     """Published, and the league's two documents disagree about it.
 

@@ -26,29 +26,30 @@
 import { inScope } from './archive.js';
 
 /**
- * The competitions that are archived and never counted, by the league's own
- * `gameType`. KNOWN VALUES GET A WRITTEN NAME AND UNKNOWN ONES RENDER RAW —
- * the same answer the missed-shot vocabulary reached, for the same reason: the
- * league's vocabulary changes under us, and `failed-bank-attempt` appeared in
- * the archive after a season of not existing.
+ * The label for a competition, from the table in `data/competitions.json`.
  *
- * Naming matters here rather than being cosmetic. Lumping all of these under
- * "preseason" — the obvious shorthand, since 320 of 361 are — would be false on
- * every Olympic and 4 Nations night, which is 38 of the 60 dates this makes
- * visible in the first place.
+ * NO TABLE LIVES IN THIS FILE. `derive.py` reads that JSON and is the only thing
+ * that walks the whole archive, so it is the only place that can catch a new
+ * competition the day it lands — and a second copy here is the defect this
+ * project keeps almost building. The page gets the same file inlined.
+ *
+ * THE RAW FALLBACK IS A LAST RESORT, NOT THE POLICY. An unnamed type fails the
+ * derive run loudly; this exists so that in the window between the league
+ * inventing one and a human naming it, a reader sees `game type 21` rather than
+ * `undefined`. Rendering raw was briefly the whole answer here and that was
+ * wrong: `gameType` is a small closed enum, so a value nobody has seen is an
+ * EVENT, not the open-ended vocabulary a missed-shot reason is.
+ *
+ * Naming is not cosmetic. Lumping these under "preseason" — the tempting
+ * shorthand, since 320 of 361 are — would be false on every Olympic and
+ * 4 Nations night, which is 38 of the 60 dates this makes visible at all.
  */
-export const COMPETITION = {
-  1: 'preseason',
-  4: 'all-star',
-  9: 'Olympics',
-  12: 'all-star',
-  19: '4 Nations',
-  20: '4 Nations',
-};
-
-/** The label for an out-of-scope game, or the raw type when we have no name. */
-export function competitionOf(type) {
-  return COMPETITION[type] || `game type ${type}`;
+export function competitionOf(type, names) {
+  // `names[type]` and not `names[String(type)]`: object keys ARE strings and the
+  // lookup coerces, so the second form was a branch no mutation could reach.
+  // The table arrives from JSON with string keys and the catalog carries `t` as
+  // a number; that is one expression, not two.
+  return (names && names[type]) || `game type ${type}`;
 }
 
 /** 'YYYY-MM-DD' -> 'YYYY-MM'. String arithmetic, never a Date. */
@@ -91,16 +92,16 @@ export function nightsOf(games) {
     if (!g || !g.d) continue;
     let n = out.get(g.d);
     if (!n) {
-      n = { date: g.d, inScope: { held: 0, shown: 0 }, other: { held: 0, shown: 0, kinds: [] } };
+      n = { date: g.d, inScope: { held: 0, shown: 0 }, other: { held: 0, shown: 0, types: [] } };
       out.set(g.d, n);
     }
     const side = inScope(g.id) ? n.inScope : n.other;
     side.held += 1;
     if (g.v === 1) side.shown += 1;
-    if (side === n.other) {
-      const k = competitionOf(g.t);
-      if (!side.kinds.includes(k)) side.kinds.push(k);
-    }
+    // RAW TYPES, NOT LABELS. Naming happens where the table is, so this file
+    // cannot drift from it and a night carrying an unnamed competition still
+    // computes correctly rather than half-rendering a string.
+    if (side === n.other && !side.types.includes(g.t)) side.types.push(g.t);
   }
   return out;
 }
@@ -147,7 +148,7 @@ export function monthGrid(games, month, nights = nightsOf(games)) {
       // NHL games we hold, `other` is everything archived and not counted.
       count: n ? n.inScope.held : 0,
       other: n ? n.other.held : 0,
-      kinds: n ? n.other.kinds : [],
+      types: n ? n.other.types : [],
       // True when the night holds games and none of them can be opened. The
       // leaf needs a STATE for this, not a list of rows nobody can click.
       dead: !!n && (n.inScope.shown + n.other.shown) === 0,
@@ -171,7 +172,7 @@ export function monthGrid(games, month, nights = nightsOf(games)) {
 export function nightOf(games, date) {
   const rows = (games || []).filter(g => g && g.d === date)
     .map(g => ({ ...g, scope: inScope(g.id) ? 'nhl' : 'other',
-                 kind: inScope(g.id) ? null : competitionOf(g.t),
+                 type: inScope(g.id) ? null : g.t,
                  shown: g.v === 1 }))
     .sort((a, b) => (a.scope === b.scope ? a.id - b.id : a.scope === 'nhl' ? -1 : 1));
   const shown = rows.filter(r => r.shown).length;

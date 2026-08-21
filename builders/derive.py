@@ -48,6 +48,23 @@ import sys
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+
+
+def _competitions():
+    """gameType -> name, from the one table both languages read.
+
+    THE LEAGUE MINTS A NEW CODE WHENEVER IT INVENTS A COMPETITION, and names it
+    nowhere in the feed -- 19 and 20 arrived in February 2025 for a 4 Nations
+    tournament that had never been held, 9 in February 2026 for the Olympics,
+    both after this archive started. Nothing watched for that: the vocabulary
+    gate covers five fields inside the play-by-play and `gameType` is a property
+    of the GAME, so an unknown code flowed silently into the catalog and the
+    first thing to render it would have been a calendar cell reading
+    "game type 21".
+    """
+    return json.loads((ROOT / "data" / "competitions.json").read_text())["names"]
+
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import extract as E
 import fetch_nhl as F   # the storage layout, defined once. Imports open no socket.
@@ -134,6 +151,7 @@ class Report:
     absent: dict = field(default_factory=dict)    # gid -> raw not in THIS store
     noted: dict = field(default_factory=dict)     # field -> values seen but forgiven
     unreconciled: int = 0                        # published, but the league disagrees with itself
+    types: dict = field(default_factory=dict)    # gameType -> how many games carry it
     refused_in_window: int = 0
 
     @property
@@ -174,6 +192,14 @@ class Report:
                 "refusedInWindow": self.refused_in_window,
                 "absent": len(self.absent), "byGate": by_gate,
                 "noted": {k: sorted(v) for k, v in sorted(self.noted.items())},
+                # EVERY gameType THE RUN WALKED, and the ones nobody has named.
+                # Both published, because "we looked and found none" and "this
+                # version did not look" are different sentences -- the same
+                # reason `blocking` is present when empty.
+                "gameTypes": {str(k): v for k, v in sorted(
+                    self.types.items(), key=lambda kv: (kv[0] is None, kv[0]))},
+                "unnamedTypes": sorted(str(k) for k in self.types
+                                       if str(k) not in _competitions()),
                 "blocking": blocking, "failedChecks": failed,
                 "refusedGames": sorted(int(g) for g in self.refused),
                 "reasons": {g: r["detail"] for g, r in sorted(self.refused.items())}}
@@ -294,7 +320,13 @@ def derive(store, end=None, days=None, now=None):
             continue
 
         g = meta.get(gid, {})
-        row = {"id": int(gid), "d": g.get("date"), "t": g.get("type"),
+        # COUNTED HERE, before any branch. Every game reaches this line --
+        # published, refused, and the unchanged fast path alike -- so a new
+        # competition cannot hide behind a game that happened not to be
+        # re-derived on the run that first saw it.
+        t = g.get("type")
+        rep.types[t] = rep.types.get(t, 0) + 1
+        row = {"id": int(gid), "d": g.get("date"), "t": t,
                **_quote(payloads["boxscore"])}
 
         # Decidable from the artifact itself, with no timestamp and no mtime --
@@ -384,6 +416,8 @@ def _write_ledger(store, idx, rep, stamp):
         # is -- a gate that quietly forgets what it forgave is worse than one
         # that never looked.
         "unreconciled": rep.unreconciled,
+        "gameTypes": d["gameTypes"],
+        "unnamedTypes": d["unnamedTypes"],
         # Present even when empty, so a reader can tell "we checked and found
         # none" from "this version did not check" -- the same distinction
         # lastRun exists to make one layer up.
@@ -420,6 +454,21 @@ def main():
     # holds pointers for the whole archive and raw for one night of it. Neither
     # is a failure, and exiting non-zero on either would make a green pipeline
     # impossible to distinguish from a broken one.
+    #
+    # AN UNNAMED COMPETITION IS DIFFERENT, AND IT IS LOUD -- but only AFTER
+    # everything is written. It cannot change a number: `inScope` keys on 02 and
+    # 03 read off the game id, so an unrecognised type is excluded from every
+    # rate by construction. What it can do is put "game type 21" in front of a
+    # reader, which is a naming gap and not a data fault -- so the archive is
+    # published in full and the RUN goes red, the same shape the ingest uses for
+    # a partial fetch. Withholding real hockey over a missing display name is
+    # the mistake the 73 refused games already were.
+    if out.get("unnamedTypes"):
+        print(f"\n::error::the archive holds gameType {out['unnamedTypes']} and "
+              f"data/competitions.json does not name it. The games are published; "
+              f"add the name so the calendar stops rendering it raw.",
+              file=sys.stderr)
+        return 1
     return 0
 
 

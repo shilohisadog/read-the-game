@@ -7,10 +7,21 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
-  COMPETITION, competitionOf, monthOf, weekdayOf, daysInMonth,
+  competitionOf, monthOf, weekdayOf, daysInMonth,
   nightsOf, monthsIn, monthGrid, nightOf,
 } from '../src/lib/calendar.js';
+
+/**
+ * The one table, read from the file derive.py reads.
+ *
+ * NOT RE-TYPED HERE. A second copy is what makes a name in the page disagree
+ * with the set the pipeline validates against, and the whole point of moving
+ * this out of calendar.js was that there be exactly one.
+ */
+const NAMES = JSON.parse(
+  readFileSync(new URL('../data/competitions.json', import.meta.url))).names;
 
 /** Catalog rows, in the shape the browser actually receives. */
 const row = (id, d, extra = {}) => ({ id, d, a: 'BUF', h: 'MIN', hs: 2, as: 1,
@@ -38,20 +49,47 @@ test('the mark names the competition, and "preseason" is wrong for 38 of the dat
   // the 60 dates this feature exists to make visible.
   const g = [OLY(1, '2026-02-11'), OLY(2, '2026-02-11')];
   const [cell] = monthGrid(g, '2026-02').flat().filter(c => c && c.date === '2026-02-11');
-  assert.deepEqual(cell.kinds, ['Olympics']);
-  assert.equal(competitionOf(19), '4 Nations');
-  assert.equal(competitionOf(4), 'all-star');
+  assert.deepEqual(cell.types, [9], 'the grid carries the raw type, never a label');
+  assert.equal(competitionOf(9, NAMES), 'Olympics');
+  assert.equal(competitionOf(19, NAMES), '4 Nations');
+  assert.equal(competitionOf(4, NAMES), 'all-star');
 });
 
-test('a gameType we have never seen renders raw instead of being mislabelled', () => {
-  // The league's vocabulary changes under us — `failed-bank-attempt` appeared
-  // in the archive after a season of not existing. Falling back to the commonest
-  // label would print "preseason" over a competition nobody has looked at yet.
-  assert.equal(COMPETITION[77], undefined, 'the fixture must use an unknown type');
-  assert.equal(competitionOf(77), 'game type 77');
+test('an unnamed gameType degrades to itself — but that is the last resort, not the policy', () => {
+  /* THE POLICY IS IN derive.py, WHICH GOES RED. This only covers the window
+     between the league inventing a competition and a human naming it, so a
+     reader sees `game type 77` rather than `undefined`.
+
+     Rendering raw was briefly the WHOLE answer here, and that was wrong.
+     `gameType` is a small closed enum — the league mints a code when it invents
+     a competition, 19 and 20 for the 4 Nations in 2025, 9 for the Olympics in
+     2026 — so an unseen value is an event, not the open-ended vocabulary a
+     missed-shot reason is. Nothing watched it: the vocabulary gate covers five
+     fields inside the play-by-play, and this is a property of the game. */
+  assert.equal(NAMES['77'], undefined, 'the fixture must use an unnamed type');
+  assert.equal(competitionOf(77, NAMES), 'game type 77');
+  assert.equal(competitionOf(77, undefined), 'game type 77', 'and with no table at all');
   const [cell] = monthGrid([row(2023770001, '2024-03-03', { t: 77 })], '2024-03')
     .flat().filter(c => c && c.date === '2024-03-03');
-  assert.deepEqual(cell.kinds, ['game type 77']);
+  assert.deepEqual(cell.types, [77], 'the grid still computes; only the label is missing');
+});
+
+test('the table names every gameType the live archive holds', () => {
+  // The pinned half. derive.py is the half that fires the day the league
+  // invents something, because it walks the archive and this file cannot.
+  for (const t of ['1', '2', '3', '4', '9', '12', '19', '20']) {
+    assert.ok(NAMES[t], `gameType ${t} is in the archive and has no name`);
+  }
+});
+
+test('a label is never baked into the grid', () => {
+  // MUTATION GUARD on the split. If monthGrid resolved names itself it would
+  // need its own copy of the table, which is the drift this was moved to avoid.
+  const [cell] = monthGrid([row(2023090001, '2026-02-11', { t: 9 })], '2026-02')
+    .flat().filter(c => c && c.date === '2026-02-11');
+  assert.deepEqual(cell.types, [9]);
+  assert.equal(JSON.stringify(cell).includes('Olympics'), false,
+               'the grid must not know what 9 is called');
 });
 
 test('a cell counts what we HOLD, not what we can show', () => {
@@ -175,8 +213,9 @@ test('the night list puts NHL first and is stable within each group', () => {
   const leaf = nightOf(g, '2023-10-05');
   assert.deepEqual(leaf.rows.map(r => r.scope), ['nhl', 'nhl', 'other']);
   assert.deepEqual(leaf.rows.map(r => r.id), [2023020002, 2023020004, 2023010009]);
-  assert.equal(leaf.rows[2].kind, 'preseason');
-  assert.equal(leaf.rows[0].kind, null, 'an NHL game is not a competition footnote');
+  assert.equal(leaf.rows[2].type, 1);
+  assert.equal(competitionOf(leaf.rows[2].type, NAMES), 'preseason');
+  assert.equal(leaf.rows[0].type, null, 'an NHL game is not a competition footnote');
 });
 
 test('nightsOf keeps held and shown apart rather than deriving one at the end', () => {

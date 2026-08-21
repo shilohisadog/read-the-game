@@ -1,0 +1,34 @@
+{
+  "_": [
+    "gameType -> the competition it names. The league carries this as a bare",
+    "integer and names it nowhere in the feed, so a human has to.",
+    "",
+    "ONE TABLE, READ BY BOTH LANGUAGES. derive.py walks every game and is the",
+    "only thing that sees the whole archive, so it is the only place that can",
+    "catch a new competition the day it lands; build_index.py inlines this same",
+    "file for the page. A second copy in JavaScript would be the defect this",
+    "project keeps almost building.",
+    "",
+    "A NEW CODE IS NOT NOISE, IT IS AN EVENT. The league mints one whenever it",
+    "invents a competition: 19 and 20 arrived in February 2025 for the 4 Nations",
+    "Face-Off, which had never been held, and 9 arrived in February 2026 for the",
+    "Olympics. Both after this archive started. derive.py exits non-zero when it",
+    "walks a type not listed here -- AFTER publishing, because a missing display",
+    "name cannot change a number and withholding real hockey over one is the",
+    "mistake the 73 refused games already were.",
+    "",
+    "SCOPE IS NOT DECIDED HERE. inScope() keys on 02 and 03 read off the game id",
+    "and owes nothing to this file; regular season and playoffs are listed only",
+    "so the set is complete and a reader of this file is not left wondering."
+  ],
+  "names": {
+    "1": "preseason",
+    "2": "regular season",
+    "3": "playoffs",
+    "4": "all-star",
+    "9": "Olympics",
+    "12": "all-star",
+    "19": "4 Nations",
+    "20": "4 Nations"
+  }
+}
