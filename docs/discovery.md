@@ -467,3 +467,36 @@ Five of these six were invisible to 623 green tests.
 - **The front-door disclosure does not name the all-star games** (4 of 4,553).
   Named in §10.1 as something that gets looked at on its own merits, and it
   still has not been.
+
+## 11.8 ⭐ And CI found one C1 did not cause but did expose
+
+The deploy failed on *"the inlined pages must not call out to anything"* — a
+grep over every page in `src/` with **`index|game` exempted by filename.**
+`calendar.html` fetches its catalog, by design, under a hash-pinned CSP naming
+exactly the data origin. It fell outside a typed list and failed a gate that had
+no opinion about it.
+
+**The comment beside that list already stated the real reason for the
+exemption:** *"both carry a hash-pinned CSP the BROWSER enforces, which is a
+stronger promise than this grep can make."* That reason is a **property of the
+page**, so the list was the defect, not the page. It is now read off the policy.
+
+**And reading it off the policy is only half a fix.** A page that DECLARES a
+reach it never uses would exempt itself from the check meant to hold it —
+silently. **Two pages were already in that state**: `what-you-can-see.html` and
+`workshop.html` inherited `connect-src https://data.readthegame.co` from a
+shared builder and fetch nothing at all. Mutating every page to "allowed" did
+not turn the new gate red.
+
+So the gate asserts **both directions**: declaring the archive and calling out
+must be the same set of pages, and either alone fails. `page.py::csp` now takes
+`connect=None`, and the two pages that read nothing say so.
+
+| | |
+|---|---|
+| pages that fetch and declare it | **3** — `index`, `game`, `calendar` |
+| pages that reach nothing and declare nothing | **8** |
+| before this change | **5 declared it**, two of them for no reason |
+
+Mutation-checked in both directions: an undeclared `fetch(` on `workshop.html`
+fails, and widening every page's policy fails.

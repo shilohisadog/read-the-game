@@ -63,21 +63,54 @@ jobs:
       # The pages that inline their whole game must still call nobody. This grep
       # is a blacklist over an open vocabulary and cannot close -- it is blind to
       # import(), EventSource, sendBeacon and window["fetch"] -- so it is a
-      # backstop, not the guarantee. index.html is exempt because it legitimately
-      # fetches its own freshness, and its guarantee is a CSP the browser
-      # enforces, checked in the step below.
-      - name: the inlined pages must not call out to anything
+      # backstop, not the guarantee. A page that legitimately reaches the archive
+      # is held to a CSP the browser enforces, which is the stronger promise.
+      #
+      # ⭐ WHICH PAGES THOSE ARE IS READ OFF THE PAGES, NOT TYPED HERE. This step
+      # used to exempt `index|game` by name, and the comment beside the list
+      # already stated the real reason: their guarantee is the policy, not their
+      # filename. So when calendar.html became the third page that fetches, it
+      # fell outside a hand-typed list and failed a gate that had no opinion
+      # about it -- the list was the defect, not the page. The exemption is now
+      # the property that justified it, which no new page can fall outside of.
+      - name: a page reaches the network only where its own policy says so
         run: |
-          # index.html fetches its own freshness and game.html fetches its game;
-          # both are exempt here and both carry a hash-pinned CSP the BROWSER
-          # enforces, which is a stronger promise than this grep can make. The
-          # grep stays for the pages that genuinely reach nothing.
-          pages=$(ls src/*.html | grep -vE 'src/(index|game)\.html')
-          if grep -rniE 'fetch\(|XMLHttpRequest|new WebSocket|src="https?:|<link[^>]+https?:' $pages; then
-            echo "::error::a shipped page references the network"
-            exit 1
-          fi
-          echo "no outbound calls in $(echo "$pages" | wc -l) inlined pages"
+          # ⭐ THE TWO FACTS MUST AGREE, IN BOTH DIRECTIONS.
+          #
+          # This step used to exempt `index|game` BY NAME while the comment
+          # beside the list stated the real reason: their guarantee is a CSP the
+          # browser enforces, not their filename. So when calendar.html became
+          # the third page that fetches, it fell outside a hand-typed list and
+          # failed a gate that had no opinion about it. The list was the defect.
+          #
+          # Reading the exemption off the policy is the fix, and on its own it
+          # is only half of one -- a page that DECLARES a reach it never uses
+          # would exempt itself from the check meant to hold it, silently, and
+          # two pages were already in that state (what-you-can-see and workshop
+          # inherited the data origin from a shared builder). Mutating every
+          # page to "allowed" did not turn this red until both directions were
+          # asserted. So: declaring the archive and calling out must be the same
+          # set of pages, and either one alone is a failure.
+          fail=0; both=0; neither=0
+          for f in src/*.html; do
+            says=0; does=0
+            grep -qE "connect-src [^\"]*https://data\.readthegame\.co" "$f" && says=1
+            grep -qiE 'fetch\(|XMLHttpRequest|new WebSocket|src="https?:|<link[^>]+https?:' "$f" && does=1
+            if [ "$says" = 1 ] && [ "$does" = 1 ]; then both=$((both+1)); continue; fi
+            if [ "$says" = 0 ] && [ "$does" = 0 ]; then neither=$((neither+1)); continue; fi
+            if [ "$does" = 1 ]; then
+              echo "::error::$f reaches the network and its own policy does not permit it"
+            else
+              echo "::error::$f declares the archive in its policy and never reads it -- least privilege, and an unused permission exempts the page from this check"
+            fi
+            fail=1
+          done
+          # Printed so the failure mode where every page drifts into one bucket
+          # is visible rather than silently green.
+          echo "$both pages fetch and say so; $neither reach nothing and say nothing"
+          [ "$both" -gt 0 ] && [ "$neither" -gt 0 ] || {
+            echo "::error::every page landed in one bucket -- this gate stopped separating anything"; fail=1; }
+          exit $fail
 
       # THE CSP MUST EXECUTE, NOT MERELY BE PRESENT. A hash-pinned policy with a
       # stale hash is a blank page that passes every grep we could write, so the

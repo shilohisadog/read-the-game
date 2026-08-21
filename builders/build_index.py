@@ -38,9 +38,15 @@ def _module(name):
     body = re.sub(r"^[ \t]*import(?=[\s{'\"*])[^;]*?;[ \t]*$", "", src, flags=re.M)
     return body.replace("export ", "")
 
-def _csp(html):
-    """Delegates to page.csp — see there for why there is only one copy."""
-    return P.csp(html, connect=DATA_ORIGIN)
+def _csp(html, *, connect=DATA_ORIGIN):
+    """Delegates to page.csp — see there for why there is only one copy.
+
+    `connect` defaults to the data origin because the two pages that fetch are
+    the ones this builder was written for. The learn and workshop pages pass
+    None: they read nothing, and a policy naming a reach a page does not use is
+    what the deploy gate now reads as permission to call out.
+    """
+    return P.csp(html, connect=connect)
 
 # THE PAGE NAMES NO GAME AND NO TEAM.
 #
@@ -963,7 +969,7 @@ def build_learn():
                       current="/what-you-can-see.html",
                       head='<meta http-equiv="Content-Security-Policy" content="__CSP__">\n'
                            + STYLE)
-    return html.replace("__CSP__", _csp(html))
+    return html.replace("__CSP__", _csp(html, connect=None))
 
 
 def build_workshop():
@@ -973,7 +979,7 @@ def build_workshop():
                       current="/workshop.html",
                       head='<meta http-equiv="Content-Security-Policy" content="__CSP__">\n'
                            + STYLE)
-    return html.replace("__CSP__", _csp(html))
+    return html.replace("__CSP__", _csp(html, connect=None))
 
 
 # ---------------------------------------------------------------------------

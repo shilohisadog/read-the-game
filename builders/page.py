@@ -32,7 +32,7 @@ definition, one place to fix, and `test/document.test.js` asserts every page in
 import base64, hashlib, re
 
 
-def csp(html, *, connect):
+def csp(html, *, connect=None):
     """A Content-Security-Policy the BROWSER enforces, replacing a grep we wrote.
 
     ONE COPY, AND THE BUG IS THE ARGUMENT FOR IT. This lived in `build_main.py`
@@ -122,7 +122,16 @@ def csp(html, *, connect):
         "default-src 'none'",
         f"script-src {h(r'<script>(.*?)</script>', '<script>')} {beacon_script}".strip(),
         f"style-src {h(r'<style>(.*?)</style>', '<style>')}",
-        f"connect-src 'self' {connect}",
+        # ⭐ LEAST PRIVILEGE, AND THE DEPLOY GATE IS WHY IT STOPPED BEING
+        # OPTIONAL. `connect` used to be required and every page passed the data
+        # origin, so `what-you-can-see.html` and `workshop.html` -- which fetch
+        # nothing at all -- declared permission to reach the archive. That was
+        # merely untidy until the deploy step began READING this directive to
+        # decide which pages are allowed to call out: a page claiming a reach it
+        # does not use then exempts itself from the check meant to hold it.
+        # `'self'` stays for every page, because the Cloudflare RUM beacon POSTs
+        # same-origin to /cdn-cgi/rum.
+        f"connect-src 'self' {connect}".strip() if connect else "connect-src 'self'",
         # The homepage frames the game page for its five-second preview, and
         # `frame-src` has no fallback to default-src -- 'none' would block it.
         #
