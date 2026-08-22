@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-EigpSWG/sG/F0ZuitxiFfnizIDDmYFOlQ9STXarqwaQ=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-76Fk0XF7szXA7Az7rmPCpuDKIvrWLMS/SSwbmlI+6uo='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-kpeHCldIDZZOqw+5Lba+AILeJT9/CjlVikjl/8kG8y0=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-c665gbBLVjsrJbjtC2qkdxXss5IIfcs/CJ8nDcqunfM='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">What is this?</a></nav></header>
@@ -572,6 +572,11 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .whsay .wkick{display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:2px}
 #rg .whsay .at{font-family:ui-monospace,Menlo,monospace;color:var(--muted);font-size:.78rem}
 #rg .whsay .none{color:var(--flag)}
+/* The blocked panel's ledger line, above three aggregates. Separated by a rule
+   rather than a gap, because it is a different KIND of statement from the rows
+   under it — one event, with a time — and the panel is otherwise all totals. */
+#rg .bklast{padding-bottom:9px;margin-bottom:10px;border-bottom:1px solid var(--edge)}
+#rg .bklast .rsn{font-weight:650}
 #rg .whmeta{font-size:.74rem;color:var(--muted);margin-top:7px}
 #rg .whmeta .src{font-family:ui-monospace,Menlo,monospace}
 #rg .goalies{display:none;gap:10px;margin-top:10px}
@@ -4354,6 +4359,56 @@ function drawNoPlace(e){
  if(!e||!inShootout(e)){g.innerHTML='';return;}
  g.innerHTML=`<text class="npl" x="100" y="39">Shootout — a skills competition that decides the game, not play in it.</text>`
    + `<text class="nplsub" x="100" y="46">Attempts are not drawn: the coordinates the feed records for them are not positions.</text>`;}
+/* ⭐ B4 — ONE NARRATOR, MANY LEDGERS. This sentence used to live inside
+   drawLabel's SVG branch, which meant the ON-ICE label was the only surface
+   that could say what a blocked shot was. The panel below the rink needed the
+   same sentence for the LAST block, and the choice was to write it twice or to
+   name it once. Naming it once is also what keeps the two from drifting: the
+   "it had no antecedent" fix (Kevin, watching CAR–VGK: `VGK · Blocked it` --
+   "but what is 'it'?") would otherwise have to be made in two places.
+
+   `named` is the layer's own privilege, not a style: the base view labels events
+   with a team and a play, never a person, and blocked shots do not get to be the
+   exception. With the layer on, the blocker is named. */
+function blockedSay(e,named){
+  const b=R[e.blk],sh=R[e.actor];
+  const bt=b?(b.tid===AID?AAB:b.tid===HID?HAB:null):null;
+  const mate=b&&sh&&b.tid===sh.tid;
+  // 7.8% of blocks across the archive are by the shooter's own side, so "the
+  // other team blocked it" would be false about one block in thirteen.
+  if(!b)return 'Blocked — no blocker recorded';
+  if(mate)return named?`Blocked by a teammate — ${b.nm}`:'Blocked by a teammate';
+  // The team is the one that DID the blocking and the verb is active, so
+  // `VGK · Blocked a shot` cannot be read as VGK's shot being blocked.
+  return `${bt?bt+' · ':''}${named?b.nm+' blocked a shot':'Blocked a shot'}`;
+}
+
+/* ⭐ HOW FAR BACK A LEDGER ENTRY IS, extracted from the whistle card so every
+   ledger can say it. The rink narrates NOW; anything below it is retrospective
+   and must say so, because the card was never wrong -- its CURRENCY was
+   invisible (Kevin: "the card stays on Last Stoppage, creating a bit of a
+   disconnect"). A reader had to compare a timestamp against the scoreboard to
+   discover they were looking at history.
+   MEASURED, on the reference game, as the gap between the playhead and the most
+   recent event of each layer: stoppage 36s median and 84% of frames over five
+   seconds -- and the layers WITHOUT this line are worse. Blocked shots are 50s
+   median, p90 153s, 92% of frames over five seconds; shots on goal 42s and 86%.
+   Corsi is 14s and is excluded on its own merits: its "most recent event" is
+   almost every event, which the caption already narrates and which does not
+   drift.
+   Same period only: across a period break the difference in `s` is not an
+   elapsed time, and saying nothing is cheaper than computing one. */
+function sinceLine(ev){
+  if(!ev)return '';
+  const c=EV[i];
+  let d='';
+  if(c&&c.per===ev.per){
+    const g=c.s-ev.s;
+    if(g>0)d=' · '+(g<60?g+'s':Math.floor(g/60)+':'+String(g%60).padStart(2,'0'))+' earlier';
+  }
+  return `· P${ev.per} ${ESC(ev.rem)}${d}`;
+}
+
 function drawLabel(e){const g=$('labels');const p=place(e);if(!labelsOn||!p){g.innerHTML='';return;}
  const lx=p.x,ly=p.y;
  if(e.type==='goal'){const tid=e.own,col=tid===AID?AWAYCOL:HOMECOL,ab=tid===AID?AAB:HAB,p=R[e.actor];
@@ -4419,21 +4474,13 @@ function drawLabel(e){const g=$('labels');const p=place(e);if(!labelsOn||!p){g.i
  // The player's NAME stays layer-only: the base view labels events with a team
  // and a play, never a person, and blocked shots do not get to be the exception.
  if(e.type==='blocked-shot'){
-   const b=R[e.blk],sh=R[e.actor];
-   const bt=b?(b.tid===AID?AAB:b.tid===HID?HAB:null):null;
-   const mate=b&&sh&&b.tid===sh.tid;
-   const head=!b?'Blocked — no blocker recorded'
-     :mate?(blockOn?`Blocked by a teammate — ${b.nm}`:'Blocked by a teammate')
+   const head=blockedSay(e,blockOn);
      // "IT" HAD NO ANTECEDENT. Kevin, watching a CAR–VGK game: `VGK · Blocked
      // it` -- "but what is 'it'?" Nothing on the label says a SHOT, and the mark
      // beside it is a dot like every other mark on the ice. The pronoun was
      // carried over from a sentence that used to name the shooter first, and it
      // lost its referent when the wording inverted to name the blocker.
      //
-     // The inversion above is preserved: the team is still the one that DID the
-     // blocking, and the verb is still active, so `VGK · Blocked a shot` cannot
-     // be read as VGK's shot being blocked.
-     :`${bt?bt+' · ':''}${blockOn?b.nm+' blocked a shot':'Blocked a shot'}`;
    g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${ESC(head)}</text></g>`;
    return;}
  // AND THE TABLE NO LONGER CARRIES A BLOCKED ROW. It would never be reached, and
@@ -4520,10 +4567,7 @@ function drawWhistles(W){
      creating a bit of a disconnect"). Same period only: across a period break
      the difference in `s` is not an elapsed time, and saying so is cheaper than
      computing one. */
-  +`<span class="rsn">${ESC(RSN(w.rsn))}</span> <span class="at">· P${w.per} ${ESC(w.rem)}${(()=>{
-      const c=EV[i]; if(!c||c.per!==w.per)return '';
-      const d=c.s-w.s; if(!(d>0))return '';
-      return ' · '+(d<60?d+'s':Math.floor(d/60)+':'+String(d%60).padStart(2,'0'))+' earlier';})()}</span><br>${say}</p>`
+  +`<span class="rsn">${ESC(RSN(w.rsn))}</span> <span class="at">${sinceLine(w)}</span><br>${say}</p>`
   /* TRIMMED TO THE RESTART AND ITS SOURCE. Kevin, looking at the live offside
      card: "remove all text after 'Play restarted at the ringed faceoff dot.' We
      don't need 'TV timeout' or the 'Goalie covered the puck....' line."
@@ -4713,7 +4757,26 @@ function drawBlocked(B,L,slice){
       doctrine and has moved into the row's scope, where it is always visible
       rather than in a paragraph below the fold on a phone. */
   :`<p class="bkarch">No archive comparison shown — ${RATES===undefined?'this page carries a single game and never asks for the archive':'the archive shares could not be loaded'}.</p>`;
- $('blockPanel').innerHTML=game+why+mates+un+arch;}
+ /* ⭐ B4 — THE LEDGER SAYS WHEN, and this panel had no `when` at all. Every
+    figure on it is an aggregate over the whole game so far, which is honest and
+    is not what a viewer watching a dimmed rink wants to know: with the layer on,
+    everything but blocks is faded, and nothing said how long ago the last one
+    was. Measured on the reference game, the most recent block is a MEDIAN 50
+    SECONDS behind the playhead, p90 153s, and more than five seconds behind on
+    92% of frames -- worse than the 36s/84% that earned the whistle card its
+    retrospective kicker.
+    CHENG's ruling was NO to a per-event card and yes to this: "a card showing
+    the most recent event of the active layer, headed retrospectively, exactly
+    as the whistle card is now." One narrator, many ledgers -- so the sentence
+    is the NARRATOR'S OWN, `blockedSay`, and not a second wording of it. */
+ const bi=B.counted.length?B.counted[B.counted.length-1]:null;
+ const lastB=(bi!=null&&slice[bi]&&slice[bi].type==='blocked-shot')?slice[bi]:null;
+ const lastly=lastB
+  ?`<p class="whsay bklast"><span class="wkick">Last blocked shot</span>`
+   +`<span class="rsn">${ESC(blockedSay(lastB,true))}</span> `
+   +`<span class="at">${sinceLine(lastB)}</span></p>`
+  :'';
+ $('blockPanel').innerHTML=lastly+game+why+mates+un+arch;}
 
 /* WHAT A FIRST-TIME VIEWER IS TOLD, and it answers three questions Kevin
    predicted a casual fan would ask, in his words:

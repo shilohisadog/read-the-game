@@ -528,6 +528,11 @@
 #rg .whsay .wkick{display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:2px}
 #rg .whsay .at{font-family:ui-monospace,Menlo,monospace;color:var(--muted);font-size:.78rem}
 #rg .whsay .none{color:var(--flag)}
+/* The blocked panel's ledger line, above three aggregates. Separated by a rule
+   rather than a gap, because it is a different KIND of statement from the rows
+   under it — one event, with a time — and the panel is otherwise all totals. */
+#rg .bklast{padding-bottom:9px;margin-bottom:10px;border-bottom:1px solid var(--edge)}
+#rg .bklast .rsn{font-weight:650}
 #rg .whmeta{font-size:.74rem;color:var(--muted);margin-top:7px}
 #rg .whmeta .src{font-family:ui-monospace,Menlo,monospace}
 #rg .goalies{display:none;gap:10px;margin-top:10px}

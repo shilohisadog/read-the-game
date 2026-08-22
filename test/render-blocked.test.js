@@ -483,3 +483,70 @@ test('a line a rule names is marked wider than the line it marks', () => {
   assert.ok(+band[1] > Math.max(...widths),
     `the rule band is ${band[1]} but something on the ice is drawn at ${Math.max(...widths)}`);
 });
+
+/* ---------------------------------------------------------------------------
+   B4 — ONE NARRATOR, MANY LEDGERS. CHENG's ruling: no per-event card; what is
+   defensible is "the most recent event of the active layer, headed
+   retrospectively, exactly as the whistle card is now."
+   --------------------------------------------------------------------------- */
+
+test('⭐ the blocked panel names the LAST block and says how far back it is', () => {
+  // WHY IT EXISTS, measured on this game rather than asserted: the most recent
+  // blocked shot is a MEDIAN 50 SECONDS behind the playhead, p90 153s, and more
+  // than five seconds behind on 92% of frames — worse than the 36s/84% that
+  // earned the whistle card its retrospective kicker. Every other figure on
+  // this panel is an aggregate over the whole game, so nothing said WHEN.
+  const a = boot(rich, CURVE_AND_MIX);
+  a.$('lyBlock').click();
+  const seen = a.every(d => (d.$('blockPanel').innerHTML.match(
+    /<p class="whsay bklast">[\s\S]*?<\/p>/) || [''])[0]);
+  const lines = seen.filter(Boolean);
+  assert.ok(lines.length > 100, `the ledger line rendered on only ${lines.length} frames`);
+  assert.ok(seen.some(s => !s), 'it must be ABSENT before the first block, not a zero');
+
+  // It is headed retrospectively, and it says how far back — the two halves of
+  // the whistle fix. Currency was never wrong here; it was invisible.
+  assert.ok(lines.every(s => /Last blocked shot/.test(s)));
+  const withGap = lines.filter(s => /earlier<\/span>/.test(s));
+  assert.ok(withGap.length > lines.length / 2,
+    `only ${withGap.length} of ${lines.length} frames said how far back`);
+  assert.match(lines.join(''), /· \d+s earlier|· \d+:\d\d earlier/);
+});
+
+test('the gap is ABSENT when the last block is the current event', () => {
+  // Without this, "says how far back" is satisfied by a line that prints
+  // "0s earlier" on the frame the block happens — a false clause, and the
+  // easiest one to write.
+  const a = boot(rich, CURVE_AND_MIX);
+  a.$('lyBlock').click();
+  const onBlockFrames = a.every(d => {
+    const m = d.$('blockPanel').innerHTML.match(/<span class="at">·[^<]*<\/span>/);
+    const cap = d.$('caption').innerHTML;
+    return m ? { at: m[0], cap } : null;
+  }).filter(Boolean);
+  assert.ok(onBlockFrames.some(x => !/earlier/.test(x.at)),
+    'no frame ever showed the block as current — the gap clause is unconditional');
+  // (?<!\d) — because /0s earlier/ alone also matches "10s earlier", and the
+  // first version of this assertion failed on a correct page for that reason.
+  assert.ok(!onBlockFrames.some(x => /(?<!\d)0s earlier/.test(x.at)),
+    '"0s earlier" was printed, which is not a thing that is true');
+});
+
+test('⭐ the panel quotes the NARRATOR — one sentence, not two wordings', () => {
+  // The on-ice label and this panel say the same thing about the same event
+  // because they call the same function. Two wordings would drift, and the "it
+  // had no antecedent" fix (`VGK · Blocked it` — "but what is 'it'?") would
+  // have to be made twice. The layer names the blocker; the base view never
+  // names a person, so the two surfaces differ in that ONE stated way.
+  const a = boot(rich, CURVE_AND_MIX);
+  a.$('lyBlock').click();
+  const pairs = a.every(d => {
+    const p = d.$('blockPanel').innerHTML.match(/<span class="rsn">([^<]*)<\/span>/);
+    const l = d.$('labels').innerHTML.match(/class="plabel"[^>]*>([^<]*)</);
+    return p && l && /blocked a shot|Blocked/.test(l[1]) ? [p[1], l[1]] : null;
+  }).filter(Boolean);
+  assert.ok(pairs.length > 5, `only ${pairs.length} frames showed both surfaces`);
+  // On the frame where the label IS the current block, the two must agree.
+  const agree = pairs.filter(([a2, b2]) => a2 === b2);
+  assert.ok(agree.length > 0, `the two surfaces never matched: ${JSON.stringify(pairs.slice(0, 3))}`);
+});
