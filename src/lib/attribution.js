@@ -66,3 +66,67 @@ export function corsiTeam(ev, roster) {
   if (!ATTEMPT_TYPES.has(ev.type)) return null;
   return shootingTeam(ev, roster);
 }
+
+/**
+ * ⭐ C8 — WHAT ACTUALLY HAPPENED TO THE PUCK, instead of one phrase for ten.
+ *
+ * `missed-shot` is the league's own typeDescKey — a shot that did not force the
+ * goalie to play the puck — and the page said "Missed shot" for every one of
+ * them. Measured over 2,574 missed shots in 89 games, that phrase is FALSE for
+ * about one in ten:
+ *
+ *   wide-left 38.3%   wide-right 35.0%   above-crossbar 5.6%
+ *   high-and-wide-right 5.4%   high-and-wide-left 5.0%
+ *   hit-left-post 2.7%   hit-right-post 2.6%   short 2.5%
+ *   hit-crossbar 2.0%   failed-bank-attempt 0.9%
+ *
+ * A puck off the POST did not miss the net, it hit it — 7.3% — and a shot
+ * recorded `short` never reached the net at all, another 2.5%.
+ *
+ * THE SENTENCE DESCRIBES, IT DOES NOT CLASSIFY. "Hit the post" is what a viewer
+ * just watched; "missed the net" is a bucket the ledger puts it in. One narrator,
+ * many ledgers, applied to a label.
+ *
+ * LEFT AND RIGHT ARE DROPPED ON PURPOSE. The mark is already on the ice at the
+ * side it went; saying it again is the caption repeating what the rink shows,
+ * which is the same defect the "⚡ Shot from the slot · … from the slot" rename
+ * left behind.
+ *
+ * `failed-bank-attempt` KEEPS THE LEAGUE'S OWN NOUN. It is a shot from behind
+ * the goal line — 23 of 24 at or past it, median 3 ft past — and every plainer
+ * phrasing invents an intention ("tried to bank it in") or an outcome ("came off
+ * the net") that the feed does not record. It is also SEASON-BOUNDED: zero in
+ * 2023 across 881 missed shots, then 9 and 15.
+ */
+export const MISS_SAID = {
+  'wide-left': 'Shot went wide',
+  'wide-right': 'Shot went wide',
+  'high-and-wide-left': 'High and wide',
+  'high-and-wide-right': 'High and wide',
+  'above-crossbar': 'Over the crossbar',
+  'hit-left-post': 'Hit the post',
+  'hit-right-post': 'Hit the post',
+  'hit-crossbar': 'Hit the crossbar',
+  short: 'Shot came up short',
+  'failed-bank-attempt': 'Failed bank attempt',
+};
+
+/**
+ * The sentence for one missed shot, or the plain phrase when the feed gave none.
+ *
+ * AN UNKNOWN VALUE RENDERS RAW, hyphens turned to spaces — the same last resort
+ * `RSN` uses for a stoppage reason and `competitionOf` for a gameType, and for
+ * the same reason: the league mints vocabulary under us, `extract.py`'s
+ * `KNOWN_MISSES` gate turns the run red the day it does, and in the window
+ * between those two a reader should see the league's word rather than a phrase
+ * of ours that might be wrong about it.
+ *
+ * NO `miss` AT ALL is a different case from an unknown one and gets the old
+ * generic phrase: 0 of 31 in the reference game carry none, but an older extract
+ * predates the field entirely and must still read.
+ */
+export function missSay(ev) {
+  const m = ev && ev.miss;
+  if (!m) return 'Missed shot';
+  return MISS_SAID[m] || String(m).replace(/-/g, ' ');
+}

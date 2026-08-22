@@ -1209,8 +1209,11 @@ function drawLabel(e){const g=$('labels');const p=place(e);if(!labelsOn||!p){g.i
  // a dead row inside a table reads as coverage -- the fourth time this file has
  // paid for that shape.
  if(!LAB[e.type]){g.innerHTML='';return;}
- const info=LAB[e.type];
- g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${lab?lab+" · ":""}${info}${ESC(why)}${hd}</text></g>`;}
+ // C8: a missed shot says WHICH way it missed. `missSay` is in attribution.js
+ // beside SHOT_TYPES, because what a shot event IS belongs with the vocabulary
+ // of shot events and not in a table of page labels.
+ const info=e.type==='missed-shot'?missSay(e):LAB[e.type];
+ g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${lab?lab+" · ":""}${ESC(info)}${ESC(why)}${hd}</text></g>`;}
 $('lbl').addEventListener('click',()=>{labelsOn=!labelsOn;$('lbl').setAttribute('aria-pressed',labelsOn);$('lbl').style.opacity=labelsOn?'1':'.5';drawLabel(EV[i]);});
 
 // THE WHISTLE LAYER, DRAWN. What from the stoppage, where from the faceoff that
@@ -1437,7 +1440,13 @@ function drawBlocked(B,L,slice){
    `${MODE()}`,
    [{k:'r',lab:'reached the goalie',v:g.r},
     {k:'b',lab:'blocked by a body',v:g.b},
-    {k:'m',lab:'missed the net',v:g.m}])
+    /* ⭐ C8 — THE ROW LABEL WAS FALSE FOR 7.3% OF WHAT IT COUNTS. "missed the net"
+       is the league's name for the CATEGORY and not a description of every event
+       in it: hit-left-post, hit-right-post and hit-crossbar are 7.3% of missed
+       shots across the archive, and a puck off the post did not miss the net.
+       The caption now describes each one; this is the ledger, so it names the
+       bucket in words true of everything inside it. */
+    {k:'m',lab:'missed the net or hit the frame',v:g.m}])
   :`<p class="bksay">Nothing shot yet — no attempts in what you have watched so far.</p>`;
  // 7.8% of blocks across the archive are by the shooter's own side. It is real
  // hockey and it is the thing a novice has never considered, so it is stated
@@ -1465,7 +1474,7 @@ function drawBlocked(B,L,slice){
     `${M.games.toLocaleString()} games · ${ESC(M.blocked.population)} · all situations`,
     [{k:'r',lab:'reached the goalie',v:(BT['shot-on-goal']||0)+(BT.goal||0),pct:1},
      {k:'b',lab:'blocked by a body',v:BT['blocked-shot']||0,pct:1},
-     {k:'m',lab:'missed the net',v:BT['missed-shot']||0,pct:1}])
+     {k:'m',lab:'missed the net or hit the frame',v:BT['missed-shot']||0,pct:1}])
    /* THE CAVEAT IS GONE, AND NOT FOR SPACE. "A share of the attempts taken, not
       a rate of winning" was compensating for an ambiguity THE NEW FRAME REMOVED.
       It was written when the line read "27.8% are blocked by a body" and never

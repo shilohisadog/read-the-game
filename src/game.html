@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-kpeHCldIDZZOqw+5Lba+AILeJT9/CjlVikjl/8kG8y0=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-c665gbBLVjsrJbjtC2qkdxXss5IIfcs/CJ8nDcqunfM='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ALrvqfr3UMc+UTwlg1CsoU7fC2NU1KxzGLtdA90oztc=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-c665gbBLVjsrJbjtC2qkdxXss5IIfcs/CJ8nDcqunfM='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">What is this?</a></nav></header>
@@ -877,6 +877,70 @@ function shootingTeam(ev, roster) {
 function corsiTeam(ev, roster) {
   if (!ATTEMPT_TYPES.has(ev.type)) return null;
   return shootingTeam(ev, roster);
+}
+
+/**
+ * ⭐ C8 — WHAT ACTUALLY HAPPENED TO THE PUCK, instead of one phrase for ten.
+ *
+ * `missed-shot` is the league's own typeDescKey — a shot that did not force the
+ * goalie to play the puck — and the page said "Missed shot" for every one of
+ * them. Measured over 2,574 missed shots in 89 games, that phrase is FALSE for
+ * about one in ten:
+ *
+ *   wide-left 38.3%   wide-right 35.0%   above-crossbar 5.6%
+ *   high-and-wide-right 5.4%   high-and-wide-left 5.0%
+ *   hit-left-post 2.7%   hit-right-post 2.6%   short 2.5%
+ *   hit-crossbar 2.0%   failed-bank-attempt 0.9%
+ *
+ * A puck off the POST did not miss the net, it hit it — 7.3% — and a shot
+ * recorded `short` never reached the net at all, another 2.5%.
+ *
+ * THE SENTENCE DESCRIBES, IT DOES NOT CLASSIFY. "Hit the post" is what a viewer
+ * just watched; "missed the net" is a bucket the ledger puts it in. One narrator,
+ * many ledgers, applied to a label.
+ *
+ * LEFT AND RIGHT ARE DROPPED ON PURPOSE. The mark is already on the ice at the
+ * side it went; saying it again is the caption repeating what the rink shows,
+ * which is the same defect the "⚡ Shot from the slot · … from the slot" rename
+ * left behind.
+ *
+ * `failed-bank-attempt` KEEPS THE LEAGUE'S OWN NOUN. It is a shot from behind
+ * the goal line — 23 of 24 at or past it, median 3 ft past — and every plainer
+ * phrasing invents an intention ("tried to bank it in") or an outcome ("came off
+ * the net") that the feed does not record. It is also SEASON-BOUNDED: zero in
+ * 2023 across 881 missed shots, then 9 and 15.
+ */
+const MISS_SAID = {
+  'wide-left': 'Shot went wide',
+  'wide-right': 'Shot went wide',
+  'high-and-wide-left': 'High and wide',
+  'high-and-wide-right': 'High and wide',
+  'above-crossbar': 'Over the crossbar',
+  'hit-left-post': 'Hit the post',
+  'hit-right-post': 'Hit the post',
+  'hit-crossbar': 'Hit the crossbar',
+  short: 'Shot came up short',
+  'failed-bank-attempt': 'Failed bank attempt',
+};
+
+/**
+ * The sentence for one missed shot, or the plain phrase when the feed gave none.
+ *
+ * AN UNKNOWN VALUE RENDERS RAW, hyphens turned to spaces — the same last resort
+ * `RSN` uses for a stoppage reason and `competitionOf` for a gameType, and for
+ * the same reason: the league mints vocabulary under us, `extract.py`'s
+ * `KNOWN_MISSES` gate turns the run red the day it does, and in the window
+ * between those two a reader should see the league's word rather than a phrase
+ * of ours that might be wrong about it.
+ *
+ * NO `miss` AT ALL is a different case from an unknown one and gets the old
+ * generic phrase: 0 of 31 in the reference game carry none, but an older extract
+ * predates the field entirely and must still read.
+ */
+function missSay(ev) {
+  const m = ev && ev.miss;
+  if (!m) return 'Missed shot';
+  return MISS_SAID[m] || String(m).replace(/-/g, ' ');
 }
 
 /* --- src/lib/layer.js --- */
@@ -4487,8 +4551,11 @@ function drawLabel(e){const g=$('labels');const p=place(e);if(!labelsOn||!p){g.i
  // a dead row inside a table reads as coverage -- the fourth time this file has
  // paid for that shape.
  if(!LAB[e.type]){g.innerHTML='';return;}
- const info=LAB[e.type];
- g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${lab?lab+" · ":""}${info}${ESC(why)}${hd}</text></g>`;}
+ // C8: a missed shot says WHICH way it missed. `missSay` is in attribution.js
+ // beside SHOT_TYPES, because what a shot event IS belongs with the vocabulary
+ // of shot events and not in a table of page labels.
+ const info=e.type==='missed-shot'?missSay(e):LAB[e.type];
+ g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${lab?lab+" · ":""}${ESC(info)}${ESC(why)}${hd}</text></g>`;}
 $('lbl').addEventListener('click',()=>{labelsOn=!labelsOn;$('lbl').setAttribute('aria-pressed',labelsOn);$('lbl').style.opacity=labelsOn?'1':'.5';drawLabel(EV[i]);});
 
 // THE WHISTLE LAYER, DRAWN. What from the stoppage, where from the faceoff that
@@ -4715,7 +4782,13 @@ function drawBlocked(B,L,slice){
    `${MODE()}`,
    [{k:'r',lab:'reached the goalie',v:g.r},
     {k:'b',lab:'blocked by a body',v:g.b},
-    {k:'m',lab:'missed the net',v:g.m}])
+    /* ⭐ C8 — THE ROW LABEL WAS FALSE FOR 7.3% OF WHAT IT COUNTS. "missed the net"
+       is the league's name for the CATEGORY and not a description of every event
+       in it: hit-left-post, hit-right-post and hit-crossbar are 7.3% of missed
+       shots across the archive, and a puck off the post did not miss the net.
+       The caption now describes each one; this is the ledger, so it names the
+       bucket in words true of everything inside it. */
+    {k:'m',lab:'missed the net or hit the frame',v:g.m}])
   :`<p class="bksay">Nothing shot yet — no attempts in what you have watched so far.</p>`;
  // 7.8% of blocks across the archive are by the shooter's own side. It is real
  // hockey and it is the thing a novice has never considered, so it is stated
@@ -4743,7 +4816,7 @@ function drawBlocked(B,L,slice){
     `${M.games.toLocaleString()} games · ${ESC(M.blocked.population)} · all situations`,
     [{k:'r',lab:'reached the goalie',v:(BT['shot-on-goal']||0)+(BT.goal||0),pct:1},
      {k:'b',lab:'blocked by a body',v:BT['blocked-shot']||0,pct:1},
-     {k:'m',lab:'missed the net',v:BT['missed-shot']||0,pct:1}])
+     {k:'m',lab:'missed the net or hit the frame',v:BT['missed-shot']||0,pct:1}])
    /* THE CAVEAT IS GONE, AND NOT FOR SPACE. "A share of the attempts taken, not
       a rate of winning" was compensating for an ambiguity THE NEW FRAME REMOVED.
       It was written when the line read "27.8% are blocked by a body" and never

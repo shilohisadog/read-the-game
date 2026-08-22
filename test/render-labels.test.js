@@ -300,3 +300,75 @@ test('the CURRENT play is marked as such, so no layer can dim it away', () => {
  */
 
 /** Every legend key, with the layer class that must be present for it to show. */
+
+/* ---------------------------------------------------------------------------
+   C8 — the missed-shot vocabulary. One phrase stood for ten outcomes and was
+   false for about one in ten of them.
+   --------------------------------------------------------------------------- */
+import { readFileSync } from 'node:fs';
+import { MISS_SAID, missSay } from '../src/lib/attribution.js';
+
+/**
+ * The gate's own set, PARSED FROM extract.py rather than retyped.
+ *
+ * `KNOWN_MISSES` is what turns the derive run red when the league invents a
+ * value, and this table is what a reader sees. Two lists of the same vocabulary
+ * in two languages is exactly what `measure.mjs` exists to prevent, so the seam
+ * is asserted: a value the gate accepts and nobody has written prose for would
+ * otherwise ship silently as a raw key.
+ */
+const KNOWN_MISSES = (() => {
+  const py = readFileSync(new URL('../builders/extract.py', import.meta.url), 'utf8');
+  const block = py.match(/KNOWN_MISSES = \{([\s\S]*?)\}/)[1];
+  return new Set([...block.matchAll(/"([a-z-]+)"/g)].map(m => m[1]));
+})();
+
+test('⭐ every value the gate accepts has prose, and no prose invents a value', () => {
+  assert.ok(KNOWN_MISSES.size >= 10, `parsed only ${KNOWN_MISSES.size} from extract.py`);
+  assert.deepEqual([...Object.keys(MISS_SAID)].sort(), [...KNOWN_MISSES].sort(),
+    'the labels and the vocabulary gate disagree about what a missed shot can be');
+});
+
+test('the phrase that was FALSE is gone from the events it was false about', () => {
+  // 7.3% of missed shots hit iron and 2.5% came up short. "Missed shot" is
+  // wrong about all of them, and it was the only thing the page ever said.
+  for (const iron of ['hit-left-post', 'hit-right-post', 'hit-crossbar']) {
+    assert.match(missSay({ miss: iron }), /Hit the (post|crossbar)/);
+    assert.doesNotMatch(missSay({ miss: iron }), /missed|Missed/);
+  }
+  assert.equal(missSay({ miss: 'short' }), 'Shot came up short');
+});
+
+test('an unknown value renders the league’s own word, never a guess', () => {
+  // The window between the league minting a value and a human naming it.
+  // extract.py's vocabulary gate is red throughout it; the page must still read.
+  assert.equal(missSay({ miss: 'deflected-out-of-play' }), 'deflected out of play');
+  // And no `miss` at all is a DIFFERENT case — an extract predating the field.
+  assert.equal(missSay({}), 'Missed shot');
+  assert.equal(missSay(null), 'Missed shot');
+});
+
+test('left and right are not repeated to a reader who can see the mark', () => {
+  // The rink already shows which side it went. Saying it again is the defect
+  // the "Shot from the slot · … from the slot" rename left behind.
+  assert.equal(missSay({ miss: 'wide-left' }), missSay({ miss: 'wide-right' }));
+  assert.equal(missSay({ miss: 'high-and-wide-left' }), missSay({ miss: 'high-and-wide-right' }));
+  assert.equal(missSay({ miss: 'hit-left-post' }), missSay({ miss: 'hit-right-post' }));
+});
+
+test('⭐ the shipped page says it, on real missed shots, in the base view', () => {
+  // The lib being right proves nothing about whether the page calls it. 31
+  // missed shots in the reference game, and the label is a BASE-VIEW label:
+  // no layer has to be on for a novice to stop being told something false.
+  const a = boot(rich, CURVE_AND_MIX);
+  const said = new Set();
+  a.every(d => {
+    const m = d.$('labels').innerHTML.match(/class="plabel"[^>]*>([^<]*)</);
+    if (m) said.add(m[1]);
+  });
+  const misses = [...said].filter(s => /wide|post|crossbar|short|Missed|bank/i.test(s));
+  assert.ok(misses.length >= 2, `only saw ${JSON.stringify(misses)}`);
+  assert.ok(misses.some(s => /went wide/.test(s)), `no "went wide" in ${JSON.stringify(misses)}`);
+  assert.ok(!misses.some(s => /Missed shot/.test(s)),
+    `the generic phrase is still being shown: ${JSON.stringify(misses)}`);
+});
