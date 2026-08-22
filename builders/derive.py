@@ -215,6 +215,20 @@ class Report:
                     self.types.items(), key=lambda kv: (kv[0] is None, kv[0]))},
                 "unnamedTypes": sorted(str(k) for k in self.types
                                        if str(k) not in _competitions()),
+                # ⭐ AND THE OTHER DIRECTION, which only became load-bearing when
+                # the front door began GENERATING its exclusion list from this
+                # table. `unnamedTypes` catches a competition the archive holds
+                # and nobody named; this catches a name in the table that no game
+                # carries -- which would put a competition on the front page,
+                # inside the block whose whole job is stating limits, that we
+                # hold zero games of. A speculative entry ("the league announced
+                # something for next February") is exactly how that happens.
+                #
+                # Both are drift alarms over the same seam and neither can see
+                # the other's direction. A guard that only checks one way is the
+                # deploy exemption again: right about the cases that existed.
+                "unheldTypes": sorted(k for k in _competitions()
+                                      if int(k) not in self.types),
                 # Forgiven values NOBODY HAS LOOKED AT YET, as opposed to the
                 # ones in data/vocabulary-seen.json that we decided to render
                 # raw on purpose. This is the difference between a ledger and
@@ -441,6 +455,7 @@ def _write_ledger(store, idx, rep, stamp):
         "unreconciled": rep.unreconciled,
         "gameTypes": d["gameTypes"],
         "unnamedTypes": d["unnamedTypes"],
+        "unheldTypes": d["unheldTypes"],
         "unseenVocabulary": d["unseenVocabulary"],
         # Present even when empty, so a reader can tell "we checked and found
         # none" from "this version did not check" -- the same distinction
@@ -474,37 +489,58 @@ def main():
         if len(reasons) > 25:
             print(f"  … and {len(reasons) - 25} more", file=sys.stderr)
 
-    # A refusal is the system working, and so is an absence -- the nightly
-    # holds pointers for the whole archive and raw for one night of it. Neither
-    # is a failure, and exiting non-zero on either would make a green pipeline
-    # impossible to distinguish from a broken one.
-    #
-    # AN UNNAMED COMPETITION IS DIFFERENT, AND IT IS LOUD -- but only AFTER
-    # everything is written. It cannot change a number: `inScope` keys on 02 and
-    # 03 read off the game id, so an unrecognised type is excluded from every
-    # rate by construction. What it can do is put "game type 21" in front of a
-    # reader, which is a naming gap and not a data fault -- so the archive is
-    # published in full and the RUN goes red, the same shape the ingest uses for
-    # a partial fetch. Withholding real hockey over a missing display name is
-    # the mistake the 73 refused games already were.
-    #
-    # THE SAME RULE, ONE FIELD OVER. A vocabulary value the feed has never shown
-    # us before is news; the ones we have already looked at and chose to render
-    # verbatim are not. Alarm on drift, never on the count -- a check that fired
-    # on all 23 every night would be switched off within a week, and then the
-    # twenty-fourth would arrive invisibly.
-    bad = bool(out.get("unnamedTypes")) or bool(out.get("unseenVocabulary"))
+    return verdict(out)
+
+
+def verdict(out, say=lambda m: print(m, file=sys.stderr)):
+    """The exit code, and the sentences that explain it. 0 = nothing drifted.
+
+    ⭐ IT IS A FUNCTION BECAUSE IT WAS UNTESTABLE INSIDE main(), AND UNTESTED.
+    main() parses argv and opens a FileStore, so no test could reach it -- and on
+    2026-08-22 a mutation proved what that cost: setting `bad = False`, which
+    disarms ALL THREE drift alarms completely, left 150 Python tests green. The
+    test named `test_and_the_run_goes_RED_rather_than_only_recording_it` asserts
+    the ledger and the publication and never the exit code, with a docstring that
+    says in as many words "a line in index.json nobody reads is not loudly. The
+    exit code is."
+    That is a test whose NAME promises what its body does not do, and it was
+    guarding the gameType alarm this repo shipped a day earlier calling it loud.
+
+    A refusal is the system working, and so is an absence -- the nightly holds
+    pointers for the whole archive and raw for one night of it. Neither is a
+    failure, and exiting non-zero on either would make a green pipeline
+    impossible to distinguish from a broken one.
+
+    THE THREE THAT ARE DIFFERENT are all naming gaps, never data faults, and all
+    three fire AFTER everything is written. None can change a number: `inScope`
+    keys on 02 and 03 read off the game id. What they can do is put "game type
+    21" in front of a reader, or -- since 2026-08-22, when the front door began
+    generating its exclusion list from the table -- name a competition on the
+    home page that we hold no games of. So the archive is published in full and
+    the RUN goes red. Withholding real hockey over a missing display name is the
+    mistake the 73 refused games already were.
+
+    Alarm on DRIFT, never on the count: a check that fired on all 23 known
+    vocabulary values every night would be switched off within a week, and then
+    the twenty-fourth would arrive invisibly.
+    """
     if out.get("unnamedTypes"):
-        print(f"\n::error::the archive holds gameType {out['unnamedTypes']} and "
-              f"data/competitions.json does not name it. The games are published; "
-              f"add the name so the calendar stops rendering it raw.",
-              file=sys.stderr)
+        say(f"\n::error::the archive holds gameType {out['unnamedTypes']} and "
+            f"data/competitions.json does not name it. The games are published; "
+            f"add the name so the calendar stops rendering it raw.")
+    if out.get("unheldTypes"):
+        say(f"\n::error::data/competitions.json names gameType "
+            f"{out['unheldTypes']} and the archive holds no game of it. The "
+            f"front door GENERATES its exclusion list from that table, so this "
+            f"would put a competition on the page we hold nothing of. Remove "
+            f"the entry, or wait until a game lands.")
     if out.get("unseenVocabulary"):
-        print(f"\n::error::the feed used vocabulary we have never seen: "
-              f"{json.dumps(out['unseenVocabulary'])}. The games are published and "
-              f"the value renders verbatim; look at it, then either give it prose "
-              f"or add it to data/vocabulary-seen.json.", file=sys.stderr)
-    return 1 if bad else 0
+        say(f"\n::error::the feed used vocabulary we have never seen: "
+            f"{json.dumps(out['unseenVocabulary'])}. The games are published and "
+            f"the value renders verbatim; look at it, then either give it prose "
+            f"or add it to data/vocabulary-seen.json.")
+    return 1 if (out.get("unnamedTypes") or out.get("unheldTypes")
+                 or out.get("unseenVocabulary")) else 0
 
 
 if __name__ == "__main__":

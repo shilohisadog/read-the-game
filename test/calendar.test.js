@@ -9,9 +9,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  competitionOf, monthOf, weekdayOf, daysInMonth,
+  monthOf, weekdayOf, daysInMonth,
   nightsOf, monthsIn, monthGrid, nightOf, seasonOfMonth, otherInMonth,
 } from '../src/lib/calendar.js';
+// The naming of a competition moved to its own module when the verdict card
+// needed the same answer from the same table. Tested here still, because the
+// calendar is what has to render it.
+import { competitionOf } from '../src/lib/competitions.js';
 import { season, seasonLabel } from '../src/lib/archive.js';
 
 /**

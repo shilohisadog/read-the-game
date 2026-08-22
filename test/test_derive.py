@@ -775,6 +775,40 @@ class ANewCompetitionIsAnEventNotNoise(unittest.TestCase):
         self.assertIsNotNone(store.get("extract/2025210001.json"),
                              "and its extract is still written")
 
+    def test_and_the_EXIT_CODE_is_what_the_name_above_promises(self):
+        """⭐ THE TEST ABOVE DOES NOT CHECK THE EXIT CODE, AND NOR DID ANY OTHER.
+
+        Found by mutation on 2026-08-22: replacing the whole verdict with
+        `bad = False` -- which disarms the gameType alarm, the vocabulary alarm
+        and the unheld-name alarm at once -- left all 150 Python tests green.
+        The test named `..._the_run_goes_RED_...` asserts the ledger and the
+        publication, and its own docstring says "a line in index.json nobody
+        reads is not 'loudly'. The exit code is."
+
+        A test whose NAME promises what its body does not do, guarding the alarm
+        this repo shipped the day before calling it loud. `verdict()` exists so
+        the exit code is reachable from a test at all.
+        """
+        # Each alarm ALONE is fatal, so no one of them can be carrying the other
+        # two -- a single all-three fixture would pass with two of them broken.
+        for key, value in (("unnamedTypes", ["21"]),
+                           ("unheldTypes", ["9"]),
+                           ("unseenVocabulary", {"stoppage reason": ["new-thing"]})):
+            said = []
+            self.assertEqual(D.verdict({key: value}, say=said.append), 1,
+                             f"{key} drifted and the run stayed green")
+            self.assertTrue(any("::error::" in m for m in said),
+                            f"{key} exited non-zero and said nothing about why")
+        # And a clean run is silent AND green, or the check is just noise.
+        said = []
+        self.assertEqual(D.verdict({"unnamedTypes": [], "unheldTypes": [],
+                                    "unseenVocabulary": {}}, say=said.append), 0)
+        self.assertEqual(said, [])
+        # A REFUSAL IS THE SYSTEM WORKING and must never be fatal, or a green
+        # pipeline stops being distinguishable from a broken one.
+        self.assertEqual(D.verdict({"refused": 63, "absent": 12,
+                                    "unreconciled": 73}, say=said.append), 0)
+
     def test_a_named_type_is_silent(self):
         # MUTATION GUARD. A check that fired on every run would be turned off
         # within a week, and then the one that mattered would be invisible.
@@ -802,6 +836,34 @@ class ANewCompetitionIsAnEventNotNoise(unittest.TestCase):
         rep = D.derive(store, now="2026-01-11T11:30:00Z")
         self.assertEqual(rep.published, 0, "the stub is still refused")
         self.assertEqual(self.index(store)["extracts"]["unnamedTypes"], ["21"])
+
+    def test_a_name_the_archive_HOLDS_NO_GAME_OF_is_reported(self):
+        # ⭐ THE OTHER DIRECTION, and it only became load-bearing on 2026-08-22,
+        # when the front door began GENERATING its exclusion list from this
+        # table. `unnamedTypes` catches a competition the archive holds and
+        # nobody named. This catches a NAME NOTHING HOLDS -- which would put a
+        # competition on the front page, inside the block whose entire job is
+        # stating limits, that we have zero games of. A speculative entry
+        # ("the league announced something for next February") is exactly how.
+        store = DictStore()
+        seed(store, gid=2025020001, gtype=2)
+        D.derive(store, now="2026-01-11T11:30:00Z")
+        held = self.index(store)["extracts"]["unheldTypes"]
+        self.assertIn("1", held, "preseason is named and this run walked none")
+        self.assertNotIn("2", held, "type 2 is the one type this run DID hold")
+        self.assertEqual(sorted(held),
+                         sorted(t for t in D._competitions() if t != "2"))
+
+    def test_a_run_that_holds_every_named_type_is_silent(self):
+        # MUTATION GUARD, the same one its twin carries: a check that fires on
+        # every run is a check that gets switched off.
+        store = DictStore()
+        for i, t in enumerate(sorted(int(k) for k in D._competitions())):
+            seed(store, gid=int(f"2025{t:02d}{i:04d}"), gtype=t)
+        D.derive(store, now="2026-01-11T11:30:00Z")
+        self.assertEqual(self.index(store)["extracts"]["unheldTypes"], [])
+        self.assertEqual(self.index(store)["extracts"]["unnamedTypes"], [],
+                         "and neither direction fires on a complete archive")
 
     def test_the_table_names_every_type_the_LIVE_archive_holds(self):
         # The pinned set, from the live catalog on 2026-08-21. This is the half

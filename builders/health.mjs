@@ -62,15 +62,45 @@ export function suiteCounts() {
   };
 }
 
-/** The published ledger, or null when there is no network. Never invented. */
+/**
+ * The archive, counted from THE DOCUMENT THE SITE ITSELF READS. Null with no
+ * network. Never invented.
+ *
+ * ⭐ IT USED TO READ index.json's `extracts` REPORT, AND THAT REPORT IS ZEROED
+ * EVERY MORNING. The nightly ingest runs `derive.py` against a store holding
+ * pointers and one night of raw, so it publishes a perfectly truthful report of
+ * ITS OWN RUN — `absent: 4553, published: 0` — over the top of the archive-wide
+ * figures a full derive left there. Nothing on the site reads that block, so
+ * nobody had noticed; this file started reading it on 2026-08-21 and printed
+ * "0 archived · 0 published" at the top of the build list the next day.
+ *
+ * catalog.json is what the front door, the team browse and the calendar all
+ * read. It is regenerated whole and cannot be emptied by a partial run, and
+ * counting it here means this block reports WHAT A VISITOR CAN ACTUALLY REACH
+ * rather than what one job's summary said about itself. Same rule the deploy
+ * gates learned: measure the thing the reader gets.
+ *
+ * `asOf` STILL COMES FROM THE LEDGER'S OWN CLOCK, never ours. catalog.json
+ * carries no date of its own, and stamping these with the time this script
+ * happened to run would say when we LOOKED rather than when the archive was
+ * last written — the distinction the whole stamp exists to make. index.json's
+ * `lastRun` is the pipeline's own timestamp for the run that wrote both files.
+ */
 async function ledger() {
-  try {
-    const r = await fetch(`https://data.readthegame.co/index.json?cb=${Date.now()}`,
+  const get = async name => {
+    const r = await fetch(`https://data.readthegame.co/${name}?cb=${Date.now()}`,
                           { signal: AbortSignal.timeout(20000) });
-    if (!r.ok) return null;
-    const e = (await r.json()).extracts;
-    return e && { games: e.games, published: e.published, refused: e.refused,
-                  unreconciled: e.unreconciled, asOf: e.asOf };
+    return r.ok ? r.json() : null;
+  };
+  try {
+    const [cat, idx] = await Promise.all([get('catalog.json'), get('index.json')]);
+    const rows = cat && cat.games;
+    if (!rows || !rows.length) return null;
+    const published = rows.filter(g => g.v === 1).length;
+    return { games: rows.length, published, refused: rows.length - published,
+             unreconciled: rows.filter(g => g.u).length,
+             asOf: (idx && idx.lastRun) || null,
+             through: (idx && idx.dataThrough) || null };
   } catch { return null; }
 }
 
@@ -89,9 +119,11 @@ export function block(counts, live, stamp) {
     '',
     live
       ? `<sub>Generated ${stamp} by \`node builders/health.mjs\`. Archive figures `
-        + `from the published ledger, whose own \`asOf\` is ${live.asOf}; the `
-        + `nightly moves them with no deploy, so re-run before quoting. Suite `
-        + `counts are checked by \`npm run gates\` and cannot go stale silently.</sub>`
+        + `COUNTED from the published \`catalog.json\` — the same document the `
+        + `site reads — as the pipeline last wrote it, whose own \`lastRun\` is `
+        + `${live.asOf}, covering games through ${live.through}; the nightly `
+        + `moves them with no deploy, so re-run before quoting. Suite counts are `
+        + `checked by \`npm run gates\` and cannot go stale silently.</sub>`
       : `<sub>Generated ${stamp} by \`node builders/health.mjs\`, offline.</sub>`,
     SHUT].join('\n');
 }

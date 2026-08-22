@@ -37,34 +37,31 @@
  * it is specifically wrong. The two clauses are returned SEPARATELY so no edit can
  * join them with a conjunction.
  */
+import { typeOf, isLeague, competitionOf } from './competitions.js';
 
 /**
- * Regular season (02) and playoffs (03) — the population every rate covers.
+ * ⭐ WHICH COMPETITION THIS IS, or null when it is one the rates cover.
  *
- * Counted over the published catalog, 4,553 games:
+ * THIS USED TO NAME ONLY PRESEASON, and the reason it gave was true when it was
+ * written and is not any more:
  *
- *   01  preseason      320        04  All-Star squads      3
- *   02  regular      3,936        09  national sides      30
- *   03  playoffs       256        12                       1
- *                                 19  national sides       6
- *                                 20  national sides       1
+ *   "ONLY PRESEASON IS NAMED. The others are recognisable from the clubs they
+ *    carry — 09 is thirty games between national teams, 19 and 20 are
+ *    CAN/FIN/SWE/USA — but 'this is the Olympics' is an inference from a ROSTER,
+ *    and a wrong one costs more than the generic phrase saves."
  *
- * ONLY PRESEASON IS NAMED. The others are recognisable from the clubs they carry
- * — 09 is thirty games between national teams, 19 and 20 are CAN/FIN/SWE/USA —
- * but "this is the Olympics" is an inference from a roster, and a wrong one costs
- * more than the generic phrase saves. `not an NHL league game` is a claim the id
- * itself supports.
+ * There is no inference. `data/competitions.json` did not exist when that was
+ * written; it does now, the league's own `gameType` sits in the id, and
+ * `derive.py` walks the whole archive refusing to pass a type nobody has named.
+ * So "not an NHL league game" was a hedge against a risk that had since been
+ * removed — the exact shape of a claim inherited and never re-derived.
+ *
+ * It mattered: the calendar made every one of those games reachable, and a
+ * reader who opens an all-star game was told only what it is NOT.
  */
-const TYPE = {
-  '01': 'a preseason game',
-  '02': null,                        // in scope
-  '03': null,                        // in scope
-};
-
-/** What kind of game this id names, for saying why a rate is absent. */
-export function describeType(gameId) {
-  const t = String(gameId).slice(4, 6);
-  return t in TYPE ? TYPE[t] : 'not an NHL league game';
+export function describeType(gameId, names) {
+  const type = typeOf(gameId);
+  return isLeague(type) ? null : competitionOf(type, names);
 }
 
 /** "30–18", never "62%". An en dash, because it is a score line and not a range. */
@@ -77,6 +74,7 @@ const pair = (a, b) => `${a}–${b}`;
  * @param o.attempts        { [teamId]: count } over the whole game, all situations
  * @param o.score           { h, a } final, the league's own line
  * @param o.gameId          for scope
+ * @param o.names           gameType -> competition, from data/competitions.json
  * @param o.curve           measures.json `levelCurve`, or null if unavailable
  * @param o.shootout        true when the game was decided by a shootout, so the
  *                          scoreboard's winner is not what the play produced.
@@ -95,11 +93,29 @@ export function sentenceFor(o) {
           score, gameId, curve, shootout } = o;
   const level = Math.abs(diff);
 
+  // ⭐ WHICH COMPETITION THIS IS, ASKED BEFORE ANYTHING ELSE, because it is a
+  // fact about the GAME and not about the comparison. It used to be asked at the
+  // bottom, after the no-edge early return — so an out-of-scope game where
+  // neither side led was told nothing at all. That is not a corner: the first
+  // all-star game opened from the new calendar (MCD at MAT, 3 February 2024)
+  // rendered exactly "Neither team controlled play while the score was level."
+  // and no statement anywhere that the game is outside every number on the site.
+  //
+  // THE NAME IS SET OFF, NEVER INFLECTED. It comes from a table the league adds
+  // to, and "this is Olympics" / "this is 4 Nations" is what any sentence that
+  // embeds it directly produces. A parenthetical takes any noun phrase,
+  // including one nobody has written yet. Same rule as the calendar's.
+  const why = describeType(gameId, o.names);
+  const foreign = why
+    ? `No comparison shown — this is not a regular-season or playoff game `
+      + `(${why}), and the archive's rates cover only those.`
+    : null;
+
   // NO EDGE IS A REAL ANSWER, and it is 264 of 4,119 games — one in sixteen.
   // There is nothing to compare, so nothing is compared.
   if (!level) {
     return { lead: 'Neither team controlled play while the score was level.',
-             rate: null, absent: null };
+             rate: null, absent: foreign };
   }
 
   const ledLevel = diff > 0 ? homeAb : awayAb;
@@ -155,12 +171,7 @@ export function sentenceFor(o) {
   }
 
   // THE REFERENCE CLASS, and the game supplies its own cutoff.
-  const why = describeType(gameId);
-  if (why) {
-    return { lead, rate: null,
-             absent: `No comparison shown — this is ${why}, and the archive's `
-                   + `rates cover the NHL regular season and playoffs.` };
-  }
+  if (foreign) return { lead, rate: null, absent: foreign };
   if (!curve || !curve.length) {
     // WHY IT IS ABSENT IS THE CALLER'S FACT, NOT OURS. A page that makes no
     // network requests at all has not "failed to load" anything, and saying so

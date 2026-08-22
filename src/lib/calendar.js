@@ -24,33 +24,9 @@
  */
 
 import { inScope } from './archive.js';
-
-/**
- * The label for a competition, from the table in `data/competitions.json`.
- *
- * NO TABLE LIVES IN THIS FILE. `derive.py` reads that JSON and is the only thing
- * that walks the whole archive, so it is the only place that can catch a new
- * competition the day it lands — and a second copy here is the defect this
- * project keeps almost building. The page gets the same file inlined.
- *
- * THE RAW FALLBACK IS A LAST RESORT, NOT THE POLICY. An unnamed type fails the
- * derive run loudly; this exists so that in the window between the league
- * inventing one and a human naming it, a reader sees `game type 21` rather than
- * `undefined`. Rendering raw was briefly the whole answer here and that was
- * wrong: `gameType` is a small closed enum, so a value nobody has seen is an
- * EVENT, not the open-ended vocabulary a missed-shot reason is.
- *
- * Naming is not cosmetic. Lumping these under "preseason" — the tempting
- * shorthand, since 320 of 361 are — would be false on every Olympic and
- * 4 Nations night, which is 38 of the 60 dates this makes visible at all.
- */
-export function competitionOf(type, names) {
-  // `names[type]` and not `names[String(type)]`: object keys ARE strings and the
-  // lookup coerces, so the second form was a branch no mutation could reach.
-  // The table arrives from JSON with string keys and the catalog carries `t` as
-  // a number; that is one expression, not two.
-  return (names && names[type]) || `game type ${type}`;
-}
+// competitionOf lives in competitions.js: the verdict card names the same
+// thing from the same table, and two lookups is two chances to disagree.
+import { competitionOf } from './competitions.js';
 
 /** 'YYYY-MM-DD' -> 'YYYY-MM'. String arithmetic, never a Date. */
 export function monthOf(date) {

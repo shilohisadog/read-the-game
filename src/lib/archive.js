@@ -17,15 +17,23 @@
  * two guards that run in opposite directions.
  */
 
-/** Regular season (02) and playoffs (03), read from the id — never a lookup. */
+import { typeOf, isLeague } from './competitions.js';
+
+/**
+ * Regular season (02) and playoffs (03), read from the id — never a lookup.
+ *
+ * The reading of the field moved to competitions.js, where the calendar and the
+ * verdict card read it too; this stays exported because half the repo imports
+ * `inScope` from here and moving the NAME would be churn for no gain. What went
+ * away is the third spelling of `String(id).slice(4, 6)`.
+ */
 export function inScope(gameId) {
-  const t = String(gameId).slice(4, 6);
-  return t === '02' || t === '03';
+  return isLeague(typeOf(gameId));
 }
 
 /** Playoffs (03), read from the same field, because the OTL bucket turns on it. */
 export function isPlayoff(gameId) {
-  return String(gameId).slice(4, 6) === '03';
+  return typeOf(gameId) === 3;
 }
 
 /**

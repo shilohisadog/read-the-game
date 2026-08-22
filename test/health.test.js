@@ -14,7 +14,7 @@ import { readFileSync } from 'node:fs';
 import { block } from '../builders/health.mjs';
 
 const LIVE = { games: 4553, published: 4490, refused: 63, unreconciled: 73,
-               asOf: '2026-08-21T15:07:34Z' };
+               asOf: '2026-08-21T15:07:34Z', through: '2026-06-14' };
 
 test('the block carries the figures it was handed, with thousands separators', () => {
   const b = block({ js: 608, py: 148 }, LIVE, '2026-08-21');
@@ -41,7 +41,16 @@ test('an archive figure is stamped with when it was read', () => {
   // read — and the stamp is what tells a reader which case they are in.
   const b = block({ js: 608, py: 148 }, LIVE, '2026-08-21');
   assert.match(b, /Generated 2026-08-21/);
-  assert.match(b, /asOf` is 2026-08-21T15:07:34Z/, "the LEDGER's own stamp, not ours");
+  assert.match(b, /lastRun` is 2026-08-21T15:07:34Z/, "the LEDGER's own stamp, not ours");
+  // ⭐ AND IT NAMES WHICH DOCUMENT IT COUNTED. These figures used to be read
+  // from index.json's `extracts` report, which the nightly OVERWRITES with a
+  // truthful summary of its own narrow run — `absent: 4553, published: 0` —
+  // because it derives against a store holding pointers and one night of raw.
+  // Nothing on the site reads that block, so nobody had noticed until this file
+  // started quoting it and printed "0 archived · 0 published" at the top of the
+  // build list. catalog.json is what the site itself reads and cannot be
+  // emptied by a partial run.
+  assert.match(b, /catalog\.json/, 'the source of the count is not named');
 });
 
 test('a missing count degrades to a dash rather than to NaN', () => {

@@ -31,6 +31,10 @@ import { teamSeasons } from '../src/lib/team-season.js';
  */
 const TIER = [
   'archive.js', 'attribution.js', 'layer.js', 'rink.js', 'strength.js', 'team-season.js',
+  // competitions.js joined when archive.js stopped spelling `slice(4, 6)` itself
+  // and asked it instead. CAUGHT BY THIS TEST, for the second time — the tier
+  // goes stale in the same edit that changes the graph, every time.
+  'competitions.js',
   // teams.js joined the tier when measure.mjs started checking that every club
   // in the archive has an entry. THIS TEST CAUGHT THAT IMPORT, which is the
   // list working: the guard was added and the tier went stale in the same edit.

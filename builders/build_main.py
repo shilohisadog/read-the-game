@@ -107,6 +107,8 @@ T = (T.replace("__CSS__", (ROOT / "src" / "app.css").read_text())
 LIB = ["rink.js", "attribution.js", "layer.js", "strength.js", "box.js", "svgpen.js", "figures.js",
        "layers/corsi.js", "layers/goaltending.js", "layers/danger.js", "layers/whistle.js",
        "layers/blocked.js",
+       # BEFORE sentence.js, which asks it which competition a game is.
+       "competitions.js",
        "teams.js", "layers/tied.js", "sentence.js",
        # LAST, and it has to be: deeplink.js derives its URL vocabulary from the
        # layer objects themselves, so all FIVE must already exist in the bundle.
@@ -127,6 +129,13 @@ def _lib():
         # whitespace and spans multi-line import blocks up to the semicolon.
         body = re.sub(r"^[ \t]*import(?=[\s{\'\"*])[^;]*?;[ \t]*$", "", src, flags=re.M)
         out.append(f"/* --- src/lib/{name} --- */\n" + body.replace("export ", ""))
+    # THE ONE TABLE, INLINED RATHER THAN FETCHED. gameType -> competition is
+    # reference data of ours, not archive data: it changes when a human names a
+    # new competition, which is a commit, so it belongs in the deployed bytes.
+    # `read-the-game.html` reaches nothing at all and still has to be able to say
+    # what an all-star game is.
+    out.append("/* --- data/competitions.json --- */\n"
+               "const COMPETITIONS = " + P.competitions() + ";")
     return "\n".join(out)
 
 # The origin the shell reads its games from. Pages serves CODE, R2 serves DATA,

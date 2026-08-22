@@ -17,6 +17,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { sentenceFor, describeType } from '../src/lib/sentence.js';
+import { excludedCompetitions } from '../src/lib/competitions.js';
+
+/** The one table, read from the file derive.py walks the whole archive against. */
+const NAMES = JSON.parse(
+  readFileSync(new URL('../data/competitions.json', import.meta.url))).names;
 
 const HOME = 10, AWAY = 20;
 const base = {
@@ -180,15 +185,63 @@ test('an out-of-scope game gets its own numbers and is TOLD why there is no rate
   // silence about an omission is the failure the ingest-state work spent two
   // rounds fixing (CHENG). Pooling a preseason game into a rate measured over the
   // regular season and playoffs is the error archive.js exists to prevent.
-  const pre = say({ gameId: 2023010001 });
+  const pre = say({ gameId: 2023010001, names: NAMES });
   assert.match(pre.lead, /BUF led the attempts 55–47/, 'the game keeps its own numbers');
   assert.equal(pre.rate, null);
-  assert.match(pre.absent, /No comparison shown — this is a preseason game/);
-  assert.match(pre.absent, /regular season and playoffs/);
+  assert.match(pre.absent, /not a regular-season or playoff game \(preseason\)/);
+  assert.match(pre.absent, /rates cover only those/);
 
-  // 19 is six games between CAN, FIN, SWE and USA in the published catalog.
-  const fourNations = say({ gameId: 2024190001 });
-  assert.match(fourNations.absent, /not an NHL league game/);
+  // ⭐ AND IT NAMES THE COMPETITION, which it did not until 2026-08-22. Every
+  // one of these read "this is not an NHL league game" — true, and the only
+  // thing a reader who opened an all-star game from the calendar was told.
+  for (const [id, name] of [[2024190001, '4 Nations'], [2025090030, 'Olympics'],
+                            [2024040001, 'all-star'], [2023120001, 'all-star']]) {
+    assert.match(say({ gameId: id, names: NAMES }).absent,
+      new RegExp(`\\(${name}\\)`), `game ${id} should name ${name}`);
+  }
+});
+
+test('⭐ the name is set off, never inflected — for EVERY name in the table', () => {
+  // Same invariant as the calendar's, on the other surface that renders these.
+  // "this is Olympics" and "this is 4 Nations" are what any sentence embedding
+  // the name directly produces, and the table is a value the league adds to.
+  for (const [type, name] of Object.entries(NAMES)) {
+    const id = Number(`2025${String(type).padStart(2, '0')}0001`);
+    const said = say({ gameId: id, names: NAMES }).absent || '';
+    assert.ok(!new RegExp(`this is ${name}\\b`, 'i').test(said),
+      `"${name}" was dropped into the sentence bare: ${said}`);
+  }
+});
+
+test('an unnamed competition degrades to a true sentence, not a broken one', () => {
+  // The window between the league minting a type and a human naming it.
+  // derive.py's run is red throughout it; the page must still read.
+  const raw = say({ gameId: 2026210001, names: NAMES });
+  assert.match(raw.absent, /not a regular-season or playoff game \(game type 21\)/);
+  // And with no table at all — the shape a caller that forgot to pass one gets.
+  assert.match(say({ gameId: 2026210001 }).absent, /game type 21/);
+});
+
+test('⭐ a game with NO EDGE is still told it is outside the population', () => {
+  // FOUND BY LOOKING, not by reasoning: the first all-star game opened from the
+  // new calendar — MCD at MAT, 3 February 2024 — rendered "Neither team
+  // controlled play while the score was level." and nothing else. The scope
+  // check sat AFTER the no-edge early return, so a game with no control edge
+  // never reached it.
+  //
+  // Scope is a fact about the GAME, not about the comparison. 264 of 4,119
+  // in-scope games have no edge, so the branch is one in sixteen and there is no
+  // reason out-of-scope games would take it less often.
+  const flat = say({ diff: 0, gameId: 2023040683, names: NAMES });
+  assert.match(flat.lead, /Neither team controlled play/);
+  assert.match(flat.absent, /\(all-star\)/, 'the reader was told nothing about scope');
+  assert.equal(flat.rate, null);
+
+  // AND AN IN-SCOPE GAME WITH NO EDGE STILL SAYS NOTHING, or the assertion above
+  // is satisfied by a page that prints the clause on every game.
+  const home = say({ diff: 0, gameId: 2023020204, names: NAMES });
+  assert.match(home.lead, /Neither team controlled play/);
+  assert.equal(home.absent, null);
 });
 
 test('a missing archive is stated, never a spinner and never a silent zero', () => {
@@ -219,13 +272,36 @@ test('the sign of the differential is read, never assumed', () => {
   assert.match(visitorLed.lead, /MIN won\./, 'MIN won 3-2, and MIN led the level count');
 });
 
-test('game types are read from the id, not from a lookup we would have to maintain', () => {
-  assert.equal(describeType(2023020204), null, 'regular season is in scope');
-  assert.equal(describeType(2024030416), null, 'so are the playoffs');
-  assert.equal(describeType(2023010001), 'a preseason game');
-  assert.equal(describeType(2024040001), 'not an NHL league game', 'All-Star squads');
-  assert.equal(describeType(2025090030), 'not an NHL league game', 'national sides');
-  assert.equal(describeType(2024190001), 'not an NHL league game', 'four nations');
+test('the competition is read from the id and named from the one table', () => {
+  // THE TITLE USED TO SAY "not from a lookup we would have to maintain", and
+  // that was the argument for calling everything but preseason "not an NHL
+  // league game". There IS a lookup now, and the reason it is safe is that
+  // derive.py walks the WHOLE ARCHIVE against it in both directions every night
+  // — a type nobody named and a name nothing holds are each an error. That is a
+  // stronger guarantee than not having the table was.
+  assert.equal(describeType(2023020204, NAMES), null, 'regular season is in scope');
+  assert.equal(describeType(2024030416, NAMES), null, 'so are the playoffs');
+  assert.equal(describeType(2023010001, NAMES), 'preseason');
+  assert.equal(describeType(2024040001, NAMES), 'all-star');
+  assert.equal(describeType(2023120001, NAMES), 'all-star', 'type 12 is all-star too');
+  assert.equal(describeType(2025090030, NAMES), 'Olympics');
+  assert.equal(describeType(2024190001, NAMES), '4 Nations');
+  assert.equal(describeType(2024200001, NAMES), '4 Nations', 'and so is type 20');
+});
+
+test('⭐ every competition the site excludes is named, and the list is derived', () => {
+  // The front door's disclosure is generated from this. It read "Preseason, the
+  // Olympics and the 4 Nations Face-Off" for two and a half years while the
+  // archive also held four ALL-STAR games — a limit that went stale inside the
+  // block whose entire job is stating limits.
+  const excluded = excludedCompetitions(NAMES);
+  assert.deepEqual(excluded, ['preseason', 'all-star', 'Olympics', '4 Nations']);
+  // Every non-league type in the table is represented, and no league one is.
+  for (const [type, name] of Object.entries(NAMES)) {
+    const league = Number(type) === 2 || Number(type) === 3;
+    assert.equal(excluded.includes(name), !league,
+      `${name} (type ${type}) is on the wrong side of the exclusion list`);
+  }
 });
 
 test('why the comparison is missing is the caller\'s fact, not a default', () => {

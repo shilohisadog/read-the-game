@@ -106,9 +106,23 @@ test('a game with no comparison gets no picture of one', () => {
   const g = JSON.parse(JSON.stringify(rich));
   g.game = { ...(g.game || {}), id: 2023010001 };          // preseason
   const v = boot(g).$('verdict').innerHTML;
-  assert.match(v, /No comparison shown — this is a preseason game/);
+  assert.match(v, /not a regular-season or playoff game \(preseason\)/);
   assert.doesNotMatch(v, /class="vtrack"/, 'an empty track was drawn anyway');
   assert.match(v, /class="vk">What this game was</, 'and the card still says what it is');
+});
+
+test('⭐ the competition table reaches the card in the BUILT page, not just the lib', () => {
+  // END TO END, and it is the only thing that can see this. `sentence.js` is
+  // handed the table by app.js from a `const COMPETITIONS` the BUILDER inlines
+  // from data/competitions.json — three files, two languages, one seam. A unit
+  // test passing NAMES by hand proves the function works and says nothing about
+  // whether the page ever hands it over: with the inlining removed, the lib
+  // tests all stay green and every visitor reads "game type 4".
+  const g = JSON.parse(JSON.stringify(rich));
+  g.game = { ...(g.game || {}), id: 2024040001 };          // an all-star game
+  const v = boot(g).$('verdict').innerHTML;
+  assert.match(v, /\(all-star\)/, 'the built page fell back to the raw type');
+  assert.doesNotMatch(v, /game type/, 'the table did not reach the page');
 });
 
 test('PREVIEW hides everything but the game, and plays by itself', () => {

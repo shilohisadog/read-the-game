@@ -903,6 +903,10 @@ $('gl').textContent=`${AAB} at ${HAB}${WHEN?' · '+WHEN:''} · final ${AAB} ${fi
    // shootout in the regular season and a THIRD OVERTIME in the playoffs.
    shootout:G.events.some(inShootout),
    gameId:(G.game&&G.game.id)||0,
+   // The one table, inlined by the builder from data/competitions.json --
+   // so an all-star or Olympic game says WHICH competition it is rather
+   // than only what it is not.
+   names:COMPETITIONS,
    curve:(RATES&&RATES.levelCurve)||null,
    // undefined = never asked for (the inlined page, which reaches nothing);
    // null = asked for and did not arrive. Two different true sentences.

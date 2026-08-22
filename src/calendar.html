@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7E5TkkcvIhOhQ+FAQoFNVWOoF2/85Mv69qBQxRcUBh4=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-W+n/hedlX+fGyW6n1NdbV5hnxDJajbSpyV/BrwEbWFM='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-nfi5KtGG62NH+kSejDP+UWYUusTMiKWESjuRe/XlP5g=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-W+n/hedlX+fGyW6n1NdbV5hnxDJajbSpyV/BrwEbWFM='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -296,6 +296,99 @@ the games played on it.</p>
 </div>
 <script>
 /**
+ * WHICH COMPETITION A GAME BELONGS TO, and whether it counts.
+ *
+ * The league carries `gameType` as a bare integer in characters 4–6 of the game
+ * id and names it nowhere in the feed, so a human has to — in
+ * `data/competitions.json`, which `derive.py` walks the whole archive against.
+ * This file is the only code that reads a game's type or turns one into words.
+ *
+ * WHY IT IS ITS OWN MODULE. Three surfaces need it and they do not overlap: the
+ * calendar names a night's competition, the verdict card says why a game gets no
+ * comparison, and `archive.js` decides what enters a base rate. Each of them had
+ * its own spelling of `String(id).slice(4, 6)` — `archive.js::inScope`,
+ * `calendar.js::competitionOf` and a private `TYPE` map in `sentence.js` that
+ * knew about preseason and nothing else. Three readings of one field is three
+ * chances for them to disagree about the same game.
+ *
+ * NO TABLE LIVES HERE EITHER. `names` is passed in, from the JSON, because a
+ * copy in JavaScript is the defect this project keeps almost building. Every
+ * builder inlines the same file.
+ */
+
+/** The league's own gameType, read off the id. Never a lookup, never a date. */
+function typeOf(gameId) {
+  return Number(String(gameId).slice(4, 6));
+}
+
+/**
+ * Regular season (02) and playoffs (03) — the population every rate covers.
+ *
+ * Preseason, the all-star games, the Olympics and the 4 Nations Face-Off are
+ * archived, derived and viewable, and never enter a computed number. A rate
+ * pooled across preseason split squads, national sides under different roster
+ * rules and an all-star exhibition is not a claim about NHL hockey; it is an
+ * average over four competitions.
+ */
+function isLeague(type) {
+  return type === 2 || type === 3;
+}
+
+/**
+ * The label for a competition, from the table in `data/competitions.json`.
+ *
+ * THE RAW FALLBACK IS A LAST RESORT, NOT THE POLICY. An unnamed type fails the
+ * derive run loudly; this exists so that in the window between the league
+ * inventing one and a human naming it, a reader sees `game type 21` rather than
+ * `undefined`. Rendering raw was briefly the whole answer and that was wrong:
+ * `gameType` is a small closed enum, so a value nobody has seen is an EVENT, not
+ * the open-ended vocabulary a missed-shot reason is.
+ *
+ * Naming is not cosmetic. Lumping these under "preseason" — the tempting
+ * shorthand, since 320 of 361 are — would be false on every Olympic and
+ * 4 Nations night, which is 38 of the 60 dates the calendar makes visible at all.
+ */
+function competitionOf(type, names) {
+  // `names[type]` and not `names[String(type)]`: object keys ARE strings and the
+  // lookup coerces, so the second form was a branch no mutation could reach.
+  // The table arrives from JSON with string keys and the catalog carries `t` as
+  // a number; that is one expression, not two.
+  return (names && names[type]) || `game type ${type}`;
+}
+
+/**
+ * ⭐ THE COMPETITIONS THIS SITE DELIBERATELY LEAVES OUT, named from the table.
+ *
+ * WHY THIS IS DERIVED AND NOT WRITTEN. The front door's limits block read
+ * "Preseason, the Olympics and the 4 Nations Face-Off", and it had been wrong
+ * since February 2024: the archive also holds four ALL-STAR games, which that
+ * sentence never named. Nothing could see it — the sentence is prose in a
+ * builder, and prose cannot be compared to a table by anything but a person
+ * remembering to.
+ *
+ * That is the same shape as the deploy gate that exempted two pages by filename
+ * and the night list that labelled a group only when it was not alone: a rule
+ * written against the cases that existed, silently wrong when a fourth arrived.
+ * The league mints a competition whenever it invents one — 19 and 20 in February
+ * 2025, 9 in February 2026, both after this archive started — so a hand-written
+ * list here is a claim with an expiry date nobody is told about.
+ *
+ * DISTINCT NAMES, because two types can share one: 4 and 12 are both all-star,
+ * 19 and 20 are both 4 Nations. Ordered by the lowest type carrying each name,
+ * so the order is stable and derived rather than chosen.
+ */
+function excludedCompetitions(names) {
+  const seen = new Map();
+  for (const key of Object.keys(names || {})) {
+    const type = Number(key);
+    if (isLeague(type)) continue;
+    const name = competitionOf(type, names);
+    if (!seen.has(name) || seen.get(name) > type) seen.set(name, type);
+  }
+  return [...seen].sort((a, b) => a[1] - b[1]).map(([name]) => name);
+}
+
+/**
  * Team identity — the one table on this site that is not derived from the feed.
  *
  * WHAT THIS IS AND IS NOT. Colours and names are public reference data, entered by
@@ -484,15 +577,23 @@ function readableInk(hex, on = '#ffffff') {
  * two guards that run in opposite directions.
  */
 
-/** Regular season (02) and playoffs (03), read from the id — never a lookup. */
+
+
+/**
+ * Regular season (02) and playoffs (03), read from the id — never a lookup.
+ *
+ * The reading of the field moved to competitions.js, where the calendar and the
+ * verdict card read it too; this stays exported because half the repo imports
+ * `inScope` from here and moving the NAME would be churn for no gain. What went
+ * away is the third spelling of `String(id).slice(4, 6)`.
+ */
 function inScope(gameId) {
-  const t = String(gameId).slice(4, 6);
-  return t === '02' || t === '03';
+  return isLeague(typeOf(gameId));
 }
 
 /** Playoffs (03), read from the same field, because the OTL bucket turns on it. */
 function isPlayoff(gameId) {
-  return String(gameId).slice(4, 6) === '03';
+  return typeOf(gameId) === 3;
 }
 
 /**
@@ -792,33 +893,9 @@ function summarise(records) {
  */
 
 
+// competitionOf lives in competitions.js: the verdict card names the same
+// thing from the same table, and two lookups is two chances to disagree.
 
-/**
- * The label for a competition, from the table in `data/competitions.json`.
- *
- * NO TABLE LIVES IN THIS FILE. `derive.py` reads that JSON and is the only thing
- * that walks the whole archive, so it is the only place that can catch a new
- * competition the day it lands — and a second copy here is the defect this
- * project keeps almost building. The page gets the same file inlined.
- *
- * THE RAW FALLBACK IS A LAST RESORT, NOT THE POLICY. An unnamed type fails the
- * derive run loudly; this exists so that in the window between the league
- * inventing one and a human naming it, a reader sees `game type 21` rather than
- * `undefined`. Rendering raw was briefly the whole answer here and that was
- * wrong: `gameType` is a small closed enum, so a value nobody has seen is an
- * EVENT, not the open-ended vocabulary a missed-shot reason is.
- *
- * Naming is not cosmetic. Lumping these under "preseason" — the tempting
- * shorthand, since 320 of 361 are — would be false on every Olympic and
- * 4 Nations night, which is 38 of the 60 dates this makes visible at all.
- */
-function competitionOf(type, names) {
-  // `names[type]` and not `names[String(type)]`: object keys ARE strings and the
-  // lookup coerces, so the second form was a branch no mutation could reach.
-  // The table arrives from JSON with string keys and the catalog carries `t` as
-  // a number; that is one expression, not two.
-  return (names && names[type]) || `game type ${type}`;
-}
 
 /** 'YYYY-MM-DD' -> 'YYYY-MM'. String arithmetic, never a Date. */
 function monthOf(date) {

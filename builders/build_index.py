@@ -80,10 +80,31 @@ WORKSHOP = [
 # is MIN at BUF" long after the archive held three seasons -- a stale claim inside
 # the block whose entire job is stating limits, which is the worst place for one.
 LIMITS = [
+    # ⭐ THE EXCLUDED COMPETITIONS ARE GENERATED FROM data/competitions.json.
+    #
+    # This sentence used to name "Preseason, the Olympics and the 4 Nations
+    # Face-Off" and it had been wrong since February 2024: the archive also holds
+    # four ALL-STAR games, which it never mentioned. Nothing could catch that.
+    # Prose in a builder cannot be compared to a table by anything except a
+    # person remembering to -- and the block whose entire job is stating limits
+    # is the worst possible place for a limit that goes quietly stale. This same
+    # list already shipped "One game, not a season" long after the archive held
+    # three, which is the same defect in the same four lines.
+    #
+    # A competition the league invents next February appears here the day someone
+    # names it, and until they do, derive.py's nightly run is red.
+    #
+    # AND IT SAYS WHERE THEY ARE. Until 2026-08-21 this sentence promised those
+    # games were "in the archive" with no surface anywhere that could show one.
+    # The calendar is that surface, so the disclosure points at it: a limit a
+    # reader can go and inspect is a different kind of claim from one they have
+    # to take on trust.
     ("Regular season and playoffs, three seasons.",
-     "2023-24 through 2025-26. Preseason, the Olympics and the 4 Nations Face-Off "
-     "are in the archive and are deliberately left out of every number here — they "
-     "are different competitions, and averaging across them would describe none."),
+     "2023-24 through 2025-26. Other competitions in the archive &mdash; "
+     "__EXCLUDED__ &mdash; are deliberately left out of every number here. They "
+     "are different competitions, and averaging across them would describe none. "
+     "<a href=\"calendar.html\">They are on the calendar</a>, counted separately "
+     "and never added to an NHL total."),
     ("A replay, not live coverage.",
      "Every game here is over. Nothing is fetched from the league while you watch; "
      "the events were pulled once, checked against the league's own boxscore, and "
@@ -764,28 +785,49 @@ def _lib(*names):
     implementation this project keeps almost building. See docs/architecture.md.
     """
     return "\n".join(_module(n) for n in
-                      (names or ("ingest-state.js", "teams.js", "archive.js")))
+                      (names or ("ingest-state.js", "competitions.js", "teams.js", "archive.js")))
 
 
 def _competitions():
-    """The gameType table, inlined as JSON for the page.
-
-    THE SAME FILE derive.py READS, never a second copy. derive.py walks the whole
-    archive and is the only thing that can catch a new competition the day it
-    lands -- and it exits non-zero when it finds one this table does not name.
-    A table re-typed in JavaScript would be the copy that quietly disagrees.
-    The `_` key is the file's own explanation of itself and is dropped here.
-    """
-    names = json.loads((ROOT / "data" / "competitions.json").read_text())["names"]
-    return json.dumps(names, sort_keys=True, separators=(",", ":"))
+    """The gameType table, inlined as JSON for the page. See page.competitions."""
+    return P.competitions()
 
 def _workshop():
     return "\n".join(
         f'  <a class="card" href="{href}"><p class="t">{title}</p><p>{blurb}</p></a>'
         for href, title, blurb in WORKSHOP)
 
+def _excluded():
+    """The competitions deliberately left out of every number, from the table.
+
+    ⭐ THE SAME RULE IS IN src/lib/competitions.js::excludedCompetitions, because
+    this page is BUILT by Python and every other surface that names a competition
+    is JavaScript. Two implementations of one rule is what `measure.mjs` exists
+    to avoid -- so the seam is ASSERTED rather than assumed: test/index.test.js
+    runs the JavaScript function and requires the rendered page to name exactly
+    what it returns, in that order. Either side drifting is a red test, not a
+    quiet disagreement about what this site excludes.
+
+    DISTINCT NAMES: 4 and 12 are both all-star, 19 and 20 both 4 Nations. Ordered
+    by the lowest type carrying each name, so the order is derived and stable.
+    """
+    names = json.loads((ROOT / "data" / "competitions.json").read_text())["names"]
+    first = {}
+    for key, name in names.items():
+        t = int(key)
+        if t in (2, 3):                      # the population every rate covers
+            continue
+        if name not in first or first[name] > t:
+            first[name] = t
+    ordered = [n for n, _ in sorted(first.items(), key=lambda kv: kv[1])]
+    if len(ordered) < 2:
+        return ordered[0] if ordered else ""
+    return ", ".join(ordered[:-1]) + " and " + ordered[-1]
+
+
 def _limits():
-    return "\n".join(f"  <li><b>{h}</b><span>{b}</span></li>" for h, b in LIMITS)
+    return "\n".join(f"  <li><b>{h}</b><span>{b}</span></li>"
+                     for h, b in LIMITS).replace("__EXCLUDED__", _excluded())
 
 
 def _learn():
@@ -1359,7 +1401,7 @@ __HELPERS__
 
 
 def build_calendar():
-    html = (CAL_BODY.replace("__LIB__", _lib("teams.js", "archive.js", "calendar.js"))
+    html = (CAL_BODY.replace("__LIB__", _lib("competitions.js", "teams.js", "archive.js", "calendar.js"))
                     .replace("__HELPERS__", HELPERS)
                     .replace("__ORIGIN__", repr(DATA_ORIGIN).replace("'", '"'))
                     .replace("__NAMES__", _competitions()))

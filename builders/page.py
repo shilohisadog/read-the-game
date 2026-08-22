@@ -29,7 +29,24 @@ So the shell is centralised rather than copied into eight builders: one
 definition, one place to fix, and `test/document.test.js` asserts every page in
 `src/` came through here.
 """
-import base64, hashlib, re
+import base64, hashlib, json, pathlib, re
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+
+
+def competitions():
+    """gameType -> name, from the one table both languages read.
+
+    HERE BECAUSE THREE BUILDERS NEED IT. `derive.py` walks the archive against
+    it, `build_index.py` inlines it for the calendar and generates the front
+    door's exclusion list from it, and `build_main.py` inlines it so the verdict
+    card can say WHICH competition a game belongs to. A second `json.loads` of
+    the same file is harmless; a second copy of its CONTENTS would be the defect
+    this project keeps almost building, and one reader makes that impossible to
+    start. The `_` key is the file's own explanation of itself and is dropped.
+    """
+    names = json.loads((ROOT / "data" / "competitions.json").read_text())["names"]
+    return json.dumps(names, sort_keys=True, separators=(",", ":"))
 
 
 def csp(html, *, connect=None):

@@ -534,3 +534,121 @@ fast, and measuring nothing.
 > pages it covers, and a page arriving that nobody added to the list. The
 > filename exemption (§11.8), the CSP probe (here), and the group heading
 > (§11.5) are all *"the rule was written against the cases that existed."*
+
+---
+
+# 12. The all-star gap — 2026-08-22
+
+Kevin: *"Let's add the all-star games to the 'not processed' list and surface
+that information to the viewer."*
+
+## 12.1 The defect was not a missing word
+
+The front door's limits block read *"Preseason, the Olympics and the 4 Nations
+Face-Off are in the archive and are deliberately left out of every number here"*
+— and the archive has held **four all-star games since February 2024** which it
+never named. Adding "all-star" to that sentence fixes today and nothing else:
+the league mints a `gameType` whenever it invents a competition (19 and 20 in
+February 2025, 9 in February 2026, **both after this archive started**), and
+prose in a Python builder cannot be compared to `data/competitions.json` by
+anything except a person remembering to.
+
+**So the list is generated from the table.** A competition appears in that
+sentence the day someone names it, and until they do, `derive.py`'s nightly run
+is red.
+
+**This is the same shape as three defects from the day before** — the deploy gate
+that exempted pages by filename, the CSP probe that named `index.html`, and the
+night list that labelled a group only when it was not alone. *A rule written
+against the cases that existed.*
+
+## 12.2 ⭐ And the game page had a quieter version of it
+
+`sentence.js` named preseason and called everything else **"not an NHL league
+game"**. The reason it gave was true when written and is not any more:
+
+> *"ONLY PRESEASON IS NAMED. The others are recognisable from the clubs they
+> carry — 09 is thirty games between national teams, 19 and 20 are CAN/FIN/SWE/
+> USA — but 'this is the Olympics' is an inference from a ROSTER, and a wrong one
+> costs more than the generic phrase saves."*
+
+There is no inference. `data/competitions.json` did not exist when that was
+written; the league's own `gameType` sits in the id, and `derive.py` refuses to
+pass a type nobody has named. **A hedge against a risk that had since been
+removed** — [[verify-inherited-claims]] exactly. And C1 made it matter: every one
+of those games is now two clicks from the front door.
+
+## 12.3 ⭐ Found by LOOKING: a game with no edge was told nothing at all
+
+The scope check sat **after** the no-edge early return. So the first all-star game
+opened from the new calendar — **MCD at MAT, 3 February 2024** — rendered:
+
+> *"Neither team controlled play while the score was level."*
+
+and no statement anywhere that the game is outside every number on the site. Not
+a corner case: **264 of 4,119** in-scope games have no control edge, one in
+sixteen, and nothing makes out-of-scope games take that branch less often.
+
+**Scope is a fact about the GAME, not about the comparison,** so it is asked
+first. Mutation-checked in both directions — moving the check back reddens, and
+printing the clause on every game reddens three other tests.
+
+## 12.4 ⭐ AND THE ALARMS WERE NEVER ALARMS
+
+Mutating `bad = False` in `derive.py` — which **disarms the gameType alarm, the
+vocabulary alarm and the new unheld-name alarm at once** — left all 150 Python
+tests green.
+
+The test guarding it is named
+`test_and_the_run_goes_RED_rather_than_only_recording_it`, and its docstring
+says *"A line in index.json nobody reads is not 'loudly'. The exit code is."*
+**It asserts the ledger and the publication and never the exit code.** A test
+whose NAME promises what its body does not do — guarding the gameType alarm this
+repo shipped **the day before**, describing it as loud.
+
+It was untestable rather than untested: the logic sat inside `main()`, behind
+`argparse` and a `FileStore`. Extracted as `verdict(out, say)`, and each alarm is
+now asserted **alone**, so no one of them can be carrying the other two.
+
+## 12.5 What shipped
+
+| | |
+|---|---|
+| `src/lib/competitions.js` | new — `typeOf`, `isLeague`, `competitionOf`, `excludedCompetitions`. **Three spellings of `String(id).slice(4, 6)` collapse into one** (`archive.js::inScope`, `calendar.js::competitionOf`, a private `TYPE` map in `sentence.js`) |
+| front door | the exclusion list is generated, and **points at the calendar** — until 2026-08-21 it promised those games were "in the archive" with no surface that could show one |
+| game page | names the competition: *"not a regular-season or playoff game (all-star)"* |
+| `derive.py` | `unheldTypes` — a name in the table no game carries, which generated prose would put on the front page |
+| `derive.py` | `verdict()` extracted, so the exit code is reachable from a test |
+
+Nine mutations run, each caught by the test named for it. **644 JS + 151 Python.**
+
+**The seam is asserted, not assumed.** The page is built by Python and every
+other surface that names a competition is JavaScript, so `test/index.test.js`
+runs `excludedCompetitions` and requires the rendered page to name exactly what
+it returns, in that order — the same discipline `measure.mjs` exists for.
+
+## 12.6 ⚠️ And one more, found because C9 started reading a document nobody read
+
+Regenerating the health line printed **"0 archived · 0 published"**.
+
+Not an outage — `catalog.json` served 4,553 games and 4,490 viewable throughout,
+and every extract loaded. **`index.json`'s `extracts` block is overwritten every
+morning by the nightly**, which runs `derive.py` (`ingest.yml:164`) against a
+store holding pointers and one night of raw. It publishes a perfectly truthful
+report *of its own narrow run* — `absent: 4553, published: 0` — over figures that
+describe the whole archive. `derive.yml` runs **weekly**, so the ledger reads
+zeros most of the time.
+
+**Nothing on the site reads that block**, which is precisely why nobody noticed:
+the front door's freshness line uses `dataThrough`, `lastRun` and `coverage`.
+`health.mjs` began quoting it on 2026-08-21 and it was right for one day.
+
+> **A number nobody reads is not a number that is right — it is a number nobody
+> has checked.** C9's whole argument was that a figure a human retypes drifts.
+> This is the other half: a figure a machine publishes and nothing consumes
+> drifts just as freely, and the first consumer inherits it.
+
+`health.mjs` now counts `catalog.json`, the document the site itself reads, which
+cannot be emptied by a partial run — the same rule the deploy gates learned:
+**measure what the reader gets.** The ledger is still wrong; tracked as **D8**
+in `docs/status.md`, with two candidate fixes and neither built.
