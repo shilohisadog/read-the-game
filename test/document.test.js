@@ -238,6 +238,39 @@ test('NO PAGE IS A DEAD END — the one this work exists to fix', () => {
   }
 });
 
+test('⭐ BOTH ways into the archive are in the chrome, or neither is', () => {
+  // C1 shipped the calendar with ONE entry point — a line under the chips on
+  // the front door — and that ruling (docs/discovery.md §10.4) was about
+  // whether the HOME PAGE should carry a second index. It was never about the
+  // chrome, and the result was an asymmetry nobody chose: the team browse
+  // reachable from every page and the date browse from none.
+  //
+  // THE ASSERTION IS THAT THEY MATCH, not that either one is present. Pinning
+  // "the nav contains By date" is a test of today's answer; pinning that the
+  // two siblings are treated alike is a test of the rule, and it fails whether
+  // someone removes the date entry or the team one.
+  for (const file of PAGES) {
+    const html = readFileSync(new URL(file, SRC), 'utf8');
+    const header = (html.match(/<header class="sitehdr">([\s\S]*?)<\/header>/) || [])[1];
+    assert.ok(header, `${file} has no site header`);
+    // The game pages carry MINIMAL chrome by ruling — one link, "What is this?"
+    // — so they are exempt from carrying either, and the exemption is read off
+    // the header rather than from a list of filenames.
+    if (!/href="\/#teams"/.test(header) && !/href="\/calendar\.html"/.test(header)) continue;
+    assert.match(header, /href="\/#teams"/, `${file} offers a date browse and no team browse`);
+    assert.match(header, /href="\/calendar\.html"/, `${file} offers a team browse and no date browse`);
+  }
+});
+
+test('the date browse is called the same thing everywhere it is offered', () => {
+  // A third name for one destination is how a reader stops believing two links
+  // go to the same place. The front door says "Or browse by date"; the nav says
+  // "By date"; the page's own h1 says "Every night in the archive".
+  const home = readFileSync(new URL('index.html', SRC), 'utf8');
+  assert.match(home, /<a href="calendar\.html">Or browse by date/);
+  assert.match(home, /<a href="\/calendar\.html"[^>]*>By date<\/a>/);
+});
+
 test('every chrome link resolves to a page that exists', () => {
   // A nav link to a page we have not built is a 404 wearing a plan. This is what
   // stops the nav being extended ahead of its destinations.

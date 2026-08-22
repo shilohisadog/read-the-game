@@ -238,7 +238,24 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 # no longer holds the section is a link that silently goes nowhere, so both
 # entries point at real files -- and `document.test.js` already refuses a
 # chrome link whose target is not in src/, which is what keeps this honest.
+# ⭐ "BY DATE" SITS BESIDE "TEAMS" BECAUSE THEY ARE THE SAME KIND OF THING:
+# the two ways into the archive. C1 shipped the calendar with one entry point,
+# a line under the chips on the front door (docs/discovery.md §10.4), and that
+# ruling was about whether the home page should carry a second INDEX -- it was
+# never about the chrome. The result was an asymmetry nobody chose: a reader on
+# a team page or a game page could reach the team browse from any page on the
+# site and the date browse from none.
+#
+# THE WORDS ARE THE ONES THE READER ALREADY MET. The front door says "Or browse
+# by date", so the nav says "By date"; a third name for one destination is how a
+# reader stops believing two links go to the same place.
+#
+# MEASURED BEFORE IT WAS ADDED, because the header is the one piece of furniture
+# on every page and the novice tester is on a phone: 4 items wrapped to 2 lines
+# at 108px, and 5 items wrap to 2 lines at 108px. It costs nothing on the device
+# that can least afford it. See docs/discovery.md §13.
 _NAV = [("/", "Watch a game"), ("/#teams", "Teams"),
+        ("/calendar.html", "By date"),
         ("/what-you-can-see.html", "What you can see"),
         ("/workshop.html", "Workshop")]
 

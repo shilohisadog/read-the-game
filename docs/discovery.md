@@ -652,3 +652,69 @@ the front door's freshness line uses `dataThrough`, `lastRun` and `coverage`.
 cannot be emptied by a partial run — the same rule the deploy gates learned:
 **measure what the reader gets.** The ledger is still wrong; tracked as **D8**
 in `docs/status.md`, with two candidate fixes and neither built.
+
+---
+
+# 13. C1's last wire — 2026-08-22
+
+Kevin, asking what was left on C1: *"the wiring, right?"*
+
+**The wiring shipped on 2026-08-21 and it works.** Walked live on a 390px phone
+before answering, rather than asserted:
+
+```
+front door → "Or browse by date" → /calendar → season 2023-24 → 23 Sep 2023
+           → game 2023010002 → plays, 24 marks drawn
+0 page errors, 0 CSP violations across all six steps
+```
+
+## 13.1 But the walk found the one asymmetry nobody chose
+
+**"Teams" was in the chrome on every page; the date browse was on the front door
+only.** A reader on a team page, a learn page or the workshop could reach the
+team browse from anywhere and the date browse from nowhere.
+
+That is not what §10.4 ruled. CHENG's argument was about whether the HOME PAGE
+should carry a second INDEX — *a month grid needs a rule for which month and
+every rule has an ugly case* — and it settled where the calendar lives. **It said
+nothing about the chrome**, and I read a ruling about one surface as covering
+another. The two browses are the same kind of thing: the two ways into the
+archive.
+
+## 13.2 Measured before it was added, because the header is on every page
+
+| | 4 items | 5 items |
+|---|---|---|
+| header at 360px | **108px**, 2 nav lines | **108px**, 2 nav lines |
+| header at 390px | **108px**, 2 nav lines | **108px**, 2 nav lines |
+| header at 1100px | 52px, 1 line | 52px, 1 line |
+
+**It costs nothing on the device the novice tester is holding**, which is the
+only reason it is defensible to add furniture to all nine full-chrome pages. Had
+it pushed the phone header to three lines, the line under the chips would have
+stayed the whole answer.
+
+The label is **"By date"** — the words the front door already uses. A third name
+for one destination is how a reader stops believing two links go to the same
+place.
+
+**The two game pages are exempt and that is a ruling, not a miss:**
+`chrome="minimal"` gives them one link, because the game header answers only
+*"where am I"* and the funnel lives below the rink at the horn.
+
+## 13.3 The test asserts the RULE, not today's answer
+
+`test/document.test.js` requires that a page offering one browse offers the
+other. Pinning *"the nav contains By date"* would be a test of the answer;
+pinning that the two siblings are treated alike fails whichever one is removed
+— **mutation-checked both ways round**, plus a third that renames the
+destination to "Calendar" and is caught by the same-words test. The minimal-
+chrome exemption is read off the header rather than from a list of filenames,
+which is 11.8's lesson applied on the way in rather than after the failure.
+
+## 13.4 So what is actually left on C1
+
+**Nothing structural.** The re-ranking (§10.6) is Kevin's and untouched.
+Deliberately not built, each with its reason in §11.6: `u` is not marked in the
+night list (the team list does not mark it either, and one list marking it alone
+is a new divergence), and no search (§10.5 — no known lookup is uncovered).
