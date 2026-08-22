@@ -366,3 +366,75 @@ test('the shootout is not blocking, and even-strength filtering reaches this lay
   assert.ok(even.excluded.some(x => x.dims && x.dims.strength),
     'even-strength-only excluded nothing for a strength reason — the toggle is inert here');
 });
+
+/* ---------------------------------------------------------------------------
+   B2 — THE CONTROL FOLLOWS THE LAYER (CHENG's ruling, docs/status.md B2).
+   "When a layer is active its control lives with it; the base view carries
+   none." The progressive legend, applied to controls.
+   --------------------------------------------------------------------------- */
+
+const APP = readFileSync(new URL('../src/app.js', import.meta.url), 'utf8');
+const CSS = readFileSync(new URL('../src/app.css', import.meta.url), 'utf8');
+
+/**
+ * Which CSS class each toggleable layer puts on `#rg`, DERIVED by joining two
+ * facts in app.js rather than retyped.
+ *
+ * A hand-written map would be wrong the first time someone renames a class, and
+ * silently: the mapping is NOT identity — `goaltending` toggles `goalie`. The
+ * deeplink table gives layer id → variable, and `setX` gives variable → class.
+ */
+function classOfLayer() {
+  const byVar = {};
+  for (const m of APP.matchAll(/classList\.toggle\('([a-z]+)',\s*([A-Za-z]+)\)/g)) {
+    byVar[m[2]] = m[1];
+  }
+  const out = {};
+  for (const m of APP.matchAll(/\[(\w+)\.id\]:\s*\(\)\s*=>\s*\{\s*([A-Za-z]+)\s*=\s*true/g)) {
+    out[m[1]] = byVar[m[2]];
+  }
+  return out;
+}
+
+test('⭐ Situations is offered by exactly the layers that READ the filter', () => {
+  // THE RULE, NOT TODAY'S ANSWER. `evenOnly` is what "Even strength only"
+  // changes, so the control belongs to every layer whose reducer reads it and
+  // to no other. Derived from the reducer sources, so a layer that starts
+  // reading the filter — or stops — turns this red instead of quietly offering
+  // a control that does nothing.
+  const map = classOfLayer();
+  assert.ok(Object.keys(map).length >= 5, `only mapped ${JSON.stringify(map)}`);
+
+  const want = new Set();
+  for (const [mod, cls] of Object.entries(map)) {
+    const file = mod === 'danger' ? 'danger' : mod === 'goaltending' ? 'goaltending' : mod;
+    const src = readFileSync(new URL(`../src/lib/layers/${file}.js`, import.meta.url), 'utf8');
+    if (/evenOnly/.test(src)) want.add(cls);
+  }
+  // Sanity: the split is real in both directions, or the assertion below is
+  // satisfied by "every layer" or "no layer".
+  assert.ok(want.size > 0 && want.size < Object.keys(map).length,
+    `every layer or none reads the filter: ${[...want]}`);
+
+  const rule = CSS.match(/([^\n}]*\.figpick\.sit[^{]*)\{display:flex\}/);
+  assert.ok(rule, 'no rule shows Situations for any layer');
+  const have = new Set([...rule[1].matchAll(/#rg\.([a-z]+)\s+\.figpick\.sit/g)].map(m => m[1]));
+  assert.deepEqual([...have].sort(), [...want].sort(),
+    'the layers offered the Situations control are not the layers that read it');
+});
+
+test('and the base view carries it not at all', () => {
+  // The other half. Without this, "offered by exactly those layers" is
+  // satisfied by a control that is always visible.
+  assert.match(CSS, /#rg \.figpick\.sit\{display:none\}/);
+});
+
+test('the controls that DO reach the base view stay in it', () => {
+  // CHENG refused moving them wholesale: the learn page's nine doors land with
+  // a layer already on, and stripping the base view's controls makes a door a
+  // one-way trip — the feature breaking, not a side effect. `trails` is read in
+  // the base-view mark loop and the figures ARE the base view.
+  assert.match(APP, /if\(trails==='off'&&k!==i\)continue;/,
+    'trails no longer reaches the base view — then it should move too');
+  assert.doesNotMatch(CSS, /#rg \.figpick\.(fig|trail)\{display:none\}/);
+});

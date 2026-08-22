@@ -452,6 +452,27 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .cbar,#rg .counters,#rg #work{display:none}
 #rg.corsi .cbar{display:block}#rg.corsi .counters{display:flex}#rg.corsi #work{display:inline-block}
 #rg .figpick{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 2px 0}
+/* ⭐ B2 — THE CONTROL FOLLOWS THE LAYER. CHENG's ruling: when a layer is active
+   its control lives with it, and the base view carries none. The progressive
+   legend, applied to controls — name what is on, nothing else.
+   `Situations` filters what a COUNT counts, and `evenOnly` is read by corsi,
+   goaltending, blocked, danger and tied: every counting layer, and nothing in
+   the base view. Measured before it moved, on the live page with the game run
+   to the horn and no layer on: toggling "Even strength only" left the board
+   identical and the rink identical (59 SVG shapes before and after) and printed
+   "49 attempts have dropped out so far."
+   THAT IS WORSE THAN CLUTTER. A control with no effect is noise; a control that
+   REPORTS an effect it is not having is a false impression, in the one place
+   this site is supposed to be legible. It was also the tallest of the three
+   groups at 147px on a 390px phone — the device the novice tester is holding.
+   `Trails` and `Players` STAY: trails is read at the base-view mark loop
+   (app.js `if(trails==='off'&&k!==i)continue;`) and the figures ARE the base
+   view. Moving them wholesale is what CHENG refused, because the learn page's
+   nine doors land with a layer already on and a door must not be a one-way
+   trip. */
+#rg .figpick.sit{display:none}
+#rg.corsi .figpick.sit,#rg.slot .figpick.sit,#rg.goalie .figpick.sit,
+#rg.blocked .figpick.sit{display:flex}
 #rg .sbtn[aria-pressed="true"],#rg .fbtn[aria-pressed="true"]{border-style:solid;color:var(--ink);border-color:var(--ink);background:#eef2f5}
 /* A NOTE APPEARS WHEN THE THING IT EXPLAINS HAPPENS, and not before. These
    three were permanent -- 183px on a phone, 93 words -- each describing a state
@@ -592,15 +613,15 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 <p class="verdict" id="verdict"></p>
 <div class="legend"><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white-filled, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span><i class="k-g"></i><i class="k-gv"></i>goal — either sweater</span><span><i class="k-blk"></i>blocked — ringed where the puck was <b>stopped</b></span><span class="lkey lk-hd"><i class="k-hd"></i>from the slot</span><span class="lkey lk-blk">blocked shots are dimmed unless a body stopped them</span><span class="lkey lk-wh"><i class="k-wh"></i>play restarted here — brightest at the most recent stoppage</span><span class="lkey lk-wh"><i class="k-rl"></i>the line the rule names — for icing the centre line and the far goal line, for offside the blue line</span><span class="lkey lk-ends" id="endsKey"></span><span class="lkey lk-unrec" id="unrecKey"></span></div>
 <div class="newcomer nwhy2" id="newcomerWhy"></div><div class="layers"><span class="ll">Add a metric layer:</span><button class="lyr" id="lyCorsi" aria-pressed="false">＋ Control (Corsi)</button><button class="lyr" id="lyHd" aria-pressed="false">＋ Shots from the slot</button><button class="lyr" id="lyGoalie" aria-pressed="false">＋ Goaltending</button><button class="lyr" id="lyWhistle" aria-pressed="false">＋ Why play stopped</button><button class="lyr" id="lyBlock" aria-pressed="false">＋ Blocked shots</button></div>
+<div class="figpick sit"><span class="ll">Situations:</span>
+<button class="lyr sbtn" data-s="all" aria-pressed="true">All situations</button>
+<button class="lyr sbtn" data-s="even" aria-pressed="false">Even strength only</button>
+<span class="fnote" id="nSit"></span></div>
 <div class="hint">Tip: click any shot ringed in amber to see <b>why</b> it counts as a slot shot — with trails set to <b>keep every mark</b>, earlier ones stay clickable too.</div>
 <div class="figpick"><span class="ll">Trails:</span>
 <button class="lyr tbtn" data-t="off" aria-pressed="true">Current moment</button>
 <button class="lyr tbtn" data-t="all" aria-pressed="false">Keep every mark</button>
 <span class="fnote" id="nTrails"></span></div>
-<div class="figpick"><span class="ll">Situations:</span>
-<button class="lyr sbtn" data-s="all" aria-pressed="true">All situations</button>
-<button class="lyr sbtn" data-s="even" aria-pressed="false">Even strength only</button>
-<span class="fnote" id="nSit"></span></div>
 <div class="figpick"><span class="ll">Players:</span>
 <button class="lyr fbtn" data-f="mascot" aria-pressed="true">Mascot</button>
 <button class="lyr fbtn" data-f="tabletop" aria-pressed="false">Tabletop</button>

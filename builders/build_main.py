@@ -63,15 +63,15 @@ __CSS__</style>
 <p class="verdict" id="verdict"></p>
 <div class="legend"><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white-filled, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span><i class="k-g"></i><i class="k-gv"></i>goal — either sweater</span><span><i class="k-blk"></i>blocked — ringed where the puck was <b>stopped</b></span><span class="lkey lk-hd"><i class="k-hd"></i>from the slot</span><span class="lkey lk-blk">blocked shots are dimmed unless a body stopped them</span><span class="lkey lk-wh"><i class="k-wh"></i>play restarted here — brightest at the most recent stoppage</span><span class="lkey lk-wh"><i class="k-rl"></i>the line the rule names — for icing the centre line and the far goal line, for offside the blue line</span><span class="lkey lk-ends" id="endsKey"></span><span class="lkey lk-unrec" id="unrecKey"></span></div>
 <div class="newcomer nwhy2" id="newcomerWhy"></div><div class="layers"><span class="ll">Add a metric layer:</span><button class="lyr" id="lyCorsi" aria-pressed="false">＋ Control (Corsi)</button><button class="lyr" id="lyHd" aria-pressed="false">＋ Shots from the slot</button><button class="lyr" id="lyGoalie" aria-pressed="false">＋ Goaltending</button><button class="lyr" id="lyWhistle" aria-pressed="false">＋ Why play stopped</button><button class="lyr" id="lyBlock" aria-pressed="false">＋ Blocked shots</button></div>
+<div class="figpick sit"><span class="ll">Situations:</span>
+<button class="lyr sbtn" data-s="all" aria-pressed="true">All situations</button>
+<button class="lyr sbtn" data-s="even" aria-pressed="false">Even strength only</button>
+<span class="fnote" id="nSit"></span></div>
 <div class="hint">Tip: click any shot ringed in amber to see <b>why</b> it counts as a slot shot — with trails set to <b>keep every mark</b>, earlier ones stay clickable too.</div>
 <div class="figpick"><span class="ll">Trails:</span>
 <button class="lyr tbtn" data-t="off" aria-pressed="true">Current moment</button>
 <button class="lyr tbtn" data-t="all" aria-pressed="false">Keep every mark</button>
 <span class="fnote" id="nTrails"></span></div>
-<div class="figpick"><span class="ll">Situations:</span>
-<button class="lyr sbtn" data-s="all" aria-pressed="true">All situations</button>
-<button class="lyr sbtn" data-s="even" aria-pressed="false">Even strength only</button>
-<span class="fnote" id="nSit"></span></div>
 <div class="figpick"><span class="ll">Players:</span>
 <button class="lyr fbtn" data-f="mascot" aria-pressed="true">Mascot</button>
 <button class="lyr fbtn" data-f="tabletop" aria-pressed="false">Tabletop</button>
