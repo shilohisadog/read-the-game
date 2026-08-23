@@ -156,6 +156,10 @@ def _write_catalog(store, rows):
     store.put(CATALOG_KEY, json.dumps(
         {"games": [merged[k] for k in sorted(merged)]},
         sort_keys=True, separators=(",", ":")).encode())
+    # Handed back so a caller can ask what the ARCHIVE holds rather than what
+    # this run walked. Returning it is cheaper than reading the file we just
+    # wrote, and it cannot disagree with what was written.
+    return merged
 
 
 @dataclass
@@ -167,6 +171,13 @@ class Report:
     noted: dict = field(default_factory=dict)     # field -> values seen but forgiven
     unreconciled: int = 0                        # published, but the league disagrees with itself
     types: dict = field(default_factory=dict)    # gameType -> how many games carry it
+    # ⭐ WHAT THE WHOLE ARCHIVE HOLDS, which is NOT what this run walked.
+    # `types` counts the games this run had raw for; in the offseason that is
+    # ZERO, because the nightly rehydrates pointers only. Any claim about the
+    # ARCHIVE has to come from the merged catalog instead -- the same record
+    # `_write_catalog` merges precisely so "a game this run said NOTHING about
+    # must not read as a game that is gone".
+    archive_types: set = field(default_factory=set)
     refused_in_window: int = 0
 
     @property
@@ -213,7 +224,10 @@ class Report:
                 # reason `blocking` is present when empty.
                 "gameTypes": {str(k): v for k, v in sorted(
                     self.types.items(), key=lambda kv: (kv[0] is None, kv[0]))},
-                "unnamedTypes": sorted(str(k) for k in self.types
+                # ⭐ FROM THE ARCHIVE, NOT FROM THIS RUN'S WALK. Both of these
+                # are claims about what the ARCHIVE holds, and `self.types`
+                # answers a different question -- what this run had raw for.
+                "unnamedTypes": sorted(str(k) for k in self.archive_types
                                        if str(k) not in _competitions()),
                 # ⭐ AND THE OTHER DIRECTION, which only became load-bearing when
                 # the front door began GENERATING its exclusion list from this
@@ -227,8 +241,17 @@ class Report:
                 # Both are drift alarms over the same seam and neither can see
                 # the other's direction. A guard that only checks one way is the
                 # deploy exemption again: right about the cases that existed.
+                #
+                # ⚠️ AND THIS ONE BROKE THE NIGHTLY THE DAY AFTER IT SHIPPED.
+                # It read `self.types`, which counts games this run had RAW for
+                # -- and the nightly rehydrates pointers only, so in the
+                # offseason it walks nothing at all. On 2026-08-23 it reported
+                # all EIGHT named types as unheld and failed the ingest.
+                # `_write_catalog` states the rule one function away: "a game
+                # this run said NOTHING about must not read as a game that is
+                # gone." That is precisely what this did.
                 "unheldTypes": sorted(k for k in _competitions()
-                                      if int(k) not in self.types),
+                                      if int(k) not in self.archive_types),
                 # Forgiven values NOBODY HAS LOOKED AT YET, as opposed to the
                 # ones in data/vocabulary-seen.json that we decided to render
                 # raw on purpose. This is the difference between a ledger and
@@ -416,7 +439,11 @@ def derive(store, end=None, days=None, now=None):
         if rich.get("unreconciled"):
             rep.unreconciled += 1
 
-    _write_catalog(store, rows)
+    merged = _write_catalog(store, rows)
+    # Every game in the published catalog, whether or not this run saw its raw.
+    # `t` is absent on a row written before the field existed; `None` is not a
+    # gameType and must not silently satisfy a name in the table.
+    rep.archive_types = {r.get("t") for r in merged.values() if r.get("t") is not None}
     _write_ledger(store, idx, rep, stamp)
     return rep
 

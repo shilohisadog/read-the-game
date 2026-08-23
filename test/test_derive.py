@@ -854,6 +854,64 @@ class ANewCompetitionIsAnEventNotNoise(unittest.TestCase):
         self.assertEqual(sorted(held),
                          sorted(t for t in D._competitions() if t != "2"))
 
+    def test_A_RUN_THAT_DERIVES_NOTHING_ACCUSES_NOTHING(self):
+        """THE NIGHTLY BROKE ON THIS, the day after the check shipped.
+
+        `unheldTypes` read the report's `types`, which counts games this run had
+        RAW for. The nightly rehydrates POINTERS ONLY -- a few hundred bytes a
+        game against an archive of hundreds of megabytes -- so in the offseason
+        it walks nothing at all. On 2026-08-23 it reported all EIGHT named
+        gameTypes as "the archive holds no game of it" and failed the ingest,
+        with 4,553 games sitting in the published catalog.
+
+        `_write_catalog` states the rule one function away, and had done for
+        months: "a game this run said NOTHING about must not read as a game that
+        is gone." The guard read exactly that way.
+
+        So the claim now comes from the MERGED CATALOG, and this is the case
+        that proves it: a store holding the published catalog and pointers, with
+        every raw payload gone.
+        """
+        store = DictStore()
+        seed(store, gid=2025020001, gtype=2)
+        for t in (1, 4, 9, 12, 19, 20):
+            seed(store, gid=int(f"2025{t:02d}0001"), gtype=t)
+        seed(store, gid=2025030001, gtype=3)
+        first = D.derive(store, now="2026-01-11T11:30:00Z")
+        self.assertEqual(first.as_dict()["unheldTypes"], [], "the full run should be silent")
+        held = len(json.loads(store.get("catalog.json").decode())["games"])
+        self.assertEqual(held, 8)
+
+        # NOW STRIP THE RAW, which is the steady state the nightly runs in.
+        for key in [k for k in store.keys("raw/") if not k.endswith("/latest.json")]:
+            store.delete(key)
+        rep = D.derive(store, now="2026-01-12T11:30:00Z")
+        out = rep.as_dict()
+        self.assertEqual(out["absent"], 8, "the run should have walked nothing")
+        self.assertEqual(out["gameTypes"], {}, "and counted nothing, which is honest")
+        self.assertEqual(out["unheldTypes"], [],
+                         "a run that derived NOTHING accused the whole table")
+        self.assertEqual(out["unnamedTypes"], [])
+        self.assertEqual(D.verdict(out, say=lambda m: None), 0,
+                         "the nightly went red on an archive that was entirely fine")
+        # And the catalog is still whole — the reason the merge exists at all.
+        self.assertEqual(
+            len(json.loads(store.get("catalog.json").decode())["games"]), 8)
+
+    def test_a_name_the_archive_holds_no_game_of_still_fires_after_the_fix(self):
+        """The other direction: reading the catalog must not disarm the check.
+
+        A guard moved to a wider source is a guard that can go quiet everywhere.
+        This is the same store with a name nothing carries.
+        """
+        store = DictStore()
+        seed(store, gid=2025020001, gtype=2)
+        D.derive(store, now="2026-01-11T11:30:00Z")
+        out = D.derive(store, now="2026-01-12T11:30:00Z").as_dict()
+        self.assertIn("1", out["unheldTypes"], "preseason is named and nothing holds it")
+        self.assertNotIn("2", out["unheldTypes"])
+        self.assertEqual(D.verdict(out, say=lambda m: None), 1)
+
     def test_a_run_that_holds_every_named_type_is_silent(self):
         # MUTATION GUARD, the same one its twin carries: a check that fires on
         # every run is a check that gets switched off.
