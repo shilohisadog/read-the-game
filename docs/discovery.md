@@ -718,3 +718,64 @@ which is 11.8's lesson applied on the way in rather than after the failure.
 Deliberately not built, each with its reason in §11.6: `u` is not marked in the
 night list (the team list does not mark it either, and one list marking it alone
 is a new divergence), and no search (§10.5 — no known lookup is uncovered).
+
+---
+
+# 14. The nightly went red — 2026-08-23
+
+**The ingest failed, and it was mine.** `unheldTypes`, added 2026-08-22, reported
+all eight named gameTypes as *"the archive holds no game of it"* and failed the
+run, with **4,553 games sitting untouched in the published catalog**.
+
+## 14.1 The mechanism
+
+The guard read the report's `types`, which counts games **this run had raw for**.
+The nightly rehydrates *pointers only* — a few hundred bytes a game against an
+archive of hundreds of megabytes — so in the offseason (`dataThrough` is
+2026-06-14) it walks **nothing at all**. `absent: 4553`, `gameTypes: {}`, and
+every named type therefore looked unheld.
+
+## 14.2 ⭐ The rule was stated one function away, and had been for months
+
+`_write_catalog` merges each run's rows over the published catalog, for a reason
+its own docstring gives:
+
+> *"a game this run said NOTHING about must not read as a game that is gone."*
+
+**My guard read exactly that way.** This is the dominant failure mode in
+`docs/` restated once more: *a check built from the implementation's own model of
+its input.* I assumed derive always sees the whole archive — and **D8, which I
+wrote the same afternoon, says in my own words that it does not.**
+
+## 14.3 The fix, and one it dragged out with it
+
+Both claims **about the archive** now come from the merged catalog;
+`_write_catalog` returns that record rather than the file being re-read, so the
+count cannot disagree with what was written. `gameTypes` stays as this run's
+walk, which is what it is honestly named.
+
+**And the same move fixed a silent one:** `unnamedTypes` was equally blind on any
+run that walked no raw, so **a new competition entering the archive would not
+have alarmed until the weekly full derive**. It failed *safe* rather than loud,
+which is why nobody noticed. It now alarms on every run until someone names it.
+
+## 14.4 D8 is no longer cosmetic
+
+Recorded yesterday as *"no user-facing impact"*, and that was true of the number.
+It was not true of the trap: **a report whose figures describe a narrow run while
+its name and position say ARCHIVE is a trap laid for the next reader — and the
+next reader was a check written by the same person a day later.**
+
+The guard was the second mistake. The first is that the report is still wrong.
+
+## 14.5 Verified, not assumed
+
+The test reproduces the real failure — derive a full archive, strip every raw
+payload, derive again — and **reverting to the shipped expression turns it red**.
+Then the ingest was dispatched at the fixed commit and watched:
+`derive the games we just fetched` **success**, `unheldTypes: []`,
+`unnamedTypes: []`, catalog **4,553 / 4,490 untouched**.
+
+The failed run stays red on `07af46c`, because that commit genuinely was broken.
+`gh run rerun` would have replayed the bug at the same SHA; re-running in place
+is for a run that failed for a reason the commit did not contain.
