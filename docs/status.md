@@ -213,6 +213,48 @@ are these guys?"*, that is a measurement and it gets built that afternoon.
 
 ---
 
+## F. What this week cost — four defects reached production
+
+None was caught by the suite. The through-line is one sentence.
+
+1. **A7 — the penalty boxes rendered beside the ice on the front page.**
+   `.rinkbox` is `display:flex` in preview. I measured `game.html` at two widths
+   and never opened the hero. *The same component had two layout modes and I
+   rendered one.* **Kevin found it.**
+2. **A6 — the ends disclosure was 176px on a phone**, taller than the rink above
+   it, on a page Kevin had just called overcrowded. Caught by measuring, before
+   he saw it. Now 78px.
+3. **A9 — 864 games refused by my own new check.** Verified 8-of-8 on the
+   reference game and shipped across 4,553. **A bench minor has no committing
+   player**, and the reference game contains none.
+4. **A10 — the figure wore the shooter's sweater at the blocker's position.**
+   Two individually-correct decisions that contradicted each other on screen.
+   **Kevin found it.**
+
+> **A check that passes on the sample cannot see the case the sample does not
+> contain.** It applies identically to test fixtures, to layout modes, and to the
+> reference game.
+
+**A stated policy, not a habit:** Kevin found two of the four (A7, A10) and
+**both were visual**. Neither is findable from code and the suite is structurally
+blind to both. So — **any change that alters what is on screen gets LOOKED AT, at
+both widths, before it is called done**, and A7's specific lesson rides with it:
+*the same component had two layout modes and I rendered one.*
+
+**And the document caught the fifth.** Reconciling a live 3,574 against a
+remembered 4,417 found what a green pipeline did not. Which argues for one cheap
+change: **the health line should be regenerated, not typed** — a number in this
+file that disagrees with the live site is exactly the reconciliation that just
+paid off, and automating it makes it pay off every time. Tracked as C9.
+
+Two tests this week were wrong before they were right, and both said so out loud
+rather than passing quietly: the blocked-figure test read the CSS class and never
+the sweater colour (Kevin's exact symptom, green), and its count guard **failed
+first** because the reference game blocks 22–22 — what separates blocker from
+shooter is the *distributions*, 22–22 against 26–18.
+
+---
+
 ## G. The row-by-row pass against the code — 2026-08-23
 
 Agreed after **B3 turned out to be already shipped** and **C2/C8 turned out to be
@@ -273,43 +315,3 @@ prose, and prose cannot be compared to code by anything but a person remembering
 to.* C9 fixed exactly one line of it by generating the health block. Nothing
 generates the rest, and nothing can — so the answer is the discipline of this
 pass, dated, rather than an alarm.
-
-## F. What this week cost — four defects reached production
-
-None was caught by the suite. The through-line is one sentence.
-
-1. **A7 — the penalty boxes rendered beside the ice on the front page.**
-   `.rinkbox` is `display:flex` in preview. I measured `game.html` at two widths
-   and never opened the hero. *The same component had two layout modes and I
-   rendered one.* **Kevin found it.**
-2. **A6 — the ends disclosure was 176px on a phone**, taller than the rink above
-   it, on a page Kevin had just called overcrowded. Caught by measuring, before
-   he saw it. Now 78px.
-3. **A9 — 864 games refused by my own new check.** Verified 8-of-8 on the
-   reference game and shipped across 4,553. **A bench minor has no committing
-   player**, and the reference game contains none.
-4. **A10 — the figure wore the shooter's sweater at the blocker's position.**
-   Two individually-correct decisions that contradicted each other on screen.
-   **Kevin found it.**
-
-> **A check that passes on the sample cannot see the case the sample does not
-> contain.** It applies identically to test fixtures, to layout modes, and to the
-> reference game.
-
-**A stated policy, not a habit:** Kevin found two of the four (A7, A10) and
-**both were visual**. Neither is findable from code and the suite is structurally
-blind to both. So — **any change that alters what is on screen gets LOOKED AT, at
-both widths, before it is called done**, and A7's specific lesson rides with it:
-*the same component had two layout modes and I rendered one.*
-
-**And the document caught the fifth.** Reconciling a live 3,574 against a
-remembered 4,417 found what a green pipeline did not. Which argues for one cheap
-change: **the health line should be regenerated, not typed** — a number in this
-file that disagrees with the live site is exactly the reconciliation that just
-paid off, and automating it makes it pay off every time. Tracked as C9.
-
-Two tests this week were wrong before they were right, and both said so out loud
-rather than passing quietly: the blocked-figure test read the CSS class and never
-the sweater colour (Kevin's exact symptom, green), and its count guard **failed
-first** because the reference game blocks 22–22 — what separates blocker from
-shooter is the *distributions*, 22–22 against 26–18.
