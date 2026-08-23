@@ -390,13 +390,25 @@ class TheLedger(unittest.TestCase):
         D.derive(store, now="2026-01-11T11:30:00Z")
         idx = self.index(store)
         self.assertNotIn("refused", idx.get("coverage", {}))
-        e = idx["extracts"]
-        self.assertEqual(e["games"], 2, "every game we hold raw for")
-        self.assertEqual(e["published"], 1)
-        self.assertEqual(e["refused"], 1)
-        self.assertEqual(e["games"], e["published"] + e["refused"],
-                         "the third ledger closes too")
-        self.assertEqual(e["asOf"], "2026-01-11T11:30:00Z")
+        self.assertNotIn("extracts", idx,
+                         "the word that conflated the two populations is gone, "
+                         "not kept as an alias for either half")
+        a, r = idx["archive"], idx["run"]
+        self.assertEqual(a["games"], 2, "every row in the catalog")
+        self.assertEqual(a["published"], 1)
+        self.assertEqual(a["refused"], 1)
+        self.assertEqual(a["games"], a["published"] + a["refused"],
+                         "the archive ledger closes")
+        self.assertEqual(r["walked"],
+                         r["derived"] + r["unchanged"] + r["refused"] + r["absent"],
+                         "and the run ledger closes over its own set")
+        self.assertEqual(a["asOf"], "2026-01-11T11:30:00Z")
+        self.assertEqual(r["asOf"], "2026-01-11T11:30:00Z")
+        # ⭐ THE WORD `published` EXISTS IN EXACTLY ONE OF THEM. D8 was a block
+        # whose names all read as the archive while half its figures described
+        # the run; the split is only worth having if the ambiguous word cannot
+        # appear on the run side for a reader to mistake.
+        self.assertNotIn("published", r)
 
     def test_the_reasons_are_counted_by_gate_so_the_shape_is_visible(self):
         # 30 games refused for one reason is a category; 30 refused for 30
@@ -408,7 +420,7 @@ class TheLedger(unittest.TestCase):
         seed(store, gid=2025020003, pbp=pbp_bytes(plays=[
             play("teleportation", 0, xCoord=0, yCoord=0, eventOwnerTeamId=30)]))
         D.derive(store, now="2026-01-11T11:30:00Z")
-        by_gate = self.index(store)["extracts"]["byGate"]
+        by_gate = self.index(store)["archive"]["byGate"]
         self.assertEqual(by_gate, {"validation": 2, "vocabulary": 1})
 
     def test_deriving_nothing_new_still_records_that_it_looked(self):
@@ -416,7 +428,7 @@ class TheLedger(unittest.TestCase):
         seed(store, gid=2025020001)
         D.derive(store, now="2026-01-11T11:30:00Z")
         D.derive(store, now="2026-01-12T11:30:00Z")
-        self.assertEqual(self.index(store)["extracts"]["asOf"], "2026-01-12T11:30:00Z")
+        self.assertEqual(self.index(store)["run"]["asOf"], "2026-01-12T11:30:00Z")
 
     def test_raw_that_is_not_in_this_store_is_absent_not_refused(self):
         # THREE OUTCOMES, NOT TWO, and this one is neither a verdict nor a
@@ -453,17 +465,247 @@ class TheLedger(unittest.TestCase):
         d2 = seed(store, gid=2025020002)
         store.delete(F.raw_key(2025020002, d2["boxscore"], "boxscore"))
         D.derive(store, now="2026-01-11T11:30:00Z")
-        e = json.loads(store.get("index.json").decode())["extracts"]
-        self.assertEqual(e["pointers"], 2)
-        self.assertEqual(e["games"], 1, "only the game we could actually judge")
-        self.assertEqual(e["published"], 1)
-        self.assertEqual(e["absent"], 1)
-        self.assertEqual(e["games"], e["published"] + e["refused"])
-        self.assertEqual(e["pointers"], e["games"] + e["absent"])
+        idx = json.loads(store.get("index.json").decode())
+        self.assertEqual(idx["run"]["walked"], 2)
+        self.assertEqual(idx["run"]["derived"], 1, "only the one we could judge")
+        self.assertEqual(idx["run"]["absent"], 1)
+        self.assertEqual(idx["archive"]["games"], 1,
+                         "and the catalog holds only the game that got a row")
+        # BOTH IDENTITIES STILL CLOSE, over their own sets and not each
+        # other's -- which is the whole reason there are two of them.
+        a, r = idx["archive"], idx["run"]
+        self.assertEqual(a["games"], a["published"] + a["refused"])
+        self.assertEqual(r["walked"],
+                         r["derived"] + r["unchanged"] + r["refused"] + r["absent"])
 
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TheArchiveLedgerIsCountedFromTheArchive(unittest.TestCase):
+    """⭐ D8. THE LEDGER THAT DESCRIBED A DIFFERENT POPULATION THAN ITS NAME.
+
+    `index.json` carried one block, `extracts`, whose figures were all computed
+    from the games a run had raw for -- and whose names (`published`, `refused`,
+    `absent`) and position all read as the ARCHIVE. A nightly rehydrates
+    pointers and one night of raw, so for most of the week it published
+    `published: 0, absent: 4553` over figures a weekly full derive had left.
+
+    NOTHING CAUGHT IT FOR MONTHS, and then two readers walked into it inside
+    forty-eight hours: `builders/health.mjs` printed "0 archived · 0 published"
+    at the top of the build list, and `unheldTypes` FAILED A PRODUCTION INGEST
+    with four and a half thousand games sitting untouched in the catalog.
+
+    ⭐ AND THE ONE CHECK THAT EXISTED COULD NOT SEE IT, BECAUSE IT WAS A MIRROR.
+    `derive.yml` asserted `local['published'] == index['published']` -- the
+    index against THE SAME RUN'S OWN REPORT. That is not an instrument for this
+    axis; it asserts the very identity that makes the defect invisible, and it
+    would have gone green on every zeroed nightly.
+
+    So the instrument here is a SECOND DOCUMENT. Every assertion below counts
+    the published `catalog.json` bytes -- what a browser would actually fetch --
+    and requires the archive block to reproduce it. If `as_dict` and
+    `_write_catalog` ever disagree about what the archive holds, one of them is
+    wrong and this says which.
+    """
+
+    def published(self, store):
+        """The archive as a VISITOR sees it: parsed from the artifact.
+
+        Deliberately NOT `rep.catalog`, which is the same in-memory dict the
+        report counts. Comparing a number against the object it was computed
+        from is the check that shipped and could not fail.
+        """
+        return json.loads(store.get("catalog.json").decode())["games"]
+
+    def test_the_archive_block_reproduces_the_catalog_a_browser_fetches(self):
+        store = DictStore()
+        seed(store, gid=2025020001, gtype=2)
+        seed(store, gid=2025020002, gtype=2, pbp=stub_pbp(), box=box_bytes(away_sog=99))
+        seed(store, gid=2025030001, gtype=3)
+        D.derive(store, now="2026-01-11T11:30:00Z")
+        a = json.loads(store.get("index.json").decode())["archive"]
+        rows = self.published(store)
+        self.assertEqual(a["games"], len(rows))
+        self.assertEqual(a["published"], sum(1 for r in rows if r.get("v") == 1))
+        self.assertEqual(a["refused"], sum(1 for r in rows if r.get("v") != 1))
+        self.assertEqual(a["refusedGames"],
+                         sorted(r["id"] for r in rows if r.get("v") != 1))
+        self.assertEqual(sum(a["byGate"].values()), a["refused"],
+                         "the gates account for every refusal, or the ledger "
+                         "names a category it cannot place a game in")
+        self.assertEqual(sum(a["gameTypes"].values()), len(rows))
+
+    def test_A_RUN_THAT_WALKS_NOTHING_STILL_STATES_WHAT_THE_ARCHIVE_HOLDS(self):
+        """THE OUTAGE, AS A LEDGER RATHER THAN AS AN ALARM.
+
+        `unheldTypes` was fixed at the guard on 2026-08-23. That was the SECOND
+        mistake. The first was this block, and fixing one reader left the trap
+        standing for the next one -- so this asserts the FIGURES, not the alarm.
+        """
+        store = DictStore()
+        for gid, t in ((2025020001, 2), (2025020002, 2), (2025030001, 3)):
+            seed(store, gid=gid, gtype=t)
+        seed(store, gid=2025020003, gtype=2, pbp=stub_pbp(), box=box_bytes(away_sog=99))
+        D.derive(store, now="2026-01-11T11:30:00Z")
+        before = self.published(store)
+
+        # THE STEADY STATE OF THE NIGHTLY: pointers rehydrated, raw gone.
+        for key in [k for k in store.keys("raw/") if not k.endswith("/latest.json")]:
+            store.delete(key)
+        D.derive(store, now="2026-01-12T11:30:00Z")
+
+        idx = json.loads(store.get("index.json").decode())
+        self.assertEqual(idx["run"]["derived"], 0, "the run really did walk none")
+        self.assertEqual(idx["run"]["absent"], 4)
+        # ⭐ AND THE ARCHIVE IS UNCHANGED, counted off the artifact both times.
+        self.assertEqual(self.published(store), before,
+                         "the catalog a visitor fetches did not move")
+        self.assertEqual(idx["archive"]["games"], 4)
+        self.assertEqual(idx["archive"]["published"], 3)
+        self.assertEqual(idx["archive"]["refused"], 1)
+        # THE EXACT SENTENCE THAT WAS FALSE. `published: 0` stood here for most
+        # of every week, under a name that said archive.
+        self.assertNotEqual(idx["archive"]["published"], 0)
+
+    def test_the_stale_block_is_REMOVED_from_an_index_that_already_carries_it(self):
+        """A key nobody assigns any more SURVIVES, because idx is read back.
+
+        `_write_ledger` mutates the index it loaded from the store, so dropping
+        the assignment is not the same as dropping the key: an `extracts` block
+        written by the last version would sit in the published document
+        forever, undated and zeroed, for the next reader to find. That is D8
+        preserved in amber, and it is the failure mode a rename invites.
+        """
+        store = DictStore()
+        seed(store, gid=2025020001, gtype=2)
+        D.derive(store, now="2026-01-11T11:30:00Z")
+        idx = json.loads(store.get("index.json").decode())
+        idx["extracts"] = {"published": 0, "absent": 4553}   # the old shape
+        store.put("index.json", json.dumps(idx).encode())
+
+        D.derive(store, now="2026-01-12T11:30:00Z")
+        after = json.loads(store.get("index.json").decode())
+        self.assertNotIn("extracts", after)
+        self.assertEqual(after["archive"]["published"], 1)
+        # And the blocks beside it are untouched -- this removes one key, not
+        # everything it does not recognise.
+        self.assertIn("games", after)
+
+    def test_unnamedTypes_ALSO_survives_a_run_that_walks_nothing(self):
+        """⭐ THE SIBLING OF THE BUG THAT BROKE PRODUCTION, and it had no test.
+
+        `unheldTypes` failed the nightly and got a test the same day.
+        `unnamedTypes` was silently blind in the SAME way on the SAME runs, was
+        fixed in the same commit, and nothing asserted its direction -- a
+        mutation reverting it to `self.types` left all 157 tests green. That is
+        the shape this project keeps paying for: a rule written against the
+        case that actually bit, with the identical case beside it uncovered
+        because it never happened to fire.
+
+        Its failure is quieter than its twin's and therefore worse. `unheld`
+        goes RED on a healthy archive, which is loud. `unnamed` goes GREEN on
+        an archive holding a competition nobody has named -- so a reader gets
+        "game type 21" on the calendar and the pipeline says everything is fine.
+        """
+        store = DictStore()
+        seed(store, gid=2025020001, gtype=2)
+        seed(store, gid=2025210001, gtype=21)     # a type nobody has named
+        for t in (1, 3, 4, 9, 12, 19, 20):        # and every type that IS named,
+            seed(store, gid=int(f"2025{t:02d}0002"), gtype=t)   # so unheld is quiet
+        out = D.derive(store, now="2026-01-11T11:30:00Z").as_dict()
+        self.assertEqual(out["archive"]["unnamedTypes"], ["21"])
+        self.assertEqual(out["archive"]["unheldTypes"], [])
+
+        # THE NIGHTLY'S STEADY STATE: pointers rehydrated, every raw gone.
+        for key in [k for k in store.keys("raw/") if not k.endswith("/latest.json")]:
+            store.delete(key)
+        out = D.derive(store, now="2026-01-12T11:30:00Z").as_dict()
+        self.assertEqual(out["run"]["gameTypes"], {}, "the run really saw none")
+        self.assertEqual(out["archive"]["unnamedTypes"], ["21"],
+                         "the archive still holds it, so the alarm still holds")
+        self.assertEqual(D.verdict(out, say=lambda m: None), 1,
+                         "an unnamed competition went unreported for a week")
+
+    def test_the_archive_unreconciled_count_is_not_this_run_s(self):
+        """The disclosure 73 games depend on, counted off the wrong population.
+
+        A run that walks nothing reconciles nothing, so a run-scoped figure
+        under an archive name reads as an archive that healed itself overnight
+        -- which is precisely what a disclosure exists to prevent.
+        """
+        store = DictStore()
+        seed(store, gid=2025020001, gtype=2,
+             box=box_bytes(away_sog=99, home_sog=0, away_score=1, home_score=0))
+        seed(store, gid=2025020002, gtype=2)
+        first = D.derive(store, now="2026-01-11T11:30:00Z")
+        self.assertEqual(first.unreconciled, 1)
+
+        for key in [k for k in store.keys("raw/") if not k.endswith("/latest.json")]:
+            store.delete(key)
+        out = D.derive(store, now="2026-01-12T11:30:00Z").as_dict()
+        self.assertEqual(out["run"]["unreconciled"], 0, "this run reconciled nothing")
+        self.assertEqual(out["archive"]["unreconciled"], 1,
+                         "and the archive still holds the game the league "
+                         "disagrees with itself about")
+        self.assertEqual(
+            out["archive"]["unreconciled"],
+            sum(1 for r in self.published(store) if r.get("u") == 1))
+
+    def test_a_refusal_the_gates_cannot_place_is_still_counted(self):
+        """MUTATION GUARD on `byGate`'s fallback, which no fixture reached.
+
+        `sum(byGate.values()) == refused` is only an instrument if some row can
+        fail it. A row merged from an older catalog carries no `r` -- the field
+        postdates the archive -- and the tempting `if not gate: continue`
+        silently drops it, leaving a ledger whose categories do not add up to
+        its own total and no test able to tell.
+        """
+        store = DictStore()
+        seed(store, gid=2025020001, gtype=2)
+        seed(store, gid=2025020002, gtype=2, pbp=stub_pbp(), box=box_bytes(away_sog=99))
+        D.derive(store, now="2026-01-11T11:30:00Z")
+
+        # An older row: refused, and from before the gate was recorded.
+        cat = json.loads(store.get("catalog.json").decode())
+        cat["games"].append({"id": 2024020001, "d": "2024-10-01", "t": 2, "v": 0,
+                             "a": "MIN", "h": "BUF", "as": 0, "hs": 0,
+                             "ash": 0, "hsh": 0})
+        store.put("catalog.json", json.dumps(cat).encode())
+
+        a = D.derive(store, now="2026-01-12T11:30:00Z").as_dict()["archive"]
+        self.assertEqual(a["refused"], 2)
+        self.assertEqual(sum(a["byGate"].values()), a["refused"],
+                         "every refusal is placed in some category")
+        self.assertIn("unrecorded", a["byGate"])
+        self.assertIn(2024020001, a["refusedGames"])
+
+    def test_an_empty_archive_raises_no_drift_alarm(self):
+        """THE DENOMINATOR QUESTION, ASKED OF THE FIX ITSELF.
+
+        The outage's lesson was: ask what a drift alarm's denominator is on the
+        SMALLEST run that will execute it. For the two naming alarms that is a
+        first derive into an empty bucket, where "the archive holds no game of
+        any named competition" is arithmetic about nothing rather than evidence
+        about the table -- and firing there would make a fresh bucket
+        unbootstrappable for a reason that is not a fault.
+        """
+        store = DictStore()
+        store.put("index.json", json.dumps({"games": []}).encode())
+        rep = D.derive(store, now="2026-01-11T11:30:00Z")
+        out = rep.as_dict()
+        self.assertEqual(out["archive"]["games"], 0)
+        self.assertEqual(out["archive"]["unheldTypes"], [])
+        self.assertEqual(out["archive"]["unnamedTypes"], [])
+        self.assertEqual(D.verdict(out, say=lambda m: None), 0)
+        # MUTATION GUARD: the emptiness is the reason, not the alarm being off.
+        # One real game and the same table accuses everything it does not hold.
+        seed(store, gid=2025020001, gtype=2)
+        out = D.derive(store, now="2026-01-11T11:30:00Z").as_dict()
+        self.assertTrue(out["archive"]["unheldTypes"],
+                        "a non-empty archive missing seven named types is silent")
+        self.assertEqual(D.verdict(out, say=lambda m: None), 1)
 
 
 class TheSituationCodeIsARule(unittest.TestCase):
@@ -566,7 +808,7 @@ class ForgivenessIsRecorded(unittest.TestCase):
         ]))
         D.derive(store, now="2026-01-11T11:30:00Z")
         idx = json.loads(store.get("index.json").decode())
-        self.assertEqual(idx["extracts"]["noted"]["stoppage reason"], ["rink-repair"])
+        self.assertEqual(idx["run"]["noted"]["stoppage reason"], ["rink-repair"])
 
 
 class TheShootoutIsNotPlay(unittest.TestCase):
@@ -644,7 +886,7 @@ class TheLedgerMustBeActionable(unittest.TestCase):
         seed(store, gid=2025020004, pbp=pbp_bytes(plays=[
             play("time-travel", 0, xCoord=0, yCoord=0, eventOwnerTeamId=30)]))
         D.derive(store, now="2026-01-11T11:30:00Z")
-        blocking = self.index(store)["extracts"]["blocking"]
+        blocking = self.index(store)["run"]["blocking"]
         self.assertEqual(blocking["typeDescKey"], {"teleportation": 3, "time-travel": 1})
 
     def test_the_failing_checks_are_published_too(self):
@@ -652,7 +894,7 @@ class TheLedgerMustBeActionable(unittest.TestCase):
         seed(store, gid=2025020001, pbp=stub_pbp(), box=box_bytes(away_sog=99))
         seed(store, gid=2025020002, pbp=stub_pbp(), box=box_bytes(away_sog=98))
         D.derive(store, now="2026-01-11T11:30:00Z")
-        failed = self.index(store)["extracts"]["failedChecks"]
+        failed = self.index(store)["run"]["failedChecks"]
         self.assertEqual(sum(failed.values()), 2)
         self.assertTrue(any("replay" in k for k in failed), f"named, not numbered: {failed}")
 
@@ -661,7 +903,7 @@ class TheLedgerMustBeActionable(unittest.TestCase):
         seed(store, gid=2025020001)
         seed(store, gid=2025020002, pbp=stub_pbp(), box=box_bytes(away_sog=99))
         D.derive(store, now="2026-01-11T11:30:00Z")
-        self.assertEqual(self.index(store)["extracts"]["refusedGames"], [2025020002])
+        self.assertEqual(self.index(store)["archive"]["refusedGames"], [2025020002])
 
     def test_a_clean_archive_publishes_empty_evidence_not_missing_evidence(self):
         # MUTATION GUARD. If these keys vanished when there was nothing to
@@ -670,10 +912,12 @@ class TheLedgerMustBeActionable(unittest.TestCase):
         store = DictStore()
         seed(store, gid=2025020001)
         D.derive(store, now="2026-01-11T11:30:00Z")
-        e = self.index(store)["extracts"]
+        idx = self.index(store)
         for k in ("blocking", "failedChecks", "refusedGames", "noted"):
-            self.assertIn(k, e, f"{k} must be present even when empty")
-        self.assertEqual(e["refusedGames"], [])
+            self.assertIn(k, idx["run"], f"{k} must be present even when empty")
+        self.assertIn("refusedGames", idx["archive"])
+        self.assertEqual(idx["archive"]["refusedGames"], [])
+        self.assertEqual(idx["run"]["refusedGames"], [])
 
 
 class TheLeaguesNumbersAreQuotedOnce(unittest.TestCase):
@@ -752,13 +996,13 @@ class ANewCompetitionIsAnEventNotNoise(unittest.TestCase):
         seed(store, gid=2025010002, gtype=1)
         seed(store, gid=2025010003, gtype=1)
         D.derive(store, now="2026-01-11T11:30:00Z")
-        self.assertEqual(self.index(store)["extracts"]["gameTypes"], {"1": 2, "2": 1})
+        self.assertEqual(self.index(store)["run"]["gameTypes"], {"1": 2, "2": 1})
 
     def test_a_type_nobody_has_named_is_reported(self):
         store = DictStore()
         seed(store, gid=2025210001, gtype=21)
         D.derive(store, now="2026-01-11T11:30:00Z")
-        self.assertEqual(self.index(store)["extracts"]["unnamedTypes"], ["21"])
+        self.assertEqual(self.index(store)["archive"]["unnamedTypes"], ["21"])
 
     def test_and_the_run_goes_RED_rather_than_only_recording_it(self):
         """A line in index.json nobody reads is not "loudly". The exit code is.
@@ -770,7 +1014,7 @@ class ANewCompetitionIsAnEventNotNoise(unittest.TestCase):
         store = DictStore()
         seed(store, gid=2025210001, gtype=21)
         rep = D.derive(store, now="2026-01-11T11:30:00Z")
-        self.assertEqual(rep.as_dict()["unnamedTypes"], ["21"])
+        self.assertEqual(rep.as_dict()["archive"]["unnamedTypes"], ["21"])
         self.assertEqual(rep.published, 1, "the game is still published")
         self.assertIsNotNone(store.get("extract/2025210001.json"),
                              "and its extract is still written")
@@ -791,23 +1035,35 @@ class ANewCompetitionIsAnEventNotNoise(unittest.TestCase):
         """
         # Each alarm ALONE is fatal, so no one of them can be carrying the other
         # two -- a single all-three fixture would pass with two of them broken.
-        for key, value in (("unnamedTypes", ["21"]),
-                           ("unheldTypes", ["9"]),
-                           ("unseenVocabulary", {"stoppage reason": ["new-thing"]})):
+        # THE BLOCK EACH ALARM LIVES IN IS PART OF THE CLAIM. The two naming
+        # alarms read `archive` because a missing name is wrong about the whole
+        # archive whatever tonight fetched; the vocabulary alarm reads `run`
+        # because only a run that read a feed can have seen a feed value.
+        for block, key, value in (
+                ("archive", "unnamedTypes", ["21"]),
+                ("archive", "unheldTypes", ["9"]),
+                ("run", "unseenVocabulary", {"stoppage reason": ["new-thing"]})):
             said = []
-            self.assertEqual(D.verdict({key: value}, say=said.append), 1,
+            self.assertEqual(D.verdict({block: {key: value}}, say=said.append), 1,
                              f"{key} drifted and the run stayed green")
             self.assertTrue(any("::error::" in m for m in said),
                             f"{key} exited non-zero and said nothing about why")
+            # ⭐ AND IT IS SILENT FROM THE WRONG BLOCK. Without this the split
+            # could be undone by an alarm that reads whichever block happens to
+            # carry the key -- which is D8 rebuilt inside its own fix.
+            other = "run" if block == "archive" else "archive"
+            self.assertEqual(D.verdict({other: {key: value}}, say=[].append), 0,
+                             f"{key} fired from {other}, where it means nothing")
         # And a clean run is silent AND green, or the check is just noise.
         said = []
-        self.assertEqual(D.verdict({"unnamedTypes": [], "unheldTypes": [],
-                                    "unseenVocabulary": {}}, say=said.append), 0)
+        self.assertEqual(D.verdict({"archive": {"unnamedTypes": [], "unheldTypes": []},
+                                    "run": {"unseenVocabulary": {}}},
+                                   say=said.append), 0)
         self.assertEqual(said, [])
         # A REFUSAL IS THE SYSTEM WORKING and must never be fatal, or a green
         # pipeline stops being distinguishable from a broken one.
-        self.assertEqual(D.verdict({"refused": 63, "absent": 12,
-                                    "unreconciled": 73}, say=said.append), 0)
+        self.assertEqual(D.verdict({"archive": {"refused": 63, "unreconciled": 73},
+                                    "run": {"absent": 12}}, say=said.append), 0)
 
     def test_a_named_type_is_silent(self):
         # MUTATION GUARD. A check that fired on every run would be turned off
@@ -816,7 +1072,7 @@ class ANewCompetitionIsAnEventNotNoise(unittest.TestCase):
         seed(store, gid=2025020001, gtype=2)
         seed(store, gid=2025090002, gtype=9)
         D.derive(store, now="2026-01-11T11:30:00Z")
-        self.assertEqual(self.index(store)["extracts"]["unnamedTypes"], [])
+        self.assertEqual(self.index(store)["archive"]["unnamedTypes"], [])
 
     def test_the_key_is_present_when_empty(self):
         # "We looked and found none" and "this version did not look" are
@@ -824,7 +1080,7 @@ class ANewCompetitionIsAnEventNotNoise(unittest.TestCase):
         store = DictStore()
         seed(store, gid=2025020001, gtype=2)
         D.derive(store, now="2026-01-11T11:30:00Z")
-        self.assertIn("unnamedTypes", self.index(store)["extracts"])
+        self.assertIn("unnamedTypes", self.index(store)["archive"])
 
     def test_a_type_is_counted_even_when_the_game_is_REFUSED(self):
         # A new competition is likeliest to arrive in a feed we cannot parse —
@@ -835,7 +1091,7 @@ class ANewCompetitionIsAnEventNotNoise(unittest.TestCase):
              box=box_bytes(away_sog=99))
         rep = D.derive(store, now="2026-01-11T11:30:00Z")
         self.assertEqual(rep.published, 0, "the stub is still refused")
-        self.assertEqual(self.index(store)["extracts"]["unnamedTypes"], ["21"])
+        self.assertEqual(self.index(store)["archive"]["unnamedTypes"], ["21"])
 
     def test_a_name_the_archive_HOLDS_NO_GAME_OF_is_reported(self):
         # ⭐ THE OTHER DIRECTION, and it only became load-bearing on 2026-08-22,
@@ -848,7 +1104,7 @@ class ANewCompetitionIsAnEventNotNoise(unittest.TestCase):
         store = DictStore()
         seed(store, gid=2025020001, gtype=2)
         D.derive(store, now="2026-01-11T11:30:00Z")
-        held = self.index(store)["extracts"]["unheldTypes"]
+        held = self.index(store)["archive"]["unheldTypes"]
         self.assertIn("1", held, "preseason is named and this run walked none")
         self.assertNotIn("2", held, "type 2 is the one type this run DID hold")
         self.assertEqual(sorted(held),
@@ -878,7 +1134,7 @@ class ANewCompetitionIsAnEventNotNoise(unittest.TestCase):
             seed(store, gid=int(f"2025{t:02d}0001"), gtype=t)
         seed(store, gid=2025030001, gtype=3)
         first = D.derive(store, now="2026-01-11T11:30:00Z")
-        self.assertEqual(first.as_dict()["unheldTypes"], [], "the full run should be silent")
+        self.assertEqual(first.as_dict()["archive"]["unheldTypes"], [], "the full run should be silent")
         held = len(json.loads(store.get("catalog.json").decode())["games"])
         self.assertEqual(held, 8)
 
@@ -887,11 +1143,21 @@ class ANewCompetitionIsAnEventNotNoise(unittest.TestCase):
             store.delete(key)
         rep = D.derive(store, now="2026-01-12T11:30:00Z")
         out = rep.as_dict()
-        self.assertEqual(out["absent"], 8, "the run should have walked nothing")
-        self.assertEqual(out["gameTypes"], {}, "and counted nothing, which is honest")
-        self.assertEqual(out["unheldTypes"], [],
+        self.assertEqual(out["run"]["absent"], 8, "the run walked nothing")
+        self.assertEqual(out["run"]["gameTypes"], {},
+                         "and counted nothing, which is honest OF THE RUN")
+        # ⭐ AND THE ARCHIVE BLOCK SAYS WHAT THE ARCHIVE HOLDS ON THAT SAME RUN.
+        # This is the assertion the whole split exists for, and the one nothing
+        # made before D8: the two populations are 0 and 8 on one invocation, so
+        # a ledger with one set of numbers had to be lying about one of them.
+        self.assertEqual(out["archive"]["games"], 8)
+        self.assertEqual(out["archive"]["published"], 8)
+        self.assertEqual(out["archive"]["gameTypes"],
+                         {str(t): 1 for t in (1, 2, 3, 4, 9, 12, 19, 20)},
+                         "counted from the catalog, not from a walk that saw none")
+        self.assertEqual(out["archive"]["unheldTypes"], [],
                          "a run that derived NOTHING accused the whole table")
-        self.assertEqual(out["unnamedTypes"], [])
+        self.assertEqual(out["archive"]["unnamedTypes"], [])
         self.assertEqual(D.verdict(out, say=lambda m: None), 0,
                          "the nightly went red on an archive that was entirely fine")
         # And the catalog is still whole — the reason the merge exists at all.
@@ -908,8 +1174,9 @@ class ANewCompetitionIsAnEventNotNoise(unittest.TestCase):
         seed(store, gid=2025020001, gtype=2)
         D.derive(store, now="2026-01-11T11:30:00Z")
         out = D.derive(store, now="2026-01-12T11:30:00Z").as_dict()
-        self.assertIn("1", out["unheldTypes"], "preseason is named and nothing holds it")
-        self.assertNotIn("2", out["unheldTypes"])
+        held = out["archive"]["unheldTypes"]
+        self.assertIn("1", held, "preseason is named and nothing holds it")
+        self.assertNotIn("2", held)
         self.assertEqual(D.verdict(out, say=lambda m: None), 1)
 
     def test_a_run_that_holds_every_named_type_is_silent(self):
@@ -919,8 +1186,8 @@ class ANewCompetitionIsAnEventNotNoise(unittest.TestCase):
         for i, t in enumerate(sorted(int(k) for k in D._competitions())):
             seed(store, gid=int(f"2025{t:02d}{i:04d}"), gtype=t)
         D.derive(store, now="2026-01-11T11:30:00Z")
-        self.assertEqual(self.index(store)["extracts"]["unheldTypes"], [])
-        self.assertEqual(self.index(store)["extracts"]["unnamedTypes"], [],
+        self.assertEqual(self.index(store)["archive"]["unheldTypes"], [])
+        self.assertEqual(self.index(store)["archive"]["unnamedTypes"], [],
                          "and neither direction fires on a complete archive")
 
     def test_the_table_names_every_type_the_LIVE_archive_holds(self):
@@ -963,9 +1230,9 @@ class ForgivenessIsRecordedAndDriftIsLOUD(unittest.TestCase):
         seed(store, pbp=self.stoppage("ice-scrape"))
         rep = D.derive(store, now="2026-01-11T11:30:00Z")
         self.assertEqual(rep.published, 1)
-        self.assertEqual(self.index(store)["extracts"]["unseenVocabulary"], {})
+        self.assertEqual(self.index(store)["run"]["unseenVocabulary"], {})
         self.assertIn("ice-scrape",
-                      self.index(store)["extracts"]["noted"]["stoppage reason"],
+                      self.index(store)["run"]["noted"]["stoppage reason"],
                       "still recorded — the ledger does not stop being a ledger")
 
     def test_a_value_NOBODY_HAS_LOOKED_AT_is_reported(self):
@@ -973,7 +1240,7 @@ class ForgivenessIsRecordedAndDriftIsLOUD(unittest.TestCase):
         seed(store, pbp=self.stoppage("zamboni-on-fire"))
         rep = D.derive(store, now="2026-01-11T11:30:00Z")
         self.assertEqual(
-            self.index(store)["extracts"]["unseenVocabulary"],
+            self.index(store)["run"]["unseenVocabulary"],
             {"stoppage reason": ["zamboni-on-fire"]})
         self.assertEqual(rep.published, 1, "and the game is still published")
 
@@ -985,14 +1252,14 @@ class ForgivenessIsRecordedAndDriftIsLOUD(unittest.TestCase):
         seed(store, pbp=self.stoppage("zamboni-on-fire"))
         rep = D.derive(store, now="2026-01-11T11:30:00Z")
         d = rep.as_dict()
-        self.assertTrue(d["unseenVocabulary"])
+        self.assertTrue(d["run"]["unseenVocabulary"])
         self.assertIsNotNone(store.get("extract/2025020001.json"))
 
     def test_the_key_is_present_when_empty(self):
         store = DictStore()
         seed(store)
         D.derive(store, now="2026-01-11T11:30:00Z")
-        self.assertIn("unseenVocabulary", self.index(store)["extracts"])
+        self.assertIn("unseenVocabulary", self.index(store)["run"])
 
     def test_every_value_the_LIVE_archive_forgives_is_acknowledged(self):
         # The 23 read off index.json on 2026-08-21. If this list and the live
@@ -1066,9 +1333,9 @@ class WhatTheLeagueCouldNotReconcile(unittest.TestCase):
         seed(store, gid=2025020002)
         D.derive(store, now="2026-01-11T11:30:00Z")
         idx = json.loads(store.get("index.json").decode())
-        self.assertEqual(idx["extracts"]["unreconciled"], 1)
-        self.assertEqual(idx["extracts"]["published"], 2, "both are published")
-        self.assertEqual(idx["extracts"]["refused"], 0)
+        self.assertEqual(idx["archive"]["unreconciled"], 1)
+        self.assertEqual(idx["archive"]["published"], 2, "both are published")
+        self.assertEqual(idx["archive"]["refused"], 0)
 
 
 class TheCatalog(unittest.TestCase):

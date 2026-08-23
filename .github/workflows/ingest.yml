@@ -339,6 +339,35 @@ jobs:
           print(f"  ledger closes: {c['finalInWindow']} = {held} + {err} + {refused}")
           PY
 
+      # ⭐ AND THE ARCHIVE LEDGER ANSWERS TO THE CATALOG -- ON THE NIGHTLY,
+      # WHICH IS THE RUN THAT BROKE.
+      #
+      # D8's figures were written HERE and checked only in derive.yml, which is
+      # WEEKLY. The run that published `published: 0, absent: 4553` over a whole
+      # archive was the one run nothing looked at, for months. A gate that skips
+      # the case that breaks is a gate written against the cases that existed --
+      # the deploy filename exemption, the night list that labelled a group only
+      # when it was not alone, the front door's hand-written competition list.
+      # This project has now paid for that shape four times.
+      #
+      # THE DENOMINATOR HERE IS THE WHOLE CATALOG, on a run that derives one
+      # night of hockey or none at all. That is the property the old check
+      # lacked, and asking for it is the lesson the outage cost us.
+      - name: the archive ledger answers to the catalog
+        if: hashFiles('ingest/index.json') != ''
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: |
+          # index.json is already down as remote-index.json and PROVEN
+          # byte-identical to what we wrote; the catalog is the second half of
+          # the pair and has to come from the bucket for the same reason -- a
+          # local file is what we meant to publish, not what a visitor gets.
+          aws s3 cp "s3://${BUCKET}/catalog.json" remote-catalog.json \
+            --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress
+          python3 builders/ledger.py remote-index.json remote-catalog.json
+
       # CHECK WHAT A VISITOR GETS, NOT WHAT THE LEDGER SAYS.
       #
       # Every check above this one passed on the night the site went dark. The

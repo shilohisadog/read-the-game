@@ -171,13 +171,21 @@ class Report:
     noted: dict = field(default_factory=dict)     # field -> values seen but forgiven
     unreconciled: int = 0                        # published, but the league disagrees with itself
     types: dict = field(default_factory=dict)    # gameType -> how many games carry it
-    # ⭐ WHAT THE WHOLE ARCHIVE HOLDS, which is NOT what this run walked.
-    # `types` counts the games this run had raw for; in the offseason that is
-    # ZERO, because the nightly rehydrates pointers only. Any claim about the
-    # ARCHIVE has to come from the merged catalog instead -- the same record
-    # `_write_catalog` merges precisely so "a game this run said NOTHING about
-    # must not read as a game that is gone".
-    archive_types: set = field(default_factory=set)
+    # ⭐ THE WHOLE ARCHIVE, WHICH IS NOT WHAT THIS RUN WALKED -- the merged
+    # catalog itself, id -> row, handed back by `_write_catalog`.
+    #
+    # `types`, `derived`, `refused` and `absent` above all describe THIS RUN.
+    # In the offseason the nightly rehydrates pointers only, so this run walks
+    # ZERO games while the archive holds four and a half thousand. Every claim
+    # about the ARCHIVE is computed from this field and never from those --
+    # the same record `_write_catalog` merges precisely so "a game this run
+    # said NOTHING about must not read as a game that is gone".
+    #
+    # THE ROW CARRIES EVERYTHING THE ARCHIVE LEDGER NEEDS, which is why this is
+    # a whole catalog rather than the one derived set it started as: `v` is the
+    # verdict, `r` the refusing gate, `u` the reconciliation flag and `t` the
+    # gameType, on every row, written or merged.
+    catalog: dict = field(default_factory=dict)
     refused_in_window: int = 0
 
     @property
@@ -209,60 +217,140 @@ class Report:
         return blocking, failed
 
     def as_dict(self):
-        by_gate = {}
+        """⭐ TWO BLOCKS, BECAUSE THERE ARE TWO POPULATIONS.
+
+        This was ONE block called `extracts`, and it mixed a claim about the
+        archive with a claim about the run under names that all read as the
+        archive. A nightly rehydrates pointers and one night of raw, so it
+        published `published: 0, absent: 4553` over figures a full derive had
+        left there -- a truthful report of its own narrow run, standing where
+        its name and its position said ARCHIVE.
+
+        TWO READERS WALKED INTO IT IN FORTY-EIGHT HOURS. `builders/health.mjs`
+        read it and printed "0 archived · 0 published" at the top of the build
+        list; then `unheldTypes` read it and FAILED A PRODUCTION INGEST, with
+        4,553 games sitting untouched in the catalog. Fixing the second reader
+        left the trap in place for the third.
+
+        So the fix is the one this project has now made three times -- C7's,
+        the shots-on-goal label's, the mode-less 18-15 scoreboard's: THE
+        POPULATION IS WELDED TO THE NUMBER. `archive` is counted from the
+        merged catalog and is true on every run including one that walks
+        nothing; `run` describes this invocation and says so in its name. The
+        word `published` exists in exactly one of them.
+
+        The name `extracts` is not kept as an alias for either half. It is the
+        word that did the lying, and an alias would be the same trap with a
+        deprecation note attached.
+        """
+        rows = list(self.catalog.values())
+        arch_gate, arch_types = {}, {}
+        for r in rows:
+            arch_types[r.get("t")] = arch_types.get(r.get("t"), 0) + 1
+            if r.get("v") != 1:
+                # A refused row carries the gate that stopped it. `unrecorded`
+                # is not padding: a row written before `r` existed would
+                # otherwise vanish from a ledger whose whole job is that the
+                # refusals ADD UP to the refused count.
+                gate = r.get("r") or "unrecorded"
+                arch_gate[gate] = arch_gate.get(gate, 0) + 1
+        held = {k for k in arch_types if k is not None}
+
+        # ⭐ AN EMPTY ARCHIVE CANNOT DRIFT, so it raises no drift alarm.
+        # THIS IS THE OUTAGE'S OWN LESSON APPLIED TO THE FIX: ask what the
+        # denominator is on the SMALLEST run that will execute the check. For
+        # these two it is a store with no catalog at all -- a first derive into
+        # an empty bucket -- where "the archive holds no game of any named
+        # competition" is arithmetic about nothing, not evidence about the
+        # table. An archive that goes empty having been full is a catastrophe
+        # the catalog-never-shrinks gate and the health block both shout about;
+        # it is not this alarm's question.
+        unnamed = sorted(str(k) for k in held if str(k) not in _competitions())
+        unheld = sorted(k for k in _competitions() if int(k) not in held)
+        if not rows:
+            unnamed, unheld = [], []
+
+        run_gate = {}
         for r in self.refused.values():
-            by_gate[r["gate"]] = by_gate.get(r["gate"], 0) + 1
+            run_gate[r["gate"]] = run_gate.get(r["gate"], 0) + 1
         blocking, failed = self.evidence()
-        return {"derived": self.derived, "unchanged": self.unchanged,
-                "published": self.published, "refused": len(self.refused),
+
+        return {
+            # EVERY GAME IN THE PUBLISHED CATALOG, whatever this run walked.
+            "archive": {
+                "games": len(rows),
+                "published": sum(1 for r in rows if r.get("v") == 1),
+                "refused": sum(1 for r in rows if r.get("v") != 1),
+                # Published games where the league's event log and its own
+                # boxscore disagree. Counted so the forgiveness is auditable --
+                # a gate that quietly forgets what it forgave is worse than one
+                # that never looked.
+                "unreconciled": sum(1 for r in rows if r.get("u") == 1),
+                # Thirty games refused for one reason is a category and thirty
+                # refused for thirty reasons is a mess; a bare count cannot tell
+                # you which you have, and that is what decides what to fix next.
+                "byGate": arch_gate,
+                "gameTypes": {str(k): v for k, v in sorted(
+                    arch_types.items(), key=lambda kv: (kv[0] is None, kv[0]))},
+                # ⭐ THE TWO DIRECTIONS OF ONE SEAM, and neither can see the
+                # other's. `unnamedTypes` catches a competition the archive
+                # holds that nobody named -- it would render "game type 21" to
+                # a reader. `unheldTypes` catches a name in the table that no
+                # game carries, which since 2026-08-22 would put a competition
+                # on the FRONT DOOR, inside the block whose whole job is
+                # stating limits, that we hold zero games of.
+                #
+                # ⚠️ `unheldTypes` BROKE THE NIGHTLY THE DAY AFTER IT SHIPPED
+                # by reading this run's walk instead of the archive. That is
+                # why both now read `self.catalog` and why this block exists.
+                "unnamedTypes": unnamed,
+                "unheldTypes": unheld,
+                "refusedGames": sorted(
+                    int(k) for k, r in self.catalog.items() if r.get("v") != 1),
+            },
+            # WHAT THIS INVOCATION DID. Nothing here is a claim about the
+            # archive, and none of these names invites being read as one.
+            "run": {
+                "walked": (self.derived + self.unchanged
+                           + len(self.refused) + len(self.absent)),
+                "derived": self.derived,
+                "unchanged": self.unchanged,
+                "refused": len(self.refused),
                 "refusedInWindow": self.refused_in_window,
-                "absent": len(self.absent), "byGate": by_gate,
-                "noted": {k: sorted(v) for k, v in sorted(self.noted.items())},
-                # EVERY gameType THE RUN WALKED, and the ones nobody has named.
-                # Both published, because "we looked and found none" and "this
-                # version did not look" are different sentences -- the same
-                # reason `blocking` is present when empty.
+                "absent": len(self.absent),
+                "unreconciled": self.unreconciled,
+                "byGate": run_gate,
+                # EVERY gameType THIS RUN HAD RAW FOR. Empty in the offseason,
+                # and that is the honest answer to the question it asks.
                 "gameTypes": {str(k): v for k, v in sorted(
                     self.types.items(), key=lambda kv: (kv[0] is None, kv[0]))},
-                # ⭐ FROM THE ARCHIVE, NOT FROM THIS RUN'S WALK. Both of these
-                # are claims about what the ARCHIVE holds, and `self.types`
-                # answers a different question -- what this run had raw for.
-                "unnamedTypes": sorted(str(k) for k in self.archive_types
-                                       if str(k) not in _competitions()),
-                # ⭐ AND THE OTHER DIRECTION, which only became load-bearing when
-                # the front door began GENERATING its exclusion list from this
-                # table. `unnamedTypes` catches a competition the archive holds
-                # and nobody named; this catches a name in the table that no game
-                # carries -- which would put a competition on the front page,
-                # inside the block whose whole job is stating limits, that we
-                # hold zero games of. A speculative entry ("the league announced
-                # something for next February") is exactly how that happens.
-                #
-                # Both are drift alarms over the same seam and neither can see
-                # the other's direction. A guard that only checks one way is the
-                # deploy exemption again: right about the cases that existed.
-                #
-                # ⚠️ AND THIS ONE BROKE THE NIGHTLY THE DAY AFTER IT SHIPPED.
-                # It read `self.types`, which counts games this run had RAW for
-                # -- and the nightly rehydrates pointers only, so in the
-                # offseason it walks nothing at all. On 2026-08-23 it reported
-                # all EIGHT named types as unheld and failed the ingest.
-                # `_write_catalog` states the rule one function away: "a game
-                # this run said NOTHING about must not read as a game that is
-                # gone." That is precisely what this did.
-                "unheldTypes": sorted(k for k in _competitions()
-                                      if int(k) not in self.archive_types),
+                # Vocabulary we did not understand and published anyway, because
+                # it cannot reach a number. Visible so the forgiveness is
+                # auditable, and so the whistle layer inherits a list instead of
+                # a survey.
+                "noted": {k: sorted(v) for k, v in sorted(self.noted.items())},
                 # Forgiven values NOBODY HAS LOOKED AT YET, as opposed to the
-                # ones in data/vocabulary-seen.json that we decided to render
-                # raw on purpose. This is the difference between a ledger and
-                # an alarm.
+                # ones in data/vocabulary-seen.json we decided to render raw on
+                # purpose. This is the difference between a ledger and an alarm.
+                #
+                # RUN-SCOPED ON PURPOSE, unlike the two above it. This asks what
+                # the FEED said, and a run that read no feed has nothing to
+                # report -- so its denominator being zero on a quiet night is
+                # the correct answer to its question rather than a blind spot.
                 "unseenVocabulary": {
                     k: sorted(set(v) - _vocabulary_seen().get(k, set()))
                     for k, v in sorted(self.noted.items())
                     if set(v) - _vocabulary_seen().get(k, set())},
-                "blocking": blocking, "failedChecks": failed,
+                # Present even when empty, so a reader can tell "we checked and
+                # found none" from "this version did not check" -- the same
+                # distinction lastRun exists to make one layer up.
+                "blocking": blocking,
+                "failedChecks": failed,
                 "refusedGames": sorted(int(g) for g in self.refused),
-                "reasons": {g: r["detail"] for g, r in sorted(self.refused.items())}}
+                "reasons": {g: r["detail"]
+                            for g, r in sorted(self.refused.items())},
+            },
+        }
 
 
 def _refuse(gate, detail):
@@ -439,59 +527,41 @@ def derive(store, end=None, days=None, now=None):
         if rich.get("unreconciled"):
             rep.unreconciled += 1
 
-    merged = _write_catalog(store, rows)
-    # Every game in the published catalog, whether or not this run saw its raw.
-    # `t` is absent on a row written before the field existed; `None` is not a
-    # gameType and must not silently satisfy a name in the table.
-    rep.archive_types = {r.get("t") for r in merged.values() if r.get("t") is not None}
+    # THE MERGED CATALOG IS THE ARCHIVE, and it is handed straight to the
+    # report. Every archive-wide figure is counted from it, so a run that walked
+    # nothing still states what the archive holds instead of what it saw.
+    rep.catalog = _write_catalog(store, rows)
     _write_ledger(store, idx, rep, stamp)
     return rep
 
 
 def _write_ledger(store, idx, rep, stamp):
-    """A third ledger, beside coverage rather than inside it.
+    """⭐ TWO DERIVATION LEDGERS BESIDE `coverage`, NOT ONE, AND NEVER INSIDE IT.
 
-        pointers = games + absent         every pointer we walked
-        games    = published + refused    of the ones we could read
+        archive.games  = published + refused              every row in the catalog
+        run.walked     = derived + unchanged
+                       + refused + absent                 every pointer this run saw
 
-    `coverage` is the FETCH window's ledger and answers a different question
-    over a different set. Folding derivation totals into it would recreate
-    exactly the conflation docs/ingest-state.md was written about.
+    THE TWO IDENTITIES CLOSE OVER DIFFERENT SETS, which is the whole point: on a
+    nightly the first is 4,553 and the second is 0, and reading either as the
+    other is the defect this split exists to remove. See `Report.as_dict`.
 
-    `byGate` is there because thirty games refused for one reason is a category
-    and thirty refused for thirty reasons is a mess, and a bare count cannot
-    tell you which you have -- which is the thing that decides what to fix next.
+    `coverage` is the FETCH window's ledger and answers a third question over a
+    third set. Folding derivation totals into it would recreate exactly the
+    conflation docs/ingest-state.md was written about -- and folding the run
+    into the archive was that same mistake committed one layer down.
     """
     d = rep.as_dict()
-    idx["extracts"] = {
-        "pointers": d["published"] + d["refused"] + d["absent"],
-        "games": d["published"] + d["refused"],
-        "published": d["published"],
-        "refused": d["refused"],
-        "refusedInWindow": rep.refused_in_window,
-        "absent": d["absent"],
-        "byGate": d["byGate"],
-        # Vocabulary we did not understand and published anyway, because it
-        # cannot reach a number. Visible so the forgiveness is auditable, and so
-        # the whistle layer inherits a list instead of a survey.
-        "noted": d["noted"],
-        # Published games where the league's event log and its own boxscore
-        # disagree. Counted so the forgiveness is auditable, exactly as `noted`
-        # is -- a gate that quietly forgets what it forgave is worse than one
-        # that never looked.
-        "unreconciled": rep.unreconciled,
-        "gameTypes": d["gameTypes"],
-        "unnamedTypes": d["unnamedTypes"],
-        "unheldTypes": d["unheldTypes"],
-        "unseenVocabulary": d["unseenVocabulary"],
-        # Present even when empty, so a reader can tell "we checked and found
-        # none" from "this version did not check" -- the same distinction
-        # lastRun exists to make one layer up.
-        "blocking": d["blocking"],
-        "failedChecks": d["failedChecks"],
-        "refusedGames": d["refusedGames"],
-        "asOf": stamp,
-    }
+    # ⭐ THE OLD KEY IS REMOVED, NOT LEFT BEHIND. `idx` is read back from the
+    # published index.json and rewritten, so a key nobody assigns any more
+    # SURVIVES FOREVER, frozen at whatever the last run to write it happened to
+    # see. A stale `extracts` block reading `published: 0` would outlive the
+    # code that produced it and still be sitting there, undated and wrong, for
+    # the next reader to find -- which is D8 preserved in amber.
+    idx.pop("extracts", None)
+    idx["archive"] = {**d["archive"], "asOf": stamp}
+    run = {k: v for k, v in d["run"].items() if k != "reasons"}
+    idx["run"] = {**run, "asOf": stamp}
     store.put("index.json", json.dumps(idx, indent=2, sort_keys=True).encode())
 
 
@@ -506,7 +576,7 @@ def main():
     out = rep.as_dict()
     # The full reason list is for a human growing the vocabulary, and at
     # fifteen hundred games it drowns the report. Counts here, detail below.
-    reasons = out.pop("reasons")
+    reasons = out["run"].pop("reasons")
     print(json.dumps(out, indent=2, sort_keys=True))
 
     if reasons:
@@ -551,23 +621,28 @@ def verdict(out, say=lambda m: print(m, file=sys.stderr)):
     vocabulary values every night would be switched off within a week, and then
     the twenty-fourth would arrive invisibly.
     """
-    if out.get("unnamedTypes"):
-        say(f"\n::error::the archive holds gameType {out['unnamedTypes']} and "
+    arch, run = out.get("archive", {}), out.get("run", {})
+    if arch.get("unnamedTypes"):
+        say(f"\n::error::the archive holds gameType {arch['unnamedTypes']} and "
             f"data/competitions.json does not name it. The games are published; "
             f"add the name so the calendar stops rendering it raw.")
-    if out.get("unheldTypes"):
+    if arch.get("unheldTypes"):
         say(f"\n::error::data/competitions.json names gameType "
-            f"{out['unheldTypes']} and the archive holds no game of it. The "
+            f"{arch['unheldTypes']} and the archive holds no game of it. The "
             f"front door GENERATES its exclusion list from that table, so this "
             f"would put a competition on the page we hold nothing of. Remove "
             f"the entry, or wait until a game lands.")
-    if out.get("unseenVocabulary"):
+    if run.get("unseenVocabulary"):
         say(f"\n::error::the feed used vocabulary we have never seen: "
-            f"{json.dumps(out['unseenVocabulary'])}. The games are published and "
+            f"{json.dumps(run['unseenVocabulary'])}. The games are published and "
             f"the value renders verbatim; look at it, then either give it prose "
             f"or add it to data/vocabulary-seen.json.")
-    return 1 if (out.get("unnamedTypes") or out.get("unheldTypes")
-                 or out.get("unseenVocabulary")) else 0
+    # ⭐ THE TWO NAMING ALARMS READ THE ARCHIVE AND THE VOCABULARY ALARM READS
+    # THE RUN, and that asymmetry is the fix, not an oversight: a name is right
+    # or wrong about the whole archive whatever tonight fetched, while a feed
+    # value can only be seen by a run that read a feed.
+    return 1 if (arch.get("unnamedTypes") or arch.get("unheldTypes")
+                 or run.get("unseenVocabulary")) else 0
 
 
 if __name__ == "__main__":

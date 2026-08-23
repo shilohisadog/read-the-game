@@ -50,6 +50,10 @@ test('an archive figure is stamped with when it was read', () => {
   // started quoting it and printed "0 archived · 0 published" at the top of the
   // build list. catalog.json is what the site itself reads and cannot be
   // emptied by a partial run.
+  // That report is now SPLIT rather than merely unread (D8): index.json carries
+  // an `archive` block counted from the catalog beside a `run` block. This file
+  // still counts catalog.json, so the two remain independent paths that
+  // builders/ledger.py can require to agree.
   assert.match(b, /catalog\.json/, 'the source of the count is not named');
 });
 

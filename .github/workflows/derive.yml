@@ -152,31 +152,43 @@ jobs:
       # ledger AND one artifact it claims, because a correct-looking index over
       # objects that are not there is exactly the failure the pointer audit
       # exists for one layer down.
-      - name: read it back and check the ledger closes
+      # ⭐ THE ARCHIVE LEDGER ANSWERS TO THE CATALOG, NOT TO THIS RUN'S REPORT.
+      #
+      # THIS STEP USED TO BE A MIRROR. It asserted `derived.json['published'] ==
+      # index['published']` -- the index against the same run's own report --
+      # which is the implementation's own model of its input, and it was green
+      # on every nightly that published `published: 0` over four and a half
+      # thousand real games (D8). A check whose expectation comes from the code
+      # under test moves when that code moves.
+      #
+      # So the instrument is the OTHER PUBLISHED DOCUMENT. `builders/ledger.py`
+      # recounts catalog.json -- what a browser actually fetches -- and requires
+      # the archive block to reproduce it, figure by figure. Its denominator on
+      # the smallest run that executes it is the whole catalog, which is the
+      # property the old check did not have and the outage was made of.
+      - name: the archive ledger answers to the catalog
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: auto
         run: |
-          aws s3 cp "s3://${BUCKET}/index.json" remote.json \
-            --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress
+          for f in index.json catalog.json; do
+            aws s3 cp "s3://${BUCKET}/$f" "remote-$f" \
+              --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress
+          done
+          python3 builders/ledger.py remote-index.json remote-catalog.json
+          # AND THE SYNC LANDED, which is a different question and all the
+          # run's own report can honestly answer. It says the bytes in the
+          # bucket came from this run; it says nothing about whether the
+          # arithmetic is right, and the step above is why that matters.
           python3 - <<'PY'
-          import json, subprocess, sys, os
-          i = json.load(open('remote.json'))
-          e = i.get('extracts')
-          if not e:
-              sys.exit("::error::the index carries no extracts ledger")
-          if e['games'] != e['published'] + e['refused']:
-              sys.exit(f"::error::extract ledger does not close: {e}")
-          if e['pointers'] != e['games'] + e['absent']:
-              sys.exit(f"::error::pointer ledger does not close: {e}")
-          print(f"  {e['published']} published, {e['refused']} refused, {e['absent']} absent")
-          print(f"  by gate: {e['byGate']}")
-          print(f"  vocabulary forgiven but recorded: "
-                f"{sum(len(v) for v in e.get('noted', {}).values())} values")
+          import json, sys
+          i = json.load(open('remote-index.json'))
           local = json.load(open('derived.json'))
-          if local['published'] != e['published']:
-              sys.exit("::error::the index does not match what this run produced")
+          if local['run']['derived'] != i['run']['derived']:
+              sys.exit("::error::the index in R2 did not come from this run")
+          print(f"  vocabulary forgiven but recorded: "
+                f"{sum(len(v) for v in i['run'].get('noted', {}).values())} values")
           PY
 
       # THE PER-TEAM SEASONS, checked for the property that cannot be checked by

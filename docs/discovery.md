@@ -779,3 +779,145 @@ Then the ingest was dispatched at the fixed commit and watched:
 The failed run stays red on `07af46c`, because that commit genuinely was broken.
 `gh run rerun` would have replayed the bug at the same SHA; re-running in place
 is for a run that failed for a reason the commit did not contain.
+
+---
+
+# 15. D8 — the ledger that described a different population than its name
+
+**Built 2026-08-23.** The row in `docs/status.md` had two candidate fixes and
+neither is what shipped, so this records why.
+
+## 15.1 What was wrong
+
+`index.json` carried one block, `extracts`. Every figure in it was computed from
+the games a run had raw for; every *name* in it — `published`, `refused`,
+`absent` — and its position at the top level of the index read as the **archive**.
+
+The nightly rehydrates pointers and one night of raw. `derive.yml` runs weekly.
+So for most of every week the published index said:
+
+```json
+"extracts": { "games": 0, "published": 0, "absent": 4553, "gameTypes": {} }
+```
+
+Truthful about the run. False about everything its names implied. It stood for
+months because nothing on the site reads it — and then two readers walked into
+it inside forty-eight hours: `builders/health.mjs` began quoting it and printed
+**"0 archived · 0 published"** at the top of the build list, and `unheldTypes`
+read it and **failed a production ingest** with 4,553 games sitting untouched in
+the catalog.
+
+## 15.2 ⭐ The one check that existed was a mirror
+
+`derive.yml` asserted:
+
+```python
+if local['published'] != e['published']:
+    sys.exit("::error::the index does not match what this run produced")
+```
+
+The index against **the same run's own report**. That is the implementation's
+own model of its input — the dominant failure mode in `mechanize-the-review` —
+and it asserts precisely the identity that makes D8 invisible. It was green on
+every zeroed nightly it ever ran on.
+
+It also ran **only in `derive.yml`**, which is weekly. The run that wrote the
+wrong figures was the one run nothing checked.
+
+## 15.3 Why neither candidate fix was taken
+
+**"The nightly merges rather than overwrites"** is the worst outcome available.
+It needs a threshold — merge when a run derived *how little*? — and it produces
+a block that is a blend of two runs with nothing saying which figure came from
+which, stamped with a **fresh `asOf` on a stale number**. That is C7's defect
+rebuilt inside its own repair.
+
+**"Refuse to publish archive-wide figures from a partial run"** is closer, but
+it throws away figures that are real: `derived: 0, absent: 4553` is exactly what
+the nightly should report about itself, and `ingest.yml` logs it.
+
+## 15.4 What shipped: the population is welded to the number
+
+The third shape, and this project's own repair applied a third time — the same
+move as the shots-on-goal label and the mode-less `MIN 18 – BUF 15` scoreboard.
+
+| `archive` — counted from the merged catalog | `run` — this invocation |
+|---|---|
+| `games` `published` `refused` `unreconciled` `byGate` `gameTypes` `unnamedTypes` `unheldTypes` `refusedGames` | `walked` `derived` `unchanged` `absent` `refusedInWindow` `unreconciled` `byGate` `gameTypes` `noted` `blocking` `failedChecks` `unseenVocabulary` `refusedGames` |
+
+Both carry `asOf`. Both ledgers close, over different sets:
+
+```
+archive.games = published + refused
+run.walked    = derived + unchanged + refused + absent
+```
+
+On a nightly the first is 4,553 and the second is 0 — which is the whole point,
+and the sentence that a single block could not say.
+
+Three details that are not incidental:
+
+- **The word `published` exists in exactly one of them.** A split is only worth
+  having if the ambiguous word cannot appear on the run side for the next reader
+  — or the next drift alarm — to pick up believing it means the archive. A test
+  asserts its absence.
+- **`extracts` is not kept as an alias.** It is the word that did the lying.
+- **The old key is popped, not merely unassigned.** `_write_ledger` mutates an
+  index read back from the store, so a key nobody writes any more *survives*,
+  frozen at whatever the last run to write it saw. A stale `extracts` block
+  reading `published: 0` would outlive the code that produced it. That is D8
+  preserved in amber, and it is the failure mode a rename invites.
+
+## 15.5 The gate, and its denominator
+
+`builders/ledger.py` recounts **`catalog.json`** — the document a browser
+actually fetches — and requires the archive block to reproduce it, figure by
+figure, plus both closing identities and the gate-accounting identity.
+
+It runs in **both** workflows, which is the correction to §15.2's second half.
+
+> **The question the outage taught us to ask: what is this check's denominator
+> on the smallest run that will execute it?**
+>
+> The old check's was the run's own report — zero against zero, green.
+> This one's is the catalog, which is whole on exactly the runs that were never
+> checked. **4,553, not 0.**
+
+Verified against the live archive before shipping: `recount()` on the published
+catalog returns **4,553 / 4,490 / 63 / 73** and `byGate {validation: 62,
+vocabulary: 1}` — reproducing the generated health block from a completely
+independent path.
+
+## 15.6 ⭐ Two things the mutation pass found that review did not
+
+Twelve mutations against `derive.py` and eleven against `ledger.py`. Three
+survived the first round, and each was a real hole:
+
+1. **`unnamedTypes` reading the run's walk again survived.** It is the *sibling*
+   of the bug that broke production — same blindness, same runs, fixed in the
+   same commit — and nothing asserted its direction, because only `unheldTypes`
+   had actually fired. A rule written against the case that bit, with the
+   identical case beside it uncovered. Its failure is the quieter one and
+   therefore worse: `unheld` goes red on a healthy archive, while `unnamed` goes
+   **green** on an archive holding a competition nobody named, so a reader gets
+   `game type 21` on the calendar and the pipeline says everything is fine.
+2. **`byGate`'s fallback survived in both files.** No fixture held a refused row
+   without a gate, so `sum(byGate.values()) == refused` was an assertion nothing
+   could fail.
+3. **The test helper was itself a mirror.** `index_for()` builds its expected
+   archive block by calling `recount()` — the function under test — so a
+   mutation relabelling every unrecorded gate moved *both sides* and 170 tests
+   stayed green. The other figure mutations were only caught because the closing
+   identities are an independent instrument. The cure is an expectation a person
+   wrote down, so `RecountIsCheckedAgainstNumbersAHUMANWROTE` holds literals on
+   purpose.
+
+Every test in `test/test_ledger.py` asserts the **exit code**, not only the
+complaint list — the lesson from `verdict()`, where a test named
+`..._goes_RED_...` asserted the ledger and never the return value, and one
+mutation disarmed three alarms with 150 tests green.
+
+One more, small and worth keeping: the gate's complaints are `::error::` lines,
+and a suite exercising it would have decorated a **passing** CI run with nine
+annotations it invented itself. Both streams are swallowed in the tests that
+assert the code. False reds are how a working gate gets ignored.

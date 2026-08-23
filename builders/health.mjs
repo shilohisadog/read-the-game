@@ -80,6 +80,14 @@ export function suiteCounts() {
  * rather than what one job's summary said about itself. Same rule the deploy
  * gates learned: measure the thing the reader gets.
  *
+ * ⭐ THE REPORT HAS SINCE BEEN SPLIT (D8, 2026-08-23): `extracts` is gone, and
+ * index.json now carries an `archive` block counted from the merged catalog
+ * beside a `run` block describing the invocation. THIS FILE STILL COUNTS
+ * catalog.json ANYWAY, on purpose. Two documents counted by two independent
+ * paths is a seam CI can assert -- `builders/ledger.py` requires them to
+ * agree on every ingest -- and switching this to read the fixed block would
+ * collapse them into one path with nothing left to check it against.
+ *
  * `asOf` STILL COMES FROM THE LEDGER'S OWN CLOCK, never ours. catalog.json
  * carries no date of its own, and stamping these with the time this script
  * happened to run would say when we LOOKED rather than when the archive was
