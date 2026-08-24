@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-f0dJbzWit4puRRaw9l4CeqL7J2K0LQ3n0Jr+ZrSWr5g=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-47jcxZOJSV4Q3JhLowH/OHkMSrwlpe0/p4DlEX5wKG4='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-jx/sqK/cVphH28KXKJRlm7nWArSyFqjcTxjwSQTx2Ys=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-47jcxZOJSV4Q3JhLowH/OHkMSrwlpe0/p4DlEX5wKG4='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">What is this?</a></nav></header>
@@ -5299,10 +5299,40 @@ function waysOut(){
   n.innerHTML='<a href="/">Watch the most recent game</a>'
     +'<a href="/calendar.html">Browse by date</a>'
     +'<a href="/#teams">All teams</a>';}
-// REVEAL BEFORE boot(), never after: boot measures and draws into this subtree,
-// and an element with `hidden` has no box, so laying out inside it is measuring
-// nothing -- the trap tools/pixels.sh already documents in its own words.
+// REVEAL BEFORE boot(), never after: an element with `hidden` has no box, so
+// anything laid out inside it is laid out against nothing.
 function reveal(){if(MSG)MSG.hidden=true;if(APP)APP.hidden=false;}
+
+// ⭐ AND THE ORDER IS ENFORCED RATHER THAN DOCUMENTED (CHENG, 2026-08-24).
+//
+// The comment above was the whole guard, and swapping to `boot(g,rates);
+// reveal();` passed all 673 tests. A fake DOM has no layout, so NO TEST CAN
+// CATCH THIS BY MEASURING -- which is exactly why it would survive a refactor.
+// Same shape as the `SX` scope guard: the rule was correct, the instrument was
+// missing, and the rule was the only thing holding it.
+//
+// ⚠️ AND THE HONEST VERSION OF THE CLAIM IS NARROWER THAN THE COMMENT WAS.
+// I wrote "boot measures and draws into this subtree", and then checked: the
+// only layout reads in the renderer are three `void el.offsetWidth` reflow
+// kicks, and the one reachable from a render (`flash`) fires only on
+// `how==='play'`, which the initial `set(0,'')` is not. So TODAY this ordering
+// has no observable symptom at all.
+//
+// THAT IS THE ARGUMENT FOR THE GUARD, NOT AGAINST IT. An invariant with no
+// current symptom is the one that rots quietly: the day boot() grows a
+// measurement -- a rink that sizes to its container, a label that wraps -- the
+// bug arrives as a layout that is subtly wrong on the shell and right on the
+// inlined page, which is the hardest kind here to see. A throw is cheap now and
+// unaffordable to reconstruct later.
+//
+// IT LIVES HERE AND NOT INSIDE boot(). `boot` is the SHARED renderer -- a test
+// asserts the two pages carry it byte for byte -- and `APP` exists only in the
+// shell's bootstrap. Putting a shell concern in the renderer would either break
+// that test or need a `typeof` dance to survive the inlined page.
+function draw(g,rates){
+  if(APP&&APP.hidden)throw new Error(
+    'boot() ran inside a hidden subtree — reveal() must come first');
+  boot(g,rates);}
 function grab(u){return fetch(u).then(function(r){
   if(!r.ok)throw new Error(u.split('/').pop()+' — HTTP '+r.status);return r.json();});}
 function pick(c){
@@ -5330,10 +5360,10 @@ say('Loading…');
     // A PREVIEW ASKS FOR NOTHING IT DOES NOT SHOW. The verdict card is hidden in
     // preview, and measures.json exists only to feed it, so fetching it would be
     // a request on a homepage for bytes nobody reads.
-    if(LINK0.preview){reveal();boot(g,null);return null;}
+    if(LINK0.preview){reveal();draw(g,null);return null;}
     return grab(ORIGIN+'/measures.json')
       .catch(function(){return null;})
-      .then(function(rates){reveal();boot(g,rates);});})
+      .then(function(rates){reveal();draw(g,rates);});})
   .catch(function(e){
     // A true sentence about a broken situation beats a spinner that never ends.
     // AND THE APP GOES BACK AWAY. `reveal()` may already have run and `boot()`

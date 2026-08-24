@@ -395,6 +395,53 @@ test('a game that loads and then fails to DRAW is put away again', () => {
   });
 });
 
+test('boot() CANNOT RUN INSIDE THE HIDDEN SUBTREE', () => {
+  // ⭐ CHENG's audit finding, 2026-08-24. The ordering was held by a COMMENT:
+  // swapping to `boot(g,rates); reveal();` passed all 673 tests, and none of the
+  // 26 mutations touched it. A fake DOM has no layout, so no test can catch it
+  // by measuring — which is precisely why it would survive a refactor.
+  //
+  // Same shape as the `SX` scope guard: the rule was right, the instrument was
+  // missing, and the rule was the only thing holding it.
+  //
+  // ⚠️ THIS TEST IS STRUCTURAL, AND THAT IS A LIMITATION, NOT A PREFERENCE.
+  // When the order is CORRECT the guard is invisible — identical behaviour with
+  // it and without it — so no behavioural test can distinguish a page that
+  // carries the guard from one that has had it deleted. Mutation confirms it:
+  // removing the throw leaves every behavioural assertion green. The wrong
+  // ORDER is caught behaviourally (see the swap, below); only the guard's
+  // EXISTENCE has to be asserted by reading the source. Saying so here, because
+  // a structural check that reads as a behavioural one is the thing this file
+  // has now been burned by twice.
+  const s = scriptOf(shell);
+  const at = s.indexOf('function draw(');
+  assert.notEqual(at, -1, 'the shell has no draw() — the ordering guard is gone');
+  const body = s.slice(at, s.indexOf('}', s.indexOf('boot(g,rates);', at)) + 1);
+  assert.match(body, /APP\s*&&\s*APP\.hidden/,
+    'draw() does not check whether the app is still hidden');
+  assert.match(body, /throw new Error/,
+    'draw() notices and continues — a guard that does not stop is a comment');
+
+  // AND NOTHING ROUTES AROUND IT. The bootstrap must reach the renderer only
+  // through draw(); a direct `boot(` call site is the guard deleted by other
+  // means, and it is the mutation that survived until this line existed.
+  // ⚠️ COMMENTS STRIPPED FIRST, AND THIS IS THE THIRD TIME TODAY. The first
+  // version matched `boot(` across the bootstrap's own prose — which mentions
+  // it repeatedly, because the prose is what explains the rule — and reported
+  // a bypass that does not exist. The D9 placeholder test passed on a comment;
+  // the D10 guard had to exclude them; and then this. A check that cannot tell
+  // code from the words about the code is not a check about code.
+  const codeOnly = t => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  const bootstrap = codeOnly(s.slice(s.indexOf('var ORIGIN=')));
+  // Cut draw()'s own body out too — the call inside it is the legitimate one,
+  // and the whole point is that it must be the ONLY one.
+  const outside = bootstrap.replace(codeOnly(body), '');
+  assert.ok(!/\bboot\(/.test(outside),
+    'the bootstrap calls boot() directly somewhere, bypassing the order guard');
+  assert.match(outside, /draw\(g,\s*null\)/, 'the preview path must go through draw()');
+  assert.match(outside, /draw\(g,\s*rates\)/, 'and so must the ordinary path');
+});
+
 test('and `hidden` is actually wired to display, not left to the UA sheet', () => {
   // The fake DOM sets a PROPERTY; only CSS makes it a box or not. Without this
   // the whole fix is one deleted rule away from a page that is "hidden" and

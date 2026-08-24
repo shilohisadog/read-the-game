@@ -336,3 +336,52 @@ test('and the wording is ONE wording, not one per surface', () => {
   assert.doesNotMatch(src, /event log and boxscore disagree/,
     'the sentence was re-typed into the builder instead of imported');
 });
+
+test('EVERY FIELD derive.py PUTS ON A CATALOG ROW HAS A READER', () => {
+  // ⭐ CHENG's sweep, made standing rather than one-time (2026-08-24).
+  //
+  // D10 was a field written for a purpose it never served: `derive.py` put
+  // `u: 1` on 73 rows expressly so a list could mark them, wrote a comment
+  // saying so, and NO LIST READ IT. That is a new variant of the two-paths
+  // class — one path did not exist at all — and it survived for months because
+  // nothing anywhere compares the writer's output to the readers' input.
+  //
+  // His note: "u:1 is the second field found this way. Worth a one-time check
+  // for others." A one-time grep finds today's; this finds the next one, on the
+  // commit that introduces it, which is the difference between a sweep and a
+  // gate. The whole catalog swept clean when this was written — `u` was the
+  // only orphan — so it starts green and stays green only while it stays true.
+  //
+  // THE WRITER IS THE SOURCE OF THE FIELD LIST, not a fixture and not the live
+  // catalog. A fixture is a copy that can disagree, and the live archive is a
+  // network call; `derive.py` is the one thing that decides what a row carries.
+  const derive = readFileSync(new URL('../builders/derive.py', import.meta.url), 'utf8');
+  const rowSrc = derive.slice(derive.indexOf('row = {"id"'),
+                              derive.indexOf('def _write_ledger'));
+  const boxSrc = derive.slice(derive.indexOf('return {"a": b['), derive.indexOf('except (ValueError'));
+  const fields = new Set([...(rowSrc + boxSrc).matchAll(/"([a-z]{1,3})":/g)].map(m => m[1]));
+  // A tripwire on the extractor itself: if the source moves and the slice comes
+  // back thin, this check would pass by finding nothing — the failure mode the
+  // `mixnight` fixture and the blind CSP probe both had.
+  assert.ok(fields.size >= 10,
+    `only ${fields.size} row fields found — this check has lost its subject`);
+  for (const must of ['id', 'd', 't', 'v', 'u', 'r', 'a', 'h'])
+    assert.ok(fields.has(must), `the field scan missed \`${must}\``);
+
+  const strip = t => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  const readers = readdirSync(new URL('../src/', import.meta.url))
+    .filter(f => f.endsWith('.html'))
+    .map(f => strip(readFileSync(new URL(`../src/${f}`, import.meta.url), 'utf8')))
+    .concat(readdirSync(new URL('../src/lib/', import.meta.url))
+      .filter(f => f.endsWith('.js'))
+      .map(f => strip(readFileSync(new URL(`../src/lib/${f}`, import.meta.url), 'utf8'))));
+
+  for (const f of fields) {
+    // The forms a row field is actually read by in this codebase: `g.u`, `r.v`,
+    // `row.t`, `x.d`, or a bracket lookup.
+    const pat = new RegExp(`\\b[a-z]\\w*\\.${f}\\b|\\['${f}'\\]|\\["${f}"\\]`);
+    assert.ok(readers.some(src => pat.test(src)),
+      `derive.py writes \`${f}\` onto every catalog row and NOTHING in src/ `
+      + `reads it — a field written for a purpose it never served (D10)`);
+  }
+});
