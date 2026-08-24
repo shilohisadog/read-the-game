@@ -32,24 +32,32 @@ DATA = json.loads((ROOT / "data" / "rich.json").read_text())
 
 T = r"""<style>
 __CSS__</style>
+<!-- ⭐ THE SHELL'S STATUS LINE, AND IT IS OUTSIDE `#rg` ON PURPOSE (D9).
+     It used to be `#gl`, the game line -- which sits at the BOTTOM of the app,
+     measured at y=1222 on a 390x844 phone. So a game that could not load said
+     so a screen and a half below a page that looked like it was working, while
+     the app above it rendered in full. The message a visitor needs first
+     cannot live inside the thing it is reporting the absence of: hiding `#rg`
+     would hide the explanation with it. -->
+<div class="shellmsg" id="shellmsg" hidden><p id="shellsay"></p><nav id="shellout" aria-label="Ways into the archive"></nav></div>
 <div id="rg"><div class="wrap">
 <p class="eyebrow">Learn to read hockey · watch first, add metrics after</p>
 <h1>Watch the game</h1>
 <div class="newcomer" id="newcomer"></div>
 <div class="board">
-  <div class="tm a"><span class="ab" id="aAb">MIN</span><span class="sc" id="aSc">0</span><i class="atk"><span class="aw">attacks</span><b class="ar" id="aAtk"></b></i></div>
+  <div class="tm a"><span class="ab" id="aAb">&mdash;</span><span class="sc" id="aSc">0</span><i class="atk"><span class="aw">attacks</span><b class="ar" id="aAtk"></b></i></div>
   <div class="mid"><div class="gs"><span id="per">Pre-game</span> · <span class="cl" id="clk">20:00</span> <i class="clw">left</i></div>
     <div class="cbar"><div class="bar"><span class="ba" id="ba"></span><span class="bh" id="bh"></span></div>
     <div class="pct"><span id="pa">0</span><span class="plab"><i class="pname" id="pName">CONTROL</i><i class="mode" id="pMode">ALL SITUATIONS</i></span><span id="ph">0</span></div></div>
   </div>
-  <div class="tm h"><span class="ab" id="hAb">BUF</span><span class="sc" id="hSc">0</span><i class="atk"><span class="aw">attacks</span><b class="ar" id="hAtk"></b></i></div>
+  <div class="tm h"><span class="ab" id="hAb">&mdash;</span><span class="sc" id="hSc">0</span><i class="atk"><span class="aw">attacks</span><b class="ar" id="hAtk"></b></i></div>
 </div>
 <p class="endnote" id="endnote"></p>
 <p class="atnote" id="atnote"></p>
 <div class="rinkbox"><svg viewBox="0 0 200 85"><g id="rink"></g><g id="netmen"></g><g id="lines"></g><g id="whistles"></g><g id="events"></g><g id="puck"></g><g id="labels"></g><g id="noplace"></g></svg>
   <div class="pboxes" id="pboxes"><span class="pblab">Penalty box</span><span class="pb a" id="pbA"></span><span class="pb h" id="pbH"></span></div>
   <div class="caption" id="caption"></div>
-  <div class="counters"><div class="cc a"><span class="n" id="cA">0</span><span class="lb">MIN attempts<span class="mode" id="mA">ALL SITUATIONS</span></span></div><div class="cc h"><span class="lb">BUF attempts<span class="mode" id="mH">ALL SITUATIONS</span></span><span class="n" id="cH">0</span></div></div>
+  <div class="counters"><div class="cc a"><span class="n" id="cA">0</span><span class="lb">Away attempts<span class="mode" id="mA">ALL SITUATIONS</span></span></div><div class="cc h"><span class="lb">Home attempts<span class="mode" id="mH">ALL SITUATIONS</span></span><span class="n" id="cH">0</span></div></div>
 </div>
 <p class="icenote" id="iceNote"></p>
 <div class="whistlepanel" id="whistlePanel"></div>
@@ -151,7 +159,55 @@ DATA_ORIGIN = "https://data.readthegame.co"
 # featured game frozen at build time would be a lie by the next morning.
 BOOTSTRAP = r"""
 var ORIGIN=__ORIGIN__;
-function say(m){var el=document.getElementById('gl');if(el)el.textContent=m;}
+// ⭐ D9. THE APP DOES NOT RENDER UNTIL THERE IS A GAME TO RENDER.
+//
+// `game.html?game=<a refused game>` used to fetch a 404 and then draw the whole
+// application anyway -- rink, transport, five layer buttons, and a scoreboard
+// reading MIN 0 / BUF 0, which are the reference game's clubs and have nothing
+// to do with the game the visitor asked for by id. The failure WAS stated, in
+// `#gl`, at the bottom of the page.
+//
+// That is this project's recurring shape stated as sharply as it gets: THE
+// FAILURE STATE RENDERED PLAUSIBLY. A clamped `at=` looked fine; the D8 gate
+// compared a run against itself and went green; this drew a working page for a
+// game that does not exist here. Each time the broken state was indistinguishable
+// from the working one at a glance, which is exactly what let it survive.
+//
+// AND IT IS NOT A TYPO-ONLY PATH, which is why it is worth the code. A row can
+// go from published to refused on a later derive -- the catalog replaces rows
+// wholesale and the whole archive was re-derived seven times in five days -- so
+// any `?game=` link shared before such a flip lands here, and the person who
+// clicked it typed nothing.
+var APP=document.getElementById('rg');
+var MSG=document.getElementById('shellmsg');
+if(APP)APP.hidden=true;
+function say(m,bad){if(!MSG)return;
+  var p=document.getElementById('shellsay');if(p)p.textContent=m;
+  MSG.hidden=false;MSG.className='shellmsg'+(bad?' bad':'');}
+// ⭐ A DEAD END IS STILL A DEAD END WHEN IT IS HONEST ABOUT BEING ONE.
+//
+// The first cut of this fix hid the app and put a true sentence at the top --
+// and LOOKING AT IT is what showed the rest: the funnel that exists precisely
+// so the game page is not a dead end (`#nextup`) lives INSIDE `#rg`, so hiding
+// the app hid the way out with it. A visitor following a shared link to a game
+// the archive no longer publishes got one sentence and a footer.
+//
+// The geometry said y=1222 -> y=56 and called it fixed. The screenshot said
+// "you built a cul-de-sac". That is the whole argument for looking.
+//
+// EVERY DESTINATION EXISTS TODAY -- the rule `nextUp` is already held to. These
+// are the site's standard ways in, the same set the chrome nav carries, because
+// a second vocabulary for one destination is how a reader stops believing two
+// links go to the same place.
+function waysOut(){
+  var n=document.getElementById('shellout');if(!n)return;
+  n.innerHTML='<a href="/">Watch the most recent game</a>'
+    +'<a href="/calendar.html">Browse by date</a>'
+    +'<a href="/#teams">All teams</a>';}
+// REVEAL BEFORE boot(), never after: boot measures and draws into this subtree,
+// and an element with `hidden` has no box, so laying out inside it is measuring
+// nothing -- the trap tools/pixels.sh already documents in its own words.
+function reveal(){if(MSG)MSG.hidden=true;if(APP)APP.hidden=false;}
 function grab(u){return fetch(u).then(function(r){
   if(!r.ok)throw new Error(u.split('/').pop()+' — HTTP '+r.status);return r.json();});}
 function pick(c){
@@ -179,13 +235,40 @@ say('Loading…');
     // A PREVIEW ASKS FOR NOTHING IT DOES NOT SHOW. The verdict card is hidden in
     // preview, and measures.json exists only to feed it, so fetching it would be
     // a request on a homepage for bytes nobody reads.
-    if(LINK0.preview){boot(g,null);return null;}
+    if(LINK0.preview){reveal();boot(g,null);return null;}
     return grab(ORIGIN+'/measures.json')
       .catch(function(){return null;})
-      .then(function(rates){boot(g,rates);});})
+      .then(function(rates){reveal();boot(g,rates);});})
   .catch(function(e){
     // A true sentence about a broken situation beats a spinner that never ends.
-    say('This game could not be loaded — '+e.message);
+    // AND THE APP GOES BACK AWAY. `reveal()` may already have run and `boot()`
+    // then thrown, which leaves a half-drawn page under an error -- the same
+    // plausible-looking wreck in a smaller costume.
+    if(APP)APP.hidden=true;
+    say('This game could not be loaded — '+e.message,true);
+    waysOut();
+    // ⭐ AND THEN ASK THE ARCHIVE WHAT IS ACTUALLY TRUE.
+    //
+    // "2023010001.json — HTTP 404" is a developer's sentence: it names a file
+    // and a status code, and to a first-time visitor it says nothing about
+    // hockey. The catalog already holds the answer -- every refused game keeps
+    // its row and carries the gate that stopped it, which is Doctrine 9 and the
+    // reason the calendar can render a refusal at all.
+    //
+    // SO THE HONEST SENTENCE WAS AVAILABLE AND WE WERE NOT ASKING FOR IT. One
+    // request, ON THE ERROR PATH ONLY, upgrades the message from a symptom to a
+    // fact: "the archive holds this game and our checks would not publish it"
+    // is a different thing from "no such game", and a reader deserves to know
+    // which one they hit.
+    if(!want)return;
+    grab(ORIGIN+'/catalog.json').then(function(c){
+      var row=(c.games||[]).filter(function(g){return String(g.id)===String(want);})[0];
+      if(!row)return say('The archive has no game with the id '+want+'.',true);
+      if(row.v)return;   // it exists and publishes: the failure was the network
+      say('This game is in the archive and we could not publish it — '
+          +row.a+' at '+row.h+', '+row.d+'. Our '+(row.r||'validation')
+          +' check stopped it, so there is nothing honest to replay.',true);
+    }).catch(function(){});   // the plain message already stands
   });
 """
 

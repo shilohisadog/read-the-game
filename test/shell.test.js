@@ -15,6 +15,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { TEAMS } from '../src/lib/teams.js';
 import { createHash } from 'node:crypto';
 
 const SRC = new URL('../src/', import.meta.url);
@@ -179,7 +180,13 @@ function run({ search = '', responses = {} } = {}) {
   // touches style, classList and the rest. With the thin element it threw, the
   // chain's own .catch reported "could not be loaded", and any assertion about
   // what was NOT fetched would have passed because nothing got that far.
-  const el = {
+  // ⭐ ONE ELEMENT PER ID, because D9 is a claim about WHICH element is hidden.
+  // This used to hand the same object to every getElementById, which is fine
+  // while every assertion is about text -- and useless the moment two elements
+  // must be told apart, since `#rg` and `#shellmsg` would be ONE object and
+  // `assert.equal(rg.hidden, true)` would pass on the message being hidden.
+  const els = {};
+  const mk = () => ({
     set textContent(v) { said.push(String(v)); }, get textContent() { return ''; },
     // `hidden` IS DELIBERATELY ABSENT, not `false`. A fake that invents the
     // default makes `assert.equal(el.hidden, false)` pass against a page that
@@ -190,10 +197,15 @@ function run({ search = '', responses = {} } = {}) {
     style: { setProperty() {}, getPropertyValue() { return ''; } },
     classList: { add() {}, remove() {}, toggle() {}, contains() { return false; } },
     setAttribute() {}, getAttribute() { return null; }, addEventListener() {},
-  };
+  });
+  const el = mk();
   // `body` is modelled for the same reason as the rest: preview hides the
   // shared chrome through a class on it.
-  const document = { body: el, getElementById: () => el, querySelectorAll: () => [] };
+  const document = {
+    body: el,
+    getElementById: id => (els[id] || (els[id] = mk())),
+    querySelectorAll: () => [],
+  };
   const fetch = url => {
     asked.push(url);
     const key = Object.keys(responses).find(k => url.includes(k));
@@ -216,7 +228,7 @@ function run({ search = '', responses = {} } = {}) {
                'window', scriptOf(shell))(
     document, fetch, { search, origin: 'https://x' }, () => ({ matches: false }),
     () => 0, () => {}, { parent: { postMessage: (m, o) => posted.push({ m, o }) } });
-  return { asked, said, posted, settle: () => new Promise(r => setTimeout(r, 0)) };
+  return { asked, said, posted, els, settle: () => new Promise(r => setTimeout(r, 0)) };
 }
 
 const CATALOG = { games: [
@@ -250,10 +262,56 @@ test('it will not land you on a game it cannot show', () => {
 });
 
 test('a named game is fetched directly, with no catalog round trip', () => {
-  const r = run({ search: '?game=2023020204', responses: {} });
+  // ⚠️ THIS TEST WAS NAMED FOR THE HAPPY PATH AND RAN THE FAILURE PATH.
+  // Its fixture was `responses: {}` — so the extract 404'd and the assertion
+  // counted the requests of a page that never loaded a game. It read as
+  // coverage of the permalink cost and measured an error. It only looked right
+  // because the old failure path did nothing at all; the moment the failure
+  // path grew a request, the test that "proved" the happy path went red for
+  // the happy path's sake.
+  const r = run({ search: '?game=2023020204',
+                  responses: { 'extract/2023020204.json': EXTRACT,
+                               'measures.json': {} } });
   return r.settle().then(() => {
-    assert.equal(r.asked.length, 1, 'a permalink should cost one request');
-    assert.match(r.asked[0], /extract\/2023020204\.json$/);
+    // THE CLAIM IS ABOUT THE CATALOG, so that is what is asserted. An exact
+    // request list would also be asserting how many microtask ticks `settle`
+    // happens to flush, which is a fact about the harness and not about the
+    // page -- the anchor-on-an-implementation-line mistake `rendererOf` above
+    // already documents.
+    assert.match(r.asked[0], /extract\/2023020204\.json$/,
+      'the extract must be the FIRST thing a permalink asks for');
+    assert.ok(!r.asked.some(u => /catalog\.json/.test(u)),
+      'a permalink cost a catalog round trip');
+  });
+});
+
+test('and the FAILURE path spends one more request, deliberately', () => {
+  // ⭐ THE ASYMMETRY IS THE POINT, so it is asserted rather than left to be
+  // rediscovered as a regression. "HTTP 404" is a developer's sentence; the
+  // catalog holds the fact — every refused game keeps its row and carries the
+  // gate that stopped it — so the error path buys the truth for one request
+  // that the working path never spends.
+  const r = run({ search: '?game=2025090030',
+                  responses: { 'catalog.json': CATALOG } });
+  return r.settle().then(() => {
+    assert.ok(r.asked.some(u => /catalog\.json/.test(u)),
+      'the failure never asked the archive what was actually wrong');
+    const said = r.said.join(' | ');
+    assert.match(said, /in the archive and we could not publish it/i);
+    assert.match(said, /validation/, 'and it names the gate, from the row');
+    assert.doesNotMatch(said.split('|').pop(), /HTTP 404/,
+      'the final sentence should be about hockey, not about a status code');
+  });
+});
+
+test('an id the archive has never heard of says exactly that', () => {
+  // A DIFFERENT FACT AND A DIFFERENT SENTENCE. "we refused this game" and "no
+  // such game" are not the same thing to a reader, and collapsing them is the
+  // conflation D8 was made of, one layer up.
+  const r = run({ search: '?game=1999020001',
+                  responses: { 'catalog.json': CATALOG } });
+  return r.settle().then(() => {
+    assert.match(r.said.join(' '), /has no game with the id 1999020001/i);
   });
 });
 
@@ -267,6 +325,112 @@ test('a failure says something true instead of spinning', () => {
     assert.match(last, /could not be loaded/i);
     assert.match(last, /404/, 'and it names the reason, not just the fact');
     assert.doesNotMatch(r.said.join(' '), /still loading|please wait/i);
+  });
+});
+
+test('A GAME THAT CANNOT LOAD DOES NOT RENDER THE APP', () => {
+  // ⭐ D9. `game.html?game=2025090030` — a refused Olympic game, and all 30 are
+  // — fetched a 404 and then drew the whole application anyway: rink, transport,
+  // five layer buttons, and a scoreboard reading MIN 0 / BUF 0.
+  //
+  // THE FAILURE WAS ALREADY STATED. It was stated in `#gl`, which is the LAST
+  // element of the app, measured at y=1222 on a 390x844 phone — a screen and a
+  // half below a page that looked like it was working. Two individually correct
+  // decisions contradicting each other on screen, which is A10's shape exactly.
+  const r = run({ search: '?game=2025090030', responses: {} });
+  // ⭐ BEFORE THE FETCH SETTLES, AND THIS ASSERTION IS NOT DECORATION.
+  // Two independent mechanisms hide the app -- the synchronous hide at start
+  // and the re-hide in the catch -- and a single post-settle assertion is
+  // satisfied by EITHER. Mutation proved it: deleting one left 660 tests green,
+  // because the other was still standing. Each has to be observed where only it
+  // can be responsible, or one of them can rot untouched.
+  assert.equal(r.els.rg.hidden, true,
+    'the app was on screen while the game was still being fetched');
+  return r.settle().then(() => {
+    assert.equal(r.els.rg.hidden, true,
+      'the app rendered for a game the archive does not hold');
+    assert.equal(r.els.shellmsg.hidden, false, 'and nothing explained why');
+    assert.match(r.said.join(' '), /could not be loaded/i);
+  });
+});
+
+test('A FAILED PAGE IS NOT A DEAD END', () => {
+  // ⭐ THE REGRESSION MY OWN FIX INTRODUCED, and only a screenshot found it.
+  //
+  // Hiding `#rg` hides `#nextup` with it — and `#nextup` is the funnel that
+  // exists SPECIFICALLY so the game page is not a dead end. So the first cut of
+  // D9 put a true sentence at the top of a cul-de-sac: a visitor following a
+  // shared link to a game the archive no longer publishes got one sentence and
+  // a footer. Every assertion above passed. The geometry said y=1222 -> y=56.
+  //
+  // That is the whole case for looking, and this is the guard so that looking
+  // does not have to happen twice.
+  const r = run({ search: '?game=2025090030', responses: { 'catalog.json': CATALOG } });
+  return r.settle().then(() => {
+    const out = r.els.shellout.innerHTML;
+    assert.ok(out.length > 0, 'a failed page offered the visitor nowhere to go');
+    for (const href of ['/calendar.html', '/#teams', '"/"'])
+      assert.ok(out.includes(href.replace(/"/g, '"')) || out.includes(href),
+        `the way out does not reach ${href}`);
+  });
+});
+
+test('a game that loads and then fails to DRAW is put away again', () => {
+  // ⭐ THE OTHER HIDE, isolated. This is the only path where `reveal()` has
+  // already run and the page then fails: the extract arrives, the app is shown,
+  // and boot() throws on it. Without the catch's re-hide the visitor keeps a
+  // half-drawn rink under an error message -- the same plausible-looking wreck
+  // in a smaller costume.
+  //
+  // AND IT IS A REAL CASE, not a contrivance for the test: a truncated or
+  // half-written extract is exactly what a partial upload produces, and the
+  // pipeline writes extracts and the catalog in separate passes.
+  const r = run({ search: '?game=2023020204',
+                  responses: { 'extract/2023020204.json': {},
+                               'measures.json': {} } });
+  return r.settle().then(() => {
+    assert.equal(r.els.rg.hidden, true,
+      'a page that could not draw stayed on screen half-built');
+    assert.match(r.said.join(' '), /could not be loaded/i);
+  });
+});
+
+test('and `hidden` is actually wired to display, not left to the UA sheet', () => {
+  // The fake DOM sets a PROPERTY; only CSS makes it a box or not. Without this
+  // the whole fix is one deleted rule away from a page that is "hidden" and
+  // fully visible, and every assertion above would still pass.
+  // The real instrument is a browser, and the deploy gate is one -- this is the
+  // cheap half that catches the deletion before it gets that far.
+  assert.match(shell, /#rg\[hidden\][^{]*\{[^}]*display:\s*none/,
+    'nothing in the stylesheet makes a hidden app take up no space');
+});
+
+test('and the explanation is NOT inside the thing it is explaining', () => {
+  // The trap in the obvious fix. `#gl` is inside `#rg`, so "hide the app" would
+  // hide the sentence with it and leave a blank page — which is the CORS bug's
+  // exact signature, and the reason `say()` had to move out of the app first.
+  const markup = shell.replace(/<script[\s\S]*?<\/script>/g, '');
+  const msg = markup.indexOf('id="shellmsg"');
+  const app = markup.indexOf('<div id="rg"');
+  assert.ok(msg !== -1, 'the shell has no status element');
+  assert.ok(msg < app, 'the status line must sit ABOVE and OUTSIDE the app');
+  const s = scriptOf(shell);
+  assert.doesNotMatch(s.slice(s.indexOf('function say(')),
+    /^function say\(m[^)]*\)\{[^}]*'gl'/,
+    'say() must not write the failure into the game line at the bottom again');
+});
+
+test('a game that DOES load reveals the app — the paired half', () => {
+  // ⭐ WITHOUT THIS, "the app is hidden" is satisfied by a page that never shows
+  // anything at all, which is a worse bug than the one being fixed and would
+  // pass every assertion above. The two tests must be able to fail in opposite
+  // directions. (The ends-switching pair is where this pattern came from.)
+  const r = run({ search: '?game=2023020204',
+                  responses: { 'extract/2023020204.json': EXTRACT,
+                               'measures.json': {} } });
+  return r.settle().then(() => {
+    assert.equal(r.els.rg.hidden, false, 'a good game left the app hidden');
+    assert.equal(r.els.shellmsg.hidden, true, 'and the loading line never cleared');
   });
 });
 
@@ -296,14 +460,51 @@ test('no page hard-codes a fact about one particular game', () => {
   }
 });
 
-test('the static markup may hold placeholders, but the script overwrites them', () => {
-  // The placeholder in the HTML is fine — it is what a reader sees for the few
-  // milliseconds before boot runs, and the deploy's browser gate proves the
-  // script executes. What matters is that nothing SURVIVES it.
-  assert.match(shell, /MIN attempts/, 'the placeholder is still in the markup');
+test('NO PLACEHOLDER IN THE MARKUP IS A REAL CLUB', () => {
+  // ⭐ D9, AND THIS TEST USED TO ASSERT THE DEFECT.
+  //
+  // It read: "The placeholder in the HTML is fine — it is what a reader sees
+  // for the few milliseconds before boot runs, and the deploy's browser gate
+  // proves the script executes. What matters is that nothing SURVIVES it."
+  //
+  // THE PREMISE IS THE THING THAT WAS WRONG. `boot` runs when the fetch
+  // succeeds. `game.html?game=2025090030` is a refused Olympic game: it 404s,
+  // boot never runs, and "a few milliseconds" is forever. The page then showed
+  // MIN 0 / BUF 0 — two real clubs — for a game that has nothing to do with
+  // either, and the single-fixture blind spot appeared as a FALLBACK, which is
+  // the sharpest version of it: the failure silently displays the one game
+  // everything was built from.
+  //
+  // ⭐ AND ITS INSTRUMENT COULD NOT SEE THE THING IT NAMED. `assert.match(shell,
+  // /MIN attempts/)` passed against a 300 KB file — and after the markup was
+  // fixed it STILL passed, on a COMMENT in app.js that happens to quote the old
+  // label. A check that cannot tell markup from prose is not an instrument for
+  // markup. So this reads the body with every <script> and <style> removed.
+  //
+  // AND THE FORBIDDEN SET IS THE LEAGUE'S OWN TABLE, not the two clubs that
+  // happened to be wrong. A future placeholder reading "TOR" is the identical
+  // defect, and a rule written against the case that bit is how the deploy
+  // exemption, the night list and the front door's competition list all shipped.
+  const clubs = Object.keys(TEAMS);
+  assert.ok(clubs.length > 30, 'the club table is the instrument; it must be real');
+  for (const [name, html] of [['game.html', shell], ['read-the-game.html', inlined]]) {
+    const markup = html
+      .replace(/<script[\s\S]*?<\/script>/g, '')
+      .replace(/<style[\s\S]*?<\/style>/g, '')
+      .replace(/<!--[\s\S]*?-->/g, '');
+    const board = markup.slice(markup.indexOf('<div class="board"'),
+                               markup.indexOf('id="nextup"'));
+    assert.ok(board.length > 200, `${name}: the board markup was not found`);
+    for (const ab of clubs) {
+      assert.ok(!new RegExp(`\\b${ab}\\b`).test(board),
+        `${name}: the static board names a real club (${ab}) before any game is loaded`);
+    }
+  }
+  // And the script still writes the real ones in, or the fix is a blank page.
   const s = scriptOf(shell);
-  assert.match(s, /\.cc\.a \.lb/, 'and the script rewrites it from the data');
+  assert.match(s, /\.cc\.a \.lb/, 'the script fills the away label from the data');
   assert.match(s, /\.cc\.h \.lb/);
+  assert.match(s, /\$\('aAb'\)\.textContent=AAB/, 'and the scoreboard abbreviations');
 });
 
 test('the deploy gate cannot pass on a blank expectation', () => {
