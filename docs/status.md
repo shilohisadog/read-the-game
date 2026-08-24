@@ -125,6 +125,34 @@ the whole game. **B1 IS COMPLETE — all of CHENG's conditions met.** (2) **keep
 
 ---
 
+## U. Usability — ranked by how early in a visit they are hit
+
+A separate section from C on purpose. **C items are ranked by correctness risk;
+U items by how many visitors hit them, and how early.** Those produce different
+orders and merging them would let one criterion quietly decide the other.
+
+**⚠️ TWO RULES FOR THIS SECTION, both earned rather than chosen.**
+
+**1. Every U item gets LOOKED AT, at both widths, before it is called done.**
+This is the category the suite cannot see. 623 green tests missed five calendar
+defects, one serious; four defects reached production in a week and the suite
+caught none of them. The U1 finding below took a `grep` comparing two pages —
+no test would ever have flagged it, because each header is individually valid.
+So U work is *easier to decide and harder to verify* than C work.
+
+**2. The doctrine constrains claims about hockey, not tone.** Everything here is
+copy, layout or discovery, and none of it requires softening a refusal. If a U
+item ever does, it stops being a U item and goes to the doctrine.
+
+| id | item | why it is ready | size |
+|---|---|---|---|
+| **U1** | **The game page cannot reach the date browse** | ⚠️ **THE DIAGNOSIS THIS ARRIVED WITH WAS WRONG, AND THE CORRECTION MAKES IT SMALLER AND SHARPER.** It was filed as *"nine of eleven pages carry four nav links and `game.html` opts out"* — as though the minimal header were an oversight. **It is a recorded ruling, and CHENG's own** (`builders/page.py:263`): *"the stranger arrives BEFORE the game, the viewer exists DURING it, and the moment that matters is neither — it is when the game ENDS, at peak curiosity, which is below the rink and not above it. So the header answers only 'where am I', and the funnel lives underneath."* The funnel is real, at `src/game.html:4309`, and carries three destinations: **More {away} games · More {home} games · Every game in the archive.** (It is also **two** pages on the minimal header, not one — `read-the-game.html` too.) **⭐ THE ACTUAL DEFECT IS ONE LINK, AND `page.py`'s OWN COMMENT NAMES IT:** C1's nav entry was added because *"a reader on a team page or a game page could reach the team browse from any page on the site and the date browse from none"* — and the fix it shipped was adding **By date** to `_NAV`, **which the game page does not use.** So the one page the comment names as the victim is the one page the fix cannot reach. The funnel is missing **By date** and nothing else: team browse is covered by the two club links, and `/` reaches everything in one more hop. **A one-line fix that preserves the ruling instead of reversing it** — and the guard is a test that requires every `_NAV` destination to be reachable from every page in at most one hop, header or funnel. | **small** |
+| **U2** | **The hero is selected for freshness and then asked to be interesting** | **VERIFIED, AND IT IS WORSE THAN THE COMPLAINT.** `featured` is the biggest level-control edge in a loss (top rows: DAL 33, LAK 33, OTT 32, COL 32). **Hero 2 is *most recent*,** chosen to solve seasonal liveness, and most recent returns whatever happened last — so it will be unremarkable most nights **by construction**, not by underwriting. Right now it reads *"CAR put more shots on goal, 23 to 22, and won."* ⭐ **AND THE GAME IT IS DESCRIBING IS `2025030416` — gameType 03, 2026-06-14: CAR 3, VGK 0. The Stanley Cup Final.** The archive's most consequential game, introduced by its shot differential. That is the argument: not that recency is boring, but that **one slot is doing two jobs** — the featured game is the one that jumps off the page, the most recent game is the one that proves the site is alive. Two routes, not exclusive: let the caption say what is true about *this* game and make the archive the hook (*"Last night: CAR 3, VGK 0. Across 4,029 games here, the team with more attempts lost 54.5% of the time"*), or **give recency its own slot** and stop asking the hero to be both. | **small** |
+| **U3** | **Progressive layer disclosure** | **VERIFIED, AND B2 DID NOT ALREADY FIX IT.** B2 moved the *Situations* control to follow the layer; the layer buttons themselves are untouched. `src/game.html:622` still renders **all five at once** in one row under *"Add a metric layer:"* — Control (Corsi) · Shots from the slot · Goaltending · Why play stopped · Blocked shots. Two outside readers have now flagged the density independently. The conversion needs **one** layer, not five. Related to but distinct from [B2](#) — that was *where a control lives*, this is *how many exist before you have asked for any*. | medium |
+| **U4** | **A curated "start here" set** | Five to ten games, each with its own stated rule, computed the way `featured` already is — so no invented numbers and no hand-typed ids. Turns the archive from a library into a shelf. Overlaps U2's second route: a curated set and a recency slot may be the same piece of furniture. | medium |
+| **U5** | **An About page** | ⚠️ **ONE HALF OF THE JUSTIFICATION IS WRONG.** *"The homeless address for the tip jar"* — the tip jar is not homeless. It renders in the footer of **all eleven pages**, under the not-affiliated sentence, deliberately (`page.py:337`: *"it supports THE WORK and never sells access"*), beside a contact email. What is genuinely missing is **who is doing this and why** — the site is anonymous, and an honest-methods site that will not say whose methods they are is asking for a trust it has not offered. The provenance half stands: nothing links the digests a reader could check. | small |
+| **U6** | **A cold copy pass** | On **register**, not accuracy — the accuracy has been argued to death and the tone never has. Cheap, and the one item here that improves every other one. | small |
+
 ## D. Known gaps and risks
 
 | id | item | state |
