@@ -250,3 +250,87 @@ test('the offseason is walked, and the empty month says so before the grid', asy
   assert.ok(note !== -1 && grid !== -1);
   assert.ok(note < grid, 'told after 31 blank boxes is told too late on a phone');
 });
+
+/* ─────────────────────────────────────────────────────────────────────────
+   D10 — the disclosure that had a field, a purpose, and no reader.
+   ───────────────────────────────────────────────────────────────────────── */
+
+test('A NIGHT MARKS THE GAMES THE LEAGUE DISAGREES WITH ITSELF ABOUT', async () => {
+  // ⭐ `derive.py` writes `u: 1` onto a catalog row when the league's play-by-play
+  // and the league's own boxscore disagree about shots on goal — 73 live rows —
+  // and its comment says exactly why the flag exists:
+  //
+  //   "`u` so a LIST can mark it without opening the extract. The calendar and
+  //    the team page both show many games at once and neither fetches an extract
+  //    to draw a row; WITHOUT THIS THE DISCLOSURE WOULD EXIST ONLY ON THE PAGE
+  //    YOU ALREADY COMMITTED TO OPENING."
+  //
+  // That sentence was TRUE. The flag was populated, correct, and read by exactly
+  // one thing in the repo — health.mjs, counting it for the build list. The
+  // reader it was created for was never written.
+  //
+  // AND IT IS NOT COSMETIC, because `ash`/`hsh` are the BOXSCORE's numbers while
+  // the game page replays the EVENT LOG. Measured on four of the 73: the list
+  // said 31–36 and the page said 31–37; 38–32 against 39–32; 31–32 against
+  // 31–33; 34–24 against 34–25. Two figures that look like one claim, which is
+  // C7's defect already shipped.
+  const games = [NHL(1, '2026-02-02'), NHL(2, '2026-02-02', { u: 1 })];
+  const { ids, settle } = run(games, '?date=2026-02-02');
+  await settle();
+  const marked = walk(ids.main).filter(x => /shots\*/.test(x.textContent || ''));
+  assert.equal(marked.length, 1, 'exactly the disputed row carries the mark');
+  const text = textOf(ids.main);
+  assert.match(text, /event log and boxscore disagree/i, 'the mark means nothing alone');
+  assert.match(text, /marked \* is the boxscore's/i,
+    'a reader cannot tell WHICH of the two numbers is on screen');
+  // ⭐ AND THE NOTE COMES FIRST, which is a MEASUREMENT and not a preference:
+  // under an 82-row team page the note rendered at y=7401 on a 390px phone,
+  // seven thousand pixels below the mark it explains. Same defect as D9's
+  // y=1222, one page over. The wording names the mark rather than pointing at
+  // a neighbour, so it stays true wherever it sits.
+  const order = walk(ids.main).map(x => x.textContent || '');
+  const noteAt = order.findIndex(t => /disagree about the shot count/.test(t));
+  const markAt = order.findIndex(t => /shots\*/.test(t));
+  assert.ok(noteAt !== -1 && markAt !== -1, 'both the note and the mark must render');
+  assert.ok(noteAt < markAt,
+    'the explanation renders after the mark it explains — a reader has to '
+    + 'scroll an unbounded distance to find out what the asterisk means');
+});
+
+test('and a night with no disagreement says nothing at all', async () => {
+  // MUTATION GUARD, and the verdict card's rule: a sentence that renders on
+  // every night is a sentence a reader learns to skip, and then the one night
+  // it matters goes past unread.
+  const { ids, settle } = run([NHL(1, '2026-02-02'), NHL(2, '2026-02-02')],
+                              '?date=2026-02-02');
+  await settle();
+  const text = textOf(ids.main);
+  assert.doesNotMatch(text, /disagree/i);
+  assert.doesNotMatch(text, /shots\*/);
+});
+
+test('a refused row is never counted as disputed', async () => {
+  // A game we do not show cannot mislead anybody about its shot count, and
+  // counting it would put "in 1 game here" above a list where no such figure
+  // appears — a note whose antecedent is not on the page.
+  const games = [NHL(1, '2026-02-02'),
+                 NHL(2, '2026-02-02', { u: 1, v: 0, r: 'validation' })];
+  const { ids, settle } = run(games, '?date=2026-02-02');
+  await settle();
+  assert.doesNotMatch(textOf(ids.main), /disagree/i);
+});
+
+test('THE COUNT IN THE NOTE IS THE COUNT ON THE PAGE', async () => {
+  // ⭐ The note says "in N games here". If N were computed over anything but the
+  // rows actually rendered, it would be a figure describing a different
+  // population than its sentence implies — which is D8, exactly, one layer down
+  // and in prose instead of JSON.
+  const games = [NHL(1, '2026-02-02', { u: 1 }), NHL(2, '2026-02-02', { u: 1 }),
+                 NHL(3, '2026-02-02'), OLY(4, '2026-02-02', { u: 1 })];
+  const { ids, settle } = run(games, '?date=2026-02-02');
+  await settle();
+  const marks = walk(ids.main).filter(x => /shots\*/.test(x.textContent || '')).length;
+  assert.equal(marks, 3, 'the fixture must actually contain three of them');
+  assert.match(textOf(ids.main), /In 3 games below/,
+    'the note counted something other than what it is standing over');
+});

@@ -966,6 +966,27 @@ $('gl').textContent=`${AAB} at ${HAB}${WHEN?' · '+WHEN:''} · final ${AAB} ${fi
  el.innerHTML=[
   `<a href="/?team=${encodeURIComponent(AAB)}">${dot('a')}More ${AAB} games</a>`,
   `<a href="/?team=${encodeURIComponent(HAB)}">${dot('h')}More ${HAB} games</a>`,
+  /* ⭐ U1. THE DATE INDEX, BECAUSE page.py's OWN COMMENT NAMES THIS PAGE AS THE
+     VICTIM AND ITS FIX COULD NOT REACH IT.
+
+     C1 added "By date" to `_NAV` for a reason stated there in as many words:
+     "a reader on a team page or a game page could reach the team browse from
+     any page on the site and the date browse from none." The game page runs
+     the MINIMAL header -- deliberately, CHENG's ruling, because the moment
+     that matters is when the game ENDS and that is below the rink rather than
+     above it -- so it does not use `_NAV`, and the fix passed by the one page
+     the comment names.
+
+     THE DIAGNOSIS THIS ARRIVED WITH WOULD HAVE REVERSED A LIVE RULING. It was
+     filed as "game.html opts out of the nav every other page has", i.e. put
+     four links back in the header. It is ONE LINK, HERE: the two clubs above
+     already reach the team browse, and only the date index was unreachable.
+
+     THE WORDS ARE THE ONES THE READER ALREADY MET. The front door says "Or
+     browse by date" and the chrome nav says "By date"; a third name for one
+     destination is how a reader stops believing two links go to the same
+     place. */
+  `<a href="/calendar.html">Browse by date</a>`,
   `<a href="/">Every game in the archive</a>`,
  ].join('');})();
 document.querySelectorAll('#rg .cc.a .lb').forEach(n=>n.childNodes[0].nodeValue=AAB+' attempts');

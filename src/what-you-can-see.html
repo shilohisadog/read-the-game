@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-W+n/hedlX+fGyW6n1NdbV5hnxDJajbSpyV/BrwEbWFM='; connect-src 'self'; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-ZjCTQAxWLu2PaEz47/dVjam4dY0pMShlIrBXKjsWLJY='; connect-src 'self'; frame-src 'self'; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -243,6 +243,11 @@ a.cell:hover,a.cell:focus-visible{border-color:var(--blue);
    Los Angeles Kings" into a five-line column beside it. */
 .games.night .off{grid-template-columns:1fr;gap:3px}
 .games.night li.uncounted{border-left:3px dashed #9fb3c0}
+/* D10's note, in the same voice as the dashed-count note above it: a small
+   qualifying sentence under the list, not a warning. The disagreement is the
+   LEAGUE's, between its own two documents, and we are reporting it rather
+   than apologising for it. */
+p.disputed{font-size:.8rem;color:#5d6f7c;margin:10px 0 0;max-width:62ch}
 .bydate{margin:14px 0 0;font-size:.9rem}
 .bydate a{color:var(--blue);text-decoration:none;font-weight:600}
 .bydate a:hover{text-decoration:underline}

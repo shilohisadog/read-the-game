@@ -329,6 +329,11 @@ a.cell:hover,a.cell:focus-visible{border-color:var(--blue);
    Los Angeles Kings" into a five-line column beside it. */
 .games.night .off{grid-template-columns:1fr;gap:3px}
 .games.night li.uncounted{border-left:3px dashed #9fb3c0}
+/* D10's note, in the same voice as the dashed-count note above it: a small
+   qualifying sentence under the list, not a warning. The disagreement is the
+   LEAGUE's, between its own two documents, and we are reporting it rather
+   than apologising for it. */
+p.disputed{font-size:.8rem;color:#5d6f7c;margin:10px 0 0;max-width:62ch}
 .bydate{margin:14px 0 0;font-size:.9rem}
 .bydate a{color:var(--blue);text-decoration:none;font-weight:600}
 .bydate a:hover{text-decoration:underline}
@@ -578,6 +583,12 @@ __HELPERS__
       return;
     }
 
+    /* D10's note goes BEFORE the list, and that is a measurement rather than a
+       preference: under an 82-row team page it rendered at y=7401 on a 390px
+       phone -- seven thousand pixels below the mark it explains. */
+    var note = disputedNote(disputedCount(mine));
+    if (note) main.appendChild(el('p', 'disputed', note));
+
     var list = el('ul', 'games'), first = true;
     mine.forEach(function (g) {
       var li = el('li');
@@ -597,9 +608,14 @@ __HELPERS__
       }
       row.appendChild(el('span', 'd', when(g.d)));
       row.appendChild(el('span', 'm', g.v ? line : line));
+      /* D10, and the same wording the calendar uses -- see
+         archive.js::disputedNote. The mark goes on the shot figure because
+         `ash`/`hsh` are the BOXSCORE's numbers and the game page replays the
+         event log, so on these rows the two surfaces genuinely differ. */
       row.appendChild(el('span', 'r', g.v
         ? (home ? g.hs + '–' + g.as : g.as + '–' + g.hs)
             + '  ·  ' + (home ? g.hsh + '–' + g.ash : g.ash + '–' + g.hsh) + ' shots'
+            + (g.u === 1 ? DISPUTED_MARK : '')
         : (g.r || 'refused')));
       li.appendChild(row);
       list.appendChild(li);
@@ -1280,8 +1296,12 @@ __HELPERS__
          language the grid already taught two clicks ago. */
       if (g.scope !== 'nhl') li.className += ' uncounted';
       row.appendChild(el('span', 'm', nameOf(g.a) + ' at ' + nameOf(g.h)));
+      /* D10. The mark sits ON the shot figure, because that is the number the
+         league's two documents disagree about and nothing else on the line is
+         in question. See archive.js::disputedNote. */
       row.appendChild(el('span', 'r', g.shown
         ? g.as + '–' + g.hs + '  ·  ' + g.ash + '–' + g.hsh + ' shots'
+            + (g.u === 1 ? DISPUTED_MARK : '')
         : 'Cannot be shown — ' + gateOf(g.r)));
       li.appendChild(row);
       ul.appendChild(li);
@@ -1303,6 +1323,13 @@ __HELPERS__
       main.appendChild(el('p', 'note', 'No games in the archive on this date.'));
       return;
     }
+
+    /* D10, ONCE PER NIGHT AND NOT ONCE PER GROUP -- a reader sees one page, not
+       three lists -- and ABOVE them, for the same reason the team page's note
+       is above its list. Counted over the whole night, so the number in the
+       sentence is the number of marks under it. */
+    var dnote = disputedNote(disputedCount(n.rows));
+    if (dnote) main.appendChild(el('p', 'disputed', dnote));
 
     /* A DEAD END IS A STATE, NOT ROWS (CHENG, §10.2). A list of rows nobody can
        click is a dead end wearing the clothes of a working list. This is on the

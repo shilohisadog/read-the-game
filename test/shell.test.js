@@ -14,7 +14,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { TEAMS } from '../src/lib/teams.js';
 import { createHash } from 'node:crypto';
 
@@ -580,4 +580,76 @@ test('and without preview it does ask, which is the half that proves the above',
     assert.ok(r.asked.some(u => /measures\.json/.test(u)),
       'the ordinary page needs the rates for its verdict card');
   });
+});
+
+/* ─────────────────────────────────────────────────────────────────────────
+   U1 — both ways into the archive, from every page.
+   ───────────────────────────────────────────────────────────────────────── */
+
+test('BOTH WAYS INTO THE ARCHIVE ARE REACHABLE FROM EVERY PAGE', () => {
+  // ⭐ THE CLAIM page.py ALREADY MAKES, asserted for the first time.
+  //
+  // Its `_NAV` comment: "'BY DATE' SITS BESIDE 'TEAMS' BECAUSE THEY ARE THE
+  // SAME KIND OF THING: the two ways into the archive... The result was an
+  // asymmetry nobody chose: a reader on a team page or a game page could reach
+  // the team browse from any page on the site and the date browse from none."
+  //
+  // C1 fixed that by adding "By date" to `_NAV` — and the game page runs the
+  // MINIMAL header by CHENG's ruling, so it does not use `_NAV` at all. The one
+  // page the comment names as the victim is the one page the fix could not
+  // reach, and nothing noticed because every header is individually valid.
+  //
+  // ⚠️ AND THE FIRST VERSION OF THIS TEST PASSED ON THE WRONG EVIDENCE.
+  // It grepped the whole file for `href="/#teams"`, and game.html contains one
+  // — inside D9's `waysOut()`, which renders ONLY WHEN THE PAGE HAS FAILED. A
+  // guard satisfied by markup that appears when the page is broken is not a
+  // guard about a working page. So this reads the two surfaces a reader on a
+  // working page actually has: the chrome header, and the funnel under the rink.
+  const headerOf = html => {
+    const m = html.replace(/<script[\s\S]*?<\/script>/g, '').match(/<header[\s\S]*?<\/header>/);
+    return m ? [...m[0].matchAll(/href="([^"]+)"/g)].map(x => x[1]) : [];
+  };
+  // TO THE END OF THE IIFE, not a fixed window. The first cut sliced 2000
+  // characters from `function nextUp(` and silently stopped short the moment a
+  // comment was added above the new link — an instrument whose reach is a
+  // constant somebody chose, which is the shape `rendererOf` above already had
+  // to have beaten out of it.
+  const funnelOf = html => {
+    const m = html.match(/<script>([\s\S]*?)<\/script>/);
+    if (!m) return [];                       // a page with no script has no funnel
+    const at = m[1].indexOf('function nextUp(');
+    if (at === -1) return [];
+    const end = m[1].indexOf("].join('');})();", at);
+    assert.notEqual(end, -1, 'nextUp() is never closed — this probe lost its subject');
+    return [...m[1].slice(at, end).matchAll(/href="([^"]*)/g)].map(x => x[1]);
+  };
+  // The team browse is reached by its index OR by a club page, which carries
+  // "← All teams" — the funnel's two club links are strictly MORE specific
+  // than the index and were never the missing half.
+  const WAYS_IN = [
+    { what: 'the team browse', ok: hrefs => hrefs.some(h => /^\/#teams|\?team=/.test(h)) },
+    { what: 'the date browse', ok: hrefs => hrefs.some(h => /calendar\.html/.test(h)) },
+  ];
+  const pages = readdirSync(SRC).filter(f => f.endsWith('.html'));
+  assert.ok(pages.length >= 10, 'the page list is the subject; it must be real');
+  for (const name of pages) {
+    const html = readFileSync(new URL(name, SRC), 'utf8');
+    const reach = [...headerOf(html), ...funnelOf(html)];
+    assert.ok(reach.length > 0, `${name}: neither a header nav nor a funnel`);
+    for (const way of WAYS_IN)
+      assert.ok(way.ok(reach),
+        `${name} cannot reach ${way.what} from a WORKING page — the archive has `
+        + `two front doors and this one offers one`);
+  }
+});
+
+test('and the date link says the words the reader already met', () => {
+  // A third name for one destination is how a reader stops believing two links
+  // go to the same place. The front door says "Or browse by date", the chrome
+  // nav says "By date"; the funnel must not invent a fourth.
+  const s = scriptOf(shell);
+  const funnel = s.slice(s.indexOf('function nextUp('), s.indexOf('function nextUp(') + 1600);
+  assert.match(funnel, /Browse by date/, 'the funnel does not reach the date index');
+  assert.doesNotMatch(funnel, /Schedule|By day|Calendar view/i,
+    'the funnel invented a new name for the date index');
 });

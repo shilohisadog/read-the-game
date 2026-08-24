@@ -282,3 +282,57 @@ test('no league logos or marks are referenced', () => {
   assert.match(html, /Not affiliated with/i, 'and the disclaimer is present');
 });
 
+
+/* ─────────────────────────────────────────────────────────────────────────
+   D10 — the structural half. Behaviour tests cover the two surfaces that
+   exist; this one covers the next one somebody writes.
+   ───────────────────────────────────────────────────────────────────────── */
+
+test('EVERY SURFACE THAT PRINTS THE LEAGUE SHOT COUNT CONSULTS THE FLAG', () => {
+  // ⭐ THE GUARD D10 ACTUALLY NEEDED, and the reason the defect lasted months.
+  //
+  // `derive.py` wrote `u: 1` onto 73 catalog rows expressly so a LIST could mark
+  // them, and then two list surfaces were built that print `ash`/`hsh` — the
+  // league's BOXSCORE numbers — and neither one looked at `u`. Nothing could
+  // notice: each renderer is individually correct, and the omission is only
+  // visible by comparing a row against a page a click away.
+  //
+  // A behaviour test per surface fixes the two that exist and protects none of
+  // the ones that do not. This asserts the RULE instead: if a line of the
+  // builder renders the quoted shot count, the same expression must consult the
+  // flag that says whether the league agrees with itself about it.
+  //
+  // Same shape as the deploy gate that had to stop exempting pages by filename
+  // and start reading a property — a rule written against the cases that exist
+  // is silently wrong when the next one arrives, and this project has now paid
+  // for that four times.
+  const src = readFileSync(new URL('../builders/build_index.py', import.meta.url), 'utf8');
+  const lines = src.split('\n');
+  const printers = lines
+    .map((text, i) => ({ text, n: i + 1 }))
+    // The rendering sites, not the prose: a comment mentioning `ash` is not a
+    // surface. (The old placeholder test passed on a COMMENT; once is enough.)
+    .filter(l => /\bg\.ash\b|\bg\.hsh\b/.test(l.text) && !/^\s*(#|\/\*|\*)/.test(l.text));
+  assert.ok(printers.length >= 2,
+    'the shot-count renderers were not found — this check has lost its subject');
+  for (const l of printers) {
+    // The flag is consulted on the same expression or within the two lines that
+    // complete it; `assert` on the window rather than the line because the
+    // renderers are wrapped.
+    const window = lines.slice(l.n - 1, l.n + 2).join('\n');
+    assert.match(window, /g\.u === 1|DISPUTED_MARK/,
+      `build_index.py:${l.n} prints the league's shot count and never asks `
+      + `whether the league agrees with itself about it (D10)`);
+  }
+});
+
+test('and the wording is ONE wording, not one per surface', () => {
+  // The rule the game page's standing sentence was built on: "amending each site
+  // would leave the next one to be written unamended." Both lists must reach the
+  // same function, or the two disclosures drift and only one gets fixed.
+  const src = readFileSync(new URL('../builders/build_index.py', import.meta.url), 'utf8');
+  const calls = (src.match(/disputedNote\(/g) || []).length;
+  assert.equal(calls, 2, 'both list surfaces must call the shared note');
+  assert.doesNotMatch(src, /event log and boxscore disagree/,
+    'the sentence was re-typed into the builder instead of imported');
+});

@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-nfi5KtGG62NH+kSejDP+UWYUusTMiKWESjuRe/XlP5g=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-W+n/hedlX+fGyW6n1NdbV5hnxDJajbSpyV/BrwEbWFM='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-bRcnnp+cc8mPOTCY7aAOsbOJcholkmHQTXy3D9mYl4M=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-ZjCTQAxWLu2PaEz47/dVjam4dY0pMShlIrBXKjsWLJY='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -243,6 +243,11 @@ a.cell:hover,a.cell:focus-visible{border-color:var(--blue);
    Los Angeles Kings" into a five-line column beside it. */
 .games.night .off{grid-template-columns:1fr;gap:3px}
 .games.night li.uncounted{border-left:3px dashed #9fb3c0}
+/* D10's note, in the same voice as the dashed-count note above it: a small
+   qualifying sentence under the list, not a warning. The disagreement is the
+   LEAGUE's, between its own two documents, and we are reporting it rather
+   than apologising for it. */
+p.disputed{font-size:.8rem;color:#5d6f7c;margin:10px 0 0;max-width:62ch}
 .bydate{margin:14px 0 0;font-size:.9rem}
 .bydate a{color:var(--blue);text-decoration:none;font-weight:600}
 .bydate a:hover{text-decoration:underline}
@@ -868,6 +873,80 @@ function summarise(records) {
 }
 
 /**
+ * ⭐ THE SHOT COUNT ON A LIST ROW IS THE LEAGUE'S, AND ON 73 GAMES IT IS THE
+ * ONE THE GAME PAGE DISCLOSES AS DISPUTED (D10).
+ *
+ * `derive.py` puts `u: 1` on a catalog row when the league's play-by-play and
+ * the league's own boxscore disagree about shots on goal, and its comment says
+ * exactly why the flag exists:
+ *
+ *   "`u` so a LIST can mark it without opening the extract. The calendar and
+ *    the team page both show many games at once and neither fetches an extract
+ *    to draw a row; without this the disclosure would exist only on the page
+ *    you already committed to opening."
+ *
+ * THAT SENTENCE WAS TRUE. The flag was populated on 73 rows, correct, and read
+ * by exactly one thing in the repo -- `builders/health.mjs`, counting it for the
+ * build list. The reader it was created for was never written.
+ *
+ * AND THE GAP IS NOT COSMETIC, because `ash`/`hsh` are the BOXSCORE's numbers.
+ * The game page shows the event log, which is what a replay IS. So the two
+ * surfaces printed different figures for the same game with nothing anywhere
+ * saying why -- measured on four of the 73:
+ *
+ *   VAN at FLA  list 31-36   page 31-37
+ *   COL at NYI  list 38-32   page 39-32
+ *   COL at ARI  list 31-32   page 31-33
+ *   FLA at CGY  list 34-24   page 34-25
+ *
+ * That is C7's defect already shipped: two figures that look like one claim,
+ * and a reader who notices concludes we cannot count.
+ *
+ * ONE WORDING, TWO SURFACES. The calendar's night list and the team browse
+ * render the same row from the same field; giving each its own sentence is how
+ * the next one gets written unamended, which is the rule the game page's own
+ * standing sentence was built on.
+ *
+ * A MARK ON THE NUMBER AND A NOTE UNDER THE LIST, which is the idiom both pages
+ * already use for the dashed out-of-scope count. The mark sits ON the figure it
+ * qualifies rather than beside the row, because the claim is about that figure
+ * and nothing else on the line.
+ */
+const DISPUTED_MARK = '*';
+
+/** How many rows on this list carry the disagreement. */
+function disputedCount(rows) {
+  return (rows || []).filter(g => g && g.u === 1 && g.v === 1).length;
+}
+
+/**
+ * The note, once, under a list that contains at least one.
+ *
+ * IT NAMES WHOSE NUMBER IS ON SCREEN. "The population is welded to the number"
+ * is the fix that has now worked six times, and here the population is a
+ * DOCUMENT: the figure in the row is the boxscore's, and the game page shows
+ * the event log. Saying only "these disagree" would leave the reader unable to
+ * tell which one they are looking at, which is the whole defect.
+ */
+function disputedNote(n) {
+  if (!n) return null;
+  // ⭐ KEYED TO THE MARK, NOT TO A POSITION. The first wording said "the figure
+  // ABOVE is the boxscore's", which was true only while the note sat under the
+  // list -- and looking at it showed why it cannot: on a team page with 82 rows
+  // the note landed at y=7401 on a 390px phone, seven thousand pixels below the
+  // mark it explains. That is D9's y=1222 one page over.
+  //
+  // So the note goes ABOVE the list, where a reader meets it on the way down,
+  // and the sentence names the mark instead of pointing at a neighbour. A
+  // sentence whose truth depends on where it is printed is a sentence that goes
+  // wrong the first time anything moves.
+  return `${DISPUTED_MARK} In ${n} ${n === 1 ? 'game' : 'games'} below, the `
+    + `league's own event log and boxscore disagree about the shot count. `
+    + `A shot figure marked ${DISPUTED_MARK} is the boxscore's; open the game `
+    + `and it shows both, and says which one it replays.`;
+}
+
+/**
  * The archive by DATE — a month of cells, and what is inside one.
  *
  * Pure functions over catalog rows. No DOM, no fetch, no rendering decisions:
@@ -1327,8 +1406,12 @@ function otherInMonth(games, month) {
          language the grid already taught two clicks ago. */
       if (g.scope !== 'nhl') li.className += ' uncounted';
       row.appendChild(el('span', 'm', nameOf(g.a) + ' at ' + nameOf(g.h)));
+      /* D10. The mark sits ON the shot figure, because that is the number the
+         league's two documents disagree about and nothing else on the line is
+         in question. See archive.js::disputedNote. */
       row.appendChild(el('span', 'r', g.shown
         ? g.as + '–' + g.hs + '  ·  ' + g.ash + '–' + g.hsh + ' shots'
+            + (g.u === 1 ? DISPUTED_MARK : '')
         : 'Cannot be shown — ' + gateOf(g.r)));
       li.appendChild(row);
       ul.appendChild(li);
@@ -1350,6 +1433,13 @@ function otherInMonth(games, month) {
       main.appendChild(el('p', 'note', 'No games in the archive on this date.'));
       return;
     }
+
+    /* D10, ONCE PER NIGHT AND NOT ONCE PER GROUP -- a reader sees one page, not
+       three lists -- and ABOVE them, for the same reason the team page's note
+       is above its list. Counted over the whole night, so the number in the
+       sentence is the number of marks under it. */
+    var dnote = disputedNote(disputedCount(n.rows));
+    if (dnote) main.appendChild(el('p', 'disputed', dnote));
 
     /* A DEAD END IS A STATE, NOT ROWS (CHENG, §10.2). A list of rows nobody can
        click is a dead end wearing the clothes of a working list. This is on the

@@ -65,8 +65,21 @@ export LD_LIBRARY_PATH="$WORK/libs/root/usr/lib/x86_64-linux-gnu:${LD_LIBRARY_PA
 ( cd "$REPO" && npm run build >/dev/null )
 cd "$WORK/site"
 cp "$REPO/src/index.html" "$REPO/src/game.html" .
+# ⭐ ALWAYS RE-FETCHED, NEVER CACHED-IF-PRESENT. This was
+# `[ -s "$WORK/$d" ] || curl ...`, which fetches only when the file is ABSENT --
+# a cache with no invalidation, in a scratch directory that survives for weeks.
+#
+# IT HAS NOW COST TWO SESSIONS. Once as a four-day-stale screenshot read as
+# current; and on 2026-08-24 a D10 probe reported "0 rows marked" on both
+# surfaces against a catalog fetched 2026-08-16 -- eight days old, from BEFORE
+# D1 shipped, so it carried zero `u` flags and the game under test was still
+# refused. The fix looked broken and was not. The whole point of this tool is to
+# show you the real thing; a stale fixture makes it show you a confident answer
+# to a question about last week.
+#
+# Three files at ~450 KB is under a second. Correctness beats it.
 for d in catalog.json measures.json index.json; do
-  [ -s "$WORK/$d" ] || curl -sS --fail "$ORIGIN/$d" -o "$WORK/$d"
+  curl -sS --fail "$ORIGIN/$d" -o "$WORK/$d"
   cp "$WORK/$d" .
 done
 
@@ -89,7 +102,8 @@ import json
 g=[x for x in json.load(open('catalog.json'))['games'] if x.get('v') and x.get('t') in (2,3)]
 g.sort(key=lambda x:(x['d'],x['id']))
 print(g[-1]['id'])")
-[ -s "extract/$ID.json" ] || curl -sS --fail "$ORIGIN/extract/$ID.json" -o "extract/$ID.json"
+# Same rule: the extract is keyed by id, and the MOST RECENT id changes nightly.
+curl -sS --fail "$ORIGIN/extract/$ID.json" -o "extract/$ID.json"
 
 # A server, not file://. The hero is an iframe of a sibling page and the fetches
 # are relative; file:// origins make both of those behave differently.
