@@ -58,7 +58,6 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .board{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;background:#fff;border:1px solid var(--edge);border-radius:13px;padding:12px 18px;box-shadow:0 5px 18px rgba(16,32,45,.07);margin-bottom:12px}
 #rg .tm{display:flex;flex-direction:column;align-items:center}#rg .tm .ab{font-weight:800;letter-spacing:.05em;font-size:.9rem}
 #rg .tm .ab{padding:2px 8px;border-radius:5px}
-.tm .atk{font-style:normal;font-size:.63rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:1px;white-space:nowrap}
 /* ⭐ THE ARROW IS THE DATUM; "ATTACKS" IS ITS LABEL. Set identically they were
    both 10.08px of muted grey beside a 35.2px score -- the smallest text on the
    board carrying the one fact that now CHANGES EVERY PERIOD, which is what
@@ -71,8 +70,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    already says whose arrow it is; it sits under that team's badge and score.
    The label keeps its size and its grey, so the line gains no bulk: what changes
    is which half of it you see first. */
-.tm .atk .ar{font-size:1.15rem;line-height:1;font-weight:700;color:var(--ink);
- letter-spacing:0;margin-left:.34em;vertical-align:-.1em}#rg .tm.a .ab{background:var(--away);color:var(--away-ink)}#rg .tm.h .ab{background:var(--home);color:var(--home-ink)}
+#rg .tm.a .ab{background:var(--away);color:var(--away-ink)}#rg .tm.h .ab{background:var(--home);color:var(--home-ink)}
 /* ⭐ THE SCORE IS THE ONE NUMBER ON THIS PAGE A STRANGER ALREADY KNOWS HOW TO
    READ, and it was set in a monospace family at 2.2rem — a 21px-wide numeral,
    which is a code listing rather than a scoreboard. Kevin: "the whole vibe of
@@ -128,8 +126,6 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
     arrow is the information — direction, which the goalies cannot supply to a
     reader who does not yet know a team attacks the net it does not defend. The
     word costs 72px on a card that has none to spare; the mark costs 14px. */
- #rg:not(.preview) .tm .atk .aw{display:none}
- #rg:not(.preview) .tm .atk{margin-top:0}
  /* ⭐ MIRRORED, SO EACH ARROW POINTS OUT OF THE CARD AT THE END ITS TEAM IS
     ATTACKING. Source order is badge, score, arrow, which put the visitor's
     LEFT-pointing arrow to the RIGHT of its own score — an arrow in the middle
@@ -138,8 +134,8 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
     the centre, which is the arrangement every scoreboard a reader has ever seen
     uses. The rule lives INSIDE this query on purpose — `order` applies to a
     flex column too, and above 520px `.tm` still stacks. */
- #rg:not(.preview) .tm.a .atk{order:1}#rg:not(.preview) .tm.a .ab{order:2}#rg:not(.preview) .tm.a .sc{order:3}
- #rg:not(.preview) .tm.h .sc{order:1}#rg:not(.preview) .tm.h .ab{order:2}#rg:not(.preview) .tm.h .atk{order:3}
+ #rg:not(.preview) .tm.a .ab{order:1}#rg:not(.preview) .tm.a .sc{order:2}
+ #rg:not(.preview) .tm.h .sc{order:1}#rg:not(.preview) .tm.h .ab{order:2}
 }
 #rg .mid{min-width:150px}#rg .gs{text-align:center;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px}#rg .gs .cl{color:var(--ink);font-family:ui-monospace,Menlo,monospace}#rg .gs .clw{font-style:normal;font-size:.62rem;letter-spacing:.08em}
 #rg .bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--edge)}#rg .bar span{transition:width .4s ease}#rg .ba{background:#fff;box-shadow:inset 0 0 0 2px var(--away);width:50%}#rg .bh{background:var(--home);width:50%}
@@ -275,7 +271,6 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg.preview .figpick,#rg.preview .hint,#rg.preview .icenote,#rg.preview .whistlepanel,#rg.preview .blockpanel,
 #rg.preview .verdict,#rg.preview .nextup,#rg.preview .foot,#rg.preview .work,
 #rg.preview .legend,#rg.preview .goalies,
-#rg.preview .atk,
 /* THE PENALTY BOX AND THE ENDS NOTE ARE GAME-VIEW CHROME, and the box had to be
    hidden here for a second reason that is worth writing down: `.rinkbox` becomes
    `display:flex` in preview (below), so a block added inside it does not stack
@@ -829,12 +824,12 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 <h1 class="pagelede">Learn to read hockey · event by event first, add metrics after</h1>
 <div class="newcomer" id="newcomer"></div>
 <div class="board">
-  <div class="tm a"><span class="ab" id="aAb">&mdash;</span><span class="sc" id="aSc">0</span><i class="atk"><span class="aw">attacks</span><b class="ar" id="aAtk"></b></i></div>
+  <div class="tm a"><span class="ab" id="aAb">&mdash;</span><span class="sc" id="aSc">0</span></div>
   <div class="mid"><div class="gs"><span id="per">Pre-game</span> · <span class="cl" id="clk">20:00</span> <i class="clw">left</i></div>
     <div class="cbar"><div class="bar"><span class="ba" id="ba"></span><span class="bh" id="bh"></span></div>
     <div class="pct"><span id="pa">0</span><span class="plab"><i class="pname" id="pName">CONTROL</i><i class="mode" id="pMode">ALL SITUATIONS</i></span><span id="ph">0</span></div></div>
   </div>
-  <div class="tm h"><span class="ab" id="hAb">&mdash;</span><span class="sc" id="hSc">0</span><i class="atk"><span class="aw">attacks</span><b class="ar" id="hAtk"></b></i></div>
+  <div class="tm h"><span class="ab" id="hAb">&mdash;</span><span class="sc" id="hSc">0</span></div>
 </div>
 <p class="endnote" id="endnote"></p>
 <p class="atnote" id="atnote"></p>
@@ -4173,7 +4168,7 @@ function render(i,how){
  // slices on purpose: the ice shows plays, the ledger accounts for everything.
  const evs=EV.slice(0,i+1),L=lens(i),cur=EV[i];
  const PER=cur?cur.per:1;     // pre-game shows the first period's arrangement
- drawRink(PER);drawAtk(PER);
+ drawRink(PER);
  drawBoxes(cur?cur.s:null);   // null before the first play: both boxes empty
  drawEndsNote(cur);
  const parts=[];
@@ -4573,21 +4568,22 @@ $('sp1').onclick=()=>setSpeed('sp1');
 $('sp2').onclick=()=>setSpeed('sp2');
 $('work').onclick=()=>{workOpen=!workOpen;$('workPanel').hidden=!workOpen;$('work').setAttribute('aria-expanded',workOpen);$('work').textContent=workOpen?'Hide the work':'Show me the work';if(workOpen)render(i,'');};
 $('aAb').textContent=AAB;$('hAb').textContent=HAB;
-/* WHICH WAY EACH TEAM SHOOTS, because nothing said it and the answer is not
-   guessable. Kevin, reading a blocked shot at the far end: "I don't understand
-   how Toronto would have a shot blocked in the offensive zone?" — the mark was
-   correct and the direction was inferable only from which crease a goaltender
-   was standing in.
-   IT IS CONSTANT, WHICH IS WHAT MAKES IT SAYABLE. extract.py normalizes every
-   coordinate with `homeTeamDefendingSide`, so the host defends one end for the
-   whole game and `extract --validate` checks that on every build. In the arena
-   the teams switch each period; on this screen they do not, and the legend has
-   always said so. See docs/ends-switching.md.
-   DERIVED, NOT TYPED. The arrow comes from the same `attackDirection` the slot
-   layer and the rule lines use, put through the same SX the ice is drawn with,
-   so a change to either moves the arrow with it. */
-const ATK=(t,per)=>AX(attackDirection(t,HID)*89,per)<100?'\u2190':'\u2192';
-drawAtk(1);
+/* ⭐ THE DIRECTION INDICATOR IS GONE, AND THE QUESTION THAT CREATED IT IS NOT.
+   Kevin, 2026-08-25: "remove both 'attacks' and the arrows completely. They are
+   becoming a headache for very little visual or educational gain... the hero
+   game without them really cleans up the scoreboard."
+   It was added for his own earlier question — reading a blocked shot at the far
+   end, "I don't understand how Toronto would have a shot blocked in the
+   offensive zone?" — and it had drifted into THREE renderings of one object: no
+   indicator in the hero, an arrow on a phone, a word and an arrow on a laptop.
+   None of those differences was ever a decision about what a reader needs; each
+   one was a space budget. Three variants for one fact is the cost side, and the
+   gain was one glyph nothing in the legend ever named.
+   WHAT STILL ANSWERS THE ORIGINAL QUESTION: the goaltenders. Two figures in two
+   creases in two colours say which end is whose without words, which is where
+   the answer came from before this existed. `attackDirection` is untouched and
+   still drives the slot layer, goaltending and `shotDir` — only the readout is
+   gone, never the derivation. */
 /* THE STANDING KEY'S WORDS COME FROM THE MODE, and only its VISIBILITY is a
    per-frame question. Written once here rather than each frame: a sentence that
    cannot change during a visit should not be rebuilt three hundred times. */
@@ -4627,7 +4623,6 @@ drawAtk(1);
    an invariant to. The label states the truth instead. */
 document.querySelectorAll('#rg .tbtn').forEach(b=>{
  if(b.dataset.t==='all')b.textContent=ASPLAYED?'Keep this period':'Keep every mark';});
-function drawAtk(per){$('aAtk').textContent=ATK(AID,per);$('hAtk').textContent=ATK(HID,per);}
 // Hand-formatted from the ISO date, never Date.parse: '2023-11-10' is UTC
 // midnight and a western timezone would render it as the 9th.
 const MON=['January','February','March','April','May','June','July','August','September','October','November','December'];

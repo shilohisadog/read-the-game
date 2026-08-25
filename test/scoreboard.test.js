@@ -73,27 +73,38 @@ test('the board becomes two rows, so the three-element column stops existing', (
     'the team stack is still a column, which is the thing that did not fit');
 });
 
-test('the WORD goes and the INFORMATION stays', () => {
-  // Two mechanisms, asserted where only each can be responsible (H2). A CSS scan
-  // can only show that nothing hides the arrow; it cannot show the arrow has
-  // anything in it. The renderer is the other half.
-  assert.match(PHONE, /#rg:not\(\.preview\) \.tm \.atk \.aw\{display:none\}/, 'the label is not hidden on a phone');
-  assert.doesNotMatch(PHONE, /\.atk\{[^}]*display:none/, 'the whole direction indicator is hidden on a phone');
-  assert.doesNotMatch(PHONE, /\.ar\{[^}]*display:none/, 'the arrow itself is hidden on a phone');
+test('the direction indicator is gone from every surface, and its derivation is not', () => {
+  // Kevin, 2026-08-25: "remove both 'attacks' and the arrows completely."
+  // It had become THREE renderings of one object — nothing in the hero, an arrow
+  // on a phone, a word and an arrow on a laptop — and not one of those
+  // differences was ever a decision about what a reader needs; each was a space
+  // budget. This asserts the removal reached every surface.
+  assert.doesNotMatch(app, /class="atk"/, 'the markup still carries the indicator');
+  assert.doesNotMatch(app, /id="[ah]Atk"/, 'the arrow elements are still in the page');
+  assert.doesNotMatch(CSS, /\.atk\b/, 'the stylesheet still dresses an element that is gone');
 
+  // ⚠️ NO ASSERTION HERE THAT THE DERIVATION SURVIVED, and that is deliberate.
+  // `attackDirection` is shared with the slot layer, goaltending and `shotDir`,
+  // so removing the readout must not remove the direction — but the check I
+  // first wrote for it, `assert.match(app, /attackDirection/)`, WAS SEEN NOT TO
+  // FIRE: the identifier appears all over the inlined library and in prose, so
+  // gutting `shotDir` left it green. A string that survives its own subject's
+  // deletion is not a check about the subject.
+  //
+  // The real protection was measured rather than assumed: stubbing
+  // `attackDirection` to always return 1 reddens SIX tests — goaltending twice,
+  // danger, and three in rink.test.js. It is well guarded where it is used, and
+  // restating it weakly here would read as coverage while adding none.
   const a = boot();
-  assert.ok(a.$('aAtk').textContent.trim(), 'the visitor has no direction arrow at all');
-  assert.ok(a.$('hAtk').textContent.trim(), 'the host has no direction arrow at all');
-  assert.notEqual(a.$('aAtk').textContent.trim(), a.$('hAtk').textContent.trim(),
-    'both teams are attacking the same way');
+  assert.equal(a.$('aAb').textContent, 'MIN', 'the board no longer renders its teams');
 });
 
 test('the mirroring is scoped to the phone, because `order` reorders a column too', () => {
   // Above 520px `.tm` is still a flex COLUMN, and `order` applies there just as
   // well — a global rule would silently restack badge/score/arrow on the desktop
   // board nobody has complained about.
-  assert.match(PHONE, /#rg:not\(\.preview\) \.tm\.a \.atk\{order:1\}/);
-  assert.match(PHONE, /#rg:not\(\.preview\) \.tm\.h \.atk\{order:3\}/);
+  assert.match(PHONE, /#rg:not\(\.preview\) \.tm\.a \.ab\{order:1\}/);
+  assert.match(PHONE, /#rg:not\(\.preview\) \.tm\.h \.ab\{order:2\}/);
   const outside = CSS.replace(PHONE, '');
   assert.doesNotMatch(outside, /#rg(:not\(\.preview\))? \.tm\.[ah] [^{]*\{[^}]*order:/,
     'an `order` rule escaped the phone block and is restacking the desktop board');
@@ -126,14 +137,12 @@ test('the phone breakpoint is the one that already exists, not a competing width
 });
 
 test('the hero is exempt — it never had the defect this query fixes', () => {
-  // `#rg.preview .atk` is in the hide list and `#rg.preview .mid` is already
-  // min-width:0, so the preview's columns are badge-width and 322px was never
-  // demanded of its 287px card. Inheriting the two-row layout took the hero's
+  // `#rg.preview .mid` is already min-width:0, so the preview's columns are
+  // badge-width and 322px was never demanded of its 287px card. Inheriting the two-row layout took the hero's
   // chrome to 83px of a 184px frame against its own gate's one-third limit —
   // caught by that gate, in CI, which is the only place it can be seen.
   // A 287px FRAME is not a 287px DEVICE.
   assert.doesNotMatch(PHONE, /#rg(?!:not\(\.preview\))[.\s]/,
     'a phone rule is not scoped away from the preview and will re-flow the hero');
   assert.match(CSS, /#rg\.preview \.mid\{min-width:0\}/, 'the hero lost its own floor repair');
-  assert.match(CSS, /#rg\.preview \.atk,/, 'the hero no longer hides the direction indicator');
 });

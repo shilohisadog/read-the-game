@@ -1,5 +1,10 @@
 /**
- * Which way each team attacks: the arrows, the disclosure, and B1 as-played
+ * The ends: the disclosure, and B1 as-played
+ *
+ * The scoreboard's direction arrows were removed 2026-08-25 (Kevin: "very
+ * little visual or educational gain"), and the test that checked them against
+ * where the host's shots actually land went with them. What replaced that
+ * information is the goaltenders, whose creases say the same thing wordlessly.
  *
  * Split out of test/render.test.js, which had reached 3,678 lines and 129 tests
  * because it owned the only harness able to run the shipped bundle. The harness
@@ -9,53 +14,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { WHY, whistle } from '../src/lib/layers/whistle.js';
 import { rich, SCRIPT, fakeDom, bundle, boot } from './helpers/page.js';
-
-test('the scoreboard says which way each team attacks, and they disagree', () => {
-  // Kevin, on a blocked shot at the far end: "I don't understand how Toronto
-  // would have a shot blocked in the offensive zone?" The mark was right; the
-  // direction was inferable only from which crease a goaltender stood in.
-  //
-  // SAYABLE BECAUSE IT IS CONSTANT: extract.py normalizes every coordinate with
-  // `homeTeamDefendingSide`, so the host defends one end for the whole game.
-  // In the arena they switch each period — see docs/ends-switching.md — and the
-  // legend has always said the ends here are held fixed.
-  const a = boot();
-  const away = a.$('aAtk').textContent, home = a.$('hAtk').textContent;
-  assert.ok(away && home, 'the scoreboard names no attacking direction');
-
-  // OPPOSITE, which is the only thing that can be wrong here in a way that
-  // matters. Two arrows agreeing would be a coin flip that reads as an answer.
-  const arrow = s => (s.includes('→') ? 'right' : s.includes('←') ? 'left' : null);
-  assert.ok(arrow(away) && arrow(home), `no arrow in "${away}" / "${home}"`);
-  assert.notEqual(arrow(away), arrow(home),
-    `both teams are shown attacking ${arrow(away)}`);
-
-  // AND THE RIGHT WAY ROUND — checked against where the host's SHOTS actually
-  // land on screen, which is the only independent witness available.
-  //
-  // THE FIRST VERSION OF THIS CHECK NEVER RAN. It looked for `id="netHome"` in
-  // the rendered rink; `netGlyph(id, gx, col)` takes that id and never emits it,
-  // so the regex could not match, and the whole assertion sat behind
-  // `if (homeNet)` — passing vacuously while a mutation flipped both arrows.
-  // A conditional assertion is a test that decides whether to be one.
-  const marks = a.every(d => d.$('events').innerHTML).join('');
-  const xs = [];
-  for (const m of marks.matchAll(/data-i="(\d+)"[^>]*cx="([\d.]+)"/g)) {
-    const e = rich.events[+m[1]];
-    if (!e || (e.type !== 'shot-on-goal' && e.type !== 'goal')) continue;
-    if (e.own !== rich.teams.home.id) continue;
-    xs.push(+m[2]);
-  }
-  // TEN, NOT TWENTY. Some attempts render as a standing FIGURE — an SvgPen `<g>`
-  // whose position is in a path, not a `cx` — so circles alone do not see every
-  // shot. The bar is set to what the instrument can actually collect, and a
-  // which-side mean does not need more.
-  assert.ok(xs.length >= 10, `only ${xs.length} host shots were drawn to check against`);
-  const mean = xs.reduce((t, v) => t + v, 0) / xs.length;
-  assert.notEqual(Math.round(mean), 100, 'the host shot from dead centre on average');
-  assert.equal(arrow(home), mean < 100 ? 'left' : 'right',
-    `the host's ${xs.length} shots average x=${mean.toFixed(1)} but the board says it attacks ${arrow(home)}`);
-});
 
 test('the ends disclosure appears at a period boundary and nowhere else', () => {
   // THE SENTENCE docs/ends-switching.md AGREED IN SECTION 6 AND NEVER BUILT.

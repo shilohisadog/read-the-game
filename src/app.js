@@ -556,7 +556,7 @@ function render(i,how){
  // slices on purpose: the ice shows plays, the ledger accounts for everything.
  const evs=EV.slice(0,i+1),L=lens(i),cur=EV[i];
  const PER=cur?cur.per:1;     // pre-game shows the first period's arrangement
- drawRink(PER);drawAtk(PER);
+ drawRink(PER);
  drawBoxes(cur?cur.s:null);   // null before the first play: both boxes empty
  drawEndsNote(cur);
  const parts=[];
@@ -956,21 +956,22 @@ $('sp1').onclick=()=>setSpeed('sp1');
 $('sp2').onclick=()=>setSpeed('sp2');
 $('work').onclick=()=>{workOpen=!workOpen;$('workPanel').hidden=!workOpen;$('work').setAttribute('aria-expanded',workOpen);$('work').textContent=workOpen?'Hide the work':'Show me the work';if(workOpen)render(i,'');};
 $('aAb').textContent=AAB;$('hAb').textContent=HAB;
-/* WHICH WAY EACH TEAM SHOOTS, because nothing said it and the answer is not
-   guessable. Kevin, reading a blocked shot at the far end: "I don't understand
-   how Toronto would have a shot blocked in the offensive zone?" — the mark was
-   correct and the direction was inferable only from which crease a goaltender
-   was standing in.
-   IT IS CONSTANT, WHICH IS WHAT MAKES IT SAYABLE. extract.py normalizes every
-   coordinate with `homeTeamDefendingSide`, so the host defends one end for the
-   whole game and `extract --validate` checks that on every build. In the arena
-   the teams switch each period; on this screen they do not, and the legend has
-   always said so. See docs/ends-switching.md.
-   DERIVED, NOT TYPED. The arrow comes from the same `attackDirection` the slot
-   layer and the rule lines use, put through the same SX the ice is drawn with,
-   so a change to either moves the arrow with it. */
-const ATK=(t,per)=>AX(attackDirection(t,HID)*89,per)<100?'\u2190':'\u2192';
-drawAtk(1);
+/* ⭐ THE DIRECTION INDICATOR IS GONE, AND THE QUESTION THAT CREATED IT IS NOT.
+   Kevin, 2026-08-25: "remove both 'attacks' and the arrows completely. They are
+   becoming a headache for very little visual or educational gain... the hero
+   game without them really cleans up the scoreboard."
+   It was added for his own earlier question — reading a blocked shot at the far
+   end, "I don't understand how Toronto would have a shot blocked in the
+   offensive zone?" — and it had drifted into THREE renderings of one object: no
+   indicator in the hero, an arrow on a phone, a word and an arrow on a laptop.
+   None of those differences was ever a decision about what a reader needs; each
+   one was a space budget. Three variants for one fact is the cost side, and the
+   gain was one glyph nothing in the legend ever named.
+   WHAT STILL ANSWERS THE ORIGINAL QUESTION: the goaltenders. Two figures in two
+   creases in two colours say which end is whose without words, which is where
+   the answer came from before this existed. `attackDirection` is untouched and
+   still drives the slot layer, goaltending and `shotDir` — only the readout is
+   gone, never the derivation. */
 /* THE STANDING KEY'S WORDS COME FROM THE MODE, and only its VISIBILITY is a
    per-frame question. Written once here rather than each frame: a sentence that
    cannot change during a visit should not be rebuilt three hundred times. */
@@ -1010,7 +1011,6 @@ drawAtk(1);
    an invariant to. The label states the truth instead. */
 document.querySelectorAll('#rg .tbtn').forEach(b=>{
  if(b.dataset.t==='all')b.textContent=ASPLAYED?'Keep this period':'Keep every mark';});
-function drawAtk(per){$('aAtk').textContent=ATK(AID,per);$('hAtk').textContent=ATK(HID,per);}
 // Hand-formatted from the ISO date, never Date.parse: '2023-11-10' is UTC
 // midnight and a western timezone would render it as the 9th.
 const MON=['January','February','March','April','May','June','July','August','September','October','November','December'];
