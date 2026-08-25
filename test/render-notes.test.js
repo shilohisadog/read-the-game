@@ -433,7 +433,17 @@ test('the opening paragraph is the first-visit block, and it carries what the le
 });
 
 test('the lede is gone, for everyone, and nothing still points at it', () => {
-  assert.doesNotMatch(app, /class="lede"/, 'the game page still ships the old opening paragraph');
+  /* ⭐ COMMENTS STRIPPED FIRST, and it took a false positive to earn the line.
+     This asserted over the whole document, so it fired on an HTML comment that
+     merely NAMED the forbidden class while explaining why a new element had
+     been given a different one — a correct page, failed by prose about the
+     page. Third time in this repo (docs/status.md H1): the D9 placeholder test
+     passed on a comment, the `draw()` bypass scan reported a bypass that did
+     not exist, and the arrivals CSS scan had to strip block comments for the
+     same reason. The CLAIM is about shipped markup, so the instrument should
+     only ever have been looking at markup. */
+  const markup = app.replace(/<!--[\s\S]*?-->/g, '');
+  assert.doesNotMatch(markup, /class="lede"/, 'the game page still ships the old opening paragraph');
   // A returning viewer now meets the rink 245px sooner than a first-time one —
   // which is the right way round, and was not true of the paragraph it replaced.
   const veteran = boot(rich, CURVE_AND_MIX, '', { getItem: () => '1999-01-01|9', setItem: () => {} });

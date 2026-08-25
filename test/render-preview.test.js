@@ -459,7 +459,7 @@ test('the preview chrome scales with the frame, so the ice cannot be crowded out
     const re = new RegExp(`#rg\\.preview [^{]*${sel}\\{[^}]*font-size:min\\(`);
     assert.match(app, re, `the preview does not scale ${sel} with its frame`);
   }
-  assert.match(app, /#rg\.preview \.eyebrow\{display:none/,
+  assert.match(app, /#rg\.preview \.pagelede\{display:none/,
     'the tagline is still introducing a five-second taste');
   assert.match(app, /#rg\.preview \.mid\{min-width:0\}/,
     'the middle column still has a px floor, which overflows a 360px frame');

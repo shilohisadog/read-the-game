@@ -41,8 +41,22 @@ __CSS__</style>
      would hide the explanation with it. -->
 <div class="shellmsg" id="shellmsg" hidden><p id="shellsay"></p><nav id="shellout" aria-label="Ways into the archive"></nav></div>
 <div id="rg"><div class="wrap">
-<p class="eyebrow">Learn to read hockey · watch first, add metrics after</p>
-<h1>Read the game</h1>
+<!-- ⭐ THE LEDE IS THE HEADING. There was a tagline AND an <h1>, and once the
+     <h1> read "Read the game" it was the wordmark in the header repeated four
+     lines lower. Kevin: "the wordmark echo isn't ideal, I'd remove the h1 and
+     maybe increase the font size of the Learn to read hockey line."
+     The page still needs ONE heading -- for the document outline, for a screen
+     reader's heading list, and for what a search result shows -- so the line
+     that was already saying what this page is becomes it, rather than the page
+     losing its h1 altogether. `index.html` made exactly this move already
+     (`<h1 class="says">`, test/homepage.test.js:719): the sentence became the
+     heading instead of sitting under one.
+     NOT `class="lede"` -- that name is spoken for. `render-notes.test.js:435`
+     forbids it outright, because it was the read-once opening PARAGRAPH that
+     the first-visit block replaced on measured grounds (576px -> 305px). Taking
+     the name back for a different element would have left that guard passing on
+     a page that no longer contains what it was written to keep out. -->
+<h1 class="pagelede">Learn to read hockey · event by event first, add metrics after</h1>
 <div class="newcomer" id="newcomer"></div>
 <div class="board">
   <div class="tm a"><span class="ab" id="aAb">&mdash;</span><span class="sc" id="aSc">0</span><i class="atk"><span class="aw">attacks</span><b class="ar" id="aAtk"></b></i></div>

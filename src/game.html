@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-V6jveM180ZfdzAzNaHlhN8S+2z3V3BYgm2UZNjqpErE=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-JXK/Kqm55JYdXdyRQFiECwWZ2oiIscr3rnMd6sf8Vpg='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-llTJ9fnx3igB4xItP/kDLl5C9cnigBll6JLbh31lzfk=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-kl2B03GiIZfaVOeUZbM/dvI67DB0NIgjB9O9sTptp1U='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">What is this?</a></nav></header>
@@ -45,9 +45,18 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;--away:#5b6d7a;--home:#3a4a56;--red:#c8102e;--blue:#3a5a9c;--ok:#12885a;--flag:#d9662b;--hd:#e0932a;
  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg);min-height:100vh;padding:clamp(16px,3.5vw,36px) clamp(12px,4vw,22px);line-height:1.5}
 #rg .wrap{max-width:900px;margin:0 auto}
-#rg .eyebrow{font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+/* ⭐ THE PAGE'S ONE HEADING. It was a .7rem tagline sitting under an <h1>; the
+   <h1> is gone (it had become the header wordmark repeated) and this line is
+   now the heading in its place, so it is sized to carry that job. Kevin asked
+   for it bigger; the ceiling is deliberately about a third of what the old <h1>
+   ran at, because the point of removing that <h1> was to stop the top of this
+   page shouting before the rink has said anything.
+   TRACKING COMES DOWN AS SIZE GOES UP. .16em was set for .7rem text, where wide
+   letter-spacing is what makes small uppercase legible; at 1rem the same value
+   reads as a gap between every letter. */
+#rg .pagelede{font-size:clamp(.82rem,2.5vw,1.02rem);letter-spacing:.1em;text-transform:uppercase;
+  font-weight:600;color:var(--ink);margin:0 0 12px;text-wrap:balance}
 #rg h1{font-size:clamp(1.7rem,3.8vw,2.4rem);letter-spacing:-.025em;font-weight:800;margin:0 0 10px;text-wrap:balance}
-#rg .lede{font-size:1.02rem;color:var(--muted);margin:0 0 18px;max-width:62ch}#rg .lede b{color:var(--ink);font-weight:600}
 #rg .board{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;background:#fff;border:1px solid var(--edge);border-radius:13px;padding:12px 18px;box-shadow:0 5px 18px rgba(16,32,45,.07);margin-bottom:12px}
 #rg .tm{display:flex;flex-direction:column;align-items:center}#rg .tm .ab{font-weight:800;letter-spacing:.05em;font-size:.9rem}
 #rg .tm .ab{padding:2px 8px;border-radius:5px}
@@ -272,9 +281,11 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    ever gets smaller. vw inside the frame IS the frame's width, so the chrome
    now scales on exactly the axis the rink does.
 
-   The eyebrow goes entirely. It is the page's tagline, it wrapped to two lines
-   at 360, and a taste does not need to be introduced twice. */
-#rg.preview .eyebrow{display:none!important}
+   The page lede goes entirely. It is the page's tagline -- now also its heading --
+   it wrapped to two lines at 360, and a taste does not need to be introduced
+   twice. `#rg.preview h1` in the hide list above would catch it now that it is
+   an h1; this rule stays because it is the one that carries the REASON. */
+#rg.preview .pagelede{display:none!important}
 /* AND THE SECOND LINE GOES IN PREVIEW TOO -- everywhere, not just the six that
    lost it. `.plabsub` is 2.8 SVG units, which is about 6 real pixels once the
    rink is scaled into a phone-sized frame: legible in the replay, where a
@@ -735,8 +746,22 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
      would hide the explanation with it. -->
 <div class="shellmsg" id="shellmsg" hidden><p id="shellsay"></p><nav id="shellout" aria-label="Ways into the archive"></nav></div>
 <div id="rg"><div class="wrap">
-<p class="eyebrow">Learn to read hockey · watch first, add metrics after</p>
-<h1>Read the game</h1>
+<!-- ⭐ THE LEDE IS THE HEADING. There was a tagline AND an <h1>, and once the
+     <h1> read "Read the game" it was the wordmark in the header repeated four
+     lines lower. Kevin: "the wordmark echo isn't ideal, I'd remove the h1 and
+     maybe increase the font size of the Learn to read hockey line."
+     The page still needs ONE heading -- for the document outline, for a screen
+     reader's heading list, and for what a search result shows -- so the line
+     that was already saying what this page is becomes it, rather than the page
+     losing its h1 altogether. `index.html` made exactly this move already
+     (`<h1 class="says">`, test/homepage.test.js:719): the sentence became the
+     heading instead of sitting under one.
+     NOT `class="lede"` -- that name is spoken for. `render-notes.test.js:435`
+     forbids it outright, because it was the read-once opening PARAGRAPH that
+     the first-visit block replaced on measured grounds (576px -> 305px). Taking
+     the name back for a different element would have left that guard passing on
+     a page that no longer contains what it was written to keep out. -->
+<h1 class="pagelede">Learn to read hockey · event by event first, add metrics after</h1>
 <div class="newcomer" id="newcomer"></div>
 <div class="board">
   <div class="tm a"><span class="ab" id="aAb">&mdash;</span><span class="sc" id="aSc">0</span><i class="atk"><span class="aw">attacks</span><b class="ar" id="aAtk"></b></i></div>
@@ -3761,7 +3786,29 @@ let rinkPer=null;
    here except the nets is symmetric about centre ice, so the flip is a no-op on
    the boards, the lines, the circles and the dots -- they are rebuilt only
    because the nets share the group. */
-function drawRink(per){if(per===rinkPer)return;rinkPer=per;const P=[];P.push('<rect class="boards" x="1" y="1" width="198" height="83" rx="27"/>');
+/* ⭐ THE BOARDS, AS NUMBERS RATHER THAN AS A STRING. Every line painted on the
+   ice has to STOP at them, and until now each line carried its own hand-typed
+   pair of y values -- so the goal lines ran y=3..82 while the boards at that x
+   are at y=7.02..77.98, and the red line stuck four feet out through the
+   corner at both ends. Kevin: "the goal lines extend beyond the playing
+   surface, can you have those terminate right at the edge of the rink."
+   The rink is a rounded rect, so how far a line reaches DEPENDS ON WHERE IT IS:
+   in the straight section it runs the full height, and inside a corner it stops
+   on the arc. `boardsY` is that one rule, and the boards rect below is drawn
+   from the same four numbers, so the paint and the outline cannot disagree. */
+const BOARD={x:1,y:1,w:198,h:83,r:27};
+/**
+ * Where the boards are at an SVG x — the top and bottom of the playing surface
+ * at that point. Straight section: the full height. Inside a corner: on the arc.
+ */
+function boardsY(sx){
+ const L=BOARD.x,R=BOARD.x+BOARD.w,T=BOARD.y,B=BOARD.y+BOARD.h,r=BOARD.r;
+ const cx=sx<L+r?L+r:sx>R-r?R-r:null;
+ if(cx===null)return[T,B];
+ const dy=Math.sqrt(Math.max(0,r*r-(sx-cx)*(sx-cx)));
+ return[T+r-dy,B-r+dy];
+}
+function drawRink(per){if(per===rinkPer)return;rinkPer=per;const P=[];P.push(`<rect class="boards" x="${BOARD.x}" y="${BOARD.y}" width="${BOARD.w}" height="${BOARD.h}" rx="${BOARD.r}"/>`);
  /* ⭐ THE SLOT IS PAINTED ON THE ICE, BEFORE ANYTHING HAPPENS.
     Kevin: "we can measure, but we're not prioritizing the teaching... if we have
     areas that are similarly shaded, the viewer's eyes will start focusing on
@@ -3819,9 +3866,17 @@ function drawRink(per){if(per===rinkPer)return;rinkPer=per;const P=[];P.push('<r
  for(const b of[BLUE_LINE_X,-BLUE_LINE_X])
   // `SX` DECREASES with x, so the band's left edge is the far side of it.
   P.push(`<rect class="zoneband" x="${SX(b+ZONE_BAND_FT)}" y="1" width="${ZONE_BAND_FT*2}" height="83"/>`);
- for(const g of[-89,89])P.push(`<line class="ln red" x1="${SX(g)}" y1="3" x2="${SX(g)}" y2="82"/>`);
- for(const b of[-25,25])P.push(`<line class="ln blue" x1="${SX(b)}" y1="1" x2="${SX(b)}" y2="84"/>`);
- P.push('<line class="ln red thick" x1="100" y1="1" x2="100" y2="84"/><circle class="ln blue" cx="100" cy="42.5" r="15"/>');
+ /* ⭐ EVERY LINE ENDS ON THE BOARDS, and it is the same call for all of them.
+    The blue lines and the centre line sit in the straight section, so `boardsY`
+    hands back the 1..84 they were previously typed with -- byte-identical
+    output, which is the point: the goal lines are not a special case being
+    patched, they are the only lines that were ever WRONG under a rule the
+    others already satisfied by accident of where they sit. */
+ const line=(cls,x)=>{const[y1,y2]=boardsY(x);
+  return `<line class="ln ${cls}" x1="${x}" y1="${y1.toFixed(2)}" x2="${x}" y2="${y2.toFixed(2)}"/>`;};
+ for(const g of[-89,89])P.push(line('red',SX(g)));
+ for(const b of[-25,25])P.push(line('blue',SX(b)));
+ P.push(line('red thick',100)+'<circle class="ln blue" cx="100" cy="42.5" r="15"/>');
  // THE NINE FACE-OFF SPOTS, taken from the DATA rather than from the rulebook.
  // Every faceoff in the archive happens at one of nine coordinates: 2,134 draws
  // across 39 games spread over the three seasons land on these nine and on

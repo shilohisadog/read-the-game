@@ -234,7 +234,29 @@ let rinkPer=null;
    here except the nets is symmetric about centre ice, so the flip is a no-op on
    the boards, the lines, the circles and the dots -- they are rebuilt only
    because the nets share the group. */
-function drawRink(per){if(per===rinkPer)return;rinkPer=per;const P=[];P.push('<rect class="boards" x="1" y="1" width="198" height="83" rx="27"/>');
+/* ⭐ THE BOARDS, AS NUMBERS RATHER THAN AS A STRING. Every line painted on the
+   ice has to STOP at them, and until now each line carried its own hand-typed
+   pair of y values -- so the goal lines ran y=3..82 while the boards at that x
+   are at y=7.02..77.98, and the red line stuck four feet out through the
+   corner at both ends. Kevin: "the goal lines extend beyond the playing
+   surface, can you have those terminate right at the edge of the rink."
+   The rink is a rounded rect, so how far a line reaches DEPENDS ON WHERE IT IS:
+   in the straight section it runs the full height, and inside a corner it stops
+   on the arc. `boardsY` is that one rule, and the boards rect below is drawn
+   from the same four numbers, so the paint and the outline cannot disagree. */
+const BOARD={x:1,y:1,w:198,h:83,r:27};
+/**
+ * Where the boards are at an SVG x — the top and bottom of the playing surface
+ * at that point. Straight section: the full height. Inside a corner: on the arc.
+ */
+function boardsY(sx){
+ const L=BOARD.x,R=BOARD.x+BOARD.w,T=BOARD.y,B=BOARD.y+BOARD.h,r=BOARD.r;
+ const cx=sx<L+r?L+r:sx>R-r?R-r:null;
+ if(cx===null)return[T,B];
+ const dy=Math.sqrt(Math.max(0,r*r-(sx-cx)*(sx-cx)));
+ return[T+r-dy,B-r+dy];
+}
+function drawRink(per){if(per===rinkPer)return;rinkPer=per;const P=[];P.push(`<rect class="boards" x="${BOARD.x}" y="${BOARD.y}" width="${BOARD.w}" height="${BOARD.h}" rx="${BOARD.r}"/>`);
  /* ⭐ THE SLOT IS PAINTED ON THE ICE, BEFORE ANYTHING HAPPENS.
     Kevin: "we can measure, but we're not prioritizing the teaching... if we have
     areas that are similarly shaded, the viewer's eyes will start focusing on
@@ -292,9 +314,17 @@ function drawRink(per){if(per===rinkPer)return;rinkPer=per;const P=[];P.push('<r
  for(const b of[BLUE_LINE_X,-BLUE_LINE_X])
   // `SX` DECREASES with x, so the band's left edge is the far side of it.
   P.push(`<rect class="zoneband" x="${SX(b+ZONE_BAND_FT)}" y="1" width="${ZONE_BAND_FT*2}" height="83"/>`);
- for(const g of[-89,89])P.push(`<line class="ln red" x1="${SX(g)}" y1="3" x2="${SX(g)}" y2="82"/>`);
- for(const b of[-25,25])P.push(`<line class="ln blue" x1="${SX(b)}" y1="1" x2="${SX(b)}" y2="84"/>`);
- P.push('<line class="ln red thick" x1="100" y1="1" x2="100" y2="84"/><circle class="ln blue" cx="100" cy="42.5" r="15"/>');
+ /* ⭐ EVERY LINE ENDS ON THE BOARDS, and it is the same call for all of them.
+    The blue lines and the centre line sit in the straight section, so `boardsY`
+    hands back the 1..84 they were previously typed with -- byte-identical
+    output, which is the point: the goal lines are not a special case being
+    patched, they are the only lines that were ever WRONG under a rule the
+    others already satisfied by accident of where they sit. */
+ const line=(cls,x)=>{const[y1,y2]=boardsY(x);
+  return `<line class="ln ${cls}" x1="${x}" y1="${y1.toFixed(2)}" x2="${x}" y2="${y2.toFixed(2)}"/>`;};
+ for(const g of[-89,89])P.push(line('red',SX(g)));
+ for(const b of[-25,25])P.push(line('blue',SX(b)));
+ P.push(line('red thick',100)+'<circle class="ln blue" cx="100" cy="42.5" r="15"/>');
  // THE NINE FACE-OFF SPOTS, taken from the DATA rather than from the rulebook.
  // Every faceoff in the archive happens at one of nine coordinates: 2,134 draws
  // across 39 games spread over the three seasons land on these nine and on
