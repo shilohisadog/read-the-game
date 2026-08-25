@@ -321,7 +321,12 @@ Shorten.**
   on and its control visible.
 - **No note about a control is empty in the default state** — the §4.2 defect,
   guarded so it cannot come back.
-- **The blocked key carries both sweaters**, like the goal key.
+- **The blocked key carries both sweaters**, like the goal key. ⭐ CHENG's note
+  on this: it is the **third** time attribution has gone astray on this one event
+  type — the folklore flip that shipped a wrong Corsi count, the figure that
+  named the blocker instead of the shooter, and now the key that painted the
+  wrong club. *The key and the mark were derived independently and one of them
+  chose the wrong team*, which is the same shape all three times.
 - **The measured total below the rink at 390 does not exceed today's 1335px**,
   because a redesign that is prettier and taller has not paid for itself. ⭐ And
   it is measured AFTER the merge, not before — CHENG's point that the 44px floor
@@ -553,12 +558,52 @@ session — not §1's production figure, which was taken with a different profil
 | side-scroll at 320 | none | none |
 
 ⚠️ **§9's standing test is NOT met and this section is where that is said.** The
-surface is 19% taller at 390 and 33% at 1100. The arithmetic is not mysterious:
-**21 controls × a 44px floor is 924px of target area**, and the redesign removed
-no controls — it merged the layer keys into the rows, which CHENG measured as
-saving nothing in the base view. His half of the 44px finding was that the floor
-argues for FEWER controls, and this round did not take it. That decision has a
-name already: **U3, layer density**, and it is Kevin's to make.
+surface is 19% taller at 390 and 33% at 1100.
+
+⭐ **AND THE FIRST EXPLANATION OFFERED FOR IT WAS WRONG.** CHENG, reviewing this:
+*"21 controls × 44px = 924px of target area. That's not a layout inefficiency,
+it's a floor… the regression isn't a failure of the redesign, it's the redesign
+correctly reporting that the control count is the binding constraint."* It is a
+clean argument and the measurement refuses it. **Per block, 390, returning
+visitor, both pages served in one session:**
+
+| block | before | after | Δ |
+|---|---|---|---|
+| transport | 162 | 210 | **+48** ← all of the 44px floor |
+| the layers | 143 | **430** | **+287** |
+| legend | 255 | 173 | −82 |
+| the funnel | 209 | 129 | −80 |
+| trails + players | 122 | 59 collapsed | −63 |
+| **below the rink** | **1418** | **1685** | **+267** |
+
+**The touch floor cost 48px, and every pixel of it is in the transport.**
+Everything else the floor touched was paid for by the trims, which net −225. The
+regression is **one block**: five layer rows that each carry a name and a
+two-line description where five chips used to carry a name.
+
+⚠️ **The 924px figure assumes one control per row**, and this surface has never
+laid out that way — the layer rows go three across at 1100, the funnel four. A
+floor computed from a count rather than from a LAYOUT is not a floor.
+
+**So the constraint is not the control count. It is that we chose to describe
+every layer**, which is what answered complaint 2 and is the best thing on the
+surface. The levers, in order of what they cost:
+
+1. **Shorter descriptions.** Every one wraps to two lines at 390; one line each
+   is about **88px** and no structural change.
+2. **U3, layer density** — fewer layers is fewer rows, ~86px each.
+3. The newcomer *why add a layer* block, 279px on a first visit.
+
+⭐ **AND §9's TEST IS REPLACED RATHER THAN WAIVED.** *"No taller than what it
+replaced"* was written before any of this was measured and it cannot be met while
+each layer explains itself. The honest successor is **per zone, not total**:
+
+> **Every zone except LAYERS must be no taller than the blocks it replaced, and
+> LAYERS' growth must be accounted for line by line.**
+
+That is checkable, it is true today, and it fails the day a zone quietly grows —
+which is what the old test was for. A total that is allowed to rise for one
+stated reason cannot tell a description from a regression.
 
 What the height bought: every layer says what it counts, every control is
 reachable by a fingertip, every note is readable before the press, and the four
@@ -616,6 +661,13 @@ not have given.
 
 - **U3 — layer density.** §11.5 is the argument for taking it.
 - The newcomer *why add a layer* block is **279px** and is the tallest single
-  thing in the LAYERS zone on a first visit.
+  thing in the LAYERS zone on a first visit. ⚠️ CHENG argued for cutting it on
+  the grounds that *"it instructs a reader to press a button using a label the
+  button shows only at rest, and the overlay on the ice already does that job
+  better."* **That describes the other block.** `#newcomer` carries the press-play
+  instruction and sits above the rink; `#newcomerWhy` is the 279px one, it gives
+  the REASON to add a layer, and it carries the site's flagship sentence — 2,228
+  of 4,100. The duplication he names is real and belongs to the block that is not
+  the expensive one.
 - At 320 the funnel falls back to one column; 390 and up get two or more.
 - `Teaching` is gone as a name. The three paces behind it are unchanged.
