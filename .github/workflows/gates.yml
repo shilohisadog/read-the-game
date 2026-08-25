@@ -15,7 +15,17 @@ jobs:
       matrix:
         node: ['20', '22']
     steps:
+      # ⭐ FULL HISTORY, BECAUSE refcheck READS IT. `tools/refcheck.py` verifies
+      # revision-pinned citations with `git show <rev>:<path>` — the form that
+      # lets a dated design doc stay checkable after the code it describes has
+      # moved. The default checkout is SHALLOW, so those revisions are not in the
+      # clone and every historical citation failed with "no builders/build_main.py
+      # at revision 29f4c30" on the first CI run after it shipped. Green locally,
+      # red here, because full history is the thing a laptop has and a runner
+      # does not.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}

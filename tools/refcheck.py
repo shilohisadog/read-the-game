@@ -76,6 +76,18 @@ CITE = re.compile(
     r'(?:\s+"(?P<anchor>[^"]{1,80})")?`?')
 
 
+def shallow():
+    """Is this clone missing history? A checkout without `fetch-depth: 0` cannot
+    read any revision-pinned citation, and every one of them fails with a message
+    that reads like a broken document. IT IS NOT A BROKEN DOCUMENT, so the two
+    are reported differently -- this shipped green on a laptop and red on the
+    first CI run, because full history is a thing a laptop has and a runner does
+    not."""
+    out = subprocess.run(["git", "rev-parse", "--is-shallow-repository"], cwd=ROOT,
+                         capture_output=True, text=True)
+    return out.stdout.strip() == "true"
+
+
 def blob(rev, path):
     """A file's lines at a revision. Cached -- a doc cites one commit many times."""
     key = (rev, path)
@@ -173,6 +185,17 @@ def main(argv):
         for shown, num, _anchor, why, _ in bad:
             print(f"    {shown}:{num}  -- {why}")
     print(f"\n{total} citations, {broken} broken, {unanchored} carrying no anchor")
+    if broken and shallow():
+        # EXIT 3, NOT 1: this is the environment failing to supply history, not a
+        # document making a false claim, and conflating them sends the next
+        # reader to edit a correct citation.
+        print("\n  ⚠️  THIS CLONE IS SHALLOW, so no revision-pinned citation can be\n"
+              "      read at all. The breaks above are almost certainly this and not\n"
+              "      the documents. Fix the CHECKOUT, not the docs:\n\n"
+              "        - uses: actions/checkout@v4\n"
+              "          with:\n"
+              "            fetch-depth: 0\n")
+        return 3
     if unanchored:
         print("  An unanchored citation is checked for RESOLUTION only, and a line "
               "number\n  always lands somewhere. Add \" \"expected text\" to make it "
