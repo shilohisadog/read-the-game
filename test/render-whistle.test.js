@@ -157,9 +157,16 @@ test('the whistle ring is NAMED, and only while the layer draws it', () => {
   // only naming was an SVG <title> — no hover on a phone, and nobody hovers
   // while watching, which is why it read as clutter beside a card that spent
   // three sentences on the same stoppage.
-  assert.match(app, /class="lkey lk-wh"/, 'the ring has no legend key at all');
-  assert.match(PAGE_CSS, /#rg\.whistle \.legend \.lk-wh/,
-    'nothing reveals the key when the layer is on');
+  // ⭐ THE KEY IS THE LAYER'S OWN ROW NOW (2026-08-25). It was a `lk-wh` entry in
+  // the legend, gated on `#rg.whistle`; it is the `.lon` half of the whistle row,
+  // gated on that row being pressed. The claim did not move — a mark is named,
+  // and only while the ice is drawing it.
+  const row = app.match(/<button class="lrow" id="lyWhistle"[\s\S]*?<\/button>/)[0];
+  assert.match(row, /<i class="k-wh">/, 'the ring has no swatch on its own control');
+  assert.match(row, /<span class="lon">[^<]*ring marks where play restarted/,
+    'the ring is not named where a viewer meets its control');
+  assert.match(PAGE_CSS, /#rg \.lrow\[aria-pressed="true"\] \.lon\{display:block\}/,
+    'nothing reveals the note when the layer is on');
   assert.match(PAGE_CSS, /#rg \.k-wh\{/, 'the key has no swatch');
 
   const a = boot();

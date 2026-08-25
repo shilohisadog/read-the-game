@@ -261,6 +261,36 @@ test('the block-point fact survives the line that used to carry it', () => {
     'the teammate-block disclosure went with the ice line instead of staying in the panel');
 });
 
+/**
+ * ⭐ THE BLOCKED KEY WORE ONE CLUB'S COLOUR FOR A MARK THAT APPEARS IN BOTH.
+ *
+ * CHENG's find, and a correctness defect rather than a layout one:
+ * `#rg .k-blk{background:var(--home)}` painted the HOST's colour, while on the
+ * ice a blocked shot is a ring around the shot's own dot — which carries the
+ * SHOOTER's colour. So a visitor's blocked shot is white-and-red on the rink and
+ * gold in the key, on every game in the archive. `goal — either sweater` had
+ * this exact problem two blocks up and solved it with TWO swatches.
+ *
+ * BOTH HALVES, because the markup half alone would let the key claim something
+ * the game never shows: the second swatch is honest only if visitors really do
+ * have shots blocked, so the fixture is asked, independently of the renderer.
+ */
+test('the blocked key carries both sweaters, because the ice draws both', () => {
+  const legend = /<div class="legend">([\s\S]*?)<\/div>/.exec(app)[1];
+  const entry = /<span>((?:<i class="k-[a-z]*"><\/i>)+)blocked —/.exec(legend);
+  assert.ok(entry, 'the blocked key is not in the legend');
+  assert.equal((entry[1].match(/<i /g) || []).length, 2,
+    'the blocked key shows ONE sweater for a mark that appears in both');
+  assert.match(PAGE_CSS, /#rg \.k-blk\{[^}]*background:var\(--home\)/,
+    'the host swatch stopped being the host colour');
+  assert.match(PAGE_CSS, /#rg \.k-blkv\{[^}]*background:#fff/,
+    'the visitor swatch is not white, so the pair does not read as two sweaters');
+
+  const owners = new Set(rich.events.filter(e => e.type === 'blocked-shot').map(e => e.own));
+  assert.equal(owners.size, 2,
+    'only one club has a shot blocked in this game, so "either sweater" is not demonstrated here');
+});
+
 test('the CURRENT play is marked as such, so no layer can dim it away', () => {
   // FOUND BY RENDERING IT, and not findable here — the fake document has no CSS,
   // so the defect was a computed opacity rather than anything in the markup.

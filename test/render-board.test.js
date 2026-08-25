@@ -94,22 +94,30 @@ test('the controls explain themselves without referring to their own history', (
   // why — the source comments legitimately discuss the app's history, and the
   // first version of this test failed on one. Read what a VISITOR is shown.
 
-  // The explanation of what the control DOES is the good part, and it still
-  // exists — but it is now shown when the control is USED rather than always.
+  // ⭐ AND THIS HALF REVERSED ON 2026-08-25. It used to REQUIRE the note to be
+  // empty until the control had been used, which is the 2026-08-16 rule applied
+  // to the wrong category: right for a STATE (the empty-net note describes
+  // something on screen now) and wrong for a CONTROL (a button has to be
+  // predictable before the click, or it is a dare). docs/below-the-rink-2.md
+  // §4.2, and CHENG's wording for it: a note about the ICE fires when the ice
+  // shows it, a note about a CONTROL is available before it is pressed.
   const a = boot();
-  assert.equal(a.$('nTrails').textContent, '',
-    'the trails note is present before anyone chose the setting it explains');
+  assert.ok(a.$('nTrails').textContent,
+    'the trails control explains itself only after you have already used it');
+  // NOT PINNED TO ONE MODE'S WORDING. What this test is about is that BOTH
+  // states explain the control; WHICH promise each mode makes is asserted below,
+  // where the promise and the behaviour are checked together.
   a.GROUPS['#rg .tbtn'].find(b => b.dataset.t === 'all').click();
-  // NOT PINNED TO ONE MODE'S WORDING. What this test is about is that using the
-  // control explains the control; WHICH promise each mode makes is asserted
-  // below, where the promise and the behaviour are checked together.
-  assert.match(a.$('nTrails').textContent, /stays on the ice/i,
+  assert.match(a.$('nTrails').textContent, /stays on the ice|as they happen/i,
     'flipping the trails control explains nothing');
   a.GROUPS['#rg .tbtn'].find(b => b.dataset.t === 'off').click();
-  assert.equal(a.$('nTrails').textContent, '', 'the note stayed after the setting left');
+  assert.ok(a.$('nTrails').textContent, 'the note left with the setting');
 
   // Every note a visitor can actually be shown, in the state that shows it.
+  // BOTH STATES OF EACH, because "explains itself" is now a claim about the
+  // default too — and the default is the state every first-time visitor is in.
   const shown = [];
+  for (const id of ['nTrails', 'nSit', 'nFig']) shown.push(a.$(id).textContent);
   a.GROUPS['#rg .tbtn'].find(b => b.dataset.t === 'all').click();
   a.GROUPS['#rg .sbtn'].find(b => b.dataset.s === 'even').click();
   a.GROUPS['#rg .fbtn'].find(b => b.dataset.f === 'tabletop').click();

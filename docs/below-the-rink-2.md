@@ -50,7 +50,7 @@ width it was designed at; it re-flows into a wall.
 
 **44×44 CSS px is the documented minimum touch target** in both Apple's and
 Google's guidance, and every single control on this surface is under it. The
-16px one is the **scrubber** (`src/app.css:461 "#rg .scrub{"`) — a *drag* target
+16px one is the **scrubber** (`19b7b5b:src/app.css:461 "#rg .scrub{"`) — a *drag* target
 eight pixels either side of centre, on the control `docs/event-index.md` already
 measured as below the resolution of a fingertip.
 
@@ -101,10 +101,10 @@ unexplained nouns.
 
 ### 4.2 ⭐ And the two that DO explain themselves do it backwards
 
-    src/app.js:694 "$('nFig').textContent"
+    19b7b5b:src/app.js:694 "$('nFig').textContent"
     $('nFig').textContent = figStyle!=='mascot' ? 'Same shots, same outcomes… only the drawing changes.' : ''
 
-    src/app.js:690 "$('nTrails').textContent"
+    19b7b5b:src/app.js:690 "$('nTrails').textContent"
     $('nTrails').textContent = trails!=='all' ? '' : 'Every attempt in this period stays on the ice…'
 
 **Both notes are empty in the default state.** The explanation of `Tabletop`
@@ -130,11 +130,11 @@ it; a note about a CONTROL is available before it is pressed.
   the surface. Two of the eight are the base-layer entries added 2026-08-25,
   each wrapping to two lines; Kevin has already flagged them for trimming.
 - ⭐ **One legend row is not a key.** *"the teams switch ends every period, as
-  they do in the arena"* has **no swatch** (`src/app.css:472 "lk-ends"`) — every
+  they do in the arena"* has **no swatch** (`19b7b5b:src/app.css:472 "lk-ends"`) — every
   other row is a mark and its name. It is a disclosure sitting in a key, which
   is part of why the block reads as a wall rather than a reference.
 - ⭐ **The `blocked` key is painted in a team colour.**
-  `src/app.css:481 "#rg .k-blk{background:var(--home)"` — but on the ice a
+  `19b7b5b:src/app.css:481 "#rg .k-blk{background:var(--home)"` — but on the ice a
   blocked shot draws a ring around the shot's own dot, which carries the
   **shooter's** colour, so a visitor's blocked shot is white-and-red where the
   key shows gold. `goal — either sweater` had this exact problem and solved it
@@ -331,3 +331,272 @@ Shorten.**
   truthfulness fix the progressive legend exists to protect.
 - Mutations: restore the 150px-era chip row, empty one note, shrink one target
   below 44 — each must redden exactly one test.
+
+---
+
+## 10. Round one, shipped — the transport
+
+**Kevin, 2026-08-25, after reading §1–§9.** Four instructions, and the third is a
+question this section answers rather than defers:
+
+> the control should say "Prev event" and "Next event" and not Prev play (since
+> these are really events and there could have been "plays" in between the events
+> that aren't shown) … we should say "Slower", "Faster" and not include
+> "Teaching" … it's not really "Explain plays", it's more like "Narration" …
+> and really, is that even an option to toggle off? … I would like the rows below
+> the scrubber to be totally remade.
+
+The rows below the scrubber are round two. This is everything above it, plus the
+control that left it.
+
+### 10.1 ⭐ The wrap was falling INSIDE every group
+
+Not in the audit above, and it is the worst thing on the surface. §1 recorded
+"transport 162px, five rows" as a height. Looking at the render is what showed
+what those rows *were* — and the count is not the finding. ⚠️ On the local build
+at 390 the transport is **four** rows, not §1's five; that measurement was taken
+on production as a returning visitor and this one on a newcomer, and the two are
+not differenceable. What matters is where the breaks fell:
+
+    row 1   ▶ Play from start   ◀ Prev play
+    row 2   Next play ▶   🐢 Slower   Teaching
+    row 3   Faster   💬 Explain plays
+    row 4   (scrubber, 16px tall)
+
+**`Prev` ended one row and `Next` began the next.** The three speed gears were
+split across two rows. And `Explain plays` — not a speed, not a step — was
+orphaned beside `Faster`, where it reads as a fourth gear. Nothing on screen said
+which buttons belonged together, because the only thing deciding was where the
+line ran out.
+
+`.transport` was nine controls in one `flex-wrap:wrap` row. The fix is a rule:
+**a `.grp` is `flex-wrap:nowrap`, so a break can only land BETWEEN groups.**
+
+### 10.2 The drawing now encodes the kind
+
+§3's complaint was five kinds of thing in one visual language. The gears are the
+first group to leave it: one border around the group, members divided by
+hairlines, the chosen one filled and underlined — the shape a reader already
+reads as *pick one of these*, which three separate chips never were.
+
+### 10.3 "play" leaves as a countable noun and stays as a mass noun
+
+Kevin's reason is a doctrine point, not a wording preference. `DOCTRINE.md` §4
+makes **discreteness the honesty** — the puck hops between recorded events and
+never glides, because the feed has no passes, dump-ins or cycle — so a button
+offering the *next play* quietly claims the continuity we refuse to invent.
+
+The rule that keeps this surgical: **"play" survives as the MASS noun for the
+flow of the game and dies as a COUNTABLE synonym for a recorded event.**
+
+| stays | goes |
+|---|---|
+| `＋ Why play stopped` | `◀ Prev play` → `◀ Prev event` |
+| "play restarted here" | `Next play ▶` → `Next event ▶` |
+| "power plays and an empty net" | "every play is named" → "every event is named" |
+| `▶ Play from start` (the verb) | `💬 Explain plays` → `Narration` |
+| `pbp["plays"]` — the league's own field name | |
+
+Two visible strings carried the countable sense; both are gone. **The test has
+both halves**, because either alone passes on the wrong change: a global
+`s/play/event/` satisfies the first and breaks correct English in the second.
+
+⚠️ **And the first version of that test failed on its own evidence.** Run over
+the whole document it matched the CSS comment that explains the rename by
+*quoting* `◀ Prev play` and `💬 Explain plays` — a check about what a reader sees,
+answering about what a maintainer reads. It now reads the visible markup with
+`<style>`, `<script>` and comments stripped. Same defect as the `class="lede"`
+guard tripping on a comment, and it runs in **both** directions here: a stray
+comment could equally have made the survivor half pass against code that no
+longer contained them.
+
+### 10.4 Three gears, and why the middle one stayed
+
+Kevin asked for `Slower` and `Faster` without `Teaching`. His diagnosis is right
+— it is a SPEED wearing the name of a content mode, which is why it read oddly
+beside what was then an actual content toggle. But **two buttons cannot express
+three states, and the default is a state**: drop the middle and a viewer who
+tries `Faster` can never get back to the pace everything in
+`docs/event-timing.md` was measured at. So the word goes and the gear stays,
+named for what it is: **`Slower · Normal · Faster`.**
+
+### 10.5 Narration — it stays an option and stops being a primary one
+
+Kevin: *"is that even an option to toggle off?"*
+
+`labelsOn` gates `drawLabel`, which is the ice naming each event as it happens.
+It changes what the ice SAYS, never where the playhead is — which is the
+definition of a display preference and puts it with Trails and Players, not in
+the transport. It is drawn the way they are: a named pair, one of which is
+pressed.
+
+**The case for deleting it outright** is real and was weighed: it is one fewer
+control on a surface with too many, and turning it off removes the thing the
+greeting promises. **The case that kept it** is that `Keep every mark` fills the
+ice with marks and the labels sit over them, so a viewer who wants to *look* at
+the ice — at the slot shading, at where the attempts cluster — needs them gone.
+That is a genuine use, and it is the only one.
+
+⚠️ **Deleting it would not have been free.** `drawLabel` off is the one state in
+which the caption pill announces a goal; with narration always on that branch
+becomes unreachable, so the delete would have had to take a working fallback
+with it. Enumerated before the decision rather than discovered after.
+
+⭐ **And it is the first control on this surface built to §4.2's rule.** `nTrails`
+and `nFig` are both empty in the default state; `nLbl` is not. Asserted in the
+markup, because a note the renderer fills in on a state change is exactly the
+defect.
+
+### 10.6 Measured after, in a real browser, local build
+
+    390    transport  162px → 210px    every control ≥44px, from 16/36/40
+    1100   transport   70px → 100px
+    320    transport             210px  no side-scroll; the groups hold at the narrow end
+
+| | before | after |
+|---|---|---|
+| controls below the rink under 44px | **21 of 21** | **15 of 22** |
+| the scrubber's drag target | **16px** | **44px** |
+| transport rows at 390 | 4, breaking inside groups | 4, breaking only between them |
+
+**The 44px floor costs height, exactly as §7.3 predicted** (162 → ~210 estimated,
+210 measured). Below the rink at 390 went **1708px → 1849px** on a newcomer's
+first visit. That debt is round two's to pay: §9's standing test is that the
+finished surface does not exceed what it replaced, **measured after the merge**.
+
+⚠️ **These are the NEWCOMER numbers** — a fresh browser profile, so the greeting
+and the *why add a layer* block are both on screen. §1's 1335px was measured on
+production as a returning visitor. Different populations; do not difference them.
+
+### 10.7 What round one did NOT touch
+
+Every defect §5 named is still there, and the render shows one more: **`Trails:`
+splits across a line break** — `Current moment` ends the row and `Keep this
+period` starts the next, which is §10.1's defect surviving in the display
+pickers. `.grp` applies there too, and that is round two.
+
+---
+
+## 11. Round two, shipped — everything below the scrubber
+
+Kevin: *"go ahead and re-make the rows below the scrubber… I want to see the
+draft of that whole area redone."* This is the draft. §7's five zones, built.
+
+### 11.1 The zones exist and each one says what it is for
+
+    WATCH       the transport                     (round one)
+    LAYERS      five self-describing rows         the conversion
+    REFERENCE   what the marks mean               a read surface, never collapsed
+    NEXT        watch another game                moved ABOVE the cosmetics
+    DISPLAY     trails · players · narration      collapsed, single-choice
+
+It was seven blocks in document order with no headings and one chip style
+between them, so a reader had to infer the grouping from spacing alone. **NEXT
+moving up is the ranking change**: four real, game-specific destinations had been
+placed below `Mascot` and `Tabletop`. CHENG's condition on that move is met — a
+heading over a ruled edge, so *next game* cannot read as *another layer*.
+
+### 11.2 §7.2 is built: the control and its key are one object
+
+Each layer is one row — **mark · name · what it counts · state**:
+
+    ◌  Shots from the slot                                        [ OFF ]
+       attempts from within 33 ft of the net, between the face-off dots
+
+⭐ **And the two sentences are different kinds, which is §4.2's rule made
+structural.** `.lds` is about the CONTROL and is always readable. `.lon` is about
+the ICE and appears only with the marks it describes. One object, both halves of
+the rule, and it is asserted in the stylesheet in both directions: a build that
+gated the description would be the §4.2 defect, one that ungated the mark note
+would be the permanent-legend defect the progressive legend fixed.
+
+**Every note on this surface is now non-empty in its default state** — `nSit`,
+`nTrails`, `nFig` and `nLbl`. `nSit` keeps its live count in the chosen state and
+loses it when you switch back, so the §4.2 repair does not become a stale number.
+
+### 11.3 The reference panel, trimmed — not collapsed
+
+CHENG's Q1 ruling holds: a key that names a mark AND hides it is worse than a
+permanent legend that was at least wrong in the open. §8b.2's third option is
+what shipped instead. The panel is **the marks the ice draws whatever you press**
+and nothing else: the four layer-owned keys left for their rows, the two long
+base-layer rows lost their trailing clause and keep their geometry (33 ft,
+between the dots; out to the neutral-zone dots), and **the two disclosures are no
+longer keys** — no swatch, so they are drawn as sentences under the panel.
+
+**Legend 255px → 173px at 390, with no mark hidden.**
+
+### 11.4 The blocked swatch — CHENG's correctness find, fixed and guarded
+
+`#rg .k-blk{background:var(--home)}` painted the HOST's colour for a mark whose
+dot on the ice carries the **shooter's**, so a visitor's blocked shot was
+white-and-red on the rink and gold in the key, on every game in the archive. Two
+swatches now, like `goal — either sweater`.
+
+⚠️ **It had no test until the mutation said so.** Deleting `.k-blkv` reddened
+nothing. The guard has both halves: the key shows two sweaters, AND the fixture
+really has blocked shots owned by both clubs — otherwise the key claims something
+the game never shows.
+
+### 11.5 Measured, in a real browser, local build, RETURNING visitor
+
+The baseline is the same page at `19b7b5b`, measured the same way in the same
+session — not §1's production figure, which was taken with a different profile.
+
+| | before | after |
+|---|---|---|
+| controls under 44px | **21 of 21** | **0 of 21** |
+| below the rink, 390 | 1418px | **1691px** |
+| below the rink, 1100 | 809px | **1073px** |
+| legend, 390 | 255px | 173px |
+| the funnel, 390 | four stacked rows | 2×2 |
+| side-scroll at 320 | none | none |
+
+⚠️ **§9's standing test is NOT met and this section is where that is said.** The
+surface is 19% taller at 390 and 33% at 1100. The arithmetic is not mysterious:
+**21 controls × a 44px floor is 924px of target area**, and the redesign removed
+no controls — it merged the layer keys into the rows, which CHENG measured as
+saving nothing in the base view. His half of the 44px finding was that the floor
+argues for FEWER controls, and this round did not take it. That decision has a
+name already: **U3, layer density**, and it is Kevin's to make.
+
+What the height bought: every layer says what it counts, every control is
+reachable by a fingertip, every note is readable before the press, and the four
+ways out are no longer ranked below two cosmetic toggles.
+
+### 11.6 Two things only looking found
+
+- ⭐ **The swatch rule was scoped to `.legend`,** so the marks moved into the
+  layer rows and rendered as **squares**. The markup was right, the classes were
+  right, and all 715 tests passed. *A shape rule that lives on the container
+  rather than on the mark stops applying the day the mark moves* — which is
+  exactly what this redesign did to it.
+- **The mark column was `auto` in a per-row grid,** so it sized itself per row:
+  the two layers that draw no mark had their names sit further left than the
+  three that do. The comment beside it claimed the opposite, in as many words,
+  because the reasoning for keeping the cell was right and the implementation of
+  it was not. Fixed width now, and the comment records the correction.
+
+### 11.7 Speed became a stepper, on Kevin's mechanism
+
+> *"I thought that faster would play at X (default) + 1, then hitting slower
+> would move back to X, then, say, slower again would move to X-1, faster back to
+> X."*
+
+That is what removes the middle button without losing the middle STATE, which was
+the whole objection to `Slower`/`Faster` alone. Two controls, three paces, all
+reachable — and it is the idiom the transport already teaches one row up.
+
+⭐ **The end state is the readout.** With no pressed label saying where you are,
+the disable says it: both live means the default, `Slower` dead means the
+slowest, `Faster` dead means the fastest. Three states, distinguishable, and
+**every press changes something visible** — which a bare two-button toggle would
+not have given.
+
+### 11.8 Still open
+
+- **U3 — layer density.** §11.5 is the argument for taking it.
+- The newcomer *why add a layer* block is **279px** and is the tallest single
+  thing in the LAYERS zone on a first visit.
+- At 320 the funnel falls back to one column; 390 and up get two or more.
+- `Teaching` is gone as a name. The three paces behind it are unchanged.

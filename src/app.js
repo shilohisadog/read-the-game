@@ -682,18 +682,26 @@ function render(i,how){
  // was also not an attempt was never going to count, and including it would
  // inflate the number with things even strength did not remove.
  const dropped=L.excluded.filter(x=>x.dims&&x.dims.strength&&!x.dims.type&&!x.dims.play).length;
+ /* ⭐ AND THE OTHER BRANCH IS NO LONGER EMPTY. All three of these notes used to
+    say nothing until their control had already been used -- so `Tabletop` was
+    explained only once you had chosen `Tabletop`, and `Even strength only`
+    described itself only after you were in it. That is the 2026-08-16 principle
+    (a sentence belongs beside the thing it is about, AT THE MOMENT OF USE)
+    applied to a CONTROL, where it is wrong: a button has to be predictable
+    before the click or it is a dare. The default branch now describes what the
+    other choice would do; the active branch still carries the live count, which
+    is a fact about the ice and belongs to the moment. */
  $('nSit').textContent=evenOnly
    ?`${dropped} ${dropped===1?'attempt has':'attempts have'} dropped out so far. Power plays and an empty net are still hockey — but they aren't even hockey.`
-   :'';
+   :'Even strength only drops the attempts made on a power play or against an empty net, and says how many it dropped.';
  // THE NOTE FOLLOWS THE MODE, because the old sentence promised a whole-game
  // chart and as-played cannot deliver one.
- $('nTrails').textContent=trails!=='all'?''
+ $('nTrails').textContent=trails!=='all'
+   ?'Current moment shows the latest event only. Keep every mark leaves the attempts on the ice as they happen.'
    :ASPLAYED
    ?'Every attempt in this period stays on the ice. It clears when the teams change ends, because after that they are shooting the other way.'
    :'Every attempt stays on the ice, which builds into a shot chart by the third period — good to study, busy to watch.';
- $('nFig').textContent=figStyle!=='mascot'
-   ?'Same shots, same outcomes, same math — only the drawing changes.'
-   :'';
+ $('nFig').textContent='Same shots, same outcomes, same math — only the drawing changes.';
  document.getElementById('rg').classList.toggle('ended',i>=EV.length-1);
  /* THE PRE-GAME FRAME IS THE ONLY ONE THAT NEEDS AN INSTRUCTION, and `i<0` is the
     whole test -- `play()` leaves the resting frame at once from either end, so a
@@ -877,13 +885,28 @@ function renderWork(L,cur){const a=L.t[AID],h=L.t[HID],tot=a+h||1,pa=Math.round(
    renderer read. Same move as `place()`: remove the opportunity to disagree
    instead of adding a third check that has to agree.
 
-   FRAME_MS IS A TASTE AND IS HERE TO BE LOOKED AT. Kevin reported Teaching too
+   PACE IS A TASTE AND IS HERE TO BE LOOKED AT. Kevin reported the default too
    fast; 1800 is his call to move, and the consequence of moving it is the
    replay's length (about 8.5 minutes for a 281-event game) and the number of
    events in the home page's loop, which runs on this same function. */
-const FRAME_MS={sp0:2600,sp1:1800,sp2:1000};
+/* ⭐ SPEED IS A STEPPER, NOT THREE GEARS TO PICK FROM. Kevin, 2026-08-25: "I
+   thought that faster would play at X (default) + 1, then hitting slower would
+   move back to X, then slower again would move to X-1, faster back to X."
+
+   That is what removes the middle button without losing the middle STATE, which
+   is the objection the three-button version was answering. Two controls, three
+   paces, all of them reachable -- and it is the idiom the transport already
+   teaches one row up: `Prev`/`Next` step and go dead at the ends of the game.
+
+   THE END STATE IS THE READOUT. With no pressed label to say where you are, the
+   disable is what says it: both live means the default pace, `Slower` dead means
+   the slowest, `Faster` dead means the fastest. Three states, distinguishable,
+   and EVERY press changes something visible -- which a two-button toggle pair
+   without the disable would not have given. The paces are unchanged; see
+   docs/event-timing.md for where the three constants come from. */
+const PACE=[2600,1800,1000];let gear=1;
 const CAPTION_BONUS=900;
-let i=EV.length-1,playing=false,timer=null,frameMs=FRAME_MS.sp1;
+let i=EV.length-1,playing=false,timer=null,frameMs=PACE[gear];
 $('scrub').max=EV.length-1;
 /* THE PLAYHEAD FLOOR IS -1, AND -1 IS A FRAME. Every read of the current event
    in `render` is already guarded, `upto(-1)` already answers `[]`, `drawBoxes`
@@ -950,10 +973,11 @@ $('scrub').onchange=e=>{set(+e.target.value,'jump');};
    of six -- two plays later at Faster -- while a goal frame (6000ms) spent 3933ms
    with the caption already gone. Opposite directions, one missing relation.
    The id is passed rather than the number so there is one table, not two. */
-function setSpeed(id){frameMs=FRAME_MS[id];['sp0','sp1','sp2'].forEach(x=>$(x).setAttribute('aria-pressed',x===id));}
-$('sp0').onclick=()=>setSpeed('sp0');
-$('sp1').onclick=()=>setSpeed('sp1');
-$('sp2').onclick=()=>setSpeed('sp2');
+function setGear(g){gear=Math.max(0,Math.min(PACE.length-1,g));frameMs=PACE[gear];
+ $('slower').disabled=gear===0;$('faster').disabled=gear===PACE.length-1;}
+$('slower').onclick=()=>setGear(gear-1);
+$('faster').onclick=()=>setGear(gear+1);
+setGear(gear);
 $('work').onclick=()=>{workOpen=!workOpen;$('workPanel').hidden=!workOpen;$('work').setAttribute('aria-expanded',workOpen);$('work').textContent=workOpen?'Hide the work':'Show me the work';if(workOpen)render(i,'');};
 $('aAb').textContent=AAB;$('hAb').textContent=HAB;
 /* ⭐ THE DIRECTION INDICATOR IS GONE, AND THE QUESTION THAT CREATED IT IS NOT.
@@ -1385,7 +1409,18 @@ function drawLabel(e){const g=$('labels');const p=place(e);if(!labelsOn||!p){g.i
  // of shot events and not in a table of page labels.
  const info=e.type==='missed-shot'?missSay(e):LAB[e.type];
  g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${lab?lab+" · ":""}${ESC(info)}${ESC(why)}${hd}</text></g>`;}
-$('lbl').addEventListener('click',()=>{labelsOn=!labelsOn;$('lbl').setAttribute('aria-pressed',labelsOn);$('lbl').style.opacity=labelsOn?'1':'.5';drawLabel(EV[i]);});
+// NARRATION IS A DISPLAY PREFERENCE, NOT A TRANSPORT CONTROL. It changes what
+// the ice SAYS, never where the playhead is, so it sits with Trails and Players
+// and is drawn the way they are -- a named pair, one of which is pressed. It was
+// a lone toggle in the transport called `💬 Explain plays`, which is the fifth
+// kind of control wearing the same chip as the other four (below-the-rink-2 §3).
+// Kevin: "is that even an option to toggle off?" It stays an option and stops
+// being a primary one: with `Keep every mark` the ice fills with marks and the
+// labels sit over them, which is the one real reason to want them gone.
+function syncLbl(){document.querySelectorAll('#rg .nbtn').forEach(b=>b.setAttribute('aria-pressed',(b.dataset.n==='on')===labelsOn));}
+document.querySelectorAll('#rg .nbtn').forEach(b=>b.addEventListener('click',()=>{
+ labelsOn=(b.dataset.n==='on');syncLbl();drawLabel(EV[i]);}));
+syncLbl();
 
 // THE WHISTLE LAYER, DRAWN. What from the stoppage, where from the faceoff that
 // restarts play -- and the sentence is the point, so it lives in a panel that
@@ -1723,7 +1758,7 @@ function drawNewcomer(){
  // quoted verbatim, which is what a reader searches for, and a sentence that
  // asserts no position cannot have a stale one at any width. Same rule that
  // stopped this paragraph enumerating the layers.
- el.innerHTML=`<b>New here?</b> Press <b>▶ Play from start</b> and just watch — every play `
+ el.innerHTML=`<b>New here?</b> Press <b>▶ Play from start</b> and just watch — every event `
   +`is named as it happens, and goals are called with the <b>scorer and assists</b>. `
   +`Nothing is invented: every number here comes from the league's own record of the game.`
   +`<button class="ndone" id="nDone">I have got the hang of it — hide this</button>`;
@@ -1740,8 +1775,16 @@ function drawNewcomer(){
 document.getElementById('rg').classList.toggle('newcomer',NEWCOMER);
 drawNewcomer();
 let corsiOn=false,hdOn=false,goalieOn=false,whistleOn=false,blockOn=false;
-function setCorsi(){document.getElementById('rg').classList.toggle('corsi',corsiOn);$('lyCorsi').setAttribute('aria-pressed',corsiOn);$('lyCorsi').textContent=(corsiOn?'✓ ':'＋ ')+'Control (Corsi)';if(!corsiOn&&workOpen){workOpen=false;$('workPanel').hidden=true;$('work').setAttribute('aria-expanded',false);$('work').textContent='Show me the work';}}
-function setHd(){document.getElementById('rg').classList.toggle('slot',hdOn);$('lyHd').setAttribute('aria-pressed',hdOn);$('lyHd').textContent=(hdOn?'✓ ':'＋ ')+'Shots from the slot';render(i,'');}
+/* ⭐ A LAYER BUTTON IS A ROW NOW, SO ITS LABEL IS NOT ITS textContent.
+   Each setter used to write `(on?'✓ ':'＋ ')+name` over the whole button, which
+   would erase the mark, the description and the state pill the row is made of.
+   The state lives in one element and the setter writes only that. Same three
+   things still change together -- class, aria-pressed, visible state -- and
+   render-preview's check that the preview goes THROUGH setCorsi rather than past
+   it is retargeted at the element that now carries the answer. */
+function lyrState(id,on){const n=$(id);if(n)n.textContent=on?'On':'Off';}
+function setCorsi(){document.getElementById('rg').classList.toggle('corsi',corsiOn);$('lyCorsi').setAttribute('aria-pressed',corsiOn);lyrState('stCorsi',corsiOn);if(!corsiOn&&workOpen){workOpen=false;$('workPanel').hidden=true;$('work').setAttribute('aria-expanded',false);$('work').textContent='Show me the work';}}
+function setHd(){document.getElementById('rg').classList.toggle('slot',hdOn);$('lyHd').setAttribute('aria-pressed',hdOn);lyrState('stHd',hdOn);render(i,'');}
 $('lyCorsi').addEventListener('click',()=>{corsiOn=!corsiOn;setCorsi();});
 // One code path owns the mode label, so the markup cannot drift from the state.
 // The static HTML carries a default only so the page reads correctly before JS.
@@ -1765,11 +1808,11 @@ document.querySelectorAll('#rg .fbtn').forEach(b=>b.addEventListener('click',()=
 syncFig();
 $('lyHd').addEventListener('click',()=>{hdOn=!hdOn;setHd();});
 function goalieStats(k){return goaltending.reduce(upto(k),CTX).g;}
-function setGoalie(){document.getElementById('rg').classList.toggle('goalie',goalieOn);$('lyGoalie').setAttribute('aria-pressed',goalieOn);$('lyGoalie').textContent=(goalieOn?'✓ ':'＋ ')+'Goaltending';render(i,'');}
+function setGoalie(){document.getElementById('rg').classList.toggle('goalie',goalieOn);$('lyGoalie').setAttribute('aria-pressed',goalieOn);lyrState('stGoalie',goalieOn);render(i,'');}
 $('lyGoalie').addEventListener('click',()=>{goalieOn=!goalieOn;setGoalie();});
-function setWhistle(){document.getElementById('rg').classList.toggle('whistle',whistleOn);$('lyWhistle').setAttribute('aria-pressed',whistleOn);$('lyWhistle').textContent=(whistleOn?'✓ ':'＋ ')+'Why play stopped';render(i,'');}
+function setWhistle(){document.getElementById('rg').classList.toggle('whistle',whistleOn);$('lyWhistle').setAttribute('aria-pressed',whistleOn);lyrState('stWhistle',whistleOn);render(i,'');}
 $('lyWhistle').addEventListener('click',()=>{whistleOn=!whistleOn;setWhistle();});
-function setBlock(){document.getElementById('rg').classList.toggle('blocked',blockOn);$('lyBlock').setAttribute('aria-pressed',blockOn);$('lyBlock').textContent=(blockOn?'✓ ':'＋ ')+'Blocked shots';render(i,'');}
+function setBlock(){document.getElementById('rg').classList.toggle('blocked',blockOn);$('lyBlock').setAttribute('aria-pressed',blockOn);lyrState('stBlock',blockOn);render(i,'');}
 $('lyBlock').addEventListener('click',()=>{blockOn=!blockOn;setBlock();});
 /* ⭐ THE GAME OPENS BEFORE THE FIRST PLAY -- on the state, not on a play.
    It used to open on the LAST event, which put the final score, the finished

@@ -349,25 +349,29 @@ test('the line the rule names is explained where it is drawn', () => {
   assert.match(SHELL, /\.rulel\{[^}]*stroke:var\(--flag\)/,
                'the rule line lost its colour');
 
-  const legend = /<div class="legend">([\s\S]*?)<\/div>/.exec(SHELL)[1];
-  assert.match(legend, /k-rl/, 'the rule line has no legend swatch');
-  assert.match(legend, /the line the rule names/,
-               'the legend does not say what the lit line is');
+  // ⭐ THE KEY MOVED INTO THE LAYER'S OWN ROW on 2026-08-25 — same claim, one
+  // object instead of two (docs/below-the-rink-2.md §7.2). The swatch and the
+  // sentence that names the lit line now sit inside the whistle row, which is
+  // also what gates them: the row is `aria-pressed` and `.lon` only shows then.
+  const row = /<button class="lrow" id="lyWhistle"[\s\S]*?<\/button>/.exec(SHELL)[0];
+  assert.match(row, /k-rl/, 'the rule line has no swatch on the control that draws it');
+  assert.match(row, /the line the rule names/,
+               'the page does not say what the lit line is');
 
-  // IT MUST APPEAR WITH THE LAYER THAT DRAWS IT. The whistle keys are hidden
-  // until the layer is on; a rule-line key outside that group would explain a
-  // line that is not on the ice.
-  const entry = /<span class="lkey ([^"]*)"><i class="k-rl">/.exec(legend);
-  assert.ok(entry, 'the rule-line key is not a layer key');
-  assert.match(entry[1], /lk-wh/, 'the rule-line key must belong to the whistle group');
+  // IT MUST APPEAR WITH THE LAYER THAT DRAWS IT. A sentence about the rule line
+  // outside the on-state would explain a line that is not on the ice.
+  const on = /<span class="lon">([\s\S]*?)<\/span>/.exec(row);
+  assert.ok(on, 'the whistle row carries no on-the-ice note at all');
+  assert.match(on[1], /the line the rule names/,
+               'the rule line is explained in the always-visible half, so it describes a mark that is not there');
 });
 
 test('and the legend names both rules the line serves', () => {
   // linesFor() answers for icing AND offside, and they name different lines --
   // the centre line and a goal line for one, a blue line for the other. A key
   // that mentioned only icing would be wrong half the time it is on screen.
-  const legend = /<div class="legend">([\s\S]*?)<\/div>/.exec(SHELL)[1];
-  const key = /the line the rule names[^<]*/.exec(legend)[0];
+  const row = /<button class="lrow" id="lyWhistle"[\s\S]*?<\/button>/.exec(SHELL)[0];
+  const key = /the line the rule names[^<]*/.exec(row)[0];
   for (const w of ['icing', 'offside', 'centre line', 'blue line'])
     assert.ok(key.includes(w), `the rule-line key never mentions ${w}: "${key}"`);
 });

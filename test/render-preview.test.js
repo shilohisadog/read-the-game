@@ -161,8 +161,8 @@ test('⭐ the preview runs with the Control layer ON, so the hero shows what the
   // a real DOM stores "true". Asserting either spelling would pin the harness
   // rather than the behaviour.
   assert.equal(String(a.$('lyCorsi').getAttribute('aria-pressed')), 'true');
-  assert.match(a.$('lyCorsi').textContent, /^✓ /,
-    'the layer button still says the layer is off');
+  assert.equal(a.$('stCorsi').textContent, 'On',
+    'the layer row still says the layer is off');
 
   // ⭐ AND THE BOARD NAMES ITS UNIT. In preview `.counters` is hidden, so this is
   // the ONLY element that can say what the two figures count. Without it the
@@ -244,7 +244,12 @@ test('the preview is hidden by CSS, not by deleting the app', () => {
   // `.lede` was here until the paragraph it named was replaced by the
   // first-visit block (it duplicated that block's job, went stale naming
   // four layers when there were five, and cost 245px above the rink).
-  for (const cls of ['.transport', '.layers', '.verdict', '.nextup', '.newcomer',
+  // ⭐ `.zone` REPLACED FOUR OF THESE on 2026-08-25 and that is worth stating,
+  // because a rule that hides a WRAPPER is a rule nobody has to remember to
+  // extend. `.layers`, `.figpick`, `.hint` and `.foot` were each named here; the
+  // next block added below the rink would have had to be added here too, and the
+  // preview is exactly the surface where nobody would notice it was not.
+  for (const cls of ['.transport', '.zone', '.verdict', '.nextup', '.newcomer',
                      // Added when Kevin found the rink cropped: these are real
                      // height in a box sized for a rink, and neither is part of
                      // a five-second taste.

@@ -12,6 +12,21 @@ import { rich, app, SCRIPT, PAGE_CSS, boot, paceOf } from './helpers/page.js';
 
 const at = d => +d.$('scrub').value;
 
+/**
+ * ⭐ WHAT A READER CAN SEE, WITH THE SOURCE'S OWN WORDS ABOUT ITSELF REMOVED.
+ *
+ * Three checks in this file are ABSENCE claims about visible copy — no button
+ * says "play", none says "Teaching" — and all three failed on their own
+ * evidence the first time, because the comments beside the code explain the
+ * renames by QUOTING the words they retired. A check that cannot tell code from
+ * the words about code is not a check about code; the same trap took the
+ * `class="lede"` guard, and it bites hardest on absence, where a comment turns a
+ * true claim false, and on presence, where it turns a false claim true.
+ */
+const SEEN = app.split('<script>')[0]
+  .replace(/<style>[\s\S]*?<\/style>/g, '')
+  .replace(/<!--[\s\S]*?-->/g, '');
+
 test('the transport can step ONE play, in both directions', () => {
   const a = boot();
   a.$('scrub').oninput({ target: { value: '40' } });
@@ -298,7 +313,7 @@ test('the speed control moves the caption too, not just the frame', () => {
     const spoke = rows.filter(r => r.spoke);
     return { frame: Math.min(...rows.map(r => r.ms)), cap: spoke[0].dur };
   };
-  const teaching = at(null), faster = at('sp2');
+  const teaching = at(null), faster = at('faster');
   assert.ok(faster.frame < teaching.frame,
     `Faster waits ${faster.frame}ms and Teaching waits ${teaching.frame}ms`);
   assert.notEqual(faster.cap, teaching.cap,
@@ -365,17 +380,161 @@ test('the step buttons say what they step THROUGH, in words a reader can see', (
   const btn = id => app.match(new RegExp(`<button[^>]*id="${id}"[^>]*>([^<]*)<`))[1];
   for (const id of ['back', 'fwd']) {
     const visible = btn(id);
-    assert.match(visible, /\bplay\b/,
+    assert.match(visible, /\bevent\b/i,
       `#${id} reads "${visible}" — it names a direction but not what it moves through`);
     // The accessible name must not be poorer than the visible one, and the
     // arrow glyph must not be the only thing a screen reader is handed.
     const aria = app.match(new RegExp(`<button[^>]*id="${id}"[^>]*aria-label="([^"]*)"`))[1];
-    assert.match(aria, /\bplay\b/, `#${id}'s accessible name lost the unit`);
+    assert.match(aria, /\bevent\b/i, `#${id}'s accessible name lost the unit`);
   }
-  // And the unit is THE PAGE'S OWN WORD for an event, not a new one introduced
-  // in the transport: a viewer who reads "Explain plays" and "every play is
-  // named as it happens" must meet the same noun here.
-  assert.match(app, /Explain plays/, 'the page stopped calling events "plays" elsewhere');
+});
+
+/**
+ * ⭐ THE WRAP MAY FALL BETWEEN GROUPS AND NEVER INSIDE ONE.
+ *
+ * Measured at 390 before this changed: the transport was nine controls in one
+ * wrapping flex row and broke into FIVE rows, with the break landing inside
+ * every group it had — `◀ Prev play` ending one row and `Next play ▶` starting
+ * the next, the three gears split across two more. A reader cannot tell which
+ * buttons belong together when the only thing deciding is where the line ran out.
+ *
+ * `npm test` cannot see layout, so this asserts the two things that CAUSE it and
+ * are visible in the source: the pair and the gears each sit inside one `.grp`,
+ * and `.grp` is `flex-wrap:nowrap`. Neither half is worth anything alone — a
+ * group with no rule wraps, and a rule with no group has nothing to hold.
+ */
+test('the step pair and the speed gears are each one non-wrapping group', () => {
+  // SCOPED TO THE TRANSPORT. `.grp` is the page's rule for every single-choice
+  // pair now — Situations, Trails, Players and Narration each wear one — so a
+  // count over the whole document would grow every time the rule is applied
+  // correctly, which is a test that punishes its own subject spreading.
+  const transport = app.match(/<div class="transport">[\s\S]*?<\/div>\s*<p class="verdict"/)[0];
+  const grp = transport.match(/<div class="grp"[^>]*>[\s\S]*?<\/div>/g) || [];
+  assert.equal(grp.length, 2, `expected two control groups in the transport, found ${grp.length}`);
+
+  const holding = ids => grp.find(g => ids.every(id => g.includes(`id="${id}"`)));
+  assert.ok(holding(['back', 'fwd']), 'Prev and Next can still be split across a line break');
+  assert.ok(holding(['slower', 'faster']), 'Slower and Faster can still be split across a line break');
+
+  // And every group carries a name, because a bordered box of buttons is a
+  // `role="group"` to a screen reader only if it says what the group is.
+  for (const g of grp) assert.match(g, /aria-label="[^"]+"/, 'a control group has no accessible name');
+
+  assert.match(PAGE_CSS, /#rg \.grp\{[^}]*flex-wrap:nowrap/,
+    'the groups exist but nothing stops the wrap falling inside them');
+});
+
+/**
+ * ⭐ NARRATION LEFT THE TRANSPORT, AND ITS NOTE IS READABLE BEFORE THE PRESS.
+ *
+ * Kevin: "it's not really 'Explain plays', it's more like 'Narration'… and
+ * really, is that even an option to toggle off?" It stays an option and stops
+ * being a primary one — it changes what the ice SAYS, never where the playhead
+ * is, which is the definition of a display preference and puts it with Trails
+ * and Players.
+ *
+ * The second half is the rule docs/below-the-rink-2.md §4.2 named: a note about
+ * the ICE fires when the ice shows it, a note about a CONTROL is available
+ * before it is pressed. `nTrails` and `nFig` are both EMPTY in the default state
+ * — you learn what `Tabletop` does only after choosing `Tabletop` — and this is
+ * the first control built the other way round. Asserted in the MARKUP, because
+ * a note the renderer fills in on a state change is exactly the defect.
+ */
+test('narration is a display pick, and it explains itself before it is used', () => {
+  const transport = app.match(/<div class="transport">[\s\S]*?<\/div>\s*<p class="verdict"/)[0];
+  assert.ok(!transport.includes('id="lbl"'),
+    'narration is back in the transport, beside controls that move the playhead');
+
+  const pick = app.match(/<div class="figpick"><span class="ll">Narration:[\s\S]*?<\/span><\/div>/)[0];
+  assert.match(pick, /id="lbl"[^>]*data-n="on"[^>]*aria-pressed="true"/, 'narration does not start on');
+  assert.match(pick, /id="lblOff"[^>]*data-n="off"/, 'there is no way to turn it off');
+
+  const note = pick.match(/<span class="fnote" id="nLbl">([^<]*)<\/span>/);
+  assert.ok(note && note[1].trim().length > 20,
+    'the note is empty in the default state — the control explains itself only ' +
+    'after you have already pressed it, which is the §4.2 defect it was built to avoid');
+});
+
+/**
+ * ⭐ THE COUNTABLE "PLAY" IS GONE AND THE MASS NOUN STAYED.
+ *
+ * Kevin, 2026-08-25: "these are really events and there could have been 'plays'
+ * in between the events that aren't shown." That is Doctrine §4 -- discreteness
+ * IS the honesty -- so a button offering the "next play" claims a continuity the
+ * feed does not have and we refuse to invent.
+ *
+ * BOTH HALVES, because either alone is satisfied by the wrong change. The first
+ * half asks that the two visible countable uses are gone. On its own a global
+ * s/play/event/ passes it -- and breaks correct English everywhere the word is
+ * the MASS noun for the flow of the game. So the second half pins the mass uses
+ * that must survive untouched: a layer named for when play STOPS, and a whistle
+ * mark for where play RESTARTED. A rename that is not surgical reddens it.
+ */
+test('"play" leaves as a countable noun and stays as a mass noun', () => {
+  assert.doesNotMatch(SEEN, /Explain plays|Prev play|Next play/,
+    'a control a reader can see still calls one recorded event "a play"');
+  // The greeting is built by concatenation, so the sentence is not contiguous in
+  // the file — the match is anchored on the clause that carries the noun.
+  assert.match(app, /and just watch — every event/,
+    'the greeting stopped promising that EVENTS are named');
+  assert.match(app, /is named as it happens/,
+    'the greeting stopped promising that anything is named');
+
+  // ⚠️ "play restarted here" WAS one of these and is not any more: it was the
+  // whistle layer's legend key, and the merge moved it into the whistle row as
+  // "The ring marks where play restarted". Still the mass noun, still correct,
+  // different words — so the survivor list follows the copy rather than pinning
+  // a phrase that a legitimate edit retired.
+  for (const survivor of ['Why play stopped', 'where play restarted', 'stopped play']) {
+    assert.ok(SEEN.includes(survivor),
+      `"${survivor}" is the mass noun and is correct English — a blanket ` +
+      `rename took it, which is the failure mode this half exists to catch`);
+  }
+});
+
+/**
+ * THE SPEED GEARS ARE THREE, AND THE MIDDLE ONE IS REACHABLE.
+ *
+ * Kevin asked for `Slower` and `Faster` without `Teaching`, whose real defect he
+ * named: it is a SPEED wearing the name of a content mode, sitting beside what
+ * was then an actual content toggle. But two buttons cannot express three
+ * states, and the default is a state -- drop the middle button and a viewer who
+ * tries `Faster` can never get back to the pace everything was measured at.
+ * So the word goes and the gear stays, named for what it is.
+ */
+test('speed is a stepper: two buttons, three paces, all of them reachable', () => {
+  // Kevin asked for `Slower` and `Faster` without `Teaching`, whose defect he
+  // named exactly: a SPEED wearing the name of a content mode. The objection to
+  // simply deleting it was that two buttons cannot express three states — and
+  // his answer is that they can, if they STEP: "faster would play at X + 1, then
+  // hitting slower would move back to X, then slower again would move to X-1."
+  assert.doesNotMatch(SEEN, /Teaching/, 'the content-mode name came back');
+  assert.match(app, /id="slower"/); assert.match(app, /id="faster"/);
+  assert.doesNotMatch(app, /id="sp1"/, 'the middle gear is back as a third button');
+
+  // THE MIDDLE PACE MUST STILL BE REACHABLE, which is the whole reason the third
+  // button existed. Walk the stepper and read the pace the renderer would use.
+  // The shortest wait the page asks for over a run — the same reading the pace
+  // test above takes, so the two cannot disagree about what "faster" means.
+  const a = boot();
+  const pace = walk => Math.min(...paceOf(60,
+    d => { for (const id of walk) d.$(id).onclick(); }).rows.map(r => r.ms));
+  const paces = [pace([]), pace(['faster']), pace(['faster', 'slower']), pace(['slower'])];
+  assert.ok(paces[1] < paces[0], 'Faster did not speed the replay up');
+  assert.equal(paces[2], paces[0], 'stepping up then down did not return to the default pace');
+  assert.ok(paces[3] > paces[0], 'Slower did not slow the replay down');
+
+  // AND THE ENDS ARE THE READOUT. With no pressed label saying where you are,
+  // the disable is what says it — and it is also what makes every press produce
+  // a visible change. Without this half, `setGear` clamping silently would look
+  // identical to a control that had stopped working.
+  assert.equal(!!a.$('slower').disabled, false, 'the default pace cannot go slower');
+  assert.equal(!!a.$('faster').disabled, false, 'the default pace cannot go faster');
+  a.$('faster').onclick();
+  assert.equal(a.$('faster').disabled, true, 'the fastest pace still offers Faster');
+  a.$('slower').onclick(); a.$('slower').onclick();
+  assert.equal(a.$('slower').disabled, true, 'the slowest pace still offers Slower');
+  assert.equal(!!a.$('faster').disabled, false, 'Faster stayed dead after stepping away from the top');
 });
 
 /**
@@ -403,7 +562,7 @@ test('the step buttons say what they step THROUGH, in words a reader can see', (
  * BOTH BRANCHES, because "no goal pill" is satisfied by deleting the pill
  * outright — which would silently take the penalty taker and the only place the
  * site names the slot with it. And the ice is behind a CONTROL: switch
- * `Explain plays` off and the pill is the goal's only announcement.
+ * Narration off and the pill is the goal's only announcement.
  */
 test('a goal is not captioned twice, and IS captioned when the ice is silent', () => {
   const goalCaps = a => callsWhileStepping(a, h => (/🚨 GOAL/.test(h) ? 'goal' : 'other'))
@@ -421,13 +580,16 @@ test('a goal is not captioned twice, and IS captioned when the ice is silent', (
   assert.equal(goalCaps(boot()), goals, 'a goal stopped getting a moment at all');
 
   // AND WITH THE ICE SWITCHED OFF the pill has to come back, or turning labels
-  // off silently removes the announcement instead of moving it.
+  // off silently removes the announcement instead of moving it. `Narration: Off`
+  // is the control that used to be `💬 Explain plays` in the transport; it is a
+  // named pair now, so the test presses the button that means off rather than
+  // toggling whatever `#lbl` currently holds.
   const off = boot();
-  off.$('lbl').click();
+  off.GROUPS['#rg .nbtn'].find(b => b.dataset.n === 'off').click();
   const pills = callsWhileStepping(off, (h, d) =>
     /🚨 GOAL/.test(d.$('caption').innerHTML) ? 'pill' : 'other').filter(x => x === 'pill');
   assert.equal(pills.length, goals,
-    'with `Explain plays` off the goal has no announcement anywhere');
+    'with narration off the goal has no announcement anywhere');
 });
 
 /**

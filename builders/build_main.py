@@ -86,30 +86,47 @@ __CSS__</style>
 <div class="blockpanel" id="blockPanel"></div>
 <div class="goalies" id="goaliePanel"></div>
 <div class="transport"><button class="play" id="play">▶ Play from start</button>
-  <button class="spd stepb" id="back" aria-label="Prev play">◀ Prev play</button><button class="spd stepb" id="fwd" aria-label="Next play">Next play ▶</button>
-  <button class="spd" id="sp0" aria-pressed="false">🐢 Slower</button><button class="spd" id="sp1" aria-pressed="true">Teaching</button><button class="spd" id="sp2" aria-pressed="false">Faster</button><button class="spd" id="lbl" aria-pressed="true">💬 Explain plays</button>
-  <button id="work" aria-expanded="false">Show me the work</button>
+  <div class="grp" role="group" aria-label="Step through the events"><button class="spd stepb" id="back" aria-label="Previous event">◀ Prev event</button><button class="spd stepb" id="fwd" aria-label="Next event">Next event ▶</button></div>
+  <div class="grp" role="group" aria-label="Replay speed"><button class="spd stepb" id="slower">&#9664; Slower</button><button class="spd stepb" id="faster">Faster &#9654;</button></div>
   <input class="scrub" id="scrub" type="range" min="-1" max="1" value="-1"></div>
 <p class="verdict" id="verdict"></p>
-<div class="legend"><span><i class="k-slot"></i>the slot &mdash; within 33 ft of the net, between the face-off dots</span><span><i class="k-zone"></i>either blue line &mdash; out to the neutral-zone dots, the ice teams fight to hold</span><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white-filled, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span><i class="k-g"></i><i class="k-gv"></i>goal — either sweater</span><span><i class="k-blk"></i>blocked — ringed where the puck was <b>stopped</b></span><span class="lkey lk-hd"><i class="k-hd"></i>from the slot</span><span class="lkey lk-blk">blocked shots are dimmed unless a body stopped them</span><span class="lkey lk-wh"><i class="k-wh"></i>play restarted here — brightest at the most recent stoppage</span><span class="lkey lk-wh"><i class="k-rl"></i>the line the rule names — for icing the centre line and the far goal line, for offside the blue line</span><span class="lkey lk-ends" id="endsKey"></span><span class="lkey lk-unrec" id="unrecKey"></span></div>
-<div class="newcomer nwhy2" id="newcomerWhy"></div><div class="layers"><span class="ll">Add a metric layer:</span><button class="lyr" id="lyCorsi" aria-pressed="false">＋ Control (Corsi)</button><button class="lyr" id="lyHd" aria-pressed="false">＋ Shots from the slot</button><button class="lyr" id="lyGoalie" aria-pressed="false">＋ Goaltending</button><button class="lyr" id="lyWhistle" aria-pressed="false">＋ Why play stopped</button><button class="lyr" id="lyBlock" aria-pressed="false">＋ Blocked shots</button></div>
+<section class="zone zlayers" aria-labelledby="zhLayers"><h2 class="zh" id="zhLayers">Add a metric layer</h2>
+<div class="newcomer nwhy2" id="newcomerWhy"></div>
+<div class="lrows">
+<button class="lrow" id="lyCorsi" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Control (Corsi)</b><span class="lds">every shot attempt — on goal, missed, or blocked</span><span class="lon">The counters above the rink fill in as the replay runs, and the bar splits the attempts between the two clubs.</span></span><span class="st" id="stCorsi">Off</span></button>
+<button class="lrow" id="lyHd" aria-pressed="false"><span class="lmk"><i class="k-hd"></i></span><span class="ltx"><b>Shots from the slot</b><span class="lds">attempts from within 33 ft of the net, between the face-off dots</span><span class="lon">An amber ring marks each one. Click a ring to see the distance and angle it was measured by.</span></span><span class="st" id="stHd">Off</span></button>
+<button class="lrow" id="lyGoalie" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Goaltending</b><span class="lds">every shot each goaltender faced, and what became of it</span><span class="lon">A card per goaltender builds its save percentage as the replay runs.</span></span><span class="st" id="stGoalie">Off</span></button>
+<button class="lrow" id="lyWhistle" aria-pressed="false"><span class="lmk"><i class="k-wh"></i><i class="k-rl"></i></span><span class="ltx"><b>Why play stopped</b><span class="lds">the rule that stopped play, and the dot it restarted on</span><span class="lon">The ring marks where play restarted, brightest at the most recent stoppage. The bar lights the line the rule names — for icing the centre line and the far goal line, for offside the blue line.</span></span><span class="st" id="stWhistle">Off</span></button>
+<button class="lrow" id="lyBlock" aria-pressed="false"><span class="lmk"><i class="k-blk"></i><i class="k-blkv"></i></span><span class="ltx"><b>Blocked shots</b><span class="lds">the attempts a body stopped before they reached the goalie</span><span class="lon">Blocked attempts keep their ring and every other mark dims, so the ones a body stopped stand out.</span></span><span class="st" id="stBlock">Off</span></button>
+</div>
 <div class="figpick sit"><span class="ll">Situations:</span>
-<button class="lyr sbtn" data-s="all" aria-pressed="true">All situations</button>
-<button class="lyr sbtn" data-s="even" aria-pressed="false">Even strength only</button>
+<div class="grp" role="group" aria-label="Which situations are counted"><button class="lyr sbtn" data-s="all" aria-pressed="true">All situations</button><button class="lyr sbtn" data-s="even" aria-pressed="false">Even strength only</button></div>
 <span class="fnote" id="nSit"></span></div>
-<div class="hint">Tip: click any shot ringed in amber to see <b>why</b> it counts as a slot shot — with trails set to <b>keep every mark</b>, earlier ones stay clickable too.</div>
-<div class="figpick"><span class="ll">Trails:</span>
-<button class="lyr tbtn" data-t="off" aria-pressed="true">Current moment</button>
-<button class="lyr tbtn" data-t="all" aria-pressed="false">Keep every mark</button>
-<span class="fnote" id="nTrails"></span></div>
-<div class="figpick"><span class="ll">Players:</span>
-<button class="lyr fbtn" data-f="mascot" aria-pressed="true">Mascot</button>
-<button class="lyr fbtn" data-f="tabletop" aria-pressed="false">Tabletop</button>
-<span class="fnote" id="nFig"></span></div>
+<button id="work" aria-expanded="false">Show me the work</button>
 <div class="work" id="workPanel" hidden></div>
+<div class="hint">Tip: click any shot ringed in amber to see <b>why</b> it counts as a slot shot — with trails set to <b>keep every mark</b>, earlier ones stay clickable too.</div>
+</section>
+<section class="zone zref" aria-labelledby="zhRef"><h2 class="zh" id="zhRef">What the marks mean</h2>
+<div class="legend"><span><i class="k-slot"></i>the slot — within 33 ft of the net, between the dots</span><span><i class="k-zone"></i>either blue line — out to the neutral-zone dots</span><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span><i class="k-g"></i><i class="k-gv"></i>goal — either sweater</span><span><i class="k-blk"></i><i class="k-blkv"></i>blocked — ringed where the puck was <b>stopped</b></span></div>
+<p class="disclose lkey lk-ends" id="endsKey"></p>
+<p class="disclose lkey lk-unrec" id="unrecKey"></p>
+</section>
 <div class="whybk" id="whyBk"><div class="why" id="whyContent"></div></div>
 <div class="foot" id="gl">—</div>
+<section class="zone znext" aria-labelledby="zhNext"><h2 class="zh" id="zhNext">Watch another game</h2>
 <nav class="nextup" id="nextup" aria-label="Where to go next"></nav>
+</section>
+<details class="zone zdisp"><summary class="zh">Display options</summary>
+<div class="figpick"><span class="ll">Trails:</span>
+<div class="grp" role="group" aria-label="How long marks stay on the ice"><button class="lyr tbtn" data-t="off" aria-pressed="true">Current moment</button><button class="lyr tbtn" data-t="all" aria-pressed="false">Keep every mark</button></div>
+<span class="fnote" id="nTrails"></span></div>
+<div class="figpick"><span class="ll">Players:</span>
+<div class="grp" role="group" aria-label="How players are drawn"><button class="lyr fbtn" data-f="mascot" aria-pressed="true">Mascot</button><button class="lyr fbtn" data-f="tabletop" aria-pressed="false">Tabletop</button></div>
+<span class="fnote" id="nFig"></span></div>
+<div class="figpick"><span class="ll">Narration:</span>
+<div class="grp" role="group" aria-label="Whether the ice names each event"><button class="lyr nbtn" id="lbl" data-n="on" aria-pressed="true">On</button><button class="lyr nbtn" id="lblOff" data-n="off" aria-pressed="false">Off</button></div>
+<span class="fnote" id="nLbl">Names each event on the ice as it happens — and calls a goal with the scorer and assists.</span></div>
+</details>
 </div></div>
 <script>
 __JS__</script>"""

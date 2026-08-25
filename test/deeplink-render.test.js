@@ -56,6 +56,15 @@ function fakeDom() {
     '#rg .tbtn': ['off', 'all'].map(t => Object.assign(el(), { dataset: { t } })),
     '#rg .sbtn': ['all', 'even'].map(s => Object.assign(el(), { dataset: { s } })),
     '#rg .fbtn': ['mascot', 'tabletop'].map(f => Object.assign(el(), { dataset: { f } })),
+    // NARRATION'S TWO BUTTONS CARRY IDS AS WELL AS A CLASS, and the fake hands
+    // back THE SAME OBJECTS `getElementById` does -- which is what the real
+    // document does. Minting separate ones would let `$('lbl').click()` reach a
+    // button no handler was ever attached to: a click that silently does
+    // nothing, reported as the page failing to respond.
+    '#rg .nbtn': [['lbl', 'on'], ['lblOff', 'off']].map(([id, n]) => {
+      if (!byId.has(id)) byId.set(id, el());
+      return Object.assign(byId.get(id), { dataset: { n } });
+    }),
     '#rg .cc.a .lb': [el()],
     '#rg .cc.h .lb': [el()],
   };

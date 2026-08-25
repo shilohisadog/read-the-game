@@ -10,7 +10,19 @@ import assert from 'node:assert/strict';
 import { corsi } from '../src/lib/layers/corsi.js';
 import { rich, app, PAGE_CSS, prose, boot, CURVE_AND_MIX } from './helpers/page.js';
 
-const CONDITIONAL_KEYS = { 'lk-hd': 'slot', 'lk-blk': 'blocked' };
+/**
+ * ⭐ THE LAYER KEYS LEFT THE LEGEND ON 2026-08-25 — they did not stop existing.
+ *
+ * `docs/below-the-rink-2.md` §7.2: a layer's key IS its description, and drawing
+ * them apart is what left five metric layers as five unexplained nouns in one
+ * block and four unattached marks in another. One row now carries the mark, the
+ * name, what it counts and its state.
+ *
+ * So the rule these tests are about is unchanged and its MECHANISM moved: from
+ * `#rg.slot .legend .lk-hd` to `#rg .lrow[aria-pressed="true"] .lon`. Same
+ * claim — a mark is named only while the ice is drawing it.
+ */
+const LAYER_ROWS = ['lyCorsi', 'lyHd', 'lyGoalie', 'lyWhistle', 'lyBlock'];
 /**
  * And the keys gated on the GAME's state rather than on a button.
  *
@@ -21,25 +33,70 @@ const CONDITIONAL_KEYS = { 'lk-hd': 'slot', 'lk-blk': 'blocked' };
  */
 const GAME_STATE_KEYS = { 'lk-ends': 'endskey', 'lk-unrec': 'unrec' };
 
-test('a legend key is hidden until the layer that draws its mark is on', () => {
-  // The markup ships every key — this is a stylesheet decision, so the assertion
-  // is on the rule, in the one instrument that can see it at build time.
-  for (const [key, cls] of Object.entries({ ...CONDITIONAL_KEYS, ...GAME_STATE_KEYS })) {
-    assert.match(app, new RegExp(`class="lkey ${key}"`), `${key} is not in the legend at all`);
-    assert.match(PAGE_CSS, new RegExp(`#rg\\.${cls} \\.legend \\.${key}`),
-      `${key} has no rule revealing it when the ${cls} layer is on`);
+test('a layer\'s mark is named in its own row, and only while the layer draws it', () => {
+  // The markup ships every row complete — this is a stylesheet decision, so the
+  // assertion is on the rule, in the one instrument that can see it at build time.
+  const row = id => app.match(new RegExp(`<button class="lrow" id="${id}"[\\s\\S]*?</button>`))[0];
+  for (const id of LAYER_ROWS) {
+    const r = row(id);
+    assert.match(r, /<span class="lds">[^<]{20,}</,
+      `${id} does not say what it counts — five layers as five unexplained nouns is the defect this replaced`);
+    assert.match(r, /<span class="lon">[^<]{20,}</,
+      `${id} names no mark, so nothing tells a viewer what appeared on the ice`);
   }
-  assert.match(PAGE_CSS, /#rg \.legend \.lkey\{display:none\}/,
-    'conditional keys are not hidden by default, so they are not conditional');
+  assert.match(PAGE_CSS, /#rg \.lrow \.lon\{display:none/,
+    'the on-the-ice note is not hidden by default, so it is not conditional');
+  assert.match(PAGE_CSS, /#rg \.lrow\[aria-pressed="true"\] \.lon\{display:block\}/,
+    'nothing reveals the note when the layer goes on');
+
+  // ⭐ AND THE TWO SENTENCES ARE DIFFERENT KINDS. `.lds` is about the CONTROL and
+  // must be readable before the press; `.lon` is about the ICE and must not be.
+  // A build that gated both would be the §4.2 defect, and one that gated neither
+  // would be the permanent-legend defect the progressive legend fixed.
+  assert.doesNotMatch(PAGE_CSS, /\.lds\{[^}]*display:none/,
+    'the description is hidden until the layer is on — you cannot learn what it does before using it');
 });
 
-test('the class each conditional key waits for is REALLY toggled by its button', () => {
-  // The half that makes the rule above mean something. A key gated on a class
-  // nothing sets is a key nobody ever sees — the mirror of the defect being
-  // fixed, and exactly as invisible.
+test('the two game-state disclosures are still gated, and are no longer keys', () => {
+  // They never were keys: neither has a swatch, and every other row in the
+  // legend is a mark and its name. They are sentences about the GAME, so they
+  // are drawn as sentences under the panel rather than among the marks.
+  for (const [key, cls] of Object.entries(GAME_STATE_KEYS)) {
+    assert.match(app, new RegExp(`class="disclose lkey ${key}"`),
+      `${key} is not on the page at all`);
+    assert.match(PAGE_CSS, new RegExp(`#rg\\.${cls} \\.${key}`),
+      `${key} has no rule revealing it when ${cls} is true of the game`);
+  }
+  assert.match(PAGE_CSS, /#rg \.lkey\{display:none\}/,
+    'the disclosures are not hidden by default, so they are not conditional');
+
+  const legend = /<div class="legend">([\s\S]*?)<\/div>/.exec(app)[1];
+  assert.doesNotMatch(legend, /lkey/,
+    'a disclosure is back inside the key list, where a row with no swatch reads as a wall');
+});
+
+test('the state each layer row reports is REALLY the state of the layer', () => {
+  // The half that makes the rule above mean something. A note gated on an
+  // aria-pressed nothing sets is a note nobody ever sees — the mirror of the
+  // defect being fixed, and exactly as invisible. And the state PILL is checked
+  // beside the class, because a row that says "On" over a layer that is off is
+  // the control-reporting-an-effect-it-is-not-having defect.
   const a = boot();
-  for (const [, cls] of Object.entries(CONDITIONAL_KEYS))
+  for (const cls of ['slot', 'blocked'])
     assert.equal(a.$('rg').classList.contains(cls), false, `${cls} is on before anyone asked`);
+  // THE RESTING STATE IS READ FROM THE MARKUP, not through the fake. No setter
+  // runs at boot — the document ships every row saying `Off` — so asserting the
+  // fake's element here would pin the harness rather than what a browser shows.
+  for (const id of ['stCorsi', 'stHd', 'stGoalie', 'stWhistle', 'stBlock'])
+    assert.match(app, new RegExp(`<span class="st" id="${id}">Off</span>`),
+      `${id} does not ship saying the layer is off`);
+
+  a.$('lyHd').click();
+  assert.equal(a.$('stHd').textContent, 'On', 'the slot row does not say it is on');
+  assert.equal(String(a.$('lyHd').getAttribute('aria-pressed')), 'true',
+    'the row is pressed in fact but not in the attribute its note is gated on');
+  a.$('lyHd').click();
+  assert.equal(a.$('stHd').textContent, 'Off', 'the row keeps saying On after the layer left');
 
   a.$('lyHd').click();
   assert.ok(a.$('rg').classList.contains('slot'), 'the slot layer sets no class, so its key can never appear');
@@ -245,7 +302,13 @@ test('the card sits above the controls, not below them', () => {
   // The other half of Q1, and it is a claim about DOM order rather than pixels,
   // so it is checkable here. It was next-to-last: 1,156px below the rink on a
   // phone, screen 2.18 of 2.99, behind 230 words of read-once prose.
-  const order = ['class="transport"', 'class="verdict"', 'class="legend"', 'class="layers"', 'class="figpick"'];
+  // ⭐ LEGEND AND LAYERS SWAPPED ON 2026-08-25 and the swap is the point. The
+  // five zones run WATCH → LAYERS → REFERENCE → NEXT → DISPLAY: the conversion
+  // sits directly under the transport, the marks-reference is a read surface
+  // below it, and the four real destinations moved ABOVE the cosmetic toggles
+  // they had been ranked under. docs/below-the-rink-2.md §7.1.
+  const order = ['class="transport"', 'class="verdict"', 'class="zone zlayers"',
+                 'class="legend"', 'class="zone znext"', 'class="zone zdisp"'];
   let at = -1;
   for (const marker of order) {
     const k = app.indexOf(marker);
@@ -262,8 +325,16 @@ test('the even-strength note counts what actually dropped out, and agrees with t
   // And the number is reconciled against the ledger rather than recomputed here:
   // a test that re-derived it from the events would be a second implementation
   // agreeing with the first, which is the defect measure.mjs exists to avoid.
+  // ⭐ AND THE DEFAULT BRANCH IS NO LONGER EMPTY (2026-08-25). It used to be
+  // required empty, which explained `Even strength only` only to a reader who
+  // had already chosen it. What must NOT leak into the default is the live
+  // count, because that is a fact about the ice at a moment — so the two are
+  // checked apart: the default describes the control, the chosen state counts.
   const a = boot();
-  assert.equal(a.$('nSit').textContent, '', 'the note appears before even-strength is chosen');
+  const resting = a.$('nSit').textContent;
+  assert.ok(resting, 'the situations control explains itself only after it is used');
+  assert.doesNotMatch(resting, /\d/,
+    'the resting note carries a number, so it is claiming something about a game nobody has filtered');
 
   a.GROUPS['#rg .sbtn'].find(b => b.dataset.s === 'even').click();
   const scrub = a.$('scrub');
@@ -302,8 +373,15 @@ test('the even-strength note counts what actually dropped out, and agrees with t
   assert.ok(sawOne, 'no frame in this game drops exactly one attempt — the singular arm is untested');
   scrub.value = scrub.max; scrub.oninput({ target: { value: scrub.value } });
 
+  // AND THE COUNT LEAVES WITH THE SETTING even though the note does not. This is
+  // the half that keeps the §4.2 fix from becoming a stale-number bug: the
+  // resting note describes the control, and must not go on reporting a figure
+  // about a filter nobody has applied.
   a.GROUPS['#rg .sbtn'].find(b => b.dataset.s === 'all').click();
-  assert.equal(a.$('nSit').textContent, '', 'the note outlived the setting that produced it');
+  const back = a.$('nSit').textContent;
+  assert.ok(back, 'the note left with the setting instead of going back to describing the control');
+  assert.doesNotMatch(back, /dropped out/,
+    'the count outlived the setting that produced it');
 });
 
 /* --------------------------------------------------------------- the first visit
@@ -455,7 +533,7 @@ test('each half of the greeting sits beside the thing it is about', () => {
   // the block pushed the play button it names below the fold (rink ended 899,
   // button 914, fold 844 on a 390px phone). DOM order is the half checkable
   // here; the geometry is checked by looking.
-  const order = ['id="newcomer"', 'class="transport"', 'id="newcomerWhy"', 'class="layers"'];
+  const order = ['id="newcomer"', 'class="transport"', 'id="newcomerWhy"', 'class="lrow"'];
   let at = -1;
   for (const marker of order) {
     const k = app.indexOf(marker);
