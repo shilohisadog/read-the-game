@@ -235,6 +235,84 @@ sizes and it is the first thing a build should replace with real numbers.
 
 ---
 
+## 8b. CHENG's review — three adopted, one corrected by measurement
+
+Reviewed 2026-08-25.
+
+**Adopted, verbatim, as the rule §4.2 was reaching for:**
+
+> **A note about the ice fires when the ice shows it. A note about a control is
+> available before it is pressed.**
+
+**Adopted — the 44px finding argues for FEWER controls, not only bigger ones.**
+His caution is the half I missed: twenty-one controls each grown to 44px is a lot
+of height on a surface already at 1.58 screens, so the target must be measured
+*after* the layer rows merge, since that is the change that removes elements
+rather than enlarging them. He would fix the **16px scrubber** first — a *drag*
+target on a control already measured at 0.89 plays/px, and drag needs more
+precision than tap, not less. Agreed.
+
+**Adopted — the funnel needs a separator when it moves up.** Between the layer
+rows and the display toggles it will compete with the layers for the same
+attention, and *next game* must not read as *another layer*.
+
+**And he owned the `Play from start` error with its mechanism** — three labels
+keyed to position, and he had inferred a revert from two states of one function.
+
+### ⚠️ 8b.1 Q1 — right on the principle, wrong on the arithmetic
+
+His answer: do not collapse the reference panel, because the progressive legend
+was a **truthfulness** fix — *"a key behind a disclosure names what's on the ice
+AND hides it, which is worse than the permanent legend was; at least that one was
+wrong in the open."* **That reasoning is right and I adopt it.**
+
+But the escape hatch he offers does not exist. He writes that merging keys into
+layer rows *dissolves* the question, leaving *"three lines, not eight."*
+**Measured, on production at 390px:**
+
+| | keys | legend height |
+|---|---|---|
+| base view, no layer on | **8** | **255px** |
+| all five layers on | 12 | 414px |
+
+**Only four keys are layer-owned** — `lk-hd`, `lk-blk` and two `lk-wh` — and
+**not one of them is visible in the base view**. The other eight are marks the
+ice draws whatever you do: the slot and blue-line shading, home shot, visitor
+shot, puck, goal, blocked, and the ends sentence.
+
+⭐ **So merging removes ZERO lines from the base view.** It saves 159px when all
+five layers are on, and nothing at all in the state a first-time visitor is
+actually in. Q1 is not dissolved; it is exactly as live as it was, and the block
+it concerns is still the tallest thing on the surface.
+
+### ⭐ 8b.2 And the measurement hands us a third option neither of us proposed
+
+Per-key, base view, 390px:
+
+    37px  2 lines  13 words   the slot — within 33 ft of the net, between the face-off dots
+    37px  2 lines  15 words   either blue line — out to the neutral-zone dots, the ice teams…
+    19px  1 line    2 words   home shot
+    19px  1 line    7 words   visitor shot — white-filled, like the sweaters
+    19px  1 line    5 words   puck (jumps between real events)
+    19px  1 line    4 words   goal — either sweater
+    19px  1 line    8 words   blocked — ringed where the puck was stopped
+    37px  2 lines  12 words   the teams switch ends every period, as they do in the arena
+
+**Three rows wrap to two lines and are 111px of the 255px — 44% of the block.**
+Two are the base-layer entries Kevin flagged for trimming the day they shipped;
+the third is the ends sentence, which **is not a key at all** and leaves the
+legend under §5 regardless.
+
+So the block shrinks by about 40% **without hiding a single mark**: remove the
+one row that is not a key, and trim the two that are three times the length of
+every other. That satisfies CHENG's truthfulness constraint and Kevin's wall
+complaint at the same time, and it needs no disclosure widget.
+
+**Revised answer to Q1: do not collapse, and do not rely on the merge either.
+Shorten.**
+
+---
+
 ## 9. What the tests would have to say
 
 - **Every control below the rink is at least 44px tall**, asserted in a browser
@@ -245,6 +323,11 @@ sizes and it is the first thing a build should replace with real numbers.
   guarded so it cannot come back.
 - **The blocked key carries both sweaters**, like the goal key.
 - **The measured total below the rink at 390 does not exceed today's 1335px**,
-  because a redesign that is prettier and taller has not paid for itself.
+  because a redesign that is prettier and taller has not paid for itself. ⭐ And
+  it is measured AFTER the merge, not before — CHENG's point that the 44px floor
+  argues for fewer controls as much as for bigger ones.
+- **The legend still names every mark the ice is drawing.** The §8b.2 trim must
+  shorten rows, never remove a key for a mark that is on screen — that is the
+  truthfulness fix the progressive legend exists to protect.
 - Mutations: restore the 150px-era chip row, empty one note, shrink one target
   below 44 — each must redden exactly one test.
