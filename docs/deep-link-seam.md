@@ -1,5 +1,15 @@
 # The deep-link seam
 
+> **A note on the citations below.** They are pinned to `29f4c30`, the revision
+> this document was written against, and each carries the text its line must
+> contain — `tools/refcheck.py` checks both. They are **historical on purpose**:
+> `builders/build_main.py` was 1,100–1,900 lines of inlined JavaScript then, and
+> commit `914e638` moved the renderer out to `src/app.js`, leaving every address
+> here pointing into a file that is now 403 lines long. Re-aiming them at
+> today's code would make a dated description of the code appear to describe the
+> current code, which is a worse failure than a number that does not resolve.
+
+
 *For CHENG, before a line of URL parsing is written. §1–§3 are an audit of code
 and pipeline that exist today; §4 is a measurement over 88 published extracts;
 §5 onward is the design argument, which is where I expect the disagreement. The
@@ -25,9 +35,9 @@ Two independent regexes, in two places, with no parser between them:
 
 | where | what | form |
 |---|---|---|
-| `build_main.py:279` | `PREVIEW` | `/[?&]preview=1\b/.test(location.search)` |
-| `build_main.py:1030` | `want` (game id) | `location.search.match(/[?&]game=(\d+)/)` |
-| `build_main.py:1043` | `PREVIEW` **again** | the same regex, re-written |
+| `29f4c30:build_main.py:279 "const PREVIEW="` | `PREVIEW` | `/[?&]preview=1\b/.test(location.search)` |
+| `29f4c30:build_main.py:1030 "location.search.match(/[?&]game="` | `want` (game id) | `location.search.match(/[?&]game=(\d+)/)` |
+| `29f4c30:build_main.py:1043 "boot(g,null);return null;"` | `PREVIEW` **again** | the same regex, re-written |
 
 Three reads, two of them the same test spelled twice. Adding `at=` and `layer=`
 to this is how a fourth and a fifth get written. **This is the third instance in
@@ -44,7 +54,7 @@ any claim to be a "position":
 
 | state | held as | reachable today | should a link carry it? |
 |---|---|---|---|
-| event position | `let i` (`build_main.py:703`) | scrubber, play | **yes** — the whole point |
+| event position | `let i` (`29f4c30:build_main.py:703 "let i=EV.length-1"`) | scrubber, play | **yes** — the whole point |
 | four metric layers | `corsiOn` `hdOn` `goalieOn` `whistleOn` | four buttons | **yes** |
 | strength mode | `evenOnly` | `.sbtn` pair | **yes, and this is not optional — see below** |
 | trails | `trails` | `.tbtn` | no |
@@ -62,7 +72,7 @@ one they were promised, and **the site's whole posture — check me — becomes 
 thing that fails.**
 
 The four layers are four booleans with four bespoke `setX()` functions and four
-click handlers (`build_main.py:923–952`). There is no registry, so a `layer=`
+click handlers (`29f4c30:build_main.py:923 "let corsiOn=false"–952`). There is no registry, so a `layer=`
 parameter has to touch all four by hand, or introduce the table that should have
 existed anyway.
 
@@ -151,7 +161,7 @@ seasons (2023: 36, 2024: 28, 2025: 24). All 88 are in the catalog and
 publishable; **85 regular season, 3 playoff** — thin on playoffs, and §10 says
 what that costs. All 27,705 events carry `per` and `rem` — the period and the
 **time remaining**, which is what the page already prints on the scoreboard
-(`build_main.py:668`) and in the whistle panel (`P2 14:32`).
+(`29f4c30:build_main.py:668 "$('clk').textContent"`) and in the whistle panel (`P2 14:32`).
 
 ### Uniqueness
 
@@ -306,7 +316,7 @@ CSP conversation entirely.
 
 ## 7. Out of range degrades to a spoiler, not a blank rink
 
-`set()` (`build_main.py:705`) is:
+`set()` (`29f4c30:build_main.py:705 "function set(v,newest)"`) is:
 
 ```js
 function set(v,newest){i=Math.max(0,Math.min(EV.length-1,v));$('scrub').value=i;render(i,newest);}

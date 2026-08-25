@@ -1,5 +1,15 @@
 # The rink and the card are describing different moments
 
+> **A note on the citations below.** They are pinned to `2afbf88`, the revision
+> this document was written against, and each carries the text its line must
+> contain — `tools/refcheck.py` checks both. They are **historical on purpose**:
+> `builders/build_main.py` was 1,100–1,900 lines of inlined JavaScript then, and
+> commit `914e638` moved the renderer out to `src/app.js`, leaving every address
+> here pointing into a file that is now 403 lines long. Re-aiming them at
+> today's code would make a dated description of the code appear to describe the
+> current code, which is a worse failure than a number that does not resolve.
+
+
 **For CHENG. Kevin, 2026-08-16, watching a game on a laptop:**
 
 > *"The card below the rink becomes 'disjointed' with the event by event action
@@ -66,7 +76,7 @@ relationship unstated. Third instance this week.
 > *"On the ice, when a whistle happens — a caption like every other event. That's
 > your overlay, and the rink already has the mechanism."*
 
-**It does not.** `build_main.py:444`:
+**It does not.** `2afbf88:build_main.py:444 "const SKIP=new Set("`:
 
 ```js
 const SKIP = new Set(['stoppage','period-start','period-end','game-end','delayed-penalty']);
@@ -148,7 +158,7 @@ the two surfaces are talking about the same thing for the first time.
 ## 5. The raw feed key, on three surfaces
 
 CHENG: *"'Goalie Stopped After Sog' is a raw feed key title-cased."* **Correct.**
-`build_main.py:1187` is the whole of it:
+`2afbf88:build_main.py:1187 "String(r).replace(/-/g,' ')"` is the whole of it:
 
 ```js
 const RSN = r => r ? String(r).replace(/-/g,' ') : 'unrecorded';

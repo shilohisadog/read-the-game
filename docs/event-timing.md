@@ -1,5 +1,15 @@
 # Event display timing — eight clocks, and the speed control governs one
 
+> **A note on the citations below.** They are pinned to `edd9fc2`, the revision
+> this document was written against, and each carries the text its line must
+> contain — `tools/refcheck.py` checks both. They are **historical on purpose**:
+> `builders/build_main.py` was 1,100–1,900 lines of inlined JavaScript then, and
+> commit `914e638` moved the renderer out to `src/app.js`, leaving every address
+> here pointing into a file that is now 403 lines long. Re-aiming them at
+> today's code would make a dated description of the code appear to describe the
+> current code, which is a worse failure than a number that does not resolve.
+
+
 **Kevin, 2026-08-16**, playing WSH–CBJ:
 
 > *"We need to discuss event display timing, it's rather inconsistent now."*
@@ -24,7 +34,7 @@ This audit was **walked in a browser before anything was argued**, per
 
 ## 1. The mechanism, in full
 
-There is exactly one pacing rule in the renderer, `build_main.py:1058`:
+There is exactly one pacing rule in the renderer, `edd9fc2:build_main.py:1058 "function dwell(e){let d=650;"`:
 
 ```js
 function dwell(e){let d=650;if(e.type==='goal')d=3000;else if(isHD(e))d=1700;
@@ -312,7 +322,7 @@ checking it turned up the constraint that most affects this decision.
 
 The **home page preview** — the five-second loop of the most recent game, the
 first moving thing a stranger sees — runs on `dwell`. Deliberately, and the
-reasoning is in `build_main.py:1716`: two chosen constants were tried and Kevin
+reasoning is in `edd9fc2:build_main.py:1716 "Deliberately NOT the ordinary play loop"`: two chosen constants were tried and Kevin
 rejected both (*"a blur of activity, looks like it's 100x real-time"* at 115 ms,
 then *"definitely better, still 2 or 3x too fast"* at 430 ms). The fix was to
 **stop choosing** — the preview waits what the replay waits, so it cannot

@@ -1,5 +1,15 @@
 # The blocked-shots layer — audit
 
+> **A note on the citations below.** They are pinned to `974a8bc`, the revision
+> this document was written against, and each carries the text its line must
+> contain — `tools/refcheck.py` checks both. They are **historical on purpose**:
+> `builders/build_main.py` was 1,100–1,900 lines of inlined JavaScript then, and
+> commit `914e638` moved the renderer out to `src/app.js`, leaving every address
+> here pointing into a file that is now 403 lines long. Re-aiming them at
+> today's code would make a dated description of the code appear to describe the
+> current code, which is a worse failure than a number that does not resolve.
+
+
 *For CHENG. Build-list item **B**, ahead of the novice test at Kevin's call: he
 can read the site as a relative novice and wants blocked shots in it before he
 hands it to his wife.*
@@ -97,7 +107,7 @@ which is where a defender collapsing in front of the net actually is.
 The coordinate is the **block point**: somewhere between the shooter and the net,
 so it is systematically nearer the net than the shot that produced it.
 
-**What that means for the page as it stands.** `build_main.py:718` already draws
+**What that means for the page as it stands.** `974a8bc:build_main.py:718 "if(e.type==='blocked-shot')parts.push"` already draws
 
 ```js
 if(e.type==='blocked-shot')parts.push(`<circle class="ring blk" data-i="${k}" …>`)
