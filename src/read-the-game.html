@@ -140,6 +140,15 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    loudest thing on the rink and the slot stops being the point. Both numbers are
    visual judgements and are here to be looked at rather than proved. */
 #rg .zoneband{fill:var(--blue);opacity:.055}
+/* ⭐ THE TWO TINTS GET A LINE EACH, because furniture nobody explains is just a
+   smudge on the ice. They are the only marks on the base view a visitor did not
+   ask for, and the legend named every other one.
+   THE SWATCHES ARE THE REGIONS' OWN FILLS, at an opacity that survives being
+   12px wide -- a 5.5% tint on a swatch this small is invisible, and a key that
+   cannot be seen is not a key. The COLOUR is the claim and it matches; the
+   strength is a legibility judgement about a chip, not about the ice. */
+#rg .k-slot{background:var(--hd);opacity:.5;border-radius:3px}
+#rg .k-zone{background:var(--blue);opacity:.42;border-radius:3px}
 #rg .ln{fill:none;stroke-linecap:round}#rg .ln.red{stroke:var(--red);stroke-width:.7;opacity:.42}#rg .ln.blue{stroke:var(--blue);stroke-width:.9;opacity:.42}#rg .ln.thick{stroke-width:1.1;opacity:.52}
 /* PREVIEW: THE FIVE-SECOND TASTE, AND IT IS THE REAL RENDERER.
    The homepage had no motion at all, on a site whose product is animation, so a
@@ -715,7 +724,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
   <button id="work" aria-expanded="false">Show me the work</button>
   <input class="scrub" id="scrub" type="range" min="-1" max="1" value="-1"></div>
 <p class="verdict" id="verdict"></p>
-<div class="legend"><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white-filled, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span><i class="k-g"></i><i class="k-gv"></i>goal — either sweater</span><span><i class="k-blk"></i>blocked — ringed where the puck was <b>stopped</b></span><span class="lkey lk-hd"><i class="k-hd"></i>from the slot</span><span class="lkey lk-blk">blocked shots are dimmed unless a body stopped them</span><span class="lkey lk-wh"><i class="k-wh"></i>play restarted here — brightest at the most recent stoppage</span><span class="lkey lk-wh"><i class="k-rl"></i>the line the rule names — for icing the centre line and the far goal line, for offside the blue line</span><span class="lkey lk-ends" id="endsKey"></span><span class="lkey lk-unrec" id="unrecKey"></span></div>
+<div class="legend"><span><i class="k-slot"></i>the slot &mdash; within 33 ft of the net, between the face-off dots</span><span><i class="k-zone"></i>either blue line &mdash; out to the neutral-zone dots, the ice teams fight to hold</span><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white-filled, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span><i class="k-g"></i><i class="k-gv"></i>goal — either sweater</span><span><i class="k-blk"></i>blocked — ringed where the puck was <b>stopped</b></span><span class="lkey lk-hd"><i class="k-hd"></i>from the slot</span><span class="lkey lk-blk">blocked shots are dimmed unless a body stopped them</span><span class="lkey lk-wh"><i class="k-wh"></i>play restarted here — brightest at the most recent stoppage</span><span class="lkey lk-wh"><i class="k-rl"></i>the line the rule names — for icing the centre line and the far goal line, for offside the blue line</span><span class="lkey lk-ends" id="endsKey"></span><span class="lkey lk-unrec" id="unrecKey"></span></div>
 <div class="newcomer nwhy2" id="newcomerWhy"></div><div class="layers"><span class="ll">Add a metric layer:</span><button class="lyr" id="lyCorsi" aria-pressed="false">＋ Control (Corsi)</button><button class="lyr" id="lyHd" aria-pressed="false">＋ Shots from the slot</button><button class="lyr" id="lyGoalie" aria-pressed="false">＋ Goaltending</button><button class="lyr" id="lyWhistle" aria-pressed="false">＋ Why play stopped</button><button class="lyr" id="lyBlock" aria-pressed="false">＋ Blocked shots</button></div>
 <div class="figpick sit"><span class="ll">Situations:</span>
 <button class="lyr sbtn" data-s="all" aria-pressed="true">All situations</button>

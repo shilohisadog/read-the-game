@@ -98,6 +98,15 @@
    loudest thing on the rink and the slot stops being the point. Both numbers are
    visual judgements and are here to be looked at rather than proved. */
 #rg .zoneband{fill:var(--blue);opacity:.055}
+/* ⭐ THE TWO TINTS GET A LINE EACH, because furniture nobody explains is just a
+   smudge on the ice. They are the only marks on the base view a visitor did not
+   ask for, and the legend named every other one.
+   THE SWATCHES ARE THE REGIONS' OWN FILLS, at an opacity that survives being
+   12px wide -- a 5.5% tint on a swatch this small is invisible, and a key that
+   cannot be seen is not a key. The COLOUR is the claim and it matches; the
+   strength is a legibility judgement about a chip, not about the ice. */
+#rg .k-slot{background:var(--hd);opacity:.5;border-radius:3px}
+#rg .k-zone{background:var(--blue);opacity:.42;border-radius:3px}
 #rg .ln{fill:none;stroke-linecap:round}#rg .ln.red{stroke:var(--red);stroke-width:.7;opacity:.42}#rg .ln.blue{stroke:var(--blue);stroke-width:.9;opacity:.42}#rg .ln.thick{stroke-width:1.1;opacity:.52}
 /* PREVIEW: THE FIVE-SECOND TASTE, AND IT IS THE REAL RENDERER.
    The homepage had no motion at all, on a site whose product is animation, so a

@@ -248,3 +248,46 @@ test('the slot and the blue-line band are visibly different kinds of thing', () 
   assert.ok(Number(band[2]) < Number(slot[2]),
     'the band covers far more ice than the slot and must be fainter, not louder');
 });
+
+/**
+ * ⭐ THE LEGEND DESCRIBES THE REGIONS THAT ARE ACTUALLY DRAWN.
+ *
+ * The two tints are the only marks on the base view a visitor did not ask for,
+ * and until now the legend named every other mark and not these. Copy is the one
+ * kind of claim on this site that nothing checks by default: a number in a
+ * sentence drifts from the constant it describes in total silence, and the
+ * sentence keeps reading correctly.
+ *
+ * BOTH LANDMARKS ARE REAL AND BOTH ARE CHECKABLE BY EYE — which is why the copy
+ * uses them instead of a second set of numbers. The slot's half-width IS the
+ * end-zone face-off dots' y, and the band reaches the neutral-zone dots. Those
+ * are coincidences of the paint rather than definitions, so if either stops
+ * being true the sentence has to change, and this is what says so.
+ */
+test('the legend says what the two painted regions really are', () => {
+  const legend = /<div class="legend">([\s\S]*?)<\/div>/.exec(
+    readFileSync(new URL('../src/game.html', import.meta.url), 'utf8'));
+  assert.ok(legend, 'the legend is gone — this check has lost its subject');
+  const text = legend[1].replace(/<[^>]*>/g, ' ');
+
+  assert.match(text, /the slot/, 'the slot is painted on the ice and unexplained');
+  assert.match(text, /blue line/, 'the blue-line zone is painted and unexplained');
+
+  const ft = /within (\d+) ft of the net/.exec(text);
+  assert.ok(ft, 'the slot key stopped stating its distance');
+  assert.equal(Number(ft[1]), HIGH_DANGER_FT,
+    `the legend says ${ft[1]} ft and the rule uses ${HIGH_DANGER_FT}`);
+
+  // "between the face-off dots" — true only while the slot's half-width is the
+  // dots' own y. `drawRink` places the end-zone dots at +-22.
+  const rink = String(boot().$('rink').innerHTML);
+  const dotY = [...rink.matchAll(/<circle class="fdot" cx="([-\d.]+)" cy="([-\d.]+)"/g)]
+    .map(m => Math.abs(Number(m[2]) - 42.5));           // SY(y) = 42.5 - y
+  assert.ok(dotY.some(y => Math.abs(y - SLOT_HALF_WIDTH) < 0.001),
+    `no face-off dot sits at |y| = ${SLOT_HALF_WIDTH}, so "between the face-off dots" is false`);
+
+  // "out to the neutral-zone dots" — the band's own claim, stated in copy here
+  // and asserted geometrically in the test above.
+  assert.match(text, /neutral-zone dots/, 'the band key stopped naming its edge');
+  assert.equal(ZONE_BAND_FT, BLUE_LINE_X - NEUTRAL_DOT_X);
+});
