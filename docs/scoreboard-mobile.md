@@ -164,7 +164,109 @@ dot is mine; the narrowness is real on both.**
 
 ---
 
+## 4b. CHENG's review, and the measurement that qualifies it
+
+Reviewed 2026-08-25. Three process points **accepted outright**:
+
+- ⭐ **A canary proves the RULER, never that the SUBJECT is there.** The fit gate
+  already had the discipline and still went green: *"a 900px element overflowing
+  a 360px frame proves the comparison functions. An empty `#rg` at height 0 also
+  fits. Both are true at once, and the gate can't tell them apart."* New entry
+  for the catalogue, distinct from a vacuous assertion and from a mirror: **a
+  correct instrument measuring an absent subject.**
+- **Three checks, each answering a narrower question than its name** — the fit
+  gate asks *does the fetched document fit*, the canary asks *does the
+  measurement work*, refcheck asks *does this line number exist*. That is Q5,
+  answered.
+- ⭐ **Do not repair the 11 broken citations by making them resolve** — *"that
+  converts a loud wrong into a quiet wrong."* The repair is a **content
+  assertion**: a citation carries a short expected substring and refcheck
+  verifies the line contains it. Same move as the D10 guard.
+
+### ⚠️ And the one claim that does not survive measurement
+
+CHENG proposed moving the direction indicator onto the ice, and argued the
+scoreboard arithmetic then becomes `150 + 28` with *"the overflow gone without
+re-flow or scale."* **The outer columns do not vanish; they shrink to the team
+badge.** Measured on production by hiding `.atk` in the live document:
+
+```
+width  avail   today            .atk removed      .atk removed + .mid{min-width:0}
+320    240     322  OVER +82    281  OVER +41     240  fits (zero slack)
+360    277     322  OVER +45    281  OVER  +4     277  fits (zero slack)
+375    291     322  OVER +31    290  fits by 1px  290  fits by 1px
+390    305     322  OVER +17    304  fits by 1px  304  fits by 1px
+
+cells at 360:  [72,150,72]  ->  [51,150,52]  ->  [51,146,52]
+```
+
+It removes **41 of the 45 pixels at 360** — the biggest single lever available —
+and still leaves the page broken at 320 and 360, and fitting by ONE pixel at 375
+and 390, which is the knife-edge relocated rather than removed. The residue is
+`#rg .mid{min-width:150px}` (`app.css:35`), **the exact floor the hero already
+zeroes** (`app.css:255`). So his move is the first step of the responsive work,
+not an alternative to it.
+
+### Two things his argument missed, one for and one against
+
+⭐ **FOR — the indicator is already period-aware.** `drawAtk(per)` computes each
+arrow from the period (`src/app.js:1013`), so direction already flips when the
+ends flip. On the ice it becomes arena-frame furniture that turns over with the
+rink, beside the goalie it agrees with — **two elements that must agree become
+one grouping**, and it answers his own earlier finding that nothing tells a
+viewer which way *this* game opens. That is a better argument for his placement
+than the arithmetic he led with.
+
+⚠️ **AGAINST — on-ice team text was deliberately removed, and he cited that
+removal himself earlier the same day.** The nets used to read `<BUF` / `MIN>`;
+the goalie figures replaced them because a goaltender in the crease says the net
+is defended and the text was clutter. The distinction that rescues the proposal:
+those labels said *which net is whose*, which the goalie now covers, while this
+says *which way this team attacks*, which nothing covers. But at 360px the rink
+is **293x125** and the nets sit where horizontal room is scarcest, so **words
+there would rebuild this defect on a smaller canvas.** A chevron in team colour,
+no text, is the shape to test.
+
+---
+
 ## 5. What I propose, and what I want argued
+
+### 5.0 THE PLAN, after CHENG's review — three changes, in this order
+
+1. **Move the direction indicator to the ice.** Biggest lever (41 of 45px at
+   360), and it puts direction where direction means something.
+2. **Apply the hero's two repairs** — `min-width:0` on `.mid`, and
+   `min(Xvw, <today>)` on the type — because (1) alone leaves 4px at 360 and
+   41px at 320.
+3. **Re-flow what remains**, which by then is a much smaller problem: badge,
+   score, state line.
+
+⭐ **CHENG's argument for weighting re-flow over scale, which I had not made:**
+*"scaling shrinks text on the device where text is already smallest."* The stated
+reader is a novice on a phone; making the scoreboard smaller so it fits is the
+wrong direction for exactly that reader. Scale is the safety net under a layout
+that already fits, not the mechanism that makes it fit.
+
+### 5.0.1 The aesthetic target, stated so it can be rejected before it is built
+
+Kevin: *"let's make double-sure we are aligned on creating a more professional
+looking artifact here, the current scoreboard vibe just doesn't work."* Taste is
+his call, so the target is written as properties rather than adjectives:
+
+- **The score is the hero.** `#rg .sc` is `ui-monospace…2.2rem` (`app.css:34`) —
+  a 21px-wide numeral. ⭐ **The monospace family is not load-bearing:
+  `font-variant-numeric:tabular-nums` is on the same rule and already guarantees
+  the digit will not reflow when the score changes.** Dropping the family and
+  keeping `tabular-nums` buys a scoreboard numeral at no cost to the reason
+  monospace was chosen. Likely the single largest share of the "vibe".
+- **One line per team**, not a three-element column — the stack is what forces
+  the 72px floor and pins each team to a card edge with a void between them.
+- **Nothing clipped and nothing orphaned** at 320, 360, 375 and 390.
+- **The board is SHORTER than the ice on a phone.** It is 85% of the rink's
+  height at 360 today; a viewer reads size as importance and the page's whole
+  claim is *watch the game*.
+- **The state line is always one line**, at full card width.
+- **The 1100px rendering does not move.** It is clean and nobody has complained.
 
 ### 5.1 Re-flow below a breakpoint, and scale what remains
 
