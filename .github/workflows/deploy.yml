@@ -906,10 +906,16 @@ jobs:
             try {
               var f = document.getElementById('f'), d = f.contentDocument, w = f.contentWindow;
               var rg = d.getElementById('rg'), b = d.querySelector('.board');
-              /* ONE TOKEN, ALWAYS. This reported `rg.className` straight, and the
+              /* ONE TOKEN, ALWAYS. (No backticks in this block: the heredoc is
+                unquoted so it can interpolate $ID and $W, which means bash runs
+                anything in backticks. This comment did, and every run of this
+                step has been printing "rg.className: command not found" and
+                "PREV: command not found" six times into the log. Harmless, and
+                exactly the noise that trains people to skim a passing log.)
+                This reported rg.className straight, and the
                  shell parses the title positionally — so the day #rg carried a
                  SECOND class ("newcomer preview") the title became
-                 `PREV newcomer preview 287 184 ...`, the regex stopped matching,
+                 "PREV newcomer preview 287 184 ...", the regex stopped matching,
                  and all three boxes failed with "the probe never reported"
                  including the canary. The gate was right and its parser was
                  brittle: a probe that emits a STATE for the shell to interpret

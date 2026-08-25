@@ -37,7 +37,7 @@ const PHONE = (() => {
       if (CSS[k] === '{') d++;
       else if (CSS[k] === '}' && --d === 0) {
         const block = CSS.slice(m.index, k + 1);
-        if (block.includes('#rg .board')) return block;
+        if (block.includes('.board{grid-template-columns')) return block;
         break;
       }
     }
@@ -63,13 +63,13 @@ test('the 150px floor is lifted on a phone, where it is the thing that overflows
   // 72 + 150 + 72 + 28 = 322 against 277 available at 360. The hero already
   // zeroes this (`#rg.preview .mid{min-width:0}`); the game page never did.
   assert.match(CSS, /#rg \.mid\{min-width:150px\}/, 'the desktop floor is gone — that is a different change');
-  assert.match(PHONE, /#rg \.mid\{[^}]*min-width:0/, 'the phone layout still carries the 150px floor');
+  assert.match(PHONE, /#rg:not\(\.preview\) \.mid\{[^}]*min-width:0/, 'the phone layout still carries the 150px floor');
 });
 
 test('the board becomes two rows, so the three-element column stops existing', () => {
   assert.match(PHONE, /grid-template-columns:1fr 1fr/);
   assert.match(PHONE, /grid-template-areas:"away home" "state state"/);
-  assert.match(PHONE, /#rg \.tm\{[^}]*flex-direction:row/,
+  assert.match(PHONE, /#rg:not\(\.preview\) \.tm\{[^}]*flex-direction:row/,
     'the team stack is still a column, which is the thing that did not fit');
 });
 
@@ -77,7 +77,7 @@ test('the WORD goes and the INFORMATION stays', () => {
   // Two mechanisms, asserted where only each can be responsible (H2). A CSS scan
   // can only show that nothing hides the arrow; it cannot show the arrow has
   // anything in it. The renderer is the other half.
-  assert.match(PHONE, /#rg \.tm \.atk \.aw\{display:none\}/, 'the label is not hidden on a phone');
+  assert.match(PHONE, /#rg:not\(\.preview\) \.tm \.atk \.aw\{display:none\}/, 'the label is not hidden on a phone');
   assert.doesNotMatch(PHONE, /\.atk\{[^}]*display:none/, 'the whole direction indicator is hidden on a phone');
   assert.doesNotMatch(PHONE, /\.ar\{[^}]*display:none/, 'the arrow itself is hidden on a phone');
 
@@ -92,10 +92,10 @@ test('the mirroring is scoped to the phone, because `order` reorders a column to
   // Above 520px `.tm` is still a flex COLUMN, and `order` applies there just as
   // well — a global rule would silently restack badge/score/arrow on the desktop
   // board nobody has complained about.
-  assert.match(PHONE, /#rg \.tm\.a \.atk\{order:1\}/);
-  assert.match(PHONE, /#rg \.tm\.h \.atk\{order:3\}/);
+  assert.match(PHONE, /#rg:not\(\.preview\) \.tm\.a \.atk\{order:1\}/);
+  assert.match(PHONE, /#rg:not\(\.preview\) \.tm\.h \.atk\{order:3\}/);
   const outside = CSS.replace(PHONE, '');
-  assert.doesNotMatch(outside, /#rg \.tm\.[ah] [^{]*\{[^}]*order:/,
+  assert.doesNotMatch(outside, /#rg(:not\(\.preview\))? \.tm\.[ah] [^{]*\{[^}]*order:/,
     'an `order` rule escaped the phone block and is restacking the desktop board');
 });
 
@@ -116,11 +116,24 @@ test('the phone breakpoint is the one that already exists, not a competing width
       if (CSS[k] === '{') d++;
       else if (CSS[k] === '}' && --d === 0) {
         const block = CSS.slice(m.index, k + 1);
-        if (/#rg \.(board|tm|mid|sc)\b/.test(block)) boardQueries.push(m[1]);
+        if (/#rg(:not\(\.preview\))? \.(board|tm|mid|sc)\b/.test(block)) boardQueries.push(m[1]);
         break;
       }
     }
   }
   assert.deepEqual([...new Set(boardQueries)], ['520'],
     `the scoreboard is being restyled at more than one width: ${boardQueries.join(', ')}`);
+});
+
+test('the hero is exempt — it never had the defect this query fixes', () => {
+  // `#rg.preview .atk` is in the hide list and `#rg.preview .mid` is already
+  // min-width:0, so the preview's columns are badge-width and 322px was never
+  // demanded of its 287px card. Inheriting the two-row layout took the hero's
+  // chrome to 83px of a 184px frame against its own gate's one-third limit —
+  // caught by that gate, in CI, which is the only place it can be seen.
+  // A 287px FRAME is not a 287px DEVICE.
+  assert.doesNotMatch(PHONE, /#rg(?!:not\(\.preview\))[.\s]/,
+    'a phone rule is not scoped away from the preview and will re-flow the hero');
+  assert.match(CSS, /#rg\.preview \.mid\{min-width:0\}/, 'the hero lost its own floor repair');
+  assert.match(CSS, /#rg\.preview \.atk,/, 'the hero no longer hides the direction indicator');
 });
