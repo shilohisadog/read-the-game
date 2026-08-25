@@ -38,10 +38,35 @@ including the front-door hero. The line drawn instead:
 Browse lists keep it — browsing is a choice, and a reader may well be looking for
 that 6-5 game. The hero (`build_index.py:807`, was `g.a + g.as + …`) and the game page do not.
 
-**Residue, stated rather than left to be found:** `sayHero` still says *"and
-won"* / *"and lost"* when the attempts leader is decided, because that *is* the
-site's argument. The hero withholds the margin, not the outcome. Closing that is
-a decision about the thesis sentence and it has not been made.
+**The residue is closed.** It was flagged here as *"the hero withholds the
+margin, not the outcome"* and left as a decision about the thesis sentence.
+Kevin made it, reading the deployed front door:
+
+> *"VGK took more shot attempts, 50 to 44, and lost … i.e. we still give away
+> the outcome of the game."*
+
+`sayHero` no longer names the result, and the pitch is **stronger as a question
+than as a statement**. It used to raise a tension and resolve it in the same
+breath — *"… and lost. That is the usual outcome."* — leaving the button nothing
+to answer. It now reads:
+
+> VGK took more shot attempts, 50 to 44.
+> Across 4,100 games in this archive the team with more shot attempts **loses
+> 54.3% of the time.**
+
+The `That is (not) the usual outcome` line went with it, because classifying
+*this* game against the rate is what stated the result.
+
+**And a condition retired with its reason.** A level game used to get silence,
+because there was an outcome to classify and a draw could not be classified. The
+caption classifies nothing now, so the only thing that can withhold the rate is
+having no attempts leader. `test/homepage.test.js` says which condition went and
+why, rather than deleting it quietly.
+
+**Doctrine §9 is now satisfied structurally rather than by symmetry.** The
+leader losing had to be said in the same shape as the leader winning, or the site
+would be showing only the surprising half. Neither is said, so there is no half
+to select.
 
 ### What guards it
 
@@ -301,8 +326,6 @@ doctrine in the comment eight lines above it.
 ## Open, and not claimed clean
 
 - **Do the arrivals read?** Nobody has watched a novice see them.
-- **The hero's sentence still names the winner.** The margin is withheld, the
-  outcome is not.
 - **One transient 404** on the index at 390px, seen in the pixels harness, not
   reproducible, not identified. It does not affect boot — the page renders at
   both widths — but it is not explained.

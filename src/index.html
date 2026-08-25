@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-nI8EJX6QTojDER2bjAyazBhCvFnVgo7E6LD+8H6EtWw=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-ZjCTQAxWLu2PaEz47/dVjam4dY0pMShlIrBXKjsWLJY='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-XpPd8zwrW+6bKCMeUvY4CkqI7GAEWhvvs/MdKd7zXlo=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-ZjCTQAxWLu2PaEz47/dVjam4dY0pMShlIrBXKjsWLJY='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -1424,13 +1424,24 @@ function disputedNote(n) {
     var a = att.a, h = att.h;
     if (!a && !h) return;                 /* nothing counted: say nothing */
     var lead = a === h ? null : (a > h ? g.a : g.h);
-    var won  = g.as === g.hs ? null : (g.as > g.hs ? g.a : g.h);
+    /* ⭐ AND IT NO LONGER SAYS WHO WON.
+       Kevin, reading the front door after the score came off the line above:
+       "VGK took more shot attempts, 50 to 44, and lost ... i.e. we still give
+       away the outcome of the game." He is right, and the margin coming off
+       while the RESULT stayed was half a fix -- the visitor still knew how it
+       ended before pressing anything.
+       THE ARGUMENT SURVIVES INTACT, and it is stronger as a question than as a
+       statement. The pitch was `... and lost. That is the usual outcome.` --
+       a tension raised and resolved in the same breath, with nothing left for
+       the button to answer. What replaces it raises the tension and stops:
+       the attempts, then the archive's own rate, then `Watch the whole game`.
+       NOTHING IS HIDDEN, and nothing here is newly withheld that the scoreboard
+       does not fill in as the game plays. */
     if (lead == null) {
       $('herosub').textContent = 'Both teams took ' + a + ' shot attempts.';
     } else {
       var hi = Math.max(a, h), lo = Math.min(a, h);
-      $('herosub').textContent = lead + ' took more shot attempts, ' + hi + ' to ' + lo
-        + ', and ' + (won === null ? 'the game was level' : (won === lead ? 'won' : 'lost')) + '.';
+      $('herosub').textContent = lead + ' took more shot attempts, ' + hi + ' to ' + lo + '.';
     }
 
     /* IS THIS THE USUAL CASE? COMPUTED, NEVER WRITTEN -- unchanged in shape from
@@ -1448,16 +1459,23 @@ function disputedNote(n) {
     var at = measures && measures.baseRates && measures.baseRates.moreAttemptsLost;
     var rel = $('herorel');
     rel.textContent = '';                 /* a second message must not append twice */
-    if (lead != null && won != null && at && at.n) {
+    /* `won` IS GONE FROM THIS BRANCH TOO, and with it the condition that a level
+       game gets silence. That rule existed because there was an OUTCOME to
+       classify and a draw could not be classified; the rate is a fact about the
+       archive, not a verdict on this game, so the only thing that can still
+       withhold it is having no attempts leader to talk about.
+       THE DIRECTION IS STILL READ, NEVER ASSUMED. The archive publishes every
+       rate as "lost", so a caption saying the leader WINS must print 100 minus
+       that -- a correct sentence with the wrong number welded to it is the
+       failure this shape exists to prevent. */
+    if (lead != null && at && at.n) {
       var lostPct = at.count / at.n * 100;
       var usuallyLoses = lostPct > 50;
-      var thisLost = won !== lead;
       var usualPct = (usuallyLoses ? lostPct : 100 - lostPct).toFixed(1);
-      rel.appendChild(el('b', null, thisLost === usuallyLoses
-        ? 'That is the usual outcome.' : 'That is not the usual outcome.'));
-      rel.appendChild(el('span', null, ' Across ' + at.n.toLocaleString()
-        + ' games the team with more shot attempts '
-        + (usuallyLoses ? 'loses' : 'wins') + ' ' + usualPct + '% of the time.'));
+      rel.appendChild(el('span', null, 'Across ' + at.n.toLocaleString()
+        + ' games in this archive the team with more shot attempts '));
+      rel.appendChild(el('b', null,
+        (usuallyLoses ? 'loses' : 'wins') + ' ' + usualPct + '% of the time.'));
     }
   }
 

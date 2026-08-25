@@ -304,44 +304,61 @@ const LEADERS_LOSE = { count: 800, n: 1000 };
 // TOR away, BUF home. `aAtt`/`hAtt` are attempts, `as`/`hs` goals.
 const BUF_LED_SHOTS = { aAtt: 22, hAtt: 33 };
 
-test('the hero caption says whether THIS game went the usual way, both ways round', () =>
+/**
+ * ⭐ RETARGETED 2026-08-25, AND THE HALF THAT MATTERED IS KEPT.
+ *
+ * This asserted "That is the usual outcome." — a sentence that classified THIS
+ * game against the rate, and therefore stated who won. Kevin, reading the front
+ * door: "we still give away the outcome of the game." The clause is gone.
+ *
+ * WHAT SURVIVES IS THE MUTATION THE OLD TEST EXISTED FOR: the rate's own
+ * direction is READ, not assumed. The archive publishes every rate as "lost",
+ * so a caption saying the leader WINS must print 100 minus that. A hard-coded
+ * "leaders usually lose" passes half of this and fails the other half.
+ *
+ * WHAT IS NEW is the claim the change is about, and it needs the four fixtures
+ * the old test used: whichever way the game went, the caption must not say.
+ */
+test('the hero caption reads the rate BOTH WAYS and never states this outcome', () =>
   Promise.all([
     heroRelation({ ...BUF_LED_SHOTS, as: 1, hs: 4, ...LEADERS_WIN }),
     heroRelation({ ...BUF_LED_SHOTS, as: 4, hs: 1, ...LEADERS_WIN }),
     heroRelation({ ...BUF_LED_SHOTS, as: 4, hs: 1, ...LEADERS_LOSE }),
     heroRelation({ ...BUF_LED_SHOTS, as: 1, hs: 4, ...LEADERS_LOSE }),
   ]).then(([winnerLed, winnerTrailed, ledAndLost, ledAndWon]) => {
-    // Leader won, and leaders usually win.
-    assert.match(winnerLed, /That is the usual outcome\./);
-    // Leader lost, and leaders usually win. Same rate, opposite game.
-    assert.match(winnerTrailed, /That is not the usual outcome\./);
-    // THE RATE'S OWN DIRECTION IS READ, NOT ASSUMED. Same two games again
-    // against a rate that runs the other way, and both verdicts must flip —
-    // which a hard-coded "leaders usually lose" cannot do.
-    assert.match(ledAndLost, /That is the usual outcome\./,
-      'the leader lost and leaders usually lose, and the page called it unusual');
-    assert.match(ledAndWon, /That is not the usual outcome\./);
+    // Same rate, opposite games: the caption must be IDENTICAL, because the
+    // only thing it is allowed to describe is the archive.
+    assert.equal(winnerLed, winnerTrailed,
+      'the caption changed with the result — it is still describing this game');
+    assert.equal(ledAndLost, ledAndWon);
 
-    // AND THE PERCENTAGE IS THE ONE IT JUST NAMED. The archive publishes every
-    // rate as "lost"; a caption that says the leader WINS must show 100 − that,
-    // or it is a correct sentence with the wrong number welded to it.
+    // AND THE PERCENTAGE IS THE ONE IT JUST NAMED.
     assert.match(winnerLed, /wins 80\.0% of the time/);
     assert.match(ledAndLost, /loses 80\.0% of the time/);
     for (const t of [winnerLed, ledAndLost])
       assert.ok(t.includes('1,000 games'), `the denominator is missing: ${t}`);
+
+    // THE SPOILER, NAMED. BUF led attempts in every fixture; in two of them BUF
+    // won and in two BUF lost, so any verb of outcome would have to appear.
+    for (const t of [winnerLed, winnerTrailed, ledAndLost, ledAndWon])
+      assert.doesNotMatch(t, /\b(won|lost|usual outcome|the game was level)\b/,
+        `the caption states how the game ended: "${t}"`);
   }));
 
-test('a game the rate cannot classify gets silence, not a guess', () =>
+test('with no attempts leader there is nothing to say, and it says nothing', () =>
   Promise.all([
-    // Equal shots: there is no leader, so there is no relationship to state.
+    // Equal attempts: there is no leader, so there is no subject for the rate.
     heroRelation({ aAtt: 30, hAtt: 30, as: 1, hs: 4, ...LEADERS_WIN }),
-    // A game that ended level: no outcome to compare the rate against. The
-    // archive holds these, and neither arm is reachable from the default
-    // fixture — which is why both survived the first mutation pass.
+    // ⭐ A GAME THAT ENDED LEVEL USED TO BE SILENT TOO, AND THAT RULE RETIRED
+    // WITH ITS REASON. The caption classified this game against the rate, and a
+    // draw could not be classified. It no longer classifies anything — the rate
+    // is a fact about the archive — so the only thing that can withhold it is
+    // having no leader. When you delete a condition, say which one and why.
     heroRelation({ ...BUF_LED_SHOTS, as: 3, hs: 3, ...LEADERS_WIN }),
-  ]).then(([noLeader, noWinner]) => {
-    assert.equal(noLeader, '', `equal attempts were classified anyway: ${noLeader}`);
-    assert.equal(noWinner, '', `a level game was classified anyway: ${noWinner}`);
+  ]).then(([noLeader, levelGame]) => {
+    assert.equal(noLeader, '', `equal attempts were given a rate anyway: ${noLeader}`);
+    assert.match(levelGame, /wins 80\.0% of the time/,
+      'a level game lost its rate — that condition was about the outcome clause');
   }));
 
 test('the hero is the ONLY route to the game it shows, and both halves agree', () => {
@@ -594,17 +611,28 @@ test('the shot line reads the LEADER, home or away, and says it both ways round'
     assert.ok(!home.ids.herosub || home.ids.herosub.textContent === '',
       'the sentence rendered before any measure existed');
     home.post({ rtg: 'attempts', game: NEWEST_ID, a: 22, h: 33 });
-    assert.match(home.ids.herosub.textContent, /^BUF took more shot attempts, 33 to 22, and won\.$/);
+    // WAS `..., 33 to 22, and won.` — the outcome came off on 2026-08-25.
+    assert.match(home.ids.herosub.textContent, /^BUF took more shot attempts, 33 to 22\.$/);
   });
 
-  // BUF away, 30 shots to 20, and lost 2-5. The shot leader losing is the site's
-  // thesis at its smallest — and it must be said in the same shape as the
-  // winning case, or we are only showing the surprising half (Doctrine §9).
+  // BUF away, 30 attempts to 20, and lost 2-5.
+  //
+  // ⭐ THE DOCTRINE §9 HALF OF THIS RETIRED, AND SAY WHY RATHER THAN JUST
+  // DELETING IT. The concern was selective honesty: the leader LOSING is the
+  // site's thesis at its smallest, so it had to be said in the same shape as
+  // the winning case or we would be showing only the surprising half. The
+  // sentence no longer names the outcome in EITHER case, so there is no half to
+  // select — §9 is satisfied structurally instead of by symmetry.
+  // WHAT THIS STILL PROVES is the mutation it was written for: the page reads
+  // the LEADER and not the home side. Home leads above, away leads here, and a
+  // page that printed `g.h` unconditionally passes one and fails the other.
   const AWAY = { games: [CATALOG.games[0]] };
   const away = run({ docs: { ...ALL, 'catalog.json': AWAY } });
   const p2 = away.settle().then(() => {
     away.post({ rtg: 'attempts', game: AWAY.games[0].id, a: 30, h: 20 });
-    assert.match(away.ids.herosub.textContent, /^BUF took more shot attempts, 30 to 20, and lost\.$/);
+    assert.match(away.ids.herosub.textContent, /^BUF took more shot attempts, 30 to 20\.$/);
+    assert.doesNotMatch(away.ids.herosub.textContent, /\b(won|lost)\b/,
+      'the away-leader arm still states the result');
   });
 
   // And an even shot count says so rather than picking a side.
