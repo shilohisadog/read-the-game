@@ -686,6 +686,34 @@ jobs:
           for d in catalog.json measures.json index.json; do
             curl -sS --fail "https://data.readthegame.co/$d" -o "$d"
           done
+          # ⭐ AND THE EXTRACTS, WHICH IS THE FILE THIS STEP SPENT MONTHS NOT
+          # FETCHING. game.html asks for /extract/<id>.json; without it the page
+          # 404s, and since D9 the app is HIDDEN when there is no game — so this
+          # gate framed an error page, measured `#rg` at height 0, found no
+          # overflow and passed. It is the check whose entire purpose is this
+          # defect, running at exactly the width where the scoreboard overflows
+          # by 25px, green throughout. The comment two blocks up predicted it in
+          # its own words — "an empty page overflows nothing, it would pass while
+          # proving nothing" — about the DATA files, while the one file that
+          # mattered never made the list. See docs/scoreboard-mobile.md §1.
+          #
+          # A WINDOW, NOT A PREDICTION. `tools/pixels.sh` learned this already
+          # and says why: a tool that restates the rule it is meant to observe
+          # breaks silently the day the rule moves. The shell picks its own game
+          # when no `?game=` is given, and that rule has changed twice this
+          # month. Ten is slack, not a guess — and the subject assertion below
+          # makes the window size non-critical, because a miss now fails loudly
+          # instead of passing quietly.
+          mkdir -p extract
+          for ID in $(python3 -c "
+          import json
+          g=[x for x in json.load(open('catalog.json'))['games'] if x.get('v') and x.get('t') in (2,3)]
+          g.sort(key=lambda x:(x['d'],x['id']))
+          print(' '.join(str(x['id']) for x in g[-10:]))"); do
+            curl -sS --fail "https://data.readthegame.co/extract/$ID.json" -o "extract/$ID.json" &
+          done
+          wait
+          echo "  fetched $(ls extract | wc -l) extracts so the page can boot"
           # The policy is hash-pinned and separately tested; stripped here only so
           # the page may be framed and measured.
           sed -i 's#<meta http-equiv="Content-Security-Policy"[^>]*>##' index.html game.html
@@ -704,8 +732,20 @@ jobs:
           </body></html>
           HTML
 
+          # ⭐ THE SECOND CANARY, AND IT IS LITERALLY THE BUG THIS COMMIT FIXES.
+          # CHENG: "a canary proves the RULER works. It says nothing about
+          # whether the SUBJECT is there. A 900px element overflowing a 360px
+          # frame proves the comparison functions. An empty #rg at height 0 also
+          # fits. Both are true at once, and the gate cannot tell them apart."
+          # So the existing canary gets a sibling: a copy of game.html whose
+          # extract path cannot resolve — the exact state this gate was in — and
+          # the step FAILS IF IT REPORTS A SUBJECT. Without it, "the board has
+          # height" is a claim nothing has ever seen fail.
+          cp game.html gamenosubj.html
+          sed -i 's#/extract/#/nosuch/#g' gamenosubj.html
+
           WIDTH=360
-          for f in index game canary; do
+          for f in index game canary gamenosubj; do
             cat > "probe-$f.html" <<HTML
           <!doctype html><html><head><meta charset="utf-8"><title>pending</title></head>
           <body style="margin:0">
@@ -720,8 +760,20 @@ jobs:
                an overlay scrollbar and takes none, so measuring against the
                client width is STRICTER than a real device, not looser. SCROLL is
                what the content actually needs. */
+            /* ⭐ AND A FOURTH NUMBER: IS THERE ANYTHING UNDER THE RULER?
+               `fits` is true of a page that rendered nothing, so the three
+               numbers above cannot distinguish "this laid out correctly" from
+               "this laid out nothing". The subject is the SCOREBOARD's height,
+               because it is the element that overflows and it exists only once
+               the page has a game. A canary page whose extract cannot resolve
+               is measured alongside and must report 0. */
+            var idoc = f.contentDocument;
+            var rg = idoc.getElementById('rg');
+            var bd = idoc.querySelector('.board');
+            var subj = (rg && !rg.hidden && bd)
+                     ? Math.round(bd.getBoundingClientRect().height) : 0;
             document.title = 'FIT ' + f.clientWidth + ' ' + d.clientWidth + ' ' +
-                             d.scrollWidth;
+                             d.scrollWidth + ' ' + subj;
           }, 4000);
           </script>
           </body></html>
@@ -735,7 +787,7 @@ jobs:
             dom=$(google-chrome --headless --no-sandbox --disable-gpu \
                     --virtual-time-budget=15000 --dump-dom \
                     "http://localhost:8099/probe-$f.html" 2>/dev/null)
-            read -r _ frame client scroll <<<"$(echo "$dom" | grep -o 'FIT [0-9]* [0-9]* [0-9]*' | head -1)"
+            read -r _ frame client scroll subj <<<"$(echo "$dom" | grep -o 'FIT [0-9]* [0-9]* [0-9]* [0-9]*' | head -1)"
             if [ -z "$scroll" ]; then
               echo "::error::$f.html never reported a width — the probe did not run"
               fail=1; continue
@@ -753,6 +805,28 @@ jobs:
             fi
             over=0
             [ "$scroll" -gt $((client + 1)) ] && over=1
+
+            # THE SUBJECT CANARY, judged before the fit canary because it is the
+            # one that decides whether the fit numbers describe anything at all.
+            if [ "$f" = gamenosubj ]; then
+              if [ "$subj" -eq 0 ]; then
+                echo "  gamenosubj: no extract, no scoreboard, subject reported as 0 — the subject check can fail"
+              else
+                echo "::error::gamenosubj reported a ${subj}px scoreboard with no extract — the subject check is broken, and every 'it fits' above is unverified"
+                fail=1
+              fi
+              continue
+            fi
+
+            # ⭐ EVERY REAL PAGE MUST HAVE A SUBJECT. index.html carries the
+            # hero, which is game.html in an iframe, so both real pages have a
+            # scoreboard; the two canaries are the only exemptions and both are
+            # handled by their own branch.
+            if [ "$f" != canary ] && [ "${subj:-0}" -le 0 ]; then
+              echo "::error::$f.html laid out with NO scoreboard — this gate measured a page with nothing on it, which is how a 25px overflow shipped"
+              fail=1; continue
+            fi
+
             if [ "$f" = canary ]; then
               # The mutation. It MUST overflow; if it does not, the comparison
               # above is not working and every green above it means nothing.
@@ -764,7 +838,7 @@ jobs:
               fi
               continue
             fi
-            echo "  $f.html: framed ${WIDTH}px, laid out at ${client}px, content needs ${scroll}px"
+            echo "  $f.html: framed ${WIDTH}px, laid out at ${client}px, content needs ${scroll}px, scoreboard ${subj}px"
             if [ "$over" = 1 ]; then
               echo "::error::$f.html needs ${scroll}px in a ${client}px viewport — it scrolls sideways"
               fail=1

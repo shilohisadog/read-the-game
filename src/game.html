@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-llTJ9fnx3igB4xItP/kDLl5C9cnigBll6JLbh31lzfk=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-kl2B03GiIZfaVOeUZbM/dvI67DB0NIgjB9O9sTptp1U='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-llTJ9fnx3igB4xItP/kDLl5C9cnigBll6JLbh31lzfk=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-wNdcpaNH/wnK5mObpWmQtvfHPUZSuRx8P+uoy80tm8o='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">What is this?</a></nav></header>
@@ -75,7 +75,65 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    is which half of it you see first. */
 .tm .atk .ar{font-size:1.15rem;line-height:1;font-weight:700;color:var(--ink);
  letter-spacing:0;margin-left:.34em;vertical-align:-.1em}#rg .tm.a .ab{background:var(--away);color:var(--away-ink)}#rg .tm.h .ab{background:var(--home);color:var(--home-ink)}
-#rg .sc{font-family:ui-monospace,Menlo,monospace;font-size:2.2rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+/* ⭐ THE SCORE IS THE ONE NUMBER ON THIS PAGE A STRANGER ALREADY KNOWS HOW TO
+   READ, and it was set in a monospace family at 2.2rem — a 21px-wide numeral,
+   which is a code listing rather than a scoreboard. Kevin: "the whole vibe of
+   the scoreboard (on mobile) just doesn't appeal to me."
+   THE FAMILY WAS NEVER THE LOAD-BEARING PART. Monospace was here so the digit
+   would not reflow when the score changes — and `font-variant-numeric:
+   tabular-nums` was on the same rule the whole time and already guarantees
+   exactly that, on a proportional face. So the guarantee is kept and the
+   typewriter is dropped: every digit still occupies one fixed advance, the
+   scoreboard no longer looks like a terminal, and nothing about the reason the
+   family was chosen has been given up. */
+#rg .sc{font-size:2.2rem;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1}
+/* ⭐ THE PHONE LAYOUT. Below this width the three-column board does not fit and
+   never did: `.mid` has a 150px floor and `.atk` is an unbreakable 72px, so the
+   card must accept 72+150+72+28 = 322px against 277px available at 360 — a 45px
+   overflow that clipped the `K` of `VGK`, threw the direction arrow off the
+   card and made the whole PAGE scroll sideways at 360 and 320. Measured, with
+   the arithmetic reproducing the measurement, in docs/scoreboard-mobile.md §3.
+
+   THE STACK IS THE CAUSE, so the stack is what goes. Badge and score share a
+   line, the state line gets the whole card beneath them, and the two team
+   columns stop being pinned to opposite edges with a void between them.
+
+   RE-FLOW RATHER THAN SCALE, and this is CHENG's argument: scaling shrinks text
+   on the device where text is already smallest, and the stated reader is a
+   novice on a phone. Scale is the safety net UNDER a layout that fits, never
+   the mechanism that makes it fit.
+
+   THE BREAKPOINT IS 520px BECAUSE ONE ALREADY EXISTS AT 520px (the goalie panel,
+   further down). It sets different properties on different selectors, so there
+   is no silent winner here — but a SECOND query for the same job at a different
+   width is how the penalty-box fix lost an afternoon, so the value is borrowed
+   rather than chosen. */
+@media(max-width:520px){
+ #rg .board{grid-template-columns:1fr 1fr;grid-template-areas:"away home" "state state";
+   gap:9px 10px;padding:11px 12px}
+ #rg .tm.a{grid-area:away}#rg .tm.h{grid-area:home}
+ #rg .tm{flex-direction:row;align-items:center;justify-content:center;gap:7px}
+ /* THE 150px FLOOR GOES. `#rg.preview .mid` already zeroes it for the hero and
+    the game page never got the same repair — one fix, two surfaces, one missed. */
+ #rg .mid{grid-area:state;min-width:0}
+ #rg .gs{margin-bottom:0}
+ /* THE WORD GOES, THE ARROW STAYS. `attacks` is a LABEL for the arrow, and the
+    arrow is the information — direction, which the goalies cannot supply to a
+    reader who does not yet know a team attacks the net it does not defend. The
+    word costs 72px on a card that has none to spare; the mark costs 14px. */
+ #rg .tm .atk .aw{display:none}
+ #rg .tm .atk{margin-top:0}
+ /* ⭐ MIRRORED, SO EACH ARROW POINTS OUT OF THE CARD AT THE END ITS TEAM IS
+    ATTACKING. Source order is badge, score, arrow, which put the visitor's
+    LEFT-pointing arrow to the RIGHT of its own score — an arrow in the middle
+    of the card pointing back across the block it belongs to. Ordered instead as
+    `<- CAR 0` and `0 VGK ->`: arrows on the outside aimed outward, scores toward
+    the centre, which is the arrangement every scoreboard a reader has ever seen
+    uses. The rule lives INSIDE this query on purpose — `order` applies to a
+    flex column too, and above 520px `.tm` still stacks. */
+ #rg .tm.a .atk{order:1}#rg .tm.a .ab{order:2}#rg .tm.a .sc{order:3}
+ #rg .tm.h .sc{order:1}#rg .tm.h .ab{order:2}#rg .tm.h .atk{order:3}
+}
 #rg .mid{min-width:150px}#rg .gs{text-align:center;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px}#rg .gs .cl{color:var(--ink);font-family:ui-monospace,Menlo,monospace}#rg .gs .clw{font-style:normal;font-size:.62rem;letter-spacing:.08em}
 #rg .bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--edge)}#rg .bar span{transition:width .4s ease}#rg .ba{background:#fff;box-shadow:inset 0 0 0 2px var(--away);width:50%}#rg .bh{background:var(--home);width:50%}
 #rg .pct{display:flex;justify-content:space-between;align-items:center;font-size:.9rem;margin-top:5px;font-family:ui-monospace,Menlo,monospace;font-weight:700}
