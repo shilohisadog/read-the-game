@@ -7,6 +7,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { rich, app, SCRIPT, PAGE_CSS, boot, paceOf } from './helpers/page.js';
 
 const at = d => +d.$('scrub').value;
@@ -73,15 +74,43 @@ test('stepping takes the replay off automatic', () => {
  *
  * A call is therefore a CHANGE, which is what the viewer sees too.
  */
+/**
+ * ⭐ A MOMENT IS WHEREVER IT IS DRAWN, NOT THE `#caption` ELEMENT.
+ *
+ * This read `#caption` alone, which was the same thing until 2026-08-25: the
+ * goal pill was suppressed when the ice is already saying it, because
+ * `drawLabel` has its own goal branch naming the scorer AND the assists —
+ * "🚨 GOAL — Stankoven" — and the pill under it repeated the sentence eight
+ * inches away. Kevin: "it's redundant and doesn't add any information."
+ *
+ * The CLAIM these tests make did not change: whatever the game holds, exactly
+ * its goals and penalties get a moment of their own. Only the element carrying
+ * it did, and a test welded to the element would have read that as the moment
+ * disappearing. Both surfaces carry the same `🚨 GOAL` token, so the readers
+ * below are untouched.
+ */
+/* ⚠️ THE GOAL BRANCH OF THE LABEL, NOT THE WHOLE LABELS GROUP. The first version
+   of this concatenated `#labels` wholesale — and that group is rewritten on
+   EVERY frame, because every event gets an on-ice label ("CAR · Shot on goal").
+   Every frame then read as a moment and the walk counted 266 of them. What is a
+   moment on the ice is the goal branch specifically, which is the only one that
+   carries the siren. */
+const goalOnIce = a => (a.$('labels').innerHTML.match(/🚨 GOAL[^<]*/) || [''])[0];
+/* AND AN ARRIVAL, NOT ANY CHANGE. The label group is rewritten every frame, so
+   the goal branch goes non-empty and then empty again one frame later -- and a
+   plain "did it change" reader counted that clearing as a second moment, five
+   phantom `other`s in a walk. The caption never empties, so it is still read as
+   a change; the goal label is read as an appearance. */
 function callsWhileStepping(a, read) {
   const out = [];
-  let last = a.$('caption').innerHTML;
+  let lastCap = a.$('caption').innerHTML, lastGoal = goalOnIce(a);
   a.$('scrub').oninput({ target: { value: '0' } });
   for (let k = 0; k < +a.$('scrub').max; k++) {
     a.$('fwd').click();
-    const now = a.$('caption').innerHTML;
-    if (now !== last) out.push(read(now, a));
-    last = now;
+    const cap = a.$('caption').innerHTML, goal = goalOnIce(a);
+    if (goal && goal !== lastGoal) out.push(read(goal, a));
+    else if (cap !== lastCap) out.push(read(cap, a));
+    lastCap = cap; lastGoal = goal;
   }
   return out;
 }
@@ -156,11 +185,22 @@ test('letting go of the scrubber calls the play you landed on', () => {
   const goal = firstGoalFrame(a);
   a.$('scrub').oninput({ target: { value: String(goal - 1) } });
   a.$('scrub').oninput({ target: { value: String(goal) } });
-  const during = a.$('caption').innerHTML;
+  /* ⭐ THE FLARE, NOT THE CAPTION, and the retarget is the point.
+     This read `#caption` — and once the goal pill was suppressed (the ice
+     already names the scorer and the assists) the caption was identical before
+     and after the release, so the test read a working page as a dead one.
+     THE ON-ICE LABEL CANNOT SUBSTITUTE: `drawLabel` runs on every frame, moment
+     or not, so the goal's name is on screen during the drag too. What separates
+     "arrived at" from "called" is the arrival — `flare` is only added when
+     `moment` is true, which is exactly what `onchange` turns on and `oninput`
+     leaves off. Asserting it here tests the mechanism rather than one of the
+     things that used to ride on it. */
+  const flared = () => /\bflare\b/.test(a.$('events').innerHTML);
+  assert.equal(flared(), false, 'dragging THROUGH a goal already called it');
   a.$('scrub').onchange({ target: { value: String(goal) } });
-  const after = a.$('caption').innerHTML;
-  assert.notEqual(after, during, 'letting go of the scrubber on a goal called nothing');
-  assert.match(after, /🚨 GOAL/, 'the release called something other than the goal it landed on');
+  assert.equal(flared(), true, 'letting go of the scrubber on a goal called nothing');
+  assert.match(a.$('labels').innerHTML, /🚨 GOAL/,
+    'the release landed on something other than the goal it was aimed at');
 });
 
 test('a penalty is CALLED on the ice, like a goal and unlike a giveaway', () => {
@@ -347,3 +387,70 @@ test('the step buttons say what they step THROUGH, in words a reader can see', (
  * it carries none. Splitting on the SHARED prefix is what makes the boundary
  * real, because `split` cuts at every delimiter rather than the first.
  */
+
+/**
+ * ⭐ THE PILL IS RESERVED FOR WHAT THE ICE DOES NOT ALREADY SAY.
+ *
+ * Kevin, on the front door: the goal pill "is redundant and doesn't add any
+ * information to the event". True of a goal — `drawLabel` has its own branch
+ * naming the scorer AND the assists — and NOT true of the other two moments the
+ * pill serves, which is the part worth pinning:
+ *
+ *   goal     ice: "🚨 GOAL — Stankoven" + assists      pill: adds nothing
+ *   penalty  ice: "CAR · Penalty"                      pill: adds WHO TOOK IT
+ *   slot     ice: "CAR · Shot on goal"                 pill: "⚡ Shot from the slot"
+ *
+ * BOTH BRANCHES, because "no goal pill" is satisfied by deleting the pill
+ * outright — which would silently take the penalty taker and the only place the
+ * site names the slot with it. And the ice is behind a CONTROL: switch
+ * `Explain plays` off and the pill is the goal's only announcement.
+ */
+test('a goal is not captioned twice, and IS captioned when the ice is silent', () => {
+  const goalCaps = a => callsWhileStepping(a, h => (/🚨 GOAL/.test(h) ? 'goal' : 'other'))
+    .filter(x => x === 'goal').length;
+
+  const on = boot();
+  const capsWithLabels = callsWhileStepping(on, (h, d) =>
+    /🚨 GOAL/.test(d.$('caption').innerHTML) ? 'pill' : 'other').filter(x => x === 'pill');
+  assert.equal(capsWithLabels.length, 0,
+    'the ice already names the scorer, and the pill said it again');
+
+  // The same walk still SEES every goal — the moment did not disappear, it moved.
+  const goals = rich.events.filter(e => e.type === 'goal').length;
+  assert.ok(goals > 0, 'the fixture has no goal, so neither half proves anything');
+  assert.equal(goalCaps(boot()), goals, 'a goal stopped getting a moment at all');
+
+  // AND WITH THE ICE SWITCHED OFF the pill has to come back, or turning labels
+  // off silently removes the announcement instead of moving it.
+  const off = boot();
+  off.$('lbl').click();
+  const pills = callsWhileStepping(off, (h, d) =>
+    /🚨 GOAL/.test(d.$('caption').innerHTML) ? 'pill' : 'other').filter(x => x === 'pill');
+  assert.equal(pills.length, goals,
+    'with `Explain plays` off the goal has no announcement anywhere');
+});
+
+/**
+ * ⭐ AND THE PILL DOES NOT SIT ON THE PENALTY BOX.
+ *
+ * Measured in a real browser before the fix: 58px of overlap on the game page at
+ * both widths, 267x20 on the front door. The caption was `bottom:14px` inside
+ * `.rinkbox`, which contains the penalty box — wrong since the box became
+ * furniture, and invisible until the hero started ending on a goal every loop.
+ *
+ * THE FAKE DOM HAS NO LAYOUT, so this cannot measure the overlap. What it can
+ * pin is the STRUCTURE the fix depends on: the caption is anchored to the
+ * penalty box row, whose top edge is the bottom of the ice. If either half is
+ * undone the geometry silently returns.
+ */
+test('the caption is anchored to the penalty box, not to the whole rink box', () => {
+  const markup = readFileSync(new URL('../src/game.html', import.meta.url), 'utf8');
+  const row = /<div class="pboxes" id="pboxes">([\s\S]*?)<\/div>/.exec(markup);
+  assert.ok(row, 'the penalty box row is gone — this check has lost its subject');
+  assert.match(row[1], /id="caption"/,
+    'the caption is outside the penalty box row, so it anchors to .rinkbox again');
+  assert.match(PAGE_CSS, /#rg \.pboxes\{position:relative/,
+    'the row is not a positioning context, so bottom:100% means the rink box');
+  assert.match(PAGE_CSS, /#rg \.caption\{[^}]*bottom:calc\(100% \+/,
+    'the caption is not anchored above the row it sits in');
+});

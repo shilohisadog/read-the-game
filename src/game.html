@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-RivZklJnz1VcBeuF3JZhuc3NiUlchEY80n/nafuOt5s=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-FJhREPe/gG0+jDZJg/oZDn3D6FLgjkoAIUNl+Gvjy48='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-/PQ56hyGp6E3vZ3pusT/EEp9WyONTUOUi1lGQJ2sRIg=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-eF+k6C1v05Ln4/VE8hi0cSkZPt0EZVW0fI9428PCFh0='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">What is this?</a></nav></header>
@@ -96,7 +96,19 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    ALWAYS PRESENT, EMPTY OR NOT. A band that appears only when occupied moves
    everything below it twice a period, and a viewer never learns what the space
    is for. Kevin: "enough vertical pixels to be super obvious." */
-#rg .pboxes{margin-top:9px;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+/* ⭐ `position:relative` SO THE CAPTION CAN SIT ON THE ICE ABOVE IT.
+   The caption was `bottom:14px` inside `.rinkbox`, which contains this row -- so
+   it rendered ON TOP of the penalty box, measured at 58px of overlap on the game
+   page at both widths and 267x20 on the front door. It has been wrong since the
+   box became furniture; it only ever showed when a caption fired, and the hero
+   ending on a goal made that every loop.
+   ANCHORED TO THIS ROW RATHER THAN TO A NEW WRAPPER. The obvious fix is to wrap
+   the <svg> so the caption anchors to the ice -- and the comment forty lines up
+   says in capitals not to, because `.rinkbox` becomes `display:flex` in preview
+   and `#rg.preview .rinkbox svg` needs the svg to be a DIRECT flex child. This
+   row's top edge IS the bottom of the ice, so `bottom:100%` is the same place
+   with none of that risk, and it adapts if the box ever changes height. */
+#rg .pboxes{position:relative;margin-top:9px;display:grid;grid-template-columns:1fr 1fr;gap:6px}
 #rg .pblab{grid-column:1/-1;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:center}
 #rg .pb{display:flex;align-items:center;gap:7px;min-height:30px;padding:5px 9px;border:1px solid var(--edge);border-radius:9px;background:#fff;font-size:.79rem;line-height:1.25}
 #rg .pb::before{content:attr(data-ab);font-size:.62rem;font-weight:750;letter-spacing:.04em;padding:2px 5px;border-radius:4px}
@@ -311,7 +323,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 @keyframes slip{0%{transform:scale(1.55);opacity:0}45%{opacity:.7}100%{transform:scale(1);opacity:1}}
 #rg .puck{fill:#0e1216;stroke:#fff;stroke-width:.55}#rg .puck.jump{animation:pj .3s ease}@keyframes pj{0%{transform:scale(2)}100%{transform:scale(1)}}
 #rg .shotline{stroke:var(--ink);stroke-width:.7;stroke-dasharray:2.2 2;opacity:.7;animation:sl 1s ease forwards}@keyframes sl{to{opacity:0}}
-#rg .caption{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;align-items:center;gap:8px;background:rgba(15,26,35,.94);color:#fff;padding:7px 15px;border-radius:99px;font-size:.86rem;font-weight:600;white-space:nowrap;opacity:0;pointer-events:none;max-width:92%}
+#rg .caption{position:absolute;left:50%;bottom:calc(100% + 6px);transform:translateX(-50%);display:flex;align-items:center;gap:8px;background:rgba(15,26,35,.94);color:#fff;padding:7px 15px;border-radius:99px;font-size:.86rem;font-weight:600;white-space:nowrap;opacity:0;pointer-events:none;max-width:92%}
 /* THE DURATION HERE IS A PLACEHOLDER AND NEVER APPLIES. `caption()` sets
    `style.animationDuration` from `dwell(e)` on every call, so the caption lasts
    exactly as long as the frame it describes. This number used to be the real
@@ -681,8 +693,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 <p class="endnote" id="endnote"></p>
 <p class="atnote" id="atnote"></p>
 <div class="rinkbox"><svg viewBox="0 0 200 85"><g id="rink"></g><g id="netmen"></g><g id="lines"></g><g id="whistles"></g><g id="events"></g><g id="puck"></g><g id="labels"></g><g id="noplace"></g></svg>
-  <div class="pboxes" id="pboxes"><span class="pblab">Penalty box</span><span class="pb a" id="pbA"></span><span class="pb h" id="pbH"></span></div>
-  <div class="caption" id="caption"></div>
+  <div class="pboxes" id="pboxes"><span class="pblab">Penalty box</span><span class="pb a" id="pbA"></span><span class="pb h" id="pbH"></span><div class="caption" id="caption"></div></div>
   <div class="counters"><div class="cc a"><span class="n" id="cA">0</span><span class="lb">Away attempts<span class="mode" id="mA">ALL SITUATIONS</span></span></div><div class="cc h"><span class="lb">Home attempts<span class="mode" id="mH">ALL SITUATIONS</span></span><span class="n" id="cH">0</span></div></div>
 </div>
 <p class="icenote" id="iceNote"></p>
@@ -4145,7 +4156,24 @@ function render(i,how){
  $('cA').textContent=a;$('cH').textContent=h;
  if(how==='play'){if(a>prevA)flash('cA');if(h>prevH)flash('cH');}
  if(moment){
-   if(cur&&cur.type==='goal'){flashNet(cur.own);caption(cur,'goal');}
+   /* ⭐ THE GOAL PILL IS NOT DRAWN WHEN THE ICE IS ALREADY SAYING IT.
+      Kevin, looking at the front door: the pill "is redundant and doesn't add
+      any information to the event". He is right about a goal -- `drawLabel` has
+      its own branch for one, naming the SCORER AND THE ASSISTS, which is more
+      than the pill carries. The same sentence twice, eight inches apart.
+      AND ONLY A GOAL, WHICH IS THE PART WORTH SAYING OUT LOUD. The pill fires
+      for three moments, and the other two are not duplicates: `LAB` has no
+      `goal` key but it does have `penalty`, so the ice says "CAR · Penalty"
+      while only the pill says WHO TOOK IT; and for a slot shot the ice says
+      "CAR · Shot on goal" while only the pill says "⚡ Shot from the slot" --
+      the one place the site names the region now painted on the ice.
+      THE CONDITION IS drawLabel's OWN GUARD, not a copy of its reasoning.
+      `labelsOn` is a control the viewer can switch off, and `place()` returns
+      nothing for an unlocated event; in either case the ice says nothing and
+      the pill is the goal's only announcement. Asking the same two questions
+      here is what keeps "the ice already says it" true rather than assumed. */
+   if(cur&&cur.type==='goal'){flashNet(cur.own);
+     if(!(labelsOn&&place(cur)))caption(cur,'goal');}
    // THE PENALTY IS CALLED, and it is the only event here that changes the
    // CONDITIONS of the game rather than the count. It is why `Even strength
    // only` exists as a control at all, and until now the ice marked it exactly

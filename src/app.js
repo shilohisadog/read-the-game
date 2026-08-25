@@ -703,7 +703,24 @@ function render(i,how){
  $('cA').textContent=a;$('cH').textContent=h;
  if(how==='play'){if(a>prevA)flash('cA');if(h>prevH)flash('cH');}
  if(moment){
-   if(cur&&cur.type==='goal'){flashNet(cur.own);caption(cur,'goal');}
+   /* ⭐ THE GOAL PILL IS NOT DRAWN WHEN THE ICE IS ALREADY SAYING IT.
+      Kevin, looking at the front door: the pill "is redundant and doesn't add
+      any information to the event". He is right about a goal -- `drawLabel` has
+      its own branch for one, naming the SCORER AND THE ASSISTS, which is more
+      than the pill carries. The same sentence twice, eight inches apart.
+      AND ONLY A GOAL, WHICH IS THE PART WORTH SAYING OUT LOUD. The pill fires
+      for three moments, and the other two are not duplicates: `LAB` has no
+      `goal` key but it does have `penalty`, so the ice says "CAR · Penalty"
+      while only the pill says WHO TOOK IT; and for a slot shot the ice says
+      "CAR · Shot on goal" while only the pill says "⚡ Shot from the slot" --
+      the one place the site names the region now painted on the ice.
+      THE CONDITION IS drawLabel's OWN GUARD, not a copy of its reasoning.
+      `labelsOn` is a control the viewer can switch off, and `place()` returns
+      nothing for an unlocated event; in either case the ice says nothing and
+      the pill is the goal's only announcement. Asking the same two questions
+      here is what keeps "the ice already says it" true rather than assumed. */
+   if(cur&&cur.type==='goal'){flashNet(cur.own);
+     if(!(labelsOn&&place(cur)))caption(cur,'goal');}
    // THE PENALTY IS CALLED, and it is the only event here that changes the
    // CONDITIONS of the game rather than the count. It is why `Even strength
    // only` exists as a control at all, and until now the ice marked it exactly

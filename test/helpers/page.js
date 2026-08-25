@@ -313,7 +313,14 @@ export function paceOf(ticks, setup) {
   const timer = (fn, ms) => {
     rows.push({ ms, i: +dom.$('scrub').value,
                 dur: dom.$('caption').style.animationDuration,
-                html: dom.$('caption').innerHTML });
+                html: dom.$('caption').innerHTML,
+                // ⭐ THE ICE SPEAKS TOO. A goal's moment moved out of the pill
+                // on 2026-08-25 -- `drawLabel` already named the scorer and the
+                // assists, so the pill repeated it -- and `dwell` still gives a
+                // goal its extra time. Measuring speech by the caption alone
+                // therefore reported a frame that was long and silent, which is
+                // exactly the defect the invariant below exists to forbid.
+                goal: (dom.$('labels').innerHTML.match(/🚨 GOAL[^<]*/) || [''])[0] });
     if (n++ < ticks) fn();
     return 0;
   };
@@ -324,7 +331,13 @@ export function paceOf(ticks, setup) {
   b(rich, null);
   if (setup) setup(dom);
   dom.$('play').onclick();
-  // A frame SPOKE if the caption's markup differs from the frame before it.
-  rows.forEach((r, k) => { r.spoke = k > 0 && r.html !== rows[k - 1].html; });
+  // A frame SPOKE if the caption changed, or a goal ARRIVED on the ice. An
+  // arrival and not any change: the label group is rewritten every frame, so the
+  // goal branch empties again one frame later and "did it differ" would count
+  // that clearing as a second, silent-but-long frame.
+  rows.forEach((r, k) => {
+    const prev = rows[k - 1];
+    r.spoke = k > 0 && ((r.goal && r.goal !== prev.goal) || r.html !== prev.html);
+  });
   return { dom, rows };
 }

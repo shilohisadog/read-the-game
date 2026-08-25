@@ -55,8 +55,7 @@ __CSS__</style>
 <p class="endnote" id="endnote"></p>
 <p class="atnote" id="atnote"></p>
 <div class="rinkbox"><svg viewBox="0 0 200 85"><g id="rink"></g><g id="netmen"></g><g id="lines"></g><g id="whistles"></g><g id="events"></g><g id="puck"></g><g id="labels"></g><g id="noplace"></g></svg>
-  <div class="pboxes" id="pboxes"><span class="pblab">Penalty box</span><span class="pb a" id="pbA"></span><span class="pb h" id="pbH"></span></div>
-  <div class="caption" id="caption"></div>
+  <div class="pboxes" id="pboxes"><span class="pblab">Penalty box</span><span class="pb a" id="pbA"></span><span class="pb h" id="pbH"></span><div class="caption" id="caption"></div></div>
   <div class="counters"><div class="cc a"><span class="n" id="cA">0</span><span class="lb">Away attempts<span class="mode" id="mA">ALL SITUATIONS</span></span></div><div class="cc h"><span class="lb">Home attempts<span class="mode" id="mH">ALL SITUATIONS</span></span><span class="n" id="cH">0</span></div></div>
 </div>
 <p class="icenote" id="iceNote"></p>
