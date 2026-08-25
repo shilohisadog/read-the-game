@@ -593,6 +593,25 @@ slowest, `Faster` dead means the fastest. Three states, distinguishable, and
 **every press changes something visible** — which a bare two-button toggle would
 not have given.
 
+### 11.7b Three fixes from Kevin's laptop shot
+
+- ⭐ **FIVE DOES NOT DIVIDE, so the grid left a hole.** Three layer rows across,
+  then two, and a third of the second row empty — and a `1fr` grid track holds
+  its width whether or not anything sits in it, so the gap is structural at every
+  viewport where the column count does not divide five. An empty cell at the end
+  of a list reads as *something is missing*, not as spare room. `flex:1 1 290px`
+  instead, so the last row's rows GROW into the space and the block ends on a
+  straight edge. **A grid is the wrong tool for a list whose length is not a
+  multiple of anything.**
+- **The three display pickers started at three different x positions**, because
+  `Trails:`, `Players:` and `Narration:` are three different lengths and each is
+  its own row in the markup, so nothing aligned them. One label column.
+- **The game line was floating in the gap between two zones** — centred, in its
+  own whitespace, with everything else left-aligned under a heading. It is the
+  identity of the game you just watched, and the first two destinations under
+  *Watch another game* are that game's two clubs, so it moved to the top of that
+  zone instead of sitting adrift above it.
+
 ### 11.8 Still open
 
 - **U3 — layer density.** §11.5 is the argument for taking it.

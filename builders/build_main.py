@@ -112,8 +112,8 @@ __CSS__</style>
 <p class="disclose lkey lk-unrec" id="unrecKey"></p>
 </section>
 <div class="whybk" id="whyBk"><div class="why" id="whyContent"></div></div>
-<div class="foot" id="gl">—</div>
 <section class="zone znext" aria-labelledby="zhNext"><h2 class="zh" id="zhNext">Watch another game</h2>
+<div class="foot" id="gl">—</div>
 <nav class="nextup" id="nextup" aria-label="Where to go next"></nav>
 </section>
 <details class="zone zdisp"><summary class="zh">Display options</summary>

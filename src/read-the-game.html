@@ -577,7 +577,12 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .wc .wexc{font-size:.82rem;line-height:1.6}#rg .wg{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
 #rg .wc{background:#f2f7fa;border:1px solid var(--edge);border-radius:10px;padding:13px}#rg .wc h3{margin:0 0 6px;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);display:flex;justify-content:space-between}#rg .wc h3 .n{font-family:ui-monospace,Menlo,monospace;font-size:1.2rem;color:var(--ink);font-weight:700}#rg .wc.flag{border-color:#e6b98f}#rg .wc.flag h3 .n{color:var(--flag)}#rg .wc p{margin:0;font-size:.87rem}
 #rg .wfoot{margin-top:13px;font-size:.8rem;color:var(--muted);border-top:1px solid var(--edge);padding-top:11px}#rg .wfoot em{font-style:normal;color:var(--ink)}
-#rg .foot{font-size:.78rem;color:var(--muted);margin-top:16px;text-align:center}
+/* ⭐ IT WAS FLOATING IN THE GAP BETWEEN TWO ZONES -- centred, in its own
+   whitespace, with every other thing on the surface left-aligned under a
+   heading. It is the identity of the game you just watched, and the first two
+   destinations under `Watch another game` are that game's two clubs, so it
+   belongs at the top of that zone rather than adrift above it. */
+#rg .foot{font-size:.78rem;color:var(--muted);margin:0 0 10px;text-align:left}
 /* THE GAME SUMMARY, GIVEN A SURFACE (Kevin liked it and could not find it).
    It was a small centred paragraph in muted type, sitting between the ledger and
    the footer -- the one sentence on the page that says what the game WAS, styled
@@ -740,6 +745,10 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .zone{margin:15px 0 0;padding-top:12px;border-top:1px solid var(--edge)}
 #rg .zh{margin:0 0 8px;font-size:.72rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 #rg .zdisp{padding-bottom:2px}
+/* ONE COLUMN FOR THE LABELS, so the three controls start at the same x. They are
+   separate rows in the markup -- each is its own `figpick` -- so nothing aligned
+   them, and `Trails:` / `Players:` / `Narration:` are three different lengths. */
+#rg .zdisp .figpick>.ll{min-width:5.4rem}
 #rg .zdisp>summary{cursor:pointer;list-style:none;display:flex;align-items:center;min-height:44px;margin:0}
 #rg .zdisp>summary::-webkit-details-marker{display:none}
 #rg .zdisp>summary::after{content:"\25be";margin-left:8px;font-size:.9rem}
@@ -758,11 +767,20 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    control is available before it is pressed. */
 /* AS MANY COLUMNS AS FIT, RATHER THAN A BREAKPOINT. At 1100 a full-width row is
    900px of box for nine words, and five of them cost 330px on a surface this
-   redesign exists to SHORTEN. `auto-fit` with a floor means the phone gets one
-   column because 343px only fits one, not because someone picked 760 as the
-   width where a laptop starts -- the same reason the rink lines stopped carrying
-   hand-typed y values. 290px is the width at which the name stops wrapping. */
-#rg .lrows{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:8px}
+   redesign exists to SHORTEN. The floor means the phone gets one column because
+   343px only fits one, not because someone picked 760 as the width where a
+   laptop starts -- the same reason the rink lines stopped carrying hand-typed y
+   values. 290px is the width at which the name stops wrapping.
+
+   ⭐ AND IT IS FLEX RATHER THAN GRID, BECAUSE FIVE DOES NOT DIVIDE. Kevin's
+   laptop shot showed the cost: three across, then two, and a third of the second
+   row empty. A `1fr` grid track holds its width whether or not anything is in
+   it, so the hole is structural at every viewport where the column count does
+   not divide five -- and an empty cell at the end of a list reads as something
+   missing rather than as spare room. `flex:1 1 290px` lets the last row's rows
+   GROW into the space instead, so the block ends on a straight edge. */
+#rg .lrows{display:flex;flex-wrap:wrap;gap:8px}
+#rg .lrows>.lrow{flex:1 1 290px}
 #rg .lrow{display:grid;grid-template-columns:23px 1fr auto;align-items:start;gap:0 9px;width:100%;text-align:left;padding:10px 13px;margin:0;min-height:44px;border:1px solid var(--edge);border-radius:11px;background:#fff}
 #rg .lrow[aria-pressed="true"]{border-color:var(--ink);background:#f4f8fa}
 /* ⭐ THE MARK COLUMN IS A FIXED WIDTH IN EVERY ROW, and this is the correction
@@ -986,8 +1004,8 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 <p class="disclose lkey lk-unrec" id="unrecKey"></p>
 </section>
 <div class="whybk" id="whyBk"><div class="why" id="whyContent"></div></div>
-<div class="foot" id="gl">—</div>
 <section class="zone znext" aria-labelledby="zhNext"><h2 class="zh" id="zhNext">Watch another game</h2>
+<div class="foot" id="gl">—</div>
 <nav class="nextup" id="nextup" aria-label="Where to go next"></nav>
 </section>
 <details class="zone zdisp"><summary class="zh">Display options</summary>
