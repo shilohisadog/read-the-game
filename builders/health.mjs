@@ -107,6 +107,21 @@ async function ledger() {
     const published = rows.filter(g => g.v === 1).length;
     return { games: rows.length, published, refused: rows.length - published,
              unreconciled: rows.filter(g => g.u).length,
+             // ⭐ HOW MANY ROWS CARRY A HERO LOOP. CHENG's finding, and the
+             // failure it makes visible is a QUIET one: if the derivation has
+             // not run with `hl`, the homepage falls back to the newest game
+             // and looks completely normal -- no error, no gap, just the
+             // unremarkable hero the whole change exists to replace. That is
+             // the fifth instance in this project of the failure state
+             // rendering plausibly, and the only cheap way to see it is to
+             // count the field where the archive is already being counted.
+             //
+             // THE FIELD'S PRESENCE, NOT THE HERO WINDOW. `[3,8]` is the
+             // READER's constant and lives in build_index.py; restating it
+             // here would be a second copy that can disagree with the one in
+             // use. Presence answers the question actually being asked --
+             // did the backfill happen -- and zero is the alarming number.
+             loops: rows.filter(g => typeof g.hl === 'number').length,
              asOf: (idx && idx.lastRun) || null,
              through: (idx && idx.dataThrough) || null };
   } catch { return null; }
@@ -120,7 +135,8 @@ export function block(counts, live, stamp) {
   // empty" are different sentences and only one of them is alarming.
   const arch = live
     ? `${n(live.games)} archived · **${n(live.published)} published** · `
-      + `${n(live.refused)} refused · ${n(live.unreconciled)} unreconciled`
+      + `${n(live.refused)} refused · ${n(live.unreconciled)} unreconciled · `
+      + `${n(live.loops)} with a hero loop`
     : '_archive not read — this block was regenerated without network_';
   return [OPEN,
     `**Health right now:** ${arch} · ${suite}`,
@@ -130,7 +146,12 @@ export function block(counts, live, stamp) {
         + `COUNTED from the published \`catalog.json\` — the same document the `
         + `site reads — as the pipeline last wrote it, whose own \`lastRun\` is `
         + `${live.asOf}, covering games through ${live.through}; the nightly `
-        + `moves them with no deploy, so re-run before quoting. Suite counts are `
+        + `moves them with no deploy, so re-run before quoting. `
+        + `**\`with a hero loop\`** is how many rows carry \`hl\` — the distance `
+        + `from the preview's opening frame to the first goal. **Zero means the `
+        + `derivation has not run since that field was added**, and the homepage `
+        + `is quietly serving the old most-recent hero with nothing on screen `
+        + `saying so. Suite counts are `
         + `checked by \`npm run gates\` and cannot go stale silently.</sub>`
       : `<sub>Generated ${stamp} by \`node builders/health.mjs\`, offline.</sub>`,
     SHUT].join('\n');
