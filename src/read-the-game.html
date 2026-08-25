@@ -129,6 +129,17 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    must lose to every one of them -- this is the ice, not a mark. The number is a
    visual judgement and cannot be derived; it is here to be looked at. */
 #rg .slotzone{fill:var(--hd);opacity:.09}
+/* ⭐ THE BLUE LINE'S OWN ZONE, IN THE BLUE LINE'S OWN COLOUR.
+   Same rule as the slot and a different answer: each tint borrows the colour of
+   the mark it explains, so `--hd` there and `--blue` here. What that buys is
+   that the two regions cannot be read as the same kind of thing -- one is a
+   lozenge in front of a net where danger lives, the other a full-width strip
+   across a line that gets fought over.
+   FAINTER THAN THE SLOT, because it covers far more ice. Two strips of 10 x 85
+   feet against two clipped discs; at equal opacity the neutral zone becomes the
+   loudest thing on the rink and the slot stops being the point. Both numbers are
+   visual judgements and are here to be looked at rather than proved. */
+#rg .zoneband{fill:var(--blue);opacity:.055}
 #rg .ln{fill:none;stroke-linecap:round}#rg .ln.red{stroke:var(--red);stroke-width:.7;opacity:.42}#rg .ln.blue{stroke:var(--blue);stroke-width:.9;opacity:.42}#rg .ln.thick{stroke-width:1.1;opacity:.52}
 /* PREVIEW: THE FIVE-SECOND TASTE, AND IT IS THE REAL RENDERER.
    The homepage had no motion at all, on a site whose product is animation, so a
@@ -752,6 +763,15 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 const NET_X = 89;
 const GOAL_LINE_X = 89;      // the same line; named for the rule that uses it
 const BLUE_LINE_X = 25;      // zone boundary, and what an offside is about
+/* ⭐ THE NEUTRAL-ZONE FACE-OFF DOT, AND IT IS FIVE FEET OFF THE BLUE LINE.
+   Not a rulebook figure remembered: `drawRink` records these nine spots as
+   MEASURED -- 2,134 draws across 39 games land on them and on nothing else --
+   so the gap between the line and the dot is a fact about the paint rather than
+   a number anyone here chose. It is what gives the blue-line band a width with a
+   source: the band reaches from the line to the dots, and you can see that it
+   does. Kevin's "battleground" needs an edge, and this is the rink's own. */
+const NEUTRAL_DOT_X = 20;
+const ZONE_BAND_FT = BLUE_LINE_X - NEUTRAL_DOT_X;   // 5 ft either side
 const CENTRE_X = 0;
 const SLOT_HALF_WIDTH = 22;   // feet either side of centre
 const HIGH_DANGER_FT = 33;    // Doctrine section 7: a rule, not a model
@@ -3718,6 +3738,31 @@ function drawRink(per){if(per===rinkPer)return;rinkPer=per;const P=[];P.push('<r
   +`<g clip-path="url(#slotfrontA)"><circle cx="${SX(NET_X)}" cy="${SY(0)}" r="${HIGH_DANGER_FT}"/></g>`
   +`<g clip-path="url(#slotfrontB)"><circle cx="${SX(-NET_X)}" cy="${SY(0)}" r="${HIGH_DANGER_FT}"/></g>`
   +`</g>`);
+ /* ⭐ AND THE BLUE LINES, WHICH ARE A DIFFERENT KIND OF IMPORTANT.
+    Kevin: "offense wants to hold play in, defense wants to keep play out, a
+    battleground if you will -- that's an aesthetic the casual fan needs to be
+    exposed to." He is right, and the measurement that looked like it refuted him
+    does not: only 6.2% of located plays fall within five feet of a blue line,
+    but holding the line produces NO RECORDABLE EVENT. The feed records where
+    countable things happen, not where the puck is contested, so its silence
+    there is a property of the recording. (docs/status.md §U, and the same
+    caveat that forbids a heat map of the neutral zone.)
+    A DIFFERENT SHAPE AND A DIFFERENT COLOUR, ON PURPOSE. The slot is a PLACE --
+    a lozenge in front of a net, tinted in the high-danger colour it belongs to.
+    A blue line is a THRESHOLD, and the contest runs board to board, so this is a
+    full-width strip in the line's OWN blue. Shading them alike would say they
+    are the same kind of important, which is the misconception rather than the
+    lesson. Each tint borrows the colour of the mark it explains, so the palette
+    does not grow.
+    ITS WIDTH HAS A SOURCE. `ZONE_BAND_FT` is the gap between the blue line and
+    the neutral-zone face-off dot, which the archive measured; the band reaches
+    from the line to the dots and you can see that it does. Five feet chosen by
+    eye would be a model wearing a UI control.
+    NO CLIP NEEDED. At |x| 20-30 the boards are straight -- the corner radius
+    only bends the ice within 27 units of a corner -- so a plain rect is exact. */
+ for(const b of[BLUE_LINE_X,-BLUE_LINE_X])
+  // `SX` DECREASES with x, so the band's left edge is the far side of it.
+  P.push(`<rect class="zoneband" x="${SX(b+ZONE_BAND_FT)}" y="1" width="${ZONE_BAND_FT*2}" height="83"/>`);
  for(const g of[-89,89])P.push(`<line class="ln red" x1="${SX(g)}" y1="3" x2="${SX(g)}" y2="82"/>`);
  for(const b of[-25,25])P.push(`<line class="ln blue" x1="${SX(b)}" y1="1" x2="${SX(b)}" y2="84"/>`);
  P.push('<line class="ln red thick" x1="100" y1="1" x2="100" y2="84"/><circle class="ln blue" cx="100" cy="42.5" r="15"/>');
@@ -3743,7 +3788,7 @@ function drawRink(per){if(per===rinkPer)return;rinkPer=per;const P=[];P.push('<r
  // gives their dimensions, so they stay off rather than being approximated.
  const ENDZONE=[],NEUTRAL=[];
  for(const zx of[-69,69])for(const zy of[-22,22])ENDZONE.push([zx,zy]);
- for(const zx of[-20,20])for(const zy of[-22,22])NEUTRAL.push([zx,zy]);
+ for(const zx of[-NEUTRAL_DOT_X,NEUTRAL_DOT_X])for(const zy of[-22,22])NEUTRAL.push([zx,zy]);
  for(const[zx,zy]of ENDZONE)P.push(`<circle class="ln red" cx="${SX(zx)}" cy="${SY(zy)}" r="15"/>`);
  // Spots go on LAST so a dot sits on top of its circle. Centre ice is blue and
  // the other eight are red, which is how the paint goes down. All nine are drawn

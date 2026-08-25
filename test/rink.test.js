@@ -11,9 +11,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { attackDirection, distanceToNet, isHighDanger,
-         NET_X, HIGH_DANGER_FT, SLOT_HALF_WIDTH } from '../src/lib/rink.js';
+         NET_X, HIGH_DANGER_FT, SLOT_HALF_WIDTH,
+         BLUE_LINE_X, NEUTRAL_DOT_X, ZONE_BAND_FT } from '../src/lib/rink.js';
 import { shootingTeam, SHOT_TYPES } from '../src/lib/attribution.js';
-import { boot } from './helpers/page.js';
+import { boot, PAGE_CSS } from './helpers/page.js';
 
 const rich = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url)));
 const R = rich.roster;
@@ -187,4 +188,63 @@ test('the slot painted on the ice is drawn from the rule\'s own constants', () =
   }
   assert.ok(rink.includes('clip-path="url(#slotband)"'),
     'the band is defined but never applied');
+});
+
+/**
+ * ⭐ THE BLUE-LINE BAND, AND THE ONE CLAIM THAT MAKES ITS WIDTH HONEST.
+ *
+ * Kevin: "offense wants to hold play in, defense wants to keep play out, a
+ * battleground if you will." The band exists to teach that, and a band needs an
+ * edge — five feet picked by eye would be a model wearing a UI control.
+ *
+ * IT DOES NOT PICK ONE. `ZONE_BAND_FT` is the distance from the blue line to the
+ * neutral-zone face-off dot, and `drawRink` records those nine spots as MEASURED
+ * from the archive rather than remembered from a rulebook. So the band reaches
+ * from the line to the dots, and a viewer can see that it does. That relationship
+ * is what this pins: break it and the width becomes arbitrary again, silently.
+ */
+test('the blue-line band reaches exactly to the neutral-zone dots', () => {
+  assert.equal(ZONE_BAND_FT, BLUE_LINE_X - NEUTRAL_DOT_X,
+    'the band width stopped being the line-to-dot distance');
+  assert.ok(ZONE_BAND_FT > 0, 'a band of no width teaches nothing');
+
+  const rink = String(boot().$('rink').innerHTML);
+  const bands = [...rink.matchAll(/<rect class="zoneband" x="([-\d.]+)" y="1" width="([\d.]+)"/g)]
+    .map(m => ({ x: Number(m[1]), w: Number(m[2]) }));
+  assert.equal(bands.length, 2, `expected one band per blue line, found ${bands.length}`);
+
+  // SX(x) = 100 - x, so a band centred on the line at `b` starts at SX(b + half).
+  for (const b of [BLUE_LINE_X, -BLUE_LINE_X]) {
+    const want = { x: 100 - (b + ZONE_BAND_FT), w: ZONE_BAND_FT * 2 };
+    assert.ok(bands.some(z => z.x === want.x && z.w === want.w),
+      `no band centred on the blue line at ${b} (wanted x=${want.x} w=${want.w})`);
+  }
+
+  // AND THE EDGE LANDS ON A DOT THAT IS REALLY DRAWN THERE — read out of the
+  // same markup, so the claim is about the picture and not about my arithmetic.
+  const dots = [...rink.matchAll(/<circle class="fdot" cx="([-\d.]+)"/g)].map(m => Number(m[1]));
+  for (const z of bands) {
+    const inner = Math.abs(z.x - 100) < Math.abs(z.x + z.w - 100) ? z.x : z.x + z.w;
+    assert.ok(dots.includes(inner),
+      `the band edge at ${inner} does not land on a face-off dot (dots at ${[...new Set(dots)].sort((a,b)=>a-b)})`);
+  }
+});
+
+/**
+ * The two regions must not be read as the same kind of important. The slot is a
+ * PLACE and the blue line is a THRESHOLD, and the only thing carrying that
+ * distinction is that they look different — a different shape and a different
+ * colour, each borrowed from the mark it explains.
+ */
+test('the slot and the blue-line band are visibly different kinds of thing', () => {
+  const css = PAGE_CSS;
+  const slot = /#rg \.slotzone\{fill:var\(--([a-z]+)\);opacity:([\d.]+)\}/.exec(css);
+  const band = /#rg \.zoneband\{fill:var\(--([a-z]+)\);opacity:([\d.]+)\}/.exec(css);
+  assert.ok(slot && band, 'one of the two regions has lost its styling');
+  assert.notEqual(slot[1], band[1],
+    'both regions are tinted the same colour — they read as the same kind of area');
+  assert.equal(slot[1], 'hd', 'the slot no longer borrows the high-danger colour');
+  assert.equal(band[1], 'blue', 'the band no longer borrows the blue line\'s colour');
+  assert.ok(Number(band[2]) < Number(slot[2]),
+    'the band covers far more ice than the slot and must be fainter, not louder');
 });

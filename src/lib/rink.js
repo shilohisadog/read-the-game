@@ -19,6 +19,15 @@
 export const NET_X = 89;
 export const GOAL_LINE_X = 89;      // the same line; named for the rule that uses it
 export const BLUE_LINE_X = 25;      // zone boundary, and what an offside is about
+/* ⭐ THE NEUTRAL-ZONE FACE-OFF DOT, AND IT IS FIVE FEET OFF THE BLUE LINE.
+   Not a rulebook figure remembered: `drawRink` records these nine spots as
+   MEASURED -- 2,134 draws across 39 games land on them and on nothing else --
+   so the gap between the line and the dot is a fact about the paint rather than
+   a number anyone here chose. It is what gives the blue-line band a width with a
+   source: the band reaches from the line to the dots, and you can see that it
+   does. Kevin's "battleground" needs an edge, and this is the rink's own. */
+export const NEUTRAL_DOT_X = 20;
+export const ZONE_BAND_FT = BLUE_LINE_X - NEUTRAL_DOT_X;   // 5 ft either side
 export const CENTRE_X = 0;
 export const SLOT_HALF_WIDTH = 22;   // feet either side of centre
 export const HIGH_DANGER_FT = 33;    // Doctrine section 7: a rule, not a model
