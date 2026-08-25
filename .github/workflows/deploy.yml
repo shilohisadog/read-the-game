@@ -993,7 +993,21 @@ jobs:
                  written by boot() and is the same marker the live-watch step
                  below uses. */
               var gl = d.getElementById('gl'), v = d.getElementById('verdict');
-              var booted = gl && /final/.test(gl.textContent || '') ? 1 : 0;
+              /* ⭐ AND IT ASKS THE APP, NOT THE COPY. This read
+                 `/final/.test(gl.textContent)` -- the word `final` in the game
+                 line -- and on 2026-08-25 the game line stopped printing the
+                 result, because a replay that states its ending before you press
+                 play is a recap. Every page then measured as never-booted and
+                 the deploy failed on a site that was working perfectly.
+                 A GATE KEYED TO A SENTENCE FAILS WHEN THE SENTENCE IS EDITED,
+                 which is not a property of the thing it exists to watch. `#rg`
+                 is `hidden` in the markup and unhidden by `reveal()`, and
+                 `draw()` throws if `boot()` runs inside the hidden subtree -- so
+                 "the app is visible" IS "boot ran", structurally, with no prose
+                 in the path. `#gl`'s placeholder is an em-dash, so emptiness is
+                 not the signal either. */
+              var rg = d.getElementById('rg');
+              var booted = rg && !rg.hidden ? 1 : 0;
               /* THE CARD IS THE LAST FRAME'S CONTENT, so the probe has to reach
                  the last frame before it can measure one. The page opens at the
                  opening faceoff and the card is display:none until the replay
@@ -1176,7 +1190,11 @@ jobs:
             line=$(grep -o 'id="gl"[^>]*>[^<]*' g.html | sed 's/.*>//' || true)
             case "$line" in
               *"could not be loaded"*) echo "::error::the shell says: $line"; exit 1 ;;
-              *" at "*final*) fail=0; break ;;
+              # SAME FIX AS THE PROBE ABOVE, and the same reason: `final` was
+              # half of this pattern until the game line stopped printing the
+              # result. What is left is the game line's own grammar -- AWAY at
+              # HOME -- against a placeholder of `—`, which cannot match it.
+              *" at "*) fail=0; break ;;
               *) echo "    attempt $i: \"$line\"" ;;
             esac
             sleep 8

@@ -16,6 +16,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { TEAMS } from '../src/lib/teams.js';
+import { boot } from './helpers/page.js';
 import { createHash } from 'node:crypto';
 
 const SRC = new URL('../src/', import.meta.url);
@@ -699,4 +700,70 @@ test('and the date link says the words the reader already met', () => {
   assert.match(funnel, /Browse by date/, 'the funnel does not reach the date index');
   assert.doesNotMatch(funnel, /Schedule|By day|Calendar view/i,
     'the funnel invented a new name for the date index');
+});
+
+/**
+ * ⭐ THE DEPLOY GATE'S IDEA OF "BOOTED" MUST MATCH WHAT THE PAGE ACTUALLY DRAWS.
+ *
+ * On 2026-08-25 the game line stopped printing `· final MIN 2–3 BUF`, because a
+ * replay that states its ending before you press play is a recap. Two steps in
+ * `.github/workflows/deploy.yml` decided whether a page had booted by testing
+ * `#gl` for the word **final** — so every page measured as never-booted, and the
+ * deploy failed against a site that was working perfectly.
+ *
+ * The gate was not wrong to fail; it was keyed to a SENTENCE, and a sentence is
+ * not a property of the thing it exists to watch. Both now read `#rg`'s hidden
+ * state, which `reveal()` owns — except the live-watch step, which greps a
+ * dumped DOM and can only see text.
+ *
+ * THIS IS THE MISSING LINK BETWEEN THEM: the pattern that step greps for, read
+ * out of the YAML, against the game line this page really renders. Two files,
+ * two languages, one string, and nothing else compares them.
+ */
+test('the deploy gate greps for a game line this page actually renders', () => {
+  const yml = readFileSync(
+    new URL('../.github/workflows/deploy.yml', import.meta.url), 'utf8');
+
+  // The live-watch step's success arm, e.g.  *" at "*) fail=0; break ;;
+  const arm = /\*"([^"]+)"\*\)\s*fail=0;\s*break/.exec(yml);
+  assert.ok(arm, 'the live-watch step no longer has a success pattern — '
+    + 'this check has lost its subject');
+  const needle = arm[1];
+
+  const a = boot();
+  const line = String(a.$('gl').textContent || '');
+  assert.ok(line.includes(needle),
+    `deploy.yml waits for ${JSON.stringify(needle)} in #gl, but the page renders `
+    + `${JSON.stringify(line)} — the gate would call a working page dead`);
+
+  // AND THE PLACEHOLDER MUST NOT MATCH IT, or the gate passes on a page that
+  // never ran. `#gl` ships as an em-dash, so "not empty" was never the signal.
+  const raw = readFileSync(new URL('../src/game.html', import.meta.url), 'utf8');
+  const ph = /id="gl"[^>]*>([^<]*)</.exec(raw);
+  assert.ok(ph, 'no #gl in the built markup — this check has lost its subject');
+  assert.ok(!ph[1].includes(needle),
+    `the un-booted placeholder ${JSON.stringify(ph[1])} already contains the `
+    + `pattern the gate waits for, so the gate cannot tell boot from no-boot`);
+});
+
+/**
+ * The other detector is structural, and this pins the mechanism it depends on:
+ * `#rg` must ship hidden, so that "visible" means "reveal() ran".
+ */
+test('the probe gate can tell a booted page from an un-booted one', () => {
+  const yml = readFileSync(
+    new URL('../.github/workflows/deploy.yml', import.meta.url), 'utf8');
+  // ⚠️ COMMENTS STRIPPED FIRST, and this check caught itself doing the thing it
+  // exists to prevent: the fix in deploy.yml QUOTES the old broken line in its
+  // own explanation, so a raw scan finds `/final/.test(gl` in prose and fails on
+  // a file that is correct. A check that cannot tell code from the words about
+  // the code is not a check about code — the fourth instance in this project.
+  // Both comment syntaxes: `#` is YAML's, and the embedded browser script has
+  // its own `/* */`. The quote that tripped this was in the JavaScript one.
+  const code = yml.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*#.*$/gm, '');
+  assert.match(code, /var booted = rg && !rg\.hidden/,
+    'the verdict probe no longer keys on #rg — if it keys on copy again, the '
+    + 'next wording change fails the deploy on a working site');
+  assert.doesNotMatch(code, /\/final\/\.test\(gl/,
+    'the probe is keyed to the game line stating the result again');
 });
