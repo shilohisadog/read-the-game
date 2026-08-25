@@ -761,7 +761,12 @@ jobs:
                client width is STRICTER than a real device, not looser. SCROLL is
                what the content actually needs. */
             /* ⭐ AND A FOURTH NUMBER: IS THERE ANYTHING UNDER THE RULER?
-               `fits` is true of a page that rendered nothing, so the three
+               NO BACKTICKS IN THIS BLOCK. The heredoc below is UNQUOTED so the
+               probe can interpolate $WIDTH, which means bash also runs anything
+               in backticks -- the first version of this comment quoted a word
+               that way and the step printed "fits: command not found" four
+               times, once per page, while still producing a title.
+               "it fits" is true of a page that rendered nothing, so the three
                numbers above cannot distinguish "this laid out correctly" from
                "this laid out nothing". The subject is the SCOREBOARD's height,
                because it is the element that overflows and it exists only once
@@ -769,8 +774,13 @@ jobs:
                is measured alongside and must report 0. */
             var idoc = f.contentDocument;
             var rg = idoc.getElementById('rg');
-            var bd = idoc.querySelector('.board');
-            var subj = (rg && !rg.hidden && bd)
+            /* EACH PAGE'S OWN SUBJECT. game.html carries the scoreboard, which
+               is the element that overflows. index.html has no #rg at all -- its
+               replay is a NESTED iframe, invisible from here -- so its subject
+               is the hero block that frames it. Asserting a scoreboard on both
+               was wrong and failed a correct front page on the first run. */
+            var bd = idoc.querySelector('#rg .board') || idoc.querySelector('.hero');
+            var subj = (bd && (!rg || !rg.hidden))
                      ? Math.round(bd.getBoundingClientRect().height) : 0;
             document.title = 'FIT ' + f.clientWidth + ' ' + d.clientWidth + ' ' +
                              d.scrollWidth + ' ' + subj;
@@ -823,7 +833,7 @@ jobs:
             # scoreboard; the two canaries are the only exemptions and both are
             # handled by their own branch.
             if [ "$f" != canary ] && [ "${subj:-0}" -le 0 ]; then
-              echo "::error::$f.html laid out with NO scoreboard — this gate measured a page with nothing on it, which is how a 25px overflow shipped"
+              echo "::error::$f.html laid out with NO SUBJECT — this gate measured a page with nothing on it, which is how a 25px overflow shipped"
               fail=1; continue
             fi
 
@@ -838,7 +848,7 @@ jobs:
               fi
               continue
             fi
-            echo "  $f.html: framed ${WIDTH}px, laid out at ${client}px, content needs ${scroll}px, scoreboard ${subj}px"
+            echo "  $f.html: framed ${WIDTH}px, laid out at ${client}px, content needs ${scroll}px, subject ${subj}px"
             if [ "$over" = 1 ]; then
               echo "::error::$f.html needs ${scroll}px in a ${client}px viewport — it scrolls sideways"
               fail=1
