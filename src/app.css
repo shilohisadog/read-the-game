@@ -41,6 +41,41 @@
 #rg .endnote .disp{color:var(--muted)}
 #rg .atnote:empty{display:none}
 #rg .atnote{margin:0 0 10px;padding:9px 13px;border-radius:9px;border:1px solid var(--edge);background:#fbf6ee;color:var(--ink);font-size:.88rem}
+/* ⭐ "PRESS PLAY", ON THE ICE. Kevin, looking at the pre-game frame: "we should
+   overlay 'Press Play' onto the rink, in rather large lettering, so the first
+   time visitor knows what the first step is."
+
+   IT IS A CONDITION, NOT A TIP, and that is what decides its gating. `render`
+   toggles `.atrest` from `i<0` alone -- the pre-game frame -- so it obeys the
+   same rule as the empty-net note and the ends key: recomputable from the
+   playhead, with no reference to when it started. That is why it is NOT gated on
+   first-visit. A newcomer tip would be invisible to a returning viewer who is
+   also looking at empty ice, and it would need a dismissal, a counter and a
+   stale-copy risk. This needs none: it is true whenever it shows, for everyone,
+   and it removes itself the moment it is obeyed.
+
+   SIZED AGAINST THE RINK, NOT THE PAGE. `clamp` with a vw middle term, because
+   the ice is 136px tall at 390 and 373px at 1100 -- a rem constant would be a
+   caption on a phone and a whisper on a laptop, which is the defect the
+   scoreboard shipped (87px in both frames, 19% of one and 56% of the other).
+
+   THE PLATE IS TRANSLUCENT INK, not a solid, so the slot and blue-line shading
+   stay visible underneath it: the base layer is what the viewer is being invited
+   to watch, and covering it to advertise the invitation would be self-defeating. */
+#rg .pressplay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3;
+  display:none;align-items:center;gap:.4em;font:inherit;font-weight:800;letter-spacing:.01em;
+  font-size:clamp(1.05rem,4.4vw,2rem);line-height:1;color:#fff;cursor:pointer;
+  background:rgba(15,26,35,.82);border:0;border-radius:999px;padding:.62em 1.15em;
+  box-shadow:0 10px 30px rgba(16,32,45,.28);white-space:nowrap;
+  animation:ppin .5s cubic-bezier(.2,.7,.3,1)}
+#rg.atrest .pressplay{display:flex}
+/* The hero autoplays and has no transport, so an instruction to press a button
+   that is not on the frame would be false. `.preview` wins by being listed with
+   the rest of the game-view chrome below; this rule is the one that turns it on
+   and it is deliberately not `!important`. */
+@keyframes ppin{from{opacity:0;transform:translate(-50%,-50%) scale(.88)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+@media (prefers-reduced-motion:reduce){#rg .pressplay{animation:none}}
+#rg .pressplay:hover,#rg .pressplay:focus-visible{background:rgba(15,26,35,.92)}
 #rg .rinkbox{position:relative;background:var(--ice);border:1px solid var(--edge);border-radius:15px;padding:10px;box-shadow:0 6px 22px rgba(16,32,45,.08)}
 /* THE PENALTY BOX, AND IT IS OUTSIDE THE viewBox ON PURPOSE. Put inside it, the
    rink would shrink to make room -- and the rink is 136px tall on a 390px phone
@@ -117,6 +152,7 @@
    not a trailer for the product, it is the product.
    ONE RENDERER, still. Preview is a class on #rg and a play loop; there is no
    second drawing path and nothing here is reimplemented. */
+#rg.preview .pressplay,
 #rg.preview .newcomer,#rg.preview h1,#rg.preview .transport,#rg.preview .layers,
 #rg.preview .figpick,#rg.preview .hint,#rg.preview .icenote,#rg.preview .whistlepanel,#rg.preview .blockpanel,
 #rg.preview .verdict,#rg.preview .nextup,#rg.preview .foot,#rg.preview .work,

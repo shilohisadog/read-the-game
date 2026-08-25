@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-8TNmUd0yoIAk+p4bWmAhNgcnBvw6aQdQ5cjgIIICxaM=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-bd1xYWx13UcoHQq/RBMWw15O9cpgroBH84w5zQ3stCo='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-V6jveM180ZfdzAzNaHlhN8S+2z3V3BYgm2UZNjqpErE=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-JXK/Kqm55JYdXdyRQFiECwWZ2oiIscr3rnMd6sf8Vpg='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">What is this?</a></nav></header>
@@ -85,6 +85,41 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .endnote .disp{color:var(--muted)}
 #rg .atnote:empty{display:none}
 #rg .atnote{margin:0 0 10px;padding:9px 13px;border-radius:9px;border:1px solid var(--edge);background:#fbf6ee;color:var(--ink);font-size:.88rem}
+/* ⭐ "PRESS PLAY", ON THE ICE. Kevin, looking at the pre-game frame: "we should
+   overlay 'Press Play' onto the rink, in rather large lettering, so the first
+   time visitor knows what the first step is."
+
+   IT IS A CONDITION, NOT A TIP, and that is what decides its gating. `render`
+   toggles `.atrest` from `i<0` alone -- the pre-game frame -- so it obeys the
+   same rule as the empty-net note and the ends key: recomputable from the
+   playhead, with no reference to when it started. That is why it is NOT gated on
+   first-visit. A newcomer tip would be invisible to a returning viewer who is
+   also looking at empty ice, and it would need a dismissal, a counter and a
+   stale-copy risk. This needs none: it is true whenever it shows, for everyone,
+   and it removes itself the moment it is obeyed.
+
+   SIZED AGAINST THE RINK, NOT THE PAGE. `clamp` with a vw middle term, because
+   the ice is 136px tall at 390 and 373px at 1100 -- a rem constant would be a
+   caption on a phone and a whisper on a laptop, which is the defect the
+   scoreboard shipped (87px in both frames, 19% of one and 56% of the other).
+
+   THE PLATE IS TRANSLUCENT INK, not a solid, so the slot and blue-line shading
+   stay visible underneath it: the base layer is what the viewer is being invited
+   to watch, and covering it to advertise the invitation would be self-defeating. */
+#rg .pressplay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3;
+  display:none;align-items:center;gap:.4em;font:inherit;font-weight:800;letter-spacing:.01em;
+  font-size:clamp(1.05rem,4.4vw,2rem);line-height:1;color:#fff;cursor:pointer;
+  background:rgba(15,26,35,.82);border:0;border-radius:999px;padding:.62em 1.15em;
+  box-shadow:0 10px 30px rgba(16,32,45,.28);white-space:nowrap;
+  animation:ppin .5s cubic-bezier(.2,.7,.3,1)}
+#rg.atrest .pressplay{display:flex}
+/* The hero autoplays and has no transport, so an instruction to press a button
+   that is not on the frame would be false. `.preview` wins by being listed with
+   the rest of the game-view chrome below; this rule is the one that turns it on
+   and it is deliberately not `!important`. */
+@keyframes ppin{from{opacity:0;transform:translate(-50%,-50%) scale(.88)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+@media (prefers-reduced-motion:reduce){#rg .pressplay{animation:none}}
+#rg .pressplay:hover,#rg .pressplay:focus-visible{background:rgba(15,26,35,.92)}
 #rg .rinkbox{position:relative;background:var(--ice);border:1px solid var(--edge);border-radius:15px;padding:10px;box-shadow:0 6px 22px rgba(16,32,45,.08)}
 /* THE PENALTY BOX, AND IT IS OUTSIDE THE viewBox ON PURPOSE. Put inside it, the
    rink would shrink to make room -- and the rink is 136px tall on a 390px phone
@@ -161,6 +196,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    not a trailer for the product, it is the product.
    ONE RENDERER, still. Preview is a class on #rg and a play loop; there is no
    second drawing path and nothing here is reimplemented. */
+#rg.preview .pressplay,
 #rg.preview .newcomer,#rg.preview h1,#rg.preview .transport,#rg.preview .layers,
 #rg.preview .figpick,#rg.preview .hint,#rg.preview .icenote,#rg.preview .whistlepanel,#rg.preview .blockpanel,
 #rg.preview .verdict,#rg.preview .nextup,#rg.preview .foot,#rg.preview .work,
@@ -700,7 +736,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 <div class="shellmsg" id="shellmsg" hidden><p id="shellsay"></p><nav id="shellout" aria-label="Ways into the archive"></nav></div>
 <div id="rg"><div class="wrap">
 <p class="eyebrow">Learn to read hockey · watch first, add metrics after</p>
-<h1>Watch the game</h1>
+<h1>Read the game</h1>
 <div class="newcomer" id="newcomer"></div>
 <div class="board">
   <div class="tm a"><span class="ab" id="aAb">&mdash;</span><span class="sc" id="aSc">0</span><i class="atk"><span class="aw">attacks</span><b class="ar" id="aAtk"></b></i></div>
@@ -713,6 +749,15 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 <p class="endnote" id="endnote"></p>
 <p class="atnote" id="atnote"></p>
 <div class="rinkbox"><svg viewBox="0 0 200 85"><g id="rink"></g><g id="netmen"></g><g id="lines"></g><g id="whistles"></g><g id="events"></g><g id="puck"></g><g id="labels"></g><g id="noplace"></g></svg>
+  <!-- THE FIRST STEP, ON THE ICE. Kevin: "we should overlay 'Press Play' onto the
+       rink, in rather large lettering, so the first time visitor knows what the
+       first step is". It is a CONDITION, not a tip: it is on screen exactly when
+       the playhead is at the pre-game frame, so it is recomputable from the
+       playhead alone and needs no first-visit gating and can never go stale. It
+       is also the only thing on this page that removes itself by being obeyed.
+       aria-hidden because `#play` already offers this action with a real label;
+       a second tab stop for the same command is noise to a screen reader. -->
+  <button class="pressplay" id="pressplay" tabindex="-1" aria-hidden="true">&#9654; Press Play</button>
   <div class="pboxes" id="pboxes"><span class="pblab">Penalty box</span><span class="pb a" id="pbA"></span><span class="pb h" id="pbH"></span><div class="caption" id="caption"></div></div>
   <div class="counters"><div class="cc a"><span class="n" id="cA">0</span><span class="lb">Away attempts<span class="mode" id="mA">ALL SITUATIONS</span></span></div><div class="cc h"><span class="lb">Home attempts<span class="mode" id="mH">ALL SITUATIONS</span></span><span class="n" id="cH">0</span></div></div>
 </div>
@@ -4147,6 +4192,11 @@ function render(i,how){
    ?'Same shots, same outcomes, same math — only the drawing changes.'
    :'';
  document.getElementById('rg').classList.toggle('ended',i>=EV.length-1);
+ /* THE PRE-GAME FRAME IS THE ONLY ONE THAT NEEDS AN INSTRUCTION, and `i<0` is the
+    whole test -- `play()` leaves the resting frame at once from either end, so a
+    playing replay can never be at -1 and no `playing` term is needed here. Same
+    shape as `ended` directly above: a class off the playhead, nothing remembered. */
+ document.getElementById('rg').classList.toggle('atrest',i<0);
  /* AN EMPTY NET IS A STATE, NOT AN INSTANT, so the sentence explaining it lasts
     exactly as long as the fact. This is half of the permanent paragraph that
     used to sit under the controls saying a goaltender "leaves when the feed says
@@ -4358,6 +4408,11 @@ function step(){if(i>=EV.length-1){stop();return;}set(i+1,'play');timer=setTimeo
 function play(){if(i>=EV.length-1||i<0){prevA=0;prevH=0;set(0,'play');}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);timer=setTimeout(step,dwell(EV[i]));}
 function stop(){playing=false;$('play').textContent=i<0?'▶ Play from start':i>=EV.length-1?'▶ Replay from start':'▶ Play';clearTimeout(timer);}
 $('play').onclick=()=>playing?stop():play();
+/* THE OVERLAY IS THE BUTTON. It calls `play()` directly rather than synthesising a
+   click on `#play`, because a forwarded click is a second path to the same state
+   that a test could satisfy without the real control working. There is no pause
+   branch: it is only on screen at the resting frame, where `playing` is false. */
+if($('pressplay'))$('pressplay').onclick=()=>play();
 /**
  * ONE PLAY AT A TIME, IN EITHER DIRECTION — the control this transport did not
  * have, and the slider is measurably unable to substitute for.

@@ -665,6 +665,11 @@ function render(i,how){
    ?'Same shots, same outcomes, same math — only the drawing changes.'
    :'';
  document.getElementById('rg').classList.toggle('ended',i>=EV.length-1);
+ /* THE PRE-GAME FRAME IS THE ONLY ONE THAT NEEDS AN INSTRUCTION, and `i<0` is the
+    whole test -- `play()` leaves the resting frame at once from either end, so a
+    playing replay can never be at -1 and no `playing` term is needed here. Same
+    shape as `ended` directly above: a class off the playhead, nothing remembered. */
+ document.getElementById('rg').classList.toggle('atrest',i<0);
  /* AN EMPTY NET IS A STATE, NOT AN INSTANT, so the sentence explaining it lasts
     exactly as long as the fact. This is half of the permanent paragraph that
     used to sit under the controls saying a goaltender "leaves when the feed says
@@ -876,6 +881,11 @@ function step(){if(i>=EV.length-1){stop();return;}set(i+1,'play');timer=setTimeo
 function play(){if(i>=EV.length-1||i<0){prevA=0;prevH=0;set(0,'play');}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);timer=setTimeout(step,dwell(EV[i]));}
 function stop(){playing=false;$('play').textContent=i<0?'▶ Play from start':i>=EV.length-1?'▶ Replay from start':'▶ Play';clearTimeout(timer);}
 $('play').onclick=()=>playing?stop():play();
+/* THE OVERLAY IS THE BUTTON. It calls `play()` directly rather than synthesising a
+   click on `#play`, because a forwarded click is a second path to the same state
+   that a test could satisfy without the real control working. There is no pause
+   branch: it is only on screen at the resting frame, where `playing` is false. */
+if($('pressplay'))$('pressplay').onclick=()=>play();
 /**
  * ONE PLAY AT A TIME, IN EITHER DIRECTION — the control this transport did not
  * have, and the slider is measurably unable to substitute for.

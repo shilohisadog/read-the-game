@@ -42,7 +42,7 @@ __CSS__</style>
 <div class="shellmsg" id="shellmsg" hidden><p id="shellsay"></p><nav id="shellout" aria-label="Ways into the archive"></nav></div>
 <div id="rg"><div class="wrap">
 <p class="eyebrow">Learn to read hockey · watch first, add metrics after</p>
-<h1>Watch the game</h1>
+<h1>Read the game</h1>
 <div class="newcomer" id="newcomer"></div>
 <div class="board">
   <div class="tm a"><span class="ab" id="aAb">&mdash;</span><span class="sc" id="aSc">0</span><i class="atk"><span class="aw">attacks</span><b class="ar" id="aAtk"></b></i></div>
@@ -55,6 +55,15 @@ __CSS__</style>
 <p class="endnote" id="endnote"></p>
 <p class="atnote" id="atnote"></p>
 <div class="rinkbox"><svg viewBox="0 0 200 85"><g id="rink"></g><g id="netmen"></g><g id="lines"></g><g id="whistles"></g><g id="events"></g><g id="puck"></g><g id="labels"></g><g id="noplace"></g></svg>
+  <!-- THE FIRST STEP, ON THE ICE. Kevin: "we should overlay 'Press Play' onto the
+       rink, in rather large lettering, so the first time visitor knows what the
+       first step is". It is a CONDITION, not a tip: it is on screen exactly when
+       the playhead is at the pre-game frame, so it is recomputable from the
+       playhead alone and needs no first-visit gating and can never go stale. It
+       is also the only thing on this page that removes itself by being obeyed.
+       aria-hidden because `#play` already offers this action with a real label;
+       a second tab stop for the same command is noise to a screen reader. -->
+  <button class="pressplay" id="pressplay" tabindex="-1" aria-hidden="true">&#9654; Press Play</button>
   <div class="pboxes" id="pboxes"><span class="pblab">Penalty box</span><span class="pb a" id="pbA"></span><span class="pb h" id="pbH"></span><div class="caption" id="caption"></div></div>
   <div class="counters"><div class="cc a"><span class="n" id="cA">0</span><span class="lb">Away attempts<span class="mode" id="mA">ALL SITUATIONS</span></span></div><div class="cc h"><span class="lb">Home attempts<span class="mode" id="mH">ALL SITUATIONS</span></span><span class="n" id="cH">0</span></div></div>
 </div>
