@@ -1588,7 +1588,17 @@ class TheReplacedRowIsWholesale(unittest.TestCase):
         self.assertEqual(set(self.rows(store)[2025020001]),
                          {"id", "d", "t",              # what game, when, which kind
                           "a", "h", "as", "hs", "ash", "hsh",   # the league's quote
-                          "v"},                        # our verdict, and `r` when 0
+                          "v",                         # our verdict, and `r` when 0
+                          # WIDENED 2026-08-24 FOR `hl`, and the tripwire firing
+                          # is what brought the decision here rather than letting
+                          # a field appear unannounced. It is the homepage hero's
+                          # only means of asking "does this game's replay reach a
+                          # goal in about ten seconds" WITHOUT fetching a game to
+                          # find out -- and the fixture seeded above scores one,
+                          # which is why this line had to move. Present only when
+                          # there IS such a loop, so a row may legitimately lack
+                          # it; see `_hl`.
+                          "hl"},
                          "read this class's docstring before widening this set")
 
 
@@ -2129,3 +2139,72 @@ class TheEndsTheyDefended(unittest.TestCase):
         self.assertEqual(bad, 0)
         self.assertEqual(self.rich["sides"]["2"], "right",
                          "and period two is the one that was flipped")
+
+
+class HeroLoop(unittest.TestCase):
+    """How long the front door's replay runs before the goal that ends it.
+
+    ⭐ EVERY EXPECTATION HERE IS COUNTED BY HAND, not produced by calling the
+    function and writing down what it said. That distinction is the whole value
+    of the file: a test whose expected value has only one path -- through the
+    code under test -- moves both sides together under a mutation and stays
+    green. See docs/status.md H1.
+    """
+
+    @staticmethod
+    def ev(type_, **kw):
+        return {"type": type_, **kw}
+
+    def test_the_loop_is_measured_from_the_frame_BEFORE_the_first_attempt(self):
+        # Plays:  0 faceoff  1 hit  2 shot-on-goal  3 hit  4 giveaway  5 goal
+        # The preview opens one frame before the first counted attempt, so the
+        # opening frame is play 1 and the loop is 5 - 1 = 4 plays.
+        events = [self.ev("faceoff"), self.ev("hit"), self.ev("shot-on-goal"),
+                  self.ev("hit"), self.ev("giveaway"), self.ev("goal")]
+        self.assertEqual(D._hero_loop(events), 4)
+
+    def test_a_goal_that_is_ITSELF_the_first_attempt_still_has_a_loop(self):
+        # Plays:  0 faceoff  1 hit  2 goal  -- the goal is the first attempt, so
+        # the opening frame is play 1 and the loop is a single play.
+        events = [self.ev("faceoff"), self.ev("hit"), self.ev("goal")]
+        self.assertEqual(D._hero_loop(events), 1)
+        # And the reader's floor is 3, so this game is not a hero. That is the
+        # floor doing its job rather than a defect here.
+
+    def test_events_the_renderer_never_plays_do_not_move_the_count(self):
+        # The same six plays as the first case with four unplayable events shot
+        # through them. The renderer skips all four, so the answer must not move.
+        events = [self.ev("period-start"), self.ev("faceoff"), self.ev("hit"),
+                  self.ev("stoppage"), self.ev("shot-on-goal"),
+                  self.ev("delayed-penalty"), self.ev("hit"),
+                  self.ev("giveaway"), self.ev("period-end"), self.ev("goal")]
+        self.assertEqual(D._hero_loop(events), 4)
+
+    def test_a_shootout_goal_is_not_a_goal_here(self):
+        # Excluded on `pt`, NEVER on period number -- period 5 is a shootout in
+        # the regular season and a third overtime in the playoffs. A shootout
+        # attempt is placed at coordinates that are not positions, and the hero
+        # must never open on one.
+        events = [self.ev("faceoff"), self.ev("shot-on-goal"),
+                  self.ev("goal", pt="SO", per=5)]
+        self.assertIsNone(D._hero_loop(events))
+
+    def test_a_goal_beyond_the_storage_cap_is_not_recorded(self):
+        # An attempt at play 1, then the cap's worth of plays, then a goal. The
+        # field exists to keep the catalog small; a game whose goal is this far
+        # out is not a hero under any reader threshold.
+        events = ([self.ev("faceoff"), self.ev("shot-on-goal")]
+                  + [self.ev("hit")] * (D.HERO_LOOP_CAP + 2)
+                  + [self.ev("goal")])
+        self.assertIsNone(D._hero_loop(events))
+
+    def test_a_goalless_game_has_no_loop_and_no_field(self):
+        events = [self.ev("faceoff"), self.ev("shot-on-goal"), self.ev("hit")]
+        self.assertIsNone(D._hero_loop(events))
+        self.assertEqual(D._hl(events), {},
+                         "an absent loop must write no key at all, not a null")
+
+    def test_the_fragment_is_the_only_place_the_field_is_named(self):
+        events = [self.ev("faceoff"), self.ev("hit"), self.ev("shot-on-goal"),
+                  self.ev("hit"), self.ev("giveaway"), self.ev("goal")]
+        self.assertEqual(D._hl(events), {"hl": 4})

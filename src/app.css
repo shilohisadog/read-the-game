@@ -235,6 +235,27 @@
 #rg .hdring{fill:none;stroke:var(--hd);stroke-width:.5;opacity:.6}
 #rg .pop{animation:pop .34s cubic-bezier(.2,1.3,.4,1)}@keyframes pop{0%{transform:scale(2.6);opacity:.3}100%{transform:scale(1);opacity:1}}
 #rg .flare{animation:flare .7s ease-out}@keyframes flare{0%{transform:scale(3.6);opacity:.2}55%{opacity:1}100%{transform:scale(1)}}
+/* ⭐ FOUR MORE ARRIVALS, one per play that FEELS different from the others.
+   Chosen as two pairs of opposites, because a contrast teaches where a single
+   flourish only decorates:
+     jolt   a HIT. Lands hard and recoils -- fast in, overshoot, settle.
+     halt   a BLOCKED SHOT. Comes in fast and STOPS DEAD, no overshoot, a
+            squash on contact. The puck was stopped exactly there.
+     snatch a TAKEAWAY. Pulled inward, decisive, tight undershoot.
+     slip   a GIVEAWAY. The only one with no snap at all -- it just comes loose,
+            slower and softer than everything else on the ice.
+   All four are scale and opacity on `.ev`, which already carries
+   `transform-box:fill-box`, so they work on the circle AND on the figure the
+   current attempt is drawn as. All four stop under prefers-reduced-motion by the
+   blanket rule below; none of them moves a mark off its recorded coordinate. */
+#rg .jolt{animation:jolt .26s cubic-bezier(.9,0,.1,1)}
+@keyframes jolt{0%{transform:scale(.4);opacity:.35}40%{transform:scale(1.65);opacity:1}70%{transform:scale(.88)}100%{transform:scale(1)}}
+#rg .halt{animation:halt .3s cubic-bezier(.05,.85,.15,1)}
+@keyframes halt{0%{transform:scale(2.9);opacity:.25}62%{transform:scale(1);opacity:1}74%{transform:scale(.9)}100%{transform:scale(1)}}
+#rg .snatch{animation:snatch .28s cubic-bezier(.3,0,.2,1)}
+@keyframes snatch{0%{transform:scale(2.3);opacity:.2}55%{transform:scale(.8);opacity:1}100%{transform:scale(1)}}
+#rg .slip{animation:slip .55s ease-in-out}
+@keyframes slip{0%{transform:scale(1.55);opacity:0}45%{opacity:.7}100%{transform:scale(1);opacity:1}}
 #rg .puck{fill:#0e1216;stroke:#fff;stroke-width:.55}#rg .puck.jump{animation:pj .3s ease}@keyframes pj{0%{transform:scale(2)}100%{transform:scale(1)}}
 #rg .shotline{stroke:var(--ink);stroke-width:.7;stroke-dasharray:2.2 2;opacity:.7;animation:sl 1s ease forwards}@keyframes sl{to{opacity:0}}
 #rg .caption{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;align-items:center;gap:8px;background:rgba(15,26,35,.94);color:#fff;padding:7px 15px;border-radius:99px;font-size:.86rem;font-weight:600;white-space:nowrap;opacity:0;pointer-events:none;max-width:92%}

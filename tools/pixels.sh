@@ -97,13 +97,54 @@ sed -i "s#$ORIGIN##g" index.html game.html
 # real CSS edit, on a page that had never started. measure.mjs below refuses to
 # report unless #rg carries the preview class.
 mkdir -p extract
-ID=$(python3 -c "
+# ⭐ IT NO LONGER PREDICTS WHICH GAME THE PAGE WILL ASK FOR.
+# This used to fetch exactly one extract, chosen by a copy of the homepage's
+# "most recent viewable game" rule -- and the moment the hero stopped being the
+# most recent game (it now needs one whose replay reaches a goal in about ten
+# seconds) the copy pointed at the wrong file, the fetch 404'd, and the harness
+# would have reported geometry for a page that never booted. A tool that
+# restates the rule it is meant to observe breaks silently the day the rule
+# moves. Fetching a WINDOW removes the prediction: whichever game the page
+# chooses is already on disk.
+LAST=$(python3 -c "
 import json
 g=[x for x in json.load(open('catalog.json'))['games'] if x.get('v') and x.get('t') in (2,3)]
 g.sort(key=lambda x:(x['d'],x['id']))
-print(g[-1]['id'])")
-# Same rule: the extract is keyed by id, and the MOST RECENT id changes nightly.
-curl -sS --fail "$ORIGIN/extract/$ID.json" -o "extract/$ID.json"
+print(' '.join(str(x['id']) for x in g[-40:]))")
+# And UNCONDITIONALLY, for the reason spelled out at the catalog fetch above: a
+# cache with no invalidation in a scratch directory that survives for weeks has
+# already cost this project two sessions. An extract is keyed by game id and a
+# re-derivation keeps the id, so "the file is present" says nothing about
+# whether it is current. Forty files in parallel is a couple of seconds.
+for ID in $LAST; do
+  curl -sS --fail "$ORIGIN/extract/$ID.json" -o "extract/$ID.json" &
+done
+wait
+
+# ⭐ AND `hl` IS COMPUTED WITH derive.py ITSELF, not with a copy of it.
+# The published catalog gains this field on the next derivation; until then the
+# local page would fall back to the newest game and this tool would show a hero
+# nobody will ever see. `builders/derive.py` is importable, so the local catalog
+# is patched by the REAL implementation -- the alternative is a third statement
+# of the rule living in a shell script, which is the defect directly above.
+RTG_BUILDERS="$REPO/builders" python3 - <<'PY'
+import json, os, pathlib, sys
+sys.path.insert(0, os.environ['RTG_BUILDERS'])
+import derive
+cat = json.load(open('catalog.json'))
+have = {int(p.stem): p for p in pathlib.Path('extract').glob('*.json')}
+n = 0
+for row in cat['games']:
+    p = have.get(row['id'])
+    if not p:
+        continue
+    hl = derive._hero_loop(json.load(open(p)).get('events'))
+    if hl is not None:
+        row['hl'] = hl
+        n += 1
+json.dump(cat, open('catalog.json', 'w'))
+print(f'  patched {n} of {len(have)} local extracts with `hl` (derive.py)')
+PY
 
 # A server, not file://. The hero is an iframe of a sibling page and the fetches
 # are relative; file:// origins make both of those behave differently.

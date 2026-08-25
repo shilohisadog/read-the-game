@@ -359,13 +359,22 @@ test('EVERY FIELD derive.py PUTS ON A CATALOG ROW HAS A READER', () => {
   const rowSrc = derive.slice(derive.indexOf('row = {"id"'),
                               derive.indexOf('def _write_ledger'));
   const boxSrc = derive.slice(derive.indexOf('return {"a": b['), derive.indexOf('except (ValueError'));
-  const fields = new Set([...(rowSrc + boxSrc).matchAll(/"([a-z]{1,3})":/g)].map(m => m[1]));
+  // ⭐ AND THE HELPERS THAT RETURN ROW FRAGMENTS, which is where this check was
+  // BLIND. The row slice above stops at the literal `row = {...}`, so a field
+  // contributed by `**_helper(...)` never entered the field set at all — the
+  // scan would have reported a clean sweep while carrying an unread field, which
+  // is D10 exactly, committed inside the gate written to prevent D10.
+  // Found by adding `hl` and asking what the denominator was, rather than by the
+  // check going red: it could not go red, which is the point.
+  const fragSrc = [...derive.matchAll(/return \{"[a-z]{1,3}": [a-z_]+\}/g)].map(m => m[0]).join('\n');
+  assert.ok(fragSrc.length, 'the row-fragment scan found no helper — it has lost its subject');
+  const fields = new Set([...(rowSrc + boxSrc + fragSrc).matchAll(/"([a-z]{1,3})":/g)].map(m => m[1]));
   // A tripwire on the extractor itself: if the source moves and the slice comes
   // back thin, this check would pass by finding nothing — the failure mode the
   // `mixnight` fixture and the blind CSP probe both had.
   assert.ok(fields.size >= 10,
     `only ${fields.size} row fields found — this check has lost its subject`);
-  for (const must of ['id', 'd', 't', 'v', 'u', 'r', 'a', 'h'])
+  for (const must of ['id', 'd', 't', 'v', 'u', 'r', 'a', 'h', 'hl'])
     assert.ok(fields.has(must), `the field scan missed \`${must}\``);
 
   const strip = t => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');

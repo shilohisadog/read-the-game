@@ -33,6 +33,11 @@ const LINK=parse(location.search),PREVIEW=LINK.preview;
    is exactly where `upto()` puts it, so that is where the link lands. */
 function frameOf(n){for(let k=0;k<EVI.length;k++)if(EVI[k]>=n)return k;return EV.length-1;}
 const ATT=ATTEMPT_TYPES;
+/* How each play LANDS. Paired opposites on purpose: a takeaway snatches inward
+   and a giveaway slips loose; a hit jolts and a blocked shot halts dead. The
+   names are the CSS animations in src/app.css. */
+const ARRIVE={goal:'flare',hit:'jolt','blocked-shot':'halt',
+              giveaway:'slip',takeaway:'snatch'};
 // THE HOST DEFENDS THE RIGHT-HAND END, which is the arrangement a television
 // viewer expects (Kevin) -- and it is ours to choose, because the feed does not
 // have one: across 14 raw play-by-plays `homeTeamDefendingSide` in period one
@@ -502,7 +507,25 @@ function render(i,how){
    if(k===i)cls+=' cur';
    if(hd)cls+=' clickable';
    const r=e.type==='goal'?3.2:hd?2.2:ATT.has(e.type)?1.7:1;
-   const anim=(k===i&&moment)?(e.type==='goal'?' flare':' pop'):'';
+   /* ⭐ THE MOMENT OF ARRIVAL, AND IT IS THE EVENT'S OWN.
+      Until now every play arrived identically -- one `pop`, 0.34s, one easing --
+      with a single exception, the goal, which got a flare. A hit, a giveaway, a
+      takeaway and a blocked shot all simply APPEARED, and those four things feel
+      nothing alike in a building. The goal treatment proved the idea and was
+      never generalised.
+      IT INVENTS NOTHING. The event TYPE is recorded, on every play, by the
+      league; this renders a fact we already hold with the weight it actually
+      carries. That is the opposite standing to anything drawn in the interval
+      BETWEEN two events, where the honest answer is that we do not know.
+      AND IT IS THE TEACHING, NOT DECORATION. A novice does not know that a
+      takeaway is good and a giveaway is bad. The captions say so to whoever
+      reads them; a snatch and a slip say so to everyone. Kevin's own framing --
+      "teaching them how to watch the game" -- and the cheapest instance of it on
+      the site.
+      FIVE, NOT NINE. Everything unlisted keeps `pop`. The point is that the
+      distinct things are distinct, and a rink where every mark has its own
+      flourish is a rink where none of them mean anything. */
+   const anim=(k===i&&moment)?' '+(ARRIVE[e.type]||'pop'):'';
    if(hd&&k===i&&moment)parts.push(`<circle class="hdring" cx="${pos.x.toFixed(1)}" cy="${pos.y.toFixed(1)}" r="4.5"/>`);
    const cx=pos.x, cy=pos.y, title=`<title>${e.rem} ${e.type}</title>`;
    // Annotations ride OUTSIDE the mark, so the mark keeps saying whose it is.
@@ -879,7 +902,20 @@ function drawAtk(per){$('aAtk').textContent=ATK(AID,per);$('hAtk').textContent=A
 const MON=['January','February','March','April','May','June','July','August','September','October','November','December'];
 const GD=(G.game&&G.game.date||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
 const WHEN=GD?`${+GD[3]} ${MON[+GD[2]-1]} ${GD[1]}`:'';
-$('gl').textContent=`${AAB} at ${HAB}${WHEN?' · '+WHEN:''} · final ${AAB} ${finalA}–${finalH} ${HAB}`;
+/* ⭐ THE GAME LINE DOES NOT SAY HOW IT ENDS.
+   It read `... · final MIN 2–3 BUF`, which put the result on screen before the
+   visitor had pressed anything -- on a page whose opening frame is chosen, twice
+   over, precisely so that nothing is given away. It used to open on the last
+   event ("defaulting to the end kinda spoils the surprise"), then on the opening
+   faceoff (which named the winner of a draw before the game started), and both
+   were moved earlier for this reason. Then this line printed the score anyway.
+   Found by CHENG, and the incoherence is the argument: the fix is not new
+   doctrine, it is the doctrine already applied one element to its left.
+   NOTHING IS HIDDEN. The scoreboard fills in as the game plays -- from 0-0, the
+   same reason the counter starts at zero -- and the verdict card states the
+   result at the horn, where it happens. A replay of a game whose ending is on
+   the title bar is a recap; the ending arriving when it arrived is a game. */
+$('gl').textContent=`${AAB} at ${HAB}${WHEN?' · '+WHEN:''}`;
 // THE PER-GAME SENTENCE. A summary of a FINISHED game, so it sits with the game
 // line at the foot rather than beside the scoreboard, which counts up as the
 // replay plays. It discloses nothing the page has not already said -- #gl states
@@ -1847,7 +1883,27 @@ if(PREVIEW){
   return 0;})();
  let acc=0,W=START;
  while(W<EV.length-1&&acc+dwell(EV[W])<=BUDGET_MS){acc+=dwell(EV[W]);W++;}
- const WINDOW=Math.max(START,W);
+ const BUDGETED=Math.max(START,W);
+ /* ⭐ AND THE LOOP ENDS ON THE GOAL WHEN THERE IS ONE IN REACH.
+    Kevin: "let's end the hero replay right after the goal". BUDGET_MS stops
+    being the loop's length and becomes its BOUND -- the taste now ends on the
+    one event this renderer gives a real moment to, instead of wherever thirty
+    seconds happened to run out. Build-up, payoff, restart.
+
+    THE LENGTH IS THEREFORE THE DATA'S, NOT A NUMBER WE PICK, which is the same
+    move START made at the other end: the opening frame is the last one on which
+    the count is still zero, and the closing frame is the first goal. Two ends,
+    both derived, and BUDGET_MS is left holding only the case where the archive
+    hands us a game with no goal nearby.
+
+    THE HERO IS CHOSEN SO THIS FIRES. builders/build_index.py picks the most
+    recent game whose first goal is 3 to 8 plays after the opening frame -- about
+    six to fifteen seconds at this pace. When it cannot (a small archive, a run
+    of goalless openings) the fallback is the newest game, this search finds
+    nothing, and the loop runs its budget exactly as it did before. */
+ const GOAL=(()=>{for(let k=START;k<=BUDGETED;k++)
+   if(EV[k]&&EV[k].type==='goal')return k;return -1;})();
+ const WINDOW=GOAL>=0?GOAL:BUDGETED;
  if(REDUCED){set(WINDOW,'');}
  else{let k=START;
   /* THE RESTART PAUSE USED TO BE DEAD CODE. It read
@@ -1856,8 +1912,16 @@ if(PREVIEW){
      -- and k had already been reset to 0 by the time the ternary asked, so the
      900 never fired once. The loop restarted at full speed, which is its own
      small contribution to the blur. Decide the wait BEFORE moving k. */
+  /* THE LAST FRAME IS HELD LONGER WHEN IT IS A GOAL, because the goal's own
+     moment is still running: the flare is 0.7s, the net flash 1.3s, and the
+     siren caption 2.2s (`@keyframes cap`, src/app.css). Restarting at 1500 would
+     cut the caption off mid-sentence and the loop would swallow the payoff it
+     was just rebuilt to deliver. Guarded by a test that reads the duration out
+     of the stylesheet rather than restating it here. */
+  const GOAL_HOLD_MS=2600;
   const tick=()=>{
-   const shown=EV[k],last=k>=WINDOW,wait=last?1500:dwell(shown);
+   const shown=EV[k],last=k>=WINDOW,
+    wait=last?(GOAL>=0?GOAL_HOLD_MS:1500):dwell(shown);
    set(k,k>0?'play':'');
    if(last){k=START;prevA=0;prevH=0;}else{k++;}
    setTimeout(tick,wait);};

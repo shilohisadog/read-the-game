@@ -12,7 +12,15 @@ import { rich, app, PAGE_CSS, prose, boot, rings, evMarks, panel } from './helpe
 
 test('the shipped app boots, and the reference game is in it', () => {
   const a = boot();
-  assert.match(a.$('gl').textContent, /at .* final/, 'the game line is written from the data');
+  // WAS /at .* final/ -- the game line no longer states the result, because a
+  // replay that prints its ending before you press play is a recap. What still
+  // has to be true is the claim this assertion was always making: the line comes
+  // from the game, not from a literal. Both clubs and the date, none of which
+  // this file supplies.
+  assert.match(a.$('gl').textContent, /^MIN at BUF · .*2023/,
+    'the game line is written from the data');
+  assert.doesNotMatch(a.$('gl').textContent, /final/,
+    'and it does not give the ending away');
 });
 
 test('NOTHING draws whistle marks until the layer is turned on', () => {

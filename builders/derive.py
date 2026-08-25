@@ -111,6 +111,77 @@ def _quote(box_raw):
         return {}
 
 
+# ⭐ WHAT THE HOMEPAGE HERO NEEDS TO KNOW BEFORE IT HAS THE GAME.
+# The hero loop now RUNS TO THE FIRST GOAL AND STOPS (Kevin: "let's end the hero
+# replay right after the goal... maybe 10 seconds between the start of the replay
+# and the goal"). A goal is the only event the renderer gives a real moment -- a
+# 0.7s flare from 3.6x, a 1.3s net flash, the siren caption -- and a stranger who
+# watches ten seconds should get it.
+#
+# THE PREVIEW DOES NOT START AT PLAY ZERO, so the raw index of the goal is the
+# wrong number and selecting on it was measured to be wrong: `fg <= 12` gives a
+# MEDIAN LOOP OF FIVE PLAYS and a p10 of one. src/app.js starts the loop one
+# frame before the layer's first counted attempt, so what the hero cares about is
+# the DISTANCE BETWEEN THOSE TWO, which is what is stored.
+#
+# ⚠️ AND IT IS AN ESTIMATE OF THAT DISTANCE, NOT THE DISTANCE. The real start
+# comes from corsi's counted set, which respects even-strength; this counts the
+# first attempt of any strength, because running the layer's reducer in Python
+# would be a second implementation of it and those drift. The error is one-sided
+# -- a game opening on a power-play attempt starts LATER than this estimates, so
+# the real loop is shorter than the stored number, never longer -- which is why
+# the reader's floor is 3 rather than 1. The attempt vocabulary itself is
+# guarded by a test that reads corsi.js and this file.
+#
+# THE CAP IS A STORAGE BOUND, NOT THE PREVIEW'S. Every visitor fetches the
+# catalog; an uncapped field on 4,553 rows is 40 KB of a 452 KB document spent
+# describing games no selector reaches for. The WINDOW lives in the reader, where
+# changing it is a rebuild rather than a re-derivation of the archive.
+HERO_LOOP_CAP = 30
+
+# THE SAME STREAM THE PREVIEW STEPS THROUGH, duplicated from src/app.js because
+# one file is Python and the other JavaScript. Both sets are guarded against
+# drift by test/hero-loop.test.js, which reads the JavaScript rather than
+# restating it -- a builder holding a private idea of what the renderer plays is
+# how the index and the page come to disagree.
+PLAYABLE_SKIP = {"stoppage", "period-start", "period-end", "game-end",
+                 "delayed-penalty"}
+ATTEMPT_TYPES = {"shot-on-goal", "missed-shot", "blocked-shot", "goal"}
+
+
+def _hero_loop(events):
+    """Plays from the preview's opening frame to the first goal, or None.
+
+    None means "no hero here", which covers a late first goal, a game with no
+    goal, and a goal that arrives before any attempt has been counted. The
+    reader treats all three the same and none of them is a front door.
+    """
+    first_att = None
+    n = 0
+    for e in events or ():
+        # The shootout is excluded on `pt`, NEVER on period number: period 5 is
+        # a shootout in the regular season and a THIRD OVERTIME in the playoffs.
+        if e.get("pt") == "SO" or e.get("type") in PLAYABLE_SKIP:
+            continue
+        t = e.get("type")
+        if first_att is None and t in ATTEMPT_TYPES:
+            first_att = n
+        if t == "goal":
+            if first_att is None:
+                return None
+            return n - max(0, first_att - 1)
+        n += 1
+        if first_att is not None and n - max(0, first_att - 1) > HERO_LOOP_CAP:
+            return None
+    return None
+
+
+def _hl(events):
+    """The catalog fragment, so both derive paths spell the field once."""
+    n = _hero_loop(events)
+    return {"hl": n} if n is not None else {}
+
+
 def _write_catalog(store, rows):
     """One document the browser reads to know what exists.
 
@@ -492,8 +563,14 @@ def derive(store, end=None, days=None, now=None):
                     # otherwise every unchanged game loses its disclosure on the
                     # next nightly, and the catalog would quietly heal itself
                     # into looking cleaner than the archive is.
+                    # `hl` IS RECOMPUTED FROM THE STORED EXTRACT, not carried
+                    # in a variable this branch never sets -- the same reason `u`
+                    # is read back here. A field derived only on the fresh path
+                    # is a field every game loses on the next nightly, and the
+                    # catalog would quietly heal itself into having no heroes.
                     rows[gid] = {**row, "v": 1,
-                                 **({"u": 1} if was.get("unreconciled") else {})}
+                                 **({"u": 1} if was.get("unreconciled") else {}),
+                                 **_hl(was.get("events"))}
                     rep.unreconciled += 1 if was.get("unreconciled") else 0
                     continue
             except ValueError:
@@ -515,7 +592,9 @@ def derive(store, end=None, days=None, now=None):
         # and the team page both show many games at once and neither fetches an
         # extract to draw a row; without this the disclosure would exist only on
         # the page you already committed to opening.
-        rows[gid] = {**row, "v": 1, **({"u": 1} if rich.get("unreconciled") else {})}
+        rows[gid] = {**row, "v": 1,
+                     **({"u": 1} if rich.get("unreconciled") else {}),
+                     **_hl(rich.get("events"))}
         rich["game"] = {"id": int(gid), "date": g.get("date"),
                         "type": g.get("type"), "src": digests}
         # sort_keys, and NO TIMESTAMP ANYWHERE. Determinism is a gate we can

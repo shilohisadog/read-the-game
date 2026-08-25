@@ -430,7 +430,14 @@ BODY = r"""<div class="wrap">
        LOST, sorted by edge) and the catalog is fetched anyway for the grid. So
        this costs zero extra requests and cannot go stale. -->
   <div class="hero" id="hero" hidden>
-    <p class="herokick">The most recent game in the archive</p>
+    <!-- ⭐ EMPTY IN THE MARKUP, AND WRITTEN FROM SCRIPT LIKE EVERY OTHER LINE
+         IN THIS BLOCK. It read "The most recent game in the archive", which was
+         true for exactly as long as the hero WAS the most recent game. The hero
+         now prefers one whose replay reaches a goal, which is a median of zero
+         days behind and occasionally several -- and a fixed sentence describing
+         a rule that has two branches is false in one of them. Which branch fired
+         is known only to `hero()`, so the sentence is written there. -->
+    <p class="herokick" id="herokick"></p>
     <!-- THE REAL RENDERER, FRAMED. Not a recorded video: no binary asset to go
          stale, no media-src in the policy, nothing to re-record when the rink
          changes, and every mark still traces to a recorded event. The frame is
@@ -641,11 +648,56 @@ __HELPERS__
      nightly with no deploy. And choosing what to SHOW by date biases no
      measurement -- the base rates still run over all 4,119 in-scope games, and
      nothing is computed from the selection. */
-  function newest(games) {
+  /* ⭐ AND IT SHOWS A GOAL, WHICH IS A SELECTION AND NEVER A JUMP.
+     Kevin: "we should show the goal during the first ten seconds of the hero
+     game -- that's where the most visualization takes place", and then "let's
+     end the hero replay right after the goal". He is right about the renderer: a
+     goal is the only event with a real treatment (r 3.2 against 1.7, a 0.7s
+     flare from 3.6x, a 1.3s net flash, the siren caption) and the preview
+     otherwise shows a stranger dots appearing.
+
+     THE OBVIOUS IMPLEMENTATION IS THE WRONG ONE. Starting the preview AT the
+     goal would break the thing the preview exists to demonstrate: the counter is
+     watched from zero, because "a counter you join at 24-11 is a number you did
+     not watch being built" (src/app.js). So the goal has to come to us, and the
+     LOOP ENDS ON IT instead of running out a budget.
+
+     `hl` IS THE LOOP, NOT THE GOAL'S INDEX. derive.py stores the distance from
+     the preview's opening frame to the first goal. Selecting on the raw index
+     was measured to be wrong: "goal within 12 plays" gives a median loop of FIVE
+     plays and a p10 of ONE, because the loop does not start at play zero.
+
+     THE WINDOW IS KEVIN'S TEN SECONDS, MEASURED OUTWARDS. At the replay's own
+     pace 30s buys a median 16 plays, so ten seconds is about five. [3,8] is
+     6-15s around that, and it is the range where the cost stops being free:
+     across 4,192 in-scope games the newest qualifying game is a MEDIAN OF 0 DAYS
+     behind the newest game (p90 3, p99 20), where the tighter [4,6] is p90 SEVEN
+     and p99 forty-eight. Kevin: "let's start with that and work outwards (if
+     needed)" -- so the two numbers are here, together, to be moved together.
+
+     THE FLOOR IS 3 AND NOT 1 BECAUSE `hl` IS AN ESTIMATE. derive.py counts the
+     first attempt of any strength; the real opening frame comes from corsi's
+     even-strength counted set and can only be LATER, so the true loop is never
+     longer than `hl` and the floor absorbs the difference.
+
+     AND IT FALLS BACK RATHER THAN FAILING. If nothing qualifies -- an archive
+     too small, a run of goalless openings -- the hero is the newest game, which
+     is exactly what it was before, and the preview runs its budget the way it
+     always did. A front door with no game is worse than one that opens quietly. */
+  var HERO_LOOP = { min: 3, max: 8 };
+
+  function hero(games) {
     var v = games.filter(function (g) { return g.v && inScope(g.id); });
-    if (!v.length) return null;
     v.sort(function (a, b) { return a.d === b.d ? a.id - b.id : (a.d < b.d ? -1 : 1); });
-    return v[v.length - 1];
+    for (var k = v.length - 1; k >= 0; k--) {
+      var g = v[k], n = g.hl;
+      if (typeof n === 'number' && n >= HERO_LOOP.min && n <= HERO_LOOP.max)
+        return { game: g, toGoal: true };
+    }
+    /* THE FALLBACK IS NAMED, not left to be inferred from a null. The caller has
+       to say something true above the rink and the two branches are showing
+       different things -- one runs to a goal, the other runs a budget. */
+    return v.length ? { game: v[v.length - 1], toGoal: false } : null;
   }
 
 
@@ -706,8 +758,15 @@ __HELPERS__
   }
 
   function drawHero(cat, measures) {
-    var g = newest((cat && cat.games) || []);
-    if (!g) return;
+    var pick = hero((cat && cat.games) || []);
+    if (!pick) return;
+    var g = pick.game;
+    /* WHAT THE VISITOR IS ABOUT TO WATCH, in the words the branch earns. The
+       goal branch is the common one and says what the loop actually does; the
+       fallback says the older, weaker thing, which is still true of it. */
+    $('herokick').textContent = pick.toGoal
+      ? 'A recent game, up to its first goal'
+      : 'The most recent game in the archive';
 
     /* THE FIVE-SECOND TASTE, and it is this site's own renderer in a frame.
        Created here rather than in the markup so it cannot load for a visitor who
@@ -730,8 +789,22 @@ __HELPERS__
     });
     $('heroframe').appendChild(f);
 
-    $('heroline').textContent = g.a + ' ' + g.as + ', ' + g.h + ' ' + g.hs
-      + ' — ' + when(g.d);
+    /* ⭐ AND IT DOES NOT SAY HOW THE GAME ENDS.
+       This read "CAR 5, VGK 3 — 9 June 2026" directly under a loop that now
+       builds to a goal, in the largest type on the block. The loop was rebuilt
+       to make a stranger want to press the button; the line under it answered
+       the question the button asks. Same fix as the game line above the rink
+       (src/app.js), same reason, and the pair is the point -- a replay that
+       prints its ending before you press play is a recap.
+       THE LISTS KEEP THEIR SCORES. Browsing is a choice and a visitor may well
+       be looking for that 6-5 game; the hero is handed to you. The score
+       appears where it was asked for, not where a game was chosen for you.
+       ⚠️ THE SENTENCE BELOW THIS ONE STILL CAN. `sayHero` says "and won" or "and
+       lost" when the attempts leader is decided, because that IS the site's
+       argument and removing it would gut the pitch. So this is the margin
+       withheld, not the outcome -- stated here rather than left to be
+       discovered, because the two lines are eight pixels apart. */
+    $('heroline').textContent = g.a + ' at ' + g.h + ' — ' + when(g.d);
 
     $('herogo').href = 'game.html?game=' + g.id;
 

@@ -484,6 +484,72 @@ test('an unknown season falls back rather than showing nothing', () => {
  *                                       still bites — a REFUSED game must never
  *                                       be chosen — is asserted below.
  */
+/**
+ * ⭐ THE HERO PREFERS A GAME WHOSE REPLAY REACHES A GOAL — AND SAYS SO.
+ *
+ * The loop now ends on the first goal instead of running out a budget (Kevin:
+ * "let's end the hero replay right after the goal ... maybe 10 seconds between
+ * the start of the replay and the goal"), so the front door picks the most
+ * recent game that HAS one in reach. `hl` is that distance, written by
+ * derive.py.
+ *
+ * BOTH BRANCHES, BECAUSE THE SENTENCE ABOVE THE RINK IS DIFFERENT IN EACH. The
+ * kicker used to be a fixed line in the markup reading "The most recent game in
+ * the archive", and that line survived the selection rule changing underneath it
+ * — true for as long as the hero was the newest game, false the moment it was
+ * not. It is now written by whichever branch fired, and neither test alone can
+ * tell a page that picks correctly from one that always prints one sentence.
+ */
+test('the hero takes an older game to get a goal, and the kicker says which rule ran', () => {
+  // 2023020100 is OLDER than the newest in-scope game, and it is the only row
+  // with a loop inside the window. Choosing it is therefore a real preference,
+  // not the newest game wearing a new field.
+  const cat = { games: CATALOG.games.map(g =>
+    g.id === 2023020100 ? { ...g, hl: 5 } : g) };
+  assert.notEqual(2023020100, NEWEST_ID,
+    'the qualifying game must not also be the newest, or this proves nothing');
+  const r = run({ docs: { ...ALL, 'catalog.json': cat } });
+  return r.settle().then(() => {
+    assert.equal(r.ids.herogo.href, 'game.html?game=2023020100',
+      'the hero ignored the game whose replay reaches a goal');
+    assert.match(r.ids.herokick.textContent, /up to its first goal/,
+      'the kicker still describes the rule that did not run');
+  });
+});
+
+test('and with no game in reach it falls back to the newest, and says THAT', () => {
+  // No row carries `hl`, which is the state of the published catalog until the
+  // archive is re-derived — and a front door with no game is worse than one that
+  // opens quietly, so the fallback is the behaviour, not an error.
+  const r = run({ docs: ALL });
+  return r.settle().then(() => {
+    assert.equal(r.ids.herogo.href, 'game.html?game=' + NEWEST_ID);
+    assert.match(r.ids.herokick.textContent, /most recent game/,
+      'the kicker promised a goal the fallback loop will not reach');
+  });
+});
+
+test('a loop OUTSIDE the window is not a hero', () => {
+  // The floor exists because `hl` is an estimate that can only run long, and the
+  // ceiling because the loop has to fit in the taste. A row carrying the field
+  // is not automatically eligible — otherwise the window is decoration.
+  //
+  // ⚠️ AWAITED, AND THAT IS NOT A DETAIL. Written as a bare `.then()` inside the
+  // loop, every assertion below settles AFTER the test has already passed, and
+  // the whole case is green without running — the "tests that pass by not
+  // running" shape this project has been bitten by before. Promise.all is what
+  // makes the loop a check.
+  return Promise.all([1, 2, 9, 30].map(hl => {
+    const cat = { games: CATALOG.games.map(g =>
+      g.id === 2023020100 ? { ...g, hl } : g) };
+    const r = run({ docs: { ...ALL, 'catalog.json': cat } });
+    return r.settle().then(() => {
+      assert.equal(r.ids.herogo.href, 'game.html?game=' + NEWEST_ID,
+        `a loop of ${hl} plays was accepted — it is outside [3,8]`);
+    });
+  }));
+});
+
 test('the front door leads with the most recent game, and it PLAYS', () => {
   const r = run({ docs: ALL });
   return r.settle().then(() => {
@@ -491,7 +557,13 @@ test('the front door leads with the most recent game, and it PLAYS', () => {
     // 2023020200 is the newest in-scope viewable game in the fixture: TOR at BUF,
     // BUF 4-1. Not 2023020300 (refused, and later) and not the Olympics game
     // (later still, and out of scope).
-    assert.match(r.ids.heroline.textContent, /^TOR 1, BUF 4 — 9 February 2024$/);
+    // WAS /^TOR 1, BUF 4 — 9 February 2024$/. The hero no longer prints the
+    // final score: the loop builds to a goal and the line under it used to
+    // answer the question that loop is asking. Both clubs and the date still
+    // come from the catalog, which is what this assertion was ever about.
+    assert.match(r.ids.heroline.textContent, /^TOR at BUF — 9 February 2024$/);
+    assert.doesNotMatch(r.ids.heroline.textContent, /\d\D+\d.*—/,
+      'the hero line is stating a score again');
     assert.equal(r.ids.herogo.href, 'game.html?game=2023020200');
 
     // THE FRAME IS THE REAL RENDERER, not a recording — and it is built in

@@ -144,6 +144,53 @@ test('first paint is the PRE-GAME state, not the final score and not a play', ()
   assert.equal(String(n.el('scrub').value), '-1', 'the scrubber is not at the pre-game frame');
 });
 
+/**
+ * ⭐ THE ENDING IS NOT ON SCREEN BEFORE THE GAME IS WATCHED.
+ *
+ * The game line used to read `MIN at BUF · ... · final MIN 2–3 BUF`, so the
+ * result was on the page at first paint -- on a page whose opening frame had
+ * already been moved earlier TWICE to avoid exactly that (see the pre-game test
+ * above). CHENG found it; the incoherence was the argument.
+ *
+ * THE EXPECTED SCORE IS COUNTED FROM THE FEED, NOT READ OFF THE APP. If this
+ * asked the app what the final score was and then looked for that, it would be
+ * a mirror: any change that broke the count would move both sides together and
+ * the test would still pass. `data/rich.json` is a second path to 2–3.
+ *
+ * AND IT ASSERTS BOTH DIRECTIONS, because "the score is absent" is satisfied by
+ * a page that never shows a score at all -- which would be a worse bug than the
+ * one being fixed, and invisible to a one-sided test.
+ */
+test('the final score is absent at first paint and present at the horn', () => {
+  const goals = rich.events.filter(e => e.type === 'goal');
+  const home = rich.game ? rich.teams.home.id : null;
+  const hs = goals.filter(e => e.own === rich.teams.home.id).length;
+  const as = goals.filter(e => e.own !== rich.teams.home.id).length;
+  assert.ok(hs > 0 && as > 0 && hs !== as,
+    'the fixture must have a decided game, or neither direction proves anything');
+
+  const before = run();
+  const seen = id => String(before.get(id).textContent ?? '');
+  // Sweep every element the app has written, not just the one we changed --
+  // moving the spoiler to a different node would otherwise pass.
+  const all = [...before.keys()].map(seen).join(' ␟ ');
+  for (const spoiler of [`${as}–${hs}`, `${as}-${hs}`, `final`]) {
+    assert.ok(!all.includes(spoiler),
+      `first paint states the result (${spoiler}) somewhere on the page`);
+  }
+  // What the line MUST still carry. When you take something out of a container,
+  // enumerate what was inside it.
+  const gl = seen('gl');
+  assert.match(gl, /MIN/, 'the game line names the visitor');
+  assert.match(gl, /BUF/, 'the game line names the host');
+  assert.match(gl, /2023/, 'the game line carries the date');
+
+  const after = toEnd(run());
+  assert.equal(String(after.get('aSc').textContent), String(as),
+    'the scoreboard must reach the real result once the game has been watched');
+  assert.equal(String(after.get('hSc').textContent), String(hs));
+});
+
 test('a full render at the end puts the right numbers in the DOM', () => {
   // Same claim the old 'first paint' test made — a complete render producing the
   // golden numbers — now reached deliberately rather than by accident of where
