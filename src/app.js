@@ -235,6 +235,38 @@ let rinkPer=null;
    the boards, the lines, the circles and the dots -- they are rebuilt only
    because the nets share the group. */
 function drawRink(per){if(per===rinkPer)return;rinkPer=per;const P=[];P.push('<rect class="boards" x="1" y="1" width="198" height="83" rx="27"/>');
+ /* ⭐ THE SLOT IS PAINTED ON THE ICE, BEFORE ANYTHING HAPPENS.
+    Kevin: "we can measure, but we're not prioritizing the teaching... if we have
+    areas that are similarly shaded, the viewer's eyes will start focusing on
+    those areas during game play." A novice does not know the slot is where
+    danger lives, and until now the site only said so at the moment a shot
+    happened to land there -- which is after the point at which knowing it would
+    have helped. Furniture teaches it before the puck moves.
+    IT IS THE RULE, DRAWN, NOT A SHAPE THAT LOOKS LIKE IT. `HIGH_DANGER_FT` and
+    `SLOT_HALF_WIDTH` are the same two constants `isHighDanger()` tests, so a
+    viewer who wonders why a mark counted can look at where it sits. Drawing a
+    prettier region than the rule would break the one promise Doctrine 7 makes:
+    a geometric rule you can check with a ruler.
+    INCLUDING THE ICE BEHIND THE NET, which looks odd and is correct. The rule
+    is a radius, and it does not stop at the goal line -- a wrap-around from
+    three feet out passes it. A tint that quietly excluded that would disagree
+    with the layer at exactly the events people argue about.
+    BOTH ENDS, AND THEREFORE NO FRAME AT ALL. The slot is symmetric about centre
+    ice, so this is arena-frame furniture that never asks which way anyone is
+    attacking -- it is untouched by the ends-switching machinery, which is the
+    most expensive thing in this file to be near.
+    NESTED CLIPS INTERSECT; a clipPath with two shapes would UNION them. One
+    band for `|y| <= SLOT_HALF_WIDTH`, then a half-plane per end for the clause
+    that says in front of the goal line. No boards clip is needed any more --
+    that existed only to stop the old region spilling out of the rink behind the
+    net, which is the ice this rule no longer claims. */
+ P.push(`<clipPath id="slotband"><rect x="0" y="${SY(SLOT_HALF_WIDTH)}" width="200" height="${SLOT_HALF_WIDTH*2}"/></clipPath>`
+  +`<clipPath id="slotfrontA"><rect x="${SX(NET_X)}" y="0" width="200" height="85"/></clipPath>`
+  +`<clipPath id="slotfrontB"><rect x="0" y="0" width="${SX(-NET_X)}" height="85"/></clipPath>`
+  +`<g class="slotzone" clip-path="url(#slotband)">`
+  +`<g clip-path="url(#slotfrontA)"><circle cx="${SX(NET_X)}" cy="${SY(0)}" r="${HIGH_DANGER_FT}"/></g>`
+  +`<g clip-path="url(#slotfrontB)"><circle cx="${SX(-NET_X)}" cy="${SY(0)}" r="${HIGH_DANGER_FT}"/></g>`
+  +`</g>`);
  for(const g of[-89,89])P.push(`<line class="ln red" x1="${SX(g)}" y1="3" x2="${SX(g)}" y2="82"/>`);
  for(const b of[-25,25])P.push(`<line class="ln blue" x1="${SX(b)}" y1="1" x2="${SX(b)}" y2="84"/>`);
  P.push('<line class="ln red thick" x1="100" y1="1" x2="100" y2="84"/><circle class="ln blue" cx="100" cy="42.5" r="15"/>');

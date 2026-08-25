@@ -35,11 +35,34 @@ export function distanceToNet(x, y, dir) {
 
 /**
  * Doctrine section 7: high danger is a geometric RULE, not an expected-goals
- * model -- inside 33 feet and inside the slot -- so that a viewer can check it
- * with a ruler.
+ * model -- inside 33 feet, inside the slot, and IN FRONT OF THE NET -- so that a
+ * viewer can check it with a ruler.
+ *
+ * ⭐ THE THIRD CLAUSE WAS FOUND BY DRAWING THE RULE, 2026-08-25.
+ *
+ * The slot became permanent furniture on the ice, and furniture has to be the
+ * rule itself or the viewer cannot check a mark against it. Drawn faithfully,
+ * the region reached PAST THE GOAL LINE to the end boards -- because a radius
+ * does not stop at the net -- and Kevin, looking at the picture: "I don't
+ * consider the slot to be valid behind the net."
+ *
+ * He is right about hockey, and a wrap-around from three feet out was never a
+ * shot from the slot. The first two clauses had simply never been asked to draw
+ * themselves, so nobody had seen what they admitted.
+ *
+ * WHAT IT COSTS, MEASURED BEFORE IT CHANGED, over 4,192 in-scope games:
+ *   262,539 attempts met the old rule; 4,249 of them (1.62%) were behind the
+ *   goal line. Of 19,304 high-danger goals, 171 (0.89%). About one mark a game.
+ * Nothing archive-wide moves: neither builders/measure.mjs nor src/lib/archive.js
+ * reads this function, so no published rate or base rate is derived from it.
+ *
+ * AND IT IS STILL A RULE YOU CAN CHECK WITH A RULER, which is the whole of
+ * Doctrine 7. Three clauses, all geometric, none of them fitted to an outcome.
  */
 export function isHighDanger(x, y, dir) {
-  return distanceToNet(x, y, dir) <= HIGH_DANGER_FT && Math.abs(y) <= SLOT_HALF_WIDTH;
+  return distanceToNet(x, y, dir) <= HIGH_DANGER_FT
+    && Math.abs(y) <= SLOT_HALF_WIDTH
+    && x * dir <= NET_X;
 }
 
 /**

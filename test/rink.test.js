@@ -13,6 +13,7 @@ import { readFileSync } from 'node:fs';
 import { attackDirection, distanceToNet, isHighDanger,
          NET_X, HIGH_DANGER_FT, SLOT_HALF_WIDTH } from '../src/lib/rink.js';
 import { shootingTeam, SHOT_TYPES } from '../src/lib/attribution.js';
+import { boot } from './helpers/page.js';
 
 const rich = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url)));
 const R = rich.roster;
@@ -112,4 +113,78 @@ test('direction is symmetric between the two ends', () => {
   assert.equal(attackDirection(AID, HID), -1);
   // Mirrored shots are equidistant from the nets they are aimed at.
   assert.equal(distanceToNet(70, 12, 1), distanceToNet(-70, 12, -1));
+});
+
+/**
+ * ⭐ THE SLOT IS NOT BEHIND THE NET — the third clause, added 2026-08-25.
+ *
+ * The first two clauses are a radius and a band, and a radius does not stop at
+ * the goal line. Nobody had noticed because nobody had asked the rule to draw
+ * itself; the moment the slot became furniture on the ice, the region reached
+ * past the net to the end boards. Kevin: "I don't consider the slot to be valid
+ * behind the net."
+ *
+ * BOTH SIDES OF THE LINE, and both attacking directions. A one-sided test is
+ * satisfied by a rule that rejects everything, and a one-direction test is
+ * satisfied by a clause that forgot to multiply by `dir` — which would silently
+ * delete the whole slot at one end of the ice.
+ */
+test('the slot stops at the goal line, at both ends', () => {
+  for (const dir of [1, -1]) {
+    const at = ft => ft * dir;          // feet along the attack, signed for the frame
+    assert.ok(isHighDanger(at(NET_X - 5), 0, dir),
+      `five feet out is the slot (dir ${dir})`);
+    assert.ok(isHighDanger(at(NET_X), 0, dir),
+      `ON the goal line still counts (dir ${dir})`);
+    assert.ok(!isHighDanger(at(NET_X + 0.01), 0, dir),
+      `a hair behind the goal line does not (dir ${dir})`);
+    // The point that made this necessary: a wrap-around three feet behind the
+    // net passes the radius and the band, and is not a shot from the slot.
+    assert.ok(distanceToNet(at(NET_X + 3), 0, dir) <= HIGH_DANGER_FT,
+      'the fixture must still pass the radius, or it proves nothing');
+    assert.ok(!isHighDanger(at(NET_X + 3), 0, dir),
+      `a wrap-around from behind the net is not the slot (dir ${dir})`);
+  }
+});
+
+/**
+ * ⭐ AND THE PAINT ON THE ICE IS THE RULE, NOT A SHAPE THAT RESEMBLES IT.
+ *
+ * The whole justification for making the slot permanent furniture is that a
+ * viewer can check a mark against it — which is only true while the drawing is
+ * parameterised by the same constants `isHighDanger` tests. A tint hand-tuned to
+ * look right would drift from the rule the first time either moved, and the
+ * disagreement would appear exactly at the marks people argue about.
+ *
+ * THE EXPECTED NUMBERS ARE IMPORTED FROM rink.js, so changing a constant moves
+ * the assertion with it and this cannot pass by agreeing with a literal.
+ */
+test('the slot painted on the ice is drawn from the rule\'s own constants', () => {
+  const rink = String(boot().$('rink').innerHTML);
+  assert.match(rink, /class="slotzone"/, 'the slot is not painted at all');
+
+  const r = [...rink.matchAll(/<circle cx="([-\d.]+)" cy="([-\d.]+)" r="([\d.]+)"\/>/g)]
+    .filter(m => Number(m[3]) === HIGH_DANGER_FT);
+  assert.equal(r.length, 2,
+    `expected one slot arc per end at r=${HIGH_DANGER_FT}, found ${r.length}`);
+
+  // The band is |y| <= SLOT_HALF_WIDTH, so its height is twice that.
+  const band = /<clipPath id="slotband"><rect x="0" y="([\d.]+)" width="200" height="([\d.]+)"/.exec(rink);
+  assert.ok(band, 'the |y| band is missing — the arcs would be full circles');
+  assert.equal(Number(band[2]), SLOT_HALF_WIDTH * 2, 'the band is not the rule\'s width');
+
+  // ⚠️ AND THE CLIP HAS TO BE *APPLIED*, NOT MERELY DEFINED. This asserted the
+  // two `<clipPath>` elements existed, and a mutation that deleted the
+  // `clip-path=` attribute from the group left both definitions sitting there
+  // unused — the tint went back over the goal line and the test stayed green.
+  // A definition is not a use, and only the use is the claim.
+  for (const [id, rect] of [['slotfrontA', `<rect x="${100 - NET_X}" y="0" width="200"`],
+                            ['slotfrontB', `<rect x="0" y="0" width="${100 + NET_X}"`]]) {
+    assert.ok(rink.includes(`<clipPath id="${id}">${rect}`),
+      `the ${id} half-plane is not the goal line`);
+    assert.ok(rink.includes(`clip-path="url(#${id})"`),
+      `${id} is defined but never applied — the tint spills behind the net`);
+  }
+  assert.ok(rink.includes('clip-path="url(#slotband)"'),
+    'the band is defined but never applied');
 });

@@ -66,6 +66,15 @@
 #rg .pb .man+.man{margin-left:6px}
 #rg svg{display:block;width:100%;height:auto}
 #rg .boards{fill:var(--ice);stroke:var(--edge);stroke-width:1.1}
+/* ⭐ THE SLOT, AS FURNITURE. `--hd` is the SAME colour the high-danger ring and
+   the legend key already use, which is the point: the tint and the ring are one
+   idea seen twice, so turning the layer on lands its marks inside a region the
+   viewer has been looking at all along. A different colour here would make them
+   two unrelated decorations.
+   FAINT ON PURPOSE. It sits under the painted lines and the faceoff circles and
+   must lose to every one of them -- this is the ice, not a mark. The number is a
+   visual judgement and cannot be derived; it is here to be looked at. */
+#rg .slotzone{fill:var(--hd);opacity:.09}
 #rg .ln{fill:none;stroke-linecap:round}#rg .ln.red{stroke:var(--red);stroke-width:.7;opacity:.42}#rg .ln.blue{stroke:var(--blue);stroke-width:.9;opacity:.42}#rg .ln.thick{stroke-width:1.1;opacity:.52}
 /* PREVIEW: THE FIVE-SECOND TASTE, AND IT IS THE REAL RENDERER.
    The homepage had no motion at all, on a site whose product is animation, so a

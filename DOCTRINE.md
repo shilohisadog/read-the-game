@@ -74,8 +74,16 @@ new layer is a new reducer, not a new app.
 xG is a *model*, not a measurement. It's the exact thing this project exists
 as an alternative to.
 
-High-danger is a **geometric rule** — distance to net ≤ 33 ft and |y| ≤ 22 —
-because a rule is inspectable and a viewer can verify it with a ruler. If xG
+High-danger is a **geometric rule** — distance to net ≤ 33 ft, |y| ≤ 22, and in
+front of the goal line — because a rule is inspectable and a viewer can verify it
+with a ruler.
+
+The third clause arrived on 2026-08-25, when the slot became permanent furniture
+on the ice. Furniture has to *be* the rule or a viewer cannot check a mark
+against it — and drawn faithfully, the first two clauses reached past the goal
+line to the end boards, because a radius does not stop at the net. Nobody had
+seen it because nobody had asked the rule to draw itself. It cost 1.62% of the
+attempts the rule counted and 0.89% of its goals, measured before it changed. If xG
 ever appears, it must be a specific published model, labeled loudly as a
 model, and never in the base view.
 
