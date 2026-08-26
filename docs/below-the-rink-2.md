@@ -863,7 +863,23 @@ prove it; the other is where the game is decided and we cannot see it. A test
 forbids `contested|battleground|fight|fierce` in that card, so the next edit
 cannot quietly reach for the assertion.
 
-⚠️ **The 73% in the first render is a 40-game sanity run, not the archive.** The
-real figure comes from `derive.yml`, which is the only job that walks the whole
-archive — and it is worth noting it is nowhere near the 79% this document had
-been carrying.
+### 13.4 The archive answered: **75.4%**, and §7.2 was wrong by four points
+
+`derive.yml` walked all 4,192 in-scope games and published it:
+
+    slot share   19,304 of 25,597 goals = 75.4%
+    unplaced     0     — every goal in the archive carries a coordinate
+    cross-check  n == attemptMix.byType.goal, exactly
+
+Live on the page, computed: *"75% of goals are scored from inside it — 19,304 of
+25,597 across the archive."*
+
+⭐ **§7.2 of this document said 79%.** It came from an ad-hoc census taken during
+the base-layer work that cannot be reproduced, and it had been sitting here
+reading as settled. Four points, one hop from being typed onto a page. The
+published figure is authoritative because it is the SHIPPED rule (`danger.js`)
+run by the SHIPPED reducer over the whole archive, and because its denominator
+agrees exactly with a count derived by a different path.
+
+⚠️ **The rest of that census is equally unverified** — 56.8% of attempts from the
+slot, 8.2%/3.3% at the blue line. None of it is published. Do not quote it.
