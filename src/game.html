@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-9oEuhdOQaaapABIyIwx3UsKGoY/0bnnAQ8JiVp7OZqQ=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-3zfHVsbGdx2HRd2oLgVfXnMU+cBt4TCfwm3uxBQnDAs='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-qiYH1+fkeR8rmuzWWiyZrGDEWht1zTyZGR0tkE+Ot6c=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-vbxcelZGGR9BTyL1IV4d/jKK5DwvG2a6D8+unsweOWI='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">What is this?</a></nav></header>
@@ -822,6 +822,19 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg details.zone>summary::after{content:"\25be";margin-left:auto;font-size:.9rem}
 #rg details.zone[open]>summary::after{content:"\25b4"}
 #rg details.zone[open]>summary{margin-bottom:10px}
+/* ⭐ ABOVE THE RINK, THE MENU IS A CONTROL AND NOT A CAPTION.
+   Kevin, 2026-08-26: down below "it's just so disjointed from the rink that
+   toggling a layer on and off creates a UX disconnect". Moved between the
+   scoreboard and the ice -- and moving it was not enough. The zone treatment is
+   SECTION-HEADING language: a full-width rule, then a muted uppercase label,
+   then the thing it heads. Directly above the rink card that reads as a caption
+   FOR THE ICE -- at 1100 the label sits over the rink with the caret 1600px away
+   at the other end of a rule, and nothing says it is pressable. So this one zone
+   drops the rule and takes the same white card as the board and the rinkbox: it
+   is a bar you can obviously press, sitting on the ice it acts on. */
+#rg .zlayers{margin:12px 0 8px;padding-top:0;border-top:0}
+#rg details.zlayers>summary{border:1px solid var(--edge);border-radius:11px;background:#fff;padding:0 14px}
+#rg details.zlayers[open]>summary{margin-bottom:9px}
 #rg .zon{margin-left:9px;font-size:.68rem;font-weight:800;letter-spacing:.06em;color:#fff;background:var(--ink);border-radius:99px;padding:3px 9px}
 #rg .zon:empty{display:none}
 /* The trails summary carries its setting, so a collapsed control still reports
@@ -1033,6 +1046,21 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
   </div>
   <div class="tm h"><span class="ab" id="hAb">&mdash;</span><span class="sc" id="hSc">0</span></div>
 </div>
+<details class="zone zlayers" id="zLayers"><summary class="zh">Add a metric layer<span class="zon" id="zLayersOn"></span></summary>
+<div class="lrows">
+<button class="lrow" id="lyCorsi" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Control (Corsi)</b><span class="lds">every shot attempt — on goal, missed, or blocked</span><span class="lon">The counters above the rink fill in as the replay runs, and the bar splits the attempts between the two clubs.</span></span><span class="st" id="stCorsi">Off</span></button>
+<button class="lrow" id="lyHd" aria-pressed="false"><span class="lmk"><i class="k-hd"></i></span><span class="ltx"><b>Shots from the slot</b><span class="lds">attempts from within 33 ft of the net, between the face-off dots</span><span class="lon">An amber ring marks each one. Click a ring to see the distance and angle it was measured by.</span></span><span class="st" id="stHd">Off</span></button>
+<button class="lrow" id="lyGoalie" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Goaltending</b><span class="lds">every shot each goaltender faced, and what became of it</span><span class="lon">A card per goaltender builds its save percentage as the replay runs.</span></span><span class="st" id="stGoalie">Off</span></button>
+<button class="lrow" id="lyWhistle" aria-pressed="false"><span class="lmk"><i class="k-wh"></i><i class="k-rl"></i></span><span class="ltx"><b>Why play stopped</b><span class="lds">the rule that stopped play, and the dot it restarted on</span><span class="lon">The ring marks where play restarted, brightest at the most recent stoppage. The bar lights the line the rule names — for icing the centre line and the far goal line, for offside the blue line.</span></span><span class="st" id="stWhistle">Off</span></button>
+<button class="lrow" id="lyBlock" aria-pressed="false"><span class="lmk"><i class="k-blk"></i><i class="k-blkv"></i></span><span class="ltx"><b>Blocked shots</b><span class="lds">the attempts a body stopped before they reached the goalie</span><span class="lon">Blocked attempts keep their ring and every other mark dims, so the ones a body stopped stand out.</span></span><span class="st" id="stBlock">Off</span></button>
+</div>
+<div class="figpick sit"><span class="ll">Situations:</span>
+<div class="grp" role="group" aria-label="Which situations are counted"><button class="lyr sbtn" data-s="all" aria-pressed="true">All situations</button><button class="lyr sbtn" data-s="even" aria-pressed="false">Even strength only</button></div>
+<span class="fnote" id="nSit"></span></div>
+<button id="work" aria-expanded="false">Show me the work</button>
+<div class="work" id="workPanel" hidden></div>
+<div class="hint">Tip: click any shot ringed in amber to see <b>why</b> it counts as a slot shot — with trails set to <b>keep every mark</b>, earlier ones stay clickable too.</div>
+</details>
 <p class="endnote" id="endnote"></p>
 <p class="atnote" id="atnote"></p>
 <div class="rinkbox"><svg viewBox="0 0 200 85"><g id="rink"></g><g id="netmen"></g><g id="lines"></g><g id="whistles"></g><g id="events"></g><g id="puck"></g><g id="labels"></g><g id="noplace"></g></svg>
@@ -1058,21 +1086,6 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
   <input class="scrub" id="scrub" type="range" min="-1" max="1" value="-1"></div>
 <p class="verdict" id="verdict"></p>
 <div class="newcomer nwhy2" id="newcomerWhy"></div>
-<details class="zone zlayers" id="zLayers"><summary class="zh">Add a metric layer<span class="zon" id="zLayersOn"></span></summary>
-<div class="lrows">
-<button class="lrow" id="lyCorsi" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Control (Corsi)</b><span class="lds">every shot attempt — on goal, missed, or blocked</span><span class="lon">The counters above the rink fill in as the replay runs, and the bar splits the attempts between the two clubs.</span></span><span class="st" id="stCorsi">Off</span></button>
-<button class="lrow" id="lyHd" aria-pressed="false"><span class="lmk"><i class="k-hd"></i></span><span class="ltx"><b>Shots from the slot</b><span class="lds">attempts from within 33 ft of the net, between the face-off dots</span><span class="lon">An amber ring marks each one. Click a ring to see the distance and angle it was measured by.</span></span><span class="st" id="stHd">Off</span></button>
-<button class="lrow" id="lyGoalie" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Goaltending</b><span class="lds">every shot each goaltender faced, and what became of it</span><span class="lon">A card per goaltender builds its save percentage as the replay runs.</span></span><span class="st" id="stGoalie">Off</span></button>
-<button class="lrow" id="lyWhistle" aria-pressed="false"><span class="lmk"><i class="k-wh"></i><i class="k-rl"></i></span><span class="ltx"><b>Why play stopped</b><span class="lds">the rule that stopped play, and the dot it restarted on</span><span class="lon">The ring marks where play restarted, brightest at the most recent stoppage. The bar lights the line the rule names — for icing the centre line and the far goal line, for offside the blue line.</span></span><span class="st" id="stWhistle">Off</span></button>
-<button class="lrow" id="lyBlock" aria-pressed="false"><span class="lmk"><i class="k-blk"></i><i class="k-blkv"></i></span><span class="ltx"><b>Blocked shots</b><span class="lds">the attempts a body stopped before they reached the goalie</span><span class="lon">Blocked attempts keep their ring and every other mark dims, so the ones a body stopped stand out.</span></span><span class="st" id="stBlock">Off</span></button>
-</div>
-<div class="figpick sit"><span class="ll">Situations:</span>
-<div class="grp" role="group" aria-label="Which situations are counted"><button class="lyr sbtn" data-s="all" aria-pressed="true">All situations</button><button class="lyr sbtn" data-s="even" aria-pressed="false">Even strength only</button></div>
-<span class="fnote" id="nSit"></span></div>
-<button id="work" aria-expanded="false">Show me the work</button>
-<div class="work" id="workPanel" hidden></div>
-<div class="hint">Tip: click any shot ringed in amber to see <b>why</b> it counts as a slot shot — with trails set to <b>keep every mark</b>, earlier ones stay clickable too.</div>
-</details>
 <details class="zone zref"><summary class="zh">What the marks mean</summary>
 <div class="areas">
 <div class="area"><span class="lmk"><i class="k-slot"></i></span><span class="ltx"><b>The slot</b><span class="lds">The shaded area at each end — within 33 ft of the net, between the face-off dots.<span class="asay" id="slotSay"></span></span></span></div>
@@ -5575,6 +5588,16 @@ function drawBlocked(B,L,slice){
    THE COPY IS A DRAFT AND THE SEAM IS THE POINT (Kevin's own rule: mechanism,
    not policy). The novice test revises these words; it should not have to
    revise the machinery. */
+/* ⭐ THE PITCH NAMES THE CONTROL, AND NEVER ITS POSITION. The layer menu moved
+   above the rink on 2026-08-26 and this paragraph did not follow it: measured at
+   390 it is 279px tall, so above the ice it would have put the play button at
+   y=1036 against a fold of 844 -- the exact defect that split this greeting in
+   two in the first place. So the halves are no longer adjacent, and the reader
+   is given the one thing that survives a layout change: the control's own label,
+   quoted verbatim, the same way the other half quotes `▶ Play from start`.
+   It is a constant read by a test against the summary in the built page, so the
+   day someone renames the control this sentence fails rather than lying. */
+const LAYER_MENU='Add a metric layer';
 function drawNewcomer(){
  const el=$('newcomer'); if(!el)return;
  const R2=RATES&&RATES.baseRates&&RATES.baseRates.moreAttemptsLost;
@@ -5611,7 +5634,7 @@ function drawNewcomer(){
  if(w)w.innerHTML=`<b>Why add a layer?</b> Because the obvious reading of a game is often `
   +`the wrong one.`+why
   +`<span class="nwhy">Every layer shows its work — the events it counted, the ones it did `
-  +`not, and why.</span>`;
+  +`not, and why. Open <b>${LAYER_MENU}</b> to switch one on.</span>`;
  $('nDone').addEventListener('click',()=>{
   // An explicit dismissal outranks the counter, and it is remembered. A tip you
   // cannot turn off is an advert.
@@ -5628,13 +5651,24 @@ let corsiOn=false,hdOn=false,goalieOn=false,whistleOn=false,blockOn=false;
    render-preview's check that the preview goes THROUGH setCorsi rather than past
    it is retargeted at the element that now carries the answer. */
 function lyrState(id,on){const n=$(id);if(n)n.textContent=on?'On':'Off';zoneState();}
-/* ⭐ A COLLAPSED CONTROL MUST STILL REPORT ITS STATE, and a zone holding one must
-   be able to open itself. Every zone below the rink is a disclosure now, which is
-   only safe with both halves: without the badge, marks appear on the ice with
-   nothing on screen accounting for them; without the auto-open, a deep link that
-   lands with a layer on -- eight of the learn page's nine doors do -- would put
-   the only way to turn it off behind a closed drawer, which is CHENG's one-way
-   trip.
+/* ⭐ A COLLAPSED CONTROL MUST STILL REPORT ITS STATE. Every zone is a disclosure
+   now, and without the badge marks appear on the ice with nothing on screen
+   accounting for them.
+
+   ⭐ THE AUTO-OPEN IS GONE, AND POSITION REPLACED IT. It existed for one reason:
+   the menu sat 1,219px down a phone page, so a deep link landing with a layer on
+   -- eight of the learn page's nine doors do -- put the only way to turn that
+   layer off behind a closed drawer far below the fold. CHENG's one-way trip.
+   The menu is now the third element on the page, 46px above the rink, measured
+   at y=459 on a first visit at 390 and y=222 on a return: ON SCREEN WITHOUT
+   SCROLLING IN BOTH VISITOR STATES, with the badge naming the layer on its face.
+   Reachability no longer depends on the drawer being open.
+
+   And keeping both cost the whole hero. Measured at 390 with `?layer=whistle`:
+   the opened list is 600px tall, so it pushed the rink top to y=830 and a
+   visitor arriving at a door met a first screen with NO ICE ON IT AT ALL. The
+   mechanism that made the collapse safe in one position makes it unusable in
+   this one; the badge is the half that travels.
 
    DERIVED FROM THE DOM, NOT FROM A LIST OF LAYERS. `[aria-pressed="true"]` on a
    row IS the on-state, so a sixth layer is covered the day it is added and a
@@ -5643,19 +5677,7 @@ function lyrState(id,on){const n=$(id);if(n)n.textContent=on?'On':'Off';zoneStat
 function zoneState(){
  let on=0;document.querySelectorAll('#rg .lrow').forEach(r=>{
   if(String(r.getAttribute('aria-pressed'))==='true')on++;});
- const b=$('zLayersOn');if(b)b.textContent=on?`${on} layer${on===1?'':'s'} on`:'';
- const d=$('zLayers');if(d&&on)d.open=true;}
-/* ⭐ AND THE OPEN NEEDS NO "HAS THE READER TOUCHED IT" FLAG, which is worth
-   saying because the first version had one and it could not have worked. The
-   `toggle` event fires for a PROGRAMMATIC change too, and the spec queues it as
-   a task -- so any `_auto` guard set around the assignment is already false by
-   the time the handler runs, and the fake document does not fire `toggle` at
-   all, so the divergence would have been invisible here.
-
-   It is unnecessary anyway: the only way to close this drawer is to press its
-   summary, and the only way to reach a layer row is with the drawer open. So
-   every call that arrives with a layer on and the drawer SHUT came from boot --
-   which is the deep link, and the one case this exists for. */
+ const b=$('zLayersOn');if(b)b.textContent=on?`${on} layer${on===1?'':'s'} on`:'';}
 zoneState();
 function setCorsi(){document.getElementById('rg').classList.toggle('corsi',corsiOn);$('lyCorsi').setAttribute('aria-pressed',corsiOn);lyrState('stCorsi',corsiOn);if(!corsiOn&&workOpen){workOpen=false;$('workPanel').hidden=true;$('work').setAttribute('aria-expanded',false);$('work').textContent='Show me the work';}}
 function setHd(){document.getElementById('rg').classList.toggle('slot',hdOn);$('lyHd').setAttribute('aria-pressed',hdOn);lyrState('stHd',hdOn);render(i,'');}

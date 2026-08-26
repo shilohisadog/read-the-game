@@ -956,3 +956,80 @@ test asserts the label did not leak into it.
     below the rink, 320    1040px   no side-scroll
     controls below the rink   17    from 21 — the two pickers took four buttons
     under 44px                 0 of 17
+
+## 15. The layer menu moves above the rink
+
+Kevin, 2026-08-26: *"it's just so disjointed from the rink that toggling a layer
+on and off creates a UX disconnect, and I'd like to see it above the rink to see
+if it helps."* The control was 760px below the thing it changed on a phone, so
+pressing it moved marks a reader could not see.
+
+Moved to sit between the scoreboard and the ice.
+
+### 15.1 Moving it was not enough — it read as a caption for the ice
+
+The zone treatment is section-heading language: a full-width rule, a muted
+uppercase label, then the thing it heads. Directly above the rink card that
+reads as a **title for the rink** — at 1100 the label sits over the ice with its
+caret 1,600px away at the far end of a rule, and nothing says it is pressable.
+
+So this one zone drops the rule and takes the same white card as the board and
+the rinkbox. Three stacked cards: **scoreboard, layer bar, ice.** It is a bar you
+can obviously press, sitting on the surface it acts on.
+
+### 15.2 ⭐ The auto-open had to go, and POSITION is what replaced it
+
+§12 made every zone a disclosure, and that was only safe with two halves: the
+summary reports what is on inside it, and **the zone opens itself when a deep
+link arrives with a layer on** — eight of the learn page's nine doors do.
+
+Above the rink the second half is destructive. Measured at 390 with
+`?layer=whistle`:
+
+    the opened list          600px tall
+    rink top                 y=830        — the ENTIRE first screen is the menu
+    play button              y=1199       against a fold of 844
+
+A visitor coming through a door met a page with **no ice on it at all**.
+
+The auto-open existed for exactly one reason: the menu sat at y=1219 on a phone,
+so a shut drawer put the only way to turn a layer off far below the fold —
+CHENG's one-way trip. That reason is gone. The menu is now the third element on
+the page:
+
+    390, first visit    menu y=459    rink y=513    play ends 801   (fold 844)
+    390, returning      menu y=222    rink y=276    play ends 564
+    ?layer=whistle,390  menu y=222    rink y=276    play ends 645   badge "1 layer on"
+
+**On screen without scrolling in both visitor states, with the badge naming the
+layer on its face.** Reachability no longer depends on the drawer being open, so
+the half that made the collapse safe in one position is the half that had to be
+dropped in this one. The badge is what travels.
+
+### 15.3 The pitch could not follow, so it names the control instead
+
+`#newcomerWhy` — *"Why add a layer? Because the obvious reading of a game is
+often the wrong one"* — is the half of the greeting that sits beside the layers.
+It is **279px tall at 390**: above the ice it would have put the play button at
+y=1036 against a fold of 844, which is the exact defect that split the greeting
+in two in the first place (§11 of `docs/ten-second-hero.md`).
+
+So the halves are no longer adjacent, and the paragraph carries the one thing
+that survives a layout change — **the control's own label, quoted verbatim and
+never its position**, the same way the other half quotes `▶ Play from start`. A
+test reads the label out of the built summary rather than restating it, so
+renaming the control fails the test instead of quietly staling the sentence.
+
+### 15.4 What it cost, and what is still open
+
+    rink top at 390, first visit     459 → 513   (+54px)
+    rink top at 1100, first visit    374 → 428   (+54px)
+    play button, 1100 first visit    below an 844 fold by 110px (was 56)
+    deep link at 390                 rink y=830 → y=276
+
+⭐ **Opening the menu at 390 still pushes the ice off the screen** — the list is
+554px of rows and there is nowhere for it to go. Below the rink that cost
+nothing visible; above it, it is the trade. It is a deliberate press rather than
+something a link does to you, and the two-across layout already collapses it at
+1100. Whether the rows need a denser phone form is open, and is the same
+question as U3 (layer density).

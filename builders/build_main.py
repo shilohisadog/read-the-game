@@ -66,6 +66,21 @@ __CSS__</style>
   </div>
   <div class="tm h"><span class="ab" id="hAb">&mdash;</span><span class="sc" id="hSc">0</span></div>
 </div>
+<details class="zone zlayers" id="zLayers"><summary class="zh">Add a metric layer<span class="zon" id="zLayersOn"></span></summary>
+<div class="lrows">
+<button class="lrow" id="lyCorsi" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Control (Corsi)</b><span class="lds">every shot attempt — on goal, missed, or blocked</span><span class="lon">The counters above the rink fill in as the replay runs, and the bar splits the attempts between the two clubs.</span></span><span class="st" id="stCorsi">Off</span></button>
+<button class="lrow" id="lyHd" aria-pressed="false"><span class="lmk"><i class="k-hd"></i></span><span class="ltx"><b>Shots from the slot</b><span class="lds">attempts from within 33 ft of the net, between the face-off dots</span><span class="lon">An amber ring marks each one. Click a ring to see the distance and angle it was measured by.</span></span><span class="st" id="stHd">Off</span></button>
+<button class="lrow" id="lyGoalie" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Goaltending</b><span class="lds">every shot each goaltender faced, and what became of it</span><span class="lon">A card per goaltender builds its save percentage as the replay runs.</span></span><span class="st" id="stGoalie">Off</span></button>
+<button class="lrow" id="lyWhistle" aria-pressed="false"><span class="lmk"><i class="k-wh"></i><i class="k-rl"></i></span><span class="ltx"><b>Why play stopped</b><span class="lds">the rule that stopped play, and the dot it restarted on</span><span class="lon">The ring marks where play restarted, brightest at the most recent stoppage. The bar lights the line the rule names — for icing the centre line and the far goal line, for offside the blue line.</span></span><span class="st" id="stWhistle">Off</span></button>
+<button class="lrow" id="lyBlock" aria-pressed="false"><span class="lmk"><i class="k-blk"></i><i class="k-blkv"></i></span><span class="ltx"><b>Blocked shots</b><span class="lds">the attempts a body stopped before they reached the goalie</span><span class="lon">Blocked attempts keep their ring and every other mark dims, so the ones a body stopped stand out.</span></span><span class="st" id="stBlock">Off</span></button>
+</div>
+<div class="figpick sit"><span class="ll">Situations:</span>
+<div class="grp" role="group" aria-label="Which situations are counted"><button class="lyr sbtn" data-s="all" aria-pressed="true">All situations</button><button class="lyr sbtn" data-s="even" aria-pressed="false">Even strength only</button></div>
+<span class="fnote" id="nSit"></span></div>
+<button id="work" aria-expanded="false">Show me the work</button>
+<div class="work" id="workPanel" hidden></div>
+<div class="hint">Tip: click any shot ringed in amber to see <b>why</b> it counts as a slot shot — with trails set to <b>keep every mark</b>, earlier ones stay clickable too.</div>
+</details>
 <p class="endnote" id="endnote"></p>
 <p class="atnote" id="atnote"></p>
 <div class="rinkbox"><svg viewBox="0 0 200 85"><g id="rink"></g><g id="netmen"></g><g id="lines"></g><g id="whistles"></g><g id="events"></g><g id="puck"></g><g id="labels"></g><g id="noplace"></g></svg>
@@ -91,21 +106,6 @@ __CSS__</style>
   <input class="scrub" id="scrub" type="range" min="-1" max="1" value="-1"></div>
 <p class="verdict" id="verdict"></p>
 <div class="newcomer nwhy2" id="newcomerWhy"></div>
-<details class="zone zlayers" id="zLayers"><summary class="zh">Add a metric layer<span class="zon" id="zLayersOn"></span></summary>
-<div class="lrows">
-<button class="lrow" id="lyCorsi" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Control (Corsi)</b><span class="lds">every shot attempt — on goal, missed, or blocked</span><span class="lon">The counters above the rink fill in as the replay runs, and the bar splits the attempts between the two clubs.</span></span><span class="st" id="stCorsi">Off</span></button>
-<button class="lrow" id="lyHd" aria-pressed="false"><span class="lmk"><i class="k-hd"></i></span><span class="ltx"><b>Shots from the slot</b><span class="lds">attempts from within 33 ft of the net, between the face-off dots</span><span class="lon">An amber ring marks each one. Click a ring to see the distance and angle it was measured by.</span></span><span class="st" id="stHd">Off</span></button>
-<button class="lrow" id="lyGoalie" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Goaltending</b><span class="lds">every shot each goaltender faced, and what became of it</span><span class="lon">A card per goaltender builds its save percentage as the replay runs.</span></span><span class="st" id="stGoalie">Off</span></button>
-<button class="lrow" id="lyWhistle" aria-pressed="false"><span class="lmk"><i class="k-wh"></i><i class="k-rl"></i></span><span class="ltx"><b>Why play stopped</b><span class="lds">the rule that stopped play, and the dot it restarted on</span><span class="lon">The ring marks where play restarted, brightest at the most recent stoppage. The bar lights the line the rule names — for icing the centre line and the far goal line, for offside the blue line.</span></span><span class="st" id="stWhistle">Off</span></button>
-<button class="lrow" id="lyBlock" aria-pressed="false"><span class="lmk"><i class="k-blk"></i><i class="k-blkv"></i></span><span class="ltx"><b>Blocked shots</b><span class="lds">the attempts a body stopped before they reached the goalie</span><span class="lon">Blocked attempts keep their ring and every other mark dims, so the ones a body stopped stand out.</span></span><span class="st" id="stBlock">Off</span></button>
-</div>
-<div class="figpick sit"><span class="ll">Situations:</span>
-<div class="grp" role="group" aria-label="Which situations are counted"><button class="lyr sbtn" data-s="all" aria-pressed="true">All situations</button><button class="lyr sbtn" data-s="even" aria-pressed="false">Even strength only</button></div>
-<span class="fnote" id="nSit"></span></div>
-<button id="work" aria-expanded="false">Show me the work</button>
-<div class="work" id="workPanel" hidden></div>
-<div class="hint">Tip: click any shot ringed in amber to see <b>why</b> it counts as a slot shot — with trails set to <b>keep every mark</b>, earlier ones stay clickable too.</div>
-</details>
 <details class="zone zref"><summary class="zh">What the marks mean</summary>
 <div class="areas">
 <div class="area"><span class="lmk"><i class="k-slot"></i></span><span class="ltx"><b>The slot</b><span class="lds">The shaded area at each end — within 33 ft of the net, between the face-off dots.<span class="asay" id="slotSay"></span></span></span></div>

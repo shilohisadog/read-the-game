@@ -1747,6 +1747,16 @@ function drawBlocked(B,L,slice){
    THE COPY IS A DRAFT AND THE SEAM IS THE POINT (Kevin's own rule: mechanism,
    not policy). The novice test revises these words; it should not have to
    revise the machinery. */
+/* ⭐ THE PITCH NAMES THE CONTROL, AND NEVER ITS POSITION. The layer menu moved
+   above the rink on 2026-08-26 and this paragraph did not follow it: measured at
+   390 it is 279px tall, so above the ice it would have put the play button at
+   y=1036 against a fold of 844 -- the exact defect that split this greeting in
+   two in the first place. So the halves are no longer adjacent, and the reader
+   is given the one thing that survives a layout change: the control's own label,
+   quoted verbatim, the same way the other half quotes `▶ Play from start`.
+   It is a constant read by a test against the summary in the built page, so the
+   day someone renames the control this sentence fails rather than lying. */
+const LAYER_MENU='Add a metric layer';
 function drawNewcomer(){
  const el=$('newcomer'); if(!el)return;
  const R2=RATES&&RATES.baseRates&&RATES.baseRates.moreAttemptsLost;
@@ -1783,7 +1793,7 @@ function drawNewcomer(){
  if(w)w.innerHTML=`<b>Why add a layer?</b> Because the obvious reading of a game is often `
   +`the wrong one.`+why
   +`<span class="nwhy">Every layer shows its work — the events it counted, the ones it did `
-  +`not, and why.</span>`;
+  +`not, and why. Open <b>${LAYER_MENU}</b> to switch one on.</span>`;
  $('nDone').addEventListener('click',()=>{
   // An explicit dismissal outranks the counter, and it is remembered. A tip you
   // cannot turn off is an advert.
@@ -1800,13 +1810,24 @@ let corsiOn=false,hdOn=false,goalieOn=false,whistleOn=false,blockOn=false;
    render-preview's check that the preview goes THROUGH setCorsi rather than past
    it is retargeted at the element that now carries the answer. */
 function lyrState(id,on){const n=$(id);if(n)n.textContent=on?'On':'Off';zoneState();}
-/* ⭐ A COLLAPSED CONTROL MUST STILL REPORT ITS STATE, and a zone holding one must
-   be able to open itself. Every zone below the rink is a disclosure now, which is
-   only safe with both halves: without the badge, marks appear on the ice with
-   nothing on screen accounting for them; without the auto-open, a deep link that
-   lands with a layer on -- eight of the learn page's nine doors do -- would put
-   the only way to turn it off behind a closed drawer, which is CHENG's one-way
-   trip.
+/* ⭐ A COLLAPSED CONTROL MUST STILL REPORT ITS STATE. Every zone is a disclosure
+   now, and without the badge marks appear on the ice with nothing on screen
+   accounting for them.
+
+   ⭐ THE AUTO-OPEN IS GONE, AND POSITION REPLACED IT. It existed for one reason:
+   the menu sat 1,219px down a phone page, so a deep link landing with a layer on
+   -- eight of the learn page's nine doors do -- put the only way to turn that
+   layer off behind a closed drawer far below the fold. CHENG's one-way trip.
+   The menu is now the third element on the page, 46px above the rink, measured
+   at y=459 on a first visit at 390 and y=222 on a return: ON SCREEN WITHOUT
+   SCROLLING IN BOTH VISITOR STATES, with the badge naming the layer on its face.
+   Reachability no longer depends on the drawer being open.
+
+   And keeping both cost the whole hero. Measured at 390 with `?layer=whistle`:
+   the opened list is 600px tall, so it pushed the rink top to y=830 and a
+   visitor arriving at a door met a first screen with NO ICE ON IT AT ALL. The
+   mechanism that made the collapse safe in one position makes it unusable in
+   this one; the badge is the half that travels.
 
    DERIVED FROM THE DOM, NOT FROM A LIST OF LAYERS. `[aria-pressed="true"]` on a
    row IS the on-state, so a sixth layer is covered the day it is added and a
@@ -1815,19 +1836,7 @@ function lyrState(id,on){const n=$(id);if(n)n.textContent=on?'On':'Off';zoneStat
 function zoneState(){
  let on=0;document.querySelectorAll('#rg .lrow').forEach(r=>{
   if(String(r.getAttribute('aria-pressed'))==='true')on++;});
- const b=$('zLayersOn');if(b)b.textContent=on?`${on} layer${on===1?'':'s'} on`:'';
- const d=$('zLayers');if(d&&on)d.open=true;}
-/* ⭐ AND THE OPEN NEEDS NO "HAS THE READER TOUCHED IT" FLAG, which is worth
-   saying because the first version had one and it could not have worked. The
-   `toggle` event fires for a PROGRAMMATIC change too, and the spec queues it as
-   a task -- so any `_auto` guard set around the assignment is already false by
-   the time the handler runs, and the fake document does not fire `toggle` at
-   all, so the divergence would have been invisible here.
-
-   It is unnecessary anyway: the only way to close this drawer is to press its
-   summary, and the only way to reach a layer row is with the drawer open. So
-   every call that arrives with a layer on and the drawer SHUT came from boot --
-   which is the deep link, and the one case this exists for. */
+ const b=$('zLayersOn');if(b)b.textContent=on?`${on} layer${on===1?'':'s'} on`:'';}
 zoneState();
 function setCorsi(){document.getElementById('rg').classList.toggle('corsi',corsiOn);$('lyCorsi').setAttribute('aria-pressed',corsiOn);lyrState('stCorsi',corsiOn);if(!corsiOn&&workOpen){workOpen=false;$('workPanel').hidden=true;$('work').setAttribute('aria-expanded',false);$('work').textContent='Show me the work';}}
 function setHd(){document.getElementById('rg').classList.toggle('slot',hdOn);$('lyHd').setAttribute('aria-pressed',hdOn);lyrState('stHd',hdOn);render(i,'');}

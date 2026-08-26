@@ -132,16 +132,33 @@ test('a disclosure is never inside a collapsed zone', () => {
   }
 });
 
-test('a collapsed layer menu still says what is on, and opens itself for a deep link', () => {
+test('a collapsed layer menu still says what is on, and sits above the rink', () => {
   const shut = boot();
   assert.equal(shut.$('zLayersOn').textContent, '', 'the badge claims a layer with none on');
   assert.notEqual(shut.$('zLayers').open, true, 'the menu is open before anyone asked');
 
-  // EIGHT OF THE NINE DOORS ARRIVE LIKE THIS.
+  // ⭐ EIGHT OF THE NINE DOORS ARRIVE LIKE THIS, AND THE DRAWER STAYS SHUT.
+  // It used to open itself, because the menu was 1,219px down a phone page and a
+  // deep link would otherwise have left the only way to turn the layer off below
+  // the fold — CHENG's one-way trip. The menu is now above the rink, and keeping
+  // the auto-open there cost the entire hero: measured at 390, the opened list is
+  // 600px tall and pushed the rink top to y=830, so a door landed on a first
+  // screen with no ice on it. The badge is what makes the shut drawer safe.
   const door = boot(null, null, '?game=2023020204&layer=whistle');
-  assert.equal(door.$('zLayers').open, true,
-    'a deep link put marks on the ice and left the only way to turn them off shut');
-  assert.equal(door.$('zLayersOn').textContent, '1 layer on');
+  assert.notEqual(door.$('zLayers').open, true,
+    'the drawer opened itself again — at 390 that puts the rink off the first screen');
+  assert.equal(door.$('zLayersOn').textContent, '1 layer on',
+    'a deep link put marks on the ice with nothing on screen naming them');
+
+  // ⭐ AND THE POSITION IS NOW LOAD-BEARING, so it is asserted rather than assumed.
+  // Reachability rests on the menu being on the first screen; the unit suite has
+  // no layout, so what it can check is document order — above the ice, below the
+  // scoreboard. Move it back down and this test is the one that says what broke.
+  const board = app.indexOf('class="board"');
+  const menu = app.indexOf('id="zLayers"');
+  const rink = app.indexOf('class="rinkbox"');
+  assert.ok(board < menu && menu < rink,
+    `the layer menu left its place between the scoreboard and the ice (board ${board}, menu ${menu}, rink ${rink})`);
 
   // AND THE BADGE COUNTS, rather than saying "on". Two layers is a different
   // sentence from one, and singular/plural is where this kind of readout ships
@@ -468,7 +485,10 @@ test('the card sits above the controls, not below them', () => {
   // nothing is meaningfully ranked below a 44px summary, and the reason no
   // longer applies. Kevin's ordering, and the argument for the old one expired
   // rather than being overruled.
-  const order = ['class="transport"', 'class="verdict"', 'class="zone zlayers"',
+  //
+  // LAYERS LEFT THIS STACK ON 2026-08-26 — it is above the rink now, and its
+  // order is asserted against the board and the rink in the deep-link test above.
+  const order = ['class="transport"', 'class="verdict"',
                  'class="legend"', 'class="zone zdisp"', 'class="zone znext"'];
   let at = -1;
   for (const marker of order) {
@@ -689,18 +709,34 @@ test('the lede is gone, for everyone, and nothing still points at it', () => {
   assert.equal(veteran.$('rg').classList.contains('newcomer'), false);
 });
 
-test('each half of the greeting sits beside the thing it is about', () => {
+test('each half of the greeting names the thing it is about', () => {
   // The fix for a defect only a browser could show: whole and above the rink,
   // the block pushed the play button it names below the fold (rink ended 899,
   // button 914, fold 844 on a 390px phone). DOM order is the half checkable
   // here; the geometry is checked by looking.
-  const order = ['id="newcomer"', 'class="transport"', 'id="newcomerWhy"', 'class="lrow"'];
+  const order = ['id="newcomer"', 'class="transport"', 'id="newcomerWhy"'];
   let at = -1;
   for (const marker of order) {
     const k = app.indexOf(marker);
     assert.ok(k > at, `${marker} is out of order — a greeting has drifted from its subject`);
     at = k;
   }
+
+  // ⭐ AND THE SECOND HALF NO LONGER SITS BESIDE ITS SUBJECT, so it names it.
+  // The layer menu moved above the rink; this paragraph is 279px tall at 390 and
+  // could not follow without putting the play button at y=1036 against an 844
+  // fold. What it can carry instead is the control's own label — quoted, never
+  // its position, because a position is a constant that drifts with the next
+  // viewport. Read from the BUILT SUMMARY rather than typed here twice: rename
+  // the control and this fails instead of the sentence quietly going stale.
+  const summary = /<summary class="zh">([^<]+)</.exec(
+    app.slice(app.indexOf('id="zLayers"')))[1].trim();
+  const a2 = boot();
+  assert.ok(summary.length > 4, `the layer menu summary is not a label: "${summary}"`);
+  assert.ok(a2.$('newcomerWhy').innerHTML.includes(summary),
+    `the pitch does not name the control it is asking for — it says nothing matching "${summary}"`);
+  assert.doesNotMatch(a2.$('newcomerWhy').innerHTML, /\b(above|below|beneath|under) the rink\b/i,
+    'the pitch asserts a position, which is the constant that drifted at 360px');
   // Both halves retire together: one class, one dismissal, no half-greeted state.
   const a = boot(rich, CURVE_AND_MIX);
   assert.ok(a.$('newcomer').innerHTML && a.$('newcomerWhy').innerHTML);
