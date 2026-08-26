@@ -1394,3 +1394,61 @@ LAYER state and lied about the PAGE. The internal token stays `none`, because no
 own line it costs ~20px at 1100 and pays for itself at every width below.
 
     390   rink y=282   play ends 570   ·   1100  rink y=231   play ends 756
+
+## 24. CHENG on the selector — one fix, and the taxonomy question answered
+
+### 24.1 `Goalies` went back to `Goaltending`
+
+> *It names a position, not a metric.*
+
+Right, and the short form was mine rather than Kevin's — his list said
+*Goaltending*. It cost nothing: with the label on its own line the row is still
+two chips deep at 390 and one from 700 up.
+
+`Stoppages` is Kevin's own word and stays. CHENG's objection — that *Why play
+stopped* was plain English naming a question a viewer actually has — is on the
+record for when the descriptions get their home.
+
+### 24.2 ⭐ "Slot and Blocked are subsets of Attempts" — one is, one is not
+
+This is checkable and it decides the facet model:
+
+    ATTEMPT_TYPES  goal · shot-on-goal · missed-shot · blocked-shot   ← corsi.js
+    SHOT_TYPES     goal · shot-on-goal · missed-shot                  ← danger.js
+
+**Blocked IS a facet of Attempts.** `blocked-shot` is one of the four types
+Corsi counts, so *Attempts → blocked only* is an honest refinement.
+
+**Slot is NOT.** `danger.js` runs on `SHOT_TYPES`, which excludes blocked shots
+deliberately: a blocked shot's coordinate is *where the puck was stopped*, not
+where it was taken — median **24.2 ft against 33.4** over an 80-game sample,
+while the point shot is the most-blocked shot in hockey and the blue line is
+~64 ft out. Nesting the slot under Attempts would hand it a population it
+measurably must not use.
+
+So the facet model nests one correctly and one wrongly. If refinements happen:
+**`Attempts → [all types] [blocked only]`, and Slot stays a peer.**
+
+### 24.3 The distance, measured
+
+> *Call it 300px … toggle a layer and the change happens at the top of the
+> viewport while your eye is at the bottom.*
+
+    390    ice ends y=429   selector y=748   gap 319px from the ice, 236 from the card
+    1400   ice ends y=615   selector y=823   gap 208px from the ice, 126 from the card
+
+His 300 is right at 390. But the question that matters is whether both are on
+screen at once, and they are:
+
+    ice top 282 → selector bottom 843, against an 844px phone viewport
+
+**By one pixel**, which is not a margin to design on — on a 700px visible
+viewport the selector is one short scroll down, after which the ice is still in
+frame. Worth knowing before anyone moves it again.
+
+### 24.4 Still open, deliberately
+
+Does anyone want two layers at once? The evidence in §21.1 says we never have —
+twelve curated links, zero combinations. The selector assumes that answer. The
+one combination CHENG names as obvious, *Attempts + Slot*, is also the one the
+reducers say is not a subset relationship. Kevin's call.
