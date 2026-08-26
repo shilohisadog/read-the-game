@@ -1174,3 +1174,50 @@ bad instrument pointing at a real defect is still pointing at a real defect.
 
 They are in the same rows, revealed by the press — not filed into the reference
 zone. The split he was watching for did not happen.
+
+## 19. And it belongs BELOW the ice, not above it
+
+CHENG, on the §15 move, and Kevin agreeing:
+
+> The instruction says watch first. The layout says decide first. A novice
+> following the header has to scroll past five decisions to reach the thing they
+> were told to do.
+
+The page header is **LEARN TO READ HOCKEY · EVENT BY EVENT FIRST, ADD METRICS
+AFTER**. Five controls between that sentence and the ice make the layout
+contradict the copy, and the copy is right.
+
+### 19.1 The two candidate positions, measured at 390
+
+    A  after the transport      menu y=688   play ends 510   236px from the ice
+    B  directly under the rink  menu y=464   play ends 568    12px from the ice
+
+**A is where it was when Kevin called it disjointed** — the 236px is the
+transport, which is exactly the gap he was describing. B keeps the adjacency
+that the whole move was for, and puts it after the game rather than before it.
+
+**The cost of B is 58px on the play button, and it stays inside the 844 fold in
+both visitor states.** The ice returns to y=222 on a return visit and y=459 on a
+first — the same place it was before any of this started.
+
+### 19.2 ⭐ And it fixed the thing §17.1 left open, for free
+
+    drawer OPEN, nothing on:   rink top 222 at 390  ·  231 at 1100
+
+**Opening the menu no longer moves the rink at all.** Above the ice, expanding a
+drawer pushed the whole game down the page; below it, the ice is upstream of the
+control and cannot be moved by it. §15.4's *"opening the menu at 390 still pushes
+the ice off the screen"* is closed — not by shortening anything, but by putting
+the control on the downstream side of the thing it changes.
+
+That is the general form worth keeping: **a control that grows belongs after the
+thing it acts on, or its growth is paid for by its own subject.**
+
+### 19.3 Both halves are pinned
+
+Each position broke on its own, so one assertion cannot describe the rule:
+
+    board < rink < menu     the header says metrics come after
+    menu  < transport       or it falls back into the 236px gap
+
+Mutated in both directions; each fires its own message.

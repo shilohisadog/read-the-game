@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-qiYH1+fkeR8rmuzWWiyZrGDEWht1zTyZGR0tkE+Ot6c=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-GF25Zx6RrgnB65oWCBJEaNTyv32S5G+qUPVT3QW1U6c='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-qiYH1+fkeR8rmuzWWiyZrGDEWht1zTyZGR0tkE+Ot6c=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-DJseHzGntGBvDvK4+iPqCDa3mbHkLXVeDTBx0ELyqUk='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">What is this?</a></nav></header>
@@ -822,17 +822,24 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg details.zone>summary::after{content:"\25be";margin-left:auto;font-size:.9rem}
 #rg details.zone[open]>summary::after{content:"\25b4"}
 #rg details.zone[open]>summary{margin-bottom:10px}
-/* ⭐ ABOVE THE RINK, THE MENU IS A CONTROL AND NOT A CAPTION.
-   Kevin, 2026-08-26: down below "it's just so disjointed from the rink that
-   toggling a layer on and off creates a UX disconnect". Moved between the
-   scoreboard and the ice -- and moving it was not enough. The zone treatment is
-   SECTION-HEADING language: a full-width rule, then a muted uppercase label,
-   then the thing it heads. Directly above the rink card that reads as a caption
-   FOR THE ICE -- at 1100 the label sits over the rink with the caret 1600px away
-   at the other end of a rule, and nothing says it is pressable. So this one zone
-   drops the rule and takes the same white card as the board and the rinkbox: it
-   is a bar you can obviously press, sitting on the ice it acts on. */
-#rg .zlayers{margin:12px 0 8px;padding-top:0;border-top:0}
+/* ⭐ THE MENU IS A CONTROL AND NOT A CAPTION, AND IT SITS UNDER THE ICE.
+   Kevin, 2026-08-26: "it's just so disjointed from the rink that toggling a
+   layer on and off creates a UX disconnect." It went above the rink first, and
+   that was wrong for a reason CHENG named and Kevin agreed with: the page header
+   says EVENT BY EVENT FIRST, ADD METRICS AFTER, and putting five decisions
+   between that sentence and the ice makes the layout contradict it. It now sits
+   12px BELOW the rink -- adjacent to the marks it changes, and after them.
+   Measured at 390: the ice starts at y=222 either way, and the play button ends
+   at 568 rather than 510 -- 58px for the adjacency, still inside the 844 fold.
+
+   THE ZONE TREATMENT IS STILL WRONG FOR THIS ONE ZONE, wherever it sits. It is
+   SECTION-HEADING language -- a full-width rule, a muted uppercase label, then
+   the thing it heads -- so against the rink card it read as a caption FOR THE
+   ICE, with the caret 1600px away at the other end of a rule at 1100 and nothing
+   saying it was pressable. So this zone drops the rule and takes the same white
+   card as the board and the rinkbox: a bar you can obviously press, sitting on
+   the ice it acts on. */
+#rg .zlayers{margin:10px 0 0;padding-top:0;border-top:0}
 #rg details.zlayers>summary{border:1px solid var(--edge);border-radius:11px;background:#fff;padding:0 14px}
 #rg details.zlayers[open]>summary{margin-bottom:9px}
 #rg .zon{margin-left:9px;font-size:.68rem;font-weight:800;letter-spacing:.06em;color:#fff;background:var(--ink);border-radius:99px;padding:3px 9px}
@@ -1083,21 +1090,6 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
   </div>
   <div class="tm h"><span class="ab" id="hAb">&mdash;</span><span class="sc" id="hSc">0</span></div>
 </div>
-<details class="zone zlayers" id="zLayers"><summary class="zh">Add a metric layer<span class="zon" id="zLayersOn"></span></summary>
-<div class="lrows">
-<button class="lrow" id="lyCorsi" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Control (Corsi) — every shot attempt</b><span class="lds">on goal, missed, or blocked: all three count, because all three are the team moving the puck at the net</span><span class="lon">The counters above the rink fill in as the replay runs, and the bar splits the attempts between the two clubs.</span></span><span class="st" id="stCorsi">Off</span></button>
-<button class="lrow" id="lyHd" aria-pressed="false"><span class="lmk"><i class="k-hd"></i></span><span class="ltx"><b>Shots from the slot</b><span class="lds">attempts from within 33 ft of the net, between the face-off dots</span><span class="lon">An amber ring marks each one. Click a ring to see the distance and angle it was measured by.</span></span><span class="st" id="stHd">Off</span></button>
-<button class="lrow" id="lyGoalie" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Goaltending — every shot faced</b><span class="lds">and what became of it: saved, scored on, or missed the net entirely</span><span class="lon">A card per goaltender builds its save percentage as the replay runs.</span></span><span class="st" id="stGoalie">Off</span></button>
-<button class="lrow" id="lyWhistle" aria-pressed="false"><span class="lmk"><i class="k-wh"></i><i class="k-rl"></i></span><span class="ltx"><b>Why play stopped</b><span class="lds">the rule that stopped play, and the dot it restarted on</span><span class="lon">The ring marks where play restarted, brightest at the most recent stoppage. The bar lights the line the rule names — for icing the centre line and the far goal line, for offside the blue line.</span></span><span class="st" id="stWhistle">Off</span></button>
-<button class="lrow" id="lyBlock" aria-pressed="false"><span class="lmk"><i class="k-blk"></i><i class="k-blkv"></i></span><span class="ltx"><b>Blocked shots</b><span class="lds">the attempts a body stopped before they reached the goalie</span><span class="lon">Blocked attempts keep their ring and every other mark dims, so the ones a body stopped stand out.</span></span><span class="st" id="stBlock">Off</span></button>
-</div>
-<div class="figpick sit"><span class="ll">Situations:</span>
-<div class="grp" role="group" aria-label="Which situations are counted"><button class="lyr sbtn" data-s="all" aria-pressed="true">All situations</button><button class="lyr sbtn" data-s="even" aria-pressed="false">Even strength only</button></div>
-<span class="fnote" id="nSit"></span></div>
-<button id="work" aria-expanded="false">Show me the work</button>
-<div class="work" id="workPanel" hidden></div>
-<div class="hint">Tip: click any shot ringed in amber to see <b>why</b> it counts as a slot shot — with trails set to <b>keep every mark</b>, earlier ones stay clickable too.</div>
-</details>
 <p class="endnote" id="endnote"></p>
 <p class="atnote" id="atnote"></p>
 <div class="rinkbox"><svg viewBox="0 0 200 85"><g id="rink"></g><g id="netmen"></g><g id="lines"></g><g id="whistles"></g><g id="events"></g><g id="puck"></g><g id="labels"></g><g id="noplace"></g></svg>
@@ -1113,6 +1105,21 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
   <div class="pboxes" id="pboxes"><span class="pblab">Penalty box</span><span class="pb a" id="pbA"></span><span class="pb h" id="pbH"></span><div class="caption" id="caption"></div></div>
   <div class="counters"><div class="cc a"><span class="n" id="cA">0</span><span class="lb">Away attempts<span class="mode" id="mA">ALL SITUATIONS</span></span></div><div class="cc h"><span class="lb">Home attempts<span class="mode" id="mH">ALL SITUATIONS</span></span><span class="n" id="cH">0</span></div></div>
 </div>
+<details class="zone zlayers" id="zLayers"><summary class="zh">Add a metric layer<span class="zon" id="zLayersOn"></span></summary>
+<div class="lrows">
+<button class="lrow" id="lyCorsi" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Control (Corsi) — every shot attempt</b><span class="lds">on goal, missed, or blocked: all three count, because all three are the team moving the puck at the net</span><span class="lon">The counters above the rink fill in as the replay runs, and the bar splits the attempts between the two clubs.</span></span><span class="st" id="stCorsi">Off</span></button>
+<button class="lrow" id="lyHd" aria-pressed="false"><span class="lmk"><i class="k-hd"></i></span><span class="ltx"><b>Shots from the slot</b><span class="lds">attempts from within 33 ft of the net, between the face-off dots</span><span class="lon">An amber ring marks each one. Click a ring to see the distance and angle it was measured by.</span></span><span class="st" id="stHd">Off</span></button>
+<button class="lrow" id="lyGoalie" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Goaltending — every shot faced</b><span class="lds">and what became of it: saved, scored on, or missed the net entirely</span><span class="lon">A card per goaltender builds its save percentage as the replay runs.</span></span><span class="st" id="stGoalie">Off</span></button>
+<button class="lrow" id="lyWhistle" aria-pressed="false"><span class="lmk"><i class="k-wh"></i><i class="k-rl"></i></span><span class="ltx"><b>Why play stopped</b><span class="lds">the rule that stopped play, and the dot it restarted on</span><span class="lon">The ring marks where play restarted, brightest at the most recent stoppage. The bar lights the line the rule names — for icing the centre line and the far goal line, for offside the blue line.</span></span><span class="st" id="stWhistle">Off</span></button>
+<button class="lrow" id="lyBlock" aria-pressed="false"><span class="lmk"><i class="k-blk"></i><i class="k-blkv"></i></span><span class="ltx"><b>Blocked shots</b><span class="lds">the attempts a body stopped before they reached the goalie</span><span class="lon">Blocked attempts keep their ring and every other mark dims, so the ones a body stopped stand out.</span></span><span class="st" id="stBlock">Off</span></button>
+</div>
+<div class="figpick sit"><span class="ll">Situations:</span>
+<div class="grp" role="group" aria-label="Which situations are counted"><button class="lyr sbtn" data-s="all" aria-pressed="true">All situations</button><button class="lyr sbtn" data-s="even" aria-pressed="false">Even strength only</button></div>
+<span class="fnote" id="nSit"></span></div>
+<button id="work" aria-expanded="false">Show me the work</button>
+<div class="work" id="workPanel" hidden></div>
+<div class="hint">Tip: click any shot ringed in amber to see <b>why</b> it counts as a slot shot — with trails set to <b>keep every mark</b>, earlier ones stay clickable too.</div>
+</details>
 <p class="icenote" id="iceNote"></p>
 <div class="whistlepanel" id="whistlePanel"></div>
 <div class="blockpanel" id="blockPanel"></div>

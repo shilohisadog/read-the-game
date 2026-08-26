@@ -778,17 +778,24 @@
 #rg details.zone>summary::after{content:"\25be";margin-left:auto;font-size:.9rem}
 #rg details.zone[open]>summary::after{content:"\25b4"}
 #rg details.zone[open]>summary{margin-bottom:10px}
-/* ⭐ ABOVE THE RINK, THE MENU IS A CONTROL AND NOT A CAPTION.
-   Kevin, 2026-08-26: down below "it's just so disjointed from the rink that
-   toggling a layer on and off creates a UX disconnect". Moved between the
-   scoreboard and the ice -- and moving it was not enough. The zone treatment is
-   SECTION-HEADING language: a full-width rule, then a muted uppercase label,
-   then the thing it heads. Directly above the rink card that reads as a caption
-   FOR THE ICE -- at 1100 the label sits over the rink with the caret 1600px away
-   at the other end of a rule, and nothing says it is pressable. So this one zone
-   drops the rule and takes the same white card as the board and the rinkbox: it
-   is a bar you can obviously press, sitting on the ice it acts on. */
-#rg .zlayers{margin:12px 0 8px;padding-top:0;border-top:0}
+/* ⭐ THE MENU IS A CONTROL AND NOT A CAPTION, AND IT SITS UNDER THE ICE.
+   Kevin, 2026-08-26: "it's just so disjointed from the rink that toggling a
+   layer on and off creates a UX disconnect." It went above the rink first, and
+   that was wrong for a reason CHENG named and Kevin agreed with: the page header
+   says EVENT BY EVENT FIRST, ADD METRICS AFTER, and putting five decisions
+   between that sentence and the ice makes the layout contradict it. It now sits
+   12px BELOW the rink -- adjacent to the marks it changes, and after them.
+   Measured at 390: the ice starts at y=222 either way, and the play button ends
+   at 568 rather than 510 -- 58px for the adjacency, still inside the 844 fold.
+
+   THE ZONE TREATMENT IS STILL WRONG FOR THIS ONE ZONE, wherever it sits. It is
+   SECTION-HEADING language -- a full-width rule, a muted uppercase label, then
+   the thing it heads -- so against the rink card it read as a caption FOR THE
+   ICE, with the caret 1600px away at the other end of a rule at 1100 and nothing
+   saying it was pressable. So this zone drops the rule and takes the same white
+   card as the board and the rinkbox: a bar you can obviously press, sitting on
+   the ice it acts on. */
+#rg .zlayers{margin:10px 0 0;padding-top:0;border-top:0}
 #rg details.zlayers>summary{border:1px solid var(--edge);border-radius:11px;background:#fff;padding:0 14px}
 #rg details.zlayers[open]>summary{margin-bottom:9px}
 #rg .zon{margin-left:9px;font-size:.68rem;font-weight:800;letter-spacing:.06em;color:#fff;background:var(--ink);border-radius:99px;padding:3px 9px}

@@ -184,13 +184,25 @@ test('a collapsed layer menu still says what is on, and sits above the rink', ()
 
   // ⭐ AND THE POSITION IS NOW LOAD-BEARING, so it is asserted rather than assumed.
   // Reachability rests on the menu being on the first screen; the unit suite has
-  // no layout, so what it can check is document order — above the ice, below the
-  // scoreboard. Move it back down and this test is the one that says what broke.
+  // no layout, so what it can check is document order.
+  //
+  // ⭐ IT WENT ABOVE THE RINK FIRST, AND THAT WAS WRONG. CHENG, and Kevin
+  // agreeing: this page's header says EVENT BY EVENT FIRST, ADD METRICS AFTER,
+  // and five decisions between that sentence and the ice make the layout
+  // contradict the copy. The menu now sits DIRECTLY BELOW the rink — after the
+  // game, adjacent to the marks it changes, and still above the fold: measured
+  // at 390 the ice starts at y=222 and the menu at y=464, 12px under the boards.
+  // Both halves are pinned, because each one broke on its own: below the rink it
+  // was 236px away behind the transport (the disconnect Kevin reported), and
+  // above it, it preceded the ice.
   const board = app.indexOf('class="board"');
-  const menu = app.indexOf('id="zLayers"');
   const rink = app.indexOf('class="rinkbox"');
-  assert.ok(board < menu && menu < rink,
-    `the layer menu left its place between the scoreboard and the ice (board ${board}, menu ${menu}, rink ${rink})`);
+  const menu = app.indexOf('id="zLayers"');
+  const transport = app.indexOf('class="transport"');
+  assert.ok(board < rink && rink < menu,
+    `the layer menu is not after the ice — the header says metrics come after (board ${board}, rink ${rink}, menu ${menu})`);
+  assert.ok(menu < transport,
+    `the layer menu fell below the transport, which is the 236px gap Kevin called disjointed (menu ${menu}, transport ${transport})`);
 
   // AND THE BADGE COUNTS, rather than saying "on". Two layers is a different
   // sentence from one, and singular/plural is where this kind of readout ships
