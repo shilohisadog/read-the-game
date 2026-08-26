@@ -111,24 +111,17 @@ __CSS__</style>
 <div class="area"><span class="lmk"><i class="k-slot"></i></span><span class="ltx"><b>The slot</b><span class="lds">The shaded area at each end — within 33 ft of the net, between the face-off dots.<span class="asay" id="slotSay"></span></span></span></div>
 <div class="area"><span class="lmk"><i class="k-zone"></i></span><span class="ltx"><b>Either blue line</b><span class="lds">The shaded strip at each blue line, reaching out to the neutral-zone dots. No attacker may cross it ahead of the puck — that is offside, <span class="src">NHL Rule 83</span>.<span class="lim">We count nothing here. Holding the line leaves no event in the record, so the feed is silent about the thing that makes it matter.</span></span></span></div>
 </div>
-<div class="legend"><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span><i class="k-g"></i><i class="k-gv"></i>goal — either sweater</span><span><i class="k-blk"></i><i class="k-blkv"></i>blocked — ringed where the puck was <b>stopped</b></span></div>
+<div class="legend"><span><i class="k-h"></i><span class="kn">home shot</span></span><span><i class="k-a"></i><span class="kn">visitor shot — white, like the sweaters</span></span><span><i class="k-p"></i><span class="kn">puck — jumps between real events</span></span><span><i class="k-g"></i><i class="k-gv"></i><span class="kn">goal — either sweater</span></span><span><i class="k-blk"></i><i class="k-blkv"></i><span class="kn">blocked — ringed where the puck was <b>stopped</b></span></span></div>
 </details>
 <p class="disclose lkey lk-ends" id="endsKey"></p>
 <p class="disclose lkey lk-unrec" id="unrecKey"></p>
 <div class="whybk" id="whyBk"><div class="why" id="whyContent"></div></div>
-<details class="zone zdisp"><summary class="zh">Display options</summary>
-<div class="figpick"><span class="ll">Trails:</span>
-<div class="grp" role="group" aria-label="How long marks stay on the ice"><button class="lyr tbtn" data-t="off" aria-pressed="true">Current moment</button><button class="lyr tbtn" data-t="all" aria-pressed="false">Keep every mark</button></div>
+<details class="zone zdisp"><summary class="zh">Trails<span class="zon" id="zTrailsOn"></span></summary>
+<div class="figpick"><div class="grp" role="group" aria-label="How long marks stay on the ice"><button class="lyr tbtn" data-t="off" aria-pressed="true">Current moment</button><button class="lyr tbtn" data-t="all" aria-pressed="false">Keep every mark</button></div>
 <span class="fnote" id="nTrails"></span></div>
-<div class="figpick"><span class="ll">Players:</span>
-<div class="grp" role="group" aria-label="How players are drawn"><button class="lyr fbtn" data-f="mascot" aria-pressed="true">Mascot</button><button class="lyr fbtn" data-f="tabletop" aria-pressed="false">Tabletop</button></div>
-<span class="fnote" id="nFig"></span></div>
-<div class="figpick"><span class="ll">Narration:</span>
-<div class="grp" role="group" aria-label="Whether the ice names each event"><button class="lyr nbtn" id="lbl" data-n="on" aria-pressed="true">On</button><button class="lyr nbtn" id="lblOff" data-n="off" aria-pressed="false">Off</button></div>
-<span class="fnote" id="nLbl">Names each event on the ice as it happens — and calls a goal with the scorer and assists.</span></div>
 </details>
 <details class="zone znext"><summary class="zh">Watch another game</summary>
-<div class="foot" id="gl">—</div>
+<p class="nowplay"><span class="nowlab">Now watching</span><span class="foot" id="gl">—</span></p>
 <nav class="nextup" id="nextup" aria-label="Where to go next"></nav>
 </details>
 </div></div>

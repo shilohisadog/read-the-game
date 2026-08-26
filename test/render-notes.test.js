@@ -93,6 +93,35 @@ test('every zone below the rink is a disclosure, with a 44px summary', () => {
  * sentence is the same kind of thing. They were lifted out when the reference
  * panel became collapsible, and this is what stops them drifting back in.
  */
+/**
+ * ⭐ THE GAME LINE SAYS WHICH GAME IT IS.
+ *
+ * Kevin: "under Watch another game, the current game needs to be specified as
+ * such, right now there's a disconnect between the date in that section and the
+ * replay." Under that heading a bare `CAR at VGK · 14 June 2026` reads as one of
+ * the games on OFFER, and it is the one date on the page a reader has no reason
+ * to attach to what they are watching.
+ *
+ * THE LABEL IS A SEPARATE ELEMENT, on purpose. `#gl`'s text is what the deploy
+ * gate greps out of the live page, and `shell.test.js` pins the two together —
+ * so the fix adds a sibling rather than rewording the line, and the gate keeps
+ * matching what it has always matched.
+ */
+test('the game line is labelled as the game being watched', () => {
+  const zone = /<details class="zone znext">([\s\S]*?)<\/details>/.exec(app)[1];
+  assert.match(zone, /<span class="nowlab">[^<]{6,}<\/span>/,
+    'the current game sits under "Watch another game" with nothing saying it is the current game');
+  const lab = /<span class="nowlab">([^<]*)<\/span>/.exec(zone)[1];
+  assert.match(lab, /watching/i, `the label does not say what it labels: "${lab}"`);
+
+  // AND THE LINE ITSELF IS UNTOUCHED, which is what keeps the deploy gate honest.
+  const a = boot();
+  assert.match(a.$('gl').textContent, / at /,
+    'the game line stopped naming both clubs, and the live-watch gate greps for it');
+  assert.doesNotMatch(a.$('gl').textContent, /watching/i,
+    'the label leaked into the line the gate reads');
+});
+
 test('a disclosure is never inside a collapsed zone', () => {
   for (const id of ['endsKey', 'unrecKey']) {
     const before = app.slice(0, app.indexOf(`id="${id}"`));

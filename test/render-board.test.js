@@ -9,7 +9,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { colourOf } from '../src/lib/teams.js';
 import { whistle } from '../src/lib/layers/whistle.js';
-import { rich, app, PAGE_CSS, prose, boot } from './helpers/page.js';
+import { readFileSync } from 'node:fs';
+import { rich, app, SCRIPT, PAGE_CSS, prose, boot } from './helpers/page.js';
 
 test('no bare percentage survives on the scoreboard', () => {
   // The rule the goalie card and the per-game sentence already follow, applied
@@ -116,17 +117,81 @@ test('the controls explain themselves without referring to their own history', (
   // Every note a visitor can actually be shown, in the state that shows it.
   // BOTH STATES OF EACH, because "explains itself" is now a claim about the
   // default too — and the default is the state every first-time visitor is in.
+  // `nFig` LEFT WITH ITS CONTROL on 2026-08-26 — Kevin removed the Players and
+  // Narration pickers, so the two notes this used to walk have no button to be
+  // about. What remains is every note a visitor can still be shown.
   const shown = [];
-  for (const id of ['nTrails', 'nSit', 'nFig']) shown.push(a.$(id).textContent);
+  for (const id of ['nTrails', 'nSit']) shown.push(a.$(id).textContent);
   a.GROUPS['#rg .tbtn'].find(b => b.dataset.t === 'all').click();
   a.GROUPS['#rg .sbtn'].find(b => b.dataset.s === 'even').click();
-  a.GROUPS['#rg .fbtn'].find(b => b.dataset.f === 'tabletop').click();
-  for (const id of ['nTrails', 'nSit', 'nFig']) shown.push(a.$(id).textContent);
+  for (const id of ['nTrails', 'nSit']) shown.push(a.$(id).textContent);
   for (const text of shown) {
     assert.ok(text, 'a control was switched and explained nothing');
     assert.doesNotMatch(text, /used to|older behaviour|nobody asked for|no longer/i,
       `the changelog voice reached a visitor: "${text}"`);
   }
+});
+
+/**
+ * ⭐ TWO CONTROLS LEFT, AND ONE OF THEM TOOK NOTHING WITH IT.
+ *
+ * Kevin, 2026-08-26: "for display options, I vote to remove players and
+ * narration." Both are gone from this page. What this asserts is the part that
+ * is easy to get wrong in a deletion — WHAT WAS INSIDE THE CONTAINER:
+ *
+ *   narration  `labelsOn` gated the ice's naming of every event. The pill's
+ *              goal branch used to be reachable only with it off; it survives
+ *              because `place()` returns nothing for a shootout event, which
+ *              render-transport now proves against a real shootout fixture.
+ *   players    `figTabletop` is NOT dead code — `src/goalie-eye-view.html`
+ *              offers both figures and carries its own copy of the module. What
+ *              went is the control and the cross-page `rtg.fig` preference: a
+ *              setting made on another page, applied here through a control this
+ *              page no longer has, is state nothing on screen accounts for.
+ */
+test('the figure picker and the narration pair are gone, and nothing is orphaned', () => {
+  for (const cls of ['fbtn', 'nbtn']) {
+    assert.doesNotMatch(app, new RegExp(`class="[^"]*\\b${cls}\\b`),
+      `the ${cls} control is back on the page`);
+    assert.doesNotMatch(SCRIPT, new RegExp(`querySelectorAll\\('#rg \\.${cls}'\\)`),
+      `the page still queries .${cls}, so a control was half-removed`);
+  }
+  assert.doesNotMatch(SCRIPT, /localStorage\.setItem\('rtg\.fig'/,
+    'the page still writes a figure preference no control on it can set');
+
+  // AND THE ALTERNATIVE FIGURE STILL HAS A HOME. Without this the deletion above
+  // would read as a licence to delete `figTabletop` too, which would break a
+  // page nobody was looking at.
+  const gv = readFileSync(new URL('../src/goalie-eye-view.html', import.meta.url), 'utf8');
+  assert.match(gv, /data-f="tabletop"/,
+    'the goalie view no longer offers the tabletop figure, so it really is dead code now');
+});
+
+/**
+ * ⭐ AND TRAILS IS BEHIND A DISCLOSURE, SO ITS SUMMARY CARRIES ITS SETTING.
+ *
+ * The rule the layer menu established when everything below the rink collapsed:
+ * a control you cannot see must still be able to say what it is doing, or the
+ * ice fills with marks and nothing on screen accounts for them.
+ */
+test('the trails summary says which setting is on, in the button\'s own words', () => {
+  const a = boot();
+  const label = () => a.$('zTrailsOn').textContent;
+  const btn = t => a.GROUPS['#rg .tbtn'].find(b => b.dataset.t === t);
+
+  assert.equal(label(), btn('off').textContent.toLowerCase(),
+    'the summary does not report the setting the page opened with');
+  btn('all').click();
+  assert.equal(label(), btn('all').textContent.toLowerCase(),
+    'the summary kept reporting a setting that is no longer on');
+
+  // QUOTED FROM THE BUTTON, NOT RE-DERIVED. `Keep every mark` becomes `Keep this
+  // period` under as-played, and a badge with its own spelling of the state is
+  // how a readout starts disagreeing with the control it reports.
+  const played = boot(null, null, '?ends=as-played');
+  const on = played.GROUPS['#rg .tbtn'].find(b => b.dataset.t === 'all');
+  on.click();
+  assert.equal(played.$('zTrailsOn').textContent, on.textContent.toLowerCase());
 });
 
 test('a goaltender stands in each crease, and the sides agree with the scoreboard', () => {

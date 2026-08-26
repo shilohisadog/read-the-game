@@ -55,23 +55,9 @@ function fakeDom() {
   const GROUPS = {
     '#rg .tbtn': ['off', 'all'].map(t => Object.assign(el(), { dataset: { t } })),
     '#rg .sbtn': ['all', 'even'].map(s => Object.assign(el(), { dataset: { s } })),
-    '#rg .fbtn': ['mascot', 'tabletop'].map(f => Object.assign(el(), { dataset: { f } })),
-    // NARRATION'S TWO BUTTONS CARRY IDS AS WELL AS A CLASS, and the fake hands
-    // back THE SAME OBJECTS `getElementById` does -- which is what the real
-    // document does. Minting separate ones would let `$('lbl').click()` reach a
-    // button no handler was ever attached to: a click that silently does
-    // nothing, reported as the page failing to respond.
-    // ⭐ THE FIVE LAYER ROWS, AS THE SAME OBJECTS `getElementById` HANDS BACK.
-    // `zoneState` counts the rows that are pressed rather than consulting a list
-    // of layer names, so the count follows the rows -- and it can only do that
-    // here if pressing `lyCorsi` is visible to a query for `.lrow`.
     '#rg .lrow': ['lyCorsi', 'lyHd', 'lyGoalie', 'lyWhistle', 'lyBlock'].map(id => {
       if (!byId.has(id)) byId.set(id, el());
       return byId.get(id);
-    }),
-    '#rg .nbtn': [['lbl', 'on'], ['lblOff', 'off']].map(([id, n]) => {
-      if (!byId.has(id)) byId.set(id, el());
-      return Object.assign(byId.get(id), { dataset: { n } });
     }),
     '#rg .cc.a .lb': [el()],
     '#rg .cc.h .lb': [el()],

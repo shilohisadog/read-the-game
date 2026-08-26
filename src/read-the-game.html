@@ -569,8 +569,23 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .area .asay,#rg .area .lim{display:block;margin-top:6px;padding-left:9px;border-left:2px solid var(--edge)}
 #rg .area .asay{border-left-color:var(--hd);color:var(--ink)}
 #rg .area .asay:empty{display:none}
-#rg .legend{display:flex;flex-wrap:wrap;gap:7px 18px;font-size:.78rem;color:var(--muted);margin:6px 2px}
-#rg .legend i{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:-1px}
+/* ⭐ ROWS, NOT A PARAGRAPH. Five marks set as a wrapping flex line read as a
+   block of prose that happens to contain dots -- Kevin's "additional text in
+   that area". A grid gives every mark the same left edge and its own line, so
+   the block scans as a key rather than as writing. `auto-fit` because five does
+   not divide either: the columns follow the width, and the last row grows. */
+#rg .legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+  gap:4px 18px;font-size:.78rem;color:var(--muted);margin:0 2px}
+/* ⚠️ AND THE LABEL IS ITS OWN ELEMENT, because the row is a flex container and
+   the `<b>` inside "the puck was **stopped**" was becoming a flex ITEM -- the
+   text either side of it forming two more anonymous ones, so the emphasis flew
+   to the far right of the row. Found by looking; the markup was valid, the rule
+   was valid, and every test passed. One text child, and the flexing is between
+   the swatch and the label rather than between the words. */
+#rg .legend>span{display:flex;align-items:baseline;min-height:22px}
+#rg .legend .kn{flex:1}
+#rg .legend i{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px;flex:none}
+#rg .legend i+i{margin-left:-3px}
 /* A LEGEND MAY NOT DESCRIBE A MARK THAT IS NOT ON THE ICE. "from the slot, once
    that layer is on" was conditional copy in a permanent list -- the legend
    asserting a property of the rink the rink did not have, which is the same
@@ -607,7 +622,17 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    heading. It is the identity of the game you just watched, and the first two
    destinations under `Watch another game` are that game's two clubs, so it
    belongs at the top of that zone rather than adrift above it. */
-#rg .foot{font-size:.78rem;color:var(--muted);margin:0 0 10px;text-align:left}
+/* ⭐ IT NEEDED TO SAY WHICH GAME IT IS. Kevin: "under Watch another game, the
+   current game needs to be specified as such, right now there's a disconnect
+   between the date in that section and the replay." Under that heading a bare
+   `CAR at VGK · 14 June 2026` reads as one of the games on offer, and the date
+   beside four ways OUT is the one date on the page a reader has no reason to
+   attach to what they are watching. The line is unchanged -- `#gl` still holds
+   exactly what the deploy gate greps for -- and it gained a label. */
+#rg .nowplay{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;margin:0 2px 11px}
+#rg .nowlab{font-size:.62rem;font-weight:800;letter-spacing:.11em;text-transform:uppercase;
+  color:#fff;background:var(--ink);border-radius:99px;padding:3px 9px}
+#rg .foot{font-size:.82rem;color:var(--ink);font-weight:650;margin:0;text-align:left}
 /* THE GAME SUMMARY, GIVEN A SURFACE (Kevin liked it and could not find it).
    It was a small centred paragraph in muted type, sitting between the ledger and
    the footer -- the one sentence on the page that says what the game WAS, styled
@@ -797,6 +822,10 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg details.zone[open]>summary{margin-bottom:10px}
 #rg .zon{margin-left:9px;font-size:.68rem;font-weight:800;letter-spacing:.06em;color:#fff;background:var(--ink);border-radius:99px;padding:3px 9px}
 #rg .zon:empty{display:none}
+/* The trails summary carries its setting, so a collapsed control still reports
+   what it is doing. Quieter than the layer count, because it is always there
+   and a permanent black pill would out-shout the heading it sits beside. */
+#rg .zdisp .zon{color:var(--ink);background:transparent;border:1px solid var(--edge);font-weight:700}
 /* ⭐ THE LAYER CONTROL AND ITS LEGEND KEY ARE ONE OBJECT.
    They were drawn separately: an unexplained chip in one block, and a
    mark-and-name in another that only appeared once the layer was on. So five
@@ -1047,24 +1076,17 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 <div class="area"><span class="lmk"><i class="k-slot"></i></span><span class="ltx"><b>The slot</b><span class="lds">The shaded area at each end — within 33 ft of the net, between the face-off dots.<span class="asay" id="slotSay"></span></span></span></div>
 <div class="area"><span class="lmk"><i class="k-zone"></i></span><span class="ltx"><b>Either blue line</b><span class="lds">The shaded strip at each blue line, reaching out to the neutral-zone dots. No attacker may cross it ahead of the puck — that is offside, <span class="src">NHL Rule 83</span>.<span class="lim">We count nothing here. Holding the line leaves no event in the record, so the feed is silent about the thing that makes it matter.</span></span></span></div>
 </div>
-<div class="legend"><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span><i class="k-g"></i><i class="k-gv"></i>goal — either sweater</span><span><i class="k-blk"></i><i class="k-blkv"></i>blocked — ringed where the puck was <b>stopped</b></span></div>
+<div class="legend"><span><i class="k-h"></i><span class="kn">home shot</span></span><span><i class="k-a"></i><span class="kn">visitor shot — white, like the sweaters</span></span><span><i class="k-p"></i><span class="kn">puck — jumps between real events</span></span><span><i class="k-g"></i><i class="k-gv"></i><span class="kn">goal — either sweater</span></span><span><i class="k-blk"></i><i class="k-blkv"></i><span class="kn">blocked — ringed where the puck was <b>stopped</b></span></span></div>
 </details>
 <p class="disclose lkey lk-ends" id="endsKey"></p>
 <p class="disclose lkey lk-unrec" id="unrecKey"></p>
 <div class="whybk" id="whyBk"><div class="why" id="whyContent"></div></div>
-<details class="zone zdisp"><summary class="zh">Display options</summary>
-<div class="figpick"><span class="ll">Trails:</span>
-<div class="grp" role="group" aria-label="How long marks stay on the ice"><button class="lyr tbtn" data-t="off" aria-pressed="true">Current moment</button><button class="lyr tbtn" data-t="all" aria-pressed="false">Keep every mark</button></div>
+<details class="zone zdisp"><summary class="zh">Trails<span class="zon" id="zTrailsOn"></span></summary>
+<div class="figpick"><div class="grp" role="group" aria-label="How long marks stay on the ice"><button class="lyr tbtn" data-t="off" aria-pressed="true">Current moment</button><button class="lyr tbtn" data-t="all" aria-pressed="false">Keep every mark</button></div>
 <span class="fnote" id="nTrails"></span></div>
-<div class="figpick"><span class="ll">Players:</span>
-<div class="grp" role="group" aria-label="How players are drawn"><button class="lyr fbtn" data-f="mascot" aria-pressed="true">Mascot</button><button class="lyr fbtn" data-f="tabletop" aria-pressed="false">Tabletop</button></div>
-<span class="fnote" id="nFig"></span></div>
-<div class="figpick"><span class="ll">Narration:</span>
-<div class="grp" role="group" aria-label="Whether the ice names each event"><button class="lyr nbtn" id="lbl" data-n="on" aria-pressed="true">On</button><button class="lyr nbtn" id="lblOff" data-n="off" aria-pressed="false">Off</button></div>
-<span class="fnote" id="nLbl">Names each event on the ice as it happens — and calls a goal with the scorer and assists.</span></div>
 </details>
 <details class="zone znext"><summary class="zh">Watch another game</summary>
-<div class="foot" id="gl">—</div>
+<p class="nowplay"><span class="nowlab">Now watching</span><span class="foot" id="gl">—</span></p>
 <nav class="nextup" id="nextup" aria-label="Where to go next"></nav>
 </details>
 </div></div>
@@ -3908,7 +3930,13 @@ const AWAYCOL=colourOf(AAB), HOMECOL=colourOf(HAB);
  el.style.setProperty('--away-text',readableInk(AWAYCOL));
  el.style.setProperty('--home-text',readableInk(HOMECOL));})();
 let T=0, REDUCED=matchMedia('(prefers-reduced-motion:reduce)').matches;
-let figStyle=(()=>{try{return localStorage.getItem('rtg.fig')||'mascot'}catch(e){return 'mascot'}})();
+/* ONE FIGURE, AND `figTabletop` IS NOT DEAD CODE. The picker is gone from this
+   page; `src/goalie-eye-view.html` still offers both and carries its own copy of
+   the module, so the alternative figure has a live caller and a live test. What
+   went is the CONTROL and the cross-page `rtg.fig` preference it wrote -- a
+   setting made on another page, applied here through a control this page no
+   longer has, is a state nothing on screen accounts for. */
+const figStyle='mascot';
 /* WHETHER THIS IS A FIRST VISIT — a fact the page has never had, and the reason
    230 words of teaching copy were either permanent furniture or absent.
    Kevin: "what they don't know, they have no idea what it means... they need to
@@ -3930,7 +3958,6 @@ const NEWCOMER=(()=>{try{
   if(day!==today){visits++;localStorage.setItem('rtg.seen',today+'|'+visits);}
   return visits<=NEWCOMER_DAYS;
  }catch(e){return true;}})();
-if(!FIG[figStyle])figStyle='mascot';
 let finalA=0,finalH=0; for(const e of EV){if(e.type==='goal')(e.own===HID?finalH++:finalA++);}
 function attemptTeam(e){return corsiTeam(e,R);}  // renamed: `corsi` is the layer object
 function tk(e){const c=attemptTeam(e);return c===AID?'a':c===HID?'h':'x';}
@@ -4505,7 +4532,6 @@ function render(i,how){
    :ASPLAYED
    ?'Every attempt in this period stays on the ice. It clears when the teams change ends, because after that they are shooting the other way.'
    :'Every attempt stays on the ice, which builds into a shot chart by the third period — good to study, busy to watch.';
- $('nFig').textContent='Same shots, same outcomes, same math — only the drawing changes.';
  document.getElementById('rg').classList.toggle('ended',i>=EV.length-1);
  /* THE PRE-GAME FRAME IS THE ONLY ONE THAT NEEDS AN INSTRUCTION, and `i<0` is the
     whole test -- `play()` leaves the resting frame at once from either end, so a
@@ -4592,7 +4618,7 @@ function render(i,how){
       the pill is the goal's only announcement. Asking the same two questions
       here is what keeps "the ice already says it" true rather than assumed. */
    if(cur&&cur.type==='goal'){flashNet(cur.own);
-     if(!(labelsOn&&place(cur)))caption(cur,'goal');}
+     if(!place(cur))caption(cur,'goal');}
    // THE PENALTY IS CALLED, and it is the only event here that changes the
    // CONDITIONS of the game rather than the count. It is why `Even strength
    // only` exists as a control at all, and until now the ice marked it exactly
@@ -5073,7 +5099,16 @@ $('whyBk').addEventListener('click',e=>{if(e.target.id==='whyBk')hideWhy();});
    broke "start with the game at the top" and "Press Play below", and this time
    a test holds the two ends together rather than a comment. */
 const LAB={faceoff:'Won the faceoff',hit:'Hit',giveaway:'Giveaway',takeaway:'Takeaway','missed-shot':'Missed shot','shot-on-goal':'Shot on goal',penalty:'Penalty'};
-let labelsOn=true;
+/* NARRATION IS NO LONGER A CONTROL (Kevin, 2026-08-26: "for display options, I
+   vote to remove players and narration"). The ice names every event, always.
+
+   THE PILL'S GOAL BRANCH SURVIVES, WHICH IS WHY THIS IS A DELETION AND NOT AN
+   ORPHANING. Turning labels off used to be the one state where the caption
+   announced a goal, and enumerating that before the removal was the point: the
+   guard is `!place(cur)`, and `place()` returns nothing for a SHOOTOUT event.
+   So the branch is still reachable on the ~6% of games decided in a shootout,
+   and the test that covers it now boots a shootout fixture rather than pressing
+   a control that no longer exists. */
 /**
  * WHAT THE ICE SAYS WHEN IT IS SHOWING NOTHING.
  *
@@ -5146,7 +5181,7 @@ function sinceLine(ev){
   return `· P${ev.per} ${ESC(ev.rem)}${d}`;
 }
 
-function drawLabel(e){const g=$('labels');const p=place(e);if(!labelsOn||!p){g.innerHTML='';return;}
+function drawLabel(e){const g=$('labels');const p=place(e);if(!p){g.innerHTML='';return;}
  const lx=p.x,ly=p.y;
  if(e.type==='goal'){const tid=e.own,col=tid===AID?AWAYCOL:HOMECOL,ab=tid===AID?AAB:HAB,p=R[e.actor];
    const as=[R[e.a1],R[e.a2]].filter(Boolean).map(x=>x.nm).join(', ');
@@ -5229,18 +5264,6 @@ function drawLabel(e){const g=$('labels');const p=place(e);if(!labelsOn||!p){g.i
  // of shot events and not in a table of page labels.
  const info=e.type==='missed-shot'?missSay(e):LAB[e.type];
  g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${lab?lab+" · ":""}${ESC(info)}${ESC(why)}${hd}</text></g>`;}
-// NARRATION IS A DISPLAY PREFERENCE, NOT A TRANSPORT CONTROL. It changes what
-// the ice SAYS, never where the playhead is, so it sits with Trails and Players
-// and is drawn the way they are -- a named pair, one of which is pressed. It was
-// a lone toggle in the transport called `💬 Explain plays`, which is the fifth
-// kind of control wearing the same chip as the other four (below-the-rink-2 §3).
-// Kevin: "is that even an option to toggle off?" It stays an option and stops
-// being a primary one: with `Keep every mark` the ice fills with marks and the
-// labels sit over them, which is the one real reason to want them gone.
-function syncLbl(){document.querySelectorAll('#rg .nbtn').forEach(b=>b.setAttribute('aria-pressed',(b.dataset.n==='on')===labelsOn));}
-document.querySelectorAll('#rg .nbtn').forEach(b=>b.addEventListener('click',()=>{
- labelsOn=(b.dataset.n==='on');syncLbl();drawLabel(EV[i]);}));
-syncLbl();
 
 // THE WHISTLE LAYER, DRAWN. What from the stoppage, where from the faceoff that
 // restarts play -- and the sentence is the point, so it lives in a panel that
@@ -5647,14 +5670,20 @@ function syncStrength(){
 function setStrength(v){evenOnly=(v==='even');syncStrength();render(i,'');}
 document.querySelectorAll('#rg .sbtn').forEach(b=>b.addEventListener('click',()=>setStrength(b.dataset.s)));
 syncStrength();
-function syncTrails(){document.querySelectorAll('#rg .tbtn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===trails));}
+/* ⭐ TRAILS IS BEHIND A DISCLOSURE TOO, SO ITS SUMMARY CARRIES ITS SETTING.
+   The same rule the layer menu follows: a control you cannot see must still be
+   able to say what it is doing, or the ice fills with marks and nothing on
+   screen accounts for them. The badge quotes the PRESSED BUTTON'S OWN LABEL
+   rather than re-deriving one from `trails` -- the label is written by
+   `trailsLabel` and changes with the ends mode, and two spellings of one state
+   is how a readout starts disagreeing with the thing it reports. */
+function syncTrails(){let lab='';
+ document.querySelectorAll('#rg .tbtn').forEach(b=>{const on=b.dataset.t===trails;
+  b.setAttribute('aria-pressed',on);if(on)lab=b.textContent;});
+ const z=$('zTrailsOn');if(z)z.textContent=lab.toLowerCase();}
 document.querySelectorAll('#rg .tbtn').forEach(b=>b.addEventListener('click',()=>{
  trails=b.dataset.t;syncTrails();render(i,'');}));
 syncTrails();
-function syncFig(){document.querySelectorAll('#rg .fbtn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.f===figStyle));}
-document.querySelectorAll('#rg .fbtn').forEach(b=>b.addEventListener('click',()=>{
- figStyle=b.dataset.f;try{localStorage.setItem('rtg.fig',figStyle)}catch(e){}syncFig();render(i,'');}));
-syncFig();
 $('lyHd').addEventListener('click',()=>{hdOn=!hdOn;setHd();});
 function goalieStats(k){return goaltending.reduce(upto(k),CTX).g;}
 function setGoalie(){document.getElementById('rg').classList.toggle('goalie',goalieOn);$('lyGoalie').setAttribute('aria-pressed',goalieOn);lyrState('stGoalie',goalieOn);render(i,'');}

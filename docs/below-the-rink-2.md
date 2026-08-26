@@ -883,3 +883,76 @@ agrees exactly with a count derived by a different path.
 
 ⚠️ **The rest of that census is equally unverified** — 56.8% of attempts from the
 slot, 8.2%/3.3% at the blue line. None of it is published. Do not quote it.
+
+---
+
+## 14. Round five — two controls out, and the marks stop being a paragraph
+
+Kevin, 2026-08-26: *"For display options, I vote to remove players and narration
+(and then do something different with Trails, since it'll be the only item in
+that section). Under Watch another game, the current game needs to be specified
+as such… We still have the additional text in that area we need to do something
+with."*
+
+### 14.1 The removals, and what was inside the containers
+
+**Narration.** `labelsOn` gated the ice naming every event. It is gone; the ice
+always names. ⭐ **The caption pill's goal branch survives, which is why this was
+a deletion and not an orphaning.** Turning labels off used to be the only state
+where the pill announced a goal — and the guard is `!place(cur)`, where `place()`
+returns nothing for a **shootout** event. So the branch is still reached on the
+~6% of games decided in one, and the test that covers it now boots the shootout
+fixture instead of pressing a control that no longer exists. **Enumerating that
+before the removal is what made the removal safe** — it was written down two
+rounds ago as the reason not to delete casually.
+
+**Players.** ⭐ **`figTabletop` is not dead code.** `src/goalie-eye-view.html`
+offers both figures and carries its own copy of the module, so the alternative
+has a live caller and a live test — asserted, so a future reader cannot take this
+removal as licence to delete it. What went is the control and the cross-page
+`rtg.fig` preference: **a setting made on another page, applied here through a
+control this page no longer has, is state nothing on screen accounts for.**
+
+### 14.2 Trails is alone, so the zone is named for it
+
+Not *Display options* with one item in it. The summary is **TRAILS** and it
+carries its setting as a badge — the rule the layer menu established when
+everything collapsed: *a control you cannot see must still be able to say what it
+is doing.* ⭐ **The badge quotes the pressed button's own label** rather than
+re-deriving one from `trails`: the label is `Keep every mark` in one-direction
+and `Keep this period` under as-played, and two spellings of one state is how a
+readout starts disagreeing with the control it reports.
+
+### 14.3 The marks stop being a paragraph
+
+Five marks set as a wrapping flex line read as prose that happens to contain
+dots. A grid gives every mark the same left edge and its own row, so the block
+scans as a key. `auto-fit`, because five does not divide here either.
+
+⚠️ **And it shipped a rendering bug that only looking found.** The row is a flex
+container, so the `<b>` in *"where the puck was **stopped**"* became a flex
+**item** — with the text either side forming two more anonymous ones — and the
+emphasis flew to the far right of the row. Markup valid, rule valid, 723 tests
+green. The label is its own element now, so the flexing is between the swatch and
+the label rather than between the words. **Third defect in this redesign found by
+rendering it, and all three are CSS that is individually correct and situationally
+wrong.**
+
+### 14.4 The game line says which game
+
+Under *Watch another game*, a bare `CAR at VGK · 14 June 2026` reads as one of
+the games on offer — and it is the one date on the page a reader has no reason to
+attach to what they are watching. It gained a **NOW WATCHING** label.
+
+⭐ **The label is a sibling, not a rewording.** `#gl`'s text is what the deploy
+gate greps out of the live page and `shell.test.js` pins the two together, so the
+line itself is untouched and the gate keeps matching what it always matched. A
+test asserts the label did not leak into it.
+
+### 14.5 Measured
+
+    below the rink, 390     981px   (baseline 1418 at 19b7b5b)
+    below the rink, 900     760px
+    below the rink, 320    1040px   no side-scroll
+    controls below the rink   17    from 21 — the two pickers took four buttons
+    under 44px                 0 of 17

@@ -425,36 +425,19 @@ test('the step pair and the speed gears are each one non-wrapping group', () => 
 });
 
 /**
- * ⭐ NARRATION LEFT THE TRANSPORT, AND ITS NOTE IS READABLE BEFORE THE PRESS.
+ * ⭐ NARRATION IS GONE, AND SO IS ITS CONTROL — 2026-08-26.
  *
- * Kevin: "it's not really 'Explain plays', it's more like 'Narration'… and
- * really, is that even an option to toggle off?" It stays an option and stops
- * being a primary one — it changes what the ice SAYS, never where the playhead
- * is, which is the definition of a display preference and puts it with Trails
- * and Players.
+ * It arrived in the transport as `💬 Explain plays`, moved to the display zone
+ * as a named pair when Kevin asked what it even was, and then left entirely:
+ * "for display options, I vote to remove players and narration." The ice names
+ * every event now, always.
  *
- * The second half is the rule docs/below-the-rink-2.md §4.2 named: a note about
- * the ICE fires when the ice shows it, a note about a CONTROL is available
- * before it is pressed. `nTrails` and `nFig` are both EMPTY in the default state
- * — you learn what `Tabletop` does only after choosing `Tabletop` — and this is
- * the first control built the other way round. Asserted in the MARKUP, because
- * a note the renderer fills in on a state change is exactly the defect.
+ * WHAT ITS TEST GUARDED IS STILL GUARDED. The §4.2 rule — a note about a
+ * control is available before it is pressed — is asserted on the layer rows
+ * (render-notes) and on `nTrails`/`nSit` (render-board). This block is deleted
+ * rather than kept limping, because a test whose subject no longer exists is
+ * the thing `docs/status.md` §H calls a check that cannot fail.
  */
-test('narration is a display pick, and it explains itself before it is used', () => {
-  const transport = app.match(/<div class="transport">[\s\S]*?<\/div>\s*<p class="verdict"/)[0];
-  assert.ok(!transport.includes('id="lbl"'),
-    'narration is back in the transport, beside controls that move the playhead');
-
-  const pick = app.match(/<div class="figpick"><span class="ll">Narration:[\s\S]*?<\/span><\/div>/)[0];
-  assert.match(pick, /id="lbl"[^>]*data-n="on"[^>]*aria-pressed="true"/, 'narration does not start on');
-  assert.match(pick, /id="lblOff"[^>]*data-n="off"/, 'there is no way to turn it off');
-
-  const note = pick.match(/<span class="fnote" id="nLbl">([^<]*)<\/span>/);
-  assert.ok(note && note[1].trim().length > 20,
-    'the note is empty in the default state — the control explains itself only ' +
-    'after you have already pressed it, which is the §4.2 defect it was built to avoid');
-});
-
 /**
  * ⭐ THE COUNTABLE "PLAY" IS GONE AND THE MASS NOUN STAYED.
  *
@@ -561,8 +544,15 @@ test('speed is a stepper: two buttons, three paces, all of them reachable', () =
  *
  * BOTH BRANCHES, because "no goal pill" is satisfied by deleting the pill
  * outright — which would silently take the penalty taker and the only place the
- * site names the slot with it. And the ice is behind a CONTROL: switch
- * Narration off and the pill is the goal's only announcement.
+ * site names the slot with it.
+ *
+ * ⭐ AND THE SECOND BRANCH IS NOW REACHED BY A SHOOTOUT, NOT BY A CONTROL. It
+ * used to be reached by switching Narration off, and that control was removed on
+ * 2026-08-26. The branch did not go with it: `drawLabel` draws nothing without a
+ * `place()`, and `place()` returns nothing for a SHOOTOUT event — so on the ~6%
+ * of games decided in one, the ice is silent and the pill is the goal's only
+ * announcement. Enumerating that BEFORE the removal is what made the removal
+ * safe; a fixture that really goes to a shootout is what keeps it honest.
  */
 test('a goal is not captioned twice, and IS captioned when the ice is silent', () => {
   const goalCaps = a => callsWhileStepping(a, h => (/🚨 GOAL/.test(h) ? 'goal' : 'other'))
@@ -579,17 +569,19 @@ test('a goal is not captioned twice, and IS captioned when the ice is silent', (
   assert.ok(goals > 0, 'the fixture has no goal, so neither half proves anything');
   assert.equal(goalCaps(boot()), goals, 'a goal stopped getting a moment at all');
 
-  // AND WITH THE ICE SWITCHED OFF the pill has to come back, or turning labels
-  // off silently removes the announcement instead of moving it. `Narration: Off`
-  // is the control that used to be `💬 Explain plays` in the transport; it is a
-  // named pair now, so the test presses the button that means off rather than
-  // toggling whatever `#lbl` currently holds.
-  const off = boot();
-  off.GROUPS['#rg .nbtn'].find(b => b.dataset.n === 'off').click();
-  const pills = callsWhileStepping(off, (h, d) =>
+  // AND WHERE THE ICE IS SILENT the pill has to come back, or a goal the rink
+  // cannot draw goes unannounced. A shootout winner is exactly that goal.
+  const so = JSON.parse(readFileSync(
+    new URL('fixtures/extracts/2023020207.json', import.meta.url), 'utf8'));
+  const soGoals = so.events.filter(e => e.type === 'goal' && e.pt === 'SO');
+  assert.ok(soGoals.length > 0,
+    'this fixture never reaches a shootout, so the silent-ice branch is untested');
+
+  const shoot = boot(so);
+  const pills = callsWhileStepping(shoot, (h, d) =>
     /🚨 GOAL/.test(d.$('caption').innerHTML) ? 'pill' : 'other').filter(x => x === 'pill');
-  assert.equal(pills.length, goals,
-    'with narration off the goal has no announcement anywhere');
+  assert.equal(pills.length, soGoals.length,
+    'a shootout goal draws nothing on the ice AND says nothing in the pill');
 });
 
 /**

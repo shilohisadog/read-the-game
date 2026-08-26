@@ -104,7 +104,13 @@ const AWAYCOL=colourOf(AAB), HOMECOL=colourOf(HAB);
  el.style.setProperty('--away-text',readableInk(AWAYCOL));
  el.style.setProperty('--home-text',readableInk(HOMECOL));})();
 let T=0, REDUCED=matchMedia('(prefers-reduced-motion:reduce)').matches;
-let figStyle=(()=>{try{return localStorage.getItem('rtg.fig')||'mascot'}catch(e){return 'mascot'}})();
+/* ONE FIGURE, AND `figTabletop` IS NOT DEAD CODE. The picker is gone from this
+   page; `src/goalie-eye-view.html` still offers both and carries its own copy of
+   the module, so the alternative figure has a live caller and a live test. What
+   went is the CONTROL and the cross-page `rtg.fig` preference it wrote -- a
+   setting made on another page, applied here through a control this page no
+   longer has, is a state nothing on screen accounts for. */
+const figStyle='mascot';
 /* WHETHER THIS IS A FIRST VISIT — a fact the page has never had, and the reason
    230 words of teaching copy were either permanent furniture or absent.
    Kevin: "what they don't know, they have no idea what it means... they need to
@@ -126,7 +132,6 @@ const NEWCOMER=(()=>{try{
   if(day!==today){visits++;localStorage.setItem('rtg.seen',today+'|'+visits);}
   return visits<=NEWCOMER_DAYS;
  }catch(e){return true;}})();
-if(!FIG[figStyle])figStyle='mascot';
 let finalA=0,finalH=0; for(const e of EV){if(e.type==='goal')(e.own===HID?finalH++:finalA++);}
 function attemptTeam(e){return corsiTeam(e,R);}  // renamed: `corsi` is the layer object
 function tk(e){const c=attemptTeam(e);return c===AID?'a':c===HID?'h':'x';}
@@ -701,7 +706,6 @@ function render(i,how){
    :ASPLAYED
    ?'Every attempt in this period stays on the ice. It clears when the teams change ends, because after that they are shooting the other way.'
    :'Every attempt stays on the ice, which builds into a shot chart by the third period — good to study, busy to watch.';
- $('nFig').textContent='Same shots, same outcomes, same math — only the drawing changes.';
  document.getElementById('rg').classList.toggle('ended',i>=EV.length-1);
  /* THE PRE-GAME FRAME IS THE ONLY ONE THAT NEEDS AN INSTRUCTION, and `i<0` is the
     whole test -- `play()` leaves the resting frame at once from either end, so a
@@ -788,7 +792,7 @@ function render(i,how){
       the pill is the goal's only announcement. Asking the same two questions
       here is what keeps "the ice already says it" true rather than assumed. */
    if(cur&&cur.type==='goal'){flashNet(cur.own);
-     if(!(labelsOn&&place(cur)))caption(cur,'goal');}
+     if(!place(cur))caption(cur,'goal');}
    // THE PENALTY IS CALLED, and it is the only event here that changes the
    // CONDITIONS of the game rather than the count. It is why `Even strength
    // only` exists as a control at all, and until now the ice marked it exactly
@@ -1269,7 +1273,16 @@ $('whyBk').addEventListener('click',e=>{if(e.target.id==='whyBk')hideWhy();});
    broke "start with the game at the top" and "Press Play below", and this time
    a test holds the two ends together rather than a comment. */
 const LAB={faceoff:'Won the faceoff',hit:'Hit',giveaway:'Giveaway',takeaway:'Takeaway','missed-shot':'Missed shot','shot-on-goal':'Shot on goal',penalty:'Penalty'};
-let labelsOn=true;
+/* NARRATION IS NO LONGER A CONTROL (Kevin, 2026-08-26: "for display options, I
+   vote to remove players and narration"). The ice names every event, always.
+
+   THE PILL'S GOAL BRANCH SURVIVES, WHICH IS WHY THIS IS A DELETION AND NOT AN
+   ORPHANING. Turning labels off used to be the one state where the caption
+   announced a goal, and enumerating that before the removal was the point: the
+   guard is `!place(cur)`, and `place()` returns nothing for a SHOOTOUT event.
+   So the branch is still reachable on the ~6% of games decided in a shootout,
+   and the test that covers it now boots a shootout fixture rather than pressing
+   a control that no longer exists. */
 /**
  * WHAT THE ICE SAYS WHEN IT IS SHOWING NOTHING.
  *
@@ -1342,7 +1355,7 @@ function sinceLine(ev){
   return `· P${ev.per} ${ESC(ev.rem)}${d}`;
 }
 
-function drawLabel(e){const g=$('labels');const p=place(e);if(!labelsOn||!p){g.innerHTML='';return;}
+function drawLabel(e){const g=$('labels');const p=place(e);if(!p){g.innerHTML='';return;}
  const lx=p.x,ly=p.y;
  if(e.type==='goal'){const tid=e.own,col=tid===AID?AWAYCOL:HOMECOL,ab=tid===AID?AAB:HAB,p=R[e.actor];
    const as=[R[e.a1],R[e.a2]].filter(Boolean).map(x=>x.nm).join(', ');
@@ -1425,18 +1438,6 @@ function drawLabel(e){const g=$('labels');const p=place(e);if(!labelsOn||!p){g.i
  // of shot events and not in a table of page labels.
  const info=e.type==='missed-shot'?missSay(e):LAB[e.type];
  g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${lab?lab+" · ":""}${ESC(info)}${ESC(why)}${hd}</text></g>`;}
-// NARRATION IS A DISPLAY PREFERENCE, NOT A TRANSPORT CONTROL. It changes what
-// the ice SAYS, never where the playhead is, so it sits with Trails and Players
-// and is drawn the way they are -- a named pair, one of which is pressed. It was
-// a lone toggle in the transport called `💬 Explain plays`, which is the fifth
-// kind of control wearing the same chip as the other four (below-the-rink-2 §3).
-// Kevin: "is that even an option to toggle off?" It stays an option and stops
-// being a primary one: with `Keep every mark` the ice fills with marks and the
-// labels sit over them, which is the one real reason to want them gone.
-function syncLbl(){document.querySelectorAll('#rg .nbtn').forEach(b=>b.setAttribute('aria-pressed',(b.dataset.n==='on')===labelsOn));}
-document.querySelectorAll('#rg .nbtn').forEach(b=>b.addEventListener('click',()=>{
- labelsOn=(b.dataset.n==='on');syncLbl();drawLabel(EV[i]);}));
-syncLbl();
 
 // THE WHISTLE LAYER, DRAWN. What from the stoppage, where from the faceoff that
 // restarts play -- and the sentence is the point, so it lives in a panel that
@@ -1843,14 +1844,20 @@ function syncStrength(){
 function setStrength(v){evenOnly=(v==='even');syncStrength();render(i,'');}
 document.querySelectorAll('#rg .sbtn').forEach(b=>b.addEventListener('click',()=>setStrength(b.dataset.s)));
 syncStrength();
-function syncTrails(){document.querySelectorAll('#rg .tbtn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===trails));}
+/* ⭐ TRAILS IS BEHIND A DISCLOSURE TOO, SO ITS SUMMARY CARRIES ITS SETTING.
+   The same rule the layer menu follows: a control you cannot see must still be
+   able to say what it is doing, or the ice fills with marks and nothing on
+   screen accounts for them. The badge quotes the PRESSED BUTTON'S OWN LABEL
+   rather than re-deriving one from `trails` -- the label is written by
+   `trailsLabel` and changes with the ends mode, and two spellings of one state
+   is how a readout starts disagreeing with the thing it reports. */
+function syncTrails(){let lab='';
+ document.querySelectorAll('#rg .tbtn').forEach(b=>{const on=b.dataset.t===trails;
+  b.setAttribute('aria-pressed',on);if(on)lab=b.textContent;});
+ const z=$('zTrailsOn');if(z)z.textContent=lab.toLowerCase();}
 document.querySelectorAll('#rg .tbtn').forEach(b=>b.addEventListener('click',()=>{
  trails=b.dataset.t;syncTrails();render(i,'');}));
 syncTrails();
-function syncFig(){document.querySelectorAll('#rg .fbtn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.f===figStyle));}
-document.querySelectorAll('#rg .fbtn').forEach(b=>b.addEventListener('click',()=>{
- figStyle=b.dataset.f;try{localStorage.setItem('rtg.fig',figStyle)}catch(e){}syncFig();render(i,'');}));
-syncFig();
 $('lyHd').addEventListener('click',()=>{hdOn=!hdOn;setHd();});
 function goalieStats(k){return goaltending.reduce(upto(k),CTX).g;}
 function setGoalie(){document.getElementById('rg').classList.toggle('goalie',goalieOn);$('lyGoalie').setAttribute('aria-pressed',goalieOn);lyrState('stGoalie',goalieOn);render(i,'');}

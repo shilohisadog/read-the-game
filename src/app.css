@@ -527,8 +527,23 @@
 #rg .area .asay,#rg .area .lim{display:block;margin-top:6px;padding-left:9px;border-left:2px solid var(--edge)}
 #rg .area .asay{border-left-color:var(--hd);color:var(--ink)}
 #rg .area .asay:empty{display:none}
-#rg .legend{display:flex;flex-wrap:wrap;gap:7px 18px;font-size:.78rem;color:var(--muted);margin:6px 2px}
-#rg .legend i{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:-1px}
+/* ⭐ ROWS, NOT A PARAGRAPH. Five marks set as a wrapping flex line read as a
+   block of prose that happens to contain dots -- Kevin's "additional text in
+   that area". A grid gives every mark the same left edge and its own line, so
+   the block scans as a key rather than as writing. `auto-fit` because five does
+   not divide either: the columns follow the width, and the last row grows. */
+#rg .legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+  gap:4px 18px;font-size:.78rem;color:var(--muted);margin:0 2px}
+/* ⚠️ AND THE LABEL IS ITS OWN ELEMENT, because the row is a flex container and
+   the `<b>` inside "the puck was **stopped**" was becoming a flex ITEM -- the
+   text either side of it forming two more anonymous ones, so the emphasis flew
+   to the far right of the row. Found by looking; the markup was valid, the rule
+   was valid, and every test passed. One text child, and the flexing is between
+   the swatch and the label rather than between the words. */
+#rg .legend>span{display:flex;align-items:baseline;min-height:22px}
+#rg .legend .kn{flex:1}
+#rg .legend i{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px;flex:none}
+#rg .legend i+i{margin-left:-3px}
 /* A LEGEND MAY NOT DESCRIBE A MARK THAT IS NOT ON THE ICE. "from the slot, once
    that layer is on" was conditional copy in a permanent list -- the legend
    asserting a property of the rink the rink did not have, which is the same
@@ -565,7 +580,17 @@
    heading. It is the identity of the game you just watched, and the first two
    destinations under `Watch another game` are that game's two clubs, so it
    belongs at the top of that zone rather than adrift above it. */
-#rg .foot{font-size:.78rem;color:var(--muted);margin:0 0 10px;text-align:left}
+/* ⭐ IT NEEDED TO SAY WHICH GAME IT IS. Kevin: "under Watch another game, the
+   current game needs to be specified as such, right now there's a disconnect
+   between the date in that section and the replay." Under that heading a bare
+   `CAR at VGK · 14 June 2026` reads as one of the games on offer, and the date
+   beside four ways OUT is the one date on the page a reader has no reason to
+   attach to what they are watching. The line is unchanged -- `#gl` still holds
+   exactly what the deploy gate greps for -- and it gained a label. */
+#rg .nowplay{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;margin:0 2px 11px}
+#rg .nowlab{font-size:.62rem;font-weight:800;letter-spacing:.11em;text-transform:uppercase;
+  color:#fff;background:var(--ink);border-radius:99px;padding:3px 9px}
+#rg .foot{font-size:.82rem;color:var(--ink);font-weight:650;margin:0;text-align:left}
 /* THE GAME SUMMARY, GIVEN A SURFACE (Kevin liked it and could not find it).
    It was a small centred paragraph in muted type, sitting between the ledger and
    the footer -- the one sentence on the page that says what the game WAS, styled
@@ -755,6 +780,10 @@
 #rg details.zone[open]>summary{margin-bottom:10px}
 #rg .zon{margin-left:9px;font-size:.68rem;font-weight:800;letter-spacing:.06em;color:#fff;background:var(--ink);border-radius:99px;padding:3px 9px}
 #rg .zon:empty{display:none}
+/* The trails summary carries its setting, so a collapsed control still reports
+   what it is doing. Quieter than the layer count, because it is always there
+   and a permanent black pill would out-shout the heading it sits beside. */
+#rg .zdisp .zon{color:var(--ink);background:transparent;border:1px solid var(--edge);font-weight:700}
 /* ⭐ THE LAYER CONTROL AND ITS LEGEND KEY ARE ONE OBJECT.
    They were drawn separately: an unexplained chip in one block, and a
    mark-and-name in another that only appeared once the layer was on. So five

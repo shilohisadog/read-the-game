@@ -277,7 +277,9 @@ test('the block-point fact survives the line that used to carry it', () => {
  */
 test('the blocked key carries both sweaters, because the ice draws both', () => {
   const legend = /<div class="legend">([\s\S]*?)<\/div>/.exec(app)[1];
-  const entry = /<span>((?:<i class="k-[a-z]*"><\/i>)+)blocked —/.exec(legend);
+  // The label sits in its own `.kn` since 2026-08-26 — the `<b>` inside it was
+  // becoming a flex item and flying to the end of the row.
+  const entry = /<span>((?:<i class="k-[a-z]*"><\/i>)+)<span class="kn">blocked —/.exec(legend);
   assert.ok(entry, 'the blocked key is not in the legend');
   assert.equal((entry[1].match(/<i /g) || []).length, 2,
     'the blocked key shows ONE sweater for a mark that appears in both');
