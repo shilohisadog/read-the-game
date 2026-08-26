@@ -235,6 +235,21 @@ test('the state each layer row reports is REALLY the state of the layer', () => 
 
   a.$('lyHd').click();
   assert.equal(a.$('rg').classList.contains('slot'), false, 'the key would stay after its marks left');
+
+  // ⭐ AND THE STATE IS DRAWN AS A SWITCH, WITHOUT THE WORD LEAVING THE PAGE.
+  // Kevin: "I was thinking of the Metrics layers buttons as just toggles."  The
+  // pill became a track with a ::after knob — so the text `lyrState` writes is
+  // clipped, not deleted, and the assertions above still describe what a screen
+  // reader hears. A visual-only state is this control shipping broken for the
+  // reader who cannot see the knob move, which is why both halves are pinned.
+  assert.match(PAGE_CSS, /#rg \.lrow \.st\{[^}]*text-indent:-9999px/,
+    'the state text is not clipped, so the switch has the word OFF printed across it');
+  assert.match(PAGE_CSS, /#rg \.lrow \.st::after\{content:""/,
+    'the switch has no knob — the track is a bare grey pill with no state in it');
+  assert.match(PAGE_CSS, /#rg \.lrow\[aria-pressed="true"\] \.st::after\{transform:translateX/,
+    'the knob never moves, so the switch reports the same thing on and off');
+  assert.match(PAGE_CSS, /prefers-reduced-motion:reduce\)\{#rg \.lrow \.st/,
+    'the knob animates for a reader who asked the system for no motion');
 });
 
 /**

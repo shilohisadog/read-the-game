@@ -897,13 +897,38 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .lmk i{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:2px}
 #rg .lmk i.k-rl{width:3px;height:13px;border-radius:1px;margin-right:4px}
 #rg .lrow .ltx{grid-column:2;display:block;min-width:0}
-#rg .lrow b{font-size:.92rem;font-weight:700;display:block}
+#rg .lrow b{font-size:.92rem;font-weight:700;display:block;text-wrap:balance}
 #rg .lrow .lds{display:none;font-size:.75rem;font-weight:400;color:var(--muted);line-height:1.4;margin-top:2px}
 #rg .lrow[aria-pressed="true"] .lds{display:block}
 #rg .lrow .lon{display:none;font-size:.78rem;font-weight:400;line-height:1.45;margin-top:6px;padding-left:9px;border-left:2px solid var(--hd)}
 #rg .lrow[aria-pressed="true"] .lon{display:block}
-#rg .lrow .st{grid-column:3;grid-row:1;align-self:center;font-size:.7rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);border:1px solid var(--edge);border-radius:99px;padding:4px 10px}
-#rg .lrow[aria-pressed="true"] .st{color:#fff;background:var(--ink);border-color:var(--ink)}
+/* ⭐ THE STATE IS A SWITCH, NOT THE WORD "OFF". Kevin, 2026-08-26: "I was
+   thinking of the Metrics layers buttons as just toggles." A pill reading OFF is
+   a label that has to be read and then mapped to an action; a switch is the one
+   control shape that says both what it is and what state it is in without a
+   word, and five of them stacked read as a settings list rather than as five
+   competing buttons -- which is the "they need some work" complaint.
+
+   ⭐ THE WORD DID NOT GO AWAY, IT WENT INTO THE ACCESSIBILITY TREE. The switch is
+   drawn with ::after on `.st`, and `.st`'s TEXT -- still written by `lyrState` --
+   is clipped rather than deleted, so a screen reader keeps hearing "On"/"Off"
+   beside `aria-pressed`. A visual state with no textual one is the version of
+   this control that ships broken for the reader who cannot see the knob move.
+
+   THE KNOB TRAVEL IS THE TRACK MINUS THE KNOB MINUS BOTH INSETS, so it is
+   derived from the three numbers above it rather than eyeballed: 44 - 18 - 3 - 3. */
+/* ALIGNED TO THE NAME, NOT TO THE ROW. `align-self:center` centres the switch in
+   a grid row as tall as the text beside it -- fine while every row is one line,
+   and on the row with a layer ON it floated halfway down a 194px block, level
+   with a sentence rather than with the thing it switches. */
+#rg .lrow .st{grid-column:3;grid-row:1;align-self:start;margin-top:-1px;position:relative;flex:none;
+ width:44px;height:26px;border-radius:99px;background:#e4eaef;border:1px solid var(--edge);
+ overflow:hidden;text-indent:-9999px;color:transparent;transition:background .16s ease}
+#rg .lrow .st::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;
+ border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(16,32,45,.4);transition:transform .16s ease}
+#rg .lrow[aria-pressed="true"] .st{background:var(--ink);border-color:var(--ink)}
+#rg .lrow[aria-pressed="true"] .st::after{transform:translateX(20px)}
+@media (prefers-reduced-motion:reduce){#rg .lrow .st,#rg .lrow .st::after{transition:none}}
 #rg .lyr{font:inherit;font-size:.83rem;font-weight:600;border-radius:8px;border:1px dashed #b7c6d0;background:#fff;color:var(--muted);padding:8px 13px;cursor:pointer}
 #rg .lyr[aria-pressed="true"]{border-style:solid;color:var(--ink);border-color:var(--ink);background:#eef2f5}
 

@@ -1088,3 +1088,38 @@ local build — where `tools/pixels.sh` strips the CSP — returned 159px.
 
 **A probe that MUTATES the page cannot run against production**, and the failure
 is silent in exactly the direction that reads as "your change does nothing".
+
+## 17. The state becomes a switch
+
+Kevin: *"I was thinking of the Metrics layers buttons as just toggles."*
+
+A pill reading **OFF** is a label that has to be read and then mapped to an
+action. A switch is the one control shape that says both what it is and what
+state it is in without a word, and five of them stacked read as a settings list
+rather than as five competing buttons — which is the *"they need some work"*
+complaint.
+
+⭐ **The word did not go away, it went into the accessibility tree.** The track is
+`.st`, the knob is its `::after`, and the text `lyrState` writes is **clipped
+rather than deleted** — so a screen reader still hears *On* / *Off* beside
+`aria-pressed`, and the existing assertions still describe something real. A
+visual-only state is this control shipping broken for the reader who cannot see
+the knob move. Four stylesheet claims are pinned, including the
+`prefers-reduced-motion` guard, and each was mutated to see it fail.
+
+The knob travel is derived from the three numbers above it — track 44, knob 18,
+inset 3 — rather than eyeballed.
+
+**And the switch aligns to the NAME, not to the row.** `align-self:center` is
+correct while every row is one line; with a layer on it floated halfway down a
+194px block, level with a sentence instead of with the thing it switches.
+
+### 17.1 The 194px row is the open question
+
+    row, off      50px
+    row, ON      194px   ← name + what it counts + what the ice is doing
+
+The row with a layer on is four times the height of the others, and the drawer
+it sits in is above the rink. That is the *"description wording being integrated
+into the layer, as a type of intro to the layer (somehow)"* half of Kevin's
+note, and it is not answered yet — see the thread.
