@@ -228,6 +228,41 @@ export function saveShare(records) {
     + '(n counts SHOTS FACED, not games, and is NOT goals + shots on goal)');
 }
 
+/**
+ * ⭐ WHERE THE GOALS COME FROM — the one number the shaded slot needs and the
+ * site has never published.
+ *
+ * The base layer paints a lozenge in front of each net and the legend has only
+ * ever said WHERE it is: "within 33 ft of the net, between the dots". That is a
+ * definition, not a reason. The reason is this share, and until now it existed
+ * nowhere a page could read — not here, not in `measures.json`, not on any
+ * surface — while being quoted in a design document as though it were settled.
+ * That is the shape that shipped a wrong Corsi count once.
+ *
+ * THE DENOMINATOR IS PLACED GOALS, NOT ALL GOALS. A goal the feed gives no
+ * coordinate for is neither inside the slot nor outside it; counting it in the
+ * denominator would score it as "not from the slot" and quietly bias the share
+ * downwards. `unplaced` is published beside the rate so the gap is stated rather
+ * than hidden — the same reason `attemptMix` publishes `saveFraction` next to
+ * the counts that invite the wrong division.
+ */
+export function slotShare(records) {
+  let slot = 0, placed = 0, unplaced = 0, seen = 0;
+  for (const g of records) {
+    if (!g.goals) continue;      // an older record shape: counted, never guessed at
+    seen++;
+    slot += g.goals.slot; placed += g.goals.placed; unplaced += g.goals.unplaced;
+  }
+  return {
+    ...share(slot, placed,
+      'of the goals scored in play whose location the feed records, this many were '
+      + 'taken from inside the slot — within 33 ft of the attacking net and inside '
+      + '22 ft of centre (n counts GOALS, not games, and excludes the shootout)'),
+    games: seen,
+    unplaced,
+  };
+}
+
 function attemptMix(records) {
   const t = { goal: 0, 'shot-on-goal': 0, 'missed-shot': 0, 'blocked-shot': 0 };
   let games = 0;
@@ -291,6 +326,9 @@ export function summarise(records) {
     // What those attempts turned into. A share of a population, not an outcome
     // rate — see attemptMix for why that distinction is load-bearing.
     attemptMix: attemptMix(games),
+    // Where the goals come from. A share of a population, like attemptMix, and
+    // the reason the base layer shades the slot at all.
+    slot: slotShare(games),
     baseRates: {
       moreShotsOnGoalLost:
         rateOf(games, g => [g.sog.h, g.sog.a], 'the team with more shots on goal lost'),

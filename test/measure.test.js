@@ -20,7 +20,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { measureGame, stable, firstAtClock, endedIn, measureAll } from '../builders/measure.mjs';
 import { TEAMS } from '../src/lib/teams.js';
-import { summarise } from '../src/lib/archive.js';
+import { summarise, slotShare } from '../src/lib/archive.js';
 import { teamSeasons } from '../src/lib/team-season.js';
 
 /**
@@ -107,6 +107,72 @@ test('a measured game quotes the league and counts our own attempts', () => {
   assert.equal(r.level, 1,
     'home shot and blocked attempt while level, away goal while level; the home '
     + 'shot after that goal was taken while trailing and does not count');
+});
+
+/**
+ * ⭐ WHERE THE GOALS COME FROM, AND THE DENOMINATOR IS THE WHOLE OF IT.
+ *
+ * The base layer has shaded the slot since it was built and the legend has only
+ * ever said WHERE it is. The reason is this share, and it existed nowhere a page
+ * could read while being quoted in a design document as settled — the shape that
+ * shipped a wrong Corsi count once.
+ *
+ * BOTH HALVES. The numerator alone is satisfied by counting every goal in the
+ * slot; what makes the figure honest is that a goal the feed gives NO COORDINATE
+ * for is left out of the denominator too, rather than scored as "not from the
+ * slot" and biasing the share downwards. So the fixture carries one of each.
+ */
+test('the slot share counts placed goals, and an unplaced goal is in neither half', () => {
+  const g = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url), 'utf8'));
+  const real = measureGame(g);
+  assert.ok(real.goals.placed > 0, 'the reference game scores no goal this can be about');
+  assert.ok(real.goals.slot <= real.goals.placed, 'more goals from the slot than were placed');
+  assert.equal(real.goals.slot + (real.goals.placed - real.goals.slot), real.goals.placed);
+
+  // THE SAME GAME WITH ONE GOAL'S COORDINATES REMOVED. Not a synthesised event:
+  // stripping x from a real goal is the exact thing the feed does to us, and it
+  // must move `placed` and `unplaced` together and leave the RATE's meaning
+  // intact rather than counting the goal as a miss.
+  const blind = JSON.parse(JSON.stringify(g));
+  const firstGoal = blind.events.find(e => e.type === 'goal' && e.x != null);
+  assert.ok(firstGoal, 'no placed goal to blind');
+  const wasInSlot = measureGame(g).goals.slot;
+  firstGoal.x = null; firstGoal.y = null;
+  const after = measureGame(blind);
+  assert.equal(after.goals.unplaced, real.goals.unplaced + 1, 'the blinded goal was not counted as unplaced');
+  assert.equal(after.goals.placed, real.goals.placed - 1, 'the blinded goal stayed in the denominator');
+  assert.ok(after.goals.slot <= wasInSlot, 'a goal with no coordinate was counted as being in the slot');
+});
+
+test('the published archive states where the goals come from, with its rule', () => {
+  // THE ARITHMETIC, on the function itself. `summarise` filters to in-scope ids
+  // first, so hand-made records would have to carry an id, a score and a level
+  // before this could see them — a fixture built to get past a gate rather than
+  // to state a claim.
+  const agg = slotShare([
+    { goals: { slot: 3, placed: 4, unplaced: 1 } },
+    { goals: { slot: 1, placed: 4, unplaced: 0 } },
+    { /* an older record shape, carrying no goal placement at all */ },
+  ]);
+  assert.equal(agg.count, 4);
+  assert.equal(agg.n, 8, 'the denominator is placed goals, not every goal');
+  assert.equal(agg.rate, 0.5);
+  assert.equal(agg.unplaced, 1, 'the goals it could not speak for are not published');
+  assert.equal(agg.games, 2, 'a record with no goal placement was counted anyway');
+  assert.match(agg.what, /33 ft/, 'the share does not state the rule it was measured by');
+  assert.match(agg.what, /GOALS, not games/, 'the share does not name its own unit');
+
+  // AND AN EMPTY ARCHIVE IS NOT A FINDING OF ZERO — the rule stated at `share`.
+  assert.equal(slotShare([]).rate, null);
+
+  // AND IT REACHES THE PUBLISHED DOCUMENT, through the whole path a real run
+  // takes: an extract, `measureGame`, `summarise`. Without this half the
+  // arithmetic above could be perfect in a function nothing calls.
+  const g = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url), 'utf8'));
+  const doc = summarise([measureGame(g)]);
+  assert.ok(doc.slot && doc.slot.n > 0,
+    'the archive summary carries no slot share, so no page can read one');
+  assert.equal(doc.slot.n, measureGame(g).goals.placed);
 });
 
 test('the two shot measures are computed separately and may disagree', () => {

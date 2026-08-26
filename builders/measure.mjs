@@ -107,6 +107,28 @@ export function measureGame(g) {
     if (s) located[s]++;
   }
 
+  /* ⭐ THE GOALS, AND THEIR OWN DENOMINATOR — a different population from
+     `slot`/`located` above, which are about ATTEMPTS. The question a reader asks
+     of the shaded area is "of the goals, how many came from in there", and
+     answering it with the attempt figures beside it would be the third quantity
+     nobody sanctioned that `saveShare` exists to head off.
+
+     COUNTED OVER THE EVENTS `danger` COULD HAVE JUDGED. A goal the feed gives no
+     coordinate for is neither inside the slot nor outside it, and dividing by
+     every goal would silently score it as "not from the slot" — the numerator
+     and the denominator have to mean the same thing. The unplaced ones are
+     carried rather than dropped, so the published share can say how many it
+     could not speak for. */
+  const inSlot = new Set(slotted.counted);
+  const goals = { slot: 0, placed: 0, unplaced: 0 };
+  for (const id of all.counted) {
+    const e = g.events[id];
+    if (e.type !== 'goal') continue;
+    if (e.x == null) { goals.unplaced++; continue; }
+    goals.placed++;
+    if (inSlot.has(id)) goals.slot++;
+  }
+
   const goalies = [];
   for (const [pid, v] of Object.entries(nets.g)) {
     const p = g.roster[pid];
@@ -126,7 +148,7 @@ export function measureGame(g) {
     // Blocks CREDITED to each side — the team that did the blocking, which is
     // the defending team and therefore NOT the event's owner.
     blocks: { h: blk.t[ctx.homeId], a: blk.t[ctx.awayId] },
-    slot, located, goalies,
+    slot, located, goals, goalies,
     // THE LEAGUE'S OWN LINE, quoted from the boxscore and stored in the extract
     // so nothing here re-derives a score. If it is missing we do not guess.
     score: { h: g.quoted.home.score, a: g.quoted.away.score },
