@@ -44,36 +44,43 @@ const GAME_STATE_KEYS = { 'lk-ends': 'endskey', 'lk-unrec': 'unrec' };
  * comma the whole time and we have never once used it.
  */
 /**
- * ⭐ ONE HEADLINE, TWO PAGES — compared between the BUILT pages, not against the
- * constant that produced them. Kevin: "let's have the same header on the game
- * page as we do on the front page, for consistency." A check that read
- * `page.py`'s SAYS and found it in both files would pass for a build where the
- * game page hard-codes its own copy of the sentence, which is the exact
- * consistency this is supposed to guarantee.
+ * ⭐ THE GAME PAGE CARRIES THE WHOLE NAV.
+ *
+ * Kevin, 2026-08-26: "the topmost header on the page, the area with Watch a
+ * game, Teams, By Date, etc., I think that should be on the game page." That
+ * overrules the `minimal` header CHENG had ruled for — his argument was about
+ * the FUNNEL, and a nav is not a funnel: a game page reached from a shared link
+ * is the one page here a stranger is most likely to land on cold.
+ *
+ * ⭐ COMPARED AGAINST THE FRONT PAGE'S OWN HEADER, not against a list typed
+ * here. A test carrying its own copy of the five links passes the day someone
+ * adds a sixth to `_NAV` and the game page quietly ships four of six.
  */
-test('the game page and the front page ship the same headline', () => {
+test('the game page ships the same nav as the front page', () => {
   const index = readFileSync(new URL('../src/index.html', import.meta.url), 'utf8');
-  // ⚠️ COMMENTS STRIPPED FIRST, and it took a false positive to earn the line —
-  // for the FOURTH time in this repo. `game.html` carries a comment that QUOTES
-  // `<h1 class="says">` while explaining an earlier decision, and the regex
-  // matched the prose about the markup before the markup itself. The claim is
-  // about what ships; the instrument must only ever look at what ships.
-  const h1 = src => {
-    const m = /<h1 class="says">([\s\S]*?)<\/h1>/.exec(src.replace(/<!--[\s\S]*?-->/g, ''));
-    return m && m[1].trim();
+  const nav = src => {
+    const m = /<header class="sitehdr">([\s\S]*?)<\/header>/.exec(src.replace(/<!--[\s\S]*?-->/g, ''));
+    return m && [...m[1].matchAll(/<a [^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>/g)].map(x => `${x[2]} -> ${x[1]}`);
   };
-  const a = h1(app), b = h1(index);
-  assert.ok(a && a.length > 40, `the game page has no <h1 class="says">: ${a}`);
-  assert.equal(a, b, 'the two pages have drifted apart on the sentence that says what this is');
+  const g = nav(app), i = nav(index);
+  assert.ok(g && g.length >= 5, `the game page header has ${g ? g.length : 0} links: ${JSON.stringify(g)}`);
+  assert.deepEqual(g, i, 'the two headers have drifted apart');
 
-  // AND NOTHING SHIPPED A MARKER. `str.replace` cannot fail — it just does not
+  // AND THE LEDE IS BACK, in its own words rather than the front page's.
+  assert.match(app.replace(/<!--[\s\S]*?-->/g, ''),
+    /<h1 class="pagelede">Learn to read hockey[^<]*add metrics after<\/h1>/,
+    'the game page lost the sentence that says what to do on it');
+
+  // ⚠️ AND NOTHING SHIPPED A MARKER. `str.replace` cannot fail — it just does not
   // happen — and a `__PLACEHOLDER__` has reached a built page from this builder
-  // before. The builder asserts it too; this asserts the artifact.
+  // before. The builder asserts it where the substitution is made; this asserts
+  // the artifact. Kept when the shared-headline experiment was reverted, because
+  // the guard was the half of that change worth keeping.
   for (const [name, src] of [['game.html', app], ['index.html', index]])
     assert.doesNotMatch(src, /__[A-Z_]{3,}__/, `${name} shipped an unsubstituted marker`);
 });
 
-test('the selector holds exactly one choice, and Nothing is one of them', () => {
+test('the selector holds exactly one choice, and the base view is one of them', () => {
   const CHIPS = ['none', 'corsi', 'slot', 'blocked', 'goaltending', 'whistle'];
   const chip = (a, l) => a.$$('#rg .pk').find(b => b.dataset.l === l);
   const checked = a => a.$$('#rg .pk').filter(b => String(b.getAttribute('aria-checked')) === 'true')
@@ -81,6 +88,16 @@ test('the selector holds exactly one choice, and Nothing is one of them', () => 
 
   const a = boot();
   assert.deepEqual(checked(a), ['none'], 'the page opens with something other than the base view chosen');
+
+  // ⭐ AND ITS LABEL DOES NOT CLAIM THE PAGE IS SHOWING NOTHING. Kevin: "it's not
+  // really Nothing, shouldn't that say Just events?" With no metric on, the rink
+  // is drawing every recorded event — the base view the header tells a reader to
+  // watch FIRST. `Nothing` described the layer state and lied about the screen.
+  const base = /<button class="pk" id="pkNone"[^>]*>([^<]+)</.exec(app)[1];
+  assert.doesNotMatch(base, /^(nothing|none|off)$/i,
+    `the base choice is labelled "${base}", which says the page is blank while it draws the whole game`);
+  assert.match(base, /event/i,
+    `the base choice is labelled "${base}" — it is the events, in the vocabulary the rest of the page uses`);
 
   // ⭐ THE INVARIANT, NOT A SEQUENCE OF EXPECTED VALUES. Whatever you press, the
   // row holds exactly one — which is the property a radiogroup claims, and the

@@ -254,18 +254,6 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 # on every page and the novice tester is on a phone: 4 items wrapped to 2 lines
 # at 108px, and 5 items wrap to 2 lines at 108px. It costs nothing on the device
 # that can least afford it. See docs/discovery.md §13.
-# ⭐ ONE HEADLINE, TWO PAGES. Kevin, 2026-08-26: "let's have the same header on
-# the game page as we do on the front page, for consistency." It lived in
-# build_index.py, so `consistency` would have meant two authors keeping two
-# strings in step -- which is the second-implementation shape this repo keeps
-# almost building. It lives here, beside the chrome both pages already share,
-# and a test compares the two BUILT pages rather than this constant.
-#
-# It says SCOPE, not a count: "Every NHL game since 2023" does not move between
-# deploys, and the limits block states the scope exactly.
-SAYS = ("Every NHL game since 2023, replayed event by event &mdash; with the counts "
-        "built in front of you, so you can see <b>where a number comes from</b>.")
-
 _NAV = [("/", "Watch a game"), ("/#teams", "Teams"),
         ("/calendar.html", "By date"),
         ("/what-you-can-see.html", "What you can see"),
@@ -279,12 +267,17 @@ def _header(current=None, minimal=False):
     and the deploy gate measures a real 360 CSS px viewport; a sticky header eats
     the viewport on exactly the device that can least afford it.
 
-    `minimal` is for the game page. CHENG's ruling, and it dissolved a question I
-    had asked badly: I framed it as "converting a stranger versus interrupting a
-    viewer", and those are not simultaneous. The stranger arrives BEFORE the game,
-    the viewer exists DURING it, and the moment that matters is neither -- it is
-    when the game ENDS, at peak curiosity, which is below the rink and not above
-    it. So the header answers only "where am I", and the funnel lives underneath.
+    `minimal` WAS the game page's, on CHENG's ruling: the header answers only
+    "where am I" and the funnel lives below the rink, because the moment that
+    converts is when the game ENDS, at peak curiosity, and not before it starts.
+
+    ⭐ KEVIN OVERRULED IT ON 2026-08-26 -- "the topmost header on the page, the
+    area with Watch a game, Teams, By Date, etc., I think that should be on the
+    game page". The ruling's argument was about the FUNNEL, and the nav is not a
+    funnel: it is five destinations a reader may already want, and a game page
+    reached from a shared link is the one page on this site a stranger is most
+    likely to land on with no way back to the rest of it. `minimal` stays here
+    and is now unused by the game page; nothing else asks for it.
     """
     if minimal:
         return ('<header class="sitehdr"><a class="mark" href="/">Read the Game</a>'

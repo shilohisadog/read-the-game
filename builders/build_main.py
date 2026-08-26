@@ -56,7 +56,7 @@ __CSS__</style>
      the first-visit block replaced on measured grounds (576px -> 305px). Taking
      the name back for a different element would have left that guard passing on
      a page that no longer contains what it was written to keep out. -->
-<h1 class="says">__SAYS__</h1>
+<h1 class="pagelede">Learn to read hockey · event by event first, add metrics after</h1>
 <div class="newcomer" id="newcomer"></div>
 <div class="board">
   <div class="tm a"><span class="ab" id="aAb">&mdash;</span><span class="sc" id="aSc">0</span></div>
@@ -104,7 +104,7 @@ __CSS__</style>
   <div class="grp" role="group" aria-label="Step through the events"><button class="spd stepb" id="back" aria-label="Previous event">◀ Prev event</button><button class="spd stepb" id="fwd" aria-label="Next event">Next event ▶</button></div>
   <div class="grp" role="group" aria-label="Replay speed"><button class="spd stepb" id="slower">&#9664; Slower</button><button class="spd stepb" id="faster">Faster &#9654;</button></div>
   <input class="scrub" id="scrub" type="range" min="-1" max="1" value="-1"></div>
-<div class="pickrow" role="radiogroup" aria-label="Which metric is on the ice" id="pickrow"><span class="pklab">Watching</span><button class="pk" id="pkNone" data-l="none" role="radio" aria-checked="true">Nothing</button><button class="pk" id="pkCorsi" data-l="corsi" role="radio" aria-checked="false">Attempts</button><button class="pk" id="pkSlot" data-l="slot" role="radio" aria-checked="false">Slot</button><button class="pk" id="pkBlocked" data-l="blocked" role="radio" aria-checked="false">Blocked</button><button class="pk" id="pkGoalie" data-l="goaltending" role="radio" aria-checked="false">Goalies</button><button class="pk" id="pkWhistle" data-l="whistle" role="radio" aria-checked="false">Stoppages</button></div>
+<div class="pickrow" role="radiogroup" aria-label="Which metric is on the ice" id="pickrow"><span class="pklab">Watching</span><button class="pk" id="pkNone" data-l="none" role="radio" aria-checked="true">Just events</button><button class="pk" id="pkCorsi" data-l="corsi" role="radio" aria-checked="false">Attempts</button><button class="pk" id="pkSlot" data-l="slot" role="radio" aria-checked="false">Slot</button><button class="pk" id="pkBlocked" data-l="blocked" role="radio" aria-checked="false">Blocked</button><button class="pk" id="pkGoalie" data-l="goaltending" role="radio" aria-checked="false">Goalies</button><button class="pk" id="pkWhistle" data-l="whistle" role="radio" aria-checked="false">Stoppages</button></div>
 <p class="verdict" id="verdict"></p>
 <div class="newcomer nwhy2" id="newcomerWhy"></div>
 <details class="zone zref"><summary class="zh">What the marks mean</summary>
@@ -146,8 +146,7 @@ __JS__</script>"""
 # The markers keep their own newline in the template, so each file starts at
 # column zero and ends with the trailing newline every other file here has.
 T = (T.replace("__CSS__", (ROOT / "src" / "app.css").read_text())
-      .replace("__JS__", (ROOT / "src" / "app.js").read_text())
-      .replace("__SAYS__", P.SAYS))
+      .replace("__JS__", (ROOT / "src" / "app.js").read_text()))
 # ⚠️ `str.replace` CANNOT FAIL -- it just does not happen, and a `__PLACEHOLDER__`
 # has shipped from this file before. So the substitutions are asserted here,
 # where they are made, rather than trusted: a leftover marker is a loud build
@@ -363,7 +362,7 @@ def build():
     body = (T.replace("__LIB__", _lib())
              .replace("__BOOT__",
                       "boot(" + json.dumps(DATA, separators=(",", ":")) + ");"))
-    return P.document(body, title=TITLE, description=DESC, chrome="minimal")
+    return P.document(body, title=TITLE, description=DESC, chrome="full")
 
 
 def build_shell():
@@ -383,7 +382,7 @@ def build_shell():
     # of the <script> and <style>, which live in the body and are untouched by
     # adding a head around them.
     html = P.document(body, title=TITLE, description=DESC,
-                      url="https://readthegame.co/game", chrome="minimal",
+                      url="https://readthegame.co/game", chrome="full",
                       head='<meta http-equiv="Content-Security-Policy" content="__CSP__">')
     return html.replace("__CSP__", _csp(html))
 

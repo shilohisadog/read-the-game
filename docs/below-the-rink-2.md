@@ -1350,3 +1350,47 @@ deleting that rule makes them identical.
 `game.html` carries a comment that quotes `<h1 class="says">` while explaining an
 earlier decision, and the headline check read the prose about the markup instead
 of the markup. Comments stripped first, as in three other checks in this repo.
+
+## 23. The header was the OTHER header, and `Nothing` was a false label
+
+Kevin: *"I misstated what I was looking for. I was referring to the topmost
+header on the page, the area with Watch a game, Teams, By Date, etc."*
+
+So §22 is reverted: the game page carries its own lede again — *Learn to read
+hockey · event by event first, add metrics after* — and takes **the full site
+nav** instead of the two-link `minimal` header.
+
+⭐ **That overrules CHENG's `minimal` ruling, and the override has a reason.**
+His argument was about the FUNNEL: the moment that converts is when the game
+ENDS, at peak curiosity, which is below the rink. A nav is not a funnel — it is
+five destinations, and **a game page reached from a shared link is the one page
+on this site a stranger is most likely to land on with no way back to the rest
+of it.** `minimal` stays in `page.py`, now unused.
+
+**The test compares the game page's header to the front page's**, rather than
+carrying its own list of five links — a typed list passes the day someone adds a
+sixth to `_NAV` and the game page quietly ships four of six.
+
+⭐ **The marker guard from §22 was kept.** The shared-headline experiment was
+reverted; the assertion that no `__PLACEHOLDER__` survives substitution was the
+half of it worth keeping, in the builder and on the artifact.
+
+### 23.1 `Nothing` said the page was blank while it drew the whole game
+
+Kevin: *"it's not really 'Nothing', shouldn't that say 'Just events'?"*
+
+Right, and it was a false claim about the screen. With no metric on, the rink is
+still drawing **every recorded event** — that is the base view §6 is built on and
+the exact thing the header tells a reader to watch first. `Nothing` described the
+LAYER state and lied about the PAGE. The internal token stays `none`, because no
+*layer* is what it means. A test forbids `nothing|none|off` as that label.
+
+### 23.2 The longer label cost a row, and the label got its own line
+
+    inline label     390: 3 rows   700: 2 rows   1100: 1 row
+    label own line   390: 2 rows   700: 1 row    1100: 1 row
+
+`WATCHING` is 90px of a 342px phone line and `Just events` alone is 111. On its
+own line it costs ~20px at 1100 and pays for itself at every width below.
+
+    390   rink y=282   play ends 570   ·   1100  rink y=231   play ends 756
