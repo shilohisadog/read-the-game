@@ -1782,7 +1782,36 @@ let corsiOn=false,hdOn=false,goalieOn=false,whistleOn=false,blockOn=false;
    things still change together -- class, aria-pressed, visible state -- and
    render-preview's check that the preview goes THROUGH setCorsi rather than past
    it is retargeted at the element that now carries the answer. */
-function lyrState(id,on){const n=$(id);if(n)n.textContent=on?'On':'Off';}
+function lyrState(id,on){const n=$(id);if(n)n.textContent=on?'On':'Off';zoneState();}
+/* ⭐ A COLLAPSED CONTROL MUST STILL REPORT ITS STATE, and a zone holding one must
+   be able to open itself. Every zone below the rink is a disclosure now, which is
+   only safe with both halves: without the badge, marks appear on the ice with
+   nothing on screen accounting for them; without the auto-open, a deep link that
+   lands with a layer on -- eight of the learn page's nine doors do -- would put
+   the only way to turn it off behind a closed drawer, which is CHENG's one-way
+   trip.
+
+   DERIVED FROM THE DOM, NOT FROM A LIST OF LAYERS. `[aria-pressed="true"]` on a
+   row IS the on-state, so a sixth layer is covered the day it is added and a
+   layer that stops setting the attribute stops being counted -- rather than a
+   second enumeration here that agrees with the rows until someone edits one. */
+function zoneState(){
+ let on=0;document.querySelectorAll('#rg .lrow').forEach(r=>{
+  if(String(r.getAttribute('aria-pressed'))==='true')on++;});
+ const b=$('zLayersOn');if(b)b.textContent=on?`${on} layer${on===1?'':'s'} on`:'';
+ const d=$('zLayers');if(d&&on)d.open=true;}
+/* ⭐ AND THE OPEN NEEDS NO "HAS THE READER TOUCHED IT" FLAG, which is worth
+   saying because the first version had one and it could not have worked. The
+   `toggle` event fires for a PROGRAMMATIC change too, and the spec queues it as
+   a task -- so any `_auto` guard set around the assignment is already false by
+   the time the handler runs, and the fake document does not fire `toggle` at
+   all, so the divergence would have been invisible here.
+
+   It is unnecessary anyway: the only way to close this drawer is to press its
+   summary, and the only way to reach a layer row is with the drawer open. So
+   every call that arrives with a layer on and the drawer SHUT came from boot --
+   which is the deep link, and the one case this exists for. */
+zoneState();
 function setCorsi(){document.getElementById('rg').classList.toggle('corsi',corsiOn);$('lyCorsi').setAttribute('aria-pressed',corsiOn);lyrState('stCorsi',corsiOn);if(!corsiOn&&workOpen){workOpen=false;$('workPanel').hidden=true;$('work').setAttribute('aria-expanded',false);$('work').textContent='Show me the work';}}
 function setHd(){document.getElementById('rg').classList.toggle('slot',hdOn);$('lyHd').setAttribute('aria-pressed',hdOn);lyrState('stHd',hdOn);render(i,'');}
 $('lyCorsi').addEventListener('click',()=>{corsiOn=!corsiOn;setCorsi();});

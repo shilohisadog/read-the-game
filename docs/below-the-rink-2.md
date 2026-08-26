@@ -671,3 +671,122 @@ not have given.
   the expensive one.
 - At 320 the funnel falls back to one column; 390 and up get two or more.
 - `Teaching` is gone as a name. The three paces behind it are unchanged.
+
+---
+
+## 12. Round three — every zone is a disclosure
+
+Kevin, 2026-08-26: *"I like how the Display Options is collapsed by default, can
+all of the elements under the rink be the same way? I'd move 'Watch another game'
+to below Display Options."* Then, after the counter-argument below:
+**"I want LAYERS to be collapsible too, it looks a lot better for consistency."**
+
+### 12.1 The case against, and how it was answered
+
+The objection was **the conversion**. The stated north star is *a visitor
+watches one game with one metric layer turned on*, and collapsing the layer menu
+puts the one thing the site exists to get someone to do behind a closed drawer.
+Everything else down there is reference, navigation or cosmetics — a novice can
+complete the intended experience without opening any of it.
+
+Two things were also being overridden, and they should be overridden knowingly:
+
+1. **CHENG's Q1 ruling** — *a key that names a mark AND hides it is worse than a
+   permanent legend that was at least wrong in the open.* Still right about a
+   KEY. Not an argument about a funnel or a cosmetics drawer.
+2. ⭐ **The nine doors.** Verified again before building: `what-you-can-see.html`
+   deep-links into this page **nine** times, **eight** with a layer already on
+   (whistle ×4, corsi ×2, slot ×1, goaltending ×1). A reader arriving with
+   `layer=whistle` would see orange rings on the ice and no visible way to turn
+   them off — CHENG's one-way trip, which killed the last wholesale move.
+
+**Kevin's call stands and the objection is answered by mechanism, not by an
+exception.** A collapse is safe with two halves, and neither is optional:
+
+- **The summary says what is on inside it** — `2 layers on`. Marks cannot appear
+  on the ice with nothing on screen accounting for them. Same principle as the
+  speed stepper's disable-as-readout.
+- **The zone opens itself when it arrives with a layer on.** Verified in a real
+  browser, not only in the fake:
+
+      ?layer=whistle          {"open":true,  "badge":"1 layer on"}
+      ?layer=whistle,corsi    {"open":true,  "badge":"2 layers on"}
+      (no layer)              {"open":false, "badge":""}
+
+⭐ **The count is DERIVED FROM THE ROWS, not from a list of layer names.**
+`[aria-pressed="true"]` on a row *is* the on-state, so a sixth layer is covered
+the day it is added, and a layer that stops setting the attribute stops being
+counted — rather than a second enumeration that agrees with the rows until
+someone edits one.
+
+⚠️ **And the first version of the auto-open could not have worked.** It carried a
+*has the reader touched this* flag, guarded by setting `_auto` around the
+assignment. The `toggle` event fires for a programmatic change too and **the spec
+queues it as a task**, so the guard is already false by the time the handler
+runs — and the fake document does not fire `toggle` at all, so the divergence
+would have been invisible to `npm test`. The flag was deleted rather than fixed:
+the only way to close the drawer is to press its summary, and the only way to
+reach a layer row is with the drawer open, so every call arriving with a layer on
+and the drawer shut came from boot. Which is the deep link, and the one case it
+exists for.
+
+### 12.2 ⭐ The two disclosures are NOT in the collapse
+
+`#rg.unrec .lk-unrec` carries the sentence for the **73 games where the league's
+boxscore contradicts the league's own event log**. Its own note in the stylesheet
+has said since it was written that *a disclosure a reader reaches only by turning
+something on is not a disclosure* — and putting it inside a panel that now starts
+CLOSED is that defect with a different lid. Both disclosures were lifted out of
+the reference panel when it became collapsible, and a test walks the `<details>`
+nesting depth at each one so they cannot drift back in.
+
+### 12.3 The reorder, and why the old reason expired rather than lost
+
+NEXT went above the cosmetics in §7.1 because four real destinations had been
+ranked below `Mascot` and `Tabletop`. **Once every zone is a 57px bar, nothing is
+meaningfully ranked below a summary.** The reason no longer applies, so Kevin's
+ordering costs nothing. Recorded here because the difference between *an argument
+overruled* and *an argument expired* is the difference between drift and a
+decision.
+
+### 12.4 Measured, returning visitor, real browser
+
+| | baseline `19b7b5b` | after §11 | **after §12** |
+|---|---|---|---|
+| below the rink, 390 | 1418 | 1685 | **981** |
+| below the rink, 1100 | 809 | 1073 | **764** |
+| below the rink, 390, newcomer | — | 1941 | **1271** |
+| controls under 44px | 21 of 21 | 0 of 21 | **0 of 21** |
+
+**Every zone is 57px closed.** §9's replacement test passes, and so would the
+original one it replaced: the surface is now **437px shorter than what it
+replaced** at 390 and 45px shorter at 1100, with every control at the touch
+floor and every layer describing itself.
+
+⚠️ **§11.5's levers are therefore not needed for height any more.** The one-line
+descriptions and U3 remain worth doing on their own merits — five layers is still
+five layers — but the height argument for them is gone.
+
+### 12.5 Open, and the next piece
+
+- **The marks section is unbuilt.** Kevin: the list mixes three kinds of thing —
+  two shaded AREAS that need a sentence, five MARKS that need only naming, and a
+  DISCLOSURE — which is the same defect as §3's *five kinds of control, one
+  visual language*, one block lower. Two area cards plus a compact mark strip.
+- ⚠️ **The number the copy wants does not exist.** *"79% of goals come from the
+  slot"* appears in this document and nowhere else — not in `measures.json`, not
+  on any page, not in any published artifact. `measure.mjs` already computes a
+  per-game `slot` count over all 4,192 in-scope games but never summarises it.
+  **Deriving and publishing it is a precondition for the copy, not a nicety** —
+  typing it from this document is the shape that shipped a wrong Corsi count once
+  ([[verify-inherited-claims]]).
+- ⚠️ **And the blue line's copy has no measurable hook.** Kevin: *"the blue line,
+  at least the way I think of it, is more of a contested area, not necessarily
+  offside-focused."* He is describing TERRITORY — zone entries fought over — and
+  the feed has no territory in it: no passes, no dump-ins, no zone entries, no
+  possession. What we hold is EVENTS. So *contested* cannot be measured here, and
+  asserting it is the same move as the *"the ice teams fight to hold"* clause
+  this round removed. The honest treatment is the one the shading was designed
+  on: **the slot is a PLACE and the blue line a THRESHOLD**. Say what the
+  threshold is and let the reader draw the inference — *show the distance from
+  normal, never supply the inference*.

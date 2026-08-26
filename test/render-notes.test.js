@@ -57,6 +57,72 @@ test('a layer\'s mark is named in its own row, and only while the layer draws it
     'the description is hidden until the layer is on — you cannot learn what it does before using it');
 });
 
+/**
+ * ⭐ EVERY ZONE BELOW THE RINK IS A DISCLOSURE — AND A COLLAPSE IS ONLY SAFE
+ * WITH BOTH SAFETY HALVES.
+ *
+ * Kevin, 2026-08-26: "I want LAYERS to be collapsible too, it looks a lot better
+ * for consistency." The argument against was the conversion — the one thing the
+ * site exists to get a visitor to do would start behind a closed drawer — and it
+ * is answered by mechanism rather than by an exception:
+ *
+ *   1. the summary SAYS WHAT IS ON INSIDE IT, so marks cannot appear on the ice
+ *      with nothing on screen accounting for them;
+ *   2. the zone OPENS ITSELF when it arrives with a layer on, so a deep link can
+ *      always turn off what it turned on.
+ *
+ * `what-you-can-see.html` enters this page nine times, EIGHT with a layer
+ * already on, and CHENG's recorded ruling killed the last wholesale move of
+ * these controls because it made a door a one-way trip.
+ */
+test('every zone below the rink is a disclosure, with a 44px summary', () => {
+  const zones = app.match(/<details class="zone [a-z]+"/g) || [];
+  assert.equal(zones.length, 4, `expected four collapsible zones, found ${zones.length}`);
+  assert.match(PAGE_CSS, /#rg details\.zone>summary\{[^}]*min-height:44px/,
+    'a summary is the only control in a closed zone and it is under the touch floor');
+});
+
+/**
+ * ⭐ AND THE TWO DISCLOSURES ARE DELIBERATELY OUTSIDE EVERY ONE OF THEM.
+ *
+ * `#rg.unrec .lk-unrec` carries the sentence for the 73 games where the league's
+ * boxscore contradicts the league's own event log. Its own note in the
+ * stylesheet has said since it was written that "a disclosure a reader reaches
+ * only by turning something on is not a disclosure" — and putting it inside a
+ * panel that now starts CLOSED is that defect with a different lid. The ends
+ * sentence is the same kind of thing. They were lifted out when the reference
+ * panel became collapsible, and this is what stops them drifting back in.
+ */
+test('a disclosure is never inside a collapsed zone', () => {
+  for (const id of ['endsKey', 'unrecKey']) {
+    const before = app.slice(0, app.indexOf(`id="${id}"`));
+    const opens = (before.match(/<details/g) || []).length;
+    const closes = (before.match(/<\/details>/g) || []).length;
+    assert.equal(opens, closes,
+      `#${id} sits inside a <details> — a reader meets it only by opening something`);
+  }
+});
+
+test('a collapsed layer menu still says what is on, and opens itself for a deep link', () => {
+  const shut = boot();
+  assert.equal(shut.$('zLayersOn').textContent, '', 'the badge claims a layer with none on');
+  assert.notEqual(shut.$('zLayers').open, true, 'the menu is open before anyone asked');
+
+  // EIGHT OF THE NINE DOORS ARRIVE LIKE THIS.
+  const door = boot(null, null, '?game=2023020204&layer=whistle');
+  assert.equal(door.$('zLayers').open, true,
+    'a deep link put marks on the ice and left the only way to turn them off shut');
+  assert.equal(door.$('zLayersOn').textContent, '1 layer on');
+
+  // AND THE BADGE COUNTS, rather than saying "on". Two layers is a different
+  // sentence from one, and singular/plural is where this kind of readout ships
+  // broken — the ternary only ever runs one arm at a fixed number of layers.
+  door.$('lyCorsi').click();
+  assert.equal(door.$('zLayersOn').textContent, '2 layers on');
+  door.$('lyCorsi').click(); door.$('lyWhistle').click();
+  assert.equal(door.$('zLayersOn').textContent, '', 'the badge outlived the last layer');
+});
+
 test('the two game-state disclosures are still gated, and are no longer keys', () => {
   // They never were keys: neither has a swatch, and every other row in the
   // legend is a mark and its name. They are sentences about the GAME, so they
@@ -302,13 +368,18 @@ test('the card sits above the controls, not below them', () => {
   // The other half of Q1, and it is a claim about DOM order rather than pixels,
   // so it is checkable here. It was next-to-last: 1,156px below the rink on a
   // phone, screen 2.18 of 2.99, behind 230 words of read-once prose.
-  // ⭐ LEGEND AND LAYERS SWAPPED ON 2026-08-25 and the swap is the point. The
-  // five zones run WATCH → LAYERS → REFERENCE → NEXT → DISPLAY: the conversion
-  // sits directly under the transport, the marks-reference is a read surface
-  // below it, and the four real destinations moved ABOVE the cosmetic toggles
-  // they had been ranked under. docs/below-the-rink-2.md §7.1.
+  // ⭐ LEGEND AND LAYERS SWAPPED ON 2026-08-25 and the swap is the point: the
+  // conversion sits directly under the transport and the marks-reference is a
+  // read surface below it.
+  //
+  // NEXT MOVED BACK BELOW DISPLAY ON 2026-08-26, which is not a reversal of the
+  // reason it went up. That reason was that four real destinations had been
+  // ranked below `Mascot` and `Tabletop`; once every zone is a collapsed bar,
+  // nothing is meaningfully ranked below a 44px summary, and the reason no
+  // longer applies. Kevin's ordering, and the argument for the old one expired
+  // rather than being overruled.
   const order = ['class="transport"', 'class="verdict"', 'class="zone zlayers"',
-                 'class="legend"', 'class="zone znext"', 'class="zone zdisp"'];
+                 'class="legend"', 'class="zone zdisp"', 'class="zone znext"'];
   let at = -1;
   for (const marker of order) {
     const k = app.indexOf(marker);

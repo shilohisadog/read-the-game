@@ -90,8 +90,8 @@ __CSS__</style>
   <div class="grp" role="group" aria-label="Replay speed"><button class="spd stepb" id="slower">&#9664; Slower</button><button class="spd stepb" id="faster">Faster &#9654;</button></div>
   <input class="scrub" id="scrub" type="range" min="-1" max="1" value="-1"></div>
 <p class="verdict" id="verdict"></p>
-<section class="zone zlayers" aria-labelledby="zhLayers"><h2 class="zh" id="zhLayers">Add a metric layer</h2>
 <div class="newcomer nwhy2" id="newcomerWhy"></div>
+<details class="zone zlayers" id="zLayers"><summary class="zh">Add a metric layer<span class="zon" id="zLayersOn"></span></summary>
 <div class="lrows">
 <button class="lrow" id="lyCorsi" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Control (Corsi)</b><span class="lds">every shot attempt — on goal, missed, or blocked</span><span class="lon">The counters above the rink fill in as the replay runs, and the bar splits the attempts between the two clubs.</span></span><span class="st" id="stCorsi">Off</span></button>
 <button class="lrow" id="lyHd" aria-pressed="false"><span class="lmk"><i class="k-hd"></i></span><span class="ltx"><b>Shots from the slot</b><span class="lds">attempts from within 33 ft of the net, between the face-off dots</span><span class="lon">An amber ring marks each one. Click a ring to see the distance and angle it was measured by.</span></span><span class="st" id="stHd">Off</span></button>
@@ -105,17 +105,13 @@ __CSS__</style>
 <button id="work" aria-expanded="false">Show me the work</button>
 <div class="work" id="workPanel" hidden></div>
 <div class="hint">Tip: click any shot ringed in amber to see <b>why</b> it counts as a slot shot — with trails set to <b>keep every mark</b>, earlier ones stay clickable too.</div>
-</section>
-<section class="zone zref" aria-labelledby="zhRef"><h2 class="zh" id="zhRef">What the marks mean</h2>
+</details>
+<details class="zone zref"><summary class="zh">What the marks mean</summary>
 <div class="legend"><span><i class="k-slot"></i>the slot — within 33 ft of the net, between the dots</span><span><i class="k-zone"></i>either blue line — out to the neutral-zone dots</span><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span><i class="k-g"></i><i class="k-gv"></i>goal — either sweater</span><span><i class="k-blk"></i><i class="k-blkv"></i>blocked — ringed where the puck was <b>stopped</b></span></div>
+</details>
 <p class="disclose lkey lk-ends" id="endsKey"></p>
 <p class="disclose lkey lk-unrec" id="unrecKey"></p>
-</section>
 <div class="whybk" id="whyBk"><div class="why" id="whyContent"></div></div>
-<section class="zone znext" aria-labelledby="zhNext"><h2 class="zh" id="zhNext">Watch another game</h2>
-<div class="foot" id="gl">—</div>
-<nav class="nextup" id="nextup" aria-label="Where to go next"></nav>
-</section>
 <details class="zone zdisp"><summary class="zh">Display options</summary>
 <div class="figpick"><span class="ll">Trails:</span>
 <div class="grp" role="group" aria-label="How long marks stay on the ice"><button class="lyr tbtn" data-t="off" aria-pressed="true">Current moment</button><button class="lyr tbtn" data-t="all" aria-pressed="false">Keep every mark</button></div>
@@ -126,6 +122,10 @@ __CSS__</style>
 <div class="figpick"><span class="ll">Narration:</span>
 <div class="grp" role="group" aria-label="Whether the ice names each event"><button class="lyr nbtn" id="lbl" data-n="on" aria-pressed="true">On</button><button class="lyr nbtn" id="lblOff" data-n="off" aria-pressed="false">Off</button></div>
 <span class="fnote" id="nLbl">Names each event on the ice as it happens — and calls a goal with the scorer and assists.</span></div>
+</details>
+<details class="zone znext"><summary class="zh">Watch another game</summary>
+<div class="foot" id="gl">—</div>
+<nav class="nextup" id="nextup" aria-label="Where to go next"></nav>
 </details>
 </div></div>
 <script>

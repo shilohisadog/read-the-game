@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-+gSWjINmvxtHjquk7wJIVK+r6EQ4ABxtigO4Es/dBlo=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-8FsUeYpdK8z+E0gctrzC0lARKgA9sJP9fmCbHXMPTNI='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-DSU+pSnWNHjTeu3U+5sH3PkRjCxpZCdcc5WRtqWpEqg=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-T013jDlu7ny4EFBfAY0hx1SUC+/wT+Fm3cH69YmyMuA='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">What is this?</a></nav></header>
@@ -571,7 +571,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    and sit under the keys rather than among them. */
 #rg .lkey{display:none}
 #rg.endskey .lk-ends,#rg.unrec .lk-unrec{display:block}
-#rg .disclose{font-size:.76rem;line-height:1.5;color:var(--muted);margin:9px 2px 0;padding-left:11px;border-left:2px solid var(--edge)}
+#rg .disclose{font-size:.76rem;line-height:1.5;color:var(--muted);margin:12px 2px 0;padding-left:11px;border-left:2px solid var(--edge)}
 #rg .k-a{background:#fff;box-shadow:0 0 0 1.5px var(--away)}#rg .k-h{background:var(--home)}#rg .k-hd{background:#fff;box-shadow:0 0 0 1.5px var(--hd)}#rg .k-wh{background:transparent;box-shadow:0 0 0 1.5px var(--flag)}
 .k-rl{width:3px;height:12px;border-radius:1px;background:var(--flag);opacity:.75}#rg .k-blk{background:var(--home);box-shadow:0 0 0 1.5px var(--flag)}#rg .k-blkv{background:#fff;box-shadow:0 0 0 1.5px var(--flag);margin-left:-3px}#rg .k-p{background:#0e1216}#rg .k-g{background:radial-gradient(circle,#fff 0 2.5px,var(--home) 2.5px)}#rg .k-gv{background:radial-gradient(circle,var(--away) 0 2.5px,#fff 2.5px);box-shadow:0 0 0 1.5px var(--away);margin-left:-3px}
 #rg .work{background:#fff;border:1px solid var(--edge);border-radius:13px;padding:18px;margin-top:14px;box-shadow:0 5px 18px rgba(16,32,45,.06)}
@@ -746,15 +746,34 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    `another layer`, and a heading over a ruled edge is what keeps it from it. */
 #rg .zone{margin:15px 0 0;padding-top:12px;border-top:1px solid var(--edge)}
 #rg .zh{margin:0 0 8px;font-size:.72rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
-#rg .zdisp{padding-bottom:2px}
 /* ONE COLUMN FOR THE LABELS, so the three controls start at the same x. They are
    separate rows in the markup -- each is its own `figpick` -- so nothing aligned
    them, and `Trails:` / `Players:` / `Narration:` are three different lengths. */
 #rg .zdisp .figpick>.ll{min-width:5.4rem}
-#rg .zdisp>summary{cursor:pointer;list-style:none;display:flex;align-items:center;min-height:44px;margin:0}
-#rg .zdisp>summary::-webkit-details-marker{display:none}
-#rg .zdisp>summary::after{content:"\25be";margin-left:8px;font-size:.9rem}
-#rg .zdisp[open]>summary::after{content:"\25b4"}
+/* ⭐ EVERY ZONE IS A DISCLOSURE, INCLUDING THE LAYERS (Kevin, 2026-08-26: "I want
+   LAYERS to be collapsible too, it looks a lot better for consistency"). The
+   argument against was the conversion -- the one thing the site exists to get a
+   visitor to do would start behind a closed drawer -- and it is answered by the
+   two mechanisms below rather than by an exception:
+
+     1. A zone OPENS ITSELF when it holds an active control, so a deep link that
+        arrives with a layer on can always turn it off. `what-you-can-see.html`
+        enters this page nine times, EIGHT of them with a layer already on, and
+        CHENG's recorded ruling killed the last wholesale move of these controls
+        because it made a door a one-way trip.
+     2. The summary SAYS WHAT IS ON INSIDE IT. Collapsing a control is only safe
+        while the collapsed thing still reports its state -- otherwise marks
+        appear on the ice with nothing on screen accounting for them. Same
+        principle as the speed stepper's disable-as-readout.
+
+   The two DISCLOSURES are deliberately not in here; see the note by `.lkey`. */
+#rg details.zone>summary{cursor:pointer;list-style:none;display:flex;align-items:center;min-height:44px;margin:0}
+#rg details.zone>summary::-webkit-details-marker{display:none}
+#rg details.zone>summary::after{content:"\25be";margin-left:auto;font-size:.9rem}
+#rg details.zone[open]>summary::after{content:"\25b4"}
+#rg details.zone[open]>summary{margin-bottom:10px}
+#rg .zon{margin-left:9px;font-size:.68rem;font-weight:800;letter-spacing:.06em;color:#fff;background:var(--ink);border-radius:99px;padding:3px 9px}
+#rg .zon:empty{display:none}
 /* ⭐ THE LAYER CONTROL AND ITS LEGEND KEY ARE ONE OBJECT.
    They were drawn separately: an unexplained chip in one block, and a
    mark-and-name in another that only appeared once the layer was on. So five
@@ -984,8 +1003,8 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
   <div class="grp" role="group" aria-label="Replay speed"><button class="spd stepb" id="slower">&#9664; Slower</button><button class="spd stepb" id="faster">Faster &#9654;</button></div>
   <input class="scrub" id="scrub" type="range" min="-1" max="1" value="-1"></div>
 <p class="verdict" id="verdict"></p>
-<section class="zone zlayers" aria-labelledby="zhLayers"><h2 class="zh" id="zhLayers">Add a metric layer</h2>
 <div class="newcomer nwhy2" id="newcomerWhy"></div>
+<details class="zone zlayers" id="zLayers"><summary class="zh">Add a metric layer<span class="zon" id="zLayersOn"></span></summary>
 <div class="lrows">
 <button class="lrow" id="lyCorsi" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Control (Corsi)</b><span class="lds">every shot attempt — on goal, missed, or blocked</span><span class="lon">The counters above the rink fill in as the replay runs, and the bar splits the attempts between the two clubs.</span></span><span class="st" id="stCorsi">Off</span></button>
 <button class="lrow" id="lyHd" aria-pressed="false"><span class="lmk"><i class="k-hd"></i></span><span class="ltx"><b>Shots from the slot</b><span class="lds">attempts from within 33 ft of the net, between the face-off dots</span><span class="lon">An amber ring marks each one. Click a ring to see the distance and angle it was measured by.</span></span><span class="st" id="stHd">Off</span></button>
@@ -999,17 +1018,13 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 <button id="work" aria-expanded="false">Show me the work</button>
 <div class="work" id="workPanel" hidden></div>
 <div class="hint">Tip: click any shot ringed in amber to see <b>why</b> it counts as a slot shot — with trails set to <b>keep every mark</b>, earlier ones stay clickable too.</div>
-</section>
-<section class="zone zref" aria-labelledby="zhRef"><h2 class="zh" id="zhRef">What the marks mean</h2>
+</details>
+<details class="zone zref"><summary class="zh">What the marks mean</summary>
 <div class="legend"><span><i class="k-slot"></i>the slot — within 33 ft of the net, between the dots</span><span><i class="k-zone"></i>either blue line — out to the neutral-zone dots</span><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span><i class="k-g"></i><i class="k-gv"></i>goal — either sweater</span><span><i class="k-blk"></i><i class="k-blkv"></i>blocked — ringed where the puck was <b>stopped</b></span></div>
+</details>
 <p class="disclose lkey lk-ends" id="endsKey"></p>
 <p class="disclose lkey lk-unrec" id="unrecKey"></p>
-</section>
 <div class="whybk" id="whyBk"><div class="why" id="whyContent"></div></div>
-<section class="zone znext" aria-labelledby="zhNext"><h2 class="zh" id="zhNext">Watch another game</h2>
-<div class="foot" id="gl">—</div>
-<nav class="nextup" id="nextup" aria-label="Where to go next"></nav>
-</section>
 <details class="zone zdisp"><summary class="zh">Display options</summary>
 <div class="figpick"><span class="ll">Trails:</span>
 <div class="grp" role="group" aria-label="How long marks stay on the ice"><button class="lyr tbtn" data-t="off" aria-pressed="true">Current moment</button><button class="lyr tbtn" data-t="all" aria-pressed="false">Keep every mark</button></div>
@@ -1020,6 +1035,10 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 <div class="figpick"><span class="ll">Narration:</span>
 <div class="grp" role="group" aria-label="Whether the ice names each event"><button class="lyr nbtn" id="lbl" data-n="on" aria-pressed="true">On</button><button class="lyr nbtn" id="lblOff" data-n="off" aria-pressed="false">Off</button></div>
 <span class="fnote" id="nLbl">Names each event on the ice as it happens — and calls a goal with the scorer and assists.</span></div>
+</details>
+<details class="zone znext"><summary class="zh">Watch another game</summary>
+<div class="foot" id="gl">—</div>
+<nav class="nextup" id="nextup" aria-label="Where to go next"></nav>
 </details>
 </div></div>
 <script>
@@ -5540,7 +5559,36 @@ let corsiOn=false,hdOn=false,goalieOn=false,whistleOn=false,blockOn=false;
    things still change together -- class, aria-pressed, visible state -- and
    render-preview's check that the preview goes THROUGH setCorsi rather than past
    it is retargeted at the element that now carries the answer. */
-function lyrState(id,on){const n=$(id);if(n)n.textContent=on?'On':'Off';}
+function lyrState(id,on){const n=$(id);if(n)n.textContent=on?'On':'Off';zoneState();}
+/* ⭐ A COLLAPSED CONTROL MUST STILL REPORT ITS STATE, and a zone holding one must
+   be able to open itself. Every zone below the rink is a disclosure now, which is
+   only safe with both halves: without the badge, marks appear on the ice with
+   nothing on screen accounting for them; without the auto-open, a deep link that
+   lands with a layer on -- eight of the learn page's nine doors do -- would put
+   the only way to turn it off behind a closed drawer, which is CHENG's one-way
+   trip.
+
+   DERIVED FROM THE DOM, NOT FROM A LIST OF LAYERS. `[aria-pressed="true"]` on a
+   row IS the on-state, so a sixth layer is covered the day it is added and a
+   layer that stops setting the attribute stops being counted -- rather than a
+   second enumeration here that agrees with the rows until someone edits one. */
+function zoneState(){
+ let on=0;document.querySelectorAll('#rg .lrow').forEach(r=>{
+  if(String(r.getAttribute('aria-pressed'))==='true')on++;});
+ const b=$('zLayersOn');if(b)b.textContent=on?`${on} layer${on===1?'':'s'} on`:'';
+ const d=$('zLayers');if(d&&on)d.open=true;}
+/* ⭐ AND THE OPEN NEEDS NO "HAS THE READER TOUCHED IT" FLAG, which is worth
+   saying because the first version had one and it could not have worked. The
+   `toggle` event fires for a PROGRAMMATIC change too, and the spec queues it as
+   a task -- so any `_auto` guard set around the assignment is already false by
+   the time the handler runs, and the fake document does not fire `toggle` at
+   all, so the divergence would have been invisible here.
+
+   It is unnecessary anyway: the only way to close this drawer is to press its
+   summary, and the only way to reach a layer row is with the drawer open. So
+   every call that arrives with a layer on and the drawer SHUT came from boot --
+   which is the deep link, and the one case this exists for. */
+zoneState();
 function setCorsi(){document.getElementById('rg').classList.toggle('corsi',corsiOn);$('lyCorsi').setAttribute('aria-pressed',corsiOn);lyrState('stCorsi',corsiOn);if(!corsiOn&&workOpen){workOpen=false;$('workPanel').hidden=true;$('work').setAttribute('aria-expanded',false);$('work').textContent='Show me the work';}}
 function setHd(){document.getElementById('rg').classList.toggle('slot',hdOn);$('lyHd').setAttribute('aria-pressed',hdOn);lyrState('stHd',hdOn);render(i,'');}
 $('lyCorsi').addEventListener('click',()=>{corsiOn=!corsiOn;setCorsi();});
