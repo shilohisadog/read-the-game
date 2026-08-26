@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-DSU+pSnWNHjTeu3U+5sH3PkRjCxpZCdcc5WRtqWpEqg=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-T013jDlu7ny4EFBfAY0hx1SUC+/wT+Fm3cH69YmyMuA='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-dlUR9usWGSy5SgXft0qODOphy0ghYAG8SWnqUeDTBAI=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-3/HGdsTIw8UnZfWzM8JdEGm0bre0tdlnp29c91xmsN8='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">What is this?</a></nav></header>
@@ -546,6 +546,31 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    controls at every viewport instead of whatever flex-wrap happens to leave,
    and it stops being a function of how many buttons sit beside it. */
 #rg .scrub{flex:1 0 100%;accent-color:var(--ink);cursor:pointer;min-width:120px;height:44px;margin:0}
+/* ⭐ THREE KINDS OF THING WERE IN ONE LIST, which is why it read as a wall.
+   Two of the eight rows were shaded AREAS that need a sentence, five were MARKS
+   that need only naming, and one was a DISCLOSURE with no swatch at all. Kevin:
+   "the existing wall of text just doesn't look good". Same defect as §3 of
+   docs/below-the-rink-2.md -- five kinds of control wearing one chip -- one
+   block lower down.
+
+   So the areas get the card the layer rows get, because they carry the same
+   shape of content (a mark, a name, what it means); the five marks stay a
+   compact strip, because a card around "home shot" is a box around two words;
+   and the disclosure left the panel entirely. */
+#rg .areas{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+#rg .area{flex:1 1 290px;display:grid;grid-template-columns:24px 1fr;gap:0 9px;padding:11px 13px;border:1px solid var(--edge);border-radius:11px;background:#fff}
+#rg .area b{font-size:.92rem;font-weight:700;display:block}
+#rg .area .lds{display:block;font-size:.78rem;line-height:1.45;color:var(--muted);margin-top:2px}
+#rg .area .src{font-size:.72rem;letter-spacing:.02em;color:var(--flag);font-weight:700;white-space:nowrap}
+/* ⭐ THE ONE CARD THAT CARRIES A NUMBER AND THE ONE THAT SAYS WHY IT CANNOT.
+   The slot's sentence is COMPUTED from the archive at render time; the blue
+   line's is a stated limit. Doctrine §3 -- honest limits stated ON SCREEN --
+   and it is the honest answer to Kevin's reading of the blue line as a
+   contested area: he is right about the hockey and the feed cannot see it,
+   because holding a line produces no recordable event. */
+#rg .area .asay,#rg .area .lim{display:block;margin-top:6px;padding-left:9px;border-left:2px solid var(--edge)}
+#rg .area .asay{border-left-color:var(--hd);color:var(--ink)}
+#rg .area .asay:empty{display:none}
 #rg .legend{display:flex;flex-wrap:wrap;gap:7px 18px;font-size:.78rem;color:var(--muted);margin:6px 2px}
 #rg .legend i{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:-1px}
 /* A LEGEND MAY NOT DESCRIBE A MARK THAT IS NOT ON THE ICE. "from the slot, once
@@ -1020,7 +1045,11 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 <div class="hint">Tip: click any shot ringed in amber to see <b>why</b> it counts as a slot shot — with trails set to <b>keep every mark</b>, earlier ones stay clickable too.</div>
 </details>
 <details class="zone zref"><summary class="zh">What the marks mean</summary>
-<div class="legend"><span><i class="k-slot"></i>the slot — within 33 ft of the net, between the dots</span><span><i class="k-zone"></i>either blue line — out to the neutral-zone dots</span><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span><i class="k-g"></i><i class="k-gv"></i>goal — either sweater</span><span><i class="k-blk"></i><i class="k-blkv"></i>blocked — ringed where the puck was <b>stopped</b></span></div>
+<div class="areas">
+<div class="area"><span class="lmk"><i class="k-slot"></i></span><span class="ltx"><b>The slot</b><span class="lds">The shaded area at each end — within 33 ft of the net, between the face-off dots.<span class="asay" id="slotSay"></span></span></span></div>
+<div class="area"><span class="lmk"><i class="k-zone"></i></span><span class="ltx"><b>Either blue line</b><span class="lds">The shaded strip at each blue line, reaching out to the neutral-zone dots. No attacker may cross it ahead of the puck — that is offside, <span class="src">NHL Rule 83</span>.<span class="lim">We count nothing here. Holding the line leaves no event in the record, so the feed is silent about the thing that makes it matter.</span></span></span></div>
+</div>
+<div class="legend"><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span><i class="k-g"></i><i class="k-gv"></i>goal — either sweater</span><span><i class="k-blk"></i><i class="k-blkv"></i>blocked — ringed where the puck was <b>stopped</b></span></div>
 </details>
 <p class="disclose lkey lk-ends" id="endsKey"></p>
 <p class="disclose lkey lk-unrec" id="unrecKey"></p>
@@ -4778,6 +4807,22 @@ $('aAb').textContent=AAB;$('hAb').textContent=HAB;
    cannot change during a visit should not be rebuilt three hundred times. */
 (()=>{const k=$('endsKey');if(!k)return;const K=ENDS_KEY[ENDSMODE];
  k.textContent=K.rule||K.display;})();
+/* ⭐ THE SLOT'S SENTENCE IS COMPUTED, NEVER TYPED.
+   The legend said only WHERE the shading is -- "within 33 ft of the net,
+   between the dots" -- which is a definition, not a reason. The reason is the
+   share of goals scored from inside it, and the figure a design document had
+   been quoting was in NO published artifact at all: the archive now measures it
+   (`archive.js::slotShare`) and this reads it.
+
+   SILENT WHEN IT DOES NOT HAVE IT, rather than falling back to a number. A page
+   built from a single game never asks for the archive, and a derive that has not
+   run yet has no share to give; in both cases the card keeps its geometry and
+   loses its clause, which is the `noCurveReason` rule applied one block down.
+   A typed constant here would go stale the next time the archive is re-derived
+   and nobody would ever see it happen. */
+(()=>{const el=$('slotSay');if(!el)return;
+ const S=RATES&&RATES.slot;if(!S||S.rate==null||!S.n)return;
+ el.textContent=`${Math.round(S.rate*100)}% of goals are scored from inside it — ${S.count.toLocaleString()} of ${S.n.toLocaleString()} across the archive.`;})();
 /* ⭐ WHERE THE LEAGUE DISAGREES WITH ITSELF, SAID ONCE, COVERING EVERYWHERE.
    73 in-scope games reproduce the NHL's play-by-play exactly and differ from the
    NHL's own boxscore by one shot. We used to withhold them; now we show the

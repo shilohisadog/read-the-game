@@ -265,13 +265,22 @@ test('the slot and the blue-line band are visibly different kinds of thing', () 
  * being true the sentence has to change, and this is what says so.
  */
 test('the legend says what the two painted regions really are', () => {
-  const legend = /<div class="legend">([\s\S]*?)<\/div>/.exec(
+  // ⭐ IT READS `.areas`, NOT `.legend`, AS OF 2026-08-26. The two painted
+  // regions left the key list for cards of their own — they are the only two
+  // rows that needed a sentence rather than a name, and mixing them with five
+  // one-word marks is what made the block read as a wall. The claim is
+  // unchanged and is the one worth keeping: THE COPY MUST AGREE WITH THE
+  // CONSTANTS THE RINK IS DRAWN FROM, so a change to `HIGH_DANGER_FT` cannot
+  // leave the page describing a shape it no longer paints.
+  const areas = /<div class="areas">([\s\S]*?)<\/div>\s*<div class="legend">/.exec(
     readFileSync(new URL('../src/game.html', import.meta.url), 'utf8'));
-  assert.ok(legend, 'the legend is gone — this check has lost its subject');
-  const text = legend[1].replace(/<[^>]*>/g, ' ');
+  assert.ok(areas, 'the area cards are gone — this check has lost its subject');
+  const text = areas[1].replace(/<[^>]*>/g, ' ');
 
-  assert.match(text, /the slot/, 'the slot is painted on the ice and unexplained');
-  assert.match(text, /blue line/, 'the blue-line zone is painted and unexplained');
+  // Case-insensitive: the region is a card TITLE now rather than a phrase inside
+  // a key, so it is capitalised. What is being asserted is that it is named.
+  assert.match(text, /\bthe slot\b/i, 'the slot is painted on the ice and unexplained');
+  assert.match(text, /blue line/i, 'the blue-line zone is painted and unexplained');
 
   const ft = /within (\d+) ft of the net/.exec(text);
   assert.ok(ft, 'the slot key stopped stating its distance');

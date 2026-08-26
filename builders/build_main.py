@@ -107,7 +107,11 @@ __CSS__</style>
 <div class="hint">Tip: click any shot ringed in amber to see <b>why</b> it counts as a slot shot — with trails set to <b>keep every mark</b>, earlier ones stay clickable too.</div>
 </details>
 <details class="zone zref"><summary class="zh">What the marks mean</summary>
-<div class="legend"><span><i class="k-slot"></i>the slot — within 33 ft of the net, between the dots</span><span><i class="k-zone"></i>either blue line — out to the neutral-zone dots</span><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span><i class="k-g"></i><i class="k-gv"></i>goal — either sweater</span><span><i class="k-blk"></i><i class="k-blkv"></i>blocked — ringed where the puck was <b>stopped</b></span></div>
+<div class="areas">
+<div class="area"><span class="lmk"><i class="k-slot"></i></span><span class="ltx"><b>The slot</b><span class="lds">The shaded area at each end — within 33 ft of the net, between the face-off dots.<span class="asay" id="slotSay"></span></span></span></div>
+<div class="area"><span class="lmk"><i class="k-zone"></i></span><span class="ltx"><b>Either blue line</b><span class="lds">The shaded strip at each blue line, reaching out to the neutral-zone dots. No attacker may cross it ahead of the puck — that is offside, <span class="src">NHL Rule 83</span>.<span class="lim">We count nothing here. Holding the line leaves no event in the record, so the feed is silent about the thing that makes it matter.</span></span></span></div>
+</div>
+<div class="legend"><span><i class="k-h"></i>home shot</span><span><i class="k-a"></i>visitor shot — white, like the sweaters</span><span><i class="k-p"></i>puck (jumps between real events)</span><span><i class="k-g"></i><i class="k-gv"></i>goal — either sweater</span><span><i class="k-blk"></i><i class="k-blkv"></i>blocked — ringed where the puck was <b>stopped</b></span></div>
 </details>
 <p class="disclose lkey lk-ends" id="endsKey"></p>
 <p class="disclose lkey lk-unrec" id="unrecKey"></p>

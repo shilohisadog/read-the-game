@@ -502,6 +502,31 @@
    controls at every viewport instead of whatever flex-wrap happens to leave,
    and it stops being a function of how many buttons sit beside it. */
 #rg .scrub{flex:1 0 100%;accent-color:var(--ink);cursor:pointer;min-width:120px;height:44px;margin:0}
+/* ⭐ THREE KINDS OF THING WERE IN ONE LIST, which is why it read as a wall.
+   Two of the eight rows were shaded AREAS that need a sentence, five were MARKS
+   that need only naming, and one was a DISCLOSURE with no swatch at all. Kevin:
+   "the existing wall of text just doesn't look good". Same defect as §3 of
+   docs/below-the-rink-2.md -- five kinds of control wearing one chip -- one
+   block lower down.
+
+   So the areas get the card the layer rows get, because they carry the same
+   shape of content (a mark, a name, what it means); the five marks stay a
+   compact strip, because a card around "home shot" is a box around two words;
+   and the disclosure left the panel entirely. */
+#rg .areas{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+#rg .area{flex:1 1 290px;display:grid;grid-template-columns:24px 1fr;gap:0 9px;padding:11px 13px;border:1px solid var(--edge);border-radius:11px;background:#fff}
+#rg .area b{font-size:.92rem;font-weight:700;display:block}
+#rg .area .lds{display:block;font-size:.78rem;line-height:1.45;color:var(--muted);margin-top:2px}
+#rg .area .src{font-size:.72rem;letter-spacing:.02em;color:var(--flag);font-weight:700;white-space:nowrap}
+/* ⭐ THE ONE CARD THAT CARRIES A NUMBER AND THE ONE THAT SAYS WHY IT CANNOT.
+   The slot's sentence is COMPUTED from the archive at render time; the blue
+   line's is a stated limit. Doctrine §3 -- honest limits stated ON SCREEN --
+   and it is the honest answer to Kevin's reading of the blue line as a
+   contested area: he is right about the hockey and the feed cannot see it,
+   because holding a line produces no recordable event. */
+#rg .area .asay,#rg .area .lim{display:block;margin-top:6px;padding-left:9px;border-left:2px solid var(--edge)}
+#rg .area .asay{border-left-color:var(--hd);color:var(--ink)}
+#rg .area .asay:empty{display:none}
 #rg .legend{display:flex;flex-wrap:wrap;gap:7px 18px;font-size:.78rem;color:var(--muted);margin:6px 2px}
 #rg .legend i{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:-1px}
 /* A LEGEND MAY NOT DESCRIBE A MARK THAT IS NOT ON THE ICE. "from the slot, once

@@ -790,3 +790,80 @@ five layers — but the height argument for them is gone.
   on: **the slot is a PLACE and the blue line a THRESHOLD**. Say what the
   threshold is and let the reader draw the inference — *show the distance from
   normal, never supply the inference*.
+
+---
+
+## 13. The marks section — two area cards and a mark strip
+
+### 13.1 Three kinds of thing were in one list
+
+Kevin: *"the existing wall of text just doesn't look good… if we are doing
+cards, then I think this area should be consistent with that approach."* What
+made it a wall was not the wording:
+
+| | |
+|---|---|
+| the slot · either blue line | shaded **AREAS** — need a sentence |
+| home shot · visitor shot · puck · goal · blocked | **MARKS** — need only a name |
+| the teams switch ends | a **DISCLOSURE** — no swatch at all |
+
+**Same defect as §3, one block lower**: five kinds of control wearing one chip.
+The areas get the card the layer rows get, because they carry the same shape of
+content. The five marks stay a compact strip, because a card around *home shot*
+is a box around two words. The disclosure left the panel in §12.
+
+### 13.2 ⭐ The number did not exist, so it was derived first
+
+The legend had only ever said WHERE the slot is — *within 33 ft of the net,
+between the dots*. That is a definition, not a reason. **The reason is the share
+of goals scored from inside it, and that figure was in no published artifact at
+all** — not `measures.json`, not any page — while §7.2 of this document quoted
+*"79% of goals"* as though it were settled. [[verify-inherited-claims]].
+
+`measure.mjs` was already running `danger.js` over every in-scope game and
+throwing the goal placement away. It now carries `goals: {slot, placed,
+unplaced}` per game, and `archive.js::slotShare` publishes it.
+
+⭐ **The denominator is PLACED goals, not all goals.** A goal the feed gives no
+coordinate for is neither inside the slot nor outside it; counting it below the
+line scores it as *not from the slot* and biases the share downwards. `unplaced`
+is published beside the rate. The test blinds a **real** goal's coordinates —
+the exact thing the feed does to us — rather than synthesising an event.
+
+⭐ **And the card COMPUTES the sentence.** A typed constant would go stale on the
+next re-derive with nobody ever seeing it happen, so the card reads
+`RATES.slot` and **says nothing at all** when there is none — a single-game page
+never asks for the archive, and a derive that has not run has no share to give.
+Both keep the geometry and lose the clause. Mutating it to fall back on a
+constant reddens the test.
+
+### 13.3 The blue line — Kevin is right and the feed cannot see it
+
+> *"the blue line, at least the way I think of it, is more of a contested area,
+> not necessarily offside-focused."*
+
+**His reading is already ratified in the source.** `drawRink`'s own comment,
+written when the shading was built, records his earlier wording — *offense wants
+to hold play in, defense wants to keep play out, a battleground if you will* —
+and then the finding that matters: **only 6.2% of located plays fall within five
+feet of a blue line, but holding the line produces NO RECORDABLE EVENT.** The
+feed records where countable things happen, not where the puck is contested.
+
+So *contested* cannot be measured here, and asserting it is the same move as the
+*"the ice teams fight to hold"* clause §11.3 removed. The card states the RULE,
+which is the league's (**NHL Rule 83**, already cited by `whistle.js` — looked
+up, not typed), and then states the limit, which is ours:
+
+> We count nothing here. Holding the line leaves no event in the record, so the
+> feed is silent about the thing that makes it matter.
+
+**Doctrine §3 — honest limits stated ON SCREEN.** It is also what makes the pair
+of cards teach something: one region is where the goals come from and we can
+prove it; the other is where the game is decided and we cannot see it. A test
+forbids `contested|battleground|fight|fierce` in that card, so the next edit
+cannot quietly reach for the assertion.
+
+⚠️ **The 73% in the first render is a 40-game sanity run, not the archive.** The
+real figure comes from `derive.yml`, which is the only job that walks the whole
+archive — and it is worth noting it is nowhere near the 79% this document had
+been carrying.

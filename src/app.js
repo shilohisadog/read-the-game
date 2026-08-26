@@ -1001,6 +1001,22 @@ $('aAb').textContent=AAB;$('hAb').textContent=HAB;
    cannot change during a visit should not be rebuilt three hundred times. */
 (()=>{const k=$('endsKey');if(!k)return;const K=ENDS_KEY[ENDSMODE];
  k.textContent=K.rule||K.display;})();
+/* ⭐ THE SLOT'S SENTENCE IS COMPUTED, NEVER TYPED.
+   The legend said only WHERE the shading is -- "within 33 ft of the net,
+   between the dots" -- which is a definition, not a reason. The reason is the
+   share of goals scored from inside it, and the figure a design document had
+   been quoting was in NO published artifact at all: the archive now measures it
+   (`archive.js::slotShare`) and this reads it.
+
+   SILENT WHEN IT DOES NOT HAVE IT, rather than falling back to a number. A page
+   built from a single game never asks for the archive, and a derive that has not
+   run yet has no share to give; in both cases the card keeps its geometry and
+   loses its clause, which is the `noCurveReason` rule applied one block down.
+   A typed constant here would go stale the next time the archive is re-derived
+   and nobody would ever see it happen. */
+(()=>{const el=$('slotSay');if(!el)return;
+ const S=RATES&&RATES.slot;if(!S||S.rate==null||!S.n)return;
+ el.textContent=`${Math.round(S.rate*100)}% of goals are scored from inside it — ${S.count.toLocaleString()} of ${S.n.toLocaleString()} across the archive.`;})();
 /* ⭐ WHERE THE LEAGUE DISAGREES WITH ITSELF, SAID ONCE, COVERING EVERYWHERE.
    73 in-scope games reproduce the NHL's play-by-play exactly and differ from the
    NHL's own boxscore by one shot. We used to withhold them; now we show the

@@ -173,6 +173,67 @@ test('the state each layer row reports is REALLY the state of the layer', () => 
   assert.equal(a.$('rg').classList.contains('slot'), false, 'the key would stay after its marks left');
 });
 
+/**
+ * ⭐ THE SLOT'S REASON IS COMPUTED, AND ITS ABSENCE IS SILENT.
+ *
+ * The legend said only WHERE the shading is — a definition, not a reason. The
+ * reason is the share of goals scored from inside it, and the figure a design
+ * document had been quoting existed in NO published artifact: `archive.js`
+ * measures it now and the card reads it.
+ *
+ * TWO HALVES, and the second is the one that matters. A typed constant would
+ * pass the first and go stale the next time the archive is re-derived, with
+ * nobody ever seeing it happen — so the card must also say NOTHING when the
+ * archive is not there, rather than falling back to a number somebody wrote.
+ */
+test('the slot card states its share from the archive, and nothing without one', () => {
+  const withArchive = boot(rich, { ...CURVE_AND_MIX,
+    slot: { n: 25000, count: 18000, rate: 0.72, unplaced: 4,
+            population: 'NHL regular season and playoffs', what: 'x' } });
+  const said = withArchive.$('slotSay').textContent;
+  assert.match(said, /72% of goals/, `the card does not state the share: "${said}"`);
+  assert.match(said, /18,000 of 25,000/, 'a percentage with no counts behind it');
+
+  // THE NUMBER IS NOT IN THE DOCUMENT. If it were, the assertion above would
+  // pass against a page that ignores the archive entirely.
+  assert.doesNotMatch(app.split('<script>')[0], /\d+% of goals/,
+    'the share is typed into the markup, so a re-derive cannot move it');
+
+  // A PAGE WITH NO ARCHIVE SAYS NOTHING. `read-the-game.html` carries a single
+  // game and never asks for one; a derive that has not run yet has no share to
+  // give. Both keep the geometry and lose the clause.
+  assert.equal(boot(rich, undefined).$('slotSay').textContent, '',
+    'a page with no archive invented a share');
+  assert.equal(boot(rich, { ...CURVE_AND_MIX, slot: { n: 0, count: 0, rate: null } })
+    .$('slotSay').textContent, '',
+    'an archive that measured nothing was reported as a rate anyway');
+});
+
+/**
+ * AND THE BLUE LINE SAYS WHY IT CARRIES NO NUMBER.
+ *
+ * Kevin: "the blue line, at least the way I think of it, is more of a contested
+ * area, not necessarily offside-focused." He is right about the hockey and the
+ * feed cannot see it — holding a line produces no recordable event, which
+ * `drawRink`'s own comment has said since the shading was built. So the card
+ * states the RULE, which is the league's, and then states the limit, which is
+ * ours. Doctrine §3: honest limits stated ON SCREEN.
+ *
+ * This is what stops the next edit reaching for "hotly contested" — an
+ * assertion about hockey we have no measurement for, and the same move as the
+ * "the ice teams fight to hold" clause this round removed.
+ */
+test('the blue-line card cites a rule and states what we do not measure', () => {
+  const areas = /<div class="areas">([\s\S]*?)<\/div>\s*<div class="legend">/.exec(app)[1];
+  const card = areas.split('<div class="area">').find(c => /blue line/i.test(c));
+  assert.ok(card, 'there is no blue-line card');
+  assert.match(card, /NHL Rule 83/, 'the offside claim cites no rule');
+  assert.match(card, /<span class="lim">[^<]{20,}</,
+    'the card carries no statement of what is NOT measured there');
+  assert.doesNotMatch(card, /contested|battleground|fight|fierce/i,
+    'the card asserts a contest we have no measurement for');
+});
+
 test('the permanent keys are the marks the BASE view actually draws', () => {
   // The other direction: what is left in the permanent legend must be drawn
   // without any layer on, or it is the same defect the conditional keys just
