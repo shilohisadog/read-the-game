@@ -37,7 +37,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-qiYH1+fkeR8rmuzWWiyZrGDEWht1zTyZGR0tkE+Ot6c=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-DJseHzGntGBvDvK4+iPqCDa3mbHkLXVeDTBx0ELyqUk='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-1DoIQ7xSfVny/2ySukbsmjOOG/bRG5J1F6GmGlP2g/o=' https://static.cloudflareinsights.com; style-src 'sha256-138h5qGhA+x2xOdGtYx632sCYpq1Rzo10Ko/9Ll4+rI=' 'sha256-tlKsckknCwZPaEkj9LzB6PMdaWn7PJS1ov1KI7Ym7So='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">What is this?</a></nav></header>
@@ -822,6 +822,40 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg details.zone>summary::after{content:"\25be";margin-left:auto;font-size:.9rem}
 #rg details.zone[open]>summary::after{content:"\25b4"}
 #rg details.zone[open]>summary{margin-bottom:10px}
+/* ⏸ ═══ PARKED 2026-08-26 — THE PAGE IS BACK TO ITS BASE ═══
+   Kevin: "let's just remove all the extra stuff, for now, then we can rebuild
+   properly. Just have the header, scoreboard, rink, play controls and then the
+   footer. We need to start fresh on the layers, we're just spinning our wheels."
+
+   NOTHING IS DELETED. Every block below still ships in the markup and every
+   handler still runs, so the rebuild starts from working code rather than from
+   `git log`. This is one rule and it is the whole mechanism -- delete these two
+   lines and the page is exactly what it was at aa99c56.
+
+   WHAT IS PARKED, AND WHAT IS DELIBERATELY NOT:
+     parked   .zlayers  the layer menu        .zref  what the marks mean
+              .zdisp    trails                .nwhy2 the "why add a layer" pitch
+     KEPT     the greeting (it is the instruction the header's promise makes),
+              the verdict card, `.disclose` (ends switching, and the games whose
+              boxscore contradicts the event log) and the footer nav. The two
+              disclosures are DOCTRINE, not furniture: they are the page telling
+              a reader what it is not showing them, and parking them would be a
+              different kind of decision than the one Kevin asked for.
+
+   ⭐ AND THE MENU COMES BACK THE MOMENT IT HAS SOMETHING TO CONTROL.
+   `what-you-can-see.html` enters this page NINE times, EIGHT of them with a
+   layer already on. Hiding the menu outright would make every one of those doors
+   a one-way trip -- marks on the ice, nothing on the page able to turn them off,
+   which is the exact failure CHENG's ruling named. So `zoneState` puts `anylayer`
+   on the root whenever a row is pressed, and the rule below gives the menu back.
+   A control that appears exactly when it has a subject. */
+/* `.nwhy2` carries `#rg.newcomer .newcomer{display:block}` at (1,2,0) and a rule
+   at (1,1,0) cannot turn that off, so the pitch stayed on a first visit through
+   a rule that read as if it had parked it. Specificity, not the selector, was
+   the bug -- found by rendering the page, not by reading the rule. */
+#rg .zlayers,#rg .zref,#rg .zdisp{display:none}
+#rg.newcomer .nwhy2{display:none}
+#rg.anylayer .zlayers{display:block}
 /* ⭐ THE MENU IS A CONTROL AND NOT A CAPTION, AND IT SITS UNDER THE ICE.
    Kevin, 2026-08-26: "it's just so disjointed from the rink that toggling a
    layer on and off creates a UX disconnect." It went above the rink first, and
@@ -907,10 +941,29 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .lmk i.k-rl{width:3px;height:13px;border-radius:1px;margin-right:4px}
 #rg .lrow .ltx{grid-column:2;display:block;min-width:0}
 #rg .lrow b{font-size:.92rem;font-weight:700;display:block;text-wrap:balance}
-#rg .lrow .lds{display:none;font-size:.75rem;font-weight:400;color:var(--muted);line-height:1.4;margin-top:2px}
-#rg .lrow[aria-pressed="true"] .lds{display:block}
-#rg .lrow .lon{display:none;font-size:.78rem;font-weight:400;line-height:1.45;margin-top:6px;padding-left:9px;border-left:2px solid var(--hd)}
-#rg .lrow[aria-pressed="true"] .lon{display:block}
+/* ⚠️ ⭐ BOTH SENTENCES ARE OFF THE PAGE, AND THIS IS DEBT WITH A NAME.
+   Kevin, 2026-08-26: "remove the descriptive text when toggling a layer, just
+   have Corsi, Slot Shots, Goaltending, Stoppages, and Blocked shots, less is
+   more, and then we have to figure out how to add the descriptions somewhere
+   else." So the row is a mark, a name and a switch, and nothing else -- and the
+   markup still SHIPS both sentences, because the next round gives them a home
+   and a deleted sentence is one nobody rewrites.
+
+   WHAT IS UNHOMED, ENUMERATED, because hiding a container without listing what
+   was in it is how this repo has lost content before:
+     Corsi        the counters and the bar are what fill in
+     Slot shots   THE AMBER RING IS NAMED HERE AND ALMOST NOWHERE ELSE -- the
+                  `.hint` line covers it while the layer is on, which is the only
+                  reason this is debt rather than a regression
+     Goaltending  a card per goaltender, building a save percentage
+     Stoppages    the ring is the restart spot; the bar lights the line the rule
+                  names -- restated in `.whistlepanel` for the current whistle
+     Blocked      others dim so the stopped ones carry the frame -- the legend
+                  key `blocked - ringed where the puck was stopped` still stands
+   Four of the five have a panel or a hint under the ice that repeats the load-
+   bearing half. `test/render-notes.test.js` pins this list so the day one of
+   those panels goes, the row note is not silently the only casualty. */
+#rg .lrow .lds,#rg .lrow .lon{display:none}
 /* ⭐ THE STATE IS A SWITCH, NOT THE WORD "OFF". Kevin, 2026-08-26: "I was
    thinking of the Metrics layers buttons as just toggles." A pill reading OFF is
    a label that has to be read and then mapped to an action; a switch is the one
@@ -1107,10 +1160,10 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 </div>
 <details class="zone zlayers" id="zLayers"><summary class="zh">Add a metric layer<span class="zon" id="zLayersOn"></span></summary>
 <div class="lrows">
-<button class="lrow" id="lyCorsi" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Control (Corsi) — every shot attempt</b><span class="lds">on goal, missed, or blocked: all three count, because all three are the team moving the puck at the net</span><span class="lon">The counters above the rink fill in as the replay runs, and the bar splits the attempts between the two clubs.</span></span><span class="st" id="stCorsi">Off</span></button>
-<button class="lrow" id="lyHd" aria-pressed="false"><span class="lmk"><i class="k-hd"></i></span><span class="ltx"><b>Shots from the slot</b><span class="lds">attempts from within 33 ft of the net, between the face-off dots</span><span class="lon">An amber ring marks each one. Click a ring to see the distance and angle it was measured by.</span></span><span class="st" id="stHd">Off</span></button>
-<button class="lrow" id="lyGoalie" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Goaltending — every shot faced</b><span class="lds">and what became of it: saved, scored on, or missed the net entirely</span><span class="lon">A card per goaltender builds its save percentage as the replay runs.</span></span><span class="st" id="stGoalie">Off</span></button>
-<button class="lrow" id="lyWhistle" aria-pressed="false"><span class="lmk"><i class="k-wh"></i><i class="k-rl"></i></span><span class="ltx"><b>Why play stopped</b><span class="lds">the rule that stopped play, and the dot it restarted on</span><span class="lon">The ring marks where play restarted, brightest at the most recent stoppage. The bar lights the line the rule names — for icing the centre line and the far goal line, for offside the blue line.</span></span><span class="st" id="stWhistle">Off</span></button>
+<button class="lrow" id="lyCorsi" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Corsi</b><span class="lds">on goal, missed, or blocked: all three count, because all three are the team moving the puck at the net</span><span class="lon">The counters above the rink fill in as the replay runs, and the bar splits the attempts between the two clubs.</span></span><span class="st" id="stCorsi">Off</span></button>
+<button class="lrow" id="lyHd" aria-pressed="false"><span class="lmk"><i class="k-hd"></i></span><span class="ltx"><b>Slot shots</b><span class="lds">attempts from within 33 ft of the net, between the face-off dots</span><span class="lon">An amber ring marks each one. Click a ring to see the distance and angle it was measured by.</span></span><span class="st" id="stHd">Off</span></button>
+<button class="lrow" id="lyGoalie" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Goaltending</b><span class="lds">and what became of it: saved, scored on, or missed the net entirely</span><span class="lon">A card per goaltender builds its save percentage as the replay runs.</span></span><span class="st" id="stGoalie">Off</span></button>
+<button class="lrow" id="lyWhistle" aria-pressed="false"><span class="lmk"><i class="k-wh"></i><i class="k-rl"></i></span><span class="ltx"><b>Stoppages</b><span class="lds">the rule that stopped play, and the dot it restarted on</span><span class="lon">The ring marks where play restarted, brightest at the most recent stoppage. The bar lights the line the rule names — for icing the centre line and the far goal line, for offside the blue line.</span></span><span class="st" id="stWhistle">Off</span></button>
 <button class="lrow" id="lyBlock" aria-pressed="false"><span class="lmk"><i class="k-blk"></i><i class="k-blkv"></i></span><span class="ltx"><b>Blocked shots</b><span class="lds">the attempts a body stopped before they reached the goalie</span><span class="lon">Blocked attempts keep their ring and every other mark dims, so the ones a body stopped stand out.</span></span><span class="st" id="stBlock">Off</span></button>
 </div>
 <div class="figpick sit"><span class="ll">Situations:</span>
@@ -5721,7 +5774,11 @@ function lyrState(id,on){const n=$(id);if(n)n.textContent=on?'On':'Off';zoneStat
 function zoneState(){
  let on=0;document.querySelectorAll('#rg .lrow').forEach(r=>{
   if(String(r.getAttribute('aria-pressed'))==='true')on++;});
- const b=$('zLayersOn');if(b)b.textContent=on?`${on} layer${on===1?'':'s'} on`:'';}
+ const b=$('zLayersOn');if(b)b.textContent=on?`${on} layer${on===1?'':'s'} on`:'';
+ // ⏸ PARKED: the menu is hidden on the base page and this class is what gives
+ // it back, so a deep link that arrives with a layer on is never a one-way
+ // trip. Derived from the same count as the badge -- one source, two readouts.
+ document.getElementById('rg').classList.toggle('anylayer',on>0);}
 zoneState();
 function setCorsi(){document.getElementById('rg').classList.toggle('corsi',corsiOn);$('lyCorsi').setAttribute('aria-pressed',corsiOn);lyrState('stCorsi',corsiOn);if(!corsiOn&&workOpen){workOpen=false;$('workPanel').hidden=true;$('work').setAttribute('aria-expanded',false);$('work').textContent='Show me the work';}}
 function setHd(){document.getElementById('rg').classList.toggle('slot',hdOn);$('lyHd').setAttribute('aria-pressed',hdOn);lyrState('stHd',hdOn);render(i,'');}

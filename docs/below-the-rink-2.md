@@ -1221,3 +1221,50 @@ Each position broke on its own, so one assertion cannot describe the rule:
     menu  < transport       or it falls back into the 236px gap
 
 Mutated in both directions; each fires its own message.
+
+## 20. ⏸ Parked back to the base page
+
+Kevin: *"let's just remove all the extra stuff, for now, then we can rebuild
+properly. Just have the header, scoreboard, rink, play controls and then the
+footer. We need to start fresh on the layers, we're just spinning our wheels."*
+
+    390, returning     pagelede · board · rinkbox · transport · disclose · next
+    390, first visit   + the greeting                                doc 1371px
+    1100, returning                                                  doc 1189px
+
+**Parked:** `.zlayers`, `.zref`, `.zdisp`, `.nwhy2`.
+**Kept:** the greeting (it is the instruction the header's promise makes), the
+verdict card, both `.disclose` lines and the footer nav.
+
+⭐ **The two disclosures are doctrine, not furniture** — ends switching, and the
+games whose boxscore contradicts the event log. They are the page telling a
+reader what it is *not* showing them, and parking them would be a different
+decision than the one that was asked for. A test asserts their absence from the
+parking rule, because **absence from a list is invisible in review.**
+
+### 20.1 ⭐ Nothing was deleted, and the doors still work
+
+Every block still ships and every handler still runs, so the rebuild starts from
+working code rather than from `git log`. Two CSS lines are the whole mechanism.
+
+`what-you-can-see.html` enters this page **nine** times, **eight** with a layer
+already on. A menu hidden outright makes every one of those a one-way trip —
+marks on the ice, nothing on the page able to turn them off. So `zoneState` puts
+`anylayer` on the root whenever a row is pressed and the menu comes back: **a
+control that appears exactly when it has a subject.** Pinned in both directions
+and mutated three ways.
+
+### 20.2 ⚠️ A rule that read as if it parked a block, and did not
+
+`#rg .nwhy2{display:none}` is (1,1,0) and `#rg.newcomer .newcomer{display:block}`
+is (1,2,0), so **the 301px pitch stayed on the page through a rule that looked
+like it had removed it.** It shipped that way and only the render showed it —
+the same family as §7's swatch scoped to `.legend`. The test asserts the
+*winning* selector, because the losing one is what passes review.
+
+### 20.3 Open, for the rebuild
+
+* The header still says **ADD METRICS AFTER** and the base page now offers no way
+  to add one. The copy is right and the page is temporarily short of it.
+* The five descriptions and the five on-the-ice notes are parked in the markup,
+  enumerated in the stylesheet, and still have no home. That is the rebuild.

@@ -1836,7 +1836,11 @@ function lyrState(id,on){const n=$(id);if(n)n.textContent=on?'On':'Off';zoneStat
 function zoneState(){
  let on=0;document.querySelectorAll('#rg .lrow').forEach(r=>{
   if(String(r.getAttribute('aria-pressed'))==='true')on++;});
- const b=$('zLayersOn');if(b)b.textContent=on?`${on} layer${on===1?'':'s'} on`:'';}
+ const b=$('zLayersOn');if(b)b.textContent=on?`${on} layer${on===1?'':'s'} on`:'';
+ // ⏸ PARKED: the menu is hidden on the base page and this class is what gives
+ // it back, so a deep link that arrives with a layer on is never a one-way
+ // trip. Derived from the same count as the badge -- one source, two readouts.
+ document.getElementById('rg').classList.toggle('anylayer',on>0);}
 zoneState();
 function setCorsi(){document.getElementById('rg').classList.toggle('corsi',corsiOn);$('lyCorsi').setAttribute('aria-pressed',corsiOn);lyrState('stCorsi',corsiOn);if(!corsiOn&&workOpen){workOpen=false;$('workPanel').hidden=true;$('work').setAttribute('aria-expanded',false);$('work').textContent='Show me the work';}}
 function setHd(){document.getElementById('rg').classList.toggle('slot',hdOn);$('lyHd').setAttribute('aria-pressed',hdOn);lyrState('stHd',hdOn);render(i,'');}

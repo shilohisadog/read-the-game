@@ -468,11 +468,23 @@ test('"play" leaves as a countable noun and stays as a mass noun', () => {
   // "The ring marks where play restarted". Still the mass noun, still correct,
   // different words — so the survivor list follows the copy rather than pinning
   // a phrase that a legitimate edit retired.
-  for (const survivor of ['Why play stopped', 'where play restarted', 'stopped play']) {
+  // ⚠️ AND "Why play stopped" HAS NOW RETIRED THE SAME WAY, on 2026-08-26: Kevin
+  // renamed the layer to `Stoppages` ("less is more"). Still a legitimate edit,
+  // so it leaves the list rather than failing it.
+  //
+  // ⚠️ THE TWO SURVIVORS BELOW NOW SIT IN `display:none` ROWS, which is the same
+  // weakening as a comment passing a markup check — SEEN cannot see a stylesheet.
+  // So the tooth of this half has moved to the runtime survivor asserted after
+  // it, which a reader with the whistle layer on genuinely reads. When the
+  // descriptions get a home (docs §20), the visible survivors come back here.
+  for (const survivor of ['where play restarted', 'stopped play']) {
     assert.ok(SEEN.includes(survivor),
       `"${survivor}" is the mass noun and is correct English — a blanket ` +
       `rename took it, which is the failure mode this half exists to catch`);
   }
+  assert.ok(app.includes('play has not stopped'),
+    'the whistle panel stopped saying "play has not stopped" — the mass noun no longer ' +
+    'appears anywhere a reader can actually read it');
 });
 
 /**

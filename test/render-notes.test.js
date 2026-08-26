@@ -33,60 +33,50 @@ const LAYER_ROWS = ['lyCorsi', 'lyHd', 'lyGoalie', 'lyWhistle', 'lyBlock'];
  */
 const GAME_STATE_KEYS = { 'lk-ends': 'endskey', 'lk-unrec': 'unrec' };
 
-test('a layer row is a readable name, and both of its notes arrive with the press', () => {
-  // The markup ships every row complete — this is a stylesheet decision, so the
-  // assertion is on the rule, in the one instrument that can see it at build time.
+test('the page is parked at its base, and nothing was deleted to get there', () => {
+  // ⏸ Kevin, 2026-08-26: "let's just remove all the extra stuff, for now, then we
+  // can rebuild properly. Just have the header, scoreboard, rink, play controls
+  // and then the footer. We need to start fresh on the layers."
   const row = id => app.match(new RegExp(`<button class="lrow" id="${id}"[\\s\\S]*?</button>`))[0];
+
+  // ⭐ PARKED, NOT DELETED — the rebuild starts from working code, not from git log.
   for (const id of LAYER_ROWS) {
-    const r = row(id);
-    assert.match(r, /<span class="lds">[^<]{20,}</,
-      `${id} does not say what it counts — five layers as five unexplained nouns is the defect this replaced`);
-    assert.match(r, /<span class="lon">[^<]{20,}</,
-      `${id} names no mark, so nothing tells a viewer what appeared on the ice`);
+    assert.match(row(id), /<span class="lds">[^<]{20,}</, `${id}'s description was deleted rather than parked`);
+    assert.match(row(id), /<span class="lon">[^<]{20,}</, `${id}'s on-the-ice note was deleted rather than parked`);
   }
-  assert.match(PAGE_CSS, /#rg \.lrow \.lon\{display:none/,
-    'the on-the-ice note is not hidden by default, so it is not conditional');
-  assert.match(PAGE_CSS, /#rg \.lrow\[aria-pressed="true"\] \.lon\{display:block\}/,
-    'nothing reveals the note when the layer goes on');
+  assert.match(PAGE_CSS, /#rg \.zlayers,#rg \.zref,#rg \.zdisp\{display:none\}/,
+    'the base page is carrying the layer furniture again');
+  // ⚠️ AND THE PITCH NEEDS ITS OWN RULE AT (1,2,0). `#rg.newcomer .newcomer` sets
+  // display:block, so a rule at (1,1,0) reads as if it parked the block and does
+  // nothing — it shipped that way and only the render showed it. The assertion is
+  // on the WINNING selector, because the losing one is what passed review.
+  assert.match(PAGE_CSS, /#rg\.newcomer \.nwhy2\{display:none\}/,
+    'the "why add a layer" pitch is parked by a rule that loses to the greeting\'s own');
 
-  // ⭐ THE DESCRIPTION IS DEFERRED TOO, AND THAT REVERSED A ONE-DAY-OLD RULE.
-  // It read: `.lds` is about the CONTROL and must be readable before the press.
-  // Kevin's trim (2026-08-26) buys 159px of a 600px drawer that now sits above
-  // the rink, which is what puts the ice back on a phone's first screen. The
-  // reversal is safe because the original defect was five chips with the
-  // explanation NOWHERE, not late — one press, reversible, in the same row.
-  assert.match(PAGE_CSS, /#rg \.lrow \.lds\{display:none/,
-    'the description is not deferred, so the drawer still carries 159px above the rink');
-  assert.match(PAGE_CSS, /#rg \.lrow\[aria-pressed="true"\] \.lds\{display:block\}/,
-    'nothing brings the description back when the layer goes on — then it is explained nowhere');
+  // ⭐ AND THE NINE DOORS STILL WORK. `what-you-can-see.html` enters this page
+  // nine times, EIGHT with a layer already on. A menu hidden outright makes every
+  // one of those a one-way trip: marks on the ice, nothing able to turn them off.
+  assert.match(PAGE_CSS, /#rg\.anylayer \.zlayers\{display:block\}/,
+    'nothing gives the menu back when a layer is on — every learn-page door is a one-way trip');
+  const shut = boot();
+  assert.equal(shut.$('rg').classList.contains('anylayer'), false,
+    'the base page claims a layer is on');
+  const door = boot(null, null, '?game=2023020204&layer=whistle');
+  assert.ok(door.$('rg').classList.contains('anylayer'),
+    'a deep link put marks on the ice and left no way to reach the control');
+  door.$('lyWhistle').click();
+  assert.equal(door.$('rg').classList.contains('anylayer'), false,
+    'the menu stays on the base page after the last layer went off');
 
-  // ⭐ SO THE NAME CARRIES THE WHOLE CHOICE, and two names could not.
-  // `Shots from the slot`, `Why play stopped` and `Blocked shots` say what they
-  // are. The other two do not, and a reader who must press a switch to find out
-  // what it means is being asked to choose blind.
-  //
-  // ⭐ THE SECOND ONE WAS FOUND BY A REVIEWER, NOT BY THIS TEST — and the near
-  // miss is the lesson. The first draft carried a word-count rule over all five
-  // names, and it FAILED ON `Goaltending`: the right row, for the wrong reason.
-  // I removed it as a bad instrument (a count of words passes any two-word
-  // jargon pair and fails a clear one-word noun) and did not ask why it had
-  // fired. CHENG: "it could mean saves, save percentage, the goalie's
-  // positioning, anything." Killing a check that measures the wrong axis is
-  // still right; throwing away the case it happened to land on is not.
-  const NEEDS_A_GLOSS = {
-    lyCorsi: [/<b>[^<]*\battempt/i, '`Corsi` is jargon and `Control` is a plain word doing technical work'],
-    lyGoalie: [/<b>[^<]*\b(shot|save|faced)/i, '`Goaltending` names a subject, not what the layer counts'],
-  };
-  for (const [id, [pattern, why]] of Object.entries(NEEDS_A_GLOSS))
-    assert.match(row(id), pattern,
-      `${id} is a bare name again — ${why}, and the description is behind the press`);
-  // AND NO WORD-COUNT RULE ON THE OTHER FOUR, which is worth recording because
-  // the first draft had one and it failed on `Goaltending` — a name that reads
-  // perfectly. A count of words is not an instrument for legibility; it would
-  // have passed any two-word jargon pair and failed a clear one-word noun. The
-  // Corsi assertion above is a claim about a SPECIFIC name that could not carry
-  // itself, which is checkable; "is this name readable" is not, and pretending
-  // otherwise is how a check that measures nothing gets shipped as coverage.
+  // ⭐ AND THE TWO DISCLOSURES ARE NOT PARKED. They are the page saying what it is
+  // NOT showing — ends switching, and the games whose boxscore contradicts the
+  // event log. Parking those is a doctrine decision, not a layout one, and it is
+  // not the one that was asked for. `.disclose` is absent from the rule above;
+  // this asserts it, because absence from a list is invisible in review.
+  assert.doesNotMatch(PAGE_CSS, /#rg \.zlayers[^{]*\.disclose[^{]*\{display:none\}/,
+    'the honesty disclosures were parked along with the furniture');
+  for (const key of Object.keys(GAME_STATE_KEYS))
+    assert.match(app, new RegExp(`class="disclose lkey ${key}"`), `${key} left the page`);
 });
 
 /**

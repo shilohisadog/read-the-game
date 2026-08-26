@@ -165,8 +165,17 @@ test('the whistle ring is NAMED, and only while the layer draws it', () => {
   assert.match(row, /<i class="k-wh">/, 'the ring has no swatch on its own control');
   assert.match(row, /<span class="lon">[^<]*ring marks where play restarted/,
     'the ring is not named where a viewer meets its control');
-  assert.match(PAGE_CSS, /#rg \.lrow\[aria-pressed="true"\] \.lon\{display:block\}/,
-    'nothing reveals the note when the layer is on');
+  // ⚠️ AND SINCE 2026-08-26 IT IS PARKED, NOT SHOWN. Kevin trimmed the rows to a
+  // name and a switch. The sentence still ships and is hidden, so what carries
+  // the naming while the layer is on is `.whistlepanel` — which restates the
+  // restart spot for the current whistle, with provenance. That gate is what is
+  // asserted here now; when the descriptions get a home (docs §20) this points
+  // at the home instead. The mark is still named while the ice draws it, by a
+  // different element, which is the claim — not the mechanism.
+  assert.match(PAGE_CSS, /#rg \.lrow \.lds,#rg \.lrow \.lon\{display:none\}/,
+    'the row note is displayed again — this test is describing a page that moved on');
+  assert.match(PAGE_CSS, /#rg\.whistle \.whistlepanel\{display:block/,
+    'the row note is hidden AND the whistle panel is gone — the ring is on the ice with nothing naming it');
   assert.match(PAGE_CSS, /#rg \.k-wh\{/, 'the key has no swatch');
 
   const a = boot();
