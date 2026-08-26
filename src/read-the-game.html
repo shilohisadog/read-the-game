@@ -846,11 +846,22 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    and 13 of 21 controls down here had nowhere for an explanation to go at all.
    One row now carries the mark, the name, WHAT IT COUNTS and its state.
 
-   AND THE TWO SENTENCES ARE DIFFERENT KINDS, which is the rule this surface got
-   wrong twice (docs/below-the-rink-2.md §4.2). `.lds` is about the CONTROL and is
-   readable before the press. `.lon` is about the ICE and appears with the marks
-   it describes. A note about the ice fires when the ice shows it; a note about a
-   control is available before it is pressed. */
+   ⭐ AND THE DESCRIPTION IS NOW DEFERRED TOO, which REVERSES what this comment
+   said a day ago -- `.lds` about the CONTROL, readable before the press; `.lon`
+   about the ICE, shown with the marks. Kevin, 2026-08-26: "trim the metrics
+   cards to just the name and leave the description to be displayed on the
+   metric, after it's opened, that'll free up space." Measured at 390 with the
+   menu open: 600px of drawer, of which the five descriptions are 159. Deferring
+   them takes the drawer to 441 and the rink top from y=830 to y=671 -- ice back
+   on the first screen, which is what the whole move above the rink was for.
+
+   WHAT MADE THE REVERSAL SAFE IS THAT THE DEFECT WAS NEVER "explained late", IT
+   WAS "explained nowhere": five chips with no room for a sentence at all. The
+   description now arrives on the press, one reversible tap from the name, in the
+   row the reader is already looking at. What is NOT safe is a name a novice
+   cannot read -- so the one name that could not carry itself carries its
+   definition instead. `Control (Corsi)` is jargon twice over; the other four say
+   what they are. See the row markup and the test that pins it. */
 /* AS MANY COLUMNS AS FIT, RATHER THAN A BREAKPOINT. At 1100 a full-width row is
    900px of box for nine words, and five of them cost 330px on a surface this
    redesign exists to SHORTEN. The floor means the phone gets one column because
@@ -887,7 +898,8 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .lmk i.k-rl{width:3px;height:13px;border-radius:1px;margin-right:4px}
 #rg .lrow .ltx{grid-column:2;display:block;min-width:0}
 #rg .lrow b{font-size:.92rem;font-weight:700;display:block}
-#rg .lrow .lds{display:block;font-size:.75rem;font-weight:400;color:var(--muted);line-height:1.4;margin-top:2px}
+#rg .lrow .lds{display:none;font-size:.75rem;font-weight:400;color:var(--muted);line-height:1.4;margin-top:2px}
+#rg .lrow[aria-pressed="true"] .lds{display:block}
 #rg .lrow .lon{display:none;font-size:.78rem;font-weight:400;line-height:1.45;margin-top:6px;padding-left:9px;border-left:2px solid var(--hd)}
 #rg .lrow[aria-pressed="true"] .lon{display:block}
 #rg .lrow .st{grid-column:3;grid-row:1;align-self:center;font-size:.7rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);border:1px solid var(--edge);border-radius:99px;padding:4px 10px}
@@ -1046,7 +1058,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 </div>
 <details class="zone zlayers" id="zLayers"><summary class="zh">Add a metric layer<span class="zon" id="zLayersOn"></span></summary>
 <div class="lrows">
-<button class="lrow" id="lyCorsi" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Control (Corsi)</b><span class="lds">every shot attempt — on goal, missed, or blocked</span><span class="lon">The counters above the rink fill in as the replay runs, and the bar splits the attempts between the two clubs.</span></span><span class="st" id="stCorsi">Off</span></button>
+<button class="lrow" id="lyCorsi" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Control (Corsi) — every shot attempt</b><span class="lds">on goal, missed, or blocked: all three count, because all three are the team moving the puck at the net</span><span class="lon">The counters above the rink fill in as the replay runs, and the bar splits the attempts between the two clubs.</span></span><span class="st" id="stCorsi">Off</span></button>
 <button class="lrow" id="lyHd" aria-pressed="false"><span class="lmk"><i class="k-hd"></i></span><span class="ltx"><b>Shots from the slot</b><span class="lds">attempts from within 33 ft of the net, between the face-off dots</span><span class="lon">An amber ring marks each one. Click a ring to see the distance and angle it was measured by.</span></span><span class="st" id="stHd">Off</span></button>
 <button class="lrow" id="lyGoalie" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Goaltending</b><span class="lds">every shot each goaltender faced, and what became of it</span><span class="lon">A card per goaltender builds its save percentage as the replay runs.</span></span><span class="st" id="stGoalie">Off</span></button>
 <button class="lrow" id="lyWhistle" aria-pressed="false"><span class="lmk"><i class="k-wh"></i><i class="k-rl"></i></span><span class="ltx"><b>Why play stopped</b><span class="lds">the rule that stopped play, and the dot it restarted on</span><span class="lon">The ring marks where play restarted, brightest at the most recent stoppage. The bar lights the line the rule names — for icing the centre line and the far goal line, for offside the blue line.</span></span><span class="st" id="stWhistle">Off</span></button>

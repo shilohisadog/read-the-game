@@ -33,7 +33,7 @@ const LAYER_ROWS = ['lyCorsi', 'lyHd', 'lyGoalie', 'lyWhistle', 'lyBlock'];
  */
 const GAME_STATE_KEYS = { 'lk-ends': 'endskey', 'lk-unrec': 'unrec' };
 
-test('a layer\'s mark is named in its own row, and only while the layer draws it', () => {
+test('a layer row is a readable name, and both of its notes arrive with the press', () => {
   // The markup ships every row complete — this is a stylesheet decision, so the
   // assertion is on the rule, in the one instrument that can see it at build time.
   const row = id => app.match(new RegExp(`<button class="lrow" id="${id}"[\\s\\S]*?</button>`))[0];
@@ -49,12 +49,30 @@ test('a layer\'s mark is named in its own row, and only while the layer draws it
   assert.match(PAGE_CSS, /#rg \.lrow\[aria-pressed="true"\] \.lon\{display:block\}/,
     'nothing reveals the note when the layer goes on');
 
-  // ⭐ AND THE TWO SENTENCES ARE DIFFERENT KINDS. `.lds` is about the CONTROL and
-  // must be readable before the press; `.lon` is about the ICE and must not be.
-  // A build that gated both would be the §4.2 defect, and one that gated neither
-  // would be the permanent-legend defect the progressive legend fixed.
-  assert.doesNotMatch(PAGE_CSS, /\.lds\{[^}]*display:none/,
-    'the description is hidden until the layer is on — you cannot learn what it does before using it');
+  // ⭐ THE DESCRIPTION IS DEFERRED TOO, AND THAT REVERSED A ONE-DAY-OLD RULE.
+  // It read: `.lds` is about the CONTROL and must be readable before the press.
+  // Kevin's trim (2026-08-26) buys 159px of a 600px drawer that now sits above
+  // the rink, which is what puts the ice back on a phone's first screen. The
+  // reversal is safe because the original defect was five chips with the
+  // explanation NOWHERE, not late — one press, reversible, in the same row.
+  assert.match(PAGE_CSS, /#rg \.lrow \.lds\{display:none/,
+    'the description is not deferred, so the drawer still carries 159px above the rink');
+  assert.match(PAGE_CSS, /#rg \.lrow\[aria-pressed="true"\] \.lds\{display:block\}/,
+    'nothing brings the description back when the layer goes on — then it is explained nowhere');
+
+  // ⭐ SO THE NAME CARRIES THE WHOLE CHOICE, and one name could not.
+  // `Shots from the slot`, `Goaltending`, `Why play stopped`, `Blocked shots`
+  // say what they are. `Control (Corsi)` is jargon twice over, and a reader who
+  // must press it to find out what it means is being asked to choose blind.
+  assert.match(row('lyCorsi'), /<b>[^<]*\battempt/i,
+    'the Control row is a bare metric name again — nothing on it says what it counts');
+  // AND NO WORD-COUNT RULE ON THE OTHER FOUR, which is worth recording because
+  // the first draft had one and it failed on `Goaltending` — a name that reads
+  // perfectly. A count of words is not an instrument for legibility; it would
+  // have passed any two-word jargon pair and failed a clear one-word noun. The
+  // Corsi assertion above is a claim about a SPECIFIC name that could not carry
+  // itself, which is checkable; "is this name readable" is not, and pretending
+  // otherwise is how a check that measures nothing gets shipped as coverage.
 });
 
 /**

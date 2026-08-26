@@ -1033,3 +1033,58 @@ nothing visible; above it, it is the trade. It is a deliberate press rather than
 something a link does to you, and the two-across layout already collapses it at
 1100. Whether the rows need a denser phone form is open, and is the same
 question as U3 (layer density).
+
+## 16. The rows trim to their names
+
+Kevin, minutes after §15 shipped: *"maybe trim the metrics cards to just the
+name and leave the description to be displayed on the metric, after it's opened,
+that'll free up space."*
+
+    off row                     80px → 49px
+    the five descriptions            159px of a 600px drawer
+    drawer open, nothing on     ?    → 348px at 390 (178 at 1100)
+    rink top, drawer open       830  → 578 at 390 — the ice is back on the screen
+
+### 16.1 ⭐ It reverses a rule this document ratified the day before
+
+§4.2 and §13: *a note about the ICE fires when the ice shows it; a note about a
+CONTROL is available before it is pressed.* `.lds` — what a layer counts — was
+the control note, and it is now deferred to the press along with `.lon`.
+
+**What makes the reversal safe is that the original defect was never "explained
+late", it was "explained nowhere".** §7.2 was five chips with no room for a
+sentence anywhere on the surface. The description now arrives on the press, in
+the row the reader is already looking at, one reversible tap away — and the
+press is what the drawer exists to invite.
+
+### 16.2 What is NOT safe is a name a reader cannot use
+
+With the descriptions deferred, **the name is the whole choice.** Four of them
+survive that: *Shots from the slot*, *Goaltending*, *Why play stopped*, *Blocked
+shots*. One does not — `Control (Corsi)` is jargon twice over, and pressing a
+thing to find out what it means is choosing blind.
+
+So that row's name carries its own definition: **Control (Corsi) — every shot
+attempt**, and its description keeps the detail (*on goal, missed, or blocked*)
+for the press. A test pins that name; mutating it back to the bare metric name
+fails.
+
+⭐ **And there is no word-count rule on the other four**, which is worth
+recording because the first draft had one and it failed on `Goaltending` — a
+name that reads perfectly. A count of words is not an instrument for legibility:
+it passes any two-word jargon pair and fails a clear one-word noun. The
+assertion that survived is about one specific name that could not carry itself,
+because that is checkable; *is this name readable* is not, and pretending
+otherwise is how a check that measures nothing ships as coverage.
+
+### 16.3 ⚠️ The instrument lied first, and the CSP is why
+
+The first run of this measurement reported **`name-only saves 0px`** — the probe
+injects a `<style>` element and re-measures. It was pointed at
+`https://readthegame.co`, whose CSP has no `unsafe-inline` for styles, **so the
+browser dropped the rule and the page was measured unchanged.** No error, a
+plausible number, and it argued against Kevin's idea. The same probe against the
+local build — where `tools/pixels.sh` strips the CSP — returned 159px.
+
+**A probe that MUTATES the page cannot run against production**, and the failure
+is silent in exactly the direction that reads as "your change does nothing".
