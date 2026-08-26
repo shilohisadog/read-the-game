@@ -60,12 +60,26 @@ test('a layer row is a readable name, and both of its notes arrive with the pres
   assert.match(PAGE_CSS, /#rg \.lrow\[aria-pressed="true"\] \.lds\{display:block\}/,
     'nothing brings the description back when the layer goes on — then it is explained nowhere');
 
-  // ⭐ SO THE NAME CARRIES THE WHOLE CHOICE, and one name could not.
-  // `Shots from the slot`, `Goaltending`, `Why play stopped`, `Blocked shots`
-  // say what they are. `Control (Corsi)` is jargon twice over, and a reader who
-  // must press it to find out what it means is being asked to choose blind.
-  assert.match(row('lyCorsi'), /<b>[^<]*\battempt/i,
-    'the Control row is a bare metric name again — nothing on it says what it counts');
+  // ⭐ SO THE NAME CARRIES THE WHOLE CHOICE, and two names could not.
+  // `Shots from the slot`, `Why play stopped` and `Blocked shots` say what they
+  // are. The other two do not, and a reader who must press a switch to find out
+  // what it means is being asked to choose blind.
+  //
+  // ⭐ THE SECOND ONE WAS FOUND BY A REVIEWER, NOT BY THIS TEST — and the near
+  // miss is the lesson. The first draft carried a word-count rule over all five
+  // names, and it FAILED ON `Goaltending`: the right row, for the wrong reason.
+  // I removed it as a bad instrument (a count of words passes any two-word
+  // jargon pair and fails a clear one-word noun) and did not ask why it had
+  // fired. CHENG: "it could mean saves, save percentage, the goalie's
+  // positioning, anything." Killing a check that measures the wrong axis is
+  // still right; throwing away the case it happened to land on is not.
+  const NEEDS_A_GLOSS = {
+    lyCorsi: [/<b>[^<]*\battempt/i, '`Corsi` is jargon and `Control` is a plain word doing technical work'],
+    lyGoalie: [/<b>[^<]*\b(shot|save|faced)/i, '`Goaltending` names a subject, not what the layer counts'],
+  };
+  for (const [id, [pattern, why]] of Object.entries(NEEDS_A_GLOSS))
+    assert.match(row(id), pattern,
+      `${id} is a bare name again — ${why}, and the description is behind the press`);
   // AND NO WORD-COUNT RULE ON THE OTHER FOUR, which is worth recording because
   // the first draft had one and it failed on `Goaltending` — a name that reads
   // perfectly. A count of words is not an instrument for legibility; it would

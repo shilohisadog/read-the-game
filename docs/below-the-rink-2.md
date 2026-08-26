@@ -1123,3 +1123,54 @@ The row with a layer on is four times the height of the others, and the drawer
 it sits in is above the rink. That is the *"description wording being integrated
 into the layer, as a type of intro to the layer (somehow)"* half of Kevin's
 note, and it is not answered yet — see the thread.
+
+## 18. CHENG's review of §15–§17 — three refuted, one right
+
+Kevin sent the expanded drawer to CHENG. Measured live at `ea62777`, on
+readthegame.co, in both visitor states at 390×844 and 1120×974:
+
+### 18.1 "The decisive question is the default state" — it ships COLLAPSED
+
+> *If it ships expanded, the contradiction is live on first paint.*
+
+    drawer open=false   in all four states measured
+
+His own condition for the objection dissolving is met. The screenshot he was
+given is of a drawer someone opened.
+
+### 18.2 "At 390 the ice starts around y=690" — it starts at 513, or 276
+
+    390, first visit      menu y=459   RINK y=513   play y=757   (fold 844)
+    390, returning        menu y=222   RINK y=276   play y=520
+
+The figure was extrapolated from a desktop screenshot of an opened drawer. With
+the drawer open at 390 the rink top is 583, still not 690. **The play button —
+the thing the header tells a novice to press — is inside the fold in both
+states**, which is the check this surface has failed before.
+
+### 18.3 "The reserved mark column looks like it did not survive" — it did
+
+    every row, both widths:   name is indented 46px from the card's left edge
+
+`Control` and `Goaltending` carry no swatch and their names start at exactly the
+same x as the three that do. The fix from §7 survived the move.
+
+### 18.4 ⭐ `Goaltending` — he is right, and the near miss is the lesson
+
+> *It could mean saves, save percentage, the goalie's positioning, anything.*
+
+Correct. §16.2 claimed one name could not carry itself; it was two. Now
+**Goaltending — every shot faced**, with *and what became of it* held for the
+press.
+
+⭐ **The first draft of the test caught this row and I threw the catch away.** The
+word-count rule failed on `Goaltending` — the right row, for the wrong reason —
+and §16.2 records removing it as a bad instrument, which it was. What it does not
+record is anyone asking *why did it fire here*. **Killing a check that measures
+the wrong axis is right; discarding the case it happened to land on is not.** A
+bad instrument pointing at a real defect is still pointing at a real defect.
+
+### 18.5 Where the four sentences went: nowhere
+
+They are in the same rows, revealed by the press — not filed into the reference
+zone. The split he was watching for did not happen.
