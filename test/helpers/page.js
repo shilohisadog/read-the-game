@@ -93,6 +93,13 @@ export function fakeDom() {
       if (!byId.has(id)) byId.set(id, el());
       return byId.get(id);
     }),
+    // THE SELECTOR UNDER THE SCRUBBER. Six radios keyed by `data-l`, and the ids
+    // are shared with byId so a test can drive one and read the others.
+    '#rg .pk': ['none', 'corsi', 'slot', 'blocked', 'goaltending', 'whistle'].map(l => {
+      const key = 'pk:' + l;
+      if (!byId.has(key)) byId.set(key, Object.assign(el(), { dataset: { l } }));
+      return byId.get(key);
+    }),
     '#rg .cc.a .lb': [el()],
     '#rg .cc.h .lb': [el()],
   };
@@ -110,7 +117,10 @@ export function fakeDom() {
       return GROUPS[sel];
     },
   };
-  return { document, byId, GROUPS, $: id => document.getElementById(id) };
+  return { document, byId, GROUPS, $: id => document.getElementById(id),
+           // Group queries by selector, for controls that are one-of-N rather
+           // than one element with an id -- the selector under the scrubber.
+           $$: sel => document.querySelectorAll(sel) };
 }
 
 /**

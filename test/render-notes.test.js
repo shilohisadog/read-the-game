@@ -7,6 +7,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { corsi } from '../src/lib/layers/corsi.js';
 import { rich, app, PAGE_CSS, prose, boot, CURVE_AND_MIX } from './helpers/page.js';
 
@@ -33,6 +34,130 @@ const LAYER_ROWS = ['lyCorsi', 'lyHd', 'lyGoalie', 'lyWhistle', 'lyBlock'];
  */
 const GAME_STATE_KEYS = { 'lk-ends': 'endskey', 'lk-unrec': 'unrec' };
 
+/**
+ * ⭐ ONE ROW, ONE ACTIVE ITEM — and "one" was a MEASUREMENT, not a preference.
+ *
+ * CHENG's question before any placement: does anyone want two layers on at once?
+ * Counted over every layer link the site ships — the nine doors on
+ * `what-you-can-see.html` and the rest — whistle 5, slot 4, corsi 2,
+ * goaltending 1, and ZERO naming two. `deeplink.js` has been able to join on a
+ * comma the whole time and we have never once used it.
+ */
+/**
+ * ⭐ ONE HEADLINE, TWO PAGES — compared between the BUILT pages, not against the
+ * constant that produced them. Kevin: "let's have the same header on the game
+ * page as we do on the front page, for consistency." A check that read
+ * `page.py`'s SAYS and found it in both files would pass for a build where the
+ * game page hard-codes its own copy of the sentence, which is the exact
+ * consistency this is supposed to guarantee.
+ */
+test('the game page and the front page ship the same headline', () => {
+  const index = readFileSync(new URL('../src/index.html', import.meta.url), 'utf8');
+  // ⚠️ COMMENTS STRIPPED FIRST, and it took a false positive to earn the line —
+  // for the FOURTH time in this repo. `game.html` carries a comment that QUOTES
+  // `<h1 class="says">` while explaining an earlier decision, and the regex
+  // matched the prose about the markup before the markup itself. The claim is
+  // about what ships; the instrument must only ever look at what ships.
+  const h1 = src => {
+    const m = /<h1 class="says">([\s\S]*?)<\/h1>/.exec(src.replace(/<!--[\s\S]*?-->/g, ''));
+    return m && m[1].trim();
+  };
+  const a = h1(app), b = h1(index);
+  assert.ok(a && a.length > 40, `the game page has no <h1 class="says">: ${a}`);
+  assert.equal(a, b, 'the two pages have drifted apart on the sentence that says what this is');
+
+  // AND NOTHING SHIPPED A MARKER. `str.replace` cannot fail — it just does not
+  // happen — and a `__PLACEHOLDER__` has reached a built page from this builder
+  // before. The builder asserts it too; this asserts the artifact.
+  for (const [name, src] of [['game.html', app], ['index.html', index]])
+    assert.doesNotMatch(src, /__[A-Z_]{3,}__/, `${name} shipped an unsubstituted marker`);
+});
+
+test('the selector holds exactly one choice, and Nothing is one of them', () => {
+  const CHIPS = ['none', 'corsi', 'slot', 'blocked', 'goaltending', 'whistle'];
+  const chip = (a, l) => a.$$('#rg .pk').find(b => b.dataset.l === l);
+  const checked = a => a.$$('#rg .pk').filter(b => String(b.getAttribute('aria-checked')) === 'true')
+                        .map(b => b.dataset.l);
+
+  const a = boot();
+  assert.deepEqual(checked(a), ['none'], 'the page opens with something other than the base view chosen');
+
+  // ⭐ THE INVARIANT, NOT A SEQUENCE OF EXPECTED VALUES. Whatever you press, the
+  // row holds exactly one — which is the property a radiogroup claims, and the
+  // one that a set of five independent booleans cannot be trusted to keep.
+  for (const l of [...CHIPS, ...CHIPS.slice().reverse(), 'corsi', 'corsi']) {
+    chip(a, l).click();
+    assert.deepEqual(checked(a), [l], `pressing ${l} did not leave exactly ${l} checked`);
+  }
+
+  // AND THE CLASS ON THE ROOT IS WHAT DRAWS THE ICE, so it has to follow. A row
+  // that reports a layer the rink is not drawing is the control-that-reports-an-
+  // effect-it-is-not-having defect, which this repo has shipped before.
+  const CLASS = { corsi: 'corsi', slot: 'slot', blocked: 'blocked', goaltending: 'goalie', whistle: 'whistle' };
+  for (const [l, cls] of Object.entries(CLASS)) {
+    chip(a, l).click();
+    assert.ok(a.$('rg').classList.contains(cls), `${l} is checked and the ice is not drawing it`);
+    const others = Object.entries(CLASS).filter(([k]) => k !== l).map(([, c]) => c);
+    for (const o of others)
+      assert.equal(a.$('rg').classList.contains(o), false,
+        `${l} is checked and the ice is still drawing ${o} — two layers at once`);
+  }
+  chip(a, 'none').click();
+  for (const cls of Object.values(CLASS))
+    assert.equal(a.$('rg').classList.contains(cls), false, `Nothing left ${cls} on the ice`);
+});
+
+test('a deep link checks its own chip, and the row is never hidden', () => {
+  // EIGHT OF THE NINE DOORS ARRIVE WITH A LAYER ON. The chip is not set by the
+  // link handler — it is DERIVED from the same booleans the link sets, so a new
+  // way to turn a layer on is covered the day it is added.
+  for (const [token, cls] of [['whistle', 'whistle'], ['corsi', 'corsi'], ['slot', 'slot'],
+                              ['goaltending', 'goalie']]) {
+    const d = boot(null, null, `?game=2023020204&layer=${token}`);
+    const on = d.$$('#rg .pk').filter(b => String(b.getAttribute('aria-checked')) === 'true')
+                 .map(b => b.dataset.l);
+    assert.deepEqual(on, [token], `?layer=${token} left the row showing ${on.join()}`);
+    assert.ok(d.$('rg').classList.contains(cls));
+  }
+
+  // ⭐ AND A URL CAN ASK FOR TWO, because a person can type one. The row cannot
+  // represent it; what it must not do is go blank, which would say the page is
+  // off while the ice is drawing two layers.
+  const both = boot(null, null, '?game=2023020204&layer=corsi,slot');
+  const on = both.$$('#rg .pk').filter(b => String(b.getAttribute('aria-checked')) === 'true')
+               .map(b => b.dataset.l);
+  // ⚠️ `on.length === 1` WAS THE WHOLE ASSERTION AND IT COULD NOT FAIL. A build
+  // that fell back to `none` also checks exactly one chip, so the count passed
+  // while the row said the page was off with two layers drawing. Caught by
+  // mutating the fallback and watching nothing go red. The claim is not "one
+  // chip is lit", it is "the lit chip is one of the layers that is ON".
+  assert.deepEqual(on, ['corsi'],
+    `a two-layer link left the row showing ${on.join() || 'nothing at all'} while the ice drew two`);
+  assert.ok(both.$('rg').classList.contains('corsi') && both.$('rg').classList.contains('slot'),
+    'the link was silently reduced to one layer — the row is a view, not a gate');
+
+  // The selector is the only control for layers now, so nothing may hide it.
+  // ⚠️ SCOPED TO THE GAME PAGE, because `#rg.preview .pickrow{display:none}` is
+  // correct and my first version of this assertion failed on it: the homepage
+  // hero is an iframe of this page with every control hidden, and a check that
+  // cannot tell "hidden in the hero" from "hidden for the reader" is not a check
+  // about the reader. The rules are split on `.preview` before matching.
+  const forTheReader = PAGE_CSS.split('\n').filter(l => !l.includes('.preview')).join('\n');
+  assert.doesNotMatch(forTheReader, /\.pickrow[^{]*\{[^}]*display:none/,
+    'the selector can be hidden — the menu it replaced is parked, so that is every control gone');
+  assert.match(PAGE_CSS, /#rg\.preview \.pickrow\{display:none!important\}/,
+    'the homepage hero would show the selector over its own rink');
+  assert.match(app, /class="pickrow"[^>]*role="radiogroup"/,
+    'the row is six unrelated buttons rather than a one-of-N group');
+
+  // ⚠️ AND THE CHIPS ARE TAP TARGETS. The first draft was 38px and the probe
+  // counted six controls under the floor where the page had none — a silent
+  // give-back of the 21-of-21 → 0-of-17 result that §9 was measured on. The
+  // suite cannot see a rendered height, so it pins the rule that sets it.
+  assert.match(PAGE_CSS, /#rg \.pk\{[^}]*min-height:44px/,
+    'the selector chips are under the 44px touch floor, on the surface whose reviewer is on a phone');
+});
+
 test('the page is parked at its base, and nothing was deleted to get there', () => {
   // ⏸ Kevin, 2026-08-26: "let's just remove all the extra stuff, for now, then we
   // can rebuild properly. Just have the header, scoreboard, rink, play controls
@@ -48,33 +173,19 @@ test('the page is parked at its base, and nothing was deleted to get there', () 
     'the base page is carrying the layer furniture again');
   // ⚠️ AND THE PITCH NEEDS ITS OWN RULE AT (1,2,0). `#rg.newcomer .newcomer` sets
   // display:block, so a rule at (1,1,0) reads as if it parked the block and does
-  // nothing — it shipped that way and only the render showed it. The assertion is
-  // on the WINNING selector, because the losing one is what passed review.
+  // nothing — it shipped that way and only the render showed it.
   assert.match(PAGE_CSS, /#rg\.newcomer \.nwhy2\{display:none\}/,
     'the "why add a layer" pitch is parked by a rule that loses to the greeting\'s own');
 
-  // ⭐ AND THE NINE DOORS STILL WORK. `what-you-can-see.html` enters this page
-  // nine times, EIGHT with a layer already on. A menu hidden outright makes every
-  // one of those a one-way trip: marks on the ice, nothing able to turn them off.
-  assert.match(PAGE_CSS, /#rg\.anylayer \.zlayers\{display:block\}/,
-    'nothing gives the menu back when a layer is on — every learn-page door is a one-way trip');
-  const shut = boot();
-  assert.equal(shut.$('rg').classList.contains('anylayer'), false,
-    'the base page claims a layer is on');
-  const door = boot(null, null, '?game=2023020204&layer=whistle');
-  assert.ok(door.$('rg').classList.contains('anylayer'),
-    'a deep link put marks on the ice and left no way to reach the control');
-  door.$('lyWhistle').click();
-  assert.equal(door.$('rg').classList.contains('anylayer'), false,
-    'the menu stays on the base page after the last layer went off');
-
-  // ⭐ AND THE TWO DISCLOSURES ARE NOT PARKED. They are the page saying what it is
-  // NOT showing — ends switching, and the games whose boxscore contradicts the
-  // event log. Parking those is a doctrine decision, not a layout one, and it is
-  // not the one that was asked for. `.disclose` is absent from the rule above;
-  // this asserts it, because absence from a list is invisible in review.
-  assert.doesNotMatch(PAGE_CSS, /#rg \.zlayers[^{]*\.disclose[^{]*\{display:none\}/,
-    'the honesty disclosures were parked along with the furniture');
+  // ⏸ THE ENDS LINE IS PARKED TOO, BY NAME. Kevin: "remove the orphaned '...switch
+  // ends every period...'". ⚠️ It is a DISCLOSURE, which §20 argued is doctrine
+  // rather than furniture — so this is an explicit override and it is debt. The
+  // OTHER disclosure is untouched, and that asymmetry is the thing asserted:
+  // parking one is a decision, parking both by accident is a defect.
+  assert.match(PAGE_CSS, /#rg\.endskey \.lk-ends\{display:none\}/,
+    'the ends line is back on the page');
+  assert.doesNotMatch(PAGE_CSS, /\.lk-unrec\{display:none\}/,
+    'the unrecorded-games disclosure was parked along with the ends line — nobody asked for that');
   for (const key of Object.keys(GAME_STATE_KEYS))
     assert.match(app, new RegExp(`class="disclose lkey ${key}"`), `${key} left the page`);
 });

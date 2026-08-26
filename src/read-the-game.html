@@ -54,6 +54,24 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    reads as a gap between every letter. */
 #rg .pagelede{font-size:clamp(.82rem,2.5vw,1.02rem);letter-spacing:.1em;text-transform:uppercase;
   font-weight:600;color:var(--ink);margin:0 0 12px;text-wrap:balance}
+/* ⭐ THE SAME SENTENCE AS THE FRONT PAGE, AND NOT THE SAME SIZE.
+   Kevin: "let's have the same header on the game page as we do on the front
+   page, for consistency." The words are now one source (`builders/page.py`
+   SAYS) and a test compares the two BUILT pages -- that is the consistency
+   worth having. The TYPE is a different question, and measured at 390 the front
+   page's h1 clamp renders this sentence at 286px:
+
+       front-page size   says 286px   rink y=466   play ends ~998   (fold 844)
+       this size         says  95px   rink y=275   play ends ~807
+
+   The front page's job is to explain to a stranger who has never seen this; the
+   game page's job is to show a game, and 286px of explanation above the ice puts
+   the play button off a phone screen -- the same defect that split the greeting
+   in two. Same words, lighter weight, which is the ordinary editorial answer.
+   Kevin can overrule it by deleting this rule; the sentence stays shared. */
+#rg .says{font-size:clamp(.95rem,2.5vw,1.3rem);font-weight:700;letter-spacing:-.005em;
+ line-height:1.4;margin:0 0 12px;text-wrap:balance;color:var(--ink)}
+#rg .says b{font-weight:800}
 #rg h1{font-size:clamp(1.7rem,3.8vw,2.4rem);letter-spacing:-.025em;font-weight:800;margin:0 0 10px;text-wrap:balance}
 #rg .board{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;background:#fff;border:1px solid var(--edge);border-radius:13px;padding:12px 18px;box-shadow:0 5px 18px rgba(16,32,45,.07);margin-bottom:12px}
 #rg .tm{display:flex;flex-direction:column;align-items:center}#rg .tm .ab{font-weight:800;letter-spacing:.05em;font-size:.9rem}
@@ -820,6 +838,43 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg details.zone>summary::after{content:"\25be";margin-left:auto;font-size:.9rem}
 #rg details.zone[open]>summary::after{content:"\25b4"}
 #rg details.zone[open]>summary{margin-bottom:10px}
+/* ⭐ ONE ROW, ONE ACTIVE ITEM — AND "ONE" WAS A MEASUREMENT, NOT A PREFERENCE.
+   CHENG asked the question that had to come before any placement: does anyone
+   want two layers on at once? Counted over every layer link the site ships --
+   the nine doors on `what-you-can-see.html` and the rest:
+
+       layer=whistle 5 · layer=slot 4 · layer=corsi 2 · layer=goaltending 1
+       layer=<two of them> ....... 0
+
+   Twelve curated links, each one a place where we chose the clearest way to show
+   a thing, and NOT ONE turns on two. `deeplink.js` has been able to join tokens
+   on a comma the whole time and we have never used it. So this is a selector,
+   not five switches, and `Nothing` is a real choice rather than the absence of
+   one -- it is the base view the whole site is built on.
+
+   `role="radiogroup"` with `aria-checked`, not five `aria-pressed` toggles,
+   because one-of-N is what a radio group MEANS: a screen reader says "3 of 6"
+   instead of announcing six unrelated buttons that happen to interlock.
+
+   IT WRAPS RATHER THAN SCROLLS. Measured, the six chips need 533px of line and a
+   390px phone has 342 -- so it is two rows there and one row from 700 up. A row
+   that scrolls sideways instead would hide the last two behind a gesture nobody
+   is told about.
+
+   ⚠️ AND THE CHIPS ARE 44px, NOT 38. The first draft used 38 and the probe
+   counted six controls under the touch floor where the page had none -- a silent
+   give-back of the 21-of-21 to 0-of-17 result §9 was measured on. A chip is a tap
+   target, on the surface whose one scheduled reviewer is on a phone. */
+#rg .pickrow{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:12px 0 0}
+#rg .pklab{font-size:.62rem;font-weight:800;letter-spacing:.11em;text-transform:uppercase;
+ color:var(--muted);margin-right:2px}
+#rg .pk{font:inherit;font-size:.8rem;font-weight:600;color:var(--ink);background:#fff;
+ border:1px solid var(--edge);border-radius:99px;padding:0 14px;min-height:44px;
+ cursor:pointer;white-space:nowrap}
+#rg .pk[aria-checked="true"]{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:700}
+#rg .pk:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+#rg.preview .pickrow{display:none!important}
+
 /* ⏸ ═══ PARKED 2026-08-26 — THE PAGE IS BACK TO ITS BASE ═══
    Kevin: "let's just remove all the extra stuff, for now, then we can rebuild
    properly. Just have the header, scoreboard, rink, play controls and then the
@@ -851,9 +906,20 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    at (1,1,0) cannot turn that off, so the pitch stayed on a first visit through
    a rule that read as if it had parked it. Specificity, not the selector, was
    the bug -- found by rendering the page, not by reading the rule. */
+/* ⏸ AND THE ENDS LINE IS PARKED (Kevin: "remove the orphaned '...switch ends
+   every period...', we'll figure that out after we get the core metrics").
+   ⚠️ IT IS A DISCLOSURE, and §20 argued disclosures are doctrine and not
+   furniture -- so this is an explicit override of that, asked for by name, and
+   it is DEBT: with as-played orientation the page draws a rink whose ends swap
+   between periods and now says nothing about it. `.lk-unrec` is untouched.
+   `endsKeyShowing` still runs and still sets the class, so deleting the one rule
+   below brings the line back.
+   ⭐ AND `anylayer` GOES WITH IT. It existed to hand the parked menu back for a
+   deep link; the selector under the scrubber is on the page unconditionally, so
+   nothing can arrive with a layer on and no way to turn it off. */
 #rg .zlayers,#rg .zref,#rg .zdisp{display:none}
 #rg.newcomer .nwhy2{display:none}
-#rg.anylayer .zlayers{display:block}
+#rg.endskey .lk-ends{display:none}
 /* ⭐ THE MENU IS A CONTROL AND NOT A CAPTION, AND IT SITS UNDER THE ICE.
    Kevin, 2026-08-26: "it's just so disjointed from the rink that toggling a
    layer on and off creates a UX disconnect." It went above the rink first, and
@@ -1131,7 +1197,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
      the first-visit block replaced on measured grounds (576px -> 305px). Taking
      the name back for a different element would have left that guard passing on
      a page that no longer contains what it was written to keep out. -->
-<h1 class="pagelede">Learn to read hockey · event by event first, add metrics after</h1>
+<h1 class="says">Every NHL game since 2023, replayed event by event &mdash; with the counts built in front of you, so you can see <b>where a number comes from</b>.</h1>
 <div class="newcomer" id="newcomer"></div>
 <div class="board">
   <div class="tm a"><span class="ab" id="aAb">&mdash;</span><span class="sc" id="aSc">0</span></div>
@@ -1179,6 +1245,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
   <div class="grp" role="group" aria-label="Step through the events"><button class="spd stepb" id="back" aria-label="Previous event">◀ Prev event</button><button class="spd stepb" id="fwd" aria-label="Next event">Next event ▶</button></div>
   <div class="grp" role="group" aria-label="Replay speed"><button class="spd stepb" id="slower">&#9664; Slower</button><button class="spd stepb" id="faster">Faster &#9654;</button></div>
   <input class="scrub" id="scrub" type="range" min="-1" max="1" value="-1"></div>
+<div class="pickrow" role="radiogroup" aria-label="Which metric is on the ice" id="pickrow"><span class="pklab">Watching</span><button class="pk" id="pkNone" data-l="none" role="radio" aria-checked="true">Nothing</button><button class="pk" id="pkCorsi" data-l="corsi" role="radio" aria-checked="false">Attempts</button><button class="pk" id="pkSlot" data-l="slot" role="radio" aria-checked="false">Slot</button><button class="pk" id="pkBlocked" data-l="blocked" role="radio" aria-checked="false">Blocked</button><button class="pk" id="pkGoalie" data-l="goaltending" role="radio" aria-checked="false">Goalies</button><button class="pk" id="pkWhistle" data-l="whistle" role="radio" aria-checked="false">Stoppages</button></div>
 <p class="verdict" id="verdict"></p>
 <div class="newcomer nwhy2" id="newcomerWhy"></div>
 <details class="zone zref"><summary class="zh">What the marks mean</summary>
@@ -5738,6 +5805,51 @@ function drawNewcomer(){
 document.getElementById('rg').classList.toggle('newcomer',NEWCOMER);
 drawNewcomer();
 let corsiOn=false,hdOn=false,goalieOn=false,whistleOn=false,blockOn=false;
+/* ⚠️ AND IT LIVES HERE, NOT BESIDE THE THING IT DRAWS. `zoneState()` runs at
+   BOOT, one line below its own definition, and it calls `syncPick` -- so with
+   this block further down the file `let picking` was still in its temporal
+   dead zone and every page threw. 180 tests, one error. The selector belongs
+   with the five booleans it is a view of, which is also where it reads best. */
+/* ⭐ ONE ROW, ONE ACTIVE ITEM. Kevin: "build the one row, one active item and
+   place it right below the scrubber." The five booleans above are still the
+   state -- this is a VIEW of them and a way to set them, not a sixth variable
+   that has to agree with the other five.
+
+   ⭐ SO `syncPick` READS THE BOOLEANS AND NEVER REMEMBERS A CHOICE. Every path
+   that changes a layer already ends in `lyrState`, which now calls it: the row
+   below the scrubber, a deep link, and the parked menu if it is ever unparked.
+   A `current` variable set alongside the booleans is the same defect as a
+   drift alarm built from the implementation's own model of its input -- it
+   agrees until one path forgets to update it, and then it is confidently wrong.
+
+   `none` IS A REAL CHOICE and not the absence of one. It is the base view the
+   site is built on -- §6, "the base view is just the game" -- so it is on the
+   row, first, and checked when nothing else is. */
+const PICKS=[['corsi',()=>corsiOn,v=>{corsiOn=v;setCorsi();}],
+             ['slot',()=>hdOn,v=>{hdOn=v;setHd();}],
+             ['blocked',()=>blockOn,v=>{blockOn=v;setBlock();}],
+             ['goaltending',()=>goalieOn,v=>{goalieOn=v;setGoalie();}],
+             ['whistle',()=>whistleOn,v=>{whistleOn=v;setWhistle();}]];
+let picking=false;
+function pick(want){
+ // GUARDED because each setter calls lyrState -> syncPick, and syncPick reads
+ // booleans that are mid-update. Without this the row would paint four times
+ // per press, each time from a state no reader ever sees.
+ if(picking)return; picking=true;
+ for(const [id,get,set] of PICKS){const on=id===want; if(get()!==on)set(on);}
+ picking=false; syncPick();}
+function syncPick(){
+ if(picking)return;
+ const on=PICKS.filter(([,get])=>get()).map(([id])=>id);
+ // ⭐ MORE THAN ONE ON IS NOT REPRESENTABLE ON THIS ROW, and it is reachable --
+ // `?layer=corsi,slot` is a URL anyone can type. The row shows the FIRST in
+ // this file's order rather than showing nothing, because a control that goes
+ // blank is a control that says the page is off when it is not.
+ const cur=on.length?on[0]:'none';
+ document.querySelectorAll('#rg .pk').forEach(b=>
+  b.setAttribute('aria-checked',String(b.dataset.l===cur)));}
+document.querySelectorAll('#rg .pk').forEach(b=>{
+ b.onclick=()=>pick(b.dataset.l);});
 /* ⭐ A LAYER BUTTON IS A ROW NOW, SO ITS LABEL IS NOT ITS textContent.
    Each setter used to write `(on?'✓ ':'＋ ')+name` over the whole button, which
    would erase the mark, the description and the state pill the row is made of.
@@ -5773,10 +5885,7 @@ function zoneState(){
  let on=0;document.querySelectorAll('#rg .lrow').forEach(r=>{
   if(String(r.getAttribute('aria-pressed'))==='true')on++;});
  const b=$('zLayersOn');if(b)b.textContent=on?`${on} layer${on===1?'':'s'} on`:'';
- // ⏸ PARKED: the menu is hidden on the base page and this class is what gives
- // it back, so a deep link that arrives with a layer on is never a one-way
- // trip. Derived from the same count as the badge -- one source, two readouts.
- document.getElementById('rg').classList.toggle('anylayer',on>0);}
+ syncPick();}
 zoneState();
 function setCorsi(){document.getElementById('rg').classList.toggle('corsi',corsiOn);$('lyCorsi').setAttribute('aria-pressed',corsiOn);lyrState('stCorsi',corsiOn);if(!corsiOn&&workOpen){workOpen=false;$('workPanel').hidden=true;$('work').setAttribute('aria-expanded',false);$('work').textContent='Show me the work';}}
 function setHd(){document.getElementById('rg').classList.toggle('slot',hdOn);$('lyHd').setAttribute('aria-pressed',hdOn);lyrState('stHd',hdOn);render(i,'');}

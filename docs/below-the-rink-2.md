@@ -1268,3 +1268,85 @@ the same family as §7's swatch scoped to `.legend`. The test asserts the
   to add one. The copy is right and the page is temporarily short of it.
 * The five descriptions and the five on-the-ice notes are parked in the markup,
   enumerated in the stylesheet, and still have no home. That is the rebuild.
+
+## 21. One row, one active item — the selector
+
+Kevin: *"build the one row, one active item and place it right below the
+scrubber."* And CHENG's question first, which is what made it one row.
+
+### 21.1 ⭐ "One at a time" is a measurement in this repo
+
+Counted over every layer link the site ships:
+
+    layer=whistle 5 · layer=slot 4 · layer=corsi 2 · layer=goaltending 1
+    layer=<two of them> ....... 0
+
+Twelve curated links — the nine doors on `what-you-can-see.html` and the rest,
+each one a place where we chose the clearest way to show something — and **not
+one turns on two layers.** `deeplink.js` has been able to join tokens on a comma
+the whole time and we have never used it.
+
+So: a selector, not five switches. `role="radiogroup"` with `aria-checked`,
+because one-of-N is what a radio group *means* — a screen reader announces
+"3 of 6" instead of six unrelated buttons that happen to interlock.
+
+**`Nothing` is a real choice**, first on the row: it is the base view §6 is built
+on, not the absence of a choice.
+
+### 21.2 The row is a VIEW of the five booleans, never a sixth variable
+
+`syncPick` reads `corsiOn … blockOn` and remembers nothing. Every path that
+changes a layer already ends in `lyrState`, so the row follows the deep link, the
+selector and the parked menu alike. **A `current` variable set alongside the
+booleans is the drift-alarm-built-from-its-own-model defect**: it agrees until
+one path forgets it, and then it is confidently wrong.
+
+### 21.3 Measured
+
+    390    two rows (six chips need 533px of line, a phone has 342)   rink y=268
+    700    one row                                                    rink y=268
+    1100   one row                                                    rink y=265
+    controls under the 44px floor: 0 at 700 and 1100, and at 390 only the
+    on-ice `pressplay` overlay, which is pre-existing and aria-hidden
+
+⚠️ **The chips were 38px in the first draft** and the probe counted six controls
+under the touch floor where the page had none — a silent give-back of the
+21-of-21 → 0-of-17 result §9 was measured on. 44px now, pinned by a test.
+
+### 21.4 What the mutations caught
+
+* `assert.equal(on.length, 1)` for a two-layer URL **could not fail**: a build
+  that fell back to `Nothing` also checks exactly one chip. The claim is not
+  *one chip is lit*, it is *the lit chip is a layer that is ON*.
+* The selector block first sat next to the markup it draws — but `zoneState()`
+  runs at boot one line below its own definition and calls `syncPick`, so
+  `let picking` was still in its temporal dead zone. **180 tests, one error.**
+
+## 22. One headline, two pages
+
+Kevin: *"let's have the same header on the game page as we do on the front page,
+for consistency."* The sentence lived in `build_index.py`, so consistency would
+have meant two authors keeping two strings in step. It is now `P.SAYS` in
+`builders/page.py`, beside the chrome both pages already share, **and the test
+compares the two BUILT pages** — a check that read the constant and found it in
+both would pass for a build where the game page hard-codes its own copy.
+
+⚠️ `str.replace` cannot fail, it just does not happen, and a `__PLACEHOLDER__`
+has shipped from this builder before. The substitution is now asserted **in the
+builder, where it is made**, and again on the artifact.
+
+### 22.1 Same words, not the same size
+
+    front-page size on the game page   headline 286px   rink y=466   play off the fold
+    sized for this page                headline  85px   rink y=268   play ends 556
+
+The front page's job is to explain to a stranger; the game page's job is to show
+a game. 286px of explanation above the ice puts the play button off a phone
+screen — the same defect that split the greeting in two. One rule sets it and
+deleting that rule makes them identical.
+
+### 22.2 ⚠️ A comment matched before the markup did — the fourth time
+
+`game.html` carries a comment that quotes `<h1 class="says">` while explaining an
+earlier decision, and the headline check read the prose about the markup instead
+of the markup. Comments stripped first, as in three other checks in this repo.

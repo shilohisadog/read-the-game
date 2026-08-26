@@ -1802,6 +1802,51 @@ function drawNewcomer(){
 document.getElementById('rg').classList.toggle('newcomer',NEWCOMER);
 drawNewcomer();
 let corsiOn=false,hdOn=false,goalieOn=false,whistleOn=false,blockOn=false;
+/* ⚠️ AND IT LIVES HERE, NOT BESIDE THE THING IT DRAWS. `zoneState()` runs at
+   BOOT, one line below its own definition, and it calls `syncPick` -- so with
+   this block further down the file `let picking` was still in its temporal
+   dead zone and every page threw. 180 tests, one error. The selector belongs
+   with the five booleans it is a view of, which is also where it reads best. */
+/* ⭐ ONE ROW, ONE ACTIVE ITEM. Kevin: "build the one row, one active item and
+   place it right below the scrubber." The five booleans above are still the
+   state -- this is a VIEW of them and a way to set them, not a sixth variable
+   that has to agree with the other five.
+
+   ⭐ SO `syncPick` READS THE BOOLEANS AND NEVER REMEMBERS A CHOICE. Every path
+   that changes a layer already ends in `lyrState`, which now calls it: the row
+   below the scrubber, a deep link, and the parked menu if it is ever unparked.
+   A `current` variable set alongside the booleans is the same defect as a
+   drift alarm built from the implementation's own model of its input -- it
+   agrees until one path forgets to update it, and then it is confidently wrong.
+
+   `none` IS A REAL CHOICE and not the absence of one. It is the base view the
+   site is built on -- §6, "the base view is just the game" -- so it is on the
+   row, first, and checked when nothing else is. */
+const PICKS=[['corsi',()=>corsiOn,v=>{corsiOn=v;setCorsi();}],
+             ['slot',()=>hdOn,v=>{hdOn=v;setHd();}],
+             ['blocked',()=>blockOn,v=>{blockOn=v;setBlock();}],
+             ['goaltending',()=>goalieOn,v=>{goalieOn=v;setGoalie();}],
+             ['whistle',()=>whistleOn,v=>{whistleOn=v;setWhistle();}]];
+let picking=false;
+function pick(want){
+ // GUARDED because each setter calls lyrState -> syncPick, and syncPick reads
+ // booleans that are mid-update. Without this the row would paint four times
+ // per press, each time from a state no reader ever sees.
+ if(picking)return; picking=true;
+ for(const [id,get,set] of PICKS){const on=id===want; if(get()!==on)set(on);}
+ picking=false; syncPick();}
+function syncPick(){
+ if(picking)return;
+ const on=PICKS.filter(([,get])=>get()).map(([id])=>id);
+ // ⭐ MORE THAN ONE ON IS NOT REPRESENTABLE ON THIS ROW, and it is reachable --
+ // `?layer=corsi,slot` is a URL anyone can type. The row shows the FIRST in
+ // this file's order rather than showing nothing, because a control that goes
+ // blank is a control that says the page is off when it is not.
+ const cur=on.length?on[0]:'none';
+ document.querySelectorAll('#rg .pk').forEach(b=>
+  b.setAttribute('aria-checked',String(b.dataset.l===cur)));}
+document.querySelectorAll('#rg .pk').forEach(b=>{
+ b.onclick=()=>pick(b.dataset.l);});
 /* ⭐ A LAYER BUTTON IS A ROW NOW, SO ITS LABEL IS NOT ITS textContent.
    Each setter used to write `(on?'✓ ':'＋ ')+name` over the whole button, which
    would erase the mark, the description and the state pill the row is made of.
@@ -1837,10 +1882,7 @@ function zoneState(){
  let on=0;document.querySelectorAll('#rg .lrow').forEach(r=>{
   if(String(r.getAttribute('aria-pressed'))==='true')on++;});
  const b=$('zLayersOn');if(b)b.textContent=on?`${on} layer${on===1?'':'s'} on`:'';
- // ⏸ PARKED: the menu is hidden on the base page and this class is what gives
- // it back, so a deep link that arrives with a layer on is never a one-way
- // trip. Derived from the same count as the badge -- one source, two readouts.
- document.getElementById('rg').classList.toggle('anylayer',on>0);}
+ syncPick();}
 zoneState();
 function setCorsi(){document.getElementById('rg').classList.toggle('corsi',corsiOn);$('lyCorsi').setAttribute('aria-pressed',corsiOn);lyrState('stCorsi',corsiOn);if(!corsiOn&&workOpen){workOpen=false;$('workPanel').hidden=true;$('work').setAttribute('aria-expanded',false);$('work').textContent='Show me the work';}}
 function setHd(){document.getElementById('rg').classList.toggle('slot',hdOn);$('lyHd').setAttribute('aria-pressed',hdOn);lyrState('stHd',hdOn);render(i,'');}

@@ -880,8 +880,7 @@ __HELPERS__
 # count would be a claim that goes stale between deploys. "Every NHL game since
 # 2023" is a claim about SCOPE, which the limits block below states exactly and
 # which does not move.
-SAYS = ("Every NHL game since 2023, replayed event by event &mdash; with the counts "
-        "built in front of you, so you can see <b>where a number comes from</b>.")
+SAYS = P.SAYS  # one source, shared with the game page -- see builders/page.py
 
 
 def _lib(*names):

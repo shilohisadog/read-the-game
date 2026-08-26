@@ -254,6 +254,18 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 # on every page and the novice tester is on a phone: 4 items wrapped to 2 lines
 # at 108px, and 5 items wrap to 2 lines at 108px. It costs nothing on the device
 # that can least afford it. See docs/discovery.md §13.
+# ⭐ ONE HEADLINE, TWO PAGES. Kevin, 2026-08-26: "let's have the same header on
+# the game page as we do on the front page, for consistency." It lived in
+# build_index.py, so `consistency` would have meant two authors keeping two
+# strings in step -- which is the second-implementation shape this repo keeps
+# almost building. It lives here, beside the chrome both pages already share,
+# and a test compares the two BUILT pages rather than this constant.
+#
+# It says SCOPE, not a count: "Every NHL game since 2023" does not move between
+# deploys, and the limits block states the scope exactly.
+SAYS = ("Every NHL game since 2023, replayed event by event &mdash; with the counts "
+        "built in front of you, so you can see <b>where a number comes from</b>.")
+
 _NAV = [("/", "Watch a game"), ("/#teams", "Teams"),
         ("/calendar.html", "By date"),
         ("/what-you-can-see.html", "What you can see"),
