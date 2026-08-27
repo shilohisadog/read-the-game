@@ -2105,8 +2105,14 @@ function lboxFor(id,at,L){
      wins", which docs/blocked-shots-layer.md refused to publish for that reason.
      THE WORDS ARE THE SITE'S OWN. `build_index.py` names this concept "The
      attempt that never arrived" on the learn page. Using it here removes the
-     collision with the blocker's stat and stops one idea having two names. */
-  return {a:c[AID],k:'ATTEMPTS THAT NEVER ARRIVED',h:c[HID],
+     collision with the blocker's stat and stops one idea having two names.
+     ⚠️ AND IT IS THE SHORT FORM, because the long one WRAPPED. Measured on the
+     reference game at 360: `ATTEMPTS THAT NEVER ARRIVED` is 209px in a 293px
+     box, so the centre label took two lines, row one grew from 26px to 30px and
+     the box overflowed its 74px at 84. The deploy gate caught it. Three of the
+     four box defects so far have been a LABEL or a figure outgrowing the row
+     rather than the sentence everyone looks at. */
+  return {a:c[AID],k:'NEVER ARRIVED',h:c[HID],
    /* THE ATTRIBUTION CLAUSE IS IN THE CAPTION, not here -- it is a property of
       the LENS, true before the puck drops (§27.1), and spelling it out in the
       box ran the line to three lines at 360 and clipped it. The label carries
@@ -2142,12 +2148,24 @@ function lboxFor(id,at,L){
   const W=whistle.reduce(sl,CTX), n=W.whistles.length, w=latest(W);
   const nm=w?(WHY[w.rsn]&&WHY[w.rsn].name)||w.rsn:null;
   return {a:'',k:`${n} STOPPAGE${n===1?'':'S'}`,h:'',
-   n:nm?`Most recently: ${nm}. A stoppage names a rule and no club, so this row has no sides.`
+   /* ⭐ THE VARIABLE STATE ONLY — the third time this rule has been paid for.
+      The clause about a stoppage having no club is a CONSTANT and belongs to the
+      lens, so it lives in the caption (§27.1). Leaving it here made the line
+      `Most recently: <reason>` plus a fixed sentence, and a reason is DATA:
+      "Offside" fits and "Goalie stopped play after a shot on goal" does not.
+      The deploy gate caught it on the reference game after a local pass on the
+      Cup Final — two games, two string lengths, and the gate was measuring the
+      one I was not.
+      ⭐ THE RULE, now that it has bitten three times (the goaltending flip, the
+      blocked attribution, this): THE BOX'S LINE CARRIES ONLY WHAT CHANGES;
+      every constant explanation belongs in the caption. A fixed box cannot hold
+      a constant sentence AND an unbounded one. */
+   n:nm?`Most recently: ${nm}.`
        :'Play has not stopped yet in what you have watched.'};}
  return none;}
 /** The centre label alone, for the pre-game frame where there is nothing to count. */
 const LBK={corsi:()=>'SHOT ATTEMPTS',slot:()=>'SHOTS FROM THE SLOT',
- blocked:()=>'ATTEMPTS THAT NEVER ARRIVED',goaltending:()=>'SAVES BY',whistle:()=>'STOPPAGES'};
+ blocked:()=>'NEVER ARRIVED',goaltending:()=>'SAVES BY',whistle:()=>'STOPPAGES'};
 function syncPick(){
  if(picking)return;
  const on=PICKS.filter(([,get])=>get()).map(([id])=>id);

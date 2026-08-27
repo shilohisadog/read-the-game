@@ -208,7 +208,16 @@ test('stoppages fills the centre alone and says why it has no sides', () => {
   assert.equal(b.a, '', 'a club figure appeared for stoppages, which carry no club');
   assert.equal(b.h, '', 'a club figure appeared for stoppages, which carry no club');
   assert.match(b.k, /^\d+ STOPPAGES?$/, 'the centre does not carry the count');
-  assert.match(b.n, /no club|no sides/i, 'the row does not say why the columns are empty');
+  /* ⭐ AND THE REASON THE COLUMNS ARE EMPTY IS IN THE CAPTION, not the box.
+     It is a CONSTANT — true of every stoppage in every game — so it belongs to
+     the lens (§27.1), and leaving it in the box left no room for the part that
+     is DATA: "Offside" fits where "Goalie stopped play after a shot on goal"
+     clips. The deploy gate found that on the reference game after a local pass
+     on a different one, which is also why this asserts both halves. */
+  assert.match(b.n, /Most recently|has not stopped/,
+    'the box does not name the stoppage, which is the only part of this that changes');
+  assert.match(a.$('lcap').innerHTML, /never a team|no club/i,
+    'nothing explains why this layer has no per-club figures');
 });
 
 /**
