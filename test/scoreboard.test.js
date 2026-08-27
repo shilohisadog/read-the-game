@@ -68,7 +68,10 @@ test('the 150px floor is lifted on a phone, where it is the thing that overflows
 
 test('the board becomes two rows, so the three-element column stops existing', () => {
   assert.match(PHONE, /grid-template-columns:1fr 1fr/);
-  assert.match(PHONE, /grid-template-areas:"away home" "state state"/);
+  // The game line took the top of the board on 2026-08-27, so the phone layout
+  // is three rows now. The claim is unchanged: away and home SHARE a row, and
+  // the state spans beneath them.
+  assert.match(PHONE, /grid-template-areas:"game game" "away home" "state state"/);
   assert.match(PHONE, /#rg:not\(\.preview\) \.tm\{[^}]*flex-direction:row/,
     'the team stack is still a column, which is the thing that did not fit');
 });

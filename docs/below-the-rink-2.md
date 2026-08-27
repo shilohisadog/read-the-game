@@ -1779,3 +1779,83 @@ A bench minor — *too many men on the ice*, 10 in the sample — has **no commi
 player** in the feed, so `box.js` gives it no seat and the scoreboard shows
 nothing while the team is genuinely short-handed. Pre-existing behaviour, now
 visible in a place where its absence is more noticeable.
+
+## 30. Short-handed goals, bench minors, and a board that holds still
+
+Three things from Kevin scrubbing a game he had not used before — which is
+itself the finding: *"I had only been using 1 game for all our previous
+efforts."*
+
+### 30.1 ⭐ A short-handed goal is not "fewer skaters" — it is wrong 20 times in 26
+
+Over 40 published games: **246 goals in play, 26 with fewer skaters, and only
+SIX with anybody in the scoring team's own box.** The other twenty are the
+opposite situation — the other side pulled its goaltender, so the scorers are
+five against six *shooting at an empty net*. A badge driven by `sit` alone reads
+**SHORT-HANDED on an empty-net goal**, which is not a near-miss, it is backwards.
+
+So both conditions, the second doing the work: fewer skaters, **and** the
+scoring team actually has somebody in the box. `box.js` says it in one line —
+*fewer skaters is not the same as penalised* — and it took writing the wrong
+version to see that the line was about this too.
+
+⚠️ **The boundary is inclusive on purpose.** `occupants` is `end > secs` and the
+release rule sets a released stint's `end` to the goal's own second, so at the
+instant of a POWER-PLAY goal the box it just emptied already reads empty.
+Counted the other way, power-play goals came to **6 instead of 51** against
+box.js's documented 52. It does not move the short-handed number.
+
+⚠️ **And the tag had to go in BOTH announcements.** A located goal is announced
+by its label on the ice; only an unplaced one falls through to the caption pill.
+In the caption alone it would never have appeared on a located goal — most of
+them — and a probe driving the scrubber shows nothing either way, because
+neither announcement fires unless the playhead *arrives* at the moment.
+
+### 30.2 A bench minor fills a seat and has no name to put in it
+
+Kevin: *"we definitely need to capture that on the scoreboard, just without an
+identified person."* `box.js` admitted penalties on `e.actor != null`, which
+silently dropped **13 of 347** — every one `sev: 'BEN'`: ten too many men, two
+unsuccessful challenges, one bench unsportsmanlike. The team is short for two
+minutes and somebody serves it, so the box was wrong about the ice.
+
+⭐ **The condition is the severity, not the missing name.** A future penalty type
+that also loses its actor would be admitted by accident under the weaker rule.
+`player` stays null and the scoreboard says **Bench**, because an em-dash reads
+as *we lost his name* rather than *there is not one*.
+
+### 30.3 The board holds still, and the badges line up
+
+    board heights over one heavily-penalised game, at 390
+      before   117 / 161 / 195 / 213      the rink stepped down four times
+      after    161 / 195 / 213            0 and 1 penalties are the same height
+
+There is no free version: to stop the shift the room has to exist before the
+penalty does. One seat is held open — the 0→1 transition, **98.2% of frames**.
+
+⚠️ **And reserving a seat does not fix the misalignment Kevin saw** — *"notice
+how VGK is shifted above WSH too"*. `align-items:center` centres each team
+column, so one side at one penalty and the other at two still drifts. **Top
+alignment** does fix it, at any number of rows: badge y-difference is now `[0]`
+across an entire game at both widths.
+
+### 30.4 The game line heads the board
+
+Kevin: *"can we move the game identifier to the top of the scoreboard, would that
+help in the spacing below the clock?"* It does — the card now reads identity →
+score → who is off, and the bottom belongs to the clock and the penalty columns.
+
+⚠️ **`grid-area:game` is only valid where the areas exist.** Above 520 the board
+has no `grid-template-areas`, so naming one resolved to lines that do not exist
+and the game line dropped to **178px down a 159px card**. Fifth instance of the
+same declaration being correct in one container and wrong in another — and the
+first one caught by a probe printing a distance rather than by looking.
+
+### 30.5 ⚠️ And a check that could not fail, again
+
+The assertion guarding that last bug read
+`PAGE_CSS.split('@media(max-width:520px)')[0]` — which drops every rule written
+*after* the query, including the one under test. **The mutation putting
+`grid-area:game` back changed nothing and the suite stayed green.** It strips the
+narrow blocks now, and asserts the slice still contains the rule before judging
+it — because a slice that lost its subject passes everything.

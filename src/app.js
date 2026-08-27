@@ -558,10 +558,17 @@ function drawBoxes(secs){
    const el=$(id);if(!el)continue;
    const men=secs==null?[]:occupants(PBOX,secs,tm);
    const rows=men.slice(0,SEATS).map(s=>{
-     const p=R[s.player];
+     const p=s.player==null?null:R[s.player];
+     /* ⭐ A BENCH MINOR IS NAMED AS ONE, not as an em-dash. `sev: 'BEN'` -- ten
+        too-many-men, two unsuccessful challenges and one bench unsportsmanlike
+        in 40 games -- has no committing player in the feed, and a placeholder
+        would read as "we lost his name" rather than "the league did not record
+        one, because there is not one". The seat is real either way: the team is
+        short two minutes and somebody serves it. */
+     const who=s.player==null?'Bench':(p?p.nm:'—');
      // The assessed clock, never the served one -- see above.
      const left=Math.max(0,(s.start+s.min*60)-secs);
-     return `<span class="pen"><span class="pw">${ESC(p?p.nm:'—')}</span>`
+     return `<span class="pen${s.player==null?' pbench':''}"><span class="pw">${ESC(who)}</span>`
            +`<span class="pf">${ESC(penName(s.pen))}</span>`
            +`<span class="pt">${mmss(left)}</span></span>`;}).join('');
    const more=men.length>SEATS
@@ -854,6 +861,43 @@ function render(i,how){
  if(workOpen)renderWork(L,cur);
 }
 function flash(id){const el=$(id);el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump');}
+/* ⭐ A SHORT-HANDED GOAL, AND THE TEST FOR ONE IS NOT "FEWER SKATERS".
+   ⚠️ NAMED IN BOTH PLACES A GOAL IS ANNOUNCED, because there are two. A goal the
+   feed placed is announced by its LABEL ON THE ICE; only an unplaced one falls
+   through to the caption pill (`if(!place(cur))caption(...)`). Putting the tag
+   in the caption alone would have shipped a feature that never appeared on a
+   located goal -- which is most of them -- and a probe driving the scrubber
+   would have shown nothing either way, because neither announcement fires
+   unless the playhead ARRIVES at the moment.
+   Kevin, 2026-08-27, having found one by scrubbing a random game: it "needs
+   special emphasis (different than a power-play or even strength goal)."
+
+   ⚠️ THE OBVIOUS IMPLEMENTATION IS WRONG FOUR TIMES IN FIVE. Over 40 published
+   games there are 246 goals in play and 26 where the scoring team had FEWER
+   skaters — of which only SIX had anybody in their own box. The other TWENTY are
+   the opposite situation: the other team pulled its goaltender, so the scorers
+   are 5 against 6 while shooting at an empty net. A badge reading SHORT-HANDED
+   on an empty-net goal is not a near-miss, it is backwards, and `sit` alone
+   cannot tell them apart. box.js says it in one line: fewer skaters is not the
+   same as penalised.
+
+   So both conditions, and the second is the one that carries it:
+     1. the scoring team had fewer skaters (`sit`, read not predicted)
+     2. the scoring team actually had somebody in the box
+
+   ⚠️ AND THE BOUNDARY IS INCLUSIVE ON PURPOSE. `occupants` is `end > secs`, and
+   the release rule sets a released stint's `end` to the goal's own second — so
+   at the instant of a POWER-PLAY goal the box it just emptied already reads
+   empty. Counted the other way, power-play goals came to 6 instead of 51 against
+   box.js's documented 52. It does not move the short-handed number (a team's own
+   goal never releases its own penalty) and it is written this way so the next
+   reader does not have to rediscover why. */
+function shortHanded(e){
+ if(!e||e.type!=='goal'||e.pt==='SO'||!e.sit||e.sit.length!==4||e.own==null)return false;
+ const home=e.own===HID;
+ const mine=+e.sit[home?2:1], theirs=+e.sit[home?1:2];
+ if(!(mine<theirs))return false;
+ return PBOX.some(s=>s.team===e.own&&s.start<=e.s&&s.end>=e.s);}
 function caption(e,kind){const c=$('caption');const tid=e.own;const ab=tid===AID?AAB:HAB;const side=tid===AID?'a':'h';
  const p=R[e.actor];const who=p?`<span class="num">#${p.n}</span>${p.nm}`:ab;
  const label=kind==='goal'?'🚨 GOAL':kind==='penalty'?'⛔ Penalty':'⚡ Shot from the slot';
@@ -865,7 +909,10 @@ function caption(e,kind){const c=$('caption');const tid=e.own;const ab=tid===AID
  // the OLD term, which can prove a word is gone and cannot see that removing it
  // left a sentence saying the same thing in both halves. Found by watching the
  // layer play; the assertion below it is in `render-transport.test.js`.
- c.innerHTML=`<span class="tag ${side}">${ab}</span><b>${label}</b> · ${who}`;
+ // The tag is a fact about the goal, so it sits with the label and not with the
+ // scorer: "GOAL · SHORT-HANDED · #16 Name" reads as one sentence about one shot.
+ const sh=kind==='goal'&&shortHanded(e)?'<span class="shg">short-handed</span>':'';
+ c.innerHTML=`<span class="tag ${side}">${ab}</span><b>${label}</b>${sh} · ${who}`;
  /* THE CAPTION LASTS EXACTLY AS LONG AS THE FRAME IT DESCRIBES. It used to be
     `animation:cap 2.2s` in the stylesheet -- a second clock, beside the pace and
     unrelated to it, and the speed buttons moved one of them. Driving the
@@ -1388,7 +1435,7 @@ function drawLabel(e){const g=$('labels');const p=place(e);if(!p){g.innerHTML=''
  if(e.type==='goal'){const tid=e.own,col=tid===AID?AWAYCOL:HOMECOL,ab=tid===AID?AAB:HAB,p=R[e.actor];
    const as=[R[e.a1],R[e.a2]].filter(Boolean).map(x=>x.nm).join(', ');
    let tx=lx>100?lx-5:lx+5,anc=lx>100?'end':'start',ty=Math.max(15,ly-6);
-   g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${ty.toFixed(1)}" stroke="${col}" stroke-width=".4" opacity=".55"/><text class="glab" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}" fill="${col}">🚨 GOAL — ${p?p.nm:ab}</text><text class="plabsub" x="${tx.toFixed(1)}" y="${(ty+4).toFixed(1)}" text-anchor="${anc}">${as?'assists: '+as:'unassisted'}</text></g>`;return;}
+   g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${ty.toFixed(1)}" stroke="${col}" stroke-width=".4" opacity=".55"/><text class="glab" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}" fill="${col}">🚨 GOAL${shortHanded(e)?' · SHORT-HANDED':''} — ${p?p.nm:ab}</text><text class="plabsub" x="${tx.toFixed(1)}" y="${(ty+4).toFixed(1)}" text-anchor="${anc}">${as?'assists: '+as:'unassisted'}</text></g>`;return;}
  let tx=lx+4,anc='start';if(lx>150){tx=lx-4;anc='end';}let ty=ly-4.5;if(ty<11)ty=ly+8;
  // THE TEAM, IN WORDS. The figure on the ice is one colour and two clubs can
  // wear the same one, so the label says whose play it was rather than leaving

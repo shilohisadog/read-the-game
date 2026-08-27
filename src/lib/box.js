@@ -14,8 +14,9 @@
  * WHAT IS RECORDED AND WHAT IS DERIVED, stated plainly because only one line
  * here is derived at all:
  *
- *   recorded   who took it (`actor`), whose box (`own`), what it was (`pen`),
- *              how long was assessed (`min`), how severe (`sev`)
+ *   recorded   who took it (`actor`, ABSENT on a bench minor), whose box
+ *              (`own`), what it was (`pen`), how long was assessed (`min`),
+ *              how severe (`sev`)
  *   derived    ONE thing -- that a minor ends early when its team is scored on
  *
  * `min` IS WHAT WAS ASSESSED, NEVER WHAT WAS SERVED. In the reference game BUF
@@ -80,12 +81,27 @@ export function stints(events, ctx) {
   const all = [];
 
   for (const e of events) {
-    if (e.type === 'penalty' && e.min && e.actor != null && e.own != null) {
+    // ⭐ A BENCH MINOR HAS NO COMMITTING PLAYER AND STILL FILLS A SEAT.
+    // `e.actor != null` was the admission test and it silently dropped 13 of 347
+    // penalties across 40 published games -- every one of them `sev: 'BEN'`: ten
+    // for too many men, two unsuccessful challenges, one bench unsportsmanlike.
+    // The team is short-handed for two minutes and a player the feed does not
+    // name serves it, so a box that omits them is wrong about the ice.
+    // Kevin, 2026-08-27: "we definitely need to capture that on the scoreboard,
+    // just without an identified person."
+    //
+    // THE CONDITION IS THE SEVERITY, NOT THE MISSING NAME. `sev === 'BEN'` is
+    // what the feed says this is; "actor happens to be null" is a symptom, and a
+    // future penalty type that also loses its actor would be admitted by
+    // accident under the weaker rule. `player` stays null and the caller says
+    // so in words -- see `drawBoxes`.
+    if (e.type === 'penalty' && e.min && e.own != null
+        && (e.actor != null || e.sev === 'BEN')) {
       // A penalty with no duration is not box time -- a penalty shot carries
       // `sev: 'PS'` and no `min`, and it belongs on the ice, not in here.
       if (e.sev && NOT_BOX.has(e.sev)) continue;
       all.push({
-        player: e.actor, team: e.own, start: e.s, end: e.s + e.min * 60,
+        player: e.actor ?? null, team: e.own, start: e.s, end: e.s + e.min * 60,
         min: e.min, sev: e.sev || null, pen: e.pen || null, endedBy: 'time',
       });
       continue;

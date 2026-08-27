@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Z547i2BDEajPa3a6LDp6BLhFjGo0BkQ+CFohgQtclE4=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-FmfwLkdvYolh+iqQoddElEgjZZRQf3Ga0dwLawsOm4Y='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-RLH3qeRvz4iStbGRUGBoGAne5WwJi1kMb6kG4DQfypY=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-P2VxT61XYYKq/byx3d2iIVahVx7FIGkD1MJhrF66ZSo='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">Watch a game</a><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see</a><a href="/workshop.html">Workshop</a></nav></header>
@@ -123,9 +123,10 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    `:not(.preview)` leaves the hero byte-identical to what its gate has been
    passing, instead of re-tuning a surface that was already right. */
 @media(max-width:520px){
- #rg:not(.preview) .board{grid-template-columns:1fr 1fr;grid-template-areas:"away home" "state state";
+ #rg:not(.preview) .board{grid-template-columns:1fr 1fr;grid-template-areas:"game game" "away home" "state state";
    gap:9px 10px;padding:11px 12px}
  #rg:not(.preview) .tm.a{grid-area:away}#rg:not(.preview) .tm.h{grid-area:home}
+ #rg:not(.preview) .board .foot{grid-area:game}
  #rg:not(.preview) .tm{flex-direction:row;align-items:center;justify-content:center;gap:7px}
  /* THE 150px FLOOR GOES. `#rg.preview .mid` already zeroes it for the hero and
     the game page never got the same repair — one fix, two surfaces, one missed. */
@@ -666,8 +667,31 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    signal with no prose in the path, which is the property it was given after a
    gate keyed to the word `final` failed a working site. Moving the element is
    safe; rewriting its sentence is not. */
-#rg .board .foot{grid-column:1/-1;margin:2px 0 0;text-align:center;
+/* ⭐ THE GAME LINE HEADS THE BOARD. Kevin, 2026-08-27: "can we move the game
+   identifier to the top of the scoreboard, would that help in the spacing below
+   the clock (where the penalty information is displayed)?" It does: the bottom
+   of the card now belongs to the clock and the two penalty columns, so the
+   board reads identity → score → who is off, top to bottom. */
+/* ⚠️ `grid-area:game` IS ONLY VALID WHERE THE AREAS EXIST. Above 520 the board
+   has no `grid-template-areas`, so naming one resolved to lines that do not
+   exist and the game line dropped to 178px down a 159px card -- below the score
+   it was supposed to head. `grid-column:1/-1` plus being first in the DOM is
+   what puts it on row one there; the named area belongs in the query that
+   defines it. The same declaration, correct in one container and wrong in the
+   other: fifth instance in this project, and the first one caught by a probe
+   printing a distance rather than by looking. */
+#rg .board .foot{grid-column:1/-1;margin:0 0 2px;text-align:center;
  font-size:.78rem;font-weight:600;color:var(--muted)}
+/* ⚠️ AND THE COLUMNS ALIGN AT THE TOP, NOT AT THEIR CENTRES. `align-items:center`
+   centres each team column in the row, so the moment one side had a penalty and
+   the other did not, the two badges sat at different heights -- Kevin: "notice
+   how VGK is shifted above WSH too". Reserving a seat fixes the common case and
+   NOT this one: at one penalty against two the columns are still unequal. Top
+   alignment makes the badge and the score sit at the same y whatever hangs below
+   them, which is the property that was actually wanted. The clock keeps its
+   centred position explicitly. */
+#rg .board{align-items:start}
+#rg .mid{align-self:center}
 #rg .foot{font-size:.82rem;color:var(--ink);font-weight:650;margin:0;text-align:left}
 /* THE GAME SUMMARY, GIVEN A SURFACE (Kevin liked it and could not find it).
    It was a small centred paragraph in muted type, sitting between the ledger and
@@ -1257,6 +1281,16 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
  padding:2px 0;font-weight:600}
 .shellmsg nav a:hover{border-bottom-color:#2a5d86}
 
+/* ⭐ THE SHORT-HANDED TAG. Six goals in 246 across 40 games -- rare enough that
+   a reader who has watched a few games has probably never seen one, which is the
+   whole reason to mark it. Loud on purpose and still inside the caption, because
+   it is a fact about THAT goal rather than a state of the game: the ice already
+   moved on by the next event. Amber rather than either club's colour, so it
+   cannot be read as belonging to one of them. */
+#rg .shg{display:inline-block;margin-left:7px;padding:1px 7px;border-radius:99px;
+ background:var(--hd);color:#fff;font-size:.62rem;font-weight:800;letter-spacing:.09em;
+ text-transform:uppercase;vertical-align:middle}
+
 /* ⭐ PENALTIES ON THE SCOREBOARD, under the team that took them.
    Absent when nobody is sitting -- no reserved space, which is exactly what was
    wrong with the row under the ice: it read "empty · empty" on 80.4% of
@@ -1269,8 +1303,24 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    The name leads, the infraction follows in muted type, and the clock is
    monospace and last so a column of them lines up. `tabular-nums` because a
    countdown whose digits change width jitters as it steps. */
-#rg .pens{display:flex;flex-direction:column;gap:3px;margin-top:6px;align-items:inherit}
-#rg .pens:empty{display:none}
+/* ⭐ THE SEAT IS RESERVED, SO THE BOARD DOES NOT RESIZE.
+   Kevin, 2026-08-27: "the scoreboard adjusts heights when the penalty is being
+   displayed, that shouldn't happen." Measured over one heavily-penalised game,
+   the board took FOUR different heights -- 117 / 161 / 195 / 213 at 390 -- and
+   the rink stepped down each time.
+
+   There is no free version of this: to stop the shift the room has to exist
+   before the penalty does. So one row is held open always, which covers the
+   0 -> 1 transition, and that is 98.3% of frames archive-wide (empty 82.3%, one
+   15.9%). Two or more still grows the board, on 1.7% of frames.
+
+   IT IS NOT THE SPACE THAT WAS COMPLAINED ABOUT. The row under the ice cost
+   62px at every width and PRINTED "empty · empty" into it; this is 31px of
+   nothing, which reads as the board's shape rather than as a box reporting that
+   it is empty. `:empty` is gone with it -- the point is that the slot holds
+   its ground. */
+#rg .pens{display:flex;flex-direction:column;gap:3px;margin-top:6px;align-items:inherit;
+ min-height:31px}
 /* ⚠️ A GRID, NOT A WRAPPING ROW, and the infraction is why. `Delay of game —
    faceoff violation` is 41 characters and `Tripping` is 8, so as flex items the
    clock landed on line 1 for one and line 3 for the other -- two seats in one
@@ -1350,13 +1400,13 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 <h1 class="pagelede">Learn to read hockey · event by event first, add metrics after</h1>
 <div class="newcomer" id="newcomer"></div>
 <div class="board">
+  <p class="foot" id="gl">—</p>
   <div class="tm a"><span class="ab" id="aAb">&mdash;</span><span class="sc" id="aSc">0</span><div class="pens" id="penA"></div></div>
   <div class="mid"><div class="gs"><span id="per">Pre-game</span> · <span class="cl" id="clk">20:00</span> <i class="clw">left</i></div>
     <div class="cbar"><div class="bar"><span class="ba" id="ba"></span><span class="bh" id="bh"></span></div>
     <div class="pct"><span id="pa">0</span><span class="plab"><i class="pname" id="pName">CONTROL</i><i class="mode" id="pMode">ALL SITUATIONS</i></span><span id="ph">0</span></div></div>
   </div>
   <div class="tm h"><span class="ab" id="hAb">&mdash;</span><span class="sc" id="hSc">0</span><div class="pens" id="penH"></div></div>
-  <p class="foot" id="gl">—</p>
 </div>
 <p class="endnote" id="endnote"></p>
 <p class="atnote" id="atnote"></p>
@@ -2033,8 +2083,9 @@ function windows(events, ctx) {
  * WHAT IS RECORDED AND WHAT IS DERIVED, stated plainly because only one line
  * here is derived at all:
  *
- *   recorded   who took it (`actor`), whose box (`own`), what it was (`pen`),
- *              how long was assessed (`min`), how severe (`sev`)
+ *   recorded   who took it (`actor`, ABSENT on a bench minor), whose box
+ *              (`own`), what it was (`pen`), how long was assessed (`min`),
+ *              how severe (`sev`)
  *   derived    ONE thing -- that a minor ends early when its team is scored on
  *
  * `min` IS WHAT WAS ASSESSED, NEVER WHAT WAS SERVED. In the reference game BUF
@@ -2099,12 +2150,27 @@ function stints(events, ctx) {
   const all = [];
 
   for (const e of events) {
-    if (e.type === 'penalty' && e.min && e.actor != null && e.own != null) {
+    // ⭐ A BENCH MINOR HAS NO COMMITTING PLAYER AND STILL FILLS A SEAT.
+    // `e.actor != null` was the admission test and it silently dropped 13 of 347
+    // penalties across 40 published games -- every one of them `sev: 'BEN'`: ten
+    // for too many men, two unsuccessful challenges, one bench unsportsmanlike.
+    // The team is short-handed for two minutes and a player the feed does not
+    // name serves it, so a box that omits them is wrong about the ice.
+    // Kevin, 2026-08-27: "we definitely need to capture that on the scoreboard,
+    // just without an identified person."
+    //
+    // THE CONDITION IS THE SEVERITY, NOT THE MISSING NAME. `sev === 'BEN'` is
+    // what the feed says this is; "actor happens to be null" is a symptom, and a
+    // future penalty type that also loses its actor would be admitted by
+    // accident under the weaker rule. `player` stays null and the caller says
+    // so in words -- see `drawBoxes`.
+    if (e.type === 'penalty' && e.min && e.own != null
+        && (e.actor != null || e.sev === 'BEN')) {
       // A penalty with no duration is not box time -- a penalty shot carries
       // `sev: 'PS'` and no `min`, and it belongs on the ice, not in here.
       if (e.sev && NOT_BOX.has(e.sev)) continue;
       all.push({
-        player: e.actor, team: e.own, start: e.s, end: e.s + e.min * 60,
+        player: e.actor ?? null, team: e.own, start: e.s, end: e.s + e.min * 60,
         min: e.min, sev: e.sev || null, pen: e.pen || null, endedBy: 'time',
       });
       continue;
@@ -4794,10 +4860,17 @@ function drawBoxes(secs){
    const el=$(id);if(!el)continue;
    const men=secs==null?[]:occupants(PBOX,secs,tm);
    const rows=men.slice(0,SEATS).map(s=>{
-     const p=R[s.player];
+     const p=s.player==null?null:R[s.player];
+     /* ⭐ A BENCH MINOR IS NAMED AS ONE, not as an em-dash. `sev: 'BEN'` -- ten
+        too-many-men, two unsuccessful challenges and one bench unsportsmanlike
+        in 40 games -- has no committing player in the feed, and a placeholder
+        would read as "we lost his name" rather than "the league did not record
+        one, because there is not one". The seat is real either way: the team is
+        short two minutes and somebody serves it. */
+     const who=s.player==null?'Bench':(p?p.nm:'—');
      // The assessed clock, never the served one -- see above.
      const left=Math.max(0,(s.start+s.min*60)-secs);
-     return `<span class="pen"><span class="pw">${ESC(p?p.nm:'—')}</span>`
+     return `<span class="pen${s.player==null?' pbench':''}"><span class="pw">${ESC(who)}</span>`
            +`<span class="pf">${ESC(penName(s.pen))}</span>`
            +`<span class="pt">${mmss(left)}</span></span>`;}).join('');
    const more=men.length>SEATS
@@ -5090,6 +5163,43 @@ function render(i,how){
  if(workOpen)renderWork(L,cur);
 }
 function flash(id){const el=$(id);el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump');}
+/* ⭐ A SHORT-HANDED GOAL, AND THE TEST FOR ONE IS NOT "FEWER SKATERS".
+   ⚠️ NAMED IN BOTH PLACES A GOAL IS ANNOUNCED, because there are two. A goal the
+   feed placed is announced by its LABEL ON THE ICE; only an unplaced one falls
+   through to the caption pill (`if(!place(cur))caption(...)`). Putting the tag
+   in the caption alone would have shipped a feature that never appeared on a
+   located goal -- which is most of them -- and a probe driving the scrubber
+   would have shown nothing either way, because neither announcement fires
+   unless the playhead ARRIVES at the moment.
+   Kevin, 2026-08-27, having found one by scrubbing a random game: it "needs
+   special emphasis (different than a power-play or even strength goal)."
+
+   ⚠️ THE OBVIOUS IMPLEMENTATION IS WRONG FOUR TIMES IN FIVE. Over 40 published
+   games there are 246 goals in play and 26 where the scoring team had FEWER
+   skaters — of which only SIX had anybody in their own box. The other TWENTY are
+   the opposite situation: the other team pulled its goaltender, so the scorers
+   are 5 against 6 while shooting at an empty net. A badge reading SHORT-HANDED
+   on an empty-net goal is not a near-miss, it is backwards, and `sit` alone
+   cannot tell them apart. box.js says it in one line: fewer skaters is not the
+   same as penalised.
+
+   So both conditions, and the second is the one that carries it:
+     1. the scoring team had fewer skaters (`sit`, read not predicted)
+     2. the scoring team actually had somebody in the box
+
+   ⚠️ AND THE BOUNDARY IS INCLUSIVE ON PURPOSE. `occupants` is `end > secs`, and
+   the release rule sets a released stint's `end` to the goal's own second — so
+   at the instant of a POWER-PLAY goal the box it just emptied already reads
+   empty. Counted the other way, power-play goals came to 6 instead of 51 against
+   box.js's documented 52. It does not move the short-handed number (a team's own
+   goal never releases its own penalty) and it is written this way so the next
+   reader does not have to rediscover why. */
+function shortHanded(e){
+ if(!e||e.type!=='goal'||e.pt==='SO'||!e.sit||e.sit.length!==4||e.own==null)return false;
+ const home=e.own===HID;
+ const mine=+e.sit[home?2:1], theirs=+e.sit[home?1:2];
+ if(!(mine<theirs))return false;
+ return PBOX.some(s=>s.team===e.own&&s.start<=e.s&&s.end>=e.s);}
 function caption(e,kind){const c=$('caption');const tid=e.own;const ab=tid===AID?AAB:HAB;const side=tid===AID?'a':'h';
  const p=R[e.actor];const who=p?`<span class="num">#${p.n}</span>${p.nm}`:ab;
  const label=kind==='goal'?'🚨 GOAL':kind==='penalty'?'⛔ Penalty':'⚡ Shot from the slot';
@@ -5101,7 +5211,10 @@ function caption(e,kind){const c=$('caption');const tid=e.own;const ab=tid===AID
  // the OLD term, which can prove a word is gone and cannot see that removing it
  // left a sentence saying the same thing in both halves. Found by watching the
  // layer play; the assertion below it is in `render-transport.test.js`.
- c.innerHTML=`<span class="tag ${side}">${ab}</span><b>${label}</b> · ${who}`;
+ // The tag is a fact about the goal, so it sits with the label and not with the
+ // scorer: "GOAL · SHORT-HANDED · #16 Name" reads as one sentence about one shot.
+ const sh=kind==='goal'&&shortHanded(e)?'<span class="shg">short-handed</span>':'';
+ c.innerHTML=`<span class="tag ${side}">${ab}</span><b>${label}</b>${sh} · ${who}`;
  /* THE CAPTION LASTS EXACTLY AS LONG AS THE FRAME IT DESCRIBES. It used to be
     `animation:cap 2.2s` in the stylesheet -- a second clock, beside the pace and
     unrelated to it, and the speed buttons moved one of them. Driving the
@@ -5624,7 +5737,7 @@ function drawLabel(e){const g=$('labels');const p=place(e);if(!p){g.innerHTML=''
  if(e.type==='goal'){const tid=e.own,col=tid===AID?AWAYCOL:HOMECOL,ab=tid===AID?AAB:HAB,p=R[e.actor];
    const as=[R[e.a1],R[e.a2]].filter(Boolean).map(x=>x.nm).join(', ');
    let tx=lx>100?lx-5:lx+5,anc=lx>100?'end':'start',ty=Math.max(15,ly-6);
-   g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${ty.toFixed(1)}" stroke="${col}" stroke-width=".4" opacity=".55"/><text class="glab" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}" fill="${col}">🚨 GOAL — ${p?p.nm:ab}</text><text class="plabsub" x="${tx.toFixed(1)}" y="${(ty+4).toFixed(1)}" text-anchor="${anc}">${as?'assists: '+as:'unassisted'}</text></g>`;return;}
+   g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${ty.toFixed(1)}" stroke="${col}" stroke-width=".4" opacity=".55"/><text class="glab" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}" fill="${col}">🚨 GOAL${shortHanded(e)?' · SHORT-HANDED':''} — ${p?p.nm:ab}</text><text class="plabsub" x="${tx.toFixed(1)}" y="${(ty+4).toFixed(1)}" text-anchor="${anc}">${as?'assists: '+as:'unassisted'}</text></g>`;return;}
  let tx=lx+4,anc='start';if(lx>150){tx=lx-4;anc='end';}let ty=ly-4.5;if(ty<11)ty=ly+8;
  // THE TEAM, IN WORDS. The figure on the ice is one colour and two clubs can
  // wear the same one, so the label says whose play it was rather than leaving

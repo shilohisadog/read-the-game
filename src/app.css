@@ -76,9 +76,10 @@
    `:not(.preview)` leaves the hero byte-identical to what its gate has been
    passing, instead of re-tuning a surface that was already right. */
 @media(max-width:520px){
- #rg:not(.preview) .board{grid-template-columns:1fr 1fr;grid-template-areas:"away home" "state state";
+ #rg:not(.preview) .board{grid-template-columns:1fr 1fr;grid-template-areas:"game game" "away home" "state state";
    gap:9px 10px;padding:11px 12px}
  #rg:not(.preview) .tm.a{grid-area:away}#rg:not(.preview) .tm.h{grid-area:home}
+ #rg:not(.preview) .board .foot{grid-area:game}
  #rg:not(.preview) .tm{flex-direction:row;align-items:center;justify-content:center;gap:7px}
  /* THE 150px FLOOR GOES. `#rg.preview .mid` already zeroes it for the hero and
     the game page never got the same repair — one fix, two surfaces, one missed. */
@@ -619,8 +620,31 @@
    signal with no prose in the path, which is the property it was given after a
    gate keyed to the word `final` failed a working site. Moving the element is
    safe; rewriting its sentence is not. */
-#rg .board .foot{grid-column:1/-1;margin:2px 0 0;text-align:center;
+/* ⭐ THE GAME LINE HEADS THE BOARD. Kevin, 2026-08-27: "can we move the game
+   identifier to the top of the scoreboard, would that help in the spacing below
+   the clock (where the penalty information is displayed)?" It does: the bottom
+   of the card now belongs to the clock and the two penalty columns, so the
+   board reads identity → score → who is off, top to bottom. */
+/* ⚠️ `grid-area:game` IS ONLY VALID WHERE THE AREAS EXIST. Above 520 the board
+   has no `grid-template-areas`, so naming one resolved to lines that do not
+   exist and the game line dropped to 178px down a 159px card -- below the score
+   it was supposed to head. `grid-column:1/-1` plus being first in the DOM is
+   what puts it on row one there; the named area belongs in the query that
+   defines it. The same declaration, correct in one container and wrong in the
+   other: fifth instance in this project, and the first one caught by a probe
+   printing a distance rather than by looking. */
+#rg .board .foot{grid-column:1/-1;margin:0 0 2px;text-align:center;
  font-size:.78rem;font-weight:600;color:var(--muted)}
+/* ⚠️ AND THE COLUMNS ALIGN AT THE TOP, NOT AT THEIR CENTRES. `align-items:center`
+   centres each team column in the row, so the moment one side had a penalty and
+   the other did not, the two badges sat at different heights -- Kevin: "notice
+   how VGK is shifted above WSH too". Reserving a seat fixes the common case and
+   NOT this one: at one penalty against two the columns are still unequal. Top
+   alignment makes the badge and the score sit at the same y whatever hangs below
+   them, which is the property that was actually wanted. The clock keeps its
+   centred position explicitly. */
+#rg .board{align-items:start}
+#rg .mid{align-self:center}
 #rg .foot{font-size:.82rem;color:var(--ink);font-weight:650;margin:0;text-align:left}
 /* THE GAME SUMMARY, GIVEN A SURFACE (Kevin liked it and could not find it).
    It was a small centred paragraph in muted type, sitting between the ledger and
@@ -1210,6 +1234,16 @@
  padding:2px 0;font-weight:600}
 .shellmsg nav a:hover{border-bottom-color:#2a5d86}
 
+/* ⭐ THE SHORT-HANDED TAG. Six goals in 246 across 40 games -- rare enough that
+   a reader who has watched a few games has probably never seen one, which is the
+   whole reason to mark it. Loud on purpose and still inside the caption, because
+   it is a fact about THAT goal rather than a state of the game: the ice already
+   moved on by the next event. Amber rather than either club's colour, so it
+   cannot be read as belonging to one of them. */
+#rg .shg{display:inline-block;margin-left:7px;padding:1px 7px;border-radius:99px;
+ background:var(--hd);color:#fff;font-size:.62rem;font-weight:800;letter-spacing:.09em;
+ text-transform:uppercase;vertical-align:middle}
+
 /* ⭐ PENALTIES ON THE SCOREBOARD, under the team that took them.
    Absent when nobody is sitting -- no reserved space, which is exactly what was
    wrong with the row under the ice: it read "empty · empty" on 80.4% of
@@ -1222,8 +1256,24 @@
    The name leads, the infraction follows in muted type, and the clock is
    monospace and last so a column of them lines up. `tabular-nums` because a
    countdown whose digits change width jitters as it steps. */
-#rg .pens{display:flex;flex-direction:column;gap:3px;margin-top:6px;align-items:inherit}
-#rg .pens:empty{display:none}
+/* ⭐ THE SEAT IS RESERVED, SO THE BOARD DOES NOT RESIZE.
+   Kevin, 2026-08-27: "the scoreboard adjusts heights when the penalty is being
+   displayed, that shouldn't happen." Measured over one heavily-penalised game,
+   the board took FOUR different heights -- 117 / 161 / 195 / 213 at 390 -- and
+   the rink stepped down each time.
+
+   There is no free version of this: to stop the shift the room has to exist
+   before the penalty does. So one row is held open always, which covers the
+   0 -> 1 transition, and that is 98.3% of frames archive-wide (empty 82.3%, one
+   15.9%). Two or more still grows the board, on 1.7% of frames.
+
+   IT IS NOT THE SPACE THAT WAS COMPLAINED ABOUT. The row under the ice cost
+   62px at every width and PRINTED "empty · empty" into it; this is 31px of
+   nothing, which reads as the board's shape rather than as a box reporting that
+   it is empty. `:empty` is gone with it -- the point is that the slot holds
+   its ground. */
+#rg .pens{display:flex;flex-direction:column;gap:3px;margin-top:6px;align-items:inherit;
+ min-height:31px}
 /* ⚠️ A GRID, NOT A WRAPPING ROW, and the infraction is why. `Delay of game —
    faceoff violation` is 41 characters and `Tripping` is 8, so as flex items the
    clock landed on line 1 for one and line 3 for the other -- two seats in one

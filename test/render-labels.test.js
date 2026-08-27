@@ -34,7 +34,11 @@ test('the goal row is gone, and goals still get their scorer and assists', () =>
   // table reads as coverage -- the third instance of that shape here.
   assert.doesNotMatch(app, /const LAB=\{[^}]*goal:\[/,
     'the dead goal row is back in the label table');
-  assert.match(app, /🚨 GOAL — /, 'goals lost their own label');
+  // ⚠️ THE DASH IS NO LONGER ADJACENT TO THE WORD. A short-handed goal reads
+  // "🚨 GOAL · SHORT-HANDED — Chatfield", so a pattern anchored on `GOAL — `
+  // asserts the ABSENCE of a tag it knows nothing about. Anchored on the two
+  // parts that are always there instead.
+  assert.match(app, /🚨 GOAL\$\{[^}]*\} — |🚨 GOAL — /, 'goals lost their own label');
   assert.match(app, /assists: /, 'goals lost their assists');
 });
 
