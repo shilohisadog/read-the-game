@@ -918,9 +918,19 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    and one. It costs ~20px at 1100 and pays for itself at every width below. */
 #rg .pklab{flex-basis:100%;font-size:.62rem;font-weight:800;letter-spacing:.11em;
  text-transform:uppercase;color:var(--muted);margin:0 0 -1px}
+/* ⭐ ONE SIZE FOR EVERY CHIP. Kevin: "can (or should) we make all of the
+   selectors the same size, for consistency?" Yes -- six pills of six different
+   widths read as six different kinds of thing, and they are one kind.
+
+   `min-width`, NOT a fixed width: the longest label measures 118px here, so 124
+   makes every chip identical AND leaves headroom for a face wider than this
+   laptop's. If some system font pushes one past 124 that chip grows and the row
+   still wraps -- cosmetically uneven, never overflowing. A fixed width would
+   clip the label instead, and `nowrap` to defend it is exactly what shipped the
+   360px side-scroll one commit ago. */
 #rg .pk{font:inherit;font-size:.8rem;font-weight:600;color:var(--ink);background:#fff;
  border:1px solid var(--edge);border-radius:99px;padding:0 14px;min-height:44px;
- cursor:pointer;white-space:nowrap}
+ min-width:124px;text-align:center;cursor:pointer}
 #rg .pk[aria-checked="true"]{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:700}
 #rg .pk:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 /* ⭐ A RULE BETWEEN THE BASE VIEW AND THE METRICS. Kevin: "should we have a faint
@@ -1234,6 +1244,34 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .shellmsg nav a{color:#2a5d86;text-decoration:none;border-bottom:1px solid #cfe0ec;
  padding:2px 0;font-weight:600}
 .shellmsg nav a:hover{border-bottom-color:#2a5d86}
+
+/* ⏸ ═══ PARKED 2026-08-27 — EVERY LAYER'S OUTPUT, NOT ITS CONTROL ═══
+   Kevin: "let's hide (not remove, but temporarily hide) the layer information
+   that comes up when each selector is active. The reason is I don't think we
+   are displaying that information in an intuitive way and want to start fresh
+   on how and where we display the metrics/information."
+
+   So the selector stays, the caption under it stays -- "I like the description
+   under the selector, that works" -- and what goes is the DISPLAY each layer
+   produces: the counters and the split bar, the goaltender cards, the whistle
+   and blocked panels, the amber tip, and `Show me the work`.
+
+   ⚠️ WHAT THIS COSTS, SAID OUT LOUD. Two of the five layers have no other
+   output: `Attempts` draws no mark of its own (the counters WERE its display)
+   and `Goaltending` builds cards. With this block on, choosing either changes
+   the caption and nothing else on screen. `Slot`, `Blocked` and `Stoppages`
+   still change the ice. That is the state Kevin asked for and it is temporary.
+
+   ⚠️ AND IT MUST SIT AFTER THE RULES IT OVERRIDES. `#rg.corsi .counters` is
+   (1,2,0) and so is this; the later rule wins, and "later" is the only reason
+   this works. Moving this block up the file silently un-parks half of it --
+   which is the CSS-that-is-valid-and-situationally-wrong defect this project
+   has now hit four times. Hence the end of the file, and hence this note. */
+#rg.corsi .cbar,#rg.corsi .counters,#rg.corsi #work,
+#rg.slot .hint,
+#rg.goalie .goalies,
+#rg.whistle .whistlepanel,
+#rg.blocked .blockpanel{display:none}
 </style>
 <!-- ⭐ THE SHELL'S STATUS LINE, AND IT IS OUTSIDE `#rg` ON PURPOSE (D9).
      It used to be `#gl`, the game line -- which sits at the BOTTOM of the app,

@@ -1635,3 +1635,45 @@ checkable at build time and is the property that actually failed.
 And the reason it reached production: **every measurement I took was at 390**,
 where it fits. The gate measures 360 into a 345 layout viewport. When a block's
 content is text of unknown length, 390 is not a test.
+
+## 28. ⏸ Every layer's output is parked, and the chips are one size
+
+Kevin, 2026-08-27: *"let's hide (not remove, but temporarily hide) the layer
+information that comes up when each selector is active… I don't think we are
+displaying that information in an intuitive way and want to start fresh on how
+and where we display the metrics/information."* And: *"I like the description
+under the selector, that works."*
+
+So the control and its caption stay; **the display each layer produces goes**:
+the counters and the split bar, the goaltender cards, the whistle and blocked
+panels, the amber tip, and *Show me the work*.
+
+⚠️ **What that costs, said out loud.** `Attempts` draws no mark of its own — the
+counters WERE its display — and `Goaltending` builds cards. With this parked,
+choosing either changes the caption **and nothing else on screen**. `Slot`,
+`Blocked` and `Stoppages` still change the ice; verified in a browser, the
+whistle layer still drew its four restart rings.
+
+### 28.1 ⭐ The parking rule only works because it comes LAST
+
+`#rg.corsi .counters{display:flex}` is (1,2,0) and so is the rule that parks it.
+**The later one wins, and that is the entire mechanism.** Move the block up the
+file and half of it silently stops applying — the *CSS that is individually
+valid and situationally wrong* defect, for the fourth time in this project.
+
+Nothing about specificity says so, so the **position** is what the test asserts:
+each reveal rule's index must be less than the parking rule's. Mutated by moving
+the block to the top of the stylesheet, which is still valid CSS and inert.
+
+### 28.2 One size for every chip
+
+    Just events 124 · Attempts 124 · Slot 124 · Blocked 124 · Goaltending 124 · Stoppages 124
+
+    390: three rows (was two)   700: two   1100: one
+    32 width × state × layer combinations, none overflow
+
+⭐ **`min-width`, not `width`.** The longest label measures 118px here, so 124
+makes every chip identical and leaves headroom for a wider system font: if one
+grows past 124 the row still wraps — cosmetically uneven, never overflowing. A
+fixed width would clip the label instead, and `nowrap` to defend it is exactly
+what shipped the 360px side-scroll one commit ago. A test forbids both.

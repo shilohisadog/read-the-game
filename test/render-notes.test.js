@@ -305,6 +305,57 @@ test('the caption says what the chosen lens is, in the words the rows carry', ()
     'the caption has an unbreakable run again — that is the 360px side-scroll the gate caught');
 });
 
+/**
+ * ⏸ EVERY LAYER'S OUTPUT IS PARKED — the control and its caption are not.
+ *
+ * Kevin, 2026-08-27: "let's hide (not remove, but temporarily hide) the layer
+ * information that comes up when each selector is active… I want to start fresh
+ * on how and where we display the metrics/information."
+ */
+test('the layer displays are parked, by a rule that has to come last', () => {
+  const PARKED = ['#rg.corsi .counters', '#rg.corsi .cbar', '#rg.slot .hint',
+                  '#rg.goalie .goalies', '#rg.whistle .whistlepanel', '#rg.blocked .blockpanel'];
+  const park = /#rg\.corsi \.cbar,[\s\S]*?\{display:none\}/.exec(PAGE_CSS);
+  assert.ok(park, 'the layer displays are back — nothing parks them');
+  for (const sel of PARKED)
+    assert.ok(park[0].includes(sel.replace('#rg', '')) || park[0].includes(sel),
+      `${sel} is not in the parking rule, so that layer still draws its display`);
+
+  // ⭐ AND THE ORDER IS THE WHOLE MECHANISM. `#rg.corsi .counters{display:flex}`
+  // and the rule that parks it are BOTH (1,2,0) — the later one wins, and that
+  // is the only reason this works. Move the block up the file and half of it
+  // silently stops applying, which is the CSS-valid-but-situationally-wrong
+  // defect this repo has hit four times. Nothing about specificity says so; the
+  // position does, so the position is what is asserted.
+  for (const [reveal, sel] of [[/#rg\.corsi \.counters\{display:flex\}/, '.counters'],
+                               [/#rg\.goalie \.goalies\{display:grid/, '.goalies'],
+                               [/#rg\.whistle \.whistlepanel\{display:block/, '.whistlepanel']]) {
+    const m = reveal.exec(PAGE_CSS);
+    assert.ok(m, `the rule that reveals ${sel} is gone — this test is describing a page that moved on`);
+    assert.ok(m.index < park.index,
+      `${sel} is parked BEFORE the rule that reveals it, so the parking does nothing`);
+  }
+
+  // The control and its caption are explicitly NOT parked: that is the half
+  // Kevin kept, and absence from a list is invisible in review.
+  assert.doesNotMatch(park[0], /\.pickrow|\.pk\b|\.lcap/,
+    'the selector or its caption got parked along with the displays');
+});
+
+test('every selector chip is the same size', () => {
+  // Kevin: "can (or should) we make all of the selectors the same size, for
+  // consistency?" Six pills of six widths read as six kinds of thing.
+  // `min-width`, not `width`: a wider system font grows a chip instead of
+  // clipping its label, and `nowrap` to defend a fixed width is what shipped a
+  // 360px side-scroll one commit earlier.
+  assert.match(PAGE_CSS, /#rg \.pk\{[^}]*min-width:\d+px/,
+    'the chips have no common width, so they are six different sizes');
+  assert.doesNotMatch(PAGE_CSS, /#rg \.pk\{[^}]*[^-]width:\d+px[;}]/,
+    'the chips have a FIXED width — a wider font clips the label instead of growing the chip');
+  assert.doesNotMatch(PAGE_CSS, /#rg \.pk\{[^}]*white-space:nowrap/,
+    'the chips are unbreakable again, which is the 360px side-scroll this project just shipped');
+});
+
 test('the page is parked at its base, and nothing was deleted to get there', () => {
   // ⏸ Kevin, 2026-08-26: "let's just remove all the extra stuff, for now, then we
   // can rebuild properly. Just have the header, scoreboard, rink, play controls
