@@ -2089,6 +2089,33 @@ CHENG adds two arguments neither of us had:
 * **It makes the rate family checkable in one place** — 39.6% / 60.4% / 45.8% /
   54.3% / 75.4% / 51.9% — instead of one panel at a time.
 
+### 31.7b ⏸ Three verification surfaces, and only two of them are the same kind
+
+Kevin, approving the measurements page and parking it: *"it'll have to (somehow)
+align with both the 'show me your work' (which we haven't talked about for some
+time), and the current 'Workshop' page, all of which need to align and be
+cognizant and interact with each other. But that's a bit aways in our build
+cycle."*
+
+Parked — and the taxonomy is settled here because it changes what the box under
+the ice must make room for, which is not parked.
+
+| surface | the question it answers | scope |
+|---|---|---|
+| **Show me the work** | *where did 34 come from?* | this game, this layer |
+| **the measurements page** | *how unusual is 34?* | the archive, with `n` and population |
+| **the Workshop** | *what else can you show me?* | other views entirely |
+
+⭐ **The first two are ONE THING SPLIT BY SCOPE** — the number in front of you,
+and the population it sits in. They are Doctrine §8's two halves and they should
+link to each other. **The Workshop is not in that family**; it is exploration,
+not verification. That is the real reason a reference card there read wrong to
+both reviewers in §31.7: a category error, not a matter of taste.
+
+**The consequence for the current build:** the box under the ice is where *Show
+me the work* reattaches, per layer. It needs an affordance for it in the layout,
+decided before the box is laid out rather than after.
+
 ### 31.8 What is settled, and what is not
 
 **Settled:** the box lives under the ice, inside `.rinkbox` · it holds a fixed
@@ -2098,9 +2125,11 @@ base view's box is empty or carries an interface prompt, never a metric · SOG
 becomes a validation gate, not a display · the archive references leave the
 panels, and what stays is counts.
 
-**Not settled, and both are Kevin's:** whether the reference figures go to a new
-measurements page or a Workshop card whose description changes deliberately; and
-what the selector's own acknowledgement looks like, which §31.2 says is now a
+**Settled since:** the reference figures go to a **measurements page**, not a
+Workshop card — approved by Kevin and parked behind the current build, with the
+three-surface taxonomy in §31.7b.
+
+**Not settled, and it is Kevin's:** what the selector's own acknowledgement looks like, which §31.2 says is now a
 requirement rather than a nicety.
 
 ⚠️ **And one instrument note carried out of §31.4:** a figure quoted from a
