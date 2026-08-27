@@ -2014,6 +2014,43 @@ games and stays a fraction. *Who* was in net, and when he was relieved, is a
 different question and belongs on the second line — which is the line the
 grammar already reserves for the state at the playhead.
 
+### 31.4b ⭐ And the same question bites Blocked — 99.2% of the time
+
+CHENG raised the column-subject problem for Goaltending. Checking the reducers
+before laying anything out found it in a layer neither of us named, and worse.
+
+`blocked.js` returns `t` keyed by **the blocker's team**: `t[AID]` is *blocks
+the away club made*, which are blocks **of home attempts**. Every other layer's
+left column is *what the away club did with the puck*. Measured over 262
+in-scope published games:
+
+    blocked events                                        8,571
+    credited to NEITHER club (blocked by a teammate)        710   8.3%
+    the two readings name DIFFERENT clubs as leader     245/247  99.2%
+
+**Not sometimes — almost always**, and obviously so once stated: your blocks are
+of their shots, so the two leaders are mirror images of each other. The 0.8% are
+games where the uncredited residue flips a near-tie.
+
+⚠️ **So dropping the existing panel's `t` into the shared grammar would put a
+number under the away column that is describing the home club's shooting, in 99
+games out of 100** — under a grammar whose entire teaching claim is *left column
+is the away club*. That is the blocked-shot attribution defect for the fourth
+time in this project, and this time it would have arrived through reuse rather
+than through a mistake.
+
+⭐ **THE RULE, and it is now the grammar's first rule: every column is COUNTED
+BY THE CLUB THAT SHOT THE PUCK.** Attempts, Slot and Blocked are then the same
+population filtered three ways, and the columns mean one thing across all three.
+It also removes the residue: counted by shooter, the two columns sum to the
+total blocked exactly, where counted by blocker they are short by 8.3% because a
+teammate block is credited to nobody — a discrepancy a viewer can see and cannot
+explain.
+
+Goaltending is the one layer that cannot obey it, since a save is by definition
+against the other club's shot. That is what §31.4's second line is for: the
+label carries the flip, and it is the ONLY layer where it has to.
+
 ### 31.5 Stoppages degrades, and the degradation is the honest part
 
 **A stoppage has no team.** `extract.py` carries `rsn`/`rsn2` and nothing else —
@@ -2119,7 +2156,8 @@ decided before the box is laid out rather than after.
 ### 31.8 What is settled, and what is not
 
 **Settled:** the box lives under the ice, inside `.rinkbox` · it holds a fixed
-grammar rather than a reserved maximum · Stoppages degrades to centre-only ·
+grammar rather than a reserved maximum · **every column is counted by the club
+that shot the puck** (§31.4b), Goaltending excepted and labelled · Stoppages degrades to centre-only ·
 Goaltending counts the CLUB, with the goaltender named on the second line · the
 base view's box is empty or carries an interface prompt, never a metric · SOG
 becomes a validation gate, not a display · the archive references leave the
