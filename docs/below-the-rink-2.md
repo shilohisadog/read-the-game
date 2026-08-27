@@ -1677,3 +1677,27 @@ makes every chip identical and leaves headroom for a wider system font: if one
 grows past 124 the row still wraps — cosmetically uneven, never overflowing. A
 fixed width would clip the label instead, and `nowrap` to defend it is exactly
 what shipped the 360px side-scroll one commit ago. A test forbids both.
+
+### 28.3 ⭐ The deploy gate refused the park, and it was right to
+
+`what only a stylesheet can settle` opens the whistle layer in a real browser and
+asserts the panel goes from **0px to more than 20px tall**. Parking the displays
+made that pair fail on a correct page — and **the job stopped before the deploy
+step**, so nothing broken reached production.
+
+The gate was not waived. Its subject moved: **the caption under the selector is
+what a layer now visibly produces**, and it is still a laid-out box whose
+visibility only a stylesheet decides, which is what this step exists for.
+
+    caption, base view   39px          (the base view's marks are named)
+    caption, layer on    39px, 261 chars, changed=1
+    whistle marks on the ice           1
+
+⭐ **Still a pair, and still for the same reason.** A caption that is always empty
+passes *it changed* alone; one that never changes passes *it has height* alone.
+Both were proven able to fail: hiding `.lcap` fails two assertions, and deleting
+the line that writes it fails four.
+
+And it is **driven through the control a visitor uses** — `#rg .pk[data-l=…]`
+rather than the parked `#lyWhistle` behind it, which still exists and still works
+and would have kept the gate green on a page whose selector had stopped working.

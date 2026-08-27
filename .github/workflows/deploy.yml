@@ -272,24 +272,33 @@ jobs:
           <script>
           setTimeout(function () {
             var d = document.getElementById('f').contentDocument;
-            var p = d.getElementById('whistlePanel');
-            /* Height of the box as laid out, which is the number no fake document
-               can produce. Zero means the stylesheet is hiding it, however
-               correct the markup inside it is. */
+            /* ⏸ THE WHISTLE PANEL IS PARKED (2026-08-27, docs §28) along with every
+               other layer display, so its height is 0 in both states by design and
+               the pair that used to live here would now fail on a correct page.
+               What replaced it as the layer's visible output is the CAPTION under
+               the selector -- still a laid-out box whose visibility only a
+               stylesheet decides, which is what this step exists for. Restore the
+               panel half when the displays come back. */
+            var p = d.getElementById('lcap');
             var h = function () { return Math.round(p.getBoundingClientRect().height); };
             var shut = h();
-            d.getElementById('lyWhistle').click();
+            var base = (p.textContent || '').trim();
+            /* DRIVEN THROUGH THE CONTROL A VISITOR USES, not the parked row behind
+               it: `#lyWhistle` still exists and still works, so clicking it would
+               keep this gate green on a page whose selector had stopped working. */
+            d.querySelector('#rg .pk[data-l="whistle"]').click();
             /* Sweep rather than pick a moment. A whistle is placed by the faceoff
                that restarts play, so any single frame is entitled to hold none --
                a fixed 70%-through index would make this gate's colour depend on
                which event the reference game happens to have there. */
-            var s = d.getElementById('scrub'), open = 0, rings = 0, text = 0;
+            var s = d.getElementById('scrub'), open = 0, rings = 0, text = 0, moved = 0;
             for (var k = 1; k <= 20; k++) {
               s.value = Math.round(+s.max * k / 20);
               s.dispatchEvent(new Event('input'));
               open = Math.max(open, h());
               rings = Math.max(rings, d.getElementById('whistles').querySelectorAll('circle').length);
               text = Math.max(text, (p.textContent || '').trim().length);
+              if ((p.textContent || '').trim() !== base) moved = 1;
             }
             /* THE SWEATER CONVENTION, in the only place it is real. The markup
                says only class="att a" and class="att h"; which of them ends up
@@ -306,6 +315,7 @@ jobs:
               return (c.fill + '|' + c.stroke).replace(/ /g, '');
             };
             document.title = 'ICE ' + shut + ' ' + open + ' ' + rings + ' ' + text
+                           + ' MOVED ' + moved
                            + ' VIS ' + paint('.att.a') + ' HOST ' + paint('.att.h');
           }, 4000);
           </script>
@@ -316,22 +326,24 @@ jobs:
           dom=$(google-chrome --headless --no-sandbox --disable-gpu \
                   --virtual-time-budget=25000 --dump-dom \
                   "http://localhost:8098/probe.html" 2>/dev/null)
-          read -r _ shut open rings text _ vis _ host \
-            <<<"$(echo "$dom" | grep -o 'ICE [0-9 ]* VIS [^ ]* HOST [^ <]*' | head -1)"
+          read -r _ shut open rings text _ moved _ vis _ host \
+            <<<"$(echo "$dom" | grep -o 'ICE [0-9 ]* MOVED [0-9]* VIS [^ ]* HOST [^ <]*' | head -1)"
           if [ -z "$text" ]; then
             echo "::error::the probe never reported — the app did not run in the frame"
             echo "$dom" | head -20; exit 1
           fi
-          echo "  layer off: the panel is ${shut}px tall"
-          echo "  layer on : the panel is ${open}px tall, holding $text characters"
-          echo "             and $rings whistle marks are on the ice"
+          echo "  caption, base view : ${shut}px tall"
+          echo "  caption, layer on  : ${open}px tall, holding $text characters, changed=$moved"
+          echo "                       and $rings whistle marks are on the ice"
           fail=0
-          # THE PAIR IS THE POINT. A panel that is always visible passes the
-          # second check alone, and a stylesheet that hides it always passes the
-          # first alone. Neither is worth anything without the other.
-          [ "$shut" -eq 0 ] || { echo "::error::the panel is on screen with the layer OFF (${shut}px)"; fail=1; }
-          [ "$open" -gt 20 ] || { echo "::error::the layer is on and the panel is ${open}px tall — the CSS is hiding it"; fail=1; }
-          [ "$text" -ge 40 ] || { echo "::error::the panel is visible and explains nothing ($text chars)"; fail=1; }
+          # ⭐ STILL A PAIR, AND STILL FOR THE SAME REASON. A caption that is
+          # always empty passes "it changed" alone; one that never changes passes
+          # "it has height" alone. Neither is worth anything without the other,
+          # and both are laid-out facts no fake document can produce.
+          [ "$shut" -gt 10 ] || { echo "::error::the base view has no caption (${shut}px) — its marks are unnamed"; fail=1; }
+          [ "$open" -gt 10 ] || { echo "::error::a layer is on and its caption is ${open}px tall — the CSS is hiding it"; fail=1; }
+          [ "$text" -ge 40 ] || { echo "::error::the caption is visible and explains nothing ($text chars)"; fail=1; }
+          [ "$moved" -eq 1 ] || { echo "::error::the caption never changed when the layer went on — the control is mute"; fail=1; }
           [ "$rings" -ge 1 ] || { echo "::error::no whistle mark reached the ice in a real browser"; fail=1; }
 
           # The visitor wears white and the host wears its colour. Asserted as a
