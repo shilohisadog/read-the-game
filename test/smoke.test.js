@@ -245,10 +245,17 @@ test('turning on the Control layer renders the ledger, and it reconciles', () =>
   const lastPlayable = rich.events.reduce((acc, e, n) => SKIP.has(e.type) ? acc : n, -1);
   const expected = lastPlayable + 1;
 
+  /* ⭐ THE ARITHMETIC STILL CLOSES ACROSS THREE BUCKETS INSTEAD OF TWO. The
+     exclusions split on 2026-08-27: the ones a viewer could plausibly have
+     expected to count are promoted, the rest collapse to a line with its own
+     total. Doctrine §9 is why this test had to change rather than be dropped —
+     the reordering is allowed to move the bookkeeping, never to lose any of it,
+     so the check is that every event is still on screen somewhere. */
   const counted = +w.match(/Counted <span class="n">(\d+)<\/span>/)[1];
-  const notCounted = +w.match(/Not counted <span class="n">(\d+)<\/span>/)[1];
+  const near = +(w.match(/Close, but not counted <span class="n">(\d+)<\/span>/) || [, 0])[1];
+  const plain = +(w.match(/(\d+) other events? (?:was|were) not this kind/) || [, 0])[1];
   const total = +w.match(/= <b>(\d+)<\/b> events/)[1];
-  assert.equal(counted + notCounted, total, 'the panel\'s own arithmetic must close');
+  assert.equal(counted + near + plain, total, 'the panel\'s own arithmetic must close');
   assert.equal(total, expected, 'every event up to and including the last playable one');
   assert.equal(counted, 135, 'and the attempt count is the one we pin everywhere else');
 });
@@ -281,9 +288,15 @@ test('the ledger explains the filtered-out attempts, on screen', () => {
   assert.match(w, /pulled their goalie/i, 'and the empty-net ones');
   // The reconciliation must still close under the filter.
   const counted = +w.match(/Counted <span class="n">(\d+)<\/span>/)[1];
-  const not = +w.match(/Not counted <span class="n">(\d+)<\/span>/)[1];
+  const near = +(w.match(/Close, but not counted <span class="n">(\d+)<\/span>/) || [, 0])[1];
+  const plain = +(w.match(/(\d+) other events? (?:was|were) not this kind/) || [, 0])[1];
   const total = +w.match(/= <b>(\d+)<\/b> events/)[1];
-  assert.equal(counted + not, total, 'nothing is lost by filtering');
+  assert.equal(counted + near + plain, total, 'nothing is lost by filtering');
+  // ⭐ AND THE FILTERED-OUT ATTEMPTS ARE NEAR-MISSES BY CONSTRUCTION: a
+  // power-play attempt IS an attempt, so `strength` is not `type` and it is
+  // promoted rather than collapsed. If that ever stops being true the panel is
+  // hiding the exclusions the filter exists to explain.
+  assert.ok(near > 0, 'the strength exclusions were collapsed into the bookkeeping line');
 });
 
 test('the clock shows time remaining, not elapsed', () => {

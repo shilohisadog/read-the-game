@@ -966,13 +966,20 @@ let workOpen=false;
    the moment it became generic: it read the right NAME off the chip and the
    wrong NUMBERS off corsi, for every layer. Caught by a test that took its
    expected totals from each reducer rather than from the page. */
+/* Plurals for the collapsed line. A TABLE, for the reason `PEN` and `WHY` are
+   tables: `type+'s'` gives "period-starts" and "shot-on-goals", and a name the
+   league controls is never inflected by us. */
+const PLURAL={faceoff:'faceoffs',hit:'hits',giveaway:'giveaways',takeaway:'takeaways',
+ penalty:'penalties',stoppage:'whistles',goal:'goals','shot-on-goal':'shots on goal',
+ 'missed-shot':'missed shots','blocked-shot':'blocked shots','period-start':'period starts',
+ 'period-end':'period ends','game-end':'the final horn','delayed-penalty':'delayed penalties'};
 const LEDGER={corsi:sl=>corsi.reduce(sl,CTX),slot:sl=>danger.reduce(sl,CTX),
  blocked:sl=>blocked.reduce(sl,CTX),goaltending:sl=>goaltending.reduce(sl,CTX),
  whistle:sl=>whistle.reduce(sl,CTX)};
 function renderWork(_,cur,at){
  const id=whichPick();
  if(id==='none'||!LEDGER[id]||at<0){$('workPanel').innerHTML='';return;}
- const L=LEDGER[id](upto(at));
+ const sl=upto(at), L=LEDGER[id](sl);
  const chip=document.querySelector(`#rg .pk[data-l="${id}"]`);
  const row=document.querySelector(`#rg .lrow[data-pick="${id}"]`);
  const lds=row&&row.querySelector('.lds');
@@ -995,7 +1002,40 @@ function renderWork(_,cur,at){
  const rows=g=>Object.entries(g).sort((a,b)=>b[1].n-a[1].n)
    .map(([why,{n,eg}])=>`<div><b>${n}&times;</b> ${ESC(why)}`
      +(eg?` <span class="weg">e.g. ${ESC(eg)}</span>`:'')+`</div>`).join('');
- const exc=rows(summarise(L.excluded));
+ /* ⭐ THE LEDGER STOPS PRETENDING TO TEACH. Kevin: "what is the Not Counted
+    column teaching the new viewer? That faceoffs, giveaways, period starts are
+    NOT shots from the slot? I don't think there's much value there." Measured
+    and he is right: over the reference game, 100% of the exclusions for
+    Attempts, Goaltending and Stoppages are events that were never candidates.
+
+    ⭐ CHENG'S RULE DECIDES WHAT STAYS: an exclusion teaches when a viewer could
+    plausibly have expected it to COUNT -- the exact mirror of the `surprising`
+    admission rule. It is not derivable from the events, but it IS derivable
+    from the DIMENSION that rejected them, which is what `dims` is for: `type`
+    means a different kind of event entirely, and everything else means a real
+    candidate that failed a test.
+
+    ⚠️ CONSERVATION IS NOT WEAKENED, AND MUST NOT BE (Doctrine §9 -- selective
+    honesty is worse than none). The collapsed line carries its own count and
+    the footer still closes over every event, so a reader adds three numbers
+    instead of two. Nothing is hidden; the bookkeeping stops occupying the
+    position that teaching should have. */
+ const isNear=x=>Object.keys(x.dims||{}).some(k=>k!=='type');
+ const near=L.excluded.filter(isNear), plain=L.excluded.filter(x=>!isNear(x));
+ const exc=rows(summarise(near));
+ /* AND THE COLLAPSED LINE STILL NAMES WHAT IS IN IT, from the events rather
+    than from prose -- CHENG's one defence of the noise is that a novice might
+    think a hit counts toward "controlling play", and that survives as three
+    named kinds rather than ten rows. */
+ const kinds={};
+ for(const x of plain){const e=sl[x.id]; if(e)kinds[e.type]=(kinds[e.type]||0)+1;}
+ const top=Object.entries(kinds).sort((a,b)=>b[1]-a[1]);
+ const named=top.slice(0,3).map(([t,n])=>`${n} ${PLURAL[t]||t}`);
+ const restN=top.slice(3).reduce((a,[,n])=>a+n,0);
+ const plainLine=plain.length
+   ? `${plain.length} other event${plain.length===1?'':'s'} ${plain.length===1?'was':'were'} not this kind of play at all`
+     +(named.length?` — ${named.join(', ')}${restN?`, and ${restN} more`:''}`:'')+'.'
+   : '';
  /* ⚠️ SURPRISING IS NOT GROUPED, AND EXCLUDED IS, because the reducers author
     them differently and it shows the moment you try. An EXCLUDED reason names a
     RULE -- "a hit — physical play, but not a shot attempt" -- so nine rules
@@ -1035,10 +1075,12 @@ function renderWork(_,cur,at){
    +`<p><em>For example:</em> ${ESC(sur)}</p>`
    +(L.surprising.length>1?`<p class="wexc">The other ${L.surprising.length-1} each carry their own reason, written by the layer that counted them.</p>`:'')
    +`</div>`:'')
- +`<div class="wc"><h3>Not counted <span class="n">${L.excluded.length}</span></h3>`
- +`<p class="wexc">${exc||'&mdash;'}</p></div></div>`
+ +(near.length?`<div class="wc"><h3>Close, but not counted <span class="n">${near.length}</span></h3>`
+   +`<p class="wexc">${exc}</p></div>`:'')+`</div>`
+ +(plainLine?`<p class="wplain">${plainLine}</p>`:'')
  +`<p class="wfoot">${fig?`<em>${ESC(fig)}.</em> `:''}`
- +`${L.counted.length} counted + ${L.excluded.length} not counted = `
+ +`${L.counted.length} counted${near.length?` + ${near.length} close`:''}`
+ +` + ${plain.length} other = `
  +`<b>${L.counted.length+L.excluded.length}</b> events, which is every event in `
  +`the game so far. Nothing is dropped quietly.`
  +`${evenOnly?' <b>Even strength only</b> &mdash; the power-play and empty-net '
@@ -2119,7 +2161,14 @@ function capFor(id){
     with a stated end condition, and this is that condition: the box below the
     ice gives both an output, so the set is GONE rather than emptied. A temporary
     mechanism that outlives its reason is how a workaround becomes the design. */
- return `<b>${chip?chip.textContent:''}</b> — ${lds?lds.textContent:''}. `
+ /* ⚠️ THE LABEL, NOT THE WHOLE CHIP. Each metric chip now carries a live count
+    beside its name, so `chip.textContent` reads "Slot33" -- and this composes
+    the caption from it, which would have shipped "**Slot33** — attempts from
+    within 33 ft". Third time this seam has decided a design: it ruled out a
+    "Done" label on the acknowledgement and forced the count out of the chip's
+    text here. The name lives in `.pkl` and only that is read. */
+ const lab=chip&&(chip.querySelector('.pkl')||chip);
+ return `<b>${lab?lab.textContent:''}</b> — ${lds?lds.textContent:''}. `
        +`<span class="cap2">${lon?lon.textContent:''}</span>`;}
 /**
  * ⭐ THE LAYER'S OUTPUT, IN ONE FIXED GRAMMAR -- docs/below-the-rink-2.md §31.
@@ -2151,6 +2200,38 @@ function capFor(id){
  * figure would be an attribution the feed does not contain. The form holds and
  * the content admits it has no sides, which is better than a form that lies.
  */
+/**
+ * ⭐ A LIVE COUNT ON EVERY LENS — what each one would show you, while you watch.
+ *
+ * Kevin: "let's say an event occurs on the rink… flash the updated metric; if
+ * it's not currently shown, flash the control button, which indicates the event
+ * applied to that layer" -- and CHENG's improvement on the flash: a COUNT
+ * reports where a pulse invites, persists so `prefers-reduced-motion` gets the
+ * whole lesson rather than none of it, and is cumulative, so looking away and
+ * back still tells you which lens has been busy.
+ *
+ * ⛔ AND NOT "THE MOST SPECIFIC LAYER LIGHTS", which was my proposal and was
+ * wrong. Measured over 262 games and 69,661 frames: Attempts COUNTS 45.0% of
+ * frames and would have flashed on 5.8% -- a 7.8x disagreement between the chip
+ * and the counter about one quantity, which is this project's signature bug in
+ * a new medium. It also asserts the lenses are disjoint when Slot and Blocked
+ * are both subsets of Attempts.
+ *
+ * ⭐ THE COUNTS TEACH CONTAINMENT FOR FREE. Attempts ticks whenever Slot ticks
+ * AND at other times, so the subset relation is learned by watching rather than
+ * by a label nobody reads. That is what made CHENG's two-strength flash
+ * unnecessary: the frequency IS the information.
+ */
+function drawChipCounts(at){
+ const sl=at<0?null:upto(at);
+ for(const id of Object.keys(LEDGER)){
+  const el=$('n_'+id); if(!el)continue;
+  // Pre-game every lens is honestly at zero: nothing has happened to count.
+  const n=sl?LEDGER[id](sl).counted.length:0;
+  if(String(n)===el.textContent)continue;
+  el.textContent=n;
+  // The sanctioned motion: a counter moving because a real event happened.
+  el.classList.remove('tick');void el.offsetWidth;el.classList.add('tick');}}
 function drawLBox(k,L){
  const el=$('lbox'); if(!el)return;
  const id=whichPick();
@@ -2160,6 +2241,7 @@ function drawLBox(k,L){
  // would make the box lag the frame render() is mid-way through drawing.
  const at=k==null?i:k, lens=L||(at<0?null:corsi.reduce(upto(at),CTX));
  const b=lboxFor(id,at,lens);
+ drawChipCounts(at);
  el.classList.toggle('empty',id==='none');
  /* ⚠️ A FRACTION IS A LONGER STRING THAN A COUNT, and at 360 two of them plus
     the centre label did not fit across the box -- the figures wrapped and the

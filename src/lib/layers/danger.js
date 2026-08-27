@@ -59,7 +59,14 @@ export const danger = {
        the sentence, and a verification surface that hides its arithmetic behind
        prose is the thing this project exists to be the opposite of. */
     const push = (id, dims, detail) =>
-      excluded.push({ id, why: dims.play || dims.type || dims.strength || dims.geometry,
+      /* ⭐ THE DIMENSION VOCABULARY, AND THE ORDER IS THE PRECEDENCE. `play` --
+         outside play at all. `type` -- a different kind of event. `strength` --
+         the wrong situation. `limit` -- a real candidate the FEED cannot place.
+         `geometry` -- a real candidate that failed OUR rule. The last two are
+         what the panel promotes, because they are the only exclusions where a
+         viewer could have expected the event to count. */
+      excluded.push({ id, why: dims.play || dims.type || dims.strength
+                             || dims.limit || dims.geometry,
                       ...(detail ? { detail } : {}), dims });
 
     events.forEach((e, id) => {
@@ -74,10 +81,21 @@ export const danger = {
         return;
       }
       if (!SHOT_TYPES.has(e.type) || e.x == null) {
-        push(id, { type: e.type === 'blocked-shot'
-                 ? 'blocked before it got there — no shot location on the net'
-                 : NOT_A_PLAY[e.type] || `not a shot on the net (${e.type})`,
-                   ...(notEven ? { strength: notEven } : {}) });
+        /* ⭐ A BLOCKED SHOT IS EXCLUDED BY A LIMIT, NOT BY ITS TYPE, and the
+           distinction is CHENG's: "two of these are hockey, one is us." A
+           faceoff is not a slot shot because it is a different kind of event.
+           A blocked shot IS a shot -- we know who took it, verified 44 of 44 --
+           and it is out because the feed records where the puck STOPPED and not
+           where it was struck. That is a limit of the data, and labelling it
+           `type` filed it with the faceoffs, where it collapsed into a line
+           about things that were never candidates. It is the most interesting
+           exclusion on the page and it was being hidden by its own dimension. */
+        const rest = notEven ? { strength: notEven } : {};
+        push(id, e.type === 'blocked-shot'
+               ? { limit: 'blocked before it got there — the feed records where the '
+                        + 'puck stopped, not where the shot was taken', ...rest }
+               : { type: NOT_A_PLAY[e.type] || `not a shot on the net (${e.type})`,
+                   ...rest });
         return;
       }
       if (notEven) { push(id, { strength: notEven }); return; }

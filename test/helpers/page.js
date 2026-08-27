@@ -123,8 +123,16 @@ export function fakeDom() {
     '#rg .pk': ['none', 'corsi', 'slot', 'blocked', 'goaltending', 'whistle'].map(l => {
       const key = 'pk:' + l;
       if (!byId.has(key)) {
-        const m = new RegExp(`<button class="pk"[^>]*data-l="${l}"[^>]*>([^<]*)<`).exec(app);
-        byId.set(key, Object.assign(el(), { dataset: { l }, textContent: m ? m[1] : '' }));
+        /* ⭐ THE CHIP'S NAME IS IN `.pkl` NOW, because each metric chip carries a
+           live count beside it and `capFor` must read the NAME alone -- a chip
+           whose `textContent` is "Slot33" would compose "**Slot33** — attempts
+           from within 33 ft". The fake models the same split, so a test cannot
+           pass on a structure the page does not have. */
+        const m = new RegExp(`<button class="pk"[^>]*data-l="${l}"[^>]*>(?:<span class="pkl">)?([^<]*)<`).exec(app);
+        const label = m ? m[1] : '';
+        const node = Object.assign(el(), { dataset: { l }, textContent: label });
+        node.querySelector = sel => (sel === '.pkl' ? { textContent: label } : null);
+        byId.set(key, node);
       }
       return byId.get(key);
     }),

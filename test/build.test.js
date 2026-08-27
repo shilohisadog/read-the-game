@@ -58,8 +58,15 @@ test('the app reduces through the extracted modules, not a copy', () => {
     'the old inline reducer body is gone');
   // Phase 2: the ledger must be rendered FROM the ledger, not from a hand-kept
   // list of event types that can go stale when a rule changes.
-  assert.ok(app.includes('summarise(L.excluded)'),
+  /* ⭐ THE PAGE ASKS THE LAYER HOW TO GROUP. It now groups the NEAR-MISSES --
+     the exclusions a viewer could plausibly have expected to count -- and
+     collapses the rest to a count, so the argument is `near` rather than
+     `L.excluded`. The claim is unchanged: the reasons come from the ledger and
+     the grouping from `layer.js`, never from a list kept in the renderer. */
+  assert.ok(app.includes('summarise(near)'),
     'show-me-the-work reads the layer\'s own exclusion reasons');
+  assert.ok(/const isNear=x=>Object\.keys\(x\.dims\|\|\{\}\)\.some/.test(app),
+    'the near-miss split is not made from the reducer\'s own dimensions');
   assert.ok(!/exL=\{hit:/.test(app),
     'the hardcoded exclusion labels are gone');
 });

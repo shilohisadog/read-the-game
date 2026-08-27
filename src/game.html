@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Qy7Xcta7bwHn+rNZLEY7aPGU45frEHPdpgzSlxZ4KxI=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-l/Qsl4Ga6FuQPnfnnA2avarwfPXlF0dvr8ZA+Tb2CsU='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Ejq+udXzRa3cVYubjWIjWTyYWh3NXay6HVbwONixtqY=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-5b/JV5ZQCQMrYOa8iGppq32r4s3MA3ZP32e8KTVsbEc='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">Watch a game</a><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see</a><a href="/workshop.html">Workshop</a></nav></header>
@@ -1144,6 +1144,17 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 @keyframes pkack{
  0%{box-shadow:0 0 0 0 rgba(217,102,43,.55)}
  100%{box-shadow:0 0 0 9px rgba(217,102,43,0)}}
+/* ⭐ THE LIVE COUNT BESIDE EACH LENS. Quieter than the name, monospaced so the
+   digits do not shuffle the label as they grow, and `tabular-nums` for the same
+   reason. It is an ANNOTATION on the control, not part of it: the chip still
+   does one job (choose a lens) and the number sits next to it doing the other
+   (report what that lens has seen). */
+#rg .pkn{margin-left:7px;font-family:ui-monospace,Menlo,monospace;font-size:.78rem;
+ font-weight:700;font-variant-numeric:tabular-nums;opacity:.55}
+#rg .pk[aria-checked="true"] .pkn{opacity:.8}
+#rg .pkn.tick{animation:pkn .45s ease}
+@keyframes pkn{0%{transform:scale(1)}35%{transform:scale(1.45);color:var(--flag)}100%{transform:scale(1)}}
+#rg .pkn{display:inline-block}
 #rg .pksep{flex:0 0 1px;align-self:stretch;background:var(--edge);margin:4px 3px}
 #rg.preview .pickrow{display:none!important}
 
@@ -1647,7 +1658,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
   <div class="grp" role="group" aria-label="Step through the events"><button class="spd stepb" id="back" aria-label="Previous event">◀ Prev event</button><button class="spd stepb" id="fwd" aria-label="Next event">Next event ▶</button></div>
   <div class="grp" role="group" aria-label="Replay speed"><button class="spd stepb" id="slower">&#9664; Slower</button><button class="spd stepb" id="faster">Faster &#9654;</button></div>
   <input class="scrub" id="scrub" type="range" min="-1" max="1" value="-1"></div>
-<div class="pickrow" role="radiogroup" aria-label="Which metric is on the ice" id="pickrow"><span class="pklab">Watching</span><button class="pk" id="pkNone" data-l="none" role="radio" aria-checked="true">Just events</button><span class="pksep" aria-hidden="true"></span><button class="pk" id="pkCorsi" data-l="corsi" role="radio" aria-checked="false">Attempts</button><button class="pk" id="pkSlot" data-l="slot" role="radio" aria-checked="false">Slot</button><button class="pk" id="pkBlocked" data-l="blocked" role="radio" aria-checked="false">Blocked</button><button class="pk" id="pkGoalie" data-l="goaltending" role="radio" aria-checked="false">Goaltending</button><button class="pk" id="pkWhistle" data-l="whistle" role="radio" aria-checked="false">Stoppages</button></div>
+<div class="pickrow" role="radiogroup" aria-label="Which metric is on the ice" id="pickrow"><span class="pklab">Watching</span><button class="pk" id="pkNone" data-l="none" role="radio" aria-checked="true"><span class="pkl">Just events</span></button><span class="pksep" aria-hidden="true"></span><button class="pk" id="pkCorsi" data-l="corsi" role="radio" aria-checked="false"><span class="pkl">Attempts</span><span class="pkn" id="n_corsi">0</span></button><button class="pk" id="pkSlot" data-l="slot" role="radio" aria-checked="false"><span class="pkl">Slot</span><span class="pkn" id="n_slot">0</span></button><button class="pk" id="pkBlocked" data-l="blocked" role="radio" aria-checked="false"><span class="pkl">Blocked</span><span class="pkn" id="n_blocked">0</span></button><button class="pk" id="pkGoalie" data-l="goaltending" role="radio" aria-checked="false"><span class="pkl">Goaltending</span><span class="pkn" id="n_goaltending">0</span></button><button class="pk" id="pkWhistle" data-l="whistle" role="radio" aria-checked="false"><span class="pkl">Stoppages</span><span class="pkn" id="n_whistle">0</span></button></div>
 <p class="lcap" id="lcap"></p>
 <!-- ⭐ THE WORK PANEL SITS AFTER THE EXPLANATION, NOT BEFORE THE CONTROLS.
      It first went directly under the rink box, and measured open it is 1,229px
@@ -3105,7 +3116,14 @@ const danger = {
        the sentence, and a verification surface that hides its arithmetic behind
        prose is the thing this project exists to be the opposite of. */
     const push = (id, dims, detail) =>
-      excluded.push({ id, why: dims.play || dims.type || dims.strength || dims.geometry,
+      /* ⭐ THE DIMENSION VOCABULARY, AND THE ORDER IS THE PRECEDENCE. `play` --
+         outside play at all. `type` -- a different kind of event. `strength` --
+         the wrong situation. `limit` -- a real candidate the FEED cannot place.
+         `geometry` -- a real candidate that failed OUR rule. The last two are
+         what the panel promotes, because they are the only exclusions where a
+         viewer could have expected the event to count. */
+      excluded.push({ id, why: dims.play || dims.type || dims.strength
+                             || dims.limit || dims.geometry,
                       ...(detail ? { detail } : {}), dims });
 
     events.forEach((e, id) => {
@@ -3120,10 +3138,21 @@ const danger = {
         return;
       }
       if (!SHOT_TYPES.has(e.type) || e.x == null) {
-        push(id, { type: e.type === 'blocked-shot'
-                 ? 'blocked before it got there — no shot location on the net'
-                 : NOT_A_PLAY[e.type] || `not a shot on the net (${e.type})`,
-                   ...(notEven ? { strength: notEven } : {}) });
+        /* ⭐ A BLOCKED SHOT IS EXCLUDED BY A LIMIT, NOT BY ITS TYPE, and the
+           distinction is CHENG's: "two of these are hockey, one is us." A
+           faceoff is not a slot shot because it is a different kind of event.
+           A blocked shot IS a shot -- we know who took it, verified 44 of 44 --
+           and it is out because the feed records where the puck STOPPED and not
+           where it was struck. That is a limit of the data, and labelling it
+           `type` filed it with the faceoffs, where it collapsed into a line
+           about things that were never candidates. It is the most interesting
+           exclusion on the page and it was being hidden by its own dimension. */
+        const rest = notEven ? { strength: notEven } : {};
+        push(id, e.type === 'blocked-shot'
+               ? { limit: 'blocked before it got there — the feed records where the '
+                        + 'puck stopped, not where the shot was taken', ...rest }
+               : { type: NOT_A_PLAY[e.type] || `not a shot on the net (${e.type})`,
+                   ...rest });
         return;
       }
       if (notEven) { push(id, { strength: notEven }); return; }
@@ -5545,13 +5574,20 @@ let workOpen=false;
    the moment it became generic: it read the right NAME off the chip and the
    wrong NUMBERS off corsi, for every layer. Caught by a test that took its
    expected totals from each reducer rather than from the page. */
+/* Plurals for the collapsed line. A TABLE, for the reason `PEN` and `WHY` are
+   tables: `type+'s'` gives "period-starts" and "shot-on-goals", and a name the
+   league controls is never inflected by us. */
+const PLURAL={faceoff:'faceoffs',hit:'hits',giveaway:'giveaways',takeaway:'takeaways',
+ penalty:'penalties',stoppage:'whistles',goal:'goals','shot-on-goal':'shots on goal',
+ 'missed-shot':'missed shots','blocked-shot':'blocked shots','period-start':'period starts',
+ 'period-end':'period ends','game-end':'the final horn','delayed-penalty':'delayed penalties'};
 const LEDGER={corsi:sl=>corsi.reduce(sl,CTX),slot:sl=>danger.reduce(sl,CTX),
  blocked:sl=>blocked.reduce(sl,CTX),goaltending:sl=>goaltending.reduce(sl,CTX),
  whistle:sl=>whistle.reduce(sl,CTX)};
 function renderWork(_,cur,at){
  const id=whichPick();
  if(id==='none'||!LEDGER[id]||at<0){$('workPanel').innerHTML='';return;}
- const L=LEDGER[id](upto(at));
+ const sl=upto(at), L=LEDGER[id](sl);
  const chip=document.querySelector(`#rg .pk[data-l="${id}"]`);
  const row=document.querySelector(`#rg .lrow[data-pick="${id}"]`);
  const lds=row&&row.querySelector('.lds');
@@ -5574,7 +5610,40 @@ function renderWork(_,cur,at){
  const rows=g=>Object.entries(g).sort((a,b)=>b[1].n-a[1].n)
    .map(([why,{n,eg}])=>`<div><b>${n}&times;</b> ${ESC(why)}`
      +(eg?` <span class="weg">e.g. ${ESC(eg)}</span>`:'')+`</div>`).join('');
- const exc=rows(summarise(L.excluded));
+ /* ⭐ THE LEDGER STOPS PRETENDING TO TEACH. Kevin: "what is the Not Counted
+    column teaching the new viewer? That faceoffs, giveaways, period starts are
+    NOT shots from the slot? I don't think there's much value there." Measured
+    and he is right: over the reference game, 100% of the exclusions for
+    Attempts, Goaltending and Stoppages are events that were never candidates.
+
+    ⭐ CHENG'S RULE DECIDES WHAT STAYS: an exclusion teaches when a viewer could
+    plausibly have expected it to COUNT -- the exact mirror of the `surprising`
+    admission rule. It is not derivable from the events, but it IS derivable
+    from the DIMENSION that rejected them, which is what `dims` is for: `type`
+    means a different kind of event entirely, and everything else means a real
+    candidate that failed a test.
+
+    ⚠️ CONSERVATION IS NOT WEAKENED, AND MUST NOT BE (Doctrine §9 -- selective
+    honesty is worse than none). The collapsed line carries its own count and
+    the footer still closes over every event, so a reader adds three numbers
+    instead of two. Nothing is hidden; the bookkeeping stops occupying the
+    position that teaching should have. */
+ const isNear=x=>Object.keys(x.dims||{}).some(k=>k!=='type');
+ const near=L.excluded.filter(isNear), plain=L.excluded.filter(x=>!isNear(x));
+ const exc=rows(summarise(near));
+ /* AND THE COLLAPSED LINE STILL NAMES WHAT IS IN IT, from the events rather
+    than from prose -- CHENG's one defence of the noise is that a novice might
+    think a hit counts toward "controlling play", and that survives as three
+    named kinds rather than ten rows. */
+ const kinds={};
+ for(const x of plain){const e=sl[x.id]; if(e)kinds[e.type]=(kinds[e.type]||0)+1;}
+ const top=Object.entries(kinds).sort((a,b)=>b[1]-a[1]);
+ const named=top.slice(0,3).map(([t,n])=>`${n} ${PLURAL[t]||t}`);
+ const restN=top.slice(3).reduce((a,[,n])=>a+n,0);
+ const plainLine=plain.length
+   ? `${plain.length} other event${plain.length===1?'':'s'} ${plain.length===1?'was':'were'} not this kind of play at all`
+     +(named.length?` — ${named.join(', ')}${restN?`, and ${restN} more`:''}`:'')+'.'
+   : '';
  /* ⚠️ SURPRISING IS NOT GROUPED, AND EXCLUDED IS, because the reducers author
     them differently and it shows the moment you try. An EXCLUDED reason names a
     RULE -- "a hit — physical play, but not a shot attempt" -- so nine rules
@@ -5614,10 +5683,12 @@ function renderWork(_,cur,at){
    +`<p><em>For example:</em> ${ESC(sur)}</p>`
    +(L.surprising.length>1?`<p class="wexc">The other ${L.surprising.length-1} each carry their own reason, written by the layer that counted them.</p>`:'')
    +`</div>`:'')
- +`<div class="wc"><h3>Not counted <span class="n">${L.excluded.length}</span></h3>`
- +`<p class="wexc">${exc||'&mdash;'}</p></div></div>`
+ +(near.length?`<div class="wc"><h3>Close, but not counted <span class="n">${near.length}</span></h3>`
+   +`<p class="wexc">${exc}</p></div>`:'')+`</div>`
+ +(plainLine?`<p class="wplain">${plainLine}</p>`:'')
  +`<p class="wfoot">${fig?`<em>${ESC(fig)}.</em> `:''}`
- +`${L.counted.length} counted + ${L.excluded.length} not counted = `
+ +`${L.counted.length} counted${near.length?` + ${near.length} close`:''}`
+ +` + ${plain.length} other = `
  +`<b>${L.counted.length+L.excluded.length}</b> events, which is every event in `
  +`the game so far. Nothing is dropped quietly.`
  +`${evenOnly?' <b>Even strength only</b> &mdash; the power-play and empty-net '
@@ -6698,7 +6769,14 @@ function capFor(id){
     with a stated end condition, and this is that condition: the box below the
     ice gives both an output, so the set is GONE rather than emptied. A temporary
     mechanism that outlives its reason is how a workaround becomes the design. */
- return `<b>${chip?chip.textContent:''}</b> — ${lds?lds.textContent:''}. `
+ /* ⚠️ THE LABEL, NOT THE WHOLE CHIP. Each metric chip now carries a live count
+    beside its name, so `chip.textContent` reads "Slot33" -- and this composes
+    the caption from it, which would have shipped "**Slot33** — attempts from
+    within 33 ft". Third time this seam has decided a design: it ruled out a
+    "Done" label on the acknowledgement and forced the count out of the chip's
+    text here. The name lives in `.pkl` and only that is read. */
+ const lab=chip&&(chip.querySelector('.pkl')||chip);
+ return `<b>${lab?lab.textContent:''}</b> — ${lds?lds.textContent:''}. `
        +`<span class="cap2">${lon?lon.textContent:''}</span>`;}
 /**
  * ⭐ THE LAYER'S OUTPUT, IN ONE FIXED GRAMMAR -- docs/below-the-rink-2.md §31.
@@ -6730,6 +6808,38 @@ function capFor(id){
  * figure would be an attribution the feed does not contain. The form holds and
  * the content admits it has no sides, which is better than a form that lies.
  */
+/**
+ * ⭐ A LIVE COUNT ON EVERY LENS — what each one would show you, while you watch.
+ *
+ * Kevin: "let's say an event occurs on the rink… flash the updated metric; if
+ * it's not currently shown, flash the control button, which indicates the event
+ * applied to that layer" -- and CHENG's improvement on the flash: a COUNT
+ * reports where a pulse invites, persists so `prefers-reduced-motion` gets the
+ * whole lesson rather than none of it, and is cumulative, so looking away and
+ * back still tells you which lens has been busy.
+ *
+ * ⛔ AND NOT "THE MOST SPECIFIC LAYER LIGHTS", which was my proposal and was
+ * wrong. Measured over 262 games and 69,661 frames: Attempts COUNTS 45.0% of
+ * frames and would have flashed on 5.8% -- a 7.8x disagreement between the chip
+ * and the counter about one quantity, which is this project's signature bug in
+ * a new medium. It also asserts the lenses are disjoint when Slot and Blocked
+ * are both subsets of Attempts.
+ *
+ * ⭐ THE COUNTS TEACH CONTAINMENT FOR FREE. Attempts ticks whenever Slot ticks
+ * AND at other times, so the subset relation is learned by watching rather than
+ * by a label nobody reads. That is what made CHENG's two-strength flash
+ * unnecessary: the frequency IS the information.
+ */
+function drawChipCounts(at){
+ const sl=at<0?null:upto(at);
+ for(const id of Object.keys(LEDGER)){
+  const el=$('n_'+id); if(!el)continue;
+  // Pre-game every lens is honestly at zero: nothing has happened to count.
+  const n=sl?LEDGER[id](sl).counted.length:0;
+  if(String(n)===el.textContent)continue;
+  el.textContent=n;
+  // The sanctioned motion: a counter moving because a real event happened.
+  el.classList.remove('tick');void el.offsetWidth;el.classList.add('tick');}}
 function drawLBox(k,L){
  const el=$('lbox'); if(!el)return;
  const id=whichPick();
@@ -6739,6 +6849,7 @@ function drawLBox(k,L){
  // would make the box lag the frame render() is mid-way through drawing.
  const at=k==null?i:k, lens=L||(at<0?null:corsi.reduce(upto(at),CTX));
  const b=lboxFor(id,at,lens);
+ drawChipCounts(at);
  el.classList.toggle('empty',id==='none');
  /* ⚠️ A FRACTION IS A LONGER STRING THAN A COUNT, and at 360 two of them plus
     the centre label did not fit across the box -- the figures wrapped and the

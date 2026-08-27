@@ -93,7 +93,8 @@ test('the selector holds exactly one choice, and the base view is one of them', 
   // really Nothing, shouldn't that say Just events?" With no metric on, the rink
   // is drawing every recorded event — the base view the header tells a reader to
   // watch FIRST. `Nothing` described the layer state and lied about the screen.
-  const base = /<button class="pk" id="pkNone"[^>]*>([^<]+)</.exec(app)[1];
+  // The chip's NAME is in `.pkl` since the metric chips gained a live count.
+  const base = /<button class="pk" id="pkNone"[^>]*><span class="pkl">([^<]+)</.exec(app)[1];
   assert.doesNotMatch(base, /^(nothing|none|off)$/i,
     `the base choice is labelled "${base}", which says the page is blank while it draws the whole game`);
   assert.match(base, /event/i,

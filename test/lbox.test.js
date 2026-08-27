@@ -14,10 +14,11 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { boot, app, PAGE_CSS, rich } from './helpers/page.js';
 import { blocked } from '../src/lib/layers/blocked.js';
 import { corsi } from '../src/lib/layers/corsi.js';
+import { goaltending } from '../src/lib/layers/goaltending.js';
 import { whistle } from '../src/lib/layers/whistle.js';
 import { danger } from '../src/lib/layers/danger.js';
 import { shootingTeam } from '../src/lib/attribution.js';
@@ -365,8 +366,22 @@ test('the work panel explains whichever layer is on, from that layer\'s ledger',
       `${token}: the slice taken from the panel does not close — wrong subject`);
     assert.ok(html.includes(`<span class="n">${r.counted.length}</span>`),
       `${token}'s panel does not show ITS counted total (${r.counted.length})`);
-    assert.ok(html.includes(`<span class="n">${r.excluded.length}</span>`),
-      `${token}'s panel does not show ITS excluded total (${r.excluded.length})`);
+
+    /* ⭐ AND CONSERVATION STILL CLOSES ACROSS THE SPLIT. The excluded total is
+       no longer one number on screen — the near-misses are promoted and the
+       rest collapse to a count — so the check is that the three still add to
+       every event, which is the claim the panel makes in words. Doctrine §9:
+       the split may not weaken the accounting, only reorder it. */
+    const near = r.excluded.filter(x => Object.keys(x.dims || {}).some(k => k !== 'type'));
+    const plain = r.excluded.length - near.length;
+    assert.equal(r.counted.length + near.length + plain, total,
+      `${token}: the panel's three buckets do not close over every event`);
+    if (near.length)
+      assert.ok(html.includes(`<span class="n">${near.length}</span>`),
+        `${token}'s panel does not show its near-miss count (${near.length})`);
+    if (plain)
+      assert.ok(html.includes(`${plain} other event`),
+        `${token} drops ${plain} events without saying so — Doctrine §9`);
 
     /* ⭐ AND ITS WORDS ARE READ FROM THE ROW, NEVER RETYPED (§27.2). */
     const rowHtml = app.match(new RegExp(`<button class="lrow"[^>]*data-pick="${token}"[\\s\\S]*?</button>`))[0];
@@ -477,7 +492,8 @@ test('a club with none of something still appears in the ledger line', () => {
   for (const token of ['corsi', 'slot', 'blocked']) {
     pick(a, token);
     a.$('work').click();
-    const foot = /<p class="wfoot">([\s\S]*?)<\/p>/.exec(a.$('workPanel').innerHTML)[1];
+    const panel = a.$('workPanel').innerHTML;
+    const foot = /<p class="wfoot">([\s\S]*?)<\/p>/.exec(panel)[1];
     const b = { a: a.$('lxA').textContent, h: a.$('lxH').textContent };
     assert.ok(foot.includes(`${b.a} `), `${token}: the away figure is missing from the footer`);
     assert.ok(foot.includes(`${b.h} `), `${token}: the home figure is missing from the footer`);
@@ -537,7 +553,7 @@ test('each row carries the same name as its chip', () => {
   for (const token of ['corsi', 'slot', 'blocked', 'goaltending', 'whistle']) {
     const rowHtml = app.match(new RegExp(`<button class="lrow"[^>]*data-pick="${token}"[\\s\\S]*?</button>`))[0];
     const rowName = /<b>([^<]*)<\/b>/.exec(rowHtml)[1];
-    const chip = new RegExp(`<button class="pk"[^>]*data-l="${token}"[^>]*>([^<]*)<`).exec(app)[1];
+    const chip = new RegExp(`<button class="pk"[^>]*data-l="${token}"[^>]*>(?:<span class="pkl">)?([^<]*)<`).exec(app)[1];
     assert.ok(rowName.toLowerCase().includes(chip.toLowerCase()),
       `the row calls this layer "${rowName}" and the chip calls it "${chip}"`);
   }
@@ -579,5 +595,83 @@ test('no attribution line shouts', () => {
     const shouted = lat.match(/\b[A-Z]{2,}\b/g) || [];
     assert.deepEqual(shouted, [],
       `${token}'s attribution line shouts: ${shouted.join(", ")}`);
+  }
+});
+
+/**
+ * ⭐ A LIVE COUNT ON EVERY LENS — what each one would show you, while you watch.
+ *
+ * Kevin: "let's say an event occurs on the rink… flash the updated metric; if
+ * it's not currently shown, flash the control button, which indicates the event
+ * applied to that layer." CHENG's improvement on the flash: a COUNT reports
+ * where a pulse invites, PERSISTS so `prefers-reduced-motion` gets the whole
+ * lesson rather than none, and is cumulative, so looking away and back still
+ * says which lens has been busy.
+ *
+ * ⛔ AND NOT "the most specific layer lights", which was my proposal. Measured
+ * over 262 games and 69,661 frames: Attempts COUNTS 45.0% of frames and would
+ * have flashed on 5.8% — the chip and the counter disagreeing 7.8-fold about
+ * one quantity.
+ */
+test('every lens carries a live count of what it has seen', () => {
+  const a = boot();
+  const chipCount = l => a.$('n_' + l).textContent;
+
+  // Pre-game every lens is honestly at zero: nothing has happened to count.
+  for (const l of ['corsi', 'slot', 'blocked', 'goaltending', 'whistle'])
+    assert.equal(chipCount(l), '0', `${l} claims a count before the puck drops`);
+
+  a.$('scrub').oninput({ target: { value: a.$('scrub').max } });
+  // The slice the page reached, taken from the panel's own closing arithmetic.
+  pick(a, 'corsi');
+  a.$('work').click();
+  const total = +/= <b>(\d+)<\/b> events/.exec(a.$('workPanel').innerHTML)[1];
+  a.$('work').click();
+
+  // THE EXPECTED VALUES COME FROM THE REDUCERS (H1), on the slice the page reached.
+  const slice = rich.events.slice(0, total);
+  for (const [l, mod] of [['corsi', corsi], ['slot', danger], ['blocked', blocked],
+                          ['goaltending', goaltending], ['whistle', whistle]])
+    assert.equal(chipCount(l), String(mod.reduce(slice, { ...CTX, evenOnly: false }).counted.length),
+      `${l}'s chip count is not what that layer counted`);
+
+  /* ⛔ AND THE BASE VIEW CARRIES NO COUNT. `Just events` is not a metric, and
+     §31.6 refused a number in the box for exactly that reason.
+     ⚠️ The first version of this compared `a.$('n_none')` to a function
+     returning `a.$('n_none')` — a check that could not fail. The fake mints an
+     element for any id asked of it, so the claim has to be made against the
+     MARKUP, where the absence is real. */
+  const noneChip = /<button class="pk" id="pkNone"[\s\S]*?<\/button>/.exec(app)[0];
+  assert.doesNotMatch(noneChip, /class="pkn"/,
+    'the base view chip carries a count, which makes `Just events` a lens');
+  const slotChip = /<button class="pk"[^>]*data-l="slot"[\s\S]*?<\/button>/.exec(app)[0];
+  assert.match(slotChip, /class="pkn"/,
+    'no chip carries a count at all, so the check above proves nothing');
+});
+
+/**
+ * ⭐ THE CONTAINMENT IS WHAT THE COUNTS TEACH, and it is a real property rather
+ * than a presentational one: Attempts ticks whenever any other lens ticks, and
+ * at other times too. That is the subset relation learned by watching instead
+ * of by a label nobody reads — and it is why CHENG's two-strength flash was
+ * unnecessary, because the frequency IS the information.
+ *
+ * Asserted over every fixture game, not just the reference one: the shootout,
+ * overtime and bench-minor games are where a containment claim would break.
+ */
+test('Attempts contains every other lens, in every fixture game', () => {
+  const dir = new URL('./fixtures/extracts/', import.meta.url);
+  const files = readdirSync(dir).filter(f => f.endsWith('.json'));
+  assert.ok(files.length >= 5, 'the fixture corpus has shrunk — this check needs games');
+  for (const f of files) {
+    const g = JSON.parse(readFileSync(new URL(f, dir), 'utf8'));
+    const ctx = { roster: g.roster, homeId: g.teams.home.id, awayId: g.teams.away.id };
+    const all = new Set(corsi.reduce(g.events, ctx).counted);
+    for (const [nm, mod] of [['slot', danger], ['blocked', blocked], ['goaltending', goaltending]]) {
+      const out = mod.reduce(g.events, ctx).counted.filter(i => !all.has(i));
+      assert.deepEqual(out, [],
+        `${f}: ${out.length} ${nm} events are not counted as Attempts, so the chip `
+        + 'counts teach a containment that does not hold');
+    }
   }
 });
