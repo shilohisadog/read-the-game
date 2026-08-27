@@ -1452,34 +1452,32 @@ function drawLabel(e){const g=$('labels');const p=place(e);if(!p){g.innerHTML=''
  // the rule on the dot is therefore a RECORDED RELATIONSHIP, not an inference,
  // and it is the only thing the ice can honestly say about an offside.
  //
- // The reducer already paired them to place the ring and now publishes `spotId`,
- // so the pairing is read here rather than worked out a second time.
- //
- // TWO INDEX SPACES, AND THE FIRST DRAFT CROSSED THEM. `i` indexes EV -- the
- // PLAYABLE events, which drops 51 of 320 in this game -- while the reducer runs
- // over `upto(i)`, a slice of G.events, so its `spotId` is a G.events index.
- // Comparing `spotId === i` matched anyway, often enough to look right and to
- // survive a mutation that swapped the field for another one. It was true by
- // coincidence. `EVI[i]` is the same moment expressed in the reducer's space.
- //
- // ONE LINE, NOT TWO. The first draft made it a `plabsub` and a test caught it:
- // Kevin retired on-ice subtext on 2026-08-16 for taking room, and this label
- // sits on a faceoff dot that already carries a ring and sometimes a count. It
- // rides the same suffix seam `hd` uses, so the ice gains a clause and not a row.
- const why=(()=>{
-   if(!whistleOn||e.type!=='faceoff')return '';
-   const w=whistle.reduce(upto(i),CTX).whistles.find(x=>x.spotId===EVI[i]);
-   if(!w)return '';
-   /* ⭐ THE CLAUSE FORM, NOT THE HEADING. `RSN` returns `WHY[].name`, which is
-      written to START something -- a card, a legend row -- so composing it here
-      produced "Won the faceoff after Goaltender covered the puck": a capital
-      mid-sentence and a missing article, on all fifteen reasons. Caught by
-      looking at a screenshot; no test could see it, because every one of them
-      was comparing the label to the same `name` the label was building from.
-      Falls back to the heading only for a reason we have never seen, which is
-      the same honest branch `RSN` itself takes. */
-   const c=w.rsn&&WHY[w.rsn]&&WHY[w.rsn].clause;
-   return ' after '+(c||(w.rsn?RSN(w.rsn):'an unrecorded stoppage'));})();
+ /* ⛔ THE ICE NO LONGER NAMES THE STOPPAGE — REMOVED 2026-08-27, and the
+    measurement is why. CHENG, on a screenshot: "three surfaces are describing
+    two different events at one moment, and the caption is the one carrying
+    both… the same fact appears in both a narrating surface and a ledger, and
+    they'll separate."
+
+    ⚠️ THEY DO NOT SEPARATE LATER. THEY DISAGREE NOW. Measured over 53 games:
+    the clause fired on 2,354 faceoffs and on 83 of them — 3.5%, one in thirty —
+    the box named a DIFFERENT stoppage at the same frame. Two whistles before one
+    faceoff is all it takes: the ice showed the whistle the reducer PAIRED with
+    that dot, the box shows the LATEST one. `ice "delayed-penalty" box
+    "tv-timeout"`, `ice "icing" box "referee-or-linesman"`. Both statements true,
+    read as a contradiction.
+
+    ⭐ AND THE FIX IS THE RULE THIS PROJECT ALREADY HAS: one narrator, many
+    ledgers. The rink says what is happening NOW — VGK won the faceoff. What
+    stopped play is a CONDITION at the playhead and belongs to the box, which
+    already states it. Removing the clause leaves exactly one surface naming a
+    stoppage, and the 3.5% disagreement has nowhere to appear.
+
+    ⚠️ AND THE COMMIT BEFORE THIS ONE FIXED THIS SENTENCE'S GRAMMAR. Every
+    `WHY[].name` read wrong composed into "Won the faceoff after …", so a third
+    authored form was added to the table. That work was one level too shallow: I
+    corrected the wording of a composition instead of asking whether the
+    composition should happen. `clause` is gone with the sentence — a field
+    nobody displays is a field nobody checks. */
  // WITH THE LAYER ON, THE LABEL NAMES THE BLOCKER, and the reason is the mark's
  // position rather than a preference for one name over the other. A blocked
  // shot's (x, y) is the BLOCK POINT -- where the puck was stopped, between the
@@ -1522,7 +1520,7 @@ function drawLabel(e){const g=$('labels');const p=place(e);if(!p){g.innerHTML=''
  // beside SHOT_TYPES, because what a shot event IS belongs with the vocabulary
  // of shot events and not in a table of page labels.
  const info=e.type==='missed-shot'?missSay(e):LAB[e.type];
- g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${lab?lab+" · ":""}${ESC(info)}${ESC(why)}${hd}</text></g>`;}
+ g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${lab?lab+" · ":""}${ESC(info)}${hd}</text></g>`;}
 
 // THE WHISTLE LAYER, DRAWN. What from the stoppage, where from the faceoff that
 // restarts play -- and the sentence is the point, so it lives in a panel that

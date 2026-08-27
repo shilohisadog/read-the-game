@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-oMUPoxxmSMinNAUXKhSyMFEFig2MKlTu8ZX1hQHw+wc=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-P4SvALiHxpxjTD1YATi1zOGqrCzf7mSJvU0Ue5IIa7U='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-m9VUbzzZw+xX/fi2YuxU2FXcAoWs6MWDGj6JxP+kwzg=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-P4SvALiHxpxjTD1YATi1zOGqrCzf7mSJvU0Ue5IIa7U='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">Watch a game</a><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see</a><a href="/workshop.html">Workshop</a></nav></header>
@@ -3191,30 +3191,23 @@ function linesFor(rsn, x) {
  * branch, not the default one.
  */
 /**
- * ⭐ THREE GRAMMATICAL FORMS, EACH AUTHORED. `name` is a HEADING — it starts a
- * card and a legend entry. `say` is the full sentence with its rule. `clause`
- * is the mid-sentence form, and it exists because the on-ice label composes
- * "Won the faceoff after …" and every `name` read wrong inside it:
+ * ⚠️ A `clause` FIELD LIVED HERE FOR ONE COMMIT, on 2026-08-27, because the ice
+ * composed "Won the faceoff after …" and every `name` read wrong inside it — a
+ * capital mid-sentence and a missing article, on all fifteen. It is gone with
+ * that sentence: measured over 53 games, the ice named a different stoppage
+ * from the box on 3.5% of the frames where it fired, so the clause was removed
+ * rather than reworded (one narrator, many ledgers). The lesson is the order of
+ * the two questions: I fixed the WORDING of a composition before asking whether
+ * the composition should happen.
  *
- *     VGK · Won the faceoff after Goaltender covered the puck
- *
- * A capital in the middle of a sentence and a missing article, on all fifteen.
- * This is the de-hyphenation defect one grammatical position over: a string
- * written for one slot, reused in another, where it is nearly right and
- * therefore ships. `say` already exists for the same reason — it was added
- * when `name` turned out to be the wrong LENGTH for a panel — so this table's
- * own history is the argument for authoring a third form rather than deriving
- * one. Lowercasing `name` would fix eight of fifteen and leave "after icing"
- * and "after goaltender covered the puck" beside each other.
- *
- * ⚠️ EVERY ENTRY WITH A `name` MUST HAVE A `clause`, checked in
- * test/render-whistle.test.js — an entry added without one would fall back to
- * the heading and reintroduce exactly this.
+ * `name` is a HEADING — it starts a card and a legend row and follows "Most
+ * recently:". `say` is the full sentence with its rule. Nothing composes these
+ * mid-sentence any more, and if something ever does, it needs its own authored
+ * form rather than either of these.
  */
 const WHY = {
   icing: {
     name: 'Icing',
-    clause: 'the puck was iced',
     say: 'Icing — the puck was sent from behind the centre line all the way past '
        + 'the far goal line untouched. The faceoff comes back to the offending '
        + 'end, and that team may not change players before it.',
@@ -3222,7 +3215,6 @@ const WHY = {
   },
   offside: {
     name: 'Offside',
-    clause: 'an offside call',
     // "the faceoff goes back outside" WAS SHIPPED AND IS WRONG ABOUT ONE OFFSIDE
     // IN TEN. Measured over 1,094 offsides that restart immediately, across 240
     // games: 89.8% at the neutral-zone dot outside the blue line, 5.3% at centre
@@ -3239,83 +3231,70 @@ const WHY = {
   },
   'goalie-stopped-after-sog': {
     name: 'Goaltender covered the puck',
-    clause: 'the goaltender covered the puck',
     say: 'The goaltender caught or covered the puck after a shot, which stops play '
        + 'and brings a faceoff.',
     from: 'field: rsn',
   },
   'puck-frozen': {
     name: 'Puck frozen',
-    clause: 'the puck was frozen',
     say: 'The puck was covered and play stopped.',
     from: 'field: rsn',
   },
   'skater-puck-frozen': {
     name: 'Puck frozen by a skater',
-    clause: 'a skater froze the puck',
     say: 'A skater, not the goaltender, froze the puck against the boards or the '
        + 'net, and play stopped.',
     from: 'field: rsn',
   },
   'puck-in-netting': {
     name: 'Puck into the netting',
-    clause: 'the puck went into the netting',
     say: 'The puck was shot out of play into the netting above the glass.',
     from: 'field: rsn',
   },
   'puck-in-crowd': {
     name: 'Puck into the crowd',
-    clause: 'the puck went into the crowd',
     say: 'The puck left the ice into the crowd.',
     from: 'field: rsn',
   },
   'puck-in-benches': {
     name: 'Puck into a bench',
-    clause: 'the puck went into a bench',
     say: 'The puck went into a player bench and play stopped.',
     from: 'field: rsn',
   },
   'hand-pass': {
     name: 'Hand pass',
-    clause: 'a hand pass',
     say: 'Hand pass — the puck was directed to a teammate with a hand in a zone '
        + 'where that is not allowed, so possession does not carry.',
     from: 'rule: NHL Rule 79',
   },
   'high-stick': {
     name: 'High stick',
-    clause: 'a high stick',
     say: 'The puck was played with a stick above shoulder height, which is not '
        + 'allowed, so play stopped.',
     from: 'rule: NHL Rule 80',
   },
   'net-dislodged-defensive-skater': {
     name: 'Net off its moorings',
-    clause: 'the net came off its moorings',
     say: 'The net came off its moorings, and play stopped.',
     from: 'field: rsn',
   },
   'referee-or-linesman': {
     name: 'Puck hit an official',
-    clause: 'the puck hit an official',
     say: 'The puck struck an official, and play stopped.',
     from: 'field: rsn',
   },
   'tv-timeout': {
     name: 'TV timeout',
-    clause: 'a television timeout',
     say: 'A scheduled broadcast break. Play was already stopped.',
     from: 'field: rsn',
   },
   'video-review': {
     name: 'Video review',
-    clause: 'a video review',
     say: 'The play was reviewed on video before the result was confirmed.',
     from: 'field: rsn',
   },
   'delayed-penalty': {
     name: 'Delayed penalty',
-    clause: 'a delayed penalty',
     say: 'A penalty has been signalled and play continues until the offending team '
        + 'touches the puck — which is why the arm stays up and no whistle comes '
        + 'yet. The other side may pull its goaltender for an extra skater until '
@@ -3367,7 +3346,7 @@ const whistle = {
       // of 1,279 sampled restarts were within five. That number is a fact about
       // the sample, not a rule, and encoding it would have been a threshold with
       // no source.
-      let spot = null, spotId = null, unplaced = null;
+      let spot = null, unplaced = null;
       for (let j = id + 1; j < events.length; j++) {
         const t = events[j].type;
         if (CLOSES_PLAY.has(t)) {
@@ -3380,7 +3359,6 @@ const whistle = {
             unplaced = 'the restarting faceoff has no recorded location';
           } else {
             spot = events[j];
-            spotId = j;
           }
           break;
         }
@@ -3423,7 +3401,15 @@ const whistle = {
         // of pairing them a second time on its own. The ring has carried the
         // reason in a <title> since it shipped, and this layer's own notes say
         // why that was never enough: nobody hovers while watching.
-        spotId,
+        /* ⛔ `spotId` -- the restarting faceoff's INDEX -- was removed on
+           2026-08-27 with its only reader. The page used it to pair a label
+           with the faceoff at that dot ("Won the faceoff after …"), and that
+           sentence is gone: the box below the ice names the stoppage now, and
+           two surfaces naming one disagreed on 3.5% of the frames where both
+           spoke. `spot` stays, because it is what PLACES the ring; the index is
+           recoverable from it if anything ever needs it again.
+           A reducer field with no reader is the same shape as a catalog field
+           with no reader, which this repo already gates against. */
         x: spot ? spot.x : null,
         y: spot ? spot.y : null,
         // WHOSE END play restarted in, and the lines the rule is about. Both are
@@ -5944,34 +5930,32 @@ function drawLabel(e){const g=$('labels');const p=place(e);if(!p){g.innerHTML=''
  // the rule on the dot is therefore a RECORDED RELATIONSHIP, not an inference,
  // and it is the only thing the ice can honestly say about an offside.
  //
- // The reducer already paired them to place the ring and now publishes `spotId`,
- // so the pairing is read here rather than worked out a second time.
- //
- // TWO INDEX SPACES, AND THE FIRST DRAFT CROSSED THEM. `i` indexes EV -- the
- // PLAYABLE events, which drops 51 of 320 in this game -- while the reducer runs
- // over `upto(i)`, a slice of G.events, so its `spotId` is a G.events index.
- // Comparing `spotId === i` matched anyway, often enough to look right and to
- // survive a mutation that swapped the field for another one. It was true by
- // coincidence. `EVI[i]` is the same moment expressed in the reducer's space.
- //
- // ONE LINE, NOT TWO. The first draft made it a `plabsub` and a test caught it:
- // Kevin retired on-ice subtext on 2026-08-16 for taking room, and this label
- // sits on a faceoff dot that already carries a ring and sometimes a count. It
- // rides the same suffix seam `hd` uses, so the ice gains a clause and not a row.
- const why=(()=>{
-   if(!whistleOn||e.type!=='faceoff')return '';
-   const w=whistle.reduce(upto(i),CTX).whistles.find(x=>x.spotId===EVI[i]);
-   if(!w)return '';
-   /* ⭐ THE CLAUSE FORM, NOT THE HEADING. `RSN` returns `WHY[].name`, which is
-      written to START something -- a card, a legend row -- so composing it here
-      produced "Won the faceoff after Goaltender covered the puck": a capital
-      mid-sentence and a missing article, on all fifteen reasons. Caught by
-      looking at a screenshot; no test could see it, because every one of them
-      was comparing the label to the same `name` the label was building from.
-      Falls back to the heading only for a reason we have never seen, which is
-      the same honest branch `RSN` itself takes. */
-   const c=w.rsn&&WHY[w.rsn]&&WHY[w.rsn].clause;
-   return ' after '+(c||(w.rsn?RSN(w.rsn):'an unrecorded stoppage'));})();
+ /* ⛔ THE ICE NO LONGER NAMES THE STOPPAGE — REMOVED 2026-08-27, and the
+    measurement is why. CHENG, on a screenshot: "three surfaces are describing
+    two different events at one moment, and the caption is the one carrying
+    both… the same fact appears in both a narrating surface and a ledger, and
+    they'll separate."
+
+    ⚠️ THEY DO NOT SEPARATE LATER. THEY DISAGREE NOW. Measured over 53 games:
+    the clause fired on 2,354 faceoffs and on 83 of them — 3.5%, one in thirty —
+    the box named a DIFFERENT stoppage at the same frame. Two whistles before one
+    faceoff is all it takes: the ice showed the whistle the reducer PAIRED with
+    that dot, the box shows the LATEST one. `ice "delayed-penalty" box
+    "tv-timeout"`, `ice "icing" box "referee-or-linesman"`. Both statements true,
+    read as a contradiction.
+
+    ⭐ AND THE FIX IS THE RULE THIS PROJECT ALREADY HAS: one narrator, many
+    ledgers. The rink says what is happening NOW — VGK won the faceoff. What
+    stopped play is a CONDITION at the playhead and belongs to the box, which
+    already states it. Removing the clause leaves exactly one surface naming a
+    stoppage, and the 3.5% disagreement has nowhere to appear.
+
+    ⚠️ AND THE COMMIT BEFORE THIS ONE FIXED THIS SENTENCE'S GRAMMAR. Every
+    `WHY[].name` read wrong composed into "Won the faceoff after …", so a third
+    authored form was added to the table. That work was one level too shallow: I
+    corrected the wording of a composition instead of asking whether the
+    composition should happen. `clause` is gone with the sentence — a field
+    nobody displays is a field nobody checks. */
  // WITH THE LAYER ON, THE LABEL NAMES THE BLOCKER, and the reason is the mark's
  // position rather than a preference for one name over the other. A blocked
  // shot's (x, y) is the BLOCK POINT -- where the puck was stopped, between the
@@ -6014,7 +5998,7 @@ function drawLabel(e){const g=$('labels');const p=place(e);if(!p){g.innerHTML=''
  // beside SHOT_TYPES, because what a shot event IS belongs with the vocabulary
  // of shot events and not in a table of page labels.
  const info=e.type==='missed-shot'?missSay(e):LAB[e.type];
- g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${lab?lab+" · ":""}${ESC(info)}${ESC(why)}${hd}</text></g>`;}
+ g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${lab?lab+" · ":""}${ESC(info)}${hd}</text></g>`;}
 
 // THE WHISTLE LAYER, DRAWN. What from the stoppage, where from the faceoff that
 // restarts play -- and the sentence is the point, so it lives in a panel that

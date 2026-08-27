@@ -360,77 +360,33 @@ test('the whistle layer actually draws the line its rule names', () => {
   assert.ok(!/<line class="rulel/.test(off),
             'the rule line is drawn with the whistle layer off, where nothing explains it');
 });
+/**
+ * ⛔ RETIRED 2026-08-27 — "the restart faceoff says which rule it is restarting
+ * after". The ice no longer says it, so the test goes with the feature instead
+ * of being quietly re-aimed at something else.
+ *
+ * What it asserted was real and was right for a page with no layer box: the
+ * ring marked a restart and the label named what the restart followed. It also
+ * caught a genuine defect on the way in — `spotId === i` compared two different
+ * index spaces and matched often enough to look correct.
+ *
+ * ⚠️ IT STOPPED BEING RIGHT WHEN THE BOX ARRIVED. Two surfaces then named a
+ * stoppage at one moment, and measured over 53 games they DISAGREED on 83 of
+ * the 2,354 frames where the clause fired — 3.5%. The ice showed the whistle
+ * the reducer PAIRED with that dot; the box shows the LATEST one; two whistles
+ * before one faceoff is all it takes (`delayed-penalty` against `tv-timeout`).
+ * One narrator, many ledgers — so only the box names it now.
+ *
+ * ⚠️ AND THE FIRST VERSION OF THIS NOTE WAS WRONG, which is the reason to check
+ * a claim before writing it down. It said "`spotId` places the RING, and that is
+ * asserted in test/whistle.test.js" — and `spotId` had NO reader anywhere once
+ * this test went, so deleting the test deleted the field's only mention. `spot`
+ * is what places the ring, and THAT is covered in whistle.test.js (`placed`,
+ * the period-boundary case, the unplaced fallback). `spotId` has been removed
+ * with the sentence that used it.
+ */
 
-test('the restart faceoff says which rule it is restarting after', () => {
-  // THE ONLY THING THE ICE CAN HONESTLY SAY ABOUT AN OFFSIDE. The stoppage
-  // carries a reason and a time and nothing else — no coordinates, no zone, no
-  // players — so the infraction cannot be drawn. The restart IS recorded, and so
-  // is the fact that it belongs to that whistle, which makes this a recorded
-  // relationship rather than an inference.
-  //
-  // Driven from the reducer, never from a literal: whatever this game stopped
-  // for, the faceoff the layer paired with a whistle must carry that whistle's
-  // written name.
-  const a = boot();
-  a.$('lyWhistle').click();
-  const seen = a.every(d => d.$('labels').innerHTML).join('\n');
-  const said = [...seen.matchAll(/ after ([^<·]+)/g)].map(m => m[1].trim());
-  assert.ok(said.length > 0, 'no restart ever named the rule that caused it');
 
-  /* Every reason it named must be one the vocabulary actually holds — a raw
-     feed key leaking onto the ice is the defect WHY was built to end.
-
-     ⭐ AND IT IS THE `clause` FORM, NOT `name`. `name` is a HEADING; composed
-     into "Won the faceoff after …" it shipped "after Goaltender covered the
-     puck" — a capital mid-sentence and a missing article, on all fifteen
-     reasons, found by looking at a screenshot. No test could see it: this one
-     compared the label against the same `name` the label was built from, which
-     is a mirror. It now compares against the form written for THIS position. */
-  const clauses = new Set(Object.values(WHY).map(v => v.clause).filter(Boolean));
-  for (const s of said) {
-    assert.ok(clauses.has(s) || s === 'an unrecorded stoppage',
-              `the ice named "${s}", which is not a written clause`);
-  }
-
-  // AND ONLY THE FACEOFFS THAT ACTUALLY RESTART A WHISTLE. Taking "the most
-  // recent whistle" instead of the paired one survived every check above,
-  // because at a restart they are usually the same event. They come apart at a
-  // faceoff that follows a GOAL: play stopped for the goal, not for a whistle,
-  // so that dot must say nothing — and the loose version would hand it whatever
-  // stopped play last, several minutes earlier.
-  const wctx = { roster: rich.roster, homeId: rich.teams.home.id,
-                 awayId: rich.teams.away.id, evenOnly: false };
-  const paired = new Set(whistle.reduce(rich.events, wctx).whistles
-    .map(w => w.spotId).filter(x => x != null));
-  const afterGoal = rich.events.findIndex((e, k) =>
-    e.type === 'faceoff' && k > 0 && rich.events[k - 1].type === 'goal');
-  assert.ok(afterGoal > 0, 'this game has no faceoff following a goal to test with');
-  assert.ok(!paired.has(afterGoal),
-            'the reducer paired a whistle with the faceoff after a goal');
-
-  // ONE LABEL PER PAIRED RESTART, EXACTLY. This is the assertion that separates
-  // the right answer from a coincidental one. `i` indexes EV (the playable
-  // events, 269 of this game's 320) and `spotId` indexes the whole game, so
-  // `spotId === i` compares two different spaces -- and still matched often
-  // enough to produce plausible labels and survive three mutations. Counting
-  // them catches it: the coincidences do not add up to the real total.
-  const placed = whistle.reduce(rich.events, wctx).whistles.filter(w => w.spotId != null);
-  const labelled = a.every(d => d.$('labels').innerHTML).filter(h => / after /.test(h)).length;
-  assert.equal(labelled, placed.length,
-    `${labelled} frames name a restarting rule but ${placed.length} whistles were placed`);
-
-  const c = boot();
-  c.$('lyWhistle').click();
-  const atGoalRestart = c.at(afterGoal, d => d.$('labels').innerHTML);
-  assert.ok(!/ after /.test(atGoalRestart),
-            `the faceoff after a goal claims to be restarting a whistle: ${atGoalRestart}`);
-
-  // AND ONLY WITH THE LAYER ON, like the ring and the legend key it belongs to.
-  const b = boot();
-  const off = b.every(d => d.$('labels').innerHTML).join('\n');
-  assert.ok(!/ after /.test(off),
-            'the restart names its rule with the whistle layer off');
-});
 
 test('the stoppage card says how far back it is looking', () => {
   // Kevin: "when I tap next play the rink activity moves forward, but the card

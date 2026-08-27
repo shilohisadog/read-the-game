@@ -82,18 +82,6 @@ test('every known stoppage is CALLED something, on every surface that shows one'
   const named = Object.entries(WHY).filter(([, v]) => v.name);
   assert.ok(named.length >= 12, `WHY carries ${named.length} written names`);
 
-  /* ⭐ AND A THIRD GRAMMATICAL FORM, GUARDED. `name` starts a card; `clause`
-     goes mid-sentence, because the on-ice label composes "Won the faceoff
-     after …". An entry added with a name and no clause falls back to the
-     heading and reintroduces "after Goaltender covered the puck" for that one
-     reason only — invisible in every game that does not contain it, which is
-     precisely how a vocabulary gap hides. */
-  for (const [key, v] of named) {
-    assert.ok(v.clause, `${key} has a heading but no mid-sentence form`);
-    assert.match(v.clause, /^[a-z]/,
-      `${key}'s clause starts with a capital, so it reads as a heading again`);
-    assert.doesNotMatch(v.clause, /\.$/, `${key}'s clause ends in a full stop`);
-  }
   for (const [key, v] of named) {
     if (!seen.includes(v.name) && !seen.includes(key.replace(/-/g, ' '))) continue;
     assert.ok(seen.includes(v.name),
@@ -257,3 +245,42 @@ test('the whistle layer changes no other layer\'s numbers', () => {
  * the game page." Every visitor was green, because the page carried
  * Minnesota's and Buffalo's colours as literals and used them as roles.
  * ------------------------------------------------------------------ */
+
+/**
+ * ⭐ EXACTLY ONE SURFACE NAMES THE STOPPAGE — one narrator, many ledgers.
+ *
+ * The ice used to append "after <reason>" to the faceoff label while the box
+ * below reported the stoppage. Measured over 53 games, the two named DIFFERENT
+ * stoppages on 83 of the 2,354 frames where both spoke — 3.5% — because the ice
+ * showed the whistle the reducer PAIRED with that dot and the box shows the
+ * LATEST one, and two whistles before one faceoff is all it takes.
+ *
+ * ⚠️ REMOVING IT LEFT NO GUARD. A mutation putting a stoppage clause back on the
+ * ice passed all 753 tests, which is what a deletion with no assertion always
+ * does. So this is a PAIR, and both halves are needed: "the ice is silent" alone
+ * is satisfied by a page where nothing works, and "the box speaks" alone is
+ * satisfied by the duplication this removed.
+ */
+test('the stoppage is named by the box and not by the ice', () => {
+  const a = boot();
+  a.$$('#rg .pk').find(b => b.dataset.l === 'whistle').click();
+
+  const names = Object.values(WHY).map(v => v.name).filter(Boolean);
+  const ice = a.every(d => d.$('labels').innerHTML).join('\n');
+  const box = a.every(d => d.$('lxN').textContent).join('\n');
+
+  const inBox = names.filter(n => box.includes(n));
+  assert.ok(inBox.length > 0,
+    'the box never names a stoppage, so the ledger half of the rule is not working '
+    + 'and the other assertion below would pass on a dead page');
+
+  for (const n of inBox)
+    assert.ok(!ice.includes(n),
+      `the ice names "${n}" as well as the box — two surfaces for one fact, which `
+      + 'disagree on 3.5% of frames because they pair differently');
+
+  // AND THE ICE STILL NARRATES ITS OWN EVENT. Removing the clause must not have
+  // taken the label with it.
+  assert.match(ice, /Won the faceoff/,
+    'the ice stopped naming the faceoff too — the removal took the label with it');
+});
