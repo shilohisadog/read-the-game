@@ -30,6 +30,9 @@
    build-time preview variant; one file serves both), and the rule lives HERE
    because this is where the chrome is defined. A rule in build_main.py reaching
    across to style .sitehdr would be the second place chrome is decided. */
+/* Every page now, not just the preview: the site header and footer are flush to
+   the viewport edges and the gutter lives on `.wrap`. See build_index.py. */
+body{margin:0}
 body.previewing{margin:0}
 body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot p{margin:0 0 7px;max-width:70ch}

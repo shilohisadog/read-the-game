@@ -128,10 +128,21 @@ STYLE = r"""<style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
 *{box-sizing:border-box}
+/* ⭐ THE CHROME IS FLUSH TO THE TOP, AND THE GUTTER MOVED BELOW IT.
+   Kevin, 2026-08-27, comparing the two pages: "I much prefer the no padding, it
+   tightens up the top of the page, which looks better than the home page, let's
+   default to that." The game page had never carried this rule -- it ran on the
+   browser's default 8px body margin -- so the site header sat 44px down and
+   inset 22px here and flush there. Same header markup, different box.
+
+   THE PADDING IS NOT DELETED, IT IS MOVED: `.wrap` takes it, so the header and
+   footer go edge to edge and the CONTENT keeps the breathing room it had. A
+   `body{padding:0}` on its own would have run the text into the viewport edge on
+   a phone, which is the version of this change that looks tidy in a diff. */
 body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
- color:var(--ink);background:var(--bg);line-height:1.55;
+ color:var(--ink);background:var(--bg);line-height:1.55;padding:0}
+.wrap{max-width:900px;margin:0 auto;box-sizing:content-box;
  padding:clamp(18px,4vw,44px) clamp(14px,4vw,22px)}
-.wrap{max-width:900px;margin:0 auto}
 .eyebrow{font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
 h1{font-size:clamp(1.8rem,4vw,2.5rem);letter-spacing:-.025em;font-weight:800;margin:0 0 12px;text-wrap:balance}
 h1.says{font-weight:400;letter-spacing:normal}

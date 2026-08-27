@@ -1452,3 +1452,60 @@ Does anyone want two layers at once? The evidence in §21.1 says we never have �
 twelve curated links, zero combinations. The selector assumes that answer. The
 one combination CHENG names as obvious, *Attempts + Slot*, is also the one the
 reducers say is not a subset relationship. Kevin's call.
+
+## 25. Flush chrome, a rule in the row, and one layer at a time
+
+### 25.1 The header goes flush on every page
+
+Kevin, comparing the two: *"I much prefer the no padding, it tightens up the top
+of the page, which looks better than the home page, let's default to that."*
+
+The game page had never carried the site's body rule — it ran on the browser's
+default 8px margin — so the same header sat flush there and **44px down, inset
+22px** everywhere else.
+
+⭐ **The padding is MOVED, not deleted.** `body{padding:0}` on its own runs text
+into the viewport edge on a phone, which is the version of this change that looks
+tidy in a diff and is wrong on the device that matters. `.wrap` takes it, so the
+chrome goes edge to edge and the content keeps its gutter.
+
+### 25.2 ⚠️ The test read the wrong `body` rule and passed
+
+The first version took **the first `body{…}` match** and found the shared
+chrome's `body{margin:0}` — which has no padding, so it passed while the page's
+own rule two blocks later carried 44px. **Mutating the padding back in changed
+nothing, and that is how it was found.** Every `body` rule is checked now.
+
+Then the fixed version fired a false positive on `padding:0` *as the last
+declaration in the block* — `/padding:(?!0[;}])/` has no `;` or `}` to look
+ahead at, because the capture stops before the brace. **The value is parsed
+now:** a regex that has to know where a rule ends is doing the parser's job
+badly.
+
+### 25.3 A rule between the base view and the lenses
+
+Kevin: *"should we have a faint vertical line between Just events and the others?
+That'll differentiate the two distinct sets of toggles."* Two kinds of thing in
+one row — the game as recorded, and five lenses over it — which is §3's *five
+kinds of control, one visual language* in miniature.
+
+⭐ **It is a flex item, not a `::before` on the next chip.** The row wraps at 390;
+a pseudo-element on `Attempts` would hang at the left edge of whatever line that
+chip happened to start. A real item wraps with the chips. `aria-hidden`, so it is
+not announced as content.
+
+### 25.4 One layer at a time — settled, and cheap to reverse
+
+Kevin: *"let's leave it as only one layer at a time, with some thought given to
+how we would add two or more layers at the same time."*
+
+⭐ **The mechanism already supports N; only the control is one-of-N.** The state
+is five independent booleans, every reducer runs on its own, and `deeplink.js`
+still parses a comma list — `?layer=corsi,slot` draws both today, and a test
+asserts the row shows one of the two rather than going blank. So combinations
+are a CONTROL change, not a model change. Mechanism, not policy.
+
+If they are ever wanted, §24.2 says what the shape must be: **`Attempts → [all
+types] [blocked only]` as a refinement, and Slot as a peer**, because the slot
+reducer excludes blocked shots by measurement and cannot be a filter over what
+Corsi counts.

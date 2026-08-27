@@ -30,6 +30,9 @@
    build-time preview variant; one file serves both), and the rule lives HERE
    because this is where the chrome is defined. A rule in build_main.py reaching
    across to style .sitehdr would be the second place chrome is decided. */
+/* Every page now, not just the preview: the site header and footer are flush to
+   the viewport edges and the gutter lives on `.wrap`. See build_index.py. */
+body{margin:0}
 body.previewing{margin:0}
 body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot p{margin:0 0 7px;max-width:70ch}
@@ -42,7 +45,11 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 <style>
 #rg{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;--away:#5b6d7a;--home:#3a4a56;--red:#c8102e;--blue:#3a5a9c;--ok:#12885a;--flag:#d9662b;--hd:#e0932a;
  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg);min-height:100vh;padding:clamp(16px,3.5vw,36px) clamp(12px,4vw,22px);line-height:1.5}
-#rg .wrap{max-width:900px;margin:0 auto}
+/* THE 8px WAS THE BROWSER'S DEFAULT BODY MARGIN, not a decision -- this page
+   never carried the site's body rule. With `body{margin:0}` now set for every
+   page the header goes edge to edge here too, so the inset the content had is
+   restated where it belongs, on the content. Same pixels, a reason behind them. */
+#rg .wrap{max-width:900px;margin:0 auto;box-sizing:content-box;padding:0 8px}
 /* ⭐ THE PAGE'S ONE HEADING. It was a .7rem tagline sitting under an <h1>; the
    <h1> is gone (it had become the header wordmark repeated) and this line is
    now the heading in its place, so it is sized to carry that job. Kevin asked
@@ -870,6 +877,18 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
  cursor:pointer;white-space:nowrap}
 #rg .pk[aria-checked="true"]{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:700}
 #rg .pk:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+/* ⭐ A RULE BETWEEN THE BASE VIEW AND THE METRICS. Kevin: "should we have a faint
+   vertical line between Just events and the others? That'll differentiate the two
+   distinct sets of toggles." They are two kinds of thing sharing one row -- one
+   is the game as recorded, five are lenses over it -- which is §3's "five kinds
+   of control, one visual language" defect in miniature, and a 1px rule is the
+   cheapest honest way to say so.
+
+   IT IS A REAL ELEMENT, NOT A PSEUDO-ELEMENT ON THE NEXT CHIP. The row wraps at
+   390, and a separator drawn as `::before` on `Attempts` would hang at the left
+   edge of whatever line that chip started. A flex item wraps WITH the chips and
+   `:first-child`/`:last-child` on a line cannot strand it. */
+#rg .pksep{flex:0 0 1px;align-self:stretch;background:var(--edge);margin:4px 3px}
 #rg.preview .pickrow{display:none!important}
 
 /* ⏸ ═══ PARKED 2026-08-26 — THE PAGE IS BACK TO ITS BASE ═══
@@ -1242,7 +1261,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
   <div class="grp" role="group" aria-label="Step through the events"><button class="spd stepb" id="back" aria-label="Previous event">◀ Prev event</button><button class="spd stepb" id="fwd" aria-label="Next event">Next event ▶</button></div>
   <div class="grp" role="group" aria-label="Replay speed"><button class="spd stepb" id="slower">&#9664; Slower</button><button class="spd stepb" id="faster">Faster &#9654;</button></div>
   <input class="scrub" id="scrub" type="range" min="-1" max="1" value="-1"></div>
-<div class="pickrow" role="radiogroup" aria-label="Which metric is on the ice" id="pickrow"><span class="pklab">Watching</span><button class="pk" id="pkNone" data-l="none" role="radio" aria-checked="true">Just events</button><button class="pk" id="pkCorsi" data-l="corsi" role="radio" aria-checked="false">Attempts</button><button class="pk" id="pkSlot" data-l="slot" role="radio" aria-checked="false">Slot</button><button class="pk" id="pkBlocked" data-l="blocked" role="radio" aria-checked="false">Blocked</button><button class="pk" id="pkGoalie" data-l="goaltending" role="radio" aria-checked="false">Goaltending</button><button class="pk" id="pkWhistle" data-l="whistle" role="radio" aria-checked="false">Stoppages</button></div>
+<div class="pickrow" role="radiogroup" aria-label="Which metric is on the ice" id="pickrow"><span class="pklab">Watching</span><button class="pk" id="pkNone" data-l="none" role="radio" aria-checked="true">Just events</button><span class="pksep" aria-hidden="true"></span><button class="pk" id="pkCorsi" data-l="corsi" role="radio" aria-checked="false">Attempts</button><button class="pk" id="pkSlot" data-l="slot" role="radio" aria-checked="false">Slot</button><button class="pk" id="pkBlocked" data-l="blocked" role="radio" aria-checked="false">Blocked</button><button class="pk" id="pkGoalie" data-l="goaltending" role="radio" aria-checked="false">Goaltending</button><button class="pk" id="pkWhistle" data-l="whistle" role="radio" aria-checked="false">Stoppages</button></div>
 <p class="verdict" id="verdict"></p>
 <div class="newcomer nwhy2" id="newcomerWhy"></div>
 <details class="zone zref"><summary class="zh">What the marks mean</summary>

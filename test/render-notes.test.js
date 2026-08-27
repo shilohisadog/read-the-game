@@ -175,6 +175,72 @@ test('a deep link checks its own chip, and the row is never hidden', () => {
     'the selector chips are under the 44px touch floor, on the surface whose reviewer is on a phone');
 });
 
+/**
+ * ⭐ THE CHROME IS FLUSH AND THE GUTTER MOVED ONTO THE CONTENT.
+ *
+ * Kevin, 2026-08-27: "I much prefer the no padding, it tightens up the top of
+ * the page, which looks better than the home page, let's default to that." The
+ * game page had never carried the site's body rule — it ran on the browser's
+ * default 8px margin — so the same header sat flush there and 44px down here.
+ *
+ * The padding is MOVED, not deleted: `body{padding:0}` on its own runs text into
+ * the viewport edge on a phone, which is the version of this change that looks
+ * tidy in a diff and is wrong on the device that matters.
+ */
+test('every page has flush chrome and a gutter on its content', () => {
+  const index = readFileSync(new URL('../src/index.html', import.meta.url), 'utf8');
+  // ⚠️ EVERY `body` RULE, NOT THE FIRST ONE. The first version took one match and
+  // it found the shared chrome's `body{margin:0}` — which has no padding, so the
+  // assertion passed while the page's OWN body rule two blocks later carried
+  // 44px. Mutating the padding back in changed nothing and that is how it was
+  // found: a check pointed at the wrong declaration reports on the wrong page.
+  const rules = (src, sel) => [...src.replace(/<!--[\s\S]*?-->/g, '')
+    .matchAll(new RegExp(`(?:^|[};\n])\\s*${sel}\\s*\\{([^}]*)\\}`, 'g'))].map(m => m[1]);
+  for (const [name, src, wrapSel] of [['index.html', index, '\\.wrap'], ['game.html', app, '#rg \\.wrap']]) {
+    const bodies = rules(src, 'body');
+    assert.ok(bodies.length, `${name} has no body rule at all`);
+    // ⚠️ THE VALUE IS PARSED, NOT PATTERN-MATCHED. `/padding:(?!0[;}])/` looked
+    // right and failed on `padding:0` as the LAST declaration, because there is
+    // no `;` or `}` inside the captured block for the lookahead to find. A
+    // regex that has to know where a rule ends is doing the parser's job badly.
+    for (const body of bodies) {
+      const pad = /(?:^|;)\s*padding\s*:\s*([^;]+)/.exec(body);
+      if (pad) assert.equal(pad[1].trim(), '0',
+        `${name} has a body rule padded "${pad[1].trim()}" — its header is inset while another page's is flush`);
+    }
+    assert.ok(bodies.some(b => /margin:0/.test(b)), `${name}'s body relies on the browser's default margin`);
+    const wraps = rules(src, wrapSel);
+    assert.ok(wraps.some(w => /padding:/.test(w)),
+      `${name} moved the padding off the body and gave the content none — the text runs into the edge on a phone`);
+  }
+});
+
+/**
+ * ⭐ A RULE BETWEEN THE BASE VIEW AND THE FIVE LENSES.
+ *
+ * Kevin: "should we have a faint vertical line between Just events and the
+ * others? That'll differentiate the two distinct sets of toggles." Two kinds of
+ * thing in one row — the game as recorded, and lenses over it.
+ */
+test('the selector separates the base view from the metrics', () => {
+  const clean = app.replace(/<!--[\s\S]*?-->/g, '');
+  const row = /<div class="pickrow"[\s\S]*?<\/div>/.exec(clean)[0];
+  const order = [...row.matchAll(/data-l="([a-z]+)"|class="(pksep)"/g)]
+                  .map(m => m[1] || m[2]);
+  assert.deepEqual(order.slice(0, 3), ['none', 'pksep', 'corsi'],
+    `the rule is not between the base view and the first metric: ${order.join(' ')}`);
+  assert.equal(order.filter(x => x === 'pksep').length, 1,
+    'more than one rule — the row has grown a grouping nobody decided on');
+  assert.match(row, /<span class="pksep" aria-hidden="true">/,
+    'the rule is announced to a screen reader as if it were content');
+
+  // IT IS A FLEX ITEM, NOT A PSEUDO-ELEMENT ON THE NEXT CHIP. The row wraps at
+  // 390; a `::before` on `Attempts` would hang at the left edge of whatever line
+  // that chip happened to start.
+  assert.match(PAGE_CSS, /#rg \.pksep\{flex:0 0 1px;align-self:stretch/,
+    'the rule is not a flex item, so wrapping can strand it at the start of a line');
+});
+
 test('the page is parked at its base, and nothing was deleted to get there', () => {
   // ⏸ Kevin, 2026-08-26: "let's just remove all the extra stuff, for now, then we
   // can rebuild properly. Just have the header, scoreboard, rink, play controls

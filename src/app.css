@@ -1,6 +1,10 @@
 #rg{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;--away:#5b6d7a;--home:#3a4a56;--red:#c8102e;--blue:#3a5a9c;--ok:#12885a;--flag:#d9662b;--hd:#e0932a;
  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg);min-height:100vh;padding:clamp(16px,3.5vw,36px) clamp(12px,4vw,22px);line-height:1.5}
-#rg .wrap{max-width:900px;margin:0 auto}
+/* THE 8px WAS THE BROWSER'S DEFAULT BODY MARGIN, not a decision -- this page
+   never carried the site's body rule. With `body{margin:0}` now set for every
+   page the header goes edge to edge here too, so the inset the content had is
+   restated where it belongs, on the content. Same pixels, a reason behind them. */
+#rg .wrap{max-width:900px;margin:0 auto;box-sizing:content-box;padding:0 8px}
 /* ⭐ THE PAGE'S ONE HEADING. It was a .7rem tagline sitting under an <h1>; the
    <h1> is gone (it had become the header wordmark repeated) and this line is
    now the heading in its place, so it is sized to carry that job. Kevin asked
@@ -828,6 +832,18 @@
  cursor:pointer;white-space:nowrap}
 #rg .pk[aria-checked="true"]{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:700}
 #rg .pk:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+/* ⭐ A RULE BETWEEN THE BASE VIEW AND THE METRICS. Kevin: "should we have a faint
+   vertical line between Just events and the others? That'll differentiate the two
+   distinct sets of toggles." They are two kinds of thing sharing one row -- one
+   is the game as recorded, five are lenses over it -- which is §3's "five kinds
+   of control, one visual language" defect in miniature, and a 1px rule is the
+   cheapest honest way to say so.
+
+   IT IS A REAL ELEMENT, NOT A PSEUDO-ELEMENT ON THE NEXT CHIP. The row wraps at
+   390, and a separator drawn as `::before` on `Attempts` would hang at the left
+   edge of whatever line that chip started. A flex item wraps WITH the chips and
+   `:first-child`/`:last-child` on a line cannot strand it. */
+#rg .pksep{flex:0 0 1px;align-self:stretch;background:var(--edge);margin:4px 3px}
 #rg.preview .pickrow{display:none!important}
 
 /* ⏸ ═══ PARKED 2026-08-26 — THE PAGE IS BACK TO ITS BASE ═══
