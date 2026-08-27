@@ -14,6 +14,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { boot, app, PAGE_CSS, rich } from './helpers/page.js';
 import { blocked } from '../src/lib/layers/blocked.js';
 import { danger } from '../src/lib/layers/danger.js';
@@ -23,7 +24,8 @@ const CTX = { roster: rich.roster, homeId: rich.teams.home.id, awayId: rich.team
 const AID = rich.teams.away.id, HID = rich.teams.home.id;
 const pick = (a, l) => a.$$('#rg .pk').find(b => b.dataset.l === l).click();
 const box = a => ({ a: a.$('lxA').textContent, k: a.$('lxK').textContent,
-                    h: a.$('lxH').textContent, n: a.$('lxN').textContent });
+                    h: a.$('lxH').textContent, n: a.$('lxN').textContent,
+                    as: a.$('lxAn').textContent, hs: a.$('lxHn').textContent });
 
 test('every layer fills the same four slots, and the base view fills only the line', () => {
   const a = boot();
@@ -85,6 +87,46 @@ test('blocked counts by the shooter, not by the blocker', () => {
     'counted by shooter the columns no longer sum to the blocked attempts');
 });
 
+/**
+ * ⭐ THE LABEL MAY NOT READ AS THE BLOCKER'S STAT.
+ *
+ * Kevin: "Attempts Blocked, is that standard terminology? I thought the team
+ * that did the blocking got credit for the block, not the attempt. We show who
+ * blocked the shot at the event level, but the layer displays what team took
+ * the shot? Seems like a disconnect."
+ *
+ * Right on the terminology. A blocked shot IS the blocker's stat, and the count
+ * here is deliberately the opposite club — so a label a reader takes in the
+ * standard sense hands them the WRONG TEAM in 245 of 247 decided games (§31.4b).
+ * The count stays with the shooter, because that is what carries the layer's
+ * point (51.9% of attempts never reach the goalie); the LABEL is what had to
+ * change, to the site's own published name for the concept.
+ */
+test('the blocked label does not read as the blocker\'s stat', () => {
+  const a = boot();
+  a.$('scrub').oninput({ target: { value: a.$('scrub').max } });
+  pick(a, 'blocked');
+  const b = box(a);
+
+  assert.doesNotMatch(b.k, /\bblocked\b/i,
+    'the centre label says "blocked", which is the stat credited to the club '
+    + 'this column is NOT counting');
+
+  // ⭐ AND IT IS THE NAME THE SITE ALREADY PUBLISHES, so one idea does not end up
+  // with two names. `build_index.py` calls this "The attempt that never arrived"
+  // on the learn page; the check reads that file rather than restating it.
+  const learn = readFileSync(new URL('../builders/build_index.py', import.meta.url), 'utf8');
+  assert.match(learn, /The attempt that never arrived/,
+    'the learn page no longer uses this name — the box and the door have drifted apart');
+  assert.match(b.k, /NEVER ARRIVED/,
+    'the box does not use the name the learn page publishes for this concept');
+
+  // The attribution belongs in the caption: it is a property of the lens, true
+  // before the puck drops, and spelling it out in the box clipped at 360.
+  assert.match(a.$('lcap').innerHTML, /SHOT the puck, not the one that blocked/,
+    'nothing tells the reader which club these figures belong to');
+});
+
 test('the slot counts by the shooter too, and names its denominator', () => {
   const a = boot();
   a.$('scrub').oninput({ target: { value: a.$('scrub').max } });
@@ -135,11 +177,21 @@ test('goaltending counts the club, keeps a fraction, and says which way it reads
   assert.doesNotMatch(b.n, /opposite way round/i,
     'the flip warning is back in the box, whose sentence has to fit two lines at 360');
 
-  // The goaltenders are NAMED, which is the only place relief can appear.
+  /* ⭐ EACH GOALTENDER UNDER HIS OWN CLUB'S FIGURE. Kevin: "it shows both goalies
+     under the left hand count, where they should be separated and each under
+     their specific count." The shared line spans the whole box, so anything
+     club-specific written into it lands on the left — the grammar's fault, not
+     the copy's. A layer with something to say about EACH club says it in that
+     club's column. This is also where relief appears, in the 12.2% of games
+     that use more than two goaltenders. */
   for (const gid of rich.goalies) {
     const p = rich.roster[gid];
-    if (p) assert.ok(b.n.includes(p.nm), `${p.nm} faced shots and is not named`);
+    if (!p) continue;
+    const mine = p.tid === AID ? b.as : b.hs, theirs = p.tid === AID ? b.hs : b.as;
+    assert.ok(mine.includes(p.nm), `${p.nm} is not named under his own club's figure`);
+    assert.ok(!theirs.includes(p.nm), `${p.nm} is named under the other club's figure`);
   }
+  assert.equal(b.n, '', 'the shared line is also populated, so it stacks on the per-club names');
 });
 
 /**

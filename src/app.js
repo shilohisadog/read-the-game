@@ -2056,7 +2056,9 @@ function drawLBox(k,L){
     wide rather than the stylesheet sniffing the text for " of ", because a rule
     that reads a value's shape breaks the day a club is called `of`. */
  el.classList.toggle('wide',!!b.wide);
+ el.classList.toggle('split',!!b.split);
  $('lxA').textContent=b.a;$('lxK').textContent=b.k;$('lxH').textContent=b.h;
+ $('lxAn').textContent=b.as||'';$('lxHn').textContent=b.hs||'';
  $('lxN').textContent=b.n;}
 /** Split a reducer's counted ids into per-club totals BY THE SHOOTING CLUB. */
 function byShooter(ids,slice){
@@ -2086,8 +2088,30 @@ function lboxFor(id,at,L){
    n:`Of ${tot} attempt${tot===1?'':'s'} so far · ${MODE()}.`};}
  if(id==='blocked'){
   const c=byShooter(blocked.reduce(sl,CTX).counted,sl), tot=L.t[AID]+L.t[HID];
-  return {a:c[AID],k:'ATTEMPTS BLOCKED',h:c[HID],
-   n:`Of ${tot} attempt${tot===1?'':'s'} so far · credited to the club that shot.`};}
+  /* ⚠️ NOT "ATTEMPTS BLOCKED", AND THE LABEL IS THE WHOLE PROBLEM. Kevin: "I
+     thought the team that did the blocking got credit for the block, not the
+     attempt. We show who blocked the shot at the event level, but the layer
+     displays what team took the shot? Seems like a disconnect."
+     He is right about the terminology -- a blocked shot IS the blocker's stat --
+     and `ATTEMPTS BLOCKED` reads as that stat while counting the opposite club.
+     Because the two readings name DIFFERENT clubs in 245 of 247 decided games
+     (§31.4b), a reader who takes the standard meaning gets the wrong team every
+     single time.
+     ⭐ THE COUNT STAYS WITH THE SHOOTER and the LABEL changes, because the count
+     is what carries the layer's point: 51.9% of attempts never reach the goalie,
+     which is why shots on goal is a partial view. Counting by blocker would make
+     the pair a "who blocked more" contest -- and the blocks leader is the
+     ATTEMPTS TRAILER 81.7% of the time, so that pair reads as "gritty defence
+     wins", which docs/blocked-shots-layer.md refused to publish for that reason.
+     THE WORDS ARE THE SITE'S OWN. `build_index.py` names this concept "The
+     attempt that never arrived" on the learn page. Using it here removes the
+     collision with the blocker's stat and stops one idea having two names. */
+  return {a:c[AID],k:'ATTEMPTS THAT NEVER ARRIVED',h:c[HID],
+   /* THE ATTRIBUTION CLAUSE IS IN THE CAPTION, not here -- it is a property of
+      the LENS, true before the puck drops (§27.1), and spelling it out in the
+      box ran the line to three lines at 360 and clipped it. The label carries
+      the disambiguation now, which is what it is for. */
+   n:`Of ${tot} attempt${tot===1?'':'s'} so far, stopped by a body.`};}
  if(id==='goaltending'){
   const gs=goalieStats(at), per={[AID]:[],[HID]:[]};
   for(const gid of G.goalies){const p=R[gid]; if(!p||per[p.tid]==null)continue;
@@ -2097,9 +2121,12 @@ function lboxFor(id,at,L){
   const [sa,fa]=sum(AID),[sh,fh]=sum(HID);
   // A FRACTION, NEVER A RATE, so no minimum-n threshold is needed to be honest
   // -- the same rule the goaltender card already states in its own comment.
-  const say=t=>per[t].length?`${t===AID?AAB:HAB} ${per[t].map(g=>g.nm).join(' then ')}`:null;
-  const who=[say(AID),say(HID)].filter(Boolean).join(' · ');
-  return {wide:true,a:fa?`${sa} of ${fa}`:'—',k:'SAVES BY',h:fh?`${sh} of ${fh}`:'—',
+  /* EACH CLUB'S GOALTENDER UNDER THAT CLUB'S FIGURE. `then` is what relief
+     looks like, and it needs no special case -- 12.2% of games use more than
+     two goaltenders, so this is the normal path once every eight games. */
+  const say=t=>per[t].map(g=>g.nm).join(' then ');
+  return {wide:true,split:true,a:fa?`${sa} of ${fa}`:'—',k:'SAVES BY',h:fh?`${sh} of ${fh}`:'—',
+   as:say(AID),hs:say(HID),
    /* ⭐ THE NAMES ONLY, AND THE FLIP MOVED TO THE CAPTION. This was the one
       sentence in the box whose LENGTH IS DATA -- two goaltender names, plus
       "then X" on a relief -- so it ran to three lines at 360 and 390 and was
@@ -2110,7 +2137,7 @@ function lboxFor(id,at,L){
       property of the lens, true before the puck drops. The box says what is true
       NOW, which is who is in net -- and that is also where relief shows up, in
       the 12.2% of games that use more than two goaltenders. */
-   n:who||'No shot has reached a goaltender yet.'};}
+   n:(sa+sh+fa+fh)?'':'No shot has reached a goaltender yet.'};}
  if(id==='whistle'){
   const W=whistle.reduce(sl,CTX), n=W.whistles.length, w=latest(W);
   const nm=w?(WHY[w.rsn]&&WHY[w.rsn].name)||w.rsn:null;
@@ -2120,7 +2147,7 @@ function lboxFor(id,at,L){
  return none;}
 /** The centre label alone, for the pre-game frame where there is nothing to count. */
 const LBK={corsi:()=>'SHOT ATTEMPTS',slot:()=>'SHOTS FROM THE SLOT',
- blocked:()=>'ATTEMPTS BLOCKED',goaltending:()=>'SAVES BY',whistle:()=>'STOPPAGES'};
+ blocked:()=>'ATTEMPTS THAT NEVER ARRIVED',goaltending:()=>'SAVES BY',whistle:()=>'STOPPAGES'};
 function syncPick(){
  if(picking)return;
  const on=PICKS.filter(([,get])=>get()).map(([id])=>id);

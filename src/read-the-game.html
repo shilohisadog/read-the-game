@@ -522,6 +522,19 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .lxh{grid-column:3;text-align:right;color:var(--home-text)}
 #rg .lxk{grid-column:2;font-size:.62rem;font-weight:800;letter-spacing:.1em;
  text-transform:uppercase;color:var(--muted);text-align:center}
+/* ⭐ A PER-CLUB SECOND LINE, BECAUSE ONE SHARED LINE PUT BOTH GOALTENDERS UNDER
+   THE AWAY FIGURE. Kevin: "it shows both goalies under the left hand count,
+   where they should be separated and each under their specific count." Exactly
+   right, and it was the grammar's fault rather than the copy's -- `.lxn` spans
+   the whole box, so anything club-specific written into it lands on the left.
+   A layer that has something to say about EACH club says it in that club's
+   column; `.lxn` stays for the layers whose sentence is about the population as
+   a whole, and `.split` keeps the two from stacking in the same grid cell. */
+#rg .lxan,#rg .lxhn{grid-row:2;font-size:.74rem;line-height:1.35;color:var(--muted);
+ align-self:start;margin-top:3px}
+#rg .lxan{grid-column:1;text-align:left}
+#rg .lxhn{grid-column:3;text-align:right}
+#rg .lbox.split .lxn{display:none}
 #rg .lxn{grid-column:1/-1;grid-row:2;font-size:.74rem;line-height:1.35;color:var(--muted);
  min-height:calc(2 * 1.35 * .74rem);align-self:start;margin-top:3px}
 /* The base view states what the box is FOR, which is a sentence about the
@@ -1540,7 +1553,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
        comparable as a side effect.
        ⚠️ EVERY COLUMN IS COUNTED BY THE CLUB THAT SHOT THE PUCK (§31.4b).
        Goaltending is the one layer that cannot obey it and says so in words. -->
-  <div class="lbox" id="lbox"><span class="lxa" id="lxA"></span><span class="lxk" id="lxK"></span><span class="lxh" id="lxH"></span><span class="lxn" id="lxN"></span></div>
+  <div class="lbox" id="lbox"><span class="lxa" id="lxA"></span><span class="lxk" id="lxK"></span><span class="lxh" id="lxH"></span><span class="lxan" id="lxAn"></span><span class="lxhn" id="lxHn"></span><span class="lxn" id="lxN"></span></div>
   <!-- THE PILL IS A CHILD OF .rinkbox, NOT OF THE PENALTY-BOX ROW. It lived
        inside `.pboxes` so it could anchor to that row's top edge, which was the
        bottom of the ice -- correct exactly while the row was furniture. Parking
@@ -1555,7 +1568,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 <button class="lrow" id="lyHd" data-pick="slot" aria-pressed="false"><span class="lmk"><i class="k-hd"></i></span><span class="ltx"><b>Slot shots</b><span class="lds">attempts from within 33 ft of the net, between the face-off dots</span><span class="lon">An amber ring marks each one. Click a ring to see the distance and angle it was measured by.</span></span><span class="st" id="stHd">Off</span></button>
 <button class="lrow" id="lyGoalie" data-pick="goaltending" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Goaltending</b><span class="lds">every shot each goaltender faced, and what became of it — saved, scored on, or missed the net</span><span class="lon">The box below the ice builds each club&rsquo;s save fraction as the replay runs. A save is against the OTHER club&rsquo;s shot, so those two columns read the opposite way round.</span></span><span class="st" id="stGoalie">Off</span></button>
 <button class="lrow" id="lyWhistle" data-pick="whistle" aria-pressed="false"><span class="lmk"><i class="k-wh"></i><i class="k-rl"></i></span><span class="ltx"><b>Stoppages</b><span class="lds">the rule that stopped play, and the dot it restarted on</span><span class="lon">The ring marks where play restarted, brightest at the most recent stoppage. The bar lights the line the rule names — for icing the centre line and the far goal line, for offside the blue line.</span></span><span class="st" id="stWhistle">Off</span></button>
-<button class="lrow" id="lyBlock" data-pick="blocked" aria-pressed="false"><span class="lmk"><i class="k-blk"></i><i class="k-blkv"></i></span><span class="ltx"><b>Blocked shots</b><span class="lds">the attempts a body stopped before they reached the goalie</span><span class="lon">Blocked attempts keep their ring and every other mark dims, so the ones a body stopped stand out.</span></span><span class="st" id="stBlock">Off</span></button>
+<button class="lrow" id="lyBlock" data-pick="blocked" aria-pressed="false"><span class="lmk"><i class="k-blk"></i><i class="k-blkv"></i></span><span class="ltx"><b>Blocked shots</b><span class="lds">the attempts a body stopped before they reached the goalie</span><span class="lon">Blocked attempts keep their ring and every other mark dims, so the ones a body stopped stand out. The box below the ice counts them for the club that SHOT the puck, not the one that blocked it &mdash; a block is credited to the blocker, but the count here is about attempts that never arrived.</span></span><span class="st" id="stBlock">Off</span></button>
 </div>
 <div class="figpick sit"><span class="ll">Situations:</span>
 <div class="grp" role="group" aria-label="Which situations are counted"><button class="lyr sbtn" data-s="all" aria-pressed="true">All situations</button><button class="lyr sbtn" data-s="even" aria-pressed="false">Even strength only</button></div>
@@ -6484,7 +6497,9 @@ function drawLBox(k,L){
     wide rather than the stylesheet sniffing the text for " of ", because a rule
     that reads a value's shape breaks the day a club is called `of`. */
  el.classList.toggle('wide',!!b.wide);
+ el.classList.toggle('split',!!b.split);
  $('lxA').textContent=b.a;$('lxK').textContent=b.k;$('lxH').textContent=b.h;
+ $('lxAn').textContent=b.as||'';$('lxHn').textContent=b.hs||'';
  $('lxN').textContent=b.n;}
 /** Split a reducer's counted ids into per-club totals BY THE SHOOTING CLUB. */
 function byShooter(ids,slice){
@@ -6514,8 +6529,30 @@ function lboxFor(id,at,L){
    n:`Of ${tot} attempt${tot===1?'':'s'} so far · ${MODE()}.`};}
  if(id==='blocked'){
   const c=byShooter(blocked.reduce(sl,CTX).counted,sl), tot=L.t[AID]+L.t[HID];
-  return {a:c[AID],k:'ATTEMPTS BLOCKED',h:c[HID],
-   n:`Of ${tot} attempt${tot===1?'':'s'} so far · credited to the club that shot.`};}
+  /* ⚠️ NOT "ATTEMPTS BLOCKED", AND THE LABEL IS THE WHOLE PROBLEM. Kevin: "I
+     thought the team that did the blocking got credit for the block, not the
+     attempt. We show who blocked the shot at the event level, but the layer
+     displays what team took the shot? Seems like a disconnect."
+     He is right about the terminology -- a blocked shot IS the blocker's stat --
+     and `ATTEMPTS BLOCKED` reads as that stat while counting the opposite club.
+     Because the two readings name DIFFERENT clubs in 245 of 247 decided games
+     (§31.4b), a reader who takes the standard meaning gets the wrong team every
+     single time.
+     ⭐ THE COUNT STAYS WITH THE SHOOTER and the LABEL changes, because the count
+     is what carries the layer's point: 51.9% of attempts never reach the goalie,
+     which is why shots on goal is a partial view. Counting by blocker would make
+     the pair a "who blocked more" contest -- and the blocks leader is the
+     ATTEMPTS TRAILER 81.7% of the time, so that pair reads as "gritty defence
+     wins", which docs/blocked-shots-layer.md refused to publish for that reason.
+     THE WORDS ARE THE SITE'S OWN. `build_index.py` names this concept "The
+     attempt that never arrived" on the learn page. Using it here removes the
+     collision with the blocker's stat and stops one idea having two names. */
+  return {a:c[AID],k:'ATTEMPTS THAT NEVER ARRIVED',h:c[HID],
+   /* THE ATTRIBUTION CLAUSE IS IN THE CAPTION, not here -- it is a property of
+      the LENS, true before the puck drops (§27.1), and spelling it out in the
+      box ran the line to three lines at 360 and clipped it. The label carries
+      the disambiguation now, which is what it is for. */
+   n:`Of ${tot} attempt${tot===1?'':'s'} so far, stopped by a body.`};}
  if(id==='goaltending'){
   const gs=goalieStats(at), per={[AID]:[],[HID]:[]};
   for(const gid of G.goalies){const p=R[gid]; if(!p||per[p.tid]==null)continue;
@@ -6525,9 +6562,12 @@ function lboxFor(id,at,L){
   const [sa,fa]=sum(AID),[sh,fh]=sum(HID);
   // A FRACTION, NEVER A RATE, so no minimum-n threshold is needed to be honest
   // -- the same rule the goaltender card already states in its own comment.
-  const say=t=>per[t].length?`${t===AID?AAB:HAB} ${per[t].map(g=>g.nm).join(' then ')}`:null;
-  const who=[say(AID),say(HID)].filter(Boolean).join(' · ');
-  return {wide:true,a:fa?`${sa} of ${fa}`:'—',k:'SAVES BY',h:fh?`${sh} of ${fh}`:'—',
+  /* EACH CLUB'S GOALTENDER UNDER THAT CLUB'S FIGURE. `then` is what relief
+     looks like, and it needs no special case -- 12.2% of games use more than
+     two goaltenders, so this is the normal path once every eight games. */
+  const say=t=>per[t].map(g=>g.nm).join(' then ');
+  return {wide:true,split:true,a:fa?`${sa} of ${fa}`:'—',k:'SAVES BY',h:fh?`${sh} of ${fh}`:'—',
+   as:say(AID),hs:say(HID),
    /* ⭐ THE NAMES ONLY, AND THE FLIP MOVED TO THE CAPTION. This was the one
       sentence in the box whose LENGTH IS DATA -- two goaltender names, plus
       "then X" on a relief -- so it ran to three lines at 360 and 390 and was
@@ -6538,7 +6578,7 @@ function lboxFor(id,at,L){
       property of the lens, true before the puck drops. The box says what is true
       NOW, which is who is in net -- and that is also where relief shows up, in
       the 12.2% of games that use more than two goaltenders. */
-   n:who||'No shot has reached a goaltender yet.'};}
+   n:(sa+sh+fa+fh)?'':'No shot has reached a goaltender yet.'};}
  if(id==='whistle'){
   const W=whistle.reduce(sl,CTX), n=W.whistles.length, w=latest(W);
   const nm=w?(WHY[w.rsn]&&WHY[w.rsn].name)||w.rsn:null;
@@ -6548,7 +6588,7 @@ function lboxFor(id,at,L){
  return none;}
 /** The centre label alone, for the pre-game frame where there is nothing to count. */
 const LBK={corsi:()=>'SHOT ATTEMPTS',slot:()=>'SHOTS FROM THE SLOT',
- blocked:()=>'ATTEMPTS BLOCKED',goaltending:()=>'SAVES BY',whistle:()=>'STOPPAGES'};
+ blocked:()=>'ATTEMPTS THAT NEVER ARRIVED',goaltending:()=>'SAVES BY',whistle:()=>'STOPPAGES'};
 function syncPick(){
  if(picking)return;
  const on=PICKS.filter(([,get])=>get()).map(([id])=>id);

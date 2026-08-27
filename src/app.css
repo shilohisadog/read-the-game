@@ -477,6 +477,19 @@
 #rg .lxh{grid-column:3;text-align:right;color:var(--home-text)}
 #rg .lxk{grid-column:2;font-size:.62rem;font-weight:800;letter-spacing:.1em;
  text-transform:uppercase;color:var(--muted);text-align:center}
+/* ⭐ A PER-CLUB SECOND LINE, BECAUSE ONE SHARED LINE PUT BOTH GOALTENDERS UNDER
+   THE AWAY FIGURE. Kevin: "it shows both goalies under the left hand count,
+   where they should be separated and each under their specific count." Exactly
+   right, and it was the grammar's fault rather than the copy's -- `.lxn` spans
+   the whole box, so anything club-specific written into it lands on the left.
+   A layer that has something to say about EACH club says it in that club's
+   column; `.lxn` stays for the layers whose sentence is about the population as
+   a whole, and `.split` keeps the two from stacking in the same grid cell. */
+#rg .lxan,#rg .lxhn{grid-row:2;font-size:.74rem;line-height:1.35;color:var(--muted);
+ align-self:start;margin-top:3px}
+#rg .lxan{grid-column:1;text-align:left}
+#rg .lxhn{grid-column:3;text-align:right}
+#rg .lbox.split .lxn{display:none}
 #rg .lxn{grid-column:1/-1;grid-row:2;font-size:.74rem;line-height:1.35;color:var(--muted);
  min-height:calc(2 * 1.35 * .74rem);align-self:start;margin-top:3px}
 /* The base view states what the box is FOR, which is a sentence about the
