@@ -174,6 +174,23 @@ contains `#nextup`, **the funnel that exists specifically so the game page is no
 a dead end.** D9's fix broke D3's fix and only looking caught it. Consistent
 enough to be a checklist line rather than a lesson.
 
+⚠️ **AND ON 2026-08-27 THE CHECKLIST LINE DID NOT FIRE.** Parking `.pboxes`
+took `#caption` with it — the pill that announces a penalty, an unplaced goal
+and a slot shot, which is a child of that row — and the same rule took the
+front door's split bar, because the hero wears the `corsi` class a park written
+for the game page keyed on. CHENG's read was that the rule *"keeps getting
+stated correctly and applied late, which suggests it belongs in a checklist
+rather than in memory."* It was already H3. **A checklist line that has been
+written down and then broken is not under-stated; it is un-instrumented** —
+which is this project's own doctrine about the difference, and the reason the
+answer is `test/park.test.js` rather than a fourth line here.
+
+**H3 now has an instrument.** It reads the shipped stylesheet, works out which
+containers are dark, walks the markup with a tag stack, and fails when the
+renderer writes into something inside a dark container that nobody put on a
+ledger. Adding a ledger line **is** the act of enumerating. Proven against the
+real defect: run at `6b3d655` it names `caption`; at `a5af829` it is silent.
+
 ---
 
 ## U. Usability — ranked by how early in a visit they are hit

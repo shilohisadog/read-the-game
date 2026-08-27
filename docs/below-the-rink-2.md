@@ -1859,3 +1859,222 @@ The assertion guarding that last bug read
 `grid-area:game` back changed nothing and the suite stayed green.** It strips the
 narrow blocks now, and asserts the slice still contains the rule before judging
 it — because a slice that lost its subject passes everything.
+
+## 31. Where a layer's output lives — the audit
+
+Kevin, 2026-08-27, opening the brainstorm: *"another reason to (re)move the
+penalty information was to free up that space below the rink, which is where I
+think the layer information/counters should live. The requirement is that the
+space utilization is consistent so the graphics don't adjust based on which
+layer is selected. The blocked layer doesn't need all of the data that's
+currently in it — the archive reference, that should go on its own informational
+card in the Workshop area."*
+
+Three claims, and they are separable: **a place**, **a constraint**, and **a
+removal**. This section audits each, records CHENG's review, and states what is
+settled and what is not.
+
+### 31.1 ⚠️ First, the space is not empty — and the audit of it found two live defects
+
+Both are fixed in `a5af829`, both shipped in `6b3d655`, and both are the same
+shape: **a park written for one container took something else with it.**
+
+`#caption` was a CHILD of `.pboxes`. It lived there deliberately — anchored to
+that row's top edge, which is the bottom of the ice, so the pill would stop
+overlapping the penalty boxes. Parking the row hid the pill, and a
+`display:none` parent is not something a child can override. For one commit,
+every penalty, every unplaced (shootout) goal and every *"⚡ Shot from the slot"*
+was written into a dark element — **98 penalties and 4 shootout goals across the
+seven fixture games** — while `dwell()` still held the replay 2.2s to make room
+for a caption nobody could see. Two of those three announcements have no other
+home on the page.
+
+And the same commit took the **front door's** split bar. The hero boots
+`corsiOn=true`, so it wears the `corsi` class, so `#rg.corsi .cbar{display:none}`
+applied to a surface it was never written for: a scoreboard with no bar, above a
+sentence about attempts. That is the exact pair `app.js` names in *"AND THE BOARD
+NAMES ITS UNIT"*, where the fix for it was written a fortnight ago.
+
+⭐ **H3 was already a checklist line and it did not fire**, which is why the
+answer is an instrument (`test/park.test.js`) rather than another line. See
+`docs/status.md` §H3.
+
+### 31.2 The place — adopted, with one thing to design deliberately
+
+The freed space is inside `.rinkbox`, directly under the ice: the closest real
+estate on the page to the marks a layer draws. It also preserves the division
+§27.1 already ratified — **the caption under the selector says what the lens
+*is*; a box under the ice says what it is showing *now*.**
+
+The objection is distance: the selector sits below the transport, so the box a
+chip changes is ~300px above the chip. **CC's argument for accepting it: the
+control is pressed once, the output is watched continuously**, so the output's
+position should be optimised for watching. That is also why the penalty move
+worked — penalties went where a viewer was already looking.
+
+⚠️ **CHENG's pushback is the half that survives, and it is phone-specific.** At
+390 the box and the selector cannot be on screen together, so **the first toggle
+produces no visible feedback near your thumb**; the active chip changing state
+is the only signal, and it is the thing you are already looking at. That is not
+an argument against the placement. It is a requirement: **the selector needs its
+own acknowledgement**, designed on purpose rather than discovered at 390.
+
+### 31.3 ⭐ The constraint — "consistent space" has a weak reading and a strong one
+
+The weak reading is *reserve the tallest box*. It fails on its own terms,
+because the five outputs are not the same order of size:
+
+| layer | its parked output | shape |
+|---|---|---|
+| Attempts | two counts + a split bar | 2 numbers |
+| Slot | the amber tip | 1 sentence |
+| Blocked | panel + archive reference | ~4 lines |
+| Goaltending | a card per goaltender | 2+ cards |
+| Stoppages | tally over up to 15 reasons + last stoppage | up to 16 rows |
+
+Reserve for Stoppages and Attempts rattles in an empty box for sixty minutes.
+
+The strong reading is that **every layer produces the same grammar**, and the
+height is then constant because the content is:
+
+    [ away figure ]   [ WHAT IS COUNTED ]   [ home figure ]
+    [ one sentence about the state at the playhead ]
+
+The constraint pays twice: the box holds still, **and the layers become
+comparable**, because each is now *a number for each club, and what it counts.*
+
+### 31.4 ⚠️ The grammar holds for three, not four — and Goaltending is the interesting one
+
+CC claimed four of five fill the two-column form natively and flagged
+Goaltending as the place to check. CHENG checked it and objected on a ground
+neither of us had stated: for Attempts, Slot and Blocked the left number is
+*what the away team did*, while for Goaltending the away goalie's saves are
+*shots the home team took* — so **the column changes subject between layers.**
+
+⚠️ **Two-thirds of his repair is already shipped, and checking the code is what
+showed it.** He proposed the saves be phrased `saved 12 of 15` rather than
+`.800`, and be placed under the club the goaltender plays for. `app.js` already
+does both: `const faced = st.f ? \`${st.s} of ${st.f}\` : '—'`, with a comment
+arguing exactly his reason (*"a fraction carries its own denominator, so it
+needs no cutoff to be honest at"*), and the card's side comes from
+`R[id].tid` — the goaltender's own club. So the convention he is asking for is
+the convention in the file.
+
+What survives is narrower and still real: the column's **agency** flips.
+`34 | SHOT ATTEMPTS | 41` reads *what this club did*; `12 of 15 | SAVES | 18 of
+20` reads *what this club's goaltender stopped the other club doing.* The
+subject stays the club — that is the part of CHENG's framing measurement does
+not support — but the verb changes, and the label has to carry it.
+
+⭐ **AND THE MEASUREMENT FOUND THE HARDER PROBLEM, WHICH IS NOT ABOUT SUBJECTS.**
+Over a deterministic 300-game sample of in-scope published games:
+
+    2 goaltenders   274   91.3%
+    3 goaltenders    24    8.0%
+    4 goaltenders     2    0.7%
+    ------------------------------------
+    more than two          8.7%
+
+**One game in eleven cannot fit two columns at all** — more often than a
+shootout. A relieved goaltender is not an edge case to round off; it is one of
+the few nights when goaltending is visibly the story.
+
+So the ruling this hands us: **the row counts the CLUB's goaltending, not a
+goaltender's.** `saved 33 of 35` under each club holds the grammar for 100% of
+games and stays a fraction. *Who* was in net, and when he was relieved, is a
+different question and belongs on the second line — which is the line the
+grammar already reserves for the state at the playhead.
+
+### 31.5 Stoppages degrades, and the degradation is the honest part
+
+**A stoppage has no team.** `extract.py` carries `rsn`/`rsn2` and nothing else —
+no team, no player, no coordinates — so a two-column per-club form would have to
+invent an attribution the feed does not contain. Both reviewers land in the same
+place: centre-only, one row tall, `44 stoppages · last: icing`. The form holding
+while the content admits it has no sides is better than a form that lies.
+
+### 31.6 ⛔ What the base view puts there — SOG proposed and REJECTED
+
+CC proposed **shots on goal**: per-club, the number a broadcast shows,
+self-validating against the league's boxscore at the final whistle, and it makes
+the site's thesis mechanical (*the base view shows the familiar number, every
+layer replaces it with a better one*). CC also stated the counter-argument
+against it, and CHENG's ruling is that the counter-argument is decisive rather
+than cautionary:
+
+> *It puts a number we spend the whole site arguing is misleading into the most
+> valuable position on the page, permanently.*
+
+**45.8%** is published on the front page: the shot-on-goal leader **loses**
+nearly half the time. Making SOG the resting state teaches a novice that it is
+the default lens and everything else is optional decoration — backwards.
+
+⭐ **And CHENG's second reason is structural, which is the stronger one.**
+`Just events` currently means *no metric*. Put SOG there and the chip is
+mislabelled and **Doctrine §6 — the base view is just the game — stops being
+structural and becomes a convention.** Today the default cannot accidentally
+carry a metric, because *none* is a choice.
+
+**The self-validation is worth keeping and belongs somewhere else.** *Our running
+count must equal the league's boxscore at the final whistle* is a genuinely good
+check that nothing on the page currently offers. It should be **a validation
+gate, not a display** — which is where checks belong, and which `extract.py`
+already has the shape for (`SOG reproduces boxscore` is the gate 135 refusals
+fail).
+
+**So the base view's box holds nothing** — an empty box that reserves its height.
+That satisfies the constraint without asserting anything, keeps `Just events`
+honest, and makes the box's arrival on first toggle a **reveal** rather than a
+**replacement**, which is the more instructive event. If empty reads as dead, the
+honest filler is a prompt and not a number: *pick a lens above and this fills in*
+— a statement about the interface, which is the `display:` provenance category
+§B1 already created for sentences about what we did rather than what happened.
+
+### 31.7 The archive reference leaves, and the rule that lets it
+
+Doctrine §8 decides the shape: **a rate without a base rate is a story, not a
+measurement.** So the reference can leave *only if what stays behind is counts,
+not percentages*. `11 blocked` beside `8 blocked` claims exactly what it is —
+CHENG's own ruling on the split bar — while `27.8%` with its reference moved to
+another page is a rate that has lost its denominator. Conveniently, that is what
+the fixed grammar wants anyway.
+
+⚠️ **The destination is the open part, and both reviewers argue against the
+Workshop.** Its stated identity is *"Earlier views, each answering a question the
+main app does not. They are explorations, not front doors, and several are pinned
+to one game."* A reference card is a different kind of object; putting one in the
+grid redefines the page quietly, which is the failure mode this project names
+everywhere else.
+
+**The proposal is a measurements page**: every published archive figure with its
+`n`, its population, and the date it was read. Everything is already in
+`measures.json`; today a reader meeting one of these figures has no way to see
+the others or their populations, which is the ground D4 grew in.
+
+CHENG adds two arguments neither of us had:
+
+* **It is the natural home for the provenance digests.** Three SHA-256 hashes per
+  game of the league's own responses, computed at ingest, currently invisible.
+  *Don't trust, verify* — implemented, shipped, unmentioned. A measurements page
+  is exactly where a sceptic is standing.
+* **It makes the rate family checkable in one place** — 39.6% / 60.4% / 45.8% /
+  54.3% / 75.4% / 51.9% — instead of one panel at a time.
+
+### 31.8 What is settled, and what is not
+
+**Settled:** the box lives under the ice, inside `.rinkbox` · it holds a fixed
+grammar rather than a reserved maximum · Stoppages degrades to centre-only ·
+Goaltending counts the CLUB, with the goaltender named on the second line · the
+base view's box is empty or carries an interface prompt, never a metric · SOG
+becomes a validation gate, not a display · the archive references leave the
+panels, and what stays is counts.
+
+**Not settled, and both are Kevin's:** whether the reference figures go to a new
+measurements page or a Workshop card whose description changes deliberately; and
+what the selector's own acknowledgement looks like, which §31.2 says is now a
+requirement rather than a nicety.
+
+**Not yet designed:** the second line's grammar. It is the line that must carry
+*"Ullmark relieved Levi at 12:04"*, *"last: icing"* and the even-strength note
+*"49 attempts have dropped out so far"* — three sentences of different kinds in
+one slot, which is the thing that has gone wrong before.
