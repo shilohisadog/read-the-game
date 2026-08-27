@@ -163,7 +163,7 @@
 @keyframes ppin{from{opacity:0;transform:translate(-50%,-50%) scale(.88)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
 @media (prefers-reduced-motion:reduce){#rg .pressplay{animation:none}}
 #rg .pressplay:hover,#rg .pressplay:focus-visible{background:rgba(15,26,35,.92)}
-#rg .rinkbox{position:relative;background:var(--ice);border:1px solid var(--edge);border-radius:15px;padding:10px;box-shadow:0 6px 22px rgba(16,32,45,.08)}
+#rg .rinkbox{position:relative;background:var(--ice);border:1px solid var(--edge);border-radius:15px;padding:var(--rinkpad);box-shadow:0 6px 22px rgba(16,32,45,.08)}
 /* THE PENALTY BOX, AND IT IS OUTSIDE THE viewBox ON PURPOSE. Put inside it, the
    rink would shrink to make room -- and the rink is 136px tall on a 390px phone
    against 373px on a laptop, measured, so the band would cost most where there
@@ -251,6 +251,15 @@
    floating above them, which no test here can see and which I did not look at,
    having measured only game.html.
    ANYTHING ADDED INSIDE .rinkbox HAS TO ANSWER THIS QUESTION. */
+/* ⚠️ AND THE LAYER BOX, FOR EXACTLY THE REASON SPELLED OUT DIRECTLY ABOVE.
+   Measured before this line existed: the box took 70px of a 90px ice at 390 on
+   the front door, because `.rinkbox` is a flex column in preview and a block
+   added inside it does not stack under the rink -- it becomes a flex sibling
+   and eats the ice. The comment above asks anything added inside `.rinkbox` to
+   answer this question; this is the answer, and it was found by LOOKING at the
+   hero rather than by remembering to. The hero already carries the attempts on
+   its scoreboard (`.cbar`), which is the same information in the space it has. */
+#rg.preview .lbox,
 #rg.preview .endnote,
 #rg.preview .counters{display:none!important}
 /* THE PREVIEW FITS ITSELF TO WHATEVER BOX IT IS GIVEN.
@@ -427,6 +436,56 @@
 @keyframes slip{0%{transform:scale(1.55);opacity:0}45%{opacity:.7}100%{transform:scale(1);opacity:1}}
 #rg .puck{fill:#0e1216;stroke:#fff;stroke-width:.55}#rg .puck.jump{animation:pj .3s ease}@keyframes pj{0%{transform:scale(2)}100%{transform:scale(1)}}
 #rg .shotline{stroke:var(--ink);stroke-width:.7;stroke-dasharray:2.2 2;opacity:.7;animation:sl 1s ease forwards}@keyframes sl{to{opacity:0}}
+/* ⭐ THE LAYER BOX -- ONE GRAMMAR, CONSTANT HEIGHT (§31.3).
+   Three columns: away figure, what is counted, home figure; then one line
+   underneath naming the population or condition. The row is a grid so the
+   centre label is centred on the BOX rather than on whatever the two figures
+   happen to measure -- a flex row with `space-between` moves the label every
+   time a number gains a digit, which on this page happens sixty times a game.
+
+   ⭐ THE HEIGHT IS FIXED AND THE CAPTION PILL DEPENDS ON IT. `--lboxh` is the
+   single source: the box takes it, and `.caption` sits `--lboxh + 6px` off the
+   bottom of `.rinkbox`, which is the top edge of this box. That is the same
+   mechanism the penalty row used, and the reason it is SAFE here is exactly
+   Kevin's requirement -- a box whose height does not change cannot move the
+   pill onto itself. A test asserts both read the same custom property.
+
+   ⚠️ TWO LINES ARE RESERVED FOR `.lxn`, NOT ONE. "Constant" means across
+   LAYERS at a given width, which is what was asked for; it cannot mean across
+   widths, because the sentence that names a population wraps at 360 and not at
+   1100. Reserving two lines everywhere makes the box constant per width, holds
+   at 360, and costs one line of whitespace on a laptop. Clamping instead would
+   truncate a sentence, which is how a page starts lying about its own figures.
+
+   ⏸ AND THE RIGHT END OF `.lxn` IS WHERE `Show me the work` REATTACHES (§31.7b)
+   -- per layer, since that surface answers "where did this number come from"
+   about THESE numbers. It is not rendered yet, because a control that does
+   nothing is worse than no control; the row is laid out so it has somewhere to
+   go that does not move anything else. */
+#rg{--lboxh:74px;--rinkpad:10px}
+#rg .lbox{display:grid;grid-template-columns:1fr auto 1fr;grid-template-rows:auto auto;
+ align-items:baseline;gap:2px 10px;height:var(--lboxh);box-sizing:border-box;
+ margin-top:8px;padding:6px 4px 0;border-top:1px solid var(--edge)}
+#rg .lxa,#rg .lxh{font-family:ui-monospace,Menlo,monospace;font-size:1.45rem;font-weight:700;
+ font-variant-numeric:tabular-nums;line-height:1.1}
+/* Goaltending's figures are FRACTIONS -- "22 of 22" is four times the string a
+   count is -- so the two of them plus the centre label overflowed a 360px box
+   while the sentence underneath fitted comfortably. The layer declares itself
+   wide; the size floors at .95rem so it stays legible rather than vanishing. */
+#rg .lbox.wide .lxa,#rg .lbox.wide .lxh{font-size:clamp(.95rem,3.6vw,1.45rem)}
+#rg .lxa{grid-column:1;text-align:left;color:var(--away-text)}
+#rg .lxh{grid-column:3;text-align:right;color:var(--home-text)}
+#rg .lxk{grid-column:2;font-size:.62rem;font-weight:800;letter-spacing:.1em;
+ text-transform:uppercase;color:var(--muted);text-align:center}
+#rg .lxn{grid-column:1/-1;grid-row:2;font-size:.74rem;line-height:1.35;color:var(--muted);
+ min-height:calc(2 * 1.35 * .74rem);align-self:start;margin-top:3px}
+/* The base view states what the box is FOR, which is a sentence about the
+   interface -- the `display:` provenance category (§B1) -- and never a metric.
+   Shots on goal was proposed for this slot and refused: `Just events` means no
+   metric, so a number here would mislabel the chip and make Doctrine §6 a
+   convention instead of a structure (§31.6). */
+#rg .lbox.empty .lxn{font-style:italic}
+
 /* ⭐ ANCHORED TO `.rinkbox`, AND THE HISTORY IS THE WARNING.
    It was `bottom:14px` here once, then moved INSIDE `.pboxes` with
    `bottom:calc(100% + 6px)` so it would sit on the row's top edge -- the bottom
@@ -454,7 +513,7 @@
    does not become a flex item when the preview turns the box into a flex
    column. That is the constraint the comment forty lines up asks of anything
    added inside `.rinkbox`, and this is its answer. */
-#rg .caption{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;align-items:center;gap:8px;background:rgba(15,26,35,.94);color:#fff;padding:7px 15px;border-radius:99px;font-size:.86rem;font-weight:600;white-space:nowrap;opacity:0;pointer-events:none;max-width:92%}
+#rg .caption{position:absolute;left:50%;bottom:calc(var(--lboxh) + var(--rinkpad) + 6px);transform:translateX(-50%);display:flex;align-items:center;gap:8px;background:rgba(15,26,35,.94);color:#fff;padding:7px 15px;border-radius:99px;font-size:.86rem;font-weight:600;white-space:nowrap;opacity:0;pointer-events:none;max-width:92%}
 /* THE DURATION HERE IS A PLACEHOLDER AND NEVER APPLIES. `caption()` sets
    `style.animationDuration` from `dwell(e)` on every call, so the caption lasts
    exactly as long as the frame it describes. This number used to be the real

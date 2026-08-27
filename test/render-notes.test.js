@@ -266,23 +266,14 @@ test('the caption says what the chosen lens is, in the words the rows carry', ()
     const lon = /<span class="lon">([^<]+)</.exec(row)[1];
     assert.ok(text().includes(lds), `${token}'s caption does not carry the row's description`);
 
-    /* ⏸ AND THE "WHAT IT SHOWS" CLAUSE IS ONLY TRUE WHILE ITS SUBJECT IS ON
-       SCREEN. Slot, Blocked and Stoppages still mark the ICE, so their
-       sentences hold. Attempts and Goaltending had NO output but the parked
-       panel, so the caption was telling a viewer to watch counters that are not
-       drawn — found by looking at a 390px render while every test passed.
-
-       ⭐ THE EXPECTED SET IS STATED HERE AS A CLAIM ABOUT THE DESIGN — which
-       layers still draw something — and the app keeps its own `OUTPUT_PARKED`.
-       Two independent statements of one fact; if they drift, this goes red.
-       Reading the app's set would make this a mirror (H1). */
-    const stillDraws = !['corsi', 'goaltending'].includes(token);
-    if (stillDraws)
-      assert.ok(text().includes(lon), `${token}'s caption does not say what appears on the ice`);
-    else
-      assert.ok(!text().includes(lon),
-        `${token}'s caption still promises a display that is parked — `
-        + 'it tells the viewer to watch something that is not drawn');
+    /* ⭐ AND THE "WHAT IT SHOWS" CLAUSE HAS TO BE TRUE. For one commit it was
+       not: with every layer's output parked, Attempts promised counters and
+       Goaltending promised cards, neither of which was drawn. Found by looking
+       at a 390px render, invisible to this test, which faithfully compared a
+       caption to a row that faithfully described a display nobody could see.
+       Both have an output again — the box below the ice — so the rows say so,
+       and the suppression that stood in the meantime is gone. */
+    assert.ok(text().includes(lon), `${token}'s caption does not say what appears on screen`);
 
     // ⚠️ AND THE NAME IS THE CHIP'S, NOT THE ROW'S. The parked rows still carry
     // the names they had when Kevin trimmed them — `Corsi`, `Slot shots` — while
@@ -377,27 +368,6 @@ test('the layer displays are parked, by a rule that has to come last', () => {
  * nobody touched is asserting an interaction; and it restarts, because re-adding
  * a class an element already carries does not replay an animation.
  */
-/**
- * ⏸ AND THE SUPPRESSION HAS AN END CONDITION, ASSERTED RATHER THAN INTENDED.
- *
- * `OUTPUT_PARKED` exists only because two layers currently have nothing on
- * screen. The box under the ice (docs/below-the-rink-2.md §31) gives both an
- * output, and the parking rule for `.counters` goes in the same commit. A
- * temporary set with no expiry is how a workaround becomes the design.
- */
-test('the muted-caption set empties when the displays come back', () => {
-  const parked = /#rg\.corsi \.counters\{display:none\}|#rg\.corsi \.counters,/.test(
-    PAGE_CSS.replace(/\/\*[\s\S]*?\*\//g, ' '));
-  const set = /const OUTPUT_PARKED=new Set\(\[([^\]]*)\]\)/.exec(app);
-  assert.ok(set, 'OUTPUT_PARKED is gone — if the displays returned, delete this test too');
-  const members = set[1].split(',').map(x => x.trim()).filter(Boolean);
-  if (parked)
-    assert.deepEqual(members, ["'corsi'", "'goaltending'"],
-      'the layers with no visible output are not the ones being muted');
-  else
-    assert.deepEqual(members, [],
-      'the counters are back on screen and the caption is still refusing to mention them');
-});
 
 test('pressing a chip acknowledges on that chip, and only on a press', () => {
   const a = boot();

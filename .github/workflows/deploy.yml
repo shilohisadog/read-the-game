@@ -314,7 +314,41 @@ jobs:
               var c = getComputedStyle(n);
               return (c.fill + '|' + c.stroke).replace(/ /g, '');
             };
+            /* ⭐ THE LAYER BOX IS A FIXED HEIGHT, SO IT CAN CLIP — and clipping
+               is a laid-out fact no fake document can see. The unit test forbids
+               `line-clamp` and `text-overflow`, which is a check with no
+               instrument for the axis in question: the first build truncated
+               three of six sentences at 360 through `height` plus overflow, and
+               the suite was green. Measured HERE, at the width that fails first,
+               across every layer -- a box that hides half a sentence about the
+               numbers beside it is worse than a taller box.
+               THE HEIGHT IS SWEPT TOO: "consistent space utilization so the
+               graphics don't adjust based on which layer is selected" is Kevin's
+               requirement in his own words, and it is exactly one distinct
+               height across the six states. */
+            var f = document.getElementById('f');
+            f.style.width = '360px';
+            var clipped = 0, heights = {}, nH = 0;
+            ['none','corsi','slot','blocked','goaltending','whistle'].forEach(function (l) {
+              d.querySelector('#rg .pk[data-l="' + l + '"]').click();
+              s.value = s.max; s.dispatchEvent(new Event('input'));
+              var bx = d.getElementById('lbox');
+              if (bx.scrollHeight > bx.clientHeight + 1) clipped++;
+              heights[Math.round(bx.getBoundingClientRect().height)] = 1;
+              nH = Math.max(nH, Math.round(bx.getBoundingClientRect().height));
+            });
+            /* AND THE PILL CLEARS THE BOX. `bottom` is measured from the rink
+               box's padding box, so the offset needs the box height AND the
+               rink's padding; the first build omitted the second and the pill
+               sat 4px inside the box. Negative means overlap. */
+            var bx = d.getElementById('lbox').getBoundingClientRect();
+            var cp = d.querySelector('#rg .caption').getBoundingClientRect();
+            var clear = Math.round(bx.top - cp.bottom);
+            f.style.width = '1100px';
+
             document.title = 'ICE ' + shut + ' ' + open + ' ' + rings + ' ' + text
+                           + ' BOX ' + clipped + ' ' + Object.keys(heights).length
+                           + ' ' + clear
                            + ' MOVED ' + moved
                            + ' VIS ' + paint('.att.a') + ' HOST ' + paint('.att.h');
           }, 4000);
@@ -326,8 +360,8 @@ jobs:
           dom=$(google-chrome --headless --no-sandbox --disable-gpu \
                   --virtual-time-budget=25000 --dump-dom \
                   "http://localhost:8098/probe.html" 2>/dev/null)
-          read -r _ shut open rings text _ moved _ vis _ host \
-            <<<"$(echo "$dom" | grep -o 'ICE [0-9 ]* MOVED [0-9]* VIS [^ ]* HOST [^ <]*' | head -1)"
+          read -r _ shut open rings text _ clipped heights clear _ moved _ vis _ host \
+            <<<"$(echo "$dom" | grep -o 'ICE [0-9 ]* BOX [0-9]* [0-9]* -\?[0-9]* MOVED [0-9]* VIS [^ ]* HOST [^ <]*' | head -1)"
           if [ -z "$text" ]; then
             echo "::error::the probe never reported — the app did not run in the frame"
             echo "$dom" | head -20; exit 1
@@ -345,6 +379,13 @@ jobs:
           [ "$text" -ge 40 ] || { echo "::error::the caption is visible and explains nothing ($text chars)"; fail=1; }
           [ "$moved" -eq 1 ] || { echo "::error::the caption never changed when the layer went on — the control is mute"; fail=1; }
           [ "$rings" -ge 1 ] || { echo "::error::no whistle mark reached the ice in a real browser"; fail=1; }
+
+          # ⭐ THE LAYER BOX, MEASURED AT 360 WHERE IT FAILS FIRST.
+          echo "  layer box, 360px   : $heights distinct height(s) over six states,"
+          echo "                       $clipped clipped, pill clears it by ${clear}px"
+          [ "$clipped" -eq 0 ] || { echo "::error::$clipped of six layers has its sentence CLIPPED by the box's fixed height — a box that hides half a sentence about the numbers beside it is worse than a taller box"; fail=1; }
+          [ "$heights" -eq 1 ] || { echo "::error::the box takes $heights different heights across the six layers — Kevin's requirement is that the graphics do not adjust based on which layer is selected"; fail=1; }
+          [ "$clear" -ge 0 ] || { echo "::error::the caption pill overlaps the layer box by ${clear#-}px — the offset has lost a term"; fail=1; }
 
           # The visitor wears white and the host wears its colour. Asserted as a
           # PAIR: "the visitor is white" is also satisfied by a page that paints

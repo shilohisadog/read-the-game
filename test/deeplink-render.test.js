@@ -37,7 +37,13 @@ function fakeDom() {
     // never wrote the element at all -- the assertion reads as coverage and
     // proves nothing. Left undefined, the same assertion requires a real write.
     // (homepage.test.js already worked this way and says so at its heroShown.)
-    innerHTML: '', textContent: '', value: '',
+    innerHTML: '', value: '',
+    // Coerces, for the reason spelled out in helpers/page.js: a plain field
+    // stores a number where the DOM stores a string, and the fake being more
+    // permissive than the browser is the direction that hides defects.
+    _text: '',
+    get textContent() { return this._text; },
+    set textContent(v) { this._text = v == null ? '' : String(v); },
     style: { _v: {}, setProperty(k, v) { this._v[k] = v; }, getPropertyValue(k) { return this._v[k] || ''; } },
     dataset: {}, childNodes: [{ nodeValue: '' }], _on: {},
     classList: {

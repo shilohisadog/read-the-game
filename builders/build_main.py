@@ -81,6 +81,19 @@ __CSS__</style>
   <button class="pressplay" id="pressplay" tabindex="-1" aria-hidden="true">&#9654; Press Play</button>
   <div class="pboxes" id="pboxes"><span class="pblab">Penalty box</span><span class="pb a" id="pbA"></span><span class="pb h" id="pbH"></span></div>
   <div class="counters"><div class="cc a"><span class="n" id="cA">0</span><span class="lb">Away attempts<span class="mode" id="mA">ALL SITUATIONS</span></span></div><div class="cc h"><span class="lb">Home attempts<span class="mode" id="mH">ALL SITUATIONS</span></span><span class="n" id="cH">0</span></div></div>
+  <!-- ⭐ THE LAYER'S OUTPUT, IN ONE FIXED SHAPE. docs/below-the-rink-2.md §31.
+       Kevin: "the layer information/counters should live [below the rink]. The
+       requirement is that the space utilization is consistent so the graphics
+       don't adjust based on which layer is selected."
+       The strong reading of that is not "reserve the tallest box" -- the five
+       outputs ranged from two numbers to sixteen rows -- it is that every layer
+       fills ONE GRAMMAR: a figure for each club, what is being counted, and one
+       line naming the population or condition those figures were counted under.
+       Constant height follows from constant content, and the layers become
+       comparable as a side effect.
+       ⚠️ EVERY COLUMN IS COUNTED BY THE CLUB THAT SHOT THE PUCK (§31.4b).
+       Goaltending is the one layer that cannot obey it and says so in words. -->
+  <div class="lbox" id="lbox"><span class="lxa" id="lxA"></span><span class="lxk" id="lxK"></span><span class="lxh" id="lxH"></span><span class="lxn" id="lxN"></span></div>
   <!-- THE PILL IS A CHILD OF .rinkbox, NOT OF THE PENALTY-BOX ROW. It lived
        inside `.pboxes` so it could anchor to that row's top edge, which was the
        bottom of the ice -- correct exactly while the row was furniture. Parking
@@ -91,9 +104,9 @@ __CSS__</style>
 </div>
 <details class="zone zlayers" id="zLayers"><summary class="zh">Add a metric layer<span class="zon" id="zLayersOn"></span></summary>
 <div class="lrows">
-<button class="lrow" id="lyCorsi" data-pick="corsi" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Corsi</b><span class="lds">every shot attempt the league recorded: on goal, missed, or blocked, because all three are the team moving the puck at the net</span><span class="lon">The counters above the rink fill in as the replay runs, and the bar splits the attempts between the two clubs.</span></span><span class="st" id="stCorsi">Off</span></button>
+<button class="lrow" id="lyCorsi" data-pick="corsi" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Corsi</b><span class="lds">every shot attempt the league recorded: on goal, missed, or blocked, because all three are the team moving the puck at the net</span><span class="lon">The box below the ice counts every attempt for each club as the replay runs.</span></span><span class="st" id="stCorsi">Off</span></button>
 <button class="lrow" id="lyHd" data-pick="slot" aria-pressed="false"><span class="lmk"><i class="k-hd"></i></span><span class="ltx"><b>Slot shots</b><span class="lds">attempts from within 33 ft of the net, between the face-off dots</span><span class="lon">An amber ring marks each one. Click a ring to see the distance and angle it was measured by.</span></span><span class="st" id="stHd">Off</span></button>
-<button class="lrow" id="lyGoalie" data-pick="goaltending" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Goaltending</b><span class="lds">every shot each goaltender faced, and what became of it — saved, scored on, or missed the net</span><span class="lon">A card per goaltender builds its save percentage as the replay runs.</span></span><span class="st" id="stGoalie">Off</span></button>
+<button class="lrow" id="lyGoalie" data-pick="goaltending" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Goaltending</b><span class="lds">every shot each goaltender faced, and what became of it — saved, scored on, or missed the net</span><span class="lon">The box below the ice builds each club&rsquo;s save fraction as the replay runs. A save is against the OTHER club&rsquo;s shot, so those two columns read the opposite way round.</span></span><span class="st" id="stGoalie">Off</span></button>
 <button class="lrow" id="lyWhistle" data-pick="whistle" aria-pressed="false"><span class="lmk"><i class="k-wh"></i><i class="k-rl"></i></span><span class="ltx"><b>Stoppages</b><span class="lds">the rule that stopped play, and the dot it restarted on</span><span class="lon">The ring marks where play restarted, brightest at the most recent stoppage. The bar lights the line the rule names — for icing the centre line and the far goal line, for offside the blue line.</span></span><span class="st" id="stWhistle">Off</span></button>
 <button class="lrow" id="lyBlock" data-pick="blocked" aria-pressed="false"><span class="lmk"><i class="k-blk"></i><i class="k-blkv"></i></span><span class="ltx"><b>Blocked shots</b><span class="lds">the attempts a body stopped before they reached the goalie</span><span class="lon">Blocked attempts keep their ring and every other mark dims, so the ones a body stopped stand out.</span></span><span class="st" id="stBlock">Off</span></button>
 </div>

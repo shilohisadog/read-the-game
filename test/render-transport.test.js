@@ -627,6 +627,14 @@ test('the caption pill is not inside a container the stylesheet hides', () => {
     'the caption is inside .pboxes, which the stylesheet parks with display:none');
   assert.match(PAGE_CSS, /#rg \.pboxes\{[^}]*display:none|#rg \.pboxes\{display:none\}/,
     'the row is no longer parked — re-read whether the pill should move back into it');
-  assert.match(PAGE_CSS, /#rg \.caption\{[^}]*position:absolute[^}]*bottom:14px/,
-    'the pill no longer anchors to the rink box');
+  /* ⭐ AND THE PILL'S OFFSET IS THE BOX'S HEIGHT, FROM ONE SOURCE.
+     `--lboxh` sizes the layer box and lifts the caption clear of it. Two
+     numbers would drift the day the box changes height, and the drift's symptom
+     is the 58px overlap this whole test exists about. The safety of the
+     arrangement is Kevin's own requirement: a box whose height does not change
+     cannot move the pill onto itself. */
+  assert.match(PAGE_CSS, /#rg \.caption\{[^}]*position:absolute[^}]*bottom:calc\(var\(--lboxh\) \+ var\(--rinkpad\) \+ 6px\)/,
+    'the pill no longer clears the layer box by that box\'s height and the rink padding');
+  assert.match(PAGE_CSS, /#rg \.lbox\{[^}]*[;{]height:var\(--lboxh\)/,
+    'the layer box no longer takes its height from the property the caption reads');
 });

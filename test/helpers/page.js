@@ -50,7 +50,16 @@ export function fakeDom() {
     // never wrote the element at all -- the assertion reads as coverage and
     // proves nothing. Left undefined, the same assertion requires a real write.
     // (homepage.test.js already worked this way and says so at its heroShown.)
-    innerHTML: '', textContent: '', value: '',
+    innerHTML: '', value: '',
+    /* ⭐ `textContent` COERCES, BECAUSE A REAL ONE DOES.
+       It was a plain field, so `el.textContent = 34` stored the NUMBER 34 while
+       a browser stores "34". Every assertion here then had to know which side of
+       the fence it was on, and a test comparing against a string failed on a
+       page that is correct — the fake being MORE PERMISSIVE than the DOM, which
+       is the direction that hides defects rather than inventing them. */
+    _text: '',
+    get textContent() { return this._text; },
+    set textContent(v) { this._text = v == null ? '' : String(v); },
     // The app paints each team's real colour onto #rg as a custom property at
     // boot, so the fake has to record them to be able to check them.
     style: { _v: {}, setProperty(k, v) { this._v[k] = v; },

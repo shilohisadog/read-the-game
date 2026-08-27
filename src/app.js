@@ -809,6 +809,7 @@ function render(i,how){
  $('pa').textContent=a;$('ph').textContent=h;
  $('cA').textContent=a;$('cH').textContent=h;
  if(how==='play'){if(a>prevA)flash('cA');if(h>prevH)flash('cH');}
+ drawLBox(i,L);
  if(moment){
    /* ⭐ THE GOAL PILL IS NOT DRAWN WHEN THE ICE IS ALREADY SAYING IT.
       Kevin, looking at the front door: the pill "is redundant and doesn't add
@@ -1998,29 +1999,128 @@ function capFor(id){
  // is the one the sentence has to open with.
  const chip=document.querySelector(`#rg .pk[data-l="${id}"]`);
  const lds=row.querySelector('.lds'), lon=row.querySelector('.lon');
- /* ⏸ AND THE SECOND CLAUSE IS SUPPRESSED WHILE ITS SUBJECT IS PARKED.
-    `.lon` says what the layer PUTS ON SCREEN, and for two layers that thing is
-    currently hidden -- so the caption was instructing a viewer to watch
-    counters that are not drawn ("the counters above the rink fill in as the
-    replay runs") and to read goaltender cards that do not exist. Found by
-    LOOKING at a 390px render; every test passed, because the caption faithfully
-    quoted a row that faithfully described a display nobody could see.
-
-    ⭐ THE SET IS THE LAYERS WHOSE ONLY OUTPUT WAS THE PARKED PANEL, which is
-    not derivable from the stylesheet: `.hint`, `.whistlepanel` and
-    `.blockpanel` are parked too, but Slot, Stoppages and Blocked all still mark
-    the ICE, so their sentences remain true. `render-notes.test.js` pins both
-    halves against the rows themselves.
-
-    ⚠️ THIS IS TEMPORARY AND ITS END CONDITION IS NAMED: the box under the ice
-    (docs/below-the-rink-2.md §31) restores an output for both, and this set
-    empties in the same commit. A test fails if it is still populated when the
-    parking rule for `.counters` goes. */
- const mute=OUTPUT_PARKED.has(id);
- return `<b>${chip?chip.textContent:''}</b> — ${lds?lds.textContent:''}.`
-       +(mute?'':` <span class="cap2">${lon?lon.textContent:''}</span>`);}
-/** Layers whose entire display is parked, so their "what it shows" clause lies. */
-const OUTPUT_PARKED=new Set(['corsi','goaltending']);
+ /* ⭐ AND THE SECOND CLAUSE IS TRUE AGAIN, WHICH IT WAS NOT FOR ONE COMMIT.
+    `.lon` says what the layer PUTS ON SCREEN. With every layer's output parked
+    it described counters and goaltender cards that were not drawn -- the page
+    instructing a viewer to watch things that do not exist, found by LOOKING
+    while every test passed. It was suppressed for those two layers behind a set
+    with a stated end condition, and this is that condition: the box below the
+    ice gives both an output, so the set is GONE rather than emptied. A temporary
+    mechanism that outlives its reason is how a workaround becomes the design. */
+ return `<b>${chip?chip.textContent:''}</b> — ${lds?lds.textContent:''}. `
+       +`<span class="cap2">${lon?lon.textContent:''}</span>`;}
+/**
+ * ⭐ THE LAYER'S OUTPUT, IN ONE FIXED GRAMMAR -- docs/below-the-rink-2.md §31.
+ *
+ * A figure for each club, what is being counted, and one line naming the
+ * POPULATION OR CONDITION those figures were counted under. Every layer fills
+ * the same four slots, which is what makes the box a constant height and the
+ * layers comparable to each other.
+ *
+ * ⚠️ EVERY COLUMN IS COUNTED BY THE CLUB THAT SHOT THE PUCK, and that is the
+ * grammar's first rule rather than a detail (§31.4b). `blocked.js` keeps its
+ * tally by the BLOCKER's club, which is correct for its own panel and wrong
+ * here: measured over 262 games the two readings name DIFFERENT clubs as the
+ * leader in 245 of 247 decided games -- 99.2%, because your blocks are of their
+ * shots. Reusing that tally would have put a number under the away column that
+ * describes the home club's shooting, in 99 games out of 100, on a row whose
+ * whole teaching claim is that the left column is the away club. Counting by
+ * shooter also makes the two columns SUM to the total: by blocker they are
+ * short 8.3%, because a block by a teammate is credited to nobody.
+ *
+ * ⭐ GOALTENDING IS THE ONE LAYER THAT CANNOT OBEY IT, since a save is by
+ * definition against the other club's shot. So it does not pretend to: the
+ * label says SAVES BY and the line names the goaltenders, which is also where
+ * relief shows up -- 12.2% of games use more than two goaltenders, one in eight,
+ * so a form that assumed two would be wrong more often than a shootout happens.
+ *
+ * ⭐ AND STOPPAGES DEGRADES TO THE CENTRE COLUMN ALONE. A stoppage carries
+ * `rsn` and nothing else -- no team, no player, no coordinates -- so a per-club
+ * figure would be an attribution the feed does not contain. The form holds and
+ * the content admits it has no sides, which is better than a form that lies.
+ */
+function drawLBox(k,L){
+ const el=$('lbox'); if(!el)return;
+ const id=whichPick();
+ // ⚠️ `i` IS THE MODULE-LEVEL PLAYHEAD and this is called from two places: from
+ // `render()` with the frame it is drawing, and from `syncPick()` with nothing,
+ // where the playhead is the only truth available. Reading it unconditionally
+ // would make the box lag the frame render() is mid-way through drawing.
+ const at=k==null?i:k, lens=L||(at<0?null:corsi.reduce(upto(at),CTX));
+ const b=lboxFor(id,at,lens);
+ el.classList.toggle('empty',id==='none');
+ /* ⚠️ A FRACTION IS A LONGER STRING THAN A COUNT, and at 360 two of them plus
+    the centre label did not fit across the box -- the figures wrapped and the
+    box clipped, with the SENTENCE fitting fine. Found by measuring, after two
+    rounds of shortening copy that was never the problem. The layer says it is
+    wide rather than the stylesheet sniffing the text for " of ", because a rule
+    that reads a value's shape breaks the day a club is called `of`. */
+ el.classList.toggle('wide',!!b.wide);
+ $('lxA').textContent=b.a;$('lxK').textContent=b.k;$('lxH').textContent=b.h;
+ $('lxN').textContent=b.n;}
+/** Split a reducer's counted ids into per-club totals BY THE SHOOTING CLUB. */
+function byShooter(ids,slice){
+ const t={[AID]:0,[HID]:0};
+ for(const id of ids){const e=slice[id]; if(!e)continue;
+  const tm=shootingTeam(e,R); if(t[tm]!=null)t[tm]++;}
+ return t;}
+function lboxFor(id,at,L){
+ const none={a:'',k:'',h:'',n:''};
+ if(id==='none')
+  // A SENTENCE ABOUT THE INTERFACE, NOT A METRIC. Shots on goal was proposed
+  // for this slot and refused (§31.6): `Just events` means no metric, so a
+  // number here would mislabel the chip.
+  return {...none,n:'Pick a lens above and this fills in as the replay runs.'};
+ if(at<0){
+  // BEFORE THE FIRST EVENT THERE IS NOTHING TO COUNT, and zeroes would be a
+  // claim rather than a blank. Same rule as the split bar refusing to draw a
+  // proportion of an empty population.
+  const k=LBK[id]; return {a:'',k:k?k(null,null):'',h:'',n:'Press play — nothing has been counted yet.'};}
+ const sl=upto(at);
+ if(id==='corsi'){
+  const a=L.t[AID],h=L.t[HID];
+  return {a,k:'SHOT ATTEMPTS',h,n:`On goal, missed or blocked · ${MODE()}.`};}
+ if(id==='slot'){
+  const c=byShooter(danger.reduce(sl,CTX).counted,sl), tot=L.t[AID]+L.t[HID];
+  return {a:c[AID],k:'SHOTS FROM THE SLOT',h:c[HID],
+   n:`Of ${tot} attempt${tot===1?'':'s'} so far · ${MODE()}.`};}
+ if(id==='blocked'){
+  const c=byShooter(blocked.reduce(sl,CTX).counted,sl), tot=L.t[AID]+L.t[HID];
+  return {a:c[AID],k:'ATTEMPTS BLOCKED',h:c[HID],
+   n:`Of ${tot} attempt${tot===1?'':'s'} so far · credited to the club that shot.`};}
+ if(id==='goaltending'){
+  const gs=goalieStats(at), per={[AID]:[],[HID]:[]};
+  for(const gid of G.goalies){const p=R[gid]; if(!p||per[p.tid]==null)continue;
+   const st=gs[gid]; if(!st||!st.f)continue;
+   per[p.tid].push({nm:p.nm,s:st.s,f:st.f});}
+  const sum=t=>per[t].reduce((x,g)=>[x[0]+g.s,x[1]+g.f],[0,0]);
+  const [sa,fa]=sum(AID),[sh,fh]=sum(HID);
+  // A FRACTION, NEVER A RATE, so no minimum-n threshold is needed to be honest
+  // -- the same rule the goaltender card already states in its own comment.
+  const say=t=>per[t].length?`${t===AID?AAB:HAB} ${per[t].map(g=>g.nm).join(' then ')}`:null;
+  const who=[say(AID),say(HID)].filter(Boolean).join(' · ');
+  return {wide:true,a:fa?`${sa} of ${fa}`:'—',k:'SAVES BY',h:fh?`${sh} of ${fh}`:'—',
+   /* ⭐ THE NAMES ONLY, AND THE FLIP MOVED TO THE CAPTION. This was the one
+      sentence in the box whose LENGTH IS DATA -- two goaltender names, plus
+      "then X" on a relief -- so it ran to three lines at 360 and 390 and was
+      CLIPPED by the fixed height while the other five fitted in two. No amount
+      of trimming a constant fixes a variable.
+      §27.1 already says where each half belongs: the caption under the selector
+      says what the LENS IS, and "a save is against the other club's shot" is a
+      property of the lens, true before the puck drops. The box says what is true
+      NOW, which is who is in net -- and that is also where relief shows up, in
+      the 12.2% of games that use more than two goaltenders. */
+   n:who||'No shot has reached a goaltender yet.'};}
+ if(id==='whistle'){
+  const W=whistle.reduce(sl,CTX), n=W.whistles.length, w=latest(W);
+  const nm=w?(WHY[w.rsn]&&WHY[w.rsn].name)||w.rsn:null;
+  return {a:'',k:`${n} STOPPAGE${n===1?'':'S'}`,h:'',
+   n:nm?`Most recently: ${nm}. A stoppage names a rule and no club, so this row has no sides.`
+       :'Play has not stopped yet in what you have watched.'};}
+ return none;}
+/** The centre label alone, for the pre-game frame where there is nothing to count. */
+const LBK={corsi:()=>'SHOT ATTEMPTS',slot:()=>'SHOTS FROM THE SLOT',
+ blocked:()=>'ATTEMPTS BLOCKED',goaltending:()=>'SAVES BY',whistle:()=>'STOPPAGES'};
 function syncPick(){
  if(picking)return;
  const on=PICKS.filter(([,get])=>get()).map(([id])=>id);
@@ -2028,10 +2128,18 @@ function syncPick(){
  // `?layer=corsi,slot` is a URL anyone can type. The row shows the FIRST in
  // this file's order rather than showing nothing, because a control that goes
  // blank is a control that says the page is off when it is not.
- const cur=on.length?on[0]:'none';
+ const cur=whichPick();
  document.querySelectorAll('#rg .pk').forEach(b=>
   b.setAttribute('aria-checked',String(b.dataset.l===cur)));
- const cap=$('lcap');if(cap)cap.innerHTML=capFor(cur);}
+ const cap=$('lcap');if(cap)cap.innerHTML=capFor(cur);
+ // The box is a view of the same choice, so it is refreshed from the same
+ // place. It also refreshes every frame from `render()`; this call is what
+ // makes a TOGGLE change it without waiting for the next event.
+ drawLBox();}
+/** The one active layer, or `none`. The single reader of the five booleans. */
+function whichPick(){
+ const on=PICKS.filter(([,get])=>get()).map(([id])=>id);
+ return on.length?on[0]:'none';}
 document.querySelectorAll('#rg .pk').forEach(b=>{
  b.onclick=()=>pick(b.dataset.l);});
 /* ⭐ A LAYER BUTTON IS A ROW NOW, SO ITS LABEL IS NOT ITS textContent.
