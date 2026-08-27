@@ -377,12 +377,19 @@ test('the restart faceoff says which rule it is restarting after', () => {
   const said = [...seen.matchAll(/ after ([^<·]+)/g)].map(m => m[1].trim());
   assert.ok(said.length > 0, 'no restart ever named the rule that caused it');
 
-  // Every reason it named must be one the vocabulary actually holds — a raw
-  // feed key leaking onto the ice is the defect WHY was built to end.
-  const names = new Set(Object.values(WHY).map(v => v.name).filter(Boolean));
+  /* Every reason it named must be one the vocabulary actually holds — a raw
+     feed key leaking onto the ice is the defect WHY was built to end.
+
+     ⭐ AND IT IS THE `clause` FORM, NOT `name`. `name` is a HEADING; composed
+     into "Won the faceoff after …" it shipped "after Goaltender covered the
+     puck" — a capital mid-sentence and a missing article, on all fifteen
+     reasons, found by looking at a screenshot. No test could see it: this one
+     compared the label against the same `name` the label was built from, which
+     is a mirror. It now compares against the form written for THIS position. */
+  const clauses = new Set(Object.values(WHY).map(v => v.clause).filter(Boolean));
   for (const s of said) {
-    assert.ok(names.has(s) || s === 'an unrecorded stoppage',
-              `the ice named "${s}", which is not a written reason`);
+    assert.ok(clauses.has(s) || s === 'an unrecorded stoppage',
+              `the ice named "${s}", which is not a written clause`);
   }
 
   // AND ONLY THE FACEOFFS THAT ACTUALLY RESTART A WHISTLE. Taking "the most

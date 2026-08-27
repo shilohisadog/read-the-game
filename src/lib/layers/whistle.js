@@ -108,9 +108,31 @@ function linesFor(rsn, x) {
  * the guess this project refuses everywhere else. The fallback is the honest
  * branch, not the default one.
  */
+/**
+ * ⭐ THREE GRAMMATICAL FORMS, EACH AUTHORED. `name` is a HEADING — it starts a
+ * card and a legend entry. `say` is the full sentence with its rule. `clause`
+ * is the mid-sentence form, and it exists because the on-ice label composes
+ * "Won the faceoff after …" and every `name` read wrong inside it:
+ *
+ *     VGK · Won the faceoff after Goaltender covered the puck
+ *
+ * A capital in the middle of a sentence and a missing article, on all fifteen.
+ * This is the de-hyphenation defect one grammatical position over: a string
+ * written for one slot, reused in another, where it is nearly right and
+ * therefore ships. `say` already exists for the same reason — it was added
+ * when `name` turned out to be the wrong LENGTH for a panel — so this table's
+ * own history is the argument for authoring a third form rather than deriving
+ * one. Lowercasing `name` would fix eight of fifteen and leave "after icing"
+ * and "after goaltender covered the puck" beside each other.
+ *
+ * ⚠️ EVERY ENTRY WITH A `name` MUST HAVE A `clause`, checked in
+ * test/render-whistle.test.js — an entry added without one would fall back to
+ * the heading and reintroduce exactly this.
+ */
 export const WHY = {
   icing: {
     name: 'Icing',
+    clause: 'the puck was iced',
     say: 'Icing — the puck was sent from behind the centre line all the way past '
        + 'the far goal line untouched. The faceoff comes back to the offending '
        + 'end, and that team may not change players before it.',
@@ -118,6 +140,7 @@ export const WHY = {
   },
   offside: {
     name: 'Offside',
+    clause: 'an offside call',
     // "the faceoff goes back outside" WAS SHIPPED AND IS WRONG ABOUT ONE OFFSIDE
     // IN TEN. Measured over 1,094 offsides that restart immediately, across 240
     // games: 89.8% at the neutral-zone dot outside the blue line, 5.3% at centre
@@ -134,70 +157,83 @@ export const WHY = {
   },
   'goalie-stopped-after-sog': {
     name: 'Goaltender covered the puck',
+    clause: 'the goaltender covered the puck',
     say: 'The goaltender caught or covered the puck after a shot, which stops play '
        + 'and brings a faceoff.',
     from: 'field: rsn',
   },
   'puck-frozen': {
     name: 'Puck frozen',
+    clause: 'the puck was frozen',
     say: 'The puck was covered and play stopped.',
     from: 'field: rsn',
   },
   'skater-puck-frozen': {
     name: 'Puck frozen by a skater',
+    clause: 'a skater froze the puck',
     say: 'A skater, not the goaltender, froze the puck against the boards or the '
        + 'net, and play stopped.',
     from: 'field: rsn',
   },
   'puck-in-netting': {
     name: 'Puck into the netting',
+    clause: 'the puck went into the netting',
     say: 'The puck was shot out of play into the netting above the glass.',
     from: 'field: rsn',
   },
   'puck-in-crowd': {
     name: 'Puck into the crowd',
+    clause: 'the puck went into the crowd',
     say: 'The puck left the ice into the crowd.',
     from: 'field: rsn',
   },
   'puck-in-benches': {
     name: 'Puck into a bench',
+    clause: 'the puck went into a bench',
     say: 'The puck went into a player bench and play stopped.',
     from: 'field: rsn',
   },
   'hand-pass': {
     name: 'Hand pass',
+    clause: 'a hand pass',
     say: 'Hand pass — the puck was directed to a teammate with a hand in a zone '
        + 'where that is not allowed, so possession does not carry.',
     from: 'rule: NHL Rule 79',
   },
   'high-stick': {
     name: 'High stick',
+    clause: 'a high stick',
     say: 'The puck was played with a stick above shoulder height, which is not '
        + 'allowed, so play stopped.',
     from: 'rule: NHL Rule 80',
   },
   'net-dislodged-defensive-skater': {
     name: 'Net off its moorings',
+    clause: 'the net came off its moorings',
     say: 'The net came off its moorings, and play stopped.',
     from: 'field: rsn',
   },
   'referee-or-linesman': {
     name: 'Puck hit an official',
+    clause: 'the puck hit an official',
     say: 'The puck struck an official, and play stopped.',
     from: 'field: rsn',
   },
   'tv-timeout': {
     name: 'TV timeout',
+    clause: 'a television timeout',
     say: 'A scheduled broadcast break. Play was already stopped.',
     from: 'field: rsn',
   },
   'video-review': {
     name: 'Video review',
+    clause: 'a video review',
     say: 'The play was reviewed on video before the result was confirmed.',
     from: 'field: rsn',
   },
   'delayed-penalty': {
     name: 'Delayed penalty',
+    clause: 'a delayed penalty',
     say: 'A penalty has been signalled and play continues until the offending team '
        + 'touches the puck — which is why the arm stays up and no whistle comes '
        + 'yet. The other side may pull its goaltender for an extra skater until '

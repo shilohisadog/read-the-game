@@ -1470,7 +1470,16 @@ function drawLabel(e){const g=$('labels');const p=place(e);if(!p){g.innerHTML=''
    if(!whistleOn||e.type!=='faceoff')return '';
    const w=whistle.reduce(upto(i),CTX).whistles.find(x=>x.spotId===EVI[i]);
    if(!w)return '';
-   return ' after '+(w.rsn?RSN(w.rsn):'an unrecorded stoppage');})();
+   /* ⭐ THE CLAUSE FORM, NOT THE HEADING. `RSN` returns `WHY[].name`, which is
+      written to START something -- a card, a legend row -- so composing it here
+      produced "Won the faceoff after Goaltender covered the puck": a capital
+      mid-sentence and a missing article, on all fifteen reasons. Caught by
+      looking at a screenshot; no test could see it, because every one of them
+      was comparing the label to the same `name` the label was building from.
+      Falls back to the heading only for a reason we have never seen, which is
+      the same honest branch `RSN` itself takes. */
+   const c=w.rsn&&WHY[w.rsn]&&WHY[w.rsn].clause;
+   return ' after '+(c||(w.rsn?RSN(w.rsn):'an unrecorded stoppage'));})();
  // WITH THE LAYER ON, THE LABEL NAMES THE BLOCKER, and the reason is the mark's
  // position rather than a preference for one name over the other. A blocked
  // shot's (x, y) is the BLOCK POINT -- where the puck was stopped, between the

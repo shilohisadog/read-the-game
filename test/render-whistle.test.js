@@ -81,12 +81,39 @@ test('every known stoppage is CALLED something, on every surface that shows one'
   // to the vocabulary without a name is caught rather than missed.
   const named = Object.entries(WHY).filter(([, v]) => v.name);
   assert.ok(named.length >= 12, `WHY carries ${named.length} written names`);
+
+  /* ⭐ AND A THIRD GRAMMATICAL FORM, GUARDED. `name` starts a card; `clause`
+     goes mid-sentence, because the on-ice label composes "Won the faceoff
+     after …". An entry added with a name and no clause falls back to the
+     heading and reintroduces "after Goaltender covered the puck" for that one
+     reason only — invisible in every game that does not contain it, which is
+     precisely how a vocabulary gap hides. */
+  for (const [key, v] of named) {
+    assert.ok(v.clause, `${key} has a heading but no mid-sentence form`);
+    assert.match(v.clause, /^[a-z]/,
+      `${key}'s clause starts with a capital, so it reads as a heading again`);
+    assert.doesNotMatch(v.clause, /\.$/, `${key}'s clause ends in a full stop`);
+  }
   for (const [key, v] of named) {
     if (!seen.includes(v.name) && !seen.includes(key.replace(/-/g, ' '))) continue;
     assert.ok(seen.includes(v.name),
       `${key} reached a surface as the raw key rather than "${v.name}"`);
-    assert.ok(!seen.includes(key.replace(/-/g, ' ')),
-      `${key} still renders as the raw feed key somewhere`);
+    /* ⚠️ AND THIS CHECK CAN ONLY SEE THE DEFECT WHERE THE DEFECT IS VISIBLE.
+       "The de-hyphenated key appears" was a proxy for "a machine string reached
+       a reader", and it holds only while the de-hyphenated key differs from the
+       copy we authored. It does not for `offside` (the clause reads "an offside
+       call") or `hand-pass` ("a hand pass") — there, the words being on screen
+       is the copy working, not leaking. Asserting it anyway is a check that
+       cannot tell its subject from its background, and it went red on correct
+       copy the moment the clause form landed.
+       So it applies where it discriminates, which includes the case it was
+       written for: `goalie-stopped-after-sog` de-hyphenates to "goalie stopped
+       after sog" and appears in no authored string. */
+    const raw = key.replace(/-/g, ' ');
+    const authored = `${v.name} ${v.clause || ''} ${v.say || ''}`.toLowerCase();
+    if (!authored.includes(raw))
+      assert.ok(!seen.includes(raw),
+        `${key} still renders as the raw feed key somewhere`);
   }
   // And the specific one from the screenshot, so this cannot pass vacuously on a
   // game that happens to contain none of the ugly keys.
