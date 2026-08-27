@@ -959,6 +959,19 @@
    390, and a separator drawn as `::before` on `Attempts` would hang at the left
    edge of whatever line that chip started. A flex item wraps WITH the chips and
    `:first-child`/`:last-child` on a line cannot strand it. */
+/* ⭐ THE PRESS CONFIRMS ITSELF -- a ring that leaves the chip.
+   The distance is the reason (see `ack()` in app.js): at 390 the layer's output
+   is off screen when you press, so the only thing that can report the press is
+   the chip. It expands OUTWARD and fades, which reads as "sent" rather than
+   "selected" -- the stateful colour change from `aria-checked` is already doing
+   "selected", and doing it on the element you were looking at, which is what
+   made it unreadable as feedback.
+   `--flag` is the page's own attention colour, the one the counters bump to, so
+   this borrows an existing vocabulary rather than introducing a sixth. */
+#rg .pk.ack{animation:pkack .5s ease-out}
+@keyframes pkack{
+ 0%{box-shadow:0 0 0 0 rgba(217,102,43,.55)}
+ 100%{box-shadow:0 0 0 9px rgba(217,102,43,0)}}
 #rg .pksep{flex:0 0 1px;align-self:stretch;background:var(--edge);margin:4px 3px}
 #rg.preview .pickrow{display:none!important}
 

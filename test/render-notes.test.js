@@ -265,7 +265,24 @@ test('the caption says what the chosen lens is, in the words the rows carry', ()
     const lds = /<span class="lds">([^<]+)</.exec(row)[1];
     const lon = /<span class="lon">([^<]+)</.exec(row)[1];
     assert.ok(text().includes(lds), `${token}'s caption does not carry the row's description`);
-    assert.ok(text().includes(lon), `${token}'s caption does not say what appears on the ice`);
+
+    /* ⏸ AND THE "WHAT IT SHOWS" CLAUSE IS ONLY TRUE WHILE ITS SUBJECT IS ON
+       SCREEN. Slot, Blocked and Stoppages still mark the ICE, so their
+       sentences hold. Attempts and Goaltending had NO output but the parked
+       panel, so the caption was telling a viewer to watch counters that are not
+       drawn — found by looking at a 390px render while every test passed.
+
+       ⭐ THE EXPECTED SET IS STATED HERE AS A CLAIM ABOUT THE DESIGN — which
+       layers still draw something — and the app keeps its own `OUTPUT_PARKED`.
+       Two independent statements of one fact; if they drift, this goes red.
+       Reading the app's set would make this a mirror (H1). */
+    const stillDraws = !['corsi', 'goaltending'].includes(token);
+    if (stillDraws)
+      assert.ok(text().includes(lon), `${token}'s caption does not say what appears on the ice`);
+    else
+      assert.ok(!text().includes(lon),
+        `${token}'s caption still promises a display that is parked — `
+        + 'it tells the viewer to watch something that is not drawn');
 
     // ⚠️ AND THE NAME IS THE CHIP'S, NOT THE ROW'S. The parked rows still carry
     // the names they had when Kevin trimmed them — `Corsi`, `Slot shots` — while
@@ -344,6 +361,94 @@ test('the layer displays are parked, by a rule that has to come last', () => {
   // Kevin kept, and absence from a list is invisible in review.
   assert.doesNotMatch(park[0], /\.pickrow|\.pk\b|\.lcap/,
     'the selector or its caption got parked along with the displays');
+});
+
+/**
+ * ⭐ THE CHIP CONFIRMS ITS OWN PRESS — and only its own press.
+ *
+ * CHENG: at 390 the box under the ice and the selector cannot share a screen, so
+ * a toggle changes something you cannot see. Kevin: "I like the chip briefly
+ * confirming." `aria-checked` already recolours the chip, which is why that is
+ * NOT the answer — a stateful change on the element under your thumb reads as
+ * "selected", not as "something happened", so the confirmation is transient.
+ *
+ * THREE CLAIMS, EACH WHERE ONLY IT CAN BE (H2). The class lands on the chip that
+ * was pressed; it lands on NOTHING at boot, because a page that pulses a control
+ * nobody touched is asserting an interaction; and it restarts, because re-adding
+ * a class an element already carries does not replay an animation.
+ */
+/**
+ * ⏸ AND THE SUPPRESSION HAS AN END CONDITION, ASSERTED RATHER THAN INTENDED.
+ *
+ * `OUTPUT_PARKED` exists only because two layers currently have nothing on
+ * screen. The box under the ice (docs/below-the-rink-2.md §31) gives both an
+ * output, and the parking rule for `.counters` goes in the same commit. A
+ * temporary set with no expiry is how a workaround becomes the design.
+ */
+test('the muted-caption set empties when the displays come back', () => {
+  const parked = /#rg\.corsi \.counters\{display:none\}|#rg\.corsi \.counters,/.test(
+    PAGE_CSS.replace(/\/\*[\s\S]*?\*\//g, ' '));
+  const set = /const OUTPUT_PARKED=new Set\(\[([^\]]*)\]\)/.exec(app);
+  assert.ok(set, 'OUTPUT_PARKED is gone — if the displays returned, delete this test too');
+  const members = set[1].split(',').map(x => x.trim()).filter(Boolean);
+  if (parked)
+    assert.deepEqual(members, ["'corsi'", "'goaltending'"],
+      'the layers with no visible output are not the ones being muted');
+  else
+    assert.deepEqual(members, [],
+      'the counters are back on screen and the caption is still refusing to mention them');
+});
+
+test('pressing a chip acknowledges on that chip, and only on a press', () => {
+  const a = boot();
+
+  // At boot the selector is synced — and nothing may be acknowledged.
+  assert.equal(a.$$('#rg .pk').filter(b => b.classList.contains('ack')).length, 0,
+    'a chip is acknowledging a press that never happened');
+
+  a.$$('#rg .pk').find(b => b.dataset.l === 'slot').click();
+  const acked = a.$$('#rg .pk').filter(b => b.classList.contains('ack'));
+  assert.deepEqual(acked.map(b => b.dataset.l), ['slot'],
+    'the acknowledgement is missing, or it landed on a chip nobody pressed');
+
+  // ⭐ AND IT RESTARTS. Pressing a DIFFERENT chip must acknowledge that one; the
+  // remove/reflow/re-add is the only reason a second press animates at all.
+  a.$$('#rg .pk').find(b => b.dataset.l === 'corsi').click();
+  assert.deepEqual(
+    a.$$('#rg .pk').filter(b => b.classList.contains('ack')).map(b => b.dataset.l),
+    ['corsi'], 'the acknowledgement did not move to the chip that was pressed');
+
+  assert.match(PAGE_CSS, /#rg \.pk\.ack\{animation:/,
+    'nothing in the stylesheet makes the acknowledgement visible');
+});
+
+/**
+ * ⛔ AND THE CONFIRMATION IS NOT ALLOWED TO BE A LABEL CHANGE.
+ *
+ * "Or saying done" was one of Kevin's suggestions and it is ruled out on a
+ * mechanical ground rather than a taste one: `capFor()` composes the caption
+ * from the chip's own `textContent`, which is §27.2 — the caption's words are
+ * READ from the page and never retyped. A chip that said "Done" would make the
+ * caption read "Done — every shot attempt the league recorded".
+ *
+ * So this pins the coupling itself. If the caption ever stops reading the chip,
+ * this test says so and the constraint can be revisited deliberately.
+ */
+test('the caption reads the chip, so the chip may not restyle its own text', () => {
+  const a = boot();
+  a.$$('#rg .pk').find(b => b.dataset.l === 'corsi').click();
+  const chip = a.$$('#rg .pk').find(b => b.dataset.l === 'corsi');
+  assert.ok(chip.textContent, 'the chip has no label — this check has lost its subject');
+  assert.ok(a.$('lcap').innerHTML.includes(chip.textContent),
+    'the caption no longer quotes the chip, so the label coupling has gone');
+
+  const body = /function ack\(want\)\{[\s\S]*?add\('ack'\);\}/.exec(app);
+  assert.ok(body, 'ack() is gone, or it no longer ends by adding the class');
+  assert.ok(body[0].length < 900,
+    'the matched body ran past the function — a regex that over-reaches would '
+    + 'then be reporting on whatever function comes next');
+  assert.doesNotMatch(body[0], /textContent|innerHTML/,
+    'ack() writes text — that is the change capFor() would then quote into the caption');
 });
 
 test('every selector chip is the same size', () => {

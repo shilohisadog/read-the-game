@@ -1909,7 +1909,50 @@ function pick(want){
  // per press, each time from a state no reader ever sees.
  if(picking)return; picking=true;
  for(const [id,get,set] of PICKS){const on=id===want; if(get()!==on)set(on);}
- picking=false; syncPick();}
+ picking=false; syncPick(); ack(want);}
+/**
+ * ⭐ THE CHIP CONFIRMS ITS OWN PRESS, and it exists because of a distance.
+ *
+ * CHENG, on the box under the ice: at 390 the box and the selector cannot be on
+ * screen together, so the first toggle produces NO VISIBLE FEEDBACK NEAR YOUR
+ * THUMB -- the layer's output changes 300px above the fold you are looking at.
+ * Kevin: "I like the chip briefly confirming."
+ *
+ * ⭐ AND `aria-checked` ALREADY CHANGES THE CHIP'S COLOUR, which is exactly why
+ * that is not the answer. A stateful change on the element you were already
+ * looking at when you pressed it reads as "this button is selected", not as
+ * "something happened". The confirmation has to be TRANSIENT to be a report
+ * about an event rather than a description of a state.
+ *
+ * ⛔ AND IT IS NOT A LABEL CHANGE, on a mechanical ground rather than taste.
+ * `capFor()` composes the caption from `chip.textContent` -- that is the §27.2
+ * rule that the caption's words are READ from the page and never retyped -- so a
+ * chip that said "Done" would make the caption read "Done — every shot attempt
+ * the league recorded". The coupling is real, so the confirmation must not touch
+ * the text. `test/render-notes.test.js` pins it.
+ *
+ * ONLY ON A PRESS. `syncPick()` also runs at boot and after a deep link, and a
+ * page that pulses a control nobody touched is claiming an interaction happened.
+ * So this is called from `pick()` and from nowhere else.
+ *
+ * Reduced motion is handled globally -- `#rg *{animation:none!important}` under
+ * `prefers-reduced-motion:reduce` -- so this degrades to no feedback rather than
+ * to a jarring one, which is the correct degradation for a confirmation.
+ */
+function ack(want){
+ const chips=document.querySelectorAll('#rg .pk');
+ // ⚠️ CLEARED FROM EVERY CHIP, NOT JUST RE-ADDED TO THIS ONE. Removing it only
+ // from the target left the previously-pressed chip carrying `ack` for the rest
+ // of the session -- inert today, because the animation has already run to a
+ // transparent ring and does not repeat, but a class that says "just pressed"
+ // sitting on a chip nobody has touched in ten minutes is a lie waiting for the
+ // next rule that reads it. Found by a test asserting the set, not the target.
+ chips.forEach(b=>b.classList.remove('ack'));
+ const chip=[...chips].find(b=>b.dataset&&b.dataset.l===want);
+ if(!chip)return;
+ // Force a reflow between remove and add: re-adding a class an element already
+ // carries does not restart an animation. Same three lines as `flash()`.
+ void chip.offsetWidth;chip.classList.add('ack');}
 /* ⭐ WHERE THE LAYER'S INFORMATION LIVES — and the selector answered it.
    Kevin, 2026-08-27: "I think we now can figure out where the layer information
    lives (once the toggle is selected)..... I've (we've) struggled with that."
@@ -1955,8 +1998,29 @@ function capFor(id){
  // is the one the sentence has to open with.
  const chip=document.querySelector(`#rg .pk[data-l="${id}"]`);
  const lds=row.querySelector('.lds'), lon=row.querySelector('.lon');
- return `<b>${chip?chip.textContent:''}</b> — ${lds?lds.textContent:''}. `
-       +`<span class="cap2">${lon?lon.textContent:''}</span>`;}
+ /* ⏸ AND THE SECOND CLAUSE IS SUPPRESSED WHILE ITS SUBJECT IS PARKED.
+    `.lon` says what the layer PUTS ON SCREEN, and for two layers that thing is
+    currently hidden -- so the caption was instructing a viewer to watch
+    counters that are not drawn ("the counters above the rink fill in as the
+    replay runs") and to read goaltender cards that do not exist. Found by
+    LOOKING at a 390px render; every test passed, because the caption faithfully
+    quoted a row that faithfully described a display nobody could see.
+
+    ⭐ THE SET IS THE LAYERS WHOSE ONLY OUTPUT WAS THE PARKED PANEL, which is
+    not derivable from the stylesheet: `.hint`, `.whistlepanel` and
+    `.blockpanel` are parked too, but Slot, Stoppages and Blocked all still mark
+    the ICE, so their sentences remain true. `render-notes.test.js` pins both
+    halves against the rows themselves.
+
+    ⚠️ THIS IS TEMPORARY AND ITS END CONDITION IS NAMED: the box under the ice
+    (docs/below-the-rink-2.md §31) restores an output for both, and this set
+    empties in the same commit. A test fails if it is still populated when the
+    parking rule for `.counters` goes. */
+ const mute=OUTPUT_PARKED.has(id);
+ return `<b>${chip?chip.textContent:''}</b> — ${lds?lds.textContent:''}.`
+       +(mute?'':` <span class="cap2">${lon?lon.textContent:''}</span>`);}
+/** Layers whose entire display is parked, so their "what it shows" clause lies. */
+const OUTPUT_PARKED=new Set(['corsi','goaltending']);
 function syncPick(){
  if(picking)return;
  const on=PICKS.filter(([,get])=>get()).map(([id])=>id);
