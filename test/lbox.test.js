@@ -542,3 +542,42 @@ test('each row carries the same name as its chip', () => {
       `the row calls this layer "${rowName}" and the chip calls it "${chip}"`);
   }
 });
+
+/**
+ * ⭐ ATTRIBUTION AND LOCATION ARE DIFFERENT PROBLEMS, and the slot row said one
+ * thing that implied the other.
+ *
+ * CHENG: the card read "Credited to the club that shot" beside "Blocked
+ * attempts are excluded, because the coordinate the feed records is where the
+ * puck STOPPED" — which together read as *we do not know whose it was*. But
+ * Corsi credits a blocked shot to the shooter, verified 44 of 44 against
+ * `rosterSpots`, and Attempts counts them. So a reader toggling Attempts → Slot
+ * sees the same events counted in one and excluded from the other, with an
+ * explanation that names the wrong reason. We know WHO shot it; we do not know
+ * WHERE FROM.
+ */
+test('the slot row separates whose shot it was from where it was taken', () => {
+  const row = app.match(/<button class="lrow"[^>]*data-pick="slot"[\s\S]*?<\/button>/)[0];
+  const lat = /<span class="lat">([^<]*)</.exec(row)[1];
+  assert.match(lat, /who shot it, but not from where/i,
+    'the slot exclusion still reads as though the shooter were unknown, which '
+    + 'contradicts Attempts counting the same events for that shooter');
+});
+
+/**
+ * ⭐ NO SHOUTING IN RUNNING PROSE. CHENG: "this is the only all-caps word in
+ * running prose, and it is in the panel that is meant to read as careful."
+ * Right — and it was in four of the five rows, not the one he could see.
+ * Emphasis on this page is weight or colour; these strings reach the panel
+ * through `textContent`, which carries no markup, so the answer is to write
+ * sentences that do not need it.
+ */
+test('no attribution line shouts', () => {
+  for (const token of ['corsi', 'slot', 'blocked', 'goaltending', 'whistle']) {
+    const row = app.match(new RegExp(`<button class="lrow"[^>]*data-pick="${token}"[\\s\\S]*?</button>`))[0];
+    const lat = /<span class="lat">([^<]*)</.exec(row)[1];
+    const shouted = lat.match(/\b[A-Z]{2,}\b/g) || [];
+    assert.deepEqual(shouted, [],
+      `${token}'s attribution line shouts: ${shouted.join(", ")}`);
+  }
+});
