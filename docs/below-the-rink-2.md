@@ -2224,3 +2224,151 @@ numerator is a single-digit count is reported as the count.
 *"Ullmark relieved Levi at 12:04"*, *"last: icing"* and the even-strength note
 *"49 attempts have dropped out so far"* — three sentences of different kinds in
 one slot, which is the thing that has gone wrong before.
+
+## 32. The box was built, and then the ledger was demoted
+
+Everything in §31 shipped, plus two things §31 did not anticipate. Commits
+`a5af829..a3021dd`, all gates + deploy green. **766 JS + 180 Python.**
+
+### 32.1 What the page holds now
+
+    scoreboard · rink · [ LAYER BOX ] · transport
+    WATCHING  [Just events] │ [Attempts 59][Slot 24][Blocked 15][Goaltending 27][Stoppages 36]
+    caption · [ work panel, behind a button ] · Other games
+
+**The layer box** is `--lboxh:120px`, one height across every state and width,
+holding `away | WHAT IS COUNTED | home`, a line naming the population or
+condition, per-club sub-lines where a layer has something to say about each
+club, and the `Show me the work` control.
+
+⚠️ **`--lboxh` IS MEASURED, NOT CHOSEN**, and it was guessed wrong three times
+before it was measured once. Release it to `height:auto`, sweep six layer states
+× three widths × two games, take the worst case. Re-measure after any change to
+the box's content; the deploy gate is the backstop (zero clipped, one height).
+
+### 32.2 ⭐ The rule that kept costing money: constants in the caption, variables in the box
+
+Paid for three times in one day — the goaltending flip, the blocked
+attribution, the stoppage's "names a rule and never a team". **A fixed box
+cannot hold a constant sentence AND an unbounded one**, and §27.1 already said
+where each belongs: the caption says what the LENS IS (true before the puck
+drops), the box says what is true NOW.
+
+⚠️ **And three of the four box defects were a LABEL or a FIGURE outgrowing the
+row, not the sentence everyone looks at** — twice after a round of shortening
+copy that was never the problem. `ATTEMPTS THAT NEVER ARRIVED` wrapped at 209px
+in a 293px box; `22 of 22` is four times the string a count is.
+
+### 32.3 ⛔ §31.4b was superseded by the sport, and by the layer's own audit
+
+Kevin: *"blocked shots is quite a common stat… all of them attribute the block
+to the defending team."* Right — and `docs/blocked-shots-layer.md` §6 already
+specified the blocker is named and teammate blocks excluded, which is only
+meaningful under blocker credit. **A consistency rule invented the previous day
+overrode a document that had already ruled.**
+
+⚠️ And the argument defending it was aimed at the wrong target: the 81.7%
+inversion is what §5 of that audit rules on, and what §5 forbids is publishing a
+blocks-leader WIN RATE. We publish none.
+
+⭐ **§31.4c, the rule that replaced it: a column carries the club hockey would
+put it under.** Shooter for attempts and slot, blocker for blocks, a save
+against the other club's shot. **Agreeing with the sport beats agreeing with
+ourselves.**
+
+### 32.4 ⭐ The ledger was never a teaching surface, and now it stops pretending
+
+Kevin: *"what is the Not Counted column teaching? That faceoffs, giveaways,
+period starts are NOT shots from the slot? I don't think there's much value
+there."* Measured: **100% of the exclusions for Attempts, Goaltending and
+Stoppages are events that were never candidates.**
+
+CHENG's rule decides what stays: **an exclusion teaches when a viewer could
+plausibly have expected it to COUNT** — the exact mirror of the `surprising`
+admission rule. It is not derivable from the events but it IS derivable from the
+DIMENSION that rejected them.
+
+⭐ **THE DIMENSION VOCABULARY, and it is now load-bearing:**
+
+    play      outside play at all (the shootout)
+    type      a different kind of event entirely      → collapses to one line
+    strength  the wrong situation                     → promoted
+    limit     a real candidate the FEED cannot place  → promoted
+    geometry  a real candidate that failed OUR rule   → promoted
+
+⭐ **A blocked shot is excluded by a LIMIT, not by its type** (CHENG: *"two of
+these are hockey, one is us"*). Labelling it `type` filed the most interesting
+exclusion on the page in with the faceoffs.
+
+⚠️ **Conservation is not weakened, and must not be** (Doctrine §9). The footer
+closes over three buckets instead of two; two smoke tests were rewritten to
+check the new arithmetic rather than dropped.
+
+⚠️ **AND THE SLOT LEDGER WAS A 3,176px WALL.** 276 exclusions grouped into 49
+rows, 32 appearing exactly once, because each named THIS shot's distance.
+⭐ **A reason that names a RULE groups; a reason that names the EVENT does not.**
+`why` is the rule, `detail` is the measurement, one example per group — so
+CHENG's *"36 against 33 teaches the rule better than the rule statement does"*
+survives once per rule instead of once per shot. 49 rows → 14, singletons → 1.
+
+### 32.5 ⭐ The teaching moved to the chips — a live count per lens
+
+Kevin: *"an event occurs on the rink… flash the control button, which indicates
+the event applied to that layer."* CHENG's improvement is what shipped: **a
+count, not a flash.** It reports where a pulse invites (a glowing button says
+*press me*), it PERSISTS so `prefers-reduced-motion` gets the whole lesson
+rather than none, and it is cumulative.
+
+⛔ **"The most specific layer lights" was proposed and REFUTED by census.** Over
+**262 games and 69,661 visited frames**: Attempts *counts* 45.0% of frames and
+would have *flashed* on 5.8% — the chip and the counter disagreeing 7.8-fold
+about one quantity. It also asserts the lenses are disjoint when they are not.
+
+    per lens, share of visited frames it counts
+      Attempts 45.0%   Goaltending 21.7%   Slot 15.4%   Blocked 12.3%
+      nothing at all 55.0%       Stoppages 0% of frames the transport VISITS
+
+⭐ **The counts teach containment for free** — Attempts ticks whenever any other
+lens ticks and at other times too. Verified as a PROPERTY over every fixture
+game: every Slot, Blocked and Goaltending event is also an Attempt. That is why
+CHENG's two-strength flash became unnecessary: the frequency IS the information.
+
+⭐ **A layer's signal must fire on a frame the transport VISITS.** Stoppages
+counts 0% of visited frames because its events are exactly the ones `SKIP`
+removes. Its count fires at the restart faceoff. Anything else is a signal
+nobody can receive — the same class as the caption stranded inside `display:none`.
+
+⚠️ **The count could not live in the chip's text.** `capFor` composes the caption
+from `chip.textContent`, so it would have shipped *"**Slot33** — attempts from
+within 33 ft"*. The label moved to `.pkl`. **Third time that seam has decided a
+design** (it also ruled out a "Done" label on the press acknowledgement).
+
+**Measured: the counts cost ZERO extra rows** at 360, 390, 700 and 1100 — the
+chips already carried `min-width:124px` against a 118px longest label.
+
+⚠️ **AND IT REOPENS §31.6.** That section refused a metric in the base view's
+box because *`Just events` means no metric*. Five live counters are five numbers
+on screen in the base view. Kevin ruled to build it and it reads as informative
+to him; the distinction held is that **the box is the output slot (a number
+there claims to be what you are watching) and a chip count is a menu with
+prices**. The `Just events` chip carries no count, and a test forbids one.
+
+### 32.6 What is open
+
+* **The default playback speed wants adjusting again** (Kevin, 2026-08-27,
+  after the counts landed). Not measured.
+* **Per-game distributions in `measure.mjs`** — nothing in `measures.json` says
+  whether 94 attempts or 55 stoppages is a normal night, so no surface can say
+  a game was unusual. Blocks both of the next two.
+* **The per-game summary**, growing out of the verdict card (§31.7b ladder).
+* **The measurements page**, approved and parked, also the natural home for the
+  three per-game SHA-256 provenance digests, which ship and are invisible.
+* **Clicking a ledger row to seek to that event** — Kevin's idea, and
+  `docs/event-index.md` §7 already rules what clicking should do (stop, seek,
+  re-announce, stay paused) and names the wrinkle: `render`'s `newest` flag
+  drives both the caption and the counter bump, and `prevA/prevH` go stale after
+  a jump. **Measured: about a third of rows cannot be shown**, because
+  `stoppage`, `period-start`, `period-end`, `game-end` and `delayed-penalty` are
+  in `SKIP`. A row is clickable exactly when the page has a moment for it.
+* **The near-miss as a visual** — a shot that nearly qualified could mark
+  differently on the ice. Untested idea.

@@ -75,6 +75,25 @@ reported as `200` too. **The instrument could not separate "fetched again" from
 
 ---
 
+## A2. The layer surface — BUILT 2026-08-27 (second half)
+
+`a5af829..a3021dd`, 18 commits, all green. Full record in
+`docs/below-the-rink-2.md` §31–§32. What a reader needs from here:
+
+| | state |
+|---|---|
+| **The layer box** | ✅ under the ice, `--lboxh:120px`, one height across every layer and width. `away │ WHAT IS COUNTED │ home` + a population line + per-club sub-lines + the work control. **The height is MEASURED, never chosen** — §32.1. |
+| **Show me the work** | ✅ back, ONE panel driven by the layer contract rather than five. Behind the button, below the caption. All five layers' ledgers conserve. |
+| **The ledger's shape** | ✅ near-misses promoted with a measurement each, category non-members collapsed to one line, conservation closing over three buckets. **It is the audit surface, not the teaching one.** |
+| **Chip counts** | ✅ a live count per lens, 0 pre-game. Teaches containment by observation. **Costs zero rows at 360.** |
+| **Attribution** | ✅ every layer has a `.lat` line the work panel reads. §31.4c: a column carries the club **hockey** would put it under. |
+
+⚠️ **This reopened U-nothing and closed nothing on this list** — it is the B2
+surface, rebuilt again. The open items are in §32.6 and the ranked ones are:
+**the default playback speed** (Kevin, unmeasured), **per-game distributions in
+`measure.mjs`** (blocks the game summary AND the measurements page AND any
+"is 55 stoppages a lot" sentence), then the summary, then the measurements page.
+
 ## B. Decisions waiting on Kevin — nothing is being built
 
 | id | decision | state | what it needs |
