@@ -816,9 +816,16 @@
  vertical-align:baseline}
 #rg .lcap i.k-rl{width:3px;height:11px;border-radius:1px}
 #rg .lcap .kn{color:var(--muted);font-size:.78rem}
-/* ⚠️ THE LEGEND ENTRIES ONLY. `.cap2` is a direct span child too, and `nowrap`
-   on it would have sent the second sentence off the side of a phone. */
-#rg .lcap>span:not(.cap2){white-space:nowrap}
+/* ⚠️ NO `nowrap` HERE, AND THE DEPLOY GATE IS WHY. The legend entries were
+   `white-space:nowrap` so a swatch could not be orphaned from its name -- and
+   that shipped a side-scroll at 360px that 40 games at 345px on this laptop did
+   not reproduce. THE RUNNER'S `system-ui` IS A WIDER FACE than mine, so an
+   entry that fitted here did not fit there: a layout whose correctness depends
+   on font METRICS is a layout that is correct on one machine.
+
+   The swatch cannot be orphaned anyway. `<i></i><span class="kn">name</span>`
+   has no whitespace between the two, so there is no wrap opportunity after the
+   mark -- the thing nowrap was protecting was already structural. */
 #rg.preview .lcap{display:none!important}
 
 /* ⭐ ONE ROW, ONE ACTIVE ITEM — AND "ONE" WAS A MEASUREMENT, NOT A PREFERENCE.

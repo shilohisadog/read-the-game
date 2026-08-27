@@ -1612,3 +1612,26 @@ only then did the mutation go red.
 `<div class="transport">…<p class="verdict"`, so inserting the caption between
 them failed a test about the transport. It is anchored on the transport's own
 last child now.
+
+### 27.4 ⚠️ The caption shipped a side-scroll at 360, and the gate caught it
+
+`nowrap` on each legend entry — so a swatch could not be orphaned from its name
+— produced **362px of content in a 345px layout viewport**. The deploy gate's
+*the pages fit a phone* step failed on it, after this laptop had reported *fits*
+at 390.
+
+    with nowrap      345px → scrollWidth 361      320px → 360
+    without          345, 360, 390, 320 → fits, in four faces and 32 combinations
+
+**The swatch could not be orphaned anyway**: `<i></i><span class="kn">name</span>`
+has no whitespace between the two, so there was never a wrap opportunity after
+the mark. The thing `nowrap` was protecting was already structural.
+
+⭐ **A layout that needs `nowrap` to look right is one font away from
+overflowing**, and the unit suite cannot see a font. So the rule the test pins is
+not a width — it is that **nothing in this block is unbreakable**, which is
+checkable at build time and is the property that actually failed.
+
+And the reason it reached production: **every measurement I took was at 390**,
+where it fits. The gate measures 360 into a 345 layout viewport. When a block's
+content is text of unknown length, 390 is not a test.

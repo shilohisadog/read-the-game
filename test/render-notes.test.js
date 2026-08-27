@@ -292,7 +292,17 @@ test('the caption says what the chosen lens is, in the words the rows carry', ()
   // scrolled sideways, which this project forbids outright. Inline boxes with
   // nothing between them offer no wrap opportunity.
   assert.match(cap(), /<\/span> · <span/,
-    'the base key is pasted as one blob — with nowrap entries that is a 1,166px line on a phone');
+    'the base key is pasted as one blob, with no wrap opportunity between entries');
+
+  // ⚠️ AND NOTHING IN THE CAPTION IS UNBREAKABLE. The first fix made each entry
+  // `white-space:nowrap` so a swatch could not be orphaned — and that shipped a
+  // SIDE-SCROLL AT 360px, caught by the deploy gate after 32 local combinations
+  // at 390 said fine. The swatch could not be orphaned anyway: `<i></i><span>`
+  // has no whitespace between them, so there is no wrap opportunity after the
+  // mark. A layout that needs `nowrap` to look right is one font away from
+  // overflowing, and the suite cannot see a font.
+  assert.doesNotMatch(PAGE_CSS, /#rg \.lcap[^{]*\{[^}]*white-space:nowrap/,
+    'the caption has an unbreakable run again — that is the 360px side-scroll the gate caught');
 });
 
 test('the page is parked at its base, and nothing was deleted to get there', () => {
