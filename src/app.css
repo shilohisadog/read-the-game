@@ -728,7 +728,10 @@
 .k-rl{width:3px;height:12px;border-radius:1px;background:var(--flag);opacity:.75}#rg .k-blk{background:var(--home);box-shadow:0 0 0 1.5px var(--flag)}#rg .k-blkv{background:#fff;box-shadow:0 0 0 1.5px var(--flag);margin-left:-3px}#rg .k-p{background:#0e1216}#rg .k-g{background:radial-gradient(circle,#fff 0 2.5px,var(--home) 2.5px)}#rg .k-gv{background:radial-gradient(circle,var(--away) 0 2.5px,#fff 2.5px);box-shadow:0 0 0 1.5px var(--away);margin-left:-3px}
 #rg .work{background:#fff;border:1px solid var(--edge);border-radius:13px;padding:18px;margin-top:14px;box-shadow:0 5px 18px rgba(16,32,45,.06)}
 #rg .work h2{margin:0 0 10px;font-size:1.1rem}#rg .work h2 .wsub{color:var(--muted);font-weight:400}
-#rg .wc .wexc{font-size:.82rem;line-height:1.6}#rg .wg{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+#rg .wc .wexc{font-size:.82rem;line-height:1.6}
+/* The measurement that keeps a categorical reason specific. Quieter than the
+   rule it illustrates, because the rule is the thing being taught. */
+#rg .weg{color:var(--muted);font-weight:400}#rg .wg{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
 #rg .wc{background:#f2f7fa;border:1px solid var(--edge);border-radius:10px;padding:13px}#rg .wc h3{margin:0 0 6px;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);display:flex;justify-content:space-between}#rg .wc h3 .n{font-family:ui-monospace,Menlo,monospace;font-size:1.2rem;color:var(--ink);font-weight:700}#rg .wc.flag{border-color:#e6b98f}#rg .wc.flag h3 .n{color:var(--flag)}#rg .wc p{margin:0;font-size:.87rem}
 #rg .wfoot{margin-top:13px;font-size:.8rem;color:var(--muted);border-top:1px solid var(--edge);padding-top:11px}#rg .wfoot em{font-style:normal;color:var(--ink)}
 /* ⭐ IT WAS FLOATING IN THE GAP BETWEEN TWO ZONES -- centred, in its own

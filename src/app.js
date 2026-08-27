@@ -986,8 +986,15 @@ function renderWork(_,cur,at){
     moment this panel became generic, which is the check working. */
  const lat=row&&row.querySelector('.lat');
  const name=chip?chip.textContent:id;
- const rows=o=>Object.entries(o).sort((x,y)=>y[1]-x[1])
-   .map(([why,n])=>`<div><b>${n}&times;</b> ${ESC(why)}</div>`).join('');
+ /* ⭐ ONE EXAMPLE PER GROUP, so a categorical reason keeps a real measurement
+    beside it. CHENG on the specific form: "36 against 33 teaches the rule
+    better than the rule statement does" -- right, and the way to keep that
+    without a 49-row wall is to say the rule once and show one shot that met it.
+    `detail` is set only where the reducer has a per-event measurement, so
+    layers without one render exactly as before. */
+ const rows=g=>Object.entries(g).sort((a,b)=>b[1].n-a[1].n)
+   .map(([why,{n,eg}])=>`<div><b>${n}&times;</b> ${ESC(why)}`
+     +(eg?` <span class="weg">e.g. ${ESC(eg)}</span>`:'')+`</div>`).join('');
  const exc=rows(summarise(L.excluded));
  /* ⚠️ SURPRISING IS NOT GROUPED, AND EXCLUDED IS, because the reducers author
     them differently and it shows the moment you try. An EXCLUDED reason names a

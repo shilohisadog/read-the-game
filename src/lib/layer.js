@@ -133,9 +133,28 @@ export function conservation(result, totalEvents) {
   };
 }
 
-/** Group an excluded list into {why: count} for display. */
+/**
+ * Group an excluded list for display: `{ why: { n, eg } }`.
+ *
+ * ⭐ THE GROUPING IS THE LAYER'S, NOT THE PAGE'S -- `build.test.js` has asserted
+ * that since Phase 2, and it is why the example belongs here rather than in a
+ * few lines of the renderer. A page that groups a ledger is a page that can
+ * group it differently from the layer that wrote it.
+ *
+ * `eg` is the first `detail` seen for that reason, or undefined. A reducer sets
+ * `detail` when it has a per-event MEASUREMENT to go with a categorical rule --
+ * "outside the 33 ft line" plus "36 ft from the net". It exists because reasons
+ * that named the event instead of the rule could not be grouped at all: the
+ * slot layer's 276 exclusions came out as 49 rows, 32 of them appearing exactly
+ * once, and the panel ran to 3,176px. One rule per row, one measurement beside
+ * it, keeps what that specificity taught without the wall.
+ */
 export function summarise(excluded) {
   const out = {};
-  for (const x of excluded) out[x.why] = (out[x.why] || 0) + 1;
+  for (const x of excluded) {
+    const g = out[x.why] || (out[x.why] = { n: 0 });
+    g.n++;
+    if (x.detail && g.eg === undefined) g.eg = x.detail;
+  }
   return out;
 }

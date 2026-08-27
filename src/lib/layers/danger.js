@@ -58,8 +58,9 @@ export const danger = {
        `derivedFrom` KEEPS THE NOTATION on purpose: it is the computation, not
        the sentence, and a verification surface that hides its arithmetic behind
        prose is the thing this project exists to be the opposite of. */
-    const push = (id, dims) =>
-      excluded.push({ id, why: dims.play || dims.type || dims.strength, dims });
+    const push = (id, dims, detail) =>
+      excluded.push({ id, why: dims.play || dims.type || dims.strength || dims.geometry,
+                      ...(detail ? { detail } : {}), dims });
 
     events.forEach((e, id) => {
       const notEven = ctx.evenOnly ? whyNotEven(e, ctx) : null;
@@ -102,13 +103,31 @@ export const danger = {
         }
         return;
       }
-      push(id, {
-        type: !near && !central
-               ? `${d.toFixed(0)} ft out and ${Math.abs(e.y)} ft off centre — the slot reaches ${SLOT_HALF_WIDTH} ft either side`
-           : !near
-               ? `${d.toFixed(0)} ft from the net — outside the ${HIGH_DANGER_FT} ft line`
-               : `in close but wide — ${Math.abs(e.y)} ft off centre, outside the ${SLOT_HALF_WIDTH} ft slot`,
-      });
+      /* ⚠️ A REASON THAT NAMES A RULE GROUPS; A REASON THAT NAMES THE EVENT DOES
+         NOT -- and these named the event. Each string carried THIS shot's
+         distance, so `summarise` grouped 276 exclusions into 49 rows of which
+         32 appeared exactly once, and the work panel ran to 3,176px at 390 by
+         the final whistle. Every other layer renders 10 to 13 rows.
+
+         ⭐ THE DIMENSION WAS ALSO MISLABELLED, which is why it could not be
+         grouped by anything else. A shot 36 ft out is rejected by GEOMETRY, not
+         by its type, and `dims` exists to name which dimension rejected an
+         event -- all 276 said `type`. So: `why` is the rule, categorical and
+         groupable; `detail` is this shot's measurement, which the panel shows
+         as one example per group. The specificity CHENG valued -- "36 against
+         33 teaches the rule better than the rule statement does" -- survives,
+         once per group instead of once per shot. */
+      push(id,
+        { geometry: !near && !central
+              ? `outside the slot on both counts — beyond ${HIGH_DANGER_FT} ft and wide of it`
+          : !near
+              ? `outside the ${HIGH_DANGER_FT} ft line`
+              : `in close but wide of the slot — the slot reaches ${SLOT_HALF_WIDTH} ft either side` },
+        !near && !central
+              ? `${d.toFixed(0)} ft out and ${Math.abs(e.y)} ft off centre`
+          : !near
+              ? `${d.toFixed(0)} ft from the net`
+              : `${Math.abs(e.y)} ft off centre`);
     });
 
     return { counted, surprising, excluded };

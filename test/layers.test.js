@@ -149,7 +149,35 @@ test('CONSERVATION CAN FAIL — proven, not assumed', () => {
 test('summarise groups the ledger for display without losing the count', () => {
   const L = corsi.reduce(EVENTS, ctx);
   const s = summarise(L.excluded);
-  assert.equal(Object.values(s).reduce((a, b) => a + b, 0), L.excluded.length);
+  assert.equal(Object.values(s).reduce((a, b) => a + b.n, 0), L.excluded.length);
+
+  /* ⭐ AND IT CARRIES ONE EXAMPLE PER REASON, which is what lets a categorical
+     rule keep a real measurement beside it. `detail` is optional -- corsi sets
+     none, and every group here must therefore be example-less rather than
+     carrying an empty one, because "e.g. " with nothing after it is worse than
+     no example at all. */
+  for (const [why, g] of Object.entries(s)) {
+    assert.ok(g.n > 0, `${why} grouped to a non-positive count`);
+    assert.ok(g.eg === undefined || g.eg,
+      `${why} carries an empty example, which renders as a dangling "e.g."`);
+  }
+
+  /* ⭐ THE SLOT LAYER IS WHY THIS EXISTS. Its exclusions used to name THIS
+     event's distance, so grouping did nothing: 276 exclusions became 49 rows,
+     32 appearing exactly once, and the work panel reached 3,176px at 390px
+     wide. The reason is the rule now and the measurement is the example. The
+     number here is a ceiling on the WALL, not a pin on the copy — every other
+     layer renders 10 to 13 rows. */
+  const D = summarise(danger.reduce(EVENTS, ctx).excluded);
+  const rows = Object.keys(D).length;
+  const singles = Object.values(D).filter(g => g.n === 1).length;
+  assert.ok(rows <= 20, `the slot exclusions group into ${rows} rows — the wall is back`);
+  assert.ok(singles <= 3,
+    `${singles} slot exclusion reasons appear exactly once, so they are naming `
+    + 'the event rather than the rule and grouping cannot work');
+  assert.ok(Object.values(D).some(g => g.eg),
+    'no slot exclusion carries a measurement, so the rule lost the specificity '
+    + 'that taught it — "36 against 33" is the thing worth keeping');
 });
 
 /* ------------------------------------------------------------------ shootout
