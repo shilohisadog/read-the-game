@@ -187,8 +187,13 @@ test('the whistle ring is NAMED, and only while the layer draws it', () => {
   // asserted here now; when the descriptions get a home (docs §20) this points
   // at the home instead. The mark is still named while the ice draws it, by a
   // different element, which is the claim — not the mechanism.
-  assert.match(PAGE_CSS, /#rg \.lrow \.lds,#rg \.lrow \.lon\{display:none\}/,
-    'the row note is displayed again — this test is describing a page that moved on');
+  // ⭐ AND `.lat` JOINED THEM on 2026-08-27 — how the layer attributes what it
+  // counts, read by the work panel. All three spans are parked in the row and
+  // read FROM it, which is the pattern: the row is the single source for a
+  // layer's words and the surfaces are its readers. Asserted as a set so a span
+  // added without a reader, or dropped from the park, is visible here.
+  assert.match(PAGE_CSS, /#rg \.lrow \.lds,#rg \.lrow \.lon,#rg \.lrow \.lat\{display:none\}/,
+    'the row notes are displayed again, or a span was added without being parked');
   assert.match(PAGE_CSS, /#rg\.whistle \.whistlepanel\{display:block/,
     'the row note is hidden AND the whistle panel is gone — the ring is on the ice with nothing naming it');
   assert.match(PAGE_CSS, /#rg \.k-wh\{/, 'the key has no swatch');

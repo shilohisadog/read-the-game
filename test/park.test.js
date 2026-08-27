@@ -126,8 +126,11 @@ const ENUMERATED = {
   lyCorsi: 'the old row', lyHd: 'the old row', lyGoalie: 'the old row',
   lyWhistle: 'the old row', lyBlock: 'the old row',
   nSit: 'the even-strength note, "N attempts have dropped out so far"',
-  work: 'Show me the work — the verification surface, parked with its panel',
-  workPanel: 'and the work it shows',
+  // ⭐ `work` AND `workPanel` LEFT THIS LIST ON 2026-08-27, and the second test
+  // in this file is what said so — they moved out of the parked menu into the
+  // layer box and the space under the rink, so their ledger lines were stale
+  // the moment the markup changed. A ledger that only ever grows is a document
+  // describing a page that no longer exists.
   // The reference and display zones.
   slotSay: 'the slot card computes its own census sentence',
   zTrailsOn: 'the trails zone summary',

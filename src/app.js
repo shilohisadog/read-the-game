@@ -859,7 +859,11 @@ function render(i,how){
  // whole site exists to correct. One game is one game.
  const faced=st.f?`${st.s} of ${st.f}`:'—';
  return `<div class="gcard"><div class="gname ${side}">${p.nm} <span class="sub">${ab} · #${p.n}</span></div><div class="gsv">${faced}</div><div class="gline">${st.s} saves · ${st.gl} goals · ${st.f} shots faced (${MODE()})${st.hf?` · from the slot ${st.hs} of ${st.hf}`:''}<br><span class="lim">one game — what happened, not how unusual it was</span></div></div>`;}).join('');}
- if(workOpen)renderWork(L,cur);
+ /* THE FRAME BEING DRAWN IS PASSED, NOT READ. `render`'s parameter shadows the
+    module-level playhead, so a bare `i` inside `renderWork` would be whichever
+    frame the transport last settled on -- one behind the one being drawn during
+    a step. Same trap `drawLBox` names in its own comment. */
+ if(workOpen)renderWork(L,cur,i);
 }
 function flash(id){const el=$(id);el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump');}
 /* ⭐ A SHORT-HANDED GOAL, AND THE TEST FOR ONE IS NOT "FEWER SKATERS".
@@ -928,18 +932,98 @@ function caption(e,kind){const c=$('caption');const tid=e.own;const ab=tid===AID
  c.style.animationDuration=dwell(e)+'ms';
  c.classList.remove('on');void c.offsetWidth;c.classList.add('on');}
 let workOpen=false;
-function renderWork(L,cur){const a=L.t[AID],h=L.t[HID],tot=a+h||1,pa=Math.round(100*a/tot);
- // Rendered from the ledger itself, not from a hand-written list. Every reason
- // below was written by the layer that excluded the event, so a new layer gets
- // this panel for free and a changed rule cannot leave stale copy behind.
- const byWhy=summarise(L.excluded), rows=Object.entries(byWhy).sort((x,y)=>y[1]-x[1])
-   .map(([why,n])=>`<div><b>${n}×</b> ${why}</div>`).join('');
- const sTotal=L.surprising.length, sWhy=sTotal?L.surprising[0].why:'';
- $('workPanel').innerHTML=`<h2>How “control” is computed <span class="wsub">(${MODE()}${cur?', through P'+cur.per+' '+cur.rem:', pre-game'})</span></h2>
- <div class="wg"><div class="wc"><h3>Counted <span class="n">${L.counted.length}</span></h3><p>Every attempt on goal — shots that hit the net, missed it, or were blocked. All credited to the shooter.</p></div>
- <div class="wc flag"><h3>Counted, surprisingly <span class="n">${sTotal}</span></h3><p>${sWhy||'—'}</p></div>
- <div class="wc"><h3>Not counted <span class="n">${L.excluded.length}</span></h3><p class="wexc">${rows||'—'}</p></div></div>
- <p class="wfoot"><em>${a} ${AAB} / ${h} ${HAB} → ${pa}% / ${100-pa}%.</em> ${L.counted.length} counted + ${L.excluded.length} not counted = <b>${L.counted.length+L.excluded.length}</b> events, which is every event in the game so far. Nothing is dropped quietly.${evenOnly?' <b>Even strength only</b> — the power-play and empty-net attempts are in the not-counted list above, with the situation that removed each one.':''}</p>`;}
+/**
+ * ⭐ SHOW ME THE WORK — ONE PANEL, DRIVEN BY THE LAYER CONTRACT.
+ *
+ * It was written for Attempts and parked with everything else on 2026-08-27.
+ * Bringing it back raised the shape question: one panel or five? Checked rather
+ * than guessed, over the reference game's 320 events:
+ *
+ *     layer         counted  surprising  excluded   counted+excluded
+ *     Attempts          135          44       185   = 320  every event
+ *     Slot               44          14       276   = 320
+ *     Blocked            44           4       276   = 320
+ *     Goaltending        60           5       260   = 320
+ *     Stoppages          44           —       276   = 320
+ *
+ * ⭐ ALL FIVE CONSERVE, so this is ONE panel. That is also the first broad
+ * evidence the layer contract is an abstraction rather than a description of
+ * two things that happened to look alike — it had been demonstrated once, by
+ * the whistle layer being built without touching the others.
+ *
+ * ⭐ AND ITS WORDS ARE READ FROM THE PAGE, NEVER RETYPED (§27.2), for the same
+ * reason the caption is: the layer's name comes from its chip and what it
+ * counts comes from its own row, so a rename moves both and a second copy
+ * cannot drift from the first. Only the ARITHMETIC is computed here.
+ *
+ * ⚠️ STOPPAGES HAS NO `surprising` BUCKET and must not be given an empty card
+ * that reads as "none were surprising" — a claim the layer never made. The
+ * section is absent when the bucket is.
+ */
+/* ⭐ THE LEDGER OF THE LAYER THAT IS ON, not the one `render` happens to hold.
+   `render` computes the CORSI lens for the scoreboard and passed it here, which
+   was right while this panel only ever explained Attempts -- and silently wrong
+   the moment it became generic: it read the right NAME off the chip and the
+   wrong NUMBERS off corsi, for every layer. Caught by a test that took its
+   expected totals from each reducer rather than from the page. */
+const LEDGER={corsi:sl=>corsi.reduce(sl,CTX),slot:sl=>danger.reduce(sl,CTX),
+ blocked:sl=>blocked.reduce(sl,CTX),goaltending:sl=>goaltending.reduce(sl,CTX),
+ whistle:sl=>whistle.reduce(sl,CTX)};
+function renderWork(_,cur,at){
+ const id=whichPick();
+ if(id==='none'||!LEDGER[id]||at<0){$('workPanel').innerHTML='';return;}
+ const L=LEDGER[id](upto(at));
+ const chip=document.querySelector(`#rg .pk[data-l="${id}"]`);
+ const row=document.querySelector(`#rg .lrow[data-pick="${id}"]`);
+ const lds=row&&row.querySelector('.lds');
+ /* ⭐ HOW THE LAYER ATTRIBUTES WHAT IT COUNTS, and this panel is where that
+    belongs: it is the verification surface, and attribution is the thing two
+    layers can legitimately disagree about. Attempts credits a blocked shot to
+    the SHOOTER; Blocked credits it to the BLOCKER. Both are right for their own
+    question, and a reader who meets them without this reads a contradiction.
+    The old panel hard-coded "All credited to the shooter." for Attempts, which
+    `build.test.js` follows as a CLAIM rather than a string -- it went red the
+    moment this panel became generic, which is the check working. */
+ const lat=row&&row.querySelector('.lat');
+ const name=chip?chip.textContent:id;
+ const rows=o=>Object.entries(o).sort((x,y)=>y[1]-x[1])
+   .map(([why,n])=>`<div><b>${n}&times;</b> ${ESC(why)}</div>`).join('');
+ const exc=rows(summarise(L.excluded));
+ /* ⚠️ SURPRISING IS NOT GROUPED, AND EXCLUDED IS, because the reducers author
+    them differently and it shows the moment you try. An EXCLUDED reason names a
+    RULE -- "a hit — physical play, but not a shot attempt" -- so nine rules
+    cover 183 events. A SURPRISING reason names the EVENT, player and all:
+    "blocked, but it still counts — an attempt belongs to the SHOOTER, Kaprizov,
+    not the player who blocked it". Grouping those produced TWENTY near-identical
+    rows, one per shooter, which is a wall wearing the shape of detail.
+    So: the total, and ONE case labelled as an example. The old panel printed
+    `surprising[0].why` beside the number 44 with no such label, which reads as
+    though all 44 were that one thing -- the defect this avoids without
+    reintroducing the wall. */
+ const sur=L.surprising&&L.surprising.length?L.surprising[0].why:null;
+ const when=cur?`through P${cur.per} ${cur.rem}`:'pre-game';
+ const b=lboxFor(id,at,corsi.reduce(upto(at),CTX));
+ const fig=[b.a&&`${b.a} ${AAB}`,b.h&&`${b.h} ${HAB}`].filter(Boolean).join(' / ');
+ $('workPanel').innerHTML=
+  `<h2>How ${ESC(name)} is counted <span class="wsub">(${MODE()}, ${when})</span></h2>`
+ +`<div class="wg">`
+ +`<div class="wc"><h3>Counted <span class="n">${L.counted.length}</span></h3>`
+ +`<p>${lds?ESC(lds.textContent):''}</p>`
+ +(lat?`<p class="wattr">${ESC(lat.textContent)}</p>`:'')+`</div>`
+ +(sur?`<div class="wc flag"><h3>Counted, surprisingly <span class="n">${L.surprising.length}</span></h3>`
+   +`<p><em>For example:</em> ${ESC(sur)}</p>`
+   +(L.surprising.length>1?`<p class="wexc">The other ${L.surprising.length-1} each carry their own reason, written by the layer that counted them.</p>`:'')
+   +`</div>`:'')
+ +`<div class="wc"><h3>Not counted <span class="n">${L.excluded.length}</span></h3>`
+ +`<p class="wexc">${exc||'&mdash;'}</p></div></div>`
+ +`<p class="wfoot">${fig?`<em>${ESC(fig)}.</em> `:''}`
+ +`${L.counted.length} counted + ${L.excluded.length} not counted = `
+ +`<b>${L.counted.length+L.excluded.length}</b> events, which is every event in `
+ +`the game so far. Nothing is dropped quietly.`
+ +`${evenOnly?' <b>Even strength only</b> &mdash; the power-play and empty-net '
+   +'events are in the not-counted list above, with the situation that removed '
+   +'each one.':''}</p>`;}
+
 /* THE PACE, AND IT IS ONE RULE INSTEAD OF FOUR TIERS.
    docs/event-timing.md carries the walk this came out of. What it measured, at
    Teaching, over 280 frames of a real replay:
@@ -2203,7 +2287,11 @@ function syncPick(){
  // The box is a view of the same choice, so it is refreshed from the same
  // place. It also refreshes every frame from `render()`; this call is what
  // makes a TOGGLE change it without waiting for the next event.
- drawLBox();}
+ drawLBox();
+ // The base view has no work to show, so the panel closes with the last layer;
+ // any other change redraws it against the layer that is now on.
+ if(cur==='none'){if(workOpen)closeWork();}
+ else if(workOpen)render(i,'');}
 /** The one active layer, or `none`. The single reader of the five booleans. */
 function whichPick(){
  const on=PICKS.filter(([,get])=>get()).map(([id])=>id);
@@ -2247,7 +2335,15 @@ function zoneState(){
  const b=$('zLayersOn');if(b)b.textContent=on?`${on} layer${on===1?'':'s'} on`:'';
  syncPick();}
 zoneState();
-function setCorsi(){document.getElementById('rg').classList.toggle('corsi',corsiOn);$('lyCorsi').setAttribute('aria-pressed',corsiOn);lyrState('stCorsi',corsiOn);if(!corsiOn&&workOpen){workOpen=false;$('workPanel').hidden=true;$('work').setAttribute('aria-expanded',false);$('work').textContent='Show me the work';}}
+function setCorsi(){document.getElementById('rg').classList.toggle('corsi',corsiOn);$('lyCorsi').setAttribute('aria-pressed',corsiOn);lyrState('stCorsi',corsiOn);}
+/* ⭐ THE WORK PANEL FOLLOWS THE SELECTOR, NOT ONE LAYER. It used to close itself
+   inside `setCorsi`, which was right while it only ever explained Attempts:
+   turning that layer off left a panel explaining nothing. Now it explains
+   whichever layer is on, so switching Attempts → Slot must REDRAW it, not shut
+   it -- and `setCorsi` turning false is exactly what happens on that switch.
+   The condition is therefore the SELECTOR's state, not any one boolean. */
+function closeWork(){workOpen=false;$('workPanel').hidden=true;
+ $('work').setAttribute('aria-expanded',false);$('work').textContent='Show me the work';}
 function setHd(){document.getElementById('rg').classList.toggle('slot',hdOn);$('lyHd').setAttribute('aria-pressed',hdOn);lyrState('stHd',hdOn);render(i,'');}
 $('lyCorsi').addEventListener('click',()=>{corsiOn=!corsiOn;setCorsi();});
 // One code path owns the mode label, so the markup cannot drift from the state.

@@ -17,6 +17,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { boot, app, PAGE_CSS, rich } from './helpers/page.js';
 import { blocked } from '../src/lib/layers/blocked.js';
+import { corsi } from '../src/lib/layers/corsi.js';
+import { whistle } from '../src/lib/layers/whistle.js';
 import { danger } from '../src/lib/layers/danger.js';
 import { shootingTeam } from '../src/lib/attribution.js';
 
@@ -329,4 +331,130 @@ test('the layer box does not reach the front-door hero', () => {
   // whole build invisible while this assertion stayed green.
   assert.ok(!hides.includes('#rg .lbox'),
     'the box is hidden on the game page too, so the layer output is gone');
+});
+
+/**
+ * ⭐ SHOW ME THE WORK — ONE PANEL, DRIVEN BY THE LAYER CONTRACT.
+ *
+ * Measured over the reference game's 320 events before building it: all five
+ * layers return `counted` + `excluded` that sum to every event, and four also
+ * carry `surprising`. So this is ONE panel, not five — which is also the first
+ * broad evidence the layer contract is an abstraction rather than a description
+ * of two things that happened to look alike.
+ */
+test('the work panel explains whichever layer is on, from that layer\'s ledger', () => {
+  const a = boot();
+  a.$('scrub').oninput({ target: { value: a.$('scrub').max } });
+
+  for (const [token, mod] of [['corsi', corsi], ['slot', danger],
+                              ['blocked', blocked], ['whistle', whistle]]) {
+    pick(a, token);
+    a.$('work').click();
+    const html = a.$('workPanel').innerHTML;
+
+    /* THE LEDGER COMES FROM THE REDUCER, NOT FROM THE PAGE (H1) — but the SLICE
+       comes from the page, because the page decides how far the playhead has
+       reached and the panel is explicitly "so far". The scrubber's last stop is
+       the last PLAYABLE event, which in this game leaves two period-end records
+       after it, so a full-game reduce is the wrong comparison and said so:
+       320 against the panel's honest 318. What is under test is which layer's
+       ledger the panel uses, and that is fully exercised on any slice. */
+    const total = +/= <b>(\d+)<\/b> events/.exec(html)[1];
+    const r = mod.reduce(rich.events.slice(0, total), { ...CTX, evenOnly: false });
+    assert.equal(r.counted.length + r.excluded.length, total,
+      `${token}: the slice taken from the panel does not close — wrong subject`);
+    assert.ok(html.includes(`<span class="n">${r.counted.length}</span>`),
+      `${token}'s panel does not show ITS counted total (${r.counted.length})`);
+    assert.ok(html.includes(`<span class="n">${r.excluded.length}</span>`),
+      `${token}'s panel does not show ITS excluded total (${r.excluded.length})`);
+
+    /* ⭐ AND ITS WORDS ARE READ FROM THE ROW, NEVER RETYPED (§27.2). */
+    const rowHtml = app.match(new RegExp(`<button class="lrow"[^>]*data-pick="${token}"[\\s\\S]*?</button>`))[0];
+    for (const cls of ['lds', 'lat']) {
+      const t = new RegExp(`<span class="${cls}">([^<]*)<`).exec(rowHtml);
+      assert.ok(t, `${token}'s row has no .${cls}`);
+      const words = t[1].replace(/&mdash;|&rsquo;/g, '').split(/\s+/).slice(0, 4).join(' ');
+      assert.ok(html.includes(words.split(' ')[0]),
+        `${token}'s panel does not quote its own row (.${cls})`);
+    }
+    a.$('work').click();
+  }
+});
+
+/**
+ * ⛔ AND STOPPAGES GETS NO "surprisingly" CARD, because it has no such bucket.
+ * An empty card there would read as "none were surprising" — a claim the layer
+ * never made, which is the difference between a gap and a finding.
+ */
+test('a layer with no surprising bucket is not given an empty one', () => {
+  const a = boot();
+  a.$('scrub').oninput({ target: { value: a.$('scrub').max } });
+  pick(a, 'whistle');
+  a.$('work').click();
+  assert.doesNotMatch(a.$('workPanel').innerHTML, /surprisingly/i,
+    'stoppages is shown a "counted, surprisingly" card it has no data for');
+
+  pick(a, 'corsi');
+  assert.match(a.$('workPanel').innerHTML, /surprisingly/i,
+    'no layer shows the card at all, so the check above proves nothing');
+});
+
+/**
+ * ⭐ THE PANEL FOLLOWS THE SELECTOR, NOT ONE BOOLEAN. It used to close itself
+ * inside `setCorsi` — right while it only explained Attempts, and wrong now:
+ * switching Attempts → Slot turns `corsiOn` false, which would have shut a
+ * panel that should have been redrawn against the new layer.
+ */
+test('the panel redraws on a layer change and closes only in the base view', () => {
+  const a = boot();
+  a.$('scrub').oninput({ target: { value: a.$('scrub').max } });
+  pick(a, 'corsi');
+  a.$('work').click();
+  assert.equal(a.$('workPanel').hidden, false, 'the panel did not open');
+  const asCorsi = a.$('workPanel').innerHTML;
+
+  pick(a, 'slot');
+  assert.equal(a.$('workPanel').hidden, false,
+    'switching layers closed the panel instead of redrawing it');
+  assert.notEqual(a.$('workPanel').innerHTML, asCorsi,
+    'the panel still explains the layer that is no longer on');
+
+  pick(a, 'none');
+  assert.equal(a.$('workPanel').hidden, true,
+    'the base view has no work to show, and the panel stayed open');
+});
+
+/**
+ * ⭐ THE VERIFICATION CONTROL IS REACHABLE, AND ONLY WHERE THERE IS WORK.
+ *
+ * ⚠️ It shipped `display:none` under four of five layers and nobody could see
+ * it: `#work` still carried the rules from when it belonged to Attempts —
+ * hidden by default, revealed under `.corsi`, parked with the rest. Found by
+ * trying to CLICK it in a real browser, where `getComputedStyle().visibility`
+ * reported "visible" beside a 0x0 box, which is what a display rule looks like
+ * from a visibility check.
+ *
+ * ⚠️ And its first row was 8px tall, against this project's own 44px touch
+ * floor — the one the R audit moved 21 of 21 controls above. A verification
+ * affordance nobody can hit on a phone is the same as none.
+ */
+test('the work control is shown for every layer and hidden in the base view', () => {
+  const css = PAGE_CSS.replace(/\/\*[\s\S]*?\*\//g, ' ');
+
+  assert.doesNotMatch(css, /#rg\.corsi #work/,
+    'the work control still carries a rule keyed to one layer, so it is display:none '
+    + 'under the other four');
+  assert.doesNotMatch(css, /#rg [^{]*#work[^{]*\{[^}]*display:none/,
+    'something hides the work control outright');
+
+  // Hidden, not removed, in the base view — removing it would change the box's
+  // height, which is the one thing the box may not do.
+  assert.match(css, /#rg \.lbox\.empty \.lxw\{visibility:hidden\}/,
+    'the base view either shows a control with nothing to show, or resizes the box');
+
+  // A real target. `min-height`, so a wider font grows it rather than clipping.
+  const rule = /#rg \.lxw\{([^}]*)\}/.exec(css);
+  assert.ok(rule, 'the work control has no rule of its own');
+  assert.match(rule[1], /min-height:(3[0-9]|[4-9][0-9])px/,
+    'the work control is under the touch floor this project holds everything else to');
 });

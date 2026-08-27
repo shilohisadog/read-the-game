@@ -488,6 +488,17 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    happen to measure -- a flex row with `space-between` moves the label every
    time a number gains a digit, which on this page happens sixty times a game.
 
+   ⚠️ `--lboxh` IS MEASURED, NOT CHOSEN, and it was guessed wrong three times
+   before it was measured once. Released to `height:auto` in a real browser and
+   swept over six layer states x three widths x two games, the box's natural
+   height is: base 94, goaltending 96-104, stoppages 109, and 120 for Attempts,
+   Slot and Blocked. So 120 is the worst case rather than a round number, and
+   every state below it is deliberate slack. Re-measure it after any change to
+   the box's content -- `tools/pixels.sh` plus the probe in this project's
+   scratch harness -- and never estimate it, because a box one line short does
+   not look broken, it just silently truncates a sentence about the numbers
+   beside it. The deploy gate is the backstop: zero clipped, one height.
+
    ⭐ THE HEIGHT IS FIXED AND THE CAPTION PILL DEPENDS ON IT. `--lboxh` is the
    single source: the box takes it, and `.caption` sits `--lboxh + 6px` off the
    bottom of `.rinkbox`, which is the top edge of this box. That is the same
@@ -507,8 +518,8 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    about THESE numbers. It is not rendered yet, because a control that does
    nothing is worse than no control; the row is laid out so it has somewhere to
    go that does not move anything else. */
-#rg{--lboxh:74px;--rinkpad:10px}
-#rg .lbox{display:grid;grid-template-columns:1fr auto 1fr;grid-template-rows:auto auto;
+#rg{--lboxh:120px;--rinkpad:10px}
+#rg .lbox{display:grid;grid-template-columns:1fr auto 1fr;grid-template-rows:auto auto auto;
  align-items:baseline;gap:2px 10px;height:var(--lboxh);box-sizing:border-box;
  margin-top:8px;padding:6px 4px 0;border-top:1px solid var(--edge)}
 #rg .lxa,#rg .lxh{font-family:ui-monospace,Menlo,monospace;font-size:1.45rem;font-weight:700;
@@ -535,6 +546,30 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .lxan{grid-column:1;text-align:left}
 #rg .lxhn{grid-column:3;text-align:right}
 #rg .lbox.split .lxn{display:none}
+/* ⭐ THE VERIFICATION AFFORDANCE, IN ITS OWN ROW. §31.7b reserved a place for it
+   when the box was laid out -- "the box under the ice is where Show me the work
+   reattaches, per layer" -- and this is that place: a third row, so the button
+   never competes with the figures or the sentence for horizontal space, and the
+   box's height stays one number rather than depending on which layer is on.
+   THE PANEL ITSELF GOES BELOW THE RINK BOX, not in here. It is three cards and a
+   footer; a fixed-height box cannot hold it, and the box is fixed height because
+   that is the requirement the whole thing was built to. So the CONTROL is with
+   the numbers it explains and the EXPLANATION has room to be long. */
+/* ⚠️ AND IT IS A REAL TOUCH TARGET. The first version was an 8px row -- measured,
+   not estimated -- against this project's own 44px floor, the one the R audit
+   moved 21 of 21 controls above. A verification affordance nobody can hit on a
+   phone is the same as no verification affordance. The row is part of
+   `--lboxh`, so the box is still ONE height across every layer. */
+#rg .lxw{grid-column:1/-1;grid-row:3;justify-self:stretch;align-self:end;
+ min-height:34px;margin-top:4px;
+ background:none;border:0;border-top:1px solid var(--edge);padding:6px;
+ font:inherit;font-size:.72rem;font-weight:700;letter-spacing:.03em;
+ color:var(--muted);cursor:pointer}
+#rg .lxw:hover{color:var(--ink)}
+/* HIDDEN, NOT REMOVED, IN THE BASE VIEW: `Just events` has no ledger to show,
+   and a button that vanishes would change the box's height, which is the one
+   thing the box is not allowed to do. */
+#rg .lbox.empty .lxw{visibility:hidden}
 /* ⭐ CENTRED, BECAUSE IT BELONGS TO NO COLUMN. Kevin, on the blocked layer:
    "the only tweak I might suggest is to center the text, instead of having it on
    the left (which implies association with the number directly above it)."
@@ -890,8 +925,15 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .plabsub{font-size:2.8px;fill:var(--muted);stroke:#fff;stroke-width:.8px;paint-order:stroke;font-family:system-ui,sans-serif}
 #rg .plabgrp{animation:plfade .28s ease}@keyframes plfade{0%{opacity:0}100%{opacity:1}}
 
-#rg .cbar,#rg .counters,#rg #work{display:none}
-#rg.corsi .cbar{display:block}#rg.corsi .counters{display:flex}#rg.corsi #work{display:inline-block}
+/* ⚠️ `#work` LEFT THESE RULES ON 2026-08-27. They were written when the button
+   belonged to Attempts -- hidden by default, shown under `.corsi`, parked with
+   the rest -- and the button now belongs to the SELECTOR, so a corsi-keyed rule
+   made it `display:none` under every other layer. Found by trying to click it in
+   a real browser: `getComputedStyle().visibility` said "visible" and the element
+   had a 0x0 box, which is what a display rule looks like from a visibility
+   check. Its display now lives with `.lxw`, keyed on the base view alone. */
+#rg .cbar,#rg .counters{display:none}
+#rg.corsi .cbar{display:block}#rg.corsi .counters{display:flex}
 #rg .figpick{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 2px 0}
 /* ⭐ B2 — THE CONTROL FOLLOWS THE LAYER. CHENG's ruling: when a layer is active
    its control lives with it, and the base view carries none. The progressive
@@ -1252,7 +1294,11 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    Four of the five have a panel or a hint under the ice that repeats the load-
    bearing half. `test/render-notes.test.js` pins this list so the day one of
    those panels goes, the row note is not silently the only casualty. */
-#rg .lrow .lds,#rg .lrow .lon{display:none}
+/* `.lat` -- HOW THE LAYER ATTRIBUTES WHAT IT COUNTS -- joins the two spans that
+   were already here. All three are parked in the row and read from it: `.lds`
+   by the caption, `.lon` by the caption, `.lat` by the work panel. The row is
+   the single source for a layer's words; the surfaces are its readers. */
+#rg .lrow .lds,#rg .lrow .lon,#rg .lrow .lat{display:none}
 /* ⭐ THE STATE IS A SWITCH, NOT THE WORD "OFF". Kevin, 2026-08-26: "I was
    thinking of the Metrics layers buttons as just toggles." A pill reading OFF is
    a label that has to be read and then mapped to an action; a switch is the one
@@ -1494,7 +1540,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
       stylesheet, so it stayed green. The counters and `#work` need no such
       scoping: the preview hides both on purpose, two hundred lines up. */
 #rg:not(.preview).corsi .cbar,
-#rg.corsi .counters,#rg.corsi #work,
+#rg.corsi .counters,
 #rg.slot .hint,
 #rg.goalie .goalies,
 #rg.whistle .whistlepanel,
@@ -1566,7 +1612,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
        against the other club's shot. Where a column reads the other way round
        the caption says so, and the box's line carries whichever fact belongs to
        the GAME rather than to either club. -->
-  <div class="lbox" id="lbox"><span class="lxa" id="lxA"></span><span class="lxk" id="lxK"></span><span class="lxh" id="lxH"></span><span class="lxan" id="lxAn"></span><span class="lxhn" id="lxHn"></span><span class="lxn" id="lxN"></span></div>
+  <div class="lbox" id="lbox"><span class="lxa" id="lxA"></span><span class="lxk" id="lxK"></span><span class="lxh" id="lxH"></span><span class="lxan" id="lxAn"></span><span class="lxhn" id="lxHn"></span><span class="lxn" id="lxN"></span><button class="lxw" id="work" aria-expanded="false" aria-controls="workPanel">Show me the work</button></div>
   <!-- THE PILL IS A CHILD OF .rinkbox, NOT OF THE PENALTY-BOX ROW. It lived
        inside `.pboxes` so it could anchor to that row's top edge, which was the
        bottom of the ice -- correct exactly while the row was furniture. Parking
@@ -1577,17 +1623,15 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 </div>
 <details class="zone zlayers" id="zLayers"><summary class="zh">Add a metric layer<span class="zon" id="zLayersOn"></span></summary>
 <div class="lrows">
-<button class="lrow" id="lyCorsi" data-pick="corsi" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Corsi</b><span class="lds">every shot attempt the league recorded: on goal, missed, or blocked, because all three are the team moving the puck at the net</span><span class="lon">The box below the ice counts every attempt for each club as the replay runs.</span></span><span class="st" id="stCorsi">Off</span></button>
-<button class="lrow" id="lyHd" data-pick="slot" aria-pressed="false"><span class="lmk"><i class="k-hd"></i></span><span class="ltx"><b>Slot shots</b><span class="lds">attempts from within 33 ft of the net, between the face-off dots</span><span class="lon">An amber ring marks each one. Click a ring to see the distance and angle it was measured by.</span></span><span class="st" id="stHd">Off</span></button>
-<button class="lrow" id="lyGoalie" data-pick="goaltending" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Goaltending</b><span class="lds">every shot each goaltender faced, and what became of it — saved, scored on, or missed the net</span><span class="lon">The box below the ice builds each club&rsquo;s save fraction as the replay runs. A save is against the OTHER club&rsquo;s shot, so those two columns read the opposite way round.</span></span><span class="st" id="stGoalie">Off</span></button>
-<button class="lrow" id="lyWhistle" data-pick="whistle" aria-pressed="false"><span class="lmk"><i class="k-wh"></i><i class="k-rl"></i></span><span class="ltx"><b>Stoppages</b><span class="lds">the rule that stopped play, and the dot it restarted on</span><span class="lon">The ring marks where play restarted, brightest at the most recent stoppage. The bar lights the line the rule names — for icing the centre line and the far goal line, for offside the blue line. The box below the ice counts them and names the most recent one &mdash; with no figure for either club, because a stoppage names a rule and never a team.</span></span><span class="st" id="stWhistle">Off</span></button>
-<button class="lrow" id="lyBlock" data-pick="blocked" aria-pressed="false"><span class="lmk"><i class="k-blk"></i><i class="k-blkv"></i></span><span class="ltx"><b>Blocked shots</b><span class="lds">the attempts a body stopped before they reached the goalie</span><span class="lon">Blocked attempts keep their ring and every other mark dims, so the ones a body stopped stand out. The box below the ice credits each block to the club that MADE it, the way a broadcast does. A block by a teammate is credited to neither club, so the two figures need not add up to the total.</span></span><span class="st" id="stBlock">Off</span></button>
+<button class="lrow" id="lyCorsi" data-pick="corsi" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Corsi</b><span class="lds">every shot attempt the league recorded: on goal, missed, or blocked, because all three are the team moving the puck at the net</span><span class="lon">The box below the ice counts every attempt for each club as the replay runs.</span><span class="lat">A blocked attempt is credited to the club that SHOT it &mdash; the shot was still taken, it just never arrived.</span></span><span class="st" id="stCorsi">Off</span></button>
+<button class="lrow" id="lyHd" data-pick="slot" aria-pressed="false"><span class="lmk"><i class="k-hd"></i></span><span class="ltx"><b>Slot shots</b><span class="lds">attempts from within 33 ft of the net, between the face-off dots</span><span class="lon">An amber ring marks each one. Click a ring to see the distance and angle it was measured by.</span><span class="lat">Credited to the club that shot. Blocked attempts are excluded, because the coordinate the feed records is where the puck STOPPED, not where the shot was taken.</span></span><span class="st" id="stHd">Off</span></button>
+<button class="lrow" id="lyGoalie" data-pick="goaltending" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Goaltending</b><span class="lds">every shot each goaltender faced, and what became of it — saved, scored on, or missed the net</span><span class="lon">The box below the ice builds each club&rsquo;s save fraction as the replay runs. A save is against the OTHER club&rsquo;s shot, so those two columns read the opposite way round.</span><span class="lat">Each goaltender is counted for the club he plays for, against the OTHER club&rsquo;s shots &mdash; so these two columns read the opposite way round.</span></span><span class="st" id="stGoalie">Off</span></button>
+<button class="lrow" id="lyWhistle" data-pick="whistle" aria-pressed="false"><span class="lmk"><i class="k-wh"></i><i class="k-rl"></i></span><span class="ltx"><b>Stoppages</b><span class="lds">the rule that stopped play, and the dot it restarted on</span><span class="lon">The ring marks where play restarted, brightest at the most recent stoppage. The bar lights the line the rule names — for icing the centre line and the far goal line, for offside the blue line. The box below the ice counts them and names the most recent one &mdash; with no figure for either club, because a stoppage names a rule and never a team.</span><span class="lat">A stoppage names a rule and never a club, so nothing here is credited to either side.</span></span><span class="st" id="stWhistle">Off</span></button>
+<button class="lrow" id="lyBlock" data-pick="blocked" aria-pressed="false"><span class="lmk"><i class="k-blk"></i><i class="k-blkv"></i></span><span class="ltx"><b>Blocked shots</b><span class="lds">the attempts a body stopped before they reached the goalie</span><span class="lon">Blocked attempts keep their ring and every other mark dims, so the ones a body stopped stand out. The box below the ice credits each block to the club that MADE it, the way a broadcast does. A block by a teammate is credited to neither club, so the two figures need not add up to the total.</span><span class="lat">Each block is credited to the club that MADE it, the way a broadcast does. A block by a teammate is credited to neither, so the two figures need not add up.</span></span><span class="st" id="stBlock">Off</span></button>
 </div>
 <div class="figpick sit"><span class="ll">Situations:</span>
 <div class="grp" role="group" aria-label="Which situations are counted"><button class="lyr sbtn" data-s="all" aria-pressed="true">All situations</button><button class="lyr sbtn" data-s="even" aria-pressed="false">Even strength only</button></div>
 <span class="fnote" id="nSit"></span></div>
-<button id="work" aria-expanded="false">Show me the work</button>
-<div class="work" id="workPanel" hidden></div>
 <div class="hint">Tip: click any shot ringed in amber to see <b>why</b> it counts as a slot shot — with trails set to <b>keep every mark</b>, earlier ones stay clickable too.</div>
 </details>
 <p class="icenote" id="iceNote"></p>
@@ -1600,6 +1644,15 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
   <input class="scrub" id="scrub" type="range" min="-1" max="1" value="-1"></div>
 <div class="pickrow" role="radiogroup" aria-label="Which metric is on the ice" id="pickrow"><span class="pklab">Watching</span><button class="pk" id="pkNone" data-l="none" role="radio" aria-checked="true">Just events</button><span class="pksep" aria-hidden="true"></span><button class="pk" id="pkCorsi" data-l="corsi" role="radio" aria-checked="false">Attempts</button><button class="pk" id="pkSlot" data-l="slot" role="radio" aria-checked="false">Slot</button><button class="pk" id="pkBlocked" data-l="blocked" role="radio" aria-checked="false">Blocked</button><button class="pk" id="pkGoalie" data-l="goaltending" role="radio" aria-checked="false">Goaltending</button><button class="pk" id="pkWhistle" data-l="whistle" role="radio" aria-checked="false">Stoppages</button></div>
 <p class="lcap" id="lcap"></p>
+<!-- ⭐ THE WORK PANEL SITS AFTER THE EXPLANATION, NOT BEFORE THE CONTROLS.
+     It first went directly under the rink box, and measured open it is 1,229px
+     at 390 -- which put a screen and a half between the ice and its own Play
+     button. The reading order it has now is the one the page teaches in:
+     what am I watching (the ice) -> how do I move (the transport) -> which
+     lens (the selector) -> what does it mean (the caption) -> show me the
+     work. The control stays with the numbers it explains, up in the box; only
+     the long part moved. -->
+<div class="work" id="workPanel" hidden></div>
 <p class="verdict" id="verdict"></p>
 <div class="newcomer nwhy2" id="newcomerWhy"></div>
 <details class="zone zref"><summary class="zh">What the marks mean</summary>
@@ -5335,7 +5388,11 @@ function render(i,how){
  // whole site exists to correct. One game is one game.
  const faced=st.f?`${st.s} of ${st.f}`:'—';
  return `<div class="gcard"><div class="gname ${side}">${p.nm} <span class="sub">${ab} · #${p.n}</span></div><div class="gsv">${faced}</div><div class="gline">${st.s} saves · ${st.gl} goals · ${st.f} shots faced (${MODE()})${st.hf?` · from the slot ${st.hs} of ${st.hf}`:''}<br><span class="lim">one game — what happened, not how unusual it was</span></div></div>`;}).join('');}
- if(workOpen)renderWork(L,cur);
+ /* THE FRAME BEING DRAWN IS PASSED, NOT READ. `render`'s parameter shadows the
+    module-level playhead, so a bare `i` inside `renderWork` would be whichever
+    frame the transport last settled on -- one behind the one being drawn during
+    a step. Same trap `drawLBox` names in its own comment. */
+ if(workOpen)renderWork(L,cur,i);
 }
 function flash(id){const el=$(id);el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump');}
 /* ⭐ A SHORT-HANDED GOAL, AND THE TEST FOR ONE IS NOT "FEWER SKATERS".
@@ -5404,18 +5461,98 @@ function caption(e,kind){const c=$('caption');const tid=e.own;const ab=tid===AID
  c.style.animationDuration=dwell(e)+'ms';
  c.classList.remove('on');void c.offsetWidth;c.classList.add('on');}
 let workOpen=false;
-function renderWork(L,cur){const a=L.t[AID],h=L.t[HID],tot=a+h||1,pa=Math.round(100*a/tot);
- // Rendered from the ledger itself, not from a hand-written list. Every reason
- // below was written by the layer that excluded the event, so a new layer gets
- // this panel for free and a changed rule cannot leave stale copy behind.
- const byWhy=summarise(L.excluded), rows=Object.entries(byWhy).sort((x,y)=>y[1]-x[1])
-   .map(([why,n])=>`<div><b>${n}×</b> ${why}</div>`).join('');
- const sTotal=L.surprising.length, sWhy=sTotal?L.surprising[0].why:'';
- $('workPanel').innerHTML=`<h2>How “control” is computed <span class="wsub">(${MODE()}${cur?', through P'+cur.per+' '+cur.rem:', pre-game'})</span></h2>
- <div class="wg"><div class="wc"><h3>Counted <span class="n">${L.counted.length}</span></h3><p>Every attempt on goal — shots that hit the net, missed it, or were blocked. All credited to the shooter.</p></div>
- <div class="wc flag"><h3>Counted, surprisingly <span class="n">${sTotal}</span></h3><p>${sWhy||'—'}</p></div>
- <div class="wc"><h3>Not counted <span class="n">${L.excluded.length}</span></h3><p class="wexc">${rows||'—'}</p></div></div>
- <p class="wfoot"><em>${a} ${AAB} / ${h} ${HAB} → ${pa}% / ${100-pa}%.</em> ${L.counted.length} counted + ${L.excluded.length} not counted = <b>${L.counted.length+L.excluded.length}</b> events, which is every event in the game so far. Nothing is dropped quietly.${evenOnly?' <b>Even strength only</b> — the power-play and empty-net attempts are in the not-counted list above, with the situation that removed each one.':''}</p>`;}
+/**
+ * ⭐ SHOW ME THE WORK — ONE PANEL, DRIVEN BY THE LAYER CONTRACT.
+ *
+ * It was written for Attempts and parked with everything else on 2026-08-27.
+ * Bringing it back raised the shape question: one panel or five? Checked rather
+ * than guessed, over the reference game's 320 events:
+ *
+ *     layer         counted  surprising  excluded   counted+excluded
+ *     Attempts          135          44       185   = 320  every event
+ *     Slot               44          14       276   = 320
+ *     Blocked            44           4       276   = 320
+ *     Goaltending        60           5       260   = 320
+ *     Stoppages          44           —       276   = 320
+ *
+ * ⭐ ALL FIVE CONSERVE, so this is ONE panel. That is also the first broad
+ * evidence the layer contract is an abstraction rather than a description of
+ * two things that happened to look alike — it had been demonstrated once, by
+ * the whistle layer being built without touching the others.
+ *
+ * ⭐ AND ITS WORDS ARE READ FROM THE PAGE, NEVER RETYPED (§27.2), for the same
+ * reason the caption is: the layer's name comes from its chip and what it
+ * counts comes from its own row, so a rename moves both and a second copy
+ * cannot drift from the first. Only the ARITHMETIC is computed here.
+ *
+ * ⚠️ STOPPAGES HAS NO `surprising` BUCKET and must not be given an empty card
+ * that reads as "none were surprising" — a claim the layer never made. The
+ * section is absent when the bucket is.
+ */
+/* ⭐ THE LEDGER OF THE LAYER THAT IS ON, not the one `render` happens to hold.
+   `render` computes the CORSI lens for the scoreboard and passed it here, which
+   was right while this panel only ever explained Attempts -- and silently wrong
+   the moment it became generic: it read the right NAME off the chip and the
+   wrong NUMBERS off corsi, for every layer. Caught by a test that took its
+   expected totals from each reducer rather than from the page. */
+const LEDGER={corsi:sl=>corsi.reduce(sl,CTX),slot:sl=>danger.reduce(sl,CTX),
+ blocked:sl=>blocked.reduce(sl,CTX),goaltending:sl=>goaltending.reduce(sl,CTX),
+ whistle:sl=>whistle.reduce(sl,CTX)};
+function renderWork(_,cur,at){
+ const id=whichPick();
+ if(id==='none'||!LEDGER[id]||at<0){$('workPanel').innerHTML='';return;}
+ const L=LEDGER[id](upto(at));
+ const chip=document.querySelector(`#rg .pk[data-l="${id}"]`);
+ const row=document.querySelector(`#rg .lrow[data-pick="${id}"]`);
+ const lds=row&&row.querySelector('.lds');
+ /* ⭐ HOW THE LAYER ATTRIBUTES WHAT IT COUNTS, and this panel is where that
+    belongs: it is the verification surface, and attribution is the thing two
+    layers can legitimately disagree about. Attempts credits a blocked shot to
+    the SHOOTER; Blocked credits it to the BLOCKER. Both are right for their own
+    question, and a reader who meets them without this reads a contradiction.
+    The old panel hard-coded "All credited to the shooter." for Attempts, which
+    `build.test.js` follows as a CLAIM rather than a string -- it went red the
+    moment this panel became generic, which is the check working. */
+ const lat=row&&row.querySelector('.lat');
+ const name=chip?chip.textContent:id;
+ const rows=o=>Object.entries(o).sort((x,y)=>y[1]-x[1])
+   .map(([why,n])=>`<div><b>${n}&times;</b> ${ESC(why)}</div>`).join('');
+ const exc=rows(summarise(L.excluded));
+ /* ⚠️ SURPRISING IS NOT GROUPED, AND EXCLUDED IS, because the reducers author
+    them differently and it shows the moment you try. An EXCLUDED reason names a
+    RULE -- "a hit — physical play, but not a shot attempt" -- so nine rules
+    cover 183 events. A SURPRISING reason names the EVENT, player and all:
+    "blocked, but it still counts — an attempt belongs to the SHOOTER, Kaprizov,
+    not the player who blocked it". Grouping those produced TWENTY near-identical
+    rows, one per shooter, which is a wall wearing the shape of detail.
+    So: the total, and ONE case labelled as an example. The old panel printed
+    `surprising[0].why` beside the number 44 with no such label, which reads as
+    though all 44 were that one thing -- the defect this avoids without
+    reintroducing the wall. */
+ const sur=L.surprising&&L.surprising.length?L.surprising[0].why:null;
+ const when=cur?`through P${cur.per} ${cur.rem}`:'pre-game';
+ const b=lboxFor(id,at,corsi.reduce(upto(at),CTX));
+ const fig=[b.a&&`${b.a} ${AAB}`,b.h&&`${b.h} ${HAB}`].filter(Boolean).join(' / ');
+ $('workPanel').innerHTML=
+  `<h2>How ${ESC(name)} is counted <span class="wsub">(${MODE()}, ${when})</span></h2>`
+ +`<div class="wg">`
+ +`<div class="wc"><h3>Counted <span class="n">${L.counted.length}</span></h3>`
+ +`<p>${lds?ESC(lds.textContent):''}</p>`
+ +(lat?`<p class="wattr">${ESC(lat.textContent)}</p>`:'')+`</div>`
+ +(sur?`<div class="wc flag"><h3>Counted, surprisingly <span class="n">${L.surprising.length}</span></h3>`
+   +`<p><em>For example:</em> ${ESC(sur)}</p>`
+   +(L.surprising.length>1?`<p class="wexc">The other ${L.surprising.length-1} each carry their own reason, written by the layer that counted them.</p>`:'')
+   +`</div>`:'')
+ +`<div class="wc"><h3>Not counted <span class="n">${L.excluded.length}</span></h3>`
+ +`<p class="wexc">${exc||'&mdash;'}</p></div></div>`
+ +`<p class="wfoot">${fig?`<em>${ESC(fig)}.</em> `:''}`
+ +`${L.counted.length} counted + ${L.excluded.length} not counted = `
+ +`<b>${L.counted.length+L.excluded.length}</b> events, which is every event in `
+ +`the game so far. Nothing is dropped quietly.`
+ +`${evenOnly?' <b>Even strength only</b> &mdash; the power-play and empty-net '
+   +'events are in the not-counted list above, with the situation that removed '
+   +'each one.':''}</p>`;}
+
 /* THE PACE, AND IT IS ONE RULE INSTEAD OF FOUR TIERS.
    docs/event-timing.md carries the walk this came out of. What it measured, at
    Teaching, over 280 frames of a real replay:
@@ -6679,7 +6816,11 @@ function syncPick(){
  // The box is a view of the same choice, so it is refreshed from the same
  // place. It also refreshes every frame from `render()`; this call is what
  // makes a TOGGLE change it without waiting for the next event.
- drawLBox();}
+ drawLBox();
+ // The base view has no work to show, so the panel closes with the last layer;
+ // any other change redraws it against the layer that is now on.
+ if(cur==='none'){if(workOpen)closeWork();}
+ else if(workOpen)render(i,'');}
 /** The one active layer, or `none`. The single reader of the five booleans. */
 function whichPick(){
  const on=PICKS.filter(([,get])=>get()).map(([id])=>id);
@@ -6723,7 +6864,15 @@ function zoneState(){
  const b=$('zLayersOn');if(b)b.textContent=on?`${on} layer${on===1?'':'s'} on`:'';
  syncPick();}
 zoneState();
-function setCorsi(){document.getElementById('rg').classList.toggle('corsi',corsiOn);$('lyCorsi').setAttribute('aria-pressed',corsiOn);lyrState('stCorsi',corsiOn);if(!corsiOn&&workOpen){workOpen=false;$('workPanel').hidden=true;$('work').setAttribute('aria-expanded',false);$('work').textContent='Show me the work';}}
+function setCorsi(){document.getElementById('rg').classList.toggle('corsi',corsiOn);$('lyCorsi').setAttribute('aria-pressed',corsiOn);lyrState('stCorsi',corsiOn);}
+/* ⭐ THE WORK PANEL FOLLOWS THE SELECTOR, NOT ONE LAYER. It used to close itself
+   inside `setCorsi`, which was right while it only ever explained Attempts:
+   turning that layer off left a panel explaining nothing. Now it explains
+   whichever layer is on, so switching Attempts → Slot must REDRAW it, not shut
+   it -- and `setCorsi` turning false is exactly what happens on that switch.
+   The condition is therefore the SELECTOR's state, not any one boolean. */
+function closeWork(){workOpen=false;$('workPanel').hidden=true;
+ $('work').setAttribute('aria-expanded',false);$('work').textContent='Show me the work';}
 function setHd(){document.getElementById('rg').classList.toggle('slot',hdOn);$('lyHd').setAttribute('aria-pressed',hdOn);lyrState('stHd',hdOn);render(i,'');}
 $('lyCorsi').addEventListener('click',()=>{corsiOn=!corsiOn;setCorsi();});
 // One code path owns the mode label, so the markup cannot drift from the state.

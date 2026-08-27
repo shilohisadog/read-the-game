@@ -443,6 +443,17 @@
    happen to measure -- a flex row with `space-between` moves the label every
    time a number gains a digit, which on this page happens sixty times a game.
 
+   ⚠️ `--lboxh` IS MEASURED, NOT CHOSEN, and it was guessed wrong three times
+   before it was measured once. Released to `height:auto` in a real browser and
+   swept over six layer states x three widths x two games, the box's natural
+   height is: base 94, goaltending 96-104, stoppages 109, and 120 for Attempts,
+   Slot and Blocked. So 120 is the worst case rather than a round number, and
+   every state below it is deliberate slack. Re-measure it after any change to
+   the box's content -- `tools/pixels.sh` plus the probe in this project's
+   scratch harness -- and never estimate it, because a box one line short does
+   not look broken, it just silently truncates a sentence about the numbers
+   beside it. The deploy gate is the backstop: zero clipped, one height.
+
    ⭐ THE HEIGHT IS FIXED AND THE CAPTION PILL DEPENDS ON IT. `--lboxh` is the
    single source: the box takes it, and `.caption` sits `--lboxh + 6px` off the
    bottom of `.rinkbox`, which is the top edge of this box. That is the same
@@ -462,8 +473,8 @@
    about THESE numbers. It is not rendered yet, because a control that does
    nothing is worse than no control; the row is laid out so it has somewhere to
    go that does not move anything else. */
-#rg{--lboxh:74px;--rinkpad:10px}
-#rg .lbox{display:grid;grid-template-columns:1fr auto 1fr;grid-template-rows:auto auto;
+#rg{--lboxh:120px;--rinkpad:10px}
+#rg .lbox{display:grid;grid-template-columns:1fr auto 1fr;grid-template-rows:auto auto auto;
  align-items:baseline;gap:2px 10px;height:var(--lboxh);box-sizing:border-box;
  margin-top:8px;padding:6px 4px 0;border-top:1px solid var(--edge)}
 #rg .lxa,#rg .lxh{font-family:ui-monospace,Menlo,monospace;font-size:1.45rem;font-weight:700;
@@ -490,6 +501,30 @@
 #rg .lxan{grid-column:1;text-align:left}
 #rg .lxhn{grid-column:3;text-align:right}
 #rg .lbox.split .lxn{display:none}
+/* ⭐ THE VERIFICATION AFFORDANCE, IN ITS OWN ROW. §31.7b reserved a place for it
+   when the box was laid out -- "the box under the ice is where Show me the work
+   reattaches, per layer" -- and this is that place: a third row, so the button
+   never competes with the figures or the sentence for horizontal space, and the
+   box's height stays one number rather than depending on which layer is on.
+   THE PANEL ITSELF GOES BELOW THE RINK BOX, not in here. It is three cards and a
+   footer; a fixed-height box cannot hold it, and the box is fixed height because
+   that is the requirement the whole thing was built to. So the CONTROL is with
+   the numbers it explains and the EXPLANATION has room to be long. */
+/* ⚠️ AND IT IS A REAL TOUCH TARGET. The first version was an 8px row -- measured,
+   not estimated -- against this project's own 44px floor, the one the R audit
+   moved 21 of 21 controls above. A verification affordance nobody can hit on a
+   phone is the same as no verification affordance. The row is part of
+   `--lboxh`, so the box is still ONE height across every layer. */
+#rg .lxw{grid-column:1/-1;grid-row:3;justify-self:stretch;align-self:end;
+ min-height:34px;margin-top:4px;
+ background:none;border:0;border-top:1px solid var(--edge);padding:6px;
+ font:inherit;font-size:.72rem;font-weight:700;letter-spacing:.03em;
+ color:var(--muted);cursor:pointer}
+#rg .lxw:hover{color:var(--ink)}
+/* HIDDEN, NOT REMOVED, IN THE BASE VIEW: `Just events` has no ledger to show,
+   and a button that vanishes would change the box's height, which is the one
+   thing the box is not allowed to do. */
+#rg .lbox.empty .lxw{visibility:hidden}
 /* ⭐ CENTRED, BECAUSE IT BELONGS TO NO COLUMN. Kevin, on the blocked layer:
    "the only tweak I might suggest is to center the text, instead of having it on
    the left (which implies association with the number directly above it)."
@@ -845,8 +880,15 @@
 #rg .plabsub{font-size:2.8px;fill:var(--muted);stroke:#fff;stroke-width:.8px;paint-order:stroke;font-family:system-ui,sans-serif}
 #rg .plabgrp{animation:plfade .28s ease}@keyframes plfade{0%{opacity:0}100%{opacity:1}}
 
-#rg .cbar,#rg .counters,#rg #work{display:none}
-#rg.corsi .cbar{display:block}#rg.corsi .counters{display:flex}#rg.corsi #work{display:inline-block}
+/* ⚠️ `#work` LEFT THESE RULES ON 2026-08-27. They were written when the button
+   belonged to Attempts -- hidden by default, shown under `.corsi`, parked with
+   the rest -- and the button now belongs to the SELECTOR, so a corsi-keyed rule
+   made it `display:none` under every other layer. Found by trying to click it in
+   a real browser: `getComputedStyle().visibility` said "visible" and the element
+   had a 0x0 box, which is what a display rule looks like from a visibility
+   check. Its display now lives with `.lxw`, keyed on the base view alone. */
+#rg .cbar,#rg .counters{display:none}
+#rg.corsi .cbar{display:block}#rg.corsi .counters{display:flex}
 #rg .figpick{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 2px 0}
 /* ⭐ B2 — THE CONTROL FOLLOWS THE LAYER. CHENG's ruling: when a layer is active
    its control lives with it, and the base view carries none. The progressive
@@ -1207,7 +1249,11 @@
    Four of the five have a panel or a hint under the ice that repeats the load-
    bearing half. `test/render-notes.test.js` pins this list so the day one of
    those panels goes, the row note is not silently the only casualty. */
-#rg .lrow .lds,#rg .lrow .lon{display:none}
+/* `.lat` -- HOW THE LAYER ATTRIBUTES WHAT IT COUNTS -- joins the two spans that
+   were already here. All three are parked in the row and read from it: `.lds`
+   by the caption, `.lon` by the caption, `.lat` by the work panel. The row is
+   the single source for a layer's words; the surfaces are its readers. */
+#rg .lrow .lds,#rg .lrow .lon,#rg .lrow .lat{display:none}
 /* ⭐ THE STATE IS A SWITCH, NOT THE WORD "OFF". Kevin, 2026-08-26: "I was
    thinking of the Metrics layers buttons as just toggles." A pill reading OFF is
    a label that has to be read and then mapped to an action; a switch is the one
@@ -1449,7 +1495,7 @@
       stylesheet, so it stayed green. The counters and `#work` need no such
       scoping: the preview hides both on purpose, two hundred lines up. */
 #rg:not(.preview).corsi .cbar,
-#rg.corsi .counters,#rg.corsi #work,
+#rg.corsi .counters,
 #rg.slot .hint,
 #rg.goalie .goalies,
 #rg.whistle .whistlepanel,

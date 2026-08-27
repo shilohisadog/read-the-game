@@ -59,7 +59,18 @@ export function fakeDom() {
        is the direction that hides defects rather than inventing them. */
     _text: '',
     get textContent() { return this._text; },
-    set textContent(v) { this._text = v == null ? '' : String(v); },
+    /* ⚠️ AND IT DECODES ENTITIES, because a real `textContent` does. The row
+       copy contains `&mdash;`; a browser hands the page an em dash and the fake
+       was handing it the seven literal characters, which the page then escaped
+       into `&amp;mdash;`. The fake being able to produce a string the DOM never
+       would is the same fidelity gap as it storing a number where the DOM
+       stores a string — a defect invented by the harness, or hidden by it. */
+    set textContent(v) {
+      this._text = v == null ? '' : String(v)
+        .replace(/&mdash;/g, '\u2014').replace(/&ndash;/g, '\u2013')
+        .replace(/&rsquo;/g, '\u2019').replace(/&lsquo;/g, '\u2018')
+        .replace(/&times;/g, '\u00d7').replace(/&amp;/g, '&');
+    },
     // The app paints each team's real colour onto #rg as a custom property at
     // boot, so the fake has to record them to be able to check them.
     style: { _v: {}, setProperty(k, v) { this._v[k] = v; },
