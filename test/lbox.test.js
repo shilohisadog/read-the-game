@@ -201,6 +201,77 @@ test('the pre-game frame counts nothing rather than counting zero', () => {
   assert.match(b.n, /nothing has been counted/i);
 });
 
+/**
+ * ⭐ THE BASE PROMPT NAMES THE CONTROL, NEVER A DIRECTION.
+ *
+ * It read "Pick a lens ABOVE" while the selector sits below — the second stale
+ * direction word in two days, after the caption told viewers to watch "the
+ * counters above the rink" with those counters parked. This page has moved that
+ * row three times; a sentence that points is a sentence that rots.
+ *
+ * So the prompt READS the selector's own heading (§27.2's rule on a second
+ * surface), and this asserts the coupling rather than the string: rename the
+ * heading and the prompt renames itself.
+ */
+test('the base prompt quotes the selector heading and points in no direction', () => {
+  const a = boot();
+  const n = a.$('lxN').textContent;
+  const heading = /<span class="pklab">([^<]*)</.exec(app)[1];
+
+  assert.ok(n.includes(heading),
+    `the prompt does not name the control — it says "${n}" while the heading is "${heading}"`);
+  assert.doesNotMatch(n, /\babove\b|\bbelow\b|\bunderneath\b|\bright\b|\bleft\b/i,
+    'the prompt points in a direction, which goes stale the next time the row moves');
+});
+
+/**
+ * ⭐ AND THE SHARED LINE IS CENTRED, BECAUSE IT BELONGS TO NO COLUMN.
+ *
+ * Kevin, on the blocked layer: "the only tweak I might suggest is to center the
+ * text, instead of having it on the left (which implies association with the
+ * number directly above it)." That was exactly the reading it invited. Alignment
+ * is now the grammar: the shared line is centred because it is about the game,
+ * and the per-club lines are aligned to their own columns because they are about
+ * that club. Position says ownership.
+ */
+test('alignment says which column a line belongs to', () => {
+  assert.match(PAGE_CSS, /#rg \.lxn\{[^}]*text-align:center/,
+    'the shared line is not centred, so it reads as a caption for the away figure');
+  assert.match(PAGE_CSS, /#rg \.lxan\{[^}]*text-align:left/);
+  assert.match(PAGE_CSS, /#rg \.lxhn\{[^}]*text-align:right/);
+});
+
+/**
+ * ⭐ AND THE STOPPAGE SAYS HOW LONG AGO, THROUGH THE FUNCTION THAT ALREADY KNOWS.
+ *
+ * Kevin: "didn't we used to have a time associated with the most recent event?"
+ * We did — `sinceLine` was built for his earlier complaint that the card and the
+ * rink described different moments (the card ran a median 29s behind the
+ * playhead), and it went dark when the panel was parked. It already carries the
+ * rule that matters: across a period break the difference in `s` is not an
+ * elapsed time, so it says nothing rather than computing a wrong one.
+ *
+ * THE CHECK IS THAT THE BOX CALLS IT, not that a second copy produces the same
+ * words — a re-implementation could never be checked against the first.
+ */
+test('the stoppage line says how long ago, and reuses the rule that knows', () => {
+  const a = boot();
+  a.$('scrub').oninput({ target: { value: a.$('scrub').max } });
+  pick(a, 'whistle');
+  const n = a.$('lxN').textContent;
+  assert.match(n, /P\d/, 'the stoppage line no longer says when it happened');
+  assert.match(n, /\d+s earlier|\d+:\d\d earlier/,
+    'the stoppage line does not say how long ago — the thing Kevin asked for');
+
+  const body = /if\(id==='whistle'\)\{[\s\S]*?\n return none;/.exec(app);
+  assert.ok(body, 'the whistle branch has moved — re-aim this check');
+  assert.ok(body[0].includes('STOPPAGE'),
+    'the slice does not contain the whistle branch it claims to be reading');
+  assert.match(body[0], /sinceLine\(/,
+    'the box computes its own elapsed time instead of calling the one function '
+    + 'that knows a period break is not an interval');
+});
+
 test('the box is a constant height and the caption clears it from one source', () => {
   assert.match(PAGE_CSS, /#rg\{--lboxh:\d+px;--rinkpad:\d+px\}/,
     'the box height and the rink padding are not both single named values');

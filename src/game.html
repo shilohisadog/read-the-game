@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-4WaE0f78gpOUc2s/nT5PXgCuzFWRxTmRe/B1BGNZec0=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-VS5xKEjXd1QcZFe1B8EKISvEu4rRQgqglmTC5p4EG/E='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-xhG8wHnueu/UsnwBxgYd/bLsGFkoBS3C9L1xR2aNTzM=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-P4SvALiHxpxjTD1YATi1zOGqrCzf7mSJvU0Ue5IIa7U='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">Watch a game</a><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see</a><a href="/workshop.html">Workshop</a></nav></header>
@@ -537,8 +537,16 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .lxan{grid-column:1;text-align:left}
 #rg .lxhn{grid-column:3;text-align:right}
 #rg .lbox.split .lxn{display:none}
+/* ⭐ CENTRED, BECAUSE IT BELONGS TO NO COLUMN. Kevin, on the blocked layer:
+   "the only tweak I might suggest is to center the text, instead of having it on
+   the left (which implies association with the number directly above it)."
+   Exactly the reading it invited -- left-aligned under the away figure, a
+   sentence about the whole game looked like a caption for one club's number.
+   THE ALIGNMENT IS NOW THE GRAMMAR: this line spans both columns and is centred
+   because it is about the game; `.lxan` / `.lxhn` sit under their own column and
+   are aligned to it because they are about that club. Position says ownership. */
 #rg .lxn{grid-column:1/-1;grid-row:2;font-size:.74rem;line-height:1.35;color:var(--muted);
- min-height:calc(2 * 1.35 * .74rem);align-self:start;margin-top:3px}
+ min-height:calc(2 * 1.35 * .74rem);align-self:start;margin-top:3px;text-align:center}
 /* The base view states what the box is FOR, which is a sentence about the
    interface -- the `display:` provenance category (§B1) -- and never a metric.
    Shots on goal was proposed for this slot and refused: `Just events` means no
@@ -6516,11 +6524,24 @@ function byShooter(ids,slice){
  return t;}
 function lboxFor(id,at,L){
  const none={a:'',k:'',h:'',n:''};
- if(id==='none')
-  // A SENTENCE ABOUT THE INTERFACE, NOT A METRIC. Shots on goal was proposed
-  // for this slot and refused (§31.6): `Just events` means no metric, so a
-  // number here would mislabel the chip.
-  return {...none,n:'Pick a lens above and this fills in as the replay runs.'};
+ if(id==='none'){
+  /* A SENTENCE ABOUT THE INTERFACE, NOT A METRIC. Shots on goal was proposed
+     for this slot and refused (§31.6): `Just events` means no metric, so a
+     number here would mislabel the chip.
+
+     ⭐ AND IT NAMES THE CONTROL, NEVER A DIRECTION. It said "Pick a lens ABOVE"
+     and the selector is below — the second time in two days a direction word
+     went stale, after the caption told viewers to watch "the counters above the
+     rink" while those counters were parked. A sentence that points with a
+     direction is a sentence that rots the next time anything moves, and this
+     page has moved that row three times.
+     THE HEADING IS READ FROM THE PAGE, never retyped, which is §27.2's rule
+     applied to a second surface: if the selector is renamed the prompt renames
+     itself, and if the heading disappears the fallback still makes sense. */
+  const lab=document.querySelector('#rg .pklab');
+  const w=lab&&lab.textContent?lab.textContent.trim():null;
+  return {...none,n:w?`Choose a metric under ${w} and this fills in as the replay runs.`
+                    :'Choose a metric and this fills in as the replay runs.'};}
  if(at<0){
   // BEFORE THE FIRST EVENT THERE IS NOTHING TO COUNT, and zeroes would be a
   // claim rather than a blank. Same rule as the split bar refusing to draw a
@@ -6604,7 +6625,14 @@ function lboxFor(id,at,L){
       blocked attribution, this): THE BOX'S LINE CARRIES ONLY WHAT CHANGES;
       every constant explanation belongs in the caption. A fixed box cannot hold
       a constant sentence AND an unbounded one. */
-   n:nm?`Most recently: ${nm}.`
+   /* ⭐ AND HOW LONG AGO, THROUGH `sinceLine` RATHER THAN A SECOND COPY OF IT.
+      Kevin: "didn't we used to have a time associated with the most recent
+      event?" We did -- it was built for his own complaint that the card and the
+      rink described different moments (the card ran a median 29s behind the
+      playhead), and it went dark with the panel. It already knows the one rule
+      that matters: across a period break the difference in `s` is not an
+      elapsed time, so it says nothing rather than computing a wrong one. */
+   n:nm?`Most recently: ${nm} ${sinceLine(w)}`.trim().replace(/\s+·/g,' ·')
        :'Play has not stopped yet in what you have watched.'};}
  return none;}
 /** The centre label alone, for the pre-game frame where there is nothing to count. */

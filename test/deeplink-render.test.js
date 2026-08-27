@@ -110,6 +110,15 @@ function fakeDom() {
           return t ? { textContent: t[1] } : null;
         } };
       }
+      /* THE SELECTOR'S OWN HEADING, from the built markup. The base view's prompt
+         names the control rather than pointing at a direction — "Pick a lens
+         ABOVE" went stale the day the row moved below — so it READS this, and
+         the fake has to answer with the real word or the test is comparing the
+         fake's silence to the fake's silence. */
+      if (sel === '#rg .pklab') {
+        const m = /<span class="pklab">([^<]*)</.exec(app);
+        return m ? { textContent: m[1] } : null;
+      }
       const pk = /^#rg \.pk\[data-l="([a-z]+)"\]$/.exec(sel);
       if (pk) return GROUPS['#rg .pk'].find(b => b.dataset.l === pk[1]) || null;
       if (sel === '#rg .zref .legend') {

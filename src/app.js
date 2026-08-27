@@ -2068,11 +2068,24 @@ function byShooter(ids,slice){
  return t;}
 function lboxFor(id,at,L){
  const none={a:'',k:'',h:'',n:''};
- if(id==='none')
-  // A SENTENCE ABOUT THE INTERFACE, NOT A METRIC. Shots on goal was proposed
-  // for this slot and refused (§31.6): `Just events` means no metric, so a
-  // number here would mislabel the chip.
-  return {...none,n:'Pick a lens above and this fills in as the replay runs.'};
+ if(id==='none'){
+  /* A SENTENCE ABOUT THE INTERFACE, NOT A METRIC. Shots on goal was proposed
+     for this slot and refused (§31.6): `Just events` means no metric, so a
+     number here would mislabel the chip.
+
+     ⭐ AND IT NAMES THE CONTROL, NEVER A DIRECTION. It said "Pick a lens ABOVE"
+     and the selector is below — the second time in two days a direction word
+     went stale, after the caption told viewers to watch "the counters above the
+     rink" while those counters were parked. A sentence that points with a
+     direction is a sentence that rots the next time anything moves, and this
+     page has moved that row three times.
+     THE HEADING IS READ FROM THE PAGE, never retyped, which is §27.2's rule
+     applied to a second surface: if the selector is renamed the prompt renames
+     itself, and if the heading disappears the fallback still makes sense. */
+  const lab=document.querySelector('#rg .pklab');
+  const w=lab&&lab.textContent?lab.textContent.trim():null;
+  return {...none,n:w?`Choose a metric under ${w} and this fills in as the replay runs.`
+                    :'Choose a metric and this fills in as the replay runs.'};}
  if(at<0){
   // BEFORE THE FIRST EVENT THERE IS NOTHING TO COUNT, and zeroes would be a
   // claim rather than a blank. Same rule as the split bar refusing to draw a
@@ -2156,7 +2169,14 @@ function lboxFor(id,at,L){
       blocked attribution, this): THE BOX'S LINE CARRIES ONLY WHAT CHANGES;
       every constant explanation belongs in the caption. A fixed box cannot hold
       a constant sentence AND an unbounded one. */
-   n:nm?`Most recently: ${nm}.`
+   /* ⭐ AND HOW LONG AGO, THROUGH `sinceLine` RATHER THAN A SECOND COPY OF IT.
+      Kevin: "didn't we used to have a time associated with the most recent
+      event?" We did -- it was built for his own complaint that the card and the
+      rink described different moments (the card ran a median 29s behind the
+      playhead), and it went dark with the panel. It already knows the one rule
+      that matters: across a period break the difference in `s` is not an
+      elapsed time, so it says nothing rather than computing a wrong one. */
+   n:nm?`Most recently: ${nm} ${sinceLine(w)}`.trim().replace(/\s+·/g,' ·')
        :'Play has not stopped yet in what you have watched.'};}
  return none;}
 /** The centre label alone, for the pre-game frame where there is nothing to count. */

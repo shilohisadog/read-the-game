@@ -490,8 +490,16 @@
 #rg .lxan{grid-column:1;text-align:left}
 #rg .lxhn{grid-column:3;text-align:right}
 #rg .lbox.split .lxn{display:none}
+/* ⭐ CENTRED, BECAUSE IT BELONGS TO NO COLUMN. Kevin, on the blocked layer:
+   "the only tweak I might suggest is to center the text, instead of having it on
+   the left (which implies association with the number directly above it)."
+   Exactly the reading it invited -- left-aligned under the away figure, a
+   sentence about the whole game looked like a caption for one club's number.
+   THE ALIGNMENT IS NOW THE GRAMMAR: this line spans both columns and is centred
+   because it is about the game; `.lxan` / `.lxhn` sit under their own column and
+   are aligned to it because they are about that club. Position says ownership. */
 #rg .lxn{grid-column:1/-1;grid-row:2;font-size:.74rem;line-height:1.35;color:var(--muted);
- min-height:calc(2 * 1.35 * .74rem);align-self:start;margin-top:3px}
+ min-height:calc(2 * 1.35 * .74rem);align-self:start;margin-top:3px;text-align:center}
 /* The base view states what the box is FOR, which is a sentence about the
    interface -- the `display:` provenance category (§B1) -- and never a metric.
    Shots on goal was proposed for this slot and refused: `Just events` means no
