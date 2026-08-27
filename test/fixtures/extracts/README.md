@@ -1,4 +1,4 @@
-# Five real games, each committed for a stated reason
+# Six real games, each committed for a stated reason
 
 These are **published extracts**, copied byte-for-byte from
 `https://data.readthegame.co/extract/<id>.json`. They exist because the only
@@ -17,6 +17,7 @@ holds; it may never assert how often something happens.**
 |---|---|
 | `2024030413` EDM@FLA 2025-06-09 | **15 events in one second, 13 of them penalties** — the worst clock collision in the sampled archive. A resolver that assumes a clock names one event fails here first. |
 | `2023020207` CGY@TOR 2023-11-10 | 14 events in one second, **and period 5 is a `SO`** (shootout). |
+| `2025030214` | **A double minor killed by a goal 176 seconds before it was due to expire.** At playable frame 125 the referee's clock reads `4:00` and the player actually leaves in `1:04`. The penalty display counts the ASSESSED time, because counting the served time would announce a goal that has not happened yet — this is the game where the two numbers are furthest apart. |
 | `2023030222` CAR@NYR 2024-05-07 | Playoff double overtime — **period 5 is an `OT`**. Pairs with the row above: *same period number, opposite meaning.* A resolver reading the period number rather than `pt` passes one of these two and fails the other, which is the only way that bug shows itself. |
 | `2023020105` COL@PIT 2023-10-26 | **Zero clock collisions** — every event uniquely addressed by `(period, clock, type)`. The case where a bare clock is exact everywhere, so a test that only ever runs on messy games cannot claim it. |
 | `2025020501` CAR@PHI 2025-12-13 | An ordinary recent game that still reaches a shootout; keeps the 2025 season represented. |

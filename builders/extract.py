@@ -401,6 +401,37 @@ KNOWN_MISSES = {
 
 CONSEQUENTIAL = ("typeDescKey", "situationCode")
 
+# ⚠️ COLLECTED SINCE THIS FUNCTION WAS WRITTEN, AND NEVER COMPARED TO ANYTHING.
+# `seen["penalty descKey"]` has been gathered on every run and had no entry in
+# `unknown`, so a descriptor the league invented would have been recorded and
+# alerted on by nobody -- the exact gap `_vocabulary_seen()` in derive.py
+# describes for stoppage reasons, one field over, sitting open in this file.
+#
+# It closed because the page started RENDERING these: `src/lib/penalties.js`
+# turns a descriptor into words, and an unknown one renders raw there. Raw on
+# screen is survivable; unnoticed is not.
+#
+# ⚠️ STRICTLY WHAT HAS BEEN OBSERVED -- 29 descriptors: 28 across 40 games, plus
+# `kneeing`, which appears in data/rich.json and in NONE of the forty. A sample
+# of forty games did not contain a word the reference fixture did, which is the
+# whole argument for the archive-wide sweep this list feeds.
+# The archive is thousands of games and will have more. Adding a plausible
+# `spearing` here would HIDE it from this report, which is the trap the
+# missed-shot comment below names. They get added from the drift report.
+KNOWN_PENALTIES = {
+    "roughing", "tripping", "kneeing", "cross-checking", "high-sticking", "interference",
+    "slashing", "hooking", "holding", "elbowing", "boarding", "embellishment",
+    "misconduct", "game-misconduct", "holding-the-stick",
+    "unsportsmanlike-conduct", "unsportsmanlike-conduct-bench",
+    "interference-goalkeeper", "delaying-game",
+    "delaying-game-puck-over-glass", "delaying-game-face-off-violation",
+    "delaying-game-illegal-play-by-goalie", "delaying-game-unsuccessful-challenge",
+    "closing-hand-on-puck", "too-many-men-on-the-ice", "goalie-removed-own-mask",
+    "high-sticking-double-minor", "butt-ending-double-minor",
+    "ps-slash-on-breakaway",
+}
+
+
 def vocabulary(pbp):
     seen = {"typeDescKey": set(), "stoppage reason": set(), "situationCode": set(),
             "penalty descKey": set(), "missed-shot reason": set()}
@@ -438,6 +469,11 @@ def vocabulary(pbp):
         # know what. One game cannot answer it; the archive can, on the next
         # derive, through `index.json`'s `noted`.
         "missed-shot reason": seen["missed-shot reason"] - KNOWN_MISSES,
+        # NOTED, NEVER BLOCKING, and the standing is deliberate: an unrecognised
+        # descriptor renders as itself on the page rather than as a guess, so it
+        # is a wording gap and not a wrong number. Blocking a derive on it would
+        # refuse a game over a word.
+        "penalty descKey": seen["penalty descKey"] - KNOWN_PENALTIES,
     }
     return seen, {k: v for k, v in unknown.items() if v}
 

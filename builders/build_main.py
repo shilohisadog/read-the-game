@@ -59,12 +59,12 @@ __CSS__</style>
 <h1 class="pagelede">Learn to read hockey · event by event first, add metrics after</h1>
 <div class="newcomer" id="newcomer"></div>
 <div class="board">
-  <div class="tm a"><span class="ab" id="aAb">&mdash;</span><span class="sc" id="aSc">0</span></div>
+  <div class="tm a"><span class="ab" id="aAb">&mdash;</span><span class="sc" id="aSc">0</span><div class="pens" id="penA"></div></div>
   <div class="mid"><div class="gs"><span id="per">Pre-game</span> · <span class="cl" id="clk">20:00</span> <i class="clw">left</i></div>
     <div class="cbar"><div class="bar"><span class="ba" id="ba"></span><span class="bh" id="bh"></span></div>
     <div class="pct"><span id="pa">0</span><span class="plab"><i class="pname" id="pName">CONTROL</i><i class="mode" id="pMode">ALL SITUATIONS</i></span><span id="ph">0</span></div></div>
   </div>
-  <div class="tm h"><span class="ab" id="hAb">&mdash;</span><span class="sc" id="hSc">0</span></div>
+  <div class="tm h"><span class="ab" id="hAb">&mdash;</span><span class="sc" id="hSc">0</span><div class="pens" id="penH"></div></div>
   <p class="foot" id="gl">—</p>
 </div>
 <p class="endnote" id="endnote"></p>
@@ -157,7 +157,7 @@ assert not set(_left) - {"__LIB__", "__BOOT__", "__CSP__"}, \
     f"unsubstituted markers left in the template: {sorted(set(_left))}"
 
 
-LIB = ["rink.js", "attribution.js", "layer.js", "strength.js", "box.js", "svgpen.js", "figures.js",
+LIB = ["rink.js", "attribution.js", "layer.js", "strength.js", "box.js", "penalties.js", "svgpen.js", "figures.js",
        "layers/corsi.js", "layers/goaltending.js", "layers/danger.js", "layers/whistle.js",
        "layers/blocked.js",
        # BEFORE sentence.js, which asks it which competition a game is.

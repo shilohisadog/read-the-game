@@ -1701,3 +1701,81 @@ the line that writes it fails four.
 And it is **driven through the control a visitor uses** — `#rg .pk[data-l=…]`
 rather than the parked `#lyWhistle` behind it, which still exists and still works
 and would have kept the gate green on a page whose selector had stopped working.
+
+## 29. Penalties move to the scoreboard
+
+Kevin, 2026-08-27: the penalty boxes under the ice *"are (now) rather wasted
+space… let's display penalties on the scoreboard, with the offending party being
+identified under the applicable team, maybe what they went off for and some sort
+of timer that counts down."*
+
+    the row under the ice   62px at every width, saying "empty · empty"
+    measured, at frames the replay SHOWS, over 40 published games:
+      nobody in the box  82.3%     three or more  0.7%
+      exactly one        15.9%     six            once
+      two                 1.1%     both boxes     3.0%
+
+So the block is **absent** four times in five — no reserved space, which was the
+complaint — and it is built for one. **Two seats and a `+N`**: two covers 99.3%
+of frames and is what a rink's scoreboard has. Kevin chose the `+N`.
+
+### 29.1 ⭐ The clock counts the referee's time, and that is not a detail
+
+`box.js` derives early release, so every stint knows its **true** end. Counting
+down to that end would **announce a goal that has not happened.**
+
+The new fixture is where the two are furthest apart: `2025030214`, a double
+minor killed by a goal — at the frame the replay shows, the **assessed** clock
+reads `4:00` and the **served** remaining is `1:04`. **A page counting the served
+time tells the viewer, 176 seconds early, that a goal is coming.** That is the
+spoiler the verdict card and the game line already refuse.
+
+So the number is `start + min×60 − now`, exactly what the arena shows, and the
+seat empties on the ICE's schedule because `occupants` uses the true end.
+**Kevin's earlier ruling on this surface — *the assessed time, not a countdown* —
+is kept, not overturned**: it is the assessed clock that ticks.
+
+⚠️ **50 of 332 stints end early**, so this is not hypothetical. And the test
+asserts the two numbers DIFFER before comparing them — *two mechanisms, one
+observable* is the shape that has fooled this project before.
+
+### 29.2 The league's word, never a de-hyphenation
+
+`src/lib/penalties.js`, in the shape `whistle.js` already argued: known keys
+only, and an unseen one **renders raw**. `delaying-game-puck-over-glass` becomes
+*Delay of game — puck over the glass*; a descriptor we have never met arrives as
+itself, visible and fixable.
+
+⚠️ **And the vocabulary alarm was collecting penalty keys and comparing them to
+nothing.** `seen["penalty descKey"]` has been gathered on every run with no entry
+in `unknown` — the exact gap `derive.py` describes for stoppage reasons, sitting
+open one field over. Closed, at the standing *noted, never blocking*.
+
+⭐ **`kneeing` is why that matters.** It is in `data/rich.json` and in **none** of
+the forty published games I sampled. A forty-game sample did not contain a word
+the reference fixture did.
+
+### 29.3 ⚠️ Three instrument errors in one sitting
+
+1. **`?g=…` is not a parameter this page accepts** — it is `?game=`. Several
+   probes silently measured the *default* game. The "40 games, none overflow"
+   sweep was **one game, forty times.** Re-run properly: 5,562 frames across 40
+   real games at 345 and 390, none overflow, tallest scoreboard 226px.
+2. **`stints(events, {})`** destructures `{homeId, awayId}`, so with an empty
+   context **no penalty could ever be released** — which is why the first count
+   said *0 of 332 ended by a goal* against `box.js`'s own documented 45.
+3. The first version of the row was a **wrapping flex line**, so a 41-character
+   infraction put the clock on line 3 and an 8-character one on line 1 — two
+   seats in one scoreboard with different shapes. A grid now: name and clock on
+   row one, infraction spanning row two, two lines whatever the league calls it.
+
+⚠️ **And the same element in two containers, for the fifth time**: under 520px
+`.tm` becomes a ROW, so the penalty block laid out *beside* the badge and squeezed
+`CAR 1` into a sliver. Correct above 520, wrong below it.
+
+### 29.4 Known limit
+
+A bench minor — *too many men on the ice*, 10 in the sample — has **no committing
+player** in the feed, so `box.js` gives it no seat and the scoreboard shows
+nothing while the team is genuinely short-handed. Pre-existing behaviour, now
+visible in a place where its absence is more noticeable.

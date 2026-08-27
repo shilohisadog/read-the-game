@@ -41,7 +41,10 @@ GAMES.push({ id: '2023020204',
 const byId = id => GAMES.find(g => g.id === id);
 
 test('the corpus is the corpus we think it is', () => {
-  assert.equal(GAMES.length, 6);
+  // Six published extracts plus `rich.json`. It went from 5+1 to 6+1 on
+  // 2026-08-27 when `2025030214` arrived — a double minor killed by a goal 176
+  // seconds early, which is what the penalty clock is tested against.
+  assert.equal(GAMES.length, 7);
   assert.ok(GAMES.every(g => g.events.length > 250));
 });
 

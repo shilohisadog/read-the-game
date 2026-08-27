@@ -202,12 +202,16 @@ test('the game opens before the first play, and narrates nothing', () => {
   assert.equal(a.$('puck').innerHTML, '', 'the puck was placed before the draw');
   assert.equal(String(a.$('aSc').textContent), '0');
   assert.equal(String(a.$('hSc').textContent), '0');
-  assert.ok(a.$('pbA').classList.contains('empty'), 'a penalty was served before the game');
-  assert.ok(a.$('pbH').classList.contains('empty'), 'a penalty was served before the game');
+  // ⭐ THE PENALTY DISPLAY MOVED TO THE SCOREBOARD (2026-08-27) and stopped
+  // being a box that says `empty`: it is ABSENT when nobody is sitting, which is
+  // 80.4% of rendered events. So the pre-game claim is now emptiness of the
+  // slot, not a class on a box that is always there.
+  assert.equal(a.$('penA').innerHTML, '', 'a penalty was served before the game');
+  assert.equal(a.$('penH').innerHTML, '', 'a penalty was served before the game');
   // AND IT IS NOT A BLANK PAGE. Both goaltenders are in their creases, so the
   // frame says "about to start" rather than "nothing loaded" -- which is the
-  // whole reason to have one. A novice gets two teams, two nets, two directions
-  // and two empty boxes to read before anything moves.
+  // whole reason to have one. A novice gets two teams, two nets and two
+  // directions to read before anything moves.
   assert.ok(a.$('netmen').innerHTML.length > 0,
             'the goaltenders left the ice along with the puck');
   assert.equal(a.$('back').disabled, true, 'there is nothing behind the first frame');

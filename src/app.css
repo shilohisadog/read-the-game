@@ -98,6 +98,16 @@
     flex column too, and above 520px `.tm` still stacks. */
  #rg:not(.preview) .tm.a .ab{order:1}#rg:not(.preview) .tm.a .sc{order:2}
  #rg:not(.preview) .tm.h .sc{order:1}#rg:not(.preview) .tm.h .ab{order:2}
+ /* ⚠️ AND THE PENALTIES NEED THEIR OWN LINE HERE. Under 520 `.tm` turns into a
+    ROW so the badge sits beside the score — which laid the penalty block out as
+    a third item BESIDE them, squeezing `CAR 1` into a sliver. It was correct
+    above 520, where `.tm` is still a column, and wrong below it: the same
+    element in two containers, which is the defect class this project has now
+    named four times. `flex-basis:100%` puts it on its own line; `order:3` keeps
+    it under BOTH arrangements, since the away side reverses badge and score. */
+ #rg:not(.preview) .tm{flex-wrap:wrap}
+ #rg:not(.preview) .pens{flex-basis:100%;order:3;align-items:center}
+ #rg:not(.preview) .pens{width:100%}
 }
 #rg .mid{min-width:150px}#rg .gs{text-align:center;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px}#rg .gs .cl{color:var(--ink);font-family:ui-monospace,Menlo,monospace}#rg .gs .clw{font-style:normal;font-size:.62rem;letter-spacing:.08em}
 #rg .bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--edge)}#rg .bar span{transition:width .4s ease}#rg .ba{background:#fff;box-shadow:inset 0 0 0 2px var(--away);width:50%}#rg .bh{background:var(--home);width:50%}
@@ -1199,6 +1209,44 @@
 .shellmsg nav a{color:#2a5d86;text-decoration:none;border-bottom:1px solid #cfe0ec;
  padding:2px 0;font-weight:600}
 .shellmsg nav a:hover{border-bottom-color:#2a5d86}
+
+/* ⭐ PENALTIES ON THE SCOREBOARD, under the team that took them.
+   Absent when nobody is sitting -- no reserved space, which is exactly what was
+   wrong with the row under the ice: it read "empty · empty" on 80.4% of
+   rendered events while costing 62px of the rink card at every width.
+
+   THE TEAM COLUMN IS WHERE THE ROOM IS. Each `.tm` is a `1fr` track, ~370px at
+   1100; the middle column is only 156px. Kevin saw that from the render and the
+   measurement agrees.
+
+   The name leads, the infraction follows in muted type, and the clock is
+   monospace and last so a column of them lines up. `tabular-nums` because a
+   countdown whose digits change width jitters as it steps. */
+#rg .pens{display:flex;flex-direction:column;gap:3px;margin-top:6px;align-items:inherit}
+#rg .pens:empty{display:none}
+/* ⚠️ A GRID, NOT A WRAPPING ROW, and the infraction is why. `Delay of game —
+   faceoff violation` is 41 characters and `Tripping` is 8, so as flex items the
+   clock landed on line 1 for one and line 3 for the other -- two seats in one
+   scoreboard with different shapes. Name and clock hold row 1, the infraction
+   spans row 2, and the block is two lines tall whatever the league calls it. */
+#rg .pen{display:grid;grid-template-columns:1fr auto;gap:0 8px;
+ font-size:.72rem;line-height:1.35;text-align:left}
+#rg .pw{grid-column:1;grid-row:1}
+#rg .pt{grid-column:2;grid-row:1}
+#rg .pf{grid-column:1/-1;grid-row:2}
+#rg .pmore{grid-column:1/-1}
+#rg .pw{font-weight:700;color:var(--ink)}
+#rg .pf{color:var(--muted)}
+#rg .pt{font-family:ui-monospace,Menlo,monospace;font-weight:700;color:var(--ink);
+ font-variant-numeric:tabular-nums}
+#rg .pmore{color:var(--muted);font-style:italic}
+/* The away column is right-aligned in the board, so its penalties follow it. */
+#rg.preview .pens{display:none!important}
+
+/* ⏸ AND THE ROW UNDER THE ICE IS PARKED, not deleted. Kevin: "I know I was the
+   one that originally wanted them but have since changed my mind." The markup
+   still ships; `drawBoxes` no longer writes to it. */
+#rg .pboxes{display:none}
 
 /* ⏸ ═══ PARKED 2026-08-27 — EVERY LAYER'S OUTPUT, NOT ITS CONTROL ═══
    Kevin: "let's hide (not remove, but temporarily hide) the layer information

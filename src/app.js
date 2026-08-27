@@ -518,27 +518,55 @@ let prevA=0,prevH=0;
  * happened forty times, minutes ago. The caption is the opposite case: calling
  * the goal again is the whole reason to jump to it.
  */
-/* WHO IS SITTING, at one instant. The names come from the penalty events and
-   the seat is emptied by src/lib/box.js -- which consults `sit` about GOALS and
-   about nothing else, because occupancy and strength are different questions.
-   Coincidental majors after a fight fill both boxes at five a side, and a band
-   driven by the strength code would show them empty.
+/* WHO IS SITTING, at one instant — ON THE SCOREBOARD, the way a rink shows it.
+   Kevin, 2026-08-27: the penalty boxes under the ice "are (now) rather wasted
+   space... let's display penalties on the scoreboard, with the offending party
+   being identified under the applicable team, maybe what they went off for and
+   some sort of timer that counts down."
 
-   THE ASSESSED TIME, NOT A COUNTDOWN. `2:00` is what the referee gave him; what
-   he serves can be less, and it is the ice that says so. Kevin ruled a static
-   label for this build. */
+   MEASURED FIRST, over 40 games and every rendered event:
+       both boxes empty   80.4%      three or more   0.7%
+       exactly one        17.7%      six, once
+       two                 1.2%      both boxes at once 3.7%
+   So the block is ABSENT four times in five -- no reserved space, which was the
+   complaint -- and it is built for one. TWO SEATS ARE SHOWN AND THE REST ARE
+   COUNTED: two covers 99.3% of events and is also what a real arena scoreboard
+   has. Kevin chose the `+N`.
+
+   ⭐ THE CLOCK COUNTS THE ASSESSED TIME, AND THAT IS NOT A DETAIL.
+   `box.js` derives early release -- a minor dies when the other team scores on
+   it -- so every stint already knows its TRUE end. Counting down to that would
+   LEAK THE FUTURE: a clock reading 0:40 on a penalty that a goal is about to
+   kill tells the viewer a goal is coming, which is the spoiler the verdict card
+   and the game line already refuse. So the number shown is
+   `start + min*60 - now`, the referee's clock, exactly what the arena shows --
+   and the seat empties on the ICE's schedule, because `occupants` uses the true
+   end. Kevin's earlier ruling on this surface ("the assessed time, not a
+   countdown") is kept, not overturned: it is the assessed clock that is ticking.
+
+   IT STEPS RATHER THAN TICKS, because the playhead is at events. A jump of two
+   minutes of game time moves it two minutes, like everything else here.
+
+   ⚠️ AND THIS IS NOT A POWER-PLAY DISPLAY. A ten-minute misconduct puts a man
+   in the box and takes nobody off the ice (23 of 332 penalties measured). `sit`
+   answers strength; this answers occupancy, and box.js is emphatic that the two
+   are different questions. */
+const SEATS = 2;
+function mmss(sec){const m=Math.floor(sec/60),s=sec%60;return `${m}:${String(s).padStart(2,'0')}`;}
 function drawBoxes(secs){
- for(const [tm,id,ab] of [[AID,'pbA',AAB],[HID,'pbH',HAB]]){
+ for(const [tm,id] of [[AID,'penA'],[HID,'penH']]){
    const el=$(id);if(!el)continue;
    const men=secs==null?[]:occupants(PBOX,secs,tm);
-   el.setAttribute('data-ab',ab);
-   el.classList.toggle('empty',!men.length);
-   // The infraction is a raw feed key (`high-sticking-double-minor`) and stays
-   // out of here; the caption already names it in words when the call is made.
-   el.innerHTML=men.length
-     ? men.map(s=>{const p=R[s.player];
-         return `<span class="man">${ESC(p?p.nm:'—')}</span><span class="srv">${s.min}:00</span>`;}).join('')
-     : '<span class="srv">empty</span>';}}
+   const rows=men.slice(0,SEATS).map(s=>{
+     const p=R[s.player];
+     // The assessed clock, never the served one -- see above.
+     const left=Math.max(0,(s.start+s.min*60)-secs);
+     return `<span class="pen"><span class="pw">${ESC(p?p.nm:'—')}</span>`
+           +`<span class="pf">${ESC(penName(s.pen))}</span>`
+           +`<span class="pt">${mmss(left)}</span></span>`;}).join('');
+   const more=men.length>SEATS
+     ? `<span class="pen pmore">+${men.length-SEATS} more in the box</span>`:'';
+   el.innerHTML=rows+more;}}
 
 /* THE SENTENCE THE PAGE HAS OWED SINCE THE ENDS DECISION -- see rink.js.
    Two sentences, two kinds: the first is about hockey, the second is about what

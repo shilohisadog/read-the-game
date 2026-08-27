@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-sFE3oG2sr3/4L62vge/A+iJKjv32mvmhIDYaozrxFxo=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-y5T7GDZ2LWByTZIOxDuZl0uYDqHhMo9y+AbeRDxubGY='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Z547i2BDEajPa3a6LDp6BLhFjGo0BkQ+CFohgQtclE4=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-FmfwLkdvYolh+iqQoddElEgjZZRQf3Ga0dwLawsOm4Y='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">Watch a game</a><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see</a><a href="/workshop.html">Workshop</a></nav></header>
@@ -145,6 +145,16 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
     flex column too, and above 520px `.tm` still stacks. */
  #rg:not(.preview) .tm.a .ab{order:1}#rg:not(.preview) .tm.a .sc{order:2}
  #rg:not(.preview) .tm.h .sc{order:1}#rg:not(.preview) .tm.h .ab{order:2}
+ /* ⚠️ AND THE PENALTIES NEED THEIR OWN LINE HERE. Under 520 `.tm` turns into a
+    ROW so the badge sits beside the score — which laid the penalty block out as
+    a third item BESIDE them, squeezing `CAR 1` into a sliver. It was correct
+    above 520, where `.tm` is still a column, and wrong below it: the same
+    element in two containers, which is the defect class this project has now
+    named four times. `flex-basis:100%` puts it on its own line; `order:3` keeps
+    it under BOTH arrangements, since the away side reverses badge and score. */
+ #rg:not(.preview) .tm{flex-wrap:wrap}
+ #rg:not(.preview) .pens{flex-basis:100%;order:3;align-items:center}
+ #rg:not(.preview) .pens{width:100%}
 }
 #rg .mid{min-width:150px}#rg .gs{text-align:center;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px}#rg .gs .cl{color:var(--ink);font-family:ui-monospace,Menlo,monospace}#rg .gs .clw{font-style:normal;font-size:.62rem;letter-spacing:.08em}
 #rg .bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--edge)}#rg .bar span{transition:width .4s ease}#rg .ba{background:#fff;box-shadow:inset 0 0 0 2px var(--away);width:50%}#rg .bh{background:var(--home);width:50%}
@@ -1247,6 +1257,44 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
  padding:2px 0;font-weight:600}
 .shellmsg nav a:hover{border-bottom-color:#2a5d86}
 
+/* ⭐ PENALTIES ON THE SCOREBOARD, under the team that took them.
+   Absent when nobody is sitting -- no reserved space, which is exactly what was
+   wrong with the row under the ice: it read "empty · empty" on 80.4% of
+   rendered events while costing 62px of the rink card at every width.
+
+   THE TEAM COLUMN IS WHERE THE ROOM IS. Each `.tm` is a `1fr` track, ~370px at
+   1100; the middle column is only 156px. Kevin saw that from the render and the
+   measurement agrees.
+
+   The name leads, the infraction follows in muted type, and the clock is
+   monospace and last so a column of them lines up. `tabular-nums` because a
+   countdown whose digits change width jitters as it steps. */
+#rg .pens{display:flex;flex-direction:column;gap:3px;margin-top:6px;align-items:inherit}
+#rg .pens:empty{display:none}
+/* ⚠️ A GRID, NOT A WRAPPING ROW, and the infraction is why. `Delay of game —
+   faceoff violation` is 41 characters and `Tripping` is 8, so as flex items the
+   clock landed on line 1 for one and line 3 for the other -- two seats in one
+   scoreboard with different shapes. Name and clock hold row 1, the infraction
+   spans row 2, and the block is two lines tall whatever the league calls it. */
+#rg .pen{display:grid;grid-template-columns:1fr auto;gap:0 8px;
+ font-size:.72rem;line-height:1.35;text-align:left}
+#rg .pw{grid-column:1;grid-row:1}
+#rg .pt{grid-column:2;grid-row:1}
+#rg .pf{grid-column:1/-1;grid-row:2}
+#rg .pmore{grid-column:1/-1}
+#rg .pw{font-weight:700;color:var(--ink)}
+#rg .pf{color:var(--muted)}
+#rg .pt{font-family:ui-monospace,Menlo,monospace;font-weight:700;color:var(--ink);
+ font-variant-numeric:tabular-nums}
+#rg .pmore{color:var(--muted);font-style:italic}
+/* The away column is right-aligned in the board, so its penalties follow it. */
+#rg.preview .pens{display:none!important}
+
+/* ⏸ AND THE ROW UNDER THE ICE IS PARKED, not deleted. Kevin: "I know I was the
+   one that originally wanted them but have since changed my mind." The markup
+   still ships; `drawBoxes` no longer writes to it. */
+#rg .pboxes{display:none}
+
 /* ⏸ ═══ PARKED 2026-08-27 — EVERY LAYER'S OUTPUT, NOT ITS CONTROL ═══
    Kevin: "let's hide (not remove, but temporarily hide) the layer information
    that comes up when each selector is active. The reason is I don't think we
@@ -1302,12 +1350,12 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 <h1 class="pagelede">Learn to read hockey · event by event first, add metrics after</h1>
 <div class="newcomer" id="newcomer"></div>
 <div class="board">
-  <div class="tm a"><span class="ab" id="aAb">&mdash;</span><span class="sc" id="aSc">0</span></div>
+  <div class="tm a"><span class="ab" id="aAb">&mdash;</span><span class="sc" id="aSc">0</span><div class="pens" id="penA"></div></div>
   <div class="mid"><div class="gs"><span id="per">Pre-game</span> · <span class="cl" id="clk">20:00</span> <i class="clw">left</i></div>
     <div class="cbar"><div class="bar"><span class="ba" id="ba"></span><span class="bh" id="bh"></span></div>
     <div class="pct"><span id="pa">0</span><span class="plab"><i class="pname" id="pName">CONTROL</i><i class="mode" id="pMode">ALL SITUATIONS</i></span><span id="ph">0</span></div></div>
   </div>
-  <div class="tm h"><span class="ab" id="hAb">&mdash;</span><span class="sc" id="hSc">0</span></div>
+  <div class="tm h"><span class="ab" id="hAb">&mdash;</span><span class="sc" id="hSc">0</span><div class="pens" id="penH"></div></div>
   <p class="foot" id="gl">—</p>
 </div>
 <p class="endnote" id="endnote"></p>
@@ -2105,6 +2153,88 @@ function stints(events, ctx) {
 function occupants(all, secs, teamId) {
   return all.filter(s => s.team === teamId && s.start <= secs && s.end > secs)
             .sort((a, b) => a.start - b.start);
+}
+
+/* --- src/lib/penalties.js --- */
+/**
+ * What a player went off for — the league's own word for it, in ours.
+ *
+ * WHY A TABLE AND NOT `replace(/-/g,' ')`. `docs/whistle-layer.md` and the
+ * comment above `WHY` in layers/whistle.js already paid for this lesson: that
+ * one line shipped for weeks and rendered "Goalie Stopped After Sog" and "Tv
+ * Timeout" into every heading. A feed key is a machine identifier and the words
+ * inside it are not a sentence -- `delaying-game-puck-over-glass` de-hyphenates
+ * to "delaying game puck over glass", which is not what anybody in a rink says.
+ *
+ * ⭐ KNOWN KEYS ONLY, AND AN UNKNOWN ONE RENDERS RAW. Same rule as `WHY`, for
+ * the same reason: the league can add a descriptor tomorrow, and inventing a
+ * label for one we have never seen is the guess this project refuses. Raw is
+ * visible and fixable; a guessed label is invisible and wrong. The fallback is
+ * the honest branch, not the default one.
+ *
+ * ⚠️ THE SET IS STRICTLY WHAT HAS BEEN OBSERVED -- 29 descriptors: 28 counted
+ * across 40 published games, plus `kneeing`, which is in `data/rich.json` and in
+ * NONE of the forty. That one is the argument for the archive-wide sweep in a
+ * sentence: a forty-game sample did not contain a word the reference fixture
+ * did. Adding a plausible `spearing` here would HIDE it from the vocabulary
+ * alarm in `extract.py` -- the same trap the `missed-shot reason` comment names
+ * one file over. The rest arrive from the drift report, never from memory.
+ *
+ * `from` is provenance, in the same shape the whistle layer uses: every entry
+ * here is the feed's own `descKey` re-worded, never a rule we looked up.
+ */
+const PEN = {
+  // Straight already: the key IS the word a rink uses. Capitalised, nothing else.
+  roughing: 'Roughing',
+  tripping: 'Tripping',
+  'cross-checking': 'Cross-checking',
+  'high-sticking': 'High-sticking',
+  interference: 'Interference',
+  slashing: 'Slashing',
+  hooking: 'Hooking',
+  holding: 'Holding',
+  elbowing: 'Elbowing',
+  boarding: 'Boarding',
+  kneeing: 'Kneeing',
+  embellishment: 'Embellishment',
+  misconduct: 'Misconduct',
+  'game-misconduct': 'Game misconduct',
+  'holding-the-stick': 'Holding the stick',
+  'unsportsmanlike-conduct': 'Unsportsmanlike conduct',
+
+  // These are the ones the table exists for. Each is a phrase a broadcast uses
+  // and a de-hyphenation does not produce.
+  'interference-goalkeeper': 'Goaltender interference',
+  'delaying-game': 'Delay of game',
+  'delaying-game-puck-over-glass': 'Delay of game — puck over the glass',
+  'delaying-game-face-off-violation': 'Delay of game — faceoff violation',
+  'delaying-game-illegal-play-by-goalie': 'Delay of game — illegal play by the goaltender',
+  'delaying-game-unsuccessful-challenge': 'Delay of game — unsuccessful challenge',
+  'closing-hand-on-puck': 'Closing his hand on the puck',
+  'too-many-men-on-the-ice': 'Too many men on the ice',
+  'goalie-removed-own-mask': 'Goaltender removed his own mask',
+  'unsportsmanlike-conduct-bench': 'Unsportsmanlike conduct — bench',
+
+  // ⚠️ THE DURATION IS IN THE KEY AND IS NOT REPEATED IN THE WORDS. The clock
+  // beside the name already says 4:00, and "High-sticking (double minor) 4:00"
+  // says the same thing twice -- the defect the slot caption hit when a rename
+  // left both halves naming the slot.
+  'high-sticking-double-minor': 'High-sticking',
+  'butt-ending-double-minor': 'Butt-ending',
+
+  // Not box time at all -- a penalty shot is taken on the ice. It is in the
+  // table because it is in the feed, and `box.js` is what keeps it out of a seat.
+  'ps-slash-on-breakaway': 'Slash on a breakaway — penalty shot',
+};
+
+/**
+ * The words for a descriptor, or the descriptor itself.
+ *
+ * Never throws and never guesses: an unseen key comes back as it arrived, which
+ * is how it becomes visible enough to add.
+ */
+function penName(key) {
+  return (key && PEN[key]) || key || '';
 }
 
 /* --- src/lib/svgpen.js --- */
@@ -4624,27 +4754,55 @@ let prevA=0,prevH=0;
  * happened forty times, minutes ago. The caption is the opposite case: calling
  * the goal again is the whole reason to jump to it.
  */
-/* WHO IS SITTING, at one instant. The names come from the penalty events and
-   the seat is emptied by src/lib/box.js -- which consults `sit` about GOALS and
-   about nothing else, because occupancy and strength are different questions.
-   Coincidental majors after a fight fill both boxes at five a side, and a band
-   driven by the strength code would show them empty.
+/* WHO IS SITTING, at one instant — ON THE SCOREBOARD, the way a rink shows it.
+   Kevin, 2026-08-27: the penalty boxes under the ice "are (now) rather wasted
+   space... let's display penalties on the scoreboard, with the offending party
+   being identified under the applicable team, maybe what they went off for and
+   some sort of timer that counts down."
 
-   THE ASSESSED TIME, NOT A COUNTDOWN. `2:00` is what the referee gave him; what
-   he serves can be less, and it is the ice that says so. Kevin ruled a static
-   label for this build. */
+   MEASURED FIRST, over 40 games and every rendered event:
+       both boxes empty   80.4%      three or more   0.7%
+       exactly one        17.7%      six, once
+       two                 1.2%      both boxes at once 3.7%
+   So the block is ABSENT four times in five -- no reserved space, which was the
+   complaint -- and it is built for one. TWO SEATS ARE SHOWN AND THE REST ARE
+   COUNTED: two covers 99.3% of events and is also what a real arena scoreboard
+   has. Kevin chose the `+N`.
+
+   ⭐ THE CLOCK COUNTS THE ASSESSED TIME, AND THAT IS NOT A DETAIL.
+   `box.js` derives early release -- a minor dies when the other team scores on
+   it -- so every stint already knows its TRUE end. Counting down to that would
+   LEAK THE FUTURE: a clock reading 0:40 on a penalty that a goal is about to
+   kill tells the viewer a goal is coming, which is the spoiler the verdict card
+   and the game line already refuse. So the number shown is
+   `start + min*60 - now`, the referee's clock, exactly what the arena shows --
+   and the seat empties on the ICE's schedule, because `occupants` uses the true
+   end. Kevin's earlier ruling on this surface ("the assessed time, not a
+   countdown") is kept, not overturned: it is the assessed clock that is ticking.
+
+   IT STEPS RATHER THAN TICKS, because the playhead is at events. A jump of two
+   minutes of game time moves it two minutes, like everything else here.
+
+   ⚠️ AND THIS IS NOT A POWER-PLAY DISPLAY. A ten-minute misconduct puts a man
+   in the box and takes nobody off the ice (23 of 332 penalties measured). `sit`
+   answers strength; this answers occupancy, and box.js is emphatic that the two
+   are different questions. */
+const SEATS = 2;
+function mmss(sec){const m=Math.floor(sec/60),s=sec%60;return `${m}:${String(s).padStart(2,'0')}`;}
 function drawBoxes(secs){
- for(const [tm,id,ab] of [[AID,'pbA',AAB],[HID,'pbH',HAB]]){
+ for(const [tm,id] of [[AID,'penA'],[HID,'penH']]){
    const el=$(id);if(!el)continue;
    const men=secs==null?[]:occupants(PBOX,secs,tm);
-   el.setAttribute('data-ab',ab);
-   el.classList.toggle('empty',!men.length);
-   // The infraction is a raw feed key (`high-sticking-double-minor`) and stays
-   // out of here; the caption already names it in words when the call is made.
-   el.innerHTML=men.length
-     ? men.map(s=>{const p=R[s.player];
-         return `<span class="man">${ESC(p?p.nm:'—')}</span><span class="srv">${s.min}:00</span>`;}).join('')
-     : '<span class="srv">empty</span>';}}
+   const rows=men.slice(0,SEATS).map(s=>{
+     const p=R[s.player];
+     // The assessed clock, never the served one -- see above.
+     const left=Math.max(0,(s.start+s.min*60)-secs);
+     return `<span class="pen"><span class="pw">${ESC(p?p.nm:'—')}</span>`
+           +`<span class="pf">${ESC(penName(s.pen))}</span>`
+           +`<span class="pt">${mmss(left)}</span></span>`;}).join('');
+   const more=men.length>SEATS
+     ? `<span class="pen pmore">+${men.length-SEATS} more in the box</span>`:'';
+   el.innerHTML=rows+more;}}
 
 /* THE SENTENCE THE PAGE HAS OWED SINCE THE ENDS DECISION -- see rink.js.
    Two sentences, two kinds: the first is about hockey, the second is about what
