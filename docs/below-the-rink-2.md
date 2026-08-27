@@ -1967,17 +1967,46 @@ subject stays the club — that is the part of CHENG's framing measurement does
 not support — but the verb changes, and the label has to carry it.
 
 ⭐ **AND THE MEASUREMENT FOUND THE HARDER PROBLEM, WHICH IS NOT ABOUT SUBJECTS.**
-Over a deterministic 300-game sample of in-scope published games:
 
-    2 goaltenders   274   91.3%
-    3 goaltenders    24    8.0%
-    4 goaltenders     2    0.7%
-    ------------------------------------
-    more than two          8.7%
+    COMBINED SWEEP  n = 2,096 games -- half the in-scope archive
+      2 goaltenders                       87.8%
+      3 goaltenders                        12.0%
+      4 goaltenders            4 games      0.19%
+      ---------------------------------------------------------
+      more than two            12.2%  +/- 1.4 (95%)
+      by year   2023 15.4% . 2024 12.0% . 2025 10.8% . 2026 12.6%
 
-**One game in eleven cannot fit two columns at all** — more often than a
-shootout. A relieved goaltender is not an edge case to round off; it is one of
-the few nights when goaltending is visibly the story.
+      team-games with a change  ~6%  =>  ~5 per team per 82-game season
+      reliever shots faced      median 13, min 1, none at zero
+      non-goalie positions in any goalie list                    0
+
+**One game in eight cannot fit two columns at all.** A relieved goaltender is
+not an edge case to round off; it is one of the few nights when goaltending is
+visibly the story. The four-goaltender games are both clubs changing — checked
+by name: `EDM@VAN 2023-10-11` (Campbell/Skinner, Demko/DeSmith) and
+`BUF@MTL 2026-05-16` (Lyon/Luukkonen, Dobes/Fowler).
+
+⚠️ **THE FIRST VERSION OF THIS FIGURE WAS 8.7%, FROM n=300, AND KEVIN REFUSED
+IT FROM DOMAIN KNOWLEDGE.** He was right to, and the two errors are worth
+separating because only one of them is arithmetic.
+
+*The sample was too small and was quoted as though it were not.* Three strides
+over the same ordered catalog gave 8.7% → 12.0% → 13.3%, and none carried an
+interval. **`0.7% use four goaltenders` was TWO GAMES** — a count of 2 rendered
+as a rate to one decimal place, which is Doctrine §8's failure in better
+clothes. The honest form is the one Kevin's objection took: *two games in a
+thousand, and both are both-clubs-changed.* A **disjoint control** (same stride,
+offset 2, zero overlap) returned 10.9% ±1.9 against 13.3% ±2.1, so stride
+aliasing is refuted and the spread was ordinary variance — but the control was
+run because the walk looked like structure, which is the right reason.
+
+*And the WORDS were wrong, which is what made the number unbelievable.* The
+field counts **a second goaltender facing a shot** — the starter was pulled,
+which happens about five times a club a season. **The emergency backup
+goaltender is a different and far rarer event, and `goalieInNetId` cannot
+distinguish it at all**; that needs roster data we do not hold. Saying "more
+than two goaltenders" invited the EBUG reading, and against that reading the
+figure is absurd. The measurement was defensible and its label was not.
 
 So the ruling this hands us: **the row counts the CLUB's goaltending, not a
 goaltender's.** `saved 33 of 35` under each club holds the grammar for 100% of
@@ -2073,6 +2102,10 @@ panels, and what stays is counts.
 measurements page or a Workshop card whose description changes deliberately; and
 what the selector's own acknowledgement looks like, which §31.2 says is now a
 requirement rather than a nicety.
+
+⚠️ **And one instrument note carried out of §31.4:** a figure quoted from a
+sample states its `n` and its interval, or it is not quoted. A percentage whose
+numerator is a single-digit count is reported as the count.
 
 **Not yet designed:** the second line's grammar. It is the line that must carry
 *"Ullmark relieved Levi at 12:04"*, *"last: icing"* and the even-strength note
