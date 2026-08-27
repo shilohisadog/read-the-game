@@ -88,6 +88,10 @@ function makeDom() {
       return nodes.get(id);
     },
     querySelectorAll: sel => made[sel] || [],
+    // Lenient, like the line above: this fake exists to prove the app RUNS,
+    // not to prove what it draws. `capFor` already returns '' when the
+    // element it wants is absent, so null is a state the app handles.
+    querySelector: () => null,
     createElement: () => node(),
     addEventListener() {},
   };

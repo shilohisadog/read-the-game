@@ -241,6 +241,60 @@ test('the selector separates the base view from the metrics', () => {
     'the rule is not a flex item, so wrapping can strand it at the start of a line');
 });
 
+/**
+ * ⭐ WHERE THE LAYER'S INFORMATION LIVES — one slot, because one layer.
+ *
+ * Kevin, 2026-08-27: "I think we now can figure out where the layer information
+ * lives (once the toggle is selected)..... I've (we've) struggled with that."
+ * The struggle had one cause: five layers could be on at once, so five notes
+ * needed homes, and every home was either far from the ice or grew the page by
+ * five blocks. A selector makes it ONE line, under the control that chose it.
+ */
+test('the caption says what the chosen lens is, in the words the rows carry', () => {
+  const a = boot();
+  const cap = () => a.$('lcap').innerHTML;
+  const text = () => cap().replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+
+  // ⭐ SOURCED FROM THE PARKED ROWS, NOT RETYPED. `.lds` and `.lon` have shipped
+  // hidden since §20; this is their home. A second copy of the sentences could
+  // never be checked against the first — this can.
+  for (const [token, rowId] of [['corsi', 'lyCorsi'], ['slot', 'lyHd'], ['blocked', 'lyBlock'],
+                                ['goaltending', 'lyGoalie'], ['whistle', 'lyWhistle']]) {
+    a.$$('#rg .pk').find(b => b.dataset.l === token).click();
+    const row = app.match(new RegExp(`<button class="lrow" id="${rowId}"[\\s\\S]*?</button>`))[0];
+    const lds = /<span class="lds">([^<]+)</.exec(row)[1];
+    const lon = /<span class="lon">([^<]+)</.exec(row)[1];
+    assert.ok(text().includes(lds), `${token}'s caption does not carry the row's description`);
+    assert.ok(text().includes(lon), `${token}'s caption does not say what appears on the ice`);
+
+    // ⚠️ AND THE NAME IS THE CHIP'S, NOT THE ROW'S. The parked rows still carry
+    // the names they had when Kevin trimmed them — `Corsi`, `Slot shots` — while
+    // the chips say `Attempts`, `Slot`. The first build opened the sentence with
+    // a name the reader had never pressed.
+    const chip = a.$$('#rg .pk').find(b => b.dataset.l === token).textContent;
+    assert.match(cap(), new RegExp(`<b>${chip}</b>`),
+      `${token}'s caption opens with something other than the chip that was pressed`);
+  }
+
+  // ⭐ AND `Just events` GETS THE BASE KEY — the marks the rink draws whether or
+  // not a layer is on, which have had nothing naming them since §20 parked the
+  // reference zone. Same source rule: it is the legend's own entries.
+  a.$$('#rg .pk').find(b => b.dataset.l === 'none').click();
+  const legend = /<div class="legend">([\s\S]*?)<\/div>/.exec(app)[1];
+  const names = [...legend.matchAll(/<span class="kn">([^<]+)</g)].map(m => m[1]);
+  assert.ok(names.length >= 4, `the legend has only ${names.length} entries to draw on`);
+  for (const n of names)
+    assert.ok(text().includes(n), `the base view's key does not name "${n}"`);
+
+  // ⚠️ AND THE ENTRIES ARE JOINED WITH A REAL SEPARATOR. The legend's markup has
+  // no whitespace between entries and each is `nowrap`, so pasting its innerHTML
+  // produced ONE unbreakable run 1,166px wide inside a 390px phone — the body
+  // scrolled sideways, which this project forbids outright. Inline boxes with
+  // nothing between them offer no wrap opportunity.
+  assert.match(cap(), /<\/span> · <span/,
+    'the base key is pasted as one blob — with nowrap entries that is a 1,166px line on a phone');
+});
+
 test('the page is parked at its base, and nothing was deleted to get there', () => {
   // ⏸ Kevin, 2026-08-26: "let's just remove all the extra stuff, for now, then we
   // can rebuild properly. Just have the header, scoreboard, rink, play controls

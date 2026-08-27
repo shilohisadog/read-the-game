@@ -1548,3 +1548,67 @@ Found by mutation.
 **What Kevin reported was a COUNT**, not a property of one element: three
 variants of one word stacked in 220px. So the count is what is checked now,
 over every heading on the page, and the failure prints the whole list.
+
+## 27. ⭐ Where the layer's information lives
+
+Kevin: *"I think we now can figure out where the layer information lives (once
+the toggle is selected)… I've (we've) struggled with that."*
+
+**The selector had already answered it and we had not noticed.** Every home we
+tried failed for the same reason: five layers could be on at once, so five notes
+needed somewhere to sit, and every candidate was either far from the ice or grew
+the page by five blocks. **One active choice makes it one line.**
+
+    WATCHING
+    [Just events] │ Attempts · Slot · Blocked · Goaltending · Stoppages
+    ▏Attempts — every shot attempt the league recorded: on goal, missed, or
+    ▏blocked… The counters beside the rink fill in as the replay runs.
+
+### 27.1 Under the selector, not under the ice — and the division is the point
+
+* **this line says what the LENS is** → beside the control that picks it
+* **the panels say what it is showing NOW** → beside the ice, where they already are
+
+Pressing a chip therefore changes something inside the reader's own line of
+sight even when the rink is off screen, which answers CHENG's control-to-effect
+distance where it actually bites rather than by moving the rink.
+
+### 27.2 The words are READ from the parked rows, never retyped
+
+`.lds` and `.lon` have shipped hidden since §20; this is their home. So nothing
+was rewritten, the parked markup stops being dead weight, and **a test compares
+the caption to the row it came from** — which a second copy of the sentences
+could never be checked against.
+
+⭐ **And `Just events` gets the base key at last**, built the same way from the
+parked legend: home shot · visitor shot · puck · goal · blocked. Those marks
+have had nothing naming them since §20, and the base view is the thing the
+header tells a novice to watch first.
+
+### 27.3 What the render and the mutations caught
+
+⚠️ **A 1,166px line inside a 390px phone.** The legend's markup has no whitespace
+between entries and each is `nowrap`, so pasting its `innerHTML` produced one
+unbreakable run and the body scrolled sideways. Inline boxes with nothing between
+them offer no wrap opportunity; joining with ` · ` puts one back.
+
+⚠️ **Two descriptions were written as the second half of a name that no longer
+exists** — *"on goal, missed, or blocked: all three count"* was the continuation
+of `Control (Corsi) — every shot attempt`, and read as a definition once the
+caption supplied its own subject. Both are standalone sentences now.
+
+⚠️ **The caption named the row, not the chip.** The parked rows still carry
+`Corsi` and `Slot shots`; the chips say `Attempts` and `Slot`.
+
+⭐ **AND THAT ASSERTION COULD NOT FAIL, THREE TIMES OVER.** The mutation applied,
+the suite stayed green, and the reason is the sharpest instance of the mirror
+rule this project has hit: **the fake's chips had an empty `textContent`, so the
+test compared the fake's empty label against the fake's empty output** and
+matched. The expectation and the code under test came from the same empty
+source. The fake now reads each chip's real label out of the built page — and
+only then did the mutation go red.
+
+⚠️ **And a transport test broke because a NEIGHBOUR moved.** It matched
+`<div class="transport">…<p class="verdict"`, so inserting the caption between
+them failed a test about the transport. It is anchored on the transport's own
+last child now.

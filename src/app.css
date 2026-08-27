@@ -799,6 +799,28 @@
 #rg details.zone>summary::after{content:"\25be";margin-left:auto;font-size:.9rem}
 #rg details.zone[open]>summary::after{content:"\25b4"}
 #rg details.zone[open]>summary{margin-bottom:10px}
+/* ⭐ THE ONE LINE THAT SAYS WHAT THE CHOSEN LENS IS.
+   Under the selector, not under the ice, because it is a note about the CONTROL
+   -- what this lens counts -- while the panels under the rink say what it is
+   showing at this moment. Pressing a chip changes something inside the reader's
+   own line of sight even when the rink is off screen.
+
+   The swatches come from the parked legend, so `.lmk i` shapes them; `.kn` is
+   the legend's own name span and goes inline here rather than filling a column. */
+#rg .lcap{margin:9px 2px 0;font-size:.82rem;line-height:1.5;color:var(--ink);
+ padding-left:11px;border-left:2px solid var(--edge)}
+#rg .lcap:empty{display:none}
+#rg .lcap b{font-weight:800}
+#rg .lcap .cap2{color:var(--muted)}
+#rg .lcap i{width:9px;height:9px;border-radius:50%;display:inline-block;margin:0 4px 0 0;
+ vertical-align:baseline}
+#rg .lcap i.k-rl{width:3px;height:11px;border-radius:1px}
+#rg .lcap .kn{color:var(--muted);font-size:.78rem}
+/* ⚠️ THE LEGEND ENTRIES ONLY. `.cap2` is a direct span child too, and `nowrap`
+   on it would have sent the second sentence off the side of a phone. */
+#rg .lcap>span:not(.cap2){white-space:nowrap}
+#rg.preview .lcap{display:none!important}
+
 /* ⭐ ONE ROW, ONE ACTIVE ITEM — AND "ONE" WAS A MEASUREMENT, NOT A PREFERENCE.
    CHENG asked the question that had to come before any placement: does anyone
    want two layers on at once? Counted over every layer link the site ships --

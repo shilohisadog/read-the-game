@@ -206,6 +206,8 @@ function run({ search = '', responses = {} } = {}) {
     body: el,
     getElementById: id => (els[id] || (els[id] = mk())),
     querySelectorAll: () => [],
+    // Lenient like the line above -- this fake watches the NETWORK, not the DOM.
+    querySelector: () => null,
   };
   const fetch = url => {
     asked.push(url);

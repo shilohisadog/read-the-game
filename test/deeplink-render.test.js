@@ -61,9 +61,17 @@ function fakeDom() {
     }),
     // THE SELECTOR UNDER THE SCRUBBER. Six radios keyed by `data-l`, and the ids
     // are shared with byId so a test can drive one and read the others.
+    /* ⚠️ AND THE CHIPS CARRY THEIR REAL LABELS, read out of the built page.
+       They were bare stubs with an empty `textContent`, and the caption test
+       compared the fake's empty label against the fake's empty output — so a
+       build that named the wrong thing passed. The mutation applied, the suite
+       stayed green, and that is what a mirror looks like from the inside. */
     '#rg .pk': ['none', 'corsi', 'slot', 'blocked', 'goaltending', 'whistle'].map(l => {
       const key = 'pk:' + l;
-      if (!byId.has(key)) byId.set(key, Object.assign(el(), { dataset: { l } }));
+      if (!byId.has(key)) {
+        const m = new RegExp(`<button class="pk"[^>]*data-l="${l}"[^>]*>([^<]*)<`).exec(app);
+        byId.set(key, Object.assign(el(), { dataset: { l }, textContent: m ? m[1] : '' }));
+      }
       return byId.get(key);
     }),
     '#rg .cc.a .lb': [el()],
@@ -78,6 +86,33 @@ function fakeDom() {
     querySelectorAll(sel) {
       assert.ok(GROUPS[sel], `the page queried "${sel}", which this fake does not model`);
       return GROUPS[sel];
+    },
+    /* ⭐ SINGLE-ELEMENT QUERIES, ANSWERED FROM THE BUILT MARKUP.
+       The caption under the selector reads the words out of the parked layer
+       rows and the parked legend — that is the whole point of it, so a fake that
+       returned empty stubs would let a caption test pass against a page that
+       says nothing. These answers carry the REAL strings from the built page.
+       Anything not modelled throws, as above: a fake that silently returns null
+       turns "the app asked for something new" into "the feature did nothing". */
+    querySelector(sel) {
+      const row = /^#rg \.lrow\[data-pick="([a-z]+)"\]$/.exec(sel);
+      if (row) {
+        const m = new RegExp(`<button class="lrow" [^>]*data-pick="${row[1]}"[\\s\\S]*?</button>`).exec(app);
+        if (!m) return null;
+        return { querySelector: s2 => {
+          const t = new RegExp(`<span class="${s2.slice(1)}">([^<]*)<`).exec(m[0]);
+          return t ? { textContent: t[1] } : null;
+        } };
+      }
+      const pk = /^#rg \.pk\[data-l="([a-z]+)"\]$/.exec(sel);
+      if (pk) return GROUPS['#rg .pk'].find(b => b.dataset.l === pk[1]) || null;
+      if (sel === '#rg .zref .legend') {
+        const m = /<div class="legend">([\s\S]*?)<\/div>/.exec(app);
+        if (!m) return null;
+        const parts = m[1].split('</span></span>').filter(x => x.trim());
+        return { children: parts.map(x => ({ outerHTML: x + '</span></span>' })) };
+      }
+      assert.fail(`the page asked this fake for "${sel}", which it does not model`);
     },
   };
   return { document, byId, GROUPS, $: id => document.getElementById(id) };

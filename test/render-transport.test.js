@@ -408,7 +408,12 @@ test('the step pair and the speed gears are each one non-wrapping group', () => 
   // pair now — Situations, Trails, Players and Narration each wear one — so a
   // count over the whole document would grow every time the rule is applied
   // correctly, which is a test that punishes its own subject spreading.
-  const transport = app.match(/<div class="transport">[\s\S]*?<\/div>\s*<p class="verdict"/)[0];
+  // ⚠️ ANCHORED ON THE TRANSPORT'S OWN LAST CHILD, not on whatever follows it.
+  // This read up to `<p class="verdict"`, so it broke the day a caption was
+  // inserted between the two — a test that fails because a NEIGHBOUR moved is
+  // reporting on the wrong subject. The scrubber is the transport's last
+  // element and is inside the thing being measured.
+  const transport = app.match(/<div class="transport">[\s\S]*?<input class="scrub"[^>]*>\s*<\/div>/)[0];
   const grp = transport.match(/<div class="grp"[^>]*>[\s\S]*?<\/div>/g) || [];
   assert.equal(grp.length, 2, `expected two control groups in the transport, found ${grp.length}`);
 

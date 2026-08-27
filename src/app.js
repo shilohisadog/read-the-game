@@ -1835,6 +1835,53 @@ function pick(want){
  if(picking)return; picking=true;
  for(const [id,get,set] of PICKS){const on=id===want; if(get()!==on)set(on);}
  picking=false; syncPick();}
+/* ⭐ WHERE THE LAYER'S INFORMATION LIVES — and the selector answered it.
+   Kevin, 2026-08-27: "I think we now can figure out where the layer information
+   lives (once the toggle is selected)..... I've (we've) struggled with that."
+
+   The struggle had one cause: FIVE layers could be on at once, so five notes
+   needed somewhere to sit, and every home we tried was either far from the ice
+   or grew the page by five blocks. ONE ACTIVE CHOICE makes it one line. There is
+   never more than one layer to explain, so the page needs one slot, not five.
+
+   IT SITS UNDER THE SELECTOR, NOT UNDER THE ICE, and the division is the point:
+     · this line says what the LENS is        -> beside the control that picks it
+     · the panels say what it is showing NOW  -> beside the ice, where they are
+   Pressing a chip therefore changes something in the reader's own line of sight
+   even when the rink is off screen, which is CHENG's control-to-effect distance
+   answered where it actually bites rather than by moving the rink.
+
+   ⭐ AND THE WORDS ARE READ FROM THE PARKED ROWS, NOT RETYPED. `.lds` (what it
+   counts) and `.lon` (what appears on the ice) have been shipping hidden since
+   §20; this is their home. So nothing was rewritten, the parked markup stops
+   being dead weight, and a test compares the caption to the row it came from --
+   which a second copy of the sentences could never be checked against. */
+function capFor(id){
+ if(id==='none'){
+  // THE BASE VIEW GETS A KEY AT LAST. `Just events` is not the absence of a
+  // layer, it is the whole recorded game -- and since §20 parked the reference
+  // zone the marks it draws have had nothing naming them. The legend is still in
+  // the markup; this is where it shows.
+  const leg=document.querySelector('#rg .zref .legend');
+  if(!leg)return '';
+  // ⚠️ JOINED WITH A REAL SEPARATOR, NOT PASTED AS ONE BLOB. The legend's markup
+  // has NO WHITESPACE between its entries, and each entry is `nowrap` so its own
+  // words stay with their swatch -- so `innerHTML` produced a single unbreakable
+  // run 1,166px wide inside a 390px phone. Inline boxes with nothing between
+  // them offer no wrap opportunity; the ` · ` puts one back and is visible.
+  const keys=[...leg.children].map(x=>x.outerHTML).join(' · ');
+  return `<b>Just events</b> — every event the league recorded, in order. ${keys}`;}
+ const row=document.querySelector(`#rg .lrow[data-pick="${id}"]`);
+ if(!row)return '';
+ // ⚠️ THE NAME COMES FROM THE CHIP, NOT THE ROW. The parked rows still carry the
+ // names they had when Kevin trimmed them -- `Corsi`, `Slot shots` -- and the
+ // chips say `Attempts`, `Slot`. Reading the row's `<b>` printed a caption that
+ // named something the reader had not pressed. The label a reader just touched
+ // is the one the sentence has to open with.
+ const chip=document.querySelector(`#rg .pk[data-l="${id}"]`);
+ const lds=row.querySelector('.lds'), lon=row.querySelector('.lon');
+ return `<b>${chip?chip.textContent:''}</b> — ${lds?lds.textContent:''}. `
+       +`<span class="cap2">${lon?lon.textContent:''}</span>`;}
 function syncPick(){
  if(picking)return;
  const on=PICKS.filter(([,get])=>get()).map(([id])=>id);
@@ -1844,7 +1891,8 @@ function syncPick(){
  // blank is a control that says the page is off when it is not.
  const cur=on.length?on[0]:'none';
  document.querySelectorAll('#rg .pk').forEach(b=>
-  b.setAttribute('aria-checked',String(b.dataset.l===cur)));}
+  b.setAttribute('aria-checked',String(b.dataset.l===cur)));
+ const cap=$('lcap');if(cap)cap.innerHTML=capFor(cur);}
 document.querySelectorAll('#rg .pk').forEach(b=>{
  b.onclick=()=>pick(b.dataset.l);});
 /* ⭐ A LAYER BUTTON IS A ROW NOW, SO ITS LABEL IS NOT ITS textContent.

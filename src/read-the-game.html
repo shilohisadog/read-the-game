@@ -844,6 +844,28 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg details.zone>summary::after{content:"\25be";margin-left:auto;font-size:.9rem}
 #rg details.zone[open]>summary::after{content:"\25b4"}
 #rg details.zone[open]>summary{margin-bottom:10px}
+/* ⭐ THE ONE LINE THAT SAYS WHAT THE CHOSEN LENS IS.
+   Under the selector, not under the ice, because it is a note about the CONTROL
+   -- what this lens counts -- while the panels under the rink say what it is
+   showing at this moment. Pressing a chip changes something inside the reader's
+   own line of sight even when the rink is off screen.
+
+   The swatches come from the parked legend, so `.lmk i` shapes them; `.kn` is
+   the legend's own name span and goes inline here rather than filling a column. */
+#rg .lcap{margin:9px 2px 0;font-size:.82rem;line-height:1.5;color:var(--ink);
+ padding-left:11px;border-left:2px solid var(--edge)}
+#rg .lcap:empty{display:none}
+#rg .lcap b{font-weight:800}
+#rg .lcap .cap2{color:var(--muted)}
+#rg .lcap i{width:9px;height:9px;border-radius:50%;display:inline-block;margin:0 4px 0 0;
+ vertical-align:baseline}
+#rg .lcap i.k-rl{width:3px;height:11px;border-radius:1px}
+#rg .lcap .kn{color:var(--muted);font-size:.78rem}
+/* ⚠️ THE LEGEND ENTRIES ONLY. `.cap2` is a direct span child too, and `nowrap`
+   on it would have sent the second sentence off the side of a phone. */
+#rg .lcap>span:not(.cap2){white-space:nowrap}
+#rg.preview .lcap{display:none!important}
+
 /* ⭐ ONE ROW, ONE ACTIVE ITEM — AND "ONE" WAS A MEASUREMENT, NOT A PREFERENCE.
    CHENG asked the question that had to come before any placement: does anyone
    want two layers on at once? Counted over every layer link the site ships --
@@ -1258,11 +1280,11 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 </div>
 <details class="zone zlayers" id="zLayers"><summary class="zh">Add a metric layer<span class="zon" id="zLayersOn"></span></summary>
 <div class="lrows">
-<button class="lrow" id="lyCorsi" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Corsi</b><span class="lds">on goal, missed, or blocked: all three count, because all three are the team moving the puck at the net</span><span class="lon">The counters above the rink fill in as the replay runs, and the bar splits the attempts between the two clubs.</span></span><span class="st" id="stCorsi">Off</span></button>
-<button class="lrow" id="lyHd" aria-pressed="false"><span class="lmk"><i class="k-hd"></i></span><span class="ltx"><b>Slot shots</b><span class="lds">attempts from within 33 ft of the net, between the face-off dots</span><span class="lon">An amber ring marks each one. Click a ring to see the distance and angle it was measured by.</span></span><span class="st" id="stHd">Off</span></button>
-<button class="lrow" id="lyGoalie" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Goaltending</b><span class="lds">and what became of it: saved, scored on, or missed the net entirely</span><span class="lon">A card per goaltender builds its save percentage as the replay runs.</span></span><span class="st" id="stGoalie">Off</span></button>
-<button class="lrow" id="lyWhistle" aria-pressed="false"><span class="lmk"><i class="k-wh"></i><i class="k-rl"></i></span><span class="ltx"><b>Stoppages</b><span class="lds">the rule that stopped play, and the dot it restarted on</span><span class="lon">The ring marks where play restarted, brightest at the most recent stoppage. The bar lights the line the rule names — for icing the centre line and the far goal line, for offside the blue line.</span></span><span class="st" id="stWhistle">Off</span></button>
-<button class="lrow" id="lyBlock" aria-pressed="false"><span class="lmk"><i class="k-blk"></i><i class="k-blkv"></i></span><span class="ltx"><b>Blocked shots</b><span class="lds">the attempts a body stopped before they reached the goalie</span><span class="lon">Blocked attempts keep their ring and every other mark dims, so the ones a body stopped stand out.</span></span><span class="st" id="stBlock">Off</span></button>
+<button class="lrow" id="lyCorsi" data-pick="corsi" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Corsi</b><span class="lds">every shot attempt the league recorded: on goal, missed, or blocked, because all three are the team moving the puck at the net</span><span class="lon">The counters above the rink fill in as the replay runs, and the bar splits the attempts between the two clubs.</span></span><span class="st" id="stCorsi">Off</span></button>
+<button class="lrow" id="lyHd" data-pick="slot" aria-pressed="false"><span class="lmk"><i class="k-hd"></i></span><span class="ltx"><b>Slot shots</b><span class="lds">attempts from within 33 ft of the net, between the face-off dots</span><span class="lon">An amber ring marks each one. Click a ring to see the distance and angle it was measured by.</span></span><span class="st" id="stHd">Off</span></button>
+<button class="lrow" id="lyGoalie" data-pick="goaltending" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Goaltending</b><span class="lds">every shot each goaltender faced, and what became of it — saved, scored on, or missed the net</span><span class="lon">A card per goaltender builds its save percentage as the replay runs.</span></span><span class="st" id="stGoalie">Off</span></button>
+<button class="lrow" id="lyWhistle" data-pick="whistle" aria-pressed="false"><span class="lmk"><i class="k-wh"></i><i class="k-rl"></i></span><span class="ltx"><b>Stoppages</b><span class="lds">the rule that stopped play, and the dot it restarted on</span><span class="lon">The ring marks where play restarted, brightest at the most recent stoppage. The bar lights the line the rule names — for icing the centre line and the far goal line, for offside the blue line.</span></span><span class="st" id="stWhistle">Off</span></button>
+<button class="lrow" id="lyBlock" data-pick="blocked" aria-pressed="false"><span class="lmk"><i class="k-blk"></i><i class="k-blkv"></i></span><span class="ltx"><b>Blocked shots</b><span class="lds">the attempts a body stopped before they reached the goalie</span><span class="lon">Blocked attempts keep their ring and every other mark dims, so the ones a body stopped stand out.</span></span><span class="st" id="stBlock">Off</span></button>
 </div>
 <div class="figpick sit"><span class="ll">Situations:</span>
 <div class="grp" role="group" aria-label="Which situations are counted"><button class="lyr sbtn" data-s="all" aria-pressed="true">All situations</button><button class="lyr sbtn" data-s="even" aria-pressed="false">Even strength only</button></div>
@@ -1280,6 +1302,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
   <div class="grp" role="group" aria-label="Replay speed"><button class="spd stepb" id="slower">&#9664; Slower</button><button class="spd stepb" id="faster">Faster &#9654;</button></div>
   <input class="scrub" id="scrub" type="range" min="-1" max="1" value="-1"></div>
 <div class="pickrow" role="radiogroup" aria-label="Which metric is on the ice" id="pickrow"><span class="pklab">Watching</span><button class="pk" id="pkNone" data-l="none" role="radio" aria-checked="true">Just events</button><span class="pksep" aria-hidden="true"></span><button class="pk" id="pkCorsi" data-l="corsi" role="radio" aria-checked="false">Attempts</button><button class="pk" id="pkSlot" data-l="slot" role="radio" aria-checked="false">Slot</button><button class="pk" id="pkBlocked" data-l="blocked" role="radio" aria-checked="false">Blocked</button><button class="pk" id="pkGoalie" data-l="goaltending" role="radio" aria-checked="false">Goaltending</button><button class="pk" id="pkWhistle" data-l="whistle" role="radio" aria-checked="false">Stoppages</button></div>
+<p class="lcap" id="lcap"></p>
 <p class="verdict" id="verdict"></p>
 <div class="newcomer nwhy2" id="newcomerWhy"></div>
 <details class="zone zref"><summary class="zh">What the marks mean</summary>
@@ -5871,6 +5894,53 @@ function pick(want){
  if(picking)return; picking=true;
  for(const [id,get,set] of PICKS){const on=id===want; if(get()!==on)set(on);}
  picking=false; syncPick();}
+/* ⭐ WHERE THE LAYER'S INFORMATION LIVES — and the selector answered it.
+   Kevin, 2026-08-27: "I think we now can figure out where the layer information
+   lives (once the toggle is selected)..... I've (we've) struggled with that."
+
+   The struggle had one cause: FIVE layers could be on at once, so five notes
+   needed somewhere to sit, and every home we tried was either far from the ice
+   or grew the page by five blocks. ONE ACTIVE CHOICE makes it one line. There is
+   never more than one layer to explain, so the page needs one slot, not five.
+
+   IT SITS UNDER THE SELECTOR, NOT UNDER THE ICE, and the division is the point:
+     · this line says what the LENS is        -> beside the control that picks it
+     · the panels say what it is showing NOW  -> beside the ice, where they are
+   Pressing a chip therefore changes something in the reader's own line of sight
+   even when the rink is off screen, which is CHENG's control-to-effect distance
+   answered where it actually bites rather than by moving the rink.
+
+   ⭐ AND THE WORDS ARE READ FROM THE PARKED ROWS, NOT RETYPED. `.lds` (what it
+   counts) and `.lon` (what appears on the ice) have been shipping hidden since
+   §20; this is their home. So nothing was rewritten, the parked markup stops
+   being dead weight, and a test compares the caption to the row it came from --
+   which a second copy of the sentences could never be checked against. */
+function capFor(id){
+ if(id==='none'){
+  // THE BASE VIEW GETS A KEY AT LAST. `Just events` is not the absence of a
+  // layer, it is the whole recorded game -- and since §20 parked the reference
+  // zone the marks it draws have had nothing naming them. The legend is still in
+  // the markup; this is where it shows.
+  const leg=document.querySelector('#rg .zref .legend');
+  if(!leg)return '';
+  // ⚠️ JOINED WITH A REAL SEPARATOR, NOT PASTED AS ONE BLOB. The legend's markup
+  // has NO WHITESPACE between its entries, and each entry is `nowrap` so its own
+  // words stay with their swatch -- so `innerHTML` produced a single unbreakable
+  // run 1,166px wide inside a 390px phone. Inline boxes with nothing between
+  // them offer no wrap opportunity; the ` · ` puts one back and is visible.
+  const keys=[...leg.children].map(x=>x.outerHTML).join(' · ');
+  return `<b>Just events</b> — every event the league recorded, in order. ${keys}`;}
+ const row=document.querySelector(`#rg .lrow[data-pick="${id}"]`);
+ if(!row)return '';
+ // ⚠️ THE NAME COMES FROM THE CHIP, NOT THE ROW. The parked rows still carry the
+ // names they had when Kevin trimmed them -- `Corsi`, `Slot shots` -- and the
+ // chips say `Attempts`, `Slot`. Reading the row's `<b>` printed a caption that
+ // named something the reader had not pressed. The label a reader just touched
+ // is the one the sentence has to open with.
+ const chip=document.querySelector(`#rg .pk[data-l="${id}"]`);
+ const lds=row.querySelector('.lds'), lon=row.querySelector('.lon');
+ return `<b>${chip?chip.textContent:''}</b> — ${lds?lds.textContent:''}. `
+       +`<span class="cap2">${lon?lon.textContent:''}</span>`;}
 function syncPick(){
  if(picking)return;
  const on=PICKS.filter(([,get])=>get()).map(([id])=>id);
@@ -5880,7 +5950,8 @@ function syncPick(){
  // blank is a control that says the page is off when it is not.
  const cur=on.length?on[0]:'none';
  document.querySelectorAll('#rg .pk').forEach(b=>
-  b.setAttribute('aria-checked',String(b.dataset.l===cur)));}
+  b.setAttribute('aria-checked',String(b.dataset.l===cur)));
+ const cap=$('lcap');if(cap)cap.innerHTML=capFor(cur);}
 document.querySelectorAll('#rg .pk').forEach(b=>{
  b.onclick=()=>pick(b.dataset.l);});
 /* ⭐ A LAYER BUTTON IS A ROW NOW, SO ITS LABEL IS NOT ITS textContent.
