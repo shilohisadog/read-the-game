@@ -591,9 +591,26 @@
    beside four ways OUT is the one date on the page a reader has no reason to
    attach to what they are watching. The line is unchanged -- `#gl` still holds
    exactly what the deploy gate greps for -- and it gained a label. */
-#rg .nowplay{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;margin:0 2px 11px}
-#rg .nowlab{font-size:.62rem;font-weight:800;letter-spacing:.11em;text-transform:uppercase;
-  color:#fff;background:var(--ink);border-radius:99px;padding:3px 9px}
+/* ⭐ THE GAME LINE IS PART OF THE SCOREBOARD NOW, and that removes a third
+   heading rather than moving one. Kevin, 2026-08-27, with a screenshot of
+   `WATCHING` / `WATCH ANOTHER GAME` / `NOW WATCHING` inside 220px: "we have 3
+   watching variants in a small vertical space, somewhat cumbersome when reading
+   top to bottom... could we put the current game info into the scoreboard? then
+   we could remove that small section."
+
+   The board already names both clubs, so the only NEW fact in that line is the
+   DATE -- which is exactly the fact a reader arriving from a shared link is
+   missing. As a caption row under the score it needs no label at all: nothing
+   else in the board could be "CAR at VGK · 9 June 2026".
+
+   ⚠️ AND `#gl` KEEPS ITS TEXT, because the deploy gate greps this element out of
+   the live DOM and matches its GRAMMAR -- `AWAY at HOME` against a placeholder
+   of an em-dash -- to decide the shell booted at all. That is a structural
+   signal with no prose in the path, which is the property it was given after a
+   gate keyed to the word `final` failed a working site. Moving the element is
+   safe; rewriting its sentence is not. */
+#rg .board .foot{grid-column:1/-1;margin:2px 0 0;text-align:center;
+ font-size:.78rem;font-weight:600;color:var(--muted)}
 #rg .foot{font-size:.82rem;color:var(--ink);font-weight:650;margin:0;text-align:left}
 /* THE GAME SUMMARY, GIVEN A SURFACE (Kevin liked it and could not find it).
    It was a small centred paragraph in muted type, sitting between the ledger and

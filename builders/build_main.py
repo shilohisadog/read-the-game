@@ -65,6 +65,7 @@ __CSS__</style>
     <div class="pct"><span id="pa">0</span><span class="plab"><i class="pname" id="pName">CONTROL</i><i class="mode" id="pMode">ALL SITUATIONS</i></span><span id="ph">0</span></div></div>
   </div>
   <div class="tm h"><span class="ab" id="hAb">&mdash;</span><span class="sc" id="hSc">0</span></div>
+  <p class="foot" id="gl">—</p>
 </div>
 <p class="endnote" id="endnote"></p>
 <p class="atnote" id="atnote"></p>
@@ -121,8 +122,7 @@ __CSS__</style>
 <div class="figpick"><div class="grp" role="group" aria-label="How long marks stay on the ice"><button class="lyr tbtn" data-t="off" aria-pressed="true">Current moment</button><button class="lyr tbtn" data-t="all" aria-pressed="false">Keep every mark</button></div>
 <span class="fnote" id="nTrails"></span></div>
 </details>
-<details class="zone znext"><summary class="zh">Watch another game</summary>
-<p class="nowplay"><span class="nowlab">Now watching</span><span class="foot" id="gl">—</span></p>
+<details class="zone znext"><summary class="zh">Other games</summary>
 <nav class="nextup" id="nextup" aria-label="Where to go next"></nav>
 </details>
 </div></div>

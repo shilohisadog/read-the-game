@@ -1509,3 +1509,42 @@ If they are ever wanted, §24.2 says what the shape must be: **`Attempts → [al
 types] [blocked only]` as a refinement, and Slot as a peer**, because the slot
 reducer excludes blocked shots by measurement and cannot be a filter over what
 Corsi counts.
+
+## 26. Three "watching" headings became one
+
+Kevin, with a screenshot of `WATCHING` / `WATCH ANOTHER GAME` / `NOW WATCHING`
+inside 220px: *"somewhat cumbersome when reading top to bottom… could we put the
+current game info into the scoreboard? then we could remove that small section,
+then the section header could be changed to 'More games', or 'Other games'."*
+
+Done. The game line is a caption row in the board, `.nowplay` and its label are
+gone, and the zone is **Other games** — which reads better than *More games*
+beside buttons that already say *More CAR games*.
+
+    headings now:  Watching · Other games        (was three saying "watch")
+    board          87px → 117px at 390, rink y=304
+    doc            unchanged — the block below paid for the row above
+
+⭐ **It is not duplication.** The board already shows both clubs, but nothing in
+it says which one is HOME — left and right are screen orientation, and under
+as-played they swap every period. *CAR at VGK* states the relationship and the
+date states the day, which is exactly what a reader arriving from a shared link
+is missing.
+
+### 26.1 ⚠️ `#gl` keeps its sentence, because a gate reads its grammar
+
+The deploy step greps `id="gl"` out of the live DOM and matches **AWAY at HOME**
+against an em-dash placeholder to decide the shell booted at all. That property
+was given to it after a gate keyed to the word `final` failed a working site —
+structural, no prose in the path. **Moving the element is safe; rewriting its
+sentence is not**, and a test pins both the grammar and the placeholder.
+
+### 26.2 ⚠️ The heading test asserted the wrong thing and passed
+
+First version: `assert.doesNotMatch(zone, /watching/i)`. Renaming the zone back
+to **Watch another game** did not fail it — that is `Watch`, not `watching`.
+Found by mutation.
+
+**What Kevin reported was a COUNT**, not a property of one element: three
+variants of one word stacked in 220px. So the count is what is checked now,
+over every heading on the page, and the failure prints the whole list.

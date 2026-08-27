@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-RUJey5zw6ed2iDhVLLbVQ7JkJdKs7HI8nYFt7N/gLO0=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-i1UKz5nGFLCmsPRcU0uSm/LCbR/8CauqrnvcWPSuUPE='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-RUJey5zw6ed2iDhVLLbVQ7JkJdKs7HI8nYFt7N/gLO0=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-4nUZxxEopb8mmQrLr3URQE3xRgJKjQE8OgBk4vD9sXk='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">Watch a game</a><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see</a><a href="/workshop.html">Workshop</a></nav></header>
@@ -638,9 +638,26 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    beside four ways OUT is the one date on the page a reader has no reason to
    attach to what they are watching. The line is unchanged -- `#gl` still holds
    exactly what the deploy gate greps for -- and it gained a label. */
-#rg .nowplay{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;margin:0 2px 11px}
-#rg .nowlab{font-size:.62rem;font-weight:800;letter-spacing:.11em;text-transform:uppercase;
-  color:#fff;background:var(--ink);border-radius:99px;padding:3px 9px}
+/* ⭐ THE GAME LINE IS PART OF THE SCOREBOARD NOW, and that removes a third
+   heading rather than moving one. Kevin, 2026-08-27, with a screenshot of
+   `WATCHING` / `WATCH ANOTHER GAME` / `NOW WATCHING` inside 220px: "we have 3
+   watching variants in a small vertical space, somewhat cumbersome when reading
+   top to bottom... could we put the current game info into the scoreboard? then
+   we could remove that small section."
+
+   The board already names both clubs, so the only NEW fact in that line is the
+   DATE -- which is exactly the fact a reader arriving from a shared link is
+   missing. As a caption row under the score it needs no label at all: nothing
+   else in the board could be "CAR at VGK · 9 June 2026".
+
+   ⚠️ AND `#gl` KEEPS ITS TEXT, because the deploy gate greps this element out of
+   the live DOM and matches its GRAMMAR -- `AWAY at HOME` against a placeholder
+   of an em-dash -- to decide the shell booted at all. That is a structural
+   signal with no prose in the path, which is the property it was given after a
+   gate keyed to the word `final` failed a working site. Moving the element is
+   safe; rewriting its sentence is not. */
+#rg .board .foot{grid-column:1/-1;margin:2px 0 0;text-align:center;
+ font-size:.78rem;font-weight:600;color:var(--muted)}
 #rg .foot{font-size:.82rem;color:var(--ink);font-weight:650;margin:0;text-align:left}
 /* THE GAME SUMMARY, GIVEN A SURFACE (Kevin liked it and could not find it).
    It was a small centred paragraph in muted type, sitting between the ledger and
@@ -1224,6 +1241,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
     <div class="pct"><span id="pa">0</span><span class="plab"><i class="pname" id="pName">CONTROL</i><i class="mode" id="pMode">ALL SITUATIONS</i></span><span id="ph">0</span></div></div>
   </div>
   <div class="tm h"><span class="ab" id="hAb">&mdash;</span><span class="sc" id="hSc">0</span></div>
+  <p class="foot" id="gl">—</p>
 </div>
 <p class="endnote" id="endnote"></p>
 <p class="atnote" id="atnote"></p>
@@ -1280,8 +1298,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 <div class="figpick"><div class="grp" role="group" aria-label="How long marks stay on the ice"><button class="lyr tbtn" data-t="off" aria-pressed="true">Current moment</button><button class="lyr tbtn" data-t="all" aria-pressed="false">Keep every mark</button></div>
 <span class="fnote" id="nTrails"></span></div>
 </details>
-<details class="zone znext"><summary class="zh">Watch another game</summary>
-<p class="nowplay"><span class="nowlab">Now watching</span><span class="foot" id="gl">—</span></p>
+<details class="zone znext"><summary class="zh">Other games</summary>
 <nav class="nextup" id="nextup" aria-label="Where to go next"></nav>
 </details>
 </div></div>

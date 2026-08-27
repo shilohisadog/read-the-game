@@ -323,19 +323,46 @@ test('every zone below the rink is a disclosure, with a 44px summary', () => {
  * so the fix adds a sibling rather than rewording the line, and the gate keeps
  * matching what it has always matched.
  */
-test('the game line is labelled as the game being watched', () => {
-  const zone = /<details class="zone znext">([\s\S]*?)<\/details>/.exec(app)[1];
-  assert.match(zone, /<span class="nowlab">[^<]{6,}<\/span>/,
-    'the current game sits under "Watch another game" with nothing saying it is the current game');
-  const lab = /<span class="nowlab">([^<]*)<\/span>/.exec(zone)[1];
-  assert.match(lab, /watching/i, `the label does not say what it labels: "${lab}"`);
+test('the game line is part of the scoreboard, and the gate can still read it', () => {
+  // ⭐ THREE HEADINGS BECAME TWO. Kevin, with a screenshot of `WATCHING` /
+  // `WATCH ANOTHER GAME` / `NOW WATCHING` inside 220px: "somewhat cumbersome
+  // when reading top to bottom... could we put the current game info into the
+  // scoreboard? then we could remove that small section."
+  //
+  // The board already names both clubs, so the only NEW fact in that line is the
+  // DATE — the one thing a reader arriving from a shared link is missing. In the
+  // board it needs no label: nothing else there could be "CAR at VGK · 9 June".
+  const clean = app.replace(/<!--[\s\S]*?-->/g, '');
+  const board = /<div class="board">([\s\S]*?)\n<\/div>/.exec(clean)[1];
+  assert.match(board, /id="gl"/, 'the game line is not in the scoreboard');
+  assert.doesNotMatch(clean, /class="nowlab"/,
+    'the "Now watching" label survived — that is the third heading this removed');
+  const zone = /<details class="zone znext">[\s\S]*?<\/details>/.exec(clean)[0];
+  assert.doesNotMatch(zone, /id="gl"/, 'the game line is in both places');
 
-  // AND THE LINE ITSELF IS UNTOUCHED, which is what keeps the deploy gate honest.
+  // ⭐ THE CLAIM IS "ONE HEADING SAYS WATCH", NOT "THIS ONE DOES NOT SAY WATCHING".
+  // The first version asserted `!/watching/i` on the zone and PASSED when the
+  // heading went back to `Watch another game` — because that is `Watch`, not
+  // `watching`. Found by mutation. What Kevin actually reported is a COUNT:
+  // three variants of one word stacked in 220px. So the count is what is checked,
+  // over every heading on the page rather than over one element.
+  const headings = [...clean.matchAll(/<summary class="zh">([^<]*)|<span class="pklab">([^<]*)|<span class="nowlab">([^<]*)/g)]
+    .map(m => (m[1] || m[2] || m[3]).trim()).filter(Boolean);
+  const watchy = headings.filter(h => /watch/i.test(h));
+  assert.deepEqual(watchy, ['Watching'],
+    `${watchy.length} headings say "watch" — the stack Kevin measured was three: ${JSON.stringify(headings)}`);
+
+  // ⚠️ AND THE LINE ITSELF IS UNTOUCHED, which is what keeps the deploy gate
+  // honest. It greps `#gl` out of the live DOM and matches AWAY-at-HOME against
+  // an em-dash placeholder to decide the shell booted — a structural signal with
+  // no prose in the path, given that property after a gate keyed to the word
+  // `final` failed a working site. Moving the element is safe; rewriting its
+  // sentence is not.
   const a = boot();
   assert.match(a.$('gl').textContent, / at /,
     'the game line stopped naming both clubs, and the live-watch gate greps for it');
-  assert.doesNotMatch(a.$('gl').textContent, /watching/i,
-    'the label leaked into the line the gate reads');
+  assert.match(app, /id="gl">—<\/p>|id="gl">—<\/span>/,
+    'the placeholder stopped being an em-dash, so the gate can no longer tell empty from unbooted');
 });
 
 test('a disclosure is never inside a collapsed zone', () => {
