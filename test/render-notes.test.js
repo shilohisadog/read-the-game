@@ -313,9 +313,13 @@ test('the caption says what the chosen lens is, in the words the rows carry', ()
  * on how and where we display the metrics/information."
  */
 test('the layer displays are parked, by a rule that has to come last', () => {
-  const PARKED = ['#rg.corsi .counters', '#rg.corsi .cbar', '#rg.slot .hint',
+  // ⚠️ `.cbar` CARRIES `:not(.preview)` AND THE OTHERS DO NOT. The hero boots
+  // with the corsi layer on, so an unscoped park took the FRONT DOOR's split
+  // bar with it — a live defect for one commit. The counters and `#work` need
+  // no scoping because the preview already hides both on purpose.
+  const PARKED = ['#rg.corsi .counters', '#rg:not(.preview).corsi .cbar', '#rg.slot .hint',
                   '#rg.goalie .goalies', '#rg.whistle .whistlepanel', '#rg.blocked .blockpanel'];
-  const park = /#rg\.corsi \.cbar,[\s\S]*?\{display:none\}/.exec(PAGE_CSS);
+  const park = /#rg:not\(\.preview\)\.corsi \.cbar,[\s\S]*?\{display:none\}/.exec(PAGE_CSS);
   assert.ok(park, 'the layer displays are back — nothing parks them');
   for (const sel of PARKED)
     assert.ok(park[0].includes(sel.replace('#rg', '')) || park[0].includes(sel),

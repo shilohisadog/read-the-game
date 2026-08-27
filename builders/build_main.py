@@ -79,8 +79,15 @@ __CSS__</style>
        aria-hidden because `#play` already offers this action with a real label;
        a second tab stop for the same command is noise to a screen reader. -->
   <button class="pressplay" id="pressplay" tabindex="-1" aria-hidden="true">&#9654; Press Play</button>
-  <div class="pboxes" id="pboxes"><span class="pblab">Penalty box</span><span class="pb a" id="pbA"></span><span class="pb h" id="pbH"></span><div class="caption" id="caption"></div></div>
+  <div class="pboxes" id="pboxes"><span class="pblab">Penalty box</span><span class="pb a" id="pbA"></span><span class="pb h" id="pbH"></span></div>
   <div class="counters"><div class="cc a"><span class="n" id="cA">0</span><span class="lb">Away attempts<span class="mode" id="mA">ALL SITUATIONS</span></span></div><div class="cc h"><span class="lb">Home attempts<span class="mode" id="mH">ALL SITUATIONS</span></span><span class="n" id="cH">0</span></div></div>
+  <!-- THE PILL IS A CHILD OF .rinkbox, NOT OF THE PENALTY-BOX ROW. It lived
+       inside `.pboxes` so it could anchor to that row's top edge, which was the
+       bottom of the ice -- correct exactly while the row was furniture. Parking
+       the row hid the pill with it, and a `display:none` parent is not something
+       a child can override, so every penalty and every unplaced goal announced
+       into a dark element. It is last in the box so it paints over the ice. -->
+  <div class="caption" id="caption"></div>
 </div>
 <details class="zone zlayers" id="zLayers"><summary class="zh">Add a metric layer<span class="zon" id="zLayersOn"></span></summary>
 <div class="lrows">

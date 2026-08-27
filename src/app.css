@@ -174,18 +174,17 @@
    ALWAYS PRESENT, EMPTY OR NOT. A band that appears only when occupied moves
    everything below it twice a period, and a viewer never learns what the space
    is for. Kevin: "enough vertical pixels to be super obvious." */
-/* ⭐ `position:relative` SO THE CAPTION CAN SIT ON THE ICE ABOVE IT.
-   The caption was `bottom:14px` inside `.rinkbox`, which contains this row -- so
-   it rendered ON TOP of the penalty box, measured at 58px of overlap on the game
-   page at both widths and 267x20 on the front door. It has been wrong since the
-   box became furniture; it only ever showed when a caption fired, and the hero
-   ending on a goal made that every loop.
-   ANCHORED TO THIS ROW RATHER THAN TO A NEW WRAPPER. The obvious fix is to wrap
-   the <svg> so the caption anchors to the ice -- and the comment forty lines up
-   says in capitals not to, because `.rinkbox` becomes `display:flex` in preview
-   and `#rg.preview .rinkbox svg` needs the svg to be a DIRECT flex child. This
-   row's top edge IS the bottom of the ice, so `bottom:100%` is the same place
-   with none of that risk, and it adapts if the box ever changes height. */
+/* ⚠️ `position:relative` IS A LEFTOVER, AND IT IS KEPT ON PURPOSE.
+   It was here so the caption pill -- then a child of this row -- could anchor to
+   the row's top edge, which is the bottom of the ice. That fixed a real defect:
+   at `bottom:14px` inside `.rinkbox` the pill rendered ON TOP of the penalty
+   boxes, 58px of overlap on the game page at both widths and 267x20 on the
+   front door.
+   The pill has moved out (see `.caption` below) because parking this row hid it.
+   The declaration stays because THIS ROW COMES BACK if the boxes ever do, and
+   because a positioning context with nothing positioned in it costs nothing --
+   whereas removing it and later restoring the child silently restores the
+   overlap. If the row is deleted rather than parked, this goes with it. */
 #rg .pboxes{position:relative;margin-top:9px;display:grid;grid-template-columns:1fr 1fr;gap:6px}
 #rg .pblab{grid-column:1/-1;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:center}
 #rg .pb{display:flex;align-items:center;gap:7px;min-height:30px;padding:5px 9px;border:1px solid var(--edge);border-radius:9px;background:#fff;font-size:.79rem;line-height:1.25}
@@ -428,7 +427,34 @@
 @keyframes slip{0%{transform:scale(1.55);opacity:0}45%{opacity:.7}100%{transform:scale(1);opacity:1}}
 #rg .puck{fill:#0e1216;stroke:#fff;stroke-width:.55}#rg .puck.jump{animation:pj .3s ease}@keyframes pj{0%{transform:scale(2)}100%{transform:scale(1)}}
 #rg .shotline{stroke:var(--ink);stroke-width:.7;stroke-dasharray:2.2 2;opacity:.7;animation:sl 1s ease forwards}@keyframes sl{to{opacity:0}}
-#rg .caption{position:absolute;left:50%;bottom:calc(100% + 6px);transform:translateX(-50%);display:flex;align-items:center;gap:8px;background:rgba(15,26,35,.94);color:#fff;padding:7px 15px;border-radius:99px;font-size:.86rem;font-weight:600;white-space:nowrap;opacity:0;pointer-events:none;max-width:92%}
+/* ⭐ ANCHORED TO `.rinkbox`, AND THE HISTORY IS THE WARNING.
+   It was `bottom:14px` here once, then moved INSIDE `.pboxes` with
+   `bottom:calc(100% + 6px)` so it would sit on the row's top edge -- the bottom
+   of the ice -- instead of overlapping the penalty boxes. That was right for
+   exactly as long as the row was furniture.
+
+   ⚠️ PARKING THE ROW TOOK THE PILL WITH IT. `#rg .pboxes{display:none}` is not
+   something a child can override, so from 6b3d655 to this commit every penalty
+   and every unplaced (shootout) goal announced into a dark element -- 98 and 4
+   across the seven fixture games -- while `dwell()` still held the replay open
+   to give a caption room that never appeared. The rule this project already
+   wrote down is `when you hide a container, enumerate what was inside it`, and
+   `test/park.test.js` is now the instrument for it.
+
+   ⭐ AND MOVING IT IS ITSELF A CONTAINER CHANGE, so `.rinkbox` gets the same
+   enumeration the row did not (CHENG). It now holds, in order: the <svg>, the
+   Press Play button, the parked penalty row, the parked attempt counters, and
+   this pill -- last, so it paints over the ice. Nothing is nested inside the
+   pill, and `test/park.test.js` is what will notice if that stops being true.
+
+   ⚠️ AND WHEN FURNITURE RETURNS UNDER THE ICE -- the fixed-height metrics box is
+   the next build -- THIS HAS TO MOVE WITH IT, back to `bottom:calc(100% + 6px)`
+   against that box, or the 58px overlap returns. `.rinkbox` is already
+   `position:relative`, and an absolutely-positioned child is out of flow, so it
+   does not become a flex item when the preview turns the box into a flex
+   column. That is the constraint the comment forty lines up asks of anything
+   added inside `.rinkbox`, and this is its answer. */
+#rg .caption{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;align-items:center;gap:8px;background:rgba(15,26,35,.94);color:#fff;padding:7px 15px;border-radius:99px;font-size:.86rem;font-weight:600;white-space:nowrap;opacity:0;pointer-events:none;max-width:92%}
 /* THE DURATION HERE IS A PLACEHOLDER AND NEVER APPLIES. `caption()` sets
    `style.animationDuration` from `dwell(e)` on every call, so the caption lasts
    exactly as long as the frame it describes. This number used to be the real
@@ -1320,7 +1346,17 @@
    this works. Moving this block up the file silently un-parks half of it --
    which is the CSS-that-is-valid-and-situationally-wrong defect this project
    has now hit four times. Hence the end of the file, and hence this note. */
-#rg.corsi .cbar,#rg.corsi .counters,#rg.corsi #work,
+/* ⚠️ `.cbar` IS SCOPED AWAY FROM THE PREVIEW, and the omission was a live
+      defect on the front door. The hero boots with `corsiOn=true`, so it wears
+      the `corsi` class, so a park written for the game page took the hero's
+      split bar and its CONTROL/SHOT ATTEMPTS readout with it -- leaving a
+      scoreboard with no bar above a sentence about attempts, which is the exact
+      pair the comment at `app.js` "AND THE BOARD NAMES ITS UNIT" exists to
+      prevent. `render-preview.test.js` asserts `pName`'s TEXT and cannot see a
+      stylesheet, so it stayed green. The counters and `#work` need no such
+      scoping: the preview hides both on purpose, two hundred lines up. */
+#rg:not(.preview).corsi .cbar,
+#rg.corsi .counters,#rg.corsi #work,
 #rg.slot .hint,
 #rg.goalie .goalies,
 #rg.whistle .whistlepanel,

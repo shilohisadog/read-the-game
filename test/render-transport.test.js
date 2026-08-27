@@ -604,24 +604,29 @@ test('a goal is not captioned twice, and IS captioned when the ice is silent', (
 /**
  * ⭐ AND THE PILL DOES NOT SIT ON THE PENALTY BOX.
  *
- * Measured in a real browser before the fix: 58px of overlap on the game page at
- * both widths, 267x20 on the front door. The caption was `bottom:14px` inside
- * `.rinkbox`, which contains the penalty box — wrong since the box became
- * furniture, and invisible until the hero started ending on a goal every loop.
+ * Measured in a real browser before the first fix: 58px of overlap on the game
+ * page at both widths, 267x20 on the front door. The caption was `bottom:14px`
+ * inside `.rinkbox`, which contains the penalty box.
  *
- * THE FAKE DOM HAS NO LAYOUT, so this cannot measure the overlap. What it can
- * pin is the STRUCTURE the fix depends on: the caption is anchored to the
- * penalty box row, whose top edge is the bottom of the ice. If either half is
- * undone the geometry silently returns.
+ * ⚠️ AND THE FIX FOR THAT BECAME THE NEXT DEFECT. Anchoring the pill INSIDE
+ * `.pboxes` was right while the row was furniture; parking the row on
+ * 2026-08-27 hid the pill with it, and this test went green throughout —
+ * because it asserted the STRUCTURE the old fix used rather than the property
+ * either fix exists to protect. A check that pins a mechanism cannot notice
+ * when the mechanism stops delivering the outcome.
+ *
+ * So it now pins the outcome instead, in the two halves a fake DOM can reach:
+ * the pill is not inside a container the stylesheet parks, and it anchors to
+ * the rink box. `test/park.test.js` is the general form of the first half.
  */
-test('the caption is anchored to the penalty box, not to the whole rink box', () => {
+test('the caption pill is not inside a container the stylesheet hides', () => {
   const markup = readFileSync(new URL('../src/game.html', import.meta.url), 'utf8');
   const row = /<div class="pboxes" id="pboxes">([\s\S]*?)<\/div>/.exec(markup);
   assert.ok(row, 'the penalty box row is gone — this check has lost its subject');
-  assert.match(row[1], /id="caption"/,
-    'the caption is outside the penalty box row, so it anchors to .rinkbox again');
-  assert.match(PAGE_CSS, /#rg \.pboxes\{position:relative/,
-    'the row is not a positioning context, so bottom:100% means the rink box');
-  assert.match(PAGE_CSS, /#rg \.caption\{[^}]*bottom:calc\(100% \+/,
-    'the caption is not anchored above the row it sits in');
+  assert.doesNotMatch(row[1], /id="caption"/,
+    'the caption is inside .pboxes, which the stylesheet parks with display:none');
+  assert.match(PAGE_CSS, /#rg \.pboxes\{[^}]*display:none|#rg \.pboxes\{display:none\}/,
+    'the row is no longer parked — re-read whether the pill should move back into it');
+  assert.match(PAGE_CSS, /#rg \.caption\{[^}]*position:absolute[^}]*bottom:14px/,
+    'the pill no longer anchors to the rink box');
 });
