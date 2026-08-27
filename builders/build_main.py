@@ -91,8 +91,13 @@ __CSS__</style>
        line naming the population or condition those figures were counted under.
        Constant height follows from constant content, and the layers become
        comparable as a side effect.
-       ⚠️ EVERY COLUMN IS COUNTED BY THE CLUB THAT SHOT THE PUCK (§31.4b).
-       Goaltending is the one layer that cannot obey it and says so in words. -->
+       ⚠️ AND A COLUMN IS COUNTED THE WAY HOCKEY COUNTS IT, which is not always
+       the shooting club (§31.4c). Attempts and Slot belong to the shooter;
+       BLOCKS belong to the blocker, because that is the stat every broadcast
+       shows and the one our own ice already names; a SAVE is by definition
+       against the other club's shot. Where a column reads the other way round
+       the caption says so, and the box's line carries whichever fact belongs to
+       the GAME rather than to either club. -->
   <div class="lbox" id="lbox"><span class="lxa" id="lxA"></span><span class="lxk" id="lxK"></span><span class="lxh" id="lxH"></span><span class="lxan" id="lxAn"></span><span class="lxhn" id="lxHn"></span><span class="lxn" id="lxN"></span></div>
   <!-- THE PILL IS A CHILD OF .rinkbox, NOT OF THE PENALTY-BOX ROW. It lived
        inside `.pboxes` so it could anchor to that row's top edge, which was the
@@ -108,7 +113,7 @@ __CSS__</style>
 <button class="lrow" id="lyHd" data-pick="slot" aria-pressed="false"><span class="lmk"><i class="k-hd"></i></span><span class="ltx"><b>Slot shots</b><span class="lds">attempts from within 33 ft of the net, between the face-off dots</span><span class="lon">An amber ring marks each one. Click a ring to see the distance and angle it was measured by.</span></span><span class="st" id="stHd">Off</span></button>
 <button class="lrow" id="lyGoalie" data-pick="goaltending" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Goaltending</b><span class="lds">every shot each goaltender faced, and what became of it — saved, scored on, or missed the net</span><span class="lon">The box below the ice builds each club&rsquo;s save fraction as the replay runs. A save is against the OTHER club&rsquo;s shot, so those two columns read the opposite way round.</span></span><span class="st" id="stGoalie">Off</span></button>
 <button class="lrow" id="lyWhistle" data-pick="whistle" aria-pressed="false"><span class="lmk"><i class="k-wh"></i><i class="k-rl"></i></span><span class="ltx"><b>Stoppages</b><span class="lds">the rule that stopped play, and the dot it restarted on</span><span class="lon">The ring marks where play restarted, brightest at the most recent stoppage. The bar lights the line the rule names — for icing the centre line and the far goal line, for offside the blue line. The box below the ice counts them and names the most recent one &mdash; with no figure for either club, because a stoppage names a rule and never a team.</span></span><span class="st" id="stWhistle">Off</span></button>
-<button class="lrow" id="lyBlock" data-pick="blocked" aria-pressed="false"><span class="lmk"><i class="k-blk"></i><i class="k-blkv"></i></span><span class="ltx"><b>Blocked shots</b><span class="lds">the attempts a body stopped before they reached the goalie</span><span class="lon">Blocked attempts keep their ring and every other mark dims, so the ones a body stopped stand out. The box below the ice counts them for the club that SHOT the puck, not the one that blocked it &mdash; a block is credited to the blocker, but the count here is about attempts that never arrived.</span></span><span class="st" id="stBlock">Off</span></button>
+<button class="lrow" id="lyBlock" data-pick="blocked" aria-pressed="false"><span class="lmk"><i class="k-blk"></i><i class="k-blkv"></i></span><span class="ltx"><b>Blocked shots</b><span class="lds">the attempts a body stopped before they reached the goalie</span><span class="lon">Blocked attempts keep their ring and every other mark dims, so the ones a body stopped stand out. The box below the ice credits each block to the club that MADE it, the way a broadcast does. A block by a teammate is credited to neither club, so the two figures need not add up to the total.</span></span><span class="st" id="stBlock">Off</span></button>
 </div>
 <div class="figpick sit"><span class="ll">Situations:</span>
 <div class="grp" role="group" aria-label="Which situations are counted"><button class="lyr sbtn" data-s="all" aria-pressed="true">All situations</button><button class="lyr sbtn" data-s="even" aria-pressed="false">Even strength only</button></div>

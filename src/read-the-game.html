@@ -1551,8 +1551,13 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
        line naming the population or condition those figures were counted under.
        Constant height follows from constant content, and the layers become
        comparable as a side effect.
-       ⚠️ EVERY COLUMN IS COUNTED BY THE CLUB THAT SHOT THE PUCK (§31.4b).
-       Goaltending is the one layer that cannot obey it and says so in words. -->
+       ⚠️ AND A COLUMN IS COUNTED THE WAY HOCKEY COUNTS IT, which is not always
+       the shooting club (§31.4c). Attempts and Slot belong to the shooter;
+       BLOCKS belong to the blocker, because that is the stat every broadcast
+       shows and the one our own ice already names; a SAVE is by definition
+       against the other club's shot. Where a column reads the other way round
+       the caption says so, and the box's line carries whichever fact belongs to
+       the GAME rather than to either club. -->
   <div class="lbox" id="lbox"><span class="lxa" id="lxA"></span><span class="lxk" id="lxK"></span><span class="lxh" id="lxH"></span><span class="lxan" id="lxAn"></span><span class="lxhn" id="lxHn"></span><span class="lxn" id="lxN"></span></div>
   <!-- THE PILL IS A CHILD OF .rinkbox, NOT OF THE PENALTY-BOX ROW. It lived
        inside `.pboxes` so it could anchor to that row's top edge, which was the
@@ -1568,7 +1573,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 <button class="lrow" id="lyHd" data-pick="slot" aria-pressed="false"><span class="lmk"><i class="k-hd"></i></span><span class="ltx"><b>Slot shots</b><span class="lds">attempts from within 33 ft of the net, between the face-off dots</span><span class="lon">An amber ring marks each one. Click a ring to see the distance and angle it was measured by.</span></span><span class="st" id="stHd">Off</span></button>
 <button class="lrow" id="lyGoalie" data-pick="goaltending" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Goaltending</b><span class="lds">every shot each goaltender faced, and what became of it — saved, scored on, or missed the net</span><span class="lon">The box below the ice builds each club&rsquo;s save fraction as the replay runs. A save is against the OTHER club&rsquo;s shot, so those two columns read the opposite way round.</span></span><span class="st" id="stGoalie">Off</span></button>
 <button class="lrow" id="lyWhistle" data-pick="whistle" aria-pressed="false"><span class="lmk"><i class="k-wh"></i><i class="k-rl"></i></span><span class="ltx"><b>Stoppages</b><span class="lds">the rule that stopped play, and the dot it restarted on</span><span class="lon">The ring marks where play restarted, brightest at the most recent stoppage. The bar lights the line the rule names — for icing the centre line and the far goal line, for offside the blue line. The box below the ice counts them and names the most recent one &mdash; with no figure for either club, because a stoppage names a rule and never a team.</span></span><span class="st" id="stWhistle">Off</span></button>
-<button class="lrow" id="lyBlock" data-pick="blocked" aria-pressed="false"><span class="lmk"><i class="k-blk"></i><i class="k-blkv"></i></span><span class="ltx"><b>Blocked shots</b><span class="lds">the attempts a body stopped before they reached the goalie</span><span class="lon">Blocked attempts keep their ring and every other mark dims, so the ones a body stopped stand out. The box below the ice counts them for the club that SHOT the puck, not the one that blocked it &mdash; a block is credited to the blocker, but the count here is about attempts that never arrived.</span></span><span class="st" id="stBlock">Off</span></button>
+<button class="lrow" id="lyBlock" data-pick="blocked" aria-pressed="false"><span class="lmk"><i class="k-blk"></i><i class="k-blkv"></i></span><span class="ltx"><b>Blocked shots</b><span class="lds">the attempts a body stopped before they reached the goalie</span><span class="lon">Blocked attempts keep their ring and every other mark dims, so the ones a body stopped stand out. The box below the ice credits each block to the club that MADE it, the way a broadcast does. A block by a teammate is credited to neither club, so the two figures need not add up to the total.</span></span><span class="st" id="stBlock">Off</span></button>
 </div>
 <div class="figpick sit"><span class="ll">Situations:</span>
 <div class="grp" role="group" aria-label="Which situations are counted"><button class="lyr sbtn" data-s="all" aria-pressed="true">All situations</button><button class="lyr sbtn" data-s="even" aria-pressed="false">Even strength only</button></div>
@@ -6458,16 +6463,16 @@ function capFor(id){
  * the same four slots, which is what makes the box a constant height and the
  * layers comparable to each other.
  *
- * ⚠️ EVERY COLUMN IS COUNTED BY THE CLUB THAT SHOT THE PUCK, and that is the
- * grammar's first rule rather than a detail (§31.4b). `blocked.js` keeps its
- * tally by the BLOCKER's club, which is correct for its own panel and wrong
- * here: measured over 262 games the two readings name DIFFERENT clubs as the
- * leader in 245 of 247 decided games -- 99.2%, because your blocks are of their
- * shots. Reusing that tally would have put a number under the away column that
- * describes the home club's shooting, in 99 games out of 100, on a row whose
- * whole teaching claim is that the left column is the away club. Counting by
- * shooter also makes the two columns SUM to the total: by blocker they are
- * short 8.3%, because a block by a teammate is credited to nobody.
+ * ⚠️ AND A COLUMN IS COUNTED THE WAY HOCKEY COUNTS IT (§31.4c), which is not
+ * one rule for all five. Attempts and Slot belong to the SHOOTER. Blocks belong
+ * to the BLOCKER -- the stat every broadcast shows, the one our own ice names,
+ * and the one this layer's audit specified before a consistency rule invented
+ * later overrode it. A save is by definition against the other club's shot.
+ *
+ * ⭐ THE RULE THAT REPLACED "EVERY COLUMN IS THE SHOOTER" is narrower and holds:
+ * a column carries the club hockey would put it under, the caption says so
+ * wherever that reads the opposite way round, and any fact belonging to the GAME
+ * rather than to either club goes in the line, where it needs no attribution.
  *
  * ⭐ GOALTENDING IS THE ONE LAYER THAT CANNOT OBEY IT, since a save is by
  * definition against the other club's shot. So it does not pretend to: the
@@ -6528,37 +6533,33 @@ function lboxFor(id,at,L){
   return {a:c[AID],k:'SHOTS FROM THE SLOT',h:c[HID],
    n:`Of ${tot} attempt${tot===1?'':'s'} so far · ${MODE()}.`};}
  if(id==='blocked'){
-  const c=byShooter(blocked.reduce(sl,CTX).counted,sl), tot=L.t[AID]+L.t[HID];
-  /* ⚠️ NOT "ATTEMPTS BLOCKED", AND THE LABEL IS THE WHOLE PROBLEM. Kevin: "I
-     thought the team that did the blocking got credit for the block, not the
-     attempt. We show who blocked the shot at the event level, but the layer
-     displays what team took the shot? Seems like a disconnect."
-     He is right about the terminology -- a blocked shot IS the blocker's stat --
-     and `ATTEMPTS BLOCKED` reads as that stat while counting the opposite club.
-     Because the two readings name DIFFERENT clubs in 245 of 247 decided games
-     (§31.4b), a reader who takes the standard meaning gets the wrong team every
-     single time.
-     ⭐ THE COUNT STAYS WITH THE SHOOTER and the LABEL changes, because the count
-     is what carries the layer's point: 51.9% of attempts never reach the goalie,
-     which is why shots on goal is a partial view. Counting by blocker would make
-     the pair a "who blocked more" contest -- and the blocks leader is the
-     ATTEMPTS TRAILER 81.7% of the time, so that pair reads as "gritty defence
-     wins", which docs/blocked-shots-layer.md refused to publish for that reason.
-     THE WORDS ARE THE SITE'S OWN. `build_index.py` names this concept "The
-     attempt that never arrived" on the learn page. Using it here removes the
-     collision with the blocker's stat and stops one idea having two names.
-     ⚠️ AND IT IS THE SHORT FORM, because the long one WRAPPED. Measured on the
-     reference game at 360: `ATTEMPTS THAT NEVER ARRIVED` is 209px in a 293px
-     box, so the centre label took two lines, row one grew from 26px to 30px and
-     the box overflowed its 74px at 84. The deploy gate caught it. Three of the
-     four box defects so far have been a LABEL or a figure outgrowing the row
-     rather than the sentence everyone looks at. */
-  return {a:c[AID],k:'NEVER ARRIVED',h:c[HID],
-   /* THE ATTRIBUTION CLAUSE IS IN THE CAPTION, not here -- it is a property of
-      the LENS, true before the puck drops (§27.1), and spelling it out in the
-      box ran the line to three lines at 360 and clipped it. The label carries
-      the disambiguation now, which is what it is for. */
-   n:`Of ${tot} attempt${tot===1?'':'s'} so far, stopped by a body.`};}
+  /* ⭐ COUNTED BY THE BLOCKER — the standard attribution, and this REVERSES the
+     rule §31.4b laid down a day earlier. Kevin: "blocked shots is quite a common
+     stat that gets broadcast on every hockey platform possible, all of them
+     attribute the block to the defending team."
+
+     He is right, and the layer's OWN AUDIT already said so before I overrode it:
+     `docs/blocked-shots-layer.md` §6 specifies "it marks the block point and
+     says so, WITH THE BLOCKER NAMED" and "a per-game count per team, TEAMMATE
+     BLOCKS EXCLUDED and stated" -- and excluding teammate blocks is only
+     meaningful under blocker credit. The panel tallies by blocker, the ice names
+     the blocker, every broadcast names the blocker, and the box named the other
+     club. That is one page saying two things.
+
+     ⚠️ AND MY DEFENCE OF THE SHOOTER COUNT WAS AIMED AT THE WRONG TARGET. The
+     "gritty defence wins" risk is what §5 of that audit rules on, and what §5
+     forbids is publishing a BLOCKS-LEADER WIN RATE. We publish no such rate. A
+     bare count is what every broadcast shows, and the inversion it warns about
+     (the blocks leader is the attempts trailer 81.7% of the time) is an argument
+     against an outcome rate, not against a count.
+
+     ⭐ AND THE TWO THINGS THE LAYER WAS DOING AT ONCE COME APART CLEANLY. Where
+     blocks happen is a DEFENSIVE fact and belongs to the blocker; how many
+     attempts never got through is a fact about the GAME and belongs to neither,
+     so it goes in the line where it needs no attribution at all. */
+  const B=blocked.reduce(sl,CTX), tot=L.t[AID]+L.t[HID], n=B.counted.length;
+  return {a:B.t[AID],k:'BLOCKS',h:B.t[HID],
+   n:`Of ${tot} attempt${tot===1?'':'s'} so far, ${n} were stopped by a body.`};}
  if(id==='goaltending'){
   const gs=goalieStats(at), per={[AID]:[],[HID]:[]};
   for(const gid of G.goalies){const p=R[gid]; if(!p||per[p.tid]==null)continue;
@@ -6606,7 +6607,7 @@ function lboxFor(id,at,L){
  return none;}
 /** The centre label alone, for the pre-game frame where there is nothing to count. */
 const LBK={corsi:()=>'SHOT ATTEMPTS',slot:()=>'SHOTS FROM THE SLOT',
- blocked:()=>'NEVER ARRIVED',goaltending:()=>'SAVES BY',whistle:()=>'STOPPAGES'};
+ blocked:()=>'BLOCKS',goaltending:()=>'SAVES BY',whistle:()=>'STOPPAGES'};
 function syncPick(){
  if(picking)return;
  const on=PICKS.filter(([,get])=>get()).map(([id])=>id);

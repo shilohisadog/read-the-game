@@ -2051,6 +2051,51 @@ Goaltending is the one layer that cannot obey it, since a save is by definition
 against the other club's shot. That is what §31.4's second line is for: the
 label carries the flip, and it is the ONLY layer where it has to.
 
+### 31.4c ⛔ AND §31.4b IS SUPERSEDED — blocks are counted by the blocker
+
+Kevin, the day after: *"blocked shots is quite a common stat that gets broadcast
+on every hockey platform possible, all of them (to my knowledge) attribute the
+block to the defending team… If we do keep it the way it is, we need to change
+'credited' to 'attributed' or 'assigned', something different than credited."*
+
+He is right, and **the layer's own audit said so before I overrode it.**
+`docs/blocked-shots-layer.md` §6 specifies *"it marks the block point and says
+so, **with the blocker named**"* and *"a per-game count per team, **teammate
+blocks excluded** and stated"* — and excluding teammate blocks is only
+meaningful under blocker credit. The panel tallies by blocker, the ice names the
+blocker, every broadcast names the blocker, and §31.4b made the box name the
+other club. **One page saying two things**, from a consistency rule invented the
+previous day.
+
+⚠️ **And the argument I defended it with was aimed at the wrong target.** I cited
+the 81.7% inversion and *"gritty defence wins"* — which is what §5 of that audit
+rules on, and what §5 forbids is publishing a **blocks-leader win rate**. We
+publish no such rate. The inversion is an argument against an outcome rate, not
+against a count, and a bare count is exactly what every broadcast shows.
+
+⭐ **The question that dissolved it was Kevin's first one**, not his second:
+*"what does the layer intend to educate about?"* It was doing two things at once.
+
+* **Where blocks happen** is a defensive fact — attempts die in the lanes, not
+  at the net — and it belongs to the **blocker**.
+* **How many attempts never got through** is a fact about the **game**, belonging
+  to neither club, and it needs no attribution at all.
+
+Separate them and the conflict is gone: the columns carry blocks by club, the
+line carries the game-level fact. It is also why the two figures need not sum to
+the total — a block by a teammate is credited to neither, 7.8% of blocks — and
+that constant explanation lives in the caption.
+
+⭐ **THE RULE THAT REPLACES §31.4b, narrower and durable: a column carries the
+club hockey would put it under.** Attempts and Slot are the shooter's; blocks are
+the blocker's; a save is against the other club's shot. Where a column reads the
+opposite way round the caption says so, and anything belonging to the game rather
+than to either club goes in the line. The comparability §31.4b was protecting was
+real but subordinate — **agreeing with the sport beats agreeing with ourselves.**
+
+And the wording objection dissolves with the attribution: under blocker credit,
+*credited* is the correct hockey word, so nothing needs renaming to *attributed*.
+
 ### 31.5 Stoppages degrades, and the degradation is the honest part
 
 **A stoppage has no team.** `extract.py` carries `rsn`/`rsn2` and nothing else —
@@ -2156,8 +2201,9 @@ decided before the box is laid out rather than after.
 ### 31.8 What is settled, and what is not
 
 **Settled:** the box lives under the ice, inside `.rinkbox` · it holds a fixed
-grammar rather than a reserved maximum · **every column is counted by the club
-that shot the puck** (§31.4b), Goaltending excepted and labelled · Stoppages degrades to centre-only ·
+grammar rather than a reserved maximum · **a column carries the club hockey would
+put it under** (§31.4c, superseding §31.4b) — shooter for attempts and slot,
+blocker for blocks, and a save against the other club's shot · Stoppages degrades to centre-only ·
 Goaltending counts the CLUB, with the goaltender named on the second line · the
 base view's box is empty or carries an interface prompt, never a metric · SOG
 becomes a validation gate, not a display · the archive references leave the

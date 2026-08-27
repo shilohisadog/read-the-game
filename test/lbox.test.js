@@ -47,19 +47,20 @@ test('every layer fills the same four slots, and the base view fills only the li
 });
 
 /**
- * ⭐ EVERY COLUMN IS COUNTED BY THE CLUB THAT SHOT THE PUCK (§31.4b) — and this
- * is the check that matters, because the wrong answer looks entirely right.
+ * ⭐ BLOCKS ARE COUNTED BY THE BLOCKER — the standard attribution.
  *
- * `blocked.js` tallies by the BLOCKER's club, correct for its own panel. Over
- * 262 in-scope games the two readings name DIFFERENT clubs as leader in 245 of
- * 247 decided games — 99.2% — because your blocks are of their shots. So this
- * recomputes the expected split from the reducer's `counted` ids through
- * `shootingTeam`, and asserts the page agrees with THAT and not with `t`.
+ * Kevin: "blocked shots is quite a common stat that gets broadcast on every
+ * hockey platform possible, all of them attribute the block to the defending
+ * team." Right, and the layer's own audit said so first:
+ * `docs/blocked-shots-layer.md` §6 specifies the blocker is named and that
+ * teammate blocks are excluded — which is only meaningful under blocker credit.
+ * The box had been counting the shooting club, on a consistency rule invented a
+ * day earlier, while the panel, the ice and every broadcast said the other one.
  *
- * THE PATH IS INDEPENDENT (H1): the expected values come from the library
- * reducer plus the attribution helper, never from the page's own arithmetic.
+ * THE PATH IS INDEPENDENT (H1): the expected pair comes from the library
+ * reducer, never from the page's arithmetic.
  */
-test('blocked counts by the shooter, not by the blocker', () => {
+test('blocks are credited to the club that made them', () => {
   const a = boot();
   a.$('scrub').oninput({ target: { value: a.$('scrub').max } });
   pick(a, 'blocked');
@@ -71,60 +72,25 @@ test('blocked counts by the shooter, not by the blocker', () => {
     if (byShooter[t] != null) byShooter[t]++;
   }
   const b = box(a);
-  assert.equal(b.a, String(byShooter[AID]), 'the away column is not the away club\'s blocked attempts');
-  assert.equal(b.h, String(byShooter[HID]), 'the home column is not the home club\'s blocked attempts');
+  assert.equal(b.a, String(B.t[AID]), 'the away column is not the away club\'s blocks');
+  assert.equal(b.h, String(B.t[HID]), 'the home column is not the home club\'s blocks');
 
-  // ⭐ AND THE TWO READINGS REALLY DO DISAGREE IN THIS FIXTURE, so the check
-  // above is capable of failing. Without this the test would pass on a game
-  // where blocker and shooter happen to give the same pair.
+  /* ⭐ AND THE OTHER ATTRIBUTION REALLY IS DIFFERENT IN THIS FIXTURE, so the
+     check above can fail. Over 262 games the two readings name different clubs
+     as leader in 245 of 247 decided games — but a test has to prove it of the
+     game it actually runs on, or it is a tautology wearing a citation. */
   assert.notDeepEqual([B.t[AID], B.t[HID]], [byShooter[AID], byShooter[HID]],
-    'the two attributions agree here, so this fixture cannot tell them apart — '
-    + 'the check is a tautology on this game and needs a different one');
+    'the two attributions agree on this game, so this check cannot tell them apart');
 
-  // The columns SUM to the population, which the blocker reading cannot do:
-  // a block by a teammate is credited to nobody, 8.3% of blocks archive-wide.
-  assert.equal(byShooter[AID] + byShooter[HID], B.counted.length,
-    'counted by shooter the columns no longer sum to the blocked attempts');
-});
-
-/**
- * ⭐ THE LABEL MAY NOT READ AS THE BLOCKER'S STAT.
- *
- * Kevin: "Attempts Blocked, is that standard terminology? I thought the team
- * that did the blocking got credit for the block, not the attempt. We show who
- * blocked the shot at the event level, but the layer displays what team took
- * the shot? Seems like a disconnect."
- *
- * Right on the terminology. A blocked shot IS the blocker's stat, and the count
- * here is deliberately the opposite club — so a label a reader takes in the
- * standard sense hands them the WRONG TEAM in 245 of 247 decided games (§31.4b).
- * The count stays with the shooter, because that is what carries the layer's
- * point (51.9% of attempts never reach the goalie); the LABEL is what had to
- * change, to the site's own published name for the concept.
- */
-test('the blocked label does not read as the blocker\'s stat', () => {
-  const a = boot();
-  a.$('scrub').oninput({ target: { value: a.$('scrub').max } });
-  pick(a, 'blocked');
-  const b = box(a);
-
-  assert.doesNotMatch(b.k, /\bblocked\b/i,
-    'the centre label says "blocked", which is the stat credited to the club '
-    + 'this column is NOT counting');
-
-  // ⭐ AND IT IS THE NAME THE SITE ALREADY PUBLISHES, so one idea does not end up
-  // with two names. `build_index.py` calls this "The attempt that never arrived"
-  // on the learn page; the check reads that file rather than restating it.
-  const learn = readFileSync(new URL('../builders/build_index.py', import.meta.url), 'utf8');
-  assert.match(learn, /The attempt that never arrived/,
-    'the learn page no longer uses this name — the box and the door have drifted apart');
-  assert.match(b.k, /NEVER ARRIVED/,
-    'the box does not use the name the learn page publishes for this concept');
-
-  // The attribution belongs in the caption: it is a property of the lens, true
-  // before the puck drops, and spelling it out in the box clipped at 360.
-  assert.match(a.$('lcap').innerHTML, /SHOT the puck, not the one that blocked/,
-    'nothing tells the reader which club these figures belong to');
+  /* ⭐ AND THE GAME-LEVEL FACT NEEDS NO ATTRIBUTION AT ALL. How many attempts
+     never got through belongs to the GAME, not to either club — which is what
+     lets the layer teach the site's thesis without borrowing a club's column
+     to do it. It is also why the two figures need not sum to it: a block by a
+     teammate is credited to neither, 7.8% of blocks. */
+  assert.match(b.n, new RegExp(`${B.counted.length} were stopped by a body`),
+    'the line does not carry the count of attempts a body stopped');
+  assert.match(a.$('lcap').innerHTML, /teammate is credited to neither/,
+    'nothing explains why the two figures need not add up to the total');
 });
 
 test('the slot counts by the shooter too, and names its denominator', () => {
