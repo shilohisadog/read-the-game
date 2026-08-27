@@ -458,3 +458,87 @@ test('the work control is shown for every layer and hidden in the base view', ()
   assert.match(rule[1], /min-height:(3[0-9]|[4-9][0-9])px/,
     'the work control is under the touch floor this project holds everything else to');
 });
+
+/**
+ * ⚠️ ZERO IS A FIGURE. The footer built its club list with `b.h && …`, and `b.h`
+ * is a NUMBER — so a club with none of something was falsy and vanished. On a
+ * 1–0 slot count the line read "1 WSH." and the other club was simply not
+ * there, on a panel whose closing sentence is "nothing is dropped quietly".
+ *
+ * THE PAIR MATTERS: Stoppages legitimately shows no club figures at all, so
+ * "both clubs always appear" would be wrong. The distinction is EMPTY (a real
+ * absence) against ZERO (a measured none), which truthiness cannot make.
+ */
+test('a club with none of something still appears in the ledger line', () => {
+  const a = boot();
+  // early in the game, so at least one club is on zero for the narrow layers
+  a.$('scrub').oninput({ target: { value: '12' } });
+
+  for (const token of ['corsi', 'slot', 'blocked']) {
+    pick(a, token);
+    a.$('work').click();
+    const foot = /<p class="wfoot">([\s\S]*?)<\/p>/.exec(a.$('workPanel').innerHTML)[1];
+    const b = { a: a.$('lxA').textContent, h: a.$('lxH').textContent };
+    assert.ok(foot.includes(`${b.a} `), `${token}: the away figure is missing from the footer`);
+    assert.ok(foot.includes(`${b.h} `), `${token}: the home figure is missing from the footer`);
+    assert.match(foot, /\/ /, `${token}: the footer names only one club`);
+    a.$('work').click();
+  }
+
+  // ⭐ AND STOPPAGES SHOWS NONE, because there the fields are EMPTY, not zero.
+  pick(a, 'whistle');
+  a.$('work').click();
+  const foot = /<p class="wfoot">([\s\S]*?)<\/p>/.exec(a.$('workPanel').innerHTML)[1];
+  assert.doesNotMatch(foot, /^<em>/,
+    'stoppages was given club figures, which the feed does not record');
+});
+
+/**
+ * ⚠️ `.lds` IS A FRAGMENT — it is written to follow "Slot — " in the caption,
+ * which supplies the full stop. In the panel it ran into the attribution line:
+ * "between the face-off dots Credited to the club that shot."
+ */
+test('the panel closes the row fragment it quotes', () => {
+  const a = boot();
+  a.$('scrub').oninput({ target: { value: a.$('scrub').max } });
+  pick(a, 'slot');
+  a.$('work').click();
+  const html = a.$('workPanel').innerHTML;
+  const rowHtml = app.match(/<button class="lrow"[^>]*data-pick="slot"[\s\S]*?<\/button>/)[0];
+  const lds = /<span class="lds">([^<]*)</.exec(rowHtml)[1];
+  assert.ok(html.includes(lds + '.'),
+    'the fragment is quoted without a full stop, so it runs into the line after it');
+});
+
+/**
+ * ⚠️ `why` IS PROSE AND `derivedFrom` IS MATHS. "38 ft out and wide of the slot
+ * (|y|=33 ft)" shipped absolute-value notation to a novice being taught what the
+ * slot is. The notation belongs in the derivation, which is a different field
+ * and is deliberately left alone — a verification surface that hides its
+ * arithmetic is the opposite of the point.
+ */
+test('no reason a reader sees is written in maths', () => {
+  const ctx = { ...CTX, evenOnly: false };
+  for (const [name, mod] of [['slot', danger], ['blocked', blocked], ['attempts', corsi]]) {
+    const r = mod.reduce(rich.events, ctx);
+    for (const x of [...(r.excluded || []), ...(r.surprising || [])])
+      assert.doesNotMatch(x.why, /\|y\||<=|>=|\babs\b/i,
+        `${name} explains an event to a reader in notation: "${x.why}"`);
+  }
+});
+
+/**
+ * ⭐ ONE LAYER, ONE NAME. The parked row still said "Corsi" after the chip was
+ * renamed "Attempts" — invisible, because the caption reads the CHIP, so the two
+ * could disagree indefinitely. They are allowed to differ in length ("Slot"
+ * against "Slot shots"); they are not allowed to be different words.
+ */
+test('each row carries the same name as its chip', () => {
+  for (const token of ['corsi', 'slot', 'blocked', 'goaltending', 'whistle']) {
+    const rowHtml = app.match(new RegExp(`<button class="lrow"[^>]*data-pick="${token}"[\\s\\S]*?</button>`))[0];
+    const rowName = /<b>([^<]*)<\/b>/.exec(rowHtml)[1];
+    const chip = new RegExp(`<button class="pk"[^>]*data-l="${token}"[^>]*>([^<]*)<`).exec(app)[1];
+    assert.ok(rowName.toLowerCase().includes(chip.toLowerCase()),
+      `the row calls this layer "${rowName}" and the chip calls it "${chip}"`);
+  }
+});

@@ -51,6 +51,13 @@ export const danger = {
     // true of it. Omitting it here left exclusions with no `why` at all, which
     // the conservation check caught — it requires a human-written reason on
     // every excluded event, not merely that the counts balance.
+    /* ⚠️ `|y|` IS MATHS, AND `why` IS PROSE. These strings are read by a person
+       in the work panel -- "38 ft out and wide of the slot (|y|=33 ft)" shipped
+       absolute-value notation to a novice learning what the slot is. `y` off
+       the centre line is the thing being said, so it says that.
+       `derivedFrom` KEEPS THE NOTATION on purpose: it is the computation, not
+       the sentence, and a verification surface that hides its arithmetic behind
+       prose is the thing this project exists to be the opposite of. */
     const push = (id, dims) =>
       excluded.push({ id, why: dims.play || dims.type || dims.strength, dims });
 
@@ -97,10 +104,10 @@ export const danger = {
       }
       push(id, {
         type: !near && !central
-               ? `${d.toFixed(0)} ft out and wide of the slot (|y|=${Math.abs(e.y)} ft)`
+               ? `${d.toFixed(0)} ft out and ${Math.abs(e.y)} ft off centre — the slot reaches ${SLOT_HALF_WIDTH} ft either side`
            : !near
                ? `${d.toFixed(0)} ft from the net — outside the ${HIGH_DANGER_FT} ft line`
-               : `in close but wide — |y|=${Math.abs(e.y)} ft, outside the ${SLOT_HALF_WIDTH} ft slot`,
+               : `in close but wide — ${Math.abs(e.y)} ft off centre, outside the ${SLOT_HALF_WIDTH} ft slot`,
       });
     });
 

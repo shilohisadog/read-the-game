@@ -1003,12 +1003,26 @@ function renderWork(_,cur,at){
  const sur=L.surprising&&L.surprising.length?L.surprising[0].why:null;
  const when=cur?`through P${cur.per} ${cur.rem}`:'pre-game';
  const b=lboxFor(id,at,corsi.reduce(upto(at),CTX));
- const fig=[b.a&&`${b.a} ${AAB}`,b.h&&`${b.h} ${HAB}`].filter(Boolean).join(' / ');
+ /* ⚠️ ZERO IS A FIGURE, AND `&&` DROPPED IT. `b.h` is a NUMBER, so a club with
+    none of something was falsy and vanished: the footer read "1 WSH." on a
+    1-0 slot count, silently omitting the club that had none. On a panel whose
+    closing sentence is "nothing is dropped quietly", that is the one number
+    that must never go missing. Stoppages still shows no figures, because there
+    the fields are EMPTY STRINGS -- a real absence, which is a different thing
+    from zero and is now distinguished by the test rather than by truthiness. */
+ const has=v=>v!==''&&v!=null;
+ const fig=[has(b.a)&&`${b.a} ${AAB}`,has(b.h)&&`${b.h} ${HAB}`]
+   .filter(Boolean).join(' / ');
  $('workPanel').innerHTML=
   `<h2>How ${ESC(name)} is counted <span class="wsub">(${MODE()}, ${when})</span></h2>`
  +`<div class="wg">`
  +`<div class="wc"><h3>Counted <span class="n">${L.counted.length}</span></h3>`
- +`<p>${lds?ESC(lds.textContent):''}</p>`
+ /* ⚠️ AND THE SENTENCE IS CLOSED HERE. `.lds` is a FRAGMENT -- it is written to
+    follow "Slot &mdash; " in the caption, which supplies the full stop -- so in
+    this card it ran straight into the attribution line: "between the face-off
+    dots Credited to the club that shot." The caption already appends the stop;
+    this does the same rather than 15 copies of the row text gaining one. */
+ +`<p>${lds?ESC(lds.textContent)+'.':''}</p>`
  +(lat?`<p class="wattr">${ESC(lat.textContent)}</p>`:'')+`</div>`
  +(sur?`<div class="wc flag"><h3>Counted, surprisingly <span class="n">${L.surprising.length}</span></h3>`
    +`<p><em>For example:</em> ${ESC(sur)}</p>`

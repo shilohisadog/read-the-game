@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-0OEkvdk+LmwW0bjZ0Y8ploIMf7BROmBgNdmREhevpbw=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-aPRV2d4X/1BjzjKrK3zw+fQBezSbKnHbOvp4WIS1Pks='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7c32G3FlAeZnA7WLvhcXrATsoGcQIrAfV3B4AkLlpkE=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-aPRV2d4X/1BjzjKrK3zw+fQBezSbKnHbOvp4WIS1Pks='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">Watch a game</a><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see</a><a href="/workshop.html">Workshop</a></nav></header>
@@ -1625,7 +1625,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 </div>
 <details class="zone zlayers" id="zLayers"><summary class="zh">Add a metric layer<span class="zon" id="zLayersOn"></span></summary>
 <div class="lrows">
-<button class="lrow" id="lyCorsi" data-pick="corsi" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Corsi</b><span class="lds">every shot attempt the league recorded: on goal, missed, or blocked, because all three are the team moving the puck at the net</span><span class="lon">The box below the ice counts every attempt for each club as the replay runs.</span><span class="lat">A blocked attempt is credited to the club that SHOT it &mdash; the shot was still taken, it just never arrived.</span></span><span class="st" id="stCorsi">Off</span></button>
+<button class="lrow" id="lyCorsi" data-pick="corsi" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Attempts</b><span class="lds">every shot attempt the league recorded: on goal, missed, or blocked, because all three are the team moving the puck at the net</span><span class="lon">The box below the ice counts every attempt for each club as the replay runs.</span><span class="lat">A blocked attempt is credited to the club that SHOT it &mdash; the shot was still taken, it just never arrived.</span></span><span class="st" id="stCorsi">Off</span></button>
 <button class="lrow" id="lyHd" data-pick="slot" aria-pressed="false"><span class="lmk"><i class="k-hd"></i></span><span class="ltx"><b>Slot shots</b><span class="lds">attempts from within 33 ft of the net, between the face-off dots</span><span class="lon">An amber ring marks each one. Click a ring to see the distance and angle it was measured by.</span><span class="lat">Credited to the club that shot. Blocked attempts are excluded, because the coordinate the feed records is where the puck STOPPED, not where the shot was taken.</span></span><span class="st" id="stHd">Off</span></button>
 <button class="lrow" id="lyGoalie" data-pick="goaltending" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Goaltending</b><span class="lds">every shot each goaltender faced, and what became of it — saved, scored on, or missed the net</span><span class="lon">The box below the ice builds each club&rsquo;s save fraction as the replay runs. A save is against the OTHER club&rsquo;s shot, so those two columns read the opposite way round.</span><span class="lat">Each goaltender is counted for the club he plays for, against the OTHER club&rsquo;s shots &mdash; so these two columns read the opposite way round.</span></span><span class="st" id="stGoalie">Off</span></button>
 <button class="lrow" id="lyWhistle" data-pick="whistle" aria-pressed="false"><span class="lmk"><i class="k-wh"></i><i class="k-rl"></i></span><span class="ltx"><b>Stoppages</b><span class="lds">the rule that stopped play, and the dot it restarted on</span><span class="lon">The ring marks where play restarted, brightest at the most recent stoppage. The bar lights the line the rule names — for icing the centre line and the far goal line, for offside the blue line. The box below the ice counts them and names the most recent one &mdash; with no figure for either club, because a stoppage names a rule and never a team.</span><span class="lat">A stoppage names a rule and never a club, so nothing here is credited to either side.</span></span><span class="st" id="stWhistle">Off</span></button>
@@ -3075,6 +3075,13 @@ const danger = {
     // true of it. Omitting it here left exclusions with no `why` at all, which
     // the conservation check caught — it requires a human-written reason on
     // every excluded event, not merely that the counts balance.
+    /* ⚠️ `|y|` IS MATHS, AND `why` IS PROSE. These strings are read by a person
+       in the work panel -- "38 ft out and wide of the slot (|y|=33 ft)" shipped
+       absolute-value notation to a novice learning what the slot is. `y` off
+       the centre line is the thing being said, so it says that.
+       `derivedFrom` KEEPS THE NOTATION on purpose: it is the computation, not
+       the sentence, and a verification surface that hides its arithmetic behind
+       prose is the thing this project exists to be the opposite of. */
     const push = (id, dims) =>
       excluded.push({ id, why: dims.play || dims.type || dims.strength, dims });
 
@@ -3121,10 +3128,10 @@ const danger = {
       }
       push(id, {
         type: !near && !central
-               ? `${d.toFixed(0)} ft out and wide of the slot (|y|=${Math.abs(e.y)} ft)`
+               ? `${d.toFixed(0)} ft out and ${Math.abs(e.y)} ft off centre — the slot reaches ${SLOT_HALF_WIDTH} ft either side`
            : !near
                ? `${d.toFixed(0)} ft from the net — outside the ${HIGH_DANGER_FT} ft line`
-               : `in close but wide — |y|=${Math.abs(e.y)} ft, outside the ${SLOT_HALF_WIDTH} ft slot`,
+               : `in close but wide — ${Math.abs(e.y)} ft off centre, outside the ${SLOT_HALF_WIDTH} ft slot`,
       });
     });
 
@@ -5534,12 +5541,26 @@ function renderWork(_,cur,at){
  const sur=L.surprising&&L.surprising.length?L.surprising[0].why:null;
  const when=cur?`through P${cur.per} ${cur.rem}`:'pre-game';
  const b=lboxFor(id,at,corsi.reduce(upto(at),CTX));
- const fig=[b.a&&`${b.a} ${AAB}`,b.h&&`${b.h} ${HAB}`].filter(Boolean).join(' / ');
+ /* ⚠️ ZERO IS A FIGURE, AND `&&` DROPPED IT. `b.h` is a NUMBER, so a club with
+    none of something was falsy and vanished: the footer read "1 WSH." on a
+    1-0 slot count, silently omitting the club that had none. On a panel whose
+    closing sentence is "nothing is dropped quietly", that is the one number
+    that must never go missing. Stoppages still shows no figures, because there
+    the fields are EMPTY STRINGS -- a real absence, which is a different thing
+    from zero and is now distinguished by the test rather than by truthiness. */
+ const has=v=>v!==''&&v!=null;
+ const fig=[has(b.a)&&`${b.a} ${AAB}`,has(b.h)&&`${b.h} ${HAB}`]
+   .filter(Boolean).join(' / ');
  $('workPanel').innerHTML=
   `<h2>How ${ESC(name)} is counted <span class="wsub">(${MODE()}, ${when})</span></h2>`
  +`<div class="wg">`
  +`<div class="wc"><h3>Counted <span class="n">${L.counted.length}</span></h3>`
- +`<p>${lds?ESC(lds.textContent):''}</p>`
+ /* ⚠️ AND THE SENTENCE IS CLOSED HERE. `.lds` is a FRAGMENT -- it is written to
+    follow "Slot &mdash; " in the caption, which supplies the full stop -- so in
+    this card it ran straight into the attribution line: "between the face-off
+    dots Credited to the club that shot." The caption already appends the stop;
+    this does the same rather than 15 copies of the row text gaining one. */
+ +`<p>${lds?ESC(lds.textContent)+'.':''}</p>`
  +(lat?`<p class="wattr">${ESC(lat.textContent)}</p>`:'')+`</div>`
  +(sur?`<div class="wc flag"><h3>Counted, surprisingly <span class="n">${L.surprising.length}</span></h3>`
    +`<p><em>For example:</em> ${ESC(sur)}</p>`
