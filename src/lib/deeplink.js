@@ -240,5 +240,17 @@ export function format({ game, events, index, layers = [], strength = DEFAULT_ST
   q.set('at', e.per + '-' + e.rem + (total > 1 ? '.' + n : ''));
   if (layers.length) q.set('layer', layers.join(','));
   q.set('strength', strength);
-  return '?' + q.toString();
+  /* ⭐ THE COLON STAYS A COLON. `URLSearchParams.toString()` percent-encodes it,
+     and on a link whose entire purpose is to be pasted somewhere public that is
+     the difference between `at=1-07:45.2`, which reads as a time, and
+     `at=1-07%3A45.2`, which reads as machine noise. Kevin pasted a real one and
+     it was the first thing either of us looked at.
+
+     LEGAL, NOT A LIBERTY: RFC 3986 §3.4 admits `:` in a query unencoded. Nothing
+     round-trips differently — `parse` receives a decoded value either way — so
+     every link already shared keeps working, which is why this could be changed
+     after the fact at all. The replace is safe against the other parameters
+     rather than merely lucky: `game` is digits, `layer` and `strength` and
+     `ends` are fixed vocabularies, and none of them can contain a colon. */
+  return '?' + q.toString().replace(/%3A/g, ':');
 }

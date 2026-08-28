@@ -445,3 +445,38 @@ test('every shareable moment round-trips to the frame it was copied from', () =>
   assert.ok(shootout > 0, 'no shootout moment was tested — the case CHENG raised');
   assert.ok(ordinals > 0, 'no moment needed an ordinal, so the shared-clock path never ran');
 });
+
+/**
+ * ⭐ THE LINK IS READ BY PEOPLE, so the clock in it is a clock.
+ *
+ * `URLSearchParams.toString()` percent-encodes the colon, and a control whose
+ * whole purpose is producing something to paste in public was emitting
+ * `at=1-07%3A45.2` where `at=1-07:45.2` reads as a time. Kevin pasted a real
+ * one and it was the first thing either of us looked at.
+ *
+ * RFC 3986 §3.4 admits `:` in a query unencoded, and the decoded value is
+ * identical — which is asserted here rather than argued, both ways round, so a
+ * link already shared in the encoded form is proven to still work.
+ */
+test('a shared link carries a readable clock, and both spellings resolve alike', () => {
+  const g = JSON.parse(readFileSync(new URL('./fixtures/extracts/2023020105.json', import.meta.url), 'utf8'));
+  const SKIP = new Set(['stoppage', 'period-start', 'period-end', 'game-end', 'delayed-penalty']);
+  let checked = 0;
+  for (let n = 0; n < g.events.length; n++) {
+    if (SKIP.has(g.events[n].type)) continue;
+    const q = format({ game: g.game.id, events: g.events, index: n, layers: ['slot'] });
+    assert.doesNotMatch(q, /%3A/, `event ${n}: the clock is percent-encoded — ${q}`);
+    assert.match(q, /at=\d+-\d\d:\d\d/, `event ${n}: the clock is not a clock — ${q}`);
+
+    // ⭐ AND THE OLD SPELLING STILL LANDS IN THE SAME PLACE. Links shared before
+    // this change carry `%3A`; if this ever stops holding, every one of them
+    // breaks silently and nobody finds out from us.
+    const old = q.replace(/:/g, '%3A');
+    assert.notEqual(old, q, 'the two spellings are identical, so this proves nothing');
+    assert.equal(resolve(g.events, parse(new URLSearchParams(old)).at).index,
+                 resolve(g.events, parse(new URLSearchParams(q)).at).index,
+                 `event ${n}: the encoded and readable forms open different frames`);
+    checked++;
+  }
+  assert.ok(checked > 100, `only ${checked} links were checked`);
+});
