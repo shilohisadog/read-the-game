@@ -1033,7 +1033,11 @@ function renderWork(_,cur,at){
     the footer still closes over every event, so a reader adds three numbers
     instead of two. Nothing is hidden; the bookkeeping stops occupying the
     position that teaching should have. */
- const isNear=x=>Object.keys(x.dims||{}).some(k=>k!=='type');
+ /* ⭐ THE RULE IS `isNearMiss` IN layer.js, WHICH IS WHERE IT BELONGS. It was
+    written here as "has any dimension that is not `type`" and restated a second
+    time in the test that guards it; the version in the library says what `type`
+    disqualifying means and why, and both readers now share it. */
+ const isNear=isNearMiss;
  const near=L.excluded.filter(isNear), plain=L.excluded.filter(x=>!isNear(x));
  const exc=rows(summarise(near));
  /* AND THE COLLAPSED LINE STILL NAMES WHAT IS IN IT, from the events rather
@@ -1100,7 +1104,13 @@ function renderWork(_,cur,at){
  +`<p>${lds?ESC(lds.textContent)+'.':''}</p>`
  +(lat?`<p class="wattr">${ESC(lat.textContent)}</p>`:'')+`</div>`
  +(sur?`<div class="wc flag"><h3>Counted, surprisingly <span class="n">${L.surprising.length}</span></h3>`
-   +`<p><em>For example:</em> ${ESC(sur)}</p>`
+   /* ⚠️ AND THIS SENTENCE IS CLOSED TOO — the same fragment defect `.lds` had one
+      card to the left, seen in the same screenshot. A reducer's `why` is a
+      CLAUSE ("…so neither club is credited with the block"), so it ran straight
+      into the line below it: "…credited with the block The other one carries
+      its own reason." The stop is added HERE rather than in fifteen reasons,
+      and only when the clause has not already ended itself. */
+   +`<p><em>For example:</em> ${ESC(sur)}${/[.!?]$/.test(sur)?'':'.'}</p>`
    /* ⚠️ AND IT AGREES WITH ITSELF WHEN THERE IS ONE. "The other 1 each carry
       their own reason" is what a plural written once and never re-read looks
       like — and it is the COMMONEST case, not an edge: the surprising bucket

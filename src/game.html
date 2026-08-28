@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-tMWkaoppY6Uqs33wQqP81HBTw5CLRjhDRyrENFT2sDk=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-5b/JV5ZQCQMrYOa8iGppq32r4s3MA3ZP32e8KTVsbEc='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-HFbmoM/OKH+v6iEd4SuMs2lGBBpxyW8mYN4kJU1umMI=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-5b/JV5ZQCQMrYOa8iGppq32r4s3MA3ZP32e8KTVsbEc='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">Watch a game</a><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see</a><a href="/workshop.html">Workshop</a></nav></header>
@@ -2128,6 +2128,38 @@ const NOT_A_PLAY = {
 };
 
 /**
+ * ⭐ IS THIS EXCLUSION A NEAR MISS — one the work panel promotes to a row of its
+ * own, rather than collapsing into "not this kind of play at all"?
+ *
+ * CHENG's rule: an exclusion teaches when a viewer could plausibly have expected
+ * it to COUNT. That is not derivable from the event, but it IS derivable from
+ * the DIMENSION that rejected it (docs/below-the-rink-2.md §32.4):
+ *
+ *   type      a different kind of event entirely   → collapses, and DISQUALIFIES
+ *   play      the right kind, outside play at all  → promoted (the shootout)
+ *   strength  the wrong situation                  → promoted
+ *   limit     a real candidate the FEED cannot place → promoted
+ *   geometry  a real candidate that failed OUR rule  → promoted
+ *
+ * ⚠️ `type` DISQUALIFIES rather than merely failing to qualify, and the
+ * difference is the whole defect this function was extracted for. It lived in
+ * `renderWork` as "has any dimension that is not `type`", which promotes an
+ * event that failed on `type` AND on something else — so a stoppage during a
+ * power play (`type` + `strength`) became a near miss the moment a reader
+ * pressed "Even strength only", and Blocked put 51 whistles and period starts
+ * under "Close, but not counted" in every game, because it records `play`
+ * alongside `type` where the other layers record `type` alone. Kevin: "none of
+ * them are close to a blocked shot, they are random events."
+ *
+ * ⭐ AND IT LIVES HERE BECAUSE IT WAS STATED TWICE. `test/lbox.test.js` carried
+ * its own copy to predict the panel's near count, so the page and the check that
+ * guards it could drift apart — and the day they did, the test would have gone
+ * red about the wrong thing. One statement, both readers.
+ */
+const isNearMiss = x =>
+  !x.dims?.type && Object.keys(x.dims || {}).some(k => k !== 'type');
+
+/**
  * Does this result account for every event exactly once?
  *
  * Returns the evidence, not a boolean, so a failure says WHICH events were lost
@@ -3134,7 +3166,17 @@ const danger = {
       // entirely plausible.
       const notPlay = inShootout(e);
       if (notPlay) {
-        push(id, { play: notPlay, ...(notEven ? { strength: notEven } : {}) });
+        /* ⚠️ AND THE TYPE QUESTION IS STILL ASKED, because the shootout contains
+           events that are not plays at all — its own `period-start` and
+           `period-end`. Returning on `play` alone filed those as a near miss on
+           a layer about shots from the slot: a period start is not a candidate
+           for anything, and the panel promotes on any dimension but `type`.
+           Twelve rows across the fixture corpus, the tail of the same defect
+           Kevin found on Blocked. Both dimensions are true of the event, so
+           both are recorded, and `type` is what disqualifies it. */
+        const alsoType = !SHOT_TYPES.has(e.type) ? NOT_A_PLAY[e.type] : null;
+        push(id, { play: notPlay, ...(alsoType ? { type: alsoType } : {}),
+                   ...(notEven ? { strength: notEven } : {}) });
         return;
       }
       if (!SHOT_TYPES.has(e.type) || e.x == null) {
@@ -3696,12 +3738,28 @@ const blocked = {
     const counted = [], surprising = [], excluded = [], teammate = [], unknown = [];
 
     events.forEach((e, id) => {
-      // Before the type question, exactly as corsi does it: a shootout attempt
-      // can be blocked by type and is not play.
-      const notPlay = inShootout(e) || NOT_A_PLAY[e.type];
+      /* Before the type question, exactly as corsi does it: a shootout attempt
+         can be blocked by type and is not play.
+
+         ⚠️ AND `NOT_A_PLAY` IS A `type`, NOT A `play`. This said `inShootout(e)
+         || NOT_A_PLAY[e.type]` where corsi and goaltending say `inShootout(e)`
+         alone, so a period start was recorded here as **`play` AND `type`** and
+         elsewhere as `type` alone. Measured, because the first version of this
+         comment claimed it was `play` INSTEAD of `type` and that was wrong: 51
+         of 51 carried both.
+
+         ⭐ SO THIS IS A VOCABULARY FIX, NOT THE FIX. What put those 51 whistles
+         and period starts under "Close, but not counted" was the panel
+         promoting on the extra `play` — repaired in `isNearMiss`, and repaired
+         there whatever this layer records. What is wrong HERE is that `play`
+         means outside play altogether, which is the shootout; a period start is
+         a different KIND of event, which is what `type` means and what the other
+         three layers already called it. A dimension that means one thing in four
+         layers and another in the fifth is the drift that fed the defect. */
+      const notPlay = inShootout(e);
       const notBlocked = e.type === 'blocked-shot'
         ? null
-        : (NOT_BLOCKED[e.type] || `nothing was blocked (${e.type})`);
+        : (NOT_BLOCKED[e.type] || NOT_A_PLAY[e.type] || `nothing was blocked (${e.type})`);
       const notEven = ctx.evenOnly ? whyNotEven(e, ctx) : null;
 
       if (notPlay || notBlocked || notEven) {
@@ -3737,11 +3795,21 @@ const blocked = {
       // shot. It is counted, uncredited, and said out loud.
       if (shooter && blocker.tid === shooter.tid) {
         teammate.push(id);
+        /* ⚠️ AND THE REASON HAS TO SAY WHAT IT IS COUNTED IN, because it sits
+           under a heading that says COUNTED. It read "…so no defender stopped
+           this one and neither team is credited with the block" — every word
+           true, and read against that heading it says the opposite of it.
+           Kevin: "the header says counted."
+
+           ⭐ BOTH HALVES, IN ORDER: a body stopped it, so it IS one of the
+           blocks this layer counts; no DEFENDER did, so no club's column gets
+           it. That is the whole reason it is filed as surprising rather than
+           excluded, and the sentence never said the first half out loud. */
         surprising.push({
           id,
           why: `blocked by a teammate — ${blocker.nm} was in front of his own`
-             + ` side's shot, so no defender stopped this one and neither team`
-             + ` is credited with the block`,
+             + ` side's shot. A body stopped it, so it is counted here; but no`
+             + ` defender did, so neither club is credited with the block`,
           derivedFrom: `roster[event.blk].tid === roster[event.actor].tid `
                      + `(blk=${e.blk}, actor=${e.actor})`,
         });
@@ -5641,7 +5709,11 @@ function renderWork(_,cur,at){
     the footer still closes over every event, so a reader adds three numbers
     instead of two. Nothing is hidden; the bookkeeping stops occupying the
     position that teaching should have. */
- const isNear=x=>Object.keys(x.dims||{}).some(k=>k!=='type');
+ /* ⭐ THE RULE IS `isNearMiss` IN layer.js, WHICH IS WHERE IT BELONGS. It was
+    written here as "has any dimension that is not `type`" and restated a second
+    time in the test that guards it; the version in the library says what `type`
+    disqualifying means and why, and both readers now share it. */
+ const isNear=isNearMiss;
  const near=L.excluded.filter(isNear), plain=L.excluded.filter(x=>!isNear(x));
  const exc=rows(summarise(near));
  /* AND THE COLLAPSED LINE STILL NAMES WHAT IS IN IT, from the events rather
@@ -5708,7 +5780,13 @@ function renderWork(_,cur,at){
  +`<p>${lds?ESC(lds.textContent)+'.':''}</p>`
  +(lat?`<p class="wattr">${ESC(lat.textContent)}</p>`:'')+`</div>`
  +(sur?`<div class="wc flag"><h3>Counted, surprisingly <span class="n">${L.surprising.length}</span></h3>`
-   +`<p><em>For example:</em> ${ESC(sur)}</p>`
+   /* ⚠️ AND THIS SENTENCE IS CLOSED TOO — the same fragment defect `.lds` had one
+      card to the left, seen in the same screenshot. A reducer's `why` is a
+      CLAUSE ("…so neither club is credited with the block"), so it ran straight
+      into the line below it: "…credited with the block The other one carries
+      its own reason." The stop is added HERE rather than in fifteen reasons,
+      and only when the clause has not already ended itself. */
+   +`<p><em>For example:</em> ${ESC(sur)}${/[.!?]$/.test(sur)?'':'.'}</p>`
    /* ⚠️ AND IT AGREES WITH ITSELF WHEN THERE IS ONE. "The other 1 each carry
       their own reason" is what a plural written once and never re-read looks
       like — and it is the COMMONEST case, not an edge: the surprising bucket

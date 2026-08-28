@@ -65,8 +65,18 @@ test('the app reduces through the extracted modules, not a copy', () => {
      the grouping from `layer.js`, never from a list kept in the renderer. */
   assert.ok(app.includes('summarise(near)'),
     'show-me-the-work reads the layer\'s own exclusion reasons');
-  assert.ok(/const isNear=x=>Object\.keys\(x\.dims\|\|\{\}\)\.some/.test(app),
+  /* ⭐ AND THE SPLIT IS THE LIBRARY'S RULE, NOT THE PAGE'S. This used to pin the
+     predicate's text inside `renderWork`, which is where it was written — and
+     it was written a SECOND time in test/lbox.test.js, so the page and the
+     check guarding it could drift. `isNearMiss` lives in layer.js now, and the
+     three assertions are: the page delegates, the bundle carries the library's
+     definition, and there is exactly ONE statement of it in the shipped bytes. */
+  assert.ok(app.includes('const isNear=isNearMiss;'),
     'the near-miss split is not made from the reducer\'s own dimensions');
+  assert.match(app, /const isNearMiss = x =>\s*!x\.dims\?\.type && Object\.keys/,
+    'the library rule is missing from the bundle, or `type` no longer disqualifies');
+  assert.equal((app.match(/Object\.keys\(x\.dims/g) || []).length, 1,
+    'the near-miss rule is stated more than once in the shipped page');
   assert.ok(!/exL=\{hit:/.test(app),
     'the hardcoded exclusion labels are gone');
 });

@@ -361,8 +361,19 @@ test('a TEAMMATE block credits nobody, and says so in words', () => {
   const why = after.surprising.find(s => s.id === real);
   assert.ok(why, 'a teammate block is exactly the counter-intuitive case — it must be surprising');
   assert.match(why.why, /teammate/i);
-  assert.match(why.why, /neither team is credited/i,
+  /* ⚠️ AND IT SAYS WHAT IT WAS COUNTED IN, not only what it is denied. Kevin,
+     reading the card: "the 'counted, surprisingly' says neither team is
+     credited with the block, but the header says 'counted'." Every word of the
+     old sentence was true and against that heading it said the opposite of it,
+     because the caveat had been shipping without the fact. Both halves, and in
+     that order — the club word is the page's throughout ("the club that MADE
+     it", "credited to neither club"), so the reducer uses it too. */
+  assert.match(why.why, /counted/i,
+    'the reason never says the block was counted, under a heading that says it was');
+  assert.match(why.why, /neither club is credited/i,
     'the reader is not told that nobody got the block');
+  assert.ok(why.why.indexOf('counted') < why.why.indexOf('neither club is credited'),
+    'the caveat lands before the fact it is a caveat to');
   assert.match(why.derivedFrom, /roster\[event\.blk\]\.tid/,
     'the claim is not checkable against the data that produced it');
 });

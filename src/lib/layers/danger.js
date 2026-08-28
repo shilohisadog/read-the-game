@@ -77,7 +77,17 @@ export const danger = {
       // entirely plausible.
       const notPlay = inShootout(e);
       if (notPlay) {
-        push(id, { play: notPlay, ...(notEven ? { strength: notEven } : {}) });
+        /* ⚠️ AND THE TYPE QUESTION IS STILL ASKED, because the shootout contains
+           events that are not plays at all — its own `period-start` and
+           `period-end`. Returning on `play` alone filed those as a near miss on
+           a layer about shots from the slot: a period start is not a candidate
+           for anything, and the panel promotes on any dimension but `type`.
+           Twelve rows across the fixture corpus, the tail of the same defect
+           Kevin found on Blocked. Both dimensions are true of the event, so
+           both are recorded, and `type` is what disqualifies it. */
+        const alsoType = !SHOT_TYPES.has(e.type) ? NOT_A_PLAY[e.type] : null;
+        push(id, { play: notPlay, ...(alsoType ? { type: alsoType } : {}),
+                   ...(notEven ? { strength: notEven } : {}) });
         return;
       }
       if (!SHOT_TYPES.has(e.type) || e.x == null) {

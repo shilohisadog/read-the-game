@@ -2458,3 +2458,72 @@ Real Chromium, Cup Final, 360 and 1100: `--lboxh` still **120px** and untouched
 (this is the panel below the box, not the box), **no side-scroll at either
 width**, footer 89px at 360 and 31–50px at 1100. Every equation on screen
 closes.
+
+## 34. "None of them are close to a blocked shot"
+
+Kevin, reading the Blocked work panel: *"the description under 'Close, but not
+counted' doesn't make sense, none of them are close to a blocked shot, they are
+random events"*, and *"the 'counted, surprisingly' says neither team is credited
+with the block, but the header says 'counted'."*
+
+### 34.1 ⭐ `type` DISQUALIFIES — it does not merely fail to qualify
+
+§32.4 put the near-miss split on the DIMENSION that rejected an event, and the
+panel implemented it as **"has any dimension that is not `type`"**. That is a
+different claim: an event can fail on `type` **and** on something else, and then
+the something else promotes it.
+
+| where | what was promoted |
+|---|---|
+| **Blocked, every game** | **51** whistles and period starts. This layer records `play` *as well as* `type` on a NOT_A_PLAY event, where the other three record `type` alone — so the extra dimension carried them in |
+| **Attempts, `evenOnly`** | a stoppage during a power play carries `type` **and** `strength`, so **every whistle** was promoted the moment a reader pressed *Even strength only* |
+| **Slot, shootout games** | the shootout's own `period-start` and `period-end` — `danger.js` returned on `play` before asking the type question |
+
+**428 NOT_A_PLAY events promoted across the fixture corpus and both strength
+modes. Now 0.** What is still promoted on `play` is the shootout ATTEMPT itself,
+which is right: a shot at a goalie is exactly the exclusion a viewer could
+plausibly expect to count.
+
+⚠️ **AND MY FIRST DIAGNOSIS WAS WRONG IN A WAY THE FIX HID.** I wrote that
+Blocked filed a period start as `play` *instead of* `type`; measured, **51 of 51
+carried both**. The mutation caught it: reverting `blocked.js` alone broke
+nothing on screen, because the rule change covers it either way. The layer edit
+is a VOCABULARY fix — `play` means outside play altogether — and it now has its
+own assertion rather than riding on the other one's.
+
+### 34.2 ⭐ The rule was stated twice, so it moved to the library
+
+`isNear` lived in `renderWork`, and `test/lbox.test.js` carried **its own copy**
+to predict the panel's near count. Two statements of one rule: the day the page's
+was corrected, the test went red about the wrong thing — which is how this was
+found. `isNearMiss` is in `src/lib/layer.js` now, with the vocabulary table
+beside it, and `test/build.test.js` asserts the shipped bundle contains **exactly
+one** statement of it.
+
+⚠️ **The same test's conservation check was a tautology:** `plain` was defined as
+`excluded − near`, so `counted + near + plain` was `counted + excluded` however
+the split fell. It closes over the numbers **the panel prints** now.
+
+### 34.3 The reason under a heading that says COUNTED
+
+*"…so no defender stopped this one and neither team is credited with the block"*
+— every word true, and against that heading it says the opposite of it. **The
+caveat had been shipping without the fact.** Two different things are true: a
+body stopped the shot, so it IS one of the blocks this layer counts; no
+*defender* did, so no club's column gets it. Both halves now, in that order.
+
+### 34.4 And two more the screenshot found
+
+The example ran into the paragraph below it — *"…credited with the block The
+other one carries its own reason"* — because a reducer's `why` is a CLAUSE. **The
+identical fragment defect `.lds` had one card to the left**, closed the same way,
+in the panel rather than in fifteen reasons. And the club word: the page says
+*club* throughout (*"the club that MADE it"*, *"credited to neither club"*) while
+the reducer said *team*.
+
+### 34.5 Looked at
+
+Chromium, 360px, Cup Final, both strength modes. **Blocked's near-miss card is
+gone entirely** (36 → 0) and its whistles appear in the collapsed line where they
+belong; **Attempts under `evenOnly` falls 32 → 14**; **Slot is unchanged at 34**,
+which is the control — its near misses were always real. Every footer closes.

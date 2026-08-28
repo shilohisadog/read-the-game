@@ -22,6 +22,7 @@ import { goaltending } from '../src/lib/layers/goaltending.js';
 import { whistle } from '../src/lib/layers/whistle.js';
 import { danger } from '../src/lib/layers/danger.js';
 import { shootingTeam } from '../src/lib/attribution.js';
+import { NOT_A_PLAY, isNearMiss, inShootout } from '../src/lib/layer.js';
 
 const CTX = { roster: rich.roster, homeId: rich.teams.home.id, awayId: rich.teams.away.id };
 const AID = rich.teams.away.id, HID = rich.teams.home.id;
@@ -372,10 +373,23 @@ test('the work panel explains whichever layer is on, from that layer\'s ledger',
        rest collapse to a count — so the check is that the three still add to
        every event, which is the claim the panel makes in words. Doctrine §9:
        the split may not weaken the accounting, only reorder it. */
-    const near = r.excluded.filter(x => Object.keys(x.dims || {}).some(k => k !== 'type'));
+    /* ⚠️ THE RULE IS IMPORTED, NOT RESTATED. This line was its own copy of
+       "promoted unless `type`", so the page and the check guarding it could
+       drift apart — and when the page's rule was corrected, this went red about
+       the wrong thing. `isNearMiss` is the one statement, in layer.js.
+       ⚠️ AND THE ARITHMETIC BELOW WAS A TAUTOLOGY: `plain` was defined as
+       `excluded - near`, so the sum was `counted + excluded` however the split
+       fell. It closes over the numbers THE PANEL PRINTS now, which is the claim
+       the panel actually makes. */
+    const near = r.excluded.filter(isNearMiss);
     const plain = r.excluded.length - near.length;
-    assert.equal(r.counted.length + near.length + plain, total,
-      `${token}: the panel's three buckets do not close over every event`);
+    const onPage = {
+      near: +(/Close, but not counted <span class="n">(\d+)<\/span>/.exec(html) || [, 0])[1],
+      plain: +(/(\d+) other events? (?:was|were) not this kind/.exec(html) || [, 0])[1],
+      counted: +/Counted <span class="n">(\d+)<\/span>/.exec(html)[1],
+    };
+    assert.equal(onPage.counted + onPage.near + onPage.plain, total,
+      `${token}: the panel's own three buckets do not close over every event`);
     if (near.length)
       assert.ok(html.includes(`<span class="n">${near.length}</span>`),
         `${token}'s panel does not show its near-miss count (${near.length})`);
@@ -810,4 +824,155 @@ test('the surprising bucket says "the other one" when there is one', () => {
   }
   assert.equal(seen, 2, 'no frame in this game puts a layer at exactly two '
     + 'surprising events, so this check never reached its subject');
+});
+
+/**
+ * ⭐ A THING THAT WAS NEVER A CANDIDATE IS NOT A NEAR MISS — Kevin, reading the
+ * Blocked card: "the description under 'Close, but not counted' doesn't make
+ * sense, none of them are close to a blocked shot, they are random events."
+ *
+ * The panel promoted an exclusion carrying ANY dimension other than `type`,
+ * which is not the same claim as "no `type` dimension": an event can fail on
+ * `type` AND on something else, and the something else promoted it. Two live
+ * consequences —
+ *
+ *   Blocked, every game   51 whistles and period starts, which this layer
+ *                         records as `play` AND `type` where the other three
+ *                         record `type` alone — so the extra dimension promoted
+ *                         them
+ *   Attempts, evenOnly    a stoppage during a power play carries `type` AND
+ *                         `strength`, so every whistle was promoted the moment
+ *                         a reader pressed "Even strength only"
+ *
+ * The corpus figure: 428 NOT_A_PLAY events promoted across the fixtures and
+ * both strength modes, now 0.
+ *
+ * ⚠️ THE RULE ONLY WORKS IF EVERY LAYER RECORDS `type` WHEN THE EVENT IS NOT A
+ * PLAY, whatever else it also records — an event missing that dimension is
+ * promoted on whatever remains. Blocked recorded it and danger.js did not: its
+ * shootout branch returned on `play` before asking the type question, which put
+ * the shootout's own period-start and period-end under "Close, but not counted"
+ * on the Slot layer, 12 across the corpus.
+ */
+test('a not-a-play event carries the type dimension in every layer', () => {
+  const dir = new URL('./fixtures/extracts/', import.meta.url);
+  const files = readdirSync(dir).filter(f => f.endsWith('.json'));
+  assert.ok(files.length >= 5, 'the fixture corpus has shrunk — this check needs games');
+
+  // ⭐ THE LAYER SET IS DERIVED FROM THE PANEL'S OWN TABLE, not typed here: a
+  // layer added to `LEDGER` and not to this list would go unchecked, which is
+  // exactly how blocked.js drifted from the other three in the first place.
+  const names = /const LEDGER=\{([\s\S]*?)\};/.exec(app)[1].match(/(\w+):/g).map(s => s.slice(0, -1));
+  const MODS = { corsi, slot: danger, blocked, goaltending, whistle };
+  assert.deepEqual(names.sort(), Object.keys(MODS).sort(),
+    'the panel shows a layer this check does not exercise');
+
+  let seen = 0, dims = new Set();
+  for (const f of files) {
+    const g = JSON.parse(readFileSync(new URL(f, dir), 'utf8'));
+    const ctx = { roster: g.roster, homeId: g.teams.home.id, awayId: g.teams.away.id };
+    for (const [nm, mod] of Object.entries(MODS)) {
+      for (const evenOnly of [false, true]) {
+        for (const x of mod.reduce(g.events, { ...ctx, evenOnly }).excluded) {
+          const t = g.events[x.id].type;
+          if (NOT_A_PLAY[t]) {
+            assert.ok(x.dims?.type,
+              `${f} ${nm} evenOnly=${evenOnly}: a ${t} is excluded as `
+              + `${Object.keys(x.dims || {}).join('+')} with no \`type\` — the panel `
+              + 'will promote it into "Close, but not counted"');
+            /* ⭐ AND `play` MEANS OUTSIDE PLAY ALTOGETHER — the shootout, the one
+               exclusion here a viewer could plausibly expect to count. Blocked
+               recorded `play` on every period start and whistle as well, where
+               the other three record `type` alone; that cost nothing once
+               `isNearMiss` was fixed, which is exactly why it needs saying out
+               loud rather than left to be rediscovered. A dimension that means
+               one thing in four layers and another in the fifth is the drift
+               that fed the defect above. */
+            assert.ok(!x.dims.play || inShootout(g.events[x.id]),
+              `${f} ${nm}: a ${t} outside the shootout is dimension \`play\` — `
+              + 'that word means outside play altogether, not "not a play"');
+            seen++;
+          }
+          for (const k of Object.keys(x.dims || {})) dims.add(k);
+        }
+      }
+    }
+  }
+  assert.ok(seen > 1000, `only ${seen} not-a-play exclusions were checked`);
+  // ⭐ AND THE VOCABULARY IS CLOSED. A dimension nobody has ruled on would be
+  // promoted by default, under a heading that claims the event nearly counted.
+  assert.deepEqual([...dims].sort(), ['geometry', 'limit', 'play', 'strength', 'type'],
+    'a layer invented an exclusion dimension that §32.4 has not ruled on');
+});
+
+/**
+ * ⭐ AND THE SAME CLAIM AT THE SURFACE, where Kevin met it. The check above is
+ * about the reducers; this one reads what the panel actually renders, in both
+ * strength modes, because the evenOnly defect is invisible in the default.
+ */
+test('nothing that was never a candidate appears under "Close, but not counted"', () => {
+  const a = boot();
+  a.$('scrub').oninput({ target: { value: a.$('scrub').max } });
+  const NEVER = [/play stopped/, /period start/, /period end/, /game over/, /delayed penalty/];
+  let checked = 0;
+  for (const evenOnly of [false, true]) {
+    a.$$('#rg .sbtn')[evenOnly ? 1 : 0].click();
+    for (const l of ['corsi', 'slot', 'blocked', 'goaltending', 'whistle']) {
+      pick(a, l);
+      a.$('work').click();
+      const w = a.$('workPanel').innerHTML;
+      const m = /Close, but not counted[\s\S]*?<p class="wexc">([\s\S]*?)<\/p>/.exec(w);
+      if (m) for (const re of NEVER)
+        assert.doesNotMatch(m[1], re,
+          `${l} (evenOnly=${evenOnly}): "${re.source}" is filed as a near miss`);
+      checked++;
+      a.$('work').click();
+    }
+  }
+  assert.equal(checked, 10, 'a layer or a strength mode went unchecked');
+  // The section still EXISTS where it should — otherwise this passes by the
+  // panel having stopped rendering near misses at all.
+  a.$$('#rg .sbtn')[0].click();
+  pick(a, 'slot');
+  a.$('work').click();
+  assert.match(a.$('workPanel').innerHTML, /Close, but not counted/,
+    'no layer shows a near-miss section any more, so the check above is vacuous');
+});
+
+/**
+ * ⚠️ A REASON PRINTED UNDER A HEADING THAT SAYS **COUNTED** MAY NOT READ AS
+ * THOUGH THE EVENT WAS NOT. Kevin: "the 'counted, surprisingly' says neither
+ * team is credited with the block, but the header says 'counted'."
+ *
+ * Every word of the old sentence was true — "no defender stopped this one and
+ * neither team is credited with the block" — and against that heading it said
+ * the opposite of it. The two facts are different: a body stopped the shot, so
+ * it IS one of the blocks this layer counts; no DEFENDER did, so no club's
+ * column gets it. The caveat had been shipping without the fact.
+ *
+ * This is a copy pin, and it says so: what it defends is that BOTH halves are
+ * present, not the particular wording of either.
+ */
+test('a surprising reason says what it was counted in, not only what it is denied', () => {
+  /* THE SENTENCE ITSELF IS PINNED IN test/layers.test.js, which owns the
+     reducer's claim. What is checked HERE is the thing Kevin actually saw: the
+     reason and the heading above it, on one card, agreeing. */
+  const B = blocked.reduce(rich.events, CTX);
+  assert.ok(B.teammate.length, 'no teammate block in this fixture — no subject');
+  const a = boot();
+  a.$('scrub').oninput({ target: { value: a.$('scrub').max } });
+  pick(a, 'blocked');
+  a.$('work').click();
+  const card = /Counted, surprisingly[\s\S]*?<\/div>/.exec(a.$('workPanel').innerHTML)[0];
+  assert.match(card, /counted/i,
+    'the card headed "Counted, surprisingly" shows a reason that never says so');
+
+  /* ⚠️ AND THE EXAMPLE CLOSES ITS OWN SENTENCE. A reducer's `why` is a CLAUSE,
+     so it ran into the line beneath it — "…credited with the block The other
+     one carries its own reason." The identical fragment defect `.lds` had one
+     card to the left, and it was found the same way: by looking at a 360px
+     render, not by a test. */
+  const eg = /<p><em>For example:<\/em>([\s\S]*?)<\/p>/.exec(card)[1];
+  assert.match(eg.trim(), /[.!?]$/,
+    'the example runs into the paragraph after it, with no full stop');
 });

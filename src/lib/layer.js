@@ -99,6 +99,38 @@ export const NOT_A_PLAY = {
 };
 
 /**
+ * ⭐ IS THIS EXCLUSION A NEAR MISS — one the work panel promotes to a row of its
+ * own, rather than collapsing into "not this kind of play at all"?
+ *
+ * CHENG's rule: an exclusion teaches when a viewer could plausibly have expected
+ * it to COUNT. That is not derivable from the event, but it IS derivable from
+ * the DIMENSION that rejected it (docs/below-the-rink-2.md §32.4):
+ *
+ *   type      a different kind of event entirely   → collapses, and DISQUALIFIES
+ *   play      the right kind, outside play at all  → promoted (the shootout)
+ *   strength  the wrong situation                  → promoted
+ *   limit     a real candidate the FEED cannot place → promoted
+ *   geometry  a real candidate that failed OUR rule  → promoted
+ *
+ * ⚠️ `type` DISQUALIFIES rather than merely failing to qualify, and the
+ * difference is the whole defect this function was extracted for. It lived in
+ * `renderWork` as "has any dimension that is not `type`", which promotes an
+ * event that failed on `type` AND on something else — so a stoppage during a
+ * power play (`type` + `strength`) became a near miss the moment a reader
+ * pressed "Even strength only", and Blocked put 51 whistles and period starts
+ * under "Close, but not counted" in every game, because it records `play`
+ * alongside `type` where the other layers record `type` alone. Kevin: "none of
+ * them are close to a blocked shot, they are random events."
+ *
+ * ⭐ AND IT LIVES HERE BECAUSE IT WAS STATED TWICE. `test/lbox.test.js` carried
+ * its own copy to predict the panel's near count, so the page and the check that
+ * guards it could drift apart — and the day they did, the test would have gone
+ * red about the wrong thing. One statement, both readers.
+ */
+export const isNearMiss = x =>
+  !x.dims?.type && Object.keys(x.dims || {}).some(k => k !== 'type');
+
+/**
  * Does this result account for every event exactly once?
  *
  * Returns the evidence, not a boolean, so a failure says WHICH events were lost

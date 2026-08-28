@@ -73,12 +73,28 @@ export const blocked = {
     const counted = [], surprising = [], excluded = [], teammate = [], unknown = [];
 
     events.forEach((e, id) => {
-      // Before the type question, exactly as corsi does it: a shootout attempt
-      // can be blocked by type and is not play.
-      const notPlay = inShootout(e) || NOT_A_PLAY[e.type];
+      /* Before the type question, exactly as corsi does it: a shootout attempt
+         can be blocked by type and is not play.
+
+         ⚠️ AND `NOT_A_PLAY` IS A `type`, NOT A `play`. This said `inShootout(e)
+         || NOT_A_PLAY[e.type]` where corsi and goaltending say `inShootout(e)`
+         alone, so a period start was recorded here as **`play` AND `type`** and
+         elsewhere as `type` alone. Measured, because the first version of this
+         comment claimed it was `play` INSTEAD of `type` and that was wrong: 51
+         of 51 carried both.
+
+         ⭐ SO THIS IS A VOCABULARY FIX, NOT THE FIX. What put those 51 whistles
+         and period starts under "Close, but not counted" was the panel
+         promoting on the extra `play` — repaired in `isNearMiss`, and repaired
+         there whatever this layer records. What is wrong HERE is that `play`
+         means outside play altogether, which is the shootout; a period start is
+         a different KIND of event, which is what `type` means and what the other
+         three layers already called it. A dimension that means one thing in four
+         layers and another in the fifth is the drift that fed the defect. */
+      const notPlay = inShootout(e);
       const notBlocked = e.type === 'blocked-shot'
         ? null
-        : (NOT_BLOCKED[e.type] || `nothing was blocked (${e.type})`);
+        : (NOT_BLOCKED[e.type] || NOT_A_PLAY[e.type] || `nothing was blocked (${e.type})`);
       const notEven = ctx.evenOnly ? whyNotEven(e, ctx) : null;
 
       if (notPlay || notBlocked || notEven) {
@@ -114,11 +130,21 @@ export const blocked = {
       // shot. It is counted, uncredited, and said out loud.
       if (shooter && blocker.tid === shooter.tid) {
         teammate.push(id);
+        /* ⚠️ AND THE REASON HAS TO SAY WHAT IT IS COUNTED IN, because it sits
+           under a heading that says COUNTED. It read "…so no defender stopped
+           this one and neither team is credited with the block" — every word
+           true, and read against that heading it says the opposite of it.
+           Kevin: "the header says counted."
+
+           ⭐ BOTH HALVES, IN ORDER: a body stopped it, so it IS one of the
+           blocks this layer counts; no DEFENDER did, so no club's column gets
+           it. That is the whole reason it is filed as surprising rather than
+           excluded, and the sentence never said the first half out loud. */
         surprising.push({
           id,
           why: `blocked by a teammate — ${blocker.nm} was in front of his own`
-             + ` side's shot, so no defender stopped this one and neither team`
-             + ` is credited with the block`,
+             + ` side's shot. A body stopped it, so it is counted here; but no`
+             + ` defender did, so neither club is credited with the block`,
           derivedFrom: `roster[event.blk].tid === roster[event.actor].tid `
                      + `(blk=${e.blk}, actor=${e.actor})`,
         });
