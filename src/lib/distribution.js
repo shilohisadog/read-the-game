@@ -147,6 +147,25 @@ export function shareAtOrBelow(d, value) {
  * season, or an empty one. A caller must then say nothing at all, which is the
  * verdict card's standing rule.
  */
+export function judgeable(dists, counts) {
+  if (!dists || !counts) return 0;
+  let n = 0;
+  for (const [lens, d] of Object.entries(dists))
+    if (d && d.n && d.noun && Number.isInteger(counts[lens])) n++;
+  return n;
+}
+
+/**
+ * ⚠️ AND `mostUnusual` RETURNING NULL IS TWO DIFFERENT FACTS. "Every count was
+ * ordinary" and "no lens could be judged at all" are not the same statement, and
+ * a caller that cannot tell them apart will say the game was ordinary without
+ * having checked — which is what shipped for one commit, because the page
+ * guarded on `some(d => d.n)`, a NEIGHBOUR of the question rather than the
+ * question. `judgeable` above is the question: how many lenses could be judged.
+ * The verdict card already makes this distinction for the curve (undefined =
+ * never asked, null = asked and did not arrive, two different true sentences);
+ * this is the same distinction one measure over.
+ */
 export function mostUnusual(dists, counts) {
   if (!dists || !counts) return null;
   let best = null, outside = 0;

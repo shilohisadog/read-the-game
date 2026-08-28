@@ -2669,6 +2669,28 @@ directly rather than importing `rowFor`, and its own comment says why. The
 mechanism ships; the aggregation that walks records stays. **+12 KB on the game
 page, +4.6 KB gzipped.**
 
+### 36.4b ⚠️ AND NULL WAS TWO FACTS — caught by checking what the pipeline had published
+
+`mostUnusual` returns null both when **nothing stood out** and when **no lens
+could be judged at all**, and the page guarded on `some(d => d.n)` — a NEIGHBOUR
+of the question (do distributions exist) rather than the question (can a lens be
+judged). A document carrying `perGame` without `noun` has distributions, judges
+nothing, and would have been told it was *an ordinary night by every lens*: a
+claim about measures that were never evaluated.
+
+⚠️ **AND THE TEST FOR THAT CASE PASSED ON THE DEFECT.** It asserted only
+`doesNotMatch(/whistle|corsi/)` — no lens id shown to a reader — which a page
+printing "every count sat inside the middle half" satisfies completely. The
+second assertion is the one that had to exist.
+
+⭐ `judgeable(dists, counts)` is the question, and the guard asks it. The verdict
+card already draws this distinction for the curve — *undefined* is never asked,
+*null* is asked and did not arrive, two different true sentences — so this is the
+same rule one measure over.
+
+Found by checking whether the pipeline had published `perGame` yet, which is the
+kind of look that has no test behind it at all.
+
 ### 36.5 ⏸ OPEN, AND UNMEASURED: playoffs are pooled with the regular season
 
 A playoff game is compared against a distribution that is mostly regular season.

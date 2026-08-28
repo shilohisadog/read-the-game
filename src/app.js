@@ -1418,13 +1418,19 @@ $('gl').textContent=`${AAB} at ${HAB}${WHEN?' · '+WHEN:''}`;
     noise about a feature the reader has not been promised. */
  const season=String((G.game&&G.game.id)||'').slice(0,4);
  const dists=RATES&&RATES.perGame&&RATES.perGame[season];
- const U=mostUnusual(dists,{
+ const LENSCOUNTS={
    corsi:all.counted.length,
    slot:danger.reduce(G.events,{...CTX,evenOnly:false}).counted.length,
    blocked:blocked.reduce(G.events,{...CTX,evenOnly:false}).counted.length,
    goaltending:goaltending.reduce(G.events,{...CTX,evenOnly:false}).counted.length,
-   whistle:whistle.reduce(G.events,{...CTX,evenOnly:false}).counted.length});
- if(dists&&Object.values(dists).some(d=>d&&d.n)){
+   whistle:whistle.reduce(G.events,{...CTX,evenOnly:false}).counted.length};
+ const U=mostUnusual(dists,LENSCOUNTS);
+ /* ⚠️ THE GUARD ASKS THE QUESTION, not a neighbour of it. It was
+    `some(d => d.n)` — distributions exist — which is not the same as "a lens
+    could be judged": a document carrying `perGame` without `noun` has
+    distributions, judges nothing, and would have been told it was an ordinary
+    night by every lens. Two different facts behind one null. */
+ if(judgeable(dists,LENSCOUNTS)){
   /* A FRACTION, NEVER A PERCENTAGE (levelCurve's rule): "more than 182 of the
      200 nights" is self-limiting where "the 91st percentile" is not, and it
      needs no minimum-n guard — early in a season the sentence says so itself. */

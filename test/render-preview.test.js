@@ -646,9 +646,21 @@ test('both the unusual and the ordinary sentence actually render', () => {
     'a count inside the range is not stated as a fraction of the population');
   assert.doesNotMatch(part, /\d%/, 'the season comparison was printed as a percentage');
 
-  // ⭐ AND A DOCUMENT WITH NO NOUN SAYS NOTHING RATHER THAN NAMING A LENS ID.
+  /* ⭐ AND A DOCUMENT WITH NO NOUN SAYS NOTHING AT ALL — not "an ordinary
+     night", which is a claim about lenses nothing could judge.
+
+     ⚠️ THIS ASSERTION USED TO BE `doesNotMatch(/whistle|corsi/)` ALONE, and it
+     PASSED ON THE DEFECT: a page printing "every count sat inside the middle
+     half" names no lens id and satisfied it completely. `mostUnusual` returns
+     null for two different facts — nothing stood out, and nothing could be
+     judged — and the page guarded on a NEIGHBOUR of the question (do
+     distributions exist) rather than the question (can a lens be judged). */
   const nameless = Object.fromEntries(Object.entries(low).map(([k, d]) =>
     [k, { ...d, noun: undefined }]));
   const quiet = boot(rich, { perGame: { [y]: nameless } }).$('verdict').innerHTML;
   assert.doesNotMatch(quiet, /whistle|corsi/, 'a lens id was shown to a reader');
+  assert.doesNotMatch(quiet, /middle half/,
+    'a game was called ordinary by lenses nothing could judge');
+  assert.doesNotMatch(quiet, /class="rate season"/,
+    'a season claim was made from a document that names no measure');
 });
