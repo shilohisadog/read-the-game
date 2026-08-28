@@ -18,6 +18,7 @@
  */
 
 import { typeOf, isLeague } from './competitions.js';
+import { distribution } from './distribution.js';
 
 /**
  * Regular season (02) and playoffs (03), read from the id — never a lookup.
@@ -160,82 +161,23 @@ export function rowFor(curve, diff) {
 }
 
 /**
- * ⭐ WHAT A NORMAL NIGHT LOOKS LIKE — the distribution of each lens's count, per
- * game, and the one thing `measures.json` has never been able to say.
- *
- * Every figure in this file until now is a RATE: of all attempts, this share was
- * blocked; of games with an edge, this share were lost. None of them can answer
- * "is 94 attempts a lot", because a share of a population says nothing about
- * how one night compares to the others. That is §32.6's blocker, and it blocks
- * the per-game summary, the measurements page, and any sentence anywhere that
- * calls a game unusual.
- *
- * ⭐ A HISTOGRAM, NOT A MEAN AND A SPREAD, and the choice is the doctrinal one.
- * A mean invites "average", a standard deviation asserts a shape nobody has
- * checked, and both are summaries a reader cannot verify against anything. An
- * integer histogram is the raw material: every median, quartile and "more nights
- * than four in five" is DERIVED from it by `quantile`/`shareAtOrBelow` below, in
- * one place, and can be recomputed by anyone holding the published file. Publish
- * the mechanism and let the sentence be chosen on top of it.
- *
- * ⭐ AND THE UNIT IS THE CHIP'S OWN NUMBER. The selector puts a live count on
- * each lens and that count is `reducer.reduce(...).counted.length`; these
- * distributions count the same field from the same reducers, so the number on
- * screen and the reference class it is compared against are the same quantity by
- * construction rather than by coincidence. `test/measure.test.js` asserts that
- * identity against the page's own table.
- *
- * `n` COUNTS GAMES here — unlike `attemptMix`, whose n counts attempts. Both say
- * so in `what`, because the two units differ by a factor of about 120.
- *
- * ⭐ AND IT IS SCOPED PER SEASON, NEVER POOLED — measured, not assumed, because
- * every other figure in this file pools the three seasons and it would have been
- * the obvious thing to copy. Over a stratified 600-game sample, 200 per season,
- * the question asked was the one that matters: how far would a game's RANK move
- * if it were scored against the pooled archive instead of its own season?
- *
- *   lens          by season   random p50   random p95   verdict
- *   attempts          12.5          6.8          8.7    season matters
- *   blocked           15.0          4.7          7.5    season matters
- *   goaltending       13.0          5.5         11.0    season matters
- *   slot               3.8          5.3          7.3    within noise
- *   stoppages          4.7          5.0          8.2    within noise
- *
- * ⭐ THE CONTROL IS WHAT MAKES THAT READABLE: 200 random splits into groups of
- * the SAME SIZES, ignoring the season entirely. A 12-point gap means nothing
- * without knowing what 200 games of sampling noise produces on its own, and the
- * answer is 7–11 points at p95. Three of five clear it, so a pooled rank would
- * be wrong by more than a tenth of the archive on the lenses a reader looks at
- * most. Hockey is not stationary and this is the measurement that says so.
- *
- * The two within noise are published per season anyway, because a document whose
- * scoping depends on which lens you read is a document nobody can quote safely.
- */
-export function distribution(values, what, population = POPULATION) {
-  const v = values.filter(x => Number.isInteger(x)).sort((a, b) => a - b);
-  // An empty population publishes no shape at all rather than a zero one, for
-  // the reason `rateOf` returns a null rate: 0 reads as a finding.
-  if (!v.length) return { what, population, unit: 'games', n: 0,
-                          min: null, max: null, start: null, counts: [] };
-  const min = v[0], max = v[v.length - 1];
-  const counts = new Array(max - min + 1).fill(0);
-  for (const x of v) counts[x - min]++;
-  return { what, population, unit: 'games', n: v.length, min, max, start: min, counts };
-}
-
-/**
  * Every lens's per-game count, distributed, keyed by SEASON and then by the
  * page's own lens ids. See the measurement above for why the season key exists.
  */
 export function perGame(records) {
   // Keyed by the PAGE'S lens ids, so the selector and the reference class name
   // the same things — the human label is the chip's, and lives in `what`.
+  /* Each lens twice: the full statement of what was counted, and the NOUN a
+     sentence uses. Both travel with the number for the same reason the
+     population does — a summary that says "55 goaltending" is a label nobody
+     wrote, and one that reaches for its own wording is a second vocabulary. */
   const said = {
-    corsi: 'shot attempts by both clubs in one game, at all strengths',
-    slot: 'shot attempts from inside the slot, both clubs, in one game',
-    blocked: 'attempts a body stopped, both clubs, in one game',
-    goaltending: 'shots the two goaltenders faced between them in one game',
-    whistle: 'whistles that stopped play in one game',
+    corsi: ['shot attempts by both clubs in one game, at all strengths', 'shot attempts'],
+    slot: ['shot attempts from inside the slot, both clubs, in one game', 'shots from the slot'],
+    blocked: ['attempts a body stopped, both clubs, in one game', 'blocked shots'],
+    goaltending: ['shots the two goaltenders faced between them in one game',
+                  'shots the goaltenders faced'],
+    whistle: ['whistles that stopped play in one game', 'stoppages'],
   };
   const bySeason = {};
   for (const g of records) (bySeason[season(g.id)] ||= []).push(g);
@@ -251,49 +193,12 @@ export function perGame(records) {
       // A record written before `lens` existed contributes nothing rather than a
       // zero: "we did not measure it" and "there were none" are different facts,
       // which is why `distribution` filters on Number.isInteger.
-      out[y][k] = distribution(bySeason[y].map(g => g.lens?.[k]),
-                               `${said[k]} (n counts GAMES, not events)`, pop);
+      out[y][k] = { ...distribution(bySeason[y].map(g => g.lens?.[k]),
+                                    `${said[k][0]} (n counts GAMES, not events)`, pop),
+                    noun: said[k][1] };
     }
   }
   return out;
-}
-
-/**
- * The value at a quantile, by the nearest-rank method over the published counts.
- *
- * NEAREST-RANK, NEVER INTERPOLATED: these are counts of events in a hockey game,
- * so every value in the distribution is a number that actually occurred, and an
- * interpolated median of 88.5 attempts is a night nobody played. The method is
- * named here because "the median" has several and they disagree on even n.
- */
-export function quantile(d, q) {
-  if (!d || !d.n) return null;
-  const want = Math.max(1, Math.ceil(q * d.n));
-  let seen = 0;
-  for (let i = 0; i < d.counts.length; i++) {
-    seen += d.counts[i];
-    if (seen >= want) return d.start + i;
-  }
-  return d.max;
-}
-
-/**
- * The share of games at or below this value — the rank a sentence like "more
- * than four nights in five" is built from.
- *
- * AT OR BELOW, and the name says which. A game holding the exact median value is
- * not "above average", and a rule that split ties would have to choose a side of
- * one; this counts the ties in, once, and is stated so nobody has to guess.
- * Returns null over an empty population, never 0.
- */
-export function shareAtOrBelow(d, value) {
-  if (!d || !d.n) return null;
-  let seen = 0;
-  for (let i = 0; i < d.counts.length; i++) {
-    if (d.start + i > value) break;
-    seen += d.counts[i];
-  }
-  return seen / d.n;
 }
 
 /**

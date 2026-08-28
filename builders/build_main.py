@@ -199,6 +199,9 @@ assert not set(_left) - {"__LIB__", "__BOOT__", "__CSP__"}, \
 
 
 LIB = ["rink.js", "attribution.js", "layer.js", "strength.js", "box.js", "penalties.js", "svgpen.js", "figures.js",
+       # The per-game summary reads `perGame` out of measures.json — the mechanism
+       # only, never the archive tier that builds it. See distribution.js.
+       "distribution.js",
        "layers/corsi.js", "layers/goaltending.js", "layers/danger.js", "layers/whistle.js",
        "layers/blocked.js",
        # BEFORE sentence.js, which asks it which competition a game is.

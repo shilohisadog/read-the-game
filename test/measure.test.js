@@ -20,7 +20,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { measureGame, stable, firstAtClock, endedIn, measureAll } from '../builders/measure.mjs';
 import { TEAMS } from '../src/lib/teams.js';
-import { summarise, slotShare, distribution, perGame, quantile, shareAtOrBelow } from '../src/lib/archive.js';
+import { summarise, slotShare, perGame } from '../src/lib/archive.js';
+import { distribution, quantile, shareAtOrBelow, mostUnusual } from '../src/lib/distribution.js';
 import { corsi } from '../src/lib/layers/corsi.js';
 import { danger } from '../src/lib/layers/danger.js';
 import { blocked } from '../src/lib/layers/blocked.js';
@@ -46,6 +47,10 @@ const TIER = [
   'teams.js',
   'layers/blocked.js', 'layers/corsi.js', 'layers/danger.js', 'layers/goaltending.js',
   'layers/tied.js',
+  // distribution.js joined when the primitives were split out of archive.js so
+  // the GAME PAGE could carry them without the whole archive tier. CAUGHT BY
+  // THIS TEST, fourth time.
+  'distribution.js',
   // whistle.js joined when the per-game distributions did: `measures.json` could
   // say a shot attempt is blocked 27.7% of the time and could not say whether 55
   // stoppages was a normal night, because nothing had ever counted them.
@@ -755,4 +760,82 @@ test('a season is measured against itself, and says which season it is', () => {
   // "not measured" and "there were none" are different facts.
   const older = perGame([rec(2023020001, 10), { id: 2023020003 }]);
   assert.equal(older['2023'].corsi.n, 1, 'an unmeasured game was counted as a zero');
+});
+
+/**
+ * ⭐ THE ONE WAY A GAME WAS UNUSUAL — or nothing, which it must be able to say.
+ *
+ * "Three things to notice" was ruled publishable only as a MEASURED distance
+ * from a base rate, with the dimensions chosen once in public, and able to
+ * report that nothing stood out. The lenses are the dimensions and the game
+ * supplies which one.
+ *
+ * ⭐ NO TUNED THRESHOLD. "Unusual enough to mention" wants a cutoff, and a
+ * cutoff here would be a parameter with no source in the data. What decides is
+ * a DEFINITION — the middle half of nights, p25 to p75 — so this asserts the
+ * boundary behaviour rather than a number somebody picked.
+ */
+test('a game is unusual only outside the middle half, and can be ordinary', () => {
+  // A distribution with a known shape: 1..100, one game each, so p25 = 25 and
+  // p75 = 75 by construction rather than by whatever the archive happens to hold.
+  const d = { ...distribution(Array.from({ length: 100 }, (_, k) => k + 1), 'made up'),
+              noun: 'stoppages' };
+  const only = v => mostUnusual({ whistle: d }, { whistle: v });
+
+  assert.equal(only(50), null, 'a typical count was reported as unusual');
+  assert.equal(only(25), null, 'the edge of the middle half is inside it');
+  assert.equal(only(75), null, 'the edge of the middle half is inside it');
+
+  const high = only(95);
+  assert.ok(high, '95 of 100 is outside the middle half and was not reported');
+  assert.equal(high.high, true, 'a high count was reported as a low one');
+  // ⭐ A COUNT, NOT A PERCENTAGE, and STRICT — 94 games scored lower than 95,
+  // and the game itself is not one of them.
+  assert.equal(high.n, 94, `"more than ${high.n} of 100" is not the count of games below 95`);
+  assert.equal(high.of, 100, 'the population it is stated against is wrong');
+  assert.equal(high.noun, 'stoppages', 'the sentence has no noun, or reached for its own');
+
+  const low = only(3);
+  assert.ok(low && !low.high, 'a low count was not reported, or was called high');
+  assert.equal(low.n, 97, 'the count of games above 3 is wrong');
+});
+
+/**
+ * ⭐ THE FURTHEST FROM TYPICAL WINS, and the finding says how many others were
+ * also outside — because the sentence wanted to end "and nothing else about it
+ * was unusual", which is a claim about the lenses this function DISCARDED.
+ */
+test('the finding is the furthest from typical, and counts the others', () => {
+  const d = n => ({ ...distribution(Array.from({ length: 100 }, (_, k) => k + 1), 'x'), noun: n });
+  const dists = { whistle: d('stoppages'), corsi: d('shot attempts'), slot: d('shots from the slot') };
+
+  const one = mostUnusual(dists, { whistle: 99, corsi: 50, slot: 50 });
+  assert.equal(one.lens, 'whistle');
+  assert.equal(one.outside, 1, 'the other two were ordinary and it said otherwise');
+
+  const many = mostUnusual(dists, { whistle: 99, corsi: 90, slot: 50 });
+  assert.equal(many.lens, 'whistle', 'the reported lens is not the furthest from typical');
+  assert.equal(many.outside, 2, 'a second unusual count was not counted');
+
+  // ⭐ AND IT REALLY IS A CONTEST. Without this the "furthest wins" claim is
+  // satisfied by a fixture where only one lens qualifies.
+  assert.equal(mostUnusual(dists, { whistle: 90, corsi: 99, slot: 50 }).lens, 'corsi',
+    'the ordering does not follow the distance from typical');
+});
+
+/**
+ * ⛔ NOTHING TO COMPARE AGAINST MEANS NOTHING SAID. This is the LIVE state until
+ * the pipeline next derives — `perGame` is absent from the published document —
+ * and the permanent state of the inlined page, which never asks for the archive.
+ */
+test('with no distribution there is no finding, and no invented one', () => {
+  assert.equal(mostUnusual(null, { whistle: 50 }), null, 'a finding with no distributions');
+  assert.equal(mostUnusual({ whistle: null }, { whistle: 50 }), null, 'a finding from a null lens');
+  const empty = distribution([], 'nothing measured');
+  assert.equal(mostUnusual({ whistle: empty }, { whistle: 50 }), null,
+    'an empty season produced a finding — 0 of 0 is not a comparison');
+  // A lens the game has no count for is skipped, never scored as zero.
+  const d = { ...distribution([10, 20, 30, 40], 'x'), noun: 'stoppages' };
+  assert.equal(mostUnusual({ whistle: d }, {}), null, 'an absent count was treated as a value');
+  assert.equal(mostUnusual({ whistle: d }, { whistle: null }), null, 'a null count was scored');
 });

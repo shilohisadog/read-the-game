@@ -1396,6 +1396,61 @@ $('gl').textContent=`${AAB} at ${HAB}${WHEN?' · '+WHEN:''}`;
    + `<span class="vpt${pct>50?' hi':''}" id="vpt"></span></span>`
    + `<span class="vends"><span>0% — that team always won</span>`
    + `<span>always lost — 100%</span></span></span>`);}
+ /* ⭐ AND HOW THIS GAME SAT IN ITS SEASON — the per-game summary, §32.6, and the
+    payoff of the distributions `measures.json` gained on 2026-08-28.
+    §31.7b's taxonomy is why it belongs on THIS card and not beside a counter:
+    "Show me the work" answers *where did 34 come from*, this is the other half
+    of Doctrine §8 — *how unusual is 34* — and the two are one thing split by
+    scope. The card already fires at the horn, which is the moment the question
+    can be asked at all.
+
+    ⭐ THE COUNTS ARE THE CHIPS' OWN, at the full-game slice: the same
+    `counted.length` from the same reducers `perGame` measured, so the number
+    compared and the number distributed are one quantity. A second way of
+    counting here would be the CONTROL-versus-shots-on-goal defect rebuilt
+    inside its own answer.
+
+    ⚠️ SILENT WHEN THERE IS NOTHING TO COMPARE AGAINST, which is the verdict
+    card's standing rule and is the LIVE state until the pipeline next derives:
+    `perGame` is absent from the published document today, and the inlined page
+    never asks for the archive at all. One absent-comparison sentence on a card
+    is enough — the curve's, above — and a second apology beside it would be
+    noise about a feature the reader has not been promised. */
+ const season=String((G.game&&G.game.id)||'').slice(0,4);
+ const dists=RATES&&RATES.perGame&&RATES.perGame[season];
+ const U=mostUnusual(dists,{
+   corsi:all.counted.length,
+   slot:danger.reduce(G.events,{...CTX,evenOnly:false}).counted.length,
+   blocked:blocked.reduce(G.events,{...CTX,evenOnly:false}).counted.length,
+   goaltending:goaltending.reduce(G.events,{...CTX,evenOnly:false}).counted.length,
+   whistle:whistle.reduce(G.events,{...CTX,evenOnly:false}).counted.length});
+ if(dists&&Object.values(dists).some(d=>d&&d.n)){
+  /* A FRACTION, NEVER A PERCENTAGE (levelCurve's rule): "more than 182 of the
+     200 nights" is self-limiting where "the 91st percentile" is not, and it
+     needs no minimum-n guard — early in a season the sentence says so itself. */
+  /* ⚠️ AND THE EXTREME READS AS A SENTENCE, NOT AS A BUG. A count above every
+     game in the population produced "more than 200 of the 200 games this
+     season" — precise, self-checking, and it looks like arithmetic that has
+     gone wrong. Same figure, said the way a person would. Seen in a browser on
+     the Cup Final; no test here could have called it. */
+  const nights=n=>`${n} of the ${U?U.of:0} game${(U?U.of:0)===1?'':'s'} this season`;
+  const beat=U&&U.n===U.of
+    ?`${U.high?'higher':'lower'} than all ${U.of} game${U.of===1?'':'s'} this season`
+    :`${U&&U.high?'more than':'fewer than'} ${nights(U?U.n:0)}`;
+  p.push(`<span class="rate season">${U
+    ?`<b>${U.count} ${ESC(U.noun)}</b> — ${beat}.`
+      /* ⚠️ AND THE CLAUSE ABOUT THE OTHERS ONLY SAYS WHAT WAS COUNTED. It was
+         written as "Nothing else about it was unusual", which is a claim about
+         the four lenses `mostUnusual` had just discarded and never checked. */
+      /* ⚠️ AND "one of 5 counts" WHEN IT IS ALL FIVE is true and weak — the
+         stronger true sentence is that nothing about the game was ordinary. */
+      +(U.outside>=5
+        ?' Every count here sat outside the middle half — an unusual game by every lens.'
+        :U.outside>1
+        ?` One of ${U.outside} counts here that sat outside the middle half of the season.`
+        :' Every other count sat inside the middle half of the season.')
+    :'Every count in this game sat inside the middle half of the season — '
+      +'an ordinary night by every lens here.'}</span>`);}
  $('verdict').innerHTML=p.join('');
  // THE ONE POSITION HERE THAT IS GENUINELY CONTINUOUS, and the only one that
  // cannot become a class. Written through the CSSOM, which no policy restricts;
@@ -1758,7 +1813,14 @@ function playSaid(e){
    AN UNKNOWN REASON STILL RENDERS RAW. The feed can emit one we have never seen
    and a label we invented for it would be a guess wearing our own voice. */
 const RSN=r=>{if(!r)return 'unrecorded';const w=WHY[r];return w&&w.name?w.name:String(r).replace(/-/g,' ');};
-const ESC=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+/* ⚠️ A DECLARATION, NOT A `const` ARROW, AND THE DIFFERENCE BROKE THE PAGE. This
+   sat at line 1805 while the verdict card runs immediately at 1361, so the
+   per-game summary's first call to it threw `Cannot access 'ESC' before
+   initialization` — which aborted boot, left every `let` below it in its own
+   dead zone, and surfaced later as `Cannot access 'hdOn'` on the first scrub.
+   A pure escaping helper the whole file reaches for should be available to the
+   whole file; a function declaration hoists and a `const` does not. */
+function ESC(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);}
 function drawWhistles(W){
  const g=[];
  for(const m of marks(W,{trails:trails,dir:DIR})){const cx=SX(m.x),cy=SY(m.y);

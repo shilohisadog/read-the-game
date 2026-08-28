@@ -2602,3 +2602,91 @@ examples, against 2025-26:
 **Club-level is NOT built** — "is CAR's 39 attempts a lot" needs a club-game
 population, which is a second accumulator over the same walk. Named here rather
 than quietly included.
+
+## 36. The per-game summary — how this game sat in its season
+
+§32.6's last blocked item, on the card that already fires at the right moment.
+§31.7b is why it belongs there: *Show me the work* answers **where did 34 come
+from**, this answers **how unusual is 34**, and they are Doctrine §8's two halves
+split by scope.
+
+    156 shot attempts — higher than all 200 games this season.
+    Every count here sat outside the middle half — an unusual game by every lens.
+
+    67 shots the goaltenders faced — more than 184 of the 200 games this season.
+    One of 2 counts here that sat outside the middle half of the season.
+
+### 36.1 ⭐ No tuned threshold, because a definition was available
+
+"Unusual enough to mention" wants a cutoff, and a cutoff here is a parameter with
+no source in the data — CHENG's *model wearing a UI control*. What decides
+instead is the **middle half of nights, p25 to p75**, which is not a number
+anybody chose: a count inside it is ordinary by construction, and when every
+count is inside it the card says the game was ordinary. That was a requirement,
+not a nicety — "three ways this game was unusual" was ruled publishable only if
+it could report that nothing was.
+
+**A fraction, never a percentage** — `levelCurve`'s rule, and it removes the
+other parameter that would otherwise be needed: no minimum-`n` guard, because
+"more than 184 of the 200 games" is self-limiting where "the 92nd percentile" is
+not. Early in a season the sentence says so by itself.
+
+### 36.2 ⚠️ THE SUITE WAS GREEN AND THE PAGE WAS DEAD
+
+`ESC` is declared at line 1805 and the verdict card runs at 1361, so the first
+call to it threw `Cannot access 'ESC' before initialization` — aborting boot,
+leaving every `let` below in its own dead zone, and surfacing as
+`Cannot access 'hdOn'` on the first scrub. A dead scrubber on every game page.
+
+⭐ **AND THE TEST COULD NOT HAVE CAUGHT IT, BY CONSTRUCTION.** It read
+`if (U) … else …` — branching on whatever the fixture corpus produced. Nine
+games made the reference game ORDINARY, the else-branch ran, and the finding
+branch was never executed by any test in the suite. **A test that branches on
+the data it happens to get is not a test of either branch**, and the fix is a
+second test that constructs both and renders both. Proven against the real
+defect: restore the `const` and it reddens.
+
+⚠️ **And the boot check was a false positive too** — `#rg .board` is static
+markup, so it exists on a page whose script never ran. Third time today.
+
+`ESC` is a function declaration now: a pure helper the whole file reaches for
+should be available to the whole file.
+
+### 36.3 What looking changed, twice
+
+**"more than 200 of the 200 games this season"** — precise, self-checking, and it
+reads like arithmetic that has gone wrong. Now *higher than all 200 games this
+season*, same figure. **"One of 5 counts"** when it was all five is true and
+weak; now *every count here sat outside the middle half — an unusual game by
+every lens*. Neither is visible to a test that does not read English.
+
+### 36.4 Where it lives, and what it cost
+
+`distribution`, `quantile`, `shareAtOrBelow` and `mostUnusual` moved out of
+`archive.js` into **`src/lib/distribution.js`**, because the game page inlines
+none of the archive tier — `sentence.js` reads the published `levelCurve`
+directly rather than importing `rowFor`, and its own comment says why. The
+mechanism ships; the aggregation that walks records stays. **+12 KB on the game
+page, +4.6 KB gzipped.**
+
+### 36.5 ⏸ OPEN, AND UNMEASURED: playoffs are pooled with the regular season
+
+A playoff game is compared against a distribution that is mostly regular season.
+The season question was settled by measurement, and the same question here is
+**not answered**, which is different from answered reassuringly:
+
+| lens | playoffs | random p50 | random p95 |
+|---|---|---|---|
+| whistle | 35.5 | 20.0 | 32.7 |
+| corsi | 30.8 | 18.5 | 34.2 |
+| blocked | 27.8 | 18.0 | 33.2 |
+| goaltending | 24.0 | 22.2 | 36.2 |
+| slot | 12.0 | 19.2 | 36.5 |
+
+**The sample holds 12 playoff games**, and at that size the control's own p95 is
+33–37 points — so one marginal exceedance across five lenses is what chance
+produces about a quarter of the time. **The instrument was sized for the season
+question and cannot answer this one.** The archive holds 256 playoff games, which
+would be enough; that measurement belongs to the pipeline's records rather than
+a 600-game sample. Until then the population string names exactly what it is —
+*NHL regular season and playoffs, 2025-26* — so nothing on screen overstates.

@@ -7,11 +7,17 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { TEAMS, colourOf } from '../src/lib/teams.js';
 import { whistle } from '../src/lib/layers/whistle.js';
 import { corsi } from '../src/lib/layers/corsi.js';
 import { rich, app, PAGE_CSS, prose, bundle, boot, delaysOf, paceOf } from './helpers/page.js';
+import { measureGame } from '../builders/measure.mjs';
+import { perGame } from '../src/lib/archive.js';
+import { mostUnusual } from '../src/lib/distribution.js';
+import { danger } from '../src/lib/layers/danger.js';
+import { blocked } from '../src/lib/layers/blocked.js';
+import { goaltending } from '../src/lib/layers/goaltending.js';
 
 test('the game page offers a way onward, and it is about THIS game', () => {
   // THE DEFECT THIS EXISTS FOR: game.html shipped with zero href attributes. It
@@ -506,3 +512,143 @@ test('the homepage gives a narrow frame the extra height its rink needs', () => 
 // which is the surprise. `hit` was in this list and should not have been: there
 // is no hits counter on the page, so "not a shot" answered a question nobody
 // had -- explaining a metric we do not show is noise wearing the shape of rigour.
+
+/**
+ * ⭐ THE PER-GAME SUMMARY — §32.6's last item, on the card that already fires at
+ * the right moment. §31.7b is why it belongs HERE and not beside a counter:
+ * "Show me the work" answers *where did 34 come from*, this answers *how unusual
+ * is 34*, and they are Doctrine §8's two halves split by scope.
+ *
+ * THE DISTRIBUTIONS ARE BUILT FROM THE REAL FIXTURE EXTRACTS, not invented — a
+ * made-up histogram would test the formatting and nothing else, which is the
+ * warning `CURVE_AND_MIX` carries in its own docstring. Small `n` is not a
+ * problem to hide from: the sentence is a FRACTION for exactly that reason, and
+ * a nine-game season says so by construction.
+ */
+test('the card says how this game sat in its season, or that it was ordinary', () => {
+  const dir = new URL('./fixtures/extracts/', import.meta.url);
+  const recs = readdirSync(dir).filter(f => f.endsWith('.json'))
+    .map(f => measureGame(JSON.parse(readFileSync(new URL(f, dir), 'utf8'))));
+  const dists = perGame(recs);
+  const y = String(rich.game.id).slice(0, 4);
+  assert.ok(dists[y], `the fixture corpus holds no ${y} game to compare against`);
+
+  const a = boot(rich, { levelCurve: [{ k: 12, n: 708, count: 243 }], perGame: dists });
+  const v = a.$('verdict').innerHTML;
+  const line = /<span class="rate season">([\s\S]*?)<\/span>/.exec(v);
+  assert.ok(line, 'the card says nothing about how the game sat in its season');
+
+  /* ⭐ THE PATH IS INDEPENDENT (H1): the expectation comes from the library
+     called directly on the same counts, never from the page's own arithmetic. */
+  const ctx = { roster: rich.roster, homeId: rich.teams.home.id,
+                awayId: rich.teams.away.id, evenOnly: false };
+  const counts = { corsi: corsi.reduce(rich.events, ctx).counted.length,
+                   slot: danger.reduce(rich.events, ctx).counted.length,
+                   blocked: blocked.reduce(rich.events, ctx).counted.length,
+                   goaltending: goaltending.reduce(rich.events, ctx).counted.length,
+                   whistle: whistle.reduce(rich.events, ctx).counted.length };
+  const U = mostUnusual(dists[y], counts);
+  if (U) {
+    // (the branch actually taken is asserted below; see the both-branches test)
+    assert.ok(line[1].includes(`${U.count} ${U.noun}`),
+      `the card names a different count than the measurement: ${line[1]}`);
+    assert.ok(line[1].includes(`${U.n} of the ${U.of} game`),
+      `the card does not state the fraction it is claiming: ${line[1]}`);
+    // ⭐ A FRACTION, NEVER A BARE PERCENTAGE — levelCurve's rule, and the reason
+    // no minimum-n guard is needed anywhere in this feature.
+    assert.doesNotMatch(line[1], /\d%/, 'the season comparison was printed as a percentage');
+  } else {
+    assert.match(line[1], /middle half/, 'an ordinary game was not told it was ordinary');
+  }
+
+  /* ⭐ AND THE COUNT IT COMPARES IS THE CHIP'S OWN. Without this the sentence
+     could be right about the archive and about a different quantity. */
+  const chip = a.$('n_' + (U ? U.lens : 'corsi'));
+  a.$('scrub').oninput({ target: { value: a.$('scrub').max } });
+  if (U) assert.equal(+a.$('n_' + U.lens).textContent, U.count,
+    'the summary compares a number the selector never shows');
+  assert.ok(chip, 'the lens named by the summary has no chip');
+});
+
+/**
+ * ⛔ AND WITH NO DISTRIBUTIONS IT SAYS NOTHING — the verdict card's standing
+ * rule, the LIVE state until the pipeline next derives, and the permanent state
+ * of the inlined page, which never asks for the archive at all.
+ */
+test('a page with no distributions makes no claim about the season', () => {
+  for (const rates of [undefined, null, { levelCurve: [] }, { perGame: {} }]) {
+    const v = boot(rich, rates).$('verdict').innerHTML;
+    assert.doesNotMatch(v, /class="rate season"/,
+      `rates=${JSON.stringify(rates)}: a season claim was made with nothing to compare against`);
+    assert.doesNotMatch(v, /middle half/, 'an ordinary-night sentence with no season behind it');
+    assert.match(v, /class="vk">What this game was</, 'and the card itself went missing');
+  }
+});
+
+/**
+ * ⚠️ BOTH BRANCHES, FORCED — and this is the test that would have caught the
+ * defect the one above missed.
+ *
+ * That test reads `if (U) … else …`, so it renders whichever branch the fixture
+ * corpus happens to produce. Nine fixture games made the reference game
+ * ORDINARY, the else-branch ran, and the finding branch — the one that calls
+ * `ESC` — was never executed by any test. In a browser it threw `Cannot access
+ * 'ESC' before initialization`, aborted boot, and surfaced as a dead scrubber.
+ * Green suite, broken page, found by looking.
+ *
+ * ⭐ A TEST THAT BRANCHES ON THE DATA IT HAPPENS TO GET IS NOT A TEST OF EITHER
+ * BRANCH. Both are constructed here, so both are rendered.
+ */
+test('both the unusual and the ordinary sentence actually render', () => {
+  const flat = n => ({ what: 'made up', population: 'p', unit: 'games', n: 100,
+                       min: 1, max: 100, start: 1,
+                       counts: Array.from({ length: 100 }, () => 1), noun: n });
+  const y = String(rich.game.id).slice(0, 4);
+  const lenses = { corsi: 'shot attempts', slot: 'shots from the slot',
+                   blocked: 'blocked shots', goaltending: 'shots the goaltenders faced',
+                   whistle: 'stoppages' };
+  const dists = Object.fromEntries(Object.entries(lenses).map(([k, n]) => [k, flat(n)]));
+
+  // ORDINARY: every real count lands inside 25..75 of a flat 1..100 spread only
+  // if it happens to; so the ordinary case is built by making the middle half
+  // cover everything the game can hold.
+  const wide = Object.fromEntries(Object.entries(lenses).map(([k, n]) =>
+    [k, { ...flat(n), min: 0, start: 0, max: 999,
+          counts: Array.from({ length: 1000 }, () => 1), n: 1000 }]));
+  const ordinary = boot(rich, { perGame: { [y]: wide } }).$('verdict').innerHTML;
+  assert.match(ordinary, /middle half/, 'the ordinary sentence never rendered');
+
+  // UNUSUAL: a distribution every real count sits above.
+  const low = Object.fromEntries(Object.entries(lenses).map(([k, n]) =>
+    [k, { ...flat(n), min: 0, start: 0, max: 1, counts: [50, 50], n: 100 }]));
+  const found = boot(rich, { perGame: { [y]: low } }).$('verdict').innerHTML;
+  assert.match(found, /class="rate season"/, 'the finding sentence never rendered');
+  /* ⭐ ABOVE EVERYTHING READS AS A SENTENCE. "more than 100 of the 100 games"
+     is precise, self-checking, and looks like arithmetic that went wrong —
+     found on the Cup Final in a browser, not here. */
+  assert.match(found, /higher than all 100 games this season/,
+    'a count above every game in the population is stated as a fraction of itself');
+  assert.doesNotMatch(found, /undefined|\[object/, 'the sentence rendered a hole');
+
+  /* AND THE ORDINARY FRACTION IS STILL A FRACTION when the game has NOT beaten
+     everything — the two forms are one rule with a boundary, so both are pinned
+     or the boundary is free to move. */
+  /* 80 games at zero and 20 far above, so every real count in this game is
+     ABOVE the middle half (p75 = 0) and BELOW the top of the range — the case
+     the fraction wording exists for. The first attempt put p25 at 0 and p75 at
+     400, which made every count ORDINARY and the assertion below unreachable. */
+  const some = Object.fromEntries(Object.entries(lenses).map(([k, n]) =>
+    [k, { ...flat(n), min: 0, start: 0, max: 400,
+          counts: Array.from({ length: 401 }, (_, i) => i === 0 ? 80 : (i === 400 ? 20 : 0)),
+          n: 100 }]));
+  const part = boot(rich, { perGame: { [y]: some } }).$('verdict').innerHTML;
+  assert.match(part, /more than 80 of the 100 games this season/,
+    'a count inside the range is not stated as a fraction of the population');
+  assert.doesNotMatch(part, /\d%/, 'the season comparison was printed as a percentage');
+
+  // ⭐ AND A DOCUMENT WITH NO NOUN SAYS NOTHING RATHER THAN NAMING A LENS ID.
+  const nameless = Object.fromEntries(Object.entries(low).map(([k, d]) =>
+    [k, { ...d, noun: undefined }]));
+  const quiet = boot(rich, { perGame: { [y]: nameless } }).$('verdict').innerHTML;
+  assert.doesNotMatch(quiet, /whistle|corsi/, 'a lens id was shown to a reader');
+});
