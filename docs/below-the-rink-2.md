@@ -2372,3 +2372,89 @@ prices**. The `Just events` chip carries no count, and a test forbids one.
   in `SKIP`. A row is clickable exactly when the page has a moment for it.
 * **The near-miss as a visual** — a shot that nearly qualified could mark
   differently on the ice. Untested idea.
+
+## 33. Two nits on the Goaltending card, and what was under them
+
+Kevin, looking at the work panel on a live game: *"'Goaltending10' is one of
+them"*, and the ledger line *"should probably be `5 of 5 WSH + 4 of 5 VGK = 10
+counted + 35 other = 45 events`"*. Both were right about the surface. Underneath
+the first was a seam with two readers, and underneath the second was an equation
+that does not close on two of the five layers.
+
+### 33.1 ⚠️ THE FOURTH DESIGN THIS SEAM HAS DECIDED, AND THE FIRST IT DECIDED TWICE
+
+§32.5 records `capFor` composing the caption from `chip.textContent` and the
+live counts turning that into `Slot33`. The fix moved the read to `.pkl` — **in
+the caption.** The work panel's heading is the other reader of the same seam,
+one function away, and it shipped `How Goaltending10 is counted`.
+
+⭐ **A seam that keeps biting does not want a second correction, it wants one
+reader.** `chipLabel(id)` is now the only place either surface reads a chip's
+name, so a third caller cannot get it wrong by default.
+
+⚠️ **AND THE SUITE COULD NOT HAVE SEEN IT.** The fake chip in
+`test/helpers/page.js` stored the label in its own `textContent`, so `.pkl` and
+the whole chip were the same string and the entire defect class was invisible.
+Two caption tests were *passing on that gap* — they asserted "the caption opens
+with the chip's name" and were satisfied by a reading a browser never produces.
+The harness now concatenates `n_<layer>` the way the DOM does, and the proof is
+a mutation in the harness rather than in the app: **old harness + broken page =
+25 of 25 green.** That is what a mirror looks like from the inside, and it is
+`mechanize-the-review`'s second form — a check with no instrument for the axis
+in question.
+
+### 33.2 ⭐ A SLASH PROMISES NOTHING; A PLUS IS AN EQUATION
+
+`5 of 5 WSH / 4 of 5 VGK.` — two figures behind a slash and a full stop,
+orphaned from the arithmetic in the same line that they are the parts of. Kevin
+is right that they should be joined. **But joining them with `+` makes a claim
+the slash never did, and the claim is false on two layers:**
+
+| layer | figures | counted | a reader adding them gets |
+|---|---|---|---|
+| Attempts, Slot | `39 CAR`, `32 VGK` | 71 | **71** ✅ |
+| **Goaltending** | `16 of 16 CAR`, `16 of 18 VGK` | 34 | **32**, by numerator |
+| **Blocked** | `8 CAR`, `7 VGK` | 17 | **15** |
+
+Goaltending shows a FRACTION, where what sums to the counted events is the
+*denominators* — the shots each goaltender faced — while the numerators sum to
+the saves. Blocked credits a teammate's block to **neither** club (7.8% of
+blocks, and the layer says so out loud in its own copy), so two columns can
+never reach the total.
+
+⭐ **So a layer says what its figures add to, and what is credited to nobody.**
+`sums` names the quantity (`shots faced`); `rest` names the parts that belong to
+neither club (`2 by a teammate`). The panel prints what it is given:
+
+    39 CAR + 32 VGK — 71 counted + 204 other = 275 events
+    8 CAR + 7 VGK + 2 by a teammate — 17 counted + 50 close + 208 other = 275 events
+    16 of 16 CAR + 16 of 18 VGK — 34 shots faced + 241 other = 275 events
+
+⚠️ **AND THERE IS ONE `=` IN THE LINE, NOT TWO.** Written as Kevin typed it,
+`A + B = 10 counted + 35 other = 45 events` is a chain of equals, and a chain of
+equals asserts **10 = 45**. The dash reads *that is*, the club figures stay
+welded to the number they are the parts of, and the single equation left
+standing is the one Doctrine §9 is about.
+
+**The instrument is the reader's own arithmetic**, not the composition: it
+splits the line on ` + `, takes each term's value (a fraction contributes its
+denominator), and requires the sum to equal the number in the *Counted* heading,
+which comes from the reducer by an independent path. It also forbids a fraction
+under the bare word `counted`, which is the 32-against-34 trap in one assertion.
+Five mutations, each caught by exactly one test.
+
+### 33.3 ⚠️ And a plural that disagreed with its own number, in the same card
+
+*"The other 1 each carry their own reason."* Visible in the 360px screenshot of
+both open layers, and **it is the commonest case rather than an edge one** — the
+surprising bucket reaches exactly two the moment a second event lands in it, so
+every layer passes through this sentence. No test could have flagged it: each
+half is individually valid English. The check walks the replay until a layer
+sits at two, because *which frame that is* is data.
+
+### 33.4 Looked at
+
+Real Chromium, Cup Final, 360 and 1100: `--lboxh` still **120px** and untouched
+(this is the panel below the box, not the box), **no side-scroll at either
+width**, footer 89px at 360 and 31–50px at 1100. Every equation on screen
+closes.

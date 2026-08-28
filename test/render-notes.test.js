@@ -280,7 +280,14 @@ test('the caption says what the chosen lens is, in the words the rows carry', ()
     // the names they had when Kevin trimmed them — `Corsi`, `Slot shots` — while
     // the chips say `Attempts`, `Slot`. The first build opened the sentence with
     // a name the reader had never pressed.
-    const chip = a.$$('#rg .pk').find(b => b.dataset.l === token).textContent;
+    /* ⚠️ AND IT IS THE CHIP'S LABEL, NOT THE WHOLE CHIP. This read
+       `chip.textContent` and passed — on a harness whose fake chip stored the
+       label there, while a real chip's `textContent` carries the live count
+       too and reads "Attempts135". The assertion claimed a coupling the DOM
+       does not have, so the harness learned to concatenate the count and this
+       reads the same `.pkl` the page does. */
+    const chip = a.$$('#rg .pk').find(b => b.dataset.l === token)
+      .querySelector('.pkl').textContent;
     assert.match(cap(), new RegExp(`<b>${chip}</b>`),
       `${token}'s caption opens with something other than the chip that was pressed`);
   }
@@ -398,20 +405,31 @@ test('pressing a chip acknowledges on that chip, and only on a press', () => {
  *
  * "Or saying done" was one of Kevin's suggestions and it is ruled out on a
  * mechanical ground rather than a taste one: `capFor()` composes the caption
- * from the chip's own `textContent`, which is §27.2 — the caption's words are
- * READ from the page and never retyped. A chip that said "Done" would make the
- * caption read "Done — every shot attempt the league recorded".
+ * from the chip's own label, which is §27.2 — the caption's words are READ from
+ * the page and never retyped. A chip that said "Done" would make the caption
+ * read "Done — every shot attempt the league recorded".
  *
  * So this pins the coupling itself. If the caption ever stops reading the chip,
  * this test says so and the constraint can be revisited deliberately.
+ *
+ * ⚠️ THE QUOTED PART IS `.pkl`, AND THE DISTINCTION IS THE WHOLE SEAM. The
+ * chip's own `textContent` gained the live count, so quoting the chip WHOLE is
+ * the defect (`Attempts135`) rather than the coupling. Both readers go through
+ * `chipLabel` now.
  */
 test('the caption reads the chip, so the chip may not restyle its own text', () => {
   const a = boot();
   a.$$('#rg .pk').find(b => b.dataset.l === 'corsi').click();
   const chip = a.$$('#rg .pk').find(b => b.dataset.l === 'corsi');
-  assert.ok(chip.textContent, 'the chip has no label — this check has lost its subject');
-  assert.ok(a.$('lcap').innerHTML.includes(chip.textContent),
+  const label = chip.querySelector('.pkl').textContent;
+  assert.ok(label, 'the chip has no label — this check has lost its subject');
+  assert.ok(a.$('lcap').innerHTML.includes(label),
     'the caption no longer quotes the chip, so the label coupling has gone');
+  // ⭐ AND IT QUOTES THE LABEL ALONE. Without this the assertion above is
+  // satisfied by a caption that opened with the label AND the count, since the
+  // label is a prefix of the whole chip's text.
+  assert.doesNotMatch(a.$('lcap').innerHTML, new RegExp(`<b>${label}\\d`),
+    'the caption opens with the chip\'s count as well as its name');
 
   const body = /function ack\(want\)\{[\s\S]*?add\('ack'\);\}/.exec(app);
   assert.ok(body, 'ack() is gone, or it no longer ends by adding the class');

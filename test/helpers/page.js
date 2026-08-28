@@ -130,7 +130,19 @@ export function fakeDom() {
            pass on a structure the page does not have. */
         const m = new RegExp(`<button class="pk"[^>]*data-l="${l}"[^>]*>(?:<span class="pkl">)?([^<]*)<`).exec(app);
         const label = m ? m[1] : '';
-        const node = Object.assign(el(), { dataset: { l }, textContent: label });
+        const node = Object.assign(el(), { dataset: { l } });
+        /* ⚠️ AND THE CHIP'S OWN `textContent` CARRIES THE COUNT, because a real
+           one does — it is the concatenation of the chip's children, and
+           `.pkn` is a child. The fake stored the LABEL there, which made the
+           two readings identical and the whole defect class invisible: the
+           panel heading shipped "How Goaltending10 is counted" while every
+           test here compared the fake's label against the fake's label. A
+           harness that cannot tell `.pkl` from the whole chip cannot check the
+           one seam that has now decided four designs. `n_<layer>` is the
+           element `drawChipCounts` writes to, so this reads what the app
+           actually put on screen rather than a number the fake invented. */
+        Object.defineProperty(node, 'textContent', { configurable: true,
+          get: () => label + (byId.has('n_' + l) ? byId.get('n_' + l).textContent : '') });
         node.querySelector = sel => (sel === '.pkl' ? { textContent: label } : null);
         byId.set(key, node);
       }

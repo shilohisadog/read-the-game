@@ -497,7 +497,7 @@ test('a club with none of something still appears in the ledger line', () => {
     const b = { a: a.$('lxA').textContent, h: a.$('lxH').textContent };
     assert.ok(foot.includes(`${b.a} `), `${token}: the away figure is missing from the footer`);
     assert.ok(foot.includes(`${b.h} `), `${token}: the home figure is missing from the footer`);
-    assert.match(foot, /\/ /, `${token}: the footer names only one club`);
+    assert.match(foot, / \+ /, `${token}: the footer names only one club`);
     a.$('work').click();
   }
 
@@ -674,4 +674,140 @@ test('Attempts contains every other lens, in every fixture game', () => {
         + 'counts teach a containment that does not hold');
     }
   }
+});
+
+/**
+ * ⚠️ THE HEADING NAMED THE LENS AND ITS COUNT — "How Goaltending10 is counted".
+ *
+ * `capFor` was taught to read `.pkl` when the live counts landed on the chips,
+ * because `chip.textContent` had become "Slot33". The work panel's heading is
+ * the OTHER reader of the same seam and was not taught, so the fix for the
+ * caption shipped the identical defect one surface down. Both now go through
+ * `chipLabel`, which is what a seam that has decided four designs is owed.
+ *
+ * ⭐ AND THE HARNESS HAD TO LEARN THE DIFFERENCE FIRST. The fake chip stored the
+ * label in its own `textContent`, so the two readings were identical and this
+ * test would have passed against the broken page — a check with no instrument
+ * for the axis in question. `helpers/page.js` now concatenates the count the
+ * way a browser does, which is why the second assertion below can fail.
+ */
+test('the work panel heads with the lens name, never the name plus its count', () => {
+  const a = boot();
+  a.$('scrub').oninput({ target: { value: a.$('scrub').max } });
+  for (const l of ['corsi', 'slot', 'blocked', 'goaltending', 'whistle']) {
+    pick(a, l);
+    a.$('work').click();
+    const head = /<h2>([\s\S]*?)<span class="wsub">/.exec(a.$('workPanel').innerHTML)[1];
+    const chip = a.$$('#rg .pk').find(b => b.dataset.l === l);
+    const label = chip.querySelector('.pkl').textContent;
+    const count = a.$('n_' + l).textContent;
+
+    assert.equal(head.trim(), `How ${label} is counted`,
+      `${l}: the heading does not name the lens the reader pressed`);
+    // The count is what makes the two readings differ. Without it the assertion
+    // above is satisfied by the whole chip and proves nothing.
+    assert.ok(count && +count > 0,
+      `${l}: no count reached the chip, so this test cannot see its own subject`);
+    assert.ok(!head.includes(label + count),
+      `${l}: the heading reads "${label + count}" — it is composed from the whole `
+      + 'chip instead of `.pkl`');
+    a.$('work').click();
+  }
+});
+
+/**
+ * ⭐ THE FIGURES ARE JOINED WITH A PLUS, SO THEY HAVE TO ADD UP.
+ *
+ * Kevin, looking at Goaltending: the two club figures sat behind a slash and a
+ * full stop, orphaned from the arithmetic they are the parts of. Joining them
+ * with `+` is right — and it makes a promise the slash never did, which four
+ * layers keep trivially and the fifth cannot: `5 of 5 WSH + 4 of 5 VGK` sums to
+ * 9 by numerator and 10 by denominator, against a 10 on screen. Two figures
+ * that look like one claim, this project's signature defect, in a sentence
+ * whose entire job is that nothing is dropped quietly.
+ *
+ * So the layer names what its figures add to and the panel prints that name.
+ * THE PATH IS INDEPENDENT: the figures come from `lboxFor`, the count comes
+ * from the reducer's own `counted.length` by way of the Counted heading.
+ */
+test('whatever a reader adds in the ledger line is the number it is printed against', () => {
+  const a = boot();
+  a.$('scrub').oninput({ target: { value: a.$('scrub').max } });
+  let checked = 0;
+  for (const l of ['corsi', 'slot', 'blocked', 'goaltending']) {
+    pick(a, l);
+    a.$('work').click();
+    const panel = a.$('workPanel').innerHTML;
+    const foot = /<p class="wfoot">([\s\S]*?)<\/p>/.exec(panel)[1];
+    const m = /<em>([^<]*)<\/em> &mdash; (\d+) ([a-z ]+?)(?: \+|,|\.)/.exec(foot);
+    assert.ok(m, `${l}: the ledger line does not read "figures — N noun"`);
+    const [, em, n, noun] = m;
+    const counted = +/Counted <span class="n">(\d+)<\/span>/.exec(panel)[1];
+    assert.equal(+n, counted, `${l}: the ledger line and the Counted column disagree`);
+
+    // What a reader adds. A fraction contributes its DENOMINATOR, because that
+    // is the population being counted — and the noun has to say so.
+    /* Two clubs, plus any part credited to NEITHER — 7.8% of blocks are by a
+       teammate, so Blocked closes on three terms and the other layers on two.
+       The count of terms is not the claim; that they add up is. */
+    const parts = em.split(' + ');
+    assert.ok(parts.length >= 2, `${l}: the ledger line names ${parts.length} club`);
+    const val = s => {
+      const f = /^(\d+) of (\d+) /.exec(s);
+      if (f) return +f[2];
+      const p = /^(\d+) /.exec(s);
+      assert.ok(p, `${l}: "${s}" is joined with a + and is not a number`);
+      return +p[1];
+    };
+    assert.equal(parts.reduce((t, s) => t + val(s), 0), counted,
+      `${l}: "${em}" is joined with a + and does not add to ${counted}`);
+
+    /* ⭐ AND A FRACTION MAY NOT SIT UNDER THE BARE WORD "counted". The sum
+       closes on the denominators, so the noun must name them; left as
+       "counted", a reader adding the numerators gets 9 against a 10 and
+       concludes we cannot count. This is the assertion that fails if the
+       `sums` field is dropped from the goaltending box. */
+    if (/\d+ of \d+/.test(em))
+      assert.notEqual(noun, 'counted',
+        `${l}: fractions are summed under the word "counted", so the numbers a `
+        + 'reader adds are not the number on screen');
+    checked++;
+    a.$('work').click();
+  }
+  assert.equal(checked, 4, 'a layer with club figures went unchecked');
+});
+
+/**
+ * ⚠️ "The other 1 each carry their own reason" — a plural written once and
+ * never re-read, on the commonest case rather than an edge one. The surprising
+ * bucket reaches exactly two the moment a second event lands in it, so every
+ * layer that has one passes through this sentence. Found in a 360px screenshot
+ * of the card, on both layers that were open; no test could have flagged it,
+ * because each half of the sentence is individually valid English.
+ */
+test('the surprising bucket says "the other one" when there is one', () => {
+  const a = boot();
+  let seen = 0;
+  // Walk the replay rather than picking a moment: the bucket passes through 2
+  // at some point in every game, and which frame that is, is data.
+  for (const l of ['blocked', 'goaltending']) {
+    for (let f = 10; f <= +a.$('scrub').max; f += 10) {
+      a.$('scrub').oninput({ target: { value: String(f) } });
+      pick(a, l);
+      a.$('work').click();
+      const w = a.$('workPanel').innerHTML;
+      const n = +(/Counted, surprisingly <span class="n">(\d+)<\/span>/.exec(w) || [, 0])[1];
+      a.$('work').click();
+      assert.doesNotMatch(w, /The other 1 each carry/,
+        `${l}: the sentence disagrees with its own number`);
+      if (n === 2) {
+        assert.match(w, /The other one carries its own reason/,
+          `${l}: two surprising events, and the sentence does not say "the other one"`);
+        seen++;
+        break;
+      }
+    }
+  }
+  assert.equal(seen, 2, 'no frame in this game puts a layer at exactly two '
+    + 'surprising events, so this check never reached its subject');
 });

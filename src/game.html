@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Ejq+udXzRa3cVYubjWIjWTyYWh3NXay6HVbwONixtqY=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-5b/JV5ZQCQMrYOa8iGppq32r4s3MA3ZP32e8KTVsbEc='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-tMWkaoppY6Uqs33wQqP81HBTw5CLRjhDRyrENFT2sDk=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-5b/JV5ZQCQMrYOa8iGppq32r4s3MA3ZP32e8KTVsbEc='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">Watch a game</a><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see</a><a href="/workshop.html">Workshop</a></nav></header>
@@ -5581,6 +5581,20 @@ const PLURAL={faceoff:'faceoffs',hit:'hits',giveaway:'giveaways',takeaway:'takea
  penalty:'penalties',stoppage:'whistles',goal:'goals','shot-on-goal':'shots on goal',
  'missed-shot':'missed shots','blocked-shot':'blocked shots','period-start':'period starts',
  'period-end':'period ends','game-end':'the final horn','delayed-penalty':'delayed penalties'};
+/* ⭐ THE CHIP'S NAME, AND ONE READER OF IT — the fourth design this seam has
+   decided, and the first one it decided TWICE. Each metric chip carries a live
+   count beside its label, so `chip.textContent` reads "Goaltending10". `capFor`
+   was taught to read `.pkl` when the counts landed; this panel's heading was the
+   other reader of the same seam and was not, so the fix for the caption shipped
+   the identical defect one surface down. A seam that keeps biting does not want
+   a second correction, it wants one reader — so both callers come through here
+   and a new one cannot get it wrong by default. The fallback is the whole chip,
+   which is what a chip with no label element would have to be. */
+function chipLabel(id){
+ const chip=document.querySelector(`#rg .pk[data-l="${id}"]`);
+ if(!chip)return id;
+ const lab=chip.querySelector('.pkl');
+ return lab?lab.textContent:chip.textContent;}
 const LEDGER={corsi:sl=>corsi.reduce(sl,CTX),slot:sl=>danger.reduce(sl,CTX),
  blocked:sl=>blocked.reduce(sl,CTX),goaltending:sl=>goaltending.reduce(sl,CTX),
  whistle:sl=>whistle.reduce(sl,CTX)};
@@ -5588,7 +5602,6 @@ function renderWork(_,cur,at){
  const id=whichPick();
  if(id==='none'||!LEDGER[id]||at<0){$('workPanel').innerHTML='';return;}
  const sl=upto(at), L=LEDGER[id](sl);
- const chip=document.querySelector(`#rg .pk[data-l="${id}"]`);
  const row=document.querySelector(`#rg .lrow[data-pick="${id}"]`);
  const lds=row&&row.querySelector('.lds');
  /* ⭐ HOW THE LAYER ATTRIBUTES WHAT IT COUNTS, and this panel is where that
@@ -5600,7 +5613,7 @@ function renderWork(_,cur,at){
     `build.test.js` follows as a CLAIM rather than a string -- it went red the
     moment this panel became generic, which is the check working. */
  const lat=row&&row.querySelector('.lat');
- const name=chip?chip.textContent:id;
+ const name=chipLabel(id);
  /* ⭐ ONE EXAMPLE PER GROUP, so a categorical reason keeps a real measurement
     beside it. CHENG on the specific form: "36 against 33 teaches the rule
     better than the rule statement does" -- right, and the way to keep that
@@ -5666,8 +5679,23 @@ function renderWork(_,cur,at){
     the fields are EMPTY STRINGS -- a real absence, which is a different thing
     from zero and is now distinguished by the test rather than by truthiness. */
  const has=v=>v!==''&&v!=null;
- const fig=[has(b.a)&&`${b.a} ${AAB}`,has(b.h)&&`${b.h} ${HAB}`]
-   .filter(Boolean).join(' / ');
+ /* ⭐ JOINED WITH A PLUS, BECAUSE THEY ADD UP — Kevin, looking at Goaltending:
+    the two club figures sat behind a slash and a full stop, orphaned from the
+    arithmetic in the same line that they are the parts of. They are not a list;
+    they are the parts of the counted number.
+
+    ⚠️ AND THAT IS WHY TWO LAYERS NEEDED MORE THAN A NEW SEPARATOR. A slash
+    promises nothing and a plus is an equation, so both places where the club
+    figures do not account for everything counted became visible the moment the
+    separator changed: Goaltending shows FRACTIONS, where the denominators sum
+    to the counted events and a reader adding numerators is one short per goal;
+    Blocked credits a teammate's block to NEITHER club, 7.8% of them. So a layer
+    says what its figures add to (`sums`) and what is credited to nobody
+    (`rest`), and the one thing a `+` may never do here is invite a sum that
+    does not close. */
+ const fig=[has(b.a)&&`${b.a} ${AAB}`,has(b.h)&&`${b.h} ${HAB}`,
+   ...(has(b.a)||has(b.h)?(b.rest||[]).map(r=>`${r.n} ${r.say}`):[])]
+   .filter(Boolean).join(' + ');
  $('workPanel').innerHTML=
   `<h2>How ${ESC(name)} is counted <span class="wsub">(${MODE()}, ${when})</span></h2>`
  +`<div class="wg">`
@@ -5681,13 +5709,27 @@ function renderWork(_,cur,at){
  +(lat?`<p class="wattr">${ESC(lat.textContent)}</p>`:'')+`</div>`
  +(sur?`<div class="wc flag"><h3>Counted, surprisingly <span class="n">${L.surprising.length}</span></h3>`
    +`<p><em>For example:</em> ${ESC(sur)}</p>`
-   +(L.surprising.length>1?`<p class="wexc">The other ${L.surprising.length-1} each carry their own reason, written by the layer that counted them.</p>`:'')
+   /* ⚠️ AND IT AGREES WITH ITSELF WHEN THERE IS ONE. "The other 1 each carry
+      their own reason" is what a plural written once and never re-read looks
+      like — and it is the COMMONEST case, not an edge: the surprising bucket
+      opens at two the moment a second one lands, so every layer passes through
+      it. Seen in a 360px screenshot of the very card this session was tidying,
+      on both the layers that were open. */
+   +(L.surprising.length>1?`<p class="wexc">${L.surprising.length===2
+     ?'The other one carries its own reason, written by the layer that counted it.'
+     :`The other ${L.surprising.length-1} each carry their own reason, written by the layer that counted them.`}</p>`:'')
    +`</div>`:'')
  +(near.length?`<div class="wc"><h3>Close, but not counted <span class="n">${near.length}</span></h3>`
    +`<p class="wexc">${exc}</p></div>`:'')+`</div>`
  +(plainLine?`<p class="wplain">${plainLine}</p>`:'')
- +`<p class="wfoot">${fig?`<em>${ESC(fig)}.</em> `:''}`
- +`${L.counted.length} counted${near.length?` + ${near.length} close`:''}`
+/* ⚠️ ONE `=` IN THE LINE, AND A DASH WHERE THE SECOND ONE WANTED TO GO. Written
+   as `A + B = 10 counted + 35 other = 45 events`, a chain of equals asserts
+   10 = 45 — and the conservation sentence is the one place on this page that
+   cannot afford arithmetic a reader can catch out. The dash reads "that is",
+   the club figures stay welded to the number they are the parts of, and the
+   single equation left standing is the one Doctrine §9 is about. */
+ +`<p class="wfoot">${fig?`<em>${ESC(fig)}</em> &mdash; `:''}`
+ +`${L.counted.length} ${b.sums||'counted'}${near.length?` + ${near.length} close`:''}`
  +` + ${plain.length} other = `
  +`<b>${L.counted.length+L.excluded.length}</b> events, which is every event in `
  +`the game so far. Nothing is dropped quietly.`
@@ -6759,7 +6801,6 @@ function capFor(id){
  // chips say `Attempts`, `Slot`. Reading the row's `<b>` printed a caption that
  // named something the reader had not pressed. The label a reader just touched
  // is the one the sentence has to open with.
- const chip=document.querySelector(`#rg .pk[data-l="${id}"]`);
  const lds=row.querySelector('.lds'), lon=row.querySelector('.lon');
  /* ⭐ AND THE SECOND CLAUSE IS TRUE AGAIN, WHICH IT WAS NOT FOR ONE COMMIT.
     `.lon` says what the layer PUTS ON SCREEN. With every layer's output parked
@@ -6774,9 +6815,10 @@ function capFor(id){
     the caption from it, which would have shipped "**Slot33** — attempts from
     within 33 ft". Third time this seam has decided a design: it ruled out a
     "Done" label on the acknowledgement and forced the count out of the chip's
-    text here. The name lives in `.pkl` and only that is read. */
- const lab=chip&&(chip.querySelector('.pkl')||chip);
- return `<b>${lab?lab.textContent:''}</b> — ${lds?lds.textContent:''}. `
+    text here. Then it decided a FOURTH — the work panel's heading shipped "How
+    Goaltending10 is counted", because this caller was fixed and the other one
+    was not. The read lives in `chipLabel` now, and every caller uses it. */
+ return `<b>${chipLabel(id)}</b> — ${lds?lds.textContent:''}. `
        +`<span class="cap2">${lon?lon.textContent:''}</span>`;}
 /**
  * ⭐ THE LAYER'S OUTPUT, IN ONE FIXED GRAMMAR -- docs/below-the-rink-2.md §31.
@@ -6927,7 +6969,17 @@ function lboxFor(id,at,L){
      attempts never got through is a fact about the GAME and belongs to neither,
      so it goes in the line where it needs no attribution at all. */
   const B=blocked.reduce(sl,CTX), tot=L.t[AID]+L.t[HID], n=B.counted.length;
-  return {a:B.t[AID],k:'BLOCKS',h:B.t[HID],
+  /* ⭐ AND THE BLOCKS CREDITED TO NOBODY ARE NAMED, because the ledger line now
+     joins the club figures with a `+`. Under a slash they were two figures side
+     by side and 18 + 22 against 44 counted was nobody's claim; under a plus it
+     is an equation, and 7.8% of blocks are by a TEAMMATE — a point shot off
+     your own winger's shin — which this layer counts and credits to neither
+     club, deliberately and out loud. The caption says why; the line has to say
+     where they went, or the arithmetic a reader can do comes up short. */
+  const rest=[[B.teammate.length,'by a teammate'],
+              [B.unknown.length,'with no blocker recorded']]
+    .filter(([k])=>k).map(([k,say])=>({n:k,say}));
+  return {a:B.t[AID],k:'BLOCKS',h:B.t[HID],rest,
    n:`Of ${tot} attempt${tot===1?'':'s'} so far, ${n} were stopped by a body.`};}
  if(id==='goaltending'){
   const gs=goalieStats(at), per={[AID]:[],[HID]:[]};
@@ -6942,8 +6994,14 @@ function lboxFor(id,at,L){
      looks like, and it needs no special case -- 12.2% of games use more than
      two goaltenders, so this is the normal path once every eight games. */
   const say=t=>per[t].map(g=>g.nm).join(' then ');
+  /* ⭐ WHAT THESE TWO FIGURES ADD UP TO, because it is not what they look like.
+     Every other layer shows a count per club and `a + h` is the counted total.
+     Here they are fractions: the denominators sum to the counted events (shots
+     faced) and the numerators sum to the saves, so a ledger line reading
+     `5 of 5 WSH + 4 of 5 VGK = 10 counted` invites 5 + 4 = 9 against a 10 on
+     screen. The layer names the sum; the panel prints the name it is given. */
   return {wide:true,split:true,a:fa?`${sa} of ${fa}`:'—',k:'SAVES BY',h:fh?`${sh} of ${fh}`:'—',
-   as:say(AID),hs:say(HID),
+   as:say(AID),hs:say(HID),sums:'shots faced',
    /* ⭐ THE NAMES ONLY, AND THE FLIP MOVED TO THE CAPTION. This was the one
       sentence in the box whose LENGTH IS DATA -- two goaltender names, plus
       "then X" on a relief -- so it ran to three lines at 360 and 390 and was
