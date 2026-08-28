@@ -20,7 +20,12 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { measureGame, stable, firstAtClock, endedIn, measureAll } from '../builders/measure.mjs';
 import { TEAMS } from '../src/lib/teams.js';
-import { summarise, slotShare } from '../src/lib/archive.js';
+import { summarise, slotShare, distribution, perGame, quantile, shareAtOrBelow } from '../src/lib/archive.js';
+import { corsi } from '../src/lib/layers/corsi.js';
+import { danger } from '../src/lib/layers/danger.js';
+import { blocked } from '../src/lib/layers/blocked.js';
+import { goaltending } from '../src/lib/layers/goaltending.js';
+import { whistle } from '../src/lib/layers/whistle.js';
 import { teamSeasons } from '../src/lib/team-season.js';
 
 /**
@@ -41,6 +46,12 @@ const TIER = [
   'teams.js',
   'layers/blocked.js', 'layers/corsi.js', 'layers/danger.js', 'layers/goaltending.js',
   'layers/tied.js',
+  // whistle.js joined when the per-game distributions did: `measures.json` could
+  // say a shot attempt is blocked 27.7% of the time and could not say whether 55
+  // stoppages was a normal night, because nothing had ever counted them.
+  // CAUGHT BY THIS TEST, third time — the tier goes stale in the same edit that
+  // changes the graph, every time.
+  'layers/whistle.js',
 ];
 
 test('the analysis tier runs outside a browser', () => {
@@ -637,4 +648,111 @@ test('a club is collected even from a game that is OUT OF SCOPE', () => {
   const { records, unnamedClubs } = measureAll(dir);
   assert.equal(records.length, 0, 'the preseason game is correctly not measured');
   assert.deepEqual(unnamedClubs, ['PDX'], 'and its club is still seen');
+});
+
+/**
+ * ⭐ THE REFERENCE CLASS COUNTS THE SAME THING THE CHIP DOES.
+ *
+ * The selector puts a live count on each lens, and that count is
+ * `LEDGER[id](slice).counted.length`. A distribution built on any other quantity
+ * would be a number about a different thing wearing the same label — the defect
+ * this project has shipped in every other medium: CONTROL against shots on goal,
+ * two rates on one screen, the chip and the counter disagreeing 7.8-fold.
+ *
+ * THE PATH IS INDEPENDENT (H1): the expected value comes from the reducer, and
+ * the LENS SET comes from the page's own `LEDGER` table, so a lens added to the
+ * selector with no distribution behind it fails here rather than shipping a
+ * count nothing can say a normal night for.
+ */
+test('every lens the selector counts has a distribution of the same quantity', () => {
+  const page = readFileSync(new URL('../src/read-the-game.html', import.meta.url), 'utf8');
+  const onPage = /const LEDGER=\{([\s\S]*?)\};/.exec(page)[1]
+    .match(/(\w+):/g).map(s => s.slice(0, -1)).sort();
+  /* ⚠️ ON THE REFERENCE GAME, NOT THE MINIMAL FIXTURE. `GAME` holds four events
+     and no stoppage, so the whistle half of this compared 0 to 0 — vacuous, and
+     a mutation swapping the field it reads sailed through. Every lens is
+     asserted non-zero below for that reason: a check that cannot tell a right
+     field from a wrong one on the data it runs is not a check about the field. */
+  const rich = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url), 'utf8'));
+  const rec = measureGame(rich);
+  /* ⭐ THE SAME IDS, WITH NO RENAME AT ALL. The first version keyed two of the
+     five to their human labels (`attempts`, `stoppages`) and this assertion had
+     to carve out an exception for each — which is a test describing a second
+     vocabulary rather than refusing one. */
+  assert.deepEqual(onPage, Object.keys(rec.lens).sort(),
+    'the selector shows a lens with no per-game distribution behind it, or vice versa');
+
+  const ctx = { roster: rich.roster, homeId: rich.teams.home.id,
+                awayId: rich.teams.away.id, evenOnly: false };
+  const mods = { corsi, slot: danger, blocked, goaltending, whistle };
+  for (const [k, mod] of Object.entries(mods)) {
+    assert.equal(rec.lens[k], mod.reduce(rich.events, ctx).counted.length,
+      `${k}: the distribution's unit is not the number the chip shows`);
+    assert.ok(rec.lens[k] > 0,
+      `${k}: this game holds none, so the assertion above compared 0 to 0`);
+  }
+});
+
+/**
+ * ⭐ THE HISTOGRAM IS THE RAW MATERIAL, and the derived figures are checked
+ * against the values themselves rather than against each other.
+ *
+ * `quantile` and `shareAtOrBelow` walk the published counts; this walks the
+ * SORTED VALUES, which is a different route to the same answer. A histogram that
+ * lost a game, or an off-by-one in `start`, moves one and not the other.
+ */
+test('the derived figures agree with the values the histogram was built from', () => {
+  const vals = [3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9, 7, 9, 3, 2, 3, 8, 4];
+  const d = distribution(vals, 'a made-up count');
+  assert.equal(d.n, vals.length, 'the histogram lost or invented a game');
+  assert.equal(d.counts.reduce((a, b) => a + b, 0), vals.length, 'the counts do not sum to n');
+  assert.equal(d.min, 1); assert.equal(d.max, 9); assert.equal(d.start, d.min);
+
+  const sorted = [...vals].sort((a, b) => a - b);
+  for (const q of [0.1, 0.25, 0.5, 0.75, 0.9, 1]) {
+    const want = sorted[Math.max(0, Math.ceil(q * sorted.length) - 1)];
+    assert.equal(quantile(d, q), want, `the ${q} quantile disagrees with the values`);
+  }
+  for (let v = 0; v <= 10; v++)
+    assert.equal(shareAtOrBelow(d, v), sorted.filter(x => x <= v).length / sorted.length,
+      `the share at or below ${v} disagrees with the values`);
+
+  // ⭐ NEAREST-RANK, so every answer is a night somebody played. An interpolated
+  // median of 4.5 here would be a count no game in the population holds.
+  assert.ok(Number.isInteger(quantile(d, 0.5)), 'the median is not a value that occurred');
+
+  // An empty population publishes no shape, and null is not zero.
+  const none = distribution([], 'nothing');
+  assert.equal(none.n, 0);
+  assert.equal(none.min, null, 'an empty population was given a minimum of 0');
+  assert.equal(quantile(none, 0.5), null, 'an empty population was given a median');
+  assert.equal(shareAtOrBelow(none, 5), null, 'an empty population was given a rank');
+});
+
+/**
+ * ⭐ SCOPED PER SEASON, AND THE SEASONS DO NOT MIX. Measured over a 600-game
+ * sample against a 200-split random control: pooling moves a game's rank by up
+ * to 15 points on attempts, blocked and goaltending, against 7–11 points of
+ * sampling noise. See `perGame` in archive.js for the table.
+ *
+ * The mechanism is asserted with disjoint values rather than with real data, so
+ * this cannot pass because two seasons happened to look alike.
+ */
+test('a season is measured against itself, and says which season it is', () => {
+  const rec = (id, n) => ({ id, lens: { corsi: n, slot: n, blocked: n, goaltending: n, whistle: n } });
+  const out = perGame([rec(2023020001, 10), rec(2023020002, 12), rec(2024020001, 90)]);
+  assert.deepEqual(Object.keys(out).sort(), ['2023', '2024'], 'the seasons were pooled or dropped');
+  assert.equal(out['2023'].corsi.n, 2);
+  assert.equal(out['2024'].corsi.max, 90, 'a season took a value from another season');
+  assert.equal(out['2023'].corsi.max, 12, 'a season took a value from another season');
+  assert.match(out['2023'].corsi.population, /2023-24/,
+    'the distribution does not name the season it measures, so it reads as the archive');
+  assert.match(out['2024'].corsi.population, /2024-25/);
+  assert.match(out['2023'].corsi.what, /n counts GAMES/,
+    'the unit is not stated, and every other n in this file counts events');
+
+  // A record from before `lens` existed contributes nothing, rather than a zero:
+  // "not measured" and "there were none" are different facts.
+  const older = perGame([rec(2023020001, 10), { id: 2023020003 }]);
+  assert.equal(older['2023'].corsi.n, 1, 'an unmeasured game was counted as a zero');
 });

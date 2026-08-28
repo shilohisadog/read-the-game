@@ -28,6 +28,7 @@ import { tiedControl } from '../src/lib/layers/tied.js';
 import { blocked } from '../src/lib/layers/blocked.js';
 import { danger } from '../src/lib/layers/danger.js';
 import { goaltending } from '../src/lib/layers/goaltending.js';
+import { whistle } from '../src/lib/layers/whistle.js';
 import { shootingTeam, SHOT_TYPES } from '../src/lib/attribution.js';
 import { inScope, summarise } from '../src/lib/archive.js';
 import { teamSeasons } from '../src/lib/team-season.js';
@@ -87,6 +88,12 @@ export function measureGame(g) {
   const blk = blocked.reduce(g.events, lay);
   const slotted = danger.reduce(g.events, lay);
   const nets = goaltending.reduce(g.events, lay);
+  /* ⭐ AND THE FIFTH LENS, WHICH NOTHING HAS EVER MEASURED. `measures.json`
+     could say a shot attempt is blocked 27.7% of the time and could not say
+     whether 55 stoppages is a normal night — §32.6's blocker, and the reason no
+     surface can call a game unusual. The whistle layer counts nothing about a
+     club, so it appears in the per-game distribution and nowhere else. */
+  const stops = whistle.reduce(g.events, lay);
   const sideOf = tid => tid === ctx.homeId ? 'h' : tid === ctx.awayId ? 'a' : null;
 
   const slot = { h: 0, a: 0 };
@@ -149,6 +156,27 @@ export function measureGame(g) {
     // the defending team and therefore NOT the event's owner.
     blocks: { h: blk.t[ctx.homeId], a: blk.t[ctx.awayId] },
     slot, located, goals, goalies,
+    /* ⭐ THE FIVE LENS COUNTS, AS THE CHIPS COUNT THEM. The selector under the
+       rink puts a live count on each lens, and it is `LEDGER[id](sl)
+       .counted.length` for every one of them — so a reference class built on
+       any other quantity would be a number about a different thing wearing the
+       same label. These ARE that quantity: the same reducers, the same field.
+       `test/measure.test.js` asserts the identity against the page's own table
+       rather than trusting this comment. */
+    /* ⚠️ KEYED BY THE PAGE'S OWN LENS IDS — `corsi`, not `attempts`, and `whistle`,
+       not `stoppages`. The first version renamed two of the five to their human
+       labels, which is a SECOND VOCABULARY for one set of things: the same shape
+       as `play` meaning two different things in two layers, which had just cost
+       a day. The chip is `data-l="corsi"` and the reducer table is keyed the
+       same, so this is too, and the human wording lives in `what` where a
+       reader meets it. */
+    lens: {
+      corsi: all.counted.length,
+      slot: slotted.counted.length,
+      blocked: blk.counted.length,
+      goaltending: nets.counted.length,
+      whistle: stops.counted.length,
+    },
     // THE LEAGUE'S OWN LINE, quoted from the boxscore and stored in the extract
     // so nothing here re-derives a score. If it is missing we do not guess.
     score: { h: g.quoted.home.score, a: g.quoted.away.score },

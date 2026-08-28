@@ -2527,3 +2527,78 @@ Chromium, 360px, Cup Final, both strength modes. **Blocked's near-miss card is
 gone entirely** (36 → 0) and its whistles appear in the collapsed line where they
 belong; **Attempts under `evenOnly` falls 32 → 14**; **Slot is unchanged at 34**,
 which is the control — its near misses were always real. Every footer closes.
+
+## 35. What a normal night looks like — per-game distributions
+
+§32.6's blocker, and it blocked three things: the per-game summary, the
+measurements page, and any sentence anywhere calling a game unusual.
+`measures.json` could say a shot attempt is blocked 27.7% of the time and could
+not say whether 55 stoppages was a lot.
+
+### 35.1 The unit is the chip's own number
+
+The selector puts a live count on each lens and that count is
+`LEDGER[id](slice).counted.length`. These distributions count **the same field
+from the same reducers**, so the number on screen and the reference class it is
+compared against are one quantity by construction. `test/measure.test.js`
+asserts the identity per lens, and derives the LENS SET from the page's own
+`LEDGER` table — a lens added to the selector with no distribution behind it
+fails there rather than shipping a count nothing can contextualise.
+
+⚠️ **And the keys are the page's ids** — `corsi`, not `attempts`; `whistle`, not
+`stoppages`. The first version renamed two of the five to their human labels,
+which is a second vocabulary for one set of things: the same shape as `play`
+meaning two things in two layers, §34, one day earlier.
+
+⚠️ **The first version of that test was vacuous for the whistle lens.** It ran on
+a four-event fixture holding no stoppage, so it compared 0 to 0 and a mutation
+swapping the field sailed through. It runs on the reference game now and asserts
+every lens is non-zero, because *a check that cannot tell a right field from a
+wrong one on the data it runs is not a check about the field.*
+
+### 35.2 ⭐ A histogram, not a mean and a spread
+
+A mean invites "average"; a standard deviation asserts a shape nobody checked;
+both are summaries a reader cannot verify. An integer histogram is the raw
+material — every median, quartile and rank is derived from it by `quantile` and
+`shareAtOrBelow`, in one place, and anyone holding the published file can
+recompute them. **Nearest-rank, never interpolated:** an interpolated median of
+88.5 attempts is a night nobody played.
+
+### 35.3 ⭐ Scoped per SEASON — measured, against a control
+
+Every other figure in `measures.json` pools the three seasons, and copying that
+was the obvious move. The question that matters is how far a game's **rank**
+moves if it is scored against the pooled archive instead of its own season.
+Stratified 600-game sample, 200 per season, worst gap within p10–p90:
+
+| lens | by season | random p50 | random p95 | |
+|---|---|---|---|---|
+| blocked | **15.0** | 4.7 | 7.5 | season matters |
+| goaltending | **13.0** | 5.5 | 11.0 | season matters |
+| attempts | **12.5** | 6.8 | 8.7 | season matters |
+| slot | 3.8 | 5.3 | 7.3 | within noise |
+| stoppages | 4.7 | 5.0 | 8.2 | within noise |
+
+⭐ **The control is what makes that readable** — 200 random splits into groups of
+the *same sizes*, ignoring the season. A 12-point gap means nothing until you
+know that 200 games of sampling noise alone produces 7–11. Three of five clear
+it, so a pooled rank would be wrong by more than a tenth of the archive on the
+lenses a reader looks at most. **Hockey is not stationary, and this is the
+measurement that says so** rather than the recollection.
+
+The two within noise are published per season anyway: a document whose scoping
+depends on which lens you read is one nobody can quote safely.
+
+### 35.4 What it costs and what it answers
+
+**+850 bytes gzipped** on the 600-game sample (1,282 → 2,132). Kevin's own two
+examples, against 2025-26:
+
+    55 stoppages — at or above 91% of nights (median 46)
+    94 attempts  — at or above  4% of nights (median 116)
+
+**No UI this pass.** The summary is the next item and this is what it reads.
+**Club-level is NOT built** — "is CAR's 39 attempts a lot" needs a club-game
+population, which is a second accumulator over the same walk. Named here rather
+than quietly included.
