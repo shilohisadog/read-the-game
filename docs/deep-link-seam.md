@@ -513,3 +513,91 @@ The **"copy link to this moment" control**. `format()` exists and is tested, but
 nothing on the page calls it yet: the seam is the mechanism and the control is a
 policy on top of it. It needs a place in the transport row and a word, and both
 are better decided once §5's "How it works" page exists to link *from*.
+
+---
+
+## The write side — "Copy a link to this moment" (2026-08-28)
+
+Kevin, with his own address bar in the screenshot: `readthegame.co/game?game=2025021213`,
+and nothing else however far he scrubs. **The seam has only ever been read.**
+`format()` has said in its own docstring since it was written that it is *"the
+link a copy this moment control emits"*, and nothing emitted one — so a shared
+link could only be hand-typed off the scoreboard. Verified before building: no
+`replaceState`, no `pushState`, no writer anywhere; the URL is identical after
+scrubbing and after pressing a lens.
+
+### The button, and not the URL following the playhead
+
+CHENG's call and it is the right one. `replaceState` on every event is ~270
+writes per replay, a few hundred milliseconds apart at Faster — and it makes the
+address bar a live-updating element during the one activity the page exists for,
+on a site whose aesthetic is that the ice moves and the chrome holds still. The
+stated benefit (*the address bar tells the truth about where you are*) is a
+benefit to almost nobody: people do not read the URL while watching. **The one
+moment they care is the moment they copy.** If it is ever built: throttle it, and
+write on pause and seek only.
+
+### ⭐ The confirmation names the event the link resolves to
+
+CHENG's design, better than a caveat beside the button. The caveat worth stating
+is that a link lands on the nearest RECORDED moment, and the way to state it is
+to **name which one** — checkable by the person who just pressed. So the URL is
+built, **parsed back, and resolved** through the same functions a visitor's
+browser runs; the moment reported is the moment that resolved, never the moment
+we meant.
+
+    Copied — it opens at P2 13:10 · MTL · Over the crossbar.
+
+⚠️ **That choice is unguarded by design, and saying so is the point.** A mutation
+reporting the playhead's own event instead of the resolved one survives every
+test — *because the round trip holds*. What protects it is the invariant below,
+not a page assertion; resolving is the correct direction of dependency for the
+day the two ever part.
+
+### ⛔ FINDING: the shootout — raised by CHENG, refuted by measurement
+
+*"What does the button copy when the playhead is on a shootout attempt? Either it
+produces a link that resolves somewhere odd, or it should refuse."* Worth asking,
+and the answer is neither.
+
+| | |
+|---|---|
+| moments round-tripped | **160,012** in 607 games (this corpus + a 600-game archive sample) |
+| landed on a different event | **0** |
+| shootout attempts among them | **319**, all correct |
+| distinct shootout clocks | **1** — every attempt is at `5-00:00`, up to 25 events on it |
+| moments needing an ordinal | **28.8%**, largest `.27` |
+
+The ordinal is not a shootout special case; it is the common mechanism, and it
+carries the shared clock exactly. **No refusal, no special case.** 6.6% of games
+reach a shootout.
+
+### What travels with the moment
+
+**The lens** — *"watch this shot get counted"* is the site's argument and a link
+that arrives with it on delivers it, exactly as the nine doors do.
+
+**The strength, always.** CHENG proposed omitting it at the default; keeping it
+is `format()`'s existing ruling and the stronger argument is drift: **a link is
+read long after it is written, and one that omits the mode inherits whatever the
+default becomes.**
+
+**The ends mode only when non-default**, and the asymmetry is principled rather
+than aesthetic: strength changes every COUNT on the page, ends changes only the
+drawing and the page discloses it in words at each period break.
+
+**Nothing at all before the first play.** Pre-game is a state, not a play (A11),
+so there is no moment to name and the link opens where an unadorned visit opens.
+
+### Where it sits, and what looking changed
+
+Under the scrubber, in its own row — with the control that SETS the moment, not
+in the transport group where CHENG rightly says it would read as another
+transport control. ⚠️ **And the first version was unreadable at 360:** at
+`flex-basis:12ch` the confirmation stayed beside the button in the ~103px left
+over and broke into **five lines of two words**. It takes the full width now the
+moment the button does not leave it room. No test here can see that.
+
+`playSaid()` was extracted so the confirmation and the ice choose the same
+words — verified in a browser: the rink read `MTL · Over the crossbar` and so did
+the confirmation.

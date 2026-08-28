@@ -23,6 +23,7 @@ import { whistle } from '../src/lib/layers/whistle.js';
 import { danger } from '../src/lib/layers/danger.js';
 import { shootingTeam } from '../src/lib/attribution.js';
 import { NOT_A_PLAY, isNearMiss, inShootout } from '../src/lib/layer.js';
+import { parse, resolve } from '../src/lib/deeplink.js';
 
 const CTX = { roster: rich.roster, homeId: rich.teams.home.id, awayId: rich.teams.away.id };
 const AID = rich.teams.away.id, HID = rich.teams.home.id;
@@ -975,4 +976,91 @@ test('a surprising reason says what it was counted in, not only what it is denie
   const eg = /<p><em>For example:<\/em>([\s\S]*?)<\/p>/.exec(card)[1];
   assert.match(eg.trim(), /[.!?]$/,
     'the example runs into the paragraph after it, with no full stop');
+});
+
+/**
+ * ⭐ THE WRITE SIDE OF THE DEEP-LINK SEAM. Kevin, looking at his own address bar
+ * on a game scrubbed into period 1: it reads `?game=2025021213` and nothing
+ * else, however far he moves. `deeplink.js::format` has said in its own
+ * docstring since it was written that it is "the link a copy this moment
+ * control emits", and nothing had ever emitted one — so a shared link could only
+ * be hand-typed off the scoreboard.
+ *
+ * ⭐ AND THE CONFIRMATION NAMES THE EVENT THE LINK RESOLVES TO (CHENG), which is
+ * a better design than a caveat beside the button: what is worth saying is that
+ * a link lands on the nearest RECORDED moment, and the way to say it is to name
+ * which one — checkable by the person who just pressed.
+ */
+test('the copy control emits a link to this moment, and says which moment', async () => {
+  const a = boot();
+  a.$('scrub').oninput({ target: { value: '120' } });
+  pick(a, 'slot');
+  a.$('share').onclick();
+  await a.settle();
+
+  const url = a.copied;
+  assert.ok(url, 'nothing was written to the clipboard');
+  assert.match(url, /^https:\/\/x\/game\?/, 'the link is not absolute — it cannot be pasted anywhere');
+  const q = new URLSearchParams(url.split('?')[1]);
+  assert.equal(q.get('game'), String(rich.game.id), 'the link names the wrong game, or none');
+  assert.equal(q.get('layer'), 'slot', 'the lens the sharer was watching did not travel');
+  assert.equal(q.get('strength'), 'all', 'the mode the counts were measured under did not travel');
+
+  /* ⭐ THE MOMENT IS THE PLAYHEAD'S, DERIVED INDEPENDENTLY. The expectation
+     comes from the game data at the frame the scrubber is on; the answer comes
+     back through the parser and resolver a visitor's browser runs. */
+  const SKIP = new Set(['stoppage', 'period-start', 'period-end', 'game-end', 'delayed-penalty']);
+  const visitable = rich.events.map((e, n) => n).filter(n => !SKIP.has(rich.events[n].type));
+  const want = rich.events[visitable[120]];
+  assert.equal(resolve(rich.events, parse(q).at).index, visitable[120],
+    'the link does not open on the frame it was copied from');
+
+  const said = a.$('sharesaid').innerHTML;
+  assert.match(said, /^Copied/, 'the press was not confirmed');
+  assert.ok(said.includes(`P${want.per} ${want.rem}`),
+    `the confirmation does not name the moment (P${want.per} ${want.rem}): ${said}`);
+});
+
+/**
+ * ⭐ THE CONFIRMATION AND THE ICE NAME THE PLAY THE SAME WAY. Two surfaces
+ * describing one event is a disagreement this page has already paid for twice —
+ * the whistle clause at 3.5% of frames, and the caption saying "from the slot"
+ * in both halves of one sentence. `playSaid` is the one place the words are
+ * chosen, so this asserts they arrive in both.
+ */
+test('the copied moment is described in the words the rink uses', async () => {
+  const a = boot();
+  // Walk to a frame whose label the rink actually draws, rather than assuming
+  // any given index has one: `place()` returns null for an event with no
+  // coordinates and the label is then empty.
+  for (let f = 30; f < 200; f += 1) {
+    a.$('scrub').oninput({ target: { value: String(f) } });
+    const onIce = a.$('labels').innerHTML;
+    const m = /<text class="plabel"[^>]*>([^<]*)</.exec(onIce);
+    if (!m || !m[1].includes('·')) continue;
+    a.$('share').onclick();
+    await a.settle();
+    const said = a.$('sharesaid').innerHTML;
+    assert.ok(said.includes(m[1]),
+      `frame ${f}: the ice says "${m[1]}" and the confirmation says "${said}"`);
+    return;
+  }
+  assert.fail('no frame in this range drew a labelled play, so nothing was compared');
+});
+
+/**
+ * ⛔ PRE-GAME IS A STATE, NOT A PLAY (A11), so there is no moment to name and the
+ * link carries none rather than naming the opening faceoff — which would be a
+ * link to a play the sharer was not looking at.
+ */
+test('before the first play the link carries no moment', async () => {
+  const a = boot();
+  a.$('scrub').oninput({ target: { value: '-1' } });
+  a.$('share').onclick();
+  await a.settle();
+  const q = new URLSearchParams(a.copied.split('?')[1]);
+  assert.equal(q.get('at'), null, 'a link was written to a play nobody was watching');
+  assert.equal(q.get('game'), String(rich.game.id), 'the game did not travel either');
+  assert.match(a.$('sharesaid').innerHTML, /start of the game/,
+    'the confirmation does not say where the link opens');
 });

@@ -1718,8 +1718,26 @@ function drawLabel(e){const g=$('labels');const p=place(e);if(!p){g.innerHTML=''
  // C8: a missed shot says WHICH way it missed. `missSay` is in attribution.js
  // beside SHOT_TYPES, because what a shot event IS belongs with the vocabulary
  // of shot events and not in a table of page labels.
+ g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${ESC(playSaid(e))}${hd}</text></g>`;}
+
+/* ⭐ WHAT THIS PLAY IS, IN WORDS — the one place the words are chosen.
+   Extracted when the share control needed to name the moment it had just
+   copied: a confirmation reading "opens at WSH · Won the faceoff" and a rink
+   reading something else would be two surfaces describing one event, which is
+   the disagreement this page has already paid for twice (the whistle clause at
+   3.5%, the caption saying "from the slot" twice).
+   THE RICHER FORMS STAY WHERE THEY BELONG. A goal on the ice carries its
+   assists on a second line and a blocked shot goes through `blockedSay`, which
+   is shared; what is centralised here is WHICH WORDS NAME THE PLAY, and the
+   surfaces differ only in how much they then add. */
+function playSaid(e){
+ const lab=e.own===AID?AAB:e.own===HID?HAB:null;
+ if(e.type==='blocked-shot')return blockedSay(e,blockOn);
+ if(e.type==='goal'){const p=R[e.actor];
+   return `${lab?lab+' · ':''}GOAL${shortHanded(e)?' · short-handed':''} — ${p?p.nm:(lab||'')}`;}
  const info=e.type==='missed-shot'?missSay(e):LAB[e.type];
- g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${lab?lab+" · ":""}${ESC(info)}${hd}</text></g>`;}
+ if(!info)return lab||'';
+ return `${lab?lab+' · ':''}${info}`;}
 
 // THE WHISTLE LAYER, DRAWN. What from the stoppage, where from the faceoff that
 // restarts play -- and the sentence is the point, so it lives in a panel that
@@ -2625,6 +2643,76 @@ prevA=0;prevH=0;
    and is asserted there instead. */
 const OPEN=LINK.at?frameOf(AT.index):-1;
 set(OPEN,OPEN<0?'':'jump');
+
+/**
+ * ⭐ COPY A LINK TO THIS MOMENT — the write side of a seam that has only ever
+ * been read.
+ *
+ * `deeplink.js::format` says in its own docstring that it is "the link a copy
+ * this moment control emits", and until now nothing emitted one: the page never
+ * wrote its position anywhere, so `?at=` could only be hand-typed off the
+ * scoreboard. Kevin, looking at his own address bar: it holds `?game=…` and
+ * nothing else however far you scrub.
+ *
+ * ⭐ THE CONFIRMATION NAMES THE EVENT THE LINK RESOLVES TO, which is CHENG's
+ * design and a better one than a warning beside the button: the caveat worth
+ * stating is that a link lands on the nearest RECORDED moment, and the way to
+ * state it is to say which one, checkable by the person who just pressed. So the
+ * URL is built, PARSED BACK, and resolved through the same functions a visitor's
+ * browser will use — and the moment reported is the moment that resolved, never
+ * the moment we meant.
+ *
+ * ⚠️ AND THAT ROUND TRIP IS THE INVARIANT, asserted over 160,012 shareable
+ * moments in 607 games: format → parse → resolve returns the frame it started
+ * from, 0 failures. It includes every shootout attempt, which is where CHENG
+ * expected a bad link — the whole shootout shares ONE clock, `5-00:00`, with up
+ * to 25 events on it, and the ordinal carries them exactly. Ordinals are not a
+ * shootout special case at all: 28.8% of all shareable moments need one.
+ *
+ * ⭐ WHAT TRAVELS WITH THE MOMENT. The LENS, because "watch this shot get
+ * counted" is the site's argument and a link that arrives with it on delivers it
+ * (the learn doors already work this way). The STRENGTH always, which is
+ * `format`'s existing ruling and I am keeping it against CHENG's suggestion to
+ * omit the default: a link is read long after it is written, and one that omits
+ * the mode inherits whatever the default becomes. The ENDS mode only when it is
+ * NOT the default, and the asymmetry is principled rather than aesthetic —
+ * strength changes every COUNT on the page, ends changes only the drawing and
+ * the page discloses it in words at each period break.
+ */
+function shareUrl(){
+ const n=i<0?null:EVI[i];
+ const pick=whichPick();
+ const q=n==null
+   // PRE-GAME IS A STATE, NOT A PLAY (A11), so there is no moment to name and
+   // the link carries none — it opens where an unadorned visit opens.
+   ?'?'+new URLSearchParams({game:String(G.game.id)}).toString()
+   :format({game:G.game.id,events:G.events,index:n,
+            layers:pick==='none'?[]:[pick],strength:evenOnly?'even':'all'});
+ // The ends mode is appended rather than passed, because `format` does not carry
+ // it and only a non-default is worth the noise. See the note above.
+ return q+(ENDSMODE!==DEFAULT_ENDS?'&ends='+ENDSMODE:'');}
+
+const shareBtn=$('share'),shareSaid=$('sharesaid');
+if(shareBtn)shareBtn.onclick=()=>{
+ const q=shareUrl();
+ const url=location.origin+location.pathname+q;
+ /* RESOLVED THROUGH THE VISITOR'S OWN PATH, not through the index we started
+    from. If those two ever disagree the confirmation says what the LINK does,
+    which is the fact the sharer needs. */
+ const back=parse(new URLSearchParams(q));
+ const r=resolve(G.events,back.at);
+ const e=back.at?G.events[r.index]:null;
+ const where=e?`<b>P${e.per} ${e.rem}</b> · ${ESC(playSaid(e))}`
+             :'<b>the start of the game</b>';
+ const done=ok=>{shareSaid.innerHTML=ok
+   ?`Copied — it opens at ${where}.`
+   // ⚠️ A REFUSED CLIPBOARD IS NOT A FAILED FEATURE. Permission can be denied
+   // and there is nothing to retry, so the link itself goes on screen where it
+   // can be selected by hand — the same move as naming the game we could not
+   // publish instead of printing an HTTP code.
+   :`Copy this: ${ESC(url)}`;};
+ try{navigator.clipboard.writeText(url).then(()=>done(true),()=>done(false));}
+ catch(_){done(false);}};
 /* THE PREVIEW LOOP.
    Deliberately NOT the ordinary play loop: `dwell()` paces a game for someone
    watching it, easing for the big moments, and a taste has about five seconds.

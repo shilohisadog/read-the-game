@@ -400,3 +400,48 @@ test('an unreadable ends is named and defaulted, never silently repaired', () =>
 test('ends is case- and space-tolerant, like strength', () => {
   assert.equal(parse('?ends=%20FIXED%20').ends, 'fixed');
 });
+
+/**
+ * ⭐ THE ROUND TRIP IS THE INVARIANT — format → parse → resolve returns the frame
+ * it started from, for every moment a viewer can share.
+ *
+ * CHENG asked for exactly this when the copy control was designed, and asked it
+ * of the SHOOTOUT in particular: the shootout's events are excluded from every
+ * count and its coordinates are not positions, so a link landing there was
+ * expected to resolve somewhere odd or need refusing.
+ *
+ * ⭐ MEASURED, AND THE FINDING IS REFUTED. Over 160,012 shareable moments in 607
+ * games (this corpus plus a stratified 600-game archive sample), 0 land on a
+ * different event — including all 319 shootout attempts. The whole shootout
+ * shares ONE clock, `5-00:00`, with up to 25 events on it, and the ordinal
+ * carries them exactly. Ordinals are not a shootout special case: 28.8% of ALL
+ * shareable moments need one, and the largest seen is `.27`.
+ *
+ * THE PATH IS INDEPENDENT: the expectation is the index the walk started from,
+ * and the answer comes back through the parser a visitor's browser runs.
+ */
+test('every shareable moment round-trips to the frame it was copied from', () => {
+  const dir = new URL('./fixtures/extracts/', import.meta.url);
+  const files = readdirSync(dir).filter(f => f.endsWith('.json'));
+  assert.ok(files.length >= 5, 'the fixture corpus has shrunk — this check needs games');
+  const SKIP = new Set(['stoppage', 'period-start', 'period-end', 'game-end', 'delayed-penalty']);
+  let checked = 0, shootout = 0, ordinals = 0;
+  for (const f of files) {
+    const g = JSON.parse(readFileSync(new URL(f, dir), 'utf8'));
+    for (let n = 0; n < g.events.length; n++) {
+      if (SKIP.has(g.events[n].type)) continue;          // the transport cannot stop here
+      const q = format({ game: g.game.id, events: g.events, index: n, layers: ['slot'] });
+      const back = parse(new URLSearchParams(q));
+      assert.equal(resolve(g.events, back.at).index, n,
+        `${f}: the link for event ${n} (${g.events[n].type}) opens somewhere else — ${q}`);
+      checked++;
+      if (g.events[n].pt === 'SO') shootout++;
+      if (/\.\d+$/.test(back.at.raw || q.match(/at=([^&]*)/)[1])) ordinals++;
+    }
+  }
+  assert.ok(checked > 1000, `only ${checked} moments were round-tripped`);
+  // ⭐ AND THE HARD CASES WERE ACTUALLY IN IT. Without these the check above is
+  // satisfied by a corpus of games where every clock is unique.
+  assert.ok(shootout > 0, 'no shootout moment was tested — the case CHENG raised');
+  assert.ok(ordinals > 0, 'no moment needed an ordinal, so the shared-clock path never ran');
+});

@@ -227,8 +227,12 @@ export function fakeDom() {
  * scar of four fakes of one document at four fidelities.
  */
 export function bundle(globals, src = SCRIPT, give = 'boot') {
+  /* `navigator` joined when the share control did. It is part of the environment
+     the bundle runs in — the clipboard lives there — and without it every press
+     took the "clipboard refused" fallback, so the success path was structurally
+     untestable and the fake would have been MORE PERMISSIVE than a browser. */
   const names = ['document', 'matchMedia', 'setTimeout', 'clearTimeout',
-                 'localStorage', 'location', 'window'];
+                 'localStorage', 'location', 'window', 'navigator'];
   return new Function(...names, src + `\nreturn ${give};`)(...names.map(n => globals[n]));
 }
 
@@ -269,7 +273,12 @@ export function boot(game, rates, search = '', store = null) {
     document: dom.document, matchMedia: () => ({ matches: true }),
     setTimeout: setTimeout_, clearTimeout: clearTimeout_,
     localStorage: store || { getItem: () => null, setItem: () => {} },
-    location: { search, origin: 'https://x' }, window: win });
+    /* `pathname` too: the share control builds an absolute URL from it, and a
+       fake without it produces "https://xundefined?game=…" — a string that
+       every assertion about the query would still pass on. */
+    location: { search, origin: 'https://x', pathname: '/game' },
+    navigator: { clipboard: { writeText: v => { dom.copied = v; return Promise.resolve(); } } },
+    window: win });
   // `rates` is what the SHELL fetches and the inlined page never has. Without it
   // this harness can only ever see the "no comparison shown" branch, which is
   // how a test for the drawn rate first went red against a page structurally
@@ -280,6 +289,17 @@ export function boot(game, rates, search = '', store = null) {
   assert.ok(+scrub.max > 100, `the reference game should have hundreds of plays, not ${scrub.max}`);
   return {
     ...dom,
+    /* ⚠️ A GETTER, BECAUSE THE SPREAD ABOVE IS A SNAPSHOT. The share control
+       writes to the clipboard when a test presses it, which is long after this
+       object is built — read through `...dom` it is forever undefined, and an
+       assertion on it would fail for a reason that has nothing to do with the
+       page. */
+    get copied() { return dom.copied; },
+    /* THE CLIPBOARD WRITE IS ASYNC, so the confirmation is composed in a
+       microtask. A test that reads the status line straight after the press is
+       reading the frame before it. `setImmediate` lands after every queued
+       microtask, which is the guarantee `Promise.resolve()` does not give. */
+    settle: () => new Promise(r => setImmediate(r)),
     /**
      * Run the replay the way a viewer who presses Play does — the real loop,
      * `render(i,'play')`, one frame per `dwell`. Returns how many frames
@@ -389,7 +409,8 @@ export function delaysOf(search, ticks) {
     document: dom.document, matchMedia: () => ({ matches: false }),
     setTimeout: timer, clearTimeout: () => {},
     localStorage: { getItem: () => null, setItem: () => {} },
-    location: { search, origin: 'https://x' },
+    location: { search, origin: 'https://x', pathname: '/game' },
+    navigator: { clipboard: { writeText: () => Promise.resolve() } },
     window: { parent: { postMessage: () => {} } } });
   b(rich, null);
   return { dom, delays, at };

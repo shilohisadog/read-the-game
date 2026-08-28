@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-HFbmoM/OKH+v6iEd4SuMs2lGBBpxyW8mYN4kJU1umMI=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-5b/JV5ZQCQMrYOa8iGppq32r4s3MA3ZP32e8KTVsbEc='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-gMj7rip6Sp4QT8RuKXztV6OKLYuIw2g7DxwGaUwrI5M=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-J08c+gWB/YdbK/On3y37fsaDobToYBewqBP2CrnbVtE='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">Watch a game</a><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see</a><a href="/workshop.html">Workshop</a></nav></header>
@@ -705,6 +705,21 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    controls at every viewport instead of whatever flex-wrap happens to leave,
    and it stops being a function of how many buttons sit beside it. */
 #rg .scrub{flex:1 0 100%;accent-color:var(--ink);cursor:pointer;min-width:120px;height:44px;margin:0}
+/* THE SHARE ROW. Quiet by default -- it is not a transport control and must not
+   read as one -- and the confirmation sits beside it rather than replacing the
+   label, so the button a reader just pressed is still where they left it.
+   `min-height` on the row, not a fixed height: the confirmation names an event
+   and an event's name is DATA, so at 360 it wraps rather than clipping. */
+#rg .sharerow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 10px;min-height:44px}
+#rg .share{font:inherit;font-size:.82rem;color:var(--muted);background:none;border:1px solid var(--edge);border-radius:999px;padding:9px 14px;cursor:pointer;min-height:44px}
+#rg .share:hover{color:var(--ink);border-color:var(--ink)}
+/* ⚠️ A WIDE BASIS SO IT WRAPS TO ITS OWN LINE RATHER THAN INTO A COLUMN. At
+   12ch it stayed beside the button in the ~103px left over at 360 and broke
+   into five lines of two words — legal, and unreadable. The sentence names an
+   event, whose length is DATA, so it gets the whole width the moment the button
+   does not leave it room. Found by looking; no test here can see it. */
+#rg .sharesaid{font-size:.8rem;color:var(--muted);flex:1 1 20ch}
+#rg .sharesaid b{color:var(--ink);font-weight:600}
 /* ⭐ THREE KINDS OF THING WERE IN ONE LIST, which is why it read as a wall.
    Two of the eight rows were shaded AREAS that need a sentence, five were MARKS
    that need only naming, and one was a DISCLOSURE with no swatch at all. Kevin:
@@ -1658,6 +1673,15 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
   <div class="grp" role="group" aria-label="Step through the events"><button class="spd stepb" id="back" aria-label="Previous event">◀ Prev event</button><button class="spd stepb" id="fwd" aria-label="Next event">Next event ▶</button></div>
   <div class="grp" role="group" aria-label="Replay speed"><button class="spd stepb" id="slower">&#9664; Slower</button><button class="spd stepb" id="faster">Faster &#9654;</button></div>
   <input class="scrub" id="scrub" type="range" min="-1" max="1" value="-1"></div>
+<!-- ⭐ COPY A LINK TO THIS MOMENT. The read side has been built and tested since
+     the learn-page doors -- `deeplink.js::format` even says in its own docstring
+     that it is "the link a copy this moment control emits" -- and nothing ever
+     emitted one. The page never wrote its position anywhere, so a shared link
+     could only be hand-typed off the scoreboard.
+     UNDER THE SCRUBBER, NOT IN THE BUTTON ROW. CHENG: a control in the transport
+     group reads as another transport control. This sits with the thing that SETS
+     the moment, and the confirmation names the moment it copied. -->
+<div class="sharerow"><button class="share" id="share" type="button">Copy a link to this moment</button><span class="sharesaid" id="sharesaid" role="status" aria-live="polite"></span></div>
 <div class="pickrow" role="radiogroup" aria-label="Which metric is on the ice" id="pickrow"><span class="pklab">Watching</span><button class="pk" id="pkNone" data-l="none" role="radio" aria-checked="true"><span class="pkl">Just events</span></button><span class="pksep" aria-hidden="true"></span><button class="pk" id="pkCorsi" data-l="corsi" role="radio" aria-checked="false"><span class="pkl">Attempts</span><span class="pkn" id="n_corsi">0</span></button><button class="pk" id="pkSlot" data-l="slot" role="radio" aria-checked="false"><span class="pkl">Slot</span><span class="pkn" id="n_slot">0</span></button><button class="pk" id="pkBlocked" data-l="blocked" role="radio" aria-checked="false"><span class="pkl">Blocked</span><span class="pkn" id="n_blocked">0</span></button><button class="pk" id="pkGoalie" data-l="goaltending" role="radio" aria-checked="false"><span class="pkl">Goaltending</span><span class="pkn" id="n_goaltending">0</span></button><button class="pk" id="pkWhistle" data-l="whistle" role="radio" aria-checked="false"><span class="pkl">Stoppages</span><span class="pkn" id="n_whistle">0</span></button></div>
 <p class="lcap" id="lcap"></p>
 <!-- ⭐ THE WORK PANEL SITS AFTER THE EXPLANATION, NOT BEFORE THE CONTROLS.
@@ -6394,8 +6418,26 @@ function drawLabel(e){const g=$('labels');const p=place(e);if(!p){g.innerHTML=''
  // C8: a missed shot says WHICH way it missed. `missSay` is in attribution.js
  // beside SHOT_TYPES, because what a shot event IS belongs with the vocabulary
  // of shot events and not in a table of page labels.
+ g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${ESC(playSaid(e))}${hd}</text></g>`;}
+
+/* ⭐ WHAT THIS PLAY IS, IN WORDS — the one place the words are chosen.
+   Extracted when the share control needed to name the moment it had just
+   copied: a confirmation reading "opens at WSH · Won the faceoff" and a rink
+   reading something else would be two surfaces describing one event, which is
+   the disagreement this page has already paid for twice (the whistle clause at
+   3.5%, the caption saying "from the slot" twice).
+   THE RICHER FORMS STAY WHERE THEY BELONG. A goal on the ice carries its
+   assists on a second line and a blocked shot goes through `blockedSay`, which
+   is shared; what is centralised here is WHICH WORDS NAME THE PLAY, and the
+   surfaces differ only in how much they then add. */
+function playSaid(e){
+ const lab=e.own===AID?AAB:e.own===HID?HAB:null;
+ if(e.type==='blocked-shot')return blockedSay(e,blockOn);
+ if(e.type==='goal'){const p=R[e.actor];
+   return `${lab?lab+' · ':''}GOAL${shortHanded(e)?' · short-handed':''} — ${p?p.nm:(lab||'')}`;}
  const info=e.type==='missed-shot'?missSay(e):LAB[e.type];
- g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${lab?lab+" · ":""}${ESC(info)}${hd}</text></g>`;}
+ if(!info)return lab||'';
+ return `${lab?lab+' · ':''}${info}`;}
 
 // THE WHISTLE LAYER, DRAWN. What from the stoppage, where from the faceoff that
 // restarts play -- and the sentence is the point, so it lives in a panel that
@@ -7301,6 +7343,76 @@ prevA=0;prevH=0;
    and is asserted there instead. */
 const OPEN=LINK.at?frameOf(AT.index):-1;
 set(OPEN,OPEN<0?'':'jump');
+
+/**
+ * ⭐ COPY A LINK TO THIS MOMENT — the write side of a seam that has only ever
+ * been read.
+ *
+ * `deeplink.js::format` says in its own docstring that it is "the link a copy
+ * this moment control emits", and until now nothing emitted one: the page never
+ * wrote its position anywhere, so `?at=` could only be hand-typed off the
+ * scoreboard. Kevin, looking at his own address bar: it holds `?game=…` and
+ * nothing else however far you scrub.
+ *
+ * ⭐ THE CONFIRMATION NAMES THE EVENT THE LINK RESOLVES TO, which is CHENG's
+ * design and a better one than a warning beside the button: the caveat worth
+ * stating is that a link lands on the nearest RECORDED moment, and the way to
+ * state it is to say which one, checkable by the person who just pressed. So the
+ * URL is built, PARSED BACK, and resolved through the same functions a visitor's
+ * browser will use — and the moment reported is the moment that resolved, never
+ * the moment we meant.
+ *
+ * ⚠️ AND THAT ROUND TRIP IS THE INVARIANT, asserted over 160,012 shareable
+ * moments in 607 games: format → parse → resolve returns the frame it started
+ * from, 0 failures. It includes every shootout attempt, which is where CHENG
+ * expected a bad link — the whole shootout shares ONE clock, `5-00:00`, with up
+ * to 25 events on it, and the ordinal carries them exactly. Ordinals are not a
+ * shootout special case at all: 28.8% of all shareable moments need one.
+ *
+ * ⭐ WHAT TRAVELS WITH THE MOMENT. The LENS, because "watch this shot get
+ * counted" is the site's argument and a link that arrives with it on delivers it
+ * (the learn doors already work this way). The STRENGTH always, which is
+ * `format`'s existing ruling and I am keeping it against CHENG's suggestion to
+ * omit the default: a link is read long after it is written, and one that omits
+ * the mode inherits whatever the default becomes. The ENDS mode only when it is
+ * NOT the default, and the asymmetry is principled rather than aesthetic —
+ * strength changes every COUNT on the page, ends changes only the drawing and
+ * the page discloses it in words at each period break.
+ */
+function shareUrl(){
+ const n=i<0?null:EVI[i];
+ const pick=whichPick();
+ const q=n==null
+   // PRE-GAME IS A STATE, NOT A PLAY (A11), so there is no moment to name and
+   // the link carries none — it opens where an unadorned visit opens.
+   ?'?'+new URLSearchParams({game:String(G.game.id)}).toString()
+   :format({game:G.game.id,events:G.events,index:n,
+            layers:pick==='none'?[]:[pick],strength:evenOnly?'even':'all'});
+ // The ends mode is appended rather than passed, because `format` does not carry
+ // it and only a non-default is worth the noise. See the note above.
+ return q+(ENDSMODE!==DEFAULT_ENDS?'&ends='+ENDSMODE:'');}
+
+const shareBtn=$('share'),shareSaid=$('sharesaid');
+if(shareBtn)shareBtn.onclick=()=>{
+ const q=shareUrl();
+ const url=location.origin+location.pathname+q;
+ /* RESOLVED THROUGH THE VISITOR'S OWN PATH, not through the index we started
+    from. If those two ever disagree the confirmation says what the LINK does,
+    which is the fact the sharer needs. */
+ const back=parse(new URLSearchParams(q));
+ const r=resolve(G.events,back.at);
+ const e=back.at?G.events[r.index]:null;
+ const where=e?`<b>P${e.per} ${e.rem}</b> · ${ESC(playSaid(e))}`
+             :'<b>the start of the game</b>';
+ const done=ok=>{shareSaid.innerHTML=ok
+   ?`Copied — it opens at ${where}.`
+   // ⚠️ A REFUSED CLIPBOARD IS NOT A FAILED FEATURE. Permission can be denied
+   // and there is nothing to retry, so the link itself goes on screen where it
+   // can be selected by hand — the same move as naming the game we could not
+   // publish instead of printing an HTTP code.
+   :`Copy this: ${ESC(url)}`;};
+ try{navigator.clipboard.writeText(url).then(()=>done(true),()=>done(false));}
+ catch(_){done(false);}};
 /* THE PREVIEW LOOP.
    Deliberately NOT the ordinary play loop: `dwell()` paces a game for someone
    watching it, easing for the big moments, and a taste has about five seconds.

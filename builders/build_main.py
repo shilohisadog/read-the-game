@@ -128,6 +128,15 @@ __CSS__</style>
   <div class="grp" role="group" aria-label="Step through the events"><button class="spd stepb" id="back" aria-label="Previous event">◀ Prev event</button><button class="spd stepb" id="fwd" aria-label="Next event">Next event ▶</button></div>
   <div class="grp" role="group" aria-label="Replay speed"><button class="spd stepb" id="slower">&#9664; Slower</button><button class="spd stepb" id="faster">Faster &#9654;</button></div>
   <input class="scrub" id="scrub" type="range" min="-1" max="1" value="-1"></div>
+<!-- ⭐ COPY A LINK TO THIS MOMENT. The read side has been built and tested since
+     the learn-page doors -- `deeplink.js::format` even says in its own docstring
+     that it is "the link a copy this moment control emits" -- and nothing ever
+     emitted one. The page never wrote its position anywhere, so a shared link
+     could only be hand-typed off the scoreboard.
+     UNDER THE SCRUBBER, NOT IN THE BUTTON ROW. CHENG: a control in the transport
+     group reads as another transport control. This sits with the thing that SETS
+     the moment, and the confirmation names the moment it copied. -->
+<div class="sharerow"><button class="share" id="share" type="button">Copy a link to this moment</button><span class="sharesaid" id="sharesaid" role="status" aria-live="polite"></span></div>
 <div class="pickrow" role="radiogroup" aria-label="Which metric is on the ice" id="pickrow"><span class="pklab">Watching</span><button class="pk" id="pkNone" data-l="none" role="radio" aria-checked="true"><span class="pkl">Just events</span></button><span class="pksep" aria-hidden="true"></span><button class="pk" id="pkCorsi" data-l="corsi" role="radio" aria-checked="false"><span class="pkl">Attempts</span><span class="pkn" id="n_corsi">0</span></button><button class="pk" id="pkSlot" data-l="slot" role="radio" aria-checked="false"><span class="pkl">Slot</span><span class="pkn" id="n_slot">0</span></button><button class="pk" id="pkBlocked" data-l="blocked" role="radio" aria-checked="false"><span class="pkl">Blocked</span><span class="pkn" id="n_blocked">0</span></button><button class="pk" id="pkGoalie" data-l="goaltending" role="radio" aria-checked="false"><span class="pkl">Goaltending</span><span class="pkn" id="n_goaltending">0</span></button><button class="pk" id="pkWhistle" data-l="whistle" role="radio" aria-checked="false"><span class="pkl">Stoppages</span><span class="pkn" id="n_whistle">0</span></button></div>
 <p class="lcap" id="lcap"></p>
 <!-- ⭐ THE WORK PANEL SITS AFTER THE EXPLANATION, NOT BEFORE THE CONTROLS.
