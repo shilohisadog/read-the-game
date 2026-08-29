@@ -69,7 +69,7 @@ __CSS__</style>
 </div>
 <p class="endnote" id="endnote"></p>
 <p class="atnote" id="atnote"></p>
-<div class="rinkbox"><svg viewBox="0 0 200 85"><g id="rink"></g><g id="netmen"></g><g id="lines"></g><g id="whistles"></g><g id="events"></g><g id="puck"></g><g id="labels"></g><g id="noplace"></g></svg>
+<div class="rinkbox"><svg viewBox="0 0 200 85"><g id="rink"></g><g id="netmen"></g><g id="lines"></g><g id="whistles"></g><g id="cue"></g><g id="events"></g><g id="puck"></g><g id="labels"></g><g id="noplace"></g></svg>
   <!-- THE FIRST STEP, ON THE ICE. Kevin: "we should overlay 'Press Play' onto the
        rink, in rather large lettering, so the first time visitor knows what the
        first step is". It is a CONDITION, not a tip: it is on screen exactly when

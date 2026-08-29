@@ -589,6 +589,55 @@ function drawEndsNote(e){
  const N=ENDS_NOTE[ENDSMODE];
  el.innerHTML=ESC(N.rule)+(N.display?` <span class="disp">${ESC(N.display)}</span>`:'');}
 
+/* ⭐ WHERE TO LOOK NEXT — a five-foot circle on the spot the next event will
+   happen, drawn before it happens.
+   THE PROBLEM IT ANSWERS, in Kevin's words: "when I do next event / prev event
+   I can at least grasp what's happening on the ice, but the continuous event
+   stream tells me nothing." Stepping works because the eye is already braced;
+   streaming does not because every mark lands somewhere on a 200-foot sheet and
+   the eye spends the interval SEARCHING rather than reading. Measured over eight
+   games: the median jump between consecutive marks is 45 ft and the p90 is
+   137 ft, which at a 390px viewport is 220 pixels -- more than half the screen,
+   every fifth frame.
+
+   ⭐ IT USES KNOWLEDGE OF THE NEXT EVENT, AND THAT IS THE WHOLE COST.
+   The standing rule was "foreknowledge may set the pace and choose the clip; it
+   may not point at the ice", and this points at the ice. Kevin spent it
+   deliberately on 2026-08-28, on the argument that we are a teaching product:
+   annotated chess prints the winning line. The spoiler rule is untouched --
+   what is protected is the RESULT, and where to look is structure.
+
+   ⚠️ NO SUPPRESSION ON GOALS, and the reason is not squeamishness. If the
+   circle preceded every event except a goal, then its ABSENCE would announce
+   one -- the same side-channel leak `drawBoxes` refuses when it declines to
+   count a penalty clock down to its true end.
+
+   IT IS GREEN BECAUSE NOTHING ON THE ICE IS. Red and blue are lines, amber is
+   the slot, and the two greys are the clubs; every one of those means something
+   about hockey. This means something about US, so it takes a colour that has no
+   hockey job -- the `display:` provenance category, in paint.
+
+   ⭐ `place()` IS THE ONE READER OF WHERE A MARK GOES, and the circle asks it
+   the same question the mark does. Given its own coordinate arithmetic the two
+   could disagree -- the circle promising a spot the mark then misses -- which is
+   the one failure that would make this worse than nothing. It also inherits
+   `place`'s refusals for free: an unlocated event and a shootout attempt both
+   come back null, and a circle is drawn on neither.
+
+   FIVE FEET, AND THE EDGE IS WHAT MAKES IT LEGIBLE. The first build was a
+   soft-edged 18-to-32-foot gradient -- "its size is its honesty", always wider
+   than a position. Kevin, looking at it: "I can't tell which area the next event
+   is going to be. I just ain't seeing it." A region that can never be mistaken
+   for a position cannot be read as a PLACE either. The ring is drawn with
+   `non-scaling-stroke` so it keeps its weight at 390px, where five feet is nine
+   pixels. */
+const CUE_FT=5;
+function drawCue(i){
+ const el=$('cue');if(!el)return;
+ const pos=place(EV[i+1]);
+ if(!pos){el.innerHTML='';return;}
+ el.innerHTML=`<circle class="cuef" cx="${pos.x.toFixed(1)}" cy="${pos.y.toFixed(1)}" r="${CUE_FT}"/>`
+             +`<circle class="cuer" cx="${pos.x.toFixed(1)}" cy="${pos.y.toFixed(1)}" r="${CUE_FT}"/>`;}
 function render(i,how){
  const moment=how==='play'||how==='jump';
  // `evs` is the PLAYABLE prefix, used to draw the marks on the timeline.
@@ -710,6 +759,7 @@ function render(i,how){
      if(e.type==='goal')parts.push(`<circle class="core ${tk(e)}" data-i="${k}" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="1.15"/>`);
    }}
  $('events').innerHTML=parts.join('');
+ drawCue(i);
  if(whistleOn)drawWhistles(whistle.reduce(upto(i),CTX));
  else{$('whistles').innerHTML='';$('whistlePanel').innerHTML='';}
  // The replay is AT the end, not merely near it. `i` is the frame index and
@@ -1183,7 +1233,20 @@ function renderWork(_,cur,at){
    and EVERY press changes something visible -- which a two-button toggle pair
    without the disable would not have given. The paces are unchanged; see
    docs/event-timing.md for where the three constants come from. */
-const PACE=[2600,1800,1000];let gear=1;
+/* ⭐ HALVED, 2026-08-29. Kevin, watching a replay: "the events populate way too
+   quickly now and don't give the casual viewer a chance to really grasp what's
+   going on... reduce playback by 1/2 or more."
+   THE STRUCTURE IS UNCHANGED AND THAT IS DELIBERATE. Three gears, one constant
+   each, no ranking of events by importance -- §7.2 of docs/event-timing.md
+   argued that tiering encodes an editorial judgement this site refuses, and
+   halving does not reintroduce one. Pacing by DISTANCE was drafted, prototyped
+   and set aside at Kevin's call the same day: "let's make a constant update
+   rate for the events."
+   ⭐ AND CAPTION_BONUS DOES NOT SCALE. It buys reading time for words, and the
+   words are the same length at every gear -- 900 ms of extra reading is 900 ms
+   of extra reading. Doubling it would be a constant tracking another constant
+   for no reason either of them states. */
+const PACE=[5200,3600,2000];let gear=1;
 const CAPTION_BONUS=900;
 let i=EV.length-1,playing=false,timer=null,frameMs=PACE[gear];
 $('scrub').max=EV.length-1;
