@@ -506,7 +506,11 @@ test('the page is parked at its base, and nothing was deleted to get there', () 
  */
 test('every zone below the rink is a disclosure, with a 44px summary', () => {
   const zones = app.match(/<details class="zone [a-z]+"/g) || [];
-  assert.equal(zones.length, 4, `expected four collapsible zones, found ${zones.length}`);
+  // FIVE SINCE 2026-08-29: `zcue` joined them when the next-play ring got its
+  // own control. The number is a tripwire, not a target — it exists so a zone
+  // cannot be added without someone reading the two properties above and
+  // deciding they hold for it.
+  assert.equal(zones.length, 5, `expected five collapsible zones, found ${zones.length}`);
   assert.match(PAGE_CSS, /#rg details\.zone>summary\{[^}]*min-height:44px/,
     'a summary is the only control in a closed zone and it is under the touch floor');
 });

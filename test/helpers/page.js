@@ -109,6 +109,11 @@ export function fakeDom() {
   const GROUPS = {
     '#rg .tbtn': ['off', 'all'].map(t => Object.assign(el(), { dataset: { t } })),
     '#rg .sbtn': ['all', 'even'].map(s => Object.assign(el(), { dataset: { s } })),
+    // The next-play ring. Its buttons carry the real labels, because `syncCue`
+    // copies the pressed one into the drawer's summary — a fake with empty text
+    // would let a summary that says nothing pass as a summary that says what is on.
+    '#rg .cbtn': [['on', 'Show the ring'], ['off', 'No ring']]
+      .map(([c, textContent]) => Object.assign(el(), { dataset: { c }, textContent })),
     '#rg .lrow': ['lyCorsi', 'lyHd', 'lyGoalie', 'lyWhistle', 'lyBlock'].map(id => {
       if (!byId.has(id)) byId.set(id, el());
       return byId.get(id);

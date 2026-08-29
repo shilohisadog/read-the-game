@@ -632,9 +632,17 @@ function drawEndsNote(e){
    `non-scaling-stroke` so it keeps its weight at 390px, where five feet is nine
    pixels. */
 const CUE_FT=5;
+/* ⭐ AND IT CAN BE SWITCHED OFF, WHICH IS A DOCTRINE MATTER RATHER THAN A
+   PREFERENCE ONE. This is the only thing on the site that uses knowledge of
+   what happens next. Having spent that deliberately, the honest complement is
+   letting a viewer decline it: a page whose whole claim is "nothing is invented"
+   has to offer a replay with the one lookahead removed.
+   ON BY DEFAULT, because the novice is who it was built for and the complaint it
+   answers -- "the continuous event stream tells me nothing" -- is theirs. */
+let cueOn=true;
 function drawCue(i){
  const el=$('cue');if(!el)return;
- const pos=place(EV[i+1]);
+ const pos=cueOn?place(EV[i+1]):null;
  if(!pos){el.innerHTML='';return;}
  el.innerHTML=`<circle class="cuef" cx="${pos.x.toFixed(1)}" cy="${pos.y.toFixed(1)}" r="${CUE_FT}"/>`
              +`<circle class="cuer" cx="${pos.x.toFixed(1)}" cy="${pos.y.toFixed(1)}" r="${CUE_FT}"/>`;}
@@ -2216,8 +2224,17 @@ function drawNewcomer(){
  // quoted verbatim, which is what a reader searches for, and a sentence that
  // asserts no position cannot have a stale one at any width. Same rule that
  // stopped this paragraph enumerating the layers.
+ // ⭐ THE GREEN RING IS NAMED HERE BECAUSE THIS IS WHERE A NEWCOMER IS.
+ // The legend under "What the marks mean" defines it and the control switches
+ // it, but both sit behind a summary a first-time visitor has not opened.
+ // Kevin: "we need to identify what the green circle represents somewhere
+ // (obvious, so the viewer knows what they are looking at/for)".
+ // THIS SENTENCE IS THE ONLY ONE OF THE THREE THAT SAYS WHAT TO DO WITH IT --
+ // watch it -- so it is not a third copy of the definition.
  el.innerHTML=`<b>New here?</b> Press <b>▶ Play from start</b> and just watch — every event `
   +`is named as it happens, and goals are called with the <b>scorer and assists</b>. `
+  +`The <b class="ncue">green ring</b> shows you where the next play happens, so you are `
+  +`looking in the right place when it does. `
   +`Nothing is invented: every number here comes from the league's own record of the game.`
   +`<button class="ndone" id="nDone">I have got the hang of it — hide this</button>`;
  const w=$('newcomerWhy');
@@ -2692,6 +2709,21 @@ function syncTrails(){let lab='';
 document.querySelectorAll('#rg .tbtn').forEach(b=>b.addEventListener('click',()=>{
  trails=b.dataset.t;syncTrails();render(i,'');}));
 syncTrails();
+/* THE RING'S CONTROL, IN THE SAME GRAMMAR as trails and situations: two buttons
+   that each NAME A STATE OF THE ICE rather than a switch position, a summary
+   that carries the live setting because the drawer is closed, and a note whose
+   default branch describes what the OTHER choice would do -- the 2026-08-16
+   rule, since a button has to be predictable before the click or it is a dare. */
+function syncCue(){let lab='';
+ document.querySelectorAll('#rg .cbtn').forEach(b=>{const on=(b.dataset.c==='on')===cueOn;
+  b.setAttribute('aria-pressed',on);if(on)lab=b.textContent;});
+ const z=$('zCueOn');if(z)z.textContent=lab.toLowerCase();
+ const n=$('nCue');if(n)n.textContent=cueOn
+  ?'A green ring marks where the next play happens, a moment before it does. It is the one thing on this ice we know because we read ahead — No ring removes it.'
+  :'Nothing is drawn ahead of the play. Show the ring marks the next event’s spot before the play arrives, so your eye is already there.';}
+document.querySelectorAll('#rg .cbtn').forEach(b=>b.addEventListener('click',()=>{
+ cueOn=b.dataset.c==='on';syncCue();render(i,'');}));
+syncCue();
 $('lyHd').addEventListener('click',()=>{hdOn=!hdOn;setHd();});
 function goalieStats(k){return goaltending.reduce(upto(k),CTX).g;}
 function setGoalie(){document.getElementById('rg').classList.toggle('goalie',goalieOn);$('lyGoalie').setAttribute('aria-pressed',goalieOn);lyrState('stGoalie',goalieOn);render(i,'');}

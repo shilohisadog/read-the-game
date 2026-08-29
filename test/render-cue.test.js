@@ -138,6 +138,70 @@ test('the circle takes a colour no hockey fact uses', () => {
   }
 });
 
+test('the ring can be switched off, and switching it off empties the ice', () => {
+  /* ⭐ THIS IS A DOCTRINE CONTROL, NOT A PREFERENCE ONE. The ring is the only
+     thing on the site drawn from knowledge of what happens next, and a page
+     whose claim is "nothing is invented" has to be able to show a replay with
+     that one lookahead removed. A toggle that changed a class but left the
+     circle drawn would satisfy an aria check and fail the promise. */
+  const d = boot();
+  seek(d, 30);
+  assert.notEqual(cuePoint(d), null, 'no ring to switch off at frame 30');
+
+  const btn = c => [...d.document.querySelectorAll('#rg .cbtn')].find(b => b.dataset.c === c);
+  btn('off').click();
+  assert.equal(d.$('cue').innerHTML, '', 'the ring is still on the ice after being switched off');
+  assert.equal(btn('off').getAttribute('aria-pressed'), true, 'the pressed button is not the chosen one');
+
+  btn('on').click();
+  assert.notEqual(cuePoint(d), null, 'the ring did not come back');
+});
+
+test('the closed drawer says which way the ring is set', () => {
+  // A control you cannot see must still be able to say what it is doing --
+  // the rule `zTrailsOn` already follows, for the same reason: the ice must
+  // never carry something with nothing on screen accounting for it.
+  const d = boot();
+  const btn = c => [...d.document.querySelectorAll('#rg .cbtn')].find(b => b.dataset.c === c);
+  const said = () => d.$('zCueOn').textContent;
+  const on = said();
+  assert.ok(on && on.length, 'the drawer summary says nothing about the ring');
+  btn('off').click();
+  assert.notEqual(said(), on, `the summary reads "${said()}" whichever way the ring is set`);
+});
+
+test('the ring is named in the key a viewer can actually see', () => {
+  /* Kevin, 2026-08-29: "we need to identify what the green circle represents
+     somewhere (obvious, so the viewer knows what they are looking at/for)".
+
+     ⚠️ AND THE FIRST ATTEMPT PUT IT SOMEWHERE INVISIBLE. `.zref` — "What the
+     marks mean" — is PARKED (`#rg .zref{display:none}`, §20), so an entry added
+     to its `.areas` list ships in the markup and reaches nobody. What a viewer
+     sees is `capFor('none')`, which harvests the children of `.zref .legend`
+     into the Just events caption under the selector. So the entry has to be a
+     `.legend` child, and this asserts it lands in the RENDERED caption rather
+     than merely in the file. The node suite cannot see `display:none`; this
+     works around that by checking the output of the code that does the moving. */
+  const d = boot();
+  const cap = d.$('lcap').innerHTML;
+  assert.match(cap, /k-cue/, 'the visible key never mentions the ring');
+  assert.match(cap, /next play/i, 'the ring is in the key with no name on it');
+  assert.match(PAGE_CSS, /#rg \.k-cue\{/, 'the swatch has no style, so the key shows a blank');
+});
+
+test('the page names the ring where a newcomer will be, and admits it is ours', () => {
+  /* Three surfaces, and they do three different jobs rather than repeating one:
+     the key NAMES it, the newcomer block says what to DO with it, and the
+     control's note says WHERE IT COMES FROM. That last one is the doctrine
+     sentence — every other thing on that ice is a fact about hockey and this is
+     us reading a line ahead. */
+  const d = boot();
+  assert.match(d.$('newcomer').innerHTML, /green ring/i,
+    'the newcomer block never names the ring');
+  assert.match(d.$('nCue').textContent, /read ahead/i,
+    'the control describes the ring without admitting where it comes from');
+});
+
 test('the group is under the marks, so a mark is never hidden by its own circle', () => {
   // SVG paints in document order. `cue` after `events` would draw the hint on
   // top of the thing it is pointing at.

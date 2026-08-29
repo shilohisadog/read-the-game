@@ -101,6 +101,11 @@ function fakeDom() {
     }),
     '#rg .cc.a .lb': [el()],
     '#rg .cc.h .lb': [el()],
+    // The next-play ring's control. A link never sets it — it is not in the URL
+    // grammar — but `boot` calls `syncCue()` on every page, so a fake that does
+    // not model it fails every deep-link test at boot.
+    '#rg .cbtn': [['on', 'Show the ring'], ['off', 'No ring']]
+      .map(([c, textContent]) => Object.assign(el(), { dataset: { c }, textContent })),
   };
   const document = {
     // `document.body` is part of the document this bundle runs in -- preview

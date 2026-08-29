@@ -232,6 +232,14 @@
    strength is a legibility judgement about a chip, not about the ice. */
 #rg .k-slot{background:var(--hd);opacity:.5;border-radius:3px}
 #rg .k-zone{background:var(--blue);opacity:.42;border-radius:3px}
+/* ⭐ THE SWATCH IS THE MARK. A legend entry that described the ring in words
+   would leave the reader matching a sentence to a shape; a ring in the legend
+   and a ring on the ice need no sentence between them. Same construction as the
+   ring itself -- a faint fill inside a definite edge, which is the pairing that
+   made it legible in the first place. */
+#rg .k-cue{background:color-mix(in srgb,var(--cue) 10%,transparent);
+ box-shadow:0 0 0 1.5px color-mix(in srgb,var(--cue) 50%,transparent);border-radius:50%}
+#rg .ncue{color:var(--cue)}
 #rg .ln{fill:none;stroke-linecap:round}#rg .ln.red{stroke:var(--red);stroke-width:.7;opacity:.42}#rg .ln.blue{stroke:var(--blue);stroke-width:.9;opacity:.42}#rg .ln.thick{stroke-width:1.1;opacity:.52}
 /* PREVIEW: THE FIVE-SECOND TASTE, AND IT IS THE REAL RENDERER.
    The homepage had no motion at all, on a site whose product is animation, so a
