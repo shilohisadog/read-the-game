@@ -80,11 +80,43 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: auto
+          AWS_RETRY_MODE: adaptive
+          AWS_MAX_ATTEMPTS: '10'
         run: |
           mkdir -p ingest
-          aws s3 sync "s3://${BUCKET}/" ingest/ \
-            --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" \
-            --exclude 'extract/*' --exclude 'catalog.json' --no-progress
+          # ⭐ THROTTLING IS THE EXPECTED CONDITION AT THIS SIZE, NOT AN ERROR.
+          # 2026-08-30: two consecutive derives died pulling the archive, on
+          # THREE DIFFERENT OBJECTS -- 1 failure in 18,216 downloads, then 2 --
+          # each a 503 reading "Reduce your rate of simultaneous reads on the
+          # same object". `aws s3 sync` exits 1 if ANY single transfer fails, so
+          # one unlucky object out of eighteen thousand took the whole run down
+          # before derive.py had started.
+          #
+          # ⚠️ AND IT IS NOT THE HOT OBJECT, WHICH I ASSUMED FIRST AND CHECKED.
+          # Content addressing does create one: a single shifts blob is fetched
+          # 202 times because 202 games share its hash. None of the three
+          # failures was that object -- they were singletons -- so this is
+          # ordinary throttling under the default 10-way concurrency and R2's
+          # message is its generic 503 text.
+          #
+          # THREE MEASURES, WEAKEST FIRST: adaptive mode makes the client back
+          # off instead of hammering, more attempts survive a slow bucket, and
+          # fewer simultaneous requests provoke less of it. The retry around the
+          # whole sync is the backstop, and it is cheap because sync is
+          # INCREMENTAL -- a second pass re-fetches only what the first missed.
+          aws configure set default.s3.max_concurrent_requests 4
+          ok=
+          for attempt in 1 2 3; do
+            if aws s3 sync "s3://${BUCKET}/" ingest/ \
+                --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" \
+                --exclude 'extract/*' --exclude 'catalog.json' --no-progress; then ok=1; break; fi
+            echo "::warning::pull attempt $attempt hit a transient R2 error; retrying"
+            sleep $(( attempt * 20 ))
+          done
+          if [ -z "$ok" ]; then
+            echo "::error::the archive could not be pulled in three attempts"
+            exit 1
+          fi
           echo "pulled $(find ingest/raw -name latest.json | wc -l) games, $(du -sh ingest | cut -f1)"
 
       - name: derive everything
