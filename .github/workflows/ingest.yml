@@ -46,6 +46,14 @@ permissions:
 
 env:
   BUCKET: readthegame
+  # ⭐ AT THE JOB, NOT AT A STEP, AND THAT IS THE WHOLE REPAIR.
+  # These were added to the PULL step on 2026-08-30 and the very next run died
+  # on the PUSH step with the identical 503 -- the fix was applied to one of two
+  # surfaces while its own commit message claimed both. Step-level env is an
+  # enumeration, and an enumeration is a list somebody has to remember to extend.
+  # At the job every aws call in it is covered, including the ones not written yet.
+  AWS_RETRY_MODE: adaptive
+  AWS_MAX_ATTEMPTS: '10'
   WINDOW: ${{ inputs.days || '14' }}
 
 jobs:
@@ -76,8 +84,6 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: auto
-          AWS_RETRY_MODE: adaptive
-          AWS_MAX_ATTEMPTS: '10'
         run: |
           mkdir -p ingest
           # ⭐ THROTTLING IS THE EXPECTED CONDITION AT THIS SIZE, NOT AN ERROR.
@@ -254,9 +260,30 @@ jobs:
           # three-pass partition we had to PROVE partitions is a real hazard.
           # A header that is merely conservative on an object nobody reads costs
           # nothing; getting the filters wrong costs the ordering guarantee.
-          sync() { aws s3 sync ingest/ "s3://${BUCKET}/" \
-                     --cache-control no-cache \
-                     --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress "$@"; }
+          # ⭐ THE RETRY LIVES IN THE HELPER, SO ALL THREE ORDERED PASSES GET IT
+          # and none can be forgotten -- which is exactly how the push side was
+          # missed when the pull side was hardened.
+          # ⚠️ IT STILL RETURNS NON-ZERO WHEN IT GIVES UP. `set -e` stopping a
+          # failed pass is what makes "a pointer in the bucket implies its bytes
+          # are in the bucket" a guarantee rather than a hope, so `[ -n "$ok" ]`
+          # is the function's last command on purpose.
+          # ⚠️ AND THE WARNING GOES TO STDERR, because `dry()` parses this
+          # function's STDOUT -- a retry notice on stdout would enter the
+          # partition proof as a filename.
+          aws configure set default.s3.max_concurrent_requests 4
+          sync() {
+            local attempt ok=
+            for attempt in 1 2 3; do
+              if aws s3 sync ingest/ "s3://${BUCKET}/" \
+                   --cache-control no-cache \
+                   --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress "$@"; then
+                ok=1; break
+              fi
+              echo "::warning::sync attempt $attempt hit a transient R2 error; retrying" >&2
+              sleep $(( attempt * 20 ))
+            done
+            [ -n "$ok" ]
+          }
 
           # PROVE THE FILTERS PARTITION BEFORE TRUSTING THEM. The ordering above
           # is only a guarantee if every file lands in exactly one pass: a file
