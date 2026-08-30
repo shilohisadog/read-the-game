@@ -1,7 +1,14 @@
 # Restart frames — what the replay does at a whistle
 
-**Reviewed by CHENG 2026-08-30. §9 carries his rulings, §10 the three
-measurements they forced, §11 the proposal as it now stands. Nothing is built.**
+**Round one reviewed by CHENG 2026-08-30 — §9 his rulings, §10 the three
+measurements they forced, §11 the mechanism that survived.**
+
+**⭐ ROUND TWO IS §13–§14 AND IT IS THE LIVE ONE.** Kevin reframed the question
+from *what is honest to draw* to *what would a novice want to look at*, and the
+answer is a lesson that has been painted on our own ice all year with nothing
+naming it. **§14 carries the recommendations and the six things I want ruled.**
+
+**Nothing is built.**
 
 Kevin, 2026-08-30, after locking in the halved pace: *"now, how to handle the
 faceoffs/restarts, that's the current question."*
@@ -411,34 +418,206 @@ review describes.
 3. **The beat lands on the restart frame** (§6, ruled).
 4. **No pill.** No sentence, so §9.1's grammar condition is satisfied vacuously
    — and it must stay satisfied if copy is ever added.
-5. **One carrier: the mark.** Out of `.excl`, with a `drop` arrival — **quiet**,
-   per §10.2. It is the only candidate that is never absent.
+5. ⛔ **SUPERSEDED BY §13 — one carrier: the *event mark*.** Out of `.excl`, with
+   a `drop` arrival, quiet per §10.2. **§13 replaces it with the painted rink
+   dot, which is strictly better on the same test** — and hands back §10.2's
+   63.5% cost entirely, because the event mark is then never touched.
 
-⚠️ **It rests on one untested claim: that a beat plus a quiet mark reads as
-"play stopped."** Three carriers have now been proposed and two died to
-measurement; the survivor has not been looked at. **That is a pixels question and
-`npm run gates` is blind to it** — so it is a prototype behind a URL flag, looked
-at both widths, exactly as the shading was decided.
+⚠️ **Items 1–4 stand. Only the carrier moved.** Four carriers have now been
+proposed: two died to measurement (§10.1, §10.3), one was superseded (this), and
+the survivor is §13's. **None has been looked at**, which is a pixels question
+`npm run gates` is blind to — so it is a prototype behind a URL flag, at both
+widths, exactly as the shading was decided.
 
 ---
 
-## 12. ⏸ OPEN, and larger than this document — the run-bounded trail
+## 12. ⛔ DECLINED BY KEVIN, 2026-08-30 — the run-bounded trail
 
-CHENG's §9.5 reframed as its own question, because it answers a different
-complaint. Trails today are **one dot** (`off`, the default) or **the whole
-period** / **the whole game**, and the page's own copy admits the binary: *good
-to study, busy to watch.*
+*"Honestly that doesn't interest me much, I don't see what that would teach a
+novice."* Recorded rather than deleted, because the measurements below are the
+reason §13 exists: they are what made him ask the better question.
 
-**A run-bounded trail is the missing middle** — the current sequence, cleared at
-the whistle. It speaks to Kevin's original complaint (*"the continuous event
-stream tells me nothing"*) in a way the beat does not: the beat punctuates the
-stream, this one gives him something to read between the punctuation.
+⭐ **And the decline came with the reframe that redirected the whole thread:**
+*"we took a decidedly data centric approach to looking at whistle stoppages and
+faceoffs, how about we look at things from the novice viewer standpoint?"* Every
+option in §4 through §11 answers *what is honest to draw*. **Nobody had asked
+what a novice would want to look at.** See §13.
 
-**What is already measured:** median 3 frames a run, p75 6, p90 10, and 12% empty
-(§10.3). Three marks is a rush — draw, carry, shot — and it is also thin.
+### The idea, as measured
 
-**Unmeasured and needed before it is specified:** whether a 3–6 mark trail is
-legible at 390px against a rink that already carries painted lines and shading;
-whether it becomes a fourth trails state or replaces the default; and what it
-does to the base view's existing hierarchy, which §10.2 shows is already close to
-half-and-half.
+CHENG's §9.5 reframed as its own question. Trails today are **one dot** (`off`,
+the default) or **the whole period** / **the whole game**, and the page's own copy
+admits the binary: *good to study, busy to watch.* A run-bounded trail is the
+missing middle — the current sequence, cleared at the whistle.
+
+**Measured:** median **3** frames a run, p25 1, p75 6, p90 10, and **12.0%
+empty** (§10.3). Three marks is a rush — draw, carry, shot — and it is also thin.
+
+⚠️ **Not refuted, declined.** The measurement says it is thin, not that it is
+wrong, and it remains the only proposal that spoke to *"the continuous event
+stream tells me nothing"* rather than to the boundary around it.
+
+---
+
+## 13. ⭐ THE NINE DOTS — the second thing put to CHENG
+
+**Kevin's reframe, and it changed the question.** Everything above asks *what is
+honest to draw at a whistle*. He asked instead: **when play stops, what could we
+overlay that a novice would want to look at?**
+
+### 13.1 The ruling that makes it possible
+
+*One narrator, many ledgers* — the rink narrates **now**, retrospection lives
+below it. **At a whistle there is no now.** Play has stopped, so the rink is the
+one surface that is genuinely free at exactly the moment we want to use it, and
+putting something on it competes with nothing.
+
+That is a new application of a standing rule rather than a new rule, and it is
+what makes any overlay at a restart admissible at all.
+
+### 13.2 The finding: nine, and they are already on the ice
+
+**3,341 of 3,341 draws in these 60 games land on one of nine coordinates —
+100.00%, zero exceptions.**
+
+| spot | share |
+|---|---|
+| centre `(0,0)` | 20.1% |
+| four end-zone spots `(±69,±22)` | **69.0%** |
+| four neutral spots `(±20,±22)` | 10.7% |
+
+⭐ **And `app.js:333` already carries the measurement**: *"Every faceoff in the
+archive happens at one of nine coordinates: 2,134 draws across 39 games… land on
+these nine and on nothing else."* Independent sample, independent code, same
+answer — 68.6/19.5/11.9 against 69.0/20.1/10.7.
+
+⭐ **All nine are already painted** (`app.js:353–364`), and that comment opens
+with *"AND THE SPOTS ARE NOT DECORATION."* **The argument for their importance
+was written, and then they were used only as a backdrop for the whistle layer's
+rings.** The lesson has been on the ice the whole time with nothing naming it.
+
+**Why it is the right novice lesson:** a viewer has watched a hundred games and
+never registered it; once seen it is seen forever, on any rink, without us; and
+it is **checkable by counting**, which is worth a great deal on a site whose
+argument is checkability. It carries **no base rate, no percentage, and no claim
+about why play stopped** — so it inherits none of §3.1.
+
+### 13.3 The design
+
+**Once per session — the lesson.** All nine lift, with one sentence naming what
+they are. Fired at the **first restart after play starts**, so a visitor arriving
+on a shared `?at=3-11:09` link still gets it; a period-1 trigger would silently
+deny it to everyone who arrives by link.
+
+**Every restart after — the residue.** The dot the draw is on lifts. Not all
+nine, per Kevin: *"we know where the faceoff is going to be."*
+
+⭐ **The two halves are one system: the lesson teaches the nine places, and
+thereafter the place you learned about lights up whenever play restarts there.**
+The residue only means something because of the lesson.
+
+### 13.4 ⭐ The carrier changes, and it is strictly better
+
+**§11.5 said the event mark. It should be the painted `.fdot`.** Both land on the
+same coordinate, so this is a choice, not an addition — brightening both is mud.
+
+1. **Only one is what the lesson is about.** Lighting the painted place is the
+   residue of the sentence; lighting the event mark is a brighter grey dot that
+   means nothing to a viewer who was never told.
+2. **It is the only carrier that is never absent.** That test killed the clock
+   (10%, §10.1) and the run-reset (12% empty, §10.3). Rink geometry is present on
+   every frame of every game **by construction**.
+3. ⭐ **It hands back §10.2's cost entirely.** Giving the event mark a `drop` took
+   distinct arrivals from 46.4% to **63.5%**, making loud the majority. Touching
+   only the paint makes that cost **zero** — faceoffs stay at 20%, and the
+   hierarchy `.excl` exists to protect is untouched. **CHENG's competition worry
+   evaporates rather than being argued down.**
+4. **The beat is unchanged.** `carriesABeat()` still fires on the restart frame;
+   only the element carrying it moved.
+
+### 13.5 Icing — measured, and the one whistle we can name
+
+| | |
+|---|---|
+| restart dots carrying an icing | **469** — 18.7% of restarts, second only to the goalie freeze |
+| icings restarting at an **end-zone** dot | **469 of 469 — 100.00%** |
+| icing dots also carrying **another** whistle | **1 of 469 — 0.21%**, against 3.2% overall |
+
+The 100% independently reproduces the whistle layer's own *"2,019 of 2,019 icings
+across 240 games restart at an end-zone dot."*
+
+⭐ **And icing passes §9.1's test outright.** *"An icing was called here"* is an
+**at-least-one** claim — true on **469 of 469** — not a *this-one* claim. What is
+forbidden is the grammar that implies a sole cause. So icing is nameable in the
+base view under a rule already agreed, and it is the rule a novice has heard
+shouted a hundred times and never had explained.
+
+⚠️ **Who iced it stays unasserted**, exactly as the layer already has it: state
+Rule 81, state the recorded dot, let the reader connect them.
+
+### 13.6 What the zone-value sentence would cost, and a trap in it
+
+⚠️ **`faceoffZone` buckets by `zoneOf(e.x, dir)` where the direction is THE
+WINNER'S.** So 2.395× means *draws **won** in the winner's attacking zone* —
+winner's attempts over loser's in the run that follows. **At a restart we do not
+know who wins**, so *"a draw here is worth 2.4×"* is false. The verb is
+load-bearing.
+
+The `endZone` control says it more precisely still: **being in the attacking end
+is worth 1.163; winning the draw there adds 0.52 on top.**
+
+⚠️ **And icing draws are 100% end-zone draws**, so this lesson and §13.5 land on
+the same dot. `docs/one-measure.md` forbids combining them — *one measure per
+screen, never two wearing one label.*
+
+### 13.7 Declined, and by whom
+
+- **The run-bounded trail** — Kevin, §12.
+- **Drawing the rule that was broken** (the blue line for an offside, the red for
+  icing). It looks like the obvious win and is not: **drawing the line is naming
+  the whistle**, so it inherits §3.1's selection defect wholesale.
+- **The run just ended, redrawn at the whistle** — the same declined trail in a
+  costume.
+- **Who was on the ice at a goal** — §4.3, refused on measurement.
+
+---
+
+## 14. Recommendations, and what I want ruled
+
+**Recommended:**
+
+1. **Ship the nine dots as the once-per-session lesson**, triggered on the first
+   restart after play starts. Structure before meaning.
+2. **Make the painted `.fdot` the every-restart residue and §11's carrier**,
+   replacing the event mark (§13.4).
+3. **Keep the zone-value sentence out of it** for now. The nine dots is a
+   complete lesson and does not need a statistic to justify it; adding one buys a
+   second measure on one screen.
+4. **Hold icing as the second moment**, specified but not built, so we learn from
+   one teaching overlay before adding a second.
+
+**What I want ruled:**
+
+1. **Does §13.1 hold?** *At a whistle there is no now, so the rink is free.* It
+   is the load-bearing claim and it is one sentence of reasoning against a rule
+   that has held all year. If it is wrong, §13 collapses.
+2. **All nine once, or never all nine?** Kevin's instinct is to elevate only the
+   upcoming dot. Mine is that a lesson about a **set** requires seeing the set,
+   and a ring on one dot teaches nothing the mark did not already say. Is the
+   once-only showing enough for the lesson to land, or is it too quick?
+3. **Is a session-scoped trigger honest?** Every other rule here is a property of
+   the game; *"first restart you personally saw"* is a property of the visit. Is
+   that a different kind of thing, and does it matter?
+4. **§13.4 — does the paint really beat the mark?** I argue it is better on the
+   absence test, on meaning, and on density. The counter I can see: rink paint is
+   *background*, and a viewer may never notice a background element brightening,
+   in which case the beat has no visible cause and we are back to §10.1's
+   problem.
+5. **Is a once-per-session moment a tier?** §3.2 refuses editorial ranking of
+   events. This ranks one restart above 43 others — on recency of the *viewer*,
+   not on anything about the play. Does that escape §3.2 or violate it?
+6. **What is missing this time?** The previous round's honest summary was *found
+   a gap, talked myself out of the two obvious fixes, kept the third.* This round
+   is *a carrier went looking for content and Kevin supplied the question that
+   found it* — which is a better shape, and is still one person's idea with one
+   reviewer.
