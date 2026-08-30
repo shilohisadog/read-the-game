@@ -57,6 +57,13 @@ const TIER = [
   // CAUGHT BY THIS TEST, third time — the tier goes stale in the same edit that
   // changes the graph, every time.
   'layers/whistle.js',
+  // census.js joined when the archive was asked four questions it had never been
+  // asked: what a faceoff win is worth by zone, what winning it adds once the
+  // zone is held constant, whether a draw is worth more on a power play, and
+  // whether hits run inverse to having the puck. CAUGHT BY THIS TEST, fifth
+  // time — the tier goes stale in the same edit that changes the graph, every
+  // time, and that is the whole argument for naming it rather than globbing it.
+  'census.js',
 ];
 
 test('the analysis tier runs outside a browser', () => {

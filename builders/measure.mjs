@@ -32,6 +32,7 @@ import { whistle } from '../src/lib/layers/whistle.js';
 import { shootingTeam, SHOT_TYPES } from '../src/lib/attribution.js';
 import { inScope, summarise } from '../src/lib/archive.js';
 import { teamSeasons } from '../src/lib/team-season.js';
+import { censusGame, censusAdd, censusRates } from '../src/lib/census.js';
 import { TEAMS } from '../src/lib/teams.js';
 
 /**
@@ -221,6 +222,16 @@ export function measureAll(dir) {
   const records = [];
   const skipped = [];
   const drawFirst = [];
+  /* ⭐ THE CENSUS, ACCUMULATED IN INTEGERS ACROSS THE WHOLE ARCHIVE.
+     Four claims are waiting on it, all of them currently measured on eight games
+     or fewer and none of them publishable: what a faceoff win is worth by zone,
+     what winning it adds once the zone is held constant, whether a draw is worth
+     more on a power play, and whether hits run inverse to having the puck.
+     IT RIDES THE SAME WALK. The extracts are already being read and parsed here;
+     a second pass would be a second answer to "which games count" and half an
+     hour of I/O for nothing. `inScope` gates it exactly as it gates the records,
+     so no preseason or Olympic game reaches a published rate. */
+  const census = {};
   /* EVERY CLUB THE ARCHIVE CONTAINS, so the one table nobody derives can be
      checked against it HERE rather than against a hand-pinned list in a unit
      test. teams.js claims "the next relocation or expansion team fails loudly
@@ -248,8 +259,14 @@ export function measureAll(dir) {
     if (!inScope(g.game.id)) continue;
     if (!g.quoted) { skipped.push(g.game.id); continue; }
     records.push(measureGame(g));
+    censusAdd(census, censusGame(g.events, {
+      roster: g.roster,
+      homeId: g.teams.home.id, awayId: g.teams.away.id,
+      homeAb: g.teams.home.ab, awayAb: g.teams.away.ab,
+    }));
   }
-  return { records, skipped, drawFirst, unnamedClubs: [...clubs].filter(ab => !TEAMS[ab]).sort() };
+  return { records, skipped, drawFirst, census,
+           unnamedClubs: [...clubs].filter(ab => !TEAMS[ab]).sort() };
 }
 
 /** JSON with object keys sorted, so the file is a function of its input alone. */
@@ -270,8 +287,12 @@ function main(argv) {
     console.error(`::error::no extracts at ${dir} — nothing to measure`);
     process.exit(1);
   }
-  const { records, skipped, drawFirst, unnamedClubs } = measureAll(dir);
-  const doc = { ...summarise(records), measured: records.length };
+  const { records, skipped, drawFirst, census, unnamedClubs } = measureAll(dir);
+  /* THE DIVISION HAPPENS ONCE, HERE, on the finished totals. Every tally that
+     reached this point is an integer, so the archive folds in exactly and no
+     game is weighted by how many events it happened to contain. */
+  const doc = { ...summarise(records), measured: records.length,
+                census: censusRates(census) };
   // NO TIMESTAMP, and KEYS SORTED. Same extracts in, same bytes out, so any diff
   // on a re-run is a real change of opinion or of data — the same property
   // catalog.json holds through `sort_keys=True`. Freshness is index.json's job.
@@ -305,6 +326,18 @@ function main(argv) {
     unnamedClubs,
     archive: Object.fromEntries(Object.entries(teams.archive).map(([k, v]) =>
       [k, v.rate == null ? null : `${(v.rate * 100).toFixed(2)}% of ${v.n}`])),
+    /* PRINTED, because a number nobody reads is a number nobody checks. These
+       are the four claims the census exists to settle, in the run's own log. */
+    census: {
+      draw: `zone worth ${doc.census.endZone.zoneWorth} attempts, winning it adds `
+          + `${doc.census.endZone.winningWorth} (n=${doc.census.endZone.n})`,
+      drawOnPP: `${doc.census.drawStrength.pp.ratio}x on the power play vs `
+          + `${doc.census.drawStrength.even.ratio}x at even strength`,
+      goalsPer60: `even ${doc.census.state.even.per60}, power play ${doc.census.state.pp.per60}`,
+      hits: `r=${doc.census.hits.r}, opposite in ${doc.census.hits.opposite} of games`,
+      unreadableStrength: `${doc.census.state.unknown.minutes} min of play whose `
+          + `situation code strength.js does not know`,
+    },
   }, null, 2));
   // LOUD, because a silent change here is a wrong landing on every teaching
   // link into the affected game rather than a missing number.
