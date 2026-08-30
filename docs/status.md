@@ -354,6 +354,64 @@ drawn at 20% opacity. The ring often points at a spot where almost nothing
 appears, and that is a candidate for *why the stream reads as nothing*
 independent of anticipation. Kevin's call.
 
+## A4. The lens taxonomy and the measurement page — Kevin, 2026-08-30
+
+Written down because he asked for it to be, mid-brainstorm: *"gotta remember the
+measurement page, where we'll tie all the data pieces together into a consistent
+story for that particular game."*
+
+### A4.1 ⭐ FLAT, AND THAT IS A RULING
+
+Kevin: *"I prefer a flatter taxonomy... I think that puts yet another decision in
+front of the user that we may (or may not) want to surface."*
+
+**It kills two proposals at once**, and both were mine or CHENG's rather than his:
+a family layer (*Shots / Restarts / Battles*) and **CHENG's "Slot and Blocked
+become refinements inside Attempts"** — which is the same extra decision wearing
+different clothes. Grouping helps a reader who knows the vocabulary and needs to
+navigate; it taxes a reader who is browsing and does not. **The novice is the
+second reader**, so a family gate makes them choose a category before they can
+see what is in it.
+
+⚠️ **WHAT FLAT COSTS, MEASURED**: eleven chips at 390px is **6 rows and 320px** —
+against an ice height of 164px. That is the trade, and it is real.
+
+**THE RECONCILIATION: grouping may survive as TYPOGRAPHY, never as navigation.**
+A quiet label above a run of chips is something a reader scans past; a collapsed
+group is a decision. The structure can still teach without ever gating anything.
+
+⚠️ **AND THREE DENSER ARRANGEMENTS WERE TRIED AND NONE APPLIED** — the overrides
+lost the cascade, the same trap as the U11 session (`#rg .pk` is out-specified).
+So one number here is solid (11 chips = 6 rows) and the alternatives are
+**untested, not rejected**.
+
+### A4.2 ⭐ NOT EVERY LENS NEEDS A CHIP — the measurement page is the other home
+
+The strongest idea to come out of the density argument, and it is Kevin's own
+thought doing the work. A lens has two possible jobs: **a control on the rink**,
+and **a sentence in this game's story**. They do not have to be the same surface.
+
+A data piece that would make a poor toggle — too rare to watch for, or a
+condition rather than an event — can still be a paragraph on the measurement
+page. **That relieves the chip density without adding a decision anywhere**,
+which is the thing neither grouping nor a bigger container could do.
+
+**WHAT ALREADY EXISTS TOWARD IT**, so this is not a green field:
+- **the verdict card's season summary** (shipped 2026-08-28, §36) is its seed —
+  *"156 shot attempts — higher than all 200 games this season. Every count here
+  sat outside the middle half."*
+- **`docs/game-sentence.md`** — the thinking behind that sentence, including the
+  "nothing was unusual is a real population" argument.
+- **`docs/one-measure.md`** — the consistency rule the page must obey: *"they
+  need to be the same measure"*, one measure per screen, never two wearing one
+  label.
+- **`perGame` distributions** in `src/lib/archive.js`, already built and scoped
+  per season.
+
+⏸ **NOT SPECIFIED AND NOT STARTED.** It is the natural destination for every
+lens under discussion, which is also an argument for building the census first:
+the page is only worth as much as the numbers it can quote.
+
 ## B. Decisions waiting on Kevin — nothing is being built
 
 | id | decision | state | what it needs |
