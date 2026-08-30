@@ -500,6 +500,48 @@
    nothing is worse than no control; the row is laid out so it has somewhere to
    go that does not move anything else. */
 #rg{--lboxh:120px;--rinkpad:10px}
+/* ⭐ U11 — THE RINK GOES EDGE TO EDGE ON A PHONE, AND THE SECOND KNOB EXISTS
+   AFTER ALL.
+   Kevin, 2026-08-28: "the first thing that jumps out is how large the scoreboard
+   is relative to the rink... reduce the scoreboard size and/or increase the
+   vertical height of the rink (without increasing the width)."
+
+   ⚠️ THE ENTRY IN docs/status.md SAID THE SECOND HALF WAS IMPOSSIBLE, AND IT WAS
+   WRONG. Its argument: the ice is locked at 2.3529:1, the rink already fills the
+   width, so height follows width and nothing else — "every fix is a scoreboard
+   fix." The first two clauses are true and the third does not follow, because
+   the rink was NOT filling the width. Measured at 390: `#rg` pads 15.6px a side
+   (`clamp(12px,4vw,22px)`), `.wrap` another 8, the card's border 1 and its
+   `--rinkpad` 10 — 69.2px of chrome, 17.7% of the viewport, spent on margins
+   around the one thing the page exists to show.
+
+   WHAT IT BUYS, measured: the ice goes 320.8x136.3 -> 386x164 at 390, and
+   293.2x124.6 -> 356x151 at 360. That is +28px of HOCKEY, and it costs no
+   content anywhere — the alternative levers all wanted to delete something.
+
+   THE BORDER AND THE RADIUS GO WITH IT. A card edge that runs off the screen
+   reads as a rendering fault rather than as a decision; a full-width band reads
+   as deliberate. Two pixels of padding remain either side so the boards are not
+   flush against the glass.
+
+   ⭐ AND IT LEAVES THE PENALTY SEAT ALONE, which is the point. The seat reserves
+   31px on every frame BECAUSE Kevin asked for it on 2026-08-27 — "the scoreboard
+   adjusts heights when the penalty is being displayed, that shouldn't happen" —
+   and every board-shrinking route worth 40px ran straight back through it. The
+   one that did not was the rink. */
+@media(max-width:520px){
+ #rg:not(.preview) .rinkbox{
+   margin-inline:calc(-1 * (clamp(12px,4vw,22px) + 8px));
+   border-radius:0;border-left-width:0;border-right-width:0;
+   padding-left:2px;padding-right:2px}
+ /* AND THE SCORE STOPS IGNORING THE FRAME. 2.2rem is a constant, and a constant
+    is exactly the mechanism U11 diagnosed: `rem` does not care how wide the
+    screen is, so the board held 160.6px at 360, 390 and 430 alike while the ice
+    shrank underneath it. `clamp` gives the type the same relationship to the
+    viewport that the rink already has, and the 2.2rem ceiling means no width
+    that reads well today changes at all. */
+ #rg:not(.preview) .board .sc{font-size:clamp(1.6rem,5.4vw,2.2rem)}
+}
 #rg .lbox{display:grid;grid-template-columns:1fr auto 1fr;grid-template-rows:auto auto auto;
  align-items:baseline;gap:2px 10px;height:var(--lboxh);box-sizing:border-box;
  margin-top:8px;padding:6px 4px 0;border-top:1px solid var(--edge)}
