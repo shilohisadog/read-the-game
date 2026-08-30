@@ -624,13 +624,13 @@ function drawEndsNote(e){
    `place`'s refusals for free: an unlocated event and a shootout attempt both
    come back null, and a circle is drawn on neither.
 
-   FIVE FEET, AND THE EDGE IS WHAT MAKES IT LEGIBLE. The first build was a
-   soft-edged 18-to-32-foot gradient -- "its size is its honesty", always wider
-   than a position. Kevin, looking at it: "I can't tell which area the next event
-   is going to be. I just ain't seeing it." A region that can never be mistaken
-   for a position cannot be read as a PLACE either. The ring is drawn with
-   `non-scaling-stroke` so it keeps its weight at 390px, where five feet is nine
-   pixels. */
+   FIVE FEET, SHADED, AND NOT OUTLINED. The first build was a soft-edged
+   18-to-32-foot gradient -- "its size is its honesty", always wider than a
+   position. Kevin, looking at it: "I can't tell which area the next event is
+   going to be. I just ain't seeing it." A region that can never be mistaken for
+   a position cannot be read as a PLACE either, and the fix was the SIZE. A
+   stroke was added at the same time and outlived its reason; see the note in
+   src/app.css, where the edge is argued off on doctrine rather than on taste. */
 const CUE_FT=5;
 /* ⭐ AND IT CAN BE SWITCHED OFF, WHICH IS A DOCTRINE MATTER RATHER THAN A
    PREFERENCE ONE. This is the only thing on the site that uses knowledge of
@@ -644,8 +644,7 @@ function drawCue(i){
  const el=$('cue');if(!el)return;
  const pos=cueOn?place(EV[i+1]):null;
  if(!pos){el.innerHTML='';return;}
- el.innerHTML=`<circle class="cuef" cx="${pos.x.toFixed(1)}" cy="${pos.y.toFixed(1)}" r="${CUE_FT}"/>`
-             +`<circle class="cuer" cx="${pos.x.toFixed(1)}" cy="${pos.y.toFixed(1)}" r="${CUE_FT}"/>`;}
+ el.innerHTML=`<circle class="cuef" cx="${pos.x.toFixed(1)}" cy="${pos.y.toFixed(1)}" r="${CUE_FT}"/>`;}
 function render(i,how){
  const moment=how==='play'||how==='jump';
  // `evs` is the PLAYABLE prefix, used to draw the marks on the timeline.
@@ -2233,7 +2232,7 @@ function drawNewcomer(){
  // watch it -- so it is not a third copy of the definition.
  el.innerHTML=`<b>New here?</b> Press <b>▶ Play from start</b> and just watch — every event `
   +`is named as it happens, and goals are called with the <b>scorer and assists</b>. `
-  +`The <b class="ncue">green ring</b> shows you where the next play happens, so you are `
+  +`The <b class="ncue">green shading</b> shows you where the next play happens, so you are `
   +`looking in the right place when it does. `
   +`Nothing is invented: every number here comes from the league's own record of the game.`
   +`<button class="ndone" id="nDone">I have got the hang of it — hide this</button>`;
@@ -2719,8 +2718,8 @@ function syncCue(){let lab='';
   b.setAttribute('aria-pressed',on);if(on)lab=b.textContent;});
  const z=$('zCueOn');if(z)z.textContent=lab.toLowerCase();
  const n=$('nCue');if(n)n.textContent=cueOn
-  ?'A green ring marks where the next play happens, a moment before it does. It is the one thing on this ice we know because we read ahead — No ring removes it.'
-  :'Nothing is drawn ahead of the play. Show the ring marks the next event’s spot before the play arrives, so your eye is already there.';}
+  ?'A patch of green shades where the next play happens, a moment before it does. It is the one thing on this ice we know because we read ahead — No shading removes it.'
+  :'Nothing is drawn ahead of the play. Show the shading marks the next event’s spot before the play arrives, so your eye is already there.';}
 document.querySelectorAll('#rg .cbtn').forEach(b=>b.addEventListener('click',()=>{
  cueOn=b.dataset.c==='on';syncCue();render(i,'');}));
 syncCue();

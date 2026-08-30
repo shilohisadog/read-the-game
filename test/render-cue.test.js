@@ -109,19 +109,44 @@ test('a goal is not suppressed — the circle precedes it like anything else', (
   }
 });
 
-test('the circle carries an edge, and the edge holds its width on a phone', () => {
-  /* A FILL ALONE IS A SMUDGE WITH NO LOCATION, which is exactly how the first
-     version failed in front of Kevin: "I can't tell which area the next event is
-     going to be." The ring is what makes it a place.
-     `non-scaling-stroke` is load-bearing rather than tidy: the rink is 200 units
-     wide at every screen size, so a stroke in user units thins with the viewport
-     — and 390px is the one place where five feet is nine pixels across and the
-     ring is all there is to see. The node suite cannot see a pixel, so this
-     asserts the declaration that makes the pixel possible. */
-  assert.match(PAGE_CSS, /#rg \.cuer\{[^}]*vector-effect:non-scaling-stroke/,
-    'the ring scales with the rink again — it thins to nothing on a phone');
-  assert.match(PAGE_CSS, /#rg \.cuef\{[^}]*opacity:\.1/,
-    'the fill is no longer faint');
+test('the shading carries no outline, like every other tint on this ice', () => {
+  /* Kevin, 2026-08-30: "why does the next event have a ring around it, why not
+     just a shadowed area? ... Neither the slot nor the blue line highlights have
+     outlines."
+
+     ⭐ THE CLAIM IS A RELATIONSHIP, NOT A STYLE. The event is a POINT; five feet
+     is a target size chosen for the eye. A stroke drew a boundary that means
+     nothing, in the language this rink keeps for boundaries that do — and the
+     slot and blue-line bands, whose edges ARE their rules, are unstroked. So the
+     assertion is made against THEM rather than against a remembered value: if
+     the furniture ever gains an outline this stops being the right answer, and
+     this test should be re-argued rather than quietly updated. */
+  assert.doesNotMatch(PAGE_CSS, /#rg \.cuef\{[^}]*stroke/,
+    'the shading is stroked again — it is asserting a boundary it does not have');
+  assert.doesNotMatch(PAGE_CSS, /#rg \.cuer\{/,
+    'the separate outline shape is back');
+  for (const [sel, what] of [['slotzone', 'the slot'], ['zoneband', 'the blue-line band']]) {
+    const m = new RegExp('#rg \\.' + sel + '\\{([^}]*)\\}').exec(PAGE_CSS);
+    assert.ok(m, `${what} is gone, so the comparison this test rests on is gone too`);
+    assert.doesNotMatch(m[1], /stroke/,
+      `${what} has gained an outline — the shading's argument for having none needs re-making`);
+  }
+});
+
+test('the shading is opaque enough to carry itself without an edge', () => {
+  // .10 was a fill UNDER an outline; alone it is invisible, which is how the
+  // very first version failed. The slot runs .09 over a huge area and five feet
+  // needs more than that. The floor here is the slot's own value: whatever the
+  // number becomes, a five-foot disc may never be fainter than the largest tint
+  // on the ice.
+  const cue = /#rg \.cuef\{[^}]*opacity:\.(\d+)\}/.exec(PAGE_CSS);
+  assert.ok(cue, 'the shading has no opacity of its own');
+  const slot = /#rg \.slotzone\{[^}]*opacity:\.(\d+)\}/.exec(PAGE_CSS);
+  assert.ok(slot, 'the slot tint is gone');
+  const val = s => parseFloat('.' + s);
+  assert.ok(val(cue[1]) > val(slot[1]),
+    `the shading is .${cue[1]} against the slot's .${slot[1]} — a five-foot disc ` +
+    `cannot be fainter than a region twenty times its size and still be seen`);
 });
 
 test('the circle takes a colour no hockey fact uses', () => {
@@ -138,7 +163,7 @@ test('the circle takes a colour no hockey fact uses', () => {
   }
 });
 
-test('the ring can be switched off, and switching it off empties the ice', () => {
+test('the shading can be switched off, and switching it off empties the ice', () => {
   /* ⭐ THIS IS A DOCTRINE CONTROL, NOT A PREFERENCE ONE. The ring is the only
      thing on the site drawn from knowledge of what happens next, and a page
      whose claim is "nothing is invented" has to be able to show a replay with
@@ -157,7 +182,7 @@ test('the ring can be switched off, and switching it off empties the ice', () =>
   assert.notEqual(cuePoint(d), null, 'the ring did not come back');
 });
 
-test('the closed drawer says which way the ring is set', () => {
+test('the closed drawer says which way the shading is set', () => {
   // A control you cannot see must still be able to say what it is doing --
   // the rule `zTrailsOn` already follows, for the same reason: the ice must
   // never carry something with nothing on screen accounting for it.
@@ -170,7 +195,7 @@ test('the closed drawer says which way the ring is set', () => {
   assert.notEqual(said(), on, `the summary reads "${said()}" whichever way the ring is set`);
 });
 
-test('the ring is named in the key a viewer can actually see', () => {
+test('the shading is named in the key a viewer can actually see', () => {
   /* Kevin, 2026-08-29: "we need to identify what the green circle represents
      somewhere (obvious, so the viewer knows what they are looking at/for)".
 
@@ -189,15 +214,15 @@ test('the ring is named in the key a viewer can actually see', () => {
   assert.match(PAGE_CSS, /#rg \.k-cue\{/, 'the swatch has no style, so the key shows a blank');
 });
 
-test('the page names the ring where a newcomer will be, and admits it is ours', () => {
+test('the page names the shading where a newcomer will be, and admits it is ours', () => {
   /* Three surfaces, and they do three different jobs rather than repeating one:
      the key NAMES it, the newcomer block says what to DO with it, and the
      control's note says WHERE IT COMES FROM. That last one is the doctrine
      sentence — every other thing on that ice is a fact about hockey and this is
      us reading a line ahead. */
   const d = boot();
-  assert.match(d.$('newcomer').innerHTML, /green ring/i,
-    'the newcomer block never names the ring');
+  assert.match(d.$('newcomer').innerHTML, /green shading/i,
+    'the newcomer block never names the shading');
   assert.match(d.$('nCue').textContent, /read ahead/i,
     'the control describes the ring without admitting where it comes from');
 });

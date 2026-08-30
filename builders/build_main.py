@@ -155,7 +155,7 @@ __CSS__</style>
 <div class="area"><span class="lmk"><i class="k-slot"></i></span><span class="ltx"><b>The slot</b><span class="lds">The shaded area at each end — within 33 ft of the net, between the face-off dots.<span class="asay" id="slotSay"></span></span></span></div>
 <div class="area"><span class="lmk"><i class="k-zone"></i></span><span class="ltx"><b>Either blue line</b><span class="lds">The shaded strip at each blue line, reaching out to the neutral-zone dots. No attacker may cross it ahead of the puck — that is offside, <span class="src">NHL Rule 83</span>.<span class="lim">We count nothing here. Holding the line leaves no event in the record, so the feed is silent about the thing that makes it matter.</span></span></span></div>
 </div>
-<div class="legend"><span><i class="k-cue"></i><span class="kn">next play — ringed before it happens</span></span><span><i class="k-h"></i><span class="kn">home shot</span></span><span><i class="k-a"></i><span class="kn">visitor shot — white, like the sweaters</span></span><span><i class="k-p"></i><span class="kn">puck — jumps between real events</span></span><span><i class="k-g"></i><i class="k-gv"></i><span class="kn">goal — either sweater</span></span><span><i class="k-blk"></i><i class="k-blkv"></i><span class="kn">blocked — ringed where the puck was <b>stopped</b></span></span></div>
+<div class="legend"><span><i class="k-cue"></i><span class="kn">next play — shaded before it happens</span></span><span><i class="k-h"></i><span class="kn">home shot</span></span><span><i class="k-a"></i><span class="kn">visitor shot — white, like the sweaters</span></span><span><i class="k-p"></i><span class="kn">puck — jumps between real events</span></span><span><i class="k-g"></i><i class="k-gv"></i><span class="kn">goal — either sweater</span></span><span><i class="k-blk"></i><i class="k-blkv"></i><span class="kn">blocked — ringed where the puck was <b>stopped</b></span></span></div>
 </details>
 <p class="disclose lkey lk-ends" id="endsKey"></p>
 <p class="disclose lkey lk-unrec" id="unrecKey"></p>
@@ -165,7 +165,7 @@ __CSS__</style>
 <span class="fnote" id="nTrails"></span></div>
 </details>
 <details class="zone zcue"><summary class="zh">The next play<span class="zon" id="zCueOn"></span></summary>
-<div class="figpick"><div class="grp" role="group" aria-label="Whether the next play is marked before it happens"><button class="lyr cbtn" data-c="on" aria-pressed="true">Show the ring</button><button class="lyr cbtn" data-c="off" aria-pressed="false">No ring</button></div>
+<div class="figpick"><div class="grp" role="group" aria-label="Whether the next play is marked before it happens"><button class="lyr cbtn" data-c="on" aria-pressed="true">Show the shading</button><button class="lyr cbtn" data-c="off" aria-pressed="false">No shading</button></div>
 <span class="fnote" id="nCue"></span></div>
 </details>
 <details class="zone znext"><summary class="zh">Other games</summary>

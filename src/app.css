@@ -233,12 +233,11 @@
 #rg .k-slot{background:var(--hd);opacity:.5;border-radius:3px}
 #rg .k-zone{background:var(--blue);opacity:.42;border-radius:3px}
 /* ⭐ THE SWATCH IS THE MARK. A legend entry that described the ring in words
-   would leave the reader matching a sentence to a shape; a ring in the legend
-   and a ring on the ice need no sentence between them. Same construction as the
-   ring itself -- a faint fill inside a definite edge, which is the pairing that
-   made it legible in the first place. */
-#rg .k-cue{background:color-mix(in srgb,var(--cue) 10%,transparent);
- box-shadow:0 0 0 1.5px color-mix(in srgb,var(--cue) 50%,transparent);border-radius:50%}
+   would leave the reader matching a sentence to a shape; the same shading in the
+   legend and on the ice needs no sentence between them. Same construction as the
+   mark itself -- one flat tint at one opacity, and no outline, because the
+   thing it stands for has none. */
+#rg .k-cue{background:color-mix(in srgb,var(--cue) 22%,transparent);border-radius:50%}
 #rg .ncue{color:var(--cue)}
 #rg .ln{fill:none;stroke-linecap:round}#rg .ln.red{stroke:var(--red);stroke-width:.7;opacity:.42}#rg .ln.blue{stroke:var(--blue);stroke-width:.9;opacity:.42}#rg .ln.thick{stroke-width:1.1;opacity:.52}
 /* PREVIEW: THE FIVE-SECOND TASTE, AND IT IS THE REAL RENDERER.
@@ -408,18 +407,55 @@
 #rg .excl{fill:var(--muted);opacity:.2}
 /* ⭐ WHERE TO LOOK NEXT. See `drawCue` in src/app.js for what it claims and what
    it costs; this is only how faint it is allowed to be.
-   TWO SHAPES, AND THE RING IS THE ONE DOING THE WORK. A fill on its own is a
-   smudge with no location -- that is exactly how the first version failed. The
-   ring gives it an edge, so it reads as a PLACE rather than a haze.
-   ⭐ `non-scaling-stroke` HOLDS THE RING AT A CONSTANT DEVICE WIDTH. The rink
-   is 200 units wide however wide the screen is, so a stroke in user units is
-   ~2.7px on a desktop and ~1.1px on a 390px phone -- the one viewport where
-   five feet is only nine pixels across and the ring is all there is to see.
-   Kevin, 2026-08-29: "I'd like it faint, yet obvious enough to see." The fill
-   carries the faintness and the ring carries the obviousness; they are separate
-   numbers because they are separate jobs. */
-#rg .cuef{fill:var(--cue);opacity:.10}
-#rg .cuer{fill:none;stroke:var(--cue);stroke-width:1.4px;opacity:.5;vector-effect:non-scaling-stroke}
+
+   NO OUTLINE, AND THAT IS THE WHOLE OF THIS BLOCK. Kevin, 2026-08-30: "why does
+   the next event have a ring around it, why not just a shadowed area? ...
+   Neither the slot nor the blue line highlights have outlines, so I got to
+   wondering why the next event does?"
+
+   ⭐ AND HIS OWN FRAMING IS THE REASON, ahead of anything below it: "I have
+   thought of the next event as more of a HINT of the next area to keep an eye
+   on, and removing the ring will align more with the other 2 hints we have on
+   the ice (e.g. the slot and blue line)."
+
+   THAT MAKES THREE OF ONE THING, and naming the category is what settles the
+   shape. The slot, the blue-line band and this are all the same instruction to
+   a viewer -- AN AREA TO KEEP AN EYE ON -- so they take one grammar: a soft flat
+   tint, no outline, nothing that reads as a mark. Two of the three are PERMANENT
+   hints, places that always repay watching; this one is a MOVING hint, a place
+   that repays watching right now. That is the only difference in what they do,
+   and it is expressed by the thing moving rather than by a different shape.
+
+   ⭐ SAME GRAMMAR, DIFFERENT COLOUR, AND BOTH HALVES ARE LOAD-BEARING. The shape
+   says what KIND of thing it is (a hint, not a mark). The colour says WHOSE it
+   is: amber and blue are hockey's, green is ours, because this hint is the one
+   we get by reading a line ahead. A viewer who learns the grammar reads all
+   three the same way and is still told, in the palette, that one of them came
+   from us. Neither dimension would carry both facts alone.
+
+   ⭐ THE EDGE WAS ASSERTING A PRECISION THE RADIUS DOES NOT HAVE. The event is a
+   POINT -- one recorded coordinate. Five feet is a target size chosen for the
+   eye, not a fact about the play, so a crisp stroke drew a boundary that means
+   nothing, in the one visual language this rink keeps for exact things. The slot
+   and the blue-line band are the opposite case: their edges ARE the rule (33 ft
+   and between the dots; the line out to the neutral-zone spots), a reader can
+   check them with a ruler -- and even THEY are not stroked. A boundary worth
+   drawing hard is left unstroked here; an arbitrary one was being outlined.
+
+   ⚠️ AND THE RING'S JUSTIFICATION HAD EXPIRED WITHOUT BEING RE-EXAMINED. It was
+   added because the FIRST build was an 18-to-32-foot gradient falling to zero --
+   "its size is its honesty" -- which had no location at all. The fix for that
+   was the RESIZE, not the stroke: a five-foot flat disc has a location because
+   it is small and solid. The edge went on solving a problem the previous change
+   had already solved, and nobody could see it was redundant until someone asked
+   why it did not match the furniture beside it.
+
+   THE FILL RISES TO CARRY IT ALONE -- .10 was a fill UNDER an outline. The slot
+   runs .09 and the zone band .055 over large areas; five feet needs more to read
+   at the same distance. .22 was chosen by looking at .16/.22/.28 in a browser,
+   against plain ice and against the slot's own tint, which is where three shots
+   in four happen. */
+#rg .cuef{fill:var(--cue);opacity:.22}
 /* A HIGHLIGHTER, NOT A LINE ON TOP OF A LINE. At 1.5 wide the mark was about
    the weight of the rink lines it was marking, so it read as a highlight over
    the THIN goal line and as stripes over the THICK red centre line -- and the

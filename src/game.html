@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-DUWyvHhgE+0cEFodgyXbBMasF2rFgTmY1k2nXfnwhH0=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-mXfPwEY2sqhHBMpktWLOaH2H9/nppPeHfHQEBIpE2QQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-TlHX/cDfUN1JCFnoDJ6P5LAMPnQo5GtUuSxuUxYO6OQ=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-7OOikFYdGkFyaDzPqJW7Wr6NESrddkShvGapKMeOBbg='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">Watch a game</a><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see</a><a href="/workshop.html">Workshop</a></nav></header>
@@ -280,12 +280,11 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .k-slot{background:var(--hd);opacity:.5;border-radius:3px}
 #rg .k-zone{background:var(--blue);opacity:.42;border-radius:3px}
 /* ⭐ THE SWATCH IS THE MARK. A legend entry that described the ring in words
-   would leave the reader matching a sentence to a shape; a ring in the legend
-   and a ring on the ice need no sentence between them. Same construction as the
-   ring itself -- a faint fill inside a definite edge, which is the pairing that
-   made it legible in the first place. */
-#rg .k-cue{background:color-mix(in srgb,var(--cue) 10%,transparent);
- box-shadow:0 0 0 1.5px color-mix(in srgb,var(--cue) 50%,transparent);border-radius:50%}
+   would leave the reader matching a sentence to a shape; the same shading in the
+   legend and on the ice needs no sentence between them. Same construction as the
+   mark itself -- one flat tint at one opacity, and no outline, because the
+   thing it stands for has none. */
+#rg .k-cue{background:color-mix(in srgb,var(--cue) 22%,transparent);border-radius:50%}
 #rg .ncue{color:var(--cue)}
 #rg .ln{fill:none;stroke-linecap:round}#rg .ln.red{stroke:var(--red);stroke-width:.7;opacity:.42}#rg .ln.blue{stroke:var(--blue);stroke-width:.9;opacity:.42}#rg .ln.thick{stroke-width:1.1;opacity:.52}
 /* PREVIEW: THE FIVE-SECOND TASTE, AND IT IS THE REAL RENDERER.
@@ -455,18 +454,55 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .excl{fill:var(--muted);opacity:.2}
 /* ⭐ WHERE TO LOOK NEXT. See `drawCue` in src/app.js for what it claims and what
    it costs; this is only how faint it is allowed to be.
-   TWO SHAPES, AND THE RING IS THE ONE DOING THE WORK. A fill on its own is a
-   smudge with no location -- that is exactly how the first version failed. The
-   ring gives it an edge, so it reads as a PLACE rather than a haze.
-   ⭐ `non-scaling-stroke` HOLDS THE RING AT A CONSTANT DEVICE WIDTH. The rink
-   is 200 units wide however wide the screen is, so a stroke in user units is
-   ~2.7px on a desktop and ~1.1px on a 390px phone -- the one viewport where
-   five feet is only nine pixels across and the ring is all there is to see.
-   Kevin, 2026-08-29: "I'd like it faint, yet obvious enough to see." The fill
-   carries the faintness and the ring carries the obviousness; they are separate
-   numbers because they are separate jobs. */
-#rg .cuef{fill:var(--cue);opacity:.10}
-#rg .cuer{fill:none;stroke:var(--cue);stroke-width:1.4px;opacity:.5;vector-effect:non-scaling-stroke}
+
+   NO OUTLINE, AND THAT IS THE WHOLE OF THIS BLOCK. Kevin, 2026-08-30: "why does
+   the next event have a ring around it, why not just a shadowed area? ...
+   Neither the slot nor the blue line highlights have outlines, so I got to
+   wondering why the next event does?"
+
+   ⭐ AND HIS OWN FRAMING IS THE REASON, ahead of anything below it: "I have
+   thought of the next event as more of a HINT of the next area to keep an eye
+   on, and removing the ring will align more with the other 2 hints we have on
+   the ice (e.g. the slot and blue line)."
+
+   THAT MAKES THREE OF ONE THING, and naming the category is what settles the
+   shape. The slot, the blue-line band and this are all the same instruction to
+   a viewer -- AN AREA TO KEEP AN EYE ON -- so they take one grammar: a soft flat
+   tint, no outline, nothing that reads as a mark. Two of the three are PERMANENT
+   hints, places that always repay watching; this one is a MOVING hint, a place
+   that repays watching right now. That is the only difference in what they do,
+   and it is expressed by the thing moving rather than by a different shape.
+
+   ⭐ SAME GRAMMAR, DIFFERENT COLOUR, AND BOTH HALVES ARE LOAD-BEARING. The shape
+   says what KIND of thing it is (a hint, not a mark). The colour says WHOSE it
+   is: amber and blue are hockey's, green is ours, because this hint is the one
+   we get by reading a line ahead. A viewer who learns the grammar reads all
+   three the same way and is still told, in the palette, that one of them came
+   from us. Neither dimension would carry both facts alone.
+
+   ⭐ THE EDGE WAS ASSERTING A PRECISION THE RADIUS DOES NOT HAVE. The event is a
+   POINT -- one recorded coordinate. Five feet is a target size chosen for the
+   eye, not a fact about the play, so a crisp stroke drew a boundary that means
+   nothing, in the one visual language this rink keeps for exact things. The slot
+   and the blue-line band are the opposite case: their edges ARE the rule (33 ft
+   and between the dots; the line out to the neutral-zone spots), a reader can
+   check them with a ruler -- and even THEY are not stroked. A boundary worth
+   drawing hard is left unstroked here; an arbitrary one was being outlined.
+
+   ⚠️ AND THE RING'S JUSTIFICATION HAD EXPIRED WITHOUT BEING RE-EXAMINED. It was
+   added because the FIRST build was an 18-to-32-foot gradient falling to zero --
+   "its size is its honesty" -- which had no location at all. The fix for that
+   was the RESIZE, not the stroke: a five-foot flat disc has a location because
+   it is small and solid. The edge went on solving a problem the previous change
+   had already solved, and nobody could see it was redundant until someone asked
+   why it did not match the furniture beside it.
+
+   THE FILL RISES TO CARRY IT ALONE -- .10 was a fill UNDER an outline. The slot
+   runs .09 and the zone band .055 over large areas; five feet needs more to read
+   at the same distance. .22 was chosen by looking at .16/.22/.28 in a browser,
+   against plain ice and against the slot's own tint, which is where three shots
+   in four happen. */
+#rg .cuef{fill:var(--cue);opacity:.22}
 /* A HIGHLIGHTER, NOT A LINE ON TOP OF A LINE. At 1.5 wide the mark was about
    the weight of the rink lines it was marking, so it read as a highlight over
    the THIN goal line and as stripes over the THICK red centre line -- and the
@@ -1768,7 +1804,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 <div class="area"><span class="lmk"><i class="k-slot"></i></span><span class="ltx"><b>The slot</b><span class="lds">The shaded area at each end — within 33 ft of the net, between the face-off dots.<span class="asay" id="slotSay"></span></span></span></div>
 <div class="area"><span class="lmk"><i class="k-zone"></i></span><span class="ltx"><b>Either blue line</b><span class="lds">The shaded strip at each blue line, reaching out to the neutral-zone dots. No attacker may cross it ahead of the puck — that is offside, <span class="src">NHL Rule 83</span>.<span class="lim">We count nothing here. Holding the line leaves no event in the record, so the feed is silent about the thing that makes it matter.</span></span></span></div>
 </div>
-<div class="legend"><span><i class="k-cue"></i><span class="kn">next play — ringed before it happens</span></span><span><i class="k-h"></i><span class="kn">home shot</span></span><span><i class="k-a"></i><span class="kn">visitor shot — white, like the sweaters</span></span><span><i class="k-p"></i><span class="kn">puck — jumps between real events</span></span><span><i class="k-g"></i><i class="k-gv"></i><span class="kn">goal — either sweater</span></span><span><i class="k-blk"></i><i class="k-blkv"></i><span class="kn">blocked — ringed where the puck was <b>stopped</b></span></span></div>
+<div class="legend"><span><i class="k-cue"></i><span class="kn">next play — shaded before it happens</span></span><span><i class="k-h"></i><span class="kn">home shot</span></span><span><i class="k-a"></i><span class="kn">visitor shot — white, like the sweaters</span></span><span><i class="k-p"></i><span class="kn">puck — jumps between real events</span></span><span><i class="k-g"></i><i class="k-gv"></i><span class="kn">goal — either sweater</span></span><span><i class="k-blk"></i><i class="k-blkv"></i><span class="kn">blocked — ringed where the puck was <b>stopped</b></span></span></div>
 </details>
 <p class="disclose lkey lk-ends" id="endsKey"></p>
 <p class="disclose lkey lk-unrec" id="unrecKey"></p>
@@ -1778,7 +1814,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 <span class="fnote" id="nTrails"></span></div>
 </details>
 <details class="zone zcue"><summary class="zh">The next play<span class="zon" id="zCueOn"></span></summary>
-<div class="figpick"><div class="grp" role="group" aria-label="Whether the next play is marked before it happens"><button class="lyr cbtn" data-c="on" aria-pressed="true">Show the ring</button><button class="lyr cbtn" data-c="off" aria-pressed="false">No ring</button></div>
+<div class="figpick"><div class="grp" role="group" aria-label="Whether the next play is marked before it happens"><button class="lyr cbtn" data-c="on" aria-pressed="true">Show the shading</button><button class="lyr cbtn" data-c="off" aria-pressed="false">No shading</button></div>
 <span class="fnote" id="nCue"></span></div>
 </details>
 <details class="zone znext"><summary class="zh">Other games</summary>
@@ -5612,13 +5648,13 @@ function drawEndsNote(e){
    `place`'s refusals for free: an unlocated event and a shootout attempt both
    come back null, and a circle is drawn on neither.
 
-   FIVE FEET, AND THE EDGE IS WHAT MAKES IT LEGIBLE. The first build was a
-   soft-edged 18-to-32-foot gradient -- "its size is its honesty", always wider
-   than a position. Kevin, looking at it: "I can't tell which area the next event
-   is going to be. I just ain't seeing it." A region that can never be mistaken
-   for a position cannot be read as a PLACE either. The ring is drawn with
-   `non-scaling-stroke` so it keeps its weight at 390px, where five feet is nine
-   pixels. */
+   FIVE FEET, SHADED, AND NOT OUTLINED. The first build was a soft-edged
+   18-to-32-foot gradient -- "its size is its honesty", always wider than a
+   position. Kevin, looking at it: "I can't tell which area the next event is
+   going to be. I just ain't seeing it." A region that can never be mistaken for
+   a position cannot be read as a PLACE either, and the fix was the SIZE. A
+   stroke was added at the same time and outlived its reason; see the note in
+   src/app.css, where the edge is argued off on doctrine rather than on taste. */
 const CUE_FT=5;
 /* ⭐ AND IT CAN BE SWITCHED OFF, WHICH IS A DOCTRINE MATTER RATHER THAN A
    PREFERENCE ONE. This is the only thing on the site that uses knowledge of
@@ -5632,8 +5668,7 @@ function drawCue(i){
  const el=$('cue');if(!el)return;
  const pos=cueOn?place(EV[i+1]):null;
  if(!pos){el.innerHTML='';return;}
- el.innerHTML=`<circle class="cuef" cx="${pos.x.toFixed(1)}" cy="${pos.y.toFixed(1)}" r="${CUE_FT}"/>`
-             +`<circle class="cuer" cx="${pos.x.toFixed(1)}" cy="${pos.y.toFixed(1)}" r="${CUE_FT}"/>`;}
+ el.innerHTML=`<circle class="cuef" cx="${pos.x.toFixed(1)}" cy="${pos.y.toFixed(1)}" r="${CUE_FT}"/>`;}
 function render(i,how){
  const moment=how==='play'||how==='jump';
  // `evs` is the PLAYABLE prefix, used to draw the marks on the timeline.
@@ -7221,7 +7256,7 @@ function drawNewcomer(){
  // watch it -- so it is not a third copy of the definition.
  el.innerHTML=`<b>New here?</b> Press <b>▶ Play from start</b> and just watch — every event `
   +`is named as it happens, and goals are called with the <b>scorer and assists</b>. `
-  +`The <b class="ncue">green ring</b> shows you where the next play happens, so you are `
+  +`The <b class="ncue">green shading</b> shows you where the next play happens, so you are `
   +`looking in the right place when it does. `
   +`Nothing is invented: every number here comes from the league's own record of the game.`
   +`<button class="ndone" id="nDone">I have got the hang of it — hide this</button>`;
@@ -7707,8 +7742,8 @@ function syncCue(){let lab='';
   b.setAttribute('aria-pressed',on);if(on)lab=b.textContent;});
  const z=$('zCueOn');if(z)z.textContent=lab.toLowerCase();
  const n=$('nCue');if(n)n.textContent=cueOn
-  ?'A green ring marks where the next play happens, a moment before it does. It is the one thing on this ice we know because we read ahead — No ring removes it.'
-  :'Nothing is drawn ahead of the play. Show the ring marks the next event’s spot before the play arrives, so your eye is already there.';}
+  ?'A patch of green shades where the next play happens, a moment before it does. It is the one thing on this ice we know because we read ahead — No shading removes it.'
+  :'Nothing is drawn ahead of the play. Show the shading marks the next event’s spot before the play arrives, so your eye is already there.';}
 document.querySelectorAll('#rg .cbtn').forEach(b=>b.addEventListener('click',()=>{
  cueOn=b.dataset.c==='on';syncCue();render(i,'');}));
 syncCue();
