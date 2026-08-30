@@ -406,9 +406,46 @@ were weak mutations rather than holes** — `aw/(al||1)` is integral by luck on 
 fixture, and the shootout turns out to be guarded twice — which is worth
 distinguishing rather than recording as coverage.
 
-⏸ **THE NUMBERS DO NOT EXIST YET.** `measure.mjs` runs in the pipeline; the
-figures appear in `measures.json` on the next derive run and are printed in that
-run's log. **No copy may be written from the eight-game figures above.**
+### A5.1 ✅ THE ANSWERS — 4,192 games, 165,420 draws, published 2026-08-30
+
+| claim | 8 games said | **the archive says** |
+|---|---|---|
+| being in the attacking end / winning the draw there | 1.29 / +0.30 | **1.163 / +0.52** (lift **44.7%**) |
+| a draw won **on the power play** | 4.50× vs 1.29× | **4.16×** vs **1.272×** (n=21,704 / 188,421) |
+| goals per 60 — even / power play | 4.65 / 7.40 | **5.013 / 7.602** (**1.52×**) |
+| hits against attempts | r = −0.15 | **r = −0.07**, opposite in **48.1%** |
+
+⚠️ **AND MY HEADLINE WAS WRONG.** I told Kevin *"where the puck drops is worth
+about four times what winning it is worth."* On the archive it is **2.2×**
+(1.163 against 0.52). Winning the draw is worth **nearly twice** what the eight
+games suggested — a **45% lift**, not 23%. The direction and the ordering hold;
+**the multiplier was small-sample noise stated as a finding**, which is the exact
+thing the census existed to prevent, committed by the person who built it.
+
+⭐ **THE ZONE GRADIENT IS REAL AND LARGE**: a draw won in the offensive zone
+returns **2.395×** the opponent's attempts, in the neutral zone **1.132×**, in
+the defensive zone **0.712×**. Monotonic over 237,502 draws. **That is the
+explanation for the published faceoff null (50.4%)**: the season total adds up
+quantities with opposite signs, so it cancels to nothing. The stat every
+broadcast quotes is empty *because* of what is underneath it.
+
+⭐ **THE POWER-PLAY DRAW SURVIVED INTACT** — 4.16× against 1.272×, the strongest
+teaching claim available and barely moved from the sample.
+
+❌ **CHENG's HITS HYPOTHESIS IS DEAD.** r = −0.07 and the club with more hits had
+fewer attempts in **48.1%** of games — a coin flip over 4,192. Hitting says
+nothing about who had the puck. He proposed it, killed it on one game, and
+refused to write copy on it; the archive agrees.
+
+⚠️ **AND THE FIVE-ON-THREE BLINDNESS IS NOW A NUMBER**: **4,151.9 minutes** of
+play — about **59 seconds a game** — whose situation code `strength.js` cannot
+read, carrying **299 goals** nobody can classify. Nothing was wrong; nothing had
+been counted.
+
+**Also shipped by that run**: penalty detail (`pen`, `min`, `sev`, `drew`,
+`zone`) is backfilled across all 4,192 extracts, so the scoreboard's penalty box
+now works on every published game rather than only on those derived since
+2026-08-27.
 
 ## A4. The lens taxonomy and the measurement page — Kevin, 2026-08-30
 
