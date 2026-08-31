@@ -384,21 +384,52 @@ export const whistle = {
  *   club whose end it is in (or null when the dot names no end), and the lines
  *   the rule is about.
  */
-export function icingRestarts(events, ctx) {
+export function restarts(events, ctx, rsn) {
   const out = [];
   events.forEach((e, i) => {
-    if (e.type !== 'stoppage' || e.rsn !== 'icing') return;
+    if (e.type !== 'stoppage' || e.rsn !== rsn) return;
     for (let k = i + 1; k < events.length; k++) {
       if (events[k].type === 'stoppage') return;   // a second whistle owns that drop
       if (events[k].type !== 'faceoff') continue;
       out.push({ event: events[k],
                  zone: zoneOf(events[k].x, ctx.homeAb, ctx.awayAb),
-                 lines: linesFor('icing', events[k].x) });
+                 lines: linesFor(rsn, events[k].x) });
       return;
     }
   });
   return out;
 }
+
+/** The face-off an icing forced. See `restarts`. */
+export const icingRestarts = (events, ctx) => restarts(events, ctx, 'icing');
+
+/**
+ * The face-off an OFFSIDE forced — the same walk, one reason later.
+ *
+ * ⭐ WHY THIS SHARES `restarts` RATHER THAN COPYING IT. The two rules differ only in
+ * which `rsn` they watch for; everything else — the drop is the FIRST face-off,
+ * a second whistle owns the next one, the zone comes from the recorded
+ * coordinate — is the same claim about how the feed records a stoppage. A second
+ * copy is where the two would drift, and `whistle.js` already carries the scar
+ * of a rule stated twice.
+ *
+ * ⚠️ AND OFFSIDE IS THE ONE THE FEED IS QUIETEST ABOUT. An offside stoppage
+ * carries a reason and NOTHING else: no coordinate, no zone, no player, and no
+ * video review on any of 4,160 of them. It is also not on the playable timeline
+ * at all — `SKIP` drops stoppages — so the only frame a viewer can ever be
+ * standing on is the RESTART. That is why the learn card says *watch the line,
+ * not the play*, and it is why this caption exists: without it the page shows a
+ * face-off and says nothing about why it is happening.
+ *
+ * ⛔ IT NEVER SAYS WHERE THE DRAW COMES BACK TO, and that is deliberate.
+ * Measured over 1,094 immediate offside restarts across 240 games: 89.8% at the
+ * neutral-zone dot, 5.3% at centre ice, 4.9% in an END zone. "The faceoff goes
+ * back outside the zone" shipped once and is wrong about one offside in ten.
+ * `linesFor` is already honest in the same way — it names a blue line only when
+ * the restart is in the neutral zone, and highlights nothing rather than the
+ * nearer of two guesses.
+ */
+export const offsideRestarts = (events, ctx) => restarts(events, ctx, 'offside');
 
 export function latest(result) {
   const w = result.whistles;

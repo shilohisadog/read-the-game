@@ -34,6 +34,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { app, PAGE_CSS, boot, rich } from './helpers/page.js';
 import { stints } from '../src/lib/box.js';
+import { icingRestarts, offsideRestarts } from '../src/lib/layers/whistle.js';
 import { readFileSync } from 'node:fs';
 
 const HOME = rich.teams.home.ab;   // BUF
@@ -196,7 +197,31 @@ test('an empty net is badged as an empty net, and names the club that pulled', (
  *   MIN Faber        holding       2967 → 3087  time   → refused, BUF still serving
  *   BUF Greenway     interference  3050 → 3147  GOAL   → refused
  */
-const KILL_MOMENTS = [[1, '17:17'], [1, '04:48'], [2, '10:41'], [3, '18:09']];
+const KILL_MOMENTS = [[1, '17:17', 'MIN'], [1, '04:48', 'BUF'],
+                     [2, '10:41', 'BUF'], [3, '18:09', 'MIN']];
+
+/* ⭐⭐ A WHISTLE OUTRANKS A CLOCK, so a kill on a rule's restart frame YIELDS.
+ *
+ * app.js reversed this on 2026-08-31: the power-play pill already shows the
+ * condition, and an icing or an offside has no other surface at all, so the one
+ * caption goes to the fact with nowhere else to go. In this fixture that costs
+ * exactly one kill — P1 04:48 is both BUF's expiry and the game's only offside
+ * restart.
+ *
+ * ⭐ DERIVED FROM THE REDUCERS, NEVER TYPED. Writing `['MIN','BUF','MIN']` here
+ * would be a copy of a decision app.js makes, and it would keep passing on the
+ * day the priority silently flipped back. Asking the whistle module which frames
+ * it owns means the expectation MOVES when the behaviour does — and the
+ * displaced kill is then asserted to have yielded to a rule rather than simply
+ * gone missing, which "there are three" alone could never tell apart. */
+const CTX = { homeId: rich.teams.home.id, awayId: rich.teams.away.id,
+              homeAb: rich.teams.home.ab, awayAb: rich.teams.away.ab };
+const RULE_FRAMES = new Set(
+  [...icingRestarts(rich.events, CTX), ...offsideRestarts(rich.events, CTX)]
+    .map(r => `${r.event.per}|${r.event.rem}`));
+const yielded = ([per, rem]) => RULE_FRAMES.has(`${per}|${rem}`);
+const KILLS_SHOWN = KILL_MOMENTS.filter(m => !yielded(m));
+const KILLS_YIELDED = KILL_MOMENTS.filter(yielded);
 
 test('⭐ the caption names the club that was SHORT — the opposite of every other one', () => {
   // Every other caption on this page is about the event's own team: the scorer,
@@ -219,11 +244,16 @@ test('⭐ the caption names the club that was SHORT — the opposite of every ot
     if (cap !== last && /🛡 Penalty killed/.test(cap)) seen.push(cap);
     last = cap;
   }
-  assert.equal(seen.length, KILL_MOMENTS.length, `found ${seen.length} kills`);
+  assert.equal(seen.length, KILLS_SHOWN.length, `found ${seen.length} kills`);
   // MIN killed two and BUF killed two, per the table above — so a caption that
   // always named one club, or always named the club on the advantage, fails.
+  // ⭐ AND THE PAIR: the kill that is NOT shown must have yielded to a rule
+  // caption on that frame, not simply vanished. Without this half, "three kills"
+  // is equally satisfied by a kill that broke.
+  assert.ok(KILLS_YIELDED.length >= 1,
+    'no kill collides with a rule restart in this fixture — the yield is untested');
   const tags = seen.map(h => /<span class="tag (\w)">(\w+)<\/span>/.exec(h).slice(1));
-  assert.deepEqual(tags.map(t => t[1]), ['MIN', 'BUF', 'BUF', 'MIN'],
+  assert.deepEqual(tags.map(t => t[1]), KILLS_SHOWN.map(m => m[2]),
     'the kills are credited to the wrong clubs, or in the wrong order');
   // AND THE COLOUR FOLLOWS THE CLUB, not the frame's own team.
   for (const [side, ab] of tags)
@@ -276,7 +306,7 @@ test('⭐ a power play SCORED ON is not a kill, and box.js is what knows', () =>
     if (cap !== last && /🛡 Penalty killed/.test(cap)) found.push(+a.$('scrub').value);
     last = cap;
   }
-  assert.equal(found.length, KILL_MOMENTS.length,
+  assert.equal(found.length, KILLS_SHOWN.length,
     `the walk found ${found.length} kills — if it found none this test proves nothing`);
 
   for (const n of found) {

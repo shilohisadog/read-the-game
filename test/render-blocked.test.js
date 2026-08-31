@@ -372,19 +372,31 @@ test('the whistle layer actually draws the line its rule names', () => {
   // `rsn` and the faceoff after it — never from the rule that draws them.
   const iced = new Set();
   rich.events.forEach((e, i) => {
-    if (e.type !== 'stoppage' || e.rsn !== 'icing') return;
+    /* ⭐ ICING **AND OFFSIDE**, because both now caption with the layer off and
+       both light the lines their rule names. The guard was written for icing
+       alone and went red the moment offside shipped -- correctly: it says a rule
+       line may appear where a rule is being explained AND NOWHERE ELSE, and
+       widening the set of rules is not weakening the claim.
+       ⚠️ OFFSIDE NAMES A LINE ONLY 89.8% OF THE TIME (neutral-zone restart);
+       centre ice and end-zone restarts name none, so an offside restart is in
+       this set only when `linesFor` gave it something to draw. Asserting every
+       offside lights a line would be asserting the opposite of the honesty
+       `linesFor` was built for. */
+    if (e.type !== 'stoppage' || (e.rsn !== 'icing' && e.rsn !== 'offside')) return;
     for (let k = i + 1; k < rich.events.length; k++) {
       if (rich.events[k].type === 'stoppage') return;
       if (rich.events[k].type !== 'faceoff') continue;
-      iced.add(EV.indexOf(rich.events[k])); return;
+      const fo = rich.events[k];
+      if (e.rsn === 'offside' && !(fo.x != null && Math.abs(fo.x) < 25 && fo.x !== 0)) return;
+      iced.add(EV.indexOf(fo)); return;
     }
   });
-  assert.ok(iced.size >= 4, `only ${iced.size} icing restarts in the reference game`);
+  assert.ok(iced.size >= 4, `only ${iced.size} rule restarts in the reference game`);
 
   const drew = b.every(d => /<line class="rulel/.test(d.$('whistles').innerHTML));
   drew.forEach((lit, k) => assert.equal(lit, iced.has(k),
-    lit ? `frame ${k} lit a rule line with the layer off and is not an icing restart`
-        : `the icing restart at frame ${k} lit no rule line — the cause half is missing`));
+    lit ? `frame ${k} lit a rule line with the layer off and is not a rule restart`
+        : `the rule restart at frame ${k} lit no rule line — the cause half is missing`));
 });
 /**
  * ⛔ RETIRED 2026-08-27 — "the restart faceoff says which rule it is restarting

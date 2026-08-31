@@ -257,17 +257,29 @@ test('a penalty is CALLED on the ice, like a goal and unlike a giveaway', () => 
   const icings = rich.events.filter(e => e.type === 'stoppage' && e.rsn === 'icing').length;
 
   const a = boot();
+  const offsides = rich.events.filter(e => e.type === 'stoppage' && e.rsn === 'offside').length;
   const marks = callsWhileStepping(a, (h) =>
     /🚨 GOAL/.test(h) ? 'goal' : /⛔ Penalty/.test(h) ? 'penalty'
       : /🛡 Penalty killed/.test(h) ? 'kill'
-      : /🧊 Icing/.test(h) ? 'icing' : 'other');
-  const got = { goal: 0, penalty: 0, kill: 0, icing: 0, other: 0 };
+      : /🧊 Icing/.test(h) ? 'icing'
+      : /🔵 Offside/.test(h) ? 'offside' : 'other');
+  const got = { goal: 0, penalty: 0, kill: 0, icing: 0, offside: 0, other: 0 };
   marks.forEach(m => got[m]++);
   const want = t => rich.events.filter(e => e.type === t).length;
+  /* ⭐ ONE FEWER KILL THAN THE GAME CONTAINS, AND THAT IS THE NEW RULE, NOT A
+     LOSS. A whistle outranks a clock: the reference game's single offside
+     restarts on frame 62 and a penalty expires on the same frame, so the caption
+     goes to the rule that has no other surface (the pill already shows the
+     strength). Written as `kills - offsides` rather than as the number 3,
+     because the relationship is what is being claimed -- if the fixture gained a
+     second offside that did NOT collide, a hard 3 would go red for the wrong
+     reason and a hard 4 would never have caught this at all. */
+  assert.equal(offsides, 1, 'the reference game no longer has exactly one offside');
   assert.deepEqual(got,
-    { goal: want('goal'), penalty: want('penalty'), kill: kills, icing: icings, other: 0 },
-    'with no layers on, exactly the goals, penalties, kills and icings get a moment of their own');
-  assert.ok(Object.values(got).slice(0, 4).every(v => v > 0), 'the walk missed a kind entirely');
+    { goal: want('goal'), penalty: want('penalty'), kill: kills - offsides,
+      icing: icings, offside: offsides, other: 0 },
+    'with no layers on, exactly the goals, penalties, kills, icings and offsides get a moment');
+  assert.ok(Object.values(got).slice(0, 5).every(v => v > 0), 'the walk missed a kind entirely');
 });
 
 test('the penalty caption names the team that TOOK it', () => {
@@ -318,6 +330,34 @@ test('no frame pauses without saying something', () => {
       r.spoke ? `frame ${r.i} carried a caption and got the ordinary ${r.ms}ms`
               : `frame ${r.i} paused for ${r.ms}ms with nothing on screen to explain it`);
   }
+});
+
+test('⭐ every caption the chain can say is one `captioned()` knows about', () => {
+  /* ⚠️ WHY THIS IS STRUCTURAL AND NOT A WALK. `captioned()` is the seam that
+     makes "a pause with nothing on screen" impossible: `dwell` gives a frame
+     extra time if and only if `captioned` says it speaks. The biconditional
+     above is the real check — and it CANNOT see a missing term when the frame
+     also qualifies some other way.
+     Found by a mutation: dropping `OFFSIDE.has(e)` from `captioned()` survived a
+     green suite of 902, because the reference game's ONLY offside restarts on
+     the same frame a penalty expires, so `KILLED.has(e)` was still true there
+     and the dwell stayed long. The defect was real and the fixture could not
+     express it — one game, one offside, one collision.
+     So the relationship is asserted where it lives. Every map the caption chain
+     branches on must also be a term in `captioned()`; a caption the pace loop
+     has never heard of is defect one waiting to happen again.
+     COMMENTS ARE STRIPPED FIRST. A source scan that cannot tell code from a
+     mention of code is not a check about code — this project has paid for that
+     three times in one day. */
+  const code = SCRIPT.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '');
+  const chain = [...code.matchAll(/else if\(cur&&([A-Z]+)\.has\(cur\)\)/g)].map(m => m[1]);
+  const fn = /function captioned\(e\)\{return([^;]*);\}/.exec(code);
+  assert.ok(fn, 'captioned() has moved — this test has lost its subject');
+  const known = [...fn[1].matchAll(/([A-Z]+)\.has\(e\)/g)].map(m => m[1]);
+  assert.ok(chain.length >= 2, `the caption chain branches on only ${chain.length} maps`);
+  assert.deepEqual([...new Set(chain)].sort(), [...new Set(known)].sort(),
+    'the caption chain and captioned() disagree about which frames speak — a frame '
+    + 'can now caption without being given time to be read, or pause with nothing to say');
 });
 
 test('the caption lasts exactly as long as the frame it describes', () => {

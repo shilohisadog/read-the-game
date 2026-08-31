@@ -175,6 +175,13 @@ const KILLED=new Map(penaltyKilled(EV,PBOX,CTX).map(k=>[EV[k.at],k]));
    rather than `EV`, because the icing itself is a `stoppage` and the SKIP set
    drops it: the whistle is not a frame, and the faceoff it forces is. */
 const ICING=new Map(icingRestarts(G.events,CTX).map(r=>[r.event,r]));
+/* ⭐ AND THE SAME FOR OFFSIDE, which is the rule the feed is quietest about:
+   a stoppage carries the reason and NOTHING else -- no coordinate, no zone, no
+   player, and no video review on any of 4,160 of them. The restart is the only
+   frame a viewer can ever stand on, so without this the page shows a face-off
+   and never says why. The learn card has been telling people to `watch the
+   line, not the play` while the game itself said nothing at all. */
+const OFFSIDE=new Map(offsideRestarts(G.events,CTX).map(r=>[r.event,r]));
 // WHEN EACH PERIOD BEGAN, read from the events.
 //
 // AND NOT BECAUSE THE ARITHMETIC WOULD BE WRONG -- the first draft of this
@@ -670,7 +677,8 @@ function render(i,how){
     speaks only with its layer on).
     ONLY AT THE RESTART FRAME, so it appears and goes with the caption that
     explains it rather than standing on the ice afterwards. */
- else{$('whistles').innerHTML=cur&&ICING.has(cur)?ruleLines(ICING.get(cur).lines,cur.per):'';
+ else{$('whistles').innerHTML=cur&&ICING.has(cur)?ruleLines(ICING.get(cur).lines,cur.per)
+   :cur&&OFFSIDE.has(cur)?ruleLines(OFFSIDE.get(cur).lines,cur.per):'';
       $('whistlePanel').innerHTML='';}
  // The replay is AT the end, not merely near it. `i` is the frame index and
  // EV.length-1 is the last playable event; a game paused one shot short has
@@ -804,6 +812,36 @@ function render(i,how){
    // skater short (`sit` still reads 1551), so any sentence about the power play
    // would be a claim about the future dressed as a description.
    else if(cur&&cur.type==='penalty'){caption(cur,'penalty');}
+   /* ⭐⭐ A WHISTLE OUTRANKS A CLOCK, AND THIS REVERSES A DECISION I MADE ON
+      2026-08-31. Icing used to sit UNDER the kill, argued on rarity: "a kill is
+      rarer -- 3.3 a game against 7.8 -- and a power play ending is the bigger
+      change of state." Both halves of that are still true and it is still the
+      wrong order, for a reason that only became available after the pill shipped.
+
+      THE PILL ALREADY CARRIES THE CONDITION. A power play ending turns the
+      scoreboard badge dark, on screen, at that frame -- so the kill caption is an
+      AMPLIFIER of a signal the page already gives. An icing or an offside has no
+      other surface at all: the stoppage is not even a frame (`SKIP` drops it), so
+      the restart is the only place the rule can ever be named. Given one pill and
+      two facts, it goes to the fact with nowhere else to go.
+
+      AND THE WRONG ORDER IS ACTIVELY MISLEADING, not merely a missed fact. "🛡
+      Penalty killed" on a face-off offers the reader an explanation for a whistle
+      it did not cause -- and no penalty expiry produces a face-off. Naming the
+      offside is silent about the kill; naming the kill invites a false inference.
+
+      ⚠️ THE COST, AS A COUNT AND NOT A RATE: in the reference game 1 of 4 kill
+      captions lands on a rule restart and is displaced. One game is not a rate,
+      and it is quoted as what it is. The collision is COINCIDENCE rather than
+      structure -- measured, because I assumed the opposite first: only 1 of those
+      4 kills lands on a face-off at all, since a penalty usually expires during
+      live play and the next recorded event is a hit or a shot.
+
+      ⚠️ AND THE OLD ORDER WAS NEVER EXERCISED. 0 of 8 icing restarts in the
+      reference game collide with a kill, so the branch that demoted icing had
+      never once run. It read as a decision and was an untested preference. */
+   else if(cur&&ICING.has(cur)){captionIcing(cur);}
+   else if(cur&&OFFSIDE.has(cur)){captionOffside(cur);}
    /* ⭐ THE KILL SITS BELOW GOAL AND PENALTY AND ABOVE THE SLOT SHOT, and the
       order is an argument rather than a preference. A goal or a penalty ON this
       frame is the bigger news and both already have a sentence; a penalty here
@@ -812,11 +850,6 @@ function render(i,how){
       many times a game and a kill happens 3.4 times, and because the slot layer
       has the ice to say it with while this has nothing at all. */
    else if(cur&&KILLED.has(cur)){captionKill(cur);}
-   /* Icing sits under the kill and over the slot shot. It cannot collide with
-      the goal or penalty above it (a faceoff is neither), and it loses to a kill
-      because a kill is rarer -- 3.3 a game against 7.8 -- and because a power
-      play ending is the bigger change of state. */
-   else if(cur&&ICING.has(cur)){captionIcing(cur);}
    else if(cur&&hdOn&&isHD(cur)){lastHD=i;caption(cur,'hd');}}
  prevA=a;prevH=h;
  $('per').textContent=periodLabel(cur);$('clk').textContent=cur?cur.rem:'20:00';
@@ -960,6 +993,20 @@ function captionIcing(e){const z=ICING.get(e).zone;
  sayCaption(null,null,'🧊 Icing',
   ' · from behind centre, past the far goal line'
   +(z?` &mdash; faceoff back in ${ESC(z)}'s end`:''),e);}
+/* OFFSIDE, AT THE ONLY FRAME IT CAN EVER BE SAID ON.
+   ⛔ AND IT NEVER SAYS WHERE THE DRAW COMES BACK TO, which is the one clause a
+   reader would expect after icing's. "The faceoff goes back outside the zone"
+   shipped once in `WHY.offside` and is WRONG ABOUT ONE OFFSIDE IN TEN: measured
+   over 1,094 immediate restarts across 240 games, 89.8% land on the neutral-zone
+   dot, 5.3% at centre ice and 4.9% inside an END zone. The sentence claims only
+   what Rule 83 guarantees, and the lit blue line under it shows the rest for the
+   game actually in front of you -- which is the division of labour this module
+   argues for everywhere: a rule states, a coordinate shows.
+   🔵 RATHER THAN A RED SIGN. `⛔` is already Penalty on this same pill and `🚨`
+   is a goal; a third red disc would be three meanings in one shape. Blue is the
+   line the rule is about and the line lit on the ice beneath it. */
+function captionOffside(e){
+ sayCaption(null,null,'🔵 Offside',' &middot; a skater crossed the blue line ahead of the puck',e);}
 /* THE TWO LINES RULE 81 NAMES, at the frame it is being explained. Same markup
    `drawWhistles` emits for the same reason, through one writer so the geometry
    and the class cannot drift into two versions. */
@@ -1287,7 +1334,7 @@ function syncStep(){$('back').disabled=i<=-1;$('fwd').disabled=i>=EV.length-1;}
    silent, so `dwell` would give it an ordinary frame's time -- a sentence that
    appears and is gone before it is read, which is the exact defect this
    predicate was extracted to make impossible, running in the other direction. */
-function captioned(e){return !!e&&(e.type==='goal'||e.type==='penalty'||KILLED.has(e)||ICING.has(e)||(hdOn&&isHD(e)));}
+function captioned(e){return !!e&&(e.type==='goal'||e.type==='penalty'||KILLED.has(e)||ICING.has(e)||OFFSIDE.has(e)||(hdOn&&isHD(e)));}
 function dwell(e){return captioned(e)?frameMs+CAPTION_BONUS:frameMs;}
 function step(){if(i>=EV.length-1){stop();return;}set(i+1,'play');timer=setTimeout(step,dwell(EV[i]));}
 /* PLAY MEANS GO. A viewer who presses it has asked for the game, and resting on
