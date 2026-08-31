@@ -969,7 +969,7 @@ RULE_BODY = r"""<div class="wrap rulep">
 <h1>__RULE_TITLE__</h1>
 <p class="rlede">__RULE_LEDE__</p>
 __RULE_FIG__
-<p class="rdoor"><a class="rgo" href="/game.html__RULE_HREF__">See it in a real game &rarr;</a></p>
+<p class="rdoor"><a class="rgo" href="/game.html__RULE_HREF__">__RULE_DOOR__ &rarr;</a></p>
 <p class="rat">__RULE_AT__</p>
 </div>"""
 
@@ -1277,6 +1277,16 @@ FIGCSS = r"""<style>
 .dgpaint .ln.thick{stroke-width:1.1;opacity:.52}
 .dgpaint .fdot{fill:var(--red);opacity:.55}
 .dgpaint .fdot.ctr{fill:var(--blue)}
+/* THE NET IS EQUIPMENT, and in a CROP it is also the compass. Kevin: "the rink
+   snippet just doesn't look right without a net and goalie" -- a full sheet has
+   two nets and is obviously symmetric, but a crop has one end, and without the
+   net that end is just more ice. Same values as app.css; the colour comes in on
+   the element, and for a diagram it is the neutral grey, never a club's. */
+.dgpaint .crease{fill:#cfe0f2;stroke:var(--blue);stroke-width:.4;opacity:.55}
+.dgpaint .mesh{stroke-width:.8;opacity:.9}
+.dgpaint .strand{stroke-width:.35;opacity:.5}
+.dgpaint .post{stroke-width:1.1;stroke-linecap:round}
+.dgpaint .flashpath{display:none}
 /* THE ILLUSTRATION. Outlined, neutral, never a club's colour. */
 .dgplay .dgtok{fill:var(--ice);stroke:var(--ink);stroke-width:1.1}
 .dgplay .dgpuck{fill:var(--ink);stroke:var(--ice);stroke-width:.5}
@@ -1337,6 +1347,9 @@ def build_rule(cid):
             .replace("__RULE_LEDE__", blurb)
             .replace("__RULE_FIG__", _figures()[cid])
             .replace("__RULE_HREF__", door["href"])
+            # THE PROMISE IS THE FIGURE'S, not this template's: what lies
+            # through the door differs per rule, and the rule knows.
+            .replace("__RULE_DOOR__", fig["door"])
             .replace("__RULE_AT__", f'{g["away"]} at {g["home"]}, {int(day)} '
                                     f'{MONTHS[int(m) - 1]} {y} &middot; period {door["per"]}, '
                                     f'{door["rem"]} left'))

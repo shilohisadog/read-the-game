@@ -42,8 +42,9 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { furniture, SX, SY } from '../src/lib/rinkart.js';
-import { BLUE_LINE_X, NEUTRAL_DOT_X } from '../src/lib/rink.js';
+import { furniture, netGlyph, SX, SY } from '../src/lib/rinkart.js';
+import { BLUE_LINE_X, NEUTRAL_DOT_X, NET_X } from '../src/lib/rink.js';
+import { NEUTRAL } from '../src/lib/teams.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -91,6 +92,39 @@ const defs = id =>
  * grammar.
  */
 const stamp = (x, y) => `<text class="dgstamp" x="${f(x)}" y="${f(y)}">Diagram</text>`;
+
+/* ── the equipment ──────────────────────────────────────────────────────────
+   ⭐ A CROP OF ICE WITH NO NET IN IT DOES NOT READ AS AN END OF A RINK.
+   Kevin, on the first offside page: *"we need a goal (at least, maybe even the
+   goalie) to provide another level of orientation for the viewer... the rink
+   snippet just doesn't look right without a net and goalie."*
+
+   He is right, and the reason is that a crop removes the thing that tells you
+   WHICH WAY the play is going. The full sheet has two nets and is obviously
+   symmetric; a crop has one end, and without the net that end is just more ice.
+   The blue line alone cannot say "this is the attacking zone" to someone who
+   does not already know what a blue line means -- which is the entire audience
+   for this page.
+
+   BOTH NETS, AND THE CROP DECIDES WHAT IS SEEN. A figure that drew only the
+   attacked net would need to know which end it had framed, which is a second
+   place the crop is decided; the viewBox already owns that.
+
+   ⭐ NEUTRAL, NOT A CLUB COLOUR, and imported rather than typed. `netGlyph`
+   paints the frame and the strands in whatever colour it is handed, and on the
+   game page that colour is the club's -- which is exactly the provenance signal
+   these diagrams must not borrow. `teams.NEUTRAL` is the palette's own
+   no-team grey, and a test asserts it has not become some club's actual hex. */
+const nets = id =>
+  netGlyph(`${id}netA`, SX(-NET_X), NEUTRAL) + netGlyph(`${id}netB`, SX(NET_X), NEUTRAL);
+
+/** A goaltender, in the one place on the ice only a goaltender stands. */
+const keeper = (gx) =>
+  // ITS POSITION IS ITS LABEL. Drawn in the diagram's own vocabulary -- outlined,
+  // neutral, the same token every other player gets -- because a second style of
+  // player token would be a second thing for a novice to decode. Nobody else
+  // stands in the crease, so the crease says which one he is.
+  `<circle class="dgtok dgkeep" cx="${f(gx < 100 ? gx + 4.5 : gx - 4.5)}" cy="42.5" r="4.4"/>`;
 
 /* ── how a token travels ────────────────────────────────────────────────────
    ⭐ THE PAGE OPENS ON THE FINISHED PICTURE, THEN REPLAYS. Found by looking: a
@@ -167,10 +201,22 @@ function offside() {
     viewBox: `${f(SX(24))} 0 ${f(SX(-89) - SX(24) + 10)} 85`,
     label: 'Diagram: an attacking skater crosses the blue line before the puck '
          + 'carrier does, so play stops and the face-off comes back outside the zone.',
+    /* ⭐ THE DOOR PROMISES WHAT IT ACTUALLY DELIVERS, AND EACH RULE DELIVERS
+       SOMETHING DIFFERENT. Kevin: *"we say 'See it in a real game', which isn't
+       consistent with what we are providing... something that ensures there
+       isn't a misconception over '...a real game'."*
+       He is right, and on THIS rule the mismatch is at its worst. An offside
+       stoppage carries no coordinate, no zone and no player, and stoppages are
+       not even on the playable timeline -- so the link resolves to the FACE-OFF
+       that restarts play. "See it in a real game" promises the crossing, which
+       is the one thing this page has just finished explaining we can never show.
+       The restart is what there is, so the restart is what the button says. */
+    door: 'See the restart in our replay',
     svg: defs(id)
       // NO TINTS. The slot lozenge and the blue-line band are measurements of
       // ours, and this figure is about the league's rulebook -- see rinkart.js.
-      + `<g class="dgpaint">${furniture(id, false)}</g>`
+      + `<g class="dgpaint">${furniture(id, false)}${nets(id)}</g>`
+      + `<g class="dgplay">${keeper(SX(-NET_X))}</g>`
       + `<g class="dgplay">`
       // Where each of them set off — drawn faintly, and they stay drawn.
       + ghost(C0.x, C0.y) + puckGhost(C0.x + PUCK.x, C0.y + PUCK.y) + ghost(T0.x, T0.y)

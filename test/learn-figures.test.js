@@ -76,6 +76,39 @@ test('⭐ no figure is filled in a club colour — the provenance grammar', () =
   }
 });
 
+test('⭐ a cropped figure carries the net, which is what makes it an END of a rink', () => {
+  /* Kevin, on the first offside page: *"we need a goal (at least, maybe even the
+     goalie) to provide another level of orientation for the viewer... the rink
+     snippet just doesn't look right without a net and goalie."*
+
+     The full sheet has two nets and is obviously symmetric. A CROP has one end,
+     and without the net that end is just more ice -- the blue line alone cannot
+     say "this is the attacking zone" to someone who does not yet know what a
+     blue line means, which is the entire audience for this page. So a figure
+     that crops is a figure that must show the equipment.
+
+     THE COLOUR IS ASSERTED SEPARATELY AND THAT IS THE POINT: `netGlyph` paints
+     the frame in whatever it is handed, and on the game page that is the CLUB's
+     colour -- the provenance signal these drawings must not borrow. */
+  /* ⚠️ NO `if (cropped)` BRANCH, and that was the first draft. Exempting a
+     full-sheet figure looked principled -- the crop is WHY the net matters -- but
+     docs/status.md §H4 is exactly this: a test that branches on the data tests
+     neither branch, and with one figure on disk only one branch would ever run.
+     A rink has nets whatever is framed, so the rule has no exception to reason
+     about and the viewBox check below carries the crop argument on its own. */
+  for (const [id, fig] of Object.entries(figures)) {
+    const box = fig.viewBox.split(/\s+/).map(Number);
+    assert.match(fig.svg, /class="mesh"/, `the ${id} figure draws no net`);
+    assert.match(fig.svg, /class="crease"/, `the ${id} figure draws a net with no crease`);
+    assert.match(fig.svg, /class="dgtok dgkeep"/, `the ${id} figure draws a net with nobody in it`);
+    // AND THE NET IS INSIDE THE CROP, or it is equipment nobody can see. `mesh`
+    // carries the goal line's x, so the frame either contains it or does not.
+    const xs = [...fig.svg.matchAll(/class="mesh" d="M ([\d.]+) /g)].map(m => +m[1]);
+    assert.ok(xs.some(x => x >= box[0] && x <= box[0] + box[2]),
+      `every net in the ${id} figure is outside its own viewBox ${fig.viewBox}: ${xs}`);
+  }
+});
+
 test('a figure names no club, no player and no game', () => {
   // The weaker sibling of the colour test, and it catches the other way in: a
   // figure captioned "TOR" is a claim about Toronto whatever colour it is drawn in.
@@ -246,8 +279,17 @@ test('⭐ the card leads to the diagram, and the diagram leads to the game', () 
   const card = /<a class="card" id="offside" href="([^"]+)"/.exec(learn);
   assert.ok(card, 'the offside card has gone');
   assert.equal(card[1], '/offside.html', 'the offside card no longer opens the diagram');
-  const door = /<a class="rgo" href="([^"]+)"/.exec(rule);
-  assert.ok(door, 'the diagram page carries no way through to a real game');
+  const door = /<a class="rgo" href="([^"]+)">([^<]+)</.exec(rule);
+  assert.ok(door, 'the diagram page carries no way through to the replay');
+  /* ⭐ THE DOOR MAY NOT PROMISE THE THING THIS PAGE JUST EXPLAINED WE CANNOT
+     SHOW. Kevin: *"we say 'See it in a real game', which isn't consistent with
+     what we are providing."* An offside stoppage carries no coordinate, no zone
+     and no player, and stoppages are not on the playable timeline at all -- the
+     link resolves to the FACE-OFF that restarts play. So the label names the
+     restart, and the words that would over-promise are refused by name. */
+  assert.match(door[2], /restart/i, `the offside door says "${door[2].trim()}", not what it opens`);
+  assert.doesNotMatch(door[2], /a real game|the offside|the crossing/i,
+    `the offside door promises "${door[2].trim()}", which is not what lies through it`);
   assert.match(door[1], /^\/game\.html\?game=\d+/, `the door points at ${door[1]}`);
   assert.match(door[1], /layer=whistle/, 'the door does not turn on the layer that marks the call');
 });
