@@ -1,12 +1,15 @@
 # Restart frames — what the replay does at a whistle
 
-**Round one reviewed by CHENG 2026-08-30 — §9 his rulings, §10 the three
-measurements they forced, §11 the mechanism that survived.**
+**Round one — §9 CHENG's rulings, §10 the three measurements they forced, §11 the
+mechanism that survived.**
 
-**⭐ ROUND TWO IS §13–§14 AND IT IS THE LIVE ONE.** Kevin reframed the question
-from *what is honest to draw* to *what would a novice want to look at*, and the
-answer is a lesson that has been painted on our own ice all year with nothing
-naming it. **§14 carries the recommendations and the six things I want ruled.**
+**Round two — §13 the nine dots, §14 the recommendations put to him.**
+
+**⭐ ROUND THREE IS §15–§17 AND IT IS THE LIVE ONE.** He upheld the doctrine that
+makes an overlay admissible, rejected the once-per-session trigger outright, and
+asked for one measurement — **which turned out to be the most valuable thing in
+his review, because it says the opposite of what either of us expected.**
+**§17 carries the proposal and what is still open.**
 
 **Nothing is built.**
 
@@ -504,17 +507,22 @@ about why play stopped** — so it inherits none of §3.1.
 
 ### 13.3 The design
 
-**Once per session — the lesson.** All nine lift, with one sentence naming what
-they are. Fired at the **first restart after play starts**, so a visitor arriving
-on a shared `?at=3-11:09` link still gets it; a period-1 trigger would silently
-deny it to everyone who arrives by link.
+⛔ **Once per session — the lesson. REJECTED IN REVIEW, see §15.3 and §17.** All
+nine lift, with one sentence naming what they are, fired at the **first restart
+after play starts** so a visitor arriving on a shared `?at=3-11:09` link still
+gets it. **The reachability argument was right and the mechanism was not: a
+trigger keyed to the viewer's history means two people watching the same game see
+different renderings of the same frame.** §17 keeps the lesson and moves it.
 
-**Every restart after — the residue.** The dot the draw is on lifts. Not all
-nine, per Kevin: *"we know where the faceoff is going to be."*
+**Every restart — the residue.** The dot the draw is on lifts. Not all nine, per
+Kevin: *"we know where the faceoff is going to be."* **Survived, and §15.3
+strengthens it: with the lesson moved, all 44 restarts get the identical
+treatment**, which is what §5's *no honest subset* already demanded.
 
 ⭐ **The two halves are one system: the lesson teaches the nine places, and
 thereafter the place you learned about lights up whenever play restarts there.**
-The residue only means something because of the lesson.
+The residue only means something because of the lesson. **This survived; only
+where the lesson lives changed.**
 
 ### 13.4 ⭐ The carrier changes, and it is strictly better
 
@@ -582,7 +590,7 @@ screen, never two wearing one label.*
 
 ---
 
-## 14. Recommendations, and what I want ruled
+## 14. Recommendations put to CHENG — ⛔ item 1 rejected, §17 supersedes
 
 **Recommended:**
 
@@ -621,3 +629,184 @@ screen, never two wearing one label.*
    is *a carrier went looking for content and Kevin supplied the question that
    found it* — which is a better shape, and is still one person's idea with one
    reviewer.
+
+---
+
+## 15. CHENG's round-two rulings — 2026-08-30
+
+### 15.1 ✅ §14.1 UPHELD, and his statement of it is better than mine
+
+He tested it rather than agreeing with it. The rule being escaped is *the rink
+shows this moment*, and it exists because **a rink asserting something not true
+now is a rink that lies about the game.** So: is there a *now* to be wrong about?
+
+> The clock is stopped and the puck is not in play. There is no play state for
+> the rink to misrepresent, because there is no play. That's not a loophole — it's
+> the same reasoning that lets the pre-game frame show an empty rink with two
+> goalies and no marks. Nobody calls that a lie about the game.
+
+⭐ **His wording replaces mine, because it names the CONDITION rather than the
+permission:** *during a stoppage the rink has no live claim to make, so it may
+carry a standing fact instead.* **"The rink is free" could be borrowed to justify
+drawing during play. This cannot.**
+
+⭐ **And it comes with a requirement: the emphasis MUST END WHEN PLAY RESUMES.**
+If it outlives the drop it is on screen during a live moment and the escape stops
+applying. **That is an assertion, not a note** — a test that the emphasis is gone
+on the frame after a restart.
+
+### 15.2 ✅ §14.4 UPHELD with two conditions — and one premise of the rescue is false
+
+He agreed the paint beats the mark on all three tests, and answered the *"paint
+is background, nobody notices it brighten"* counter with the beat:
+
+> A background element brightening **while nothing else moves and the clock has
+> stopped** is a very different perceptual event from one brightening mid-stream.
+> The stillness is what makes it visible.
+
+⚠️ **NEITHER HALF OF THAT IS TRUE AT A RESTART FRAME.** §16 measures the mark
+moving a median **31 ft — 59px** into a restart, and §10.1 already established
+the clock holds on **10%**. **The stillness is TEMPORAL, not spatial**: the frame
+lasts longer because of the beat, and nothing on it is still.
+
+**His conclusion survives on the dwell alone**, which is why this is a correction
+rather than a refutation. But a rescue argument resting on a false premise is
+§10.1's shape a second time, in the same document, by the same reviewer.
+
+**The two conditions stand:**
+- **A change, not a state.** Paint brighter for the whole restart reads as paint;
+  paint that brightens *at the drop* reads as an event.
+- **It is a pixels question.** Both of us are reasoning about perception from a
+  terminal, which this project has got wrong repeatedly. One look at both widths
+  before it is called settled, and **if it reads as nothing, §11.5's event mark is
+  the fallback.**
+
+### 15.3 ⛔ §14.5 REJECTED — once-per-session is a tier, and a worse one
+
+Accepted without defence. His argument:
+
+> Every rule this project has kept is **a property of the game**: the pairing
+> rule, the geometric slot, the ends array, `sit`, the nine coordinates. Every
+> rule it has killed was a property of **us**: the tier ladder, `recent` trails,
+> the five-event window, `thin = f < 20`. *Once per session* is a property of the
+> viewer's history with our website.
+
+⭐ **And the decisive consequence: two viewers watching the same game would see
+different renderings of the same frame.** Every frame of this replay is
+reproducible from the record alone — that is what makes the golden fixture
+possible and what makes a deep link land identically for everyone.
+
+**My own escape named the problem** — *the ranking is on recency of the viewer,
+not on anything about the play* — and I offered it as a mitigation when it was
+the objection.
+
+⚠️ **The newcomer block is not a precedent**, and he pre-empted the argument: it
+is **chrome making a claim about the interface**, and it is dismissible. Emphasis
+on one restart and not the other 43 is **the ice making a claim about the game**,
+and the ice would say something different on a second viewing.
+
+---
+
+## 16. ⭐ THE MEASUREMENT HE ASKED FOR, AND IT SAYS THE OPPOSITE OF WHAT WE EXPECTED
+
+His question: *how many base-view frames currently change anything visible at
+all?* His test: *if most already look near-identical the restart beat is
+punctuation; if most are distinct it is competition.*
+
+With `trails=off` — the default — the current mark **is** the picture, so the
+honest measure is how far it moves. 15,483 consecutive-frame transitions, in feet
+and in device pixels at a 390px viewport (the ice is **386px** wide there, U11,
+measured — 1.93 px/ft):
+
+| | p10 | median | p90 |
+|---|---|---|---|
+| **every frame** | 13 ft | **48 ft — 93px of 386** | 137 ft |
+| **into a restart frame** (n=2,653) | 9 ft | **31 ft — 59px** | 104 ft |
+| every other frame (n=12,830) | 14 ft | 52 ft — 101px | 140 ft |
+
+| the mark moves less than | share of frames |
+|---|---|
+| 5 ft (10px) | **2.9%** |
+| 10 ft (19px) | 6.9% |
+| 20 ft (39px) | 17.9% |
+| 30 ft (58px) | 30.7% |
+
+Frames carrying a distinct arrival or a caption: **49.4%**.
+
+### 16.1 The answer, and what it exposes
+
+**Most frames are distinct** — the mark jumps roughly a quarter of the screen
+every frame, all game — so by his own test this is **competition, not
+punctuation.**
+
+⭐ **BUT THAT ANSWER IS KEVIN'S ORIGINAL COMPLAINT RESTATED IN NUMBERS.** *"The
+continuous event stream tells me nothing"* is exactly what a dot teleporting 93px
+every 3.6 seconds looks like. **The frames are all maximally different and not one
+of them is legible.**
+
+⭐⭐ **DISTINCTNESS WAS NEVER THE SCARCE RESOURCE. CONTINUITY IS.** Neither of us
+framed it that way; his own test is what exposed it, and it reframes every option
+in this document — each one adds a *distinction* to a stream already saturated
+with them.
+
+### 16.2 The one gift in the numbers
+
+**A restart frame moves the mark 31 ft against 52 for a normal one.** Restarts
+are already the quietest transitions in the replay, so the paint lift is not
+competing with a large jump. That is the strongest single argument for putting
+the emphasis there rather than anywhere else, and it was not available to either
+of us before this query.
+
+---
+
+## 17. ⭐ The proposal as it now stands
+
+1. **`carriesABeat(e)` gains one state** — a faceoff a whistle paired to
+   (§11.1–4, unchanged, ruled observable in §9.2).
+2. **The pairing rule is imported from `whistle.js`**, never restated.
+3. **The carrier is the painted `.fdot`**, not the event mark — never absent,
+   what the lesson is about, and it hands back §10.2's 46.4% → 63.5% density cost
+   entirely (§13.4, upheld §15.2).
+4. **It brightens AT THE DROP and is GONE ON THE NEXT FRAME** — a change not a
+   state, and the escape in §15.1 requires the end as much as the start. Both
+   asserted.
+5. **All 44 restarts get the identical treatment.** No trigger, no session state,
+   nothing keyed to the viewer (§15.3).
+6. **The nine-dot lesson moves to the resting frame** — see §17.1.
+
+### 17.1 ⭐ Where the lesson lives — my counter to the exile
+
+CHENG's alternative sends the nine-dot fact to the learn page or a reference
+panel. Session-independent and correct, and **it gives up the thing that started
+this: the whistle's dead air.**
+
+**The resting frame keeps both.** A11 already established the pre-game state at
+`s=0` as *"a state, not a play"* — **so §15.1's escape covers it by exactly the
+same reasoning**: no live claim, therefore free to carry a standing fact. It is
+empty ice whose entire job is orientation. It is **reproducible for every viewer**
+who presses play, and a deep-link arrival skipping it is skipping a moment before
+theirs — expected behaviour, not a rendering difference.
+
+⚠️ **The cost, stated:** at the resting frame no faceoff has happened yet, so the
+lesson is abstract — *"faceoffs happen on these nine spots"* rather than *"that
+draw just now, and here are all nine."* **That is a real loss and it is the
+trade.**
+
+### 17.2 What I want ruled
+
+1. **Does the resting frame satisfy §15.1?** It is the same escape applied to a
+   different no-live-claim state, but A11 called it an *orientation*, and an
+   orientation that teaches may be a different thing from one that orients.
+2. **§16 changed the problem — does it change the answer?** If continuity rather
+   than distinctness is what the replay lacks, then every option in this document
+   is the wrong shape, including the one being recommended. **The paint lift is a
+   defensible small thing. It is not an answer to a 93px median jump.**
+3. **Is the abstract lesson worth having at all?** If *"these are the nine spots"*
+   with no draw on screen does not land, the honest move is CHENG's exile to the
+   learn page and the ice keeps only the residue — which then has no lesson behind
+   it and is just a brighter dot.
+4. **What is missing this time?** Round one was *found a gap, talked myself out of
+   two fixes, kept the third.* Round two was *a carrier went looking for content.*
+   Round three is **a measurement I requested on his behalf and it undercut the
+   premise of the whole document** — which is the most useful thing that has
+   happened here and is not something either of us aimed at.
