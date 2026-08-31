@@ -732,7 +732,34 @@
    does not become a flex item when the preview turns the box into a flex
    column. That is the constraint the comment forty lines up asks of anything
    added inside `.rinkbox`, and this is its answer. */
-#rg .caption{position:absolute;left:50%;bottom:calc(var(--lboxh) + var(--rinkpad) + 6px);transform:translateX(-50%);display:flex;align-items:center;gap:8px;background:rgba(15,26,35,.94);color:#fff;padding:7px 15px;border-radius:99px;font-size:.86rem;font-weight:600;white-space:nowrap;opacity:0;pointer-events:none;max-width:92%}
+/* ⭐ IT WRAPS NOW, AND `nowrap` WAS ACTIVELY BLOCKING THE TEACHING. With it,
+   `max-width:92%` could not shrink the pill below its own text: the pill simply
+   overflowed and the whole PAGE scrolled sideways. Measured — the icing caption,
+   which says both halves of Rule 81, is 324px at a 320px viewport and 389px at
+   390. Every caption before this was a club, a label and a name, so nothing had
+   ever been long enough to expose it; a caption that TEACHES is longer than one
+   that labels, and this surface is now a teaching surface.
+   Fixing the sentence would have fixed one sentence. */
+/* ⚠️ AND IT IS NORMAL TEXT FLOW, NOT FLEX. `display:flex;flex-wrap:wrap` was the
+   first attempt and it made every child a flex item, so the sentence shrank to
+   min-content: a 160px-wide, 148px-tall COLUMN of words standing on the ice.
+   Text wants a line box, not a flex line. The tag keeps its spacing with a
+   margin, which is what the `gap` was doing for it.
+
+   ⚠️ AND `width:max-content` IS LOAD-BEARING, which `max-width:92%` hid. An
+   absolutely positioned box shrink-to-fits into the space from its `left` to
+   the container's edge — and `left:50%` leaves it HALF the card. With `nowrap`
+   that never showed, because the text refused to fold and simply overflowed; the
+   moment it could wrap, the pill folded into a 160px column in a 320px card and
+   the 92% cap was never reached. `max-content` asks for the whole sentence and
+   the cap brings it back to the card. */
+/* ⚠️ AND `box-sizing:border-box` WITH THE CAP, WHICH THE CAP ALONE DOES NOT GIVE.
+   The computed width really was 294px against a 316px card — `max-width:92%`
+   WAS applying — and the pill still measured 324 and scrolled the page, because
+   this element is `content-box` and the 15px of padding each side is added
+   OUTSIDE the cap. A max-width the box then exceeds is the most convincing kind
+   of wrong: the declaration is present, correct, applied, and insufficient. */
+#rg .caption{position:absolute;left:50%;bottom:calc(var(--lboxh) + var(--rinkpad) + 6px);transform:translateX(-50%);box-sizing:border-box;width:max-content;max-width:92%;text-align:center;background:rgba(15,26,35,.94);color:#fff;padding:7px 15px;border-radius:16px;font-size:.86rem;font-weight:600;line-height:1.4;opacity:0;pointer-events:none}
 /* THE DURATION HERE IS A PLACEHOLDER AND NEVER APPLIES. `caption()` sets
    `style.animationDuration` from `dwell(e)` on every call, so the caption lasts
    exactly as long as the frame it describes. This number used to be the real
@@ -741,7 +768,7 @@
    still needs A duration to be valid; `render-transport.test.js` pins that the script
    overwrites it, so if the assignment ever goes, a test does too. */
 #rg .caption.on{animation:cap 2.2s ease}@keyframes cap{0%{opacity:0;transform:translateX(-50%) translateY(6px)}12%{opacity:1;transform:translateX(-50%) translateY(0)}82%{opacity:1}100%{opacity:0}}
-#rg .caption .tag{font-family:ui-monospace,Menlo,monospace;font-weight:700;font-size:.72rem;padding:2px 7px;border-radius:5px}
+#rg .caption .tag{font-family:ui-monospace,Menlo,monospace;font-weight:700;font-size:.72rem;padding:2px 7px;border-radius:5px;margin-right:7px}
 #rg .caption .tag.a{background:var(--away);color:var(--away-ink)}#rg .caption .tag.h{background:var(--home);color:var(--home-ink)}
 #rg .caption .num{opacity:.65;font-family:ui-monospace,Menlo,monospace;margin-right:3px}
 #rg .counters{display:flex;justify-content:space-between;padding:2px 6px;margin-top:8px}

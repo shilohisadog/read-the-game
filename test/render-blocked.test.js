@@ -353,12 +353,38 @@ test('the whistle layer actually draws the line its rule names', () => {
   assert.ok(lines > 0,
             'the whistle layer never lit a line — the rule geometry is not on the ice');
 
-  // AND ONLY WHILE THE LAYER IS ON. A line left behind after the layer is off
-  // would be unexplained geometry: its legend key is hidden with the group.
+  /* ⭐ AND WITH THE LAYER OFF, ONLY AT AN ICING RESTART — a NARROWING of this
+     guard, not a removal, and the reason it moved is worth stating.
+     It read "only while the layer is on", because a line left behind after the
+     layer is off would be unexplained geometry: its legend key is hidden with
+     the group. That premise was exact for a line drawn at any whistle. It stops
+     being exact for a line drawn at an ICING restart, which is now the one
+     frame that carries a caption naming those two lines in words — "from behind
+     centre, past the far goal line". Kevin: "we left out half of icing, the
+     situation that caused it." The lines ARE that half, and they were reachable
+     only by turning on a layer a novice does not know exists.
+     So the invariant tightens rather than relaxes: with the layer off, a rule
+     line may appear at an icing restart and NOWHERE ELSE. */
   const b = boot();
-  const off = b.every(d => d.$('whistles').innerHTML).join('\n');
-  assert.ok(!/<line class="rulel/.test(off),
-            'the rule line is drawn with the whistle layer off, where nothing explains it');
+  const SKIP = new Set(['stoppage', 'period-start', 'period-end', 'game-end', 'delayed-penalty']);
+  const EV = rich.events.filter(e => !SKIP.has(e.type));
+  // The icing restarts, derived here from the RAW FEED — the stoppage's own
+  // `rsn` and the faceoff after it — never from the rule that draws them.
+  const iced = new Set();
+  rich.events.forEach((e, i) => {
+    if (e.type !== 'stoppage' || e.rsn !== 'icing') return;
+    for (let k = i + 1; k < rich.events.length; k++) {
+      if (rich.events[k].type === 'stoppage') return;
+      if (rich.events[k].type !== 'faceoff') continue;
+      iced.add(EV.indexOf(rich.events[k])); return;
+    }
+  });
+  assert.ok(iced.size >= 4, `only ${iced.size} icing restarts in the reference game`);
+
+  const drew = b.every(d => /<line class="rulel/.test(d.$('whistles').innerHTML));
+  drew.forEach((lit, k) => assert.equal(lit, iced.has(k),
+    lit ? `frame ${k} lit a rule line with the layer off and is not an icing restart`
+        : `the icing restart at frame ${k} lit no rule line — the cause half is missing`));
 });
 /**
  * ⛔ RETIRED 2026-08-27 — "the restart faceoff says which rule it is restarting

@@ -50,7 +50,17 @@ export function fakeDom() {
     // never wrote the element at all -- the assertion reads as coverage and
     // proves nothing. Left undefined, the same assertion requires a real write.
     // (homepage.test.js already worked this way and says so at its heroShown.)
-    innerHTML: '', value: '',
+    /* ⭐ `innerHTML` COUNTS ITS WRITES, and a caption is what forced it. Nothing
+       ever CLEARS the caption pill, so "did the html change since the last
+       frame" was only ever a proxy for "did this frame speak" — and it held only
+       while every caption carried a player name and was therefore unique. The
+       icing caption says one of two sentences 7.8 times a game; two icings into
+       the same end write the identical string, and two real captions in the
+       reference game read as silence. The write is the signal itself. */
+    _html: '', writes: 0,
+    get innerHTML() { return this._html; },
+    set innerHTML(v) { this._html = v; this.writes++; },
+    value: '',
     /* ⭐ `textContent` COERCES, BECAUSE A REAL ONE DOES.
        It was a plain field, so `el.textContent = 34` stored the NUMBER 34 while
        a browser stores "34". Every assertion here then had to know which side of
@@ -433,9 +443,20 @@ export function paceOf(ticks, setup) {
   const dom = fakeDom();
   const rows = [];
   let n = 0;
+  /* ⭐ COUNT THE WRITES, DO NOT DIFF THE TEXT — and a real caption is what
+     forced this. `spoke` used to mean "the caption's innerHTML differs from the
+     previous frame's", which worked only while every caption carried a player
+     name and was therefore unique. The icing caption (2026-08-31) says one of
+     two sentences, 7.8 times a game; the pill is never CLEARED, so a second
+     icing into the same end wrote the identical string and the frame read as
+     long-and-silent. The pill had spoken, loudly, in a real browser — the proxy
+     had stopped tracking the thing it stood for. Counting assignments is the
+     signal itself: `sayCaption` writes exactly once per caption. */
+  const cap = dom.$('caption');
   const timer = (fn, ms) => {
     rows.push({ ms, i: +dom.$('scrub').value,
                 dur: dom.$('caption').style.animationDuration,
+                wrote: cap.writes,
                 html: dom.$('caption').innerHTML,
                 // ⭐ THE ICE SPEAKS TOO. A goal's moment moved out of the pill
                 // on 2026-08-25 -- `drawLabel` already named the scorer and the
@@ -460,7 +481,7 @@ export function paceOf(ticks, setup) {
   // that clearing as a second, silent-but-long frame.
   rows.forEach((r, k) => {
     const prev = rows[k - 1];
-    r.spoke = k > 0 && ((r.goal && r.goal !== prev.goal) || r.html !== prev.html);
+    r.spoke = k > 0 && ((r.goal && r.goal !== prev.goal) || r.wrote > prev.wrote);
   });
   return { dom, rows };
 }

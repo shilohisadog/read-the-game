@@ -117,16 +117,23 @@ const goalOnIce = a => (a.$('labels').innerHTML.match(/🚨 GOAL[^<]*/) || [''])
    plain "did it change" reader counted that clearing as a second moment, five
    phantom `other`s in a walk. The caption never empties, so it is still read as
    a change; the goal label is read as an appearance. */
+/* ⚠️ A WRITE, NOT A DIFFERENT STRING. This compared `innerHTML` to the previous
+   frame's, which is a proxy that fails the moment two captions say the same
+   thing — and the icing caption does: the reference game ices twice into BUF's
+   end six seconds apart, and twice more in the third, so eight real captions
+   read as six. The fake counts assignments now (helpers/page.js), which is the
+   event itself rather than a shadow of it. */
 function callsWhileStepping(a, read) {
   const out = [];
-  let lastCap = a.$('caption').innerHTML, lastGoal = goalOnIce(a);
+  const cap = a.$('caption');
+  let lastWrites = cap.writes, lastGoal = goalOnIce(a);
   a.$('scrub').oninput({ target: { value: '0' } });
   for (let k = 0; k < +a.$('scrub').max; k++) {
     a.$('fwd').click();
-    const cap = a.$('caption').innerHTML, goal = goalOnIce(a);
+    const goal = goalOnIce(a);
     if (goal && goal !== lastGoal) out.push(read(goal, a));
-    else if (cap !== lastCap) out.push(read(cap, a));
-    lastCap = cap; lastGoal = goal;
+    else if (cap.writes > lastWrites) out.push(read(cap.innerHTML, a));
+    lastWrites = cap.writes; lastGoal = goal;
   }
   return out;
 }
@@ -242,17 +249,25 @@ test('a penalty is CALLED on the ice, like a goal and unlike a giveaway', () => 
   const ST = stints(rich.events, ctx);
   const kills = ST.filter(s => s.endedBy === 'time'
     && !ST.some(o => o !== s && o.team !== s.team && o.start <= s.end && o.end > s.end)).length;
+  // ⭐ ICINGS COUNTED FROM THE RAW FEED, not from `icingRestarts`. `rsn` is the
+  // league's own word on the stoppage; asking the rule under test how many to
+  // expect would make this a mirror. They agree at 8 in this game, and where
+  // they could differ — an icing with no faceoff after it, 1 in 469 across the
+  // archive — the rule is the one that must explain itself, not this line.
+  const icings = rich.events.filter(e => e.type === 'stoppage' && e.rsn === 'icing').length;
 
   const a = boot();
   const marks = callsWhileStepping(a, (h) =>
     /🚨 GOAL/.test(h) ? 'goal' : /⛔ Penalty/.test(h) ? 'penalty'
-      : /🛡 Penalty killed/.test(h) ? 'kill' : 'other');
-  const got = { goal: 0, penalty: 0, kill: 0, other: 0 };
+      : /🛡 Penalty killed/.test(h) ? 'kill'
+      : /🧊 Icing/.test(h) ? 'icing' : 'other');
+  const got = { goal: 0, penalty: 0, kill: 0, icing: 0, other: 0 };
   marks.forEach(m => got[m]++);
   const want = t => rich.events.filter(e => e.type === t).length;
-  assert.deepEqual(got, { goal: want('goal'), penalty: want('penalty'), kill: kills, other: 0 },
-    'with no layers on, exactly the goals, the penalties and the kills get a moment of their own');
-  assert.ok(got.penalty > 0 && got.goal > 0 && got.kill > 0, 'the walk missed a kind entirely');
+  assert.deepEqual(got,
+    { goal: want('goal'), penalty: want('penalty'), kill: kills, icing: icings, other: 0 },
+    'with no layers on, exactly the goals, penalties, kills and icings get a moment of their own');
+  assert.ok(Object.values(got).slice(0, 4).every(v => v > 0), 'the walk missed a kind entirely');
 });
 
 test('the penalty caption names the team that TOOK it', () => {

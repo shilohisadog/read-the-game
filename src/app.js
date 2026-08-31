@@ -171,6 +171,11 @@ const PBOX=stints(G.events,CTX);
    `PBOX` above is computed once: a penalty being killed is a property of the
    GAME, and only the query is a property of the moment. */
 const KILLED=new Map(penaltyKilled(EV,PBOX,CTX).map(k=>[EV[k.at],k]));
+/* ⭐ AND THE RESTART EACH ICING FORCES. Keyed by the event object for `KILLED`'s
+   reason -- `captioned` takes one event and nothing else. Built from ALL events
+   rather than `EV`, because the icing itself is a `stoppage` and the SKIP set
+   drops it: the whistle is not a frame, and the faceoff it forces is. */
+const ICING=new Map(icingRestarts(G.events,CTX).map(r=>[r.event,r]));
 // WHEN EACH PERIOD BEGAN, read from the events.
 //
 // AND NOT BECAUSE THE ARITHMETIC WOULD BE WRONG -- the first draft of this
@@ -833,7 +838,17 @@ function render(i,how){
  $('events').innerHTML=parts.join('');
  drawCue(i);
  if(whistleOn)drawWhistles(whistle.reduce(upto(i),CTX));
- else{$('whistles').innerHTML='';$('whistlePanel').innerHTML='';}
+ /* ⭐ AND THE ICING'S OWN GEOMETRY EVEN WITH THE LAYER OFF. The two lines are
+    the CAUSE half of Rule 81 — from behind the centre line, past the far goal
+    line — and they were reachable only by turning Stoppages on, which is a
+    thing a novice does not know to do. A rule is not a metric: it applies
+    whether or not anyone opted into measuring it, which is the same line the
+    caption chain already draws (goals and penalties always speak; a slot shot
+    speaks only with its layer on).
+    ONLY AT THE RESTART FRAME, so it appears and goes with the caption that
+    explains it rather than standing on the ice afterwards. */
+ else{$('whistles').innerHTML=cur&&ICING.has(cur)?ruleLines(ICING.get(cur).lines,cur.per):'';
+      $('whistlePanel').innerHTML='';}
  // The replay is AT the end, not merely near it. `i` is the frame index and
  // EV.length-1 is the last playable event; a game paused one shot short has
  // no verdict, and saying so is the whole point.
@@ -974,6 +989,11 @@ function render(i,how){
       many times a game and a kill happens 3.4 times, and because the slot layer
       has the ice to say it with while this has nothing at all. */
    else if(cur&&KILLED.has(cur)){captionKill(cur);}
+   /* Icing sits under the kill and over the slot shot. It cannot collide with
+      the goal or penalty above it (a faceoff is neither), and it loses to a kill
+      because a kill is rarer -- 3.3 a game against 7.8 -- and because a power
+      play ending is the bigger change of state. */
+   else if(cur&&ICING.has(cur)){captionIcing(cur);}
    else if(cur&&hdOn&&isHD(cur)){lastHD=i;caption(cur,'hd');}}
  prevA=a;prevH=h;
  $('per').textContent=periodLabel(cur);$('clk').textContent=cur?cur.rem:'20:00';
@@ -1057,8 +1077,15 @@ function caption(e,kind){const c=$('caption');const tid=e.own;const ab=tid===AID
    pill's markup and its duration in two places, and the duration is the half
    that matters: it comes from `dwell(e)`, which reads `captioned(e)`, which is
    the seam that keeps a caption from outliving or undercutting its own frame. */
+/* ⛔ AND `ab` MAY BE NULL, WHICH IS A DOCTRINE HOLE NOT A CONVENIENCE. Every
+   caption until now was about a club, so the chip was unconditional. An icing is
+   about a RULE: `whistle.js` says so in its own words -- "a stoppage names a rule
+   and never a club, so nothing here is credited to either side" -- and Rule 81
+   is what connects the end play restarts in to the team that iced it. Painting
+   a club's colour on that sentence would make the page assert the inference it
+   deliberately leaves to the reader. No club, no chip. */
 function sayCaption(side,ab,label,rest,e){const c=$('caption');
- c.innerHTML=`<span class="tag ${side}">${ab}</span><b>${label}</b>${rest}`;
+ c.innerHTML=(ab?`<span class="tag ${side}">${ab}</span>`:'')+`<b>${label}</b>${rest}`;
  /* THE CAPTION LASTS EXACTLY AS LONG AS THE FRAME IT DESCRIBES. It used to be
     `animation:cap 2.2s` in the stylesheet -- a second clock, beside the pace and
     unrelated to it, and the speed buttons moved one of them. Driving the
@@ -1088,6 +1115,34 @@ function sayCaption(side,ab,label,rest,e){const c=$('caption');
 function captionKill(e){const k=KILLED.get(e);const tid=k.killedBy;
  sayCaption(tid===AID?'a':'h',tid===AID?AAB:HAB,'🛡 Penalty killed',
   ` · ${k.aside} a side`,e);}
+/* ⭐ THE PUNISHMENT IS THE DOT, AND THE PAGE HAS NEVER SAID SO DURING PLAY. The
+   learn card has said it all along -- "watch where the faceoff goes, that dot is
+   the whole punishment" -- on a page nobody is looking at while the puck moves.
+   7.8 a game across the archive, two distinct sentences, worst repeat 5 in a
+   game: a narrator, not wallpaper (K1's sentence repeated 47 times).
+   ⛔ AND IT NAMES THE END, NEVER THE OFFENDER. `zone` is read from the restart
+   coordinate; on the 1 of 469 that restarts in the neutral zone it is null, and
+   the sentence drops the clause rather than picking the nearer end. */
+function captionIcing(e){const z=ICING.get(e).zone;
+ /* ⭐ BOTH HALVES OF THE RULE, WHICH IS KEVIN'S POINT. "The learn card tells the
+    reader to watch where the faceoff is, but we left out half of icing — the
+    situation that CAUSED it." The cause is the first clause and the two lit
+    lines under it; the punishment is the second. `WHY.icing.say` has carried
+    the same sentence all along, in a panel that is parked. */
+ /* ⚠️ AND IT IS THIS SHORT BECAUSE THE PILL SITS ON THE ICE. Measured at 390:
+    "the faceoff comes back into X's end" makes three lines, 72px over a 164px
+    rink — 44% of the ice covered by a sentence pointing at it. "faceoff back in"
+    is two lines and 32%. At 320 every wording is three lines; that is the cost
+    of saying both halves on a 320px phone, and it is stated rather than hidden. */
+ sayCaption(null,null,'🧊 Icing',
+  ' · from behind centre, past the far goal line'
+  +(z?` &mdash; faceoff back in ${ESC(z)}'s end`:''),e);}
+/* THE TWO LINES RULE 81 NAMES, at the frame it is being explained. Same markup
+   `drawWhistles` emits for the same reason, through one writer so the geometry
+   and the class cannot drift into two versions. */
+function ruleLines(lines,per){
+ return (lines||[]).map(lx=>
+  `<line class="rulel" x1="${AX(lx,per)}" y1="2" x2="${AX(lx,per)}" y2="83"/>`).join('');}
 let workOpen=false;
 /**
  * ⭐ SHOW ME THE WORK — ONE PANEL, DRIVEN BY THE LAYER CONTRACT.
@@ -1409,7 +1464,7 @@ function syncStep(){$('back').disabled=i<=-1;$('fwd').disabled=i>=EV.length-1;}
    silent, so `dwell` would give it an ordinary frame's time -- a sentence that
    appears and is gone before it is read, which is the exact defect this
    predicate was extracted to make impossible, running in the other direction. */
-function captioned(e){return !!e&&(e.type==='goal'||e.type==='penalty'||KILLED.has(e)||(hdOn&&isHD(e)));}
+function captioned(e){return !!e&&(e.type==='goal'||e.type==='penalty'||KILLED.has(e)||ICING.has(e)||(hdOn&&isHD(e)));}
 function dwell(e){return captioned(e)?frameMs+CAPTION_BONUS:frameMs;}
 function step(){if(i>=EV.length-1){stop();return;}set(i+1,'play');timer=setTimeout(step,dwell(EV[i]));}
 /* PLAY MEANS GO. A viewer who presses it has asked for the game, and resting on
@@ -2108,9 +2163,7 @@ function drawWhistles(W){
  // one -- so what is lit is rink geometry the rulebook refers to, selected by the
  // recorded restart coordinate.
  const cur=latest(W);
- if(cur&&cur.lines&&cur.lines.length){
-  for(const lx of cur.lines)
-   g.push(`<line class="rulel" x1="${AX(lx,cur.per)}" y1="2" x2="${AX(lx,cur.per)}" y2="83"/>`);}
+ if(cur&&cur.lines&&cur.lines.length)g.push(ruleLines(cur.lines,cur.per));
  $('whistles').innerHTML=g.join('');
  const w=latest(W);
  if(!w){$('whistlePanel').innerHTML='<p class="whsay">No whistle yet — play has not stopped in what you have watched so far.</p>';return;}

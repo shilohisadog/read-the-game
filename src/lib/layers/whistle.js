@@ -349,6 +349,57 @@ export const whistle = {
  * Null is the answer the page needs to be able to say "no whistle yet" instead
  * of reaching for the last one it happens to hold.
  */
+/**
+ * ⭐ THE RESTART AN ICING FORCES — the one frame the learn card asks a reader to
+ * watch, and the replay has never said a word about.
+ *
+ * The Icing card reads: *"The puck is sent the length of the ice and play comes
+ * straight back. Watch where the faceoff goes — that dot is the whole
+ * punishment."* That sentence is on the learn page and nowhere in the game, at
+ * the moment it is actually visible. This finds the moment.
+ *
+ * ⭐ THE RESTART IS THE FACEOFF, MEASURED NOT ASSUMED. Across 60 archive games,
+ * **468 of 469 icings are followed by a faceoff** and the remaining one by a
+ * penalty; the game clock is identical on all 469, because a whistle and its
+ * drop share a second. So the rule walks forward to the first faceoff and stops
+ * at a second stoppage — a new whistle owns the next drop, and attaching this
+ * icing's sentence to it would name the wrong rule.
+ *
+ * ⛔ IT RETURNS WHOSE END, NEVER WHO ICED IT. `zoneOf` reads the restart
+ * coordinate, which is recorded; Rule 81 is what connects that end to the
+ * offending club, and this module is emphatic elsewhere that *a stoppage names
+ * a rule and never a club*. **1 of 469** restarts in the neutral zone and names
+ * no end at all — that one gets `null` and the caller must say less, rather than
+ * pick the nearer of two.
+ *
+ * ⭐ AND IT CARRIES THE OTHER HALF OF THE RULE. Kevin: *"the learn card tells
+ * the reader to watch where the faceoff is, but we left out half of icing — the
+ * situation that CAUSED it."* He is right, and the honest form of that half is
+ * already in this module: `linesFor` returns the two lines Rule 81 names, the
+ * centre line and the far goal line. From behind one, past the other. That is
+ * the cause stated as rink geometry rather than as a puck path the feed does
+ * not record and Doctrine §4 forbids us to invent.
+ *
+ * @returns {Array<{event, zone, lines}>} the faceoff that restarted play, the
+ *   club whose end it is in (or null when the dot names no end), and the lines
+ *   the rule is about.
+ */
+export function icingRestarts(events, ctx) {
+  const out = [];
+  events.forEach((e, i) => {
+    if (e.type !== 'stoppage' || e.rsn !== 'icing') return;
+    for (let k = i + 1; k < events.length; k++) {
+      if (events[k].type === 'stoppage') return;   // a second whistle owns that drop
+      if (events[k].type !== 'faceoff') continue;
+      out.push({ event: events[k],
+                 zone: zoneOf(events[k].x, ctx.homeAb, ctx.awayAb),
+                 lines: linesFor('icing', events[k].x) });
+      return;
+    }
+  });
+  return out;
+}
+
 export function latest(result) {
   const w = result.whistles;
   return w.length ? w[w.length - 1] : null;
