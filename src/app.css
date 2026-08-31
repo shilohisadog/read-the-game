@@ -976,6 +976,19 @@
 #rg .weg{color:var(--muted);font-weight:400}#rg .wg{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
 #rg .wc{background:#f2f7fa;border:1px solid var(--edge);border-radius:10px;padding:13px}#rg .wc h3{margin:0 0 6px;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);display:flex;justify-content:space-between}#rg .wc h3 .n{font-family:ui-monospace,Menlo,monospace;font-size:1.2rem;color:var(--ink);font-weight:700}#rg .wc.flag{border-color:#e6b98f}#rg .wc.flag h3 .n{color:var(--flag)}#rg .wc p{margin:0;font-size:.87rem}
 #rg .wfoot{margin-top:13px;font-size:.8rem;color:var(--muted);border-top:1px solid var(--edge);padding-top:11px}#rg .wfoot em{font-style:normal;color:var(--ink)}
+/* ⭐ THE WAY BACK TO THE CARD THAT EXPLAINS THIS. It is the only thing in this
+   panel that is not evidence, so it is separated by a rule and set quieter than
+   the arithmetic above it -- a reader auditing a count should not have their
+   eye pulled out of the audit.
+   WRAPS, because Stoppages carries four of them and a phone gives this row
+   about 300px. `gap` on a flex row is what keeps the spacing even when it wraps;
+   margins on the links would double up at the break. */
+#rg .wlearn{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px;
+ margin-top:11px;padding-top:10px;border-top:1px solid var(--edge);font-size:.8rem}
+#rg .wll{font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+#rg .wlearn a{color:var(--ink);text-decoration:underline;text-underline-offset:3px;
+ text-decoration-color:var(--edge)}
+#rg .wlearn a:hover{text-decoration-color:var(--ink)}
 /* ⭐ IT WAS FLOATING IN THE GAP BETWEEN TWO ZONES -- centred, in its own
    whitespace, with every other thing on the surface left-aligned under a
    heading. It is the identity of the game you just watched, and the first two

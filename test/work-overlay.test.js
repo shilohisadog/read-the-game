@@ -160,3 +160,60 @@ test('the closer is static markup with an id, not built into the panel’s inner
   assert.doesNotMatch(app, /class="wx"[^>]*\sonclick=/,
     'the closer uses an inline handler, which the page’s CSP refuses');
 });
+
+/**
+ * ⭐ THE WAY BACK OUT — 2026-08-31. Kevin: *"aligning show me the work with
+ * learning cards, and making them bi-directional."*
+ *
+ * ⚠️ THESE EXIST BECAUSE A MUTATION SURVIVED. `learn.test.js` checks the MAP
+ * that the row is built from, and a mutation dropping `#${c.id}` from the href —
+ * so every link landed on the top of the learn page instead of on the card —
+ * passed the whole suite. Checking the ingredients is not checking the dish.
+ */
+test('⭐ the row renders a real anchored link per card, for the layer that is on', () => {
+  const a = boot(rich, null, '?layer=slot');
+  // ⚠️ THE PLAYHEAD FIRST. `renderWork` returns early at `at < 0`, so a panel
+  // opened on the pre-game frame is empty by design — and three assertions
+  // about its contents failed for that reason before they could say anything.
+  a.$('scrub').oninput({ target: { value: '120' } });
+  a.$('work').click();
+  const html = a.$('workBody').innerHTML;
+  assert.match(html, /class="wlearn"/, 'the Learn More row never rendered');
+  const hrefs = [...html.matchAll(/<a href="([^"]+)"/g)].map(m => m[1]);
+  assert.deepEqual(hrefs, ['/what-you-can-see.html#slot'],
+    'the slot layer must link to the slot card, by anchor');
+  // ⚠️ AND THE TEXT IS THE CARD'S TITLE, NOT ITS KEY. `slot` and `empty-net` are
+  // table keys; this project has already shipped a raw `descKey` to a screen
+  // once. A mutation printing `c.id` here survived until this line existed.
+  const text = [...html.matchAll(/<a href="[^"]+">([^<]+)<\/a>/g)].map(m => m[1]);
+  assert.deepEqual(text, ['Shots from the slot'],
+    'the row is printing the card key rather than its title');
+});
+
+test('⭐ Stoppages links to all four of its cards, and each carries its own anchor', () => {
+  // The layer the map is 4-to-1 on. A row that lists one, or four links that
+  // share a fragment, both look fine and teach the wrong thing.
+  const a = boot(rich, null, '?layer=whistle');
+  a.$('scrub').oninput({ target: { value: '120' } });
+  a.$('work').click();
+  const hrefs = [...a.$('workBody').innerHTML.matchAll(/<a href="([^"]+)"/g)].map(m => m[1]);
+  assert.deepEqual(hrefs.slice().sort(), [
+    '/what-you-can-see.html#faceoffs', '/what-you-can-see.html#icing',
+    '/what-you-can-see.html#offside', '/what-you-can-see.html#penalties']);
+  assert.equal(new Set(hrefs).size, 4, 'two of the links point at the same card');
+  for (const h of hrefs)
+    assert.match(h, /#[a-z-]+$/, `${h} lands on the page, not on a card`);
+  const text = [...a.$('workBody').innerHTML.matchAll(/<a href="[^"]+">([^<]+)<\/a>/g)].map(m => m[1]);
+  assert.deepEqual(text.slice().sort(), ['Faceoffs', 'Icing', 'Offside', 'Penalties'],
+    'the row prints card keys rather than the titles the learn page shows');
+});
+
+test('a layer with no card renders no row at all', () => {
+  const a = boot(rich, null, '?layer=blocked');
+  a.$('scrub').oninput({ target: { value: '120' } });
+  a.$('work').click();
+  const html = a.$('workBody').innerHTML;
+  assert.ok(html.length > 100, 'the panel drew nothing, so this proves nothing');
+  assert.doesNotMatch(html, /class="wlearn"/,
+    'an empty Learn More row advertises a gap the Blocked layer has');
+});

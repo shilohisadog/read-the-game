@@ -1294,7 +1294,38 @@ function renderWork(_,cur,at){
  +`the game so far. Nothing is dropped quietly.`
  +`${evenOnly?' <b>Even strength only</b> &mdash; the power-play and empty-net '
    +'events are in the not-counted list above, with the situation that removed '
-   +'each one.':''}</p>`;}
+   +'each one.':''}</p>`
+ /* ⭐ THE WAY BACK OUT, AND UNTIL NOW THE TRIP WAS ONE-WAY. Kevin: "aligning
+    show me the work with learning cards, and making them bi-directional." Nine
+    cards deep-link INTO a game, each carrying `&layer=`; the game linked back
+    only through the site header, to the top of a page with no anchors on it at
+    all. A reader who met "Blocked credits the blocker" here and wanted to know
+    why had nowhere to go.
+
+    ⭐ EVERY CARD FOR THIS LAYER, NOT ONE PICKED. The map is 9 cards onto 5
+    layers -- Stoppages is taught by four of them (icing, offside, faceoffs,
+    penalties) and Attempts by two -- so choosing one would mean choosing
+    inside a set the data does not rank. Listing them all dissolves that, and
+    says what else this layer teaches.
+
+    ⚠️ AND IT IS ABSENT, NOT EMPTY, WHEN A LAYER HAS NO CARD. `Blocked` has
+    none: the card called "blocked" opens the Attempts layer, because its door
+    is the first blocked shot the CONTROL reducer counts. An empty "Learn More"
+    row would advertise a gap; no row says nothing, which is true. The gap
+    itself is a content question, not a layout one.
+
+    ⭐ AND IT SITS BELOW THE LEDGER, which is Kevin's call and the right one:
+    this panel is a VERIFICATION surface and the link is the first thing in it
+    that is not evidence. It goes after the arithmetic closes, never beside it. */
+ +cardsFor(id);}
+/* The learn-card row for a layer, or '' when the layer has none. `LEARNCARDS`
+   is built by `builders/build_main.py::_learn_by_layer` out of the two
+   documents that already own the answer -- never restated here. */
+function cardsFor(id){const cs=LEARNCARDS[id];
+ if(!cs||!cs.length)return '';
+ return `<p class="wlearn"><span class="wll">Learn More</span>`
+  +cs.map(c=>`<a href="/what-you-can-see.html#${ESC(c.id)}">${ESC(c.title)}</a>`).join('')
+  +`</p>`;}
 
 /* THE PACE, AND IT IS ONE RULE INSTEAD OF FOUR TIERS.
    docs/event-timing.md carries the walk this came out of. What it measured, at

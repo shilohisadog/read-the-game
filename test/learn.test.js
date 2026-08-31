@@ -29,10 +29,14 @@ const html = readFileSync(new URL('../src/what-you-can-see.html', import.meta.ur
 const CTX = { homeId: rich.teams.home.id, awayId: rich.teams.away.id,
               roster: rich.roster, evenOnly: false };
 
-/** The cards as the page actually renders them, in document order. */
+/** The cards as the page actually renders them, in document order.
+ *  ⭐ THE ID IS CAPTURED, NOT TOLERATED. It became load-bearing on 2026-08-31:
+ *  the work panel links back to `#<card-id>`, so a card without one is a dead
+ *  link from the game, and a card whose id is not its door key is a link to the
+ *  wrong lesson. Reading it here is what lets the next test say so. */
 const cards = [...html.matchAll(
-  /<a class="card" href="([^"]+)"><p class="t">([^<]+)<\/p>/g)]
-  .map(m => ({ href: m[1].replace(/&amp;/g, '&'), title: m[2] }));
+  /<a class="card" id="([^"]+)" href="([^"]+)"><p class="t">([^<]+)<\/p>/g)]
+  .map(m => ({ id: m[1], href: m[2].replace(/&amp;/g, '&'), title: m[3] }));
 
 /** The href a card carries, minus the page, as parse() wants it. */
 const query = h => h.slice(h.indexOf('?'));
@@ -168,4 +172,90 @@ test('a card with no door fails the build rather than rendering a dead link', ()
   const stripped = { ...rich, events: rich.events.filter(e => e.rsn !== 'icing') };
   assert.throws(() => doors(stripped), /icing/,
                 'a game with no icing must refuse to produce doors, not emit a broken one');
+});
+
+/* ═══ THE TRIP BACK — the work panel links to the card that explains it ═══
+ *
+ * Kevin: *"aligning show me the work with learning cards, and making them
+ * bi-directional."* The forward half has existed since the doors shipped. The
+ * return half did not, and could not: before this, `what-you-can-see.html`
+ * carried **zero elements with an id**, so there was nothing on it to link to.
+ */
+
+test('⭐ every card is anchored, and its anchor IS its door key', () => {
+  // A card with no id is a dead link from the game; a card whose id is not the
+  // key `doors` uses is a link to the wrong lesson — and both render fine.
+  assert.equal(cards.length, Object.keys(built.doors).length);
+  for (const c of cards)
+    assert.ok(c.id in built.doors,
+      `the card "${c.title}" is anchored #${c.id}, which is not a door key`);
+  assert.equal(new Set(cards.map(c => c.id)).size, cards.length,
+    'two cards share an anchor, so one of them is unreachable');
+});
+
+test('⭐ the app’s LEARNCARDS map is DERIVED, not a third copy of the pairing', () => {
+  /* THE FAILURE THIS EXISTS FOR: the pairing is now stated in three places —
+     `doors[].layers` (written by node from the real reducers), `LEARN_CARDS`
+     (the titles), and the constant inlined into the bundle. A hand-written
+     third copy is a cache of the other two, and a stale link still LOOKS like a
+     link. So the bundle's map is re-derived here from the two sources and
+     compared byte for byte with what shipped. */
+  const app = readFileSync(new URL('../src/read-the-game.html', import.meta.url), 'utf8');
+  const m = /const LEARNCARDS = (\{.*?\});/.exec(app);
+  assert.ok(m, 'the app no longer carries a learn-card map at all');
+  const shipped = JSON.parse(m[1]);
+
+  const title = Object.fromEntries(cards.map(c => [c.id, c.title]));
+  const want = {};
+  for (const cid of Object.keys(built.doors).sort())
+    for (const layer of built.doors[cid].layers)
+      (want[layer] ||= []).push({ id: cid, title: title[cid] });
+  assert.deepEqual(shipped, want,
+    'the inlined map disagrees with the doors and the card titles it is made of');
+
+  // AND IT IS NOT EMPTY, or the comparison above is two empties agreeing.
+  assert.ok(Object.keys(shipped).length >= 4, `only ${Object.keys(shipped).length} layers carry a card`);
+  assert.deepEqual(shipped.whistle.map(c => c.id).sort(),
+    ['faceoffs', 'icing', 'offside', 'penalties'],
+    'Stoppages is taught by four cards; listing one would be choosing inside a set the data does not rank');
+});
+
+test('⚠️ the Blocked layer has no card, and the row is ABSENT rather than empty', () => {
+  /* A REAL CONTENT GAP, PINNED SO IT IS NOT MISTAKEN FOR A BUG. The card called
+     "blocked" opens the ATTEMPTS layer — its door is the first blocked shot the
+     Control reducer counts — so the Blocked layer itself is taught by nothing.
+     An empty "Learn More" row would advertise the gap; no row says nothing,
+     which is true. When a Blocked card is written this test should fail, and
+     the fix is to delete it. */
+  const app = readFileSync(new URL('../src/read-the-game.html', import.meta.url), 'utf8');
+  const shipped = JSON.parse(/const LEARNCARDS = (\{.*?\});/.exec(app)[1]);
+  assert.ok(!shipped.blocked, 'a Blocked card now exists — delete this test');
+  assert.match(app, /function cardsFor\(id\)\{const cs=LEARNCARDS\[id\];\s*\n?\s*if\(!cs\|\|!cs\.length\)return '';/,
+    'the panel no longer refuses to draw a row for a layer with no cards');
+});
+
+test('⭐ the Learn More row is BELOW the ledger, never beside the arithmetic', () => {
+  /* KEVIN'S CALL, and the reason it is worth pinning: this panel is a
+     VERIFICATION surface. The link is the only thing in it that is not
+     evidence, so a reader auditing a count must reach the arithmetic first and
+     meet the invitation after it closes. Moved above the ledger the panel stops
+     leading with its evidence — and nothing else in the suite would notice. */
+  // ⚠️ NOT a non-greedy match from `$('workBody').innerHTML=` — that stops at
+  // the EARLY RETURN (`innerHTML='';return;}`) a hundred lines up, so the test
+  // read a two-character string and reported the panel had lost its footer.
+  // These two strings each occur once in the bundle; their order is the claim.
+  const app = readFileSync(new URL('../src/read-the-game.html', import.meta.url), 'utf8');
+  const foot = app.indexOf('class="wfoot"');
+  const learn = app.indexOf('+cardsFor(id);');
+  assert.ok(foot > 0 && learn > 0, 'the panel no longer has both a footer and a learn row');
+  assert.ok(learn > foot,
+    'the Learn More row is being emitted before the conservation line it must follow');
+});
+
+test('the anchor a card is landed on is not flush with the viewport edge', () => {
+  // Only ever consumed on a `#hash` arrival, which is now the whole point of
+  // the card carrying an id.
+  const page = readFileSync(new URL('../src/what-you-can-see.html', import.meta.url), 'utf8');
+  assert.match(page, /scroll-margin-top:\s*16px/,
+    'a card arrived at by anchor parks flush against the top edge again');
 });

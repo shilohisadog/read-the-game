@@ -267,7 +267,12 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:12px}
 .card{display:block;text-decoration:none;color:inherit;background:#fff;
- border:1px solid var(--edge);border-radius:12px;padding:15px 17px}
+ border:1px solid var(--edge);border-radius:12px;padding:15px 17px;
+ /* ⭐ ROOM ABOVE THE CARD A READER JUST ARRIVED AT. Every card is now an anchor
+    target -- the work panel links back to `#<card-id>` -- and without this the
+    browser parks it flush with the top edge, which reads as a rendering glitch
+    rather than as an arrival. It is only ever consumed on a `#hash` landing. */
+ scroll-margin-top:16px}
 .card:hover,.card:focus-visible{border-color:var(--blue)}
 .card .t{font-weight:700;margin:0 0 5px}
 .card p{margin:0;font-size:.86rem;color:var(--muted)}
@@ -984,7 +989,14 @@ def _learn():
                           .replace("__ATTEMPTS__", str(fig["unreached"]["n"])))
             # The moment is shown, not just linked: a reader can see the card
             # points somewhere specific before spending a click on it.
-            out.append(f'    <a class="card" href="/game.html{door["href"]}">'
+            # ⭐ THE CARD CARRIES ITS OWN ANCHOR, which is what makes the trip
+            # two-way. Until now this page had ZERO elements with an id: the
+            # doors led into a game and nothing led back, so a reader who met
+            # `Blocked credits the blocker` in the work panel and wanted to know
+            # why had no way to reach the card that explains it. The id is the
+            # card id -- the same key `doors` is keyed by and the guard above
+            # already pins -- so the anchor cannot name a card that is not here.
+            out.append(f'    <a class="card" id="{cid}" href="/game.html{door["href"]}">'
                        f'<p class="t">{title}</p><p>{blurb}</p>'
                        f'<p class="at">Period {door["per"]} &middot; {door["rem"]} left</p></a>')
         out.append("  </div>")

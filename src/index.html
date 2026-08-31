@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-9czOqYfO8DkU2cMyVigrggOWXaQVnF+qNST8FNgMMQg=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-7fG4lUf/NLyg17jY5lB4vgMtIMvee8aYVo7glFAEl3k='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-9czOqYfO8DkU2cMyVigrggOWXaQVnF+qNST8FNgMMQg=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-dxdJgiWgdgpnkMrUr1plLNOc1Qz3QcQOp1l+57GPoIk='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -184,7 +184,12 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:12px}
 .card{display:block;text-decoration:none;color:inherit;background:#fff;
- border:1px solid var(--edge);border-radius:12px;padding:15px 17px}
+ border:1px solid var(--edge);border-radius:12px;padding:15px 17px;
+ /* ⭐ ROOM ABOVE THE CARD A READER JUST ARRIVED AT. Every card is now an anchor
+    target -- the work panel links back to `#<card-id>` -- and without this the
+    browser parks it flush with the top edge, which reads as a rendering glitch
+    rather than as an arrival. It is only ever consumed on a `#hash` landing. */
+ scroll-margin-top:16px}
 .card:hover,.card:focus-visible{border-color:var(--blue)}
 .card .t{font-weight:700;margin:0 0 5px}
 .card p{margin:0;font-size:.86rem;color:var(--muted)}

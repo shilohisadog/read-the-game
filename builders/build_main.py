@@ -295,7 +295,39 @@ def _lib():
     # what an all-star game is.
     out.append("/* --- data/competitions.json --- */\n"
                "const COMPETITIONS = " + P.competitions() + ";")
+    out.append("/* --- which learn cards teach which layer --- */\n"
+               "const LEARNCARDS = "
+               + json.dumps(_learn_by_layer(), separators=(",", ":")) + ";")
     return "\n".join(out)
+
+
+def _learn_by_layer():
+    """{layerId: [{id, title}]} — which learn cards teach each metric layer.
+
+    ⭐ DERIVED FROM THE TWO DOCUMENTS THAT ALREADY OWN THE ANSWER, NEVER TYPED.
+    `data/learn-doors.json` records which layers a card's door turns on (node
+    wrote it by asking the real reducers); `build_index.LEARN_CARDS` owns the
+    titles. A third statement of the pairing here would be a cache of both --
+    the shape docs/status.md §F is about -- and it would go stale silently,
+    because a wrong link still looks like a link.
+
+    ⚠️ THE PAIRING IS RECORDED, NOT GUESSED. A card belongs to a layer when its
+    door TURNS THAT LAYER ON. It is tempting to add `card id == layer id`, which
+    would sweep in the one layer that has no card -- but that rule fires exactly
+    once in the whole table, which makes it a special case wearing a rule's
+    clothes. The gap is reported by `--verify` instead of papered over.
+    """
+    import build_index as B          # builders/, guarded by __main__, no cycle
+    doors = json.loads((ROOT / "data" / "learn-doors.json").read_text())["doors"]
+    titles = {cid: t for _, cid, t, _ in B.LEARN_CARDS}
+    if set(titles) != set(doors):
+        raise SystemExit("learn cards and doors disagree: "
+                         f"{sorted(set(titles) ^ set(doors))}")
+    by = {}
+    for cid in sorted(doors):
+        for layer in doors[cid]["layers"]:
+            by.setdefault(layer, []).append({"id": cid, "title": titles[cid]})
+    return by
 
 # The origin the shell reads its games from. Pages serves CODE, R2 serves DATA,
 # so this page ships with no game in it and the archive can grow without a deploy.
