@@ -42,7 +42,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { furniture, netGlyph, SX, SY } from '../src/lib/rinkart.js';
+import { furniture, netGlyph, boardsY, SX, SY } from '../src/lib/rinkart.js';
 import { BLUE_LINE_X, NEUTRAL_DOT_X, NET_X } from '../src/lib/rink.js';
 import { NEUTRAL } from '../src/lib/teams.js';
 
@@ -91,6 +91,25 @@ const defs = id =>
  * A label that thinks it is a guard is how the next figure ships without the
  * grammar.
  */
+/**
+ * The line a rule NAMES, lit — and it ends on the boards like every other line.
+ *
+ * ⭐ IT BORROWS THE COLOUR OF THE LINE IT EXPLAINS, which is the rule app.js
+ * already applies to the slot tint and the zone band: "each tint borrows the
+ * colour of the mark it explains, so the palette does not grow." The first
+ * icing draft lit the CENTRE LINE and a GOAL LINE — both red — in blue, which
+ * to a novice reads as "blue line", the one thing icing is not about.
+ *
+ * ⚠️ AND IT ASKS `boardsY` RATHER THAN CARRYING THE ANSWER. The first draft
+ * typed `y1="7.02" y2="77.98"` for the goal line, which is `boardsY(189)`
+ * spelled out — a second statement of the exact rule that function exists to be
+ * the only copy of, and the defect its own comment in rinkart.js describes.
+ */
+const hot = (x, cls) => {
+  const [y1, y2] = boardsY(x);
+  return `<line class="dghot ${cls}" x1="${f(x)}" y1="${f(y1)}" x2="${f(x)}" y2="${f(y2)}"/>`;
+};
+
 const stamp = (x, y) => `<text class="dgstamp" x="${f(x)}" y="${f(y)}">Diagram</text>`;
 
 /* ── the equipment ──────────────────────────────────────────────────────────
@@ -222,7 +241,7 @@ function offside() {
       + ghost(C0.x, C0.y) + puckGhost(C0.x + PUCK.x, C0.y + PUCK.y) + ghost(T0.x, T0.y)
       + arrow(id, C0.x, C0.y, C1.x, C1.y) + arrow(id, T0.x, T0.y, T1.x, T1.y)
       // The line is lit where the rule is decided.
-      + `<line class="dghot" x1="${f(BLUE)}" y1="1" x2="${f(BLUE)}" y2="84"/>`
+      + hot(BLUE, 'blue')
       // ① THE CARRIER AND HIS PUCK ARE ONE GROUP, so they cannot drift apart in
       // the animation -- "controlling the puck" has to survive the motion.
       + `<g class="dgmove dgm-c">${tok(C1.x, C1.y)}${puck(C1.x + PUCK.x, C1.y + PUCK.y)}</g>`
@@ -254,7 +273,65 @@ function offside() {
   };
 }
 
-const FIGURES = { offside: offside() };
+/* ── ICING ──────────────────────────────────────────────────────────────────
+   ⭐ THE ONE FIGURE THAT MUST NOT CROP, because the rule IS the length of the
+   ice. Offside happens at one line and a crop makes it bigger; icing is a
+   hundred and twenty feet of travel and cropping it would remove the subject.
+   So this is the full sheet, both nets, both goaltenders — and it is the figure
+   that pays for that in scale: at 359px wide a rink unit is 1.8px against
+   offside's 2.9, so every token here is 61% the size of the same token there.
+   Looked at before it was believed.
+
+   THE TWO LINES ARE THE ONES THE CAPTION ALREADY NAMES. `linesFor('icing')`
+   returns the centre line and the FAR goal line, and the live caption says "from
+   behind centre, past the far goal line". The diagram lights the same two, so a
+   reader meets one geometry in both places rather than two descriptions of it.
+
+   ⛔ AND IT SHOWS NOBODY TOUCHING THE PUCK BY SHOWING NOBODY, which is the
+   honest limit of a still drawing. "Untouched" is a negative and the steps carry
+   it; drawing a defender reaching and missing would be inventing a play. */
+function icing() {
+  const id = 'ic-';
+  // The shooter is BEHIND THE CENTRE LINE — screen-left of x=100 — and the draw
+  // comes all the way back to an end-zone dot on that same side. In feet so it
+  // can be checked: he shoots from 28 ft inside his own half.
+  const S = { x: SX(28), y: SY(12) };
+  const P0 = { x: S.x + 5.5, y: S.y };
+  const P1 = { x: 196, y: S.y };             // past the far goal line, into the corner
+  const DOT = { x: SX(69), y: SY(-22) };     // the offending team's own end-zone spot
+  return {
+    viewBox: '0 0 200 85',
+    label: 'Diagram: a player shoots the puck from behind the centre line, it '
+         + 'crosses the far goal line untouched, and the face-off comes all the '
+         + 'way back to the shooting team’s end.',
+    door: 'See a real icing in our replay',
+    svg: defs(id)
+      + `<g class="dgpaint">${furniture(id, false)}${nets(id)}</g>`
+      + `<g class="dgplay">${keeper(SX(-NET_X))}${keeper(SX(NET_X))}`
+      + ghost(S.x, S.y) + puckGhost(P0.x, P0.y)
+      + arrow(id, P0.x, P0.y, P1.x, P1.y, 4)
+      // THE TWO LINES RULE 81 NAMES, lit exactly as the game page lights them.
+      + hot(100, 'red') + hot(SX(-89), 'red')
+      + `<circle class="dgtok" cx="${f(S.x)}" cy="${f(S.y)}" r="4"/>`
+      + `<g class="dgmove dgm-p">${puck(P1.x, P1.y)}</g>`
+      + `<circle class="dgspot" cx="${f(DOT.x)}" cy="${f(DOT.y)}" r="4.2"/>`
+      + badge(1, S.x - 8, S.y + 6) + badge(2, P1.x - 4, P1.y - 9)
+      + badge(3, DOT.x, DOT.y - 9)
+      + stamp(SX(60), SY(34))
+      + `</g>`,
+    steps: [
+      'A player shoots the puck from <b>behind the centre line</b>.',
+      'It crosses the <b>far goal line</b> with nobody touching it.',
+      'Play stops, and the face-off comes all the way back to <b>the shooting '
+      + 'team&rsquo;s own end</b> &mdash; that dot is the whole punishment.',
+    ],
+    css: [travel(id + 'p', P0, P1),
+      `.dgfig.ic .dgm-p{animation:${id}p ${CYCLE} ease-in-out ${DELAY} infinite}`,
+    ].join('\n'),
+  };
+}
+
+const FIGURES = { icing: icing(), offside: offside() };
 
 /* ── the artifact ───────────────────────────────────────────────────────── */
 const OUT = join(ROOT, 'data', 'learn-figures.json');

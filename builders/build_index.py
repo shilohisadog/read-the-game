@@ -1294,7 +1294,9 @@ FIGCSS = r"""<style>
 .dgplay .dgarrow{stroke:var(--muted);stroke-width:.8;stroke-linecap:round;opacity:.85}
 .dgheadp{fill:var(--muted);opacity:.85}
 /* The line where the rule is decided, and the spot the draw comes back to. */
-.dgplay .dghot{stroke:var(--blue);stroke-width:2.2;opacity:.5;stroke-linecap:round}
+.dgplay .dghot{stroke-width:2.2;opacity:.5;stroke-linecap:round}
+.dgplay .dghot.blue{stroke:var(--blue)}
+.dgplay .dghot.red{stroke:var(--red)}
 .dgplay .dgspot{fill:none;stroke:var(--red);stroke-width:1;opacity:.8}
 .dgbadge circle{fill:var(--ink);opacity:.88}
 .dgbadge text{fill:#fff;font:700 5.6px/1 system-ui,sans-serif;text-anchor:middle}

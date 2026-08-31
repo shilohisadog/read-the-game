@@ -18,12 +18,20 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { furniture } from '../src/lib/rinkart.js';
+import { furniture, SX } from '../src/lib/rinkart.js';
 import { TEAMS, NEUTRAL } from '../src/lib/teams.js';
 import { boot } from './helpers/page.js';
 
 const learn = readFileSync(new URL('../src/what-you-can-see.html', import.meta.url), 'utf8');
-const rule = readFileSync(new URL('../src/offside.html', import.meta.url), 'utf8');
+/* ⚠️ EVERY RULE PAGE, NOT THE FIRST ONE. These three page-level tests read
+   `offside.html` alone until icing shipped, at which point a whole page was
+   live and unchecked -- and the second figure is exactly when "the test reads
+   THE page" stops being the same claim as "the test reads EVERY page". Keyed by
+   figure id so a new diagram cannot arrive without its page being examined. */
+const rulePages = Object.fromEntries(Object.keys(
+  JSON.parse(readFileSync(new URL('../data/learn-figures.json', import.meta.url))))
+  .map(id => [id, readFileSync(new URL(`../src/${id}.html`, import.meta.url), 'utf8')]));
+const rule = rulePages.offside;
 const figures = JSON.parse(readFileSync(new URL('../data/learn-figures.json', import.meta.url)));
 
 /** Every painted line and spot in a chunk of rink markup, as comparable strings. */
@@ -276,11 +284,16 @@ test('⭐ the card leads to the diagram, and the diagram leads to the game', () 
      it, so the door moves down a level rather than closing: card -> diagram ->
      "See it in a real game". Both hops are asserted, because a card that reaches
      a diagram which reaches nothing is the failure this replaces. */
+  for (const [id, page] of Object.entries(rulePages)) {
+    const c = new RegExp(`<a class="card" id="${id}" href="([^"]+)"`).exec(learn);
+    assert.ok(c, `the ${id} card has gone`);
+    assert.equal(c[1], `/${id}.html`, `the ${id} card no longer opens its diagram`);
+    const d = /<a class="rgo" href="([^"]+)">([^<]+)</.exec(page);
+    assert.ok(d, `the ${id} diagram carries no way through to the replay`);
+    assert.match(d[1], /^\/game\.html\?game=\d+/, `${id}'s door points at ${d[1]}`);
+  }
   const card = /<a class="card" id="offside" href="([^"]+)"/.exec(learn);
-  assert.ok(card, 'the offside card has gone');
-  assert.equal(card[1], '/offside.html', 'the offside card no longer opens the diagram');
   const door = /<a class="rgo" href="([^"]+)">([^<]+)</.exec(rule);
-  assert.ok(door, 'the diagram page carries no way through to the replay');
   /* ⭐ THE DOOR MAY NOT PROMISE THE THING THIS PAGE JUST EXPLAINED WE CANNOT
      SHOW. Kevin: *"we say 'See it in a real game', which isn't consistent with
      what we are providing."* An offside stoppage carries no coordinate, no zone
@@ -300,15 +313,23 @@ test('the diagram page is the game\'s stage without the game\'s instruments', ()
      same ice-coloured frame the replay uses; a scoreboard with no game and a
      clock with no time would be fabrications, so none of that furniture is here.
      Asserted by ID, because those are the elements the game page actually uses. */
-  for (const id of ['aSc', 'hSc', 'clk', 'per', 'scrub', 'play', 'ppill', 'pboxes']) {
-    assert.ok(!new RegExp(`id="${id}"`).test(rule),
-      `the diagram page carries the game page's #${id} — an instrument with nothing to measure`);
+  for (const [name, page] of Object.entries(rulePages)) {
+    for (const id of ['aSc', 'hSc', 'clk', 'per', 'scrub', 'play', 'ppill', 'pboxes']) {
+      assert.ok(!new RegExp(`id="${id}"`).test(page),
+        `the ${name} page carries the game page's #${id} — an instrument with nothing to measure`);
+    }
+    assert.match(page, /<figure class="dgfig/, `the ${name} page has no diagram`);
+    assert.match(page, /class="dgsteps"/, `the ${name} page has no steps`);
   }
-  assert.match(rule, /<figure class="dgfig/, 'the diagram page has no diagram');
-  assert.match(rule, /class="dgsteps"/, 'the diagram page has no steps');
 });
 
 test('the figure comes after the rule is named and before the steps explain it', () => {
+  for (const [name, page] of Object.entries(rulePages)) {
+    const a = page.indexOf('<h1>'), b = page.indexOf('<figure class="dgfig');
+    const c = page.indexOf('<ol class="dgsteps"');
+    assert.ok(a >= 0 && b >= 0 && c >= 0, `${name}: h1 ${a}, figure ${b}, steps ${c}`);
+    assert.ok(b > a && b < c, `${name} draws its figure out of order`);
+  }
   const t = rule.indexOf('<h1>');
   const f = rule.indexOf('<figure class="dgfig');
   const o = rule.indexOf('<ol class="dgsteps"');
@@ -330,6 +351,51 @@ test('the offside words say the LIMIT, not the rule the picture already draws', 
   assert.match(lede[1], /never the crossing/, 'the page stopped stating the limit');
   assert.doesNotMatch(lede[1], /ahead of the puck/,
     'the words repeat what the figure and its steps both already say');
+});
+
+test('⭐ icing does not crop, because the rule IS the length of the ice', () => {
+  /* THE CROP FOLLOWS THE RULE, which is Kevin's ruling: "no preference for full
+     rink, 1/2 rink or whatever, as long as the teaching surface is sufficient to
+     clearly explain the topic at hand." For offside that means zooming in — the
+     rule happens at one line and a crop makes it bigger. For icing it means the
+     opposite: a hundred and twenty feet of travel IS the subject, and a crop
+     would remove it.
+     The cost is real and is stated rather than hidden: at 359px a rink unit is
+     1.79px here against 2.92 on offside, so every token is 61% the size. That
+     was looked at before it was accepted. */
+  const box = figures.icing.viewBox.split(/\s+/).map(Number);
+  assert.deepEqual(box, [0, 0, 200, 85],
+    `icing is drawn at ${figures.icing.viewBox} — a crop of the one rule whose subject is the whole sheet`);
+  // AND THE PAIR: if every figure were full-sheet this would be satisfied by a
+  // builder that had lost the ability to crop at all.
+  const off = figures.offside.viewBox.split(/\s+/).map(Number);
+  assert.ok(off[0] > 0 && off[2] < 200,
+    'offside is no longer cropped, so "icing does not crop" claims nothing');
+});
+
+test('⭐ a lit line borrows the colour of the line it explains', () => {
+  /* ⭐ THE RULE app.js ALREADY APPLIES to the slot tint and the zone band:
+     "each tint borrows the colour of the mark it explains, so the palette does
+     not grow." Found by LOOKING: the first icing figure lit the CENTRE LINE and
+     a GOAL LINE — both red — in blue, which to a novice reads as "blue line",
+     the one thing icing is not about. No test could have seen it; nothing had
+     ever claimed the highlight had a colour to get wrong.
+     ⭐ AND IT IS DERIVED, NOT LISTED. The expectation comes from the RINK: the
+     blue lines are at |x|=25 and everything else painted vertically is red, so
+     the class a highlight carries is checked against where it actually sits. */
+  const BLUE_X = [SX(25), SX(-25)].map(v => +v.toFixed(2));
+  let checked = 0;
+  for (const [id, fig] of Object.entries(figures)) {
+    const lit = [...fig.svg.matchAll(/<line class="dghot (\w+)" x1="([-\d.]+)"/g)];
+    assert.ok(lit.length, `the ${id} figure lights no line at all`);
+    for (const [, cls, x] of lit) {
+      const want = BLUE_X.includes(+x) ? 'blue' : 'red';
+      assert.equal(cls, want,
+        `the ${id} figure lights x=${x} in ${cls}; a line at that spot is ${want}`);
+      checked++;
+    }
+  }
+  assert.ok(checked >= 3, `only ${checked} lit lines across every figure`);
 });
 
 test('the NEUTRAL colour is what a figure may use, and it is not any club\'s', () => {
