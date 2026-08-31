@@ -21,6 +21,8 @@ import { corsi } from '../src/lib/layers/corsi.js';
 import { danger } from '../src/lib/layers/danger.js';
 import { goaltending } from '../src/lib/layers/goaltending.js';
 import { doors } from '../builders/learn-doors.mjs';
+import { playable } from '../src/lib/layer.js';
+import { icingRestarts } from '../src/lib/layers/whistle.js';
 
 const rich = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url)));
 const built = JSON.parse(readFileSync(new URL('../data/learn-doors.json', import.meta.url)));
@@ -133,15 +135,62 @@ test('the slot door is a shot the slot layer counts and Control alone would not 
                   'the slot card and the Control card must not be the same moment');
 });
 
-test('the icing and the faceoff it forces are one clock apart by ordinal', () => {
-  // THE RELATIONSHIP, NOT EITHER HALF. Two tests each pinning its own literal
-  // could both pass while the pair stopped being a pair. The teaching point of
-  // these two cards is that they are the same instant.
+test('⭐ the icing and the faceoff it forces are ONE FRAME, deliberately', () => {
+  /* ⭐ KEVIN'S RULING, 2026-08-31: "the pairing between icing and the faceoff is
+     the teaching moment, those should stay paired."
+     This test used to assert `fo.at.n > ice.at.n` — "later in the sequence at
+     that clock" — and that was FALSE the whole time. The ordinals differed
+     because learn-doors counted occurrences over every event, including the
+     stoppage; the app resolves them over the playable timeline, where the
+     stoppage does not exist and both cards were the SAME frame. The claim moved
+     to what is true: one moment, two lessons.
+     ⭐ AND IT IS DERIVED FROM `restarts`, not from the doors agreeing with each
+     other. Two hrefs matching proves only that they match; this asserts the
+     frame they share is the face-off that this game's first icing actually
+     forced, which is the thing being taught. */
   const ice = parse(query(cards.find(c => /Icing/.test(c.title)).href));
   const fo = parse(query(cards.find(c => /faceoff/i.test(c.title)).href));
-  assert.equal(fo.at.per, ice.at.per, 'the restart is in the same period');
-  assert.equal(fo.at.rem, ice.at.rem, 'and at the same clock');
-  assert.ok(fo.at.n > ice.at.n, 'and later in the sequence at that clock');
+  assert.deepEqual(fo.at, ice.at,
+    'the icing and its restart are no longer the same moment — the pairing is the lesson');
+
+  const CT = { homeId: rich.teams.home.id, awayId: rich.teams.away.id,
+               homeAb: rich.teams.home.ab, awayAb: rich.teams.away.ab };
+  const forced = icingRestarts(rich.events, CT)[0];
+  assert.ok(forced, 'the reference game contains no icing at all');
+  assert.equal(ice.at.per, forced.event.per, 'the shared frame is not the restart period');
+  assert.equal(ice.at.rem, forced.event.rem, 'the shared frame is not the restart the icing forced');
+  // AND THE HOP IS RECORDED rather than silent: the icing door names a stoppage
+  // and lands on the frame after it.
+  assert.equal(built.doors.icing.via, 'stoppage',
+    'the icing door no longer records that it hopped off an unplayable event');
+  assert.equal(built.doors.faceoffs.via, undefined,
+    'the faceoffs door claims a hop it did not make');
+});
+
+test('⭐ every door is REACHABLE on the timeline the app actually plays', () => {
+  /* ⚠️ THE GUARD THAT SHOULD HAVE CAUGHT ALL OF THIS, WITH THE RIGHT DENOMINATOR.
+     "every door lands on a moment the game actually contains" counted matches
+     over `rich.events` — every event, including the ones the replay drops. The
+     app indexes into the PLAYABLE list. So a door asking for occurrence 2 at a
+     clock with two raw events and one playable frame passed a test and clamped
+     in production. Ask what a drift alarm's denominator is.
+     ⭐ AND `type` MUST BE THE FRAME'S. The document recorded the type of the
+     event the RULE matched — `stoppage`, `delayed-penalty` — for doors that open
+     something else, so the committed artifact asserted something untrue about
+     where it goes. */
+  const PLAY = playable(rich.events);
+  for (const c of raw) {
+    const id = c.id;
+    const door = built.doors[id];
+    const at = parse(query(door.href)).at;
+    const here = PLAY.filter(e => e.per === at.per && e.rem === at.rem);
+    assert.ok(here.length >= (at.n || 1),
+      `"${c.title}" asks for occurrence ${at.n || 1} at P${at.per} ${at.rem}, and the `
+      + `replay has ${here.length} frame(s) there — the app will clamp somewhere else`);
+    const landed = here[(at.n || 1) - 1];
+    assert.equal(landed.type, door.type,
+      `the ${id} door records type "${door.type}" and opens a ${landed.type}`);
+  }
 });
 
 test('the empty-net door names no layer, because the base view already shows it', () => {

@@ -25,7 +25,10 @@ __RINKART__
 // nothing, and the sentence then says the comparison is missing -- which is true
 // of a page that makes no requests at all.
 const R=G.roster, HID=G.teams.home.id, AID=G.teams.away.id, HAB=G.teams.home.ab, AAB=G.teams.away.ab;
-const SKIP=new Set(['stoppage','period-start','period-end','game-end','delayed-penalty']);
+// ⭐ DERIVED FROM `NOT_A_PLAY`, NOT TYPED AGAIN. This was five string literals
+// stating a second time what layer.js already states beside its reasons; the
+// two agreed by luck, and a THIRD implicit copy in learn-doors.mjs did not.
+const SKIP=new Set(Object.keys(NOT_A_PLAY));
 const EV=[],EVI=[];
 G.events.forEach((e,n)=>{if(!SKIP.has(e.type)){EV.push(e);EVI.push(n);}});
 // The timeline is the playable events; the LEDGER is the whole game. Layers get

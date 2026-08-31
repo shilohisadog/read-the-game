@@ -90,6 +90,22 @@ export const NOT_AN_ATTEMPT = {
 };
 
 /** Every event type that is not a play — recorded, but nothing happened on the ice. */
+/**
+ * ⭐ THE TIMELINE A VIEWER ACTUALLY STEPS THROUGH — one statement of it.
+ *
+ * `app.js` built this set a second time (`const SKIP=new Set([...])`, five
+ * string literals) and `builders/learn-doors.mjs` assumed a THIRD version by
+ * counting an event's occurrence over the raw list. All three agreed by luck
+ * until they did not: a door computed its ordinal over every event while the app
+ * resolved it over this one, so the faceoffs card asked for occurrence 2 at a
+ * clock the replay has only one frame at, the app clamped, and the icing and
+ * faceoffs cards opened the identical frame — the exact "cards sharing a moment
+ * has no symptom at all" defect learn-doors.mjs was written to prevent.
+ *
+ * Which events are not plays is one rule. It lives here, beside the reasons.
+ */
+export const playable = events => events.filter(e => !(e.type in NOT_A_PLAY));
+
 export const NOT_A_PLAY = {
   'period-start': 'period start — not a play',
   'period-end': 'period end — not a play',

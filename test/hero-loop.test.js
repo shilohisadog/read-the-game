@@ -51,12 +51,21 @@ test('the builder and the renderer agree on what a play is, and what an attempt 
     'derive.py skips different events than src/lib/layer.js calls not-a-play');
   assert.ok(same(pySet('ATTEMPT_TYPES'), ATTEMPT_TYPES),
     'derive.py counts different events as attempts than src/lib/attribution.js');
-  // And the renderer's own copy, which is a third statement of the first set.
-  const m = /const SKIP=new Set\(\[([^\]]*)\]\)/.exec(appjs);
-  assert.ok(m, 'src/app.js no longer declares SKIP — this check has lost its subject');
-  assert.ok(same(new Set([...m[1].matchAll(/'([^']+)'/g)].map(x => x[1])),
-                 new Set(Object.keys(NOT_A_PLAY))),
-    'the renderer skips different events than the module it imports its layers from');
+  /* ⭐ THE RENDERER'S THIRD STATEMENT IS GONE, AND THIS PINS THAT IT STAYS GONE.
+     app.js typed the same five literals; it derives them from `NOT_A_PLAY` now,
+     so the two cannot disagree BY CONSTRUCTION rather than by this check
+     happening to pass. What is worth asserting is therefore the derivation
+     itself — a literal set creeping back is the regression, and it is the shape
+     that let a THIRD copy (learn-doors.mjs, counting ordinals over the raw list)
+     drift far enough to put two learn cards on one frame.
+     ⚠️ COMMENTS STRIPPED FIRST: the note above this line in app.js quotes the old
+     literal form, and a scan that cannot tell code from a mention of code is not
+     a check about code. */
+  const code = appjs.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '');
+  assert.match(code, /const SKIP=new Set\(Object\.keys\(NOT_A_PLAY\)\)/,
+    'the renderer states the not-a-play set itself again instead of deriving it');
+  assert.doesNotMatch(code, /const SKIP=new Set\(\[/,
+    'a literal not-a-play set is back in the renderer');
 });
 
 test('the preview STOPS ON THE GOAL', () => {

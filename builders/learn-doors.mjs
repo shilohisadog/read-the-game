@@ -29,6 +29,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { format } from '../src/lib/deeplink.js';
+import { NOT_A_PLAY, playable } from '../src/lib/layer.js';
 import { corsi } from '../src/lib/layers/corsi.js';
 import { danger } from '../src/lib/layers/danger.js';
 import { goaltending } from '../src/lib/layers/goaltending.js';
@@ -98,11 +99,54 @@ export function doors(game) {
                   + 'cannot promise something the game does not contain');
   }
 
+  /* ⭐⭐ A DOOR NAMES A FRAME A VIEWER CAN STAND ON, and until now it did not.
+   *
+   * `format` counts an event's occurrence within the list it is HANDED, and this
+   * handed it every event; the app resolves that ordinal against the PLAYABLE
+   * timeline, which drops stoppages, delayed penalties and the period markers.
+   * The two lists disagree, so the ordinals meant different things:
+   *
+   *   faceoffs asked for occurrence 2 at P1 15:02 where the replay has ONE frame
+   *     — the app clamped, and the icing card and the faceoffs card opened the
+   *     IDENTICAL frame. That is the "cards sharing a moment has no symptom at
+   *     all" defect this file's own header was written to prevent, arriving
+   *     through the ordinal instead of through the choice.
+   *   icing, offside and penalties each name an event that is NOT PLAYABLE, so
+   *     they landed on whatever the arithmetic happened to reach. Twice that was
+   *     the right frame by luck; once (penalties) the clock has NO playable frame
+   *     at all and the app fell forward to the next one.
+   *
+   * ⭐ SO THE MAPPING IS STATED INSTEAD OF INFERRED. A rule that fires on an
+   * unplayable event resolves FORWARD to the first frame that follows it, which
+   * for a stoppage is the restart it forces — the only frame a viewer could ever
+   * be standing on when that rule is what they came to see. `via` records that a
+   * hop happened, so the artifact says what it did rather than hiding it.
+   *
+   * AND `type` IS THE FRAME'S, NOT THE RULE'S. It used to record the type of the
+   * event the rule matched — `stoppage`, `delayed-penalty` — for a door that
+   * opens something else entirely, which made the committed document assert
+   * something untrue about where it goes. */
+  const PLAY = playable(events);
   const out = {};
   for (const [id, layers, index, rule] of found) {
-    const e = events[index];
-    out[id] = { href: format({ game: game.game.id, events, index, layers }),
-                per: e.per, rem: e.rem, type: e.type, layers, rule };
+    const found_e = events[index];
+    let k = PLAY.indexOf(found_e);
+    let via = null;
+    if (k < 0) {
+      // Forward to the first playable frame after the rule's own event.
+      for (let j = index + 1; j < events.length; j++) {
+        const p = PLAY.indexOf(events[j]);
+        if (p >= 0) { k = p; via = found_e.type; break; }
+      }
+    }
+    if (k < 0) {
+      throw new Error(`the ${id} door found a ${found_e.type} with no playable frame `
+                    + 'after it — nothing a viewer can be shown');
+    }
+    const e = PLAY[k];
+    out[id] = { href: format({ game: game.game.id, events: PLAY, index: k, layers }),
+                per: e.per, rem: e.rem, type: e.type, layers, rule,
+                ...(via ? { via } : {}) };
   }
   // THE ONE FIGURE ON THE PAGE, AND IT IS THIS GAME'S. The archive number —
   // 51.9% of attempts never reach the goalie — is written weekly into
