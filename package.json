@@ -5,9 +5,9 @@
   "description": "Zero dependencies, deliberately. `npm test` runs node's built-in runner.",
   "scripts": {
     "test": "node --test test/*.test.js",
-    "build": "export PYTHONDONTWRITEBYTECODE=1; node builders/learn-doors.mjs >/dev/null && python3 builders/build_main.py && python3 builders/build_main.py --verify && python3 builders/build_index.py && python3 builders/build_index.py --verify && npm run build:rest",
+    "build": "export PYTHONDONTWRITEBYTECODE=1; node builders/learn-doors.mjs >/dev/null && node builders/learn-figures.mjs >/dev/null && python3 builders/build_main.py && python3 builders/build_main.py --verify && python3 builders/build_index.py && python3 builders/build_index.py --verify && npm run build:rest",
     "build:rest": "export PYTHONDONTWRITEBYTECODE=1; for b in build_A build_B build_C build_gv build_3d; do python3 builders/$b.py >/dev/null || exit 1; done",
-    "build:check": "npm run build >/dev/null && git diff --quiet -- src/ data/learn-doors.json || (echo 'STALE: a built page in src/ or data/learn-doors.json differs from a fresh build — page.py or a layer changed and someone rebuilt only part of the site' && git --no-pager diff --stat -- src/ data/learn-doors.json && exit 1)",
+    "build:check": "npm run build >/dev/null && git diff --quiet -- src/ data/learn-doors.json data/learn-figures.json || (echo 'STALE: a built page in src/ or data/learn-doors.json differs from a fresh build — page.py or a layer changed and someone rebuilt only part of the site' && git --no-pager diff --stat -- src/ data/learn-doors.json data/learn-figures.json && exit 1)",
     "extract:verify": "python3 builders/extract.py --verify",
     "extract:validate": "python3 builders/extract.py --validate",
     "extract:vocab": "python3 builders/extract.py --vocab",

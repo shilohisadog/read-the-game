@@ -253,9 +253,25 @@ T = (T.replace("__CSS__", (ROOT / "src" / "app.css").read_text())
 # where they are made, rather than trusted: a leftover marker is a loud build
 # error instead of a page that says `__SAYS__` to a visitor.
 _left = re.findall(r"__[A-Z_]{3,}__", T)
-assert not set(_left) - {"__LIB__", "__BOOT__", "__CSP__"}, \
+assert not set(_left) - {"__LIB__", "__RINKART__", "__BOOT__", "__CSP__"}, \
     f"unsubstituted markers left in the template: {sorted(set(_left))}"
 
+
+# ⭐ THE RINK'S PAINT IS A LIBRARY FILE THAT IS NOT IN LIBRARY SCOPE.
+#
+# `src/lib/rinkart.js` has to be a real ES module, because `builders/*.mjs` draws
+# the learn page's rule diagrams with it and one implementation of the ice is the
+# whole point -- a second rink would let the diagram teach a rink the replay does
+# not have. But it owns `SX`/`SY`, and CHENG's ruling on as-played ends is that
+# `SX` must be LEXICALLY unreachable from library scope, "not merely unused": a
+# reducer that reads screen coordinates is a reducer whose counts move when the
+# rink flips. Putting it in LIB broke that, and `render-ends.test.js` said so.
+#
+# So it is inlined INSIDE boot instead of above it. Same file, same module, one
+# implementation -- and `SX` lands in exactly the scope it has always been in.
+# Renaming it to slip past the probe would have been the other option, and it is
+# the one that keeps the test and loses the property.
+RINKART = "rinkart.js"
 
 LIB = ["rink.js", "attribution.js", "layer.js", "strength.js", "box.js", "penalties.js", "svgpen.js", "figures.js",
        # AFTER rink.js, which owns BLUE_LINE_X. K1 — what happened between two
@@ -273,21 +289,32 @@ LIB = ["rink.js", "attribution.js", "layer.js", "strength.js", "box.js", "penalt
        # layer objects themselves, so all FIVE must already exist in the bundle.
        "deeplink.js"]
 
+def _inline(name):
+    """One src/lib module, as browser script rather than as an ES module.
+
+    Strip ESM syntax: node imports these as modules for testing, the browser gets
+    them concatenated in dependency order.
+
+    Regex, not startswith(). The old line-prefix test required column zero and a
+    trailing space, so an indented import -- what any formatter produces --
+    sailed straight through into the bundle. Tolerates leading whitespace and
+    spans multi-line import blocks up to the semicolon.
+    """
+    src = (ROOT / "src" / "lib" / name).read_text()
+    body = re.sub(r"^[ \t]*import(?=[\s{\'\"*])[^;]*?;[ \t]*$", "", src, flags=re.M)
+    return f"/* --- src/lib/{name} --- */\n" + body.replace("export ", "")
+
+
+def _rinkart():
+    """The rink's paint, for inlining INSIDE boot -- see the RINKART note above."""
+    return _inline(RINKART)
+
+
 def _lib():
-    """Inline src/lib/*.js. They are real ES modules so `node --test` can import
-    them; the browser gets them concatenated, with the export keyword stripped."""
+    """Inline src/lib/*.js above boot. See RINKART for the one that is not."""
     out = []
     for name in LIB:
-        src = (ROOT / "src" / "lib" / name).read_text()
-        # Strip ESM syntax: node imports these as modules for testing, the
-        # browser gets them concatenated in dependency order.
-        #
-        # Regex, not startswith(). The old line-prefix test required column zero
-        # and a trailing space, so an indented import -- what any formatter
-        # produces -- sailed straight through into the bundle. Tolerates leading
-        # whitespace and spans multi-line import blocks up to the semicolon.
-        body = re.sub(r"^[ \t]*import(?=[\s{\'\"*])[^;]*?;[ \t]*$", "", src, flags=re.M)
-        out.append(f"/* --- src/lib/{name} --- */\n" + body.replace("export ", ""))
+        out.append(_inline(name))
     # THE ONE TABLE, INLINED RATHER THAN FETCHED. gameType -> competition is
     # reference data of ours, not archive data: it changes when a human names a
     # new competition, which is a commit, so it belongs in the deployed bytes.
@@ -499,6 +526,7 @@ DESC = ("An NHL game replayed so a new fan can see what the numbers are made of.
 def build():
     """The reference game, inlined. Works with the network unplugged."""
     body = (T.replace("__LIB__", _lib())
+             .replace("__RINKART__", _rinkart())
              .replace("__BOOT__",
                       "boot(" + json.dumps(DATA, separators=(",", ":")) + ");"))
     return P.document(body, title=TITLE, description=DESC, chrome="full")
@@ -511,6 +539,7 @@ def build_shell():
     page that must state plainly when it cannot load, rather than spinning.
     """
     body = (T.replace("__LIB__", _lib())
+             .replace("__RINKART__", _rinkart())
              .replace("__BOOT__", BOOTSTRAP.replace(
                  "__ORIGIN__", json.dumps(DATA_ORIGIN))))
     # The inlined page reaches nothing and needs no policy beyond the deploy

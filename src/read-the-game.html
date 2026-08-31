@@ -5594,6 +5594,258 @@ const COMPETITIONS = {"1":"preseason","12":"all-star","19":"4 Nations","2":"regu
 /* --- which learn cards teach which layer --- */
 const LEARNCARDS = {"corsi":[{"id":"blocked","title":"The attempt that never arrived"},{"id":"control","title":"Control"}],"whistle":[{"id":"faceoffs","title":"Faceoffs"},{"id":"icing","title":"Icing"},{"id":"offside","title":"Offside"},{"id":"penalties","title":"Penalties"}],"goaltending":[{"id":"goaltending","title":"Goaltending"}],"slot":[{"id":"slot","title":"Shots from the slot"}]};
 function boot(G,RATES){
+/* ⭐ AND THE RINK'S PAINT SITS INSIDE IT, for the opposite reason.
+   `src/lib/rinkart.js` owns `SX`/`SY` and the whole SVG of an NHL sheet, so that
+   the learn page's rule diagrams and this replay cannot draw two different
+   rinks. It is a real ES module -- builders/*.mjs imports it -- but it is NOT in
+   LIB, because CHENG's ruling on as-played ends is that `SX` must be LEXICALLY
+   unreachable from library scope, "not merely unused": a reducer that reads
+   screen coordinates is a reducer whose counts move when the rink flips.
+   Inlined here, `SX` is in exactly the scope it has always been in, and
+   `render-ends.test.js`'s two-sided probe still passes for its original reason
+   rather than for a reworded one. */
+/* --- src/lib/rinkart.js --- */
+/**
+ * The rink itself — the paint, with no game on it.
+ *
+ * WHY THIS IS A MODULE NOW. Every mark this project draws is a claim about a
+ * game that happened, and the learn page needs the opposite: a DIAGRAM of a
+ * rule, on ice nobody played on. Kevin: *"the learning cards don't have to be
+ * specific replay events… we have some discretion in what we overlay onto the
+ * ice for explanatory purposes"* — and then the constraint that makes it safe,
+ * *"it's the same ice rink, but the graphics are noticeably and obviously
+ * different between the learning cards and the game pages."*
+ *
+ * SAME ICE MEANS ONE IMPLEMENTATION OF THE ICE. A second rink drawn for the
+ * diagrams would be a rule stated twice, and the day the two disagreed the
+ * diagram would be teaching a rink the replay does not have — which is the
+ * exact failure the transfer depends on not happening.
+ *
+ * ⭐ IT SPLITS WHERE app.js ALREADY SAID IT SHOULD. The slot comment below has
+ * argued for a year that this is *"arena-frame furniture that never asks which
+ * way anyone is attacking"*: the boards, the tints, the five lines, the nine
+ * spots and the centre circle carry no game in them at all. Only the NETS need
+ * a period and two club colours, so they are a separate call and the caller
+ * supplies both. `drawRink` in app.js is what is left — three lines.
+ *
+ * THE EXTRACTION IS GUARDED BY BYTES, NOT BY READING. `test/rink-lines.test.js`
+ * parses the markup the renderer actually produced, and `test/rinkart.test.js`
+ * pins the whole string against a capture taken before the move: if one
+ * character of the game's rink changed, both go red.
+ */
+
+
+// THE HOST DEFENDS THE RIGHT-HAND END, which is the arrangement a television
+// viewer expects (Kevin) -- and it is ours to choose, because the feed does not
+// have one: across 14 raw play-by-plays `homeTeamDefendingSide` in period one
+// splits 7 left, 7 right. It is fixed to the arena, not to the league.
+//
+// It also removes a real confusion. The scoreboard reads away-then-host, so the
+// host's badge sits on the RIGHT; with the host defending the left end, the same
+// three letters appeared on opposite sides of one screen. Kevin read the pair as
+// swapped and CHENG independently found the cause -- the rink and the scoreboard
+// speaking one visual language with two meanings. Now they agree.
+//
+// A DISPLAY TRANSFORM AND NOTHING MORE. The extract keeps the host on -x, every
+// reducer keeps reading it that way, and `distanceToNet` still measures to the
+// net a team attacks. Only the mapping from rink feet to screen units is
+// reflected, in this one line.
+const SX=x=>100-x, SY=y=>42.5-y;
+
+/* ⭐ THE BOARDS, AS NUMBERS RATHER THAN AS A STRING. Every line painted on the
+   ice has to STOP at them, and until now each line carried its own hand-typed
+   pair of y values -- so the goal lines ran y=3..82 while the boards at that x
+   are at y=7.02..77.98, and the red line stuck four feet out through the
+   corner at both ends. Kevin: "the goal lines extend beyond the playing
+   surface, can you have those terminate right at the edge of the rink."
+   The rink is a rounded rect, so how far a line reaches DEPENDS ON WHERE IT IS:
+   in the straight section it runs the full height, and inside a corner it stops
+   on the arc. `boardsY` is that one rule, and the boards rect below is drawn
+   from the same four numbers, so the paint and the outline cannot disagree. */
+const BOARD={x:1,y:1,w:198,h:83,r:27};
+/**
+ * Where the boards are at an SVG x — the top and bottom of the playing surface
+ * at that point. Straight section: the full height. Inside a corner: on the arc.
+ */
+function boardsY(sx){
+ const L=BOARD.x,R=BOARD.x+BOARD.w,T=BOARD.y,B=BOARD.y+BOARD.h,r=BOARD.r;
+ const cx=sx<L+r?L+r:sx>R-r?R-r:null;
+ if(cx===null)return[T,B];
+ const dy=Math.sqrt(Math.max(0,r*r-(sx-cx)*(sx-cx)));
+ return[T+r-dy,B-r+dy];
+}
+
+/**
+ * Every fixed thing painted on an NHL sheet, as one SVG string.
+ *
+ * No period, no teams, no game — see the header. The caller appends the nets.
+ *
+ * ⭐ `id` NAMESPACES THE CLIP PATHS, and it is not decoration. The slot tint is
+ * three `<clipPath>`s the paint refers to by id; one rink to a document, that is
+ * fine. The learn page puts FIVE rule diagrams on one page, and five
+ * `id="slotband"` would make every figure after the first resolve its clip to
+ * the FIRST figure's — which does not error, does not warn, and quietly draws
+ * the wrong shape. The default is empty so the game page's bytes do not move.
+ */
+/* ⭐ AND `tints` IS A DOCTRINE SWITCH, NOT A STYLE ONE.
+   The slot lozenge and the blue-line bands are OUR MEASUREMENTS drawn as
+   furniture -- a geometric rule of ours in the first case, an aesthetic argument
+   about where the game is contested in the second. On the game ice that is
+   honest: the page is ours and it says so. Inside a RULE diagram it is not, and
+   looking at the first one made it obvious -- the learn page deliberately keeps
+   the league's rules apart from what we count, so that our measurements cannot
+   borrow the rulebook's authority, and a slot tint glowing inside the offside
+   figure walks straight through that wall. The paint a diagram inherits is the
+   paint the LEAGUE puts on the ice: boards, five lines, nine spots. */
+function furniture(id='',tints=true){const P=[];P.push(`<rect class="boards" x="${BOARD.x}" y="${BOARD.y}" width="${BOARD.w}" height="${BOARD.h}" rx="${BOARD.r}"/>`);
+ if(tints){
+ /* ⭐ THE SLOT IS PAINTED ON THE ICE, BEFORE ANYTHING HAPPENS.
+    Kevin: "we can measure, but we're not prioritizing the teaching... if we have
+    areas that are similarly shaded, the viewer's eyes will start focusing on
+    those areas during game play." A novice does not know the slot is where
+    danger lives, and until now the site only said so at the moment a shot
+    happened to land there -- which is after the point at which knowing it would
+    have helped. Furniture teaches it before the puck moves.
+    IT IS THE RULE, DRAWN, NOT A SHAPE THAT LOOKS LIKE IT. `HIGH_DANGER_FT` and
+    `SLOT_HALF_WIDTH` are the same two constants `isHighDanger()` tests, so a
+    viewer who wonders why a mark counted can look at where it sits. Drawing a
+    prettier region than the rule would break the one promise Doctrine 7 makes:
+    a geometric rule you can check with a ruler.
+    INCLUDING THE ICE BEHIND THE NET, which looks odd and is correct. The rule
+    is a radius, and it does not stop at the goal line -- a wrap-around from
+    three feet out passes it. A tint that quietly excluded that would disagree
+    with the layer at exactly the events people argue about.
+    BOTH ENDS, AND THEREFORE NO FRAME AT ALL. The slot is symmetric about centre
+    ice, so this is arena-frame furniture that never asks which way anyone is
+    attacking -- it is untouched by the ends-switching machinery, which is the
+    most expensive thing in this file to be near.
+    NESTED CLIPS INTERSECT; a clipPath with two shapes would UNION them. One
+    band for `|y| <= SLOT_HALF_WIDTH`, then a half-plane per end for the clause
+    that says in front of the goal line. No boards clip is needed any more --
+    that existed only to stop the old region spilling out of the rink behind the
+    net, which is the ice this rule no longer claims. */
+ P.push(`<clipPath id="${id}slotband"><rect x="0" y="${SY(SLOT_HALF_WIDTH)}" width="200" height="${SLOT_HALF_WIDTH*2}"/></clipPath>`
+  +`<clipPath id="${id}slotfrontA"><rect x="${SX(NET_X)}" y="0" width="200" height="85"/></clipPath>`
+  +`<clipPath id="${id}slotfrontB"><rect x="0" y="0" width="${SX(-NET_X)}" height="85"/></clipPath>`
+  +`<g class="slotzone" clip-path="url(#${id}slotband)">`
+  +`<g clip-path="url(#${id}slotfrontA)"><circle cx="${SX(NET_X)}" cy="${SY(0)}" r="${HIGH_DANGER_FT}"/></g>`
+  +`<g clip-path="url(#${id}slotfrontB)"><circle cx="${SX(-NET_X)}" cy="${SY(0)}" r="${HIGH_DANGER_FT}"/></g>`
+  +`</g>`);
+ /* ⭐ AND THE BLUE LINES, WHICH ARE A DIFFERENT KIND OF IMPORTANT.
+    Kevin: "offense wants to hold play in, defense wants to keep play out, a
+    battleground if you will -- that's an aesthetic the casual fan needs to be
+    exposed to." He is right, and the measurement that looked like it refuted him
+    does not: only 6.2% of located plays fall within five feet of a blue line,
+    but holding the line produces NO RECORDABLE EVENT. The feed records where
+    countable things happen, not where the puck is contested, so its silence
+    there is a property of the recording. (docs/status.md §U, and the same
+    caveat that forbids a heat map of the neutral zone.)
+    A DIFFERENT SHAPE AND A DIFFERENT COLOUR, ON PURPOSE. The slot is a PLACE --
+    a lozenge in front of a net, tinted in the high-danger colour it belongs to.
+    A blue line is a THRESHOLD, and the contest runs board to board, so this is a
+    full-width strip in the line's OWN blue. Shading them alike would say they
+    are the same kind of important, which is the misconception rather than the
+    lesson. Each tint borrows the colour of the mark it explains, so the palette
+    does not grow.
+    ITS WIDTH HAS A SOURCE. `ZONE_BAND_FT` is the gap between the blue line and
+    the neutral-zone face-off dot, which the archive measured; the band reaches
+    from the line to the dots and you can see that it does. Five feet chosen by
+    eye would be a model wearing a UI control.
+    NO CLIP NEEDED. At |x| 20-30 the boards are straight -- the corner radius
+    only bends the ice within 27 units of a corner -- so a plain rect is exact. */
+ for(const b of[BLUE_LINE_X,-BLUE_LINE_X])
+  // `SX` DECREASES with x, so the band's left edge is the far side of it.
+  P.push(`<rect class="zoneband" x="${SX(b+ZONE_BAND_FT)}" y="1" width="${ZONE_BAND_FT*2}" height="83"/>`);
+ }
+ /* ⭐ EVERY LINE ENDS ON THE BOARDS, and it is the same call for all of them.
+    The blue lines and the centre line sit in the straight section, so `boardsY`
+    hands back the 1..84 they were previously typed with -- byte-identical
+    output, which is the point: the goal lines are not a special case being
+    patched, they are the only lines that were ever WRONG under a rule the
+    others already satisfied by accident of where they sit. */
+ const line=(cls,x)=>{const[y1,y2]=boardsY(x);
+  return `<line class="ln ${cls}" x1="${x}" y1="${y1.toFixed(2)}" x2="${x}" y2="${y2.toFixed(2)}"/>`;};
+ for(const g of[-89,89])P.push(line('red',SX(g)));
+ for(const b of[-25,25])P.push(line('blue',SX(b)));
+ P.push(line('red thick',100)+'<circle class="ln blue" cx="100" cy="42.5" r="15"/>');
+ // THE NINE FACE-OFF SPOTS, taken from the DATA rather than from the rulebook.
+ // Every faceoff in the archive happens at one of nine coordinates: 2,134 draws
+ // across 39 games spread over the three seasons land on these nine and on
+ // nothing else, and none of them arrives without a coordinate. So this table is
+ // a measurement, checkable against the feed, rather than a diagram I remembered.
+ //
+ //   end zone (+-69,+-22) 68.6%   centre (0,0) 19.5%   neutral (+-20,+-22) 11.9%
+ //
+ // ONLY FIVE OF THE NINE CARRY A CIRCLE -- the four end-zone spots and centre
+ // ice. The neutral-zone spots are bare, which is the rink's own arrangement and
+ // not an omission here; drawing circles on them would be tidier and wrong.
+ //
+ // AND THE SPOTS ARE NOT DECORATION. The whistle layer places every mark at the
+ // faceoff that RESTARTS play, and offside restarts on a neutral-zone spot 89.8%
+ // of the time -- so the four spots nobody had drawn are the four that layer uses
+ // most. A ring on blank ice reads as "something happened at this arbitrary
+ // point"; the same ring on a painted spot reads as "play restarted here".
+ //
+ // NO HASH MARKS. A real end-zone circle has them and nothing available here
+ // gives their dimensions, so they stay off rather than being approximated.
+ const ENDZONE=[],NEUTRAL=[];
+ for(const zx of[-69,69])for(const zy of[-22,22])ENDZONE.push([zx,zy]);
+ for(const zx of[-NEUTRAL_DOT_X,NEUTRAL_DOT_X])for(const zy of[-22,22])NEUTRAL.push([zx,zy]);
+ for(const[zx,zy]of ENDZONE)P.push(`<circle class="ln red" cx="${SX(zx)}" cy="${SY(zy)}" r="15"/>`);
+ // Spots go on LAST so a dot sits on top of its circle. Centre ice is blue and
+ // the other eight are red, which is how the paint goes down. All nine are drawn
+ // at one size: the eight outer spots are two feet across and this is that, while
+ // the centre spot is smaller in a real rink and is drawn to match the rest
+ // because at this scale the true size is under a pixel on a phone.
+ for(const[zx,zy]of[...ENDZONE,...NEUTRAL])
+  P.push(`<circle class="fdot" cx="${SX(zx)}" cy="${SY(zy)}" r="1"/>`);
+ P.push('<circle class="fdot ctr" cx="100" cy="42.5" r="1"/>');
+ return P.join('');}
+
+ // nets: BUF(home) defends LEFT(-89), MIN(away) defends RIGHT(+89)
+ // A NET DRAWN AS EQUIPMENT, not as a chip. It was a rounded rectangle filled
+ // with the club colour and captioned in contrasting ink -- which is the
+ // scoreboard badge's exact treatment, in mirrored positions, so the same visual
+ // language meant "this team" at the top of the page and "this team's net" on the
+ // ice with nothing distinguishing the two (CHENG). Kevin read the pair as
+ // swapped, and he knows the sport cold.
+ //
+ // DRAWING IT PROPERLY FOUND A PLAIN ERROR. The old rectangles sat on the ICE
+ // side of the goal line -- x = 11..15 at the near end -- and a real net stands
+ // ON the line with its body BEHIND it. They were also 11 units across where a
+ // net is 6 feet, nearly double. Both are fixed here: 6 wide, 4 deep, behind the
+ // line, with the mouth facing centre ice, plus the crease it sits in.
+ //
+ // The sweater convention carries over: the host's mesh is filled with its
+ // colour, the visitor's is white inside its own frame.
+const netGlyph=(id,gx,col)=>{
+  // Which way is "behind" is read from where the goal line sits on screen, so a
+  // reflection of SX carries the whole net with it and cannot leave one end
+  // pointing the wrong way.
+  const dir=gx<100?1:-1, back=gx-4*dir, top=42.5-3, bot=42.5+3;
+  const body=`M ${gx} ${top} L ${back} ${top+0.8} L ${back} ${bot-0.8} L ${gx} ${bot} Z`;
+  // NETTING, NOT A BLOCK. Filled with the club's colour the host's net rendered as
+  // a solid slab -- the visitor's, being white inside its own frame, read far
+  // better as equipment. So the sweater convention comes OFF the net: both are
+  // open, both carry their colour in the frame and the strands, and the goalie
+  // standing in front keeps the host-filled / visitor-white distinction where it
+  // is doing identity work.
+  let strands='';
+  for(let k=1;k<=2;k++){const t=k/3, mx=gx+(back-gx)*t;
+   strands+=`<line class="strand" x1="${mx.toFixed(1)}" y1="${(top+0.8*t).toFixed(1)}" `
+          + `x2="${mx.toFixed(1)}" y2="${(bot-0.8*t).toFixed(1)}" stroke="${col}"/>`;}
+  return `<g class="netg">`
+   + `<path class="crease" d="M ${gx} ${42.5-6} A 6 6 0 0 ${dir>0?1:0} ${gx} ${42.5+6}"/>`
+   + `<path class="mesh" d="${body}" fill="#fff" fill-opacity=".5" stroke="${col}"/>`
+   + strands
+   + `<line class="post" x1="${gx}" y1="${top}" x2="${gx}" y2="${bot}" stroke="${col}"/>`
+   // THE FLASH IS ITS OWN ELEMENT, over the net rather than being it. The old
+   // markup put the animation on a hidden duplicate; putting it on the net now
+   // that the net is always visible would make the net VANISH and return on
+   // every goal, because the keyframes run 0 -> .85 -> 0.
+   + `<path id="${id}" class="flashpath" d="${body}" fill="${col}" opacity="0"/>`
+   + `</g>`;};
+
 // RATES ARRIVES AS AN ARGUMENT AND IS NEVER REQUESTED IN THIS FUNCTION. Both
 // pages share this body byte for byte, and read-the-game.html carries its whole
 // game inside it and must reach nothing -- the deploy greps the inlined pages for
@@ -5627,22 +5879,10 @@ const ATT=ATTEMPT_TYPES;
    names are the CSS animations in src/app.css. */
 const ARRIVE={goal:'flare',hit:'jolt','blocked-shot':'halt',
               giveaway:'slip',takeaway:'snatch'};
-// THE HOST DEFENDS THE RIGHT-HAND END, which is the arrangement a television
-// viewer expects (Kevin) -- and it is ours to choose, because the feed does not
-// have one: across 14 raw play-by-plays `homeTeamDefendingSide` in period one
-// splits 7 left, 7 right. It is fixed to the arena, not to the league.
-//
-// It also removes a real confusion. The scoreboard reads away-then-host, so the
-// host's badge sits on the RIGHT; with the host defending the left end, the same
-// three letters appeared on opposite sides of one screen. Kevin read the pair as
-// swapped and CHENG independently found the cause -- the rink and the scoreboard
-// speaking one visual language with two meanings. Now they agree.
-//
-// A DISPLAY TRANSFORM AND NOTHING MORE. The extract keeps the host on -x, every
-// reducer keeps reading it that way, and `distanceToNet` still measures to the
-// net a team attacks. Only the mapping from rink feet to screen units is
-// reflected, in this one line.
-const SX=x=>100-x, SY=y=>42.5-y;
+// `SX`/`SY` -- the pure screen transform, and the reasoning for which end the
+// host defends -- moved to src/lib/rinkart.js, which is where the rink's paint
+// lives now so the learn page's diagrams and the replay cannot draw two
+// different rinks. They are in scope here: the bundle concatenates the libs.
 /* ⭐ THE ARENA FRAME — B1. `SX`/`SY` are the pure screen transform and know
    nothing about which way anyone is facing. `AX`/`AY` add the one thing that
    varies, which is the PERIOD.
@@ -5848,197 +6088,21 @@ let rinkPer=null;
    here except the nets is symmetric about centre ice, so the flip is a no-op on
    the boards, the lines, the circles and the dots -- they are rebuilt only
    because the nets share the group. */
-/* ⭐ THE BOARDS, AS NUMBERS RATHER THAN AS A STRING. Every line painted on the
-   ice has to STOP at them, and until now each line carried its own hand-typed
-   pair of y values -- so the goal lines ran y=3..82 while the boards at that x
-   are at y=7.02..77.98, and the red line stuck four feet out through the
-   corner at both ends. Kevin: "the goal lines extend beyond the playing
-   surface, can you have those terminate right at the edge of the rink."
-   The rink is a rounded rect, so how far a line reaches DEPENDS ON WHERE IT IS:
-   in the straight section it runs the full height, and inside a corner it stops
-   on the arc. `boardsY` is that one rule, and the boards rect below is drawn
-   from the same four numbers, so the paint and the outline cannot disagree. */
-const BOARD={x:1,y:1,w:198,h:83,r:27};
-/**
- * Where the boards are at an SVG x — the top and bottom of the playing surface
- * at that point. Straight section: the full height. Inside a corner: on the arc.
- */
-function boardsY(sx){
- const L=BOARD.x,R=BOARD.x+BOARD.w,T=BOARD.y,B=BOARD.y+BOARD.h,r=BOARD.r;
- const cx=sx<L+r?L+r:sx>R-r?R-r:null;
- if(cx===null)return[T,B];
- const dy=Math.sqrt(Math.max(0,r*r-(sx-cx)*(sx-cx)));
- return[T+r-dy,B-r+dy];
-}
-function drawRink(per){if(per===rinkPer)return;rinkPer=per;const P=[];P.push(`<rect class="boards" x="${BOARD.x}" y="${BOARD.y}" width="${BOARD.w}" height="${BOARD.h}" rx="${BOARD.r}"/>`);
- /* ⭐ THE SLOT IS PAINTED ON THE ICE, BEFORE ANYTHING HAPPENS.
-    Kevin: "we can measure, but we're not prioritizing the teaching... if we have
-    areas that are similarly shaded, the viewer's eyes will start focusing on
-    those areas during game play." A novice does not know the slot is where
-    danger lives, and until now the site only said so at the moment a shot
-    happened to land there -- which is after the point at which knowing it would
-    have helped. Furniture teaches it before the puck moves.
-    IT IS THE RULE, DRAWN, NOT A SHAPE THAT LOOKS LIKE IT. `HIGH_DANGER_FT` and
-    `SLOT_HALF_WIDTH` are the same two constants `isHighDanger()` tests, so a
-    viewer who wonders why a mark counted can look at where it sits. Drawing a
-    prettier region than the rule would break the one promise Doctrine 7 makes:
-    a geometric rule you can check with a ruler.
-    INCLUDING THE ICE BEHIND THE NET, which looks odd and is correct. The rule
-    is a radius, and it does not stop at the goal line -- a wrap-around from
-    three feet out passes it. A tint that quietly excluded that would disagree
-    with the layer at exactly the events people argue about.
-    BOTH ENDS, AND THEREFORE NO FRAME AT ALL. The slot is symmetric about centre
-    ice, so this is arena-frame furniture that never asks which way anyone is
-    attacking -- it is untouched by the ends-switching machinery, which is the
-    most expensive thing in this file to be near.
-    NESTED CLIPS INTERSECT; a clipPath with two shapes would UNION them. One
-    band for `|y| <= SLOT_HALF_WIDTH`, then a half-plane per end for the clause
-    that says in front of the goal line. No boards clip is needed any more --
-    that existed only to stop the old region spilling out of the rink behind the
-    net, which is the ice this rule no longer claims. */
- P.push(`<clipPath id="slotband"><rect x="0" y="${SY(SLOT_HALF_WIDTH)}" width="200" height="${SLOT_HALF_WIDTH*2}"/></clipPath>`
-  +`<clipPath id="slotfrontA"><rect x="${SX(NET_X)}" y="0" width="200" height="85"/></clipPath>`
-  +`<clipPath id="slotfrontB"><rect x="0" y="0" width="${SX(-NET_X)}" height="85"/></clipPath>`
-  +`<g class="slotzone" clip-path="url(#slotband)">`
-  +`<g clip-path="url(#slotfrontA)"><circle cx="${SX(NET_X)}" cy="${SY(0)}" r="${HIGH_DANGER_FT}"/></g>`
-  +`<g clip-path="url(#slotfrontB)"><circle cx="${SX(-NET_X)}" cy="${SY(0)}" r="${HIGH_DANGER_FT}"/></g>`
-  +`</g>`);
- /* ⭐ AND THE BLUE LINES, WHICH ARE A DIFFERENT KIND OF IMPORTANT.
-    Kevin: "offense wants to hold play in, defense wants to keep play out, a
-    battleground if you will -- that's an aesthetic the casual fan needs to be
-    exposed to." He is right, and the measurement that looked like it refuted him
-    does not: only 6.2% of located plays fall within five feet of a blue line,
-    but holding the line produces NO RECORDABLE EVENT. The feed records where
-    countable things happen, not where the puck is contested, so its silence
-    there is a property of the recording. (docs/status.md §U, and the same
-    caveat that forbids a heat map of the neutral zone.)
-    A DIFFERENT SHAPE AND A DIFFERENT COLOUR, ON PURPOSE. The slot is a PLACE --
-    a lozenge in front of a net, tinted in the high-danger colour it belongs to.
-    A blue line is a THRESHOLD, and the contest runs board to board, so this is a
-    full-width strip in the line's OWN blue. Shading them alike would say they
-    are the same kind of important, which is the misconception rather than the
-    lesson. Each tint borrows the colour of the mark it explains, so the palette
-    does not grow.
-    ITS WIDTH HAS A SOURCE. `ZONE_BAND_FT` is the gap between the blue line and
-    the neutral-zone face-off dot, which the archive measured; the band reaches
-    from the line to the dots and you can see that it does. Five feet chosen by
-    eye would be a model wearing a UI control.
-    NO CLIP NEEDED. At |x| 20-30 the boards are straight -- the corner radius
-    only bends the ice within 27 units of a corner -- so a plain rect is exact. */
- for(const b of[BLUE_LINE_X,-BLUE_LINE_X])
-  // `SX` DECREASES with x, so the band's left edge is the far side of it.
-  P.push(`<rect class="zoneband" x="${SX(b+ZONE_BAND_FT)}" y="1" width="${ZONE_BAND_FT*2}" height="83"/>`);
- /* ⭐ EVERY LINE ENDS ON THE BOARDS, and it is the same call for all of them.
-    The blue lines and the centre line sit in the straight section, so `boardsY`
-    hands back the 1..84 they were previously typed with -- byte-identical
-    output, which is the point: the goal lines are not a special case being
-    patched, they are the only lines that were ever WRONG under a rule the
-    others already satisfied by accident of where they sit. */
- const line=(cls,x)=>{const[y1,y2]=boardsY(x);
-  return `<line class="ln ${cls}" x1="${x}" y1="${y1.toFixed(2)}" x2="${x}" y2="${y2.toFixed(2)}"/>`;};
- for(const g of[-89,89])P.push(line('red',SX(g)));
- for(const b of[-25,25])P.push(line('blue',SX(b)));
- P.push(line('red thick',100)+'<circle class="ln blue" cx="100" cy="42.5" r="15"/>');
- // THE NINE FACE-OFF SPOTS, taken from the DATA rather than from the rulebook.
- // Every faceoff in the archive happens at one of nine coordinates: 2,134 draws
- // across 39 games spread over the three seasons land on these nine and on
- // nothing else, and none of them arrives without a coordinate. So this table is
- // a measurement, checkable against the feed, rather than a diagram I remembered.
- //
- //   end zone (+-69,+-22) 68.6%   centre (0,0) 19.5%   neutral (+-20,+-22) 11.9%
- //
- // ONLY FIVE OF THE NINE CARRY A CIRCLE -- the four end-zone spots and centre
- // ice. The neutral-zone spots are bare, which is the rink's own arrangement and
- // not an omission here; drawing circles on them would be tidier and wrong.
- //
- // AND THE SPOTS ARE NOT DECORATION. The whistle layer places every mark at the
- // faceoff that RESTARTS play, and offside restarts on a neutral-zone spot 89.8%
- // of the time -- so the four spots nobody had drawn are the four that layer uses
- // most. A ring on blank ice reads as "something happened at this arbitrary
- // point"; the same ring on a painted spot reads as "play restarted here".
- //
- // NO HASH MARKS. A real end-zone circle has them and nothing available here
- // gives their dimensions, so they stay off rather than being approximated.
- const ENDZONE=[],NEUTRAL=[];
- for(const zx of[-69,69])for(const zy of[-22,22])ENDZONE.push([zx,zy]);
- for(const zx of[-NEUTRAL_DOT_X,NEUTRAL_DOT_X])for(const zy of[-22,22])NEUTRAL.push([zx,zy]);
- for(const[zx,zy]of ENDZONE)P.push(`<circle class="ln red" cx="${SX(zx)}" cy="${SY(zy)}" r="15"/>`);
- // Spots go on LAST so a dot sits on top of its circle. Centre ice is blue and
- // the other eight are red, which is how the paint goes down. All nine are drawn
- // at one size: the eight outer spots are two feet across and this is that, while
- // the centre spot is smaller in a real rink and is drawn to match the rest
- // because at this scale the true size is under a pixel on a phone.
- for(const[zx,zy]of[...ENDZONE,...NEUTRAL])
-  P.push(`<circle class="fdot" cx="${SX(zx)}" cy="${SY(zy)}" r="1"/>`);
- P.push('<circle class="fdot ctr" cx="100" cy="42.5" r="1"/>');
- // nets: BUF(home) defends LEFT(-89), MIN(away) defends RIGHT(+89)
- // A NET DRAWN AS EQUIPMENT, not as a chip. It was a rounded rectangle filled
- // with the club colour and captioned in contrasting ink -- which is the
- // scoreboard badge's exact treatment, in mirrored positions, so the same visual
- // language meant "this team" at the top of the page and "this team's net" on the
- // ice with nothing distinguishing the two (CHENG). Kevin read the pair as
- // swapped, and he knows the sport cold.
- //
- // DRAWING IT PROPERLY FOUND A PLAIN ERROR. The old rectangles sat on the ICE
- // side of the goal line -- x = 11..15 at the near end -- and a real net stands
- // ON the line with its body BEHIND it. They were also 11 units across where a
- // net is 6 feet, nearly double. Both are fixed here: 6 wide, 4 deep, behind the
- // line, with the mouth facing centre ice, plus the crease it sits in.
- //
- // The sweater convention carries over: the host's mesh is filled with its
- // colour, the visitor's is white inside its own frame.
- const netGlyph=(id,gx,col)=>{
-  // Which way is "behind" is read from where the goal line sits on screen, so a
-  // reflection of SX carries the whole net with it and cannot leave one end
-  // pointing the wrong way.
-  const dir=gx<100?1:-1, back=gx-4*dir, top=42.5-3, bot=42.5+3;
-  const body=`M ${gx} ${top} L ${back} ${top+0.8} L ${back} ${bot-0.8} L ${gx} ${bot} Z`;
-  // NETTING, NOT A BLOCK. Filled with the club's colour the host's net rendered as
-  // a solid slab -- the visitor's, being white inside its own frame, read far
-  // better as equipment. So the sweater convention comes OFF the net: both are
-  // open, both carry their colour in the frame and the strands, and the goalie
-  // standing in front keeps the host-filled / visitor-white distinction where it
-  // is doing identity work.
-  let strands='';
-  for(let k=1;k<=2;k++){const t=k/3, mx=gx+(back-gx)*t;
-   strands+=`<line class="strand" x1="${mx.toFixed(1)}" y1="${(top+0.8*t).toFixed(1)}" `
-          + `x2="${mx.toFixed(1)}" y2="${(bot-0.8*t).toFixed(1)}" stroke="${col}"/>`;}
-  return `<g class="netg">`
-   + `<path class="crease" d="M ${gx} ${42.5-6} A 6 6 0 0 ${dir>0?1:0} ${gx} ${42.5+6}"/>`
-   + `<path class="mesh" d="${body}" fill="#fff" fill-opacity=".5" stroke="${col}"/>`
-   + strands
-   + `<line class="post" x1="${gx}" y1="${top}" x2="${gx}" y2="${bot}" stroke="${col}"/>`
-   // THE FLASH IS ITS OWN ELEMENT, over the net rather than being it. The old
-   // markup put the animation on a hidden duplicate; putting it on the net now
-   // that the net is always visible would make the net VANISH and return on
-   // every goal, because the keyframes run 0 -> .85 -> 0.
-   + `<path id="${id}" class="flashpath" d="${body}" fill="${col}" opacity="0"/>`
-   + `</g>`;};
- // dir points from the goal line toward CENTRE ice, so the body goes the other way.
- // Ids by ROLE, not by side. `netL`/`netR` were screen names for data facts, and
- // a reflection turns that kind of name into a lie without changing a character.
- P.push(netGlyph('netHome',AX(-89,per),HOMECOL));
- P.push(netGlyph('netAway',AX(89,per),AWAYCOL));
- // THE LABEL MOVES BEHIND THE GOAL LINE, into dead ice where there is room for
- // the word that was doing the disambiguating work. "CBJ" alone can be read as
- // "CBJ's net" or "where CBJ shoots", and those are opposites (CHENG); "CBJ net"
- // is what the original caption said before it was shortened to fit on a post.
- // THE TAGS FACE EACH OTHER ACROSS THE RINK (Kevin). The near net reads UP and
- // the far net reads DOWN, which puts the near tag's first letter at the BOTTOM
- // and the far tag's at the top.
- //
- // ESTABLISHED BY LOOKING, NOT BY DERIVING, and that is the note worth keeping. I
- // reasoned this out from the transform algebra twice -- SVG's y-axis points down,
- // a positive rotation is clockwise, so +90 carries a glyph's top toward +x -- and
- // shipped the opposite of what was asked for both times. The algebra is correct
- // and it answers a different question than the one a viewer is asking: which way
- // a label appears to face is not settled by where its ascenders point. Kevin read
- // the screen; the screen wins.
- // NO TEXT TAG. A goaltender standing in the crease says "this net is defended"
- // without a label, and the club's colour on the goalie and the net says whose --
- // which is how a viewer reads a real rink. The vertical "WSH net" was clutter
- // doing a job a figure does better (Kevin).
- $('rink').innerHTML=P.join('');}
+/* THE PAINT IS IN src/lib/rinkart.js. `furniture()` is every fixed thing on an
+   NHL sheet and carries no game in it; `netGlyph` is the only part that needs a
+   period and a club colour, which is why it takes both rather than reading them.
+   Kevin's diagrams on the learn page call the same `furniture()`, so the rink a
+   novice is taught on and the rink they then watch cannot drift apart.
+   Ids by ROLE, not by side. `netL`/`netR` were screen names for data facts, and
+   a reflection turns that kind of name into a lie without changing a character.
+   NO TEXT TAG. A goaltender standing in the crease says "this net is defended"
+   without a label, and the club's colour on the goalie and the net says whose --
+   which is how a viewer reads a real rink. The vertical "WSH net" was clutter
+   doing a job a figure does better (Kevin). */
+function drawRink(per){if(per===rinkPer)return;rinkPer=per;
+ $('rink').innerHTML=furniture()
+  +netGlyph('netHome',AX(-89,per),HOMECOL)
+  +netGlyph('netAway',AX(89,per),AWAYCOL);}
 /**
  * A goaltender in each crease -- unless the feed says one has been pulled.
  *

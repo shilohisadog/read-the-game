@@ -389,7 +389,13 @@ footer p{margin:0 0 8px}
   .chip{height:42px;font-size:.82rem}
   .rates li{flex-direction:column;gap:2px}
 }
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/* ⚠️ `animation`, NOT JUST `transition`. This rule said `transition:none` alone
+   for as long as it has existed, and that was harmless only because these pages
+   carried ZERO @keyframes -- an un-reachable gap reads exactly like a working
+   guard. The learn page's rule diagrams animate, so it became live the moment
+   the first figure shipped. app.css:1127 has always had the blanket form; this
+   is the same rule, finally saying the same thing. */
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>"""
 
 # THE FOUR THINGS EVERY PAGE SCRIPT ON THIS SITE NEEDS, DEFINED ONCE.
@@ -953,6 +959,34 @@ def _limits():
                      for h, b in LIMITS).replace("__EXCLUDED__", _excluded())
 
 
+def _fig_json():
+    return json.loads((ROOT / "data" / "learn-figures.json").read_text())
+
+
+def _figures():
+    """{cardId: rendered <figure>} — the rule diagrams, drawn by node.
+
+    ⭐ SAME SEAM AS THE DOORS, FOR THE SAME REASON. `learn-figures.mjs` draws
+    them with the replay's own `furniture()`, so the rink a novice is taught on
+    and the rink they then watch are one implementation; restating any of that
+    geometry in Python would be the second statement of a shared rule in a
+    second language. Node draws, Python renders, and the two meet over one
+    committed document.
+
+    THE `<title>` IS THE ACCESSIBLE NAME and it says the word "Diagram" first.
+    That is not the guard -- the outlined-neutral grammar is -- but a reader who
+    cannot see the drawing at all should still be told which kind of thing it is.
+    """
+    out = {}
+    for cid, d in sorted(_fig_json().items()):
+        steps = "".join(f"<li>{s}</li>" for s in d["steps"])
+        out[cid] = (f'<figure class="dgfig {cid[:2]}">'
+                    f'<svg class="dgice" viewBox="{d["viewBox"]}" role="img" '
+                    f'aria-label="{d["label"]}">{d["svg"]}</svg>'
+                    f'<ol class="dgsteps">{steps}</ol></figure>')
+    return out
+
+
 def _learn():
     """The learn page, where every claim is a door into a real game.
 
@@ -971,12 +1005,19 @@ def _learn():
     """
     d = json.loads((ROOT / "data" / "learn-doors.json").read_text())
     doors, g, fig = d["doors"], d["game"], d["figures"]
+    figures = _figures()
 
     ids, want = {c[1] for c in LEARN_CARDS}, set(doors)
     if ids != want:
         raise SystemExit("learn: cards and doors disagree -- "
                          f"cards without a door: {sorted(ids - want)}; "
                          f"doors without a card: {sorted(want - ids)}")
+    # A FIGURE FOR A CARD THAT IS NOT HERE IS A DRAWING NOBODY SEES. The other
+    # direction is deliberately allowed: Kevin ruled diagrams go only where "we
+    # need graphics to teach", so most cards have none and that is not a gap.
+    stray = set(figures) - ids
+    if stray:
+        raise SystemExit(f"learn: figures for cards that do not exist: {sorted(stray)}")
 
     out = []
     for kind, heading in LEARN_GROUPS:
@@ -996,8 +1037,14 @@ def _learn():
             # why had no way to reach the card that explains it. The id is the
             # card id -- the same key `doors` is keyed by and the guard above
             # already pins -- so the anchor cannot name a card that is not here.
+            # ⭐ THE FIGURE GOES AFTER THE TITLE AND BEFORE THE WORDS, which is
+            # the teaching order: name the rule, draw the rule, then say it, then
+            # offer the real instance. It sits INSIDE the card's link on purpose
+            # -- tapping the diagram lands on the same rule happening in a real
+            # game, which is the whole point of the pairing, and on a phone it
+            # makes the tap target larger rather than smaller.
             out.append(f'    <a class="card" id="{cid}" href="/game.html{door["href"]}">'
-                       f'<p class="t">{title}</p><p>{blurb}</p>'
+                       f'<p class="t">{title}</p>{figures.get(cid, "")}<p>{blurb}</p>'
                        f'<p class="at">Period {door["per"]} &middot; {door["rem"]} left</p></a>')
         out.append("  </div>")
 
@@ -1053,10 +1100,19 @@ LEARN_CARDS = [
     #
     # It now says what we have and admits what we do not, which is also the more
     # useful instruction: watch the line, because the crossing is not there.
+    # ⭐ THE BLURB SHRANK WHEN THE FIGURE ARRIVED, and that is the general rule:
+    # a card with a diagram should say the part the diagram CANNOT. This one
+    # said "an attacking player crossed the blue line ahead of the puck" -- which
+    # is now drawn, twice, in the picture and in step 2 -- and the words were the
+    # third telling of it. What is left is the half no drawing can carry: WHY
+    # there is a drawing here at all. Zero of 4,160 offside stoppages carry a
+    # coordinate, a zone or a player, so this is the one rule on the page whose
+    # moment we can name and never show. The figure teaches the rule and the
+    # sentence teaches the limit, which is the more useful pair (CHENG).
     ("rules", "offside", "Offside",
-     "An attacking player crossed the blue line ahead of the puck, so the entry "
-     "does not count. The feed records the call and the restart, never the "
-     "crossing &mdash; so watch the line, not the play."),
+     "This is the one rule we can draw but never replay: the feed records the "
+     "call and the restart, never the crossing. So in a real game, watch the "
+     "line rather than the play."),
     ("rules", "penalties", "Penalties",
      "The arm goes up and play carries on until the offending team touches the "
      "puck. This is that gap &mdash; the delayed call, before the whistle."),
@@ -1125,6 +1181,64 @@ WORKSHOP_BODY = r"""<div class="wrap">
 __WORKSHOP_PAGE__
 </div>"""
 
+# \u2500\u2500 THE RULE DIAGRAMS \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+#
+# The geometry, the motion and the captions are written by
+# `builders/learn-figures.mjs`, which draws them with the SAME `furniture()` the
+# replay draws its rink with -- see that file for why a diagram is allowed at
+# all and what keeps it from being mistaken for a game. This is only the paint.
+#
+# \u2b50 THE ICE IS THE REPLAY'S ICE AND THE PLAY ON IT IS NOT. Kevin: "it's the same
+# ice rink, but the graphics are noticeably and obviously different between the
+# learning cards and the game pages." So `.dgpaint` restates app.css's rink
+# values exactly -- boards, lines, spots, both tints -- and everything in
+# `.dgplay` is outlined, neutral, and drawn in a vocabulary the game ice does
+# not own: arrows, ghosts of where a thing started, and numbered badges.
+#
+# \u26a0\ufe0f THE OUTLINE IS THE SIGNAL, NOT THE ARROW (CHENG). "The replay never draws an
+# arrow" is true today and stops being true the day anything directional lands
+# on the game ice, which is live work. What carries provenance is FILLED IN A
+# CLUB'S COLOUR = recorded, OUTLINED NEUTRAL = illustrative. No club colour
+# appears in any figure, and the test asserts it rather than the arrow.
+FIGCSS = r"""<style>
+.dgfig{margin:9px 0 10px;padding:0}
+.dgice{display:block;width:100%;height:auto;background:var(--ice);
+  border:1px solid var(--edge);border-radius:9px}
+/* THE RINK, RESTATED FROM app.css -- same numbers, because it is the same ice. */
+.dgpaint .boards{fill:var(--ice);stroke:var(--edge);stroke-width:1.1}
+.dgpaint .slotzone{fill:#e0932a;opacity:.09}
+.dgpaint .zoneband{fill:var(--blue);opacity:.055}
+.dgpaint .ln{fill:none;stroke-linecap:round}
+.dgpaint .ln.red{stroke:var(--red);stroke-width:.7;opacity:.42}
+.dgpaint .ln.blue{stroke:var(--blue);stroke-width:.9;opacity:.42}
+.dgpaint .ln.thick{stroke-width:1.1;opacity:.52}
+.dgpaint .fdot{fill:var(--red);opacity:.55}
+.dgpaint .fdot.ctr{fill:var(--blue)}
+/* THE ILLUSTRATION. Outlined, neutral, never a club's colour. */
+.dgplay .dgtok{fill:var(--ice);stroke:var(--ink);stroke-width:1.1}
+.dgplay .dgpuck{fill:var(--ink);stroke:var(--ice);stroke-width:.5}
+.dgplay .dgghost{fill:none;stroke:var(--muted);stroke-width:.7;stroke-dasharray:2 1.6;opacity:.75}
+.dgplay .dgarrow{stroke:var(--muted);stroke-width:.8;stroke-linecap:round;opacity:.85}
+.dgheadp{fill:var(--muted);opacity:.85}
+/* The line where the rule is decided, and the spot the draw comes back to. */
+.dgplay .dghot{stroke:var(--blue);stroke-width:2.2;opacity:.5;stroke-linecap:round}
+.dgplay .dgspot{fill:none;stroke:var(--red);stroke-width:1;opacity:.8}
+.dgbadge circle{fill:var(--ink);opacity:.88}
+.dgbadge text{fill:#fff;font:700 5.6px/1 system-ui,sans-serif;text-anchor:middle}
+/* It says what it is, quietly. See learn-figures.mjs: this is not the guard. */
+.dgstamp{fill:var(--muted);opacity:.6;font:600 4.4px/1 system-ui,sans-serif;
+  letter-spacing:.09em;text-transform:uppercase}
+/* THE CAPTION IS A NUMBERED LIST BECAUSE THE RULE IS A SEQUENCE, and the numbers
+   are the badges on the ice. It is always fully visible -- the animation
+   illustrates these lines, it never replaces them, so a reader who arrives after
+   a loop has finished has lost nothing. */
+.dgsteps{margin:0;padding:0 0 0 20px;font-size:.82rem;color:var(--muted);line-height:1.45}
+.dgsteps li{margin:0 0 4px}
+.dgsteps li::marker{color:var(--ink);font-weight:700}
+.dgsteps b{color:var(--ink);font-weight:600}
+__FIGKEYS__
+</style>"""
+
 LEARN_TITLE = "What you can see here \u2014 Read the Game"
 LEARN_DESC = ("The hockey rules this site names as they happen \u2014 icing, offside, "
               "faceoffs, penalties, the empty net \u2014 and the measurements it counts "
@@ -1136,11 +1250,19 @@ WORKSHOP_DESC = ("Earlier views of the same NHL data, each answering a question 
 
 def build_learn():
     html = LEARN_BODY.replace("__LEARN__", _learn())
+    # THE FIGURES' KEYFRAMES COME FROM THE FIGURES, so a token's motion and its
+    # geometry are written by one hand and cannot drift into animating from a
+    # place it was never drawn. `str.replace` cannot fail, so it is asserted.
+    keys = "\n".join(d["css"] for _, d in sorted(_fig_json().items()))
+    figcss = FIGCSS.replace("__FIGKEYS__", keys)
+    assert "__FIGKEYS__" not in figcss, "the figure keyframes were never substituted"
+    # ITS OWN <style>, NOT AN ADDITION TO THE SHARED ONE. `STYLE` is served to the
+    # home page and the workshop as well, and neither draws a rink.
     html = P.document(html, title=LEARN_TITLE, description=LEARN_DESC,
                       url="https://readthegame.co/what-you-can-see.html",
                       current="/what-you-can-see.html",
                       head='<meta http-equiv="Content-Security-Policy" content="__CSP__">\n'
-                           + STYLE)
+                           + STYLE + "\n" + figcss)
     return html.replace("__CSP__", _csp(html, connect=None))
 
 

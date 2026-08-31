@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-9czOqYfO8DkU2cMyVigrggOWXaQVnF+qNST8FNgMMQg=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-dxdJgiWgdgpnkMrUr1plLNOc1Qz3QcQOp1l+57GPoIk='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-9czOqYfO8DkU2cMyVigrggOWXaQVnF+qNST8FNgMMQg=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-wCzZ5doKMp4YUz0OzT9XyZMKf++eETEMktHAxKa+wMQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -306,7 +306,13 @@ footer p{margin:0 0 8px}
   .chip{height:42px;font-size:.82rem}
   .rates li{flex-direction:column;gap:2px}
 }
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/* ⚠️ `animation`, NOT JUST `transition`. This rule said `transition:none` alone
+   for as long as it has existed, and that was harmless only because these pages
+   carried ZERO @keyframes -- an un-reachable gap reads exactly like a working
+   guard. The learn page's rule diagrams animate, so it became live the moment
+   the first figure shipped. app.css:1127 has always had the blanket form; this
+   is the same rule, finally saying the same thing. */
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
