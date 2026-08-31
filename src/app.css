@@ -89,6 +89,14 @@
     the game page never got the same repair — one fix, two surfaces, one missed. */
  #rg:not(.preview) .mid{grid-area:state;min-width:0}
  #rg:not(.preview) .gs{margin-bottom:0}
+ /* ⭐ AND THE PILL COMES BACK INLINE, because the free space in this board is
+    INVERTED at this width: `.mid` is the full-width `state` row, so there are
+    167px spare BESIDE the clock and nothing at all below it but the board's own
+    11px of padding. On its own line here the board grows 151 -> 176 and, worse,
+    grows and shrinks as power plays start and end -- a display that shifts
+    under the viewer, which is the defect the work overlay was built to remove.
+    Beside the clock it costs nothing. */
+ #rg:not(.preview) .ppill{display:inline-flex;margin:0}
  /* THE WORD GOES, THE ARROW STAYS. `attacks` is a LABEL for the arrow, and the
     arrow is the information — direction, which the goalies cannot supply to a
     reader who does not yet know a team attacks the net it does not defend. The
@@ -115,6 +123,45 @@
  #rg:not(.preview) .pens{width:100%}
 }
 #rg .mid{min-width:150px}#rg .gs{text-align:center;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px}#rg .gs .cl{color:var(--ink);font-family:ui-monospace,Menlo,monospace}#rg .gs .clw{font-style:normal;font-size:.62rem;letter-spacing:.08em}
+/* ⭐ THE STANDING CONDITION — a power play or a pulled goalie, sitting still.
+   It is INLINE CONTENT OF THE CLOCK LINE, not a positioned badge, because the
+   free space in this board inverts between the two widths (the reasoning and
+   the measurements are on the markup in builders/build_main.py). Inline, the
+   layout puts it beside the clock at 390 and wraps it underneath at 1100
+   without either being asked for, and the board grows at neither width.
+
+   ⚠️ `[hidden]` MUST BE RESTATED. The UA sheet's `[hidden]{display:none}` loses
+   to `#rg .ppill`, so without the next line a hidden pill is an inline-flex box
+   that draws itself -- the attribute would be set, the tests would pass on it,
+   and the chip would sit on the scoreboard through even-strength play.
+
+   THE CHIP IS `.pb`'s, DELIBERATELY. Same `content:attr(data-ab)`, same padding
+   and radius, same two colour rules -- a viewer meets one team chip on this
+   board, not two that nearly match.
+
+   ⭐ AND IT SITS ON ITS OWN LINE HERE, WHICH THE PIXELS DECIDED. `.mid` is the
+   `auto` column of `1fr auto 1fr` and `min-width:150px` is a FLOOR, not a cap --
+   so inline, the clock and the pill made one 285px line and the column grew
+   150 -> 290, taking the width out of both team columns. As its own line the
+   column is max(clock, pill) = 150px and nothing moves. `width:fit-content` with
+   auto margins is what centres a flex container under a `text-align:center`
+   parent. */
+#rg .ppill{display:flex;width:fit-content;margin:5px auto 0;
+ align-items:center;gap:6px;vertical-align:middle;
+ padding:1px 8px 1px 2px;border-radius:99px;border:1px solid var(--edge);background:#fff;
+ font-size:.62rem;font-weight:700;letter-spacing:.06em;color:var(--ink);white-space:nowrap;
+ /* ⚠️ `line-height:1` IS LOAD-BEARING, NOT TIDYING. At the inherited line-height
+    the pill stands 21px inside the clock's 19px line box, so at 390 -- where it
+    sits INLINE -- the board went 151 -> 153 every time a power play started and
+    back again when it ended. Two pixels, thirteen times a game, is still a
+    display shifting under the viewer. At 1 the pill is 16px and the line box
+    absorbs it: the board is byte-identical lit and dark. */
+ line-height:1}
+#rg .ppill[hidden]{display:none}
+#rg .ppill::before{content:attr(data-ab);font-size:.62rem;font-weight:750;
+ letter-spacing:.04em;padding:1px 5px;border-radius:4px}
+#rg .ppill.a::before{background:var(--away);color:var(--away-ink)}
+#rg .ppill.h::before{background:var(--home);color:var(--home-ink)}
 #rg .bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--edge)}#rg .bar span{transition:width .4s ease}#rg .ba{background:#fff;box-shadow:inset 0 0 0 2px var(--away);width:50%}#rg .bh{background:var(--home);width:50%}
 #rg .pct{display:flex;justify-content:space-between;align-items:center;font-size:.9rem;margin-top:5px;font-family:ui-monospace,Menlo,monospace;font-weight:700}
 #rg .pct #pa{color:var(--away-text)}#rg .pct #ph{color:var(--home-text)}
@@ -272,6 +319,18 @@
    its scoreboard (`.cbar`), which is the same information in the space it has. */
 #rg.preview .lbox,
 #rg.preview .endnote,
+/* ⭐ AND THE STRENGTH PILL, FOR THE PENALTY BOX'S REASON THREE COMMENTS UP: it
+   is game-view chrome, and here it would be an EFFECT WITH ITS CAUSE REMOVED --
+   `.pens` is hidden on this surface, so a `WSH POWER PLAY` chip would appear
+   with nothing on the board saying anyone was penalised.
+   ⚠️ IT WAS ALREADY INVISIBLE WHEN I LOOKED, AND THAT WAS LUCK. The hero happens
+   to loop over even-strength frames today, so the pill measured 0x0 in the
+   preview and nothing was wrong. The hero's opening frame is DERIVED (`hl`, the
+   distance to the first goal) and moves whenever the archive does; on the day it
+   lands inside a power play, a 133px chip arrives in a board 64px tall at 390.
+   A thing that is correct because of where the playhead happens to be is not
+   correct, so it is turned off here rather than left to the loop. */
+#rg.preview .ppill,
 #rg.preview .counters{display:none!important}
 /* THE PREVIEW FITS ITSELF TO WHATEVER BOX IT IS GIVEN.
    Kevin: "the bottom 1/3 of the rink is clipped off within the frame."

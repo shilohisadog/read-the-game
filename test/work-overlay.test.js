@@ -31,12 +31,20 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { boot, rich, app, PAGE_CSS } from './helpers/page.js';
 
-/** The rule body for a selector, from every stylesheet the page carries. */
+/**
+ * The rule body for a selector, WITH ITS COMMENTS STRIPPED.
+ *
+ * ⚠️ The strip is not tidying. On 2026-08-31 the identical helper in
+ * `render-strength-pill.test.js` passed a mutation, because the rule it read
+ * carried a comment quoting the very declaration the test asserted. None of the
+ * three rules read here happens to carry a comment today, so this changes no
+ * result — it removes the way they would stop being checks if one ever did.
+ */
 const ruleFor = (sel) => {
   const re = new RegExp(sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*\\{([^}]*)\\}');
   const m = re.exec(PAGE_CSS);
   assert.ok(m, `no rule for ${sel} — this guard has lost its subject`);
-  return m[1];
+  return m[1].replace(/\/\*[\s\S]*?\*\//g, '');
 };
 
 test('the panel is inside the rink card, not a sibling of it', () => {

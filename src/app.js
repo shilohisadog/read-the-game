@@ -492,6 +492,56 @@ function drawNetmen(e){
  // arrives or leaves, and at no other moment.
  if(now===netmenAre)return;
  netmenAre=now;$('netmen').innerHTML=now;}
+/**
+ * ⭐ THE STANDING CONDITION ON THE SCOREBOARD — a power play or a pulled goalie,
+ * for as long as it is true. Kevin: "we announce the penalty, but we don't
+ * retain the power play on the caption pill, maybe we should?"
+ *
+ * ⭐ WHY THIS IS NOT THE CAPTION PILL, MEASURED. Across 60 archive games, 77.6%
+ * of power-play windows contain at least one caption-worthy event (a goal, a
+ * penalty, a shot from the slot) -- the power play is exactly when those happen.
+ * A standing fact parked in the page's busiest transient surface would be
+ * fighting for it precisely when both matter. So the CONDITION sits here and the
+ * CHANGE stays on the caption: the split box.js already draws between occupancy
+ * and strength, one surface each.
+ *
+ * ⭐ AND IT IS `standing()`, WHICH SHARES `relativeTo` WITH THE LEDGER'S
+ * SENTENCE. Whose skaters is the only part of this that has ever been wrong --
+ * it shipped backwards once, in 36 of one game's 103 exclusions -- and a badge
+ * that sits on screen for a two-minute power play is wrong for longer than a
+ * ledger line nobody scrolls to.
+ *
+ * ONLY ON CHANGE, for `drawNetmen`'s reason one function up: this is read on
+ * every frame of a ~250-event game and touching the DOM each time would restart
+ * whatever the chip ever animates with.
+ */
+let pillIs=null;
+function drawPill(e){
+ // NO CODE MEANS NO CLAIM. Before the first event there is no `sit` at all, and
+ // an unreadable one (five-on-three, 3-on-3 overtime, the shootout -- 1.4% of
+ // coded events) is refused by `situation` rather than guessed. Both arrive here
+ // as null, and a badge that stays lit on a state we cannot read is worse than
+ // no badge, because it is wrong for minutes rather than for a frame.
+ const b=e?standing(e.sit,CTX):null;
+ const now=b?`${b.id}|${b.said}|${b.count}`:'';
+ if(now===pillIs)return;
+ pillIs=now;
+ const p=$('ppill');
+ if(!b){p.hidden=true;return;}
+ p.className='ppill '+(b.id===AID?'a':'h');
+ p.dataset.ab=b.ab;
+ /* ⭐ THE STATE, NOT THE ARITHMETIC — and the pixels are what found the reason.
+    `WSH POWER PLAY · 5 ON 4` measures 189px in a real browser. The clock row has
+    167px of spare beside it at 390 and the middle column is 150px at 1100, so at
+    189 the board GREW 151->176 on a phone and the middle column widened 150->343
+    on a laptop, eating the team columns. `power play` alone is 135px and clears
+    both. That is the constraint; this is why the answer is also right:
+    `b.count` is carried by `standing()` and spent ONCE, by the caption, at the
+    frame the power play begins. A badge that repeats "5 on 4" for two minutes is
+    the wallpaper this surface exists to avoid -- the CONDITION reminds, the
+    CHANGE explains. */
+ p.textContent=b.said;
+ p.hidden=false;}
 function flashNet(scorer){
  // A team scores INTO the net it is attacking, which is the OTHER team's: a
  // visitor goal lights the HOST's net. Stated by role, so which side of the
@@ -842,6 +892,7 @@ function render(i,how){
  drawNoPlace(cur);
  drawLabel(cur);
  drawNetmen(cur);
+ drawPill(cur);
  $('aSc').textContent=L.as;$('hSc').textContent=L.hs;
  const a=L.t[AID],h=L.t[HID],tot=a+h,pa=tot?Math.round(100*a/tot):0;
  /* ⭐ NO BAR OVER AN EMPTY POPULATION, and this was a real defect on the front

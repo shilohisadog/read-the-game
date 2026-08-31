@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-I4wWleHRlJNFJYfwJJUDd6nPxM+coYK3vHHFWvrFWHA=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-9O5ytP7iwcAWAfOJhnb6+onYOBrKpoEeOL+mUS51CHc='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-eQhZQ3Grtdtj1fubLlmSicg47lcRvDbvssXEXGOIzQE=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-MZR7iXLaIgLGWMyhT0yZSJ8ieTNEpbKBM5XoyH6zBt0='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">Watch a game</a><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see</a><a href="/workshop.html">Workshop</a></nav></header>
@@ -136,6 +136,14 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
     the game page never got the same repair — one fix, two surfaces, one missed. */
  #rg:not(.preview) .mid{grid-area:state;min-width:0}
  #rg:not(.preview) .gs{margin-bottom:0}
+ /* ⭐ AND THE PILL COMES BACK INLINE, because the free space in this board is
+    INVERTED at this width: `.mid` is the full-width `state` row, so there are
+    167px spare BESIDE the clock and nothing at all below it but the board's own
+    11px of padding. On its own line here the board grows 151 -> 176 and, worse,
+    grows and shrinks as power plays start and end -- a display that shifts
+    under the viewer, which is the defect the work overlay was built to remove.
+    Beside the clock it costs nothing. */
+ #rg:not(.preview) .ppill{display:inline-flex;margin:0}
  /* THE WORD GOES, THE ARROW STAYS. `attacks` is a LABEL for the arrow, and the
     arrow is the information — direction, which the goalies cannot supply to a
     reader who does not yet know a team attacks the net it does not defend. The
@@ -162,6 +170,45 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
  #rg:not(.preview) .pens{width:100%}
 }
 #rg .mid{min-width:150px}#rg .gs{text-align:center;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px}#rg .gs .cl{color:var(--ink);font-family:ui-monospace,Menlo,monospace}#rg .gs .clw{font-style:normal;font-size:.62rem;letter-spacing:.08em}
+/* ⭐ THE STANDING CONDITION — a power play or a pulled goalie, sitting still.
+   It is INLINE CONTENT OF THE CLOCK LINE, not a positioned badge, because the
+   free space in this board inverts between the two widths (the reasoning and
+   the measurements are on the markup in builders/build_main.py). Inline, the
+   layout puts it beside the clock at 390 and wraps it underneath at 1100
+   without either being asked for, and the board grows at neither width.
+
+   ⚠️ `[hidden]` MUST BE RESTATED. The UA sheet's `[hidden]{display:none}` loses
+   to `#rg .ppill`, so without the next line a hidden pill is an inline-flex box
+   that draws itself -- the attribute would be set, the tests would pass on it,
+   and the chip would sit on the scoreboard through even-strength play.
+
+   THE CHIP IS `.pb`'s, DELIBERATELY. Same `content:attr(data-ab)`, same padding
+   and radius, same two colour rules -- a viewer meets one team chip on this
+   board, not two that nearly match.
+
+   ⭐ AND IT SITS ON ITS OWN LINE HERE, WHICH THE PIXELS DECIDED. `.mid` is the
+   `auto` column of `1fr auto 1fr` and `min-width:150px` is a FLOOR, not a cap --
+   so inline, the clock and the pill made one 285px line and the column grew
+   150 -> 290, taking the width out of both team columns. As its own line the
+   column is max(clock, pill) = 150px and nothing moves. `width:fit-content` with
+   auto margins is what centres a flex container under a `text-align:center`
+   parent. */
+#rg .ppill{display:flex;width:fit-content;margin:5px auto 0;
+ align-items:center;gap:6px;vertical-align:middle;
+ padding:1px 8px 1px 2px;border-radius:99px;border:1px solid var(--edge);background:#fff;
+ font-size:.62rem;font-weight:700;letter-spacing:.06em;color:var(--ink);white-space:nowrap;
+ /* ⚠️ `line-height:1` IS LOAD-BEARING, NOT TIDYING. At the inherited line-height
+    the pill stands 21px inside the clock's 19px line box, so at 390 -- where it
+    sits INLINE -- the board went 151 -> 153 every time a power play started and
+    back again when it ended. Two pixels, thirteen times a game, is still a
+    display shifting under the viewer. At 1 the pill is 16px and the line box
+    absorbs it: the board is byte-identical lit and dark. */
+ line-height:1}
+#rg .ppill[hidden]{display:none}
+#rg .ppill::before{content:attr(data-ab);font-size:.62rem;font-weight:750;
+ letter-spacing:.04em;padding:1px 5px;border-radius:4px}
+#rg .ppill.a::before{background:var(--away);color:var(--away-ink)}
+#rg .ppill.h::before{background:var(--home);color:var(--home-ink)}
 #rg .bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--edge)}#rg .bar span{transition:width .4s ease}#rg .ba{background:#fff;box-shadow:inset 0 0 0 2px var(--away);width:50%}#rg .bh{background:var(--home);width:50%}
 #rg .pct{display:flex;justify-content:space-between;align-items:center;font-size:.9rem;margin-top:5px;font-family:ui-monospace,Menlo,monospace;font-weight:700}
 #rg .pct #pa{color:var(--away-text)}#rg .pct #ph{color:var(--home-text)}
@@ -319,6 +366,18 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    its scoreboard (`.cbar`), which is the same information in the space it has. */
 #rg.preview .lbox,
 #rg.preview .endnote,
+/* ⭐ AND THE STRENGTH PILL, FOR THE PENALTY BOX'S REASON THREE COMMENTS UP: it
+   is game-view chrome, and here it would be an EFFECT WITH ITS CAUSE REMOVED --
+   `.pens` is hidden on this surface, so a `WSH POWER PLAY` chip would appear
+   with nothing on the board saying anyone was penalised.
+   ⚠️ IT WAS ALREADY INVISIBLE WHEN I LOOKED, AND THAT WAS LUCK. The hero happens
+   to loop over even-strength frames today, so the pill measured 0x0 in the
+   preview and nothing was wrong. The hero's opening frame is DERIVED (`hl`, the
+   distance to the first goal) and moves whenever the archive does; on the day it
+   lands inside a power play, a 133px chip arrives in a board 64px tall at 390.
+   A thing that is correct because of where the playhead happens to be is not
+   correct, so it is turned off here rather than left to the loop. */
+#rg.preview .ppill,
 #rg.preview .counters{display:none!important}
 /* THE PREVIEW FITS ITSELF TO WHATEVER BOX IT IS GIVEN.
    Kevin: "the bottom 1/3 of the rink is clipped off within the frame."
@@ -1774,7 +1833,25 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 <div class="board">
   <p class="foot" id="gl">—</p>
   <div class="tm a"><span class="ab" id="aAb">&mdash;</span><span class="sc" id="aSc">0</span><div class="pens" id="penA"></div></div>
-  <div class="mid"><div class="gs"><span id="per">Pre-game</span> · <span class="cl" id="clk">20:00</span> <i class="clw">left</i></div>
+  <!-- ⭐ THE STANDING CONDITION, AND IT IS A SIBLING OF THE CLOCK RATHER THAN A
+       POSITIONED BADGE. Kevin: "the power play pill should be in the bottom
+       center, which is just empty space now, due to reserving the left and
+       right hand side for penalty information."
+       He is right, and the free space INVERTS between the two widths -- measured
+       in a real browser at a frame where WSH were up a skater. At 1100 `.mid` is
+       a 150px column the clock ink fills exactly: 0px spare beside it, ~36px of
+       empty band below, level with the penalty rows. At 390 `.mid` becomes the
+       full-width `state` grid area: 167px spare BESIDE the clock and nothing
+       below but the board's own 11px of padding.
+       So `bottom center` is a desktop description -- at 390 the bottom centre IS
+       the clock. Positioning this absolutely would have looked right on a laptop
+       and printed through "PERIOD 1 · 11:17 LEFT" on a phone. As inline content
+       of `.gs` the layout does it for free: side by side where there is width,
+       wrapped underneath where there is not, and THE BOARD GROWS AT NEITHER.
+       ⭐ AND IT IS `data-ab` + `::before`, WHICH IS THE PENALTY BOX'S OWN PATTERN
+       (`#rg .pb::before{content:attr(data-ab)}`) -- a second way to draw a team
+       chip is a second thing to keep in step with the club colours. -->
+  <div class="mid"><div class="gs"><span id="per">Pre-game</span> · <span class="cl" id="clk">20:00</span> <i class="clw">left</i> <span class="ppill" id="ppill" hidden></span></div>
     <div class="cbar"><div class="bar"><span class="ba" id="ba"></span><span class="bh" id="bh"></span></div>
     <div class="pct"><span id="pa">0</span><span class="plab"><i class="pname" id="pName">CONTROL</i><i class="mode" id="pMode">ALL SITUATIONS</i></span><span id="ph">0</span></div></div>
   </div>
@@ -2542,6 +2619,34 @@ function isEven(code, ctx) {
 }
 
 /**
+ * WHICH TEAM A SENTENCE ABOUT THIS SITUATION IS ABOUT, and the counts stated
+ * from that team's side.
+ *
+ * ⭐ ONE READER, because this seam shipped backwards once. The counts must be
+ * relative to the team the sentence NAMES, not in the feed's away-then-home
+ * order. Those coincide only when the named team is the away team, so half of
+ * them read backwards: with code 1451 the away side has 4 and the home side 5,
+ * and "BUF were on the power play -- 4 skaters against 5" says the team on the
+ * advantage has FEWER players. 36 of the reference game's 103 strength
+ * exclusions were that sentence. Whoever reads it is a novice, so it has to
+ * survive being read literally.
+ *
+ * It is a function rather than two copies because there are now TWO callers --
+ * the exclusion ledger and the scoreboard badge -- and a second statement of
+ * this is a second chance to get it backwards.
+ */
+function relativeTo(s, ctx) {
+  // A power play names the club with the extra skater; an empty net names the
+  // club that pulled, which `code[0]` (the away goalie digit) identifies.
+  const id = s.kind === EMPTY_NET
+    ? (s.code[0] === '0' ? ctx.awayId : ctx.homeId)
+    : s.advantage;
+  return id === ctx.homeId
+    ? { id, ab: ctx.homeAb, own: s.home, opp: s.away }
+    : { id, ab: ctx.awayAb, own: s.away, opp: s.home };
+}
+
+/**
  * Why this event is not even-strength play, in a sentence a novice can use.
  * Returns null when it IS even strength, or when the code is unreadable.
  */
@@ -2550,24 +2655,40 @@ function whyNotEven(e, ctx) {
   if (s == null) return `game state not recorded for this event`;
   if (s.kind === EVEN) return null;
 
-  // THE COUNTS ARE STATED RELATIVE TO THE TEAM THE SENTENCE NAMES, not in the
-  // feed's away-then-home order. Those coincide only when the named team is the
-  // away team, so half of these read backwards: with code 1451 the away side has
-  // 4 and the home side 5, and "BUF were on the power play -- 4 skaters against
-  // 5" says the team on the advantage has FEWER players. 36 of this game's 103
-  // strength exclusions were that sentence. Whoever reads it is a novice being
-  // told why 49 attempts vanished, so it has to survive being read literally.
-  const forTeam = id => id === ctx.homeId
-    ? { ab: ctx.homeAb, own: s.home, opp: s.away }
-    : { ab: ctx.awayAb, own: s.away, opp: s.home };
+  const { ab, own, opp } = relativeTo(s, ctx);
+  return s.kind === EMPTY_NET
+    ? `${ab} had pulled their goalie — ${own} skaters against ${opp} with an empty net`
+    : `${ab} were on the power play — ${own} skaters against ${opp}`;
+}
 
-  if (s.kind === EMPTY_NET) {
-    // Name the team that pulled, and count from their side.
-    const { ab, own, opp } = forTeam(s.code[0] === '0' ? ctx.awayId : ctx.homeId);
-    return `${ab} had pulled their goalie — ${own} skaters against ${opp} with an empty net`;
-  }
-  const { ab, own, opp } = forTeam(s.advantage);
-  return `${ab} were on the power play — ${own} skaters against ${opp}`;
+/**
+ * ⭐ THE CONDITION RIGHT NOW, for a badge that SITS on the scoreboard rather
+ * than announcing itself. Returns null at even strength and on an unreadable
+ * code — a badge that stays on screen must never claim a state we cannot read.
+ *
+ * ⭐ WHY THIS IS A SEPARATE FUNCTION FROM `whyNotEven` AND NOT A FORMATTING
+ * FLAG. They differ in TENSE and in JOB, not in wording. `whyNotEven` explains,
+ * in the past, why a counted thing was dropped from a ledger; this states, in
+ * the present, what is true of the ice being drawn. They share the only part
+ * that has ever been wrong — which team, and whose skaters — via `relativeTo`.
+ *
+ * ⚠️ IT READS THE FRAME'S OWN CODE, WHICH IS WHY IT LAGS THE PENALTY BY ONE
+ * EVENT, and that is correct rather than a defect. `render` already documents
+ * it at the penalty caption: at the frame the penalty is called the offending
+ * team is not yet a skater short (`sit` still reads 1551), so a badge lit there
+ * would be "a claim about the future dressed as a description." Measured across
+ * 60 archive games: the strength code changes exactly one frame later, 0
+ * seconds of game clock later, on 317 of 317 power plays.
+ *
+ * @returns {{kind, id, ab, own, opp, said, count}} or null
+ */
+function standing(code, ctx) {
+  const s = situation(code, ctx);
+  if (s == null || s.kind === EVEN) return null;
+  const { id, ab, own, opp } = relativeTo(s, ctx);
+  return { kind: s.kind, id, ab, own, opp,
+           said: s.kind === EMPTY_NET ? 'net empty' : 'power play',
+           count: `${own} on ${opp}` };
 }
 
 /**
@@ -5777,6 +5898,56 @@ function drawNetmen(e){
  // arrives or leaves, and at no other moment.
  if(now===netmenAre)return;
  netmenAre=now;$('netmen').innerHTML=now;}
+/**
+ * ⭐ THE STANDING CONDITION ON THE SCOREBOARD — a power play or a pulled goalie,
+ * for as long as it is true. Kevin: "we announce the penalty, but we don't
+ * retain the power play on the caption pill, maybe we should?"
+ *
+ * ⭐ WHY THIS IS NOT THE CAPTION PILL, MEASURED. Across 60 archive games, 77.6%
+ * of power-play windows contain at least one caption-worthy event (a goal, a
+ * penalty, a shot from the slot) -- the power play is exactly when those happen.
+ * A standing fact parked in the page's busiest transient surface would be
+ * fighting for it precisely when both matter. So the CONDITION sits here and the
+ * CHANGE stays on the caption: the split box.js already draws between occupancy
+ * and strength, one surface each.
+ *
+ * ⭐ AND IT IS `standing()`, WHICH SHARES `relativeTo` WITH THE LEDGER'S
+ * SENTENCE. Whose skaters is the only part of this that has ever been wrong --
+ * it shipped backwards once, in 36 of one game's 103 exclusions -- and a badge
+ * that sits on screen for a two-minute power play is wrong for longer than a
+ * ledger line nobody scrolls to.
+ *
+ * ONLY ON CHANGE, for `drawNetmen`'s reason one function up: this is read on
+ * every frame of a ~250-event game and touching the DOM each time would restart
+ * whatever the chip ever animates with.
+ */
+let pillIs=null;
+function drawPill(e){
+ // NO CODE MEANS NO CLAIM. Before the first event there is no `sit` at all, and
+ // an unreadable one (five-on-three, 3-on-3 overtime, the shootout -- 1.4% of
+ // coded events) is refused by `situation` rather than guessed. Both arrive here
+ // as null, and a badge that stays lit on a state we cannot read is worse than
+ // no badge, because it is wrong for minutes rather than for a frame.
+ const b=e?standing(e.sit,CTX):null;
+ const now=b?`${b.id}|${b.said}|${b.count}`:'';
+ if(now===pillIs)return;
+ pillIs=now;
+ const p=$('ppill');
+ if(!b){p.hidden=true;return;}
+ p.className='ppill '+(b.id===AID?'a':'h');
+ p.dataset.ab=b.ab;
+ /* ⭐ THE STATE, NOT THE ARITHMETIC — and the pixels are what found the reason.
+    `WSH POWER PLAY · 5 ON 4` measures 189px in a real browser. The clock row has
+    167px of spare beside it at 390 and the middle column is 150px at 1100, so at
+    189 the board GREW 151->176 on a phone and the middle column widened 150->343
+    on a laptop, eating the team columns. `power play` alone is 135px and clears
+    both. That is the constraint; this is why the answer is also right:
+    `b.count` is carried by `standing()` and spent ONCE, by the caption, at the
+    frame the power play begins. A badge that repeats "5 on 4" for two minutes is
+    the wallpaper this surface exists to avoid -- the CONDITION reminds, the
+    CHANGE explains. */
+ p.textContent=b.said;
+ p.hidden=false;}
 function flashNet(scorer){
  // A team scores INTO the net it is attacking, which is the OTHER team's: a
  // visitor goal lights the HOST's net. Stated by role, so which side of the
@@ -6127,6 +6298,7 @@ function render(i,how){
  drawNoPlace(cur);
  drawLabel(cur);
  drawNetmen(cur);
+ drawPill(cur);
  $('aSc').textContent=L.as;$('hSc').textContent=L.hs;
  const a=L.t[AID],h=L.t[HID],tot=a+h,pa=tot?Math.round(100*a/tot):0;
  /* ⭐ NO BAR OVER AN EMPTY POPULATION, and this was a real defect on the front

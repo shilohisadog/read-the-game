@@ -60,6 +60,34 @@ export function isEven(code, ctx) {
 }
 
 /**
+ * WHICH TEAM A SENTENCE ABOUT THIS SITUATION IS ABOUT, and the counts stated
+ * from that team's side.
+ *
+ * ⭐ ONE READER, because this seam shipped backwards once. The counts must be
+ * relative to the team the sentence NAMES, not in the feed's away-then-home
+ * order. Those coincide only when the named team is the away team, so half of
+ * them read backwards: with code 1451 the away side has 4 and the home side 5,
+ * and "BUF were on the power play -- 4 skaters against 5" says the team on the
+ * advantage has FEWER players. 36 of the reference game's 103 strength
+ * exclusions were that sentence. Whoever reads it is a novice, so it has to
+ * survive being read literally.
+ *
+ * It is a function rather than two copies because there are now TWO callers --
+ * the exclusion ledger and the scoreboard badge -- and a second statement of
+ * this is a second chance to get it backwards.
+ */
+function relativeTo(s, ctx) {
+  // A power play names the club with the extra skater; an empty net names the
+  // club that pulled, which `code[0]` (the away goalie digit) identifies.
+  const id = s.kind === EMPTY_NET
+    ? (s.code[0] === '0' ? ctx.awayId : ctx.homeId)
+    : s.advantage;
+  return id === ctx.homeId
+    ? { id, ab: ctx.homeAb, own: s.home, opp: s.away }
+    : { id, ab: ctx.awayAb, own: s.away, opp: s.home };
+}
+
+/**
  * Why this event is not even-strength play, in a sentence a novice can use.
  * Returns null when it IS even strength, or when the code is unreadable.
  */
@@ -68,24 +96,40 @@ export function whyNotEven(e, ctx) {
   if (s == null) return `game state not recorded for this event`;
   if (s.kind === EVEN) return null;
 
-  // THE COUNTS ARE STATED RELATIVE TO THE TEAM THE SENTENCE NAMES, not in the
-  // feed's away-then-home order. Those coincide only when the named team is the
-  // away team, so half of these read backwards: with code 1451 the away side has
-  // 4 and the home side 5, and "BUF were on the power play -- 4 skaters against
-  // 5" says the team on the advantage has FEWER players. 36 of this game's 103
-  // strength exclusions were that sentence. Whoever reads it is a novice being
-  // told why 49 attempts vanished, so it has to survive being read literally.
-  const forTeam = id => id === ctx.homeId
-    ? { ab: ctx.homeAb, own: s.home, opp: s.away }
-    : { ab: ctx.awayAb, own: s.away, opp: s.home };
+  const { ab, own, opp } = relativeTo(s, ctx);
+  return s.kind === EMPTY_NET
+    ? `${ab} had pulled their goalie — ${own} skaters against ${opp} with an empty net`
+    : `${ab} were on the power play — ${own} skaters against ${opp}`;
+}
 
-  if (s.kind === EMPTY_NET) {
-    // Name the team that pulled, and count from their side.
-    const { ab, own, opp } = forTeam(s.code[0] === '0' ? ctx.awayId : ctx.homeId);
-    return `${ab} had pulled their goalie — ${own} skaters against ${opp} with an empty net`;
-  }
-  const { ab, own, opp } = forTeam(s.advantage);
-  return `${ab} were on the power play — ${own} skaters against ${opp}`;
+/**
+ * ⭐ THE CONDITION RIGHT NOW, for a badge that SITS on the scoreboard rather
+ * than announcing itself. Returns null at even strength and on an unreadable
+ * code — a badge that stays on screen must never claim a state we cannot read.
+ *
+ * ⭐ WHY THIS IS A SEPARATE FUNCTION FROM `whyNotEven` AND NOT A FORMATTING
+ * FLAG. They differ in TENSE and in JOB, not in wording. `whyNotEven` explains,
+ * in the past, why a counted thing was dropped from a ledger; this states, in
+ * the present, what is true of the ice being drawn. They share the only part
+ * that has ever been wrong — which team, and whose skaters — via `relativeTo`.
+ *
+ * ⚠️ IT READS THE FRAME'S OWN CODE, WHICH IS WHY IT LAGS THE PENALTY BY ONE
+ * EVENT, and that is correct rather than a defect. `render` already documents
+ * it at the penalty caption: at the frame the penalty is called the offending
+ * team is not yet a skater short (`sit` still reads 1551), so a badge lit there
+ * would be "a claim about the future dressed as a description." Measured across
+ * 60 archive games: the strength code changes exactly one frame later, 0
+ * seconds of game clock later, on 317 of 317 power plays.
+ *
+ * @returns {{kind, id, ab, own, opp, said, count}} or null
+ */
+export function standing(code, ctx) {
+  const s = situation(code, ctx);
+  if (s == null || s.kind === EVEN) return null;
+  const { id, ab, own, opp } = relativeTo(s, ctx);
+  return { kind: s.kind, id, ab, own, opp,
+           said: s.kind === EMPTY_NET ? 'net empty' : 'power play',
+           count: `${own} on ${opp}` };
 }
 
 /**

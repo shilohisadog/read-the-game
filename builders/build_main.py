@@ -61,7 +61,25 @@ __CSS__</style>
 <div class="board">
   <p class="foot" id="gl">—</p>
   <div class="tm a"><span class="ab" id="aAb">&mdash;</span><span class="sc" id="aSc">0</span><div class="pens" id="penA"></div></div>
-  <div class="mid"><div class="gs"><span id="per">Pre-game</span> · <span class="cl" id="clk">20:00</span> <i class="clw">left</i></div>
+  <!-- ⭐ THE STANDING CONDITION, AND IT IS A SIBLING OF THE CLOCK RATHER THAN A
+       POSITIONED BADGE. Kevin: "the power play pill should be in the bottom
+       center, which is just empty space now, due to reserving the left and
+       right hand side for penalty information."
+       He is right, and the free space INVERTS between the two widths -- measured
+       in a real browser at a frame where WSH were up a skater. At 1100 `.mid` is
+       a 150px column the clock ink fills exactly: 0px spare beside it, ~36px of
+       empty band below, level with the penalty rows. At 390 `.mid` becomes the
+       full-width `state` grid area: 167px spare BESIDE the clock and nothing
+       below but the board's own 11px of padding.
+       So `bottom center` is a desktop description -- at 390 the bottom centre IS
+       the clock. Positioning this absolutely would have looked right on a laptop
+       and printed through "PERIOD 1 · 11:17 LEFT" on a phone. As inline content
+       of `.gs` the layout does it for free: side by side where there is width,
+       wrapped underneath where there is not, and THE BOARD GROWS AT NEITHER.
+       ⭐ AND IT IS `data-ab` + `::before`, WHICH IS THE PENALTY BOX'S OWN PATTERN
+       (`#rg .pb::before{content:attr(data-ab)}`) -- a second way to draw a team
+       chip is a second thing to keep in step with the club colours. -->
+  <div class="mid"><div class="gs"><span id="per">Pre-game</span> · <span class="cl" id="clk">20:00</span> <i class="clw">left</i> <span class="ppill" id="ppill" hidden></span></div>
     <div class="cbar"><div class="bar"><span class="ba" id="ba"></span><span class="bh" id="bh"></span></div>
     <div class="pct"><span id="pa">0</span><span class="plab"><i class="pname" id="pName">CONTROL</i><i class="mode" id="pMode">ALL SITUATIONS</i></span><span id="ph">0</span></div></div>
   </div>
