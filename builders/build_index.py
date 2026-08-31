@@ -1036,6 +1036,14 @@ def _figures():
     cannot see the drawing at all should still be told which kind of thing it is.
     """
     out = {}
+    # ⚠️ THE FIGURE'S CSS CLASS IS THE CARD ID'S FIRST TWO LETTERS, and each
+    # figure scopes its keyframes by it (`.dgfig.ic .dgm-p`). Two cards sharing a
+    # prefix would silently hand one figure the other's motion -- no error, no
+    # warning, the wrong drawing. Today they are em/fa/ic/of/sl; the day they are
+    # not, this says so instead of the page simply being wrong.
+    _pre = [c[:2] for c in _fig_json()]
+    if len(set(_pre)) != len(_pre):
+        raise SystemExit(f"learn: two figures share a CSS prefix: {sorted(_pre)}")
     for cid, d in sorted(_fig_json().items()):
         steps = "".join(f"<li>{s}</li>" for s in d["steps"])
         out[cid] = (f'<figure class="dgfig {cid[:2]}">'

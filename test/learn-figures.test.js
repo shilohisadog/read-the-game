@@ -394,6 +394,39 @@ test('the offside words say the LIMIT, not the rule the picture already draws', 
     'the words repeat what the figure and its steps both already say');
 });
 
+test('⭐ no badge or stamp is drawn on top of a net', () => {
+  /* ⚠️ FOUND BY LOOKING AT THE EMPTY-NET FIGURE, where it mattered most: badge ②
+     sat at x=195, INSIDE the net's body (189–193), and ① was against the crease.
+     Between them the goal — the one thing that figure is about — was invisible.
+     A numbered badge is a label ABOUT the drawing and must not cover the drawing.
+
+     ⛔ GHOSTS ARE NOT INCLUDED, deliberately. A dashed goaltender in the crease
+     is exactly where a goaltender stands, and it is how the empty-net figure
+     records that he WAS there; forbidding it would be forbidding the truthful
+     drawing. The claim is about annotation, not about play. */
+  const netBox = gx => gx < 100
+    ? { x0: gx - 4, x1: gx, y0: 36.5, y1: 48.5 }
+    : { x0: gx, x1: gx + 4, y0: 36.5, y1: 48.5 };
+  let checked = 0;
+  for (const [id, fig] of Object.entries(figures)) {
+    const nets = [...fig.svg.matchAll(/<path class="mesh" d="M ([\d.]+)/g)].map(m => netBox(+m[1]));
+    assert.ok(nets.length, `the ${id} figure draws no net`);
+    const badges = [...fig.svg.matchAll(
+      /<g class="dgbadge"><circle cx="([-\d.]+)" cy="([-\d.]+)" r="([\d.]+)"/g)]
+      .map(m => ({ x: +m[1], y: +m[2], r: +m[3] }));
+    for (const b of badges) {
+      for (const n of nets) {
+        const over = b.x + b.r > n.x0 && b.x - b.r < n.x1
+                  && b.y + b.r > n.y0 && b.y - b.r < n.y1;
+        assert.ok(!over,
+          `the ${id} figure puts a badge at (${b.x}, ${b.y}) on top of the net at x=${n.x0}`);
+        checked++;
+      }
+    }
+  }
+  assert.ok(checked >= 10, `only ${checked} badge/net pairs were checked`);
+});
+
 test('⭐ annotation is the same SIZE on every figure, whatever each one frames', () => {
   /* ⭐⭐ THE RINK IS GEOMETRY AND EVERY TOKEN IS ANNOTATION. Lines, spots, boards,
      nets and the slot region are real things and must scale with the crop —

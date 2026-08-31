@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>What you can see here — Read the Game</title>
-<meta name="description" content="The hockey rules this site names as they happen — icing, offside, faceoffs, penalties, the empty net — and the measurements it counts itself, each one showing the events behind it.">
+<title>The empty net — Read the Game</title>
+<meta name="description" content="Losing late, a team trades its goaltender for a sixth skater. Nothing is toggled here &mdash; the goalie is simply no longer on the ice.">
 <meta property="og:type" content="website">
-<meta property="og:title" content="What you can see here — Read the Game">
-<meta property="og:description" content="The hockey rules this site names as they happen — icing, offside, faceoffs, penalties, the empty net — and the measurements it counts itself, each one showing the events behind it.">
+<meta property="og:title" content="The empty net — Read the Game">
+<meta property="og:description" content="Losing late, a team trades its goaltender for a sixth skater. Nothing is toggled here &mdash; the goalie is simply no longer on the ice.">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="What you can see here — Read the Game">
-<meta name="twitter:description" content="The hockey rules this site names as they happen — icing, offside, faceoffs, penalties, the empty net — and the measurements it counts itself, each one showing the events behind it.">
-<meta property="og:url" content="https://readthegame.co/what-you-can-see.html">
+<meta name="twitter:title" content="The empty net — Read the Game">
+<meta name="twitter:description" content="Losing late, a team trades its goaltender for a sixth skater. Nothing is toggled here &mdash; the goalie is simply no longer on the ice.">
+<meta property="og:url" content="https://readthegame.co/empty-net.html">
 <style>
 .sitehdr,.sitefoot{font:500 .9rem/1.5 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
  background:#f4f7fa;color:#0f1a23;-webkit-text-size-adjust:100%}
@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-wCzZ5doKMp4YUz0OzT9XyZMKf++eETEMktHAxKa+wMQ='; connect-src 'self'; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-wCzZ5doKMp4YUz0OzT9XyZMKf++eETEMktHAxKa+wMQ=' 'sha256-3+0fhNxcFv1hqa6bbIED97gaPrYfGO+LXRVYuvwPrQA=' 'sha256-misAyWbdW13T+hKHLyNe2pkLg76EwKbeEsOMXwNlc1g='; connect-src 'self'; frame-src 'self'; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -314,30 +314,103 @@ footer p{margin:0 0 8px}
    is the same rule, finally saying the same thing. */
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
+<style>
+.dgfig{margin:9px 0 10px;padding:0}
+.dgice{display:block;width:100%;height:auto;background:var(--ice);
+  border:1px solid var(--edge);border-radius:9px}
+/* THE RINK, RESTATED FROM app.css -- same numbers, because it is the same ice. */
+.dgpaint .boards{fill:var(--ice);stroke:var(--edge);stroke-width:1.1}
+.dgpaint .slotzone{fill:#e0932a;opacity:.09}
+.dgpaint .zoneband{fill:var(--blue);opacity:.055}
+.dgpaint .ln{fill:none;stroke-linecap:round}
+.dgpaint .ln.red{stroke:var(--red);stroke-width:.7;opacity:.42}
+.dgpaint .ln.blue{stroke:var(--blue);stroke-width:.9;opacity:.42}
+.dgpaint .ln.thick{stroke-width:1.1;opacity:.52}
+.dgpaint .fdot{fill:var(--red);opacity:.55}
+.dgpaint .fdot.ctr{fill:var(--blue)}
+/* THE NET IS EQUIPMENT, and in a CROP it is also the compass. Kevin: "the rink
+   snippet just doesn't look right without a net and goalie" -- a full sheet has
+   two nets and is obviously symmetric, but a crop has one end, and without the
+   net that end is just more ice. Same values as app.css; the colour comes in on
+   the element, and for a diagram it is the neutral grey, never a club's. */
+.dgpaint .crease{fill:#cfe0f2;stroke:var(--blue);stroke-width:.4;opacity:.55}
+.dgpaint .mesh{stroke-width:.8;opacity:.9}
+.dgpaint .strand{stroke-width:.35;opacity:.5}
+.dgpaint .post{stroke-width:1.1;stroke-linecap:round}
+.dgpaint .flashpath{display:none}
+/* THE ILLUSTRATION. Outlined, neutral, never a club's colour. */
+.dgplay .dgtok{fill:var(--ice);stroke:var(--ink);stroke-width:1.1}
+.dgplay .dgpuck{fill:var(--ink);stroke:var(--ice);stroke-width:.5}
+.dgplay .dgghost{fill:none;stroke:var(--muted);stroke-width:.7;stroke-dasharray:2 1.6;opacity:.75}
+.dgplay .dgarrow{stroke:var(--muted);stroke-width:.8;stroke-linecap:round;opacity:.85}
+.dgheadp{fill:var(--muted);opacity:.85}
+/* The line where the rule is decided, and the spot the draw comes back to. */
+.dgplay .dghot{stroke-width:2.2;opacity:.5;stroke-linecap:round}
+.dgplay .dghot.blue{stroke:var(--blue)}
+.dgplay .dghot.red{stroke:var(--red)}
+.dgplay .dgspot{fill:none;stroke:var(--red);stroke-width:1;opacity:.8}
+/* A SHOT THAT COUNTS AND ONE THAT DOES NOT — only on the slot figure, where the
+   subject is our own rule and the lesson is that you can check a mark against
+   it. Solid means the rule admits it; hollow means it does not, which is the
+   same "outlined = not the thing" the ghosts already use. */
+/* The WIDTH comes from the element — see `mark` in learn-figures.mjs. A stroke
+   in rink units thickens as a figure zooms in, and a shot marker is annotation. */
+.dgplay .dgmark{fill:var(--ink);stroke:var(--ice)}
+.dgplay .dgmark.out{fill:none;stroke:var(--muted)}
+.dgbadge circle{fill:var(--ink);opacity:.88}
+/* ⭐ SIZE COMES FROM THE ELEMENT, NOT FROM HERE. Each figure scales its
+   annotation by how tightly it is framed, so a badge is the same number of
+   PIXELS on the full sheet and on the slot's crop. The stylesheet owns the
+   weight, the family and the colour; the figure owns the size. */
+.dgbadge text{fill:#fff;font-weight:700;font-family:system-ui,sans-serif;
+  line-height:1;text-anchor:middle}
+/* It says what it is, quietly. See learn-figures.mjs: this is not the guard. */
+.dgstamp{fill:var(--muted);opacity:.6;font-weight:600;
+  font-family:system-ui,sans-serif;line-height:1;text-transform:uppercase}
+/* THE CAPTION IS A NUMBERED LIST BECAUSE THE RULE IS A SEQUENCE, and the numbers
+   are the badges on the ice. It is always fully visible -- the animation
+   illustrates these lines, it never replaces them, so a reader who arrives after
+   a loop has finished has lost nothing. */
+.dgsteps{margin:0;padding:0 0 0 20px;font-size:.82rem;color:var(--muted);line-height:1.45}
+.dgsteps li{margin:0 0 4px}
+.dgsteps li::marker{color:var(--ink);font-weight:700}
+.dgsteps b{color:var(--ink);font-weight:600}
+
+</style>
+<style>
+.rulep{max-width:760px}
+.rback{margin:0 0 4px;font-size:.86rem}
+.rback a{color:var(--muted);text-decoration:none}
+.rback a:hover,.rback a:focus-visible{color:var(--blue);text-decoration:underline}
+.rulep h1{margin:0 0 6px}
+.rlede{margin:0 0 14px;color:var(--muted);max-width:60ch}
+/* THE RINK'S OWN FRAME, taken from app.css so the stage is the game's stage. */
+.rulep .dgfig{margin:0 0 16px}
+.rulep .dgice{background:var(--ice);border:1px solid var(--edge);border-radius:15px;
+  padding:6px;box-shadow:0 6px 22px rgba(16,32,45,.08)}
+.rulep .dgsteps{margin:14px 0 0;font-size:.94rem;max-width:60ch}
+.rulep .dgsteps li{margin:0 0 8px}
+.rdoor{margin:20px 0 6px}
+.rgo{display:inline-block;background:var(--blue);color:#fff;text-decoration:none;
+  font-weight:600;font-size:.94rem;padding:10px 16px;border-radius:9px}
+.rgo:hover,.rgo:focus-visible{background:var(--ink)}
+.rat{margin:0;font-size:.78rem;letter-spacing:.05em;color:var(--muted);text-transform:uppercase}
+@keyframes en-g{0%{transform:translate(72.5px,31.5px);opacity:0}8%{transform:translate(72.5px,31.5px);opacity:1}55%{transform:translate(0,0);opacity:1}94%{transform:translate(0,0);opacity:1}100%{transform:translate(0,0);opacity:0}}
+@keyframes en-a{0%{transform:translate(28px,0px);opacity:0}8%{transform:translate(28px,0px);opacity:1}55%{transform:translate(0,0);opacity:1}94%{transform:translate(0,0);opacity:1}100%{transform:translate(0,0);opacity:0}}
+.dgfig.em .dgm-g{animation:en-g 9s ease-in-out 2.5s infinite}
+.dgfig.em .dgm-a{animation:en-a 9s ease-in-out 2.5s infinite}
+</style>
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">Watch a game</a><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html" aria-current="page">What you can see</a><a href="/workshop.html">Workshop</a></nav></header>
-<div class="wrap">
+<div class="wrap rulep">
 <p class="eyebrow">Read the Game</p>
-<h1>What you can see here</h1>
-<div class="conc">
-  <p class="ck">The game itself &mdash; the league&rsquo;s rules, named as they happen</p>
-  <div class="grid learn rules">
-    <a class="card" id="icing" href="/icing.html"><p class="t">Icing</p><p>The puck is sent the length of the ice and play comes straight back. Watch where the faceoff goes &mdash; that dot is the whole punishment.</p><p class="at">Diagram &middot; then a real example</p></a>
-    <a class="card" id="faceoffs" href="/faceoffs.html"><p class="t">Faceoffs</p><p>Nine spots on the ice and the rule picks one. This is the restart the icing above forces &mdash; same second as the whistle, and deep in the offending team&rsquo;s own end.</p><p class="at">Diagram &middot; then a real example</p></a>
-    <a class="card" id="offside" href="/offside.html"><p class="t">Offside</p><p>This is the one rule we can draw but never replay: the feed records the call and the restart, never the crossing. So in a real game, watch the line rather than the play.</p><p class="at">Diagram &middot; then a real example</p></a>
-    <a class="card" id="penalties" href="/game.html?game=2023020204&at=1-19:35.1&layer=whistle&strength=all"><p class="t">Penalties</p><p>The arm goes up and play carries on until the offending team touches the puck. This is that gap &mdash; the delayed call, before the whistle.</p><p class="at">Period 1 &middot; 19:35 left</p></a>
-    <a class="card" id="empty-net" href="/empty-net.html"><p class="t">The empty net</p><p>Losing late, a team trades its goaltender for a sixth skater. Nothing is toggled here &mdash; the goalie is simply no longer on the ice.</p><p class="at">Diagram &middot; then a real example</p></a>
-  </div>
-  <p class="ck">What we count &mdash; our own measurements, each showing its work</p>
-  <div class="grid learn ours">
-    <a class="card" id="control" href="/game.html?game=2023020204&at=1-18:40.1&layer=corsi&strength=all"><p class="t">Control</p><p>Every shot attempt, counted for both teams as it happens. This is the first one of the game.</p><p class="at">Period 1 &middot; 18:40 left</p></a>
-    <a class="card" id="blocked" href="/game.html?game=2023020204&at=1-18:40.2&layer=corsi&strength=all"><p class="t">The attempt that never arrived</p><p>One event after that shot and at the same second, blocked. Both are attempts; only one is a shot on goal &mdash; 75 of 135 attempts in this game never reached the goaltender at all.</p><p class="at">Period 1 &middot; 18:40 left</p></a>
-    <a class="card" id="slot" href="/slot.html"><p class="t">Shots from the slot</p><p>A geometric rule of ours, not a model: close in, and between the faceoff dots. This is the first shot that qualifies.</p><p class="at">Diagram &middot; then a real example</p></a>
-    <a class="card" id="goaltending" href="/game.html?game=2023020204&at=1-18:40.1&layer=goaltending&strength=all"><p class="t">Goaltending</p><p>Saves as a fraction, built while you watch. This is the first shot the goaltender had to deal with.</p><p class="at">Period 1 &middot; 18:40 left</p></a>
-  </div>
-  <p class="cnote">Every one of them is a toggle on a real game, and every one shows the events it counted and the events it did not. These 9 moments are all from one night &mdash; MIN at BUF, 10 November 2023 &mdash; and 8 of them happen in the first period alone. Every other game we hold is reachable from <a href="/">the front page</a>.</p>
-</div>
+<p class="rback"><a href="/what-you-can-see.html">&larr; What you can see here</a></p>
+<h1>The empty net</h1>
+<p class="rlede">Losing late, a team trades its goaltender for a sixth skater. Nothing is toggled here &mdash; the goalie is simply no longer on the ice.</p>
+<figure class="dgfig em"><svg class="dgice" viewBox="0 0 200 85" role="img" aria-label="Diagram: a team pulls its goaltender for an extra attacker, leaving its own net empty."><defs><marker id="en-head" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path class="dgheadp" d="M 0 0 L 8 4 L 0 8 z"/></marker></defs><g class="dgpaint"><rect class="boards" x="1" y="1" width="198" height="83" rx="27"/><line class="ln red" x1="189" y1="7.02" x2="189" y2="77.98"/><line class="ln red" x1="11" y1="7.02" x2="11" y2="77.98"/><line class="ln blue" x1="125" y1="1.00" x2="125" y2="84.00"/><line class="ln blue" x1="75" y1="1.00" x2="75" y2="84.00"/><line class="ln red thick" x1="100" y1="1.00" x2="100" y2="84.00"/><circle class="ln blue" cx="100" cy="42.5" r="15"/><circle class="ln red" cx="169" cy="64.5" r="15"/><circle class="ln red" cx="169" cy="20.5" r="15"/><circle class="ln red" cx="31" cy="64.5" r="15"/><circle class="ln red" cx="31" cy="20.5" r="15"/><circle class="fdot" cx="169" cy="64.5" r="1"/><circle class="fdot" cx="169" cy="20.5" r="1"/><circle class="fdot" cx="31" cy="64.5" r="1"/><circle class="fdot" cx="31" cy="20.5" r="1"/><circle class="fdot" cx="120" cy="64.5" r="1"/><circle class="fdot" cx="120" cy="20.5" r="1"/><circle class="fdot" cx="80" cy="64.5" r="1"/><circle class="fdot" cx="80" cy="20.5" r="1"/><circle class="fdot ctr" cx="100" cy="42.5" r="1"/><g class="netg"><path class="crease" d="M 189 36.5 A 6 6 0 0 0 189 48.5"/><path class="mesh" d="M 189 39.5 L 193 40.3 L 193 44.7 L 189 45.5 Z" fill="#fff" fill-opacity=".5" stroke="#5b6d7a"/><line class="strand" x1="190.3" y1="39.8" x2="190.3" y2="45.2" stroke="#5b6d7a"/><line class="strand" x1="191.7" y1="40.0" x2="191.7" y2="45.0" stroke="#5b6d7a"/><line class="post" x1="189" y1="39.5" x2="189" y2="45.5" stroke="#5b6d7a"/><path id="en-netA" class="flashpath" d="M 189 39.5 L 193 40.3 L 193 44.7 L 189 45.5 Z" fill="#5b6d7a" opacity="0"/></g><g class="netg"><path class="crease" d="M 11 36.5 A 6 6 0 0 1 11 48.5"/><path class="mesh" d="M 11 39.5 L 7 40.3 L 7 44.7 L 11 45.5 Z" fill="#fff" fill-opacity=".5" stroke="#5b6d7a"/><line class="strand" x1="9.7" y1="39.8" x2="9.7" y2="45.2" stroke="#5b6d7a"/><line class="strand" x1="8.3" y1="40.0" x2="8.3" y2="45.0" stroke="#5b6d7a"/><line class="post" x1="11" y1="39.5" x2="11" y2="45.5" stroke="#5b6d7a"/><path id="en-netB" class="flashpath" d="M 11 39.5 L 7 40.3 L 7 44.7 L 11 45.5 Z" fill="#5b6d7a" opacity="0"/></g></g><g class="dgplay"><circle class="dgtok dgkeep" cx="15.5" cy="42.5" r="4.4"/><circle class="dgghost" cx="184.5" cy="42.5" r="4"/><circle class="dgghost" cx="62" cy="57" r="4"/><line class="dgarrow" x1="184.5" y1="42.5" x2="116.59" y2="12.99" marker-end="url(#en-head)"/><line class="dgarrow" x1="62" y1="57" x2="39" y2="57" marker-end="url(#en-head)"/><g class="dgmove dgm-g"><circle class="dgtok" cx="112" cy="11" r="4"/></g><g class="dgmove dgm-a"><circle class="dgtok" cx="34" cy="57" r="4"/></g><g class="dgbadge"><circle cx="150" cy="34" r="4.6"/><text x="150" y="34" dy="1.9" font-size="5.6">1</text></g><g class="dgbadge"><circle cx="186" cy="28" r="4.6"/><text x="186" y="28" dy="1.9" font-size="5.6">2</text></g><g class="dgbadge"><circle cx="34" cy="66" r="4.6"/><text x="34" y="66" dy="1.9" font-size="5.6">3</text></g><text class="dgstamp" x="40" y="8.5" font-size="4.4" letter-spacing="0.4">Diagram</text></g></svg><ol class="dgsteps"><li>Losing late, a team sends its <b>goaltender to the bench</b>.</li><li>Their own net is now <b>empty</b> &mdash; any shot that reaches it goes in.</li><li>In his place comes an <b>extra attacker</b>: six skaters against five. Nothing is toggled on this site to show it &mdash; the goalie is simply no longer drawn.</li></ol></figure>
+<p class="rdoor"><a class="rgo" href="/game.html?game=2023020204&at=3-01:40&strength=all">See a pulled goalie in our replay &rarr;</a></p>
+<p class="rat">MIN at BUF, 10 November 2023 &middot; period 3, 01:40 left</p>
 </div>
 <footer class="sitefoot"><p>Game data from the NHL's public play-by-play feed, fetched once and stored. Not affiliated with, endorsed by, or a product of the National Hockey League or any club. <strong>No NHL or club logos, wordmarks or crests appear anywhere on this site</strong> — teams are identified by colour and three-letter abbreviation only.</p><p><a href="https://github.com/shilohisadog/read-the-game">Source on GitHub</a> — every number here is a function of stored events, and you can read the function. Found one that looks wrong? <!--email_off--><a href="mailto:ReadTheGameOfHockey@gmail.com">ReadTheGameOfHockey@gmail.com</a><!--/email_off--></p><p>Nothing here is paywalled. If it helped you read a game, you can <a href="https://buymeacoffee.com/readthegameofhockey">buy me a coffee</a>.</p></footer>
 </body>

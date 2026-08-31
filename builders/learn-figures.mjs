@@ -502,7 +502,79 @@ function slot() {
   };
 }
 
-const FIGURES = { faceoffs: faceoffs(), icing: icing(), offside: offside(), slot: slot() };
+/* ── THE EMPTY NET ──────────────────────────────────────────────────────────
+   ⚠️⚠️ THE FIGURE THAT COMES CLOSEST TO FAKING SOMETHING, AND THE SITE ALREADY
+   KNEW THE ANSWER. `on-the-ice.html` carries this banner: *"players are arranged
+   by role (goalie · defense · forwards), not by tracked position — real skater
+   coordinates aren't public, so we don't fake them. What's real here is who is on
+   the ice, and when."*
+
+   Six attackers drawn in a shape is a FORMATION, and a formation is the one thing
+   that banner refuses. It is also unnecessary: what changes when a goaltender is
+   pulled is a COUNT and an empty crease, and neither of those is a position.
+
+   ⭐ SO IT DRAWS THE CHANGE, NOT THE STATE. The goaltender leaves the crease for
+   the bench — one token, both endpoints real — and ONE extra attacker comes on.
+   Five more bodies would say nothing true that these two do not, and would say
+   several things we cannot support.
+
+   ⭐ AND IT IS THE FULL SHEET BECAUSE THE CONTRAST IS THE LESSON. One net still
+   has a goaltender in it and one does not; a crop of the empty end shows an empty
+   crease with nothing to compare it to, which is exactly the thing a novice does
+   not yet know is unusual.
+
+   ⭐ IT ALSO RESOLVES THE DISHONESTY THE ACCUMULATE RULE CAUGHT AT THE START. The
+   first sketch had the goalie VANISH, which with motion off reads as a goalie in
+   the crease and an empty crease at once. He skates to the bench instead, which
+   is what actually happens — the accessibility rule producing the more truthful
+   drawing. */
+function emptyNet() {
+  const id = 'en-';
+  const PULLED = SX(-NET_X);            // the net that is emptied, screen-right
+  const KEPT = SX(NET_X);               // the other end, still defended
+  const G0 = { x: PULLED - 4.5, y: 42.5 };   // where `keeper` stands
+  const G1 = { x: 112, y: 11 };              // the bench, along the boards at centre
+  const A0 = { x: 62, y: 57 }, A1 = { x: 34, y: 57 };
+  return {
+    viewBox: '0 0 200 85',
+    group: 'rules',
+    label: 'Diagram: a team pulls its goaltender for an extra attacker, leaving '
+         + 'its own net empty.',
+    door: 'See a pulled goalie in our replay',
+    svg: defs(id)
+      + `<g class="dgpaint">${furniture(id, false)}${nets(id)}</g>`
+      // ONLY THE FAR NET KEEPS ITS GOALTENDER. The near crease is empty, which is
+      // the whole subject, so nothing is drawn standing in it.
+      + `<g class="dgplay">${keeper(KEPT, 1)}`
+      + ghost(G0.x, G0.y, 1) + ghost(A0.x, A0.y, 1)
+      + arrow(id, G0.x, G0.y, G1.x, G1.y) + arrow(id, A0.x, A0.y, A1.x, A1.y)
+      + `<g class="dgmove dgm-g">${tok(G1.x, G1.y, 1)}</g>`
+      + `<g class="dgmove dgm-a">${tok(A1.x, A1.y, 1)}</g>`
+      /* ⚠️ THE BADGES WERE SITTING ON THE EMPTY NET — the one thing this figure
+         is about. ② was at x=195, which is INSIDE the net's body (189–193), and ①
+         was against the crease; between them and the ghost, the goal was
+         invisible. ① now marks the goaltender's path and ② sits clear above the
+         mouth it is pointing at. */
+      + badge(1, 150, 34, 1) + badge(2, PULLED - 3, 28, 1)
+      + badge(3, A1.x, A1.y + 9, 1)
+      + stamp(SX(60), SY(34), 1)
+      + `</g>`,
+    steps: [
+      'Losing late, a team sends its <b>goaltender to the bench</b>.',
+      'Their own net is now <b>empty</b> &mdash; any shot that reaches it goes in.',
+      'In his place comes an <b>extra attacker</b>: six skaters against five. '
+      + 'Nothing is toggled on this site to show it &mdash; the goalie is simply '
+      + 'no longer drawn.',
+    ],
+    css: [travel(id + 'g', G0, G1), travel(id + 'a', A0, A1),
+      `.dgfig.em .dgm-g{animation:${id}g ${CYCLE} ease-in-out ${DELAY} infinite}`,
+      `.dgfig.em .dgm-a{animation:${id}a ${CYCLE} ease-in-out ${DELAY} infinite}`,
+    ].join('\n'),
+  };
+}
+
+const FIGURES = { 'empty-net': emptyNet(), faceoffs: faceoffs(), icing: icing(),
+                  offside: offside(), slot: slot() };
 
 /* ── the artifact ───────────────────────────────────────────────────────── */
 const OUT = join(ROOT, 'data', 'learn-figures.json');
