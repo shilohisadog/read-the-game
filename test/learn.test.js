@@ -34,9 +34,34 @@ const CTX = { homeId: rich.teams.home.id, awayId: rich.teams.away.id,
  *  the work panel links back to `#<card-id>`, so a card without one is a dead
  *  link from the game, and a card whose id is not its door key is a link to the
  *  wrong lesson. Reading it here is what lets the next test say so. */
-const cards = [...html.matchAll(
+const raw = [...html.matchAll(
   /<a class="card" id="([^"]+)" href="([^"]+)"><p class="t">([^<]+)<\/p>/g)]
   .map(m => ({ id: m[1], href: m[2].replace(/&amp;/g, '&'), title: m[3] }));
+
+/* ⭐ A DOOR MAY NOW BE TWO HOPS, AND THE CLAIM IS UNCHANGED.
+ *
+ * Kevin, 2026-08-31: *"I want the diagram in place of the game replay we
+ * currently get when the offside card is clicked."* A card with a rule diagram
+ * opens the diagram, and the diagram page carries "See it in a real game". So
+ * the door did not close, it moved down a level -- and every assertion in this
+ * file is still about where a card EVENTUALLY lands, which is what it was always
+ * about. Weakening them to "a card links somewhere" would have been the easy
+ * change and would have stopped checking the thing that matters.
+ *
+ * Resolving the hop here rather than in each test also means a diagram page that
+ * lost its door fails EVERY door test, not just one. */
+const hopProblems = [];
+const cards = raw.map(c => {
+  if (c.href.startsWith('/game.html?')) return c;
+  const m = /^\/([a-z-]+)\.html$/.exec(c.href);
+  if (!m) { hopProblems.push(`"${c.title}" links to ${c.href}, neither the app nor a rule page`); return c; }
+  let page = '';
+  try { page = readFileSync(new URL(`../src/${m[1]}.html`, import.meta.url), 'utf8'); }
+  catch { hopProblems.push(`"${c.title}" opens ${c.href}, which is not a file we build`); return c; }
+  const door = /<a class="rgo" href="([^"]+)"/.exec(page);
+  if (!door) { hopProblems.push(`"${c.title}" opens ${c.href}, which carries no way through to a game`); return c; }
+  return { ...c, href: door[1].replace(/&amp;/g, '&'), via: c.href };
+});
 
 /** The href a card carries, minus the page, as parse() wants it. */
 const query = h => h.slice(h.indexOf('?'));
@@ -44,11 +69,15 @@ const query = h => h.slice(h.indexOf('?'));
 test('the page carries a door for every card, and they are real links', () => {
   // The old page had NONE. A count of zero is the failure this whole file is
   // about, so it is asserted before anything subtler.
+  assert.deepEqual(hopProblems, [], 'a card leads somewhere that does not reach a game');
   assert.ok(cards.length >= 9, `only ${cards.length} cards carry a game link`);
   for (const c of cards) {
     assert.ok(c.href.startsWith('/game.html?'),
               `"${c.title}" links to ${c.href}, which is not the app`);
   }
+  // AND THE HOP IS EXERCISED, or the resolver above is dead code that proves
+  // nothing about the pages it is meant to be reading.
+  assert.ok(cards.some(c => c.via), 'no card reaches its game through a rule page');
 });
 
 test('every door parses — through the real parser, with nothing to complain about', () => {

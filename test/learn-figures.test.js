@@ -23,6 +23,7 @@ import { TEAMS, NEUTRAL } from '../src/lib/teams.js';
 import { boot } from './helpers/page.js';
 
 const learn = readFileSync(new URL('../src/what-you-can-see.html', import.meta.url), 'utf8');
+const rule = readFileSync(new URL('../src/offside.html', import.meta.url), 'utf8');
 const figures = JSON.parse(readFileSync(new URL('../data/learn-figures.json', import.meta.url)));
 
 /** Every painted line and spot in a chunk of rink markup, as comparable strings. */
@@ -109,7 +110,7 @@ test('⭐ every token animates in from a place it is actually drawn', () => {
     for (const [, cls, ex, ey] of moves) {
       const key = new RegExp(`\\.dgfig\\.\\w+ \\.${cls}\\{animation:(\\S+) `).exec(fig.css);
       assert.ok(key, `${id}/${cls} animates with no keyframes named`);
-      const kf = new RegExp(`@keyframes ${key[1]}\\{0%,\\d+%\\{transform:translate\\((-?[\\d.]+)px,(-?[\\d.]+)px\\)`)
+      const kf = new RegExp(`@keyframes ${key[1]}\\{0%\\{transform:translate\\((-?[\\d.]+)px,(-?[\\d.]+)px\\)`)
         .exec(fig.css);
       assert.ok(kf, `${id}/${cls}'s keyframes do not start with a translate`);
       const from = { x: +ex + +kf[1], y: +ey + +kf[2] };
@@ -126,11 +127,57 @@ test('⭐ the keyframes come to REST, so motion-off is the finished picture', ()
   // The other half of the rule above: a loop that ends anywhere but translate(0,0)
   // leaves the reduced-motion frame disagreeing with the animation's own ending.
   for (const [id, fig] of Object.entries(figures)) {
-    const ends = [...fig.css.matchAll(/@keyframes \S+\{[^}]*\}[^}]*?(\d+)%,100%\{transform:translate\(([^)]*)\)\}\}/g)];
+    const ends = [...fig.css.matchAll(/100%\{transform:translate\(([^)]*)\)/g)];
     assert.ok(ends.length, `the ${id} figure's keyframes never state a resting position`);
-    for (const [, , rest] of ends) {
+    for (const [, rest] of ends) {
       assert.equal(rest.replace(/\s/g, ''), '0,0',
         `a ${id} token rests at translate(${rest}) — reduced motion would show it mid-story`);
+    }
+  }
+});
+
+test('⭐ a figure opens on the FINISHED picture, not on frame zero', () => {
+  /* ⭐ FOUND BY LOOKING, and it is the reader's very first impression. A
+     screenshot of the first build caught frame 0 of the loop: every token
+     sitting on top of its own ghost, both arrows pointing at empty ice. That is
+     not a bad screenshot, it is what everyone sees at load -- the one frame of
+     the cycle that teaches nothing.
+
+     A DELAY WITH NO fill-mode IS THE WHOLE FIX. Until the delay elapses an
+     element uses its own styles, and its own position IS the end of the story.
+     `animation-fill-mode:backwards` would apply the 0% frame during the delay
+     and put the bug straight back, so its ABSENCE is asserted, not just the
+     delay's presence. */
+  for (const [id, fig] of Object.entries(figures)) {
+    /* ⚠️ EVERY DECLARATION, NOT THE WELL-FORMED ONES. This matched
+       `animation:(\S+) (\S+) (\S+) (\S+) (\S+)` -- five tokens -- so a rule that
+       had LOST its delay was four tokens and simply did not match. Removing the
+       delay from one of two tokens left the other still matching, the loop still
+       ran, and the mutation survived: an instrument that selects only the cases
+       that already pass. The shorthand is now captured whole and read after. */
+    const rules = [...fig.css.matchAll(/\{animation:([^}]+)\}/g)].map(m => m[1]);
+    assert.ok(rules.length, `the ${id} figure declares no animation shorthand`);
+    for (const shorthand of rules) {
+      const times = shorthand.match(/(?:^|\s)[\d.]+m?s(?=\s|$)/g) || [];
+      assert.equal(times.length, 2,
+        `${id} declares ${times.length} time(s) in "animation:${shorthand}" — a duration and a `
+        + 'delay are both required, and without the delay the figure opens on frame zero');
+      assert.ok(parseFloat(times[1]) > 0, `${id}'s delay is ${times[1]}`);
+    }
+    assert.doesNotMatch(fig.css, /animation-fill-mode|\bbackwards\b|\bboth\b/,
+      `${id} sets a fill-mode, which paints frame zero during the delay and undoes the fix`);
+  }
+});
+
+test('the loop hides its own wrap, so a reset does not read as a glitch', () => {
+  // An infinite loop teleports 100% -> 0%. A token snapping the length of the
+  // neutral zone every cycle looks like a bug; it fades out at rest and in at the
+  // start instead. Motion off means none of this applies and the token is simply
+  // drawn, fully opaque, where the story ends.
+  for (const [id, fig] of Object.entries(figures)) {
+    for (const kf of fig.css.match(/@keyframes[^\n]*/g) || []) {
+      assert.match(kf, /0%\{[^}]*opacity:0\}/, `${id} fades in at neither end of its loop`);
+      assert.match(kf, /100%\{[^}]*opacity:0\}/, `${id} snaps back visibly at the wrap`);
     }
   }
 });
@@ -190,40 +237,57 @@ test('⭐ the clip ids are namespaced, or the second figure steals the first one
   }
 });
 
-test('the figure sits inside its card, after the title and before the words', () => {
-  // The teaching order: name the rule, draw the rule, say it, then offer the real
-  // instance. It is inside the card's <a> so that tapping the picture lands on
-  // the same rule happening in a game.
-  const card = /<a class="card" id="offside"[\s\S]*?<\/a>/.exec(learn);
+test('⭐ the card leads to the diagram, and the diagram leads to the game', () => {
+  /* Kevin: *"I want the diagram in place of the game replay we currently get
+     when the offside card is clicked."* The real moment must not be lost with
+     it, so the door moves down a level rather than closing: card -> diagram ->
+     "See it in a real game". Both hops are asserted, because a card that reaches
+     a diagram which reaches nothing is the failure this replaces. */
+  const card = /<a class="card" id="offside" href="([^"]+)"/.exec(learn);
   assert.ok(card, 'the offside card has gone');
-  const t = card[0].indexOf('<p class="t">');
-  const f = card[0].indexOf('<figure class="dgfig');
-  const p = card[0].indexOf('</figure><p>');
-  /* ⭐ EACH PIECE IS ASSERTED TO EXIST BEFORE THEIR ORDER IS. `indexOf` returns
-     -1 for a thing that is absent, and `f > -1` is true -- so the ordering check
-     alone PASSED against a card whose title had been deleted outright. A
-     mutation found it: "the figure is drawn before the title" survived, because
-     removing the title satisfies "the figure comes after it". Comparing
-     positions without first establishing that both things are there is a check
-     that reads as ordering and is really nothing at all. */
-  assert.ok(t >= 0, 'the card no longer names the rule');
-  assert.ok(f >= 0, 'the card carries no figure');
-  assert.ok(p >= 0, 'the card carries no blurb after its figure');
-  assert.ok(f > t, 'the figure is drawn before the card names the rule');
-  assert.ok(f < p, 'the figure comes after the blurb rather than before it');
+  assert.equal(card[1], '/offside.html', 'the offside card no longer opens the diagram');
+  const door = /<a class="rgo" href="([^"]+)"/.exec(rule);
+  assert.ok(door, 'the diagram page carries no way through to a real game');
+  assert.match(door[1], /^\/game\.html\?game=\d+/, `the door points at ${door[1]}`);
+  assert.match(door[1], /layer=whistle/, 'the door does not turn on the layer that marks the call');
 });
 
-test('the offside blurb says the LIMIT, not the rule the picture already draws', () => {
+test('the diagram page is the game\'s stage without the game\'s instruments', () => {
+  /* Kevin: *"a similar layout, without the scoreboard, clock, controls, etc.,
+     similar yet different enough not to be confusing."* The rink sits in the
+     same ice-coloured frame the replay uses; a scoreboard with no game and a
+     clock with no time would be fabrications, so none of that furniture is here.
+     Asserted by ID, because those are the elements the game page actually uses. */
+  for (const id of ['aSc', 'hSc', 'clk', 'per', 'scrub', 'play', 'ppill', 'pboxes']) {
+    assert.ok(!new RegExp(`id="${id}"`).test(rule),
+      `the diagram page carries the game page's #${id} — an instrument with nothing to measure`);
+  }
+  assert.match(rule, /<figure class="dgfig/, 'the diagram page has no diagram');
+  assert.match(rule, /class="dgsteps"/, 'the diagram page has no steps');
+});
+
+test('the figure comes after the rule is named and before the steps explain it', () => {
+  const t = rule.indexOf('<h1>');
+  const f = rule.indexOf('<figure class="dgfig');
+  const o = rule.indexOf('<ol class="dgsteps"');
+  // Each piece is asserted to EXIST before their order is: indexOf returns -1
+  // for a thing that is absent, and `f > -1` is true -- which is how an earlier
+  // version of this passed against a card whose title had been deleted.
+  assert.ok(t >= 0 && f >= 0 && o >= 0, `h1 ${t}, figure ${f}, steps ${o}`);
+  assert.ok(f > t, 'the figure is drawn before the page names the rule');
+  assert.ok(f < o, 'the steps come before the figure they narrate');
+});
+
+test('the offside words say the LIMIT, not the rule the picture already draws', () => {
   /* Kevin's direction is teaching, and three tellings of one fact is not
      teaching. With the figure present the words shrank to the half no drawing
      can carry: zero of 4,160 offside stoppages carry a coordinate, a zone or a
      player, so this is the one rule we can name and never show. */
-  const card = /<a class="card" id="offside"[\s\S]*?<\/a>/.exec(learn)[0];
-  const blurb = /<\/figure><p>([\s\S]*?)<\/p>/.exec(card);
-  assert.ok(blurb, 'the offside card lost its blurb');
-  assert.match(blurb[1], /never the crossing/, 'the blurb stopped stating the limit');
-  assert.doesNotMatch(blurb[1], /ahead of the puck/,
-    'the blurb repeats what the figure and its steps both already say');
+  const lede = /<p class="rlede">([\s\S]*?)<\/p>/.exec(rule);
+  assert.ok(lede, 'the diagram page lost its opening sentence');
+  assert.match(lede[1], /never the crossing/, 'the page stopped stating the limit');
+  assert.doesNotMatch(lede[1], /ahead of the puck/,
+    'the words repeat what the figure and its steps both already say');
 });
 
 test('the NEUTRAL colour is what a figure may use, and it is not any club\'s', () => {

@@ -963,6 +963,64 @@ def _fig_json():
     return json.loads((ROOT / "data" / "learn-figures.json").read_text())
 
 
+RULE_BODY = r"""<div class="wrap rulep">
+<p class="eyebrow">Read the Game</p>
+<p class="rback"><a href="/what-you-can-see.html">&larr; What you can see here</a></p>
+<h1>__RULE_TITLE__</h1>
+<p class="rlede">__RULE_LEDE__</p>
+__RULE_FIG__
+<p class="rdoor"><a class="rgo" href="/game.html__RULE_HREF__">See it in a real game &rarr;</a></p>
+<p class="rat">__RULE_AT__</p>
+</div>"""
+
+# ── A RULE GETS ITS OWN PAGE ────────────────────────────────────────────────
+#
+# Kevin, after looking at the first figure embedded in its card: *"I think I want
+# the diagram in place of the game replay we currently get when the offside card
+# is clicked. I don't think we'd like having all of the cards stacking on top of
+# each other on mobile. Plus it'll obviously be a diagram, but the look and feel
+# will be the same as the game page, which I think is good for consistency."*
+#
+# He is solving the cost this change was about to impose rather than paying it:
+# one figure took the learn page from 2,337px to 2,695px at 390, and five would
+# have put it near 4,300. As a destination the diagram costs the learn page
+# nothing and gets a whole screen instead of a 323px card.
+#
+# ⭐ SAME STAGE, NO INVENTED INSTRUMENTS. "Similar layout to the game page,
+# without the scoreboard, clock, controls, etc. -- similar yet different enough
+# not to be confusing." So the rink sits in the same `.rinkbox` treatment the
+# replay uses, on the same ice, at the same proportions; and there is no
+# scoreboard, no clock and no transport, because a scoreboard with no game and a
+# clock with no time would be fabrications -- which is the one part of the game
+# page's furniture a diagram must not borrow.
+#
+# ⭐ AND THE DOOR MOVES DOWN A LEVEL RATHER THAN CLOSING. The card used to link
+# straight to a real offside in BUF/MIN; if the diagram simply took that slot,
+# the real instance would lose its only way in. So the page carries it: card ->
+# diagram -> "See it in a real game" -> the moment. The teaching order is
+# unchanged, it just has room now.
+RULECSS = r"""<style>
+.rulep{max-width:760px}
+.rback{margin:0 0 4px;font-size:.86rem}
+.rback a{color:var(--muted);text-decoration:none}
+.rback a:hover,.rback a:focus-visible{color:var(--blue);text-decoration:underline}
+.rulep h1{margin:0 0 6px}
+.rlede{margin:0 0 14px;color:var(--muted);max-width:60ch}
+/* THE RINK'S OWN FRAME, taken from app.css so the stage is the game's stage. */
+.rulep .dgfig{margin:0 0 16px}
+.rulep .dgice{background:var(--ice);border:1px solid var(--edge);border-radius:15px;
+  padding:6px;box-shadow:0 6px 22px rgba(16,32,45,.08)}
+.rulep .dgsteps{margin:14px 0 0;font-size:.94rem;max-width:60ch}
+.rulep .dgsteps li{margin:0 0 8px}
+.rdoor{margin:20px 0 6px}
+.rgo{display:inline-block;background:var(--blue);color:#fff;text-decoration:none;
+  font-weight:600;font-size:.94rem;padding:10px 16px;border-radius:9px}
+.rgo:hover,.rgo:focus-visible{background:var(--ink)}
+.rat{margin:0;font-size:.78rem;letter-spacing:.05em;color:var(--muted);text-transform:uppercase}
+__FIGKEYS__
+</style>"""
+
+
 def _figures():
     """{cardId: rendered <figure>} — the rule diagrams, drawn by node.
 
@@ -1037,15 +1095,20 @@ def _learn():
             # why had no way to reach the card that explains it. The id is the
             # card id -- the same key `doors` is keyed by and the guard above
             # already pins -- so the anchor cannot name a card that is not here.
-            # ⭐ THE FIGURE GOES AFTER THE TITLE AND BEFORE THE WORDS, which is
-            # the teaching order: name the rule, draw the rule, then say it, then
-            # offer the real instance. It sits INSIDE the card's link on purpose
-            # -- tapping the diagram lands on the same rule happening in a real
-            # game, which is the whole point of the pairing, and on a phone it
-            # makes the tap target larger rather than smaller.
-            out.append(f'    <a class="card" id="{cid}" href="/game.html{door["href"]}">'
-                       f'<p class="t">{title}</p>{figures.get(cid, "")}<p>{blurb}</p>'
-                       f'<p class="at">Period {door["per"]} &middot; {door["rem"]} left</p></a>')
+            # ⭐ A CARD WITH A DIAGRAM LEADS TO THE DIAGRAM, NOT STRAIGHT TO THE
+            # GAME -- Kevin's call after seeing the figure inside the card. The
+            # card stays a short, scannable tile either way; what changes is
+            # where it lands, and the real moment is one step further on. The
+            # footer line says which kind of destination it is, because "Period 1
+            # · 04:48 left" on a card that opens a drawing would be a small lie.
+            if cid in figures:
+                href, at = f"/{cid}.html", "Diagram &middot; then a real example"
+            else:
+                href = f'/game.html{door["href"]}'
+                at = f'Period {door["per"]} &middot; {door["rem"]} left'
+            out.append(f'    <a class="card" id="{cid}" href="{href}">'
+                       f'<p class="t">{title}</p><p>{blurb}</p>'
+                       f'<p class="at">{at}</p></a>')
         out.append("  </div>")
 
     p1 = sum(1 for c in LEARN_CARDS if doors[c[1]]["per"] == 1)
@@ -1249,20 +1312,46 @@ WORKSHOP_DESC = ("Earlier views of the same NHL data, each answering a question 
 
 
 def build_learn():
+    # NO FIGURE CSS HERE ANY MORE. The diagrams moved to their own pages, so the
+    # learn page is back to what it was: a grid of short cards, scannable on a
+    # phone rather than a column of five rinks.
     html = LEARN_BODY.replace("__LEARN__", _learn())
-    # THE FIGURES' KEYFRAMES COME FROM THE FIGURES, so a token's motion and its
-    # geometry are written by one hand and cannot drift into animating from a
-    # place it was never drawn. `str.replace` cannot fail, so it is asserted.
-    keys = "\n".join(d["css"] for _, d in sorted(_fig_json().items()))
-    figcss = FIGCSS.replace("__FIGKEYS__", keys)
-    assert "__FIGKEYS__" not in figcss, "the figure keyframes were never substituted"
-    # ITS OWN <style>, NOT AN ADDITION TO THE SHARED ONE. `STYLE` is served to the
-    # home page and the workshop as well, and neither draws a rink.
     html = P.document(html, title=LEARN_TITLE, description=LEARN_DESC,
                       url="https://readthegame.co/what-you-can-see.html",
                       current="/what-you-can-see.html",
                       head='<meta http-equiv="Content-Security-Policy" content="__CSP__">\n'
-                           + STYLE + "\n" + figcss)
+                           + STYLE)
+    return html.replace("__CSP__", _csp(html, connect=None))
+
+
+def build_rule(cid):
+    """One rule, drawn — the destination a learn card with a diagram opens."""
+    fig = _fig_json()[cid]
+    doors = json.loads((ROOT / "data" / "learn-doors.json").read_text())
+    door, g = doors["doors"][cid], doors["game"]
+    title = next(t for _, c, t, _ in LEARN_CARDS if c == cid)
+    blurb = next(b for _, c, _, b in LEARN_CARDS if c == cid)
+    y, m, day = g["date"].split("-")
+    html = (RULE_BODY
+            .replace("__RULE_TITLE__", title)
+            .replace("__RULE_LEDE__", blurb)
+            .replace("__RULE_FIG__", _figures()[cid])
+            .replace("__RULE_HREF__", door["href"])
+            .replace("__RULE_AT__", f'{g["away"]} at {g["home"]}, {int(day)} '
+                                    f'{MONTHS[int(m) - 1]} {y} &middot; period {door["per"]}, '
+                                    f'{door["rem"]} left'))
+    # THE FIGURES' KEYFRAMES COME FROM THE FIGURE, so a token's motion and its
+    # geometry are written by one hand and cannot drift into animating from a
+    # place it was never drawn. `str.replace` cannot fail, so it is asserted.
+    css = (STYLE + "\n" + FIGCSS.replace("__FIGKEYS__", "")
+           + "\n" + RULECSS.replace("__FIGKEYS__", fig["css"]))
+    assert "__FIGKEYS__" not in css, "the figure keyframes were never substituted"
+    desc = re.sub("<[^>]+>", "", blurb)
+    html = P.document(html, title=f"{title} — Read the Game", description=desc,
+                      url=f"https://readthegame.co/{cid}.html",
+                      current="/what-you-can-see.html",
+                      head='<meta http-equiv="Content-Security-Policy" content="__CSP__">\n'
+                           + css)
     return html.replace("__CSP__", _csp(html, connect=None))
 
 
@@ -1698,6 +1787,12 @@ def main():
              (ROOT / "src" / "what-you-can-see.html", build_learn()),
              (ROOT / "src" / "workshop.html", build_workshop()),
              (ROOT / "src" / "calendar.html", build_calendar())]
+    # ONE PAGE PER RULE WE DREW. The list comes from the figures themselves, so a
+    # new diagram is a page without anyone remembering to add it here -- and a
+    # learn card links to `/{cid}.html` under exactly the same condition, which
+    # is what keeps the link and the file from disagreeing.
+    pages += [(ROOT / "src" / f"{cid}.html", build_rule(cid))
+              for cid in sorted(_fig_json())]
 
     # A link to a file that does not exist is a 404 in production. Cheapest
     # possible gate, run on every build, before the byte comparison.

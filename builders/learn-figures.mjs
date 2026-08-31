@@ -92,6 +92,34 @@ const defs = id =>
  */
 const stamp = (x, y) => `<text class="dgstamp" x="${f(x)}" y="${f(y)}">Diagram</text>`;
 
+/* ── how a token travels ────────────────────────────────────────────────────
+   ⭐ THE PAGE OPENS ON THE FINISHED PICTURE, THEN REPLAYS. Found by looking: a
+   screenshot of the first build caught frame 0 of the loop, where every token
+   sits ON TOP OF ITS OWN GHOST and both arrows point at empty ice. That is not
+   a bad screenshot, it is what every reader sees at the moment the page loads --
+   the pre-story frame, which is the one frame of the cycle that teaches nothing.
+   The DELAY fixes it for free: with no `animation-fill-mode`, an element uses
+   its own styles until the delay elapses, and its own position IS the end of the
+   story. So the reader lands on the complete diagram, reads it, and only then
+   watches it build. The delay applies to the first iteration only, which is
+   exactly the one that matters.
+
+   ⭐ AND THE WRAP IS HIDDEN. An infinite loop teleports from 100% back to 0%,
+   and a token snapping the length of the neutral zone every cycle looks like a
+   glitch rather than a lesson. It fades out where it came to rest and fades in
+   where it starts, so the reset happens while nothing is on screen to see it.
+   `opacity` is safe to animate here for the same reason the transform is: with
+   motion off, none of it applies and the token is simply drawn, fully opaque, at
+   the end of the story. */
+const CYCLE = '9s', DELAY = '2.5s';
+const travel = (name, from, to) =>
+  `@keyframes ${name}{`
+  + `0%{transform:translate(${f(from.x - to.x)}px,${f(from.y - to.y)}px);opacity:0}`
+  + `8%{transform:translate(${f(from.x - to.x)}px,${f(from.y - to.y)}px);opacity:1}`
+  + `55%{transform:translate(0,0);opacity:1}`
+  + `94%{transform:translate(0,0);opacity:1}`
+  + `100%{transform:translate(0,0);opacity:0}}`;
+
 /* ── OFFSIDE ────────────────────────────────────────────────────────────────
    ⭐ THE ONE RULE THE SITE ADMITS IT CANNOT SHOW. The card's own words, live on
    production: *"The feed records the call and the restart, never the crossing —
@@ -113,45 +141,58 @@ const stamp = (x, y) => `<text class="dgstamp" x="${f(x)}" y="${f(y)}">Diagram</
 function offside() {
   const id = 'of-';
   const BLUE = SX(-BLUE_LINE_X);           // the line being entered
-  const DOT = { x: SX(-NEUTRAL_DOT_X), y: SY(-22) };  // where an offside restarts
-  // ⭐ THE WHOLE RULE IS ONE COMPARISON, so the drawing has to win it at a
-  // glance: measured in FEET, the skater finishes 18 ft INSIDE the zone and the
-  // puck 11 ft OUTSIDE it. The first draft had 9 and 4, and at 256px -- the
-  // binding width, which is the DESKTOP card -- a 4 ft gap was thinner than the
-  // token's own outline and the puck read as sitting on the line.
-  const P0 = { x: SX(12), y: SY(4) }, P1 = { x: SX(-14), y: SY(4) };
-  const A0 = { x: SX(8), y: SY(-15) }, A1 = { x: SX(-43), y: SY(-15) };
+  const DOT = { x: SX(-NEUTRAL_DOT_X), y: SY(22) };   // where an offside restarts
+  /* ⭐⭐ ① IS THE PUCK CARRIER AND ② IS THE TEAMMATE WHO BEATS HIM IN.
+     Kevin, looking at the first draft: *"1) needs to be the player controlling
+     the puck and then the arrow at the top needs to be 2), who would then move
+     into the zone before the player carrying the puck 1)."*
+     He is right twice over. The drawing had a BARE PUCK travelling up the ice
+     with nobody carrying it, which is not a thing that happens and quietly made
+     the rule look like it was about a loose puck; and the numbers were pinned to
+     the wrong actors, so ① named the offender rather than the man he skated
+     past. The puck now belongs to a player and moves as one object with him.
+
+     ⭐ THE COMPARISON THE DRAWING HAS TO WIN AT A GLANCE, in feet, so it can be
+     checked: the teammate finishes 18 ft INSIDE the zone and the PUCK 9 ft
+     outside it. An earlier draft had 4 ft, and at 256px that gap was thinner
+     than the token's own outline -- the puck read as sitting on the line, which
+     is the opposite of the rule. And it is the PUCK's position that decides an
+     offside, not the carrier's, so the puck is the thing kept clearly short. */
+  const C0 = { x: SX(14), y: SY(-15) }, C1 = { x: SX(-10), y: SY(-15) };
+  const T0 = { x: SX(18), y: SY(5) }, T1 = { x: SX(-43), y: SY(5) };
+  const PUCK = { x: 5.5, y: 1.4 };         // carried just ahead of the stick
   return {
     // From the far neutral-zone dot to the end boards: one blue line, the ice
     // either side of it, and both spots a draw could come back to.
     viewBox: `${f(SX(24))} 0 ${f(SX(-89) - SX(24) + 10)} 85`,
-    label: 'Diagram: an attacking skater crosses the blue line ahead of the puck, '
-         + 'so play stops and the face-off comes back outside the zone.',
+    label: 'Diagram: an attacking skater crosses the blue line before the puck '
+         + 'carrier does, so play stops and the face-off comes back outside the zone.',
     svg: defs(id)
       // NO TINTS. The slot lozenge and the blue-line band are measurements of
       // ours, and this figure is about the league's rulebook -- see rinkart.js.
       + `<g class="dgpaint">${furniture(id, false)}</g>`
       + `<g class="dgplay">`
-      // ① both come up the ice — drawn where they START, and they stay drawn.
-      + ghost(A0.x, A0.y) + puckGhost(P0.x, P0.y)
-      + arrow(id, A0.x, A0.y, A1.x, A1.y) + arrow(id, P0.x, P0.y, P1.x, P1.y, 4)
-      // ② the crossing. The line is lit where the rule is decided.
+      // Where each of them set off — drawn faintly, and they stay drawn.
+      + ghost(C0.x, C0.y) + puckGhost(C0.x + PUCK.x, C0.y + PUCK.y) + ghost(T0.x, T0.y)
+      + arrow(id, C0.x, C0.y, C1.x, C1.y) + arrow(id, T0.x, T0.y, T1.x, T1.y)
+      // The line is lit where the rule is decided.
       + `<line class="dghot" x1="${f(BLUE)}" y1="1" x2="${f(BLUE)}" y2="84"/>`
-      + `<g class="dgmove dgm-a">${tok(A1.x, A1.y)}</g>`
-      + `<g class="dgmove dgm-p">${puck(P1.x, P1.y)}</g>`
+      // ① THE CARRIER AND HIS PUCK ARE ONE GROUP, so they cannot drift apart in
+      // the animation -- "controlling the puck" has to survive the motion.
+      + `<g class="dgmove dgm-c">${tok(C1.x, C1.y)}${puck(C1.x + PUCK.x, C1.y + PUCK.y)}</g>`
+      // ② the teammate, already inside the zone with the puck still outside.
+      + `<g class="dgmove dgm-t">${tok(T1.x, T1.y)}</g>`
       // ③ and the punishment, which is WHERE — the same claim the icing card makes.
       + `<circle class="dgspot" cx="${f(DOT.x)}" cy="${f(DOT.y)}" r="4.2"/>`
-      // EACH BADGE SITS ON THE THING ITS LINE IS ABOUT: ① where they set off,
-      // ② on the skater who has gone too far, ③ on the spot play comes back to.
-      // The first draft put ② at the top of the blue line, nowhere near the
-      // crossing, where it read as a label for the line itself.
-      + badge(1, A0.x - 9, A0.y) + badge(2, A1.x, A1.y - 9)
-      + badge(3, DOT.x, DOT.y + 9)
-      + stamp(SX(18), SY(36))
+      // EACH BADGE SITS ON THE THING ITS LINE IS ABOUT: ① on the carrier, ② on
+      // the teammate who has gone too far, ③ on the spot play comes back to.
+      + badge(1, C1.x - 3, C1.y + 9) + badge(2, T1.x, T1.y - 9)
+      + badge(3, DOT.x, DOT.y - 9)
+      + stamp(SX(20), SY(34))
       + `</g>`,
     steps: [
-      'The attackers carry the puck toward the blue line.',
-      'A skater crosses the line <b>before the puck does</b> &mdash; that is offside. '
+      'The puck carrier comes up the ice toward the blue line.',
+      'A teammate crosses the line <b>before the puck does</b> &mdash; that is offside. '
       + 'The puck has to enter the zone first.',
       'Play stops, and the face-off comes back <b>outside</b> the zone.',
     ],
@@ -160,13 +201,9 @@ function offside() {
     // is the token's start MINUS its end: the element sits at the end, and the
     // animation pushes it back to the start and lets it travel home. With
     // animation off it is simply at the end, which is the finished diagram.
-    css: [
-      `@keyframes ${id}a{0%,8%{transform:translate(${f(A0.x - A1.x)}px,${f(A0.y - A1.y)}px)}`
-      + `55%,100%{transform:translate(0,0)}}`,
-      `@keyframes ${id}p{0%,8%{transform:translate(${f(P0.x - P1.x)}px,${f(P0.y - P1.y)}px)}`
-      + `55%,100%{transform:translate(0,0)}}`,
-      `.dgfig.of .dgm-a{animation:${id}a 11s ease-in-out infinite}`,
-      `.dgfig.of .dgm-p{animation:${id}p 11s ease-in-out infinite}`,
+    css: [travel(id + 'c', C0, C1), travel(id + 't', T0, T1),
+      `.dgfig.of .dgm-c{animation:${id}c ${CYCLE} ease-in-out ${DELAY} infinite}`,
+      `.dgfig.of .dgm-t{animation:${id}t ${CYCLE} ease-in-out ${DELAY} infinite}`,
     ].join('\n'),
   };
 }
