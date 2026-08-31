@@ -353,7 +353,15 @@ test('the work panel explains whichever layer is on, from that layer\'s ledger',
                               ['blocked', blocked], ['whistle', whistle]]) {
     pick(a, token);
     a.$('work').click();
-    const html = a.$('workPanel').innerHTML;
+    /* ⚠️ `#workBody`, NOT `#workPanel` — changed 2026-08-31 when the panel became
+       an overlay on the ice. The panel gained a static `Hide the work` button of
+       its own (the card's copy is underneath the overlay), so `renderWork` now
+       writes into a child rather than over the panel, which would delete its own
+       closer on every frame. In a browser reading the parent would still see
+       this markup; in this fake the two elements hold independent strings, so
+       every read here had to follow the content. `hidden` is still read from
+       `#workPanel`, because the PANEL is what opens and shuts. */
+    const html = a.$('workBody').innerHTML;
 
     /* THE LEDGER COMES FROM THE REDUCER, NOT FROM THE PAGE (H1) — but the SLICE
        comes from the page, because the page decides how far the playhead has
@@ -421,11 +429,11 @@ test('a layer with no surprising bucket is not given an empty one', () => {
   a.$('scrub').oninput({ target: { value: a.$('scrub').max } });
   pick(a, 'whistle');
   a.$('work').click();
-  assert.doesNotMatch(a.$('workPanel').innerHTML, /surprisingly/i,
+  assert.doesNotMatch(a.$('workBody').innerHTML, /surprisingly/i,
     'stoppages is shown a "counted, surprisingly" card it has no data for');
 
   pick(a, 'corsi');
-  assert.match(a.$('workPanel').innerHTML, /surprisingly/i,
+  assert.match(a.$('workBody').innerHTML, /surprisingly/i,
     'no layer shows the card at all, so the check above proves nothing');
 });
 
@@ -441,12 +449,12 @@ test('the panel redraws on a layer change and closes only in the base view', () 
   pick(a, 'corsi');
   a.$('work').click();
   assert.equal(a.$('workPanel').hidden, false, 'the panel did not open');
-  const asCorsi = a.$('workPanel').innerHTML;
+  const asCorsi = a.$('workBody').innerHTML;
 
   pick(a, 'slot');
   assert.equal(a.$('workPanel').hidden, false,
     'switching layers closed the panel instead of redrawing it');
-  assert.notEqual(a.$('workPanel').innerHTML, asCorsi,
+  assert.notEqual(a.$('workBody').innerHTML, asCorsi,
     'the panel still explains the layer that is no longer on');
 
   pick(a, 'none');
@@ -507,7 +515,7 @@ test('a club with none of something still appears in the ledger line', () => {
   for (const token of ['corsi', 'slot', 'blocked']) {
     pick(a, token);
     a.$('work').click();
-    const panel = a.$('workPanel').innerHTML;
+    const panel = a.$('workBody').innerHTML;
     const foot = /<p class="wfoot">([\s\S]*?)<\/p>/.exec(panel)[1];
     const b = { a: a.$('lxA').textContent, h: a.$('lxH').textContent };
     assert.ok(foot.includes(`${b.a} `), `${token}: the away figure is missing from the footer`);
@@ -519,7 +527,7 @@ test('a club with none of something still appears in the ledger line', () => {
   // ⭐ AND STOPPAGES SHOWS NONE, because there the fields are EMPTY, not zero.
   pick(a, 'whistle');
   a.$('work').click();
-  const foot = /<p class="wfoot">([\s\S]*?)<\/p>/.exec(a.$('workPanel').innerHTML)[1];
+  const foot = /<p class="wfoot">([\s\S]*?)<\/p>/.exec(a.$('workBody').innerHTML)[1];
   assert.doesNotMatch(foot, /^<em>/,
     'stoppages was given club figures, which the feed does not record');
 });
@@ -534,7 +542,7 @@ test('the panel closes the row fragment it quotes', () => {
   a.$('scrub').oninput({ target: { value: a.$('scrub').max } });
   pick(a, 'slot');
   a.$('work').click();
-  const html = a.$('workPanel').innerHTML;
+  const html = a.$('workBody').innerHTML;
   const rowHtml = app.match(/<button class="lrow"[^>]*data-pick="slot"[\s\S]*?<\/button>/)[0];
   const lds = /<span class="lds">([^<]*)</.exec(rowHtml)[1];
   assert.ok(html.includes(lds + '.'),
@@ -640,7 +648,7 @@ test('every lens carries a live count of what it has seen', () => {
   // The slice the page reached, taken from the panel's own closing arithmetic.
   pick(a, 'corsi');
   a.$('work').click();
-  const total = +/= <b>(\d+)<\/b> events/.exec(a.$('workPanel').innerHTML)[1];
+  const total = +/= <b>(\d+)<\/b> events/.exec(a.$('workBody').innerHTML)[1];
   a.$('work').click();
 
   // THE EXPECTED VALUES COME FROM THE REDUCERS (H1), on the slice the page reached.
@@ -712,7 +720,7 @@ test('the work panel heads with the lens name, never the name plus its count', (
   for (const l of ['corsi', 'slot', 'blocked', 'goaltending', 'whistle']) {
     pick(a, l);
     a.$('work').click();
-    const head = /<h2>([\s\S]*?)<span class="wsub">/.exec(a.$('workPanel').innerHTML)[1];
+    const head = /<h2>([\s\S]*?)<span class="wsub">/.exec(a.$('workBody').innerHTML)[1];
     const chip = a.$$('#rg .pk').find(b => b.dataset.l === l);
     const label = chip.querySelector('.pkl').textContent;
     const count = a.$('n_' + l).textContent;
@@ -752,7 +760,7 @@ test('whatever a reader adds in the ledger line is the number it is printed agai
   for (const l of ['corsi', 'slot', 'blocked', 'goaltending']) {
     pick(a, l);
     a.$('work').click();
-    const panel = a.$('workPanel').innerHTML;
+    const panel = a.$('workBody').innerHTML;
     const foot = /<p class="wfoot">([\s\S]*?)<\/p>/.exec(panel)[1];
     const m = /<em>([^<]*)<\/em> &mdash; (\d+) ([a-z ]+?)(?: \+|,|\.)/.exec(foot);
     assert.ok(m, `${l}: the ledger line does not read "figures — N noun"`);
@@ -810,7 +818,7 @@ test('the surprising bucket says "the other one" when there is one', () => {
       a.$('scrub').oninput({ target: { value: String(f) } });
       pick(a, l);
       a.$('work').click();
-      const w = a.$('workPanel').innerHTML;
+      const w = a.$('workBody').innerHTML;
       const n = +(/Counted, surprisingly <span class="n">(\d+)<\/span>/.exec(w) || [, 0])[1];
       a.$('work').click();
       assert.doesNotMatch(w, /The other 1 each carry/,
@@ -921,7 +929,7 @@ test('nothing that was never a candidate appears under "Close, but not counted"'
     for (const l of ['corsi', 'slot', 'blocked', 'goaltending', 'whistle']) {
       pick(a, l);
       a.$('work').click();
-      const w = a.$('workPanel').innerHTML;
+      const w = a.$('workBody').innerHTML;
       const m = /Close, but not counted[\s\S]*?<p class="wexc">([\s\S]*?)<\/p>/.exec(w);
       if (m) for (const re of NEVER)
         assert.doesNotMatch(m[1], re,
@@ -936,7 +944,7 @@ test('nothing that was never a candidate appears under "Close, but not counted"'
   a.$$('#rg .sbtn')[0].click();
   pick(a, 'slot');
   a.$('work').click();
-  assert.match(a.$('workPanel').innerHTML, /Close, but not counted/,
+  assert.match(a.$('workBody').innerHTML, /Close, but not counted/,
     'no layer shows a near-miss section any more, so the check above is vacuous');
 });
 
@@ -964,7 +972,7 @@ test('a surprising reason says what it was counted in, not only what it is denie
   a.$('scrub').oninput({ target: { value: a.$('scrub').max } });
   pick(a, 'blocked');
   a.$('work').click();
-  const card = /Counted, surprisingly[\s\S]*?<\/div>/.exec(a.$('workPanel').innerHTML)[0];
+  const card = /Counted, surprisingly[\s\S]*?<\/div>/.exec(a.$('workBody').innerHTML)[0];
   assert.match(card, /counted/i,
     'the card headed "Counted, surprisingly" shows a reason that never says so');
 

@@ -846,7 +846,71 @@
 #rg .k-a{background:#fff;box-shadow:0 0 0 1.5px var(--away)}#rg .k-h{background:var(--home)}#rg .k-hd{background:#fff;box-shadow:0 0 0 1.5px var(--hd)}#rg .k-wh{background:transparent;box-shadow:0 0 0 1.5px var(--flag)}
 .k-rl{width:3px;height:12px;border-radius:1px;background:var(--flag);opacity:.75}#rg .k-blk{background:var(--home);box-shadow:0 0 0 1.5px var(--flag)}#rg .k-blkv{background:#fff;box-shadow:0 0 0 1.5px var(--flag);margin-left:-3px}#rg .k-p{background:#0e1216}#rg .k-g{background:radial-gradient(circle,#fff 0 2.5px,var(--home) 2.5px)}#rg .k-gv{background:radial-gradient(circle,var(--away) 0 2.5px,#fff 2.5px);box-shadow:0 0 0 1.5px var(--away);margin-left:-3px}
 #rg .work{background:#fff;border:1px solid var(--edge);border-radius:13px;padding:18px;margin-top:14px;box-shadow:0 5px 18px rgba(16,32,45,.06)}
+/* ⭐ THE WORK PANEL IS AN OVERLAY ON THE ICE — 2026-08-31.
+   Kevin: "the information shows up well below the ice, which gives the vibe
+   that it's disjointed from the play... let's overlay it over the ice, make
+   them mutually exclusive."
+   MEASURED BEFORE, at 390 with a layer on: the rink card at top 623, the panel
+   opening at top 1,493 on a 900px viewport, 696px tall. A screen and a half
+   away from the number it explains. On desktop, opening it put the ice at
+   top -29 -- off screen -- on the one surface that exists so a reader can check
+   a count against the ice.
+   ⭐ ABSOLUTE, WHICH IS THE WHOLE MECHANISM. Kevin's follow-up asked whether the
+   two surfaces could be the same HEIGHT so nothing shifts. On desktop they
+   nearly are (panel 342, ice 373); on a phone the panel is 696 against 164 --
+   4.2x -- and matching them costs either 382px off the audit (409 of the 696 is
+   `.wg`, the two boxes that ARE the audit) or 530px of blank space above the ice
+   on every frame you watch, on the surface U11 just reclaimed 20% of hockey
+   for. So the heights are NOT matched and the shift is removed a different way:
+   out of the flow entirely, so nothing below the card can move.
+   `.rinkbox` is already `position:relative` (it anchors the caption pill), and
+   `inset-inline` uses the card's own `--rinkpad` rather than a copied number.
+   THE z-index IS FOR `.pressplay` (3), NOT FOR THE CAPTION PILL. The pill sets
+   no z-index at all and is earlier in source order, so it would be painted over
+   anyway; `.pressplay` sets one and would otherwise sit on top of the panel.
+   Checked in the stylesheet rather than assumed -- an earlier draft of this
+   comment claimed the pill was at 5, which is a number nothing sets. */
+/* ⚠️ `inset:0 0 auto 0`, AND THE FIRST DRAFT COPIED A CONSTANT INSTEAD.
+   It read `left:var(--rinkpad);right:var(--rinkpad)` -- which looks like it
+   matches the card and does not, because U11 overrides the card's HORIZONTAL
+   padding to 2px below 520px while `--rinkpad` stays 10. So at 390 the panel
+   spanned 10..380 inside a content box of 2..388, and the layer box behind it
+   showed 8px of itself down each edge: the red 48 and the blue 59 peeking out
+   past the panel, reading as a rendering fault.
+   Positioning to the PADDING BOX instead makes the panel at least as wide as
+   any flow child by construction, at every breakpoint, and it cannot drift the
+   next time the card's padding moves -- the same reason U11's own guard asserts
+   a relationship rather than a pinned 15.6px. */
+#rg:not(.preview) .work{position:absolute;z-index:6;inset:0 0 auto 0;margin-top:0}
+/* ⭐ MUTUALLY EXCLUSIVE MEANS THE ICE GOES AWAY, and this was FOUND BY LOOKING.
+   The panel is opaque, so the first build read as correct at a glance. At 1100
+   the card is 523 tall, the panel 366 and the ice 373 -- so a SEVEN-PIXEL
+   STRIPE of rink showed below the panel's bottom edge, an arc and three
+   face-off dots, which reads as a rendering fault rather than a decision.
+   Invisible to every test here: the node document has no layout, and the panel
+   and the svg were each individually correct.
+   `visibility`, NEVER `display`. Collapsing the svg collapses the card the
+   panel is positioned inside -- which is precisely the shift this change exists
+   to remove, reintroduced by the fix for it. */
+#rg:not(.preview).working .rinkbox svg,
+#rg:not(.preview).working .caption{visibility:hidden}
 #rg .work h2{margin:0 0 10px;font-size:1.1rem}#rg .work h2 .wsub{color:var(--muted);font-weight:400}
+/* THE OVERLAY'S OWN CLOSER, pinned to the panel's top-right so it is reachable
+   before the reader has scrolled anything — which matters because the panel is
+   ~680px at 390 and the card's own `Hide the work` is underneath it.
+   z-index 7 puts it over the panel at 6. 44px, like every other control here. */
+/* ⚠️ A FLOAT, AND THE ABSOLUTE VERSION IS WHY. Pinned to the panel's top-right
+   it printed straight through the heading -- "How Attempts is coun[Hide the
+   work]" at 390 -- because an out-of-flow box reserves no space. Clearing it
+   would have taken a `padding-right` on the h2 that has to agree with this
+   button's width: a constant tracking a constant, which is the shape U11 and
+   the overlay's own inset have each already cost this project. A float reserves
+   its space and the heading wraps around it, so the two cannot disagree. */
+#rg .wx{float:right;margin:-2px -2px 6px 12px;min-height:44px;padding:0 14px;
+ background:#fff;border:1px solid var(--edge);border-radius:99px;
+ font:inherit;font-size:.82rem;font-weight:600;color:var(--muted);cursor:pointer}
+#rg .wx:hover{color:var(--ink);border-color:var(--muted)}
+#rg.preview .wx{display:none}
 #rg .wc .wexc{font-size:.82rem;line-height:1.6}
 /* The measurement that keeps a categorical reason specific. Quieter than the
    rule it illustrates, because the rule is the thing being taught. */

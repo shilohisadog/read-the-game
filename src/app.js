@@ -1049,7 +1049,7 @@ const LEDGER={corsi:sl=>corsi.reduce(sl,CTX),slot:sl=>danger.reduce(sl,CTX),
  whistle:sl=>whistle.reduce(sl,CTX)};
 function renderWork(_,cur,at){
  const id=whichPick();
- if(id==='none'||!LEDGER[id]||at<0){$('workPanel').innerHTML='';return;}
+ if(id==='none'||!LEDGER[id]||at<0){$('workBody').innerHTML='';return;}
  const sl=upto(at), L=LEDGER[id](sl);
  const row=document.querySelector(`#rg .lrow[data-pick="${id}"]`);
  const lds=row&&row.querySelector('.lds');
@@ -1149,7 +1149,7 @@ function renderWork(_,cur,at){
  const fig=[has(b.a)&&`${b.a} ${AAB}`,has(b.h)&&`${b.h} ${HAB}`,
    ...(has(b.a)||has(b.h)?(b.rest||[]).map(r=>`${r.n} ${r.say}`):[])]
    .filter(Boolean).join(' + ');
- $('workPanel').innerHTML=
+ $('workBody').innerHTML=
   `<h2>How ${ESC(name)} is counted <span class="wsub">(${MODE()}, ${when})</span></h2>`
  +`<div class="wg">`
  +`<div class="wc"><h3>Counted <span class="n">${L.counted.length}</span></h3>`
@@ -1327,7 +1327,51 @@ function setGear(g){gear=Math.max(0,Math.min(PACE.length-1,g));frameMs=PACE[gear
 $('slower').onclick=()=>setGear(gear-1);
 $('faster').onclick=()=>setGear(gear+1);
 setGear(gear);
-$('work').onclick=()=>{workOpen=!workOpen;$('workPanel').hidden=!workOpen;$('work').setAttribute('aria-expanded',workOpen);$('work').textContent=workOpen?'Hide the work':'Show me the work';if(workOpen)render(i,'');};
+/* ⭐ OPENING THE WORK STOPS THE REPLAY — 2026-08-31, and it is the other half of
+   making the two MUTUALLY EXCLUSIVE. The panel now covers the ice, so a replay
+   left running would advance behind it: the counters would move, the caption
+   would fire, and the reader would come back to a game that had gone on without
+   them. Kevin's framing is the argument -- "show it to them in the same view
+   they are currently watching" -- and you cannot watch and read the same
+   rectangle at once.
+   IT DOES NOT AUTO-RESUME. Pressing Play again is one tap and is the reader's
+   decision; a replay that restarts itself when a panel closes is the page
+   moving under someone, which is the thing this change exists to remove. */
+/* ⭐ AND THE ICE IS HIDDEN, NOT MERELY COVERED — found by LOOKING, not reading.
+   The panel is opaque and paints over the rink, so the first build looked
+   correct at a glance. It was not: at 1100 the card is 523 tall, the panel 366,
+   and the ice 373 -- so a SEVEN-PIXEL STRIPE of rink showed below the panel's
+   bottom edge, an arc and three face-off dots, reading as a rendering fault
+   rather than a design. No unit test could ever have seen it; the node document
+   has no layout, and both elements were individually correct.
+   `visibility`, NEVER `display`. Collapsing the svg would collapse the card the
+   panel is positioned inside, which is the shift this whole change removes. */
+/* ⭐ ONE OWNER FOR THE OPEN STATE, AND THAT IS THE WHOLE REASON THIS IS A
+   FUNCTION. There are TWO ways the panel closes -- this button, and `closeWork`
+   when the lens goes back to `none` -- and the overlay adds a third thing that
+   has to be undone: the class that HIDES THE ICE. Toggled in the button handler
+   alone, picking `Just events` while the work was open would have left the rink
+   invisible with nothing over it. The same shape as `place()` and `chipLabel`:
+   remove the opportunity to disagree rather than add a second correct line. */
+function setWork(open){
+ workOpen=open;
+ $('workPanel').hidden=!open;
+ document.getElementById('rg').classList.toggle('working',open);
+ $('work').setAttribute('aria-expanded',open);
+ $('work').textContent=open?'Hide the work':'Show me the work';
+ if(open&&playing)stop();}
+$('work').onclick=()=>{setWork(!workOpen);if(workOpen)render(i,'');};
+/* THE OVERLAY'S CLOSER DELEGATES rather than calling `setWork` itself, so there
+   is exactly one closer and no way for two call sites to drift about what
+   closing means. `#work` is still the control; this is the copy of it that is
+   reachable while the overlay covers the original. */
+$('workClose').onclick=()=>$('work').click();
+/* AND THE SHUT STATE IS ESTABLISHED BY THE SAME OWNER AT BOOT, the way
+   `setGear` establishes the pace. The markup carries `hidden` so the page reads
+   correctly before JS runs; without this line that attribute would be a SECOND
+   statement of the closed state, free to disagree with `setWork` the day either
+   one moves. Same argument as the mode label two rows down. */
+setWork(false);
 $('aAb').textContent=AAB;$('hAb').textContent=HAB;
 /* ⭐ THE DIRECTION INDICATOR IS GONE, AND THE QUESTION THAT CREATED IT IS NOT.
    Kevin, 2026-08-25: "remove both 'attacks' and the arrows completely. They are
@@ -2694,8 +2738,7 @@ function setCorsi(){document.getElementById('rg').classList.toggle('corsi',corsi
    whichever layer is on, so switching Attempts → Slot must REDRAW it, not shut
    it -- and `setCorsi` turning false is exactly what happens on that switch.
    The condition is therefore the SELECTOR's state, not any one boolean. */
-function closeWork(){workOpen=false;$('workPanel').hidden=true;
- $('work').setAttribute('aria-expanded',false);$('work').textContent='Show me the work';}
+function closeWork(){setWork(false);}
 function setHd(){document.getElementById('rg').classList.toggle('slot',hdOn);$('lyHd').setAttribute('aria-pressed',hdOn);lyrState('stHd',hdOn);render(i,'');}
 $('lyCorsi').addEventListener('click',()=>{corsiOn=!corsiOn;setCorsi();});
 // One code path owns the mode label, so the markup cannot drift from the state.

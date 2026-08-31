@@ -106,6 +106,34 @@ __CSS__</style>
        a child can override, so every penalty and every unplaced goal announced
        into a dark element. It is last in the box so it paints over the ice. -->
   <div class="caption" id="caption"></div>
+  <!-- ⭐ THE WORK PANEL, OVERLAID ON THE ICE — 2026-08-31, and the note below
+       the card carries the measurement. Last in the box for the same reason the
+       caption pill is: it paints over the ice and over the layer box without a
+       stacking fight. It is `position:absolute`, so the flow is untouched and
+       nothing below the card moves when it opens — which is the shifting Kevin
+       asked to avoid, solved without forcing two surfaces to one height. -->
+  <!-- ⭐ THE PANEL'S OWN WAY OUT — STATIC, AND INSIDE THE PANEL.
+       BLOCKING DEFECT it fixes: `Hide the work` lives in `.lbox`, which the
+       overlay covers. At 390 the panel is ~655px over a 314px card, so the only
+       closer was underneath the thing it closes -- the panel could be opened and
+       not shut, while every test passed because the button existed, was labelled
+       correctly and still fired. It was invisible, which is the one property the
+       node document cannot see.
+       ⚠️ NOT RENDERED INTO A MARKUP STRING, which is where it started. The test
+       harness models elements by id and gives them no `querySelector`, so a
+       control built by `innerHTML` is unreachable from every test here -- and a
+       control only a browser can wire is a control only a browser can catch
+       breaking.
+       ⚠️ AND NOT ABSOLUTELY POSITIONED EITHER, which is where it went next. Over
+       the panel it printed straight through the heading -- "How Attempts is
+       coun[Hide the work]" at 390 -- and clearing it would have meant a
+       `padding-right` on the h2 that has to agree with the button's width, a
+       constant tracking a constant. A FLOAT reserves its own space and the
+       heading wraps around it, so the two cannot disagree.
+       WHICH IS WHY THE BODY IS ITS OWN ELEMENT: `renderWork` replaces
+       `#workBody`, so the button can live in the panel without being wiped on
+       every frame. -->
+  <div class="work" id="workPanel" hidden><button class="wx" id="workClose" type="button">Hide the work</button><div id="workBody"></div></div>
 </div>
 <details class="zone zlayers" id="zLayers"><summary class="zh">Add a metric layer<span class="zon" id="zLayersOn"></span></summary>
 <div class="lrows">
@@ -139,15 +167,24 @@ __CSS__</style>
 <div class="sharerow"><button class="share" id="share" type="button">Copy a link to this moment</button><span class="sharesaid" id="sharesaid" role="status" aria-live="polite"></span></div>
 <div class="pickrow" role="radiogroup" aria-label="Which metric is on the ice" id="pickrow"><span class="pklab">Watching</span><button class="pk" id="pkNone" data-l="none" role="radio" aria-checked="true"><span class="pkl">Just events</span></button><span class="pksep" aria-hidden="true"></span><button class="pk" id="pkCorsi" data-l="corsi" role="radio" aria-checked="false"><span class="pkl">Attempts</span><span class="pkn" id="n_corsi">0</span></button><button class="pk" id="pkSlot" data-l="slot" role="radio" aria-checked="false"><span class="pkl">Slot</span><span class="pkn" id="n_slot">0</span></button><button class="pk" id="pkBlocked" data-l="blocked" role="radio" aria-checked="false"><span class="pkl">Blocked</span><span class="pkn" id="n_blocked">0</span></button><button class="pk" id="pkGoalie" data-l="goaltending" role="radio" aria-checked="false"><span class="pkl">Goaltending</span><span class="pkn" id="n_goaltending">0</span></button><button class="pk" id="pkWhistle" data-l="whistle" role="radio" aria-checked="false"><span class="pkl">Stoppages</span><span class="pkn" id="n_whistle">0</span></button></div>
 <p class="lcap" id="lcap"></p>
-<!-- ⭐ THE WORK PANEL SITS AFTER THE EXPLANATION, NOT BEFORE THE CONTROLS.
-     It first went directly under the rink box, and measured open it is 1,229px
-     at 390 -- which put a screen and a half between the ice and its own Play
-     button. The reading order it has now is the one the page teaches in:
-     what am I watching (the ice) -> how do I move (the transport) -> which
-     lens (the selector) -> what does it mean (the caption) -> show me the
-     work. The control stays with the numbers it explains, up in the box; only
-     the long part moved. -->
-<div class="work" id="workPanel" hidden></div>
+<!-- ⭐ THE WORK PANEL MOVED INTO `.rinkbox` ON 2026-08-31 AND IS NOW AN OVERLAY.
+     Kevin, playing through a game: "I clicked on show me the work and the
+     information shows up well below the ice, which gives the vibe that it's
+     disjointed from the play on the ice... let's overlay it over the ice, make
+     them mutually exclusive."
+     MEASURED, and it was not a vibe: at 390 the rink card sits at top 623 and
+     the panel opened at top 1,493 -- a screen and a half below where the reader
+     was looking, on a 900px viewport, and 696px tall so it did not fit on one
+     screen once they got there. On DESKTOP it was worse in a different way:
+     opening it scrolled the ice to top -29, off the viewport entirely, on the
+     one surface whose whole job is "check my number against the ice".
+     ⭐ AND THIS DISSOLVES THE REASON IT SAT DOWN THERE rather than contradicting
+     it. The note that used to be here said the panel had first gone directly
+     under the rink box, "which put a screen and a half between the ice and its
+     own Play button" -- a REFLOW cost. An overlay takes no space in the flow at
+     all, so the Play button never moves and the panel is still at the ice.
+     WHERE IT LIVES NOW: last inside `.rinkbox`, above. -->
+
 <p class="verdict" id="verdict"></p>
 <div class="newcomer nwhy2" id="newcomerWhy"></div>
 <details class="zone zref"><summary class="zh">What the marks mean</summary>

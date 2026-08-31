@@ -230,7 +230,7 @@ test('turning on the Control layer renders the ledger, and it reconciles', () =>
   const n = toEnd(run());   // these read a WATCHED game, so drive it there
   n.get('lyCorsi').click();   // add the Control layer
   n.get('work').click();      // then open "Show me the work"
-  const w = String(n.get('workPanel').innerHTML);
+  const w = String(n.get('workBody').innerHTML);
   assert.ok(w.length > 200, 'the panel has content');
   assert.match(w, /whistle|not a play|period/i, 'the 51 non-plays appear with reasons');
 
@@ -282,7 +282,7 @@ test('the ledger explains the filtered-out attempts, on screen', () => {
   n.get('lyCorsi').click();
   n.get('work').click();
   n.get('#rg .sbtn[1]').click();
-  const w = String(n.get('workPanel').innerHTML);
+  const w = String(n.get('workBody').innerHTML);
   assert.match(w, /even strength/i, 'the panel states the mode');
   assert.match(w, /power play/i, 'and names the power-play exclusions');
   assert.match(w, /pulled their goalie/i, 'and the empty-net ones');
