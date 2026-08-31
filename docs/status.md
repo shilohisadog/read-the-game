@@ -45,13 +45,28 @@ detail, organised by state rather than by date.
 | **The layer surface**, distributions, per-game summary, share links | §A2–§A2f |
 | **C1 — a date path into the archive** | `calendar.html` |
 
+## 0.1b ⭐ SHIPPED 2026-08-31, later the same day
+
+| | |
+|---|---|
+| **`b561f5c` — every missed-shot label names its subject** | Kevin: *"what was high and wide?"* Six of ten values named nothing — **22.8% of missed shots, 5.9 a game.** And `Hit the post` collided with `LAB.hit`, the body check, on the same surface. |
+| **`d035229` — `src/lib/transition.js`, the K1 rule** | End to end, measured; **built, tested, and deliberately not wired** — see K1 below. |
+| **`a1acd68` — the work panel is an overlay on the ice** | Kevin: *"it shows up well below the ice… let's overlay it, make them mutually exclusive."* Panel moves from top **1,493 → 11** at 390, and the page height is **identical open and shut** at both widths. |
+
+⭐ **THE OVERLAY IS THE MODEL FOR THE REST OF IT.** Kevin: *"it integrates the
+work into the UX, as opposed to a kinda bolt-on at the bottom of the page."*
+Three defects in it were found **by looking** and none was visible to 840 green
+tests — a 7px stripe of rink under the panel, an 8px edge of the layer box from
+a copied padding constant, and a **blocking** one: the panel could be opened and
+not closed, because its only closer was underneath it.
+
 ## 0.2 What is live and under argument
 
-**`docs/restart-frames.md`** — three rounds with CHENG, published as an artifact.
-What the replay should do at a whistle. Settled: the beat is earned, not added;
-the carrier is the painted faceoff dot; all 44 restarts get identical treatment;
-once-per-session was **rejected** because two viewers would see one frame
-differently. **Not built.**
+**`docs/restart-frames.md`** — three rounds with CHENG, published as an artifact,
+17 sections. What the replay should do at a whistle. Settled: the beat is earned
+rather than added; the carrier is the painted faceoff dot; all 44 restarts get
+identical treatment; once-per-session was **rejected** because two viewers would
+see one frame differently. **Not built, and parked** — see §0.5.
 
 ⭐ **And a measurement inside it reframed the whole thing** — see §0.4.
 
@@ -66,7 +81,7 @@ His own words, and three of the four are old:
 
 | | state | what is actually known |
 |---|---|---|
-| **K1 — activity between recorded events** | **OPEN, and now measured** | §0.4. This is the oldest complaint on the project (*"the continuous event stream tells me nothing"*, 2026-08-28) and it is still unaddressed. |
+| **K1 — activity between recorded events** | **RULE BUILT, SURFACE IS KEVIN'S** | §0.4. The oldest complaint on the project. `src/lib/transition.js` ships the rule — **end to end, both events beyond a blue line on opposite sides: 18.4% of transitions, 47 a game, median gap 16s** — with 7 mutations, 7 kills. ⛔ **It says WHERE and HOW LONG and never WHOSE**: `own` means a different thing per event type (a hit credits the HITTER, who by rule has no puck), so *"Toronto now"* would have been **wrong on Kevin's own specimen**. ⏸ **Not wired**: the first build put it on `.plabsub` and `render-labels.test.js` went red, because **Kevin retired event sublines on 2026-08-16** — *"it still looks crowded to me."* That guard did its job. What is new is that his ruling retired a subline under EVERY event and this fires on fewer than one in five. |
 | **K2 — puck trails** | **OPEN** | Trails are one dot (`off`, the default), the period, or the game. The page's own copy admits the binary: *good to study, busy to watch*. The run-bounded middle was proposed and **Kevin declined it** (`restart-frames.md` §12) — *"I don't see what that would teach a novice."* So the binary stands and nothing replaces it. |
 | **K3 — who is on the ice at important times** | **OPEN, and half-refused on measurement** | At a **goal**, `shifts` agree with `situationCode` on **73.5%** (407 goals) — a named list is not defensible. ⚠️ The remembered *"97%"* was measured on **shots**, sampled, n=120. At a **faceoff at s=0** it is clean: 25/25 games hold exactly 6 a side. So the pre-game lineup is buildable and the goal moment is not. That is **C3** and it still has no reducer in `src/lib/`. |
 | **K4 — a killer feature** | **OPEN, NEW, and nothing is specified** | §0.5. |
@@ -130,6 +145,13 @@ review rounds without shipping anything is a document that has become the work.
 this site.** The tester is scheduled (§E) and has not happened. Any killer
 feature chosen before that is a guess dressed as a plan — which is the one shape
 this project refuses everywhere else.
+
+⭐ **AND THE OVERLAY IS THE FIRST ANSWER TO THE DRIFT.** §0.1b shipped the same
+day this section was written: a real UX change, looked at, three defects caught
+by looking, and Kevin's own verdict — *"it integrates the work into the UX, as
+opposed to a kinda bolt-on."* The lesson is not "measure less"; it is **that a
+measurement is worth what it changes, and `restart-frames.md` absorbed four
+review rounds without changing anything.**
 
 **Three candidates, ranked, none specified:**
 
