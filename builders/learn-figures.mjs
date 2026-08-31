@@ -331,7 +331,67 @@ function icing() {
   };
 }
 
-const FIGURES = { icing: icing(), offside: offside() };
+/* ── FACE-OFFS ──────────────────────────────────────────────────────────────
+   ⭐ THE ONE FIGURE THAT IS A MAP RATHER THAN A SEQUENCE, and it does not move.
+   Offside and icing are plays that unfold, so they animate; "nine painted spots
+   and the rule picks one" is a taxonomy, and there is nothing in it to travel.
+   Adding motion because the other two have it would be decoration — the thing
+   this project refuses everywhere else — so the test asserts CONSISTENCY (a
+   figure animates iff it has something to animate) rather than presence.
+
+   ⭐ THE NINE ARE A MEASUREMENT ALREADY IN THE PAINT. `furniture` draws them
+   from the archive, not from the rulebook: 2,134 draws across 39 games spread
+   over three seasons land on these nine coordinates and on nothing else, and
+   none arrives without one. So this figure adds no geometry at all — it RINGS
+   what the rink already paints and names the three kinds.
+
+   ⛔ AND IT CARRIES NO PERCENTAGES, though they exist and are tempting (end zone
+   68.6%, centre 19.5%, neutral 11.9%). This card sits in "The game itself — the
+   league's rules", and the learn page keeps that apart from "what we count" so
+   our measurements cannot borrow the rulebook's authority. The share of draws
+   that land in an end zone is ours; the fact that there are nine spots is the
+   league's. A figure in the rules half says the second and not the first — the
+   same wall the slot tint was taken off these diagrams for. */
+function faceoffs() {
+  const id = 'fo-';
+  const END = SX(69), NEU = SX(NEUTRAL_DOT_X), UP = SY(22), DOWN = SY(-22);
+  const ring = (x, y) => `<circle class="dgspot" cx="${f(x)}" cy="${f(y)}" r="4.2"/>`;
+  const spots = [];
+  for (const x of [END, SX(-69)]) for (const y of [UP, DOWN]) spots.push([x, y]);
+  for (const x of [NEU, SX(-NEUTRAL_DOT_X)]) for (const y of [UP, DOWN]) spots.push([x, y]);
+  spots.push([100, 42.5]);
+  return {
+    viewBox: '0 0 200 85',
+    label: 'Diagram: the nine painted face-off spots — four in each end, four in '
+         + 'the neutral zone, and one at centre ice.',
+    door: 'See a real face-off in our replay',
+    svg: defs(id)
+      + `<g class="dgpaint">${furniture(id, false)}${nets(id)}</g>`
+      + `<g class="dgplay">${keeper(SX(-NET_X))}${keeper(SX(NET_X))}`
+      + spots.map(([x, y]) => ring(x, y)).join('')
+      // ONE BADGE PER KIND, not per spot: the lesson is that there are three
+      // kinds of place, and nine of them.
+      /* EACH BADGE IN CLEAR ICE BESIDE THE GROUP IT NAMES, which took a look to
+         get right: ① sat on the end-zone circle's own stroke and under the
+         stamp, and ② sat between the two NEUTRAL spots where it read as labelling
+         them rather than centre ice. ① now sits in the gap between the two
+         end-zone circles, ② beside the centre spot, ③ under a neutral one. */
+      + badge(1, END, 42.5) + badge(2, 89, 42.5) + badge(3, NEU, DOWN + 9)
+      + stamp(SX(48), SY(32))
+      + `</g>`,
+    steps: [
+      '<b>In each end</b> &mdash; four spots, two on either side of the net. '
+      + 'An icing comes back to one of these, in the offending team&rsquo;s own end.',
+      '<b>At centre ice</b> &mdash; where a period starts, and where play restarts '
+      + 'after every goal.',
+      '<b>In the neutral zone</b> &mdash; four more, just outside each blue line. '
+      + 'A play called back out of the zone usually restarts here.',
+    ],
+    css: '',
+  };
+}
+
+const FIGURES = { faceoffs: faceoffs(), icing: icing(), offside: offside() };
 
 /* ── the artifact ───────────────────────────────────────────────────────── */
 const OUT = join(ROOT, 'data', 'learn-figures.json');

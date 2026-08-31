@@ -147,7 +147,19 @@ test('⭐ every token animates in from a place it is actually drawn', () => {
       .map(m => ({ x: +m[1], y: +m[2] }));
     const moves = [...fig.svg.matchAll(
       /class="dgmove (dgm-[a-z]+)"><circle[^>]*cx="(-?[\d.]+)" cy="(-?[\d.]+)"/g)];
-    assert.ok(moves.length, `the ${id} figure has no moving token`);
+    /* ⭐ A FIGURE MAY LEGITIMATELY NOT MOVE, and this used to forbid it. The
+       face-off figure is a MAP — nine painted spots and which rule sends you to
+       which — not a sequence, and animating it would be motion added because the
+       harness expected motion, which is decoration this project refuses
+       everywhere else. So the claim is CONSISTENCY rather than presence: a
+       figure declares an animation if and only if it has something to animate.
+       That still catches a figure silently losing its motion, which is what the
+       old assertion was really protecting, and the `checked` count at the bottom
+       keeps the whole test from going vacuous. */
+    assert.equal(/\{animation:/.test(fig.css), moves.length > 0,
+      moves.length
+        ? `the ${id} figure has ${moves.length} moving token(s) and declares no animation`
+        : `the ${id} figure declares an animation with nothing to move`);
     for (const [, cls, ex, ey] of moves) {
       const key = new RegExp(`\\.dgfig\\.\\w+ \\.${cls}\\{animation:(\\S+) `).exec(fig.css);
       assert.ok(key, `${id}/${cls} animates with no keyframes named`);
@@ -167,14 +179,18 @@ test('⭐ every token animates in from a place it is actually drawn', () => {
 test('⭐ the keyframes come to REST, so motion-off is the finished picture', () => {
   // The other half of the rule above: a loop that ends anywhere but translate(0,0)
   // leaves the reduced-motion frame disagreeing with the animation's own ending.
+  let rested = 0;
   for (const [id, fig] of Object.entries(figures)) {
     const ends = [...fig.css.matchAll(/100%\{transform:translate\(([^)]*)\)/g)];
-    assert.ok(ends.length, `the ${id} figure's keyframes never state a resting position`);
+    // A STATIC FIGURE HAS NOTHING TO REST — see the face-off map. The claim is
+    // about keyframes that exist, and the count below keeps it from going empty.
     for (const [, rest] of ends) {
+      rested++;
       assert.equal(rest.replace(/\s/g, ''), '0,0',
         `a ${id} token rests at translate(${rest}) — reduced motion would show it mid-story`);
     }
   }
+  assert.ok(rested >= 2, `only ${rested} resting positions across every figure`);
 });
 
 test('⭐ a figure opens on the FINISHED picture, not on frame zero', () => {
@@ -189,6 +205,7 @@ test('⭐ a figure opens on the FINISHED picture, not on frame zero', () => {
      `animation-fill-mode:backwards` would apply the 0% frame during the delay
      and put the bug straight back, so its ABSENCE is asserted, not just the
      delay's presence. */
+  let delayed = 0;
   for (const [id, fig] of Object.entries(figures)) {
     /* ⚠️ EVERY DECLARATION, NOT THE WELL-FORMED ONES. This matched
        `animation:(\S+) (\S+) (\S+) (\S+) (\S+)` -- five tokens -- so a rule that
@@ -197,8 +214,10 @@ test('⭐ a figure opens on the FINISHED picture, not on frame zero', () => {
        ran, and the mutation survived: an instrument that selects only the cases
        that already pass. The shorthand is now captured whole and read after. */
     const rules = [...fig.css.matchAll(/\{animation:([^}]+)\}/g)].map(m => m[1]);
-    assert.ok(rules.length, `the ${id} figure declares no animation shorthand`);
+    // Again: a figure with nothing to animate declares nothing, and that is not
+    // a defect. `delayed` below is what stops this from passing on silence.
     for (const shorthand of rules) {
+      delayed++;
       const times = shorthand.match(/(?:^|\s)[\d.]+m?s(?=\s|$)/g) || [];
       assert.equal(times.length, 2,
         `${id} declares ${times.length} time(s) in "animation:${shorthand}" — a duration and a `
@@ -208,6 +227,7 @@ test('⭐ a figure opens on the FINISHED picture, not on frame zero', () => {
     assert.doesNotMatch(fig.css, /animation-fill-mode|\bbackwards\b|\bboth\b/,
       `${id} sets a fill-mode, which paints frame zero during the delay and undoes the fix`);
   }
+  assert.ok(delayed >= 2, `only ${delayed} delayed animations across every figure`);
 });
 
 test('the loop hides its own wrap, so a reset does not read as a glitch', () => {
@@ -353,6 +373,42 @@ test('the offside words say the LIMIT, not the rule the picture already draws', 
     'the words repeat what the figure and its steps both already say');
 });
 
+test('⭐ a ringed spot is one the rink actually paints, and face-offs rings them ALL', () => {
+  /* ⚠️ FOUND BY A MUTATION: deleting one of the nine rings survived the whole
+     suite. The face-offs card's entire claim is "nine spots on the ice and the
+     rule picks one", and nothing checked that the figure showed nine.
+
+     ⭐ BUT THE TEST IS NOT `=== 9`. The nine are a MEASUREMENT living in
+     `furniture` — 2,134 draws across 39 games land on those coordinates and on
+     nothing else — so the expectation is READ FROM THE PAINT. A magic 9 here
+     would be a constant that stops agreeing with the rink the day the league
+     moves a dot, and it would say nothing about whether the rings are in the
+     right PLACES.
+
+     TWO CLAIMS, and the first is universal: a ring must sit on a painted spot in
+     ANY figure — icing's restart dot and offside's are real spots too, and a
+     ring on blank ice reads as "something happened at this arbitrary point",
+     which is the exact sentence rinkart.js uses about why the spots are drawn. */
+  const paint = furniture('', false);
+  const spots = [...paint.matchAll(/<circle class="fdot(?: ctr)?" cx="([\d.]+)" cy="([\d.]+)"/g)]
+    .map(m => `${+m[1]},${+m[2]}`);
+  assert.equal(spots.length, 9, `the rink paints ${spots.length} face-off spots, not nine`);
+
+  for (const [id, fig] of Object.entries(figures)) {
+    const rings = [...fig.svg.matchAll(/<circle class="dgspot" cx="([-\d.]+)" cy="([-\d.]+)"/g)]
+      .map(m => `${+m[1]},${+m[2]}`);
+    for (const r of rings) {
+      assert.ok(spots.includes(r),
+        `the ${id} figure rings (${r}), where the rink paints no face-off spot`);
+    }
+  }
+  // AND THE FACE-OFF MAP RINGS EVERY ONE, because its subject is the whole set.
+  const fo = [...figures.faceoffs.svg.matchAll(/<circle class="dgspot" cx="([-\d.]+)" cy="([-\d.]+)"/g)]
+    .map(m => `${+m[1]},${+m[2]}`);
+  assert.deepEqual([...fo].sort(), [...spots].sort(),
+    'the face-off figure does not ring exactly the spots the rink paints');
+});
+
 test('⭐ icing does not crop, because the rule IS the length of the ice', () => {
   /* THE CROP FOLLOWS THE RULE, which is Kevin's ruling: "no preference for full
      rink, 1/2 rink or whatever, as long as the teaching surface is sufficient to
@@ -386,8 +442,9 @@ test('⭐ a lit line borrows the colour of the line it explains', () => {
   const BLUE_X = [SX(25), SX(-25)].map(v => +v.toFixed(2));
   let checked = 0;
   for (const [id, fig] of Object.entries(figures)) {
+    // THE FACE-OFF MAP LIGHTS NONE, and correctly: it is about nine SPOTS, and
+    // no line on the rink is what selects them. `checked` is the non-vacuity half.
     const lit = [...fig.svg.matchAll(/<line class="dghot (\w+)" x1="([-\d.]+)"/g)];
-    assert.ok(lit.length, `the ${id} figure lights no line at all`);
     for (const [, cls, x] of lit) {
       const want = BLUE_X.includes(+x) ? 'blue' : 'red';
       assert.equal(cls, want,
