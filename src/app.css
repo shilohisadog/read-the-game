@@ -347,7 +347,18 @@
    so THE WHOLE RINK IS ALWAYS DRAWN and only its size varies. The frame's ratio
    now decides how much empty ice sits beside it, never whether a goal line is
    on screen. */
-#rg.preview{padding:0;min-height:0;height:100vh;overflow:hidden}
+/* ⚠️ AND `--lboxh` GOES TO ZERO, because the box it reserves room for is HIDDEN
+   here (`#rg.preview .lbox`, in the list above). Kevin, on the front page: "the
+   icing caption pill displays in the middle of the rink, was that intentional?"
+   It was not. `.caption` sits `--lboxh + --rinkpad + 6px` off the bottom of the
+   rinkbox -- 136px, measured, IDENTICAL in both modes -- which on the full page
+   is the empty band under the ice where the layer box lives, and on the hero is
+   136px of reserved space for a box that is not there. The pill floated up into
+   the rink by exactly the height of the thing nobody drew.
+   ⭐ THIS IS THE SCAR ALREADY IN THE NOTES: *when you hide a container,
+   enumerate what was inside it.* Hiding `.lbox` was one line; the variable that
+   reserved its space was somewhere else entirely and kept its value. */
+#rg.preview{--lboxh:0px;padding:0;min-height:0;height:100vh;overflow:hidden}
 #rg.preview .wrap{max-width:none;padding:0;height:100%;
  display:flex;flex-direction:column;min-height:0}
 #rg.preview .board{margin:0 0 4px;flex:0 0 auto}

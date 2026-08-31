@@ -269,6 +269,29 @@ jobs:
           <!doctype html><html><head><meta charset="utf-8"><title>pending</title></head>
           <body style="margin:0">
           <iframe id="f" src="app.html" style="width:1100px;height:900px;border:0"></iframe>
+          <!-- ⭐ THE HERO IS ITS OWN MODE AND HAD NO INSTRUMENT. Kevin, on the
+               front page: "the icing caption pill displays in the middle of the
+               rink, was that intentional?" It was not: `.caption` sits
+               `--lboxh + --rinkpad + 6px` off the bottom of the rink box, and the
+               preview HIDES the layer box while leaving --lboxh at 120px -- so the
+               pill floated 136px up over a 129px-tall rink. Measured before the
+               fix: 95.8% of the way up the ice. After: 3.1%.
+               THE GUARD BELOW COULD NEVER HAVE SEEN IT. "the pill clears the layer
+               box" is a claim about the mode that HAS a layer box; the preview has
+               none, so the axis was untested rather than passing. Same width as the
+               real hero on a phone: 390 wide at aspect-ratio 200/140. -->
+          <iframe id="pv" src="app.html?preview=1" style="width:390px;height:273px;border:0"></iframe>
+          <!-- ⚠️ AND THE DESKTOP HERO, WHICH IS THE WIDTH IT WAS REPORTED AT.
+               The same 136px offset reads completely differently at the two
+               sizes, because the hero's ice is 129px tall on a phone and 363px
+               on a laptop: measured before the fix, 95.8% up the rink at 390 and
+               34.2% at 900. I instrumented the width I happened to test first and
+               described the bug from it, which is not the width Kevin was looking
+               at. One frame would have caught THIS regression and a one-width
+               guard is a thin guard when the quantity is a fraction. 900x527 is
+               the real hero at a 1100px page: `.heroframe` measures 900 wide and
+               the iframe is aspect-ratio 200/117. -->
+          <iframe id="pvw" src="app.html?preview=1" style="width:900px;height:527px;border:0"></iframe>
           <script>
           setTimeout(function () {
             var d = document.getElementById('f').contentDocument;
@@ -346,9 +369,29 @@ jobs:
             var clear = Math.round(bx.top - cp.bottom);
             f.style.width = '1100px';
 
+            /* THE HERO'S PILL, AS A FRACTION OF THE ICE IT SITS ON. 0 means the
+               bottom edge; anything high means it is printing over the rink. A
+               fraction rather than a pixel count because the hero's ice is a
+               different size from the full page's, and a threshold in pixels
+               would be a constant nobody could check. */
+            var pd = document.getElementById('pv').contentDocument;
+            var pcap = pd.querySelector('#rg .caption');
+            var pice = pd.querySelector('#rg .rinkbox svg').getBoundingClientRect();
+            pcap.classList.add('on');
+            pcap.textContent = 'probe';
+            var pr = pcap.getBoundingClientRect();
+            var upRink = Math.round(((pice.bottom - pr.bottom) / pice.height) * 100);
+            var wd = document.getElementById('pvw').contentDocument;
+            var wcap = wd.querySelector('#rg .caption');
+            var wice = wd.querySelector('#rg .rinkbox svg').getBoundingClientRect();
+            wcap.classList.add('on'); wcap.textContent = 'probe';
+            var wr = wcap.getBoundingClientRect();
+            var upRinkW = Math.round(((wice.bottom - wr.bottom) / wice.height) * 100);
+
             document.title = 'ICE ' + shut + ' ' + open + ' ' + rings + ' ' + text
                            + ' BOX ' + clipped + ' ' + Object.keys(heights).length
                            + ' ' + clear
+                           + ' HERO ' + upRink + ' ' + upRinkW
                            + ' MOVED ' + moved
                            + ' VIS ' + paint('.att.a') + ' HOST ' + paint('.att.h');
           }, 4000);
@@ -360,8 +403,8 @@ jobs:
           dom=$(google-chrome --headless --no-sandbox --disable-gpu \
                   --virtual-time-budget=25000 --dump-dom \
                   "http://localhost:8098/probe.html" 2>/dev/null)
-          read -r _ shut open rings text _ clipped heights clear _ moved _ vis _ host \
-            <<<"$(echo "$dom" | grep -o 'ICE [0-9 ]* BOX [0-9]* [0-9]* -\?[0-9]* MOVED [0-9]* VIS [^ ]* HOST [^ <]*' | head -1)"
+          read -r _ shut open rings text _ clipped heights clear _ upRink upRinkW _ moved _ vis _ host \
+            <<<"$(echo "$dom" | grep -o 'ICE [0-9 ]* BOX [0-9]* [0-9]* -\?[0-9]* HERO -\?[0-9]* -\?[0-9]* MOVED [0-9]* VIS [^ ]* HOST [^ <]*' | head -1)"
           if [ -z "$text" ]; then
             echo "::error::the probe never reported — the app did not run in the frame"
             echo "$dom" | head -20; exit 1
@@ -386,6 +429,18 @@ jobs:
           [ "$clipped" -eq 0 ] || { echo "::error::$clipped of six layers has its sentence CLIPPED by the box's fixed height — a box that hides half a sentence about the numbers beside it is worse than a taller box"; fail=1; }
           [ "$heights" -eq 1 ] || { echo "::error::the box takes $heights different heights across the six layers — Kevin's requirement is that the graphics do not adjust based on which layer is selected"; fail=1; }
           [ "$clear" -ge 0 ] || { echo "::error::the caption pill overlaps the layer box by ${clear#-}px — the offset has lost a term"; fail=1; }
+
+          # ⭐ AND THE SAME PILL IN THE HERO, WHERE THERE IS NO BOX TO CLEAR.
+          # 25% is not a tuned threshold: the pill belongs in the band under the
+          # ice, the ice is 129px tall on the hero, and one pill is ~30px — so
+          # anything above a quarter of the rink is printing over hockey. It read
+          # 96 before the fix and 3 after, so the bound is nowhere near either.
+          echo "  hero pill          : ${upRink}% up the ice at 390, ${upRinkW}% at 900"
+          for w in "390 $upRink" "900 $upRinkW"; do
+            set -- $w
+            [ "$2" -le 25 ] || { echo "::error::at ${1}px the hero's caption pill sits $2% up the rink — it is printing over the ice, because a term in its offset reserves room for a box the preview hides"; fail=1; }
+          done
+
 
           # The visitor wears white and the host wears its colour. Asserted as a
           # PAIR: "the visitor is white" is also satisfied by a page that paints
