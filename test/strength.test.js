@@ -16,7 +16,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { conservation } from '../src/lib/layer.js';
-import { situation, isEven, whyNotEven, standing, windows, KNOWN_SITUATIONS, EVEN, POWER_PLAY, EMPTY_NET } from '../src/lib/strength.js';
+import { situation, isEven, whyNotEven, standing, penaltyKilled, windows, KNOWN_SITUATIONS, EVEN, POWER_PLAY, EMPTY_NET } from '../src/lib/strength.js';
 import { corsi } from '../src/lib/layers/corsi.js';
 import { goaltending } from '../src/lib/layers/goaltending.js';
 import { danger } from '../src/lib/layers/danger.js';
@@ -285,6 +285,84 @@ test('⭐ a penalty DURING a power play darkens the badge — it is 4-on-4, not 
     assert.equal(standing(next.sit, base), null,
       `P${e.per} ${e.rem}: the badge stayed lit through a penalty that cancelled the advantage`);
   }
+});
+
+/* ═══ `penaltyKilled` — the three refusals, on frames the fixture cannot show ═══
+ *
+ * ⭐ WHY THESE ARE SYNTHETIC AND THE OTHERS ARE NOT. The reference game contains
+ * eight power-play-to-even transitions and **zero** across a period boundary, so
+ * that guard is unreachable from `rich.json` — a mutation deleting it survived a
+ * green suite of 857. The archive has 4 in 327, which is exactly the rate at
+ * which a real fixture will not carry one. Constructing the condition is the
+ * only way to test a branch the data will not reach; every OTHER claim about
+ * this rule is made against the real game.
+ *
+ * ⭐ AND EACH REFUSAL IS PAIRED WITH THE SAME SHAPE THAT SUCCEEDS. A test that
+ * only ever asserts "no kill" is satisfied by a function that never returns one.
+ */
+const K = { homeId: 7, awayId: 30, homeAb: 'BUF', awayAb: 'MIN' };
+//  sit = [awayGoalie][awaySkaters][homeSkaters][homeGoalie]; `1451` is BUF up
+//  5-on-4, so MIN (the away club, id 30) is the one killing it.
+const frame = (per, s, sit) => ({ per, s, sit, type: 'faceoff' });
+const stint = (end, endedBy) => ({ team: 30, start: 0, end, endedBy, min: 2 });
+
+test('⭐ a penalty that runs out IS a kill — the positive control for the three below', () => {
+  const got = penaltyKilled([frame(1, 100, '1451'), frame(1, 110, '1551')],
+    [stint(105, 'time')], K);
+  assert.equal(got.length, 1, 'the shape every refusal below is a variation of');
+  assert.deepEqual(got[0], { at: 1, killedBy: 30, aside: 5 });
+});
+
+test('⭐ no stint in the box record is no claim — the strength code is not enough', () => {
+  // 7 of 327 archive endings look like a kill by the situation code while
+  // `box.js` has nobody of that club in the box: a bench minor served by a
+  // player the feed does not name, a delayed penalty, a record that disagrees
+  // with itself. The code alone would let us announce a kill with no penalty
+  // behind it, which is a sentence about a thing that may not have happened.
+  assert.deepEqual(penaltyKilled([frame(1, 100, '1451'), frame(1, 110, '1551')], [], K), [],
+    'a kill was claimed with an empty box record');
+  assert.deepEqual(penaltyKilled([frame(1, 100, '1451'), frame(1, 110, '1551')],
+    [{ team: 7, start: 0, end: 105, endedBy: 'time', min: 2 }], K), [],
+    'the OTHER club’s penalty was read as this club’s kill');
+});
+
+test('⭐ an INTERMISSION is not a kill — a penalty can carry across it', () => {
+  // `windows()` says so in its own header: one runs from P2 00:36 to P3 18:43 in
+  // the reference game. Nothing expired at the horn, so nothing was killed.
+  assert.deepEqual(penaltyKilled([frame(1, 1190, '1451'), frame(2, 1200, '1551')],
+    [stint(1195, 'time')], K), [], 'the period boundary was captioned as a kill');
+});
+
+test('⭐ five-on-four going to FOUR-ON-FOUR is a second penalty, not a kill', () => {
+  // 8.0% of power-play endings in the archive. The advantage is gone and the
+  // club that was short is no better off — they did not get their skater back,
+  // the other club lost one. Saying "penalty killed" would credit them for it.
+  assert.deepEqual(penaltyKilled([frame(1, 100, '1451'), frame(1, 110, '1441')],
+    [stint(105, 'time')], K), [], 'a cancelled advantage was captioned as a kill');
+});
+
+test('⭐ a power play SCORED ON is not a kill, and the stint is what says so', () => {
+  // ⚠️ THIS BRANCH WAS UNEXERCISED AND A MUTATION DISABLING IT SURVIVED. In the
+  // reference game both goal-ended penalties sit at a second the goal SHARES
+  // with its restarting faceoff (1170 and 3147), and the window was open at the
+  // lower end — so `ended` came back empty and the transition was refused by
+  // "no stint ended here" rather than by `endedBy`. Right answer, wrong reason.
+  // The window is closed at both ends now; this pins the guard that does the
+  // work, on the identical frames as the control above.
+  assert.deepEqual(penaltyKilled([frame(1, 100, '1451'), frame(1, 110, '1551')],
+    [stint(105, 'goal')], K), [], 'a power-play goal was captioned as a kill');
+  // AND THE SAME-SECOND CASE THE REFERENCE GAME ACTUALLY CONTAINS.
+  assert.deepEqual(penaltyKilled([frame(1, 1170, '1541'), frame(1, 1170, '1551')],
+    [{ team: 7, start: 1114, end: 1170, endedBy: 'goal', min: 2 }], K), [],
+    'two frames on one second hide the stint, so the goal reads as an expiry');
+});
+
+test('⭐ and with the same two frames one second apart, that one IS a kill', () => {
+  // The pair, so neither result comes from the frames rather than the rule.
+  const got = penaltyKilled([frame(1, 1170, '1541'), frame(1, 1170, '1551')],
+    [{ team: 7, start: 1114, end: 1170, endedBy: 'time', min: 2 }], K);
+  assert.equal(got.length, 1, 'the same frames with a time-ended stint are a kill');
+  assert.equal(got[0].killedBy, 7, 'BUF were the ones short at 1541');
 });
 
 for (const layer of LAYERS) {

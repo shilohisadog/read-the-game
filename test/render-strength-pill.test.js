@@ -33,6 +33,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { app, PAGE_CSS, boot, rich } from './helpers/page.js';
+import { stints } from '../src/lib/box.js';
+import { readFileSync } from 'node:fs';
 
 const HOME = rich.teams.home.ab;   // BUF
 const AWAY = rich.teams.away.ab;   // MIN
@@ -172,6 +174,157 @@ test('an empty net is badged as an empty net, and names the club that pulled', (
   assert.equal(p.textContent, 'net empty');
   assert.equal(p.dataset.ab, AWAY, 'code[0]=0 is the away net');
   assert.ok(p.className.split(/\s+/).includes('a'));
+});
+
+/* ═══ THE PENALTY KILL — the moment the feed does not record ═══
+ *
+ * Kevin, watching a replay event by event: *"I was wondering why don't we say
+ * when the penalty expires."* A penalty running out produces no play, so there
+ * is no event to hang a caption on; the situation code simply changes on the
+ * next thing that happens. Across 60 archive games, 78.6% of the 308 power
+ * plays that end, end this way, and the page said nothing about any of them.
+ *
+ * ⛔ EVERY EXPECTATION BELOW COMES FROM `box.js`'s STINT TABLE, WHICH NEVER
+ * READS `sit`. The reference game's eight penalties, hand-checked:
+ *
+ *   MIN Eriksson Ek  tripping        25 → 145   time   → killed, P1 17:17
+ *   BUF Peterka      holding        785 → 905   time   → killed, P1 04:48
+ *   BUF Johnson      cross-checking 1114 → 1170 GOAL   → refused
+ *   MIN Bogosian     kneeing       1452 → 1572  time   → refused, BUF still serving
+ *   BUF Mittelstadt  double-minor  1497 → 1737  time   → killed, P2 10:41
+ *   MIN Kaprizov     interference  2364 → 2484  time   → killed, P3 18:09
+ *   MIN Faber        holding       2967 → 3087  time   → refused, BUF still serving
+ *   BUF Greenway     interference  3050 → 3147  GOAL   → refused
+ */
+const KILL_MOMENTS = [[1, '17:17'], [1, '04:48'], [2, '10:41'], [3, '18:09']];
+
+test('⭐ the caption names the club that was SHORT — the opposite of every other one', () => {
+  // Every other caption on this page is about the event's own team: the scorer,
+  // the offender, the shooter. This one is about the club that killed it, which
+  // by definition does not own the frame it lands on — a shot, a faceoff, a hit
+  // belonging to whoever happened to be playing. Reusing `e.own` would have
+  // credited the kill to the club that had just been on the power play.
+  // ⚠️ STEPPED ONTO, NOT DRAGGED THROUGH. Captions fire only on a MOMENT — the
+  // whole subject of "the difference between arriving at a frame and seeing a
+  // moment again" in render-transport.test.js. Scrubbing with `oninput` found
+  // zero kills on a page that renders four, because a drag is deliberately
+  // silent. The kill is a caption and inherits that, which is correct.
+  const a = boot();
+  const seen = [];
+  let last = a.$('caption').innerHTML;
+  a.$('scrub').oninput({ target: { value: '0' } });
+  for (let k = 0; k < +a.$('scrub').max; k++) {
+    a.$('fwd').click();
+    const cap = a.$('caption').innerHTML;
+    if (cap !== last && /🛡 Penalty killed/.test(cap)) seen.push(cap);
+    last = cap;
+  }
+  assert.equal(seen.length, KILL_MOMENTS.length, `found ${seen.length} kills`);
+  // MIN killed two and BUF killed two, per the table above — so a caption that
+  // always named one club, or always named the club on the advantage, fails.
+  const tags = seen.map(h => /<span class="tag (\w)">(\w+)<\/span>/.exec(h).slice(1));
+  assert.deepEqual(tags.map(t => t[1]), ['MIN', 'BUF', 'BUF', 'MIN'],
+    'the kills are credited to the wrong clubs, or in the wrong order');
+  // AND THE COLOUR FOLLOWS THE CLUB, not the frame's own team.
+  for (const [side, ab] of tags)
+    assert.equal(side, ab === rich.teams.home.ab ? 'h' : 'a', `${ab} wearing side "${side}"`);
+});
+
+test('⭐ "a side" is read from the feed, never asserted to be five', () => {
+  const a = boot();
+  // STEPPED ONTO — a drag is silent, see the note in the test above.
+  a.$('scrub').oninput({ target: { value: '8' } });
+  a.$('fwd').click();                                   // frame 9, P1 17:17, MIN killed it
+  const h = a.$('caption').innerHTML;
+  assert.match(h, /🛡 Penalty killed/);
+  // The reference game returns to 1551 every time, so the rendered number is 5 —
+  // but it must come from the CODE. `sit[1]` and `sit[2]` are the skater counts.
+  const SKIP = new Set(['stoppage', 'period-start', 'period-end', 'game-end', 'delayed-penalty']);
+  const EV = rich.events.filter(e => !SKIP.has(e.type));
+  assert.equal(EV[9].sit, '1551', 'the fixture frame moved');
+  assert.match(h, new RegExp(`· ${EV[9].sit[2]} a side`),
+    'the caption does not quote the skater count the feed reports');
+});
+
+test('⭐ a power play SCORED ON is not a kill, and box.js is what knows', () => {
+  // Johnson's cross-check and Greenway's interference both die to a goal. A
+  // "no goal within N frames" test would need an N with no source in the data —
+  // and would still be wrong, because a goal does not end a MAJOR. Over 60
+  // archive games the two approaches disagree on 15 power plays, in both
+  // directions, and this rule is right in both.
+  const ctx = { roster: rich.roster, homeId: rich.teams.home.id, awayId: rich.teams.away.id };
+  const ST = stints(rich.events, ctx);
+  const byGoal = ST.filter(s => s.endedBy === 'goal');
+  assert.equal(byGoal.length, 2, 'the reference game no longer contains a penalty killed by a goal');
+
+  /* ⚠️ THIS TEST WAS VACUOUS ON ITS FIRST WRITING AND PASSED. It drove the page
+     with `oninput` and asserted the caption did NOT say "Penalty killed" — but a
+     drag never fires a caption at all, so the assertion held on a page that
+     renders nothing. It could not have failed. The walk below STEPS, which is
+     the only way a caption appears, and every kill it finds is then matched to
+     the stint that produced it — so the claim is positive (each kill has a
+     time-ended cause) rather than an absence that silence satisfies. */
+  const SKIP = new Set(['stoppage', 'period-start', 'period-end', 'game-end', 'delayed-penalty']);
+  const EV = rich.events.filter(e => !SKIP.has(e.type));
+  const a = boot();
+  const found = [];
+  let last = a.$('caption').innerHTML;
+  a.$('scrub').oninput({ target: { value: '0' } });
+  for (let k = 0; k < +a.$('scrub').max; k++) {
+    a.$('fwd').click();
+    const cap = a.$('caption').innerHTML;
+    if (cap !== last && /🛡 Penalty killed/.test(cap)) found.push(+a.$('scrub').value);
+    last = cap;
+  }
+  assert.equal(found.length, KILL_MOMENTS.length,
+    `the walk found ${found.length} kills — if it found none this test proves nothing`);
+
+  for (const n of found) {
+    // The stint this kill claims: the same club's, ending at or before this
+    // frame and after the one before it.
+    const cause = ST.filter(s => s.end > EV[n - 1].s && s.end <= EV[n].s);
+    assert.equal(cause.length, 1, `P${EV[n].per} ${EV[n].rem}: ${cause.length} stints could have caused this`);
+    assert.equal(cause[0].endedBy, 'time',
+      `P${EV[n].per} ${EV[n].rem}: a power play that was SCORED ON was captioned as killed`);
+  }
+  // AND NEITHER GOAL-ENDED PENALTY PRODUCED ONE.
+  for (const s of byGoal)
+    assert.ok(!found.some(n => s.end > EV[n - 1].s && s.end <= EV[n].s),
+      `the penalty ended by a goal at ${s.end}s was captioned as a kill`);
+});
+
+test('⭐ the kill outranks the slot shot, on a game where that actually happens', () => {
+  /* ⚠️ THE REFERENCE GAME CANNOT TEST THIS AND A MUTATION PROVED IT. Swapping
+     the two branches so the slot shot wins survived a green suite of 861,
+     because none of `rich.json`'s four kills lands on a high-danger shot. That
+     is luck: across 60 archive games **14.8% of kills do** — about one every
+     two games with the slot layer on. So the check moves to a fixture that
+     contains the collision rather than staying where it is comfortable.
+     `2025030214` is already in the repo for the penalty clock; its kill at
+     frame 81 is also a shot from the slot. */
+  const KILLED_GAME = JSON.parse(readFileSync(
+    new URL('fixtures/extracts/2025030214.json', import.meta.url), 'utf8'));
+  const a = boot(KILLED_GAME, null, '?layer=slot');
+  a.$('scrub').oninput({ target: { value: '80' } });
+  a.$('fwd').click();
+  const h = a.$('caption').innerHTML;
+  assert.match(h, /🛡 Penalty killed/,
+    'the slot shot took the frame and the penalty kill went unsaid');
+  assert.doesNotMatch(h, /Shot from the slot/, 'both captions rendered at once');
+});
+
+test('⭐ a kill is a captioned frame, so the pace gives it room', () => {
+  // THE SEAM. `captioned` is the one predicate `render` and `dwell` share, and
+  // that shared-ness is what makes a caption with no pause behind it impossible.
+  // A caption wired into `render` alone would appear and vanish inside an
+  // ordinary frame — the same defect docs/event-timing.md exists about, running
+  // backwards. This asserts the predicate itself carries the kill.
+  assert.match(app, /function captioned\(e\)\{return[^}]*KILLED\.has\(e\)/,
+    'the kill is captioned by the renderer but invisible to `dwell`');
+  // AND IT IS ONE MAP, COMPUTED ONCE — a per-frame recomputation would re-derive
+  // every stint on all 269 frames.
+  assert.match(app, /const KILLED=new Map\(penaltyKilled\(EV,PBOX,CTX\)/,
+    'the kills are no longer derived once from the game');
 });
 
 test('⭐ the badge lags the penalty by one frame, and the page says why', () => {

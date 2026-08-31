@@ -133,6 +133,98 @@ export function standing(code, ctx) {
 }
 
 /**
+ * ⭐ THE FRAMES AT WHICH A PENALTY WAS KILLED — the moment the feed does not
+ * record.
+ *
+ * Kevin, watching a replay event by event: *"I was wondering why don't we say
+ * when the penalty expires."* Measured across 60 archive games: **308 power
+ * plays end, and 78.6% of them end because the penalty simply ran out — with no
+ * event in the feed and nothing on the page saying so.** A penalty expiring
+ * produces no play; the situation code just changes on the next recorded event.
+ *
+ * ⭐ `endedBy` IS WHY THIS TAKES THE STINTS RATHER THAN LOOKING FOR A GOAL.
+ * `box.js` already derives early release — a minor dies when the other team
+ * scores on it — and it is the tested rule for the exact distinction this
+ * sentence makes: KILLED versus SCORED ON. The alternative was "no goal within
+ * N frames", and N would be a constant with no source in the data. (For the
+ * record, it would also have been wrong: the power-play goal sits one frame
+ * before the change 19.3% of the time, on the same frame 1.5%, and three frames
+ * back once in 327.)
+ *
+ * ⛔ IT IS DELIBERATELY NOT BUILT ON `windows()`. That answers "when was play
+ * not even", which is a question about the whole interval; this one is about a
+ * single boundary and the two frames either side of it. Bending one into the
+ * other would give both a shape that suits neither.
+ *
+ * THE THREE REFUSALS, each a case where the sentence would be false:
+ *   an INTERMISSION between the two frames — a penalty can carry across it, so
+ *     nothing expired (4 of 327);
+ *   the short side did NOT gain a skater — 5-on-4 going to 4-on-4 is a SECOND
+ *     penalty cancelling the advantage, not a kill (26 of 327, 8.0%);
+ *   the stint ended by a GOAL — the power play was scored on, and the goal
+ *     caption owns that frame anyway (69 of 327, 21.1%).
+ *
+ * ⭐ VALIDATED AGAINST A SECOND, INDEPENDENT PATH. Over 60 archive games this
+ * finds 205 kills; a "no goal within three frames" heuristic finds 208, and the
+ * two disagree on 15 — in BOTH directions, which is what makes the comparison
+ * worth anything. Nine are the heuristic announcing a kill while somebody is
+ * still in the box (coincidental majors: two men off, five a side on the ice);
+ * six are a goal by the club on the advantage that did NOT end the penalty,
+ * because it was a major. This rule is right in both directions, and it is right
+ * because `box.js` already knew.
+ *
+ * @param {Array} events   the PLAYABLE timeline; `at` indexes into it
+ * @param {Array} boxStints  `box.js::stints`, computed over ALL events
+ * @returns {Array<{at, killedBy, aside}>} `killedBy` is the club that was short;
+ *   `aside` is the skaters each side now has, READ from the code rather than
+ *   assumed to be five, so the sentence cannot outlive the situations we know.
+ *
+ * ⚠️ AND `aside` IS UNTESTABLE TODAY — A WEAK MUTATION, NOT A HOLE, WRITTEN DOWN
+ * SO NOBODY HUNTS FOR THE TEST. Replacing `now.home` with the literal `5`
+ * survives the whole suite, and no test could kill it: every power play in
+ * `KNOWN_SITUATIONS` is five-on-four, so a kill always lands on five-on-five and
+ * the two are behaviourally identical on every frame the archive contains. It is
+ * read from the code anyway because the alternative is a constant that becomes
+ * a lie the day `KNOWN_SITUATIONS` learns four-on-three — which is the same
+ * defence `situation()` itself is built on.
+ */
+export function penaltyKilled(events, boxStints, ctx) {
+  const out = [];
+  for (let i = 1; i < events.length; i++) {
+    const was = situation(events[i - 1].sit, ctx), now = situation(events[i].sit, ctx);
+    if (was == null || now == null) continue;
+    if (was.kind !== POWER_PLAY || now.kind !== EVEN) continue;
+    if (events[i].per !== events[i - 1].per) continue;
+
+    // WHO WAS KILLING IT: the club that did NOT have the extra skater.
+    const shortId = was.advantage === ctx.homeId ? ctx.awayId : ctx.homeId;
+    const isHome = shortId === ctx.homeId;
+    // ⭐ A RELATIONSHIP, NOT THE CODE `1551`. What makes this a kill is that the
+    // short side GAINED a skater — their penalised player came back. Pinning the
+    // literal code would state the same thing in a form that says nothing about
+    // why, and would quietly exclude any future strength the league invents.
+    if (!((isHome ? now.home : now.away) > (isHome ? was.home : was.away))) continue;
+
+    /* ⚠️ THE WINDOW IS CLOSED AT BOTH ENDS, AND A MUTATION IS WHY. It was
+       `s.end > events[i-1].s`, which makes the window EMPTY whenever two
+       consecutive frames share a second — and that is precisely what a goal and
+       its restarting faceoff do. In the reference game both penalties killed by
+       a goal sit at 1170 and 3147 with the goal and the faceoff on the same
+       second, so `ended` came back empty and the transition was refused by "no
+       stint ended here" instead of by `endedBy === 'goal'`. Right answer, wrong
+       reason — and it left the guard that does the real work unexercised, which
+       is how a mutation disabling it survived a green suite. `>=` is safe: the
+       previous frame's own code still says the club was short, so a stint
+       ending on that second had not yet been reflected. */
+    const ended = boxStints.filter(s => s.team === shortId
+      && s.start <= events[i - 1].s && s.end >= events[i - 1].s && s.end <= events[i].s);
+    if (!ended.length || !ended.every(s => s.endedBy === 'time')) continue;
+    out.push({ at: i, killedBy: shortId, aside: now.home });
+  }
+  return out;
+}
+
+/**
  * The windows in which play was not even strength, for marking a timeline.
  *
  * A penalty can carry across the intermission — in the reference game one runs

@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-eQhZQ3Grtdtj1fubLlmSicg47lcRvDbvssXEXGOIzQE=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-MZR7iXLaIgLGWMyhT0yZSJ8ieTNEpbKBM5XoyH6zBt0='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-mXoTd8TPeb74g5eXbEYy4qt0G/wX0AAzHeIiiNsj2Xw=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-MZR7iXLaIgLGWMyhT0yZSJ8ieTNEpbKBM5XoyH6zBt0='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">Watch a game</a><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see</a><a href="/workshop.html">Workshop</a></nav></header>
@@ -2689,6 +2689,98 @@ function standing(code, ctx) {
   return { kind: s.kind, id, ab, own, opp,
            said: s.kind === EMPTY_NET ? 'net empty' : 'power play',
            count: `${own} on ${opp}` };
+}
+
+/**
+ * ⭐ THE FRAMES AT WHICH A PENALTY WAS KILLED — the moment the feed does not
+ * record.
+ *
+ * Kevin, watching a replay event by event: *"I was wondering why don't we say
+ * when the penalty expires."* Measured across 60 archive games: **308 power
+ * plays end, and 78.6% of them end because the penalty simply ran out — with no
+ * event in the feed and nothing on the page saying so.** A penalty expiring
+ * produces no play; the situation code just changes on the next recorded event.
+ *
+ * ⭐ `endedBy` IS WHY THIS TAKES THE STINTS RATHER THAN LOOKING FOR A GOAL.
+ * `box.js` already derives early release — a minor dies when the other team
+ * scores on it — and it is the tested rule for the exact distinction this
+ * sentence makes: KILLED versus SCORED ON. The alternative was "no goal within
+ * N frames", and N would be a constant with no source in the data. (For the
+ * record, it would also have been wrong: the power-play goal sits one frame
+ * before the change 19.3% of the time, on the same frame 1.5%, and three frames
+ * back once in 327.)
+ *
+ * ⛔ IT IS DELIBERATELY NOT BUILT ON `windows()`. That answers "when was play
+ * not even", which is a question about the whole interval; this one is about a
+ * single boundary and the two frames either side of it. Bending one into the
+ * other would give both a shape that suits neither.
+ *
+ * THE THREE REFUSALS, each a case where the sentence would be false:
+ *   an INTERMISSION between the two frames — a penalty can carry across it, so
+ *     nothing expired (4 of 327);
+ *   the short side did NOT gain a skater — 5-on-4 going to 4-on-4 is a SECOND
+ *     penalty cancelling the advantage, not a kill (26 of 327, 8.0%);
+ *   the stint ended by a GOAL — the power play was scored on, and the goal
+ *     caption owns that frame anyway (69 of 327, 21.1%).
+ *
+ * ⭐ VALIDATED AGAINST A SECOND, INDEPENDENT PATH. Over 60 archive games this
+ * finds 205 kills; a "no goal within three frames" heuristic finds 208, and the
+ * two disagree on 15 — in BOTH directions, which is what makes the comparison
+ * worth anything. Nine are the heuristic announcing a kill while somebody is
+ * still in the box (coincidental majors: two men off, five a side on the ice);
+ * six are a goal by the club on the advantage that did NOT end the penalty,
+ * because it was a major. This rule is right in both directions, and it is right
+ * because `box.js` already knew.
+ *
+ * @param {Array} events   the PLAYABLE timeline; `at` indexes into it
+ * @param {Array} boxStints  `box.js::stints`, computed over ALL events
+ * @returns {Array<{at, killedBy, aside}>} `killedBy` is the club that was short;
+ *   `aside` is the skaters each side now has, READ from the code rather than
+ *   assumed to be five, so the sentence cannot outlive the situations we know.
+ *
+ * ⚠️ AND `aside` IS UNTESTABLE TODAY — A WEAK MUTATION, NOT A HOLE, WRITTEN DOWN
+ * SO NOBODY HUNTS FOR THE TEST. Replacing `now.home` with the literal `5`
+ * survives the whole suite, and no test could kill it: every power play in
+ * `KNOWN_SITUATIONS` is five-on-four, so a kill always lands on five-on-five and
+ * the two are behaviourally identical on every frame the archive contains. It is
+ * read from the code anyway because the alternative is a constant that becomes
+ * a lie the day `KNOWN_SITUATIONS` learns four-on-three — which is the same
+ * defence `situation()` itself is built on.
+ */
+function penaltyKilled(events, boxStints, ctx) {
+  const out = [];
+  for (let i = 1; i < events.length; i++) {
+    const was = situation(events[i - 1].sit, ctx), now = situation(events[i].sit, ctx);
+    if (was == null || now == null) continue;
+    if (was.kind !== POWER_PLAY || now.kind !== EVEN) continue;
+    if (events[i].per !== events[i - 1].per) continue;
+
+    // WHO WAS KILLING IT: the club that did NOT have the extra skater.
+    const shortId = was.advantage === ctx.homeId ? ctx.awayId : ctx.homeId;
+    const isHome = shortId === ctx.homeId;
+    // ⭐ A RELATIONSHIP, NOT THE CODE `1551`. What makes this a kill is that the
+    // short side GAINED a skater — their penalised player came back. Pinning the
+    // literal code would state the same thing in a form that says nothing about
+    // why, and would quietly exclude any future strength the league invents.
+    if (!((isHome ? now.home : now.away) > (isHome ? was.home : was.away))) continue;
+
+    /* ⚠️ THE WINDOW IS CLOSED AT BOTH ENDS, AND A MUTATION IS WHY. It was
+       `s.end > events[i-1].s`, which makes the window EMPTY whenever two
+       consecutive frames share a second — and that is precisely what a goal and
+       its restarting faceoff do. In the reference game both penalties killed by
+       a goal sit at 1170 and 3147 with the goal and the faceoff on the same
+       second, so `ended` came back empty and the transition was refused by "no
+       stint ended here" instead of by `endedBy === 'goal'`. Right answer, wrong
+       reason — and it left the guard that does the real work unexercised, which
+       is how a mutation disabling it survived a green suite. `>=` is safe: the
+       previous frame's own code still says the club was short, so a stint
+       ending on that second had not yet been reflected. */
+    const ended = boxStints.filter(s => s.team === shortId
+      && s.start <= events[i - 1].s && s.end >= events[i - 1].s && s.end <= events[i].s);
+    if (!ended.length || !ended.every(s => s.endedBy === 'time')) continue;
+    out.push({ at: i, killedBy: shortId, aside: now.home });
+  }
+  return out;
 }
 
 /**
@@ -5562,6 +5654,21 @@ const MODE=()=>evenOnly?'even strength':'all situations';
 // not a correctness one, and it is written down that way rather than dressed up
 // as a bug it does not fix.
 const PBOX=stints(G.events,CTX);
+/* ⭐ THE FRAMES AT WHICH A PENALTY WAS KILLED — Kevin, watching a replay event
+   by event: "I was wondering why don't we say when the penalty expires."
+   Measured across 60 archive games: 308 power plays end and 78.6% of them end
+   because the penalty ran out, with NO EVENT IN THE FEED and nothing on the page
+   saying so. The scoreboard pill goes dark and that is the whole announcement.
+
+   ⭐ COMPUTED ONCE, AND KEYED BY THE EVENT OBJECT. `captioned` takes one event
+   and nothing else -- it is the single predicate `dwell` and `render` share, and
+   that shared-ness is the mechanism that makes a caption with no pause behind it
+   impossible (docs/event-timing.md). A kill depends on the PREVIOUS frame, so
+   widening `captioned`'s signature would have split the two readers apart. A Map
+   from the event object answers in O(1) without touching it, for the same reason
+   `PBOX` above is computed once: a penalty being killed is a property of the
+   GAME, and only the query is a property of the moment. */
+const KILLED=new Map(penaltyKilled(EV,PBOX,CTX).map(k=>[EV[k.at],k]));
 // WHEN EACH PERIOD BEGAN, read from the events.
 //
 // AND NOT BECAUSE THE ARITHMETIC WOULD BE WRONG -- the first draft of this
@@ -6357,6 +6464,14 @@ function render(i,how){
    // skater short (`sit` still reads 1551), so any sentence about the power play
    // would be a claim about the future dressed as a description.
    else if(cur&&cur.type==='penalty'){caption(cur,'penalty');}
+   /* ⭐ THE KILL SITS BELOW GOAL AND PENALTY AND ABOVE THE SLOT SHOT, and the
+      order is an argument rather than a preference. A goal or a penalty ON this
+      frame is the bigger news and both already have a sentence; a penalty here
+      also contradicts the kill, since a second infraction is what makes it
+      four-on-four rather than an expiry. The slot shot loses because it happens
+      many times a game and a kill happens 3.4 times, and because the slot layer
+      has the ice to say it with while this has nothing at all. */
+   else if(cur&&KILLED.has(cur)){captionKill(cur);}
    else if(cur&&hdOn&&isHD(cur)){lastHD=i;caption(cur,'hd');}}
  prevA=a;prevH=h;
  $('per').textContent=periodLabel(cur);$('clk').textContent=cur?cur.rem:'20:00';
@@ -6431,7 +6546,17 @@ function caption(e,kind){const c=$('caption');const tid=e.own;const ab=tid===AID
  // The tag is a fact about the goal, so it sits with the label and not with the
  // scorer: "GOAL · SHORT-HANDED · #16 Name" reads as one sentence about one shot.
  const sh=kind==='goal'&&shortHanded(e)?'<span class="shg">short-handed</span>':'';
- c.innerHTML=`<span class="tag ${side}">${ab}</span><b>${label}</b>${sh} · ${who}`;
+ sayCaption(side,ab,label,`${sh} · ${who}`,e);}
+/* ⭐ ONE WRITER FOR THE PILL, because there are now two callers and they differ
+   in WHOSE club the tag names. Every caption above is about the event's own
+   team (`e.own` -- the scorer, the offender, the shooter); a penalty kill is
+   about the club that was SHORT, which is by definition not the club that owns
+   the frame it lands on. Building a second innerHTML for that would have put the
+   pill's markup and its duration in two places, and the duration is the half
+   that matters: it comes from `dwell(e)`, which reads `captioned(e)`, which is
+   the seam that keeps a caption from outliving or undercutting its own frame. */
+function sayCaption(side,ab,label,rest,e){const c=$('caption');
+ c.innerHTML=`<span class="tag ${side}">${ab}</span><b>${label}</b>${rest}`;
  /* THE CAPTION LASTS EXACTLY AS LONG AS THE FRAME IT DESCRIBES. It used to be
     `animation:cap 2.2s` in the stylesheet -- a second clock, beside the pace and
     unrelated to it, and the speed buttons moved one of them. Driving the
@@ -6445,6 +6570,22 @@ function caption(e,kind){const c=$('caption');const tid=e.own;const ab=tid===AID
     have, because the render harness has no stylesheet. */
  c.style.animationDuration=dwell(e)+'ms';
  c.classList.remove('on');void c.offsetWidth;c.classList.add('on');}
+/* ⭐ THE PENALTY IS OVER, AND NOTHING IN THE FEED SAYS SO. The pill names the
+   club that KILLED it -- the one that was short -- which is the opposite of
+   every other caption on this page, and the reason `sayCaption` exists.
+   ⛔ `a side` IS READ, NEVER ASSUMED. `aside` comes off the situation code, so
+   the sentence cannot quietly become false the day the league invents a strength
+   we do not yet know: it says what the feed says the ice now holds. */
+/* ⚠️ THE COPY IS AS SHORT AS IT IS BECAUSE OF A 320px PHONE. `.caption` is
+   `white-space:nowrap`, so its `max-width:92%` cannot shrink it below its own
+   text -- it overflows and the whole PAGE scrolls sideways. Measured at 320:
+   "back to 5 a side" is 324px against a 320px viewport and the document went to
+   322 (the penalty caption already shipping is 242 and fine). "5 a side" is
+   270px. This is the longest caption the page can produce, so it is the one
+   that sets the budget, and no test we have can see it. */
+function captionKill(e){const k=KILLED.get(e);const tid=k.killedBy;
+ sayCaption(tid===AID?'a':'h',tid===AID?AAB:HAB,'🛡 Penalty killed',
+  ` · ${k.aside} a side`,e);}
 let workOpen=false;
 /**
  * ⭐ SHOW ME THE WORK — ONE PANEL, DRIVEN BY THE LAYER CONTRACT.
@@ -6730,7 +6871,12 @@ function syncStep(){$('back').disabled=i<=-1;$('fwd').disabled=i>=EV.length-1;}
    lasts. Two readers, one answer, so they cannot drift: that drift is the whole
    subject of docs/event-timing.md. `hdOn` is in here on purpose; a slot shot
    with the layer off is a frame that says nothing, and it must be paced as one. */
-function captioned(e){return !!e&&(e.type==='goal'||e.type==='penalty'||(hdOn&&isHD(e)));}
+/* ⚠️ AND THE PENALTY KILL IS IN HERE, WHICH IS THE WHOLE POINT OF THE SEAM. A
+   caption added to `render` alone would fire on a frame this function calls
+   silent, so `dwell` would give it an ordinary frame's time -- a sentence that
+   appears and is gone before it is read, which is the exact defect this
+   predicate was extracted to make impossible, running in the other direction. */
+function captioned(e){return !!e&&(e.type==='goal'||e.type==='penalty'||KILLED.has(e)||(hdOn&&isHD(e)));}
 function dwell(e){return captioned(e)?frameMs+CAPTION_BONUS:frameMs;}
 function step(){if(i>=EV.length-1){stop();return;}set(i+1,'play');timer=setTimeout(step,dwell(EV[i]));}
 /* PLAY MEANS GO. A viewer who presses it has asked for the game, and resting on

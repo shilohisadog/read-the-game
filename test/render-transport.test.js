@@ -9,6 +9,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { rich, app, SCRIPT, PAGE_CSS, boot, paceOf } from './helpers/page.js';
+import { stints } from '../src/lib/box.js';
 
 const at = d => +d.$('scrub').value;
 
@@ -223,16 +224,35 @@ test('a penalty is CALLED on the ice, like a goal and unlike a giveaway', () => 
   // a penalty is the one event that changes the CONDITIONS of the game — it is
   // why `Even strength only` exists — and it was marked exactly as loudly as a
   // giveaway. What follows is a RELATIONSHIP, not a list: whatever the game
-  // holds, the events that get called must be exactly its goals and penalties.
+  // holds, the events that get called must be exactly its goals, its penalties,
+  // and the moments one of those penalties was KILLED.
+  //
+  // ⭐ THE KILL COUNT IS DERIVED FROM `box.js` AND NEVER FROM THE RULE UNDER
+  // TEST. `penaltyKilled` reads the situation code; this expectation does not
+  // look at `sit` at all. A penalty that runs its full time ends a power play
+  // UNLESS the other club also had somebody in the box at that instant — then
+  // nothing was killed, the advantage simply changed hands. Asking
+  // `penaltyKilled` how many kills to expect would have made this a mirror.
+  //
+  // Hand-checked against the reference game's eight stints: six end by time,
+  // two of those (Bogosian at 1572, Faber at 3087) expire while the other club
+  // is still serving, and the remaining four are the captions — P1 17:17,
+  // P1 04:48, P2 10:41, P3 18:09.
+  const ctx = { roster: rich.roster, homeId: rich.teams.home.id, awayId: rich.teams.away.id };
+  const ST = stints(rich.events, ctx);
+  const kills = ST.filter(s => s.endedBy === 'time'
+    && !ST.some(o => o !== s && o.team !== s.team && o.start <= s.end && o.end > s.end)).length;
+
   const a = boot();
   const marks = callsWhileStepping(a, (h) =>
-    /🚨 GOAL/.test(h) ? 'goal' : /⛔ Penalty/.test(h) ? 'penalty' : 'other');
-  const got = { goal: 0, penalty: 0, other: 0 };
+    /🚨 GOAL/.test(h) ? 'goal' : /⛔ Penalty/.test(h) ? 'penalty'
+      : /🛡 Penalty killed/.test(h) ? 'kill' : 'other');
+  const got = { goal: 0, penalty: 0, kill: 0, other: 0 };
   marks.forEach(m => got[m]++);
   const want = t => rich.events.filter(e => e.type === t).length;
-  assert.deepEqual(got, { goal: want('goal'), penalty: want('penalty'), other: 0 },
-    'with no layers on, exactly the goals and the penalties get a moment of their own');
-  assert.ok(got.penalty > 0 && got.goal > 0, 'the walk found neither kind');
+  assert.deepEqual(got, { goal: want('goal'), penalty: want('penalty'), kill: kills, other: 0 },
+    'with no layers on, exactly the goals, the penalties and the kills get a moment of their own');
+  assert.ok(got.penalty > 0 && got.goal > 0 && got.kill > 0, 'the walk missed a kind entirely');
 });
 
 test('the penalty caption names the team that TOOK it', () => {

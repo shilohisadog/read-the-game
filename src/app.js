@@ -156,6 +156,21 @@ const MODE=()=>evenOnly?'even strength':'all situations';
 // not a correctness one, and it is written down that way rather than dressed up
 // as a bug it does not fix.
 const PBOX=stints(G.events,CTX);
+/* ⭐ THE FRAMES AT WHICH A PENALTY WAS KILLED — Kevin, watching a replay event
+   by event: "I was wondering why don't we say when the penalty expires."
+   Measured across 60 archive games: 308 power plays end and 78.6% of them end
+   because the penalty ran out, with NO EVENT IN THE FEED and nothing on the page
+   saying so. The scoreboard pill goes dark and that is the whole announcement.
+
+   ⭐ COMPUTED ONCE, AND KEYED BY THE EVENT OBJECT. `captioned` takes one event
+   and nothing else -- it is the single predicate `dwell` and `render` share, and
+   that shared-ness is the mechanism that makes a caption with no pause behind it
+   impossible (docs/event-timing.md). A kill depends on the PREVIOUS frame, so
+   widening `captioned`'s signature would have split the two readers apart. A Map
+   from the event object answers in O(1) without touching it, for the same reason
+   `PBOX` above is computed once: a penalty being killed is a property of the
+   GAME, and only the query is a property of the moment. */
+const KILLED=new Map(penaltyKilled(EV,PBOX,CTX).map(k=>[EV[k.at],k]));
 // WHEN EACH PERIOD BEGAN, read from the events.
 //
 // AND NOT BECAUSE THE ARITHMETIC WOULD BE WRONG -- the first draft of this
@@ -951,6 +966,14 @@ function render(i,how){
    // skater short (`sit` still reads 1551), so any sentence about the power play
    // would be a claim about the future dressed as a description.
    else if(cur&&cur.type==='penalty'){caption(cur,'penalty');}
+   /* ⭐ THE KILL SITS BELOW GOAL AND PENALTY AND ABOVE THE SLOT SHOT, and the
+      order is an argument rather than a preference. A goal or a penalty ON this
+      frame is the bigger news and both already have a sentence; a penalty here
+      also contradicts the kill, since a second infraction is what makes it
+      four-on-four rather than an expiry. The slot shot loses because it happens
+      many times a game and a kill happens 3.4 times, and because the slot layer
+      has the ice to say it with while this has nothing at all. */
+   else if(cur&&KILLED.has(cur)){captionKill(cur);}
    else if(cur&&hdOn&&isHD(cur)){lastHD=i;caption(cur,'hd');}}
  prevA=a;prevH=h;
  $('per').textContent=periodLabel(cur);$('clk').textContent=cur?cur.rem:'20:00';
@@ -1025,7 +1048,17 @@ function caption(e,kind){const c=$('caption');const tid=e.own;const ab=tid===AID
  // The tag is a fact about the goal, so it sits with the label and not with the
  // scorer: "GOAL · SHORT-HANDED · #16 Name" reads as one sentence about one shot.
  const sh=kind==='goal'&&shortHanded(e)?'<span class="shg">short-handed</span>':'';
- c.innerHTML=`<span class="tag ${side}">${ab}</span><b>${label}</b>${sh} · ${who}`;
+ sayCaption(side,ab,label,`${sh} · ${who}`,e);}
+/* ⭐ ONE WRITER FOR THE PILL, because there are now two callers and they differ
+   in WHOSE club the tag names. Every caption above is about the event's own
+   team (`e.own` -- the scorer, the offender, the shooter); a penalty kill is
+   about the club that was SHORT, which is by definition not the club that owns
+   the frame it lands on. Building a second innerHTML for that would have put the
+   pill's markup and its duration in two places, and the duration is the half
+   that matters: it comes from `dwell(e)`, which reads `captioned(e)`, which is
+   the seam that keeps a caption from outliving or undercutting its own frame. */
+function sayCaption(side,ab,label,rest,e){const c=$('caption');
+ c.innerHTML=`<span class="tag ${side}">${ab}</span><b>${label}</b>${rest}`;
  /* THE CAPTION LASTS EXACTLY AS LONG AS THE FRAME IT DESCRIBES. It used to be
     `animation:cap 2.2s` in the stylesheet -- a second clock, beside the pace and
     unrelated to it, and the speed buttons moved one of them. Driving the
@@ -1039,6 +1072,22 @@ function caption(e,kind){const c=$('caption');const tid=e.own;const ab=tid===AID
     have, because the render harness has no stylesheet. */
  c.style.animationDuration=dwell(e)+'ms';
  c.classList.remove('on');void c.offsetWidth;c.classList.add('on');}
+/* ⭐ THE PENALTY IS OVER, AND NOTHING IN THE FEED SAYS SO. The pill names the
+   club that KILLED it -- the one that was short -- which is the opposite of
+   every other caption on this page, and the reason `sayCaption` exists.
+   ⛔ `a side` IS READ, NEVER ASSUMED. `aside` comes off the situation code, so
+   the sentence cannot quietly become false the day the league invents a strength
+   we do not yet know: it says what the feed says the ice now holds. */
+/* ⚠️ THE COPY IS AS SHORT AS IT IS BECAUSE OF A 320px PHONE. `.caption` is
+   `white-space:nowrap`, so its `max-width:92%` cannot shrink it below its own
+   text -- it overflows and the whole PAGE scrolls sideways. Measured at 320:
+   "back to 5 a side" is 324px against a 320px viewport and the document went to
+   322 (the penalty caption already shipping is 242 and fine). "5 a side" is
+   270px. This is the longest caption the page can produce, so it is the one
+   that sets the budget, and no test we have can see it. */
+function captionKill(e){const k=KILLED.get(e);const tid=k.killedBy;
+ sayCaption(tid===AID?'a':'h',tid===AID?AAB:HAB,'🛡 Penalty killed',
+  ` · ${k.aside} a side`,e);}
 let workOpen=false;
 /**
  * ⭐ SHOW ME THE WORK — ONE PANEL, DRIVEN BY THE LAYER CONTRACT.
@@ -1324,7 +1373,12 @@ function syncStep(){$('back').disabled=i<=-1;$('fwd').disabled=i>=EV.length-1;}
    lasts. Two readers, one answer, so they cannot drift: that drift is the whole
    subject of docs/event-timing.md. `hdOn` is in here on purpose; a slot shot
    with the layer off is a frame that says nothing, and it must be paced as one. */
-function captioned(e){return !!e&&(e.type==='goal'||e.type==='penalty'||(hdOn&&isHD(e)));}
+/* ⚠️ AND THE PENALTY KILL IS IN HERE, WHICH IS THE WHOLE POINT OF THE SEAM. A
+   caption added to `render` alone would fire on a frame this function calls
+   silent, so `dwell` would give it an ordinary frame's time -- a sentence that
+   appears and is gone before it is read, which is the exact defect this
+   predicate was extracted to make impossible, running in the other direction. */
+function captioned(e){return !!e&&(e.type==='goal'||e.type==='penalty'||KILLED.has(e)||(hdOn&&isHD(e)));}
 function dwell(e){return captioned(e)?frameMs+CAPTION_BONUS:frameMs;}
 function step(){if(i>=EV.length-1){stop();return;}set(i+1,'play');timer=setTimeout(step,dwell(EV[i]));}
 /* PLAY MEANS GO. A viewer who presses it has asked for the game, and resting on
