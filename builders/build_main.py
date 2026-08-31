@@ -203,6 +203,9 @@ assert not set(_left) - {"__LIB__", "__BOOT__", "__CSP__"}, \
 
 
 LIB = ["rink.js", "attribution.js", "layer.js", "strength.js", "box.js", "penalties.js", "svgpen.js", "figures.js",
+       # AFTER rink.js, which owns BLUE_LINE_X. K1 — what happened between two
+       # recorded events — and the duration format both it and `sinceLine` read.
+       "transition.js",
        # The per-game summary reads `perGame` out of measures.json — the mechanism
        # only, never the archive tier that builds it. See distribution.js.
        "distribution.js",

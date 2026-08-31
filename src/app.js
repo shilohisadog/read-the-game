@@ -1756,7 +1756,12 @@ function sinceLine(ev){
   let d='';
   if(c&&c.per===ev.per){
     const g=c.s-ev.s;
-    if(g>0)d=' · '+(g<60?g+'s':Math.floor(g/60)+':'+String(g%60).padStart(2,'0'))+' earlier';
+    // ⭐ THE DURATION IS SPELLED IN ONE PLACE NOW. This was the second spelling
+    // of it in this file (`mmss` is the other, and they disagree on purpose --
+    // "0:28" against "28s"). K1 would have made a third, which is the point at
+    // which nobody can say which is canonical, so the shared one moved to
+    // src/lib/transition.js and both readers import it.
+    const w=spokenGap(g);if(w)d=' · '+w+' earlier';
   }
   return `· P${ev.per} ${ESC(ev.rem)}${d}`;
 }
@@ -1849,6 +1854,17 @@ function drawLabel(e){const g=$('labels');const p=place(e);if(!p){g.innerHTML=''
  // C8: a missed shot says WHICH way it missed. `missSay` is in attribution.js
  // beside SHOT_TYPES, because what a shot event IS belongs with the vocabulary
  // of shot events and not in a table of page labels.
+ /* ⏸ K1's SENTENCE IS BUILT AND IS NOT DRAWN HERE — `src/lib/transition.js`.
+    The rule is done and mutation-checked; the SURFACE is Kevin's to choose,
+    because the obvious one is the one he already closed. `.plabsub` on an event
+    was retired on 2026-08-16 at his own request -- "I think we can retire the
+    subtext on the event displayed on the ice, it still looks crowded to me" --
+    and `render-labels.test.js` is the guard he asked for. It fired on the first
+    build of this, which is the suite doing exactly its job.
+    WHAT IS DIFFERENT NOW, and it is his call whether it matters: that ruling
+    retired a subline under EVERY event, and K1's fires on 18.4% of transitions,
+    47 a game. A line on fewer than one frame in five is not the thing he was
+    looking at. Until he says so, the ice keeps one label. */
  g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${ESC(playSaid(e))}${hd}</text></g>`;}
 
 /* ⭐ WHAT THIS PLAY IS, IN WORDS — the one place the words are chosen.
