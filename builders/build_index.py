@@ -1076,6 +1076,20 @@ def _learn():
     stray = set(figures) - ids
     if stray:
         raise SystemExit(f"learn: figures for cards that do not exist: {sorted(stray)}")
+    # ⭐⭐ THE WALL BETWEEN THE TWO HALVES, ASSERTED ACROSS THE SEAM. The page keeps
+    # the league's rules apart from what WE count so our measurements cannot
+    # borrow the rulebook's authority, and a figure now declares which half it is
+    # drawn for -- which decides whether it may paint our slot tint at all. Node
+    # says one thing and this table says another, so the two are compared rather
+    # than trusted: a slot figure that thought it was a rules figure would lose
+    # the tint that IS its subject, and a rules figure that thought it was ours
+    # would paint our claim on the league's ice.
+    fig_group = {cid: d["group"] for cid, d in _fig_json().items()}
+    card_group = {c[1]: c[0] for c in LEARN_CARDS}
+    wrong = {cid: (g, card_group[cid]) for cid, g in fig_group.items() if card_group[cid] != g}
+    if wrong:
+        raise SystemExit("learn: a figure disagrees with its card about which half of "
+                         f"the page it is on: {wrong}")
 
     out = []
     for kind, heading in LEARN_GROUPS:
@@ -1298,11 +1312,24 @@ FIGCSS = r"""<style>
 .dgplay .dghot.blue{stroke:var(--blue)}
 .dgplay .dghot.red{stroke:var(--red)}
 .dgplay .dgspot{fill:none;stroke:var(--red);stroke-width:1;opacity:.8}
+/* A SHOT THAT COUNTS AND ONE THAT DOES NOT — only on the slot figure, where the
+   subject is our own rule and the lesson is that you can check a mark against
+   it. Solid means the rule admits it; hollow means it does not, which is the
+   same "outlined = not the thing" the ghosts already use. */
+/* The WIDTH comes from the element — see `mark` in learn-figures.mjs. A stroke
+   in rink units thickens as a figure zooms in, and a shot marker is annotation. */
+.dgplay .dgmark{fill:var(--ink);stroke:var(--ice)}
+.dgplay .dgmark.out{fill:none;stroke:var(--muted)}
 .dgbadge circle{fill:var(--ink);opacity:.88}
-.dgbadge text{fill:#fff;font:700 5.6px/1 system-ui,sans-serif;text-anchor:middle}
+/* ⭐ SIZE COMES FROM THE ELEMENT, NOT FROM HERE. Each figure scales its
+   annotation by how tightly it is framed, so a badge is the same number of
+   PIXELS on the full sheet and on the slot's crop. The stylesheet owns the
+   weight, the family and the colour; the figure owns the size. */
+.dgbadge text{fill:#fff;font-weight:700;font-family:system-ui,sans-serif;
+  line-height:1;text-anchor:middle}
 /* It says what it is, quietly. See learn-figures.mjs: this is not the guard. */
-.dgstamp{fill:var(--muted);opacity:.6;font:600 4.4px/1 system-ui,sans-serif;
-  letter-spacing:.09em;text-transform:uppercase}
+.dgstamp{fill:var(--muted);opacity:.6;font-weight:600;
+  font-family:system-ui,sans-serif;line-height:1;text-transform:uppercase}
 /* THE CAPTION IS A NUMBERED LIST BECAUSE THE RULE IS A SEQUENCE, and the numbers
    are the badges on the ice. It is always fully visible -- the animation
    illustrates these lines, it never replaces them, so a reader who arrives after

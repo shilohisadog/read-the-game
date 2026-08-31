@@ -91,7 +91,13 @@ export function boardsY(sx){
    borrow the rulebook's authority, and a slot tint glowing inside the offside
    figure walks straight through that wall. The paint a diagram inherits is the
    paint the LEAGUE puts on the ice: boards, five lines, nine spots. */
-export function furniture(id='',tints=true){const P=[];P.push(`<rect class="boards" x="${BOARD.x}" y="${BOARD.y}" width="${BOARD.w}" height="${BOARD.h}" rx="${BOARD.r}"/>`);
+export function furniture(id='',tints=true){
+ /* `tints` is THREE-VALUED, and the third value exists because the slot figure
+    needed one of ours and not the other. `true` draws both; `'slot'` draws the
+    lozenge alone -- a diagram OF the slot rule should not also carry our
+    blue-line shading, which is a different claim about a different part of the
+    ice; anything falsy draws neither, which is what a league-rules figure gets. */
+ const bands=tints===true;const P=[];P.push(`<rect class="boards" x="${BOARD.x}" y="${BOARD.y}" width="${BOARD.w}" height="${BOARD.h}" rx="${BOARD.r}"/>`);
  if(tints){
  /* ⭐ THE SLOT IS PAINTED ON THE ICE, BEFORE ANYTHING HAPPENS.
     Kevin: "we can measure, but we're not prioritizing the teaching... if we have
@@ -147,7 +153,7 @@ export function furniture(id='',tints=true){const P=[];P.push(`<rect class="boar
     eye would be a model wearing a UI control.
     NO CLIP NEEDED. At |x| 20-30 the boards are straight -- the corner radius
     only bends the ice within 27 units of a corner -- so a plain rect is exact. */
- for(const b of[BLUE_LINE_X,-BLUE_LINE_X])
+ if(bands)for(const b of[BLUE_LINE_X,-BLUE_LINE_X])
   // `SX` DECREASES with x, so the band's left edge is the far side of it.
   P.push(`<rect class="zoneband" x="${SX(b+ZONE_BAND_FT)}" y="1" width="${ZONE_BAND_FT*2}" height="83"/>`);
  }

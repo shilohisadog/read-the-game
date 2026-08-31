@@ -55,10 +55,29 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
    reason the slot tint does: a reader can check them against the rulebook. */
 
 const f = n => +n.toFixed(2);
-const tok = (x, y, r = 4) => `<circle class="dgtok" cx="${f(x)}" cy="${f(y)}" r="${r}"/>`;
-const ghost = (x, y, r = 4) => `<circle class="dgghost" cx="${f(x)}" cy="${f(y)}" r="${r}"/>`;
-const puck = (x, y) => `<circle class="dgpuck" cx="${f(x)}" cy="${f(y)}" r="2.4"/>`;
-const puckGhost = (x, y) => `<circle class="dgpuck dgghost" cx="${f(x)}" cy="${f(y)}" r="2.4"/>`;
+
+/* ⭐⭐ EVERY TOKEN IS ANNOTATION, AND ONLY THE RINK IS GEOMETRY.
+ *
+ * The lines, the spots, the boards, the net and the slot region are real things
+ * with real sizes and must scale with the crop — that is what makes the diagram
+ * and the replay the same rink. A dot standing for a player is NOT: its size is
+ * a legibility choice, so it should be a constant number of PIXELS across every
+ * figure however tightly each one is framed.
+ *
+ * ⚠️ FOUND ON THE SLOT FIGURE, WHERE THE CROP IS TIGHTEST AND THE ERROR FINALLY
+ * SHOWED. At `r = 4.4` rink units the goaltender token was 8.8 FEET across, beside
+ * a net that is 6 — a goalie wider than the goal, on every figure, invisible on
+ * the full sheet because everything there is small. `k` is the figure's
+ * units-per-200, so one number of pixels serves all five.
+ */
+const tok = (x, y, k = 1, r = 4) =>
+  `<circle class="dgtok" cx="${f(x)}" cy="${f(y)}" r="${f(r * k)}"/>`;
+const ghost = (x, y, k = 1, r = 4) =>
+  `<circle class="dgghost" cx="${f(x)}" cy="${f(y)}" r="${f(r * k)}"/>`;
+const puck = (x, y, k = 1) =>
+  `<circle class="dgpuck" cx="${f(x)}" cy="${f(y)}" r="${f(2.4 * k)}"/>`;
+const puckGhost = (x, y, k = 1) =>
+  `<circle class="dgpuck dgghost" cx="${f(x)}" cy="${f(y)}" r="${f(2.4 * k)}"/>`;
 
 /** An arrow from one point to another, stopping short so the head clears the token. */
 function arrow(id, x1, y1, x2, y2, back = 5) {
@@ -68,10 +87,21 @@ function arrow(id, x1, y1, x2, y2, back = 5) {
        + ` marker-end="url(#${id}head)"/>`;
 }
 
-/** The numbered badge that ties a place on the ice to a line of the caption. */
-const badge = (n, x, y) =>
-  `<g class="dgbadge"><circle cx="${f(x)}" cy="${f(y)}" r="4.6"/>`
-  + `<text x="${f(x)}" y="${f(y)}" dy="1.9">${n}</text></g>`;
+/**
+ * The numbered badge that ties a place on the ice to a line of the caption.
+ *
+ * ⭐⭐ ANNOTATION IS SIZED IN SCREEN TERMS, GEOMETRY IN RINK TERMS, and the slot
+ * figure is what forced the distinction. Every figure renders about 359px wide
+ * on a phone whatever it FRAMES, so a badge of a fixed 4.6 rink units is 8px
+ * across on the full sheet and 20px on the slot's 81-unit crop — the badges came
+ * out bigger than the net. A blue line is a real thing 200 feet of ice wide and
+ * must scale with the crop; a numbered marker is a label about the drawing and
+ * must not. `k` is the figure's units-per-200, so `4.6 * k` is a constant number
+ * of PIXELS no matter how tightly the figure is framed.
+ */
+const badge = (n, x, y, k = 1) =>
+  `<g class="dgbadge"><circle cx="${f(x)}" cy="${f(y)}" r="${f(4.6 * k)}"/>`
+  + `<text x="${f(x)}" y="${f(y)}" dy="${f(1.9 * k)}" font-size="${f(5.6 * k)}">${n}</text></g>`;
 
 /** The arrowhead, namespaced — five figures on one page share a document. */
 const defs = id =>
@@ -110,7 +140,9 @@ const hot = (x, cls) => {
   return `<line class="dghot ${cls}" x1="${f(x)}" y1="${f(y1)}" x2="${f(x)}" y2="${f(y2)}"/>`;
 };
 
-const stamp = (x, y) => `<text class="dgstamp" x="${f(x)}" y="${f(y)}">Diagram</text>`;
+const stamp = (x, y, k = 1) =>
+  `<text class="dgstamp" x="${f(x)}" y="${f(y)}" font-size="${f(4.4 * k)}"`
+  + ` letter-spacing="${f(0.09 * 4.4 * k)}">Diagram</text>`;
 
 /* ── the equipment ──────────────────────────────────────────────────────────
    ⭐ A CROP OF ICE WITH NO NET IN IT DOES NOT READ AS AN END OF A RINK.
@@ -138,12 +170,12 @@ const nets = id =>
   netGlyph(`${id}netA`, SX(-NET_X), NEUTRAL) + netGlyph(`${id}netB`, SX(NET_X), NEUTRAL);
 
 /** A goaltender, in the one place on the ice only a goaltender stands. */
-const keeper = (gx) =>
+const keeper = (gx, k = 1) =>
   // ITS POSITION IS ITS LABEL. Drawn in the diagram's own vocabulary -- outlined,
   // neutral, the same token every other player gets -- because a second style of
   // player token would be a second thing for a novice to decode. Nobody else
   // stands in the crease, so the crease says which one he is.
-  `<circle class="dgtok dgkeep" cx="${f(gx < 100 ? gx + 4.5 : gx - 4.5)}" cy="42.5" r="4.4"/>`;
+  `<circle class="dgtok dgkeep" cx="${f(gx < 100 ? gx + 4.5 : gx - 4.5)}" cy="42.5" r="${f(4.4 * k)}"/>`;
 
 /* ── how a token travels ────────────────────────────────────────────────────
    ⭐ THE PAGE OPENS ON THE FINISHED PICTURE, THEN REPLAYS. Found by looking: a
@@ -194,6 +226,7 @@ const travel = (name, from, to) =>
 function offside() {
   const id = 'of-';
   const BLUE = SX(-BLUE_LINE_X);           // the line being entered
+  const K = 123 / 200;   // this figure's crop, so annotation stays screen-sized
   const DOT = { x: SX(-NEUTRAL_DOT_X), y: SY(22) };   // where an offside restarts
   /* ⭐⭐ ① IS THE PUCK CARRIER AND ② IS THE TEAMMATE WHO BEATS HIM IN.
      Kevin, looking at the first draft: *"1) needs to be the player controlling
@@ -218,7 +251,8 @@ function offside() {
     // From the far neutral-zone dot to the end boards: one blue line, the ice
     // either side of it, and both spots a draw could come back to.
     viewBox: `${f(SX(24))} 0 ${f(SX(-89) - SX(24) + 10)} 85`,
-    label: 'Diagram: an attacking skater crosses the blue line before the puck '
+    group: 'rules',
+        label: 'Diagram: an attacking skater crosses the blue line before the puck '
          + 'carrier does, so play stops and the face-off comes back outside the zone.',
     /* ⭐ THE DOOR PROMISES WHAT IT ACTUALLY DELIVERS, AND EACH RULE DELIVERS
        SOMETHING DIFFERENT. Kevin: *"we say 'See it in a real game', which isn't
@@ -235,25 +269,25 @@ function offside() {
       // NO TINTS. The slot lozenge and the blue-line band are measurements of
       // ours, and this figure is about the league's rulebook -- see rinkart.js.
       + `<g class="dgpaint">${furniture(id, false)}${nets(id)}</g>`
-      + `<g class="dgplay">${keeper(SX(-NET_X))}</g>`
+      + `<g class="dgplay">${keeper(SX(-NET_X), K)}</g>`
       + `<g class="dgplay">`
       // Where each of them set off — drawn faintly, and they stay drawn.
-      + ghost(C0.x, C0.y) + puckGhost(C0.x + PUCK.x, C0.y + PUCK.y) + ghost(T0.x, T0.y)
+      + ghost(C0.x, C0.y, K) + puckGhost(C0.x + PUCK.x, C0.y + PUCK.y, K) + ghost(T0.x, T0.y, K)
       + arrow(id, C0.x, C0.y, C1.x, C1.y) + arrow(id, T0.x, T0.y, T1.x, T1.y)
       // The line is lit where the rule is decided.
       + hot(BLUE, 'blue')
       // ① THE CARRIER AND HIS PUCK ARE ONE GROUP, so they cannot drift apart in
       // the animation -- "controlling the puck" has to survive the motion.
-      + `<g class="dgmove dgm-c">${tok(C1.x, C1.y)}${puck(C1.x + PUCK.x, C1.y + PUCK.y)}</g>`
+      + `<g class="dgmove dgm-c">${tok(C1.x, C1.y, K)}${puck(C1.x + PUCK.x, C1.y + PUCK.y, K)}</g>`
       // ② the teammate, already inside the zone with the puck still outside.
-      + `<g class="dgmove dgm-t">${tok(T1.x, T1.y)}</g>`
+      + `<g class="dgmove dgm-t">${tok(T1.x, T1.y, K)}</g>`
       // ③ and the punishment, which is WHERE — the same claim the icing card makes.
       + `<circle class="dgspot" cx="${f(DOT.x)}" cy="${f(DOT.y)}" r="4.2"/>`
       // EACH BADGE SITS ON THE THING ITS LINE IS ABOUT: ① on the carrier, ② on
       // the teammate who has gone too far, ③ on the spot play comes back to.
-      + badge(1, C1.x - 3, C1.y + 9) + badge(2, T1.x, T1.y - 9)
-      + badge(3, DOT.x, DOT.y - 9)
-      + stamp(SX(20), SY(34))
+      + badge(1, C1.x - 3, C1.y + 9, K) + badge(2, T1.x, T1.y - 9, K)
+      + badge(3, DOT.x, DOT.y - 9, K)
+      + stamp(SX(20), SY(34), K)
       + `</g>`,
     steps: [
       'The puck carrier comes up the ice toward the blue line.',
@@ -301,23 +335,27 @@ function icing() {
   const DOT = { x: SX(69), y: SY(-22) };     // the offending team's own end-zone spot
   return {
     viewBox: '0 0 200 85',
-    label: 'Diagram: a player shoots the puck from behind the centre line, it '
+    group: 'rules',
+        label: 'Diagram: a player shoots the puck from behind the centre line, it '
          + 'crosses the far goal line untouched, and the face-off comes all the '
          + 'way back to the shooting team’s end.',
     door: 'See a real icing in our replay',
     svg: defs(id)
       + `<g class="dgpaint">${furniture(id, false)}${nets(id)}</g>`
-      + `<g class="dgplay">${keeper(SX(-NET_X))}${keeper(SX(NET_X))}`
+      + `<g class="dgplay">${keeper(SX(-NET_X), 1)}${keeper(SX(NET_X), 1)}`
       + ghost(S.x, S.y) + puckGhost(P0.x, P0.y)
       + arrow(id, P0.x, P0.y, P1.x, P1.y, 4)
       // THE TWO LINES RULE 81 NAMES, lit exactly as the game page lights them.
       + hot(100, 'red') + hot(SX(-89), 'red')
-      + `<circle class="dgtok" cx="${f(S.x)}" cy="${f(S.y)}" r="4"/>`
-      + `<g class="dgmove dgm-p">${puck(P1.x, P1.y)}</g>`
+      // THROUGH `tok`, NOT HAND-WRITTEN. This was a literal `r="4"` that
+      // bypassed the helper entirely, so it would not have scaled with the crop
+      // and nothing about it moved when the sizing rule changed.
+      + tok(S.x, S.y, 1)
+      + `<g class="dgmove dgm-p">${puck(P1.x, P1.y, 1)}</g>`
       + `<circle class="dgspot" cx="${f(DOT.x)}" cy="${f(DOT.y)}" r="4.2"/>`
-      + badge(1, S.x - 8, S.y + 6) + badge(2, P1.x - 4, P1.y - 9)
-      + badge(3, DOT.x, DOT.y - 9)
-      + stamp(SX(60), SY(34))
+      + badge(1, S.x - 8, S.y + 6, 1) + badge(2, P1.x - 4, P1.y - 9, 1)
+      + badge(3, DOT.x, DOT.y - 9, 1)
+      + stamp(SX(60), SY(34), 1)
       + `</g>`,
     steps: [
       'A player shoots the puck from <b>behind the centre line</b>.',
@@ -362,12 +400,13 @@ function faceoffs() {
   spots.push([100, 42.5]);
   return {
     viewBox: '0 0 200 85',
-    label: 'Diagram: the nine painted face-off spots — four in each end, four in '
+    group: 'rules',
+        label: 'Diagram: the nine painted face-off spots — four in each end, four in '
          + 'the neutral zone, and one at centre ice.',
     door: 'See a real face-off in our replay',
     svg: defs(id)
       + `<g class="dgpaint">${furniture(id, false)}${nets(id)}</g>`
-      + `<g class="dgplay">${keeper(SX(-NET_X))}${keeper(SX(NET_X))}`
+      + `<g class="dgplay">${keeper(SX(-NET_X), 1)}${keeper(SX(NET_X), 1)}`
       + spots.map(([x, y]) => ring(x, y)).join('')
       // ONE BADGE PER KIND, not per spot: the lesson is that there are three
       // kinds of place, and nine of them.
@@ -376,8 +415,8 @@ function faceoffs() {
          stamp, and ② sat between the two NEUTRAL spots where it read as labelling
          them rather than centre ice. ① now sits in the gap between the two
          end-zone circles, ② beside the centre spot, ③ under a neutral one. */
-      + badge(1, END, 42.5) + badge(2, 89, 42.5) + badge(3, NEU, DOWN + 9)
-      + stamp(SX(48), SY(32))
+      + badge(1, END, 42.5, 1) + badge(2, 89, 42.5, 1) + badge(3, NEU, DOWN + 9, 1)
+      + stamp(SX(48), SY(32), 1)
       + `</g>`,
     steps: [
       '<b>In each end</b> &mdash; four spots, two on either side of the net. '
@@ -391,7 +430,79 @@ function faceoffs() {
   };
 }
 
-const FIGURES = { faceoffs: faceoffs(), icing: icing(), offside: offside() };
+/* ── THE SLOT ───────────────────────────────────────────────────────────────
+   ⭐⭐ THE ONE FIGURE WHERE THE DIAGRAM *IS* THE DEFINITION, and the only one so
+   far that belongs to the OTHER half of the learn page. Icing, offside and the
+   face-off spots are the league's rules; the slot is OURS — "a geometric rule of
+   ours, not a model", as its card says — and the page keeps those two halves
+   apart so our measurements cannot borrow the rulebook's authority.
+
+   ⭐ SO IT KEEPS THE TINT, and every other figure refuses it. `furniture(id,
+   true)` paints the exact region `isHighDanger` tests, from the same two
+   constants, which is the whole of Doctrine 7: a rule you can check with a
+   ruler. On a rules figure that tint would be our claim wearing the rulebook's
+   clothes; on this one it is the subject. `group` is what carries that
+   distinction into the tests, and build_index asserts it against the group the
+   card is actually rendered in — two documents, one wall.
+
+   ⭐ AND THE THREE MARKS ARE THE THREE CLAUSES. `isHighDanger` is an AND of
+   three geometric tests, and the figure spends one mark on each: one that
+   counts, one too wide, and one behind the goal line. That third clause exists
+   because Kevin looked at the tint when it first shipped — "I don't consider the
+   slot to be valid behind the net" — and the first two clauses had simply never
+   been asked to draw themselves. Measured before it changed: 4,249 of 262,539
+   attempts (1.62%) sat behind the goal line, and 171 of 19,304 high-danger goals
+   (0.89%). About one mark a game. */
+function slot() {
+  const id = 'sl-';
+  const NET = SX(-NET_X);
+  // In FEET, checkable against `isHighDanger(x, y, dir)` by hand.
+  //   ① -70,  5  -> 19.6 ft out, 5 wide, in front            COUNTS
+  //   ② -80, 26  -> 27.5 ft out, 26 wide  ................... too wide
+  //   ③ -93, 12  ->  5.7 ft out, 12 wide, BEHIND the line ... wrong side
+  const K = 99 / 200;   // see `badge`: annotation is screen-sized, geometry is not
+  const IN = { x: SX(-70), y: SY(5) };
+  const WIDE = { x: SX(-80), y: SY(26) };
+  const BEHIND = { x: SX(-93), y: SY(12) };
+  /* ⭐ SOLID MEANS THE RULE ADMITS IT, HOLLOW MEANS IT DOES NOT — and both are
+     token-sized, because a shot location is the same KIND of mark as a player.
+     The first draft drew the refused ones dashed at half a token's size, and at
+     this crop a 2-unit dash pattern on a 5px ring is noise rather than a
+     distinction. STROKE WIDTH RIDES ON THE ELEMENT for the same reason the radius
+     does: a width in rink units gets thicker as a figure zooms in, and this is
+     annotation, not paint. */
+  const mark = (p, out) =>
+    `<circle class="dgmark${out ? ' out' : ''}" cx="${f(p.x)}" cy="${f(p.y)}"`
+    + ` r="${f(4 * K)}" stroke-width="${f((out ? 1.1 : 0.6) * K)}"/>`;
+  return {
+    // Tighter than offside's: the subject is a 33-foot radius, and a wider frame
+    // would spend the page on ice the rule says nothing about.
+    viewBox: '100 0 99 85',
+    group: 'ours',
+    label: 'Diagram: the slot — within 33 feet of the net, between the face-off '
+         + 'dots, and in front of the goal line.',
+    door: 'See a shot from the slot in our replay',
+    svg: defs(id)
+      // TINTS ON, alone among the figures: this one IS the tint.
+      + `<g class="dgpaint">${furniture(id, 'slot')}${nets(id)}</g>`
+      + `<g class="dgplay">${keeper(NET, K)}`
+      + mark(IN, false) + mark(WIDE, true) + mark(BEHIND, true)
+      + badge(1, IN.x - 7, IN.y + 6, K) + badge(2, WIDE.x - 6, WIDE.y - 5, K)
+      + badge(3, BEHIND.x, BEHIND.y - 6, K)
+      + stamp(SX(-3), SY(36), K)
+      + `</g>`,
+    steps: [
+      '<b>Close in</b> &mdash; within 33 feet of the net. This one counts.',
+      '<b>And between the face-off dots.</b> The shaded band is exactly that '
+      + 'wide, so you can check a mark against it: this one is too far out to the side.',
+      '<b>And in front of the goal line.</b> A wrap-around from behind the net '
+      + 'is close, and it is not a shot from the slot.',
+    ],
+    css: '',
+  };
+}
+
+const FIGURES = { faceoffs: faceoffs(), icing: icing(), offside: offside(), slot: slot() };
 
 /* ── the artifact ───────────────────────────────────────────────────────── */
 const OUT = join(ROOT, 'data', 'learn-figures.json');

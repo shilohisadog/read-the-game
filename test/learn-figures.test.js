@@ -267,12 +267,33 @@ test('⭐ a diagram carries no tint of ours — the rulebook does not borrow our
      contested in the second -- and the first offside figure had both glowing
      inside it. Found by LOOKING; no test in the suite could see it, and none
      could have, because nothing had ever claimed they must not be there. */
-  for (const [id, fig] of Object.entries(figures)) {
+  /* ⭐⭐ SCOPED BY WHICH HALF OF THE PAGE THE FIGURE IS ON, and that is data
+     rather than a branch I chose. The learn page keeps the league's rules apart
+     from what WE count; a tint of ours on a RULES figure is our claim wearing
+     the rulebook's clothes, and on the SLOT figure the same tint is the subject
+     — it is the region `isHighDanger` tests, drawn from the same two constants,
+     which is the whole of Doctrine 7.
+
+     BOTH DIRECTIONS ARE ASSERTED, and both halves are checked non-empty, so this
+     is not the §H4 shape where a branch on the data tests neither branch. The
+     third figure taught me that lesson about motion; this is the same lesson
+     about doctrine, caught before it shipped rather than after. */
+  const rules = Object.entries(figures).filter(([, f]) => f.group === 'rules');
+  const ours = Object.entries(figures).filter(([, f]) => f.group === 'ours');
+  assert.ok(rules.length && ours.length,
+    `figures are ${rules.length} rules and ${ours.length} ours — one half is untested`);
+  for (const [id, fig] of rules) {
     assert.ok(!/class="slotzone"/.test(fig.svg),
       `the ${id} rule diagram paints the slot, which is a measurement of ours`);
     assert.ok(!/class="zoneband"/.test(fig.svg),
       `the ${id} rule diagram paints the blue-line band, which is a measurement of ours`);
   }
+  // AND THE SLOT FIGURE MUST CARRY IT: its card says "a geometric rule of ours,
+  // not a model", and a figure of that rule with the region missing shows nothing.
+  const [, sl] = ours.find(([id]) => id === 'slot') || [];
+  assert.ok(sl, 'the slot figure has gone');
+  assert.match(sl.svg, /class="slotzone"/,
+    'the slot figure does not draw the slot — the one thing it is a diagram of');
   // AND THE PAIR: `furniture` must still be ABLE to draw them, or the assertions
   // above are satisfied by a function that lost the feature altogether.
   assert.match(furniture('', true), /class="slotzone"/,
@@ -371,6 +392,53 @@ test('the offside words say the LIMIT, not the rule the picture already draws', 
   assert.match(lede[1], /never the crossing/, 'the page stopped stating the limit');
   assert.doesNotMatch(lede[1], /ahead of the puck/,
     'the words repeat what the figure and its steps both already say');
+});
+
+test('⭐ annotation is the same SIZE on every figure, whatever each one frames', () => {
+  /* ⭐⭐ THE RINK IS GEOMETRY AND EVERY TOKEN IS ANNOTATION. Lines, spots, boards,
+     nets and the slot region are real things and must scale with the crop —
+     that is what makes the diagram and the replay one rink. A dot standing for a
+     player is a legibility choice, and at a fixed size in RINK units it grows as
+     the frame tightens: the slot figure's goaltender came out 8.8 FEET across,
+     beside a net that is 6, on a crop 99 units wide. Invisible on the full sheet,
+     obvious the moment one figure zoomed in.
+
+     ⭐ SO THE CLAIM IS ABOUT PIXELS, AND IT IS DERIVED. Every figure renders the
+     same width on a page, so a radius in rink units times (200 / viewBox width)
+     is its apparent size. Those must agree across all four — which is a real
+     comparison between independently authored figures, not a constant restated. */
+  const apparent = (fig, re) => {
+    const box = fig.viewBox.split(/\s+/).map(Number);
+    const m = re.exec(fig.svg);
+    return m ? +(+m[1] * (200 / box[2])).toFixed(2) : null;
+  };
+  const kinds = {
+    badge: /<g class="dgbadge"><circle[^>]*r="([\d.]+)"/,
+    token: /<circle class="dgtok"[^>]*r="([\d.]+)"/,
+    keeper: /<circle class="dgtok dgkeep"[^>]*r="([\d.]+)"/,
+  };
+  for (const [kind, re] of Object.entries(kinds)) {
+    const sizes = Object.entries(figures)
+      .map(([id, f]) => [id, apparent(f, re)]).filter(([, v]) => v != null);
+    assert.ok(sizes.length >= 2, `only ${sizes.length} figure carries a ${kind}`);
+    /* ⭐ THE NON-VACUITY CONDITION IS TWO DIFFERENT CROPS, not a headcount. Only
+       two figures carry a plain player token, and that is fine — what would make
+       this test empty is every figure carrying it at the SAME crop, where sizing
+       in rink units and sizing in pixels are indistinguishable. */
+    const crops = new Set(sizes.map(([id]) => +figures[id].viewBox.split(/\s+/)[2]));
+    assert.ok(crops.size >= 2,
+      `every figure carrying a ${kind} has the same crop (${[...crops]}) — the two `
+      + 'sizing rules are indistinguishable here, so this proves nothing');
+    const [, first] = sizes[0];
+    for (const [id, v] of sizes) {
+      assert.ok(Math.abs(v - first) < 0.05,
+        `the ${kind} is ${v} apparent units on ${id} and ${first} on ${sizes[0][0]} — `
+        + 'annotation is being sized in rink units, so it grows as a figure zooms in');
+    }
+  }
+  // AND THE FIGURES MUST ACTUALLY DIFFER IN CROP, or "they all agree" is trivial.
+  const widths = new Set(Object.values(figures).map(f => +f.viewBox.split(/\s+/)[2]));
+  assert.ok(widths.size >= 2, `every figure has the same crop (${[...widths]}) — this proves nothing`);
 });
 
 test('⭐ a ringed spot is one the rink actually paints, and face-offs rings them ALL', () => {
