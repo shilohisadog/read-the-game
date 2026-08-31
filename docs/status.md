@@ -60,6 +60,47 @@ tests — a 7px stripe of rink under the panel, an 8px edge of the layer box fro
 a copied padding constant, and a **blocking** one: the panel could be opened and
 not closed, because its only closer was underneath it.
 
+## 0.1c ⭐⭐ SHIPPED 2026-08-31 (later still) — FOUR TEACHING SURFACES
+
+Kevin set the direction and it is now the spine of the work:
+
+> *"What I want to focus on is educational content, aligning show me the work
+> with learning cards, and making them bi-directional, adding more learning
+> information to the rink (in the caption pill we just leveraged for the penalty
+> is over information)."*
+
+| | |
+|---|---|
+| **`35b0a32` — the power-play pill on the scoreboard** | *"we announce the penalty, but we don't retain the power play… maybe we should?"* A CONDITION that sits still, in the empty bottom-centre he identified. Up on **15.1%** of frames, toggles **13.6×/game**. Board height **identical lit and dark** at 390 and 1100. |
+| **`4fd71dc` — the penalty-kill caption** | *"why don't we say when the penalty expires?"* **78.6% of the 308 power plays that end, end because the penalty simply ran out — with no event in the feed and nothing on the page.** 3.5 a game. |
+| **`6b2bc12` — the learn cards became bi-directional** | The learn page had **zero elements with an id**; there was nothing to link to. Every card is anchored now and the work panel ends with a **Learn More** row of every card teaching the active layer. |
+| **`180ef6e` — the icing caption and its rule lines** | *"we left out half of icing — the situation that CAUSED it."* Both halves on the frame, and the two lines Rule 81 names lit **even with the Stoppages layer off**. 7.8 a game. |
+
+⭐ **THE RULE THAT ORGANISES ALL FOUR: a CONDITION is not an EVENT.** A condition
+sits (the power-play pill); a change speaks (the caption). Measured on one fact
+two ways — *standing* power play is 3 sentences × 20 repeats a game, the power
+play *changing* is 4 × 6. And they cannot share a surface: **77.6% of power-play
+windows contain a caption-worthy event.**
+
+⭐ **AND RULES ALWAYS SPEAK; MEASUREMENTS SPEAK ONLY WITH THEIR LAYER ON.** Goals,
+penalties, kills and icings caption unconditionally; a slot shot needs `hdOn`. A
+rule applies whether or not anyone opted into measuring it.
+
+⚠️ **THE CAPTION PILL IS A TEACHING SURFACE NOW AND CAN WRAP.** `nowrap` meant
+`max-width:92%` could not shrink it below its own text, so it overflowed and the
+**page scrolled sideways at 320 and 390**. Three fixes, each hiding the next:
+not `flex-wrap` (it folded the sentence into a 160px column), `width:max-content`
+(an abspos box at `left:50%` shrink-to-fits into HALF the card), and
+`box-sizing:border-box` (the cap **was** applying — 294px in a 316px card — while
+15px of padding each side sat outside it).
+
+⚠️ **AND TWO CORRECTIONS THIS FILE OWES.** §A5.1 calls the unreadable `sit`
+bucket *"five-on-three blindness"*; measured, it is **four** things — two-man
+advantage 34.1%, empty-net combinations 29.7%, **3-on-3 overtime 25.8%**,
+shootout 10.4%. And a claim I made in conversation that four of five layers
+"change nothing" was wrong: I never measured `.lbox`, which **is** the layer's
+live output. They do not change **the ice**; that is all.
+
 ## 0.2 What is live and under argument
 
 **`docs/restart-frames.md`** — three rounds with CHENG, published as an artifact,
