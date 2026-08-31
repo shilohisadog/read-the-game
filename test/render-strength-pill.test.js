@@ -34,6 +34,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { app, PAGE_CSS, boot, rich } from './helpers/page.js';
 import { stints } from '../src/lib/box.js';
+import { powerPlayOver } from '../src/lib/strength.js';
 import { icingRestarts, offsideRestarts } from '../src/lib/layers/whistle.js';
 import { readFileSync } from 'node:fs';
 
@@ -260,6 +261,52 @@ test('⭐ the caption names the club that was SHORT — the opposite of every ot
     assert.equal(side, ab === rich.teams.home.ab ? 'h' : 'a', `${ab} wearing side "${side}"`);
 });
 
+test('⭐ each ending chips the club its own VERB is about', () => {
+  /* ⚠️ THE FIRST BUILD HAD THIS BACKWARDS AND ONLY READING THE PILL FOUND IT.
+     "Penalty killed" is about the club that HELD, so it chips the penalised
+     side — deliberately the opposite of every other caption on this page. But
+     "Power play over" is about whose POWER PLAY ended, which is the OTHER club,
+     and reusing `killedBy` there rendered "BUF · Power play over" on a power
+     play that was MIN's. The chip named the opposite club from its own verb's
+     subject: the same shape as the exclusion ledger's "BUF were on the power
+     play — 4 skaters against 5", which is why `relativeTo` exists at all.
+
+     ⭐ THE EXPECTATION IS DERIVED FROM `box.js` AND THE SITUATION CODE, never
+     listed. A hard ['MIN','BUF'] would be a copy of the answer and would keep
+     passing the day the two clubs were swapped back. */
+  const ctx = { roster: rich.roster, homeId: rich.teams.home.id, awayId: rich.teams.away.id };
+  const abOf = id => (id === rich.teams.home.id ? rich.teams.home.ab : rich.teams.away.ab);
+  const SKIP = new Set(['stoppage', 'period-start', 'period-end', 'game-end', 'delayed-penalty']);
+  const EV = rich.events.filter(e => !SKIP.has(e.type));
+  const CTX = { homeId: rich.teams.home.id, awayId: rich.teams.away.id,
+                homeAb: rich.teams.home.ab, awayAb: rich.teams.away.ab };
+  const all = powerPlayOver(EV, stints(rich.events, ctx), CTX);
+  const scored = all.filter(k => k.by === 'goal');
+  assert.ok(scored.length >= 1, 'no power play in the fixture is scored on');
+  // The two clubs must actually DIFFER on these, or the test cannot tell them apart.
+  for (const k of scored) {
+    assert.notEqual(abOf(k.advantage), abOf(k.killedBy),
+      'the advantage and the penalised club are the same — this test proves nothing');
+  }
+
+  const a = boot();
+  const seen = [];
+  let last = a.$('caption').innerHTML;
+  a.$('scrub').oninput({ target: { value: '0' } });
+  for (let k = 0; k < +a.$('scrub').max; k++) {
+    a.$('fwd').click();
+    const cap = a.$('caption').innerHTML;
+    if (cap !== last && /⚡ Power play over/.test(cap)) {
+      const m = /<span class="tag (\w)">(\w+)<\/span>/.exec(cap);
+      assert.ok(m, `a power-play-over caption carries no club chip: ${cap}`);
+      seen.push(m[2]);
+    }
+    last = cap;
+  }
+  assert.deepEqual(seen, scored.map(k => abOf(k.advantage)),
+    'a "Power play over" caption names the penalised club instead of the one whose power play it was');
+});
+
 test('⭐ "a side" is read from the feed, never asserted to be five', () => {
   const a = boot();
   // STEPPED ONTO — a drag is silent, see the note in the test above.
@@ -349,11 +396,14 @@ test('⭐ a kill is a captioned frame, so the pace gives it room', () => {
   // A caption wired into `render` alone would appear and vanish inside an
   // ordinary frame — the same defect docs/event-timing.md exists about, running
   // backwards. This asserts the predicate itself carries the kill.
-  assert.match(app, /function captioned\(e\)\{return[^}]*KILLED\.has\(e\)/,
-    'the kill is captioned by the renderer but invisible to `dwell`');
+  assert.match(app, /function captioned\(e\)\{return[^}]*ENDED\.has\(e\)/,
+    'the end of a power play is captioned by the renderer but invisible to `dwell`');
   // AND IT IS ONE MAP, COMPUTED ONCE — a per-frame recomputation would re-derive
   // every stint on all 269 frames.
-  assert.match(app, /const KILLED=new Map\(penaltyKilled\(EV,PBOX,CTX\)/,
+  /* ⭐ KEYED ON `sayAt`, NOT `at`. A transition surfacing ON a goal waits one
+     frame so the goal keeps its own caption — see strength.js. Asserting the
+     key here is what stops the deferral being quietly undone by a rename. */
+  assert.match(app, /const ENDED=new Map\(powerPlayOver\(EV,PBOX,CTX\)\.map\(k=>\[EV\[k\.sayAt\]/,
     'the kills are no longer derived once from the game');
 });
 

@@ -16,7 +16,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { conservation } from '../src/lib/layer.js';
-import { situation, isEven, whyNotEven, standing, penaltyKilled, windows, KNOWN_SITUATIONS, EVEN, POWER_PLAY, EMPTY_NET } from '../src/lib/strength.js';
+import { situation, isEven, whyNotEven, standing, penaltyKilled, powerPlayOver, windows, KNOWN_SITUATIONS, EVEN, POWER_PLAY, EMPTY_NET } from '../src/lib/strength.js';
 import { corsi } from '../src/lib/layers/corsi.js';
 import { goaltending } from '../src/lib/layers/goaltending.js';
 import { danger } from '../src/lib/layers/danger.js';
@@ -310,7 +310,84 @@ test('⭐ a penalty that runs out IS a kill — the positive control for the thr
   const got = penaltyKilled([frame(1, 100, '1451'), frame(1, 110, '1551')],
     [stint(105, 'time')], K);
   assert.equal(got.length, 1, 'the shape every refusal below is a variation of');
-  assert.deepEqual(got[0], { at: 1, killedBy: 30, aside: 5 });
+  /* BOTH CLUBS, and the shape is asserted whole rather than field by field so a
+     new field cannot arrive unnoticed. `killedBy` is the club that HELD and
+     `advantage` the club that had the extra skater — the two sentences have
+     different subjects and the caption chips whichever its own verb is about. */
+  assert.deepEqual(got[0],
+    { at: 1, sayAt: 1, killedBy: 30, advantage: 7, aside: 5, by: 'time' });
+});
+
+/* ═══ THE OTHER WAY A POWER PLAY ENDS ═══════════════════════════════════════
+ *
+ * Kevin, on a live sequence: *"CAR is on a power play, then the next event is a
+ * CAR goal, nothing shows the power play is now over (because the team scored),
+ * that's a gap I think."*
+ *
+ * ⭐ HE IS RIGHT, AND HIS MISREADING IS THE EVIDENCE. On that specimen the
+ * penalty had expired on the clock four seconds BEFORE the goal — so the page's
+ * silence led a viewer who knows the sport cold to infer the wrong rule. A
+ * novice would infer the same and learn something false.
+ *
+ * ⚠️ AND NONE OF THIS IS REACHABLE FROM `rich.json`. Its six transitions land on
+ * faceoffs, hits, blocked shots and a shot on goal — not one of them on a GOAL —
+ * so a check driven through the page could only ever exercise the branch that
+ * does nothing. Constructed events reach it; the fixture cannot, and saying so
+ * is the point of these four. */
+const goalAt = (per, s, sit) => ({ per, s, sit, type: 'goal' });
+
+test('⭐ a power play SCORED ON is returned now, and named as its own thing', () => {
+  // It was REFUSED, on the reasoning that "the goal caption owns that frame
+  // anyway" — an assumption about presentation living inside a reducer, and the
+  // reason 21.1% of endings went by in silence.
+  const got = powerPlayOver([frame(1, 100, '1451'), frame(1, 110, '1551')],
+    [stint(105, 'goal')], K);
+  assert.equal(got.length, 1, 'a power play scored on still says nothing');
+  assert.equal(got[0].by, 'goal', 'it is not distinguished from a kill');
+  // AND THE PAIR: `penaltyKilled` must still refuse it, or the shield ends up on
+  // the team that just conceded.
+  assert.deepEqual(penaltyKilled([frame(1, 100, '1451'), frame(1, 110, '1551')],
+    [stint(105, 'goal')], K), [], 'a power-play goal was captioned as a kill');
+});
+
+test('⭐ a transition ON a goal waits one frame, so the goal keeps its caption', () => {
+  const got = powerPlayOver(
+    [frame(1, 100, '1451'), goalAt(1, 110, '1551'), frame(1, 111, '1551')],
+    [stint(105, 'time')], K);
+  assert.equal(got.length, 1);
+  assert.equal(got[0].at, 1, 'the strength changed on the goal frame');
+  assert.equal(got[0].sayAt, 2, 'the sentence stayed on the goal frame and was thrown away');
+});
+
+test('...but never twice, never onto another goal, and never across a period', () => {
+  // Each refusal is a case where deferring would put the sentence somewhere it
+  // describes something else. Paired with the success above, which is the same
+  // shape with the obstruction removed.
+  const back2back = powerPlayOver(
+    [frame(1, 100, '1451'), goalAt(1, 110, '1551'), goalAt(1, 111, '1551')],
+    [stint(105, 'time')], K);
+  assert.equal(back2back[0].sayAt, 1, 'it chased a second goal instead of standing still');
+
+  const across = powerPlayOver(
+    [frame(1, 100, '1451'), goalAt(1, 110, '1551'), frame(2, 111, '1551')],
+    [stint(105, 'time')], K);
+  assert.equal(across[0].sayAt, 1, 'the sentence crossed an intermission to a different situation');
+
+  const noNext = powerPlayOver(
+    [frame(1, 100, '1451'), goalAt(1, 110, '1551')], [stint(105, 'time')], K);
+  assert.equal(noNext[0].sayAt, 1, 'it deferred to a frame that does not exist');
+});
+
+test('⭐ two penalties ending together by DIFFERENT causes is refused, not guessed', () => {
+  // There is no single true sentence for "one ran out and one was scored on",
+  // and inventing one is worse than the silence this whole change removes.
+  const mixed = powerPlayOver([frame(1, 100, '1451'), frame(1, 110, '1551')],
+    [stint(105, 'time'), stint(106, 'goal')], K);
+  assert.deepEqual(mixed, [], 'a mixed ending was given one of the two sentences');
+  // AND THE PAIR: the same two stints agreeing DO produce one.
+  assert.equal(powerPlayOver([frame(1, 100, '1451'), frame(1, 110, '1551')],
+    [stint(105, 'time'), stint(106, 'time')], K).length, 1,
+    'two stints ending together is refused even when they agree');
 });
 
 test('⭐ no stint in the box record is no claim — the strength code is not enough', () => {

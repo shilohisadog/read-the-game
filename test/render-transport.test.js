@@ -262,8 +262,9 @@ test('a penalty is CALLED on the ice, like a goal and unlike a giveaway', () => 
     /🚨 GOAL/.test(h) ? 'goal' : /⛔ Penalty/.test(h) ? 'penalty'
       : /🛡 Penalty killed/.test(h) ? 'kill'
       : /🧊 Icing/.test(h) ? 'icing'
-      : /🔵 Offside/.test(h) ? 'offside' : 'other');
-  const got = { goal: 0, penalty: 0, kill: 0, icing: 0, offside: 0, other: 0 };
+      : /🔵 Offside/.test(h) ? 'offside'
+      : /⚡ Power play over/.test(h) ? 'ppover' : 'other');
+  const got = { goal: 0, penalty: 0, kill: 0, icing: 0, offside: 0, ppover: 0, other: 0 };
   marks.forEach(m => got[m]++);
   const want = t => rich.events.filter(e => e.type === t).length;
   /* ⭐ ONE FEWER KILL THAN THE GAME CONTAINS, AND THAT IS THE NEW RULE, NOT A
@@ -275,11 +276,19 @@ test('a penalty is CALLED on the ice, like a goal and unlike a giveaway', () => 
      second offside that did NOT collide, a hard 3 would go red for the wrong
      reason and a hard 4 would never have caught this at all. */
   assert.equal(offsides, 1, 'the reference game no longer has exactly one offside');
+  /* ⭐ AND THE OTHER WAY A POWER PLAY ENDS. 2 of the reference game's 6 endings
+     are a power play SCORED ON, which said nothing at all until 2026-08-31 —
+     21.1% of endings across 60 archive games. Derived from `box.js` here rather
+     than typed, so the expectation moves if the fixture does. */
+  const scored = stints(rich.events, { roster: rich.roster, homeId: rich.teams.home.id,
+                                       awayId: rich.teams.away.id })
+    .filter(s => s.endedBy === 'goal').length;
+  assert.ok(scored > 0, 'no power play in the fixture is scored on — ppover is untested');
   assert.deepEqual(got,
     { goal: want('goal'), penalty: want('penalty'), kill: kills - offsides,
-      icing: icings, offside: offsides, other: 0 },
-    'with no layers on, exactly the goals, penalties, kills, icings and offsides get a moment');
-  assert.ok(Object.values(got).slice(0, 5).every(v => v > 0), 'the walk missed a kind entirely');
+      icing: icings, offside: offsides, ppover: scored, other: 0 },
+    'with no layers on, exactly the goals, penalties, power-play endings, icings and offsides get a moment');
+  assert.ok(Object.values(got).slice(0, 6).every(v => v > 0), 'the walk missed a kind entirely');
 });
 
 test('the penalty caption names the team that TOOK it', () => {

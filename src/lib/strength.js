@@ -188,7 +188,7 @@ export function standing(code, ctx) {
  * a lie the day `KNOWN_SITUATIONS` learns four-on-three — which is the same
  * defence `situation()` itself is built on.
  */
-export function penaltyKilled(events, boxStints, ctx) {
+export function powerPlayOver(events, boxStints, ctx) {
   const out = [];
   for (let i = 1; i < events.length; i++) {
     const was = situation(events[i - 1].sit, ctx), now = situation(events[i].sit, ctx);
@@ -218,11 +218,83 @@ export function penaltyKilled(events, boxStints, ctx) {
        ending on that second had not yet been reflected. */
     const ended = boxStints.filter(s => s.team === shortId
       && s.start <= events[i - 1].s && s.end >= events[i - 1].s && s.end <= events[i].s);
-    if (!ended.length || !ended.every(s => s.endedBy === 'time')) continue;
-    out.push({ at: i, killedBy: shortId, aside: now.home });
+    if (!ended.length) continue;
+    /* ⭐⭐ THE GOAL-ENDED CASE IS RETURNED NOW RATHER THAN REFUSED, and this
+       docstring's third refusal is why it had to change. It read "the stint
+       ended by a GOAL — the power play was scored on, AND THE GOAL CAPTION OWNS
+       THAT FRAME ANYWAY (69 of 327, 21.1%)". The first half is a fact about
+       hockey and stands. The second half was an assumption about presentation
+       living inside a reducer, and it was wrong: the goal caption owning the
+       frame is exactly why nothing ever says the power play ended, and one in
+       five endings went by in silence.
+
+       Kevin found it from the other side — a power play, then a goal, then the
+       pill dark with nothing connecting them: "nothing shows the power play is
+       now over, that's a gap I think." He is right, and he is also evidence of
+       how big the gap is: he read that sequence as the GOAL ending the penalty,
+       and on that specimen it had actually expired on the clock four seconds
+       earlier. A page silent about a rule lets a viewer who knows the sport cold
+       infer the wrong one.
+
+       WHICH FRAME IT IS SAID ON IS THE CALLER'S PROBLEM. This reports what
+       happened and when the strength changed; app.js decides that a goal keeps
+       its own frame and the strength change lands on the next one. A reducer
+       that skipped a fact because of what some page might draw is the shape
+       being removed here, not repeated. */
+    const by = ended.every(s => s.endedBy === 'time') ? 'time'
+             : ended.every(s => s.endedBy === 'goal') ? 'goal' : null;
+    // MIXED IS REFUSED, not guessed. Two penalties ending on one boundary by
+    // different causes has no single true sentence, and inventing one is worse
+    // than the silence this change exists to remove.
+    if (by == null) continue;
+    /* ⭐ `sayAt` — THE FRAME THE SENTENCE GOES ON, WHICH IS NOT ALWAYS `at`.
+       A goal is the biggest thing that happens in hockey and its caption owns
+       its own frame; a strength change arriving in the same breath is thrown
+       away, which is the silence Kevin found. So when the transition surfaces ON
+       a goal, the sentence waits one frame — the goal keeps its moment and the
+       strength change lands where the badge actually goes dark, which is roughly
+       what a broadcast does: call the goal, then note the strength.
+
+       ONE FRAME, NEVER MORE, AND NEVER ACROSS A PERIOD. Deferring repeatedly
+       would let a sentence drift away from the thing it describes, and across an
+       intermission it would be describing a different situation entirely.
+       If the next frame is ANOTHER goal there is nowhere honest to put it and it
+       stays where it is rather than chasing.
+
+       ⭐ IT LIVES HERE, NOT IN app.js, BECAUSE IT IS TESTABLE HERE. Which frame
+       carries a sentence is a fact about the timeline, and the reference game
+       cannot express this case at all — none of its six transitions lands on a
+       goal, so a check driven through the page could only ever assert the
+       branch that does nothing. Constructed events reach it; a fixture cannot. */
+    const nxt = events[i + 1];
+    const defer = events[i].type === 'goal' && nxt && nxt.type !== 'goal'
+                  && nxt.per === events[i].per;
+    /* ⭐ BOTH CLUBS, BECAUSE THE TWO SENTENCES HAVE DIFFERENT SUBJECTS.
+       "Penalty killed" is about the club that HELD — the short one. "Power play
+       over" is about the club that HAD the advantage. Returning only `killedBy`
+       forced the caption to chip the penalised club under both, so a power play
+       scored on read as "BUF · Power play over" when the power play was MIN's —
+       the chip naming the opposite club from its own verb's subject.
+       That is the exact defect `relativeTo` above exists to prevent, found by
+       reading the rendered pill rather than by any test. */
+    out.push({ at: i, sayAt: defer ? i + 1 : i,
+               killedBy: shortId, advantage: was.advantage, aside: now.home, by });
   }
   return out;
 }
+
+/**
+ * The power play RAN OUT — a kill, which is `powerPlayOver` filtered to the clock.
+ *
+ * ⭐ ONE WALK, TWO VIEWS. A power play that expires is a kill; one that is
+ * SCORED ON is the opposite of a kill, and calling both by one name would put
+ * the shield on a team that just conceded. They keep different names and
+ * different sentences, and share every line of the derivation — the transition,
+ * the skater-gained relationship, and all three refusals — because that is one
+ * claim about the situation code and a second copy is where the two would drift.
+ */
+export const penaltyKilled = (events, boxStints, ctx) =>
+  powerPlayOver(events, boxStints, ctx).filter(k => k.by === 'time');
 
 /**
  * The windows in which play was not even strength, for marking a timeline.

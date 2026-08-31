@@ -169,7 +169,13 @@ const PBOX=stints(G.events,CTX);
    from the event object answers in O(1) without touching it, for the same reason
    `PBOX` above is computed once: a penalty being killed is a property of the
    GAME, and only the query is a property of the moment. */
-const KILLED=new Map(penaltyKilled(EV,PBOX,CTX).map(k=>[EV[k.at],k]));
+/* ⭐ KEYED ON `sayAt`, NOT ON `at`. A transition that surfaces on a GOAL waits
+   one frame -- see strength.js. Kevin: "CAR is on a power play, then the next
+   event is a CAR goal, nothing shows the power play is now over, that's a gap
+   I think." It was: the caption chain gave that frame to the goal and the
+   strength change was dropped. Now the goal keeps its moment and the sentence
+   lands on the next frame, which is where the badge goes dark anyway. */
+const ENDED=new Map(powerPlayOver(EV,PBOX,CTX).map(k=>[EV[k.sayAt],k]));
 /* ⭐ AND THE RESTART EACH ICING FORCES. Keyed by the event object for `KILLED`'s
    reason -- `captioned` takes one event and nothing else. Built from ALL events
    rather than `EV`, because the icing itself is a `stoppage` and the SKIP set
@@ -849,7 +855,7 @@ function render(i,how){
       four-on-four rather than an expiry. The slot shot loses because it happens
       many times a game and a kill happens 3.4 times, and because the slot layer
       has the ice to say it with while this has nothing at all. */
-   else if(cur&&KILLED.has(cur)){captionKill(cur);}
+   else if(cur&&ENDED.has(cur)){captionEnded(cur);}
    else if(cur&&hdOn&&isHD(cur)){lastHD=i;caption(cur,'hd');}}
  prevA=a;prevH=h;
  $('per').textContent=periodLabel(cur);$('clk').textContent=cur?cur.rem:'20:00';
@@ -968,7 +974,38 @@ function sayCaption(side,ab,label,rest,e){const c=$('caption');
    322 (the penalty caption already shipping is 242 and fine). "5 a side" is
    270px. This is the longest caption the page can produce, so it is the one
    that sets the budget, and no test we have can see it. */
-function captionKill(e){const k=KILLED.get(e);const tid=k.killedBy;
+/* ⭐⭐ AND THE OTHER WAY A POWER PLAY ENDS, WHICH THE PAGE HAS NEVER SAID AT ALL.
+   Kevin: "CAR is on a power play, then the next event is a CAR goal, nothing
+   shows the power play is now over (because the team scored), that's a gap."
+   Measured over 60 archive games, 69 of 327 endings -- 21.1%, better than one in
+   five -- end because the power play SCORED, and every one of them was silent:
+   `penaltyKilled` refused them on the grounds that "the goal caption owns that
+   frame anyway", which was an assumption about presentation living in a reducer.
+
+   ⛔ IT IS NOT CALLED A KILL AND DOES NOT WEAR THE SHIELD. A power play that was
+   scored on is the OPPOSITE of a kill; the shield belongs to the team that held,
+   and putting it on the team that just conceded would say the reverse of what
+   happened. Different outcome, different label, different glyph.
+
+   ⭐ AND THE SENTENCE TEACHES THE RULE RATHER THAN RESTATING THE SCOREBOARD.
+   That a goal ends a minor penalty is not deducible from anything on screen —
+   the badge just goes dark. It is also not universally true, which is exactly
+   why this reads `box.js`'s `endedBy` and never "was there a goal near here": a
+   goal does NOT end a major, and the archive disagreement between those two
+   readings is 15 power plays over 60 games, in both directions. */
+function captionEnded(e){const k=ENDED.get(e);const tid=k.killedBy;
+ if(k.by==='goal'){
+  /* ⚠️ THE CHIP NAMES THE CLUB THAT HAD THE ADVANTAGE, NOT THE PENALISED ONE,
+     and the first build had it backwards. The kill's chip is the club that HELD
+     because "killed" is their verb; this sentence's subject is whose POWER PLAY
+     ended, which is the other club. "BUF · Power play over" on MIN's power play
+     says the reverse of what happened — the same shape as the exclusion ledger's
+     "BUF were on the power play, 4 skaters against 5", which is why
+     `relativeTo` exists. Found by reading the rendered pill. */
+  const pid=k.advantage;
+  sayCaption(pid===AID?'a':'h',pid===AID?AAB:HAB,'⚡ Power play over',
+   ` &middot; the goal ends the penalty &mdash; ${k.aside} a side`,e);
+  return;}
  sayCaption(tid===AID?'a':'h',tid===AID?AAB:HAB,'🛡 Penalty killed',
   ` · ${k.aside} a side`,e);}
 /* ⭐ THE PUNISHMENT IS THE DOT, AND THE PAGE HAS NEVER SAID SO DURING PLAY. The
@@ -1334,7 +1371,7 @@ function syncStep(){$('back').disabled=i<=-1;$('fwd').disabled=i>=EV.length-1;}
    silent, so `dwell` would give it an ordinary frame's time -- a sentence that
    appears and is gone before it is read, which is the exact defect this
    predicate was extracted to make impossible, running in the other direction. */
-function captioned(e){return !!e&&(e.type==='goal'||e.type==='penalty'||KILLED.has(e)||ICING.has(e)||OFFSIDE.has(e)||(hdOn&&isHD(e)));}
+function captioned(e){return !!e&&(e.type==='goal'||e.type==='penalty'||ENDED.has(e)||ICING.has(e)||OFFSIDE.has(e)||(hdOn&&isHD(e)));}
 function dwell(e){return captioned(e)?frameMs+CAPTION_BONUS:frameMs;}
 function step(){if(i>=EV.length-1){stop();return;}set(i+1,'play');timer=setTimeout(step,dwell(EV[i]));}
 /* PLAY MEANS GO. A viewer who presses it has asked for the game, and resting on
