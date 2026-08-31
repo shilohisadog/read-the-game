@@ -369,10 +369,47 @@ test('the phrase that was FALSE is gone from the events it was false about', () 
   // 7.3% of missed shots hit iron and 2.5% came up short. "Missed shot" is
   // wrong about all of them, and it was the only thing the page ever said.
   for (const iron of ['hit-left-post', 'hit-right-post', 'hit-crossbar']) {
-    assert.match(missSay({ miss: iron }), /Hit the (post|crossbar)/);
+    assert.match(missSay({ miss: iron }), /hit the (post|crossbar)/);
     assert.doesNotMatch(missSay({ miss: iron }), /missed|Missed/);
   }
   assert.equal(missSay({ miss: 'short' }), 'Shot came up short');
+});
+
+/**
+ * ⭐ EVERY MISSED-SHOT LABEL NAMES WHAT MISSED.
+ *
+ * Kevin, on `?game=2025021245&at=2-09:26`, reading `TOR · High and wide`:
+ * **"what was high and wide?"** Six of the ten values answered nothing —
+ * 22.8% of missed shots, 5.9 a game, measured over 60 live games.
+ *
+ * ⚠️ WHY NO EXISTING TEST COULD SEE IT. Every string in the table was
+ * individually correct English, the two commonest values (74.4%) were already
+ * in the good half, and the checks above assert PER-VALUE facts — that iron is
+ * named, that left and right are not repeated. None of them could ask the
+ * question that spans the set: *does this phrase have a subject?*
+ *
+ * So this asserts the PROPERTY over the whole table, which is the only shape
+ * that fails when a future value is added with the same omission.
+ */
+test('⭐ every missed-shot phrase names its subject, so none of them is a fragment', () => {
+  for (const [value, said] of Object.entries(MISS_SAID)) {
+    assert.match(said, /^Shot\b/,
+      `"${said}" (${value}) does not say WHAT missed — the "Blocked it" defect again`);
+  }
+});
+
+test('⭐ and none of them can be read as a body check', () => {
+  // `LAB.hit` is the word `Hit`, on this same surface, in this same
+  // `CLUB · phrase` grammar. `TOR · Hit the post` therefore invited exactly the
+  // wrong reading of 9.8% of missed shots, and both strings were individually
+  // fine — which is why only a claim about the PAIR can catch it.
+  const bodyCheck = /const LAB=\{[^}]*hit:'([^']*)'/.exec(app);
+  assert.ok(bodyCheck, 'LAB no longer carries a hit label, so this guard has no subject');
+  const hitWord = bodyCheck[1];
+  for (const said of Object.values(MISS_SAID)) {
+    assert.ok(!said.startsWith(hitWord + ' '),
+      `"${said}" opens with the body-check label "${hitWord}"`);
+  }
 });
 
 test('an unknown value renders the league’s own word, never a guess', () => {

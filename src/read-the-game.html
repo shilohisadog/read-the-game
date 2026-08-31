@@ -2123,17 +2123,43 @@ function corsiTeam(ev, roster) {
  * the net") that the feed does not record. It is also SEASON-BOUNDED: zero in
  * 2023 across 881 missed shots, then 9 and 15.
  */
+/**
+ * ⭐ EVERY ONE OF THESE NAMES ITS SUBJECT, and that is a rule rather than a
+ * style. Kevin, on `?game=2025021245&at=2-09:26`: the label read `TOR · High
+ * and wide` and his question was **"what was high and wide?"**
+ *
+ * It is the `VGK · Blocked it` defect again — a label whose grammar lost its
+ * subject — and the first version of this table shipped it on SIX of ten
+ * values. It stayed invisible because the two commonest (74.4% of missed shots)
+ * are in the half that reads correctly, so a walk through a game mostly showed
+ * working copy. Measured across 60 live games and 1,554 missed shots:
+ * **22.8%, 5.9 a game, named nothing at all.**
+ *
+ * ⚠️ AND TWO OF THEM WERE NOT MERELY SUBJECTLESS, THEY WERE AMBIGUOUS.
+ * `LAB.hit` is the word `Hit` — a body check, on this same surface, in this
+ * same `CLUB · phrase` grammar. So `TOR · Hit the post` invited exactly the
+ * wrong reading of 9.8% of missed shots, and no test could see it because both
+ * strings are individually correct.
+ *
+ * THE SUBJECT IS ALWAYS `Shot`, never a pronoun and never implied. That is what
+ * makes the set checkable by a rule instead of by ten remembered strings, and
+ * `attribution.test.js` asserts the property rather than the phrases.
+ *
+ * `failed-bank-attempt` KEEPS THE LEAGUE'S NOUN behind the subject rather than
+ * being reworded: the note above explains why every plainer phrasing invents an
+ * intention the feed does not record. Adding a subject does not touch that.
+ */
 const MISS_SAID = {
   'wide-left': 'Shot went wide',
   'wide-right': 'Shot went wide',
-  'high-and-wide-left': 'High and wide',
-  'high-and-wide-right': 'High and wide',
-  'above-crossbar': 'Over the crossbar',
-  'hit-left-post': 'Hit the post',
-  'hit-right-post': 'Hit the post',
-  'hit-crossbar': 'Hit the crossbar',
+  'high-and-wide-left': 'Shot went high and wide',
+  'high-and-wide-right': 'Shot went high and wide',
+  'above-crossbar': 'Shot went over the crossbar',
+  'hit-left-post': 'Shot hit the post',
+  'hit-right-post': 'Shot hit the post',
+  'hit-crossbar': 'Shot hit the crossbar',
   short: 'Shot came up short',
-  'failed-bank-attempt': 'Failed bank attempt',
+  'failed-bank-attempt': 'Shot — failed bank attempt',
 };
 
 /**
