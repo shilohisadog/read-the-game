@@ -28,6 +28,125 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 
 ---
 
+# §0. WHERE WE ARE — 2026-08-31
+
+Kevin: *"I want to take a step back and capture where we are… I've lost the
+bubble a bit."* This section is the orientation. Everything below §0 is the
+detail, organised by state rather than by date.
+
+## 0.1 What shipped in the last week, all live
+
+| | |
+|---|---|
+| **The pace halved** to `[5200,3600,2000]` | **LOCKED IN 2026-08-30** — Kevin, after several replays: *"definitely helps the watchability."* |
+| **A 5-ft green shading on the next play** | on by default, switchable; the largest doctrine spend this project has made |
+| **U11 — the rink goes edge to edge below 520px** | ice 320.8×136.3 → **386×164**, +20% of hockey on a phone |
+| **The census** — 4,192 games | the zone gradient (**2.395/1.132/0.712**), the power-play draw (**4.16×**), CHENG's hits hypothesis dead |
+| **The layer surface**, distributions, per-game summary, share links | §A2–§A2f |
+| **C1 — a date path into the archive** | `calendar.html` |
+
+## 0.2 What is live and under argument
+
+**`docs/restart-frames.md`** — three rounds with CHENG, published as an artifact.
+What the replay should do at a whistle. Settled: the beat is earned, not added;
+the carrier is the painted faceoff dot; all 44 restarts get identical treatment;
+once-per-session was **rejected** because two viewers would see one frame
+differently. **Not built.**
+
+⭐ **And a measurement inside it reframed the whole thing** — see §0.4.
+
+## 0.3 ⭐ THE FOUR THREADS KEVIN NAMED, 2026-08-31 — none of them solved
+
+His own words, and three of the four are old:
+
+> *"We haven't really solved a couple of my outstanding issues: puck trails,
+> activity between recorded events, how we surface who's on the ice at important
+> times, and most importantly — this is a new thought — we really haven't come up
+> with a killer feature that'll drive and maintain viewership on the site."*
+
+| | state | what is actually known |
+|---|---|---|
+| **K1 — activity between recorded events** | **OPEN, and now measured** | §0.4. This is the oldest complaint on the project (*"the continuous event stream tells me nothing"*, 2026-08-28) and it is still unaddressed. |
+| **K2 — puck trails** | **OPEN** | Trails are one dot (`off`, the default), the period, or the game. The page's own copy admits the binary: *good to study, busy to watch*. The run-bounded middle was proposed and **Kevin declined it** (`restart-frames.md` §12) — *"I don't see what that would teach a novice."* So the binary stands and nothing replaces it. |
+| **K3 — who is on the ice at important times** | **OPEN, and half-refused on measurement** | At a **goal**, `shifts` agree with `situationCode` on **73.5%** (407 goals) — a named list is not defensible. ⚠️ The remembered *"97%"* was measured on **shots**, sampled, n=120. At a **faceoff at s=0** it is clean: 25/25 games hold exactly 6 a side. So the pre-game lineup is buildable and the goal moment is not. That is **C3** and it still has no reducer in `src/lib/`. |
+| **K4 — a killer feature** | **OPEN, NEW, and nothing is specified** | §0.5. |
+
+## 0.4 ⭐⭐ THE MEASUREMENT THAT REFRAMES ALL OF IT
+
+Taken 2026-08-31 across 60 live games, 15,353 consecutive timeline transitions:
+
+| between one recorded event and the next | |
+|---|---|
+| game-clock gap — p25 / **median** / p75 / p90 | 3s / **9s** / 20s / 34s |
+| transitions spanning **10 seconds or more** | **48.3%** |
+| **the acting team CHANGES** | **45.0%** |
+| crosses centre ice | **28.5%** |
+| the mark's jump — median | **48 ft, 93px of a 386px rink** |
+| frames where the mark moves **less than 5 ft** | **2.9%** |
+
+⭐ **The median transition is nine seconds of hockey and a quarter of the screen,
+rendered as one cut with nothing said about it. Forty-five percent of them are
+the puck changing hands — and that IS recorded.**
+
+⭐⭐ **DISTINCTNESS WAS NEVER THE SCARCE RESOURCE. CONTINUITY IS.** Every frame
+already differs maximally from the last; none of them is legible. That is Kevin's
+day-one complaint expressed in numbers, and it means **every option argued in
+`restart-frames.md` is the wrong shape** — each adds a distinction to a stream
+already saturated with them.
+
+**Kevin's specimen, `?game=2025021245&at=2-18:52`** — the concrete version:
+
+```
+18:52  WSH  hit          Leonard    x=-80   deep in Toronto's end
+        ...28 seconds and 161 feet, unrecorded and unnarrated...
+18:24  TOR  shot on goal Lorentz    x=+81   the other end
+18:23       goalie froze it → faceoff in Washington's end
+```
+
+Washington is forechecking, throws a hit, loses it; Toronto breaks out the length
+of the ice and gets a shot. **A fan reads that instantly. A novice cannot, and
+the page says nothing.** ⭐ **The story is recoverable without inventing a path:
+which end, which team, how long, and that possession changed are all recorded.
+The trajectory is not — and we do not need it.** *Name the transition, not the
+trajectory.*
+
+## 0.5 ⚠️ THE MISSION CHECK — Kevin is right and this is the honest version
+
+> *"We've also been focusing on measurements and continue to lose sight of our
+> mission, which is to educate the novice viewer on the intricacies of hockey."*
+
+**`docs/restart-frames.md` is seventeen sections and four review rounds about
+whether one dot should be brighter.** Three days of it. Meanwhile the complaint
+that started the work — *the stream tells me nothing* — has had one change shipped
+against it (the pace) and every subsequent day spent on the boundary around the
+problem rather than the problem.
+
+**The measurements are not the failure**; §0.4 is the most useful thing produced
+in the whole thread and it exists because CHENG asked for a denominator. **The
+failure is that measuring became the activity.** A document that can absorb four
+review rounds without shipping anything is a document that has become the work.
+
+⭐ **And K4 has a gate that outranks every idea in it: no novice has ever used
+this site.** The tester is scheduled (§E) and has not happened. Any killer
+feature chosen before that is a guess dressed as a plan — which is the one shape
+this project refuses everywhere else.
+
+**Three candidates, ranked, none specified:**
+
+1. **A reason to come back tomorrow.** The nightly ingest already runs. *"Last
+   night, three moments worth understanding"* is a habit, and habit is what
+   retention actually is. Cheapest of the three and the only one that uses
+   machinery already built.
+2. **The expanding curriculum** — Kevin's own framing: *"teach them an expanding
+   set of hockey details that the novice doesn't grasp yet."* The nine learn
+   doors are the seed; the archive is infinite examples; the census is the
+   facts. Progression is a retention mechanic and this is the only candidate
+   that IS the mission rather than serving it.
+3. **The game story** — the measurement page, told as a sequence rather than a
+   table. Shareable, and it is where §0.4's *name the transition* would live.
+
+---
+
 ## A. Shipped in the last three days
 
 | id | item | commit |
