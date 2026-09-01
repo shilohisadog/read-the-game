@@ -877,3 +877,119 @@ test('the NEUTRAL colour is what a figure may use, and it is not any club\'s', (
   assert.ok(!clubs.has(NEUTRAL.toLowerCase()),
     `NEUTRAL ${NEUTRAL} is a club's colour now`);
 });
+
+test('⭐ a "see also" between two diagrams is MUTUAL, or the second stays undiscovered', () => {
+  /* Kevin: *"then the cross-link for the delayed penalty (crossing over to the
+     'pull the goalie' learning card)."* And both ways, because the fact is
+     symmetric — a goaltender leaves the ice for exactly two reasons, and until the
+     penalties figure existed the empty-net card taught only one of them.
+
+     ⭐ ONE-WAY IS THE FAILURE MODE, NOT A LESSER VERSION. A reader who arrives at
+     the empty net has no way to learn there is a second cause; the link exists
+     precisely for the reader who has not seen the other card, which is the reader
+     the missing direction strands. */
+  const see = Object.fromEntries(Object.entries(figures)
+    .filter(([, f]) => f.see).map(([id, f]) => [id, f.see.to]));
+  const n = Object.keys(see).length;
+  assert.ok(n >= 2, `${n} figure(s) carry a "see also" — a pairing needs two`);
+  for (const [from, to] of Object.entries(see)) {
+    assert.ok(figures[to], `${from} points at "${to}", which is not a figure`);
+    assert.equal(see[to], from,
+      `${from} points at ${to} and ${to} does not point back — the reader who needs `
+      + 'this link is the one who has not seen the other card');
+    /* AND THE PAGE ACTUALLY CARRIES IT, not just the document node draws.
+       ⚠️ THE FIRST VERSION OF THIS COULD NOT SEE ITS OWN SUBJECT: it scanned
+       `class="dgsee"…(<[^>]+>)*…href=`, and `(<[^>]+>)*` swallows the whole
+       `<a href="…">` before the search for `href` begins. The paragraph is
+       extracted and read instead, which is what it was always trying to do. */
+    const block = /<p class="dgsee">([\s\S]*?)<\/p>/.exec(rulePages[from]);
+    assert.ok(block, `the ${from} page renders no "see also" at all`);
+    assert.match(block[1], new RegExp(`href="/${to}\\.html"`),
+      `the ${from} page's "see also" does not link to ${to}: ${block[1]}`);
+  }
+});
+
+test('⭐ the two figures that walk a goaltender off the ice do not draw the same picture', () => {
+  /* CHENG's condition for drawing it twice: *"the two figures must differ in what's
+     visible around the goalie… if they render identically, that's duplication. If
+     the cause is legible in each, it's the lesson."*
+
+     The delayed call carries an OFFICIAL with his arm up and a puck with the other
+     team; the empty net carries neither. That difference is what stops a reader
+     meeting one picture twice and learning nothing the second time.
+
+     ⛔ AND THE CONVERSE IS NOT ASSERTED, because it is not achievable and
+     docs/penalties-card.md §5.2 overstated it. The empty net's cause is "losing
+     late", which needs a clock and a score — the one part of the game page's
+     furniture a diagram may not borrow. Its cause lives in its words. What a test
+     can hold is that the two DRAWINGS differ. */
+  const leavers = Object.entries(figures).filter(([, f]) =>
+    goalies(f.svg).some(g => { const [t, b] = boardsY((g.x1 + g.x2) / 2); return g.y2 < t || g.y1 > b; }));
+  assert.equal(leavers.length, 2,
+    `${leavers.length} figure(s) walk a goaltender off the ice — this compares a pair`);
+  const kinds = f => [...new Set(actors(f.svg).filter(a => !a.ghost)
+    .flatMap(a => (a.cls.match(/\bdg(gk|sk|of|puck|tok)\b/g) || [])))].sort().join(',');
+  const [a, b] = leavers;
+  assert.notEqual(kinds(a[1]), kinds(b[1]),
+    `${a[0]} and ${b[0]} draw the same cast (${kinds(a[1])}) — a reader meets one `
+    + 'picture twice and cannot tell which rule it is about');
+  // AND THE DELAYED CALL IS THE ONE WITH THE SIGNAL IN IT.
+  const withRef = leavers.filter(([, f]) => /\bdgof\b/.test(f.svg)).map(([id]) => id);
+  assert.deepEqual(withRef, ['penalties'],
+    `the raised arm appears on ${withRef.join(', ') || 'nothing'} — it is the delayed `
+    + 'call\'s own signal and means nothing on the other figure');
+});
+
+test('⭐ a note is prose, so it points at nothing and carries no count', () => {
+  /* CHENG ruled the penalty kinds out of the drawing: *"drawing the three kinds at
+     the places those fouls happen would be inventing coordinates — the taxonomy is
+     a naming of `descKey` values and it carries no geometry."* Hence `note`, and
+     hence the rule: **a figure draws what the ice can show.**
+
+     ⛔ AND IT CARRIES NO NUMBER. *The rules half may state what the record
+     contains; only the measurements half may state how often.* Which penalties
+     exist is the league's; how often each occurs is ours. */
+  const notes = Object.entries(figures).filter(([, f]) => f.note);
+  assert.ok(notes.length >= 1, 'no figure carries a note — this test has no subject');
+  for (const [id, f] of notes) {
+    assert.doesNotMatch(f.note.replace(/&[a-z]+;/g, ''), /\d/,
+      `the ${id} note carries a figure. A count is a measurement over our archive and `
+      + 'belongs to the other half of the learn page');
+    // A NOTE IS NOT A STEP: nothing on the ice is numbered for it.
+    const badges = (f.svg.match(/<g class="dgbadge">/g) || []).length;
+    assert.equal(badges, f.steps.length,
+      `the ${id} figure draws ${badges} badge(s) for ${f.steps.length} step(s) — a note `
+      + 'must not be numbered, and every step must be');
+    assert.match(rulePages[id], /class="dgnote"/, `the ${id} page renders no note`);
+  }
+});
+
+test('⭐ both men who leave the ice reach it, and they leave on OPPOSITE sides', () => {
+  /* ⚠️ FOUND BY A MUTATION THAT SURVIVED. Stopping the penalised skater at y=74 —
+     inside the boards, in the corner — passed the whole suite. The goaltender has
+     been guarded since Kevin caught him loitering in the neutral zone (*"make sure
+     the pulled goalie goes as far off the ice as he can"*), and nothing said the
+     same about anyone else. A figure whose entire second step is "he serves two
+     minutes in the penalty box" must not draw him standing on the ice.
+
+     ⭐ AND OPPOSITE SIDES IS A FACT ABOUT A RINK, NOT A COMPOSITION TRICK. The
+     benches are on one side and the penalty boxes on the other, so a goaltender
+     leaving for the bench and a skater leaving for the box travel in opposite
+     directions. It is also the one thing that stops two people walking off the ice
+     in one drawing from reading as the same event happening twice. */
+  const fig = figures.penalties;
+  assert.ok(fig, 'the penalties figure is gone');
+  const movers = actors(fig.svg).filter(a => a.move && !a.ghost);
+  assert.equal(movers.length, 2, `${movers.length} moving actor(s) — this figure walks two men off`);
+  const side = [];
+  for (const m of movers) {
+    const [top, bot] = boardsY(m.cx);
+    assert.ok(m.y2 < top || m.y1 > bot,
+      `a mover rests spanning y ${m.y1}–${m.y2} at x=${m.cx}, where the ice runs `
+      + `${top}–${bot} — he is on the ice, not in the box or on the bench`);
+    side.push(m.y2 < top ? 'above' : 'below');
+  }
+  assert.deepEqual([...side].sort(), ['above', 'below'],
+    `both men leave ${side[0]} the ice — the bench and the penalty box are on `
+    + 'opposite sides of a rink, and drawing them together loses the difference');
+});

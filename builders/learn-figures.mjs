@@ -42,7 +42,8 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { furniture, netGlyph, goalieGlyph, skaterGlyph, GK_H, boardsY, SX, SY } from '../src/lib/rinkart.js';
+import { furniture, netGlyph, goalieGlyph, skaterGlyph, officialGlyph, GK_H,
+         boardsY, SX, SY } from '../src/lib/rinkart.js';
 import { BLUE_LINE_X, NEUTRAL_DOT_X, NET_X } from '../src/lib/rink.js';
 import { NEUTRAL } from '../src/lib/teams.js';
 
@@ -228,6 +229,15 @@ const gk = (gx, x, y, k = 1, cls = '', dash = false) => {
   return `<g transform="translate(${f(tx)},${f(ty)}) scale(${f(s)})"`
        + ` stroke-width="${f(TOK_STROKE / s)}"${dashes(s, dash)}>`
        + goalieGlyph(gx, NEUTRAL, 'var(--ice)', `dggk ${cls}`.trim()) + '</g>';
+};
+
+/** An official, placed and weighted exactly as `gk` places a goaltender. */
+const of_ = (gx, x, y, k = 1, cls = '') => {
+  const s = GK_FIT * k;
+  const [tx, ty] = [x - s * gx, y - s * GK_HOME];
+  return `<g transform="translate(${f(tx)},${f(ty)}) scale(${f(s)})"`
+       + ` stroke-width="${f(TOK_STROKE / s)}">`
+       + officialGlyph(gx, NEUTRAL, 'var(--ice)', `dgof ${cls}`.trim()) + '</g>';
 };
 
 /** A skater, placed and weighted exactly as `gk` places and weights a goaltender. */
@@ -733,6 +743,9 @@ function emptyNet() {
       + badge(3, A1.x, A1.y + 9, 1)
       + stamp(SX(60), SY(34), 1)
       + `</g>`,
+    // ⭐ AND BACK THE OTHER WAY — see the penalties figure's `see` for why both.
+    see: { to: 'penalties',
+           say: 'This is not the only reason a goaltender leaves the ice' },
     /* ⛔ STEP 2 STOPS AT THE FACT. It used to add *"— any shot that reaches it
        goes in"*, and Kevin killed it: *"if we expand on that it can lead to
        'that's not true' type comments, since a defender can still guard the goal
@@ -755,8 +768,122 @@ function emptyNet() {
   };
 }
 
+
+/* ── PENALTIES ──────────────────────────────────────────────────────────────
+   ⭐ THE SIXTH FIGURE, AND THE ONE THE OTHER FIVE MADE NECESSARY. Kevin: *"that's
+   the only card that links to a game. Would it provide more continuity if we used
+   a diagram (somehow) to describe a delayed penalty (as well as detail the more
+   common penalty types, can't forget the base case)?"* In the rules half it was
+   four diagrams and one raw game link — the inconsistency sits in the half a
+   novice reads first.
+
+   ⚠️ AND THE CARD PROMISED A MOMENT THE FEED DOES NOT POPULATE. It said *"this is
+   that gap — the delayed call, before the whistle"*, and measured over 46
+   published games (109 delayed→penalty pairs) **79 of them, 72.5%, carry no event
+   at all between the call and the whistle**. The gap exists in time — median 4s,
+   p90 28s — and a replay that walks recorded events has nothing to put in it.
+   Same family as offside's crossing: a rule we can draw and never replay.
+
+   ⭐ TWO DRAWN STEPS, IN CHRONOLOGICAL ORDER, AND THE KINDS IN PROSE (CHENG).
+   A third step naming restraint/stick/physical fouls was drawn first and ruled
+   out: *"drawing the three kinds at the places those fouls happen would be
+   inventing coordinates — the taxonomy is a naming of `descKey` values and it
+   carries no geometry."* Hence `note`, and hence the rule it produced:
+   **a figure draws what the ice can show.**
+
+   ⭐ THE TWO DEPARTURES GO TO OPPOSITE SIDES, WHICH IS TRUE OF A REAL RINK. The
+   benches are on one side and the penalty boxes on the other (Rule 3), so the
+   goaltender leaves upward and the penalised skater downward. That is not a
+   composition trick: it is the one fact that keeps two people walking off the ice
+   in one drawing from reading as the same event twice.
+
+   ⚠️ CHENG'S CONDITION ON DRAWING A GOALTENDER LEAVING TWICE — *"the two figures
+   must differ in what's visible around the goalie… if the cause is legible in
+   each, it's the lesson."* Here the cause is legible: an official with his arm up
+   and the puck with the OTHER team, neither of which the empty-net figure has.
+   ⛔ THE CONVERSE IS NOT ACHIEVABLE AND I OVERSTATED IT IN docs/penalties-card.md
+   §5.2: the empty net's cause is "losing late", which needs a clock and a score —
+   the one piece of the game page's furniture a diagram may not borrow. Its cause
+   lives in its words. The test is that the two DRAWINGS differ, not that both
+   causes are drawable. */
+function penalties() {
+  const id = 'pe-';
+  const [ICETOP, ICEBOT] = boardsY(112);
+  // The offender, and where he goes: down, to the box side.
+  const P0 = { x: 138, y: 58 }, P1 = { x: 118, y: ICEBOT + 5 };
+  // The goaltender of the team that did NOT offend, leaving for the bench above.
+  const G0 = { x: SX(-NET_X), y: GK_HOME }, G1 = { x: 88, y: ICETOP - 5 };
+  /* ⚠️ EVERY ONE OF THESE MOVED AFTER LOOKING AT THE FIRST RENDER, and each was
+     sitting on something: the official stood INSIDE the end-zone circle with the
+     goaltender's arrow passing through his badge, and the puck carrier stood in
+     the middle of the centre circle. Between the two of them the two lines this
+     figure is actually about — a departure up and a departure down — were the
+     hardest things on the ice to follow. The official now sits between the two
+     end-zone circles, 29 units clear of each and 21 below the arrow; the carrier
+     is out on open ice in the half his team is attacking. */
+  const REF = { x: 150, y: GK_HOME };       // clear ice between the end-zone circles
+  const PUCKMAN = { x: 70, y: 60 };         // the other team, carrying the other way
+  const GO_G = [8, 42], GO_P = [50, 82];    // the delay first, the whistle after
+  return {
+    viewBox: `0 ${f(-11)} 200 ${f(107)}`,
+    group: 'rules',
+    label: 'Diagram: an official signals a delayed penalty while the other team '
+         + 'keeps the puck and pulls its goaltender; at the whistle the offending '
+         + 'player leaves the ice for the penalty box.',
+    door: 'See a penalty called in our replay',
+    svg: defs(id)
+      + `<g class="dgpaint">${furniture(id, false)}${nets(id)}</g>`
+      + `<g class="dgplay">`
+      // ① the signal, and the team that still has the puck
+      + of_(REF.x, REF.x, REF.y, 1)
+      + `${sk(PUCKMAN.x, PUCKMAN.x, PUCKMAN.y, 1, '', -1)}`
+      + puck(PUCKMAN.x - 5.5, PUCKMAN.y + 1.4, 1)
+      // the two who leave, each with the ghost of where they were
+      + `<g class="dgghost">${gk(G0.x, G0.x, G0.y, 1, '', true)}`
+      + `${sk(P0.x, P0.x, P0.y, 1, '', 1, true)}</g>`
+      + arrow(id, G0.x, G0.y - 6, G1.x, G1.y)
+      + arrow(id, P0.x, P0.y + 5, P1.x, P1.y)
+      + `<g transform="translate(${f(G1.x - G0.x)},${f(G1.y - G0.y)})">`
+      + `<g class="dgmove dgm-g">${gk(G0.x, G0.x, G0.y, 1)}</g></g>`
+      + `<g transform="translate(${f(P1.x - P0.x)},${f(P1.y - P0.y)})">`
+      + `<g class="dgmove dgm-p">${sk(P0.x, P0.x, P0.y, 1, '', 1)}</g></g>`
+      + badge(1, REF.x + 9, REF.y - 2, 1) + badge(2, P1.x - 10, P1.y, 1)
+      + stamp(SX(60), SY(34), 1)
+      + `</g>`,
+    steps: [
+      'An official raises his arm and <b>play carries on</b> &mdash; until the '
+      + 'offending team touches the puck. The other side keeps possession, and may '
+      + 'even pull its goaltender for an extra skater.',
+      'At the whistle the offender serves <b>two minutes</b> in the penalty box, '
+      + 'and his team plays a skater short until it expires.',
+    ],
+    /* ⭐ THE CROSS-LINK, AND IT RUNS BOTH WAYS ON PURPOSE. Kevin: *"then the
+       cross-link for the delayed penalty (crossing over to the 'pull the goalie'
+       learning card)."* The fact is symmetric — a goaltender leaves the ice for
+       exactly two reasons — and until now the empty-net card taught only one of
+       them, so a reader met the same picture twice with no way to know it had two
+       causes. CHENG: *"you only learn that by seeing it twice and being told the
+       causes differ."* */
+    see: { to: 'empty-net',
+           say: 'A goaltender leaves the ice for one other reason &mdash; and it is '
+              + 'the more familiar one' },
+    /* ⭐ THE KINDS ARE PROSE BECAUSE THEY ARE A CLASSIFICATION OF LANGUAGE. And
+       they are NAMED, never ranked: which penalties exist is the league's, how
+       often each occurs is ours, and that is the wall the faceoffs figure already
+       refuses percentages for. */
+    note: 'Most penalties are one of three kinds: <b>restraint</b> &mdash; '
+        + 'tripping, hooking, holding, interference; <b>stick</b> &mdash; slashing, '
+        + 'high-sticking, cross-checking; and <b>physical</b> &mdash; roughing, '
+        + 'boarding, charging. A few are none of those: delay of game, too many men.',
+    css: [travel(id + 'g', G0, G1, ...GO_G), travel(id + 'p', P0, P1, ...GO_P),
+      `.dgfig.pe .dgm-g{animation:${id}g ${CYCLE} ease-in-out ${DELAY} infinite}`,
+      `.dgfig.pe .dgm-p{animation:${id}p ${CYCLE} ease-in-out ${DELAY} infinite}`,
+    ].join('\n'),
+  };
+}
+
 const FIGURES = { 'empty-net': emptyNet(), faceoffs: faceoffs(), icing: icing(),
-                  offside: offside(), slot: slot() };
+                  offside: offside(), penalties: penalties(), slot: slot() };
 
 /* ── the artifact ───────────────────────────────────────────────────────── */
 const OUT = join(ROOT, 'data', 'learn-figures.json');

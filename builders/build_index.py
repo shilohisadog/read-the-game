@@ -1036,6 +1036,12 @@ def _figures():
     cannot see the drawing at all should still be told which kind of thing it is.
     """
     out = {}
+    # ⚠️ THE LINK TEXT COMES FROM THE CARD, NOT THE FIGURE. A figure has no title
+    # of its own and should not gain one: the card already names the rule, and a
+    # second name for one thing is how the learn page and the rule page start
+    # disagreeing about what a card is called. Read here rather than at module
+    # scope because LEARN_CARDS is defined below this function.
+    titles = {c[1]: c[2] for c in LEARN_CARDS}
     # ⚠️ THE FIGURE'S CSS CLASS IS THE CARD ID'S FIRST TWO LETTERS, and each
     # figure scopes its keyframes by it (`.dgfig.ic .dgm-p`). Two cards sharing a
     # prefix would silently hand one figure the other's motion -- no error, no
@@ -1046,10 +1052,28 @@ def _figures():
         raise SystemExit(f"learn: two figures share a CSS prefix: {sorted(_pre)}")
     for cid, d in sorted(_fig_json().items()):
         steps = "".join(f"<li>{s}</li>" for s in d["steps"])
+        # ⭐ `note` IS PROSE THAT IS NOT ABOUT A PLACE ON THE ICE, and it exists
+        # because CHENG ruled the penalty kinds out of the drawing: "drawing the
+        # three kinds at the places those fouls happen would be inventing
+        # coordinates -- the taxonomy is a naming of `descKey` values and carries
+        # no geometry." Every numbered step has a badge on the rink; a note has
+        # none, deliberately, because there is nowhere for it to point.
+        note = f'<p class="dgnote">{d["note"]}</p>' if d.get("note") else ""
+        # ⭐ ONE DIAGRAM POINTING AT ANOTHER, and the only link on these pages that
+        # is not a door into the replay. It exists because two rules share a
+        # picture: a goaltender skating off is a delayed penalty OR a team losing
+        # late, and a reader who meets one has no way to learn there is another.
+        # The pairing is asserted to be MUTUAL in learn-figures.test.js — a
+        # one-way "see also" is how the second card stays undiscovered.
+        see = ""
+        if d.get("see"):
+            t = d["see"]["to"]
+            see = (f'<p class="dgsee">{d["see"]["say"]} &mdash; '
+                   f'<a href="/{t}.html">{titles[t]}</a>.</p>')
         out[cid] = (f'<figure class="dgfig {cid[:2]}">'
                     f'<svg class="dgice" viewBox="{d["viewBox"]}" role="img" '
                     f'aria-label="{d["label"]}">{d["svg"]}</svg>'
-                    f'<ol class="dgsteps">{steps}</ol></figure>')
+                    f'<ol class="dgsteps">{steps}</ol>{note}{see}</figure>')
     return out
 
 
@@ -1206,9 +1230,24 @@ LEARN_CARDS = [
      "This is the one rule we can draw but never replay: the feed records the "
      "call and the restart, never the crossing. So in a real game, watch the "
      "line rather than the play."),
+    # ⚠️ THIS PROMISED A MOMENT THE FEED DOES NOT POPULATE. It read "This is that
+    # gap -- the delayed call, before the whistle", and over 46 published games
+    # 79 of 109 delayed calls carry NO event between the call and the whistle. The
+    # gap is real in time and empty in the record, so no replay that walks
+    # recorded events can ever show it.
+    # ⭐⭐ AND THE REPLACEMENT CARRIES NO NUMBER, which is CHENG's ruling and the
+    # sharpest statement of the wall yet: THE RULES HALF MAY STATE WHAT THE RECORD
+    # CONTAINS; ONLY THE MEASUREMENTS HALF MAY STATE HOW OFTEN. Offside's "the
+    # feed records the call and the restart, never the crossing" is CATEGORICAL --
+    # true of every offside ever recorded, checkable against the schema. "79 of
+    # 109" is a measurement with an n, a population and a date, and it belongs to
+    # the other half by construction.
+    # The base case leads, because Kevin asked for it by name: "detail the more
+    # common penalty types, can't forget the base case."
     ("rules", "penalties", "Penalties",
-     "The arm goes up and play carries on until the offending team touches the "
-     "puck. This is that gap &mdash; the delayed call, before the whistle."),
+     "A penalty is time: two minutes in the box, and his team plays a skater "
+     "short. The league records the call and the whistle, and usually nothing "
+     "in between."),
     ("rules", "empty-net", "The empty net",
      "Losing late, a team trades its goaltender for a sixth skater. Nothing is "
      "toggled here &mdash; the goalie is simply no longer on the ice."),
@@ -1328,13 +1367,15 @@ FIGCSS = r"""<style>
    stroke with it, so `gk` in learn-figures.mjs divides it out and the group
    INHERITS one rendered weight -- see the note there. A number in this file would
    be a second copy that stops matching the moment the scale moves. */
-.dgplay .dggk .gkstick,.dgplay .dgsk .skstick{stroke-linecap:round}
+.dgplay .dggk .gkstick,.dgplay .dgsk .skstick,
+.dgplay .dgof .ofarm{stroke-linecap:round}
 /* The ghost each of them left behind is the SAME figure, dashed — a `<g>`, so the
    rule has to reach the shapes rather than sit on the group. ⚠️ THE DASH ITSELF IS
    NOT HERE: these figures are scaled, and a pattern in rink units shatters the
    outline into blobs at 1.74x. `dashes` in learn-figures.mjs divides the scale
    out, next to where the scale is set. */
-.dgplay .dgghost .dggk *,.dgplay .dgghost .dgsk *{opacity:.75;fill:none}
+.dgplay .dgghost .dggk *,.dgplay .dgghost .dgsk *,
+.dgplay .dgghost .dgof *{opacity:.75;fill:none}
 .dgplay .dgarrow{stroke:var(--muted);stroke-width:.8;stroke-linecap:round;opacity:.85}
 .dgheadp{fill:var(--muted);opacity:.85}
 /* The line where the rule is decided, and the spot the draw comes back to. */
@@ -1367,6 +1408,16 @@ FIGCSS = r"""<style>
 .dgsteps{margin:0;padding:0 0 0 20px;font-size:.82rem;color:var(--muted);line-height:1.45}
 .dgsteps li{margin:0 0 4px}
 .dgsteps li::marker{color:var(--ink);font-weight:700}
+/* ⭐ A NOTE IS NOT A STEP, AND IT LOOKS LIKE IT. The numbered list is tied to
+   badges on the ice; this is the part that has no place to point at, so it is
+   unnumbered, indented no further than the figure and set a shade quieter. */
+.dgnote{margin:9px 0 0;font-size:.8rem;color:var(--muted);line-height:1.45}
+.dgnote b{color:var(--ink);font-weight:650}
+/* THE ONE LINK ON THESE PAGES THAT IS NOT A DOOR INTO THE REPLAY. Quieter than
+   the door and set apart from it, because it leads sideways rather than onward. */
+.dgsee{margin:8px 0 0;font-size:.8rem;color:var(--muted)}
+.dgsee a{color:#2a5d86;font-weight:650;text-decoration:none;border-bottom:1px solid #cfe0ec}
+.dgsee a:hover{border-bottom-color:#2a5d86}
 .dgsteps b{color:var(--ink);font-weight:600}
 __FIGKEYS__
 </style>"""
