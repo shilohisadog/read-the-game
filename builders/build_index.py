@@ -1160,12 +1160,37 @@ def _learn():
     p1 = sum(1 for c in LEARN_CARDS if doors[c[1]]["per"] == 1)
     y, m, day = g["date"].split("-")
     when = f"{int(day)} {MONTHS[int(m) - 1]} {y}"
+    # ⚠️⚠️ THIS SENTENCE CONTRADICTED A CARD SITTING TWO ELEMENTS ABOVE IT.
+    # It read "Every one of them is a toggle on a real game", and the empty-net
+    # card's own blurb says "Nothing is toggled here -- the goalie is simply no
+    # longer on the ice." `empty-net` is the one door with `layers: []`, and
+    # test/learn.test.js asserts that ten lines above the test that guards this
+    # paragraph. Both were green, on a page a reader can catch by reading.
+    #
+    # ⭐⭐ THE GUARD WATCHED THE ARITHMETIC AND NEVER THE CLAIM. It checked that
+    # "9" matches the card count and "8" matches the period-1 doors -- and its
+    # own comment says "this page has already broken exactly that way once",
+    # which is true of the numbers and blind to the assertions around them. An
+    # instrument aimed at one axis reads as coverage for all of them.
+    #
+    # ⭐ AND THE SECOND CLAUSE HAD DRIFTED THE SAME WAY. "Every one shows the
+    # events it counted and the events it did not" is true of the measurement
+    # layers and of nothing else -- it is already the `ours` group's own heading
+    # ("each showing its work"), so it was a claim about half the page, made
+    # about all of it, in the one place it was not needed.
+    # "These N moments" went for a third reason: 6 of the 9 cards now lead to a
+    # DIAGRAM, and each says so in its own `at` line, so the page called them
+    # moments while labelling them drawings.
+    #
+    # WHAT IS LEFT IS WHAT SURVIVES BEING CHECKED: every card does reach a real
+    # game (directly, or through the diagram's door -- the build already refuses
+    # a card without one), they are all from the one night, and the front page
+    # is where the rest live.
     out.append(
-        f'  <p class="cnote">Every one of them is a toggle on a real game, and '
-        f'every one shows the events it counted and the events it did not. '
-        f'These {len(LEARN_CARDS)} moments are all from one night &mdash; '
-        f'{g["away"]} at {g["home"]}, {when} &mdash; and {p1} of them '
-        f'happen in the first period alone. Every other game we hold is '
+        f'  <p class="cnote">Every one of these leads to a real game, and they '
+        f'are all from one night &mdash; {g["away"]} at {g["home"]}, {when} '
+        f'&mdash; with {p1} of the {len(LEARN_CARDS)} in the first period '
+        f'alone. Every other game we hold is '
         f'reachable from <a href="/">the front page</a>.</p>')
     return ('<h1>What you can see here</h1>\n<div class="conc">\n'
             + "\n".join(out) + "\n</div>")

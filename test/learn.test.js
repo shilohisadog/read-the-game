@@ -208,11 +208,57 @@ test('the closing sentence counts the cards it is standing next to', () => {
   // PROSE THAT REFERS TO ANOTHER ELEMENT BY COUNT has a dependency nothing in a
   // text file can see, and this page has already broken exactly that way once.
   const note = /<p class="cnote">([\s\S]*?)<\/p>/.exec(html)[1];
-  const total = Number(/These (\d+) moments/.exec(note)[1]);
-  const first = Number(/and (\d+) of them/.exec(note)[1]);
+  const first = Number(/with (\d+) of the (\d+)/.exec(note)[1]);
+  const total = Number(/with (\d+) of the (\d+)/.exec(note)[2]);
   assert.equal(total, cards.length, 'the sentence must count the cards on the page');
   const inP1 = Object.values(built.doors).filter(d => d.per === 1).length;
   assert.equal(first, inP1, 'and the first-period claim must be the real one');
+});
+
+test('⛔ and the closing sentence makes no UNIVERSAL claim the cards contradict', () => {
+  /* ⚠️⚠️ THE TEST ABOVE WAS GREEN WHILE THE PARAGRAPH WAS FALSE, and so was the
+     empty-net test forty lines up, which asserts `p.layers` is `[]` -- "the
+     empty-net card must toggle nothing". The paragraph said *"Every one of them
+     is a toggle on a real game"*, and the empty-net card's own blurb says
+     *"Nothing is toggled here"*. A reader could catch it; two tests could not.
+
+     ⭐⭐ BECAUSE THEY INSTRUMENT THE ARITHMETIC AND NOT THE ASSERTION. The guard
+     above checks that the two NUMBERS in the sentence are the real ones, which
+     it does correctly, and nothing at all watched the two CLAIMS wrapped around
+     them. An instrument aimed at one axis reads as coverage for every axis.
+
+     ⭐ SO WHAT IS PINNED HERE IS THE SHAPE, NOT THE WORDING. A universal
+     quantifier over the cards ("every one of these…") is only allowed to be
+     followed by something every DOOR actually satisfies. The two properties the
+     doors genuinely vary on are the ones the sentence has already got wrong
+     once: whether a card toggles a layer, and whether it opens the game or a
+     drawing. Re-add either claim and this goes red with the reason attached. */
+  const note = /<p class="cnote">([\s\S]*?)<\/p>/.exec(html)[1];
+  const doors = Object.entries(built.doors);
+
+  // (1) A TOGGLE CLAIM REQUIRES EVERY DOOR TO HAVE A LAYER.
+  if (/toggle/i.test(note)) {
+    const bare = doors.filter(([, d]) => !d.layers.length).map(([k]) => k);
+    assert.deepEqual(bare, [],
+      `the closing note claims a toggle, but ${bare.join(', ')} toggles nothing — `
+      + 'which is what its own card blurb says out loud');
+  }
+  // (2) A "SHOWS WHAT IT COUNTED" CLAIM IS THE `ours` HEADING'S, NOT THE PAGE'S.
+  assert.doesNotMatch(note, /shows the events it counted/,
+    'the counted/not-counted claim is true of the measurement layers only, and is '
+    + 'already the `ours` group heading — stating it over the whole page makes it '
+    + 'false for the rules half');
+  // (3) A CARD THAT LEADS TO A DIAGRAM IS NOT "A MOMENT".
+  const drawn = cards.filter(c => /Diagram/.test(c.at)).length;
+  if (drawn) assert.doesNotMatch(note, /\d+ moments/,
+    `${drawn} of ${cards.length} cards say "Diagram" in their own footer, so the `
+    + 'closing note may not call all of them moments');
+
+  // ⭐ AND THE CLAIM THAT REPLACED THEM IS CHECKED, not merely shorter: every
+  // card really does reach a game, through its own door or its figure's.
+  assert.match(note, /leads to a real game/, 'the surviving claim has been reworded');
+  for (const [id, d] of doors)
+    assert.match(d.href, /^\?game=\d+&at=/, `${id}'s door does not reach a game`);
 });
 
 test('the two groups stay apart, and the measurements are the marked half', () => {
