@@ -245,3 +245,48 @@ export const netGlyph=(id,gx,col)=>{
    // every goal, because the keyframes run 0 -> .85 -> 0.
    + `<path id="${id}" class="flashpath" d="${body}" fill="${col}" opacity="0"/>`
    + `</g>`;};
+
+/**
+ * A GOALTENDER, DRAWN AS A GOALTENDER.
+ *
+ * ⭐ MOVED HERE FROM app.js SO THE DIAGRAMS CAN USE THE SAME FIGURE. Kevin, on
+ * the empty-net page: *"is there any way to improve the goalie animation? like
+ * using the goalie figures themselves, the circles don't look real good."* The
+ * learn diagrams were drawing him as a plain outlined circle -- the same token a
+ * skater gets -- while the game page had had a real one all along. Two drawings
+ * of one thing is the drift `furniture` was extracted to end, and the fix is the
+ * same fix: one definition, both surfaces.
+ *
+ * The game's markup is unchanged to the byte. `cls` defaults to the class app.js
+ * has always emitted; a caller that wants its own hook passes one, which the
+ * diagrams need because the learn pages already use `.gk` for a text label.
+ */
+// SIZED AGAINST THE NET, NOT PICKED. The first figure stood 8.1 units tall in
+// front of a 6-foot goal mouth -- 135% of the thing it defends -- and it was not
+// centred on the mouth either (figure centre 41.8, mouth centre 42.5), so it read
+// large AND high. Kevin saw it in one look; nothing in a 317-test suite could.
+//
+// There is no measurement anywhere in the feed that sets the size of a glyph, and
+// a number we simply chose is the shape CHENG calls a model wearing a UI control.
+// What IS available is a RELATIONSHIP that can be checked: a goaltender defending
+// a net has to fit inside it. So ONE constant drives every dimension below, and
+// the test pins the relationship -- figure inside the mouth, centred on it,
+// measured from the rendered markup against the rendered post -- rather than
+// pinning these digits, which would only re-state what the code already says.
+export const GK_H=4.6;                                    // full height, inside the 6ft mouth
+export const goalieGlyph=(gx,col,fill,cls='gk')=>{
+ const dir=gx<100?1:-1, x=gx+2.2*dir;
+ const top=42.5-GK_H/2, bot=42.5+GK_H/2;           // CENTRED on the mouth
+ const hr=GK_H*0.163, hcy=top+hr;                  // head
+ const by=hcy+hr*0.6, bw=GK_H*0.5;                 // body, tucked just under it
+ const n=v=>v.toFixed(2);
+ return `<g class="${cls}">`
+  + `<rect class="gkbody" x="${n(x-bw/2)}" y="${n(by)}" width="${n(bw)}" `
+  + `height="${n(bot-by)}" rx="${n(bw*0.37)}" fill="${fill}" stroke="${col}"/>`
+  + `<circle class="gkhead" cx="${n(x)}" cy="${n(hcy)}" r="${n(hr)}" fill="${fill}" stroke="${col}"/>`
+  // The stick reaches out to the side and STOPS AT THE POST -- it is the one part
+  // of a goaltender that genuinely extends across the mouth, so it is allowed the
+  // full half-width and no more.
+  + `<line class="gkstick" x1="${n(x+bw/2*dir)}" y1="${n(bot-0.5)}" `
+  + `x2="${n(x+(bw/2+1.5)*dir)}" y2="${n(bot)}" stroke="${col}"/>`
+  + `</g>`;};

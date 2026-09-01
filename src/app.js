@@ -304,35 +304,6 @@ function drawRink(per){if(per===rinkPer)return;rinkPer=per;
  * and the crease is where the rulebook puts them, not where we guess they were.
  * Same line the shooter figures already sit on the right side of (Doctrine §5).
  */
-// SIZED AGAINST THE NET, NOT PICKED. The first figure stood 8.1 units tall in
-// front of a 6-foot goal mouth -- 135% of the thing it defends -- and it was not
-// centred on the mouth either (figure centre 41.8, mouth centre 42.5), so it read
-// large AND high. Kevin saw it in one look; nothing in a 317-test suite could.
-//
-// There is no measurement anywhere in the feed that sets the size of a glyph, and
-// a number we simply chose is the shape CHENG calls a model wearing a UI control.
-// What IS available is a RELATIONSHIP that can be checked: a goaltender defending
-// a net has to fit inside it. So ONE constant drives every dimension below, and
-// the test pins the relationship -- figure inside the mouth, centred on it,
-// measured from the rendered markup against the rendered post -- rather than
-// pinning these digits, which would only re-state what the code already says.
-const GK_H=4.6;                                    // full height, inside the 6ft mouth
-const goalieGlyph=(gx,col,fill)=>{
- const dir=gx<100?1:-1, x=gx+2.2*dir;
- const top=42.5-GK_H/2, bot=42.5+GK_H/2;           // CENTRED on the mouth
- const hr=GK_H*0.163, hcy=top+hr;                  // head
- const by=hcy+hr*0.6, bw=GK_H*0.5;                 // body, tucked just under it
- const n=v=>v.toFixed(2);
- return `<g class="gk">`
-  + `<rect class="gkbody" x="${n(x-bw/2)}" y="${n(by)}" width="${n(bw)}" `
-  + `height="${n(bot-by)}" rx="${n(bw*0.37)}" fill="${fill}" stroke="${col}"/>`
-  + `<circle class="gkhead" cx="${n(x)}" cy="${n(hcy)}" r="${n(hr)}" fill="${fill}" stroke="${col}"/>`
-  // The stick reaches out to the side and STOPS AT THE POST -- it is the one part
-  // of a goaltender that genuinely extends across the mouth, so it is allowed the
-  // full half-width and no more.
-  + `<line class="gkstick" x1="${n(x+bw/2*dir)}" y1="${n(bot-0.5)}" `
-  + `x2="${n(x+(bw/2+1.5)*dir)}" y2="${n(bot)}" stroke="${col}"/>`
-  + `</g>`;};
 let netmenAre=null;
 function drawNetmen(e){
  const sit=e&&e.sit;

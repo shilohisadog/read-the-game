@@ -18,7 +18,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { furniture, SX } from '../src/lib/rinkart.js';
+import { furniture, boardsY, SX } from '../src/lib/rinkart.js';
 import { TEAMS, NEUTRAL } from '../src/lib/teams.js';
 import { boot } from './helpers/page.js';
 
@@ -40,6 +40,75 @@ const paint = svg => [
   ...svg.matchAll(/<circle class="(?:ln [^"]*|fdot(?: ctr)?)"[^>]*>/g),
   ...svg.matchAll(/<rect class="boards"[^>]*>/g),
 ].map(m => m[0]).sort();
+
+/**
+ * WHERE EVERY GOALTENDER ACTUALLY LANDS, translates included.
+ *
+ * ⭐ THE FIGURE IS PLACED BY A WRAPPER, SO READING ITS OWN COORDINATES IS A LIE.
+ * `goalieGlyph` always builds him at y=42.5 — that is where a crease is — and a
+ * `<g transform="translate(…)">` around him is what puts him anywhere else. A
+ * regex over `cx`/`cy` would report the pulled goaltender standing in his crease
+ * while the page shows him off the ice at the boards.
+ *
+ * So this walks the tags in order and composes the transforms, which is what a
+ * renderer does. It is deliberately NOT a call into the builder: the point is to
+ * compute the rendered position INDEPENDENTLY and compare, and asking the code
+ * where it drew something is the mirror this file keeps refusing.
+ *
+ * ⚠️ IT COMPOSES THE SCALE TOO, because the goaltender carries one — a diagram
+ * sizes him to its own tokens, not to the net. A walker that read only
+ * `translate` would place him correctly and report him HALF SIZE, which is the
+ * quiet kind of wrong: every assertion still passes and none of them means what
+ * it says. Uniform scale only; anything else here throws rather than guesses.
+ */
+function goalies(svg) {
+  const out = [];
+  const stack = [{ s: 1, e: 0, f: 0 }];      // x' = s*x + e,  y' = s*y + f
+  const top = () => stack[stack.length - 1];
+  for (const m of svg.matchAll(/<(\/?)g\b([^>]*)>|<(rect|circle|line)\b([^>]*)>/g)) {
+    const [, close, gattr, shape, sattr] = m;
+    if (shape) {
+      if (!out.length || !out[out.length - 1].open) continue;
+      const a = k => { const v = new RegExp(`\\b${k}="(-?[\\d.]+)"`).exec(sattr); return v ? +v[1] : null; };
+      let x1, x2, y1, y2;
+      if (shape === 'rect') { x1 = a('x'); y1 = a('y'); x2 = x1 + a('width'); y2 = y1 + a('height'); }
+      else if (shape === 'circle') { const r = a('r'); x1 = a('cx') - r; x2 = a('cx') + r; y1 = a('cy') - r; y2 = a('cy') + r; }
+      else { x1 = Math.min(a('x1'), a('x2')); x2 = Math.max(a('x1'), a('x2')); y1 = Math.min(a('y1'), a('y2')); y2 = Math.max(a('y1'), a('y2')); }
+      const t = top(), g = out[out.length - 1];
+      for (const [px, py] of [[x1, y1], [x2, y2]]) {
+        const X = t.s * px + t.e, Y = t.s * py + t.f;
+        g.x1 = Math.min(g.x1, X); g.x2 = Math.max(g.x2, X);
+        g.y1 = Math.min(g.y1, Y); g.y2 = Math.max(g.y2, Y);
+      }
+      continue;
+    }
+    if (close) {
+      stack.pop();
+      const g = out[out.length - 1];
+      if (g && g.open && g.depth === stack.length) g.open = false;
+      continue;
+    }
+    const tf = /transform="([^"]*)"/.exec(gattr);
+    let s = 1, e = 0, fy = 0;
+    if (tf) {
+      const tr = /translate\((-?[\d.]+),(-?[\d.]+)\)/.exec(tf[1]);
+      const sc = /scale\((-?[\d.]+)\)/.exec(tf[1]);
+      assert.match(tf[1], /^(translate\([^)]*\)\s*)?(scale\([^)]*\))?$/,
+        `a transform this walker cannot compose: ${tf[1]}`);
+      if (tr) { e = +tr[1]; fy = +tr[2]; }
+      if (sc) s = +sc[1];
+    }
+    const p = top();
+    stack.push({ s: p.s * s, e: p.s * e + p.e, f: p.s * fy + p.f });
+    if (/class="[^"]*\bdggk\b/.test(gattr)) {
+      out.push({ x1: Infinity, x2: -Infinity, y1: Infinity, y2: -Infinity,
+                 open: true, depth: stack.length - 1 });
+    }
+  }
+  return out.map(g => ({
+    x1: +g.x1.toFixed(2), x2: +g.x2.toFixed(2), y1: +g.y1.toFixed(2), y2: +g.y2.toFixed(2),
+  }));
+}
 
 test('⭐ the diagram and the replay are the SAME RINK, line for line', () => {
   /* THE CLAIM KEVIN'S "same ice rink" ACTUALLY MAKES, and the reason `furniture`
@@ -136,19 +205,23 @@ test('⭐ a goaltender is drawn IFF the figure\'s own words name one', () => {
      neither side is an empty claim, and the FALSE side is the regression that
      actually happened -- a keeper appearing on a page that never says the word.
 
-     ⭐ AND WHERE HE IS DRAWN, HE STANDS IN A CREASE, read from the drawing: the
-     crease's own arc carries the goal line and the radius, rather than restating
-     `keeper`'s 4.5-unit offset, which would be a mirror of the code under test. */
+     ⭐ AND A GOALTENDER IS EITHER IN A CREASE OR OFF THE ICE — never loitering.
+     That is the second half of Kevin's note: *"make sure the pulled goalie goes as
+     far off the ice as he can... we need to ensure the viewer understands the
+     goalie comes off the ice and another skater takes his place."* He used to stop
+     at y=11, inside the rink, so the frame a reader rests on showed a goaltender
+     standing in the neutral zone. Both states are asserted and both must occur, so
+     neither branch is an empty claim. */
   const named = [], drawn = [];
   for (const [id, fig] of Object.entries(figures)) {
     const words = (fig.steps.join(' ') + ' ' + fig.label).replace(/<[^>]+>/g, '');
     const says = /goal(ie|tender)/i.test(words);
-    const has = /class="dgtok dgkeep"/.test(fig.svg);
+    const has = /class="dggk/.test(fig.svg);
     if (says) named.push(id);
     if (has) drawn.push(id);
     assert.equal(has, says, has
       ? `the ${id} figure draws a goaltender its own words never mention — that is `
-        + 'the unlabelled circle a reader cannot identify'
+        + 'the unlabelled figure a reader cannot identify'
       : `the ${id} figure talks about a goaltender and does not draw one`);
   }
   assert.ok(named.length >= 1 && named.length < Object.keys(figures).length,
@@ -156,27 +229,29 @@ test('⭐ a goaltender is drawn IFF the figure\'s own words name one', () => {
     + 'one side of this biconditional is empty, so it proves nothing');
   assert.deepEqual(drawn, named);
 
-  let seen = 0;
+  let inCrease = 0, offIce = 0;
   for (const [id, fig] of Object.entries(figures)) {
-    const creases = [...fig.svg.matchAll(
-      /class="crease" d="M ([\d.]+) [\d.]+ A ([\d.]+) [\d.]+ 0 0 (\d) [\d.]+ [\d.]+"/g)]
-      .map(m => ({ gx: +m[1], r: +m[2], dir: m[3] === '1' ? 1 : -1 }));
-    assert.ok(creases.length, `the ${id} figure draws no crease to read`);
-    for (const m of fig.svg.matchAll(/class="dgtok dgkeep" cx="([\d.]+)" cy="([\d.]+)"/g)) {
-      seen++;
-      const [cx, cy] = [+m[1], +m[2]];
-      const c = creases.find(k => Math.abs(k.gx - cx) <= k.r);
-      assert.ok(c, `${id}: a goaltender at x=${cx} is nowhere near a crease `
-        + `(${creases.map(k => k.gx).join(', ')}) — he is not in the one place only he stands`);
-      // ON THE ICE SIDE, not behind the net. The crease bulges toward centre ice
-      // and its sweep flag is where that direction is already written down.
-      assert.ok((cx - c.gx) * c.dir > 0,
-        `${id}: the goaltender at x=${cx} is BEHIND his own net at x=${c.gx}`);
-      assert.ok(Math.hypot(cx - c.gx, cy - 42.5) < c.r,
-        `${id}: the goaltender at (${cx}, ${cy}) is outside his own crease`);
+    for (const box of goalies(fig.svg)) {
+      const creases = [...fig.svg.matchAll(
+        /class="crease" d="M ([\d.]+) [\d.]+ A ([\d.]+) [\d.]+ 0 0 (\d) [\d.]+ [\d.]+"/g)]
+        .map(m => ({ gx: +m[1], r: +m[2], dir: m[3] === '1' ? 1 : -1 }));
+      const cx = (box.x1 + box.x2) / 2, cy = (box.y1 + box.y2) / 2;
+      const c = creases.find(k => Math.hypot(k.gx - cx, 42.5 - cy) < k.r
+                                  && (cx - k.gx) * k.dir > 0);
+      if (c) { inCrease++; continue; }
+      /* ⭐ OFF THE ICE MEANS ALL OF HIM, and the boards say where that is. A
+         goaltender half over the line is a goaltender standing on the boards. */
+      const [top, bot] = boardsY(cx);
+      assert.ok(box.y2 < top || box.y1 > bot,
+        `${id}: a goaltender spans y ${box.y1}–${box.y2} at x=${cx}, where the ice `
+        + `runs ${top}–${bot} — he is neither in a crease nor off the ice, which `
+        + 'leaves him standing about in open play');
+      offIce++;
     }
   }
-  assert.ok(seen >= 1, 'no goaltender is drawn anywhere — the crease check ran on nothing');
+  assert.ok(inCrease >= 1 && offIce >= 1,
+    `${inCrease} goaltender(s) in a crease and ${offIce} off the ice — one of the `
+    + 'two states this test distinguishes never occurs, so it distinguishes nothing');
 });
 
 test('a figure names no club, no player and no game', () => {

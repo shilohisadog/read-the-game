@@ -42,7 +42,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { furniture, netGlyph, boardsY, SX, SY } from '../src/lib/rinkart.js';
+import { furniture, netGlyph, goalieGlyph, GK_H, boardsY, SX, SY } from '../src/lib/rinkart.js';
 import { BLUE_LINE_X, NEUTRAL_DOT_X, NET_X } from '../src/lib/rink.js';
 import { NEUTRAL } from '../src/lib/teams.js';
 
@@ -169,7 +169,58 @@ const stamp = (x, y, k = 1) =>
 const nets = id =>
   netGlyph(`${id}netA`, SX(-NET_X), NEUTRAL) + netGlyph(`${id}netB`, SX(NET_X), NEUTRAL);
 
-/** A goaltender — drawn ONLY where a figure is about him. */
+/**
+ * A GOALTENDER, DRAWN AS ONE — the game's own figure, placed anywhere.
+ *
+ * ⭐ IT IS `goalieGlyph` FROM rinkart.js, NOT A SHAPE OF OUR OWN. Kevin: *"is
+ * there any way to improve the goalie animation? like using the goalie figures
+ * themselves, the circles don't look real good."* The game page has drawn a head,
+ * a body and a stick since the goaltender view shipped; the diagrams were drawing
+ * a plain circle beside it. One thing, two drawings, is the drift `furniture` was
+ * extracted to end.
+ *
+ * ⭐ AND IT ALSO ANSWERS THE READABILITY PROBLEM UNDERNEATH. A goaltender who
+ * LOOKS like a goaltender needs no crease to identify him and no badge to label
+ * him, which is what the old circle needed and never had. It is now the one token
+ * on these pages that is not a circle, and it is the one actor who is not a
+ * skater — the drawing tells you which is which without a word.
+ *
+ * `goalieGlyph` builds him at y=42.5 because that is where a crease is, so a
+ * static translate moves him; the animated class goes on an INNER group so the
+ * keyframes and the placement cannot fight over one `transform`.
+ */
+/* ⭐⭐ AND HE IS SCALED TO THE ANNOTATION, NOT TO THE NET. On the game page the
+   glyph is sized by a RELATIONSHIP — a goaltender defending a net has to fit
+   inside its mouth — and GK_H is 4.6 units for that reason. A diagram's people
+   are not to scale with anything: a skater token is r=4, so 8 units across, which
+   is a legibility choice and about 8 feet of ice. Dropping the game's goaltender
+   in beside them makes him HALF a skater's height, and the reader is looking at a
+   child in a crease.
+   So the diagram scales him to the token, and the scale is DERIVED from the token
+   rather than picked: `GK_FIT` is what makes his height match a skater's
+   diameter. The game's own relationship is untouched — it is a different claim on
+   a different surface, and GK_H still drives it. */
+const GK_HOME = 42.5;
+const GK_FIT = (4 * 2) / GK_H;
+/** The weight every illustrated token carries — `.dgplay .dgtok` in FIGCSS. */
+const TOK_STROKE = 1.1;
+const gk = (gx, x, y, k = 1, cls = '') => {
+  const s = GK_FIT * k;
+  // Scale about the figure's own home, then place: p -> (tx + s*px, ty + s*py).
+  const [tx, ty] = [x - s * gx, y - s * GK_HOME];
+  /* ⚠️ THE SCALE TAKES THE STROKE WITH IT, so the weight is divided out HERE and
+     not restated in a stylesheet. Drawn at app.css's 0.4 inside a 1.74x group the
+     goaltender rendered at 0.70 beside skater tokens stroked at 1.1 — a fainter
+     figure, which reads as further away. Inherited from the wrapper it renders at
+     TOK_STROKE whatever the scale is, and the one number that decides it lives
+     next to the one that sets the scale. A CSS rule would be a second copy that
+     silently stops matching the moment `GK_FIT` moves. */
+  return `<g transform="translate(${f(tx)},${f(ty)}) scale(${f(s)})"`
+       + ` stroke-width="${f(TOK_STROKE / s)}">`
+       + goalieGlyph(gx, NEUTRAL, 'var(--ice)', `dggk ${cls}`.trim()) + '</g>';
+};
+
+/** ⛔ RETIRED — see the empty-net figure. A goaltender is drawn by `gk` now. */
 const keeper = (gx, k = 1) =>
   /* ⚠️ "ITS POSITION IS ITS LABEL" WAS WRONG, AND KEVIN FALSIFIED IT TWICE.
      This used to read: drawn in the diagram's own vocabulary — outlined, neutral,
@@ -588,24 +639,40 @@ function slot() {
 function emptyNet() {
   const id = 'en-';
   const PULLED = SX(-NET_X);            // the net that is emptied, screen-right
-  const KEPT = SX(NET_X);               // the other end, still defended
-  const G0 = { x: PULLED - 4.5, y: 42.5 };   // where `keeper` stands
-  const G1 = { x: 112, y: 11 };              // the bench, along the boards at centre
+  /* ⭐ HE LEAVES THE ICE, AND THE FRAME MAKES ROOM FOR HIM TO. Kevin: *"make sure
+     the pulled goalie goes as far off the ice as he can, just to close the concept
+     out, since we don't have player benches we need to ensure the viewer
+     understands the goalie comes off the ice."* He used to stop at y=11, which is
+     inside the rink — a goaltender standing in the neutral zone, doing nothing,
+     for the whole resting frame. The boards at this x are `boardsY`'s top edge,
+     and he now finishes clear ABOVE them, which needs frame outside the rink:
+     hence the viewBox opening at -11 rather than 0. The width is untouched, so
+     every apparent-size rule (which divides 200 by it) is unaffected. */
+  const G0 = { x: PULLED, y: GK_HOME };      // his crease — where `goalieGlyph` builds him
+  const [ICETOP] = boardsY(112);
+  const G1 = { x: 112, y: ICETOP - 5 };      // off the ice entirely, past the boards
   const A0 = { x: 62, y: 57 }, A1 = { x: 34, y: 57 };
   return {
-    viewBox: '0 0 200 85',
+    viewBox: '0 -11 200 96',
     group: 'rules',
     label: 'Diagram: a team pulls its goaltender for an extra attacker, leaving '
          + 'its own net empty.',
     door: 'See a pulled goalie in our replay',
     svg: defs(id)
       + `<g class="dgpaint">${furniture(id, false)}${nets(id)}</g>`
-      // ONLY THE FAR NET KEEPS ITS GOALTENDER. The near crease is empty, which is
-      // the whole subject, so nothing is drawn standing in it.
-      + `<g class="dgplay">${keeper(KEPT, 1)}`
-      + ghost(G0.x, G0.y, 1) + ghost(A0.x, A0.y, 1)
-      + arrow(id, G0.x, G0.y, G1.x, G1.y) + arrow(id, A0.x, A0.y, A1.x, A1.y)
-      + `<g class="dgmove dgm-g">${tok(G1.x, G1.y, 1)}</g>`
+      /* ⛔ NOTHING STANDS IN THE OTHER CREASE. This drew `keeper(KEPT)` on a
+         contrast argument — one net defended, one not. Kevin: *"the random goalie
+         circle is on the other net, that needs removed."* The contrast was never
+         carrying it: the empty net has a GHOST in its crease and an arrow leading
+         away, which says "somebody was here and left" without a second club's
+         goaltender who has nothing to do with this team's decision. */
+      + `<g class="dgplay">`
+      // ⭐ THE GHOST IS A GOALTENDER TOO, not a dashed circle. It marks the crease
+      // he vacated, and it is the same figure so the eye reads one actor moving.
+      + `<g class="dgghost">${gk(G0.x, G0.x, G0.y, 1)}</g>` + ghost(A0.x, A0.y, 1)
+      + arrow(id, G0.x, G0.y - 6, G1.x, G1.y) + arrow(id, A0.x, A0.y, A1.x, A1.y)
+      + `<g transform="translate(${f(G1.x - G0.x)},${f(G1.y - G0.y)})">`
+      + `<g class="dgmove dgm-g">${gk(G0.x, G0.x, G0.y, 1)}</g></g>`
       + `<g class="dgmove dgm-a">${tok(A1.x, A1.y, 1)}</g>`
       /* ⚠️ THE BADGES WERE SITTING ON THE EMPTY NET — the one thing this figure
          is about. ② was at x=195, which is INSIDE the net's body (189–193), and ①
@@ -616,9 +683,17 @@ function emptyNet() {
       + badge(3, A1.x, A1.y + 9, 1)
       + stamp(SX(60), SY(34), 1)
       + `</g>`,
+    /* ⛔ STEP 2 STOPS AT THE FACT. It used to add *"— any shot that reaches it
+       goes in"*, and Kevin killed it: *"if we expand on that it can lead to
+       'that's not true' type comments, since a defender can still guard the goal
+       and '...any shot that reaches it goes in' isn't universally true."* He is
+       right and it is the site's own rule in a new place — a sentence that
+       overstates invites a correction, and the correction is about US rather than
+       about the rule. The net being empty is the whole claim and it is exactly
+       true. */
     steps: [
       'Losing late, a team sends its <b>goaltender to the bench</b>.',
-      'Their own net is now <b>empty</b> &mdash; any shot that reaches it goes in.',
+      'Their own net is now <b>empty</b>.',
       'In his place comes an <b>extra attacker</b>: six skaters against five. '
       + 'Nothing is toggled on this site to show it &mdash; the goalie is simply '
       + 'no longer drawn.',
