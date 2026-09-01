@@ -285,6 +285,19 @@ jobs:
       # is checked the way every other published claim is: read back, and asserted
       # to carry the sentence that produced it. A featured game with no rule
       # attached is a number we are asking to be trusted.
+      # ⚠️ THE COMMITTED COPY IS A DERIVED ARTIFACT IN A REPO OF INPUTS, which is
+      # exactly how five stale fixtures sat green for months. `data/measures.json`
+      # is a BUILD INPUT because the learn pages carry no scripts and cannot fetch
+      # the archive -- so a re-derivation that moves a rate leaves a card quoting
+      # last month's number, silently, until somebody happens to look.
+      #
+      # THIS RUNS WHERE THE ARCHIVE IS, which is the rule that earned itself:
+      # a value the pipeline can change needs a check on the whole-archive pass,
+      # not a unit test holding last year's answer. It alarms on DRIFT and never
+      # on the count.
+      - name: the committed measures.json still agrees with what was just published
+        run: python3 tools/measures_fresh.py
+
       - name: the measurement is published with its rule and its denominators
         run: |
           curl -sS --fail "https://data.readthegame.co/measures.json?cb=${GITHUB_RUN_ID}" \

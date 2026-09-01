@@ -638,6 +638,35 @@ function slot() {
       + badge(3, BEHIND.x, BEHIND.y - 6, K)
       + stamp(SX(-3), SY(36), K)
       + `</g>`,
+    /* ⭐⭐ THE LIMIT, WHICH IS THE MEASUREMENT PAGE'S CLOSING MOVE — the slot of
+       the template that the rules pages spend on "what to watch" and this half
+       has to spend on what the number does NOT say.
+
+       ⚠️ AND HERE IT IS THE BASE RATE, because without it the card's headline is
+       correct and loses the argument. "Most goals come from the slot" invites
+       one reply — *"that is where everybody shoots"* — and the reply is HALF
+       RIGHT: 46.7% of located attempts are already taken from inside it. Naming
+       that is what turns the shading from an assertion into something a reader
+       can check, and it is why the card leads with the CONVERSION rather than
+       with the share of goals.
+
+       ⛔ THE FIGURES ARE TOKENS, SUBSTITUTED BY `build_index.py::_archive()` out
+       of the published measurements. A typed constant would go stale the next
+       time the archive is re-derived, which already shipped a wrong slot figure
+       once (79.4% against a real 75.4%). Every one carries its n on the line.
+
+       ⭐ AND THE SECOND HALF EXPLAINS AN EXCLUSION RATHER THAN HIDING IT. Blocked
+       shots are in neither count, and the reason is a fact about the feed a
+       reader has no other way to learn: the coordinate recorded for a blocked
+       shot is where the puck was STOPPED. `attribution.js` has said so in a
+       comment for months; this is the first surface that says it to anybody. */
+    note: 'The slot is not rare, and that is the point: __SLOT_ATT_IN__ of '
+        + '__SLOT_ATT_N__ located attempts &mdash; __SLOT_ATT_PCT__% &mdash; are '
+        + 'already taken from inside it. So the shading does not mark where the '
+        + 'shots are; it marks where they <b>go in</b>. Blocked shots are in '
+        + 'neither count, because the coordinate the feed records for one is '
+        + 'where the puck was <b>stopped</b> &mdash; the blocker&rsquo;s position, '
+        + 'not the shooter&rsquo;s.',
     steps: [
       '<b>Close in</b> &mdash; within 33 feet of the net. This one counts.',
       '<b>And between the face-off dots.</b> The shaded band is exactly that '

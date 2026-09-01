@@ -1021,6 +1021,64 @@ __FIGKEYS__
 </style>"""
 
 
+# ---------------------------------------------------------------------------
+# ⭐⭐ THE ARCHIVE'S OWN FIGURES, READ AND FORMATTED — NEVER COMPUTED HERE.
+#
+# The measurement cards teach what we count and have never said what it lets a
+# reader SEE, because every anchor that would say it lives in `measures.json`,
+# which the GAME page fetches at runtime and a learn page cannot: these pages
+# carry zero scripts and `connect-src 'self'`, which is most of their virtue.
+#
+# So `data/measures.json` is committed as a BUILD INPUT (16 KB) and substituted
+# the way `__UNREACHED__` already is. Kevin's call, over a runtime fetch on six
+# static pages and over putting the figure only where `RATES` already exists.
+#
+# ⚠️ IT IS A DERIVED ARTIFACT IN A REPO OF INPUTS, which is the exact shape that
+# let five stale fixtures sit undetected — so it is gated from the first day
+# rather than after it bites: `tools/measures_fresh.py` fetches the published
+# file and diffs it, and `derive.yml` fails when the two have parted. Staleness
+# here is visible in git and loud in CI, which is the difference.
+#
+# ⛔ AND THIS FUNCTION ONLY READS. Every rule that produced these numbers lives
+# in `src/lib/archive.js` and ran in node; Python selects a field and formats a
+# percentage. Anything needing a QUANTILE stays out — `reach`'s medians would
+# require restating `distribution.js::quantile` in a second language, which is
+# the one thing the pipeline is built not to do. Those wait for the number to be
+# published beside the distribution.
+def _archive():
+    m = json.loads((ROOT / "data" / "measures.json").read_text())
+    s = m["slot"]
+
+    def pct(sh):
+        # A published rate, formatted. `round` is presentation; the arithmetic
+        # was `count / n` in archive.js and is not repeated here.
+        return f"{sh['rate'] * 100:.1f}"
+
+    def num(v):
+        return f"{v:,}"
+
+    out = {
+        "__SLOT_IN_PCT__": pct(s["scoredFromInside"]),
+        "__SLOT_OUT_PCT__": pct(s["scoredFromOutside"]),
+        "__SLOT_IN_GOALS__": num(s["scoredFromInside"]["count"]),
+        "__SLOT_IN_ATT__": num(s["scoredFromInside"]["n"]),
+        "__SLOT_ATT_PCT__": pct(s["attempts"]),
+        "__SLOT_ATT_IN__": num(s["attempts"]["count"]),
+        "__SLOT_ATT_N__": num(s["attempts"]["n"]),
+        "__ARCHIVE_GAMES__": num(m["measured"]),
+    }
+    # EVERY SHARE IT READS MUST STILL CARRY ITS OWN n AND POPULATION. The
+    # published file is checked at the point of use, not trusted because CI
+    # checked it once: a hand-edited `data/measures.json` is exactly how this
+    # would go wrong quietly.
+    for k in ("scoredFromInside", "scoredFromOutside", "attempts"):
+        sh = s.get(k)
+        if not sh or sh.get("rate") is None or not sh.get("n") or not sh.get("population"):
+            raise SystemExit(f"learn: measures.json slot.{k} has no rate, n or population -- "
+                             "re-run derive and refresh data/measures.json")
+    return out
+
+
 def _figures():
     """{cardId: rendered <figure>} — the rule diagrams, drawn by node.
 
@@ -1095,6 +1153,7 @@ def _learn():
     """
     d = json.loads((ROOT / "data" / "learn-doors.json").read_text())
     doors, g, fig = d["doors"], d["game"], d["figures"]
+    arch = _archive()
     figures = _figures()
 
     ids, want = {c[1] for c in LEARN_CARDS}, set(doors)
@@ -1132,6 +1191,8 @@ def _learn():
             door = doors[cid]
             blurb = (blurb.replace("__UNREACHED__", str(fig["unreached"]["count"]))
                           .replace("__ATTEMPTS__", str(fig["unreached"]["n"])))
+            for tok, val in arch.items():
+                blurb = blurb.replace(tok, val)
             # The moment is shown, not just linked: a reader can see the card
             # points somewhere specific before spending a click on it.
             # ⭐ THE CARD CARRIES ITS OWN ANCHOR, which is what makes the trip
@@ -1347,9 +1408,40 @@ LEARN_CARDS = [
      "One event after that shot and at the same second, blocked. Both are "
      "attempts; only one is a shot on goal &mdash; __UNREACHED__ of __ATTEMPTS__ "
      "attempts in this game never reached the goaltender at all."),
+    # ⭐⭐ THE PILOT FOR THE MEASUREMENT CARDS, and what it changes is the ORDER.
+    # This read "A geometric rule of ours, not a model: close in, and between the
+    # faceoff dots. This is the first shot that qualifies." -- a definition and a
+    # pointer to a door, and Kevin: "I'm not sure we provide what we need within
+    # the what we count cards, we need to take an education first approach."
+    #
+    # ⭐ ON THE RULES HALF THE DEFINITION IS THE LESSON; ON THIS HALF IT IS ONLY
+    # THE SETUP. Knowing what icing is, is the point. Knowing where the slot is
+    # tells a reader nothing until they know what happens in it -- so the fact
+    # leads and the geometry follows it, and `/slot.html`'s three steps (which
+    # are the definition, drawn) become the middle of the page rather than all
+    # of it.
+    #
+    # ⚠️ AND THE BASE RATE IS IN THE SENTENCE BECAUSE THE SHARE ALONE LOSES THE
+    # ARGUMENT. "Three of every four goals come from the slot" invites exactly
+    # one reply -- "that is where everybody shoots" -- and the reply is half
+    # right: 46.7% of located attempts are already taken from inside it. The
+    # CONVERSION is the number that survives, so it is the number the card
+    # leads with. See `slotShare` in src/lib/archive.js.
+    #
+    # ⛔ THE FIGURES ARE SUBSTITUTED, NEVER TYPED. A constant here would go stale
+    # the next time the archive is re-derived and nobody would see it happen --
+    # which already cost this project a wrong slot figure once (79.4% against a
+    # real 75.4%). `_archive()` reads them out of the published measurements.
+    #
+    # ⭐ A FREQUENCY REPORTS; A VERDICT INSTRUCTS OR CONCLUDES (CHENG). "11.4%
+    # against 3.3%" is a frequency and is what the measurements half exists to
+    # be allowed to say. "The slot is where games are won" would be a verdict
+    # wearing a frequency, and "shoot from the slot" advice. Neither is here,
+    # and every figure carries its n on the same line.
     ("ours", "slot", "Shots from the slot",
-     "A geometric rule of ours, not a model: close in, and between the faceoff "
-     "dots. This is the first shot that qualifies."),
+     "A shot taken from inside the slot goes in __SLOT_IN_PCT__% of the time "
+     "&mdash; __SLOT_IN_GOALS__ goals from __SLOT_IN_ATT__ attempts. From "
+     "outside it, __SLOT_OUT_PCT__%. That gap is what the shading is for."),
     ("ours", "goaltending", "Goaltending",
      "Saves as a fraction, built while you watch. This is the first shot the "
      "goaltender had to deal with."),
@@ -1540,6 +1632,15 @@ def build_rule(cid):
     door, g = doors["doors"][cid], doors["game"]
     title = next(t for _, c, t, _ in LEARN_CARDS if c == cid)
     blurb = next(b for _, c, _, b in LEARN_CARDS if c == cid)
+    # ⚠️ THE RULE PAGE IS A SECOND READER OF THE SAME BLURB, and the first version
+    # of this substituted only in the card grid -- so `/slot.html` shipped four
+    # raw `__SLOT_*__` tokens as its lede. CAUGHT BY THE PLACEHOLDER GATE, which
+    # is the guard that exists because a `__PLACEHOLDER__` reached production
+    # once. Substituted before `desc` is derived from it, so the meta description
+    # cannot carry a token either.
+    arch = _archive()
+    for tok, val in arch.items():
+        blurb = blurb.replace(tok, val)
     y, m, day = g["date"].split("-")
     html = (RULE_BODY
             .replace("__RULE_TITLE__", title)
@@ -1552,6 +1653,11 @@ def build_rule(cid):
             .replace("__RULE_AT__", f'{g["away"]} at {g["home"]}, {int(day)} '
                                     f'{MONTHS[int(m) - 1]} {y} &middot; period {door["per"]}, '
                                     f'{door["rem"]} left'))
+    # AND AGAIN OVER THE WHOLE PAGE, because a figure's `note` is rendered inside
+    # `__RULE_FIG__` and never passes through `blurb`. Idempotent: a token
+    # replaced once is not there to replace twice.
+    for tok, val in arch.items():
+        html = html.replace(tok, val)
     # THE FIGURES' KEYFRAMES COME FROM THE FIGURE, so a token's motion and its
     # geometry are written by one hand and cannot drift into animating from a
     # place it was never drawn. `str.replace` cannot fail, so it is asserted.

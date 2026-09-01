@@ -261,6 +261,65 @@ test('⛔ and the closing sentence makes no UNIVERSAL claim the cards contradict
     assert.match(d.href, /^\?game=\d+&at=/, `${id}'s door does not reach a game`);
 });
 
+test('\u2b50\u2b50 the slot card leads with the FACT and the figures are substituted, never typed', () => {
+  /* THE PILOT FOR THE MEASUREMENT CARDS. Kevin: *"I'm not sure we provide what we
+     need within the what we count cards, we need to take an education first
+     approach."* On the rules half the definition IS the lesson; on this half it
+     is only the setup, so the fact leads and the geometry follows it.
+
+     \u26a0\ufe0f AND THE BASE RATE HAS TO BE THERE OR THE CARD LOSES THE ARGUMENT.
+     "Most goals come from the slot" invites *"that is where everybody shoots"* and
+     the reply is half right \u2014 46.7% of located attempts are already inside it.
+     The CONVERSION is the number that survives, so it is the one that leads. */
+  /* The blurb, read off the built page rather than off the `cards` helper above,
+     which captures only id/href/title. Read here so the assertion is about what
+     a visitor sees, not about the table the builder used. */
+  const m0 = /<a class="card" id="slot"[^>]*>\s*<p class="t">[^<]*<\/p><p>([\s\S]*?)<\/p>/.exec(html);
+  assert.ok(m0, 'the slot card has gone, or its markup no longer carries a blurb');
+  const card = { blurb: m0[1] };
+
+  // \u26d4 NO RAW TOKEN REACHED THE PAGE. The first build substituted only in the
+  // card grid and `/slot.html` shipped four `__SLOT_*__` placeholders as its lede.
+  assert.doesNotMatch(html, /__[A-Z_]+__/, 'a placeholder reached the built page');
+
+  // \u2b50 THE FIGURES ARE THE ARCHIVE'S, checked against the committed measurements
+  // rather than against a number written here \u2014 which would be a second copy of
+  // the constant this whole mechanism exists to avoid.
+  const m = JSON.parse(readFileSync(new URL('../data/measures.json', import.meta.url), 'utf8'));
+  const inside = m.slot.scoredFromInside, outside = m.slot.scoredFromOutside;
+  assert.ok(card.blurb.includes((inside.rate * 100).toFixed(1)),
+    `the card does not state the inside conversion (${(inside.rate * 100).toFixed(1)}%)`);
+  assert.ok(card.blurb.includes((outside.rate * 100).toFixed(1)),
+    'the card does not state the outside conversion, so there is no gap to see');
+  assert.ok(card.blurb.includes(inside.count.toLocaleString('en-US')),
+    'the headline figure does not carry its count');
+  assert.ok(card.blurb.includes(inside.n.toLocaleString('en-US')),
+    'the headline figure does not carry its n \u2014 every published frequency must');
+
+  /* \u26d4 A FREQUENCY REPORTS; A VERDICT INSTRUCTS OR CONCLUDES (CHENG). The
+     measurements half may say how often and may not say what it means. */
+  assert.doesNotMatch(card.blurb, /where games are won|shoot from|you should|best place/i,
+    'the card has started giving advice or reaching a conclusion');
+});
+
+test('\u2b50 and the slot PAGE carries the base rate as its limit', () => {
+  /* The template's closing move: the rules pages spend it on "what to watch",
+     the measurement pages have to spend it on what the number does NOT say.
+     Without this the headline is correct and unfalsifiable by a reader. */
+  const page = readFileSync(new URL('../src/slot.html', import.meta.url), 'utf8');
+  const m = JSON.parse(readFileSync(new URL('../data/measures.json', import.meta.url), 'utf8'));
+  const note = /<p class="dgnote">([\s\S]*?)<\/p>/.exec(page);
+  assert.ok(note, 'the slot page has no note, so it states no limit at all');
+  assert.ok(note[1].includes((m.slot.attempts.rate * 100).toFixed(1)),
+    'the note does not carry the attempt base rate, which is the whole limit');
+  assert.ok(note[1].includes(m.slot.attempts.n.toLocaleString('en-US')),
+    'the base rate is stated without its n');
+  // AND IT EXPLAINS THE EXCLUSION rather than hiding it: a blocked shot's
+  // coordinate is where the puck was STOPPED, which is why it is in neither count.
+  assert.match(note[1], /blocked/i, 'the note does not say blocked shots are excluded');
+  assert.match(note[1], /stopped|blocker/i, 'the note excludes blocked shots without saying why');
+});
+
 test('the two groups stay apart, and the measurements are the marked half', () => {
   // The split is the page's argument -- the league's rules against our
   // arithmetic -- and a uniform grid would flatten two kinds of claim into one.
