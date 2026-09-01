@@ -219,3 +219,78 @@ with?
 - No penalty-frequency claim on the page (§1.7).
 - No referee figure — the arm going up is a marker, not a person.
 - No fix here for the stale fixtures (§1.4); that is its own change.
+
+---
+
+# 5. CHENG's rulings — 2026-09-01
+
+| | ruling |
+|---|---|
+| **3.1** | **Take (b) — step 2 drops to prose.** And (a) is disqualified twice over: *"drawing the three kinds at the places those fouls happen would be inventing coordinates. The taxonomy is a naming of `descKey` values; it carries no geometry."* (c) is the faceoffs ⛔: *"a labelled taxonomy on a rink is a slide with a rink behind it. The rink stops meaning anything."* |
+| **3.2** | **Draw it.** Not the duplicated-clause defect — *"that was the same sentence twice in one caption. This is the same picture with two causes, which is a genuinely interesting fact about hockey and one a novice would never guess."* **One condition — see §5.2.** |
+| **3.3** | **The qualitative form is the rule; the number is the violation.** |
+| **3.4** | **Precedent, and the discomfort is a check on the GRAMMAR rather than on the card.** |
+
+## 5.1 ⭐ THE RULE OUT OF 3.1 — a figure draws what the ice can show
+
+> Steps 1 and 3 are things that happen on ice — a player leaves, a goalie leaves,
+> the count changes. **Step 2 is a classification of language.** Different kind of
+> object, and prose is where it belongs.
+
+It also keeps the grammar clean: every figure so far is wholly a sequence or
+wholly a map, and the mixture would have been the first exception on the card with
+the weakest case for one.
+
+## 5.2 ⚠️ THE CONDITION ON DRAWING THE GOALIE TWICE
+
+> *"The two figures must differ in what's visible around the goalie. Empty net:
+> losing late, clock low, six skaters attacking. Delayed call: arm up, the **other**
+> team has the puck, six skaters because possession hasn't changed yet. If they
+> render identically, that's duplication. If the cause is legible in each, it's the
+> lesson."*
+
+So the delayed-call figure must show **the puck with the other team** and **the
+raised arm**, and the empty-net figure must keep what makes its cause legible.
+This is a build requirement, and the test for it is that a reader can tell the two
+frames apart with the captions covered.
+
+## 5.3 ⭐⭐ THE WALL, STATED PROPERLY — and it settles more than this card
+
+> **The rules half may state what the record contains; only the measurements half
+> may state how often.**
+
+The offside card's *"the feed records the call and the restart, never the
+crossing"* is **categorical** — true of every offside ever recorded, checkable by
+reading the schema. *"79 of 109"* is a **measurement** with an n, a population and
+a date.
+
+So §2.4's sentence loses its number and becomes categorical:
+
+> The league records the call and the whistle, and usually nothing in between.
+
+The number, if it wants a home, goes to the measurements page with the other
+homeless figures.
+
+## 5.4 ⚠️ AND THE §1.2 SELF-CORRECTION EARNED A STANDING RULE
+
+CHENG, on my reporting one game's numbers as facts about hockey twice in short
+order:
+
+> *"That's the same shape as the 4× headline that turned out to be 8-game noise.
+> Twice now in short order, which suggests the discipline is right and the habit
+> isn't yet — **any number offered in conversation should carry its n out loud**,
+> because a bare figure gets remembered as a fact about hockey and then designed
+> against."*
+
+## 5.5 §1.4 — filed and instrumented, 2026-09-01
+
+CHENG: *"worth a row of its own, and worth a gate: assert the fixtures were
+extracted by the current extractor."* **Done in the same session** — see
+`test/fixtures.test.js` and the new *Keeping them honest* section in
+`test/fixtures/extracts/README.md`.
+
+Five of seven fixtures were refreshed; the drift had already produced a **false
+test** (`render-penalties.test.js` demanded the code call a genuinely short-handed
+goal *not* short-handed, and passed for as long as the data was wrong). A
+2024020543 fixture was added because no fixture contained the pulled-goalie trap
+any more.

@@ -117,8 +117,21 @@ test('a penalty descriptor is looked up, never inflected', () => {
 
 const SHORTY = JSON.parse(readFileSync(
   new URL('fixtures/extracts/2025030223.json', import.meta.url), 'utf8'));
+/* ⚠️⚠️ THIS WAS `2023020207`, AND THE FIXTURE WAS LYING. That file was a copy of an
+   older extractor's output with no penalty durations, so `stints()` computed an empty
+   box and its 4-on-5 Toronto goal looked like the pulled-goalie trap this test needs.
+   It is not: with the correct extract there is a Toronto player in the box and the goal
+   is genuinely short-handed. **The assertion below was demanding the code give the
+   WRONG answer, and it passed for as long as the data was wrong.**
+
+   ⭐ SO THE TRAP CASE IS A GAME THAT ACTUALLY CONTAINS ONE, and it contains TWO — both
+   at `sit=0651`, the away goalie pulled for a sixth skater while the home team scores
+   with five. Measured over the 46-game sample that settled this: 247 goals in play, 17
+   with fewer skaters, 7 genuinely short-handed and **10 of them this trap** — so it is
+   the commoner of the two, which is exactly why a badge driven by `sit` alone would be
+   wrong more often than right. */
 const PULLED = JSON.parse(readFileSync(
-  new URL('fixtures/extracts/2023020207.json', import.meta.url), 'utf8'));
+  new URL('fixtures/extracts/2024020543.json', import.meta.url), 'utf8'));
 
 /** The rule the page uses, restated here from the two facts it reads. */
 function shortHandedIn(g, e) {
@@ -145,13 +158,22 @@ const fewerIn = (g, e) => {
  *
  * Neither fixture proves this alone: one shows the tag firing, the other shows
  * it staying silent on the case that looks identical to the naive rule.
+ *
+ * ⚠️ RE-DERIVED 2026-09-01 AGAINST 46 PUBLISHED GAMES, because the numbers above came
+ * from a set of 40 and the fixture that was supposed to prove the silent half turned
+ * out to be a stale extract (see the `PULLED` binding). The shape holds and the
+ * conclusion is unchanged: 247 goals in play, 17 with fewer skaters, 7 short-handed
+ * and 10 the pulled-goalie trap — so the naive rule is wrong on the MAJORITY, not
+ * merely four times in five.
  */
 test('the short-handed tag fires on a short-handed goal and not on a pulled goaltender', () => {
   const sh = goalsIn(SHORTY).filter(e => shortHandedIn(SHORTY, e));
   assert.equal(sh.length, 1, 'this fixture no longer contains exactly one short-handed goal');
 
   const trap = goalsIn(PULLED).filter(e => fewerIn(PULLED, e));
-  assert.ok(trap.length, '2023020207 no longer contains a fewer-skaters goal — the trap case is gone');
+  assert.ok(trap.length >= 2,
+    `2024020543 now holds ${trap.length} fewer-skaters goal(s) — the trap case needs at least two, `
+    + 'so a single mislabelled event cannot be the whole claim');
   for (const e of trap)
     assert.equal(shortHandedIn(PULLED, e), false,
       `a goal with fewer skaters and nobody in the box was called short-handed — sit ${e.sit}`);
