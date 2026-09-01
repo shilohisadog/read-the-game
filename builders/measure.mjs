@@ -30,6 +30,9 @@ import { danger } from '../src/lib/layers/danger.js';
 import { goaltending } from '../src/lib/layers/goaltending.js';
 import { whistle } from '../src/lib/layers/whistle.js';
 import { shootingTeam, SHOT_TYPES } from '../src/lib/attribution.js';
+// The SAME two functions danger.js calls at line 118 — a distance measured here
+// cannot disagree with a distance measured by the layer.
+import { attackDirection, distanceToNet } from '../src/lib/rink.js';
 import { inScope, summarise } from '../src/lib/archive.js';
 import { teamSeasons } from '../src/lib/team-season.js';
 import { censusGame, censusAdd, censusRates } from '../src/lib/census.js';
@@ -137,6 +140,35 @@ export function measureGame(g) {
     if (inSlot.has(id)) goals.slot++;
   }
 
+  /* ⭐⭐ HOW FAR OUT EACH KIND OF ATTEMPT IS RECORDED — the number that makes the
+     blocked-shot coordinate legible instead of merely disclaimed.
+
+     `src/lib/attribution.js` has said for months that a blocked shot's
+     coordinate is the BLOCKER's and therefore nearer the net than the shot was
+     taken, citing a median 24.2 ft against 33.4 for a shot on goal — over an
+     EIGHTY-GAME SAMPLE, in a comment, published nowhere. It is the site's
+     sharpest piece of self-disclosure and no page could read it.
+
+     ⭐ THE DIRECTION RULE IS `danger.js`'s, IMPORTED. `attackDirection` and
+     `distanceToNet` are the same two functions the slot layer calls at
+     danger.js:118, so a distance measured here cannot disagree with a distance
+     measured there. Restating either would be a second answer to a question
+     src/lib already answers, which is the one thing this file exists not to do.
+
+     ⛔ AND A MEDIAN NEEDS NO THRESHOLD. "Beyond 50 ft" was the tempting form and
+     50 is a number we would have chosen — a parameter with no source, which is
+     the defect `docs/game-sentence.md` §3 removed from the goalie card. The
+     distances are published as a distribution and the reader picks the cut. */
+  const reach = {};
+  for (const id of all.counted) {
+    const e = g.events[id];
+    if (e.x == null || e.y == null) continue;
+    const team = shootingTeam(e, g.roster);
+    if (team == null) continue;          // unresolvable, and never guessed at
+    (reach[e.type] ||= []).push(
+      Math.round(distanceToNet(e.x, e.y, attackDirection(team, ctx.homeId))));
+  }
+
   const goalies = [];
   for (const [pid, v] of Object.entries(nets.g)) {
     const p = g.roster[pid];
@@ -156,7 +188,7 @@ export function measureGame(g) {
     // Blocks CREDITED to each side — the team that did the blocking, which is
     // the defending team and therefore NOT the event's owner.
     blocks: { h: blk.t[ctx.homeId], a: blk.t[ctx.awayId] },
-    slot, located, goals, goalies,
+    slot, located, goals, goalies, reach,
     /* ⭐ THE FIVE LENS COUNTS, AS THE CHIPS COUNT THEM. The selector under the
        rink puts a live count on each lens, and it is `LEDGER[id](sl)
        .counted.length` for every one of them — so a reference class built on

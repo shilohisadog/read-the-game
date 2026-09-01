@@ -20,7 +20,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { measureGame, stable, firstAtClock, endedIn, measureAll } from '../builders/measure.mjs';
 import { TEAMS } from '../src/lib/teams.js';
-import { summarise, slotShare, perGame } from '../src/lib/archive.js';
+import { summarise, slotShare, perGame, reachOf, goalieNight } from '../src/lib/archive.js';
 import { distribution, quantile, shareAtOrBelow, mostUnusual } from '../src/lib/distribution.js';
 import { corsi } from '../src/lib/layers/corsi.js';
 import { danger } from '../src/lib/layers/danger.js';
@@ -196,6 +196,166 @@ test('the published archive states where the goals come from, with its rule', ()
   assert.ok(doc.slot && doc.slot.n > 0,
     'the archive summary carries no slot share, so no page can read one');
   assert.equal(doc.slot.n, measureGame(g).goals.placed);
+});
+
+test('⭐⭐ the slot share is published WITH ITS BASE RATE, or it loses the argument', () => {
+  /* ⚠️ "Three of every four goals come from the slot" invites one reply — *"that
+     is where everybody shoots"* — and over a 600-game sample the reply is half
+     right: 46.8% of located unblocked attempts are already inside it. A share
+     with no base rate beside it is a number that is CORRECT AND UNPERSUASIVE,
+     which is a different defect from being wrong and is not caught by any
+     arithmetic check. So the base rate is part of the published object. */
+  const agg = slotShare([
+    { goals: { slot: 3, placed: 4, unplaced: 1 }, slot: { h: 4, a: 6 }, located: { h: 10, a: 10 } },
+    { goals: { slot: 1, placed: 4, unplaced: 0 }, slot: { h: 5, a: 5 }, located: { h: 15, a: 15 } },
+    { /* an older record shape, carrying neither half */ },
+    // ⭐ ONE HALF AND NOT THE OTHER, which is the case the separate guards exist
+    // for: this must move the goals denominator and leave the attempts one alone.
+    { goals: { slot: 0, placed: 2, unplaced: 0 } },
+  ]);
+  assert.equal(agg.n, 10, 'the goals denominator lost or gained a record');
+  assert.equal(agg.attempts.count, 20, 'attempts inside the slot are summed over both sides');
+  assert.equal(agg.attempts.n, 50, 'the attempts denominator is `located`, not every attempt');
+  assert.equal(agg.games, 3);
+  assert.equal(agg.attemptGames, 2,
+    'a record carrying goals but no attempt placement was counted as if it carried both');
+
+  /* ⚠️⚠️ THE TWO CONVERSIONS MUST PARTITION ONE POPULATION, AND THIS ASSERTION
+     FOUND A REAL DEFECT WHEN IT WAS FIRST RUN. The fourth record above carries
+     goals and no attempt placement; the first implementation put its 2 goals in
+     the conversion numerator while its attempts never reached the denominator —
+     `saveShare`'s defect rebuilt one function away. The conversions now count a
+     game only when it supplied BOTH halves, so the totals here are 4 of 50 and
+     NOT the goals share's 4 of 10. */
+  assert.equal(agg.scoredFromInside.n + agg.scoredFromOutside.n, agg.attempts.n,
+    'the two conversions do not partition the located attempts');
+  assert.equal(agg.scoredFromInside.count + agg.scoredFromOutside.count, 8,
+    'the conversions do not account for every placed goal in the games they measure');
+  assert.ok(agg.scoredFromInside.count + agg.scoredFromOutside.count < agg.n,
+    `the conversions count all ${agg.n} placed goals, including the 2 from a record `
+    + 'whose attempts were never counted — the population mismatch this guards');
+
+  // ⛔ EVERY RATIO REPRODUCIBLE FROM PUBLISHED COUNTS — the only meaning of
+  // "locked in" that survives a reader checking it.
+  for (const s of [agg, agg.attempts, agg.scoredFromInside, agg.scoredFromOutside]) {
+    assert.ok(s.n != null && s.count != null && s.population,
+      `a published share carries no n, count or population: ${JSON.stringify(s)}`);
+    assert.equal(s.rate, s.n ? s.count / s.n : null, 'a published rate is not its own count over its own n');
+  }
+  assert.match(agg.attempts.what, /BLOCKER/,
+    'the attempts base rate does not say why blocked shots are excluded from it');
+
+  assert.equal(slotShare([]).attempts.rate, null, 'an empty archive reports 0 rather than nothing');
+});
+
+test('⭐ and the slot counts NEST, on every real game — the division is sanctioned', () => {
+  /* ⚠️ THIS IS `saveShare`'s LESSON ASKED AGAIN. That number exists because two
+     correct counts had a ratio nobody sanctioned. `goals.slot / slot` and
+     `slot / located` are only rates if each numerator is a SUBSET of its
+     denominator — otherwise they are third quantities wearing a percent sign.
+
+     The reasoning says they are: in measure.mjs `danger` and `corsi` both run at
+     `evenOnly: false`, and `located` filters corsi's counted set to exactly the
+     shot types with a coordinate that `danger` judges. ⭐ BUT THE REASONING IS
+     NOT THE CHECK — this asserts the containment on every fixture game. */
+  const dir = new URL('fixtures/extracts/', import.meta.url);
+  let games = 0;
+  for (const f of readdirSync(dir).filter(f => /^\d+\.json$/.test(f))) {
+    const r = measureGame(JSON.parse(readFileSync(new URL(f, dir), 'utf8')));
+    if (!r || !r.slot || !r.located) continue;
+    games++;
+    const inSlot = r.slot.h + r.slot.a, located = r.located.h + r.located.a;
+    assert.ok(inSlot <= located,
+      `${f}: ${inSlot} slot attempts against ${located} located — the base rate would exceed 1`);
+    assert.ok(r.goals.slot <= inSlot,
+      `${f}: ${r.goals.slot} slot goals against ${inSlot} slot attempts — a goal that is not an attempt`);
+    assert.ok(r.goals.placed <= located,
+      `${f}: ${r.goals.placed} placed goals against ${located} located attempts`);
+  }
+  assert.ok(games >= 7, `only ${games} fixture games carried both halves`);
+});
+
+test('\u2b50\u2b50 the archive publishes HOW FAR OUT each kind of attempt is recorded', () => {
+  /* \u26a0\ufe0f THIS CLAIM HAS BEEN LOAD-BEARING AND UNPUBLISHED FOR MONTHS.
+     `src/lib/attribution.js` excludes blocked shots from SHOT_TYPES because their
+     coordinate is the BLOCKER's and therefore nearer the net than the shot was
+     taken \u2014 citing a median 24.2 ft against 33.4, from an EIGHTY-GAME SAMPLE, in
+     a comment. The slot rule depends on it and no page could read it. */
+  const agg = reachOf([
+    { reach: { 'blocked-shot': [10, 20], 'shot-on-goal': [30] } },
+    { reach: { 'blocked-shot': [30], 'shot-on-goal': [40, 50] } },
+    { /* an older record shape, carrying no distances at all */ },
+  ]);
+  assert.equal(agg['blocked-shot'].n, 3, 'distances are pooled across records');
+  assert.equal(agg['shot-on-goal'].n, 3);
+  assert.equal(agg['blocked-shot'].min, 10);
+  assert.equal(agg['blocked-shot'].max, 30);
+  assert.equal(agg['blocked-shot'].unit, 'events',
+    'the unit still says games, which is out by a factor of about a hundred');
+  for (const v of Object.values(agg)) {
+    assert.ok(v.population, 'a published distribution carries no population');
+    assert.match(v.what, /n counts EVENTS/, 'the distribution does not name its own unit');
+  }
+  assert.match(agg['blocked-shot'].what, /BLOCKER/,
+    'the blocked-shot distribution does not say whose position it records');
+
+  // \u26d4 AND NO THRESHOLD ANYWHERE IN IT. "Beyond 50 ft" was the tempting form and
+  // 50 is a number we would have chosen \u2014 the defect game-sentence.md \u00a73 removed.
+  assert.deepEqual(Object.keys(agg['blocked-shot']).filter(k => /beyond|over|above|min[A-Z]/.test(k)), [],
+    'a chosen cutoff has appeared in the published shape');
+});
+
+test('\u2b50 and a blocked shot really is recorded nearer the net \u2014 on every fixture', () => {
+  /* THE DIRECTION IS THE CLAIM, and it is what SHOT_TYPES is built on. If a
+     direction bug ever inverted `attackDirection` here, the distances would all
+     be measured to the wrong net and this ordering would break \u2014 which is the
+     only cheap check that the imported rule is being applied the way danger.js
+     applies it. Pinned on real games rather than on hand-made numbers. */
+  const dir = new URL('fixtures/extracts/', import.meta.url);
+  const pool = {};
+  for (const f of readdirSync(dir).filter(f => /^\d+\.json$/.test(f))) {
+    const r = measureGame(JSON.parse(readFileSync(new URL(f, dir), 'utf8')));
+    if (!r || !r.reach) continue;
+    for (const [t, ds] of Object.entries(r.reach)) (pool[t] ||= []).push(...ds);
+  }
+  const med = a => [...a].sort((x, y) => x - y)[Math.floor(a.length / 2)];
+  assert.ok(pool['blocked-shot'] && pool['blocked-shot'].length > 100,
+    `only ${pool['blocked-shot']?.length || 0} blocked shots across the fixtures`);
+  const b = med(pool['blocked-shot']), s = med(pool['shot-on-goal']);
+  assert.ok(b < s,
+    `a blocked shot is recorded a median ${b} ft out and a shot on goal ${s} \u2014 the `
+    + 'ordering attribution.js excludes blocked shots FOR has inverted, so either the '
+    + 'attacking direction is wrong here or the feed has changed');
+  // AND EVERY DISTANCE IS ON THE ICE. 200 ft is the length of the rink.
+  for (const [t, ds] of Object.entries(pool))
+    assert.ok(Math.max(...ds) <= 200, `a ${t} was measured ${Math.max(...ds)} ft from the net`);
+});
+
+test('\u2b50 a goaltender\u2019s night is published as TWO INTEGERS, never as a rate', () => {
+  /* `docs/game-sentence.md` \u00a73: the goalie card prints "33 of 35" and never a save
+     percentage, because a percentage over a small denominator needs a minimum-n
+     threshold and twenty was a number we chose. The archive anchor is published
+     in the same idiom \u2014 shots faced and goals allowed, both integers, and the
+     reader forms the fraction. */
+  const agg = goalieNight([
+    { goalies: [{ faced: 30, saves: 28 }, { faced: 20, saves: 20 }] },
+    { goalies: [{ faced: 1, saves: 0 }] },
+    { /* an older record shape */ },
+  ]);
+  assert.equal(agg.faced.n, 3, 'every appearance is counted');
+  assert.equal(agg.allowed.n, 3);
+  assert.deepEqual([agg.allowed.min, agg.allowed.max], [0, 2], 'goals allowed is faced minus saves');
+  assert.equal(agg.faced.unit, 'appearances', 'the unit says games, and there are two a game');
+  for (const v of [agg.faced, agg.allowed])
+    assert.match(v.what, /GOALTENDER APPEARANCES/, 'the distribution does not name its own unit');
+
+  /* \u26d4 THE ONE-SHOT APPEARANCE IS IN THERE, AND THAT IS THE POINT. Filtering it
+     out would need a minimum, and the minimum does not change the answer: over a
+     600-game sample the middle half of the save fraction is .857-.935 unfiltered,
+     .857-.935 above ten shots faced and .864-.938 above twenty. So the honest
+     form is the one with no parameter in it. */
+  assert.equal(agg.faced.min, 1,
+    'a short appearance was filtered out, which is a threshold with no source');
 });
 
 test('the two shot measures are computed separately and may disagree', () => {

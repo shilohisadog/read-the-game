@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-XO273OhSBBTD2a3fdQclrqpLmZPLGHpYTJyeHvgEFw4=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-wCzZ5doKMp4YUz0OzT9XyZMKf++eETEMktHAxKa+wMQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-a+7fSypyl4EUlEPLFru+ufpgXuG/6XfyqZTPXei5jog=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-wCzZ5doKMp4YUz0OzT9XyZMKf++eETEMktHAxKa+wMQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -878,20 +878,175 @@ function saveShare(records) {
  * than hidden — the same reason `attemptMix` publishes `saveFraction` next to
  * the counts that invite the wrong division.
  */
-function slotShare(records) {
-  let slot = 0, placed = 0, unplaced = 0, seen = 0;
+/**
+ * ⚠️⚠️ AND THE SHARE ABOVE DOES NOT SURVIVE THE FIRST OBJECTION ANYBODY MAKES.
+ *
+ * "Three of every four goals come from the slot" invites exactly one reply —
+ * *"well, that is where everybody shoots"* — and the reply is half right.
+ * Measured over a 600-game sample with this file's own rule, **46.8% of the
+ * unblocked, located attempts are already inside the slot** (24,264 of 51,815)
+ * against 76.4% of the goals. The effect is real, and the goals share alone
+ * cannot show that it is: a share with no base rate beside it is a number that
+ * is correct and loses the argument.
+ *
+ * So the base rate is published in the same object, which is `saveShare`'s move
+ * exactly — supply the figure that settles it rather than warn against the one
+ * that does not.
+ *
+ * ⭐ AND THE CONVERSION IS THE SANCTIONED DIVISION, CHECKED RATHER THAN ASSUMED.
+ * `saveShare` exists because two correct counts had a ratio nobody sanctioned,
+ * so the same question is asked here. In `builders/measure.mjs` the per-game
+ * `slot` comes from `danger.reduce(events, lay)` and `located` from
+ * `corsi.reduce(events, {...ctx, evenOnly: false})` filtered to `SHOT_TYPES`
+ * with a coordinate — and `lay` sets `evenOnly: false` too. `danger` counts
+ * exactly corsi's counted set narrowed to those same shot types with a
+ * coordinate, so `slot` is a SUBSET of `located` and `goals.slot` a subset of
+ * both. Numerator and denominator are the same population, which is the whole
+ * of the test. `test/archive.test.js` asserts the containment per game rather
+ * than trusting this paragraph.
+ *
+ * ⛔ EVERY RATIO HERE IS REPRODUCIBLE FROM THE PUBLISHED COUNTS. `count`/`n` on
+ * each share, plus `attempts`, are enough for a reader to recompute all three
+ * without trusting any of them — which is the only meaning of "locked in" that
+ * survives somebody actually checking.
+ */
+/**
+ * ⭐⭐ HOW FAR OUT EACH KIND OF ATTEMPT IS RECORDED — the site's sharpest piece of
+ * self-disclosure, and until now it existed only in a comment.
+ *
+ * `src/lib/attribution.js` explains that a blocked shot's coordinate is the
+ * BLOCKER's, not the shooter's, and therefore nearer the net than the shot was
+ * taken. It cites a median 24.2 ft against 33.4 for a shot on goal — over an
+ * EIGHTY-GAME SAMPLE, in prose, published nowhere a page could read. A reader
+ * had to take the disclaimer on trust, which is the one thing this site asks of
+ * nobody.
+ *
+ * ⛔ NO THRESHOLD, DELIBERATELY. "Beyond 50 ft" was the tempting form and 50 is a
+ * number we would have chosen — a parameter with no source, which is the defect
+ * `docs/game-sentence.md` §3 removed from the goalie card rather than argued
+ * separately. A distribution states the whole shape and lets the reader pick the
+ * cut; the blue line, if anyone wants one, is 64 ft out (`NET_X - BLUE_LINE_X`)
+ * and comes from the rink rather than from us.
+ *
+ * A SHARE OF A POPULATION, NOT AN OUTCOME RATE — the distinction `attemptMix`
+ * turns on. There is no winner in it, so there is no causal reading to misread.
+ */
+function reachOf(records) {
+  const by = {};
   for (const g of records) {
-    if (!g.goals) continue;      // an older record shape: counted, never guessed at
-    seen++;
-    slot += g.goals.slot; placed += g.goals.placed; unplaced += g.goals.unplaced;
+    if (!g.reach) continue;      // an older record shape: counted, never guessed at
+    for (const [type, ds] of Object.entries(g.reach)) (by[type] ||= []).push(...ds);
   }
+  const out = {};
+  for (const type of Object.keys(by).sort()) {
+    out[type] = distribution(by[type],
+      `feet from the attacking net at which a ${type.replace(/-/g, ' ')} is RECORDED `
+      + '(n counts EVENTS, not games; for a blocked shot this is where the puck was '
+      + 'stopped, which is the BLOCKER\'s position and not where the shot was taken)',
+      POPULATION);
+    out[type].unit = 'events';
+  }
+  return out;
+}
+
+/**
+ * ⭐ WHAT A GOALTENDER'S NIGHT LOOKS LIKE — as two integers, never as a rate.
+ *
+ * The novice question behind the goaltending card is "is .900 good?", and the
+ * card deliberately does not answer it in those terms: `docs/game-sentence.md`
+ * §3 made it print "33 of 35" always, because a percentage over a small
+ * denominator needs a minimum-n threshold and twenty was a number we chose.
+ *
+ * So the anchor is published in the card's own idiom. Shots faced and goals
+ * allowed are both INTEGERS, which `distribution` takes unchanged, and a reader
+ * forms the fraction themselves — which is the whole of what the fraction rule
+ * asks for.
+ *
+ * ⛔ AND NO MINIMUM-SHOTS FILTER, WHICH IS A MEASURED CHOICE RATHER THAN A
+ * PREFERENCE. Over a 600-game sample the middle half of the save fraction is
+ * .857-.935 with no filter, .857-.935 above ten shots faced and .864-.938 above
+ * twenty. The threshold does not move the answer, so the honest form is the one
+ * that does not have one. `test/measure.test.js` pins the population as EVERY
+ * appearance.
+ *
+ * `n` HERE COUNTS GOALTENDER APPEARANCES, not games — two per game when both
+ * teams' starters go the distance, more when anybody is pulled. Named in `what`
+ * for the reason `attemptMix` names its own unit.
+ */
+function goalieNight(records) {
+  const faced = [], allowed = [];
+  for (const g of records) {
+    if (!g.goalies) continue;    // an older record shape: counted, never guessed at
+    for (const k of g.goalies) { faced.push(k.faced); allowed.push(k.faced - k.saves); }
+  }
+  const said = '(n counts GOALTENDER APPEARANCES, not games, and excludes the shootout)';
+  const one = (v, what) => {
+    const d = distribution(v, what + ' ' + said, POPULATION);
+    d.unit = 'appearances';
+    return d;
+  };
   return {
-    ...share(slot, placed,
+    faced: one(faced, 'shots one goaltender faced in one game'),
+    allowed: one(allowed, 'goals one goaltender allowed in one game'),
+  };
+}
+
+function slotShare(records) {
+  let goalsIn = 0, goalsPlaced = 0, unplaced = 0, seen = 0;
+  let attIn = 0, attPlaced = 0, attSeen = 0;
+  /* ⚠️⚠️ THE CONVERSIONS GET A THIRD PAIR OF ACCUMULATORS, AND A TEST FOUND OUT
+     WHY. A record carrying goal placement but NOT attempt placement puts its
+     goals in the conversion's numerator while its attempts never enter the
+     denominator — `saveShare`'s defect exactly, rebuilt one function away, and
+     no arithmetic check on the goals share or the base rate can see it. So a
+     conversion counts a game only when the game supplied BOTH halves. In a real
+     run every record carries both and all three agree; this makes that true by
+     construction rather than by luck. */
+  let cIn = 0, cGoalsIn = 0, cPlaced = 0, cGoalsPlaced = 0;
+  for (const g of records) {
+    if (g.goals) {               // an older record shape: counted, never guessed at
+      seen++;
+      goalsIn += g.goals.slot; goalsPlaced += g.goals.placed; unplaced += g.goals.unplaced;
+    }
+    // Counted under its OWN guard, so a record carrying one half and not the
+    // other cannot silently shrink the other's denominator.
+    if (g.slot && g.located) {
+      attSeen++;
+      attIn += g.slot.h + g.slot.a;
+      attPlaced += g.located.h + g.located.a;
+    }
+    if (g.goals && g.slot && g.located) {
+      cIn += g.slot.h + g.slot.a;
+      cPlaced += g.located.h + g.located.a;
+      cGoalsIn += g.goals.slot;
+      cGoalsPlaced += g.goals.placed;
+    }
+  }
+  const GEOM = 'within 33 ft of the attacking net and inside 22 ft of centre';
+  return {
+    ...share(goalsIn, goalsPlaced,
       'of the goals scored in play whose location the feed records, this many were '
-      + 'taken from inside the slot — within 33 ft of the attacking net and inside '
-      + '22 ft of centre (n counts GOALS, not games, and excludes the shootout)'),
+      + `taken from inside the slot — ${GEOM} `
+      + '(n counts GOALS, not games, and excludes the shootout)'),
     games: seen,
     unplaced,
+    // ⭐ THE BASE RATE. Without it the goals share is unfalsifiable by a reader.
+    attempts: share(attIn, attPlaced,
+      'of the unblocked shot attempts whose location the feed records, this many were '
+      + `taken from inside the slot — ${GEOM} `
+      + '(n counts ATTEMPTS, not games, and a blocked shot is excluded because the '
+      + 'coordinate the feed records for one is the BLOCKER\'s, not the shooter\'s)'),
+    // ⭐⭐ AND THE ANSWER TO "that is just where everybody shoots": the same
+    // attempt is far likelier to score from inside than from outside.
+    scoredFromInside: share(cGoalsIn, cIn,
+      'of the unblocked attempts taken from INSIDE the slot, this many were goals '
+      + '(n counts ATTEMPTS, not games, over the games carrying BOTH goal and '
+      + 'attempt placement)'),
+    scoredFromOutside: share(cGoalsPlaced - cGoalsIn, cPlaced - cIn,
+      'of the unblocked attempts taken from OUTSIDE the slot, this many were goals '
+      + '(n counts ATTEMPTS, not games, over the games carrying BOTH goal and '
+      + 'attempt placement)'),
+    attemptGames: attSeen,
   };
 }
 
@@ -961,6 +1116,12 @@ function summarise(records) {
     // Where the goals come from. A share of a population, like attemptMix, and
     // the reason the base layer shades the slot at all.
     slot: slotShare(games),
+    // ⭐ HOW FAR OUT EACH KIND OF ATTEMPT IS RECORDED. The one number that makes
+    // the blocked-shot coordinate legible rather than merely disclaimed.
+    reach: reachOf(games),
+    // ⭐ AND WHAT A GOALTENDER'S NIGHT LOOKS LIKE, as two integers rather than a
+    // rate — see `goalieNight`.
+    goalieNight: goalieNight(games),
     // ⭐ AND WHAT A NORMAL NIGHT LOOKS LIKE — a distribution rather than a rate,
     // which is the one thing no figure above can be asked. See `perGame`.
     perGame: perGame(games),
