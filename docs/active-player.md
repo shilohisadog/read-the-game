@@ -251,3 +251,114 @@ acceptable or whether the line should hold its ground.
 3. **Both branches of the caption overlap** (§6.2) must be populated in whatever
    fixture the test uses — `docs/status.md` §H4.
 4. **Looked at**, on a phone, with the longest name in the archive.
+
+---
+
+# 10. CHENG's rulings — 2026-09-01
+
+All four questions answered, plus a fifth point that changes the design. Recorded
+here so the build has one place to work from.
+
+| | ruling |
+|---|---|
+| §4 | **Stated harder than the doc did:** *"A name without a verb is an attribution claim with no stated relationship. `actor` doesn't mean 'who did this' — it means whatever `ACTOR` mapped for that type. Rendering it bare would be publishing a field's value without its meaning, which is the same class as a rate without its reference class."* Say both halves on a blocked shot. |
+| 7.1 | **Take the one-sided sentence. Do not touch the pipeline.** *"Delivered a hit is a whole sentence about a recorded fact… it isn't wrong, and nothing on screen implies a second name is missing."* Reversible in the cheap direction: if `hitteePlayerId` ever arrives for another reason, the sentence grows. |
+| 7.3 | Same answer, and it is one question, not two. |
+| 7.2 | **Not a layer** (it counts nothing, has no ledger, produces no conservation claim) **and not a permanent toggle.** |
+| 6.2 | **Suppress** where a caption already names a player. |
+| 7.4 | **Reserve nothing, render the event name.** *"The line should never be empty, and 'Shootout complete' is a real thing to say"* — which sidesteps both defects instead of trading between them. |
+
+## 10.1 ⭐ THE RULE THAT CAME OUT OF 7.1/7.3, worth more than the answer
+
+> **Add a field to the extractor only when its absence makes an existing sentence
+> false — never when it merely makes one shorter.**
+
+`hitteePlayerId` and `losingPlayerId` both fail that test. It also explains the
+existing "still dropped, deliberately" list in `builders/extract.py:52` rather
+than leaving it as a list of things nobody got round to.
+
+## 10.2 ⚠️ The third reader of `captioned()` — the danger is named
+
+CHENG: *"Three readers of one predicate is the property that made the 'fifth of
+the replay pauses for nothing' defect structurally impossible — `dwell()` and the
+renderer couldn't disagree because they read the same function. A third reader
+inherits that guarantee. **What would be dangerous is a third reader with a
+slightly different predicate**, which is the `dwell(isHD(e))` versus `hdOn &&
+isHD(cur)` bug exactly."*
+
+So the suppression must call `captioned(e)` — not re-test `e.type==='goal' ||
+e.type==='penalty'`, which is the same predicate spelled again and would drift the
+first time a caption kind is added.
+
+⚠️ **And note it is not the same question.** `captioned()` is true for icing,
+offside and power-play endings too, and those captions name **no player** — so
+suppressing on `captioned()` alone would blank the line on frames where nothing
+duplicates it. The predicate the line needs is *"does the caption name a player"*,
+which today is `goal || penalty || (hdOn && isHD(e))`. **That is a fourth
+predicate, and CHENG's warning is precisely about inventing one.** The fix is to
+make the caption's own player-naming a named function that both readers call —
+one predicate, two readers — rather than a second expression that happens to
+agree today.
+
+## 10.3 ⭐ THE ONE TABLE — resolved, and the pattern already exists
+
+CHENG: *"The verb has to come from one table, and that table is `ACTOR`'s mirror…
+Put them in one structure — `{ field, verb }` per type — rather than two tables
+that have to agree. That's the same move as `place()`, and it's cheap now and
+unfixable later."*
+
+The obstacle is that `ACTOR` is **Python** (`builders/extract.py:41`) and the verb
+is needed in **JavaScript**. One structure across two languages is exactly the
+problem `builders/learn-figures.mjs` already solved:
+
+    src/lib/attribution.js   ATTRIBUTION = { type: { field, say } }   ← the source,
+                                                                       comments and all
+    builders/…                → data/attribution.json                 ← emitted
+    builders/extract.py       ACTOR = {t: v["field"] …}               ← derived
+    npm run build             …--verify                               ← staleness cannot ship
+
+Three facts make this the right shape rather than a new invention:
+
+1. **`attribution.js` is already in `build_main.py`'s `LIB` list**, so the browser
+   already inlines it — the verb needs no new fetch and no new file in the hot
+   path.
+2. **`extract.py` already defers to it by name** in its own comments
+   (`"the SHOOTER -- see src/lib/attribution.js"`). The authority is already
+   asserted; this makes it real.
+3. **`learn-figures.mjs --verify` is already in `npm run build`**, so the
+   JS-source → JSON-for-Python → verify chain is a shipped, gated pattern, not a
+   proposal.
+
+JSON alone was rejected as the source: it cannot carry comments, and the
+per-entry comments in `ACTOR` (*"the SHOOTER"*, *"a shootout attempt that
+missed"*) are the reason anyone knows the mapping is non-obvious.
+
+## 10.4 ⛔ WHERE I DISAGREE WITH CHENG — the toggle should not exist at all
+
+He ruled *"fold it into the newcomer dismissal"*, and asked one check:
+
+> *"Does the dismissal currently hide anything else? If it's hiding the banner
+> only, it's a single-purpose control gaining a second meaning."*
+
+**Checked: it already controls two things, in opposite directions.**
+`#rg.newcomer .newcomer{display:block}` shows the banner (`src/app.css:1257`) and
+`#rg.newcomer .nwhy2{display:none}` hides the layer pitch (`:1478`). It is a
+first-visit *state flag*, not a single-element toggle, so his stated objection is
+already moot.
+
+**But I think tying the line to it is wrong, for a reason his own argument
+supplies.** The newcomer flag means *"I know how this site works."* The banner is
+scaffolding a reader outgrows. **Who took the shot is not scaffolding — it is game
+information, and a viewer on their tenth game wants it more, not less.** Tying
+them means dismissing a tutorial silently removes a fact, and `rtg.seen` is
+written as `…|99`, so there is no way back.
+
+CHENG's own sentence is the argument against his conclusion: *"a permanent control
+for a 29px line that's always true is the clutter the ruling was written
+against."* If it is always true and always useful, the honest answer is **no
+control and no tie** — it is part of the replay, like the caption pill, which also
+has no toggle.
+
+**This one is Kevin's call**, because he is the one who offered the toggle
+(*"we can also put a toggle"*) and because it is the only point where the two
+reviews disagree.
