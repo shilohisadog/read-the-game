@@ -993,3 +993,35 @@ test('⭐ both men who leave the ice reach it, and they leave on OPPOSITE sides'
     `both men leave ${side[0]} the ice — the bench and the penalty box are on `
     + 'opposite sides of a rink, and drawing them together loses the difference');
 });
+
+test('⛔ a step does not claim an outcome is universal when it is not', () => {
+  /* ⚠️ TWICE NOW, IN TWO FIGURES, AND THE SAME MISTAKE BOTH TIMES.
+
+     The empty net said the net is empty "— any shot that reaches it goes in".
+     Kevin: *"if we expand on that it can lead to 'that's not true' type comments,
+     since a defender can still guard the goal."* It was cut to the fact.
+
+     The penalties figure then said a team plays a skater short "until it expires".
+     Measured over 46 published games, 50 of 289 two-minute minors — 17.3% — end
+     EARLY on a goal, so the sentence was wrong about one penalty in six.
+
+     ⭐ THE PATTERN IS AN UNQUALIFIED ALWAYS, and it is worth naming because a
+     figure's steps are the one place on these pages where a confident sentence is
+     never checked against anything. There is no way to test prose for
+     overstatement, so what is pinned here is the two corrections themselves: the
+     exception each one had to name, and the claim each one had to stop making.
+     A future step that reintroduces either goes red with the reason attached. */
+  const say = id => figures[id].steps.join(' ').replace(/<[^>]+>/g, '');
+
+  const en = say('empty-net');
+  assert.match(en, /net is now\s*empty\.?/i, 'the empty-net step no longer stops at the fact');
+  assert.doesNotMatch(en, /any shot|goes in|cannot be saved/i,
+    'the empty net claims every shot scores again — a defender can still guard the goal');
+
+  const pe = say('penalties');
+  assert.match(pe, /other team scores/i,
+    'the penalties step no longer names the early end. A minor stops the moment the '
+    + 'other team scores, on 17.3% of them, and "until it expires" is wrong about those');
+  assert.doesNotMatch(pe, /until it expires|for the full two|all two minutes/i,
+    'the penalties step claims the whole two minutes are served again');
+});

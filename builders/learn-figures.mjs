@@ -854,8 +854,21 @@ function penalties() {
       'An official raises his arm and <b>play carries on</b> &mdash; until the '
       + 'offending team touches the puck. The other side keeps possession, and may '
       + 'even pull its goaltender for an extra skater.',
-      'At the whistle the offender serves <b>two minutes</b> in the penalty box, '
-      + 'and his team plays a skater short until it expires.',
+      /* ⚠️ THIS SAID "…a skater short UNTIL IT EXPIRES", and a minor very often does
+         not expire: the other team scoring ends it on the spot. Measured over the
+         same 46 games, 50 of 289 two-minute minors — 17.3% — end early on a goal,
+         so the sentence was wrong about one penalty in six.
+         ⭐ SECOND TIME IN TWO FIGURES, AND IT IS THE SAME MISTAKE. Kevin killed
+         "any shot that reaches it goes in" on the empty net for exactly this: a
+         sentence that overstates invites a correction, and the correction is about
+         US rather than about the rule.
+         ⭐ AND THE FIX TEACHES MORE THAN THE TRIM WOULD. Stopping at "plays a
+         skater short" would be true and would drop a rule a novice needs — that a
+         power-play goal ends the penalty is why the team that concedes stops
+         killing it. Both endings are named, and "the time runs out" also retires
+         an "it" whose referent was the box as easily as the penalty. */
+      'At the whistle he serves <b>two minutes</b> in the penalty box and his team '
+      + 'plays a skater short &mdash; until the time runs out, or the other team scores.',
     ],
     /* ⭐ THE CROSS-LINK, AND IT RUNS BOTH WAYS ON PURPOSE. Kevin: *"then the
        cross-link for the delayed penalty (crossing over to the 'pull the goalie'
