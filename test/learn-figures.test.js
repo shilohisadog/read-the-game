@@ -42,73 +42,100 @@ const paint = svg => [
 ].map(m => m[0]).sort();
 
 /**
- * WHERE EVERY GOALTENDER ACTUALLY LANDS, translates included.
+ * EVERY ACTOR A FIGURE DRAWS, WHERE IT ACTUALLY LANDS — transforms composed.
  *
- * ⭐ THE FIGURE IS PLACED BY A WRAPPER, SO READING ITS OWN COORDINATES IS A LIE.
- * `goalieGlyph` always builds him at y=42.5 — that is where a crease is — and a
- * `<g transform="translate(…)">` around him is what puts him anywhere else. A
- * regex over `cx`/`cy` would report the pulled goaltender standing in his crease
- * while the page shows him off the ice at the boards.
+ * ⭐ AN ACTOR IS PLACED BY A WRAPPER, SO READING ITS OWN COORDINATES IS A LIE.
+ * `goalieGlyph` always builds at y=42.5 — that is where a crease is — and a
+ * `<g transform="translate(…) scale(…)">` is what puts it anywhere else. So this
+ * walks the tags in order and composes the transforms, which is what a renderer
+ * does. It is deliberately NOT a call into the builder: the point is to compute
+ * the rendered position INDEPENDENTLY, and asking the code where it drew
+ * something is the mirror this file keeps refusing.
  *
- * So this walks the tags in order and composes the transforms, which is what a
- * renderer does. It is deliberately NOT a call into the builder: the point is to
- * compute the rendered position INDEPENDENTLY and compare, and asking the code
- * where it drew something is the mirror this file keeps refusing.
+ * ⚠️⚠️ AND IT IS SHAPE-BLIND ON PURPOSE, BECAUSE THE LAST VERSION WAS NOT. The
+ * animation test matched `class="dgmove dgm-x"><circle`, which was true of every
+ * mover until the goaltender became a `<g>`. From that commit it saw ONE mover on
+ * a figure that declares TWO, and stayed green — because the assertion beside it
+ * asked `hasAnimation === (movers > 0)`, a BOOLEAN, so "two declared, one found"
+ * satisfied it and the goaltender's keyframes went unchecked. Both halves of that
+ * are the recurring defect: an instrument that assumes the shape of its subject,
+ * and a check whose arithmetic cannot distinguish 1 from 2 (docs/status.md §H).
  *
- * ⚠️ IT COMPOSES THE SCALE TOO, because the goaltender carries one — a diagram
- * sizes him to its own tokens, not to the net. A walker that read only
- * `translate` would place him correctly and report him HALF SIZE, which is the
- * quiet kind of wrong: every assertion still passes and none of them means what
- * it says. Uniform scale only; anything else here throws rather than guesses.
+ * So an actor is any of the five classes below, group or shape, and callers ask
+ * about ANCESTRY (ghost? moving? which group?) rather than about tag names.
  */
-function goalies(svg) {
+const ACTOR = /\b(dggk|dgsk|dgtok|dgpuck|dgghost)\b/;
+function actors(svg) {
   const out = [];
-  const stack = [{ s: 1, e: 0, f: 0 }];      // x' = s*x + e,  y' = s*y + f
+  const stack = [{ s: 1, e: 0, f: 0, cls: '', mv: null }];
   const top = () => stack[stack.length - 1];
+  const frame = (gattr, parent) => {
+    const tf = /transform="([^"]*)"/.exec(gattr);
+    let s = 1, e = 0, fy = 0;
+    if (tf) {
+      assert.match(tf[1], /^(translate\([^)]*\)\s*)?(scale\([^)]*\))?$/,
+        `a transform this walker cannot compose: ${tf[1]}`);
+      const tr = /translate\((-?[\d.]+),(-?[\d.]+)\)/.exec(tf[1]);
+      const sc = /scale\((-?[\d.]+)\)/.exec(tf[1]);
+      if (tr) { e = +tr[1]; fy = +tr[2]; }
+      if (sc) s = +sc[1];
+    }
+    const cls = (/class="([^"]*)"/.exec(gattr) || ['', ''])[1];
+    const mvHere = (/\b(dgm-[a-z]+)\b/.exec(cls) || [])[1] || null;
+    return { s: parent.s * s, e: parent.s * e + parent.e, f: parent.s * fy + parent.f,
+             cls: `${parent.cls} ${cls}`, mv: mvHere || parent.mv };
+  };
+  const open = fr => out.push({
+    x1: Infinity, x2: -Infinity, y1: Infinity, y2: -Infinity,
+    cls: fr.cls.trim(), move: fr.mv, ghost: /\bdgghost\b/.test(fr.cls), depth: stack.length,
+  });
+  const grow = (g, fr, x1, y1, x2, y2) => {
+    for (const [px, py] of [[x1, y1], [x2, y2]]) {
+      const X = fr.s * px + fr.e, Y = fr.s * py + fr.f;
+      g.x1 = Math.min(g.x1, X); g.x2 = Math.max(g.x2, X);
+      g.y1 = Math.min(g.y1, Y); g.y2 = Math.max(g.y2, Y);
+    }
+  };
   for (const m of svg.matchAll(/<(\/?)g\b([^>]*)>|<(rect|circle|line)\b([^>]*)>/g)) {
     const [, close, gattr, shape, sattr] = m;
     if (shape) {
-      if (!out.length || !out[out.length - 1].open) continue;
       const a = k => { const v = new RegExp(`\\b${k}="(-?[\\d.]+)"`).exec(sattr); return v ? +v[1] : null; };
       let x1, x2, y1, y2;
       if (shape === 'rect') { x1 = a('x'); y1 = a('y'); x2 = x1 + a('width'); y2 = y1 + a('height'); }
       else if (shape === 'circle') { const r = a('r'); x1 = a('cx') - r; x2 = a('cx') + r; y1 = a('cy') - r; y2 = a('cy') + r; }
       else { x1 = Math.min(a('x1'), a('x2')); x2 = Math.max(a('x1'), a('x2')); y1 = Math.min(a('y1'), a('y2')); y2 = Math.max(a('y1'), a('y2')); }
-      const t = top(), g = out[out.length - 1];
-      for (const [px, py] of [[x1, y1], [x2, y2]]) {
-        const X = t.s * px + t.e, Y = t.s * py + t.f;
-        g.x1 = Math.min(g.x1, X); g.x2 = Math.max(g.x2, X);
-        g.y1 = Math.min(g.y1, Y); g.y2 = Math.max(g.y2, Y);
-      }
+      // INNERMOST WINS. A ghost group can contain two glyphs; attributing their
+      // shapes to the wrapper would report one actor straddling both.
+      const live = out.filter(g => g.live);
+      if (live.length) { grow(live[live.length - 1], top(), x1, y1, x2, y2); continue; }
+      // A bare shape that is itself an actor — a ghost circle, a puck, a token.
+      const fr = frame(sattr, top());
+      if (!ACTOR.test(fr.cls)) continue;
+      open(fr); const g = out[out.length - 1];
+      grow(g, top(), x1, y1, x2, y2);
       continue;
     }
     if (close) {
+      const d = stack.length;
+      for (const g of out) if (g.live && g.depth === d) g.live = false;
       stack.pop();
-      const g = out[out.length - 1];
-      if (g && g.open && g.depth === stack.length) g.open = false;
       continue;
     }
-    const tf = /transform="([^"]*)"/.exec(gattr);
-    let s = 1, e = 0, fy = 0;
-    if (tf) {
-      const tr = /translate\((-?[\d.]+),(-?[\d.]+)\)/.exec(tf[1]);
-      const sc = /scale\((-?[\d.]+)\)/.exec(tf[1]);
-      assert.match(tf[1], /^(translate\([^)]*\)\s*)?(scale\([^)]*\))?$/,
-        `a transform this walker cannot compose: ${tf[1]}`);
-      if (tr) { e = +tr[1]; fy = +tr[2]; }
-      if (sc) s = +sc[1];
-    }
-    const p = top();
-    stack.push({ s: p.s * s, e: p.s * e + p.e, f: p.s * fy + p.f });
-    if (/class="[^"]*\bdggk\b/.test(gattr)) {
-      out.push({ x1: Infinity, x2: -Infinity, y1: Infinity, y2: -Infinity,
-                 open: true, depth: stack.length - 1 });
+    const fr = frame(gattr, top());
+    stack.push(fr);
+    if (ACTOR.test((/class="([^"]*)"/.exec(gattr) || ['', ''])[1])) {
+      // A group that will turn out to CONTAIN actors is a wrapper, not an actor.
+      for (const g of out) if (g.live) g.container = true;
+      open(fr); out[out.length - 1].live = true; out[out.length - 1].depth = stack.length;
     }
   }
-  return out.map(g => ({
+  return out.filter(g => !g.container).map(g => ({
+    cls: g.cls, move: g.move, ghost: g.ghost,
     x1: +g.x1.toFixed(2), x2: +g.x2.toFixed(2), y1: +g.y1.toFixed(2), y2: +g.y2.toFixed(2),
+    cx: +((g.x1 + g.x2) / 2).toFixed(2), cy: +((g.y1 + g.y2) / 2).toFixed(2),
   }));
 }
+const goalies = svg => actors(svg).filter(a => /\bdggk\b/.test(a.cls));
 
 test('⭐ the diagram and the replay are the SAME RINK, line for line', () => {
   /* THE CLAIM KEVIN'S "same ice rink" ACTUALLY MAKES, and the reason `furniture`
@@ -280,31 +307,37 @@ test('⭐ every token animates in from a place it is actually drawn', () => {
      alone goes red. */
   let checked = 0;
   for (const [id, fig] of Object.entries(figures)) {
-    const ghosts = [...fig.svg.matchAll(/class="[^"]*\bdgghost\b[^"]*"[^>]*cx="(-?[\d.]+)" cy="(-?[\d.]+)"/g)]
-      .map(m => ({ x: +m[1], y: +m[2] }));
-    const moves = [...fig.svg.matchAll(
-      /class="dgmove (dgm-[a-z]+)"><circle[^>]*cx="(-?[\d.]+)" cy="(-?[\d.]+)"/g)];
+    /* ⚠️⚠️ READ THROUGH `actors`, NOT OFF THE TAG. This matched
+       `class="dgmove dgm-x"><circle` and `class="…dgghost…" cx=` — both true of
+       every mark on these pages until a goaltender became a `<g>`, at which point
+       it silently saw ONE mover on a figure declaring TWO. See the note on
+       `actors` for why the assertion below is now a COUNT: the boolean it used to
+       be was satisfied by "some movers exist" and could not tell 1 from 2. */
+    const drawn = actors(fig.svg);
+    const ghosts = drawn.filter(a => a.ghost);
+    // One entry per moving GROUP — a mover may hold a carrier and his puck.
+    const moves = [];
+    for (const a of drawn.filter(a => a.move && !a.ghost)) {
+      if (!moves.some(m => m.cls === a.move)) moves.push({ cls: a.move, cx: a.cx, cy: a.cy });
+    }
     /* ⭐ A FIGURE MAY LEGITIMATELY NOT MOVE, and this used to forbid it. The
        face-off figure is a MAP — nine painted spots and which rule sends you to
        which — not a sequence, and animating it would be motion added because the
        harness expected motion, which is decoration this project refuses
        everywhere else. So the claim is CONSISTENCY rather than presence: a
-       figure declares an animation if and only if it has something to animate.
-       That still catches a figure silently losing its motion, which is what the
-       old assertion was really protecting, and the `checked` count at the bottom
-       keeps the whole test from going vacuous. */
-    assert.equal(/\{animation:/.test(fig.css), moves.length > 0,
-      moves.length
-        ? `the ${id} figure has ${moves.length} moving token(s) and declares no animation`
-        : `the ${id} figure declares an animation with nothing to move`);
-    for (const [, cls, ex, ey] of moves) {
+       figure declares exactly as many animations as it has things to animate. */
+    const declared = (fig.css.match(/\{animation:/g) || []).length;
+    assert.equal(declared, moves.length,
+      `the ${id} figure declares ${declared} animation(s) and draws ${moves.length} `
+      + `moving thing(s) [${moves.map(m => m.cls).join(', ') || 'none'}]`);
+    for (const { cls, cx: ex, cy: ey } of moves) {
       const key = new RegExp(`\\.dgfig\\.\\w+ \\.${cls}\\{animation:(\\S+) `).exec(fig.css);
       assert.ok(key, `${id}/${cls} animates with no keyframes named`);
       const kf = new RegExp(`@keyframes ${key[1]}\\{0%\\{transform:translate\\((-?[\\d.]+)px,(-?[\\d.]+)px\\)`)
         .exec(fig.css);
       assert.ok(kf, `${id}/${cls}'s keyframes do not start with a translate`);
-      const from = { x: +ex + +kf[1], y: +ey + +kf[2] };
-      assert.ok(ghosts.some(g => Math.abs(g.x - from.x) < 0.05 && Math.abs(g.y - from.y) < 0.05),
+      const from = { x: +(ex + +kf[1]).toFixed(2), y: +(ey + +kf[2]).toFixed(2) };
+      assert.ok(ghosts.some(g => Math.abs(g.cx - from.x) < 0.4 && Math.abs(g.cy - from.y) < 0.4),
         `${id}/${cls} animates in from (${from.x}, ${from.y}), where nothing is drawn — `
         + `the ghosts are at ${JSON.stringify(ghosts)}`);
       checked++;
@@ -328,6 +361,59 @@ test('⭐ the keyframes come to REST, so motion-off is the finished picture', ()
     }
   }
   assert.ok(rested >= 2, `only ${rested} resting positions across every figure`);
+});
+
+test('⛔ the extra attacker does not step on until the goaltender is off', () => {
+  /* ⭐ AN ORDER THAT IS PART OF THE RULE, SO IT IS ASSERTED LIKE ONE. Kevin: *"a
+     skater glyph coming from the bench (once the goalie gets there, not before).
+     That would complete the empty net process."* He is naming a real constraint —
+     a team may not have both men on the ice, so the swap is sequential, and two
+     tokens sliding at once would draw an illegal bench change while looking
+     perfectly pleasant.
+
+     ⭐ THE TIMELINE IS READ OUT OF THE STYLESHEET, not out of the constants that
+     produced it. Every keyframe block is parsed for the last percentage at which
+     a token is still offset (it is still travelling) and the first at which it
+     has arrived; the goaltender must be home before the skater leaves. A comment
+     saying "staggered" is not a check, and the numbers are two edits apart. */
+  /* ⭐ AND THE SWAP IS TWO DIFFERENT PEOPLE. Kevin: *"show a skater glyph... in his
+     place comes an extra attacker."* One goaltender off and one SKATER on is the
+     whole rule; two identical tokens trading places would draw a line change. The
+     two moving groups are required to be one of each, which is also what stops the
+     attacker quietly reverting to the circle he used to be. */
+  const moving = actors(figures['empty-net'].svg).filter(a => a.move && !a.ghost);
+  const byKind = k => [...new Set(moving.filter(a => new RegExp(`\\b${k}\\b`).test(a.cls))
+    .map(a => a.move))];
+  assert.deepEqual([byKind('dggk').length, byKind('dgsk').length], [1, 1],
+    'the empty-net figure no longer moves exactly one goaltender and one skater: '
+    + JSON.stringify(moving.map(a => ({ move: a.move, cls: a.cls }))));
+  assert.notEqual(byKind('dggk')[0], byKind('dgsk')[0],
+    'the goaltender and the skater are the same moving group, so they cannot be sequenced');
+
+  const kf = [...figures['empty-net'].css.matchAll(/@keyframes (\S+?)\{([^}]*\}[^@]*)/g)]
+    .map(([, name, body]) => {
+      const stops = [...body.matchAll(/(\d+)%\{transform:translate\(([^)]*)\)/g)]
+        .map(m => ({ at: +m[1], home: m[2].replace(/\s/g, '') === '0,0' }));
+      assert.ok(stops.length >= 3, `${name} has only ${stops.length} keyframe stops`);
+      return {
+        name,
+        leaves: Math.max(...stops.filter(s => !s.home).map(s => s.at)),
+        arrives: Math.min(...stops.filter(s => s.home).map(s => s.at)),
+      };
+    });
+  assert.equal(kf.length, 2, `the empty-net figure has ${kf.length} timelines, not two`);
+  const g = kf.find(k => /g$/.test(k.name)), a = kf.find(k => /a$/.test(k.name));
+  assert.ok(g && a, `cannot tell the goaltender's timeline from the skater's: ${kf.map(k => k.name)}`);
+  assert.ok(a.leaves >= g.arrives,
+    `the skater is still at the bench until ${a.leaves}% but the goaltender is not off `
+    + `until ${g.arrives}% — for ${g.arrives - a.leaves}% of every cycle both men are on `
+    + 'the ice, which is a bench change no team is allowed to make');
+  /* AND THE GAP IS A BEAT, NOT A COINCIDENCE. Equal numbers would satisfy the
+     line above while showing the two moves as one continuous slide, which is the
+     "not before" Kevin asked for read as "at the same instant". */
+  assert.ok(a.leaves - g.arrives >= 2,
+    `only ${a.leaves - g.arrives}% separates the goaltender arriving from the skater `
+    + 'leaving — the swap reads as one motion rather than two');
 });
 
 test('⭐ a figure opens on the FINISHED picture, not on frame zero', () => {

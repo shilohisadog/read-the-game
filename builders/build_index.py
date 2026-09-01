@@ -1328,10 +1328,13 @@ FIGCSS = r"""<style>
    stroke with it, so `gk` in learn-figures.mjs divides it out and the group
    INHERITS one rendered weight -- see the note there. A number in this file would
    be a second copy that stops matching the moment the scale moves. */
-.dgplay .dggk .gkstick{stroke-linecap:round}
-/* The ghost he left behind is the SAME figure, dashed — it is a `<g>`, so the
-   dash has to reach the shapes rather than sit on the group. */
-.dgplay .dgghost .dggk *{stroke-dasharray:1.1 .9;opacity:.75;fill:none}
+.dgplay .dggk .gkstick,.dgplay .dgsk .skstick{stroke-linecap:round}
+/* The ghost each of them left behind is the SAME figure, dashed — a `<g>`, so the
+   rule has to reach the shapes rather than sit on the group. ⚠️ THE DASH ITSELF IS
+   NOT HERE: these figures are scaled, and a pattern in rink units shatters the
+   outline into blobs at 1.74x. `dashes` in learn-figures.mjs divides the scale
+   out, next to where the scale is set. */
+.dgplay .dgghost .dggk *,.dgplay .dgghost .dgsk *{opacity:.75;fill:none}
 .dgplay .dgarrow{stroke:var(--muted);stroke-width:.8;stroke-linecap:round;opacity:.85}
 .dgheadp{fill:var(--muted);opacity:.85}
 /* The line where the rule is decided, and the spot the draw comes back to. */

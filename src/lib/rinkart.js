@@ -290,3 +290,41 @@ export const goalieGlyph=(gx,col,fill,cls='gk')=>{
   + `<line class="gkstick" x1="${n(x+bw/2*dir)}" y1="${n(bot-0.5)}" `
   + `x2="${n(x+(bw/2+1.5)*dir)}" y2="${n(bot)}" stroke="${col}"/>`
   + `</g>`;};
+
+/**
+ * A SKATER — the goaltender's sibling, and the only other person on this rink.
+ *
+ * ⭐ IT DID NOT EXIST, AND THE THING THAT LOOKED LIKE IT WOULD HAVE LIED. Kevin,
+ * on the empty-net diagram: *"can we please show a skater glyph (we should have
+ * one somewhere)."* We have `figMascot` and `figTabletop` in src/lib/figures.js,
+ * and they are the wrong thing twice over: they are SHOT markers whose pose
+ * encodes the outcome the feed recorded — saved or scored — and they wear a
+ * jersey, which is the provenance grammar's word for "recorded". A player
+ * stepping over the boards has no shot and no club, so borrowing that figure
+ * would draw two claims the moment does not make.
+ *
+ * ⭐ SO HE IS BUILT FROM `goalieGlyph`'S OWN CONSTANT, not from a second set of
+ * digits. The two figures on this rink have to read as PEERS — same head, same
+ * line, same height — differing only where a goaltender genuinely differs: he is
+ * wide because of his pads and his stick stops at the post, while a skater is
+ * narrow and his stick reaches. Two independent glyphs would drift into two
+ * unrelated species the first time either was touched.
+ */
+export const skaterGlyph=(gx,col,fill,cls='sk',dir=gx<100?1:-1)=>{
+  const top=42.5-GK_H/2, bot=42.5+GK_H/2;          // the same body a goalie has
+  const hr=GK_H*0.163, hcy=top+hr;
+  const by=hcy+hr*0.6, bw=GK_H*0.30;               // NARROW: no pads
+  const n=v=>v.toFixed(2);
+  return `<g class="${cls}">`
+   + `<rect class="skbody" x="${n(gx-bw/2)}" y="${n(by)}" width="${n(bw)}" `
+   + `height="${n(bot-by)}" rx="${n(bw*0.45)}" fill="${fill}" stroke="${col}"/>`
+   + `<circle class="skhead" cx="${n(gx)}" cy="${n(hcy)}" r="${n(hr)}" fill="${fill}" stroke="${col}"/>`
+   /* THE STICK IS THE TELL, and it stays LOW AND SHORT. A goaltender's stops at
+      the post; a skater's carries out in front of him, which is the silhouette
+      that says "not the goalie" at the size these are actually read at.
+      ⚠️ THE FIRST ONE REACHED 2.6 UNITS FROM MID-BODY and rendered as a long
+      diagonal spike -- at a glance it read as a second LEG, not a stick. Kept in
+      the same low band the goaltender's occupies, it reads as equipment. */
+   + `<line class="skstick" x1="${n(gx+bw/2*dir)}" y1="${n(bot-0.9)}" `
+   + `x2="${n(gx+(bw/2+1.9)*dir)}" y2="${n(bot+0.15)}" stroke="${col}"/>`
+   + `</g>`;};

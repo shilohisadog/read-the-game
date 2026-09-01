@@ -42,7 +42,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { furniture, netGlyph, goalieGlyph, GK_H, boardsY, SX, SY } from '../src/lib/rinkart.js';
+import { furniture, netGlyph, goalieGlyph, skaterGlyph, GK_H, boardsY, SX, SY } from '../src/lib/rinkart.js';
 import { BLUE_LINE_X, NEUTRAL_DOT_X, NET_X } from '../src/lib/rink.js';
 import { NEUTRAL } from '../src/lib/teams.js';
 
@@ -200,11 +200,21 @@ const nets = id =>
    rather than picked: `GK_FIT` is what makes his height match a skater's
    diameter. The game's own relationship is untouched — it is a different claim on
    a different surface, and GK_H still drives it. */
+/* ⚠️ A GHOST'S DASH IS SCALED TOO, AND AT 1.74x IT SHATTERED THE FIGURE. The
+   stylesheet's `stroke-dasharray:1.1 .9` is a sensible pattern on an 8-unit
+   circle and a catastrophe on a body 1.38 LOCAL units wide: the outline broke
+   into four disconnected blobs and the bench ghost read as debris rather than as
+   a skater. Same defect as the stroke width one line above, and the same fix --
+   state what it should look like RENDERED and divide the scale out here, where
+   the scale is known. */
+const GHOST_DASH = [0.8, 0.65];
+const dashes = (s, on) => on
+  ? ` stroke-dasharray="${f(GHOST_DASH[0] / s)} ${f(GHOST_DASH[1] / s)}"` : '';
 const GK_HOME = 42.5;
 const GK_FIT = (4 * 2) / GK_H;
 /** The weight every illustrated token carries — `.dgplay .dgtok` in FIGCSS. */
 const TOK_STROKE = 1.1;
-const gk = (gx, x, y, k = 1, cls = '') => {
+const gk = (gx, x, y, k = 1, cls = '', dash = false) => {
   const s = GK_FIT * k;
   // Scale about the figure's own home, then place: p -> (tx + s*px, ty + s*py).
   const [tx, ty] = [x - s * gx, y - s * GK_HOME];
@@ -216,8 +226,17 @@ const gk = (gx, x, y, k = 1, cls = '') => {
      next to the one that sets the scale. A CSS rule would be a second copy that
      silently stops matching the moment `GK_FIT` moves. */
   return `<g transform="translate(${f(tx)},${f(ty)}) scale(${f(s)})"`
-       + ` stroke-width="${f(TOK_STROKE / s)}">`
+       + ` stroke-width="${f(TOK_STROKE / s)}"${dashes(s, dash)}>`
        + goalieGlyph(gx, NEUTRAL, 'var(--ice)', `dggk ${cls}`.trim()) + '</g>';
+};
+
+/** A skater, placed and weighted exactly as `gk` places and weights a goaltender. */
+const sk = (gx, x, y, k = 1, cls = '', dir, dash = false) => {
+  const s = GK_FIT * k;
+  const [tx, ty] = [x - s * gx, y - s * GK_HOME];
+  return `<g transform="translate(${f(tx)},${f(ty)}) scale(${f(s)})"`
+       + ` stroke-width="${f(TOK_STROKE / s)}"${dashes(s, dash)}>`
+       + skaterGlyph(gx, NEUTRAL, 'var(--ice)', `dgsk ${cls}`.trim(), dir) + '</g>';
 };
 
 /** ⛔ RETIRED — see the empty-net figure. A goaltender is drawn by `gk` now. */
@@ -264,12 +283,22 @@ const keeper = (gx, k = 1) =>
    `opacity` is safe to animate here for the same reason the transform is: with
    motion off, none of it applies and the token is simply drawn, fully opaque, at
    the end of the story. */
+/* ⭐ AND ONE ACTOR CAN WAIT FOR ANOTHER, WHICH IS A CLAIM ABOUT THE RULE. Kevin,
+   on the empty net: *"a skater glyph coming from the bench (once the goalie gets
+   there, not before)."* He is right that the ORDER is the lesson — a team may not
+   have both men on, so the extra attacker steps over the boards after the
+   goaltender is off, and two tokens sliding at once would draw a bench change
+   that is not legal. `go` and `stop` are the percentages of the cycle this token
+   is actually moving; everything before `go` it sits where it started, which for
+   a skater is the bench, visible and waiting. A test reads these numbers back out
+   of the stylesheet and asserts the gap, so the sequencing is not a comment. */
 const CYCLE = '9s', DELAY = '2.5s';
-const travel = (name, from, to) =>
+const travel = (name, from, to, go = 8, stop = 55) =>
   `@keyframes ${name}{`
   + `0%{transform:translate(${f(from.x - to.x)}px,${f(from.y - to.y)}px);opacity:0}`
   + `8%{transform:translate(${f(from.x - to.x)}px,${f(from.y - to.y)}px);opacity:1}`
-  + `55%{transform:translate(0,0);opacity:1}`
+  + (go > 8 ? `${f(go)}%{transform:translate(${f(from.x - to.x)}px,${f(from.y - to.y)}px);opacity:1}` : '')
+  + `${f(stop)}%{transform:translate(0,0);opacity:1}`
   + `94%{transform:translate(0,0);opacity:1}`
   + `100%{transform:translate(0,0);opacity:0}}`;
 
@@ -651,7 +680,21 @@ function emptyNet() {
   const G0 = { x: PULLED, y: GK_HOME };      // his crease — where `goalieGlyph` builds him
   const [ICETOP] = boardsY(112);
   const G1 = { x: 112, y: ICETOP - 5 };      // off the ice entirely, past the boards
-  const A0 = { x: 62, y: 57 }, A1 = { x: 34, y: 57 };
+  /* ⭐ AND THE EXTRA ATTACKER COMES FROM THE SAME PLACE, WHICH IS THE POINT.
+     Kevin: *"a skater glyph coming from the bench (once the goalie gets there, not
+     before). That would complete the empty net process."* He used to fade in at
+     (62, 57) — the middle of the ice, from nowhere, which drew a sixth skater
+     APPEARING rather than a bench change. Now he starts beside the goaltender's
+     landing spot, off the ice, and steps over the boards: the two of them at the
+     bench are the swap, and the swap is the whole rule.
+     ⛔ AND HE STOPS JUST INSIDE. Where he actually goes is not recorded and is not
+     the lesson; skating him to a spot in the attacking zone would be the formation
+     this figure's own header refuses. */
+  const A0 = { x: 96, y: ICETOP - 5 };       // the bench, beside where the goalie lands
+  const A1 = { x: 72, y: 24 };               // over the boards and onto the ice
+  /* THE ORDER, AS PERCENTAGES OF ONE CYCLE. The goaltender is off before the
+     skater moves; the gap is a beat, not a coincidence. */
+  const GO_G = [8, 42], GO_A = [46, 78];
   return {
     viewBox: '0 -11 200 96',
     group: 'rules',
@@ -669,11 +712,18 @@ function emptyNet() {
       + `<g class="dgplay">`
       // ⭐ THE GHOST IS A GOALTENDER TOO, not a dashed circle. It marks the crease
       // he vacated, and it is the same figure so the eye reads one actor moving.
-      + `<g class="dgghost">${gk(G0.x, G0.x, G0.y, 1)}</g>` + ghost(A0.x, A0.y, 1)
-      + arrow(id, G0.x, G0.y - 6, G1.x, G1.y) + arrow(id, A0.x, A0.y, A1.x, A1.y)
+      // ⭐ BOTH GHOSTS ARE THE FIGURE THAT LEFT, not a dashed circle. The crease
+      // and the bench each keep the shape of whoever vacated it, so the eye reads
+      // two actors moving rather than four unrelated marks.
+      + `<g class="dgghost">${gk(G0.x, G0.x, G0.y, 1, '', true)}`
+      + `${sk(A1.x, A0.x, A0.y, 1, '', -1, true)}</g>`
+      // ⚠️ EACH ARROW LEAVES ITS GHOST, not from inside it. The bench arrow used to
+      // start on the skater's own outline, so the two read as one smudge.
+      + arrow(id, G0.x, G0.y - 6, G1.x, G1.y)
+      + arrow(id, A0.x - 1, A0.y + 5, A1.x, A1.y)
       + `<g transform="translate(${f(G1.x - G0.x)},${f(G1.y - G0.y)})">`
       + `<g class="dgmove dgm-g">${gk(G0.x, G0.x, G0.y, 1)}</g></g>`
-      + `<g class="dgmove dgm-a">${tok(A1.x, A1.y, 1)}</g>`
+      + `<g class="dgmove dgm-a">${sk(A1.x, A1.x, A1.y, 1, '', -1)}</g>`
       /* ⚠️ THE BADGES WERE SITTING ON THE EMPTY NET — the one thing this figure
          is about. ② was at x=195, which is INSIDE the net's body (189–193), and ①
          was against the crease; between them and the ghost, the goal was
@@ -698,7 +748,7 @@ function emptyNet() {
       + 'Nothing is toggled on this site to show it &mdash; the goalie is simply '
       + 'no longer drawn.',
     ],
-    css: [travel(id + 'g', G0, G1), travel(id + 'a', A0, A1),
+    css: [travel(id + 'g', G0, G1, ...GO_G), travel(id + 'a', A0, A1, ...GO_A),
       `.dgfig.em .dgm-g{animation:${id}g ${CYCLE} ease-in-out ${DELAY} infinite}`,
       `.dgfig.em .dgm-a{animation:${id}a ${CYCLE} ease-in-out ${DELAY} infinite}`,
     ].join('\n'),
