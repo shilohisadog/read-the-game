@@ -28,11 +28,70 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 
 ---
 
-# §0. WHERE WE ARE — 2026-08-31
+# §0. WHERE WE ARE — 2026-09-01
 
 Kevin: *"I want to take a step back and capture where we are… I've lost the
 bubble a bit."* This section is the orientation. Everything below §0 is the
 detail, organised by state rather than by date.
+
+## ⏸⏸ 0.0 PICK UP HERE — the one thing Kevin deferred
+
+He raised this after the penalties card shipped and asked to take it up **after
+the compact**, so it is the first work of the next session:
+
+> *"Under Penalties, this isn't universally true: 'A penalty is time off the ice:
+> the offender sits and his team plays a skater short… and usually nothing in
+> between.' You can have **matching penalties**, where neither team plays a
+> skater short… either way, let's clean up the 'usually' terminology."*
+
+**Two problems, different in kind.** (1) *"his team plays a skater short"* is
+plainly FALSE on matching minors — a factual error on a live page. (2)
+*"usually"* is a frequency word on the rules half.
+
+⭐ **And the second one is a doctrine question, not a sentence.** CHENG ruled the
+wall as *"the rules half may state what the record CONTAINS; only the
+measurements half may state HOW OFTEN"* — and then wrote this sentence himself,
+with "usually" in it, on the grounds that the ban is on NUMBERS rather than on
+frequency words. Kevin is pushing exactly that seam.
+
+⚠️ **The trap:** a number violates the wall outright; deleting the hedge asserts a
+categorical that is false 27.5% of the time. **Measured, 46 games, 109
+delayed→penalty pairs: 79 of 109 (72.5%) carry no event between the call and the
+whistle**, median gap 4s, p90 28s. Worth putting back to CHENG.
+Lives in `builders/build_index.py`, the `penalties` row of `LEARN_CARDS`.
+
+## 0.0b Shipped since 2026-08-31, all live
+
+| | |
+|---|---|
+| **Six rule diagrams** | the rules half is now five cards, five diagrams — `penalties` joined offside/icing/faceoffs/empty-net, and `slot` is in the other half. All reviewed by Kevin. |
+| **The active player's line** | who the league attributed each frame to, and what he did, between the controls and the scrubber. **No toggle** — Kevin's ruling over CHENG's. |
+| **The scoreboard** | 159px → 121px at every desktop width; the phone is unchanged in arrangement. |
+| **The fixtures** | five of seven were an older extractor's output; refreshed, plus a new trap fixture and a drift gate. |
+
+⚠️ **The single most important finding of that stretch is in §0.0c.**
+
+## ⚠️⚠️ 0.0c FIVE OF SEVEN TEST FIXTURES WERE A DIFFERENT EXTRACTOR'S OUTPUT
+
+Same games, **same raw feeds** (`game.src` hashes identical), missing the
+top-level `sides` key and `pen`/`min`/`sev`/`zone`/`drew` on every penalty and
+`miss` on every missed shot. **So `sides` (B1) and `miss` (B5) had no fixture
+coverage at all and nothing said so.**
+
+⭐⭐ **It had already produced a false test.** `render-penalties.test.js` asserted
+a fewer-skaters goal was NOT short-handed — the pulled-goalie trap. It is: with
+the correct extract there is a player in the box at 4-on-5. The stale file had no
+durations, so `stints()` computed an empty box. **The test demanded the wrong
+answer and passed for as long as the data was wrong.**
+
+⭐⭐ **A RULE WRITTEN DOWN AND THEN BROKEN IS UN-INSTRUMENTED, NOT UNDER-STATED.**
+`fixtures/extracts/README.md` already claimed these were byte-for-byte copies,
+already named the failure mode — *"worse than going red, because it still looks
+like coverage"* — and already prescribed the fix. None of it fired. The gate is
+now cross-fixture consistency (`test/fixtures.test.js`): a field every event of a
+type carries in one file and none carries in another is two vintages in one
+directory. ⛔ Blind if every fixture were stale at once; the byte-comparison
+against the published archive belongs in `derive.yml` and is **not built**.
 
 ## 0.1 What shipped in the last week, all live
 
