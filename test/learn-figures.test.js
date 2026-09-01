@@ -108,13 +108,75 @@ test('⭐ a cropped figure carries the net, which is what makes it an END of a r
     const box = fig.viewBox.split(/\s+/).map(Number);
     assert.match(fig.svg, /class="mesh"/, `the ${id} figure draws no net`);
     assert.match(fig.svg, /class="crease"/, `the ${id} figure draws a net with no crease`);
-    assert.match(fig.svg, /class="dgtok dgkeep"/, `the ${id} figure draws a net with nobody in it`);
     // AND THE NET IS INSIDE THE CROP, or it is equipment nobody can see. `mesh`
     // carries the goal line's x, so the frame either contains it or does not.
     const xs = [...fig.svg.matchAll(/class="mesh" d="M ([\d.]+) /g)].map(m => +m[1]);
     assert.ok(xs.some(x => x >= box[0] && x <= box[0] + box[2]),
       `every net in the ${id} figure is outside its own viewBox ${fig.viewBox}: ${xs}`);
   }
+});
+
+test('⭐ a goaltender is drawn IFF the figure\'s own words name one', () => {
+  /* ⚠️ THIS TEST USED TO SAY "every figure draws a goaltender", one line inside
+     the net test above, and its failure message was *"draws a net with nobody in
+     it"* -- the goalie swept into a sentence about EQUIPMENT. He is not
+     equipment; he is a person, and a person on the ice is a claim about play.
+
+     Kevin, twice. On face-offs: *"I'm not sure what the circles in front of the
+     net are?"* On offside: *"there's the random circle in front of the net."*
+     They were goaltenders, standing on four of five figures, and on three of
+     those the words never mentioned a goaltender at all. The test put them
+     there; nothing about the lessons did. That is the SIXTH time on these five
+     figures that "every figure does X" turned out to mean "a figure that does X
+     must do it correctly" (docs/status.md §H4).
+
+     ⭐ THE RULE IS A BICONDITIONAL, WHICH IS WHY IT CANNOT GO VACUOUS. Drawn iff
+     named: `empty-net` is the one figure whose subject IS the goaltender, and it
+     is the one figure that draws him. Both branches carry figures (1 and 4), so
+     neither side is an empty claim, and the FALSE side is the regression that
+     actually happened -- a keeper appearing on a page that never says the word.
+
+     ⭐ AND WHERE HE IS DRAWN, HE STANDS IN A CREASE, read from the drawing: the
+     crease's own arc carries the goal line and the radius, rather than restating
+     `keeper`'s 4.5-unit offset, which would be a mirror of the code under test. */
+  const named = [], drawn = [];
+  for (const [id, fig] of Object.entries(figures)) {
+    const words = (fig.steps.join(' ') + ' ' + fig.label).replace(/<[^>]+>/g, '');
+    const says = /goal(ie|tender)/i.test(words);
+    const has = /class="dgtok dgkeep"/.test(fig.svg);
+    if (says) named.push(id);
+    if (has) drawn.push(id);
+    assert.equal(has, says, has
+      ? `the ${id} figure draws a goaltender its own words never mention — that is `
+        + 'the unlabelled circle a reader cannot identify'
+      : `the ${id} figure talks about a goaltender and does not draw one`);
+  }
+  assert.ok(named.length >= 1 && named.length < Object.keys(figures).length,
+    `${named.length} of ${Object.keys(figures).length} figures name a goaltender — `
+    + 'one side of this biconditional is empty, so it proves nothing');
+  assert.deepEqual(drawn, named);
+
+  let seen = 0;
+  for (const [id, fig] of Object.entries(figures)) {
+    const creases = [...fig.svg.matchAll(
+      /class="crease" d="M ([\d.]+) [\d.]+ A ([\d.]+) [\d.]+ 0 0 (\d) [\d.]+ [\d.]+"/g)]
+      .map(m => ({ gx: +m[1], r: +m[2], dir: m[3] === '1' ? 1 : -1 }));
+    assert.ok(creases.length, `the ${id} figure draws no crease to read`);
+    for (const m of fig.svg.matchAll(/class="dgtok dgkeep" cx="([\d.]+)" cy="([\d.]+)"/g)) {
+      seen++;
+      const [cx, cy] = [+m[1], +m[2]];
+      const c = creases.find(k => Math.abs(k.gx - cx) <= k.r);
+      assert.ok(c, `${id}: a goaltender at x=${cx} is nowhere near a crease `
+        + `(${creases.map(k => k.gx).join(', ')}) — he is not in the one place only he stands`);
+      // ON THE ICE SIDE, not behind the net. The crease bulges toward centre ice
+      // and its sweep flag is where that direction is already written down.
+      assert.ok((cx - c.gx) * c.dir > 0,
+        `${id}: the goaltender at x=${cx} is BEHIND his own net at x=${c.gx}`);
+      assert.ok(Math.hypot(cx - c.gx, cy - 42.5) < c.r,
+        `${id}: the goaltender at (${cx}, ${cy}) is outside his own crease`);
+    }
+  }
+  assert.ok(seen >= 1, 'no goaltender is drawn anywhere — the crease check ran on nothing');
 });
 
 test('a figure names no club, no player and no game', () => {
@@ -348,6 +410,40 @@ test('⭐ the card leads to the diagram, and the diagram leads to the game', () 
   assert.match(door[1], /layer=whistle/, 'the door does not turn on the layer that marks the call');
 });
 
+test('⛔ no door says "real" or "live" — what lies through it is a recording', () => {
+  /* Kevin, on the face-offs button: *"the link to a replay says '...a real
+     face-off'. I want to avoid 'real' or 'live' or anything that suggests
+     streaming or video, so can the button please say 'See a face-off in our
+     replay' instead."*
+
+     ⚠️ THE RULE ALREADY EXISTED AND WAS SCOPED TO ONE PAGE. The test above
+     refuses "a real game" on the OFFSIDE door, written the day Kevin first
+     raised it — and two other doors shipped saying "a real icing" and "a real
+     face-off" because nothing looked at them. A rule written for the instance
+     that provoked it is un-instrumented for every other instance
+     (docs/status.md §H). So this reads every door there is.
+
+     What lies through any of these is a game we recorded, replayed from a JSON
+     file. "Real" and "live" both invite a reader to expect a broadcast, and the
+     word buys nothing: "See a face-off in our replay" already says the thing and
+     already says where. */
+  const BANNED = /\b(real|live|stream(ing)?|video|footage|watch it happen)\b/i;
+  let doors = 0;
+  for (const [id, page] of Object.entries(rulePages)) {
+    for (const m of page.matchAll(/<a class="rgo"[^>]*>([^<]+)</g)) {
+      doors++;
+      assert.doesNotMatch(m[1], BANNED,
+        `the ${id} door says "${m[1].trim()}" — that word promises a broadcast, `
+        + 'and what is through it is a recording');
+      // AND IT STILL NAMES WHERE IT GOES, so the fix cannot be "delete the words".
+      assert.match(m[1], /our replay/,
+        `the ${id} door says "${m[1].trim()}" without saying it opens our replay`);
+    }
+  }
+  assert.equal(doors, Object.keys(rulePages).length,
+    `${doors} doors across ${Object.keys(rulePages).length} rule pages — one page has none, or two`);
+});
+
 test('the diagram page is the game\'s stage without the game\'s instruments', () => {
   /* Kevin: *"a similar layout, without the scoreboard, clock, controls, etc.,
      similar yet different enough not to be confusing."* The rink sits in the
@@ -392,6 +488,51 @@ test('the offside words say the LIMIT, not the rule the picture already draws', 
   assert.match(lede[1], /never the crossing/, 'the page stopped stating the limit');
   assert.doesNotMatch(lede[1], /ahead of the puck/,
     'the words repeat what the figure and its steps both already say');
+});
+
+test('⭐ offside: the puck ENDS SHORT of the line and the skater ends past it', () => {
+  /* Kevin: *"we need to mention that the puck has to completely cross the blue
+     line first, that's an important distinction that novices sometimes don't
+     understand."* The words now say it, and words are the part that can be
+     rewritten without anybody noticing the picture stopped agreeing.
+
+     ⭐ SO THIS IS THE GEOMETRIC HALF, and it is the claim the figure is FOR: at
+     the frame the diagram rests on, the teammate is inside the zone and the puck
+     is NOT. Nothing asserted that before — the 9-ft margin lived only in a
+     comment, and a puck nudged onto the line would have drawn the opposite rule
+     with every test still green.
+
+     ⭐ EVERY NUMBER IS READ FROM THE DRAWING. The threshold is the lit line's own
+     x, the zone's direction is where the net is, and the margin is required to
+     be visible at the rendered size rather than merely positive: `dghot` is the
+     line the figure lights, and a puck within a token's width of it reads as ON
+     it, which is the misconception. */
+  const svg = figures.offside.svg;
+  const line = /<line class="dghot blue" x1="([\d.]+)"/.exec(svg);
+  assert.ok(line, 'the offside figure no longer lights the blue line');
+  const bx = +line[1];
+  const netx = [...svg.matchAll(/class="mesh" d="M ([\d.]+) /g)].map(m => +m[1])
+    .filter(x => Math.abs(x - bx) < 90);   // the net this figure is cropped onto
+  assert.equal(netx.length, 1, `the offside crop holds ${netx.length} nets, so "the zone" is ambiguous`);
+  const into = Math.sign(netx[0] - bx);    // which way is INTO the attacking zone
+
+  // The resting frame is where the tokens are drawn; the animation returns to it.
+  const carrier = /<g class="dgmove dgm-c">\s*<circle class="dgtok" cx="([\d.]+)"[^>]*\/>\s*<circle class="dgpuck" cx="([\d.]+)"/.exec(svg);
+  assert.ok(carrier, 'the carrier and his puck are no longer one drawn group');
+  const mate = /<g class="dgmove dgm-t">\s*<circle class="dgtok" cx="([\d.]+)"/.exec(svg);
+  assert.ok(mate, 'the offside figure no longer draws the teammate who went too far');
+  const r = +/<circle class="dgtok" cx="[\d.]+" cy="[\d.]+" r="([\d.]+)"/.exec(svg)[1];
+
+  const [puck, teammate] = [+carrier[2], +mate[1]];
+  assert.ok((teammate - bx) * into > 2 * r,
+    `the teammate is at x=${teammate} against a blue line at ${bx} — he is not `
+    + 'clearly inside the zone, so the figure does not show an offside');
+  assert.ok((bx - puck) * into > 2 * r,
+    `the PUCK is at x=${puck} against a blue line at ${bx} — it is on or over the `
+    + 'line, so the figure draws a legal entry and calls it offside');
+  // AND THE CARRIER IS BEHIND HIS OWN PUCK, or the group has come apart.
+  assert.ok((puck - +carrier[1]) * into > 0,
+    `the puck at x=${carrier[2]} is behind its carrier at x=${carrier[1]}`);
 });
 
 test('⭐ no badge or stamp is drawn on top of a net', () => {
@@ -445,10 +586,18 @@ test('⭐ annotation is the same SIZE on every figure, whatever each one frames'
     const m = re.exec(fig.svg);
     return m ? +(+m[1] * (200 / box[2])).toFixed(2) : null;
   };
+  /* ⛔ `keeper` IS NO LONGER ONE OF THE KINDS, and removing it is the honest move
+     rather than the convenient one. Exactly one figure draws a goaltender now
+     (see the biconditional above), and "every figure sizes him the same" is a
+     comparison with one term -- it would pass forever without ever comparing
+     anything, which is the vacuous-claim failure this file keeps catching. He is
+     still sized through `tok`'s helper in `learn-figures.mjs`, so the rule
+     applies to him; what is gone is the EVIDENCE, and a test may not pretend to
+     evidence it does not have. If a second figure ever earns a goaltender, put
+     the kind back. */
   const kinds = {
     badge: /<g class="dgbadge"><circle[^>]*r="([\d.]+)"/,
     token: /<circle class="dgtok"[^>]*r="([\d.]+)"/,
-    keeper: /<circle class="dgtok dgkeep"[^>]*r="([\d.]+)"/,
   };
   for (const [kind, re] of Object.entries(kinds)) {
     const sizes = Object.entries(figures)

@@ -1171,10 +1171,18 @@ LEARN_CARDS = [
     # word a visitor scans for, and the concept has to survive the copy -- the
     # page exists to name what the site teaches. The pairing lives in the blurb,
     # where it can also say the thing that matters: the punishment is WHERE.
+    # ⚠️ "THE ICING ABOVE" WAS TRUE ON ONE SURFACE AND FALSE ON THE OTHER. This
+    # blurb is used twice -- as the card's body, where the icing card really does
+    # sit directly above it, and as the lede of /faceoffs.html, where there is no
+    # icing anywhere on the page and "above" points at nothing (Kevin). A string
+    # that two surfaces share cannot carry a POSITION; it can only carry the
+    # fact. So the pairing is named instead of pointed at, and "This is" goes
+    # with it -- on the rule page "this" would have meant the diagram, which is
+    # nine spots and not an icing restart. The same error, one notch quieter.
     ("rules", "faceoffs", "Faceoffs",
-     "Nine spots on the ice and the rule picks one. This is the restart the "
-     "icing above forces &mdash; same second as the whistle, and deep in the "
-     "offending team&rsquo;s own end."),
+     "Nine spots on the ice and the rule picks one. An icing brings the draw all "
+     "the way back &mdash; same second as the whistle, and deep in the offending "
+     "team&rsquo;s own end."),
     # "WHY A GOAL GETS WAVED OFF" WAS SHIPPED AND IS NOT SHOWABLE ANYWHERE.
     # Checked against the raw feed, not inferred: an offside stoppage carries
     # `reason` and `secondaryReason` and NOTHING else -- no coordinates, no zone,

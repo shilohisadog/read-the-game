@@ -169,12 +169,29 @@ const stamp = (x, y, k = 1) =>
 const nets = id =>
   netGlyph(`${id}netA`, SX(-NET_X), NEUTRAL) + netGlyph(`${id}netB`, SX(NET_X), NEUTRAL);
 
-/** A goaltender, in the one place on the ice only a goaltender stands. */
+/** A goaltender — drawn ONLY where a figure is about him. */
 const keeper = (gx, k = 1) =>
-  // ITS POSITION IS ITS LABEL. Drawn in the diagram's own vocabulary -- outlined,
-  // neutral, the same token every other player gets -- because a second style of
-  // player token would be a second thing for a novice to decode. Nobody else
-  // stands in the crease, so the crease says which one he is.
+  /* ⚠️ "ITS POSITION IS ITS LABEL" WAS WRONG, AND KEVIN FALSIFIED IT TWICE.
+     This used to read: drawn in the diagram's own vocabulary — outlined, neutral,
+     the same token every other player gets — because nobody else stands in the
+     crease, so the crease says which one he is. It went onto four of the five
+     figures on that argument. Then, on face-offs: *"I'm not sure what the circles
+     in front of the net are?"*, and on offside: *"there's the random circle in
+     front of the net."*
+
+     ⭐ THE ARGUMENT ASSUMED ITS OWN AUDIENCE. "The crease identifies him" is true
+     for someone who already knows what a crease is — and the entire audience for
+     these pages is someone who does not. Worse, the reasoning is self-defeating:
+     the token is deliberately IDENTICAL to every labelled player token, and on
+     four figures it was the only one carrying no number, so the page taught
+     "circles are numbered actors" and then drew an unnumbered one.
+
+     ⛔ SO HE IS DRAWN ONLY WHERE THE WORDS NAME HIM, which is `empty-net` alone —
+     there he is the subject, he skates off, and the steps say so. Kevin's request
+     that a CROP show equipment is met by the NETS, which every figure still draws:
+     he asked for *"a goal (at least, maybe even the goalie)"*, and the goal was
+     the part doing the work. A test asserts the biconditional, so a goaltender
+     cannot reappear on a figure that never mentions one. */
   `<circle class="dgtok dgkeep" cx="${f(gx < 100 ? gx + 4.5 : gx - 4.5)}" cy="42.5" r="${f(4.4 * k)}"/>`;
 
 /* ── how a token travels ────────────────────────────────────────────────────
@@ -252,8 +269,16 @@ function offside() {
     // either side of it, and both spots a draw could come back to.
     viewBox: `${f(SX(24))} 0 ${f(SX(-89) - SX(24) + 10)} 85`,
     group: 'rules',
-        label: 'Diagram: an attacking skater crosses the blue line before the puck '
-         + 'carrier does, so play stops and the face-off comes back outside the zone.',
+    /* ⚠️ THE LABEL NAMED THE WRONG TEST. It said the skater crosses "before the
+       puck CARRIER does", which is the mistake this figure exists to correct:
+       the rule is about the PUCK, not the man carrying it, and a carrier who is
+       over the line with the puck still short of it has not put the puck in the
+       zone. The drawing had it right all along (the puck ends 9 ft out, the
+       carrier 15) and only the words were wrong -- so a reader on a screen
+       reader got the misconception the picture refuses. */
+        label: 'Diagram: an attacking skater is inside the blue line while the puck '
+         + 'is still outside it, so play stops and the face-off comes back outside '
+         + 'the zone.',
     /* ⭐ THE DOOR PROMISES WHAT IT ACTUALLY DELIVERS, AND EACH RULE DELIVERS
        SOMETHING DIFFERENT. Kevin: *"we say 'See it in a real game', which isn't
        consistent with what we are providing... something that ensures there
@@ -269,7 +294,9 @@ function offside() {
       // NO TINTS. The slot lozenge and the blue-line band are measurements of
       // ours, and this figure is about the league's rulebook -- see rinkart.js.
       + `<g class="dgpaint">${furniture(id, false)}${nets(id)}</g>`
-      + `<g class="dgplay">${keeper(SX(-NET_X), K)}</g>`
+      // ⛔ NO GOALTENDER HERE EITHER — see `keeper` below. Kevin asked for "a goal
+      // (at least, maybe even the goalie)" on this crop and got both; the NET is
+      // what does the orientation work, and the goalie was the "maybe".
       + `<g class="dgplay">`
       // Where each of them set off — drawn faintly, and they stay drawn.
       + ghost(C0.x, C0.y, K) + puckGhost(C0.x + PUCK.x, C0.y + PUCK.y, K) + ghost(T0.x, T0.y, K)
@@ -289,10 +316,21 @@ function offside() {
       + badge(3, DOT.x, DOT.y - 9, K)
       + stamp(SX(20), SY(34), K)
       + `</g>`,
+    /* ⭐ "COMPLETELY" IS THE WHOLE DISTINCTION, and it is Kevin's: *"we need to
+       mention that the puck has to completely cross the blue line first, that's
+       an important distinction that novices sometimes don't understand."*
+       The blue line is a foot wide and it belongs to the NEUTRAL zone -- a puck
+       sitting on the paint has not entered anything, so a skater who beats it
+       across is offside even though the puck is touching the line. Step 2 said
+       only "the puck has to enter the zone first", which a novice reads as
+       "reach the line", and reaching the line is exactly the case the rule
+       decides against. The figure already draws it (the puck ends 9 ft short);
+       what was missing was the sentence saying the margin is required. */
     steps: [
       'The puck carrier comes up the ice toward the blue line.',
       'A teammate crosses the line <b>before the puck does</b> &mdash; that is offside. '
-      + 'The puck has to enter the zone first.',
+      + 'The puck has to cross the line <b>completely</b> first: touching it is '
+      + 'not being in the zone.',
       'Play stops, and the face-off comes back <b>outside</b> the zone.',
     ],
     // ⭐ THE MOTION IS EMITTED BESIDE THE GEOMETRY, from the same two points, so
@@ -339,10 +377,15 @@ function icing() {
         label: 'Diagram: a player shoots the puck from behind the centre line, it '
          + 'crosses the far goal line untouched, and the face-off comes all the '
          + 'way back to the shooting team’s end.',
-    door: 'See a real icing in our replay',
+    door: 'See an icing in our replay',
     svg: defs(id)
       + `<g class="dgpaint">${furniture(id, false)}${nets(id)}</g>`
-      + `<g class="dgplay">${keeper(SX(-NET_X), 1)}${keeper(SX(NET_X), 1)}`
+      // ⛔ NO GOALTENDERS — see `keeper`. And on THIS figure they were worse than
+      // unexplained: the puck slides the length of the ice "with nobody touching
+      // it", past a goaltender drawn standing in its path. A goalie who plays
+      // that puck waves the icing off, so the drawing was quietly posing a
+      // question the three steps do not answer.
+      + `<g class="dgplay">`
       + ghost(S.x, S.y) + puckGhost(P0.x, P0.y)
       + arrow(id, P0.x, P0.y, P1.x, P1.y, 4)
       // THE TWO LINES RULE 81 NAMES, lit exactly as the game page lights them.
@@ -403,10 +446,22 @@ function faceoffs() {
     group: 'rules',
         label: 'Diagram: the nine painted face-off spots — four in each end, four in '
          + 'the neutral zone, and one at centre ice.',
-    door: 'See a real face-off in our replay',
+    // ⛔ NO "REAL" AND NO "LIVE" ON A DOOR (Kevin). What lies through it is a
+    // recorded game replayed from the archive, and a button that says "real" or
+    // "live" invites a reader to expect streaming video. The honest promise is
+    // the thing plus where it is: a face-off, in our replay.
+    door: 'See a face-off in our replay',
+    /* ⛔ AND NO GOALTENDER, which is the whole reason Kevin could not read this
+       figure: *"I'm not sure what the circles in front of the net are?"* Two
+       outlined tokens stood in the creases, and this figure is a MAP — nothing
+       in its three steps refers to a player, so the only person on the ice was
+       there to answer no question at all. Worse, ① sits at the same y one token
+       away from the left one, so a badge and an unexplained circle read as a
+       pair. The NETS stay: step 1 says "two on either side of the net", so the
+       equipment is load-bearing here and the goaltender never was. */
     svg: defs(id)
       + `<g class="dgpaint">${furniture(id, false)}${nets(id)}</g>`
-      + `<g class="dgplay">${keeper(SX(-NET_X), 1)}${keeper(SX(NET_X), 1)}`
+      + `<g class="dgplay">`
       + spots.map(([x, y]) => ring(x, y)).join('')
       // ONE BADGE PER KIND, not per spot: the lesson is that there are three
       // kinds of place, and nine of them.
@@ -485,7 +540,9 @@ function slot() {
     svg: defs(id)
       // TINTS ON, alone among the figures: this one IS the tint.
       + `<g class="dgpaint">${furniture(id, 'slot')}${nets(id)}</g>`
-      + `<g class="dgplay">${keeper(NET, K)}`
+      // ⛔ NO GOALTENDER — see `keeper`. This figure is about a REGION of ice and
+      // the shots taken from it; who is in the crease is not part of that claim.
+      + `<g class="dgplay">`
       + mark(IN, false) + mark(WIDE, true) + mark(BEHIND, true)
       + badge(1, IN.x - 7, IN.y + 6, K) + badge(2, WIDE.x - 6, WIDE.y - 5, K)
       + badge(3, BEHIND.x, BEHIND.y - 6, K)
