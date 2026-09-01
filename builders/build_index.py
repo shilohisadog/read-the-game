@@ -1244,10 +1244,16 @@ LEARN_CARDS = [
     # the other half by construction.
     # The base case leads, because Kevin asked for it by name: "detail the more
     # common penalty types, can't forget the base case."
+    # ⚠️ AND THE DURATION CAME OUT OF HERE TOO. This read "two minutes in the box"
+    # and Kevin caught it: penalties are not always two minutes. 289 of 325 are,
+    # over 46 published games -- but 25 are five-minute majors and 6 are
+    # ten-minute misconducts. The blurb states no duration at all, because it has
+    # no room to qualify one; the figure's step 2 says "most are two minutes",
+    # where the qualifier fits.
     ("rules", "penalties", "Penalties",
-     "A penalty is time: two minutes in the box, and his team plays a skater "
-     "short. The league records the call and the whistle, and usually nothing "
-     "in between."),
+     "A penalty is time off the ice: the offender sits and his team plays a "
+     "skater short. The league records the call and the whistle, and usually "
+     "nothing in between."),
     ("rules", "empty-net", "The empty net",
      "Losing late, a team trades its goaltender for a sixth skater. Nothing is "
      "toggled here &mdash; the goalie is simply no longer on the ice."),

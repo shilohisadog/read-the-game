@@ -867,8 +867,9 @@ function penalties() {
          power-play goal ends the penalty is why the team that concedes stops
          killing it. Both endings are named, and "the time runs out" also retires
          an "it" whose referent was the box as easily as the penalty. */
-      'At the whistle he serves <b>two minutes</b> in the penalty box and his team '
-      + 'plays a skater short &mdash; until the time runs out, or the other team scores.',
+      'At the whistle he goes to the penalty box and his team plays a skater short '
+      + 'until the penalty is served &mdash; and a goal by the other team ends a '
+      + '<b>minor</b> early.',
     ],
     /* ⭐ THE CROSS-LINK, AND IT RUNS BOTH WAYS ON PURPOSE. Kevin: *"then the
        cross-link for the delayed penalty (crossing over to the 'pull the goalie'
@@ -887,7 +888,10 @@ function penalties() {
     note: 'Most penalties are one of three kinds: <b>restraint</b> &mdash; '
         + 'tripping, hooking, holding, interference; <b>stick</b> &mdash; slashing, '
         + 'high-sticking, cross-checking; and <b>physical</b> &mdash; roughing, '
-        + 'boarding, charging. A few are none of those: delay of game, too many men.',
+        + 'boarding, charging. A few are none of those: delay of game, too many men. '
+        + 'They are not all the same length either: <b>two minutes</b> for a minor, '
+        + 'five for a major, and a <b>game misconduct</b> sends a player off for the '
+        + 'rest of the night.',
     css: [travel(id + 'g', G0, G1, ...GO_G), travel(id + 'p', P0, P1, ...GO_P),
       `.dgfig.pe .dgm-g{animation:${id}g ${CYCLE} ease-in-out ${DELAY} infinite}`,
       `.dgfig.pe .dgm-p{animation:${id}p ${CYCLE} ease-in-out ${DELAY} infinite}`,

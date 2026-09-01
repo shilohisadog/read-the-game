@@ -1019,9 +1019,41 @@ test('⛔ a step does not claim an outcome is universal when it is not', () => {
     'the empty net claims every shot scores again — a defender can still guard the goal');
 
   const pe = say('penalties');
-  assert.match(pe, /other team scores/i,
+  /* ⚠️ PINNED TO THE FACT, NOT TO MY PHRASING. The first version matched the
+     literal "other team scores" and went red the moment the sentence was reworded
+     to "a goal by the other team ends one of those early" — which states exactly
+     the same fact. A test that only accepts one wording of a claim blocks the next
+     correction instead of protecting it. Both halves are required and neither is a
+     quotation: WHO ends it, and that it ends EARLY. */
+  assert.match(pe, /other team/i,
+    'the penalties step no longer says whose goal ends a minor early');
+  assert.match(pe, /\bearl(y|ier)\b/i,
     'the penalties step no longer names the early end. A minor stops the moment the '
     + 'other team scores, on 17.3% of them, and "until it expires" is wrong about those');
   assert.doesNotMatch(pe, /until it expires|for the full two|all two minutes/i,
     'the penalties step claims the whole two minutes are served again');
+
+  /* ⚠️ AND THE DURATION, WHICH KEVIN CAUGHT IN THE SAME SENTENCE AFTER I FIXED
+     THE ENDING AND LEFT IT STANDING: *"until it expires and 'two minutes' are
+     both wrong, penalties aren't always two minutes."* 289 of 325 are, over 46
+     published games — 25 are five-minute majors, 6 are ten-minute misconducts.
+     So a duration may appear only with a hedge attached, and the step that names
+     one must carry it. */
+  /* ⭐ AND IT SCANS THE NOTE AS WELL AS THE STEPS, because that is where the
+     lengths ended up. Kevin's third pass: *"you might also get a game misconduct
+     in there once in a while too."* A step that names a duration is describing one
+     KIND of penalty inside a sentence about all of them; the note is a
+     classification, so each length sits attached to the thing it is true of. */
+  const timed = [...figures.penalties.steps, figures.penalties.note]
+    .map(x => x.replace(/<[^>]+>/g, ''))
+    .filter(x => /\b(two|five|ten|\d+)\s+minutes?\b/i.test(x));
+  assert.equal(timed.length, 1, `${timed.length} penalties passages name a duration`);
+  assert.match(timed[0], /\b(most|usually|often|for a minor|a minor is)\b/i,
+    `"${timed[0].trim()}" states a length with nothing tying it to a kind of penalty — `
+    + 'penalties are not always two minutes, and the exceptions are the ones a '
+    + 'viewer notices');
+  // AND THE LONGEST CASE IS NAMED, because it is the one that looks like a bug.
+  assert.match(figures.penalties.note, /game misconduct/i,
+    'the note no longer mentions a game misconduct — a player who does not come back '
+    + 'is the case a viewer is least able to explain from the other two');
 });
