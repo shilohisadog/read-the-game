@@ -1348,25 +1348,43 @@ function syncStep(){$('back').disabled=i<=-1;$('fwd').disabled=i>=EV.length-1;}
    predicate was extracted to make impossible, running in the other direction. */
 function captioned(e){return !!e&&(e.type==='goal'||e.type==='penalty'||ENDED.has(e)||ICING.has(e)||OFFSIDE.has(e)||(hdOn&&isHD(e)));}
 /**
- * ⭐ DOES SOME SURFACE ALREADY PUT THIS EVENT'S PLAYER ON SCREEN?
+ * ⭐ DOES SOMETHING PERMANENT ALREADY PUT THIS EVENT'S PLAYER ON SCREEN?
  *
- * The three `kind`s `caption(e,kind)` accepts, and no others -- a goal, a penalty
- * and a slot shot are the frames that name a person. A goal may say it on the ICE
- * rather than in the pill (`drawLabel` writes "🚨 GOAL — Dorofeyev" when the goal
- * has a coordinate), which is why this asks about the NAME rather than about the
- * pill: either way it is already there.
+ * ⚠️⚠️ AND "PERMANENT" IS THE WHOLE OF IT, WHICH THE FIRST VERSION GOT WRONG.
+ * Kevin, on the slot card's own door: *"the active player between the play
+ * controls and the scrubber just says 'shot on goal', shouldn't that have the
+ * player that took the shot as well?"* It should, and it did not, because this
+ * function used to return true for a penalty and for a slot shot on the grounds
+ * that `caption()` names the player on those frames.
+ *
+ * IT DOES -- FOR `dwell(e)` MILLISECONDS. The pill is TRANSIENT and this line is
+ * PERMANENT, so silencing the permanent surface because a transient one spoke
+ * means the name appears for a second or two and is then gone for good. On the
+ * slot door that is the whole visit: you arrive, the pill says "⚡ Shot from the
+ * slot · #16 Dorofeyev", it fades, and the page can no longer tell you whose
+ * shot it was.
+ *
+ * ⛔ WORSE, THE PILL MAY NEVER HAVE FIRED AT ALL. `sayWho` runs on EVERY render;
+ * the caption chain runs only inside `if(moment)` -- `how==='play'||'jump'`. A
+ * scrub, a layer toggle or any re-render blanks the line for a caption that did
+ * not happen. Two surfaces on different conditions, one predicting the other.
+ *
+ * SO THE QUESTION IS NOT "does a caption name him" BUT "is his name STILL ON THE
+ * SCREEN", and exactly one frame qualifies: a goal, whose scorer and assists
+ * `drawLabel` writes onto the ice and leaves there. It asks `place(e)` because
+ * that is `drawLabel`'s own guard -- an unplaced goal draws no label, and this
+ * must not silence the line on a frame where the ice says nothing either.
+ * A penalty and a slot shot fall to the generic path, which renders
+ * "CAR · Penalty" and "BUF · Shot on goal" and names nobody.
  *
  * ⚠️ IT IS A SEPARATE PREDICATE FROM `captioned` ON PURPOSE, AND CHENG NAMED THE
- * HAZARD IN DOING SO: *"three readers of one predicate is the property that made
- * the 'fifth of the replay pauses for nothing' defect structurally impossible.
- * What would be dangerous is a third reader with a SLIGHTLY DIFFERENT
- * predicate."* `captioned` is true for icing, offside and a power play ending
- * too, and those captions name NO player -- so reusing it would blank this line
- * on frames where nothing duplicates it. Different question, so a different
- * function, declared beside the one it must not be confused with; a test ties its
- * terms to the `kind`s the caption chain actually passes.
+ * HAZARD IN DOING SO: *"what would be dangerous is a third reader with a SLIGHTLY
+ * DIFFERENT predicate."* He was right, and this was that reader -- it differed
+ * from `captioned` in the right direction and from the ICE in the wrong one.
+ * The repair is to stop predicting another surface's content and ask the
+ * question this line actually has: is the name still there?
  */
-function namesActor(e){return !!e&&(e.type==='goal'||e.type==='penalty'||(hdOn&&isHD(e)));}
+function namesActor(e){return !!e&&e.type==='goal'&&!!place(e);}
 /**
  * `#NN Surname`, in the caption's own treatment but with a REAL SPACE.
  *

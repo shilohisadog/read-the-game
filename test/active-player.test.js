@@ -94,31 +94,58 @@ test('⭐ every sentence comes from the one table, and none is a bare name', () 
   }
 });
 
-test('⭐ the line is suppressed exactly where a name is already on screen', () => {
-  /* CHENG: *"a caption naming the scorer already carries the sentence, and echoing
-     it below is the duplicated-clause defect in a new place."* 144 of 2,069 frames.
+test('\u2b50\u2b50 the line is suppressed only where the name is STILL on screen', () => {
+  /* \u26a0\ufe0f\u26a0\ufe0f KEVIN FOUND THIS ON THE SLOT CARD'S OWN DOOR: *"the active
+     player between the play controls and the scrubber just says 'shot on goal',
+     shouldn't that have the player that took the shot as well?"*
 
-     ⚠️⚠️ AND HE NAMED THE HAZARD IN THE FIX ITSELF: *"what would be dangerous is a
-     third reader with a SLIGHTLY DIFFERENT predicate"*, which is the
-     `dwell(isHD(e))` versus `hdOn && isHD(cur)` bug exactly. `captioned()` is the
-     wrong predicate here — it is true for icing, offside and a power play ending,
-     whose captions name NO player — so `namesActor()` is a separate function, and
-     what this asserts is that its terms are exactly the `kind`s the caption chain
-     passes to `caption(e,kind)`. Add a fourth caption kind that names somebody and
-     forget this predicate, and it goes red. */
+     It should. `namesActor` used to return true for a penalty and a slot shot
+     because `caption()` names the player on those frames \u2014 and it does, for
+     `dwell(e)` MILLISECONDS. The pill is TRANSIENT and this line is PERMANENT, so
+     silencing the permanent surface because a transient one spoke means the name
+     shows for a second and is then gone for the rest of the visit.
+
+     \u26d4 AND THE PILL MAY NEVER FIRE. `sayWho` runs on every render; the caption
+     chain runs only inside `if(moment)`. A scrub or a layer toggle blanked the
+     line for a caption that did not happen.
+
+     \u2b50 SO THE OLD TEST WAS PART OF THE BUG. It asserted that `namesActor`'s terms
+     equalled the caption chain's `kind`s \u2014 pinning the very coupling that was
+     wrong, and it passed all the way through. What is asserted now is the
+     property the line actually needs: the name is still on the screen. */
   const fn = fnSrc('namesActor');
-  const kinds = [...app.matchAll(/caption\((?:cur|e),'(\w+)'\)/g)].map(m => m[1]).sort();
-  assert.deepEqual([...new Set(kinds)], ['goal', 'hd', 'penalty'],
-    `the caption chain passes ${[...new Set(kinds)].join(', ')} — namesActor must cover exactly these`);
-  assert.match(fn, /e\.type==='goal'/, 'a goal is no longer treated as naming its player');
-  assert.match(fn, /e\.type==='penalty'/, 'a penalty is no longer treated as naming its player');
-  assert.match(fn, /hdOn&&isHD\(e\)/, 'a slot shot is no longer treated as naming its player');
-  // ⛔ AND IT IS NOT `captioned`, which would blank the line on icing and offside.
+  assert.match(fn, /e\.type==='goal'/, 'a goal no longer counts as having its name on the ice');
+  assert.match(fn, /place\(e\)/,
+    "namesActor does not ask drawLabel's own guard, so an unplaced goal would blank "
+    + 'the line while the ice draws no label either');
+  assert.doesNotMatch(fn, /penalty/,
+    'a penalty suppresses the line again \u2014 the ice renders "CAR \u00b7 Penalty" and names nobody');
+  assert.doesNotMatch(fn, /isHD|hdOn/,
+    'a slot shot suppresses the line again \u2014 only the transient pill ever named him');
+
+  // \u26d4 AND IT IS NOT `captioned`, which would blank the line on icing and offside.
   const say = fnSrc('sayWho');
   assert.match(say, /namesActor\(e\)/, 'the suppression asks something other than namesActor');
   assert.doesNotMatch(say, /captioned\(/,
     'the line suppresses on `captioned`, which is true for icing, offside and a power '
-    + 'play ending — captions that name no player, so the line would go blank for nothing');
+    + 'play ending \u2014 captions that name no player, so the line would go blank for nothing');
+});
+
+test('\u2b50 and ON THE SLOT DOOR ITSELF the line names the shooter', () => {
+  /* THE FRAME KEVIN WAS LOOKING AT, driven through the real page rather than
+     asserted about the predicate. `?layer=slot` with the slot card's own moment:
+     the ice says "BUF \u00b7 Shot on goal" and names nobody, so this line must. */
+  const rich = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url), 'utf8'));
+  const a = boot(rich, null, '?layer=slot&at=1-16:03');
+  const who = a.$('who').innerHTML;
+  assert.ok(who, 'the active player line is empty on the slot card\u2019s own door');
+  assert.doesNotMatch(who, /^Shot on goal$/,
+    'the line renders the bare event name on the frame the slot card links to \u2014 '
+    + 'the pill named the shooter and then faded, and nothing else ever will');
+  assert.match(who, /#\d+/, 'the line names no player number');
+  // AND THE ICE REALLY DOES NOT NAME HIM, which is what makes the line necessary.
+  assert.doesNotMatch(a.$('labels').innerHTML, /#\d+/,
+    'the ice now names the shooter too, so this line would be a duplicate');
 });
 
 test('⭐ the sentence resolves on every frame the replay shows, or says the event instead', () => {
