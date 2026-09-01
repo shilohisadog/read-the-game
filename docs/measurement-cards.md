@@ -1,0 +1,228 @@
+# The measurement cards — teaching what we count, not how we count it
+
+**For CHENG's review. Nothing here is built.** Kevin, 2026-09-01, after the rules
+half was reworked card by card:
+
+> *"I'm not sure we provide what we need within the what we count cards, we need
+> to take an 'education first' approach to the information."*
+
+and then, on structure:
+
+> *"We would go from the card, to a descriptive diagram, to a link to a replay
+> moment. I think the question is **where do we explain why this event is
+> important in reading the game**, which is really the important part of the
+> diagram page."*
+
+Every figure below is re-derived from the published `measures.json`
+(`data.readthegame.co/measures.json`, `measured: 4192` games,
+`scope: "NHL regular season and playoffs"`) and carries its n. None is quoted
+from memory — the slot rate shipped wrong once at 79.4%, and memory still holds
+the attempts null at 54.5% when the published file says 54.3%.
+
+---
+
+## §1 The problem, and the page already ran the experiment
+
+The four `ours` cards read:
+
+| card | blurb ends with |
+|---|---|
+| Control | *"This is the first one of the game."* |
+| The attempt that never arrived | a real number — the best of the four |
+| Shots from the slot | *"This is the first shot that qualifies."* |
+| Goaltending | *"This is the first shot the goaltender had to deal with."* |
+
+Three of four close on a pointer to a door, printed directly above an `at` line
+that already announces the door. Meanwhile **every** card on the rules half
+closes by telling the reader what to watch (*"Watch where the faceoff goes"*,
+*"watch the line rather than the play"*).
+
+⭐⭐ **AND `slot` PROVES THIS IS NOT A MISSING SURFACE.** It is the one measurement
+card that already has the full rules-half structure — card → diagram → replay.
+Its diagram page, in full, is *"Close in — within 33 feet"*, *"And between the
+face-off dots"*, *"And in front of the goal line"*. Three steps, all boundary.
+**The 75.4% appears nowhere on it.** Given the whole teaching surface, we spent
+it defining an edge more precisely.
+
+So the gap is content, not architecture.
+
+---
+
+## §2 Why the rules-half operation cannot simply be repeated
+
+The move that fixed the rules half was **cut the sentence about us, keep the
+sentence about hockey** (`docs/status.md` §0.0). That deletes these cards: on
+this half *we are the subject*. The rulebook exists without us; `Control` does
+not.
+
+⭐ **THE ASYMMETRY, STATED:** on the rules half the **definition is the lesson** —
+knowing what icing is, is the point, and the reader grants that a rule matters
+before arriving. On the measurement half the **definition is only the setup**,
+and the lesson is what the count lets you see. We have been shipping setup.
+
+Which answers Kevin's question directly: **the "why" is not a section to add to
+the diagram page. It is the page's thesis, and the definition is subordinate to
+it.**
+
+| | rules page | measurement page |
+|---|---|---|
+| thesis | here is the rule | **what this lets you see** |
+| steps | how it works | what we count to get it |
+| close | what to watch | ⚠️ what it does **not** tell you |
+
+⭐ **AND THE ORDER WE BUILT IN WAS RIGHT, WHICH IS WORTH SAYING.** Kevin: *"we
+started the whole site with the notion of explaining Corsi… then turned into
+teaching the basics… now we turn back to explaining Corsi, lol."* That is not a
+circle. You cannot explain Corsi to somebody who cannot yet read a game. The
+measurement cards may now **assume** the rules cards — *"between the face-off
+dots"* means something on the slot card only because the faceoffs card taught
+what those dots are — and the bi-directional learn links already exist as the
+mechanism to make that dependency explicit rather than lucky.
+
+---
+
+## §3 ⭐⭐ THE FACT THAT CHANGES THE WHOLE PITCH, AND IT IS UNCOMFORTABLE
+
+`baseRates`, recomputed from `count`/`n` rather than the stored `rate`:
+
+| what you counted | that team won | n (games) |
+|---|---|---|
+| more shot **attempts** | **45.7%** | 4,100 |
+| more **shots on goal** | 54.3% | 4,026 |
+| more attempts **while the score was level** | **60.3%** | 3,925 |
+
+⚠️⚠️ **READ THE FIRST TWO ROWS TOGETHER.** The team with more *attempts* wins
+less than half its games, and the team with more *shots on goal* wins more than
+half. **Raw attempts — the site's flagship layer — is the worst of the three
+raw predictors.** That is adversarial to the premise the project started from,
+and it is sitting in our own published file.
+
+⭐ **AND THE THIRD ROW IS THE ANSWER, NOT A DODGE.** `rule` in `measures.json`
+says it exactly: *"even-strength shot attempts taken while the score was level,
+in regulation"*. A team that goes ahead stops attacking, so raw attempts are
+contaminated by the scoreboard — the leader's opponent piles up attempts while
+losing. Hold the score level and the same count predicts.
+
+`levelCurve` carries the shape, and the edge matters:
+
+| attempt edge while level | that team won | n |
+|---|---|---|
+| ≥ 1 | 60.3% | 3,925 |
+| ≥ 5 | 60.9% | 2,155 |
+| ≥ 10 | 62.7% | 1,002 |
+| ≥ 15 | 67.3% | 422 |
+
+⛔ **The curve runs to k = 41 and I am not quoting past 15.** n falls to 171 at
+k ≥ 20, 62 at 25, 26 at 30, and 1 at the end; the 76.9% at k ≥ 30 is 20 games of
+26 and is noise. This is the *"4× headline that was 8-game noise"* shape, and it
+is in the same file as the good rows.
+
+**So Control's card has a genuine three-beat lesson and currently teaches none of
+it:** you cannot count possession, so we count its visible trace; the raw version
+misleads because the scoreboard changes how teams play; hold the score level and
+it is the best thing on the page.
+
+### The other three, with their n
+
+| card | the fact it does not carry | source |
+|---|---|---|
+| Blocked | **51.8%** of attempts never reach the goalie (259,594 of 500,720) | `attemptMix.neverReachedTheGoalie` |
+| Slot | **75.4%** of goals come from there (19,304 of 25,597, 4,192 games) | `slot` |
+| Goaltending | goalies save **90.0%** of what they face (215,529 of 239,526) | `attemptMix.saveFraction` |
+
+Goaltending's is the anchor a novice has no way to acquire otherwise: without it,
+`.900` and `.930` are two decimals.
+
+### ⭐ Kevin is open to measurements we do not yet surface
+
+> *"I am not opposed to finding others within our existing data sets."*
+
+Already measured, already published, on no card:
+
+- **`census.faceoffZone`** — an offensive-zone draw is worth **2.395×** the
+  loser's return; a defensive-zone draw **0.712×** (n = 83,036 / 82,384).
+- **`census.drawStrength.pp`** — a power-play draw is worth **4.16×** (n = 21,704).
+- **`census.state`** — goals per 60: even **5.0**, power play **7.6**, empty net
+  **32.8**. ⚠️ `unknown` is 1,117 goals over 4,151.9 minutes — five-on-three is
+  invisible to `strength.js` and would have to be named as unclassified, not
+  quietly dropped.
+- **`census.hits`** — r = **−0.07** (n = 4,192). A null, and the honest kind.
+
+---
+
+## §4 ⚠️ WHERE KEVIN'S PROPOSED STRUCTURE DOES NOT TRANSFER CLEANLY
+
+Every rules diagram works because the rule is **spatial**. Of the four
+measurements:
+
+- **Slot** — geometry. Drawn already. Needs a thesis, not a figure.
+- **Blocked** — drawable, and there is a real confusion to fix: the recorded
+  coordinate belongs to the **blocker**, not the shooter. That pairing shipped a
+  wrong flagship number once; a picture of it is worth having.
+- **Control** — a count. There is no place on the ice where control happens.
+- **Goaltending** — a fraction. Same.
+
+The last two could still take a figure whose subject is **the counting** — the
+same thirty seconds drawn twice, once as two shots on goal and once as five
+attempts, which is precisely the lesson. Under the provenance grammar that is
+legal (outlined neutral = illustrative). But it is **a different kind of figure
+than offside's line**, and the alternative is real: `measures.json` carries
+`perGame` distributions for all five layers across three seasons (2025 corsi:
+n = 1,394, min 74, max 208), and *"is 60 attempts a lot?"* is answered by a
+histogram, not by a rink.
+
+---
+
+## §5 A content question that should be settled before four pages get built
+
+**Control, Blocked and Goaltending may not be three lessons.**
+
+| card | door | layer |
+|---|---|---|
+| control | `at=1-18:40.1` | corsi |
+| goaltending | `at=1-18:40.1` | goaltending |
+| blocked | `at=1-18:40.2` | corsi |
+
+Control and Goaltending open the **identical frame**; Blocked is the next event
+and opens the **same layer** as Control. All three `at` lines render the same
+string, "Period 1 · 18:40 left". Kevin has already ruled that one frame may carry
+two lessons (icing/faceoffs), so this is not automatically a defect — but three
+cards on one second, two of them on one frame, is worth a ruling rather than an
+assumption.
+
+---
+
+## §6 Questions for CHENG
+
+1. **Does a card leading with a frequency break the wall?** The wall permits the
+   measurements half to state how often. But *leading* with it makes the number
+   the headline: *"Three of every four goals are scored from here"*. Frequency
+   (allowed) or verdict wearing a frequency (not)? This is the seam Kevin found
+   in the penalties lede, one half of the page over.
+
+2. **Is a figure whose subject is the COUNTING still a figure under "a figure
+   draws what the ice can show"?** You wrote that rule to stop the penalties
+   taxonomy being drawn at invented coordinates. Two drawings of the same thirty
+   seconds invent an arrangement too — does the rule stretch, or does it forbid?
+
+3. **Is §3 publishable at all?** Telling a novice that our flagship layer's raw
+   form predicts the loser is either the most trust-earning thing on the site or
+   an argument that the layer should not be the default. Attack it.
+
+4. **Three cards, one moment** (§5) — the ruled-acceptable pairing, or evidence
+   the cards are over-split?
+
+5. **Card as hook, page as argument** — my proposal is that the card carries one
+   fact (the one that earns a click) and the page carries the reasoning, with the
+   definition demoted out of the lead on both. The counter is that a tile in a
+   grid should stay a definition and the fact belongs only on the page. Which?
+
+## §7 What I would do first
+
+**`slot` as the pilot.** It is the one card whose structure already exists, and
+it has the strongest available fact (75.4%, n = 25,597). If adding a thesis and a
+limit makes that page teach, the template is proven on one surface before it is
+spent on three more.
+
+Related: `docs/status.md` §0.0 (the rules-half rework and the education-first
+ruling), `docs/penalties-card.md` §5.3 (the wall).
