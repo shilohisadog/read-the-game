@@ -21,7 +21,7 @@
 #rg .pagelede{font-size:clamp(.82rem,2.5vw,1.02rem);letter-spacing:.1em;text-transform:uppercase;
   font-weight:600;color:var(--ink);margin:0 0 12px;text-wrap:balance}
 #rg h1{font-size:clamp(1.7rem,3.8vw,2.4rem);letter-spacing:-.025em;font-weight:800;margin:0 0 10px;text-wrap:balance}
-#rg .board{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;background:#fff;border:1px solid var(--edge);border-radius:13px;padding:12px 18px;box-shadow:0 5px 18px rgba(16,32,45,.07);margin-bottom:12px}
+#rg .board{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:11px;background:#fff;border:1px solid var(--edge);border-radius:13px;padding:10px 18px;box-shadow:0 5px 18px rgba(16,32,45,.07);margin-bottom:12px}
 #rg .tm{display:flex;flex-direction:column;align-items:center}#rg .tm .ab{font-weight:800;letter-spacing:.05em;font-size:.9rem}
 #rg .tm .ab{padding:2px 8px;border-radius:5px}
 /* ⭐ THE ARROW IS THE DATUM; "ATTACKS" IS ITS LABEL. Set identically they were
@@ -48,7 +48,12 @@
    typewriter is dropped: every digit still occupies one fixed advance, the
    scoreboard no longer looks like a terminal, and nothing about the reason the
    family was chosen has been given up. */
-#rg .sc{font-size:2.2rem;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1}
+/* ⭐ 1.8rem, NOT 2.2. The score was the tallest thing in a STACK and had to
+   anchor it; beside the badge it shares a line, and 35px of a 140px board
+   buys nothing at widths where the ice stopped growing at 1024. Still the
+   largest element on the card by a wide margin, and still larger than the
+   25.6px a phone shows, which is the size nobody has complained about. */
+#rg .sc{font-size:1.8rem;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1}
 /* ⭐ THE PHONE LAYOUT. Below this width the three-column board does not fit and
    never did: `.mid` has a 150px floor and `.atk` is an unbreakable 72px, so the
    card must accept 72+150+72+28 = 322px against 277px available at 360 — a 45px
@@ -79,12 +84,42 @@
    demanded of a 287px card. A 287px FRAME is not a 287px DEVICE. Scoping this to
    `:not(.preview)` leaves the hero byte-identical to what its gate has been
    passing, instead of re-tuning a surface that was already right. */
+/* ⭐⭐ THE BADGE SITS BESIDE THE SCORE AT EVERY WIDTH, AND THAT IS A PROMOTION,
+   NOT A NEW LAYOUT. Kevin, with a screenshot of his laptop: *"relative to the
+   rink, it just looks too big."* He is right, and the measurement says why: the
+   board reaches 159px at 600px wide and never changes again, while the ice grows
+   to a cap of 373px at 1024 and never changes again — so every laptop shows the
+   same fixed 159 against 373, the board 43% as tall as the thing it labels.
+
+   THE HEIGHT WAS IN THE STACK. Above 520 the team block was a COLUMN: badge 26px
+   over score 35px over the penalty slot. Below 520 it has always been a row, so
+   the badge and score share one 35px line — the arrangement every scoreboard a
+   reader has ever seen, already shipped, already tested, and 26px shorter.
+   Nothing here is invented; these five rules simply move out of the phone query
+   into the base, where they were always the better answer.
+
+   ⛔ AND `:not(.preview)` IS KEPT ON EVERY ONE. The hero is a different surface
+   with its own height budget and its own passing gate; re-tuning it was not
+   asked for and is not free.
+
+   ⚠️ THE `order` RULES COME TOO, and their old comment said why they could not:
+   *"the rule lives INSIDE this query on purpose — `order` applies to a flex
+   column too, and above 520px `.tm` still stacks."* That reason expires with
+   this change. Above 520 `.tm` no longer stacks, so mirroring the away side is
+   now correct at every width for the same reason it was correct at one. */
+#rg:not(.preview) .tm{flex-direction:row;align-items:center;justify-content:center;
+ gap:7px;flex-wrap:wrap}
+#rg:not(.preview) .tm.a .ab{order:1}#rg:not(.preview) .tm.a .sc{order:2}
+#rg:not(.preview) .tm.h .sc{order:1}#rg:not(.preview) .tm.h .ab{order:2}
+/* The penalty slot keeps its own line under BOTH arrangements — `order:3` works
+   whichever way the badge and score are mirrored. It still holds its ground when
+   empty (see `.pens`); this changes where it sits, never whether it is there. */
+#rg:not(.preview) .pens{flex-basis:100%;order:3;width:100%;align-items:center}
 @media(max-width:520px){
  #rg:not(.preview) .board{grid-template-columns:1fr 1fr;grid-template-areas:"game game" "away home" "state state";
    gap:9px 10px;padding:11px 12px}
  #rg:not(.preview) .tm.a{grid-area:away}#rg:not(.preview) .tm.h{grid-area:home}
  #rg:not(.preview) .board .foot{grid-area:game}
- #rg:not(.preview) .tm{flex-direction:row;align-items:center;justify-content:center;gap:7px}
  /* THE 150px FLOOR GOES. `#rg.preview .mid` already zeroes it for the hero and
     the game page never got the same repair — one fix, two surfaces, one missed. */
  #rg:not(.preview) .mid{grid-area:state;min-width:0}
@@ -107,20 +142,13 @@
     of the card pointing back across the block it belongs to. Ordered instead as
     `<- CAR 0` and `0 VGK ->`: arrows on the outside aimed outward, scores toward
     the centre, which is the arrangement every scoreboard a reader has ever seen
-    uses. The rule lives INSIDE this query on purpose — `order` applies to a
-    flex column too, and above 520px `.tm` still stacks. */
- #rg:not(.preview) .tm.a .ab{order:1}#rg:not(.preview) .tm.a .sc{order:2}
- #rg:not(.preview) .tm.h .sc{order:1}#rg:not(.preview) .tm.h .ab{order:2}
- /* ⚠️ AND THE PENALTIES NEED THEIR OWN LINE HERE. Under 520 `.tm` turns into a
-    ROW so the badge sits beside the score — which laid the penalty block out as
-    a third item BESIDE them, squeezing `CAR 1` into a sliver. It was correct
-    above 520, where `.tm` is still a column, and wrong below it: the same
-    element in two containers, which is the defect class this project has now
-    named four times. `flex-basis:100%` puts it on its own line; `order:3` keeps
-    it under BOTH arrangements, since the away side reverses badge and score. */
- #rg:not(.preview) .tm{flex-wrap:wrap}
- #rg:not(.preview) .pens{flex-basis:100%;order:3;align-items:center}
- #rg:not(.preview) .pens{width:100%}
+    uses. ⭐ THE RULE HAS MOVED OUT OF THIS QUERY — see the base rules above. It
+    lived here because `order` applies to a flex column too and `.tm` still
+    stacked above 520; it no longer does. */
+ /* ⚠️ AND THE PENALTIES NEED THEIR OWN LINE — now at every width, so the rule
+    is in the base above rather than here. It was written when `.tm` was a row
+    below 520 and a column above it: the same element in two containers, which
+    is the defect class this project has named four times. One container now. */
 }
 #rg .mid{min-width:150px}#rg .gs{text-align:center;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px}#rg .gs .cl{color:var(--ink);font-family:ui-monospace,Menlo,monospace}#rg .gs .clw{font-style:normal;font-size:.62rem;letter-spacing:.08em}
 /* ⭐ THE STANDING CONDITION — a power play or a pulled goalie, sitting still.
@@ -1744,7 +1772,12 @@
    nothing, which reads as the board's shape rather than as a box reporting that
    it is empty. `:empty` is gone with it -- the point is that the slot holds
    its ground. */
-#rg .pens{display:flex;flex-direction:column;gap:3px;margin-top:6px;align-items:inherit;
+/* ⚠️ NO `margin-top` ANY MORE, AND IT IS NOW REDUNDANT RATHER THAN TRIMMED.
+   It was the only separation above 520, where `.tm` was a gapless column.
+   With the row promoted to the base, `.tm`'s own 7px gap does that job and
+   the margin added a second 6px on top of it -- 13px between the score and
+   the penalty slot, at BOTH widths, one of them spelled twice. */
+#rg .pens{display:flex;flex-direction:column;gap:3px;align-items:inherit;
  min-height:31px}
 /* ⚠️ A GRID, NOT A WRAPPING ROW, and the infraction is why. `Delay of game —
    faceoff violation` is 41 characters and `Tripping` is 8, so as flex items the

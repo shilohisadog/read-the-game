@@ -72,8 +72,35 @@ test('the board becomes two rows, so the three-element column stops existing', (
   // is three rows now. The claim is unchanged: away and home SHARE a row, and
   // the state spans beneath them.
   assert.match(PHONE, /grid-template-areas:"game game" "away home" "state state"/);
-  assert.match(PHONE, /#rg:not\(\.preview\) \.tm\{[^}]*flex-direction:row/,
-    'the team stack is still a column, which is the thing that did not fit');
+});
+
+test('⭐ the team block is a ROW at every width, and said once', () => {
+  /* ⚠️ THIS TEST USED TO LOOK FOR THE ROW INSIDE THE PHONE QUERY, and its failure
+     message read *"the team stack is still a column, which is the thing that did
+     not fit"* — the opposite of what a failure would now mean.
+
+     Kevin, 2026-08-31, with a laptop screenshot: *"relative to the rink, it just
+     looks too big."* Above 520 the team block was a COLUMN — badge over score
+     over the penalty slot — which is 26px taller than the row a phone has always
+     shown. The row is promoted to the base, so the arrangement is one
+     arrangement, and the board fell 159px -> 121px on every desktop width.
+
+     ⭐ SO THE CLAIM IS NOW "ONCE, IN THE BASE", not "here, in this query". A rule
+     restated inside the phone block would be the duplication that lets the two
+     widths drift apart — the defect class this file's own comments have named
+     four times — and it would pass a test that only asked whether the row
+     existed somewhere. */
+  const outside = CSS.replace(PHONE, '');
+  assert.match(outside, /#rg:not\(\.preview\) \.tm\{[^}]*flex-direction:row/,
+    'the team block is a column again outside the phone query, which is the height Kevin saw');
+  assert.match(outside, /#rg:not\(\.preview\) \.tm\{[^}]*flex-wrap:wrap/,
+    'without a wrap the penalty slot lays out beside the score and squeezes it');
+  assert.doesNotMatch(PHONE, /flex-direction:row/,
+    'the phone query restates the row it now inherits — two copies to drift apart');
+  // AND THE HERO IS NOT ALONG FOR THE RIDE. It has its own height budget and its
+  // own passing gate; every rule above is `:not(.preview)` for that reason.
+  assert.match(CSS, /#rg \.tm\{[^}]*flex-direction:column/,
+    'the base column rule is gone, so the hero board has silently been re-laid out');
 });
 
 test('the direction indicator is gone from every surface, and its derivation is not', () => {
@@ -102,15 +129,31 @@ test('the direction indicator is gone from every surface, and its derivation is 
   assert.equal(a.$('aAb').textContent, 'MIN', 'the board no longer renders its teams');
 });
 
-test('the mirroring is scoped to the phone, because `order` reorders a column too', () => {
-  // Above 520px `.tm` is still a flex COLUMN, and `order` applies there just as
-  // well — a global rule would silently restack badge/score/arrow on the desktop
-  // board nobody has complained about.
-  assert.match(PHONE, /#rg:not\(\.preview\) \.tm\.a \.ab\{order:1\}/);
-  assert.match(PHONE, /#rg:not\(\.preview\) \.tm\.h \.ab\{order:2\}/);
-  const outside = CSS.replace(PHONE, '');
-  assert.doesNotMatch(outside, /#rg(:not\(\.preview\))? \.tm\.[ah] [^{]*\{[^}]*order:/,
-    'an `order` rule escaped the phone block and is restacking the desktop board');
+test('⭐ `order` is applied exactly where `.tm` is a ROW, and nowhere else', () => {
+  /* ⚠️ THIS PINNED A LOCATION, AND THE LOCATION WAS NOT THE POINT. It asserted
+     the mirroring lived INSIDE the phone query, on this reasoning: *"above 520px
+     `.tm` is still a flex COLUMN, and `order` applies there just as well — a
+     global rule would silently restack badge/score/arrow on the desktop board."*
+
+     True when written, false now. `.tm` is a row at every width, so mirroring the
+     away side is correct everywhere for the same reason it was correct at one
+     width. A test pinned to WHERE a rule sits goes red on a change that makes it
+     more right, and — worse — would have stayed green if the row had been removed
+     while the `order` rules stayed put.
+
+     ⭐ SO IT ASSERTS THE ACTUAL HAZARD: `order` restacks a COLUMN vertically, so
+     the rule that mirrors and the rule that makes a row must cover the same
+     elements. Both are `:not(.preview)`, which is what keeps the hero — still a
+     column — out of it. Change either scope alone and this goes red. */
+  const scope = /#rg:not\(\.preview\)/;
+  const orders = [...CSS.matchAll(/(#rg[^{,]*?) \.tm\.[ah] \.\w+\{order:\d\}/g)].map(m => m[1]);
+  assert.equal(orders.length, 4, `${orders.length} order rules, not the four that mirror a pair`);
+  for (const sel of orders) {
+    assert.match(sel, scope,
+      `\`${sel}\` mirrors a team block the hero also owns, where .tm is still a column`);
+  }
+  const row = /#rg:not\(\.preview\) \.tm\{[^}]*flex-direction:row/.exec(CSS);
+  assert.ok(row, 'nothing makes `.tm` a row, so every `order` rule above is restacking a column');
 });
 
 test('the phone breakpoint is the one that already exists, not a competing width', () => {
