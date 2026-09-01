@@ -156,3 +156,52 @@ export function missSay(ev) {
   if (!m) return 'Missed shot';
   return MISS_SAID[m] || String(m).replace(/-/g, ' ');
 }
+
+/**
+ * ⭐⭐ ONE TABLE: WHICH FIELD THE ACTOR COMES FROM, AND WHAT HE DID.
+ *
+ * CHENG, on the active-player line: *"the verb has to come from one table, and
+ * that table is `ACTOR`'s mirror. If `ACTOR` ever changes which field a type
+ * reads, the verb has to change with it or the sentence becomes false silently.
+ * Put them in one structure — {field, verb} per type — rather than two tables
+ * that have to agree. That's cheap now and unfixable later."*
+ *
+ * ⚠️ AND THE REASON IT MATTERS IS THE DEFECT AT THE TOP OF THIS FILE. `actor`
+ * does not mean "who did this". It means whatever `field` says for that type —
+ * the faceoff WINNER, the HITTER, the SHOOTER on a blocked shot whose coordinate
+ * belongs to the blocker. Rendering a bare name is publishing a field's VALUE
+ * without its MEANING, which is the same class of error as a rate with no
+ * reference class. So the name never appears without its verb.
+ *
+ *   {a}   the actor, already formatted
+ *   {b}   the second player, when `with` names the field that carries him
+ *
+ * ⛔ `hitteePlayerId` AND `losingPlayerId` ARE STILL DROPPED, on CHENG's rule:
+ * *add a field to the extractor only when its absence makes an existing sentence
+ * FALSE, never when it merely makes one shorter.* "Delivered a hit" and "won the
+ * draw" are whole sentences about recorded facts; naming the other man would make
+ * them richer, not truer, and re-extracting three seasons is not free.
+ *
+ * THE FIELD HALF CROSSES INTO PYTHON via `data/attribution.json`, which
+ * `builders/attribution.mjs` writes and `builders/extract.py` reads. Same seam as
+ * the learn figures, and `--verify` in `npm run build` means a stale copy cannot
+ * ship. The table lives here rather than in the JSON because JSON cannot carry
+ * the paragraph above, and that paragraph is why anyone knows the mapping is not
+ * obvious.
+ */
+export const ATTRIBUTION = {
+  faceoff:               { field: 'winningPlayerId',     say: '{a} won the draw' },
+  'shot-on-goal':        { field: 'shootingPlayerId',    say: '{a} shot on goal' },
+  'missed-shot':         { field: 'shootingPlayerId',    say: '{a} missed the net' },
+  // BOTH HALVES, because this is the one frame where a bare name is ambiguous in
+  // a way that has already cost this project a wrong number. `blk` resolves on
+  // 253 of 253 blocked shots in the fixtures, so the sentence is affordable.
+  'blocked-shot':        { field: 'shootingPlayerId',    say: '{a} &mdash; shot blocked by {b}',
+                           with: 'blk' },
+  goal:                  { field: 'scoringPlayerId',     say: '{a} scored' },
+  hit:                   { field: 'hittingPlayerId',     say: '{a} delivered a hit' },
+  penalty:               { field: 'committedByPlayerId', say: '{a} took a penalty' },
+  giveaway:              { field: 'playerId',            say: '{a} gave the puck away' },
+  takeaway:              { field: 'playerId',            say: '{a} took the puck away' },
+  'failed-shot-attempt': { field: 'shootingPlayerId',    say: '{a} was stopped' },
+};

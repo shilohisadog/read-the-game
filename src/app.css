@@ -810,6 +810,29 @@
 #rg .caption .tag{font-family:ui-monospace,Menlo,monospace;font-weight:700;font-size:.72rem;padding:2px 7px;border-radius:5px;margin-right:7px}
 #rg .caption .tag.a{background:var(--away);color:var(--away-ink)}#rg .caption .tag.h{background:var(--home);color:var(--home-ink)}
 #rg .caption .num{opacity:.65;font-family:ui-monospace,Menlo,monospace;margin-right:3px}
+/* ⭐ THE ACTIVE PLAYER, BETWEEN THE CONTROLS AND THE SCRUBBER. `flex-basis:100%`
+   gives it its own row in the wrapping transport at every width; measured, it
+   costs 19px of type plus the transport's existing 10px gap, which is 2.5% of a
+   390px phone's below-the-rink budget. Smaller than the caption pill and quieter,
+   because it names every frame rather than the rare ones. */
+/* ⚠️ NO `order`, AND THE FIRST VERSION HAD ONE. `order:3` put this AFTER the
+   scrubber — every other child of the transport is `order:0`, so any positive
+   value sorts it last, and Kevin asked for it *"right above the scrubber and
+   below the play controls"*. The markup already sits between them; source order
+   is the whole placement and an `order` could only fight it. */
+#rg .who{flex:0 0 100%;margin:0;min-height:1.15rem;line-height:1.15rem;
+ font-size:.82rem;font-weight:600;color:var(--ink)}
+#rg .who .num{opacity:.6;font-family:ui-monospace,Menlo,monospace;font-weight:700}
+/* ⭐ THE CLUB'S COLOUR ON THE INK, THROUGH `--away-text` — the token that already
+   exists for TYPE ON WHITE, and which `paint()` substitutes for the six clubs
+   whose primary cannot be read there. A filled chip would be a third badge
+   treatment on one page; and 7 of 33 club colours fail 4.5:1 on white, which is
+   the measurement `--away-text` was created to answer. */
+#rg .who.a{color:var(--away-text)}#rg .who.h{color:var(--home-text)}
+/* AND WHERE WE HAVE NO PERSON, THE EVENT'S OWN NAME AND NOTHING ELSE. Reserving
+   an empty line is the defect the row under the ice was deleted for; a name we
+   cannot supply is not a reason to say nothing at all. */
+#rg .who.plain{color:var(--muted);font-weight:500}
 #rg .counters{display:flex;justify-content:space-between;padding:2px 6px;margin-top:8px}
 #rg .cc{display:flex;align-items:baseline;gap:7px}#rg .cc .n{font-family:ui-monospace,Menlo,monospace;font-size:1.5rem;font-weight:700}#rg .cc.a .n{color:var(--away-text)}#rg .cc.h .n{color:var(--home-text)}
 #rg .cc .mode{display:block;font-size:.6rem;letter-spacing:.06em;color:var(--flag);font-weight:700}

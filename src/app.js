@@ -832,6 +832,7 @@ function render(i,how){
    else if(cur&&ENDED.has(cur)){captionEnded(cur);}
    else if(cur&&hdOn&&isHD(cur)){lastHD=i;caption(cur,'hd');}}
  prevA=a;prevH=h;
+ sayWho(cur);
  $('per').textContent=periodLabel(cur);$('clk').textContent=cur?cur.rem:'20:00';
  if(goalieOn){const gs=goalieStats(i);$('goaliePanel').innerHTML=G.goalies.map(id=>{const p=R[id];if(!p)return '';const tid=p.tid,side=tid===AID?'a':'h',ab=tid===AID?AAB:HAB;const st=gs[id]||{f:0,s:0,gl:0,hf:0,hs:0};
  // A FRACTION, ALWAYS, AND THE THRESHOLD IS GONE. This used to print .943 and
@@ -1346,6 +1347,55 @@ function syncStep(){$('back').disabled=i<=-1;$('fwd').disabled=i>=EV.length-1;}
    appears and is gone before it is read, which is the exact defect this
    predicate was extracted to make impossible, running in the other direction. */
 function captioned(e){return !!e&&(e.type==='goal'||e.type==='penalty'||ENDED.has(e)||ICING.has(e)||OFFSIDE.has(e)||(hdOn&&isHD(e)));}
+/**
+ * ⭐ DOES SOME SURFACE ALREADY PUT THIS EVENT'S PLAYER ON SCREEN?
+ *
+ * The three `kind`s `caption(e,kind)` accepts, and no others -- a goal, a penalty
+ * and a slot shot are the frames that name a person. A goal may say it on the ICE
+ * rather than in the pill (`drawLabel` writes "🚨 GOAL — Dorofeyev" when the goal
+ * has a coordinate), which is why this asks about the NAME rather than about the
+ * pill: either way it is already there.
+ *
+ * ⚠️ IT IS A SEPARATE PREDICATE FROM `captioned` ON PURPOSE, AND CHENG NAMED THE
+ * HAZARD IN DOING SO: *"three readers of one predicate is the property that made
+ * the 'fifth of the replay pauses for nothing' defect structurally impossible.
+ * What would be dangerous is a third reader with a SLIGHTLY DIFFERENT
+ * predicate."* `captioned` is true for icing, offside and a power play ending
+ * too, and those captions name NO player -- so reusing it would blank this line
+ * on frames where nothing duplicates it. Different question, so a different
+ * function, declared beside the one it must not be confused with; a test ties its
+ * terms to the `kind`s the caption chain actually passes.
+ */
+function namesActor(e){return !!e&&(e.type==='goal'||e.type==='penalty'||(hdOn&&isHD(e)));}
+/**
+ * `#NN Surname`, in the caption's own treatment but with a REAL SPACE.
+ *
+ * ⚠️ The caption builds this as `<span…>#14</span>Eriksson Ek`, leaning on the
+ * span's `margin-right` for the gap — so it LOOKS spaced and reads as
+ * "#14Eriksson" to anything that takes `textContent`, which is a screen reader.
+ * A margin is not a word boundary. Here the space is a character and the margin
+ * is dropped, so the two agree.
+ */
+function whoTag(p){return `<span class="num">#${p.n}</span> ${p.nm}`;}
+/**
+ * The active player's line: WHO, and WHAT HE DID.
+ *
+ * ⛔ NO SENTENCE WITHOUT A VERB. The table is the only place that knows both which
+ * field the actor came from and what that field means, so a type it does not
+ * carry gets the event's own name and no person -- which is what `shootout-complete`
+ * and the four unattributed penalties in nine fixtures get.
+ */
+function sayWho(e){const w=$('who');if(!w)return;
+ if(!e){w.innerHTML='';w.className='who';return;}
+ const a=ATTRIBUTION[e.type],p=a&&R[e.actor];
+ // ⭐ SUPPRESSED WHERE THE NAME IS ALREADY ON SCREEN, on the site's own precedent:
+ // the offside blurb shrank when its figure arrived, because a card with a diagram
+ // should say the part the diagram cannot. 144 of 2,069 frames.
+ if(!p||namesActor(e)){w.innerHTML=LAB[e.type]||e.type.replace(/-/g,' ');w.className='who plain';return;}
+ let s=a.say.replace('{a}',whoTag(p));
+ if(a.with){const q=R[e[a.with]];if(!q){w.innerHTML=LAB[e.type]||e.type.replace(/-/g,' ');w.className='who plain';return;}
+  s=s.replace('{b}',whoTag(q));}
+ w.className='who '+(p.tid===AID?'a':'h');w.innerHTML=s;}
 function dwell(e){return captioned(e)?frameMs+CAPTION_BONUS:frameMs;}
 function step(){if(i>=EV.length-1){stop();return;}set(i+1,'play');timer=setTimeout(step,dwell(EV[i]));}
 /* PLAY MEANS GO. A viewer who presses it has asked for the game, and resting on

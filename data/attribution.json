@@ -1,0 +1,12 @@
+{
+ "faceoff": "winningPlayerId",
+ "shot-on-goal": "shootingPlayerId",
+ "missed-shot": "shootingPlayerId",
+ "blocked-shot": "shootingPlayerId",
+ "goal": "scoringPlayerId",
+ "hit": "hittingPlayerId",
+ "penalty": "committedByPlayerId",
+ "giveaway": "playerId",
+ "takeaway": "playerId",
+ "failed-shot-attempt": "shootingPlayerId"
+}

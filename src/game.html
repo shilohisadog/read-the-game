@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-IQTxlHOCpIbYV/Z1xZe1wMl5Dnstt9x2kSr+WwbRXR8=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-SMDcfoVUmEsNXc6wTen/ULNgnoPY19oGNPhnrDcZKW8='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-LdEj5wkWuMCmp3MumndI9AoK+hA1zJFS41Pvl7Tu/BM=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-SccvklKRpHhYn1HIyLZKQbhxyrinqwZSr2J4V2THf0o='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">Watch a game</a><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see</a><a href="/workshop.html">Workshop</a></nav></header>
@@ -857,6 +857,29 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .caption .tag{font-family:ui-monospace,Menlo,monospace;font-weight:700;font-size:.72rem;padding:2px 7px;border-radius:5px;margin-right:7px}
 #rg .caption .tag.a{background:var(--away);color:var(--away-ink)}#rg .caption .tag.h{background:var(--home);color:var(--home-ink)}
 #rg .caption .num{opacity:.65;font-family:ui-monospace,Menlo,monospace;margin-right:3px}
+/* ⭐ THE ACTIVE PLAYER, BETWEEN THE CONTROLS AND THE SCRUBBER. `flex-basis:100%`
+   gives it its own row in the wrapping transport at every width; measured, it
+   costs 19px of type plus the transport's existing 10px gap, which is 2.5% of a
+   390px phone's below-the-rink budget. Smaller than the caption pill and quieter,
+   because it names every frame rather than the rare ones. */
+/* ⚠️ NO `order`, AND THE FIRST VERSION HAD ONE. `order:3` put this AFTER the
+   scrubber — every other child of the transport is `order:0`, so any positive
+   value sorts it last, and Kevin asked for it *"right above the scrubber and
+   below the play controls"*. The markup already sits between them; source order
+   is the whole placement and an `order` could only fight it. */
+#rg .who{flex:0 0 100%;margin:0;min-height:1.15rem;line-height:1.15rem;
+ font-size:.82rem;font-weight:600;color:var(--ink)}
+#rg .who .num{opacity:.6;font-family:ui-monospace,Menlo,monospace;font-weight:700}
+/* ⭐ THE CLUB'S COLOUR ON THE INK, THROUGH `--away-text` — the token that already
+   exists for TYPE ON WHITE, and which `paint()` substitutes for the six clubs
+   whose primary cannot be read there. A filled chip would be a third badge
+   treatment on one page; and 7 of 33 club colours fail 4.5:1 on white, which is
+   the measurement `--away-text` was created to answer. */
+#rg .who.a{color:var(--away-text)}#rg .who.h{color:var(--home-text)}
+/* AND WHERE WE HAVE NO PERSON, THE EVENT'S OWN NAME AND NOTHING ELSE. Reserving
+   an empty line is the defect the row under the ice was deleted for; a name we
+   cannot supply is not a reason to say nothing at all. */
+#rg .who.plain{color:var(--muted);font-weight:500}
 #rg .counters{display:flex;justify-content:space-between;padding:2px 6px;margin-top:8px}
 #rg .cc{display:flex;align-items:baseline;gap:7px}#rg .cc .n{font-family:ui-monospace,Menlo,monospace;font-size:1.5rem;font-weight:700}#rg .cc.a .n{color:var(--away-text)}#rg .cc.h .n{color:var(--home-text)}
 #rg .cc .mode{display:block;font-size:.6rem;letter-spacing:.06em;color:var(--flag);font-weight:700}
@@ -2029,6 +2052,21 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 <div class="transport"><button class="play" id="play">▶ Play from start</button>
   <div class="grp" role="group" aria-label="Step through the events"><button class="spd stepb" id="back" aria-label="Previous event">◀ Prev event</button><button class="spd stepb" id="fwd" aria-label="Next event">Next event ▶</button></div>
   <div class="grp" role="group" aria-label="Replay speed"><button class="spd stepb" id="slower">&#9664; Slower</button><button class="spd stepb" id="faster">Faster &#9654;</button></div>
+  <!-- ⭐ WHO THE LEAGUE ATTRIBUTED THIS EVENT TO. Kevin: "we have the player
+       that's attributed to each event... that might be a good idea to integrate
+       into our main game replay, smaller font, right above the scrubber and
+       below the play controls."
+       2,065 of 2,069 playable frames across nine fixtures resolve to a named
+       player, and the page was showing the name on 144 of them -- goals and
+       penalties. This is the other 92.8%.
+       ⛔ AND IT CARRIES THE VERB, NEVER THE NAME ALONE. `actor` is the faceoff
+       WINNER, the HITTER, the SHOOTER on a blocked shot whose coordinate belongs
+       to the blocker -- so a bare name publishes a field's value without its
+       meaning (CHENG). See ATTRIBUTION in src/lib/attribution.js.
+       ⛔ NO TOGGLE, which is Kevin's ruling over CHENG's. He proposed folding one
+       into the newcomer dismissal; that flag means "I know how this site works",
+       and who took the shot is not scaffolding a reader outgrows. -->
+  <p class="who" id="who" aria-live="polite"></p>
   <input class="scrub" id="scrub" type="range" min="-1" max="1" value="-1"></div>
 <!-- ⭐ COPY A LINK TO THIS MOMENT. The read side has been built and tested since
      the learn-page doors -- `deeplink.js::format` even says in its own docstring
@@ -2445,6 +2483,55 @@ function missSay(ev) {
   if (!m) return 'Missed shot';
   return MISS_SAID[m] || String(m).replace(/-/g, ' ');
 }
+
+/**
+ * ⭐⭐ ONE TABLE: WHICH FIELD THE ACTOR COMES FROM, AND WHAT HE DID.
+ *
+ * CHENG, on the active-player line: *"the verb has to come from one table, and
+ * that table is `ACTOR`'s mirror. If `ACTOR` ever changes which field a type
+ * reads, the verb has to change with it or the sentence becomes false silently.
+ * Put them in one structure — {field, verb} per type — rather than two tables
+ * that have to agree. That's cheap now and unfixable later."*
+ *
+ * ⚠️ AND THE REASON IT MATTERS IS THE DEFECT AT THE TOP OF THIS FILE. `actor`
+ * does not mean "who did this". It means whatever `field` says for that type —
+ * the faceoff WINNER, the HITTER, the SHOOTER on a blocked shot whose coordinate
+ * belongs to the blocker. Rendering a bare name is publishing a field's VALUE
+ * without its MEANING, which is the same class of error as a rate with no
+ * reference class. So the name never appears without its verb.
+ *
+ *   {a}   the actor, already formatted
+ *   {b}   the second player, when `with` names the field that carries him
+ *
+ * ⛔ `hitteePlayerId` AND `losingPlayerId` ARE STILL DROPPED, on CHENG's rule:
+ * *add a field to the extractor only when its absence makes an existing sentence
+ * FALSE, never when it merely makes one shorter.* "Delivered a hit" and "won the
+ * draw" are whole sentences about recorded facts; naming the other man would make
+ * them richer, not truer, and re-extracting three seasons is not free.
+ *
+ * THE FIELD HALF CROSSES INTO PYTHON via `data/attribution.json`, which
+ * `builders/attribution.mjs` writes and `builders/extract.py` reads. Same seam as
+ * the learn figures, and `--verify` in `npm run build` means a stale copy cannot
+ * ship. The table lives here rather than in the JSON because JSON cannot carry
+ * the paragraph above, and that paragraph is why anyone knows the mapping is not
+ * obvious.
+ */
+const ATTRIBUTION = {
+  faceoff:               { field: 'winningPlayerId',     say: '{a} won the draw' },
+  'shot-on-goal':        { field: 'shootingPlayerId',    say: '{a} shot on goal' },
+  'missed-shot':         { field: 'shootingPlayerId',    say: '{a} missed the net' },
+  // BOTH HALVES, because this is the one frame where a bare name is ambiguous in
+  // a way that has already cost this project a wrong number. `blk` resolves on
+  // 253 of 253 blocked shots in the fixtures, so the sentence is affordable.
+  'blocked-shot':        { field: 'shootingPlayerId',    say: '{a} &mdash; shot blocked by {b}',
+                           with: 'blk' },
+  goal:                  { field: 'scoringPlayerId',     say: '{a} scored' },
+  hit:                   { field: 'hittingPlayerId',     say: '{a} delivered a hit' },
+  penalty:               { field: 'committedByPlayerId', say: '{a} took a penalty' },
+  giveaway:              { field: 'playerId',            say: '{a} gave the puck away' },
+  takeaway:              { field: 'playerId',            say: '{a} took the puck away' },
+  'failed-shot-attempt': { field: 'shootingPlayerId',    say: '{a} was stopped' },
+};
 
 /* --- src/lib/layer.js --- */
 /**
@@ -6955,6 +7042,7 @@ function render(i,how){
    else if(cur&&ENDED.has(cur)){captionEnded(cur);}
    else if(cur&&hdOn&&isHD(cur)){lastHD=i;caption(cur,'hd');}}
  prevA=a;prevH=h;
+ sayWho(cur);
  $('per').textContent=periodLabel(cur);$('clk').textContent=cur?cur.rem:'20:00';
  if(goalieOn){const gs=goalieStats(i);$('goaliePanel').innerHTML=G.goalies.map(id=>{const p=R[id];if(!p)return '';const tid=p.tid,side=tid===AID?'a':'h',ab=tid===AID?AAB:HAB;const st=gs[id]||{f:0,s:0,gl:0,hf:0,hs:0};
  // A FRACTION, ALWAYS, AND THE THRESHOLD IS GONE. This used to print .943 and
@@ -7469,6 +7557,55 @@ function syncStep(){$('back').disabled=i<=-1;$('fwd').disabled=i>=EV.length-1;}
    appears and is gone before it is read, which is the exact defect this
    predicate was extracted to make impossible, running in the other direction. */
 function captioned(e){return !!e&&(e.type==='goal'||e.type==='penalty'||ENDED.has(e)||ICING.has(e)||OFFSIDE.has(e)||(hdOn&&isHD(e)));}
+/**
+ * ⭐ DOES SOME SURFACE ALREADY PUT THIS EVENT'S PLAYER ON SCREEN?
+ *
+ * The three `kind`s `caption(e,kind)` accepts, and no others -- a goal, a penalty
+ * and a slot shot are the frames that name a person. A goal may say it on the ICE
+ * rather than in the pill (`drawLabel` writes "🚨 GOAL — Dorofeyev" when the goal
+ * has a coordinate), which is why this asks about the NAME rather than about the
+ * pill: either way it is already there.
+ *
+ * ⚠️ IT IS A SEPARATE PREDICATE FROM `captioned` ON PURPOSE, AND CHENG NAMED THE
+ * HAZARD IN DOING SO: *"three readers of one predicate is the property that made
+ * the 'fifth of the replay pauses for nothing' defect structurally impossible.
+ * What would be dangerous is a third reader with a SLIGHTLY DIFFERENT
+ * predicate."* `captioned` is true for icing, offside and a power play ending
+ * too, and those captions name NO player -- so reusing it would blank this line
+ * on frames where nothing duplicates it. Different question, so a different
+ * function, declared beside the one it must not be confused with; a test ties its
+ * terms to the `kind`s the caption chain actually passes.
+ */
+function namesActor(e){return !!e&&(e.type==='goal'||e.type==='penalty'||(hdOn&&isHD(e)));}
+/**
+ * `#NN Surname`, in the caption's own treatment but with a REAL SPACE.
+ *
+ * ⚠️ The caption builds this as `<span…>#14</span>Eriksson Ek`, leaning on the
+ * span's `margin-right` for the gap — so it LOOKS spaced and reads as
+ * "#14Eriksson" to anything that takes `textContent`, which is a screen reader.
+ * A margin is not a word boundary. Here the space is a character and the margin
+ * is dropped, so the two agree.
+ */
+function whoTag(p){return `<span class="num">#${p.n}</span> ${p.nm}`;}
+/**
+ * The active player's line: WHO, and WHAT HE DID.
+ *
+ * ⛔ NO SENTENCE WITHOUT A VERB. The table is the only place that knows both which
+ * field the actor came from and what that field means, so a type it does not
+ * carry gets the event's own name and no person -- which is what `shootout-complete`
+ * and the four unattributed penalties in nine fixtures get.
+ */
+function sayWho(e){const w=$('who');if(!w)return;
+ if(!e){w.innerHTML='';w.className='who';return;}
+ const a=ATTRIBUTION[e.type],p=a&&R[e.actor];
+ // ⭐ SUPPRESSED WHERE THE NAME IS ALREADY ON SCREEN, on the site's own precedent:
+ // the offside blurb shrank when its figure arrived, because a card with a diagram
+ // should say the part the diagram cannot. 144 of 2,069 frames.
+ if(!p||namesActor(e)){w.innerHTML=LAB[e.type]||e.type.replace(/-/g,' ');w.className='who plain';return;}
+ let s=a.say.replace('{a}',whoTag(p));
+ if(a.with){const q=R[e[a.with]];if(!q){w.innerHTML=LAB[e.type]||e.type.replace(/-/g,' ');w.className='who plain';return;}
+  s=s.replace('{b}',whoTag(q));}
+ w.className='who '+(p.tid===AID?'a':'h');w.innerHTML=s;}
 function dwell(e){return captioned(e)?frameMs+CAPTION_BONUS:frameMs;}
 function step(){if(i>=EV.length-1){stop();return;}set(i+1,'play');timer=setTimeout(step,dwell(EV[i]));}
 /* PLAY MEANS GO. A viewer who presses it has asked for the game, and resting on

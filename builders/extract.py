@@ -38,16 +38,19 @@ GAME = "2023020204"
 # Which raw detail field is "the player this event is about", per event type.
 # Derived empirically against the committed extract; anything absent here yields
 # a null actor, which is how the original extraction behaved.
-ACTOR = {
-    "faceoff":       "winningPlayerId",
-    "shot-on-goal":  "shootingPlayerId",
-    "missed-shot":   "shootingPlayerId",
-    "blocked-shot":  "shootingPlayerId",   # the SHOOTER -- see src/lib/attribution.js
-    "goal":          "scoringPlayerId",
-    "hit":           "hittingPlayerId",
-    "failed-shot-attempt": "shootingPlayerId",   # a shootout attempt that missed
-    "penalty":       "committedByPlayerId",
-}
+#
+# ⭐⭐ IT IS READ, NOT TYPED, AND THAT IS CHENG'S RULING. This was a literal dict
+# here while `src/lib/attribution.js` needed the same types to say WHAT EACH
+# ACTOR DID -- the faceoff WINNER, the HITTER, the SHOOTER on a blocked shot.
+# Two tables that have to agree is how a `field` drifts from its sentence and
+# makes it false with nothing going red: *"put them in one structure -- {field,
+# verb} per type -- rather than two tables that have to agree."*
+#
+# So `ATTRIBUTION` in attribution.js is the source, `builders/attribution.mjs`
+# writes the half this file needs, and `--verify` in `npm run build` means a
+# stale copy cannot ship. Same seam as the learn figures: node writes a committed
+# document, Python reads it.
+ACTOR = json.loads((DATA / "attribution.json").read_text())
 
 # NOTE: still dropped, deliberately, pending a decision on what needs them:
 #   shotType, losingPlayerId, hitteePlayerId, running awaySOG/homeSOG, and
@@ -192,10 +195,11 @@ def extract(pbp, shifts, box=None):
                              ("servedByPlayerId", "srv"), ("zoneCode", "zone")):
                 if d.get(src) is not None:
                     ev[dst] = d[src]
-        # giveaway/takeaway carry a playerId the original extraction discarded,
-        # leaving `actor` null on 20 events for no reason.
-        if t in ("giveaway", "takeaway") and d.get("playerId") is not None:
-            ev["actor"] = d["playerId"]
+        # ⭐ giveaway/takeaway USED TO BE A SPECIAL CASE HERE -- "they carry a
+        # playerId the original extraction discarded, leaving `actor` null on 20
+        # events for no reason." They are ordinary rows of ATTRIBUTION now
+        # (`playerId`), which yields the identical value and puts every type in
+        # one place, so nothing can gain a verb without gaining a field.
         if t == "goal":
             if d.get("assist1PlayerId") is not None:
                 ev["a1"] = d["assist1PlayerId"]
