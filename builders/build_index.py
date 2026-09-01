@@ -1242,18 +1242,76 @@ LEARN_CARDS = [
     # true of every offside ever recorded, checkable against the schema. "79 of
     # 109" is a measurement with an n, a population and a date, and it belongs to
     # the other half by construction.
+    # ⚠️⚠️ AND BOTH HALVES OF THIS BLURB WERE WRONG, IN DIFFERENT WAYS (Kevin).
+    #
+    # (1) "his team plays a skater short" WAS NOT UNIVERSALLY TRUE, and it is not
+    # a corner case. Kevin named matching penalties; measured over 600 published
+    # games (4,347 penalties with a readable restart), the offending team is at
+    # EVEN strength when play resumes 793 times -- 18.2%, one penalty in five --
+    # and is actually UP a skater on another 149. The instrument is the league's
+    # own `situationCode` at the next face-off, not a count we infer: 60.5% of
+    # calls that share a second with one on the other team come back even,
+    # against 6.0% of the rest. So the exception is NAMED rather than trimmed,
+    # which is the precedent step 2 set when both endings of a minor went in.
+    #
+    # ⚠️⚠️ AND IT TOOK THREE DRAFTS TO STATE THE EXCEPTION, EACH WRONG IN THE WAY
+    # THE ONE BEFORE IT WAS. Draft one said "penalised ON THE SAME WHISTLE" --
+    # but simultaneity is not what offsets: two calls at one whistle for unequal
+    # time leave a side short anyway. Draft two said "takes a MATCHING penalty",
+    # which is the correct rulebook term and STILL WRONG FOR A NOVICE -- Kevin:
+    # "there can be different minors penalized on the same play that offset."
+    # He is right and it is not rare: 206 of 588 offsetting pairs, 35%, name two
+    # DIFFERENT infractions. A reader who takes "matching" to mean "the same
+    # foul" misreads a third of the real cases, and the rule does not care what
+    # the fouls were -- only that the TIME is equal.
+    # ⭐ THE LESSON IS THAT AN EXCEPTION IS A CLAIM AND NEEDS ITS OWN MEASUREMENT.
+    # Naming an exception feels like humility, so it does not get checked the way
+    # the rule it qualifies does. The wording is Kevin's, and it names the two
+    # conditions the rule actually has -- same duration, same time.
+    # ⭐ THE CONSEQUENCE IS STATED POSITIVELY ("both teams skate with the same
+    # number of players") rather than as "neither is short", which is also more
+    # accurate: an offset pair can leave the sides at 4-on-4, even but not five.
+    #
+    # (2) ⭐⭐ "USUALLY NOTHING IN BETWEEN" WAS ACCURATE AND STILL HAD TO GO, AND
+    # THE REASON IS NOT THE ONE I FIRST GAVE. Re-measured at 600 games: 1,027 of
+    # 1,394 delayed->whistle pairs, 73.7%, carry no event between -- so the hedge
+    # was TRUE, and CHENG had defended it on the grounds that the wall bans
+    # NUMBERS rather than frequency words. I replaced it with a categorical claim
+    # about the schema ("the league records what the call was for, and where"),
+    # reasoning that a frequency word is a symptom of a sentence aimed at
+    # INSTANCES instead of at the SCHEMA.
+    #
+    # ⭐⭐ KEVIN CUT THAT WHOLE SENTENCE, AND HIS REASON IS BETTER THAN MINE:
+    # "these are learning cards, not data-driven, education driven." A sentence
+    # about what OUR RECORD CONTAINS is a fact about the pipeline, not about
+    # hockey, and it was on a card whose one job is to teach a rule. Delete the
+    # sentence about US and the hedge goes with it -- no doctrine adjudication
+    # needed, and no schema claim to keep true either.
+    #
+    #   THE HEDGE WAS A SYMPTOM OF THE AUDIENCE, NOT OF THE AIM. "Usually"
+    #   appeared because the sentence was about us on a card that teaches the
+    #   rule. That is the general test for these blurbs: does this sentence
+    #   teach the RULE, or does it describe OUR DATA?
+    #
+    # ⛔ AND IT COSTS NOTHING. The honest-limit slot exists for offside because
+    # that rule's moment genuinely cannot be replayed; here it can, and the card
+    # already promises the door in its own `at` line ("Diagram - then a real
+    # example"). Symmetry with the offside card was the only argument for
+    # keeping it, and symmetry is not a reason to teach a novice about a schema.
     # The base case leads, because Kevin asked for it by name: "detail the more
     # common penalty types, can't forget the base case."
     # ⚠️ AND THE DURATION CAME OUT OF HERE TOO. This read "two minutes in the box"
-    # and Kevin caught it: penalties are not always two minutes. 289 of 325 are,
-    # over 46 published games -- but 25 are five-minute majors and 6 are
-    # ten-minute misconducts. The blurb states no duration at all, because it has
-    # no room to qualify one; the figure's step 2 says "most are two minutes",
-    # where the qualifier fits.
+    # and Kevin caught it: penalties are not always two minutes. The blurb states
+    # no duration at all, because it has no room to qualify one; the figure's
+    # step 2 says "most are two minutes", where the qualifier fits. The TERM
+    # "matching" now lives only in `note`, which is the right split: the blurb
+    # explains the concept in plain words, the note gives it its name and says
+    # outright that the two infractions need not be the same.
     ("rules", "penalties", "Penalties",
-     "A penalty is time off the ice: the offender sits and his team plays a "
-     "skater short. The league records the call and the whistle, and usually "
-     "nothing in between."),
+     "A penalty is time off the ice: the offender sits, and his team plays a "
+     "skater short &mdash; unless the other team commits a penalty of the same "
+     "duration at the same time, and then both teams skate with the same number "
+     "of players."),
     ("rules", "empty-net", "The empty net",
      "Losing late, a team trades its goaltender for a sixth skater. Nothing is "
      "toggled here &mdash; the goalie is simply no longer on the ice."),

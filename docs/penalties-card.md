@@ -271,6 +271,35 @@ So §2.4's sentence loses its number and becomes categorical:
 The number, if it wants a home, goes to the measurements page with the other
 homeless figures.
 
+### 5.3b ⚠️ AND THAT SENTENCE DID NOT SURVIVE — nor did my first replacement for it
+
+Kevin, 2026-09-01: *"let's clean up the 'usually' terminology."* The hedge was
+**accurate** — 1,027 of 1,394 delayed→whistle pairs over 600 games, 73.7% — so
+this was never a correction of the measurement.
+
+My reading was that the sentence had been **aimed** wrongly (at instances rather
+than at the schema), and I replaced it with a categorical claim: *"The league
+records what the call was for, and where"*, backed by 4,371 of 4,371 penalties
+carrying the infraction, the zone and the coordinate against **0 of 1,496** for
+the delayed call.
+
+⭐⭐ **Kevin cut that sentence too, and the reason retires the whole line of
+argument:**
+
+> *"these are learning cards, not data-driven, education driven."*
+
+A sentence about what our record **contains** is a fact about the pipeline, not
+about hockey. On a card whose one job is to teach a rule it does not belong at
+all — so the hedge was a symptom of the **audience**, not of the aim, and the
+question "does *usually* count as a number?" never had to be answered.
+
+> ⭐⭐ **The test for a rules blurb: does this sentence teach the RULE, or describe
+> OUR DATA?**
+
+The wall in §5.3 stands unchanged and is simply not reached here. See
+`docs/status.md` §0.0 for the full resolution, including the exception clause
+that took three drafts.
+
 ## 5.4 ⚠️ AND THE §1.2 SELF-CORRECTION EARNED A STANDING RULE
 
 CHENG, on my reporting one game's numbers as facts about hockey twice in short

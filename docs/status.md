@@ -34,31 +34,123 @@ Kevin: *"I want to take a step back and capture where we are… I've lost the
 bubble a bit."* This section is the orientation. Everything below §0 is the
 detail, organised by state rather than by date.
 
-## ⏸⏸ 0.0 PICK UP HERE — the one thing Kevin deferred
+## ✅ 0.0 THE PENALTIES LEDE — DONE 2026-09-01, and it settled a doctrine question
 
-He raised this after the penalties card shipped and asked to take it up **after
-the compact**, so it is the first work of the next session:
+Kevin, after the penalties card shipped, deferred to after the compact:
 
 > *"Under Penalties, this isn't universally true: 'A penalty is time off the ice:
 > the offender sits and his team plays a skater short… and usually nothing in
 > between.' You can have **matching penalties**, where neither team plays a
 > skater short… either way, let's clean up the 'usually' terminology."*
 
-**Two problems, different in kind.** (1) *"his team plays a skater short"* is
-plainly FALSE on matching minors — a factual error on a live page. (2)
-*"usually"* is a frequency word on the rules half.
+**It now reads** (his wording, plus one "and" for grammar):
 
-⭐ **And the second one is a doctrine question, not a sentence.** CHENG ruled the
-wall as *"the rules half may state what the record CONTAINS; only the
-measurements half may state HOW OFTEN"* — and then wrote this sentence himself,
-with "usually" in it, on the grounds that the ban is on NUMBERS rather than on
-frequency words. Kevin is pushing exactly that seam.
+> A penalty is time off the ice: the offender sits, and his team plays a skater
+> short — unless the other team commits a penalty of the same duration at the
+> same time, and then both teams skate with the same number of players.
 
-⚠️ **The trap:** a number violates the wall outright; deleting the hedge asserts a
-categorical that is false 27.5% of the time. **Measured, 46 games, 109
-delayed→penalty pairs: 79 of 109 (72.5%) carry no event between the call and the
-whistle**, median gap 4s, p90 28s. Worth putting back to CHENG.
-Lives in `builders/build_index.py`, the `penalties` row of `LEARN_CARDS`.
+### (1) The factual error was BIGGER than "an edge case"
+
+Measured over **600 published games** (4,347 penalties with a readable restart),
+reading the league's own `situationCode` at the next face-off rather than a count
+we infer:
+
+| the offending team, when play resumes | n | |
+|---|---|---|
+| a skater **short** | 3,405 | 78.3% |
+| **even** | 793 | **18.2%** |
+| **up** a skater | 149 | 3.4% |
+
+**One penalty in five**, not a corner case. Kevin was right and understated it.
+
+### (2) ⭐⭐ "USUALLY" WAS ACCURATE AND STILL HAD TO GO — and not for the reason I gave
+
+Re-measured at 600 games: **1,027 of 1,394 delayed→whistle pairs, 73.7%**, carry
+no event between (the 46-game 72.5% held up). So the hedge was *true*, and CHENG
+had defended it on the grounds that the wall bans **numbers**, not frequency
+words. Kevin pushed exactly that seam.
+
+**My answer was to re-aim the sentence** at the schema — the record here being
+categorical *and*, unlike offside's, complete: **4,371 of 4,371** penalties carry
+the infraction's name, its zone *and* its coordinate, while the delayed call
+carries **none of the three, 0 of 1,496** (which is why `NOT_A_PLAY` drops it, and
+why no replay could ever have shown that gap). That became *"The league records
+what the call was for, and where."*
+
+⭐⭐ **KEVIN CUT THAT SENTENCE, AND HIS REASON IS BETTER THAN MINE:**
+
+> *"these are learning cards, not data-driven, education driven."*
+
+A sentence about what **our record contains** is a fact about the pipeline, not
+about hockey, on a card whose one job is to teach a rule. Delete the sentence
+about **us** and the hedge leaves with it — no doctrine adjudication needed, and
+no schema claim to keep true either.
+
+> ⭐⭐ **THE HEDGE WAS A SYMPTOM OF THE AUDIENCE, NOT OF THE AIM.** "Usually"
+> appeared because the sentence was about us on a card that teaches the rule.
+> **The test for these blurbs: does this sentence teach the RULE, or describe OUR
+> DATA?**
+
+⛔ And it cost nothing. The honest-limit slot exists on the offside card because
+that rule's moment genuinely cannot be replayed; here it can, and the card already
+promises the door in its own `at` line. **Symmetry with offside was the only
+argument for keeping it** — and symmetry is not a reason to teach a novice about a
+schema.
+
+### ⚠️⚠️ THE EXCEPTION TOOK THREE DRAFTS, EACH WRONG THE WAY THE LAST ONE WAS
+
+**Draft 1 — *"penalised on the same whistle"***. Simultaneity is not what offsets;
+two calls at one whistle for unequal time leave a side short anyway.
+
+| coincident calls | n | even restart |
+|---|---|---|
+| match on count **and** minutes | 588 | 534 — **90.8%** |
+| do not match | 385 | 55 — 14.3% |
+| *simultaneity alone* | 973 | *589 — 60.5%* |
+
+**Draft 2 — *"takes a matching penalty"***. The correct rulebook term, and still
+wrong for a novice. Kevin: *"there can be different minors penalized on the same
+play that offset."* **206 of 588 offsetting pairs — 35% — name two DIFFERENT
+infractions**, so a reader who hears "matching" as *the same foul* misreads a third
+of the real cases. The rule does not care what the fouls were, only that the time
+is equal.
+
+**Draft 3 — Kevin's**, which names the two conditions the rule actually has: same
+duration, same time. ⭐ And it states the consequence **positively** — *"both teams
+skate with the same number of players"* — which is also more accurate than "neither
+is short", since an offset pair can leave the sides at **4-on-4**: even, but not
+five.
+
+⭐ **AN EXCEPTION IS A CLAIM AND NEEDS ITS OWN MEASUREMENT.** Naming an exception
+*feels* like humility, so it does not get checked the way the rule it qualifies
+does — and drafts 1 and 2 were each wrong about roughly a third of the cases they
+covered, inside a sentence written to stop overstating.
+
+*(The residual 54 of 588 that do not restart even are not counter-examples to the
+rule: 34 had another penalty already running in the same period, and spot-checking
+the rest shows cross-period carryover and one pulled goalie. The pair offsets; the
+imbalance comes from somewhere else.)*
+
+**Also changed:** the figure's `note` is now the **only** place the word
+*matching* appears, and it says the quiet part out loud —
+
+> Two calls that arrive together and carry the same time are **matching**,
+> whatever the two infractions were — both players sit, and the sides stay even.
+
+⭐ **The blurb explains the idea in plain words; the note gives it its name.**
+That split is why the blurb needed no jargon and the term still gets taught.
+
+Step 2 of the figure still says "a skater short" unqualified, deliberately: it
+describes the drawing, and the ice shows one penalised skater and no other. *A
+figure draws what the ice can show*, so a case the drawing does not contain cannot
+be qualified in a caption for it — the note is the slot that already holds what
+the drawing leaves out, as it does the lengths.
+
+Lives in `builders/build_index.py` (`LEARN_CARDS` — one string used by the card,
+`/penalties.html`'s lede and three meta tags) and `builders/learn-figures.mjs`
+(`note`). Verified in a real browser at 390 and 1400: six lines on the phone, no
+sideways scroll, and at 223 characters it is the longest blurb on the page
+(blocked's is 195) with the grid row simply stretching.
 
 ## 0.0b Shipped since 2026-08-31, all live
 

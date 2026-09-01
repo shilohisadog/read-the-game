@@ -884,14 +884,36 @@ function penalties() {
     /* ⭐ THE KINDS ARE PROSE BECAUSE THEY ARE A CLASSIFICATION OF LANGUAGE. And
        they are NAMED, never ranked: which penalties exist is the league's, how
        often each occurs is ours, and that is the wall the faceoffs figure already
-       refuses percentages for. */
+       refuses percentages for.
+       ⚠️ AND THE NOTE GAINED THE EXCEPTION STEP 2 CANNOT CARRY. Kevin found "his
+       team plays a skater short" stated as universal, and it is false on one
+       penalty in five — 793 of 4,347 over 600 games come back to an EVEN restart.
+       Step 2 keeps saying it, because step 2 describes the drawing and the ice
+       here shows one penalised skater and no other: a figure draws what the ice
+       can show, so a case the drawing does not contain cannot be qualified in a
+       caption for it. The note is the slot that already holds what the drawing
+       leaves out — the lengths went here for the identical reason — and it is
+       the ONLY place the word "matching" appears: the blurb explains the idea in
+       plain words, the note gives it its name.
+       ⚠️ AND THE DEFINITION IS TWO CONDITIONS, NEITHER OF THEM THE INFRACTION.
+       "Both teams penalised on the same whistle" was the first draft and is
+       wrong — unequal time leaves a side short anyway (of coincident calls
+       matching on count AND minutes, 534 of 588, 90.8%, restart even; of those
+       that do not, 55 of 385, 14.3%). Then Kevin caught the second draft: *"there
+       can be different minors penalized on the same play that offset."* 206 of
+       588 offsetting pairs — 35% — name two DIFFERENT infractions, so a reader
+       who hears "matching" as "the same foul" misreads a third of the real
+       cases. Hence "whatever the two infractions were", stated out loud rather
+       than left for the reader to infer from an absence. */
     note: 'Most penalties are one of three kinds: <b>restraint</b> &mdash; '
         + 'tripping, hooking, holding, interference; <b>stick</b> &mdash; slashing, '
         + 'high-sticking, cross-checking; and <b>physical</b> &mdash; roughing, '
         + 'boarding, charging. A few are none of those: delay of game, too many men. '
         + 'They are not all the same length either: <b>two minutes</b> for a minor, '
         + 'five for a major, and a <b>game misconduct</b> sends a player off for the '
-        + 'rest of the night.',
+        + 'rest of the night. Two calls that arrive together and carry the same time '
+        + 'are <b>matching</b>, whatever the two infractions were &mdash; both '
+        + 'players sit, and the sides stay even.',
     css: [travel(id + 'g', G0, G1, ...GO_G), travel(id + 'p', P0, P1, ...GO_P),
       `.dgfig.pe .dgm-g{animation:${id}g ${CYCLE} ease-in-out ${DELAY} infinite}`,
       `.dgfig.pe .dgm-p{animation:${id}p ${CYCLE} ease-in-out ${DELAY} infinite}`,
