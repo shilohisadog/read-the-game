@@ -120,3 +120,76 @@ test('the teaching claim and the arithmetic agree', () => {
   assert.ok(app.includes('corsiTeam(e,R)'),
     'and Corsi resolves through the shooter, which is what makes the claim true');
 });
+
+/**
+ * ⭐⭐ THE BUNDLE'S MODULE ORDER IS A HAND-WRITTEN LIST, AND NOTHING DERIVED IT.
+ *
+ * `build_main.py` builds the browser bundle by regex-stripping `import`/`export`
+ * and concatenating `LIB` in order. So the app's real dependency graph exists
+ * only as that Python list — `src/app.js` has ZERO imports and ZERO exports, and
+ * every JavaScript tool inherits the blindness: madge reports eleven of these
+ * modules as orphans, knip reports thirteen live exports as unused, and node's
+ * coverage cannot see app.js at all.
+ *
+ * ⚠️ WHICH MAKES `LIB` THE SHAPE THIS PROJECT CONDEMNS IN ITS OWN WORDS —
+ * `derive.yml`: *"an enumeration is a list somebody has to remember to extend"*.
+ * Its ordering constraints are maintained by comments (*"AFTER rink.js, which
+ * owns BLUE_LINE_X"*) and its only alarm is a runtime failure somewhere else:
+ * build_main.py's own note records a module being added to LIB and
+ * `render-ends.test.js` breaking as a result.
+ *
+ * ⭐ THE FIX ALREADY EXISTS ONE FILE OVER. `measure.test.js` walks the real
+ * import graph and asserts its hand-written `TIER` list is complete — a guard
+ * that has caught staleness FIVE times, each time in the same edit that changed
+ * the graph. This is that guard for `LIB`, and it derives both properties rather
+ * than restating them:
+ *
+ *   CLOSURE  — every module a LIB member imports is itself in LIB, or the
+ *              browser gets a bundle referring to something that is not there.
+ *   ORDER    — a dependency is concatenated BEFORE its dependent. Function
+ *              declarations hoist and would survive a wrong order; a top-level
+ *              `const` does not, which is exactly what the BLUE_LINE_X comment
+ *              is hand-maintaining.
+ *
+ * Both hold today (25 edges, 0 violations). Nothing was broken; the invariant
+ * was simply un-instrumented, which is how this project has been bitten before.
+ */
+test('⭐ the bundle list is closed and ordered, derived from the real imports', () => {
+  const py = read('../builders/build_main.py');
+  const block = /^LIB = \[([\s\S]*?)\]/m.exec(py);
+  assert.ok(block, 'LIB has moved or changed shape in build_main.py');
+  const lib = [...block[1].matchAll(/"([^"]+\.js)"/g)].map(m => m[1]);
+  assert.ok(lib.length >= 15, `LIB lists only ${lib.length} modules`);
+  const pos = new Map(lib.map((n, i) => [n, i]));
+
+  // posix-normalise a specifier against its importer's own directory, so
+  // `layers/danger.js` importing '../rink.js' resolves to `rink.js`.
+  const resolve = (from, spec) => {
+    const parts = from.split('/').slice(0, -1).concat(spec.split('/'));
+    const out = [];
+    for (const p of parts) {
+      if (p === '.' || p === '') continue;
+      if (p === '..') out.pop(); else out.push(p);
+    }
+    return out.join('/');
+  };
+
+  let edges = 0;
+  const missing = [], disordered = [];
+  for (const name of lib) {
+    const src = read(`../src/lib/${name}`);
+    for (const m of src.matchAll(/^\s*import[^;]*?from\s+'([^']+)'/gm)) {
+      const dep = resolve(name, m[1]);
+      if (!pos.has(dep)) { missing.push(`${name} imports ${dep}, which LIB does not carry`); continue; }
+      edges++;
+      if (pos.get(dep) > pos.get(name))
+        disordered.push(`${name} (#${pos.get(name)}) needs ${dep} (#${pos.get(dep)}), which is concatenated AFTER it`);
+    }
+  }
+  assert.ok(edges >= 20, `only ${edges} import edges found — the parse has stopped seeing them`);
+  assert.deepEqual(missing, [],
+    'the browser bundle would reference a module it does not contain');
+  assert.deepEqual(disordered, [],
+    'a module is concatenated before something it depends on — a top-level const '
+    + 'would be undefined at load, and only a hoisted function would survive it');
+});
