@@ -609,16 +609,32 @@ function slot() {
   const IN = { x: SX(-70), y: SY(5) };
   const WIDE = { x: SX(-80), y: SY(26) };
   const BEHIND = { x: SX(-93), y: SY(12) };
-  /* ⭐ SOLID MEANS THE RULE ADMITS IT, HOLLOW MEANS IT DOES NOT — and both are
-     token-sized, because a shot location is the same KIND of mark as a player.
-     The first draft drew the refused ones dashed at half a token's size, and at
-     this crop a 2-unit dash pattern on a 5px ring is noise rather than a
-     distinction. STROKE WIDTH RIDES ON THE ELEMENT for the same reason the radius
-     does: a width in rink units gets thicker as a figure zooms in, and this is
-     annotation, not paint. */
-  const mark = (p, out) =>
-    `<circle class="dgmark${out ? ' out' : ''}" cx="${f(p.x)}" cy="${f(p.y)}"`
-    + ` r="${f(4 * K)}" stroke-width="${f((out ? 1.1 : 0.6) * K)}"/>`;
+  /* ⚠️⚠️ THE HOLLOW MARK IS GONE, AND KEVIN FOUND WHY IT HAD TO BE. This figure
+     used to draw each shot twice over: a filled dot for the one the rule admits,
+     a hollow ring for the two it refuses, and a numbered badge beside each.
+     *"I don't understand what the other circle is that's associated with 2 and
+     3."*
+
+     ⭐⭐ BECAUSE A HOLLOW CIRCLE ALREADY MEANS SOMETHING ELSE ON EVERY OTHER
+     FIGURE. `.dgtok` — ice-filled with a dark ring — is A PLAYER, and a reader
+     meets it on faceoffs, offside, penalties and the empty net before arriving
+     here. Asking the same shape to mean "a shot the rule refuses" on this one
+     page is a second meaning for one signal, which is the same defect as the
+     goaltender token that had to come off four figures: obvious to the author,
+     unreadable to anybody else. Third time this class has been caught by Kevin
+     looking at a picture.
+
+     ⭐ AND THE FIX IS A SUBTRACTION, WHICH IS HIS: the numbered badge sits AT the
+     shot's own coordinate and is the only token. Nothing is drawn twice, and no
+     shape carries a verdict — because THE SHADING ALREADY DOES. ① is inside the
+     tint, ② is outside the band, ③ is behind the goal line, and the whole point
+     of painting the region is that a reader can check a mark against it. A
+     legend explaining filled-versus-hollow would have patched the collision;
+     removing the second token ends it.
+
+     ⛔ THE BADGE IS STILL ANNOTATION and still sized in screen terms (`4.6 * k`,
+     see `badge`) — a numbered label at a place is a label, not paint. What
+     changed is that it now marks the place rather than pointing at it. */
   return {
     // Tighter than offside's: the subject is a 33-foot radius, and a wider frame
     // would spend the page on ice the rule says nothing about.
@@ -633,9 +649,8 @@ function slot() {
       // ⛔ NO GOALTENDER — see `keeper`. This figure is about a REGION of ice and
       // the shots taken from it; who is in the crease is not part of that claim.
       + `<g class="dgplay">`
-      + mark(IN, false) + mark(WIDE, true) + mark(BEHIND, true)
-      + badge(1, IN.x - 7, IN.y + 6, K) + badge(2, WIDE.x - 6, WIDE.y - 5, K)
-      + badge(3, BEHIND.x, BEHIND.y - 6, K)
+      + badge(1, IN.x, IN.y, K) + badge(2, WIDE.x, WIDE.y, K)
+      + badge(3, BEHIND.x, BEHIND.y, K)
       + stamp(SX(-3), SY(36), K)
       + `</g>`,
     /* ⭐⭐ THE LIMIT, WHICH IS THE MEASUREMENT PAGE'S CLOSING MOVE — the slot of
@@ -671,8 +686,22 @@ function slot() {
       '<b>Close in</b> &mdash; within 33 feet of the net. This one counts.',
       '<b>And between the face-off dots.</b> The shaded band is exactly that '
       + 'wide, so you can check a mark against it: this one is too far out to the side.',
-      '<b>And in front of the goal line.</b> A wrap-around from behind the net '
-      + 'is close, and it is not a shot from the slot.',
+      /* ⚠️⚠️ THIS NAMED A PLAY THE FEED DOES NOT RECORD. It read "a wrap-around
+         from behind the net is close, and it is not a shot from the slot" —
+         and `builders/extract.py:56` lists `shotType` among the fields
+         DELIBERATELY DROPPED. We do not know what kind of shot any mark was.
+         "A wrap-around" was a story invented to explain a coordinate, which is
+         exactly the taxonomy-without-geometry CHENG ruled out on the penalties
+         figure: a figure draws what the ice can show, and the ice shows a
+         POSITION, never an intention.
+         ⭐ KEVIN CAUGHT IT ON THE HOCKEY FIRST, which is the tell: a completed
+         wrap-around comes back round in front of the goal line and WOULD
+         count, so the sentence described a play whose natural reading
+         contradicts the rule it was illustrating. It now states the geometry
+         and stops. The "close to the slot, but not from the slot" shape is
+         his. */
+      '<b>And in front of the goal line.</b> A shot recorded from behind the net '
+      + 'is close to the slot, but it is not from the slot.',
     ],
     css: '',
   };

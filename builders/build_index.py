@@ -1568,10 +1568,6 @@ FIGCSS = r"""<style>
    subject is our own rule and the lesson is that you can check a mark against
    it. Solid means the rule admits it; hollow means it does not, which is the
    same "outlined = not the thing" the ghosts already use. */
-/* The WIDTH comes from the element — see `mark` in learn-figures.mjs. A stroke
-   in rink units thickens as a figure zooms in, and a shot marker is annotation. */
-.dgplay .dgmark{fill:var(--ink);stroke:var(--ice)}
-.dgplay .dgmark.out{fill:none;stroke:var(--muted)}
 .dgbadge circle{fill:var(--ink);opacity:.88}
 /* ⭐ SIZE COMES FROM THE ELEMENT, NOT FROM HERE. Each figure scales its
    annotation by how tightly it is framed, so a badge is the same number of
