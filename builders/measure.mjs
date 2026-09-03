@@ -30,6 +30,7 @@ import { danger } from '../src/lib/layers/danger.js';
 import { goaltending } from '../src/lib/layers/goaltending.js';
 import { whistle } from '../src/lib/layers/whistle.js';
 import { shootingTeam, SHOT_TYPES } from '../src/lib/attribution.js';
+import { situation, DECLINED } from '../src/lib/strength.js';
 // The SAME two functions danger.js calls at line 118 — a distance measured here
 // cannot disagree with a distance measured by the layer.
 import { attackDirection, distanceToNet } from '../src/lib/rink.js';
@@ -254,6 +255,8 @@ export function measureAll(dir) {
   const records = [];
   const skipped = [];
   const drawFirst = [];
+  /** situation codes the archive holds that `situation()` will not read. */
+  const declined = {};
   /* ⭐ THE CENSUS, ACCUMULATED IN INTEGERS ACROSS THE WHOLE ARCHIVE.
      Four claims are waiting on it, all of them currently measured on eight games
      or fewer and none of them publishable: what a faceoff win is worth by zone,
@@ -291,13 +294,28 @@ export function measureAll(dir) {
     if (!inScope(g.game.id)) continue;
     if (!g.quoted) { skipped.push(g.game.id); continue; }
     records.push(measureGame(g));
-    censusAdd(census, censusGame(g.events, {
+    const sctx = {
       roster: g.roster,
       homeId: g.teams.home.id, awayId: g.teams.away.id,
       homeAb: g.teams.home.ab, awayAb: g.teams.away.ab,
-    }));
+    };
+    /* ⭐ EVERY SITUATION CODE THE ARCHIVE HOLDS THAT WE DECLINE TO READ.
+       `strength.js` used to match eight literal codes and drop the rest in
+       silence; over the fixtures alone that was 91 events, 44 of them 3-on-3
+       overtime. Nothing anywhere counted the cost, which is why it survived two
+       rounds of "add the code we noticed".
+       THE ALARM IS ON DRIFT, not on the count — `DECLINED` names what we refuse
+       on purpose, so a state we have never met announces itself and a known one
+       is not news. Same doctrine as `_vocabulary_seen` in derive.py, and it must
+       run HERE because this is where the whole archive is walked. */
+    for (const e of g.events) {
+      if (e.sit && !situation(e.sit, sctx) && !(e.sit in DECLINED)) {
+        (declined[e.sit] ||= { n: 0, eg: g.game.id }).n++;
+      }
+    }
+    censusAdd(census, censusGame(g.events, sctx));
   }
-  return { records, skipped, drawFirst, census,
+  return { records, skipped, drawFirst, census, declined,
            unnamedClubs: [...clubs].filter(ab => !TEAMS[ab]).sort() };
 }
 
@@ -345,6 +363,22 @@ function main(argv) {
       + 'src/lib/teams.js has no entry — they render as grey chips with no name. '
       + 'Add them; the measures are written and correct.');
   }
+  /* ⭐ A SITUATION CODE THE ARCHIVE HOLDS AND `situation()` WILL NOT READ.
+     This is the guard the eight-code allowlist never had. Its absence is why
+     3-on-3 overtime went unread for as long as it did: the refusal cost nothing
+     visible, so nobody looked, and the fix arrived twice as "add the code we
+     happened to notice". A refused code is now an EVENT, with the game to go and
+     look at, and `DECLINED` in strength.js is the short list of the ones we mean.
+     Loud in the pipeline, never in the artifact — the measures are already on
+     disk and correct; what is missing is a state we would rather name. */
+  const strange = Object.entries(declined).sort((a, b) => b[1].n - a[1].n);
+  if (strange.length) {
+    console.error('::error::the archive holds situation codes strength.js declines: '
+      + strange.map(([c, v]) => `${c} (${v.n}, e.g. game ${v.eg})`).join(', ')
+      + '. Either read them in `situation()` or name them in `DECLINED` with a '
+      + 'reason. Until then their time is unclassifiable and nothing on the page '
+      + 'can say what state it was.');
+  }
   const r = doc.baseRates;
   console.log(JSON.stringify({
     measured: records.length,
@@ -387,7 +421,7 @@ function main(argv) {
   // check with a red message in it, which is the same "recorded but nobody is
   // told" gap this guard exists to close — measures.json and teams.json are
   // already on disk by the time we get here.
-  if (unnamedClubs.length) process.exit(1);
+  if (unnamedClubs.length || strange.length) process.exit(1);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) main(process.argv.slice(2));

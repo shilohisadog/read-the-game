@@ -15,8 +15,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { conservation } from '../src/lib/layer.js';
-import { situation, isEven, whyNotEven, standing, penaltyKilled, powerPlayOver, windows, SKATERS_MIN, SKATERS_MAX, EVEN, POWER_PLAY, EMPTY_NET, PENALTY_SHOT } from '../src/lib/strength.js';
+import { situation, isEven, whyNotEven, standing, penaltyKilled, powerPlayOver, windows, SKATERS_MIN, SKATERS_MAX, EVEN, POWER_PLAY, EMPTY_NET, PENALTY_SHOT, DECLINED } from '../src/lib/strength.js';
 
 /**
  * ⭐ THE READABLE CODES, DERIVED FROM THE DECODER RATHER THAN LISTED BESIDE IT.
@@ -678,4 +679,52 @@ test('an unreadable situation code is refused rather than assumed even', () => {
   assert.ok(entry, 'the event is excluded, not counted');
   assert.match(entry.dims.strength, /could not read/, 'and says why');
   assert.equal(isEven('7777', base), false, 'never treated as even');
+});
+
+/**
+ * ⭐⭐ THE TWO IMPLEMENTATIONS, CHECKED AGAINST EACH OTHER OVER THE WHOLE DOMAIN.
+ *
+ * `extract.py::situation_ok` and `situation()` here are the same domain rule in
+ * two languages, and only the Python one was ever corrected — its own comment
+ * names "the eight situation codes" as the defect it was fixing. Two rules that
+ * shook hands on trust is what let them drift for as long as they did.
+ *
+ * ⭐ AND IT IS EXHAUSTIVE RATHER THAN SAMPLED, which is the only reason this is
+ * allowed to exist at all. `measure.mjs` argues in its own header that a Python
+ * copy plus a differential test is WORSE than one implementation, because "a
+ * differential test validates on the games it runs, which is a rule checked
+ * against a sample." That objection is exactly right and it does not apply here:
+ * both rules are pure functions of four digits, so the domain is 10,000 codes
+ * and this walks all of them. There is no sample to be unrepresentative of.
+ *
+ * ⭐ THE RELATIONSHIP IS SUBSET, NOT EQUALITY, because the two answer different
+ * questions. Python asks "is this coherent hockey?" — a gate at ingestion that
+ * must not refuse a real game. This asks "what state is this?" — and we may
+ * decline to narrate something perfectly coherent, as we do for both nets empty.
+ * So: anything we CLASSIFY, Python must accept. The converse is ours to choose.
+ */
+test('⭐⭐ every code we classify, extract.py agrees is coherent hockey', () => {
+  const py = new Set(JSON.parse(execFileSync('python3', ['-c',
+    "import sys,json; sys.path.insert(0,'builders'); import extract as E; "
+    + "print(json.dumps([c for c in (str(n).zfill(4) for n in range(10000)) "
+    + "if E.situation_ok(c)]))"], { cwd: new URL('..', import.meta.url).pathname })));
+
+  assert.ok(py.size > 40, `extract.py accepted only ${py.size} codes — it did not run`);
+
+  const mine = [...READABLE];
+  assert.ok(mine.length > 40, `${mine.length} readable codes — the decoder did not run`);
+
+  const classifiedButIncoherent = mine.filter(c => !py.has(c));
+  assert.deepEqual(classifiedButIncoherent, [],
+    'these codes are given a strength state here and rejected as impossible by '
+    + 'extract.py — one of the two rules is wrong and they cannot both ship');
+
+  /* ⭐ THE OTHER DIRECTION IS REPORTED, NEVER ASSERTED EQUAL. Every coherent code
+     we decline must be one we MEANT to decline — otherwise it is the allowlist
+     defect returning, with a different list. `DECLINED` carries the ones we mean;
+     anything else here is a state nobody has decided about. */
+  const declinedUnnamed = [...py].filter(c => !READABLE.has(c) && !(c in DECLINED));
+  assert.deepEqual(declinedUnnamed.sort(), [],
+    'a coherent situation code is neither read nor named in DECLINED — decide '
+    + 'about it rather than letting it fall through');
 });
