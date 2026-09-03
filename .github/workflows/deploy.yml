@@ -719,7 +719,8 @@ jobs:
       # data/rich.json, and the tests prove every href parses -- but "the archive
       # still publishes this game" is a fact about the live bucket, and a
       # re-judge that refused it would break all nine at once with every test
-      # green. build_B.py and build_rules.py already carry this exposure; the
+      # green. build_B.py and build_rules.py carried this exposure before they
+      # were removed (B8, 2026-09-03); the
       # learn page is the first to put it in front of a visitor.
       #
       # AND STATUS TELLS YOU NOTHING HERE. Unknown paths on this deployment

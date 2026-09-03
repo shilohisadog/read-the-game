@@ -782,7 +782,7 @@ Plus `trails` scoped to the period, which §5 already answered: the frame ended.
 
 ## 12.6 Scope — the flip is the replay's, not the site's
 
-`build_A.py` and `build_B.py` carry their own `SX = x => x + 100`, the **opposite**
+`build_A.py` and `build_B.py` carried their own `SX = x => x + 100` — the **opposite**
 orientation from the game page's `100 - x`. Those surfaces already have their own
 frame and are not touched. That is CHENG's condition 2 in practice: **one-direction
 stays the analytic frame**, and the flip is a property of the replay alone.

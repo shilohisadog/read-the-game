@@ -500,6 +500,8 @@ regenerating over the working tree leaves `git diff` empty (sha256
 `8b8ece7c…`). The five superseded builders moved to `builders/legacy/` with a
 README recording why, and keeping `build_alive3.py` for the why-popup source.
 
-Still outstanding from F1: `build_A/B/C/3d.py` (the earlier 2D prototypes and
-the terrain view) retain the bare-path problem and cannot run from the repo
+Outstanding from F1 when this was written: `build_A/B/C/3d.py` (the earlier 2D
+prototypes and the terrain view) retained the bare-path problem and could not run
+from the repo. **`build_A/B/C.py` were removed 2026-09-03** (B8), so only
+`build_3d.py` still carries it
 root. Out of scope for Phase 0, which was the main app.

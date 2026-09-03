@@ -153,8 +153,8 @@ counter-argument is not weak.
 ## 6. What can break, and the gate that cannot exist
 
 - **The reference game could stop publishing.** A re-judge that refuses it would
-  break all eight links at once. `build_B.py` and `build_rules.py` already carry
-  this exposure; adding eight production links raises the cost. **A cheap live
+  break all eight links at once. `build_B.py` and `build_rules.py` already carried
+  this exposure when this was written (both are gone — B8, 2026-09-03); adding eight production links raises the cost. **A cheap live
   gate is available**: assert `2023020204` is `v: 1` in the published catalog.
 - **Link-checking by HTTP status is useless here.** Unknown URLs return **200
   with the home page** — the soft 404 already recorded. So a checker that fetches

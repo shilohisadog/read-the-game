@@ -298,7 +298,9 @@ dictating play.
 
 **His claim that the fix already shipped is verified**: `evenOnly` is a parameter
 on the existing Corsi reducer (`src/lib/layers/corsi.js:30`) over
-`whyNotEven`/`KNOWN_SITUATIONS` in `src/lib/strength.js`. No new code — the
+`whyNotEven`/`KNOWN_SITUATIONS` in `src/lib/strength.js`. (**`KNOWN_SITUATIONS`
+was replaced 2026-09-03** by a decoder that reads the four digits; the eight-code
+list is gone.) No new code — the
 measurement below mirrors those eight codes and that rule exactly rather than
 approximating it.
 
