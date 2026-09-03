@@ -44,7 +44,7 @@ header, and §4 records what it cost us the one time we did it anyway.
 | **analysis** | events → meaning; pure, no DOM, no network | `src/lib/**` (26 modules) | 5,655 |
 | **measurement** | the archive, reduced by the SAME modules | `measure.mjs` | 428 |
 | **presentation** | generates the pages | `build_*.py` (9) | 3,848 |
-| **the app** | **the one exception — see §2** | `src/app.js` | 3,298 |
+| **the app** | **the one exception — see §2** | `src/app.js` | 3,320 |
 
 <sub>Counted 2026-09-03 by `tools/tiers.mjs`, checked by `npm run gates`. The analysis tier is **26 modules** and **not one of them touches the DOM, the network or the filesystem** — the boundary §1 claims, verified here rather than asserted. `src/app.js` carries **24 module-level mutable bindings and 0 exports**, which is §2.</sub>
 <!-- /tiers -->

@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-0HYDgzIzaOKwSW9tKYJE9daLS0Pgk8+LrOn6Nepu7jo=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-SccvklKRpHhYn1HIyLZKQbhxyrinqwZSr2J4V2THf0o='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-S9KOwlVpLfwDuzLVRkw1IOI6v0AY4qv4Uyqhtquyh+Y=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-SccvklKRpHhYn1HIyLZKQbhxyrinqwZSr2J4V2THf0o='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">Watch a game</a><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see</a><a href="/workshop.html">Workshop</a></nav></header>
@@ -6657,8 +6657,8 @@ let rinkPer=null;
    doing a job a figure does better (Kevin). */
 function drawRink(per){if(per===rinkPer)return;rinkPer=per;
  $('rink').innerHTML=furniture()
-  +netGlyph('netHome',AX(-89,per),HOMECOL)
-  +netGlyph('netAway',AX(89,per),AWAYCOL);}
+  +netGlyph('netHome',AX(-NET_X,per),HOMECOL)
+  +netGlyph('netAway',AX(NET_X,per),AWAYCOL);}
 /**
  * A goaltender in each crease -- unless the feed says one has been pulled.
  *
@@ -6682,8 +6682,8 @@ function drawNetmen(e){
  // ice invented from nothing.
  const out=[];
  const gper=(e&&e.per)||1;
- if(!sit||sit[3]!=='0')out.push(goalieGlyph(AX(-89,gper),HOMECOL,HOMECOL));
- if(!sit||sit[0]!=='0')out.push(goalieGlyph(AX(89,gper),AWAYCOL,'#fff'));
+ if(!sit||sit[3]!=='0')out.push(goalieGlyph(AX(-NET_X,gper),HOMECOL,HOMECOL));
+ if(!sit||sit[0]!=='0')out.push(goalieGlyph(AX(NET_X,gper),AWAYCOL,'#fff'));
  const now=out.join('');
  // ONLY ON CHANGE. Rewriting this every frame would rebuild both figures on every
  // event, restarting their entrance animation each time -- a goaltender flickering
@@ -7094,7 +7094,7 @@ function render(i,how){
  else $('blockPanel').innerHTML='';
  let lh='';
  const cp=place(cur);
- if(cp&&(cur.type==='shot-on-goal'||cur.type==='goal')){const netx=(cur.own===HID)?89:-89;
+ if(cp&&(cur.type==='shot-on-goal'||cur.type==='goal')){const netx=(cur.own===HID)?NET_X:-NET_X;
    lh=`<line class="shotline" x1="${cp.x.toFixed(1)}" y1="${cp.y.toFixed(1)}" x2="${AX(netx,cur.per)}" y2="42.5"/>`;}
  $('lines').innerHTML=lh;
  // THE PUCK GOES WITH THEM. It was the third drawing site reading `e.x`
@@ -8173,9 +8173,30 @@ document.querySelectorAll('#rg .cc.a .lb').forEach(n=>n.childNodes[0].nodeValue=
 document.querySelectorAll('#rg .cc.h .lb').forEach(n=>n.childNodes[0].nodeValue=HAB+' attempts');
 
 const HX=x=>11+Math.abs(x), HY=y=>42.5-y; let lastHD=null;
+/* ⭐⭐ THE POPUP THAT SAYS "you can check it" MUST APPLY THE RULE IT DESCRIBES.
+   ⚠️ IT DID NOT, AND THE GAP WAS A WHOLE CLAUSE. `isHighDanger` has THREE:
+   within 33 ft, within ±22 ft of centre, and IN FRONT OF THE GOAL LINE — the
+   third added 2026-08-25 after Kevin looked at the drawn region and said "I
+   don't consider the slot to be valid behind the net." The sentence below still
+   named two and ended "Both true here", so the one surface on the site that
+   hands a reader a ruler was handing them an incomplete rule: check a
+   wrap-around against it and you get a different answer than our own ice does.
+   Nothing mechanical could see this — the code was correct and the words were
+   not, which is the only kind of defect this project actually has.
+
+   ⭐ AND THE NUMBERS ARE NOW THE ONES THE RULE APPLIES. `dist` re-implemented
+   `distanceToNet` and the thresholds were typed as literals, in a file that
+   already resolves `attackDirection` out of the same module. A restated rule on
+   a verification surface is one edit away from explaining a rule we do not use.
+
+   ⛔ `angle < 22` BELOW IS NOT THIS 22. It is 22 DEGREES off straight-on and has
+   nothing to do with `SLOT_HALF_WIDTH`, which is 22 FEET off centre. Two
+   different quantities that happen to share a number, one of which a
+   find-and-replace would silently have broken. */
 function showWhy(idx){const e=EV[idx];if(e==null||e.x==null)return;
- const _d=shotDir(e)||1, dLine=89-e.x*_d, dist=Math.hypot(dLine,e.y), angle=Math.atan2(Math.abs(e.y),dLine)*180/Math.PI;
- const inSlot=Math.abs(e.y)<=22, tid=e.own, ab=tid===AID?AAB:HAB, col=tid===AID?AWAYCOL:HOMECOL, p=R[e.actor], isGoal=e.type==='goal';
+ const _d=shotDir(e)||1, dLine=NET_X-e.x*_d, dist=distanceToNet(e.x,e.y,_d), angle=Math.atan2(Math.abs(e.y),dLine)*180/Math.PI;
+ const inSlot=Math.abs(e.y)<=SLOT_HALF_WIDTH, inFront=e.x*_d<=NET_X;
+ const tid=e.own, ab=tid===AID?AAB:HAB, col=tid===AID?AWAYCOL:HOMECOL, p=R[e.actor], isGoal=e.type==='goal';
  const diag=`<svg viewBox="0 0 100 85"><rect x="1" y="1" width="98" height="83" rx="14" fill="#fff" stroke="var(--edge)"/>
    <polygon points="63,20.5 96,38 96,47 63,64.5" fill="var(--hd)" opacity=".3"/><text x="70" y="43.5" font-size="3.4" fill="#b07d17" text-anchor="middle">slot</text>
    <rect x="90" y="37" width="6" height="11" rx="1.5" fill="${col}" opacity=".55"/><line x1="96" y1="29" x2="96" y2="56" stroke="var(--red)" stroke-width="1" opacity=".7"/>
@@ -8186,10 +8207,11 @@ function showWhy(idx){const e=EV[idx];if(e==null||e.x==null)return;
  $('whyContent').innerHTML=`<div class="whyhd ${tid===AID?'a':'h'}"><div><div class="t">${isGoal?'🚨 A GOAL from the slot':'⚡ Why this counts as a slot shot'}</div>
    <div class="s">${p?'#'+p.n+' '+p.nm:ab} · ${ab} · P${e.per} ${e.rem} · ${e.type.replace(/-/g,' ')}</div></div><button class="whyclose" onclick="hideWhy()">✕</button></div>
   <div class="whybody"><div class="whydiag">${diag}</div>
-   <div class="factor"><span class="fv">${Math.round(dist)} ft</span><span class="fl">Distance to the net — <b>close</b>. Our rule: ≤ 33 ft. <span class="chk">✓</span></span></div>
+   <div class="factor"><span class="fv">${Math.round(dist)} ft</span><span class="fl">Distance to the net — <b>close</b>. Our rule: ≤ ${HIGH_DANGER_FT} ft. <span class="chk">✓</span></span></div>
    <div class="factor"><span class="fv">${Math.round(angle)}°</span><span class="fl">Angle off straight-on — ${angle<22?'<b>a clean look</b> at the net':'a slot-area angle'}. Lower = more net to shoot at.</span></div>
-   <div class="factor last"><span class="fv">${inSlot?'Slot':'Wide'}</span><span class="fl">Lateral position — ${inSlot?'<b>in the slot</b> (within the faceoff dots) <span class="chk">✓</span>':'outside the slot'}</span></div>
-   <div class="whyrule"><b>The rule, and you can check it:</b> a shot counts as <b>from the slot</b> when it is <b>≤ 33 ft from the net</b> AND <b>within ±22 ft of the middle</b>. Both true here. This is <b>our own geometric rule</b>, not a model and not anybody else's statistic — it says where the shot came from, and nothing about how likely it was to go in. Measure it yourself on the diagram.</div></div>`;
+   <div class="factor"><span class="fv">${inSlot?'Slot':'Wide'}</span><span class="fl">Lateral position — ${inSlot?'<b>in the slot</b> (within the faceoff dots) <span class="chk">✓</span>':'outside the slot'}</span></div>
+   <div class="factor last"><span class="fv">${inFront?'Front':'Behind'}</span><span class="fl">Side of the goal line — ${inFront?'<b>in front of the net</b> <span class="chk">✓</span>':'behind the net'}. A wrap-around is close, but it is not from the slot.</span></div>
+   <div class="whyrule"><b>The rule, and you can check it:</b> a shot counts as <b>from the slot</b> when <b>all three</b> are true — it is <b>≤ ${HIGH_DANGER_FT} ft from the net</b>, <b>within ±${SLOT_HALF_WIDTH} ft of the middle</b>, and <b>in front of the goal line</b> (a wrap-around from behind the net is close, but it is not from the slot). All three true here. This is <b>our own geometric rule</b>, not a model and not anybody else's statistic — it says where the shot came from, and nothing about how likely it was to go in. Measure it yourself on the diagram.</div></div>`;
  $('whyBk').classList.add('on');}
 function hideWhy(){$('whyBk').classList.remove('on');}
 $('events').addEventListener('click',ev=>{const t=ev.target;if(t&&t.dataset&&t.dataset.i!=null){const k=+t.dataset.i;if(hdOn&&isHD(EV[k]))showWhy(k);}});
