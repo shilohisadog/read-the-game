@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-4g9/hmZk33jKRU/asaySDRflG2kjzskrG4NbO2EgIN0=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-SccvklKRpHhYn1HIyLZKQbhxyrinqwZSr2J4V2THf0o='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-U39XUzDGtpJX9kzI2RLyMiJhTj6ly9Igq5qGTrHVxHI=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-SccvklKRpHhYn1HIyLZKQbhxyrinqwZSr2J4V2THf0o='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">Watch a game</a><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see</a><a href="/workshop.html">Workshop</a></nav></header>
@@ -4979,8 +4979,8 @@ function marks(result, { trails, dir }) {
  * other side of it.
  *
  * WHY THIS LAYER EXISTS, AND IT IS ONE SENTENCE. Over the whole archive —
- * 491,971 attempts in 4,119 games — **51.9% of shot attempts never reach the
- * goalie at all, and 27.8% are blocked by a body.** A novice reading "58
+ * 500,720 attempts in 4,192 games — **51.8% of shot attempts never reach the
+ * goalie at all, and 27.7% are blocked by a body.** A novice reading "58
  * attempts" on the scoreboard hears 58 chances; about thirty of them never got
  * there. This layer is that correction, made visible on the ice.
  *
@@ -4988,7 +4988,7 @@ function marks(result, { trails, dir }) {
  * was built around. The obvious number is "the team that blocked more won X% of
  * the time", and it is not publishable at any sample size. The team that blocks
  * more is the team that ATTEMPTED FEWER 81.7% of the time, and the archive
- * already reports that the attempts leader loses 54.5%. So the reference class
+ * already reports that the attempts leader loses 54.3%. So the reference class
  * for a blocks-leader win rate is "teams that were being outshot", and once
  * that is said honestly the sentence teaches nothing. CHENG's ruling was that it
  * is *uninterpretable, not merely uncertain* — a bigger sample buys precision on
@@ -5543,7 +5543,7 @@ const tiedControl = {
  * The per-game sentence — what this game was, and how ordinary that is.
  *
  * THE FINDING THAT SHAPES IT (docs/game-sentence.md §1). "They controlled play
- * and lost" happens in **1,527 of 3,855 games**. It is not a strange night; it is
+ * and lost" happens in **1,560 of 3,925 games**. It is not a strange night; it is
  * hockey. So this sentence must not frame a game as remarkable, and the base rate
  * is not decoration hung off it — the rate IS the lesson. The novice's actual
  * misconception is *the team that played better wins*, and the archive refutes it
@@ -5551,7 +5551,7 @@ const tiedControl = {
  *
  * TWO NUMBERS, ONE CLAUSE (CHENG). Raw attempts and level control disagree often,
  * and the narrowing between them is the site's whole thesis at single-game scale:
- * 54.5% of games are lost by the team with more attempts, against 39.6% by the
+ * 54.3% of games are lost by the team with more attempts, against 39.7% by the
  * team that controlled play while level. A sentence carrying only the second
  * hides the comparison that makes it mean anything.
  *
@@ -5652,7 +5652,7 @@ function sentenceFor(o) {
       + `(${why}), and the archive's rates cover only those.`
     : null;
 
-  // NO EDGE IS A REAL ANSWER, and it is 264 of 4,119 games — one in sixteen.
+  // NO EDGE IS A REAL ANSWER, and it is 267 of 4,192 games — one in sixteen.
   // There is nothing to compare, so nothing is compared.
   if (!level) {
     return { lead: 'Neither team controlled play while the score was level.',

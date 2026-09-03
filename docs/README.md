@@ -98,10 +98,26 @@ their line references to the commit they were written against, each carrying the
 text that line must contain, and `tools/refcheck.py` checks both in the gates.
 They point at history because the file they describe has since been split.
 
-**Numbers in a document may be older than the archive.** Where that is known it
-is stated in the document's own header. The figures that are *not* allowed to
-drift are generated and gated — `builders/health.mjs` for the suite and archive
-counts, `tools/tiers.mjs` for the architecture tier table.
+**Numbers in a document may be older than the archive, and that is the
+convention rather than an oversight.** These are dated arguments: a figure here
+carries the `n` it was measured over, and rewriting it to today's value would
+destroy the record instead of maintaining it. Where a document's figures are
+known to predate a correction, its own header says so — `game-sentence.md` is
+the model.
+
+**The figures that are *not* allowed to drift are gated**, and they are the ones
+stated in the present tense:
+
+| what | gated by |
+|---|---|
+| the suite and archive counts in `status.md` | `builders/health.mjs --check` |
+| the tier table in `architecture.md` | `tools/tiers.mjs --check` |
+| archive figures quoted in `src/lib` comments | `test/quoted-figures.test.js` |
+
+That last one was added 2026-09-03 after six of them went stale: `sentence.js`
+argued from *"1,527 of 3,855 games"* while the published `measures.json` said
+1,560 of 3,925. Its expectations are **read from `measures.json` at test time**,
+so a re-derive turns it red rather than leaving the prose behind.
 
 **Withdrawn findings are left in place, not deleted.** A wrong conclusion with
 the evidence that killed it beside it is more useful than a clean document, and

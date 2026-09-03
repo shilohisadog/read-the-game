@@ -214,7 +214,7 @@ export function perGame(records) {
  * "The team that blocked more won X% of the time" was the obvious rate and it is
  * not publishable at any sample size: the team that blocks more is the team that
  * attempted fewer 81.7% of the time, and the archive already says the attempts
- * leader loses 54.5%. The reference class is "teams that were being outshot", and
+ * leader loses 54.3%. The reference class is "teams that were being outshot", and
  * once stated honestly the sentence teaches nothing (CHENG,
  * docs/blocked-shots-layer.md §5 and §7).
  *

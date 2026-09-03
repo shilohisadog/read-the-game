@@ -2,7 +2,7 @@
  * The per-game sentence — what this game was, and how ordinary that is.
  *
  * THE FINDING THAT SHAPES IT (docs/game-sentence.md §1). "They controlled play
- * and lost" happens in **1,527 of 3,855 games**. It is not a strange night; it is
+ * and lost" happens in **1,560 of 3,925 games**. It is not a strange night; it is
  * hockey. So this sentence must not frame a game as remarkable, and the base rate
  * is not decoration hung off it — the rate IS the lesson. The novice's actual
  * misconception is *the team that played better wins*, and the archive refutes it
@@ -10,7 +10,7 @@
  *
  * TWO NUMBERS, ONE CLAUSE (CHENG). Raw attempts and level control disagree often,
  * and the narrowing between them is the site's whole thesis at single-game scale:
- * 54.5% of games are lost by the team with more attempts, against 39.6% by the
+ * 54.3% of games are lost by the team with more attempts, against 39.7% by the
  * team that controlled play while level. A sentence carrying only the second
  * hides the comparison that makes it mean anything.
  *
@@ -111,7 +111,7 @@ export function sentenceFor(o) {
       + `(${why}), and the archive's rates cover only those.`
     : null;
 
-  // NO EDGE IS A REAL ANSWER, and it is 264 of 4,119 games — one in sixteen.
+  // NO EDGE IS A REAL ANSWER, and it is 267 of 4,192 games — one in sixteen.
   // There is nothing to compare, so nothing is compared.
   if (!level) {
     return { lead: 'Neither team controlled play while the score was level.',
