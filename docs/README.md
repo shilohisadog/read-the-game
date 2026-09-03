@@ -113,11 +113,19 @@ stated in the present tense:
 | the suite and archive counts in `status.md` | `builders/health.mjs --check` |
 | the tier table in `architecture.md` | `tools/tiers.mjs --check` |
 | archive figures quoted in `src/lib` comments | `test/quoted-figures.test.js` |
+| the snapshot banner on every dated document | `tools/snapshots.mjs --check` |
 
-That last one was added 2026-09-03 after six of them went stale: `sentence.js`
-argued from *"1,527 of 3,855 games"* while the published `measures.json` said
-1,560 of 3,925. Its expectations are **read from `measures.json` at test time**,
-so a re-derive turns it red rather than leaving the prose behind.
+The third was added 2026-09-03 after six went stale: `sentence.js` argued from
+*"1,527 of 3,855 games"* while the published `measures.json` said 1,560 of
+3,925. The fourth puts a generated banner on all 16 documents that quote a
+superseded figure, saying what the archive holds **now**. Both read their
+expectations **from `measures.json` at test time**, so a re-derive turns them red
+rather than leaving the prose behind.
+
+⭐ **And no document's body is ever rewritten to match.** The figures in a dated
+argument are the evidence it was made from; silently updating them would make
+the record claim a case was argued from evidence nobody had yet. The measurement
+is not the defect — an undated measurement read as a current one is.
 
 **Withdrawn findings are left in place, not deleted.** A wrong conclusion with
 the evidence that killed it beside it is more useful than a clean document, and
