@@ -59,9 +59,18 @@ import { NET_X, BLUE_LINE_X, ZONE_BAND_FT, NEUTRAL_DOT_X,
  * "lexically unreachable from library scope, not merely unused, BECAUSE THE
  * MODULES SHARE ONE INLINED SCOPE" — and `test/render-ends.test.js` audited that
  * premise and found it half wrong: the modules share one SCRIPT, not one SCOPE.
- * `__LIB__` is emitted above `function boot(G,RATES){` and this file is injected
- * INSIDE boot's body, which a top-level declaration can never see into. The
- * guarantee was real; the reason given for it was not.
+ * The library marker is substituted ABOVE the opening of `boot`, and this file
+ * is injected INSIDE boot's body, which a top-level declaration can never see
+ * into. The guarantee was real; the reason given for it was not.
+ *
+ * ⚠️ AND THIS COMMENT MAY NOT SPELL EITHER TOKEN OUT. Its first draft quoted the
+ * build's library marker and the exact opening line of `boot` — and broke three
+ * tests, because `build_main.py` scans the output for unsubstituted markers and
+ * `render-ends.test.js` requires its probe anchor to appear EXACTLY ONCE.
+ * Quoting them here put a second copy of each into the shipped bundle. The
+ * checks were right; the prose was impersonating code. This project has a rule
+ * about instruments that cannot tell code from the words about code, and this is
+ * that rule pointing the other way.
  *
  * WHY IT MATTERS: a reducer that reads screen coordinates is a reducer whose
  * counts move when the rink flips, which is the one thing as-played must not be
