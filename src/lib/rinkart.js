@@ -44,6 +44,49 @@ import { NET_X, BLUE_LINE_X, ZONE_BAND_FT, NEUTRAL_DOT_X,
 // reducer keeps reading it that way, and `distanceToNet` still measures to the
 // net a team attacks. Only the mapping from rink feet to screen units is
 // reflected, in this one line.
+/**
+ * ⭐⭐ THE SCREEN TRANSFORM, AND THE RULE ABOUT WHO MAY RESOLVE IT.
+ *
+ * CHENG, ruling on as-played ends and RESTATED 2026-09-03 in the terms that are
+ * actually true:
+ *
+ *   > `SX` and `SY` must not be resolvable from any reducer's scope AT RUNTIME.
+ *   > Today that holds because `rinkart` is emitted inside `boot`. Any build
+ *   > change that moves it to top level breaks the guarantee, and the probe is
+ *   > what says so.
+ *
+ * ⚠️ THE ORIGINAL WORDING DEPENDED ON A SCOPE MODEL THAT WAS WRONG. It said
+ * "lexically unreachable from library scope, not merely unused, BECAUSE THE
+ * MODULES SHARE ONE INLINED SCOPE" — and `test/render-ends.test.js` audited that
+ * premise and found it half wrong: the modules share one SCRIPT, not one SCOPE.
+ * `__LIB__` is emitted above `function boot(G,RATES){` and this file is injected
+ * INSIDE boot's body, which a top-level declaration can never see into. The
+ * guarantee was real; the reason given for it was not.
+ *
+ * WHY IT MATTERS: a reducer that reads screen coordinates is a reducer whose
+ * counts move when the rink flips, which is the one thing as-played must not be
+ * able to do.
+ *
+ * ⭐ TWO CHECKS, ONE PROPERTY, AND THE RUNTIME ONE IS THE AUTHORITY.
+ *   `test/render-ends.test.js`  a probe in library position must THROW, and the
+ *                               same probe inside boot must RESOLVE — the second
+ *                               half is what stops "it threw" being satisfied by
+ *                               a probe that was simply broken.
+ *   `test/sx-scope.test.js`     no module under `src/lib/` imports this file.
+ *                               A leading indicator: a static import is the
+ *                               MECHANISM by which the runtime property would
+ *                               break, so catching it earlier is cheaper.
+ *
+ * ⛔ AND THE TRANSFORM IS NOT ENCAPSULATED, WHICH WAS CONSIDERED AND MEASURED.
+ * The obvious alternative — export only drawing functions and keep `SX` private
+ * — would make the rule structural instead of positional. It fails on the data:
+ * `builders/learn-figures.mjs` calls `SX`/`SY` **24 times** directly to place
+ * blue lines, faceoff dots, glyph anchors and viewBox bounds, and
+ * `test/learn-figures.test.js` uses `SX` to derive its expected blue-line
+ * positions by a path independent of the code under test. Hiding the transform
+ * would require replacing 24 call sites with bespoke helpers and would turn that
+ * test into a mirror of the function it checks.
+ */
 export const SX=x=>100-x, SY=y=>42.5-y;
 
 /* ⭐ THE BOARDS, AS NUMBERS RATHER THAN AS A STRING. Every line painted on the
