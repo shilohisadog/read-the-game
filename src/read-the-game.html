@@ -7449,9 +7449,30 @@ function chipLabel(id){
  if(!chip)return id;
  const lab=chip.querySelector('.pkl');
  return lab?lab.textContent:chip.textContent;}
-const LEDGER={corsi:sl=>corsi.reduce(sl,CTX),slot:sl=>danger.reduce(sl,CTX),
- blocked:sl=>blocked.reduce(sl,CTX),goaltending:sl=>goaltending.reduce(sl,CTX),
- whistle:sl=>whistle.reduce(sl,CTX)};
+/* ⭐⭐ THE LENS SET, WRITTEN DOWN ONCE — and it was written down FOUR TIMES.
+   `LEDGER` here, `LENSCOUNTS` in the verdict 590 lines below, `lens` in
+   `builders/measure.mjs`, and five booleans in the layer controls. Three of the
+   four were guarded and the comments on those guards describe this exact
+   failure: "a lens added to the selector with no distribution behind it fails
+   here", "a layer added to LEDGER and not to this list would go unchecked".
+
+   ⚠️ `LENSCOUNTS` HAD NOTHING, AND IT IS THE ONE THAT FAILS IN SILENCE. It feeds
+   `mostUnusual`, where an ABSENT count is skipped rather than scored — so a
+   sixth lens added to `LEDGER` (which a guard forces) and forgotten there could
+   never be nominated as a game's most unusual night, for the life of the site,
+   with no symptom on any surface.
+
+   ⭐ SO THE DUPLICATE IS REMOVED RATHER THAN GUARDED. Both tables are derived
+   from this one, which is the only place an id is typed.
+
+   THE KEY IS THE LENS ID AND THE VALUE IS THE MODULE, and they are deliberately
+   not the same word: `danger.js` is published as `slot`, because the id is spent
+   as a URL token and "high-danger" is a term of art with definitions that are
+   not ours (see the header of layers/danger.js). Writing `slot:danger` puts that
+   mapping in one visible place instead of scattering it. `test/lbox.test.js`
+   asserts every key here equals its own module's `id`, so the two cannot drift. */
+const LENS={corsi:corsi,slot:danger,blocked:blocked,goaltending:goaltending,whistle:whistle};
+const LEDGER=Object.fromEntries(Object.entries(LENS).map(([id,m])=>[id,sl=>m.reduce(sl,CTX)]));
 function renderWork(_,cur,at){
  const id=whichPick();
  if(id==='none'||!LEDGER[id]||at<0){$('workBody').innerHTML='';return;}
@@ -8040,12 +8061,17 @@ $('gl').textContent=`${AAB} at ${HAB}${WHEN?' · '+WHEN:''}`;
     noise about a feature the reader has not been promised. */
  const season=String((G.game&&G.game.id)||'').slice(0,4);
  const dists=RATES&&RATES.perGame&&RATES.perGame[season];
- const LENSCOUNTS={
-   corsi:all.counted.length,
-   slot:danger.reduce(G.events,{...CTX,evenOnly:false}).counted.length,
-   blocked:blocked.reduce(G.events,{...CTX,evenOnly:false}).counted.length,
-   goaltending:goaltending.reduce(G.events,{...CTX,evenOnly:false}).counted.length,
-   whistle:whistle.reduce(G.events,{...CTX,evenOnly:false}).counted.length};
+ /* ⭐ DERIVED FROM `LENS`, so a lens cannot exist in the selector and be missing
+    here. This was a second hand-written list of the same five ids with no guard
+    on it at all; see the note on `LENS`.
+    ⚠️ `evenOnly:false` STAYS EXPLICIT rather than inheriting CTX. The reference
+    class in `measures.json` is built over all situations, so judging this game
+    through a strength filter would compare a filtered count against an
+    unfiltered distribution — the "two numbers about different things wearing one
+    label" defect. `corsi` is recomputed rather than reusing `all` above so all
+    five go through one path; it is the same reduce with the same context. */
+ const LENSCOUNTS=Object.fromEntries(Object.entries(LENS).map(([id,m])=>
+   [id,m.reduce(G.events,{...CTX,evenOnly:false}).counted.length]));
  const U=mostUnusual(dists,LENSCOUNTS);
  /* ⚠️ THE GUARD ASKS THE QUESTION, not a neighbour of it. It was
     `some(d => d.n)` — distributions exist — which is not the same as "a lens

@@ -838,7 +838,7 @@ test('a club is collected even from a game that is OUT OF SCOPE', () => {
  */
 test('every lens the selector counts has a distribution of the same quantity', () => {
   const page = readFileSync(new URL('../src/read-the-game.html', import.meta.url), 'utf8');
-  const onPage = /const LEDGER=\{([\s\S]*?)\};/.exec(page)[1]
+  const onPage = /const LENS=\{([\s\S]*?)\};/.exec(page)[1]
     .match(/(\w+):/g).map(s => s.slice(0, -1)).sort();
   /* ⚠️ ON THE REFERENCE GAME, NOT THE MINIMAL FIXTURE. `GAME` holds four events
      and no stoppage, so the whistle half of this compared 0 to 0 — vacuous, and

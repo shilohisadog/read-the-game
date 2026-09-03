@@ -868,13 +868,30 @@ test('a not-a-play event carries the type dimension in every layer', () => {
   const files = readdirSync(dir).filter(f => f.endsWith('.json'));
   assert.ok(files.length >= 5, 'the fixture corpus has shrunk — this check needs games');
 
-  // ⭐ THE LAYER SET IS DERIVED FROM THE PANEL'S OWN TABLE, not typed here: a
-  // layer added to `LEDGER` and not to this list would go unchecked, which is
-  // exactly how blocked.js drifted from the other three in the first place.
-  const names = /const LEDGER=\{([\s\S]*?)\};/.exec(app)[1].match(/(\w+):/g).map(s => s.slice(0, -1));
+  /* ⭐ THE LAYER SET IS DERIVED FROM THE PAGE'S OWN TABLE, not typed here: a
+     layer added to the page and not to this list would go unchecked, which is
+     exactly how blocked.js drifted from the other three in the first place.
+
+     It reads `LENS` rather than `LEDGER` as of 2026-09-03. `LEDGER` used to be
+     the hand-written enumeration and is now DERIVED from `LENS`, along with
+     `LENSCOUNTS` in the verdict — which had no guard at all and fed a function
+     that skips an absent count rather than failing on it. Scraping the derived
+     table would have been reading a shadow of the real one. */
+  const names = /const LENS=\{([\s\S]*?)\};/.exec(app)[1].match(/(\w+):/g).map(s => s.slice(0, -1));
   const MODS = { corsi, slot: danger, blocked, goaltending, whistle };
   assert.deepEqual(names.sort(), Object.keys(MODS).sort(),
     'the panel shows a layer this check does not exercise');
+
+  /* ⭐⭐ AND THE KEY MUST BE THE MODULE'S OWN `id`, which is the gap the page
+     cannot close by itself. `LENS` maps a typed id to a module — `slot:danger`
+     — and a typo there would give a lens whose URL token, ledger key and
+     distribution key silently disagree with what `deeplink.js` derives from
+     `l.id`. Asserting it here keeps the one hand-written mapping in the project
+     honest against the layer objects themselves. */
+  for (const [id, mod] of Object.entries(MODS))
+    assert.equal(mod.id, id,
+      `LENS maps "${id}" to a module whose own id is "${mod.id}" — the page, the `
+      + `URL vocabulary and measures.json would not agree about this lens`);
 
   let seen = 0, dims = new Set();
   for (const f of files) {
