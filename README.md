@@ -38,13 +38,23 @@ Everything in this repo is a different way of making that visible.
 | `src/` | Self-contained HTML apps. Each one opens standalone — no build step, no bundler, no library. The files ask for nothing beyond their game data; the live site's host injects a Cloudflare Web Analytics beacon, which is named in each page's Content-Security-Policy. |
 | `data/` | The extracted game data plus the raw NHL API responses it came from. |
 | `builders/` | Python that extracts the raw feeds into `rich.json` and generates the apps. |
+| `src/lib/` | The analysis tier: pure reducers over the event stream. No DOM, no network, no filesystem — the same modules run in the browser and in the pipeline, so a number cannot mean two things. |
+| `test/` | Both suites. The JS half boots the real shipped bundle against a fake document. |
+| `docs/` | The design record — including the measurements, and the findings that were **withdrawn** with the evidence that killed them. |
 
 ### The apps
 
 - **`read-the-game.html`** — the main one. Base view is a plain-language
-  auto-narrated replay. Optional layers: **＋Control** (Corsi, with a
-  show-me-the-work panel), **＋High-danger** (why *this* chance counted),
-  **＋Goaltending** (save percentages building live as you watch).
+  auto-narrated replay. Five optional layers, each with a show-me-the-work
+  panel that accounts for **every** event as counted or excluded-with-a-reason:
+  **＋Control (Corsi)**, **＋Shots from the slot**, **＋Goaltending**,
+  **＋Why play stopped**, **＋Blocked shots**.
+
+  > *Not "high-danger".* Ours is a pure location test — inside 33 ft of the net
+  > and within ±22 ft of centre, no rush bonus, no shot-quality weighting — and
+  > published definitions elsewhere score attempts differently. A reader who
+  > looked ours up would conclude we were **wrong** rather than **different**,
+  > so the label says what the rule does and borrows nobody's authority.
 - **`goalie-eye-view.html`** — first-person from the crease, plus five other
   seats in the building. Same real data, the camera just moves.
 - **`terrain-3d.html`** — shot density as terrain. Height is real kernel
@@ -102,17 +112,57 @@ The master extract. Everything the apps render comes from here.
 ```
 teams   { home, away: { id, ab } }
 roster  { playerId → { n, nm, pos, tid } }
-events  [ { per, s, clock, type, own, x, y, actor, goalie, a1?, a2? } ]
-shifts  [ { p, t, s, e } ]          // 694 real on-ice shifts
+events  [ { per, s, clock, rem, type, own, x, y, actor, goalie,
+            sit, pt,                    // strength code; period type
+            a1?, a2?,                   // assists, on a goal
+            blk?, miss?,                // blocker; why a shot missed
+            pen?, min?, sev?, drew?,    // the penalty, and who drew it
+            rsn?, rsn2?, zone? } ]      // why the whistle went, and where
+shifts  [ { p, t, s, e } ]
 gshots  [ { g, x, y, out, sh } ]    // shots faced, per goalie
 goalies [ ... ]
+quoted  { home, away }              // the league's own boxscore line
+sides   { period → homeTeamDefendingSide }
 ```
+
+⚠️ **`builders/extract.py` is the definition, not this block.** There is
+deliberately no schema file: a declared field list is a second statement of the
+truth, free to drift from the extractor that actually produces the data. If this
+and the extractor disagree, the extractor is right and this is a bug — see
+[CONTRIBUTING.md](CONTRIBUTING.md) rule 7, and `test/fixtures.test.js` for how
+drift is actually caught.
 
 ## Running it
 
 Open any file in `src/` in a browser. That's the whole procedure. They are
 single files with the data inlined, which is deliberate: an app you can save
 to disk and still have work is an app that isn't hiding anything.
+
+## Working on it
+
+**Node 20+ and Python 3.10+. Nothing to install** — the site ships zero runtime
+dependencies and the suites are `node --test` and `unittest`.
+
+```
+npm run gates      # everything CI runs
+npm test           # the JS suite alone
+npm run test:py    # the Python suite alone
+```
+
+`gates` builds the site, runs both suites, checks that every documentation
+citation resolves and that the generated figures in `docs/` are not stale,
+re-runs the extractor's gates against stored feeds, and rebuilds to confirm the
+output is **byte-identical**. Exit 0 means `src/` is reproducible from source.
+
+**`src/*.html` is generated — never edit it.** `builders/*.py` is the source.
+
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** — what counts as a valid check here.
+  Read this before writing a test; the bar is unusual and most of it is about
+  checks rather than code.
+- **[docs/architecture.md](docs/architecture.md)** — the shape of the system,
+  the one place that shape breaks, and the decisions that look like oversights
+  and are not.
+- **[DOCTRINE.md](DOCTRINE.md)** — what this site will and will not claim.
 
 ## License
 
