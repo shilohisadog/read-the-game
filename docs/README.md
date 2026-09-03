@@ -52,6 +52,8 @@ without this index moving with it.
 
 | | |
 |---|---|
+| **[app-state-phase1.md](app-state-phase1.md)** | ⏸ **proposal, for review** — `app.js` is one 3,311-line function; removing the eight bindings that were never state. |
+| **[app-state-phase2.md](app-state-phase2.md)** | ⏸ **proposal, for review** — one write path for the sixteen that are. Depends on phase 1. |
 | **[main-app-rework.md](main-app-rework.md)** | 🏛 the audit that turned one HTML file into a program. Historical, and the origin of the current build chain. |
 | **[deep-link-seam.md](deep-link-seam.md)** | ✅ shipped — URL vocabulary derived from the layer objects. Citations pinned on purpose. |
 | **[restart-frames.md](restart-frames.md)** | ✅ shipped — what the replay does at a whistle. Two rounds of review. |
