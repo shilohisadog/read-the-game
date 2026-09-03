@@ -18,6 +18,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { censusGame, censusAdd, censusRates, zoneOf, runAfter } from '../src/lib/census.js';
+import { situation, POWER_PLAY } from '../src/lib/strength.js';
 import { BLUE_LINE_X } from '../src/lib/rink.js';
 
 const load = p => JSON.parse(readFileSync(new URL(p, import.meta.url)));
@@ -161,18 +162,25 @@ test('a power-play draw was won BY the club with the advantage, and the gap is t
      — and the ratio would look entirely reasonable. Same shape as the
      short-handed goal rule, where "fewer skaters" is not "penalised".
 
-     ⭐ AND THE INDEPENDENT COUNT DELIBERATELY DISAGREES WITH THE CENSUS, BY AN
-     AMOUNT THIS TEST NAMES. The rule below reads `sit` directly and accepts any
-     unequal-skaters code; the census asks `situation()`, which KNOWS EIGHT CODES
-     and refuses the rest — so five-on-three draws are counted here and refused
-     there. Reconciling the two by hand would have hidden that; requiring the
-     difference to equal the refused draws exactly makes the blindness a
-     measured, asserted quantity instead of a surprise in a season's numbers. */
-  const KNOWN = new Set(['1551', '1541', '1451', '1441', '0651', '1560', '1450', '1540']);
+     ⭐⭐ THIS USED TO CARRY A CORRECTION TERM, AND THE CORRECTION IS NOW ZERO.
+     The census asked `situation()`, which knew EIGHT LITERAL CODES and refused
+     the rest, so five-on-three draws were counted by the hand-rule below and
+     refused by the census. The test allowed for that by subtracting the refused
+     ones — and to do it, it carried a NINTH copy of those eight codes right
+     here. A test holding its own duplicate of the list under test is the drift
+     it was written to detect, one file further along.
+
+     `situation()` now reads the digits, so the two counts agree EXACTLY and the
+     allowance is gone. That is strictly stronger: an exact equality has no slack
+     for a future refusal to hide in, so the day the league sends a code we
+     cannot read during a power-play draw, this fails and names it — which is the
+     "somebody looks" the correction term was standing in for. The hand-rule
+     stays fully independent: it reads `sit` and never asks `census.js`. */
   for (const g of GAMES) {
     const c = censusGame(g.events, ctxOf(g));
     const ctx = ctxOf(g);
-    let byHand = 0, refused = 0;
+    let byHand = 0;
+    const seen = new Set();
     for (const e of g.events) {
       if (e.type !== 'faceoff' || e.own == null || e.x == null || e.pt === 'SO') continue;
       if (!e.sit || e.sit.length !== 4) continue;
@@ -180,34 +188,51 @@ test('a power-play draw was won BY the club with the advantage, and the gap is t
       if (e.sit[0] === '0' || e.sit[3] === '0' || aw === hm) continue;
       const advantage = aw > hm ? ctx.awayId : ctx.homeId;
       if (e.own !== advantage) continue;
-      byHand++;
-      if (!KNOWN.has(e.sit)) refused++;
+      byHand++; seen.add(e.sit);
     }
-    assert.equal(c.drawStrength.pp.n, byHand - refused,
-      `game ${g.game.id}: the census counted ${c.drawStrength.pp.n} power-play draws, ` +
-      `the ice held ${byHand}, and ${refused} were refused for an unknown code`);
+    assert.equal(c.drawStrength.pp.n, byHand,
+      `game ${g.game.id}: the census counted ${c.drawStrength.pp.n} power-play draws and ` +
+      `the ice held ${byHand}. The codes involved were ${[...seen].sort().join(', ')} — ` +
+      `if one of those is new, the decoder refused it and the census lost a draw.`);
   }
 });
 
-test('five-on-three is in the archive and strength.js cannot read it', () => {
-  /* ⭐ NOT A BUG BEING TOLERATED — a refusal being MEASURED. `KNOWN_SITUATIONS`
-     lists eight codes and the feed carries more; `situation()` returns null
-     rather than guessing, which is right. What was missing is anybody counting
-     the cost. If this test ever fails because the count went to zero, the codes
-     were added and the census can stop apologising; if it fails because the
-     count grew, the league invented another one. Either way somebody looks. */
-  const total = {};
-  for (const g of GAMES) censusAdd(total, censusGame(g.events, ctxOf(g)));
-  const r = censusRates(total);
-  assert.ok(r.state.unknown.minutes > 0,
-    'no fixture carries an unreadable situation code, so this proves nothing');
-  const codes = new Set();
+test('⭐ five-on-three is in the archive, and strength.js reads it now', () => {
+  /* ⭐⭐ THIS TEST PREDICTED ITS OWN REPLACEMENT, AND THE PREDICTION IS WHY IT IS
+     SAFE TO CHANGE IT. It used to assert `unknown.minutes > 0` and said why:
+     "if this test ever fails because the count went to zero, the codes were
+     added and the census can stop apologising; if it fails because the count
+     grew, the league invented another one. Either way somebody looks."
+
+     It went to zero. `situation()` decodes the digits instead of matching eight
+     literals, so five-on-three, four-on-three and 3-on-3 overtime are states
+     rather than refusals. Measured over the seven fixtures (2,793 events
+     carrying a code — a FIXTURE figure, not an archive one): 91 refusals became
+     27, and the census's unclassifiable TIME went to zero seconds.
+
+     ⛔ THE 27 ARE NOT AN OVERSIGHT. Twenty-six are `0101`/`1010`, one skater
+     against none — a shootout attempt, which the census already excludes — and
+     one is `0660`, both nets empty, which names no club and so states nothing.
+
+     So the assertion inverts: the two-skater advantage that was the CAUSE of the
+     apology must now be READ, and named as a power play. */
+  const seen = new Set();
   for (const g of GAMES) for (const e of g.events) {
     if (e.sit && e.sit.length === 4 && e.sit[0] !== '0' && e.sit[3] !== '0'
-        && Math.abs(+e.sit[1] - +e.sit[2]) > 1) codes.add(e.sit);
+        && Math.abs(+e.sit[1] - +e.sit[2]) > 1) seen.add(e.sit);
   }
-  assert.ok(codes.size > 0,
-    `no two-skater advantage in any fixture — the blindness is unproven here`);
+  assert.ok(seen.size > 0,
+    'no two-skater advantage in any fixture — this proves nothing either way');
+
+  const ctx = { homeId: 1, awayId: 2 };
+  for (const code of seen) {
+    const s = situation(code, ctx);
+    assert.ok(s, `${code} is a two-skater advantage and the decoder still refuses it`);
+    assert.equal(s.kind, POWER_PLAY, `${code} is a two-skater advantage, not ${s.kind}`);
+    // The bigger side holds the advantage — the half a literal list never checked.
+    assert.equal(s.advantage, +code[1] > +code[2] ? ctx.awayId : ctx.homeId,
+      `${code}: the advantage is on the wrong side`);
+  }
 });
 
 test('the shootout is in none of it', () => {
@@ -236,18 +261,43 @@ test('the shootout is in none of it', () => {
 });
 
 test('an unreadable situation code is carried, never folded into even strength', () => {
-  /* ⭐ `strength.js` KNOWS EIGHT CODES AND THE ARCHIVE CONTAINS MORE — 1351 and
-     1431 are five-on-three and four-on-three, and it refuses them by design.
-     The census must carry that refusal as its own bucket: adding unreadable time
-     to `even` would put five-on-three minutes into the even-strength goal rate,
-     which is the exact number the power-play comparison rests on. */
+  /* ⭐ THE BUCKET MUST SURVIVE ITS OWN EMPTINESS. Adding unreadable time to
+     `even` would put a state we do not understand into the even-strength goal
+     rate, which is the exact number the power-play comparison rests on.
+
+     ⚠️ AND THE INSTRUMENT IS NOW UNEXERCISED BY THE FIXTURES, which is the
+     dangerous half of a defect being fixed. This asserted `unknown.secs > 0`,
+     and that is the only thing that made it a check; with the decoder reading
+     the digits, no fixture leaves unclassifiable TIME behind, so the same
+     assertion inverted to `=== 0` would pass against a census that had deleted
+     the bucket entirely. A test that cannot tell "nothing to classify" from
+     "nothing being classified" is not a test about classification.
+
+     So it does both: the real fixtures must leave the bucket EMPTY, and an
+     injected code the decoder cannot read must land IN it. The second half is
+     what keeps the first half meaningful. */
   const total = {};
   for (const g of GAMES) censusAdd(total, censusGame(g.events, ctxOf(g)));
   assert.ok(total.state.unknown, 'there is no bucket for time we cannot classify');
-  assert.ok(total.state.unknown.secs > 0,
-    'no fixture contains an unreadable code, so this proves nothing');
-  const r = censusRates(total);
-  assert.ok(r.state.unknown.minutes > 0, 'the refusal is not reported');
+  assert.equal(total.state.unknown.secs, 0,
+    'a fixture now carries time the decoder cannot read — the league sent something new');
+
+  /* THE BUCKET, PROVEN ABLE TO FILL. `7777` is seven skaters a side, which is
+     not hockey and never will be, so it can never collide with a real state. */
+  const g = GAMES[0];
+  const idx = g.events.findIndex((e, i) =>
+    e.sit && i > 0 && i < g.events.length - 1 && e.pt !== 'SO');
+  assert.ok(idx > 0, 'no mid-game event carries a code, so nothing can be injected');
+  const bogus = g.events.map((e, i) => i === idx ? { ...e, sit: '7777' } : e);
+  const hurt = censusGame(bogus, ctxOf(g));
+  assert.ok(hurt.state.unknown.secs > 0,
+    'an unreadable code left no time in the unknown bucket — it was folded somewhere');
+
+  const clean = censusGame(g.events, ctxOf(g));
+  assert.equal(clean.state.unknown.secs, 0, 'the same game, unhurt, classifies fully');
+  assert.ok(hurt.state.even.secs < clean.state.even.secs
+         || hurt.state.pp.secs < clean.state.pp.secs,
+    'the unknown time was ADDED rather than taken from the state it came out of');
 });
 
 test('a rate with no denominator is null, never zero', () => {

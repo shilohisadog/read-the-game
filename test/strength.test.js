@@ -16,10 +16,32 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { conservation } from '../src/lib/layer.js';
-import { situation, isEven, whyNotEven, standing, penaltyKilled, powerPlayOver, windows, KNOWN_SITUATIONS, EVEN, POWER_PLAY, EMPTY_NET } from '../src/lib/strength.js';
+import { situation, isEven, whyNotEven, standing, penaltyKilled, powerPlayOver, windows, SKATERS_MIN, SKATERS_MAX, EVEN, POWER_PLAY, EMPTY_NET, PENALTY_SHOT } from '../src/lib/strength.js';
+
+/**
+ * ⭐ THE READABLE CODES, DERIVED FROM THE DECODER RATHER THAN LISTED BESIDE IT.
+ *
+ * This was `KNOWN_SITUATIONS`, imported — so the exhaustive loops below walked
+ * the very list that decided the answer, and every one of them was a mirror
+ * (§H): the set under test and the set generating the expectation were one
+ * object. It could not have caught a code being wrongly admitted OR wrongly
+ * refused, which is the entire failure it was written to prevent.
+ *
+ * Enumerating all ten thousand and keeping what `situation` reads gives the same
+ * exhaustiveness with an INDEPENDENT path, and it grows by itself: widen the
+ * decoder and these loops cover the new codes without anyone remembering to.
+ * It lives in the test rather than the module because the bundle ships to a
+ * phone and ten thousand iterations at boot is a cost the page has no use for.
+ */
 import { corsi } from '../src/lib/layers/corsi.js';
 import { goaltending } from '../src/lib/layers/goaltending.js';
 import { danger } from '../src/lib/layers/danger.js';
+
+const READABLE = new Set();
+for (let n = 0; n < 10000; n++) {
+  const c = String(n).padStart(4, '0');
+  if (situation(c, { homeId: 1, awayId: 2 })) READABLE.add(c);
+}
 
 const rich = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url)));
 const EVENTS = rich.events;
@@ -40,6 +62,137 @@ test('situation codes are read, not guessed', () => {
   assert.equal(situation('0651', base).kind, EMPTY_NET, 'a pulled goalie is not a power play');
   assert.equal(situation('9999', base), null, 'an unknown code is refused, not guessed');
   assert.equal(situation(undefined, base), null);
+});
+
+/**
+ * ⭐ THE CODES THE ALLOWLIST WAS REFUSING, AND WHY EACH ONE IS NOW READ.
+ *
+ * Not "the decoder works" — each of these is a state the eight-code list dropped
+ * on the floor, named, with the reason it was never a judgement call. Every one
+ * is a real code counted in the fixtures.
+ */
+test('⭐ the states the eight-code list could not see', () => {
+  // 3-on-3 overtime. Both goalies in, equal skaters — EVEN by the same clause
+  // that reads 5v5 and 4v4, which were both on the old list. 44 events.
+  assert.equal(situation('1331', base).kind, EVEN);
+  assert.equal(situation('1331', base).advantage, null, 'nobody has an advantage at 3-on-3');
+  assert.equal(isEven('1331', base), true,
+    'isEven has documented "5v5, 4v4 or 3v3" the whole time it refused 3v3');
+
+  // Five-on-three, both ways round. 15 events.
+  assert.equal(situation('1351', base).kind, POWER_PLAY);
+  assert.equal(situation('1351', base).advantage, base.homeId, 'home has five against three');
+  assert.equal(situation('1531', base).advantage, base.awayId, 'and away, mirrored');
+
+  // Four-on-three. 4 events.
+  assert.equal(situation('1431', base).kind, POWER_PLAY);
+  assert.equal(situation('1431', base).advantage, base.awayId);
+
+  // An empty net alongside a two-man edge — the branch that needs BOTH rules.
+  assert.equal(situation('1460', base).kind, EMPTY_NET,
+    'a pulled goalie still outranks the skater count');
+});
+
+/**
+ * ⭐⭐ THE REGULATION PENALTY SHOT — Kevin's correction, and the population it turns on.
+ *
+ * I refused this shape and argued the rule for it: a state designed against data
+ * we do not hold is how the blocked-shot flip got in. Kevin: *"I am sure there
+ * are penalty shots in regulation time, not frequent but enough to warrant a
+ * valid condition."* He is right, and the evidence was already in the repo —
+ * `extract.py` says the shape "blocks 44 games in REGULATION, because it is also
+ * a PENALTY SHOT," naming game 2025010011. **The rule was sound and I applied it
+ * to the wrong population:** seven fixtures are not the archive.
+ *
+ * ⚠️ WHICH IS WHY THIS TEST SAYS WHAT IT CANNOT SEE. No fixture holds a
+ * regulation penalty shot, so the frames below are CONSTRUCTED. Green here means
+ * the branch is right, not that it has ever met real recorded play — and the
+ * archive guard is what will close that, not this file.
+ */
+test('⭐ a regulation penalty shot is a state, not a shrug', () => {
+  const away = situation('0101', base);
+  assert.equal(away.kind, PENALTY_SHOT);
+  assert.equal(away.advantage, base.awayId, 'the side with one skater is shooting');
+  const home = situation('1010', base);
+  assert.equal(home.kind, PENALTY_SHOT);
+  assert.equal(home.advantage, base.homeId, 'and mirrored');
+
+  // NOT EVEN STRENGTH — the filtering is unchanged, only the words are new.
+  assert.equal(isEven('0101', base), false);
+  const why = whyNotEven({ sit: '0101' }, base);
+  assert.match(why, /penalty shot/, 'the ledger names it');
+  assert.doesNotMatch(why, /could not read/, 'it is no longer a refusal');
+  assert.equal(why.startsWith(base.awayAb), true, 'and names the shooting club');
+
+  /* ⭐ THE SHOOTOUT IS UNAFFECTED, which is the whole reason this is safe. Every
+     one of the 26 such codes in our fixtures is `pt === 'SO'`, and `inShootout`
+     removes those before strength is consulted — so reading the shape here
+     cannot leak shootout attempts into a count. Proven, not asserted. */
+  const so = EVENTS.map((e, i) => i === 5 ? { ...e, sit: '0101', pt: 'SO' } : e);
+  const ev = corsi.reduce(so, even);
+  const entry = ev.excluded.find(x => x.id === 5);
+  assert.ok(entry, 'a shootout frame must still be excluded');
+  assert.ok(entry.dims.play, 'and excluded on the PLAY dimension, before strength is asked');
+  assert.doesNotMatch(JSON.stringify(entry.dims), /penalty shot/,
+    'the shootout must never be described as a penalty shot');
+  assert.match(entry.dims.strength, /shootout attempt/,
+    'and the strength sentence names what it actually is');
+
+  /* ⭐ THE SAME CODE, THE OTHER PERIOD — the pair that proves the period is what
+     is doing the work. One assertion alone is satisfied by a branch that always
+     returns the same string. */
+  assert.match(whyNotEven({ sit: '0101', pt: 'REG' }, base), /penalty shot/);
+  assert.match(whyNotEven({ sit: '0101', pt: 'SO' }, base), /shootout attempt/);
+});
+
+/**
+ * ⛔ AND WHAT IS STILL REFUSED — the half that makes the change safe.
+ *
+ * Widening a decoder is only correct if the refusals that remain are the ones we
+ * mean. Each of these is a DIFFERENT reason, so a single over-broad clause
+ * cannot satisfy them all.
+ */
+test('⛔ the refusals that remain, one per reason', () => {
+  assert.equal(situation('2551', base), null, 'a goalie digit above 1 is not our flag');
+  assert.equal(situation('1552', base), null, 'nor at the other end');
+  assert.equal(situation('1751', base), null, `${SKATERS_MAX} skaters is the ceiling`);
+  assert.equal(situation('1251', base), null, `${SKATERS_MIN} is the floor`);
+  assert.equal(situation('0660', base), null,
+    'both nets empty names no club, so it states nothing');
+  /* ⛔ THE PENALTY-SHOT SHAPE NEEDS BOTH HALVES. One skater against none is only
+     a penalty shot when the shooter has no goalie and the defender does; a code
+     that counts 1 and 0 any other way is a code we do not recognise, not a
+     penalty shot we narrate. Without this the branch would swallow anything
+     shaped vaguely like it. */
+  assert.equal(situation('1101', base), null,
+    'the shooter still has a goalie in net — not the penalty-shot arrangement');
+  assert.equal(situation('0100', base), null, 'nobody is defending the net');
+  assert.equal(situation('155', base), null, 'three digits');
+  assert.equal(situation('15a1', base), null, 'not a number');
+  assert.equal(situation(1551, base), null, 'a number, not the string the feed sends');
+});
+
+/**
+ * ⭐⭐ THE SENTENCE THAT WAS A FALSE CLAIM ABOUT THE LEAGUE.
+ *
+ * `summarise` puts this string in the work panel, where a novice reads it. It
+ * said "game state not recorded for this event" — but the state IS recorded: the
+ * feed sent a code and `extract.py` stored it under `sit`. We could not read it.
+ * Blaming the league for our own gap is precisely the class of claim this site
+ * exists not to make, and no arithmetic check anywhere could have seen it.
+ */
+test('⭐ the refusal blames us, not the league', () => {
+  const why = whyNotEven({ sit: '0660' }, { ...base, evenOnly: true });
+  assert.ok(why, 'an unreadable code must cost the event its place, not buy one');
+  assert.doesNotMatch(why, /not recorded|no record|missing/i,
+    'the league recorded it — we could not read it');
+  assert.match(why, /could not read/);
+
+  // NULL MEANS EVEN AND ONLY EVEN — the property the old docstring described
+  // backwards, and the one every `evenOnly` caller depends on.
+  assert.equal(whyNotEven({ sit: '1551' }, base), null, 'even strength, and nothing else');
+  assert.equal(whyNotEven({ sit: '1331' }, base), null, '3-on-3 is even too');
+  assert.ok(whyNotEven({ sit: '9999' }, base), 'unreadable is a reason, never silence');
 });
 
 test('an empty net outranks the skater count', () => {
@@ -108,7 +261,7 @@ test('every strength exclusion names the situation in plain language', () => {
   const strength = ev.excluded.filter(x => x.dims && x.dims.strength);
   assert.ok(strength.length >= 49, `${strength.length} events cite a strength reason`);
   for (const x of strength) {
-    assert.match(x.dims.strength, /power play|pulled their goalie|not recorded/,
+    assert.match(x.dims.strength, /power play|pulled their goalie|could not read/,
       `event ${x.id}: ${x.dims.strength}`);
   }
 });
@@ -154,9 +307,12 @@ test('the skater counts are stated from the named team\'s side', () => {
   // Exhaustive over KNOWN_SITUATIONS rather than over the codes this game
   // happens to contain -- 1560, 1450 and 1540 never occur here, and those are
   // exactly the branches nobody would notice were wrong.
-  for (const code of KNOWN_SITUATIONS) {
+  for (const code of READABLE) {
     const s = situation(code, base);
-    if (s.kind === EVEN) continue;
+    // EVEN has no sentence, and a PENALTY SHOT deliberately quotes no counts —
+    // "1 skater against 0" is arithmetic that teaches nothing. Both are asserted
+    // on their own terms below rather than forced through this parser.
+    if (s.kind === EVEN || s.kind === PENALTY_SHOT) continue;
 
     const msg = whyNotEven({ sit: code }, base);
     const m = msg.match(/^(\w+) .*— (\d+) skaters against (\d+)/);
@@ -181,7 +337,7 @@ test('a team on the power play never reads as having fewer skaters', () => {
   // The symptom, pinned separately from the rule above. This is the sentence a
   // novice actually reads, and it must not contradict itself no matter how the
   // ordering is implemented.
-  for (const code of KNOWN_SITUATIONS) {
+  for (const code of READABLE) {
     const s = situation(code, base);
     if (s.kind !== POWER_PLAY) continue;
     const [, own, opp] = whyNotEven({ sit: code }, base)
@@ -200,14 +356,36 @@ test('a team on the power play never reads as having fewer skaters', () => {
 
 test('the badge is dark at even strength and on a code we cannot read', () => {
   // It sits on screen rather than flashing, so a wrong badge is wrong for
-  // minutes. `1331` (3-on-3 overtime) and `1531` (five-on-three) are real codes
-  // from the archive that `KNOWN_SITUATIONS` does not carry; the badge must go
-  // dark on them rather than fall back to a guess.
+  // minutes.
   assert.equal(standing('1551', base), null, '5v5 is not a condition worth a badge');
   assert.equal(standing('1441', base), null, '4v4 is even strength');
-  assert.equal(standing('1331', base), null, '3-on-3 overtime is unreadable, not even');
-  assert.equal(standing('1531', base), null, 'five-on-three is unreadable, not a power play');
+  assert.equal(standing('1331', base), null, '3-on-3 overtime is even strength');
   assert.equal(standing(undefined, base), null);
+  assert.equal(standing('1991', base), null, 'nine skaters a side is not a state we read');
+});
+
+/**
+ * ⭐⭐ THE ASSERTION THAT WOULD HAVE STAYED GREEN WHILE ITS MESSAGE WENT FALSE.
+ *
+ * The line above used to read `standing('1331') === null, '3-on-3 overtime is
+ * UNREADABLE, not even'` — and after the decoder landed, 3-on-3 became EVEN,
+ * for which `standing` also returns null. Same assertion, same green, opposite
+ * reason, and nothing in the suite could tell the difference. A test whose
+ * MESSAGE is the only thing that changed is a test that stopped describing the
+ * code, so the fact has to be pinned where a wrong answer is a wrong VALUE.
+ *
+ * `1531` is the one that moved: five-on-three was refused and is now a power
+ * play, so the badge that was dark must now be lit. That is a value, and it is
+ * the direction of this whole change stated as one.
+ */
+test('⭐ five-on-three lights the badge it used to be blind to', () => {
+  assert.equal(situation('1331', base).kind, EVEN,
+    '3-on-3 overtime — both goalies in, equal skaters');
+  const s = standing('1531', base);
+  assert.ok(s, 'five-on-three is a condition, and the badge must say so');
+  assert.equal(s.kind, POWER_PLAY);
+  assert.equal(s.id, base.awayId, 'the away side has five against three');
+  assert.equal(s.own, 5); assert.equal(s.opp, 3);
 });
 
 test('⭐ the badge and the ledger name the SAME team and quote the SAME counts', () => {
@@ -216,23 +394,39 @@ test('⭐ the badge and the ledger name the SAME team and quote the SAME counts'
   // either side, these two stop agreeing and this fails — which is the only
   // way to catch a second copy that happens to be right on the codes the
   // reference game contains and backwards on the four it does not.
-  let checked = 0;
-  for (const code of KNOWN_SITUATIONS) {
+  let checked = 0, shots = 0;
+  for (const code of READABLE) {
     const s = situation(code, base);
     if (s.kind === EVEN) continue;
     const b = standing(code, base);
-    const [, ab, own, opp] = whyNotEven({ sit: code }, base)
-      .match(/^(\w+) .*— (\d+) skaters against (\d+)/);
+    const msg = whyNotEven({ sit: code }, base);
+
+    /* ⭐ THE PENALTY SHOT IS HELD TO THE HALF OF THE GUARANTEE THAT APPLIES.
+       WHICH TEAM is the part that has ever been wrong, and it is checked here
+       exactly as for the other kinds. The counts are not compared because
+       neither surface prints them — and THAT is asserted, so the day one of them
+       starts quoting "1 on 0" this notices rather than skipping it. */
+    if (s.kind === PENALTY_SHOT) {
+      const [, ab] = msg.match(/^(\w+) /);
+      assert.equal(b.ab, ab, `${code}: badge says ${b.ab}, ledger says ${ab}`);
+      assert.doesNotMatch(msg, /\d/, `${code}: the ledger quoted a count — ${msg}`);
+      assert.doesNotMatch(b.count, /\d/, `${code}: the badge quoted a count — ${b.count}`);
+      shots++;
+      continue;
+    }
+
+    const [, ab, own, opp] = msg.match(/^(\w+) .*— (\d+) skaters against (\d+)/);
     assert.equal(b.ab, ab, `${code}: badge says ${b.ab}, ledger says ${ab}`);
     assert.equal(b.count, `${own} on ${opp}`,
       `${code}: badge says "${b.count}", ledger says ${own} against ${opp}`);
     checked++;
   }
   assert.ok(checked >= 6, `only ${checked} non-even codes compared`);
+  assert.equal(shots, 2, 'both penalty-shot codes must be reached, or the branch is untested');
 });
 
 test('the badge never says a team on the power play has fewer skaters', () => {
-  for (const code of KNOWN_SITUATIONS) {
+  for (const code of READABLE) {
     const s = situation(code, base);
     if (s.kind !== POWER_PLAY) continue;
     const b = standing(code, base);
@@ -474,13 +668,14 @@ test('the placeholder guard fires when the context is missing a field', () => {
 });
 
 test('an unreadable situation code is refused rather than assumed even', () => {
-  // The set is known-incomplete: a real season adds 3-on-3, 5-on-3, 4-on-3 and
-  // both goalies pulled. Treating an unknown code as "even" would silently fold
-  // a state we do not understand into the number we are most careful about.
+  // Reading the digits shrank this set — 3-on-3, 5-on-3 and 4-on-3 are states
+  // now, not refusals — but it did not empty it, and the league can still send
+  // something new. Treating an unknown code as "even" would silently fold a
+  // state we do not understand into the number we are most careful about.
   const bogus = EVENTS.map((e, i) => i === 5 ? { ...e, sit: '7777' } : e);
   const ev = corsi.reduce(bogus, even);
   const entry = ev.excluded.find(x => x.id === 5);
   assert.ok(entry, 'the event is excluded, not counted');
-  assert.match(entry.dims.strength, /not recorded/, 'and says why');
+  assert.match(entry.dims.strength, /could not read/, 'and says why');
   assert.equal(isEven('7777', base), false, 'never treated as even');
 });

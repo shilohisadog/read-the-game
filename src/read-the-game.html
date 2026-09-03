@@ -2751,10 +2751,53 @@ function summarise(excluded) {
  * mattered: 12 of Minnesota's 80 attempts came 6-on-5 with their own net empty,
  * which is the entire gap between 59.3% control and 55.8%.
  *
- * THE SET OF CODES IS KNOWN-INCOMPLETE. This game shows five. A real season adds
- * 3-on-3 overtime, 5-on-3, 4-on-3, penalty shots and both goalies pulled. So an
- * unrecognised code returns `null` and the caller must refuse to classify rather
- * than guess — the same gate `extract.py --vocab` applies at ingestion.
+ * ⭐ THE CODE IS DECODED, NOT LOOKED UP — and that is a correction, not a design.
+ *
+ * This was a set of eight literal codes, and its own comment said where they came
+ * from: "This game shows five." A rule derived from one game. It then GAINED
+ * CODES TWICE, which is the defect being paid in instalments rather than fixed —
+ * `extract.py::situation_ok` names this exact list as its precedent for the same
+ * correction ("a rule derived from a sample is still a sample. That is the same
+ * correction as FINAL_STATES, as the eight situation codes").
+ *
+ * So the digits are read instead. A side dresses between 3 and 6 skaters: three
+ * in a 3-on-3 overtime or two men down, six with the goalie pulled. `extract.py`
+ * bounds it identically (`SKATERS = range(3, 7)`) and for the same reason.
+ *
+ * ⭐ WHAT THE ALLOWLIST WAS COSTING, measured over the seven fixtures (2,793
+ * events carrying a code — a fixture figure, not an archive one): 91 refusals,
+ * 3.26%, across nine codes. FORTY-FOUR of them `1331`, which is 3-on-3 overtime
+ * — both goalies in, equal skaters, EVEN by the very logic below, refused only
+ * because a list did not name it. `1441` (4-on-4) was listed and read as even, so
+ * "even but unusual counts as even" was already the rule; 3-on-3 was an omission,
+ * never a position. `isEven`'s docstring has said "5v5, 4v4 or 3v3" the whole time.
+ *
+ * ⛔ STILL REFUSED, AND THE REFUSAL IS THE POINT. A goalie digit above 1, a
+ * skater count outside 3-6, and BOTH nets empty at once. That last is one event
+ * in 2,793 and we have no sentence for it that names the right club, so it
+ * refuses rather than naming one — the same rule as everywhere else here.
+ *
+ * ⭐ THE ONE-SKATER-AGAINST-NONE SHAPE (`0101`, `1010`) IS A PENALTY SHOT.
+ *
+ * ⚠️ I FIRST REFUSED IT ON THE GROUNDS THAT OUR FIXTURES CONTAIN NO REGULATION
+ * ONE — all 26 are `pt === 'SO'`, and `inShootout` removes those before strength
+ * is asked — citing the rule that a state designed against absent data is how the
+ * blocked-shot flip got in. Kevin: *"I am sure there are penalty shots in
+ * regulation time, not frequent but enough to warrant a valid condition."*
+ *
+ * He is right, and the evidence was already in this repo: `extract.py` says the
+ * shape "blocks 44 games in REGULATION, because it is also a PENALTY SHOT",
+ * naming game 2025010011 — a `ps-slash-on-breakaway` at 19:44 of the second
+ * period, then a goal at `0101`. **The rule was applied to the wrong
+ * population.** Seven fixtures are not the archive, and the archive has these.
+ *
+ * ⚠️ SO ITS COVERAGE HERE IS SYNTHETIC, AND THAT IS SAID OUT LOUD. No fixture
+ * exercises the regulation path; the tests construct the frame. Green here means
+ * the branch is correct, NOT that it has been seen against real recorded play.
+ *
+ * The shape names itself: the side with ONE skater and no goalie is shooting,
+ * the side with NO skaters and a goalie is defending. Both codes agree, and a
+ * pair that does not hold that relationship is refused rather than read.
  *
  * ONE empty-net state, deliberately. A pulled goalie means opposite things
  * trailing late (desperation) and on a delayed penalty (free attack), but this
@@ -2767,24 +2810,55 @@ function summarise(excluded) {
 const EVEN = 'even';
 const POWER_PLAY = 'power-play';
 const EMPTY_NET = 'empty-net';
-
-/** Codes this module knows how to read. Anything else is a refusal, not a guess. */
-const KNOWN_SITUATIONS = new Set([
-  '1551', '1541', '1451', '1441', '0651', '1560', '1450', '1540',
-]);
+const PENALTY_SHOT = 'penalty-shot';
 
 /**
- * @returns {{kind, advantage, away, home, code}} or null if unrecognised.
+ * How many skaters a side can have on the ice. `extract.py::SKATERS` is the same
+ * range; both are bounds on what the digit can mean, not a list of what we saw.
+ */
+const SKATERS_MIN = 3, SKATERS_MAX = 6;
+
+/**
+ * @returns {{kind, advantage, away, home, code}} or null if it cannot be read.
  *   kind       EVEN | POWER_PLAY | EMPTY_NET
  *   advantage  team id with the extra skater, or null
  */
 function situation(code, ctx) {
-  if (!code || !KNOWN_SITUATIONS.has(code)) return null;
+  if (typeof code !== 'string' || !/^[0-9]{4}$/.test(code)) return null;
 
-  const awayGoalie = code[0] !== '0';
+  // The goalie digits are a flag: in the net, or not. Anything else is a code
+  // shaped like ours that does not mean what ours means.
+  if (code[0] > '1' || code[3] > '1') return null;
+  const awayGoalie = code[0] === '1';
+  const homeGoalie = code[3] === '1';
   const away = +code[1];
   const home = +code[2];
-  const homeGoalie = code[3] !== '0';
+
+  /* A PENALTY SHOT, CHECKED BEFORE THE SKATER RANGE because its digits are
+     deliberately outside it. The shooter is the side holding ONE skater and no
+     goalie; the defender has none on the ice and its goalie in. Both halves are
+     required, so a code that merely counts 1 and 0 without that goalie
+     arrangement is refused rather than narrated as a penalty shot.
+
+     `pt === 'SO'` carries the shootout, and `inShootout` removes those before
+     strength is consulted — so in practice this branch describes the REGULATION
+     penalty shot, which is live play: it counts toward the score and counts as a
+     shot on goal. It is not even strength, so `evenOnly` still excludes it; what
+     changes is that the ledger now says WHY in words that are true. */
+  if ((away === 1 && home === 0 && !awayGoalie && homeGoalie)
+   || (home === 1 && away === 0 && !homeGoalie && awayGoalie)) {
+    return { kind: PENALTY_SHOT, code, away, home,
+             advantage: away === 1 ? ctx.awayId : ctx.homeId };
+  }
+
+  // Outside this range the digits are not a skater count we can reason about.
+  if (away < SKATERS_MIN || away > SKATERS_MAX) return null;
+  if (home < SKATERS_MIN || home > SKATERS_MAX) return null;
+
+  // BOTH NETS EMPTY HAS NO SENTENCE, so it has no state. `relativeTo` would name
+  // one club as the one that pulled, and with both digits at 0 either answer is
+  // half false. One event in 2,793 — refused rather than narrated.
+  if (!awayGoalie && !homeGoalie) return null;
 
   // An empty net dominates: 6-on-5 with a net empty is not a power play, and
   // calling it one would put desperation time in the same bucket as a penalty.
@@ -2833,14 +2907,50 @@ function relativeTo(s, ctx) {
 
 /**
  * Why this event is not even-strength play, in a sentence a novice can use.
- * Returns null when it IS even strength, or when the code is unreadable.
+ *
+ * ⭐ NULL MEANS EVEN, AND ONLY EVEN. An unreadable code returns a REASON, so the
+ * caller excludes it — refusing to classify must cost the event its place in the
+ * count, never quietly buy it one.
+ *
+ * ⚠️ THIS DOCSTRING SAID THE OPPOSITE OF THE CODE, and said it in the dangerous
+ * direction: "returns null when it IS even strength, or when the code is
+ * unreadable." Five of six layers call this to decide what `evenOnly` drops, so
+ * anyone writing a caller from the documentation would have written the defect.
+ * The code was right the whole time; the words about it were not, which is the
+ * failure this project's quality actually turns on.
+ *
+ * ⚠️ AND THE REFUSAL SENTENCE WAS A FALSE CLAIM ON A PUBLISHED SURFACE. It read
+ * "game state not recorded for this event" and went into the work panel ledger
+ * through `summarise`. The state IS recorded — the league sent a code and the
+ * extract stored it; we could not read it. Telling a novice the league failed to
+ * record something it recorded is exactly the kind of claim this site exists to
+ * not make. It now says what is true, and blames the reader it should blame: us.
  */
 function whyNotEven(e, ctx) {
   const s = situation(e.sit, ctx);
-  if (s == null) return `game state not recorded for this event`;
+  if (s == null) return `we could not read the game state at this moment`;
   if (s.kind === EVEN) return null;
 
   const { ab, own, opp } = relativeTo(s, ctx);
+  /* ⭐ THE PENALTY SHOT DOES NOT QUOTE SKATER COUNTS, because "1 skater against
+     0" is arithmetic that teaches nothing — the point is one shooter and one
+     goalie, which is what a novice sees. The other two sentences carry counts
+     because there the counts ARE the condition. */
+  /* ⚠️ THE SAME FOUR DIGITS MEAN TWO DIFFERENT THINGS, AND THE PERIOD IS WHAT
+     TELLS THEM APART. `extract.py::situation_ok` takes a `period_type` for
+     exactly this reason and says so: "0101 is a coherent shootout and an
+     impossible even-strength shift." `situation()` sees only the code, so the
+     distinction is drawn here, where the EVENT is in hand.
+
+     ⚠️ CAUGHT BY ITS OWN TEST, NOT BY REVIEW. The first version of this branch
+     called every one of them a penalty shot, so a shootout attempt — already
+     excluded on the `play` dimension — carried a second, false sentence saying
+     it was a penalty shot. `isNearMiss` PROMOTES a `play` exclusion to a row of
+     its own, so that sentence was headed for the work panel. */
+  if (s.kind === PENALTY_SHOT)
+    return e.pt === 'SO'
+      ? `${ab} were taking a shootout attempt — one skater against the goalie`
+      : `${ab} were awarded a penalty shot — one skater against the goalie`;
   return s.kind === EMPTY_NET
     ? `${ab} had pulled their goalie — ${own} skaters against ${opp} with an empty net`
     : `${ab} were on the power play — ${own} skaters against ${opp}`;
@@ -2871,9 +2981,13 @@ function standing(code, ctx) {
   const s = situation(code, ctx);
   if (s == null || s.kind === EVEN) return null;
   const { id, ab, own, opp } = relativeTo(s, ctx);
-  return { kind: s.kind, id, ab, own, opp,
-           said: s.kind === EMPTY_NET ? 'net empty' : 'power play',
-           count: `${own} on ${opp}` };
+  const said = s.kind === EMPTY_NET ? 'net empty'
+             : s.kind === PENALTY_SHOT ? 'penalty shot'
+             : 'power play';
+  /* THE BADGE'S COUNT MATCHES ITS SENTENCE. "1 on 0" beside "penalty shot" is
+     the arithmetic the ledger already refuses to print for the same reason. */
+  return { kind: s.kind, id, ab, own, opp, said,
+           count: s.kind === PENALTY_SHOT ? 'on the goalie' : `${own} on ${opp}` };
 }
 
 /**
