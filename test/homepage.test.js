@@ -20,7 +20,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const html = readFileSync(new URL('../src/index.html', import.meta.url), 'utf8');
-const PAGES_TO_CHECK = Object.fromEntries(['index.html','game.html','read-the-game.html','goalie-view.html','goalie-eye-view.html']
+const PAGES_TO_CHECK = Object.fromEntries(['index.html','game.html','read-the-game.html','goalie-eye-view.html']
   .map(f => [f, readFileSync(new URL('../src/' + f, import.meta.url), 'utf8')]));
 const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
 

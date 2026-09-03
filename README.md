@@ -59,8 +59,10 @@ Everything in this repo is a different way of making that visible.
   seats in the building. Same real data, the camera just moves.
 - **`terrain-3d.html`** — shot density as terrain. Height is real kernel
   density: *volume, not expected goals.*
-- **`active-play.html`**, **`on-the-ice.html`**, **`goalie-view.html`** —
-  earlier 2D prototypes, kept for reference.
+Three earlier 2D prototypes — `active-play`, `on-the-ice` and `goalie-view` —
+were removed on 2026-09-03 rather than left standing as things a reader would
+reasonably assume were current. They are in the history if you want them, and
+what each one taught is recorded in [docs/status.md](docs/status.md) §B8.
 
 ## Data
 

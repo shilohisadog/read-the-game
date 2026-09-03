@@ -322,10 +322,10 @@ const travel = (name, from, to, go = 8, stop = 55) =>
    teach the rule AND the limit, which is the more useful pair.
 
    ⚠️ AND IT IS THE FIGURE THAT COMES CLOSEST TO A LINE WE DO NOT CROSS. It puts
-   a skater at a coordinate nobody recorded — the thing `on-the-ice.html` refuses
-   in its own banner. That is legitimate for a rule diagram and would be a
-   violation as a game rendering, so the outlined-neutral grammar above is doing
-   real work here rather than decorating.
+   a skater at a coordinate nobody recorded — the thing DOCTRINE §5 refuses. That
+   is legitimate for a rule diagram and would be a violation as a game rendering,
+   so the outlined-neutral grammar above is doing real work here rather than
+   decorating.
 
    ATTACKING TOWARD SCREEN-RIGHT, which is the reading direction. `SX` decreases
    with rink x, so the attacked net is at rink -89 and the blue line the play is
@@ -709,10 +709,17 @@ function slot() {
 
 /* ── THE EMPTY NET ──────────────────────────────────────────────────────────
    ⚠️⚠️ THE FIGURE THAT COMES CLOSEST TO FAKING SOMETHING, AND THE SITE ALREADY
-   KNEW THE ANSWER. `on-the-ice.html` carries this banner: *"players are arranged
-   by role (goalie · defense · forwards), not by tracked position — real skater
-   coordinates aren't public, so we don't fake them. What's real here is who is on
-   the ice, and when."*
+   KNEW THE ANSWER. DOCTRINE §5: *"where several players must be shown at once,
+   they are arranged by role (goalie · defense · forwards), never by tracked
+   position — real skater coordinates are not public, so we do not fake them.
+   What is real is who is on the ice, and when."*
+
+   ⭐ THAT SENTENCE USED TO LIVE ON `on-the-ice.html`, AND THIS CITED IT THERE.
+   When that page was removed the quote would have become an attribution to a
+   file that does not exist — the reasoning still right, its source gone. So the
+   rule moved into DOCTRINE.md, where it was always the real home: a limit the
+   whole site is held to, not a note on one prototype's banner. Load-bearing
+   doctrine must not live on a page that can be deleted.
 
    Six attackers drawn in a shape is a FORMATION, and a formation is the one thing
    that banner refuses. It is also unnecessary: what changes when a goaltender is

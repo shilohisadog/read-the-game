@@ -53,6 +53,17 @@ That's decoration, not fabrication.
 Fabrication would be inventing where players skated or how they moved. That
 needs per-frame tracking data we do not have and will not estimate.
 
+**So where several players must be shown at once, they are arranged by role
+(goalie · defense · forwards), never by tracked position — real skater
+coordinates are not public, so we do not fake them. What is real is who is on
+the ice, and when.**
+
+That sentence is load-bearing rather than decorative: it is the reason the
+empty-net figure draws the *change* — the goaltender leaving the crease, one
+extra attacker arriving — instead of six attackers in a shape. Six bodies
+arranged on the ice is a **formation**, and a formation is exactly the thing
+this rule refuses. It has been applied against a figure we wanted to draw.
+
 The stylization actually helps here — a figure that obviously reads as a
 drawing can't be mistaken for a simulation. Cartoonishness is a form of
 honesty.

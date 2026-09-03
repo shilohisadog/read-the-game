@@ -61,12 +61,6 @@ def _csp(html, *, connect=DATA_ORIGIN):
 WORKSHOP = [
     ("read-the-game.html", "The reference game",
      "MIN at BUF, 10 November 2023, compiled in — the one page that works offline."),
-    ("goalie-view.html", "The goalie view",
-     "Minnesota outshot Buffalo and lost. This is the save-by-save reason why."),
-    ("on-the-ice.html", "On the ice",
-     "Who was actually out there, read from the shift charts."),
-    ("active-play.html", "Active play",
-     "Following the puck between whistles, and who touched it."),
     ("goalie-eye-view.html", "From the crease",
      "The same shots, seen from where the goalie stood."),
     ("terrain-3d.html", "Where the chances came from",
