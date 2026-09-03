@@ -52,6 +52,7 @@ without this index moving with it.
 
 | | |
 |---|---|
+| **[sx-scope-question.md](sx-scope-question.md)** | ⏸ **one question, for review** — the `SX` scope ruling is enforced by the build; making `app.js` a module changes that. Blocks the step it names. |
 | **[app-state-phase1.md](app-state-phase1.md)** | ⏸ **proposal, for review** — `app.js` is one 3,311-line function; removing the eight bindings that were never state. |
 | **[app-state-phase2.md](app-state-phase2.md)** | ⏸ **proposal, for review** — one write path for the sixteen that are. Depends on phase 1. |
 | **[main-app-rework.md](main-app-rework.md)** | 🏛 the audit that turned one HTML file into a program. Historical, and the origin of the current build chain. |
