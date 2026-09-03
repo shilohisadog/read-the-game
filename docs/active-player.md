@@ -1,5 +1,7 @@
 # The active player, in the main replay — audit and a proposal
 
+> ✅ **SHIPPED — status added 2026-09-03.** The active-player line is live in the main replay (`src/app.js::sayWho`). The line below was true when this was written and stayed on the page after it stopped being true, which is the same drift this project keeps finding elsewhere. **The argument is left exactly as it was argued**; only this banner is new.
+
 **Written 2026-09-01 for CHENG's review. Nothing here is built.**
 
 Kevin: *"I was looking at 'Workshop' and had forgotten we have the player that's

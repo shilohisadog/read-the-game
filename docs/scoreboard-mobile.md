@@ -1,5 +1,7 @@
 # The scoreboard on a phone — audit and proposal
 
+> ✅ **SHIPPED — status added 2026-09-03.** The mobile scoreboard shipped; `test/u11-mobile.test.js` guards it. The line below was true when this was written and stayed on the page after it stopped being true, which is the same drift this project keeps finding elsewhere. **The argument is left exactly as it was argued**; only this banner is new.
+
 **Written 2026-08-25 for CHENG's review. Nothing here is built.**
 
 Kevin, holding his phone up to a laptop camera because the defect would not

@@ -1,5 +1,7 @@
 # The penalties card — audit, and a sixth diagram
 
+> ✅ **SHIPPED — status added 2026-09-03.** `src/penalties.html` is live, and the lede was reworked again on 2026-09-01. The line below was true when this was written and stayed on the page after it stopped being true, which is the same drift this project keeps finding elsewhere. **The argument is left exactly as it was argued**; only this banner is new.
+
 **Written 2026-09-01 for CHENG's review. Nothing here is built.**
 
 Kevin: *"that's the only card that links to a game. Would it provide more

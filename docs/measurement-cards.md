@@ -1,5 +1,7 @@
 # The measurement cards — teaching what we count, not how we count it
 
+> ✅ **SHIPPED — status added 2026-09-03.** The slot card and `src/slot.html` shipped as the pilot; goaltending, blocked and control are still queued. The line below was true when this was written and stayed on the page after it stopped being true, which is the same drift this project keeps finding elsewhere. **The argument is left exactly as it was argued**; only this banner is new.
+
 **For CHENG's review. Nothing here is built.** Kevin, 2026-09-01, after the rules
 half was reworked card by card:
 

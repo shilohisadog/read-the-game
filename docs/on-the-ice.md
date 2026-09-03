@@ -1,5 +1,7 @@
 # On the ice — from a list of names to what happened while they were out there
 
+> ⛔ **THE PAGE THIS DESCRIBES WAS REMOVED 2026-09-03** (commit `7b17715`), with `active-play.html` and `goalie-view.html`. It is kept because the argument is still the best statement of what shift data can and cannot show, and **K3 — "who's on the ice" — is still on the build list**; `shifts` stays in `builders/extract.py` for that reason. ⭐ Its banner sentence outlived it: *"players are arranged by role, not by tracked position — real skater coordinates aren't public, so we don't fake them"* is **DOCTRINE §5** now, because load-bearing doctrine must not live on a page that can be deleted.
+
 **Kevin, 2026-08-17:**
 
 > *"On the 'On the ice' page, we list the players on the ice for the whole game,

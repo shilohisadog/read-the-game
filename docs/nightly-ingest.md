@@ -1,5 +1,7 @@
 # The nightly ingest — acquisition, convergence, and keeping the audit whole
 
+> ✅ **SHIPPED — status added 2026-09-03.** The nightly ingest runs — `.github/workflows/ingest.yml`. The line below was true when this was written and stayed on the page after it stopped being true, which is the same drift this project keeps finding elsewhere. **The argument is left exactly as it was argued**; only this banner is new.
+
 **Status:** design, for CHENG's review. Nothing here is built.
 **Date:** 2026-08-09
 **Supersedes:** the "Ingest worker" language in `docs/platform-architecture.md` §The architecture and §Phase 4, which assumed a Cloudflare Worker and never confronted that the extractor is Python.

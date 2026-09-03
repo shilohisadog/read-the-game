@@ -1,5 +1,7 @@
 # C1 — Discovery: a date path into the archive
 
+> ✅ **SHIPPED — status added 2026-09-03.** C1 shipped: `src/calendar.html` is live, including the nav entry. The line below was true when this was written and stayed on the page after it stopped being true, which is the same drift this project keeps finding elsewhere. **The argument is left exactly as it was argued**; only this banner is new.
+
 **Status: audited and designed, nothing built.** This is the artifact for
 CHENG's review. Written 2026-08-21. Every number below was read from the live
 catalog or measured in a browser against production, not recalled.

@@ -1,5 +1,7 @@
 # Below the rink, again — audit and a layout proposal
 
+> ✅ **SHIPPED — status added 2026-09-03.** The layer surface, the distributions, the summary and the share links all shipped; §32.6 is closed. The line below was true when this was written and stayed on the page after it stopped being true, which is the same drift this project keeps finding elsewhere. **The argument is left exactly as it was argued**; only this banner is new.
+
 **Written 2026-08-25 for CHENG's review. Nothing here is built.**
 
 Kevin: *"I would like to re-imagine that area… now it's just a bunch of small
