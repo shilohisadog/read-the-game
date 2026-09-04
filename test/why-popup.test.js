@@ -23,6 +23,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { boot } from './helpers/page.js';
+import { whyMarkup } from '../src/lib/why.js';
 import { HIGH_DANGER_FT, SLOT_HALF_WIDTH, NET_X, isHighDanger } from '../src/lib/rink.js';
 
 /* ⭐ THE BUILT PAGE, NOT A SOURCE FILE — and moving the popup out of `app.js` is
@@ -34,6 +36,8 @@ import { HIGH_DANGER_FT, SLOT_HALF_WIDTH, NET_X, isHighDanger } from '../src/lib
    goes red on every future decomposition for no reason. */
 const APP = readFileSync(new URL('../src/read-the-game.html', import.meta.url), 'utf8');
 const RINK = readFileSync(new URL('../src/lib/rink.js', import.meta.url), 'utf8');
+const APP_SRC = readFileSync(new URL('../src/app.js', import.meta.url), 'utf8');
+const EVENTS = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url), 'utf8')).events;
 
 /** The body of `isHighDanger`, and the clauses it is made of. */
 function clauses() {
@@ -122,4 +126,68 @@ test('⭐ the net is drawn where rink.js says the net is', () => {
   assert.match(APP, /AX\(-NET_X,/, 'the home net is not placed from NET_X');
   assert.match(APP, /AX\(NET_X,/, 'the away net is not placed from NET_X');
   assert.match(APP, /\?NET_X:-NET_X/, 'the shot line does not target NET_X');
+});
+
+/**
+ * ⛔ THE ✕ NOW CLOSES THE POPUP, AND THE SEAM IT CREATED IS WHAT THIS GUARDS.
+ *
+ * It never closed anything: its markup carried `onclick="hideWhy()"`, which the
+ * page's CSP blocks outright (a script hash authorises an element, never an
+ * attribute) and which named a local of `boot` that global scope could not see.
+ * `test/inline-handlers.test.js` is the general guard; this is the behaviour.
+ *
+ * ⭐ AND THE FIX PUT TWO HALVES IN TWO FILES. `src/lib/why.js` emits the button's
+ * class; `src/app.js` delegates from the backdrop and asks for that class by
+ * name. Two things that must agree, with a file boundary between them, which is
+ * where every seam defect in this project has lived — so the class is READ OUT OF
+ * THE LISTENER and required in the markup, rather than typed twice here.
+ */
+/**
+ * A booted page with the popup open on the first shot that opens it.
+ *
+ * ⚠️ THE INDEX SPACE IS THE APP'S `EV`, NOT `data/rich.json`'s `events`, and the
+ * first draft of these tests assumed they were the same list. They are not, and
+ * the assumption failed as "the popup never opened" — which reads like a broken
+ * feature rather than a broken test. So the frame is FOUND by clicking rather
+ * than computed: walk until one opens, and say so loudly if none does.
+ */
+function openPopup() {
+  const a = boot(null, null, '?layer=slot');
+  for (let k = 0; k < 400; k++) {
+    a.at(k, () => {});
+    for (const fn of a.$('events')._on.click || []) fn({ target: { dataset: { i: String(k) } } });
+    if (a.$('whyBk').classList.contains('on')) return a;
+  }
+  throw new assert.AssertionError({ message: 'no click anywhere in the game opened the why-popup' });
+}
+
+test('⭐⭐ the ✕ closes the popup, and the class it needs is the one the app listens for', () => {
+  const listens = /classList\.contains\('([a-z]+)'\)/.exec(APP_SRC);
+  assert.ok(listens, 'the backdrop listener no longer delegates by class — re-read this test');
+  const cls = listens[1];
+
+  const shot = EVENTS.find(e => e.x != null && isHighDanger(e.x, e.y, 1));
+  const html = whyMarkup(shot, { dir: 1, AID: 1, AAB: 'AAA', HAB: 'HHH',
+                                 AWAYCOL: '#000', HOMECOL: '#fff', R: {} });
+  assert.match(html, new RegExp(`class="${cls}"`),
+    `the popup's close button does not carry "${cls}", which is the only class the `
+    + 'backdrop listener closes on — the button would be inert again');
+  assert.doesNotMatch(html, /onclick=/, 'the close button went back to an inline handler');
+
+  // The page itself: open the popup, press the ✕, and require it shut.
+  const a = openPopup();
+
+  const press = t => (a.$('whyBk')._on.click || []).forEach(fn => fn({ target: t }));
+  press({ classList: { contains: c => c === cls } });
+  assert.ok(!a.$('whyBk').classList.contains('on'), 'the ✕ did not close the popup');
+});
+
+test('⭐ …and a click on the card itself does NOT close it', () => {
+  /* THE CONTROL. A listener that closes on every click would pass the test above
+     and make the popup impossible to read — selecting the text would dismiss it. */
+  const a = openPopup();
+
+  (a.$('whyBk')._on.click || []).forEach(fn => fn({ target: { id: 'whyContent', classList: { contains: () => false } } }));
+  assert.ok(a.$('whyBk').classList.contains('on'),
+    'clicking inside the card closed it — reading the popup would dismiss it');
 });

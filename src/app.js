@@ -1887,7 +1887,25 @@ $('events').addEventListener('click',ev=>{const t=ev.target;if(t&&t.dataset&&t.d
    the same lesson `text-transform:capitalize` taught: the CSS is part of the
    program. It was also WRONG on its own terms, opening the why-card for the
    last slot shot no matter which event the caption was describing. */
-$('whyBk').addEventListener('click',e=>{if(e.target.id==='whyBk')hideWhy();});
+/* ⛔ THE ✕ CLOSED NOTHING FOR AS LONG AS IT HAS EXISTED, and it took two
+   independent things to make that true. Its markup carried `onclick="hideWhy()"`,
+   which resolves against the GLOBAL scope -- and `hideWhy` is a local of `boot`,
+   so the call was a ReferenceError even in a browser that ran it. No browser did:
+   the page's CSP names a script HASH and no `'unsafe-hashes'`, and a hash covers
+   a script ELEMENT, never an inline handler ATTRIBUTE. Blocked outright.
+   (⚠️ That sentence originally spelled the element's opening tag, and `page.py`'s
+   CSP builder counts those to check it hashed every block -- so the comment ABOUT
+   the policy broke the policy. Prose impersonating code, second time in this file
+   in two days. The assertion was loud, which is why it is only a footnote.)
+   Fifth dead affordance of this shape here (the caption's click handler, the
+   `goal` row in LAB, `rosterSpots`, an assertion on `undefined`), and the second
+   found by the stylesheet-and-headers half of the program rather than the script.
+   ⭐ DELEGATED RATHER THAN BOUND, because the button does not survive: the popup
+   rewrites `#whyContent` on every open, so a listener attached to the element
+   would be attached to a button that the next shot throws away. The backdrop is
+   permanent and was already listening. */
+$('whyBk').addEventListener('click',e=>{const t=e.target;
+ if(t&&(t.id==='whyBk'||(t.classList&&t.classList.contains('whyclose'))))hideWhy();});
 
 
 /* THE LABEL SAYS WHAT HAPPENED. A SECOND LINE IS ONLY EARNED BY SAYING WHETHER

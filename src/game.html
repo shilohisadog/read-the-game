@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-btdbJfKnWVVQOdzfPDrDTfxo8mU2STtiftFdqgzgomw=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-SccvklKRpHhYn1HIyLZKQbhxyrinqwZSr2J4V2THf0o='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-m85lrehap/sai1dMFMfsseDnXZ7VOZt4cagRLbdxso8=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-SccvklKRpHhYn1HIyLZKQbhxyrinqwZSr2J4V2THf0o='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">Watch a game</a><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see</a><a href="/workshop.html">Workshop</a></nav></header>
@@ -4197,7 +4197,7 @@ function whyMarkup(e, { dir, AID, AAB, HAB, AWAYCOL, HOMECOL, R }) {
    <circle cx="${HX(e.x).toFixed(1)}" cy="${HY(e.y).toFixed(1)}" r="2.8" fill="${col}" stroke="#fff" stroke-width=".7"/>
    <text x="${Math.min(HX(e.x)+4,78).toFixed(1)}" y="${(HY(e.y)-2.5).toFixed(1)}" font-size="4.2" fill="var(--ink)" font-weight="700">${Math.round(dist)} ft</text></svg>`;
  return `<div class="whyhd ${tid===AID?'a':'h'}"><div><div class="t">${isGoal?'🚨 A GOAL from the slot':'⚡ Why this counts as a slot shot'}</div>
-   <div class="s">${p?'#'+p.n+' '+p.nm:ab} · ${ab} · P${e.per} ${e.rem} · ${e.type.replace(/-/g,' ')}</div></div><button class="whyclose" onclick="hideWhy()">✕</button></div>
+   <div class="s">${p?'#'+p.n+' '+p.nm:ab} · ${ab} · P${e.per} ${e.rem} · ${e.type.replace(/-/g,' ')}</div></div><button class="whyclose" type="button" aria-label="Close">✕</button></div>
   <div class="whybody"><div class="whydiag">${diag}</div>
    <div class="factor"><span class="fv">${Math.round(dist)} ft</span><span class="fl">Distance to the net — <b>close</b>. Our rule: ≤ ${HIGH_DANGER_FT} ft. <span class="chk">✓</span></span></div>
    <div class="factor"><span class="fv">${Math.round(angle)}°</span><span class="fl">Angle off straight-on — ${angle<22?'<b>a clean look</b> at the net':'a slot-area angle'}. Lower = more net to shoot at.</span></div>
@@ -8329,7 +8329,25 @@ $('events').addEventListener('click',ev=>{const t=ev.target;if(t&&t.dataset&&t.d
    the same lesson `text-transform:capitalize` taught: the CSS is part of the
    program. It was also WRONG on its own terms, opening the why-card for the
    last slot shot no matter which event the caption was describing. */
-$('whyBk').addEventListener('click',e=>{if(e.target.id==='whyBk')hideWhy();});
+/* ⛔ THE ✕ CLOSED NOTHING FOR AS LONG AS IT HAS EXISTED, and it took two
+   independent things to make that true. Its markup carried `onclick="hideWhy()"`,
+   which resolves against the GLOBAL scope -- and `hideWhy` is a local of `boot`,
+   so the call was a ReferenceError even in a browser that ran it. No browser did:
+   the page's CSP names a script HASH and no `'unsafe-hashes'`, and a hash covers
+   a script ELEMENT, never an inline handler ATTRIBUTE. Blocked outright.
+   (⚠️ That sentence originally spelled the element's opening tag, and `page.py`'s
+   CSP builder counts those to check it hashed every block -- so the comment ABOUT
+   the policy broke the policy. Prose impersonating code, second time in this file
+   in two days. The assertion was loud, which is why it is only a footnote.)
+   Fifth dead affordance of this shape here (the caption's click handler, the
+   `goal` row in LAB, `rosterSpots`, an assertion on `undefined`), and the second
+   found by the stylesheet-and-headers half of the program rather than the script.
+   ⭐ DELEGATED RATHER THAN BOUND, because the button does not survive: the popup
+   rewrites `#whyContent` on every open, so a listener attached to the element
+   would be attached to a button that the next shot throws away. The backdrop is
+   permanent and was already listening. */
+$('whyBk').addEventListener('click',e=>{const t=e.target;
+ if(t&&(t.id==='whyBk'||(t.classList&&t.classList.contains('whyclose'))))hideWhy();});
 
 
 /* THE LABEL SAYS WHAT HAPPENED. A SECOND LINE IS ONLY EARNED BY SAYING WHETHER

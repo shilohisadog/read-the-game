@@ -115,6 +115,34 @@ export function facts() {
     impure: impure.map(f => f.replace('src/lib/', '')),
     appImports: (code(app).match(/^import\b/gm) || []).length,
     appExports: (code(app).match(/^export\b/gm) || []).length,
+    ...shape(app),
+  };
+}
+
+/**
+ * How much of `src/app.js` is prose about itself — §2's central figure.
+ *
+ * WRITTEN BECAUSE IT WAS TYPED BY HAND THREE TIMES AND DRIFTED EVERY TIME, into a
+ * document whose own header says no number in it is typed by hand. Every edit to
+ * that file moves these, so they are counted here or they are wrong.
+ *
+ * Whole lines, and deliberately the conservative reading: a line of code with a
+ * trailing comment counts as CODE. That understates the prose rather than
+ * flattering the argument section 2 makes with it.
+ */
+function shape(src) {
+  const rows = src.split('\n');
+  let comment = 0, blank = 0, block = false;
+  for (const line of rows) {
+    const t = line.trim();
+    if (!t) { blank++; continue; }
+    if (block) { comment++; if (t.includes('*/')) block = false; continue; }
+    if (t.startsWith('//')) { comment++; continue; }
+    if (t.startsWith('/*')) { comment++; if (!t.includes('*/')) block = true; continue; }
+  }
+  return {
+    appLines: rows.length, appComment: comment, appCode: rows.length - comment - blank,
+    appClaims: rows.filter(l => /\u2b50|\u26a0\ufe0f|\u26d4/.test(l)).length,
   };
 }
 
@@ -131,7 +159,10 @@ export function block(t, f, stamp) {
           + `the boundary §1 claims, verified here rather than asserted.`)
     + ` \`src/app.js\` **declares ${f.appImports} dependencies on that tier and exports `
     + `${f.appExports === 1 ? '1 function' : `${f.appExports} names`}** — it is a module, `
-    + `not a build template, and §2 is what remains.</sub>`,
+    + `not a build template, and §2 is what remains. Of its ${f.appLines.toLocaleString('en-US')} `
+    + `lines **${f.appComment.toLocaleString('en-US')} are comment-only and ${f.appCode} are code**, `
+    + `and **${f.appClaims} comment lines carry an explicit claim** about the code beside them — `
+    + `which is §2's argument, counted rather than asserted.</sub>`,
     SHUT].join('\n');
 }
 
@@ -149,20 +180,35 @@ function main() {
   const t = tiers(), f = facts();
   if (process.argv.includes('--check')) {
     /* ⭐ IT COMPARES THE TABLE, NOT A STAMP. A date tells you when somebody ran
-       this; only the numbers tell you whether they are still true. */
-    let bad = [];
-    for (const r of t) {
-      const row = new RegExp(`\\|\\s*\\*\\*${r.tier.replace(/\*/g, '\\*')}\\*\\*\\s*\\|[^|]*\\|[^|]*\\|\\s*([\\d,]+)\\s*\\|`);
-      const m = doc.match(row);
-      if (!m) { bad.push(`${r.tier}: no row`); continue; }
-      if (m[1] !== r.n.toLocaleString('en-US')) bad.push(`${r.tier}: says ${m[1]}, is ${r.n}`);
-    }
-    if (bad.length) {
-      console.error(`::error::docs/architecture.md's tier table is stale — ${bad.join('; ')}. `
+       this; only the numbers tell you whether they are still true.
+       ⚠️ AND IT USED TO COMPARE ONLY THE ROWS, which was fine until the block
+       gained a sentence. The moment `facts()` started publishing app.js's comment
+       and claim counts, those were generated, printed, read with trust — and
+       unchecked, because the loop below only ever knew about tiers. A generated
+       figure nothing verifies is a hand-typed figure with better manners. So the
+       WHOLE block is compared now, with the stamp masked out of both sides. */
+    const here = doc.slice(doc.indexOf(OPEN), doc.indexOf(SHUT) + SHUT.length);
+    const mask = b => b.replace(/Counted \d{4}-\d{2}-\d{2} by/, 'Counted <date> by');
+    if (mask(here) !== mask(block(t, f, '0000-00-00'))) {
+      /* Name the first line that differs: "the block is stale" sends a reader to
+         diff two paragraphs by eye. */
+      const A = mask(here).split('\n'), B = mask(block(t, f, '0000-00-00')).split('\n');
+      const i = A.findIndex((l, n) => l !== B[n]);
+      console.error("::error::docs/architecture.md's generated block is stale. "
         + 'Run `node tools/tiers.mjs`.');
+      /* A WINDOW ON THE DIVERGENCE, not the first 160 characters. The generated
+         sub-line is one long paragraph, so printing its head showed two identical
+         strings and told a reader nothing — the first version of this message did
+         exactly that. Skip the shared prefix, then show what follows. */
+      const a = A[i] ?? '', c = B[i] ?? '';
+      let j = 0; while (j < a.length && j < c.length && a[j] === c[j]) j++;
+      const from = Math.max(0, j - 30);
+      console.error(`    doc: …${a.slice(from, from + 140)}…`);
+      console.error(`    now: …${c.slice(from, from + 140)}…`);
       process.exit(1);
     }
-    console.log(`  architecture tier table agrees with the tree (${t.length} tiers)`);
+    console.log(`  architecture block agrees with the tree (${t.length} tiers, `
+      + `${f.libModules} analysis modules)`);
   } else {
     writeFileSync(DOC, splice(doc, block(t, f, new Date().toISOString().slice(0, 10))));
     console.log(`  tier table rewritten: ${t.length} tiers, ${f.libModules} analysis modules, `
