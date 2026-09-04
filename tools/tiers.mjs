@@ -99,13 +99,22 @@ export function facts() {
   const REACH = /(\bdocument\s*\.|\bwindow\s*\.|\blocalStorage\b|\bgetElementById\b|\bfetch\s*\(|\bXMLHttpRequest\b|from\s*['"]node:|\brequire\s*\()/;
   const impure = lib.filter(f => REACH.test(code(readFileSync(join(ROOT, f), 'utf8'))));
   const app = readFileSync(join(ROOT, 'src/app.js'), 'utf8');
-  const bindings = (app.match(/^(let|var) [^;]*/gm) || [])
-    .flatMap(s => s.replace(/^(let|var) /, '').split(',')).length;
+  /* ⚠️ THIS BLOCK USED TO PUBLISH A BINDING COUNT, AND IT WAS WRONG TWICE OVER.
+     `^(let|var) ` finds declarations at column zero, which inside a 3,300-line
+     function is an arbitrary subset -- it reported 24 where a hand audit of every
+     site found 25 -- and it called them "module-level" when every one of them is
+     a LOCAL of `boot`. A number a scanner cannot get right does not belong in a
+     generated block; it belongs in §2's prose with the audit that produced it.
+
+     What replaces it is what a tool can stand behind, and it is also the fact
+     that changed: since 2026-09-04 `src/app.js` is a module, so its dependencies
+     on the analysis tier are DECLARED rather than resolved by concatenation.
+     `test/app-imports.test.js` is what keeps that list honest. */
   return {
     libModules: lib.length,
     impure: impure.map(f => f.replace('src/lib/', '')),
-    appBindings: bindings,
-    appExports: (app.match(/^export /gm) || []).length,
+    appImports: (code(app).match(/^import\b/gm) || []).length,
+    appExports: (code(app).match(/^export\b/gm) || []).length,
   };
 }
 
@@ -120,8 +129,9 @@ export function block(t, f, stamp) {
         ? `**${f.impure.join(', ')} reach outside pure computation** — the boundary §1 claims is broken.`
         : `**not one of them touches the DOM, the network or the filesystem** — `
           + `the boundary §1 claims, verified here rather than asserted.`)
-    + ` \`src/app.js\` carries **${f.appBindings} module-level mutable bindings and `
-    + `${f.appExports} exports**, which is §2.</sub>`,
+    + ` \`src/app.js\` **declares ${f.appImports} dependencies on that tier and exports `
+    + `${f.appExports === 1 ? '1 function' : `${f.appExports} names`}** — it is a module, `
+    + `not a build template, and §2 is what remains.</sub>`,
     SHUT].join('\n');
 }
 

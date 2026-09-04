@@ -65,10 +65,24 @@ The fourth is why the rule says *name the path* rather than *have two*: it had a
 second path and it was the wrong one.
 
 **Corollary, which keeps biting: a check that cannot tell code from the words
-about the code is not a check about code.** This repo comments heavily. A scan
-that greps source will match prose. It happened three times in one day, and
-again in `tools/tiers.mjs`, which matched the English word "document" in a
-comment and reported ten pure modules as impure.
+about the code is not a check about code.** This repo comments heavily — three
+quarters of `src/app.js` is comment — so a scan that greps source will match
+prose. It happened three times in one day; again in `tools/tiers.mjs`, which
+matched the English word "document" in a comment and reported ten pure modules
+as impure; and again on 2026-09-04, when a `grep -c` for a hardcoded `89` found
+`189px` and `89.8%` in comments.
+
+⭐⭐ **Kevin's generalisation, and it is the sharpest sentence of the 2026-09
+review: A CODEBASE THAT CAN ONLY BE ANALYSED BY REGEX WILL BE ANALYSED BY REGEX,
+BADLY.** `src/app.js` was a build template until 2026-09-04, so nothing could
+parse it, and four findings about it in one review were false — every one a
+text-match artefact. **Two rules follow, and they are not optional here:**
+
+- **Do not measure `src/app.js` with a regex.** It is a module now; import it, or
+  use `tools/jslex.mjs`, which is a lexer and knows a template literal from code.
+- **An instrument gets a control before it gets believed.** `jslex`'s control is
+  the first test in `test/app-imports.test.js`, and it is calibrated against the
+  exact literal — `data-i="${k}"` — that turned a two-write binding into seven.
 
 ### 2. If two mechanisms could be responsible for a pass, assert each where only it can be.
 

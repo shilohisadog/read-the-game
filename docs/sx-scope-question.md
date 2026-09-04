@@ -1,5 +1,27 @@
 # The `SX` scope ruling, and what making `app.js` a module does to it
 
+> ✅ **ANSWERED AND BUILT — 2026-09-04. Kept as the record of the reasoning, not
+> as an open question.**
+>
+> **Q1:** the ruling survives, restated as a property of the **artifact** rather
+> than of the authoring model: *`SX`/`SY` must not be resolvable from any
+> reducer's scope at runtime.* It now lives at the top of `src/lib/rinkart.js`.
+> **Q3:** option **A**, and the special case is one line — `app.js` imports
+> `rinkart.js` like anything else, and the builder satisfies that one import
+> inside `boot` instead of above it. **Q4:** CHENG's option D — encapsulate the
+> transform — is dead, killed by the check he proposed for it:
+> `builders/learn-figures.mjs` calls `SX`/`SY` 24 times directly.
+>
+> ⭐⭐ **Q2 got the best answer of the exchange, and it generalises past this
+> question: A STATIC CHECK CAN BE TWO-SIDED — the control does not have to be
+> static. Feed the checker a fixture that violates the rule and assert it is
+> rejected.** `test/sx-scope.test.js` does exactly that. The runtime probe in
+> `test/render-ends.test.js` remains the authority; the static one is the cheaper,
+> earlier indicator.
+>
+> §1's description of the file is now history: it is a module, and the numbers in
+> it are superseded by `docs/status.md` §0.
+
 **One question for CHENG. Nothing here is built, and nothing else is proposed.**
 Pinned to `a5b802c`.
 

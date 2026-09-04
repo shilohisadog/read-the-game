@@ -1,10 +1,54 @@
-/* THE LIBRARY SITS OUTSIDE boot(), because the SHELL needs it too. It used to
-   be inlined inside the function, which meant the bootstrap that chooses WHICH
-   game to load could not use the same URL parser the renderer uses -- and so it
-   grew its own regex, and then a second one for preview. Hoisting it is what
-   makes "one place reads the URL" true of both pages rather than one. */
-__LIB__
-function boot(G,RATES){
+/* ⭐⭐ THIS FILE IS A MODULE, AND THE IMPORT LIST BELOW IS AN INSTRUMENT.
+   It was a TEMPLATE until 2026-09-04 -- three build markers where the imports
+   now are -- which meant no parser, no linter with real scope analysis and no
+   coverage tool could load it. So every question about a 3,300-line file got
+   answered by text-matching, and four of those answers were wrong in a single
+   review: "70 write sites" (about 45), "24 bindings" (25), toggles "held by
+   repetition" (there is a correct write path), and a deep-link defect that was
+   already documented as deliberate. Declaring the 54 names it uses is what
+   replaces that instrument: node checks every one against what the module
+   really exports, at link time, which no amount of grepping can do.
+
+   THE BROWSER STILL GETS ONE CONCATENATED SCRIPT, and nothing about the shipped
+   page changed when this landed. `builders/build_main.py` drops this preamble,
+   strips the `export`, and satisfies these imports by inlining the same twenty
+   modules above -- the treatment `src/lib/*.js` has always had. `--verify`
+   byte-identical is the proof, and it was the whole safety argument for making
+   this change without coverage.
+
+   ⚠️ THE PREAMBLE IS NOT SHIPPED. Prose a reader of the PAGE needs belongs
+   below, not here. */
+import {
+  ENDS_KEY, ENDS_NOTE, HIGH_DANGER_FT, NET_X, SLOT_HALF_WIDTH, attackDirection,
+  distanceToNet, endsKeyShowing, endsNoteShowing
+} from './lib/rink.js';
+import {
+  ATTEMPT_TYPES, ATTRIBUTION, corsiTeam, missSay, shootingTeam
+} from './lib/attribution.js';
+import { NOT_A_PLAY, inShootout, isNearMiss, summarise } from './lib/layer.js';
+import { powerPlayOver, standing } from './lib/strength.js';
+import { occupants, stints } from './lib/box.js';
+import { penName } from './lib/penalties.js';
+import { SvgPen } from './lib/svgpen.js';
+import { FIG } from './lib/figures.js';
+import { spokenGap } from './lib/transition.js';
+import { judgeable, mostUnusual } from './lib/distribution.js';
+import { corsi } from './lib/layers/corsi.js';
+import { goaltending, isHighDangerEvent } from './lib/layers/goaltending.js';
+import { danger } from './lib/layers/danger.js';
+import {
+  WHY, icingRestarts, latest, marks, offsideRestarts, whistle
+} from './lib/layers/whistle.js';
+import { blocked } from './lib/layers/blocked.js';
+import { colourOf, inkOn, readableInk } from './lib/teams.js';
+import { tiedControl } from './lib/layers/tied.js';
+import { sentenceFor } from './lib/sentence.js';
+import { DEFAULT_ENDS, LINK_NOTES, format, parse, resolve } from './lib/deeplink.js';
+/* ⭐ THE ONE IMPORT THAT IS NOT SATISFIED ABOVE THE FUNCTION -- see the marker
+   inside it, and the note beside it, for why the rink's paint lands elsewhere. */
+import { SX, SY, furniture, goalieGlyph, netGlyph } from './lib/rinkart.js';
+
+export function boot(G,RATES){
 /* ⭐ AND THE RINK'S PAINT SITS INSIDE IT, for the opposite reason.
    `src/lib/rinkart.js` owns `SX`/`SY` and the whole SVG of an NHL sheet, so that
    the learn page's rule diagrams and this replay cannot draw two different
@@ -15,7 +59,7 @@ function boot(G,RATES){
    Inlined here, `SX` is in exactly the scope it has always been in, and
    `render-ends.test.js`'s two-sided probe still passes for its original reason
    rather than for a reworded one. */
-__RINKART__
+//__RINKART__
 // RATES ARRIVES AS AN ARGUMENT AND IS NEVER REQUESTED IN THIS FUNCTION. Both
 // pages share this body byte for byte, and read-the-game.html carries its whole
 // game inside it and must reach nothing -- the deploy greps the inlined pages for
@@ -3316,4 +3360,3 @@ if(PREVIEW){
    setTimeout(tick,wait);};
   tick();}}
 }
-__BOOT__

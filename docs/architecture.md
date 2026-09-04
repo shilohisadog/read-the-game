@@ -43,10 +43,10 @@ header, and §4 records what it cost us the one time we did it anyway.
 | **orchestration** | walks the store, judges, writes documents | `derive.py` | 729 |
 | **analysis** | events → meaning; pure, no DOM, no network | `src/lib/**` (26 modules) | 5,707 |
 | **measurement** | the archive, reduced by the SAME modules | `measure.mjs` | 428 |
-| **presentation** | generates the pages | `build_*.py` (9) | 3,848 |
-| **the app** | **the one exception — see §2** | `src/app.js` | 3,320 |
+| **presentation** | generates the pages | `build_*.py` (9) | 3,938 |
+| **the app** | **the one exception — see §2** | `src/app.js` | 3,363 |
 
-<sub>Counted 2026-09-04 by `tools/tiers.mjs`, checked by `npm run gates`. The analysis tier is **26 modules** and **not one of them touches the DOM, the network or the filesystem** — the boundary §1 claims, verified here rather than asserted. `src/app.js` carries **24 module-level mutable bindings and 0 exports**, which is §2.</sub>
+<sub>Counted 2026-09-04 by `tools/tiers.mjs`, checked by `npm run gates`. The analysis tier is **26 modules** and **not one of them touches the DOM, the network or the filesystem** — the boundary §1 claims, verified here rather than asserted. `src/app.js` **declares 20 dependencies on that tier and exports 1 function** — it is a module, not a build template, and §2 is what remains.</sub>
 <!-- /tiers -->
 
 ---
@@ -57,39 +57,69 @@ Everything above is pure functions over immutable data. **`app.js` is a state
 machine that does not admit it is one**, and that is the single genuine
 architectural inconsistency in the project.
 
-The shape of it: **module-level mutable bindings, no exports**, one very large
-reader (`render`, which touches eleven of those bindings across 328 lines), and
-writers scattered across the file. There is no interface, so there is nothing to
-assert against.
+The shape of it: **one function**. `boot()` opens on the first shipped line and
+closes on the last, and its **25 mutable bindings are its locals** — verified by
+reading every site, not by a scanner, after three scanners disagreed. So nothing
+here needs *encapsulating*; it already is. What is missing is an **interface**:
+one very large reader (`render`, touching eleven of those bindings across 328
+lines) and writers spread across the file, with nothing to assert against.
+
+⭐ **AND THE DEEPER PROBLEM IS NOT THE STATE — IT IS WHERE THE INVARIANTS LIVE.**
+The file is 3,363 lines of which about three quarters are comments: roughly 850
+lines of code carrying **177 explicitly marked assertions about itself**. The
+comments are excellent, and that is the symptom. A comment cannot be executed, so
+nothing notices when it stops being true, and it cannot be queried, so *"is this
+deliberate?"* costs a full read. **Decomposition is the fix, and moving the
+bindings around is not** — boundaries can say what those comments have to say
+today; a rearranged assignment converts none of them into a check.
+
+✅ **It is a module as of 2026-09-04.** It was a build template — markers where
+its imports now are — so no parser, linter or coverage tool could load it, and
+every question about it was answered by text-matching. Four answers in one review
+were wrong because of that. It now declares its 20 dependencies and exports
+`boot`; node checks every imported name at link time, and
+`test/app-imports.test.js` keeps the list from rotting, since the concatenated
+bundle resolves those names whether they are declared or not.
 
 **This is not a size complaint, and the distinction matters because it changes
 the fix.** Three things follow from the state, none of them from the line count:
 
-- **It is invisible to coverage.** The test harness loads it with `new Function`,
-  and a string compiled at runtime is never a file, so no instrument can see it.
-  The project's published coverage figure is therefore *a rate computed without
-  its largest and most-changed file*.
+- **It is still invisible to coverage**, though no longer in principle. The 29
+  boot-harness suites load the *built bundle* with `new Function`, and a string
+  compiled at runtime is never a file, so no instrument sees it. The project's
+  published coverage figure is *a rate computed without its largest and
+  most-changed file*. Becoming a module removed the reason this was permanent; it
+  did not close the hole, and nothing about the harness changed.
 - **Every seam defect this project has had lives here.** Not because the file is
   long — because two things that had to agree had nowhere to be checked. They are
   one class, not a run of incidents.
-- **Splitting it into seven files would make it worse.** The natural clusters are
-  visible (ice-drawing, announcement, transport, the work panel, layer controls,
-  the why-popup, boot/geometry), but they share the same mutable bindings. Seven
-  files mutating the same globals scatters the writers and destroys the one
-  property the single file still has: the state is auditable in one place.
+- ⚠️ **Splitting it into seven files that share the same bindings would make it
+  worse.** The natural clusters are visible (ice-drawing, announcement, transport,
+  the work panel, layer controls, the why-popup, boot/geometry). Seven files
+  mutating one shared state scatters the writers and destroys the one property the
+  single file still has: the state is auditable in one place. **This is an
+  argument against a particular split, and it was read for two months as an
+  argument against decomposition.** It is not.
 
-**The fix, when there is appetite for it, is to make the state explicit** — one
-state object, `render(state)` as a function of it, writes through a single
-setter. Not a framework; the same code, differently shaped. The value is *the
-enforced write path*, not the container: renaming the bindings to `S.trails`,
-`S.hdOn` and leaving the writes scattered is globals with a prefix, and this
-project has a name for that kind of change.
+**The fix is decomposition with declared inputs** — each cluster becoming a module
+that is *handed* what it needs instead of reaching for it. That is what turns 177
+prose invariants into structure, because a boundary states what a comment
+currently has to. Incremental and byte-identical one cluster at a time; the
+why-popup and the geometry are the smallest and most self-contained.
 
-⚠️ **Two things that sound like one and are not.** Making the state explicit does
-not deliver coverage, and coverage does not require it. The coverage hole is
-caused by `new Function`; it is fixed by changing how the harness loads the
-bundle. Do them separately or the expensive one gets credit for the cheap one's
-result.
+⛔ **THE STATE REFACTOR WAS NOT THE FIX, AND THIS SECTION USED TO SAY IT WAS.**
+The plan was one state object with `render(state)` and a single setter. Moving 45
+assignments converts zero comments into checks; the count was a symptom that
+could be measured, which is a different thing from the disease — and it was
+measured wrongly three times, by scanners, because the file could not be parsed.
+Phases 1 and 2 (`docs/app-state-phase1.md`, `app-state-phase2.md`) are superseded
+and fall *out* of decomposition rather than preceding it: a memo living inside its
+own module is a local, not a binding anyone has to inventory.
+
+⚠️ **Two things that sound like one and are not.** Decomposition does not deliver
+coverage, and coverage does not require it. The coverage hole is caused by
+`new Function`; it is fixed by changing how the harness loads the bundle. Do them
+separately or the expensive one gets credit for the cheap one's result.
 
 ---
 
@@ -183,10 +213,9 @@ measure the substrate.**
 
 | | |
 |---|---|
-| **`app.js` state** | §2. The largest remaining architectural item; not started |
+| **`app.js` decomposition** | §2. The largest remaining architectural item. Its precondition — making the file a module — landed 2026-09-04; no cluster has moved yet |
 | **coverage blindness** | `new Function` in `test/helpers/page.js`; independent of §2 |
-| **`LENSCOUNTS`** | a fourth enumeration of the layer set with no guard, beside two siblings that have them |
-| **rink constants** | `app.js` hardcodes `89`, `42.5`, `22`, `33` while already resolving `attackDirection` from `rink.js` — habit, not constraint |
+| **rink constants** | Mostly closed. `89`, `33` and the slot's `22 ft` are gone — the why-popup reads `NET_X`, `HIGH_DANGER_FT` and `SLOT_HALF_WIDTH` from `rink.js`. What survives is `42.5`, half the rink's width, in three places: the why-popup's own mini-rink transform and two emitted SVG attributes. ⛔ The `22` still in the file is **22 degrees** off straight-on and is deliberately not `SLOT_HALF_WIDTH` |
 | **`build_index.py`** | five page-builders in one file; already cost us a shipped `__SLOT_*__` placeholder |
 | **claim coverage** | of the ~49 published claims, how many have an instrument that goes red when they stop being true? No definition of "claim" yet |
 

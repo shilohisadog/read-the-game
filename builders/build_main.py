@@ -243,7 +243,15 @@ __CSS__</style>
 </details>
 </div></div>
 <script>
-__JS__</script>"""
+/* THE LIBRARY SITS OUTSIDE boot(), because the SHELL needs it too. It used to
+   be inlined inside the function, which meant the bootstrap that chooses WHICH
+   game to load could not use the same URL parser the renderer uses -- and so it
+   grew its own regex, and then a second one for preview. Hoisting it is what
+   makes "one place reads the URL" true of both pages rather than one. */
+__LIB__
+__JS__
+__BOOT__
+</script>"""
 
 # ⭐ THE RENDERER AND THE STYLESHEET ARE REAL FILES.
 #
@@ -261,8 +269,54 @@ __JS__</script>"""
 #
 # The markers keep their own newline in the template, so each file starts at
 # column zero and ends with the trailing newline every other file here has.
+
+# ⭐⭐ AND `src/app.js` IS A MODULE NOW (2026-09-04), WHICH IS WHY THE MARKERS
+# THAT USED TO OPEN AND CLOSE IT LIVE IN THE TEMPLATE ABOVE INSTEAD.
+#
+# It carried `__LIB__` on line 6 and `__BOOT__` on its last line, so it was not
+# JavaScript any tool could load -- and a 3,300-line file nothing can parse gets
+# measured with a regex, which answered four questions wrongly in one review.
+# Those two markers were never about the renderer; they are about how the page
+# is assembled, so they belong to the page's template. The file now declares its
+# 54 dependencies as imports and exports one function, and node checks every
+# imported name against what the module really exports.
+#
+# ⚠️ THE ONE MARKER THAT COULD NOT MOVE is `__RINKART__`, because it names a
+# position INSIDE a function body and no outer template can address that. It is
+# spelled as a comment there so the file still parses; the `import` beside it is
+# what declares the dependency, and this is what places it. See RINKART below.
+# The open bracket is load-bearing, not decoration: without it the pattern is a
+# PREFIX match, `export function bootstrap` satisfies it, and the assertion below
+# passes while the page calls a function that no longer exists. Caught by
+# mutating the name and watching the wrong instrument fire.
+_BOOT_LINE = re.compile(r"^export function boot\(", re.M)
+
+
+def _app():
+    """`src/app.js` as browser script rather than as an ES module.
+
+    THE PREAMBLE IS NOT SHIPPED. Everything above the exported function is the
+    module's declaration of what it needs, and the bundle satisfies those needs
+    by concatenation instead -- so emitting the import list to a browser that
+    has already been handed the modules would be shipping a statement that is
+    not true of the artifact.
+
+    The anchor is asserted UNIQUE rather than trusted, for the same reason
+    `render-ends.test.js` asserts its probe anchor appears exactly once: a
+    `str.replace` or an `index()` that quietly matches the wrong place is this
+    builder's oldest failure mode.
+    """
+    src = (ROOT / "src" / "app.js").read_text()
+    hits = list(_BOOT_LINE.finditer(src))
+    assert len(hits) == 1, \
+        f"src/app.js must export exactly one boot(); the anchor matched {len(hits)} times"
+    body = src[hits[0].start():].replace("export ", "", 1)
+    assert body.endswith("\n"), "src/app.js does not end with a newline"
+    return body[:-1]          # the template supplies it, as it does for every marker
+
+
 T = (T.replace("__CSS__", (ROOT / "src" / "app.css").read_text())
-      .replace("__JS__", (ROOT / "src" / "app.js").read_text()))
+      .replace("__JS__", _app()))
 # ⚠️ `str.replace` CANNOT FAIL -- it just does not happen, and a `__PLACEHOLDER__`
 # has shipped from this file before. So the substitutions are asserted here,
 # where they are made, rather than trusted: a leftover marker is a loud build
@@ -270,6 +324,14 @@ T = (T.replace("__CSS__", (ROOT / "src" / "app.css").read_text())
 _left = re.findall(r"__[A-Z_]{3,}__", T)
 assert not set(_left) - {"__LIB__", "__RINKART__", "__BOOT__", "__CSP__"}, \
     f"unsubstituted markers left in the template: {sorted(set(_left))}"
+# ⭐ AND THE OTHER HALF OF THAT ASSERTION, WHICH WAS MISSING. The line above
+# catches a marker nobody substitutes; it says nothing about a marker nobody
+# WROTE. A missing `__RINKART__` would leave a page with no rink art on it and
+# no build error at all -- the substitution simply would not happen. Each of the
+# three is required to appear exactly once, so both directions are loud.
+for _m in ("__LIB__", "//__RINKART__", "__BOOT__"):
+    assert T.count(_m) == 1, \
+        f"the template holds {T.count(_m)} copies of {_m}, and it must hold exactly one"
 
 
 # ⭐ THE RINK'S PAINT IS A LIBRARY FILE THAT IS NOT IN LIBRARY SCOPE.
@@ -323,6 +385,34 @@ def _inline(name):
 def _rinkart():
     """The rink's paint, for inlining INSIDE boot -- see the RINKART note above."""
     return _inline(RINKART)
+
+
+# ⭐ WHAT `src/app.js` IMPORTS AND WHAT THE BUNDLE CONTAINS ARE TWO DIFFERENT
+# STATEMENTS, AND THEY CAN DISAGREE SILENTLY.
+#
+# `LIB` is the list of modules the browser gets; app.js's imports are the list
+# app.js needs. They are not the same fact -- competitions.js is in the bundle
+# because sentence.js asks it questions, and app.js never touches it -- so
+# neither list is a cache of the other. But one containment has to hold: a
+# module app.js imports and the bundle omits resolves fine under node, ships a
+# page missing a definition, and fails only in a browser.
+#
+# ⚠️ THE EMPTY-SET CASE IS ASSERTED TOO. A subset test against nothing passes,
+# so a pattern that quietly stopped matching would report a clean build forever
+# -- which is this repo's most-repeated failure wearing green.
+_APP_IMPORT = re.compile(r"^import[^;]*?from\s*['\"]\./lib/([^'\"]+)['\"]\s*;", re.M)
+
+
+def _app_deps():
+    """Which `src/lib` modules `src/app.js` declares it needs."""
+    return {m.group(1) for m in _APP_IMPORT.finditer((ROOT / "src" / "app.js").read_text())}
+
+
+_deps = _app_deps()
+assert _deps, "no imports found in src/app.js -- the import scan is broken, not the file"
+assert _deps <= set(LIB) | {RINKART}, \
+    ("src/app.js imports modules the bundle does not carry, so the built page would be "
+     f"missing them: {sorted(_deps - set(LIB) - {RINKART})}")
 
 
 def _lib():
@@ -541,7 +631,7 @@ DESC = ("An NHL game replayed so a new fan can see what the numbers are made of.
 def build():
     """The reference game, inlined. Works with the network unplugged."""
     body = (T.replace("__LIB__", _lib())
-             .replace("__RINKART__", _rinkart())
+             .replace("//__RINKART__", _rinkart())
              .replace("__BOOT__",
                       "boot(" + json.dumps(DATA, separators=(",", ":")) + ");"))
     return P.document(body, title=TITLE, description=DESC, chrome="full")
@@ -554,7 +644,7 @@ def build_shell():
     page that must state plainly when it cannot load, rather than spinning.
     """
     body = (T.replace("__LIB__", _lib())
-             .replace("__RINKART__", _rinkart())
+             .replace("//__RINKART__", _rinkart())
              .replace("__BOOT__", BOOTSTRAP.replace(
                  "__ORIGIN__", json.dumps(DATA_ORIGIN))))
     # The inlined page reaches nothing and needs no policy beyond the deploy

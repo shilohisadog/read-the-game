@@ -15,7 +15,15 @@
 > **The corrected path is in `docs/status.md` §0.** The state count was never the
 > architectural problem; it was a symptom I could count and kept counting wrong.
 > Phases 1 and 2 are absorbed into decomposition and should be re-measured with a
-> parser — never a regex — after `src/app.js` becomes a module.
+> parser — never a regex.
+>
+> ⚠️ **§5 IS ALSO OUT OF DATE, AND IT MATTERED MORE THAN IT LOOKS.** It says
+> `app.js` "cannot be loaded by any instrument… and never will be without a build
+> change." That build change landed **2026-09-04**: the file is a real ES module,
+> node imports it and checks every name it declares, and `tools/jslex.mjs` exists
+> so the next measurement of it is lexical rather than textual. The sentence was
+> true when written and reads as a permanent constraint, which is exactly how an
+> undated claim misleads.
 
 **Written 2026-09-03 for CHENG's review. Nothing here is built, and phase 1 is a
 precondition.** Line numbers pinned to `9078df1`. Read
