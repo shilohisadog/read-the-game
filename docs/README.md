@@ -72,7 +72,8 @@ of this repo found rather than one we noticed.
 | | |
 |---|---|
 | **[step1-review.md](step1-review.md)** | ⏸ **for review** — `src/app.js` became a module (shipped). What was done, the four guards, and the three places I think it is weakest. |
-| **[step2-decomposition.md](step2-decomposition.md)** | ⏸ **plan, for review** — decomposing `boot()`. Byte-identity does not survive it, and the interior still resists measurement. |
+| **[step2-decomposition.md](step2-decomposition.md)** | ✅ **built** — decomposing `boot()`. Seven clusters out; byte-identity does not survive it, so a rendered-DOM walk replaced it. §0 carries CHENG's six rulings, §0.4–§0.5 what happened when they were built. |
+| **[render-residue.md](render-residue.md)** | ⏸ **for review** — what is left of `render`, counted. *"What remains is wiring"* turns out to be false in four places, and the question is whether the answer is code or checks. |
 | **[sx-scope-question.md](sx-scope-question.md)** | ✅ **answered and built** — the `SX` ruling restated as a property of the artifact, and the answer that generalises: a static check can be two-sided. |
 | **[app-state-phase1.md](app-state-phase1.md)** | ⛔ **superseded** — proposed removing the eight bindings that were never state. Absorbed into decomposition; see `status.md` §0. Its §1 (the file is one function) still holds. |
 | **[app-state-phase2.md](app-state-phase2.md)** | ⛔ **superseded, and its §2 was wrong** — kept because the correction is the useful part. |
