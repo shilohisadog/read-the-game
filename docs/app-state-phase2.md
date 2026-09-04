@@ -1,5 +1,22 @@
 # App state, phase 2 — one write path for the sixteen
 
+> ⛔⛔ **THIS DOCUMENT'S §2 IS WRONG, AND IT IS SUPERSEDED. Do not scope work
+> from it.** It says the five layer toggles are "fifteen sites where the
+> invariant is held by nothing but repetition." They are not. `pick()` **is** a
+> correct single write path and it enforces something the others do not — every
+> layer whose id is not the one pressed gets turned **off**. Three sites bypass
+> it (a parked click handler, the deep-link `LAYER_APPLY` table, the preview
+> path), and two of those bypass it legitimately.
+>
+> ⚠️ **That was my third wrong measurement of this file in one review**, and the
+> fourth followed it: I wrote up `?layer=corsi,slot` as a live defect before
+> reading `syncPick`, which already documents it as a deliberate degradation.
+>
+> **The corrected path is in `docs/status.md` §0.** The state count was never the
+> architectural problem; it was a symptom I could count and kept counting wrong.
+> Phases 1 and 2 are absorbed into decomposition and should be re-measured with a
+> parser — never a regex — after `src/app.js` becomes a module.
+
 **Written 2026-09-03 for CHENG's review. Nothing here is built, and phase 1 is a
 precondition.** Line numbers pinned to `9078df1`. Read
 [app-state-phase1.md](app-state-phase1.md) first: it establishes that `src/app.js`
