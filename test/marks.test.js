@@ -13,8 +13,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { eventMarks } from '../src/lib/marks.js';
-import { isHighDanger, attackDirection } from '../src/lib/rink.js';
+import { eventMarks, puckMark, shotLine } from '../src/lib/marks.js';
+import { isHighDanger, attackDirection, NET_X } from '../src/lib/rink.js';
 import { shootingTeam } from '../src/lib/attribution.js';
 
 const G = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url), 'utf8'));
@@ -107,4 +107,76 @@ test('⭐ a blocked shot is ringed where the puck STOPPED, not where it was aime
   const n = G.events.findIndex(e => e.type === 'blocked-shot' && e.x != null);
   assert.ok(n > 0, 'no blocked shot in the fixture');
   assert.match(draw(n), /class="ring blk"/, 'the blocked-shot ring is gone');
+});
+
+/* ── The shot line and the puck ─────────────────────────────────────────────── */
+
+/** The arena-frame transform, handed in because src/lib may not import rinkart. */
+const AX = (x) => 100 - x;
+
+test('⭐ a shot that arrived is drawn a line to the net it was aimed at', () => {
+  const shot = G.events.find(e => e.type === 'shot-on-goal' && e.x != null);
+  assert.ok(shot, 'no shot on goal in the fixture');
+  const line = shotLine(shot, helpers.place(shot), HID, AX);
+  assert.match(line, /class="shotline"/);
+  assert.match(line, /x1="[-\d.]+" y1="[-\d.]+"/, 'the line does not start where the shot was taken');
+});
+
+test('⭐⭐ …and the two clubs are drawn lines to OPPOSITE nets', () => {
+  /* ⚠️ THE FIRST DRAFT CHECKED ONLY WHERE THE LINE STARTS, so flipping the sign
+     of `netx` — pointing every shot at the wrong end — survived every assertion
+     here. The golden catches it as changed markup; this catches it as a WRONG
+     CLAIM, which is the half a fixture cannot make.
+
+     ⭐ ASSERTED AS A RELATIONSHIP, NOT AN ABSOLUTE. Which end is "+89" is a
+     convention of the feed's coordinates, and pinning a number here would be me
+     encoding a guess about hockey. That the two clubs shoot at DIFFERENT nets is
+     not a guess. */
+  const home = G.events.find(e => e.own === HID && e.type === 'shot-on-goal' && e.x != null);
+  const away = G.events.find(e => e.own === AID && e.type === 'shot-on-goal' && e.x != null);
+  assert.ok(home && away, 'the fixture lacks a shot on goal from each club');
+
+  /* ⚠️ AND "DIFFERENT NETS" WAS NOT ENOUGH. The first version asserted only that
+     the two clubs get different ends, which SWAPPING the sign satisfies just as
+     well as getting it right — the mutant survived. The expected net is derived
+     here from `attackDirection` in rink.js, which is the rule's own home and a
+     path to the answer that does not run the code under test. Without that this
+     is a mirror of the ternary it is checking. */
+  const x2 = e => +/x2="([-\d.]+)"/.exec(shotLine(e, helpers.place(e), HID, AX))[1];
+  for (const e of [home, away])
+    assert.equal(x2(e), AX(NET_X * attackDirection(e.own, HID)),
+      `a ${e.own === HID ? 'home' : 'away'} shot is drawn to the net that club is not `
+      + 'attacking, so the page is telling a reader the puck went to the wrong end');
+  assert.notEqual(x2(home), x2(away), 'both clubs were drawn to the same net');
+});
+
+test('⛔ …and a miss or a block is not, because it never took that path', () => {
+  /* ⭐ THE LINE MEANS "the puck went there". A missed shot did not arrive and a
+     blocked one stopped where its ring is drawn, so drawing either a path to the
+     net would be the page asserting something that did not happen. */
+  for (const type of ['missed-shot', 'blocked-shot', 'faceoff', 'hit']) {
+    const e = G.events.find(x => x.type === type && x.x != null);
+    if (!e) continue;
+    assert.equal(shotLine(e, helpers.place(e), HID, AX), '',
+                 `a ${type} was drawn a line to the net`);
+  }
+});
+
+test('⛔ …and an event with no place is drawn nothing at all', () => {
+  /* `place()` returns null for an unlocated event — a shootout attempt among
+     them. Both of these must answer with silence rather than with coordinates
+     computed from a null. */
+  const e = G.events.find(x => x.type === 'goal') || G.events[0];
+  assert.equal(shotLine(e, null, HID, AX), '');
+  assert.equal(puckMark(null, false), '');
+});
+
+test('⭐ the puck is drawn where the current event happened, and jumps on a moment', () => {
+  const e = G.events.find(x => x.x != null);
+  const cp = helpers.place(e);
+  const still = puckMark(cp, false), jumped = puckMark(cp, true);
+  assert.match(still, new RegExp(`cx="${cp.x.toFixed(1)}"`),
+               'the puck is not at the event it is meant to mark');
+  assert.doesNotMatch(still, /jump/, 'a scrubbed frame animated the puck');
+  assert.match(jumped, /puck jump/, 'a play or jump did not animate the puck');
 });

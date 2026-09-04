@@ -32,7 +32,7 @@ import { spokenGap } from './lib/transition.js';
 import { whyMarkup } from './lib/why.js';
 import { ESC } from './lib/esc.js';
 import { workMarkup } from './lib/work.js';
-import { eventMarks } from './lib/marks.js';
+import { eventMarks, puckMark, shotLine } from './lib/marks.js';
 import { iceNote, situationsNote, trailsNote } from './lib/notes.js';
 import { judgeable, mostUnusual } from './lib/distribution.js';
 import { corsi } from './lib/layers/corsi.js';
@@ -653,14 +653,9 @@ function render(i,how){
  document.getElementById('rg').classList.toggle('endskey',endsKeyShowing(ENDSMODE,cur));
  if(blockOn){const sl=upto(i);drawBlocked(blocked.reduce(sl,CTX),L,sl);}
  else $('blockPanel').innerHTML='';
- let lh='';
  const cp=place(cur);
- if(cp&&(cur.type==='shot-on-goal'||cur.type==='goal')){const netx=(cur.own===HID)?NET_X:-NET_X;
-   lh=`<line class="shotline" x1="${cp.x.toFixed(1)}" y1="${cp.y.toFixed(1)}" x2="${AX(netx,cur.per)}" y2="42.5"/>`;}
- $('lines').innerHTML=lh;
- // THE PUCK GOES WITH THEM. It was the third drawing site reading `e.x`
- // directly, so a shootout attempt moved the puck to a place it had not been.
- $('puck').innerHTML=cp?`<circle class="puck${moment?' jump':''}" cx="${cp.x.toFixed(1)}" cy="${cp.y.toFixed(1)}" r="1.5"/>`:'';
+ $('lines').innerHTML=shotLine(cur,cp,HID,AX);
+ $('puck').innerHTML=puckMark(cp,moment);
  drawNoPlace(cur);
  drawLabel(cur);
  drawNetmen(cur);
