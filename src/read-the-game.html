@@ -6194,7 +6194,7 @@ function boot(G,RATES){
  *                               break, so catching it earlier is cheaper.
  *
  * ⛔ AND THE TRANSFORM IS NOT ENCAPSULATED, WHICH WAS CONSIDERED AND MEASURED.
- * The obvious alternative — only drawing functions and keep `SX` private
+ * The obvious alternative — export only drawing functions and keep `SX` private
  * — would make the rule structural instead of positional. It fails on the data:
  * `builders/learn-figures.mjs` calls `SX`/`SY` **24 times** directly to place
  * blue lines, faceoff dots, glyph anchors and viewBox bounds, and

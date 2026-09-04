@@ -12,19 +12,58 @@ import { readFileSync } from 'node:fs';
 const read = p => readFileSync(new URL(p, import.meta.url), 'utf8');
 const app = read('../src/read-the-game.html');
 
+
+/** The modules the browser actually receives, read from the builder rather than typed. */
+function bundled() {
+  const py = read('../builders/build_main.py');
+  const block = /^LIB = \[([\s\S]*?)\]/m.exec(py);
+  assert.ok(block, 'LIB has moved or changed shape in build_main.py');
+  const lib = [...block[1].matchAll(/"([^"]+\.js)"/g)].map(m => m[1]);
+  assert.ok(lib.length >= 15, `LIB lists only ${lib.length} modules`);
+  return lib;
+}
+
 test('the shipped app carries the library verbatim, not a copy', () => {
   // Compares CONTENT, not the builder's stripping method. An earlier version
   // reproduced the builder's exact transformation, which meant it could only
   // agree with the builder rather than check it -- the same flaw as the leak
   // guard below. Here: every substantive line of the module must appear in the
   // bundle, whatever the builder did to the blank lines around it.
-  const substantive = t => t
-    .split('\n')
-    .filter(l => l.trim() && !/^\s*import\s/.test(l))
-    .map(l => l.replace(/^export /, ''));
+  /* ⚠️ AN IMPORT CAN SPAN LINES, and the first version of this filter only
+     dropped the line that STARTS one. `rinkart.js` wraps its import of the rink
+     constants across two lines, so the continuation survived the filter and was
+     demanded of a bundle that correctly does not contain it — a false failure
+     the moment this test was widened past its five hand-picked modules.
 
-  for (const name of ['rink.js', 'attribution.js', 'layers/corsi.js', 'layers/goaltending.js',
-                      'layers/whistle.js']) {
+     ⭐ IT IS A LINE STATE MACHINE, NOT THE BUILDER'S REGEX, on purpose. This
+     test exists to CHECK the builder, and an earlier version of it reproduced
+     the builder's exact transformation, which meant it could only ever agree
+     with it. Two implementations of "what is an import statement" is the point
+     here, not the defect. */
+  const substantive = t => {
+    const out = [];
+    let inImport = false;
+    for (const l of t.split('\n')) {
+      if (inImport) { if (l.includes(';')) inImport = false; continue; }
+      if (/^\s*import\s/.test(l)) { if (!l.includes(';')) inImport = true; continue; }
+      if (l.trim()) out.push(l.replace(/^export /, ''));
+    }
+    return out;
+  };
+
+  /* ⚠️ EVERY BUNDLED MODULE, NOT FIVE OF THEM — AND THE SAMPLE COST US ONE.
+     This test named five modules by hand, and on 2026-09-04 the builder was found
+     to be deleting the word "export" from PROSE: `_inline` used a blanket
+     `replace("export ", "")`, and `rinkart.js` says "the obvious alternative --
+     export only drawing functions" in a comment. The page shipped that sentence
+     with the word missing, for as long as the comment had existed.
+
+     This check would have caught it on the first build. It did not, because
+     `rinkart.js` was not one of the five. ⭐ A RULE DERIVED FROM A SAMPLE IS
+     STILL A SAMPLE — the repo's own §5, and the sample here was a list somebody
+     typed. The list is read from the builder now, so a module added to the
+     bundle is covered the moment it is added. */
+  for (const name of [...bundled(), 'rinkart.js']) {
     for (const line of substantive(read(`../src/lib/${name}`))) {
       assert.ok(app.includes(line),
         `${name}: line missing from the bundle, so the shipped code has drifted `

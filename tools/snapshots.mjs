@@ -80,12 +80,33 @@ export function banner(f) {
     SHUT].join('\n');
 }
 
+
+/**
+ * A document with its GENERATED blocks removed.
+ *
+ * ⚠️ WRITTEN BECAUSE THIS CHECKER DEMANDED AN ARCHIVE BANNER ON A DOCUMENT THAT
+ * QUOTES NO ARCHIVE FIGURE. `architecture.md`'s tier table is counted from the
+ * filesystem, and on 2026-09-04 the presentation tier came to 3,957 lines —
+ * which is also a retired archive population in the list above. The scan matches
+ * a bare number with no context, so a line count collided with a figure and the
+ * gate asked for a banner saying the document quotes stale archive data.
+ *
+ * ⭐ THE RULE THIS EARNS IS GENERAL: a generated block cannot QUOTE anything. Its
+ * numbers are derived by a tool from the tree at build time, so they carry no
+ * claim about the archive and cannot go stale in the way a banner is for. Prose
+ * checks belong on prose, and this is where the two are separated.
+ *
+ * Any `<!-- name: … -->` / `<!-- /name -->` pair, so a document that gains a new
+ * generated block is covered without this list being edited.
+ */
+const prose = t => t.replace(/<!--\s*([a-z-]+):[\s\S]*?<!--\s*\/\1\s*-->/g, ' ');
+
 /** Documents that quote a superseded figure and are not exempt. */
 export function needing() {
   return readdirSync(DOCS)
     .filter(f => f.endsWith('.md') && !EXEMPT.has(f))
     .filter(f => {
-      const t = readFileSync(join(DOCS, f), 'utf8');
+      const t = prose(readFileSync(join(DOCS, f), 'utf8'));
       return SUPERSEDED.some(s => t.includes(s)) && !HAND_WRITTEN.test(t);
     })
     .sort();

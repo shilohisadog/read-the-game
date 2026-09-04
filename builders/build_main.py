@@ -386,7 +386,19 @@ def _inline(name):
     """
     src = (ROOT / "src" / "lib" / name).read_text()
     body = re.sub(r"^[ \t]*import(?=[\s{\'\"*])[^;]*?;[ \t]*$", "", src, flags=re.M)
-    return f"/* --- src/lib/{name} --- */\n" + body.replace("export ", "")
+    # ⚠️ ANCHORED, BECAUSE THE BLANKET FORM WAS EDITING PROSE AND SHIPPED IT.
+    # `body.replace("export ", "")` deleted the word wherever it appeared, and
+    # `rinkart.js` says "the obvious alternative -- export only drawing functions"
+    # in a comment. The page shipped "the obvious alternative -- only drawing
+    # functions" for as long as that comment has existed: a sentence the builder
+    # rewrote, silently, in the artifact this project asks readers to check.
+    #
+    # A comment is harmless and the next one might not be. Nothing stops a module
+    # putting those seven characters in a STRING -- a label, a URL, a line of
+    # generated markup -- and the same replace would corrupt it with no error
+    # anywhere. Every export in this repo is a declaration at column zero, which
+    # is a fact worth depending on rather than a coincidence worth ignoring.
+    return f"/* --- src/lib/{name} --- */\n" + re.sub(r"^export ", "", body, flags=re.M)
 
 
 def _rinkart():
