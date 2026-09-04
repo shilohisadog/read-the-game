@@ -11,6 +11,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { boot } from './helpers/page.js';
 import { conservation, summarise } from '../src/lib/layer.js';
 import { corsi } from '../src/lib/layers/corsi.js';
 import { goaltending } from '../src/lib/layers/goaltending.js';
@@ -473,7 +474,24 @@ test('the controls that DO reach the base view stay in it', () => {
   // a layer already on, and stripping the base view's controls makes a door a
   // one-way trip — the feature breaking, not a side effect. `trails` is read in
   // the base-view mark loop and the figures ARE the base view.
-  assert.match(APP, /if\(trails==='off'&&k!==i\)continue;/,
-    'trails no longer reaches the base view — then it should move too');
+  /* ⭐ ASSERTED AS BEHAVIOUR, NOT AS A LINE OF SOURCE. This matched
+     `if(trails==='off'&&k!==i)continue;` inside `src/app.js`, so moving the mark
+     loop into `src/lib/marks.js` broke it while the page had not changed at all.
+     Third test in three days coupled to which file holds a string rather than to
+     its claim — and the claim here is about what a viewer GETS: in the base view,
+     with no layer chosen, asking to keep every mark must actually keep them. */
+  const off = boot(null, null, '');
+  off.at(200, () => {});
+  const before = (off.byId.get('events')._html.match(/class="ev/g) || []).length;
+
+  const on = boot(null, null, '');
+  on.GROUPS['#rg .tbtn'].find(b => b.dataset.t === 'all').click();
+  on.at(200, () => {});
+  const after = (on.byId.get('events')._html.match(/class="ev/g) || []).length;
+
+  assert.ok(after > before + 10,
+    `trails no longer reaches the base view: keeping every mark drew ${after} marks against `
+    + `${before} for the current moment alone. If the control genuinely stopped applying here, `
+    + 'it should move out of the base view too — but it has not, so this is a regression.');
   assert.doesNotMatch(CSS, /#rg \.figpick\.(fig|trail)\{display:none\}/);
 });
