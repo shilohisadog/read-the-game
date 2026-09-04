@@ -361,6 +361,9 @@ LIB = ["rink.js", "attribution.js", "layer.js", "strength.js", "box.js", "penalt
        # why-popup's markup, split out of boot at `return markup` / `write to
        # document` so the purity of this tier survives the move.
        "why.js",
+       # The HTML escaper. Used by app.js thirty times and by every markup module
+       # extracted from it -- a primitive, not an argument to thread through.
+       "esc.js",
        "layers/corsi.js", "layers/goaltending.js", "layers/danger.js", "layers/whistle.js",
        "layers/blocked.js",
        # BEFORE sentence.js, which asks it which competition a game is.

@@ -32,6 +32,7 @@ import { SvgPen } from './lib/svgpen.js';
 import { FIG } from './lib/figures.js';
 import { spokenGap } from './lib/transition.js';
 import { whyMarkup } from './lib/why.js';
+import { ESC } from './lib/esc.js';
 import { judgeable, mostUnusual } from './lib/distribution.js';
 import { corsi } from './lib/layers/corsi.js';
 import { goaltending, isHighDangerEvent } from './lib/layers/goaltending.js';
@@ -2193,7 +2194,6 @@ const RSN=r=>{if(!r)return 'unrecorded';const w=WHY[r];return w&&w.name?w.name:S
    dead zone, and surfaced later as `Cannot access 'hdOn'` on the first scrub.
    A pure escaping helper the whole file reaches for should be available to the
    whole file; a function declaration hoists and a `const` does not. */
-function ESC(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);}
 function drawWhistles(W){
  const g=[];
  for(const m of marks(W,{trails:trails,dir:DIR})){const cx=SX(m.x),cy=SY(m.y);
