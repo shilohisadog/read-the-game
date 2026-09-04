@@ -1,5 +1,13 @@
 # App state, phase 1 — removing what was never state
 
+> ⛔ **SUPERSEDED — do not scope work from it.** The state refactor was never the
+> fix; decomposition is, and phase 1 falls out of it rather than preceding it
+> (`docs/status.md` §0, `docs/step2-decomposition.md`). ⚠️ Two of its counts have
+> since moved: `boot` has **26** mutable bindings, not 25 — it missed `gear`, a
+> mid-line declaration, exactly as the original scan missed `lastHD` — and **27**
+> suites boot the bundle, not 29. **§1 still holds and is the useful part:** the
+> file is one function, and its bindings are locals rather than globals.
+
 **Written 2026-09-03 for CHENG's review. Nothing here is built.** Every line
 number is pinned to `9078df1` and every classification below comes from reading
 every site of every binding, not from a scanner — three of my scanners produced

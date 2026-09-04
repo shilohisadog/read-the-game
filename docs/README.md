@@ -52,6 +52,8 @@ without this index moving with it.
 
 | | |
 |---|---|
+| **[step1-review.md](step1-review.md)** | ⏸ **for review** — `src/app.js` became a module (shipped). What was done, the four guards, and the three places I think it is weakest. |
+| **[step2-decomposition.md](step2-decomposition.md)** | ⏸ **plan, for review** — decomposing `boot()`. Byte-identity does not survive it, and the interior still resists measurement. |
 | **[sx-scope-question.md](sx-scope-question.md)** | ✅ **answered and built** — the `SX` ruling restated as a property of the artifact, and the answer that generalises: a static check can be two-sided. |
 | **[app-state-phase1.md](app-state-phase1.md)** | ⛔ **superseded** — proposed removing the eight bindings that were never state. Absorbed into decomposition; see `status.md` §0. Its §1 (the file is one function) still holds. |
 | **[app-state-phase2.md](app-state-phase2.md)** | ⛔ **superseded, and its §2 was wrong** — kept because the correction is the useful part. |
