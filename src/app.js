@@ -34,6 +34,7 @@ import { ESC } from './lib/esc.js';
 import { workMarkup } from './lib/work.js';
 import { eventMarks, puckMark, shotLine } from './lib/marks.js';
 import { iceNote, situationsNote, trailsNote } from './lib/notes.js';
+import { goalieCards } from './lib/goalie-card.js';
 import { judgeable, mostUnusual } from './lib/distribution.js';
 import { corsi } from './lib/layers/corsi.js';
 import { goaltending, isHighDangerEvent } from './lib/layers/goaltending.js';
@@ -760,19 +761,7 @@ function render(i,how){
  prevA=a;prevH=h;
  sayWho(cur);
  $('per').textContent=periodLabel(cur);$('clk').textContent=cur?cur.rem:'20:00';
- if(goalieOn){const gs=goalieStats(i);$('goaliePanel').innerHTML=G.goalies.map(id=>{const p=R[id];if(!p)return '';const tid=p.tid,side=tid===AID?'a':'h',ab=tid===AID?AAB:HAB;const st=gs[id]||{f:0,s:0,gl:0,hf:0,hs:0};
- // A FRACTION, ALWAYS, AND THE THRESHOLD IS GONE. This used to print .943 and
- // switch to "18/20" below twenty shots faced -- and twenty was a number we
- // chose, the same defect this project refuses everywhere else. A fraction
- // carries its own denominator, so it needs no cutoff to be honest at: 33 of 35
- // and 18 of 18 both say exactly what they are, and 1.000 does not.
- //
- // The limit is stated on EVERY card for the same reason. Showing it only when
- // the number was small was selective honesty (Doctrine §9) -- it made a
- // 35-shot game look like a rate you could compare, which is the belief the
- // whole site exists to correct. One game is one game.
- const faced=st.f?`${st.s} of ${st.f}`:'—';
- return `<div class="gcard"><div class="gname ${side}">${p.nm} <span class="sub">${ab} · #${p.n}</span></div><div class="gsv">${faced}</div><div class="gline">${st.s} saves · ${st.gl} goals · ${st.f} shots faced (${MODE()})${st.hf?` · from the slot ${st.hs} of ${st.hf}`:''}<br><span class="lim">one game — what happened, not how unusual it was</span></div></div>`;}).join('');}
+ if(goalieOn)$('goaliePanel').innerHTML=goalieCards(G.goalies,R,goalieStats(i),{AID,AAB,HAB,mode:MODE()});
  /* THE FRAME BEING DRAWN IS PASSED, NOT READ. `render`'s parameter shadows the
     module-level playhead, so a bare `i` inside `renderWork` would be whichever
     frame the transport last settled on -- one behind the one being drawn during

@@ -372,6 +372,8 @@ LIB = ["rink.js", "attribution.js", "layer.js", "strength.js", "box.js", "penalt
        "marks.js",
        # The three sentences the page says about its own state. No dependencies.
        "notes.js",
+       # The goaltending cards. Markup only; the layer does the counting.
+       "goalie-card.js",
        "layers/corsi.js", "layers/goaltending.js", "layers/danger.js", "layers/whistle.js",
        "layers/blocked.js",
        # BEFORE sentence.js, which asks it which competition a game is.
