@@ -4618,6 +4618,72 @@ function eventMarks({ evs, i, cur, moment },
  return parts.join('');
 }
 
+/* --- src/lib/notes.js --- */
+/**
+ * THE SENTENCES THE PAGE SAYS ABOUT ITS OWN STATE.
+ *
+ * Three notes that sat inline in `render`, each one a CLAIM a reader is invited
+ * to check — which is this project's whole product — and none of them reachable
+ * by a test without booting a page and reading a DOM node.
+ *
+ * ⭐ COHESION PREDICTS INTERFACE WIDTH, and this cluster is the evidence beside
+ * `marks.js`. That one needed nineteen inputs for fifty-seven lines, because
+ * drawing a mark reads half the world. These three need seven inputs between
+ * them, because a sentence about the strength filter depends on the strength
+ * filter and nothing else. **A wide interface is a measurement of the cluster,
+ * not of the method** — the same split gave both numbers.
+ *
+ * ⛔ THE WORDING IS COPIED EXACTLY, punctuation included. `iceNote` carries a
+ * typographic apostrophe and a doctrine sentence — "never a guess" — that
+ * `test/notes.test.js` requires by name.
+ */
+
+/**
+ * The strength filter's note, which describes THE OTHER CHOICE when it is off.
+ *
+ * ⭐ THAT ASYMMETRY IS DELIBERATE AND WAS ONCE THE BUG. Both controls used to say
+ * nothing until they had already been used, so "Even strength only" described
+ * itself only once you were in it. A sentence belongs beside the thing it is
+ * about AT THE MOMENT OF USE — which is right for a caption and wrong for a
+ * CONTROL, because a button has to be predictable before the click or it is a
+ * dare. Off, it says what pressing it would do; on, it carries the live count.
+ */
+function situationsNote(evenOnly, dropped) {
+ return evenOnly
+   ?`${dropped} ${dropped===1?'attempt has':'attempts have'} dropped out so far. Power plays and an empty net are still hockey — but they aren't even hockey.`
+   :'Even strength only drops the attempts made on a power play or against an empty net, and says how many it dropped.';
+}
+
+/** The trails control's note. It follows the ENDS MODE, because the old sentence
+ *  promised a whole-game chart and as-played cannot deliver one. */
+function trailsNote(trails, ASPLAYED) {
+ return trails!=='all'
+   ?'Current moment shows the latest event only. Keep every mark leaves the attempts on the ice as they happen.'
+   :ASPLAYED
+   ?'Every attempt in this period stays on the ice. It clears when the teams change ends, because after that they are shooting the other way.'
+   :'Every attempt stays on the ice, which builds into a shot chart by the third period — good to study, busy to watch.';
+}
+
+/**
+ * Which club has pulled its goaltender, said only while it is true.
+ *
+ * ⭐ `sit` is [awayGoalie][awaySkaters][homeSkaters][homeGoalie] — the same code
+ * `drawNetmen` draws by. A MISSING code is not evidence of an empty net, so it
+ * produces no note, on the same rule. One sentence per pulled team, mapped
+ * rather than branched: both nets empty at once is legal and rare, and a
+ * has/have ternary for it would be a branch no game in the archive can reach,
+ * which is a branch no test can honestly kill.
+ */
+function iceNote(sit, AAB, HAB) {
+ const pulled=[];
+ if(sit&&sit[0]==='0')pulled.push(AAB);
+ if(sit&&sit[3]==='0')pulled.push(HAB);
+ return pulled.length
+   ?pulled.map(ab=>`${ab} has pulled the goaltender for an extra attacker.`).join(' ')
+    +' An empty net here is the feed’s own situation code, never a guess.'
+   :'';
+}
+
 /* --- src/lib/layers/corsi.js --- */
 /**
  * Control (Corsi) — shot attempts, as a reduction over the whole game.
@@ -7476,16 +7542,8 @@ function render(i,how){
     before the click or it is a dare. The default branch now describes what the
     other choice would do; the active branch still carries the live count, which
     is a fact about the ice and belongs to the moment. */
- $('nSit').textContent=evenOnly
-   ?`${dropped} ${dropped===1?'attempt has':'attempts have'} dropped out so far. Power plays and an empty net are still hockey — but they aren't even hockey.`
-   :'Even strength only drops the attempts made on a power play or against an empty net, and says how many it dropped.';
- // THE NOTE FOLLOWS THE MODE, because the old sentence promised a whole-game
- // chart and as-played cannot deliver one.
- $('nTrails').textContent=trails!=='all'
-   ?'Current moment shows the latest event only. Keep every mark leaves the attempts on the ice as they happen.'
-   :ASPLAYED
-   ?'Every attempt in this period stays on the ice. It clears when the teams change ends, because after that they are shooting the other way.'
-   :'Every attempt stays on the ice, which builds into a shot chart by the third period — good to study, busy to watch.';
+ $('nSit').textContent=situationsNote(evenOnly,dropped);
+ $('nTrails').textContent=trailsNote(trails,ASPLAYED);
  document.getElementById('rg').classList.toggle('ended',i>=EV.length-1);
  /* THE PRE-GAME FRAME IS THE ONLY ONE THAT NEEDS AN INSTRUCTION, and `i<0` is the
     whole test -- `play()` leaves the resting frame at once from either end, so a
@@ -7504,13 +7562,7 @@ function render(i,how){
     ONE SENTENCE PER PULLED TEAM, mapped rather than branched. Both nets empty at
     once is legal and rare, and a `has`/`have` ternary for it would be a branch no
     game in the archive can reach, which is a branch no test can honestly kill. */
- const st=cur&&cur.sit, pulled=[];
- if(st&&st[0]==='0')pulled.push(AAB);
- if(st&&st[3]==='0')pulled.push(HAB);
- $('iceNote').textContent=pulled.length
-   ?pulled.map(ab=>`${ab} has pulled the goaltender for an extra attacker.`).join(' ')
-    +' An empty net here is the feed’s own situation code, never a guess.'
-   :'';
+ $('iceNote').textContent=iceNote(cur&&cur.sit,AAB,HAB);
  /* THE ENDS KEY, at the first moment the claim can be doubted. Every team
     attacks the same net all game here and switches every period in the arena,
     and the reader who NOTICES is the one who already knows hockey -- so the key

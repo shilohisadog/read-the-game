@@ -33,6 +33,7 @@ import { whyMarkup } from './lib/why.js';
 import { ESC } from './lib/esc.js';
 import { workMarkup } from './lib/work.js';
 import { eventMarks } from './lib/marks.js';
+import { iceNote, situationsNote, trailsNote } from './lib/notes.js';
 import { judgeable, mostUnusual } from './lib/distribution.js';
 import { corsi } from './lib/layers/corsi.js';
 import { goaltending, isHighDangerEvent } from './lib/layers/goaltending.js';
@@ -623,16 +624,8 @@ function render(i,how){
     before the click or it is a dare. The default branch now describes what the
     other choice would do; the active branch still carries the live count, which
     is a fact about the ice and belongs to the moment. */
- $('nSit').textContent=evenOnly
-   ?`${dropped} ${dropped===1?'attempt has':'attempts have'} dropped out so far. Power plays and an empty net are still hockey — but they aren't even hockey.`
-   :'Even strength only drops the attempts made on a power play or against an empty net, and says how many it dropped.';
- // THE NOTE FOLLOWS THE MODE, because the old sentence promised a whole-game
- // chart and as-played cannot deliver one.
- $('nTrails').textContent=trails!=='all'
-   ?'Current moment shows the latest event only. Keep every mark leaves the attempts on the ice as they happen.'
-   :ASPLAYED
-   ?'Every attempt in this period stays on the ice. It clears when the teams change ends, because after that they are shooting the other way.'
-   :'Every attempt stays on the ice, which builds into a shot chart by the third period — good to study, busy to watch.';
+ $('nSit').textContent=situationsNote(evenOnly,dropped);
+ $('nTrails').textContent=trailsNote(trails,ASPLAYED);
  document.getElementById('rg').classList.toggle('ended',i>=EV.length-1);
  /* THE PRE-GAME FRAME IS THE ONLY ONE THAT NEEDS AN INSTRUCTION, and `i<0` is the
     whole test -- `play()` leaves the resting frame at once from either end, so a
@@ -651,13 +644,7 @@ function render(i,how){
     ONE SENTENCE PER PULLED TEAM, mapped rather than branched. Both nets empty at
     once is legal and rare, and a `has`/`have` ternary for it would be a branch no
     game in the archive can reach, which is a branch no test can honestly kill. */
- const st=cur&&cur.sit, pulled=[];
- if(st&&st[0]==='0')pulled.push(AAB);
- if(st&&st[3]==='0')pulled.push(HAB);
- $('iceNote').textContent=pulled.length
-   ?pulled.map(ab=>`${ab} has pulled the goaltender for an extra attacker.`).join(' ')
-    +' An empty net here is the feed’s own situation code, never a guess.'
-   :'';
+ $('iceNote').textContent=iceNote(cur&&cur.sit,AAB,HAB);
  /* THE ENDS KEY, at the first moment the claim can be doubted. Every team
     attacks the same net all game here and switches every period in the arena,
     and the reader who NOTICES is the one who already knows hockey -- so the key

@@ -370,6 +370,8 @@ LIB = ["rink.js", "attribution.js", "layer.js", "strength.js", "box.js", "penalt
        # Every mark on the ice. AFTER attribution.js, svgpen.js and figures.js,
        # which it imports; presentation, so it may resolve screen coordinates.
        "marks.js",
+       # The three sentences the page says about its own state. No dependencies.
+       "notes.js",
        "layers/corsi.js", "layers/goaltending.js", "layers/danger.js", "layers/whistle.js",
        "layers/blocked.js",
        # BEFORE sentence.js, which asks it which competition a game is.
