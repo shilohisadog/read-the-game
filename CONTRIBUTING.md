@@ -10,6 +10,37 @@ and both apply.
 
 ---
 
+## The three marks
+
+<!-- marks: legend -->
+Comments and documents here carry one of three glyphs, about 2,400 times across
+the repo. They are not decoration and they are not severity levels — each one
+names a different kind of claim, so a reader can tell at a glance whether a
+paragraph is teaching them something, warning them, or forbidding something.
+
+| | what it means |
+|---|---|
+| ⭐ | **A finding.** Something that was measured or reasoned out, and that the code depends on. The interesting half of a comment. |
+| ⚠️ | **A defect we shipped, or a trap.** Written where the mistake was made, in the past tense, with what it cost. These are kept rather than tidied away: a warning with no incident behind it is advice, and advice does not stick. |
+| ⛔ | **A prohibition.** Do not do this, and here is the reason. The strongest of the three, and the rarest. |
+| ✅ | **A status, not a claim.** Used in `docs/` to mean *shipped and verified live*. It is here because a reader meets it 79 times and it is the one glyph that says nothing about the code beside it. |
+
+Doubling a mark (⭐⭐) means the point generalises beyond the line it sits on.
+
+⭐ **The list is closed, and `test/legends.test.js` enforces it**: any glyph used
+more than forty times must appear in the table above. Forty is not tuned — the
+four defined marks are used 1,020 / 531 / 141 / 79 times and the next glyph in
+the repo is used 16, so the threshold sits in a fivefold gap rather than on a
+number somebody liked. A fifth convention arriving is a fifth convention a
+reader has to guess at, and the test makes it a decision instead.
+
+**Write them in the past tense with the evidence attached.** *"⚠️ This counted
+`data-i="${k}"` as a write and reported 70 sites where there were 45"* is worth
+keeping. *"⚠️ Be careful with regexes"* is not.
+<!-- /marks -->
+
+---
+
 ## Running it
 
 You need **Node 20+** and **Python 3.10+**. There is nothing to install: the

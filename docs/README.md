@@ -15,6 +15,25 @@ without this index moving with it.
 
 ---
 
+## Two names you will meet, and neither is a stranger to us
+
+<!-- people: legend -->
+These documents are arguments, and arguments have participants. Both names
+appear throughout; neither is introduced anywhere else, which is a gap a reader
+of this repo found rather than one we noticed.
+
+- **Kevin** — Kevin Brown, who owns and directs the project. Quoted directly
+  wherever a decision was his, because the wording usually carries the reason.
+  When a document says *"Kevin ruled"*, that is the end of the argument.
+- **CHENG** — the adversarial reviewer. Substantial designs are written up and
+  put to CHENG to be argued against before they are built; the rulings are
+  recorded with the reasoning, including the ones that killed a plan of ours or
+  were themselves killed by a measurement. ⚠️ **CHENG and the author of most of
+  this code are the same base model**, so their agreement is correlated and is
+  deliberately worth less here than their disagreement. The review process
+  exists to catch what one pass misses, not to manufacture a second opinion.
+<!-- /people -->
+
 ## Start here
 
 | | |
