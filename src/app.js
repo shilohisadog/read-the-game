@@ -24,7 +24,7 @@ import {
 import {
   ATTEMPT_TYPES, ATTRIBUTION, corsiTeam, missSay, shootingTeam
 } from './lib/attribution.js';
-import { NOT_A_PLAY, inShootout } from './lib/layer.js';
+import { NOT_A_PLAY, inShootout, droppedForStrength } from './lib/layer.js';
 import { powerPlayOver, standing } from './lib/strength.js';
 import { occupants, stints } from './lib/box.js';
 import { penName } from './lib/penalties.js';
@@ -333,6 +333,39 @@ let rinkPer=null;
    without a label, and the club's colour on the goalie and the net says whose --
    which is how a viewer reads a real rink. The vertical "WSH net" was clutter
    doing a job a figure does better (Kevin). */
+/**
+ * The rink and its two nets, redrawn only when the period turns over.
+ *
+ * ⚠️⚠️ THE ONLY MEMO ON THIS PAGE THAT IS KEYED ON A PROXY, AND IT IS SAFE BY A
+ * FACT NOBODY HAD WRITTEN DOWN. CHENG, 2026-09-04, splitting the three:
+ *
+ *   netmenAre / pillIs   memo on the CONTENT — `now === netmenAre`, self-validating
+ *   rinkPer              memo on a PROXY     — `per === rinkPer`, and the period
+ *                                              is not the content
+ *
+ * The other two compare the string they are about to write against the string
+ * they last wrote, so they cannot be wrong: if the output changed for any reason
+ * at all, they notice. This one asks a different question — *has the period
+ * changed?* — and returns early on the answer. What it draws depends on **three**
+ * things, and only one of them is in that test:
+ *
+ *   `per`                 varies, and is the key
+ *   `AX`                  fixed for the life of a boot: `ASPLAYED` comes from the
+ *                         link and `SIDES` from the game, and neither moves
+ *   `HOMECOL`/`AWAYCOL`   fixed for the life of a boot: read once from the clubs
+ *
+ * So it is correct, and it is correct BY CIRCUMSTANCE. Anything that made a
+ * colour or the ends mode change without a period change would leave a stale
+ * rink on screen — ⛔ and **a golden walk structurally cannot see that**, because
+ * a stale frame renders identically on every pass. It is the fifth instance in
+ * this repo of an instrument covering less than its name implies.
+ *
+ * ⭐ WHICH IS WHY THE PREMISE IS ASSERTED RATHER THAN DESCRIBED. `test/rink-memo.
+ * test.js` proves the three inputs above are constant across a whole game, and
+ * that the memo redraws on every period change. That converts "safe by
+ * circumstance" into "safe by check": the day someone makes the ends mode a live
+ * control, the check goes red instead of the rink going stale.
+ */
 function drawRink(per){if(per===rinkPer)return;rinkPer=per;
  $('rink').innerHTML=furniture()
   +netGlyph('netHome',AX(-NET_X,per),HOMECOL)
@@ -574,6 +607,17 @@ function drawCue(i){
  if(!pos){el.innerHTML='';return;}
  el.innerHTML=`<circle class="cuef" cx="${pos.x.toFixed(1)}" cy="${pos.y.toFixed(1)}" r="${CUE_FT}"/>`;}
 function render(i,how){
+ /* ⭐⭐ A MOMENT IS A PLAY OR A JUMP — AND THE COUNTER FLASH BELOW IS DELIBERATELY
+    NOT. The two conditions differ by one word and the difference is a claim about
+    what the page is telling someone.
+    A deep link JUMPS to a frame. It must caption, because you arrived somewhere
+    and deserve to be told what it is. It must NOT flash the attempt counters,
+    because nothing was just attempted — you landed mid-game with twenty already
+    on the board, and a flash says "that number just went up". `render-transport`
+    asserts both directions: arriving does not bump, playing does.
+    ⚠️ The two conditions have been mistaken for a copy of each other before. They
+    are not; simplifying one into the other silently re-introduces a defect that
+    only shows on a shared link. */
  const moment=how==='play'||how==='jump';
  // `evs` is the PLAYABLE prefix, used to draw the marks on the timeline.
  // `lens(i)` reduces the FULL stream up to the same moment. Two different
@@ -610,13 +654,12 @@ function render(i,how){
  // The replay is AT the end, not merely near it. `i` is the frame index and
  // EV.length-1 is the last playable event; a game paused one shot short has
  // no verdict, and saying so is the whole point.
- // THE SITUATIONS NOTE CARRIES A NUMBER, which is the difference between a
- // claim and evidence. "Watch which attempts drop out" asked the reader to go
- // and look; this says how many did, in the game in front of them, so far.
- // Counted as: excluded for STRENGTH and for no other reason -- an event that
- // was also not an attempt was never going to count, and including it would
- // inflate the number with things even strength did not remove.
- const dropped=L.excluded.filter(x=>x.dims&&x.dims.strength&&!x.dims.type&&!x.dims.play).length;
+ // THE SITUATIONS NOTE CARRIES A NUMBER, which is the difference between a claim
+ // and evidence. The counting rule -- excluded for STRENGTH and for no other
+ // reason -- moved to layer.js on 2026-09-04, where its argument now lives: it is
+ // a question about the ledger's own dimensions, and asking it here was the tier
+ // boundary being crossed quietly.
+ const dropped=droppedForStrength(L.excluded);
  /* ⭐ AND THE OTHER BRANCH IS NO LONGER EMPTY. All three of these notes used to
     say nothing until their control had already been used -- so `Tabletop` was
     explained only once you had chosen `Tabletop`, and `Even strength only`
@@ -750,6 +793,19 @@ function render(i,how){
         is set where the announcement happens and nowhere else. */
      case 'slot': lastHD=i; caption(cur,'hd'); break;
    }}
+ /* ⭐⭐ UPDATED ON EVERY FRAME, INCLUDING A SCRUB, AND THAT IS THE WHOLE POINT.
+    These two are the only temporal state left in the drawing path: the flash
+    above asks "did this club's count go UP since the last frame drawn", and that
+    question is only meaningful against the frame the viewer was actually looking
+    at. Drag the scrubber from the opening face-off to the third period and every
+    counter climbs, silently, because a scrub is not a moment. Press Play and the
+    next frame must compare against where the drag LEFT you.
+    ⛔ PUTTING THIS INSIDE `if(how==='play')` IS THE BUG, and it is an easy one to
+    write, because the line looks like bookkeeping that only the flash needs. It
+    would leave `prevA` holding whatever was on screen before the drag, so the
+    first played frame afterwards would flash for every attempt accumulated
+    during it — the counters going off at once for shots taken minutes ago.
+    `test/render-transport.test.js` walks exactly that: scrub deep, then play. */
  prevA=a;prevH=h;
  sayWho(cur);
  $('per').textContent=periodLabel(cur);$('clk').textContent=cur?cur.rem:'20:00';

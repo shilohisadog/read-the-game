@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-CckrW3nLj5CsZXVJhmmvQFVgCeS3TsOdBg9OXccpnxM=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-SccvklKRpHhYn1HIyLZKQbhxyrinqwZSr2J4V2THf0o='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-eGtOSw9DOVsvVsdzu0Xw5+t+XHfMMkWYxLAc6w2a8JU=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-OO0qRv56Kh3sPdJLLOwOWqulEFxfX35KkDPDBU2IxTQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">Watch a game</a><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see</a><a href="/workshop.html">Workshop</a></nav></header>
@@ -641,7 +641,24 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 @keyframes snatch{0%{transform:scale(2.3);opacity:.2}55%{transform:scale(.8);opacity:1}100%{transform:scale(1)}}
 #rg .slip{animation:slip .55s ease-in-out}
 @keyframes slip{0%{transform:scale(1.55);opacity:0}45%{opacity:.7}100%{transform:scale(1);opacity:1}}
-#rg .puck{fill:#0e1216;stroke:#fff;stroke-width:.55}#rg .puck.jump{animation:pj .3s ease}@keyframes pj{0%{transform:scale(2)}100%{transform:scale(1)}}
+/* ⛔ THE PUCK WAS THE ONE ANIMATED MARK ON THE ICE WITHOUT `transform-box`, AND
+   IT FLEW IN FROM OFF THE RINK. Kevin, 2026-09-04, watching the replay: "it now
+   looks like it's coming from off the rink onto its current event, then again
+   from off the rink to the next spot of the next event."
+   He was right about what he saw and wrong about when it started -- the markup
+   is byte-identical on all 269 played frames to before the decomposition, as is
+   this stylesheet and the pace. It has been this way since the animation was
+   written.
+   THE MECHANISM. On an SVG element a CSS transform resolves against the VIEW BOX
+   with an origin of 0 0, so `scale(2)` maps a puck at (80, 64.5) to (160, 129) --
+   past the right boards and below the ice on a 200x85 rink -- and the animation
+   slides it diagonally back. `.ev`, `.fig` and `.gk` all set `transform-box:
+   fill-box` three rules above and pop about their own centres, which is what this
+   was always meant to do; the puck alone was missed.
+   `test/css-transform-box.test.js` now derives the rule from the stylesheet
+   rather than from a list, so the next scaling animation cannot be added without
+   it. */
+#rg .puck{fill:#0e1216;stroke:#fff;stroke-width:.55;transform-box:fill-box;transform-origin:center}#rg .puck.jump{animation:pj .3s ease}@keyframes pj{0%{transform:scale(2)}100%{transform:scale(1)}}
 #rg .shotline{stroke:var(--ink);stroke-width:.7;stroke-dasharray:2.2 2;opacity:.7;animation:sl 1s ease forwards}@keyframes sl{to{opacity:0}}
 /* ⭐ THE LAYER BOX -- ONE GRAMMAR, CONSTANT HEIGHT (§31.3).
    Three columns: away figure, what is counted, home figure; then one line
@@ -2681,6 +2698,31 @@ const NOT_A_PLAY = {
  */
 const isNearMiss = x =>
   !x.dims?.type && Object.keys(x.dims || {}).some(k => k !== 'type');
+
+/**
+ * How many events the STRENGTH filter, and nothing else, took out.
+ *
+ * ⭐ THIS IS THE NUMBER UNDER THE SITUATIONS CONTROL, and it is the difference
+ * between a claim and evidence. "Watch which attempts drop out" asks a reader to
+ * go and look; *"11 attempts have dropped out so far"* says how many did, in the
+ * game in front of them, at the frame they are on.
+ *
+ * ⛔ AND STRENGTH ALONE IS THE WHOLE POINT. An event that was also not an attempt
+ * (`type`) or not a play at all (`play`) was never going to count, so including
+ * it would inflate the control's number with things even strength did not remove
+ * — the sentence would say the filter did more than it did. Same shape as
+ * `isNearMiss` directly above: a dimension test that reads as arithmetic and is
+ * really a claim about what a surface is telling someone.
+ *
+ * ⚠️ IT LIVES HERE BECAUSE IT WAS A REDUCER'S QUESTION BEING ASKED IN A RENDERER.
+ * Until 2026-09-04 this was one inline `.filter().length` in `render` — an
+ * analysis computation over the ledger's own dimensions, in the binding tier, with
+ * no test of its own and its correctness asserted only by the sentence it fed.
+ * CHENG: *"the tier boundary being crossed quietly, and the one item that is a
+ * genuine move rather than a note."*
+ */
+const droppedForStrength = excluded =>
+  excluded.filter(x => x.dims?.strength && !x.dims.type && !x.dims.play).length;
 
 /**
  * Does this result account for every event exactly once?
@@ -7464,6 +7506,39 @@ let rinkPer=null;
    without a label, and the club's colour on the goalie and the net says whose --
    which is how a viewer reads a real rink. The vertical "WSH net" was clutter
    doing a job a figure does better (Kevin). */
+/**
+ * The rink and its two nets, redrawn only when the period turns over.
+ *
+ * ⚠️⚠️ THE ONLY MEMO ON THIS PAGE THAT IS KEYED ON A PROXY, AND IT IS SAFE BY A
+ * FACT NOBODY HAD WRITTEN DOWN. CHENG, 2026-09-04, splitting the three:
+ *
+ *   netmenAre / pillIs   memo on the CONTENT — `now === netmenAre`, self-validating
+ *   rinkPer              memo on a PROXY     — `per === rinkPer`, and the period
+ *                                              is not the content
+ *
+ * The other two compare the string they are about to write against the string
+ * they last wrote, so they cannot be wrong: if the output changed for any reason
+ * at all, they notice. This one asks a different question — *has the period
+ * changed?* — and returns early on the answer. What it draws depends on **three**
+ * things, and only one of them is in that test:
+ *
+ *   `per`                 varies, and is the key
+ *   `AX`                  fixed for the life of a boot: `ASPLAYED` comes from the
+ *                         link and `SIDES` from the game, and neither moves
+ *   `HOMECOL`/`AWAYCOL`   fixed for the life of a boot: read once from the clubs
+ *
+ * So it is correct, and it is correct BY CIRCUMSTANCE. Anything that made a
+ * colour or the ends mode change without a period change would leave a stale
+ * rink on screen — ⛔ and **a golden walk structurally cannot see that**, because
+ * a stale frame renders identically on every pass. It is the fifth instance in
+ * this repo of an instrument covering less than its name implies.
+ *
+ * ⭐ WHICH IS WHY THE PREMISE IS ASSERTED RATHER THAN DESCRIBED. `test/rink-memo.
+ * test.js` proves the three inputs above are constant across a whole game, and
+ * that the memo redraws on every period change. That converts "safe by
+ * circumstance" into "safe by check": the day someone makes the ends mode a live
+ * control, the check goes red instead of the rink going stale.
+ */
 function drawRink(per){if(per===rinkPer)return;rinkPer=per;
  $('rink').innerHTML=furniture()
   +netGlyph('netHome',AX(-NET_X,per),HOMECOL)
@@ -7705,6 +7780,17 @@ function drawCue(i){
  if(!pos){el.innerHTML='';return;}
  el.innerHTML=`<circle class="cuef" cx="${pos.x.toFixed(1)}" cy="${pos.y.toFixed(1)}" r="${CUE_FT}"/>`;}
 function render(i,how){
+ /* ⭐⭐ A MOMENT IS A PLAY OR A JUMP — AND THE COUNTER FLASH BELOW IS DELIBERATELY
+    NOT. The two conditions differ by one word and the difference is a claim about
+    what the page is telling someone.
+    A deep link JUMPS to a frame. It must caption, because you arrived somewhere
+    and deserve to be told what it is. It must NOT flash the attempt counters,
+    because nothing was just attempted — you landed mid-game with twenty already
+    on the board, and a flash says "that number just went up". `render-transport`
+    asserts both directions: arriving does not bump, playing does.
+    ⚠️ The two conditions have been mistaken for a copy of each other before. They
+    are not; simplifying one into the other silently re-introduces a defect that
+    only shows on a shared link. */
  const moment=how==='play'||how==='jump';
  // `evs` is the PLAYABLE prefix, used to draw the marks on the timeline.
  // `lens(i)` reduces the FULL stream up to the same moment. Two different
@@ -7741,13 +7827,12 @@ function render(i,how){
  // The replay is AT the end, not merely near it. `i` is the frame index and
  // EV.length-1 is the last playable event; a game paused one shot short has
  // no verdict, and saying so is the whole point.
- // THE SITUATIONS NOTE CARRIES A NUMBER, which is the difference between a
- // claim and evidence. "Watch which attempts drop out" asked the reader to go
- // and look; this says how many did, in the game in front of them, so far.
- // Counted as: excluded for STRENGTH and for no other reason -- an event that
- // was also not an attempt was never going to count, and including it would
- // inflate the number with things even strength did not remove.
- const dropped=L.excluded.filter(x=>x.dims&&x.dims.strength&&!x.dims.type&&!x.dims.play).length;
+ // THE SITUATIONS NOTE CARRIES A NUMBER, which is the difference between a claim
+ // and evidence. The counting rule -- excluded for STRENGTH and for no other
+ // reason -- moved to layer.js on 2026-09-04, where its argument now lives: it is
+ // a question about the ledger's own dimensions, and asking it here was the tier
+ // boundary being crossed quietly.
+ const dropped=droppedForStrength(L.excluded);
  /* ⭐ AND THE OTHER BRANCH IS NO LONGER EMPTY. All three of these notes used to
     say nothing until their control had already been used -- so `Tabletop` was
     explained only once you had chosen `Tabletop`, and `Even strength only`
@@ -7881,6 +7966,19 @@ function render(i,how){
         is set where the announcement happens and nowhere else. */
      case 'slot': lastHD=i; caption(cur,'hd'); break;
    }}
+ /* ⭐⭐ UPDATED ON EVERY FRAME, INCLUDING A SCRUB, AND THAT IS THE WHOLE POINT.
+    These two are the only temporal state left in the drawing path: the flash
+    above asks "did this club's count go UP since the last frame drawn", and that
+    question is only meaningful against the frame the viewer was actually looking
+    at. Drag the scrubber from the opening face-off to the third period and every
+    counter climbs, silently, because a scrub is not a moment. Press Play and the
+    next frame must compare against where the drag LEFT you.
+    ⛔ PUTTING THIS INSIDE `if(how==='play')` IS THE BUG, and it is an easy one to
+    write, because the line looks like bookkeeping that only the flash needs. It
+    would leave `prevA` holding whatever was on screen before the drag, so the
+    first played frame afterwards would flash for every attempt accumulated
+    during it — the counters going off at once for shots taken minutes ago.
+    `test/render-transport.test.js` walks exactly that: scrub deep, then play. */
  prevA=a;prevH=h;
  sayWho(cur);
  $('per').textContent=periodLabel(cur);$('clk').textContent=cur?cur.rem:'20:00';

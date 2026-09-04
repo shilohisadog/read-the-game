@@ -594,7 +594,24 @@
 @keyframes snatch{0%{transform:scale(2.3);opacity:.2}55%{transform:scale(.8);opacity:1}100%{transform:scale(1)}}
 #rg .slip{animation:slip .55s ease-in-out}
 @keyframes slip{0%{transform:scale(1.55);opacity:0}45%{opacity:.7}100%{transform:scale(1);opacity:1}}
-#rg .puck{fill:#0e1216;stroke:#fff;stroke-width:.55}#rg .puck.jump{animation:pj .3s ease}@keyframes pj{0%{transform:scale(2)}100%{transform:scale(1)}}
+/* ⛔ THE PUCK WAS THE ONE ANIMATED MARK ON THE ICE WITHOUT `transform-box`, AND
+   IT FLEW IN FROM OFF THE RINK. Kevin, 2026-09-04, watching the replay: "it now
+   looks like it's coming from off the rink onto its current event, then again
+   from off the rink to the next spot of the next event."
+   He was right about what he saw and wrong about when it started -- the markup
+   is byte-identical on all 269 played frames to before the decomposition, as is
+   this stylesheet and the pace. It has been this way since the animation was
+   written.
+   THE MECHANISM. On an SVG element a CSS transform resolves against the VIEW BOX
+   with an origin of 0 0, so `scale(2)` maps a puck at (80, 64.5) to (160, 129) --
+   past the right boards and below the ice on a 200x85 rink -- and the animation
+   slides it diagonally back. `.ev`, `.fig` and `.gk` all set `transform-box:
+   fill-box` three rules above and pop about their own centres, which is what this
+   was always meant to do; the puck alone was missed.
+   `test/css-transform-box.test.js` now derives the rule from the stylesheet
+   rather than from a list, so the next scaling animation cannot be added without
+   it. */
+#rg .puck{fill:#0e1216;stroke:#fff;stroke-width:.55;transform-box:fill-box;transform-origin:center}#rg .puck.jump{animation:pj .3s ease}@keyframes pj{0%{transform:scale(2)}100%{transform:scale(1)}}
 #rg .shotline{stroke:var(--ink);stroke-width:.7;stroke-dasharray:2.2 2;opacity:.7;animation:sl 1s ease forwards}@keyframes sl{to{opacity:0}}
 /* ⭐ THE LAYER BOX -- ONE GRAMMAR, CONSTANT HEIGHT (§31.3).
    Three columns: away figure, what is counted, home figure; then one line

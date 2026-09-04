@@ -41,12 +41,12 @@ header, and §4 records what it cost us the one time we did it anyway.
 | **acquisition** | talks to the league, stores bytes | `fetch_nhl.py` | 611 |
 | **interpretation** | feed → events; the two gates | `extract.py` | 857 |
 | **orchestration** | walks the store, judges, writes documents | `derive.py` | 729 |
-| **analysis** | events → meaning; pure, no DOM, no network | `src/lib/**` (33 modules) | 6,457 |
+| **analysis** | events → meaning; pure, no DOM, no network | `src/lib/**` (33 modules) | 6,482 |
 | **measurement** | the archive, reduced by the SAME modules | `measure.mjs` | 428 |
 | **presentation** | generates the pages | `build_*.py` (9) | 3,971 |
-| **the app** | **the one exception — see §2** | `src/app.js` | 3,096 |
+| **the app** | **the one exception — see §2** | `src/app.js` | 3,152 |
 
-<sub>Counted 2026-09-04 by `tools/tiers.mjs`, checked by `npm run gates`. The analysis tier is **33 modules** and **not one of them touches the DOM, the network or the filesystem** — the boundary §1 claims, verified here rather than asserted. `src/app.js` **declares 25 dependencies on that tier and exports 1 function** — it is a module, not a build template, and §2 is what remains. Of its 3,096 lines **2,228 are comment-only and 771 are code**, and **162 comment lines carry an explicit claim** about the code beside them — which is §2's argument, counted rather than asserted.</sub>
+<sub>Counted 2026-09-04 by `tools/tiers.mjs`, checked by `npm run gates`. The analysis tier is **33 modules** and **not one of them touches the DOM, the network or the filesystem** — the boundary §1 claims, verified here rather than asserted. `src/app.js` **declares 25 dependencies on that tier and exports 1 function** — it is a module, not a build template, and §2 is what remains. Of its 3,152 lines **2,284 are comment-only and 771 are code**, and **169 comment lines carry an explicit claim** about the code beside them — which is §2's argument, counted rather than asserted.</sub>
 <!-- /tiers -->
 
 ---
@@ -120,7 +120,11 @@ imports it directly**, and `app.js` itself never becomes reachable — it shrink
 
 ✅ **Seven clusters are out as of 2026-09-04** — `why.js`, `esc.js`, `work.js`,
 `marks.js`, `notes.js`, `goalie-card.js`, `announce.js`. `render()` went from 328
-lines to 187 and `app.js` from 3,368 to 3,095. Every move left the rendered DOM
+lines to 187. ⚠️ **And then `render` went back UP to 210 and `app.js` to 3,152**,
+because the four findings in `render-residue.md` were answered by writing down
+reasons that had never been written down — which is rule 9 working as intended and
+is the clearest possible statement that **the line count was never the thing**.
+Every move left the rendered DOM
 identical, checked by `test/dom-golden.test.js` across the base game, five layer
 walks, three control walks, a click pass and **two full plays of the replay**.
 

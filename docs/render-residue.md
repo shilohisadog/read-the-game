@@ -2,6 +2,38 @@
 
 **For CHENG. 2026-09-04, after seven clusters came out of `boot()`.**
 
+> ## ✅ ANSWERED AND BUILT — 2026-09-04
+>
+> CHENG: *"Checks, and the stopping rule you propose is the right one. Take it,
+> and make it the rule rather than a summary of this document."* It is
+> **`CONTRIBUTING.md` rule 9** now: *move code only when a caller gains a question
+> it could not ask; a refactor ends when the last unstated invariant gets an
+> instrument, not when the file gets small.*
+>
+> All four outputs are in:
+>
+> | §2.1 the `moment` / `how==='play'` distinction | the reason is written down beside it |
+> | --- | --- |
+> | §2.2 `prevA`/`prevH` written on a scrub | comment **and** a test — `render-transport.test.js` |
+> | §2.3 `dropped` inline in a renderer | moved to `layer.js` as `droppedForStrength`, on the `isNearMiss` precedent |
+> | §2.4 `drawRink`'s memo | rule stated, premise **asserted** — `test/rink-memo.test.js` |
+>
+> ⭐ **And measuring split the memos three ways, not two.** CHENG's division was
+> content-keyed (`netmenAre`, `pillIs`) versus proxy-keyed (`rinkPer`). `pillIs`
+> is neither: its key is `${b.id}|${b.said}|${b.count}` — a **digest of its
+> inputs**, not the markup — so it is safe on the same kind of premise the rink's
+> memo needs, and the one thing that key omits is `AID`. Both premises are in the
+> one assertion now.
+>
+> ⚠️ **Two of my own checks were wrong before they were right**, both caught by
+> controls rather than by review: the constant-scanner read the second declarator
+> of `const AWAYCOL=…, HOMECOL=…` as a reassignment, and the scrub re-base test
+> asserted only on frames where the count happened not to move — **a conditional
+> assertion is a test that decides for itself whether to run**, and the mutation
+> walked through it.
+>
+> ⛔⛔ **AND KEVIN FOUND A REAL DEFECT WHILE THIS WAS BEING WRITTEN — see §6.**
+
 The standing answer has been *"what remains is wiring."* This document checks that
 sentence rather than repeating it, because it has been said three times and never
 measured. **It is not quite true**, and the four things that make it untrue are
@@ -199,3 +231,75 @@ checks**? Every finding in §2 is an unstated claim rather than a misplaced
 function. If the answer is checks, then §4 is right and step 2 ends — and *"the
 decomposition ended when the last unstated invariant got an instrument, not when
 the file got small"* is a better stopping rule than any line count.
+
+---
+
+## 6. ⛔⛔ The puck flew in from off the rink, and nothing here could have told us
+
+Kevin, watching the deployed site while §5 was being written: *"the puck… it now
+looks like it's coming from off the rink onto its current event, then again from
+off the rink to the next spot of the next event, which is different than it was
+pre-refactoring."* Then, doubting it: *"maybe it's been that way but it sure looks
+different… maybe it's Freudian."*
+
+**He was right about what he saw and wrong about when it started, and both halves
+are worth separating.**
+
+### It is not a regression, and that was checked rather than argued
+
+Three comparisons against the build immediately before the decomposition
+(`47e4fab`), booting both bundles through the same fake:
+
+| | result |
+|---|---|
+| `#puck` markup, every played frame | **identical, 269 of 269** |
+| the page's stylesheets | **identical** |
+| the per-frame pace | **identical frame for frame**, 3600–4500ms |
+
+So nothing about the puck changed. It has behaved this way since the animation
+was written.
+
+### What is actually wrong, and it is real
+
+`#rg .puck.jump{animation:pj .3s ease}` with `@keyframes pj{0%{transform:scale(2)}
+100%{transform:scale(1)}}`. **On an SVG element a CSS transform resolves against
+the view box with an origin of `0 0`**, not against the element's own box — so
+`scale(2)` maps a puck at (80, 64.5) to **(160, 129)**, past the right boards and
+below the ice on a 200×85 rink, and the animation slides it diagonally into place.
+`.jump` is applied on **269 of 269 played frames**, so it happens every frame of
+every replay.
+
+⭐ **Three sibling rules already do it right.** `#rg .ev`, `#rg .fig` and `#rg .gk`
+all set `transform-box:fill-box;transform-origin:center` and pop about their own
+centres, which is what every one of these animations means. **The puck alone was
+missed** — one element out of four, in the rule that says what a scale is
+measured from.
+
+### Why no instrument had it, and the one that does now
+
+**The suite has no pixels and the golden cannot see a stylesheet at all.** The
+rendered-DOM walk pins `class="puck jump"` and is completely satisfied; the defect
+lives entirely in CSS the walk never reads. It took a person watching the replay
+— which is the sixth instance of *the instrument covering less than its name
+implies*, and the first one found by a viewer rather than by a check.
+
+`test/css-transform-box.test.js` derives the rule from the stylesheet and the
+rendered markup rather than from a list: **any SVG element carrying an animation
+whose keyframes scale must also carry a class that sets `transform-box:fill-box`.**
+Proven to go red on the defect exactly as it shipped.
+
+⚠️ **Its first draft flagged nine rules of which one was real.** It compared
+selector strings, so `#rg .flare{animation:flare}` looked uncovered even though
+`#rg .ev{transform-box:fill-box}` applies to the very same element — every mark is
+`class="ev fig att cur a pop"`. A checker that flags everything is as useless as
+one that flags nothing, and it would have buried the genuine defect in noise. The
+question is about an **element**, so the second version asks it of the classes an
+element actually carries, taken from a played walk.
+
+### ⭐ What this says about the stopping rule
+
+Rule 9 says a refactor ends when the last unstated invariant gets an instrument.
+This is a reminder that **the set of unstated invariants is not bounded by the
+file you happen to be refactoring.** Nothing in `render` was wrong. The claim that
+had no instrument was in the stylesheet, and the only reason it surfaced is that
+somebody watched the thing work.

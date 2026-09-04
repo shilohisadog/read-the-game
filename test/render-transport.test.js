@@ -201,6 +201,62 @@ test('a deep link lands without pretending the whole game just happened', () => 
     'playing forward through 80% of a game never bumped a counter');
 });
 
+test('⭐⭐ a scrub re-bases the flash, so playing after a drag does not fire for the drag', () => {
+  /* THE OTHER HALF OF THE SAME SEAM, AND IT HAD NO TEST. `prevA`/`prevH` are
+     updated on EVERY frame `render` draws, a scrub included — which is what makes
+     "did this count go up since the last frame" a question about the frame the
+     viewer was actually looking at. Drag from the opening face-off into the third
+     period and every counter climbs silently, because a scrub is not a moment;
+     press Play and the next frame must compare against where the drag LEFT you.
+
+     ⛔ THE DEFECT THIS FORBIDS is moving `prevA=a;prevH=h;` inside
+     `if(how==='play')`, which reads like a tidy-up — the flash is the only reader,
+     so why pay for it on a scrub? Then `prevA` still holds the pre-drag count, and
+     the first played frame flashes for every attempt accumulated during the drag:
+     the counters going off at once for shots taken minutes ago. Found by writing
+     down why the line sits outside the branch (CHENG, 2026-09-04: correct, subtle,
+     undocumented, and the symptom is visual so the suite cannot see it). */
+  /* ⚠️ THE FIRST DRAFT OF THIS TEST ONLY ASSERTED WHEN THE COUNT HAPPENED NOT TO
+     MOVE, and the mutation it exists for walked straight through that condition.
+     A conditional assertion is a test that decides for itself whether to run.
+     The claim is an IMPLICATION and is asserted as one, on every frame: a counter
+     may flash only if that counter's own number went up. */
+  const a = boot();
+  const deep = Math.floor(+a.$('scrub').max * 0.8);
+  const read = () => ({ A: +a.$('cA').textContent, H: +a.$('cH').textContent,
+                        bA: a.$('cA').classList.contains('bump'),
+                        bH: a.$('cH').classList.contains('bump') });
+
+  a.$('scrub').oninput({ target: { value: String(deep) } });
+  const carried = read();
+  assert.ok(carried.A + carried.H > 20,
+    `the drag landed on ${carried.A + carried.H} attempts — too few to be about anything`);
+  assert.equal(carried.bA || carried.bH, false, 'the drag itself flashed a counter');
+
+  /* Now play ON from there. A stale `prev` compares the third period's totals
+     against the opening face-off's and flashes for the whole game at once. */
+  /* ⚠️ AND `bump` IS NEVER TAKEN OFF, so `contains('bump')` means "has flashed at
+     some point", not "flashed on this frame" — `flash()` removes it, forces a
+     reflow and re-adds it, which restarts the animation in a browser and leaves
+     the class sitting there afterwards. Reading it as a per-frame signal made the
+     first version of this fail on correct code. It is cleared before each frame
+     so its presence after one means the flash fired ON that frame. */
+  a.$('play').click();
+  let before = carried;
+  for (let k = 0; k < 12; k++) {
+    a.$('cA').classList.remove('bump');
+    a.$('cH').classList.remove('bump');
+    if (a.advance(1) !== 1) break;
+    const now = read();
+    assert.ok(!now.bA || now.A > before.A,
+      `the away counter flashed on the frame after a drag while its number stayed at ${now.A} — `
+      + '`prevA` is stale, so the flash is reporting the drag rather than the play');
+    assert.ok(!now.bH || now.H > before.H,
+      `the home counter flashed while its number stayed at ${now.H} — same defect, home side`);
+    before = now;
+  }
+});
+
 test('letting go of the scrubber calls the play you landed on', () => {
   // A drag passes THROUGH plays and lands on one. `oninput` fires at every value
   // the slider crosses, so the moment is called on `onchange` — once, when the

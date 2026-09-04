@@ -175,6 +175,28 @@ refusals over 2,793 events in seven fixtures — a fixture figure, not an archiv
 one" is a usable sentence; "3.3%" is not. A share with no base rate beside it
 can be perfectly correct and still lose the argument.
 
+### 9. Move code only when a caller gains a question it could not ask.
+
+⭐⭐ **A refactor ends when the last unstated invariant gets an instrument, not
+when the file gets small.** Extracting something buys exactly one thing: a caller
+can now hand it arguments the running page never would. If you cannot name that
+question, the move is motion.
+
+Earned 2026-09-04 on the seventh cluster out of `src/app.js`. `announce.js` — the
+rule deciding which single sentence a frame gets — moved at **66 lines inserted
+and 66 deleted, net zero**, and is **11 lines of code carrying 96 of comment**. By
+size it did not happen. It was worth doing because the ladder can now be asked all
+**fifteen** of its pairwise collisions, and the reference game contains **one**.
+The same test applied to the drawing helpers beside it says *don't*: `drawRink`
+and `drawLabel` are already functions, and putting them in another file adds no
+question anyone can ask them.
+
+**The corollary is where the work goes instead.** Four things in the residue were
+not wiring — a `moment`/`how==='play'` distinction carrying a real claim, state
+deliberately updated on a scrub, an analysis computation inline in a renderer, and
+a memo keyed on a proxy. One was a move; **three were comments and checks that
+should have been written when the code was.** Reach for those first.
+
 ---
 
 ## Opening a pull request
