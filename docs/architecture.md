@@ -165,7 +165,18 @@ the unit suite is blind to layout by construction.
 ### 3.2 The browser bundle is a regex concatenator
 
 `build_main.py::_inline` strips `import`/`export` with a regex and concatenates
-`src/lib` in a hand-ordered list, so the whole bundle is one lexical scope.
+`src/lib` in a hand-ordered list.
+
+⛔ **This paragraph used to end "so the whole bundle is one lexical scope", and
+that is FALSE — the repo's own test had already audited it and said so.**
+`test/render-ends.test.js`: *"the modules do share one SCRIPT, but not one SCOPE:
+`build_main.py` inlines the library ABOVE `boot`, and `SX` is a const in boot's
+body."* There are **two** scopes, and the difference is load-bearing rather than
+pedantic: CHENG's ruling that a reducer must never resolve `SX` holds **because**
+the rink art is emitted inside `boot` where no top-level module can see it. A
+reader who believed this sentence would conclude the guarantee was impossible.
+It survived the correction being made, written down, and instrumented, because
+nothing checks the prose in this file.
 
 **Why it holds:** the page is one file with inline script pinned by CSP hashes,
 and this needs no bundler, no build-time module resolution, and no dependency.
@@ -179,8 +190,10 @@ the real imports.
 
 ### 3.3 The Python↔JS data contract is checked by sample, not by schema
 
-There is no declared list of event fields. `extract.py` writes the record and 26
-JS modules read it.
+There is no declared list of event fields. `extract.py` writes the record and
+every module in the analysis tier reads it. (The count is in the generated block
+above — it said 26 here for a day after the tier gained a module, which is the
+whole reason sizes in this document are counted rather than typed.)
 
 **Why it holds, and this one is genuinely contrarian:** a declared schema would
 be a *second statement of the truth*, free to drift from the extractor that
@@ -235,6 +248,7 @@ measure the substrate.**
 | **rink constants** | Mostly closed. `89`, `33` and the slot's `22 ft` are gone — the why-popup reads `NET_X`, `HIGH_DANGER_FT` and `SLOT_HALF_WIDTH` from `rink.js`. What survives is `42.5`, half the rink's width, in three places: the why-popup's own mini-rink transform and two emitted SVG attributes. ⛔ The `22` still in the file is **22 degrees** off straight-on and is deliberately not `SLOT_HALF_WIDTH` |
 | **`build_index.py`** | five page-builders in one file; already cost us a shipped `__SLOT_*__` placeholder |
 | **the why-popup's ✕ button is dead** | `onclick="hideWhy()"` resolves against the global scope and `hideWhy` is a local of `boot`; the CSP also carries a script hash with no `'unsafe-hashes'`, which blocks inline handler attributes outright. The backdrop click still closes the popup, so it is a dead affordance rather than a trap — the fifth of that shape here. Found by reading the cluster in order to move it |
+| **this document's own claims** | ⚠️ **Audited 2026-09-04, and the answer was 10 of ~17.** Two were FALSE, not merely unchecked: §3.2 said the bundle is one lexical scope (the repo's own test had refuted it, and the `SX` guarantee depends on it being false), and §3.3 said 26 analysis modules when there were 27. Five more are true and unguarded — see the note below the table |
 | **claim coverage** | of the ~49 published claims, how many have an instrument that goes red when they stop being true? No definition of "claim" yet |
 
 ---
@@ -252,3 +266,43 @@ Its findings were acted on and are not lost; what it argued for — one
 implementation of each rule, called from both tiers — is §1 of this file and is
 now how the system works. The reasoning lives in `docs/status.md` and in the
 module headers, where it is next to the code it describes.
+
+### What the 2026-09-04 audit of this file found
+
+Kevin asked it as a question — *"how many other invariants aren't tested?"* —
+after I noticed I had typed numbers by hand into a document whose header promises
+none are. Counting falsifiable claims here rather than opinions, roughly
+seventeen, and the enumeration is a judgement call:
+
+**Instrumented (10).** No page reaches a server unless it declares it
+(`deploy.yml`'s grep, two-sided: every page either fetches *and* names
+`connect-src`, or reaches nothing and says nothing) · the layer contract and
+`conservation()` · `excluded` holding ids · the whole generated tier block
+(`tiers.mjs --check`) · `app.js`'s import list (`app-imports.test.js`) ·
+byte-identical build (`--verify`) · module order derived from real imports
+(`build.test.js`) · cross-fixture consistency (`fixtures.test.js`) · the four
+league-controlled vocabularies alarmed at archive scale · and the two situation
+implementations checked against each other over all 10,000 codes.
+
+**True but unguarded (5).**
+- ⚠️ **"One implementation, two callers."** `measure.mjs` does import the real
+  reducers, but nothing would fail if someone reimplemented one beside it — and
+  §4 records that a second implementation of a domain rule is this project's
+  most expensive defect. **The most valuable of the five to close.**
+- **`boot` is one function whose 26 bindings are its locals** — hand-audited,
+  and the count has already drifted once (it was published as 25; the audit had
+  missed `gear`).
+- **"Still invisible to coverage"** — a claim about an absence; arguably not
+  checkable, but it will silently stop being true the day the harness changes.
+- ✅ **"Zero runtime dependencies"** — was unguarded, closed the same day by
+  `test/zero-dependencies.test.js`. Nothing had ever stopped an `npm i`.
+- **The `madge`/`knip` figures in §3.2** (11 orphans, 17 unused exports, 13 used
+  in production) — an undated measurement from tools this repo does not install,
+  and `src/lib` has gained a module since. Read as history, not as status.
+
+⭐ **The pattern in the two false ones is the same and it is worth naming: both
+were corrected somewhere else and the correction never walked back to here.** The
+scope sentence was refuted by a test comment; the module count by a generated
+block eight lines above it. **A document that quotes the system is a cache of the
+system**, which is the finding `docs/status.md` §F already made about the build
+list, arriving in the file that describes the architecture.
