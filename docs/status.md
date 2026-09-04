@@ -28,84 +28,117 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 
 ---
 
-# §0. WHERE WE ARE — 2026-09-03
+# §0. WHERE WE ARE — 2026-09-04
 
-Kevin: *"I want to take a step back and capture where we are… I've lost the
-bubble a bit."* This section is the orientation. Everything below §0 is the
-detail, organised by state rather than by date.
+Kevin: *"take a step back and capture where we are in the cleanup."* This section
+is the orientation. Everything below §0 is the detail, organised by state.
 
-## ✅ 0.00 STEP 1 IS DONE — `src/app.js` is a module (2026-09-04)
+## ⏭ 0.00 PICK UP HERE — decomposition, six clusters out
 
-**Shipped. The tree is green at 984 JS + 180 Python, and `src/*.html` did not
-change by one byte** — `git diff --stat` on the commit shows the built pages
-absent from it, which is the whole safety argument arriving as evidence.
+**Nothing is in flight. The tree is green at 1,044 JS + 180 Python.**
 
-**What landed:** `app.js` declares **54 names from 20 modules** as imports and
-exports `boot`. `__LIB__` and `__BOOT__` moved into the HTML template, where
-they were always about the page rather than the renderer. `_app()` drops the
-preamble — the import list is a statement about the *module*, and a bundle that
-has already been handed those modules by concatenation must not carry it.
-**`rinkart` stays injected inside `boot`** (option A, §0.00-b), so the `SX`
-runtime probe passes for its original reason.
+| | 2026-09-04 morning | now |
+|---|---|---|
+| `src/app.js` | 3,368 lines | **3,095** |
+| `render()` | 328 lines | **196** |
+| modules extracted from `boot` | 0 | **6** (609 lines) |
+| JS suite | 984 | **1,044** |
 
-**What it bought, concretely:** node now links every imported name against what
-the module actually exports, at load. That is an instrument no regex could ever
-be, and it did not exist for this file two days ago.
+`why.js` · `esc.js` · `work.js` · `marks.js` · `notes.js` · `goalie-card.js`.
+**Every move left the rendered DOM identical**, which is the whole safety
+argument and is checked by `test/dom-golden.test.js`.
 
-⚠️ **AND THE IMPORT LIST NEEDED ITS OWN GUARD**, because the shipped page cannot
-falsify it: the bundle resolves every library name whether or not it was
-declared, so a deleted import breaks nothing and goes red nowhere.
-`test/app-imports.test.js` asserts both directions — complete and minimal, since
-completeness alone is satisfied by importing everything and minimality by
-importing nothing — over `tools/jslex.mjs`, a real lexer whose control case is
-the `data-i="${k}"` shape that produced the false finding below.
+**⏭ WHAT IS NEXT, and it is a decision before it is a task.** What remains in
+`render` is wiring plus **the caption chain** — the precedence ladder deciding
+which single sentence a frame gets (goal → penalty → icing → offside → kill →
+slot shot). It is the last thing there that is not plumbing, and it is *an
+argument in code*: each `else if` carries a paragraph on why it outranks the next.
+Extracting it means deciding whether a precedence rule is presentation (it
+composes a caption) or analysis (it decides what is true of a frame). **That is a
+CHENG question before it is a coding one.**
 
-### ⏭ 0.00-NEXT — STEP 2: decompose, one cluster at a time
+⛔ **AND ONE GUARD HAS GONE OVER-BROAD, WHICH SHAPES THE NEXT FEW MOVES.**
+`test/sx-scope.test.js` forbids **every** module under `src/lib` from importing
+`rinkart.js`. CHENG's ruling was narrower — a module that **counts** must not
+resolve screen coordinates. Those were the same set when the check was written
+and are not now: six presentation modules live in that directory and are treated
+as reducers. `marks.js` takes `AX` as an argument purely to satisfy a check never
+aimed at it. **The question is whether `src/lib` splits into analysis and
+presentation**, and it is the same shape as CHENG's own objection to option B:
+*it would forbid an import that is not inherently wrong, only wrong in a reducer.*
 
-`boot()` becomes wiring; the natural clusters — geometry, ice-drawing,
-announcement, transport, work panel, layer controls, why-popup, verdict — become
-modules with **declared inputs**. ⭐ **This is how 177 prose invariants become
-structural**: not by writing 177 tests, but by making boundaries say what
-comments have to say today. Byte-identical one cluster at a time. **Start with
-the why-popup or the geometry** — smallest and most self-contained.
+## ⭐⭐ 0.00-a WHAT THE DECOMPOSITION ACTUALLY TAUGHT
 
-⭐⭐ **WHY STEP 1 CAME FIRST, AND IT WAS NOT ABOUT TIDINESS.** Until it landed
-`app.js` could not be imported, parsed, covered, or linted with real scope
-analysis, because it was a template rather than a module. **Every question about
-it therefore got answered by regex, and regex answers confidently and wrongly.**
-That is not a theory:
+Five findings, each earned by something going wrong rather than by planning.
 
-| I reported | the truth |
-|---|---|
-| 70 write sites | ~45 — `data-i="${k}"` counted as writes to `i`, which has **2** |
-| 24 bindings | **25** — one declared mid-line escaped a `^let` scan |
-| toggles "held by repetition" | `pick()` **is** a correct path; 3 sites bypass it, 2 legitimately |
-| `?layer=corsi,slot` is a defect | **documented in `syncPick`** as a deliberate degradation |
+**1. A walk covers the state it was booted into, and nothing else.** Three times
+the golden was found not to cover the cluster about to move: `#whyContent`
+because the popup opens on a **click**; `#workBody` because the panel opens on a
+**choice**; the marks loop's period-scoping branch because it needs a **control
+moved off its default**. Each was caught by checking coverage *before* the move —
+a habit worth more than any single test. The fixture now walks the base game,
+five layers, three control axes and a click pass. ⚠️ **Axes, not combinations**,
+and it says so out loud.
 
-**Four false findings in one review, each costing a round trip through Kevin.**
-Making the file loadable is what replaced the instrument.
+**2. Cohesion predicts interface width.** `marks.js` needed **19 declared inputs
+for 57 lines**; `notes.js` needed **7 across three functions**. Same method, same
+day. **A wide interface is a measurement of the cluster, not of the method** —
+and it was invisible while the code sat in `render` reaching for whatever it liked.
 
-⚠️ **AND BUILDING IT PRODUCED TWO MORE CORRECTIONS OF THE SAME FAMILY, WHICH IS
-THE POINT RATHER THAN AN EMBARRASSMENT.**
+**3. ⭐⭐ THE CLEAREST STATEMENT OF WHAT DECOMPOSITION IS FOR, and it is not "the
+comments become checks":** *a function you can call takes any argument; a page you
+must boot takes only the game it was given.* `iceNote` has three outcomes and the
+reference game contains one. The goalie card's honest cases are the **thin** ones,
+and no fixture we own has a goaltender who faced two shots. Those tests exist now,
+and no amount of fixture work would have produced them.
 
-- **"56 dependencies" was 54**, across 20 modules — measured with a lexer against
-  each module's real exports instead of guessed. `ATTEMPT_TYPES` is exported by
-  two modules and is one binding; `competitions.js` is in the bundle because
-  `sentence.js` needs it, and `app.js` never touches it.
-- ⭐ **A NEW GUARD FIRED FOR THE WRONG REASON AND I NEARLY KEPT IT.** The builder
-  asserts its anchor is unique, and I mutated `boot` → `bootstrap` to watch it.
-  The build failed — but on `--verify`, not on the assertion, because
-  `^export function boot` matches `bootstrap` as a *prefix*. The guard passed
-  while the page called a function that no longer existed. **The bracket in
-  `^export function boot\(` is load-bearing**, and only running the mutation and
-  reading *which* instrument fired revealed it. A control that reports an effect
-  it is not having is this repo's oldest defect, and it was one line old.
-- **`89`, `33` and the slot's `22 ft` are already gone from `app.js`** — but my
-  first count said seven hardcoded constants survived, because `grep -c` counted
-  prose. `189px` and `89.8%` in comments. **The same mistake `tools/tiers.mjs`
-  has a warning block about, made while editing the file that carries it.**
+**4. A cluster is a function plus only the helpers nothing else uses.** **41 of
+`boot`'s 79 functions have more than one caller**, so "a function and everything
+it calls" pulls in most of the file. `lboxFor` looked like part of the work panel
+and is shared with the layer box under the rink; `cardsFor` cannot leave at all,
+because it reads a constant the builder injects and no module can import.
 
-## ⭐⭐⭐ 0.00-a THE SMELL, NAMED — invariants live in prose, not in structure
+**5. ⚠️ A test anchored on a source file breaks on a move while the page is
+unchanged.** Three of them — `why-popup`, `learn`, `layers` — each pinned a claim
+by matching text in `src/app.js`. All three now read the rendered page or call the
+module. **A test coupled to which file holds a string is coupled to the filing,
+not to the claim.**
+
+## ⚠️ 0.00-b THE MISTAKES WORTH KEEPING
+
+- **Automatic semicolon insertion.** Turning `$('workBody').innerHTML=` into a
+  bare `return` on its own line returned `undefined`. Every layer's panel rendered
+  empty and every layer produced the *same hash*, which is what gave it away.
+- ⛔ **Unreachable code is invisible to a parser, a probe, AND an output diff.**
+  An off-by-one left a statement after a `return`, referencing three names its
+  module does not have. `node --check` passed (it parses), a behavioural probe
+  passed (it never runs), the golden passed (the page was unaffected). Only
+  reading the generated file found it — surfaced because the *next* splice
+  asserted its boundary and failed.
+- ⚠️ **A test was a mirror twice in a row on the same six lines.** Asserting where
+  the shot line *starts*, then that two clubs get *different* nets — one sign flip
+  survived both. The third draft derives the expected net from `attackDirection`
+  in `rink.js`. **Weak properties read exactly like strong ones until something
+  mutates.**
+- ⚠️ **I typed line counts into two commit messages before measuring them.** The
+  fix is not care, it is **order**: measure, then write the sentence around it.
+
+## ⭐ 0.00-c THE TWO INSTRUMENTS, AND WHY BOTH
+
+Demonstrated rather than argued: removing a full stop from a rendered sentence
+leaves every unit test green — they assert the claim, not the punctuation — and
+the golden names it at `#iceNote frame 254`. **The golden catches "the text
+changed"; the unit test catches "the text is wrong".** Neither subsumes the other.
+
+⚠️ **The golden is a change detector, not a correctness claim.** A deliberate
+change makes it red, correctly, and is accepted by regenerating.
+**Regenerating without reading what moved is how this guard dies**, so
+`tools/dom-golden.mjs` prints what changed rather than rewriting in silence.
+
+
+## ⭐⭐⭐ 0.00-d THE SMELL, NAMED — invariants live in prose, not in structure
+
+<sub>Written 2026-09-03, before any cluster moved. Kept because the diagnosis held: this is what §0.00 above is the answer to.</sub>
 
 Kevin: *"77 functions and 24 bindings in one JavaScript file is a good
 approach?"* No. And: *"if it was architecturally sound, wouldn't the review have
@@ -143,7 +176,7 @@ counted it wrong three times. **`docs/app-state-phase1.md` and
 3. **The old phases 1 and 2 fall out of 2** rather than preceding it. A memo
    inside its own module is not a state binding to inventory; it is a local.
 
-## ✅ 0.00-b THE `SX` RULING — settled 2026-09-03, guard shipped
+## ✅ 0.00-e THE `SX` RULING — settled 2026-09-03, and its guard has since gone over-broad (§0.00)
 
 CHENG's original condition (*"lexically unreachable from library scope… because
 the modules share one inlined scope"*) rested on a premise

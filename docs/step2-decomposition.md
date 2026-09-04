@@ -1,8 +1,7 @@
 # Step 2 — decomposing `boot()`. A plan, and the finding that reshaped it.
 
-**Reviewed by CHENG 2026-09-04 — §0 carries his rulings.** The instrument §2 asks
-for is now BUILT (`tools/dom-golden.mjs`); no cluster has moved. Pinned to
-`52ac8ad`. Read
+**Reviewed by CHENG 2026-09-04 — §0 carries his rulings, §0.4 the outcome.**
+Six clusters are out; two questions (Q5, Q6) go back to him. Read
 [step1-review.md](step1-review.md) first: it is the shipped precondition, and its
 §6.4 is the sentence this document has to answer.
 
@@ -83,6 +82,68 @@ wrong, only wrong *in a reducer*. ⭐ His own note on the exchange is worth keep
 idea died to one grep.
 
 ---
+
+## 0.4 ✅ SIX CLUSTERS OUT — 2026-09-04, and two questions back to CHENG
+
+| | morning | now |
+|---|---|---|
+| `src/app.js` | 3,368 | **3,095** |
+| `render()` | 328 | **196** |
+| modules out of `boot` | 0 | **6** — `why` `esc` `work` `marks` `notes` `goalie-card` (609 lines) |
+| JS suite | 984 | **1,044** |
+
+Every move left the rendered DOM identical across the base walk, five layer
+walks, three control walks and a click pass.
+
+### ⛔ Q5 — has the `SX` guard become over-broad, and does `src/lib` split?
+
+`test/sx-scope.test.js` forbids **every** module under `src/lib` from importing
+`rinkart.js`. Your ruling was narrower: a module that **counts** must not resolve
+screen coordinates. Those were the same set when the check was written. They are
+not now — six presentation modules live in that directory and are treated as
+reducers, so `marks.js` takes `AX` as an argument purely to satisfy a check that
+was never aimed at it.
+
+⭐ **It is the same objection you made to option B**, arriving from the other
+side: *a static ban forbids an import that is not inherently wrong, only wrong in
+a reducer.* The options look like: keep passing transforms in (works, costs one
+argument per presentation module); split `src/lib` into analysis and presentation
+and scope the check to the first; or state the rule about EXPORTS a module makes
+rather than the directory it sits in. **I have not chosen, and the workaround is
+deliberately ugly rather than quietly comfortable.**
+
+### Q6 — is the caption chain presentation or analysis?
+
+What remains in `render` beyond wiring is the precedence ladder that decides
+which single sentence a frame gets: goal → penalty → icing → offside → penalty
+kill → slot shot. Every `else if` carries a paragraph on why it outranks the next,
+including a measured one (*"1 of 4 kill captions lands on a rule restart and is
+displaced"*).
+
+It composes a caption, which is presentation. It also **decides what is most true
+about a frame**, which is analysis — and the ordering has been argued from
+measurements twice. **Q6 is which tier owns a precedence rule**, because the
+answer decides whether the chain moves to a module that can be tested against
+every frame in the archive, or stays wiring.
+
+### What answered itself
+
+**Q1 (the golden walk) — yes, and it earned it twice.** It caught an
+ASI-induced `return undefined` and a `.textContent` left on a string, both within
+minutes, in a cluster the base walk did not cover an hour earlier.
+
+**Q2 (the tier) — your answer was right and my §4.3 was wrong.** No fourth tier
+was needed; `return markup` / `write to document` split every cluster cleanly, and
+the purity check over `src/lib` never had to be relaxed.
+
+**Q3 (mutation) — sharpened into something better.** The honest case is not
+mutation score, it is that **a function you can call takes any argument, and a
+page you must boot takes only the game it was given.** `iceNote` has three
+outcomes; the reference game has one. The goalie card's honest cases are the thin
+ones; no fixture we own has a goaltender who faced two shots.
+
+**Q4 (label the first cluster) — done, and the second cluster did fail**, which
+is what made the labelling worth it.
 
 ## 0.5 ✅ THE FIRST CLUSTER IS OUT — `src/lib/why.js`, 2026-09-04
 

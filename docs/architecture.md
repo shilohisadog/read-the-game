@@ -118,11 +118,32 @@ harness runs the BUILT bundle through `new Function`, so a mutant in a source
 module never executes there. **An extracted cluster is only reachable if a test
 imports it directly**, and `app.js` itself never becomes reachable — it shrinks.
 
-✅ **The first cluster is out: the why-popup, `src/lib/why.js`, 2026-09-04.** It
-established the mechanism and nothing about the risk — it was chosen for being
-safe, and a green first cluster is not evidence the approach is. Six mutants were
-run against the extracted module and the first two survived, which is the point:
-one found a threshold asserted against the wrong occurrence of the same string.
+✅ **Six clusters are out as of 2026-09-04** — `why.js`, `esc.js`, `work.js`,
+`marks.js`, `notes.js`, `goalie-card.js`, 609 lines. `render()` went from 328
+lines to 196 and `app.js` from 3,368 to 3,095. Every move left the rendered DOM
+identical, checked by `test/dom-golden.test.js` across the base game, five layer
+walks, three control walks and a click pass.
+
+⭐ **THE SPLIT IS `return markup` VERSUS `write to document`**, which is CHENG's
+ruling and needed no new tier: `rinkart.js` was already presentation and nobody
+had named it. Every extracted module composes and returns; `app.js` performs the
+assignment. The purity this tier claims was never relaxed to accommodate it.
+
+⭐⭐ **AND THE CLEAREST STATEMENT OF WHAT IT BUYS IS NOT "the comments become
+checks".** It is that **a function you can call takes any argument, and a page you
+must boot takes only the game it was given.** `iceNote` has three outcomes and the
+reference game contains one; the goaltending card's honest cases are the thin
+ones, and no fixture we own has a goaltender who faced two shots. Those branches
+have tests now, and no amount of fixture work would have produced them.
+
+⚠️ **Cohesion predicts interface width, and the width is diagnostic.** `marks.js`
+needed **19 declared inputs for 57 lines** because drawing a mark reads half the
+world; `notes.js` needed **7 across three functions**. Same method, same day. The
+coupling was always there — declaring it is what made it countable.
+
+⛔ **What is left in `render` is wiring plus the caption chain**, the precedence
+ladder deciding which sentence a frame gets. Whether a precedence rule is
+presentation or analysis is an open question — `docs/step2-decomposition.md` Q6.
 
 ⛔ **THE STATE REFACTOR WAS NOT THE FIX, AND THIS SECTION USED TO SAY IT WAS.**
 The plan was one state object with `render(state)` and a single setter. Moving 45
@@ -243,7 +264,8 @@ measure the substrate.**
 
 | | |
 |---|---|
-| **`app.js` decomposition** | §2. The largest remaining architectural item. Module: 2026-09-04. First cluster out (`src/lib/why.js`) the same day — mechanism established, risk untested, seven clusters to go |
+| **`app.js` decomposition** | §2. Module 2026-09-04; **six clusters out the same day**, `render` 328 → 196 lines. What remains is wiring plus the caption chain, which needs a tier decision first — `step2-decomposition.md` Q6 |
+| **the `SX` guard is over-broad** | `test/sx-scope.test.js` bans every `src/lib` module from importing `rinkart.js`; CHENG's rule was about modules that COUNT. Six presentation modules now live there and are treated as reducers. Does the directory split? — `step2-decomposition.md` Q5 |
 | **coverage blindness** | `new Function` in `test/helpers/page.js`; independent of §2 |
 | **rink constants** | Mostly closed. `89`, `33` and the slot's `22 ft` are gone — the why-popup reads `NET_X`, `HIGH_DANGER_FT` and `SLOT_HALF_WIDTH` from `rink.js`. What survives is `42.5`, half the rink's width, in three places: the why-popup's own mini-rink transform and two emitted SVG attributes. ⛔ The `22` still in the file is **22 degrees** off straight-on and is deliberately not `SLOT_HALF_WIDTH` |
 | **`build_index.py`** | five page-builders in one file; already cost us a shipped `__SLOT_*__` placeholder |
