@@ -21,6 +21,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { capture, differences, read } from '../tools/dom-golden.mjs';
+import { LAYER_TOKENS } from '../src/lib/deeplink.js';
 
 const gold = read();
 const made = capture();
@@ -92,6 +93,27 @@ test('⭐⭐ …and a changed popup markup is caught', () => {
   assert.equal(diff[0].at, `click ${k}`);
 });
 
+test('⭐⭐ …and a change inside one layer\'s walk is caught, and named by layer', () => {
+  /* ⛔ THE LAYER WALKS WERE ADDED BECAUSE THE BASE WALK DOES NOT REACH THEM.
+     Booting with no layer selected leaves `whichPick()` at `none`, so `#workBody`
+     was never written and the layer box under the rink held one value for all 269
+     frames. The show-me-the-work panel — the surface this project's promise
+     actually rests on — was entirely outside a fixture that claimed to pin what
+     the page draws. Second time the same way: `#whyContent` was missing because
+     it opens on a CLICK, this because it opens on a CHOICE. */
+  const [layer] = Object.keys(made.layers);
+  assert.ok(layer, 'no layer walks captured at all');
+  const varying = Object.keys(made.layers[layer].el).find(id => Array.isArray(made.layers[layer].el[id]));
+  assert.ok(varying, `nothing varies across the ${layer} walk`);
+
+  const bent = JSON.parse(JSON.stringify(made));
+  bent.layers[layer].el[varying][10] = 'deadbeefdead';
+  const diff = differences(made, bent);
+  assert.equal(diff.length, 1, `expected exactly one difference, got ${diff.length}`);
+  assert.equal(diff[0].id, `${layer}/${varying}`,
+               'the difference is not attributed to the layer that produced it');
+});
+
 test('⛔ the golden is not trivially satisfiable', () => {
   /* A fixture of one frame, or of elements that never change, would pass the
      test above against almost any refactor. What makes the walk worth running is
@@ -120,4 +142,19 @@ test('⛔ the golden is not trivially satisfiable', () => {
             `only ${gold.popup.rendered} clicks rendered the why-popup — the interaction pass is broken`);
   assert.equal(gold.popup.rendered, made.popup.rendered,
                'the popup renders a different number of times than the golden records');
+
+  /* ⛔ AND EVERY LAYER IS WALKED WITH ITS PANEL OPEN. The layer list is derived
+     from `deeplink.js`, which derives it from the layer objects, so a sixth layer
+     is covered the day it exists — but a pass that silently stopped opening the
+     panel would store an empty delta and compare nothing to nothing, which is the
+     shape that passes forever. So the panel is required to vary. */
+  const layers = Object.keys(gold.layers);
+  assert.deepEqual(layers.sort(), [...LAYER_TOKENS].sort(),
+                   'the golden does not walk every layer the URL vocabulary knows');
+  for (const l of layers) {
+    const wb = gold.layers[l].el.workBody;
+    assert.ok(Array.isArray(wb) && new Set(wb).size > 100,
+      `the ${l} walk did not render a changing work panel — the panel is the surface this `
+      + 'fixture exists to protect, and an empty delta compares nothing to nothing');
+  }
 });

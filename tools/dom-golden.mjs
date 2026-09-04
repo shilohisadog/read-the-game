@@ -36,6 +36,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { boot } from '../test/helpers/page.js';
+import { LAYER_TOKENS } from '../src/lib/deeplink.js';
 
 export const FIXTURE = new URL('../test/fixtures/dom-golden.json', import.meta.url);
 
@@ -71,13 +72,65 @@ export function capture() {
     for (const [id, el] of d.byId) o[id] = state(el);
     return o;
   });
-  const ids = [...new Set(frames.flatMap(Object.keys))].sort();
-  const el = {};
-  for (const id of ids) {
+  const el = fold(frames);
+  return { frames: frames.length, elements: Object.keys(el).length, el,
+           popup: popupPass(), layers: layerPass(el) };
+}
+
+/** Per-element hashes, storing the unchanging ones once instead of 269 times. */
+function fold(frames) {
+  const out = {};
+  for (const id of [...new Set(frames.flatMap(Object.keys))].sort()) {
     const col = frames.map(f => f[id] ?? '-');
-    el[id] = new Set(col).size === 1 ? col[0] : col;
+    out[id] = new Set(col).size === 1 ? col[0] : col;
   }
-  return { frames: frames.length, elements: ids.length, el, popup: popupPass() };
+  return out;
+}
+
+/**
+ * ⛔⛔ THE WHOLE LAYER SYSTEM WAS OUTSIDE THIS FIXTURE, AND THE PANEL IT GUARDS
+ * IS THE ONE SURFACE THIS PROJECT'S PROMISE RESTS ON.
+ *
+ * The base walk boots with no layer selected, so `whichPick()` answers `none`:
+ * `#workBody` was never written at all, and the layer box under the rink —
+ * `#lxA`, `#lxK`, `#lxH`, `#lxN` — held one value for all 269 frames. Five
+ * layers times 269 frames is 1,345 renderings of the show-me-the-work panel,
+ * every one of them unguarded, in a fixture that already claimed to pin what the
+ * page draws.
+ *
+ * Second time the same way. `#whyContent` was missing because it opens on a
+ * click; this is missing because it opens on a CHOICE. ⭐ The rule generalises
+ * past interaction: **a walk covers the state it was booted into, and nothing
+ * else.** A default boot is a single point in a space of options.
+ *
+ * The layer vocabulary comes from `deeplink.js`, which derives it from the layer
+ * objects themselves — so a sixth layer is captured the day it exists rather
+ * than the day somebody remembers to add it to a list here.
+ */
+function layerPass(base) {
+  const out = {};
+  for (const layer of LAYER_TOKENS) {
+    const a = boot(null, null, `?layer=${layer}`);
+    a.$('work').click();                       // the panel has no deep-link key
+    const frames = a.every(d => {
+      const o = {};
+      for (const [id, el] of d.byId) o[id] = state(el);
+      return o;
+    });
+    /* ⭐ STORED AS A DELTA AGAINST THE BASE WALK, and the reason is legibility
+       before size. About 85% of every layer walk is identical to the base -- a
+       layer changes what is ON the ice and in the panel, not the scoreboard or
+       the clock -- so a full capture is 855 KB in which the interesting 15% is
+       invisible. As a delta each layer's entry is a list of exactly the elements
+       that layer moves: thirteen to seventeen of eighty-eight, readable in the
+       fixture itself. An element that stops differing disappears from the delta,
+       and the key comparison catches that too. */
+    const full = fold(frames), el = {};
+    for (const [id, v] of Object.entries(full))
+      if (JSON.stringify(v) !== JSON.stringify(base[id])) el[id] = v;
+    out[layer] = { frames: frames.length, el };
+  }
+  return out;
 }
 
 /**
@@ -145,6 +198,35 @@ export function differences(gold, made) {
       out.push({ id: 'whyContent', at: `click ${k}`, was: g.at[k] ?? '(no render)', now: m.at[k] ?? '(no render)' });
       break;
     }
+
+  /* AND EVERY LAYER'S OWN WALK. Compared per layer so a message names which one
+     moved -- "the work panel changed" over five layers is a sentence a reader
+     then has to go and disambiguate by hand. */
+  const gl = gold.layers || {}, ml = made.layers || {};
+  for (const layer of [...new Set([...Object.keys(gl), ...Object.keys(ml)])].sort()) {
+    if (!gl[layer]) { out.push({ id: `layer:${layer}`, at: null, was: '(not captured)', now: 'present' }); continue; }
+    if (!ml[layer]) { out.push({ id: `layer:${layer}`, at: null, was: 'present', now: '(not captured)' }); continue; }
+    for (const d of elementDiffs(gl[layer], ml[layer]))
+      out.push({ ...d, id: `${layer}/${d.id}` });
+  }
+  return out;
+}
+
+/** Element-by-element difference between two folded walks. */
+function elementDiffs(gold, made) {
+  const out = [];
+  for (const id of [...new Set([...Object.keys(gold.el), ...Object.keys(made.el)])].sort()) {
+    const g = gold.el[id], m = made.el[id];
+    if (g === undefined) { out.push({ id, at: null, was: '(absent)', now: 'present' }); continue; }
+    if (m === undefined) { out.push({ id, at: null, was: 'present', now: '(absent)' }); continue; }
+    const ga = Array.isArray(g), ma = Array.isArray(m);
+    if (!ga && !ma) { if (g !== m) out.push({ id, at: 'all frames', was: g, now: m }); continue; }
+    const n = Math.max(ga ? g.length : gold.frames, ma ? m.length : made.frames);
+    for (let k = 0; k < n; k++) {
+      const a = ga ? g[k] : g, b = ma ? m[k] : m;
+      if (a !== b) { out.push({ id, at: k, was: a, now: b }); break; }
+    }
+  }
   return out;
 }
 
