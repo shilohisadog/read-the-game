@@ -1,6 +1,8 @@
 # Step 2 — decomposing `boot()`. A plan, and the finding that reshaped it.
 
-**For CHENG's review. Nothing here is built.** Pinned to `52ac8ad`. Read
+**Reviewed by CHENG 2026-09-04 — §0 carries his rulings.** The instrument §2 asks
+for is now BUILT (`tools/dom-golden.mjs`); no cluster has moved. Pinned to
+`52ac8ad`. Read
 [step1-review.md](step1-review.md) first: it is the shipped precondition, and its
 §6.4 is the sentence this document has to answer.
 
@@ -8,6 +10,77 @@
 safety argument does not transfer, and the interior of the file turns out not to
 be measurable by the instrument I expected to measure it with. Both are §1 and
 §2, and they matter more than the plan itself.
+
+---
+
+## 0. CHENG'S RULINGS — 2026-09-04. All four questions answered.
+
+**Q1 — the golden rendered-DOM walk stands, and it is BUILT.** His boundary is
+sharper than my caveat: what the walk cannot see is CSS silently disabling
+something the script wrote — and **decomposition does not cause those; stylesheet
+edits do, and step 2 does not edit the stylesheet.** So it is the right instrument
+for the risk step 2 actually carries, and `tools/pixels.sh` keeps the risk it does
+not. His one requirement — capture at *every* playhead position, not one — is met:
+`tools/dom-golden.mjs` pins all **269** scrubber positions across 86 elements,
+`test/dom-golden.test.js` asserts it, and both of its controls are proven to hold
+while the subject fails.
+
+⭐ **His cited precedent checks out and is stronger than he stated.**
+`test/fixtures/phase1-golden.json` really does pin every scrubber position, and it
+was captured from the shipped implementation before the layer extraction moved any
+code. **This is not a new mechanism; it is the one that already worked here.**
+
+**Q2 — do NOT invent a tier, and his reason retires my §4.3.** The model is not
+*pure vs impure*, it is:
+
+| | | |
+|---|---|---|
+| `src/lib` | analysis | no DOM, no network, no filesystem |
+| `rinkart.js` | **presentation** | produces markup, touches nothing |
+| `app.js` | binding | reads and writes the live document |
+
+**`rinkart.js` is already the third tier and nobody had named it** — a pure
+function that returns markup, which is a different thing from a module that
+mutates the document, and exactly what let one rink serve both the replay and the
+learn diagrams. So the why-popup becomes a function that **returns a string**, and
+the single `innerHTML` write stays in `app.js`. ⭐ **The boundary is `return
+markup` versus `write to document`** — and *"if a cluster cannot be split that way,
+that is a signal the cluster is not a unit, not that a fourth tier is needed."*
+
+**Q3 — the honest case is mutation testing, not 175 claims.** *"Coverage tells you
+a line ran; mutation score tells you a test would notice if it were wrong."* The
+one-sentence case for step 2 is that it moves code out of the one file that has
+never been mutation-tested and into modules that can be.
+
+⚠️ **AND THAT SENTENCE HAS A PRECONDITION HE DID NOT STATE, WHICH I CHECKED.**
+`test/helpers/page.js` runs the bundle through `new Function` on the **built
+HTML**. A mutant introduced into `src/app.js` or an extracted module therefore
+**never executes** in any bundle-based test — the built artifact is a stale file
+from the last `npm run build`. So:
+
+- An extracted cluster becomes mutation-reachable **only if a test imports it
+  directly.** Through the booted page it is exactly as invisible as it is today.
+- **`app.js` itself never becomes reachable. It shrinks.** The residue — `boot()`
+  as wiring — stays un-mutatable permanently, so the gain is one of *proportion*,
+  not of coverage arriving.
+
+That makes his own requirement in §6 — *a test that calls the extracted module
+directly* — **the load-bearing part of the whole plan rather than a nicety.**
+Without it, an extraction produces a file boundary and no new ability, which is
+precisely the outcome §5 warns about.
+
+**Q4 — do the easy cluster, and label it.** *"A first cluster that cannot fail
+proves the pipeline and proves nothing about the risk. The failure would be
+reporting a green first cluster as evidence the approach is safe."* So the commit
+must say it established the mechanism and nothing else, **and the second cluster
+gets picked for danger rather than convenience.**
+
+**On step 1 §6.2 — A stands, and it was checked rather than assumed.**
+`learn-figures.mjs` uses `SX`/`SY` heavily and legitimately, which makes a static
+import ban weaker than it looks: it would forbid an import that is not inherently
+wrong, only wrong *in a reducer*. ⭐ His own note on the exchange is worth keeping:
+*"my disagreements are worth more when they're checkable"* — the encapsulation
+idea died to one grep.
 
 ---
 
@@ -124,13 +197,14 @@ and `boot` holds one line: `const why = whyPopup({ … });`. **The declared
 parameter list is the entire point** — it is the first time any part of this file
 states what it needs, and it is checkable by node.
 
-**4.3 ⚠️ It cannot live in `src/lib/`, and this is an architectural decision, not
-a filing one.** That tier is **verifiably pure** — `tools/tiers.mjs` asserts all
-26 modules touch no DOM, no network, no filesystem, and `architecture.md` §1
-claims it. The why-popup writes `innerHTML`. So step 2 either creates a new
-tier — a **ui** directory beside `src/lib/`, inlined by the builder like `LIB`
-and declared in `architecture.md` as presentation — or it breaks the one boundary
-this project verifies. **Q2 is which.**
+**4.3 ⛔ RETIRED BY Q2, and the answer is better than the question.** I had this
+as *"it cannot live in `src/lib/` because that tier is verifiably pure, so step 2
+must invent a fourth tier."* It must not. **The why-popup is split at `return
+markup` / `write to document`**: a pure function that computes distance, angle and
+the slot verdict and returns a string, plus the one `innerHTML` assignment left
+behind in `app.js`. That is the same seam that makes `rinkart.js` shareable
+between the replay and the learn diagrams, and it keeps the purity boundary
+`tools/tiers.mjs` verifies rather than working around it.
 
 <sub>Named without a backticked path on purpose: `test/doc-paths.test.js` checks
 that every repo path cited in `docs/` exists, and it caught this document
@@ -164,11 +238,13 @@ alone, which is a real but much smaller case than the one I have been making.
 
 - **The golden-DOM walk of §2**, proven able to fail before it is trusted.
 - **The 27 boot-harness suites**, unchanged and green.
-- **`test/app-imports.test.js` extended** to the new tier, so a ui-tier module
-  the bundle omits is a build error rather than a broken page.
-- ⭐ **A test that calls the extracted module directly** — otherwise the
-  extraction has produced a file boundary and no new ability, which is the
-  outcome §5 warns about.
+- **`test/app-imports.test.js` covers it already** — an extracted module is an
+  ordinary `src/lib` module, so a module the bundle omits is already a build
+  error. Q2 is what made that true; a new tier would have needed new plumbing.
+- ⭐⭐ **A test that calls the extracted module directly — LOAD-BEARING, not a
+  nicety.** §0/Q3: the harness `new Function`s the built bundle, so a mutant in an
+  extracted module never executes through a booted page. Without a direct test the
+  extraction produces a file boundary and no new ability at all.
 - **`--verify` still runs**, and is expected to *differ*. It stops being the
   gate and becomes the diff worth reading line by line, once, by a human.
 
