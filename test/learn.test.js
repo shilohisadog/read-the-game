@@ -15,6 +15,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { boot } from './helpers/page.js';
 
 import { parse } from '../src/lib/deeplink.js';
 import { corsi } from '../src/lib/layers/corsi.js';
@@ -423,16 +424,26 @@ test('⭐ the Learn More row is BELOW the ledger, never beside the arithmetic', 
      evidence, so a reader auditing a count must reach the arithmetic first and
      meet the invitation after it closes. Moved above the ledger the panel stops
      leading with its evidence — and nothing else in the suite would notice. */
-  // ⚠️ NOT a non-greedy match from `$('workBody').innerHTML=` — that stops at
-  // the EARLY RETURN (`innerHTML='';return;}`) a hundred lines up, so the test
-  // read a two-character string and reported the panel had lost its footer.
-  // These two strings each occur once in the bundle; their order is the claim.
-  const app = readFileSync(new URL('../src/read-the-game.html', import.meta.url), 'utf8');
-  const foot = app.indexOf('class="wfoot"');
-  const learn = app.indexOf('+cardsFor(id);');
-  assert.ok(foot > 0 && learn > 0, 'the panel no longer has both a footer and a learn row');
+  /* ⭐ READ OFF THE RENDERED PANEL, NOT THE SOURCE. This asserted the order of
+     two strings in the BUNDLE, one of them `+cardsFor(id);` — so extracting the
+     panel into `src/lib/work.js` broke it while the page it is about had not
+     changed by one byte. A test anchored on which file holds a string is coupled
+     to the filing rather than to the claim, and goes red on every decomposition
+     for no reason. `test/why-popup.test.js` was corrected the same way an hour
+     earlier; this is the second instance, so the lesson is the rule.
+
+     The claim is about what a READER meets in what order, which is a property of
+     the output. Any layer will do — the row's position cannot depend on which. */
+  const a = boot(null, null, '?layer=corsi');
+  a.$('work').click();
+  a.at(200, () => {});
+  const panel = a.byId.get('workBody')._html;
+  const foot = panel.indexOf('class="wfoot"');
+  const learn = panel.indexOf('class="wlearn"');
+  assert.ok(foot > 0 && learn > 0,
+    'the rendered panel no longer has both a conservation footer and a Learn More row');
   assert.ok(learn > foot,
-    'the Learn More row is being emitted before the conservation line it must follow');
+    'the Learn More row is rendered before the conservation line it must follow');
 });
 
 test('the anchor a card is landed on is not flush with the viewport edge', () => {

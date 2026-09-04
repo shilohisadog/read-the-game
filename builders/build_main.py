@@ -364,6 +364,9 @@ LIB = ["rink.js", "attribution.js", "layer.js", "strength.js", "box.js", "penalt
        # The HTML escaper. Used by app.js thirty times and by every markup module
        # extracted from it -- a primitive, not an argument to thread through.
        "esc.js",
+       # The show-me-the-work panel's markup. AFTER esc.js and layer.js, which it
+       # imports; the panel itself is composed here and written by app.js.
+       "work.js",
        "layers/corsi.js", "layers/goaltending.js", "layers/danger.js", "layers/whistle.js",
        "layers/blocked.js",
        # BEFORE sentence.js, which asks it which competition a game is.
