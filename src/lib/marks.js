@@ -169,13 +169,19 @@ export function eventMarks({ evs, i, cur, moment },
  * of the line is the path to the target and a miss did not take it; a blocked
  * shot has none either, since it stopped where its ring is drawn.
  *
- * ⚠️ `AX` ARRIVES AS AN ARGUMENT AND CANNOT BE IMPORTED. It is built on `SX`,
- * which lives in `rinkart.js`, and `test/sx-scope.test.js` forbids EVERY module
- * under `src/lib` from importing that file. The rule it enforces is CHENG's —
- * a module that COUNTS must not resolve screen coordinates — but the check is
- * written as "no module in this directory", which was the same set when it was
- * written and is a superset now that presentation modules live here too. So the
- * transform is handed in. See `docs/step2-decomposition.md`.
+ * ⚠️ `AX` ARRIVES AS AN ARGUMENT, AND THE FIRST VERSION OF THIS PARAGRAPH BLAMED
+ * THE WRONG THING. It said the transform could not be imported because
+ * `test/sx-scope.test.js` forbids `src/lib` from importing `rinkart.js`. That
+ * check was over-broad and has since been narrowed — and narrowing it changed
+ * nothing here, because **`AX` is not in `rinkart.js` and never was.** `SX` is
+ * the pure screen transform; `AX` is `SX` composed with `DIR(per)`, which closes
+ * over the game's `sides` and over whether the link asked for as-played ends.
+ * That is page state, so it has no module to live in and passing it is the only
+ * honest way in — dependency injection, not a workaround for a check.
+ *
+ * ⭐ The mistake is worth leaving on the record: a constraint was attributed to
+ * the nearest rule that could plausibly have caused it, and the attribution went
+ * unchecked for a day. See `docs/step2-decomposition.md` §0.5.
  */
 export function shotLine(cur, cp, HID, AX) {
  if(!cp||!(cur.type==='shot-on-goal'||cur.type==='goal'))return '';

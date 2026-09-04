@@ -55,6 +55,26 @@ const TWO = ['=>', '&&', '||', '??', '==', '!=', '<=', '>=', '++', '--',
  */
 export function lex(src) {
   const out = [];
+  walk(src, t => { if (t.t === 'id') out.push({ name: t.v, member: t.member, key: t.key }); });
+  return out;
+}
+
+/**
+ * Every token in `src`, handed to `emit` in order. The scanner both public
+ * questions are built on.
+ *
+ * ⭐ ONE SCANNER, TWO QUESTIONS. `lex` asks which identifiers appear; `specifiers`
+ * asks which modules are imported. Both need the same hard part — knowing when a
+ * `/` opens a regex, and when a quote opens a body that is not code — and written
+ * twice the two would agree right up until one of them was fixed.
+ *
+ *   {t, v, member, key}
+ *     t       'id' | 'str' | 'num' | 're' | 'op'
+ *     v       the identifier name, the raw string BODY, or the operator text
+ *     member  identifiers only — preceded by `.` or `?.`
+ *     key     identifiers only — an object-literal key written `name:`
+ */
+export function walk(src, emit) {
   let prev = null;            // last significant token, for the regex/divide call
   let i = 0;
   const n = src.length;
@@ -73,11 +93,13 @@ export function lex(src) {
 
     if (c === '"' || c === "'") {
       const q = c; i++;
+      const s = i;
       while (i < n && src[i] !== q) { if (src[i] === '\\') i++; i++; }
+      emit({ t: 'str', v: src.slice(s, i) });
       i++; prev = '<str>'; continue;
     }
 
-    if (c === '`') { i = template(src, i, out); prev = '<tmpl>'; continue; }
+    if (c === '`') { i = template(src, i, emit); prev = '<tmpl>'; continue; }
 
     if (c === '/') {
       if (prev === null || REGEX_OK.has(prev)) {
@@ -92,9 +114,9 @@ export function lex(src) {
           i++;
         }
         while (i < n && /[a-z]/.test(src[i])) i++;      // flags
-        prev = '<re>'; continue;
+        emit({ t: 're' }); prev = '<re>'; continue;
       }
-      i++; prev = '/'; continue;
+      i++; emit({ t: 'op', v: '/' }); prev = '/'; continue;
     }
 
     if (/[0-9]/.test(c) || (c === '.' && /[0-9]/.test(src[i + 1] || ''))) {
@@ -102,7 +124,7 @@ export function lex(src) {
         if ((src[i] === 'e' || src[i] === 'E') && /[+-]/.test(src[i + 1] || '')) i++;
         i++;
       }
-      prev = '<num>'; continue;
+      emit({ t: 'num' }); prev = '<num>'; continue;
     }
 
     if (ID_START(c)) {
@@ -111,8 +133,9 @@ export function lex(src) {
       const name = src.slice(s, i);
       let j = i;
       while (j < n && /\s/.test(src[j])) j++;
-      out.push({
-        name,
+      emit({
+        t: 'id',
+        v: name,
         member: prev === '.' || prev === '?.',
         // `{name: …}` and `{a, name: …}` only. Over-cautious on purpose: this
         // flag can only ever DISCARD a candidate, so a false positive costs a
@@ -123,15 +146,14 @@ export function lex(src) {
     }
 
     const three = src.slice(i, i + 3), two = src.slice(i, i + 2);
-    if (THREE.includes(three)) { i += 3; prev = three; continue; }
-    if (TWO.includes(two)) { i += 2; prev = two; continue; }
-    i++; prev = c;
+    if (THREE.includes(three)) { i += 3; emit({ t: 'op', v: three }); prev = three; continue; }
+    if (TWO.includes(two)) { i += 2; emit({ t: 'op', v: two }); prev = two; continue; }
+    i++; emit({ t: 'op', v: c }); prev = c;
   }
-  return out;
 }
 
-/** A template literal: skip its text, lex each `${…}`. Returns the index after it. */
-function template(src, i, out) {
+/** A template literal: skip its text, walk each `${…}`. Returns the index after it. */
+function template(src, i, emit) {
   const n = src.length;
   i++;                                          // past the opening backtick
   while (i < n) {
@@ -140,7 +162,7 @@ function template(src, i, out) {
     if (src[i] === '$' && src[i + 1] === '{') {
       const start = i + 2;
       const end = closeBrace(src, start);
-      out.push(...lex(src.slice(start, end)));
+      walk(src.slice(start, end), emit);
       i = end + 1; continue;
     }
     i++;
@@ -159,7 +181,7 @@ function closeBrace(src, start) {
     else if (c === '"' || c === "'") {
       const q = c; i++;
       while (i < n && src[i] !== q) { if (src[i] === '\\') i++; i++; }
-    } else if (c === '`') { i = template(src, i, []) - 1; }
+    } else if (c === '`') { i = template(src, i, () => {}) - 1; }
     else if (c === '/' && src[i + 1] === '/') { while (i < n && src[i] !== '\n') i++; continue; }
     else if (c === '/' && src[i + 1] === '*') {
       i += 2;
@@ -181,4 +203,41 @@ export function referenced(src) {
   const s = new Set();
   for (const t of lex(src)) if (!t.member && !t.key) s.add(t.name);
   return s;
+}
+
+/**
+ * Every module specifier `src` imports — static, re-exported, or dynamic.
+ *
+ * ⭐⭐ WHY THIS IS NOT A REGEX, AND THE REASON IS IN THIS REPO'S OWN HISTORY.
+ * The check that used this before matched `^[ \t]*import…from '…'` on raw text,
+ * which is safe only by being anchored at the start of a line — and PROSE
+ * IMPERSONATING CODE has broken three things here already. `src/lib/marks.js`
+ * has a header paragraph about importing `rinkart.js`; `src/lib/rinkart.js`
+ * carries the ruling about who may import it. A scanner that reads comments as
+ * code reports those, and one loosened to stop reporting them starts missing
+ * real imports. Neither failure announces itself.
+ *
+ * A specifier is a string literal in exactly one of three positions:
+ *
+ *   import … from 'x'   ·   export … from 'x'      the token before it is `from`
+ *   import 'x'                                     the token before it is `import`
+ *   import('x')                                    `import` then `(`
+ *
+ * ⚠️ STATIC ONLY, AND THAT IS A REAL LIMIT. `import(expr)` where `expr` is not a
+ * literal returns nothing here, because there is nothing to return. A caller
+ * building an import GRAPH must therefore treat a computed import as an edge it
+ * cannot see, and say so rather than reporting a complete walk.
+ */
+export function specifiers(src) {
+  const out = [];
+  let prev = null, prev2 = null;
+  const isWord = (t, w) => t && t.t === 'id' && !t.member && t.v === w;
+  walk(src, t => {
+    if (t.t === 'str'
+        && (isWord(prev, 'from') || isWord(prev, 'import')
+            || (prev && prev.t === 'op' && prev.v === '(' && isWord(prev2, 'import'))))
+      out.push(t.v);
+    prev2 = prev; prev = t;
+  });
+  return out;
 }

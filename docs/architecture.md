@@ -41,7 +41,7 @@ header, and §4 records what it cost us the one time we did it anyway.
 | **acquisition** | talks to the league, stores bytes | `fetch_nhl.py` | 611 |
 | **interpretation** | feed → events; the two gates | `extract.py` | 857 |
 | **orchestration** | walks the store, judges, writes documents | `derive.py` | 729 |
-| **analysis** | events → meaning; pure, no DOM, no network | `src/lib/**` (32 modules) | 6,322 |
+| **analysis** | events → meaning; pure, no DOM, no network | `src/lib/**` (32 modules) | 6,337 |
 | **measurement** | the archive, reduced by the SAME modules | `measure.mjs` | 428 |
 | **presentation** | generates the pages | `build_*.py` (9) | 3,967 |
 | **the app** | **the one exception — see §2** | `src/app.js` | 3,096 |
@@ -265,7 +265,7 @@ measure the substrate.**
 | | |
 |---|---|
 | **`app.js` decomposition** | §2. Module 2026-09-04; **six clusters out the same day**, `render` 328 → 196 lines. What remains is wiring plus the caption chain, which needs a tier decision first — `step2-decomposition.md` Q6 |
-| **the `SX` guard is over-broad** | `test/sx-scope.test.js` bans every `src/lib` module from importing `rinkart.js`; CHENG's rule was about modules that COUNT. Six presentation modules now live there and are treated as reducers. Does the directory split? — `step2-decomposition.md` Q5 |
+| ~~the `SX` guard is over-broad~~ | ✅ **Answered 2026-09-04.** CHENG ruled the guard should test the property, not the directory, and `test/sx-scope.test.js` now walks the dependency graph down from each layer's `reduce()`. ⚠️ **But it did not REPLACE the directory ban, because measuring said not to:** the six layers' closures are 10 of 26 modules, and `census.js` — where every published archive figure is counted — is outside them. Both checks run. The `AX` workaround was a separate mistake and survives the fix; see `step2-decomposition.md` §0.5 |
 | **coverage blindness** | `new Function` in `test/helpers/page.js`; independent of §2 |
 | **rink constants** | Mostly closed. `89`, `33` and the slot's `22 ft` are gone — the why-popup reads `NET_X`, `HIGH_DANGER_FT` and `SLOT_HALF_WIDTH` from `rink.js`. What survives is `42.5`, half the rink's width, in three places: the why-popup's own mini-rink transform and two emitted SVG attributes. ⛔ The `22` still in the file is **22 degrees** off straight-on and is deliberately not `SLOT_HALF_WIDTH` |
 | **`build_index.py`** | five page-builders in one file; already cost us a shipped `__SLOT_*__` placeholder |

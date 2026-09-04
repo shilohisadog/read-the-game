@@ -81,8 +81,17 @@ import { NET_X, BLUE_LINE_X, ZONE_BAND_FT, NEUTRAL_DOT_X,
  *                               same probe inside boot must RESOLVE — the second
  *                               half is what stops "it threw" being satisfied by
  *                               a probe that was simply broken.
- *   `test/sx-scope.test.js`     no module under `src/lib/` imports this file.
- *                               A leading indicator: a static import is the
+ *   `test/sx-scope.test.js`     TWO static checks. Nothing reachable from a
+ *                               layer's `reduce()` reaches this file — a walk of
+ *                               the dependency graph, so it follows edges that
+ *                               leave `src/lib`. And no module under `src/lib/`
+ *                               names this one either, which is broader than the
+ *                               rule and stays until a presentation module
+ *                               actually needs the transform: the layer closure
+ *                               is ten of twenty-six modules, and `census.js` —
+ *                               where every published archive figure is counted
+ *                               — is not in it.
+ *                               A leading indicator: a static dependency is the
  *                               MECHANISM by which the runtime property would
  *                               break, so catching it earlier is cheaper.
  *

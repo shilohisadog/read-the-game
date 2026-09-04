@@ -30,6 +30,24 @@
  * dies**, so the writer prints the elements and frames that changed rather than
  * rewriting in silence.
  *
+ * ⭐⭐ A WALK IS EVIDENCE ABOUT THE STATES IT VISITED, AND ABOUT NO OTHERS. This
+ * is a PROPERTY of the instrument, not a caveat on it, and it is written here
+ * because it was rediscovered three times in one day and would have been a
+ * fourth. Each time the fixture was found not to cover the cluster about to
+ * move: `#whyContent`, because the popup opens on a CLICK; `#workBody`, because
+ * the panel opens on a CHOICE; the mark loop's period-scoping branch, because it
+ * needs a CONTROL MOVED OFF ITS DEFAULT — a line that had never executed under
+ * any test until 2026-09-04. **A default boot is one point in a space of
+ * controls.** So the walks below are base, five layers, three control axes and a
+ * click pass — ⚠️ AXES, NOT COMBINATIONS — and the rule for using this
+ * instrument is: **before moving code, check that a walk renders it, and if none
+ * does, add the walk first.** Regenerating afterwards proves nothing about a
+ * state nobody visited.
+ *
+ * ⭐ It is the same shape as the coverage gap in `test/helpers/page.js`, the fit
+ * gate that graded an error page, and the canary that proved the ruler instead
+ * of the subject: **an instrument covers less than its name implies.**
+ *
  *   node tools/dom-golden.mjs           regenerate, reporting what moved
  *   node tools/dom-golden.mjs --check   compare only, non-zero on difference
  */

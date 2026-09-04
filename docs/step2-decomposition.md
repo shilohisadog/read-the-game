@@ -242,6 +242,93 @@ construction, and nothing asserts it** — which is exactly the property an
 extraction could break silently, so it is a precondition for moving the panel
 rather than a nicety.
 
+## 0.5 ✅ Q5 AND Q6 ANSWERED — 2026-09-04, and two corrections to the answer
+
+### Q5 — the guard now tests the property. It did **not** replace the directory ban.
+
+CHENG: *"my ruling was about reducers… the guard was written as no module under
+`src/lib`, which was the same set at the time and isn't now. Make the guard test
+the thing the rule is about: **no module that a layer's `reduce()` can reach may
+import `rinkart.js`.**"* Built — `test/sx-scope.test.js` resolves the layers
+through node, walks each one's dependency graph, and asserts the transform is not
+in the closure. The roots are **derived, never listed**: a layer is a module
+exporting something with a `reduce`, so a seventh is covered the moment it exists.
+
+⚠️ **CORRECTION 1 — "strictly stronger" is wrong in one direction and right in
+the other, and the difference is thirteen modules.** It is stronger on edges that
+LEAVE `src/lib`, which a per-directory scan cannot follow. It is not stronger
+inside: while every module lives in `src/lib`, a transitive path
+`layer → helper → rinkart` requires `helper` to import the transform, and the
+directory ban already catches that at one hop. **The old check was transitively
+sound precisely because it was over-broad.**
+
+And replacing it would have cost real coverage. **The six layers' closures are
+ten of twenty-six modules** — the layers plus `layer.js`, `attribution.js`,
+`rink.js`, `strength.js`. Of the sixteen outside, thirteen are analysis, and one
+is **`census.js`**, which `builders/measure.mjs` runs to produce every
+archive-wide figure in `measures.json`. Under the narrowed rule alone, `census.js`
+could import the screen transform and pass. So both checks run, and the directory
+ban stays until a presentation module actually needs the transform — at which
+point it gets an exemption argued on its own facts rather than a rule loosened in
+advance of any case for it.
+
+⚠️ **CORRECTION 2 — the workaround was never caused by the guard, and fixing the
+guard did not remove it.** The prediction was that `marks.js` would import
+`rinkart.js` normally and `AX` would stop being a parameter. **`AX` is not in
+`rinkart.js` and never was.** `SX` is the pure screen transform; `AX` is `SX`
+composed with `DIR(per)`, which closes over the game's `sides` and over whether
+the link asked for as-played ends. That is page state. It has no module to live
+in, and handing it to `shotLine` is dependency injection rather than a
+concession — which is why **no presentation module imports the transform today,
+and none asked to.** The comment in `marks.js` blaming the guard was mine, it
+stood for a day, and it is corrected in place: *a constraint was attributed to
+the nearest rule that could plausibly have caused it, and the attribution went
+unchecked.*
+
+⭐ **The control is doing the whole job here, and the file says so.** While the
+directory ban holds, the closure walk **cannot go red on the real library** — so
+its being green is no evidence it works. It is proven able to fail against a
+synthetic graph: the transitive case, six spellings of a direct one, and three
+decoys that must NOT fire, because `marks.js` and `rinkart.js` both contain prose
+about importing the transform.
+
+⚠️ **Two instrument failures while building it, both the same shape.** The first
+draft found the layers with `/\breduce\s*\(events/` over the source and matched
+`census.js` and `archive.js`, which **call** `corsi.reduce(events, …)` — and
+`archive.js`'s only match was inside a comment. A declaration and a call read
+alike to a regex, and prose reads like code. The roots are resolved through node
+now. Then the new prose in `rinkart.js` ended a comment line with the word
+*import*, and `build.test.js`'s bundle scanner matched it against the next line's
+leading `*`. **Third instance of prose impersonating code, and the check was
+right both times.** `tools/jslex.mjs` gained `specifiers()` for this — one
+scanner, two questions — so the guard no longer reads comments as imports.
+
+### Q6 — precedence is analysis. Ruled, not yet built.
+
+CHENG: *"what is most true of this frame is a decision over recorded facts… the
+line the tier split already implies is **does it need to know how anything
+looks?** A precedence rule needs to know that a goal outranks a slot shot. That
+is a fact about hockey and about our own layer taxonomy — it would be identical
+if the caption were rendered as audio."* Composing the caption from the verdict
+stays presentation.
+
+⭐ **The precedent is `captioned()`** — one predicate read by both `dwell()` and
+the renderer, and the reason *a fifth of the replay pauses for nothing* became
+structurally impossible. **One rule, several consumers, and they cannot disagree
+because there is one.** The practical argument is the decisive one: as a module
+the chain can be run against every frame in the archive, which is the difference
+between correct on the frames someone looked at and measured over the whole
+record.
+
+### ⭐ And a property of the golden, promoted out of the caveats
+
+CHENG on *a walk covers the state it was booted into*: *"three times is the
+finding. That is not a caveat on the instrument, it is a **property** of it, and
+it should be written into the golden's own header, or the fourth time it happens
+it gets rediscovered."* Same shape as the coverage gap, the fit gate grading an
+error page, and the canary that proved the ruler and not the subject — **the
+instrument covers less than its name implies**, four instances now.
+
 ## 1. ⭐⭐ THE FINDING: five scanners in one session, and the reason is structural
 
 Making the file loadable was supposed to end the guessing. I then wrote a
