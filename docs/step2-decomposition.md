@@ -135,6 +135,52 @@ fifth of that exact shape in this file. **Not fixed here**: it changes what a
 visitor can do, and folding it into a mechanism-only commit is how a move stops
 being reviewable.
 
+## 0.6 ⛔⛔ THE CLUSTER MODEL IS WEAKER THAN §4 ASSUMES — 41 of 79 are shared
+
+Kevin, after I described a shared function wrongly: *"how many other seams such
+as `lbox` aren't being identified properly?"* **Measured, and the answer is that
+`lboxFor` is not an anomaly — it is the median case.**
+
+| | |
+|---|---|
+| functions declared at `boot`'s top level | **79** |
+| **more than one call site — SEAMS** | **41** |
+| exactly one call site — exclusively owned | 34 |
+| none | 4 — `boot` itself, and three IIFEs (`paint`, `nextUp`, `verdict`) |
+
+Counted with `tools/jslex.mjs`, so a name inside a comment or a string is not a
+caller — which mattered: a `grep` said `chipLabel` had three callers and two of
+them were prose. Hand-checked against four functions; the one disagreement was
+the grep's fault, not the tool's.
+
+⭐ **WHAT THIS DOES TO THE PLAN. A cluster is not "a function and everything it
+calls"** — with 41 shared functions, "everything it calls" pulls in most of the
+file. The rule has to be narrower: **a cluster is a function plus only the
+helpers nothing else uses.** Everything shared is passed in or stays behind.
+Concretely, of everything the work panel calls, exactly two helpers (`PLURAL`,
+`cardsFor`) are its own; `lboxFor`, `chipLabel`, `whichPick`, `upto`, `MODE`,
+`CTX` and `ESC` are all shared.
+
+⚠️ **AND `architecture.md` §2's list of eight "natural clusters" is a hypothesis
+nobody had measured.** I wrote it, then repeated it in this document, and it
+reads as though the clusters are separable. Slightly over half the file's
+functions are shared between callers, so they are not — not without deciding,
+for each of 41 functions, whether it moves, is passed, or stays. That is a
+larger and more interesting job than "extract eight modules", and it is the real
+shape of step 2.
+
+⭐⭐ **The honest summary of the seam question: I had not identified them wrongly
+— I had not identified them at all.** The cluster list came from reading, and
+reading is what produced both errors about `lboxFor` in one sentence: that it
+was part of the work panel, and that it drew a lineup box. **It is the layer box
+under the rink** — the away figure, the centre label, the home figure and the
+sentence — and it is shared with the work panel *because those two surfaces must
+agree*. A reader who sees `36` under the rink and opens the panel expecting `36`
+has caught us contradicting ourselves if it says `33`. ⚠️ **They agree today by
+construction, and nothing asserts it** — which is exactly the property an
+extraction could break silently, so it is a precondition for moving the panel
+rather than a nicety.
+
 ## 1. ⭐⭐ THE FINDING: five scanners in one session, and the reason is structural
 
 Making the file loadable was supposed to end the guessing. I then wrote a
