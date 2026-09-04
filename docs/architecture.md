@@ -41,12 +41,12 @@ header, and §4 records what it cost us the one time we did it anyway.
 | **acquisition** | talks to the league, stores bytes | `fetch_nhl.py` | 611 |
 | **interpretation** | feed → events; the two gates | `extract.py` | 857 |
 | **orchestration** | walks the store, judges, writes documents | `derive.py` | 729 |
-| **analysis** | events → meaning; pure, no DOM, no network | `src/lib/**` (26 modules) | 5,707 |
+| **analysis** | events → meaning; pure, no DOM, no network | `src/lib/**` (27 modules) | 5,770 |
 | **measurement** | the archive, reduced by the SAME modules | `measure.mjs` | 428 |
-| **presentation** | generates the pages | `build_*.py` (9) | 3,938 |
-| **the app** | **the one exception — see §2** | `src/app.js` | 3,363 |
+| **presentation** | generates the pages | `build_*.py` (9) | 3,942 |
+| **the app** | **the one exception — see §2** | `src/app.js` | 3,350 |
 
-<sub>Counted 2026-09-04 by `tools/tiers.mjs`, checked by `npm run gates`. The analysis tier is **26 modules** and **not one of them touches the DOM, the network or the filesystem** — the boundary §1 claims, verified here rather than asserted. `src/app.js` **declares 20 dependencies on that tier and exports 1 function** — it is a module, not a build template, and §2 is what remains.</sub>
+<sub>Counted 2026-09-04 by `tools/tiers.mjs`, checked by `npm run gates`. The analysis tier is **27 modules** and **not one of them touches the DOM, the network or the filesystem** — the boundary §1 claims, verified here rather than asserted. `src/app.js` **declares 21 dependencies on that tier and exports 1 function** — it is a module, not a build template, and §2 is what remains.</sub>
 <!-- /tiers -->
 
 ---
@@ -58,15 +58,17 @@ machine that does not admit it is one**, and that is the single genuine
 architectural inconsistency in the project.
 
 The shape of it: **one function**. `boot()` opens on the first shipped line and
-closes on the last, and its **25 mutable bindings are its locals** — verified by
-reading every site, not by a scanner, after three scanners disagreed. So nothing
+closes on the last, and its **26 mutable bindings are its locals** — verified by
+reading every site, not by a scanner, after five scanners disagreed. ⭐ The hand
+audit that found 25 had missed `gear`, a mid-line declaration, for the same
+reason the original regex missed `lastHD`. So nothing
 here needs *encapsulating*; it already is. What is missing is an **interface**:
 one very large reader (`render`, touching eleven of those bindings across 328
 lines) and writers spread across the file, with nothing to assert against.
 
 ⭐ **AND THE DEEPER PROBLEM IS NOT THE STATE — IT IS WHERE THE INVARIANTS LIVE.**
-The file is 3,363 lines of which about three quarters are comments: roughly 850
-lines of code carrying **177 explicitly marked assertions about itself**. The
+The file is 3,350 lines of which 2,399 are comment-only: **844 lines of code
+carrying 175 lines of explicitly marked ⭐/⚠️/⛔ assertion about themselves.** The
 comments are excellent, and that is the symptom. A comment cannot be executed, so
 nothing notices when it stops being true, and it cannot be queried, so *"is this
 deliberate?"* costs a full read. **Decomposition is the fix, and moving the
@@ -77,14 +79,14 @@ today; a rearranged assignment converts none of them into a check.
 its imports now are — so no parser, linter or coverage tool could load it, and
 every question about it was answered by text-matching. Four answers in one review
 were wrong because of that. It now declares its 20 dependencies and exports
-`boot`; node checks every imported name at link time, and
+`boot`; node checks all 21 imports at link time, and
 `test/app-imports.test.js` keeps the list from rotting, since the concatenated
 bundle resolves those names whether they are declared or not.
 
 **This is not a size complaint, and the distinction matters because it changes
 the fix.** Three things follow from the state, none of them from the line count:
 
-- **It is still invisible to coverage**, though no longer in principle. The 29
+- **It is still invisible to coverage**, though no longer in principle. The 28
   boot-harness suites load the *built bundle* with `new Function`, and a string
   compiled at runtime is never a file, so no instrument sees it. The project's
   published coverage figure is *a rate computed without its largest and
@@ -102,10 +104,23 @@ the fix.** Three things follow from the state, none of them from the line count:
   argument against decomposition.** It is not.
 
 **The fix is decomposition with declared inputs** — each cluster becoming a module
-that is *handed* what it needs instead of reaching for it. That is what turns 177
-prose invariants into structure, because a boundary states what a comment
-currently has to. Incremental and byte-identical one cluster at a time; the
-why-popup and the geometry are the smallest and most self-contained.
+that is *handed* what it needs instead of reaching for it.
+
+⭐ **AND THE HONEST CASE FOR IT IS NARROWER THAN "175 COMMENTS BECOME CHECKS".**
+Extraction does not write tests; people do, and `test/why-popup.test.js` had
+already turned one of those prose invariants into a check against the file as it
+stood. CHENG's framing is the one that survives: *coverage tells you a line ran;
+mutation score tells you a test would notice if it were wrong* — and `app.js` is
+the file that has never been mutation-tested at all. ⚠️ With a precondition: the
+harness runs the BUILT bundle through `new Function`, so a mutant in a source
+module never executes there. **An extracted cluster is only reachable if a test
+imports it directly**, and `app.js` itself never becomes reachable — it shrinks.
+
+✅ **The first cluster is out: the why-popup, `src/lib/why.js`, 2026-09-04.** It
+established the mechanism and nothing about the risk — it was chosen for being
+safe, and a green first cluster is not evidence the approach is. Six mutants were
+run against the extracted module and the first two survived, which is the point:
+one found a threshold asserted against the wrong occurrence of the same string.
 
 ⛔ **THE STATE REFACTOR WAS NOT THE FIX, AND THIS SECTION USED TO SAY IT WAS.**
 The plan was one state object with `render(state)` and a single setter. Moving 45
@@ -213,10 +228,11 @@ measure the substrate.**
 
 | | |
 |---|---|
-| **`app.js` decomposition** | §2. The largest remaining architectural item. Its precondition — making the file a module — landed 2026-09-04; no cluster has moved yet |
+| **`app.js` decomposition** | §2. The largest remaining architectural item. Module: 2026-09-04. First cluster out (`src/lib/why.js`) the same day — mechanism established, risk untested, seven clusters to go |
 | **coverage blindness** | `new Function` in `test/helpers/page.js`; independent of §2 |
 | **rink constants** | Mostly closed. `89`, `33` and the slot's `22 ft` are gone — the why-popup reads `NET_X`, `HIGH_DANGER_FT` and `SLOT_HALF_WIDTH` from `rink.js`. What survives is `42.5`, half the rink's width, in three places: the why-popup's own mini-rink transform and two emitted SVG attributes. ⛔ The `22` still in the file is **22 degrees** off straight-on and is deliberately not `SLOT_HALF_WIDTH` |
 | **`build_index.py`** | five page-builders in one file; already cost us a shipped `__SLOT_*__` placeholder |
+| **the why-popup's ✕ button is dead** | `onclick="hideWhy()"` resolves against the global scope and `hideWhy` is a local of `boot`; the CSP also carries a script hash with no `'unsafe-hashes'`, which blocks inline handler attributes outright. The backdrop click still closes the popup, so it is a dead affordance rather than a trap — the fifth of that shape here. Found by reading the cluster in order to move it |
 | **claim coverage** | of the ~49 published claims, how many have an instrument that goes red when they stop being true? No definition of "claim" yet |
 
 ---

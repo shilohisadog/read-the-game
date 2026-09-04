@@ -25,7 +25,14 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { HIGH_DANGER_FT, SLOT_HALF_WIDTH, NET_X, isHighDanger } from '../src/lib/rink.js';
 
-const APP = readFileSync(new URL('../src/app.js', import.meta.url), 'utf8');
+/* ⭐ THE BUILT PAGE, NOT A SOURCE FILE — and moving the popup out of `app.js` is
+   what taught this. These three tests read `src/app.js` by path, so extracting
+   the markup into `src/lib/why.js` broke all of them at once while the page they
+   are about had not changed by one byte. The claim here is *what a visitor
+   reads*, and its subject is the artifact; a test pointed at whichever module
+   currently holds the string is coupled to the filing, not to the claim, and
+   goes red on every future decomposition for no reason. */
+const APP = readFileSync(new URL('../src/read-the-game.html', import.meta.url), 'utf8');
 const RINK = readFileSync(new URL('../src/lib/rink.js', import.meta.url), 'utf8');
 
 /** The body of `isHighDanger`, and the clauses it is made of. */

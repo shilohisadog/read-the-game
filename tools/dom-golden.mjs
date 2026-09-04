@@ -77,7 +77,45 @@ export function capture() {
     const col = frames.map(f => f[id] ?? '-');
     el[id] = new Set(col).size === 1 ? col[0] : col;
   }
-  return { frames: frames.length, elements: ids.length, el };
+  return { frames: frames.length, elements: ids.length, el, popup: popupPass() };
+}
+
+/**
+ * ⛔⛔ A SCRUBBER WALK DOES NOT TOUCH A SURFACE THAT OPENS ON A CLICK, AND THE
+ * FIRST VERSION OF THIS FILE DID NOT NOTICE.
+ *
+ * `#whyContent` was **absent from the walk entirely** — 269 frames, 86 elements,
+ * and the why-popup's markup was written by none of them, because it renders only
+ * when a viewer clicks a slot shot. So the golden was about to be offered as the
+ * safety argument for extracting the very cluster it gave zero coverage of.
+ *
+ * That is the canary distinction exactly: the ruler was working and the subject
+ * was never measured. **The general rule this earns: every surface that opens on
+ * an interaction needs its own pass, and a walk that only drags the scrubber must
+ * not be described as covering the page.** The work panel and the layer controls
+ * are the same shape and will each need one.
+ *
+ * The pass needs `?layer=slot`, because the handler is
+ * `if (hdOn && isHD(EV[k])) showWhy(k)` — with the layer off, every click is a
+ * no-op and a capture taken that way would be 269 recorded silences.
+ */
+function popupPass() {
+  const a = boot(null, null, '?layer=slot');
+  const events = a.$('events'), content = a.$('whyContent'), back = a.$('whyBk');
+  const at = {};
+  const n = a.every(() => 0).length;      // scrubber positions, read from the page
+  let rendered = 0;
+  for (let k = 0; k < n; k++) {
+    a.at(k, () => {});
+    const before = content.writes;
+    for (const fn of events._on.click || []) fn({ target: { dataset: { i: String(k) } } });
+    /* `writes` rather than the backdrop's class: nothing ever CLOSES the popup
+       during this pass, so `whyBk` stays `on` after the first open and would
+       report every later click as a render. The write is the signal itself —
+       the same correction `innerHTML`'s write counter records in page.js. */
+    if (content.writes > before) { at[k] = state(content) + '/' + state(back); rendered++; }
+  }
+  return { clicks: n, rendered, at };
 }
 
 /** Every (element, frame) where two captures disagree. */
@@ -96,6 +134,17 @@ export function differences(gold, made) {
       if (a !== b) { out.push({ id, at: k, was: a, now: b }); break; }   // first frame only
     }
   }
+  /* AND THE INTERACTION PASS. Left out of the first version, which would have
+     made the popup's coverage decorative: captured, stored, never compared. */
+  const g = gold.popup || { at: {} }, m = made.popup || { at: {} };
+  if (g.rendered !== m.rendered)
+    out.push({ id: 'whyContent', at: 'renders', was: `${g.rendered} clicks rendered`,
+               now: `${m.rendered} clicks rendered` });
+  for (const k of [...new Set([...Object.keys(g.at), ...Object.keys(m.at)])].sort((x, y) => x - y))
+    if (g.at[k] !== m.at[k]) {
+      out.push({ id: 'whyContent', at: `click ${k}`, was: g.at[k] ?? '(no render)', now: m.at[k] ?? '(no render)' });
+      break;
+    }
   return out;
 }
 

@@ -84,6 +84,57 @@ idea died to one grep.
 
 ---
 
+## 0.5 ✅ THE FIRST CLUSTER IS OUT — `src/lib/why.js`, 2026-09-04
+
+**Mechanism established. Risk untested, and the commit says so.** The why-popup
+was chosen for being safe; per Q4 a first cluster that cannot fail proves the
+pipeline and nothing else. `app.js` lost 21 lines and gained 8; the module is 62.
+
+⛔⛔ **AND THE GOLDEN DID NOT COVER IT — CAUGHT BEFORE THE MOVE, NOT AFTER.**
+`#whyContent` was **absent from the 269-frame walk entirely**, because the popup
+renders only on a click. The instrument built as the safety argument for this
+extraction gave the extraction **zero coverage**, and every one of its five tests
+was green. That is the canary distinction exactly: the ruler worked and the
+subject was never measured. `tools/dom-golden.mjs` now runs an interaction pass —
+`?layer=slot`, a synthetic click at every event, 44 popups rendered — and the
+diff compares it. ⭐ **The rule this earns: a walk that only drags the scrubber
+must never be described as covering the page. The work panel and the layer
+controls are the same shape and each needs its own pass.**
+
+⭐⭐ **AND THE MUTATION CASE PAID OUT IMMEDIATELY, WHICH IS THE Q3 ANSWER MADE
+CONCRETE.** Six mutants against the extracted module; the first two survived:
+
+- **A threshold asserted against the wrong occurrence of the same string.** The
+  distance rule is printed twice — once in the factor row, once in the closing
+  sentence — and a bare `/≤ 33 ft/` was satisfied by the sentence while the row
+  was mutated to 34. *Two instances, one assertion*: this repo's "two mechanisms,
+  one observable" in its smallest form.
+- **The distance printed a third time**, inside the SVG diagram, unasserted.
+- A third survived on the corpus rather than on the test: `<=` → `<` on the goal
+  line changes nothing unless a shot sits exactly on it, and none does. **A corpus
+  is a sample; a boundary has to be asked for**, so the boundary cases are now
+  written by hand.
+
+None of that was reachable a day ago. **That is the case for step 2, and it is the
+only one that survived contact.**
+
+⚠️ **Two of the repo's own tests went red on the move, both correctly.**
+`test/app-imports.test.js` caught three imports left behind in `app.js` after
+their only user moved. And `test/why-popup.test.js` broke because it read
+`src/app.js` **by path** — so it was coupled to *which file holds the string*
+rather than to the claim, which is about what a visitor reads. It now reads the
+built page and will survive every future extraction. ⭐ **A test aimed at a source
+file is a test that decomposition breaks for no reason.**
+
+⛔ **One defect found by reading the cluster in order to move it: the popup's ✕
+button is dead.** `onclick="hideWhy()"` resolves against the global scope, and
+`hideWhy` is a local of `boot`; the page's CSP also carries a script hash with no
+`'unsafe-hashes'`, which blocks inline handler attributes outright. The backdrop
+click still closes the popup, so it is a dead affordance rather than a trap — the
+fifth of that exact shape in this file. **Not fixed here**: it changes what a
+visitor can do, and folding it into a mechanism-only commit is how a move stops
+being reviewable.
+
 ## 1. ⭐⭐ THE FINDING: five scanners in one session, and the reason is structural
 
 Making the file loadable was supposed to end the guessing. I then wrote a

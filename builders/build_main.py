@@ -357,6 +357,10 @@ LIB = ["rink.js", "attribution.js", "layer.js", "strength.js", "box.js", "penalt
        # The per-game summary reads `perGame` out of measures.json — the mechanism
        # only, never the archive tier that builds it. See distribution.js.
        "distribution.js",
+       # AFTER rink.js, whose three slot constants it states in words -- it is the
+       # why-popup's markup, split out of boot at `return markup` / `write to
+       # document` so the purity of this tier survives the move.
+       "why.js",
        "layers/corsi.js", "layers/goaltending.js", "layers/danger.js", "layers/whistle.js",
        "layers/blocked.js",
        # BEFORE sentence.js, which asks it which competition a game is.

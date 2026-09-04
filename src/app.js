@@ -19,8 +19,7 @@
    ⚠️ THE PREAMBLE IS NOT SHIPPED. Prose a reader of the PAGE needs belongs
    below, not here. */
 import {
-  ENDS_KEY, ENDS_NOTE, HIGH_DANGER_FT, NET_X, SLOT_HALF_WIDTH, attackDirection,
-  distanceToNet, endsKeyShowing, endsNoteShowing
+  ENDS_KEY, ENDS_NOTE, NET_X, attackDirection, endsKeyShowing, endsNoteShowing
 } from './lib/rink.js';
 import {
   ATTEMPT_TYPES, ATTRIBUTION, corsiTeam, missSay, shootingTeam
@@ -32,6 +31,7 @@ import { penName } from './lib/penalties.js';
 import { SvgPen } from './lib/svgpen.js';
 import { FIG } from './lib/figures.js';
 import { spokenGap } from './lib/transition.js';
+import { whyMarkup } from './lib/why.js';
 import { judgeable, mostUnusual } from './lib/distribution.js';
 import { corsi } from './lib/layers/corsi.js';
 import { goaltending, isHighDangerEvent } from './lib/layers/goaltending.js';
@@ -1846,7 +1846,11 @@ $('gl').textContent=`${AAB} at ${HAB}${WHEN?' · '+WHEN:''}`;
 document.querySelectorAll('#rg .cc.a .lb').forEach(n=>n.childNodes[0].nodeValue=AAB+' attempts');
 document.querySelectorAll('#rg .cc.h .lb').forEach(n=>n.childNodes[0].nodeValue=HAB+' attempts');
 
-const HX=x=>11+Math.abs(x), HY=y=>42.5-y; let lastHD=null;
+/* `HX`/`HY` -- the popup's own mini-rink transform -- moved to src/lib/why.js
+   with the markup they serve. `lastHD` is dead (written once, read nowhere) and
+   is left exactly as it was: this change is a MOVE, and a cleanup folded into it
+   is a cleanup nobody reviewed. */
+let lastHD=null;
 /* ⭐⭐ THE POPUP THAT SAYS "you can check it" MUST APPLY THE RULE IT DESCRIBES.
    ⚠️ IT DID NOT, AND THE GAP WAS A WHOLE CLAUSE. `isHighDanger` has THREE:
    within 33 ft, within ±22 ft of centre, and IN FRONT OF THE GOAL LINE — the
@@ -1868,24 +1872,7 @@ const HX=x=>11+Math.abs(x), HY=y=>42.5-y; let lastHD=null;
    different quantities that happen to share a number, one of which a
    find-and-replace would silently have broken. */
 function showWhy(idx){const e=EV[idx];if(e==null||e.x==null)return;
- const _d=shotDir(e)||1, dLine=NET_X-e.x*_d, dist=distanceToNet(e.x,e.y,_d), angle=Math.atan2(Math.abs(e.y),dLine)*180/Math.PI;
- const inSlot=Math.abs(e.y)<=SLOT_HALF_WIDTH, inFront=e.x*_d<=NET_X;
- const tid=e.own, ab=tid===AID?AAB:HAB, col=tid===AID?AWAYCOL:HOMECOL, p=R[e.actor], isGoal=e.type==='goal';
- const diag=`<svg viewBox="0 0 100 85"><rect x="1" y="1" width="98" height="83" rx="14" fill="#fff" stroke="var(--edge)"/>
-   <polygon points="63,20.5 96,38 96,47 63,64.5" fill="var(--hd)" opacity=".3"/><text x="70" y="43.5" font-size="3.4" fill="#b07d17" text-anchor="middle">slot</text>
-   <rect x="90" y="37" width="6" height="11" rx="1.5" fill="${col}" opacity=".55"/><line x1="96" y1="29" x2="96" y2="56" stroke="var(--red)" stroke-width="1" opacity=".7"/>
-   <line x1="36" y1="1" x2="36" y2="84" stroke="var(--blue)" stroke-width=".8" opacity=".35"/>
-   <line x1="${HX(e.x).toFixed(1)}" y1="${HY(e.y).toFixed(1)}" x2="95" y2="42.5" stroke="var(--ink)" stroke-dasharray="2 1.5" stroke-width=".7"/>
-   <circle cx="${HX(e.x).toFixed(1)}" cy="${HY(e.y).toFixed(1)}" r="2.8" fill="${col}" stroke="#fff" stroke-width=".7"/>
-   <text x="${Math.min(HX(e.x)+4,78).toFixed(1)}" y="${(HY(e.y)-2.5).toFixed(1)}" font-size="4.2" fill="var(--ink)" font-weight="700">${Math.round(dist)} ft</text></svg>`;
- $('whyContent').innerHTML=`<div class="whyhd ${tid===AID?'a':'h'}"><div><div class="t">${isGoal?'🚨 A GOAL from the slot':'⚡ Why this counts as a slot shot'}</div>
-   <div class="s">${p?'#'+p.n+' '+p.nm:ab} · ${ab} · P${e.per} ${e.rem} · ${e.type.replace(/-/g,' ')}</div></div><button class="whyclose" onclick="hideWhy()">✕</button></div>
-  <div class="whybody"><div class="whydiag">${diag}</div>
-   <div class="factor"><span class="fv">${Math.round(dist)} ft</span><span class="fl">Distance to the net — <b>close</b>. Our rule: ≤ ${HIGH_DANGER_FT} ft. <span class="chk">✓</span></span></div>
-   <div class="factor"><span class="fv">${Math.round(angle)}°</span><span class="fl">Angle off straight-on — ${angle<22?'<b>a clean look</b> at the net':'a slot-area angle'}. Lower = more net to shoot at.</span></div>
-   <div class="factor"><span class="fv">${inSlot?'Slot':'Wide'}</span><span class="fl">Lateral position — ${inSlot?'<b>in the slot</b> (within the faceoff dots) <span class="chk">✓</span>':'outside the slot'}</span></div>
-   <div class="factor last"><span class="fv">${inFront?'Front':'Behind'}</span><span class="fl">Side of the goal line — ${inFront?'<b>in front of the net</b> <span class="chk">✓</span>':'behind the net'}. A wrap-around is close, but it is not from the slot.</span></div>
-   <div class="whyrule"><b>The rule, and you can check it:</b> a shot counts as <b>from the slot</b> when <b>all three</b> are true — it is <b>≤ ${HIGH_DANGER_FT} ft from the net</b>, <b>within ±${SLOT_HALF_WIDTH} ft of the middle</b>, and <b>in front of the goal line</b> (a wrap-around from behind the net is close, but it is not from the slot). All three true here. This is <b>our own geometric rule</b>, not a model and not anybody else's statistic — it says where the shot came from, and nothing about how likely it was to go in. Measure it yourself on the diagram.</div></div>`;
+ $('whyContent').innerHTML=whyMarkup(e,{dir:shotDir(e),AID,AAB,HAB,AWAYCOL,HOMECOL,R});
  $('whyBk').classList.add('on');}
 function hideWhy(){$('whyBk').classList.remove('on');}
 $('events').addEventListener('click',ev=>{const t=ev.target;if(t&&t.dataset&&t.dataset.i!=null){const k=+t.dataset.i;if(hdOn&&isHD(EV[k]))showWhy(k);}});

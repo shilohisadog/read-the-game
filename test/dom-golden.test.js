@@ -76,6 +76,22 @@ test('⭐⭐ …and an element that stops being written is caught', () => {
   assert.equal(diff[0].now, '(absent)');
 });
 
+test('⭐⭐ …and a changed popup markup is caught', () => {
+  /* ⛔ THE POPUP NEEDED ITS OWN CONTROL BECAUSE IT NEEDED ITS OWN PASS. The
+     scrubber walk never touches `#whyContent` — it renders only on a click — so
+     the first version of this golden covered 86 elements and gave ZERO coverage
+     of the cluster it was built to protect. Captured-but-never-compared would
+     have been the next way to get that wrong, so the diff is exercised here. */
+  const [k] = Object.keys(made.popup.at);
+  assert.ok(k !== undefined, 'no click ever rendered the popup — the pass is not passing');
+
+  const bent = { ...made, popup: { ...made.popup, at: { ...made.popup.at, [k]: 'deadbeef/dead' } } };
+  const diff = differences(made, bent);
+  assert.equal(diff.length, 1, `expected exactly one difference, got ${diff.length}`);
+  assert.equal(diff[0].id, 'whyContent');
+  assert.equal(diff[0].at, `click ${k}`);
+});
+
 test('⛔ the golden is not trivially satisfiable', () => {
   /* A fixture of one frame, or of elements that never change, would pass the
      test above against almost any refactor. What makes the walk worth running is
@@ -93,4 +109,15 @@ test('⛔ the golden is not trivially satisfiable', () => {
   for (const id of ['events', 'rink', 'puck', 'per'])
     assert.ok(Array.isArray(gold.el[id]),
               `#${id} is constant across the whole game, which cannot be true of a replay`);
+
+  /* ⛔ AND THE INTERACTION PASS HAS TO HAVE HAPPENED. A pass that opened nothing
+     would store `{}`, compare `{}` to `{}`, and pass forever — which is exactly
+     the state this golden shipped in for its first hour, undetected, because the
+     scrubber walk simply never clicks anything. The reference game has 44 slot
+     shots; a floor well under that catches a pass that half-works without
+     pinning a number that moves when the fixture game does. */
+  assert.ok(gold.popup.rendered > 20,
+            `only ${gold.popup.rendered} clicks rendered the why-popup — the interaction pass is broken`);
+  assert.equal(gold.popup.rendered, made.popup.rendered,
+               'the popup renders a different number of times than the golden records');
 });
