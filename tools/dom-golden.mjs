@@ -74,7 +74,51 @@ export function capture() {
   });
   const el = fold(frames);
   return { frames: frames.length, elements: Object.keys(el).length, el,
-           popup: popupPass(), layers: layerPass(el) };
+           popup: popupPass(), layers: layerPass(el), controls: controlPass(el) };
+}
+
+/**
+ * ⛔⛔ THE WALK COVERS ONE POINT IN A SPACE OF CONTROLS, AND THE REST OF THE SPACE
+ * CONTAINS BRANCHES NOTHING HAS EVER EXECUTED.
+ *
+ * Third time the same discovery, so it is stated as a rule rather than fixed
+ * again: `#whyContent` was missing because it opens on a CLICK, `#workBody`
+ * because it opens on a CHOICE, and these because they need a control MOVED off
+ * its default. **A default boot is one point; every control multiplies the space
+ * and the walk visits none of the other points.**
+ *
+ * Concretely, in the marks loop inside `render`: `if (trails==='off' && k!==i)
+ * continue;` and `if (ASPLAYED && trails==='all' && e.per!==cur.per) continue;`.
+ * The second line has never run in this fixture. `?ends=fixed` moves every mark
+ * on the ice, and `?strength=even` changes what the ledger admits.
+ *
+ * ⚠️ AXES, NOT COMBINATIONS, AND THE DIFFERENCE IS STATED SO GREEN IS NOT READ AS
+ * MORE THAN IT IS. Each control is moved off its default ON ITS OWN. Two controls
+ * interacting — even strength WITH trails accumulating, at fixed ends — is not
+ * covered, and would be 2x2x2x6 walks rather than a handful. What this catches is
+ * a branch that never executes; what it does not catch is a branch that only
+ * misbehaves in company.
+ */
+function controlPass(base) {
+  const out = {};
+  const walks = {
+    'trails=all': () => { const a = boot(null, null, ''); a.GROUPS['#rg .tbtn'].find(b => b.dataset.t === 'all').click(); return a; },
+    'strength=even': () => boot(null, null, '?strength=even'),
+    'ends=fixed': () => boot(null, null, '?ends=fixed'),
+  };
+  for (const [name, mk] of Object.entries(walks)) {
+    const a = mk();
+    const frames = a.every(d => {
+      const o = {};
+      for (const [id, el] of d.byId) o[id] = state(el);
+      return o;
+    });
+    const full = fold(frames), el = {};
+    for (const [id, v] of Object.entries(full))
+      if (JSON.stringify(v) !== JSON.stringify(base[id])) el[id] = v;
+    out[name] = { frames: frames.length, el };
+  }
+  return out;
 }
 
 /** Per-element hashes, storing the unchanging ones once instead of 269 times. */
@@ -202,13 +246,13 @@ export function differences(gold, made) {
   /* AND EVERY LAYER'S OWN WALK. Compared per layer so a message names which one
      moved -- "the work panel changed" over five layers is a sentence a reader
      then has to go and disambiguate by hand. */
-  const gl = gold.layers || {}, ml = made.layers || {};
-  for (const layer of [...new Set([...Object.keys(gl), ...Object.keys(ml)])].sort()) {
-    if (!gl[layer]) { out.push({ id: `layer:${layer}`, at: null, was: '(not captured)', now: 'present' }); continue; }
-    if (!ml[layer]) { out.push({ id: `layer:${layer}`, at: null, was: 'present', now: '(not captured)' }); continue; }
-    for (const d of elementDiffs(gl[layer], ml[layer]))
-      out.push({ ...d, id: `${layer}/${d.id}` });
-  }
+  for (const [kind, gw, mw] of [['layer', gold.layers || {}, made.layers || {}],
+                               ['control', gold.controls || {}, made.controls || {}]])
+    for (const name of [...new Set([...Object.keys(gw), ...Object.keys(mw)])].sort()) {
+      if (!gw[name]) { out.push({ id: `${kind}:${name}`, at: null, was: '(not captured)', now: 'present' }); continue; }
+      if (!mw[name]) { out.push({ id: `${kind}:${name}`, at: null, was: 'present', now: '(not captured)' }); continue; }
+      for (const d of elementDiffs(gw[name], mw[name])) out.push({ ...d, id: `${name}/${d.id}` });
+    }
   return out;
 }
 

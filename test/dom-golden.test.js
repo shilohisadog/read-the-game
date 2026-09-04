@@ -148,6 +148,22 @@ test('⛔ the golden is not trivially satisfiable', () => {
      is covered the day it exists — but a pass that silently stopped opening the
      panel would store an empty delta and compare nothing to nothing, which is the
      shape that passes forever. So the panel is required to vary. */
+  /* ⛔ AND EACH CONTROL IS MOVED OFF ITS DEFAULT, ON ITS OWN. Three walks, and
+     each must actually move something or the pass is decorative: `trails=all`
+     reaches the accumulate branch in render's marks loop, which the default walk
+     never executes; `ends=fixed` moves every mark on the ice; `strength=even`
+     changes what the ledger admits. ⚠️ AXES, NOT COMBINATIONS — two controls
+     interacting is not covered and this fixture does not claim it. */
+  const controls = Object.keys(gold.controls);
+  assert.deepEqual(controls.sort(), ['ends=fixed', 'strength=even', 'trails=all'],
+                   'the control walks have changed without this test moving with them');
+  for (const c of controls)
+    assert.ok(Object.keys(gold.controls[c].el).length >= 3,
+      `the ${c} walk changed almost nothing against the default — either the control did not `
+      + 'move, or the pass is not driving it, and both look like coverage from here');
+  assert.ok(gold.controls['trails=all'].el.events,
+    'trails=all does not move #events, so render\'s accumulate branch is still unwalked');
+
   const layers = Object.keys(gold.layers);
   assert.deepEqual(layers.sort(), [...LAYER_TOKENS].sort(),
                    'the golden does not walk every layer the URL vocabulary knows');
