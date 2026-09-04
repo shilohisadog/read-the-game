@@ -9,6 +9,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { rich, app, SCRIPT, PAGE_CSS, boot, paceOf } from './helpers/page.js';
+import { ANNOUNCEMENTS } from '../src/lib/announce.js';
 import { stints } from '../src/lib/box.js';
 
 const at = d => +d.$('scrub').value;
@@ -341,7 +342,7 @@ test('no frame pauses without saying something', () => {
   }
 });
 
-test('⭐ every caption the chain can say is one `captioned()` knows about', () => {
+test('⭐ every caption the chain can say is one the pace knows about', () => {
   /* ⚠️ WHY THIS IS STRUCTURAL AND NOT A WALK. `captioned()` is the seam that
      makes "a pause with nothing on screen" impossible: `dwell` gives a frame
      extra time if and only if `captioned` says it speaks. The biconditional
@@ -352,21 +353,34 @@ test('⭐ every caption the chain can say is one `captioned()` knows about', () 
      the same frame a penalty expires, so `KILLED.has(e)` was still true there
      and the dwell stayed long. The defect was real and the fixture could not
      express it — one game, one offside, one collision.
-     So the relationship is asserted where it lives. Every map the caption chain
-     branches on must also be a term in `captioned()`; a caption the pace loop
-     has never heard of is defect one waiting to happen again.
+
+     ✅ 2026-09-04 — THE DISAGREEMENT THIS ASSERTED IS NOW UNSTATEABLE, and the
+     test says so rather than being deleted quietly. It used to compare the maps
+     the `else if` ladder branched on against the terms of `captioned()`'s
+     disjunction, because those were two statements of one rule. They are one
+     statement now: `announce.js` ranks the conditions and `captioned` is
+     `announcement(…) !== null`, so a term cannot be in one and missing from the
+     other. `test/build.test.js` pins the delegation and that the rule is shipped
+     exactly once.
+
+     ⭐ WHAT SURVIVES IS THE OTHER HALF, AND IT IS REAL. The renderer switches on
+     the rule's ANSWER, and a `case` label that does not match one — a rename, a
+     typo, a rank added to `announce.js` and never given a branch — is a frame
+     that `dwell` pauses for and that draws nothing. Silent in exactly the way
+     the original defect was. So: the switch's labels and the rule's answers are
+     the same set, in both directions.
      COMMENTS ARE STRIPPED FIRST. A source scan that cannot tell code from a
      mention of code is not a check about code — this project has paid for that
-     three times in one day. */
+     four times now. */
   const code = SCRIPT.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '');
-  const chain = [...code.matchAll(/else if\(cur&&([A-Z]+)\.has\(cur\)\)/g)].map(m => m[1]);
-  const fn = /function captioned\(e\)\{return([^;]*);\}/.exec(code);
-  assert.ok(fn, 'captioned() has moved — this test has lost its subject');
-  const known = [...fn[1].matchAll(/([A-Z]+)\.has\(e\)/g)].map(m => m[1]);
-  assert.ok(chain.length >= 2, `the caption chain branches on only ${chain.length} maps`);
-  assert.deepEqual([...new Set(chain)].sort(), [...new Set(known)].sort(),
-    'the caption chain and captioned() disagree about which frames speak — a frame '
-    + 'can now caption without being given time to be read, or pause with nothing to say');
+  const at = code.indexOf('switch(announcement(cur,rank()))');
+  assert.ok(at > 0, 'the caption switch has moved — this test has lost its subject');
+  const body = code.slice(at, code.indexOf('\n prevA=', at));
+  const cases = [...body.matchAll(/case '([a-z]+)':/g)].map(m => m[1]);
+  assert.ok(cases.length >= 5, `the caption switch has only ${cases.length} branches`);
+  assert.deepEqual([...cases].sort(), [...ANNOUNCEMENTS].sort(),
+    'the renderer and the precedence rule disagree about what can be announced — a '
+    + 'rank with no branch is a frame the pace pauses for and the page draws nothing on');
 });
 
 test('the caption lasts exactly as long as the frame it describes', () => {

@@ -303,7 +303,7 @@ leading `*`. **Third instance of prose impersonating code, and the check was
 right both times.** `tools/jslex.mjs` gained `specifiers()` for this — one
 scanner, two questions — so the guard no longer reads comments as imports.
 
-### Q6 — precedence is analysis. Ruled, not yet built.
+### Q6 — precedence is analysis. ✅ Ruled and BUILT.
 
 CHENG: *"what is most true of this frame is a decision over recorded facts… the
 line the tier split already implies is **does it need to know how anything
@@ -319,6 +319,55 @@ because there is one.** The practical argument is the decisive one: as a module
 the chain can be run against every frame in the archive, which is the difference
 between correct on the frames someone looked at and measured over the whole
 record.
+
+**Built as `src/lib/announce.js`.** `announcement(e, {isIcing, isOffside, isKill,
+isSlot, slotOn})` returns which of six claims wins, or null. `render` switches on
+the answer; the ordering argument moved with the rule.
+
+⭐⭐ **AND IT ENDED A RULE STATED TWICE, WHICH WAS THE FINDING RATHER THAN THE
+PLAN.** `captioned()` — the predicate `dwell()` shares with the renderer — held
+the **same six conditions as a disjunction**. Two statements of one rule, both
+shipped, and the page is only coherent while they agree: a seventh condition added
+to the ladder and forgotten in the predicate is a caption `dwell` gives an
+ordinary frame's time to, which is the exact defect `docs/event-timing.md` exists
+about. `captioned` is now `announcement(…) !== null`. **CHENG had named this
+hazard while the two were still separate** — *"what would be dangerous is a third
+reader with a slightly different predicate"* — and the answer turns out to be that
+there were already two.
+
+⭐ **THE MOVE SHRANK NOTHING, AND THAT IS THE HONEST HEADLINE.** `app.js`: **66
+inserted, 66 deleted — net zero.** `announce.js`: **11 lines of code, 96 lines of
+comment.** Judged by size this did not happen. What it bought is that the ladder
+can now be asked all **fifteen** of its pairwise collisions — a goal that is also
+a kill frame, a penalty on an offside restart — of which **the reference game
+contains one**. Fifteen pairs, one available: that ratio is the whole argument for
+decomposition, in one number.
+
+⛔⛔ **AND THE GOLDEN DID NOT COVER THE CHAIN AT ALL — FOURTH TIME, CAUGHT BY THE
+RULE THIS TIME.** Every walk in the fixture drives the SCRUBBER, whose `oninput`
+is `set(v,'')` — an empty `how`, so `moment` is false. The entire `if(moment)`
+block had **never executed** in 269 base frames, 1,345 layer frames or 807 control
+frames. A refactor could have deleted the caption chain and the golden would have
+called the page unchanged. Two play passes were added first (default and
+`?layer=slot`, 270 frames each; the pill moves through **15** and **29** distinct
+states), and only then did the code move. ⚠️ **The first draft of that pass was
+DECORATIVE** — captured, stored, never compared, so the tool printed *"rendered
+DOM unchanged"* while holding 538 new frames. That is the trap the comment one
+function above it already warns about, in its own words.
+
+✅ **Both instruments proven able to fail, on the same mutation, by different
+routes.** Promoting `kill` above `icing` in `announce.js` turns `#play/caption`
+red at **frame 62** — the one collision the game has — while the base, layer and
+control walks all stay green; and the pairwise sweep in `test/announce.test.js`
+reports *"a frame that is both icing and kill announced the lower of the two"*.
+
+⚠️ **Two more tests were anchored on source text and broke on a move that changed
+no behaviour** — fifth and sixth of that shape. One matched `captioned`'s body for
+`ENDED.has(e)` and is now a behavioural check that the kill caption gets more than
+the base pace; the other compared the ladder's maps against the predicate's terms,
+a disagreement that is **no longer stateable**, and was re-aimed at what survives:
+the switch's `case` labels and the rule's answers must be the same set, or a rank
+gets a pause with nothing drawn.
 
 ### ⭐ And a property of the golden, promoted out of the caveats
 

@@ -374,6 +374,10 @@ LIB = ["rink.js", "attribution.js", "layer.js", "strength.js", "box.js", "penalt
        "notes.js",
        # The goaltending cards. Markup only; the layer does the counting.
        "goalie-card.js",
+       # Which one thing a frame announces. Analysis: it decides what is most
+       # true of a frame and knows nothing about how any of it looks. No
+       # dependencies -- every condition it ranks arrives as an argument.
+       "announce.js",
        "layers/corsi.js", "layers/goaltending.js", "layers/danger.js", "layers/whistle.js",
        "layers/blocked.js",
        # BEFORE sentence.js, which asks it which competition a game is.

@@ -120,6 +120,32 @@ test('the app reduces through the extracted modules, not a copy', () => {
     'the hardcoded exclusion labels are gone');
 });
 
+test('the caption precedence is stated ONCE in the shipped page', () => {
+  /* ⭐⭐ THE SAME THREE ASSERTIONS AS `isNearMiss` ABOVE, FOR THE SAME REASON AND
+     WITH A SHARPER ONE UNDERNEATH. Until 2026-09-04 the ladder deciding which
+     sentence a frame gets lived in `render` as an `else if` chain, and
+     `captioned()` held the SAME six conditions as a disjunction. Two statements
+     of one rule, both shipped, and the page is only coherent while they agree:
+     `dwell` reads `captioned` to decide how long a frame lasts, so a condition
+     added to the ladder and forgotten in the predicate produces a caption with
+     no pause behind it — a sentence gone before it can be read, which is the
+     defect `docs/event-timing.md` exists about.
+     So: the page delegates, the bundle carries the rule, and the bundle states
+     it once. The last is the one that would have caught the old shape. */
+  assert.ok(app.includes('function captioned(e){return announcement(e,rank())!==null;}'),
+    'captioned() no longer asks the precedence rule — if it has grown its own copy '
+    + 'of the conditions, that is the two-statements shape coming back');
+  assert.match(app, /function announcement\(e, \{ isIcing, isOffside, isKill, isSlot, slotOn \}\)/,
+    'the precedence rule is missing from the bundle');
+  for (const [rank, once] of [['goal', /return 'goal'/g], ['penalty', /return 'penalty'/g],
+                              ['icing', /return 'icing'/g], ['offside', /return 'offside'/g],
+                              ['kill', /return 'kill'/g], ['slot', /return 'slot'/g]])
+    assert.equal((app.match(once) || []).length, 1,
+      `the shipped page decides "${rank}" in more than one place`);
+  assert.ok(!/else if\(cur&&ICING\.has\(cur\)\)/.test(app),
+    'the old inline caption ladder is still in the bundle');
+});
+
 test('no ES module syntax leaks into the browser bundle', () => {
   // The modules import each other; the browser gets them concatenated. A stray
   // `import` line is a blank page, and a self-contained artifact has no console

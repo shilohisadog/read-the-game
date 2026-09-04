@@ -35,6 +35,7 @@ import { workMarkup } from './lib/work.js';
 import { eventMarks, puckMark, shotLine } from './lib/marks.js';
 import { iceNote, situationsNote, trailsNote } from './lib/notes.js';
 import { goalieCards } from './lib/goalie-card.js';
+import { announcement } from './lib/announce.js';
 import { judgeable, mostUnusual } from './lib/distribution.js';
 import { corsi } from './lib/layers/corsi.js';
 import { goaltending, isHighDangerEvent } from './lib/layers/goaltending.js';
@@ -703,61 +704,52 @@ function render(i,how){
       nothing for an unlocated event; in either case the ice says nothing and
       the pill is the goal's only announcement. Asking the same two questions
       here is what keeps "the ice already says it" true rather than assumed. */
-   if(cur&&cur.type==='goal'){flashNet(cur.own);
-     if(!place(cur))caption(cur,'goal');}
-   // THE PENALTY IS CALLED, and it is the only event here that changes the
-   // CONDITIONS of the game rather than the count. It is why `Even strength
-   // only` exists as a control at all, and until now the ice marked it exactly
-   // as loudly as a giveaway -- a `LAB[]` label and nothing else. Found by
-   // asking the index's question ("which events does this page give a moment of
-   // their own?") of a renderer that turned out to have only two answers.
-   //
-   // `own` IS THE OFFENDING TEAM, checked rather than assumed: across the
-   // reference game's eight penalties, the skater count in `sit` drops for
-   // `own`'s side on the very next event, eight times out of eight. The caption
-   // says who took it and stops there -- at THIS frame the team is not yet a
-   // skater short (`sit` still reads 1551), so any sentence about the power play
-   // would be a claim about the future dressed as a description.
-   else if(cur&&cur.type==='penalty'){caption(cur,'penalty');}
-   /* ⭐⭐ A WHISTLE OUTRANKS A CLOCK, AND THIS REVERSES A DECISION I MADE ON
-      2026-08-31. Icing used to sit UNDER the kill, argued on rarity: "a kill is
-      rarer -- 3.3 a game against 7.8 -- and a power play ending is the bigger
-      change of state." Both halves of that are still true and it is still the
-      wrong order, for a reason that only became available after the pill shipped.
-
-      THE PILL ALREADY CARRIES THE CONDITION. A power play ending turns the
-      scoreboard badge dark, on screen, at that frame -- so the kill caption is an
-      AMPLIFIER of a signal the page already gives. An icing or an offside has no
-      other surface at all: the stoppage is not even a frame (`SKIP` drops it), so
-      the restart is the only place the rule can ever be named. Given one pill and
-      two facts, it goes to the fact with nowhere else to go.
-
-      AND THE WRONG ORDER IS ACTIVELY MISLEADING, not merely a missed fact. "🛡
-      Penalty killed" on a face-off offers the reader an explanation for a whistle
-      it did not cause -- and no penalty expiry produces a face-off. Naming the
-      offside is silent about the kill; naming the kill invites a false inference.
-
-      ⚠️ THE COST, AS A COUNT AND NOT A RATE: in the reference game 1 of 4 kill
-      captions lands on a rule restart and is displaced. One game is not a rate,
-      and it is quoted as what it is. The collision is COINCIDENCE rather than
-      structure -- measured, because I assumed the opposite first: only 1 of those
-      4 kills lands on a face-off at all, since a penalty usually expires during
-      live play and the next recorded event is a hit or a shot.
-
-      ⚠️ AND THE OLD ORDER WAS NEVER EXERCISED. 0 of 8 icing restarts in the
-      reference game collide with a kill, so the branch that demoted icing had
-      never once run. It read as a decision and was an untested preference. */
-   else if(cur&&ICING.has(cur)){captionIcing(cur);}
-   else if(cur&&OFFSIDE.has(cur)){captionOffside(cur);}
-   /* ⭐ THE KILL SITS BELOW GOAL AND PENALTY AND ABOVE THE SLOT SHOT, and the
-      order is an argument rather than a preference. A goal or a penalty ON this
-      frame is the bigger news and both already have a sentence; a penalty here
-      also contradicts the kill, since a second infraction is what makes it
-      four-on-four rather than an expiry. The slot shot loses because it happens
-      many times a game and a kill happens 3.4 times, and because the slot layer
-      has the ice to say it with while this has nothing at all. */
-   else if(cur&&ENDED.has(cur)){captionEnded(cur);}
-   else if(cur&&hdOn&&isHD(cur)){lastHD=i;caption(cur,'hd');}}
+   /* ⭐⭐ WHICH FACT WINS IS DECIDED IN `announce.js`, AND THE ARGUMENT FOR THE
+      ORDER LIVES THERE WITH IT. It used to be an `else if` ladder here, each rung
+      carrying a paragraph on why it outranks the next -- a whistle outranking a
+      clock, a penalty contradicting the kill it displaces. CHENG's ruling is that
+      a precedence rule is ANALYSIS: it decides what is most true of a frame, and
+      would be identical if the caption were read aloud. What is left here is the
+      composing, which is presentation and is all this switch does.
+      ⭐ AND IT ENDED A RULE STATED TWICE. `captioned()` held the same six
+      conditions as a disjunction, so a seventh added to the ladder and forgotten
+      there would have brought back the defect that predicate exists to prevent --
+      a caption with no pause behind it. One rule now, two readers. */
+   switch(announcement(cur,rank())){
+     /* ⭐ THE GOAL PILL IS NOT DRAWN WHEN THE ICE IS ALREADY SAYING IT.
+        Kevin, looking at the front door: the pill "is redundant and doesn't add
+        any information to the event". He is right about a goal -- `drawLabel` has
+        its own branch for one, naming the SCORER AND THE ASSISTS, which is more
+        than the pill carries. The same sentence twice, eight inches apart.
+        AND ONLY A GOAL, WHICH IS THE PART WORTH SAYING OUT LOUD. The pill fires
+        for three moments, and the other two are not duplicates: `LAB` has no
+        `goal` key but it does have `penalty`, so the ice says "CAR · Penalty"
+        while only the pill says WHO TOOK IT; and for a slot shot the ice says
+        "CAR · Shot on goal" while only the pill says "⚡ Shot from the slot" --
+        the one place the site names the region now painted on the ice.
+        THE CONDITION IS drawLabel's OWN GUARD, not a copy of its reasoning.
+        `labelsOn` is a control the viewer can switch off, and `place()` returns
+        nothing for an unlocated event; in either case the ice says nothing and
+        the pill is the goal's only announcement. Asking the same two questions
+        here is what keeps "the ice already says it" true rather than assumed.
+        ⚠️ THE NET FLASH IS NOT CONDITIONAL AND MUST NOT BECOME SO -- it fires on
+        every goal, including the located ones the pill stays quiet for. */
+     case 'goal': flashNet(cur.own); if(!place(cur))caption(cur,'goal'); break;
+     // THE PENALTY IS CALLED. `own` IS THE OFFENDING TEAM, checked rather than
+     // assumed: across the reference game's eight penalties, the skater count in
+     // `sit` drops for `own`'s side on the very next event, eight times out of
+     // eight. The caption says who took it and stops there -- at THIS frame the
+     // team is not yet a skater short (`sit` still reads 1551), so any sentence
+     // about the power play would be a claim about the future dressed as a
+     // description.
+     case 'penalty': caption(cur,'penalty'); break;
+     case 'icing': captionIcing(cur); break;
+     case 'offside': captionOffside(cur); break;
+     case 'kill': captionEnded(cur); break;
+     /* `lastHD` is the playhead's memory of the last slot shot ANNOUNCED, so it
+        is set where the announcement happens and nowhere else. */
+     case 'slot': lastHD=i; caption(cur,'hd'); break;
+   }}
  prevA=a;prevH=h;
  sayWho(cur);
  $('per').textContent=periodLabel(cur);$('clk').textContent=cur?cur.rem:'20:00';
@@ -1130,17 +1122,25 @@ function set(v,how){i=Math.max(-1,Math.min(EV.length-1,v));$('scrub').value=i;re
    clamps, so a press at either end is already harmless -- but a button that
    accepts a press and does nothing is a button that says the page is broken. */
 function syncStep(){$('back').disabled=i<=-1;$('fwd').disabled=i>=EV.length-1;}
-/* WHICH FRAMES SPEAK. The ONE place that answers it -- `render` calls this to
-   decide whether to caption, and `dwell` calls it to decide how long the frame
-   lasts. Two readers, one answer, so they cannot drift: that drift is the whole
-   subject of docs/event-timing.md. `hdOn` is in here on purpose; a slot shot
-   with the layer off is a frame that says nothing, and it must be paced as one. */
-/* ⚠️ AND THE PENALTY KILL IS IN HERE, WHICH IS THE WHOLE POINT OF THE SEAM. A
-   caption added to `render` alone would fire on a frame this function calls
-   silent, so `dwell` would give it an ordinary frame's time -- a sentence that
-   appears and is gone before it is read, which is the exact defect this
-   predicate was extracted to make impossible, running in the other direction. */
-function captioned(e){return !!e&&(e.type==='goal'||e.type==='penalty'||ENDED.has(e)||ICING.has(e)||OFFSIDE.has(e)||(hdOn&&isHD(e)));}
+/* THE CONDITIONS THE PRECEDENCE RULE RANKS, read at the moment of asking.
+   ⚠️ BUILT FRESH ON EVERY CALL, AND THAT IS NOT AN OVERSIGHT. `hdOn` is a live
+   control -- a viewer turning the slot layer on changes which frames speak, and
+   an object captured once would answer with the layer state the page was booted
+   into. The three Maps are properties of the GAME and never move; the flag is a
+   property of the moment, and this is the seam where the two meet. */
+function rank(){return {isIcing:e=>ICING.has(e),isOffside:e=>OFFSIDE.has(e),
+                        isKill:e=>ENDED.has(e),isSlot:isHD,slotOn:hdOn};}
+/* WHICH FRAMES SPEAK. The ONE place that answers it -- `render` calls
+   `announcement` to decide WHICH sentence, and `dwell` calls this to decide how
+   long the frame lasts. Two readers, one answer, so they cannot drift: that drift
+   is the whole subject of docs/event-timing.md.
+   ⭐ AND IT IS NOW LITERALLY THE SAME RULE, not a second statement of it. This
+   used to be a disjunction of the same six conditions the caption ladder tested
+   in order, which is one rule written twice -- so a seventh condition added to
+   the ladder and forgotten here would produce a caption `dwell` gives an ordinary
+   frame's time to: a sentence gone before it is read, which is the exact defect
+   this predicate exists to make impossible, running in the other direction. */
+function captioned(e){return announcement(e,rank())!==null;}
 /**
  * ⭐ DOES SOMETHING PERMANENT ALREADY PUT THIS EVENT'S PLAYER ON SCREEN?
  *

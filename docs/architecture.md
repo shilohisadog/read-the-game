@@ -41,12 +41,12 @@ header, and §4 records what it cost us the one time we did it anyway.
 | **acquisition** | talks to the league, stores bytes | `fetch_nhl.py` | 611 |
 | **interpretation** | feed → events; the two gates | `extract.py` | 857 |
 | **orchestration** | walks the store, judges, writes documents | `derive.py` | 729 |
-| **analysis** | events → meaning; pure, no DOM, no network | `src/lib/**` (32 modules) | 6,337 |
+| **analysis** | events → meaning; pure, no DOM, no network | `src/lib/**` (33 modules) | 6,457 |
 | **measurement** | the archive, reduced by the SAME modules | `measure.mjs` | 428 |
-| **presentation** | generates the pages | `build_*.py` (9) | 3,967 |
+| **presentation** | generates the pages | `build_*.py` (9) | 3,971 |
 | **the app** | **the one exception — see §2** | `src/app.js` | 3,096 |
 
-<sub>Counted 2026-09-04 by `tools/tiers.mjs`, checked by `npm run gates`. The analysis tier is **32 modules** and **not one of them touches the DOM, the network or the filesystem** — the boundary §1 claims, verified here rather than asserted. `src/app.js` **declares 24 dependencies on that tier and exports 1 function** — it is a module, not a build template, and §2 is what remains. Of its 3,096 lines **2,228 are comment-only and 767 are code**, and **161 comment lines carry an explicit claim** about the code beside them — which is §2's argument, counted rather than asserted.</sub>
+<sub>Counted 2026-09-04 by `tools/tiers.mjs`, checked by `npm run gates`. The analysis tier is **33 modules** and **not one of them touches the DOM, the network or the filesystem** — the boundary §1 claims, verified here rather than asserted. `src/app.js` **declares 25 dependencies on that tier and exports 1 function** — it is a module, not a build template, and §2 is what remains. Of its 3,096 lines **2,228 are comment-only and 771 are code**, and **162 comment lines carry an explicit claim** about the code beside them — which is §2's argument, counted rather than asserted.</sub>
 <!-- /tiers -->
 
 ---
@@ -118,11 +118,20 @@ harness runs the BUILT bundle through `new Function`, so a mutant in a source
 module never executes there. **An extracted cluster is only reachable if a test
 imports it directly**, and `app.js` itself never becomes reachable — it shrinks.
 
-✅ **Six clusters are out as of 2026-09-04** — `why.js`, `esc.js`, `work.js`,
-`marks.js`, `notes.js`, `goalie-card.js`, 609 lines. `render()` went from 328
-lines to 196 and `app.js` from 3,368 to 3,095. Every move left the rendered DOM
+✅ **Seven clusters are out as of 2026-09-04** — `why.js`, `esc.js`, `work.js`,
+`marks.js`, `notes.js`, `goalie-card.js`, `announce.js`. `render()` went from 328
+lines to 187 and `app.js` from 3,368 to 3,095. Every move left the rendered DOM
 identical, checked by `test/dom-golden.test.js` across the base game, five layer
-walks, three control walks and a click pass.
+walks, three control walks, a click pass and **two full plays of the replay**.
+
+⭐⭐ **AND THE SEVENTH IS THE ONE THAT SHOWS WHAT THIS IS FOR, BECAUSE IT SHRANK
+NOTHING.** The caption precedence moved out at **66 lines inserted and 66 deleted
+in `app.js` — net zero**, and `announce.js` is **11 lines of code carrying 96
+lines of comment**. Judged on size the move did nothing. What it did was put an
+argument where it can be *executed*: the ladder is now asked all fifteen of its
+pairwise collisions, of which the reference game contains **one**. That is §2's
+thesis arriving as a measurement — the prose was never the problem, its being
+unreachable was.
 
 ⭐ **THE SPLIT IS `return markup` VERSUS `write to document`**, which is CHENG's
 ruling and needed no new tier: `rinkart.js` was already presentation and nobody
@@ -264,7 +273,7 @@ measure the substrate.**
 
 | | |
 |---|---|
-| **`app.js` decomposition** | §2. Module 2026-09-04; **six clusters out the same day**, `render` 328 → 196 lines. What remains is wiring plus the caption chain, which needs a tier decision first — `step2-decomposition.md` Q6 |
+| **`app.js` decomposition** | §2. Module 2026-09-04; **seven clusters out the same day**, `render` 328 → 187 lines. The caption chain was the last non-wiring code and is out — CHENG ruled precedence is analysis. ⏭ What remains in `render` is wiring, and the open question is whether that is the end of it or whether wiring itself wants a shape |
 | ~~the `SX` guard is over-broad~~ | ✅ **Answered 2026-09-04.** CHENG ruled the guard should test the property, not the directory, and `test/sx-scope.test.js` now walks the dependency graph down from each layer's `reduce()`. ⚠️ **But it did not REPLACE the directory ban, because measuring said not to:** the six layers' closures are 10 of 26 modules, and `census.js` — where every published archive figure is counted — is outside them. Both checks run. The `AX` workaround was a separate mistake and survives the fix; see `step2-decomposition.md` §0.5 |
 | **coverage blindness** | `new Function` in `test/helpers/page.js`; independent of §2 |
 | **rink constants** | Mostly closed. `89`, `33` and the slot's `22 ft` are gone — the why-popup reads `NET_X`, `HIGH_DANGER_FT` and `SLOT_HALF_WIDTH` from `rink.js`. What survives is `42.5`, half the rink's width, in three places: the why-popup's own mini-rink transform and two emitted SVG attributes. ⛔ The `22` still in the file is **22 degrees** off straight-on and is deliberately not `SLOT_HALF_WIDTH` |

@@ -92,7 +92,55 @@ export function capture() {
   });
   const el = fold(frames);
   return { frames: frames.length, elements: Object.keys(el).length, el,
-           popup: popupPass(), layers: layerPass(el), controls: controlPass(el) };
+           popup: popupPass(), layers: layerPass(el), controls: controlPass(el),
+           play: playPass(el) };
+}
+
+/**
+ * ⛔⛔ FOURTH TIME, AND THIS ONE WAS CAUGHT BY THE RULE RATHER THAN AFTER THE FACT.
+ *
+ * Every walk above drives the SCRUBBER: `every()` sets `scrub.value` and fires
+ * `oninput`, which is `set(+e.target.value,'')` — an empty `how`. So `moment` is
+ * false in all 269 base frames, all 1,345 layer frames and all 807 control
+ * frames, and **the entire caption chain inside `if(moment)` has never once
+ * executed in this fixture.** The pill, the net flash, the icing and offside
+ * sentences, the penalty-killed caption: none of them are in any of those
+ * hashes. A refactor could have deleted the lot and every walk above would have
+ * agreed the page was unchanged.
+ *
+ * ⭐ The header's rule is what found it: before moving code, check that a walk
+ * renders it. `#whyContent` needed a click, `#workBody` a choice, the mark loop's
+ * period branch a control off its default — and this needs the replay to actually
+ * be PLAYING. **A scrub and a play are two different pages.**
+ *
+ * Two passes, because the ladder's bottom rung is behind a layer: the default
+ * game reaches goal, penalty, icing, offside and penalty-killed captions, and
+ * `?layer=slot` is the only way a slot shot ever speaks.
+ */
+function playPass(base) {
+  const out = {};
+  for (const [name, query] of [['play', ''], ['play?layer=slot', '?layer=slot']]) {
+    const a = boot(null, null, query);
+    const snap = () => {
+      const o = {};
+      for (const [id, el] of a.byId) o[id] = state(el);
+      return o;
+    };
+    a.$('play').click();
+    const frames = [snap()];
+    while (a.advance(1) === 1) frames.push(snap());
+    /* The real loop or nothing. `advance` returns how many frames actually ran,
+       so a play pass that captured one frame and stopped would be a fixture
+       claiming coverage it does not have — the same failure this whole function
+       exists because of. */
+    if (frames.length < 100)
+      throw new Error(`the play walk ran ${frames.length} frames — the replay is not playing`);
+    const full = fold(frames), el = {};
+    for (const [id, v] of Object.entries(full))
+      if (JSON.stringify(v) !== JSON.stringify(base[id])) el[id] = v;
+    out[name] = { frames: frames.length, el };
+  }
+  return out;
 }
 
 /**
@@ -264,8 +312,15 @@ export function differences(gold, made) {
   /* AND EVERY LAYER'S OWN WALK. Compared per layer so a message names which one
      moved -- "the work panel changed" over five layers is a sentence a reader
      then has to go and disambiguate by hand. */
+  /* ⚠️ AND THE PLAY PASS IS IN THIS LIST, WHICH IT WAS NOT IN ITS FIRST DRAFT —
+     captured, stored, and never compared, so 538 play frames sat in the fixture
+     proving nothing and the tool printed "rendered DOM unchanged". That is the
+     failure the paragraph above the popup comparison already warns about, in the
+     function directly above this one. A walk that is not in this loop is not a
+     walk; it is a bigger file. */
   for (const [kind, gw, mw] of [['layer', gold.layers || {}, made.layers || {}],
-                               ['control', gold.controls || {}, made.controls || {}]])
+                               ['control', gold.controls || {}, made.controls || {}],
+                               ['moment', gold.play || {}, made.play || {}]])
     for (const name of [...new Set([...Object.keys(gw), ...Object.keys(mw)])].sort()) {
       if (!gw[name]) { out.push({ id: `${kind}:${name}`, at: null, was: '(not captured)', now: 'present' }); continue; }
       if (!mw[name]) { out.push({ id: `${kind}:${name}`, at: null, was: 'present', now: '(not captured)' }); continue; }

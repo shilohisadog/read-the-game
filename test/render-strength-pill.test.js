@@ -32,7 +32,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { app, PAGE_CSS, boot, rich } from './helpers/page.js';
+import { app, PAGE_CSS, boot, rich, paceOf } from './helpers/page.js';
 import { stints } from '../src/lib/box.js';
 import { powerPlayOver } from '../src/lib/strength.js';
 import { icingRestarts, offsideRestarts } from '../src/lib/layers/whistle.js';
@@ -396,8 +396,31 @@ test('⭐ a kill is a captioned frame, so the pace gives it room', () => {
   // A caption wired into `render` alone would appear and vanish inside an
   // ordinary frame — the same defect docs/event-timing.md exists about, running
   // backwards. This asserts the predicate itself carries the kill.
-  assert.match(app, /function captioned\(e\)\{return[^}]*ENDED\.has\(e\)/,
-    'the end of a power play is captioned by the renderer but invisible to `dwell`');
+  /* ⚠️ THIS USED TO BE A SOURCE SCAN — `/function captioned\(e\)\{return[^}]*
+     ENDED\.has\(e\)/` — and 2026-09-04 broke it by making the claim TRUE in a
+     different shape: the precedence rule moved to `announce.js` and `captioned`
+     became `announcement(e,rank())!==null`, so the term it was matching is now a
+     predicate handed in rather than a name in that function's body. The page was
+     right and the test was wrong, which is what a check coupled to the FILING
+     rather than to the CLAIM does. Fifth of that shape in two days.
+     ⭐ SO IT ASKS THE REAL QUESTION INSTEAD: play the reference game and find the
+     frames where the kill caption was WRITTEN, then assert each was given more
+     than the base pace. That is the property — a sentence with time to be read —
+     and it holds however the predicate is spelled. `wrote` is the write COUNT,
+     not the text: the pill is never cleared, so its content persists across
+     later frames and matching on the html alone would count silent frames as
+     speaking ones. */
+  const rows = paceOf(269).rows;
+  const base = Math.min(...rows.map(r => r.ms));
+  const spoke = rows.filter((r, k) => k > 0 && r.wrote > rows[k - 1].wrote
+                                   && /🛡 Penalty killed/.test(r.html));
+  assert.ok(spoke.length > 0,
+    'no penalty-killed caption was written in a full walk of the reference game — '
+    + 'this test has lost its subject, not found a passing page');
+  for (const r of spoke)
+    assert.ok(r.ms > base,
+      `the kill caption at frame ${r.i} got the ordinary ${r.ms}ms, so the end of a `
+      + 'power play is captioned by the renderer and invisible to `dwell`');
   // AND IT IS ONE MAP, COMPUTED ONCE — a per-frame recomputation would re-derive
   // every stint on all 269 frames.
   /* ⭐ KEYED ON `sayAt`, NOT `at`. A transition surfacing ON a goal waits one
