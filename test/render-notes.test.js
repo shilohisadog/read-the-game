@@ -68,7 +68,7 @@ test('the game page ships the same nav as the front page', () => {
 
   // AND THE LEDE IS BACK, in its own words rather than the front page's.
   assert.match(app.replace(/<!--[\s\S]*?-->/g, ''),
-    /<h1 class="pagelede">Learn to read hockey[^<]*add metrics after<\/h1>/,
+    /<h1 class="pagelede">Learn to read hockey[^<]*add layers after<\/h1>/,
     'the game page lost the sentence that says what to do on it');
 
   // ⚠️ AND NOTHING SHIPPED A MARKER. `str.replace` cannot fail — it just does not
@@ -566,7 +566,14 @@ test('the game line is part of the scoreboard, and the gate can still read it', 
   const headings = [...clean.matchAll(/<summary class="zh">([^<]*)|<span class="pklab">([^<]*)|<span class="nowlab">([^<]*)/g)]
     .map(m => (m[1] || m[2] || m[3]).trim()).filter(Boolean);
   const watchy = headings.filter(h => /watch/i.test(h));
-  assert.deepEqual(watchy, ['Watching'],
+  /* ⭐ AT MOST ONE, NOT EXACTLY `['Watching']`. The claim Kevin reported is a
+     COUNT — three variants of one word stacked in 220px — so the check is on the
+     count, and pinning the surviving heading's text made it a check on a name
+     as well. 2026-09-05 renamed that heading to `Layers` and this went red for
+     the wrong reason: zero satisfies "no stack" perfectly. The rename was the
+     vocabulary fix — the page said metrics, Watching, and metric layer for one
+     concept — and a guard about crowding should not have an opinion about it. */
+  assert.ok(watchy.length <= 1,
     `${watchy.length} headings say "watch" — the stack Kevin measured was three: ${JSON.stringify(headings)}`);
 
   // ⚠️ AND THE LINE ITSELF IS UNTOUCHED, which is what keeps the deploy gate
@@ -1216,12 +1223,21 @@ test('each half of the greeting names the thing it is about', () => {
   // its position, because a position is a constant that drifts with the next
   // viewport. Read from the BUILT SUMMARY rather than typed here twice: rename
   // the control and this fails instead of the sentence quietly going stale.
-  const summary = /<summary class="zh">([^<]+)</.exec(
-    app.slice(app.indexOf('id="zLayers"')))[1].trim();
+  /* ⛔ IT NAMES THE PICKER NOW, NOT THE PARKED MENU, AND THAT WAS A REAL DEFECT.
+     This used to read the summary of `#zLayers` — and `app.css` carries
+     `#rg .zlayers{display:none}`, so the pitch quoted a control no visitor could
+     see, from the day that menu was parked. The quotation matched the markup
+     exactly the whole time and this assertion passed on both halves of a broken
+     instruction. **A quotation is only as true as the thing it quotes is
+     visible**, and no string comparison can hold that. The picker is the control
+     that is actually on the page, so it is the one the pitch has to name. */
+  const heading = /<span class="pklab">([^<]*)</.exec(app)[1].trim();
   const a2 = boot();
-  assert.ok(summary.length > 4, `the layer menu summary is not a label: "${summary}"`);
-  assert.ok(a2.$('newcomerWhy').innerHTML.includes(summary),
-    `the pitch does not name the control it is asking for — it says nothing matching "${summary}"`);
+  assert.ok(heading.length > 3, `the picker heading is not a label: "${heading}"`);
+  assert.doesNotMatch(PAGE_CSS, /#rg \.pickrow\{[^}]*display:\s*none/,
+    'the pitch names the picker and the picker is hidden — the defect this replaced');
+  assert.ok(a2.$('newcomerWhy').innerHTML.includes(heading),
+    `the pitch does not name the control it is asking for — it says nothing matching "${heading}"`);
   assert.doesNotMatch(a2.$('newcomerWhy').innerHTML, /\b(above|below|beneath|under) the rink\b/i,
     'the pitch asserts a position, which is the constant that drifted at 360px');
   // Both halves retire together: one class, one dismissal, no half-greeted state.

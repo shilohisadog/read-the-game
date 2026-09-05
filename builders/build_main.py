@@ -56,7 +56,7 @@ __CSS__</style>
      the first-visit block replaced on measured grounds (576px -> 305px). Taking
      the name back for a different element would have left that guard passing on
      a page that no longer contains what it was written to keep out. -->
-<h1 class="pagelede">Learn to read hockey · event by event first, add metrics after</h1>
+<h1 class="pagelede">Learn to read hockey · event by event first, add layers after</h1>
 <div class="newcomer" id="newcomer"></div>
 <div class="board">
   <p class="foot" id="gl">—</p>
@@ -153,7 +153,7 @@ __CSS__</style>
        every frame. -->
   <div class="work" id="workPanel" hidden><button class="wx" id="workClose" type="button">Hide the work</button><div id="workBody"></div></div>
 </div>
-<details class="zone zlayers" id="zLayers"><summary class="zh">Add a metric layer<span class="zon" id="zLayersOn"></span></summary>
+<details class="zone zlayers" id="zLayers"><summary class="zh">Add a layer<span class="zon" id="zLayersOn"></span></summary>
 <div class="lrows">
 <button class="lrow" id="lyCorsi" data-pick="corsi" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Attempts</b><span class="lds">every shot attempt the league recorded: on goal, missed, or blocked, because all three are the team moving the puck at the net</span><span class="lon">The box below the ice counts every attempt for each club as the replay runs.</span><span class="lat">A blocked attempt is credited to the club that shot it &mdash; the shot was still taken, it just never arrived.</span></span><span class="st" id="stCorsi">Off</span></button>
 <button class="lrow" id="lyHd" data-pick="slot" aria-pressed="false"><span class="lmk"><i class="k-hd"></i></span><span class="ltx"><b>Slot shots</b><span class="lds">attempts from within 33 ft of the net, between the face-off dots</span><span class="lon">An amber ring marks each one. Click a ring to see the distance and angle it was measured by.</span><span class="lat">Credited to the club that shot. Blocked attempts are excluded because the coordinate the feed records is where the puck stopped &mdash; so we know who shot it, but not from where.</span></span><span class="st" id="stHd">Off</span></button>
@@ -198,7 +198,7 @@ __CSS__</style>
      group reads as another transport control. This sits with the thing that SETS
      the moment, and the confirmation names the moment it copied. -->
 <div class="sharerow"><button class="share" id="share" type="button">Copy a link to this moment</button><span class="sharesaid" id="sharesaid" role="status" aria-live="polite"></span></div>
-<div class="pickrow" role="radiogroup" aria-label="Which metric is on the ice" id="pickrow"><span class="pklab">Watching</span><button class="pk" id="pkNone" data-l="none" role="radio" aria-checked="true"><span class="pkl">Just events</span></button><span class="pksep" aria-hidden="true"></span><button class="pk" id="pkCorsi" data-l="corsi" role="radio" aria-checked="false"><span class="pkl">Attempts</span><span class="pkn" id="n_corsi">0</span></button><button class="pk" id="pkSlot" data-l="slot" role="radio" aria-checked="false"><span class="pkl">Slot</span><span class="pkn" id="n_slot">0</span></button><button class="pk" id="pkBlocked" data-l="blocked" role="radio" aria-checked="false"><span class="pkl">Blocked</span><span class="pkn" id="n_blocked">0</span></button><button class="pk" id="pkGoalie" data-l="goaltending" role="radio" aria-checked="false"><span class="pkl">Goaltending</span><span class="pkn" id="n_goaltending">0</span></button><button class="pk" id="pkWhistle" data-l="whistle" role="radio" aria-checked="false"><span class="pkl">Stoppages</span><span class="pkn" id="n_whistle">0</span></button></div>
+<div class="pickrow" role="radiogroup" aria-label="Which layer is on the ice" id="pickrow"><span class="pklab">Layers</span><button class="pk" id="pkNone" data-l="none" role="radio" aria-checked="true"><span class="pkl">Just events</span></button><span class="pksep" aria-hidden="true"></span><button class="pk" id="pkCorsi" data-l="corsi" role="radio" aria-checked="false"><span class="pkl">Attempts</span><span class="pkn" id="n_corsi">0</span></button><button class="pk" id="pkSlot" data-l="slot" role="radio" aria-checked="false"><span class="pkl">Slot</span><span class="pkn" id="n_slot">0</span></button><button class="pk" id="pkBlocked" data-l="blocked" role="radio" aria-checked="false"><span class="pkl">Blocked</span><span class="pkn" id="n_blocked">0</span></button><button class="pk" id="pkGoalie" data-l="goaltending" role="radio" aria-checked="false"><span class="pkl">Goaltending</span><span class="pkn" id="n_goaltending">0</span></button><button class="pk" id="pkWhistle" data-l="whistle" role="radio" aria-checked="false"><span class="pkl">Stoppages</span><span class="pkn" id="n_whistle">0</span></button></div>
 <p class="lcap" id="lcap"></p>
 <!-- ⭐ THE WORK PANEL MOVED INTO `.rinkbox` ON 2026-08-31 AND IS NOW AN OVERLAY.
      Kevin, playing through a game: "I clicked on show me the work and the

@@ -2271,9 +2271,27 @@ function drawBlocked(B,L,slice){
    two in the first place. So the halves are no longer adjacent, and the reader
    is given the one thing that survives a layout change: the control's own label,
    quoted verbatim, the same way the other half quotes `▶ Play from start`.
-   It is a constant read by a test against the summary in the built page, so the
-   day someone renames the control this sentence fails rather than lying. */
-const LAYER_MENU='Add a metric layer';
+
+   ⛔ AND IT USED TO QUOTE A CONTROL THE PAGE DOES NOT SHOW. The constant here was
+   `'Add a metric layer'` — the summary of `#zLayers`, which `app.css` sets to
+   `display:none` when that menu was parked on 2026-08-27. So the one sentence on
+   the first visit that says WHERE to go named something no visitor could find,
+   and it stayed correct as a quotation the whole time: the string matched the
+   markup exactly, and the test asserting the pitch names the control passed on
+   both halves of a broken instruction. **A quotation is only as true as the
+   thing it quotes is visible**, which is not a property any string comparison
+   can hold. It now names the picker, which is the control that is actually on
+   the page. */
+/**
+ * The selector's own heading, read off the page rather than retyped.
+ *
+ * ⭐ ONE READER FOR TWO SENTENCES. The greeting says where to go and the empty
+ * layer box says what to do; both name this control, and a second hand-typed copy
+ * is how the two start disagreeing after a rename. §27.2's rule, applied once
+ * instead of twice.
+ */
+function pickLabel(){const l=document.querySelector('#rg .pklab');
+ return l&&l.textContent?l.textContent.trim():null;}
 function drawNewcomer(){
  const el=$('newcomer'); if(!el)return;
  const R2=RATES&&RATES.baseRates&&RATES.baseRates.moreAttemptsLost;
@@ -2319,7 +2337,7 @@ function drawNewcomer(){
  if(w)w.innerHTML=`<b>Why add a layer?</b> Because the obvious reading of a game is often `
   +`the wrong one.`+why
   +`<span class="nwhy">Every layer shows its work — the events it counted, the ones it did `
-  +`not, and why. Open <b>${LAYER_MENU}</b> to switch one on.</span>`;
+  +`not, and why. Choose one under <b>${pickLabel()||'Layers'}</b> to switch it on.</span>`;
  $('nDone').addEventListener('click',()=>{
   // An explicit dismissal outranks the counter, and it is remembered. A tip you
   // cannot turn off is an advert.
@@ -2572,10 +2590,9 @@ function lboxFor(id,at,L){
      THE HEADING IS READ FROM THE PAGE, never retyped, which is §27.2's rule
      applied to a second surface: if the selector is renamed the prompt renames
      itself, and if the heading disappears the fallback still makes sense. */
-  const lab=document.querySelector('#rg .pklab');
-  const w=lab&&lab.textContent?lab.textContent.trim():null;
-  return {...none,n:w?`Choose a metric under ${w} and this fills in as the replay runs.`
-                    :'Choose a metric and this fills in as the replay runs.'};}
+  const w=pickLabel();
+  return {...none,n:w?`Choose one under ${w} and this fills in as the replay runs.`
+                    :'Choose one and this fills in as the replay runs.'};}
  if(at<0){
   // BEFORE THE FIRST EVENT THERE IS NOTHING TO COUNT, and zeroes would be a
   // claim rather than a blank. Same rule as the split bar refusing to draw a

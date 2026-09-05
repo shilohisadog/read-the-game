@@ -905,11 +905,25 @@ working page reported "NOT BOOTED" twice. The chips are what boot writes. Fourth
 instance of a check built from a model of the thing rather than an instrument
 pointed at it.
 
-⏸ **OPEN: half the arrivals are nearly invisible.** Faceoffs, hits, giveaways,
-takeaways and penalties all render as a one-foot grey dot at 20% opacity —
-**134 of 269 events in the reference game, 49.8%**. So the circle often points at
-a spot where almost nothing appears. That is a strong candidate for *why the
-stream reads as nothing*, independent of anticipation, and it is Kevin's call.
+❌ **WITHDRAWN 2026-09-05 — THIS CLAIM WAS FALSE WHEN IT WAS WRITTEN.** It said
+faceoffs, hits, giveaways, takeaways and penalties render as a one-foot grey dot
+at 20% opacity — *"the circle often points at a spot where almost nothing
+appears"* — on **134 of 269 events, 49.8%**. The share is real and the conclusion
+is not. **The puck is drawn at the current event's exact coordinates on all 134 of
+them**, `#0e1216` with a white stroke at `r=1.5` against the dim mark's `r=1`, so
+the viewer sees a clear black dot on every frame. Both the puck and
+`#rg .excl{opacity:.2}` have been in the stylesheet since 2026-08-20, so this was
+never true. ⚠️ **The dimming only shows on ACCUMULATED marks, and trails are off by
+default** — in the base view nothing but the current event is drawn at all.
+
+⭐⭐ **HOW IT HAPPENED, because the shape recurs: the measurement read `#events`
+alone and the conclusion was about the PAGE.** `test/fixtures/dom-golden.json`
+captures 86 elements; the question was asked of one. **Kevin killed it by looking
+at the site** — *"the dots are clear, the next play is clear"* — which is the same
+instrument that has caught every rendering claim this suite cannot see. Beside
+the coverage gap, the fit gate grading an error page, and a walk covering only the
+states it booted into: **an instrument covers less than its name implies**, and a
+slice of a page is not the page.
 
 ### A3c. The outline comes off — 2026-08-30
 
@@ -1006,10 +1020,9 @@ parked, and only a browser could see it.
 silently querying nothing. Two selector tables needed it — `helpers/page.js` and
 `deeplink-render.js` keep separate ones on purpose.
 
-⏸ **STILL OPEN: half the arrivals are nearly invisible** — 134 of 269, 49.8%,
-drawn at 20% opacity. The ring often points at a spot where almost nothing
-appears, and that is a candidate for *why the stream reads as nothing*
-independent of anticipation. Kevin's call.
+❌ **WITHDRAWN 2026-09-05 — the claim was false when written**, see §A3. The
+49.8% is real; the conclusion was not. The puck is drawn at the current event's
+own coordinates on every one of those frames, so the ice is never blank.
 
 ## A5. The census — BUILT 2026-08-30, waiting on a derive run
 
