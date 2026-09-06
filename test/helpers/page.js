@@ -18,6 +18,30 @@
  * hidden by a stylesheet. That claim belongs to the browser — tools/pixels.sh
  * locally and the browser step in deploy.yml — and is checked there rather than
  * assumed here.
+ *
+ * ⛔⛔ AND THE SECOND BLIND SPOT, WHICH IS A WHOLE CLASS: **THE FAKE DOM CANNOT
+ * FAIL ON ABSENCE.** `getElementById` INVENTS an element for any id it has never
+ * heard of — `if (!byId.has(id)) byId.set(id, el())` — so a page that queries an
+ * element which does not exist in the markup gets a working stub instead of the
+ * `null` a browser returns. Two consequences, and both have bitten:
+ *
+ *   • Any test whose subject is *this element exists* or *this did not throw* is
+ *     measuring nothing here. It passes on a page that ships neither.
+ *   • A DELETION EXPERIMENT run against this fake reports success no matter what
+ *     was deleted. On 2026-09-06 the whole `#zLayers` block was removed and the
+ *     page booted clean here; re-run with `getElementById` returning `null` for
+ *     the removed ids — which is what a browser does — it throws at boot with
+ *     `Cannot read properties of null (reading 'addEventListener')`.
+ *
+ * So: **to ask whether something is still needed, hand `boot` a document that
+ * returns `null` for what you removed.** The permissive default is right for the
+ * ordinary case — a test should not have to enumerate the page to read one
+ * element — and wrong for exactly the questions that are about absence.
+ *
+ * ⭐ It is the same property that once made `hidden === false` assertions
+ * vacuous, and `el()` still refuses to invent `hidden` for that reason. The
+ * fix there was to leave a field undefined so an assertion demands a real write.
+ * There is no equivalent for ids, because inventing them is the feature.
  */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';

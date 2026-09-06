@@ -125,7 +125,6 @@ const ENUMERATED = {
   zLayersOn: 'the zone summary said what was on inside it',
   lyCorsi: 'the old row', lyHd: 'the old row', lyGoalie: 'the old row',
   lyWhistle: 'the old row', lyBlock: 'the old row',
-  nSit: 'the even-strength note, "N attempts have dropped out so far"',
   // ⭐ `work` AND `workPanel` LEFT THIS LIST ON 2026-08-27, and the second test
   // in this file is what said so — they moved out of the parked menu into the
   // layer box and the space under the rink, so their ledger lines were stale
@@ -184,4 +183,138 @@ test('parking the layer displays does not reach the front-door hero', () => {
     'the cbar park is not scoped away from the preview — the hero loses its bar');
   assert.doesNotMatch(CSS, /(?:^|[,\s])#rg\.corsi \.cbar\s*\{[^}]*display:none/,
     'an unscoped cbar park is still in the stylesheet');
+});
+
+/**
+ * ⛔⛔ AND A RULE THAT LIGHTS AN ELEMENT INSIDE A PARKED CONTAINER IS INERT.
+ *
+ * The strength control — *All situations / Even strength only* — was written
+ * into the layer menu by B2, on the ruling that a control follows the layer it
+ * belongs to. `#rg.corsi .figpick.sit{display:flex}` says exactly that and is
+ * still there. Then the menu was parked (`#rg .zlayers{display:none}`) and the
+ * control went with it. **A descendant cannot un-hide itself**, so the rule
+ * stayed correct and became inert: the buttons were wired at boot, `render`
+ * wrote their note into `#nSit` on every frame, and the filter was reachable
+ * only by typing `?strength=even` into the URL.
+ *
+ * ⭐⭐ TWO INSTRUMENTS, AND IT FELL BETWEEN THEM — which is the finding, not the
+ * defect. `layers.test.js` asserts the show-rule names exactly the layers whose
+ * reducers read `evenOnly`; it is right, it is derived from the reducer sources,
+ * and **it has no instrument for ancestry**. The check above this one walks
+ * ancestry — a tag stack, deliberately, "because ANCESTRY is the whole question"
+ * — and **only records elements that have an `id`**, because it models *live* as
+ * *the renderer writes to it by id*. The strength buttons are
+ * `<button class="lyr sbtn">`: no id, reached by `querySelectorAll`. So one
+ * instrument could not see the axis and the other could not see the element.
+ * Neither was wrong. **The gap was their intersection**, and that is a different
+ * failure from a check being too weak.
+ *
+ * ⚠️ `#nSit` WAS ON THE LEDGER THE WHOLE TIME, which is the part worth sitting
+ * with. The instrument fired, a human wrote *"the even-strength note"* beside it,
+ * and the enumeration was accepted — without anyone asking whether the CONTROL
+ * that note describes had gone dark too. **Enumerating is not the same as
+ * reading what you enumerated.**
+ *
+ * The rule here needs no ledger, because unlike a dark write it can never be
+ * intentional: a declaration that cannot take effect is a declaration someone
+ * believes is taking effect.
+ */
+test('⛔⛔ no rule tries to light an element that a parked ancestor hides', () => {
+  const dark = darkClasses(CSS);
+  assert.ok(dark.length > 0, 'no parked containers found — the darkness model has no subject');
+
+  /* ⭐ THE SIGNAL IS A STATE-GATED REVEAL, NOT ANY STYLED DESCENDANT, and the
+     first draft got that wrong: it flagged `#rg .pb` inside `.pboxes` and
+     `#rg .cc` inside `.counters` — ordinary layout on children of a container
+     that is parked on purpose, which is not a lie about anything. Nine
+     offenders, one real. A checker that reports everything buries the finding.
+
+     What cannot be intentional is the pair: a class with a `display:none`
+     DEFAULT and a separate context that turns it on. That pair says *this is off
+     until something switches it on* — and inside a parked ancestor the switch
+     can never fire. `.figpick.sit` is exactly that shape:
+     `#rg .figpick.sit{display:none}` plus `#rg.corsi .figpick.sit{display:flex}`. */
+  const off = new Set(), on = new Map();
+  for (const [sel, val] of displayContexts(CSS)) {
+    const m = [...sel.matchAll(/\.([\w-]+)/g)];
+    if (!m.length) continue;
+    const cls = m[m.length - 1][1];
+    if (val === 'none') off.add(cls); else on.set(cls, sel);
+  }
+  const lit = new Map([...on].filter(([c]) => off.has(c)));
+  assert.ok(lit.size > 0,
+    'no state-gated reveals found at all — the scan is broken, not the page');
+
+  /* Walk the markup for any element carrying one of those classes while sitting
+     inside a parked container. Same tag-stack walk as `buriedIds`, asking about
+     CLASSES rather than ids — which is the half that was missing. */
+  const VOIDT = VOID, stack = [], bad = [];
+  for (const m of PAGE.matchAll(
+    /<!--[\s\S]*?-->|<(\/?)([a-zA-Z][\w:-]*)((?:"[^"]*"|'[^']*'|[^>"'])*?)(\/?)>/g)) {
+    if (m[0].startsWith('<!--')) continue;
+    const [, close, tag, attrs, selfclose] = m;
+    if (close) {
+      for (let k = stack.length - 1; k >= 0; k--)
+        if (stack[k].tag === tag) { stack.length = k; break; }
+      continue;
+    }
+    const cls = (/class="([^"]*)"/.exec(attrs) || [, ''])[1].split(/\s+/).filter(Boolean);
+    const under = stack.filter(s => s.cls.some(c => dark.includes(c)));
+    if (under.length && !cls.some(c => dark.includes(c)))
+      for (const c of cls)
+        if (lit.has(c))
+          bad.push(`${lit.get(c)} — but .${c} sits inside ${under.map(s => '.' + s.cls.join('.')).join(' > ')}`);
+    if (!VOIDT.has(tag) && !selfclose) stack.push({ tag, cls });
+  }
+
+  /**
+   * ⭐ THE ACCEPTED ONES, WITH REASONS — the same shape as the ledger above and
+   * for the same reason: an inert reveal inside a zone parked ON PURPOSE is not
+   * a defect, it is a rule left behind with its zone. What is a defect is one
+   * nobody listed. Un-parking a zone should DELETE lines here, never leave them.
+   */
+  const INERT = {
+    lds: 'the layer definitions, parked with the old menu — the COPY is still read '
+       + 'out of this markup by renderWork and printed in show-me-the-work, so the '
+       + 'text is live and only its own display rule is inert',
+    asay: 'inside .zref, "What the marks mean", parked 2026-08-27',
+    legend: 'inside .zref, likewise — the legend keys moved into the layer box',
+    figpick: 'inside .zdisp, "Trails", parked with its zone; the .sit variant left '
+           + 'this list on 2026-09-06 when the strength control was moved out',
+  };
+  const unlisted = [...new Set(bad)].filter(b => !(b.match(/\.([\w-]+) sits inside/) || [])[1]
+                                             || !(INERT[b.match(/\.([\w-]+) sits inside/)[1]]));
+
+  assert.deepEqual(unlisted, [],
+    'these rules set a display that cannot take effect, because an ancestor is parked. '
+    + 'A descendant cannot un-hide itself, so the rule reads as shipped and does nothing — '
+    + 'either move the element out of the parked container or delete the rule that lies about it.');
+});
+
+test('⭐ …and that check is proven able to fail, against the defect as it shipped', () => {
+  /* THE CONTROL, AND IT IS THE REAL MARKUP. `.figpick.sit` put back inside a
+     parked `.zlayers`, with the show-rule untouched — which is the tree exactly
+     as it stood at 22800e3. If this stops being caught, the check above has
+     stopped asking about ancestry. */
+  const dark = ['zlayers'];
+  const lit = new Map([['sit', '#rg.corsi .figpick.sit']]);
+  const html = '<div id="rg"><details class="zone zlayers">'
+             + '<div class="figpick sit"><span class="fnote" id="nSit"></span></div>'
+             + '</details></div>';
+  const stack = [], bad = [];
+  for (const m of html.matchAll(/<(\/?)([a-zA-Z][\w:-]*)((?:"[^"]*"|[^>"])*?)(\/?)>/g)) {
+    const [, close, tag, attrs, selfclose] = m;
+    if (close) {
+      for (let k = stack.length - 1; k >= 0; k--)
+        if (stack[k].tag === tag) { stack.length = k; break; }
+      continue;
+    }
+    const cls = (/class="([^"]*)"/.exec(attrs) || [, ''])[1].split(/\s+/).filter(Boolean);
+    const under = stack.filter(s => s.cls.some(c => dark.includes(c)));
+    if (under.length && !cls.some(c => dark.includes(c)))
+      for (const c of cls) if (lit.has(c)) bad.push(c);
+    if (!VOID.has(tag) && !selfclose) stack.push({ tag, cls });
+  }
+  assert.deepEqual(bad, ['sit'],
+    'the ancestry check does not catch the defect in the shape it actually shipped in');
 });

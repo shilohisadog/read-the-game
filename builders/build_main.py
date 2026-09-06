@@ -161,9 +161,7 @@ __CSS__</style>
 <button class="lrow" id="lyWhistle" data-pick="whistle" aria-pressed="false"><span class="lmk"><i class="k-wh"></i><i class="k-rl"></i></span><span class="ltx"><b>Stoppages</b><span class="lds">the rule that stopped play, and the dot it restarted on</span><span class="lon">The ring marks where play restarted, brightest at the most recent stoppage. The bar lights the line the rule names — for icing the centre line and the far goal line, for offside the blue line. The box below the ice counts them and names the most recent one &mdash; with no figure for either club, because a stoppage names a rule and never a team.</span><span class="lat">A stoppage names a rule and never a club, so nothing here is credited to either side.</span></span><span class="st" id="stWhistle">Off</span></button>
 <button class="lrow" id="lyBlock" data-pick="blocked" aria-pressed="false"><span class="lmk"><i class="k-blk"></i><i class="k-blkv"></i></span><span class="ltx"><b>Blocked shots</b><span class="lds">the attempts a body stopped before they reached the goalie</span><span class="lon">Blocked attempts keep their ring and every other mark dims, so the ones a body stopped stand out. The box below the ice credits each block to the club that MADE it, the way a broadcast does. A block by a teammate is credited to neither club, so the two figures need not add up to the total.</span><span class="lat">Each block is credited to the club that made it, the way a broadcast does. A block by a teammate is credited to neither, so the two figures need not add up.</span></span><span class="st" id="stBlock">Off</span></button>
 </div>
-<div class="figpick sit"><span class="ll">Situations:</span>
-<div class="grp" role="group" aria-label="Which situations are counted"><button class="lyr sbtn" data-s="all" aria-pressed="true">All situations</button><button class="lyr sbtn" data-s="even" aria-pressed="false">Even strength only</button></div>
-<span class="fnote" id="nSit"></span></div>
+
 <div class="hint">Tip: click any shot ringed in amber to see <b>why</b> it counts as a slot shot — with trails set to <b>keep every mark</b>, earlier ones stay clickable too.</div>
 </details>
 <p class="icenote" id="iceNote"></p>
@@ -199,6 +197,18 @@ __CSS__</style>
      the moment, and the confirmation names the moment it copied. -->
 <div class="sharerow"><button class="share" id="share" type="button">Copy a link to this moment</button><span class="sharesaid" id="sharesaid" role="status" aria-live="polite"></span></div>
 <div class="pickrow" role="radiogroup" aria-label="Which layer is on the ice" id="pickrow"><span class="pklab">Layers</span><button class="pk" id="pkNone" data-l="none" role="radio" aria-checked="true"><span class="pkl">Just events</span></button><span class="pksep" aria-hidden="true"></span><button class="pk" id="pkCorsi" data-l="corsi" role="radio" aria-checked="false"><span class="pkl">Attempts</span><span class="pkn" id="n_corsi">0</span></button><button class="pk" id="pkSlot" data-l="slot" role="radio" aria-checked="false"><span class="pkl">Slot</span><span class="pkn" id="n_slot">0</span></button><button class="pk" id="pkBlocked" data-l="blocked" role="radio" aria-checked="false"><span class="pkl">Blocked</span><span class="pkn" id="n_blocked">0</span></button><button class="pk" id="pkGoalie" data-l="goaltending" role="radio" aria-checked="false"><span class="pkl">Goaltending</span><span class="pkn" id="n_goaltending">0</span></button><button class="pk" id="pkWhistle" data-l="whistle" role="radio" aria-checked="false"><span class="pkl">Stoppages</span><span class="pkn" id="n_whistle">0</span></button></div>
+<!-- ⛔ THE SITUATIONS CONTROL LIVES HERE BECAUSE ITS ANCESTOR WAS PARKED.
+     B2 put it inside the layer menu so it would follow the layer, and
+     `#rg.corsi .figpick.sit{display:flex}` still says exactly that. Then the
+     menu was parked on 2026-08-27 -- `#rg .zlayers{display:none}` -- and a
+     descendant cannot un-hide itself, so the rule stayed correct and became
+     inert. The control was wired, its note was written on every frame, and
+     neither could be seen; the filter was reachable only by typing
+     `?strength=even`. It sits beside the picker now, which is the control it
+     modifies and the surface that replaced the menu. -->
+<div class="figpick sit"><span class="ll">Situations:</span>
+<div class="grp" role="group" aria-label="Which situations are counted"><button class="lyr sbtn" data-s="all" aria-pressed="true">All situations</button><button class="lyr sbtn" data-s="even" aria-pressed="false">Even strength only</button></div>
+<span class="fnote" id="nSit"></span></div>
 <p class="lcap" id="lcap"></p>
 <!-- ⭐ THE WORK PANEL MOVED INTO `.rinkbox` ON 2026-08-31 AND IS NOW AN OVERLAY.
      Kevin, playing through a game: "I clicked on show me the work and the

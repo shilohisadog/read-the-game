@@ -1,5 +1,55 @@
 # `#zLayers` — what is actually in the parked menu
 
+> ## ✅ THE DEFECT IS FIXED — 2026-09-06. Q11 is RULED and NOT YET BUILT.
+>
+> The strength control now sits beside the picker, out of the parked container.
+> **Seen in a real browser, not reasoned about:** base view `display:none` / 0px;
+> Attempts on → `display:flex`, **339×141px at 390** and **896×46px at 1100**, no
+> side-scroll at either; turning the layer off puts it away again. `§B2` in
+> `status.md` carries the correction.
+>
+> ⭐⭐ **AND THE FINDING WAS NOT WHAT EITHER OF US SAID.** CHENG's hypothesis was
+> that `park.test.js` enumerates a fixed list. **It does not** — `darkClasses`
+> reads the stylesheet, `buriedIds` walks the markup with a tag stack precisely
+> *"because ANCESTRY is the whole question"*. It derives. The real shape:
+>
+> - `layers.test.js` asserts the show-rule names exactly the layers whose reducers
+>   read `evenOnly` — derived from the reducer sources, correct, and **blind to
+>   ancestry**.
+> - `park.test.js` walks ancestry and **records only elements with an `id`**,
+>   because it models *live* as *the renderer writes to it by id*. The strength
+>   buttons are `<button class="lyr sbtn">`.
+>
+> **Neither check was wrong. The gap was their intersection** — one could not see
+> the axis, the other could not see the element. That is a different failure from
+> a check being too weak, and it is why "add a stronger check" was the wrong
+> instinct.
+>
+> ⚠️ **`#nSit` was on park's ledger the whole time**, with the sentence *"the
+> even-strength note"*. The instrument fired; a human wrote the reason and
+> accepted the exception; nobody asked whether the **control** that note describes
+> had gone dark with it. **Enumerating is not the same as reading what you
+> enumerated.**
+>
+> ✅ `park.test.js` gained a third check: **no rule may set a display that a
+> parked ancestor makes inert.** The signal is a *state-gated reveal* — a class
+> with a `display:none` default and a separate context switching it on — because
+> the first draft flagged nine rules of which one was real, and a checker that
+> reports everything buries the finding. Proven red against the defect restored to
+> the real tree, and it names it: `#rg.blocked .figpick.sit — but .sit sits inside
+> .zone.zlayers`.
+>
+> ⭐ **Q11 — ruled: the description belongs with the layer.** CHENG: *"a layer
+> object already carries `id`, `label` and its reduce function — `label` is
+> user-facing prose in the analysis tier today and nobody has flinched."*
+> **Verified: `Object.keys(corsi)` is `id label reduce`, and `corsi.label` is
+> `"＋ Control (Corsi)"`.** The line: *the layer owns what it counts and why; the
+> page owns how that reads.* ⏭ **Not built** — the copy is still in the markup.
+
+---
+
+*Below is the report as it stood before the ruling.*
+
 **For CHENG. 2026-09-05. Short, because the finding is short and one part of it
 is live.**
 
