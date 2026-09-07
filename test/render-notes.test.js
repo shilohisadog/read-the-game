@@ -1060,7 +1060,18 @@ test('a first-time viewer is told where to click, and why', () => {
   // and pushed the play button itself below the fold — the block told a first-
   // time viewer to press something that was not on their screen.
   const t = a.$('newcomer').innerHTML, w = a.$('newcomerWhy').innerHTML;
-  assert.match(t, /Play from start/, 'never says where to click');
+  /* ⭐⭐ THE GREETING IS CHECKED AGAINST THE BUTTON, NOT AGAINST A LITERAL. This
+     read `/Play from start/` until 2026-09-07 — which pins the WORDS and says
+     nothing about the relationship the greeting's own comment claims ("the
+     control's own label, quoted verbatim"). That comment also records the
+     quotation drifting once already, to a control the page had stopped showing.
+     A test that cannot tell a correct quotation from a stale one is not a test
+     about quotation. */
+  const label = (/<button class="play" id="play">([^<]+)</.exec(app) || [, ''])[1].trim();
+  assert.ok(label.length > 2, 'the play button has no label to quote');
+  assert.ok(t.includes(label),
+    `the greeting tells a first-time viewer to press something the button does not `
+    + `say. Button: "${label}"`);
   assert.match(w, /Why add a layer\?/, 'never says why to click there');
   // "What's Corsi and why do I care" — answered with the archive's own inversion,
   // which is the site's reason to exist and had appeared NOWHERE a visitor to
@@ -1121,7 +1132,8 @@ test('a page that reaches no archive still says where to click', () => {
   // orientation must survive without it rather than vanishing with it.
   const a = boot();
   const t = a.$('newcomer').innerHTML;
-  assert.match(t, /Play from start/);
+  const label = (/<button class="play" id="play">([^<]+)</.exec(app) || [, ''])[1].trim();
+  assert.ok(t.includes(label), 'the offline page quotes a button label that is not on it');
   assert.doesNotMatch(t, /loses more often/, 'an archive claim was made with no archive');
 });
 

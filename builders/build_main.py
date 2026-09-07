@@ -212,7 +212,7 @@ __CSS__</style>
 <p class="endnote" id="endnote"></p>
 <p class="icenote" id="iceNote"></p>
 
-<div class="transport"><button class="play" id="play">▶ Play from start</button>
+<div class="transport"><button class="play" id="play">▶ Play</button>
   <div class="grp" role="group" aria-label="Step through the events"><button class="spd stepb" id="back" aria-label="Previous event">◀ Prev event</button><button class="spd stepb" id="fwd" aria-label="Next event">Next event ▶</button></div>
   <div class="grp" role="group" aria-label="Replay speed"><button class="spd stepb" id="slower">&#9664; Slower</button><button class="spd stepb" id="faster">Faster &#9654;</button></div>
   <input class="scrub" id="scrub" type="range" min="-1" max="1" value="-1"></div>

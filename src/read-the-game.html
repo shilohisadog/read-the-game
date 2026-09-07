@@ -2010,7 +2010,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 <p class="endnote" id="endnote"></p>
 <p class="icenote" id="iceNote"></p>
 
-<div class="transport"><button class="play" id="play">▶ Play from start</button>
+<div class="transport"><button class="play" id="play">▶ Play</button>
   <div class="grp" role="group" aria-label="Step through the events"><button class="spd stepb" id="back" aria-label="Previous event">◀ Prev event</button><button class="spd stepb" id="fwd" aria-label="Next event">Next event ▶</button></div>
   <div class="grp" role="group" aria-label="Replay speed"><button class="spd stepb" id="slower">&#9664; Slower</button><button class="spd stepb" id="faster">Faster &#9654;</button></div>
   <input class="scrub" id="scrub" type="range" min="-1" max="1" value="-1"></div>
@@ -8554,7 +8554,20 @@ function step(){if(i>=EV.length-1){stop();return;}set(i+1,'play');timer=setTimeo
    ice. The opening frame is an orientation, not a countdown -- so Play leaves it
    at once, from either end. */
 function play(){if(i>=EV.length-1||i<0){prevA=0;prevH=0;set(0,'play');}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);timer=setTimeout(step,dwell(EV[i]));}
-function stop(){playing=false;$('play').textContent=i<0?'▶ Play from start':i>=EV.length-1?'▶ Replay from start':'▶ Play';clearTimeout(timer);}
+/* ⭐ ALL THREE LABELS ARE SHORT, AND THAT IS A LAYOUT GUARANTEE AS WELL AS A COPY
+   CHOICE. Kevin, 2026-09-07: *"let's change the control button to just 'Play', I
+   can't remember why we have 'Play from start'."* Measured: `▶ Play from start`
+   is 157px wide against `▶ Play` at 76, and at 390 that rewraps the button row --
+   the transport went 156px to 210px on the pre-game frame, so the whole page
+   below it jumped 54px at the exact moment a first-time visitor pressed the
+   button. `▶ Replay` stays distinct at the horn because `Play` after the final
+   whistle names the wrong action, and it is short enough not to rewrap. */
+/* ⭐ ONE SOURCE FOR THE RESTING LABEL, because the first-visit greeting quotes it
+   and `builders/build_main.py` ships it as the button's pre-script text. Three
+   copies of a string a reader is told to look for is three chances to drift; the
+   markup copy is checked against this one in test/render-notes.test.js. */
+const PLAY_REST='▶ Play';
+function stop(){playing=false;$('play').textContent=i>=EV.length-1?'▶ Replay':PLAY_REST;clearTimeout(timer);}
 $('play').onclick=()=>playing?stop():play();
 /* THE OVERLAY IS THE BUTTON. It calls `play()` directly rather than synthesising a
    click on `#play`, because a forwarded click is a second path to the same state
@@ -9612,7 +9625,20 @@ function drawNewcomer(){
  // (obvious, so the viewer knows what they are looking at/for)".
  // THIS SENTENCE IS THE ONLY ONE OF THE THREE THAT SAYS WHAT TO DO WITH IT --
  // watch it -- so it is not a third copy of the definition.
- el.innerHTML=`<b>New here?</b> Press <b>▶ Play from start</b> and just watch — every event `
+ /* ⭐⭐ THE LABEL COMES FROM `PLAY_REST`, WHICH IS ALSO WHAT SETS THE BUTTON. The
+    comment two hundred lines up already claims this sentence quotes the control
+    "verbatim" — and it was a second copy, so when the button became `▶ Play` on
+    2026-09-07 the greeting would have gone on naming a control no visitor could
+    find. That comment RECORDS that happening once already, with `Add a metric
+    layer`. A quotation with no link to its source is a copy waiting to drift.
+    ⚠️ AND THE FIRST FIX READ `$('play').textContent`, WHICH IS THE WRONG SEAM.
+    The fake document invents an element for any id and gives it an empty
+    `textContent`, so the guard `$('play') ? … : …` passed and the greeting
+    rendered `Press <b></b>` under test while a browser would have been fine —
+    the fake-DOM absence trap in a new costume, caught only because the test asks
+    the greeting to match the MARKUP's label rather than its own. A constant both
+    sides read needs no DOM at all. */
+ el.innerHTML=`<b>New here?</b> Press <b>${PLAY_REST}</b> and just watch — every event `
   +`is named as it happens, and goals are called with the <b>scorer and assists</b>. `
   +`The <b class="ncue">green shading</b> shows you where the next play happens, so you are `
   +`looking in the right place when it does. `
