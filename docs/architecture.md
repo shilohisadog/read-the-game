@@ -46,7 +46,7 @@ header, and §4 records what it cost us the one time we did it anyway.
 | **presentation** | generates the pages | `build_*.py` (9) | 3,981 |
 | **the app** | **the one exception — see §2** | `src/app.js` | 3,169 |
 
-<sub>Counted 2026-09-06 by `tools/tiers.mjs`, checked by `npm run gates`. The analysis tier is **33 modules** and **not one of them touches the DOM, the network or the filesystem** — the boundary §1 claims, verified here rather than asserted. `src/app.js` **declares 25 dependencies on that tier and exports 1 function** — it is a module, not a build template, and §2 is what remains. Of its 3,169 lines **2,300 are comment-only and 771 are code**, and **171 comment lines carry an explicit claim** about the code beside them — which is §2's argument, counted rather than asserted.</sub>
+<sub>Counted 2026-09-07 by `tools/tiers.mjs`, checked by `npm run gates`. The analysis tier is **33 modules** and **not one of them touches the DOM, the network or the filesystem** — the boundary §1 claims, verified here rather than asserted. `src/app.js` **declares 25 dependencies on that tier and exports 1 function** — it is a module, not a build template, and §2 is what remains. Of its 3,169 lines **2,301 are comment-only and 770 are code**, and **172 comment lines carry an explicit claim** about the code beside them — which is §2's argument, counted rather than asserted.</sub>
 <!-- /tiers -->
 
 ---
@@ -58,10 +58,10 @@ machine that does not admit it is one**, and that is the single genuine
 architectural inconsistency in the project.
 
 The shape of it: **one function**. `boot()` opens on the first shipped line and
-closes on the last, and its **26 mutable bindings are its locals** — verified by
+closes on the last, and its **25 mutable bindings are its locals** — verified by
 reading every site, not by a scanner, after five scanners disagreed. ⭐ The hand
 audit that found 25 had missed `gear`, a mid-line declaration, for the same
-reason the original regex missed `lastHD`. So nothing
+reason the original regex missed `lastHD`. ✅ **`lastHD` itself is gone as of 2026-09-07** — written by the caption chain's slot branch and read nowhere, dead since before the decomposition and deliberately left through it, because *a cleanup folded into a move is a cleanup nobody reviewed*. That is 26 → 25. So nothing
 here needs *encapsulating*; it already is. What is missing is an **interface**:
 one very large reader (`render`, touching eleven of those bindings across 328
 lines) and writers spread across the file, with nothing to assert against.

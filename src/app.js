@@ -789,9 +789,7 @@ function render(i,how){
      case 'icing': captionIcing(cur); break;
      case 'offside': captionOffside(cur); break;
      case 'kill': captionEnded(cur); break;
-     /* `lastHD` is the playhead's memory of the last slot shot ANNOUNCED, so it
-        is set where the announcement happens and nowhere else. */
-     case 'slot': lastHD=i; caption(cur,'hd'); break;
+     case 'slot': caption(cur,'hd'); break;
    }}
  /* ⭐⭐ UPDATED ON EVERY FRAME, INCLUDING A SCRUB, AND THAT IS THE WHOLE POINT.
     These two are the only temporal state left in the drawing path: the flash
@@ -1632,10 +1630,12 @@ document.querySelectorAll('#rg .cc.a .lb').forEach(n=>n.childNodes[0].nodeValue=
 document.querySelectorAll('#rg .cc.h .lb').forEach(n=>n.childNodes[0].nodeValue=HAB+' attempts');
 
 /* `HX`/`HY` -- the popup's own mini-rink transform -- moved to src/lib/why.js
-   with the markup they serve. `lastHD` is dead (written once, read nowhere) and
-   is left exactly as it was: this change is a MOVE, and a cleanup folded into it
-   is a cleanup nobody reviewed. */
-let lastHD=null;
+   with the markup they serve.
+   ⭐ `lastHD` IS GONE (2026-09-07). It was written by the slot branch of the
+   caption chain and read nowhere -- dead since before the decomposition, and
+   left in place through it on purpose: that change was a MOVE, and a cleanup
+   folded into a move is a cleanup nobody reviewed. Removed on its own, which is
+   the whole reason it was left. */
 /* ⭐⭐ THE POPUP THAT SAYS "you can check it" MUST APPLY THE RULE IT DESCRIBES.
    ⚠️ IT DID NOT, AND THE GAP WAS A WHOLE CLAUSE. `isHighDanger` has THREE:
    within 33 ft, within ±22 ft of centre, and IN FRONT OF THE GOAL LINE — the

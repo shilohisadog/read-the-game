@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Ockzrf7eQfg3o0y4QStvy8SDxfsL3KBMEc4mf5M0oGI=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-OO0qRv56Kh3sPdJLLOwOWqulEFxfX35KkDPDBU2IxTQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-UnRlxEP/qPNR/SAsVQ7T15Yfk3bvGEY0lXa8Ko0Qu28=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-OO0qRv56Kh3sPdJLLOwOWqulEFxfX35KkDPDBU2IxTQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">Watch a game</a><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see</a><a href="/workshop.html">Workshop</a></nav></header>
@@ -7972,9 +7972,7 @@ function render(i,how){
      case 'icing': captionIcing(cur); break;
      case 'offside': captionOffside(cur); break;
      case 'kill': captionEnded(cur); break;
-     /* `lastHD` is the playhead's memory of the last slot shot ANNOUNCED, so it
-        is set where the announcement happens and nowhere else. */
-     case 'slot': lastHD=i; caption(cur,'hd'); break;
+     case 'slot': caption(cur,'hd'); break;
    }}
  /* ⭐⭐ UPDATED ON EVERY FRAME, INCLUDING A SCRUB, AND THAT IS THE WHOLE POINT.
     These two are the only temporal state left in the drawing path: the flash
@@ -8815,10 +8813,12 @@ document.querySelectorAll('#rg .cc.a .lb').forEach(n=>n.childNodes[0].nodeValue=
 document.querySelectorAll('#rg .cc.h .lb').forEach(n=>n.childNodes[0].nodeValue=HAB+' attempts');
 
 /* `HX`/`HY` -- the popup's own mini-rink transform -- moved to src/lib/why.js
-   with the markup they serve. `lastHD` is dead (written once, read nowhere) and
-   is left exactly as it was: this change is a MOVE, and a cleanup folded into it
-   is a cleanup nobody reviewed. */
-let lastHD=null;
+   with the markup they serve.
+   ⭐ `lastHD` IS GONE (2026-09-07). It was written by the slot branch of the
+   caption chain and read nowhere -- dead since before the decomposition, and
+   left in place through it on purpose: that change was a MOVE, and a cleanup
+   folded into a move is a cleanup nobody reviewed. Removed on its own, which is
+   the whole reason it was left. */
 /* ⭐⭐ THE POPUP THAT SAYS "you can check it" MUST APPLY THE RULE IT DESCRIBES.
    ⚠️ IT DID NOT, AND THE GAP WAS A WHOLE CLAUSE. `isHighDanger` has THREE:
    within 33 ft, within ±22 ft of centre, and IN FRONT OF THE GOAL LINE — the
