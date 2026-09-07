@@ -203,7 +203,19 @@
    gap behind. It sits directly under the scoreboard because that is where the
    `ATTACKS →` arrows are, and this sentence is what those arrows mean. */
 #rg .endnote:empty{display:none}
-#rg .endnote{margin:0 0 10px;padding:9px 13px;border-radius:9px;border:1px solid var(--edge);border-left:3px solid var(--blue);background:#fff;color:var(--ink);font-size:.84rem;line-height:1.45}
+/* ⭐⭐ AN OVERLAY, SO A NOTE ABOUT THE ICE CANNOT MOVE THE ICE. In the flow above
+   the card this was 0px when empty and 59px when not, and it shifted the drawing
+   69px at 390 on 15 of 269 frames. `position:absolute` takes it out of the flow
+   entirely -- the same answer the work panel already uses, for the same reason,
+   in its own words: "the flow is untouched and nothing below the card moves when
+   it opens". `:empty{display:none}` above still hides it; what changed is that
+   its presence now costs no layout at all. */
+/* ⭐ UNDER THE ICE, IN THE FLOW, AND NOT ABOVE IT. Above the card this note was
+   0px when empty and 59px when not, and it moved the drawing 69px at 390 on 15 of
+   269 frames. An overlay was tried and reverted: at 390 the rink is 164px tall and
+   this is 59px of it, so it covered the thing it is a caption for. See the markup
+   in builders/build_main.py. */
+#rg .endnote{margin:10px 0 0;padding:9px 13px;border-radius:9px;border:1px solid var(--edge);border-left:3px solid var(--blue);background:#fff;color:var(--ink);font-size:.84rem;line-height:1.45}
 #rg .endnote .disp{color:var(--muted)}
 #rg .atnote:empty{display:none}
 #rg .atnote{margin:0 0 10px;padding:9px 13px;border-radius:9px;border:1px solid var(--edge);background:#fbf6ee;color:var(--ink);font-size:.88rem}

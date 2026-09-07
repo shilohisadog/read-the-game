@@ -85,7 +85,6 @@ __CSS__</style>
   </div>
   <div class="tm h"><span class="ab" id="hAb">&mdash;</span><span class="sc" id="hSc">0</span><div class="pens" id="penH"></div></div>
 </div>
-<p class="endnote" id="endnote"></p>
 <p class="atnote" id="atnote"></p>
 <div class="rinkbox"><svg viewBox="0 0 200 85"><g id="rink"></g><g id="netmen"></g><g id="lines"></g><g id="whistles"></g><g id="cue"></g><g id="events"></g><g id="puck"></g><g id="labels"></g><g id="noplace"></g></svg>
   <!-- ⭐⭐ THE ACTIVE PLAYER, DIRECTLY UNDER THE DRAWING. Kevin, 2026-09-07,
@@ -189,10 +188,30 @@ __CSS__</style>
      clicking a slot ring. The Tip is the only content in that list, it was
      invisible for eleven days, and it is in git if it is wanted back. -->
 
-<p class="icenote" id="iceNote"></p>
 <div class="whistlepanel" id="whistlePanel"></div>
 <div class="blockpanel" id="blockPanel"></div>
 <div class="goalies" id="goaliePanel"></div>
+<!-- ⭐⭐ THE TWO ICE NOTES SIT UNDER THE ICE, AND NEITHER MAY MOVE IT. `#endnote`
+     was ABOVE the rink card until 2026-09-07, in the flow, 0px tall when empty
+     and 59px when not -- so on 15 of 269 frames of the reference game it pushed
+     the drawing, and everything below it, down 69px at 390 and 50px at 1920. The
+     rink had two y-positions during an ordinary game, and the rink is the thing
+     the viewer is watching.
+     ⛔ AND AN OVERLAY WAS TRIED FIRST AND IS WRONG, which only LOOKING said. The
+     work panel's own comment argues for it -- "position:absolute, so the flow is
+     untouched and nothing below the card moves" -- and it is right about the
+     flow and wrong about this content. At 390 the rink is 164px tall and either
+     note is 56-59px, so the note blankets a third to a half of the ice, and
+     `#iceNote` is a CONDITION that holds for a whole empty-net sequence: the most
+     dramatic minute in hockey, played behind a paragraph. The work panel is a
+     surface a reader OPENS; these arrive unbidden.
+     ⭐ SO THEY GO BELOW THE CARD, WHICH COSTS NO PIXELS AND HIDES NOTHING. The ice
+     is now fixed at one position across every frame at every width. What still
+     moves when a note appears is the transport and below -- priced, stated, and
+     smaller than what it replaced. -->
+<p class="endnote" id="endnote"></p>
+<p class="icenote" id="iceNote"></p>
+
 <div class="transport"><button class="play" id="play">▶ Play from start</button>
   <div class="grp" role="group" aria-label="Step through the events"><button class="spd stepb" id="back" aria-label="Previous event">◀ Prev event</button><button class="spd stepb" id="fwd" aria-label="Next event">Next event ▶</button></div>
   <div class="grp" role="group" aria-label="Replay speed"><button class="spd stepb" id="slower">&#9664; Slower</button><button class="spd stepb" id="faster">Faster &#9654;</button></div>

@@ -1320,3 +1320,49 @@ test('a shots note whose sides all AGREE prints nothing', () => {
   assert.ok(!a.$('rg').classList.contains('unrec'));
   assert.equal(a.$('unrecKey').textContent, '');
 });
+
+test('⛔⛔ nothing that comes and goes sits above the ice', () => {
+  /* ⭐⭐ THE RINK MUST NOT MOVE, and until 2026-09-07 it did — twice a game.
+     `#endnote` sat between the scoreboard and the rink card with
+     `:empty{display:none}`, so it was 0px tall when silent and 59px when not.
+     Measured across the reference game at 390: on 15 of 269 frames it pushed the
+     drawing, and everything below it, down 69px (50px at 1920). The rink had two
+     y-positions during an ordinary game and nothing said so, because this suite
+     has no pixels and the golden walk cannot see a stylesheet.
+
+     ⛔ AN OVERLAY WAS TRIED AND REVERTED, and only LOOKING said so. `position:
+     absolute` takes the note out of the flow — the work panel argues exactly that
+     in its own comment — but at 390 the rink is 164px tall and either note is
+     56–59px of it, so the note covered the ice it is a caption FOR. `#iceNote` is
+     worse still: it is a CONDITION, on for a whole empty-net sequence. **The work
+     panel is a surface a reader opens; these arrive unbidden, and that is the
+     difference the flow argument missed.**
+
+     ⭐ SO THE RULE IS ABOUT POSITION, AND THAT IS WHAT A NODE TEST CAN HOLD. The
+     suite cannot measure a shift; it can insist that a variable-presence element
+     is never upstream of the drawing, which is the only way one can cause it. */
+  const box = app.indexOf('<div class="rinkbox">');
+  assert.ok(box > 0, 'the rink card has moved');
+
+  for (const id of ['endnote', 'iceNote']) {
+    const at = app.indexOf(`id="${id}"`);
+    assert.ok(at > 0, `#${id} is not on the page at all`);
+    assert.ok(at > box,
+      `#${id} is above the rink card again. It is empty on most frames and tall on `
+      + 'some, so in the flow up there it moves the drawing under the viewer — 69px '
+      + 'at 390 on 15 of 269 frames when this was last measured. Put it below the '
+      + 'card; an overlay was tried and it covers a third of the ice.');
+    /* ⚠️ AND NOT SOLVED BY TAKING IT OUT OF THE FLOW EITHER, which is the fix that
+       looks right on paper. Named here so the next person reads the reason rather
+       than rediscovering it on a phone. */
+    const rule = new RegExp(`#rg \\.${id === 'iceNote' ? 'icenote' : id}\\{[^}]*\\}`).exec(PAGE_CSS);
+    assert.ok(rule, `#${id} has no rule at all`);
+    assert.doesNotMatch(rule[0], /position:\s*absolute/,
+      `the ${id} is an overlay again — it hides the ice it describes, see the note above`);
+  }
+
+  /* AND THE CARD ITSELF STILL HOLDS THE SENTENCE, so this has not been "fixed" by
+     moving everything out of the card and leaving the drawing alone up there. */
+  assert.ok(app.indexOf('id="who"') > box && app.indexOf('id="who"') < app.indexOf('id="endnote"'),
+    'the active-player line has left the rink card');
+});
