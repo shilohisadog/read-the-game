@@ -18,6 +18,10 @@
  * Pixels remain Kevin's job; "does it execute at all" no longer is.
  */
 import test from 'node:test';
+/* ⭐ THROUGH THE PICKER. These clicked `lyCorsi`, a row in the layer menu that
+   was parked in August and deleted on 2026-09-07 — and the fake invents an
+   element for any id, so the clicks silently did nothing rather than failing.
+   `the layer appears` was the assertion that finally said so. */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { corsi } from '../src/lib/layers/corsi.js';
@@ -72,6 +76,13 @@ function makeDom() {
   const groups = {
     '#rg .sbtn': [{ s: 'all' }, { s: 'even' }],
     '#rg .fbtn': [{ f: 'mascot' }, { f: 'tabletop' }],
+    /* ⭐ THE PICKER, ADDED 2026-09-07 — and its absence is what the comment above
+       predicts. Layers were turned on here by clicking `lyCorsi`, a row in the
+       layer menu wired BY ID; the menu was deleted, the picker wires through
+       this group, and an unmodelled group left every chip inert. The tests did
+       not throw — they failed with "the layer appears", which is the symptom
+       this fake's own note says to expect. */
+    '#rg .pk': ['none', 'corsi', 'slot', 'blocked', 'goaltending', 'whistle'].map(l => ({ l })),
   };
   const made = {};
   for (const [sel, list] of Object.entries(groups)) {
@@ -95,7 +106,9 @@ function makeDom() {
     createElement: () => node(),
     addEventListener() {},
   };
-  return { document, nodes };
+  return { document, nodes,
+    /** Press a picker chip the way a viewer does, by its `data-l`. */
+    pick: l => made['#rg .pk'].find(n => n.dataset.l === l) };
 }
 
 /**
@@ -116,7 +129,7 @@ function toEnd(nodes) {
 }
 
 function run() {
-  const { document, nodes } = makeDom();
+  const { document, nodes, pick } = makeDom();
   const noop = () => {};
   const fn = new Function(
     'document', 'addEventListener', 'setTimeout', 'clearTimeout',
@@ -127,6 +140,11 @@ function run() {
   // app need to reach elements it touches lazily -- #rg is only looked up when a
   // layer is toggled -- so hand back the accessor too, not just the map.
   nodes.el = id => document.getElementById(id);
+  /* ⭐ `pick` RIDES ALONG ON THE MAP. `run()` returns the node map and every
+     caller destructures from it; the picker chips are found by `data-l` rather
+     than by id, so they cannot be reached through `get`. Attached here rather
+     than changing the return shape, which every test in this file reads. */
+  nodes.pick = pick;
   return nodes;
 }
 
@@ -228,7 +246,7 @@ test('turning on the Control layer renders the ledger, and it reconciles', () =>
   // Exercises the path behind the button, which is where renderWork lives and
   // where Phase 2's ledger is actually shown to anyone.
   const n = toEnd(run());   // these read a WATCHED game, so drive it there
-  n.get('lyCorsi').click();   // add the Control layer
+  n.pick('corsi').click();   // add the Control layer, through the picker
   n.get('work').click();      // then open "Show me the work"
   const w = String(n.get('workBody').innerHTML);
   assert.ok(w.length > 200, 'the panel has content');
@@ -279,7 +297,7 @@ test('the strength filter moves the numbers on screen, with the mode attached', 
 
 test('the ledger explains the filtered-out attempts, on screen', () => {
   const n = toEnd(run());   // these read a WATCHED game, so drive it there
-  n.get('lyCorsi').click();
+  n.pick('corsi').click();
   n.get('work').click();
   n.get('#rg .sbtn[1]').click();
   const w = String(n.get('workBody').innerHTML);
@@ -344,7 +362,7 @@ test('a metric added mid-replay catches up, tracks forward, and tears down', () 
 
   // Watch a while with nothing on, THEN get curious.
   at(120);
-  el('lyCorsi').click();
+  n.pick('corsi').click();
   assert.equal(visible(), true, 'the layer appears');
   assert.deepEqual(shown(), truth(120), 'and shows the count as it stood at that moment');
 
@@ -359,7 +377,10 @@ test('a metric added mid-replay catches up, tracks forward, and tears down', () 
   // work" over a panel that is no longer reachable.
   el('work').click();
   assert.equal(el('workPanel').hidden, false, 'the ledger opens');
-  el('lyCorsi').click();
+  /* ⭐ `none` IS HOW A LAYER GOES OFF NOW. The rows were toggles, so pressing the
+     same one twice turned it off; the picker is one-of-N and `none` is a real
+     choice on it, not the absence of one. */
+  n.pick('none').click();
   assert.equal(visible(), false, 'the layer is gone');
   assert.equal(el('workPanel').hidden, true, 'and it takes the ledger with it');
   assert.match(String(el('work').textContent), /Show me the work/, 'the button resets');
@@ -367,6 +388,6 @@ test('a metric added mid-replay catches up, tracks forward, and tears down', () 
   // Turning it back on somewhere else catches up again — not resumes from where
   // it was, which would show a count that never happened.
   at(60);
-  el('lyCorsi').click();
+  n.pick('corsi').click();
   assert.deepEqual(shown(), truth(60), 're-entry catches up to the new position');
 });

@@ -575,15 +575,15 @@ test('no reason a reader sees is written in maths', () => {
  * could disagree indefinitely. They are allowed to differ in length ("Slot"
  * against "Slot shots"); they are not allowed to be different words.
  */
-test('each row carries the same name as its chip', () => {
-  for (const token of ['corsi', 'slot', 'blocked', 'goaltending', 'whistle']) {
-    const rowHtml = app.match(new RegExp(`<button class="lrow"[^>]*data-pick="${token}"[\\s\\S]*?</button>`))[0];
-    const rowName = /<b>([^<]*)<\/b>/.exec(rowHtml)[1];
-    const chip = new RegExp(`<button class="pk"[^>]*data-l="${token}"[^>]*>(?:<span class="pkl">)?([^<]*)<`).exec(app)[1];
-    assert.ok(rowName.toLowerCase().includes(chip.toLowerCase()),
-      `the row calls this layer "${rowName}" and the chip calls it "${chip}"`);
-  }
-});
+/* ❌ RETIRED 2026-09-07 — "each row carries the same name as its chip" had TWO
+   names for one layer to keep in step, and there is one name now. The parked
+   layer rows were deleted with the menu, so the disagreement this guarded
+   against is unstateable rather than unchecked.
+   ⚠️ AND NO REPLACEMENT CLAIM EXISTS, which is worth saying rather than
+   inventing one: `corsi.label` is "＋ Control (Corsi)" and the chip says
+   "Attempts", and they differ ON PURPOSE — Kevin trimmed the chips. Asserting
+   they agree would fail correctly-shipped copy. */
+
 
 /**
  * ⭐ ATTRIBUTION AND LOCATION ARE DIFFERENT PROBLEMS, and the slot row said one

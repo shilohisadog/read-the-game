@@ -284,37 +284,55 @@ for (const [q, token, label] of [
 /* -------------------------------------------------------------- the layers */
 
 test('a link with a layer opens with that layer on, and the others off', () => {
+  /* ⭐ READ OFF THE PICKER, WHICH IS THE CONTROL A VISITOR HAS. This asserted
+     `aria-pressed` on the layer-menu rows until 2026-09-07, when the menu was
+     deleted — parked since August, and the picker under the scrubber has been
+     the real control since. The claim is unchanged: the link sets one layer and
+     exactly one. ⚠️ It kept passing against the deleted rows for a moment,
+     because the fake invents an element for any id and `undefined` is not
+     `'true'` — the checks that survive absence are the ones asserting a POSITIVE. */
   const d = open('?layer=whistle');
-  assert.equal(String(d.$('lyWhistle')['aria-pressed']), 'true');
+  assert.equal(checked(d, 'whistle'), 'true');
   assert.ok(d.$('rg').classList.contains('whistle'));
-  for (const id of ['lyCorsi', 'lyHd', 'lyGoalie']) off(d.$(id)['aria-pressed']);
+  for (const l of ['corsi', 'slot', 'goaltending']) off(checked(d, l));
 });
 
 /* SET EQUALITY over the tokens, then one boot per token. Written out rather
-   than inferred, so a layer that gains a URL token but no button -- or a button
+   than inferred, so a layer that gains a URL token but no chip -- or a chip
    whose token nothing answers to -- is a red test rather than a link that
    silently does nothing. The whistle case above is the same claim in detail;
    this is the one that will notice the FIFTH layer. */
-const BUTTON_OF = { corsi: 'lyCorsi', slot: 'lyHd', goaltending: 'lyGoalie', whistle: 'lyWhistle',
-                    blocked: 'lyBlock' };
+/** A chip's checked state, found the way the page finds it: by `data-l`. */
+const checked = (d, l) =>
+  String(d.GROUPS['#rg .pk'].find(b => b.dataset.l === l).getAttribute('aria-checked'));
+const BUTTON_OF = { corsi: 'corsi', slot: 'slot', goaltending: 'goaltending',
+                    whistle: 'whistle', blocked: 'blocked' };
 
-test('every layer token has a button, and every button a token', () => {
+test('every layer token has a chip, and every chip a token', () => {
   assert.deepEqual(Object.keys(BUTTON_OF).sort(), [...LAYER_TOKENS].sort());
 });
 
 for (const [token, id] of Object.entries(BUTTON_OF)) {
-  test(`?layer=${token} presses ${id} and nothing else`, () => {
+  test(`?layer=${token} checks its chip and nothing else`, () => {
     const d = open('?layer=' + token);
-    assert.equal(String(d.$(id)['aria-pressed']), 'true');
-    for (const other of Object.values(BUTTON_OF)) if (other !== id) off(d.$(other)['aria-pressed']);
+    assert.equal(checked(d, id), 'true');
+    for (const other of Object.values(BUTTON_OF)) if (other !== id) off(checked(d, other));
   });
 }
 
-test('two layers at once, because a viewer can press two buttons', () => {
+/* ⛔ AND TWO AT ONCE IS NO LONGER POSSIBLE, which is a RULING and not a
+   regression. The rows were toggles and a viewer could press two; the picker is
+   `role="radiogroup"`, one-of-N, chosen by Kevin — "build the one row, one
+   active item". `deeplink.js` still parses `?layer=a,b` rather than rejecting
+   it, so the claim worth keeping is that such a link opens on ONE layer instead
+   of erroring or opening on none. */
+test('a link naming two layers opens on one of them, because the picker is one-of-N', () => {
   const d = open('?layer=corsi,slot');
-  assert.equal(String(d.$('lyCorsi')['aria-pressed']), 'true');
-  assert.equal(String(d.$('lyHd')['aria-pressed']), 'true');
-  off(d.$('lyWhistle')['aria-pressed']);
+  const on = ['corsi', 'slot', 'goaltending', 'whistle', 'blocked']
+    .filter(l => checked(d, l) === 'true');
+  assert.equal(on.length, 1, `a two-layer link left ${on.length} chips checked: ${on}`);
+  assert.ok(['corsi', 'slot'].includes(on[0]),
+    `a link naming corsi and slot opened on ${on[0]}, which is neither`);
 });
 
 test('an unknown layer token opens the page anyway — a link is not an error page', () => {

@@ -7,7 +7,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { rich, app, PAGE_CSS, prose, boot, panel, CURVE_AND_MIX } from './helpers/page.js';
+import { rich, app, PAGE_CSS, prose, boot, panel, CURVE_AND_MIX , pickLayer } from './helpers/page.js';
 
 test('a play label is a NAME and nothing else — the table cannot hold a second line', () => {
   // Kevin, 2026-08-16: "I think we can retire the subtext on the event displayed
@@ -53,7 +53,7 @@ test('on the ice, the ONLY second line left is a goal\u2019s assists', () => {
   // blocked layer replaces the whole thing, and a mutation restoring ITS second
   // line survived a walk that had left the layer switched off. The base view is
   // walked too, or turning every layer on would hide a regression in neither.
-  const LAYERS = ['lyCorsi', 'lyHd', 'lyGoalie', 'lyWhistle', 'lyBlock'];
+  const LAYERS = ['corsi', 'slot', 'goaltending', 'whistle', 'blocked'];
   for (const on of [[], LAYERS]) {
     const a = boot();
     on.forEach(id => a.$(id).click());
@@ -129,8 +129,10 @@ test('preview drops the second line entirely, including the three that keep it',
 test('the blocked layer draws nothing until it is asked, then says who stopped what', () => {
   const a = boot(rich, CURVE_AND_MIX);
   assert.equal(a.$('blockPanel').innerHTML, '');
-  a.$('lyBlock').click();
-  assert.equal(String(a.$('lyBlock')['aria-pressed']), 'true');
+  pickLayer(a, 'blocked');
+  /* The picker is the control now; the layer rows were deleted 2026-09-07. */
+  assert.equal(String(a.GROUPS['#rg .pk'].find(b => b.dataset.l === 'blocked')
+                       .getAttribute('aria-checked')), 'true');
   assert.ok(a.$('rg').classList.contains('blocked'), 'the panel is revealed by a class and the class is absent');
 
   const v = a.$('blockPanel').innerHTML;
@@ -154,7 +156,7 @@ test('THE PANEL PUBLISHES NO WIN RATE — the whole design turns on this', () =>
   // an outcome rate is not. If one ever appears here it will arrive as a
   // plausible-sounding sentence, so the test is on the PROSE.
   const a = boot(rich, CURVE_AND_MIX);
-  a.$('lyBlock').click();
+  pickLayer(a, 'blocked');
   const v = a.$('blockPanel').innerHTML;
   assert.doesNotMatch(v, /\bwon\b|\blost\b|\bwins\b|\bloses\b|win rate/i,
     'the blocked-shots panel is describing an outcome');
@@ -177,7 +179,7 @@ test('a page that reaches nothing says SO, rather than implying a failure', () =
   // The claim is now about what the PAGE asks for, which is what the sentence
   // was always there to explain and is true whatever the host adds.
   const a = boot();                       // no rates at all
-  a.$('lyBlock').click();
+  pickLayer(a, 'blocked');
   const v = a.$('blockPanel').innerHTML;
   assert.match(v, /never asks for the archive/, 'the reason given is not the true one');
   assert.doesNotMatch(v, /could not be loaded/);
@@ -190,7 +192,7 @@ test('the label names the BLOCKER once the layer is on', () => {
   // 24.2 ft from the net against 33.4 for a shot on goal — and the label used to
   // name the shooter beside it, which invites reading the dot as his.
   const a = boot();
-  a.$('lyBlock').click();
+  pickLayer(a, 'blocked');
   const labels = a.every(d => d.$('labels').innerHTML)
                   .filter(h => /blocked a shot|Blocked by a teammate|no blocker recorded/.test(h));
   assert.ok(labels.length > 0, 'no blocked shot ever named who stopped it');

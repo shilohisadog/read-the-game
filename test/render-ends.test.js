@@ -13,7 +13,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { WHY, whistle } from '../src/lib/layers/whistle.js';
-import { rich, SCRIPT, fakeDom, bundle, boot } from './helpers/page.js';
+import { rich, SCRIPT, fakeDom, bundle, boot , pickLayer } from './helpers/page.js';
 
 test('the ends disclosure appears at a period boundary and nowhere else', () => {
   // THE SENTENCE docs/ends-switching.md AGREED IN SECTION 6 AND NEVER BUILT.
@@ -484,7 +484,7 @@ test('the whistle layer is exempt, because its marks carry no direction', () => 
   // would throw away a true count to be consistent with a rule that does not
   // apply to it.
   const a = boot(null, null, '?ends=as-played');
-  a.$('lyWhistle').click();
+  pickLayer(a, 'whistle');
   a.GROUPS['#rg .tbtn'].find(b => b.dataset.t === 'all').click();
   a.$('scrub').oninput({ target: { value: a.$('scrub').max } });
   const counts = [...a.$('whistles').innerHTML.matchAll(/class="whn"[^>]*>(\d+)</g)].map(m => +m[1]);

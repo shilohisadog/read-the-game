@@ -353,8 +353,12 @@ test('the line the rule names is explained where it is drawn', () => {
   // object instead of two (docs/below-the-rink-2.md §7.2). The swatch and the
   // sentence that names the lit line now sit inside the whistle row, which is
   // also what gates them: the row is `aria-pressed` and `.lon` only shows then.
-  const row = /<button class="lrow" id="lyWhistle"[\s\S]*?<\/button>/.exec(SHELL)[0];
-  assert.match(row, /k-rl/, 'the rule line has no swatch on the control that draws it');
+  /* ❌ THE SWATCH HALF IS RETIRED (2026-09-07). `k-rl` was an `<i>` inside the
+     whistle's row in the layer menu — a menu that was `display:none` from
+     2026-08-27, so the swatch it asserted was never once drawn to anybody. The
+     menu is deleted and its CSS with it. What NAMES the rule line is the caption
+     sentence below, which a reader with the whistle layer on genuinely gets. A
+     check on an invisible swatch was coverage of nothing. */
 
   /* ⭐ AND THE SENTENCE MOVED OUT OF THE ROW ON 2026-09-07. It was `.lon`, gated
      by the row's `aria-pressed`; what a layer DRAWS now lives in `DRAWS` in the

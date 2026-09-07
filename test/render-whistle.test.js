@@ -8,7 +8,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { WHY, whistle } from '../src/lib/layers/whistle.js';
-import { rich, app, PAGE_CSS, prose, boot, rings, evMarks, panel } from './helpers/page.js';
+import { rich, app, PAGE_CSS, prose, boot, rings, evMarks, panel , pickLayer } from './helpers/page.js';
 
 test('the shipped app boots, and the reference game is in it', () => {
   const a = boot();
@@ -34,7 +34,7 @@ test('NOTHING draws whistle marks until the layer is turned on', () => {
 
 test('turning the layer on puts marks on the ice and a sentence under it', () => {
   const a = boot();
-  a.$('lyWhistle').click();
+  pickLayer(a, 'whistle');
   const drawn = a.sweep(rings);
   assert.ok(Math.max(...drawn) >= 1,
     'the layer is on and never drew a mark anywhere in the game');
@@ -48,7 +48,7 @@ test('the sentence on screen is the rule, and it names where it comes from', () 
   // never had one named. If the page shows the reason code and not the rule, the
   // layer has delivered nothing.
   const a = boot();
-  a.$('lyWhistle').click();
+  pickLayer(a, 'whistle');
   const seen = a.sweep(panel).join('\n');
   assert.match(seen, /centre line|blue line ahead of the puck|goaltender/i,
     'no whistle in a whole NHL game produced a teaching sentence');
@@ -72,7 +72,7 @@ test('every known stoppage is CALLED something, on every surface that shows one'
   // "three" and would have kept saying it — a count of other elements inside a
   // test's own title is the same rotting dependency as one in prose.
   const a = boot();
-  a.$('lyWhistle').click();
+  pickLayer(a, 'whistle');
   const seen = a.every(d => panel(d) + d.$('whistles').innerHTML
                           + d.$('labels').innerHTML).join('\n');
 
@@ -127,7 +127,7 @@ test('a reason we have never seen still renders, and renders raw', () => {
   for (const e of g.events) if (e.type === 'stoppage' && e.rsn) { e.rsn = 'krakens-on-ice'; touched++; }
   assert.ok(touched > 5, `only ${touched} stoppages to re-code`);
   const a = boot(g);
-  a.$('lyWhistle').click();
+  pickLayer(a, 'whistle');
   const seen = a.every(d => panel(d)).join('\n');
   assert.match(seen, /krakens on ice/, 'an unknown reason vanished instead of falling back');
   assert.doesNotMatch(seen, /undefined|\[object/, 'and it fell back to something broken');
@@ -142,7 +142,7 @@ test('the card says it is looking BACKWARDS, because it usually is', () => {
   // scoreboard to discover was history. The card was never wrong; its currency
   // was invisible.
   const a = boot();
-  a.$('lyWhistle').click();
+  pickLayer(a, 'whistle');
   //
   // AND THE EXEMPTION IS CHENG'S OWN RULE, NOT A HOLE IN THE TEST. Before the
   // first whistle the card reads "No whistle yet — play has not stopped in what
@@ -176,8 +176,9 @@ test('the whistle ring is NAMED, and only while the layer draws it', () => {
   // the legend, gated on `#rg.whistle`; it is the `.lon` half of the whistle row,
   // gated on that row being pressed. The claim did not move — a mark is named,
   // and only while the ice is drawing it.
-  const row = app.match(/<button class="lrow" id="lyWhistle"[\s\S]*?<\/button>/)[0];
-  assert.match(row, /<i class="k-wh">/, 'the ring has no swatch on its own control');
+  /* ❌ SAME RETIREMENT AS THE RULE-LINE SWATCH: `k-wh` lived in the parked
+     whistle row and was never drawn. The naming claim is asserted below, on the
+     caption, which is a surface a reader actually sees. */
   /* ⭐ AND THE SENTENCE IS ASSERTED AS BEHAVIOUR NOW, not as a gated span. It was
      `<span class="lon">` inside the parked row until 2026-09-07; what a layer
      DRAWS stayed with the renderer when `counts` moved onto the layer object,
@@ -208,13 +209,15 @@ test('the whistle ring is NAMED, and only while the layer draws it', () => {
     'the row notes are displayed again, or a span was added without being parked');
   assert.match(PAGE_CSS, /#rg\.whistle \.whistlepanel\{display:block/,
     'the row note is hidden AND the whistle panel is gone — the ring is on the ice with nothing naming it');
-  assert.match(PAGE_CSS, /#rg \.k-wh\{/, 'the key has no swatch');
 
   const a = boot();
   assert.equal(a.$('rg').classList.contains('whistle'), false);
-  a.$('lyWhistle').click();
+  pickLayer(a, 'whistle');
   assert.ok(a.$('rg').classList.contains('whistle'), 'the key can never appear');
-  a.$('lyWhistle').click();
+  /* ⭐ AND OFF IS `none`, NOT THE SAME CHIP AGAIN. The layer rows were toggles;
+     the picker is one-of-N, so pressing whistle twice leaves whistle on. The
+     claim — the naming leaves when the marks do — is unchanged. */
+  pickLayer(a, 'none');
   assert.equal(a.$('rg').classList.contains('whistle'), false,
     'the key would stay after its marks left');
 });
@@ -251,7 +254,7 @@ test('the trails control reports its own state to a screen reader', () => {
 test('the whistle layer changes no other layer\'s numbers', () => {
   // The recorded gate for a new layer: adding it touches nothing existing.
   const a = boot(), b = boot();
-  b.$('lyWhistle').click();
+  pickLayer(a, 'whistle');
   const read = d => [d.$('cA').textContent, d.$('cH').textContent,
                      d.$('aSc').textContent, d.$('hSc').textContent].join('/');
   assert.deepEqual(b.sweep(read), a.sweep(read));

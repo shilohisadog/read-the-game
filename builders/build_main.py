@@ -153,17 +153,16 @@ __CSS__</style>
        every frame. -->
   <div class="work" id="workPanel" hidden><button class="wx" id="workClose" type="button">Hide the work</button><div id="workBody"></div></div>
 </div>
-<details class="zone zlayers" id="zLayers"><summary class="zh">Add a layer<span class="zon" id="zLayersOn"></span></summary>
-<div class="lrows">
-<button class="lrow" id="lyCorsi" data-pick="corsi" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Attempts</b></span><span class="st" id="stCorsi">Off</span></button>
-<button class="lrow" id="lyHd" data-pick="slot" aria-pressed="false"><span class="lmk"><i class="k-hd"></i></span><span class="ltx"><b>Slot shots</b></span><span class="st" id="stHd">Off</span></button>
-<button class="lrow" id="lyGoalie" data-pick="goaltending" aria-pressed="false"><span class="lmk"></span><span class="ltx"><b>Goaltending</b></span><span class="st" id="stGoalie">Off</span></button>
-<button class="lrow" id="lyWhistle" data-pick="whistle" aria-pressed="false"><span class="lmk"><i class="k-wh"></i><i class="k-rl"></i></span><span class="ltx"><b>Stoppages</b></span><span class="st" id="stWhistle">Off</span></button>
-<button class="lrow" id="lyBlock" data-pick="blocked" aria-pressed="false"><span class="lmk"><i class="k-blk"></i><i class="k-blkv"></i></span><span class="ltx"><b>Blocked shots</b></span><span class="st" id="stBlock">Off</span></button>
-</div>
+<!-- ⭐ THE PARKED LAYER MENU IS GONE (2026-09-07). Five `.lrow` toggles, their
+     `Off` state spans, the `#zLayersOn` counter and five legend swatches, all
+     behind `display:none` since 2026-08-27 and replaced by the picker under the
+     scrubber. Enumerated before deleting, which is the rule this block itself
+     taught us: the DESCRIPTIONS left first, onto the layer objects; the strength
+     control left first, beside the picker; what went with the block was the dead
+     control, three swatches no visitor has ever seen, and one hidden Tip about
+     clicking a slot ring. The Tip is the only content in that list, it was
+     invisible for eleven days, and it is in git if it is wanted back. -->
 
-<div class="hint">Tip: click any shot ringed in amber to see <b>why</b> it counts as a slot shot — with trails set to <b>keep every mark</b>, earlier ones stay clickable too.</div>
-</details>
 <p class="icenote" id="iceNote"></p>
 <div class="whistlepanel" id="whistlePanel"></div>
 <div class="blockpanel" id="blockPanel"></div>
@@ -209,6 +208,21 @@ __CSS__</style>
 <div class="figpick sit"><span class="ll">Situations:</span>
 <div class="grp" role="group" aria-label="Which situations are counted"><button class="lyr sbtn" data-s="all" aria-pressed="true">All situations</button><button class="lyr sbtn" data-s="even" aria-pressed="false">Even strength only</button></div>
 <span class="fnote" id="nSit"></span></div>
+<!-- ⭐ AND THE SLOT TIP MOVED OUT WITH IT — kept, and still parked ON PURPOSE.
+     ⚠️ THE FIRST VERSION OF THIS COMMENT CALLED IT THE SAME DEFECT AS THE
+     STRENGTH CONTROL ABOVE, AND IT IS NOT. Both were invisible; only one was
+     invisible by accident. `#rg .hint{display:none}` plus `#rg.slot .hint
+     {display:block}` is a state-gated reveal, and inside the old menu it could
+     never have fired — but there is a THIRD rule, in the 2026-08-27 park block:
+     `#rg.slot .hint{display:none}`, equally specific and later, which wins.
+     The tip is layer information and Kevin parked layer information
+     deliberately: "hide (not remove, but temporarily hide)".
+     So it lives here, out of the deleted menu, still hidden by a rule that means
+     to hide it — and un-parking it is a decision, not a repair. Caught by
+     LOOKING at the page after restoring it, which is the only instrument that
+     could tell a deliberate park from an accidental burial. -->
+<div class="hint">Tip: click any shot ringed in amber to see <b>why</b> it counts as a slot shot — with trails set to <b>keep every mark</b>, earlier ones stay clickable too.</div>
+
 <p class="lcap" id="lcap"></p>
 <!-- ⭐ THE WORK PANEL MOVED INTO `.rinkbox` ON 2026-08-31 AND IS NOW AN OVERLAY.
      Kevin, playing through a game: "I clicked on show me the work and the

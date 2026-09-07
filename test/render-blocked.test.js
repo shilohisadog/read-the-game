@@ -9,7 +9,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { WHY, whistle } from '../src/lib/layers/whistle.js';
 import { corsi } from '../src/lib/layers/corsi.js';
-import { rich, app, boot, panel, CURVE_AND_MIX } from './helpers/page.js';
+import { rich, app, boot, panel, CURVE_AND_MIX , pickLayer } from './helpers/page.js';
 
 function rowsOf(html) {
   const out = {};
@@ -45,7 +45,7 @@ test('the GAME row states its share as a fraction and the ARCHIVE row as a perce
   // and both rows are assembled at render time from numbers the source does not
   // contain.
   const a = boot(rich, CURVE_AND_MIX);
-  a.$('lyBlock').click();
+  pickLayer(a, 'blocked');
   const games = new Set(), archs = new Set();
   a.every(d => {
     const r = rowsOf(d.$('blockPanel').innerHTML);
@@ -72,7 +72,7 @@ test('the game row names the whole it is a split OF, in counts', () => {
   // The panel's win-rate test caught it on the archive side; this is the game side,
   // which nothing else was watching.
   const a = boot(rich, CURVE_AND_MIX);
-  a.$('lyBlock').click();
+  pickLayer(a, 'blocked');
   const SHAPE = /(\d+)<\/b> of <b>(\d+) attempts?<\/b> never reached the goalie/;
   let checked = 0;
   a.every(d => {
@@ -101,7 +101,7 @@ test('the BAR draws the counts — the widths are the numbers', () => {
   // claim of this card and nothing was looking at it — a picture whose geometry
   // is unchecked is decoration.
   const a = boot(rich, CURVE_AND_MIX);
-  a.$('lyBlock').click();
+  pickLayer(a, 'blocked');
   let checked = 0;
   a.every(d => {
     const row = rowsOf(d.$('blockPanel').innerHTML).game;
@@ -147,7 +147,7 @@ test('what counts as REACHING the goalie is the feed’s own event types', () =>
   assert.ok(rich.events.some(e => e.type === 'goal'), 'the reference game has no goal');
 
   const a = boot(rich, CURVE_AND_MIX);
-  a.$('lyBlock').click();
+  pickLayer(a, 'blocked');
   const scrub = a.$('scrub');
   scrub.value = String(+scrub.max);
   scrub.oninput({ target: { value: scrub.value } });
@@ -163,7 +163,7 @@ test('each row states its own scope, because the two can disagree', () => {
   // nothing — and putting the two side by side turns an unstated mismatch into an
   // invited comparison, which is worse.
   const a = boot(rich, CURVE_AND_MIX);
-  a.$('lyBlock').click();
+  pickLayer(a, 'blocked');
   // Away from the opening frames: at zero attempts there is no game row to read a
   // scope off, and the first draft of this test crashed there rather than
   // failing, which is the same thing wearing a worse message.
@@ -192,7 +192,7 @@ test('the card says so before a single attempt exists, and stops once one does',
   // branch — there is no bar to draw and no fraction to state, and the empty state
   // must not survive into frames where there is.
   const a = boot(rich, CURVE_AND_MIX);
-  a.$('lyBlock').click();
+  pickLayer(a, 'blocked');
   let empty = 0, drawn = 0, overlap = 0;
   a.every(d => {
     const h = d.$('blockPanel').innerHTML;
@@ -218,7 +218,7 @@ test('both rows state their claim in the SAME frame, and each names its denomina
   // with one pattern, and the value differs in kind while the frame does not.
   const FRAME = /^(.+?) of ([\d,]+ attempts?) never reach(?:ed)? the goalie$/;
   const a = boot(rich, CURVE_AND_MIX);
-  a.$('lyBlock').click();
+  pickLayer(a, 'blocked');
   const scrub = a.$('scrub');
   scrub.value = String(+scrub.max);
   scrub.oninput({ target: { value: scrub.value } });
@@ -256,7 +256,7 @@ test('nothing on the blocked card is a bare percentage — every number names it
   // while every figure states its own denominator — so that is the thing tested,
   // not the sentence.
   const a = boot(rich, CURVE_AND_MIX);
-  a.$('lyBlock').click();
+  pickLayer(a, 'blocked');
   const scrub = a.$('scrub');
   scrub.value = String(+scrub.max);
   scrub.oninput({ target: { value: scrub.value } });
@@ -289,7 +289,7 @@ test('the card says WHY it matters, as a disagreement rather than an implication
   // own, read back out of the bar it sits under. A sentence carrying numbers
   // nobody can check is the thing this site exists as an alternative to.
   const a = boot(rich, CURVE_AND_MIX);
-  a.$('lyBlock').click();
+  pickLayer(a, 'blocked');
   const SHAPE = /A box score would show <b>(\d+)<\/b> shots?\. This game has had <b>(\d+)<\/b> attempts?\./;
   let checked = 0;
   a.every(d => {
@@ -318,7 +318,7 @@ test('and it says nothing at even strength, because a box score has no such colu
   // the very number it names. Silence is the same answer the whistle layer gets
   // in the audit, for the same reason: we hold no figure that makes it true.
   const a = boot(rich, CURVE_AND_MIX);
-  a.$('lyBlock').click();
+  pickLayer(a, 'blocked');
   const scrub = a.$('scrub');
   scrub.value = String(+scrub.max);
   scrub.oninput({ target: { value: scrub.value } });
@@ -343,7 +343,7 @@ test('the whistle layer actually draws the line its rule names', () => {
   // line for an offside — the only visual answer we have for offside at all,
   // since the feed records the call and nothing else.
   const a = boot();
-  a.$('lyWhistle').click();
+  pickLayer(a, 'whistle');
   const drawn = a.every(d => d.$('whistles').innerHTML).join('\n');
   // ANCHORED TO `<line`, NOT TO THE CLASS NAME. The fake document keeps
   // innerHTML as a string and parses nothing, so `class="rulel` matches happily
@@ -433,7 +433,7 @@ test('the stoppage card says how far back it is looking', () => {
   // behind on 78% of frames — but the distance was left as arithmetic between a
   // card reading 15:02 and a scoreboard reading 14:12.
   const a = boot();
-  a.$('lyWhistle').click();
+  pickLayer(a, 'whistle');
   const stamps = a.every(d => {
     const at = d.$('whistlePanel').innerHTML.match(/class="at">([^<]*)</);
     return at ? at[1] : null;
@@ -498,7 +498,7 @@ test('⭐ the blocked panel names the LAST block and says how far back it is', (
   // earned the whistle card its retrospective kicker. Every other figure on
   // this panel is an aggregate over the whole game, so nothing said WHEN.
   const a = boot(rich, CURVE_AND_MIX);
-  a.$('lyBlock').click();
+  pickLayer(a, 'blocked');
   const seen = a.every(d => (d.$('blockPanel').innerHTML.match(
     /<p class="whsay bklast">[\s\S]*?<\/p>/) || [''])[0]);
   const lines = seen.filter(Boolean);
@@ -519,7 +519,7 @@ test('the gap is ABSENT when the last block is the current event', () => {
   // "0s earlier" on the frame the block happens — a false clause, and the
   // easiest one to write.
   const a = boot(rich, CURVE_AND_MIX);
-  a.$('lyBlock').click();
+  pickLayer(a, 'blocked');
   const onBlockFrames = a.every(d => {
     const m = d.$('blockPanel').innerHTML.match(/<span class="at">·[^<]*<\/span>/);
     const cap = d.$('caption').innerHTML;
@@ -540,7 +540,7 @@ test('⭐ the panel quotes the NARRATOR — one sentence, not two wordings', () 
   // have to be made twice. The layer names the blocker; the base view never
   // names a person, so the two surfaces differ in that ONE stated way.
   const a = boot(rich, CURVE_AND_MIX);
-  a.$('lyBlock').click();
+  pickLayer(a, 'blocked');
   const pairs = a.every(d => {
     const p = d.$('blockPanel').innerHTML.match(/<span class="rsn">([^<]*)<\/span>/);
     const l = d.$('labels').innerHTML.match(/class="plabel"[^>]*>([^<]*)</);

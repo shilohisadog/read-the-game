@@ -73,12 +73,16 @@ test('⭐⭐ …and the page has no second copy of any of it', async () => {
      no rule". **park.test.js's own ledger had already said `.lds` appears inside
      `.zref`** and I read past it. Enumerate what a blanket edit matches. */
   const rows = app.match(/<button class="lrow"[\s\S]*?<\/button>/g) || [];
-  assert.equal(rows.length, 5, `expected five layer rows, found ${rows.length}`);
-  for (const row of rows)
-    for (const cls of ['lds', 'lat', 'lon'])
-      assert.doesNotMatch(row, new RegExp(`class="${cls}"`),
-        `a layer row still ships a <span class="${cls}"> — the description lives on `
-        + 'the layer module now, and a second copy is the drift this move removed');
+  assert.equal(rows.length, 0,
+    'the parked layer menu is back — its rows were the OLD home of these '
+    + 'descriptions, and two homes is the drift this move removed');
+  for (const cls of ['lat', 'lon'])
+    assert.doesNotMatch(app, new RegExp(`class="${cls}"`),
+      `the page still ships a <span class="${cls}">, which nothing reads`);
+  /* ⚠️ `.lds` IS NOT IN THAT LIST, and the reason is a mistake worth keeping: it
+     serves the `.areas` reference cards TOO. A blanket strip of the class on
+     2026-09-07 took two of those cards with it, and `park.test.js`'s own ledger
+     had already recorded `.lds` inside `.zref`. Two surfaces, one class name. */
 
   for (const l of await layers())
     assert.ok(app.includes(l.counts),

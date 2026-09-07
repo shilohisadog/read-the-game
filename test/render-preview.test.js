@@ -11,7 +11,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { TEAMS, colourOf } from '../src/lib/teams.js';
 import { whistle } from '../src/lib/layers/whistle.js';
 import { corsi } from '../src/lib/layers/corsi.js';
-import { rich, app, PAGE_CSS, prose, bundle, boot, delaysOf, paceOf } from './helpers/page.js';
+import { rich, app, PAGE_CSS, prose, bundle, boot, delaysOf, paceOf , pickLayer } from './helpers/page.js';
 import { measureGame } from '../builders/measure.mjs';
 import { perGame } from '../src/lib/archive.js';
 import { mostUnusual } from '../src/lib/distribution.js';
@@ -166,9 +166,9 @@ test('⭐ the preview runs with the Control layer ON, so the hero shows what the
   // String() because the fake stores what setCorsi passed -- a boolean -- while
   // a real DOM stores "true". Asserting either spelling would pin the harness
   // rather than the behaviour.
-  assert.equal(String(a.$('lyCorsi').getAttribute('aria-pressed')), 'true');
-  assert.equal(a.$('stCorsi').textContent, 'On',
-    'the layer row still says the layer is off');
+  /* The picker is the control now; the layer rows were deleted 2026-09-07. */
+  assert.equal(String(a.GROUPS['#rg .pk'].find(b => b.dataset.l === 'corsi')
+                       .getAttribute('aria-checked')), 'true');
 
   // ⭐ AND THE BOARD NAMES ITS UNIT. In preview `.counters` is hidden, so this is
   // the ONLY element that can say what the two figures count. Without it the
@@ -210,7 +210,7 @@ test('⭐ the control bar claims nothing before anything has been counted', () =
   // NOT A PREVIEW BUG -- it is what the layer does at the start of any game, so
   // it is checked on the ordinary page where a visitor meets it.
   const a = boot();
-  a.$('lyCorsi').click();
+  pickLayer(a, 'corsi');
   // Numeric, because the fake stores what the page assigned -- a number -- and
   // a real DOM stores a string. Pinning either spelling would test the harness.
   assert.equal(+a.$('cA').textContent, 0, 'the fixture is past the opening faceoff');

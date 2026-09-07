@@ -8,7 +8,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { rich, app, SCRIPT, PAGE_CSS, boot, paceOf } from './helpers/page.js';
+import { rich, app, SCRIPT, PAGE_CSS, boot, paceOf , pickLayer } from './helpers/page.js';
 import { ANNOUNCEMENTS } from '../src/lib/announce.js';
 import { stints } from '../src/lib/box.js';
 
@@ -489,7 +489,7 @@ test('no caption says the same thing twice', () => {
   const a = boot();
   const seen = [];
   for (const on of [false, true]) {
-    if (on) a.$('lyHd').click();
+    if (on) pickLayer(a, 'slot');
     seen.push(...callsWhileStepping(a, h => h));
   }
   assert.ok(seen.length > 0, 'the walk found no captions at all');

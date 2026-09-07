@@ -13,7 +13,7 @@ import { danger } from '../src/lib/layers/danger.js';
 import { blocked } from '../src/lib/layers/blocked.js';
 import { goaltending } from '../src/lib/layers/goaltending.js';
 import { whistle } from '../src/lib/layers/whistle.js';
-import { rich, app, PAGE_CSS, prose, boot, CURVE_AND_MIX } from './helpers/page.js';
+import { rich, app, PAGE_CSS, prose, boot, CURVE_AND_MIX , pickLayer } from './helpers/page.js';
 
 /**
  * ⭐ THE LAYER KEYS LEFT THE LEGEND ON 2026-08-25 — they did not stop existing.
@@ -519,11 +519,12 @@ test('the page is parked at its base, and nothing was deleted to get there', () 
  */
 test('every zone below the rink is a disclosure, with a 44px summary', () => {
   const zones = app.match(/<details class="zone [a-z]+"/g) || [];
-  // FIVE SINCE 2026-08-29: `zcue` joined them when the next-play ring got its
-  // own control. The number is a tripwire, not a target — it exists so a zone
-  // cannot be added without someone reading the two properties above and
-  // deciding they hold for it.
-  assert.equal(zones.length, 5, `expected five collapsible zones, found ${zones.length}`);
+  // FIVE SINCE 2026-08-29 when `zcue` joined them; FOUR SINCE 2026-09-07, when
+  // the layer menu was deleted — parked in August and replaced by the picker
+  // under the scrubber. The number is a tripwire, not a target: it exists so a
+  // zone cannot be added without someone reading the two properties above and
+  // deciding they hold for it, and it moves DOWN when one is retired.
+  assert.equal(zones.length, 4, `expected four collapsible zones, found ${zones.length}`);
   assert.match(PAGE_CSS, /#rg details\.zone>summary\{[^}]*min-height:44px/,
     'a summary is the only control in a closed zone and it is under the touch floor');
 });
@@ -612,54 +613,26 @@ test('a disclosure is never inside a collapsed zone', () => {
   }
 });
 
-test('a collapsed layer menu still says what is on, and sits above the rink', () => {
+/* ⭐ THE CLAIM SURVIVED ITS SUBJECT. This asserted that the collapsed layer
+   MENU carried a badge naming what was on — because the menu was 1,219px down a
+   phone page and a deep link that turned a layer on without saying so left the
+   only way off below the fold, which is CHENG's one-way trip. The menu was
+   deleted on 2026-09-07; the reachability claim did not die with it, so it is
+   asked of the picker, which is the control that replaced it and is always on
+   screen rather than behind a disclosure. */
+test('a deep link lands with the layer it turned on named on screen', () => {
+  const chip = (a, l) => a.GROUPS['#rg .pk'].find(b => b.dataset.l === l);
   const shut = boot();
-  assert.equal(shut.$('zLayersOn').textContent, '', 'the badge claims a layer with none on');
-  assert.notEqual(shut.$('zLayers').open, true, 'the menu is open before anyone asked');
+  assert.equal(String(chip(shut, 'none').getAttribute('aria-checked')), 'true',
+    'a plain visit does not open on the base view');
 
-  // ⭐ EIGHT OF THE NINE DOORS ARRIVE LIKE THIS, AND THE DRAWER STAYS SHUT.
-  // It used to open itself, because the menu was 1,219px down a phone page and a
-  // deep link would otherwise have left the only way to turn the layer off below
-  // the fold — CHENG's one-way trip. The menu is now above the rink, and keeping
-  // the auto-open there cost the entire hero: measured at 390, the opened list is
-  // 600px tall and pushed the rink top to y=830, so a door landed on a first
-  // screen with no ice on it. The badge is what makes the shut drawer safe.
   const door = boot(null, null, '?game=2023020204&layer=whistle');
-  assert.notEqual(door.$('zLayers').open, true,
-    'the drawer opened itself again — at 390 that puts the rink off the first screen');
-  assert.equal(door.$('zLayersOn').textContent, '1 layer on',
+  assert.equal(String(chip(door, 'whistle').getAttribute('aria-checked')), 'true',
     'a deep link put marks on the ice with nothing on screen naming them');
-
-  // ⭐ AND THE POSITION IS NOW LOAD-BEARING, so it is asserted rather than assumed.
-  // Reachability rests on the menu being on the first screen; the unit suite has
-  // no layout, so what it can check is document order.
-  //
-  // ⭐ IT WENT ABOVE THE RINK FIRST, AND THAT WAS WRONG. CHENG, and Kevin
-  // agreeing: this page's header says EVENT BY EVENT FIRST, ADD METRICS AFTER,
-  // and five decisions between that sentence and the ice make the layout
-  // contradict the copy. The menu now sits DIRECTLY BELOW the rink — after the
-  // game, adjacent to the marks it changes, and still above the fold: measured
-  // at 390 the ice starts at y=222 and the menu at y=464, 12px under the boards.
-  // Both halves are pinned, because each one broke on its own: below the rink it
-  // was 236px away behind the transport (the disconnect Kevin reported), and
-  // above it, it preceded the ice.
-  const board = app.indexOf('class="board"');
-  const rink = app.indexOf('class="rinkbox"');
-  const menu = app.indexOf('id="zLayers"');
-  const transport = app.indexOf('class="transport"');
-  assert.ok(board < rink && rink < menu,
-    `the layer menu is not after the ice — the header says metrics come after (board ${board}, rink ${rink}, menu ${menu})`);
-  assert.ok(menu < transport,
-    `the layer menu fell below the transport, which is the 236px gap Kevin called disjointed (menu ${menu}, transport ${transport})`);
-
-  // AND THE BADGE COUNTS, rather than saying "on". Two layers is a different
-  // sentence from one, and singular/plural is where this kind of readout ships
-  // broken — the ternary only ever runs one arm at a fixed number of layers.
-  door.$('lyCorsi').click();
-  assert.equal(door.$('zLayersOn').textContent, '2 layers on');
-  door.$('lyCorsi').click(); door.$('lyWhistle').click();
-  assert.equal(door.$('zLayersOn').textContent, '', 'the badge outlived the last layer');
+  assert.equal(String(chip(door, 'none').getAttribute('aria-checked')), 'false',
+    'the base-view chip stayed checked while a layer was on');
 });
+
 
 test('the two game-state disclosures are still gated, and are no longer keys', () => {
   // They never were keys: neither has a swatch, and every other row in the
@@ -679,52 +652,12 @@ test('the two game-state disclosures are still gated, and are no longer keys', (
     'a disclosure is back inside the key list, where a row with no swatch reads as a wall');
 });
 
-test('the state each layer row reports is REALLY the state of the layer', () => {
-  // The half that makes the rule above mean something. A note gated on an
-  // aria-pressed nothing sets is a note nobody ever sees — the mirror of the
-  // defect being fixed, and exactly as invisible. And the state PILL is checked
-  // beside the class, because a row that says "On" over a layer that is off is
-  // the control-reporting-an-effect-it-is-not-having defect.
-  const a = boot();
-  for (const cls of ['slot', 'blocked'])
-    assert.equal(a.$('rg').classList.contains(cls), false, `${cls} is on before anyone asked`);
-  // THE RESTING STATE IS READ FROM THE MARKUP, not through the fake. No setter
-  // runs at boot — the document ships every row saying `Off` — so asserting the
-  // fake's element here would pin the harness rather than what a browser shows.
-  for (const id of ['stCorsi', 'stHd', 'stGoalie', 'stWhistle', 'stBlock'])
-    assert.match(app, new RegExp(`<span class="st" id="${id}">Off</span>`),
-      `${id} does not ship saying the layer is off`);
+/* ❌ RETIRED 2026-09-07 — "the state each layer row reports is REALLY the state
+   of the layer" checked the `Off`/`On` spans inside the layer menu against the
+   booleans. The menu is deleted, so there is no second reporter to disagree with
+   the state. What replaced it is `aria-checked` on the picker, which
+   `deeplink-render.test.js` asserts for every layer token in both directions. */
 
-  a.$('lyHd').click();
-  assert.equal(a.$('stHd').textContent, 'On', 'the slot row does not say it is on');
-  assert.equal(String(a.$('lyHd').getAttribute('aria-pressed')), 'true',
-    'the row is pressed in fact but not in the attribute its note is gated on');
-  a.$('lyHd').click();
-  assert.equal(a.$('stHd').textContent, 'Off', 'the row keeps saying On after the layer left');
-
-  a.$('lyHd').click();
-  assert.ok(a.$('rg').classList.contains('slot'), 'the slot layer sets no class, so its key can never appear');
-  a.$('lyBlock').click();
-  assert.ok(a.$('rg').classList.contains('blocked'));
-
-  a.$('lyHd').click();
-  assert.equal(a.$('rg').classList.contains('slot'), false, 'the key would stay after its marks left');
-
-  // ⭐ AND THE STATE IS DRAWN AS A SWITCH, WITHOUT THE WORD LEAVING THE PAGE.
-  // Kevin: "I was thinking of the Metrics layers buttons as just toggles."  The
-  // pill became a track with a ::after knob — so the text `lyrState` writes is
-  // clipped, not deleted, and the assertions above still describe what a screen
-  // reader hears. A visual-only state is this control shipping broken for the
-  // reader who cannot see the knob move, which is why both halves are pinned.
-  assert.match(PAGE_CSS, /#rg \.lrow \.st\{[^}]*text-indent:-9999px/,
-    'the state text is not clipped, so the switch has the word OFF printed across it');
-  assert.match(PAGE_CSS, /#rg \.lrow \.st::after\{content:""/,
-    'the switch has no knob — the track is a bare grey pill with no state in it');
-  assert.match(PAGE_CSS, /#rg \.lrow\[aria-pressed="true"\] \.st::after\{transform:translateX/,
-    'the knob never moves, so the switch reports the same thing on and off');
-  assert.match(PAGE_CSS, /prefers-reduced-motion:reduce\)\{#rg \.lrow \.st/,
-    'the knob animates for a reader who asked the system for no motion');
-});
 
 /**
  * ⭐ THE SLOT'S REASON IS COMPUTED, AND ITS ABSENCE IS SILENT.

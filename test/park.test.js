@@ -120,11 +120,10 @@ const ENUMERATED = {
   // The Attempts layer's counters, parked 2026-08-27 with the rest.
   cA: 'the away attempts count', mA: 'and the situation it counts under',
   cH: 'the home attempts count', mH: 'and the situation it counts under',
-  // The old layer menu. Parked whole; every control in it goes dark by design,
-  // and the SELECTOR is what a visitor uses now.
-  zLayersOn: 'the zone summary said what was on inside it',
-  lyCorsi: 'the old row', lyHd: 'the old row', lyGoalie: 'the old row',
-  lyWhistle: 'the old row', lyBlock: 'the old row',
+  // ✅ THE OLD LAYER MENU'S SIX LINES LEFT ON 2026-09-07, and the second test in
+  // this file is what would have caught them staying: the menu was DELETED, so
+  // its ids are not merely back in the light, they are not on the page at all.
+  // A ledger that only ever grows describes a page that no longer exists.
   // ⭐ `work` AND `workPanel` LEFT THIS LIST ON 2026-08-27, and the second test
   // in this file is what said so — they moved out of the parked menu into the
   // layer box and the space under the rink, so their ledger lines were stale
@@ -274,9 +273,10 @@ test('⛔⛔ no rule tries to light an element that a parked ancestor hides', ()
    * nobody listed. Un-parking a zone should DELETE lines here, never leave them.
    */
   const INERT = {
-    lds: 'the layer definitions, parked with the old menu — the COPY is still read '
-       + 'out of this markup by renderWork and printed in show-me-the-work, so the '
-       + 'text is live and only its own display rule is inert',
+    lds: 'the .areas reference cards inside .zref — NOT the layer definitions, '
+       + 'which moved onto the layer objects on 2026-09-07. Two surfaces have '
+       + 'always shared this class, which is what made a blanket strip of it take '
+       + 'two cards with it that day.',
     asay: 'inside .zref, "What the marks mean", parked 2026-08-27',
     legend: 'inside .zref, likewise — the legend keys moved into the layer box',
     figpick: 'inside .zdisp, "Trails", parked with its zone; the .sit variant left '

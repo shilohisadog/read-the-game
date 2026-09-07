@@ -148,10 +148,10 @@ export function fakeDom() {
     // would let a summary that says nothing pass as a summary that says what is on.
     '#rg .cbtn': [['on', 'Show the shading'], ['off', 'No shading']]
       .map(([c, textContent]) => Object.assign(el(), { dataset: { c }, textContent })),
-    '#rg .lrow': ['lyCorsi', 'lyHd', 'lyGoalie', 'lyWhistle', 'lyBlock'].map(id => {
-      if (!byId.has(id)) byId.set(id, el());
-      return byId.get(id);
-    }),
+    /* ⭐ `#rg .lrow` IS GONE (2026-09-07) — the layer menu it modelled was deleted.
+       A fake that keeps modelling a control the page does not have is a fake that
+       lets a test drive something no visitor can, which is how five suites went on
+       clicking `lyBlock` for eleven days after it stopped being visible. */
     // THE SELECTOR UNDER THE SCRUBBER. Six radios keyed by `data-l`, and the ids
     // are shared with byId so a test can drive one and read the others.
     /* ⚠️ AND THE CHIPS CARRY THEIR REAL LABELS, read out of the built page.
@@ -273,6 +273,28 @@ export function bundle(globals, src = SCRIPT, give = 'boot') {
   const names = ['document', 'matchMedia', 'setTimeout', 'clearTimeout',
                  'localStorage', 'location', 'window', 'navigator'];
   return new Function(...names, src + `\nreturn ${give};`)(...names.map(n => globals[n]));
+}
+
+/**
+ * Turn a layer on through the control a visitor actually has.
+ *
+ * ⚠️ EVERY CALLER OF THIS USED TO CLICK `$('lyBlock')` — a row in the layer menu,
+ * which was parked in August and deleted on 2026-09-07. The fake INVENTS an
+ * element for any id, so those clicks did not throw; they silently did nothing,
+ * and the tests failed with *"the walk saw nothing change"* rather than *"that
+ * control is gone"*. See the standing limit at the top of this file: **the fake
+ * DOM cannot fail on absence.**
+ *
+ * ⭐ AND THE PICKER IS ONE-OF-N, WHICH THE ROWS WERE NOT. A row was a toggle, so
+ * clicking it twice turned the layer off; pressing the same chip twice leaves it
+ * on. `pickLayer(a, 'none')` is how a test turns everything off now, and that is
+ * the page's own model — `none` is a real choice, not the absence of one.
+ */
+export function pickLayer(a, token) {
+  const chip = a.$$('#rg .pk').find(b => b.dataset.l === token);
+  assert.ok(chip, `no picker chip for "${token}"`);
+  chip.click();
+  return a;
 }
 
 export function boot(game, rates, search = '', store = null) {

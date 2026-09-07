@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import { TEAMS, colourOf } from '../src/lib/teams.js';
 import { whistle } from '../src/lib/layers/whistle.js';
 import { corsi } from '../src/lib/layers/corsi.js';
-import { rich, app, PAGE_CSS, boot, rings, panel } from './helpers/page.js';
+import { rich, app, PAGE_CSS, boot, rings, panel , pickLayer } from './helpers/page.js';
 
 test('the page paints THE TEAMS IN THIS GAME, not the two it was built from', () => {
   // The reference game is MIN at BUF. Minnesota's colour is forest green
@@ -111,7 +111,7 @@ test('a goalie line is a fraction, on every card, with no chosen cutoff', () => 
   // faced. Twenty was ours. A fraction carries its own denominator, so the
   // threshold dissolves rather than needing a better value (CHENG).
   const a = boot();
-  a.$('lyGoalie').click();
+  pickLayer(a, 'goaltending');
   const cards = a.sweep(d => d.$('goaliePanel').innerHTML);
   const full = cards[cards.length - 1];
   assert.match(full, /\d+ of \d+/, 'the headline number is a fraction');
@@ -174,7 +174,7 @@ test('an annotation ring never carries a team, and never replaces the mark', () 
 
 test('the high-danger ring is an annotation too, not a repainted mark', () => {
   const a = boot();
-  a.$('lyHd').click();
+  pickLayer(a, 'slot');
   a.GROUPS['#rg .tbtn'][1].click();
   const html = a.sweep(d => d.$('events').innerHTML).pop();
   const all = marksAt(html);

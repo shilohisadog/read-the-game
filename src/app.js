@@ -2757,7 +2757,6 @@ document.querySelectorAll('#rg .pk').forEach(b=>{
    things still change together -- class, aria-pressed, visible state -- and
    render-preview's check that the preview goes THROUGH setCorsi rather than past
    it is retargeted at the element that now carries the answer. */
-function lyrState(id,on){const n=$(id);if(n)n.textContent=on?'On':'Off';zoneState();}
 /* ⭐ A COLLAPSED CONTROL MUST STILL REPORT ITS STATE. Every zone is a disclosure
    now, and without the badge marks appear on the ice with nothing on screen
    accounting for them.
@@ -2777,17 +2776,18 @@ function lyrState(id,on){const n=$(id);if(n)n.textContent=on?'On':'Off';zoneStat
    mechanism that made the collapse safe in one position makes it unusable in
    this one; the badge is the half that travels.
 
-   DERIVED FROM THE DOM, NOT FROM A LIST OF LAYERS. `[aria-pressed="true"]` on a
-   row IS the on-state, so a sixth layer is covered the day it is added and a
-   layer that stops setting the attribute stops being counted -- rather than a
-   second enumeration here that agrees with the rows until someone edits one. */
-function zoneState(){
- let on=0;document.querySelectorAll('#rg .lrow').forEach(r=>{
-  if(String(r.getAttribute('aria-pressed'))==='true')on++;});
- const b=$('zLayersOn');if(b)b.textContent=on?`${on} layer${on===1?'':'s'} on`:'';
- syncPick();}
-zoneState();
-function setCorsi(){document.getElementById('rg').classList.toggle('corsi',corsiOn);$('lyCorsi').setAttribute('aria-pressed',corsiOn);lyrState('stCorsi',corsiOn);}
+   ⭐⭐ AND `zoneState` IS GONE WITH THE MENU IT COUNTED (2026-09-07). It derived
+   the on-layer count from `[aria-pressed="true"]` on the rows — *"derived from
+   the DOM, not from a list of layers, so a sixth layer is covered the day it is
+   added"* — which was right while the rows were the control, and became **the
+   visible selector deriving its state from an invisible one** the day they were
+   parked. Every setter called it to reach `syncPick`, so the live picker was
+   repainted through a chain that ran off hidden markup. The setters call
+   `syncPick` directly now, and it reads the five booleans, which is the only
+   place the state ever was. **A derivation is only as good as the thing it
+   derives from is real.** */
+syncPick();
+function setCorsi(){document.getElementById('rg').classList.toggle('corsi',corsiOn);syncPick();}
 /* ⭐ THE WORK PANEL FOLLOWS THE SELECTOR, NOT ONE LAYER. It used to close itself
    inside `setCorsi`, which was right while it only ever explained Attempts:
    turning that layer off left a panel explaining nothing. Now it explains
@@ -2795,8 +2795,7 @@ function setCorsi(){document.getElementById('rg').classList.toggle('corsi',corsi
    it -- and `setCorsi` turning false is exactly what happens on that switch.
    The condition is therefore the SELECTOR's state, not any one boolean. */
 function closeWork(){setWork(false);}
-function setHd(){document.getElementById('rg').classList.toggle('slot',hdOn);$('lyHd').setAttribute('aria-pressed',hdOn);lyrState('stHd',hdOn);render(i,'');}
-$('lyCorsi').addEventListener('click',()=>{corsiOn=!corsiOn;setCorsi();});
+function setHd(){document.getElementById('rg').classList.toggle('slot',hdOn);syncPick();render(i,'');}
 // One code path owns the mode label, so the markup cannot drift from the state.
 // The static HTML carries a default only so the page reads correctly before JS.
 function syncStrength(){
@@ -2838,14 +2837,10 @@ function syncCue(){let lab='';
 document.querySelectorAll('#rg .cbtn').forEach(b=>b.addEventListener('click',()=>{
  cueOn=b.dataset.c==='on';syncCue();render(i,'');}));
 syncCue();
-$('lyHd').addEventListener('click',()=>{hdOn=!hdOn;setHd();});
 function goalieStats(k){return goaltending.reduce(upto(k),CTX).g;}
-function setGoalie(){document.getElementById('rg').classList.toggle('goalie',goalieOn);$('lyGoalie').setAttribute('aria-pressed',goalieOn);lyrState('stGoalie',goalieOn);render(i,'');}
-$('lyGoalie').addEventListener('click',()=>{goalieOn=!goalieOn;setGoalie();});
-function setWhistle(){document.getElementById('rg').classList.toggle('whistle',whistleOn);$('lyWhistle').setAttribute('aria-pressed',whistleOn);lyrState('stWhistle',whistleOn);render(i,'');}
-$('lyWhistle').addEventListener('click',()=>{whistleOn=!whistleOn;setWhistle();});
-function setBlock(){document.getElementById('rg').classList.toggle('blocked',blockOn);$('lyBlock').setAttribute('aria-pressed',blockOn);lyrState('stBlock',blockOn);render(i,'');}
-$('lyBlock').addEventListener('click',()=>{blockOn=!blockOn;setBlock();});
+function setGoalie(){document.getElementById('rg').classList.toggle('goalie',goalieOn);syncPick();render(i,'');}
+function setWhistle(){document.getElementById('rg').classList.toggle('whistle',whistleOn);syncPick();render(i,'');}
+function setBlock(){document.getElementById('rg').classList.toggle('blocked',blockOn);syncPick();render(i,'');}
 /* ⭐ THE GAME OPENS BEFORE THE FIRST PLAY -- on the state, not on a play.
    It used to open on the LAST event, which put the final score, the finished
    counters and -- on a shootout game -- the shootout notice on screen before a

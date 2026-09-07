@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import { colourOf } from '../src/lib/teams.js';
 import { whistle } from '../src/lib/layers/whistle.js';
 import { readFileSync } from 'node:fs';
-import { rich, app, SCRIPT, PAGE_CSS, prose, boot } from './helpers/page.js';
+import { rich, app, SCRIPT, PAGE_CSS, prose, boot , pickLayer } from './helpers/page.js';
 
 test('no bare percentage survives on the scoreboard', () => {
   // The rule the goalie card and the per-game sentence already follow, applied
@@ -18,7 +18,7 @@ test('no bare percentage survives on the scoreboard', () => {
   // a game one attempt swings the share ~2.5 points, and "58%" asserts a
   // precision that "11 – 8" does not claim (CHENG).
   const a = boot();
-  a.$('lyCorsi').click();
+  pickLayer(a, 'corsi');
   for (const [pa, ph, mode] of a.sweep(d => [d.$('pa').textContent, d.$('ph').textContent,
                                              d.$('pMode').textContent])) {
     assert.match(String(pa), /^\d+$/, `the control figure reads "${pa}"`);
@@ -29,7 +29,7 @@ test('no bare percentage survives on the scoreboard', () => {
 
 test('the strength mode reaches the scoreboard, not only the counters', () => {
   const a = boot();
-  a.$('lyCorsi').click();
+  pickLayer(a, 'corsi');
   a.GROUPS['#rg .sbtn'][1].click();                 // even strength only
   assert.equal(a.$('pMode').textContent, 'EVEN STRENGTH');
   assert.equal(a.$('mA').textContent, 'EVEN STRENGTH', 'and the two agree');
@@ -438,7 +438,7 @@ test('a whistle mark lands ON a painted spot, not on blank ice', () => {
   // and the ones that were landing on nothing were the neutral-zone offsides,
   // 89.8% of all offside restarts across the archive.
   const a = boot();
-  a.$('lyWhistle').click();
+  pickLayer(a, 'whistle');
   const spots = new Set([...a.$('rink').innerHTML.matchAll(/class="fdot[^"]*" cx="([\d.]+)" cy="([\d.]+)"/g)]
     .map(m => `${(+m[1]).toFixed(1)},${(+m[2]).toFixed(1)}`));
   const marks = new Set(a.every(d => [...d.$('whistles').innerHTML
@@ -554,7 +554,14 @@ test('every mark the stylesheet cuts a key for is NAMED to the reader', () => {
   // key added for a mark nobody explains fails on the day it is added. That is
   // the only version of this check that closes; a hand-maintained list is the
   // same defect with more steps.
-  const keys = [...new Set([...PAGE_CSS.matchAll(/\.(k-[a-z]+)\s*\{/g)].map(m => m[1]))];
+  /* ⚠️ EXCEPT THE ONES ONLY THE CAPTION DRAWS. `k-rl` is placed by `#rg .lcap
+     i.k-rl` — the rule-line swatch inside the layer caption, which appears with
+     the whistle layer and names itself in the sentence beside it rather than in
+     the legend. It had a row swatch too until 2026-09-07, when the parked layer
+     menu was deleted; losing that did not lose the naming, and this sweep is
+     about the LEGEND, whose subject it never was. */
+  const keys = [...new Set([...PAGE_CSS.matchAll(/\.(k-[a-z]+)\s*\{/g)].map(m => m[1]))]
+    .filter(k => k !== 'k-rl');
   assert.ok(keys.length >= 7, `only ${keys.length} legend keys found — the sweep is broken`);
   for (const k of keys)
     assert.match(app, new RegExp(`class="${k}"`),
