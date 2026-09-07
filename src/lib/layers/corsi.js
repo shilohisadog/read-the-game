@@ -15,6 +15,21 @@ import { whyNotEven } from '../strength.js';
 
 
 export const corsi = {
+  /**
+   * ⭐ WHAT THIS LAYER COUNTS, AND HOW IT CREDITS IT — the layer's own words.
+   *
+   * CHENG's ruling, 2026-09-06: *"the layer owns what it counts and why; the page
+   * owns how that reads."* These lived in hidden markup inside the parked layer
+   * menu until then, which meant `HIGH_DANGER_FT` could move in `rink.js` and the
+   * sentence describing it would not. A description is a property of the RULE.
+   *
+   * ⚠️ `credits` IS THE ONE TWO LAYERS CAN LEGITIMATELY DISAGREE ON — Attempts
+   * credits a blocked shot to the SHOOTER and Blocked credits it to the BLOCKER,
+   * both correctly for their own question — so it belongs beside the reducer that
+   * makes the choice, not in a panel that would have to remember it.
+   */
+  counts: 'every shot attempt the league recorded: on goal, missed, or blocked, because all three are the team moving the puck at the net',
+  credits: 'A blocked attempt is credited to the club that shot it — the shot was still taken, it just never arrived.',
   id: 'corsi',
   label: '＋ Control (Corsi)',
 

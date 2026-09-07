@@ -178,7 +178,19 @@ test('the whistle ring is NAMED, and only while the layer draws it', () => {
   // and only while the ice is drawing it.
   const row = app.match(/<button class="lrow" id="lyWhistle"[\s\S]*?<\/button>/)[0];
   assert.match(row, /<i class="k-wh">/, 'the ring has no swatch on its own control');
-  assert.match(row, /<span class="lon">[^<]*ring marks where play restarted/,
+  /* ⭐ AND THE SENTENCE IS ASSERTED AS BEHAVIOUR NOW, not as a gated span. It was
+     `<span class="lon">` inside the parked row until 2026-09-07; what a layer
+     DRAWS stayed with the renderer when `counts` moved onto the layer object,
+     because "the ring marks where play restarted" is a fact about this page and
+     not about the rule. So the claim — named when the layer draws it, silent
+     otherwise — is read off the caption the viewer actually gets. */
+  const cap = d => (d.$('lcap').innerHTML || '').replace(/<[^>]+>/g, ' ');
+  const off = boot(null, null, '');
+  assert.doesNotMatch(cap(off), /ring marks where play restarted/,
+    'the ring is named before its layer draws anything');
+  const on = boot(null, null, '?layer=whistle');
+  on.$('scrub').oninput({ target: { value: '150' } });
+  assert.match(cap(on), /ring marks where play restarted/,
     'the ring is not named where a viewer meets its control');
   // ⚠️ AND SINCE 2026-08-26 IT IS PARKED, NOT SHOWN. Kevin trimmed the rows to a
   // name and a switch. The sentence still ships and is hidden, so what carries

@@ -636,8 +636,17 @@ test('"play" leaves as a countable noun and stays as a mass noun', () => {
   // So the tooth of this half has moved to the runtime survivor asserted after
   // it, which a reader with the whistle layer on genuinely reads. When the
   // descriptions get a home (docs §20), the visible survivors come back here.
+  /* ✅ AND THE SURVIVORS CAME BACK, EXACTLY AS THE PARAGRAPH ABOVE PREDICTED.
+     The descriptions got a home on 2026-09-07: `counts` moved onto the layer
+     objects and what a layer draws into `DRAWS`, and both reach the caption while
+     the layer is on. So these are read from a page state a reader genuinely sees,
+     not from markup that ships hidden — which is the tooth this half lost when
+     the rows were parked and has now got back. */
+  const w = boot(null, null, '?layer=whistle');
+  w.$('scrub').oninput({ target: { value: '150' } });
+  const seenByAReader = (w.$('lcap').innerHTML || '').replace(/<[^>]+>/g, ' ');
   for (const survivor of ['where play restarted', 'stopped play']) {
-    assert.ok(SEEN.includes(survivor),
+    assert.ok(seenByAReader.includes(survivor),
       `"${survivor}" is the mass noun and is correct English — a blanket ` +
       `rename took it, which is the failure mode this half exists to catch`);
   }

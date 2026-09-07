@@ -355,23 +355,26 @@ test('the line the rule names is explained where it is drawn', () => {
   // also what gates them: the row is `aria-pressed` and `.lon` only shows then.
   const row = /<button class="lrow" id="lyWhistle"[\s\S]*?<\/button>/.exec(SHELL)[0];
   assert.match(row, /k-rl/, 'the rule line has no swatch on the control that draws it');
-  assert.match(row, /the line the rule names/,
-               'the page does not say what the lit line is');
 
-  // IT MUST APPEAR WITH THE LAYER THAT DRAWS IT. A sentence about the rule line
-  // outside the on-state would explain a line that is not on the ice.
-  const on = /<span class="lon">([\s\S]*?)<\/span>/.exec(row);
-  assert.ok(on, 'the whistle row carries no on-the-ice note at all');
-  assert.match(on[1], /the line the rule names/,
-               'the rule line is explained in the always-visible half, so it describes a mark that is not there');
+  /* ⭐ AND THE SENTENCE MOVED OUT OF THE ROW ON 2026-09-07. It was `.lon`, gated
+     by the row's `aria-pressed`; what a layer DRAWS now lives in `DRAWS` in the
+     renderer, keyed by layer id, and reaches the caption only while that layer is
+     the one picked. Same claim, same gate, a control a visitor can actually
+     press. The behavioural half is in `render-whistle.test.js`, which can boot;
+     this file reads the shipped bytes, so it asserts the sentence is there and
+     that it is inside the whistle's entry rather than the always-on copy. */
+  const draws = /\bwhistle:'([^']*)'/.exec(SHELL);
+  assert.ok(draws, 'the whistle layer has no line in DRAWS at all');
+  assert.match(draws[1], /the line the rule names/,
+               'the page does not say what the lit line is');
 });
 
 test('and the legend names both rules the line serves', () => {
   // linesFor() answers for icing AND offside, and they name different lines --
   // the centre line and a goal line for one, a blue line for the other. A key
   // that mentioned only icing would be wrong half the time it is on screen.
-  const row = /<button class="lrow" id="lyWhistle"[\s\S]*?<\/button>/.exec(SHELL)[0];
-  const key = /the line the rule names[^<]*/.exec(row)[0];
+  /* Same move as the test above: the key lives in `DRAWS` now, not in the row. */
+  const key = /\bwhistle:'([^']*)'/.exec(SHELL)[1];
   for (const w of ['icing', 'offside', 'centre line', 'blue line'])
     assert.ok(key.includes(w), `the rule-line key never mentions ${w}: "${key}"`);
 });

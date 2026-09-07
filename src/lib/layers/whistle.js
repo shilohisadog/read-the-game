@@ -228,6 +228,21 @@ const SUBJECT = new Set(['stoppage', 'delayed-penalty']);
 const CLOSES_PLAY = new Set(['period-end', 'game-end', 'period-start']);
 
 export const whistle = {
+  /**
+   * ⭐ WHAT THIS LAYER COUNTS, AND HOW IT CREDITS IT — the layer's own words.
+   *
+   * CHENG's ruling, 2026-09-06: *"the layer owns what it counts and why; the page
+   * owns how that reads."* These lived in hidden markup inside the parked layer
+   * menu until then, which meant `HIGH_DANGER_FT` could move in `rink.js` and the
+   * sentence describing it would not. A description is a property of the RULE.
+   *
+   * ⚠️ `credits` IS THE ONE TWO LAYERS CAN LEGITIMATELY DISAGREE ON — Attempts
+   * credits a blocked shot to the SHOOTER and Blocked credits it to the BLOCKER,
+   * both correctly for their own question — so it belongs beside the reducer that
+   * makes the choice, not in a panel that would have to remember it.
+   */
+  counts: 'the rule that stopped play, and the dot it restarted on',
+  credits: 'A stoppage names a rule and never a club, so nothing here is credited to either side.',
   id: 'whistle',
   label: '＋ Why play stopped',
 

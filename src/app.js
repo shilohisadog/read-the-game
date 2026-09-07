@@ -1065,13 +1065,35 @@ function chipLabel(id){
    mapping in one visible place instead of scattering it. `test/lbox.test.js`
    asserts every key here equals its own module's `id`, so the two cannot drift. */
 const LENS={corsi:corsi,slot:danger,blocked:blocked,goaltending:goaltending,whistle:whistle};
+/**
+ * ⭐ WHAT EACH LAYER PUTS ON SCREEN — and this half stayed with the page.
+ *
+ * CHENG drew the line and then drew the exception inside it: *"the layer owns
+ * what it counts and why; the page owns how that reads"* — and separately,
+ * *"`.lon` (what this layer puts on screen) is presentation in a way `.lds`
+ * (what it counts) is not."* He is right. "An amber ring marks each one" is a
+ * fact about this renderer, not about the slot; a second surface drawing the
+ * same rule differently would need a different sentence and the same reducer.
+ * So `counts` and `credits` moved into the layer modules and this did not.
+ *
+ * ⚠️ A MAP KEYED BY LAYER ID IS A SECOND ENUMERATION, which is the thing this
+ * project keeps being bitten by, so `test/layer-copy.test.js` asserts these keys
+ * are exactly the layer set — derived from the modules, never listed twice.
+ */
+const DRAWS={
+ corsi:'The box below the ice counts every attempt for each club as the replay runs.',
+ slot:'An amber ring marks each one. Click a ring to see the distance and angle it was measured by.',
+ goaltending:'The box below the ice builds each club\u2019s save fraction as the replay runs. A save is against the OTHER club\u2019s shot, so those two columns read the opposite way round.',
+ whistle:'The ring marks where play restarted, brightest at the most recent stoppage. The bar lights the line the rule names \u2014 for icing the centre line and the far goal line, for offside the blue line. The box below the ice counts them and names the most recent one \u2014 with no figure for either club, because a stoppage names a rule and never a team.',
+ blocked:'Blocked attempts keep their ring and every other mark dims, so the ones a body stopped stand out. The box below the ice credits each block to the club that MADE it, the way a broadcast does. A block by a teammate is credited to neither club, so the two figures need not add up to the total.'};
+/** The layer object behind a picker id, or null for `none`. */
+const layerOf=id=>LENS[id]||null;
 const LEDGER=Object.fromEntries(Object.entries(LENS).map(([id,m])=>[id,sl=>m.reduce(sl,CTX)]));
 function renderWork(_,cur,at){
  const id=whichPick();
  if(id==='none'||!LEDGER[id]||at<0){$('workBody').innerHTML='';return;}
  const sl=upto(at), L=LEDGER[id](sl);
- const row=document.querySelector(`#rg .lrow[data-pick="${id}"]`);
- const lds=row&&row.querySelector('.lds');
+ const lyr=layerOf(id);
  /* ⭐ HOW THE LAYER ATTRIBUTES WHAT IT COUNTS, and this panel is where that
     belongs: it is the verification surface, and attribution is the thing two
     layers can legitimately disagree about. Attempts credits a blocked shot to
@@ -1080,7 +1102,6 @@ function renderWork(_,cur,at){
     The old panel hard-coded "All credited to the shooter." for Attempts, which
     `build.test.js` follows as a CLAIM rather than a string -- it went red the
     moment this panel became generic, which is the check working. */
- const lat=row&&row.querySelector('.lat');
  const name=chipLabel(id);
  /* ⭐ EVERY INPUT NAMED, WHICH IS THE POINT OF THE MOVE. `src/lib/work.js`
     composes the panel and returns it; this function reads the page and does
@@ -1091,7 +1112,7 @@ function renderWork(_,cur,at){
     no module for a library file to import it from. */
  $('workBody').innerHTML=workMarkup({
   id,L,sl,name,
-  lds:lds?lds.textContent:'',lat:lat?lat.textContent:'',
+  lds:lyr?lyr.counts:'',lat:lyr?lyr.credits:'',
   box:lboxFor(id,at,corsi.reduce(sl,CTX)),cards:cardsFor(id),
   mode:MODE(),when:cur?`through P${cur.per} ${cur.rem}`:'pre-game',
   evenOnly,AAB,HAB});}
@@ -2458,14 +2479,13 @@ function capFor(id){
   // them offer no wrap opportunity; the ` · ` puts one back and is visible.
   const keys=[...leg.children].map(x=>x.outerHTML).join(' · ');
   return `<b>Just events</b> — every event the league recorded, in order. ${keys}`;}
- const row=document.querySelector(`#rg .lrow[data-pick="${id}"]`);
- if(!row)return '';
+ const lyr=layerOf(id);
+ if(!lyr)return '';
  // ⚠️ THE NAME COMES FROM THE CHIP, NOT THE ROW. The parked rows still carry the
  // names they had when Kevin trimmed them -- `Corsi`, `Slot shots` -- and the
  // chips say `Attempts`, `Slot`. Reading the row's `<b>` printed a caption that
  // named something the reader had not pressed. The label a reader just touched
  // is the one the sentence has to open with.
- const lds=row.querySelector('.lds'), lon=row.querySelector('.lon');
  /* ⭐ AND THE SECOND CLAUSE IS TRUE AGAIN, WHICH IT WAS NOT FOR ONE COMMIT.
     `.lon` says what the layer PUTS ON SCREEN. With every layer's output parked
     it described counters and goaltender cards that were not drawn -- the page
@@ -2482,8 +2502,8 @@ function capFor(id){
     text here. Then it decided a FOURTH — the work panel's heading shipped "How
     Goaltending10 is counted", because this caller was fixed and the other one
     was not. The read lives in `chipLabel` now, and every caller uses it. */
- return `<b>${chipLabel(id)}</b> — ${lds?lds.textContent:''}. `
-       +`<span class="cap2">${lon?lon.textContent:''}</span>`;}
+ return `<b>${chipLabel(id)}</b> — ${lyr.counts}. `
+       +`<span class="cap2">${DRAWS[id]||''}</span>`;}
 /**
  * ⭐ THE LAYER'S OUTPUT, IN ONE FIXED GRAMMAR -- docs/below-the-rink-2.md §31.
  *

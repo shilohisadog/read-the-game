@@ -406,16 +406,16 @@ test('the work panel explains whichever layer is on, from that layer\'s ledger',
       assert.ok(html.includes(`${plain} other event`),
         `${token} drops ${plain} events without saying so — Doctrine §9`);
 
-    /* ⭐ AND ITS WORDS ARE READ FROM THE ROW, NEVER RETYPED (§27.2). */
-    const rowHtml = app.match(new RegExp(`<button class="lrow"[^>]*data-pick="${token}"[\\s\\S]*?</button>`))[0];
-    for (const cls of ['lds', 'lat']) {
-      const t = new RegExp(`<span class="${cls}">([^<]*)<`).exec(rowHtml);
-      assert.ok(t, `${token}'s row has no .${cls}`);
-      const words = t[1].replace(/&mdash;|&rsquo;/g, '').split(/\s+/).slice(0, 4).join(' ');
-      assert.ok(html.includes(words.split(' ')[0]),
-        `${token}'s panel does not quote its own row (.${cls})`);
+    /* ⭐ AND ITS WORDS ARE READ FROM THE LAYER, NEVER RETYPED (§27.2).
+       Until 2026-09-07 they were read out of a hidden `<span class="lds">` in the
+       parked menu — right in refusing to retype them, wrong about where they
+       live. `counts` and `credits` are properties of the rule, so the module that
+       owns the rule is the one asked. */
+    for (const field of ['counts', 'credits']) {
+      assert.ok(mod[field], `${token}'s layer has no ${field}`);
+      assert.ok(html.includes(mod[field]),
+        `${token}'s panel does not carry its own ${field} line`);
     }
-    a.$('work').click();
   }
 });
 
@@ -543,8 +543,11 @@ test('the panel closes the row fragment it quotes', () => {
   pick(a, 'slot');
   a.$('work').click();
   const html = a.$('workBody').innerHTML;
-  const rowHtml = app.match(/<button class="lrow"[^>]*data-pick="slot"[\s\S]*?<\/button>/)[0];
-  const lds = /<span class="lds">([^<]*)</.exec(rowHtml)[1];
+  /* ⭐ ASKED OF THE LAYER, NOT OF THE MARKUP. This read the fragment out of a
+     hidden `<span class="lds">` until 2026-09-07; the description lives on the
+     layer object now, which is also the only place it can be checked against the
+     rule it describes. */
+  const lds = danger.counts;
   assert.ok(html.includes(lds + '.'),
     'the fragment is quoted without a full stop, so it runs into the line after it');
 });
@@ -596,9 +599,7 @@ test('each row carries the same name as its chip', () => {
  * WHERE FROM.
  */
 test('the slot row separates whose shot it was from where it was taken', () => {
-  const row = app.match(/<button class="lrow"[^>]*data-pick="slot"[\s\S]*?<\/button>/)[0];
-  const lat = /<span class="lat">([^<]*)</.exec(row)[1];
-  assert.match(lat, /who shot it, but not from where/i,
+  assert.match(danger.credits, /who shot it, but not from where/i,
     'the slot exclusion still reads as though the shooter were unknown, which '
     + 'contradicts Attempts counting the same events for that shooter');
 });
@@ -612,12 +613,12 @@ test('the slot row separates whose shot it was from where it was taken', () => {
  * sentences that do not need it.
  */
 test('no attribution line shouts', () => {
-  for (const token of ['corsi', 'slot', 'blocked', 'goaltending', 'whistle']) {
-    const row = app.match(new RegExp(`<button class="lrow"[^>]*data-pick="${token}"[\\s\\S]*?</button>`))[0];
-    const lat = /<span class="lat">([^<]*)</.exec(row)[1];
-    const shouted = lat.match(/\b[A-Z]{2,}\b/g) || [];
+  /* ⭐ DERIVED FROM THE LAYER OBJECTS, so a sixth layer is covered the day it
+     exists rather than the day someone adds its token to this list. */
+  for (const l of [corsi, danger, blocked, goaltending, whistle]) {
+    const shouted = l.credits.match(/\b[A-Z]{2,}\b/g) || [];
     assert.deepEqual(shouted, [],
-      `${token}'s attribution line shouts: ${shouted.join(", ")}`);
+      `${l.id}'s attribution line shouts: ${shouted.join(", ")}`);
   }
 });
 

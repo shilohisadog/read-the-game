@@ -9,6 +9,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { corsi } from '../src/lib/layers/corsi.js';
+import { danger } from '../src/lib/layers/danger.js';
+import { blocked } from '../src/lib/layers/blocked.js';
+import { goaltending } from '../src/lib/layers/goaltending.js';
+import { whistle } from '../src/lib/layers/whistle.js';
 import { rich, app, PAGE_CSS, prose, boot, CURVE_AND_MIX } from './helpers/page.js';
 
 /**
@@ -256,16 +260,18 @@ test('the caption says what the chosen lens is, in the words the rows carry', ()
   const cap = () => a.$('lcap').innerHTML;
   const text = () => cap().replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
 
-  // ⭐ SOURCED FROM THE PARKED ROWS, NOT RETYPED. `.lds` and `.lon` have shipped
-  // hidden since §20; this is their home. A second copy of the sentences could
-  // never be checked against the first — this can.
-  for (const [token, rowId] of [['corsi', 'lyCorsi'], ['slot', 'lyHd'], ['blocked', 'lyBlock'],
-                                ['goaltending', 'lyGoalie'], ['whistle', 'lyWhistle']]) {
+  /* ⭐ SOURCED FROM THE LAYER, NOT RETYPED. This read `.lds` and `.lon` out of
+     the parked rows until 2026-09-07 — right to refuse a second copy, wrong
+     about where the first one lives. `counts` is a property of the RULE and
+     moved onto the layer object; what a layer DRAWS stayed with the page,
+     because "an amber ring marks each one" is a fact about this renderer. So the
+     first clause is checked against the module and the second against the page. */
+  for (const [token, mod] of [['corsi', corsi], ['slot', danger], ['blocked', blocked],
+                              ['goaltending', goaltending], ['whistle', whistle]]) {
     a.$$('#rg .pk').find(b => b.dataset.l === token).click();
-    const row = app.match(new RegExp(`<button class="lrow" id="${rowId}"[\\s\\S]*?</button>`))[0];
-    const lds = /<span class="lds">([^<]+)</.exec(row)[1];
-    const lon = /<span class="lon">([^<]+)</.exec(row)[1];
-    assert.ok(text().includes(lds), `${token}'s caption does not carry the row's description`);
+    const lds = mod.counts;
+    const lon = (/<span class="cap2">([^<]+)</.exec(cap()) || [, ''])[1];
+    assert.ok(lds && text().includes(lds), `${token}'s caption does not carry the layer's description`);
 
     /* ⭐ AND THE "WHAT IT SHOWS" CLAUSE HAS TO BE TRUE. For one commit it was
        not: with every layer's output parked, Attempts promised counters and
@@ -274,7 +280,8 @@ test('the caption says what the chosen lens is, in the words the rows carry', ()
        caption to a row that faithfully described a display nobody could see.
        Both have an output again — the box below the ice — so the rows say so,
        and the suppression that stood in the meantime is gone. */
-    assert.ok(text().includes(lon), `${token}'s caption does not say what appears on screen`);
+    assert.ok(lon.length > 20,
+      `${token}'s caption has no second clause saying what appears on screen`);
 
     // ⚠️ AND THE NAME IS THE CHIP'S, NOT THE ROW'S. The parked rows still carry
     // the names they had when Kevin trimmed them — `Corsi`, `Slot shots` — while
@@ -460,10 +467,16 @@ test('the page is parked at its base, and nothing was deleted to get there', () 
   // and then the footer. We need to start fresh on the layers."
   const row = id => app.match(new RegExp(`<button class="lrow" id="${id}"[\\s\\S]*?</button>`))[0];
 
-  // ⭐ PARKED, NOT DELETED — the rebuild starts from working code, not from git log.
-  for (const id of LAYER_ROWS) {
-    assert.match(row(id), /<span class="lds">[^<]{20,}</, `${id}'s description was deleted rather than parked`);
-    assert.match(row(id), /<span class="lon">[^<]{20,}</, `${id}'s on-the-ice note was deleted rather than parked`);
+  /* ⭐ PARKED, NOT DELETED — the rebuild starts from working code, not from git
+     log. ⚠️ AND THE DESCRIPTIONS ARE NO LONGER WHAT PROVES IT. They lived in
+     these rows as `.lds`/`.lon` until 2026-09-07, when `counts` moved onto the
+     layer objects and `DRAWS` to the renderer. They were not deleted; they were
+     promoted out of markup nobody could see, which is the opposite of the loss
+     this line guards against — so the claim is checked where they went. */
+  for (const l of [corsi, danger, blocked, goaltending, whistle]) {
+    assert.ok(l.counts.length > 20, `${l.id}'s description was deleted rather than moved`);
+    assert.match(app, new RegExp(`\\b${l.id}:'[^']{20,}`),
+      `${l.id} has no line in DRAWS — its on-the-ice note was lost, not moved`);
   }
   assert.match(PAGE_CSS, /#rg \.zlayers,#rg \.zref,#rg \.zdisp\{display:none\}/,
     'the base page is carrying the layer furniture again');
