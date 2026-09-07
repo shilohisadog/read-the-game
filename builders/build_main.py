@@ -246,7 +246,7 @@ __CSS__</style>
 <div class="newcomer nwhy2" id="newcomerWhy"></div>
 <details class="zone zref"><summary class="zh">What the marks mean</summary>
 <div class="areas">
-<div class="area"><span class="lmk"><i class="k-slot"></i></span><span class="ltx"><b>The slot</b><span class="lds">The shaded area at each end — within 33 ft of the net, between the face-off dots.<span class="asay" id="slotSay"></span></span></span></div>
+<div class="area"><span class="lmk"><i class="k-slot"></i></span><span class="ltx"><b>The slot</b><span class="lds">The shaded area at each end — within __SLOT_FT__ ft of the net, between the face-off dots.<span class="asay" id="slotSay"></span></span></span></div>
 <div class="area"><span class="lmk"><i class="k-zone"></i></span><span class="ltx"><b>Either blue line</b><span class="lds">The shaded strip at each blue line, reaching out to the neutral-zone dots. No attacker may cross it ahead of the puck — that is offside, <span class="src">NHL Rule 83</span>.<span class="lim">We count nothing here. Holding the line leaves no event in the record, so the feed is silent about the thing that makes it matter.</span></span></span></div>
 </div>
 <div class="legend"><span><i class="k-cue"></i><span class="kn">next play — shaded before it happens</span></span><span><i class="k-h"></i><span class="kn">home shot</span></span><span><i class="k-a"></i><span class="kn">visitor shot — white, like the sweaters</span></span><span><i class="k-p"></i><span class="kn">puck — jumps between real events</span></span><span><i class="k-g"></i><i class="k-gv"></i><span class="kn">goal — either sweater</span></span><span><i class="k-blk"></i><i class="k-blkv"></i><span class="kn">blocked — ringed where the puck was <b>stopped</b></span></span></div>
@@ -339,7 +339,40 @@ def _app():
     return body[:-1]          # the template supplies it, as it does for every marker
 
 
+def _rink_const(name):
+    """A numeric constant read out of `src/lib/rink.js`, never retyped here.
+
+    ⭐ THE ONE PLACE THE SLOT'S GEOMETRY IS STATED IN WORDS TO A READER OF THE
+    GAME PAGE is the "What the marks mean" panel, and until 2026-09-07 it typed
+    `33 ft` while `rink.js` held `HIGH_DANGER_FT`. Every other surface that says
+    it -- the layer's own description, the archive's `what` strings, the slot
+    diagram's label and its first step -- imports the constant, because they are
+    JavaScript and can. This builder is Python and cannot, so it READS it.
+
+    ⚠️ A PARSE THAT SILENTLY FINDS NOTHING IS WORSE THAN NO PARSE, and this
+    builder's oldest failure is exactly that shape (`str.replace` cannot fail).
+    So the match is asserted UNIQUE: a rename in `rink.js` stops the build with
+    the name in the message, rather than shipping a page that says
+    `__SLOT_FT__`. The leftover-marker guard below is the second net.
+    """
+    src = (ROOT / "src" / "lib" / "rink.js").read_text()
+    hits = re.findall(rf"^export const {name} *= *(-?\d+(?:\.\d+)?) *;", src, re.M)
+    assert len(hits) == 1, \
+        f"src/lib/rink.js must export exactly one numeric {name}; matched {len(hits)}"
+    return hits[0]
+
+
+# ⭐ BOTH DIRECTIONS, AND THIS ONE HAS TO BE ASKED *BEFORE* THE SUBSTITUTION.
+# The leftover-marker guard below catches a marker nobody substituted; it cannot
+# see a marker nobody WROTE, and by the time it runs this one is gone either way.
+# So the template is required to hold exactly one, here, while the question is
+# still answerable -- the same both-directions reasoning as the three markers at
+# the foot of this block, applied where the timing is different.
+assert T.count("__SLOT_FT__") == 1, \
+    f"the template holds {T.count('__SLOT_FT__')} copies of __SLOT_FT__, and it must hold one"
+
 T = (T.replace("__CSS__", (ROOT / "src" / "app.css").read_text())
+      .replace("__SLOT_FT__", _rink_const("HIGH_DANGER_FT"))
       .replace("__JS__", _app()))
 # ⚠️ `str.replace` CANNOT FAIL -- it just does not happen, and a `__PLACEHOLDER__`
 # has shipped from this file before. So the substitutions are asserted here,

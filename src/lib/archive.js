@@ -19,6 +19,12 @@
 
 import { typeOf, isLeague } from './competitions.js';
 import { distribution } from './distribution.js';
+/* ⭐ THE SLOT'S GEOMETRY IS QUOTED HERE IN WORDS, so it is IMPORTED here rather
+   than typed. `GEOM` below is published inside `measures.json`'s `what` strings,
+   which is the document a reader checks us with — a stale number there is a
+   wrong number in the one place we invite verification. See
+   `test/prose-constants.test.js`. */
+import { HIGH_DANGER_FT, SLOT_HALF_WIDTH } from './rink.js';
 
 /**
  * Regular season (02) and playoffs (03), read from the id — never a lookup.
@@ -432,7 +438,8 @@ export function slotShare(records) {
       cGoalsPlaced += g.goals.placed;
     }
   }
-  const GEOM = 'within 33 ft of the attacking net and inside 22 ft of centre';
+  const GEOM = `within ${HIGH_DANGER_FT} ft of the attacking net `
+             + `and inside ${SLOT_HALF_WIDTH} ft of centre`;
   return {
     ...share(goalsIn, goalsPlaced,
       'of the goals scored in play whose location the feed records, this many were '

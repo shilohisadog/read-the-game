@@ -24,7 +24,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { referenced } from '../tools/jslex.mjs';
+import { referenced, specifiers, walk } from '../tools/jslex.mjs';
 
 const LIB = new URL('../src/lib/', import.meta.url);
 const src = readFileSync(new URL('../src/app.js', import.meta.url), 'utf8');
@@ -97,6 +97,42 @@ test('⭐ the lexer is right about the shapes that fooled a regex', () => {
   t('return /a\\/b/.test(z);', ['z'], ['a', 'b']);                // regex, not division
   t('f(`${g(`${h}`)}`);', ['f', 'g', 'h'], []);                   // nested templates
   t('const HX=1, HY=2; let lastHD=null;', ['lastHD', 'HX', 'HY'], []);
+});
+
+test('⭐ the lexer hands back template TEXT, and keeps it apart from code', () => {
+  /* THE HOLE THAT WAS CLOSED ON 2026-09-07, and it is here rather than beside its
+     caller because this file is the lexer's control. `walk` used to SKIP the text
+     of a template literal, which was invisible while every question was about
+     code and became a blind spot the moment one was about prose: most
+     user-facing sentences in `src/lib` are templates, so a scanner reading only
+     `str` would report a clean corpus no matter what those sentences said.
+
+     ⭐ AND THE RUN BOUNDARY IS THE WHOLE POINT, not an implementation detail. A
+     number and its unit sit in ONE run when they are typed and in TWO when the
+     number is interpolated, which is what lets `prose-constants.test.js` tell
+     `'within 33 ft'` from `` `within ${HIGH_DANGER_FT} ft` `` without knowing
+     anything about either. Asserted directly, because a change that merged the
+     runs would leave that check green and meaningless. */
+  const runs = js => { const o = []; walk(js, k => { if (k.t === 'tstr') o.push(k.v); }); return o; };
+
+  assert.deepEqual(runs('const a=`within ${FT} ft of the net`;'), ['within ', ' ft of the net'],
+    'an interpolation must BREAK the text run, or a typed number and an interpolated one look alike');
+  assert.deepEqual(runs("const b='within 33 ft';"), [],
+    'a quoted string is `str`, never `tstr`');
+  assert.deepEqual(runs('const c=`33 ft`;'), ['33 ft'],
+    'a template with no interpolation is one run');
+  assert.deepEqual(runs('// `33 ft`\n/* `22 ft` */ const d=1;'), [],
+    'template text inside a COMMENT is not template text — this repo has shipped '
+    + 'prose impersonating code three times');
+
+  /* ⚠️ AND THE TWO QUESTIONS ALREADY BEING ASKED MUST NOT HAVE MOVED. A new token
+     type in a shared stream is a change to every caller unless each is checked;
+     `specifiers` skips `tstr` by an explicit line, and this is what says so. */
+  assert.deepEqual(specifiers("import x from './a.js';\nconst s=`a${b}c`;\nimport('./d.js');"),
+    ['./a.js', './d.js'], 'the import scanner changed behaviour when the lexer learned templates');
+  const names = referenced('el.innerHTML=`<b data-i="${k}">33 ft</b>`;');
+  assert.ok(names.has('k') && !names.has('i') && !names.has('b') && !names.has('ft'),
+    'template text leaked into the identifier stream');
 });
 
 test('⭐ every library name src/app.js uses is one it imports', async () => {

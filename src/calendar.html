@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-K9lBtl0T5JcE9ocqfzGrJB083T1uguQ+whGNrwAn+nU=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-wCzZ5doKMp4YUz0OzT9XyZMKf++eETEMktHAxKa+wMQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-wWiuqQWDIFHWJhB2gT2aazWIDimvLtXTkeO3jdgvL9s=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-wCzZ5doKMp4YUz0OzT9XyZMKf++eETEMktHAxKa+wMQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -609,6 +609,12 @@ function readableInk(hex, on = '#ffffff') {
 
 
 
+/* ⭐ THE SLOT'S GEOMETRY IS QUOTED HERE IN WORDS, so it is IMPORTED here rather
+   than typed. `GEOM` below is published inside `measures.json`'s `what` strings,
+   which is the document a reader checks us with — a stale number there is a
+   wrong number in the one place we invite verification. See
+   `test/prose-constants.test.js`. */
+
 
 /**
  * Regular season (02) and playoffs (03), read from the id — never a lookup.
@@ -1022,7 +1028,8 @@ function slotShare(records) {
       cGoalsPlaced += g.goals.placed;
     }
   }
-  const GEOM = 'within 33 ft of the attacking net and inside 22 ft of centre';
+  const GEOM = `within ${HIGH_DANGER_FT} ft of the attacking net `
+             + `and inside ${SLOT_HALF_WIDTH} ft of centre`;
   return {
     ...share(goalsIn, goalsPlaced,
       'of the goals scored in play whose location the feed records, this many were '

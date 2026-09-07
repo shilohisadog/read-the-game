@@ -44,7 +44,10 @@ import { fileURLToPath } from 'node:url';
 
 import { furniture, netGlyph, goalieGlyph, skaterGlyph, officialGlyph, GK_H,
          boardsY, SX, SY } from '../src/lib/rinkart.js';
-import { BLUE_LINE_X, NEUTRAL_DOT_X, NET_X } from '../src/lib/rink.js';
+/* ⭐ `HIGH_DANGER_FT` IS HERE BECAUSE THE SLOT FIGURE SAYS IT IN WORDS. The other
+   three place geometry; this one is quoted in a label and a step, and until
+   2026-09-07 both typed `33` beside an import of the constant that holds it. */
+import { BLUE_LINE_X, NEUTRAL_DOT_X, NET_X, HIGH_DANGER_FT } from '../src/lib/rink.js';
 import { NEUTRAL } from '../src/lib/teams.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -640,8 +643,8 @@ function slot() {
     // would spend the page on ice the rule says nothing about.
     viewBox: '100 0 99 85',
     group: 'ours',
-    label: 'Diagram: the slot — within 33 feet of the net, between the face-off '
-         + 'dots, and in front of the goal line.',
+    label: `Diagram: the slot — within ${HIGH_DANGER_FT} feet of the net, between `
+         + 'the face-off dots, and in front of the goal line.',
     door: 'See a shot from the slot in our replay',
     svg: defs(id)
       // TINTS ON, alone among the figures: this one IS the tint.
@@ -683,7 +686,7 @@ function slot() {
         + 'where the puck was <b>stopped</b> &mdash; the blocker&rsquo;s position, '
         + 'not the shooter&rsquo;s.',
     steps: [
-      '<b>Close in</b> &mdash; within 33 feet of the net. This one counts.',
+      `<b>Close in</b> &mdash; within ${HIGH_DANGER_FT} feet of the net. This one counts.`,
       '<b>And between the face-off dots.</b> The shaded band is exactly that '
       + 'wide, so you can check a mark against it: this one is too far out to the side.',
       /* ⚠️⚠️ THIS NAMED A PLAY THE FEED DOES NOT RECORD. It read "a wrap-around

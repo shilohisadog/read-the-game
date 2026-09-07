@@ -20,6 +20,15 @@
  * because "an amber ring marks each one" is a fact about this renderer. A second
  * surface drawing the same rule differently would need a different sentence and
  * the same reducer. So `DRAWS` stays in `app.js`.
+ *
+ * ⚠️⚠️ AND THE MOVE DID NOT ACHIEVE WHAT THE FIRST PARAGRAPH CLAIMS. It put the
+ * sentence and the constant in one FILE; it did not make either derive from the
+ * other, and `danger.counts` went on typing `33 ft` eighteen lines under an
+ * `import { HIGH_DANGER_FT }` for a day. Proximity is not a check. The drift this
+ * file's title promises is enforced by `test/prose-constants.test.js`, derived
+ * from `rink.js` across every tier that states a distance in words — and the
+ * third assertion below, which this file used to carry, turned out to FORBID
+ * that fix. See the note where it stood.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -84,9 +93,24 @@ test('⭐⭐ …and the page has no second copy of any of it', async () => {
      2026-09-07 took two of those cards with it, and `park.test.js`'s own ledger
      had already recorded `.lds` inside `.zref`. Two surfaces, one class name. */
 
-  for (const l of await layers())
-    assert.ok(app.includes(l.counts),
-      `${l.id}.counts never reaches the bundle — the page is not reading the module`);
+  /* ⛔⛔ AND A THIRD ASSERTION USED TO STAND HERE, `app.includes(l.counts)`, with
+     the message *"the page is not reading the module"*. It never asked that. It
+     compared the EVALUATED string against the bundle's SOURCE TEXT, which is the
+     same thing only while every description is a literal — so what it actually
+     enforced was that a layer's description may never be computed.
+
+     It went red the day `danger.counts` started interpolating `HIGH_DANGER_FT`
+     instead of typing 33 (see `test/prose-constants.test.js`), which is the fix
+     for a defect this very file's header names. **A check that forbids the
+     correction to the problem it describes is worth more as a lesson than as a
+     check.** The claim it was reaching for is real and is asserted where it can
+     be asked honestly: `test/render-notes.test.js` boots the page, presses each
+     layer's chip and requires the RENDERED caption to carry `mod.counts` — the
+     words reaching a reader, not a substring reaching a file. That is strictly
+     stronger, and it stayed green through the change. */
+
+  const ls = await layers();
+  assert.ok(ls.length >= 5, `only ${ls.length} layers found — this check has lost its subject`);
 });
 
 test('⭐ DRAWS covers exactly the layers, so the map cannot drift from the set', () => {

@@ -63,16 +63,25 @@ export function lex(src) {
  * Every token in `src`, handed to `emit` in order. The scanner both public
  * questions are built on.
  *
- * ⭐ ONE SCANNER, TWO QUESTIONS. `lex` asks which identifiers appear; `specifiers`
- * asks which modules are imported. Both need the same hard part — knowing when a
+ * ⭐ ONE SCANNER, THREE QUESTIONS. `lex` asks which identifiers appear;
+ * `specifiers` asks which modules are imported; `test/prose-constants.test.js`
+ * asks what the prose says. All three need the same hard part — knowing when a
  * `/` opens a regex, and when a quote opens a body that is not code — and written
- * twice the two would agree right up until one of them was fixed.
+ * three times they would agree right up until one of them was fixed.
  *
  *   {t, v, member, key}
- *     t       'id' | 'str' | 'num' | 're' | 'op'
+ *     t       'id' | 'str' | 'tstr' | 'num' | 're' | 'op'
  *     v       the identifier name, the raw string BODY, or the operator text
  *     member  identifiers only — preceded by `.` or `?.`
  *     key     identifiers only — an object-literal key written `name:`
+ *
+ * ⭐ `tstr` IS THE TEXT OF A TEMPLATE LITERAL, AND IT USED TO BE DROPPED. That was
+ * right while every caller asked about code, and became a hole the moment one
+ * asked about prose: `docs/status.md` §0.00-α's copy rule is enforced by reading
+ * string bodies, and half the user-facing sentences in `src/lib` are templates —
+ * a scanner blind to those reports a clean corpus forever. It is a SEPARATE type
+ * from `str` so that no existing caller's behaviour moves: `lex` filters to `id`,
+ * and `specifiers` skips it explicitly rather than by luck.
  */
 export function walk(src, emit) {
   let prev = null;            // last significant token, for the regex/divide call
@@ -152,21 +161,34 @@ export function walk(src, emit) {
   }
 }
 
-/** A template literal: skip its text, walk each `${…}`. Returns the index after it. */
+/**
+ * A template literal: emit its text as `tstr`, walk each `${…}`. Returns the
+ * index after it.
+ *
+ * ⚠️ ONE `tstr` PER TEXT RUN, NOT ONE PER LITERAL. `` `within ${FT} ft of the
+ * net` `` is two runs with a walked expression between them, so a caller looking
+ * for a number beside a unit sees `" ft of the net"` and not `"within 33 ft"` —
+ * which is exactly the distinction the prose rule is about, and why the
+ * interpolated form is invisible to it while the typed form is not.
+ */
 function template(src, i, emit) {
   const n = src.length;
   i++;                                          // past the opening backtick
+  let text = i;                                 // where the current text run began
+  const flush = k => { if (k > text) emit({ t: 'tstr', v: src.slice(text, k) }); };
   while (i < n) {
     if (src[i] === '\\') { i += 2; continue; }
-    if (src[i] === '`') return i + 1;
+    if (src[i] === '`') { flush(i); return i + 1; }
     if (src[i] === '$' && src[i + 1] === '{') {
+      flush(i);
       const start = i + 2;
       const end = closeBrace(src, start);
       walk(src.slice(start, end), emit);
-      i = end + 1; continue;
+      i = end + 1; text = i; continue;
     }
     i++;
   }
+  flush(i);
   return i;
 }
 
@@ -233,6 +255,14 @@ export function specifiers(src) {
   let prev = null, prev2 = null;
   const isWord = (t, w) => t && t.t === 'id' && !t.member && t.v === w;
   walk(src, t => {
+    /* ⭐ TEMPLATE TEXT IS SKIPPED HERE ON PURPOSE, not by the type check below.
+       `tstr` arrives in this stream too, and letting it into the `prev` chain
+       would change what "the token before the string" means for a shape nobody
+       has audited — a silent widening of a load-bearing guard as a side effect
+       of teaching the lexer a new answer. This function's behaviour is exactly
+       what it was; `import(`./${x}.js`)` stays the unseeable edge the note above
+       already declares. */
+    if (t.t === 'tstr') return;
     if (t.t === 'str'
         && (isWord(prev, 'from') || isWord(prev, 'import')
             || (prev && prev.t === 'op' && prev.v === '(' && isWord(prev2, 'import'))))
