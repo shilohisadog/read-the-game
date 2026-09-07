@@ -436,38 +436,27 @@ function classOfLayer() {
   return out;
 }
 
-test('⭐ Situations is offered by exactly the layers that READ the filter', () => {
-  // THE RULE, NOT TODAY'S ANSWER. `evenOnly` is what "Even strength only"
-  // changes, so the control belongs to every layer whose reducer reads it and
-  // to no other. Derived from the reducer sources, so a layer that starts
-  // reading the filter — or stops — turns this red instead of quietly offering
-  // a control that does nothing.
-  const map = classOfLayer();
-  assert.ok(Object.keys(map).length >= 5, `only mapped ${JSON.stringify(map)}`);
+/* ⏹ TWO TESTS OF THE SITUATIONS CONTROL STOOD HERE AND RETIRED WITH IT ON
+   2026-09-07. Kevin: *"Seems like we are making an 'advanced' toggle available to
+   a novice, without really explaining what the relative importance of the toggle
+   is. Do we need the toggle to be surfaced, or just use it for internal
+   calculations?"* — so the chips went and the FILTER stayed.
 
-  const want = new Set();
-  for (const [mod, cls] of Object.entries(map)) {
-    const file = mod === 'danger' ? 'danger' : mod === 'goaltending' ? 'goaltending' : mod;
-    const src = readFileSync(new URL(`../src/lib/layers/${file}.js`, import.meta.url), 'utf8');
-    if (/evenOnly/.test(src)) want.add(cls);
-  }
-  // Sanity: the split is real in both directions, or the assertion below is
-  // satisfied by "every layer" or "no layer".
-  assert.ok(want.size > 0 && want.size < Object.keys(map).length,
-    `every layer or none reads the filter: ${[...want]}`);
+   ⭐⭐ THE ONE WORTH RECORDING IS WHY THEY WERE GOOD. The show-rule was DERIVED:
+   the set of layers offering the control was read out of the reducer SOURCES —
+   every file mentioning `evenOnly` — and compared against the selectors in the
+   stylesheet, in both directions, with a sanity check that the split was neither
+   "every layer" nor "none". A layer that started reading the filter, or stopped,
+   turned the suite red rather than quietly offering a control that did nothing.
+   That is the shape to rebuild if the chips ever return; it is not a shape to
+   reconstruct from memory.
 
-  const rule = CSS.match(/([^\n}]*\.figpick\.sit[^{]*)\{display:flex\}/);
-  assert.ok(rule, 'no rule shows Situations for any layer');
-  const have = new Set([...rule[1].matchAll(/#rg\.([a-z]+)\s+\.figpick\.sit/g)].map(m => m[1]));
-  assert.deepEqual([...have].sort(), [...want].sort(),
-    'the layers offered the Situations control are not the layers that read it');
-});
+   ⚠️ AND THE FILTER IS STILL READ BY FIVE REDUCERS AND STILL REACHABLE by
+   `?strength=even`. What no longer exists is a rule about where a control
+   appears, because there is no control. `test/deeplink-render.test.js` asserts
+   the URL still reaches the mode and the scoreboard still states it; the work
+   panel's even-strength footnote is covered in `test/smoke.test.js`. */
 
-test('and the base view carries it not at all', () => {
-  // The other half. Without this, "offered by exactly those layers" is
-  // satisfied by a control that is always visible.
-  assert.match(CSS, /#rg \.figpick\.sit\{display:none\}/);
-});
 
 test('the controls that DO reach the base view stay in it', () => {
   // CHENG refused moving them wholesale: the learn page's nine doors land with

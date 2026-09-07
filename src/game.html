@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-WQdgp+nsTbEXk5Uwsd4A6MWl4LQTadUiQqcgk/fuonU=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-XAo4eJj2sfWXQufX50U6NRkjHf+78BKrMERCPxroC/k='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7hIk0bJlk9t2gbNLWjiBd3OjwBXvvya82fLHdvMS+hM=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-UZDYBWpv+3xSzjLR97fOYL02McxdnItEtowrV+//qUU='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">Watch a game</a><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see</a><a href="/workshop.html">Workshop</a></nav></header>
@@ -1328,10 +1328,13 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    view. Moving them wholesale is what CHENG refused, because the learn page's
    nine doors land with a layer already on and a door must not be a one-way
    trip. */
-#rg .figpick.sit{display:none}
-#rg.corsi .figpick.sit,#rg.slot .figpick.sit,#rg.goalie .figpick.sit,
-#rg.blocked .figpick.sit{display:flex}
-#rg .sbtn[aria-pressed="true"]{border-style:solid;color:var(--ink);border-color:var(--ink);background:#eef2f5}
+/* ⏹ THE SITUATIONS CONTROL'S RULES WENT ON 2026-09-07 WITH THE CONTROL. They were
+   `#rg .figpick.sit{display:none}` plus a four-selector reveal naming every layer
+   that reads `evenOnly`, and `#rg .sbtn[aria-pressed="true"]`. The reveal is the
+   one worth remembering: it was DERIVED from the reducers rather than typed, and
+   test/layers.test.js checked it that way — a layer that started reading the
+   filter turned the suite red. That derivation has no subject now; if the chips
+   ever come back, so does it. See builders/build_main.py where the markup was. */
 /* A NOTE APPEARS WHEN THE THING IT EXPLAINS HAPPENS, and not before. These
    three were permanent -- 183px on a phone, 93 words -- each describing a state
    the reader was not in. CHENG: "the place that sentence actually pays off is
@@ -1378,7 +1381,6 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 /* ONE COLUMN FOR THE LABELS, so the three controls start at the same x. They are
    separate rows in the markup -- each is its own `figpick` -- so nothing aligned
    them, and `Trails:` / `Players:` / `Narration:` are three different lengths. */
-#rg .zdisp .figpick>.ll{min-width:5.4rem}
 /* ⭐ EVERY ZONE IS A DISCLOSURE, INCLUDING THE LAYERS (Kevin, 2026-08-26: "I want
    LAYERS to be collapsible too, it looks a lot better for consistency"). The
    argument against was the conversion -- the one thing the site exists to get a
@@ -2013,7 +2015,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 <p class="icenote" id="iceNote"></p>
 
 <div class="transport"><button class="play" id="play">▶ Play</button>
-  <div class="grp" role="group" aria-label="Step through the events"><button class="spd stepb" id="back" aria-label="Previous event">◀ Prev event</button><button class="spd stepb" id="fwd" aria-label="Next event">Next event ▶</button></div>
+  <div class="grp" role="group" aria-label="Step through the events"><button class="spd stepb" id="back" aria-label="Previous event">◀ Prev</button><button class="spd stepb" id="fwd" aria-label="Next event">Next ▶</button></div>
   <div class="grp" role="group" aria-label="Replay speed"><button class="spd stepb" id="slower">&#9664; Slower</button><button class="spd stepb" id="faster">Faster &#9654;</button></div>
   <input class="scrub" id="scrub" type="range" min="-1" max="1" value="-1"></div>
 <!-- ⭐ COPY A LINK TO THIS MOMENT. The read side has been built and tested since
@@ -2026,18 +2028,25 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
      the moment, and the confirmation names the moment it copied. -->
 <div class="sharerow"><button class="share" id="share" type="button">Copy a link to this moment</button><span class="sharesaid" id="sharesaid" role="status" aria-live="polite"></span></div>
 <div class="pickrow" role="radiogroup" aria-label="Which layer is on the ice" id="pickrow"><span class="pklab">Layers</span><button class="pk" id="pkNone" data-l="none" role="radio" aria-checked="true"><span class="pkl">Just events</span></button><span class="pksep" aria-hidden="true"></span><button class="pk" id="pkCorsi" data-l="corsi" role="radio" aria-checked="false"><span class="pkl">Attempts</span><span class="pkn" id="n_corsi">0</span></button><button class="pk" id="pkSlot" data-l="slot" role="radio" aria-checked="false"><span class="pkl">Slot</span><span class="pkn" id="n_slot">0</span></button><button class="pk" id="pkBlocked" data-l="blocked" role="radio" aria-checked="false"><span class="pkl">Blocked</span><span class="pkn" id="n_blocked">0</span></button><button class="pk" id="pkGoalie" data-l="goaltending" role="radio" aria-checked="false"><span class="pkl">Goaltending</span><span class="pkn" id="n_goaltending">0</span></button><button class="pk" id="pkWhistle" data-l="whistle" role="radio" aria-checked="false"><span class="pkl">Stoppages</span><span class="pkn" id="n_whistle">0</span></button></div>
-<!-- ⛔ THE SITUATIONS CONTROL LIVES HERE BECAUSE ITS ANCESTOR WAS PARKED.
-     B2 put it inside the layer menu so it would follow the layer, and
-     `#rg.corsi .figpick.sit{display:flex}` still says exactly that. Then the
-     menu was parked on 2026-08-27 -- `#rg .zlayers{display:none}` -- and a
-     descendant cannot un-hide itself, so the rule stayed correct and became
-     inert. The control was wired, its note was written on every frame, and
-     neither could be seen; the filter was reachable only by typing
-     `?strength=even`. It sits beside the picker now, which is the control it
-     modifies and the surface that replaced the menu. -->
-<div class="figpick sit"><span class="ll">Situations:</span>
-<div class="grp" role="group" aria-label="Which situations are counted"><button class="lyr sbtn" data-s="all" aria-pressed="true">All situations</button><button class="lyr sbtn" data-s="even" aria-pressed="false">Even strength only</button></div>
-<span class="fnote" id="nSit"></span></div>
+<!-- ⏹ THE SITUATIONS CONTROL STOOD HERE AND WAS REMOVED ON 2026-09-07. Kevin,
+     looking at this area for the first time in a while: *"Seems like we are
+     making an 'advanced' toggle available to a novice, without really explaining
+     what the relative importance of the toggle is. Do we need the toggle to be
+     surfaced, or just use it for internal calculations?"*
+     ⭐ THE ANSWER IS THE PAGE'S OWN WALL. Every other control here names a RULE a
+     reader can check on the ice; "even strength only" is not a rule, it is an
+     analyst's adjustment, and a novice cannot decide whether to press it without
+     a paragraph about why power-play shots inflate a count. That paragraph is
+     exactly what the learn cards refuse to carry.
+     ⛔ THE FILTER ITSELF IS UNTOUCHED, which is the whole point of removing only
+     the control. `evenOnly` is still read by all five counting layers,
+     `?strength=even` still reaches it, `setStrength` still runs, and the work
+     panel still explains what the filter dropped when it is on. What went is a
+     chip; nothing that counts moved. The default was already `all situations`,
+     so no visitor's default view changes.
+     ⚠️ AND ITS NOTE WENT WITH IT. `#nSit` was written on every frame by `render`
+     and it described the control -- see status.md B2 for the ten days that note
+     spent describing a control nobody could reach. -->
 <!-- ⏹ THE AMBER-RING TIP STOOD HERE AND WAS REMOVED ON 2026-09-07, and the
      reason is that IT HAD ALREADY BEEN SAID BETTER, twelve lines lower.
      It read: "Tip: click any shot ringed in amber to see why it counts as a
@@ -4326,9 +4335,15 @@ function workMarkup({ id, L, sl, name, lds, lat, box: b, cards, mode, when, even
     without a 49-row wall is to say the rule once and show one shot that met it.
     `detail` is set only where the reducer has a per-event measurement, so
     layers without one render exactly as before. */
- const rows=g=>Object.entries(g).sort((a,b)=>b[1].n-a[1].n)
-   .map(([why,{n,eg}])=>`<div><b>${n}&times;</b> ${ESC(why)}`
-     +(eg?` <span class="weg">e.g. ${ESC(eg)}</span>`:'')+`</div>`).join('');
+ /* ⭐ THE COUNT PREFIX EARNS ITS PLACE ONLY WHEN IT DISTINGUISHES ROWS. With one
+    rule covering everything, `29×` sits two centimetres under a heading that
+    already says 29 — two identical numbers next to each other, which reads as a
+    mistake rather than as arithmetic. This project has cut that shape before. The
+    rule is derived from the grouping rather than passed in by the caller, so both
+    columns get it for the same reason. */
+ const rows=g=>{const es=Object.entries(g).sort((a,b)=>b[1].n-a[1].n);
+   return es.map(([why,{n,eg}])=>`<div>${es.length>1?`<b>${n}&times;</b> `:''}${ESC(why)}`
+     +(eg?` <span class="weg">e.g. ${ESC(eg)}</span>`:'')+`</div>`).join('');};
  /* ⭐ THE LEDGER STOPS PRETENDING TO TEACH. Kevin: "what is the Not Counted
     column teaching the new viewer? That faceoffs, giveaways, period starts are
     NOT shots from the slot? I don't think there's much value there." Measured
@@ -4378,7 +4393,6 @@ function workMarkup({ id, L, sl, name, lds, lat, box: b, cards, mode, when, even
     `surprising[0].why` beside the number 44 with no such label, which reads as
     though all 44 were that one thing -- the defect this avoids without
     reintroducing the wall. */
- const sur=L.surprising&&L.surprising.length?L.surprising[0].why:null;
  /* `box` and `when` are computed by the caller -- see the signature. */
  /* `box` and `when` are computed by the caller -- see the signature. */
  /* ⚠️ ZERO IS A FIGURE, AND `&&` DROPPED IT. `b.h` is a NUMBER, so a club with
@@ -4422,24 +4436,25 @@ function workMarkup({ id, L, sl, name, lds, lat, box: b, cards, mode, when, even
     reader -- caught by the golden's layer walk, which had existed for an hour. */
  +`<p>${lds?ESC(lds)+'.':''}</p>`
  +(lat?`<p class="wattr">${ESC(lat)}</p>`:'')+`</div>`
- +(sur?`<div class="wc flag"><h3>Counted, surprisingly <span class="n">${L.surprising.length}</span></h3>`
-   /* ⚠️ AND THIS SENTENCE IS CLOSED TOO — the same fragment defect `.lds` had one
-      card to the left, seen in the same screenshot. A reducer's `why` is a
-      CLAUSE ("…so neither club is credited with the block"), so it ran straight
-      into the line below it: "…credited with the block The other one carries
-      its own reason." The stop is added HERE rather than in fifteen reasons,
-      and only when the clause has not already ended itself. */
-   +`<p><em>For example:</em> ${ESC(sur)}${/[.!?]$/.test(sur)?'':'.'}</p>`
-   /* ⚠️ AND IT AGREES WITH ITSELF WHEN THERE IS ONE. "The other 1 each carry
-      their own reason" is what a plural written once and never re-read looks
-      like — and it is the COMMONEST case, not an edge: the surprising bucket
-      opens at two the moment a second one lands, so every layer passes through
-      it. Seen in a 360px screenshot of the very card this session was tidying,
-      on both the layers that were open. */
-   +(L.surprising.length>1?`<p class="wexc">${L.surprising.length===2
-     ?'The other one carries its own reason, written by the layer that counted it.'
-     :`The other ${L.surprising.length-1} each carry their own reason, written by the layer that counted them.`}</p>`:'')
-   +`</div>`:'')
+ /* ⭐⭐ THE SAME SHAPE AS THE COLUMN BESIDE IT: one row per RULE, with its count
+    and one measurement. Until 2026-09-07 this printed `surprising[0].why` under
+    "For example:" and then "the other N each carry their own reason, written by
+    the layer that counted them" — which was FALSE in the way that matters. The
+    reasons embedded the player's name, so 44 events came out as 20 sentences that
+    could not group; a reader was told to imagine 43 explanations that did not
+    exist. Measured across the reference game, every layer has exactly ONE rule:
+    Attempts 44 events, Slot 14, Blocked 4, Goaltending 5 — one row each.
+    ⭐ THE FIX WAS IN THE REDUCERS, NOT HERE. `why` is the rule and `detail` is the
+    example now, so `summarise` groups these exactly as it groups exclusions and
+    every reason is shown instead of one of four. Kevin: the old form "doesn't
+    help a viewer read the game now" — a rule travels to the next game, a surname
+    does not. */
+ /* ⚠️ `L.surprising` IS OPTIONAL, and dropping this guard broke four tests at
+    once: the whistle layer's ledger has no such key at all, because a stoppage
+    is never counted against expectation. A bucket a layer does not have is not
+    an empty bucket. */
+ +(L.surprising&&L.surprising.length?`<div class="wc flag"><h3>Counted, surprisingly <span class="n">${L.surprising.length}</span></h3>`
+   +`<p class="wexc">${rows(summarise(L.surprising))}</p></div>`:'')
  +(near.length?`<div class="wc"><h3>Close, but not counted <span class="n">${near.length}</span></h3>`
    +`<p class="wexc">${exc}</p></div>`:'')+`</div>`
  +(plainLine?`<p class="wplain">${plainLine}</p>`:'')
@@ -4720,21 +4735,6 @@ function puckMark(cp, moment) {
  * `test/notes.test.js` requires by name.
  */
 
-/**
- * The strength filter's note, which describes THE OTHER CHOICE when it is off.
- *
- * ⭐ THAT ASYMMETRY IS DELIBERATE AND WAS ONCE THE BUG. Both controls used to say
- * nothing until they had already been used, so "Even strength only" described
- * itself only once you were in it. A sentence belongs beside the thing it is
- * about AT THE MOMENT OF USE — which is right for a caption and wrong for a
- * CONTROL, because a button has to be predictable before the click or it is a
- * dare. Off, it says what pressing it would do; on, it carries the live count.
- */
-function situationsNote(evenOnly, dropped) {
- return evenOnly
-   ?`${dropped} ${dropped===1?'attempt has':'attempts have'} dropped out so far. Power plays and an empty net are still hockey — but they aren't even hockey.`
-   :'Even strength only drops the attempts made on a power play or against an empty net, and says how many it dropped.';
-}
 
 /** The trails control's note. It follows the ENDS MODE, because the old sentence
  *  promised a whole-game chart and as-played cannot deliver one. */
@@ -5014,10 +5014,20 @@ const corsi = {
         // place this project once shipped a wrong number with a confident
         // explanation attached. `derivedFrom` is what makes it checkable.
         const p = roster[e.actor];
+        /* ⭐⭐ THE RULE IS `why`, THE PLAYER IS `detail`, and they were one string
+           until 2026-09-07. Embedding the name made every one of these unique, so
+           44 surprising events came out as 20 sentences that `summarise` could not
+           group — and the panel showed ONE and said "the other 43 each carry their
+           own reason", which is false: they carry the SAME reason with a different
+           name in it. Split, they are one row with a count and an example, exactly
+           like the exclusions beside them. Kevin: the old form "doesn't help a
+           viewer read the game now". A rule travels to the next game; a surname
+           does not. */
         surprising.push({
           id,
-          why: `blocked, but it still counts — an attempt belongs to the SHOOTER`
-             + `${p ? `, ${p.nm}` : ''}, not the player who blocked it`,
+          why: 'blocked, but it still counts — an attempt belongs to the SHOOTER, '
+             + 'not the player who blocked it',
+          detail: p ? p.nm : undefined,
           derivedFrom: `roster[event.actor].tid (actor=${e.actor})`,
         });
       }
@@ -5987,11 +5997,14 @@ const blocked = {
            blocks this layer counts; no DEFENDER did, so no club's column gets
            it. That is the whole reason it is filed as surprising rather than
            excluded, and the sentence never said the first half out loud. */
+        /* ⭐ THE RULE GROUPS, THE NAME IS THE EXAMPLE. See the note in corsi.js:
+           the blocker's name inside `why` made three events into three sentences
+           that could not be summarised. */
         surprising.push({
           id,
-          why: `blocked by a teammate — ${blocker.nm} was in front of his own`
-             + ` side's shot. A body stopped it, so it is counted here; but no`
-             + ` defender did, so neither club is credited with the block`,
+          why: 'blocked by a teammate — a body stopped it, so it is counted here; '
+             + 'but no defender did, so neither club is credited with the block',
+          detail: blocker.nm,
           derivedFrom: `roster[event.blk].tid === roster[event.actor].tid `
                      + `(blk=${e.blk}, actor=${e.actor})`,
         });
@@ -7913,7 +7926,6 @@ function render(i,how){
  // reason -- moved to layer.js on 2026-09-04, where its argument now lives: it is
  // a question about the ledger's own dimensions, and asking it here was the tier
  // boundary being crossed quietly.
- const dropped=droppedForStrength(L.excluded);
  /* ⭐ AND THE OTHER BRANCH IS NO LONGER EMPTY. All three of these notes used to
     say nothing until their control had already been used -- so `Tabletop` was
     explained only once you had chosen `Tabletop`, and `Even strength only`
@@ -7923,7 +7935,7 @@ function render(i,how){
     before the click or it is a dare. The default branch now describes what the
     other choice would do; the active branch still carries the live count, which
     is a fact about the ice and belongs to the moment. */
- $('nSit').textContent=situationsNote(evenOnly,dropped);
+
  $('nTrails').textContent=trailsNote(trails,ASPLAYED);
  document.getElementById('rg').classList.toggle('ended',i>=EV.length-1);
  /* THE PRE-GAME FRAME IS THE ONLY ONE THAT NEEDS AN INSTRUCTION, and `i<0` is the
@@ -8532,7 +8544,20 @@ function sayWho(e){const w=$('who');if(!w)return;
  // ⭐ SUPPRESSED WHERE THE NAME IS ALREADY ON SCREEN, on the site's own precedent:
  // the offside blurb shrank when its figure arrived, because a card with a diagram
  // should say the part the diagram cannot. 144 of 2,069 frames.
- if(!p||namesActor(e)){w.innerHTML=LAB[e.type]||e.type.replace(/-/g,' ');w.className='who plain';return;}
+/* ⭐⭐ TWO DIFFERENT SILENCES, AND THEY WERE ONE BRANCH UNTIL 2026-09-07.
+    SUPPRESSED: the name is already on screen — a goal or a penalty, where the
+    caption pill names the scorer and the assists. The line renders NOTHING,
+    because a bare `goal` under the ice is a third copy of a word the pill and the
+    scoreboard already have. Kevin saw it once the line moved under the drawing:
+    *"let's just render nothing on a Goal, the rink description is sufficient."*
+    It costs no jitter — `min-height` reserves the row either way.
+    UNRESOLVED: we cannot name a player at all. That one still says the EVENT's
+    own name, because a frame the page says nothing about reads as broken.
+    ⚠️ THE TWO SHARED A LINE AND SO SHARED A RENDERING, which is how a deliberate
+    suppression came out looking like a lowercase placeholder. Same class of thing
+    as the whistle layer's *a condition is not an event*. */
+ if(namesActor(e)){w.innerHTML='';w.className='who';return;}
+ if(!p){w.innerHTML=LAB[e.type]||e.type.replace(/-/g,' ');w.className='who plain';return;}
  let s=a.say.replace('{a}',whoTag(p));
  /* ⭐⭐ THE COLOUR IS THE SUBJECT'S CLUB, NOT THE ACTOR'S, and until 2026-09-07
     those were assumed to be the same player. They are on nine of the ten types.
@@ -10091,14 +10116,17 @@ function setHd(){document.getElementById('rg').classList.toggle('slot',hdOn);syn
 // One code path owns the mode label, so the markup cannot drift from the state.
 // The static HTML carries a default only so the page reads correctly before JS.
 function syncStrength(){
- const v=evenOnly?'even':'all';
- document.querySelectorAll('#rg .sbtn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.s===v));
+ /* ⏹ NOTHING TO SYNC SINCE 2026-09-07 — the two `.sbtn` chips were removed and
+    the filter is reached by `?strength=even` alone. Kept as a function because
+    `setStrength` is the one place that changes `evenOnly` and a reader looking
+    for "what happens when the filter moves" should find one answer, not none. */
  // EVERY site that shows this quantity carries the mode. The scoreboard is the
  // prominent one and was the unqualified one -- same number, two places, one
  // of them saying what it was measured under (CHENG).
  const lbl=MODE().toUpperCase();$('mA').textContent=lbl;$('mH').textContent=lbl;$('pMode').textContent=lbl;}
 function setStrength(v){evenOnly=(v==='even');syncStrength();render(i,'');}
-document.querySelectorAll('#rg .sbtn').forEach(b=>b.addEventListener('click',()=>setStrength(b.dataset.s)));
+/* ⏹ AND THE LISTENER WENT WITH THE CHIPS. `setStrength` survives because the
+   deep link calls it; nothing on the page does. */
 syncStrength();
 /* ⭐ TRAILS IS BEHIND A DISCLOSURE TOO, SO ITS SUMMARY CARRIES ITS SETTING.
    The same rule the layer menu follows: a control you cannot see must still be

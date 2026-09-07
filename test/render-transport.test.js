@@ -527,20 +527,33 @@ test('the caption is not clickable, and nothing pretends it is', () => {
     'a listener was added to an element that cannot receive events');
 });
 
-test('the step buttons say what they step THROUGH, in words a reader can see', () => {
-  // Kevin: "don't we need to state what the prev and next arrows are for?"
-  // `◀ Back` beside a slider does not answer "back to what", and the answer was
-  // only in an aria-label, which a sighted viewer never gets.
+test('the step buttons name their unit, and the arrow is never the whole name', () => {
+  /* ⏹ THE VISIBLE LABELS SAID "event" UNTIL 2026-09-07, on Kevin's earlier call —
+     *"don't we need to state what the prev and next arrows are for?"* — because
+     `◀ Back` beside a slider does not answer "back to what". He traded it back
+     for layout: `◀ Prev event` / `Next event ▶` are wide enough that at 390 the
+     transport row rewrapped whenever the play button grew, so the whole page
+     jumped 54px the moment a visitor pressed play. With `◀ Prev` / `Next ▶` the
+     transport is 156px for EVERY play-button label at both 360 and 390 — the
+     jitter goes, and 360 loses 54px it was paying in every state.
+
+     ⭐ WHAT DID NOT MOVE IS THE ACCESSIBLE NAME, and that is now the whole claim.
+     The unit still has to be somewhere a reader can get it; the group around both
+     buttons is labelled "Step through the events", and each button's own
+     aria-label spells it out. An arrow alone is still refused. */
   const btn = id => app.match(new RegExp(`<button[^>]*id="${id}"[^>]*>([^<]*)<`))[1];
   for (const id of ['back', 'fwd']) {
     const visible = btn(id);
-    assert.match(visible, /\bevent\b/i,
-      `#${id} reads "${visible}" — it names a direction but not what it moves through`);
-    // The accessible name must not be poorer than the visible one, and the
-    // arrow glyph must not be the only thing a screen reader is handed.
+    assert.match(visible, /[A-Za-z]{3,}/,
+      `#${id} reads "${visible}" — an arrow glyph is not a label`);
     const aria = app.match(new RegExp(`<button[^>]*id="${id}"[^>]*aria-label="([^"]*)"`))[1];
     assert.match(aria, /\bevent\b/i, `#${id}'s accessible name lost the unit`);
   }
+  /* AND THE UNIT IS ON SCREEN FOR A SIGHTED READER TOO, on the group rather than
+     on each button — which is where it can be said once. */
+  const grp = app.match(/<div class="grp" role="group" aria-label="([^"]*)"[^>]*>\s*<button[^>]*id="back"/);
+  assert.ok(grp && /\bevents?\b/i.test(grp[1]),
+    'the group around the step buttons no longer names what they step through');
 });
 
 /**

@@ -213,7 +213,7 @@ __CSS__</style>
 <p class="icenote" id="iceNote"></p>
 
 <div class="transport"><button class="play" id="play">▶ Play</button>
-  <div class="grp" role="group" aria-label="Step through the events"><button class="spd stepb" id="back" aria-label="Previous event">◀ Prev event</button><button class="spd stepb" id="fwd" aria-label="Next event">Next event ▶</button></div>
+  <div class="grp" role="group" aria-label="Step through the events"><button class="spd stepb" id="back" aria-label="Previous event">◀ Prev</button><button class="spd stepb" id="fwd" aria-label="Next event">Next ▶</button></div>
   <div class="grp" role="group" aria-label="Replay speed"><button class="spd stepb" id="slower">&#9664; Slower</button><button class="spd stepb" id="faster">Faster &#9654;</button></div>
   <input class="scrub" id="scrub" type="range" min="-1" max="1" value="-1"></div>
 <!-- ⭐ COPY A LINK TO THIS MOMENT. The read side has been built and tested since
@@ -226,18 +226,25 @@ __CSS__</style>
      the moment, and the confirmation names the moment it copied. -->
 <div class="sharerow"><button class="share" id="share" type="button">Copy a link to this moment</button><span class="sharesaid" id="sharesaid" role="status" aria-live="polite"></span></div>
 <div class="pickrow" role="radiogroup" aria-label="Which layer is on the ice" id="pickrow"><span class="pklab">Layers</span><button class="pk" id="pkNone" data-l="none" role="radio" aria-checked="true"><span class="pkl">Just events</span></button><span class="pksep" aria-hidden="true"></span><button class="pk" id="pkCorsi" data-l="corsi" role="radio" aria-checked="false"><span class="pkl">Attempts</span><span class="pkn" id="n_corsi">0</span></button><button class="pk" id="pkSlot" data-l="slot" role="radio" aria-checked="false"><span class="pkl">Slot</span><span class="pkn" id="n_slot">0</span></button><button class="pk" id="pkBlocked" data-l="blocked" role="radio" aria-checked="false"><span class="pkl">Blocked</span><span class="pkn" id="n_blocked">0</span></button><button class="pk" id="pkGoalie" data-l="goaltending" role="radio" aria-checked="false"><span class="pkl">Goaltending</span><span class="pkn" id="n_goaltending">0</span></button><button class="pk" id="pkWhistle" data-l="whistle" role="radio" aria-checked="false"><span class="pkl">Stoppages</span><span class="pkn" id="n_whistle">0</span></button></div>
-<!-- ⛔ THE SITUATIONS CONTROL LIVES HERE BECAUSE ITS ANCESTOR WAS PARKED.
-     B2 put it inside the layer menu so it would follow the layer, and
-     `#rg.corsi .figpick.sit{display:flex}` still says exactly that. Then the
-     menu was parked on 2026-08-27 -- `#rg .zlayers{display:none}` -- and a
-     descendant cannot un-hide itself, so the rule stayed correct and became
-     inert. The control was wired, its note was written on every frame, and
-     neither could be seen; the filter was reachable only by typing
-     `?strength=even`. It sits beside the picker now, which is the control it
-     modifies and the surface that replaced the menu. -->
-<div class="figpick sit"><span class="ll">Situations:</span>
-<div class="grp" role="group" aria-label="Which situations are counted"><button class="lyr sbtn" data-s="all" aria-pressed="true">All situations</button><button class="lyr sbtn" data-s="even" aria-pressed="false">Even strength only</button></div>
-<span class="fnote" id="nSit"></span></div>
+<!-- ⏹ THE SITUATIONS CONTROL STOOD HERE AND WAS REMOVED ON 2026-09-07. Kevin,
+     looking at this area for the first time in a while: *"Seems like we are
+     making an 'advanced' toggle available to a novice, without really explaining
+     what the relative importance of the toggle is. Do we need the toggle to be
+     surfaced, or just use it for internal calculations?"*
+     ⭐ THE ANSWER IS THE PAGE'S OWN WALL. Every other control here names a RULE a
+     reader can check on the ice; "even strength only" is not a rule, it is an
+     analyst's adjustment, and a novice cannot decide whether to press it without
+     a paragraph about why power-play shots inflate a count. That paragraph is
+     exactly what the learn cards refuse to carry.
+     ⛔ THE FILTER ITSELF IS UNTOUCHED, which is the whole point of removing only
+     the control. `evenOnly` is still read by all five counting layers,
+     `?strength=even` still reaches it, `setStrength` still runs, and the work
+     panel still explains what the filter dropped when it is on. What went is a
+     chip; nothing that counts moved. The default was already `all situations`,
+     so no visitor's default view changes.
+     ⚠️ AND ITS NOTE WENT WITH IT. `#nSit` was written on every frame by `render`
+     and it described the control -- see status.md B2 for the ten days that note
+     spent describing a control nobody could reach. -->
 <!-- ⏹ THE AMBER-RING TIP STOOD HERE AND WAS REMOVED ON 2026-09-07, and the
      reason is that IT HAD ALREADY BEEN SAID BETTER, twelve lines lower.
      It read: "Tip: click any shot ringed in amber to see why it counts as a

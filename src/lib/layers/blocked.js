@@ -155,11 +155,14 @@ export const blocked = {
            blocks this layer counts; no DEFENDER did, so no club's column gets
            it. That is the whole reason it is filed as surprising rather than
            excluded, and the sentence never said the first half out loud. */
+        /* ⭐ THE RULE GROUPS, THE NAME IS THE EXAMPLE. See the note in corsi.js:
+           the blocker's name inside `why` made three events into three sentences
+           that could not be summarised. */
         surprising.push({
           id,
-          why: `blocked by a teammate — ${blocker.nm} was in front of his own`
-             + ` side's shot. A body stopped it, so it is counted here; but no`
-             + ` defender did, so neither club is credited with the block`,
+          why: 'blocked by a teammate — a body stopped it, so it is counted here; '
+             + 'but no defender did, so neither club is credited with the block',
+          detail: blocker.nm,
           derivedFrom: `roster[event.blk].tid === roster[event.actor].tid `
                      + `(blk=${e.blk}, actor=${e.actor})`,
         });

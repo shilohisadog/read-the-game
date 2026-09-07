@@ -233,13 +233,26 @@ test('⭐ the sentence resolves on every frame the replay shows, or says the eve
      branch's copy of the string in place and the assertion passed. What is counted
      instead is the EMPTY writes — there may be exactly one, the pre-game frame,
      and every other exit must put words on the line. */
+  /* ⭐⭐ TWO BLANK BRANCHES SINCE 2026-09-07, AND THE SECOND IS A DECISION. This
+     required exactly ONE — the pre-game frame — on the reasoning that a frame the
+     page says nothing about reads as broken. True, and it conflated two different
+     silences: we CANNOT name anybody, versus the name is already on screen. The
+     second used to render the raw event type, which under the transport was
+     invisible and under the drawing was a lowercase `goal` sitting centred beneath
+     a pill that had just said GOAL — Blake, assists: Hall, Ehlers. Kevin, seeing
+     it: *"let's just render nothing on a Goal, the rink description is
+     sufficient."* It costs no jitter — `min-height` reserves the row either way.
+     So the count is two, and each is named, because "some branches are blank" is
+     not a claim anybody can check. */
   const say = fnSrc('sayWho');
   const blanks = say.match(/innerHTML=''/g) || [];
-  assert.equal(blanks.length, 1,
-    `${blanks.length} branches of sayWho render an empty line. Only the pre-game frame `
-    + 'may be blank; a frame with no resolvable player says the event\'s own name');
+  assert.equal(blanks.length, 2,
+    `${blanks.length} branches of sayWho render an empty line. There are exactly two: `
+    + 'the pre-game frame, and a frame whose name the caption pill already carries');
   assert.match(say, /if\(!e\)\{w\.innerHTML=''/,
-    'the one empty branch is not the pre-game one');
+    'the pre-game branch is no longer one of the empty ones');
+  assert.match(say, /if\(namesActor\(e\)\)\{w\.innerHTML=''/,
+    'the suppressed-because-already-named branch is no longer the other empty one');
   const falls = say.match(/LAB\[e\.type\]\|\|e\.type\.replace/g) || [];
   assert.equal(falls.length, 2,
     `${falls.length} branches name the event instead of a player — there are two ways to `

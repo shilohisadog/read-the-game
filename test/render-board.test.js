@@ -28,9 +28,14 @@ test('no bare percentage survives on the scoreboard', () => {
 });
 
 test('the strength mode reaches the scoreboard, not only the counters', () => {
-  const a = boot();
+  /* ⏹ THE CHIPS WENT ON 2026-09-07 and the FILTER did not, so the mode is
+     entered the way a visitor can still enter it: `?strength=even`. Driving a
+     control the page no longer has is the trap this repo hit in August — the fake
+     document invents an element for any selector, so the click would have been a
+     no-op and this test would have asserted the DEFAULT mode while claiming to
+     assert the other one. */
+  const a = boot(null, null, '?strength=even');
   pickLayer(a, 'corsi');
-  a.GROUPS['#rg .sbtn'][1].click();                 // even strength only
   assert.equal(a.$('pMode').textContent, 'EVEN STRENGTH');
   assert.equal(a.$('mA').textContent, 'EVEN STRENGTH', 'and the two agree');
 });
@@ -119,12 +124,17 @@ test('the controls explain themselves without referring to their own history', (
   // default too — and the default is the state every first-time visitor is in.
   // `nFig` LEFT WITH ITS CONTROL on 2026-08-26 — Kevin removed the Players and
   // Narration pickers, so the two notes this used to walk have no button to be
-  // about. What remains is every note a visitor can still be shown.
+  // about. ⏹ AND `nSit` LEFT THE SAME WAY ON 2026-09-07: Kevin removed the All
+  // situations / Even strength only chips — *"we are making an 'advanced' toggle
+  // available to a novice, without really explaining what the relative importance
+  // of the toggle is"* — and a note explaining a control nobody can press has
+  // nothing to be about. The FILTER survives on `?strength=even`; only the chip
+  // and its sentence went. What remains is every note a visitor can still be
+  // shown, which is the claim this test has always been making.
   const shown = [];
-  for (const id of ['nTrails', 'nSit']) shown.push(a.$(id).textContent);
+  for (const id of ['nTrails']) shown.push(a.$(id).textContent);
   a.GROUPS['#rg .tbtn'].find(b => b.dataset.t === 'all').click();
-  a.GROUPS['#rg .sbtn'].find(b => b.dataset.s === 'even').click();
-  for (const id of ['nTrails', 'nSit']) shown.push(a.$(id).textContent);
+  for (const id of ['nTrails']) shown.push(a.$(id).textContent);
   for (const text of shown) {
     assert.ok(text, 'a control was switched and explained nothing');
     assert.doesNotMatch(text, /used to|older behaviour|nobody asked for|no longer/i,

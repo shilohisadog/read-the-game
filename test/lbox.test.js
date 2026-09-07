@@ -809,31 +809,50 @@ test('whatever a reader adds in the ledger line is the number it is printed agai
  * of the card, on both layers that were open; no test could have flagged it,
  * because each half of the sentence is individually valid English.
  */
-test('the surprising bucket says "the other one" when there is one', () => {
+test('⛔ the surprising column accounts for every event it claims', () => {
+  /* ⏹ THIS PINNED THE SENTENCE "The other one carries its own reason", which was
+     removed on 2026-09-07 — it was FALSE in the way that matters. The reasons
+     embedded the player's name, so 44 events came out as 20 sentences that could
+     not group, and a reader was told to imagine 43 explanations that did not
+     exist. Measured across the reference game, every layer has exactly one RULE.
+
+     ⭐ WHAT THAT TEST WAS ACTUALLY FOR SURVIVES AND IS STRONGER: the column must
+     account for its own heading. With one rule the single row covers everything;
+     with more, the `N×` prefixes must sum to it. The old check could only catch a
+     plural disagreeing with a count of two. */
   const a = boot();
-  let seen = 0;
-  // Walk the replay rather than picking a moment: the bucket passes through 2
-  // at some point in every game, and which frame that is, is data.
-  for (const l of ['blocked', 'goaltending']) {
-    for (let f = 10; f <= +a.$('scrub').max; f += 10) {
+  let checked = 0;
+  for (const l of ['corsi', 'slot', 'blocked', 'goaltending']) {
+    for (const f of [40, 120, +a.$('scrub').max]) {
       a.$('scrub').oninput({ target: { value: String(f) } });
       pick(a, l);
       a.$('work').click();
       const w = a.$('workBody').innerHTML;
-      const n = +(/Counted, surprisingly <span class="n">(\d+)<\/span>/.exec(w) || [, 0])[1];
       a.$('work').click();
-      assert.doesNotMatch(w, /The other 1 each carry/,
-        `${l}: the sentence disagrees with its own number`);
-      if (n === 2) {
-        assert.match(w, /The other one carries its own reason/,
-          `${l}: two surprising events, and the sentence does not say "the other one"`);
-        seen++;
-        break;
+      /* ⚠️ THE CARD ENDS AT `</p></div>`, NOT `</div></div>`. The rows are
+         `<div>`s inside a `<p class="wexc">`, so a lazy match on two closing
+         divs runs past this card into "Close, but not counted" and sums the
+         wrong column — it reported 16+13+9+1 under a heading of 5. */
+      const card = /Counted, surprisingly[\s\S]*?<\/p><\/div>/.exec(w);
+      if (!card) continue;
+      const head = +(/Counted, surprisingly <span class="n">(\d+)<\/span>/.exec(card[0]) || [, 0])[1];
+      /* ⚠️ `<div>` WITH NO ATTRIBUTES IS A ROW; the card's own wrapper is
+         `<div class="wc flag">`, so it does not match and nothing has to be
+         sliced off the front — the first draft sliced anyway and lost a row. */
+      const bodies = [...card[0].matchAll(/<div>(?:<b>(\d+)&times;<\/b> )?/g)];
+      const counts = bodies.map(m => m[1]).filter(Boolean).map(Number);
+      checked++;
+      if (counts.length) {
+        assert.equal(counts.reduce((x, y) => x + y, 0), head,
+          `${l} at frame ${f}: the rows add to ${counts.join('+')} under a heading of ${head}`);
+      } else {
+        assert.equal(bodies.length, 1,
+          `${l} at frame ${f}: ${bodies.length} rows and no counts on them — a count is `
+          + 'only droppable when one row covers the whole heading');
       }
     }
   }
-  assert.equal(seen, 2, 'no frame in this game puts a layer at exactly two '
-    + 'surprising events, so this check never reached its subject');
+  assert.ok(checked >= 6, `only ${checked} surprising columns rendered — no subject`);
 });
 
 /**
@@ -938,12 +957,14 @@ test('a not-a-play event carries the type dimension in every layer', () => {
  * strength modes, because the evenOnly defect is invisible in the default.
  */
 test('nothing that was never a candidate appears under "Close, but not counted"', () => {
-  const a = boot();
-  a.$('scrub').oninput({ target: { value: a.$('scrub').max } });
   const NEVER = [/play stopped/, /period start/, /period end/, /game over/, /delayed penalty/];
   let checked = 0;
   for (const evenOnly of [false, true]) {
-    a.$$('#rg .sbtn')[evenOnly ? 1 : 0].click();
+    /* ⏹ ONE BOOT PER MODE since the chips were removed on 2026-09-07 — the filter
+       is reached by `?strength=even`, and a click on a control that is not there
+       would silently leave both passes in the default mode. */
+    const a = boot(null, null, evenOnly ? '?strength=even' : '');
+    a.$('scrub').oninput({ target: { value: a.$('scrub').max } });
     for (const l of ['corsi', 'slot', 'blocked', 'goaltending', 'whistle']) {
       pick(a, l);
       a.$('work').click();
@@ -959,10 +980,11 @@ test('nothing that was never a candidate appears under "Close, but not counted"'
   assert.equal(checked, 10, 'a layer or a strength mode went unchecked');
   // The section still EXISTS where it should — otherwise this passes by the
   // panel having stopped rendering near misses at all.
-  a.$$('#rg .sbtn')[0].click();
-  pick(a, 'slot');
-  a.$('work').click();
-  assert.match(a.$('workBody').innerHTML, /Close, but not counted/,
+  const b = boot(null, null, '');
+  b.$('scrub').oninput({ target: { value: b.$('scrub').max } });
+  pick(b, 'slot');
+  b.$('work').click();
+  assert.match(b.$('workBody').innerHTML, /Close, but not counted/,
     'no layer shows a near-miss section any more, so the check above is vacuous');
 });
 
@@ -999,8 +1021,16 @@ test('a surprising reason says what it was counted in, not only what it is denie
      one carries its own reason." The identical fragment defect `.lds` had one
      card to the left, and it was found the same way: by looking at a 360px
      render, not by a test. */
-  const eg = /<p><em>For example:<\/em>([\s\S]*?)<\/p>/.exec(card)[1];
-  assert.match(eg.trim(), /[.!?]$/,
+  /* ⏹ READ OFF THE ROW, NOT OFF "For example:", which went with the grouping on
+     2026-09-07 — and the fragment it guarded went with it too. A `why` is a
+     CLAUSE, and it used to run straight into "The other one carries its own
+     reason."; there is no following sentence now, each rule is its own `<div>`,
+     and the measurement sits in its own `.weg` span. So what is asserted is that
+     the two are still SEPARATE elements rather than one run-on line — the same
+     defect, checked where it can now occur. */
+  const row = /<div>(?:<b>\d+&times;<\/b> )?([\s\S]*?)<\/div>/.exec(card)[1];
+  const eg = row;
+  assert.match(eg, /<span class="weg">e\.g\. [^<]+<\/span>$/,
     'the example runs into the paragraph after it, with no full stop');
 });
 

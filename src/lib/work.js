@@ -65,9 +65,15 @@ export function workMarkup({ id, L, sl, name, lds, lat, box: b, cards, mode, whe
     without a 49-row wall is to say the rule once and show one shot that met it.
     `detail` is set only where the reducer has a per-event measurement, so
     layers without one render exactly as before. */
- const rows=g=>Object.entries(g).sort((a,b)=>b[1].n-a[1].n)
-   .map(([why,{n,eg}])=>`<div><b>${n}&times;</b> ${ESC(why)}`
-     +(eg?` <span class="weg">e.g. ${ESC(eg)}</span>`:'')+`</div>`).join('');
+ /* ⭐ THE COUNT PREFIX EARNS ITS PLACE ONLY WHEN IT DISTINGUISHES ROWS. With one
+    rule covering everything, `29×` sits two centimetres under a heading that
+    already says 29 — two identical numbers next to each other, which reads as a
+    mistake rather than as arithmetic. This project has cut that shape before. The
+    rule is derived from the grouping rather than passed in by the caller, so both
+    columns get it for the same reason. */
+ const rows=g=>{const es=Object.entries(g).sort((a,b)=>b[1].n-a[1].n);
+   return es.map(([why,{n,eg}])=>`<div>${es.length>1?`<b>${n}&times;</b> `:''}${ESC(why)}`
+     +(eg?` <span class="weg">e.g. ${ESC(eg)}</span>`:'')+`</div>`).join('');};
  /* ⭐ THE LEDGER STOPS PRETENDING TO TEACH. Kevin: "what is the Not Counted
     column teaching the new viewer? That faceoffs, giveaways, period starts are
     NOT shots from the slot? I don't think there's much value there." Measured
@@ -117,7 +123,6 @@ export function workMarkup({ id, L, sl, name, lds, lat, box: b, cards, mode, whe
     `surprising[0].why` beside the number 44 with no such label, which reads as
     though all 44 were that one thing -- the defect this avoids without
     reintroducing the wall. */
- const sur=L.surprising&&L.surprising.length?L.surprising[0].why:null;
  /* `box` and `when` are computed by the caller -- see the signature. */
  /* `box` and `when` are computed by the caller -- see the signature. */
  /* ⚠️ ZERO IS A FIGURE, AND `&&` DROPPED IT. `b.h` is a NUMBER, so a club with
@@ -161,24 +166,25 @@ export function workMarkup({ id, L, sl, name, lds, lat, box: b, cards, mode, whe
     reader -- caught by the golden's layer walk, which had existed for an hour. */
  +`<p>${lds?ESC(lds)+'.':''}</p>`
  +(lat?`<p class="wattr">${ESC(lat)}</p>`:'')+`</div>`
- +(sur?`<div class="wc flag"><h3>Counted, surprisingly <span class="n">${L.surprising.length}</span></h3>`
-   /* ⚠️ AND THIS SENTENCE IS CLOSED TOO — the same fragment defect `.lds` had one
-      card to the left, seen in the same screenshot. A reducer's `why` is a
-      CLAUSE ("…so neither club is credited with the block"), so it ran straight
-      into the line below it: "…credited with the block The other one carries
-      its own reason." The stop is added HERE rather than in fifteen reasons,
-      and only when the clause has not already ended itself. */
-   +`<p><em>For example:</em> ${ESC(sur)}${/[.!?]$/.test(sur)?'':'.'}</p>`
-   /* ⚠️ AND IT AGREES WITH ITSELF WHEN THERE IS ONE. "The other 1 each carry
-      their own reason" is what a plural written once and never re-read looks
-      like — and it is the COMMONEST case, not an edge: the surprising bucket
-      opens at two the moment a second one lands, so every layer passes through
-      it. Seen in a 360px screenshot of the very card this session was tidying,
-      on both the layers that were open. */
-   +(L.surprising.length>1?`<p class="wexc">${L.surprising.length===2
-     ?'The other one carries its own reason, written by the layer that counted it.'
-     :`The other ${L.surprising.length-1} each carry their own reason, written by the layer that counted them.`}</p>`:'')
-   +`</div>`:'')
+ /* ⭐⭐ THE SAME SHAPE AS THE COLUMN BESIDE IT: one row per RULE, with its count
+    and one measurement. Until 2026-09-07 this printed `surprising[0].why` under
+    "For example:" and then "the other N each carry their own reason, written by
+    the layer that counted them" — which was FALSE in the way that matters. The
+    reasons embedded the player's name, so 44 events came out as 20 sentences that
+    could not group; a reader was told to imagine 43 explanations that did not
+    exist. Measured across the reference game, every layer has exactly ONE rule:
+    Attempts 44 events, Slot 14, Blocked 4, Goaltending 5 — one row each.
+    ⭐ THE FIX WAS IN THE REDUCERS, NOT HERE. `why` is the rule and `detail` is the
+    example now, so `summarise` groups these exactly as it groups exclusions and
+    every reason is shown instead of one of four. Kevin: the old form "doesn't
+    help a viewer read the game now" — a rule travels to the next game, a surname
+    does not. */
+ /* ⚠️ `L.surprising` IS OPTIONAL, and dropping this guard broke four tests at
+    once: the whistle layer's ledger has no such key at all, because a stoppage
+    is never counted against expectation. A bucket a layer does not have is not
+    an empty bucket. */
+ +(L.surprising&&L.surprising.length?`<div class="wc flag"><h3>Counted, surprisingly <span class="n">${L.surprising.length}</span></h3>`
+   +`<p class="wexc">${rows(summarise(L.surprising))}</p></div>`:'')
  +(near.length?`<div class="wc"><h3>Close, but not counted <span class="n">${near.length}</span></h3>`
    +`<p class="wexc">${exc}</p></div>`:'')+`</div>`
  +(plainLine?`<p class="wplain">${plainLine}</p>`:'')

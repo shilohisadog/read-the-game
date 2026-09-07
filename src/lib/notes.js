@@ -17,21 +17,6 @@
  * `test/notes.test.js` requires by name.
  */
 
-/**
- * The strength filter's note, which describes THE OTHER CHOICE when it is off.
- *
- * ⭐ THAT ASYMMETRY IS DELIBERATE AND WAS ONCE THE BUG. Both controls used to say
- * nothing until they had already been used, so "Even strength only" described
- * itself only once you were in it. A sentence belongs beside the thing it is
- * about AT THE MOMENT OF USE — which is right for a caption and wrong for a
- * CONTROL, because a button has to be predictable before the click or it is a
- * dare. Off, it says what pressing it would do; on, it carries the live count.
- */
-export function situationsNote(evenOnly, dropped) {
- return evenOnly
-   ?`${dropped} ${dropped===1?'attempt has':'attempts have'} dropped out so far. Power plays and an empty net are still hockey — but they aren't even hockey.`
-   :'Even strength only drops the attempts made on a power play or against an empty net, and says how many it dropped.';
-}
 
 /** The trails control's note. It follows the ENDS MODE, because the old sentence
  *  promised a whole-game chart and as-played cannot deliver one. */

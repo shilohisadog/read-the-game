@@ -80,10 +80,20 @@ export const corsi = {
         // place this project once shipped a wrong number with a confident
         // explanation attached. `derivedFrom` is what makes it checkable.
         const p = roster[e.actor];
+        /* ⭐⭐ THE RULE IS `why`, THE PLAYER IS `detail`, and they were one string
+           until 2026-09-07. Embedding the name made every one of these unique, so
+           44 surprising events came out as 20 sentences that `summarise` could not
+           group — and the panel showed ONE and said "the other 43 each carry their
+           own reason", which is false: they carry the SAME reason with a different
+           name in it. Split, they are one row with a count and an example, exactly
+           like the exclusions beside them. Kevin: the old form "doesn't help a
+           viewer read the game now". A rule travels to the next game; a surname
+           does not. */
         surprising.push({
           id,
-          why: `blocked, but it still counts — an attempt belongs to the SHOOTER`
-             + `${p ? `, ${p.nm}` : ''}, not the player who blocked it`,
+          why: 'blocked, but it still counts — an attempt belongs to the SHOOTER, '
+             + 'not the player who blocked it',
+          detail: p ? p.nm : undefined,
           derivedFrom: `roster[event.actor].tid (actor=${e.actor})`,
         });
       }

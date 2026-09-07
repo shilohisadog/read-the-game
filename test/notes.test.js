@@ -17,7 +17,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { iceNote, situationsNote, trailsNote } from '../src/lib/notes.js';
+import { iceNote, trailsNote } from '../src/lib/notes.js';
 
 const G = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url), 'utf8'));
 
@@ -63,25 +63,18 @@ test('⭐ and it says where the empty net came from', () => {
   assert.match(iceNote('0651', 'MIN', 'BUF'), /the feed’s own situation code, never a guess/);
 });
 
-test('⭐⭐ the strength control describes the OTHER choice when it is off', () => {
-  /* THE ASYMMETRY IS THE POINT AND IT WAS ONCE THE BUG. Both controls used to say
-     nothing until they had already been used, so "Even strength only" described
-     itself only once you were in it. A sentence belongs beside the thing it is
-     about at the moment of use — right for a caption, wrong for a CONTROL,
-     because a button has to be predictable before the click or it is a dare. */
-  const off = situationsNote(false, 0);
-  assert.match(off, /Even strength only drops/, 'the off state no longer says what pressing it does');
-  assert.doesNotMatch(off, /dropped out so far/, 'the off state is reporting a live count');
-
-  const on = situationsNote(true, 3);
-  assert.match(on, /^3 attempts have dropped out so far/, 'the on state lost its live count');
-});
-
-test('⭐ …and it counts in English', () => {
-  assert.match(situationsNote(true, 1), /^1 attempt has dropped/);
-  assert.match(situationsNote(true, 2), /^2 attempts have dropped/);
-  assert.match(situationsNote(true, 0), /^0 attempts have dropped/);
-});
+/* ⏹ TWO TESTS OF `situationsNote` STOOD HERE AND WENT WITH IT ON 2026-09-07.
+   The function wrote the sentence beside the All situations / Even strength only
+   chips, and Kevin removed those chips: *"we are making an 'advanced' toggle
+   available to a novice, without really explaining what the relative importance
+   of the toggle is."* The FILTER is untouched — every counting layer still reads
+   `evenOnly` and `?strength=even` still reaches it — but nothing on the page
+   describes a control that is not there, so the sentence had no reader.
+   ⭐ WHAT THEY PROVED IS WORTH KEEPING IN WORDS, because it is a rule about
+   controls and not about this one: *a sentence belongs beside the thing it is
+   about at the moment of use — right for a caption, wrong for a CONTROL, because
+   a button has to be predictable before the click or it is a dare.* `trailsNote`
+   below is the surviving control note and it is held to exactly that. */
 
 test('⭐ the trails note follows the ends mode, not just the control', () => {
   /* ⚠️ THE OLD SENTENCE PROMISED A WHOLE-GAME SHOT CHART AND AS-PLAYED CANNOT

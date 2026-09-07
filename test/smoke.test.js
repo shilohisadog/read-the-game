@@ -74,7 +74,9 @@ function makeDom() {
   // wire its pickers. Returning [] silently leaves every one of those buttons
   // unwired -- which is how the strength toggle would have shipped untested.
   const groups = {
-    '#rg .sbtn': [{ s: 'all' }, { s: 'even' }],
+    /* ⏹ `#rg .sbtn` WAS MODELLED HERE AND IS NOT ANY MORE — the control went on
+       2026-09-07. A fake that keeps modelling a deleted control is how 23 tests
+       drove a ghost for a day in August without one of them throwing. */
     '#rg .fbtn': [{ f: 'mascot' }, { f: 'tabletop' }],
     /* ⭐ THE PICKER, ADDED 2026-09-07 — and its absence is what the comment above
        predicts. Layers were turned on here by clicking `lyCorsi`, a row in the
@@ -128,14 +130,14 @@ function toEnd(nodes) {
   return nodes;
 }
 
-function run() {
+function run(search = '') {
   const { document, nodes, pick } = makeDom();
   const noop = () => {};
   const fn = new Function(
     'document', 'addEventListener', 'setTimeout', 'clearTimeout',
     'requestAnimationFrame', 'matchMedia', 'console', 'location', 'window', script);
   fn(document, noop, noop, noop, noop, () => ({ matches: false }), console,
-     { search: '', origin: 'https://x' }, { parent: { postMessage: () => {} } });
+     { search, origin: 'https://x' }, { parent: { postMessage: () => {} } });
   // `nodes` only holds ids the app has already asked for. Tests that drive the
   // app need to reach elements it touches lazily -- #rg is only looked up when a
   // layer is toggled -- so hand back the accessor too, not just the map.
@@ -286,20 +288,24 @@ test('the strength filter moves the numbers on screen, with the mode attached', 
   assert.equal(String(n.get('cA').textContent), '80', 'opens at all situations');
   assert.equal(String(n.get('mA').textContent), 'ALL SITUATIONS', 'and says so');
 
-  n.get('#rg .sbtn[1]').click();          // "Even strength only"
-  assert.equal(String(n.get('cA').textContent), '48', 'MIN drops to 48');
-  assert.equal(String(n.get('cH').textContent), '38', 'BUF drops to 38');
-  assert.equal(String(n.get('mA').textContent), 'EVEN STRENGTH', 'the label follows');
+  /* ⏹ THE CHIPS WENT ON 2026-09-07 AND THE FILTER DID NOT, so the mode is entered
+     the way a visitor can still enter it — `?strength=even`. That makes this two
+     boots rather than a toggle, and the reversibility claim becomes what it
+     always meant: the two modes are two readings of the same game, and the
+     unfiltered one is what the page opens in. */
+  const e = toEnd(run('?strength=even'));
+  assert.equal(String(e.get('cA').textContent), '48', 'MIN drops to 48');
+  assert.equal(String(e.get('cH').textContent), '38', 'BUF drops to 38');
+  assert.equal(String(e.get('mA').textContent), 'EVEN STRENGTH', 'the label follows');
 
-  n.get('#rg .sbtn[0]').click();          // back to "All situations"
-  assert.equal(String(n.get('cA').textContent), '80', 'and it is reversible');
+  const back = toEnd(run());
+  assert.equal(String(back.get('cA').textContent), '80', 'the default is still every attempt');
 });
 
 test('the ledger explains the filtered-out attempts, on screen', () => {
-  const n = toEnd(run());   // these read a WATCHED game, so drive it there
+  const n = toEnd(run('?strength=even'));   // these read a WATCHED game, so drive it there
   n.pick('corsi').click();
   n.get('work').click();
-  n.get('#rg .sbtn[1]').click();
   const w = String(n.get('workBody').innerHTML);
   assert.match(w, /even strength/i, 'the panel states the mode');
   assert.match(w, /power play/i, 'and names the power-play exclusions');

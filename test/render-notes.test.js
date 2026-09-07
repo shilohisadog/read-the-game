@@ -967,83 +967,17 @@ test('the card sits above the controls, not below them', () => {
   }
 });
 
-test('the even-strength note counts what actually dropped out, and agrees with the ledger', () => {
-  // "Switch and watch which attempts drop out" asked the reader to go and look.
-  // The note now says HOW MANY did, in the game in front of them — a claim with
-  // its own evidence attached, which is the difference the whole site trades on.
-  //
-  // And the number is reconciled against the ledger rather than recomputed here:
-  // a test that re-derived it from the events would be a second implementation
-  // agreeing with the first, which is the defect measure.mjs exists to avoid.
-  // ⭐ AND THE DEFAULT BRANCH IS NO LONGER EMPTY (2026-08-25). It used to be
-  // required empty, which explained `Even strength only` only to a reader who
-  // had already chosen it. What must NOT leak into the default is the live
-  // count, because that is a fact about the ice at a moment — so the two are
-  // checked apart: the default describes the control, the chosen state counts.
-  const a = boot();
-  const resting = a.$('nSit').textContent;
-  assert.ok(resting, 'the situations control explains itself only after it is used');
-  assert.doesNotMatch(resting, /\d/,
-    'the resting note carries a number, so it is claiming something about a game nobody has filtered');
-
-  a.GROUPS['#rg .sbtn'].find(b => b.dataset.s === 'even').click();
-  const scrub = a.$('scrub');
-  scrub.value = scrub.max; scrub.oninput({ target: { value: scrub.value } });
-
-  const note = a.$('nSit').textContent;
-  const n = +(note.match(/^(\d+)/) || [])[1];
-  assert.ok(n > 0, `the note reports ${n} attempts dropped over a whole game at even strength only`);
-
-  // RECONCILED AGAINST THE COUNTERS THE PAGE ITSELF SHOWS, in both modes, at the
-  // same frame. Not against a re-derivation from the events: a test that
-  // recomputed the number would be a second implementation agreeing with the
-  // first, which is the defect measure.mjs exists to avoid. The attempts the
-  // page stops counting when even-strength is chosen ARE the attempts the note
-  // says dropped out.
-  const total = d => +d.$('cA').textContent + +d.$('cH').textContent;
-  const even = total(a);
-  a.GROUPS['#rg .sbtn'].find(b => b.dataset.s === 'all').click();
-  const all = total(a);
-  assert.equal(all - even, n,
-    `the note says ${n} dropped, but the counters fall by ${all - even} (${all} → ${even})`);
-  a.GROUPS['#rg .sbtn'].find(b => b.dataset.s === 'even').click();
-
-  // SINGULAR AND PLURAL, BOTH SEEN. "1 attempts have dropped out" is the kind of
-  // thing that ships and then gets screenshotted, and a ternary read at ONE
-  // frame only ever exercises one of its branches — the reference game drops 49,
-  // so the singular arm was never run and a mutation collapsing it survived.
-  // Walk to the frame where exactly one has gone.
-  assert.match(note, /attempts have dropped out/, 'plural, at the end of the game');
-  let sawOne = false;
-  for (let k = 0; k <= +scrub.max; k++) {
-    scrub.value = String(k); scrub.oninput({ target: { value: scrub.value } });
-    const t = a.$('nSit').textContent;
-    if (/^1 /.test(t)) { assert.match(t, /^1 attempt has dropped out/, 'singular is written as a plural'); sawOne = true; break; }
-  }
-  assert.ok(sawOne, 'no frame in this game drops exactly one attempt — the singular arm is untested');
-  scrub.value = scrub.max; scrub.oninput({ target: { value: scrub.value } });
-
-  // AND THE COUNT LEAVES WITH THE SETTING even though the note does not. This is
-  // the half that keeps the §4.2 fix from becoming a stale-number bug: the
-  // resting note describes the control, and must not go on reporting a figure
-  // about a filter nobody has applied.
-  a.GROUPS['#rg .sbtn'].find(b => b.dataset.s === 'all').click();
-  const back = a.$('nSit').textContent;
-  assert.ok(back, 'the note left with the setting instead of going back to describing the control');
-  assert.doesNotMatch(back, /dropped out/,
-    'the count outlived the setting that produced it');
-});
-
-/* --------------------------------------------------------------- the first visit
+/**
+ * ⭐ THE FIRST-VISIT BLOCK, and the reason it is not merely nice.
  *
  * Kevin: "she'll visit and say 'well, where should I click', 'why should I click
  * there', 'what's corsi (and why do I care)'. We absolutely need the first-visit
  * mechanism in place before showing it to a casual fan."
  *
- * And the reason that is not merely nice: he PREDICTED those responses. A test
- * whose outcome you can write down in advance produces no information — and a
- * first visit is not renewable, so spending the one novice we have on a page
- * with no orientation buys a finding that was free.
+ * He PREDICTED those responses. A test whose outcome you can write down in
+ * advance produces no information — and a first visit is not renewable, so
+ * spending the one novice we have on a page with no orientation buys a finding
+ * that was free.
  */
 
 /** A localStorage the page can actually remember things in. */
@@ -1051,6 +985,23 @@ const memStore = (seed = {}) => {
   const m = { ...seed };
   return { getItem: k => (k in m ? m[k] : null), setItem: (k, v) => { m[k] = String(v); }, _m: m };
 };
+
+/* ⏹ A TEST OF THE EVEN-STRENGTH NOTE STOOD HERE AND RETIRED WITH IT, 2026-09-07.
+   It drove the All situations / Even strength only chips, read `#nSit`, and
+   reconciled the number it reported against the ledger. Kevin removed the chips:
+   *"Seems like we are making an 'advanced' toggle available to a novice, without
+   really explaining what the relative importance of the toggle is."* The note
+   described the control, so it went too.
+
+   ⭐ THE RECONCILIATION IT WAS FOR IS NOT LOST, and that is the only reason this
+   is a deletion rather than a gap. `test/smoke.test.js` — "the ledger explains
+   the filtered-out attempts, on screen" — boots `?strength=even`, asserts the
+   work panel states the mode, names the power-play and empty-net exclusions, and
+   closes the counted + close + other arithmetic under the filter. Same claim, on
+   the surface that still exists.
+   ⚠️ WHAT IS GENUINELY GONE is the sentence that told a reader HOW MANY dropped
+   before they opened the panel. That was the note's own contribution and it had
+   no other home; it left with the control it explained. */
 
 test('a first-time viewer is told where to click, and why', () => {
   const a = boot(rich, CURVE_AND_MIX);

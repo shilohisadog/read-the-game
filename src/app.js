@@ -24,7 +24,7 @@ import {
 import {
   ATTEMPT_TYPES, ATTRIBUTION, corsiTeam, missSay, shootingTeam
 } from './lib/attribution.js';
-import { NOT_A_PLAY, inShootout, droppedForStrength } from './lib/layer.js';
+import { NOT_A_PLAY, inShootout } from './lib/layer.js';
 import { powerPlayOver, standing } from './lib/strength.js';
 import { occupants, stints } from './lib/box.js';
 import { penName } from './lib/penalties.js';
@@ -33,7 +33,7 @@ import { whyMarkup } from './lib/why.js';
 import { ESC } from './lib/esc.js';
 import { workMarkup } from './lib/work.js';
 import { eventMarks, puckMark, shotLine } from './lib/marks.js';
-import { iceNote, situationsNote, trailsNote } from './lib/notes.js';
+import { iceNote, trailsNote } from './lib/notes.js';
 import { goalieCards } from './lib/goalie-card.js';
 import { announcement } from './lib/announce.js';
 import { judgeable, mostUnusual } from './lib/distribution.js';
@@ -659,7 +659,6 @@ function render(i,how){
  // reason -- moved to layer.js on 2026-09-04, where its argument now lives: it is
  // a question about the ledger's own dimensions, and asking it here was the tier
  // boundary being crossed quietly.
- const dropped=droppedForStrength(L.excluded);
  /* ⭐ AND THE OTHER BRANCH IS NO LONGER EMPTY. All three of these notes used to
     say nothing until their control had already been used -- so `Tabletop` was
     explained only once you had chosen `Tabletop`, and `Even strength only`
@@ -669,7 +668,7 @@ function render(i,how){
     before the click or it is a dare. The default branch now describes what the
     other choice would do; the active branch still carries the live count, which
     is a fact about the ice and belongs to the moment. */
- $('nSit').textContent=situationsNote(evenOnly,dropped);
+
  $('nTrails').textContent=trailsNote(trails,ASPLAYED);
  document.getElementById('rg').classList.toggle('ended',i>=EV.length-1);
  /* THE PRE-GAME FRAME IS THE ONLY ONE THAT NEEDS AN INSTRUCTION, and `i<0` is the
@@ -1278,7 +1277,20 @@ function sayWho(e){const w=$('who');if(!w)return;
  // ⭐ SUPPRESSED WHERE THE NAME IS ALREADY ON SCREEN, on the site's own precedent:
  // the offside blurb shrank when its figure arrived, because a card with a diagram
  // should say the part the diagram cannot. 144 of 2,069 frames.
- if(!p||namesActor(e)){w.innerHTML=LAB[e.type]||e.type.replace(/-/g,' ');w.className='who plain';return;}
+/* ⭐⭐ TWO DIFFERENT SILENCES, AND THEY WERE ONE BRANCH UNTIL 2026-09-07.
+    SUPPRESSED: the name is already on screen — a goal or a penalty, where the
+    caption pill names the scorer and the assists. The line renders NOTHING,
+    because a bare `goal` under the ice is a third copy of a word the pill and the
+    scoreboard already have. Kevin saw it once the line moved under the drawing:
+    *"let's just render nothing on a Goal, the rink description is sufficient."*
+    It costs no jitter — `min-height` reserves the row either way.
+    UNRESOLVED: we cannot name a player at all. That one still says the EVENT's
+    own name, because a frame the page says nothing about reads as broken.
+    ⚠️ THE TWO SHARED A LINE AND SO SHARED A RENDERING, which is how a deliberate
+    suppression came out looking like a lowercase placeholder. Same class of thing
+    as the whistle layer's *a condition is not an event*. */
+ if(namesActor(e)){w.innerHTML='';w.className='who';return;}
+ if(!p){w.innerHTML=LAB[e.type]||e.type.replace(/-/g,' ');w.className='who plain';return;}
  let s=a.say.replace('{a}',whoTag(p));
  /* ⭐⭐ THE COLOUR IS THE SUBJECT'S CLUB, NOT THE ACTOR'S, and until 2026-09-07
     those were assumed to be the same player. They are on nine of the ten types.
@@ -2837,14 +2849,17 @@ function setHd(){document.getElementById('rg').classList.toggle('slot',hdOn);syn
 // One code path owns the mode label, so the markup cannot drift from the state.
 // The static HTML carries a default only so the page reads correctly before JS.
 function syncStrength(){
- const v=evenOnly?'even':'all';
- document.querySelectorAll('#rg .sbtn').forEach(b=>b.setAttribute('aria-pressed',b.dataset.s===v));
+ /* ⏹ NOTHING TO SYNC SINCE 2026-09-07 — the two `.sbtn` chips were removed and
+    the filter is reached by `?strength=even` alone. Kept as a function because
+    `setStrength` is the one place that changes `evenOnly` and a reader looking
+    for "what happens when the filter moves" should find one answer, not none. */
  // EVERY site that shows this quantity carries the mode. The scoreboard is the
  // prominent one and was the unqualified one -- same number, two places, one
  // of them saying what it was measured under (CHENG).
  const lbl=MODE().toUpperCase();$('mA').textContent=lbl;$('mH').textContent=lbl;$('pMode').textContent=lbl;}
 function setStrength(v){evenOnly=(v==='even');syncStrength();render(i,'');}
-document.querySelectorAll('#rg .sbtn').forEach(b=>b.addEventListener('click',()=>setStrength(b.dataset.s)));
+/* ⏹ AND THE LISTENER WENT WITH THE CHIPS. `setStrength` survives because the
+   deep link calls it; nothing on the page does. */
 syncStrength();
 /* ⭐ TRAILS IS BEHIND A DISCLOSURE TOO, SO ITS SUMMARY CARRIES ITS SETTING.
    The same rule the layer menu follows: a control you cannot see must still be

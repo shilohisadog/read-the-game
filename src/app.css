@@ -1281,10 +1281,13 @@
    view. Moving them wholesale is what CHENG refused, because the learn page's
    nine doors land with a layer already on and a door must not be a one-way
    trip. */
-#rg .figpick.sit{display:none}
-#rg.corsi .figpick.sit,#rg.slot .figpick.sit,#rg.goalie .figpick.sit,
-#rg.blocked .figpick.sit{display:flex}
-#rg .sbtn[aria-pressed="true"]{border-style:solid;color:var(--ink);border-color:var(--ink);background:#eef2f5}
+/* ⏹ THE SITUATIONS CONTROL'S RULES WENT ON 2026-09-07 WITH THE CONTROL. They were
+   `#rg .figpick.sit{display:none}` plus a four-selector reveal naming every layer
+   that reads `evenOnly`, and `#rg .sbtn[aria-pressed="true"]`. The reveal is the
+   one worth remembering: it was DERIVED from the reducers rather than typed, and
+   test/layers.test.js checked it that way — a layer that started reading the
+   filter turned the suite red. That derivation has no subject now; if the chips
+   ever come back, so does it. See builders/build_main.py where the markup was. */
 /* A NOTE APPEARS WHEN THE THING IT EXPLAINS HAPPENS, and not before. These
    three were permanent -- 183px on a phone, 93 words -- each describing a state
    the reader was not in. CHENG: "the place that sentence actually pays off is
@@ -1331,7 +1334,6 @@
 /* ONE COLUMN FOR THE LABELS, so the three controls start at the same x. They are
    separate rows in the markup -- each is its own `figpick` -- so nothing aligned
    them, and `Trails:` / `Players:` / `Narration:` are three different lengths. */
-#rg .zdisp .figpick>.ll{min-width:5.4rem}
 /* ⭐ EVERY ZONE IS A DISCLOSURE, INCLUDING THE LAYERS (Kevin, 2026-08-26: "I want
    LAYERS to be collapsible too, it looks a lot better for consistency"). The
    argument against was the conversion -- the one thing the site exists to get a

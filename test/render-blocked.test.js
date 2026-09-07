@@ -170,8 +170,8 @@ test('each row states its own scope, because the two can disagree', () => {
   const scrub = a.$('scrub');
   scrub.value = String(+scrub.max);
   scrub.oninput({ target: { value: scrub.value } });
-  const read = () => {
-    const r = rowsOf(a.$('blockPanel').innerHTML);
+  const read = (page = a) => {
+    const r = rowsOf(page.$('blockPanel').innerHTML);
     assert.ok(r.game && r.arch, 'a row is missing at the frame this test reads');
     return { game: r.game.split('</p>')[0], arch: r.arch.split('</p>')[0] };
   };
@@ -179,8 +179,12 @@ test('each row states its own scope, because the two can disagree', () => {
   assert.match(all.game, /all situations/, 'the game row does not say what it counted');
   assert.match(all.arch, /all situations/, 'the archive row does not say what it counted');
 
-  a.GROUPS['#rg .sbtn'][1].click();          // Even strength only
-  const even = read();
+  /* ⏹ THE CHIPS WENT ON 2026-09-07; the filter is reached by `?strength=even`,
+     so the second reading is a second boot rather than a click. */
+  const e = boot(rich, CURVE_AND_MIX, '?strength=even');
+  pickLayer(e, 'blocked');
+  e.$('scrub').oninput({ target: { value: String(+e.$('scrub').max) } });
+  const even = read(e);
   assert.match(even.game, /even strength/, 'the game row ignored the strength filter');
   assert.match(even.arch, /all situations/,
     'the archive row followed the strength filter, which it cannot — there is no such archive figure');
@@ -324,13 +328,16 @@ test('and it says nothing at even strength, because a box score has no such colu
   scrub.oninput({ target: { value: scrub.value } });
   assert.match(a.$('blockPanel').innerHTML, /A box score would show/, 'it is absent at all situations too');
 
-  a.GROUPS['#rg .sbtn'][1].click();                       // Even strength only
-  assert.doesNotMatch(a.$('blockPanel').innerHTML, /A box score would show/,
+  /* ⏹ TWO BOOTS SINCE 2026-09-07 — the chips were removed and `?strength=even`
+     is how a visitor reaches the filter now. The claim is unchanged and so is
+     its direction: the sentence is there at all situations and gone at even
+     strength, checked on the same frame of the same game. */
+  const e = boot(rich, CURVE_AND_MIX, '?strength=even');
+  pickLayer(e, 'blocked');
+  e.$('scrub').oninput({ target: { value: String(+e.$('scrub').max) } });
+  assert.doesNotMatch(e.$('blockPanel').innerHTML, /A box score would show/,
     'the sentence survived into even strength, where it is false about its own number');
-  assert.ok(rowsOf(a.$('blockPanel').innerHTML).game, 'the bar went with it, which was not the claim');
-
-  a.GROUPS['#rg .sbtn'][0].click();                       // and back
-  assert.match(a.$('blockPanel').innerHTML, /A box score would show/, 'it did not come back');
+  assert.ok(rowsOf(e.$('blockPanel').innerHTML).game, 'the bar went with it, which was not the claim');
 });
 
 test('the whistle layer actually draws the line its rule names', () => {

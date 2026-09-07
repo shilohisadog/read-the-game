@@ -71,7 +71,11 @@ function fakeDom() {
   const byId = new Map();
   const GROUPS = {
     '#rg .tbtn': ['off', 'all'].map(t => Object.assign(el(), { dataset: { t } })),
-    '#rg .sbtn': ['all', 'even'].map(s => Object.assign(el(), { dataset: { s } })),
+    /* ⏹ THE `.sbtn` STUB WENT ON 2026-09-07 WITH THE CONTROL ITSELF, and it is
+       named here rather than silently dropped: a fake that keeps modelling a
+       deleted control is how 23 tests drove a ghost for a day in August without
+       one of them throwing. With no stub, `GROUPS['#rg .sbtn']` is undefined and
+       anything reaching for it says so. */
     '#rg .lrow': ['lyCorsi', 'lyHd', 'lyGoalie', 'lyWhistle', 'lyBlock'].map(id => {
       if (!byId.has(id)) byId.set(id, el());
       return byId.get(id);
@@ -264,7 +268,7 @@ test('an inexact landing is not an apology: a moment between events says nothing
    mode can never disagree", because the mode is part of the number's identity
    and the scoreboard already carries MODE() beside it. */
 
-for (const [q, token, label] of [
+for (const [q, , label] of [
   ['?strength=even', 'even', 'EVEN STRENGTH'],
   ['?strength=all', 'all', 'ALL SITUATIONS'],
   ['', 'all', 'ALL SITUATIONS'],                 // the page's own default
@@ -275,9 +279,16 @@ for (const [q, token, label] of [
     assert.equal(d.$('pMode').textContent, label);
     assert.equal(d.$('mA').textContent, label, 'both scoreboard sides, not just one');
     assert.equal(d.$('mH').textContent, label);
-    const pressed = d.GROUPS['#rg .sbtn'].filter(b => String(b['aria-pressed']) === 'true');
-    assert.deepEqual(pressed.map(b => b.dataset.s), [token],
-      'the button a viewer sees must agree with the URL that opened the page');
+    /* ⏹ THIS READ `aria-pressed` OFF THE `.sbtn` CHIPS UNTIL 2026-09-07, when
+       Kevin removed them: *"we are making an 'advanced' toggle available to a
+       novice, without really explaining what the relative importance of the
+       toggle is."* The FILTER is untouched and this test is about the FILTER —
+       so the claim moves to the surface that still exists. The scoreboard's mode
+       label is now the whole answer, and it is asserted three times above
+       (`pMode` and both club sides), which is what a viewer actually sees. */
+    assert.equal((d.GROUPS['#rg .sbtn'] || []).length, 0,
+      'the situations chips are back — if that is deliberate, this test should '
+      + 'read their pressed state again rather than only the scoreboard');
   });
 }
 
