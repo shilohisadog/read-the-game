@@ -208,20 +208,23 @@ __CSS__</style>
 <div class="figpick sit"><span class="ll">Situations:</span>
 <div class="grp" role="group" aria-label="Which situations are counted"><button class="lyr sbtn" data-s="all" aria-pressed="true">All situations</button><button class="lyr sbtn" data-s="even" aria-pressed="false">Even strength only</button></div>
 <span class="fnote" id="nSit"></span></div>
-<!-- ⭐ AND THE SLOT TIP MOVED OUT WITH IT — kept, and still parked ON PURPOSE.
-     ⚠️ THE FIRST VERSION OF THIS COMMENT CALLED IT THE SAME DEFECT AS THE
-     STRENGTH CONTROL ABOVE, AND IT IS NOT. Both were invisible; only one was
-     invisible by accident. `#rg .hint{display:none}` plus `#rg.slot .hint
-     {display:block}` is a state-gated reveal, and inside the old menu it could
-     never have fired — but there is a THIRD rule, in the 2026-08-27 park block:
-     `#rg.slot .hint{display:none}`, equally specific and later, which wins.
-     The tip is layer information and Kevin parked layer information
-     deliberately: "hide (not remove, but temporarily hide)".
-     So it lives here, out of the deleted menu, still hidden by a rule that means
-     to hide it — and un-parking it is a decision, not a repair. Caught by
-     LOOKING at the page after restoring it, which is the only instrument that
-     could tell a deliberate park from an accidental burial. -->
-<div class="hint">Tip: click any shot ringed in amber to see <b>why</b> it counts as a slot shot — with trails set to <b>keep every mark</b>, earlier ones stay clickable too.</div>
+<!-- ⏹ THE AMBER-RING TIP STOOD HERE AND WAS REMOVED ON 2026-09-07, and the
+     reason is that IT HAD ALREADY BEEN SAID BETTER, twelve lines lower.
+     It read: "Tip: click any shot ringed in amber to see why it counts as a
+     slot shot -- with trails set to keep every mark, earlier ones stay
+     clickable too." The caption directly under it says, unconditionally and
+     from the opening frame: "An amber ring marks each one. Click a ring to see
+     the distance and angle it was measured by." Two sentences teaching one
+     click, about 50px apart on a phone.
+     ⚠️ AND ITS ONE UNIQUE CLAUSE WAS FALSE. `trails` was parked in the
+     2026-08-27 rebuild (`#rg .zdisp{display:none}`), so "with trails set to
+     keep every mark" named a control no visitor can reach -- the same defect
+     as the Situations control that reported an effect it was not having.
+     ⭐ SO ITS PARK WAS NOT DEBT AND UN-PARKING IT WAS NOT THE FIX. status.md
+     0.00-alpha item 1 called it "the one interaction on the page a novice would
+     never guess"; the caption guessed it for them. Checked by booting the page
+     with the layer on rather than by reading the record -- see 0.00-zeta. -->
+
 
 <p class="lcap" id="lcap"></p>
 <!-- ⭐ THE WORK PANEL MOVED INTO `.rinkbox` ON 2026-08-31 AND IS NOW AN OVERLAY.

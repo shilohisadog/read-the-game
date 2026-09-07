@@ -35,8 +35,15 @@ state.
 
 ## ⏭ 0.00 PICK UP HERE
 
-**The tree is green at 1,072 JS + 180 Python.** §0.00-α items 3 and 2 are done
-(§0.00-δ, §0.00-ε); **item 1 is the last one and it is Kevin's decision, not a task.**
+**The tree is green at 1,072 JS + 180 Python. All three of §0.00-α are done**
+— §0.00-δ, §0.00-ε, §0.00-ζ.
+
+⚠️⚠️ **AND TWO OF THE THREE ROWS WERE WRONG ABOUT THEIR OWN SUBJECT.** Item 2
+named `.zon` as the class to sweep, and `.zon` is the one in that block that had
+to stay. Item 1 called the slot tip *"the one interaction a novice would never
+guess"*, and the caption had been guessing it for them since 2026-08-27. **Both
+were caught by looking at the page instead of at the record**, in under a minute
+each, before either edit was made.
 
 The decomposition is **finished** and closed on a rule, not a line count —
 `CONTRIBUTING.md` **rule 9**: *move code only when a caller gains a question it
@@ -59,11 +66,9 @@ written reason, not a move.
 
 Three small, independent items, each a decision more than a task:
 
-1. **The slot tip is parked and it is Kevin's call.** *"Tip: click any shot ringed
-   in amber to see why it counts as a slot shot"* — the one interaction on the
-   page a novice would never guess, hidden since 2026-08-27 by the layer-output
-   park (`#rg.slot .hint{display:none}`). ⚠️ **Deliberate, not a defect** — Kevin's
-   *"hide, not remove"* — so un-parking it is one line and a decision.
+1. ✅ **RESOLVED 2026-09-07 — and not the way this row said.** ⚠️ **Its premise was
+   false: the caption already teaches the click.** See §0.00-ζ. The tip was
+   removed rather than un-parked.
 2. ✅ **DONE 2026-09-07 — the CSS sweep.** See §0.00-ε. ⚠️ **And this line was
    wrong in the one way it warned against:** it named `.zon` as the thing to
    sweep, and `.zon` is the one class in that block that must NOT go — the count
@@ -73,6 +78,46 @@ Three small, independent items, each a decision more than a task:
 
 Bigger, and unchanged: **K4 (a killer feature) stays gated on the novice test**,
 which has still not happened. §0.3 and §0.5 carry the four threads.
+
+## ✅ 0.00-ζ THE SLOT TIP — RESOLVED 2026-09-07, and the row was wrong about it
+
+§0.00-α item 1 said the tip was *"the one interaction on the page a novice would
+never guess"*, parked deliberately, and that **un-parking it was one line and a
+decision**. Kevin ordered it done. Booting the page with the layer on, before
+touching anything, said otherwise.
+
+### ⚠️⚠️ The caption already teaches it, unconditionally and from the first frame
+
+> **Slot** — attempts from within 33 ft of the net, between the face-off dots.
+> **An amber ring marks each one. Click a ring to see the distance and angle it
+> was measured by.**
+
+The tip read *"Tip: click any shot ringed in amber to see why it counts as a slot
+shot — with trails set to keep every mark, earlier ones stay clickable too."*
+**Two sentences teaching one click, about 50px apart on a phone.** Un-parking it
+would have shipped a visible duplicate.
+
+### ⛔ And its one unique clause was false
+
+`trails` was parked in the same 2026-08-27 rebuild (`#rg .zdisp{display:none}`),
+so *"with trails set to keep every mark"* named **a control no visitor can
+reach** — the same defect as the Situations control that reported an effect it
+was not having. **Parked copy that is wrong is not "working code kept for the
+rebuild"**, which is the whole justification for *hide, not remove*.
+
+So it was **removed**, and the claim it carried is now asserted where a viewer
+can be asked about it: `render-notes.test.js` boots the page and reads the
+CAPTION — silent with no layer, naming the ring and the click with the slot
+layer on, **on the opening frame**, because a reader arriving through a learn
+door lands with the layer already on and has not pressed play.
+
+### ⭐⭐ And I had propagated the false claim into the code that morning
+
+Sweeping the menu CSS a few hours earlier, I wrote into `app.css` that *"the
+amber ring is named in the `.hint` line and almost nowhere else"* — taken from
+this row rather than from the page. **On the same day whose own record twice
+says I read past a ledger.** *A claim in the record is not evidence*, and the
+instrument for this one was thirty seconds of booting the page.
 
 ## ✅ 0.00-ε THE CSS SWEEP — DONE 2026-09-07, and it found twice what it was for
 

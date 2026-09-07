@@ -321,7 +321,7 @@
    second drawing path and nothing here is reimplemented. */
 #rg.preview .pressplay,
 #rg.preview .newcomer,#rg.preview h1,#rg.preview .transport,#rg.preview .zone,#rg.preview .disclose,
-#rg.preview .figpick,#rg.preview .hint,#rg.preview .icenote,#rg.preview .whistlepanel,#rg.preview .blockpanel,
+#rg.preview .figpick,#rg.preview .icenote,#rg.preview .whistlepanel,#rg.preview .blockpanel,
 #rg.preview .verdict,#rg.preview .nextup,#rg.preview .foot,#rg.preview .work,
 #rg.preview .legend,#rg.preview .goalies,
 /* THE PENALTY BOX AND THE ENDS NOTE ARE GAME-VIEW CHROME, and the box had to be
@@ -1201,14 +1201,11 @@
 @media(prefers-reduced-motion:reduce){#rg *{animation:none!important;transition:none!important}}
 
 #rg .ev.clickable{cursor:pointer}
-/* THE TIP IS ABOUT A MARK THAT DOES NOT EXIST UNTIL A LAYER DRAWS IT. Amber
-   rings arrive with "Shots from the slot" and with nothing else, so a permanent
-   tip telling a reader to click one is 55px of instruction about something not
-   on their screen -- the same defect the legend had before it went progressive,
-   in a different block. It now appears with the layer, directly under the
-   button that turned it on. */
-#rg .hint{display:none;font-size:.76rem;color:#b07d17;margin:3px 2px 0;font-weight:600}
-#rg.slot .hint{display:block}
+/* ⏹ `.hint` -- THE AMBER-RING TIP -- WENT ON 2026-09-07. Its state-gated reveal
+   was correct and its content was redundant: the caption twelve lines below it
+   already names the ring and teaches the click, unconditionally and from the
+   opening frame, and the tip's one unique clause named `trails`, which has been
+   parked since 2026-08-27. See builders/build_main.py where it stood. */
 /* A NOTE ABOUT WHAT THE ICE IS DOING RIGHT NOW, under the ice. Empty when there
    is nothing true to say, and `:empty` rather than a class because the only
    state is "is there text" -- a class would be a second copy of that fact. */
@@ -1535,9 +1532,11 @@
    on the layer objects now (`counts` / `credits`, see test/layer-copy.test.js)
    and the switch's job belongs to the chips under the scrubber.
 
-   ⚠️ ONE THING THEY SAID IS STILL UNHOMED, and it is on Kevin's desk as
-   status.md 0.00-alpha item 1: the amber ring around a slot shot is named in
-   the `.hint` line and almost nowhere else, and that line is parked. */
+   ⚠️⚠️ AND THE SENTENCE THAT STOOD HERE THIS MORNING WAS FALSE. It said the
+   amber ring "is named in the `.hint` line and almost nowhere else". It is named
+   in the caption, on screen, whenever the layer is on -- which I took from
+   status.md instead of from the page, on the same day this file's own history
+   records reading past a ledger twice. A claim in the record is not evidence. */
 /* ⭐ THE SWATCH RULE HAD BEEN SCOPED TO `.legend`, so the marks moved into the
    rows and came out as SQUARES. Found by looking, not by reasoning: the markup
    was right, the classes were right, and every test passed. A shape rule that
@@ -1737,6 +1736,11 @@
    under the selector, that works" -- and what goes is the DISPLAY each layer
    produces: the counters and the split bar, the goaltender cards, the whistle
    and blocked panels, the amber tip, and `Show me the work`.
+   ⏹ TWO HAVE SINCE LEFT THIS BLOCK IN OPPOSITE DIRECTIONS. `Show me the work`
+   came back, driven by the layer contract. The amber tip was REMOVED on
+   2026-09-07 rather than un-parked: the caption already named the ring and
+   taught the click, and the tip's one unique clause named `trails`, parked here
+   since the same day. A park whose subject is redundant is not debt.
 
    ⚠️ WHAT THIS COSTS, SAID OUT LOUD. Two of the five layers have no other
    output: `Attempts` draws no mark of its own (the counters WERE its display)
@@ -1760,7 +1764,6 @@
       scoping: the preview hides both on purpose, two hundred lines up. */
 #rg:not(.preview).corsi .cbar,
 #rg.corsi .counters,
-#rg.slot .hint,
 #rg.goalie .goalies,
 #rg.whistle .whistlepanel,
 #rg.blocked .blockpanel{display:none}

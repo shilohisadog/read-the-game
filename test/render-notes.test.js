@@ -340,7 +340,10 @@ test('the layer displays are parked, by a rule that has to come last', () => {
   // with the corsi layer on, so an unscoped park took the FRONT DOOR's split
   // bar with it — a live defect for one commit. The counters and `#work` need
   // no scoping because the preview already hides both on purpose.
-  const PARKED = ['#rg.corsi .counters', '#rg:not(.preview).corsi .cbar', '#rg.slot .hint',
+  /* ⏹ `#rg.slot .hint` LEFT THIS LIST ON 2026-09-07 with the tip itself — not
+     un-parked, removed, because the caption already said it and better. Slot's
+     display is the amber rings on the ice, which were never in this block. */
+  const PARKED = ['#rg.corsi .counters', '#rg:not(.preview).corsi .cbar',
                   '#rg.goalie .goalies', '#rg.whistle .whistlepanel', '#rg.blocked .blockpanel'];
   const park = /#rg:not\(\.preview\)\.corsi \.cbar,[\s\S]*?\{display:none\}/.exec(PAGE_CSS);
   assert.ok(park, 'the layer displays are back — nothing parks them');
@@ -884,17 +887,32 @@ test('the note follows the situation code, whichever net the code empties', () =
     'the note fires on a game where nobody pulled anybody');
 });
 
-test('the amber-ring tip is absent until the slot layer draws an amber ring', () => {
-  // 55px of permanent instruction about a mark that does not exist unless a
-  // layer is on — the same defect the legend had before it went progressive,
-  // in a different block. The fake document has no CSS, so the claim is made
-  // against the stylesheet, and the class it keys on is the one `setHd` already
-  // toggles under test above.
-  assert.match(PAGE_CSS, /#rg \.hint\{display:none/,
-    'the tip shows before its mark exists');
-  assert.match(PAGE_CSS, /#rg\.slot \.hint\{display:block\}/,
-    'nothing brings the tip back when the layer is on');
-  assert.match(prose, /class="hint"/, 'the tip is not on the page at all');
+test('⭐ the amber ring is named, and only while the slot layer draws one', () => {
+  /* ⏹ THIS PINNED A SEPARATE TIP UNTIL 2026-09-07, and the claim outlived it.
+     `.hint` was a state-gated reveal — correct, and redundant: the caption says
+     the same thing better and unconditionally, and the tip's one unique clause
+     told the reader to set `trails`, parked since 2026-08-27. So the tip went
+     and the CLAIM stayed, which is the point of rewriting a test rather than
+     deleting it. It is asserted where it can be asked of a viewer now — on the
+     caption, booted, rather than on a stylesheet the fake document cannot see. */
+  const cap = d => (d.$('lcap').textContent || d.$('lcap').innerHTML || '').replace(/<[^>]+>/g, ' ');
+
+  const off = boot(null, null, '');
+  assert.doesNotMatch(cap(off), /amber/i,
+    'the ring is named before any layer draws one — instruction about a mark that is not there');
+
+  const on = boot(null, null, '?layer=slot');
+  assert.match(cap(on), /amber ring/i, 'the ring on the ice has no name');
+  assert.match(cap(on), /[Cc]lick a ring/,
+    'nothing tells a reader the ring is pressable — the one interaction here that '
+    + 'cannot be guessed from the drawing');
+
+  /* AND IT IS THERE ON THE OPENING FRAME, not earned by watching. A reader who
+     arrives through one of the learn doors lands with the layer already on and
+     has not pressed play; an instruction that appears only once events have
+     accumulated is an instruction that reader never sees. */
+  assert.match(cap(boot(null, null, '?layer=slot')), /Click a ring/,
+    'the click is only taught after the replay has run');
 });
 
 test('there is NO VERDICT until the replay reaches the end', () => {
