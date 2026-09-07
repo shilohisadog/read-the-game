@@ -421,3 +421,83 @@ test('the preview STACKS the band under the ice rather than beside it', () => {
   assert.ok(!hide[0].includes('#rg.preview .pboxes'),
             'the penalty box is base-layer furniture and belongs in the hero');
 });
+
+test('⛔⛔ a BENCH minor ends on a power-play goal, exactly as a player minor does', () => {
+  /* ⭐ KEVIN FOUND THIS ON THE LIVE SITE, 2026-09-07:
+     `?game=2025030414&at=1-07:12.1` — Vegas took a bench minor for too many men
+     at 07:33 of the first, Carolina scored on the power play at 07:12, and the
+     box went on counting. The league's own feed disagrees inside the same two
+     events: `situationCode` reads 1541 at the goal and 1551 at the face-off
+     immediately after it.
+
+     ⛔ THE CAUSE WAS A STRING WHERE A SET BELONGED. `ENDS_ON_GOAL` was `'MIN'`,
+     compared with `===`, so a bench minor could never match. Rule 16.2 — a team
+     short-handed by a bench minor has it terminate when the opposition scores;
+     the only thing that makes it different is that the feed does not name the
+     player serving it, and that is about the LABEL, not the clock.
+
+     ⚠️ AND THE ADMISSION TEST TWENTY LINES ABOVE ALREADY KNEW. Its comment reads
+     *"THE CONDITION IS THE SEVERITY, NOT THE MISSING NAME"* — written when bench
+     minors were let INTO the box, and the release rule was not re-read. A penalty
+     variety learned in one place and not the other.
+
+     ⚠️ NO FIXTURE EXERCISED IT, which is the honest reason it shipped: 2 bench
+     minors across the eight fixture games, 0 of them live at a power-play goal.
+     Over 150 published games it is 37 bench minors, 4 of them released by a goal.
+     So this is synthetic, and it is the shape from the real game. */
+  const all = stints([
+    // A bench minor carries no actor. That is the whole point of the case.
+    ev('penalty', 100, { own: HOME, actor: null, min: 2, sev: 'BEN',
+                         pen: 'too-many-men-on-the-ice' }),
+    ev('goal', 121, { own: AWAY, sit: '1541' }),
+  ], CTX);
+
+  assert.equal(all.length, 1, 'the bench minor is not in the box at all');
+  assert.equal(all[0].endedBy, 'goal', 'the bench minor kept running through the goal');
+  assert.equal(all[0].end, 121, 'it ends when the goal is scored, not two minutes later');
+
+  /* THE CONTROL: a MAJOR in the same position is untouched. Without it, "ends on
+     a goal" is satisfied by a rule that ends everything. */
+  const maj = stints([
+    ev('penalty', 100, { own: HOME, actor: 9, min: 5, sev: 'MAJ', pen: 'fighting' }),
+    ev('goal', 121, { own: AWAY, sit: '1541' }),
+  ], CTX);
+  assert.equal(maj[0].endedBy, 'time', 'a major is served in full, goals or not');
+});
+
+test('⛔ a DOUBLE minor loses its first half only, and the kill keeps running', () => {
+  /* Rule 16.3: short-handed by a double minor and scored on, the FIRST of the two
+     minors terminates — the player stays and serves the second. Releasing him
+     outright put the page back to full strength while the real team was still a
+     skater down for two minutes.
+
+     ⭐ AND `endedBy` STAYS 'time', WHICH IS THE POINT. The goal SHORTENS this
+     stint; it does not END it, because the kill is still on. `strength.js` reads
+     `endedBy` to say why a power play finished, so calling this 'goal' would make
+     every consumer wrong in order to record something none of them asked about.
+
+     ⚠️ Measured over 150 published games: every four-minute penalty in the sample
+     is `high-sticking-double-minor` — 20 of them — and 5 were scored on. About
+     one game in thirty. No fixture holds one, same as the case above. */
+  const dbl = () => ev('penalty', 100, { own: HOME, actor: 9, min: 4, sev: 'MIN',
+                                         pen: 'high-sticking-double-minor' });
+
+  const early = stints([dbl(), ev('goal', 160, { own: AWAY, sit: '1541' })], CTX)[0];
+  assert.equal(early.end, 280, 'the second minor starts at the goal and runs its two minutes');
+  assert.equal(early.endedBy, 'time',
+    'the stint is recorded as ended BY the goal, but the team is still short-handed');
+
+  /* A goal in the SECOND half ends it outright — by then only one minor is left. */
+  const late = stints([dbl(), ev('goal', 300, { own: AWAY, sit: '1541' })], CTX)[0];
+  assert.equal(late.end, 300, 'a goal against the remaining minor does not end it');
+  assert.equal(late.endedBy, 'goal');
+
+  /* ⛔ AND IT CANNOT BE HALVED TWICE, which is the shape that would EXTEND a
+     penalty rather than shorten it: two goals inside the first two minutes. */
+  const twice = stints([dbl(),
+    ev('goal', 130, { own: AWAY, sit: '1541' }),
+    ev('goal', 190, { own: AWAY, sit: '1541' }),
+  ], CTX)[0];
+  assert.equal(twice.end, 190, 'a second goal extended the penalty instead of ending it');
+  assert.equal(twice.endedBy, 'goal');
+});

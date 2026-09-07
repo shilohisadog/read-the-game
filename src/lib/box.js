@@ -65,8 +65,31 @@ const NOT_BOX = new Set([
   'GAM',
 ]);
 
-/** Only a MINOR can be ended early by a goal. */
-const ENDS_ON_GOAL = 'MIN';
+/**
+ * The severities a power-play goal terminates.
+ *
+ * ⛔⛔ THIS WAS THE STRING `'MIN'` UNTIL 2026-09-07 AND IT SHIPPED A LIVE BUG.
+ * Kevin found it on CAR at VGK, `?game=2025030414&at=1-07:12.1`: Vegas took a
+ * bench minor for too many men at 07:33 of the first, Carolina scored on the
+ * power play at 07:12, and the box went on counting. The league's own feed says
+ * otherwise in the same events — `situationCode` reads 1541 at the goal and 1551
+ * at the face-off immediately after it.
+ *
+ * A BENCH MINOR IS A MINOR. Rule 16.2: a team short-handed by a bench minor has
+ * that penalty terminate when the opposing team scores. The player serving it is
+ * one the feed does not name, which is the only thing that makes it different,
+ * and that difference is about the LABEL rather than about the clock.
+ *
+ * ⚠️ AND THE COMMENT ON THE ADMISSION TEST ABOVE ALREADY ARGUED THIS EXACT POINT
+ * — *"the condition is the SEVERITY, not the missing name"* — for getting bench
+ * minors INTO the box. That fix was made and this rule, twenty lines later, was
+ * not re-read. A penalty variety learned in one place and not the other.
+ *
+ * ⛔ MAJ AND MIS STAY OUT, and for two different reasons. A major is served in
+ * full, goals or not (Rule 20.3). A misconduct does not shorten the team at all —
+ * a substitute takes the ice — so it has no power play to end.
+ */
+const ENDS_ON_GOAL = new Set(['MIN', 'BEN']);
 
 /**
  * Every stint in the box, in the order the penalties were called.
@@ -129,13 +152,42 @@ export function stints(events, ctx) {
 
     const opp = e.own === awayId ? homeId : awayId;
     const live = all
-      .filter(s => s.team === opp && s.sev === ENDS_ON_GOAL
+      .filter(s => s.team === opp && ENDS_ON_GOAL.has(s.sev)
                    && s.start <= e.s && s.end > e.s)
       .sort((a, b) => a.start - b.start || a.end - b.end);
     if (!live.length) continue;                         // (2) nobody to release
 
-    live[0].end = e.s;                                  // (3) the earliest one
-    live[0].endedBy = 'goal';
+    const first = live[0];                              // (3) the earliest one
+
+    /* ⛔⛔ (4) A DOUBLE MINOR LOSES ONE HALF, NOT BOTH. Rule 16.3: when a team is
+       short-handed by a double minor and the opposition scores, the FIRST of the
+       two minors terminates — the player stays and serves the second. Setting
+       `end = e.s` released him two minutes early, and the team went back to full
+       strength on our page while the real one was still killing a penalty.
+
+       Measured over 150 published games (1,117 stints): every four-minute penalty
+       in the sample is `high-sticking-double-minor`, 20 of them, and 5 were
+       scored on. So this is about one game in thirty — rarer than the bench-minor
+       defect above and wrong in the same direction, on the same five lines.
+
+       ⭐ AND `endedBy` STAYS 'time', WHICH IS THE WHOLE MODEL. The stint is
+       SHORTENED by the goal; it is not ENDED by one, because the team is still
+       a skater down for two more minutes. `strength.js` reads `endedBy` to say
+       why a power play finished, and a goal that leaves the kill running has not
+       finished it. Changing the vocabulary here would have made every consumer
+       wrong in order to record something none of them asked about.
+
+       ⚠️ AND IT CANNOT BE HALVED TWICE. Two goals inside one double minor is the
+       shape that would extend a penalty rather than shorten it, so the branch is
+       taken only while the stint still runs its full length — after that the
+       remaining minor is an ordinary one and a goal ends it outright. */
+    const full = first.start + first.min * 60;
+    if (first.min === 4 && first.end === full && e.s < first.start + 120) {
+      first.end = e.s + 120;
+    } else {
+      first.end = e.s;
+      first.endedBy = 'goal';
+    }
   }
   return all;
 }
