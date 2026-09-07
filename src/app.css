@@ -822,17 +822,22 @@
 #rg .caption .tag{font-family:ui-monospace,Menlo,monospace;font-weight:700;font-size:.72rem;padding:2px 7px;border-radius:5px;margin-right:7px}
 #rg .caption .tag.a{background:var(--away);color:var(--away-ink)}#rg .caption .tag.h{background:var(--home);color:var(--home-ink)}
 #rg .caption .num{opacity:.65;font-family:ui-monospace,Menlo,monospace;margin-right:3px}
-/* ⭐ THE ACTIVE PLAYER, BETWEEN THE CONTROLS AND THE SCRUBBER. `flex-basis:100%`
-   gives it its own row in the wrapping transport at every width; measured, it
-   costs 19px of type plus the transport's existing 10px gap, which is 2.5% of a
-   390px phone's below-the-rink budget. Smaller than the caption pill and quieter,
-   because it names every frame rather than the rare ones. */
-/* ⚠️ NO `order`, AND THE FIRST VERSION HAD ONE. `order:3` put this AFTER the
-   scrubber — every other child of the transport is `order:0`, so any positive
-   value sorts it last, and Kevin asked for it *"right above the scrubber and
-   below the play controls"*. The markup already sits between them; source order
-   is the whole placement and an `order` could only fight it. */
-#rg .who{flex:0 0 100%;margin:0;min-height:1.15rem;line-height:1.15rem;
+/* ⭐⭐ THE ACTIVE PLAYER, DIRECTLY UNDER THE DRAWING — moved out of the transport
+   on 2026-09-07. It sat below the play controls until then, which put 479px at
+   390 and 571px at 1920 between a marked event and the sentence about it. See the
+   markup in builders/build_main.py for the measurements and the reason.
+   ⚠️ `white-space:nowrap` IS NOT HERE, AND MUST NOT BE. This line must never
+   wrap, because it now sits inside the rink card and a second row would move
+   everything under the ice mid-replay -- but the way that is guaranteed is by the
+   SENTENCE being short enough, not by clipping a player's name. A one-line budget
+   of 39 characters at 360px against a longest form of 30 is the guarantee, and
+   `test/active-player.test.js` measures it rather than trusting it. Truncating a
+   name on a site whose product is legibility would be the wrong repair.
+   ⏹ AND `flex:0 0 100%` LEFT WITH IT. It gave the line its own row in the
+   wrapping transport; in the card it is an ordinary block and the declaration
+   would be inert, which is the kind of leftover test/css-orphans.test.js exists
+   to stop accumulating. */
+#rg .who{margin:8px 2px 0;min-height:1.15rem;line-height:1.15rem;
  font-size:.82rem;font-weight:600;color:var(--ink)}
 #rg .who .num{opacity:.6;font-family:ui-monospace,Menlo,monospace;font-weight:700}
 /* ⭐ THE CLUB'S COLOUR ON THE INK, THROUGH `--away-text` — the token that already

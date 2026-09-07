@@ -42,31 +42,89 @@ function fnSrc(name) {
   throw new assert.AssertionError({ message: `${name} never closes` });
 }
 
-test('⭐ the line sits between the controls and the scrubber, and takes its own row', () => {
-  /* Kevin named the slot. ⚠️ AND `order` IS THE THING THAT BREAKS IT: every other
-     child of `.transport` is `order:0`, so any positive value sorts this last and
-     it renders BELOW the scrubber. The first build did exactly that. Source order
-     is the whole placement, which is why the markup position is asserted too. */
-  /* ⚠️ INDEXES INTO THE WHOLE PAGE, NOT A SLICE. Slicing "the transport block"
-     needed a regex for its closing tag, and the transport CONTAINS `<div
-     class="grp">` — so the first `</div>` closed a control group and the block
-     was three elements long. These three ids are unique on the page. */
-  const start = app.indexOf('<div class="transport">');
-  assert.ok(start >= 0, 'the transport block has moved');
-  const who = app.indexOf('id="who"', start), scrub = app.indexOf('id="scrub"', start);
-  const grp = app.lastIndexOf('class="grp"', who);
-  assert.ok(who > 0 && scrub > 0 && grp > 0, 'the transport lost the line, the scrubber or the controls');
-  assert.ok(grp < who, 'the line is above the play controls');
-  assert.ok(who < scrub, 'the line is below the scrubber');
+test('⭐⭐ the line sits inside the rink card, directly under the drawing', () => {
+  /* ⏹ THIS ASSERTED THE OPPOSITE UNTIL 2026-09-07 — "between the controls and the
+     scrubber", which was Kevin's own earlier slot and which he replaced after
+     looking at a giveaway: *"the (vertical) distance between '#79 Hart gave the
+     puck away' and the rink, there are many pixels between the event(s)"*.
+     Measured before the move: from the marked event to its own sentence was 479px
+     at 390 and 571px at 1920, with the layer box and the whole transport between
+     them. After: the line is 8px under the drawing at every width, on every frame.
+
+     ⭐ WHAT DID NOT CHANGE IS WHAT THE OLD TEST WAS ACTUALLY FOR — the line has
+     its own row, cannot collapse, and cannot be sorted away from its position.
+     Those are re-asserted here in the terms of the new home. */
+  const box = app.indexOf('<div class="rinkbox">');
+  assert.ok(box >= 0, 'the rink card has moved');
+  const svgEnd = app.indexOf('</svg>', box);
+  const who = app.indexOf('id="who"', box);
+  const lbox = app.indexOf('class="lbox"', box);
+  assert.ok(svgEnd > 0 && who > 0, 'the rink card lost the drawing or the line');
+  assert.ok(who > svgEnd, 'the line is inside the SVG rather than under it');
+  assert.ok(who < app.indexOf('<div class="transport">'),
+    'the line is back below the play controls, which is the 479px this move removed');
+  /* ⚠️ ABOVE THE LAYER BOX. Below it, the running tally would sit between the
+     drawing and the sentence about it — the same defect, smaller. */
+  if (lbox > 0) assert.ok(who < lbox, 'the layer box now separates the drawing from its sentence');
 
   const rule = /#rg \.who\{[^}]*\}/.exec(PAGE_CSS);
   assert.ok(rule, 'the line has no rule at all');
-  assert.match(rule[0], /flex:0 0 100%/, 'the line shares a row with a control instead of taking its own');
-  assert.doesNotMatch(rule[0], /order:/,
-    'the line sets `order`, which sorts it past the scrubber — see the note above it');
-  // AND IT RESERVES ITS HEIGHT, so a frame with a shorter sentence does not move
-  // the scrubber under a finger already reaching for it.
-  assert.match(rule[0], /min-height:/, 'the line can collapse, which shifts the scrubber under the reader');
+  assert.doesNotMatch(rule[0], /order:/, 'the line sets `order`, which sorts it away from the drawing');
+  // IT RESERVES ITS HEIGHT, so a frame with a shorter sentence does not move what
+  // is under the ice.
+  assert.match(rule[0], /min-height:/, 'the line can collapse, which shifts everything below it');
+  /* ⛔ AND IT MUST NOT BE MADE TO FIT BY CLIPPING. The line has to stay one row —
+     it is inside the rink card now and a second row moves the page mid-replay —
+     but the guarantee is that the SENTENCE is short enough, asserted in the test
+     below. Truncating a player's name on a site whose product is legibility would
+     be the wrong repair, so the shortcut is closed by name. */
+  assert.doesNotMatch(rule[0], /text-overflow|white-space:\s*nowrap/,
+    'the line is being kept to one row by clipping a name rather than by fitting');
+});
+
+test('⛔⛔ no sentence the archive can produce overflows one line', () => {
+  /* ⭐ THE JITTER GUARANTEE, AND IT IS A CHARACTER BUDGET BECAUSE THE SUITE HAS NO
+     PIXELS. The line lives in the rink card now, so a sentence that wraps moves
+     everything under the ice mid-replay. Node cannot see a wrap; what it can see
+     is the length of every sentence the table can build from real rosters.
+
+     THE BUDGET WAS MEASURED IN A REAL BROWSER, not chosen: growing a string in
+     `#who` until its height doubled gives **39 characters at 360px** and 42 at
+     390. 360 is the narrower, so 360 is the budget. That measurement is the one
+     thing here a person has to redo if the type ever changes — it is recorded in
+     builders/build_main.py beside the element.
+
+     ⚠️ AND IT IS EXACTLY THE CHECK THAT WAS MISSING. `docs/active-player.md`
+     claimed "the line does not wrap on a phone" from a measurement of
+     `"Surname #NN"` — median 11, max 18 — which is the NAME, not the sentence.
+     The blocked-shot form named two players and ran to 46, wrapping on 26 of 269
+     frames at 360. A measurement of a component quoted as a measurement of the
+     whole. */
+  const BUDGET = 39;
+  const dir = new URL('fixtures/extracts/', import.meta.url);
+  const files = readdirSync(dir).filter(f => /^\d+\.json$/.test(f));
+  assert.ok(files.length >= 5, `only ${files.length} fixture games to draw names from`);
+
+  const tag = p => `#${p.n} ${p.nm}`;              // whoTag, without its markup
+  const plain = t => t.replace(/&mdash;/g, '—').replace(/&rsquo;/g, '’').replace(/<[^>]+>/g, '');
+  let worst = { len: 0 }, n = 0;
+  for (const f of files) {
+    const j = JSON.parse(readFileSync(new URL(f, dir), 'utf8'));
+    for (const e of j.events) {
+      const a = ATTRIBUTION[e.type], p = a && j.roster[e.actor];
+      if (!p) continue;
+      let s = plain(a.say).replace('{a}', tag(p));
+      if (a.with) { const q = j.roster[e[a.with]]; if (!q) continue; s = s.replace('{b}', tag(q)); }
+      n++;
+      if (s.length > worst.len) worst = { len: s.length, s, type: e.type, game: f };
+    }
+  }
+  assert.ok(n > 1000, `only ${n} sentences built — the fixtures are not being read`);
+  assert.ok(worst.len <= BUDGET,
+    `the longest sentence the fixtures produce is ${worst.len} characters against a `
+    + `one-line budget of ${BUDGET} at 360px:\n  ${worst.type} — "${worst.s}"\n`
+    + 'It will wrap inside the rink card and move the page under the reader mid-replay. '
+    + 'Shorten the form in ATTRIBUTION; do not clip the name.');
 });
 
 test('⛔ there is no toggle, and that is Kevin\'s ruling over CHENG\'s', () => {
@@ -192,4 +250,57 @@ test('⭐ the sentence resolves on every frame the replay shows, or says the eve
 test('the line is empty before the game starts, and says something at the first frame', () => {
   const a = boot();
   assert.equal(a.$('who').innerHTML, '', 'the line names a player on the pre-game frame');
+});
+
+test('⛔⛔ the line and the ice beside it never name opposite clubs', () => {
+  /* ⚠️⚠️ KEVIN CAUGHT THIS SHAPE ONCE ALREADY, on the figure: *"text says CAR,
+     visual shows Vegas."* That fix moved the drawn PERSON onto the blocker's
+     colours, because the coordinate is his. It did not move this line, which went
+     on leading with the shooter — so on every blocked shot the ice said `MIN ·
+     Blocked a shot` and the sentence under it had a BUF player as its subject,
+     printed in BUF's colour. Corrected 2026-09-07 on Kevin's call.
+
+     ⭐ AND THE INSTRUMENT IS THE POINT, not the fix. Nothing here could have seen
+     it: `attribution-table.test.js` checks the TABLE, `render-labels.test.js`
+     checks the LABEL, and the disagreement lived between them — the same
+     intersection the strength control fell through. So the claim is asked of the
+     rendered page, across a whole walk, of both elements at once.
+
+     ⭐ IT IS A GENERAL PROPERTY, MEASURED BEFORE IT WAS ASSERTED: 260 of 260
+     frames that carry both a club-prefixed label and a club-coloured line agree,
+     across every event type in the reference game. It is not a blocked-shot
+     special case, which is why it is written as one rule over the whole walk. */
+  const a = boot(null, null, '');
+  const AAB = a.$('aAb').textContent.trim(), HAB = a.$('hAb').textContent.trim();
+  assert.ok(AAB && HAB && AAB !== HAB, 'the scoreboard has no club abbreviations to compare against');
+
+  const rows = a.every(d => ({
+    cls: d.$('who').className || '',
+    line: (d.$('who').innerHTML || '').replace(/<[^>]+>/g, ' ').trim(),
+    lab: (d.$('labels').innerHTML || '').replace(/<[^>]+>/g, ' ').trim(),
+  }));
+  assert.ok(rows.length > 200, `walked only ${rows.length} frames`);
+
+  const bad = [];
+  let checked = 0;
+  for (const [k, r] of rows.entries()) {
+    /* `who plain` is the fallback that names the EVENT and no player, so it takes
+       no club and has nothing to disagree with. */
+    if (/\bplain\b/.test(r.cls)) continue;
+    const side = /\bwho a\b/.test(r.cls) ? AAB : /\bwho h\b/.test(r.cls) ? HAB : null;
+    const m = /\b([A-Z]{3})\s*·/.exec(r.lab);
+    if (!side || !m) continue;
+    checked++;
+    if (m[1] !== side) bad.push(`frame ${k}: ice "${m[1]}" vs line "${side}" — ${r.line}`);
+  }
+
+  assert.ok(checked > 150,
+    `only ${checked} frames carried both a club label and a club-coloured line — `
+    + 'this walk is not exercising the pair, so its silence means nothing');
+  assert.deepEqual(bad, [],
+    'the ice names one club and the sentence beside it is coloured for the other. '
+    + 'The line takes its colour from the SUBJECT of its sentence (see sayWho); if a '
+    + 'row of ATTRIBUTION changed which name it leads with, the colour follows it '
+    + 'automatically — so this failing means the label and the sentence genuinely '
+    + `disagree about whose play it was:\n  ${bad.join('\n  ')}`);
 });

@@ -193,10 +193,32 @@ export const ATTRIBUTION = {
   faceoff:               { field: 'winningPlayerId',     say: '{a} won the draw' },
   'shot-on-goal':        { field: 'shootingPlayerId',    say: '{a} shot on goal' },
   'missed-shot':         { field: 'shootingPlayerId',    say: '{a} missed the net' },
-  // BOTH HALVES, because this is the one frame where a bare name is ambiguous in
-  // a way that has already cost this project a wrong number. `blk` resolves on
-  // 253 of 253 blocked shots in the fixtures, so the sentence is affordable.
-  'blocked-shot':        { field: 'shootingPlayerId',    say: '{a} &mdash; shot blocked by {b}',
+  /* ⭐⭐ THE ONE ROW WHOSE SENTENCE IS NOT ABOUT ITS `field`, AND THE PAGE ALREADY
+     AGREED — this line was the last element that did not.
+     Kevin, 2026-09-07: *"the important bit there is who blocked the shot, not who
+     made the shot… you want to know who blocked the shot."* On the same frame the
+     on-ice label already says `MIN · Blocked a shot` and the FIGURE already stands
+     in the blocker's colours on his coordinate — his own earlier call, *"text says
+     CAR, visual shows Vegas"*. This line led with the shooter, so the ice named
+     one club and the sentence under it had a player from the other as its subject.
+
+     ⛔ AND `field` DOES NOT MOVE, WHICH IS THE WHOLE CARE HERE. It is what Control
+     resolves attribution from — the shooter, verified 44/44, 25/25 and 34/34 at
+     the top of this file — and flipping it is precisely the "correction" that once
+     turned MIN 80 / BUF 55 into MIN 72 / BUF 63. The dot keeps the shooter's
+     colour for the same reason. **Only the SENTENCE changed; no count did.**
+
+     ⚠️ SO `{a}` IS DELIBERATELY UNUSED HERE, and that is not an oversight: the
+     actor is still resolved, still owns the attempt, and simply is not the subject
+     of this sentence. `sayWho` colours the line from the subject rather than from
+     the actor for exactly this row.
+
+     ⭐ AND IT IS WHAT MAKES THE LINE FIXED-HEIGHT. `#28 Girgensons blocked a shot`
+     is 30 characters against a one-line budget of 39 at 360px; the old both-names
+     form ran to 46 and wrapped on 26 of 269 frames there, which is the jitter that
+     blocked moving this line up under the rink. `blk` resolves on 253 of 253
+     blocked shots in the fixtures. */
+  'blocked-shot':        { field: 'shootingPlayerId',    say: '{b} blocked a shot',
                            with: 'blk' },
   goal:                  { field: 'scoringPlayerId',     say: '{a} scored' },
   hit:                   { field: 'hittingPlayerId',     say: '{a} delivered a hit' },

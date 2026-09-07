@@ -56,7 +56,15 @@ test('⭐ every entry has a field AND a sentence, and the sentence names its act
     assert.match(a.field, /[Pp]layerId$/, `${t}.field is "${a.field}", which is not a player field`);
     assert.ok(a.say, `${t} has a field and no sentence — a name with no verb is an `
       + 'attribution claim with no stated relationship');
-    assert.match(a.say, /\{a\}/, `${t}'s sentence never mentions its actor: "${a.say}"`);
+    /* ⭐ THE RULE IS "NAMES A PLAYER", NOT "NAMES THE ACTOR", and it changed on
+       2026-09-07. This required `{a}`, which read as the same thing while every
+       sentence happened to lead with its own `field`. `blocked-shot` now leads
+       with the BLOCKER — the club the ice already names — while `field` stays on
+       the shooter because that is what Control counts. The invariant the old
+       assertion was reaching for survives intact: a sentence must name SOMEBODY,
+       and every name it uses must be backed by a declared field. */
+    assert.match(a.say, /\{[ab]\}/,
+      `${t}'s sentence names no player at all: "${a.say}"`);
     /* ⭐ A SECOND NAME NEEDS A SECOND FIELD, both ways. `{b}` with nothing to fill
        it renders a placeholder; `with` and no `{b}` reads a field it never says. */
     assert.equal(/\{b\}/.test(a.say), !!a.with,
@@ -64,15 +72,32 @@ test('⭐ every entry has a field AND a sentence, and the sentence names its act
   }
 });
 
-test('⭐ the blocked shot says BOTH halves, because that is the one that has bitten us', () => {
+test('⛔⛔ the blocked shot counts for the shooter and SPEAKS about the blocker', () => {
   /* On a blocked shot `actor` is the SHOOTER and the coordinate is the BLOCKER's
      position — two attributions in one frame pointing at different people, and the
-     pair that shipped a wrong flagship number. A bare name there would reconstitute
-     the confusion in a new medium (CHENG). */
+     pair that shipped a wrong flagship number.
+
+     ⭐ THE TWO HALVES CAME APART ON 2026-09-07, and keeping them apart is the
+     whole point of this test now. Kevin: *"the important bit there is who blocked
+     the shot, not who made the shot."* The ice already agreed — the label says
+     `MIN · Blocked a shot` with the BLOCKER's club, and the figure stands in his
+     colours on his coordinate — so the sentence was the last element leading with
+     the shooter, printing a name from the club opposite the one beside it.
+
+     ⛔ SO `field` IS THE ONE THAT MUST NOT MOVE. It is what Control resolves
+     attribution from; "correcting" it to the blocker is exactly what once turned
+     MIN 80 / BUF 55 into MIN 72 / BUF 55. This assertion is the guard against that
+     change arriving disguised as a copy edit — which is what it would look like. */
   const b = ATTRIBUTION['blocked-shot'];
-  assert.equal(b.field, 'shootingPlayerId', 'the blocked shot no longer credits the shooter');
+  assert.equal(b.field, 'shootingPlayerId',
+    'the blocked shot no longer credits the SHOOTER. `field` is what Control counts '
+    + 'from — read the header of src/lib/attribution.js before changing it. Leading '
+    + 'the SENTENCE with the blocker is a different thing and does not need this.');
   assert.equal(b.with, 'blk', 'the blocked shot no longer names the blocker');
-  assert.match(b.say, /\{a\}[\s\S]*\{b\}/, 'the shooter must be named before the blocker');
+  assert.match(b.say, /^\{b\}/,
+    'the sentence must LEAD with the blocker, because the on-ice label and the '
+    + 'figure beside it already name his club — a sentence starting with the '
+    + 'shooter puts a player from the other club under a label naming this one');
 
   // AND THE FIELD IT PROMISES IS ON EVERY BLOCKED SHOT WE HOLD.
   const dir = new URL('fixtures/extracts/', import.meta.url);

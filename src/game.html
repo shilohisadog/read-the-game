@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-B3rReGtYIckKu2Uzr2mzlM2LODBJMD1CikjmdlaYeL8=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-K4E1SZl7lokcDPMQshEnpvTLXJf3Jc/69cLqI3e5HoA='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-rmBB2Zg0gqSTtW0beHuYQWTtgvhXVXxEhhMkxWwUtbc=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-m2hjHUo93oSezDsDMedmM4YZuDMl/Phl5k1oSVZTQW8='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">Watch a game</a><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see</a><a href="/workshop.html">Workshop</a></nav></header>
@@ -869,17 +869,22 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .caption .tag{font-family:ui-monospace,Menlo,monospace;font-weight:700;font-size:.72rem;padding:2px 7px;border-radius:5px;margin-right:7px}
 #rg .caption .tag.a{background:var(--away);color:var(--away-ink)}#rg .caption .tag.h{background:var(--home);color:var(--home-ink)}
 #rg .caption .num{opacity:.65;font-family:ui-monospace,Menlo,monospace;margin-right:3px}
-/* ⭐ THE ACTIVE PLAYER, BETWEEN THE CONTROLS AND THE SCRUBBER. `flex-basis:100%`
-   gives it its own row in the wrapping transport at every width; measured, it
-   costs 19px of type plus the transport's existing 10px gap, which is 2.5% of a
-   390px phone's below-the-rink budget. Smaller than the caption pill and quieter,
-   because it names every frame rather than the rare ones. */
-/* ⚠️ NO `order`, AND THE FIRST VERSION HAD ONE. `order:3` put this AFTER the
-   scrubber — every other child of the transport is `order:0`, so any positive
-   value sorts it last, and Kevin asked for it *"right above the scrubber and
-   below the play controls"*. The markup already sits between them; source order
-   is the whole placement and an `order` could only fight it. */
-#rg .who{flex:0 0 100%;margin:0;min-height:1.15rem;line-height:1.15rem;
+/* ⭐⭐ THE ACTIVE PLAYER, DIRECTLY UNDER THE DRAWING — moved out of the transport
+   on 2026-09-07. It sat below the play controls until then, which put 479px at
+   390 and 571px at 1920 between a marked event and the sentence about it. See the
+   markup in builders/build_main.py for the measurements and the reason.
+   ⚠️ `white-space:nowrap` IS NOT HERE, AND MUST NOT BE. This line must never
+   wrap, because it now sits inside the rink card and a second row would move
+   everything under the ice mid-replay -- but the way that is guaranteed is by the
+   SENTENCE being short enough, not by clipping a player's name. A one-line budget
+   of 39 characters at 360px against a longest form of 30 is the guarantee, and
+   `test/active-player.test.js` measures it rather than trusting it. Truncating a
+   name on a site whose product is legibility would be the wrong repair.
+   ⏹ AND `flex:0 0 100%` LEFT WITH IT. It gave the line its own row in the
+   wrapping transport; in the card it is an ordinary block and the declaration
+   would be inert, which is the kind of leftover test/css-orphans.test.js exists
+   to stop accumulating. */
+#rg .who{margin:8px 2px 0;min-height:1.15rem;line-height:1.15rem;
  font-size:.82rem;font-weight:600;color:var(--ink)}
 #rg .who .num{opacity:.6;font-family:ui-monospace,Menlo,monospace;font-weight:700}
 /* ⭐ THE CLUB'S COLOUR ON THE INK, THROUGH `--away-text` — the token that already
@@ -1871,6 +1876,32 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 <p class="endnote" id="endnote"></p>
 <p class="atnote" id="atnote"></p>
 <div class="rinkbox"><svg viewBox="0 0 200 85"><g id="rink"></g><g id="netmen"></g><g id="lines"></g><g id="whistles"></g><g id="cue"></g><g id="events"></g><g id="puck"></g><g id="labels"></g><g id="noplace"></g></svg>
+  <!-- ⭐⭐ THE ACTIVE PLAYER, DIRECTLY UNDER THE DRAWING. Kevin, 2026-09-07,
+       looking at a giveaway: "the (vertical) distance between '#79 Hart gave the
+       puck away' and the rink, there are many pixels between the event(s)".
+       MEASURED BEFORE MOVING IT: from the marked event to its own sentence was
+       479px at 390 and 571px at 1920, with the layer box and the whole transport
+       in between. The ice says the club and the event -- `VGK &middot; Giveaway`
+       -- and this says the player and the verb. They are two halves of one
+       sentence and the controls were wedged between them.
+       ⛔ AND IT COULD NOT MOVE UNTIL IT WAS FIXED-HEIGHT, which is the rule Kevin
+       set for the layer box one element down: "the space utilization is
+       consistent so the graphics don't adjust based on which layer is selected."
+       The line is never empty -- 269 of 269 frames carry text -- but it WRAPPED
+       on blocked shots, the one form naming two players: 26 of 269 frames at
+       360px, 8 at 390. Leading with the blocker alone fixed that and was the
+       right sentence anyway. See ATTRIBUTION in src/lib/attribution.js.
+       ⚠️ ABOVE THE LAYER BOX, NOT BELOW IT. Below, the running tally would sit
+       between the drawing and the sentence about it -- the same defect this move
+       exists to remove, only smaller.
+       ⛔ AND IT CARRIES THE VERB, NEVER THE NAME ALONE. `actor` is the faceoff
+       WINNER, the HITTER, the SHOOTER on a blocked shot whose coordinate belongs
+       to the blocker -- so a bare name publishes a field's value without its
+       meaning (CHENG). See ATTRIBUTION in src/lib/attribution.js.
+       ⛔ NO TOGGLE, which is Kevin's ruling over CHENG's. He proposed folding one
+       into the newcomer dismissal; that flag means "I know how this site works",
+       and who took the shot is not scaffolding a reader outgrows. -->
+  <p class="who" id="who" aria-live="polite"></p>
   <!-- THE FIRST STEP, ON THE ICE. Kevin: "we should overlay 'Press Play' onto the
        rink, in rather large lettering, so the first time visitor knows what the
        first step is". It is a CONDITION, not a tip: it is on screen exactly when
@@ -1953,21 +1984,6 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 <div class="transport"><button class="play" id="play">▶ Play from start</button>
   <div class="grp" role="group" aria-label="Step through the events"><button class="spd stepb" id="back" aria-label="Previous event">◀ Prev event</button><button class="spd stepb" id="fwd" aria-label="Next event">Next event ▶</button></div>
   <div class="grp" role="group" aria-label="Replay speed"><button class="spd stepb" id="slower">&#9664; Slower</button><button class="spd stepb" id="faster">Faster &#9654;</button></div>
-  <!-- ⭐ WHO THE LEAGUE ATTRIBUTED THIS EVENT TO. Kevin: "we have the player
-       that's attributed to each event... that might be a good idea to integrate
-       into our main game replay, smaller font, right above the scrubber and
-       below the play controls."
-       2,065 of 2,069 playable frames across nine fixtures resolve to a named
-       player, and the page was showing the name on 144 of them -- goals and
-       penalties. This is the other 92.8%.
-       ⛔ AND IT CARRIES THE VERB, NEVER THE NAME ALONE. `actor` is the faceoff
-       WINNER, the HITTER, the SHOOTER on a blocked shot whose coordinate belongs
-       to the blocker -- so a bare name publishes a field's value without its
-       meaning (CHENG). See ATTRIBUTION in src/lib/attribution.js.
-       ⛔ NO TOGGLE, which is Kevin's ruling over CHENG's. He proposed folding one
-       into the newcomer dismissal; that flag means "I know how this site works",
-       and who took the shot is not scaffolding a reader outgrows. -->
-  <p class="who" id="who" aria-live="polite"></p>
   <input class="scrub" id="scrub" type="range" min="-1" max="1" value="-1"></div>
 <!-- ⭐ COPY A LINK TO THIS MOMENT. The read side has been built and tested since
      the learn-page doors -- `deeplink.js::format` even says in its own docstring
@@ -2451,10 +2467,32 @@ const ATTRIBUTION = {
   faceoff:               { field: 'winningPlayerId',     say: '{a} won the draw' },
   'shot-on-goal':        { field: 'shootingPlayerId',    say: '{a} shot on goal' },
   'missed-shot':         { field: 'shootingPlayerId',    say: '{a} missed the net' },
-  // BOTH HALVES, because this is the one frame where a bare name is ambiguous in
-  // a way that has already cost this project a wrong number. `blk` resolves on
-  // 253 of 253 blocked shots in the fixtures, so the sentence is affordable.
-  'blocked-shot':        { field: 'shootingPlayerId',    say: '{a} &mdash; shot blocked by {b}',
+  /* ⭐⭐ THE ONE ROW WHOSE SENTENCE IS NOT ABOUT ITS `field`, AND THE PAGE ALREADY
+     AGREED — this line was the last element that did not.
+     Kevin, 2026-09-07: *"the important bit there is who blocked the shot, not who
+     made the shot… you want to know who blocked the shot."* On the same frame the
+     on-ice label already says `MIN · Blocked a shot` and the FIGURE already stands
+     in the blocker's colours on his coordinate — his own earlier call, *"text says
+     CAR, visual shows Vegas"*. This line led with the shooter, so the ice named
+     one club and the sentence under it had a player from the other as its subject.
+
+     ⛔ AND `field` DOES NOT MOVE, WHICH IS THE WHOLE CARE HERE. It is what Control
+     resolves attribution from — the shooter, verified 44/44, 25/25 and 34/34 at
+     the top of this file — and flipping it is precisely the "correction" that once
+     turned MIN 80 / BUF 55 into MIN 72 / BUF 63. The dot keeps the shooter's
+     colour for the same reason. **Only the SENTENCE changed; no count did.**
+
+     ⚠️ SO `{a}` IS DELIBERATELY UNUSED HERE, and that is not an oversight: the
+     actor is still resolved, still owns the attempt, and simply is not the subject
+     of this sentence. `sayWho` colours the line from the subject rather than from
+     the actor for exactly this row.
+
+     ⭐ AND IT IS WHAT MAKES THE LINE FIXED-HEIGHT. `#28 Girgensons blocked a shot`
+     is 30 characters against a one-line budget of 39 at 360px; the old both-names
+     form ran to 46 and wrapped on 26 of 269 frames there, which is the jitter that
+     blocked moving this line up under the rink. `blk` resolves on 253 of 253
+     blocked shots in the fixtures. */
+  'blocked-shot':        { field: 'shootingPlayerId',    say: '{b} blocked a shot',
                            with: 'blk' },
   goal:                  { field: 'scoringPlayerId',     say: '{a} scored' },
   hit:                   { field: 'hittingPlayerId',     say: '{a} delivered a hit' },
@@ -8465,9 +8503,21 @@ function sayWho(e){const w=$('who');if(!w)return;
  // should say the part the diagram cannot. 144 of 2,069 frames.
  if(!p||namesActor(e)){w.innerHTML=LAB[e.type]||e.type.replace(/-/g,' ');w.className='who plain';return;}
  let s=a.say.replace('{a}',whoTag(p));
+ /* ⭐⭐ THE COLOUR IS THE SUBJECT'S CLUB, NOT THE ACTOR'S, and until 2026-09-07
+    those were assumed to be the same player. They are on nine of the ten types.
+    On `blocked-shot` the sentence leads with `{b}` (the blocker) while `field`
+    stays on the shooter, because that is what Control counts — so colouring from
+    `actor` printed the blocker's name in the SHOOTER's club colour, which is a
+    chip naming the club opposite its own verb's subject. This project has shipped
+    that exact shape once before.
+    ⭐ SO IT IS DERIVED, NOT SPECIAL-CASED: whoever the sentence STARTS with owns
+    the colour. A row that changes which name it leads with brings its colour with
+    it, and nobody has to remember a rule. */
+ let subj=p;
  if(a.with){const q=R[e[a.with]];if(!q){w.innerHTML=LAB[e.type]||e.type.replace(/-/g,' ');w.className='who plain';return;}
-  s=s.replace('{b}',whoTag(q));}
- w.className='who '+(p.tid===AID?'a':'h');w.innerHTML=s;}
+  s=s.replace('{b}',whoTag(q));
+  if(a.say.indexOf('{b}')===0)subj=q;}
+ w.className='who '+(subj.tid===AID?'a':'h');w.innerHTML=s;}
 function dwell(e){return captioned(e)?frameMs+CAPTION_BONUS:frameMs;}
 function step(){if(i>=EV.length-1){stop();return;}set(i+1,'play');timer=setTimeout(step,dwell(EV[i]));}
 /* PLAY MEANS GO. A viewer who presses it has asked for the game, and resting on

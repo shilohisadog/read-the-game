@@ -88,6 +88,32 @@ __CSS__</style>
 <p class="endnote" id="endnote"></p>
 <p class="atnote" id="atnote"></p>
 <div class="rinkbox"><svg viewBox="0 0 200 85"><g id="rink"></g><g id="netmen"></g><g id="lines"></g><g id="whistles"></g><g id="cue"></g><g id="events"></g><g id="puck"></g><g id="labels"></g><g id="noplace"></g></svg>
+  <!-- ⭐⭐ THE ACTIVE PLAYER, DIRECTLY UNDER THE DRAWING. Kevin, 2026-09-07,
+       looking at a giveaway: "the (vertical) distance between '#79 Hart gave the
+       puck away' and the rink, there are many pixels between the event(s)".
+       MEASURED BEFORE MOVING IT: from the marked event to its own sentence was
+       479px at 390 and 571px at 1920, with the layer box and the whole transport
+       in between. The ice says the club and the event -- `VGK &middot; Giveaway`
+       -- and this says the player and the verb. They are two halves of one
+       sentence and the controls were wedged between them.
+       ⛔ AND IT COULD NOT MOVE UNTIL IT WAS FIXED-HEIGHT, which is the rule Kevin
+       set for the layer box one element down: "the space utilization is
+       consistent so the graphics don't adjust based on which layer is selected."
+       The line is never empty -- 269 of 269 frames carry text -- but it WRAPPED
+       on blocked shots, the one form naming two players: 26 of 269 frames at
+       360px, 8 at 390. Leading with the blocker alone fixed that and was the
+       right sentence anyway. See ATTRIBUTION in src/lib/attribution.js.
+       ⚠️ ABOVE THE LAYER BOX, NOT BELOW IT. Below, the running tally would sit
+       between the drawing and the sentence about it -- the same defect this move
+       exists to remove, only smaller.
+       ⛔ AND IT CARRIES THE VERB, NEVER THE NAME ALONE. `actor` is the faceoff
+       WINNER, the HITTER, the SHOOTER on a blocked shot whose coordinate belongs
+       to the blocker -- so a bare name publishes a field's value without its
+       meaning (CHENG). See ATTRIBUTION in src/lib/attribution.js.
+       ⛔ NO TOGGLE, which is Kevin's ruling over CHENG's. He proposed folding one
+       into the newcomer dismissal; that flag means "I know how this site works",
+       and who took the shot is not scaffolding a reader outgrows. -->
+  <p class="who" id="who" aria-live="polite"></p>
   <!-- THE FIRST STEP, ON THE ICE. Kevin: "we should overlay 'Press Play' onto the
        rink, in rather large lettering, so the first time visitor knows what the
        first step is". It is a CONDITION, not a tip: it is on screen exactly when
@@ -170,21 +196,6 @@ __CSS__</style>
 <div class="transport"><button class="play" id="play">▶ Play from start</button>
   <div class="grp" role="group" aria-label="Step through the events"><button class="spd stepb" id="back" aria-label="Previous event">◀ Prev event</button><button class="spd stepb" id="fwd" aria-label="Next event">Next event ▶</button></div>
   <div class="grp" role="group" aria-label="Replay speed"><button class="spd stepb" id="slower">&#9664; Slower</button><button class="spd stepb" id="faster">Faster &#9654;</button></div>
-  <!-- ⭐ WHO THE LEAGUE ATTRIBUTED THIS EVENT TO. Kevin: "we have the player
-       that's attributed to each event... that might be a good idea to integrate
-       into our main game replay, smaller font, right above the scrubber and
-       below the play controls."
-       2,065 of 2,069 playable frames across nine fixtures resolve to a named
-       player, and the page was showing the name on 144 of them -- goals and
-       penalties. This is the other 92.8%.
-       ⛔ AND IT CARRIES THE VERB, NEVER THE NAME ALONE. `actor` is the faceoff
-       WINNER, the HITTER, the SHOOTER on a blocked shot whose coordinate belongs
-       to the blocker -- so a bare name publishes a field's value without its
-       meaning (CHENG). See ATTRIBUTION in src/lib/attribution.js.
-       ⛔ NO TOGGLE, which is Kevin's ruling over CHENG's. He proposed folding one
-       into the newcomer dismissal; that flag means "I know how this site works",
-       and who took the shot is not scaffolding a reader outgrows. -->
-  <p class="who" id="who" aria-live="polite"></p>
   <input class="scrub" id="scrub" type="range" min="-1" max="1" value="-1"></div>
 <!-- ⭐ COPY A LINK TO THIS MOMENT. The read side has been built and tested since
      the learn-page doors -- `deeplink.js::format` even says in its own docstring

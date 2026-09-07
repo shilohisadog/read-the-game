@@ -1280,9 +1280,21 @@ function sayWho(e){const w=$('who');if(!w)return;
  // should say the part the diagram cannot. 144 of 2,069 frames.
  if(!p||namesActor(e)){w.innerHTML=LAB[e.type]||e.type.replace(/-/g,' ');w.className='who plain';return;}
  let s=a.say.replace('{a}',whoTag(p));
+ /* ⭐⭐ THE COLOUR IS THE SUBJECT'S CLUB, NOT THE ACTOR'S, and until 2026-09-07
+    those were assumed to be the same player. They are on nine of the ten types.
+    On `blocked-shot` the sentence leads with `{b}` (the blocker) while `field`
+    stays on the shooter, because that is what Control counts — so colouring from
+    `actor` printed the blocker's name in the SHOOTER's club colour, which is a
+    chip naming the club opposite its own verb's subject. This project has shipped
+    that exact shape once before.
+    ⭐ SO IT IS DERIVED, NOT SPECIAL-CASED: whoever the sentence STARTS with owns
+    the colour. A row that changes which name it leads with brings its colour with
+    it, and nobody has to remember a rule. */
+ let subj=p;
  if(a.with){const q=R[e[a.with]];if(!q){w.innerHTML=LAB[e.type]||e.type.replace(/-/g,' ');w.className='who plain';return;}
-  s=s.replace('{b}',whoTag(q));}
- w.className='who '+(p.tid===AID?'a':'h');w.innerHTML=s;}
+  s=s.replace('{b}',whoTag(q));
+  if(a.say.indexOf('{b}')===0)subj=q;}
+ w.className='who '+(subj.tid===AID?'a':'h');w.innerHTML=s;}
 function dwell(e){return captioned(e)?frameMs+CAPTION_BONUS:frameMs;}
 function step(){if(i>=EV.length-1){stop();return;}set(i+1,'play');timer=setTimeout(step,dwell(EV[i]));}
 /* PLAY MEANS GO. A viewer who presses it has asked for the game, and resting on
