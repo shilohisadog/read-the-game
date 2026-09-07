@@ -28,65 +28,94 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 
 ---
 
-# §0. WHERE WE ARE — 2026-09-04
+# §0. WHERE WE ARE — 2026-09-07
 
-Kevin: *"take a step back and capture where we are in the cleanup."* This section
-is the orientation. Everything below §0 is the detail, organised by state.
+This section is the orientation. Everything below §0 is the detail, organised by
+state.
 
-## ⏭ 0.00 PICK UP HERE — decomposition, seven clusters out
+## ⏭ 0.00 PICK UP HERE
 
-**Nothing is in flight. The tree is green at 1,054 JS + 180 Python.**
+**Nothing is in flight. The tree is green at 1,064 JS + 180 Python, and
+`main` is pushed with both CI workflows passing.**
+
+The decomposition is **finished** and closed on a rule, not a line count —
+`CONTRIBUTING.md` **rule 9**: *move code only when a caller gains a question it
+could not ask; a refactor ends when the last unstated invariant gets an
+instrument, not when the file gets small.*
 
 | | 2026-09-04 morning | now |
 |---|---|---|
-| `src/app.js` | 3,368 lines | **3,095** |
-| `render()` | 328 lines | **187** |
+| `src/app.js` | 3,368 lines | **3,183** |
+| `render()` | 328 lines | **208** (187 at its low point) |
 | modules extracted from `boot` | 0 | **7** |
-| JS suite | 984 | **1,054** |
+| JS suite | 984 | **1,064** |
 
 `why.js` · `esc.js` · `work.js` · `marks.js` · `notes.js` · `goalie-card.js` ·
-`announce.js`. **Every move left the rendered DOM identical**, which is the whole
-safety argument and is checked by `test/dom-golden.test.js` — now across the base
-game, five layer walks, three control walks, a click pass and **two full plays**.
+`announce.js`. ⭐ **`render` went back UP while the last findings were answered,
+and that is the rule working** — three of the four things left in it wanted a
+written reason, not a move.
 
-✅ **THE CAPTION CHAIN IS OUT — `src/lib/announce.js`, ruled ANALYSIS by CHENG:**
-*"what is most true of this frame is a decision over recorded facts… does it need
-to know how anything LOOKS? It would be identical if the caption were rendered as
-audio."* `render` switches on the answer; the ordering argument moved with the
-rule.
+## ⏭ 0.00-α WHAT TO DO NEXT — nothing is half-built
 
-⭐⭐ **AND IT ENDED A RULE STATED TWICE, WHICH NOBODY HAD NOTICED.** `captioned()`
-— the predicate `dwell()` shares with the renderer — held the **same six
-conditions as a disjunction**. A seventh added to the ladder and forgotten there
-is a caption with no pause behind it, which is the defect that predicate exists to
-prevent. It is now `announcement(…) !== null`.
+Three small, independent items, each a decision more than a task:
 
-⭐ **THE MOVE SHRANK NOTHING, AND THAT IS THE POINT.** `app.js`: **66 inserted, 66
-deleted — net zero**; `announce.js` is **11 lines of code and 96 of comment**. What
-it bought is that the ladder can be asked all **fifteen** of its pairwise
-collisions, of which the reference game contains **one**.
+1. **The slot tip is parked and it is Kevin's call.** *"Tip: click any shot ringed
+   in amber to see why it counts as a slot shot"* — the one interaction on the
+   page a novice would never guess, hidden since 2026-08-27 by the layer-output
+   park (`#rg.slot .hint{display:none}`). ⚠️ **Deliberate, not a defect** — Kevin's
+   *"hide, not remove"* — so un-parking it is one line and a decision.
+2. **Sweep what only the deleted menu used.** `#zLayersOn` is gone; its `.zon`
+   CSS and any siblings were not swept. `park.test.js`'s ancestry check is the
+   instrument to point at it.
+3. **The copy-standard rules now reach into `src/lib`**, because user-facing prose
+   lives there since Q11. CHENG thought that was fine and *"arguably better, since
+   that is where the copy checker can reach it."* Nothing enforces it yet.
 
-⛔⛔ **THE GOLDEN DID NOT COVER THE CHAIN AT ALL — FOURTH TIME, AND THE FIRST ONE
-CAUGHT BY THE RULE RATHER THAN AFTER THE FACT.** Every walk drove the scrubber,
-whose `oninput` passes an empty `how`, so `moment` was false in all 2,421 captured
-frames and the whole `if(moment)` block had never executed. Two play passes were
-added *before* the code moved.
+Bigger, and unchanged: **K4 (a killer feature) stays gated on the novice test**,
+which has still not happened. §0.3 and §0.5 carry the four threads.
 
-**⏭ WHAT IS NEXT.** What remains in `render` is wiring. The open question is
-whether that is the end of the decomposition or whether the wiring itself wants a
-shape — and that is worth putting to CHENG before assuming either.
+## ⭐⭐ 0.00-β THE SEPTEMBER RUN, AND WHAT IT WAS ACTUALLY ABOUT
 
-✅ **AND THE `SX` GUARD IS FIXED — but not the way the question assumed.**
-`test/sx-scope.test.js` now walks the dependency graph down from each layer's
-`reduce()`, with the roots resolved through node rather than listed. ⚠️ **It did
-not replace the directory ban, because measuring said not to:** the six layers'
-closures are **10 of 26 modules**, and `census.js` — where every published
-archive figure is counted — is outside them, so narrowing alone would have
-dropped the guard from thirteen analysis modules to relieve six presentation ones
-that never asked. ⚠️ **And `marks.js` still takes `AX`, because that was never
-the guard's doing:** `AX` is `SX` composed with `DIR(per)`, which closes over the
-game's `sides` and the link's ends mode. It is page state with no module to live
-in. See `step2-decomposition.md` §0.5.
+Seven working days, and only one of them was really about structure.
+
+**The instruments were the subject.** Almost every finding was an instrument
+covering less than its name implied, and the list is now long enough to be a
+property of the project rather than a run of incidents:
+
+- coverage cannot see `app.js` (`new Function` on the built bundle)
+- the golden walk never entered `if(moment)` — **2,421 frames, no caption chain**
+- the fit gate graded an error page; a canary proved the ruler, not the subject
+- ⛔ **the fake DOM cannot fail on absence** — `getElementById` invents an element
+  for any id, so *"does this exist"* and *"did this throw"* measure nothing there.
+  Written at the top of `test/helpers/page.js`. **23 tests drove a deleted control
+  for a day without one of them throwing.**
+- the golden cannot read a stylesheet at all — the puck defect was invisible to it
+- `layers.test.js` is blind to ancestry and `park.test.js` only sees elements with
+  an `id`: **the strength control fell exactly between them**
+
+⭐⭐ **AND TWICE THE INSTRUMENT FIRED AND A HUMAN WAVED IT THROUGH.** `#nSit` sat
+on park's ledger with a written reason while the control it described was
+unreachable; `.lds` was recorded in the same file as serving `.zref`, and a
+blanket strip took two `.areas` cards anyway. **Enumerating is not the same as
+reading what you enumerated**, and that is a harder failure to build against than
+a missing check.
+
+⭐ **Kevin found three things no instrument here could.** The puck flying in from
+off the rink; the four-way vocabulary split (*metrics / Watching / metric / layer*)
+on the front door; and *"no change in dimensions"*, which corrected a claim of mine
+about the layer box. **All three by reading the page as a visitor.**
+
+## ✅ 0.00-γ WHAT SHIPPED, 2026-09-04 → 09-07
+
+| | |
+|---|---|
+| `announce.js` | the caption ladder as analysis — and `captioned()` turned out to be **the same rule stated twice** |
+| the `SX` guard | narrowed to a dependency-graph walk from each layer's `reduce()`; ⚠️ the directory ban **stayed**, because the layer closure is 10 of 26 modules and `census.js` is outside it |
+| the puck | `transform-box:fill-box` — it had been scaling about the SVG origin and flying in from (160, 129) on **269 of 269 played frames** |
+| vocabulary | one word for one thing: **Layers**, everywhere a visitor can see |
+| the strength control | shipped, wired, and behind `display:none` for ten days; moved beside the picker |
+| `layer.counts` / `layer.credits` | a layer describes itself; `DRAWS` stayed with the renderer |
+| the parked layer menu | **deleted**, after the copy and the control left first |
 
 ## ⭐⭐ 0.00-a WHAT THE DECOMPOSITION ACTUALLY TAUGHT
 
