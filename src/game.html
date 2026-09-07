@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-FZZ9t1t7ouW7jyt4FlxwCJgtgCbKXZSun7XMnTFXNSE=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-H/UW4upfsZAtT7fQthLrgYNtIgyqyA9p4OwBUmNTMTs='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-FZZ9t1t7ouW7jyt4FlxwCJgtgCbKXZSun7XMnTFXNSE=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-yE6HmOAhnIn5wrZui1LpriKfvjeFySRYGwZXBEmDRMU='; connect-src 'self' https://data.readthegame.co; frame-src 'self'; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">Watch a game</a><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see</a><a href="/workshop.html">Workshop</a></nav></header>
@@ -318,11 +318,6 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .pb.a::before{background:var(--away);color:var(--away-ink)}
 #rg .pb.h::before{background:var(--home);color:var(--home-ink)}
 #rg .pb.empty{color:var(--muted);background:transparent;border-style:dashed}
-/* A NAME AND A NUMBER, never the raw `descKey`. `high-sticking-double-minor` is
-   a key, and the one thing a stylesheet must not do to it is `capitalize` it --
-   that was half the damage the last time a raw key reached a screen. */
-#rg .pb .man{font-weight:600}#rg .pb .srv{font-family:ui-monospace,Menlo,monospace;color:var(--muted);font-size:.72rem}
-#rg .pb .man+.man{margin-left:6px}
 #rg svg{display:block;width:100%;height:auto}
 #rg .boards{fill:var(--ice);stroke:var(--edge);stroke-width:1.1}
 /* ⭐ THE SLOT, AS FURNITURE. `--hd` is the SAME colour the high-danger ring and
@@ -1322,7 +1317,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .figpick.sit{display:none}
 #rg.corsi .figpick.sit,#rg.slot .figpick.sit,#rg.goalie .figpick.sit,
 #rg.blocked .figpick.sit{display:flex}
-#rg .sbtn[aria-pressed="true"],#rg .fbtn[aria-pressed="true"]{border-style:solid;color:var(--ink);border-color:var(--ink);background:#eef2f5}
+#rg .sbtn[aria-pressed="true"]{border-style:solid;color:var(--ink);border-color:var(--ink);background:#eef2f5}
 /* A NOTE APPEARS WHEN THE THING IT EXPLAINS HAPPENS, and not before. These
    three were permanent -- 183px on a phone, 93 words -- each describing a state
    the reader was not in. CHENG: "the place that sentence actually pays off is
@@ -1530,8 +1525,12 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    lines and the page is exactly what it was at aa99c56.
 
    WHAT IS PARKED, AND WHAT IS DELIBERATELY NOT:
-     parked   .zlayers  the layer menu        .zref  what the marks mean
-              .zdisp    trails                .nwhy2 the "why add a layer" pitch
+     parked   .zref  what the marks mean   .zdisp  trails
+              .nwhy2 the "why add a layer" pitch
+     DELETED  .zlayers -- the layer menu was parked here on 2026-08-27 and
+              removed on 2026-09-07, once its copy and its one live control had
+              somewhere else to be. Its CSS went with it a day later; see
+              test/css-orphans.test.js, which is what found the rest.
      KEPT     the greeting (it is the instruction the header's promise makes),
               the verdict card, `.disclose` (ends switching, and the games whose
               boxscore contradicts the event log) and the footer nav. The two
@@ -1561,148 +1560,37 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    ⭐ AND `anylayer` GOES WITH IT. It existed to hand the parked menu back for a
    deep link; the selector under the scrubber is on the page unconditionally, so
    nothing can arrive with a layer on and no way to turn it off. */
-#rg .zlayers,#rg .zref,#rg .zdisp{display:none}
+#rg .zref,#rg .zdisp{display:none}
 #rg.newcomer .nwhy2{display:none}
 #rg.endskey .lk-ends{display:none}
-/* ⭐ THE MENU IS A CONTROL AND NOT A CAPTION, AND IT SITS UNDER THE ICE.
-   Kevin, 2026-08-26: "it's just so disjointed from the rink that toggling a
-   layer on and off creates a UX disconnect." It went above the rink first, and
-   that was wrong for a reason CHENG named and Kevin agreed with: the page header
-   says EVENT BY EVENT FIRST, ADD METRICS AFTER, and putting five decisions
-   between that sentence and the ice makes the layout contradict it. It now sits
-   12px BELOW the rink -- adjacent to the marks it changes, and after them.
-   Measured at 390: the ice starts at y=222 either way, and the play button ends
-   at 568 rather than 510 -- 58px for the adjacency, still inside the 844 fold.
-
-   THE ZONE TREATMENT IS STILL WRONG FOR THIS ONE ZONE, wherever it sits. It is
-   SECTION-HEADING language -- a full-width rule, a muted uppercase label, then
-   the thing it heads -- so against the rink card it read as a caption FOR THE
-   ICE, with the caret 1600px away at the other end of a rule at 1100 and nothing
-   saying it was pressable. So this zone drops the rule and takes the same white
-   card as the board and the rinkbox: a bar you can obviously press, sitting on
-   the ice it acts on. */
-#rg .zlayers{margin:10px 0 0;padding-top:0;border-top:0}
-#rg details.zlayers>summary{border:1px solid var(--edge);border-radius:11px;background:#fff;padding:0 14px}
-#rg details.zlayers[open]>summary{margin-bottom:9px}
+/* ⏹ THE LAYER MENU'S OWN FURNITURE STOOD HERE and went on 2026-09-07 with the
+   menu. Why it sat below the rink, and why this one zone dropped the section-
+   heading treatment for a white card, is in docs/below-the-rink-2.md sections
+   15-30; the ruling that replaced it -- a control lives with its layer -- is
+   status.md B2. `.zon` below is NOT part of it: it is the count badge, and
+   `#zTrailsOn` and `#zCueOn` still wear it. */
 #rg .zon{margin-left:9px;font-size:.68rem;font-weight:800;letter-spacing:.06em;color:#fff;background:var(--ink);border-radius:99px;padding:3px 9px}
 #rg .zon:empty{display:none}
 /* The trails summary carries its setting, so a collapsed control still reports
    what it is doing. Quieter than the layer count, because it is always there
    and a permanent black pill would out-shout the heading it sits beside. */
 #rg .zdisp .zon{color:var(--ink);background:transparent;border:1px solid var(--edge);font-weight:700}
-/* ⭐ THE LAYER CONTROL AND ITS LEGEND KEY ARE ONE OBJECT.
-   They were drawn separately: an unexplained chip in one block, and a
-   mark-and-name in another that only appeared once the layer was on. So five
-   metric layers -- the site's entire conversion -- were five unexplained nouns,
-   and 13 of 21 controls down here had nowhere for an explanation to go at all.
-   One row now carries the mark, the name, WHAT IT COUNTS and its state.
+/* ⏹ THE FIVE LAYER ROWS STOOD HERE -- the flex track, the row grid, the mark
+   column, the two description spans and the switch -- and went on 2026-09-07
+   with the menu they were the inside of. `docs/below-the-rink-2.md` sections
+   15-30 carry why they looked the way they did; the copy they used to hold is
+   on the layer objects now (`counts` / `credits`, see test/layer-copy.test.js)
+   and the switch's job belongs to the chips under the scrubber.
 
-   ⭐ AND THE DESCRIPTION IS NOW DEFERRED TOO, which REVERSES what this comment
-   said a day ago -- `.lds` about the CONTROL, readable before the press; `.lon`
-   about the ICE, shown with the marks. Kevin, 2026-08-26: "trim the metrics
-   cards to just the name and leave the description to be displayed on the
-   metric, after it's opened, that'll free up space." Measured at 390 with the
-   menu open: 600px of drawer, of which the five descriptions are 159. Deferring
-   them takes the drawer to 441 and the rink top from y=830 to y=671 -- ice back
-   on the first screen, which is what the whole move above the rink was for.
-
-   WHAT MADE THE REVERSAL SAFE IS THAT THE DEFECT WAS NEVER "explained late", IT
-   WAS "explained nowhere": five chips with no room for a sentence at all. The
-   description now arrives on the press, one reversible tap from the name, in the
-   row the reader is already looking at. What is NOT safe is a name a novice
-   cannot read -- so the one name that could not carry itself carries its
-   definition instead. `Control (Corsi)` is jargon twice over; the other four say
-   what they are. See the row markup and the test that pins it. */
-/* AS MANY COLUMNS AS FIT, RATHER THAN A BREAKPOINT. At 1100 a full-width row is
-   900px of box for nine words, and five of them cost 330px on a surface this
-   redesign exists to SHORTEN. The floor means the phone gets one column because
-   343px only fits one, not because someone picked 760 as the width where a
-   laptop starts -- the same reason the rink lines stopped carrying hand-typed y
-   values. 290px is the width at which the name stops wrapping.
-
-   ⭐ AND IT IS FLEX RATHER THAN GRID, BECAUSE FIVE DOES NOT DIVIDE. Kevin's
-   laptop shot showed the cost: three across, then two, and a third of the second
-   row empty. A `1fr` grid track holds its width whether or not anything is in
-   it, so the hole is structural at every viewport where the column count does
-   not divide five -- and an empty cell at the end of a list reads as something
-   missing rather than as spare room. `flex:1 1 290px` lets the last row's rows
-   GROW into the space instead, so the block ends on a straight edge. */
-#rg .lrows{display:flex;flex-wrap:wrap;gap:8px}
-#rg .lrows>.lrow{flex:1 1 290px}
-#rg .lrow{display:grid;grid-template-columns:23px 1fr auto;align-items:start;gap:0 9px;width:100%;text-align:left;padding:10px 13px;margin:0;min-height:44px;border:1px solid var(--edge);border-radius:11px;background:#fff}
-#rg .lrow[aria-pressed="true"]{border-color:var(--ink);background:#f4f8fa}
-/* ⭐ THE MARK COLUMN IS A FIXED WIDTH IN EVERY ROW, and this is the correction
-   to what this comment said first. Two of the five layers draw no mark of their
-   own -- Control fills counters, Goaltending builds cards -- so the cell had to
-   stay in the grid rather than be hidden, or those two names would sit further
-   left than the three that carry a swatch. But EACH ROW IS ITS OWN GRID, so an
-   `auto` column is sized per row: the empty cell collapsed to nothing and the
-   two names moved anyway. Looking at the render is what showed it; the reasoning
-   for keeping the cell was right and the implementation of it was not. */
-#rg .lrow .lmk{grid-column:1;display:flex;align-items:center;width:24px;min-height:19px;padding-top:2px}
+   ⚠️ ONE THING THEY SAID IS STILL UNHOMED, and it is on Kevin's desk as
+   status.md 0.00-alpha item 1: the amber ring around a slot shot is named in
+   the `.hint` line and almost nowhere else, and that line is parked. */
 /* ⭐ THE SWATCH RULE HAD BEEN SCOPED TO `.legend`, so the marks moved into the
    rows and came out as SQUARES. Found by looking, not by reasoning: the markup
    was right, the classes were right, and every test passed. A shape rule that
    lives on the container rather than on the mark is a rule that stops applying
    the day the mark moves -- which is exactly what this redesign did to it. */
 #rg .lmk i{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:2px}
-#rg .lmk i
-#rg .lrow .ltx{grid-column:2;display:block;min-width:0}
-#rg .lrow b{font-size:.92rem;font-weight:700;display:block;text-wrap:balance}
-/* ⚠️ ⭐ BOTH SENTENCES ARE OFF THE PAGE, AND THIS IS DEBT WITH A NAME.
-   Kevin, 2026-08-26: "remove the descriptive text when toggling a layer, just
-   have Corsi, Slot Shots, Goaltending, Stoppages, and Blocked shots, less is
-   more, and then we have to figure out how to add the descriptions somewhere
-   else." So the row is a mark, a name and a switch, and nothing else -- and the
-   markup still SHIPS both sentences, because the next round gives them a home
-   and a deleted sentence is one nobody rewrites.
-
-   WHAT IS UNHOMED, ENUMERATED, because hiding a container without listing what
-   was in it is how this repo has lost content before:
-     Corsi        the counters and the bar are what fill in
-     Slot shots   THE AMBER RING IS NAMED HERE AND ALMOST NOWHERE ELSE -- the
-                  `.hint` line covers it while the layer is on, which is the only
-                  reason this is debt rather than a regression
-     Goaltending  a card per goaltender, building a save percentage
-     Stoppages    the ring is the restart spot; the bar lights the line the rule
-                  names -- restated in `.whistlepanel` for the current whistle
-     Blocked      others dim so the stopped ones carry the frame -- the legend
-                  key `blocked - ringed where the puck was stopped` still stands
-   Four of the five have a panel or a hint under the ice that repeats the load-
-   bearing half. `test/render-notes.test.js` pins this list so the day one of
-   those panels goes, the row note is not silently the only casualty. */
-/* `.lat` -- HOW THE LAYER ATTRIBUTES WHAT IT COUNTS -- joins the two spans that
-   were already here. All three are parked in the row and read from it: `.lds`
-   by the caption, `.lon` by the caption, `.lat` by the work panel. The row is
-   the single source for a layer's words; the surfaces are its readers. */
-#rg .lrow .lds,#rg .lrow .lon,#rg .lrow .lat{display:none}
-/* ⭐ THE STATE IS A SWITCH, NOT THE WORD "OFF". Kevin, 2026-08-26: "I was
-   thinking of the Metrics layers buttons as just toggles." A pill reading OFF is
-   a label that has to be read and then mapped to an action; a switch is the one
-   control shape that says both what it is and what state it is in without a
-   word, and five of them stacked read as a settings list rather than as five
-   competing buttons -- which is the "they need some work" complaint.
-
-   ⭐ THE WORD DID NOT GO AWAY, IT WENT INTO THE ACCESSIBILITY TREE. The switch is
-   drawn with ::after on `.st`, and `.st`'s TEXT -- still written by `lyrState` --
-   is clipped rather than deleted, so a screen reader keeps hearing "On"/"Off"
-   beside `aria-pressed`. A visual state with no textual one is the version of
-   this control that ships broken for the reader who cannot see the knob move.
-
-   THE KNOB TRAVEL IS THE TRACK MINUS THE KNOB MINUS BOTH INSETS, so it is
-   derived from the three numbers above it rather than eyeballed: 44 - 18 - 3 - 3. */
-/* ALIGNED TO THE NAME, NOT TO THE ROW. `align-self:center` centres the switch in
-   a grid row as tall as the text beside it -- fine while every row is one line,
-   and on the row with a layer ON it floated halfway down a 194px block, level
-   with a sentence rather than with the thing it switches. */
-#rg .lrow .st{grid-column:3;grid-row:1;align-self:start;margin-top:-1px;position:relative;flex:none;
- width:44px;height:26px;border-radius:99px;background:#e4eaef;border:1px solid var(--edge);
- overflow:hidden;text-indent:-9999px;color:transparent;transition:background .16s ease}
-#rg .lrow .st::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;
- border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(16,32,45,.4);transition:transform .16s ease}
-#rg .lrow[aria-pressed="true"] .st{background:var(--ink);border-color:var(--ink)}
-#rg .lrow[aria-pressed="true"] .st::after{transform:translateX(20px)}
-@media (prefers-reduced-motion:reduce){#rg .lrow .st,#rg .lrow .st::after{transition:none}}
 #rg .lyr{font:inherit;font-size:.83rem;font-weight:600;border-radius:8px;border:1px dashed #b7c6d0;background:#fff;color:var(--muted);padding:8px 13px;cursor:pointer}
 #rg .lyr[aria-pressed="true"]{border-style:solid;color:var(--ink);border-color:var(--ink);background:#eef2f5}
 
@@ -1718,10 +1606,6 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg.blocked .ring.blk{stroke-width:1.3;opacity:1}
 #rg .blockpanel{display:none}
 #rg.blocked .blockpanel{display:block;background:#fff;border:1px solid var(--edge);border-radius:11px;padding:13px 15px;margin-top:10px;box-shadow:0 4px 14px rgba(16,32,45,.06)}
-#rg .bkrow{display:flex;align-items:baseline;justify-content:center;gap:18px;font-family:ui-monospace,Menlo,monospace;font-weight:700;font-size:1.35rem}
-#rg .bkrow .bkt{font-size:.7rem;letter-spacing:.06em;color:var(--muted);font-family:inherit}
-#rg .bkrow .a{color:var(--away-text)}#rg .bkrow .h{color:var(--home-text)}
-#rg .bklab{text-align:center;font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-top:2px}
 #rg .bksay{margin:9px 0 0;font-size:.88rem;line-height:1.5}
 #rg .bkmate{margin:7px 0 0;font-size:.82rem;line-height:1.5;color:var(--flag)}
 #rg .bkarch{margin:9px 0 0;padding-top:9px;border-top:1px solid var(--edge);font-size:.82rem;line-height:1.55;color:var(--muted)}

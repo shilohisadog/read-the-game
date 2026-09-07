@@ -465,8 +465,6 @@ test('the page is parked at its base, and nothing was deleted to get there', () 
   // ⏸ Kevin, 2026-08-26: "let's just remove all the extra stuff, for now, then we
   // can rebuild properly. Just have the header, scoreboard, rink, play controls
   // and then the footer. We need to start fresh on the layers."
-  const row = id => app.match(new RegExp(`<button class="lrow" id="${id}"[\\s\\S]*?</button>`))[0];
-
   /* ⭐ PARKED, NOT DELETED — the rebuild starts from working code, not from git
      log. ⚠️ AND THE DESCRIPTIONS ARE NO LONGER WHAT PROVES IT. They lived in
      these rows as `.lds`/`.lon` until 2026-09-07, when `counts` moved onto the
@@ -478,8 +476,21 @@ test('the page is parked at its base, and nothing was deleted to get there', () 
     assert.match(app, new RegExp(`\\b${l.id}:'[^']{20,}`),
       `${l.id} has no line in DRAWS — its on-the-ice note was lost, not moved`);
   }
-  assert.match(PAGE_CSS, /#rg \.zlayers,#rg \.zref,#rg \.zdisp\{display:none\}/,
+  /* ⏹ `.zlayers` LEFT THIS RULE ON 2026-09-07. One selector parked three zones;
+     the menu was deleted and its stylesheet swept a day later, so the claim is
+     now about the two that remain — and about the third being GONE from the
+     sheet rather than merely unreferenced.
+
+     ⚠️ AND THE COMMENT STRIP IS LOAD-BEARING, for the fourth time in this repo.
+     `app.css` explains the deletion in a comment that names `.zlayers`, and
+     `PAGE_CSS` ships comments — so the absence assertion below reads that
+     explanation as a rule and fails on the very sentence recording the fix.
+     Prose impersonating code, caught this time before it was written. */
+  const RULES = PAGE_CSS.replace(/\/\*[\s\S]*?\*\//g, ' ');
+  assert.match(RULES, /#rg \.zref,#rg \.zdisp\{display:none\}/,
     'the base page is carrying the layer furniture again');
+  assert.doesNotMatch(RULES, /\.zlayers\b/,
+    'the deleted layer menu has rules in the stylesheet again — see test/css-orphans.test.js');
   // ⚠️ AND THE PITCH NEEDS ITS OWN RULE AT (1,2,0). `#rg.newcomer .newcomer` sets
   // display:block, so a rule at (1,1,0) reads as if it parked the block and does
   // nothing — it shipped that way and only the render showed it.

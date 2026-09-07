@@ -200,13 +200,15 @@ test('the whistle ring is NAMED, and only while the layer draws it', () => {
   // asserted here now; when the descriptions get a home (docs §20) this points
   // at the home instead. The mark is still named while the ice draws it, by a
   // different element, which is the claim — not the mechanism.
-  // ⭐ AND `.lat` JOINED THEM on 2026-08-27 — how the layer attributes what it
-  // counts, read by the work panel. All three spans are parked in the row and
-  // read FROM it, which is the pattern: the row is the single source for a
-  // layer's words and the surfaces are its readers. Asserted as a set so a span
-  // added without a reader, or dropped from the park, is visible here.
-  assert.match(PAGE_CSS, /#rg \.lrow \.lds,#rg \.lrow \.lon,#rg \.lrow \.lat\{display:none\}/,
-    'the row notes are displayed again, or a span was added without being parked');
+  /* ⏹ AND A CSS ASSERTION STOOD HERE UNTIL 2026-09-07, pinning
+     `#rg .lrow .lds,#rg .lrow .lon,#rg .lrow .lat{display:none}` — the three
+     description spans parked inside the layer row. The row was deleted with the
+     menu and its stylesheet swept, so the rule is gone and there is nothing left
+     to park. Nothing was lost with it: the comment above already records that
+     the claim moved from a gated span to the caption, and the caption is what
+     the two assertions above read. **A rule pinning the SHAPE of a park outlives
+     its subject silently; the behavioural one does not.** The general guard
+     against the residue is `test/css-orphans.test.js`. */
   assert.match(PAGE_CSS, /#rg\.whistle \.whistlepanel\{display:block/,
     'the row note is hidden AND the whistle panel is gone — the ring is on the ice with nothing naming it');
 
