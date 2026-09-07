@@ -501,7 +501,7 @@ test('the work control is shown for every layer and hidden in the base view', ()
  * ⚠️ ZERO IS A FIGURE. The footer built its club list with `b.h && …`, and `b.h`
  * is a NUMBER — so a club with none of something was falsy and vanished. On a
  * 1–0 slot count the line read "1 WSH." and the other club was simply not
- * there, on a panel whose closing sentence is "nothing is dropped quietly".
+ * there, on a panel whose whole job is that the parts add up to the whole.
  *
  * THE PAIR MATTERS: Stoppages legitimately shows no club figures at all, so
  * "both clubs always appear" would be wrong. The distinction is EMPTY (a real
@@ -748,7 +748,7 @@ test('the work panel heads with the lens name, never the name plus its count', (
  * layers keep trivially and the fifth cannot: `5 of 5 WSH + 4 of 5 VGK` sums to
  * 9 by numerator and 10 by denominator, against a 10 on screen. Two figures
  * that look like one claim, this project's signature defect, in a sentence
- * whose entire job is that nothing is dropped quietly.
+ * whose entire job is that the parts add up to the whole.
  *
  * So the layer names what its figures add to and the panel prints that name.
  * THE PATH IS INDEPENDENT: the figures come from `lboxFor`, the count comes

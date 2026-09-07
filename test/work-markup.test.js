@@ -11,11 +11,19 @@
  * CLAIMS, over real ledgers, and the two answer different questions.
  *
  * ⭐ THE PANEL'S OWN CLOSING SENTENCE IS THE PROPERTY WORTH TESTING. It ends
- * *"…which is every event in the game so far. Nothing is dropped quietly."* That
- * is the project's promise in one line, and it is arithmetic: the numbers it
- * prints must add up to the events it was given. `layer.js` proves conservation
- * for the REDUCER; nothing proved it for the SENTENCE, which is what a reader
- * actually checks.
+ * *"…which is every event in the game so far."* That is the project's promise in
+ * one line, and it is arithmetic: the numbers it prints must add up to the events
+ * it was given. `layer.js` proves conservation for the REDUCER; nothing proved it
+ * for the SENTENCE, which is what a reader actually checks.
+ *
+ * ⭐⭐ AND IT USED TO CARRY A SECOND SENTENCE, *"Nothing is dropped quietly."*,
+ * cut by Kevin on 2026-09-07. **What this file asserts did not move**, which is
+ * the point worth keeping: it was never checking the words, it was checking that
+ * the printed parts sum to the events supplied — so the copy could be cut with
+ * the guarantee intact. A test coupled to a sentence would have gone red on a
+ * change that altered nothing it was for. See the note in `src/lib/work.js` for
+ * why the sentence went: the equation above it already said the same thing, and
+ * the policy it stated belongs to DOCTRINE §9.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -117,8 +125,8 @@ test('⭐⭐ the counted figure agrees with the layer box under the rink', () =>
 test('⛔ a club with none of something is still named', () => {
   /* ⚠️ A REAL DEFECT THIS PANEL SHIPPED: "none of something was falsy and
      vanished — the footer read '1 WSH.' on a 1-0 slot count, silently omitting
-     the club that had none." On a surface whose closing sentence is "nothing is
-     dropped quietly", that is the one number that must never go missing. */
+     the club that had none." On a surface whose whole job is that the parts add
+     up to the whole, that is the one number that must never go missing. */
   /* ⚠️ NUMBERS, NOT STRINGS, AND THAT IS THE WHOLE TEST. The first version passed
      `a: '0'` — a non-empty string, truthy either way — so replacing `has` with a
      plain truthiness check changed nothing and the mutant survived. `lboxFor`

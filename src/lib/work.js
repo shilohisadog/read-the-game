@@ -123,8 +123,8 @@ export function workMarkup({ id, L, sl, name, lds, lat, box: b, cards, mode, whe
  /* ⚠️ ZERO IS A FIGURE, AND `&&` DROPPED IT. `b.h` is a NUMBER, so a club with
     none of something was falsy and vanished: the footer read "1 WSH." on a
     1-0 slot count, silently omitting the club that had none. On a panel whose
-    closing sentence is "nothing is dropped quietly", that is the one number
-    that must never go missing. Stoppages still shows no figures, because there
+    whole job is that the parts add up to the whole, that is the one number that
+    must never go missing. Stoppages still shows no figures, because there
     the fields are EMPTY STRINGS -- a real absence, which is a different thing
     from zero and is now distinguished by the test rather than by truthiness. */
  const has=v=>v!==''&&v!=null;
@@ -187,12 +187,28 @@ export function workMarkup({ id, L, sl, name, lds, lat, box: b, cards, mode, whe
    10 = 45 — and the conservation sentence is the one place on this page that
    cannot afford arithmetic a reader can catch out. The dash reads "that is",
    the club figures stay welded to the number they are the parts of, and the
-   single equation left standing is the one Doctrine §9 is about. */
+   single equation left standing is the one Doctrine §9 is about.
+
+   ⭐⭐ AND IT USED TO CLOSE WITH "Nothing is dropped quietly." Kevin cut it on
+   2026-09-07: *"that brings up something the user may not have even thought
+   about."* A denial invites the suspicion, and `quietly` was the word doing it —
+   it does not merely deny dropping, it implies a category of LOUD dropping, so
+   the reader learns that dropping is a thing and the only question is whether
+   they are told.
+
+   ⭐ THE SHARPER REASON IS THAT THE ARITHMETIC ABOVE IT ALREADY SAID SO. Parts
+   summing to the whole IS "nothing was dropped", so the sentence told the reader
+   what they had just read. What it added over the equation was a POLICY rather
+   than a fact about this game — and the policy has a home: DOCTRINE §9,
+   *"wherever we show our work, the work shown must be all of it."* This panel's
+   job is to DEMONSTRATE that, not to assert it. It was the one sentence here
+   asking to be believed rather than showing something, on the surface whose
+   whole pitch is check our work. */
  +`<p class="wfoot">${fig?`<em>${ESC(fig)}</em> &mdash; `:''}`
  +`${L.counted.length} ${b.sums||'counted'}${near.length?` + ${near.length} close`:''}`
  +` + ${plain.length} other = `
  +`<b>${L.counted.length+L.excluded.length}</b> events, which is every event in `
- +`the game so far. Nothing is dropped quietly.`
+ +`the game so far.`
  +`${evenOnly?' <b>Even strength only</b> &mdash; the power-play and empty-net '
    +'events are in the not-counted list above, with the situation that removed '
    +'each one.':''}</p>`
