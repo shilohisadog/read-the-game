@@ -791,7 +791,13 @@ def build():
              .replace("//__RINKART__", _rinkart())
              .replace("__BOOT__",
                       "boot(" + json.dumps(DATA, separators=(",", ":")) + ");"))
-    return P.document(body, title=TITLE, description=DESC, chrome="full")
+    # ⛔⛔ `tip=False`, AND THE REASON IS FOUR BLOCKS UP THIS SAME PAGE.
+    # This builder is the only one that emits `#clipbox`, so it is the one that
+    # turns the ask off -- the embed and the tip jar cannot drift apart by
+    # somebody editing a list of page names somewhere else. Kevin, 2026-09-08:
+    # "I think it's fair and reasonable to have the tip jar on the
+    # non-clip-capable pages", so the other twelve keep it.
+    return P.document(body, title=TITLE, description=DESC, chrome="full", tip=False)
 
 
 def build_shell():
@@ -811,8 +817,14 @@ def build_shell():
     # STAMPED LAST, AND THE WRAPPER CANNOT DISTURB IT: the hashes cover the bytes
     # of the <script> and <style>, which live in the body and are untouched by
     # adding a head around them.
+    # `tip=False` for the same reason as the inlined page above.
+    # This builder is the only one that emits `#clipbox`, so it is the one that
+    # turns the ask off -- the embed and the tip jar cannot drift apart by
+    # somebody editing a list of page names somewhere else. Kevin, 2026-09-08:
+    # "I think it's fair and reasonable to have the tip jar on the
+    # non-clip-capable pages", so the other twelve keep it.
     html = P.document(body, title=TITLE, description=DESC,
-                      url="https://readthegame.co/game", chrome="full",
+                      url="https://readthegame.co/game", chrome="full", tip=False,
                       head='<meta http-equiv="Content-Security-Policy" content="__CSP__">')
     return html.replace("__CSP__", _csp(html))
 

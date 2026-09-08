@@ -182,52 +182,55 @@ test('a page has ONE footer, so the attribution cannot disagree with itself', ()
   }
 });
 
-test('⛔ the footer asks the reader for nothing at all', () => {
-  /* ⏹ THE TIP JAR WAS HERE UNTIL 2026-09-08 and this test asserted its FRAMING —
-     Kevin's constraint, verbatim: "it has to be 'donate' or 'buy me a coffee'
-     type of surface, so I minimize the chance of any scrutiny from the NHL."
+test('⛔ a page that embeds NHL video asks its reader for nothing', () => {
+  /* ⭐⭐ THE RULE IS DERIVED FROM WHAT A PAGE CONTAINS, NEVER FROM A ROSTER.
+     NHL terms permit embedded content and forbid it being used "for the purpose
+     of gaining advertising, subscription, or other revenue, or for any commercial
+     purpose". A donation link is not advertising, nothing is sold and the clip is
+     not the draw — so this was never a violation on any reading. It was the one
+     sentence a careful person could point at while a Brightcove player sat four
+     blocks up the SAME page.
 
-     ⛔ THE SITE NOW EMBEDS NHL VIDEO, and their terms forbid embedded content
-     used "for the purpose of gaining advertising, subscription, or other
-     revenue, or for any commercial purpose". A donation link is not advertising,
-     nothing is sold, and the clip is not the draw — so it was not a violation on
-     any reading. It was the one sentence a careful person could point at while a
-     Brightcove player sat four blocks up the same page. Kevin: "concur on
-     removing the buy me a coffee bit, just to err on the side of caution."
+     ⚠️ AND THE FIRST FIX WAS TOO BROAD, WHICH KEVIN CAUGHT. I removed the tip jar
+     from all fourteen pages; only TWO can ever show a clip. Kevin: "I think it's
+     fair and reasonable to have the tip jar on the non-clip-capable pages." So the
+     split is real, and a split that lives in somebody's head drifts the first time
+     a page is added — this asks each ARTIFACT which kind it is.
 
-     ⭐ SO THIS IS THE OLD CLAIM MADE STRONGER, NOT DELETED. It used to say the
-     ask reads as a tip rather than a product; it now says there is no ask. The
-     forbidden vocabulary stays and gains the donation words, because the risk
-     was never the particular link — it was any sentence on a page carrying the
-     league's video that could be read as trading on it. */
-  const forbidden = /\b(subscribe|subscription|member(s|ship)?|premium|pro plan|unlock|supporters? only|paywall(?!ed)|upgrade|donate|donation|tip jar|patreon|ko-?fi|buymeacoffee)\b/i;
-  let checked = 0;
+     BOTH DIRECTIONS, because either alone is satisfied by a site-wide answer: a
+     page with a player must make no ask, AND a page without one must still make
+     it. The second half is what would catch the tip jar quietly disappearing
+     everywhere again. */
+  const ASK = /href="https:\/\/buymeacoffee\.com\//;
+  const forbidden = /\b(subscribe|subscription|premium|pro plan|unlock|supporters? only|paywall(?!ed)|upgrade)\b/i;
+  let embeds = 0, plain = 0;
   for (const f of PAGES) {
     const h = readFileSync(new URL(f, SRC), 'utf8');
     const foot = h.match(/<footer class="sitefoot">[\s\S]*?<\/footer>/)[0];
-    checked++;
-    assert.doesNotMatch(foot, forbidden,
-      `${f} asks the reader for money or offers a tier, on a site that embeds the `
-      + "league's own video — see NHL terms §7 on embedded content and revenue");
-    /* AND NOWHERE ELSE ON THE PAGE EITHER, or the sentence simply moved upstairs.
-       ⚠️ A NARROWER PATTERN OUT HERE, ON PURPOSE. The footer is short and every
-       word in it is deliberate, so the broad list is safe there. A whole page is
-       mostly code and comments, where ordinary English collides: the first draft
-       of this line failed on `members` inside a comment about how the buttons in
-       a control GROUP are divided. Widening a scan until it matches prose is how
-       a check gets deleted rather than fixed, so this asks only about words that
-       cannot mean anything but an ask. */
-    assert.doesNotMatch(h, /\b(donate|donations?|tip jar|patreon|ko-?fi|buymeacoffee|subscription|paywall(?!ed))\b/i,
-      `${f} carries the ask outside its footer`);
-  }
-  assert.ok(checked >= 10, `only ${checked} pages checked — this has lost its subject`);
+    const canPlay = h.includes('id="clipbox"');
 
-  // ⚠️ AND THE DISCLAIMER STAYED. Removing the ask must not have taken the
-  // not-affiliated sentence with it: that one is load-bearing and always was.
-  for (const f of PAGES) {
-    const h = readFileSync(new URL(f, SRC), 'utf8');
+    if (canPlay) {
+      embeds++;
+      assert.doesNotMatch(foot, ASK,
+        `${f} embeds the league's video AND asks the reader for money`);
+      assert.doesNotMatch(h, /\b(donate|donations?|tip jar|patreon|ko-?fi|buymeacoffee)\b/i,
+        `${f} carries the ask somewhere outside its footer`);
+    } else {
+      plain++;
+      assert.match(foot, ASK, `${f} shows no clip and has lost its tip jar`);
+      // Kevin's own constraint on the framing, kept: it supports the work and
+      // never sells access. The risk was never the link, it was an ask that
+      // reads as BUYING something.
+      assert.doesNotMatch(foot, forbidden,
+        `${f} offers a tier or gated access — this must read as a tip, not a product`);
+      assert.ok(foot.indexOf('Not affiliated') < foot.search(ASK),
+        `${f} asks for money above its own disclaimer`);
+    }
+    // The disclaimer is load-bearing on every page of either kind.
     assert.match(h, /Not affiliated with/, `${f} lost its not-affiliated sentence`);
   }
+  assert.ok(embeds >= 2, `only ${embeds} pages can play a clip — this has lost half its subject`);
+  assert.ok(plain >= 10, `only ${plain} pages carry the tip jar — the removal went too wide again`);
 });
 
 test('the contact address is spelt one way, in one place', () => {

@@ -313,12 +313,24 @@ def _header(current=None, minimal=False):
             f"<nav>{links}</nav></header>")
 
 
-def _footer():
+def _footer(tip=True):
     """The attribution and the limits, on every page rather than on most of them.
 
     `goalie-eye-view.html` had no no-marks statement. That is not a page anyone
     would have thought to check, which is the argument for centralising in one
     sentence.
+
+    ⭐⭐ `tip` IS THE ONE THING A PAGE MAY DIFFER ON, AND IT IS NOT A PREFERENCE.
+    A page that embeds the league's video does not ask its reader for money.
+    Kevin, 2026-09-08: *"I think it's fair and reasonable to have the tip jar on
+    the non-clip-capable pages."*
+
+    ⛔ THE CALLER THAT PASSES `False` IS THE ONE THAT EMITS THE PLAYER. Only
+    `build_main.py` writes `#clipbox`, and it is the same builder that turns this
+    off -- so the ask and the embed cannot drift apart by somebody editing a list
+    of page names. `test/document.test.js` then checks the ARTIFACTS both ways:
+    every page carrying a clip section makes no ask, every page without one does.
+    The rule is derived from what a page contains, never from a roster.
     """
     return (
         '<footer class="sitefoot">'
@@ -363,34 +375,37 @@ def _footer():
         '<a href="mailto:ReadTheGameOfHockey@gmail.com">ReadTheGameOfHockey@gmail.com</a>'
         "<!--/email_off-->"
         "</p>"
-        # ⏹ THE TIP JAR WAS HERE AND WENT ON 2026-09-08, and the reason is the
-        # goal highlight rather than anything wrong with it.
+        # THE TIP JAR, AND EVERY WORD OF ITS FRAMING IS A CONSTRAINT KEVIN SET:
+        # "it has to be 'donate' or 'buy me a coffee' type of surface, so I
+        # minimize the chance of any scrutiny from the NHL."
         #
-        # It read: "Nothing here is paywalled. If it helped you read a game, you
-        # can buy me a coffee." Every word of that framing was a constraint Kevin
-        # set -- "it has to be 'donate' or 'buy me a coffee' type of surface, so I
-        # minimize the chance of any scrutiny from the NHL" -- and it supported
-        # THE WORK rather than selling access: nothing gated, no tiers, no
-        # supporter seeing a number a visitor cannot.
+        # So it supports THE WORK and never sells access. Nothing on this site is
+        # gated, there are no tiers, and no supporter gets a number a visitor
+        # cannot see -- which is what keeps it a tip and not a product built on
+        # somebody else's feed. It sits directly under the not-affiliated
+        # sentence for the same reason, so a reader meets the disclaimer first.
         #
-        # ⛔ THEN THE SITE STARTED EMBEDDING NHL VIDEO. Their terms permit embedded
+        # A PLAIN LINK, NOT THE WIDGET. Buy Me a Coffee's button is a third-party
+        # script; the policy admits exactly one external origin and that one was
+        # bought deliberately for analytics. A link costs nothing, cannot break in
+        # a reader's browser, and cannot be refused.
+        #
+        # ⛔⛔ AND IT IS ABSENT WHERE THE PLAYER IS. NHL terms permit embedded
         # content and forbid it being used "for the purpose of gaining
         # advertising, subscription, or other revenue, or for any commercial
         # purpose". A donation link is not advertising, nothing is sold, and the
-        # clip is not the draw -- so this is not a violation on any reading I can
-        # make. It is simply the ONE SENTENCE on the site a careful person could
-        # point at while a Brightcove player sits four blocks up the same page.
-        #
-        # Kevin: "concur on removing the buy me a coffee bit, just to err on the
-        # side of caution." So the clearer standing is bought with a link rather
-        # than argued for, and the argument above is kept because the day the
-        # embed goes is the day this becomes reversible -- it is one paragraph,
-        # and its wording was already settled.
-        "</footer>")
+        # clip is not the draw -- so this was never a violation on any reading.
+        # It was the one sentence a careful person could point at while a
+        # Brightcove player sat four blocks up the SAME page, and the two pages
+        # that can show one now carry no ask at all.
+        + ('<p>Nothing here is paywalled. If it helped you read a game, you can '
+           '<a href="https://buymeacoffee.com/readthegameofhockey">buy me a coffee</a>.</p>'
+           if tip else "")
+        + "</footer>")
 
 
 def document(body, *, title, description=None, url=None, head="", lang="en",
-             chrome="full", current=None):
+             chrome="full", current=None, tip=True):
     """Wrap a fragment in a complete, mobile-correct HTML document.
 
     `head` is for anything page-specific — the hash-pinned Content-Security-Policy
@@ -431,6 +446,6 @@ def document(body, *, title, description=None, url=None, head="", lang="en",
     parts += ["</head>", "<body>",
               _header(current=current, minimal=(chrome == "minimal")),
               body.rstrip("\n"),
-              _footer(),
+              _footer(tip=tip),
               "</body>", "</html>", ""]
     return "\n".join(parts)
