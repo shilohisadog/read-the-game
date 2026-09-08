@@ -238,3 +238,75 @@ test('⛔ a clip on an event that is not a goal is ignored', () => {
       `frame ${k} offers a highlight for an event that is not a goal`);
   }
 });
+
+test('⭐ a goal with a highlight says so where the line is otherwise blank', () => {
+  /* ⛔ THE CIRCULARITY THIS FIXES. `#clipSay` teaches the click — "or press the
+     goal on the ice" — and a reader can only read it once they have already found
+     the section, which is no use to the reader who has not. Kevin asked for a line
+     under the rink; this is that line, in the slot a goal leaves empty. */
+  const a = boot();
+  const k = frameOf(a);
+  const who = a.$('who');
+  assert.match(who.innerHTML, /wclip/,
+    'a goal with a published highlight says nothing about it under the rink');
+  assert.match(who.innerHTML, /highlight/i, 'the line does not name what it offers');
+
+  // AND IT IS THE THIRD DOOR, not just a label.
+  const before = a.$('clipbox').open;
+  (who._on.click || []).forEach(fn => fn({ target: { closest: sel => (sel === '.wclip' ? {} : null) } }));
+  assert.equal(before, false, 'the section was already open, so this proves nothing');
+  assert.ok(a.$('clipbox').open, 'the line under the rink is a label and not a door');
+});
+
+test('⛔ …and it is silent on a goal the league published nothing for', () => {
+  /* 6.6% ARCHIVE-WIDE, and one of the reference game's five. A link that is
+     sometimes a promise and sometimes nothing is worse than no link — it teaches
+     a reader to press something that will not be there next time. */
+  const a = boot();
+  const scrub = a.$('scrub');
+  const bare = WITHOUT[0];
+  let seen = false;
+  for (let k = 0; k <= +scrub.max; k++) {
+    scrub.value = String(k); scrub.oninput({ target: { value: scrub.value } });
+    if (a.$('clk').textContent !== bare.rem) continue;
+    seen = true;
+    assert.doesNotMatch(a.$('who').innerHTML, /wclip/,
+      `the goal at P${bare.per} ${bare.clock} has no highlight and the line offers one`);
+  }
+  assert.ok(seen, 'never reached the goal with no clip');
+});
+
+test('⛔ …and on no other frame in the game', () => {
+  /* THE CONTROL. "It appears on goals" is satisfied by a line that appears
+     everywhere, and this row carries the active player's sentence on 92.8% of
+     frames — so a leak here would overwrite real content, not empty space. */
+  const a = boot();
+  const scrub = a.$('scrub');
+  const goalClocks = new Set(WITH.map(e => e.rem));
+  let offered = 0;
+  for (let k = 0; k <= +scrub.max; k++) {
+    scrub.value = String(k); scrub.oninput({ target: { value: scrub.value } });
+    if (!a.$('who').innerHTML.includes('wclip')) continue;
+    offered++;
+    assert.ok(goalClocks.has(a.$('clk').textContent),
+      `frame ${k} offers a highlight and is not a goal that has one`);
+  }
+  assert.ok(offered >= 2, `the line never appeared (${offered}) — this proved nothing`);
+});
+
+test('⭐ the row cannot grow, because the Play button is under it', () => {
+  /* ⚠️ THIS FEATURE HAS NEARLY RE-INTRODUCED THE 2026-09-07 JITTER TWICE — once by
+     mounting the section above the transport, once here. `#rg .who` reserves its
+     height on every frame, so a goal filling it moves nothing; a button that
+     brought its own padding, border or line-height would undo exactly that. The
+     fake DOM has no layout, so this asserts the STYLESHEET, which is the half it
+     can hold — the browser step measures the rest. */
+  assert.match(PAGE_CSS, /#rg \.who\{[^}]*min-height:[\d.]+rem/,
+    'the active-player row no longer reserves its height, so a goal makes the page jump');
+  const rule = /#rg \.wclip\{([^}]*)\}/.exec(PAGE_CSS);
+  assert.ok(rule, 'the highlight line has no rule of its own at all');
+  assert.match(rule[1], /font:inherit/, 'the link sets its own font, so the row resizes on a goal');
+  assert.match(rule[1], /line-height:inherit/, 'the link sets its own line-height');
+  assert.match(rule[1], /padding:0/, 'the link adds padding inside a row of reserved height');
+  assert.doesNotMatch(rule[1], /border:(?!0)/, 'the link draws a border, which adds height');
+});

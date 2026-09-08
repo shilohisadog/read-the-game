@@ -1395,7 +1395,41 @@ function sayWho(e){const w=$('who');if(!w)return;
     ⚠️ THE TWO SHARED A LINE AND SO SHARED A RENDERING, which is how a deliberate
     suppression came out looking like a lowercase placeholder. Same class of thing
     as the whistle layer's *a condition is not an event*. */
- if(namesActor(e)){w.innerHTML='';w.className='who';return;}
+ /* ⭐⭐ AND THE BLANK SLOT IS WHERE THE HIGHLIGHT ANNOUNCES ITSELF.
+    Kevin, 2026-09-08: "in the layer directly below the rink… can we add another
+    line and say 'On Goals, scroll down to see the NHL highlight'?"
+
+    ⛔ THE SENTENCE THAT TEACHES THE CLICK LIVED INSIDE THE THING YOU HAVE TO FIND
+    FIRST. `#clipSay` says "or press the goal on the ice" — and a reader can only
+    read that once they have already found the section, which is circular. This is
+    the repair, and it goes HERE rather than where he suggested for two reasons.
+
+    The layer caption he pointed at only exists while NO layer is on (`lboxFor`,
+    `id === 'none'`), so the instruction would vanish for exactly the reader who is
+    exploring. And "scroll down" is a DIRECTION: the comment above that sentence
+    forbids one in its own words — "a sentence that points with a direction is a
+    sentence that rots the next time anything moves, and this page has moved that
+    row three times." So the line is a LINK instead, and a direction never has to
+    be said at all.
+
+    ⭐ IT COSTS NOTHING IN LAYOUT, which is why this slot and no other. `min-height`
+    reserves this row on every frame, so a goal filling it moves nothing — the
+    Play button included, and that is the jitter killed on 2026-09-07 and nearly
+    re-introduced by this very feature two days later.
+
+    ⚠️ AND IT SOFTENS KEVIN'S OWN 09-07 RULING RATHER THAN IGNORING IT. He asked
+    for nothing on a goal because "the rink description is sufficient" — true of
+    anything the line could say ABOUT the event, and the ice still says GOAL and
+    names the scorer and the assists. This says nothing about the event. It says
+    a video exists, which no other surface at this height does.
+
+    ⛔ ONLY WHERE THERE IS ONE. 6.6% of goals carry no highlight, and the row goes
+    back to blank for those — a link that is sometimes a promise and sometimes
+    nothing is worse than no link. */
+ if(namesActor(e)){
+  if(e.clip!=null){w.innerHTML='<button type="button" class="wclip">\u25B6 Watch the NHL highlight</button>';
+   w.className='who';return;}
+  w.innerHTML='';w.className='who';return;}
  if(!p){w.innerHTML=LAB[e.type]||e.type.replace(/-/g,' ');w.className='who plain';return;}
  let s=a.say.replace('{a}',whoTag(p));
  /* ⭐⭐ THE COLOUR IS THE SUBJECT'S CLUB, NOT THE ACTOR'S, and until 2026-09-07
@@ -1892,6 +1926,11 @@ function buildClip(){
 $('events').addEventListener('click',ev=>{const k=markAt(ev);
  if(k!=null&&EV[k]&&EV[k].clip!=null)openClip(k);});
 $('labels').addEventListener('click',()=>openClip(null));
+/* The third door, and the only one that says so in words. Delegated because the
+   button is written into `#who` on every goal frame rather than living in the
+   markup, so there is no element to bind at boot. */
+$('who').addEventListener('click',ev=>{
+ if(ev.target&&ev.target.closest&&ev.target.closest('.wclip'))openClip(null);});
 /* The summary is the section's own control, so opening it any other way -- a
    press on the caret, a keyboard Enter -- has to build the frame too. Closing
    tears it down, which is also what stops the advertisement. */

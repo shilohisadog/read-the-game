@@ -1809,3 +1809,13 @@
 /* The cursor says which things are doors, on BOTH groups — the mark a reader
    aims at and the label they actually press. */
 #rg.hasclip #events [data-i],#rg.hasclip #labels{cursor:pointer}
+/* THE HIGHLIGHT LINK IN THE ACTIVE-PLAYER ROW — see `sayWho` in app.js.
+   ⭐ IT INHERITS THE ROW RATHER THAN DRESSING ITSELF. `#rg .who` already sets the
+   size, weight, line-height and the reserved `min-height`; a button that brought
+   its own would make the row taller on a goal and move the Play button, which is
+   the jitter this feature nearly re-introduced twice. So: no padding, no border,
+   no background, and the line-height is the row's. */
+#rg .wclip{font:inherit;color:var(--blue);background:none;border:0;padding:0;
+ margin:0;line-height:inherit;cursor:pointer;text-decoration:underline;
+ text-underline-offset:2px}
+#rg .wclip:hover,#rg .wclip:focus{color:var(--ink)}

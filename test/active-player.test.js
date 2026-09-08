@@ -251,8 +251,18 @@ test('⭐ the sentence resolves on every frame the replay shows, or says the eve
     + 'the pre-game frame, and a frame whose name the caption pill already carries');
   assert.match(say, /if\(!e\)\{w\.innerHTML=''/,
     'the pre-game branch is no longer one of the empty ones');
-  assert.match(say, /if\(namesActor\(e\)\)\{w\.innerHTML=''/,
-    'the suppressed-because-already-named branch is no longer the other empty one');
+  /* ⭐ THE SUPPRESSED BRANCH GAINED A CONDITION ON 2026-09-08 AND STAYED BLANK.
+     A goal whose highlight the league published now offers it here — the row is
+     reserved either way, so it costs nothing, and it is the only surface at this
+     height that can say a video exists. A goal WITHOUT one falls through to the
+     same empty line as before, which is the 6.6% and is why this branch is still
+     one of the two blanks rather than being replaced by the link. */
+  assert.match(say, /if\(namesActor\(e\)\)\{[\s\S]{0,240}?w\.innerHTML=''/,
+    'the suppressed-because-already-named branch is no longer one of the empty ones');
+  assert.match(say, /e\.clip!=null/,
+    'the suppressed branch no longer distinguishes a goal that has a highlight from '
+    + 'one the league published nothing for — so the line either promises a video '
+    + 'that is not there, or hides one that is');
   const falls = say.match(/LAB\[e\.type\]\|\|e\.type\.replace/g) || [];
   assert.equal(falls.length, 2,
     `${falls.length} branches name the event instead of a player — there are two ways to `
