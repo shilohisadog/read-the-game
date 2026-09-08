@@ -1737,6 +1737,13 @@
 #rg .pt{font-family:ui-monospace,Menlo,monospace;font-weight:700;color:var(--ink);
  font-variant-numeric:tabular-nums}
 #rg .pmore{color:var(--muted);font-style:italic}
+/* THE SEAT ON THE GOAL'S OWN FRAME — see `endedHere` in app.js. The clock is
+   struck because the time was NOT served, and the row is muted because it is
+   leaving; both are support for the sentence beside them, never the message.
+   The grid is untouched, so this row is exactly as tall as an occupied seat. */
+#rg .pout .pw{color:var(--muted)}
+#rg .pout .pt{text-decoration:line-through;color:var(--muted)}
+#rg .pout .pf{color:var(--ink)}
 /* The away column is right-aligned in the board, so its penalties follow it. */
 #rg.preview .pens{display:none!important}
 

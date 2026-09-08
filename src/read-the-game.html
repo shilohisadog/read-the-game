@@ -1782,6 +1782,13 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .pt{font-family:ui-monospace,Menlo,monospace;font-weight:700;color:var(--ink);
  font-variant-numeric:tabular-nums}
 #rg .pmore{color:var(--muted);font-style:italic}
+/* THE SEAT ON THE GOAL'S OWN FRAME — see `endedHere` in app.js. The clock is
+   struck because the time was NOT served, and the row is muted because it is
+   leaving; both are support for the sentence beside them, never the message.
+   The grid is untouched, so this row is exactly as tall as an occupied seat. */
+#rg .pout .pw{color:var(--muted)}
+#rg .pout .pt{text-decoration:line-through;color:var(--muted)}
+#rg .pout .pf{color:var(--ink)}
 /* The away column is right-aligned in the board, so its penalties follow it. */
 #rg.preview .pens{display:none!important}
 
@@ -7831,7 +7838,47 @@ let prevA=0,prevH=0;
    are different questions. */
 const SEATS = 2;
 function mmss(sec){const m=Math.floor(sec/60),s=sec%60;return `${m}:${String(s).padStart(2,'0')}`;}
-function drawBoxes(secs){
+/* ⭐⭐ THE INTERRUPTED COUNTDOWN — B6, and it is a legibility defect rather than
+   a missing feature.
+   Kevin ruled the box static in August and the countdown answered him: name,
+   infraction, clock. It teaches ITSELF when the clock runs out -- 0:07, then the
+   seat is empty, and a novice joins those without help. IT TEACHES NOTHING WHEN
+   IT DOES NOT. Read off the booted page on the reference game, the two endings
+   side by side:
+
+     #192 Kaprizov Interference 0:15      #84 Johnson Cross-checking 1:14
+     #193 Kaprizov Interference 0:08      #85 Johnson Cross-checking 1:12
+     #194 Kaprizov Interference 0:07      #86 (empty)
+     #195 (empty)
+
+   The right-hand column is a clock reading 1:12 and a man who vanished. That
+   reads as a bug, and it is a RULE -- 16.2, a minor ends when the other team
+   scores. Measured over 294 published games and 2,230 stints: 343 end on a goal,
+   15.4%, about 1.2 a game, with a MEDIAN OF 62 SECONDS still showing.
+
+   ⚠️ AND FIXING box.js MADE IT MORE COMMON, not less: bench minors and double
+   minors now release correctly too, so the unexplained vanish happens more often
+   than it did before 2026-09-07.
+
+   ⛔⛔ IT APPEARS ON THE GOAL'S OWN FRAME AND NEVER ONE FRAME EARLIER, which is
+   the whole difficulty. The comment above is emphatic that the clock counts the
+   ASSESSED time because counting to the true end would LEAK THE FUTURE -- a
+   clock reading 0:40 on a penalty a goal is about to kill tells the viewer a
+   goal is coming. This note is the same hazard and the same answer: it is keyed
+   to `cur.type === 'goal'`, so it can only ever appear on a frame where the
+   reader has already been told a goal was scored. It explains; it never
+   forecasts.
+
+   THE ROW IS THE SAME TWO LINES TALL AS AN OCCUPIED SEAT, deliberately. The
+   layout below the rink stopped moving on 2026-09-07 and a note that adds a
+   third line for one frame would put the jitter back. So the reason REPLACES
+   the infraction rather than joining it -- the infraction has been on screen for
+   the whole penalty, and `Delay of game — illegal play by the goaltender` plus a
+   clause is 66 characters against a two-line budget. */
+function endedHere(tm,cur){
+  if(!cur||cur.type!=='goal')return null;
+  return PBOX.find(s=>s.team===tm&&s.endedBy==='goal'&&s.end===cur.s)||null;}
+function drawBoxes(secs,cur){
  for(const [tm,id] of [[AID,'penA'],[HID,'penH']]){
    const el=$(id);if(!el)continue;
    const men=secs==null?[]:occupants(PBOX,secs,tm);
@@ -7851,7 +7898,25 @@ function drawBoxes(secs){
            +`<span class="pt">${mmss(left)}</span></span>`;}).join('');
    const more=men.length>SEATS
      ? `<span class="pen pmore">+${men.length-SEATS} more in the box</span>`:'';
-   el.innerHTML=rows+more;}}
+   /* THE CLOCK IS STRUCK RATHER THAN BLANKED, because the unserved time is the
+      fact worth keeping: he had 1:12 left and did not serve it. Two channels say
+      it -- the strike for the eye and the sentence for the reader -- and the
+      sentence carries the load, since a line through 0.72rem type on a phone is
+      support, never the message.
+      ⭐ THE SENTENCE NAMES THE SCORER, and that is a correction of a defect this
+      project has already shipped once: a chip named the club opposite its own
+      verb's subject. "The goal ended it" sits under a player's name and invites
+      exactly that reading, so the club that scored is the grammatical subject
+      and it is the OTHER team by construction, never `tm`. */
+   const done=endedHere(tm,cur);
+   const gone=done?(()=>{
+     const p=done.player==null?null:R[done.player];
+     const who=done.player==null?'Bench':(p?p.nm:'—');
+     const left=Math.max(0,(done.start+done.min*60)-done.end);
+     return `<span class="pen pout"><span class="pw">${ESC(who)}</span>`
+           +`<span class="pf">${ESC(tm===AID?HAB:AAB)} scored — penalty ends</span>`
+           +`<span class="pt">${mmss(left)}</span></span>`;})():'';
+   el.innerHTML=rows+more+gone;}}
 
 /* THE SENTENCE THE PAGE HAS OWED SINCE THE ENDS DECISION -- see rink.js.
    Two sentences, two kinds: the first is about hockey, the second is about what
@@ -7942,7 +8007,10 @@ function render(i,how){
  const evs=EV.slice(0,i+1),L=lens(i),cur=EV[i];
  const PER=cur?cur.per:1;     // pre-game shows the first period's arrangement
  drawRink(PER);
- drawBoxes(cur?cur.s:null);   // null before the first play: both boxes empty
+ // null before the first play: both boxes empty. `cur` goes in as well because
+ // the box has a question it could not ask from a second alone -- "did a penalty
+ // end on THIS goal" -- and several events can share one second.
+ drawBoxes(cur?cur.s:null,cur);
  drawEndsNote(cur);
  /* ⭐ EVERY INPUT NAMED, AND THERE ARE NINETEEN OF THEM. That number is the
     measurement, not a complaint: drawing one mark depends on the event, the club,

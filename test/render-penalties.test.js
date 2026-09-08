@@ -3,10 +3,24 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { stints, occupants } from '../src/lib/box.js';
 import { PEN, penName } from '../src/lib/penalties.js';
-import { app, PAGE_CSS, boot } from './helpers/page.js';
+import { app, PAGE_CSS, boot, rich } from './helpers/page.js';
+
+const mmssOf = n => `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`;
 
 const KILLED = JSON.parse(readFileSync(
   new URL('fixtures/extracts/2025030214.json', import.meta.url), 'utf8'));
+
+/**
+ * The renderer's body, for the few claims below that no fixture can pose.
+ *
+ * ⚠️ THE PARAMETER LIST IS DELIBERATELY NOT PART OF THE PATTERN. Three tests here
+ * matched `function drawBoxes(secs){…}` literally and all three went red the day
+ * the function gained a second argument — a change no viewer could see. §0.00-a
+ * finding 5: *a test anchored on a source file breaks on a move while the page is
+ * unchanged.* Everything that CAN be asked of the rendered seat now is; what is
+ * left needs a game with three men in one box, which no fixture we own contains.
+ */
+const DRAW = /function drawBoxes\([^)]*\)\{[\s\S]*?\n\}/.exec(app)[0];
 
 /**
  * ⭐ THE CLOCK COUNTS THE REFEREE'S TIME, NOT THE TIME HE ACTUALLY SERVED.
@@ -45,14 +59,24 @@ test('the penalty clock cannot announce a goal that has not happened', () => {
   assert.notEqual(assessedLeft, servedLeft);
 
   const mmss = n => `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`;
-  // What the page must print, and what it must never print.
-  assert.ok(app.includes('const SEATS'), 'the renderer this test describes is gone');
-  const src = /function drawBoxes\(secs\)\{[\s\S]*?\n\}/.exec(app)[0];
-  assert.match(src, /s\.start\s*\+\s*s\.min\s*\*\s*60\s*\)\s*-\s*secs/,
-    `the clock is not the assessed one — at this fixture's frame it would read ` +
-    `${mmss(servedLeft)} instead of ${mmss(assessedLeft)}, ${cut}s before the goal`);
-  assert.doesNotMatch(src, /s\.end\s*-\s*secs/,
-    'the clock counts down to the SERVED end, which announces the goal that ends it');
+  /* ⭐ ASKED OF THE PAGE, NOT OF THE SOURCE TEXT. This block used to pull
+     `function drawBoxes(secs){…}` out of the bundle with a regex and match the
+     arithmetic inside it — which is finding 5 of §0.00-a exactly: *a test
+     anchored on a source file breaks on a move while the page is unchanged*. It
+     did break, on a signature change that altered nothing a viewer sees. What
+     the claim is actually about is the string in the seat, and the fixture is
+     chosen so the two candidate strings CANNOT COINCIDE (the `cut > 60` guard
+     above), so reading the rendered clock decides between them outright. */
+  const a = boot(KILLED, {});
+  const scrub = a.$('scrub');
+  const k = EV.indexOf(at);
+  scrub.value = String(k); scrub.oninput({ target: { value: scrub.value } });
+  const seat = a.$(s.team === KILLED.teams.away.id ? 'penA' : 'penH').innerHTML;
+  assert.ok(seat.includes(mmss(assessedLeft)),
+    `the seat reads ${JSON.stringify(seat)} and not the assessed ${mmss(assessedLeft)}`);
+  assert.ok(!seat.includes(mmss(servedLeft)),
+    `the seat is counting down to the SERVED end (${mmss(servedLeft)}), which `
+    + `announces the goal that ends it ${cut}s early`);
 
   // AND THE SEAT STILL EMPTIES ON THE ICE'S SCHEDULE — `occupants` uses the true
   // end, so the player vanishes when the goal kills it, exactly as in a rink.
@@ -72,8 +96,8 @@ test('the scoreboard seats two and counts the rest', () => {
   const a = boot();
   assert.equal(a.$('penA').innerHTML, '', 'somebody is in the box before the game starts');
 
-  const src = /function drawBoxes\(secs\)\{[\s\S]*?\n\}/.exec(app)[0];
   assert.match(app, /const SEATS ?= ?2/, 'the seat count moved and this test did not');
+  const src = DRAW;
   assert.match(src, /slice\(0, ?SEATS\)/, 'every occupant is rendered — six names in a scoreboard');
   assert.match(src, /men\.length ?> ?SEATS/, 'nothing counts the occupants beyond the seats');
   assert.match(src, /\+\$\{men\.length ?- ?SEATS\}/, 'the overflow is not counted, so it is hidden');
@@ -103,9 +127,16 @@ test('a penalty descriptor is looked up, never inflected', () => {
   assert.equal(penName(''), '');
   assert.equal(penName(null), '');
 
-  // AND THE RENDERER USES IT. A table nothing calls is a table that rots.
-  const src = /function drawBoxes\(secs\)\{[\s\S]*?\n\}/.exec(app)[0];
-  assert.match(src, /penName\(s\.pen\)/, 'the raw feed key is being rendered directly');
+  /* AND THE RENDERER USES IT — asked of the SEAT, because the page can answer it.
+     The reference game's first penalty is `tripping`, whose looked-up words and
+     whose raw key differ in case, so the two candidates cannot coincide. */
+  const a = boot();
+  const scrub = a.$('scrub');
+  scrub.value = '3'; scrub.oninput({ target: { value: '3' } });
+  const seat = a.$('penA').innerHTML + a.$('penH').innerHTML;
+  assert.ok(seat.includes(penName('tripping')),
+    `the seat reads ${JSON.stringify(seat)} — the descriptor is not being looked up`);
+  assert.ok(!seat.includes('>tripping<'), 'the raw feed key is being rendered directly');
 
   // ⚠️ THE DURATION IS NOT SAID TWICE. The clock beside the name already reads
   // 4:00; "High-sticking (double minor)" repeats it in words.
@@ -218,8 +249,7 @@ test('a bench minor gets a seat, and the condition is the severity', () => {
     'the old actor-only admission test is back, and bench minors are dropped again');
 
   // And the page says what it is rather than showing a placeholder.
-  const draw = /function drawBoxes\(secs\)\{[\s\S]*?\n\}/.exec(app)[0];
-  assert.match(draw, /s\.player==null\?'Bench'/, 'an unnamed server renders as an em-dash, not as a bench minor');
+  assert.match(DRAW, /s\.player==null\?'Bench'/, 'an unnamed server renders as an em-dash, not as a bench minor');
 });
 
 /**
@@ -271,4 +301,174 @@ test('the seat is reserved and the columns align at the top', () => {
   assert.ok(wide.includes('.board .foot{'), 'the slice lost the rule it is about');
   assert.doesNotMatch(wide, /\.board \.foot\{[^}]*grid-area:game/,
     'the game line claims a grid area the wide board does not define');
+});
+
+/**
+ * ⭐⭐ THE INTERRUPTED COUNTDOWN — B6, and the hazard is timing rather than words.
+ *
+ * A penalty that runs out teaches itself: 0:07, then the seat is empty. One that
+ * a goal kills does not — the clock reads 1:04 and the man is gone, which reads
+ * as a bug and is Rule 16.2. Measured over 294 published games and 2,230 stints:
+ * 343 end on a goal, 15.4%, with a median of 62 seconds still showing.
+ *
+ * ⛔⛔ THE DANGEROUS FAILURE IS ONE FRAME EARLY, NOT ONE FRAME LATE. The comment
+ * above `SEATS` refuses to count the clock down to the served end because that
+ * announces a goal before it happens; a note explaining the release is the same
+ * hazard wearing words. So the second test below is the one that matters, and it
+ * is asked of EVERY frame in the game rather than of the frame before.
+ */
+test('a penalty a goal ended says so, on the goal\'s own frame', () => {
+  const ctx = { homeId: rich.teams.home.id, awayId: rich.teams.away.id };
+  const killed = stints(rich.events, ctx).filter(s => s.endedBy === 'goal');
+  assert.ok(killed.length, 'the reference game no longer contains a penalty killed by a goal');
+
+  const a = boot();
+  const scrub = a.$('scrub'), N = +scrub.max;
+  const at = k => { scrub.value = String(k); scrub.oninput({ target: { value: scrub.value } }); };
+
+  // ⭐ THE EXPECTED VALUES COME FROM THE REDUCER, NOT FROM THE RENDERER. `stints`
+  // is a different path to the same fact, which is what stops this being a mirror.
+  const s = killed[0];
+  const box = s.team === rich.teams.away.id ? 'penA' : 'penH';
+  const scorer = s.team === rich.teams.away.id ? rich.teams.home.ab : rich.teams.away.ab;
+  const unserved = (s.start + s.min * 60) - s.end;
+
+  let found = null;
+  for (let k = 0; k <= N; k++) { at(k); if (a.$(box).innerHTML.includes('pout')) { found = k; break; } }
+  assert.ok(found != null, 'no frame in the whole game explains a penalty that a goal ended');
+
+  const seat = a.$(box).innerHTML;
+  assert.ok(seat.includes(`${scorer} scored`),
+    `the seat reads ${JSON.stringify(seat)} — it does not name the club that scored`);
+  // ⚠️ AND IT IS NOT THE PENALISED CLUB. A chip on this site once named the club
+  // opposite its own verb's subject; the scorer is the OTHER team by construction.
+  const penalised = s.team === rich.teams.away.id ? rich.teams.away.ab : rich.teams.home.ab;
+  assert.ok(!seat.includes(`${penalised} scored`),
+    'the note says the penalised team scored on its own power play');
+  assert.ok(seat.includes(mmssOf(unserved)),
+    `the unserved time ${mmssOf(unserved)} is not shown, so nothing says what he did not serve`);
+});
+
+test('⛔ and it can never appear before the goal that causes it', () => {
+  const ctx = { homeId: rich.teams.home.id, awayId: rich.teams.away.id };
+  const killed = stints(rich.events, ctx).filter(s => s.endedBy === 'goal');
+  const SKIP = new Set(['stoppage', 'period-start', 'period-end', 'game-end', 'delayed-penalty']);
+  const EV = rich.events.filter(e => !SKIP.has(e.type));
+
+  const a = boot();
+  const scrub = a.$('scrub'), N = +scrub.max;
+  const at = k => { scrub.value = String(k); scrub.oninput({ target: { value: scrub.value } }); };
+
+  const notes = [];
+  for (let k = 0; k <= N; k++) {
+    at(k);
+    if ((a.$('penA').innerHTML + a.$('penH').innerHTML).includes('pout')) notes.push(k);
+  }
+  assert.ok(notes.length, 'the note never renders at all, so this proves nothing');
+
+  for (const k of notes) {
+    const e = EV[k];
+    assert.equal(e.type, 'goal',
+      `the release note is on frame ${k}, which is a ${e.type} — a viewer is being told `
+      + 'a penalty ended before anything on screen says a goal was scored');
+    assert.ok(killed.some(s => s.end === e.s),
+      `frame ${k} explains a release that box.js did not make`);
+  }
+  // AND EVERY GOAL-ENDED PENALTY IS ACCOUNTED FOR, or the note is decoration.
+  assert.equal(notes.length, killed.length,
+    `${killed.length} penalties ended on a goal and ${notes.length} frames say so`);
+});
+
+test('a penalty that simply ran out is left alone', () => {
+  /* THE CONTROL. The note exists because the expiring case teaches itself; if it
+     rendered there too it would be noise on 84.5% of endings, and the test above
+     would still be green. */
+  const ctx = { homeId: rich.teams.home.id, awayId: rich.teams.away.id };
+  const expired = stints(rich.events, ctx).filter(s => s.endedBy !== 'goal');
+  assert.ok(expired.length, 'no penalty in the reference game runs its full time');
+
+  const a = boot();
+  const scrub = a.$('scrub'), N = +scrub.max;
+  const SKIP = new Set(['stoppage', 'period-start', 'period-end', 'game-end', 'delayed-penalty']);
+  const EV = rich.events.filter(e => !SKIP.has(e.type));
+  for (let k = 0; k <= N; k++) {
+    if (!expired.some(s => EV[k] && EV[k].s === s.end)) continue;
+    scrub.value = String(k); scrub.oninput({ target: { value: scrub.value } });
+    assert.ok(!(a.$('penA').innerHTML + a.$('penH').innerHTML).includes('pout'),
+      `frame ${k} explains a penalty that nobody interrupted`);
+  }
+});
+
+test('the explained seat is exactly as tall as an occupied one', () => {
+  /* ⚠️ THE LAYOUT BELOW THE RINK STOPPED MOVING ON 2026-09-07 and a note that
+     adds a third line for one frame puts the jitter straight back. The grid has
+     two rows and the released seat uses the same three cells, so the claim is
+     that NO NEW GRID ROW EXISTS rather than that the pixels match — the fake DOM
+     has no layout, and this is the honest half it can check. */
+  assert.match(PAGE_CSS, /#rg \.pf\{grid-column:1\/-1;grid-row:2\}/,
+    'the infraction line moved off row 2 and the seat height is no longer fixed');
+  /* Scoped to the seat's own selectors: `.lxw` legitimately uses row 3 in the
+     layer box, and a stylesheet-wide scan would report it forever. */
+  const seatRules = PAGE_CSS.split('\n').filter(l => /#rg \.p(en|w|t|f|out|more|bench)\b/.test(l)).join('\n');
+  assert.ok(seatRules.length > 100, 'the seat rules are not being read at all');
+  assert.doesNotMatch(seatRules, /grid-row:\s*[3-9]/,
+    'a third grid row exists in the seat, which is a one-frame jump in the board');
+  assert.match(DRAW, /class="pen pout"/, 'the released seat is not marked, so CSS cannot reach it');
+  assert.doesNotMatch(DRAW, /class="pen pout"[\s\S]{0,200}class="px"/,
+    'the released seat renders a fourth cell the grid has no row for');
+});
+
+/**
+ * ⭐⭐ THE CASE NO FIXTURE WE OWN CONTAINS: a penalty that expires on the exact
+ * second a goal is scored.
+ *
+ * ⚠️ FOUND BY MUTATION, NOT BY THOUGHT. Dropping `endedBy === 'goal'` from the
+ * renderer's condition — leaving only "a stint ends at this second" — passed
+ * every test above, because in the reference game no expiry lands on a goal. The
+ * mutation is not hypothetical: `tools/box-witness.mjs` puts this collision at
+ * 3 of 176 power-play goals across 150 published games, and it is the whole of
+ * the disagreement between our box and the league's own code.
+ *
+ * ⭐ SO THE GAME IS CONSTRUCTED RATHER THAN FOUND, which is §0.00-a finding 3 in
+ * its plainest form: *a function you can call takes any argument; a page you must
+ * boot takes only the game it was given.* The penalty belongs to the team that
+ * SCORES, so `box.js` correctly leaves `endedBy: 'time'` — a team does not get a
+ * man back for scoring short-handed — and the seat must empty in silence.
+ */
+test('a penalty that expires on a goal\'s own second is still not "ended by" it', () => {
+  const g = JSON.parse(JSON.stringify(rich));
+  const goal = g.events.find(e => e.type === 'goal' && e.s > 400);
+  assert.ok(goal, 'the reference game has no goal late enough to hang a penalty on');
+
+  const scorer = goal.own;                       // the penalty goes on the SCORING team
+  const start = goal.s - 120;
+  g.events.push({ type: 'penalty', s: start, per: goal.per, own: scorer,
+                  actor: goal.actor, min: 2, sev: 'MIN', pen: 'hooking',
+                  x: 0, y: 0 });
+  g.events.sort((a, b) => a.s - b.s);
+
+  const ctx = { homeId: g.teams.home.id, awayId: g.teams.away.id };
+  const planted = stints(g.events, ctx).find(s => s.start === start);
+  assert.ok(planted, 'the planted penalty never reached the box');
+  assert.equal(planted.end, goal.s, 'the planted penalty does not expire on the goal');
+  assert.equal(planted.endedBy, 'time',
+    'box.js released a man for scoring short-handed, which is not a rule');
+
+  /* ⚠️ SCOPED TO THE PLANTED SEAT. A first draft scanned both boxes across the
+     whole game and went red on the LEGITIMATE note 400 seconds earlier — a test
+     that reports the feature working as a defect. The question is about one box
+     on one frame: the scoring team's, at the goal. */
+  const a = boot(g, {});
+  const scrub = a.$('scrub'), N = +scrub.max;
+  const SKIP = new Set(['stoppage', 'period-start', 'period-end', 'game-end', 'delayed-penalty']);
+  const EV = g.events.filter(e => !SKIP.has(e.type));
+  const k = EV.indexOf(goal);
+  assert.ok(k > 0 && k <= N, 'the goal is not a frame the replay plays');
+  scrub.value = String(k); scrub.oninput({ target: { value: scrub.value } });
+  const html = a.$(scorer === g.teams.away.id ? 'penA' : 'penH').innerHTML;
+  const said = html.includes('pout') ? html : null;
+  assert.equal(said, null,
+    'the page says a goal ended a penalty that simply ran out beside it — the '
+    + 'renderer is keying on "a stint ends here" rather than on box.js\'s own '
+    + `endedBy. It rendered: ${JSON.stringify(said)}`);
 });
