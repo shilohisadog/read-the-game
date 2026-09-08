@@ -27,7 +27,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { app, PAGE_CSS, boot, rich } from './helpers/page.js';
+import { app, PAGE_CSS, boot, rich, markClick } from './helpers/page.js';
 
 /** The reference game's own goals, and what the league published for each. */
 const GOALS = rich.events.filter(e => e.type === 'goal');
@@ -40,11 +40,6 @@ test('the fixture still poses both cases, or everything below is vacuous', () =>
     'every goal in the reference game now carries a highlight, so the absent '
     + 'case — 6.6% of goals archive-wide — is no longer tested by anything');
 });
-
-/** Press a mark on the ice. `#events` delegates, so the event carries the index. */
-function fireMark(a, k) {
-  (a.$('events')._on.click || []).forEach(fn => fn({ target: { dataset: { i: String(k) } } }));
-}
 
 /** Drive the page to the frame showing `ev`, using the app's own playable set. */
 function frameOf(a) {
@@ -133,15 +128,26 @@ test('…and the mark opens it too, while a mark that is not a goal does not', (
   const a = boot();
   const k = frameOf(a);
 
-  fireMark(a, k);
-  assert.ok(a.$('clipbox').open, 'pressing the goal mark does not open the section');
+  /* ⛔ THE CHILD, WHICH IS WHAT A BROWSER ACTUALLY HANDS OVER. A goal is drawn as
+     a figure — a `<g data-i>` around a `<path>` — so the click target never
+     carries the index and the handler has to walk up to find it. This exact case
+     was dead on the live site while the old test was green. */
+  markClick(a, k);
+  assert.ok(a.$('clipbox').open,
+    'pressing the goal MARK does not open the section — the handler is reading '
+    + 'ev.target rather than the element carrying data-i, so every figure-shaped '
+    + 'mark (which is every goal) is unclickable');
+
+  // …and the carrier itself still works, for marks that are a bare circle.
+  const c = boot(); frameOf(c); markClick(c, k, { leaf: false });
+  assert.ok(c.$('clipbox').open, 'a mark that carries the index directly is now dead');
 
   // THE CONTROL. Every other mark on the ice must be inert, or the section opens
   // on a faceoff and the sentence above it is false.
   const b = boot();
   frameOf(b);
   const other = String(k > 0 ? k - 1 : k + 1);
-  fireMark(b, +other);
+  markClick(b, +other);
   assert.ok(!b.$('clipbox').open,
     `pressing frame ${other}, which is not a goal with a clip, opened the player`);
 });

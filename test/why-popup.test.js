@@ -23,7 +23,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { boot } from './helpers/page.js';
+import { boot, markClick } from './helpers/page.js';
 import { whyMarkup } from '../src/lib/why.js';
 import { HIGH_DANGER_FT, SLOT_HALF_WIDTH, NET_X, isHighDanger } from '../src/lib/rink.js';
 
@@ -155,7 +155,7 @@ function openPopup() {
   const a = boot(null, null, '?layer=slot');
   for (let k = 0; k < 400; k++) {
     a.at(k, () => {});
-    for (const fn of a.$('events')._on.click || []) fn({ target: { dataset: { i: String(k) } } });
+    markClick(a, k);
     if (a.$('whyBk').classList.contains('on')) return a;
   }
   throw new assert.AssertionError({ message: 'no click anywhere in the game opened the why-popup' });

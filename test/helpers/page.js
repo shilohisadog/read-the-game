@@ -335,6 +335,32 @@ export function bundle(globals, src = SCRIPT, give = 'boot') {
 }
 
 /**
+ * Fire a click on a mark THE WAY A BROWSER DELIVERS IT.
+ *
+ * ⛔⛔ THIS EXISTS BECAUSE THE OBVIOUS SHAPE HID A LIVE BUG FOR MONTHS. Three
+ * places dispatched `{target:{dataset:{i}}}` — the carrier handed straight to the
+ * handler — and `app.js` read `ev.target.dataset.i`. Every one of them was green
+ * while, on the real site, clicking a GOAL did nothing: a browser's `target` is
+ * the INNERMOST element, and a goal is drawn as a figure — a `<g data-i>` around
+ * a `<path>` — so the index lives one level up. Ordinary marks are a bare
+ * `<circle>` carrying it, which is why everything except goals worked and nobody
+ * looked. Kevin found it by clicking one.
+ *
+ * ⭐ *A test that constructs the ideal event tests the handler's arithmetic and
+ * never its hit path.* `leaf` is the default because it is the common case on the
+ * ice, and `leaf: false` keeps the bare-circle path covered — a fix that only
+ * walks up would otherwise be free to stop answering for the marks that never
+ * needed it.
+ */
+export function markClick(a, k, { leaf = true } = {}) {
+  const carrier = { dataset: { i: String(k) } };
+  const target = leaf
+    ? { dataset: {}, closest: sel => (sel === '[data-i]' ? carrier : null) }
+    : { ...carrier, closest: () => carrier };
+  for (const fn of a.$('events')._on.click || []) fn({ target });
+}
+
+/**
  * Turn a layer on through the control a visitor actually has.
  *
  * ⚠️ EVERY CALLER OF THIS USED TO CLICK `$('lyBlock')` — a row in the layer menu,

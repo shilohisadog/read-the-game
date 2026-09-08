@@ -9191,7 +9191,25 @@ function showWhy(idx){const e=EV[idx];if(e==null||e.x==null)return;
  $('whyContent').innerHTML=whyMarkup(e,{dir:shotDir(e),AID,AAB,HAB,AWAYCOL,HOMECOL,R});
  $('whyBk').classList.add('on');}
 function hideWhy(){$('whyBk').classList.remove('on');}
-$('events').addEventListener('click',ev=>{const t=ev.target;if(t&&t.dataset&&t.dataset.i!=null){const k=+t.dataset.i;if(hdOn&&isHD(EV[k]))showWhy(k);}});
+/* ⛔⛔ `closest`, NOT `ev.target`, AND THIS WAS A LIVE DEFECT IN BOTH READERS.
+   A click lands on the innermost element under the cursor. Most marks are a bare
+   `<circle>` carrying `data-i`, so `ev.target.dataset.i` answered and everything
+   looked fine for months. A mark drawn as a FIGURE is a `<g data-i>` with children
+   -- and a goal is always drawn as a figure -- so the target is a `<path>` inside
+   it and the index is undefined. Measured on the live site: clicking a goal's own
+   mark with the slot layer on left `#whyBk` at `display:none` and `#whyContent`
+   empty, while the page's caption says "Click a ring to see the distance and angle
+   it was measured by."
+
+   Kevin found it through the new highlight door -- "when I click on the goal event,
+   the page still doesn't scroll down" -- and the older reader had the identical
+   bug one line away. ⭐ *A fix that teaches one site about a variety and leaves its
+   sibling* is a named failure here; both walk up now. */
+const markAt=ev=>{const t=ev.target;
+ const c=t&&t.closest?t.closest('[data-i]'):null;
+ return c&&c.dataset.i!=null?+c.dataset.i:null;};
+$('events').addEventListener('click',ev=>{const k=markAt(ev);
+ if(k!=null&&hdOn&&isHD(EV[k]))showWhy(k);});
 /* ⭐ THE GOAL ON THE ICE IS A DOOR TO ITS OWN HIGHLIGHT. Kevin: "is there any way
    to make the goal event link to the replay frame?" -- and the line above is the
    idiom, so this is the same click on the same channel and a reader who learned
@@ -9238,8 +9256,8 @@ function buildClip(){
  el.setAttribute('loading','lazy');
  el.setAttribute('title','NHL.com broadcast highlight of this goal');
  f.appendChild(el);}
-$('events').addEventListener('click',ev=>{const t=ev.target;
- if(t&&t.dataset&&t.dataset.i!=null&&EV[+t.dataset.i]&&EV[+t.dataset.i].clip!=null)openClip(+t.dataset.i);});
+$('events').addEventListener('click',ev=>{const k=markAt(ev);
+ if(k!=null&&EV[k]&&EV[k].clip!=null)openClip(k);});
 $('labels').addEventListener('click',()=>openClip(null));
 /* The summary is the section's own control, so opening it any other way -- a
    press on the caret, a keyboard Enter -- has to build the frame too. Closing

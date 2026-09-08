@@ -271,7 +271,15 @@ function popupPass() {
   for (let k = 0; k < n; k++) {
     a.at(k, () => {});
     const before = content.writes;
-    for (const fn of events._on.click || []) fn({ target: { dataset: { i: String(k) } } });
+    /* ⛔ THE INNERMOST ELEMENT, WHICH IS WHAT A BROWSER HANDS OVER. This line
+       used to pass the carrier itself, so the walk exercised a hit path no
+       visitor has — and a goal's mark, drawn as a `<g data-i>` around a
+       `<path>`, was dead on the live site while this pass reported it clicking
+       fine. Same shape as `markClick` in test/helpers/page.js; stated here too
+       because this tool boots the page itself and imports none of that. */
+    const carrier = { dataset: { i: String(k) } };
+    const target = { dataset: {}, closest: sel => (sel === '[data-i]' ? carrier : null) };
+    for (const fn of events._on.click || []) fn({ target });
     /* `writes` rather than the backdrop's class: nothing ever CLOSES the popup
        during this pass, so `whyBk` stays `on` after the first open and would
        report every later click as a render. The write is the signal itself —
