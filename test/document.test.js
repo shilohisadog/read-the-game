@@ -182,39 +182,52 @@ test('a page has ONE footer, so the attribution cannot disagree with itself', ()
   }
 });
 
-test('the tip jar asks for support and never sells access', () => {
-  // Kevin's constraint, verbatim: "it has to be 'donate' or 'buy me a coffee'
-  // type of surface, so I minimize the chance of any scrutiny from the NHL."
-  // The risk is not the link, it is a link that implies you are BUYING
-  // something — so this asserts the framing, not just the href.
-  const forbidden = /\b(subscribe|subscription|member(s|ship)?|premium|pro plan|unlock|supporters? only|paywall(?!ed)|upgrade)\b/i;
+test('⛔ the footer asks the reader for nothing at all', () => {
+  /* ⏹ THE TIP JAR WAS HERE UNTIL 2026-09-08 and this test asserted its FRAMING —
+     Kevin's constraint, verbatim: "it has to be 'donate' or 'buy me a coffee'
+     type of surface, so I minimize the chance of any scrutiny from the NHL."
+
+     ⛔ THE SITE NOW EMBEDS NHL VIDEO, and their terms forbid embedded content
+     used "for the purpose of gaining advertising, subscription, or other
+     revenue, or for any commercial purpose". A donation link is not advertising,
+     nothing is sold, and the clip is not the draw — so it was not a violation on
+     any reading. It was the one sentence a careful person could point at while a
+     Brightcove player sat four blocks up the same page. Kevin: "concur on
+     removing the buy me a coffee bit, just to err on the side of caution."
+
+     ⭐ SO THIS IS THE OLD CLAIM MADE STRONGER, NOT DELETED. It used to say the
+     ask reads as a tip rather than a product; it now says there is no ask. The
+     forbidden vocabulary stays and gains the donation words, because the risk
+     was never the particular link — it was any sentence on a page carrying the
+     league's video that could be read as trading on it. */
+  const forbidden = /\b(subscribe|subscription|member(s|ship)?|premium|pro plan|unlock|supporters? only|paywall(?!ed)|upgrade|donate|donation|tip jar|patreon|ko-?fi|buymeacoffee)\b/i;
+  let checked = 0;
   for (const f of PAGES) {
     const h = readFileSync(new URL(f, SRC), 'utf8');
     const foot = h.match(/<footer class="sitefoot">[\s\S]*?<\/footer>/)[0];
-    assert.match(foot, /href="https:\/\/buymeacoffee\.com\//, `${f} has no tip jar`);
+    checked++;
     assert.doesNotMatch(foot, forbidden,
-      `${f} offers a tier or gated access — this must read as a tip, not a product`);
-    // It must come AFTER the not-affiliated sentence, so a reader meets the
-    // disclaimer before the ask. Position is the whole of Kevin's constraint.
-    assert.ok(foot.indexOf('Not affiliated') < foot.indexOf('buymeacoffee.com'),
-      `${f} asks for money above its own disclaimer`);
+      `${f} asks the reader for money or offers a tier, on a site that embeds the `
+      + "league's own video — see NHL terms §7 on embedded content and revenue");
+    /* AND NOWHERE ELSE ON THE PAGE EITHER, or the sentence simply moved upstairs.
+       ⚠️ A NARROWER PATTERN OUT HERE, ON PURPOSE. The footer is short and every
+       word in it is deliberate, so the broad list is safe there. A whole page is
+       mostly code and comments, where ordinary English collides: the first draft
+       of this line failed on `members` inside a comment about how the buttons in
+       a control GROUP are divided. Widening a scan until it matches prose is how
+       a check gets deleted rather than fixed, so this asks only about words that
+       cannot mean anything but an ask. */
+    assert.doesNotMatch(h, /\b(donate|donations?|tip jar|patreon|ko-?fi|buymeacoffee|subscription|paywall(?!ed))\b/i,
+      `${f} carries the ask outside its footer`);
   }
-});
+  assert.ok(checked >= 10, `only ${checked} pages checked — this has lost its subject`);
 
-test('the tip jar is one link to one canonical URL, and it is not a script', () => {
-  // The widget is a third-party script; the policy admits exactly one external
-  // origin and it was spent on analytics deliberately. A refused donate button
-  // is not hypothetical — the email decoder was refused the same afternoon.
-  const urls = new Set();
+  // ⚠️ AND THE DISCLAIMER STAYED. Removing the ask must not have taken the
+  // not-affiliated sentence with it: that one is load-bearing and always was.
   for (const f of PAGES) {
     const h = readFileSync(new URL(f, SRC), 'utf8');
-    for (const m of h.matchAll(/https:\/\/(?:www\.)?buymeacoffee\.com\/[^"']*/g)) urls.add(m[0]);
-    assert.doesNotMatch(h, /<script[^>]+buymeacoffee/i, `${f} embeds the Buy Me a Coffee widget`);
+    assert.match(h, /Not affiliated with/, `${f} lost its not-affiliated sentence`);
   }
-  assert.equal(urls.size, 1, `the site names ${urls.size} tip-jar URLs: ${[...urls].join(', ')}`);
-  // Lowercase is the canonical path — the mixed-case form 301s to it, so
-  // linking it directly saves every reader a redirect.
-  assert.deepEqual([...urls], ['https://buymeacoffee.com/readthegameofhockey']);
 });
 
 test('the contact address is spelt one way, in one place', () => {
