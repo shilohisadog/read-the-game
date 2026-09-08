@@ -70,6 +70,24 @@ test('the test can actually fail — a bogus link is caught', () => {
   assert.deepEqual(found, ['no-such-app.html'], 'the broken-link check must detect it');
 });
 
+/**
+ * Pages that exist, are deployed, and are deliberately not linked from anywhere.
+ *
+ * ⭐ THE DECISION IS MADE HERE RATHER THAN BY OMISSION, which is what the check
+ * below always said it was for. An unlisted page is invisible to a reader and
+ * fully visible to anyone typing the URL, so it is a door that was closed, not a
+ * page that was deleted — and the difference has to be written down or the next
+ * reader cannot tell it from a mistake.
+ */
+const UNLISTED = new Map([
+  ['workshop.html',
+   'Kevin, 2026-09-08: "let\'s remove the link (thereby removing visitor access '
+   + 'to it) and then discuss goalie-eye-view." Two of its three rows are still '
+   + 'under discussion, and one of them — read-the-game.html — is not a prototype '
+   + 'at all: build_main.py builds it and 35 test files boot it. So the nav entry '
+   + 'went and the page stayed. See docs/status.md §0.00-κ.'],
+]);
+
 test('no page in src/ ships unlinked', () => {
   // An orphan page is published but unreachable, and nobody finds out. If a
   // page is deliberately unlisted, this test is where that decision gets made
@@ -87,8 +105,30 @@ test('no page in src/ ships unlinked', () => {
       if (t.endsWith('.html')) linked.add(t);
     }
   }
-  const orphans = pages.filter(p => !linked.has(p));
+  const orphans = pages.filter(p => !linked.has(p) && !UNLISTED.has(p));
   assert.deepEqual(orphans, [], `unreachable page(s): ${orphans.join(', ')}`);
+
+  /* ⭐ AND THE LEDGER MUST STILL DESCRIBE THE SITE. An exception that outlives
+     its page is how a ledger becomes a place to hide things: the entry would sit
+     there forever, silently excusing nothing, and the next unlisted page would
+     be excused by a name that happens to match. */
+  for (const [f, why] of UNLISTED) {
+    assert.ok(pages.includes(f), `${f} is on the unlisted ledger and no longer exists`);
+    assert.ok(!linked.has(f), `${f} is on the unlisted ledger and IS linked — remove the entry`);
+    assert.ok(why.length > 40, `${f}'s reason is too short to be a reason`);
+  }
+});
+
+test('⭐ …and the orphan check can still fail, ledger or no ledger', () => {
+  /* THE CONTROL. `UNLISTED` is a hole in the check above, and a hole nobody
+     proves the shape of is an off switch. This asserts the two halves separately:
+     a page NOT on the ledger is still reported, and the ledger's excuse is keyed
+     to the filename rather than being a blanket. */
+  const pages = ['workshop.html', 'some-forgotten-draft.html'];
+  const linked = new Set();
+  const orphans = pages.filter(p => !linked.has(p) && !UNLISTED.has(p));
+  assert.deepEqual(orphans, ['some-forgotten-draft.html'],
+    'the ledger is excusing pages it does not name');
 });
 
 test('⭐ the limits block names EVERY competition the site excludes', () => {

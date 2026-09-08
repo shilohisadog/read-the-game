@@ -257,10 +257,17 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 # on every page and the novice tester is on a phone: 4 items wrapped to 2 lines
 # at 108px, and 5 items wrap to 2 lines at 108px. It costs nothing on the device
 # that can least afford it. See docs/discovery.md §13.
+# ⏹ THE WORKSHOP LINK WENT 2026-09-08 AND THE PAGE DID NOT. Kevin: "let's remove
+# the link (thereby removing visitor access to it) and then discuss
+# goalie-eye-view." Two of its three rows are still under discussion and one of
+# them -- `read-the-game.html` -- is not a prototype at all: it is built by
+# build_main.py and 35 test files boot it through test/helpers/page.js. So this
+# is a DOOR being closed, not a deletion; `build_workshop()` still runs and
+# `src/workshop.html` still exists, reachable by typing the URL and by nothing
+# else. See docs/status.md §0.00-κ for what may follow it.
 _NAV = [("/", "Watch a game"), ("/#teams", "Teams"),
         ("/calendar.html", "By date"),
-        ("/what-you-can-see.html", "What you can see"),
-        ("/workshop.html", "Workshop")]
+        ("/what-you-can-see.html", "What you can see")]
 
 
 def _header(current=None, minimal=False):
