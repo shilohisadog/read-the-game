@@ -60,11 +60,13 @@ one of them into `app.css` as a comment the same morning.
 Nothing is half-built. Four things are open, in rough order of value:
 
 1. ⛔ **The `situationCode` witness for `box.js`** — §0.00-η. The league's own
-   strength code is an independent check on our penalty box, and it is **the only
-   instrument that would have caught the bug Kevin found without a lucky
-   fixture.** Measured at **94.1% agreement over 46,726 events across 150
-   published games**; the disagreements cluster where `box.js` deliberately
-   differs by one event. Not assertable as it stands — that gap is the work.
+   strength code is an independent record of the one thing `box.js` derives, and
+   asked at the **transition** it is the instrument that would have caught the bug
+   Kevin found without a lucky fixture: **7 power-play goals of 176 before the fix,
+   3 after**, over 150 published games. ⚠️ **Asked in aggregate it would not have
+   — the same fix moves that number by 0.02%.** The 3 that remain are one cause,
+   not three. `node tools/box-witness.mjs` reproduces all of it; §0.00-η carries
+   the tables and what has to be decided before any of it can be asserted.
 2. ⚠️ **`src/lib/team-season.js` cites "the 7.8% of blocks made by a teammate"** —
    not in `measures.json`, not on `quoted-figures.test.js`'s hand-written list,
    not derivable at test time. **A live instance of that file's own admitted gap.**
@@ -112,6 +114,178 @@ file gets small.*
 `why.js` · `esc.js` · `work.js` · `marks.js` · `notes.js` · `goalie-card.js` ·
 `announce.js`. ⭐ **`render` went back UP while the last findings were answered,
 and that is the rule working.**
+
+<!-- ⚠️ THE FOUR SECTIONS BELOW WERE CITED BEFORE THEY WERE WRITTEN. The table
+     above pointed at §0.00-δ, ε, ζ and η on 2026-09-07, the sections themselves
+     never landed, and the commit message said they had. Seven references into
+     nothing, in the file whose own §0.00 is about a record that stopped being
+     true — written while writing that. `tools/refcheck.py` checks `file:line`
+     citations and is blind to `§`; see §0.00-θ. -->
+
+### ⭐ 0.00-δ THE COPY STANDARD — a number the code owns is never typed
+
+`test/prose-constants.test.js`. **A sentence describing a constant must
+interpolate it, not restate it.** `HIGH_DANGER_FT` is 33 and **five surfaces said
+"33 ft" in words**: the layer's own description, `archive.js` (quoted into
+`measures.json`, the document we invite a reader to check us with), the slot
+diagram's label and its first step, and the "What the marks mean" panel on every
+game page.
+
+⚠️ **The comment above the worst of them said the problem was already fixed** —
+it argued that moving the copy into `src/lib` put it where the checker could
+reach it. The sentence then landed **eighteen lines below an
+`import { HIGH_DANGER_FT }` and still read `33`.** ⭐ *Relocating two facts into
+one file lets a reader compare them; it does not make one derive from the other,
+and only the second is a check.*
+
+Three tiers, three different mechanisms, because Python cannot import a JS
+constant: the JavaScript imports it, `builders/build_main.py` **reads it out of
+`rink.js`** into a `__SLOT_FT__` marker asserted unique in both directions (
+`str.replace` cannot fail), and the artifact itself is checked — the last test
+reads the **built pages and `measures.json`** and requires the number a visitor
+sees to be one a constant currently holds.
+
+⭐⭐ **And the instrument was blind before it was written.** All **19** of the
+corpus's feet-phrases live in template literals, and `tools/jslex.mjs` dropped
+template text — correctly, for every question ever asked of it. A first draft
+would have matched **zero of 19 and reported a clean corpus forever.** `walk` now
+emits `tstr`, and the floor assertion is made **on that channel on purpose**, so
+the day the lexer stops emitting it the scan goes red instead of quiet. **The
+first entry on this project's blind-instrument list caught before it shipped
+rather than after.**
+
+### ⭐ 0.00-ε THE CSS SWEEP — derived from what a page can produce
+
+`test/css-orphans.test.js`. **A rule for a class nothing carries describes a page
+that no longer exists.** Twelve orphans, and **only six belonged to the layer
+menu deleted that morning** — the other six had been dead since three separate
+commits between 7 and 27 August with nothing saying so:
+
+| | |
+|---|---|
+| `.zlayers .lrows .lrow .lon .lat .st` | the layer menu — 2026-09-07 |
+| `.man .srv` | the penalty box's servers — 2026-08-27 |
+| `.bkrow .bkt .bklab` | the blocked scoreboard row — 2026-08-17 |
+| `.fbtn` | the figure switcher — 2026-08-07 |
+
+⚠️⚠️ **The note asking for this sweep named the one class that had to survive.**
+It said *"`#zLayersOn` is gone; its `.zon` CSS and any siblings were not swept"* —
+and `.zon` is worn by `#zTrailsOn` and `#zCueOn`, both live. A blanket strip would
+have taken the Trails and next-play badges, **and no test in this repo looks at a
+badge.** ⭐ **So the sweep is derived, never listed: a class goes because no page
+can produce it, never because it sat in a block somebody deleted.**
+
+⚠️ And the first draft reported a thirteenth, `.bad`, which is live — assembled as
+`'shellmsg'+(bad?' bad':'')` on the page that draft was not reading. Both app
+pages are read now and the producer side counts **every word inside every shipped
+string**, deliberately generous: a rule wrongly kept costs dead bytes, a rule
+wrongly deleted costs a viewer something they can see, **and this suite is blind
+on layout.**
+
+### ⚠️⚠️ 0.00-ζ THE SLOT TIP — removed, because its premise was false
+
+§0.00-α used to call the amber-ring tip *"the one interaction on the page a novice
+would never guess"*, parked deliberately, un-parking it one line of CSS.
+**Booting the page said otherwise.** The caption twelve lines below it already
+read *"An amber ring marks each one. Click a ring to see the distance and angle
+it was measured by."* — unconditionally, from the opening frame. **Two sentences
+teaching one click, about 50px apart on a phone.**
+
+⛔ **And the tip's one unique clause was false.** *"with trails set to keep every
+mark"* named `trails`, parked in the same 2026-08-27 rebuild — **a control no
+visitor can reach.** Parked copy that is *wrong* is not "working code kept for
+the rebuild", which is the whole point of hide-not-remove. **So it was removed,
+not un-parked**, and the claim it carried now lives where a viewer can be asked
+about it: `render-notes.test.js` boots the page and reads the **caption** — silent
+with no layer, naming the ring and the click with slot on, on the opening frame,
+because a reader arriving through a learn door lands with the layer already on and
+has not pressed play.
+
+⚠️⚠️ **And I had copied the false claim into `app.css` a few hours earlier** —
+*"the amber ring is named in the `.hint` line and almost nowhere else"* — taken
+from this file instead of from the page, on the day whose own history twice says I
+read past a ledger. Corrected in place. ⭐ **The instrument was thirty seconds of
+booting the page, and nothing that could be read would have shown it.**
+
+### ⛔ 0.00-η THE PENALTY BOX — two release bugs, and a witness that only works one way
+
+Kevin, from the live site: *"CAR was on the power play, and they scored. That
+event should remove the VGK penalty, but it doesn't."*
+`?game=2025030414&at=1-07:12.1` — Vegas took a **bench minor** for too many men at
+07:33 of the first, Carolina scored at 07:12, and the box went on counting. **The
+league's own feed says otherwise inside the same two events:** `situationCode`
+reads `1541` at the goal and `1551` at the face-off after it.
+
+Two defects, both on the same five lines of `src/lib/box.js`:
+
+| | |
+|---|---|
+| ⛔ `ENDS_ON_GOAL` was the string `'MIN'` | **a bench minor is a minor** (Rule 16.2). It is `sev: 'BEN'` only because the feed does not name who serves it — a difference about the **label**, not the clock |
+| ⛔ a double minor released **both** halves | Rule 16.3: the **first** minor terminates, the player serves the second. He went back on our page two minutes early. 20 four-minute penalties in 150 games, **5 scored on** — about one game in thirty |
+
+⚠️⚠️ **The comment on the admission test twenty lines above already argued the
+first one** — *"the condition is the SEVERITY, not the missing name"* — written to
+get bench minors **into** the box, and not re-read when the rule for getting them
+**out** was next to it. **A penalty variety learned in one place and not its
+sibling.** ⭐ And the double-minor fix keeps `endedBy: 'time'`: the stint is
+*shortened* by the goal, not *ended* by one, because the kill is still running —
+changing that vocabulary would have made every consumer wrong to record something
+none of them asked about.
+
+#### ⭐⭐ The witness, and why the obvious version of it is useless
+
+`node tools/box-witness.mjs` — a measurement script, not a gate; it needs the
+network. **The same two data sources, asked two ways, over one systematic sample
+of 150 published games:**
+
+| | before the fix | after |
+|---|---|---|
+| **aggregate** — the advantage matches, over 45,478 events | 96.8% | 96.9% |
+| **aggregate** — both skater counts match | 93.0% | 93.0% |
+| **transition** — power-play goals readable on both sides | 176 | 176 |
+| **transition** — league says the advantage ended | 173 | 173 |
+| **transition** — `box.js` releases somebody | 167 | **171** |
+| ⛔ **league says ended, box holds him** | **7** | **3** |
+
+⭐⭐ **The aggregate could not see the bug.** It moved by **10 events in 45,478 —
+0.02%** — against a 3% baseline of ordinary disagreement. The transition put the
+same defect at **7 of 176** and showed the fix closing **4 of them.** *A witness
+is only as sharp as the question put to it, and the broad version is the one that
+reads as coverage while measuring nothing anybody can act on.*
+
+⚠️ **The figure this section used to carry — "94.1% over 46,726 events" — is
+withdrawn.** The population reproduces exactly; the rate does not, and the script
+that produced it was never kept, so there is no way to learn which question it
+asked. That is why `tools/box-witness.mjs` is in the repo rather than in a
+scratchpad.
+
+⭐ **The 3 remaining are one cause, not three.** `2023020281` @1745s (a minor
+1625→1745), `2023020919` @274s (154→274), `2024020870` @2884s (2764→2884): **every
+one is a goal at the exact second a penalty expires.** The league still reads
+short; our half-open interval has already opened the door. **That is a one-second
+boundary question, not a rules question** — and it is what has to be settled
+before any of this can become an assertion instead of a measurement. The tool
+prints the arithmetic beside each row so the tie is visible without a second
+script.
+
+### ⏭ 0.00-θ `refcheck` IS BLIND TO `§` — open, and it is why §0.00-δ..η were missing
+
+`tools/refcheck.py` checks every *path : line number : expected text* citation in
+`docs/` and **has no idea what a `§` is.** (⭐ Its own guard proved itself while
+this section was being written: an illustrative citation typed here as an example
+was read as a real one and went red.) So seven references into four sections that were
+never written sat in this file through a green `npm run gates`, a green CI run,
+and a deploy.
+
+A probe says the shape is repo-wide and **not** a small job: **793 `§` references
+across all 45 documents**, and a naive same-document resolver reports an
+unresolved tail in **43 of them** — most of it cross-document (`docs/status.md
+§H4`, cited from `active-player.md`) and heading formats this file uses that
+others do not. **A checker that fires on 43 documents on day one gets switched
+off**, which is worse than the gap. So the scoping is the work, and it is Kevin's
+call whether it is worth doing at all. ⭐ *The narrow version — a `0.00-x`
+reference in this file naming no heading in this file — would have caught the
+actual defect and is perhaps ten lines.*
 
 ## ⭐⭐ 0.00-β THE SEPTEMBER RUN, AND WHAT IT WAS ACTUALLY ABOUT
 
