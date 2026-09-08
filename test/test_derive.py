@@ -27,6 +27,7 @@ import json
 import pathlib
 import sys
 import unittest
+from unittest import mock
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "builders"))
 import derive as D
@@ -2208,3 +2209,73 @@ class HeroLoop(unittest.TestCase):
         events = [self.ev("faceoff"), self.ev("hit"), self.ev("shot-on-goal"),
                   self.ev("hit"), self.ev("giveaway"), self.ev("goal")]
         self.assertEqual(D._hl(events), {"hl": 4})
+
+
+class ExtractorSchemaBackfills(unittest.TestCase):
+    """⛔⛔ THE FAST PATH WAS CORRECT ABOUT THE FEED AND SILENT ABOUT US.
+
+    `derive` skips a game when the stored extract's `src` digests match the raws.
+    That is right about whether the LEAGUE changed anything and says nothing about
+    whether the EXTRACTOR did -- so a new field published on games ingested
+    afterwards would never reach the 4,490 already in the archive, and every run
+    would report `unchanged` and exit 0. Found 2026-09-08 while adding `clip`,
+    which would have shipped working locally and permanently absent live.
+
+    ⭐ AN EXTRACT IS A PURE FUNCTION OF (raws, extractor). This is the half that
+    was not tracked.
+    """
+
+    def test_an_unchanged_game_re_derives_when_the_extractor_moves(self):
+        store = DictStore()
+        seed(store)
+        self.assertEqual(D.derive(store).derived, 1)
+        self.assertEqual(D.derive(store).unchanged, 1, "the steady state")
+
+        # The raws are byte-identical; only the extractor has moved.
+        with mock.patch.object(D.E, "SCHEMA", D.E.SCHEMA + 1):
+            rep = D.derive(store)
+        self.assertEqual((rep.derived, rep.unchanged), (1, 0),
+                         "a game already in the archive did NOT pick up a new "
+                         "extractor. Every schema change would ship to new games "
+                         "only, with the run reporting success.")
+
+    def test_the_stamp_is_recorded_so_the_next_run_can_compare(self):
+        store = DictStore()
+        seed(store)
+        D.derive(store)
+        game = json.loads(store.get("extract/2025020001.json").decode())["game"]
+        self.assertEqual(game["ex"], D.E.SCHEMA,
+                         "the extract does not say which extractor wrote it, so "
+                         "the comparison above has nothing to compare against")
+        self.assertIn("src", game, "the feed half of the pair is gone")
+
+    def test_an_extract_written_before_the_stamp_is_stale_by_definition(self):
+        """THE BACKFILL, and it is the whole reason the first bump works.
+
+        Every one of the 4,490 stored extracts predates `ex`. If a missing stamp
+        compared equal to anything, the archive would sit unchanged forever and
+        this mechanism would have been built for nothing.
+        """
+        store = DictStore()
+        seed(store)
+        D.derive(store)
+        stored = json.loads(store.get("extract/2025020001.json").decode())
+        del stored["game"]["ex"]                       # exactly what the archive holds
+        store.put("extract/2025020001.json",
+                  json.dumps(stored, sort_keys=True, separators=(",", ":")).encode())
+
+        rep = D.derive(store)
+        self.assertEqual((rep.derived, rep.unchanged), (1, 0),
+                         "a pre-stamp extract was treated as current, so nothing "
+                         "in the existing archive would ever be re-derived")
+
+    def test_it_still_skips_when_nothing_moved(self):
+        """THE CONTROL. A comparison that always says "changed" would re-derive
+        hundreds of megabytes every night and pass the three tests above."""
+        store = DictStore()
+        seed(store)
+        D.derive(store)
+        for _ in range(3):
+            rep = D.derive(store)
+            self.assertEqual((rep.derived, rep.unchanged), (0, 1),
+                             "the archive re-derives itself on every run")

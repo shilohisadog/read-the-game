@@ -594,6 +594,50 @@ function drawBoxes(secs,cur){
            +`<span class="pt">${mmss(left)}</span></span>`;})():'';
    el.innerHTML=rows+more+gone;}}
 
+/* ⭐⭐ THE LEAGUE'S OWN HIGHLIGHT OF THIS GOAL, ON THE GOAL'S OWN FRAME.
+
+   Kevin, 2026-09-08, after watching a prototype: "I think it adds enough
+   value/entertainment (plus the visitor doesn't leave our site) that it's worth
+   the effort to integrate the capability."
+
+   ⛔⛔ WHAT PRESSING IT COSTS, MEASURED IN A REAL BROWSER RATHER THAN READ OFF A
+   CONFIG. Opening the player contacts THIRTEEN third-party hosts and plays an
+   advertisement first -- imasdk.googleapis.com, pubads.g.doubleclick.net,
+   securepubads, pagead2.googlesyndication.com, s0.2mdn.net, google-analytics,
+   googletagmanager, onetrust, and Brightcove's own five. The player's static
+   plugin list declares only a GA tracker, so reading it says there are no ads;
+   the IMA SDK loads at play time. **Looking is the only thing that found this.**
+
+   SO THE READER IS TOLD BEFORE THEY PRESS, not after. `clipSay` names NHL.com
+   and names the advertisement, and the section is shut until asked. Collapsed,
+   this costs a visitor zero requests to anybody -- which is the property that
+   makes it defensible on a site that otherwise ships no third-party script at
+   all, and it is asserted rather than described (test/render-clip.test.js).
+
+   THE IFRAME IS BUILT ON OPEN AND TORN DOWN ON CLOSE. Tearing it down is also
+   what stops the advertisement, so a reader who closes the section is not left
+   with audio playing under the rink.
+
+   ⚠️ 6.6% OF GOALS HAVE NO CLIP and the section simply is not there. That is the
+   league publishing none, not us failing to read one -- `extract.py` keeps the
+   two distinguishable by leaving the key absent, and there is nothing true to
+   say about a video that does not exist. */
+function clipUrl(id){return 'https://players.brightcove.net/6415718365001/D3UCGynRWU_default/index.html?videoId='+encodeURIComponent(id);}
+function shutClip(){const b=$('clipbox');if(b){b.open=false;$('clipFrame').innerHTML='';}}
+function drawClip(e){
+ const b=$('clipbox');if(!b)return;
+ const id=e&&e.type==='goal'?e.clip:null;
+ shutClip();
+ document.getElementById('rg').classList.toggle('hasclip',id!=null);
+ if(id==null){b.hidden=true;return;}
+ b.hidden=false;b.dataset.id=id;
+ /* THE DURATION IS NOT SAID TWICE. The badge would carry it if we held it -- we
+    hold the id and nothing else, deliberately (see extract.py), so the sentence
+    carries what we DO know and the badge names the source instead. */
+ $('clipDur').textContent='NHL.com';
+ $('clipSay').textContent='NHL.com published a broadcast highlight of this goal'
+  +' \u2014 or press the goal on the ice. It starts with an advertisement.';}
+
 /* THE SENTENCE THE PAGE HAS OWED SINCE THE ENDS DECISION -- see rink.js.
    Two sentences, two kinds: the first is about hockey, the second is about what
    WE did to the data, and the `display:` tag says which. */
@@ -688,6 +732,7 @@ function render(i,how){
  // end on THIS goal" -- and several events can share one second.
  drawBoxes(cur?cur.s:null,cur);
  drawEndsNote(cur);
+ drawClip(cur);
  /* ⭐ EVERY INPUT NAMED, AND THERE ARE NINETEEN OF THEM. That number is the
     measurement, not a complaint: drawing one mark depends on the event, the club,
     its colour, which way the rink faces, the slot layer, the motion preference and
@@ -1780,6 +1825,60 @@ function showWhy(idx){const e=EV[idx];if(e==null||e.x==null)return;
  $('whyBk').classList.add('on');}
 function hideWhy(){$('whyBk').classList.remove('on');}
 $('events').addEventListener('click',ev=>{const t=ev.target;if(t&&t.dataset&&t.dataset.i!=null){const k=+t.dataset.i;if(hdOn&&isHD(EV[k]))showWhy(k);}});
+/* ⭐ THE GOAL ON THE ICE IS A DOOR TO ITS OWN HIGHLIGHT. Kevin: "is there any way
+   to make the goal event link to the replay frame?" -- and the line above is the
+   idiom, so this is the same click on the same channel and a reader who learned
+   one has learned this one.
+
+   ⛔⛔ TWO GROUPS, BECAUSE THE VISIBLE TARGET IS NOT THE ONE `#events` HOLDS.
+   The first build listened here only. `#events` is where the MARK lives -- a ring
+   a few pixels across. The words a reader actually sees, "GOAL -- Lapierre" with
+   the assists under them, are written by `drawLabel` into `#labels`, a different
+   group entirely, 106x21px. So it opened when you pressed a 6px ring and did
+   nothing when you pressed the thing that says GOAL. Kevin pressed the label,
+   which is what anybody would press: the mark handler passed its check in both
+   directions while the affordance a reader can see was inert. **A hit target is
+   not a claim you can make from the source.**
+
+   `drawLabel` draws the CURRENT event and carries no index, so a press anywhere
+   in the label means "this frame" -- and `#clipbox`'s own hidden state already
+   answers whether this frame has one. No second copy of that question. */
+function openClip(k){
+ const b=$('clipbox');if(!b||b.hidden)return;
+ if(k!=null&&k!==i)set(k,'jump');
+ if(b.hidden)return;                       // the jump may have left the goal
+ b.open=true;buildClip();
+ /* ⛔ THE SCROLL RUNS AFTER THE SECTION HAS ITS HEIGHT. Calling this on the line
+    after `open=true` centres a 57px box -- `.clipframe:empty` is display:none and
+    the iframe is not in yet -- and the video then grows ~300px downward, out of
+    the viewport. It landed in view at every width measured, which is exactly why
+    measuring did not catch it. Asserted twice: once after layout, once when the
+    frame reports in, the second instant because by then the reader has waited. */
+ const bring=()=>{const t=$('clipFrame').firstChild?$('clipFrame'):b;
+  t.scrollIntoView({block:'center',behavior:REDUCED?'auto':'smooth'});
+  const settle=()=>{const r=t.getBoundingClientRect();
+   if(r.top<0||r.bottom>window.innerHeight)t.scrollIntoView({block:'center',behavior:'auto'});};
+  if(t.firstChild)t.firstChild.addEventListener('load',settle,{once:true});
+  setTimeout(settle,900);};
+ requestAnimationFrame(()=>requestAnimationFrame(bring));}
+function buildClip(){
+ const f=$('clipFrame'),b=$('clipbox');
+ if(!f||!b||!b.open||f.firstChild||!b.dataset.id)return;
+ const el=document.createElement('iframe');
+ el.src=clipUrl(b.dataset.id);
+ el.allow='encrypted-media; picture-in-picture; fullscreen';
+ el.setAttribute('allowfullscreen','');
+ el.setAttribute('loading','lazy');
+ el.setAttribute('title','NHL.com broadcast highlight of this goal');
+ f.appendChild(el);}
+$('events').addEventListener('click',ev=>{const t=ev.target;
+ if(t&&t.dataset&&t.dataset.i!=null&&EV[+t.dataset.i]&&EV[+t.dataset.i].clip!=null)openClip(+t.dataset.i);});
+$('labels').addEventListener('click',()=>openClip(null));
+/* The summary is the section's own control, so opening it any other way -- a
+   press on the caret, a keyboard Enter -- has to build the frame too. Closing
+   tears it down, which is also what stops the advertisement. */
+if($('clipbox'))$('clipbox').addEventListener('toggle',()=>{
+ if($('clipbox').open)buildClip();else $('clipFrame').innerHTML='';});
 /* THE CAPTION'S CLICK HANDLER IS GONE, AND IT HAD NEVER ONCE FIRED. `#rg
    .caption` carries `pointer-events:none` -- it has to, it floats over the ice
    and would otherwise swallow clicks meant for the marks underneath -- and

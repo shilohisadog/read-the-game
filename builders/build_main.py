@@ -225,6 +225,33 @@ __CSS__</style>
      group reads as another transport control. This sits with the thing that SETS
      the moment, and the confirmation names the moment it copied. -->
 <div class="sharerow"><button class="share" id="share" type="button">Copy a link to this moment</button><span class="sharesaid" id="sharesaid" role="status" aria-live="polite"></span></div>
+<!-- ⭐⭐ THE BROADCAST HIGHLIGHT, AND IT IS THE PAGE'S OWN SECTION IDIOM.
+     Kevin, 2026-09-08: "put a Section header above the highlight… structured the
+     same as Layers, The next play and Other games are." Those are not a header
+     plus a control -- they ARE `details.zone` with `summary.zh`, so this is one
+     too and inherits the rule above, the uppercase heading, the 44px target and
+     the caret. Nothing new was styled to make it look like its neighbours.
+
+     ⛔ IT SITS BELOW THE TRANSPORT, FOUND BY LOOKING. The prototype first put it
+     under `#caption`, which is ABOVE Play/Prev/Next -- so a section that appears
+     on a goal frame and vanishes on the next one moved the Play button 113px
+     down and back. That is the jitter killed on 2026-09-07, re-introduced by
+     something that renders per frame above the controls a thumb is on.
+
+     ⚠️ AND IT IS ABOVE `pickrow` RATHER THAN WITH THE OTHER `zone` BLOCKS, which
+     is a deliberate break from their grouping. Those four are permanent controls
+     a reader goes looking for; this one is TRANSIENT -- it exists on 9 frames of
+     268 -- and a transient thing belongs near the event that produced it. Kevin
+     reviewed it in this position.
+
+     EMPTY AND HIDDEN UNTIL `render` finds a `clip` on the frame. The iframe is
+     never in this markup: it is built on the first press and torn down on close,
+     so a reader who does not ask for video makes no request to anybody. -->
+<details class="zone zclip" id="clipbox" hidden><summary class="zh">External video clip<span class="zon" id="clipDur"></span></summary>
+<p class="clipsay" id="clipSay"></p>
+<div class="clipframe" id="clipFrame"></div>
+<p class="clipfoot">Video and advertising are NHL.com&rsquo;s. Nothing above this line changes.</p>
+</details>
 <div class="pickrow" role="radiogroup" aria-label="Which layer is on the ice" id="pickrow"><span class="pklab">Layers</span><button class="pk" id="pkNone" data-l="none" role="radio" aria-checked="true"><span class="pkl">Just events</span></button><span class="pksep" aria-hidden="true"></span><button class="pk" id="pkCorsi" data-l="corsi" role="radio" aria-checked="false"><span class="pkl">Attempts</span><span class="pkn" id="n_corsi">0</span></button><button class="pk" id="pkSlot" data-l="slot" role="radio" aria-checked="false"><span class="pkl">Slot</span><span class="pkn" id="n_slot">0</span></button><button class="pk" id="pkBlocked" data-l="blocked" role="radio" aria-checked="false"><span class="pkl">Blocked</span><span class="pkn" id="n_blocked">0</span></button><button class="pk" id="pkGoalie" data-l="goaltending" role="radio" aria-checked="false"><span class="pkl">Goaltending</span><span class="pkn" id="n_goaltending">0</span></button><button class="pk" id="pkWhistle" data-l="whistle" role="radio" aria-checked="false"><span class="pkl">Stoppages</span><span class="pkn" id="n_whistle">0</span></button></div>
 <!-- ⏹ THE SITUATIONS CONTROL STOOD HERE AND WAS REMOVED ON 2026-09-07. Kevin,
      looking at this area for the first time in a while: *"Seems like we are

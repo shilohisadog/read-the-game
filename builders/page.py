@@ -170,7 +170,21 @@ def csp(html, *, connect=None):
         # deploy-shaped change, on the build list, not smuggled in here. What
         # remains is true: `frame-src 'self'` governs what WE may frame, and it
         # does work in <meta>.
-        "frame-src 'self'",
+        # ⭐⭐ AND players.brightcove.net SINCE 2026-09-08, for the goal highlight.
+        # This is the only third-party origin the site permits anywhere, and it is
+        # named rather than widened: `https:` would let any host in the moment
+        # somebody typed one. Kevin ruled the feature in after watching a
+        # prototype; `frame-src` is the directive that decides whether pressing it
+        # loads anything at all, and with `'self'` alone the section would render,
+        # the reader would press, and a blank box would be the whole experience.
+        #
+        # ⚠️ WHAT THIS DOES NOT DO. Our policy governs the FRAME, never what runs
+        # inside it: the player pulls thirteen hosts of its own — Google's ad
+        # stack among them — under Brightcove's origin and its own rules, which no
+        # directive here can reach. That cost is real and is why the section is
+        # shut until pressed and says what pressing it costs. The CSP is not the
+        # mitigation; the collapse is.
+        "frame-src 'self' https://players.brightcove.net",
         "base-uri 'none'", "form-action 'none'",
     ])
 

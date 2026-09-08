@@ -33,6 +33,40 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
 GAME = "2023020204"
 
+# ⭐⭐⭐ THE SHAPE THIS EXTRACTOR PRODUCES. BUMP IT WHEN A FIELD IS ADDED OR
+# REMOVED, AND NOTHING BACKFILLS UNTIL YOU DO.
+#
+# ⛔ THE HOLE THIS CLOSES, FOUND 2026-09-08 while adding `clip`.
+# `derive.py` skips a game entirely when the stored extract's `src` digests match
+# the raws -- a fast path that is correct about the FEED and silent about US. An
+# extractor that learns a new field would publish it on games derived afterwards
+# and never on a game whose extract was already stored: the run reports
+# "unchanged" and exits 0.
+#
+# ⚠️ AND IT IS DEFENSIVE RATHER THAN A LIVE BUG, WHICH IS WORTH SAYING PLAINLY
+# BECAUSE THE TIDIER STORY IS THE WRONG ONE. Both CI paths happen to dodge it:
+# `derive.yml` pulls the archive with `--exclude 'extract/*'` and `ingest.yml`
+# pulls only `*/latest.json`, so neither ever has a stored extract to compare
+# against and both re-derive from raws. The fast path is real code, exercised by
+# tests, and reachable by anyone running derive against a full store -- so it was
+# one workflow flag away from being a silent defect, and the property is worth
+# holding explicitly rather than by accident.
+#
+# ⭐ AN EXTRACT IS A PURE FUNCTION OF (raws, extractor) AND ONLY HALF OF THAT WAS
+# TRACKED. This is the other half. The stamp goes into `game.ex` beside `src`,
+# and derive compares both.
+#
+# ⚠️ AN INTEGER A HUMAN BUMPS, NOT A HASH OF THIS FILE. Hashing the source would
+# re-derive the entire archive on a comment edit -- hundreds of megabytes rewritten
+# to change nothing -- and a gate that fires on every typo gets switched off. The
+# mechanism is the comparison; WHEN to bump is a judgement, and
+# `test_extract_schema.py` refuses to let that judgement be made by forgetting:
+# it pins the key set this file emits, so adding `clip` without touching this
+# number turns the suite red.
+#
+#   1  the shape as of 2026-09-08, plus `clip` on a goal
+SCHEMA = 1
+
 # ---------------------------------------------------------------- extraction
 
 # Which raw detail field is "the player this event is about", per event type.
@@ -205,6 +239,38 @@ def extract(pbp, shifts, box=None):
                 ev["a1"] = d["assist1PlayerId"]
             if d.get("assist2PlayerId") is not None:
                 ev["a2"] = d["assist2PlayerId"]
+            # THE LEAGUE'S OWN HIGHLIGHT OF THIS GOAL, as an id and nothing else.
+            #
+            # ⭐ THE ID, NOT THE URL, AND THAT IS THE WHOLE DECISION HERE. The feed
+            # carries both: `highlightClip` (a Brightcove asset id) and
+            # `highlightClipSharingUrl`, a marketing slug --
+            # "min-buf-jokiharju-scores-goal-against-wild-6340906550112" -- whose
+            # first half is EDITORIAL and whose second half is this id. A slug can
+            # be re-worded; the id is the thing being named. Storing the sentence
+            # to reach the asset would put the league's copy inside our record and
+            # date it, which is the `penName` lesson one file over: a feed string
+            # is not a sentence.
+            #
+            # ⚠️ AND IT IS NOT A URL BECAUSE WE DO NOT KNOW ONE YET. Both surfaces
+            # that could use it -- an embedded player and a link out -- build a
+            # different address from the same id, and neither is decided here. The
+            # extract records what the league said; where it points is the app's
+            # question. (docs/architecture.md 4.5: a field belongs here when it is
+            # not reconstructible from anything else we hold. This is not.)
+            #
+            # MEASURED before it was carried, over 36 games spanning three
+            # seasons -- 11,613 plays, 228 goals: 213 carry it, 93.4%, and the
+            # rate is flat at 92% / 96% / 92% across 2023-24, 2024-25 and 2025-26.
+            # NO OTHER EVENT TYPE CARRIES ONE, in 11,613 plays. So this lives
+            # under `if t == "goal"` as a fact about the feed, not as a guess.
+            #
+            # ⛔ THE 6.6% WITH NO CLIP ARE SILENT HERE ON PURPOSE. An absent key
+            # means the league published no highlight, which is a different thing
+            # from a highlight we failed to read -- and a placeholder would make
+            # those indistinguishable. The surface has to say something true when
+            # the key is missing; that is the app's problem and it is a real one.
+            if d.get("highlightClip") is not None:
+                ev["clip"] = d["highlightClip"]
         events.append(ev)
 
         if t in ("shot-on-goal", "goal"):
@@ -731,6 +797,32 @@ def validate(rich, pbp, shifts, box):
     check(not disagreed,
           f"the score sequence matches the league at every goal "
           f"({len(disagreed)} disagree{': ' + '; '.join(disagreed[:2]) if disagreed else ''})")
+
+    # ⭐ THE HIGHLIGHT ID IS CARRIED WHENEVER THE LEAGUE PUBLISHES ONE.
+    #
+    # GUARDED WHERE THE ARCHIVE IS, which is the rule of 2026-08-21: a value the
+    # LEAGUE can invent needs a check where the whole archive is walked, not a
+    # unit test holding last year's answer. `highlightClip` is exactly that kind
+    # of field -- it appeared in the feed without anyone telling us, it is absent
+    # on 6.6% of goals for reasons the league does not state, and it could stop
+    # being published tomorrow.
+    #
+    # ⛔ IT ALARMS ON DROPPING ONE, NEVER ON THE COUNT. "How many goals have a
+    # clip" is a property of the league's video operation and is none of our
+    # business; "we saw one and did not carry it" is a defect in this file. So
+    # the comparison is per goal against the raw play beside it, and a goal the
+    # feed left empty is silently fine -- the same shape the score-sequence check
+    # above uses, and the opposite of a threshold somebody would have to tune.
+    missed = []
+    for e, p in zip(rich["events"], pbp["plays"]):
+        if e["type"] != "goal":
+            continue
+        said = (p.get("details") or {}).get("highlightClip")
+        if said is not None and e.get("clip") != said:
+            missed.append(f"{e['per']}/{e['clock']} feed {said} vs ours {e.get('clip')}")
+    check(not missed,
+          f"every published highlight id is carried ({len(missed)} dropped"
+          f"{': ' + '; '.join(missed[:2]) if missed else ''})")
     return fails, notes
 
 # ---------------------------------------------------------------- main

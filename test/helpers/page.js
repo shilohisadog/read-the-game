@@ -83,7 +83,13 @@ export function fakeDom() {
        reference game read as silence. The write is the signal itself. */
     _html: '', writes: 0,
     get innerHTML() { return this._html; },
-    set innerHTML(v) { this._html = v; this.writes++; },
+    set innerHTML(v) {
+      this._html = v; this.writes++;
+      // ⭐ AND THE CHILDREN GO WITH IT. `drawClip` tears the player down with
+      // `innerHTML = ''`; if `firstChild` survived that, "closing stops the
+      // advertisement" would pass while the page still held the frame.
+      if (v === '') this._kids = [];
+    },
     value: '',
     /* ⭐ `textContent` COERCES, BECAUSE A REAL ONE DOES.
        It was a plain field, so `el.textContent = 34` stored the NUMBER 34 while
@@ -123,6 +129,27 @@ export function fakeDom() {
     // the thing it stands in for is a test that passes for its own reasons.
     getAttribute(k) { return k in this ? this[k] : null; },
     addEventListener(t, fn) { (this._on[t] = this._on[t] || []).push(fn); },
+    /* Appending maintains `innerHTML`, and `firstChild` answers from it, because
+       those are the two things the page and every assertion here read. A stub
+       that recorded the child privately would let "nothing is built until the
+       reader presses" pass against a page that builds it on render. */
+    appendChild(child) {
+      this._kids = this._kids || [];
+      this._kids.push(child);
+      this.innerHTML = (this.innerHTML || '') + (child.outerHTML || '');
+      return child;
+    },
+    get firstChild() { return (this._kids && this._kids[0]) || null; },
+    /* ⚠️ RECORDED, NOT NO-OPPED, AND THE DIFFERENCE MATTERS. `openClip` scrolls
+       the player into view and this fake has no viewport, so it cannot say WHERE
+       the page ended up — that claim belongs to the browser step and is measured
+       there (390×844, 1400×900, 1680×1050 and a short 1280×620). What it CAN say
+       is that the call was made at all, which is the half that regressed once:
+       a version that opened the section and never asked to be scrolled to looked
+       identical to this fake. `getBoundingClientRect` answers zeroes for the same
+       reason — a shape with no layout, stated rather than invented. */
+    scrollIntoView(opts) { (this.scrolled = this.scrolled || []).push(opts || {}); },
+    getBoundingClientRect() { return { top: 0, bottom: 0, left: 0, right: 0, width: 0, height: 0 }; },
     // BOTH WAYS A HANDLER GETS ATTACHED, because the page uses both and this
     // fake only knew one. The layer buttons use addEventListener; the whole
     // TRANSPORT — play, the three speeds, the work toggle — assigns `.onclick`,
@@ -195,6 +222,34 @@ export function fakeDom() {
     // hides the shared chrome through a class on it -- so the fake models it
     // rather than the app defending against its absence.
     body: el(),
+    /* ⭐ ELEMENT CREATION, ADDED 2026-09-08 FOR THE GOAL HIGHLIGHT — and it is a
+       real gap being closed, not a convenience. `drawClip` builds its iframe on
+       the reader's first press rather than shipping it in the markup, because the
+       whole defensibility of that section is that a visitor who does not ask for
+       video contacts nobody. A fake with no `createElement` cannot run that path
+       at all, so the property could only have been asserted about the SOURCE.
+
+       ⚠️ `appendChild` MAINTAINS `innerHTML`, because that is what every
+       assertion here reads. A stub that recorded the child and left innerHTML
+       empty would let "nothing is fetched until pressed" pass on a page that
+       builds the frame immediately — the fake answering a question differently
+       from the thing it stands in for, which is the defect this file's own
+       comments name twice. */
+    createElement(tag) {
+      const e = el();
+      e.tagName = tag.toUpperCase();
+      e.setAttribute = function (k, v) { this[k] = String(v); this._render(); };
+      // NOT `_html`: that name is `innerHTML`'s backing field on every element
+      // here, and a function assigned over it makes the getter return a function.
+      e._render = function () {
+        const at = ['src', 'title', 'allow', 'allowfullscreen', 'loading']
+          .filter(k => this[k] != null)
+          .map(k => ` ${k}="${String(this[k]).replace(/"/g, '&quot;')}"`).join('');
+        this.outerHTML = `<${tag}${at}></${tag}>`;
+      };
+      e._render();
+      return e;
+    },
     getElementById(id) {
       if (!byId.has(id)) byId.set(id, el());
       return byId.get(id);
@@ -271,7 +326,11 @@ export function bundle(globals, src = SCRIPT, give = 'boot') {
      took the "clipboard refused" fallback, so the success path was structurally
      untestable and the fake would have been MORE PERMISSIVE than a browser. */
   const names = ['document', 'matchMedia', 'setTimeout', 'clearTimeout',
-                 'localStorage', 'location', 'window', 'navigator'];
+                 'localStorage', 'location', 'window', 'navigator',
+                 // Added 2026-09-08 with the goal highlight: `openClip` defers
+                 // its scroll past layout, and a name the bundle reads but this
+                 // list omits is a ReferenceError at the first press.
+                 'requestAnimationFrame'];
   return new Function(...names, src + `\nreturn ${give};`)(...names.map(n => globals[n]));
 }
 
@@ -332,6 +391,15 @@ export function boot(game, rates, search = '', store = null) {
   // "a returning viewer sees no tips" could not have been tested.
   const b = bundle({
     document: dom.document, matchMedia: () => ({ matches: true }),
+    /* ⭐ RUN SYNCHRONOUSLY, WHICH IS THE ONLY HONEST STUB HERE. `openClip` defers
+       its scroll two frames so the section has its height before being centred —
+       a real defect, found by looking. A stub that DROPPED the callback would
+       make every assertion about what happens after opening vacuous, which is the
+       `setTimeout` mistake this file already records one field down. Running it
+       inline means the test sees the same end state a browser reaches, minus the
+       animation the fake has no viewport for. */
+    requestAnimationFrame: fn => { fn(0); return 1; },
+    cancelAnimationFrame: () => {},
     setTimeout: setTimeout_, clearTimeout: clearTimeout_,
     localStorage: store || { getItem: () => null, setItem: () => {} },
     /* `pathname` too: the share control builds an absolute URL from it, and a

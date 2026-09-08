@@ -535,10 +535,22 @@ test('every zone below the rink is a disclosure, with a 44px summary', () => {
   const zones = app.match(/<details class="zone [a-z]+"/g) || [];
   // FIVE SINCE 2026-08-29 when `zcue` joined them; FOUR SINCE 2026-09-07, when
   // the layer menu was deleted — parked in August and replaced by the picker
-  // under the scrubber. The number is a tripwire, not a target: it exists so a
-  // zone cannot be added without someone reading the two properties above and
-  // deciding they hold for it, and it moves DOWN when one is retired.
-  assert.equal(zones.length, 4, `expected four collapsible zones, found ${zones.length}`);
+  // under the scrubber. FIVE AGAIN SINCE 2026-09-08 and `zclip`. The number is a
+  // tripwire, not a target: it exists so a zone cannot be added without someone
+  // reading the two properties above and deciding they hold for it, and it moves
+  // DOWN when one is retired.
+  //
+  // ⭐ `zclip` WAS READ AGAINST BOTH AND HOLDS. It turns nothing on that a reader
+  // must turn off — closing it tears the iframe down, so the page is byte-for-byte
+  // where it was — and it is not a door out of a layer: it appears on a goal frame
+  // whatever layer is on, and disappears with the frame rather than with a
+  // control. ⚠️ It is also the only zone that is not always present, which is why
+  // the next assertion checks the hidden case rather than assuming it away.
+  assert.equal(zones.length, 5, `expected five collapsible zones, found ${zones.length}`);
+  // AND THE TRANSIENT ONE SHIPS SHUT AND HIDDEN, or a page with no goal on screen
+  // carries an empty heading nothing can explain.
+  assert.match(app, /<details class="zone zclip" id="clipbox" hidden>/,
+    'the clip section ships visible, so every non-goal frame shows an empty heading');
   assert.match(PAGE_CSS, /#rg details\.zone>summary\{[^}]*min-height:44px/,
     'a summary is the only control in a closed zone and it is under the touch floor');
 });

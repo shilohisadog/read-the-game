@@ -396,3 +396,48 @@ test('NO NUMBER ON THIS SITE CAN BE TRUNCATED', () => {
   }
 });
 
+
+test('⛔ the CSP permits exactly the origin the renderer embeds, and no more', () => {
+  /* ⚠️ THE GAP THIS CLOSES WAS PROVEN, NOT IMAGINED. Deleting
+     `https://players.brightcove.net` from `frame-src` breaks the goal highlight
+     completely — the section renders, the reader presses, the browser refuses the
+     frame and a black box is the whole experience — and the entire suite stayed
+     GREEN through it. The fake document has no CSP, so no unit test can see one;
+     this is the only place the two halves can be compared.
+
+     ⭐ THE EXPECTED ORIGIN IS DERIVED FROM `app.js`, NEVER TYPED HERE. A literal
+     would pass the day the player moved and the policy did not — the mirror this
+     project has killed four checks for. So the renderer's own URL is parsed and
+     the policy is asked to name its origin: move either one and they must move
+     together.
+
+     ⛔ AND THE OTHER DIRECTION, which is the half that keeps a security policy a
+     policy. `frame-src` must not have been widened past what the code uses — no
+     bare `https:`, no wildcard — or a later "just let frames through" would be
+     invisible here while satisfying everything above. */
+  const src = readFileSync(new URL('../src/app.js', import.meta.url), 'utf8');
+  const embed = /https:\/\/players\.[A-Za-z0-9.-]+/.exec(src);
+  assert.ok(embed, 'the renderer no longer embeds a player — if the highlight was '
+    + 'removed, remove this check with it rather than leaving it pointing at nothing');
+  const origin = embed[0];
+
+  const pages = readdirSync(new URL('../src/', import.meta.url)).filter(f => f.endsWith('.html'));
+  let checked = 0;
+  for (const f of pages) {
+    const h = readFileSync(new URL(`../src/${f}`, import.meta.url), 'utf8');
+    const csp = h.match(/http-equiv="Content-Security-Policy" content="([^"]*)"/);
+    if (!csp) continue;
+    const frame = /frame-src ([^;"]*)/.exec(csp[1]);
+    assert.ok(frame, `${f}: the policy has no frame-src at all, so 'none' applies `
+      + 'and the page cannot frame even its own preview');
+    checked++;
+
+    assert.ok(frame[1].includes(origin),
+      `${f}: the renderer embeds ${origin} and frame-src does not permit it — `
+      + `pressing the highlight loads nothing. frame-src is: ${frame[1].trim()}`);
+    assert.ok(!/\bhttps:(?!\/\/)|\*/.test(frame[1]),
+      `${f}: frame-src has been widened to a wildcard (${frame[1].trim()}), which `
+      + 'permits every origin on the web to be framed by this page');
+  }
+  assert.ok(checked >= 2, `only ${checked} pages carry a policy — this has lost its subject`);
+});

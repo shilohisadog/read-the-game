@@ -396,8 +396,23 @@ test('EVERY FIELD derive.py PUTS ON A CATALOG ROW HAS A READER', () => {
   // catalog. A fixture is a copy that can disagree, and the live archive is a
   // network call; `derive.py` is the one thing that decides what a row carries.
   const derive = readFileSync(new URL('../builders/derive.py', import.meta.url), 'utf8');
-  const rowSrc = derive.slice(derive.indexOf('row = {"id"'),
-                              derive.indexOf('def _write_ledger'));
+  let rowSrc = derive.slice(derive.indexOf('row = {"id"'),
+                            derive.indexOf('def _write_ledger'));
+  /* ⚠️ THE SLICE IS COARSE AND ONE ASSIGNMENT INSIDE IT IS NOT A CATALOG ROW.
+     `rich["game"] = {...}` writes the EXTRACT's own header — the document a game
+     page fetches — and it is in this range only because it sits between the two
+     markers. `ex` (the extractor's schema stamp) is read by `derive.py` itself,
+     on the very next run, and no reader in `src/` should ever see it.
+
+     ⭐ EXCISED WITH A PROOF THAT IT EXCISED SOMETHING. An exclusion that silently
+     stops matching is how this check would go blind — the exact failure its own
+     comments describe twice — so the removal is asserted rather than trusted. */
+  const HEADER = /rich\["game"\] = \{[\s\S]*?\}\n/;
+  assert.match(rowSrc, HEADER,
+    'the extract-header assignment is no longer where this exclusion expects it — '
+    + 'either it moved, in which case fix the pattern, or the scan is now reading '
+    + 'something else entirely');
+  rowSrc = rowSrc.replace(HEADER, '\n');
   const boxSrc = derive.slice(derive.indexOf('return {"a": b['), derive.indexOf('except (ValueError'));
   // ⭐ AND THE HELPERS THAT RETURN ROW FRAGMENTS, which is where this check was
   // BLIND. The row slice above stops at the literal `row = {...}`, so a field

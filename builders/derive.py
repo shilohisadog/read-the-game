@@ -555,7 +555,20 @@ def derive(store, end=None, days=None, now=None):
         if prev is not None:
             try:
                 was = json.loads(prev.decode())
-                if was.get("game", {}).get("src") == digests:
+                # ⭐⭐ BOTH HALVES, AND THE SECOND ONE WAS MISSING UNTIL
+                # 2026-09-08. An extract is a pure function of (raws, extractor);
+                # this compared only the raws, so an extractor that learned a new
+                # field would keep this branch for every game already holding an
+                # extract and the run would say "unchanged". ⚠️ Neither CI path
+                # reaches that today -- both pull the archive without `extract/*`
+                # and so re-derive from raws -- so this is the property held
+                # explicitly rather than by a workflow flag. `extract.SCHEMA` is
+                # the other half. A stored
+                # extract with no `ex` at all predates the stamp and is therefore
+                # stale by definition, which is what makes the first bump backfill
+                # everything rather than nothing.
+                if (was.get("game", {}).get("src") == digests
+                        and was.get("game", {}).get("ex") == E.SCHEMA):
                     rep.unchanged += 1
                     # READ `u` BACK OFF THE STORED EXTRACT. This path skips
                     # judge() entirely, so the flag has to come from the artifact
@@ -596,7 +609,7 @@ def derive(store, end=None, days=None, now=None):
                      **({"u": 1} if rich.get("unreconciled") else {}),
                      **_hl(rich.get("events"))}
         rich["game"] = {"id": int(gid), "date": g.get("date"),
-                        "type": g.get("type"), "src": digests}
+                        "type": g.get("type"), "src": digests, "ex": E.SCHEMA}
         # sort_keys, and NO TIMESTAMP ANYWHERE. Determinism is a gate we can
         # actually run: same bytes in, same bytes out, so re-deriving an
         # unchanged archive produces no diff and any diff is a real change.
