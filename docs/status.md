@@ -268,6 +268,35 @@ before any of this can become an assertion instead of a measurement. The tool
 prints the arithmetic beside each row so the tie is visible without a second
 script.
 
+### ⏭ 0.00-κ REMOVE THE WORKSHOP — Kevin, 2026-09-08, and it is SCOPED not started
+
+> *"I'd still like to remove the Workshop link and page, there's only 3 views on
+> that page and none add (current) value to the website."*
+
+**This is a queued item, not an open question** — B8 already ruled it and removed
+three of the six pages on 2026-09-03. What follows is the audit, done now so the
+build is a deletion rather than a discovery.
+
+⛔⛔ **ONE OF THE THREE CANNOT BE DELETED, AND IT IS NOT OBVIOUS FROM THE PAGE.**
+
+| the Workshop's three rows | what it actually is | verdict |
+|---|---|---|
+| **`read-the-game.html`** — *"The reference game"* | ⛔ **NOT A PROTOTYPE.** Built by `build_main.py`, the same builder as `game.html`. **`test/helpers/page.js` boots it, and 35 test files import that helper** — it is the subject of nearly every rendering claim in the suite. `src/game.html` references it too. | **Stays on disk. Loses its link.** |
+| **`goalie-eye-view.html`** — *"From the crease"* | `builders/build_gv.py`, in `npm run build:rest`. Referenced by `document.test.js`, `homepage.test.js`, `render-board.test.js`, `goalie-view.test.js`, `page.py`. ⚠️ B8 calls it *"the one genuinely irreplaceable idea — the only thing on the site that teaches danger as felt rather than counted"*, and Kevin named it as worth reviving. | **Deletable — his call, and it is a different call from the other two.** |
+| **`terrain-3d.html`** — *"Where the chances came from"* | `builders/build_3d.py`, in `build:rest`. Referenced only by `build_index.py` and the Workshop page itself. **No test names it.** | **Deletable, cleanly.** |
+
+**The link and the page are the easy half**, and they are all that is strictly
+asked for: `builders/page.py:263` carries the nav entry, and `build_index.py`
+holds `WORKSHOP`, `_workshop()`, `WORKSHOP_PAGE`/`_BODY`/`_TITLE`/`_DESC`,
+`build_workshop()` and the `src/workshop.html` output line.
+
+⭐ **THE PRECONDITION B8 PAID FOR ONCE ALREADY: the doctrine leaves first.**
+Deleting `on-the-ice.html` in September would have left `learn-figures.mjs`
+citing load-bearing doctrine to a file that did not exist; it became DOCTRINE §5
+instead. **Before any of these go, grep the live builders and pages for sentences
+that cite them** — *load-bearing doctrine must not live on a page that can be
+deleted.*
+
 ### ✅ 0.00-ι B6 SHIPPED, AND THE HERO LOOP IS NOT A BUG — 2026-09-08
 
 **B6 is built** (§B) and **five of the seven items held for the novice test were
