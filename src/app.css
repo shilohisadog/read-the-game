@@ -513,9 +513,10 @@
      more than the twenty-four children this wrap can hold; the extra tracks are
      empty and zero-height. */
   grid-column:1;grid-row:1/span 30;position:sticky;top:14px}
- /* The picker is a single row of chips at 900px and a 340px column is narrower
-    than that, so it wraps -- which is what it already does on a phone. */
- #rg .side .pickrow{flex-wrap:wrap}
+ /* THE PICKER NEEDS NO RULE HERE. Below 900px it is already the two-column grid
+    that this 340px column wants, and the single-row override sits in a window
+    that ends at 1359 -- so the side column inherits the wrapped shape rather than
+    restating it. See `#rg .pickrow` for why it is a grid at all. */
 }
 #rg.preview{--lboxh:0px;padding:0;min-height:0;height:100vh;overflow:hidden}
 #rg.preview .wrap{max-width:none;padding:0;height:100%;
@@ -1547,7 +1548,52 @@
    counted six controls under the touch floor where the page had none -- a silent
    give-back of the 21-of-21 to 0-of-17 result §9 was measured on. A chip is a tap
    target, on the surface whose one scheduled reviewer is on a phone. */
-#rg .pickrow{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:12px 0 0}
+/* ⭐ A GRID, BECAUSE A WRAPPED FLEX ROW CANNOT HAVE COLUMNS. Kevin: "can you
+   move Blocked and Stoppages over a few pixels so they align directly below
+   Attempts, which they don't currently do."
+   They cannot, while the chips size to their own text. `Just events`, `Slot` and
+   `Goaltending` are three different widths, so the chip after each one starts in
+   three different places -- measured in the 340px side column, the second column
+   began at x=169, 155 and 163 on the three rows, and row one carries the
+   separator's extra 7px on top of that. Nudging pixels would fix one row and
+   leave the other two, and would go wrong again the first time a layer is
+   renamed. Equal tracks are the only version of this still true after somebody
+   edits a label.
+
+   ⭐ AND THE GRID IS THE BASE, WITH THE SINGLE ROW AS THE EXCEPTION. Measured:
+   the six chips fit on one line at 900px and above, and wrap at every width
+   below it -- so the wrapped shape is what a PHONE gets, and the phone had the
+   identical misalignment (x=169, 155, 163 at 390). Writing this as a side-column
+   rule would have fixed the laptop and left the surface the novice test actually
+   runs on, which is the fix-that-left-its-sibling shape this project keeps
+   finding. One wrapped layout for the whole site; the single row is the window
+   between 900 and 1359, where there is room for it.
+
+   ⚠️ AND THE SEPARATOR TURNS FROM A VERTICAL RULE INTO A HORIZONTAL ONE when it
+   wraps, which is the one shape it can keep its MEANING in. Kevin asked for it so
+   the row would "differentiate the two distinct sets of toggles" -- and in a
+   two-column picker `Just events` and `Attempts` share a row, so a vertical line
+   between them divides chip one from chip two rather than the base view from the
+   metrics. Wrapping had ALREADY cost it its subject, silently, at every width
+   below 900. A rule across the full width gives it back, with the base view alone
+   above the line where doctrine §6 says it belongs. */
+/* ⚠️ `auto-fit`, NOT A FIXED TWO. Two equal tracks align everything and cost
+   tablet widths two extra rows -- measured at 860px, the wrapped flex row was 2
+   rows and a fixed 1fr 1fr was 4. `minmax(150px,1fr)` lets the track COUNT
+   follow the width while keeping the tracks equal, which is the property the
+   alignment actually needs: 2 columns in the 340px side column and on a phone,
+   five at 860. 150px is the widest chip (`Goaltending 0` at 133) plus room to
+   grow a label. */
+#rg .pickrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+ align-items:center;gap:7px;margin:12px 0 0}
+#rg .pickrow .pklab,#rg .pickrow #pkNone{grid-column:1/-1}
+#rg .pickrow .pksep{grid-column:1/-1;height:1px;align-self:center;margin:1px 0}
+/* THE ONE ROW, AND ITS WINDOW IS MEASURED. 900 is where the six chips stop
+   wrapping; 1359 is where the side column takes over and they wrap again. */
+@media (min-width:900px) and (max-width:1359px){
+ #rg .pickrow{display:flex;flex-wrap:wrap}
+ #rg .pickrow .pksep{height:auto;align-self:stretch;margin:4px 3px}
+}
 /* THE LABEL TAKES ITS OWN LINE, which buys a whole row of chips back. Inline it
    is 90px of a 342px phone line, and `Just events` alone is 111 -- so the six
    chips ran to three rows at 390 and two at 700. On its own line they are two

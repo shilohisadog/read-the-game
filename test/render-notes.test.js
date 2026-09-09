@@ -239,11 +239,47 @@ test('the selector separates the base view from the metrics', () => {
   assert.match(row, /<span class="pksep" aria-hidden="true">/,
     'the rule is announced to a screen reader as if it were content');
 
-  // IT IS A FLEX ITEM, NOT A PSEUDO-ELEMENT ON THE NEXT CHIP. The row wraps at
-  // 390; a `::before` on `Attempts` would hang at the left edge of whatever line
-  // that chip happened to start.
+  // IT IS A REAL ELEMENT, NOT A PSEUDO-ELEMENT ON THE NEXT CHIP — which is what
+  // lets it change shape with the layout instead of hanging off whichever chip
+  // happens to start a line.
   assert.match(PAGE_CSS, /#rg \.pksep\{flex:0 0 1px;align-self:stretch/,
-    'the rule is not a flex item, so wrapping can strand it at the start of a line');
+    'the rule is not a flex item, so the single-row layout can strand it');
+
+  /* ⭐ AND IT HAS TWO SHAPES, BECAUSE IT HAS ONE JOB. Measured: the six chips fit
+     on one line at 900px and above and wrap at every width below it. In the
+     single row the rule is VERTICAL, between the base view and the first metric,
+     which is what Kevin asked for. Wrapped, `Just events` and `Attempts` share a
+     row — so a vertical line there divides chip one from chip two rather than the
+     two sets of toggles, and it had been doing exactly that, silently, at every
+     width below 900 including every phone. Wrapped it spans the full width with
+     the base view alone above it.
+     THE CHECK IS THAT BOTH SHAPES EXIST. One of them alone means the rule is
+     drawn in a layout it does not divide anything in. */
+  assert.match(PAGE_CSS, /#rg \.pickrow \.pksep\{grid-column:1\/-1;height:1px/,
+    'the wrapped separator is not a full-width rule, so in two columns it divides '
+    + 'chip one from chip two rather than the base view from the metrics');
+  assert.match(PAGE_CSS, /@media \(min-width:900px\) and \(max-width:1359px\)\{[\s\S]*?#rg \.pickrow \.pksep\{height:auto;align-self:stretch/,
+    'the single-row separator never goes back to vertical, so the one layout with '
+    + 'room for the rule Kevin asked for does not draw it');
+});
+
+test('⭐ the picker has COLUMNS, which a wrapped flex row cannot', () => {
+  /* Kevin: "can you move Blocked and Stoppages over a few pixels so they align
+     directly below Attempts, which they don't currently do."
+     They could not: chips size to their own text, so `Just events`, `Slot` and
+     `Goaltending` are three different widths and the chip after each began in a
+     different place — measured at x=169, 155 and 163 on the three rows of the
+     340px side column, and identically at 390. Nudging pixels fixes one row,
+     leaves the other two, and goes wrong again the first time a label changes.
+     ⭐ SO THE CHECK IS THE MECHANISM, NOT A POSITION. Equal tracks are the only
+     version of this that survives an edit to a label, and no assertion about a
+     pixel could say so. */
+  assert.match(PAGE_CSS, /#rg \.pickrow\{display:grid;grid-template-columns:repeat\(auto-fit,minmax\(150px,1fr\)\)/,
+    'the picker is not an equal-track grid, so the chips align only by accident '
+    + 'of how long their labels happen to be');
+  assert.match(PAGE_CSS, /#rg \.pickrow \.pklab,#rg \.pickrow #pkNone\{grid-column:1\/-1\}/,
+    'the base view does not span the row, so it sits in a track beside a metric '
+    + 'and the rule below it divides nothing');
 });
 
 /**
