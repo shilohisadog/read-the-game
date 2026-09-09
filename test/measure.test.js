@@ -18,7 +18,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { measureGame, stable, firstAtClock, endedIn, measureAll } from '../builders/measure.mjs';
+import { measureGame, stable, firstAtClock, endedIn, measureAll, slateOf, archiveIsWhole } from '../builders/measure.mjs';
 import { TEAMS } from '../src/lib/teams.js';
 import { summarise, slotShare, perGame, reachOf, goalieNight } from '../src/lib/archive.js';
 import { distribution, quantile, shareAtOrBelow, mostUnusual } from '../src/lib/distribution.js';
@@ -1005,4 +1005,138 @@ test('with no distribution there is no finding, and no invented one', () => {
   const d = { ...distribution([10, 20, 30, 40], 'x'), noun: 'stoppages' };
   assert.equal(mostUnusual({ whistle: d }, {}), null, 'an absent count was treated as a value');
   assert.equal(mostUnusual({ whistle: d }, { whistle: null }), null, 'a null count was scored');
+});
+
+/* ---------------------------------------------------------------------------
+ * ⭐ THE DRIVER, RUN — and the defect that made this necessary.
+ *
+ * From 2026-09-03 `main()` read `declined` without destructuring it, so every
+ * archive run wrote measures.json and teams.json and then died on
+ * `ReferenceError: declined is not defined`. Everything after that line never
+ * executed: the situation-code alert, the entire JSON summary, the faceoff
+ * warning, and — the part that matters — **the exit code that the file's own
+ * comment calls "the alert"**. And derive.yml pipes the step into `tee`, so the
+ * pipeline returned tee's zero and the weekly job reported success. Confirmed in
+ * the log of the 2026-09-08 run, which is green with the stack trace in it.
+ *
+ * ⛔ NOTHING IN 1,100 TESTS COULD SEE IT, because everything here called
+ * `measureAll` and nothing ran the DRIVER. A unit test of the parts cannot fail
+ * on a reference the parts never make. So this runs the real command, on a real
+ * extract, and asserts it reaches its last line.
+ * ------------------------------------------------------------------------- */
+import { execFileSync } from 'node:child_process';
+import { existsSync, mkdirSync, readdirSync as readdir } from 'node:fs';
+import { NOT_A_CLUB } from '../src/lib/teams.js';
+
+const ROOT = new URL('../', import.meta.url).pathname;
+/** A tree holding one real extract, and a catalog that agrees with it. */
+function oneGameTree({ catalog = true } = {}) {
+  const out = mkdtempSync(join(tmpdir(), 'rtg-cli-'));
+  const ex = join(out, 'extract');
+  mkdirSync(ex, { recursive: true });
+  const g = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url), 'utf8'));
+  writeFileSync(join(ex, `${g.game.id}.json`), JSON.stringify(g));
+  if (catalog) writeFileSync(join(out, 'catalog.json'),
+    JSON.stringify({ games: [{ id: g.game.id, v: 1, t: 2 }] }));
+  return { out, id: g.game.id };
+}
+const runCli = (args, out) =>
+  execFileSync('node', ['builders/measure.mjs', '--out', out, ...args],
+               { cwd: ROOT, encoding: 'utf8' });
+
+test('⭐ the driver runs to its LAST line, not just to its writes', () => {
+  const { out } = oneGameTree();
+  const stdout = runCli([], out);
+  // The summary is the last thing main() prints before the exit-code alert, so
+  // seeing it is the only evidence the whole function ran. Its absence is what
+  // a ReferenceError anywhere above looks like.
+  const summary = JSON.parse(stdout.slice(stdout.indexOf('{')));
+  assert.equal(summary.measured, 1);
+  assert.ok('census' in summary, 'the summary stopped short of the census');
+  assert.ok(existsSync(join(out, 'measures.json')));
+  assert.ok(existsSync(join(out, 'teams.json')));
+});
+
+test('⭐ --slate writes the slate and NEITHER archive document', () => {
+  /* THE WHOLE REASON THE FLAG EXISTS. ingest.yml's first sync pass excludes only
+     index.json, catalog.json and *latest.json, so a measures.json left in the
+     out directory by a nightly run would be published over the archive-wide one.
+     Asserting the absence is the check; asserting recent.json alone would pass
+     on a run that wrote all three. */
+  const { out } = oneGameTree();
+  runCli(['--slate', '--now', '2026-09-10T11:04:00Z'], out);
+  const wrote = readdir(out).filter(f => f.endsWith('.json') && f !== 'catalog.json').sort();
+  assert.deepEqual(wrote, ['recent.json'],
+    `--slate wrote archive documents: ${wrote.join(', ')}`);
+});
+
+test('the slate carries six fields, sorted, and says when it was computed', () => {
+  const recs = [
+    { id: 3, date: '2026-01-06', awayAb: 'TOR', homeAb: 'BUF', score: { h: 1, a: 2 },
+      attempts: { h: 40, a: 55 }, reach: { big: 1 }, goalies: [{ pid: 1 }], lens: {} },
+    { id: 1, date: '2026-01-05', awayAb: 'MIN', homeAb: 'CBJ', score: { h: 3, a: 0 },
+      attempts: { h: 61, a: 44 }, reach: {}, goalies: [], lens: {} },
+    { id: 2, date: '2026-01-05', awayAb: 'NYR', homeAb: 'OTT', score: { h: 2, a: 5 },
+      attempts: { h: 33, a: 39 }, reach: {}, goalies: [], lens: {} },
+  ];
+  const doc = slateOf(recs, '2026-01-07T11:00:00Z');
+  assert.equal(doc.asOf, '2026-01-07T11:00:00Z');
+  assert.deepEqual(doc.games.map(g => g.id), [1, 2, 3], 'not sorted by date then id');
+  // ⭐ D10, POINTED FORWARDS: a field with no reader does not ship. `reach` and
+  // the per-goalie rows are 58% of a record's bytes and no surface reads them.
+  assert.deepEqual(Object.keys(doc.games[0]).sort(),
+    ['attempts', 'awayAb', 'date', 'homeAb', 'id', 'score']);
+  // AND THE SAME RECORDS GIVE THE SAME BYTES, which is why `now` is injected.
+  assert.equal(stable(slateOf(recs, 'x')), stable(slateOf([...recs].reverse(), 'x')));
+});
+
+test('⭐ archive mode REFUSES when the extracts are not the archive', () => {
+  /* THE FOOTGUN, MADE LOUD. Without this, `node builders/measure.mjs --out ingest`
+     in the nightly publishes an eight-game measures.json over the archive-wide
+     one and the front door starts saying "Across 8 games in this archive". */
+  const { out, id } = oneGameTree({ catalog: false });
+  writeFileSync(join(out, 'catalog.json'), JSON.stringify({ games: [
+    { id, v: 1, t: 2 }, { id: id + 1, v: 1, t: 2 }, { id: id + 2, v: 1, t: 3 },
+    { id: 2023010001, v: 1, t: 1 },        // preseason: out of scope, not counted
+    { id: id + 3, v: 0, t: 2 },            // refused: not published, not counted
+  ] }));
+  assert.throws(() => runCli([], out), /Command failed/);
+  assert.ok(!existsSync(join(out, 'measures.json')), 'it wrote the document anyway');
+});
+
+test('⭐ …and it does not refuse when they ARE — the control', () => {
+  // The paired half. "It refuses" is satisfied by a check that refuses always,
+  // which would take derive.yml down every Monday.
+  const { out } = oneGameTree();
+  assert.doesNotThrow(() => runCli([], out));
+  assert.equal(archiveIsWhole(out, [{ id: 1 }]), null);
+});
+
+test('a side teams.js has decided not to name is not reported as unknown', () => {
+  /* THE ARCHIVE HOLDS TEN OF THEM PERMANENTLY — the 4 Nations sides and the
+     All-Star squads — so before the ledger this guard fired on every run, which
+     is the state the mutation test two above warns about. */
+  const dir = mkdtempSync(join(tmpdir(), 'rtg-ledger-'));
+  const g = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url), 'utf8'));
+  g.game = { id: 2025190001, date: '2026-02-12', type: 19, src: {} };   // 4 Nations
+  g.teams.home.ab = 'CAN'; g.teams.away.ab = 'USA';
+  writeFileSync(join(dir, '2025190001.json'), JSON.stringify(g));
+  assert.deepEqual(measureAll(dir).unnamedClubs, []);
+});
+
+test('⭐ …and the ledger cannot hide a real club — the control', () => {
+  // A ledger nobody proves the shape of is an off switch. Two halves: an unknown
+  // club is still reported beside a ledgered one, and no entry shadows a club
+  // TEAMS actually names.
+  const dir = mkdtempSync(join(tmpdir(), 'rtg-ledger2-'));
+  const g = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url), 'utf8'));
+  g.game = { id: 2025190002, date: '2026-02-13', type: 19, src: {} };
+  g.teams.home.ab = 'CAN'; g.teams.away.ab = 'PDX';
+  writeFileSync(join(dir, '2025190002.json'), JSON.stringify(g));
+  assert.deepEqual(measureAll(dir).unnamedClubs, ['PDX']);
+
+  for (const [ab, why] of NOT_A_CLUB) {
+    assert.ok(!TEAMS[ab], `${ab} is on the not-a-club ledger AND in TEAMS`);
+    assert.ok(why.length > 30, `${ab}'s reason is too short to be a reason`);
+  }
 });

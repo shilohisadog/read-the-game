@@ -133,6 +133,13 @@ jobs:
       # first, so it runs on every extract or not at all -- a partial ranking is
       # worse than none, because it looks like an answer.
       - name: measure the archive
+        # ⛔ `shell: bash` IS LOAD-BEARING, not tidiness. The default shell for a
+        # `run:` block is `bash -e {0}` WITHOUT `-o pipefail`, so a pipeline
+        # reports the exit code of its LAST command -- `tee`, which always
+        # succeeds. From 2026-09-03 this step threw a ReferenceError after
+        # writing both documents and the job went green every week with the stack
+        # trace in the log. Naming the shell is what gets `-o pipefail`.
+        shell: bash
         run: node builders/measure.mjs --out ingest | tee measured.json
 
       # Same ordering discipline as the ingest: the document that ADVERTISES

@@ -37,7 +37,7 @@ import { attackDirection, distanceToNet } from '../src/lib/rink.js';
 import { inScope, summarise } from '../src/lib/archive.js';
 import { teamSeasons } from '../src/lib/team-season.js';
 import { censusGame, censusAdd, censusRates } from '../src/lib/census.js';
-import { TEAMS } from '../src/lib/teams.js';
+import { TEAMS, NOT_A_CLUB } from '../src/lib/teams.js';
 
 /**
  * How the game ended, read from the league's own period type.
@@ -316,7 +316,17 @@ export function measureAll(dir) {
     censusAdd(census, censusGame(g.events, sctx));
   }
   return { records, skipped, drawFirst, census, declined,
-           unnamedClubs: [...clubs].filter(ab => !TEAMS[ab]).sort() };
+           /* ⭐ MINUS THE SIDES teams.js HAS DECIDED NOT TO NAME. The archive
+              permanently contains ten of them — the 4 Nations sides and the
+              All-Star squads — so without the ledger this guard reports the same
+              ten every run forever, which is the state its own mutation test
+              warns about: "a check that fired on every run would be turned off
+              within a week, and then the expansion team would arrive invisibly."
+              The exception is a named list with a reason per entry, not a
+              narrowing of what gets collected: clubs are still gathered from
+              OUT-OF-SCOPE games too, because a relocation shows up in preseason
+              first and that is exactly where this must not be blind. */
+           unnamedClubs: [...clubs].filter(ab => !TEAMS[ab] && !NOT_A_CLUB.has(ab)).sort() };
 }
 
 /** JSON with object keys sorted, so the file is a function of its input alone. */
@@ -329,15 +339,125 @@ export function stable(v) {
   return JSON.stringify(v);
 }
 
+/**
+ * ⭐ THE SLATE — what the games in THIS run measured, and it is a different
+ * object from measures.json.
+ *
+ * `measures.json` is an archive-level claim: base rates over 4,192 games,
+ * refreshed weekly by derive.yml. A daily surface needs the opposite — the few
+ * games played last night, measured by these same reducers — and
+ * `docs/front-door.md` §6.1 is the argument for computing it by invoking the
+ * existing implementation on a smaller input rather than writing a second one.
+ *
+ * ⛔ WHY IT IS A SEPARATE DOCUMENT AND A SEPARATE FLAG. `main()` writes
+ * `measures.json` and `teams.json` into `--out`, and `ingest.yml`'s first sync
+ * pass excludes only `index.json`, `catalog.json` and `*latest.json`. So adding
+ * `node builders/measure.mjs --out ingest` to the nightly the obvious way would
+ * upload an EIGHT-GAME `measures.json` over the archive-wide one, every night —
+ * and the home page reads `moreAttemptsLost` out of that document, so the front
+ * door would begin saying "Across 8 games in this archive…" the next morning.
+ * `archiveIsWhole()` below turns that into a refusal instead of a publication.
+ *
+ * ⭐ SIX FIELDS, AND THE RULE IS D10's: A FIELD WITH NO READER DOES NOT SHIP.
+ * A full record is 1,065 bytes and 58% of it is `reach` and the per-goalie rows,
+ * which exist for archive-scale analysis and have no reader on a front door.
+ * Carrying the whole record would be the defect `test/index.test.js` already
+ * guards on catalog rows — a field written for a purpose nobody serves — one
+ * document over. **This grows a field the day a surface reads one**, which is the
+ * same rule pointed forwards instead of backwards.
+ *
+ * `asOf` IS HERE AND DELIBERATELY NOT ON measures.json. That document is an
+ * archive claim and holds no timestamp so the same extracts give the same bytes.
+ * This one is a claim about a NIGHT, and CHENG's requirement on any daily surface
+ * is that the figure carries when it was computed — "a surface saying last night
+ * beside a figure derived a week ago is the dataThrough problem in a new place".
+ * Injected rather than read from the clock, so a test can assert the bytes.
+ */
+export function slateOf(records, now) {
+  return {
+    asOf: now,
+    games: records
+      .map(r => ({ id: r.id, date: r.date, awayAb: r.awayAb, homeAb: r.homeAb,
+                   score: r.score, attempts: r.attempts }))
+      // Sorted by date then id, so "last night" is a suffix of this list rather
+      // than a scan, and two runs over the same games produce the same bytes.
+      .sort((a, b) => (a.date === b.date ? a.id - b.id : (a.date < b.date ? -1 : 1))),
+  };
+}
+
+/**
+ * Is the directory we just measured actually the archive?
+ *
+ * `measures.json` says `measured: 4192` and its rates are published as facts
+ * about the whole archive. That is only true if the extracts on disk ARE the
+ * whole archive, and nothing checked it — the document would have described
+ * eight games in exactly the same shape, with the same field names, and read as
+ * correct on every surface that quotes it.
+ *
+ * THE COMPARISON IS DERIVED, NOT A THRESHOLD. `catalog.json` is written by the
+ * same run and lists what we publish; the in-scope published rows are precisely
+ * the games `measureAll` records. Verified against the live documents on
+ * 2026-09-09: the catalog holds 4,192 in-scope published games and
+ * `measures.json` reports `measured: 4192` — the same number, so this asserts an
+ * identity that already holds rather than a tolerance somebody chose.
+ *
+ * @returns {string|null} what is wrong, or null if the directory is the archive
+ */
+export function archiveIsWhole(out, records, readJson) {
+  const cat = join(out, 'catalog.json');
+  // No catalog is not a failure: measure.mjs is also run by hand against a
+  // partial tree, and refusing there would make the tool unusable for the case
+  // it is most useful in. The nightly always has one, which is where the
+  // footgun lives.
+  if (!existsSync(cat)) return null;
+  const rows = (readJson ? readJson(cat) : JSON.parse(readFileSync(cat, 'utf8'))).games || [];
+  const published = rows.filter(g => g.v === 1 && inScope(g.id)).length;
+  if (records.length >= published) return null;
+  return `measures.json would describe ${records.length} game(s) while catalog.json `
+    + `publishes ${published} in scope — the extracts on disk are not the archive. `
+    + 'Did you mean --slate?';
+}
+
 function main(argv) {
-  const i = argv.indexOf('--out');
-  const out = i === -1 ? 'ingest' : argv[i + 1];
+  const flag = name => { const i = argv.indexOf(name); return i === -1 ? null : argv[i + 1]; };
+  const out = flag('--out') || 'ingest';
+  /* ⭐ THE SLATE MODE IS OPT-IN AND THE DEFAULT IS UNCHANGED, so derive.yml's
+     `node builders/measure.mjs --out ingest` produces the same two documents it
+     always has, byte for byte. A new mode that altered the old one would be a
+     change to the weekly archive smuggled in as a change to the nightly. */
+  const slate = argv.includes('--slate');
+  const now = flag('--now')
+    || new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
   const dir = join(out, 'extract');
   if (!existsSync(dir)) {
     console.error(`::error::no extracts at ${dir} — nothing to measure`);
     process.exit(1);
   }
-  const { records, skipped, drawFirst, census, unnamedClubs } = measureAll(dir);
+  /* ⚠️ `declined` IS DESTRUCTURED HERE AND WAS NOT, WHICH THREW EVERY WEEK.
+     `main()` read it 100 lines below, so from 2026-09-03 every archive run
+     wrote both documents and then died on `ReferenceError: declined is not
+     defined` — and the step is `node builders/measure.mjs … | tee measured.json`,
+     so the pipe returned tee's zero and the job went green. Everything after
+     that line never ran: the situation-code alert, the whole JSON summary, the
+     faceoff warning, and THE EXIT CODE THAT IS THE ALERT. Confirmed in the log
+     of the 2026-09-08 derive, which reported success with the ReferenceError in
+     it. derive.yml now runs that step under `shell: bash`, which is the only
+     spelling that carries `-o pipefail`. */
+  const { records, skipped, drawFirst, census, declined, unnamedClubs } = measureAll(dir);
+
+  if (slate) {
+    // ONE DOCUMENT, AND NOT THE OTHER TWO. See slateOf's header.
+    writeFileSync(join(out, 'recent.json'), stable(slateOf(records, now)));
+    console.log(`  recent.json: ${records.length} game(s) measured, asOf ${now}`);
+    if (skipped.length) console.log(`  ${skipped.length} skipped (no quoted boxscore)`);
+    return;
+  }
+
+  const notWhole = archiveIsWhole(out, records);
+  if (notWhole) {
+    console.error(`::error::${notWhole}`);
+    process.exit(1);
+  }
   /* THE DIVISION HAPPENS ONCE, HERE, on the finished totals. Every tally that
      reached this point is an integer, so the archive folds in exactly and no
      game is weighted by how many events it happened to contain. */

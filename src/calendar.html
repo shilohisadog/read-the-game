@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-wWiuqQWDIFHWJhB2gT2aazWIDimvLtXTkeO3jdgvL9s=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-kDR/H6GCxcJ9THqN5INvQPSPrdBu/KKmyxjgOKXNQWY='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-BYaeJv2KhyWIEIHFd+Nq/xRDvaA9Tp9uymW0ohC8P50=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-kDR/H6GCxcJ9THqN5INvQPSPrdBu/KKmyxjgOKXNQWY='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -605,6 +605,38 @@ function nameOf(ab) {
  * know what colour they wear.
  */
 const NEUTRAL = '#5b6d7a';
+
+/**
+ * ⭐ THE SIDES WE HAVE DELIBERATELY NOT NAMED — as a list the code can read.
+ *
+ * The paragraph above has always said which teams these are, and a paragraph is
+ * not a check. `measure.mjs` walks every extract and reports any club `TEAMS`
+ * cannot answer for, so that a relocation or an expansion team fails loudly
+ * instead of arriving as a grey chip nobody notices. Fired against the real
+ * archive it names CAN, FIN, HGS, KLS, KNG, MAT, MCD, MKN, SWE and USA — every
+ * one of them a side this file has decided, on the record, not to describe.
+ *
+ * ⛔ A GUARD THAT FIRES ON EVERY RUN IS A GUARD SOMEBODY SWITCHES OFF. Its own
+ * test says so — *"a check that fired on every run would be turned off within a
+ * week, and then the expansion team would arrive invisibly"* — and until
+ * 2026-09-09 it never got the chance, because `main()` threw a ReferenceError
+ * two lines before the exit code that was supposed to be the alert.
+ *
+ * SO THE EXCEPTION IS NAMED, NOT INFERRED. Membership here is a decision with a
+ * reason attached, and `test/teams.test.js` requires every entry to be a side
+ * `TEAMS` really does not name — an entry that shadowed a real club would be a
+ * hole in the check rather than an exception to it.
+ */
+const NATIONAL = 'a national side — the 4 Nations Face-Off and the Olympics are '
+  + 'outside every computed number here, so we do not invent a badge for them';
+const ALLSTAR = 'an All-Star squad, drafted for one weekend and never a club';
+const NOT_A_CLUB = new Map([
+  ['CAN', NATIONAL], ['USA', NATIONAL], ['FIN', NATIONAL], ['SWE', NATIONAL],
+  ['SVK', NATIONAL], ['SUI', NATIONAL], ['CZE', NATIONAL], ['GER', NATIONAL],
+  ['ITA', NATIONAL], ['FRA', NATIONAL], ['LAT', NATIONAL], ['DEN', NATIONAL],
+  ['MCD', ALLSTAR], ['MAT', ALLSTAR], ['MKN', ALLSTAR], ['HGS', ALLSTAR],
+  ['KNG', ALLSTAR], ['KLS', ALLSTAR], ['MUN', ALLSTAR],
+]);
 
 /**
  * The colour to paint this team, or NEUTRAL if it is not one of the 33 clubs.

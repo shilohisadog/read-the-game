@@ -353,6 +353,67 @@ slate's per-game records, under its own name, with `measures.json` and
 `teams.json` written only when asked for. That is a small change to `main()` and
 it must land *before* the workflow line, not with it.
 
+#### 6.1.2 ✅ BUILT — `--slate`, and the guard that makes the footgun loud
+
+`node builders/measure.mjs --out <dir> --slate --now <iso>` writes **`recent.json`
+and nothing else**. The default is untouched, so `derive.yml`'s weekly run
+produces the same two documents byte for byte.
+
+**Six fields per game** — `id`, `date`, `awayAb`, `homeAb`, `score`, `attempts` —
+and the rule is D10 pointed forwards: *a field with no reader does not ship.* A
+full record is **1,065 bytes** and `reach` plus the per-goalie rows are **58% of
+it**, with no reader on a front door. The document grows a field the day a surface
+reads one.
+
+`asOf` is on this document and deliberately not on `measures.json`: that one is an
+archive claim and carries no timestamp so the same extracts give the same bytes;
+this one is a claim about a **night**, and §6.3 requires the figure to carry when
+it was computed. It is injected (`--now`) so a test can assert the bytes.
+
+⭐ **And the footgun is a refusal now.** `archiveIsWhole()` compares what was
+measured against the in-scope published rows of the `catalog.json` written by the
+same run — **an identity that already holds** (the catalog publishes 4,192 in
+scope and `measures.json` reports `measured: 4192`), not a tolerance somebody
+chose. Archive mode over eight extracts exits 1 with *"the extracts on disk are
+not the archive. Did you mean --slate?"* instead of publishing.
+
+⏸ **THE WORKFLOW LINE IS DELIBERATELY NOT ADDED YET.** Publishing `recent.json`
+nightly before §5.1's block can read it would create precisely what D10 forbids —
+and `schedule.json` is the cautionary tale, published on every run for weeks with
+no reader. The mode is built and tested; the `ingest.yml` line is one line on the
+day the block lands.
+
+### 6.4 ⛔ AND BUILDING IT FOUND THE WEEKLY RUN THROWING
+
+Running `main()` end to end for the first time — which nothing in 1,100 tests did
+— raised `ReferenceError: declined is not defined`. `main()` reads `declined` and
+never destructured it, from `82caa74` on **2026-09-03**.
+
+**It throws after both documents are written**, so the archive is correct; what
+never runs is everything below that line — the situation-code alert, the entire
+JSON summary, the faceoff warning, the skipped report, and `process.exit(1)`,
+which the file's own comment calls *"THE ALERT"*.
+
+⛔ **And the weekly job reported success anyway.** `derive.yml` runs
+`node builders/measure.mjs --out ingest | tee measured.json`, and the default
+shell for a `run:` block is `bash -e {0}` **without** `-o pipefail` — so the
+pipeline returns `tee`'s zero. **Confirmed in the log of the 2026-09-08 run: a
+green step with the stack trace inside it.**
+
+Three fixes, and each closes a different half: `declined` is destructured; the
+step names `shell: bash`, the only spelling that carries `-o pipefail`; and
+`test/measure.test.js` now **runs the driver** rather than only its parts, because
+a unit test of the pieces cannot fail on a reference the pieces never make.
+
+⚠️ **One consequence had to be settled before the fix could ship.** With the throw
+gone, `process.exit(1)` fires — and the archive permanently contains ten clubs
+`TEAMS` does not name (the 4 Nations sides and the All-Star squads), so the
+weekly run would have gone red every Monday over a condition `src/lib/teams.js`
+already documents as deliberate. That paragraph is a list the code can read now
+(`NOT_A_CLUB`, a reason per entry), and the collection is **not** narrowed —
+clubs are still gathered from out-of-scope games, because a relocation shows up in
+preseason first and that is exactly where the check must not be blind.
+
 ### 6.2 Where the numbers live, measured
 
 If the sentence needs attempts, ~8 rows a night need them. Two shapes:
