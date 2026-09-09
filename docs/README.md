@@ -106,6 +106,7 @@ of this repo found rather than one we noticed.
 | **[homepage.md](homepage.md)** | ✅ shipped — written against the live page, not against intentions. |
 | **[site-chrome.md](site-chrome.md)** | ✅ shipped — the header, footer and nav that made a multi-page site possible. |
 | **[discovery.md](discovery.md)** | ✅ shipped — C1, the calendar as the date index into the archive. |
+| **[game-page-fold.md](game-page-fold.md)** | 📐 design, for review — the game page at a laptop's width, and a rule for which blocks may leave the ice: invariance under playhead movement. |
 | **[front-door.md](front-door.md)** | 📐 design, for review — a page that changes every morning. Three defects shipped ahead of it; the daily block, the fold, and what the pipeline already throws away. |
 | **[next-game.md](next-game.md)** | a card about the future on a site that refuses to forecast. |
 

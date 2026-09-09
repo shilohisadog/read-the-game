@@ -109,6 +109,34 @@ built page can produce must be inside something the preview hides.
   skeptic. ⚠️ **The staleness check must travel with whichever block says "last
   night"**, or `dataThrough`/`lastRun` is re-conflated one surface higher.
 
+### ⏭ AND THE GAME PAGE IS THE SECOND FRONT-DOOR THREAD — `docs/game-page-fold.md`
+
+Kevin, seeing §5.4 live: *"I really like the new layout… I am wondering if all the
+game pages should have this approach?"* — and he declined the interim widening, so
+it is one change. **Written up for CHENG, nothing built.**
+
+⛔ **The finding that justifies it: the layer picker is BELOW THE FOLD at 1900**
+(y=1123 against a 1065 fold) — the control DOCTRINE §6 hangs on, *base view is
+just the game, every metric is an opt-in layer*. On a laptop you must scroll to
+discover layers exist. The column is **916px of 1900**, and **437px of stack** sits
+under the ice in a window with 984px of empty room either side. At 390 the rink
+does not start until 0.73 screens and the play button is off-screen on arrival.
+
+⭐ **THE RULE PROPOSED IS NOT NEW: invariance under playhead movement.** CHENG's
+chip criterion one level out — a block may sit beside the rink only if its content
+does not change as the game plays. The caption, the active-player line, `.lbox`,
+the box and the strength pill stay; the transport, picker, `.lcap`, the two zone
+disclosures and the share row may move. **The active-player line was moved 479px →
+11–169px to learn this**, and a side column would undo it.
+
+⚠️ **`.lbox` is the trap** — it looks like chrome, it is the layer's per-frame
+output, and `--lboxh` positions the caption off it (§H3).
+
+⚠️ **And the first measurement was wrong by one selector:** `querySelector('.zone')`
+reported the disclosures hidden; there are **five** `.zone` elements and two are
+on screen. *A selector that returns one element when the page has five is an
+answer about the first element wearing the name of the group.*
+
 ⏰ **AND THERE IS A CLOCK.** The league's own schedule document, read 2026-09-09:
 **preseason opens 2026-09-19, the regular season 2026-09-29.** ⚠️ **§2 of
 `docs/next-game.md` says 8 October** — read off one week's payload on 2026-08-17,
