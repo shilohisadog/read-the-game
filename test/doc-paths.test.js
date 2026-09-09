@@ -59,6 +59,9 @@ const GONE = {
   'index.json': 'same',
   'schedule.json': 'same',
   'teams.json': 'same',
+  // Written by `measure.mjs --slate`. Not published yet, deliberately: the
+  // nightly line waits on a reader, front-door.md §6.1.2.
+  'recent.json': 'same — written by builders/measure.mjs --slate',
   // Hosting configuration that lives in the deploy workflow rather than on disk.
   'src/_headers': 'headers are set by the deploy workflow, not a checked-in file',
 };
