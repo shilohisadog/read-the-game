@@ -106,9 +106,23 @@ allowed to stop being under the ice.**
 
 CHENG's own chip criterion, applied one level out:
 
-> **A block may sit beside the rink only if its content is invariant under
-> playhead movement. Anything whose meaning changes as the game plays stays under
-> the ice.**
+> **A block may sit beside the rink only if its content AND its enabled state are
+> invariant under playhead movement.** Anything whose meaning — or whose
+> affordance — changes as the game plays stays under the ice.
+
+⛔ **The second clause is CHENG's and it overturns my own answer on the
+transport.** My draft moved it on the grounds that its labels never change. They
+do not; **its affordances do.** `◀ Prev` and `Next ▶` are *disabled at the ends of
+the game*, which is a function of the playhead and is the readout the pair was
+designed around — *the disable at each end is the readout*. So the transport was
+never invariant, and a rule that let it move had an exception hiding inside it.
+
+⭐ **And there is a second, stronger argument for the same conclusion: the
+transport and the scrubber are one control.** The scrubber shows position, the
+transport steps it. The scrubber is unambiguously playhead-dependent and cannot
+move, so moving the stepper would **split a control pair across the fold** —
+a position indicator under the ice and its stepper beside it, which is worse than
+either placement on its own.
 
 It is not a new rule and it is not a preference — it is what this project already
 paid to learn. The active-player line was moved **from 479px away to 11–169px** on
@@ -123,21 +137,36 @@ undo that fix at three times the distance.
 | `.lbox` — the layer's running output | **yes** | **stays** |
 | `.pens` / `.ppill` — the box and strength | **yes** | **stays** |
 | `.board` — score, clock, counts | **yes** | stays (already above) |
-| `.transport` | no — the same six controls all game | **may move** |
+| `.transport` + `.scrub` | **labels no, ENABLED STATE yes** — `◀ Prev` / `Next ▶` disable at the ends | **stays** |
 | `.pickrow` — the layer picker | no | **may move** |
 | `.lcap` — what the active layer counts | no, until the layer changes | **may move** |
 | `.zone zcue` / `.zone znext` | no | **may move** |
 | `.sharerow` | no | **may move** |
 | `.nextup` | no | **may move** |
 
+| `.newcomer` | no — and it survives a reload | **moves** — §7 q4 |
+
 ⚠️ **`.lbox` is the trap in that table.** It sits below the ice and looks like
 chrome; it is the layer's *output* and changes on every frame. It is also
 load-bearing in geometry — see §5.
 
-**What moving gains, arithmetically:** the six movable blocks are the whole 437px
-stack at 1900 and 664px at 390. Moving them at ≥1180 brings the picker to roughly
-**0.4 screens instead of 1.05**, and puts the transport permanently on screen
-while the game plays.
+**What moving gains, arithmetically.** With the transport staying, the movable
+blocks are `.pickrow` (65), `.lcap` (59), the two zone disclosures (57 each) and
+`.sharerow` (44) — **282px of stack at 1900** — plus `.newcomer`'s 127px from
+above the board. The picker's new position has to be **measured after building
+rather than predicted**, because moving a block out of the flow moves everything
+under it; what the change is FOR is that the picker stops being below the fold.
+
+### 3.1 ⚠️ And "`.newcomer`" is two elements
+
+`document.querySelectorAll('#rg .newcomer')` returns **2**: the first-visit block
+(900×127 at 1900, 343×268 at 390) and `.newcomer.nwhy2` — *"Why add a layer?
+Because the obvious reading of a game is…"* — which is `display:none` in the base
+view and takes a position in the flow once a layer is on, still measuring 0×0.
+
+**So a media query written against `.newcomer` moves both**, and the second one is
+a block nobody in this document has looked at. Whatever ships names the one it
+means. This is the same finding as §0's, one class over — see §9.
 
 ---
 
@@ -206,25 +235,57 @@ tidy layout over a column nobody can press.
 ⭐ **That table is the argument for doing this as CSS with no markup change**: the
 golden walk stays valid precisely because the DOM does not move.
 
+### 6.3 ⭐ The divergence is asserted, not promised — CHENG
+
+*"No markup change is what makes it safe, and §8 already commits to it. The moment
+a media query requires a second markup path, you have two renderings that can
+disagree, and this project's record on that is unambiguous. So: fine, and **add
+the assertion rather than relying on the discipline.**"*
+
+**The check: the two widths render the same elements with the same text, and
+differ only in computed placement.** Same shape as the paired ends-switching test
+— *neither half is safe alone*: "the same elements" is satisfied by a media query
+that does nothing, and "the placement differs" by one that also changed the
+content. Both are asserted, in opposite directions, at 390 and at ≥1180.
+
+⛔ **And it must be a real browser**, because every instrument that runs in the
+fake DOM is blind to the only thing this change does.
+
 ---
 
-## 7. What I want CHENG to rule on
+## 7. ✅ CHENG's rulings — 2026-09-09
 
-1. **Is invariance the right rule?** The awkward case is `.transport`: its
-   *content* never changes, but it is the control **for** the playhead, and one
-   could argue the thing you steer with belongs under the thing it steers.
-2. **Does the picker beside the rink strengthen or weaken *"the base view is just
-   the game"*?** `docs/layers-off-the-watch-page.md` ruled the controls follow the
-   layer, and Kevin's argument there was about **attention, not clutter** —
-   a permanently visible picker is exactly what that ruling was cautious about.
-   My read is that it is the opposite case: below the fold is not restraint, it is
-   invisibility, and a control nobody finds cannot be opt-in.
-3. **Is a divergent mobile/desktop layout acceptable here?** Kevin raised it
-   himself. §5.4 is the cheap shape — one query, no markup — but this page has far
-   more moving parts than the front door.
-4. **Does `.newcomer` belong in the side column?** It is 268px of a phone's fold
-   and 127px of a laptop's, it is invariant under the playhead, and §1.2 says it
-   survives a reload.
+1. ⛔ **INVARIANCE IS NECESSARY AND NOT SUFFICIENT, and the transport stays.** My
+   draft moved it and the counterexample was already on the page: `◀ Prev` and
+   `Next ▶` **disable at the ends of the game.** The rule gains a second clause —
+   *content **and enabled state*** — and the transport/scrubber pairing settles it
+   independently. §3 is rewritten. ⭐ *This is the answer I wanted, for a reason
+   that survives scrutiny instead of one with an exception inside it.*
+2. ✅ **The picker moves, and it strengthens DOCTRINE §6 rather than straining
+   it.** *"The `layers-off-the-watch-page` ruling was about a control competing
+   with the game for attention — five expanded rows between the reader and the
+   ice. A collapsed picker in a side column, outside the reading path, competes
+   with nothing."* And §6's word is **opt-in**, which presupposes discoverable.
+   **Separate *visible* from *interposed* and the ruling and the doctrine point
+   the same way.**
+
+   ⛔ **One condition rides with it: the picker's default stays `Just events`.**
+   That is what makes §6 structural rather than maintained — the base view cannot
+   accidentally carry a metric, because *none* is a choice and it is the selected
+   one. **Moving the control must not quietly change what is selected**, and the
+   test for it belongs beside §6.3's parity check.
+3. ✅ **The divergence is acceptable, and this is the case where it is least
+   risky** — same DOM, same handlers, same state, reflowed; nothing branches
+   except placement. **With the assertion, not the promise** — §6.3.
+4. ✅ **`.newcomer` moves, and it is the strongest candidate on the list.** 268px
+   of a phone's fold is the largest single cost measured here, it survives a
+   reload, and *"a newcomer's instruction that sits next to what it describes is
+   more useful than one that pushes the described thing off-screen."*
+
+   ⚠️ **AND THE PHONE IS NOT FIXED BY THIS.** There is no side column at 390, so
+   the 268px stays exactly where it is. Named here so the change cannot be read as
+   having solved it: **the phone's first screen is a separate problem**, and on
+   the measurement in §1.2 it is the more expensive one.
 
 ---
 
@@ -239,3 +300,38 @@ golden walk stays valid precisely because the DOM does not move.
   (`docs/status.md`), not part of the stack.
 - **No re-parking or un-parking.** §1.3's four hidden blocks stay exactly as they
   are; this is a layout change, not a decision about them.
+
+---
+
+## 9. ⛔ THE FIRST-MATCH QUERY IS A RECURRING SHAPE — three instances now
+
+CHENG, on §0's correction: *"`querySelector` returning the first match is the same
+class as `re.search` finding one `<style>` block and the CSP pinning it while
+leaving `game.html`'s real stylesheet unhashed. **Third instance of a first-match
+query standing in for a set.**"*
+
+**Swept, as he asked.** Every `querySelector` in `tools/`, `test/`, `builders/`
+and `src/lib/`, with the count its selector really returns on the live game page:
+
+| where | selector | matches |
+|---|---|---:|
+| `tools/pixels.sh` | `.board` | 1 |
+| `tools/pixels.sh` | `.rinkbox svg` | 1 |
+| `test/render-notes.test.js`, `test/lbox.test.js` | `chip.querySelector('.pkl')` | 1 — **scoped to a chip**, singular by construction |
+| `test/helpers/page.js`, `test/deeplink-render.test.js` | — | implementations of a fake, not uses |
+
+⭐ **So the harness was clean — and it was clean by luck rather than by check**,
+which is the whole point of the shape. `box()` now **counts before it measures**
+and reports `"N MATCHES — this figure would be about the first"` instead of
+silently describing element one. The two selectors above are singular *counted*,
+not assumed.
+
+⚠️ **And the sweep found a live one in this document's own subject.**
+`#rg .newcomer` matches **two** elements, and §1's figure for it came from a
+first-match query. The number is right for the block that is showing; the *set* is
+not what I said it was — see §3.1.
+
+**The transferable form, and it is now a habit rather than a lesson:** when the
+subject of a measurement is a class, ask the page how many wear it **before**
+reading anything off one of them. An inventory is a walk; a checklist is a guess
+about what the walk would find.

@@ -148,6 +148,43 @@ list the code reads (`NOT_A_CLUB`). **The collection is NOT narrowed**: clubs ar
 still gathered from out-of-scope games, because a relocation shows up in preseason
 first and that is exactly where the check must not be blind.
 
+### ✅ CHENG HAS RULED THE GAME-PAGE FOLD TOO — and Q1 overturned my answer
+
+- ⛔ **INVARIANCE IS NECESSARY, NOT SUFFICIENT, AND THE TRANSPORT STAYS.** I moved
+  it because its labels never change. **Its affordances do: `◀ Prev` and `Next ▶`
+  disable at the ends of the game**, which is a function of the playhead and is
+  the readout the pair was designed around. ⭐ **The rule gains a second clause —
+  *content AND enabled state*** — and the same answer falls out of a second
+  argument: **the transport and the scrubber are one control**, the scrubber is
+  playhead-dependent and cannot move, and splitting a control pair across the fold
+  is worse than either placement.
+- ✅ **The picker moves and it STRENGTHENS DOCTRINE §6.** *"A collapsed picker in
+  a side column, outside the reading path, competes with nothing"* — the
+  `layers-off-the-watch-page` ruling was about a control **interposed** between the
+  reader and the ice. **Separate *visible* from *interposed*.** ⛔ Condition: **the
+  picker's default stays `Just events`**, asserted, or §6 stops being structural.
+- ✅ **`.newcomer` moves** — the largest single cost measured. ⚠️ **The phone is
+  NOT fixed by it**: there is no side column at 390, so its 268px stays. A
+  separate problem, and the more expensive one.
+- ✅ **The divergence is asserted, not promised:** a real-browser check that both
+  widths render **the same elements with the same text**, differing only in
+  computed placement — paired, because "same elements" passes on a query that does
+  nothing and "placement differs" passes on one that also changed the content.
+
+### ⛔ AND THE FIRST-MATCH QUERY IS A RECURRING SHAPE — three instances
+
+CHENG: *"third instance of a first-match query standing in for a set"* — after the
+`.zone` disclosures and the CSP pinning one `<style>` block while `game.html`'s
+real stylesheet went unhashed. **Swept every `querySelector` in `tools/`, `test/`,
+`builders/` and `src/lib/`:** the harness's two selectors are singular — *counted,
+not assumed* — and the test uses are scoped to a chip. ⚠️ **But the sweep found a
+live one in the subject itself: `#rg .newcomer` matches TWO elements**, so a media
+query written against that class would move a block nobody has looked at.
+`tools/pixels.sh` now counts before it measures and says so.
+
+⭐ **The habit: when the subject of a measurement is a class, ask the page how many
+wear it BEFORE reading anything off one of them.**
+
 ### ⏭ AND THE GAME PAGE IS THE SECOND FRONT-DOOR THREAD — `docs/game-page-fold.md`
 
 Kevin, seeing §5.4 live: *"I really like the new layout… I am wondering if all the

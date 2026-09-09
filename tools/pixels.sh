@@ -178,8 +178,17 @@ for (const raw of widths) {
   let hero = { note: 'no hero frame on this page' };
   try {
     hero = await p.frameLocator('.heroframe iframe').locator('#rg').evaluate(el => {
-      const box = s => { const n = el.querySelector(s), r = n && n.getBoundingClientRect();
-                         return r ? Math.round(r.width) + 'x' + Math.round(r.height) : null; };
+      /* ⚠️ A FIRST-MATCH QUERY STANDING IN FOR A SET IS THIS PROJECT'S THIRD
+         INSTANCE OF ONE SHAPE (CHENG). `querySelector('.zone')` reported the
+         disclosures hidden when five exist and two are on screen; `.newcomer`
+         matches TWO elements on the game page, and a figure read off the first
+         wears the name of the class. Both `.board` and `.rinkbox svg` below are
+         singular -- COUNTED, not assumed -- and this says so out loud the day one
+         of them stops being, rather than quietly measuring the first. */
+      const box = s => { const all = el.querySelectorAll(s);
+                         if (all.length !== 1) return all.length + ' MATCHES — this figure would be about the first';
+                         const r = all[0].getBoundingClientRect();
+                         return Math.round(r.width) + 'x' + Math.round(r.height); };
       return {
         booted: el.classList.contains('preview'),   // see the comment in pixels.sh
         frame: innerWidth + 'x' + innerHeight,
