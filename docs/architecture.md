@@ -42,7 +42,7 @@ header, and §4 records what it cost us the one time we did it anyway.
 | **interpretation** | feed → events; the two gates | `extract.py` | 949 |
 | **orchestration** | walks the store, judges, writes documents | `derive.py` | 742 |
 | **analysis** | events → meaning; pure, no DOM, no network | `src/lib/**` (33 modules) | 6,761 |
-| **measurement** | the archive, reduced by the SAME modules | `measure.mjs` | 548 |
+| **measurement** | the archive, reduced by the SAME modules | `measure.mjs` | 565 |
 | **presentation** | generates the pages | `build_*.py` (9) | 4,236 |
 | **the app** | **the one exception — see §2** | `src/app.js` | 3,454 |
 

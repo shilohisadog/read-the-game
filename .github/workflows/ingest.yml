@@ -66,6 +66,16 @@ jobs:
         with:
           python-version: '3.x'
 
+      # ⭐ NODE, PINNED, BECAUSE THE SLATE IS MEASURED IN IT. `measure.mjs`
+      # imports the same reducers the browser runs rather than restating them in
+      # Python (docs/architecture.md §2), so the nightly crossed the language
+      # boundary the day it started measuring. Pinned to the same version
+      # derive.yml uses: a runner's default node is whatever the image ships
+      # this month, and "it worked yesterday" is not a version policy.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
       # The fetcher is gated like everything else. An ingest that runs with a
       # broken fetcher writes bad data into an archive we intend to keep
       # permanently, and object storage has no undo.
@@ -201,6 +211,32 @@ jobs:
           [ -n "$END" ] || END=$(date -u +%F)
           python3 builders/derive.py --out ingest --end "$END" --days "${WINDOW}"
 
+      # ⭐ THE SLATE — last night's games, measured by the SAME reducers the
+      # browser runs, so a daily surface can state a count without a second
+      # implementation of what an attempt is (docs/front-door.md §6.1).
+      #
+      # ⛔ `--slate` IS NOT OPTIONAL AND IS NOT STYLE. Without it this command
+      # writes measures.json and teams.json into `ingest/`, and the first sync
+      # pass below excludes only index.json, catalog.json and *latest.json — so
+      # a nightly run would publish an EIGHT-GAME measures.json over the
+      # archive-wide one, and the home page, which reads `moreAttemptsLost` out
+      # of that document, would begin saying "Across 8 games in this archive".
+      # `archiveIsWhole()` refuses that now, so the mistake is a red run rather
+      # than a wrong front page — but the flag is the thing that makes it right.
+      #
+      # `shell: bash` FOR `-o pipefail`, which the default `bash -e {0}` does not
+      # carry. There is no pipe here today; derive.yml had one, and its step
+      # reported success for six days over a ReferenceError because of exactly
+      # that. Naming the shell costs nothing and removes the trap.
+      #
+      # AN EMPTY WINDOW WRITES AN EMPTY DOCUMENT rather than skipping: a run that
+      # found no hockey and left last night's games published would advertise
+      # them forever, which is schedule.json's argument one file over.
+      - name: measure the slate
+        if: steps.fetch.outputs.code != '2'
+        shell: bash
+        run: node builders/measure.mjs --out ingest --slate
+
       # Exit 2 is the vocabulary halt: the same unrecognised gameState appeared
       # in more than one game, which is a feed change rather than an oddity.
       # Nothing was fetched, so there is nothing to sync and the run stops here.
@@ -292,10 +328,10 @@ jobs:
           # create. --dryrun answers with the real CLI's own wildcard semantics
           # rather than my reading of them.
           dry() { sync --dryrun "$@" | sed -n "s|.*to s3://${BUCKET}/||p" | sort; }
-          dry --exclude 'index.json' --exclude 'catalog.json' --exclude '*latest.json' > p1.txt
+          dry --exclude 'index.json' --exclude 'catalog.json' --exclude 'recent.json' --exclude '*latest.json' > p1.txt
           dry --exclude '*' --include '*latest.json'          > p2.txt
           dry                                                 > all.txt
-          grep -vxE 'index\.json|catalog\.json' all.txt > expected.txt || true
+          grep -vxE 'index\.json|catalog\.json|recent\.json' all.txt > expected.txt || true
           if [ -s p1.txt ] && [ -s p2.txt ] && [ -n "$(comm -12 p1.txt p2.txt)" ]; then
             echo "::error::a file is claimed by two passes — ordering is not guaranteed"
             comm -12 p1.txt p2.txt | head; exit 1
@@ -312,14 +348,20 @@ jobs:
           fi
 
           echo "1/3 raw feeds and extracts"
-          sync --exclude 'index.json' --exclude 'catalog.json' --exclude '*latest.json'
+          sync --exclude 'index.json' --exclude 'catalog.json' --exclude 'recent.json' --exclude '*latest.json'
           echo "2/3 pointers"
           sync --exclude '*' --include '*latest.json'
           # 3/3 THE DOCUMENTS THAT ADVERTISE. catalog.json names games a visitor
           # can open and index.json states what we hold, so both must land after
           # the extracts they point at -- the same rule that puts the pointer
           # after its bytes, one level up.
-          echo "3/3 catalog and index"
+          # ⭐ recent.json JOINED THIS PASS, NOT THE FIRST ONE. It names game ids a
+          # reader clicks through to, so it lands AFTER the extracts it points
+          # at — the same rule as catalog.json directly below, and the same rule
+          # that puts a pointer after its bytes one level up. In pass 1 it would
+          # be uploaded alongside the very extracts it advertises, and a visitor
+          # arriving in that window gets a door to a game that is not there yet.
+          echo "3/3 catalog, index and the slate"
           # `if`, not `[ -f ] &&`. Under `set -e` a failing test on the left of
           # && fails the whole step, so a run with nothing to publish -- a halt,
           # or a night with no hockey -- would report a broken sync.
@@ -345,7 +387,7 @@ jobs:
                        f"({was} -> {now}); refusing to publish it")
           PY
           fi
-          for f in catalog.json index.json; do
+          for f in catalog.json index.json recent.json; do
             if [ -f "ingest/$f" ]; then
               aws s3 cp "ingest/$f" "s3://${BUCKET}/$f" \
                 --cache-control no-cache \

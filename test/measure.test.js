@@ -379,17 +379,40 @@ test('a game with no quoted boxscore is skipped, never guessed', () => {
 });
 
 test('only the full-archive job may publish the measurement', () => {
-  // THE CATALOG BUG, ONE DOCUMENT OVER. The nightly holds raw for one night and
-  // extracts for none, so a nightly that wrote measures.json would publish a
-  // ranking over a handful of games — and a partial ranking is worse than none,
-  // because it looks like an answer. derive.yml is the only job that sees the
-  // whole archive, which is why it is also the only one that measures.
+  // THE CATALOG BUG, ONE DOCUMENT OVER. A nightly that wrote measures.json would
+  // publish a ranking over a handful of games — and a partial ranking is worse
+  // than none, because it looks like an answer. derive.yml is the only job that
+  // sees the whole archive, which is why it is the only one that may measure it.
   //
   // Asserted rather than observed: nothing about running `node measure.mjs` in
   // ingest.yml would fail, and the wrong ranking would simply appear.
+  //
+  // ⭐ NARROWED 2026-09-09, AND THE ARGUMENT ABOVE IS UNCHANGED. This forbade
+  // the STRING `measure.mjs`, which was the right prohibition while the tool had
+  // one mode. It now has two, and the nightly runs the other one — `--slate`
+  // writes recent.json and neither archive document (docs/front-door.md §6.1.2).
+  // A check spelled against the tool would have gone red on the correct change,
+  // which is the shape `layer-copy.test.js` shipped on 2026-09-07: a check that
+  // forbids the fix to the problem it describes. So the claim is spelled against
+  // THE THING THAT MUST NOT HAPPEN — the archive documents — plus the rule that
+  // every invocation here carries the flag that cannot write them.
   const wf = f => readFileSync(new URL(`../.github/workflows/${f}`, import.meta.url), 'utf8');
-  assert.doesNotMatch(wf('ingest.yml'), /measure\.mjs|measures\.json/,
-    'the nightly must neither compute nor upload the archive measurement');
+  /* ⚠️ COMMENTS OUT FIRST, AND THIS BIT ON THE FIRST RUN. The step that carries
+     the flag EXPLAINS why, and the explanation names `measures.json` — so a scan
+     over the raw file went red on a workflow that is correct, reading prose as
+     if it were an instruction. §H1's corollary, third instance: a check that
+     cannot tell code from the words about the code is not a check about code.
+     One rule serves both languages here: a line whose first non-space character
+     is `#` is a comment in YAML and in the shell inside a `run:` block. */
+  const code = t => t.split('\n').filter(l => !/^\s*#/.test(l)).join('\n');
+  const nightly = code(wf('ingest.yml'));
+  assert.doesNotMatch(nightly, /measures\.json|teams\.json/,
+    'the nightly names an archive document — it must neither compute nor upload one');
+  const runs = [...nightly.matchAll(/^ *run: (.*measure\.mjs.*)$/gm)].map(m => m[1]);
+  assert.ok(runs.length <= 1, `the nightly invokes measure.mjs ${runs.length} times`);
+  for (const r of runs)
+    assert.match(r, /--slate/,
+      `an invocation without --slate writes measures.json into ingest/: ${r}`);
   // Anchor on the INVOCATIONS, not the file names. The first version compared
   // `indexOf('derive.py')` with `indexOf('measure.mjs')` and failed on a correct
   // workflow, because a comment above the node setup step mentions measure.mjs.
@@ -1139,4 +1162,54 @@ test('⭐ …and the ledger cannot hide a real club — the control', () => {
     assert.ok(!TEAMS[ab], `${ab} is on the not-a-club ledger AND in TEAMS`);
     assert.ok(why.length > 30, `${ab}'s reason is too short to be a reason`);
   }
+});
+
+test('⭐ an empty window writes an EMPTY slate rather than failing', () => {
+  /* THE OFFSEASON IS FIVE MONTHS LONG AND IT IS THE STATE WE ARE IN. The
+     league's window holds zero games until 29 September, so a slate run that
+     exited on an empty extract directory would fail the nightly every night
+     until then.
+     AND WRITING THE EMPTY DOCUMENT IS THE POINT, not a tolerance — it is
+     schedule.json's argument one file over: a run that skipped the write
+     because it found nothing would leave LAST NIGHT'S GAMES published forever,
+     and a front door reading "Last night — 8 games" in August is the one failure
+     this document can have with nobody touching anything. */
+  const out = mkdtempSync(join(tmpdir(), 'rtg-empty-'));   // no extract/ at all
+  runCli(['--slate', '--now', '2026-08-01T11:00:00Z'], out);
+  assert.deepEqual(JSON.parse(readFileSync(join(out, 'recent.json'), 'utf8')),
+    { asOf: '2026-08-01T11:00:00Z', games: [] });
+});
+
+test('⭐ …and archive mode still refuses an empty tree — the paired half', () => {
+  // "An empty directory is fine" must not become true of the ARCHIVE run, which
+  // would publish base rates computed over nothing.
+  const out = mkdtempSync(join(tmpdir(), 'rtg-empty2-'));
+  assert.throws(() => runCli([], out), /Command failed/);
+  assert.ok(!existsSync(join(out, 'measures.json')));
+});
+
+test('⛔ the nightly passes --slate, and the sync treats recent.json as advertising', () => {
+  /* THE WORKFLOW IS WHERE THIS GOES WRONG, not the code. Without `--slate` the
+     command writes measures.json into `ingest/` and the first sync pass — which
+     excludes only index.json, catalog.json and *latest.json — publishes it over
+     the archive-wide document the home page quotes.
+     AND recent.json NAMES GAME IDS a reader clicks through to, so it must land
+     in the pass AFTER the extracts it points at, exactly like catalog.json.
+     Both claims are read out of the workflow file, because a comment there is
+     not a check and this is the only place the ordering exists. */
+  const wf = readFileSync(new URL('../.github/workflows/ingest.yml', import.meta.url), 'utf8');
+  const step = wf.slice(wf.indexOf('name: measure the slate'));
+  assert.match(step.slice(0, 400), /measure\.mjs --out ingest --slate/,
+    'the nightly measure step does not pass --slate');
+  assert.match(step.slice(0, 400), /shell: bash/,
+    'the step does not name a shell, so a pipe there would swallow its exit code');
+  // Excluded from the first pass…
+  assert.match(wf, /sync --exclude 'index\.json' --exclude 'catalog\.json' --exclude 'recent\.json'/,
+    'recent.json rides the first sync pass, alongside the extracts it advertises');
+  // …and uploaded with the documents that advertise.
+  assert.match(wf, /for f in catalog\.json index\.json recent\.json; do/,
+    'recent.json is never uploaded in the pass that carries catalog and index');
+  // …and the partition check knows all three, or the sync refuses to run at all.
+  assert.match(wf, /grep -vxE 'index\\\.json\|catalog\\\.json\|recent\\\.json'/,
+    'the partition check does not know about recent.json');
 });

@@ -430,6 +430,23 @@ function main(argv) {
     || new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
   const dir = join(out, 'extract');
   if (!existsSync(dir)) {
+    /* ⭐ AN EMPTY WINDOW IS A STATE, NOT A FAILURE — but only in slate mode.
+       The nightly derives the games it just fetched, and for five months a year
+       it fetches none: right now the league's window holds ZERO games and will
+       until 29 September. A slate run that exited 1 there would fail the ingest
+       every night of an offseason.
+       AND WRITING THE EMPTY DOCUMENT IS THE POINT, not a tolerance. This is
+       schedule.json's argument exactly (fetch_nhl.py): a run that skipped the
+       write because it found nothing would leave LAST NIGHT'S GAMES published
+       forever, and a front door that says "Last night — 8 games" in August is
+       the one failure this document can have with nobody touching anything.
+       ARCHIVE MODE STILL REFUSES, because an archive run with no extracts has
+       measured nothing and would publish base rates over an empty set. */
+    if (slate) {
+      writeFileSync(join(out, 'recent.json'), stable(slateOf([], now)));
+      console.log(`  recent.json: no extracts at ${dir} — an empty slate, asOf ${now}`);
+      return;
+    }
     console.error(`::error::no extracts at ${dir} — nothing to measure`);
     process.exit(1);
   }

@@ -377,11 +377,37 @@ scope and `measures.json` reports `measured: 4192`), not a tolerance somebody
 chose. Archive mode over eight extracts exits 1 with *"the extracts on disk are
 not the archive. Did you mean --slate?"* instead of publishing.
 
-⏸ **THE WORKFLOW LINE IS DELIBERATELY NOT ADDED YET.** Publishing `recent.json`
-nightly before §5.1's block can read it would create precisely what D10 forbids —
-and `schedule.json` is the cautionary tale, published on every run for weeks with
-no reader. The mode is built and tested; the `ingest.yml` line is one line on the
-day the block lands.
+✅ **AND THE NIGHTLY PUBLISHES IT — Kevin, 2026-09-09.** I had held the workflow
+line back on D10 grounds (a document with no reader), and he ruled the other way:
+the data should be flowing when the block lands. `ingest.yml` gains
+`node builders/measure.mjs --out ingest --slate` after the derive, under
+`shell: bash`, with Node pinned to 22 the way `derive.yml` pins it — the nightly
+crossed the language boundary the day it started measuring.
+
+⭐ **AN EMPTY WINDOW WRITES AN EMPTY DOCUMENT.** The offseason is five months and
+it is the state we are in: a slate run that exited on a missing extract directory
+would fail the ingest every night until 29 September. And writing the empty
+document is the point rather than a tolerance — **it is `schedule.json`'s argument
+one file over**: a run that skipped the write because it found nothing would leave
+last night's games published forever, and a front door reading *"Last night — 8
+games"* in August is the one failure this document can have with nobody touching
+anything. ⛔ Archive mode still refuses an empty tree, because that run would
+publish base rates over nothing.
+
+⭐ **AND IT SYNCS WITH THE DOCUMENTS THAT ADVERTISE, NOT WITH THE EXTRACTS.**
+`recent.json` names game ids a reader clicks through to, so it is excluded from
+the first sync pass and uploaded in the third beside `catalog.json` and
+`index.json` — the same rule that puts a pointer after its bytes. In pass one it
+would be published alongside the very extracts it advertises, and a visitor
+arriving in that window gets a door to a game that is not there yet.
+
+⚠️ **A pre-existing check forbade this and its argument was right.**
+`test/measure.test.js` asserted `ingest.yml` never mentions `measure.mjs` — the
+correct prohibition while the tool had one mode. It is spelled against **the
+thing that must not happen** now (the archive documents) plus *every invocation
+here carries `--slate`*, because a check spelled against the tool would have gone
+red on the correct change: the `layer-copy.test.js` shape of 2026-09-07, a check
+that forbids the fix to the problem it describes.
 
 ### 6.4 ⛔ AND BUILDING IT FOUND THE WEEKLY RUN THROWING
 
