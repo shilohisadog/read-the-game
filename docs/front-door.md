@@ -297,7 +297,15 @@ handed and throws away.**
 
 **`measure.mjs` does not run in the nightly.** `ingest.yml` is daily at 11:00 UTC
 and runs fetch + `derive.py`; `derive.yml` runs `measure.mjs` **weekly**, Mondays
-at 09:20 UTC. So the per-game attempts for last night's games do not exist until
+at 09:20 UTC.
+
+⚠️ **`11:00 UTC` is the cron, not the behaviour.** GitHub deprioritises scheduled
+workflows, and measured over the last twelve runs the nightly started **+2.7h to
++10.3h late, median ~+4h, and never once on time** — so it lands between roughly
+14:00 and 16:00 UTC. That does not affect `STALE_HOURS = 36`, which tolerates it
+with room. It does mean **anything that has to reach a given night's run must be
+pushed by ~13:30 UTC**, not by 11:00, and any sentence planned against the cron is
+planning against a number the pipeline has never hit. So the per-game attempts for last night's games do not exist until
 the following Monday.
 
 Three ways out, and only one of them is allowed:
