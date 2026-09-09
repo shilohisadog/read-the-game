@@ -335,3 +335,78 @@ not what I said it was — see §3.1.
 subject of a measurement is a class, ask the page how many wear it **before**
 reading anything off one of them. An inventory is a walk; a checklist is a guess
 about what the walk would find.
+
+---
+
+## 10. ⛔ BUILT, MEASURED, AND §8's "NO MARKUP CHANGE" DOES NOT SURVIVE IT
+
+Kevin, 2026-09-09: *"go ahead and build the updated game page."* Built as specified
+— CSS only, one media query at 1180, the six blocks §3 names given
+`grid-column:2`. **It is a regression, and the reason is structural rather than a
+detail of my CSS.**
+
+### 10.1 The six are scattered through the DOM, and grid rows are shared
+
+The movable blocks sit at child positions **1, 11, 13, 14, 22 and 23** of
+twenty-four. Grid auto-placement puts each into the first row where column 2 is
+free, and **a row's height is the taller of its two cells** — so a 268px
+`#newcomer` in row 2 holds the board out of it, and nothing after `.rinkbox` can
+rise above the rinkbox's row.
+
+**Measured at 1900×1065, against the live page as the baseline:**
+
+| | live today | grid | grid, `dense` |
+|---|---:|---:|---:|
+| `.board` | 267 | 408 | **124** |
+| `.rinkbox` | 400 (900×550) | 541 (992×589) | 408 (992×589) |
+| `.transport` | 963 | 1144 | 1011 |
+| **`.pickrow`** | **1123** | **1260** ⛔ | **1009** |
+| document | 1,615 | 1,932 | 1,682 |
+
+**Plain grid moves the picker further below the fold** — 1.05 → 1.18 screens —
+which is a regression on the single measurement that justified the whole change.
+
+**`grid-auto-flow: row dense` fixes the numbers and breaks the meaning.** The
+picker starts above the fold (1009), but dense backtracks per item: `.sharerow`
+lands in the rinkbox's row and `.pickrow` in the transport's, so the right-hand
+column reads **share button, then picker** with the share button beside the ice.
+That is not the layout §3 describes; it is a different layout that happens to
+measure better, and shipping it would be choosing a number over the thing the
+number was standing for.
+
+### 10.2 Two independent stacks need a container each
+
+This is not a CSS trick I failed to find. A grid column cannot hold an
+independent stack: every item in column 2 occupies a **row shared with column 1**.
+Floats stack only in source order and cannot precede the content they sit beside.
+Multi-column balances by height rather than by which item goes where. **The side
+column needs one wrapper element** — and the moment those six are contiguous in
+the DOM, the phone's reading order changes, which §8 promised it would not and
+which CHENG's ruling on the divergence rested on.
+
+### 10.3 ⭐ And the phone consequence is large, in the good direction
+
+If the wrapper sits after `.transport`, the phone loses `#newcomer`'s **268px**
+from above the board. From §1's measurements that moves the rink from **0.73
+screens to about 0.41**, and brings the play button — currently off-screen at 1.15
+screens — **above the fold**.
+
+That is a big improvement to the number §1.2 calls *the more expensive problem*.
+⚠️ **It is also a change nobody has ruled on**, and CHENG's q4 said in terms that
+the phone is *not* fixed by this change. It moves the first-visit instruction from
+the first thing a newcomer reads to a block beside the control it tells them to
+press — arguably better, arguably worse, and **not mine to decide**.
+
+### 10.4 So the fork, stated once
+
+| | what it costs |
+|---|---|
+| **A — ship nothing** | the picker stays below the fold on every laptop |
+| **B — CSS only, `dense`** | the numbers improve, the column reads share-then-picker, and it is not what was ruled |
+| **C — one wrapper** | the ruled layout exactly, **and the phone's reading order changes** — measurably for the better, and outside what was ruled |
+
+**My recommendation is C**, with the phone reorder taken as a deliberate second
+change rather than a side effect: it is the only route that produces the layout
+CHENG ruled on, and the phone half is an improvement to the measurement this
+document already calls the costlier one. But §8 was a commitment, and it is
+Kevin's and CHENG's to release rather than mine to work around.
