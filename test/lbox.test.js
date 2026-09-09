@@ -318,8 +318,14 @@ test('the box is a constant height and the caption clears it from one source', (
  * added inside `.rinkbox` answer this question; the answer only turned up by
  * LOOKING at the hero, which is why it is pinned here rather than remembered.
  *
- * The hero loses nothing: its scoreboard already carries the attempts on
- * `.cbar`, which is the same information in the space a 146px frame has.
+ * ⏹ AND THE SECOND HALF OF THIS NOTE EXPIRED ON 2026-09-09. It read "the hero
+ * loses nothing: its scoreboard already carries the attempts on `.cbar`" — and
+ * `.cbar` is parked on both surfaces now, because in a ten-second loop that
+ * whole-game bar read `1 - 0` for fifteen of eighteen seconds and drew it as a
+ * 100%/0% proportion beside a caption saying the game was 52-52.
+ * ⭐ THE HERO STILL LOSES NOTHING, for a different reason: `#herosub` on the
+ * parent page says "Both teams took 52 shot attempts", computed over the whole
+ * game and posted from this frame. The fact is named where the number is.
  */
 test('the layer box does not reach the front-door hero', () => {
   const css = PAGE_CSS.replace(/\/\*[\s\S]*?\*\//g, ' ');

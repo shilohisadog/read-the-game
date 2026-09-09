@@ -109,14 +109,21 @@ function buriedIds(html, dark) {
  * Un-parking a zone should DELETE lines from this list, never leave them.
  */
 const ENUMERATED = {
-  // ⚠️ `.cbar`'s SIX CHILDREN ARE NOT HERE, and their absence is the model's
-  // limit made visible. The bar is parked on the game page and lit on the front
-  // door, and the difference is one `:not(.preview)` — a specificity fact across
-  // two contexts, which `darkClasses` deliberately does not model. So it reads
-  // the bar as lit, which is true of the surface it can see. The game page's
-  // half is covered by the third test in this file instead, which asserts the
-  // scoping directly. A ledger line here would be a claim the instrument cannot
-  // support, which is worse than a gap it names.
+  /* ⭐ `.cbar`'s SIX CHILDREN ARRIVED HERE ON 2026-09-09, and the note they
+     replace said they could not. It read: the bar is parked on the game page and
+     lit on the front door, the difference is one `:not(.preview)`, and that is a
+     specificity fact across two contexts which `darkClasses` deliberately does
+     not model — so a ledger line would be a claim the instrument cannot support.
+     THE SCOPING IS GONE, so the gap it named is gone with it. The bar is parked
+     on both surfaces now, `darkClasses` reads it as dark on the one surface it
+     models, and these six become exactly what this ledger is for: elements the
+     renderer still writes into, deliberately, behind a park. */
+  ba: 'the away half of the split bar — still written, so un-parking needs no rewiring',
+  bh: 'the home half of the split bar',
+  pa: 'the away attempts figure',
+  ph: 'the home attempts figure',
+  pName: 'the unit the two figures count — still set, and read by the preview test',
+  pMode: 'the situation they count under',
   // The Attempts layer's counters, parked 2026-08-27 with the rest.
   cA: 'the away attempts count', mA: 'and the situation it counts under',
   cH: 'the home attempts count', mH: 'and the situation it counts under',
@@ -165,23 +172,44 @@ test('the ledger lists nothing that is already back in the light', () => {
 });
 
 /**
- * ⭐ THE PARK WAS WRITTEN FOR THE GAME PAGE AND APPLIED TO TWO SURFACES.
+ * ⛔⛔ THE SCOPING WAS REVERSED ON 2026-09-09, AND MEASURING THE HERO IS WHY.
  *
- * The hero boots `corsiOn=true`, so the preview wears the `corsi` class, so
- * `#rg.corsi .cbar{display:none}` took the front door's split bar and its
- * CONTROL/SHOT ATTEMPTS readout with it. That left a scoreboard with no bar
- * above a sentence about attempts — the precise pair `app.js` names in "AND
- * THE BOARD NAMES ITS UNIT", where the fix for it was originally written.
+ * This test used to assert the OPPOSITE — that `#rg:not(.preview).corsi .cbar`
+ * kept the front door's split bar lit — because parking it unscoped had once
+ * left a scoreboard with no bar above a sentence about attempts. That fix was
+ * right about the pair and wrong about which half to restore.
  *
- * `render-preview.test.js` asserts `pName`'s textContent, which is set by the
- * script and says nothing about whether a stylesheet shows it. Two mechanisms,
- * one observable, proves neither — so this asserts the other one.
+ * Sampled on the live hero every 700ms across an 18-second loop: the bar reads
+ * 0-0, then `1 - 0` for about FIFTEEN OF THE EIGHTEEN SECONDS, then 2-0, then
+ * restarts — beside a sentence reading "Both teams took 52 shot attempts". And
+ * the bar is proportional (`width:(pa)%`), so at 1-0 it draws ENTIRELY ONE
+ * COLOUR: a picture asserting one club took every attempt in a game its own
+ * caption calls 52-52.
+ *
+ * ⭐ THE DIAGNOSIS IS THE WINDOW, NOT THE SURFACE. A split bar is a whole-game
+ * instrument and the preview is a ten-second loop, so it can only ever show the
+ * extreme. The unit is still named where the number is: `#herosub` says "Both
+ * teams took 52 shot attempts", computed over the whole game and posted from
+ * this frame — so what left the hero is a contradicting picture, not the fact.
  */
-test('parking the layer displays does not reach the front-door hero', () => {
-  assert.match(CSS, /#rg:not\(\.preview\)\.corsi \.cbar/,
-    'the cbar park is not scoped away from the preview — the hero loses its bar');
-  assert.doesNotMatch(CSS, /(?:^|[,\s])#rg\.corsi \.cbar\s*\{[^}]*display:none/,
-    'an unscoped cbar park is still in the stylesheet');
+test('⛔ the hero shows no metric readout at all — it has no window for one', () => {
+  assert.match(CSS, /(?:^|[,\s])#rg\.corsi \.cbar\s*,/,
+    'the cbar park is scoped away from the preview again — the hero is back to '
+    + 'drawing a 100%/0% bar under a caption that says the game was even');
+  assert.doesNotMatch(CSS, /#rg:not\(\.preview\)\.corsi \.cbar/,
+    'the preview exception is back in the stylesheet');
+
+  /* ⚠️ AND THE PAIRED HALF, DERIVED. "Hide the bar" is satisfied by a hero that
+     grows a different attempts readout tomorrow — the counters are parked by the
+     same rule, but a NEW element would not be. So the claim is about the whole
+     board: nothing in the preview may carry a running figure whose window is the
+     loop rather than the game. */
+  const previewHides = [...CSS.replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .matchAll(/([^{}]*)\{[^}]*display:none[^}]*\}/g)]
+    .flatMap(m => m[1].split(',').map(x => x.trim()));
+  for (const sel of ['#rg.corsi .counters', '#rg.corsi .cbar'])
+    assert.ok(previewHides.includes(sel),
+      `${sel} is not parked, so the preview can show a loop-window figure again`);
 });
 
 /**

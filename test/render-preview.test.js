@@ -170,13 +170,21 @@ test('⭐ the preview runs with the Control layer ON, so the hero shows what the
   assert.equal(String(a.GROUPS['#rg .pk'].find(b => b.dataset.l === 'corsi')
                        .getAttribute('aria-checked')), 'true');
 
-  // ⭐ AND THE BOARD NAMES ITS UNIT. In preview `.counters` is hidden, so this is
-  // the ONLY element that can say what the two figures count. Without it the
-  // board said CONTROL, the sentence under the rink said shots on goal, and a
-  // reader had no way to know those were different quantities -- which reads as
-  // an error rather than a distinction.
+  /* ⏹ "AND THE BOARD NAMES ITS UNIT" ENDED ON 2026-09-09, because the board
+     stopped showing a figure for a unit to be about. `.cbar` is parked on both
+     surfaces now — measured, it read `1 - 0` for fifteen of an eighteen-second
+     loop and drew that as a 100%/0% bar beside a caption saying 52-52, so a
+     whole-game instrument had no window to work in. See park.test.js.
+
+     ⚠️ THE LABEL IS STILL SET AND THAT IS THE POINT OF KEEPING THIS LINE. The
+     renderer writes `pName` whether or not a stylesheet shows it, so asserting
+     the text proves nothing about what a reader sees — the two-mechanisms-one-
+     observable hole park.test.js exists to close. It is asserted here as WIRING,
+     so un-parking the bar needs no rewiring, and the visibility half is asserted
+     there, against the stylesheet. */
   assert.match(a.$('pName').textContent, /attempt/i,
-    'the preview board names no unit — CONTROL is a name, not a unit');
+    'the label the parked bar would carry is no longer written, so un-parking it '
+    + 'would light a bar that says CONTROL — a name, not a unit');
   // AND THE GAME PAGE IS UNCHANGED, which is the paired half. Checked in the
   // MARKUP, not through a boot: the default label is a text node the document
   // ships with, and this fake's elements start empty -- so asserting it through

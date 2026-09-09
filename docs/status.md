@@ -2446,27 +2446,56 @@ behavioural check would pass, and the chip would announce the ends change **all
 game**. `.ppill` carries the identical line and **its test is what caught mine** —
 the second element to need it, and the first one's note is why it cost a minute.
 
-## ⏸ THE THIRD NIT IS NOT MINE TO DECIDE — where the attempts figure lives
+## ✅ THE THIRD NIT — and measuring the hero found a defect, not an inconsistency
 
 Kevin: *"on the hero game attempts is shown in the scoreboard area, whereas on
 the game page attempts are shown in the layers area below the rink, somewhat of
-an inconsistency."*
+an inconsistency."* Then, offered three options: *"we could also remove attempts
+from the hero game (since that isn't how we surface the information on the game
+pages), this is the option I am leaning towards."*
 
-**He is right, and the cause is measured rather than accidental.** The hero has no
-room below the ice — `#rg.preview .lbox` is hidden because the box took **70px of
-a 90px ice at 390** — so the preview puts attempts on the scoreboard. The game
-page has room, so it uses `.lbox`, and the board's split bar is **parked**.
+**He is right, and the reason turned out to be much stronger than consistency.**
+Sampling the live hero every 700ms across an 18-second loop:
 
-⛔ **The obvious fix does not work.** Un-parking `#rg:not(.preview).corsi .cbar`
-does not unify anything: `lboxFor('corsi')` returns `{a, 'SHOT ATTEMPTS', h}` —
-**the same two numbers under the same label** as the board's bar. The page would
-print them twice, about 400px apart.
+| | |
+|---|---|
+| the hero's attempts bar | `0–0` → **`1 – 0` for about fifteen of the eighteen seconds** → `2–0` → restart |
+| the sentence six inches to its left | *"Both teams took 52 shot attempts."* |
 
-**And the park is Kevin's own**, from 2026-08-27: *"let's hide (not remove, but
-temporarily hide) the layer information… I don't think we are displaying that
-information in an intuitive way and want to start fresh on how and where we
-display the metrics."* Choosing the one home for attempts **is** that decision, so
-it is his. **My recommendation: the scoreboard**, on both surfaces — it is the
-one the hero must use, it is where a count belongs beside a score, and it is the
-version he has just looked at and liked. That means retiring corsi's `.lbox` row,
-which is the part worth his word before I touch it.
+⛔ **AND THE BAR IS PROPORTIONAL** — `width:(pa)%` — so at `1–0` it draws
+**entirely one colour.** For most of every loop the front door was showing a
+picture asserting one club took *every* shot attempt in a game its own caption
+calls **52–52**. That is not an inconsistency with the game page; it is the
+drawing contradicting the text beside it.
+
+⭐ **THE DIAGNOSIS IS THE WINDOW, NOT THE SURFACE.** A split bar is a **whole-game
+instrument** and the preview is a **ten-second loop**, so it can only ever show
+the extreme — the very swing this element's own comment refuses to print a
+percentage for, *"looking like information"*. The same instrument over a whole
+game works fine, which is why the game page keeps it.
+
+**The unit is still named where the number is.** `#herosub` says *"Both teams took
+52 shot attempts"*, computed over the whole game and posted from the frame — so
+what left the hero is a contradicting picture, not the fact.
+
+⚠️ **The board barely shrinks and I am not claiming otherwise**: 89→86px at 1900
+and 57→53px at 390, because the board's height is set by the team score columns
+and not by the middle one. The rink gains 3–4px. Real, negligible, stated.
+
+### ⏹ Four claims elsewhere expired with it, and none were loosened
+
+| where | what it said |
+|---|---|
+| `park.test.js` | asserted the **opposite** — that the park stayed scoped away from the preview. Replaced with the measurement, plus a derived paired half: nothing in the preview may carry a figure whose window is the loop. |
+| `park.test.js`'s ledger | said `.cbar`'s six children **could not** be ledgered, because the scoping was a specificity fact across two contexts the model does not carry. The scoping is gone, so the gap it named is gone; the six are ledgered. |
+| `render-preview.test.js` | *"AND THE BOARD NAMES ITS UNIT"* — the board no longer shows a figure for a unit to be about. The label is still asserted, now explicitly **as wiring**, so un-parking needs no rewiring. |
+| `lbox.test.js` | *"the hero loses nothing: its scoreboard already carries the attempts on `.cbar`"* — still true, now for a different reason. |
+
+⭐ **The `pName` assertion is the interesting one.** `park.test.js`'s own comment
+predicted this exact hole a month ago — *"`render-preview.test.js` asserts
+`pName`'s textContent, which is set by the script and says nothing about whether
+a stylesheet shows it. Two mechanisms, one observable, proves neither."* Parking
+the bar left that assertion green while what it describes went off screen. It is
+kept, relabelled as a wiring check, and the visibility half stays where it can
+actually be seen.
+

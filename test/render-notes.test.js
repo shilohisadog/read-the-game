@@ -336,16 +336,18 @@ test('the caption says what the chosen lens is, in the words the rows carry', ()
  * on how and where we display the metrics/information."
  */
 test('the layer displays are parked, by a rule that has to come last', () => {
-  // ⚠️ `.cbar` CARRIES `:not(.preview)` AND THE OTHERS DO NOT. The hero boots
-  // with the corsi layer on, so an unscoped park took the FRONT DOOR's split
-  // bar with it — a live defect for one commit. The counters and `#work` need
-  // no scoping because the preview already hides both on purpose.
+  /* ⏹ `.cbar` CARRIED `:not(.preview)` UNTIL 2026-09-09 AND NO LONGER DOES.
+     The scoping existed because an unscoped park had taken the front door's
+     split bar with it; measuring the hero showed the bar reading `1 - 0` for
+     fifteen of an eighteen-second loop, drawn as a 100%/0% proportion, beside a
+     caption saying the game was 52-52. A whole-game instrument in a ten-second
+     window can only show the extreme. See park.test.js for the measurement. */
   /* ⏹ `#rg.slot .hint` LEFT THIS LIST ON 2026-09-07 with the tip itself — not
      un-parked, removed, because the caption already said it and better. Slot's
      display is the amber rings on the ice, which were never in this block. */
-  const PARKED = ['#rg.corsi .counters', '#rg:not(.preview).corsi .cbar',
+  const PARKED = ['#rg.corsi .counters', '#rg.corsi .cbar',
                   '#rg.goalie .goalies', '#rg.whistle .whistlepanel', '#rg.blocked .blockpanel'];
-  const park = /#rg:not\(\.preview\)\.corsi \.cbar,[\s\S]*?\{display:none\}/.exec(PAGE_CSS);
+  const park = /#rg\.corsi \.cbar,[\s\S]*?\{display:none\}/.exec(PAGE_CSS);
   assert.ok(park, 'the layer displays are back — nothing parks them');
   for (const sel of PARKED)
     assert.ok(park[0].includes(sel.replace('#rg', '')) || park[0].includes(sel),
