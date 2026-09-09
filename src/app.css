@@ -217,6 +217,29 @@
    in builders/build_main.py. */
 #rg .endnote{margin:10px 0 0;padding:9px 13px;border-radius:9px;border:1px solid var(--edge);border-left:3px solid var(--blue);background:#fff;color:var(--ink);font-size:.84rem;line-height:1.45}
 #rg .endnote .disp{color:var(--muted)}
+/* ⭐ THE ENDS CHIP — the power-play pill's rules, for the power-play pill's
+   reason. It comes and goes and it sits above the ice, which is exactly what
+   `nothing that comes and goes sits above the ice` forbids IN THE FLOW; inline
+   content of `.gs` is the one shape that has been measured not to move the rink,
+   because the board absorbs it side by side where there is width and wrapped
+   underneath where there is not.
+   ⚠️ `line-height:1` AND `white-space:nowrap` ARE BOTH LOAD-BEARING, and they are
+   load-bearing for the reasons written out at `.ppill` twenty lines up: at the
+   inherited line-height the chip stands taller than the clock's line box and the
+   board grows every period; allowed to wrap, it grows at the narrow width
+   instead. */
+#rg .endpill{display:inline-flex;align-items:center;gap:5px;vertical-align:middle;
+ padding:1px 8px;border-radius:99px;border:1px solid var(--edge);background:#fff;
+ font-size:.62rem;font-weight:700;letter-spacing:.06em;color:var(--ink);
+ white-space:nowrap;line-height:1;margin-left:6px}
+/* ⚠️ RESTATED, BECAUSE THE RULE ABOVE BEATS THE UA SHEET. `[hidden]{display:none}`
+   is (0,1,0) and `#rg .endpill` is (1,1,0), so without this line the `hidden`
+   attribute is set, `el.hidden` reads true, every behavioural check passes — and
+   the chip sits on the scoreboard for the whole game announcing that the ends
+   just changed. `.ppill` carries the identical line eight rules up for the
+   identical reason, and its test says so; this is the second element to need it
+   and the first one's note is why it took a minute rather than a session. */
+#rg .endpill[hidden]{display:none}
 #rg .atnote:empty{display:none}
 #rg .atnote{margin:0 0 10px;padding:9px 13px;border-radius:9px;border:1px solid var(--edge);background:#fbf6ee;color:var(--ink);font-size:.88rem}
 /* ⭐ "PRESS PLAY", ON THE ICE. Kevin, looking at the pre-game frame: "we should

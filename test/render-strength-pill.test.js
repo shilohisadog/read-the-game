@@ -68,8 +68,18 @@ test('the pill is inside the clock line, which is what the layout assumes', () =
   // its own line inside the middle column. Moved out to `.mid` or the board it
   // becomes a sibling of the clock rather than part of its line, and both
   // behaviours change while every other assertion here keeps passing.
-  assert.match(app, /<div class="gs">[\s\S]{0,200}?<span class="ppill" id="ppill" hidden><\/span><\/div>/,
-    'the pill is no longer the last child of the clock line');
+  /* ⚠️ THIS ASSERTED "LAST CHILD" UNTIL 2026-09-09 and the claim it is making is
+     INSIDE — a second chip joined the clock line that day (`#endpill`, the ends
+     signal) and being last stopped being the property that matters. What both
+     widths actually depend on is that the pill is inline content of `.gs`; moved
+     out to `.mid` or the board it becomes a sibling of the clock rather than part
+     of its line, and both behaviours change while every other assertion here
+     keeps passing. The check is the containment, and the walk is over `.gs`'s own
+     contents so a third chip does not break it again. */
+  const gs = /<div class="gs">([\s\S]*?)<\/div>/.exec(app);
+  assert.ok(gs, 'the clock line is gone');
+  assert.match(gs[1], /<span class="ppill" id="ppill" hidden><\/span>/,
+    'the pill is no longer inline content of the clock line');
   assert.doesNotMatch(app, /class="ppill"[^>]*\sonclick=/,
     'an inline handler, which this page’s CSP refuses');
 });

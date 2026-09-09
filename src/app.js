@@ -624,26 +624,82 @@ function drawBoxes(secs,cur){
    say about a video that does not exist. */
 function clipUrl(id){return 'https://players.brightcove.net/6415718365001/D3UCGynRWU_default/index.html?videoId='+encodeURIComponent(id);}
 function shutClip(){const b=$('clipbox');if(b){b.open=false;$('clipFrame').innerHTML='';}}
-function drawClip(e){
+
+/* ⭐ THE OFFER OUTLIVES THE FRAME, AND IT DID NOT.
+   `drawClip(cur)` keyed on the CURRENT event being the goal, so at this pace the
+   link was on screen for one interval -- 3.6 seconds -- and then vanished while
+   the reader was still reading it. Kevin, watching a replay run: "the link to
+   the NHL highlight appears briefly but then goes away (since the replay
+   continues to play), that's rather odd."
+   ⭐ IT IS THE HIT-TARGET DEFECT IN A FOURTH FORM. The control was present,
+   correctly labelled and technically pressable, and a person could not press it.
+   The three before it were a label that was never wired, a test that disabled
+   the actionability check, and three sites dispatching the ideal event; this one
+   is a control that is only pressable for as long as nobody has finished reading
+   what it says.
+
+   SO THE SUBJECT IS "THE MOST RECENT GOAL", NOT "THIS FRAME". That is an
+   invariant rather than a tuned window -- no seconds to pick, no event count,
+   nothing that goes stale when the pace changes -- and the offer stands from the
+   goal until the next goal replaces it, which is exactly as long as it is the
+   answer to "can I watch that?" */
+function goalWithClip(at){
+ for(let k=Math.min(at,EV.length-1);k>=0;k--){
+  const e=EV[k];if(e&&e.type==='goal'&&e.clip!=null)return e;}
+ return null;}
+
+/* WHICH GOAL, IN THE BOARD'S OWN WORDS. A box that persists cannot say "this
+   goal": the playhead has moved on and the reader has no way to tell which one
+   it means. The club and the clock are the two things the scoreboard was showing
+   when it went in, so the sentence points back at something the reader saw. */
+function clipNames(g){
+ /* `rem` and not `clock`, because the board reads REMAINING -- "PERIOD 1 ·
+    16:13 LEFT" -- and a sentence quoting elapsed time would name a moment the
+    scoreboard never showed. `periodLabel` is the board's own function, so
+    overtime and the shootout are named the way the board named them. */
+ return (g.own===HID?HAB:AAB)+' scored at '+g.rem+' of '+periodLabel(g);}
+
+function drawClip(at){
  const b=$('clipbox');if(!b)return;
- const id=e&&e.type==='goal'?e.clip:null;
- shutClip();
- document.getElementById('rg').classList.toggle('hasclip',id!=null);
- if(id==null){b.hidden=true;return;}
- b.hidden=false;b.dataset.id=id;
+ const cur=EV[at]||null;
+ /* ⚠️ `hasclip` IS DELIBERATELY NOT MADE STICKY WITH THE BOX. It is what puts
+    `cursor:pointer` on the goal figure, and the goal is only on the ice while it
+    is the current frame -- a sticky version would advertise a click target on
+    marks that open nothing, which is this same defect inverted. So the affordance
+    tracks the frame and the box tracks the goal, and the sentence's "press the
+    goal on the ice" clause travels with the affordance rather than with the box. */
+ const live=!!cur&&cur.type==='goal'&&cur.clip!=null;
+ document.getElementById('rg').classList.toggle('hasclip',live);
+ const g=goalWithClip(at);
+ if(!g){shutClip();b.hidden=true;delete b.dataset.id;return;}
+ /* ⛔ AND IT ONLY SHUTS WHEN THE GOAL CHANGES. `shutClip()` ran on every render,
+    which was harmless while the box lived for a single frame and is not now: a
+    reader who opened the clip would have had it slammed shut under them on the
+    next tick, 3.6 seconds later. */
+ if(b.dataset.id!==String(g.clip)){shutClip();b.dataset.id=String(g.clip);}
+ b.hidden=false;
  /* THE DURATION IS NOT SAID TWICE. The badge would carry it if we held it -- we
     hold the id and nothing else, deliberately (see extract.py), so the sentence
     carries what we DO know and the badge names the source instead. */
  $('clipDur').textContent='NHL.com';
- $('clipSay').textContent='NHL.com published a broadcast highlight of this goal'
-  +' \u2014 or press the goal on the ice. It starts with an advertisement.';}
+ $('clipSay').textContent='NHL.com published a broadcast highlight \u2014 '
+  +clipNames(g)+(live?', and you can press the goal on the ice instead':'')
+  +'. It starts with an advertisement.';}
 
 /* THE SENTENCE THE PAGE HAS OWED SINCE THE ENDS DECISION -- see rink.js.
    Two sentences, two kinds: the first is about hockey, the second is about what
    WE did to the data, and the `display:` tag says which. */
 function drawEndsNote(e){
  const el=$('endnote');if(!el)return;
- if(!e||!endsNoteShowing(e,PSTART[e.per]??0)){el.innerHTML='';return;}
+ const on=!!e&&endsNoteShowing(e,PSTART[e.per]??0);
+ /* ⭐ THE SAME CONDITION DRIVES BOTH SURFACES, from one call. The chip is the
+    signal at the scoreboard, where a reader watching the rink can see it; this
+    paragraph is the explanation. Two elements, one predicate -- a second
+    `endsNoteShowing` call somewhere else is how the two would drift apart and
+    leave the board saying the ends changed under a page that had stopped
+    explaining it. */
+ const pill=$('endpill');if(pill)pill.hidden=!on;
+ if(!on){el.innerHTML='';return;}
  // The `from` provenance string is deliberately NOT painted here -- see rink.js.
  // TWO SENTENCES IN ONE MODE AND ONE IN THE OTHER, because as-played captions
  // something the reader just watched and one-direction has to carry the whole
@@ -732,7 +788,7 @@ function render(i,how){
  // end on THIS goal" -- and several events can share one second.
  drawBoxes(cur?cur.s:null,cur);
  drawEndsNote(cur);
- drawClip(cur);
+ drawClip(i);
  /* ⭐ EVERY INPUT NAMED, AND THERE ARE NINETEEN OF THEM. That number is the
     measurement, not a complaint: drawing one mark depends on the event, the club,
     its colour, which way the rink faces, the slot layer, the motion preference and

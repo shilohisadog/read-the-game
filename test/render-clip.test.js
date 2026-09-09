@@ -41,6 +41,12 @@ test('the fixture still poses both cases, or everything below is vacuous', () =>
     + 'case — 6.6% of goals archive-wide — is no longer tested by anything');
 });
 
+/** Step the playhead to an absolute frame, the way the scrubber does. */
+const seek = (a, k) => {
+  const s = a.$('scrub'); s.value = String(k);
+  s.oninput({ target: { value: s.value } });
+};
+
 /** Drive the page to the frame showing `ev`, using the app's own playable set. */
 function frameOf(a) {
   const NOT = /const SKIP=new Set\(Object\.keys\(NOT_A_PLAY\)\)/;
@@ -172,6 +178,12 @@ test('⚠️ a goal the league published no highlight for shows nothing at all',
      key means the league published none; `extract.py` keeps that distinguishable
      from a read failure by leaving it out, and there is nothing true to say about
      a video that does not exist. */
+  /* ⚠️ THIS CHECK WAS `clipbox.hidden === true` UNTIL 2026-09-09, and that
+     assertion expired when the offer stopped being a property of the frame. The
+     box now carries the most recent goal that HAS a highlight, so at a goal with
+     none it may well be on screen — naming an earlier goal, which is exactly what
+     it is for. What must still be true is the part that was ever about honesty:
+     nothing on the page offers a video for THIS goal. */
   const a = boot();
   const scrub = a.$('scrub');
   const bare = WITHOUT[0];
@@ -180,22 +192,37 @@ test('⚠️ a goal the league published no highlight for shows nothing at all',
     scrub.value = String(k); scrub.oninput({ target: { value: scrub.value } });
     if (a.$('clk').textContent !== bare.rem) continue;
     seen = true;
-    assert.equal(a.$('clipbox').hidden, true,
-      `the goal at P${bare.per} ${bare.clock} has no published highlight and the `
-      + 'page is offering one anyway');
+    assert.equal(a.$('rg').classList.contains('hasclip'), false,
+      `the goal at P${bare.per} ${bare.clock} has no published highlight and the ice `
+      + 'is offering a click on it anyway');
+    const say = a.$('clipbox').hidden ? '' : a.$('clipSay').textContent;
+    assert.doesNotMatch(say, /press the goal on the ice/,
+      'the sentence tells the reader to press a goal that opens nothing');
+    if (say) assert.doesNotMatch(say, new RegExp(bare.rem.replace(':', '\\:')),
+      `the offer names the goal at ${bare.rem}, for which the league published no video`);
   }
   assert.ok(seen, 'never reached the goal with no clip, so this proved nothing');
 });
 
-test('the section leaves the frame when the frame does', () => {
+test('⏪ seeking back before the first goal takes the offer away again', () => {
+  /* ⚠️ THIS TEST USED TO BE "the section leaves the frame when the frame does",
+     and it asserted the defect Kevin reported: the offer vanished one frame past
+     the goal, 3.6 seconds after it appeared. The behaviour it guarded is gone on
+     purpose and the check is replaced rather than deleted, because the property
+     underneath it is still real — THE BOX IS A FUNCTION OF THE PLAYHEAD AND NOT A
+     LATCH. "Most recent goal" has to run backwards too, or seeking to the start
+     leaves an offer up for a goal that has not been scored yet, which is the
+     foreknowledge leak this page spends real effort avoiding. */
   const a = boot();
   const k = frameOf(a);
-  const scrub = a.$('scrub');
-  scrub.value = String(k + 1); scrub.oninput({ target: { value: scrub.value } });
+  a.$('labels').click();
+  assert.ok(a.$('clipbox').open, 'the setup failed — nothing was open to tear down');
+  seek(a, 0);
   assert.equal(a.$('clipbox').hidden, true,
-    'the section survives the goal it describes, so it now sits under an unrelated play');
+    'the offer survives a seek to before the goal, so the page is advertising a '
+    + 'highlight of something that has not happened');
   assert.equal(a.$('clipFrame').innerHTML, '',
-    'the player survives the goal it describes and keeps playing');
+    'the player survives a seek to before the goal and keeps playing');
 });
 
 test('⭐ it is the page’s own section idiom, not a lookalike', () => {
@@ -309,4 +336,115 @@ test('⭐ the row cannot grow, because the Play button is under it', () => {
   assert.match(rule[1], /line-height:inherit/, 'the link sets its own line-height');
   assert.match(rule[1], /padding:0/, 'the link adds padding inside a row of reserved height');
   assert.doesNotMatch(rule[1], /border:(?!0)/, 'the link draws a border, which adds height');
+});
+
+/* ------------------------------------------------------- ⭐ THE OFFER PERSISTS
+ *
+ * Kevin, watching a replay run: *"when 'playing' through the game and a goal
+ * occurs, the link to the NHL highlight appears briefly but then goes away
+ * (since the replay continues to play), that's rather odd."*
+ *
+ * ⛔ IT IS THE HIT-TARGET DEFECT IN A FOURTH FORM, and every test in this file
+ * was green through it — because every one of them drives the playhead TO the
+ * goal frame and stops. The control was present, correctly labelled and
+ * technically pressable, and at 3.6 seconds a frame a person could not press it.
+ * A test that only ever visits the one frame where a control works cannot see
+ * that it works nowhere else.
+ */
+
+test('⭐ the highlight stays offered after the replay moves past the goal', () => {
+  const a = boot();
+  const k = frameOf(a);
+  assert.ok(k != null && k + 3 <= +a.$('scrub').max, 'no room to advance past the goal');
+  const id = a.$('clipbox').dataset.id;
+
+  for (const step of [1, 2, 3]) {
+    seek(a, k + step);
+    assert.equal(a.$('clipbox').hidden, false,
+      `${step} frame(s) past the goal the offer had vanished — about ${(step * 3.6).toFixed(1)}s`);
+    assert.equal(a.$('clipbox').dataset.id, id, 'it swapped to a different clip');
+  }
+});
+
+test('⛔ …but the click target on the ice does NOT persist — the paired half', () => {
+  /* `hasclip` is what puts `cursor:pointer` on the goal figure, and the goal is
+     only drawn while it is the current frame. Making it sticky alongside the box
+     would advertise a click target on marks that open nothing, which is this same
+     defect inverted — and "make the offer persist" is satisfied by a version that
+     does exactly that. */
+  const a = boot();
+  const k = frameOf(a);
+  assert.equal(a.$('rg').classList.contains('hasclip'), true,
+    'the goal frame does not mark the ice as clickable');
+  seek(a, k + 1);
+  assert.equal(a.$('rg').classList.contains('hasclip'), false,
+    'the ice still advertises a clickable goal one frame after the goal left it');
+
+  // …and the sentence drops the clause that names the affordance, with it.
+  assert.doesNotMatch(a.$('clipSay').textContent, /press the goal on the ice/,
+    'the sentence still tells the reader to press a goal that is not on the ice');
+});
+
+test('⭐ the sentence names WHICH goal, because "this goal" stops being true', () => {
+  /* A box that outlives its frame cannot say "this goal": the playhead has moved
+     and the reader has no way to tell which one it means. The club and the clock
+     are what the scoreboard was showing when it went in, so the sentence points
+     back at something the reader watched. */
+  const a = boot();
+  const k = frameOf(a);
+  const goal = rich.events.filter(e => e.type === 'goal' && e.clip != null)
+    .find(e => String(e.clip) === String(a.$('clipbox').dataset.id));
+  assert.ok(goal, 'the box points at no goal in the fixture');
+  seek(a, k + 1);
+  const say = a.$('clipSay').textContent;
+  const ab = goal.own === rich.teams.home.id ? rich.teams.home.ab : rich.teams.away.ab;
+  assert.match(say, new RegExp(ab), `the sentence does not name the club that scored: ${say}`);
+  assert.match(say, new RegExp(goal.rem.replace(':', '\\:')),
+    `the sentence does not name the clock the board was showing: ${say}`);
+  assert.doesNotMatch(say, /this goal/,
+    'the sentence still says "this goal" while the playhead is somewhere else');
+});
+
+test('⛔ an open player is not slammed shut by the next frame', () => {
+  /* `shutClip()` ran on EVERY render. That was harmless while the box lived for a
+     single frame and is the whole feature broken now: a reader who presses play,
+     opens the highlight and keeps watching would have had it torn down under them
+     3.6 seconds later — and torn down means the video stops. */
+  const a = boot();
+  const k = frameOf(a);
+  a.$('labels').click();
+  assert.ok(a.$('clipbox').open, 'the setup failed — nothing was open to survive');
+  seek(a, k + 1);
+  assert.ok(a.$('clipbox').open, 'the next frame closed the player a reader had opened');
+  assert.match(a.$('clipFrame').innerHTML, /<iframe/, 'the player was torn down mid-video');
+});
+
+test('⭐ …but a NEW goal resets it, so the shut player is the right one', () => {
+  /* THE OTHER DIRECTION, and without it "never shut" passes the test above. When
+     a second goal takes the box over, an open player from the first would sit
+     under a sentence about the second — and would go on playing the wrong clip. */
+  const a = boot();
+  const first = frameOf(a);
+  const firstId = a.$('clipbox').dataset.id;
+  a.$('labels').click();
+  assert.ok(a.$('clipbox').open);
+
+  const max = +a.$('scrub').max;
+  let next = null;
+  for (let k = first + 1; k <= max; k++) {
+    seek(a, k);
+    if (a.$('clipbox').dataset.id !== firstId) { next = k; break; }
+  }
+  assert.ok(next != null, 'the fixture has only one goal with a clip past this point');
+  assert.ok(!a.$('clipbox').open, 'the player for the previous goal was left open and running');
+  assert.equal(a.$('clipFrame').innerHTML, '', 'the previous goal’s iframe survived the swap');
+});
+
+test('before any goal there is no offer at all', () => {
+  // THE CONTROL for "most recent goal": at frame 0 there is no most-recent
+  // anything, and a box pointing at a goal that has not happened would be the
+  // foreknowledge leak this project spends real effort avoiding.
+  const a = boot();
+  seek(a, 0);
+  assert.equal(a.$('clipbox').hidden, true, 'the offer is up before any goal was scored');
 });

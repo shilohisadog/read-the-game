@@ -13,7 +13,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { WHY, whistle } from '../src/lib/layers/whistle.js';
-import { rich, SCRIPT, fakeDom, bundle, boot , pickLayer } from './helpers/page.js';
+import { rich, SCRIPT, fakeDom, bundle, boot , pickLayer, app as APP_HTML, PAGE_CSS as ENDS_CSS } from './helpers/page.js';
 
 test('the ends disclosure appears at a period boundary and nowhere else', () => {
   // THE SENTENCE docs/ends-switching.md AGREED IN SECTION 6 AND NEVER BUILT.
@@ -492,4 +492,63 @@ test('the whistle layer is exempt, because its marks carry no direction', () => 
   assert.ok(total > 5, `only ${total} restart marks survived to the last frame`);
   assert.ok(counts.some(n => n > 2),
     `no dot stacked past 2 (${counts.join(',')}) — the whole-game count did not survive`);
+});
+
+/* ------------------------------------------------- ⭐ THE SIGNAL AT THE BOARD
+ *
+ * Kevin, watching a period change: *"the teams swap sides, which works fine but
+ * 'The teams have just changed ends, as they do every period.' is displayed
+ * below the rink, which isn't where I am watching, could that message go into
+ * the scoreboard?"*
+ *
+ * ⛔ IT CANNOT GO ABOVE THE RINK IN THE FLOW — that was measured on 2026-09-07
+ * and reverted: `#endnote` there pushed the drawing down 69px on 15 of 269
+ * frames at 390. An overlay was tried the same day and covers a third of the
+ * ice. What is left is the one shape proven not to move anything, which is the
+ * power-play pill's: inline content of the clock line.
+ *
+ * So the fact goes to the board and the sentence stays under the ice — the same
+ * mark-then-explanation split the rink already uses everywhere.
+ */
+
+test('⭐ the ends chip is inline content of the clock line, like the pill', () => {
+  // Both widths depend on it: the board absorbs a chip side by side where there
+  // is width and wrapped underneath where there is not, and grows at neither.
+  // A sibling of `.gs` instead of a child of it changes both behaviours.
+  const gs = /<div class="gs">([\s\S]*?)<\/div>/.exec(APP_HTML);
+  assert.ok(gs, 'the clock line is gone');
+  assert.match(gs[1], /id="endpill"/,
+    'the ends chip has left the clock line — in the flow above the ice it moves the rink');
+});
+
+test('⛔ `[hidden]` is restated for the ends chip — the UA rule alone loses', () => {
+  /* THE PAIR THAT ONLY WORKS TOGETHER, and it is the second element on this page
+     to need it. `#rg .endpill` sets a display, which is (1,1,0) and beats the UA
+     sheet's `[hidden]{display:none}` at (0,1,0) — so without the second line the
+     attribute is set, `el.hidden` reads true, every behavioural check below still
+     passes, and the chip announces that the ends just changed for the entire
+     game. `.ppill` carries the identical line for the identical reason. */
+  assert.match(ENDS_CSS, /#rg \.endpill\{[^}]*display:inline-flex/,
+    'the chip has no display of its own');
+  assert.match(ENDS_CSS, /#rg \.endpill\[hidden\]\{display:none\}/,
+    'the chip sets a display and never takes it back, so it is on all game');
+});
+
+test('⭐ the chip and the sentence are driven by ONE predicate', () => {
+  /* Two surfaces, one condition. A second `endsNoteShowing` call would let them
+     drift — the board announcing a change under a page that had stopped
+     explaining it, or the reverse — and neither would be visible from the other's
+     test. So the check is that they agree on every frame of a real game. */
+  const a = boot();
+  const scrub = a.$('scrub');
+  let both = 0, chipOnly = 0, noteOnly = 0;
+  for (let k = 0; k <= +scrub.max; k++) {
+    scrub.value = String(k); scrub.oninput({ target: { value: scrub.value } });
+    const chip = a.$('endpill').hidden === false;
+    const note = !!a.$('endnote').innerHTML;
+    if (chip && note) both++; else if (chip) chipOnly++; else if (note) noteOnly++;
+  }
+  assert.ok(both > 0, 'the ends note never fired in the whole reference game');
+  assert.equal(chipOnly, 0, `the board announced the change on ${chipOnly} frame(s) the page did not explain`);
+  assert.equal(noteOnly, 0, `the page explained the change on ${noteOnly} frame(s) the board did not show`);
 });
