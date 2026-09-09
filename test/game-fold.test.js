@@ -64,30 +64,73 @@ test('⛔ …and the transport is NOT in it — CHENG\'s second clause', () => {
   assert.ok(page.includes('class="transport"'), 'the transport left the page entirely');
 });
 
+/**
+ * WHERE THE TWO-COLUMN QUERY STARTS, FOUND RATHER THAN TYPED.
+ *
+ * ⚠️ BOTH CHECKS BELOW USED TO CONTAIN THE LITERAL `1180`, and when the
+ * breakpoint moved to 1360 one of them went red and THE OTHER PASSED BY
+ * ACCIDENT: `indexOf` answered -1, `slice(0, -1)` handed back the whole
+ * stylesheet, and a check about what lies OUTSIDE the query was quietly reading
+ * everything inside it too. A test that cannot fail is worse than no test,
+ * because it is counted as coverage — and a pinned constant in the finder is how
+ * this one stopped being about its own subject.
+ *
+ * So the query is located by what it DOES, and the search asserts it found it.
+ */
+function twoColumnQuery(bare) {
+  const at = bare.search(/@media \(min-width:\d+px\)\{[^@]*?#rg \.wrap\{[^}]*grid-template-columns/);
+  assert.notEqual(at, -1, 'the game page has no two-column media query at all');
+  let depth = 0, end = bare.length;
+  for (let i = bare.indexOf('{', at); i < bare.length; i++) {
+    if (bare[i] === '{') depth++;
+    else if (bare[i] === '}' && --depth === 0) { end = i; break; }
+  }
+  const px = +/min-width:(\d+)px/.exec(bare.slice(at, bare.indexOf('{', at)))[1];
+  return { at, end, px, block: bare.slice(at, end), before: bare.slice(0, at) };
+}
+
 test('⭐ ONE DOM, REFLOWED — the wrapper is display:contents outside the query', () => {
   /* `display:contents` removes the wrapper's box, so below the breakpoint its
      children flow in `.wrap` exactly as direct children would. That is what
      makes this one rendering rather than two: same elements, same handlers, same
      state, and the only difference is where the boxes land. */
   const bare = css.replace(/\/\*[\s\S]*?\*\//g, '');
-  const beforeQuery = bare.slice(0, bare.indexOf('@media (min-width:1180px)'));
-  assert.match(beforeQuery, /#rg \.side\{display:contents\}/,
+  assert.match(twoColumnQuery(bare).before, /#rg \.side\{display:contents\}/,
     'the side wrapper is not neutralised outside the media query — the phone gets a box it never had');
+});
+
+test('⛔ THE BREAKPOINT IS WHERE THE RINK STOPS LOSING, and that is arithmetic', () => {
+  /* ⚠️ THE 1180 THAT SHIPPED ON 2026-09-09 WAS A DEFECT. The rule beside it read
+     "1360 is the smallest width at which nothing regresses" and the query fired
+     180px earlier, so between the two the page went to two columns without the
+     room the sentence promised — measured at a 1200px viewport, the rink was
+     750px against the 864 one column gives at the same width.
+     THE CHECK IS THE ARITHMETIC, not the number: at the breakpoint the content
+     column must still leave the rink at least the ~878px the one-column layout
+     gives it. Everything else on the line is additive and declared right here in
+     the stylesheet, so the test reads the parts rather than holding a copy of
+     the answer. */
+  const bare = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const q = twoColumnQuery(bare);
+  const side = +/grid-template-columns:(\d+)px/.exec(q.block)[1];
+  const gap = +/column-gap:(\d+)px/.exec(q.block)[1];
+  const pad = +/padding:\d+px (\d+)px/.exec(q.block)[1];
+  const MARGIN = 44;   // the page's own gutter, measured on the built page
+  const CHROME = 22;   // the rinkbox's padding and border, measured the same way
+  const ONE_COLUMN_RINK = 878;
+
+  const content = q.px - MARGIN - 2 * pad;
+  const rink = content - side - gap - CHROME;
+  assert.ok(rink >= ONE_COLUMN_RINK,
+    `at ${q.px}px the two-column rink is ${rink}px against ${ONE_COLUMN_RINK} in one column — `
+    + 'the breakpoint fires before there is room for it');
 });
 
 test('⭐ …and the query hides nothing, so both widths render the same elements', () => {
   // THE PAIRED HALF of the claim above, and the one that would catch a "fix"
   // that made the two widths agree by deleting something at one of them.
   const bare = css.replace(/\/\*[\s\S]*?\*\//g, '');
-  const at = bare.indexOf('@media (min-width:1180px)');
-  assert.notEqual(at, -1);
-  let depth = 0, end = at;
-  for (let i = bare.indexOf('{', at); i < bare.length; i++) {
-    if (bare[i] === '{') depth++;
-    else if (bare[i] === '}' && --depth === 0) { end = i; break; }
-  }
-  const block = bare.slice(at, end);
-  assert.doesNotMatch(block, /display\s*:\s*none/,
+  assert.doesNotMatch(twoColumnQuery(bare).block, /display\s*:\s*none/,
     'the two-column query hides an element — the widths no longer render the same page');
 });
 

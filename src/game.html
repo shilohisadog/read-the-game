@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-qNm47QcNB8B6hvIDrxfohMwwIAW6Ql3iQwlo9Eoy1LI=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-eQG3AP/YA88mTZLAcUB/SafWiabewheeamTGWW0b2zs='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-qNm47QcNB8B6hvIDrxfohMwwIAW6Ql3iQwlo9Eoy1LI=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-gotchSDwE+QP1jlbmTj4GE6SCpcVfMy8VkJZlMvxlfI='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">Watch a game</a><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see</a></nav></header>
@@ -476,13 +476,59 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    one DOM, one set of handlers, one state, reflowed. The novice test is on a
    phone, and the phone gets the layout it had. */
 #rg .side{display:contents}
-@media (min-width:1180px){
+/* ⛔ 1360, NOT 1180 — AND THE 1180 SHIPPED ON 2026-09-09 WAS A DEFECT OF MINE.
+   The comment below has always said "1360 is the smallest width at which nothing
+   regresses", and then the QUERY fired at 1180, so between those two widths the
+   page went to two columns WITHOUT the room the sentence promised. Measured on
+   the built page at a 1200px viewport: the rink was 750px against the 864 the
+   one-column layout gives at the same width — a 13% regression, on laptops that
+   are the most common size there is. The rule was written down and the
+   breakpoint was not derived from it.
+   ⚠️ THE HOME PAGE KEEPS 1180 ON PURPOSE and the two numbers should not be
+   reconciled. Its loop is a preview a stranger costs nothing by shrinking; here
+   the rink is the product and a reader clicks marks on it. That is exactly the
+   distinction docs/game-page-fold.md §2 draws, and it is the one thing in that
+   section that transfers. */
+@media (min-width:1360px){
  /* 1360 IS THE SMALLEST WIDTH AT WHICH NOTHING REGRESSES: beside a 340px column
     and a 28px gap the rink gets 992px against today's 900. 1240 would cost it
     3%, and the rink is the product on this page rather than a preview. */
+ /* ⭐ THE HOME PAGE'S TEMPLATE, ON THE PAGE THE HOME PAGE IS A PREVIEW OF.
+    Kevin: "as a site visitor I would expect the game page to look reasonably
+    close to what I saw on the home page." He is right, and the earlier version
+    of this rule mirrored it instead — narrow column RIGHT, rink LEFT.
+    ⚠️ MEASURED, BECAUSE "it looks different" is not a reason on its own: at 1900
+    the moving rink's centre sat at x=1167 on the home page and x=766 here, so
+    clicking `Watch the whole game →` MOVED THE RINK 401px ACROSS THE FOLD and
+    swapped which hand it was under. That is the one transition the whole site is
+    built around. Same sides, it moves 33px.
+    ⛔ AND docs/game-page-fold.md §2 ANSWERED A DIFFERENT QUESTION THAN IT
+    CLAIMED. Its argument — the rink is the product here, so it takes the big
+    column — is about the WIDTH SHARE, and it is still right: the rink keeps 992
+    against the home page's 764. Which HALF the picture sits in is a separate
+    question and that section never addressed it. */
  #rg .wrap{max-width:1360px;display:grid;
-  grid-template-columns:minmax(0,1fr) 340px;column-gap:28px;align-items:start}
- #rg .wrap > *{grid-column:1;min-width:0}
+  /* ⚠️ 340 AND NOT THE HOME PAGE'S 400, AND THE REASON IS THE BREAKPOINT RATHER
+     THAN TASTE. The narrow column, the gap, the card's padding, the page margin
+     and a rink no smaller than the 878 one column gives it are all additive, so
+     the width at which two columns first fit is arithmetic: 400 needs a 1415px
+     viewport, 340 needs 1355. Matching the home page to the pixel would have
+     cost two-column layout on every 1366 and 1400 laptop to close a 60px
+     difference nobody can see with the pages a click apart. */
+  grid-template-columns:340px minmax(0,1fr);column-gap:28px;align-items:start;
+  /* THE CARD. `.hero` is `#fff`, a `--edge` hairline, radius 13 and a soft
+     shadow, and the board and the rinkbox already carry that same vocabulary —
+     so this is a card inside a card exactly as the home page's frame is. It is
+     the difference between the two folds that a visitor actually sees: the
+     controls sat on the page's own `--bg` while the home page's prose sat on
+     white.
+     ⚠️ `box-sizing:content-box` IS ALREADY SET ABOVE, so this padding is added
+     OUTSIDE the 1360 rather than taken out of it — the rink keeps every pixel
+     of yesterday's 992. The card is then 1400 wide against the home page's
+     1240, which at 1900 is 80px of edge on each side. */
+  background:#fff;border:1px solid var(--edge);border-radius:13px;
+  padding:18px 20px 20px;box-shadow:0 4px 16px rgba(16,32,45,.06)}
+ #rg .wrap > *{grid-column:2;min-width:0}
  #rg .side{display:flex;flex-direction:column;gap:14px;
   /* ⚠️ `span 30`, NOT `1 / -1`. With no explicit rows, `-1` resolves to the end
      of the EXPLICIT grid — line 1 — so `1 / -1` collapsed to a single row and
@@ -490,7 +536,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
      the whole side column. Measured: the rink went to y=955. Thirty is simply
      more than the twenty-four children this wrap can hold; the extra tracks are
      empty and zero-height. */
-  grid-column:2;grid-row:1/span 30;position:sticky;top:14px}
+  grid-column:1;grid-row:1/span 30;position:sticky;top:14px}
  /* The picker is a single row of chips at 900px and a 340px column is narrower
     than that, so it wraps -- which is what it already does on a phone. */
  #rg .side .pickrow{flex-wrap:wrap}

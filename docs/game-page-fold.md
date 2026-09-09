@@ -490,3 +490,112 @@ disclosure opens, and `▶ Play` still runs. No page errors at either width.
 `test/game-fold.test.js` holds the structural half — what is in the column, that
 the transport is not, that the wrapper is neutralised outside the query, that the
 query hides nothing, and that the picker still defaults to `Just events`.
+---
+
+## 13. ⭐ KEVIN WAS RIGHT AND §2 ANSWERED A DIFFERENT QUESTION — 2026-09-09
+
+> *"I would have thought you were going to match (as close as possible) the
+> template from the home page on the game page(s). Maybe you explained why you
+> couldn't but I missed it."*
+> *"As a site visitor I would expect the game page to look reasonably close to
+> what I saw on the home page, no?"*
+
+**He did not miss it. §2 above is a real answer to a different question.**
+
+§2 argues about the **width share** — the rink is the product here, so it takes
+the big column — and that is still correct: the rink keeps 970px against the home
+page's 764. But *which half the picture sits in* and *how wide the picture is* are
+two separate questions, and §2 answered the second while its heading claimed the
+first. ⭐ **The tell is that the section's own sentence gives it away** — *"the
+question is not which half gets the picture"* — and then nothing else in the
+document ever asks it.
+
+### 13.1 The cost of the mirror, measured
+
+At 1900, on the one transition the whole site is built around — the home page's
+`Watch the whole game →`:
+
+| | the moving rink's centre |
+|---|---:|
+| home page fold | **x = 1167** |
+| game page, as shipped this morning | **x = 766** |
+| game page, matched | **x = 1134** |
+
+**401px and a swapped hand, against 33px.** The home page's hero is literally an
+iframe of `game.html` in preview mode — the same object — and it was moving half
+a screen and changing sides when a reader clicked it.
+
+### 13.2 What changed, and it is all inside the media query
+
+1. **The columns are the home page's way round** — narrow left, moving picture
+   right. `grid-template-columns:340px minmax(0,1fr)`, `.side` to column 1.
+2. **The fold is one white card**, with `.hero`'s own values — `#fff`, a `--edge`
+   hairline, radius 13, `0 4px 16px rgba(16,32,45,.06)`. The board and the
+   rinkbox already carried that vocabulary, so they are cards inside a card
+   exactly as the home page's frame is. ⭐ **This is the difference a visitor
+   actually sees**: the controls sat on the page's own `--bg` while the home
+   page's prose sat on white. `box-sizing:content-box` was already set, so the
+   padding is added outside the 1360 and the rink keeps every pixel.
+3. ⚠️ **340, not the home page's 400.** The narrow column, the gap, the card
+   padding, the page margin and a rink no smaller than one column's 878 are all
+   additive, so the width at which two columns first fit is arithmetic: **400
+   needs a 1415px viewport, 340 needs 1355.** Matching to the pixel would cost
+   two-column layout on every 1366 and 1400 laptop to close a 60px difference
+   nobody can see with the pages a click apart.
+
+**The phone is untouched.** Everything above is inside the query; at 390 the rink
+is 386px and the document 1,899px, unchanged.
+
+### 13.3 ⛔ AND IT FOUND A DEFECT I SHIPPED THIS MORNING
+
+The comment beside this query has always read **"1360 is the smallest width at
+which nothing regresses"** — and the query fired at **1180**. So between those two
+widths the page went to two columns *without the room the sentence promised*.
+
+| at a 1200px viewport | rink |
+|---|---:|
+| one column, as it was before yesterday | **864px** |
+| two columns, as shipped this morning | **750px** |
+
+**A 13% regression, on the most common laptop widths there are.** The rule was
+written down and the breakpoint was never derived from it — the same shape as
+`docs/status.md` §H's *a reason that expired without being re-examined*, except
+here the reason never applied in the first place.
+
+The breakpoint is 1360 now, and the crossover is clean rather than a cliff:
+
+| viewport | layout | rink |
+|---|---|---:|
+| 1359 | one column | 878px |
+| 1360 | two columns | **884px** |
+
+⚠️ **The home page keeps 1180 and the two numbers should not be reconciled.** Its
+loop is a preview a stranger costs nothing by shrinking; here the rink is the
+product and a reader clicks marks on it. That distinction is the one thing in §2
+that transfers.
+
+### 13.4 ⚠️ Two tests had the breakpoint typed into them, and one passed by accident
+
+Moving it turned `game-fold.test.js`'s *"the query hides nothing"* red — correctly
+— and left *"the wrapper is display:contents outside the query"* **green while it
+had stopped testing anything**. It located the query with
+`bare.indexOf('@media (min-width:1180px)')`, which answered `-1`, so
+`slice(0, -1)` handed back the whole stylesheet and a check about what lies
+*outside* the query was reading everything inside it too.
+
+**A pinned constant in the finder is how a check stops being about its own
+subject.** Both now locate the query by what it *does* and assert they found it,
+and a renamed query fails loudly instead of going vacuous — verified by mutation.
+
+⭐ **And the breakpoint gained a check that is the arithmetic rather than the
+number**: it reads the side width, the gap and the padding out of the stylesheet
+and asserts the rink still clears 878 at the breakpoint. Widening the column to
+400 without moving the breakpoint goes red, which is the mistake that is actually
+available to make.
+
+### 13.5 Verified
+
+Every control in the moved column clicked at 1360, 1900 and 390 with no
+`force:true`, so the actionability check ran: **six layer chips, both
+disclosures, the share button, the newcomer's hide link**, and the transport that
+stayed under the ice. No page errors at any width.
