@@ -125,3 +125,45 @@ test('⭐ DRAWS covers exactly the layers, so the map cannot drift from the set'
     'DRAWS and the layer set disagree — a layer with no `draws` line renders an '
     + 'empty second clause, and a line with no layer is dead copy nobody can reach');
 });
+
+/* ------------------------------------------ ⛔ THE PICKER'S CHIPS ARE A LIST,
+ * AND UNTIL 2026-09-09 NOTHING CHECKED IT.
+ *
+ * Kevin, watching a layer get added: *"why does adding a layer touch 4 different
+ * areas, plus several guards? I thought we just went through a code cleanup."*
+ *
+ * ⭐ THE MEASUREMENT IS THE ANSWER, and it is worth keeping: adding `zonestart`
+ * to `LENS` — the one place a lens id is typed — turned FOUR derived guards red,
+ * each naming the exact next edit. The bundle refused to build, the tier list
+ * said which module the pipeline had gained, the not-a-play sweep said it was
+ * not exercising the new layer, and the distribution check said the selector
+ * showed a lens with no per-game count behind it. **That is the architecture
+ * working**: the cost is real but it is enumerated by machine, not by memory.
+ *
+ * ⛔ EXCEPT FOR ONE. The chip markup in `build_main.py` is hand-written HTML and
+ * NOTHING FAILED WHEN IT WAS LEFT OUT. The layer was registered, bundled,
+ * counted and distributed, and was unreachable from the interface — a lens that
+ * exists everywhere except where a reader could turn it on. That is the shape
+ * this project keeps paying for, so it gets the same treatment `DRAWS` and
+ * `MODS` already have: derived from the layer set, and red on the day somebody
+ * forgets.
+ */
+test('⛔ every lens on the page has a chip, and every chip is a lens', () => {
+  const ids = /const LENS=\{([\s\S]*?)\};/.exec(app)[1].match(/(\w+):/g).map(s => s.slice(0, -1));
+  const chips = [...app.matchAll(/class="pk"[^>]*data-l="(\w+)"/g)].map(m => m[1])
+    .filter(id => id !== 'none');
+  assert.deepEqual(chips.sort(), ids.sort(),
+    'the picker and the lens registry disagree. A lens with no chip is reachable '
+    + 'from a URL and from nowhere a reader can press; a chip with no lens turns '
+    + 'on nothing.');
+});
+
+test('⛔ …and every chip carries the count element the renderer writes into', () => {
+  /* THE PAIRED HALF. A chip can exist and still be wrong: `drawChipCounts` writes
+     `#n_<id>` on every frame, so a chip whose span is missing or misnamed gives a
+     silent `null` write — the layer looks present and its count never moves. */
+  const ids = /const LENS=\{([\s\S]*?)\};/.exec(app)[1].match(/(\w+):/g).map(s => s.slice(0, -1));
+  for (const id of ids)
+    assert.match(app, new RegExp(`data-l="${id}"[^>]*>[\\s\\S]{0,200}?id="n_${id}"`),
+      `the ${id} chip has no #n_${id} span, so its count is written to nothing`);
+});

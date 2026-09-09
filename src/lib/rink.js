@@ -32,6 +32,46 @@ export const CENTRE_X = 0;
 export const SLOT_HALF_WIDTH = 22;   // feet either side of centre
 export const HIGH_DANGER_FT = 33;    // Doctrine section 7: a rule, not a model
 
+/**
+ * Which zone a point is in, for the club attacking in `dir`.
+ *
+ * ⛔⛔ IT IS `attackZone` AND NOT `zoneOf`, AND THE RENAME IS LOAD-BEARING.
+ * `layers/whistle.js` declares its own `function zoneOf(x, homeAb, awayAb)` —
+ * same name, three arguments, a different question (whose END, not which zone).
+ * THE BROWSER BUNDLE INLINES EVERY MODULE INTO ONE SCOPE, so two function
+ * declarations with one name do not coexist: they hoist, and the later one wins
+ * for every caller in the file. Moving this here put a second `zoneOf` in that
+ * scope and the whistle layer stopped drawing marks — caught by its own tests
+ * in seconds, and invisible to anything that imports the modules separately the
+ * way node does.
+ * ⚠️ SO A MODULE-PRIVATE NAME IS NOT PRIVATE IN THE BUNDLE. That is a property
+ * of this build, not of ES modules, and it is why `test/build.test.js` cares
+ * about the bundle at all.
+ *
+ * ⭐ IT LIVES HERE AND NOT IN census.js, WHICH IS WHERE IT WAS UNTIL
+ * 2026-09-09. It is geometry — it is `BLUE_LINE_X` and a sign — and `census.js`
+ * is the ARCHIVE tier, which the browser bundle deliberately does not carry. The
+ * zone-start layer needed it and `build.test.js` refused the bundle rather than
+ * quietly shipping the whole census to every visitor: *"layers/zonestart.js
+ * imports census.js, which LIB does not carry."* The guard was right about the
+ * dependency and the fix was to move the function to its real home, not to widen
+ * the bundle.
+ * ⚠️ THERE IS A SECOND `zoneOf` IN layers/whistle.js WITH A DIFFERENT SIGNATURE
+ * — `(x, homeAb, awayAb)`, answering whose END rather than which zone. Two
+ * functions, one name, different questions. Not reconciled here; named so the
+ * next reader does not assume they are the same thing.
+ *
+ * GEOMETRY, NOT A FEED FIELD. The extract carries `zone` on PENALTIES ONLY —
+ * measured at 100% there and absent everywhere else — so every other event's
+ * zone has to be derived. That is not a compromise: `BLUE_LINE_X` is the same
+ * constant the blue-line band is drawn from, so a reader can check the answer
+ * against the paint. Doctrine 7's rule, applied to a different line.
+ */
+export function attackZone(x, dir) {
+  const ax = x * dir;
+  return ax > BLUE_LINE_X ? 'O' : ax < -BLUE_LINE_X ? 'D' : 'N';
+}
+
 /** +1 if this team attacks toward +x, -1 if toward -x. */
 export function attackDirection(teamId, homeTeamId) {
   return teamId === homeTeamId ? 1 : -1;

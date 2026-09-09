@@ -17,10 +17,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { censusGame, censusAdd, censusRates, zoneOf, runAfter } from '../src/lib/census.js';
+import { censusGame, censusAdd, censusRates, runAfter } from '../src/lib/census.js';
 import { situation, POWER_PLAY } from '../src/lib/strength.js';
 import { corsi } from '../src/lib/layers/corsi.js';
-import { BLUE_LINE_X } from '../src/lib/rink.js';
+import { BLUE_LINE_X, attackZone } from '../src/lib/rink.js';
 
 const load = p => JSON.parse(readFileSync(new URL(p, import.meta.url)));
 const rich = load('../data/rich.json');
@@ -37,13 +37,13 @@ test('the zone is the blue line, read from the same constant the ice is painted 
      free to agree with a wrong first one. `BLUE_LINE_X` is what `drawRink` uses
      for the zone band, so a reader can check a classification against the paint.
      Both directions, because attacking -x is half of every game. */
-  assert.equal(zoneOf(BLUE_LINE_X + 1, 1), 'O');
-  assert.equal(zoneOf(BLUE_LINE_X - 1, 1), 'N');
-  assert.equal(zoneOf(-BLUE_LINE_X - 1, 1), 'D');
-  assert.equal(zoneOf(-BLUE_LINE_X - 1, -1), 'O', 'attacking -x is not mirrored');
-  assert.equal(zoneOf(BLUE_LINE_X + 1, -1), 'D');
+  assert.equal(attackZone(BLUE_LINE_X + 1, 1), 'O');
+  assert.equal(attackZone(BLUE_LINE_X - 1, 1), 'N');
+  assert.equal(attackZone(-BLUE_LINE_X - 1, 1), 'D');
+  assert.equal(attackZone(-BLUE_LINE_X - 1, -1), 'O', 'attacking -x is not mirrored');
+  assert.equal(attackZone(BLUE_LINE_X + 1, -1), 'D');
   // ON the line is not in the zone: offside turns on crossing it, not touching it.
-  assert.equal(zoneOf(BLUE_LINE_X, 1), 'N');
+  assert.equal(attackZone(BLUE_LINE_X, 1), 'N');
 });
 
 test('every tally is a whole number, so the archive folds exactly', () => {

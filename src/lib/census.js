@@ -55,21 +55,7 @@
  */
 import { corsi } from './layers/corsi.js';
 import { situation, EVEN, POWER_PLAY, EMPTY_NET } from './strength.js';
-import { attackDirection, BLUE_LINE_X } from './rink.js';
-
-/**
- * Which zone a point is in, for the club attacking in `dir`.
- *
- * GEOMETRY, NOT A FEED FIELD. The extract carries `zone` on PENALTIES ONLY —
- * measured at 100% there and absent everywhere else — so every other event's
- * zone has to be derived. That is not a compromise: `BLUE_LINE_X` is the same
- * constant the blue-line band is drawn from, so a reader can check the answer
- * against the paint. Doctrine 7's rule, applied to a different line.
- */
-export function zoneOf(x, dir) {
-  const ax = x * dir;
-  return ax > BLUE_LINE_X ? 'O' : ax < -BLUE_LINE_X ? 'D' : 'N';
-}
+import { attackDirection, attackZone } from './rink.js';
 
 /**
  * The run of play a faceoff opens: every event until play stops again.
@@ -185,7 +171,7 @@ export function censusGame(events, ctx) {
     if (e.type !== 'faceoff' || e.own == null || e.x == null || e.pt === 'SO') continue;
 
     const dir = attackDirection(e.own, homeId);
-    const z = zoneOf(e.x, dir);
+    const z = attackZone(e.x, dir);
     const run = runAfter(events, i);
     let aw = 0, al = 0, gw = 0, gl = 0;
     for (let j = i + 1; j <= i + run.length; j++) {
