@@ -110,6 +110,73 @@ the query was reading everything inside it. **A pinned constant in the finder is
 how a check stops being about its own subject.** Both derive the query now, and
 the breakpoint gained a check that is *the arithmetic rather than the number*.
 
+### ⏭⏭ PICK UP HERE — the zone-start layer's page wiring, and one unexplained interaction
+
+**The reducer is done**: `src/lib/layers/zonestart.js`, 9 checks, four mutations
+each caught. It counts every faceoff and attributes each to the zone the
+**winning** club was attacking toward, reusing `attackZone` and
+`attackDirection` so the mark and the sentence answer with one rule.
+
+⛔ **THE PAGE WIRING WAS BUILT AND REVERTED.** With the layer's draw call in
+`render()`, **the whistle layer stopped drawing its on-ice marks** — 1 ring
+across the reference sweep became 0. Bisected to that one line, which is guarded
+by `if(zoneOn)` and does not throw: a `try/catch` around it caught nothing and
+the marks stayed gone. **The reducer is exonerated** — `whistle.reduce` still
+places 44 of 44 stoppages and `marks()` still returns its mark called directly —
+so whatever moved is in the page.
+
+**What the wiring needs, recovered from the reverted work** (all of it verified
+green before the whistle regression appeared):
+
+| | |
+|---|---|
+| `LENS` + import | `src/app.js` — the one place a lens id is typed |
+| `LIB` | `builders/build_main.py` — the bundle; the build refuses without it |
+| `DRAWS` | the caption, which **must state the 2.2× ratio** (CHENG's condition) |
+| `LAYER_TOKENS` | `src/lib/deeplink.js` |
+| the chip | `build_main.py`'s pickrow, plus `<g id="draws">` in the rink SVG |
+| `PICKS` + `zoneOn` + `setZone` + `LAYER_APPLY` | the picker's state machine |
+| `lboxFor` | ⚠️ it receives the **corsi** lens whatever chip is on — reduce your own |
+| `measureGame`'s `lens` | the per-game distribution |
+| `TIER`, `MODS`, `BUTTON_OF`, two fake-DOM chip lists | the guarded enumerations |
+
+### ⭐ AND KEVIN ASKED THE RIGHT QUESTION ABOUT THAT LIST
+
+*"Why does adding a layer touch 4 different areas, plus several guards? I thought
+we just went through a code cleanup."*
+
+**Measured, and the answer is mostly reassuring.** Adding the lens to `LENS`
+turned **four DERIVED guards red**, each naming the exact next edit — the bundle
+refused to build, the tier list said which module the pipeline had gained, the
+not-a-play sweep said it was not exercising the new layer, and the distribution
+check said the selector showed a lens with no per-game count. **The cost is
+enumerated by machine, not by memory.**
+
+⛔ **Two were not reassuring.**
+
+1. **The chip markup had NO guard.** The layer was registered, bundled, counted
+   and distributed, and unreachable from the interface — nothing failed. **Fixed:**
+   `layer-copy.test.js` now asserts every lens has a chip and every chip a lens,
+   with the count element the renderer writes into. Both halves mutation-checked.
+2. ⏸ **`LAYER_TOKENS` is the root, and it is NOT fixed.** It is a hand-typed
+   array in `deeplink.js`, and the `DRAWS` guard checks against **it** — so when
+   both are stale they agree and the guard passes. **A guard whose reference is
+   itself an enumeration goes stale in the same edit.** Deriving it from one
+   layer list would make four of the eight lists free. Not done: it changes what
+   several tests scrape, which is not an end-of-day change.
+
+### ⛔⛔ AND THE WIRING FOUND A LATENT COLLISION — fixed
+
+`zoneOf` moved out of `census.js` (it is geometry, and census is the archive tier
+the browser bundle deliberately excludes — `build.test.js` said so by refusing
+the bundle). But `layers/whistle.js` declares its **own** `zoneOf(x, homeAb,
+awayAb)`: same name, three arguments, a different question. **The bundle inlines
+every module into ONE SCOPE**, so two function declarations with one name do not
+coexist — they hoist and the later wins for every caller in the file. Renamed to
+`attackZone`, with the reason on the function. ⚠️ **A module-private name is not
+private in this bundle**, and that is a property of the build rather than of ES
+modules.
+
 ### ⏭⏭ WHAT IS NEXT — nothing is queued, and these are the open ones
 
 - **`goalie-eye-view`** — still the older open decision, and Kevin's words:
