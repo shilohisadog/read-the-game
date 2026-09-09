@@ -410,3 +410,83 @@ change rather than a side effect: it is the only route that produces the layout
 CHENG ruled on, and the phone half is an improvement to the measurement this
 document already calls the costlier one. But §8 was a commitment, and it is
 Kevin's and CHENG's to release rather than mine to work around.
+
+---
+
+## 11. ✅ BUILT — and the fork dissolved rather than being chosen
+
+Kevin, on §10's three routes: *"not sure what I'm choosing from, but improvements
+to both UX experiences is a good thing, even when considering past guidance (which
+was based on previous UX situation)."*
+
+**He was right that it was not a choice anyone could make, and the fork was mine
+for stopping at three bad options.** There is a fourth, and it gives both.
+
+### 11.1 One wrapper, and `display:contents` below the breakpoint
+
+```css
+#rg .side{display:contents}                       /* every width */
+@media (min-width:1180px){
+  #rg .wrap{display:grid;grid-template-columns:minmax(0,1fr) 340px;max-width:1360px}
+  #rg .wrap > *{grid-column:1}
+  #rg .side{display:flex;flex-direction:column;grid-column:2;grid-row:1/span 30;
+            position:sticky;top:14px}
+}
+```
+
+**`display:contents` is what keeps §8's promise rather than breaking it.** The
+wrapper's box is removed below 1180, so its children flow in `.wrap` exactly as
+direct children would — one DOM, one set of handlers, one state, reflowed. CHENG's
+condition on the divergence is met by construction rather than by discipline.
+
+⚠️ **And `grid-row: 1 / span 30`, not `1 / -1`.** With no explicit rows, `-1`
+resolves to the end of the *explicit* grid — line 1 — so `1 / -1` collapsed to a
+single row, made row one 592px tall, and pushed the board, the ice and the
+transport below the whole side column. **Measured: the rink went to y=955.** The
+span is simply more than the twenty-four children this wrap can hold.
+
+### 11.2 Both, measured
+
+| | laptop 1900×1065 | | phone 390×844 | |
+|---|---:|---:|---:|---:|
+| | **before** | **after** | **before** | **after** |
+| the ice starts | 400 | **257** | 617 (0.73 screens) | **332 (0.39)** |
+| the rink | 900×550 | **992×589** | 390×340 | 390×340 |
+| the transport | 963 | **859** | 971 (1.15 — off-screen) | **687 (0.81)** |
+| **the layer picker** | **1123 — below the fold** | **100 (0.09)** | 1197 | 1139 |
+| document | 1,615 | **1,368** | 1,899 | 1,899 |
+
+⭐ **The phone's play button is above the fold on arrival for the first time.**
+That is the half `docs/game-page-fold.md` §1.2 called the more expensive problem
+and CHENG's q4 said this change would not fix — and it is fixed by the same
+element move, because `#newcomer`'s 268px was above the board and is now beside
+the controls it names.
+
+### 11.3 What is in the column, and what refused to move
+
+`#newcomer` · `#pickrow` · `#lcap` · `.zone.zcue` · `.zone.znext` · `.sharerow`.
+
+⛔ **The transport is not**, on CHENG's second clause: `◀ Prev` and `Next ▶` are
+disabled at the ends of the game, which is the playhead — and the transport and
+the scrubber are one control.
+
+### 11.4 Two existing checks went red, and both were right to
+
+- *"the card sits above the controls"* chained five markers and `.zone.znext` is
+  no longer in that stack. The chain shortens; the claim is untouched.
+- *"each half of the greeting names the thing it is about"* asserted `#newcomer`
+  **before** `.transport`. **That order existed because the block pushed the play
+  button off a phone** — and it no longer does: measured, 1.15 screens → 0.81.
+  ⭐ *The reason expired rather than being overruled*, which is the distinction
+  this record keeps insisting on, so the order flips and the reason is written
+  down beside it.
+
+### 11.5 Verified by pressing, not by geometry
+
+Every moved control clicked for real at **both** widths — no `force:true`, which
+disables the actionability check that answers *can a person press this*: the
+picker takes effect and returns to `Just events`, the share row answers, the cue
+disclosure opens, and `▶ Play` still runs. No page errors at either width.
+`test/game-fold.test.js` holds the structural half — what is in the column, that
+the transport is not, that the wrapper is neutralised outside the query, that the
+query hides nothing, and that the picker still defaults to `Just events`.

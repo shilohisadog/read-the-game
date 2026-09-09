@@ -57,7 +57,6 @@ __CSS__</style>
      the name back for a different element would have left that guard passing on
      a page that no longer contains what it was written to keep out. -->
 <h1 class="pagelede">Learn to read hockey · event by event first, add layers after</h1>
-<div class="newcomer" id="newcomer"></div>
 <div class="board">
   <p class="foot" id="gl">—</p>
   <div class="tm a"><span class="ab" id="aAb">&mdash;</span><span class="sc" id="aSc">0</span><div class="pens" id="penA"></div></div>
@@ -224,7 +223,44 @@ __CSS__</style>
      UNDER THE SCRUBBER, NOT IN THE BUTTON ROW. CHENG: a control in the transport
      group reads as another transport control. This sits with the thing that SETS
      the moment, and the confirmation names the moment it copied. -->
+<!-- ⭐⭐ THE SIDE COLUMN — one element, present at EVERY width.
+     docs/game-page-fold.md §10. Two independent vertical stacks need a container
+     each: a grid column cannot hold one, because every item in column 2 sits in
+     a row shared with column 1 — measured, and the CSS-only version moved the
+     picker FURTHER below the fold.
+     ⛔ AND IT IS `display:contents` BELOW 1180, so the phone renders exactly as
+     if this element were not here: the children flow in the parent as direct
+     children, in this position. That is what keeps one DOM, one set of handlers
+     and one state, reflowed — CHENG's condition on the divergence — rather than
+     two markup paths that can disagree.
+     WHAT IS IN IT is what §3 rules movable: content AND enabled state invariant
+     under playhead movement. `.transport` is NOT here — `◀ Prev`/`Next ▶` are
+     disabled at the ends of the game, which is the playhead. -->
+<div class="side">
+<!-- ⭐ THE FIRST-VISIT BLOCK LEADS THE COLUMN, and this is the half that fixes
+     the PHONE. It is 268px of a 390px fold and it sat above the board, so the
+     rink did not begin until 0.73 screens and the play button it names was
+     off-screen on arrival. Beside the controls it describes, it costs the ice
+     nothing — and CHENG's ruling is the argument: "a newcomer's instruction that
+     sits next to what it describes is more useful than one that pushes the
+     described thing off-screen."
+     ⚠️ ON A PHONE THIS IS A REAL CHANGE OF READING ORDER: the instruction now
+     comes after the rink rather than before it. Kevin, 2026-09-09, releasing the
+     phone-untouched commitment: "improvements to both UX experiences is a good
+     thing, even when considering past guidance (which was based on previous UX
+     situation)." -->
+<div class="newcomer" id="newcomer"></div>
+<div class="pickrow" role="radiogroup" aria-label="Which layer is on the ice" id="pickrow"><span class="pklab">Layers</span><button class="pk" id="pkNone" data-l="none" role="radio" aria-checked="true"><span class="pkl">Just events</span></button><span class="pksep" aria-hidden="true"></span><button class="pk" id="pkCorsi" data-l="corsi" role="radio" aria-checked="false"><span class="pkl">Attempts</span><span class="pkn" id="n_corsi">0</span></button><button class="pk" id="pkSlot" data-l="slot" role="radio" aria-checked="false"><span class="pkl">Slot</span><span class="pkn" id="n_slot">0</span></button><button class="pk" id="pkBlocked" data-l="blocked" role="radio" aria-checked="false"><span class="pkl">Blocked</span><span class="pkn" id="n_blocked">0</span></button><button class="pk" id="pkGoalie" data-l="goaltending" role="radio" aria-checked="false"><span class="pkl">Goaltending</span><span class="pkn" id="n_goaltending">0</span></button><button class="pk" id="pkWhistle" data-l="whistle" role="radio" aria-checked="false"><span class="pkl">Stoppages</span><span class="pkn" id="n_whistle">0</span></button></div>
+<p class="lcap" id="lcap"></p>
+<details class="zone zcue"><summary class="zh">The next play<span class="zon" id="zCueOn"></span></summary>
+<div class="figpick"><div class="grp" role="group" aria-label="Whether the next play is marked before it happens"><button class="lyr cbtn" data-c="on" aria-pressed="true">Show the shading</button><button class="lyr cbtn" data-c="off" aria-pressed="false">No shading</button></div>
+<span class="fnote" id="nCue"></span></div>
+</details>
+<details class="zone znext"><summary class="zh">Other games</summary>
+<nav class="nextup" id="nextup" aria-label="Where to go next"></nav>
+</details>
 <div class="sharerow"><button class="share" id="share" type="button">Copy a link to this moment</button><span class="sharesaid" id="sharesaid" role="status" aria-live="polite"></span></div>
+</div>
 <!-- ⭐⭐ THE BROADCAST HIGHLIGHT, AND IT IS THE PAGE'S OWN SECTION IDIOM.
      Kevin, 2026-09-08: "put a Section header above the highlight… structured the
      same as Layers, The next play and Other games are." Those are not a header
@@ -252,7 +288,6 @@ __CSS__</style>
 <div class="clipframe" id="clipFrame"></div>
 <p class="clipfoot">Video and advertising are NHL.com&rsquo;s. Nothing above this line changes.</p>
 </details>
-<div class="pickrow" role="radiogroup" aria-label="Which layer is on the ice" id="pickrow"><span class="pklab">Layers</span><button class="pk" id="pkNone" data-l="none" role="radio" aria-checked="true"><span class="pkl">Just events</span></button><span class="pksep" aria-hidden="true"></span><button class="pk" id="pkCorsi" data-l="corsi" role="radio" aria-checked="false"><span class="pkl">Attempts</span><span class="pkn" id="n_corsi">0</span></button><button class="pk" id="pkSlot" data-l="slot" role="radio" aria-checked="false"><span class="pkl">Slot</span><span class="pkn" id="n_slot">0</span></button><button class="pk" id="pkBlocked" data-l="blocked" role="radio" aria-checked="false"><span class="pkl">Blocked</span><span class="pkn" id="n_blocked">0</span></button><button class="pk" id="pkGoalie" data-l="goaltending" role="radio" aria-checked="false"><span class="pkl">Goaltending</span><span class="pkn" id="n_goaltending">0</span></button><button class="pk" id="pkWhistle" data-l="whistle" role="radio" aria-checked="false"><span class="pkl">Stoppages</span><span class="pkn" id="n_whistle">0</span></button></div>
 <!-- ⏹ THE SITUATIONS CONTROL STOOD HERE AND WAS REMOVED ON 2026-09-07. Kevin,
      looking at this area for the first time in a while: *"Seems like we are
      making an 'advanced' toggle available to a novice, without really explaining
@@ -290,7 +325,6 @@ __CSS__</style>
      with the layer on rather than by reading the record -- see 0.00-zeta. -->
 
 
-<p class="lcap" id="lcap"></p>
 <!-- ⭐ THE WORK PANEL MOVED INTO `.rinkbox` ON 2026-08-31 AND IS NOW AN OVERLAY.
      Kevin, playing through a game: "I clicked on show me the work and the
      information shows up well below the ice, which gives the vibe that it's
@@ -324,13 +358,6 @@ __CSS__</style>
 <details class="zone zdisp"><summary class="zh">Trails<span class="zon" id="zTrailsOn"></span></summary>
 <div class="figpick"><div class="grp" role="group" aria-label="How long marks stay on the ice"><button class="lyr tbtn" data-t="off" aria-pressed="true">Current moment</button><button class="lyr tbtn" data-t="all" aria-pressed="false">Keep every mark</button></div>
 <span class="fnote" id="nTrails"></span></div>
-</details>
-<details class="zone zcue"><summary class="zh">The next play<span class="zon" id="zCueOn"></span></summary>
-<div class="figpick"><div class="grp" role="group" aria-label="Whether the next play is marked before it happens"><button class="lyr cbtn" data-c="on" aria-pressed="true">Show the shading</button><button class="lyr cbtn" data-c="off" aria-pressed="false">No shading</button></div>
-<span class="fnote" id="nCue"></span></div>
-</details>
-<details class="zone znext"><summary class="zh">Other games</summary>
-<nav class="nextup" id="nextup" aria-label="Where to go next"></nav>
 </details>
 </div></div>
 <script>

@@ -969,8 +969,14 @@ test('the card sits above the controls, not below them', () => {
   //
   // LAYERS LEFT THIS STACK ON 2026-08-26 — it is above the rink now, and its
   // order is asserted against the board and the rink in the deep-link test above.
+  // ⭐ `zone znext` LEFT THIS STACK ON 2026-09-09 and the chain shortens with it.
+  // It is in the side column now (docs/game-page-fold.md): its content and its
+  // enabled state are both invariant under playhead movement, so it is one of
+  // the six blocks that may sit beside the ice. The claim this test is named for
+  // — the summary card sits above the read-surfaces rather than below them — is
+  // untouched, and the four markers that remain are the ones still in the stack.
   const order = ['class="transport"', 'class="verdict"',
-                 'class="legend"', 'class="zone zdisp"', 'class="zone znext"'];
+                 'class="legend"', 'class="zone zdisp"'];
   let at = -1;
   for (const marker of order) {
     const k = app.indexOf(marker);
@@ -1158,7 +1164,17 @@ test('each half of the greeting names the thing it is about', () => {
   // the block pushed the play button it names below the fold (rink ended 899,
   // button 914, fold 844 on a 390px phone). DOM order is the half checkable
   // here; the geometry is checked by looking.
-  const order = ['id="newcomer"', 'class="transport"', 'id="newcomerWhy"'];
+  //
+  // ⭐ THE ORDER FLIPPED ON 2026-09-09, AND THE REASON THE OLD ONE EXISTED IS
+  // GONE RATHER THAN OVERRULED. `#newcomer` sat BEFORE the transport because
+  // whole and above the rink it pushed the play button off a phone. It is in the
+  // side column now, so on a laptop it is literally beside the controls and on a
+  // phone it follows them — and MEASURED at 390x844 the play button moved from
+  // 1.15 screens to 0.81, which is the first time it has been above the fold on
+  // arrival. The claim is unchanged and it is the one in this test's name: each
+  // half of the greeting sits beside the thing it is about. What changed is
+  // which side of the transport that is.
+  const order = ['class="transport"', 'id="newcomer"', 'id="newcomerWhy"'];
   let at = -1;
   for (const marker of order) {
     const k = app.indexOf(marker);

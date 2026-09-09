@@ -414,6 +414,40 @@
    ⭐ THIS IS THE SCAR ALREADY IN THE NOTES: *when you hide a container,
    enumerate what was inside it.* Hiding `.lbox` was one line; the variable that
    reserved its space was somewhere else entirely and kept its value. */
+/* ⭐⭐ THE GAME PAGE AT A LAPTOP'S WIDTH — docs/game-page-fold.md.
+   The ice and everything about THIS FRAME on the left; the controls whose
+   content AND enabled state do not change with the playhead on the right.
+   ⛔ `.side` IS ONE GRID ITEM SPANNING EVERY ROW, and that is the whole trick.
+   Six blocks given `grid-column:2` individually were measured and were a
+   REGRESSION -- rows are shared between columns, so a 268px block in row 2 holds
+   the board out of it and nothing after `.rinkbox` can rise above the rinkbox's
+   row. The picker ended up FURTHER below the fold, 1.05 screens to 1.18. One
+   item spanning `1 / -1` takes a column of its own and stacks its children
+   normally inside it.
+   ⭐ AND BELOW THE BREAKPOINT THE WRAPPER DISAPPEARS. `display:contents` removes
+   its box, so its children flow in `.wrap` exactly as direct children would --
+   one DOM, one set of handlers, one state, reflowed. The novice test is on a
+   phone, and the phone gets the layout it had. */
+#rg .side{display:contents}
+@media (min-width:1180px){
+ /* 1360 IS THE SMALLEST WIDTH AT WHICH NOTHING REGRESSES: beside a 340px column
+    and a 28px gap the rink gets 992px against today's 900. 1240 would cost it
+    3%, and the rink is the product on this page rather than a preview. */
+ #rg .wrap{max-width:1360px;display:grid;
+  grid-template-columns:minmax(0,1fr) 340px;column-gap:28px;align-items:start}
+ #rg .wrap > *{grid-column:1;min-width:0}
+ #rg .side{display:flex;flex-direction:column;gap:14px;
+  /* ⚠️ `span 30`, NOT `1 / -1`. With no explicit rows, `-1` resolves to the end
+     of the EXPLICIT grid — line 1 — so `1 / -1` collapsed to a single row and
+     made row one 592px tall, pushing the board, the ice and the transport below
+     the whole side column. Measured: the rink went to y=955. Thirty is simply
+     more than the twenty-four children this wrap can hold; the extra tracks are
+     empty and zero-height. */
+  grid-column:2;grid-row:1/span 30;position:sticky;top:14px}
+ /* The picker is a single row of chips at 900px and a 340px column is narrower
+    than that, so it wraps -- which is what it already does on a phone. */
+ #rg .side .pickrow{flex-wrap:wrap}
+}
 #rg.preview{--lboxh:0px;padding:0;min-height:0;height:100vh;overflow:hidden}
 #rg.preview .wrap{max-width:none;padding:0;height:100%;
  display:flex;flex-direction:column;min-height:0}
