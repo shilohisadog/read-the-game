@@ -176,23 +176,60 @@ been published on every run since the forward window shipped and, until
 `c56a33a`, **nothing had ever read it** — the D10 shape, a field written for a
 purpose no reader served.
 
-### 5.2 The daily sentence, and it is the site's own measure
+### 5.2 The daily sentence — ⛔ REWRITTEN, because the first draft printed the
+### archive rate beside it
 
-> **Last night the team with more shot attempts lost 5 of the 8. Across 4,100
-> games in this archive, 54.3%.**
+**The draft was:** *"Last night the team with more shot attempts lost 5 of the 8.
+Across 4,100 games in this archive, 54.3%."* **CHENG ruled it out, and he is
+right.** The argument, which is not about arithmetic:
 
-Three properties, none of them new doctrine:
+> **The nightly figure is a description of last night. It may never be compared
+> to the archive figure.**
 
-1. **A count with its denominator, never a rate.** `5 of the 8` is a fraction; the
-   percentage belongs only to the archive figure, which has an n large enough to
-   carry one. This is the rule from the below-the-rink summary — *a fraction
-   never a percentage* — doing its normal job on a small night.
-2. **It classifies nothing.** Like the hero's sentence after 2026-08-25, it states
-   this slate's count and the archive's rate and draws no line between them.
-3. **It is the same measure as the hero.** Kevin's ruling: *"we show Control in
-   the replay loop but describe shots on goal in the text below the rink, those
-   should be consistent… they need to be the same measure."* That ruling is what
-   makes §6 necessary rather than optional — see below.
+My defence was the fraction convention — `5 of the 8`, never `62.5%` — and that
+convention is real but it guards a different thing. It protects against
+**precision a small n cannot carry.** It does nothing about what eight games
+actually invite, which is **a reader concluding something about hockey from last
+night**: print `5 of 8` beside `54.3%` and the reader performs the division we
+declined to print, gets 62.5%, and reads *last night was unusual.* **Eight games
+cannot support "unusual."**
+
+⭐ **It is the matchup card again, one surface out.** `docs/next-game.md` §0.1
+refused a second column because *put Buffalo's numbers next to Ottawa's and the
+reader performs the subtraction we refused to do.* Adjacency is the mechanism in
+both, and a fraction does not disarm it.
+
+**So the block prints counts and no rate at all:**
+
+> **Last night — 8 games. The team with more shot attempts lost 5 of them.**
+
+**A count needs no base rate. The base rate is precisely the thing that turns
+eight games into a claim.** The archive figure keeps the home it already has —
+`#herorel`, under the hero, where its subject is the archive and its n is 4,100 —
+and does its own job there. Nothing is lost from the page; the two facts stop
+sharing a sentence.
+
+CHENG's alternative was to state both populations so plainly that comparison is
+visibly wrong (*last night, 8 games* against *2023–26, 4,100 games*). **Rejected in
+favour of the simpler one**, on this repo's standing preference: *an invariant
+instead of a disclaimer.* A page that cannot make the comparison beats a page
+that labels it.
+
+#### 5.2.1 And it must read as a tally, not as a measurement moving
+
+CHENG: *"the nightly figure changes every day and the archive figure doesn't. A
+reader who visits twice sees one number move and one hold."* That is honest and it
+is also confusing if the two look alike. **The daily block is dated and reads as
+today's count** — the archive's sentence is a settled figure with a population,
+the daily one is a tally with a night. They should not be able to be mistaken for
+two readings of the same instrument.
+
+#### 5.2.2 What survives from the draft
+
+**It is still the same measure as the hero.** Kevin's ruling: *"we show Control in
+the replay loop but describe shots on goal in the text below the rink… they need
+to be the same measure."* So the count is attempts, and §6 is still necessary —
+dropping the rate removes a sentence, not the arithmetic behind the count.
 
 ### 5.3 Last night's games — a list, and the reason it is not a wall of previews
 
@@ -364,22 +401,52 @@ door than today's, and is the fallback if the ruling goes the other way.
    upset*, *the best game*. If it ever does, the rule needs stating on the page
    the way `featured`'s is. **Written down here because it is the obvious next
    feature request and it is the one that would cost the doctrine.**
-2. **Does the eight-game denominator survive our own rule?** *A rate without a
-   base rate is a story.* The base rate is printed beside it and the small number
-   is a fraction, never a percentage. Is that enough, or does `5 of the 8` invite
-   a reader to conclude something about last night that eight games cannot carry?
-3. **Is a remembered team allowed?** The strongest recurrence argument is not
-   league-wide at all — C1 measured that a team browse already reaches 93.3% of
-   what a fan wants, and a fan returns because *their* club played. A remembered
-   club is `localStorage`, needs no server and no analytics. But this site
-   deliberately measures nothing about its visitors, and I want that line drawn
-   explicitly rather than assumed: **storing a preference for the viewer is not
-   measuring the viewer, and I believe it is permitted.**
-4. **Where does the archive state line go?** `#state` currently sits at the bottom
-   and now carries the season sentence, which is the most forward-looking thing on
-   the page and is in the least-read position. If §5.1 ships, its offseason state
-   says the same thing at the top, and `#state` should probably keep the *ledger*
-   half only ("data through…") and lose the season half.
+2. ✅ **RULED — it survives, but not for the reason I gave, and the sentence
+   changed.** The fraction convention guards *precision a small n cannot carry*;
+   it does nothing about a reader concluding something about hockey from eight
+   games. **The survival condition is narrower: the nightly figure is a
+   description of last night and may never be compared to the archive figure.**
+   Printing them adjacent is the matchup card again — see §5.2, now rewritten to
+   counts with no rate at all.
+3. ✅ **RULED — permitted, and the rule is written below rather than assumed.**
+   C1 measured that a team browse already reaches 93.3% of what a fan wants, and a
+   fan returns because *their* club played. CHENG confirmed the line I drew —
+   **storing a preference for the viewer is not measuring the viewer** — and
+   supplied the test that makes it checkable rather than a slogan:
+
+   > ⭐ **DOES ANYTHING ABOUT THE VIEWER REACH US?** If no, it is a preference. If
+   > yes, it is measurement, whatever it is called.
+
+   `localStorage` passes: the data never leaves the browser, we never see it,
+   there is nothing to aggregate, and the CSP already forbids the third-party call
+   that would change that. **Three conditions ride with it, all cheap:**
+
+   | | |
+   |---|---|
+   | **inspectable** | a remembered club is visible and clearable **on the page**, not only in devtools — the same standard as everything else here, that a reader can check what we are doing |
+   | **it may not change what is true** | it may reorder or preselect; it may never change a number, a rate or a population. **Two viewers see the same figures for the same game.** |
+   | **it degrades to today's page** | private browsing, cleared storage, a first visit — all get the current behaviour, with no empty state and no prompt to pick a team |
+
+   ⏭ **This is the site's first personalisation, so the rule is written before the
+   feature rather than after it.** It graduates to `DOCTRINE.md` as rule 10 **on
+   the day something ships that uses it** — doctrine describes the site, and today
+   the site has no personalisation to describe.
+4. ✅ **RULED — split it.** `#state` is doing two jobs with different audiences
+   and different lifespans. **The season sentence moves into the daily block**,
+   where §5.1's three states already give it a home — and in the offseason it *is*
+   the block's content, so the case that was hardest to design for solves itself.
+   **The ledger half stays at the bottom**: it is a provenance statement, written
+   for the skeptic rather than the returning fan, and it is in the right place for
+   that reader.
+
+   ⚠️ **AND ONE THING MUST NOT BE SPLIT WITH THEM.** The staleness check lives
+   with the ledger — `daysBetween(index.lastRun, now)` in `src/lib/ingest-state.js`
+   — so if the forward-looking half moves up and the freshness claim stays down,
+   **the two can disagree.** CHENG: *whichever block says* last night *has to be
+   the one that knows how current the data is.* Otherwise this is the
+   `dataThrough` / `lastRun` conflation that the state model was built to end,
+   rebuilt one surface higher. The daily block carries its own freshness or it
+   does not carry a date.
 
 ---
 
@@ -418,7 +485,7 @@ closed, twice.
 
 ---
 
-## 11. CHENG's review — 2026-09-09
+## 11. CHENG's review — 2026-09-09, two passes
 
 What it changed, recorded because a review that only agrees is not worth citing:
 
@@ -446,3 +513,24 @@ that way:** whatever lands must have an honest August state, and `dataThrough`
 plus the freshness line solved that once already — *"no games in the last 14 days"
 is a true sentence and the surface shouldn't need a different design to say it.*
 §5.1's three states are one block with one shape for exactly that reason.
+
+### 11.1 The second pass — three rulings, and one of them rewrote the design
+
+| | |
+|---|---|
+| **§5.2** | ⛔ **rewritten.** The draft printed `5 of the 8` beside the archive's `54.3%`, and my defence was the fraction convention — which guards precision a small n cannot carry, and does nothing about the reader dividing them. **The nightly figure may never be compared to the archive figure.** Counts, no rate. |
+| **§7 q3** | permitted, with the test that makes it checkable — *does anything about the viewer reach us?* — and three conditions the draft did not have. |
+| **§7 q4** | split, and ⚠️ **the staleness check must travel with whichever block says "last night"**, or the `dataThrough`/`lastRun` conflation is rebuilt one surface higher. |
+
+⭐ **The q2 ruling is the one to remember, because I had the right convention
+doing the wrong job.** `a fraction never a percentage` is real and it is about
+**precision**; the danger here is **adjacency**. Two different guards, and I
+offered the first against the second. The mechanism — *print two populations side
+by side and the reader performs the arithmetic we declined to* — is the matchup
+card from `docs/next-game.md` §0.1, and neither a fraction nor a label disarms it.
+**Only not printing them together does.**
+
+⭐ **And on §8, which he asked to keep visible:** *we will never know whether any
+of this worked.* That is not a limitation to design around — it is the reason the
+targets are **is there something new, is it true, is it one click away.** All
+three are checkable without measuring a single visitor.

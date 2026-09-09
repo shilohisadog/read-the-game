@@ -86,6 +86,29 @@ built page can produce must be inside something the preview hides.
   *beside a figure derived a week ago is the `dataThrough` problem in a new
   place.* The figure carries when it was computed, or it does not ship.
 
+### ✅ AND THE SECOND PASS RULED THE OTHER THREE — one rewrote the design
+
+- ⛔ **THE DAILY SENTENCE LOSES ITS ARCHIVE RATE.** The draft read *"lost 5 of the
+  8. Across 4,100 games, 54.3%."* and my defence was `a fraction never a
+  percentage` — **the right convention doing the wrong job.** That guard is about
+  **precision** a small n cannot carry; the danger here is **adjacency**: print
+  the two together and the reader performs the division we declined to print and
+  concludes last night was unusual. **Eight games cannot support "unusual."** It
+  is the matchup card (`next-game.md` §0.1) one surface out, and neither a
+  fraction nor a label disarms it — only not printing them together.
+  **The block prints counts: *8 games, 5 where the attempts leader lost.*** The
+  archive figure keeps `#herorel`, where its n is 4,100.
+- ✅ **A REMEMBERED TEAM IS PERMITTED**, with the test that makes it checkable:
+  ⭐ **does anything about the viewer reach us?** If no it is a preference, if yes
+  it is measurement whatever it is called. Three conditions: **inspectable and
+  clearable on the page**, **it may never change a number, a rate or a
+  population**, and it **degrades to today's page**. Written before the feature;
+  it becomes `DOCTRINE.md` rule 10 the day something ships that uses it.
+- ✅ **`#state` SPLITS** — the season sentence moves into the daily block (in the
+  offseason it *is* the block), the ledger half stays at the bottom for the
+  skeptic. ⚠️ **The staleness check must travel with whichever block says "last
+  night"**, or `dataThrough`/`lastRun` is re-conflated one surface higher.
+
 ⏰ **AND THERE IS A CLOCK.** The league's own schedule document, read 2026-09-09:
 **preseason opens 2026-09-19, the regular season 2026-09-29.** ⚠️ **§2 of
 `docs/next-game.md` says 8 October** — read off one week's payload on 2026-08-17,
