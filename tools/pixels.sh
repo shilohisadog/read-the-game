@@ -78,7 +78,13 @@ cp "$REPO/src/index.html" "$REPO/src/game.html" .
 # to a question about last week.
 #
 # Three files at ~450 KB is under a second. Correctness beats it.
-for d in catalog.json measures.json index.json; do
+# ⚠️ schedule.json JOINED THIS LIST ON 2026-09-09, THE DAY THE PAGE STARTED
+# READING IT. Left out, it 404s, `grab` answers null, and the front door renders
+# in its "the league told us nothing" state -- which is a real state and looks
+# completely normal, so the harness would show a confident screenshot of the one
+# case the change was not about. THE TOOL HAS TO SERVE EVERY DOCUMENT THE PAGE
+# FETCHES, or it is measuring a different page.
+for d in catalog.json measures.json index.json schedule.json; do
   curl -sS --fail "$ORIGIN/$d" -o "$WORK/$d"
   cp "$WORK/$d" .
 done

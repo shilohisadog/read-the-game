@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-xJ4wpJMUC18L1iR+REypgzQK3iUKEoWnE8qz6n446uY=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-wCzZ5doKMp4YUz0OzT9XyZMKf++eETEMktHAxKa+wMQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-RCPTKoaFWrhPcsXGfBmsRwoi5p3qCHO1fvXaqHvp4P0=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-wCzZ5doKMp4YUz0OzT9XyZMKf++eETEMktHAxKa+wMQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -453,15 +453,65 @@ function ago(then, now) {
 }
 
 /**
- * @param index  the parsed index.json, or null if it could not be loaded
- * @param now    ISO instant, injected so this is testable and deterministic
+ * ⭐ WHEN HOCKEY COMES BACK, IN THE LEAGUE'S OWN WORDS.
+ *
+ * The league puts `preSeasonStartDate` and `regularSeasonStartDate` on every
+ * schedule payload, INCLUDING the empty ones it answers with all summer, and the
+ * nightly copies them into schedule.json. So this is a quotation, not a
+ * calendar of ours and not a forecast: the one thing on this site that is about
+ * the future is a date the league published.
+ *
+ * IT IS ALSO WHY THE DATE IS NEVER TYPED. `docs/next-game.md` recorded "the
+ * regular season 2026-10-08" on 2026-08-17 from one week's payload; the league's
+ * own field said 2026-09-29 three weeks later. A constant that goes wrong once a
+ * year with nobody touching it is exactly what this file exists to avoid
+ * elsewhere.
+ *
+ * ONLY DATES THAT HAVE NOT ARRIVED. A boundary in the past is not news, and
+ * naming one would leave the front page announcing an opening night that already
+ * happened -- the stale-fixture failure schedule.json is designed against,
+ * arriving through the other door.
+ *
+ * ⚠️ THE COMPARISON IS DATE-TO-DATE AND DELIBERATELY COARSE. The league's dates
+ * carry no timezone and `now` is an instant, so a reader west of the venue can
+ * see "opens 29 September" for a few hours of their 29 September. `>=` rather
+ * than `>` for the same reason: dropping the sentence on the very day it becomes
+ * true would be the worse error, and the day games are actually played the state
+ * is no longer `quiet` at all.
+ */
+function whenHockeyReturns(schedule, now) {
+  const s = (schedule && schedule.season) || {};
+  const today = String(now || '').slice(0, 10);
+  const ahead = [
+    ['preSeasonStartDate', 'preseason'],
+    ['regularSeasonStartDate', 'the regular season'],
+  ].filter(([k]) => typeof s[k] === 'string' && s[k] >= today && formatDate(s[k]))
+   .sort((a, b) => (s[a[0]] < s[b[0]] ? -1 : 1));
+
+  if (!ahead.length) return null;
+  // The verb is stated once and the rest of the list hangs off it, so two dates
+  // are one sentence rather than two: "Preseason opens 19 September 2026, the
+  // regular season 29 September 2026."
+  const [[firstKey, firstLabel], ...rest] = ahead;
+  const head = firstLabel[0].toUpperCase() + firstLabel.slice(1);
+  return `${head} opens ${formatDate(s[firstKey])}`
+    + rest.map(([k, label]) => `, ${label} ${formatDate(s[k])}`).join('') + '.';
+}
+
+/**
+ * @param index     the parsed index.json, or null if it could not be loaded
+ * @param now       ISO instant, injected so this is testable and deterministic
+ * @param schedule  the parsed schedule.json, or null. Optional: every caller
+ *                  before 2026-09-09 passed two arguments and still gets the
+ *                  same answer, because the only line it can add is one no
+ *                  other state prints.
  * @returns {{state, lines: string[]}}
  *
  * `state` is a machine-readable label for styling; `lines` is what a reader
  * sees. The states are ordered by how much they tell you, not by severity:
  * a halt explains itself, so it outranks staleness, which is only a symptom.
  */
-function describe(index, now) {
+function describe(index, now, schedule) {
   if (!index || typeof index !== 'object') {
     return { state: 'empty', lines: ['No data loaded yet.'] };
   }
@@ -524,6 +574,20 @@ function describe(index, now) {
 
     if (played === 0) {
       lines.push(`No games in the last ${c.windowDays} days.`);
+      // ⭐ AND THIS IS THE ONE STATE THAT GETS TO SAY WHAT HAPPENS NEXT.
+      //
+      // `quiet` means the LEAGUE listed no games -- we looked, recently, and the
+      // window was empty -- so it is the only state where "no games" is a fact
+      // about hockey rather than a symptom of us. Adding it to `stalled` or
+      // `halted` would pin a cheerful date onto a sentence about our own
+      // failure, and the reader could not tell which half to believe.
+      //
+      // IT IS STILL NOT A DIAGNOSIS, which is this file's standing rule. The
+      // page does not say "the season is over" -- that is a conclusion, and this
+      // state is equally what a mid-season league-wide pause looks like. It says
+      // what the league listed, and then the next date the league published.
+      const back = whenHockeyReturns(schedule, now);
+      if (back) lines.push(back);
       return { state: 'quiet', lines };
     }
     if (held < played) {
@@ -1727,8 +1791,11 @@ function disputedNote(n) {
        relationship the data is free to invert overnight.
        SAID EITHER WAY ROUND, because naming the relationship only when the game
        is the exception is Doctrine 9's selective honesty.
-       NOTHING IS SAID WHEN NOTHING CAN BE: a tie in the measure has no leader
-       and a tie on the scoreboard has no outcome.
+       NOTHING IS SAID WHEN NOTHING WAS COUNTED, and that is now the only gate:
+       the `return` above, on zero attempts either side. This line used to read
+       "a tie in the measure has no leader and a tie on the scoreboard has no
+       outcome" -- both true, neither a reason, and the second half had already
+       been retired when the outcome clause went. See below.
        AND THE RATE APPLIES HERE. It is conditioned on FINAL totals, which is
        what this is -- the game is over. (CHENG: that is why this does not
        collide with his ruling that the rate must not sit beside a LIVE count.) */
@@ -1738,13 +1805,30 @@ function disputedNote(n) {
     /* `won` IS GONE FROM THIS BRANCH TOO, and with it the condition that a level
        game gets silence. That rule existed because there was an OUTCOME to
        classify and a draw could not be classified; the rate is a fact about the
-       archive, not a verdict on this game, so the only thing that can still
-       withhold it is having no attempts leader to talk about.
+       archive, not a verdict on this game.
+       ⭐⭐ AND ON 2026-09-09 THE LAST CONDITION WENT THE SAME WAY, FOR THE SAME
+       REASON, ONE STEP LATER. It read `lead != null` -- no attempts leader, no
+       rate -- and that was the classifying caption's logic surviving the
+       classifying caption. It is only coherent if the rate is ABOUT this game:
+       once the sentence describes the archive and nothing else, a tie here is
+       not a fact about the archive and cannot withhold one.
+       ⛔ THE COST WAS LIVE AND NOBODY HAD COSTED IT. Kevin's screenshot of the
+       front door: `Both teams took 52 shot attempts.` and then nothing. The hero
+       is CAR at VGK, 9 June 2026, tied 52-52 on attempts -- so the site's
+       flagship finding, the one thing here a reader cannot get anywhere else,
+       rendered EMPTY. The hero only changes when the archive does, and the
+       archive does not move again until the season opens, so this was the front
+       door's whole claim for three months. A condition whose failure mode is
+       "the site states no finding at all" is too expensive for the tidiness of
+       not naming a leader that does not exist.
+       WHAT STILL WITHHOLDS IT is the `return` above: no attempts counted, no
+       sentence and no rate -- because the rate belongs under a count of this
+       game's attempts, and alone it is a statistic with nothing to be about.
        THE DIRECTION IS STILL READ, NEVER ASSUMED. The archive publishes every
        rate as "lost", so a caption saying the leader WINS must print 100 minus
        that -- a correct sentence with the wrong number welded to it is the
        failure this shape exists to prevent. */
-    if (lead != null && at && at.n) {
+    if (at && at.n) {
       var lostPct = at.count / at.n * 100;
       var usuallyLoses = lostPct > 50;
       var usualPct = (usuallyLoses ? lostPct : 100 - lostPct).toFixed(1);
@@ -1831,9 +1915,20 @@ function disputedNote(n) {
      the rink. Set before the fetch, so it does not depend on a network. */
   var season = +(/[?&]season=(\d{4})/.exec(location.search) || [])[1] || 0;
 
-  Promise.all([grab('catalog.json'), grab('measures.json'), grab('index.json')])
+  /* ⭐ schedule.json JOINS THE FETCH, AND IT IS THE DOCUMENT'S FIRST READER.
+     It has been published on every run since the forward window shipped and
+     nothing has ever read it -- the D10 shape, a field written for a purpose no
+     reader served. What it carries that this page needs is the league's own
+     season-opening dates, which is the difference between a front door that ends
+     on "No games in the last 14 days" and one that says when there will be.
+     THE COST IS ONE REQUEST OF ABOUT A HUNDRED BYTES, in parallel with a 467 KB
+     catalog that dominates the wait entirely, and `grab` already answers null
+     for anything that 404s or fails -- so the page renders exactly as it did
+     before if this document is ever missing. */
+  Promise.all([grab('catalog.json'), grab('measures.json'), grab('index.json'),
+               grab('schedule.json')])
     .then(function (r) {
-      var cat = r[0], measures = r[1], index = r[2];
+      var cat = r[0], measures = r[1], index = r[2], schedule = r[3];
       var games = (cat && cat.games) || [];
       if (!games.length) {
         $('teams').appendChild(el('p', 'note',
@@ -1846,7 +1941,7 @@ function disputedNote(n) {
            Dallas game; the hero exists for the visitor who has not chosen. */
         drawHero(cat, measures);
       }
-      var s = describe(index, new Date().toISOString());
+      var s = describe(index, new Date().toISOString(), schedule);
       $('state').setAttribute('data-state', s.state);
       $('state').textContent = s.lines.join(' ');
     });

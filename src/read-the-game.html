@@ -411,6 +411,27 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    A thing that is correct because of where the playhead happens to be is not
    correct, so it is turned off here rather than left to the loop. */
 #rg.preview .ppill,
+/* ⭐ AND THE SHARE ROW, WHICH SHIPPED VISIBLE ON THE FRONT DOOR FOR MONTHS.
+   Kevin's screenshot of the live home page, 2026-09-09: `Copy a link to this
+   moment` sitting inside the hero, directly above `Watch the whole game`. It is
+   the game view's control, and on this surface it is an offer the visitor cannot
+   take -- the preview drives its own playhead on a loop, so "this moment" is
+   whichever frame the loop happened to reach, the iframe is `tabindex="-1"`, and
+   the link it writes is to a game the reader has not chosen yet.
+   AND IT COSTS ICE, WHICH IS THE HALF NO ONE WOULD PREDICT. `#rg.preview` is a
+   `100vh` flex column with `overflow:hidden` (below), so `.sharerow`'s
+   `min-height:44px` does not overflow the frame -- it comes out of `.rinkbox`,
+   the one `flex:1 1 auto` child. A control nobody can use was shrinking the rink
+   it sat under.
+   ⚠️ THE ENUMERATION IS THE DEFECT, and this list's own comment predicted it two
+   entries up: *"a rule that hides a WRAPPER is a rule nobody has to remember to
+   extend... the preview is exactly the surface where nobody would notice it was
+   not."* `.sharerow` was added below the rink after that was written, and the
+   test guarding this list is a hand-written array of class names, so it could
+   only ever fail on a class somebody remembered to type into it. The check that
+   would have caught it derives the question from the page -- see
+   test/render-preview.test.js, `every control the built page can produce`. */
+#rg.preview .sharerow,
 #rg.preview .counters{display:none!important}
 /* THE PREVIEW FITS ITSELF TO WHATEVER BOX IT IS GIVEN.
    Kevin: "the bottom 1/3 of the rink is clipped off within the frame."

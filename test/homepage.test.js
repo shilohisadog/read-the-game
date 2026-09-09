@@ -345,21 +345,62 @@ test('the hero caption reads the rate BOTH WAYS and never states this outcome', 
         `the caption states how the game ended: "${t}"`);
   }));
 
-test('with no attempts leader there is nothing to say, and it says nothing', () =>
+/**
+ * ⭐⭐ THE LAST CONDITION WENT ON 2026-09-09, AND IT WAS COSTING THE SITE ITS
+ * ONLY CLAIM.
+ *
+ * This test used to assert the opposite of what it asserts now — that equal
+ * attempts produce `''`. The reasoning was "no leader, no subject for the rate",
+ * which is the CLASSIFYING caption's logic outliving the classifying caption:
+ * it is only coherent while the sentence is about this game. Once the sentence
+ * describes the archive and nothing else, a tie here is not a fact about the
+ * archive and cannot withhold one.
+ *
+ * ⛔ WHAT MADE IT URGENT WAS A SCREENSHOT, NOT AN ARGUMENT. The live hero on
+ * 2026-09-09 is CAR at VGK, 9 June 2026, **tied 52–52 on attempts** — so the
+ * front door read `Both teams took 52 shot attempts.` and then stopped, with the
+ * flagship finding rendering empty. The hero moves only when the archive does
+ * and the archive does not move until the season opens, so this was the whole
+ * claim of the front page for three months, with every test in this file green.
+ *
+ * ⭐ THE GENERAL SHAPE, because it is the third time here: a condition survived
+ * the reason that justified it. The cure that worked was not re-reading the
+ * code — it was asking what the branch DOES when it fires.
+ *
+ * WHAT STILL WITHHOLDS THE RATE is zero attempts on both sides, and that one is
+ * about this game: the rate sits under a count of the hero's own attempts, and
+ * with no count above it, it is a statistic with nothing to be about.
+ */
+test('a tie still states the archive rate — the rate is about the ARCHIVE', () =>
   Promise.all([
-    // Equal attempts: there is no leader, so there is no subject for the rate.
+    // Equal attempts: no leader, and the rate is unchanged by that.
     heroRelation({ aAtt: 30, hAtt: 30, as: 1, hs: 4, ...LEADERS_WIN }),
-    // ⭐ A GAME THAT ENDED LEVEL USED TO BE SILENT TOO, AND THAT RULE RETIRED
-    // WITH ITS REASON. The caption classified this game against the rate, and a
-    // draw could not be classified. It no longer classifies anything — the rate
-    // is a fact about the archive — so the only thing that can withhold it is
-    // having no leader. When you delete a condition, say which one and why.
+    // A game that ended level. Silent once, for the outcome clause's sake.
     heroRelation({ ...BUF_LED_SHOTS, as: 3, hs: 3, ...LEADERS_WIN }),
-  ]).then(([noLeader, levelGame]) => {
-    assert.equal(noLeader, '', `equal attempts were given a rate anyway: ${noLeader}`);
+    // The leader case, as the control: the same rate, the same words.
+    heroRelation({ ...BUF_LED_SHOTS, as: 1, hs: 4, ...LEADERS_WIN }),
+  ]).then(([noLeader, levelGame, hasLeader]) => {
+    assert.match(noLeader, /wins 80\.0% of the time/,
+      'the hero states no finding at all when the two teams tie on attempts');
     assert.match(levelGame, /wins 80\.0% of the time/,
       'a level game lost its rate — that condition was about the outcome clause');
+
+    // ⭐ AND IT IS THE SAME SENTENCE. A tie must not earn its own wording, or the
+    // page would be describing THIS game again by choosing how to phrase itself.
+    assert.equal(noLeader, hasLeader,
+      'the tie gets a different sentence — the caption is describing the game again');
+    // The denominator travels with it, on every branch.
+    assert.ok(noLeader.includes('1,000 games'), `the denominator is missing: ${noLeader}`);
   }));
+
+test('⭐ …but a hero that counted nothing still says nothing', () =>
+  // THE PAIRED HALF, and it is the condition that survives. "Always print the
+  // rate" is satisfied by a page that prints it under an empty scoreboard, which
+  // is a statistic with nothing to be about — and it is what this change would
+  // have shipped if the gate had simply been deleted rather than narrowed.
+  heroRelation({ aAtt: 0, hAtt: 0, as: 1, hs: 4, ...LEADERS_WIN })
+    .then(none => assert.equal(none, '',
+      `a rate was printed for a hero with no attempts counted: ${none}`)));
 
 test('the hero is the ONLY route to the game it shows, and both halves agree', () => {
   // THIS TEST HAS BEEN WRONG TWICE AND THE HISTORY IS THE POINT.

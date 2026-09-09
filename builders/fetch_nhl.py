@@ -168,6 +168,20 @@ class Report:
     # week's fixtures on the site is the exact failure this file is designed
     # against. A run that looked and found nothing must say so.
     upcoming: dict = field(default_factory=dict)
+    # ⭐ THE TWO DATES THE LEAGUE PUTS ON EVERY SCHEDULE PAYLOAD, INCLUDING THE
+    # EMPTY ONES. `/v1/schedule/2026-09-09` answers with 820 bytes, zero games,
+    # and `preSeasonStartDate` / `regularSeasonStartDate` at the top level. So a
+    # front page that wants to say when hockey comes back is reading a field we
+    # are already being handed -- no extra request, and nothing derived from a
+    # calendar of our own. The alternative was typing "the season opens in
+    # October" into copy, which is a constant that goes wrong once a year with
+    # nobody touching it: docs/next-game.md §2 recorded 8 October on 2026-08-17
+    # and the league's own field says 29 September.
+    # THE LAST NON-EMPTY VALUE WINS, not the first: `ingest` walks weeks in
+    # window order and every payload carries the same pair, so this is a copy
+    # rather than a choice. `None` if the league ever stops sending them, which
+    # the reader must handle -- see src/lib/ingest-state.js.
+    season: dict = field(default_factory=dict)
 
     def as_dict(self):
         return {"fetched": self.fetched, "unchanged": self.unchanged,
@@ -266,6 +280,14 @@ def ingest(end, days, transport, store, now=None):
         # The schedule is parsed: it is routing, not interpretation.
         payload = json.loads(body.decode())
         got = classify(payload, dates)
+
+        # KEPT VERBATIM, AND ONLY WHEN THE LEAGUE SENT SOMETHING. A key present
+        # and null would otherwise overwrite a real date with nothing on the next
+        # run, which is the failure schedule.json's own comment is about: the
+        # document goes wrong with nobody touching anything.
+        for key in ("preSeasonStartDate", "regularSeasonStartDate"):
+            if payload.get(key):
+                rep.season[key] = payload[key]
 
         # ⭐ THE FIXTURES WE WERE ALREADY BEING HANDED, AND THROWING AWAY.
         #
@@ -503,7 +525,14 @@ def _write_index(store, rep, now, coverage=True):
     # `asOf` rides along for the same reason index.json carries it: a reader
     # cannot tell a quiet night from a broken pipeline without it, and this is
     # the one file where "we last looked on Tuesday" changes what a page may say.
+    # `season` RIDES ALONG BECAUSE IT IS WHAT AN EMPTY `upcoming` NEEDS. The
+    # offseason is the state this file spends five months in, and "no fixtures"
+    # is a dead end on a page whose job is to give somebody a reason to come
+    # back. The two dates are the league's answer to "when, then", quoted rather
+    # than computed; what the page may SAY with them is decided in
+    # src/lib/ingest-state.js, which is where the reader lives.
     sched = {"asOf": stamp,
+             "season": dict(sorted(rep.season.items())),
              "upcoming": sorted(rep.upcoming.values(),
                                 key=lambda g: (g["startTimeUTC"] or "", g["id"]))}
     store.put("schedule.json", json.dumps(sched, indent=2, sort_keys=True).encode())

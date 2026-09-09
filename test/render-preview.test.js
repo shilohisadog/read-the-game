@@ -263,6 +263,125 @@ test('the preview is hidden by CSS, not by deleting the app', () => {
     assert.ok(hides[0].includes(cls), `preview leaves ${cls} on screen`);
 });
 
+/* ------------------------------------------------- WHAT THE LIST ABOVE CANNOT DO
+ *
+ * ⚠️⚠️ THE TEST ABOVE IS A HAND-WRITTEN ARRAY, SO IT CAN ONLY FAIL ON A CLASS
+ * SOMEBODY REMEMBERED TO TYPE INTO IT — and its own comment predicted the defect
+ * that then shipped: *"a rule that hides a WRAPPER is a rule nobody has to
+ * remember to extend… the preview is exactly the surface where nobody would
+ * notice it was not."*
+ *
+ * `.sharerow` was added below the rink after that was written. It was never added
+ * here, and `Copy a link to this moment` sat on the live front door — inside the
+ * hero, directly above `Watch the whole game` — until Kevin screenshotted it on
+ * 2026-09-09. Every test in this file was green throughout, because none of them
+ * asks the question in a form the page can answer.
+ *
+ * ⭐ SO THIS ONE IS DERIVED, the shape `css-orphans.test.js` uses: the subject is
+ * not a list of classes I can recall, it is EVERY CONTROL THE BUILT PAGE CAN
+ * PRODUCE, and each one has to be inside something the preview hides. A control
+ * added tomorrow is in the denominator the moment it is in the markup.
+ *
+ * WHY CONTROLS AND NOT EVERY ELEMENT. A control is the case where being visible
+ * is not merely untidy: the preview drives its own playhead on a loop, the iframe
+ * is `tabindex="-1"`, and the visitor did not choose this game — so a button here
+ * is an offer that cannot be taken. Panels are a height argument and stay with
+ * the enumeration above, which is why both tests exist.
+ *
+ * ⛔ ITS LIMIT, STATED. It reads the markup the builder emits and stops at the
+ * first `<script>`, so a control the bundle CREATES at runtime is invisible to
+ * it — `.whyclose` and the work panel's own links are built in JS. Those are
+ * inside `#whyContent` and `.work`, both hidden, but this test is not what
+ * establishes that. When a runtime-created control lands outside a hidden
+ * container, this scan will not see it; the answer then is the same as
+ * css-orphans' — a ledger line with a reason, not a looser scan.
+ */
+
+/** `#rg.preview X {display:none!important}` — the X's, comments stripped first.
+ *  app.css is more comment than code and its comments name selectors in prose;
+ *  a parser that skipped this step would drop every entry that follows one,
+ *  which on this file is `.pressplay`, `.lbox`, `.ppill` and `.sharerow`. */
+function previewHides(css) {
+  const bare = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const out = new Set();
+  for (const m of bare.matchAll(/([^{}]+)\{display:none!important\}/g))
+    for (const sel of m[1].split(','))
+      if (sel.trim().startsWith('#rg.preview'))
+        out.add(sel.trim().slice('#rg.preview'.length).trim());
+  return out;
+}
+
+/** Every control in the built markup, with its chain of ancestors.
+ *  A tag walker rather than a regex over `<button`: the question is ancestry,
+ *  and "is this inside something hidden" cannot be asked of a flat match. */
+function controlsWithAncestry(html) {
+  const start = html.indexOf('<div id="rg"');
+  const stop = html.indexOf('<script>', start);
+  // Comments are stripped BEFORE the walk. This file's markup quotes tags inside
+  // its own comments — four `<h1>` mentions in the first block alone — and a
+  // walker that counts those never closes them, which silently puts every
+  // element on the page inside a fake `<h1>` and passes everything.
+  const markup = html.slice(start, stop).replace(/<!--[\s\S]*?-->/g, '');
+  const VOID = new Set(['br', 'img', 'input', 'hr', 'meta', 'link', 'source',
+    'use', 'path', 'circle', 'rect', 'line', 'polygon', 'ellipse', 'stop', 'area', 'wbr']);
+  const stack = [], found = [];
+  for (const m of markup.matchAll(/<(\/?)([a-zA-Z][a-zA-Z0-9]*)((?:"[^"]*"|[^>])*?)(\/?)>/g)) {
+    const [, close, raw, attrs, selfClose] = m, tag = raw.toLowerCase();
+    if (close) { while (stack.length && stack.pop().tag !== tag); continue; }
+    const node = { tag,
+      cls: (attrs.match(/class="([^"]*)"/) || [, ''])[1],
+      id: (attrs.match(/id="([^"]*)"/) || [, ''])[1] };
+    if (['button', 'select', 'summary', 'textarea', 'input'].includes(tag)
+        || (tag === 'a' && /\shref[=\s]/.test(attrs)))
+      found.push({ node, ancestors: [...stack] });
+    if (!selfClose && !VOID.has(tag)) stack.push(node);
+  }
+  return { found, unclosed: stack.length };
+}
+
+const hiddenBy = ({ node, ancestors }, hides) => {
+  for (const n of [node, ...ancestors]) {
+    for (const k of n.cls.split(/\s+/)) if (k && hides.has('.' + k)) return '.' + k;
+    if (n.id && hides.has('#' + n.id)) return '#' + n.id;
+    if (hides.has(n.tag)) return n.tag;
+  }
+  return null;
+};
+
+test('⭐ EVERY control the built page can produce is hidden in preview', () => {
+  const hides = previewHides(PAGE_CSS);
+  const { found, unclosed } = controlsWithAncestry(app);
+
+  // THE PARSER ASSERTS ITSELF FIRST. Both halves of this check are derived, so
+  // both can go quiet: a hide list that parses to nothing reports every control
+  // as a leak (loud, safe), but a WALK that finds no controls reports a clean
+  // page forever (silent, and the exact failure this test replaces). The floors
+  // are well under the real counts — 22 controls and 25 selectors today — so
+  // they cannot become a second place the numbers are maintained.
+  assert.equal(unclosed, 0, 'the markup walk did not close every tag it opened');
+  assert.ok(found.length >= 15, `only ${found.length} controls found — the walk is blind`);
+  assert.ok(hides.size >= 12, `only ${hides.size} preview selectors parsed — the CSS scan is blind`);
+
+  const leaks = found.filter(c => !hiddenBy(c, hides))
+    .map(({ node, ancestors }) => `<${node.tag} id="${node.id}" class="${node.cls}"> in `
+      + ancestors.map(a => a.cls || a.tag).join(' > '));
+  assert.deepEqual(leaks, [], `a visitor can see and press these on the front door:\n${leaks.join('\n')}`);
+});
+
+test('⭐ …and that check can fail — the control', () => {
+  /* A DERIVED CHECK OVER TWO PARSERS IS EASY TO WRITE GREEN. This drops one
+     selector from the hide list — the one that shipped missing — and requires
+     the exact control it hid to be reported. Without it the test above would
+     pass on a page with no preview rules at all, which is how the last one
+     failed. */
+  const hides = previewHides(PAGE_CSS);
+  assert.ok(hides.delete('.sharerow'), '.sharerow is no longer the preview hide list');
+  const { found } = controlsWithAncestry(app);
+  const leaks = found.filter(c => !hiddenBy(c, hides)).map(c => c.node.id);
+  assert.deepEqual(leaks, ['share'],
+    'removing .sharerow did not expose the share button — the scan is not reading ancestry');
+});
+
 /* ------------------------------------------------- the preview's PACE
    Kevin, twice. On 115ms an event: "a blur of activity, looks like it's 100x
    real-time." On a slower chosen constant of 430ms: "definitely better, still

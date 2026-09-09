@@ -53,11 +53,17 @@ class DictStore:
         self.obj.pop(key, None)
 
 
-def schedule_payload(date, games):
-    """A schedule response shaped like the real one: a WEEK, keyed by date."""
-    return json.dumps({
-        "gameWeek": [{"date": date, "games": games}]
-    }).encode()
+def schedule_payload(date, games, season=None):
+    """A schedule response shaped like the real one: a WEEK, keyed by date.
+
+    `season` is the pair of top-level dates the league puts on EVERY payload,
+    including the empty summer ones. Optional here so that every call written
+    before 2026-09-09 still describes a payload without them -- which is also the
+    case the reader has to survive, so it is not a convenience.
+    """
+    body = {"gameWeek": [{"date": date, "games": games}]}
+    body.update(season or {})
+    return json.dumps(body).encode()
 
 
 def game(gid, state="OFF", gtype=2, away="MIN", home="BUF"):
@@ -309,6 +315,73 @@ class UpcomingFixtures(unittest.TestCase):
                  now="2026-10-20T11:00:00Z")
         got = json.loads(store.obj["schedule.json"].decode())
         self.assertEqual(len(got["upcoming"]), 1)
+
+
+class SeasonBoundaries(unittest.TestCase):
+    """The two dates that let a quiet front page say when hockey comes back.
+
+    ⭐ THEY COST NOTHING TO OBTAIN. `preSeasonStartDate` and
+    `regularSeasonStartDate` sit at the top level of every schedule payload,
+    including the 820-byte empty one the league answered 2026-09-09 with. So the
+    forward-looking half of the front door is a field we were already being
+    handed and throwing away -- the same finding as `upcoming`, one level up.
+
+    ⚠️ AND THE ALTERNATIVE WAS MEASURED WRONG. `docs/next-game.md` §2 recorded
+    "the regular season 2026-10-08" on 2026-08-17, read off one week's games; the
+    league's own field says 2026-09-29. A date typed into copy would have been
+    nine days out in the one sentence promising a visitor when to return.
+    """
+
+    LEAGUE = {"preSeasonStartDate": "2026-09-19",
+              "regularSeasonStartDate": "2026-09-29"}
+
+    def _sched(self, games, season, date="2026-09-09", days=1):
+        store = DictStore()
+        payload = schedule_payload(date, games, season)
+        F.ingest(date, days, lambda url: (200, payload), store,
+                 now="2026-09-09T11:00:00Z")
+        return json.loads(store.obj["schedule.json"].decode())
+
+    def test_the_dates_are_copied_verbatim(self):
+        got = self._sched([], self.LEAGUE)
+        self.assertEqual(got["season"], self.LEAGUE)
+
+    def test_they_survive_the_EMPTY_payload_that_is_the_whole_point(self):
+        """The offseason is the state this runs in for five months, and it is
+        exactly when `upcoming` is empty and the page has nothing else to say."""
+        got = self._sched([], self.LEAGUE)
+        self.assertEqual(got["upcoming"], [])
+        self.assertEqual(got["season"]["regularSeasonStartDate"], "2026-09-29")
+
+    def test_a_payload_without_them_asserts_nothing(self):
+        """A league that stops sending these leaves the page silent about the
+        future, which is the honest outcome. Carrying a value forward from an
+        older run would be this document advertising a date nobody re-checked --
+        the stale-fixture failure it is designed against."""
+        self.assertEqual(self._sched([], None)["season"], {})
+
+    def test_a_null_never_overwrites_a_date_the_league_did_send(self):
+        """A fourteen-day window makes several schedule calls, and only one has
+        to answer without the fields for a blanket copy to blank them."""
+        pages = iter([schedule_payload("2026-09-09", [], self.LEAGUE),
+                      schedule_payload("2026-09-16", [],
+                                       {"preSeasonStartDate": None,
+                                        "regularSeasonStartDate": None})])
+        store = DictStore()
+        F.ingest("2026-09-16", 14, lambda url: (200, next(pages)), store,
+                 now="2026-09-16T11:00:00Z")
+        got = json.loads(store.obj["schedule.json"].decode())
+        self.assertEqual(got["season"], self.LEAGUE)
+
+    def test_a_halted_run_still_publishes_them(self):
+        """A halt writes schedule.json through the same exit -- that is why the
+        fixtures live on the Report. The season dates ride the same path, so a
+        halted pipeline in September does not also lose the page's only
+        forward-looking sentence."""
+        halting = [{"id": 1, "gameState": "WHAT", "gameType": 2,
+                    "awayTeam": {"abbrev": "MIN"}, "homeTeam": {"abbrev": "BUF"}}]
+        got = self._sched(halting, self.LEAGUE)
+        self.assertEqual(got["season"], self.LEAGUE)
 
 
 class PointersMustResolve(unittest.TestCase):

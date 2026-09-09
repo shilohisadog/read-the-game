@@ -763,8 +763,11 @@ __HELPERS__
        relationship the data is free to invert overnight.
        SAID EITHER WAY ROUND, because naming the relationship only when the game
        is the exception is Doctrine 9's selective honesty.
-       NOTHING IS SAID WHEN NOTHING CAN BE: a tie in the measure has no leader
-       and a tie on the scoreboard has no outcome.
+       NOTHING IS SAID WHEN NOTHING WAS COUNTED, and that is now the only gate:
+       the `return` above, on zero attempts either side. This line used to read
+       "a tie in the measure has no leader and a tie on the scoreboard has no
+       outcome" -- both true, neither a reason, and the second half had already
+       been retired when the outcome clause went. See below.
        AND THE RATE APPLIES HERE. It is conditioned on FINAL totals, which is
        what this is -- the game is over. (CHENG: that is why this does not
        collide with his ruling that the rate must not sit beside a LIVE count.) */
@@ -774,13 +777,30 @@ __HELPERS__
     /* `won` IS GONE FROM THIS BRANCH TOO, and with it the condition that a level
        game gets silence. That rule existed because there was an OUTCOME to
        classify and a draw could not be classified; the rate is a fact about the
-       archive, not a verdict on this game, so the only thing that can still
-       withhold it is having no attempts leader to talk about.
+       archive, not a verdict on this game.
+       ⭐⭐ AND ON 2026-09-09 THE LAST CONDITION WENT THE SAME WAY, FOR THE SAME
+       REASON, ONE STEP LATER. It read `lead != null` -- no attempts leader, no
+       rate -- and that was the classifying caption's logic surviving the
+       classifying caption. It is only coherent if the rate is ABOUT this game:
+       once the sentence describes the archive and nothing else, a tie here is
+       not a fact about the archive and cannot withhold one.
+       ⛔ THE COST WAS LIVE AND NOBODY HAD COSTED IT. Kevin's screenshot of the
+       front door: `Both teams took 52 shot attempts.` and then nothing. The hero
+       is CAR at VGK, 9 June 2026, tied 52-52 on attempts -- so the site's
+       flagship finding, the one thing here a reader cannot get anywhere else,
+       rendered EMPTY. The hero only changes when the archive does, and the
+       archive does not move again until the season opens, so this was the front
+       door's whole claim for three months. A condition whose failure mode is
+       "the site states no finding at all" is too expensive for the tidiness of
+       not naming a leader that does not exist.
+       WHAT STILL WITHHOLDS IT is the `return` above: no attempts counted, no
+       sentence and no rate -- because the rate belongs under a count of this
+       game's attempts, and alone it is a statistic with nothing to be about.
        THE DIRECTION IS STILL READ, NEVER ASSUMED. The archive publishes every
        rate as "lost", so a caption saying the leader WINS must print 100 minus
        that -- a correct sentence with the wrong number welded to it is the
        failure this shape exists to prevent. */
-    if (lead != null && at && at.n) {
+    if (at && at.n) {
       var lostPct = at.count / at.n * 100;
       var usuallyLoses = lostPct > 50;
       var usualPct = (usuallyLoses ? lostPct : 100 - lostPct).toFixed(1);
@@ -867,9 +887,20 @@ __HELPERS__
      the rink. Set before the fetch, so it does not depend on a network. */
   var season = +(/[?&]season=(\d{4})/.exec(location.search) || [])[1] || 0;
 
-  Promise.all([grab('catalog.json'), grab('measures.json'), grab('index.json')])
+  /* ⭐ schedule.json JOINS THE FETCH, AND IT IS THE DOCUMENT'S FIRST READER.
+     It has been published on every run since the forward window shipped and
+     nothing has ever read it -- the D10 shape, a field written for a purpose no
+     reader served. What it carries that this page needs is the league's own
+     season-opening dates, which is the difference between a front door that ends
+     on "No games in the last 14 days" and one that says when there will be.
+     THE COST IS ONE REQUEST OF ABOUT A HUNDRED BYTES, in parallel with a 467 KB
+     catalog that dominates the wait entirely, and `grab` already answers null
+     for anything that 404s or fails -- so the page renders exactly as it did
+     before if this document is ever missing. */
+  Promise.all([grab('catalog.json'), grab('measures.json'), grab('index.json'),
+               grab('schedule.json')])
     .then(function (r) {
-      var cat = r[0], measures = r[1], index = r[2];
+      var cat = r[0], measures = r[1], index = r[2], schedule = r[3];
       var games = (cat && cat.games) || [];
       if (!games.length) {
         $('teams').appendChild(el('p', 'note',
@@ -882,7 +913,7 @@ __HELPERS__
            Dallas game; the hero exists for the visitor who has not chosen. */
         drawHero(cat, measures);
       }
-      var s = describe(index, new Date().toISOString());
+      var s = describe(index, new Date().toISOString(), schedule);
       $('state').setAttribute('data-state', s.state);
       $('state').textContent = s.lines.join(' ');
     });
