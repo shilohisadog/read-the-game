@@ -797,7 +797,25 @@ def build():
     # somebody editing a list of page names somewhere else. Kevin, 2026-09-08:
     # "I think it's fair and reasonable to have the tip jar on the
     # non-clip-capable pages", so the other twelve keep it.
-    return P.document(body, title=TITLE, description=DESC, chrome="full", tip=False)
+    # ⛔ AND IT CARRIES A POLICY, WHICH IT DID NOT UNTIL 2026-09-09.
+    # `build_shell()` below passed `head=` with the CSP and this did not, with no
+    # comment anywhere on the asymmetry — so the same application, the same
+    # bundle and the same 743 KB shipped to a live URL with no Content-Security-
+    # Policy at all, while its sibling was hash-pinned. `test/document.test.js`
+    # walks every page for unhashed blocks and skipped this one, because its skip
+    # was `if (!csp) continue` — a hole shaped exactly like the page falling into
+    # it. Found by verifying the CSP against the live site rather than by any
+    # check here.
+    # ⭐ `connect` IS DELIBERATELY OMITTED, which is STRICTER and not laxer: this
+    # page reaches nothing (`_lib`'s own comment: "read-the-game.html reaches
+    # nothing at all"), so it gets `connect-src 'self'` for the Cloudflare beacon
+    # that POSTs same-origin, and no permission to reach the data origin its
+    # sibling needs. The deploy gate reads this directive to decide which pages
+    # may call out, so claiming a reach we do not use would exempt this page from
+    # the check meant to hold it.
+    html = P.document(body, title=TITLE, description=DESC, chrome="full", tip=False,
+                      head='<meta http-equiv="Content-Security-Policy" content="__CSP__">')
+    return html.replace("__CSP__", P.csp(html))
 
 
 def build_shell():

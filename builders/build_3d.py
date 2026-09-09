@@ -157,5 +157,10 @@ document.getElementById('cBuf').textContent=RAW.counts.buf;
 buildGrid();fit();draw();loop();
 </script>'''
 html=T.replace('__DATA__',json.dumps(RAW,separators=(',',':')))
-open(_S('terrain-3d.html'),'w').write(_page.document(html, title='Where the chances came from — Read the Game', description='Shot locations from one NHL game as terrain. Height is attempts, not danger.'))
+# ⛔ A POLICY, ADDED 2026-09-09 — see the note in build_gv.py. This page holds
+# its shot coordinates inline and reaches nothing, so `connect` is omitted.
+_doc = _page.document(html, title='Where the chances came from — Read the Game',
+                      description='Shot locations from one NHL game as terrain. Height is attempts, not danger.',
+                      head='<meta http-equiv="Content-Security-Policy" content="__CSP__">')
+open(_S('terrain-3d.html'), 'w').write(_doc.replace('__CSP__', _page.csp(_doc)))
 print("wrote terrain-3d.html",len(html),"bytes")

@@ -46,6 +46,20 @@ T = r"""<style>
 #gv .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:.8rem;color:var(--muted);margin:12px 2px 0}
 #gv .legend i{width:11px;height:11px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:-1px}
 #gv .k-s{background:var(--save)}#gv .k-g{background:var(--goal)}
+/* ⛔ THESE WERE FOUR INLINE `style=` ATTRIBUTES, AND THE POLICY IS WHY THEY MOVED.
+   A hash pins a whole style BLOCK; there is no way to hash an attribute, so
+   (and note this comment says it WITHOUT the angle brackets on purpose: it
+   ships inside the page's own CSS, and `page.py::csp` counts opening tags as
+   TEXT, so the literal here made a two-block page look like a three-block one
+   and the build refused it — loudly, which is the right direction)
+   `style-src 'sha256-…'` without 'unsafe-inline' refuses every one of them —
+   the browser says so in a console nobody reads and the page renders with the
+   styling silently gone. `test/document.test.js` caught all four the moment this
+   page gained a CSP, which is precisely what its own comment promised: "give
+   another page a CSP and this starts holding it."
+   The two swatch colours are the legend's own `--save`/`--goal`, said once. */
+#gv .k-save{color:var(--save)}#gv .k-goal{color:var(--goal)}
+#gv .dim{opacity:.7}
 #gv .foot{font-size:.77rem;color:var(--muted);margin-top:13px;max-width:66ch}#gv .foot em{font-style:normal;color:var(--ink)}
 #gv .ctl{display:flex;gap:10px;margin-top:12px;align-items:center;flex-wrap:wrap}
 #gv .ctl button{font:inherit;font-size:.8rem;font-weight:600;border-radius:8px;border:1px solid var(--edge);background:#fff;color:var(--ink);padding:8px 12px;cursor:pointer}
@@ -60,7 +74,7 @@ __PICKCSS__
 <div id="gv"><div class="wrap">
 <p class="eyebrow">Prototype · the goalie's-eye view — real shots, honest limits</p>
 <h1>Standing in the crease, looking out</h1>
-<p class="cap">Every mark is a <b>real shot's origin</b> — where on the ice it was actually taken from — <b style="color:#4aa3e0">saved</b> or <b style="color:#ff4d5e">scored</b>. Close, dangerous shots <b>loom large</b>, the way they do for a goalie. <b>Drag to look around.</b> We do <b>not</b> draw the puck's path, its height, or where in the net it went — none of that is in the data, so we don't invent it. What's real: where they shot from, and what happened.</p>
+<p class="cap">Every mark is a <b>real shot's origin</b> — where on the ice it was actually taken from — <b class="k-save">saved</b> or <b class="k-goal">scored</b>. Close, dangerous shots <b>loom large</b>, the way they do for a goalie. <b>Drag to look around.</b> We do <b>not</b> draw the puck's path, its height, or where in the net it went — none of that is in the data, so we don't invent it. What's real: where they shot from, and what happened.</p>
 <div class="pick">
   <button class="gb" id="g0" aria-pressed="true">Goalie A</button>
   <button class="gb" id="g1" aria-pressed="false">Goalie B</button>
@@ -76,7 +90,7 @@ __PICKCSS__
 </div>
 <div class="seats"><span class="sl">Your seat:</span><button class="sb" data-v="crease" aria-pressed="true">🥅 In the crease</button><button class="sb" data-v="net">Behind the net</button><button class="sb" data-v="glass">On the glass</button><button class="sb" data-v="center">Center ice</button><button class="sb" data-v="nose">Nosebleeds</button><button class="sb" data-v="tv">📺 TV angle</button></div>
 __PICKHTML__
-<div class="legend"><span><i class="k-s"></i>saved <span style="opacity:.7">(shooting)</span></span><span><i class="k-g"></i>goal <span style="opacity:.7">(arms up)</span></span><span>bigger = closer / more dangerous</span></div>
+<div class="legend"><span><i class="k-s"></i>saved <span class="dim">(shooting)</span></span><span><i class="k-g"></i>goal <span class="dim">(arms up)</span></span><span>bigger = closer / more dangerous</span></div>
 <div class="ctl"><button id="play">&#9654; Play the shots</button><button id="reset">Reset view</button><button id="hd" aria-pressed="false">Highlight shots from the slot</button></div>
 <p class="foot"><em>Why it's honest:</em> the position of every mark is a real shot coordinate; the color is the real outcome. The mask cage is decorative. We show <em>where</em> and <em>what</em>, never a fabricated <em>how</em>. The little players are a friendly <b>marker</b> for “a shot came from here” — a character, not a claim about how anyone actually stood.</p>
 </div></div>
@@ -183,7 +197,17 @@ html = (T.replace("__DATA__", json.dumps(D, separators=(",", ":")))
          .replace("__PICKJS__", PICKER_JS))
 
 out = ROOT / "src" / "goalie-eye-view.html"
-out.write_text(_page.document(html, title='From the crease — Read the Game', description="One NHL game's shots, seen from where the goalie stood."))
+# ⛔ A POLICY, ADDED 2026-09-09. This page deploys at a live URL and shipped
+# without a Content-Security-Policy, as did terrain-3d and read-the-game --
+# because `test/document.test.js`'s sweep skipped any page that had none, which
+# is a hole shaped exactly like the pages falling into it. `connect` is omitted:
+# this view reads `data/goalie_sub.json` INLINED at build time and reaches
+# nothing, so it gets `connect-src 'self'` and no permission to touch the data
+# origin.
+_doc = _page.document(html, title='From the crease — Read the Game',
+                      description="One NHL game's shots, seen from where the goalie stood.",
+                      head='<meta http-equiv="Content-Security-Policy" content="__CSP__">')
+out.write_text(_doc.replace('__CSP__', _page.csp(_doc)))
 
 script = re.search(r"<script>(.*)</script>", html, re.S).group(1)
 chk = pathlib.Path(tempfile.gettempdir()) / "rtg.gv.check.js"
