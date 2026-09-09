@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-wCzZ5doKMp4YUz0OzT9XyZMKf++eETEMktHAxKa+wMQ=' 'sha256-O+tFRbevUhlyOt78ng1txnNkMDpdOHwapteYPqeRxx0=' 'sha256-xFjZ9sRme/bNt9SJN8r1rFahM9J/HY9HRzkwgJGTdow='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-kDR/H6GCxcJ9THqN5INvQPSPrdBu/KKmyxjgOKXNQWY=' 'sha256-O+tFRbevUhlyOt78ng1txnNkMDpdOHwapteYPqeRxx0=' 'sha256-xFjZ9sRme/bNt9SJN8r1rFahM9J/HY9HRzkwgJGTdow='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -117,32 +117,6 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .games li.no{background:#f1f4f6}
 .games .off{color:var(--muted)}
 
-/* THREE POINTS ON ONE SCALE, AND DELIBERATELY NOT A LINE CHART.
-   We refuse to plot the cumulative curve because its tail values are
-   uninformative (n=10 gives a 9%-70% band) and its domain is continuous, so a
-   line invites reading a value at k=17 that was never computed. Neither holds
-   here: n is 3,957 / 4,029 / 3,855, and the domain is NOMINAL -- there is no
-   measure BETWEEN "shots on goal" and "shot attempts", so interpolation is not
-   misleading, it is meaningless, which is what makes it safe (CHENG).
-   Two conditions, and they are enforced by a test: no connecting segment, and
-   every point carries its own fraction. */
-/* THE FRACTION IS THE PART THAT MUST SURVIVE (CHENG).
-   Label and fraction share one row, and the label is the long one -- "the team
-   that controlled play while the score was level lost". On a 360px screen a
-   space-between row squeezes whichever child can give, and the one that can give
-   is the number. So the row WRAPS, the fraction never breaks across lines
-   mid-way, and below 30rem the two stack outright: the label takes the width it
-   needs and the fraction sits underneath at full size. The track is decoration
-   around the number; the number is the claim. */
- gap:2px 12px;align-items:baseline}
- white-space:nowrap;flex-shrink:0}
- transform:translate(-50%,-50%);border:2px solid #fff;box-shadow:0 1px 3px rgba(16,32,45,.3)}
-/* The axis ends are the least load-bearing thing here, so they are the ones
-   allowed to shrink and wrap. Order of sacrifice: end labels, then the track,
-   never the fraction. */
- font-size:.72rem;color:var(--muted);margin-top:2px;font-variant-numeric:tabular-nums}
-/* ONE REFERENCE CLASS FOR ALL THREE ROWS, said once. It used to ride on every
-   row of a list that no longer exists. */
 
 /* THE HERO IS A GAME. Read from the archive, never typed. */
 .hero{background:#fff;border:1px solid var(--edge);border-radius:13px;
@@ -181,6 +155,83 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .herogo{display:inline-block;background:var(--ink);color:#fff;text-decoration:none;
  font-weight:700;padding:11px 18px;border-radius:9px;font-size:.95rem}
 .herogo:hover,.herogo:focus{background:var(--blue)}
+
+/* ⭐⭐ THE FOLD, AT A LAPTOP'S WIDTH -- docs/front-door.md §5.4.
+   Kevin, with the live page above the fold on his laptop: "encourages daily
+   visits, offers valuable information right from the get go, and encourages a
+   visitor to click into the site."
+   MEASURED FIRST, at 1900x1065: the document is 2.05 screens, `.wrap` renders
+   944px of 1900 (half the viewport is gutter), and the hero card alone is 729px
+   of a 1065px fold -- 68%. The card stacks the loop above four lines of text, so
+   `Watch the whole game` sits at y=903 and `Watch your team` at 982, and the fold
+   ends there. Everything a reader might act on is pushed down by the one thing
+   they are meant to look at.
+   SO THE CARD BECOMES TWO COLUMNS: what you READ on the left, the loop on the
+   right. The proposition lands whole in the first screen, and the space this
+   frees on the left is where the daily block goes when its data exists
+   (front-door.md §5.1) -- it is not decoration, it is the slot.
+
+   ⚠️ AND THE BAND HAS TO GROW OR THE RINK SHRINKS, which measuring is what
+   showed. Two columns inside the 900px reading column would leave the frame
+   ~520px against 898 today -- a 42% narrower rink to tidy the text beside it,
+   which trades the product for the layout. So above 1180 the card alone breaks
+   out of the column to `min(1240px, 100vw - 96px)`: at 1900 that is a 400px text
+   column and an ~810px frame, 10% narrower than today rather than 42%.
+   ⛔ THE REST OF THE PAGE STAYS AT 900. Prose has a measure; only the card has a
+   picture in it.
+
+   ⚠️⚠️ `:not([hidden])` IS LOAD-BEARING, NOT TIDINESS. `#hero` ships with the
+   `hidden` attribute and `drawHero` clears it once a game is chosen, which works
+   because nothing sets `display` on `.hero` -- the UA sheet's `[hidden]` wins by
+   default. A bare `display:grid` here would OVERRIDE it and paint an empty white
+   card on every page load before the catalog arrives, and on a page that never
+   gets one it would stay. The state this protects is the one nobody screenshots.
+
+   THE PHONE IS UNTOUCHED, on purpose: the whole query starts at 1180, and the
+   novice test is on a phone (docs/site-purpose.md §9). */
+@media (min-width:1180px){
+  /* ⚠️ THE COLUMN WIDENS; THE CARD DOES NOT BREAK OUT OF IT. The first draft gave
+     `.hero` a wider width and centred it with a translate, which put the card's
+     left edge 148px outside the headline above it -- the eyebrow and the h1 stayed
+     in the 900px column and the card jutted past them on both sides. LOOKING is
+     what found it: every measurement of that draft was an improvement (the fold
+     gained 313px) and it still read as a mistake.
+     ⛔ AND IT IS `.wrap.front`, NOT `.wrap`. Four BODY templates in this file share
+     this stylesheet -- the home page, learn, the rule pages and the calendar --
+     and three of them are prose that has no business at 1240px. The home page's
+     own BODY carries the class; nothing else can be widened by accident. */
+  .wrap.front{max-width:1240px}
+  /* The one block on this page with no measure of its own. Every other paragraph
+     caps at 56-70ch already; the limits cards are full-width boxes, so at 1240
+     their text would run to about a hundred characters a line. */
+  .wrap.front .limits{max-width:78ch}
+  .hero:not([hidden]){
+    display:grid;
+    grid-template-columns:minmax(320px,400px) minmax(0,1fr);
+    /* ⚠️ THE SIXTH ROW IS THE SLACK, and without it the text column is spread
+       down the card. A grid item spanning five rows distributes ITS height across
+       those rows, so the frame's ~470px was being handed to the five text rows --
+       measured at 1900, the sentences sat 88, 83 and 119px apart, which reads as
+       four unrelated notes rather than one thought. Five `min-content` rows plus
+       one `1fr` underneath send the surplus to the bottom of the card instead. */
+    grid-template-rows:repeat(5,min-content) 1fr;
+    column-gap:clamp(20px,2.4vw,34px);
+    align-items:start;
+  }
+  /* THE FRAME SPANS THE CARD'S WHOLE HEIGHT so the rink is as tall as the card,
+     rather than as tall as whichever sentence happens to be longest. */
+  .hero:not([hidden]) .heroframe{grid-column:2;grid-row:1/-1;margin:0}
+  .hero:not([hidden]) .herokick{grid-column:1;grid-row:1}
+  .hero:not([hidden]) .heroline{grid-column:1;grid-row:2}
+  .hero:not([hidden]) .herosub{grid-column:1;grid-row:3}
+  .hero:not([hidden]) .herorel{grid-column:1;grid-row:4}
+  /* `justify-self:start` because a grid item stretches by default and the button
+     is `inline-block`: without it the anchor's BOX fills the column while its
+     background does not, so the click target and the thing that looks clickable
+     stop being the same rectangle. That is the hit-target defect of 2026-09-08
+     waiting to happen in a third place. */
+  .hero:not([hidden]) .herogo{grid-column:1;grid-row:5;justify-self:start;margin-top:4px}
+}
 
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:12px}
 .card{display:block;text-decoration:none;color:inherit;background:#fff;

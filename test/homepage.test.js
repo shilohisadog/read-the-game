@@ -766,7 +766,16 @@ test('the page states what it is, above everything else', () => {
   assert.ok(h1, 'the one sentence is no longer the page\'s heading');
   assert.ok(h1[1].length > 60, `"${h1[1]}" is not a sentence`);
   // AND IT IS FIRST. Anything above it is chrome, not content.
-  const body = html.slice(html.indexOf('<div class="wrap">'));
+  // ⚠️ THE ANCHOR IS A PATTERN, NOT A LITERAL. This read `'<div class="wrap">'`
+  // and went red on 2026-09-09 when the home page's wrap gained a second class
+  // (`wrap front`, so the widened fold cannot reach the three other BODY
+  // templates in build_index.py). `indexOf` returned -1, `slice(-1)` handed the
+  // test the document's LAST CHARACTER, and both sides of the comparison became
+  // -1 — a failure with nothing wrong, on a check whose subject is ORDER and has
+  // no opinion about class attributes at all.
+  const wrapAt = html.search(/<div class="wrap[^"]*">/);
+  assert.notEqual(wrapAt, -1, 'the page body no longer opens with a .wrap');
+  const body = html.slice(wrapAt);
   assert.ok(body.indexOf('<h1 class="says">') < body.indexOf('<main'),
     'something content-shaped sits above the sentence that says what this is');
   // NO TYPED NUMBERS: every count here is fetched and rendered, so a number in
