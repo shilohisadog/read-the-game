@@ -281,6 +281,31 @@ def extract(pbp, shifts, box=None):
             if g is not None and g not in goalies:
                 goalies.append(g)
 
+    # ⛔⛔ WHO WAS ON THE ICE AT SECOND `t` IS `s < t <= e`, AND THE OTHER TWO
+    # CONVENTIONS ARE NOT MERELY WRONG — ONE OF THEM IS WRONG AND LOOKS RIGHT.
+    #
+    # The boundaries here are inclusive on both ends, because that is what the
+    # feed records: at an event the play stops, so one shift ENDS on that second
+    # and the next BEGINS on it. Anything resolving a moment out of this list has
+    # to pick a half-open interval, and the choice decides whether the answer is
+    # about hockey. Measured over 1,413 goals in 224 games stratified across four
+    # seasons (docs/layer-ideas.md §4.2):
+    #
+    #     s <= t <= e     5.7% plausible skater counts   98.0% right players
+    #     s <= t <  e    95.9% plausible skater counts   16.2% right players   ⛔
+    #     s <  t <= e    97.9% plausible skater counts   97.4% right players   ✅
+    #
+    # ⚠️ THE MIDDLE ROW IS THE HAZARD. It produces five-a-side nearly everywhere
+    # -- a completely plausible strength -- and names the right six players one
+    # time in six. A CHECK ON THE COUNT CANNOT SEPARATE THEM. What does is asking
+    # whether the players the EVENT ITSELF names (the scorer, the assists) are in
+    # the set, which is a different question from whether the set is the right
+    # size. CHENG: the first case in this project where the wrong answer looks
+    # more plausible than the right one.
+    #
+    # ⚠️ AND 97.4% IS "the players the event names are in the set", NOT "the set
+    # is right". It says nothing about the other seven or eight. Anywhere that
+    # figure is quoted has to carry that limit with it.
     sh = [{"p": s["playerId"], "t": s["teamId"],
            "s": _secs(s["period"], s["startTime"]),
            "e": _secs(s["period"], s["endTime"])}

@@ -298,3 +298,140 @@ the largest of those four off that list.
    appear); the precedent that says no is that a *wrong* name is worse than a
    missing one. **My view: it is enough only if the miss is silent** — show the
    set when it resolves and nothing when it does not, never a partial six.
+
+---
+
+## 9. ✅ CHENG'S RULINGS — 2026-09-09. All four, and two tightened the design
+
+### 9.1 Q4 — 97.4% is enough, but ⛔ **silent is not the same as invisible**
+
+> *"A missing video clip is obviously a missing artifact. A missing name list
+> looks like we decided nobody was on the ice. One is legibly absent, the other
+> is ambiguous."*
+
+**He is right and my framing was wrong.** I proposed *show when it resolves,
+nothing when it does not*, and reached for the highlight as precedent. The
+highlight's absence is self-explaining — no video, no section. **A missing name
+list reads as a claim**, and the reader has no way to tell it from six empty
+seats.
+
+**So the block's absence is stateable rather than blank:** *the shift chart does
+not place everyone this play names.* That is the `refused` versus `missing`
+distinction — the same one `extract.py` draws by leaving a field out rather than
+nulling it — applied to a rendering. The calendar cell precedent is his: a cell
+reading `2` with nothing clickable was not fixed by hiding it, it was fixed by
+saying why.
+
+⚠️ **AND A LIMIT ON THE FIGURE ITSELF, which I had stated loosely.** 97.4% is
+**"the players the event names are in the set"** — the scorer and both assists.
+It says **nothing about whether the other seven or eight are right.** *"The set
+is right 97.4% of the time"* is what a reader will take from it and is not what
+was measured. **The limit travels with the number wherever it is quoted**, and it
+is now in `extract.py`'s comment as well as here.
+
+### 9.2 Q3 — it is a **ledger**, and the test is recomputability
+
+CHENG sharpened `B4` past where I was reading it. The rule is not *"anything
+below the ice is retrospective"* — it is:
+
+> **A card may state a condition true at the playhead, and the test is whether it
+> can be recomputed from game state at the playhead alone, with no reference to
+> when it started.**
+
+*Who is on the ice* passes exactly: `shifts` evaluated at `t`, no history, no
+memory. **Same standing as the empty-net note and the penalty box**, both of
+which are conditions and both of which live below the ice without narrating.
+
+Two conditions, both of which are really one:
+
+1. ⛔ **It must disappear when it cannot be computed.** A condition card that
+   persists after its condition stops holding **becomes an event narration** —
+   the failure mode the empty-net note was tested against.
+2. ⛔ **It must not carry a verb.** *"Reinhart is on the ice"* is a condition;
+   *"Reinhart came on"* is an event, and it drifts. **The name list alone is the
+   safe form.**
+
+### 9.3 Q2 — `Defence` is honest, *from the point* is not
+
+Ruled as proposed, with the reason stated better than I had it:
+
+> **The set is what we can verify and the phrase is what a fan means, and only
+> one of those can be checked.**
+
+`Defence` is checkable against `roster.pos` on every event. *From the point* is a
+location claim, and §3.1's trap says why we cannot make it. **The caption does
+the translation** — *"defencemen — what a fan calls the point"* — which is the
+same move as naming the slot band by its rule rather than by *high-danger*, and
+it avoids borrowing a phrase whose established meaning we cannot match.
+
+### 9.4 Q1 — carry the winner, and it does **not** split the lesson
+
+My worry was that showing who won turns *where play restarts* into *who took it*.
+CHENG: **the census already says which one matters.**
+
+| | |
+|---|---:|
+| being in the offensive zone | **+1.163** attempts |
+| winning the draw there | **+0.52** |
+
+> **Where is worth 2.2× who.** So a mark carrying both is not a competing lesson
+> — it is **the comparison that makes the lesson land**, and it explains the
+> site's cleanest null in the same breath.
+
+⭐ **Condition: the mark shows both and the caption states the ratio.** Showing
+the winner *without* the comparison is exactly where it would become *who took
+it*.
+
+### 9.5 On the traps, and one instrument he is asking for
+
+- The **blocked-shot location** finding is *"an internal contradiction proving the
+  field means something other than what it looks like"* — same shape as the SOG
+  check that should have caught the blocked-shot flip.
+- The **shift interval** is *"the seventh instance of the instrument covering less
+  than its name implies, and the first where the wrong answer looks more
+  plausible than the right one."* He asked for it in the extractor's comment
+  rather than only here. **Done** — `builders/extract.py`, at `sh = [...]`.
+- ⛔ **`55% → 49.8%` is the fourth recalled figure, and the second inside a
+  document warning against it.** His conclusion, and it is a proposal rather than
+  a ruling: *"the rule keeps getting stated and the habit isn't holding — which
+  argues for the mechanical version: **any figure in a doc carries the command
+  that produced it**, the way the `file:line` checker made citations
+  verifiable."*
+  **⏸ NOT BUILT, and it is the most valuable open instrument on this page.**
+  `tools/refcheck.py` already proves the shape works for citations. The cheap
+  first version is figures quoted from a published document carrying their JSON
+  path — `measures.json:census.endZone.zoneWorth` — which a checker can verify
+  against the live document with no archive walk at all.
+
+---
+
+## 10. ✅ BUILT — the accumulator, 2026-09-09
+
+> CHENG: *"Build the accumulator first. Shooter position unmeasured archive-wide
+> means the Defence layer can't be drawn honestly at all… It also unblocks the
+> only number on that layer worth putting on screen — 1.62× blocked, 2.8% versus
+> 6.6% scoring — which is the lesson, not the lens."*
+
+`census.shooter` in `src/lib/census.js`, published by `censusRates`, printed in
+the weekly derive's summary. **The next `derive.yml` run puts it in
+`measures.json` archive-wide.** Reproduced on the 224-game sample by the reducer
+itself, independently of the Python that first measured it: **D 33.0% of
+attempts, blocked 37.6%; F 67.0%, blocked 23.4%.**
+
+**Two archive-wide alarms ride with it, both on the exit code** — an `::error::`
+with a zero exit is a green check with a red message in it:
+
+| | |
+|---|---|
+| ⛔ **an unknown position code** | The archive holds exactly `C L R D G`, counted over 224 games. The tempting shape is `pos === 'D' ? 'D' : 'F'`, which folds a new code into the comparison and **moves both rates**, because the lens is two rows and a third group takes attempts out of one of them. `gameType` is the precedent. |
+| ⛔ **the split drifting from its population** | The four outcomes partition `corsi`'s counted set. If they stop summing to `n`, every rate is over an unknown denominator. |
+
+⚠️ **AND ONE CHECK SHIPPED INERT AND WAS CAUGHT BY MUTATION.** *"The population
+is corsi's"* passed with the reducer replaced by a local
+`['shot-on-goal','goal','missed-shot','blocked-shot']` type test — **because none
+of the three fixtures we own contains an event `corsi` drops.** The check named
+the right property and could not fail on the data it ran against. It now appends
+one shootout attempt to a real event stream, which is the population that
+matters: every attempt there is unblocked and from the slot, so admitting it
+would move the blocked rate **in the direction that looks like a finding**, on
+the one number this lens exists to print.

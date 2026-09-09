@@ -35,6 +35,20 @@
  *                 killed it on one game; 8 games gave r = -0.15, which is
  *                 nothing either way.
  *
+ *   shooter       What becomes of an attempt depending on WHO took it. A
+ *                 stratified 224-game sample said a defenceman's attempt is
+ *                 blocked 37.6% of the time against a forward's 23.3%, and
+ *                 scores 2.8% against 6.6% — the whole lesson of the Defence
+ *                 lens, and unquotable until the archive says it.
+ *                 ⛔ AND IT IS KEYED ON THE SHOOTER, NEVER ON A LOCATION.
+ *                 `docs/layer-ideas.md` §3.1: a blocked shot is recorded where
+ *                 it was STOPPED, so defencemen's blocked attempts sit at a
+ *                 median 65 ft from centre against 46 ft for their shots on
+ *                 goal — closer to the net than the shots that reached it,
+ *                 which is impossible for a shot location. A location-defined
+ *                 "from the point" measure would drop the most-blocked shots
+ *                 and look tidy doing it.
+ *
  * ⚠️ EVERY ONE OF THOSE NUMBERS IS FROM AT MOST EIGHT GAMES AND NONE OF THEM MAY
  * BE PUBLISHED. They are recorded here as what the archive is being asked to
  * confirm or refute, not as findings.
@@ -83,6 +97,15 @@ export function runAfter(events, i) {
 }
 
 const zeroSplit = () => ({ n: 0, aw: 0, al: 0, gw: 0, gl: 0 });
+/** One shooter group's attempts, split by what became of them. The four outcomes
+ *  are exhaustive over `corsi`'s counted set, so `n` is their sum — a group whose
+ *  outcomes do not add to `n` is a bug, not a category, and `censusRates` says so. */
+const zeroShot = () => ({ n: 0, blocked: 0, onGoal: 0, missed: 0, goal: 0 });
+/** C, L and R are forwards; D and G are themselves. ⛔ Anything else is NOT a
+ *  forward — it is a code we have not met, and saying so is the point. */
+const SHOOTER_GROUP = { C: 'F', L: 'F', R: 'F', D: 'D', G: 'G' };
+const OUTCOME = { 'blocked-shot': 'blocked', 'shot-on-goal': 'onGoal',
+                  'missed-shot': 'missed', goal: 'goal' };
 
 /**
  * One game, censused. Returns integers only.
@@ -108,6 +131,13 @@ export function censusGame(events, ctx) {
   const state = { even: { secs: 0, goals: 0 }, pp: { secs: 0, goals: 0 },
                   en: { secs: 0, goals: 0 }, unknown: { secs: 0, goals: 0 } };
   const club = { h: { hits: 0, attempts: 0 }, a: { hits: 0, attempts: 0 } };
+  /* ⭐ FOUR BUCKETS AND ONE OF THEM IS THE ALARM. The archive holds exactly five
+     position codes today — C, L, R, D, G, counted over 224 games — and a value
+     the LEAGUE can invent needs a guard where the whole archive is walked, not a
+     unit test holding a copy of last year's answer (`gameType` cost us that
+     once). So an unrecognised code lands in `unknown` and the summary says so,
+     rather than being folded into `F` where it would quietly move a rate. */
+  const shooter = { D: zeroShot(), F: zeroShot(), G: zeroShot(), unknown: zeroShot() };
 
   for (let i = 0; i < events.length; i++) {
     const e = events[i];
@@ -117,6 +147,17 @@ export function censusGame(events, ctx) {
       const side = e.own === homeId ? 'h' : 'a';
       if (e.type === 'hit') club[side].hits++;
       if (isAttempt(i)) club[side].attempts++;
+    }
+
+    // ---- what became of an attempt, by who took it -------------------------
+    /* THE POPULATION IS `corsi`'s, like every other count here — so the shootout
+       is excluded by the same rule rather than by a second one, and this shares
+       a denominator with `attemptMix` instead of inventing its own. */
+    if (isAttempt(i)) {
+      const g = shooter[SHOOTER_GROUP[(ctx.roster?.[e.actor] || {}).pos] || 'unknown'];
+      g.n++;
+      const o = OUTCOME[e.type];
+      if (o) g[o]++;
     }
 
     // ---- time in each strength state ---------------------------------------
@@ -188,7 +229,7 @@ export function censusGame(events, ctx) {
   const hitCorr = { n: 1, sx: dh, sy: da, sxx: dh * dh, syy: da * da, sxy: dh * da,
                     opposite: dh * da < 0 ? 1 : 0 };
 
-  return { faceoffZone, endZone, drawStrength, state, club, hitCorr };
+  return { faceoffZone, endZone, drawStrength, state, club, hitCorr, shooter };
 }
 
 /** Add one game's census into a running total, in place. */
@@ -241,6 +282,31 @@ export function censusRates(t) {
       lift: (wonPer == null || lostPer == null || lostPer === 0) ? null
             : +((wonPer - lostPer) / lostPer).toFixed(3),
     },
+    /* ⭐ WHAT BECOMES OF AN ATTEMPT, BY WHO TOOK IT — and `share` is here so a
+       reader of the document does not have to reconstruct the denominator. The
+       whole lesson of the Defence lens is a comparison of two rows, so both rows
+       and the population they came from ship together.
+       ⚠️ `unknown` IS PUBLISHED EVEN AT ZERO. A field that only appears when it
+       is non-zero is a field nobody notices arriving; at zero it is the standing
+       claim that every shooter in the archive carried a position we recognise.
+       ⛔ AND `outcomesMatch` IS THE INTERNAL CHECK, not decoration: the four
+       outcomes partition `corsi`'s counted set, so if they stop adding to `n`
+       the population and the split have come apart and no rate below is safe. */
+    shooter: (() => {
+      const groups = ['D', 'F', 'G', 'unknown'];
+      const tot = groups.reduce((a, k) => a + ((t.shooter?.[k]?.n) || 0), 0);
+      const out = { attempts: tot, outcomesMatch: true };
+      for (const k of groups) {
+        const z = t.shooter?.[k] || { n: 0 };
+        const n = z.n || 0;
+        const sum = (z.blocked || 0) + (z.onGoal || 0) + (z.missed || 0) + (z.goal || 0);
+        if (sum !== n) out.outcomesMatch = false;
+        out[k] = { n, share: ratio(n, tot),
+                   blocked: ratio(z.blocked || 0, n), onGoal: ratio(z.onGoal || 0, n),
+                   missed: ratio(z.missed || 0, n), goal: ratio(z.goal || 0, n) };
+      }
+      return out;
+    })(),
     drawStrength: Object.fromEntries(['even', 'pp'].map(k => {
       const z = t.drawStrength?.[k] || { n: 0 };
       return [k, { n: z.n || 0, ratio: ratio(z.aw, z.al) }];

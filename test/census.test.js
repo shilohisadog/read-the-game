@@ -19,6 +19,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { censusGame, censusAdd, censusRates, zoneOf, runAfter } from '../src/lib/census.js';
 import { situation, POWER_PLAY } from '../src/lib/strength.js';
+import { corsi } from '../src/lib/layers/corsi.js';
 import { BLUE_LINE_X } from '../src/lib/rink.js';
 
 const load = p => JSON.parse(readFileSync(new URL(p, import.meta.url)));
@@ -320,4 +321,128 @@ test('the correlation is computed from sums, so it does not depend on game order
   for (const g of GAMES) censusAdd(fwd, censusGame(g.events, ctxOf(g)));
   for (const g of [...GAMES].reverse()) censusAdd(rev, censusGame(g.events, ctxOf(g)));
   assert.deepEqual(censusRates(fwd).hits, censusRates(rev).hits);
+});
+
+/* ------------------------------------------- ⭐ WHAT BECOMES OF AN ATTEMPT,
+ * BY WHO TOOK IT — the Defence lens's whole lesson, added 2026-09-09.
+ *
+ * ⛔ AND IT IS KEYED ON THE SHOOTER, NEVER ON A LOCATION, which is the finding
+ * that made this a census field rather than a page. `docs/layer-ideas.md` §3.1:
+ * a blocked shot is recorded where it was STOPPED, so defencemen's blocked
+ * attempts sit at a median 65 ft from centre against 46 ft for their shots on
+ * goal — CLOSER TO THE NET THAN THE SHOTS THAT REACHED IT, which is impossible
+ * for a shot location and exactly right for a block point. Any "from the point"
+ * measure defined by `x` drops the most-blocked shots and looks tidy doing it.
+ *
+ * ⚠️ THE RATES ARE NOT ASSERTED HERE AND THAT IS DELIBERATE. Three fixtures hold
+ * a few hundred attempts; the direction of the finding is a claim about hockey
+ * and its n is the archive. What is asserted is the SHAPE — that the split is
+ * over the right population, that it partitions it, and that a position code
+ * nobody planned for cannot hide inside it.
+ */
+
+test('⭐ the shooter split is over corsi\'s population, derived rather than restated', () => {
+  /* THE STRONGEST FORM THIS CHECK HAS. Every other count in census.js takes its
+     population from the reducer instead of a type test, and a local
+     `['shot-on-goal','goal',…]` here would be a second answer to a question
+     src/lib already answers — one free to disagree with the first. The shootout
+     is the case that would prove it: every attempt there is unblocked and from
+     the slot, so admitting it moves the blocked rate in a direction that looks
+     like a finding. Comparing against the reducer's own count means this test
+     does not have to know that. */
+  for (const g of GAMES) {
+    const ctx = ctxOf(g);
+    const counted = corsi.reduce(g.events, { ...ctx, evenOnly: false }).counted.length;
+    const r = censusRates(censusAdd({}, censusGame(g.events, ctx)));
+    assert.equal(r.shooter.attempts, counted,
+      'the shooter split counts a different set of attempts than the chip does');
+    assert.equal(r.shooter.D.n + r.shooter.F.n + r.shooter.G.n + r.shooter.unknown.n,
+      counted, 'the four groups do not partition the population');
+    assert.equal(r.shooter.outcomesMatch, true,
+      'the four outcomes do not sum to the attempts they came from');
+    assert.ok(r.shooter.D.n > 0 && r.shooter.F.n > 0,
+      'a fixture with no defenceman or no forward shooting makes this vacuous');
+  }
+});
+
+test('⛔ …and the check above was INERT until a shootout was put in front of it', () => {
+  /* ⚠️ FOUND BY MUTATION, WHICH IS THE ONLY WAY IT COULD HAVE BEEN FOUND.
+     Replacing `isAttempt(i)` with a local
+     `['shot-on-goal','goal','missed-shot','blocked-shot'].includes(e.type)`
+     left every fixture's count identical and the suite green — because none of
+     the three games we own contains an event `corsi` drops. The check named the
+     right property and could not fail on the data it ran against, which is this
+     project's dominant defect wearing a census hat.
+
+     ⭐ SO THE CASE IS PUT IN FRONT OF IT: a real event stream with one shootout
+     attempt appended. The shootout is the population that matters — every
+     attempt there is unblocked and from the slot, so admitting it would move the
+     blocked rate in the direction that looks like a finding, on the one number
+     the Defence lens exists to print. */
+  const ctx = ctxOf(rich);
+  const base = censusRates(censusAdd({}, censusGame(rich.events, ctx)));
+  const last = rich.events[rich.events.length - 1];
+  const shooterId = rich.events.find(e => e.actor != null && rich.roster[e.actor]).actor;
+  const so = { ...last, type: 'goal', pt: 'SO', per: 5, s: last.s + 60,
+               actor: shooterId, own: rich.teams.home.id, x: 80, y: 0 };
+  const r = censusRates(censusAdd({}, censusGame([...rich.events, so], ctx)));
+  assert.equal(r.shooter.attempts, base.shooter.attempts,
+    'a shootout attempt reached the shooter split — the population is a type '
+    + 'test rather than the reducer, and every rate here is now over a different '
+    + 'denominator than the chip counts with');
+});
+
+test('⛔ A POSITION CODE WE HAVE NOT MET IS NOT A FORWARD — it is the alarm', () => {
+  /* THE `gameType` PRECEDENT IN A SECOND PLACE: a value the LEAGUE can invent
+     needs a guard where the whole archive is walked, not a unit test holding a
+     copy of last year's vocabulary. The archive holds exactly C, L, R, D and G
+     today, counted over 224 games. The tempting shape is
+     `pos === 'D' ? 'D' : 'F'` — which folds anything new into the comparison and
+     MOVES BOTH RATES silently, because the Defence lens is two rows and a third
+     group takes attempts out of one of them.
+     ⭐ MEASURED ON A REAL GAME with one roster field changed, so the event stream
+     is the archive's and only the vocabulary is the mutation. */
+  const g = GAMES[0];
+  const ctx = ctxOf(g);
+  const base = censusRates(censusAdd({}, censusGame(g.events, ctx)));
+  assert.equal(base.shooter.unknown.n, 0, 'the fixture already carries a code we do not know');
+
+  // Re-label whichever forward took the most attempts, so the mutation is felt.
+  const tally = {};
+  for (const e of g.events) if (e.actor != null) tally[e.actor] = (tally[e.actor] || 0) + 1;
+  const victim = Object.keys(tally)
+    .filter(id => ['C', 'L', 'R'].includes((g.roster[id] || {}).pos))
+    .sort((a, b) => tally[b] - tally[a])[0];
+  assert.ok(victim, 'no forward in the fixture to re-label');
+
+  const roster = { ...g.roster, [victim]: { ...g.roster[victim], pos: 'W' } };
+  const r = censusRates(censusAdd({}, censusGame(g.events, { ...ctx, roster })));
+  assert.ok(r.shooter.unknown.n > 0, 'an unrecognised position was folded into a known group');
+  assert.equal(r.shooter.D.n, base.shooter.D.n, 'the defence row moved, so the mutation leaked');
+  assert.ok(r.shooter.F.n < base.shooter.F.n,
+    'the forward row did not lose the re-labelled player — `W` was read as a forward');
+  assert.equal(r.shooter.attempts, base.shooter.attempts,
+    'the population changed, so the unknown bucket is not inside it');
+});
+
+test('⭐ …and `unknown` is published at zero, so nobody has to notice it arriving', () => {
+  // A field that only appears when it is non-zero is a field nobody sees appear.
+  // At zero it is the standing claim that every shooter carried a code we know.
+  const r = censusRates(censusAdd({}, censusGame(rich.events, ctxOf(rich))));
+  assert.ok('unknown' in r.shooter, 'the unknown bucket vanishes when it is empty');
+  assert.equal(r.shooter.unknown.n, 0);
+  assert.equal(r.shooter.unknown.blocked, null, 'a rate over no attempts was published as 0');
+});
+
+test('⛔ outcomesMatch is the internal check, and it can go false', () => {
+  /* THE PAIRED HALF. `outcomesMatch: true` on every real game proves nothing
+     unless the field can be false — and the way it goes false in production is
+     an attempt type reaching the census that `OUTCOME` does not name, which is
+     the same league-invents-a-value shape as the position code. Simulated on the
+     accumulated total, because no fixture we own can produce it today. */
+  const tot = censusAdd({}, censusGame(rich.events, ctxOf(rich)));
+  assert.equal(censusRates(tot).shooter.outcomesMatch, true);
+  tot.shooter.D.n += 1;                       // an attempt with no named outcome
+  assert.equal(censusRates(tot).shooter.outcomesMatch, false,
+    'the split can drift from its own population without the check noticing');
 });

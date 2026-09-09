@@ -540,6 +540,13 @@ function main(argv) {
       hits: `r=${doc.census.hits.r}, opposite in ${doc.census.hits.opposite} of games`,
       unreadableStrength: `${doc.census.state.unknown.minutes} min of play whose `
           + `situation code strength.js does not know`,
+      shooter: `a defenceman's attempt is blocked `
+          + `${(doc.census.shooter.D.blocked * 100).toFixed(1)}% of the time and a `
+          + `forward's ${(doc.census.shooter.F.blocked * 100).toFixed(1)}%; they score `
+          + `${(doc.census.shooter.D.goal * 100).toFixed(1)}% against `
+          + `${(doc.census.shooter.F.goal * 100).toFixed(1)}% `
+          + `(D take ${(doc.census.shooter.D.share * 100).toFixed(1)}% of `
+          + `${doc.census.shooter.attempts} attempts)`,
     },
   }, null, 2));
   // LOUD, because a silent change here is a wrong landing on every teaching
@@ -550,6 +557,25 @@ function main(argv) {
               + `clock will land on the draw instead of the whistle: `
               + `${drawFirst.slice(0, 5).map(d => d.id).join(', ')}`);
   }
+  /* ⛔ A POSITION CODE WE HAVE NEVER MET, AND IT IS AN ERROR RATHER THAN A NOTE.
+     The Defence lens is a comparison of two rows; a third group nobody planned
+     for does not merely add a row, it moves both rates by taking attempts out of
+     one of them. `gameType` is the precedent — a value the LEAGUE can invent
+     needs a guard where the whole archive is walked, and it must be loud in the
+     pipeline and never in the artifact. */
+  if (doc.census.shooter.unknown.n > 0) {
+    console.log(`::error::${doc.census.shooter.unknown.n} attempts were taken by a `
+              + `player whose position code census.js does not recognise — the `
+              + `Defence lens compares two groups and a third has appeared. `
+              + `SHOOTER_GROUP in src/lib/census.js knows C, L, R, D, G.`);
+  }
+  /* THE SPLIT AND THE POPULATION MUST BE THE SAME SET. The four outcomes
+     partition `corsi`'s counted attempts, so if they stop summing to `n` the two
+     have come apart and every rate above is over an unknown denominator. */
+  if (!doc.census.shooter.outcomesMatch) {
+    console.log('::error::the shooter split does not sum to its own population — '
+              + 'an attempt type reached the census that OUTCOME does not name');
+  }
   if (skipped.length) {
     console.log(`  ${skipped.length} in-scope extracts carry no quoted boxscore `
               + `and were NOT measured: ${skipped.slice(0, 5).join(', ')}…`);
@@ -558,7 +584,14 @@ function main(argv) {
   // check with a red message in it, which is the same "recorded but nobody is
   // told" gap this guard exists to close — measures.json and teams.json are
   // already on disk by the time we get here.
-  if (unnamedClubs.length || strange.length) process.exit(1);
+  /* ⭐ AND THE TWO SHOOTER GUARDS JOIN THE EXIT CODE, which is the whole point
+     of the comment above: an `::error::` line with a zero exit is a green check
+     with a red message in it. Both are archive-wide drift alarms — a position
+     code the league invented, and a split that stopped matching its own
+     population — and neither is visible from any unit test, because a unit test
+     holds a copy of last year's vocabulary. */
+  if (unnamedClubs.length || strange.length
+      || doc.census.shooter.unknown.n > 0 || !doc.census.shooter.outcomesMatch) process.exit(1);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) main(process.argv.slice(2));
