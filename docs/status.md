@@ -62,6 +62,30 @@ could only fail on a class somebody remembered to type into it — and its own
 comment predicted exactly this. It derives its subject now: every control the
 built page can produce must be inside something the preview hides.
 
+### ✅ CHENG HAS REVIEWED IT — §7 q1 is RULED and the cadence is the finding
+
+- ✅ **"Last night, measured" is NOT a ranking.** *"A ranking picks WHICH game
+  deserves attention on grounds we chose. Last night applies no rule at all. It's
+  a date filter, and a date is not an outcome."* The base-rate requirement
+  attaches to selection **on an outcome**, not to selection. ⛔ It becomes a
+  ranking the moment it names *which* game — *the closest*, *the biggest upset* —
+  and then the rule must be printed on the page the way `featured`'s is.
+- ⭐ **The cadence gap is doing more work than the design questions.**
+  `measure.mjs` runs **weekly**; the nightly runs `derive.py`. CHENG's third
+  option is right and is now the plan: **run the existing reducer on a smaller
+  input** — `derive.py --out ingest` already leaves the window's extracts exactly
+  where `measureAll(dir)` reads them.
+- ⛔ **BUT IT IS NOT ONE WORKFLOW LINE, and checking that is what the review
+  bought.** `measure.mjs`'s `main()` writes `measures.json` and `teams.json` into
+  `--out`, and the nightly's first sync pass excludes only `index.json`,
+  `catalog.json` and `*latest.json` — so the obvious version **publishes an
+  eight-game `measures.json` over the archive-wide one every night**, and the
+  hero's own sentence would start reading *"Across 8 games in this archive…"*.
+  The partition guard cannot see it; §H's new instrument row says why.
+- ⭐ **"Measured" is itself a claim** — CHENG: *a surface saying* last night
+  *beside a figure derived a week ago is the `dataThrough` problem in a new
+  place.* The figure carries when it was computed, or it does not ship.
+
 ⏰ **AND THERE IS A CLOCK.** The league's own schedule document, read 2026-09-09:
 **preseason opens 2026-09-19, the regular season 2026-09-29.** ⚠️ **§2 of
 `docs/next-game.md` says 8 October** — read off one week's payload on 2026-08-17,
@@ -1816,6 +1840,39 @@ name.* The nameless-document case asserted only `doesNotMatch(/whistle|corsi/)`
 — "no lens id reached the reader" — which a page wrongly printing *"every count
 sat inside the middle half"* satisfies completely. The test was named for one
 claim and asserted a weaker one, and the weaker one was true of the defect.
+
+### H5 ⭐ A cost measured on synthetic data measures the synthesis — and check which way the error points.
+
+Earned 2026-09-09, costing a recommendation. `docs/front-door.md` §6.2 asks what
+per-game attempts would add to `catalog.json`, a document every visitor fetches.
+The fields were filled with a **constant** and gzip reported **+1.6 KB**, which
+would have made the expensive option look free. Real attempt counts run roughly
+35–85; refilled with that spread the same measurement says **+15.7 KB, ten times
+more.** ⚠️ **Compression is a measurement of ENTROPY, so a placeholder that
+repeats is not standing in for a field that varies** — it is measuring the
+placeholder. CHENG: *"gzip estimates measured on synthetic data measure the
+synthesis"*, the same shape as the fit gate grading an error page.
+
+**And the second half is the transferable one, because it is not about gzip.**
+Three numbers were wrong in this thread — the headline's width, the share of the
+viewport, and this — and **all three erred in the direction that supported the
+argument I was making.** So the question to ask of a number before quoting it:
+*if this were wrong, which way would it be wrong, and does that happen to be the
+way I want?* CHENG: *"measurement errors that happen to support the measurer are
+the ones to watch, and noticing the direction rather than just the magnitude is
+the right catch."*
+
+### ⛔ AND AN INSTRUMENT ROW FROM THE SAME DAY — `ingest.yml`'s upload partition
+
+The nightly proves its sync filters partition before trusting them, and
+`expected.txt` is built by `--dryrun`-ing the sync over **whatever is on disk**.
+So a document that should never have been in `ingest/` lands in `p1.txt` and in
+`expected.txt` alike, partitions cleanly, and publishes. **The check asks whether
+the passes cover the files, never whether the files are the ones we meant to
+publish.** Latent, not live — nothing writes an unexpected document there today —
+and it is the precondition on `docs/front-door.md` §6.1.1, where adding
+`measure.mjs` to the nightly the obvious way would overwrite the archive's
+`measures.json` with an eight-game version, silently, every night.
 
 ---
 

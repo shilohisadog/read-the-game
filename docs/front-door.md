@@ -207,6 +207,11 @@ The obvious idea is a row of previews. **Measured, gzipped, from the live site:*
 is another quarter of a megabyte, because `game.html` is the whole app and each
 iframe is a different URL. Six previews is ~1.5 MB.
 
+> ⛔ **THE RULE, STATED SO IT IS NOT RE-LITIGATED BY SOMEBODY WHO DID NOT MEASURE
+> IT: the front door carries exactly one live preview.** This is a cost, not a
+> taste. CHENG: *"it's the kind of constraint that gets re-litigated by someone
+> who didn't measure it."*
+
 So: **one live loop, and the rest is text.** Each row is the two clubs, the score,
 the game's own attempts line, and a link. Browse lists keep their scores by the
 existing rule — *the score appears where the visitor asked for a game, not where a
@@ -260,8 +265,12 @@ the following Monday.
 
 Three ways out, and only one of them is allowed:
 
-1. **Run `measure.mjs` in the nightly over the games just derived.** It is
-   scheduling, not new analysis: `measureGame` stays the single implementation.
+1. ✅ **Run `measure.mjs` in the nightly over the games just derived** — CHENG's,
+   and it is right: *"that's not a second implementation — it's the existing one,
+   invoked on a smaller input."* `derive.py --out ingest` leaves the window's
+   extracts in `ingest/extract/`, which is exactly what `measureAll(dir)` reads.
+   **It is scheduling, not analysis.** ⚠️ It is also not one workflow line — see
+   §6.1.1, which is the part nobody had checked.
 2. ⛔ **Compute attempts in `derive.py`.** Forbidden by this repo's own standing
    rule — *the reducers in `src/lib` are imported and never restated* — and it is
    the exact shape `docs/next-game.md` §9.1 caught: a second implementation, right
@@ -270,6 +279,34 @@ Three ways out, and only one of them is allowed:
    `ash`/`hsh`, with `moreShotsOnGoalLost` already published. **Zero pipeline
    work** — and it puts a shots sentence beside an attempts hero, which is the
    defect Kevin already caught once. Rejected on his ruling, not on taste.
+
+#### 6.1.1 ⛔ AND OPTION 1 AS WRITTEN WOULD DESTROY THE ARCHIVE'S BASE RATES
+
+CHENG's caution was that a per-run measurement *"is a different object and
+shouldn't be conflated with `measures.json`."* Checked against the workflows, and
+it is worse than a conflation of ideas — **`measure.mjs`'s `main()` writes
+`measures.json` and `teams.json` into `--out`, and the nightly's first sync pass
+excludes only `index.json`, `catalog.json` and `*latest.json`.** So:
+
+> `node builders/measure.mjs --out ingest` added to `ingest.yml` uploads an
+> **eight-game** `measures.json` over the archive-wide one, every night.
+
+The consequence is visible on the surface this document is about: the hero's own
+sentence reads `moreAttemptsLost` out of that document, so the front door would
+begin saying *"Across 8 games in this archive…"* the following morning.
+
+⛔ **AND THE UPLOAD GUARD CANNOT CATCH IT.** `ingest.yml` proves its sync filters
+partition before trusting them — but `expected.txt` is built by `dry`-running the
+sync over whatever is *on disk*, so a new file lands in `p1.txt` and in
+`expected.txt` alike, partitions cleanly, and is published. **The check asks
+whether the passes cover the files, never whether the files are the ones we meant
+to publish.** That is the eighth entry in `docs/status.md`'s instrument list: a
+guard measuring a narrower claim than its name.
+
+**So option 1's precondition is a mode that writes a different document** — the
+slate's per-game records, under its own name, with `measures.json` and
+`teams.json` written only when asked for. That is a small change to `main()` and
+it must land *before* the workflow line, not with it.
 
 ### 6.2 Where the numbers live, measured
 
@@ -290,17 +327,43 @@ a measurement of a field that varies.*
 not archive-shaped, and the front door should not pay 26% more for every game
 since 2023 in order to describe eight.
 
+### 6.3 ⭐ "Measured" is itself a claim, and it has to carry its date
+
+CHENG, and this is a requirement rather than a note:
+
+> *"'measured' implies the numbers are current. With a Monday cadence they're
+> not, and a surface saying* last night *beside a figure derived a week ago is the
+> `dataThrough` problem in a new place. Whatever ships needs the same discipline
+> — the number carries when it was computed, or it doesn't ship."*
+
+This site already has the machinery and the habit: `index.json` carries `asOf`,
+`describe()` turns it into a sentence, and every archive snapshot in `docs/` is
+dated rather than updated. So the rule for the daily block is the existing one
+applied one surface further out: **a figure that is not from last night's own
+derivation says which night it is from, and a block whose figures are stale
+enough to mislead renders the count without the rate rather than the rate with a
+lie.** ⚠️ **If §6.1.1's precondition is not built, the honest daily block is a
+list of games with no measured sentence at all** — which is still a better front
+door than today's, and is the fallback if the ruling goes the other way.
+
 ---
 
 ## 7. What I want CHENG to rule on
 
-1. **Is §5.2 a ranking in disguise?** The site refuses invented authority, and
-   "what is worth watching tonight" is an editorial judgement. My position is that
-   a *count over last night's whole slate* is not a ranking — nothing is selected,
-   nothing is promoted, and the sentence would be identical if every game were
-   dull. But the block sits where a "top pick" would sit, and I may be smuggling
-   the reading in through placement, which is exactly what `docs/next-game.md`
-   §0.1 found about the single-column guard.
+1. ✅ **RULED — §5.2 is not a ranking, and the argument is better than mine.**
+   CHENG: *"a ranking picks WHICH game deserves attention on grounds we chose.
+   `featured` survives because the rule is one line, printed on the page, applied
+   identically to every in-scope game. **Last night applies no rule at all. It's a
+   date filter, and a date is not an outcome.**"* That is the same test that
+   settled whether a date slice needs a base rate — **the requirement attaches to
+   selection on an OUTCOME, not to selection** — and it disposes of my placement
+   worry too, because nothing about the play decides what appears.
+
+   ⛔ **AND IT NAMES THE LINE THIS MUST NOT CROSS.** The block becomes a ranking
+   the moment it says *which* of last night's games — *the closest*, *the biggest
+   upset*, *the best game*. If it ever does, the rule needs stating on the page
+   the way `featured`'s is. **Written down here because it is the obvious next
+   feature request and it is the one that would cost the doctrine.**
 2. **Does the eight-game denominator survive our own rule?** *A rate without a
    base rate is a story.* The base rate is printed beside it and the small number
    is a fraction, never a percentage. Is that enough, or does `5 of the 8` invite
@@ -352,3 +415,34 @@ Unchanged, and this document adds one:
 The hero selection rule, the `[3, 8]` window, the pace, and the preview's
 one-live-loop-only status. `docs/replay-motion-open.md` records that pacing is
 closed, twice.
+
+---
+
+## 11. CHENG's review — 2026-09-09
+
+What it changed, recorded because a review that only agrees is not worth citing:
+
+| | |
+|---|---|
+| **§6.1** | the third option is his, and it is the answer: run the existing reducer on a smaller input. My draft offered only "run it in the nightly" as an unexamined option 1 against two refusals. |
+| **§6.1.1** | checking his "different object" caution against the workflows found that the naive version **overwrites the published `measures.json` nightly, and the upload guard cannot see it.** |
+| **§6.3** | *"'measured' implies the numbers are current"* — a whole requirement my draft did not have. |
+| **§7 q1** | ruled, on a cleaner argument than the one I made: a date is not an outcome. |
+| **§5.3** | the preview arithmetic promoted from an aside to a stated rule. |
+
+⭐ **And his framing of the invariant is the one to keep:**
+
+> *"A reason to come back tomorrow kept getting proposed as a feature when it's
+> actually a **property the front door doesn't have**. Naming it as an invariant
+> is more useful than any of the three candidates were."*
+
+⭐ **On the two corrections, he named the general form and it is sharper than the
+instances:** *"measurement errors that happen to support the measurer are the ones
+to watch"*, and **gzip estimates measured on synthetic data measure the
+synthesis** — the same shape as the fit gate grading an error page.
+
+⚠️ **His one caution on the offseason half is already satisfied and should stay
+that way:** whatever lands must have an honest August state, and `dataThrough`
+plus the freshness line solved that once already — *"no games in the last 14 days"
+is a true sentence and the surface shouldn't need a different design to say it.*
+§5.1's three states are one block with one shape for exactly that reason.

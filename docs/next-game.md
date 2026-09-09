@@ -1,5 +1,40 @@
 # The next game — a card about the future, on a site that refuses to forecast
 
+> ⛔ **CORRECTION, 2026-09-09 — THE SEASON DATES BELOW ARE WRONG, AND §0.2's GATE
+> IS COMPUTED FROM ONE OF THEM.**
+>
+> | this document says | the league's own field says, read 2026-09-09 |
+> |---|---|
+> | §2: *"the regular season **2026-10-08** (52 games, gameType 2)"* | `regularSeasonStartDate` = **2026-09-29** (5 games) |
+> | §2: *"Preseason opens **2026-09-22** (43 games in that week)"* | `preSeasonStartDate` = **2026-09-19** |
+>
+> ⭐ **THE MECHANISM IS EXACT AND IT IS THE USEFUL PART.** `/v1/schedule/{date}`
+> answers with **the week starting at that date**. Both figures above were read as
+> *the first date in a week payload somebody chose to fetch* — the week of
+> 2026-09-22, and the week of 2026-10-08. Neither is a claim about when a season
+> opens; each is a claim about which Tuesday was typed into a URL.
+>
+> ⚠️ **AND THE RIGHT ANSWER WAS IN THE SAME BYTES.** `preSeasonStartDate` and
+> `regularSeasonStartDate` sit at the top level of every schedule response,
+> including the 820-byte empty one the league answers with all summer. The
+> payload that produced "8 October" carried `2026-09-29` in the same response.
+> **A boundary was inferred from the contents when the document named it.**
+>
+> ⭐ CHENG's generalisation, which is why this is filed rather than edited away:
+> **the date is available in the feed, so it should be read rather than recorded.
+> A constant that could be a lookup is a constant that will drift** — and this one
+> drifted into a *gate*: §0.2 projects "the card lights up around 1 November" from
+> the 8 October figure, so that projection is ~9 days late and should be
+> recomputed rather than quoted.
+>
+> ✅ **The reader is built.** `builders/fetch_nhl.py` keeps both fields on every
+> run and publishes them in `schedule.json`; `src/lib/ingest-state.js` turns the
+> future ones into the front page's sentence. Nothing on the site types a season
+> date. See `docs/front-door.md` §4.2.
+>
+> **The body below is left exactly as it was argued**, per README.md — only this
+> banner is new.
+
 **Kevin, 2026-08-17:**
 
 > *"One thing I haven't mentioned in a while that we need to think through is a
