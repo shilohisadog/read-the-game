@@ -35,11 +35,40 @@ state.
 
 ## ⏭ 0.00 PICK UP HERE
 
-**Nothing is in flight.** `main` at `0592973`, tree clean, CI green. Counts are in
+**Nothing is in flight.** `main` at `c56a33a`, tree clean, CI green. Counts are in
 the generated health block above — ⚠️ **do not quote them from prose anywhere,
 including this sentence's neighbours.**
 
-### ⏭ THE NEXT CONVERSATION IS `goalie-eye-view`
+### ⏭ 0.00-ν THE FRONT DOOR IS THE LIVE THREAD — `docs/front-door.md`
+
+Kevin, 2026-09-09, with a screenshot of the home page above the fold on his
+laptop: *"I think we need to refactor this into something that encourages daily
+visits, offers valuable information right from the get go, and encourages a
+visitor to click into the site."* **`docs/front-door.md` is the design and it is
+waiting on CHENG** — §7 carries four rulings, the first of which is whether "last
+night, measured" is a ranking in disguise.
+
+✅ **Three defects out of that one screenshot shipped first (`c56a33a`)** and none
+of them needed the refactor:
+
+| | what a visitor got |
+|---|---|
+| the hero's archive rate printed **only with an attempts leader** | the hero is tied 52–52, so **the site's flagship finding rendered empty** — and the hero does not move again until the season opens |
+| `.sharerow` was never in the preview's hide list | `Copy a link to this moment` inside the hero, and because `#rg.preview` is a `100vh` flex column it **came out of the rink**: 343×86 → 343×142 at 390 |
+| nothing read `regularSeasonStartDate` | `No games in the last 14 days.` full stop, where a reason to return belongs |
+
+⭐ **The guard on that hide list was a hand-written array of class names**, so it
+could only fail on a class somebody remembered to type into it — and its own
+comment predicted exactly this. It derives its subject now: every control the
+built page can produce must be inside something the preview hides.
+
+⏰ **AND THERE IS A CLOCK.** The league's own schedule document, read 2026-09-09:
+**preseason opens 2026-09-19, the regular season 2026-09-29.** ⚠️ **§2 of
+`docs/next-game.md` says 8 October** — read off one week's payload on 2026-08-17,
+and its §0.2 gate ("~1 November") is computed from that. Treat the 8 October
+figure as stale wherever it is cited.
+
+### ⏭ AND `goalie-eye-view` IS STILL THE OTHER OPEN CONVERSATION
 
 Kevin, 2026-09-08: *"once all that gets squared away we can discuss the
 goalie-eye-view."* Everything he queued is squared away. The Workshop **link** is
