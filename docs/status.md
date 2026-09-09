@@ -39,6 +39,26 @@ state.
 the generated health block above — ⚠️ **do not quote them from prose anywhere,
 including this sentence's neighbours.**
 
+### ⏭⏭ NEXT: §5.1's DAILY BLOCK — `docs/front-door.md` §5.1–5.3, NOTHING BUILT
+
+**The one element on the front door whose content is a function of the date.**
+Every ruling it needs has landed; the data path is complete and publishing.
+
+- **One block, three states, the data picks which** — games last night / in season
+  with none last night (`schedule.json`'s `upcoming`) / offseason
+  (`schedule.json`'s `season`). No empty state; every state is a real sentence.
+- ⛔ **COUNTS, NO RATE** (CHENG q2): *"Last night — 8 games. The team with more
+  shot attempts lost 5 of them."* **The nightly figure may never sit beside the
+  archive figure** — the reader performs the division and concludes eight games
+  were unusual. The archive's 54.3% keeps its home under the hero.
+- **The season sentence MOVES here out of `#state`** (q4); the ledger half stays
+  at the bottom. ⚠️ **The staleness check travels with whichever block says "last
+  night"**, or `dataThrough`/`lastRun` is re-conflated one surface higher.
+- **It lands in the empty left column** §5.4 opened up on the home page.
+- ⏰ **It will show the OFFSEASON state for ~20 days.** `recent.json` is live and
+  publishing (`{"asOf":…,"games":[]}`); the first *"Last night — N games"* is
+  29 September, and the count sentence's first real test is the morning after.
+
 ### ⏭ 0.00-ν THE FRONT DOOR IS THE LIVE THREAD — `docs/front-door.md`
 
 Kevin, 2026-09-09, with a screenshot of the home page above the fold on his
@@ -194,11 +214,36 @@ query written against that class would move a block nobody has looked at.
 ⭐ **The habit: when the subject of a measurement is a class, ask the page how many
 wear it BEFORE reading anything off one of them.**
 
-### ⏭ AND THE GAME PAGE IS THE SECOND FRONT-DOOR THREAD — `docs/game-page-fold.md`
+### ✅ THE GAME PAGE IS TWO COLUMNS — BUILT AND LIVE, `docs/game-page-fold.md` §11
 
 Kevin, seeing §5.4 live: *"I really like the new layout… I am wondering if all the
-game pages should have this approach?"* — and he declined the interim widening, so
-it is one change. **Written up for CHENG, nothing built.**
+game pages should have this approach?"* **Built 2026-09-09 after CHENG ruled all
+four questions.**
+
+| | laptop 1900 | | phone 390 | |
+|---|---:|---:|---:|---:|
+| | before | after | before | after |
+| the ice starts | 400 | **257** | 617 (0.73 screens) | **332 (0.39)** |
+| the rink | 900×550 | **992×589** | 390×340 | 390×340 |
+| the transport | 963 | **859** | 971 (**off-screen**) | **687 (0.81)** |
+| the layer picker | **1123 — below the fold** | **100** | 1197 | 1139 |
+
+⭐ **ONE WRAPPER, `display:contents` BELOW 1180.** Six blocks given
+`grid-column:2` individually was MEASURED AND WAS A REGRESSION — grid rows are
+shared, so a 268px block in row 2 holds the board out of it. One wrapper spanning
+every row is the answer, and `display:contents` means the phone gets one DOM
+reflowed rather than a second markup path. ⚠️ `grid-row:1/span 30`, **not
+`1/-1`** — with no explicit rows `-1` is line 1, which made row one 592px tall.
+
+⭐⭐ **AND THE PHONE'S PLAY BUTTON IS ABOVE THE FOLD ON ARRIVAL FOR THE FIRST
+TIME**, because `#newcomer`'s 268px moved beside the controls it names. That is
+the half CHENG's q4 said this would not fix. **Kevin released the constraint:**
+*"improvements to both UX experiences is a good thing, even when considering past
+guidance (which was based on previous UX situation)."*
+
+⏭ **ONE THING LEFT ALONE AND WORTH A LOOK:** the empty band under the ice is
+`--lboxh`'s 120px reserve for the layer box, and a 10% wider rink makes it more
+visible. A separate change.
 
 ⛔ **The finding that justifies it: the layer picker is BELOW THE FOLD at 1900**
 (y=1123 against a 1065 fold) — the control DOCTRINE §6 hangs on, *base view is
