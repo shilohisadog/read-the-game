@@ -896,3 +896,104 @@ test('the borrowed term is gone from every page a reader sees', () => {
    a game page is the only route into that view.
    ──────────────────────────────────────────────────────────────────────────── */
 
+
+/* ------------------------------------------------------------- THE DAILY BLOCK
+ * The one element on this page whose content is a function of the date. The
+ * three states and every sentence in them are tested against fixtures in
+ * test/daily.test.js; what is tested HERE is the half that file cannot see —
+ * that the page fetches the document, renders what the module decided, and puts
+ * the block where the stylesheet expects to find it.
+ */
+const RECENT = { asOf: new Date().toISOString(), games: [
+  { id: 2025020801, date: '2026-01-14', awayAb: 'BOS', homeAb: 'TOR',
+    score: { a: 2, h: 3 }, attempts: { a: 60, h: 48 } },
+  { id: 2025020802, date: '2026-01-14', awayAb: 'MIN', homeAb: 'COL',
+    score: { a: 4, h: 1 }, attempts: { a: 55, h: 41 } },
+]};
+const SCHEDULE = { asOf: new Date().toISOString(), upcoming: [],
+  season: { preSeasonStartDate: '2099-09-19', regularSeasonStartDate: '2099-09-29' } };
+
+test('the daily block renders last night from recent.json, with doors', async () => {
+  const r = run({ docs: { ...ALL, 'recent.json': RECENT, 'schedule.json': SCHEDULE } });
+  await r.settle(); await r.settle();
+  assert.equal(r.ids.daily.hidden, false, 'the block never revealed itself');
+  assert.match(r.ids.dailykick.textContent, /2 games$/);
+  assert.match(r.ids.dailysay.textContent, /lost 1 of the 2\./);
+  const rows = r.ids.dailylist.kids;
+  assert.equal(rows.length, 2, 'one door per game');
+  assert.deepEqual(rows.map(a => a.href),
+    ['game.html?game=2025020801', 'game.html?game=2025020802']);
+});
+
+test('⛔ THE NIGHTLY COUNT AND THE ARCHIVE RATE ARE NEVER IN ONE SENTENCE', async () => {
+  /* CHENG's q2 as it reaches a reader. The module cannot break this on its own —
+     it never sees the archive figure — so the check has to be on the PAGE, where
+     both are rendered and where the adjacency lives. The archive's rate keeps
+     `#herorel`; the night's counts keep `#dailysay`; neither element may carry
+     the other's kind of number. */
+  const r = run({ docs: { ...ALL, 'recent.json': RECENT, 'schedule.json': SCHEDULE } });
+  await r.settle(); await r.settle();
+  // The rate is written only once the preview frame reports the game's attempts,
+  // so it has to be delivered or the control below is vacuous.
+  r.post({ rtg: 'attempts', game: NEWEST_ID, a: 30, h: 22 });
+  assert.match(textOf(r.ids.herorel), /54\.\d% of the time/,
+    'the archive rate must still be on the page, or this test proves nothing');
+  for (const id of ['dailykick', 'dailysay']) {
+    assert.doesNotMatch(r.ids[id].textContent, /%/, `${id} printed a rate`);
+    assert.doesNotMatch(r.ids[id].textContent, /\d\.\d/, `${id} printed a decimal`);
+  }
+  assert.doesNotMatch(textOf(r.ids.herorel), /last night/i,
+    'the archive sentence took on the night as its subject');
+});
+
+/** Was the block revealed? The fake document only mints an element when the
+ *  script asks for it, so an untouched `#daily` is ABSENT rather than hidden —
+ *  and `assert.equal(ids.daily.hidden, true)` would throw on the very case it is
+ *  asking about. Both shapes mean the same thing to a reader: no block. */
+const shown = r => !!(r.ids.daily && r.ids.daily.hidden === false);
+
+test('a team page gets no slate — it is a question already asked', async () => {
+  const docs = { ...ALL, 'recent.json': RECENT, 'schedule.json': SCHEDULE };
+  const team = run({ search: '?team=BUF', docs });
+  await team.settle(); await team.settle();
+  assert.equal(shown(team), false, 'a league-wide slate interrupted a team page');
+  // THE CONTROL, and without it "never show it" passes: the same documents on
+  // the front door do produce the block.
+  const front = run({ docs });
+  await front.settle(); await front.settle();
+  assert.equal(shown(front), true);
+});
+
+test('no recent.json and no schedule.json: the block stays hidden, page intact', async () => {
+  // `grab` answers null for anything that 404s, so this is the state a deploy
+  // reaches the morning a document is renamed — and the rest of the fold must
+  // not depend on it.
+  const r = run({ docs: ALL });
+  await r.settle(); await r.settle();
+  assert.equal(shown(r), false, 'a state fired with nothing to read');
+  assert.match(textOf(r.ids.heroline), / at /, 'the hero stopped rendering with it');
+});
+
+test('⚠️ THE BLOCK IS INSIDE THE HERO, which is what the grid rule requires', () => {
+  /* `.daily:not([hidden]){grid-column:1;grid-row:6}` places it in the card's
+     sixth row — the slack the frame leaves in column one. That rule is a claim
+     about ANCESTRY: move `#daily` out to be a sibling of the card and the
+     selector still matches, the declarations still parse, and the block silently
+     lands full-width underneath instead. Nothing else here would go red.
+     The walk is over tag depth rather than a substring search, because the hero
+     contains nested divs and "appears after" is not "is inside". */
+  const main = html.slice(html.indexOf('<main id="main">'), html.indexOf('</main>'));
+  const bare = main.replace(/<!--[\s\S]*?-->/g, '');   // comments name these ids too
+  let depth = 0, heroAt = null, ok = false;
+  for (const m of bare.matchAll(/<(\/?)([a-z]+)([^>]*)>/g)) {
+    const closing = m[1] === '/', attrs = m[3];
+    if (closing) { depth -= 1; if (heroAt !== null && depth <= heroAt) heroAt = null; continue; }
+    if (/\/$/.test(attrs) || m[2] === 'br' || m[2] === 'img') continue;  // void
+    if (/id="hero"/.test(attrs)) heroAt = depth;
+    if (/id="daily"/.test(attrs)) ok = heroAt !== null && depth > heroAt;
+    depth += 1;
+  }
+  assert.ok(ok, '#daily is not inside #hero — the grid rule places it nowhere');
+  assert.match(html, /\.daily:not\(\[hidden\]\)\{[^}]*grid-row:6/,
+    'the rule that consumes the placement is gone');
+});

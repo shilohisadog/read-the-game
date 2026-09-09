@@ -242,101 +242,72 @@ test('daysBetween is whole days and refuses nonsense', () => {
   assert.equal(daysBetween('nope', NOW), null);
 });
 
-/* ------------------------------------------------------------------ WHEN HOCKEY
- * COMES BACK — added 2026-09-09.
+/* -------------------------------------------------------- ⛔ AND NOT THE SEASON
  *
- * The `quiet` state was a dead end. On the live front door it read *"Data through
- * 14 June 2026. No games in the last 14 days."* and stopped, on a page whose
- * whole job that week was to give somebody a reason to return — and the archive
- * does not move again until the season opens, so that was the front page for
- * three months.
+ * `describe` briefly also said when the season reopens, because for one day the
+ * quiet state was the only forward-looking sentence on the page and therefore
+ * landed in the only slot that existed. `src/lib/daily.js` is that slot now, and
+ * CHENG's q4 ruling split the two: the season sentence goes where a reader looks
+ * for what is NEXT, the ledger half stays at the foot of the page where a reader
+ * looks for what we HOLD.
  *
- * ⭐ THE DATES ARE THE LEAGUE'S, AND THAT IS WHAT MAKES THIS PUBLISHABLE ON A
- * SITE THAT REFUSES TO FORECAST. `preSeasonStartDate` and
- * `regularSeasonStartDate` ride on every schedule payload including the empty
- * summer ones; the nightly copies them verbatim into schedule.json. Nothing here
- * is computed, and the values below are the real ones, read from
- * api-web.nhle.com on 2026-09-09.
- *
- * ⚠️ AND THE REASON THEY ARE NOT TYPED: `docs/next-game.md` §2 recorded "the
- * regular season 2026-10-08" from one week's payload on 2026-08-17. The league's
- * own field says 2026-09-29. A hand-written date on this page would have been
- * wrong by nine days, in the sentence promising a visitor when to come back.
+ * ⭐ THIS IS ONE HALF OF A PAIRED CHECK and is worth nothing alone. A page that
+ * printed everything twice satisfies it; the other half is in daily.test.js and
+ * asserts that no branch of `daily()` reports on the pipeline. Neither direction
+ * catches the duplication on its own, which is the shape docs/status.md §H
+ * records as the reason the ends-switching pair was written the way it was.
  */
 const SUMMER = '2026-09-09T12:00:00Z';
-/** A healthy nightly that found nothing, on whatever day it is asked about.
- *  `lastRun` tracks `now` deliberately: pin it and a test dated a fortnight
- *  later silently becomes a test about STALENESS, which is a different state
- *  and would have hidden this whole feature behind a green tick. */
-const offseason = (now = SUMMER, over = {}) => idx({
+const summerIdx = (over = {}) => idx({
   dataThrough: '2026-06-14',
-  lastRun: new Date(Date.parse(now) - 3600000).toISOString(),
+  lastRun: '2026-09-09T11:00:00Z',
   coverage: { windowDays: 14, gamesInWindow: 0, finalInWindow: 0, heldInWindow: 0,
               erroredInWindow: 0, refusedInWindow: 0, unknownStateInWindow: 0 },
   ...over,
 });
-const sched = (season) => ({ asOf: '2026-09-09T11:00:00Z', season, upcoming: [] });
-const LEAGUE = { preSeasonStartDate: '2026-09-19', regularSeasonStartDate: '2026-09-29' };
-const SEP25 = '2026-09-25T12:00:00Z';   /* preseason under way, season not */
-const OCT5 = '2026-10-05T12:00:00Z';    /* both boundaries behind us */
 
-test('⭐ a quiet window says when the league plays next, in one sentence', () => {
-  const r = describe(offseason(), SUMMER, sched(LEAGUE));
-  assert.equal(r.state, 'quiet', 'the state is unchanged — this adds a line, not a branch');
-  assert.match(text(r), /No games in the last 14 days\./);
-  assert.match(text(r),
-    /Preseason opens 19 September 2026, the regular season 29 September 2026\./);
-});
-
-test('⭐ …and a date that has already arrived is not announced', () => {
-  // 25 September: preseason is under way, the regular season is not. Naming a
-  // past opening night is the stale-fixture failure schedule.json exists to
-  // prevent, arriving through the reader instead of the writer.
-  const r = describe(offseason(SEP25), SEP25, sched(LEAGUE));
-  assert.match(text(r), /The regular season opens 29 September 2026\./);
-  assert.doesNotMatch(text(r), /19 September/, 'it announced a date already past');
-});
-
-test('⭐ …and when both have passed it says nothing at all', () => {
-  const r = describe(offseason(OCT5), OCT5, sched(LEAGUE));
-  assert.equal(r.state, 'quiet');
-  assert.equal(text(r), 'Data through 14 June 2026. No games in the last 14 days.',
-    'a stale season date survived into the season');
-});
-
-test('the season line needs the league to have said it — no document, no claim', () => {
-  // THREE WAYS THE FIELD CAN BE ABSENT, and none of them may invent a date:
-  // the document missing entirely (a 404 gives `grab` null), the block empty
-  // (the league stopped sending it), and a malformed value.
-  const plain = 'Data through 14 June 2026. No games in the last 14 days.';
-  assert.equal(text(describe(offseason(), SUMMER)), plain, 'a two-argument call changed');
-  assert.equal(text(describe(offseason(), SUMMER, null)), plain);
-  assert.equal(text(describe(offseason(), SUMMER, sched({}))), plain);
-  assert.equal(text(describe(offseason(), SUMMER, sched({ regularSeasonStartDate: 'soon' }))),
-    plain, 'an unparseable date was printed rather than dropped');
-});
-
-test('⭐ ONLY the quiet state may say it — the paired half', () => {
-  /* THE LINE IS ABOUT HOCKEY AND EVERY OTHER STATE IS ABOUT US. `quiet` means
-     the league listed no games and we looked recently; `stalled` and `halted`
-     mean we do not know what the league listed. Pinning a cheerful date onto a
-     sentence about our own failure would leave a reader unable to tell which
-     half to believe — and a run that stopped in June would advertise opening
-     night as though the pipeline were fine. */
-  const stalled = describe(offseason(SUMMER, { lastRun: '2026-09-01T11:00:00Z' }),
-    SUMMER, sched(LEAGUE));
-  const halted = describe(offseason(SUMMER,
-    { halted: { since: '2026-09-08T11:00:00Z', reason: 'x' } }), SUMMER, sched(LEAGUE));
-  const behind = describe(offseason(SUMMER,
-    { coverage: { windowDays: 14, gamesInWindow: 7, finalInWindow: 7, heldInWindow: 2 } }),
-    SUMMER, sched(LEAGUE));
-  assert.equal(stalled.state, 'stalled');
-  assert.equal(halted.state, 'halted');
-  assert.equal(behind.state, 'behind');
-  /* ⚠️ THE FIRST DRAFT OF THIS ASSERTION MATCHED /September 2026/ AND WENT RED ON
-     A CORRECT PAGE: the halt states its own date, "Updates paused 8 September
-     2026". The subject here is the announcement, so the pattern is its verb. */
-  for (const r of [stalled, halted, behind])
+test('⛔ NO STATE ANNOUNCES THE SEASON — that sentence lives in daily.js now', () => {
+  /* The sweep is over every state this function can return, not over the quiet
+     one it used to be attached to: the mistake worth catching is a future
+     version wiring it back into whichever branch somebody is editing.
+     ⚠️ THE PATTERN IS THE VERB, NOT A MONTH. A first draft of the earlier
+     version of this check matched /September 2026/ and went red on a correct
+     page, because a halt states its own date: "Updates paused 8 September 2026".
+     The subject here is the announcement. */
+  const states = [
+    describe(summerIdx(), SUMMER),
+    describe(summerIdx({ lastRun: '2026-09-01T11:00:00Z' }), SUMMER),
+    describe(summerIdx({ halted: { since: '2026-09-08T11:00:00Z', reason: 'x' } }), SUMMER),
+    describe(summerIdx({ coverage: { windowDays: 14, gamesInWindow: 7,
+                                     finalInWindow: 7, heldInWindow: 2 } }), SUMMER),
+    describe(idx(), NOW),
+    describe(null, NOW),
+  ];
+  assert.deepEqual([...new Set(states.map(r => r.state))].sort(),
+    ['behind', 'current', 'empty', 'halted', 'quiet', 'stalled'],
+    'a state escaped the sweep');
+  for (const r of states)
     assert.doesNotMatch(text(r), /\bopens\b/,
-      `${r.state} announced the season while saying it cannot read the league`);
+      `${r.state} announced the season from the page's ledger line`);
+});
+
+test('the quiet state is a full stop, and the page carries the rest above it', () => {
+  // What the live front door said for three months before the daily block, and
+  // says again below it now. It is the LEDGER — what we hold, and that the
+  // league listed nothing — and it is complete as that.
+  const r = describe(summerIdx(), SUMMER);
+  assert.equal(r.state, 'quiet');
+  assert.equal(text(r), 'Data through 14 June 2026. No games in the last 14 days.');
+});
+
+test('a third argument is ignored rather than obeyed', () => {
+  /* `describe(index, now, schedule)` was the signature for one day and the call
+     site in build_index.py passed three arguments. A version that still read the
+     third would put the season sentence back on the page beside the copy in the
+     daily block, which is precisely what q4 ruled out — and nothing else here
+     would go red, because the extra line is appended rather than substituted. */
+  const two = describe(summerIdx(), SUMMER);
+  const three = describe(summerIdx(), SUMMER,
+    { season: { regularSeasonStartDate: '2026-09-29' }, upcoming: [] });
+  assert.deepEqual(three, two);
 });

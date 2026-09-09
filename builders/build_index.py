@@ -233,6 +233,37 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
  font-weight:700;padding:11px 18px;border-radius:9px;font-size:.95rem}
 .herogo:hover,.herogo:focus{background:var(--blue)}
 
+/* ------------------------------------------------------------- THE DAILY BLOCK
+   The one dated element on the front door. It sits INSIDE the hero card (see the
+   markup for why) and has to read as a separate thought rather than as more
+   sentences about the featured game -- so it takes a rule above it and the same
+   uppercase kicker the card's own first line uses, which is a treatment a reader
+   has already met four lines higher.
+   ⚠️ THE MARGIN IS ON THE TOP AND THE RULE IS A BORDER, not a `<hr>`: the block
+   is `hidden` until a state fires, and a separator that is its own element would
+   be left drawing a line under an empty card on every page load. */
+.daily{border-top:1px solid var(--edge);margin:20px 0 0;padding:15px 0 0}
+.dailykick{margin:0 0 6px;font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;
+ color:var(--muted);font-weight:700}
+.dailysay{margin:0;font-size:.9rem;color:var(--muted);max-width:52ch}
+.dailysay:empty{display:none}
+.dailylist{display:flex;flex-direction:column;gap:5px;margin:11px 0 0}
+/* EACH ROW IS A DOOR, so it is an anchor and not a line of text with a link in
+   it -- the whole rectangle is the hit target. That is the defect of 2026-09-08
+   in its third form, and the fix is structural rather than a wider `<a>`. */
+.drow{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+ text-decoration:none;color:inherit;background:var(--bg);border:1px solid var(--edge);
+ border-radius:8px;padding:7px 11px;font-size:.85rem}
+.drow:hover,.drow:focus-visible{border-color:var(--blue)}
+.drow .dscore{font-weight:650;font-variant-numeric:tabular-nums}
+/* The attempts figure is the reason the row is here rather than in a scores
+   list, and it is `--muted` for the same reason `.herorel` is: it is the second
+   half of the thought, and matching the score's weight would make the two
+   numbers argue. `tabular-nums` so a column of them lines up. */
+.drow .datt{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.dmore{display:block;margin:3px 0 0;font-size:.83rem;color:var(--blue);text-decoration:none}
+.dmore:hover,.dmore:focus-visible{text-decoration:underline}
+
 /* ⭐⭐ THE FOLD, AT A LAPTOP'S WIDTH -- docs/front-door.md §5.4.
    Kevin, with the live page above the fold on his laptop: "encourages daily
    visits, offers valuable information right from the get go, and encourages a
@@ -308,6 +339,17 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
      stop being the same rectangle. That is the hit-target defect of 2026-09-08
      waiting to happen in a third place. */
   .hero:not([hidden]) .herogo{grid-column:1;grid-row:5;justify-self:start;margin-top:4px}
+  /* ⭐ ROW SIX IS THE SLACK, AND THIS IS WHAT IT WAS BEING SAVED FOR. The five
+     text rows are `min-content` and the frame spans the card, so column one runs
+     out of sentences about two thirds of the way down -- measured at 1900,
+     ~900px of gutter. The block that fills it is the only one on the page that
+     is different tomorrow, which is the argument docs/front-door.md §5.4 makes:
+     the three questions land in order, what is this, what is new, where do I go.
+     ⚠️ `align-self:end` PARKS IT AT THE BOTTOM OF THE ROW rather than floating it
+     under the button with the surplus beneath. Without it the row's height is
+     the slack and the block sits at its top edge, which reads as a paragraph
+     that lost its place rather than as the foot of the card. */
+  .daily:not([hidden]){grid-column:1;grid-row:6;align-self:end;width:100%}
 }
 
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:12px}
@@ -519,6 +561,32 @@ BODY = r"""<div class="wrap front">
          a game the rate cannot classify from taking any room. -->
     <p class="herorel" id="herorel"></p>
     <a class="herogo" id="herogo" href="game.html">Watch the whole game &rarr;</a>
+    <!-- ⭐ THE ONE ELEMENT ON THIS PAGE WHOSE CONTENT IS A FUNCTION OF THE DATE.
+         docs/front-door.md §3 stated it as an invariant rather than a taste:
+         before this, nothing above the fold changed from one morning to the
+         next, so a visitor had no way to tell a return visit from a first one.
+
+         ⚠️ IT LIVES INSIDE THE HERO ON PURPOSE, and the reason is the sixth grid
+         row. Above 1180 the frame spans the card's whole height while the five
+         text rows are `min-content`, which leaves ~900px of column-one gutter
+         that §5.4 measured and nothing occupied. A sibling of the card would
+         have to be full-width underneath it, wasting exactly that space and
+         pushing the team grid down. ⛔ AND `display:contents` ON `.hero` IS NOT
+         THE ANSWER HERE, though it was on the game page yesterday: `.hero` is a
+         CARD -- background, border, padding -- and an element with
+         `display:contents` generates no box, so hoisting the grid to `#main`
+         that way would delete the card it is drawn on.
+
+         THE COST IS ONE COUPLING, STATED: `#hero` is revealed by `drawHero`, so
+         a catalog that fails to load takes this block with it. That is the state
+         where the page already says it could not load the archive.
+         Empty in the markup like every other line in this card -- see daily.js
+         for which of the three states can fire and why there is no fourth. -->
+    <section class="daily" id="daily" hidden>
+      <p class="dailykick" id="dailykick"></p>
+      <p class="dailysay" id="dailysay"></p>
+      <div class="dailylist" id="dailylist"></div>
+    </section>
   </div>
 </main>
 <h2 id="teams-h">Watch your team</h2>
@@ -938,6 +1006,64 @@ __HELPERS__
      the rink. Set before the fetch, so it does not depend on a network. */
   var season = +(/[?&]season=(\d{4})/.exec(location.search) || [])[1] || 0;
 
+  /* THE DAILY BLOCK. `daily()` decides WHICH of the three states fires and
+     writes every complete sentence; this writes them into the card and builds
+     the list of doors. The split is the usual one -- the module is pure and
+     tested against fixtures for branches the calendar cannot reach until the end
+     of September, and everything that needs a DOM or a timezone is here.
+
+     ⚠️ THE FIXTURE'S TIME IS FORMATTED HERE AND CANNOT BE FORMATTED THERE. An
+     NHL game at 7pm Eastern is 23:00Z the same day; one at 10:30pm Pacific is
+     05:30Z the NEXT day, so no UTC date names "the night of the 16th" and any
+     day-name the module produced would be wrong for about half a slate. The
+     browser is the only party that knows the reader's timezone, so `daily`
+     hands back the instant and this is the one line that reads it. */
+  function drawDaily(slate, schedule) {
+    var d = daily(slate, schedule, new Date().toISOString());
+    if (d.state === 'none') return;
+
+    $('dailykick').textContent = d.kicker + (d.count == null ? '' :
+      ' \u00b7 ' + d.count + (d.count === 1 ? ' game' : ' games'));
+
+    var lines = d.lines.slice();
+    if (d.next) {
+      var when = new Date(d.next.startTimeUTC).toLocaleString(undefined,
+        { weekday: 'long', month: 'long', day: 'numeric',
+          hour: 'numeric', minute: '2-digit' });
+      lines.push(d.next.away + ' at ' + d.next.home + ', ' + when + '.');
+    }
+    $('dailysay').textContent = lines.join(' ');
+
+    var list = $('dailylist');
+    d.games.forEach(function (g) {
+      var row = el('a', 'drow');
+      row.href = 'game.html?game=' + g.id;
+      /* A ROW WITHOUT ITS NUMBERS IS STILL A DOOR. recent.json is our own
+         document, but a malformed field must degrade to the clubs rather than
+         print a zero somebody could read as a score. */
+      var sc = g.score, at = g.attempts;
+      row.appendChild(el('span', 'dscore',
+        sc && isFinite(sc.a) && isFinite(sc.h)
+          ? g.awayAb + ' ' + sc.a + ' \u2013 ' + g.homeAb + ' ' + sc.h
+          : g.awayAb + ' at ' + g.homeAb));
+      if (at && isFinite(at.a) && isFinite(at.h))
+        row.appendChild(el('span', 'datt', 'attempts ' + at.a + '\u2013' + at.h));
+      list.appendChild(row);
+    });
+    /* ⭐ THE REST OF THE NIGHT, AND IT IS A BETTER DOOR THAN THE ROWS IT
+       REPLACES. `calendar.html?date=` renders the whole slate including the
+       games we hold and cannot publish, which this list can never show. So the
+       tail is not an apology for the cap -- it is the only link on the page that
+       reaches a night in full. */
+    if (d.more > 0) {
+      var all = el('a', 'dmore',
+        d.more + ' more that night \u2014 see the whole slate \u2192');
+      all.href = 'calendar.html?date=' + d.date;
+      list.appendChild(all);
+    }
+    $('daily').hidden = false;
+  }
+
   /* ⭐ schedule.json JOINS THE FETCH, AND IT IS THE DOCUMENT'S FIRST READER.
      It has been published on every run since the forward window shipped and
      nothing has ever read it -- the D10 shape, a field written for a purpose no
@@ -949,9 +1075,9 @@ __HELPERS__
      for anything that 404s or fails -- so the page renders exactly as it did
      before if this document is ever missing. */
   Promise.all([grab('catalog.json'), grab('measures.json'), grab('index.json'),
-               grab('schedule.json')])
+               grab('schedule.json'), grab('recent.json')])
     .then(function (r) {
-      var cat = r[0], measures = r[1], index = r[2], schedule = r[3];
+      var cat = r[0], measures = r[1], index = r[2], schedule = r[3], slate = r[4];
       var games = (cat && cat.games) || [];
       if (!games.length) {
         $('teams').appendChild(el('p', 'note',
@@ -963,8 +1089,18 @@ __HELPERS__
         /* ONLY ON THE FRONT DOOR. A fan who asked for BUF is not looking for a
            Dallas game; the hero exists for the visitor who has not chosen. */
         drawHero(cat, measures);
+        /* SAME GATE, AND FOR A SECOND REASON. A team page is a question already
+           asked, so a league-wide slate is an interruption there -- and the
+           block is placed in the hero's sixth grid row, which on a team page has
+           no card to sit in. */
+        drawDaily(slate, schedule);
       }
-      var s = describe(index, new Date().toISOString(), schedule);
+      /* ⚠️ TWO ARGUMENTS, NOT THREE. `describe` took the schedule for one day,
+         when the quiet state was the only forward-looking sentence on the page
+         and therefore the only slot the season dates could land in. The daily
+         block is that slot now and CHENG's q4 ruling split the two: what is
+         NEXT goes up into the card, what we HOLD stays down here. */
+      var s = describe(index, new Date().toISOString());
       $('state').setAttribute('data-state', s.state);
       $('state').textContent = s.lines.join(' ');
     });
@@ -990,7 +1126,8 @@ def _lib(*names):
     implementation this project keeps almost building. See docs/architecture.md.
     """
     return "\n".join(_module(n) for n in
-                      (names or ("ingest-state.js", "competitions.js", "teams.js", "archive.js")))
+                      (names or ("ingest-state.js", "daily.js", "competitions.js",
+                                 "teams.js", "archive.js")))
 
 
 def _competitions():

@@ -53,65 +53,23 @@ function ago(then, now) {
 }
 
 /**
- * ⭐ WHEN HOCKEY COMES BACK, IN THE LEAGUE'S OWN WORDS.
- *
- * The league puts `preSeasonStartDate` and `regularSeasonStartDate` on every
- * schedule payload, INCLUDING the empty ones it answers with all summer, and the
- * nightly copies them into schedule.json. So this is a quotation, not a
- * calendar of ours and not a forecast: the one thing on this site that is about
- * the future is a date the league published.
- *
- * IT IS ALSO WHY THE DATE IS NEVER TYPED. `docs/next-game.md` recorded "the
- * regular season 2026-10-08" on 2026-08-17 from one week's payload; the league's
- * own field said 2026-09-29 three weeks later. A constant that goes wrong once a
- * year with nobody touching it is exactly what this file exists to avoid
- * elsewhere.
- *
- * ONLY DATES THAT HAVE NOT ARRIVED. A boundary in the past is not news, and
- * naming one would leave the front page announcing an opening night that already
- * happened -- the stale-fixture failure schedule.json is designed against,
- * arriving through the other door.
- *
- * ⚠️ THE COMPARISON IS DATE-TO-DATE AND DELIBERATELY COARSE. The league's dates
- * carry no timezone and `now` is an instant, so a reader west of the venue can
- * see "opens 29 September" for a few hours of their 29 September. `>=` rather
- * than `>` for the same reason: dropping the sentence on the very day it becomes
- * true would be the worse error, and the day games are actually played the state
- * is no longer `quiet` at all.
- */
-function whenHockeyReturns(schedule, now) {
-  const s = (schedule && schedule.season) || {};
-  const today = String(now || '').slice(0, 10);
-  const ahead = [
-    ['preSeasonStartDate', 'preseason'],
-    ['regularSeasonStartDate', 'the regular season'],
-  ].filter(([k]) => typeof s[k] === 'string' && s[k] >= today && formatDate(s[k]))
-   .sort((a, b) => (s[a[0]] < s[b[0]] ? -1 : 1));
-
-  if (!ahead.length) return null;
-  // The verb is stated once and the rest of the list hangs off it, so two dates
-  // are one sentence rather than two: "Preseason opens 19 September 2026, the
-  // regular season 29 September 2026."
-  const [[firstKey, firstLabel], ...rest] = ahead;
-  const head = firstLabel[0].toUpperCase() + firstLabel.slice(1);
-  return `${head} opens ${formatDate(s[firstKey])}`
-    + rest.map(([k, label]) => `, ${label} ${formatDate(s[k])}`).join('') + '.';
-}
-
-/**
  * @param index     the parsed index.json, or null if it could not be loaded
  * @param now       ISO instant, injected so this is testable and deterministic
- * @param schedule  the parsed schedule.json, or null. Optional: every caller
- *                  before 2026-09-09 passed two arguments and still gets the
- *                  same answer, because the only line it can add is one no
- *                  other state prints.
  * @returns {{state, lines: string[]}}
+ *
+ * ⚠️ THIS REPORTS ON THE PIPELINE AND ON NOTHING ELSE. It briefly also said when
+ * the season reopens, which was the only forward-looking sentence on the page
+ * and therefore landed in the only slot that existed at the time. `daily.js` is
+ * that slot now, and CHENG's q4 ruling split the two: the season sentence goes
+ * where a reader looks for what is next, the ledger half stays at the foot of
+ * the page where a reader looks for what we hold. Printing both halves in both
+ * places is what the ruling ruled against.
  *
  * `state` is a machine-readable label for styling; `lines` is what a reader
  * sees. The states are ordered by how much they tell you, not by severity:
  * a halt explains itself, so it outranks staleness, which is only a symptom.
  */
-export function describe(index, now, schedule) {
+export function describe(index, now) {
   if (!index || typeof index !== 'object') {
     return { state: 'empty', lines: ['No data loaded yet.'] };
   }
@@ -174,20 +132,16 @@ export function describe(index, now, schedule) {
 
     if (played === 0) {
       lines.push(`No games in the last ${c.windowDays} days.`);
-      // ⭐ AND THIS IS THE ONE STATE THAT GETS TO SAY WHAT HAPPENS NEXT.
-      //
-      // `quiet` means the LEAGUE listed no games -- we looked, recently, and the
-      // window was empty -- so it is the only state where "no games" is a fact
-      // about hockey rather than a symptom of us. Adding it to `stalled` or
-      // `halted` would pin a cheerful date onto a sentence about our own
-      // failure, and the reader could not tell which half to believe.
+      // ⭐ `quiet` MEANS THE LEAGUE LISTED NO GAMES -- we looked, recently, and
+      // the window was empty -- so it is the one state where "no games" is a
+      // fact about hockey rather than a symptom of us. That distinction is why
+      // the season sentence could be attached here and to neither `stalled` nor
+      // `halted`, which would have pinned a cheerful date onto a sentence about
+      // our own failure with the reader unable to tell which half to believe.
       //
       // IT IS STILL NOT A DIAGNOSIS, which is this file's standing rule. The
       // page does not say "the season is over" -- that is a conclusion, and this
-      // state is equally what a mid-season league-wide pause looks like. It says
-      // what the league listed, and then the next date the league published.
-      const back = whenHockeyReturns(schedule, now);
-      if (back) lines.push(back);
+      // state is equally what a mid-season league-wide pause looks like.
       return { state: 'quiet', lines };
     }
     if (held < played) {

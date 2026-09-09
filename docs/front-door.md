@@ -629,3 +629,134 @@ card from `docs/next-game.md` §0.1, and neither a fraction nor a label disarms 
 of this worked.* That is not a limitation to design around — it is the reason the
 targets are **is there something new, is it true, is it one click away.** All
 three are checkable without measuring a single visitor.
+
+---
+
+## 12. ✅ BUILT — 2026-09-09
+
+`src/lib/daily.js` + `test/daily.test.js`, rendered by `drawDaily` in
+`builders/build_index.py`, in the hero card's sixth grid row. Every ruling in §11
+is honoured. **Three things changed against §5's proposal, and all three changed
+because something was measured rather than because a preference moved.**
+
+### 12.1 ⛔ "No games last night" is gone, and it was the denominator mistake again
+
+§5.1's middle row read **`No games last night. Next: 7 tonight.`** That sentence
+is not safe, and the reason is one this project has already paid for once.
+
+`measureAll` gates its records on `inScope`, so **`recent.json` holds NHL regular
+season and playoff games and nothing else.** An empty slate is therefore also
+what a night of **preseason** looks like, and what the **Olympic break** looks
+like — on those nights the league plays a full card, we hold none of it, and the
+sentence is a false claim about hockey.
+
+⭐ **`describe()` shipped this exact bug in July.** It divided by the games it had
+managed to read and announced *"no games in the last 14 days"* over a full
+preseason slate — all 56 of which sat in a state we had never observed. The rule
+that came out of it is in `src/lib/ingest-state.js` in capitals: **THE
+DENOMINATOR IS THE HOCKEY, NOT OUR COMPREHENSION OF IT.** Absence of a record is
+not absence of a game.
+
+**So no branch claims an absence.** The in-season state answers the question a
+reader on a dark night is actually asking — when is the next one — and says
+nothing about what did or did not happen. A derived sweep over every branch
+enforces it, because the branch that gets this wrong will be the one nobody
+thought about.
+
+### 12.2 ⛔ The list is capped at six, and only LOOKING found why
+
+§5.3 sketched *"eight doors"* and §5.4's mock drew a comfortable left column.
+Neither is what a real night does.
+
+| 13 January 2024 — a real 16-game night, the league's maximum | |
+|---|---:|
+| hero card, quiet night (the off-season state live today) | **800px** |
+| hero card, all 16 rows printed | **1,230px** |
+| empty white left beside the list, because the rink does not grow with it | **~1,250 × 480** |
+| hero card, capped at six plus a tail link | **1,010px** |
+
+**Every test was green through the broken version, as they had to be** — the fake
+document has no CSS and cannot see a pixel. `tools/pixels.sh` gained
+`RTG_PIXELS_SLATE=<date>`, which rebuilds `recent.json` from that date's real
+extracts **using the nightly's own command**, because between June and the end of
+September production publishes `{"games":[]}` and the slate state is otherwise
+unreachable from a screenshot.
+
+⚠️ **The headline count still names the whole night.** The cap is about how many
+doors fit; a block saying *"6 games"* on a sixteen-game night would be a false
+claim about hockey to save a layout. And the tally's denominator is the night,
+not the list.
+
+⭐ **The tail is a better door than the rows it replaces.**
+`calendar.html?date=` already renders a whole night **including the games we hold
+and cannot publish**, which this list can never show. So it is not a truncation
+apologising for itself — it is the only link on the front door that reaches a
+night in full.
+
+### 12.3 The fixture's time is formatted in the browser, and cannot be formatted anywhere else
+
+§5.1 proposed *"Next: 7 tonight"*, which needs a date for a group of fixtures.
+There is no such date. An NHL game at 7pm Eastern is **23:00Z the same day**; one
+at 10:30pm Pacific is **05:30Z the next day** — so no UTC date names "the night of
+the 29th", and any grouping or day-name the module produced would be wrong for
+about half a slate. `daily()` returns the instant verbatim and the renderer's one
+`toLocaleString` call localises it, because **the browser is the only party that
+knows the reader's timezone and therefore the only one that can be right.**
+
+The block names the next fixture rather than counting a slate for the same
+reason: a count over a window we cannot date honestly is a number with no
+population.
+
+### 12.4 What the three states say, live
+
+| state | fires when | reads |
+|---|---|---|
+| `slate` | `recent.json` holds games | `13 January 2024 · 16 games` / *The team with more shot attempts lost 9 of the 15 where one team had more.* / six doors / `10 more that night — see the whole slate →` |
+| `upcoming` | no games, a fixture ahead | `Next` / *CAR at VGK, Friday, January 16 at 7:00 PM.* |
+| `offseason` | no games, no fixture, a league date ahead | `Next` / *Preseason opens 19 September 2026, the regular season 29 September 2026.* |
+| `none` | none of the documents loaded | nothing at all — **not a state of hockey**, and the ledger line at the foot of the page is the surface that reports on us |
+
+⏰ **Only the third can fire until 29 September.** Which is why the other two are
+tested hardest: `test/daily.test.js` is the calendar this feature does not have.
+
+### 12.5 The word "Last night" is earned from the game dates
+
+CHENG's q4 said the staleness check travels with the block that says *"last
+night"*. It does, and **not by borrowing a timestamp.** `recent.json` carries an
+`asOf`, `index.json` carries a `lastRun`, and a block computing the phrase from
+either would go on saying *"Last night — 8 games"* on the Friday after a pipeline
+stopped on Tuesday.
+
+**The phrase is a claim about when the hockey was, so it is read from the
+hockey.** If the newest game we hold was not played yesterday, the block names the
+day it was — `11 January 2026 · 1 game` — and the claim **degrades instead of
+going false**. That is one instrument reporting a different fact, rather than two
+instruments contradicting each other one scroll apart.
+
+⚠️ **And only the newest day is the slate.** `recent.json` is written from
+whatever the nightly's backwards window held, which after one failed run is two
+nights and after a bad week is seven. Reporting the file would report a fortnight
+as a night.
+
+### 12.6 What is guarded, and what a green suite still cannot see
+
+`test/daily.test.js` (24) · additions to `test/homepage.test.js` and
+`test/ingest-state.test.js`. Every check below was **seen to fail** against a
+mutation before it was kept.
+
+| the claim | the mutation that proved the check |
+|---|---|
+| only the newest day is "last night" | report `recent.games` whole |
+| the phrase is earned from the dates | always say `Last night` |
+| the tally names its own denominator | use the night's count |
+| a tie leaves the denominator | drop the `a.h === a.a` guard |
+| a past fixture is not "next" | drop the `startTimeUTC > now` filter |
+| no date is computed without a timezone | format `startTimeUTC` in the module |
+| ⛔ no branch prints a rate | the §5.2 draft sentence, through the same assertion |
+| ⛔ `describe` never announces the season | wire `whenHockeyReturns` back into it |
+| the block is inside the hero | move `#daily` out to be a sibling of the card |
+| a team page gets no slate | call `drawDaily` from the team branch too |
+
+⛔ **What none of them can see is the layout**, which is how the 16-game night
+shipped past 1,144 green tests in the first place. The instrument for that is
+`tools/pixels.sh`, and the run that matters is the one with a real slate in it.

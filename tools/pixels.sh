@@ -84,7 +84,8 @@ cp "$REPO/src/index.html" "$REPO/src/game.html" .
 # completely normal, so the harness would show a confident screenshot of the one
 # case the change was not about. THE TOOL HAS TO SERVE EVERY DOCUMENT THE PAGE
 # FETCHES, or it is measuring a different page.
-for d in catalog.json measures.json index.json schedule.json; do
+# ⚠️ recent.json JOINED IT ON 2026-09-09 FOR THE SAME REASON, one day later.
+for d in catalog.json measures.json index.json schedule.json recent.json; do
   curl -sS --fail "$ORIGIN/$d" -o "$WORK/$d"
   cp "$WORK/$d" .
 done
@@ -152,6 +153,54 @@ json.dump(cat, open('catalog.json', 'w'))
 print(f'  patched {n} of {len(have)} local extracts with `hl` (derive.py)')
 PY
 
+# --------------------------------------------------- THE SLATE THE CALENDAR HIDES
+# ⏰ FOR FIVE MONTHS A YEAR THE LEAGUE PLAYS NO GAMES, so recent.json publishes
+# `{"games":[]}` and the front door's daily block can only ever render its
+# off-season state. The `slate` state -- the count, the tally, the list of doors,
+# the whole reason the block exists -- is unreachable from a screenshot of
+# production between June and the end of September, and shipping a layout nobody
+# has looked at is precisely what this tool exists to stop.
+#
+# ⭐ SO IT IS BUILT FROM REAL GAMES BY THE REAL BUILDER. `measure.mjs --slate` is
+# the exact command the nightly runs; the extracts above are the ones production
+# published; the ids, clubs, scores and attempts are all the archive's own. The
+# only thing not true of tonight is the DATE, which is June rather than
+# yesterday -- so the block renders its "named night" kicker rather than "Last
+# night", and both are worth seeing anyway.
+# ⛔ IT IS OPT-IN AND IT SAYS SO ON EVERY RUN. A harness that quietly served a
+# document production does not have would be the stale-fixture failure this file
+# already carries two paragraphs about.
+#
+# RTG_PIXELS_SLATE=1           the extracts already on disk (the newest 40, which
+#                              in June are playoffs — one or two games a night)
+# RTG_PIXELS_SLATE=2026-03-07  every game the archive published on that date.
+#                              ⭐ USE A DATE. A one-row list and a twelve-row one
+#                              are different layout questions, and the block sits
+#                              in a fixed card whose height the rink decides — so
+#                              the only run that answers "does it fit" is one with
+#                              a real slate in it.
+if [ -n "${RTG_PIXELS_SLATE:-}" ]; then
+  rm -rf "$WORK/slate"; mkdir -p "$WORK/slate/extract"
+  if [[ "$RTG_PIXELS_SLATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+    IDS=$(python3 -c "
+import json,sys
+d=sys.argv[1]
+g=json.load(open('catalog.json'))['games']
+print(' '.join(str(x['id']) for x in g if x.get('d')==d and x.get('v') and x.get('t') in (2,3)))" "$RTG_PIXELS_SLATE")
+    [ -z "$IDS" ] && { echo "  ⛔ no published games on $RTG_PIXELS_SLATE"; exit 1; }
+    for ID in $IDS; do
+      curl -sS --fail "$ORIGIN/extract/$ID.json" -o "$WORK/slate/extract/$ID.json" &
+    done; wait
+  else
+    cp extract/*.json "$WORK/slate/extract/"
+  fi
+  ( cd "$REPO" && node builders/measure.mjs --out "$WORK/slate" --slate >/dev/null )
+  cp "$WORK/slate/recent.json" .
+  echo "  ⚠️  RTG_PIXELS_SLATE: recent.json REBUILT from $(ls "$WORK/slate/extract" | wc -l) extracts."
+  echo "      Real games, real numbers, produced by the nightly's own command —"
+  echo "      but a date months old, where production publishes {\"games\":[]}."
+fi
+
 # A server, not file://. The hero is an iframe of a sibling page and the fetches
 # are relative; file:// origins make both of those behave differently.
 PORT="${RTG_PIXELS_PORT:-8099}"
@@ -200,7 +249,27 @@ for (const raw of widths) {
     if (!hero.booted) hero.WARNING = 'the preview never booted — these numbers describe an error page';
   } catch (e) { hero = { note: String(e).slice(0, 120) }; }
 
+  /* THE BLOCK THE WHOLE CHANGE IS ABOUT, measured on the outer page rather than
+     inside the hero's iframe. `count()` first, because a figure read off the
+     first match wears the name of the class — the shape CHENG called this
+     project's third instance of one defect. */
+  const block = await p.evaluate(() => {
+    const one = s => { const all = document.querySelectorAll(s);
+                       if (all.length !== 1) return all.length + ' MATCHES';
+                       const el = all[0], r = el.getBoundingClientRect();
+                       return { box: Math.round(r.width) + 'x' + Math.round(r.height),
+                                top: Math.round(r.top + scrollY),
+                                text: (el.textContent || '').trim().slice(0, 90) }; };
+    const d = document.getElementById('daily');
+    if (!d || d.hidden) return { daily: d ? 'HIDDEN — no state fired' : 'ABSENT' };
+    return { kick: one('#dailykick'), say: one('#dailysay'),
+             rows: document.querySelectorAll('#dailylist .drow').length,
+             list: one('#dailylist'),
+             fold: Math.round(d.getBoundingClientRect().top + scrollY) < 900 };
+  });
+
   console.log(`\n${w}px  ${JSON.stringify(hero)}`);
+  console.log(`      daily ${JSON.stringify(block)}`);
   if (problems.length) console.log('      console:', [...new Set(problems)].slice(0, 4));
   await p.screenshot({ path: `${out}/page-${w}.png`, fullPage: true });
   const hasHero = await p.locator('.hero').count();

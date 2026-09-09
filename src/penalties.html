@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-kDR/H6GCxcJ9THqN5INvQPSPrdBu/KKmyxjgOKXNQWY=' 'sha256-O+tFRbevUhlyOt78ng1txnNkMDpdOHwapteYPqeRxx0=' 'sha256-QvEwa5mnRZXr+qnCA2z3ITvUXoZeXm1hVG6swMGeUgk='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-SXVL8q3cew5fRbh6pT65U3cf96sAvv0zUMtPb/E3Rkc=' 'sha256-O+tFRbevUhlyOt78ng1txnNkMDpdOHwapteYPqeRxx0=' 'sha256-QvEwa5mnRZXr+qnCA2z3ITvUXoZeXm1hVG6swMGeUgk='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -156,6 +156,37 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
  font-weight:700;padding:11px 18px;border-radius:9px;font-size:.95rem}
 .herogo:hover,.herogo:focus{background:var(--blue)}
 
+/* ------------------------------------------------------------- THE DAILY BLOCK
+   The one dated element on the front door. It sits INSIDE the hero card (see the
+   markup for why) and has to read as a separate thought rather than as more
+   sentences about the featured game -- so it takes a rule above it and the same
+   uppercase kicker the card's own first line uses, which is a treatment a reader
+   has already met four lines higher.
+   ⚠️ THE MARGIN IS ON THE TOP AND THE RULE IS A BORDER, not a `<hr>`: the block
+   is `hidden` until a state fires, and a separator that is its own element would
+   be left drawing a line under an empty card on every page load. */
+.daily{border-top:1px solid var(--edge);margin:20px 0 0;padding:15px 0 0}
+.dailykick{margin:0 0 6px;font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;
+ color:var(--muted);font-weight:700}
+.dailysay{margin:0;font-size:.9rem;color:var(--muted);max-width:52ch}
+.dailysay:empty{display:none}
+.dailylist{display:flex;flex-direction:column;gap:5px;margin:11px 0 0}
+/* EACH ROW IS A DOOR, so it is an anchor and not a line of text with a link in
+   it -- the whole rectangle is the hit target. That is the defect of 2026-09-08
+   in its third form, and the fix is structural rather than a wider `<a>`. */
+.drow{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+ text-decoration:none;color:inherit;background:var(--bg);border:1px solid var(--edge);
+ border-radius:8px;padding:7px 11px;font-size:.85rem}
+.drow:hover,.drow:focus-visible{border-color:var(--blue)}
+.drow .dscore{font-weight:650;font-variant-numeric:tabular-nums}
+/* The attempts figure is the reason the row is here rather than in a scores
+   list, and it is `--muted` for the same reason `.herorel` is: it is the second
+   half of the thought, and matching the score's weight would make the two
+   numbers argue. `tabular-nums` so a column of them lines up. */
+.drow .datt{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.dmore{display:block;margin:3px 0 0;font-size:.83rem;color:var(--blue);text-decoration:none}
+.dmore:hover,.dmore:focus-visible{text-decoration:underline}
+
 /* ⭐⭐ THE FOLD, AT A LAPTOP'S WIDTH -- docs/front-door.md §5.4.
    Kevin, with the live page above the fold on his laptop: "encourages daily
    visits, offers valuable information right from the get go, and encourages a
@@ -231,6 +262,17 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
      stop being the same rectangle. That is the hit-target defect of 2026-09-08
      waiting to happen in a third place. */
   .hero:not([hidden]) .herogo{grid-column:1;grid-row:5;justify-self:start;margin-top:4px}
+  /* ⭐ ROW SIX IS THE SLACK, AND THIS IS WHAT IT WAS BEING SAVED FOR. The five
+     text rows are `min-content` and the frame spans the card, so column one runs
+     out of sentences about two thirds of the way down -- measured at 1900,
+     ~900px of gutter. The block that fills it is the only one on the page that
+     is different tomorrow, which is the argument docs/front-door.md §5.4 makes:
+     the three questions land in order, what is this, what is new, where do I go.
+     ⚠️ `align-self:end` PARKS IT AT THE BOTTOM OF THE ROW rather than floating it
+     under the button with the surplus beneath. Without it the row's height is
+     the slack and the block sits at its top edge, which reads as a paragraph
+     that lost its place rather than as the foot of the card. */
+  .daily:not([hidden]){grid-column:1;grid-row:6;align-self:end;width:100%}
 }
 
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:12px}
