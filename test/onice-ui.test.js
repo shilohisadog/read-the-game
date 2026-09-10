@@ -85,6 +85,28 @@ test('⭐ the opening faceoff lists the line that is STARTING, not nobody', () =
   assert.ok(names >= 10, `only ${names} players listed at the opening faceoff`);
 });
 
+test('⛔⛔ never in the PREVIEW, and `hidden` actually hides — the deploy gate caught both', () => {
+  /* ⛔ THE REGRESSION THAT WENT RED, 2026-09-10. The hero is a 390x273 shop
+     window with no transport and no reader; `playing` is false between its
+     frames, so the roster rendered there and pushed 165px of names into a box
+     sized for a rink. The gate's probe returned `HERO -Infinity` and the deploy
+     failed. **1,200 green unit tests could not see it, because a fake document
+     has no layout.**
+
+     ⛔ AND `hidden` WAS A NO-OP, which is the quieter half. `#rg .onice`
+     contains an id, so its `display:grid` outranks the user agent's
+     `[hidden]{display:none}` — the element stayed laid out and `el.hidden =
+     true` did nothing, with no error anywhere. Any future block with a
+     `display` on an id-bearing selector has the same hole. */
+  const a = boot(rich, null, '?preview=1&at=2-10:00');
+  assert.equal(a.$('onIce').hidden, true, 'the roster renders inside the preview hero');
+  assert.equal(a.$('onIce').innerHTML, '', 'the preview hero carries roster markup');
+
+  const rule = /#rg \.onice\[hidden\]\{([^}]*)\}/.exec(CSS);
+  assert.ok(rule, '`#rg .onice[hidden]` has no rule — `hidden` is outranked and does nothing');
+  assert.match(rule[1], /display:\s*none/, 'the hidden rule does not turn the element off');
+});
+
 test('⭐ the panel is a LIST — no absolute positioning, nothing over the rink', () => {
   /* THE STRUCTURAL FORM OF DOCTRINE §5. A rule about where players are drawn is
      only as good as the thing that stops the next person drawing them: this

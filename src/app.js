@@ -1415,7 +1415,13 @@ function whoTag(p){return `<span class="num">#${p.n}</span> ${p.nm}`;}
  * would be a list that had stopped reading the shift chart.
  */
 function sayOnIce(e){const b=$('onIce');if(!b)return;
- if(!e||playing||e.s==null){b.hidden=true;b.innerHTML='';return;}
+ /* ⛔ NEVER IN THE PREVIEW, and the deploy gate is what said so. The hero is a
+    390x273 shop window with no transport and no reader — `playing` is false
+    between its frames, so the roster rendered there and pushed 165px of names
+    into a box sized for a rink. The gate's own probe came back `HERO -Infinity`
+    and the run went red; nothing in 1,200 unit tests could see it, because a
+    fake document has no layout. */
+ if(!e||playing||PREVIEW||e.s==null){b.hidden=true;b.innerHTML='';return;}
  const on=onIce(G,e);
  const tot=on.away.skaters.length+on.home.skaters.length;
  // NOTHING RATHER THAN A WRONG LIST: 3 of 87 published extracts carry no shifts.

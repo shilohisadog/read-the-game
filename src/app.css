@@ -983,6 +983,12 @@
    a 360px viewport, which is the width the deploy gate measures. */
 #rg .onice{margin:6px 2px 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
  gap:4px 10px;font-size:.74rem;line-height:1.35}
+/* ⛔ AND `hidden` HAS TO BE SAID, because `#rg .onice` outranks the user agent's
+   `[hidden]{display:none}` on specificity. A `display` declaration on a
+   selector with an id in it silently disables the attribute that is supposed to
+   turn the element off -- the element stays laid out, and `el.hidden = true`
+   becomes a no-op with no error anywhere. */
+#rg .onice[hidden]{display:none}
 #rg .onice .oc{min-width:0}
 #rg .onice .oab{font-weight:700;letter-spacing:.02em;opacity:.75;font-size:.7rem}
 /* THE GOALTENDER IS SET APART rather than sorted in with a letter beside him:
