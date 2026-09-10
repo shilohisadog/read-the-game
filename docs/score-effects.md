@@ -142,6 +142,23 @@ trailing — 75.7% even, 20.9% power play, 3.4% empty net — again by the same
 invariant: they are the same seconds. Empty-net time is 3.4%, not enough to carry
 a 24% difference.
 
+✅ **AND THAT EVEN-STRENGTH ROW IS ARCHIVE-WIDE NOW, 2026-09-10** (`census.pace`'s
+`evenLead` / `evenTied` / `evenTrail`, `12d5ec4`). It is a CROSS-TAB rather than a
+narrowing: the three all-situations buckets still mean what they always meant, and
+three more ask the score question inside even strength only.
+
+| | trailing | tied | leading | ratio |
+|---|---:|---:|---:|---:|
+| all situations | 65.55 | 58.57 | 52.61 | **1.246×** |
+| **even strength only** | **63.58** | 59.09 | **53.21** | **1.195×** |
+
+⭐ **So the pulled goaltender and the power play carry about a fifth of the effect
+and not the rest**, over 4,192 games — and `balancedEven` is published true, so
+the two rows cover identical minutes (132,482.4 each) by the same invariant the
+all-situations pair has. ⚠️ **The archive is slightly LESS flattering than the
+48-game sample was** — 1.195× against the local 1.236× — which is the direction a
+small sample errs in on this project for the fourth recorded time.
+
 ⚠️ **THE REMAINING CONFOUND IS SELECTION, AND IT CUTS THE RIGHT WAY.** Clubs that
 lead are on average the better clubs, and while the score is level the better club
 attempts *more* (that is §1's second row). So selection pushes the leading row
@@ -275,6 +292,11 @@ mechanism explanation and needs the census before it appears anywhere."*
 local 1.256× was a good estimate and the mechanism **is now quotable**. Nothing
 quotes it yet.
 
+✅ **AND SO DOES THE CONTROL THAT ANSWERS THE FIRST OBJECTION** (`12d5ec4`, §4):
+**1.195× at even strength only**, archive-wide. Any sentence about score effects
+meets *"isn't that just the pulled goalie?"* immediately, and until this the only
+answer on file was 48 games.
+
 ### 9.4 Q2 — not a layer, and all three reasons hold
 
 *"Score state has no location — a layer draws on ice and this has nothing to
@@ -314,7 +336,13 @@ it's caught three false premises."* **§0 of the next artifact carries that step
 
 1. **§6.2**, on Kevin's ruling (§9.5).
 2. **The dose-response on a surface**, under §9.2's two conditions.
-3. **The mechanism figures**, now archive-wide and quotable, nowhere quoted.
+3. **The mechanism figures**, now archive-wide and quotable — with the
+   even-strength control beside them since 2026-09-10 — and still nowhere quoted.
+   ⭐ **The obvious home is a twelfth learn card**, on the precedent the eleventh
+   just set: the measurements half may state how often, a card can carry a
+   measurement where it cannot carry an argument, and the card would sit beside
+   `All situations` saying the other half of the same lesson — part of an attempt
+   lead is the power play, and part of it is the scoreboard.
 4. ⭐ **Kevin's own next question, and the bigger one:** *"score-effects, even
    strength, power play/penalty kill type of information that we need to be
    seamless across the site (which I'm not sure that's the case currently)."*

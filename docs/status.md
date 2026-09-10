@@ -45,12 +45,80 @@ the `All situations` learn card, and the replay's own power-play pill and
 `MODE()` line. **Nothing has ever audited them as one vocabulary.** Start there,
 not from a blank page: the audit is the deliverable.
 
-⏸ **ALSO IN FLIGHT: the layer registry** — agreed 2026-09-10, specified further
-down this section with a countable acceptance criterion. Not started.
+⭐ **AND THE AUDIT HAS ALREADY PAID FOR ITSELF ONCE, before it was run.** Kevin,
+reading the slot card: *"we say 'that gap is what the shading is for'. However, we
+don't explain what the blue line shading is for."* Both halves were true. The word
+**shading named three different marks** — the slot lozenge, the blue-line band and
+the green next-play cue, and the replay carries a button labelled "Show the
+shading" — so on a page that draws none of them the definite article pointed at
+nothing. And the band had **a rule (offside) and no value**: nothing said what the
+zones it divides are worth. That is the eleventh card, `The attacking zone`,
+shipped 2026-09-10. **Every remaining item on the seamlessness list should be read
+the same way: a phrase on screen, and what stands behind it.**
 
-Tree clean, CI green, 12 commits on 2026-09-10. Counts are in the generated
+⏭ **THE TWELFTH CARD IS SPECIFIED AND UNBUILT: score effects.** Both figures are
+archive-wide and quotable as of 2026-09-10 — **65.55 trailing against 52.61
+leading per 60** (1.246×), and **63.58 against 53.21 at even strength only**
+(1.195×), so the pulled goaltender carries about a fifth of it and not the rest.
+`docs/score-effects.md` §4 and §10.3. It is the other half of the `All situations`
+lesson: part of an attempt lead is the power play, and part of it is the
+scoreboard.
+
+⏸ **ALSO IN FLIGHT: the layer registry** — agreed 2026-09-10, specified further
+down this section with a countable acceptance criterion. Not started. And
+**shot locations, defencemen against forwards** — the second of the three layers
+decided 2026-09-09, which Kevin raised again on the 10th. The census makes the
+case (**500,720 attempts over 4,192 games**; defencemen take **32.5%**; **37.5%**
+of a defenceman's attempt is blocked against **23.1%** of a forward's; **2.3%**
+go in against **6.5%**) and the census also names the trap: **a blocked shot is
+recorded where it was STOPPED**, so the mark is displaced toward the net for
+37.5% of the D population against 23.1% of the F one — unevenly, between the two
+groups the layer exists to compare. Decide that before drawing anything.
+
+Tree clean, CI green, 14 commits on 2026-09-10. Counts are in the generated
 health block above — ⚠️ **do not quote them from prose anywhere, including this
 sentence's neighbours.**
+
+### ✅ 2026-09-10 (later) — THE ELEVENTH CARD, AND TWO CENSUS FIGURES BUILT TO BE QUOTABLE
+
+⛔⛔ **THE OBVIOUS FIGURE FOR THE BLUE LINE IS ONE THIS PROJECT HAD ALREADY
+BANNED.** `census.faceoffZone` reads 2.395× in the offensive zone against 0.712×
+in the defensive, and `census.js` says in its own words why it may not go on a
+surface: the same physical draw lands in the O row or the D row **depending only
+on who won it**, so "the offensive zone" there secretly means *draws the attacking
+club won*. That is the identical missing-baseline fault `zoneWorth` was built to
+strip out, and the fix transfers: **sum both outcomes and split by which club was
+ATTACKING that end** (`endZone.atkPerDraw` / `defPerDraw`, `bbcd5cd`). Every
+end-zone draw is then in both numbers and the only difference between them is
+direction — **1.424 against 0.765 over 165,420 draws, 1.861×**.
+
+⭐ **AND IT IS A CLAIM ABOUT PERSISTENCE, NOT ABOUT SHOOTING.** The defending
+club's attempts are attempts at the FAR end — what getting the puck out looks
+like — so the pair says how strongly play tends to stay where the whistle put it.
+That is the reason a line is worth holding, and a claim the measurement carries.
+The card says so in its own third sentence, because without it a reader takes the
+0.77 for shots at its own net.
+
+⭐ **THE SCORE QUESTION ASKED INSIDE EVEN STRENGTH** (`12d5ec4`) is a CROSS-TAB,
+not a narrowing: `pace.lead/tied/trail` still take every situation, as their own
+comment insists they must, and three new buckets ask the same question at even
+strength only. Both invariants join the exit code — the three cross-tab buckets
+partition even strength in seconds AND attempts, and leading equals trailing
+inside it.
+
+⚠️⚠️ **AND A TEST I WROTE HAD THE HOLE IT EXISTED TO CLOSE, AGAIN.** The first
+draft of the card's guard asserted that **both figures were present** in the
+blurb — which a card with the two of them SWAPPED passes perfectly, while telling
+a reader that defending a zone produces nearly twice the attempts. Present is the
+assertion that feels like coverage and is not; each figure is now tied to its
+subject by name, and the swap is one of five mutations seen to fail. ⭐ §H5 again,
+and the fifth instance in two days.
+
+⭐ **THE DOOR CLOSED A SEAM NOBODY HAD NAMED.** Zone starts shipped that morning
+as the only layer with **no learn card**, so the work panel's Learn More row was
+absent for it — `LEARNCARDS` is derived from the doors, so the card wired it, and
+the golden DOM moved for exactly that reason. **A layer without a card is now a
+visible gap rather than an invisible one.**
 
 ### ✅ 2026-09-10 — THE SITE ANSWERS ITS OWN HEADLINE, and the archive always held the answer
 
