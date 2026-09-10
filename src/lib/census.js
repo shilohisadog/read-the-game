@@ -314,6 +314,12 @@ export function censusRates(t) {
   const ez = t.endZone || { won: {}, lost: {} };
   const wonPer = ez.won?.n > 0 ? ez.won.atk / ez.won.n : null;
   const lostPer = ez.lost?.n > 0 ? ez.lost.atk / ez.lost.n : null;
+  /* THE SAME DRAWS SUMMED THE OTHER WAY: not by who won, but by which club was
+     attacking that end. Both buckets are the whole population, so this asks
+     what the PLACE is worth without asking anything about the draw. */
+  const ezN = (ez.won?.n || 0) + (ez.lost?.n || 0);
+  const ezAtk = (ez.won?.atk || 0) + (ez.lost?.atk || 0);
+  const ezDef = (ez.won?.def || 0) + (ez.lost?.def || 0);
 
   return {
     games: t.games || 0,
@@ -329,7 +335,26 @@ export function censusRates(t) {
        being there is worth on its own — and `winningWorth` is what winning it
        adds on top. An 8-game sample put those at 1.29 and 0.30. */
     endZone: {
-      n: (ez.won?.n || 0) + (ez.lost?.n || 0),
+      n: ezN,
+      /* ⭐⭐ WHAT THE ZONE IS WORTH, ASKED WITHOUT ASKING WHO WON THE DRAW —
+         and it is the figure the blue-line band has never had.
+
+         `faceoffZone` cannot say this: its O row and its D row are the SAME
+         physical draws sorted by who won them, so "the offensive zone" there
+         means "draws the attacking club won" and the place cannot be separated
+         from the win. This sums BOTH outcomes and splits by which club was
+         attacking that end instead, so every end-zone draw appears in both
+         numbers and the only difference between them is direction. That is the
+         identical fix `zoneWorth` made, applied to the other axis.
+
+         ⛔ AND IT IS A STATEMENT ABOUT PERSISTENCE, NOT ABOUT SHOOTING SKILL.
+         The defending club's attempts are attempts at the OTHER end — they are
+         what getting the puck out and back up the ice looks like. So the pair
+         says how strongly play tends to stay where the whistle put it, which is
+         the reason a line worth holding is worth holding. */
+      atkPerDraw: ezN > 0 ? +(ezAtk / ezN).toFixed(3) : null,
+      defPerDraw: ezN > 0 ? +(ezDef / ezN).toFixed(3) : null,
+      zoneLift: ezDef > 0 ? +(ezAtk / ezDef).toFixed(3) : null,
       zoneWorth: lostPer == null ? null : +lostPer.toFixed(3),
       winningWorth: (wonPer == null || lostPer == null) ? null : +(wonPer - lostPer).toFixed(3),
       lift: (wonPer == null || lostPer == null || lostPer === 0) ? null

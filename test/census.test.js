@@ -156,6 +156,66 @@ test('the control holds the zone constant and lets only the winner vary', () => 
   }
 });
 
+test('⭐ the zone figure is the SAME draws summed the other way — the attacking club, not the winner', () => {
+  /* ⛔ THE FIGURE THE BLUE-LINE BAND HAS NEVER HAD, and it is only safe because
+     it is built the way `zoneWorth` is. `atkPerDraw` / `defPerDraw` sum BOTH
+     outcomes and split by which club was attacking that end, so every end-zone
+     draw appears in both numbers and the only thing separating them is
+     direction. This asserts that independently of the accumulator: computed
+     here from the events, by the sign of x, with no reference to `e.own`
+     except to attribute an attempt.
+
+     ⭐ AND IT CROSS-CHECKS TWO TABLES THAT NEVER SEE EACH OTHER. Every draw
+     beyond a blue line is an end-zone draw — the painted dots are at |x| 69, 20
+     and 0, so nothing sits between 25 and 60 — which makes `faceoffZone`'s O
+     and D rows the same population `endZone` walks. The attacking club is the
+     WINNER in the O row and the LOSER in the D row, so the two tables must
+     agree on this total or one of them has drifted. */
+  for (const g of GAMES) {
+    const c = censusGame(g.events, ctxOf(g));
+    const atk = c.endZone.won.atk + c.endZone.lost.atk;
+    const def = c.endZone.won.def + c.endZone.lost.def;
+    assert.equal(atk, c.faceoffZone.O.aw + c.faceoffZone.D.al,
+      'the attacking club\'s attempts disagree between endZone and faceoffZone');
+    assert.equal(def, c.faceoffZone.O.al + c.faceoffZone.D.aw,
+      'the defending club\'s attempts disagree between endZone and faceoffZone');
+    assert.equal(c.endZone.won.n + c.endZone.lost.n,
+      c.faceoffZone.O.n + c.faceoffZone.D.n,
+      'a draw is beyond a blue line and not in an end zone — the dot geometry has moved');
+  }
+
+  /* ⚠️ AND THAT LAST ONE IS A DRIFT ALARM WITH NOTHING TO MUTATE, so it gets a
+     CONTROL instead. Moving the end-zone cut from 60 to 25 in `census.js`
+     changes NOTHING on any fixture — which is the claim, and is also exactly how
+     a guard passes while measuring nothing. So the failure is manufactured: one
+     draw at x=40 is beyond a blue line and outside the end zone, `faceoffZone`
+     takes it and `endZone` does not, and the equality must break. If this ever
+     stops breaking, the two tables have stopped disagreeing about a draw they
+     should disagree about, and the alarm above is decoration. */
+  const g0 = GAMES[0];
+  const real = g0.events.find(e => e.type === 'faceoff' && e.own != null && e.x != null);
+  const bent = censusGame(
+    g0.events.map(e => (e === real ? { ...e, x: 40 } : e)), ctxOf(g0));
+  assert.notEqual(bent.endZone.won.n + bent.endZone.lost.n,
+    bent.faceoffZone.O.n + bent.faceoffZone.D.n,
+    'a draw at x=40 did not separate the two tables — the geometry check cannot fail');
+
+  /* AND THE PUBLISHED PAIR IS THE TALLY, over every fixture at once. Rates are
+     computed in one place on purpose; this is the check that the place is this
+     one. `zoneLift` is asserted above 1 rather than at a value: play tending to
+     stay where the whistle put it is the claim, and pinning the number here
+     would make the test a mirror of the arithmetic above it. */
+  let t = {};
+  for (const g of GAMES) t = censusAdd(t, censusGame(g.events, ctxOf(g)));
+  const r = censusRates(t).endZone;
+  const n = t.endZone.won.n + t.endZone.lost.n;
+  assert.equal(r.atkPerDraw, +((t.endZone.won.atk + t.endZone.lost.atk) / n).toFixed(3));
+  assert.equal(r.defPerDraw, +((t.endZone.won.def + t.endZone.lost.def) / n).toFixed(3));
+  assert.ok(r.zoneLift > 1,
+    `the attacking club does not out-attempt the defending one (${r.zoneLift}x) — `
+    + 'either the direction is inverted or the claim is false on this population');
+});
+
 test('a power-play draw was won BY the club with the advantage, and the gap is the refusal', () => {
   /* ⚠️ THE OBVIOUS IMPLEMENTATION IS WRONG AND IT IS WRONG QUIETLY. "A faceoff
      that happened during a power play" counts the SHORT-HANDED club's wins into
