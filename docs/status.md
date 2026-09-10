@@ -206,12 +206,22 @@ caption), the blocker (`blk`), the NHL clip (`clip`), stoppage reasons
    ruled an attribute on 2026-09-09 and never started. **By volume it is the
    largest thing we hold and do not use.** ⚠️ Its trap is recorded: the interval
    is `s < t <= e`.
-2. ⭐⭐ **THE ACTIVE PLAYER — BUILT AND UNWIRED.** **23,189 of 23,207 playable
-   frames (99.9%)** name a player who resolves on the roster, and every one of
-   them has a verb in `attribution.js::ATTRIBUTION` — the single {field, verb}
-   table CHENG required so a name can never appear without its meaning. **The
-   hard part is done and the page shows none of it.** Same shape as K1: built,
-   unwired, waiting on a surface decision.
+2. ⛔⛔ **NOT A STONE AT ALL — THE ACTIVE PLAYER IS LIVE, AND THIS ENTRY WAS
+   FALSE WHEN IT WAS COMMITTED.** It read *"built and unwired… the page shows
+   none of it"*. **It ships on 97.6% of playable frames** (22,661 of 23,207):
+   `app.js::who()` renders `ATTRIBUTION[e.type].say` into `#who` — *"#14 Eriksson
+   Ek won the draw"* — suppressed on goals (2.3%, where the pill already names
+   the scorer and the row offers the NHL highlight instead) and falling back to a
+   plain label on 0.1%. `test/active-player.test.js` has guarded it the whole
+   time.
+
+   ⚠️⚠️ **THE SOURCE OF THE ERROR IS THE POINT.** The claim came from a memory
+   note reading *"written up for CHENG, NOT built"* — true when written, stale
+   since, and repeated into this document without opening `app.js`. That is the
+   `verify inherited claims` rule broken while writing an inventory whose whole
+   method was *grep what a surface actually reads*. **The inventory checked
+   eleven fields against the code and took the twelfth from memory.** Kevin
+   caught it with four words: *"we have the active player line currently?"*
 3. **`drew` — 538 of 589 penalties (91.3%) name the player who DREW it, and
    nothing reads it.** The pill says who was penalised and never who was fouled.
 4. **The penalty `zone` — the only zone the feed hands us rather than deriving —
