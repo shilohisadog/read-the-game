@@ -482,6 +482,49 @@ test('⛔ leading and trailing cover the SAME seconds — the invariant, on real
     'a power-play second was counted for one club and not the other');
 });
 
+test('⛔ the even-strength score buckets PARTITION even strength — every second and every attempt', () => {
+  /* ⭐ THE CROSS-TAB'S STRONGEST CHECK IS THAT IT ADDS UP TO ITS PARENT. Every
+     even-strength club-second is spent leading, tied or trailing — there is no
+     fourth state — so the three cross-tab buckets must sum to `pace.even`
+     exactly, in seconds AND in attempts. A bucket that took a different
+     population (a different strength test, a different attempt test, a score
+     read after the goal instead of before) breaks this sum, and nothing on a
+     surface could tell. */
+  const { rates, tally } = paceOf(GAMES);
+  const p = tally.pace;
+  assert.ok(p.even.secs > 0, 'no even-strength time was found');
+  assert.equal(p.evenLead.secs + p.evenTied.secs + p.evenTrail.secs, p.even.secs,
+    'the even-strength score buckets do not sum to even strength — one of them is '
+    + 'over a different population');
+  assert.equal(p.evenLead.a + p.evenTied.a + p.evenTrail.a, p.even.a,
+    'the even-strength score attempts do not sum to even-strength attempts');
+  // AND THE SAME SYMMETRY THE PARENT HAS: one club leads at even strength
+  // exactly while the other trails at even strength.
+  assert.equal(p.evenLead.secs, p.evenTrail.secs,
+    'leading and trailing disagree INSIDE even strength');
+  assert.equal(rates.pace.balancedEven, true,
+    'the published even-strength invariant disagrees with the tally');
+});
+
+test('⭐ the even-strength cross-tab is a SUBSET of the all-situations one, bucket for bucket', () => {
+  /* The point of the cross-tab is to answer "is this just the pulled
+     goaltender?", and it can only answer that if it really is the same
+     measurement with time removed. Each even bucket must therefore be no larger
+     than its all-situations twin and strictly smaller somewhere — a cross-tab
+     equal to its parent would mean the strength filter never fired, which is
+     exactly how a guard like this passes while measuring nothing. */
+  const { tally } = paceOf(GAMES);
+  const p = tally.pace;
+  for (const [e, all] of [['evenLead', 'lead'], ['evenTied', 'tied'], ['evenTrail', 'trail']]) {
+    assert.ok(p[e].secs > 0, `${e} found no time at all`);
+    assert.ok(p[e].secs <= p[all].secs, `${e} holds more time than ${all}`);
+    assert.ok(p[e].a <= p[all].a, `${e} holds more attempts than ${all}`);
+  }
+  assert.ok(p.evenLead.secs + p.evenTied.secs + p.evenTrail.secs
+            < p.lead.secs + p.tied.secs + p.trail.secs,
+    'the even-strength cross-tab is the whole game — the strength filter never fired');
+});
+
 test('⭐ even strength is counted in CLUB-seconds — twice the clock, and `state` is the witness', () => {
   /* `state.even` counts WALL-CLOCK seconds of even strength and `pace.even`
      counts CLUB-seconds of it, so one must be exactly twice the other. The two

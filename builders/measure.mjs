@@ -553,6 +553,10 @@ function main(argv) {
       paceByScore: `attempts/60 — trailing ${doc.census.pace.trail.per60}, tied `
           + `${doc.census.pace.tied.per60}, leading ${doc.census.pace.lead.per60} `
           + `(${doc.census.pace.trailingLift}x)`,
+      paceByScoreEven: `at even strength only — trailing `
+          + `${doc.census.pace.evenTrail.per60}, tied ${doc.census.pace.evenTied.per60}, `
+          + `leading ${doc.census.pace.evenLead.per60} `
+          + `(${doc.census.pace.trailingLiftEven}x)`,
       hits: `r=${doc.census.hits.r}, opposite in ${doc.census.hits.opposite} of games`,
       unreadableStrength: `${doc.census.state.unknown.minutes} min of play whose `
           + `situation code strength.js does not know`,
@@ -603,6 +607,17 @@ function main(argv) {
               + 'club leads exactly when the other trails — the interval walk has '
               + 'dropped or double-counted time, so every attempts-per-60 is unsafe');
   }
+  /* THE SAME INVARIANT INSIDE EVEN STRENGTH, and it is a separate check rather
+     than a stronger version of the one above: even strength is symmetric, so a
+     second in which one club leads at even strength is a second in which the
+     other trails at even strength. The all-situations buckets can balance while
+     the cross-tab does not, if the strength classifier disagrees with itself
+     across an interval. */
+  if (!doc.census.pace.balancedEven) {
+    console.log('::error::census.pace: leading and trailing minutes disagree INSIDE '
+              + 'even strength — the even-strength cross-tab is over a denominator '
+              + 'nobody can name');
+  }
   if (skipped.length) {
     console.log(`  ${skipped.length} in-scope extracts carry no quoted boxscore `
               + `and were NOT measured: ${skipped.slice(0, 5).join(', ')}…`);
@@ -619,7 +634,7 @@ function main(argv) {
      holds a copy of last year's vocabulary. */
   if (unnamedClubs.length || strange.length
       || doc.census.shooter.unknown.n > 0 || !doc.census.shooter.outcomesMatch
-      || !doc.census.pace.balanced) process.exit(1);
+      || !doc.census.pace.balanced || !doc.census.pace.balancedEven) process.exit(1);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) main(process.argv.slice(2));

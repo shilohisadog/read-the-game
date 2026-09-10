@@ -135,7 +135,9 @@ export function censusGame(events, ctx) {
      That is a check the archive can fail; a rate whose denominators have come
      apart is unsafe and nothing downstream can tell. */
   const pace = { even: { a: 0, secs: 0 }, ppFor: { a: 0, secs: 0 }, ppAgainst: { a: 0, secs: 0 },
-                 lead: { a: 0, secs: 0 }, tied: { a: 0, secs: 0 }, trail: { a: 0, secs: 0 } };
+                 lead: { a: 0, secs: 0 }, tied: { a: 0, secs: 0 }, trail: { a: 0, secs: 0 },
+                 evenLead: { a: 0, secs: 0 }, evenTied: { a: 0, secs: 0 },
+                 evenTrail: { a: 0, secs: 0 } };
   let hg = 0, ag = 0;                     // the running score, for the pace buckets
   /* ⭐ FOUR BUCKETS AND ONE OF THEM IS THE ALARM. The archive holds exactly five
      position codes today — C, L, R, D, G, counted over 224 games — and a value
@@ -199,16 +201,31 @@ export function censusGame(events, ctx) {
            different question from the strength buckets — "does the scoreboard
            change how a club plays" — and restricting them to even strength here
            would silently make them a second, narrower measure wearing the same
-           name. A surface that wants both conditions at once needs a cross-tab,
-           which this is not and does not pretend to be. */
+           name.
+
+           ⭐ SO THE CROSS-TAB IS ITS OWN THREE BUCKETS, which is what this file
+           said such a surface would need. `evenLead` / `evenTied` / `evenTrail`
+           ask the score question inside even strength only, and they exist
+           because the obvious objection to a score-effects sentence is the
+           pulled goaltender: a club that is behind late plays six against five,
+           and an all-situations rate cannot answer that. Restricting the
+           original buckets would have answered it by making the published
+           number silently mean something else; adding three says both. */
         pace[hg > ag ? 'lead' : hg < ag ? 'trail' : 'tied'].secs += d;
         pace[ag > hg ? 'lead' : ag < hg ? 'trail' : 'tied'].secs += d;
+        if (s && s.kind === EVEN) {
+          pace['even' + (hg > ag ? 'Lead' : hg < ag ? 'Trail' : 'Tied')].secs += d;
+          pace['even' + (ag > hg ? 'Lead' : ag < hg ? 'Trail' : 'Tied')].secs += d;
+        }
       }
       if (isAttempt(i) && e.own != null) {
         if (s && s.kind === EVEN) pace.even.a++;
         else if (s && s.kind === POWER_PLAY) (e.own === s.advantage ? pace.ppFor : pace.ppAgainst).a++;
         const mine = e.own === homeId ? hg : ag, theirs = e.own === homeId ? ag : hg;
         pace[mine > theirs ? 'lead' : mine < theirs ? 'trail' : 'tied'].a++;
+        if (s && s.kind === EVEN) {
+          pace['even' + (mine > theirs ? 'Lead' : mine < theirs ? 'Trail' : 'Tied')].a++;
+        }
       }
       /* ⛔ AFTER, NEVER BEFORE. The attempt that IS the goal was taken in the
          score state that existed before it went in, and the interval leading to
@@ -364,7 +381,8 @@ export function censusRates(t) {
        Published even when true, for the reason `unknown` is — a field that only
        appears when it breaks is a field nobody notices arriving. */
     pace: (() => {
-      const KEYS = ['even', 'ppFor', 'ppAgainst', 'lead', 'tied', 'trail'];
+      const KEYS = ['even', 'ppFor', 'ppAgainst', 'lead', 'tied', 'trail',
+                    'evenLead', 'evenTied', 'evenTrail'];
       const out = {};
       for (const k of KEYS) {
         const z = t.pace?.[k] || { a: 0, secs: 0 };
@@ -379,7 +397,13 @@ export function censusRates(t) {
       out.powerPlayLift = lift('ppFor', 'even');
       out.killLift = lift('ppAgainst', 'even');
       out.trailingLift = lift('trail', 'lead');
+      /* ⭐ THE SAME SENTENCE WITH THE PULLED GOALTENDER TAKEN OUT. If these two
+         lifts are close, the empty net is not what the first one is made of —
+         which is the objection a score-effects sentence meets first, and the one
+         a 48-game local measurement was the only answer to until now. */
+      out.trailingLiftEven = lift('evenTrail', 'evenLead');
       out.balanced = (t.pace?.lead?.secs || 0) === (t.pace?.trail?.secs || 0);
+      out.balancedEven = (t.pace?.evenLead?.secs || 0) === (t.pace?.evenTrail?.secs || 0);
       return out;
     })(),
     /* DOES HITTING RUN INVERSE TO HAVING THE PUCK? CHENG's hypothesis, killed on
