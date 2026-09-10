@@ -285,12 +285,16 @@ test('a relocated team explains itself rather than trailing off', () => {
    them is the preview. `ash`/`hsh` stay on the row and are ignored on purpose --
    if the page ever reads them again this fixture makes the wrong number
    obvious, because they disagree with the posted totals. */
-function heroRelation({ aAtt, hAtt, as, hs, count, n }) {
+function heroRelation({ aAtt, hAtt, as, hs, count, n, level }) {
   const cat = { games: [{ id: 2023020200, d: '2024-02-09', a: 'TOR', h: 'BUF',
                           as, hs, ash: 9, hsh: 9, t: 2, v: 1 }] };
   const measures = { ...MEASURES, baseRates: { ...MEASURES.baseRates,
     moreAttemptsLost: { what: 'the team with more shot attempts lost',
-      population: 'NHL regular season and playoffs', n, count } } };
+      population: 'NHL regular season and playoffs', n, count },
+    /* `level` is optional: passing null REMOVES the second rate, which is the
+       only way to test that the hero degrades to the single sentence rather
+       than printing a dangling connective. */
+    ...(level === undefined ? {} : { moreLevelControlLost: level }) } };
   const r = run({ docs: { ...ALL, 'catalog.json': cat, 'measures.json': measures } });
   return r.settle().then(() => {
     r.post({ rtg: 'attempts', game: 2023020200, a: aAtt, h: hAtt });
@@ -332,11 +336,17 @@ test('the hero caption reads the rate BOTH WAYS and never states this outcome', 
       'the caption changed with the result — it is still describing this game');
     assert.equal(ledAndLost, ledAndWon);
 
-    // AND THE PERCENTAGE IS THE ONE IT JUST NAMED.
-    assert.match(winnerLed, /wins 80\.0% of the time/);
-    assert.match(ledAndLost, /loses 80\.0% of the time/);
-    for (const t of [winnerLed, ledAndLost])
-      assert.ok(t.includes('1,000 games'), `the denominator is missing: ${t}`);
+    /* AND THE FIGURE IS THE ONE IT JUST NAMED. A FRACTION SINCE 2026-09-10, not
+       a percentage — the hero now states two rates with DIFFERENT denominators
+       and a pair of percentages would print one `n` between them.
+
+       ⭐ AND THE FRACTION IS THE SHARPER PROBE HERE, which the percentage was
+       not. Both fixtures print the same COUNT — `LEADERS_WIN` is 200 of 1,000 so
+       the leader takes 800, `LEADERS_LOSE` is 800 of 1,000 so the leader loses
+       800 — so the only thing separating these two assertions is the VERB, which
+       is precisely the direction this test exists to pin. */
+    assert.match(winnerLed, /wins 800 of 1,000 games/);
+    assert.match(ledAndLost, /loses 800 of 1,000 games/);
 
     // THE SPOILER, NAMED. BUF led attempts in every fixture; in two of them BUF
     // won and in two BUF lost, so any verb of outcome would have to appear.
@@ -380,9 +390,9 @@ test('a tie still states the archive rate — the rate is about the ARCHIVE', ()
     // The leader case, as the control: the same rate, the same words.
     heroRelation({ ...BUF_LED_SHOTS, as: 1, hs: 4, ...LEADERS_WIN }),
   ]).then(([noLeader, levelGame, hasLeader]) => {
-    assert.match(noLeader, /wins 80\.0% of the time/,
+    assert.match(noLeader, /wins 800 of 1,000 games/,
       'the hero states no finding at all when the two teams tie on attempts');
-    assert.match(levelGame, /wins 80\.0% of the time/,
+    assert.match(levelGame, /wins 800 of 1,000 games/,
       'a level game lost its rate — that condition was about the outcome clause');
 
     // ⭐ AND IT IS THE SAME SENTENCE. A tie must not earn its own wording, or the
@@ -390,7 +400,7 @@ test('a tie still states the archive rate — the rate is about the ARCHIVE', ()
     assert.equal(noLeader, hasLeader,
       'the tie gets a different sentence — the caption is describing the game again');
     // The denominator travels with it, on every branch.
-    assert.ok(noLeader.includes('1,000 games'), `the denominator is missing: ${noLeader}`);
+    assert.ok(noLeader.includes('of 1,000 games'), `the denominator is missing: ${noLeader}`);
   }));
 
 test('⭐ …but a hero that counted nothing still says nothing', () =>
@@ -796,12 +806,21 @@ test('the one figure left on the front page carries its denominator', () => {
   return r.settle().then(() => {
     r.post({ rtg: 'attempts', game: NEWEST_ID, a: 22, h: 33 });
     const cap = textOf(r.ids.herorel);   // #herorel is where drawHero writes it
-    const pct = cap.match(/(\d+\.\d)%/);
-    assert.ok(pct, `the hero caption prints no rate: "${cap.slice(0, 120)}"`);
-    // The denominator must be in the SAME sentence, not merely on the page.
-    const sentence = cap.split(/(?<=\.)\s/).find(x => x.includes(pct[0]));
-    assert.match(sentence, /Across [\d,]+ games/,
-      `"${sentence}" prints a rate with no reference class`);
+    /* ⛔ FRACTIONS, AND THE DOCTRINE IS BETTER SERVED BY THEM THAN IT WAS BY THE
+       PERCENTAGE. This used to find a `54.2%` and then look for `Across N games`
+       in the same sentence — one reference class, stated once, up front. The hero
+       now carries TWO rates with different denominators, so each figure carries
+       its own inline and the check is no longer "is there an n somewhere near"
+       but "does EVERY sentence with a figure in it carry that figure's own n". */
+    assert.doesNotMatch(cap, /%/,
+      `the hero caption prints a percentage, which hides its denominator: "${cap.slice(0, 140)}"`);
+    assert.ok(/[\d,]+ of [\d,]+/.test(cap),
+      `the hero caption prints no figure at all: "${cap.slice(0, 140)}"`);
+    for (const sentence of cap.split(/(?<=\.)\s/)) {
+      if (!/\d/.test(sentence)) continue;
+      assert.match(sentence, /[\d,]+ of [\d,]+/,
+        `"${sentence}" prints a figure with no reference class`);
+    }
   });
 });
 
@@ -936,7 +955,8 @@ test('⛔ THE NIGHTLY COUNT AND THE ARCHIVE RATE ARE NEVER IN ONE SENTENCE', asy
   // The rate is written only once the preview frame reports the game's attempts,
   // so it has to be delivered or the control below is vacuous.
   r.post({ rtg: 'attempts', game: NEWEST_ID, a: 30, h: 22 });
-  assert.match(textOf(r.ids.herorel), /54\.\d% of the time/,
+  // THE CONTROL, and it moved from a percentage to a fraction with the caption.
+  assert.match(textOf(r.ids.herorel), /[\d,]+ of [\d,]+ games/,
     'the archive rate must still be on the page, or this test proves nothing');
   for (const id of ['dailykick', 'dailysay']) {
     assert.doesNotMatch(r.ids[id].textContent, /%/, `${id} printed a rate`);
@@ -997,3 +1017,64 @@ test('⚠️ THE BLOCK IS INSIDE THE HERO, which is what the grid rule requires'
   assert.match(html, /\.daily:not\(\[hidden\]\)\{[^}]*grid-row:6/,
     'the rule that consumes the placement is gone');
 });
+
+
+/**
+ * ⛔⛔ THE HERO ANSWERS ITS OWN PARADOX, AND UNTIL 2026-09-10 IT DID NOT.
+ *
+ * `moreLevelControlLost` was computed by `archive.js`, published in
+ * `measures.json`, and read by NOTHING — so the front door stated that the team
+ * with more shot attempts usually loses and stopped there. A novice's only
+ * available conclusion from that is *shot counts are meaningless*, which is the
+ * opposite of the truth reached from entirely true data: the same failure as a
+ * filtered list with no base rate, and we held the correction the whole time.
+ *
+ * CHENG, ruling on whether answering it defuses the hook: *"the hook is not the
+ * mystery, it is that two honest counts of nearly the same thing land on
+ * opposite sides of 50%. An unresolved 54.3% is a curiosity; the pair is an
+ * argument."*
+ *
+ * ⛔ AND EACH FIGURE CARRIES ITS OWN `n`, WHICH IS THE WHOLE REASON THESE ARE
+ * FRACTIONS. The two rates have DIFFERENT denominators — a game with no
+ * level-play edge is not in the second — so a pair of percentages would print
+ * one reference class between them and silently attribute it to both.
+ */
+test('⛔ the hero states BOTH rates, each with its own denominator', () =>
+  heroRelation({ ...BUF_LED_SHOTS, as: 1, hs: 4, ...LEADERS_LOSE,
+                 level: { what: 'the team that controlled play while the score was level lost',
+                          population: 'NHL regular season and playoffs', n: 900, count: 300 } })
+    .then(cap => {
+      // The leader loses 800 of 1,000 …
+      assert.match(cap, /loses 800 of 1,000 games/, `the first rate is missing: "${cap}"`);
+      // … and while the score was level the same club WINS 600 of 900. Different
+      // verb AND different denominator, which is the entire point of the pair.
+      assert.match(cap, /wins 600 of 900/, `the level-control rate is missing: "${cap}"`);
+      assert.match(cap, /while the score was level/,
+        'the second rate does not say what makes it different from the first');
+      // ⭐ THE CONNECTIVE IS READ, NEVER ASSUMED. These two rates point opposite
+      // ways, so the sentence may say so. A hard-coded "turns over" would be a
+      // welded claim that outlives the data that justified it.
+      assert.match(cap, /turns over/, `the reversal is not named: "${cap}"`);
+      assert.doesNotMatch(cap, /%/, 'a percentage would hide the two denominators');
+    }));
+
+test('⭐ …and when the archive stops reversing, the sentence stops saying it does', () =>
+  heroRelation({ ...BUF_LED_SHOTS, as: 1, hs: 4, ...LEADERS_LOSE,
+                 level: { what: 'the team that controlled play while the score was level lost',
+                          population: 'NHL regular season and playoffs', n: 900, count: 700 } })
+    .then(cap => {
+      // Both rates now point the SAME way, so "turns over" would be false.
+      assert.match(cap, /loses 800 of 1,000 games/);
+      assert.match(cap, /loses 700 of 900/);
+      assert.match(cap, /and it holds/, `the connective still claims a reversal: "${cap}"`);
+      assert.doesNotMatch(cap, /turns over/,
+        'the caption asserts a reversal the archive is not showing');
+    }));
+
+test('⭐ …and a hero with no second rate says the first one alone', () =>
+  heroRelation({ ...BUF_LED_SHOTS, as: 1, hs: 4, ...LEADERS_LOSE, level: null })
+    .then(cap => {
+      assert.match(cap, /loses 800 of 1,000 games/, 'the first rate went with the second');
+      assert.doesNotMatch(cap, /while the score was level|turns over|and it holds/,
+        `a dangling clause survived the missing rate: "${cap}"`);
+    }));

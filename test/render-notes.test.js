@@ -1088,6 +1088,34 @@ test('a first-time viewer is told where to click, and why', () => {
   assert.match(w, /2,194 of 4,029/, 'the claim ships without its count');
   assert.match(w, /NHL regular season and playoffs/, 'the claim ships without its scope');
   assert.match(w, /one game is still one game/, 'the limit is dropped');
+
+  /* ⛔⛔ AND THE ANSWER, WHICH THE ARCHIVE HELD AND NO SURFACE SAID UNTIL
+     2026-09-10. Stating the paradox alone leaves a novice with one available
+     conclusion — that shot counts are meaningless — which is the opposite of the
+     truth, reached from entirely true data. `moreLevelControlLost` is computed by
+     the same function over the same games. Each figure carries its OWN
+     denominator because the two populations differ. */
+  assert.match(w, /while the score was level/,
+    'the page states the paradox and not the thing that resolves it');
+  // 3,855 - 1,527 = 2,328 — the page states the WINNING side, present tense.
+  assert.match(w, /2,328 of 3,855/, 'the level-control claim ships without its count');
+
+  /* ⛔⛔ THE CHIP NAMES ITSELF, AND THIS SENTENCE NAMED A LAYER THAT NO LONGER
+     EXISTS. It read "Control counts those attempts" — live, on the page this
+     project calls its whole reason to exist — while the chip has said "Attempts"
+     since the picker was built. A first-time viewer was told to press something
+     not on their screen.
+
+     ⚠️ THIS IS THE SECOND TIME IN ONE BLOCK. The comment above records the play
+     button's own quotation drifting "to a control the page had stopped showing",
+     and the fix for it was the check three lines up — reading the label off the
+     page instead of pinning the words. The chip name sat four lines away and
+     kept its hand-typed copy through that fix. So it gets the same treatment,
+     derived from the same page. */
+  const chip = (/data-l="corsi"[^>]*>(?:<span class="pkl">)?([^<]+)</.exec(app) || [, ''])[1].trim();
+  assert.ok(chip.length > 2, 'the attempts chip has no label to quote');
+  assert.ok(w.includes(chip),
+    `the reason names a layer the picker does not offer. Chip: "${chip}"`);
 });
 
 test('a returning viewer is not greeted', () => {

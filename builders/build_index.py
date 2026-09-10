@@ -919,14 +919,46 @@ __HELPERS__
        rate as "lost", so a caption saying the leader WINS must print 100 minus
        that -- a correct sentence with the wrong number welded to it is the
        failure this shape exists to prevent. */
+    /* ⭐⭐ AND THE ANSWER, FROM THE SAME DOCUMENT AND THE SAME FUNCTION.
+       `moreLevelControlLost` was computed, published, and read by NOTHING until
+       2026-09-10. Stating the paradox alone teaches a novice that shot counts
+       are meaningless, which is the opposite of the truth from entirely true
+       data -- the same failure as a filtered list with no base rate, and we held
+       the correction the whole time.
+       ⛔ FRACTIONS, AND HERE IT IS CORRECTNESS RATHER THAN HOUSE STYLE. The two
+       rates have DIFFERENT denominators -- a game with no level-play edge is
+       dropped from the second -- so two percentages side by side would print one
+       `n` between them and hide the one thing a reader has to see. This line used
+       to say "loses 54.3% of the time". */
+    var lv = measures && measures.baseRates && measures.baseRates.moreLevelControlLost;
+    /* THE DIRECTION IS READ FOR EACH HALF SEPARATELY, never assumed -- the
+       archive publishes every rate as "lost", and a caption asserting a REVERSAL
+       that the archive has stopped showing is the welded-wrong-number failure the
+       comment above already names. So the verb comes from the data and the
+       connective comes from whether the two verbs differ. */
+    /* ⛔ PRESENT TENSE, AND IT IS LOAD-BEARING. `homepage.test.js` forbids the
+       tokens `won` and `lost` here and allows `loses` and `wins`, which is not
+       fussiness: the hero previews a game the visitor has NOT watched, and a past
+       tense verb beside it reads as the result. Kevin, on the front door: *"we
+       still give away the outcome of the game."* The first draft of this change
+       printed "lost 2,194 of 4,029" and the guard caught it. */
+    var side = function (r) {
+      return r.count / r.n > 0.5 ? ['loses', r.count] : ['wins', r.n - r.count];
+    };
     if (at && at.n) {
-      var lostPct = at.count / at.n * 100;
-      var usuallyLoses = lostPct > 50;
-      var usualPct = (usuallyLoses ? lostPct : 100 - lostPct).toFixed(1);
-      rel.appendChild(el('span', null, 'Across ' + at.n.toLocaleString()
-        + ' games in this archive the team with more shot attempts '));
+      var a = side(at);
+      rel.appendChild(el('span', null,
+        'Across this archive the team with more shot attempts '));
       rel.appendChild(el('b', null,
-        (usuallyLoses ? 'loses' : 'wins') + ' ' + usualPct + '% of the time.'));
+        a[0] + ' ' + a[1].toLocaleString() + ' of ' + at.n.toLocaleString() + ' games.'));
+      if (lv && lv.n) {
+        var b = side(lv);
+        rel.appendChild(el('span', null, ' Count only the attempts taken while the '
+          + 'score was level' + (a[0] === b[0] ? ' and it holds: ' : ' and it turns over: ')
+          + 'that team '));
+        rel.appendChild(el('b', null,
+          b[0] + ' ' + b[1].toLocaleString() + ' of ' + lv.n.toLocaleString() + '.'));
+      }
     }
   }
 

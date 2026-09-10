@@ -533,6 +533,13 @@ export const CURVE_AND_MIX = {
     moreAttemptsLost: { what: 'the team with more shot attempts lost',
                         population: 'NHL regular season and playoffs',
                         n: 4029, count: 2194, rate: 2194 / 4029 },
+    /* ⭐ AND ITS ANSWER, WHICH IS NOT INVENTED EITHER — it is `levelCurve`'s own
+       k=1 row above, because that is exactly what `moreLevelControlLost` is:
+       the club that controlled level play by 1 or more, and how often it lost.
+       A fixture whose two halves disagreed would be testing the formatting. */
+    moreLevelControlLost: { what: 'the team that controlled play while the score was level lost',
+                            population: 'NHL regular season and playoffs',
+                            n: 3855, count: 1527, rate: 1527 / 3855 },
   },
   attemptMix: {
     games: 4119,
