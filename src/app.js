@@ -1229,7 +1229,7 @@ const DRAWS={
     without the comparison is where it would become who took it" -- a weaker
     lesson, and a false one, since who wins draws is the archive's cleanest null
     at 50.4%. The figures are `census.endZone` over 165,420 end-zone draws. */
- zonestart:'A ring marks each faceoff dot, in the colour of the club that won the draw there, with a count when draws stack on one dot. The box below the ice counts the ones each club won in the zone it was attacking toward. Across the archive, being in the offensive zone is worth about 2.2 times what winning the draw there is \u2014 +1.163 attempts for being there having LOST the draw, and +0.52 more for winning it.',
+ zonestart:'Every faceoff in hockey is taken on one of nine painted dots. A ring marks each dot that has been used, and the number inside it is how many draws have been taken there \u2014 no number means one. The ring takes the colour of the club that has won MORE of them, grey when they are even, and the boldest ring is the most recent draw. The two figures below the ice are the part the ice cannot show by itself: a draw is an OFFENSIVE-zone start for the club that won it in the end that club was attacking, and a defensive-zone start for the other \u2014 so the same dot means opposite things to the two clubs. Across the archive, being in the offensive zone is worth about 2.2 times what winning the draw there is: +1.163 attempts for being there having LOST the draw, and +0.52 more for winning it.',
  blocked:'Blocked attempts keep their ring and every other mark dims, so the ones a body stopped stand out. The box below the ice credits each block to the club that MADE it, the way a broadcast does. A block by a teammate is credited to neither club, so the two figures need not add up to the total.'};
 /** The layer object behind a picker id, or null for `none`. */
 const layerOf=id=>LENS[id]||null;
@@ -2336,8 +2336,13 @@ function drawZoneStarts(Z,slice){
   const split=d.h>d.a?`${HAB} ${d.h}, ${AAB} ${d.a}`
             :d.a>d.h?`${AAB} ${d.a}, ${HAB} ${d.h}`
             :`${AAB} ${d.a}, ${HAB} ${d.h} — even`;
-  out.push(`<circle class="zs${d.last===newest?' now':''}" cx="${d.cx.toFixed(1)}" cy="${d.cy.toFixed(1)}" r="3.4" stroke="${col}"><title>${d.n} draw${d.n===1?'':'s'} here — ${ESC(split)}</title></circle>`);
-  if(d.n>1)out.push(`<text class="zsn" x="${d.cx.toFixed(1)}" y="${(d.cy+1.2).toFixed(1)}">${d.n}</text>`);
+  out.push(`<circle class="zs${d.last===newest?' now':''}" cx="${d.cx.toFixed(1)}" cy="${d.cy.toFixed(1)}" r="4.6" stroke="${col}"><title>${d.n} draw${d.n===1?'':'s'} here — ${ESC(split)}</title></circle>`);
+  /* ⭐ `y` IS THE CENTRE, NOT A NUDGED BASELINE, and that is why this diverges
+     from `.whn` next door. The old form wrote `cy+1.2`, a magic offset tuned to
+     one font-size -- so the size lived in the CSS and its centring lived here,
+     and changing one silently un-centred the other. `dominant-baseline:central`
+     puts BOTH in the stylesheet and leaves this with nothing to keep in sync. */
+  if(d.n>1)out.push(`<text class="zsn" x="${d.cx.toFixed(1)}" y="${d.cy.toFixed(1)}">${d.n}</text>`);
  }
  $('draws').innerHTML=out.join('');
 }

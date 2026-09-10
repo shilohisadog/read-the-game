@@ -39,7 +39,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-OWRW2k+TEKmcOGXUb1/WGA4gqtkk57kkQAyZRCsQcBg=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-2ayzIRzkgNcWlFkknp/vjSz6rbbGslZ12vKuH45KFCM='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-onjOIL7Is5+bVozPl30sRl8dy/HWiOSSIQLXM4F9QBI=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-CvGXfecUpVRW1cuOmBc1t/FMd2fUUPBuDcSMdsS75Rk='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">Watch a game</a><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see</a></nav></header>
@@ -1792,7 +1792,16 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    saying who won, which is half of what CHENG made a condition. */
 #rg .zs{fill:none;stroke-width:.7;opacity:.7}
 #rg .zs.now{stroke-width:1.2;opacity:1}
-#rg .zsn{font-size:3.2px;font-weight:700;fill:var(--ink);text-anchor:middle;opacity:.75}
+/* ⭐ THE HALO IS THE LEGIBILITY FIX, AND THE SIZE ALONE WAS NOT ENOUGH. Kevin,
+   from the live page: "the numbers within the face-off dot are very hard to
+   read". They sit on PAINTED RED ICE -- dark ink on a red dot at 75% opacity --
+   so enlarging them makes a bigger low-contrast number. `.plabel`, `.glab` and
+   `.plabsub` already solve this on this same rink with a white stroke drawn
+   UNDER the fill, and this is that treatment at the size he asked for: 3.2px to
+   4.4px, still well inside the faceoff circle (radius 15 in these units). */
+#rg .zsn{font-size:4.4px;font-weight:700;fill:var(--ink);text-anchor:middle;
+ dominant-baseline:central;stroke:#fff;stroke-width:1px;paint-order:stroke;
+ font-family:system-ui,sans-serif}
 /* THE BLOCKED-SHOTS LAYER. The ring is drawn on every game already; what the
    layer adds is emphasis, the blocker's name, and the archive share. Attempts
    that were NOT blocked drop back so the stopped ones carry the frame -- the
@@ -6495,7 +6504,7 @@ const zonestart = {
    * per CHENG's ruling that the layer owns what it counts and the page owns how
    * that reads.
    */
-  counts: 'the faceoffs that started each run of play, and which zone each one was in',
+  counts: 'every faceoff, and for the club that won it, whether that draw was in its offensive zone, the neutral zone, or its defensive zone',
   credits: 'Each draw is credited to the club that won it, in the zone that club was attacking toward — so the same dot is an offensive-zone start for one club and a defensive-zone start for the other. The league records the winner and not the loser, so a draw has one club and never two.',
   id: 'zonestart',
   label: '＋ Zone starts',
@@ -9095,7 +9104,7 @@ const DRAWS={
     without the comparison is where it would become who took it" -- a weaker
     lesson, and a false one, since who wins draws is the archive's cleanest null
     at 50.4%. The figures are `census.endZone` over 165,420 end-zone draws. */
- zonestart:'A ring marks each faceoff dot, in the colour of the club that won the draw there, with a count when draws stack on one dot. The box below the ice counts the ones each club won in the zone it was attacking toward. Across the archive, being in the offensive zone is worth about 2.2 times what winning the draw there is \u2014 +1.163 attempts for being there having LOST the draw, and +0.52 more for winning it.',
+ zonestart:'Every faceoff in hockey is taken on one of nine painted dots. A ring marks each dot that has been used, and the number inside it is how many draws have been taken there \u2014 no number means one. The ring takes the colour of the club that has won MORE of them, grey when they are even, and the boldest ring is the most recent draw. The two figures below the ice are the part the ice cannot show by itself: a draw is an OFFENSIVE-zone start for the club that won it in the end that club was attacking, and a defensive-zone start for the other \u2014 so the same dot means opposite things to the two clubs. Across the archive, being in the offensive zone is worth about 2.2 times what winning the draw there is: +1.163 attempts for being there having LOST the draw, and +0.52 more for winning it.',
  blocked:'Blocked attempts keep their ring and every other mark dims, so the ones a body stopped stand out. The box below the ice credits each block to the club that MADE it, the way a broadcast does. A block by a teammate is credited to neither club, so the two figures need not add up to the total.'};
 /** The layer object behind a picker id, or null for `none`. */
 const layerOf=id=>LENS[id]||null;
@@ -10202,8 +10211,13 @@ function drawZoneStarts(Z,slice){
   const split=d.h>d.a?`${HAB} ${d.h}, ${AAB} ${d.a}`
             :d.a>d.h?`${AAB} ${d.a}, ${HAB} ${d.h}`
             :`${AAB} ${d.a}, ${HAB} ${d.h} — even`;
-  out.push(`<circle class="zs${d.last===newest?' now':''}" cx="${d.cx.toFixed(1)}" cy="${d.cy.toFixed(1)}" r="3.4" stroke="${col}"><title>${d.n} draw${d.n===1?'':'s'} here — ${ESC(split)}</title></circle>`);
-  if(d.n>1)out.push(`<text class="zsn" x="${d.cx.toFixed(1)}" y="${(d.cy+1.2).toFixed(1)}">${d.n}</text>`);
+  out.push(`<circle class="zs${d.last===newest?' now':''}" cx="${d.cx.toFixed(1)}" cy="${d.cy.toFixed(1)}" r="4.6" stroke="${col}"><title>${d.n} draw${d.n===1?'':'s'} here — ${ESC(split)}</title></circle>`);
+  /* ⭐ `y` IS THE CENTRE, NOT A NUDGED BASELINE, and that is why this diverges
+     from `.whn` next door. The old form wrote `cy+1.2`, a magic offset tuned to
+     one font-size -- so the size lived in the CSS and its centring lived here,
+     and changing one silently un-centred the other. `dominant-baseline:central`
+     puts BOTH in the stylesheet and leaves this with nothing to keep in sync. */
+  if(d.n>1)out.push(`<text class="zsn" x="${d.cx.toFixed(1)}" y="${d.cy.toFixed(1)}">${d.n}</text>`);
  }
  $('draws').innerHTML=out.join('');
 }

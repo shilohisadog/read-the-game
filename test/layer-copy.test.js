@@ -167,3 +167,53 @@ test('⛔ …and every chip carries the count element the renderer writes into',
     assert.match(app, new RegExp(`data-l="${id}"[^>]*>[\\s\\S]{0,200}?id="n_${id}"`),
       `the ${id} chip has no #n_${id} span, so its count is written to nothing`);
 });
+
+
+/**
+ * ⛔ CHENG MADE THE COMPARISON A CONDITION OF THE LAYER, AND NOTHING WATCHED IT.
+ *
+ * *"Showing the winner without the comparison is where it would become who took
+ * it"* — a different and much weaker lesson, since who wins draws is the
+ * archive's cleanest null at 50.4%. The zone-start caption therefore has to
+ * carry the ratio, and until this test it could have been edited away in a
+ * copy pass with 1,176 tests still green. The layer shipped that way for a day.
+ *
+ * ⭐ AND IT IS CHECKED AGAINST THE PUBLISHED DOCUMENT, NOT AGAINST ITSELF. The
+ * figures come from `measures.json`'s `census.endZone` — the same 165,420-draw
+ * record the sentence is about — so the day `derive.yml` moves them, the caption
+ * quoting the old ones goes red. A guard whose reference is a constant typed
+ * beside it is the shape `LAYER_TOKENS` already taught this project.
+ *
+ * ⚠️ THE RATIO IS DERIVED, NEVER TYPED. `2.2` is `zoneWorth / winningWorth`
+ * rounded to one place; asserting the string "2.2" against a literal 2.2 here
+ * would be a check that cannot tell the caption from its own copy of the answer.
+ */
+test('⛔ the zone-start caption carries the archive comparison, from the archive', () => {
+  const m = /const DRAWS=\{([\s\S]*?)\};\n/.exec(app);
+  assert.ok(m, 'DRAWS has moved — this check has lost its subject');
+  const line = /\bzonestart:'((?:[^'\\]|\\.)*)'/.exec(m[1]);
+  assert.ok(line, 'the zone-start caption has moved or changed quoting');
+  const say = line[1];
+
+  const ez = JSON.parse(readFileSync(new URL('../data/measures.json', import.meta.url), 'utf8'))
+    .census.endZone;
+  for (const k of ['zoneWorth', 'winningWorth', 'n'])
+    assert.ok(Number.isFinite(ez[k]), `census.endZone.${k} is missing — the reference is gone`);
+
+  assert.ok(say.includes(String(ez.zoneWorth)),
+    `the caption does not quote census.endZone.zoneWorth (${ez.zoneWorth})`);
+  assert.ok(say.includes(String(ez.winningWorth)),
+    `the caption does not quote census.endZone.winningWorth (${ez.winningWorth})`);
+
+  const ratio = (ez.zoneWorth / ez.winningWorth).toFixed(1);
+  assert.ok(say.includes(`${ratio} times`),
+    `the caption must state the ratio the archive gives — ${ratio} times, from `
+    + `${ez.zoneWorth} / ${ez.winningWorth} over ${ez.n.toLocaleString()} draws`);
+
+  /* ⭐ AND THE DIRECTION, because a ratio with the operands swapped is still a
+     number and still reads fluently. The claim is that being THERE outweighs
+     WINNING there, which is what makes the layer worth building. */
+  assert.ok(ez.zoneWorth > ez.winningWorth,
+    'the archive no longer says being in the zone outweighs winning the draw — '
+    + 'the caption is now telling a reader the opposite of the record');
+});

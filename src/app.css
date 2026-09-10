@@ -1746,7 +1746,16 @@
    saying who won, which is half of what CHENG made a condition. */
 #rg .zs{fill:none;stroke-width:.7;opacity:.7}
 #rg .zs.now{stroke-width:1.2;opacity:1}
-#rg .zsn{font-size:3.2px;font-weight:700;fill:var(--ink);text-anchor:middle;opacity:.75}
+/* ⭐ THE HALO IS THE LEGIBILITY FIX, AND THE SIZE ALONE WAS NOT ENOUGH. Kevin,
+   from the live page: "the numbers within the face-off dot are very hard to
+   read". They sit on PAINTED RED ICE -- dark ink on a red dot at 75% opacity --
+   so enlarging them makes a bigger low-contrast number. `.plabel`, `.glab` and
+   `.plabsub` already solve this on this same rink with a white stroke drawn
+   UNDER the fill, and this is that treatment at the size he asked for: 3.2px to
+   4.4px, still well inside the faceoff circle (radius 15 in these units). */
+#rg .zsn{font-size:4.4px;font-weight:700;fill:var(--ink);text-anchor:middle;
+ dominant-baseline:central;stroke:#fff;stroke-width:1px;paint-order:stroke;
+ font-family:system-ui,sans-serif}
 /* THE BLOCKED-SHOTS LAYER. The ring is drawn on every game already; what the
    layer adds is emphasis, the blocker's name, and the archive share. Attempts
    that were NOT blocked drop back so the stopped ones carry the frame -- the

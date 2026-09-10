@@ -71,7 +71,7 @@ export const zonestart = {
    * per CHENG's ruling that the layer owns what it counts and the page owns how
    * that reads.
    */
-  counts: 'the faceoffs that started each run of play, and which zone each one was in',
+  counts: 'every faceoff, and for the club that won it, whether that draw was in its offensive zone, the neutral zone, or its defensive zone',
   credits: 'Each draw is credited to the club that won it, in the zone that club was attacking toward — so the same dot is an offensive-zone start for one club and a defensive-zone start for the other. The league records the winner and not the loser, so a draw has one club and never two.',
   id: 'zonestart',
   label: '＋ Zone starts',

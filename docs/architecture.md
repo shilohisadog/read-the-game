@@ -44,9 +44,9 @@ header, and §4 records what it cost us the one time we did it anyway.
 | **analysis** | events → meaning; pure, no DOM, no network | `src/lib/**` (35 modules) | 7,262 |
 | **measurement** | the archive, reduced by the SAME modules | `measure.mjs` | 604 |
 | **presentation** | generates the pages | `build_*.py` (9) | 4,409 |
-| **the app** | **the one exception — see §2** | `src/app.js` | 3,568 |
+| **the app** | **the one exception — see §2** | `src/app.js` | 3,573 |
 
-<sub>Counted 2026-09-10 by `tools/tiers.mjs`, checked by `npm run gates`. The analysis tier is **35 modules** and **not one of them touches the DOM, the network or the filesystem** — the boundary §1 claims, verified here rather than asserted. `src/app.js` **declares 26 dependencies on that tier and exports 1 function** — it is a module, not a build template, and §2 is what remains. Of its 3,568 lines **2,580 are comment-only and 863 are code**, and **211 comment lines carry an explicit claim** about the code beside them — which is §2's argument, counted rather than asserted.</sub>
+<sub>Counted 2026-09-10 by `tools/tiers.mjs`, checked by `npm run gates`. The analysis tier is **35 modules** and **not one of them touches the DOM, the network or the filesystem** — the boundary §1 claims, verified here rather than asserted. `src/app.js` **declares 26 dependencies on that tier and exports 1 function** — it is a module, not a build template, and §2 is what remains. Of its 3,573 lines **2,585 are comment-only and 863 are code**, and **212 comment lines carry an explicit claim** about the code beside them — which is §2's argument, counted rather than asserted.</sub>
 <!-- /tiers -->
 
 ---
