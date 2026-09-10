@@ -41,12 +41,12 @@ header, and §4 records what it cost us the one time we did it anyway.
 | **acquisition** | talks to the league, stores bytes | `fetch_nhl.py` | 640 |
 | **interpretation** | feed → events; the two gates | `extract.py` | 974 |
 | **orchestration** | walks the store, judges, writes documents | `derive.py` | 742 |
-| **analysis** | events → meaning; pure, no DOM, no network | `src/lib/**` (35 modules) | 7,261 |
-| **measurement** | the archive, reduced by the SAME modules | `measure.mjs` | 598 |
+| **analysis** | events → meaning; pure, no DOM, no network | `src/lib/**` (35 modules) | 7,262 |
+| **measurement** | the archive, reduced by the SAME modules | `measure.mjs` | 604 |
 | **presentation** | generates the pages | `build_*.py` (9) | 4,409 |
-| **the app** | **the one exception — see §2** | `src/app.js` | 3,484 |
+| **the app** | **the one exception — see §2** | `src/app.js` | 3,568 |
 
-<sub>Counted 2026-09-10 by `tools/tiers.mjs`, checked by `npm run gates`. The analysis tier is **35 modules** and **not one of them touches the DOM, the network or the filesystem** — the boundary §1 claims, verified here rather than asserted. `src/app.js` **declares 25 dependencies on that tier and exports 1 function** — it is a module, not a build template, and §2 is what remains. Of its 3,484 lines **2,538 are comment-only and 824 are code**, and **205 comment lines carry an explicit claim** about the code beside them — which is §2's argument, counted rather than asserted.</sub>
+<sub>Counted 2026-09-10 by `tools/tiers.mjs`, checked by `npm run gates`. The analysis tier is **35 modules** and **not one of them touches the DOM, the network or the filesystem** — the boundary §1 claims, verified here rather than asserted. `src/app.js` **declares 26 dependencies on that tier and exports 1 function** — it is a module, not a build template, and §2 is what remains. Of its 3,568 lines **2,580 are comment-only and 863 are code**, and **211 comment lines carry an explicit claim** about the code beside them — which is §2's argument, counted rather than asserted.</sub>
 <!-- /tiers -->
 
 ---

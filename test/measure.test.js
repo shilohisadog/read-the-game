@@ -27,6 +27,7 @@ import { danger } from '../src/lib/layers/danger.js';
 import { blocked } from '../src/lib/layers/blocked.js';
 import { goaltending } from '../src/lib/layers/goaltending.js';
 import { whistle } from '../src/lib/layers/whistle.js';
+import { zonestart } from '../src/lib/layers/zonestart.js';
 import { teamSeasons } from '../src/lib/team-season.js';
 
 /**
@@ -57,6 +58,7 @@ const TIER = [
   // CAUGHT BY THIS TEST, third time — the tier goes stale in the same edit that
   // changes the graph, every time.
   'layers/whistle.js',
+  'layers/zonestart.js',
   // census.js joined when the archive was asked four questions it had never been
   // asked: what a faceoff win is worth by zone, what winning it adds once the
   // zone is held constant, whether a draw is worth more on a power play, and
@@ -879,7 +881,7 @@ test('every lens the selector counts has a distribution of the same quantity', (
 
   const ctx = { roster: rich.roster, homeId: rich.teams.home.id,
                 awayId: rich.teams.away.id, evenOnly: false };
-  const mods = { corsi, slot: danger, blocked, goaltending, whistle };
+  const mods = { corsi, slot: danger, blocked, goaltending, whistle, zonestart };
   for (const [k, mod] of Object.entries(mods)) {
     assert.equal(rec.lens[k], mod.reduce(rich.events, ctx).counted.length,
       `${k}: the distribution's unit is not the number the chip shows`);

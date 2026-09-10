@@ -29,6 +29,7 @@ import { blocked } from '../src/lib/layers/blocked.js';
 import { danger } from '../src/lib/layers/danger.js';
 import { goaltending } from '../src/lib/layers/goaltending.js';
 import { whistle } from '../src/lib/layers/whistle.js';
+import { zonestart } from '../src/lib/layers/zonestart.js';
 import { shootingTeam, SHOT_TYPES } from '../src/lib/attribution.js';
 import { situation, DECLINED } from '../src/lib/strength.js';
 // The SAME two functions danger.js calls at line 118 — a distance measured here
@@ -99,6 +100,10 @@ export function measureGame(g) {
      surface can call a game unusual. The whistle layer counts nothing about a
      club, so it appears in the per-game distribution and nowhere else. */
   const stops = whistle.reduce(g.events, lay);
+  /* ⭐ THE SIXTH LENS. Like the whistle layer it credits a club, but the
+     lesson is about WHERE the draw was rather than who won it — so the
+     per-game distribution counts draws, which is what the chip counts. */
+  const draws = zonestart.reduce(g.events, lay);
   const sideOf = tid => tid === ctx.homeId ? 'h' : tid === ctx.awayId ? 'a' : null;
 
   const slot = { h: 0, a: 0 };
@@ -210,6 +215,7 @@ export function measureGame(g) {
       blocked: blk.counted.length,
       goaltending: nets.counted.length,
       whistle: stops.counted.length,
+      zonestart: draws.counted.length,
     },
     // THE LEAGUE'S OWN LINE, quoted from the boxscore and stored in the extract
     // so nothing here re-derives a score. If it is missing we do not guess.

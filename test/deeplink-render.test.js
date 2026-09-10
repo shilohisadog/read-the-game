@@ -87,7 +87,7 @@ function fakeDom() {
        compared the fake's empty label against the fake's empty output — so a
        build that named the wrong thing passed. The mutation applied, the suite
        stayed green, and that is what a mirror looks like from the inside. */
-    '#rg .pk': ['none', 'corsi', 'slot', 'blocked', 'goaltending', 'whistle'].map(l => {
+    '#rg .pk': ['none', 'corsi', 'slot', 'blocked', 'goaltending', 'whistle', 'zonestart'].map(l => {
       const key = 'pk:' + l;
       if (!byId.has(key)) {
         /* ⭐ THE CHIP'S NAME IS IN `.pkl` NOW, because each metric chip carries a
@@ -317,7 +317,8 @@ test('a link with a layer opens with that layer on, and the others off', () => {
 const checked = (d, l) =>
   String(d.GROUPS['#rg .pk'].find(b => b.dataset.l === l).getAttribute('aria-checked'));
 const BUTTON_OF = { corsi: 'corsi', slot: 'slot', goaltending: 'goaltending',
-                    whistle: 'whistle', blocked: 'blocked' };
+                    whistle: 'whistle', blocked: 'blocked',
+                    zonestart: 'zonestart' };
 
 test('every layer token has a chip, and every chip a token', () => {
   assert.deepEqual(Object.keys(BUTTON_OF).sort(), [...LAYER_TOKENS].sort());

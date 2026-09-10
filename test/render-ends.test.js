@@ -552,3 +552,57 @@ test('⭐ the chip and the sentence are driven by ONE predicate', () => {
   assert.equal(chipOnly, 0, `the board announced the change on ${chipOnly} frame(s) the page did not explain`);
   assert.equal(noteOnly, 0, `the page explained the change on ${noteOnly} frame(s) the board did not show`);
 });
+
+
+/**
+ * ⭐⭐ THE ZONE-START RINGS TURN OVER TOO, AND THE FIRST DRAFT DID NOT.
+ *
+ * `drawZoneStarts` was written with `SX`/`SY` — the arena frame — while the rink
+ * around it is drawn as-played. ⛔ AND THE SYMPTOM IS INVISIBLE, which is why
+ * this needs a test rather than an eye: the nine faceoff dots are SYMMETRIC
+ * about centre ice, so a ring drawn in the wrong frame still lands exactly on
+ * painted ice. It is on the mirror-image dot, with a count belonging to the
+ * other end, and nothing on screen looks wrong. `whistle.js` says the same about
+ * its own marks — "a whistle mark on the wrong dot is the kind of wrong that
+ * looks completely right".
+ *
+ * ⭐ THE PAIRED FORM, which this file already pays for once above: "it moved" is
+ * satisfied by a flip that also breaks the arithmetic, and "it held" by a flip
+ * that does nothing. Both halves, both counted, or neither means anything.
+ */
+/** The most recent zone-start ring's centre, or null when none is drawn. */
+function nowRing(d) {
+  const m = /<circle class="zs now"[^>]*cx="([\d.-]+)" cy="([\d.-]+)"/.exec(d.$('draws').innerHTML);
+  return m ? { x: +m[1], y: +m[2] } : null;
+}
+
+test('a zone-start ring turns over with the rink, and only in the periods that did', () => {
+  const walk = search => {
+    const a = boot(null, null, search);
+    pickLayer(a, 'zonestart');
+    return a.every(d => ({ per: d.$('per').textContent, ring: nowRing(d) }));
+  };
+  const played = walk('?ends=as-played'), fixed = walk('?ends=fixed');
+  assert.equal(played.length, fixed.length);
+
+  let rotated = 0, held = 0;
+  for (let k = 0; k < fixed.length; k++) {
+    const p = played[k], f = fixed[k];
+    if (!p.ring || !f.ring) continue;
+    if (p.per === 'Period 2') {
+      // THE EXACT RELATIONSHIP, as for the puck above: SX(x)=100-x and the
+      // rotation sends x to -x, so the two screen positions must sum to 200,
+      // and the two y positions to 85. Any other displacement satisfies
+      // "differs" and fails here.
+      assert.equal(p.ring.x + f.ring.x, 200, `frame ${k}: the ring did not rotate about centre ice`);
+      assert.equal(p.ring.y + f.ring.y, 85, `frame ${k}: the ring did not rotate about centre ice`);
+      rotated++;
+    } else {
+      assert.deepEqual(p.ring, f.ring,
+        `frame ${k} (${p.per}) moved, and the feed says that period was not rotated`);
+      held++;
+    }
+  }
+  assert.ok(rotated > 10, `only ${rotated} rotated frames — the fixture is not exercising the flip`);
+  assert.ok(held > 10, `only ${held} held frames — the control is not being exercised`);
+});

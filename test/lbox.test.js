@@ -21,6 +21,7 @@ import { corsi } from '../src/lib/layers/corsi.js';
 import { goaltending } from '../src/lib/layers/goaltending.js';
 import { whistle } from '../src/lib/layers/whistle.js';
 import { danger } from '../src/lib/layers/danger.js';
+import { zonestart } from '../src/lib/layers/zonestart.js';
 import { shootingTeam } from '../src/lib/attribution.js';
 import { NOT_A_PLAY, isNearMiss, inShootout } from '../src/lib/layer.js';
 import { parse, resolve } from '../src/lib/deeplink.js';
@@ -904,7 +905,7 @@ test('a not-a-play event carries the type dimension in every layer', () => {
      that skips an absent count rather than failing on it. Scraping the derived
      table would have been reading a shadow of the real one. */
   const names = /const LENS=\{([\s\S]*?)\};/.exec(app)[1].match(/(\w+):/g).map(s => s.slice(0, -1));
-  const MODS = { corsi, slot: danger, blocked, goaltending, whistle };
+  const MODS = { corsi, slot: danger, blocked, goaltending, whistle, zonestart };
   assert.deepEqual(names.sort(), Object.keys(MODS).sort(),
     'the panel shows a layer this check does not exercise');
 

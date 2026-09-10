@@ -1738,6 +1738,15 @@
 #rg .wh{fill:none;stroke:var(--ink);stroke-width:.5;stroke-dasharray:1.5 1.3;opacity:.5}
 #rg .wh.now{stroke:var(--flag);stroke-width:.9;stroke-dasharray:none;opacity:.95}
 #rg .whn{font-size:3.2px;font-weight:700;fill:var(--ink);text-anchor:middle;opacity:.7}
+/* ZONE STARTS. ⛔ NOTHING HERE DECLARES `stroke`, AND THAT IS LOAD-BEARING. The
+   ring takes its colour from the `stroke` ATTRIBUTE the renderer writes -- the
+   club that won more of the draws at that dot -- and a presentation attribute
+   loses to ANY CSS declaration of the same property. One `stroke:` line here
+   would repaint all nine rings a single colour and the mark would silently stop
+   saying who won, which is half of what CHENG made a condition. */
+#rg .zs{fill:none;stroke-width:.7;opacity:.7}
+#rg .zs.now{stroke-width:1.2;opacity:1}
+#rg .zsn{font-size:3.2px;font-weight:700;fill:var(--ink);text-anchor:middle;opacity:.75}
 /* THE BLOCKED-SHOTS LAYER. The ring is drawn on every game already; what the
    layer adds is emphasis, the blocker's name, and the archive share. Attempts
    that were NOT blocked drop back so the stopped ones carry the frame -- the

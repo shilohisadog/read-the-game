@@ -179,14 +179,14 @@ export function fakeDom() {
        A fake that keeps modelling a control the page does not have is a fake that
        lets a test drive something no visitor can, which is how five suites went on
        clicking `lyBlock` for eleven days after it stopped being visible. */
-    // THE SELECTOR UNDER THE SCRUBBER. Six radios keyed by `data-l`, and the ids
+    // THE SELECTOR UNDER THE SCRUBBER. Seven radios keyed by `data-l`, and the ids
     // are shared with byId so a test can drive one and read the others.
     /* ⚠️ AND THE CHIPS CARRY THEIR REAL LABELS, read out of the built page.
        They were bare stubs with an empty `textContent`, and the caption test
        compared the fake's empty label against the fake's empty output — so a
        build that named the wrong thing passed. The mutation applied, the suite
        stayed green, and that is what a mirror looks like from the inside. */
-    '#rg .pk': ['none', 'corsi', 'slot', 'blocked', 'goaltending', 'whistle'].map(l => {
+    '#rg .pk': ['none', 'corsi', 'slot', 'blocked', 'goaltending', 'whistle', 'zonestart'].map(l => {
       const key = 'pk:' + l;
       if (!byId.has(key)) {
         /* ⭐ THE CHIP'S NAME IS IN `.pkl` NOW, because each metric chip carries a

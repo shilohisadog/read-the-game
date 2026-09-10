@@ -44,6 +44,7 @@ import {
   WHY, icingRestarts, latest, marks, offsideRestarts, whistle
 } from './lib/layers/whistle.js';
 import { blocked } from './lib/layers/blocked.js';
+import { zonestart } from './lib/layers/zonestart.js';
 import { colourOf, inkOn, readableInk } from './lib/teams.js';
 import { tiedControl } from './lib/layers/tied.js';
 import { sentenceFor } from './lib/sentence.js';
@@ -781,6 +782,9 @@ function render(i,how){
   {AID,HID,R,AWAYCOL,HOMECOL,FIG_SZ,FIG_BIG},
   {place,tk,isHD});
  drawCue(i);
+ if(zoneOn){const sl=upto(i);drawZoneStarts(zonestart.reduce(sl,CTX),sl);}
+ // CLEARED WHEN OFF, or nine rings outlive the chip that drew them.
+ else $('draws').innerHTML='';
  if(whistleOn)drawWhistles(whistle.reduce(upto(i),CTX));
  /* ⭐ AND THE ICING'S OWN GEOMETRY EVEN WITH THE LAYER OFF. The two lines are
     the CAUSE half of Rule 81 — from behind the centre line, past the far goal
@@ -1199,7 +1203,8 @@ function chipLabel(id){
    not ours (see the header of layers/danger.js). Writing `slot:danger` puts that
    mapping in one visible place instead of scattering it. `test/lbox.test.js`
    asserts every key here equals its own module's `id`, so the two cannot drift. */
-const LENS={corsi:corsi,slot:danger,blocked:blocked,goaltending:goaltending,whistle:whistle};
+const LENS={corsi:corsi,slot:danger,blocked:blocked,goaltending:goaltending,whistle:whistle,
+ zonestart:zonestart};
 /**
  * ⭐ WHAT EACH LAYER PUTS ON SCREEN — and this half stayed with the page.
  *
@@ -1220,6 +1225,11 @@ const DRAWS={
  slot:'An amber ring marks each one. Click a ring to see the distance and angle it was measured by.',
  goaltending:'The box below the ice builds each club\u2019s save fraction as the replay runs. A save is against the OTHER club\u2019s shot, so those two columns read the opposite way round.',
  whistle:'The ring marks where play restarted, brightest at the most recent stoppage. The bar lights the line the rule names \u2014 for icing the centre line and the far goal line, for offside the blue line. The box below the ice counts them and names the most recent one \u2014 with no figure for either club, because a stoppage names a rule and never a team.',
+ /* ⛔ THE RATIO IS CHENG'S CONDITION, NOT DECORATION. "Showing the winner
+    without the comparison is where it would become who took it" -- a weaker
+    lesson, and a false one, since who wins draws is the archive's cleanest null
+    at 50.4%. The figures are `census.endZone` over 165,420 end-zone draws. */
+ zonestart:'A ring marks each faceoff dot, in the colour of the club that won the draw there, with a count when draws stack on one dot. The box below the ice counts the ones each club won in the zone it was attacking toward. Across the archive, being in the offensive zone is worth about 2.2 times what winning the draw there is \u2014 +1.163 attempts for being there having LOST the draw, and +0.52 more for winning it.',
  blocked:'Blocked attempts keep their ring and every other mark dims, so the ones a body stopped stand out. The box below the ice credits each block to the club that MADE it, the way a broadcast does. A block by a teammate is credited to neither club, so the two figures need not add up to the total.'};
 /** The layer object behind a picker id, or null for `none`. */
 const layerOf=id=>LENS[id]||null;
@@ -2283,6 +2293,54 @@ const RSN=r=>{if(!r)return 'unrecorded';const w=WHY[r];return w&&w.name?w.name:S
    dead zone, and surfaced later as `Cannot access 'hdOn'` on the first scrub.
    A pure escaping helper the whole file reaches for should be available to the
    whole file; a function declaration hoists and a `const` does not. */
+/* THE ZONE-START LAYER, DRAWN — one ring per faceoff dot, because the marks
+   STACK. Every draw in a game lands on one of nine painted positions (2,388 of
+   2,388 across a stratified 224-game sample), so nine rings hold a whole game
+   and a per-event mark would draw forty circles on top of nine.
+
+   ⛔ THE RING CARRIES THE PLACE AND THE WINNER, WHICH IS CHENG'S CONDITION. The
+   dot is the place; the colour is whichever club won MORE of the draws there,
+   and a tie draws neutral rather than picking one. A majority is a definition,
+   not a tuned threshold — and the exact split is in the <title>, so a reader who
+   wants the number is never reading it off a colour.
+
+   ⭐ AND THE MARK NEEDS NO SCALE, which is rare here: every ring lands on paint
+   the reader can see under it. That is the same property that made the slot
+   shading defensible.
+
+   A draw we counted and could not place is absent from the ice and counted in
+   the box — `zonestart.js` keeps them in `unplaced` for exactly this. */
+function drawZoneStarts(Z,slice){
+ const dots=new Map();
+ for(const id of Z.counted){
+  if(Z.zones[id]===undefined)continue;          // counted, unplaceable, said in the box
+  const e=slice[id]; if(!e)continue;
+  /* ⛔ `AX`/`AY`, NEVER `SX`/`SY` — the ends doctrine, and the first draft got it
+     wrong in the way that looks right. The nine faceoff dots are symmetric about
+     centre ice, so a mark drawn in the arena frame while the rink is drawn
+     as-played still lands ON a painted dot: the WRONG one, mirrored, with no
+     visual tell at all. `whistle.js` says the same thing in its own words about
+     its own marks. Only `AX`/`AY` know the mode, and they are downstream of
+     every count -- the zone in the box comes from `attackZone`, which is
+     attack-relative and untouched by this. */
+  const cx=AX(e.x,e.per), cy=AY(e.y,e.per), key=`${cx.toFixed(1)},${cy.toFixed(1)}`;
+  const d=dots.get(key)||{cx,cy,n:0,a:0,h:0,last:-1};
+  d.n++; if(e.own===HID)d.h++; else d.a++;
+  if(id>d.last)d.last=id;
+  dots.set(key,d);
+ }
+ const newest=Math.max(-1,...[...dots.values()].map(d=>d.last));
+ const out=[];
+ for(const d of dots.values()){
+  const col=d.h>d.a?HOMECOL:d.a>d.h?AWAYCOL:'var(--edge)';
+  const split=d.h>d.a?`${HAB} ${d.h}, ${AAB} ${d.a}`
+            :d.a>d.h?`${AAB} ${d.a}, ${HAB} ${d.h}`
+            :`${AAB} ${d.a}, ${HAB} ${d.h} — even`;
+  out.push(`<circle class="zs${d.last===newest?' now':''}" cx="${d.cx.toFixed(1)}" cy="${d.cy.toFixed(1)}" r="3.4" stroke="${col}"><title>${d.n} draw${d.n===1?'':'s'} here — ${ESC(split)}</title></circle>`);
+  if(d.n>1)out.push(`<text class="zsn" x="${d.cx.toFixed(1)}" y="${(d.cy+1.2).toFixed(1)}">${d.n}</text>`);
+ }
+ $('draws').innerHTML=out.join('');
+}
 function drawWhistles(W){
  const g=[];
  for(const m of marks(W,{trails:trails,dir:DIR})){const cx=SX(m.x),cy=SY(m.y);
@@ -2663,7 +2721,7 @@ function drawNewcomer(){
   document.getElementById('rg').classList.remove('newcomer');});}
 document.getElementById('rg').classList.toggle('newcomer',NEWCOMER);
 drawNewcomer();
-let corsiOn=false,hdOn=false,goalieOn=false,whistleOn=false,blockOn=false;
+let corsiOn=false,hdOn=false,goalieOn=false,whistleOn=false,blockOn=false,zoneOn=false;
 /* ⚠️ AND IT LIVES HERE, NOT BESIDE THE THING IT DRAWS. `zoneState()` runs at
    BOOT, one line below its own definition, and it calls `syncPick` -- so with
    this block further down the file `let picking` was still in its temporal
@@ -2688,7 +2746,8 @@ const PICKS=[['corsi',()=>corsiOn,v=>{corsiOn=v;setCorsi();}],
              ['slot',()=>hdOn,v=>{hdOn=v;setHd();}],
              ['blocked',()=>blockOn,v=>{blockOn=v;setBlock();}],
              ['goaltending',()=>goalieOn,v=>{goalieOn=v;setGoalie();}],
-             ['whistle',()=>whistleOn,v=>{whistleOn=v;setWhistle();}]];
+             ['whistle',()=>whistleOn,v=>{whistleOn=v;setWhistle();}],
+             ['zonestart',()=>zoneOn,v=>{zoneOn=v;setZone();}]];
 let picking=false;
 function pick(want){
  // GUARDED because each setter calls lyrState -> syncPick, and syncPick reads
@@ -3018,10 +3077,33 @@ function lboxFor(id,at,L){
       elapsed time, so it says nothing rather than computing a wrong one. */
    n:nm?`Most recently: ${nm} ${sinceLine(w)}`.trim().replace(/\s+·/g,' ·')
        :'Play has not stopped yet in what you have watched.'};}
+ /* ⚠️ IT REDUCES ITS OWN, AND THAT IS NOT OPTIONAL. `L` is the CORSI lens
+    whatever chip is on -- `renderWork` passes `corsi.reduce(sl,CTX)` and so does
+    the box under the rink -- so reading `L.z` here returns undefined and takes
+    the whole render down with it. Every layer past `corsi` in this chain does
+    the same thing for the same reason. */
+ if(id==='zonestart'){
+  const Z=zonestart.reduce(sl,CTX), n=Z.counted.length;
+  const mid=Z.z[AID].N+Z.z[HID].N, dz=Z.z[AID].D+Z.z[HID].D, un=Z.unplaced.length;
+  /* ⭐ THE BOX SHOWS THE OFFENSIVE-ZONE STARTS AND THE NOTE SAYS THE REST, so
+     the two figures beside the label are the ones the lesson is about and the
+     line under them accounts for EVERY OTHER DRAW -- offensive + defensive +
+     neutral + unplaced is the whole count, and it has to be. The first draft
+     said only the neutral-zone number, so a reader who added up what was on
+     screen got 24 of 47 and the missing 23 were the defensive-zone starts,
+     which is the half the archive figure is a comparison AGAINST. A box that
+     does not add up is the shape §8 is about. A draw we counted and could not
+     place is SAID, never dropped -- the layer's own rule, and the whistle
+     layer's before it. */
+  return {a:Z.z[AID].O,k:'OFFENSIVE-ZONE STARTS',h:Z.z[HID].O,
+   n:n?`${n} draw${n===1?'':'s'} · ${dz} defensive-zone · ${mid} neutral`
+       +(un?` · ${un} not placed`:'')
+     :'No draws yet in what you have watched.'};}
  return none;}
 /** The centre label alone, for the pre-game frame where there is nothing to count. */
 const LBK={corsi:()=>'SHOT ATTEMPTS',slot:()=>'SHOTS FROM THE SLOT',
- blocked:()=>'BLOCKS',goaltending:()=>'SAVES BY',whistle:()=>'STOPPAGES'};
+ blocked:()=>'BLOCKS',goaltending:()=>'SAVES BY',whistle:()=>'STOPPAGES',
+ zonestart:()=>'OFFENSIVE-ZONE STARTS'};
 function syncPick(){
  if(picking)return;
  const on=PICKS.filter(([,get])=>get()).map(([id])=>id);
@@ -3141,6 +3223,7 @@ function goalieStats(k){return goaltending.reduce(upto(k),CTX).g;}
 function setGoalie(){document.getElementById('rg').classList.toggle('goalie',goalieOn);syncPick();render(i,'');}
 function setWhistle(){document.getElementById('rg').classList.toggle('whistle',whistleOn);syncPick();render(i,'');}
 function setBlock(){document.getElementById('rg').classList.toggle('blocked',blockOn);syncPick();render(i,'');}
+function setZone(){document.getElementById('rg').classList.toggle('zonestart',zoneOn);syncPick();render(i,'');}
 /* ⭐ THE GAME OPENS BEFORE THE FIRST PLAY -- on the state, not on a play.
    It used to open on the LAST event, which put the final score, the finished
    counters and -- on a shootout game -- the shootout notice on screen before a
@@ -3189,6 +3272,7 @@ const LAYER_APPLY={
  [goaltending.id]:()=>{goalieOn=true;setGoalie();},
  [whistle.id]:()=>{whistleOn=true;setWhistle();},
  [blocked.id]:()=>{blockOn=true;setBlock();},
+ [zonestart.id]:()=>{zoneOn=true;setZone();},
 };
 if(LINK.strength==='even'){evenOnly=true;syncStrength();}
 LINK.layers.forEach(t=>{const f=LAYER_APPLY[t];if(f)f();});

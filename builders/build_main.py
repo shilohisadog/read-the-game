@@ -85,7 +85,7 @@ __CSS__</style>
   <div class="tm h"><span class="ab" id="hAb">&mdash;</span><span class="sc" id="hSc">0</span><div class="pens" id="penH"></div></div>
 </div>
 <p class="atnote" id="atnote"></p>
-<div class="rinkbox"><svg viewBox="0 0 200 85"><g id="rink"></g><g id="netmen"></g><g id="lines"></g><g id="whistles"></g><g id="cue"></g><g id="events"></g><g id="puck"></g><g id="labels"></g><g id="noplace"></g></svg>
+<div class="rinkbox"><svg viewBox="0 0 200 85"><g id="rink"></g><g id="netmen"></g><g id="lines"></g><g id="whistles"></g><g id="draws"></g><g id="cue"></g><g id="events"></g><g id="puck"></g><g id="labels"></g><g id="noplace"></g></svg>
   <!-- ⭐⭐ THE ACTIVE PLAYER, DIRECTLY UNDER THE DRAWING. Kevin, 2026-09-07,
        looking at a giveaway: "the (vertical) distance between '#79 Hart gave the
        puck away' and the rink, there are many pixels between the event(s)".
@@ -259,7 +259,7 @@ __CSS__</style>
      thing, even when considering past guidance (which was based on previous UX
      situation)." -->
 <div class="newcomer" id="newcomer"></div>
-<div class="pickrow" role="radiogroup" aria-label="Which layer is on the ice" id="pickrow"><span class="pklab">Layers</span><button class="pk" id="pkNone" data-l="none" role="radio" aria-checked="true"><span class="pkl">Just events</span></button><span class="pksep" aria-hidden="true"></span><button class="pk" id="pkCorsi" data-l="corsi" role="radio" aria-checked="false"><span class="pkl">Attempts</span><span class="pkn" id="n_corsi">0</span></button><button class="pk" id="pkSlot" data-l="slot" role="radio" aria-checked="false"><span class="pkl">Slot</span><span class="pkn" id="n_slot">0</span></button><button class="pk" id="pkBlocked" data-l="blocked" role="radio" aria-checked="false"><span class="pkl">Blocked</span><span class="pkn" id="n_blocked">0</span></button><button class="pk" id="pkGoalie" data-l="goaltending" role="radio" aria-checked="false"><span class="pkl">Goaltending</span><span class="pkn" id="n_goaltending">0</span></button><button class="pk" id="pkWhistle" data-l="whistle" role="radio" aria-checked="false"><span class="pkl">Stoppages</span><span class="pkn" id="n_whistle">0</span></button></div>
+<div class="pickrow" role="radiogroup" aria-label="Which layer is on the ice" id="pickrow"><span class="pklab">Layers</span><button class="pk" id="pkNone" data-l="none" role="radio" aria-checked="true"><span class="pkl">Just events</span></button><span class="pksep" aria-hidden="true"></span><button class="pk" id="pkCorsi" data-l="corsi" role="radio" aria-checked="false"><span class="pkl">Attempts</span><span class="pkn" id="n_corsi">0</span></button><button class="pk" id="pkSlot" data-l="slot" role="radio" aria-checked="false"><span class="pkl">Slot</span><span class="pkn" id="n_slot">0</span></button><button class="pk" id="pkBlocked" data-l="blocked" role="radio" aria-checked="false"><span class="pkl">Blocked</span><span class="pkn" id="n_blocked">0</span></button><button class="pk" id="pkGoalie" data-l="goaltending" role="radio" aria-checked="false"><span class="pkl">Goaltending</span><span class="pkn" id="n_goaltending">0</span></button><button class="pk" id="pkWhistle" data-l="whistle" role="radio" aria-checked="false"><span class="pkl">Stoppages</span><span class="pkn" id="n_whistle">0</span></button><button class="pk" id="pkZone" data-l="zonestart" role="radio" aria-checked="false"><span class="pkl">Zone starts</span><span class="pkn" id="n_zonestart">0</span></button></div>
 <p class="lcap" id="lcap"></p>
 <details class="zone zcue"><summary class="zh">The next play<span class="zon" id="zCueOn"></span></summary>
 <div class="figpick"><div class="grp" role="group" aria-label="Whether the next play is marked before it happens"><button class="lyr cbtn" data-c="on" aria-pressed="true">Show the shading</button><button class="lyr cbtn" data-c="off" aria-pressed="false">No shading</button></div>
@@ -539,7 +539,7 @@ LIB = ["rink.js", "attribution.js", "layer.js", "strength.js", "box.js", "penalt
        # dependencies -- every condition it ranks arrives as an argument.
        "announce.js",
        "layers/corsi.js", "layers/goaltending.js", "layers/danger.js", "layers/whistle.js",
-       "layers/blocked.js",
+       "layers/blocked.js", "layers/zonestart.js",
        # BEFORE sentence.js, which asks it which competition a game is.
        "competitions.js",
        "teams.js", "layers/tied.js", "sentence.js",
