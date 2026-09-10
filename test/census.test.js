@@ -446,3 +446,95 @@ test('⛔ outcomesMatch is the internal check, and it can go false', () => {
   assert.equal(censusRates(tot).shooter.outcomesMatch, false,
     'the split can drift from its own population without the check noticing');
 });
+
+
+/* ------------------------------------------------------------------ census.pace
+ * ⭐⭐ WHAT THE SITUATION DOES TO THE NUMBER ON SCREEN.
+ *
+ * Kevin, 2026-09-10, after checking the learn page: *"where do we explain
+ * Control/Attempts relative to all situations vs. power play vs. penalty kill?"*
+ * The answer was nowhere — zero mentions of any of those four phrases on
+ * `what-you-can-see.html` — and no figure existed to explain it with. This is
+ * that figure, and these are the checks that make it safe to quote.
+ */
+/** `GAMES` is already loaded — objects, not paths. */
+const paceOf = games => {
+  let t = {};
+  for (const g of games) t = censusAdd(t, censusGame(g.events, ctxOf(g)));
+  return { rates: censusRates(t), tally: t };
+};
+
+test('⛔ leading and trailing cover the SAME seconds — the invariant, on real games', () => {
+  /* One club leads exactly when the other trails, so these two buckets are the
+     same intervals seen from two sides. This is not an approximation to check
+     loosely: it is equality, and any drift means the walk dropped or
+     double-counted an interval — which would put every attempts-per-60 over a
+     denominator nobody can name. `measures.mjs` alarms on the published flag and
+     exits non-zero; this is the same claim where it can be mutated. */
+  const { rates, tally } = paceOf(GAMES);
+  assert.equal(tally.pace.lead.secs, tally.pace.trail.secs,
+    'leading and trailing minutes disagree — the interval walk is wrong');
+  assert.equal(rates.pace.balanced, true, 'the published invariant disagrees with the tally');
+  assert.ok(tally.pace.lead.secs > 0, 'no time was spent leading — the walk found nothing');
+  // AND THE POWER PLAY IS THE SAME SHAPE: one club is on it exactly while the
+  // other kills it, so those two buckets are also the same seconds.
+  assert.equal(tally.pace.ppFor.secs, tally.pace.ppAgainst.secs,
+    'a power-play second was counted for one club and not the other');
+});
+
+test('⭐ even strength is counted in CLUB-seconds — twice the clock, and `state` is the witness', () => {
+  /* `state.even` counts WALL-CLOCK seconds of even strength and `pace.even`
+     counts CLUB-seconds of it, so one must be exactly twice the other. The two
+     are accumulated in different blocks from separate `situation()` calls, so a
+     bucket that took wall-clock time into a per-club rate shows up here as a
+     factor of two — which is exactly the size of error that looks plausible on
+     a page and is invisible to a range check. */
+  const { tally } = paceOf(GAMES);
+  assert.ok(tally.state.even.secs > 0, 'no even-strength time was found');
+  assert.equal(tally.pace.even.secs, 2 * tally.state.even.secs,
+    'pace.even is not twice state.even — one of them is not counting what it says');
+});
+
+test('⛔ a shootout attempt never reaches the pace buckets — and TWO guards stop it', () => {
+  /* ⚠️ NAMED FOR WHAT IT PROVES, WHICH IS NOT WHAT THE FIRST DRAFT CLAIMED. It
+     was called *"the pace population is corsi's, not a type test"* and mutation
+     showed it CANNOT prove that: swapping `isAttempt(i)` for a type test leaves
+     it green, because the block's own `e.pt !== 'SO'` wrapper already excludes
+     the shootout. The two guards are redundant FOR ATTEMPT TYPES — outside the
+     shootout, corsi drops no event that carries one — so neither mutation alone
+     can fail this, and only removing BOTH does (verified).
+
+     ⭐ THAT IS STILL WORTH ASSERTING, as the composite: no shootout attempt may
+     reach these rates, however many guards it takes. What it must not do is
+     wear the narrower name, which is this project's dominant failure mode and
+     the exact shape `shooter`'s own population check shipped in. */
+  const g = rich;
+  const ctx = ctxOf(g);
+  const last = g.events[g.events.length - 1];
+  const so = { ...last, type: 'goal', pt: 'SO', s: last.s + 30, own: ctx.homeId, x: 80, y: 0 };
+  const before = censusRates(censusAdd({}, censusGame(g.events, ctx))).pace;
+  const after = censusRates(censusAdd({}, censusGame([...g.events, so], ctx))).pace;
+  const sum = p => p.even.attempts + p.ppFor.attempts + p.ppAgainst.attempts;
+  assert.ok(sum(before) > 0, 'the fixture holds no attempts at all — this proves nothing');
+  assert.equal(sum(after), sum(before),
+    'a shootout attempt reached census.pace — it is counting by type, not by corsi');
+  assert.equal(after.lead.attempts + after.tied.attempts + after.trail.attempts,
+               before.lead.attempts + before.tied.attempts + before.trail.attempts,
+    'a shootout attempt reached the score buckets');
+});
+
+test('⭐ a goal is counted in the score state it was taken in, not the one it created', () => {
+  /* The attempt that IS the goal was taken while the score was what it was
+     before the puck went in. Incrementing first would credit a goal to the lead
+     it created — and on a 1-0 game that is the difference between "tied" and
+     "leading" for the only goal in it. */
+  const home = 1, away = 2;
+  const ev = (o) => ({ type: 'goal', own: o, s: 100, per: 1, x: 80, y: 0, actor: 1 });
+  const g = { events: [ { type: 'faceoff', own: home, s: 0, per: 1, x: 0, y: 0, actor: 1 },
+                        ev(home), { type: 'period-end', s: 200, per: 1 } ],
+              roster: { 1: { tid: home, pos: 'C' } } };
+  const r = censusRates(censusAdd({}, censusGame(g.events, { homeId: home, awayId: away, roster: g.roster })));
+  assert.equal(r.pace.tied.attempts, 1,
+    'the opening goal was counted as taken by a club already leading');
+  assert.equal(r.pace.lead.attempts, 0, 'the goal was credited to the lead it created');
+});

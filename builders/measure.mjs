@@ -545,6 +545,14 @@ function main(argv) {
       drawOnPP: `${doc.census.drawStrength.pp.ratio}x on the power play vs `
           + `${doc.census.drawStrength.even.ratio}x at even strength`,
       goalsPer60: `even ${doc.census.state.even.per60}, power play ${doc.census.state.pp.per60}`,
+      /* WHAT THE SITUATION DOES TO THE NUMBER ON SCREEN, which is the thing no
+         learn card explained (Kevin, 2026-09-10). Per CLUB-hour. */
+      pace: `attempts/60 — even ${doc.census.pace.even.per60}, on the power play `
+          + `${doc.census.pace.ppFor.per60} (${doc.census.pace.powerPlayLift}x), `
+          + `killing one ${doc.census.pace.ppAgainst.per60} (${doc.census.pace.killLift}x)`,
+      paceByScore: `attempts/60 — trailing ${doc.census.pace.trail.per60}, tied `
+          + `${doc.census.pace.tied.per60}, leading ${doc.census.pace.lead.per60} `
+          + `(${doc.census.pace.trailingLift}x)`,
       hits: `r=${doc.census.hits.r}, opposite in ${doc.census.hits.opposite} of games`,
       unreadableStrength: `${doc.census.state.unknown.minutes} min of play whose `
           + `situation code strength.js does not know`,
@@ -584,6 +592,17 @@ function main(argv) {
     console.log('::error::the shooter split does not sum to its own population — '
               + 'an attempt type reached the census that OUTCOME does not name');
   }
+  /* ⛔ THE ARITHMETIC INVARIANT, AND IT IS THE ONE THE ARCHIVE CAN ACTUALLY
+     FALSIFY. One club leads exactly when the other trails, so those two buckets
+     must cover identical seconds. If they do not, the walk has dropped or
+     double-counted an interval and every per-60 above is over a denominator
+     nobody can name — including the ones a learn card would quote. Silent
+     otherwise, loud here, and it joins the exit code. */
+  if (!doc.census.pace.balanced) {
+    console.log('::error::census.pace: leading and trailing minutes disagree, and one '
+              + 'club leads exactly when the other trails — the interval walk has '
+              + 'dropped or double-counted time, so every attempts-per-60 is unsafe');
+  }
   if (skipped.length) {
     console.log(`  ${skipped.length} in-scope extracts carry no quoted boxscore `
               + `and were NOT measured: ${skipped.slice(0, 5).join(', ')}…`);
@@ -599,7 +618,8 @@ function main(argv) {
      population — and neither is visible from any unit test, because a unit test
      holds a copy of last year's vocabulary. */
   if (unnamedClubs.length || strange.length
-      || doc.census.shooter.unknown.n > 0 || !doc.census.shooter.outcomesMatch) process.exit(1);
+      || doc.census.shooter.unknown.n > 0 || !doc.census.shooter.outcomesMatch
+      || !doc.census.pace.balanced) process.exit(1);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) main(process.argv.slice(2));

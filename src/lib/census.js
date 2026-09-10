@@ -117,6 +117,26 @@ export function censusGame(events, ctx) {
   const state = { even: { secs: 0, goals: 0 }, pp: { secs: 0, goals: 0 },
                   en: { secs: 0, goals: 0 }, unknown: { secs: 0, goals: 0 } };
   const club = { h: { hits: 0, attempts: 0 }, a: { hits: 0, attempts: 0 } };
+  /* ⭐⭐ THE PACE OF PLAY, BY THE TWO CONDITIONS THAT MAKE A RAW ATTEMPT COUNT
+     MISLEADING — the strength and the scoreboard. The site counts attempts and
+     says so, and until 2026-09-10 explained NEITHER of the two things that move
+     that count without anybody playing better.
+
+     ⭐ CLUB-SECONDS, NOT WALL-CLOCK SECONDS, and the distinction is the whole
+     arithmetic. A second of even strength is a second for BOTH clubs, so it is
+     two club-seconds; a power-play second is one club-second on each side and
+     they land in different buckets. A rate per wall-clock second would say a
+     club attempts twice as often at even strength as it does, for no reason but
+     the denominator.
+
+     ⭐ AND `lead.secs` MUST EQUAL `trail.secs` EXACTLY. One club leads if and
+     only if the other trails, so the two buckets cover the same seconds — an
+     invariant, not a coincidence, and `censusRates` publishes whether it held.
+     That is a check the archive can fail; a rate whose denominators have come
+     apart is unsafe and nothing downstream can tell. */
+  const pace = { even: { a: 0, secs: 0 }, ppFor: { a: 0, secs: 0 }, ppAgainst: { a: 0, secs: 0 },
+                 lead: { a: 0, secs: 0 }, tied: { a: 0, secs: 0 }, trail: { a: 0, secs: 0 } };
+  let hg = 0, ag = 0;                     // the running score, for the pace buckets
   /* ⭐ FOUR BUCKETS AND ONE OF THEM IS THE ALARM. The archive holds exactly five
      position codes today — C, L, R, D, G, counted over 224 games — and a value
      the LEAGUE can invent needs a guard where the whole archive is walked, not a
@@ -167,6 +187,36 @@ export function censusGame(events, ctx) {
       }
     }
 
+    // ---- the pace of play, by strength and by the scoreboard ---------------
+    if (e.pt !== 'SO') {
+      const s = situation(e.sit, ctx);
+      const nx = events[i + 1];
+      const d = nx && nx.per === e.per && nx.pt !== 'SO' ? nx.s - e.s : null;
+      if (d != null && d >= 0) {
+        if (s && s.kind === EVEN) pace.even.secs += 2 * d;
+        else if (s && s.kind === POWER_PLAY) { pace.ppFor.secs += d; pace.ppAgainst.secs += d; }
+        /* ⚠️ THE SCORE BUCKETS TAKE EVERY SITUATION, ON PURPOSE. They answer a
+           different question from the strength buckets — "does the scoreboard
+           change how a club plays" — and restricting them to even strength here
+           would silently make them a second, narrower measure wearing the same
+           name. A surface that wants both conditions at once needs a cross-tab,
+           which this is not and does not pretend to be. */
+        pace[hg > ag ? 'lead' : hg < ag ? 'trail' : 'tied'].secs += d;
+        pace[ag > hg ? 'lead' : ag < hg ? 'trail' : 'tied'].secs += d;
+      }
+      if (isAttempt(i) && e.own != null) {
+        if (s && s.kind === EVEN) pace.even.a++;
+        else if (s && s.kind === POWER_PLAY) (e.own === s.advantage ? pace.ppFor : pace.ppAgainst).a++;
+        const mine = e.own === homeId ? hg : ag, theirs = e.own === homeId ? ag : hg;
+        pace[mine > theirs ? 'lead' : mine < theirs ? 'trail' : 'tied'].a++;
+      }
+      /* ⛔ AFTER, NEVER BEFORE. The attempt that IS the goal was taken in the
+         score state that existed before it went in, and the interval leading to
+         this event belongs to that state too. Incrementing first would credit a
+         goal to the lead it created. */
+      if (e.type === 'goal') { if (e.own === homeId) hg++; else if (e.own === ctx.awayId) ag++; }
+    }
+
     // ---- the faceoff questions ---------------------------------------------
     if (e.type !== 'faceoff' || e.own == null || e.x == null || e.pt === 'SO') continue;
 
@@ -215,7 +265,7 @@ export function censusGame(events, ctx) {
   const hitCorr = { n: 1, sx: dh, sy: da, sxx: dh * dh, syy: da * da, sxy: dh * da,
                     opposite: dh * da < 0 ? 1 : 0 };
 
-  return { faceoffZone, endZone, drawStrength, state, club, hitCorr, shooter };
+  return { faceoffZone, endZone, drawStrength, state, club, hitCorr, shooter, pace };
 }
 
 /** Add one game's census into a running total, in place. */
@@ -301,6 +351,37 @@ export function censusRates(t) {
       const s = t.state?.[k] || { secs: 0, goals: 0 };
       return [k, { minutes: +(s.secs / 60).toFixed(1), goals: s.goals, per60: per60(s) }];
     })),
+    /* ⭐⭐ HOW FAST A CLUB ATTEMPTS, BY THE TWO CONDITIONS THAT MOVE THE COUNT
+       WITHOUT ANYBODY PLAYING BETTER. `attemptMix` says what an attempt becomes
+       and `state` says how often a goal arrives; neither says how the SITUATION
+       changes the rate the site puts on screen. That is the gap Kevin found in
+       the learn cards — no card, and no sentence anywhere, explains what "all
+       situations" costs the number a reader is watching.
+
+       ⛔ RATES ARE PER CLUB-HOUR, and the accumulator's own comment says why.
+       ⭐ `balanced` IS THE INVARIANT PUBLISHED AS A FACT: one club leads exactly
+       when the other trails, so those two buckets must cover identical seconds.
+       Published even when true, for the reason `unknown` is — a field that only
+       appears when it breaks is a field nobody notices arriving. */
+    pace: (() => {
+      const KEYS = ['even', 'ppFor', 'ppAgainst', 'lead', 'tied', 'trail'];
+      const out = {};
+      for (const k of KEYS) {
+        const z = t.pace?.[k] || { a: 0, secs: 0 };
+        out[k] = { attempts: z.a, minutes: +(z.secs / 60).toFixed(1),
+                   per60: z.secs > 0 ? +(z.a / (z.secs / 3600)).toFixed(3) : null };
+      }
+      /* THE TWO SENTENCES, DERIVED HERE so no surface divides two published
+         numbers and gets a third answer. Null when either side is missing —
+         never 0, which would publish "no effect" as a finding. */
+      const lift = (a, b) => (out[a].per60 == null || !out[b].per60)
+        ? null : +(out[a].per60 / out[b].per60).toFixed(3);
+      out.powerPlayLift = lift('ppFor', 'even');
+      out.killLift = lift('ppAgainst', 'even');
+      out.trailingLift = lift('trail', 'lead');
+      out.balanced = (t.pace?.lead?.secs || 0) === (t.pace?.trail?.secs || 0);
+      return out;
+    })(),
     /* DOES HITTING RUN INVERSE TO HAVING THE PUCK? CHENG's hypothesis, killed on
        one game and unmeasurable on eight (r = -0.15). A NEGATIVE r supports it.
        `opposite` is the same question asked without any distributional
