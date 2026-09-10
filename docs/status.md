@@ -186,6 +186,52 @@ also the one whose base rate was measured BEFORE the decision.** The acceptance
 test for a layer should include running its control, not recording that one is
 needed.
 
+### ⏭ 0.00c — THE INVENTORY: what we hold and read nothing of (2026-09-10)
+
+Kevin: *"are there any stones we haven't turned over yet?"* Answered by
+enumerating **every event type and every field** across **87 games / 27,930
+events** and checking each against what any surface actually reads — not by
+brainstorming. ⚠️ A SAMPLE for the volumes; the read/unread facts are `grep`.
+
+**ALREADY TURNED, and worth recording so nobody re-proposes them:** the post and
+crossbar (**179 of 2,529 missed shots hit iron** — already spoken by
+`attribution.js::missSay`, *"Shot hit the post"*), assists (`a1`/`a2`, on the goal
+caption), the blocker (`blk`), the NHL clip (`clip`), stoppage reasons
+(`rsn`/`rsn2`), and the penalty's type, minutes and severity.
+
+**GENUINELY UNTURNED, in order of size:**
+
+1. ⛔⛔ **`shifts` — AN ENTIRE ARTIFACT THE SITE READS WITH ZERO LINES.** 84 of 87
+   games carry it, **63,573 rows**, `{p, t, s, e}`. This is who-was-on-the-ice,
+   ruled an attribute on 2026-09-09 and never started. **By volume it is the
+   largest thing we hold and do not use.** ⚠️ Its trap is recorded: the interval
+   is `s < t <= e`.
+2. ⭐⭐ **THE ACTIVE PLAYER — BUILT AND UNWIRED.** **23,189 of 23,207 playable
+   frames (99.9%)** name a player who resolves on the roster, and every one of
+   them has a verb in `attribution.js::ATTRIBUTION` — the single {field, verb}
+   table CHENG required so a name can never appear without its meaning. **The
+   hard part is done and the page shows none of it.** Same shape as K1: built,
+   unwired, waiting on a surface decision.
+3. **`drew` — 538 of 589 penalties (91.3%) name the player who DREW it, and
+   nothing reads it.** The pill says who was penalised and never who was fouled.
+4. **The penalty `zone` — the only zone the feed hands us rather than deriving —
+   is unread.** 326 defensive / 169 offensive / 94 neutral: **55% of penalties are
+   committed in the offender's own end.**
+5. ⚠️ **`hit` — 3,947 events, 14.1% of the feed, counted by nothing** — and the
+   one on this list most likely to fail. The census already killed the
+   possession hypothesis (r = −0.07). The obvious map restates a definition:
+   57.7% of hits land within 10 ft of a side board, 65.6% in an end zone.
+   **A lesson and a control BEFORE a decision, per §0.00b.**
+6. **Vocabulary drift, live:** `failed-shot-attempt` (1) and `shootout-complete`
+   (3) are types no layer classifies.
+
+⭐⭐ **THE PATTERN WORTH MORE THAN THE LIST.** Both candidates that died today were
+**comparisons offered without controls**. Items 1–4 are **identities and labels** —
+who was on the ice, who did it, who drew it, where the league says it happened.
+They are true or false, not confounded, and they need verification rather than a
+control. **That is a different and much safer class of build**, and it is where
+the remaining unused data actually is.
+
 ### ✅ 2026-09-10 (later) — THE ELEVENTH CARD, AND TWO CENSUS FIGURES BUILT TO BE QUOTABLE
 
 ⛔⛔ **THE OBVIOUS FIGURE FOR THE BLUE LINE IS ONE THIS PROJECT HAD ALREADY
