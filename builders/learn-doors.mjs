@@ -34,6 +34,7 @@ import { corsi } from '../src/lib/layers/corsi.js';
 import { danger } from '../src/lib/layers/danger.js';
 import { goaltending } from '../src/lib/layers/goaltending.js';
 import { zonestart } from '../src/lib/layers/zonestart.js';
+import { periodLabel } from '../src/lib/period.js';
 import { situation, POWER_PLAY } from '../src/lib/strength.js';
 import { stable } from './measure.mjs';
 
@@ -98,7 +99,27 @@ function firstWhere(events, fn, from = -1) {
   return -1;
 }
 
-export function doors(game) {
+/**
+ * ⭐⭐ THE SECOND GAME, AND WHY THERE HAS TO BE ONE.
+ *
+ * Kevin, 2026-09-10: *"let's find another game, teaching that there is such a
+ * thing as overtime in hockey is needed."* The reference game — MIN at BUF —
+ * never leaves regulation, and the build refuses a card without a moment
+ * (`no moment in this game for:` below). That refusal is right and predates
+ * this: a card that promises something the game does not contain was the
+ * original defect the doors were built to fix.
+ *
+ * ⛔ SO THE GAME MOVES, NOT THE RULE. `data/rich-ot.json` is a second reference
+ * game, and the overtime door is resolved against ITS playable timeline with the
+ * same `format()` every other door uses — the href carries its own `game=`, so
+ * nothing downstream needs to know there are two.
+ *
+ * ⚠️ AND IT COSTS THE PAGE'S "ALL FROM ONE NIGHT" SENTENCE, which is a real
+ * loss and is stated rather than quietly dropped: `build_index.py` now says all
+ * but one, and names the other. A sentence that is true of eleven cards out of
+ * twelve is exactly the shape §0.00's audit exists to catch.
+ */
+export function doors(game, ot) {
   const events = game.events;
   const ctx = { homeId: game.teams.home.id, awayId: game.teams.away.id,
                 roster: game.roster, evenOnly: false };
@@ -204,7 +225,23 @@ export function doors(game) {
      'even'],
   ];
 
+  /* ⭐ OVERTIME, IN THE SECOND GAME, AND THE FRAME ALREADY TEACHES ON SIGHT.
+     `periodLabel()` renders "Overtime · 3-on-3" for this event — `pt` and `sit`
+     are both recorded fields, so the page says what the rule is without the card
+     having to be believed. The goal that ENDS it is the moment: sudden death is
+     the part a novice has to be told, and the next thing that happens is the
+     game being over.
+     ⛔ NO LAYER, on the empty-net card's precedent: nothing here is toggled. The
+     base view already carries the period label, the goal and the scorer. */
+  const otFound = ot
+    ? ot.events.findIndex(e => e.pt === 'OT' && e.type === 'goal')
+    : -1;
+
   const missing = found.filter(([, , i]) => i < 0).map(([id]) => id);
+  if (ot && otFound < 0) {
+    throw new Error('the overtime reference game contains no overtime goal — '
+                  + 'data/rich-ot.json is the wrong game');
+  }
   if (missing.length) {
     throw new Error(`no moment in this game for: ${missing.join(', ')} — a card `
                   + 'cannot promise something the game does not contain');
@@ -261,8 +298,14 @@ export function doors(game) {
                     + 'after it — nothing a viewer can be shown');
     }
     const e = PLAY[k];
+    /* ⭐ THE LABEL COMES FROM THE PAGE'S OWN FUNCTION. A card's footer names the
+       moment its door opens, and the first overtime footer said "Period 4" while
+       the page said "Overtime · 3-on-3" — two artifacts describing one frame in
+       different words. `periodLabel` moved into `src/lib/period.js` so both read
+       it, rather than build_index learning a second naming rule. */
     out[id] = { href: format({ game: game.game.id, events: PLAY, index: k, layers, strength }),
                 per: e.per, rem: e.rem, type: e.type, layers, rule, strength,
+                label: periodLabel(e),
                 ...(via ? { via } : {}) };
   }
   // THE ONE FIGURE ON THE PAGE, AND IT IS THIS GAME'S. The archive number —
@@ -276,9 +319,25 @@ export function doors(game) {
   for (const i of counted) if (events[i].type in mix) mix[events[i].type]++;
   const n = counted.length;
 
+  if (ot) {
+    const OTPLAY = playable(ot.events);
+    const k = OTPLAY.indexOf(ot.events[otFound]);
+    if (k < 0) throw new Error('the overtime goal is not on its own playable timeline');
+    const e = OTPLAY[k];
+    out.overtime = {
+      href: format({ game: ot.game.id, events: OTPLAY, index: k, layers: [] }),
+      per: e.per, rem: e.rem, type: e.type, layers: [], strength: 'all',
+      label: periodLabel(e),
+      rule: 'the goal that ended this game in overtime',
+      game: ot.game.id,
+    };
+  }
+
   return {
     game: { id: game.game.id, date: game.game.date,
             away: game.teams.away.ab, home: game.teams.home.ab },
+    ot: ot ? { id: ot.game.id, date: ot.game.date,
+               away: ot.teams.away.ab, home: ot.teams.home.ab } : null,
     doors: out,
     figures: {
       // "Reached the goalie" is shots on goal plus goals; the other two never
@@ -291,8 +350,10 @@ export function doors(game) {
 
 function main(argv) {
   const src = join(ROOT, 'data', 'rich.json');
+  const otSrc = join(ROOT, 'data', 'rich-ot.json');
   const out = join(ROOT, 'data', 'learn-doors.json');
-  const body = stable(doors(JSON.parse(readFileSync(src, 'utf8')))) + '\n';
+  const body = stable(doors(JSON.parse(readFileSync(src, 'utf8')),
+                            JSON.parse(readFileSync(otSrc, 'utf8')))) + '\n';
 
   if (argv.includes('--verify')) {
     const have = readFileSync(out, 'utf8');

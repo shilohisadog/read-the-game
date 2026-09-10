@@ -45,6 +45,7 @@ import {
 } from './lib/layers/whistle.js';
 import { blocked } from './lib/layers/blocked.js';
 import { zonestart } from './lib/layers/zonestart.js';
+import { periodLabel } from './lib/period.js';
 import { colourOf, inkOn, readableInk } from './lib/teams.js';
 import { tiedControl } from './lib/layers/tied.js';
 import { sentenceFor } from './lib/sentence.js';
@@ -263,37 +264,6 @@ const $=id=>document.getElementById(id);
  * So scope is decided ONCE, here, and the drawing path is not given the
  * opportunity to disagree: it cannot read a coordinate except through this.
  */
-/**
- * WHAT PERIOD THIS IS, IN THE GAME'S OWN WORDS -- and the skater count when
- * overtime changes how many players are on the ice.
- *
- * The page said "Period 4". Overtime IS surfaced here: its events are real play
- * at real coordinates, drawn like any other and counted in the attempts. What
- * was never said is that it is overtime at all, or the thing that actually
- * changes -- MEASURED over 219 raw feeds, regular-season overtime is 3-on-3 in
- * **82.3%** of its events, while playoff overtime is 5-on-5 in **93.8%**. Four
- * skaters leave the ice and the page's only comment was to increment a number.
- *
- * `pt` and `sit` are both recorded fields, so none of this is inferred. The
- * period NUMBER cannot do this job: period 5 is a shootout in the regular season
- * and a third overtime in the playoffs.
- *
- * THE COUNT READS AWAY-THEN-HOME, which is the scoreboard's own order. Quoting
- * skater counts in one order while naming a team by another is a defect this
- * project has already shipped once, in 36 of 103 strength reasons; here no team
- * is named at all, and matching the scoreboard is what keeps the two readable
- * together.
- */
-function periodLabel(e){
- if(!e)return 'Pre-game';
- if(e.pt==='SO')return 'Shootout';
- if(e.pt!=='OT')return 'Period '+e.per;
- // Playoff games run 2OT, 3OT and beyond; regulation is three periods, so the
- // overtime's own number is the period minus three.
- const n=e.per-3, name=n>1?n+'OT':'Overtime';
- const s=e.sit;
- return (s&&s.length===4)?name+' · '+s[1]+'-on-'+s[2]:name;
-}
 function place(e){
  if(!e||e.x==null)return null;
  if(inShootout(e))return null;

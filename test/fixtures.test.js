@@ -38,10 +38,19 @@ import { readFileSync, readdirSync } from 'node:fs';
 
 const DIR = new URL('fixtures/extracts/', import.meta.url);
 const FILES = readdirSync(DIR).filter(f => /^\d+\.json$/.test(f)).sort();
+/* ⭐⭐ THE TWO REFERENCE GAMES JOIN THE COMPARISON, 2026-09-10. `data/rich.json`
+   and `data/rich-ot.json` are extracts committed into a repo of INPUTS and read
+   by the BUILD — the learn page's doors come from them — which is the exact
+   shape that let five fixtures sit at an older vintage for months with every
+   test green. `rich-ot.json` was fetched from the published origin the day the
+   overtime card was built; the day the extractor changes, this says so instead
+   of the page quietly opening a game described by an older schema. */
+const REFS = [new URL('../data/rich.json', import.meta.url),
+              new URL('../data/rich-ot.json', import.meta.url)];
 
 /** For each file: type -> { n, k: {field: count of events carrying it non-null} }. */
 const shape = f => {
-  const j = JSON.parse(readFileSync(new URL(f, DIR), 'utf8'));
+  const j = JSON.parse(readFileSync(f instanceof URL ? f : new URL(f, DIR), 'utf8'));
   const c = {};
   for (const e of j.events) {
     const t = (c[e.type] = c[e.type] || { n: 0, k: {} });
@@ -53,7 +62,7 @@ const shape = f => {
 
 test('⭐ every fixture was extracted by the same extractor — no field drift', () => {
   assert.ok(FILES.length >= 3, `${FILES.length} fixtures — too few to compare against each other`);
-  const per = Object.fromEntries(FILES.map(f => [f, shape(f)]));
+  const per = Object.fromEntries([...FILES, ...REFS].map(f => [String(f), shape(f)]));
 
   /* ⭐ UNIVERSAL-IN-ONE, ABSENT-IN-ANOTHER — not "present somewhere". The weaker
      form false-positives on fields that are genuinely occasional: `srv` (served-by)
@@ -90,7 +99,7 @@ test('⭐ every fixture carries the same top-level keys', () => {
   /* THE COARSER HALF OF THE SAME DEFECT, and the one that showed first: the five
      stale files had no `sides` at all — the ends-switching data B1 is built on — so
      any test reading them was reasoning about a game whose orientation is unknown. */
-  const per = Object.fromEntries(FILES.map(f => [f, shape(f).top]));
+  const per = Object.fromEntries([...FILES, ...REFS].map(f => [String(f), shape(f).top]));
   const union = new Set(Object.values(per).flatMap(s => [...s]));
   assert.ok(union.size >= 6, `only ${union.size} top-level keys across every fixture`);
   for (const [f, keys] of Object.entries(per)) {

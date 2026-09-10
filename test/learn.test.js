@@ -25,8 +25,19 @@ import { doors } from '../builders/learn-doors.mjs';
 import { playable } from '../src/lib/layer.js';
 import { icingRestarts } from '../src/lib/layers/whistle.js';
 import { isEven } from '../src/lib/strength.js';
+import { periodLabel } from '../src/lib/period.js';
 
 const rich = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url)));
+/* ⭐⭐ THE SECOND REFERENCE GAME, ADDED 2026-09-10. The overtime card cannot be
+   taught from the first one — MIN at BUF never leaves regulation — so a card
+   whose subject the reference game does not contain gets a game that does.
+   ⛔ EVERY GUARD BELOW WAS EXTENDED RATHER THAN RELAXED: each one used to say
+   "the game" and now says "the game this door belongs to", which is a stronger
+   claim, not a weaker one. A door that pointed at a third game nobody committed
+   would now fail four tests instead of passing all of them. */
+const richOt = JSON.parse(readFileSync(new URL('../data/rich-ot.json', import.meta.url)));
+/** The extract a given door's href actually opens. */
+const gameOf = href => String(parse(query(href)).game) === String(richOt.game.id) ? richOt : rich;
 const built = JSON.parse(readFileSync(new URL('../data/learn-doors.json', import.meta.url)));
 const html = readFileSync(new URL('../src/what-you-can-see.html', import.meta.url), 'utf8');
 
@@ -92,8 +103,10 @@ test('every door parses — through the real parser, with nothing to complain ab
     // NUMBER. Both are right in their own context and `===` across them is
     // false; this comparison coerces on purpose, and says so, because the
     // author of this file wrote that bug first.
-    assert.equal(String(p.game), String(rich.game.id),
-                 `"${c.title}" points at a different game`);
+    // ⛔ ONE OF TWO COMMITTED GAMES, and nothing else. A door to a game we do
+    // not hold would build a link the build cannot verify a single frame of.
+    assert.ok([String(rich.game.id), String(richOt.game.id)].includes(String(p.game)),
+              `"${c.title}" points at a game this repo does not carry: ${p.game}`);
     assert.ok(p.at, `"${c.title}" names no moment`);
   }
 });
@@ -101,7 +114,7 @@ test('every door parses — through the real parser, with nothing to complain ab
 test('every door lands on a moment the game actually contains', () => {
   for (const c of cards) {
     const { at } = parse(query(c.href));
-    const hits = rich.events.filter(e => e.per === at.per && e.rem === at.rem);
+    const hits = gameOf(c.href).events.filter(e => e.per === at.per && e.rem === at.rem);
     assert.ok(hits.length >= at.n,
               `"${c.title}" asks for occurrence ${at.n} at P${at.per} ${at.rem}, `
               + `and the game has ${hits.length}`);
@@ -217,11 +230,11 @@ test('⭐ every door is REACHABLE on the timeline the app actually plays', () =>
      event the RULE matched — `stoppage`, `delayed-penalty` — for doors that open
      something else, so the committed artifact asserted something untrue about
      where it goes. */
-  const PLAY = playable(rich.events);
   for (const c of raw) {
     const id = c.id;
     const door = built.doors[id];
     const at = parse(query(door.href)).at;
+    const PLAY = playable(gameOf(door.href).events);
     const here = PLAY.filter(e => e.per === at.per && e.rem === at.rem);
     assert.ok(here.length >= (at.n || 1),
       `"${c.title}" asks for occurrence ${at.n || 1} at P${at.per} ${at.rem}, and the `
@@ -514,6 +527,68 @@ test('⭐ the two condition cards say the same shape of thing, which is the poin
   assert.ok(grab('situations') !== grab('score'), 'the two cards are byte-identical');
 });
 
+test('⭐⭐ the overtime card teaches the rule, states the playoff exception, and quotes NO figure', () => {
+  /* ⛔ KEVIN, ON WHAT WAS LEFT: *"teaching that there is such a thing as
+     overtime in hockey is needed."* The page said the word ZERO times while 23
+     of 87 sampled games reach it.
+
+     ⛔⛔ AND IT MAY NOT SAY THAT 23-of-87. THE RULES HALF STATES WHAT THE RECORD
+     CONTAINS; ONLY THE MEASUREMENTS HALF STATES HOW OFTEN. "Three skaters
+     apiece" is categorical and checkable against the rulebook; a share is a
+     measurement with an n and a population and belongs to the other half by
+     construction. Same ruling that took "79 of 109" off the offside card. */
+  const m = /<a class="card" id="overtime"[^>]*>\s*<p class="t">([^<]*)<\/p><p>([\s\S]*?)<\/p>/.exec(html);
+  assert.ok(m, 'the overtime card is gone');
+  const [, title, blurb] = m;
+  assert.equal(title, 'Overtime');
+  assert.match(blurb, /three skaters/i, 'the card does not say what actually changes');
+  assert.match(blurb, /shootout/i, 'the card does not say how a tie is finally settled');
+  /* ⚠️ THE PLAYOFF EXCEPTION IS NAMED, NOT TRIMMED, on the penalties card's
+     precedent — an exception is a claim and gets stated. A reader who took
+     "three on three" as universal would misread every playoff overtime. */
+  assert.match(blurb, /playoff/i, 'the card states the regular-season rule as if it were universal');
+  // NO DIGITS EXCEPT THE RULE'S OWN ("sixty minutes", "five minutes" are words).
+  assert.doesNotMatch(blurb, /\d+(\.\d+)?%|\d{2,}/,
+    'a rules card is quoting a measurement — that belongs to the other half');
+});
+
+test('⛔ a card footer names the moment in the PAGE\'S own words, not a second naming rule', () => {
+  /* ⛔⛔ THE SEAM, CAUGHT BEFORE SHIPPING 2026-09-10. The overtime footer read
+     "Period 4" while the page it opens reads "Overtime · 3-on-3" — one artifact
+     describing another in different words, which is the shape §0.00's audit
+     exists to find. `periodLabel` moved out of app.js into `src/lib/period.js`
+     so build_index and the replay cannot disagree; this asserts the door's label
+     IS that function's output rather than a string that happens to match. */
+  for (const c of raw) {
+    const door = built.doors[c.id];
+    const g = gameOf(door.href);
+    const at = parse(query(door.href)).at;
+    const here = playable(g.events).filter(e => e.per === at.per && e.rem === at.rem);
+    const e = here[(at.n || 1) - 1];
+    assert.equal(door.label, periodLabel(e),
+      `the ${c.id} door's label "${door.label}" is not what the page calls that frame`);
+    /* ⚠️ ONLY THE CARDS THAT OPEN A GAME. Six of twelve lead to a DIAGRAM first
+       — Kevin's 2026-08-31 call — and their footer says "Diagram · then a real
+       example" on purpose, because "Period 1 · 04:48 left" on a card that opens
+       a drawing would be a small lie. That branch is named here rather than
+       silently skipped: a test that BRANCHES on the data tests neither branch
+       unless it says which one it is in. */
+    const footer = new RegExp(`id="${c.id}"[\\s\\S]*?<p class="at">([^<]*)</p>`).exec(html)[1];
+    if (footer.startsWith('Diagram')) {
+      assert.match(c.href, /\.html$/, `${c.id} claims a diagram footer but opens a game`);
+      continue;
+    }
+    assert.match(c.href, /game\.html/, `${c.id} has a moment footer but opens no game`);
+    assert.ok(footer.startsWith(door.label.replace(/&/g, '&amp;')),
+      `the ${c.id} card's footer ("${footer}") does not open with the page's own `
+      + `name for the moment ("${door.label}")`);
+  }
+  // AND THE ONE THAT PROVES IT IS NOT ALL "Period N": the overtime card must
+  // carry a label the old rule could never have produced.
+  assert.match(built.doors.overtime.label, /^Overtime · \d-on-\d$/,
+    'the overtime door no longer carries the page\'s overtime label');
+});
+
 test('⛔ "the shading" names three marks, so no card may use the bare phrase', () => {
   /* KEVIN, FROM THE LIVE PAGE: the slot card's *"that gap is what the shading is
      for"* pointed at nothing on a page that draws no shading, and on the game
@@ -576,15 +651,22 @@ test('the doors document is what the layers currently say', () => {
   // The committed JSON is a build artifact, and a stale one would let the page
   // and the layers disagree silently. npm run build:check diffs it; this proves
   // the regeneration is deterministic and driven by the real reducers.
-  assert.deepEqual(doors(rich), built);
+  assert.deepEqual(doors(rich, richOt), built);
 });
 
 test('a card with no door fails the build rather than rendering a dead link', () => {
   // The seam between two documents keyed by a shared set of ids. Proven by
   // asking the generator for a game it cannot serve every card from.
   const stripped = { ...rich, events: rich.events.filter(e => e.rsn !== 'icing') };
-  assert.throws(() => doors(stripped), /icing/,
+  assert.throws(() => doors(stripped, richOt), /icing/,
                 'a game with no icing must refuse to produce doors, not emit a broken one');
+  /* ⭐ AND THE SAME REFUSAL FOR THE SECOND GAME, which is the whole reason it
+     exists: a reference game that does not reach overtime must fail the build
+     rather than emit an overtime card pointing at regulation. This is the
+     failure the first version of the feature would have shipped. */
+  assert.throws(() => doors(rich, { ...richOt, events: richOt.events.filter(e => e.pt !== 'OT') }),
+                /overtime/i,
+                'a second game with no overtime must refuse, not emit a door into regulation');
 });
 
 /* ═══ THE TRIP BACK — the work panel links to the card that explains it ═══

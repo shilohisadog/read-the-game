@@ -1533,7 +1533,11 @@ def _learn():
                 href, at = f"/{cid}.html", "Diagram &middot; then a real example"
             else:
                 href = f'/game.html{door["href"]}'
-                at = f'Period {door["per"]} &middot; {door["rem"]} left'
+                # THE PAGE'S OWN WORDS FOR THE MOMENT, from `src/lib/period.js`
+                # via the doors artifact -- not a second naming rule here. It
+                # reads "Period 1" in regulation and "Overtime · 3-on-3" in the
+                # one card that needed a different game.
+                at = f'{door["label"]} &middot; {door["rem"]} left'
             out.append(f'    <a class="card" id="{cid}" href="{href}">'
                        f'<p class="t">{title}</p><p>{blurb}</p>'
                        f'<p class="at">{at}</p></a>')
@@ -1568,11 +1572,29 @@ def _learn():
     # game (directly, or through the diagram's door -- the build already refuses
     # a card without one), they are all from the one night, and the front page
     # is where the rest live.
+    # ⚠️⚠️ "THEY ARE ALL FROM ONE NIGHT" STOPPED BEING TRUE ON 2026-09-10, and it
+    # is amended rather than deleted. The overtime card needs a game that reached
+    # overtime and the reference game never leaves regulation, so a second one
+    # joined -- and a sentence true of eleven cards out of twelve is exactly the
+    # shape the seamlessness audit exists to catch. The count is COMPUTED from
+    # the doors rather than typed, so a third game could never make it false
+    # silently.
+    other = [d for d in doors.values() if d.get("game")]
+    ot = d.get("ot") or {}
+    oy, om, od = (ot.get("date") or "0-0-0").split("-")
+    ow = f"{int(od)} {MONTHS[int(om) - 1]} {oy}"
+    n_other = len(other)
+    WORDS = {1: "one", 2: "two", 3: "three"}
+    said = WORDS.get(n_other, str(n_other))
+    rest = (f' The {"one that cannot" if n_other == 1 else f"{said} that cannot"} '
+            f'be shown there &mdash; a game has to reach overtime to teach it '
+            f'&mdash; {"opens" if n_other == 1 else "open"} {ot.get("away")} at '
+            f'{ot.get("home")}, {ow}.') if other else ''
     out.append(
-        f'  <p class="cnote">Every one of these leads to a real game, and they '
-        f'are all from one night &mdash; {g["away"]} at {g["home"]}, {when} '
-        f'&mdash; with {p1} of the {len(LEARN_CARDS)} in the first period '
-        f'alone. Every other game we hold is '
+        f'  <p class="cnote">Every one of these leads to a real game, and all '
+        f'but {said} are from one night &mdash; {g["away"]} at '
+        f'{g["home"]}, {when} &mdash; with {p1} of the {len(LEARN_CARDS)} in '
+        f'the first period alone.{rest} Every other game we hold is '
         f'reachable from <a href="/">the front page</a>.</p>')
     return ('<h1>What you can see here</h1>\n<div class="conc">\n'
             + "\n".join(out) + "\n</div>")
@@ -1719,6 +1741,36 @@ LEARN_CARDS = [
      "skater short &mdash; unless the other team commits a penalty of the same "
      "duration at the same time, and then both teams skate with the same number "
      "of players."),
+    # ⛔⛔ THE HOLE KEVIN FOUND BY ASKING WHAT WAS LEFT, 2026-09-10: this page said
+    # the word "overtime" ZERO times, and 23 of 87 sampled games reach it. A
+    # novice watching one sees three skaters a side and no explanation.
+    #
+    # ⛔ NO NUMBER ON IT, AND THAT IS THE WALL RATHER THAN AN OMISSION. The rules
+    # half may state what the record CONTAINS; only the measurements half may say
+    # how often. "Three skaters apiece" is categorical -- true of every regular
+    # -season overtime ever played, checkable against the rulebook -- and "26% of
+    # games reach it" is a measurement with an n and a population, which belongs
+    # to the other half by construction. Same ruling that took "79 of 109" off
+    # the offside card.
+    #
+    # ⚠️ THE PLAYOFF EXCEPTION IS NAMED, NOT TRIMMED, on the penalties card's
+    # precedent -- an exception is a claim and gets stated. Measured over 87
+    # games while choosing the door: overtime is 3-on-3 in the regular season and
+    # 5-on-5 in the playoffs, and a shootout never happens in the playoffs at all.
+    # A reader who took "three on three" as universal would misread every playoff
+    # overtime, which is exactly how "matching penalty" misread a third of its
+    # cases.
+    #
+    # ⭐ AND THE FRAME TEACHES ON SIGHT, which is why this card needs no diagram:
+    # `periodLabel()` already renders "Overtime · 3-on-3" from `pt` and `sit`,
+    # both recorded fields. The door opens the goal that ENDED a game, so sudden
+    # death is shown rather than asserted.
+    ("rules", "overtime", "Overtime",
+     "A hockey game does not end level. If the score is tied after sixty "
+     "minutes, both clubs drop to three skaters and a goaltender, and the next "
+     "goal wins &mdash; five minutes of it, and a shootout after that if nobody "
+     "scores. In the playoffs there is no shootout and nobody leaves the ice: "
+     "they play full periods, five a side, until someone scores."),
     ("rules", "empty-net", "The empty net",
      "Losing late, a team trades its goaltender for a sixth skater. Nothing is "
      "toggled here &mdash; the goalie is simply no longer on the ice."),

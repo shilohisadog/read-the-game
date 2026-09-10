@@ -511,6 +511,13 @@ for _m in ("__LIB__", "//__RINKART__", "__BOOT__"):
 RINKART = "rinkart.js"
 
 LIB = ["rink.js", "attribution.js", "layer.js", "strength.js", "box.js", "penalties.js", "svgpen.js", "figures.js",
+       # ⭐ THE PERIOD'S OWN NAME, moved out of app.js on 2026-09-10 because a
+       # SECOND surface needed it: the learn page's overtime card names the
+       # moment its door opens, and the first version said "Period 4" where the
+       # page said "Overtime · 3-on-3". `builders/learn-doors.mjs` imports the
+       # same function, so the two artifacts cannot describe one frame in
+       # different words.
+       "period.js",
        # AFTER rink.js, which owns BLUE_LINE_X. K1 — what happened between two
        # recorded events — and the duration format both it and `sinceLine` read.
        "transition.js",
