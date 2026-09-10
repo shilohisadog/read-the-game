@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-tlXdR3hJXmtHquITKz79T6o5wVOhkVNqU+nUdghN1cc=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-CvGXfecUpVRW1cuOmBc1t/FMd2fUUPBuDcSMdsS75Rk='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-lz2V7ny6b3w7pkMqg08JOo2A8nCJ1b/THHMdM580kbI=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-rFOt04+76dQXbHoZ2IaUmJsKkOx5bhILk3okor5BnJM='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">Watch a game</a><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see</a></nav></header>
@@ -1024,6 +1024,20 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .who{margin:8px 2px 0;min-height:1.15rem;line-height:1.15rem;text-align:center;
  font-size:.82rem;font-weight:600;color:var(--ink)}
 #rg .who .num{opacity:.6;font-family:ui-monospace,Menlo,monospace;font-weight:700}
+/* ⭐ WHO IS ON THE ICE — a LIST, never a formation (DOCTRINE §5). Two columns so
+   the two benches read as two benches; `minmax(0,1fr)` rather than `1fr` because
+   a long surname must wrap inside its column instead of widening the grid past
+   a 360px viewport, which is the width the deploy gate measures. */
+#rg .onice{margin:6px 2px 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:4px 10px;font-size:.74rem;line-height:1.35}
+#rg .onice .oc{min-width:0}
+#rg .onice .oab{font-weight:700;letter-spacing:.02em;opacity:.75;font-size:.7rem}
+/* THE GOALTENDER IS SET APART rather than sorted in with a letter beside him:
+   he is a different job, and the count a reader checks ("five a side") is the
+   skaters. Same reason `onice.js` returns two lists. */
+#rg .onice .og{opacity:.75}
+#rg .onice .num{opacity:.55;font-family:ui-monospace,Menlo,monospace;font-weight:700}
+#rg .onice .olim{grid-column:1/-1;opacity:.6;font-size:.68rem;line-height:1.3}
 /* ⭐ THE CLUB'S COLOUR ON THE INK, THROUGH `--away-text` — the token that already
    exists for TYPE ON WHITE, and which `paint()` substitutes for the six clubs
    whose primary cannot be read there. A filled chip would be a third badge
@@ -2155,6 +2169,26 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
        into the newcomer dismissal; that flag means "I know how this site works",
        and who took the shot is not scaffolding a reader outgrows. -->
   <p class="who" id="who" aria-live="polite"></p>
+  <!-- ⭐⭐ WHO IS ON THE ICE, AND IT IS A LIST BECAUSE THAT IS WHAT WE KNOW.
+       Kevin, 2026-09-10: *"we don't surface players on the ice at all; should we
+       have a toggle... only clickable when not playing?"* — then, on the obvious
+       implementation: *"are you planning on just overlaying them in their
+       'generic' locations during a pause?"*
+       ⛔ NO. DOCTRINE §5: "players are arranged by role, not by tracked position
+       -- real skater coordinates aren't public, so we don't fake them." On a
+       rule diagram that refusal is a judgement; on THIS canvas it is sharper,
+       because every other token here sits on a measured coordinate. Twelve names
+       at invented positions in the same frame would leave a reader unable to
+       tell which marks are measured and which are decoration -- the goaltender
+       who was 8.8 ft wide, with names on.
+       ⭐ ONLY AT REST, WHICH IS KEVIN'S OWN CONSTRAINT AND THE RIGHT ONE. A
+       roster is wanted by someone who has already stopped to look; during play
+       it competes with the rink on the one screen that can least afford it (390
+       CSS px, the novice tester's phone). `hidden` is toggled, never `display`.
+       ⚠️ IT CAN DISAGREE WITH THE SCOREBOARD, on about one frame in twenty, and
+       says so rather than being reconciled: mid-change there really are six out
+       there, which is the lesson the shift card teaches. -->
+  <div class="onice" id="onIce" hidden></div>
   <!-- THE FIRST STEP, ON THE ICE. Kevin: "we should overlay 'Press Play' onto the
        rink, in rather large lettering, so the first time visitor knows what the
        first step is". It is a CONDITION, not a tip: it is on screen exactly when
@@ -4266,6 +4300,98 @@ function periodLabel(e) {
   const n = e.per - 3, name = n > 1 ? n + 'OT' : 'Overtime';
   const s = e.sit;
   return (s && s.length === 4) ? name + ' · ' + s[1] + '-on-' + s[2] : name;
+}
+
+/* --- src/lib/onice.js --- */
+/**
+ * WHO WAS ON THE ICE AT A GIVEN SECOND.
+ *
+ * ⭐⭐ THE INTERVAL CONVENTION IS THE WHOLE MODULE, AND IT FAILS QUIETLY.
+ * A shift record is `{p, t, s, e}`, and at an event the play stops, so one shift
+ * ends and the next begins ON THE SAME SECOND. Measured over 224 games and
+ * 1,413 goals (`docs/layer-ideas.md` §4.2), the three readings differ like this:
+ *
+ *   `s <= t <= e`   plausible count 5.7%    names the right players 98.0%
+ *   `s <= t <  e`   plausible count 95.9%   names the right players ⛔ 16.2%
+ *   `s <  t <= e`   plausible count 97.9%   names the right players 97.4%
+ *
+ * ⚠️ THE MIDDLE ROW IS THE DANGEROUS ONE. It produces a correct-LOOKING strength
+ * — five a side nearly everywhere — and the wrong five names one time in six.
+ * A page built on it would be plausible and wrong, and no check on the COUNT
+ * could catch it. The instrument that separates them is asking whether the
+ * players the event ITSELF names are in the set, which is what
+ * `test/onice.test.js` does rather than counting heads.
+ *
+ * ⛔⛔ AND THE CONVENTION DEPENDS ON WHETHER THE SECOND IS A BOUNDARY, which
+ * §4.2 could not have found: it measured GOALS only, and every goal is mid-play.
+ * A FACEOFF is the boundary itself — the chart ends the old line at `t` and
+ * starts the new one at `t` — so the players who are on the ice FOR the draw are
+ * the ARRIVING ones. Measured over 87 games, by whether the player the event
+ * names is in the set:
+ *
+ *                        in play        at a faceoff
+ *   `s <  t <= e`        0.1% absent    ⛔ 57.6% absent
+ *   `s <= t <  e`        5.4% absent       0.0% absent
+ *
+ * ⚠️ BOTH GIVE A PLAUSIBLE COMPLEMENT ON 100% OF FRAMES, which is the same trap
+ * one level down: counting heads cannot choose between them and the page would
+ * have contradicted itself on more than half of all faceoff frames — the
+ * active-player line naming a man the list below said was not out there. **It
+ * was found by LOOKING at a 360px screenshot, not by any test.**
+ *
+ * ⛔ AND THE SECOND IS ABSOLUTE GAME SECONDS. `event.s` already is — period two
+ * opens at 1200 and period three at 2400 — and adding `(per - 1) * 1200` to it
+ * resolved only 65.6% of attempts to a plausible complement before that was
+ * found on 2026-09-10. The shift chart uses the same clock.
+ *
+ * ⛔ THIS KNOWS NOTHING ABOUT WHERE ANYBODY IS, and cannot be made to.
+ * DOCTRINE §5: *"players are arranged by role, not by tracked position — real
+ * skater coordinates aren't public, so we don't fake them."* The return value is
+ * a LIST because that is the shape of what we know.
+ */
+/**
+ * @param game  the extract
+ * @param ev    the EVENT, not a second — the interval convention depends on
+ *              whether this second is a boundary, so the caller cannot be
+ *              trusted to have chosen one. Accepts `{s, type}`.
+ */
+function onIce(game, ev) {
+  const sec = ev && typeof ev === 'object' ? ev.s : ev;
+  /* AT A FACEOFF THE ARRIVING LINE IS THE ONE ON THE ICE. Everywhere else the
+     line that is finishing at this second is. */
+  const arriving = !!(ev && ev.type === 'faceoff');
+  const holds = arriving
+    ? (r) => r.s <= sec && sec < r.e
+    : (r) => r.s < sec && sec <= r.e;
+  const out = {
+    away: { skaters: [], goalies: [] },
+    home: { skaters: [], goalies: [] },
+  };
+  if (!game || !Array.isArray(game.shifts) || sec == null) return out;
+  const homeId = game.teams?.home?.id;
+  /* ⛔ DEDUPED BY PLAYER, because a player can carry TWO overlapping rows and
+     `s < t <= e` matches both — the row he is finishing and the row he is
+     starting. Found by the test, not by reading: a naive push listed him twice,
+     which on screen is a sixth skater who does not exist. A count check would
+     have called that a line change and been satisfied. */
+  const seen = new Set();
+  for (const r of game.shifts) {
+    if (!holds(r)) continue;
+    if (seen.has(r.p)) continue;
+    const p = game.roster?.[r.p];
+    if (!p) continue;                       // a name we cannot print is not a name
+    seen.add(r.p);
+    const side = r.t === homeId ? out.home : out.away;
+    (p.pos === 'G' ? side.goalies : side.skaters).push({ id: r.p, n: p.n, nm: p.nm, pos: p.pos });
+  }
+  /* SORTED BY SWEATER NUMBER, which is the only order a viewer can check against
+     a broadcast. Position would need a vocabulary the card does not teach, and
+     roster order is an accident of the feed. */
+  for (const s of [out.away, out.home]) {
+    s.skaters.sort((a, b) => a.n - b.n);
+    s.goalies.sort((a, b) => a.n - b.n);
+  }
+  return out;
 }
 
 /* --- src/lib/transition.js --- */
@@ -8870,6 +8996,9 @@ function render(i,how){
     `test/render-transport.test.js` walks exactly that: scrub deep, then play. */
  prevA=a;prevH=h;
  sayWho(cur);
+ // AT REST ONLY -- `render` runs on every frame including during playback, and
+ // `sayOnIce` reads `playing` itself rather than being called from two places.
+ sayOnIce(cur);
  $('per').textContent=periodLabel(cur);$('clk').textContent=cur?cur.rem:'20:00';
  if(goalieOn)$('goaliePanel').innerHTML=goalieCards(G.goalies,R,goalieStats(i),{AID,AAB,HAB,mode:MODE()});
  /* THE FRAME BEING DRAWN IS PASSED, NOT READ. `render`'s parameter shadows the
@@ -9335,6 +9464,43 @@ function whoTag(p){return `<span class="num">#${p.n}</span> ${p.nm}`;}
  * carry gets the event's own name and no person -- which is what `shootout-complete`
  * and the four unattributed penalties in nine fixtures get.
  */
+/**
+ * ⭐⭐ WHO IS ON THE ICE — AND IT IS A LIST, NOT A FORMATION.
+ *
+ * Kevin asked the right question before a line of this existed: *"are you
+ * planning on just overlaying them in their 'generic' locations during a
+ * pause?"* No. DOCTRINE §5 — *"players are arranged by role, not by tracked
+ * position — real skater coordinates aren't public, so we don't fake them"* —
+ * and on THIS canvas the refusal is sharper than on a rule diagram, because
+ * every other token here sits on a measured coordinate. Twelve names at invented
+ * positions in the same frame would leave a reader unable to tell which marks are
+ * measured and which are decoration.
+ *
+ * ⭐ ONLY AT REST. A roster is wanted by someone who has already stopped; during
+ * play it changes every 46 seconds and competes with the rink on a 390px phone.
+ * `hidden` is toggled rather than `display`, so the reserved row and the page
+ * height are the browser's problem and not ours.
+ *
+ * ⚠️ AND IT MAY DISAGREE WITH THE SCOREBOARD — 95.1% agreement with the league's
+ * own situation code over 22,414 frames, and most of the rest is a change in
+ * progress, where there really are six out there for a moment. The note says so
+ * rather than being quietly reconciled: a list that always matched the code
+ * would be a list that had stopped reading the shift chart.
+ */
+function sayOnIce(e){const b=$('onIce');if(!b)return;
+ if(!e||playing||e.s==null){b.hidden=true;b.innerHTML='';return;}
+ const on=onIce(G,e);
+ const tot=on.away.skaters.length+on.home.skaters.length;
+ // NOTHING RATHER THAN A WRONG LIST: 3 of 87 published extracts carry no shifts.
+ if(!tot){b.hidden=true;b.innerHTML='';return;}
+ const col=(side,ab)=>`<div class="oc"><div class="oab">${ESC(ab)}</div>`
+  +side.skaters.map(p=>`<div><span class="num">#${p.n}</span> ${ESC(p.nm)}</div>`).join('')
+  +side.goalies.map(p=>`<div class="og"><span class="num">#${p.n}</span> ${ESC(p.nm)} &middot; goal</div>`).join('')
+  +`</div>`;
+ b.innerHTML=col(on.away,AAB)+col(on.home,HAB)
+  +`<p class="olim">From the league&rsquo;s shift chart. During a change it can `
+  +`show six &mdash; that is the change, not a mistake.</p>`;
+ b.hidden=false;}
 function sayWho(e){const w=$('who');if(!w)return;
  if(!e){w.innerHTML='';w.className='who';return;}
  const a=ATTRIBUTION[e.type],p=a&&R[e.actor];
@@ -9411,7 +9577,12 @@ function step(){if(i>=EV.length-1){stop();return;}set(i+1,'play');timer=setTimeo
    the pre-game frame for a full dwell would answer that with 1.8 seconds of empty
    ice. The opening frame is an orientation, not a countdown -- so Play leaves it
    at once, from either end. */
-function play(){if(i>=EV.length-1||i<0){prevA=0;prevH=0;set(0,'play');}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);timer=setTimeout(step,dwell(EV[i]));}
+/* ⛔ AND STARTING HIDES THE ROSTER AT ONCE, symmetrically with `stop()`. The
+   golden caught this: pressing Play left the resting frame's twelve names on
+   screen until the NEXT render, which at 3600ms is up to three and a half
+   seconds of a list that is no longer true. Neither transition produces a frame
+   of its own, so both have to say so. */
+function play(){if(i>=EV.length-1||i<0){prevA=0;prevH=0;set(0,'play');}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);sayOnIce(EV[i]);timer=setTimeout(step,dwell(EV[i]));}
 /* ⭐ ALL THREE LABELS ARE SHORT, AND THAT IS A LAYOUT GUARANTEE AS WELL AS A COPY
    CHOICE. Kevin, 2026-09-07: *"let's change the control button to just 'Play', I
    can't remember why we have 'Play from start'."* Measured: `▶ Play from start`
@@ -9425,7 +9596,11 @@ function play(){if(i>=EV.length-1||i<0){prevA=0;prevH=0;set(0,'play');}playing=t
    copies of a string a reader is told to look for is three chances to drift; the
    markup copy is checked against this one in test/render-notes.test.js. */
 const PLAY_REST='▶ Play';
-function stop(){playing=false;$('play').textContent=i>=EV.length-1?'▶ Replay':PLAY_REST;clearTimeout(timer);}
+/* ⛔ AND STOPPING REDRAWS, which `play()` does not need to: `render` already
+   runs on the next frame when playback starts, but pausing produces no new
+   frame at all -- so without this the roster would appear only when the reader
+   next stepped, which is the opposite of "shown while paused". */
+function stop(){playing=false;$('play').textContent=i>=EV.length-1?'▶ Replay':PLAY_REST;clearTimeout(timer);sayOnIce(EV[i]);}
 $('play').onclick=()=>playing?stop():play();
 /* THE OVERLAY IS THE BUTTON. It calls `play()` directly rather than synthesising a
    click on `#play`, because a forwarded click is a second path to the same state

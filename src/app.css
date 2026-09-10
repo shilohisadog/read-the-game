@@ -977,6 +977,20 @@
 #rg .who{margin:8px 2px 0;min-height:1.15rem;line-height:1.15rem;text-align:center;
  font-size:.82rem;font-weight:600;color:var(--ink)}
 #rg .who .num{opacity:.6;font-family:ui-monospace,Menlo,monospace;font-weight:700}
+/* ⭐ WHO IS ON THE ICE — a LIST, never a formation (DOCTRINE §5). Two columns so
+   the two benches read as two benches; `minmax(0,1fr)` rather than `1fr` because
+   a long surname must wrap inside its column instead of widening the grid past
+   a 360px viewport, which is the width the deploy gate measures. */
+#rg .onice{margin:6px 2px 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:4px 10px;font-size:.74rem;line-height:1.35}
+#rg .onice .oc{min-width:0}
+#rg .onice .oab{font-weight:700;letter-spacing:.02em;opacity:.75;font-size:.7rem}
+/* THE GOALTENDER IS SET APART rather than sorted in with a letter beside him:
+   he is a different job, and the count a reader checks ("five a side") is the
+   skaters. Same reason `onice.js` returns two lists. */
+#rg .onice .og{opacity:.75}
+#rg .onice .num{opacity:.55;font-family:ui-monospace,Menlo,monospace;font-weight:700}
+#rg .onice .olim{grid-column:1/-1;opacity:.6;font-size:.68rem;line-height:1.3}
 /* ⭐ THE CLUB'S COLOUR ON THE INK, THROUGH `--away-text` — the token that already
    exists for TYPE ON WHITE, and which `paint()` substitutes for the six clubs
    whose primary cannot be read there. A filled chip would be a third badge

@@ -46,6 +46,7 @@ import {
 import { blocked } from './lib/layers/blocked.js';
 import { zonestart } from './lib/layers/zonestart.js';
 import { periodLabel } from './lib/period.js';
+import { onIce } from './lib/onice.js';
 import { colourOf, inkOn, readableInk } from './lib/teams.js';
 import { tiedControl } from './lib/layers/tied.js';
 import { sentenceFor } from './lib/sentence.js';
@@ -922,6 +923,9 @@ function render(i,how){
     `test/render-transport.test.js` walks exactly that: scrub deep, then play. */
  prevA=a;prevH=h;
  sayWho(cur);
+ // AT REST ONLY -- `render` runs on every frame including during playback, and
+ // `sayOnIce` reads `playing` itself rather than being called from two places.
+ sayOnIce(cur);
  $('per').textContent=periodLabel(cur);$('clk').textContent=cur?cur.rem:'20:00';
  if(goalieOn)$('goaliePanel').innerHTML=goalieCards(G.goalies,R,goalieStats(i),{AID,AAB,HAB,mode:MODE()});
  /* THE FRAME BEING DRAWN IS PASSED, NOT READ. `render`'s parameter shadows the
@@ -1387,6 +1391,43 @@ function whoTag(p){return `<span class="num">#${p.n}</span> ${p.nm}`;}
  * carry gets the event's own name and no person -- which is what `shootout-complete`
  * and the four unattributed penalties in nine fixtures get.
  */
+/**
+ * ⭐⭐ WHO IS ON THE ICE — AND IT IS A LIST, NOT A FORMATION.
+ *
+ * Kevin asked the right question before a line of this existed: *"are you
+ * planning on just overlaying them in their 'generic' locations during a
+ * pause?"* No. DOCTRINE §5 — *"players are arranged by role, not by tracked
+ * position — real skater coordinates aren't public, so we don't fake them"* —
+ * and on THIS canvas the refusal is sharper than on a rule diagram, because
+ * every other token here sits on a measured coordinate. Twelve names at invented
+ * positions in the same frame would leave a reader unable to tell which marks are
+ * measured and which are decoration.
+ *
+ * ⭐ ONLY AT REST. A roster is wanted by someone who has already stopped; during
+ * play it changes every 46 seconds and competes with the rink on a 390px phone.
+ * `hidden` is toggled rather than `display`, so the reserved row and the page
+ * height are the browser's problem and not ours.
+ *
+ * ⚠️ AND IT MAY DISAGREE WITH THE SCOREBOARD — 95.1% agreement with the league's
+ * own situation code over 22,414 frames, and most of the rest is a change in
+ * progress, where there really are six out there for a moment. The note says so
+ * rather than being quietly reconciled: a list that always matched the code
+ * would be a list that had stopped reading the shift chart.
+ */
+function sayOnIce(e){const b=$('onIce');if(!b)return;
+ if(!e||playing||e.s==null){b.hidden=true;b.innerHTML='';return;}
+ const on=onIce(G,e);
+ const tot=on.away.skaters.length+on.home.skaters.length;
+ // NOTHING RATHER THAN A WRONG LIST: 3 of 87 published extracts carry no shifts.
+ if(!tot){b.hidden=true;b.innerHTML='';return;}
+ const col=(side,ab)=>`<div class="oc"><div class="oab">${ESC(ab)}</div>`
+  +side.skaters.map(p=>`<div><span class="num">#${p.n}</span> ${ESC(p.nm)}</div>`).join('')
+  +side.goalies.map(p=>`<div class="og"><span class="num">#${p.n}</span> ${ESC(p.nm)} &middot; goal</div>`).join('')
+  +`</div>`;
+ b.innerHTML=col(on.away,AAB)+col(on.home,HAB)
+  +`<p class="olim">From the league&rsquo;s shift chart. During a change it can `
+  +`show six &mdash; that is the change, not a mistake.</p>`;
+ b.hidden=false;}
 function sayWho(e){const w=$('who');if(!w)return;
  if(!e){w.innerHTML='';w.className='who';return;}
  const a=ATTRIBUTION[e.type],p=a&&R[e.actor];
@@ -1463,7 +1504,12 @@ function step(){if(i>=EV.length-1){stop();return;}set(i+1,'play');timer=setTimeo
    the pre-game frame for a full dwell would answer that with 1.8 seconds of empty
    ice. The opening frame is an orientation, not a countdown -- so Play leaves it
    at once, from either end. */
-function play(){if(i>=EV.length-1||i<0){prevA=0;prevH=0;set(0,'play');}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);timer=setTimeout(step,dwell(EV[i]));}
+/* ⛔ AND STARTING HIDES THE ROSTER AT ONCE, symmetrically with `stop()`. The
+   golden caught this: pressing Play left the resting frame's twelve names on
+   screen until the NEXT render, which at 3600ms is up to three and a half
+   seconds of a list that is no longer true. Neither transition produces a frame
+   of its own, so both have to say so. */
+function play(){if(i>=EV.length-1||i<0){prevA=0;prevH=0;set(0,'play');}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);sayOnIce(EV[i]);timer=setTimeout(step,dwell(EV[i]));}
 /* ⭐ ALL THREE LABELS ARE SHORT, AND THAT IS A LAYOUT GUARANTEE AS WELL AS A COPY
    CHOICE. Kevin, 2026-09-07: *"let's change the control button to just 'Play', I
    can't remember why we have 'Play from start'."* Measured: `▶ Play from start`
@@ -1477,7 +1523,11 @@ function play(){if(i>=EV.length-1||i<0){prevA=0;prevH=0;set(0,'play');}playing=t
    copies of a string a reader is told to look for is three chances to drift; the
    markup copy is checked against this one in test/render-notes.test.js. */
 const PLAY_REST='▶ Play';
-function stop(){playing=false;$('play').textContent=i>=EV.length-1?'▶ Replay':PLAY_REST;clearTimeout(timer);}
+/* ⛔ AND STOPPING REDRAWS, which `play()` does not need to: `render` already
+   runs on the next frame when playback starts, but pausing produces no new
+   frame at all -- so without this the roster would appear only when the reader
+   next stepped, which is the opposite of "shown while paused". */
+function stop(){playing=false;$('play').textContent=i>=EV.length-1?'▶ Replay':PLAY_REST;clearTimeout(timer);sayOnIce(EV[i]);}
 $('play').onclick=()=>playing?stop():play();
 /* THE OVERLAY IS THE BUTTON. It calls `play()` directly rather than synthesising a
    click on `#play`, because a forwarded click is a second path to the same state

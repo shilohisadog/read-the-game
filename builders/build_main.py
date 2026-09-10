@@ -112,6 +112,26 @@ __CSS__</style>
        into the newcomer dismissal; that flag means "I know how this site works",
        and who took the shot is not scaffolding a reader outgrows. -->
   <p class="who" id="who" aria-live="polite"></p>
+  <!-- ⭐⭐ WHO IS ON THE ICE, AND IT IS A LIST BECAUSE THAT IS WHAT WE KNOW.
+       Kevin, 2026-09-10: *"we don't surface players on the ice at all; should we
+       have a toggle... only clickable when not playing?"* — then, on the obvious
+       implementation: *"are you planning on just overlaying them in their
+       'generic' locations during a pause?"*
+       ⛔ NO. DOCTRINE §5: "players are arranged by role, not by tracked position
+       -- real skater coordinates aren't public, so we don't fake them." On a
+       rule diagram that refusal is a judgement; on THIS canvas it is sharper,
+       because every other token here sits on a measured coordinate. Twelve names
+       at invented positions in the same frame would leave a reader unable to
+       tell which marks are measured and which are decoration -- the goaltender
+       who was 8.8 ft wide, with names on.
+       ⭐ ONLY AT REST, WHICH IS KEVIN'S OWN CONSTRAINT AND THE RIGHT ONE. A
+       roster is wanted by someone who has already stopped to look; during play
+       it competes with the rink on the one screen that can least afford it (390
+       CSS px, the novice tester's phone). `hidden` is toggled, never `display`.
+       ⚠️ IT CAN DISAGREE WITH THE SCOREBOARD, on about one frame in twenty, and
+       says so rather than being reconciled: mid-change there really are six out
+       there, which is the lesson the shift card teaches. -->
+  <div class="onice" id="onIce" hidden></div>
   <!-- THE FIRST STEP, ON THE ICE. Kevin: "we should overlay 'Press Play' onto the
        rink, in rather large lettering, so the first time visitor knows what the
        first step is". It is a CONDITION, not a tip: it is on screen exactly when
@@ -518,6 +538,12 @@ LIB = ["rink.js", "attribution.js", "layer.js", "strength.js", "box.js", "penalt
        # same function, so the two artifacts cannot describe one frame in
        # different words.
        "period.js",
+       # WHO WAS ON THE ICE. Read by the replay only -- `builders/*` do not need
+       # it -- but it is a LIB module rather than a function in app.js because
+       # the interval convention it owns is the kind of rule that must have one
+       # home: `s <= t < e` looks right on every count a reader can check and
+       # names the wrong five one time in six.
+       "onice.js",
        # AFTER rink.js, which owns BLUE_LINE_X. K1 — what happened between two
        # recorded events — and the duration format both it and `sinceLine` read.
        "transition.js",
