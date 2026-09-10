@@ -1333,6 +1333,33 @@ def _archive():
         "__PP_PER60__": f"{p['ppFor']['per60']:.0f}",
         "__PK_PER60__": f"{p['ppAgainst']['per60']:.0f}",
     })
+    # ⭐ WHAT THE ZONE IS WORTH, for the card that explains the blue-line band.
+    # TWO DECIMALS, NOT THREE AND NOT ONE. The pair is 1.42 against 0.77 and the
+    # whole lesson is the distance between them; one decimal rounds them to 1.4
+    # and 0.8 and loses a fifth of the gap, three decimals invite a precision a
+    # teaching sentence is not making. Same reasoning as the whole-attempt
+    # rounding above, arriving at a different place because the numbers are
+    # smaller.
+    ez = (m.get("census") or {}).get("endZone") or {}
+    for k in ("atkPerDraw", "defPerDraw"):
+        if ez.get(k) is None:
+            raise SystemExit(
+                f"learn: measures.json census.endZone.{k} is missing -- the blue-line "
+                "card cannot state what a zone is worth. Re-run derive.")
+    if not ez.get("n"):
+        raise SystemExit("learn: measures.json census.endZone has no n -- a share "
+                         "without its population is not quotable")
+    # ⛔ THE DIRECTION IS NOT VALIDATED HERE, ON PURPOSE. That the attacking club
+    # out-attempts the defending one is a FINDING, not an invariant, and a
+    # builder that refuses to run when a measurement changes its mind is a
+    # builder that hides the news. The claim the card's wording depends on is
+    # asserted in the suite instead, where a reversal is a failing test with a
+    # name rather than a build that will not start.
+    out.update({
+        "__ZONE_ATK__": f"{ez['atkPerDraw']:.2f}",
+        "__ZONE_DEF__": f"{ez['defPerDraw']:.2f}",
+        "__ZONE_DRAWS__": num(ez["n"]),
+    })
     # EVERY SHARE IT READS MUST STILL CARRY ITS OWN n AND POPULATION. The
     # published file is checked at the point of use, not trusted because CI
     # checked it once: a hand-edited `data/measures.json` is exactly how this
@@ -1707,7 +1734,7 @@ LEARN_CARDS = [
     ("ours", "slot", "Shots from the slot",
      "A shot taken from inside the slot goes in __SLOT_IN_PCT__% of the time "
      "&mdash; __SLOT_IN_GOALS__ goals from __SLOT_IN_ATT__ attempts. From "
-     "outside it, __SLOT_OUT_PCT__%. That gap is what the shading is for."),
+     "outside it, __SLOT_OUT_PCT__%. That gap is what the slot shading is for."),
     ("ours", "goaltending", "Goaltending",
      "Saves as a fraction, built while you watch. This is the first shot the "
      "goaltender had to deal with."),
@@ -1754,6 +1781,57 @@ LEARN_CARDS = [
      "__PP_PER60__ attempts on the power play, __EVEN_PER60__ at even strength, "
      "__PK_PER60__ killing a penalty. So part of a club&rsquo;s attempt lead can "
      "be nothing but the time it spent on the power play."),
+    # ⛔⛔ THE ELEVENTH CARD, AND KEVIN FOUND IT BY READING THE TENTH'S NEIGHBOUR:
+    # *"we say 'that gap is what the shading is for'. However, we don't explain
+    # what the blue line shading is for."* He is right twice over.
+    #
+    # (1) THE WORD "SHADING" NAMED THREE DIFFERENT MARKS. The slot lozenge, the
+    # blue-line band, and the green next-play cue -- and the third owns the word
+    # outright, because the game page carries a button labelled "Show the
+    # shading". On THIS page, where no shading is drawn at all, "the shading"
+    # pointed at nothing. The slot card now says "the slot shading"; this one
+    # names its own.
+    #
+    # (2) THE BAND HAD A RULE AND NO VALUE. `build_main.py`'s "What the marks
+    # mean" explains it as offside (Rule 83) and states the limit honestly --
+    # we count nothing at the line, because holding it leaves no event. That is
+    # what the paint FORBIDS. Nothing anywhere said what the zones it divides
+    # are WORTH, which is the same gap the card above this one closed for the
+    # phrase "all situations": a thing on screen with nothing behind it.
+    #
+    # ⭐⭐ AND THE FIGURE IS ONLY QUOTABLE BECAUSE IT IS BUILT THE WAY `zoneWorth`
+    # IS. The obvious number -- `census.faceoffZone`'s 2.395x offensive zone
+    # against 0.712x defensive -- MAY NOT GO ON A SURFACE, and `census.js` says
+    # why in its own words: the same physical draw lands in the O row or the D
+    # row depending only on who won it, so "the offensive zone" there secretly
+    # means "draws the attacking club won". `atkPerDraw` / `defPerDraw` sum BOTH
+    # outcomes and split by which club was attacking that end, so every end-zone
+    # draw is in both numbers and the only difference between them is direction.
+    #
+    # ⭐ THE THIRD SENTENCE IS NOT DECORATION. Without it a reader takes the
+    # defending club's 0.77 for shots at its own net; they are shots at the FAR
+    # end, which is what getting the puck out looks like. That makes the pair a
+    # statement about PERSISTENCE -- how strongly play tends to stay where the
+    # whistle put it -- which is the actual reason a line is worth holding, and
+    # a claim the measurement can carry.
+    #
+    # ⛔ AND THE LIMIT STAYS IN, unlike on the situations card, because here the
+    # mark and the measurement are about different things. The band is drawn at
+    # the LINE and the figure is about which SIDE of it play is on. Blur those
+    # and the card claims to measure the contest at the line -- the one thing
+    # the feed is blind to, since only 6.2% of located plays fall within five
+    # feet of a blue line and holding it produces no event at all. Same wall the
+    # offside card stands on, and the band is Kevin's aesthetic argument rather
+    # than a measurement: the card can say so and still carry a real number.
+    ("ours", "zones", "The attacking zone",
+     "Two blue lines cut the ice into three zones. The shaded strip at each one "
+     "is a boundary one club is trying to hold play inside and the other to "
+     "push it out. After a face-off in one team&rsquo;s end, the club attacking that end "
+     "takes __ZONE_ATK__ shot attempts before the next whistle, against "
+     "__ZONE_DEF__ for the club defending it &mdash; across __ZONE_DRAWS__ "
+     "draws. Those defending attempts are shots at the far end, which is what "
+     "getting the puck out looks like; at the line itself we count nothing, "
+     "because holding it leaves no event in the record."),
 ]
 
 # Spelled out rather than via strftime("%B"): this builder gates on BYTES, and

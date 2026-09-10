@@ -340,6 +340,83 @@ test('\u2b50\u2b50 the slot card leads with the FACT and the figures are substit
     'the card has started giving advice or reaching a conclusion');
 });
 
+test('⭐⭐ the blue-line card states the zone figure, its n, and the limit that keeps it honest', () => {
+  /* ⛔ KEVIN FOUND THE GAP FROM THE LIVE PAGE, 2026-09-10: the slot card said
+     *"that gap is what the shading is for"* and nothing anywhere said what the
+     BLUE-LINE shading is for. The band had a rule (offside) and no value.
+
+     ⭐⭐ AND THE FIGURE IS ONLY SAFE BECAUSE OF HOW IT IS BUILT, which is what
+     this asserts against the published file rather than against a number typed
+     here. `census.faceoffZone`'s per-zone table MAY NOT be quoted — the same
+     physical draw lands in its O row or its D row depending only on who won it —
+     so the card must carry `endZone.atkPerDraw` / `defPerDraw`, which sum both
+     outcomes and split by which club was attacking that end. */
+  const m1 = /<a class="card" id="zones"[^>]*>\s*<p class="t">([^<]*)<\/p><p>([\s\S]*?)<\/p>/.exec(html);
+  assert.ok(m1, 'the blue-line card has gone, or its markup no longer carries a blurb');
+  const [, title, blurb] = m1;
+
+  const m = JSON.parse(readFileSync(new URL('../data/measures.json', import.meta.url), 'utf8'));
+  const ez = m.census.endZone;
+  /* ⛔ EACH FIGURE IS TIED TO ITS SUBJECT, not merely present. The first draft
+     of this test asserted that both numbers appeared somewhere in the blurb —
+     which a card with the two of them SWAPPED passes perfectly, while telling a
+     reader that defending a zone produces nearly twice the attempts. "Present"
+     is the assertion that feels like coverage and is not. */
+  assert.match(blurb, new RegExp(`attacking that end[^.]*?takes ${ez.atkPerDraw.toFixed(2)}\\b`),
+    `the attacking club's rate (${ez.atkPerDraw.toFixed(2)}) is not the one attributed to it`);
+  assert.match(blurb, new RegExp(`${ez.defPerDraw.toFixed(2)}[^.]*?club defending it`),
+    `the defending club's rate (${ez.defPerDraw.toFixed(2)}) is not the one attributed to it`);
+  assert.ok(blurb.includes(ez.n.toLocaleString('en-US')),
+    'the figure is stated without its n — every published frequency must carry one');
+
+  /* ⛔ THE DIRECTION IS ASSERTED HERE AND NOWHERE ELSE, DELIBERATELY. That the
+     attacking club out-attempts the defending one is a FINDING, not an
+     invariant, so `_archive()` does not refuse to build on it — a builder that
+     will not start when a measurement changes its mind is a builder that hides
+     the news. The card's wording ("against X for the club defending it") does
+     depend on it, so a reversal has to be a failing test with a name. */
+  assert.ok(ez.atkPerDraw > ez.defPerDraw,
+    `the attacking club no longer out-attempts the defending one (${ez.atkPerDraw} vs `
+    + `${ez.defPerDraw}) — the card's comparison now reads backwards and the copy must change`);
+
+  /* ⭐ THE LIMIT IS IN THE CARD ITSELF, unlike the situations card, because here
+     the mark and the measurement are about different things: the band is drawn
+     at the LINE and the figure is about which SIDE of it play is on. Without
+     this clause the card claims to measure the contest at the line — the one
+     thing the feed is blind to, since holding a line produces no event. */
+  assert.match(blurb, /no event in the record|leaves no event/i,
+    'the card no longer says the line itself is unmeasured, so it claims the contest at it');
+
+  /* AND THE THIRD SENTENCE THAT STOPS THE MISREADING: without it a reader takes
+     the defending club's figure for shots at its own net. */
+  assert.match(blurb, /far end/i,
+    'the card does not say the defending attempts are shots at the far end');
+
+  // A FREQUENCY REPORTS; A VERDICT INSTRUCTS OR CONCLUDES (CHENG) — the same
+  // wall the slot card stands behind.
+  assert.doesNotMatch(blurb, /you should|must keep|the key to|wins games/i,
+    'the card has started giving advice or reaching a conclusion');
+  assert.ok(!/shading/i.test(title), 'the card is named for the paint rather than the zone');
+});
+
+test('⛔ "the shading" names three marks, so no card may use the bare phrase', () => {
+  /* KEVIN, FROM THE LIVE PAGE: the slot card's *"that gap is what the shading is
+     for"* pointed at nothing on a page that draws no shading, and on the game
+     page it pointed at whichever of three marks the reader noticed first — the
+     slot lozenge, the blue-line band, and the green next-play cue, which owns
+     the word outright because the replay carries a button labelled "Show the
+     shading". A definite article is only definite when there is one referent. */
+  const cardText = [...html.matchAll(/<a class="card"[^>]*>([\s\S]*?)<\/a>/g)].map(x => x[1]);
+  assert.ok(cardText.length >= 10, `only ${cardText.length} cards were found — the scrape is wrong`);
+  for (const t of cardText) {
+    const bare = /\bthe shading\b/i.exec(t);
+    assert.ok(!bare, `a card says "the shading" with no adjective: ${t.slice(0, 120)}`);
+  }
+  // AND THE SLOT CARD STILL NAMES ITS OWN, rather than having dropped the
+  // reference altogether — the sentence has a job and it is still doing it.
+  assert.match(html, /slot shading/, 'the slot card no longer points at its shading at all');
+});
+
 test('\u2b50 and the slot PAGE carries the base rate as its limit', () => {
   /* The template's closing move: the rules pages spend it on "what to watch",
      the measurement pages have to spend it on what the number does NOT say.

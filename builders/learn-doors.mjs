@@ -33,6 +33,7 @@ import { NOT_A_PLAY, playable } from '../src/lib/layer.js';
 import { corsi } from '../src/lib/layers/corsi.js';
 import { danger } from '../src/lib/layers/danger.js';
 import { goaltending } from '../src/lib/layers/goaltending.js';
+import { zonestart } from '../src/lib/layers/zonestart.js';
 import { situation, POWER_PLAY } from '../src/lib/strength.js';
 import { stable } from './measure.mjs';
 
@@ -59,6 +60,13 @@ function lastOfFirstPowerPlay(layer, events, ctx) {
   while (end + 1 < events.length && adv(end + 1) === club) end++;
   const counted = new Set(layer.reduce(events, ctx).counted);
   for (let i = end; i >= start; i--) if (counted.has(i) && events[i].own === club) return i;
+  return -1;
+}
+
+/** The first draw `zonestart` places in the winner's OFFENSIVE zone. */
+function firstZoneStart(events, ctx) {
+  const { counted, zones } = zonestart.reduce(events, ctx);
+  for (const i of counted) if (zones[i] === 'O') return i;
   return -1;
 }
 
@@ -134,6 +142,28 @@ export function doors(game) {
        refuses; the final attempt of the first power play is decided by the feed. */
     ['situations', ['corsi'], lastOfFirstPowerPlay(corsi, events, ctx),
      'the last attempt the Control layer counts inside this game\'s first power play'],
+    /* ⭐ THE ZONE CARD OPENS ON A DRAW, WITH THE LAYER THAT PLACES IT — and the
+       frame already carries the lesson, which is why this one is a FIRST where
+       the situations door had to be a LAST. Zone starts rings the dot as the
+       draw happens, so at this frame the count has moved; Control's box would
+       not have.
+
+       ⛔ AND IT IS AN OFFENSIVE-ZONE DRAW RATHER THAN ANY END-ZONE DRAW, to
+       keep it off a frame two other cards already own. The icing restart is an
+       end-zone draw by construction — deep in the offending team's end is what
+       Rule 81 means — and it is the frame BOTH the icing and faceoffs cards
+       open on, a pairing Kevin ruled stays. A third card there would be three
+       lessons on one screen. `zones[i] === 'O'` is the layer's own vocabulary,
+       decided by the winner's attacking direction and the sign of x, so this is
+       read from the feed rather than chosen.
+
+       ⚠️ THIS RULE DOES NOT MAKE THE COLLISION IMPOSSIBLE, only unlikely, and
+       that is worth saying out loud: another game could open with an offensive-
+       zone draw that is also some other card's moment. The shared-frame guard
+       in `test/learn.test.js` is what actually holds, and it holds for every
+       pair rather than for the one I thought of. */
+    ['zones', ['zonestart'], firstZoneStart(events, ctx),
+     'the first draw the Zone starts layer places in a club\'s offensive zone'],
   ];
 
   const missing = found.filter(([, , i]) => i < 0).map(([id]) => id);

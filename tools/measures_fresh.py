@@ -55,6 +55,15 @@ WATCHED = [
     ("census", "pace", "even", "per60"),
     ("census", "pace", "ppFor", "per60"),
     ("census", "pace", "ppAgainst", "per60"),
+    # AND census.endZone JOINED WITH THE ELEVENTH CARD, by the same rule: the
+    # blue-line card prints these three, so they are page-facing and a stale
+    # copy would put last month's figure under a teaching sentence. `n` is
+    # watched alongside the two rates because the card quotes its own
+    # population, and a share whose n has moved while its rate has not is the
+    # quieter half of the same drift.
+    ("census", "endZone", "atkPerDraw"),
+    ("census", "endZone", "defPerDraw"),
+    ("census", "endZone", "n"),
 ]
 
 
