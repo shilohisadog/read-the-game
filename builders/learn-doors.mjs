@@ -87,6 +87,58 @@ function firstWhileTrailing(layer, events, ctx) {
   return -1;
 }
 
+/**
+ * ⭐⭐ THE BIGGEST GROUP OF SKATERS TO CHANGE **WHILE THE PLAY WAS RUNNING**.
+ *
+ * The shift card's subject is that skaters come off during live play, so the
+ * door has to be a change on the fly rather than the tidy one at a whistle that
+ * every sport has. "During play" is defined by the EVENTS — a second lying
+ * strictly between two consecutive playable frames with no stoppage, faceoff or
+ * period marker between them — so there is no time window chosen by us.
+ *
+ * ⛔ AND IT IS NOT THE GAME'S LONGEST SHIFT, which was the first rule tried and
+ * is worse in two ways: in this game the longest ends at the final buzzer, so
+ * it is an artifact of the game ending, and a door onto the longest shift would
+ * point a reader at the EXCEPTION while the card states the median. A card that
+ * says 46 seconds should not open on 150.
+ *
+ * ⭐ "LARGEST" IS A DEFINITION, NOT A THRESHOLD — the same standard the
+ * situations door reached for by taking a LAST.
+ */
+function biggestChangeDuringPlay(game, events) {
+  const PLAY = playable(events);
+  const starts = {};
+  for (const r of (game.shifts || [])) {
+    if ((game.roster?.[r.p] || {}).pos === 'G') continue;
+    (starts[r.s] ||= []).push(r.p);
+  }
+  const idx = new Map(events.map((e, i) => [e, i]));
+  const BREAKS = ['stoppage', 'faceoff', 'period-end', 'period-start'];
+  const live = new Set();
+  for (let k = 0; k < PLAY.length - 1; k++) {
+    const a = idx.get(PLAY[k]), b = idx.get(PLAY[k + 1]);
+    if (PLAY[k].per !== PLAY[k + 1].per) continue;
+    let broke = false;
+    for (let j = a + 1; j < b; j++) if (BREAKS.includes(events[j].type)) broke = true;
+    if (broke) continue;
+    for (let sec = PLAY[k].s + 1; sec < PLAY[k + 1].s; sec++) live.add(sec);
+  }
+  let best = null;
+  for (const [sec, who] of Object.entries(starts)) {
+    if (!live.has(+sec)) continue;
+    if (!best || who.length > best.n || (who.length === best.n && +sec < best.s))
+      best = { s: +sec, n: who.length };
+  }
+  if (!best) return { index: -1, n: 0 };
+  const frame = PLAY.find(e => e.s >= best.s);
+  /* ⭐ THE COUNT IS PUBLISHED, not just used. A door that says "the biggest
+     group of skaters to change while the play was running" and does not say how
+     many is asking to be trusted — and it is what makes the goaltender
+     exclusion testable at all: deleting that filter moved no FRAME on this
+     game, so the line was decoration until the number was in the artifact. */
+  return { index: frame ? events.indexOf(frame) : -1, n: best.n };
+}
+
 function firstCounted(layer, events, ctx, keep) {
   const { counted } = layer.reduce(events, ctx);
   for (const i of counted) if (!keep || keep(events[i])) return i;
@@ -125,6 +177,7 @@ export function doors(game, ot) {
                 roster: game.roster, evenOnly: false };
 
   const icing = firstWhere(events, e => e.rsn === 'icing');
+  const bigChange = biggestChangeDuringPlay(game, events);
 
   // Each entry states the RULE that found it, and the rule is what a test
   // drives — a literal index here would be a constant standing in for a
@@ -220,6 +273,11 @@ export function doors(game, ot) {
        one situation it excludes. The door asks the layer with `evenOnly` set, so
        the moment and the sentence are selected by the same rule rather than by
        two that happen to agree. */
+    /* ⛔ NO LAYER. Nothing here is toggled, and there is nothing to draw: the
+       site shows no skaters, which is precisely why the card has to SAY this
+       rather than show it. The empty-net card's precedent. */
+    ['shifts', [], bigChange.index,
+     'the frame after the biggest group of skaters to change while the play was running'],
     ['score', ['corsi'], firstWhileTrailing(corsi, events, { ...ctx, evenOnly: true }),
      'the first attempt the Control layer counts at even strength for a club that is behind',
      'even'],
@@ -318,6 +376,8 @@ export function doors(game, ot) {
   const { counted } = corsi.reduce(events, ctx);
   for (const i of counted) if (events[i].type in mix) mix[events[i].type]++;
   const n = counted.length;
+
+  if (out.shifts) out.shifts.changed = bigChange.n;
 
   if (ot) {
     const OTPLAY = playable(ot.events);

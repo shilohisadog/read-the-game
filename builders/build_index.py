@@ -1368,6 +1368,25 @@ def _archive():
         "__EVEN_TIED_PER60__": f"{p['evenTied']['per60']:.0f}",
         "__EVEN_LEAD_PER60__": f"{p['evenLead']['per60']:.0f}",
     })
+    # ⭐⭐ HOW LONG A SHIFT IS. The one thing in `shifts` no surface has ever read,
+    # and the fact that makes a line change legible to a first-time watcher.
+    # ⛔ THE MEDIAN COMES FROM THE DISTRIBUTION, not from an average of per-game
+    # medians -- `census.js` carries 1-second bins for exactly that reason.
+    sh = (m.get("census") or {}).get("shift") or {}
+    for k in ("median", "underMinute", "perPlayerGame", "n"):
+        if sh.get(k) is None:
+            raise SystemExit(
+                f"learn: measures.json census.shift.{k} is missing -- the shift card "
+                "cannot state how long a shift is. Re-run derive.")
+    out.update({
+        "__SHIFT_MED__": f"{sh['median']:.0f}",
+        # A PERCENTAGE HERE, like the slot card and unlike the summary band: this
+        # is a share of a named population with its n one clause away, not a
+        # threshold anybody chose.
+        "__SHIFT_UNDER__": f"{sh['underMinute'] * 100:.0f}",
+        "__SHIFT_PER__": f"{sh['perPlayerGame']:.0f}",
+        "__SHIFT_N__": num(sh["n"]),
+    })
     ez = (m.get("census") or {}).get("endZone") or {}
     for k in ("atkPerDraw", "defPerDraw"):
         if ez.get(k) is None:
@@ -1958,6 +1977,27 @@ LEARN_CARDS = [
     # bounces while being outplayed. Every sentence is descriptive, which is
     # what the measurements half is allowed to say, and which is why there is
     # no "because" anywhere in the blurb.
+    # ⭐⭐ KEVIN, AFTER THE INVENTORY FOUND `shifts` UNREAD: *"the shift length card
+    # might be educational too."* It is the most fan-facing thing in the whole
+    # artifact -- players hopping over the boards mid-play is the single most
+    # confusing part of a first hockey game, and no surface said a word about it.
+    #
+    # ⭐ THE POPULATION IS SKATERS, and the card says "skater" rather than
+    # "player" for that reason: a goaltender's shift is most of the game and is
+    # excluded from every figure here (`census.js`).
+    #
+    # ⛔ THE LAST SENTENCE IS THE LESSON, NOT THE NUMBERS. Three figures with no
+    # takeaway is the draft Kevin rejected on the All situations card -- "it
+    # doesn't read like it's teaching anything". What a novice needs is not 46
+    # seconds; it is that the five in front of them are not the five who were
+    # there a minute ago, which is what those 46 seconds MEAN.
+    ("ours", "shifts", "How long a shift is",
+     "Nobody stays on the ice for long. Hockey is played in short bursts and "
+     "skaters come off while the play is still running &mdash; a shift lasts a "
+     "median of __SHIFT_MED__ seconds, __SHIFT_UNDER__% of them under a minute, "
+     "and a skater takes about __SHIFT_PER__ of them a night, measured over "
+     "__SHIFT_N__ shifts. So the five in front of you now are mostly not the "
+     "five who were there a minute ago."),
     ("ours", "score", "Score effects",
      "A club that is behind takes more shot attempts, and a club that is ahead "
      "takes fewer &mdash; that is what <em>score effects</em> means. Measured "

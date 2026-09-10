@@ -589,6 +589,98 @@ test('⛔ a card footer names the moment in the PAGE\'S own words, not a second 
     'the overtime door no longer carries the page\'s overtime label');
 });
 
+test('⭐⭐ the shift card states the median from the DISTRIBUTION, carries its n, and ends on the lesson', () => {
+  /* ⭐ KEVIN, AFTER THE INVENTORY FOUND `shifts` UNREAD: *"the shift length card
+     might be educational too."* Players hopping over the boards mid-play is the
+     single most confusing part of a first hockey game and no surface said a word.
+
+     ⛔ THE LAST SENTENCE IS THE CARD, NOT THE FIGURES. Three numbers with no
+     takeaway is the draft Kevin rejected on All situations — *"it doesn't read
+     like it's teaching anything"*. What a novice needs is not 46 seconds; it is
+     what 46 seconds MEANS. */
+  const m = /<a class="card" id="shifts"[^>]*>\s*<p class="t">([^<]*)<\/p><p>([\s\S]*?)<\/p>/.exec(html);
+  assert.ok(m, 'the shift card is gone');
+  const blurb = m[2];
+  const sh = JSON.parse(readFileSync(new URL('../data/measures.json', import.meta.url), 'utf8'))
+    .census.shift;
+
+  assert.match(blurb, new RegExp(`median of ${sh.median} seconds`),
+    `the card does not state the published median (${sh.median}s)`);
+  assert.match(blurb, new RegExp(`${(sh.underMinute * 100).toFixed(0)}% of them under a minute`),
+    'the under-a-minute share is not the published one, or is not attributed to it');
+  assert.ok(blurb.includes(sh.n.toLocaleString('en-US')),
+    'the figure is stated without its n — every published frequency must carry one');
+
+  /* ⛔ "SKATER", NEVER "PLAYER". A goaltender's shift is most of the game and is
+     excluded from every figure here; a card saying "player" would describe a
+     population it is not measuring. */
+  assert.doesNotMatch(blurb, /a player takes|every player|each player/i,
+    'the card says "player" where the population is skaters only');
+  assert.match(blurb, /skater/i, 'the card never names the population it measured');
+
+  // AND THE TAKEAWAY SURVIVES A COPY PASS: a sentence about what the number
+  // means, after the numbers.
+  const tail = blurb.slice(blurb.lastIndexOf('.', blurb.length - 2));
+  assert.doesNotMatch(tail, /\d/, 'the card now ends on a figure rather than on the lesson');
+});
+
+test('⛔ the shift door is a change made DURING PLAY, not the tidy one at a whistle', () => {
+  /* ⛔⛔ THE FIRST RULE TRIED WAS THE GAME'S LONGEST SHIFT, and it was wrong
+     twice: in this game the longest ends at the final buzzer, so it is an
+     artifact of the game ending — and a card that states a MEDIAN of 46 seconds
+     must not open on a 150-second exception. The card's subject is that skaters
+     change while the play is running, so the door has to be one of those. */
+  const door = built.doors.shifts;
+  const ev = rich.events;
+  const at = parse(query(door.href)).at;
+  const i = ev.findIndex(e => e.per === at.per && e.rem === at.rem && e.type === door.type);
+  assert.ok(i >= 0, 'the shift door names a frame the game does not contain');
+
+  // The second the change happened is before this frame, and no stoppage,
+  // faceoff or period marker sits between the two — which is what "during play"
+  // means here, defined by the events rather than by a time window.
+  const skaterStartsAt = s => rich.shifts.filter(
+    r => r.s === s && (rich.roster[r.p] || {}).pos !== 'G').length;
+  let found = 0, blocked = false;
+  for (let j = i - 1; j >= 0; j--) {
+    if (['stoppage', 'faceoff', 'period-end', 'period-start'].includes(ev[j].type)) { blocked = true; break; }
+    if (ev[j].per !== ev[i].per) { blocked = true; break; }
+    for (let s = ev[j].s + 1; s < ev[i].s + 1; s++) found = Math.max(found, skaterStartsAt(s));
+    if (found) break;
+  }
+  assert.ok(!blocked && found >= 2,
+    `the shift door does not follow an on-the-fly change (found ${found} skaters, `
+    + `blocked=${blocked}) — it is pointing at a line change at a whistle`);
+  assert.deepEqual(door.layers, [],
+    'the shift door toggles a layer, and there is nothing about a shift to draw');
+
+  /* ⛔⛔ AND THE GOALIE EXCLUSION IS PROVEN BY A CONTROL, because a mutation
+     could not reach it: deleting `pos === 'G'` from the door's counter changed
+     NOTHING on this game, so the line was decoration until this existed. A
+     goaltender changing on the fly is a pulled goalie — not the card's subject
+     — so a swarm of goalie rows at one live second must not be able to win.
+     Five of them at the second before the current frame would beat the real
+     four skaters if the filter were gone. */
+  const sec = ev[i].s - 1;
+  const gid = +Object.keys(rich.roster).find(id => rich.roster[id].pos === 'G');
+  const swarm = Array.from({ length: 5 }, () => ({ p: gid, t: rich.teams.home.id, s: sec, e: sec + 30 }));
+  const moved = doors({ ...rich, shifts: [...rich.shifts, ...swarm] }, richOt);
+  assert.equal(moved.doors.shifts.changed, door.changed,
+    'five goaltender shift-starts changed the door\'s count — a pulled goalie is '
+    + 'being read as a line change');
+  /* NON-VACUITY, and the first draft of it was wrong: injecting at a second in
+     the door's OWN gap cannot move the href, because the next playable frame is
+     the same one. The count is what the filter actually decides, so the count is
+     what both halves assert. */
+  const sid = +Object.keys(rich.roster).find(id => rich.roster[id].pos !== 'G');
+  const skaterSwarm = Array.from({ length: 5 }, () => ({ p: sid, t: rich.teams.home.id, s: sec, e: sec + 30 }));
+  const moved2 = doors({ ...rich, shifts: [...rich.shifts, ...skaterSwarm] }, richOt);
+  assert.equal(moved2.doors.shifts.changed, 5,
+    'five SKATER shift-starts did not become the biggest change — the control proves nothing');
+  assert.ok(door.changed >= 2,
+    `the door records ${door.changed} skaters changing, which is not a line change`);
+});
+
 test('⛔ "the shading" names three marks, so no card may use the bare phrase', () => {
   /* KEVIN, FROM THE LIVE PAGE: the slot card's *"that gap is what the shading is
      for"* pointed at nothing on a page that draws no shading, and on the game
