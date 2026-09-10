@@ -336,13 +336,16 @@ it's caught three false premises."* **§0 of the next artifact carries that step
 
 1. **§6.2**, on Kevin's ruling (§9.5).
 2. **The dose-response on a surface**, under §9.2's two conditions.
-3. **The mechanism figures**, now archive-wide and quotable — with the
-   even-strength control beside them since 2026-09-10 — and still nowhere quoted.
-   ⭐ **The obvious home is a twelfth learn card**, on the precedent the eleventh
-   just set: the measurements half may state how often, a card can carry a
-   measurement where it cannot carry an argument, and the card would sit beside
-   `All situations` saying the other half of the same lesson — part of an attempt
-   lead is the power play, and part of it is the scoreboard.
+3. ✅ **The mechanism figures are QUOTED** — `Score effects`, the twelfth learn
+   card, shipped 2026-09-10 (`dda5041`). It carries both rows, because the
+   even-strength one is the card's licence rather than an extra: **66 / 59 / 53
+   per 60 all situations, 64 against 53 with both goaltenders on the ice and the
+   sides even.** It sits beside `All situations` and **ends on the same sentence
+   pattern deliberately** — part of an attempt lead is the power play, part of it
+   is the scoreboard — and a test pins that parallel, because a copy pass that
+   varied the language would break the one thing making them read as one lesson.
+   ⛔ **§1's pair is NOT quoted on it**: a card carries a measurement, and joining
+   two of them is an argument (§6.1's job, still unbuilt).
 4. ⭐ **Kevin's own next question, and the bigger one:** *"score-effects, even
    strength, power play/penalty kill type of information that we need to be
    seamless across the site (which I'm not sure that's the case currently)."*

@@ -56,13 +56,16 @@ zones it divides are worth. That is the eleventh card, `The attacking zone`,
 shipped 2026-09-10. **Every remaining item on the seamlessness list should be read
 the same way: a phrase on screen, and what stands behind it.**
 
-⏭ **THE TWELFTH CARD IS SPECIFIED AND UNBUILT: score effects.** Both figures are
-archive-wide and quotable as of 2026-09-10 — **65.55 trailing against 52.61
-leading per 60** (1.246×), and **63.58 against 53.21 at even strength only**
-(1.195×), so the pulled goaltender carries about a fifth of it and not the rest.
-`docs/score-effects.md` §4 and §10.3. It is the other half of the `All situations`
-lesson: part of an attempt lead is the power play, and part of it is the
-scoreboard.
+✅ **AND THE TWELFTH CARD SHIPPED THE SAME DAY: `Score effects`.** **65.55
+trailing against 52.61 leading per 60** (1.246×), and **63.58 against 53.21 at
+even strength only** (1.195×) — so the pulled goaltender carries about a fifth of
+it and not the rest. ⭐ **THE SECOND ROW IS THE CARD'S LICENCE, NOT AN EXTRA:**
+every framing of score effects meets *"isn't that just the empty net?"*
+immediately, and until that morning the only answer on file was 48 games.
+⭐⭐ **The two condition cards END ON THE SAME SENTENCE PATTERN AND A TEST PINS
+IT** — *"nothing but the time it spent on the power play"* / *"nothing but the
+time it spent behind"*. That parallel IS the one vocabulary, and it is exactly
+what a well-meaning copy pass destroys by varying the language.
 
 ⏸ **ALSO IN FLIGHT: the layer registry** — agreed 2026-09-10, specified further
 down this section with a countable acceptance criterion. Not started. And
@@ -75,7 +78,13 @@ recorded where it was STOPPED**, so the mark is displaced toward the net for
 37.5% of the D population against 23.1% of the F one — unevenly, between the two
 groups the layer exists to compare. Decide that before drawing anything.
 
-Tree clean, CI green, 14 commits on 2026-09-10. Counts are in the generated
+⏭ **WHAT THE AUDIT HAS NOT REACHED YET** — three of the four surfaces. The two
+cards are now the fixed point to measure the others against: the front door's
+paired base rates, the game page's newcomer block, and the replay's power-play
+pill plus its `MODE()` line. **Nothing has read those three as one vocabulary,
+and the cards prove the exercise is worth running.**
+
+Tree clean, CI green, 16 commits on 2026-09-10. Counts are in the generated
 health block above — ⚠️ **do not quote them from prose anywhere, including this
 sentence's neighbours.**
 
@@ -113,6 +122,13 @@ a reader that defending a zone produces nearly twice the attempts. Present is th
 assertion that feels like coverage and is not; each figure is now tied to its
 subject by name, and the swap is one of five mutations seen to fail. ⭐ §H5 again,
 and the fifth instance in two days.
+
+⭐⭐ **AND THE SAME TEST HOLE, TWICE IN AN HOUR, CAUGHT THE SECOND TIME BY THE
+FIRST.** The score-effects card's guard was written knowing that *three figures
+being PRESENT* passes a card with them in the wrong order — a card saying clubs
+attempt LESS when behind is worse than no card at all. Every figure on both new
+cards is tied to its subject by name. ⭐ **The lesson generalises past copy: an
+assertion that a value APPEARS is almost never the claim being made about it.**
 
 ⭐ **THE DOOR CLOSED A SEAM NOBODY HAD NAMED.** Zone starts shipped that morning
 as the only layer with **no learn card**, so the work panel's Learn More row was
