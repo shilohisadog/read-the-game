@@ -399,6 +399,90 @@ test('⭐⭐ the blue-line card states the zone figure, its n, and the limit tha
   assert.ok(!/shading/i.test(title), 'the card is named for the paint rather than the zone');
 });
 
+test('⭐⭐ the score-effects card states BOTH rows, and the even-strength row is what makes the first printable', () => {
+  /* ⭐ THE CARD EXISTS BECAUSE THE SITE ALREADY PUBLISHED BOTH HALVES OF ITS OWN
+     HEADLINE AND JOINED NEITHER. More attempts lost 2,228 of 4,100; controlling
+     play while the score was level lost 1,560 of 3,925. A reader who notices
+     that pair has one question, and score effects is the answer.
+
+     ⛔ AND THE SECOND ROW IS NOT DECORATION — it is the card's licence. The first
+     objection to any score-effects figure is the pulled goaltender, and an
+     all-situations rate cannot answer it. `EVEN` in strength.js means both
+     goaltenders on the ice AND equal skaters, so the sentence is literally true
+     of every second in that row. A card that dropped it would be quoting a
+     number whose obvious rebuttal we can answer and did not. */
+  const m2 = /<a class="card" id="score"[^>]*>\s*<p class="t">[^<]*<\/p><p>([\s\S]*?)<\/p>/.exec(html);
+  assert.ok(m2, 'the score-effects card has gone, or its markup no longer carries a blurb');
+  const blurb = m2[1];
+
+  const p = JSON.parse(readFileSync(new URL('../data/measures.json', import.meta.url), 'utf8'))
+    .census.pace;
+  const r = k => p[k].per60.toFixed(0);
+
+  /* ⛔ EACH FIGURE TIED TO ITS SUBJECT, which is the lesson the blue-line card
+     paid for an hour earlier: asserting that three numbers are PRESENT passes a
+     card that has them in the wrong order, and a card claiming clubs attempt
+     LESS when behind is worse than no card. Trailing and leading round to two
+     different values, so the pairing is checkable. */
+  assert.match(blurb, new RegExp(`${r('trail')} while trailing`),
+    `the trailing rate (${r('trail')}) is not the one attributed to trailing`);
+  assert.match(blurb, new RegExp(`${r('tied')} while the score is level`),
+    `the tied rate (${r('tied')}) is not the one attributed to a level score`);
+  assert.match(blurb, new RegExp(`${r('lead')} while leading`),
+    `the leading rate (${r('lead')}) is not the one attributed to leading`);
+  assert.match(blurb, new RegExp(`${r('evenTrail')} against ${r('evenLead')}`),
+    'the even-strength control is missing, or its two figures are the wrong way round');
+
+  /* ⛔ THE DIRECTION IS A FINDING, NOT AN INVARIANT — asserted here rather than
+     in `_archive()`, on the rule the blue-line card set: a builder that refuses
+     to run when a measurement changes its mind is a builder that hides the news.
+     Both rows must point the same way or the card's whole framing is wrong. */
+  assert.ok(p.trail.per60 > p.tied.per60 && p.tied.per60 > p.lead.per60,
+    `the score-effects gradient is no longer monotonic (${p.trail.per60} / `
+    + `${p.tied.per60} / ${p.lead.per60}) — the card's wording must change`);
+  assert.ok(p.evenTrail.per60 > p.evenLead.per60,
+    'the effect has vanished at even strength — the card says it survives, and it must not '
+    + 'say that from a stale number');
+
+  // AND THE CONTROL'S OWN INVARIANT, published beside it: leading and trailing
+  // cover identical seconds inside even strength, or the second row is a rate
+  // over a denominator nobody can name.
+  assert.equal(p.balancedEven, true, 'census.pace.balancedEven is false — the control is unsafe');
+
+  /* ⛔ NO CAUSAL CLAIM. Nothing measured here shows that leading CAUSES a club
+     to attempt less; a club can be ahead because it got the bounces while being
+     outplayed. The blurb is descriptive throughout, which is what this half of
+     the page is allowed to say. */
+  assert.doesNotMatch(blurb, /\bbecause (?:it is|they are|a club is) (?:ahead|behind|leading|trailing)\b|causes|makes them/i,
+    'the card has started explaining WHY, which the measurement does not support');
+});
+
+test('⭐ the two condition cards say the same shape of thing, which is the point', () => {
+  /* KEVIN'S ASK, 2026-09-10: score effects, even strength and power play/penalty
+     kill *"need to be seamless across the site"*. `All situations` and `Score
+     effects` are the same claim about two different conditions — part of an
+     attempt lead is the power play, part of it is the scoreboard — so they end
+     on the same sentence pattern deliberately. This pins the parallel, because
+     a copy pass that "varies the language" would break the one thing that makes
+     them read as one lesson. */
+  const grab = id => {
+    const m = new RegExp(`<a class="card" id="${id}"[^>]*>\\s*<p class="t">[^<]*<\/p><p>([\\s\\S]*?)<\/p>`).exec(html);
+    assert.ok(m, `the ${id} card has gone`);
+    return m[1];
+  };
+  for (const id of ['situations', 'score']) {
+    assert.match(grab(id), /part of a club&rsquo;s attempt lead can be nothing but the time it spent/,
+      `the ${id} card no longer ends on the shared sentence, so the pair stops reading as one lesson`);
+    assert.match(grab(id), /per 60 minutes/,
+      `the ${id} card states a rate without the sport's unit — "in an hour" was rejected once`);
+  }
+  // AND THEY ARE NOT THE SAME CARD: the conditions they name must differ, or
+  // the parallel above is satisfied by a duplicate.
+  assert.match(grab('situations'), /power play/);
+  assert.match(grab('score'), /trailing/);
+  assert.ok(grab('situations') !== grab('score'), 'the two cards are byte-identical');
+});
+
 test('⛔ "the shading" names three marks, so no card may use the bare phrase', () => {
   /* KEVIN, FROM THE LIVE PAGE: the slot card's *"that gap is what the shading is
      for"* pointed at nothing on a page that draws no shading, and on the game

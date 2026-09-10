@@ -1340,6 +1340,31 @@ def _archive():
     # teaching sentence is not making. Same reasoning as the whole-attempt
     # rounding above, arriving at a different place because the numbers are
     # smaller.
+    # ⭐ WHAT THE SCOREBOARD DOES TO THE SAME NUMBER, and the second row is the
+    # one that makes the first quotable. `evenLead`/`evenTrail` is a CROSS-TAB,
+    # not a narrowing — see the accumulator — so the card can answer "isn't that
+    # just the pulled goalie?" with a measurement instead of an argument.
+    # ⛔ `balancedEven` IS CHECKED LIKE `balanced`: leading and trailing must
+    # cover identical seconds inside even strength too, or the second row is
+    # over a denominator nobody can name.
+    for k in ("lead", "tied", "trail", "evenLead", "evenTrail"):
+        z = p.get(k) or {}
+        if z.get("per60") is None or not z.get("minutes"):
+            raise SystemExit(
+                f"learn: measures.json census.pace.{k} has no rate or no minutes -- "
+                "re-run derive and refresh data/measures.json")
+    if not p.get("balancedEven"):
+        raise SystemExit(
+            "learn: measures.json census.pace.balancedEven is false -- leading and "
+            "trailing disagree INSIDE even strength, so the score-effects card's "
+            "control is over a denominator nobody can name")
+    out.update({
+        "__TRAIL_PER60__": f"{p['trail']['per60']:.0f}",
+        "__TIED_PER60__": f"{p['tied']['per60']:.0f}",
+        "__LEAD_PER60__": f"{p['lead']['per60']:.0f}",
+        "__EVEN_TRAIL_PER60__": f"{p['evenTrail']['per60']:.0f}",
+        "__EVEN_LEAD_PER60__": f"{p['evenLead']['per60']:.0f}",
+    })
     ez = (m.get("census") or {}).get("endZone") or {}
     for k in ("atkPerDraw", "defPerDraw"):
         if ez.get(k) is None:
@@ -1832,6 +1857,42 @@ LEARN_CARDS = [
      "draws. Those defending attempts are shots at the far end, which is what "
      "getting the puck out looks like; at the line itself we count nothing, "
      "because holding it leaves no event in the record."),
+    # ⭐⭐ THE TWELFTH CARD, AND IT IS THE OTHER HALF OF THE TENTH'S LESSON.
+    # `All situations` says part of an attempt lead is the power play; this says
+    # part of it is the scoreboard. The two are deliberately built to the same
+    # shape and end on the same sentence pattern, because they are the same
+    # claim about two different conditions -- and one vocabulary across the page
+    # is the thing Kevin asked for by name.
+    #
+    # ⭐ IT ALSO EXPLAINS THE SITE'S OWN HEADLINE, which is why it is worth a
+    # card rather than a footnote. The front door says the club with more shot
+    # attempts LOST 2,228 of 4,100, and the club that controlled play while the
+    # score was level lost only 1,560 of 3,925. A reader who notices that pair
+    # has exactly one question, and this is the answer to it. ⛔ The pair is NOT
+    # quoted here: a card carries a measurement, and connecting two of them is
+    # an argument. `docs/score-effects.md` Sec 6.1.
+    #
+    # ⭐⭐ THE THIRD SENTENCE IS THE REASON THE FIRST TWO MAY BE PRINTED. The
+    # first objection anyone makes is the pulled goaltender -- a club that is
+    # behind late plays six against five -- and until 2026-09-10 the only answer
+    # on file was a LOCAL 48-game measurement. `pace.evenTrail`/`evenLead` is
+    # that answer over the archive, and `EVEN` in `strength.js` means both
+    # goaltenders on the ice AND equal skaters, so the sentence is literally
+    # true of every second in it.
+    #
+    # ⛔ NO CAUSAL CLAIM, AND NONE IS NEEDED. Nothing here shows that leading
+    # CAUSES a club to attempt less -- a club can be ahead because it got the
+    # bounces while being outplayed. Every sentence is descriptive, which is
+    # what the measurements half is allowed to say, and which is why there is
+    # no "because" anywhere in the blurb.
+    ("ours", "score", "Score effects",
+     "A club that is behind takes more shot attempts, and a club that is ahead "
+     "takes fewer &mdash; that is what <em>score effects</em> means. Measured "
+     "per 60 minutes: __TRAIL_PER60__ while trailing, __TIED_PER60__ while the "
+     "score is level, __LEAD_PER60__ while leading. It is not the pulled "
+     "goaltender: with both goaltenders on the ice and the sides even, it is "
+     "still __EVEN_TRAIL_PER60__ against __EVEN_LEAD_PER60__. So part of a "
+     "club&rsquo;s attempt lead can be nothing but the time it spent behind."),
 ]
 
 # Spelled out rather than via strftime("%B"): this builder gates on BYTES, and

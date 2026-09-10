@@ -70,6 +70,22 @@ function firstZoneStart(events, ctx) {
   return -1;
 }
 
+/** The first attempt `layer` counts whose club is BEHIND when it is taken. */
+function firstWhileTrailing(layer, events, ctx) {
+  const counted = new Set(layer.reduce(events, ctx).counted);
+  let hg = 0, ag = 0;
+  for (let i = 0; i < events.length; i++) {
+    const e = events[i];
+    if (counted.has(i) && e.own != null) {
+      const mine = e.own === ctx.homeId ? hg : ag;
+      const theirs = e.own === ctx.homeId ? ag : hg;
+      if (mine < theirs) return i;
+    }
+    if (e.type === 'goal') { if (e.own === ctx.homeId) hg++; else if (e.own === ctx.awayId) ag++; }
+  }
+  return -1;
+}
+
 function firstCounted(layer, events, ctx, keep) {
   const { counted } = layer.reduce(events, ctx);
   for (const i of counted) if (!keep || keep(events[i])) return i;
@@ -164,6 +180,19 @@ export function doors(game) {
        pair rather than for the one I thought of. */
     ['zones', ['zonestart'], firstZoneStart(events, ctx),
      'the first draw the Zone starts layer places in a club\'s offensive zone'],
+    /* ⭐ THE SCORE CARD OPENS ON THE FIRST ATTEMPT A TRAILING CLUB TAKES, which
+       is the earliest frame where the card's subject EXISTS: before the first
+       goal no club is behind, so there is nothing on the scoreboard for the
+       sentence to be about. That makes "first" a definition here rather than a
+       convenience — the same standard the situations door had to reach for by
+       taking a LAST.
+
+       ⛔ THE SCORE IS READ BEFORE THE EVENT, never after, for the reason
+       `census.js` gives at the same seam: the attempt that IS the goal was
+       taken in the state that existed before it went in, and crediting it to
+       the lead it created would let a club's own goal decide it was chasing. */
+    ['score', ['corsi'], firstWhileTrailing(corsi, events, ctx),
+     'the first attempt the Control layer counts for a club that is behind'],
   ];
 
   const missing = found.filter(([, , i]) => i < 0).map(([id]) => id);

@@ -61,6 +61,16 @@ WATCHED = [
     # watched alongside the two rates because the card quotes its own
     # population, and a share whose n has moved while its rate has not is the
     # quieter half of the same drift.
+    # AND THE SCORE-EFFECTS PAIR, WITH ITS CONTROL. `evenTrail`/`evenLead` are
+    # watched beside the all-situations three because the card prints BOTH rows
+    # and the second one is what makes the first quotable -- a stale control is
+    # worse than a stale figure, since it answers an objection with last month's
+    # evidence.
+    ("census", "pace", "trail", "per60"),
+    ("census", "pace", "tied", "per60"),
+    ("census", "pace", "lead", "per60"),
+    ("census", "pace", "evenTrail", "per60"),
+    ("census", "pace", "evenLead", "per60"),
     ("census", "endZone", "atkPerDraw"),
     ("census", "endZone", "defPerDraw"),
     ("census", "endZone", "n"),
