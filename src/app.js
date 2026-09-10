@@ -1414,18 +1414,29 @@ function whoTag(p){return `<span class="num">#${p.n}</span> ${p.nm}`;}
  * rather than being quietly reconciled: a list that always matched the code
  * would be a list that had stopped reading the shift chart.
  */
-function sayOnIce(e){const b=$('onIce');if(!b)return;
+/* ⛔ DEFAULT OFF, AND IT REMEMBERS FOR THE VISIT. Kevin: *"I'd rather have a
+   toggle that turns that on/off on pause, not have it display at every pause."*
+   A reader who wants the roster wants it at the NEXT pause too, so the flag
+   outlives the frame -- but not the visit: nothing is stored, because a
+   preference this cheap to re-set does not justify a storage failure mode the
+   newcomer flag already had to handle twice. */
+let onIceOn=false;
+function sayOnIce(e){const b=$('onIce'),t=$('onIceBtn');if(!b)return;
  /* ⛔ NEVER IN THE PREVIEW, and the deploy gate is what said so. The hero is a
     390x273 shop window with no transport and no reader — `playing` is false
     between its frames, so the roster rendered there and pushed 165px of names
     into a box sized for a rink. The gate's own probe came back `HERO -Infinity`
     and the run went red; nothing in 1,200 unit tests could see it, because a
     fake document has no layout. */
- if(!e||playing||PREVIEW||e.s==null){b.hidden=true;b.innerHTML='';return;}
+ if(!e||playing||PREVIEW||e.s==null){b.hidden=true;b.innerHTML='';if(t)t.hidden=true;return;}
  const on=onIce(G,e);
  const tot=on.away.skaters.length+on.home.skaters.length;
- // NOTHING RATHER THAN A WRONG LIST: 3 of 87 published extracts carry no shifts.
- if(!tot){b.hidden=true;b.innerHTML='';return;}
+ /* NOTHING RATHER THAN A WRONG LIST: 3 of 87 published extracts carry no shifts.
+    ⭐ AND THE BUTTON GOES WITH IT, rather than offering a toggle that would
+    reveal an empty box -- a control that does nothing is worse than no control. */
+ if(!tot){b.hidden=true;b.innerHTML='';if(t)t.hidden=true;return;}
+ if(t){t.hidden=false;t.setAttribute('aria-pressed',onIceOn?'true':'false');}
+ if(!onIceOn){b.hidden=true;b.innerHTML='';return;}
  const col=(side,ab)=>`<div class="oc"><div class="oab">${ESC(ab)}</div>`
   +side.skaters.map(p=>`<div><span class="num">#${p.n}</span> ${ESC(p.nm)}</div>`).join('')
   +side.goalies.map(p=>`<div class="og"><span class="num">#${p.n}</span> ${ESC(p.nm)} &middot; goal</div>`).join('')
@@ -1434,6 +1445,11 @@ function sayOnIce(e){const b=$('onIce');if(!b)return;
   +`<p class="olim">From the league&rsquo;s shift chart. During a change it can `
   +`show six &mdash; that is the change, not a mistake.</p>`;
  b.hidden=false;}
+/* THE TOGGLE ITSELF. `render` is not called -- the roster is the only thing that
+   changes, and re-rendering the whole frame to reveal a list would redraw the
+   ice for nothing. */
+(()=>{const t=$('onIceBtn');if(!t)return;
+ t.onclick=()=>{onIceOn=!onIceOn;sayOnIce(EV[i]);};})();
 function sayWho(e){const w=$('who');if(!w)return;
  if(!e){w.innerHTML='';w.className='who';return;}
  const a=ATTRIBUTION[e.type],p=a&&R[e.actor];

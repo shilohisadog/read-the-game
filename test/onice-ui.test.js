@@ -17,8 +17,50 @@ import { onIce } from '../src/lib/onice.js';
 const rich = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url)));
 const CSS = readFileSync(new URL('../src/app.css', import.meta.url), 'utf8');
 
+test('⛔⛔ DEFAULT OFF — a toggle at rest, not a panel on every pause', () => {
+  /* KEVIN'S SECOND RULING ON THIS SURFACE, from the live page: *"I'd rather have
+     a toggle that turns that on/off on pause, not have it display at every
+     pause."* He is right twice: the roster is 165px of names, so showing it
+     unbidden clutters the frame AND shoves the Play button down the page —
+     which is the jitter this project killed once and has re-introduced twice
+     since, both times through a feature that looked harmless. */
+  const a = boot(rich, null, '?at=2-10:00');
+  const btn = a.$('onIceBtn'), box = a.$('onIce');
+  assert.equal(box.hidden, true, 'the roster is on screen without being asked for');
+  assert.equal(btn.hidden, false, 'no control is offered at rest');
+  assert.equal(btn.getAttribute('aria-pressed'), 'false', 'the control does not report its state');
+
+  btn.click();
+  assert.equal(box.hidden, false, 'the toggle does not reveal the roster');
+  assert.equal(btn.getAttribute('aria-pressed'), 'true');
+
+  /* ⭐ AND IT REMEMBERS FOR THE VISIT. A reader who wanted the roster at this
+     pause wants it at the next one; making them ask again every time is the
+     same complaint in a different costume. */
+  a.$('play').click();
+  assert.equal(box.hidden, true, 'the roster survived the press of Play');
+  assert.equal(btn.hidden, true, 'the control is offered while the replay runs');
+  a.$('play').click();
+  assert.equal(box.hidden, false, 'the toggle forgot between two pauses');
+
+  btn.click();
+  assert.equal(box.hidden, true, 'the toggle does not turn it off again');
+  assert.equal(box.innerHTML, '', 'the markup is left behind when it is turned off');
+});
+
+test('⛔ the control\'s row is RESERVED, so arriving at rest moves nothing', () => {
+  /* The button exists only at rest. Without a reserved row it would appear on
+     pause and push the Play button down — a two-line fix for the exact defect
+     the panel itself was just corrected for. */
+  const rule = /#rg \.oiwrap\{([^}]*)\}/.exec(CSS);
+  assert.ok(rule, 'the control has no row of its own');
+  assert.match(rule[1], /min-height:\s*[\d.]+/,
+    'the control\'s row reserves no height — it will move the transport when it appears');
+});
+
 test('⭐ the roster is on screen at rest, on every frame that has one', () => {
   const a = boot(rich);
+  a.$('onIceBtn').click();            // ⛔ DEFAULT OFF: ask for it, then walk
   const states = a.every(d => d.$('onIce').hidden);
   const shown = states.filter(h => !h).length;
   assert.ok(states.length > 200, `only ${states.length} frames walked`);
@@ -28,6 +70,7 @@ test('⭐ the roster is on screen at rest, on every frame that has one', () => {
 
 test('⛔ it names the players `onIce` names, and marks the goaltender', () => {
   const a = boot(rich);
+  a.$('onIceBtn').click();
   const htmls = a.every(d => d.$('onIce').innerHTML);
   const k = 40;
   const html = htmls[k];
@@ -66,6 +109,7 @@ test('⛔ it goes away the moment Play is pressed, not at the next frame', () =>
      `play()`) both LANDED and neither failed. A deep link puts the page on a
      real resting frame instead, which is the only state the claim is about. */
   const a = boot(rich, null, '?at=2-10:00');
+  a.$('onIceBtn').click();
   assert.equal(a.$('onIce').hidden, false,
     'the deep-linked resting frame shows no roster — this test has no subject');
   a.$('play').click();
@@ -79,6 +123,7 @@ test('⭐ the opening faceoff lists the line that is STARTING, not nobody', () =
      rule being honest". It was the interval rule being WRONG at a boundary, and
      the screenshot that found the faceoff defect found this with it. */
   const a = boot(rich, null, '?at=1-20:00');
+  a.$('onIceBtn').click();
   assert.equal(a.$('onIce').hidden, false, 'the opening faceoff still shows nobody');
   const html = a.$('onIce').innerHTML;
   const names = [...html.matchAll(/#(\d+)<\/span>/g)].length;
@@ -99,7 +144,9 @@ test('⛔⛔ never in the PREVIEW, and `hidden` actually hides — the deploy ga
      true` did nothing, with no error anywhere. Any future block with a
      `display` on an id-bearing selector has the same hole. */
   const a = boot(rich, null, '?preview=1&at=2-10:00');
+  a.$('onIceBtn').click();            // even when asked for, the hero refuses
   assert.equal(a.$('onIce').hidden, true, 'the roster renders inside the preview hero');
+  assert.equal(a.$('onIceBtn').hidden, true, 'the hero offers a control nobody can use');
   assert.equal(a.$('onIce').innerHTML, '', 'the preview hero carries roster markup');
 
   const rule = /#rg \.onice\[hidden\]\{([^}]*)\}/.exec(CSS);

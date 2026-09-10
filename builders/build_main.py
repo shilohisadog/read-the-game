@@ -131,6 +131,19 @@ __CSS__</style>
        ⚠️ IT CAN DISAGREE WITH THE SCOREBOARD, on about one frame in twenty, and
        says so rather than being reconciled: mid-change there really are six out
        there, which is the lesson the shift card teaches. -->
+  <!-- ⭐ THE CONTROL, AND IT IS KEVIN'S SECOND RULING ON THIS SURFACE. First:
+       *"only clickable when not playing"*. Then, from the live page: *"I'd
+       rather have a toggle that turns that on/off on pause, not have it display
+       at every pause."* He is right twice over -- the roster is 165px of names,
+       so appearing at every pause both clutters the frame AND shoves the Play
+       button down the page, which is the jitter this project killed once
+       already. Default OFF.
+       ⛔ THE ROW IS RESERVED, so the button arriving at rest moves nothing. The
+       button itself is `hidden` while the replay runs -- there is nothing to
+       toggle mid-play -- and `min-height` on the wrapper is what keeps that from
+       being a jump. Same fix as `.who`. -->
+  <div class="oiwrap" id="oiWrap"><button class="oibtn" id="onIceBtn" type="button"
+       aria-pressed="false" aria-controls="onIce" hidden>Who&rsquo;s on the ice</button></div>
   <div class="onice" id="onIce" hidden></div>
   <!-- THE FIRST STEP, ON THE ICE. Kevin: "we should overlay 'Press Play' onto the
        rink, in rather large lettering, so the first time visitor knows what the

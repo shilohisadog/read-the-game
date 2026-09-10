@@ -354,6 +354,12 @@
    not a trailer for the product, it is the product.
    ONE RENDERER, still. Preview is a class on #rg and a play loop; there is no
    second drawing path and nothing here is reimplemented. */
+/* ⛔ THE ROSTER AND ITS CONTROL, HIDDEN BY THE STYLESHEET AND NOT ONLY BY JS.
+   `sayOnIce` already refuses to render in the preview, and that was not enough:
+   `render-preview.test.js` requires every control to be hidden by CSS, because
+   the hero can paint before a script runs and a control a visitor can press on
+   the front door is a control that does something they did not ask for. */
+#rg.preview .oiwrap,#rg.preview .onice,
 #rg.preview .pressplay,
 #rg.preview .newcomer,#rg.preview h1,#rg.preview .transport,#rg.preview .zone,#rg.preview .disclose,
 #rg.preview .figpick,#rg.preview .icenote,#rg.preview .whistlepanel,#rg.preview .blockpanel,
@@ -989,6 +995,16 @@
    turn the element off -- the element stays laid out, and `el.hidden = true`
    becomes a no-op with no error anywhere. */
 #rg .onice[hidden]{display:none}
+/* ⛔ THE ROW IS RESERVED WHETHER OR NOT THE BUTTON IS IN IT. The control only
+   exists at rest, and an element that appears on pause moves everything below
+   it -- the Play button included, which is the jitter killed on 2026-09-07 and
+   re-introduced twice since by features that each looked harmless. */
+#rg .oiwrap{margin:6px 2px 0;min-height:1.6rem;text-align:center}
+#rg .oibtn{font:inherit;font-size:.72rem;font-weight:600;color:var(--ink);
+ background:none;border:1px solid var(--edge);border-radius:999px;padding:2px 10px;
+ cursor:pointer;opacity:.8}
+#rg .oibtn[aria-pressed="true"]{background:var(--edge);opacity:1}
+#rg .oibtn[hidden]{display:none}
 #rg .onice .oc{min-width:0}
 #rg .onice .oab{font-weight:700;letter-spacing:.02em;opacity:.75;font-size:.7rem}
 /* THE GOALTENDER IS SET APART rather than sorted in with a letter beside him:
