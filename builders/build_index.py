@@ -1312,6 +1312,27 @@ def _archive():
         "__SLOT_ATT_N__": num(s["attempts"]["n"]),
         "__ARCHIVE_GAMES__": num(m["measured"]),
     }
+    # ⭐ WHAT THE SITUATION DOES TO THE NUMBER ON SCREEN. Per CLUB-hour, which
+    # is what `census.pace` counts and why it counts it that way — see the
+    # accumulator in src/lib/census.js. Rounded to whole attempts here because
+    # the card is a comparison and three decimals invite a precision the
+    # sentence is not making.
+    p = (m.get("census") or {}).get("pace") or {}
+    for k in ("even", "ppFor", "ppAgainst"):
+        z = p.get(k) or {}
+        if z.get("per60") is None or not z.get("minutes"):
+            raise SystemExit(
+                f"learn: measures.json census.pace.{k} has no rate or no minutes -- "
+                "re-run derive and refresh data/measures.json")
+    if not p.get("balanced"):
+        raise SystemExit(
+            "learn: measures.json census.pace.balanced is false -- leading and trailing "
+            "minutes disagree, so every rate in it is over a denominator nobody can name")
+    out.update({
+        "__EVEN_PER60__": f"{p['even']['per60']:.0f}",
+        "__PP_PER60__": f"{p['ppFor']['per60']:.0f}",
+        "__PK_PER60__": f"{p['ppAgainst']['per60']:.0f}",
+    })
     # EVERY SHARE IT READS MUST STILL CARRY ITS OWN n AND POPULATION. The
     # published file is checked at the point of use, not trusted because CI
     # checked it once: a hand-edited `data/measures.json` is exactly how this
@@ -1690,6 +1711,49 @@ LEARN_CARDS = [
     ("ours", "goaltending", "Goaltending",
      "Saves as a fraction, built while you watch. This is the first shot the "
      "goaltender had to deal with."),
+    # ⛔⛔ THE GAP KEVIN FOUND BY CHECKING, 2026-09-10: *"where do we explain
+    # Control/Attempts relative to all situations vs. power play vs. penalty
+    # kill? I would guess that's on one of the 'What you can see cards', but
+    # haven't checked."* It was on none of them — this page carried ZERO
+    # mentions of "power play", "penalty kill", "even strength" or "all
+    # situations", while the box under the ice printed one of those phrases on
+    # every frame and the Control card's own door set `strength=all`.
+    #
+    # ⭐ AND IT IS THE PARAGRAPH A REMOVED CONTROL WAS MISSING. The situations
+    # toggle came off the page on 2026-09-07 because *"a novice cannot decide
+    # whether to press it without a paragraph about why power-play shots inflate
+    # a count. That paragraph is exactly what the learn cards refuse to carry."*
+    # A card cannot carry an argument; it can carry a MEASUREMENT, which is what
+    # the other three here do. This is that.
+    #
+    # ⚠️ TITLED FOR THE WORDS ALREADY ON SCREEN. The layer box prints
+    # "· all situations" under every count, so that is the phrase a reader
+    # scans for — not a name invented here for the same thing.
+    # ⚠️ THE FIRST DRAFT NAMED THE FIGURES AND TAUGHT NOTHING (Kevin): it never
+    # said what "all situations" ARE, so the comparison had no subject. The card
+    # defines the three states first and quotes the figures second — the order
+    # every rules card here already uses, and the one his question asked for.
+    # ⛔ AND THE UNIT IS "PER 60 MINUTES", NOT "an hour". The draft said an hour
+    # to be kind to a novice, and hockey has one word for this: a site that
+    # teaches the sport uses the sport's unit and makes it legible rather than
+    # substituting a friendlier one nobody will hear again.
+    ("ours", "situations", "All situations",
+     # ⛔ NO DURATION, AND "EVERY", NOT "ALL THREE". Two corrections to my own
+     # draft, both caught by reading the neighbouring cards. The Penalties card
+     # says "a penalty is time off the ice" and deliberately names NO length --
+     # a minor is two minutes, a major is five, and a power play ends early on a
+     # goal, so "for two minutes" would be a teaching card asserting something
+     # false about one penalty in a good many. And "all three" undercounts: the
+     # card two rows up is about a pulled goalie, which is a fourth state this
+     # count also includes. `a skater short` is lifted from that card on purpose
+     # -- one vocabulary across the page.
+     "Hockey is not always five on five. A penalty puts one club a skater short "
+     "&mdash; that club is killing it, the other is on the power play &mdash; "
+     "and the count under the ice adds every situation together, which is what "
+     "<em>all situations</em> means. Measured per 60 minutes in each: "
+     "__PP_PER60__ attempts on the power play, __EVEN_PER60__ at even strength, "
+     "__PK_PER60__ killing a penalty. So part of a club&rsquo;s attempt lead can "
+     "be nothing but the time it spent on the power play."),
 ]
 
 # Spelled out rather than via strftime("%B"): this builder gates on BYTES, and

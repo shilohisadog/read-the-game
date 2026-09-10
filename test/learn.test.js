@@ -136,6 +136,43 @@ test('the slot door is a shot the slot layer counts and Control alone would not 
                   'the slot card and the Control card must not be the same moment');
 });
 
+/**
+ * ⛔ AND EVERY OTHER PAIR IS DISTINCT, WHICH THE PAIRING ABOVE IS THE EXCEPTION TO.
+ *
+ * One frame carrying two lessons is a RULING (below) and not a default. When it
+ * happens by accident a reader clicks a second card, gets the screen they were
+ * already on, and concludes the link is broken.
+ *
+ * ⚠️ IT HAPPENED. The situations door was first written as *the first power-play
+ * attempt* and resolved byte for byte onto the Control door, because in this
+ * reference game the opening attempt of the whole match is a 5-on-4. That was a
+ * property of the FIXTURE, not of the rule — it could appear or vanish with the
+ * game — so the door was rewritten to something that cannot land there, and this
+ * is the check that says so.
+ */
+test('⛔ no two cards open the same frame, except the one pair that is ruled to', () => {
+  // SORTED, LIKE THE FOUND PAIRS ARE. The first version compared a sorted pair
+  // against an unsorted literal, so the ruled exception never matched and the
+  // test reported the one collision this project has deliberately kept.
+  const RULED = [['icing', 'faceoffs'].sort()];
+  const at = new Map();
+  for (const c of cards) {
+    const q = query(c.href);
+    (at.get(q) || at.set(q, []).get(q)).push(c.id);
+  }
+  const shared = [...at.values()].filter(ids => ids.length > 1).map(ids => ids.sort());
+  const ok = shared.filter(ids => RULED.some(r => r.length === ids.length
+                                             && r.every((x, k) => x === ids[k])));
+  const bad = shared.filter(ids => !ok.includes(ids));
+  assert.deepEqual(bad, [],
+    'two cards open the identical frame and nothing ruled that they should — a '
+    + 'reader clicking the second one lands where they already were');
+  // AND THE RULED PAIR IS STILL THERE, or this test is passing because the
+  // pairing broke rather than because nothing else collides.
+  assert.equal(ok.length, RULED.length,
+    'the ruled icing/faceoff pairing is no longer one frame — see the test below');
+});
+
 test('⭐ the icing and the faceoff it forces are ONE FRAME, deliberately', () => {
   /* ⭐ KEVIN'S RULING, 2026-08-31: "the pairing between icing and the faceoff is
      the teaching moment, those should stay paired."

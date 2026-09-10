@@ -33,11 +33,35 @@ import { NOT_A_PLAY, playable } from '../src/lib/layer.js';
 import { corsi } from '../src/lib/layers/corsi.js';
 import { danger } from '../src/lib/layers/danger.js';
 import { goaltending } from '../src/lib/layers/goaltending.js';
+import { situation, POWER_PLAY } from '../src/lib/strength.js';
 import { stable } from './measure.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 /** The first event this layer's own reducer counted. */
+/**
+ * The last attempt `layer` counts inside the game's FIRST power play — the frame
+ * where that power play's effect on the count is already visible.
+ *
+ * ⚠️ THE RUN ENDS WHEN THE ADVANTAGE DOES, not merely when a single event is not
+ * a power play. Reading `kind !== POWER_PLAY` alone would end the run at any
+ * event the situation code cannot classify and start a "second" power play out
+ * of the remainder of the first. The advantage holding is what makes it one.
+ */
+function lastOfFirstPowerPlay(layer, events, ctx) {
+  const adv = i => { const s = situation(events[i].sit, ctx);
+                     return s && s.kind === POWER_PLAY ? s.advantage : null; };
+  let start = -1;
+  for (let i = 0; i < events.length; i++) if (adv(i) != null) { start = i; break; }
+  if (start < 0) return -1;
+  const club = adv(start);
+  let end = start;
+  while (end + 1 < events.length && adv(end + 1) === club) end++;
+  const counted = new Set(layer.reduce(events, ctx).counted);
+  for (let i = end; i >= start; i--) if (counted.has(i) && events[i].own === club) return i;
+  return -1;
+}
+
 function firstCounted(layer, events, ctx, keep) {
   const { counted } = layer.reduce(events, ctx);
   for (const i of counted) if (!keep || keep(events[i])) return i;
@@ -91,6 +115,25 @@ export function doors(game) {
     // attempt anyway.
     ['blocked', ['corsi'], firstCounted(corsi, events, ctx, e => e.type === 'blocked-shot'),
      'the first blocked shot the Control layer counts'],
+    /* ⭐ THE SITUATIONS CARD OPENS AT THE END OF THE FIRST POWER PLAY, not at
+       its start, and the difference is the lesson. The card says a power play is
+       a different game; the frame that shows that is the one where the count has
+       already moved, not the one where it is about to.
+
+       ⛔ AND IT MUST NOT BE THE FRAME THE CONTROL CARD OPENS. The first version
+       took the first power-play attempt and landed on `1-18:40.1` — byte for
+       byte the Control door — because in THIS game the opening attempt happens
+       to be a 5-on-4. Two cards, one screen, and a reader clicking the second
+       one would think the site was broken. ⚠️ That collision was a property of
+       the reference game and not of the design, so it could appear or vanish
+       with the fixture: the fix is a rule that cannot land there, not a check
+       that this game does not.
+
+       LAST IS A DEFINITION, NOT A THRESHOLD. "Deep into a power play" would need
+       a number chosen by us, which is the thing `docs/below-the-rink-2.md` §31
+       refuses; the final attempt of the first power play is decided by the feed. */
+    ['situations', ['corsi'], lastOfFirstPowerPlay(corsi, events, ctx),
+     'the last attempt the Control layer counts inside this game\'s first power play'],
   ];
 
   const missing = found.filter(([, , i]) => i < 0).map(([id]) => id);

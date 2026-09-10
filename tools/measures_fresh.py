@@ -43,6 +43,18 @@ WATCHED = [
     ("slot", "scoredFromOutside", "rate"),
     ("slot", "attempts", "count"), ("slot", "attempts", "n"), ("slot", "attempts", "rate"),
     ("measured",),
+    # ⛔ census.pace JOINED ON 2026-09-10, AND IT JOINED BECAUSE THIS LIST MISSED
+    # A REAL DRIFT. The committed file sat stale across a strength.js fix that
+    # zeroed 4,151.9 unclassifiable minutes and moved every `state` and
+    # `drawStrength` figure — silently, because none of those paths is watched
+    # and no page read them. The "All situations" card reads these three, so they
+    # are page-facing now and a stale copy would put last month's rate on a
+    # teaching card. Named, not globbed, for the reason above: the claim is
+    # "what _archive() reads", and widening it to the whole census would fail
+    # this gate on figures no surface has ever printed.
+    ("census", "pace", "even", "per60"),
+    ("census", "pace", "ppFor", "per60"),
+    ("census", "pace", "ppAgainst", "per60"),
 ]
 
 

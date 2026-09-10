@@ -132,11 +132,23 @@ export const zonestart = {
          the identical missing-baseline fault `endZone` was corrected for, in the
          table one line below it.
 
-         ⛔ AND THE FIGURES THAT USED TO BE TYPED HERE WERE STALE. This comment
-         said 4.302x / 1.273x over n=22,790 / 190,144; `measures.json` says 4.16
-         and 1.272 over 21,704 / 188,421. The weekly derive moved them and nothing
-         was watching — which is why no archive figure is typed here now. Read
-         `measures.json`. */
+         ⚠️⚠️ AND THE STALENESS CLAIM THAT USED TO BE HERE WAS BACKWARDS, which
+         is worth more than the claim was. It read: *"the figures typed here were
+         STALE — this comment said 4.302x / 1.273x over n=22,790 / 190,144;
+         measures.json says 4.16 and 1.272 over 21,704 / 188,421."* A derive run
+         on 2026-09-10 published 4.302 and 1.273 over 22,790 and 190,144 — the
+         comment's own numbers, exactly. **The comment was current and
+         `data/measures.json` was the stale artifact**, because `strength.js`
+         stopped leaving 4,151.9 minutes unclassifiable and every figure derived
+         from the situation codes moved with it.
+
+         ⛔ THE MISTAKE WAS THE REFERENCE, NOT THE ARITHMETIC. A committed
+         derived file was treated as the archive, and it is a CACHE of the
+         archive — `guard where the archive is` is exactly this rule, and it was
+         broken by the person quoting it. No archive figure is typed here now,
+         which is right for a different reason than the one first given: not
+         because this one had rotted, but because nothing in a comment can say
+         when it did. Read `measures.json`. */
       const notEven = ctx.evenOnly ? whyNotEven(e, ctx) : null;
 
       if (notPlay || notDraw || notEven) {
