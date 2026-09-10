@@ -169,6 +169,23 @@ the finding.**
 geometry, and no lesson the ice can carry. **Kevin's call on whether it comes off
 the decided list.**
 
+⛔⛔ **AND THE REPLACEMENT CANDIDATE FAILED THE SAME AFTERNOON.** Turnovers
+(`docs/layer-ideas.md` §11.1) are **rink-dependent**: the give:take ratio runs
+1.28:1 in one building and 4.38:1 in another, χ² = 53.6 on 24 df, p < 0.001. A
+layer draws ONE game, so a viewer would read a scorekeeper's habit as a club
+being sloppy. And the confound §11 said it had no control for turned out to be
+computable — clubs that give it away in their own end were **already being
+outshot** (+0.380 attempts per 60s beforehand, against −0.483 in the attacking
+end), so *what follows a turnover* is substantially *what was already happening*.
+
+⭐⭐ **THE PROCESS LESSON IS BIGGER THAN EITHER CANDIDATE. Two of the three
+layers "decided" on 2026-09-09 have now failed on first contact with a control,
+and both controls were cheap** — a distance standardisation and a 60-second
+look backwards, each about twenty lines. **Zone starts, the one that shipped, is
+also the one whose base rate was measured BEFORE the decision.** The acceptance
+test for a layer should include running its control, not recording that one is
+needed.
+
 ### ✅ 2026-09-10 (later) — THE ELEVENTH CARD, AND TWO CENSUS FIGURES BUILT TO BE QUOTABLE
 
 ⛔⛔ **THE OBVIOUS FIGURE FOR THE BLUE LINE IS ONE THIS PROJECT HAD ALREADY

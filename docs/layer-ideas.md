@@ -503,3 +503,73 @@ blue line"* is the more actionable of the two. **Weigh that before building.**
 
 It would take the picker to **eight chips**, inside the 11-chip budget §A4.1
 priced at 390px.
+
+### 11.1 ⛔⛔ MEASURED 2026-09-10, AND IT IS NOT A LAYER
+
+Kevin asked whether this was a layer or a card. **87 games from the published
+origin** (a stratified walk of `catalog.json`) answer: neither, as it stands.
+⚠️ A SAMPLE, NOT THE ARCHIVE — a design input, not a publishable figure.
+
+**1. ⛔ THE EVENT IS RINK-DEPENDENT, AND A LAYER IS A PER-GAME SURFACE.**
+Giveaway and takeaway are the two most subjective calls in the feed: the same
+puck changing hands is the giver's fault or the taker's merit, and one scorer
+decides ~37 times a game. **The give:take RATIO is free of pace** — both counts
+scale with how much hockey is played — so what is left in it is judgment:
+
+| | giveaways per takeaway |
+|---|---:|
+| Montreal | **4.38 : 1** |
+| Winnipeg | 3.60 : 1 |
+| *(league, this sample)* | *2.33 : 1* |
+| Edmonton | 1.64 : 1 |
+| Vegas | **1.28 : 1** |
+
+**A factor of 3.4 across buildings, and it is not noise:** χ² = **53.6 on 24 df**
+over 25 arenas with ≥40 turnovers, against ~24 expected — **p < 0.001**. Two
+clubs' counts inside one game also move together (**r = 0.526**, 87 games), which
+is what a shared per-game factor looks like.
+
+⭐ **THAT IS FATAL FOR A LAYER SPECIFICALLY, AND NOT FOR AN AGGREGATE.** A layer
+draws ONE game: a viewer comparing two of them would read a scorekeeper's habit
+as a club being sloppy. Over 4,192 games in ~32 buildings the habit averages out.
+**Zone starts has no equivalent problem** — a faceoff is an objective event on a
+painted dot, which is exactly the property that made it defensible.
+
+**2. ⛔ AND THE CONFOUND §11 SAID IT LACKED A CONTROL FOR IS COMPUTABLE AFTER
+ALL — it just had to be asked.** *"A giveaway in your own end happens because you
+are already under pressure."* Measure the attempt differential in the **60 seconds
+BEFORE** the turnover (positive = being outshot):
+
+| giveaway, by where | n | BEFORE (against − for, 60s) | AFTER (against, to the whistle) |
+|---|---:|---:|---:|
+| own end | 1,017 | **+0.380** | 1.466 |
+| neutral zone | 403 | +0.025 | 1.040 |
+| attacking end | 806 | **−0.483** | 1.077 |
+
+**The pressure was there first, and it runs the same direction.** A club giving
+it away in its own end was already being outshot; one giving it away in the
+attacking end was already outshooting. So *"what follows a giveaway"* is
+substantially *"what was already happening"*, and the layer could never have said
+what it costs.
+
+**3. ⚠️ AND ON 87 GAMES THE GRADIENT IS NOT EVEN MONOTONIC** — 1.466 own end,
+1.040 neutral, **1.077 attacking** — where the 48-game version above is. ⚠️ The
+two runs use different implementations of *"until the next whistle"*, so this is
+**not a refutation of the table above**; it is a warning that the monotonicity
+may have been sample luck, and it is the fourth time a small sample here has read
+better than a larger one.
+
+### 11.2 ⏭ WHAT MIGHT SURVIVE, AND IT NEEDS KEVIN'S RULING
+
+The only thing in this that gets stronger under measurement is **the unreliability
+itself**, and it is genuinely on-brand for a site whose pitch is *check our work*:
+*the same play is a giveaway in one building and a takeaway in another.* A novice
+who learns that not every hockey number is counted the same way has learned
+something real.
+
+⛔ **BUT IT MAY BE THE WRONG KIND OF CARD.** Kevin's ruling on the penalties card:
+*"these are learning cards, education driven not data driven"* — a sentence about
+what a RECORD contains does not belong on one. That ruling was about the rules
+half; this would sit on the measurements half, and it is about the LEAGUE's record
+rather than ours. **Not built, not recommended, and Kevin's call.** Any figure on
+it would need a census field and a derive first.
