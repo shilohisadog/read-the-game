@@ -35,7 +35,8 @@ state.
 
 ## ⏭ 0.00 PICK UP HERE
 
-**Nothing is in flight.** Tree clean, CI green. Counts are in the generated
+⏭ **IN FLIGHT: the layer registry** — agreed 2026-09-10, specified at the end of
+this section with a countable acceptance criterion. Tree clean, CI green. Counts are in the generated
 health block above — ⚠️ **do not quote them from prose anywhere, including this
 sentence's neighbours.**
 
@@ -110,35 +111,119 @@ the query was reading everything inside it. **A pinned constant in the finder is
 how a check stops being about its own subject.** Both derive the query now, and
 the breakpoint gained a check that is *the arithmetic rather than the number*.
 
-### ⏭⏭ PICK UP HERE — the zone-start layer's page wiring, and one unexplained interaction
+### ✅ ZONE STARTS IS BUILT AND WIRED — and the regression did not return
 
 **The reducer is done**: `src/lib/layers/zonestart.js`, 9 checks, four mutations
 each caught. It counts every faceoff and attributes each to the zone the
 **winning** club was attacking toward, reusing `attackZone` and
 `attackDirection` so the mark and the sentence answer with one rule.
 
-⛔ **THE PAGE WIRING WAS BUILT AND REVERTED.** With the layer's draw call in
-`render()`, **the whistle layer stopped drawing its on-ice marks** — 1 ring
-across the reference sweep became 0. Bisected to that one line, which is guarded
-by `if(zoneOn)` and does not throw: a `try/catch` around it caught nothing and
-the marks stayed gone. **The reducer is exonerated** — `whistle.reduce` still
-places 44 of 44 stoppages and `marks()` still returns its mark called directly —
-so whatever moved is in the page.
+✅ **THE PAGE WIRING IS BUILT (2026-09-10).** Rebuilt from the recovery list
+rather than recovered — the reverted work was never committed. Every row of that
+list was needed and nothing beyond it was: **16 hand-typed sites across 4 files,
+plus 5 test-side enumerations.**
 
-**What the wiring needs, recovered from the reverted work** (all of it verified
-green before the whistle regression appeared):
+⭐ **THE WHISTLE LAYER KEPT EVERY MARK, and the DOM golden is the instrument.**
+Across the full walk: **one leaf changed value** (the element count, 84 → 87),
+**zero were removed**, 3,239 added, and **all 4,047 whistle leaves are
+byte-identical.** Whatever cost the whistle layer its rings on 2026-09-09 is not
+in this wiring.
 
-| | |
-|---|---|
-| `LENS` + import | `src/app.js` — the one place a lens id is typed |
-| `LIB` | `builders/build_main.py` — the bundle; the build refuses without it |
-| `DRAWS` | the caption, which **must state the 2.2× ratio** (CHENG's condition) |
-| `LAYER_TOKENS` | `src/lib/deeplink.js` |
-| the chip | `build_main.py`'s pickrow, plus `<g id="draws">` in the rink SVG |
-| `PICKS` + `zoneOn` + `setZone` + `LAYER_APPLY` | the picker's state machine |
-| `lboxFor` | ⚠️ it receives the **corsi** lens whatever chip is on — reduce your own |
-| `measureGame`'s `lens` | the per-game distribution |
-| `TIER`, `MODS`, `BUTTON_OF`, two fake-DOM chip lists | the guarded enumerations |
+⚠️⚠️ **AND THE COLLISION GUARD STAYED GREEN, SO THE DIAGNOSIS IS UNTESTED —
+not confirmed.** The shadowing hypothesis (below) predicts the guard fires; it
+did not, because this rewrite reached for no name the bundle owns. The code that
+would have tested it no longer exists. **What is settled is that the guard
+catches that shape when it happens** — mutation-proven on the literal name
+`marks`. What is not settled is whether that was the cause. ⛔ **Do not let this
+row harden into "we fixed it".**
+
+### ⛔ AND LOOKING FOUND A DEFECT 1,175 GREEN TESTS MISSED
+
+`drawZoneStarts` drew in the **arena frame** (`SX`/`SY`) while the rink around it
+is drawn **as-played**. ⭐ **The nine faceoff dots are symmetric about centre
+ice**, so every ring still landed exactly on painted ice — the *mirror-image*
+dot, carrying the other end's count, with no visual tell of any kind.
+`whistle.js` warns about this in its own words: *"a whistle mark on the wrong dot
+is the kind of wrong that looks completely right."*
+
+Fixed to `AX`/`AY`, with the paired test `test/render-ends.test.js` already pays
+for once:
+rotated frames must **sum to 200/85**, held frames must be **identical**, and
+both halves are mutation-proven to fail independently (frame 103 and frame 2).
+
+⭐ **AND THE ENDS DOCTRINE HELD END TO END**, confirmed in a browser rather than
+argued: with the flip applied the **ring positions moved and the box figures did
+not**. `attackZone` is attack-relative, so the mode reaches the drawing and never
+a count.
+
+### ⛔ THE BOX DID NOT ADD UP, AND ONLY LOOKING AT IT SHOWED THAT
+
+It read `10 · OFFENSIVE-ZONE STARTS · 6` over *"47 draws · 8 in the neutral
+zone"* — **24 of 47 accounted for**, with the 23 defensive-zone starts nowhere on
+screen. That is the half the 2.2× comparison is *against*. It now reads
+`47 draws · 23 defensive-zone · 8 neutral`, and the four figures on screen are
+the whole count.
+
+CHENG's condition is met: the mark carries the place **and** the winner — ring
+colour is the club that won more draws at that dot, a tie draws neutral, and the
+exact split is in the `<title>` — and the caption states the ratio.
+
+### ✅ AND THE BUNDLE IS ONE SCOPE, WHICH NOW HAS A GUARD
+
+Kevin: *"why does adding a layer touch 4 different areas, plus several guards?"*
+The measured answer is in the next section. This is the half of it that was a
+live hazard rather than a cost.
+
+`_inline` strips imports, drops `export` and concatenates, so the **27 `LIB`
+modules share ONE browser scope — 135 top-level names**, with nothing watching
+them. ⭐ **Only the silent half is dangerous:** a duplicate `function` is
+last-one-wins in sloppy *and* strict mode (verified, not assumed), while a
+duplicate `const` is a SyntaxError that cannot reach a commit.
+
+⭐⭐ **AND `boot()` IS THE REAL HAZARD.** `src/app.js` ships as one function whose
+whole body is written at column zero, so its **146 names are function LOCALS**. A
+local cannot overwrite a bundle name — it **shadows** it, for the entire
+function, from the first line. Declare `marks` anywhere in `boot` and every
+caller of the whistle layer's `marks` silently gets the wrong one.
+
+`tools/jslex.mjs` gained `declarations(src, depth)` — brace-counted from the
+token stream, because a line-anchored regex reads `app.js` as 146 top-level names
+where there is **one**. Two assertions in `test/build.test.js`, both
+mutation-proven on the literal name `marks`.
+
+⛔ **IT FOUND FIVE LIVE SHADOWS ON ITS FIRST RUN** — `ARRIVE`, `ATT`, `PLURAL`,
+`UNIT_PX`, `figStyle`, every one a byte-identical copy of a non-exported internal
+of `marks.js` or `work.js`, and **every one DEAD**: the declaration was its only
+token in the shipped half. Left behind when those modules were extracted, and
+**missed by a hand audit of dead variables.** Removed rather than allowed for —
+an allowlist of known collisions is the pinned fixture this repo has been bitten
+by before.
+
+⚠️ **TWO OVER-BROAD PATTERNS DIED WRITING THAT GUARD**, both inside the guard
+against them: the first shadow scan counted function-locals as top-level, and the
+destructuring hole-watch matched an indented `const {ab, own, opp}` in
+`strength.js`. Column zero is the anchor because `_inline` states and depends on
+it.
+
+### ⏭⏭ PICK UP HERE — the layer registry
+
+**Agreed with Kevin 2026-09-10, after the thorough path was taken deliberately.**
+Of the 16 sites a new layer touches, **~5 carry information** (the reducer, the
+chip label, the `DRAWS` sentence, the box branch, its CSS) and **~8 are the id
+retyped**: `LENS`, `PICKS`, `LAYER_APPLY`, `LAYER_TOKENS`, the boolean, the
+setter, the `LIB` entry, the `.preview` suppression list.
+
+⭐ **THE MOVE HAS BEEN MADE TWICE AND STOPPED ONE TABLE SHORT BOTH TIMES** —
+`LEDGER` and `LENSCOUNTS` are derived from `LENS`, and the work panel takes ZERO
+touches per layer because it reads `counts`/`credits` off the layer object. That
+is the argument, not elegance.
+
+⭐ **THE ACCEPTANCE CRITERION IS A COUNT, NOT A FEELING** (CHENG): the next layer
+built through the registry must touch **five informative sites plus one line in
+one array.** If it is still eight, the registry did not work.
+
+⚠️ **THE FIVE SETTERS ARE THE CLEAREST EVIDENCE** — `setHd`, `setGoalie`,
+`setWhistle`, `setBlock` and `setZone` are byte-identical modulo two strings.
 
 ### ⭐ AND KEVIN ASKED THE RIGHT QUESTION ABOUT THAT LIST
 
