@@ -205,10 +205,32 @@ test('⛔ the zone-start caption carries the archive comparison, from the archiv
   assert.ok(say.includes(String(ez.winningWorth)),
     `the caption does not quote census.endZone.winningWorth (${ez.winningWorth})`);
 
+  /* ⭐ AND THE TOTAL, because the corrected sentence LEADS with it. `zoneWorth`
+     is a LEVEL and `winningWorth` a DIFFERENCE, and the first version of this
+     caption wrote both with a `+` — which a reader (Kevin, on the live page)
+     parsed as "losing the draw gets you more". The honest form states what the
+     attacking club gets having WON, which is the sum, and neither figure alone
+     can be checked for that. */
+  const won = +(ez.zoneWorth + ez.winningWorth).toFixed(3);
+  assert.ok(say.includes(String(won)),
+    `the caption does not quote what the attacking club gets having WON the draw `
+    + `(${won} = ${ez.zoneWorth} + ${ez.winningWorth})`);
+  assert.ok(say.includes(ez.n.toLocaleString()),
+    `the caption does not carry its own n (${ez.n.toLocaleString()} draws)`);
+
   const ratio = (ez.zoneWorth / ez.winningWorth).toFixed(1);
   assert.ok(say.includes(`${ratio} times`),
     `the caption must state the ratio the archive gives — ${ratio} times, from `
     + `${ez.zoneWorth} / ${ez.winningWorth} over ${ez.n.toLocaleString()} draws`);
+
+  /* ⛔ AND THE RATIO MUST NOT BE SOLD AS A PLACE EFFECT. `endZone` fixes the end
+     and varies only the winner, so it has NO not-being-there baseline; "being in
+     the offensive zone is worth 2.2x" is a claim about a quantity nothing here
+     measured. The supported claim is a decomposition of the total. This forbids
+     the phrasing that was live for a day. */
+  assert.ok(!/being in the offensive zone is worth/i.test(say),
+    'the caption states the ratio as a PLACE effect against a baseline this '
+    + 'measurement does not have — see the header of layers/zonestart.js');
 
   /* ⭐ AND THE DIRECTION, because a ratio with the operands swapped is still a
      number and still reads fluently. The claim is that being THERE outweighs

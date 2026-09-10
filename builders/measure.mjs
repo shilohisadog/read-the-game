@@ -538,7 +538,9 @@ function main(argv) {
     /* PRINTED, because a number nobody reads is a number nobody checks. These
        are the four claims the census exists to settle, in the run's own log. */
     census: {
-      draw: `zone worth ${doc.census.endZone.zoneWorth} attempts, winning it adds `
+      // NOT "zone worth N": that is a level, not an effect against a baseline
+      // this table does not have. See the header of layers/zonestart.js.
+      draw: `attacking club ${doc.census.endZone.zoneWorth}/draw having lost it, +`
           + `${doc.census.endZone.winningWorth} (n=${doc.census.endZone.n})`,
       drawOnPP: `${doc.census.drawStrength.pp.ratio}x on the power play vs `
           + `${doc.census.drawStrength.even.ratio}x at even strength`,

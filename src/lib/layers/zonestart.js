@@ -13,12 +13,27 @@
  * nothing else here can say on the day it ships. `measures.json`'s
  * `census.endZone`, over **165,420 end-zone draws**:
  *
- *     being in the offensive zone, having LOST the draw   +1.163 attempts
- *     winning the draw there, on top of that              +0.52
+ * The attacking club's shot attempts before the next whistle, PER DRAW:
  *
- * **Where the draw is taken is worth about 2.2x what winning it is.**
+ *     having WON the draw                                 1.683
+ *     having LOST it                                      1.163
+ *     what winning is worth, therefore                    0.52
  *
- * ⛔ THAT COMPARISON IS THE LAYER'S REASON FOR EXISTING, and CHENG made it a
+ * ⛔⛔ AND THE OBVIOUS SENTENCE IS AN OVER-CLAIM, which this file shipped for a
+ * day. *"Where the draw is taken is worth 2.2x what winning it is"* reads as a
+ * PLACE effect measured against not being there — and this table has no such
+ * baseline. It fixes the END and varies only the winner; there is no neutral- or
+ * defensive-zone comparison anywhere in it. `zoneWorth` is a LEVEL and
+ * `winningWorth` is a DIFFERENCE, and writing both with a `+` is what made a
+ * reader parse it as *losing gets you more*. Kevin, from the live page: *"even I
+ * can't quite figure out what we're trying to say."*
+ *
+ * ⭐ WHAT IT DOES SUPPORT IS A DECOMPOSITION OF ONE NUMBER: of the 1.683 an
+ * attacking club gets from an offensive-zone draw, 1.163 arrives whether or not
+ * it wins, and THAT part is 2.2x the 0.52 winning adds. Same ratio, and a claim
+ * the measurement can carry.
+ *
+ * ⛔ THE COMPARISON IS THE LAYER'S REASON FOR EXISTING, and CHENG made it a
  * condition: the mark shows both the place and the winner, and the caption states
  * the ratio. *"Showing the winner without the comparison is where it would become
  * who took it"* — a different and much weaker lesson, since who wins draws is the
