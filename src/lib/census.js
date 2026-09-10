@@ -147,6 +147,24 @@ export function censusGame(events, ctx) {
      rather than being folded into `F` where it would quietly move a rate. */
   const shooter = { D: zeroShot(), F: zeroShot(), G: zeroShot(), unknown: zeroShot() };
 
+  /* ⭐⭐ HOW LONG A SHIFT IS — the one thing in `shifts` the site has never read.
+     Kevin, 2026-09-10: *"the shift length card might be educational too."* Line
+     changes on the fly are the most confusing thing about a first hockey game,
+     and no surface says how short a shift actually is.
+
+     ⛔ SKATERS ONLY. A goaltender's "shift" is most of the game, and three of
+     them in a population of forty would drag a median that the card states as a
+     fact about how hockey is played. `pos` is on every roster row.
+
+     ⛔ A HISTOGRAM IN THE TALLY, SUMMARIES IN THE PUBLISHED FILE. A median cannot
+     be averaged across games — it is not a sum — so the archive has to carry the
+     DISTRIBUTION and reduce it once, which is exactly what `censusAdd`'s generic
+     recursive sum does with a bucket object. `secs` are integers, so 1-second
+     bins are exact and no binning choice is being made on the site's behalf.
+     `over` is the overflow, published rather than folded in: a bucket that only
+     appears when it breaks is a bucket nobody notices arriving. */
+  const shift = { n: 0, secs: 0, over: 0, players: 0, bins: {} };
+
   for (let i = 0; i < events.length; i++) {
     const e = events[i];
 
@@ -282,7 +300,24 @@ export function censusGame(events, ctx) {
   const hitCorr = { n: 1, sx: dh, sy: da, sxx: dh * dh, syy: da * da, sxy: dh * da,
                     opposite: dh * da < 0 ? 1 : 0 };
 
-  return { faceoffZone, endZone, drawStrength, state, club, hitCorr, shooter, pace };
+  /* ⚠️ ABSENT SHIFTS ARE NOT ZERO SHIFTS. Some extracts carry none — 3 of 87 in
+     a 2026-09-10 sample — and an empty array must leave the buckets untouched
+     rather than adding a game to the denominator with no rows in it. */
+  const SHIFT_CAP = 600;
+  const seen = new Set();
+  for (const r of (ctx.shifts || [])) {
+    if ((ctx.roster?.[r.p] || {}).pos === 'G') continue;
+    const d = r.e - r.s;
+    if (!(d > 0)) continue;
+    seen.add(r.p);
+    shift.n++;
+    shift.secs += d;
+    if (d > SHIFT_CAP) shift.over++;
+    else shift.bins[d] = (shift.bins[d] || 0) + 1;
+  }
+  shift.players = seen.size;
+
+  return { faceoffZone, endZone, drawStrength, state, club, hitCorr, shooter, pace, shift };
 }
 
 /** Add one game's census into a running total, in place. */
@@ -430,6 +465,38 @@ export function censusRates(t) {
       out.balanced = (t.pace?.lead?.secs || 0) === (t.pace?.trail?.secs || 0);
       out.balancedEven = (t.pace?.evenLead?.secs || 0) === (t.pace?.evenTrail?.secs || 0);
       return out;
+    })(),
+    /* ⭐⭐ HOW LONG A SHIFT IS, reduced from the distribution rather than averaged.
+       ⛔ A MEDIAN IS NOT A SUM, which is why the tally carries 1-second bins and
+       this is the only place they are read. Averaging per-game medians would be
+       a statistic of statistics with no defensible meaning; this is the real
+       quantile of the whole archive's shifts.
+       ⭐ `underMinute` IS A FRACTION, never a percentage, and it carries `n`
+       like every other published share. */
+    shift: (() => {
+      const t2 = t.shift || {};
+      const bins = t2.bins || {};
+      const n = t2.n || 0;
+      if (!n) return { n: 0, median: null, p25: null, p75: null, underMinute: null,
+                       perPlayerGame: null, over: 0 };
+      const at = (frac) => {
+        const want = frac * n;
+        let seen = 0;
+        for (const k of Object.keys(bins).map(Number).sort((a, b) => a - b)) {
+          seen += bins[k];
+          if (seen >= want) return k;
+        }
+        return null;   // everything is in the overflow, which `over` will show
+      };
+      let under = 0;
+      for (const k of Object.keys(bins)) if (+k < 60) under += bins[k];
+      return {
+        n,
+        median: at(0.5), p25: at(0.25), p75: at(0.75),
+        underMinute: +(under / n).toFixed(3),
+        perPlayerGame: t2.players ? +(n / t2.players).toFixed(1) : null,
+        over: t2.over || 0,
+      };
     })(),
     /* DOES HITTING RUN INVERSE TO HAVING THE PUCK? CHENG's hypothesis, killed on
        one game and unmeasurable on eight (r = -0.15). A NEGATIVE r supports it.

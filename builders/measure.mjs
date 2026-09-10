@@ -319,7 +319,11 @@ export function measureAll(dir) {
         (declined[e.sit] ||= { n: 0, eg: g.game.id }).n++;
       }
     }
-    censusAdd(census, censusGame(g.events, sctx));
+    /* ⚠️ `shifts` RIDES IN ON THE CONTEXT rather than changing the signature.
+       Every other census question is answered from `events`; shift length is the
+       first that is not, and a second positional argument would have to be
+       threaded through `censusGame`'s three call sites and the fixtures. */
+    censusAdd(census, censusGame(g.events, { ...sctx, shifts: g.shifts }));
   }
   return { records, skipped, drawFirst, census, declined,
            /* ⭐ MINUS THE SIDES teams.js HAS DECIDED NOT TO NAME. The archive
@@ -553,6 +557,10 @@ function main(argv) {
       paceByScore: `attempts/60 — trailing ${doc.census.pace.trail.per60}, tied `
           + `${doc.census.pace.tied.per60}, leading ${doc.census.pace.lead.per60} `
           + `(${doc.census.pace.trailingLift}x)`,
+      shift: `a skater's shift — median ${doc.census.shift.median}s, `
+          + `${(doc.census.shift.underMinute * 100).toFixed(1)}% under a minute, `
+          + `${doc.census.shift.perPlayerGame} per skater per game `
+          + `(n=${doc.census.shift.n.toLocaleString()})`,
       paceByScoreEven: `at even strength only — trailing `
           + `${doc.census.pace.evenTrail.per60}, tied ${doc.census.pace.evenTied.per60}, `
           + `leading ${doc.census.pace.evenLead.per60} `

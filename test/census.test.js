@@ -156,6 +156,70 @@ test('the control holds the zone constant and lets only the winner vary', () => 
   }
 });
 
+test('⭐⭐ a shift is measured from the DISTRIBUTION, and goaltenders are not in it', () => {
+  /* ⛔ A MEDIAN IS NOT A SUM. The tally carries 1-second bins so the archive can
+     be reduced once; averaging per-game medians would be a statistic of
+     statistics. This checks the published quantile against the raw rows.
+
+     ⛔ AND THE GOALTENDER IS THE WHOLE REASON THE POPULATION IS NAMED. His
+     "shift" is most of the game, and three of them among forty skaters would
+     drag a median the card states as a fact about how hockey is played. */
+  const withShifts = GAMES.filter(g => g.shifts && g.shifts.length);
+  assert.ok(withShifts.length, 'no fixture carries shifts — this test has no subject');
+  let t = {};
+  for (const g of withShifts)
+    t = censusAdd(t, censusGame(g.events, { ...ctxOf(g), shifts: g.shifts }));
+  const r = censusRates(t).shift;
+
+  // The same population, computed here from the rows with no reference to the
+  // accumulator's buckets.
+  const raw = [];
+  for (const g of withShifts)
+    for (const s of g.shifts) {
+      if ((g.roster[s.p] || {}).pos === 'G') continue;
+      const d = s.e - s.s;
+      if (d > 0) raw.push(d);
+    }
+  raw.sort((a, b) => a - b);
+  assert.equal(r.n, raw.length, 'the published n is not the number of skater shifts');
+  assert.equal(r.median, raw[Math.ceil(raw.length * 0.5) - 1],
+    'the published median is not the median of the rows');
+  assert.equal(r.p25, raw[Math.ceil(raw.length * 0.25) - 1], 'p25 disagrees with the rows');
+  assert.equal(r.underMinute, +(raw.filter(d => d < 60).length / raw.length).toFixed(3),
+    'the under-a-minute share disagrees with the rows');
+
+  /* ⛔ THE CONTROL: a goaltender's row must actually be excluded, or the line
+     above is passing because no fixture has one. Injecting a 3,600-second shift
+     for a GOALIE must change nothing; the same row for a SKATER must move the
+     count. Without both halves this asserts only that two loops agree. */
+  const g0 = withShifts[0];
+  const goalie = Object.keys(g0.roster).find(id => g0.roster[id].pos === 'G');
+  const skater = Object.keys(g0.roster).find(id => g0.roster[id].pos !== 'G');
+  assert.ok(goalie && skater, 'the fixture has no goalie or no skater to test with');
+  const withG = censusGame(g0.events,
+    { ...ctxOf(g0), shifts: [...g0.shifts, { p: +goalie, t: 1, s: 0, e: 3600 }] });
+  const plain = censusGame(g0.events, { ...ctxOf(g0), shifts: g0.shifts });
+  assert.equal(withG.shift.n, plain.shift.n, 'a goaltender\'s shift reached the population');
+  const withS = censusGame(g0.events,
+    { ...ctxOf(g0), shifts: [...g0.shifts, { p: +skater, t: 1, s: 0, e: 3600 }] });
+  assert.equal(withS.shift.n, plain.shift.n + 1,
+    'a skater\'s shift did NOT reach the population — the exclusion is over-broad');
+  assert.equal(withS.shift.over, plain.shift.over + 1,
+    'a 3,600-second shift was not counted as an overflow');
+});
+
+test('⚠️ absent shifts leave the buckets untouched, rather than adding an empty game', () => {
+  /* 3 of 87 extracts in a 2026-09-10 sample carry no shifts at all. An empty
+     array must not enter the denominator, and `censusRates` must say `null`
+     rather than 0 — a median of zero is a claim, and "we have none" is not. */
+  const g = GAMES[0];
+  const none = censusGame(g.events, { ...ctxOf(g), shifts: [] });
+  assert.equal(none.shift.n, 0);
+  const r = censusRates(censusAdd({}, none)).shift;
+  assert.equal(r.median, null, 'an empty population published a median anyway');
+  assert.equal(r.underMinute, null, 'an empty population published a share anyway');
+});
+
 test('⭐ the zone figure is the SAME draws summed the other way — the attacking club, not the winner', () => {
   /* ⛔ THE FIGURE THE BLUE-LINE BAND HAS NEVER HAD, and it is only safe because
      it is built the way `zoneWorth` is. `atkPerDraw` / `defPerDraw` sum BOTH
