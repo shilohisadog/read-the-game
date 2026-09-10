@@ -97,15 +97,11 @@ time it spent behind"*. That parallel IS the one vocabulary, and it is exactly
 what a well-meaning copy pass destroys by varying the language.
 
 ⏸ **ALSO IN FLIGHT: the layer registry** — agreed 2026-09-10, specified further
-down this section with a countable acceptance criterion. Not started. And
-**shot locations, defencemen against forwards** — the second of the three layers
-decided 2026-09-09, which Kevin raised again on the 10th. The census makes the
-case (**500,720 attempts over 4,192 games**; defencemen take **32.5%**; **37.5%**
-of a defenceman's attempt is blocked against **23.1%** of a forward's; **2.3%**
-go in against **6.5%**) and the census also names the trap: **a blocked shot is
-recorded where it was STOPPED**, so the mark is displaced toward the net for
-37.5% of the D population against 23.1% of the F one — unevenly, between the two
-groups the layer exists to compare. Decide that before drawing anything.
+down this section with a countable acceptance criterion. Not started. ⛔⛔ And **shot locations, defencemen against forwards, IS IN DOUBT AND THE
+DOUBT IS MEASURED** — see §0.00b below. I recommended it earlier the same day on
+the strength of the census split (**2.3%** of a defenceman's attempts go in
+against **6.5%** of a forward's) and **that comparison has no control**. Kevin:
+*"I'm not sure that one is going to stand up to scrutiny."* It does not.
 
 ⏭ **WHAT THE AUDIT HAS NOT REACHED YET** — three of the four surfaces. The two
 cards are now the fixed point to measure the others against: the front door's
@@ -116,6 +112,62 @@ and the cards prove the exercise is worth running.**
 Tree clean, CI green, 16 commits on 2026-09-10. Counts are in the generated
 health block above — ⚠️ **do not quote them from prose anywhere, including this
 sentence's neighbours.**
+
+### ⛔⛔ 0.00b — THE D-vs-F LAYER DOES NOT SURVIVE ITS OWN CONTROL (2026-09-10)
+
+**Kevin asked for the data before the build, and the data killed it.** Measured
+on **87 games** pulled from the published origin — a stratified walk of
+`catalog.json`, **10,568 located attempts**, of which **2,086 D and 5,499 F
+reached the net**. ⚠️ A SAMPLE, NOT THE ARCHIVE, and labelled as one throughout;
+it is a design input, not a published figure.
+
+**1. THE HEADLINE IS A DISTANCE EFFECT WEARING A POSITION.** `docs/layer-ideas.md`
+§3.2 offers *"a forward's attempt is 2.4× as likely to end up a goal"* as one of
+the layer's two lessons. Standardising forwards onto the defencemen's own
+shot-distance distribution (5-ft bins, bins with <30 forward shots dropped):
+
+| | goal rate |
+|---|---:|
+| forwards, crude | 8.13% |
+| defencemen, crude | 3.55% |
+| **crude ratio** | **2.29×** |
+| forwards **at the defencemen's distances** | 3.60% |
+| those same defencemen | 3.43% |
+| **distance-adjusted ratio** | **1.05×** |
+
+**The entire gap is where he shoots from, not who he is.** Band by band the
+difference is under a point and it REVERSES at 50–65 ft, where defencemen score
+2.8% against forwards' 1.7%. And the site already teaches distance — that is the
+slot shading and the slot card (11.4% inside against 3.3% outside).
+
+**2. THE OTHER LESSON CANNOT BE CONTROLLED AT ALL, EVEN IN PRINCIPLE.** *"A
+defenceman's attempt is blocked 37.5% of the time against a forward's 23.1%"* is
+true archive-wide and the obvious question is whether it is distance again —
+**and we cannot answer it, because a blocked shot has no shot location.** The
+feed records where the puck was STOPPED. So we would print a comparison whose
+rival explanation is unfalsifiable with our data. ⭐ **That is the test the
+score-effects card passed this morning and this one fails:** there, the defence
+against the obvious objection was measurable, so the card was rebuilt on it.
+
+**3. AND THE DRAWING WOULD BE WRONG WHERE IT MATTERS MOST.** A defenceman's
+blocked attempt is recorded at a median **28.2 ft** from the net against **52.2
+ft** for one that reached — **24 ft of displacement, against 2.7 ft for
+forwards**, over a population that is 38% of a defenceman's attempts and 23% of a
+forward's. Drawing every attempt where the feed puts it pulls the D median from
+52.2 to 43.1 ft, into the region forwards shoot from. **The recording rule erases
+the one thing the layer exists to show, and erases it unevenly between the two
+groups being compared.**
+
+⛔ **THE FAULT CLASS, FOR THE THIRD TIME:** a comparison shipped without its
+control. The zone-start over-claim (a place effect against a baseline `endZone`
+lacks) and `drawStrength`'s `pp` bucket (no lost-the-draw control) were the first
+two, both found this week. **Here the control exists, was never run, and reverses
+the finding.**
+
+⏭ **WHAT SURVIVES IS A SENTENCE, NOT A LAYER:** a third of a club's shot attempts
+(32.5%, 500,720 attempts, archive) are taken by defencemen. No confound, no
+geometry, and no lesson the ice can carry. **Kevin's call on whether it comes off
+the decided list.**
 
 ### ✅ 2026-09-10 (later) — THE ELEVENTH CARD, AND TWO CENSUS FIGURES BUILT TO BE QUOTABLE
 
