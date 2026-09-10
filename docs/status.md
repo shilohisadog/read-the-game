@@ -232,6 +232,60 @@ They are true or false, not confounded, and they need verification rather than a
 control. **That is a different and much safer class of build**, and it is where
 the remaining unused data actually is.
 
+### ⏭ 0.00d — PLAYER DATA: TOI, plus/minus, CF% — measured 2026-09-10
+
+Kevin: *"one area we don't currently surface is any specific player data, TOI,
+plus/minus or CF%, is that a gap we should look to fill?"* **It is a gap, it is
+the biggest one we have, and all three come out of `shifts` — the artifact §0.00c
+found the site reads with zero lines.** ⚠️ 84 games with shifts, 3,022
+player-games, 62,390 skater shifts. A SAMPLE.
+
+⚠️ **AND THE ON-ICE RESOLUTION HAD TO BE DEBUGGED FIRST, which is the third
+field-meaning error in a week.** `event.s` is **already absolute game seconds** —
+P2 opens at 1200, P3 at 2400 — and adding `(per-1)*1200` to it resolved only
+**65.6%** of attempts to a plausible 10–14 players on the ice. Corrected: **98.6%**.
+⭐ **The sanity check that caught it existed only because of §0.00b**, and it
+should ship as a permanent guard with anything built on shifts.
+
+**1. ⭐⭐ TOI IS THE STRONG ONE — AND ITS BEST FACT IS NOT A PLAYER STAT AT ALL.**
+
+| | |
+|---|---:|
+| **median shift length** | **46 seconds** |
+| shifts under a minute | **75.1%** |
+| shifts over two minutes | 1.0% |
+| shifts per skater per game | 21 (p25 18, p75 24) |
+| TOI per skater per game | 16.6 min (p25 13.4, p75 20.0, max 36.4) |
+
+**A shift is forty-six seconds long, and the site never says so.** Line changes
+on the fly are one of the genuinely confusing things about watching hockey for
+the first time, and this is the fact that makes them legible. ⭐ **It is a LABEL,
+not a comparison** — the league's own shift chart, objective, no confound, and it
+needs verification rather than a control.
+
+**2. ⚠️ CF% IS COMPUTABLE AND THREE-QUARTERS OF A SINGLE GAME'S VERSION IS NOT
+ABOUT THE PLAYER.** Variance of one game's CF%, decomposed over 168 team-games:
+
+| source | share |
+|---|---:|
+| the club's night — **already drawn, it is the Control layer** | 27% |
+| binomial noise (median 33 attempts on the ice) | **48%** |
+| **distinguishes him from his own linemates** | **24%** |
+
+A per-game surface would have a reader comparing two numbers that are three
+parts club and coin flip to one part player. Archive-wide per player it would be
+fine — but that is a player database, and this site is a replay theater.
+
+**3. ⛔ PLUS/MINUS CANNOT SAY ANYTHING ABOUT ONE GAME. 79.2% of player-games are
+−1, 0 or +1**, and 36.4% are exactly zero. Its only honest use here is as **a
+lesson about a misleading number**, which is a card about the league's record and
+runs into the same ruling as §11.2.
+
+⏭ **THE DOCTRINE QUESTION IS KEVIN'S, AND IT IS PRIOR TO ALL THREE.** §6 says the
+base view is just the game and the product is teaching a novice to read hockey.
+**"A shift is 46 seconds" teaches the sport; a player's CF% evaluates a player.**
+Those are different products, and only the first is the one we have been building.
+
 ### ✅ 2026-09-10 (later) — THE ELEVENTH CARD, AND TWO CENSUS FIGURES BUILT TO BE QUOTABLE
 
 ⛔⛔ **THE OBVIOUS FIGURE FOR THE BLUE LINE IS ONE THIS PROJECT HAD ALREADY
