@@ -241,6 +241,36 @@ is asking whether the players the event itself names are in the set.
 line, which is already *"a sentence beside the thing it is about"*, and it is
 retrospective in the same way the whistle card is.
 
+### 4.3b ⭐⭐ MEASURED 2026-09-10: THE LEAGUE GIVES US A SECOND, INDEPENDENT COUNT
+
+Kevin re-opened the surface question — *"should we have a toggle that says
+'players on the ice'… or a side card… or something that shows there's players on
+the ice at all times?"* — so the first thing to establish is whether the list
+would be RIGHT. It can be checked without trusting either source: `sit` is the
+league's own situation code (away goalie, away skaters, home skaters, home
+goalie) and the shift chart is a **second, independent record of the same fact**.
+
+**84 games, 22,414 playable frames carrying a code:**
+
+| | |
+|---|---:|
+| skaters agree exactly | 21,473 (**95.8%**) |
+| skaters **and** goaltenders agree | 21,305 (**95.1%**) |
+
+⭐ **AND THE 4.9% IS MOSTLY REAL HOCKEY, NOT ERROR.** The two commonest
+disagreements are 336 frames where the chart says 5v5 and the code says 4v5 or
+5v4 — the seconds around a penalty — and 81 where the chart says **6v5**, which is
+a line change in progress: for a moment there genuinely are six, and the
+scoreboard does not say so. 84 more frames have no shift rows at all, at period
+boundaries. **A surface would have to state this**, and the honest form is a
+count that can disagree with the scoreboard rather than one that is quietly
+reconciled to it.
+
+⛔ **THE INTERVAL TRAP IN §4.2 IS THE THING THAT WOULD SHIP WRONG SILENTLY.**
+`s <= t < e` produces a *correct-looking* 5-on-5 nearly everywhere and names the
+right players **one time in six**. No count check catches it. Any build here
+starts by re-proving `s < t <= e` against the players the event itself names.
+
 ### 4.4 ⛔ Shifts as a layer of its own — declined, agreeing with Kevin
 
 *"not sure how much value shifts would have as a layer?"* — none. A shift has no
