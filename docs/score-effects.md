@@ -236,3 +236,90 @@ they do not, and nothing says so.
 4. ⛔ **Is the associational framing in §4 enough?** The sentence would say the
    archive contains this pattern, not that leading causes it. The precedent that
    says yes is the blocked-shot card, which states a rate and refuses a mechanism.
+
+---
+
+## 9. ✅ CHENG'S RULINGS — 2026-09-10, and §6.1 shipped the same day
+
+### 9.1 Q1 — **build it**, and the worry had the hook backwards
+
+> *"The worry assumes the hook is the mystery. It isn't. The hook is that two
+> honest counts of nearly the same thing land on opposite sides of 50%. An
+> unresolved 54.3% is a curiosity — huh, weird. The pair is an **argument**, and
+> it's the site's actual thesis stated in two lines: which number you count
+> changes the answer."*
+
+And the doctrinal half, which settles it independently: *"publishing 54.3% alone
+and leaving the reader to conclude shot counts are meaningless is teaching the
+opposite of the truth from entirely true data — the same failure as a filtered
+list without its base rate. **We hold the number that corrects it and we're not
+showing it.**"*
+
+✅ **BUILT** — both surfaces, `cb9e47f`. Fractions on both, because the two rates
+have different denominators; the connective is read from the data.
+
+### 9.2 On the dose-response, with two conditions
+
+*"The strongest evidence in the document."* Conditions when it reaches a screen:
+**stop quoting where `n` gets thin** (the k≥17 tail is where a reader over-reads),
+and **fraction, never a rate**, all the way down. ⏸ Not on a surface yet.
+
+### 9.3 On the mechanism — ⭐ and the condition has since been MET
+
+*"48 games, labelled as such throughout, is the right discipline and it means
+none of these numbers ship. The archive rates are publishable; 1.256× is a
+mechanism explanation and needs the census before it appears anywhere."*
+
+✅ **THE CENSUS EXISTS NOW** (`census.pace`, `2c2a79a`) and the archive says
+**65.55 / 58.57 / 52.61 per 60, a lift of 1.246×** over 4,192 games — so the
+local 1.256× was a good estimate and the mechanism **is now quotable**. Nothing
+quotes it yet.
+
+### 9.4 Q2 — not a layer, and all three reasons hold
+
+*"Score state has no location — a layer draws on ice and this has nothing to
+draw. The site owns the control shape already. And a seventh chip would tell the
+Attempts layer's story twice."* So: **a filter on Attempts, and a sentence beside
+the 54.3%.** *"That makes the existing layer honest rather than adding a rival to
+it, which is the better outcome and the smaller build."*
+
+### 9.5 ⛔ AND §6.2 IS BLOCKED BY A RULING THIS DOCUMENT DID NOT CHECK FOR
+
+§6.2 says the control sits *"where `Even strength only` sits"*. ⛔ **That place is
+empty.** The situations control was **removed on 2026-09-07** at Kevin's word:
+
+> *"Seems like we are making an 'advanced' toggle available to a novice, without
+> really explaining what the relative importance of the toggle is. Do we need the
+> toggle to be surfaced, or just use it for internal calculations?"*
+
+and the recorded answer — *"every other control here names a RULE a reader can
+check on the ice; even strength only is not a rule, it is an analyst's
+adjustment, and a novice cannot decide whether to press it without a paragraph
+about why power-play shots inflate a count. That paragraph is exactly what the
+learn cards refuse to carry"* — applies to a level-score control word for word.
+
+⭐ **THE HOLD HAS A STATED EXPIRY AND IT IS NOW HALF-MET.** The `All situations`
+card is that paragraph, for the strength half. Whether that reopens the control
+is **Kevin's decision and not CC's**.
+
+⚠️⚠️ **AND THIS IS THE THIRD DOCUMENT IN THIS PROJECT TO PROPOSE SOMETHING BY A
+PREMISE NOBODY GREPPED FOR.** CHENG: *"the rule that keeps being restated — grep
+`src/` for the thing before proposing it — isn't holding as a habit, so it should
+become a step in the artifact template rather than a lesson. Two minutes, and
+it's caught three false premises."* **§0 of the next artifact carries that step.**
+
+---
+
+## 10. ⏭ What is still open
+
+1. **§6.2**, on Kevin's ruling (§9.5).
+2. **The dose-response on a surface**, under §9.2's two conditions.
+3. **The mechanism figures**, now archive-wide and quotable, nowhere quoted.
+4. ⭐ **Kevin's own next question, and the bigger one:** *"score-effects, even
+   strength, power play/penalty kill type of information that we need to be
+   seamless across the site (which I'm not sure that's the case currently)."*
+   The site now says situation-and-score things in **four places built
+   separately** — the front door's paired rates, the newcomer block, the
+   `All situations` card, and the replay's power-play pill plus its `MODE()`
+   line. **Nothing has audited them as one vocabulary.** That audit is the next
+   deliverable, and it is not a build.

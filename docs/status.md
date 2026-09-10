@@ -35,10 +35,135 @@ state.
 
 ## ⏭ 0.00 PICK UP HERE
 
-⏭ **IN FLIGHT: the layer registry** — agreed 2026-09-10, specified at the end of
-this section with a countable acceptance criterion. Tree clean, CI green. Counts are in the generated
+⏭ **NEXT CONVERSATION, KEVIN'S: the situation vocabulary across the site.** *"I'd
+like to brainstorm score-effects, even strength, power play/penalty kill type of
+information that we need to be seamless across the site (which I'm not sure that's
+the case currently)."* ⭐ **He is right to doubt it.** As of 2026-09-10 the site
+says these things in four places that were built separately and do not refer to
+each other — the front door's paired base rates, the game page's newcomer block,
+the `All situations` learn card, and the replay's own power-play pill and
+`MODE()` line. **Nothing has ever audited them as one vocabulary.** Start there,
+not from a blank page: the audit is the deliverable.
+
+⏸ **ALSO IN FLIGHT: the layer registry** — agreed 2026-09-10, specified further
+down this section with a countable acceptance criterion. Not started.
+
+Tree clean, CI green, 12 commits on 2026-09-10. Counts are in the generated
 health block above — ⚠️ **do not quote them from prose anywhere, including this
 sentence's neighbours.**
+
+### ✅ 2026-09-10 — THE SITE ANSWERS ITS OWN HEADLINE, and the archive always held the answer
+
+`docs/score-effects.md` is the artifact; CHENG ruled all four questions.
+
+⭐⭐ **`measures.json` PUBLISHED BOTH HALVES AND NOTHING PUT THEM TOGETHER.** The
+team with more shot attempts lost **2,228 of 4,100**; the team that controlled
+play **while the score was level** lost **1,560 of 3,925**. Raw attempts are
+anti-predictive, level-score attempts are predictive, and `moreLevelControlLost`
+reached no surface at all. **Both are now on the front door and in the game
+page's newcomer block.** CHENG on whether that defuses the hook: *"the hook is
+not the mystery, it is that two honest counts of nearly the same thing land on
+opposite sides of 50%. An unresolved 54.3% is a curiosity; the pair is an
+argument."*
+
+⛔ **FRACTIONS, AND IT IS CORRECTNESS.** The two rates have **different
+denominators**, so two percentages side by side would print one reference class
+and attribute it to both. The home page used to say *"loses 54.3% of the time"*.
+⭐ **And the connective is read from the data** — *"turns over"* only when the two
+rates point opposite ways.
+
+⚠️ **THE SPOILER GUARD CAUGHT A REGRESSION IN THAT CHANGE.** `homepage.test.js`
+forbids `won`/`lost` and permits `loses`/`wins`: the hero previews a game nobody
+has watched, so a **past-tense** verb reads as the result (Kevin: *"we still give
+away the outcome"*). The first fractions were past tense.
+
+### ✅ AND A LIVE DEFECT ON THE PAGE THIS PROJECT CALLS ITS REASON TO EXIST
+
+The newcomer block said **"Control counts those attempts"** — a layer that has not
+been called Control since the picker was built, so a first-time viewer was told to
+press something not on their screen. It reads the chip's own label now. ⚠️ **The
+play button's quotation had drifted the same way and was fixed with this exact
+pattern three lines above**, while the chip name four lines away kept its
+hand-typed copy through that fix.
+
+### ✅ `census.pace` — AND THE DERIVE WAS RUN BY HAND
+
+Kevin: *"where do we explain Control/Attempts relative to all situations vs power
+play vs penalty kill?"* **Nowhere** — the learn page carried **zero** mentions of
+any of those four phrases, and no figure existed to explain it with.
+
+`census.pace` counts attempts and time by the two conditions that move the count
+without anybody playing better. ⭐ **ARCHIVE, 4,192 games, attempts per 60 minutes
+of each situation:**
+
+| | per 60 |
+|---|---:|
+| power play | **95.06** |
+| even strength | 58.65 |
+| penalty kill | **13.05** |
+| trailing / tied / leading | **65.55 / 58.57 / 52.61** (1.246×) |
+
+⭐ **RATES ARE PER CLUB-HOUR** — a second of even strength is a second for both
+clubs. ⭐⭐ **AND THE ARITHMETIC GIVES A CHECK THE ARCHIVE CAN FAIL:** one club
+leads exactly when the other trails, so those buckets must cover identical
+seconds. Published as `balanced`, alarmed, wired to the exit code. It holds to the
+tenth of a minute over 165,145.4.
+
+⛔ **`derive.yml` HAS `workflow_dispatch` AND WAS RUN BY HAND** (run 34495584685,
+~35 min, every step green) rather than waiting for Monday. Safe because the
+archive has been static since 14 June, so every `measures_fresh` WATCHED value
+reproduced exactly.
+
+### ✅ THE `All situations` LEARN CARD — the tenth, and the first about a CONDITION
+
+Kevin rejected the first copy twice and both were right: it never said what *all
+situations* ARE, and *"in an hour"* is not the unit hockey uses. It defines the
+three states, says **per 60 minutes in each**, and ends on the lesson — *part of a
+club's attempt lead can be nothing but the time it spent on the power play.*
+
+⚠️ **Two more corrections came from reading the neighbouring cards:** the
+Penalties card asserts **no duration** (a minor is two minutes, a major five, and
+a power play ends early on a goal), and *"all three"* undercounted a page that has
+an empty-net card.
+
+⛔ **ITS DOOR COLLIDED BY ACCIDENT.** *The first power-play attempt* resolved byte
+for byte onto the Control door, because **this game's** opening attempt happens to
+be a 5-on-4 — a property of the FIXTURE, not the rule. It opens on the **last
+attempt of the first power play** now, and a new guard forbids any two cards
+sharing a frame except the icing/faceoff pair Kevin ruled.
+
+### ⛔ §6.2 IS BLOCKED, AND THE BLOCKER IS KEVIN'S OWN RULING
+
+`docs/score-effects.md` §6.2 proposes a *"while the score was level"* control
+*"sitting where Even strength only sits"* — ⛔ **and that place is empty.** The
+situations control was **removed on 2026-09-07** because *"a novice cannot decide
+whether to press it without a paragraph about why power-play shots inflate a
+count. That paragraph is exactly what the learn cards refuse to carry."* A level
+control is the identical shape.
+
+⭐ **THE HOLD HAS A STATED EXPIRY AND IT IS NOW HALF-MET** — the `All situations`
+card IS that paragraph, for the strength half. **Kevin's call, not CC's.**
+
+### ⚠️⚠️ AND THE SHARPEST LESSON OF THE DAY WAS A CLAIM CC PUSHED AND HAD TO RETRACT
+
+`zonestart.js` carried `census.drawStrength` figures in a comment. CC declared
+them **stale** against `data/measures.json` and shipped that as a finding. The
+hand-run derive published **4.302 and 1.273 over n=22,790 and 190,144 — the
+comment's own numbers, exactly.**
+
+⛔⛔ **THE COMMENT WAS CURRENT AND `data/measures.json` WAS THE STALE ARTIFACT.**
+`strength.js` stopped leaving situation codes unclassifiable — `census.state.
+unknown` went from **4,151.9 min and 1,117 goals to zero** — and every figure
+derived from them moved. **A committed derived file was treated as the archive,
+and it is a CACHE of the archive.** *Guard where the archive is* is that exact
+rule, broken by the person quoting it.
+
+⛔ **AND THE FRESHNESS GATE COULD NOT HAVE CAUGHT IT.** `tools/measures_fresh.py`
+watches a **named list** — `slot.*` and `measured` — so census figures drift
+silently. `census.pace` joins it because a card reads it. ⚠️ **The rest of the
+census still is not watched: re-derive before quoting any census figure.**
+
+---
 
 ### ✅ §5.1's DAILY BLOCK IS BUILT AND LIVE — `docs/front-door.md` §12
 

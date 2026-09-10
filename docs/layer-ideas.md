@@ -448,3 +448,58 @@ one shootout attempt to a real event stream, which is the population that
 matters: every attempt there is unblocked and from the slot, so admitting it
 would move the blocked rate **in the direction that looks like a finding**, on
 the one number this lens exists to print.
+
+---
+
+## 11. ⏭ TURNOVERS — the one candidate nobody had assessed (2026-09-10)
+
+Zone starts took faceoffs off the uncounted list, the largest of the four. What
+remains that no layer counts: **hits** (~53/game, ruled out — the census killed
+it at r = −0.07, opposite in 48.1%), **penalties** (already all over the
+scoreboard), and **giveaways and takeaways, ~31 a game, never assessed.**
+
+⚠️ **LOCAL, 48 games. These do not ship** — they are evidence that a question is
+worth asking, and the archive figure would need a census field.
+
+| giveaway, by where it happened | n | attempts *against* |
+|---|---:|---:|
+| in the giver's **own end** | 634 | **1.336** |
+| neutral zone | 333 | 1.027 |
+| in the giver's **attacking end** | 475 | **0.829** |
+
+| takeaway, by where it happened | n | attempts *for* |
+|---|---:|---:|
+| in the taker's **attacking end** | 152 | **1.375** |
+| neutral zone | 83 | 1.205 |
+| in the taker's **own end** | 232 | 0.836 |
+
+Both monotonic, both ≈**1.6×** end to end, and mirror images — *the puck changing
+hands matters most near the net you are attacking.* ⭐ **The mark needs no
+threshold**, the property that made zone starts defensible: the event carries a
+coordinate and the zone comes from `attackZone`, the same constant the blue line
+is painted from.
+
+⭐ **THE ORIENTATION WAS VERIFIED, NOT ASSUMED** — `own` means four different
+things across event types, so: the player the event names belongs to the team
+`own` names in **1,266 of 1,266** giveaways and **382 of 382** takeaways. ⚠️ The
+first run of that check said *0 of 1,266*, which was the wrong roster field, not
+a finding.
+
+**Three things keep it a proposal:**
+
+1. 48 games is not the archive.
+2. ⛔ **It is descriptive and has no control.** A giveaway in your own end happens
+   *because* you are already under pressure. `endZone` earned its sentence by
+   fixing the place and varying only the winner; there is no equivalent here, and
+   without one the layer can say *"this is what follows"*, never *"this is what
+   it costs you"*.
+3. ⚠️ **Do not compare it to the 2.026 attempts-per-run baseline** — the run after
+   a giveaway is the *remainder* of a run and is shorter by construction.
+
+⛔ **AND THE STRONGEST OBJECTION IS THAT IT IS THE SAME LESSON AS ZONE STARTS** —
+*where beats what*. The defence is that they are different moments: a zone start
+is a set piece, a turnover is open play, and *"do not turn it over at your own
+blue line"* is the more actionable of the two. **Weigh that before building.**
+
+It would take the picker to **eight chips**, inside the 11-chip budget §A4.1
+priced at 390px.
