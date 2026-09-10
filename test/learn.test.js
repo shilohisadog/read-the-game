@@ -24,6 +24,7 @@ import { goaltending } from '../src/lib/layers/goaltending.js';
 import { doors } from '../builders/learn-doors.mjs';
 import { playable } from '../src/lib/layer.js';
 import { icingRestarts } from '../src/lib/layers/whistle.js';
+import { isEven } from '../src/lib/strength.js';
 
 const rich = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url)));
 const built = JSON.parse(readFileSync(new URL('../data/learn-doors.json', import.meta.url)));
@@ -399,18 +400,23 @@ test('⭐⭐ the blue-line card states the zone figure, its n, and the limit tha
   assert.ok(!/shading/i.test(title), 'the card is named for the paint rather than the zone');
 });
 
-test('⭐⭐ the score-effects card states BOTH rows, and the even-strength row is what makes the first printable', () => {
-  /* ⭐ THE CARD EXISTS BECAUSE THE SITE ALREADY PUBLISHED BOTH HALVES OF ITS OWN
-     HEADLINE AND JOINED NEITHER. More attempts lost 2,228 of 4,100; controlling
-     play while the score was level lost 1,560 of 3,925. A reader who notices
-     that pair has one question, and score effects is the answer.
+test('⭐⭐ the score-effects card is measured at EVEN STRENGTH, and says so', () => {
+  /* ⛔⛔ THE FIRST VERSION ANSWERED A CRITIC INSTEAD OF TEACHING A READER, and
+     Kevin caught it on the live page: *"the first half is good, then we talk
+     about '...the pulled goaltender...' which seems odd?"* It carried the
+     all-situations row and then rebutted the obvious objection to it — a
+     sentence about our METHOD on a card whose job is to teach, and the same
+     defect as the "usually nothing in between" hedge.
 
-     ⛔ AND THE SECOND ROW IS NOT DECORATION — it is the card's licence. The first
-     objection to any score-effects figure is the pulled goaltender, and an
-     all-situations rate cannot answer it. `EVEN` in strength.js means both
-     goaltenders on the ice AND equal skaters, so the sentence is literally true
-     of every second in that row. A card that dropped it would be quoting a
-     number whose obvious rebuttal we can answer and did not. */
+     ⭐⭐ THE FIX WAS NOT A REWORDING. The card is built on the even-strength row,
+     so there is no confound to mention: `EVEN` in strength.js means both
+     goaltenders on the ice AND equal skaters. It costs one digit — all
+     situations reads 66/59/53 and even strength 64/59/53 — so the whole
+     rebuttal was buying a difference a reader cannot see.
+
+     ⛔ EACH FIGURE TIED TO ITS SUBJECT, not merely present: three numbers that
+     merely APPEAR pass a card with them in the wrong order, and a card claiming
+     clubs attempt LESS when behind is worse than no card. */
   const m2 = /<a class="card" id="score"[^>]*>\s*<p class="t">[^<]*<\/p><p>([\s\S]*?)<\/p>/.exec(html);
   assert.ok(m2, 'the score-effects card has gone, or its markup no longer carries a blurb');
   const blurb = m2[1];
@@ -419,42 +425,67 @@ test('⭐⭐ the score-effects card states BOTH rows, and the even-strength row 
     .census.pace;
   const r = k => p[k].per60.toFixed(0);
 
-  /* ⛔ EACH FIGURE TIED TO ITS SUBJECT, which is the lesson the blue-line card
-     paid for an hour earlier: asserting that three numbers are PRESENT passes a
-     card that has them in the wrong order, and a card claiming clubs attempt
-     LESS when behind is worse than no card. Trailing and leading round to two
-     different values, so the pairing is checkable. */
-  assert.match(blurb, new RegExp(`${r('trail')} while trailing`),
-    `the trailing rate (${r('trail')}) is not the one attributed to trailing`);
-  assert.match(blurb, new RegExp(`${r('tied')} while the score is level`),
-    `the tied rate (${r('tied')}) is not the one attributed to a level score`);
-  assert.match(blurb, new RegExp(`${r('lead')} while leading`),
-    `the leading rate (${r('lead')}) is not the one attributed to leading`);
-  assert.match(blurb, new RegExp(`${r('evenTrail')} against ${r('evenLead')}`),
-    'the even-strength control is missing, or its two figures are the wrong way round');
+  assert.match(blurb, /even-strength play/,
+    'the card no longer states the population its figures are over');
+  assert.match(blurb, new RegExp(`${r('evenTrail')} while trailing`),
+    `the trailing rate (${r('evenTrail')}) is not the one attributed to trailing`);
+  assert.match(blurb, new RegExp(`${r('evenTied')} while the score is level`),
+    `the level rate (${r('evenTied')}) is not the one attributed to a level score`);
+  assert.match(blurb, new RegExp(`${r('evenLead')} while leading`),
+    `the leading rate (${r('evenLead')}) is not the one attributed to leading`);
+
+  /* ⛔ AND THE ALL-SITUATIONS ROW IS ABSENT, which is the correction itself. If
+     it comes back the rebuttal comes back with it, because an all-situations
+     score rate cannot answer the empty net and the card would have to say so. */
+  assert.doesNotMatch(blurb, /pulled goaltender|both goaltenders/i,
+    'the card is rebutting an objection again instead of teaching');
+  assert.ok(!blurb.includes(`${r('trail')} while trailing`),
+    'the all-situations row is back on the card, and it brings its confound with it');
 
   /* ⛔ THE DIRECTION IS A FINDING, NOT AN INVARIANT — asserted here rather than
      in `_archive()`, on the rule the blue-line card set: a builder that refuses
-     to run when a measurement changes its mind is a builder that hides the news.
-     Both rows must point the same way or the card's whole framing is wrong. */
-  assert.ok(p.trail.per60 > p.tied.per60 && p.tied.per60 > p.lead.per60,
-    `the score-effects gradient is no longer monotonic (${p.trail.per60} / `
-    + `${p.tied.per60} / ${p.lead.per60}) — the card's wording must change`);
-  assert.ok(p.evenTrail.per60 > p.evenLead.per60,
-    'the effect has vanished at even strength — the card says it survives, and it must not '
-    + 'say that from a stale number');
-
-  // AND THE CONTROL'S OWN INVARIANT, published beside it: leading and trailing
-  // cover identical seconds inside even strength, or the second row is a rate
-  // over a denominator nobody can name.
-  assert.equal(p.balancedEven, true, 'census.pace.balancedEven is false — the control is unsafe');
+     to run when a measurement changes its mind is a builder that hides the news. */
+  assert.ok(p.evenTrail.per60 > p.evenTied.per60 && p.evenTied.per60 > p.evenLead.per60,
+    `the gradient is no longer monotonic (${p.evenTrail.per60} / ${p.evenTied.per60} / `
+    + `${p.evenLead.per60}) — the card's wording must change`);
+  assert.equal(p.balancedEven, true,
+    'census.pace.balancedEven is false — leading and trailing no longer cover the same seconds');
 
   /* ⛔ NO CAUSAL CLAIM. Nothing measured here shows that leading CAUSES a club
      to attempt less; a club can be ahead because it got the bounces while being
-     outplayed. The blurb is descriptive throughout, which is what this half of
-     the page is allowed to say. */
+     outplayed. */
   assert.doesNotMatch(blurb, /\bbecause (?:it is|they are|a club is) (?:ahead|behind|leading|trailing)\b|causes|makes them/i,
     'the card has started explaining WHY, which the measurement does not support');
+});
+
+test('⛔ the score door opens the strength the card is measured in', () => {
+  /* ⛔⛔ THE DEFECT THIS EXISTS FOR, caught before it shipped. The card states an
+     EVEN-STRENGTH rate; the first version of its door took the first attempt by
+     a trailing club and landed on situation code `1541` — a POWER PLAY. The card
+     would have said "per 60 minutes of even-strength play" directly above a door
+     opening the one situation it excludes.
+
+     ⭐ THE FIX IS THAT THE DOOR ASKS THE LAYER WITH THE SAME FILTER, so the
+     moment and the sentence are selected by one rule rather than by two that
+     happen to agree — the same argument that put `attackZone` in the zone-start
+     renderer instead of a local `x > BLUE_LINE_X`. */
+  const door = built.doors.score;
+  assert.equal(door.strength, 'even', 'the score door no longer carries its own strength');
+  assert.match(door.href, /strength=even/, 'the href does not open the filter the card is about');
+
+  // AND THE MOMENT REALLY IS ONE: read from the event, through the same
+  // classifier the card's figures came from.
+  const i = rich.events.findIndex(e => e.per === door.per && e.rem === door.rem
+                                    && e.type === door.type);
+  assert.ok(i >= 0, 'the score door names a frame the game does not contain');
+  assert.equal(isEven(rich.events[i].sit, CTX), true,
+    'the score door opens a moment that is not even strength, under a card that says it is');
+
+  // ⭐ AND EVERY OTHER DOOR IS STILL `all`, or this stopped being one card's
+  // exception and became a silent default nobody chose.
+  const odd = Object.entries(built.doors)
+    .filter(([id, d]) => id !== 'score' && d.strength !== 'all').map(([id]) => id);
+  assert.deepEqual(odd, [], `doors carrying a non-default strength without a card that needs one: ${odd}`);
 });
 
 test('⭐ the two condition cards say the same shape of thing, which is the point', () => {

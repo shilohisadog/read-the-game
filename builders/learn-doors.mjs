@@ -190,9 +190,18 @@ export function doors(game) {
        ⛔ THE SCORE IS READ BEFORE THE EVENT, never after, for the reason
        `census.js` gives at the same seam: the attempt that IS the goal was
        taken in the state that existed before it went in, and crediting it to
-       the lead it created would let a club's own goal decide it was chasing. */
-    ['score', ['corsi'], firstWhileTrailing(corsi, events, ctx),
-     'the first attempt the Control layer counts for a club that is behind'],
+       the lead it created would let a club's own goal decide it was chasing.
+
+       ⛔⛔ AND IT IS AN EVEN-STRENGTH ATTEMPT, WITH THE FILTER ON, because the
+       card states an even-strength rate. The first version took any attempt and
+       landed on `1541` — a POWER-PLAY attempt — so the card would have said
+       "per 60 minutes of even-strength play" directly above a door opening the
+       one situation it excludes. The door asks the layer with `evenOnly` set, so
+       the moment and the sentence are selected by the same rule rather than by
+       two that happen to agree. */
+    ['score', ['corsi'], firstWhileTrailing(corsi, events, { ...ctx, evenOnly: true }),
+     'the first attempt the Control layer counts at even strength for a club that is behind',
+     'even'],
   ];
 
   const missing = found.filter(([, , i]) => i < 0).map(([id]) => id);
@@ -230,7 +239,13 @@ export function doors(game) {
    * something untrue about where it goes. */
   const PLAY = playable(events);
   const out = {};
-  for (const [id, layers, index, rule] of found) {
+  /* ⭐ A DOOR MAY CARRY ITS OWN STRENGTH, and exactly one does. Every other card
+     is measured over all situations and opens that way; the score-effects card
+     states an EVEN-STRENGTH rate, so a door that opened the replay unfiltered
+     would put the card's sentence beside a count the sentence is not about.
+     Defaulting rather than requiring it keeps the eleven that do not care
+     silent. */
+  for (const [id, layers, index, rule, strength = 'all'] of found) {
     const found_e = events[index];
     let k = PLAY.indexOf(found_e);
     let via = null;
@@ -246,8 +261,8 @@ export function doors(game) {
                     + 'after it — nothing a viewer can be shown');
     }
     const e = PLAY[k];
-    out[id] = { href: format({ game: game.game.id, events: PLAY, index: k, layers }),
-                per: e.per, rem: e.rem, type: e.type, layers, rule,
+    out[id] = { href: format({ game: game.game.id, events: PLAY, index: k, layers, strength }),
+                per: e.per, rem: e.rem, type: e.type, layers, rule, strength,
                 ...(via ? { via } : {}) };
   }
   // THE ONE FIGURE ON THE PAGE, AND IT IS THIS GAME'S. The archive number —

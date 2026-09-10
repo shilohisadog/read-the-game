@@ -337,15 +337,20 @@ it's caught three false premises."* **§0 of the next artifact carries that step
 1. **§6.2**, on Kevin's ruling (§9.5).
 2. **The dose-response on a surface**, under §9.2's two conditions.
 3. ✅ **The mechanism figures are QUOTED** — `Score effects`, the twelfth learn
-   card, shipped 2026-09-10 (`dda5041`). It carries both rows, because the
-   even-strength one is the card's licence rather than an extra: **66 / 59 / 53
-   per 60 all situations, 64 against 53 with both goaltenders on the ice and the
-   sides even.** It sits beside `All situations` and **ends on the same sentence
-   pattern deliberately** — part of an attempt lead is the power play, part of it
-   is the scoreboard — and a test pins that parallel, because a copy pass that
-   varied the language would break the one thing making them read as one lesson.
-   ⛔ **§1's pair is NOT quoted on it**: a card carries a measurement, and joining
-   two of them is an argument (§6.1's job, still unbuilt).
+   card, shipped 2026-09-10. ⛔ **It carries the EVEN-STRENGTH row only** —
+   **64 while trailing, 59 while the score is level, 53 while leading** — and
+   that is a correction, not the original design. The first version printed the
+   all-situations row and then rebutted the empty net, which Kevin read as odd
+   the moment it was live: *a sentence about our method on a card whose job is
+   to teach.* **The right move was to remove the confound from the number rather
+   than to explain it in the copy**, and it cost one digit (66 → 64). The
+   all-situations lift stays HERE, where an argument is allowed to live.
+   ⭐ Its door carries `strength=even` for the same reason. It sits beside
+   `All situations` and **ends on the same sentence pattern deliberately** — part
+   of an attempt lead is the power play, part of it is the scoreboard — and a
+   test pins that parallel. ⛔ **§1's pair is NOT quoted on it**: a card carries a
+   measurement, and joining two of them is an argument (§6.1's job, still
+   unbuilt).
 4. ⭐ **Kevin's own next question, and the bigger one:** *"score-effects, even
    strength, power play/penalty kill type of information that we need to be
    seamless across the site (which I'm not sure that's the case currently)."*

@@ -1347,7 +1347,7 @@ def _archive():
     # ⛔ `balancedEven` IS CHECKED LIKE `balanced`: leading and trailing must
     # cover identical seconds inside even strength too, or the second row is
     # over a denominator nobody can name.
-    for k in ("lead", "tied", "trail", "evenLead", "evenTrail"):
+    for k in ("evenLead", "evenTied", "evenTrail"):
         z = p.get(k) or {}
         if z.get("per60") is None or not z.get("minutes"):
             raise SystemExit(
@@ -1358,11 +1358,14 @@ def _archive():
             "learn: measures.json census.pace.balancedEven is false -- leading and "
             "trailing disagree INSIDE even strength, so the score-effects card's "
             "control is over a denominator nobody can name")
+    # ⛔ ONLY WHAT A CARD PRINTS. The all-situations row was validated and
+    # substituted here while the card carried it; it does not any more, and a
+    # builder that keeps checking a figure no page reads widens its own claim to
+    # fields nobody would notice breaking. Same rule as `measures_fresh.py`'s
+    # named list, applied at the other end of the same pipe.
     out.update({
-        "__TRAIL_PER60__": f"{p['trail']['per60']:.0f}",
-        "__TIED_PER60__": f"{p['tied']['per60']:.0f}",
-        "__LEAD_PER60__": f"{p['lead']['per60']:.0f}",
         "__EVEN_TRAIL_PER60__": f"{p['evenTrail']['per60']:.0f}",
+        "__EVEN_TIED_PER60__": f"{p['evenTied']['per60']:.0f}",
         "__EVEN_LEAD_PER60__": f"{p['evenLead']['per60']:.0f}",
     })
     ez = (m.get("census") or {}).get("endZone") or {}
@@ -1872,13 +1875,31 @@ LEARN_CARDS = [
     # quoted here: a card carries a measurement, and connecting two of them is
     # an argument. `docs/score-effects.md` Sec 6.1.
     #
-    # ⭐⭐ THE THIRD SENTENCE IS THE REASON THE FIRST TWO MAY BE PRINTED. The
-    # first objection anyone makes is the pulled goaltender -- a club that is
-    # behind late plays six against five -- and until 2026-09-10 the only answer
-    # on file was a LOCAL 48-game measurement. `pace.evenTrail`/`evenLead` is
-    # that answer over the archive, and `EVEN` in `strength.js` means both
-    # goaltenders on the ice AND equal skaters, so the sentence is literally
-    # true of every second in it.
+    # ⛔⛔ THE FIRST VERSION ANSWERED A CRITIC INSTEAD OF TEACHING A READER, and
+    # Kevin caught it on the live page within the hour: *"the first half is good,
+    # then we talk about '...the pulled goaltender...' which seems odd?"* It read
+    # "It is not the pulled goaltender: with both goaltenders on the ice and the
+    # sides even, it is still 64 against 53" -- a rebuttal to an objection a
+    # novice has never formed, introduced by a definite noun phrase pointing at
+    # nothing on the card. The same defect as the "usually nothing in between"
+    # hedge: A SENTENCE ABOUT OUR METHOD ON A CARD WHOSE JOB IS TO TEACH.
+    #
+    # ⭐⭐ AND THE FIX WAS NOT TO REWORD IT. The card should have been built on
+    # the even-strength row from the start -- then there is no confound to
+    # mention, because there is none in the number. `EVEN` in `strength.js` means
+    # both goaltenders on the ice AND equal skaters, so a power play and a pulled
+    # goaltender are both already outside it.
+    #
+    # ⭐ IT COSTS ONE DIGIT. All situations reads 66/59/53 and even strength
+    # 64/59/53, so the whole rebuttal was buying a difference a reader cannot
+    # see. The all-situations lift (1.246x against 1.195x) still lives in
+    # `docs/score-effects.md`, where an argument is allowed to.
+    #
+    # ⭐⭐ AND "EVEN STRENGTH" IS A PHRASE THE CARD ABOVE THIS ONE ALREADY
+    # DEFINED. `All situations` says *"59 at even strength"* in its own figures,
+    # so this card USES the vocabulary rather than re-teaching it -- which is
+    # what one vocabulary across a page actually looks like, and is worth more
+    # than the sentence it replaced.
     #
     # ⛔ NO CAUSAL CLAIM, AND NONE IS NEEDED. Nothing here shows that leading
     # CAUSES a club to attempt less -- a club can be ahead because it got the
@@ -1888,11 +1909,10 @@ LEARN_CARDS = [
     ("ours", "score", "Score effects",
      "A club that is behind takes more shot attempts, and a club that is ahead "
      "takes fewer &mdash; that is what <em>score effects</em> means. Measured "
-     "per 60 minutes: __TRAIL_PER60__ while trailing, __TIED_PER60__ while the "
-     "score is level, __LEAD_PER60__ while leading. It is not the pulled "
-     "goaltender: with both goaltenders on the ice and the sides even, it is "
-     "still __EVEN_TRAIL_PER60__ against __EVEN_LEAD_PER60__. So part of a "
-     "club&rsquo;s attempt lead can be nothing but the time it spent behind."),
+     "per 60 minutes of even-strength play: __EVEN_TRAIL_PER60__ while trailing, "
+     "__EVEN_TIED_PER60__ while the score is level, __EVEN_LEAD_PER60__ while "
+     "leading. So part of a club&rsquo;s attempt lead can be nothing but the "
+     "time it spent behind."),
 ]
 
 # Spelled out rather than via strftime("%B"): this builder gates on BYTES, and
