@@ -38,6 +38,9 @@
 import { ESC } from './esc.js';
 import { isNearMiss, summarise } from './layer.js';
 
+/* Plurals for the collapsed line. A TABLE, for the reason `PEN` and `WHY` are
+   tables: `type+'s'` gives "period-starts" and "shot-on-goals", and a name the
+   league controls is never inflected by us. */
 const PLURAL={faceoff:'faceoffs',hit:'hits',giveaway:'giveaways',takeaway:'takeaways',
  penalty:'penalties',stoppage:'whistles',goal:'goals','shot-on-goal':'shots on goal',
  'missed-shot':'missed shots','blocked-shot':'blocked shots','period-start':'period starts',

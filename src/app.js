@@ -22,7 +22,7 @@ import {
   ENDS_KEY, ENDS_NOTE, NET_X, attackDirection, endsKeyShowing, endsNoteShowing
 } from './lib/rink.js';
 import {
-  ATTEMPT_TYPES, ATTRIBUTION, corsiTeam, missSay, shootingTeam
+  ATTRIBUTION, corsiTeam, missSay, shootingTeam
 } from './lib/attribution.js';
 import { NOT_A_PLAY, inShootout } from './lib/layer.js';
 import { powerPlayOver, standing } from './lib/strength.js';
@@ -94,12 +94,6 @@ const LINK=parse(location.search),PREVIEW=LINK.preview;
    frame of its own. It is shown in the window of the next playable event, which
    is exactly where `upto()` puts it, so that is where the link lands. */
 function frameOf(n){for(let k=0;k<EVI.length;k++)if(EVI[k]>=n)return k;return EV.length-1;}
-const ATT=ATTEMPT_TYPES;
-/* How each play LANDS. Paired opposites on purpose: a takeaway snatches inward
-   and a giveaway slips loose; a hit jolts and a blocked shot halts dead. The
-   names are the CSS animations in src/app.css. */
-const ARRIVE={goal:'flare',hit:'jolt','blocked-shot':'halt',
-              giveaway:'slip',takeaway:'snatch'};
 // `SX`/`SY` -- the pure screen transform, and the reasoning for which end the
 // host defends -- moved to src/lib/rinkart.js, which is where the rink's paint
 // lives now so the learn page's diagrams and the replay cannot draw two
@@ -132,12 +126,6 @@ const AX=(x,per)=>SX(x*DIR(per)), AY=(y,per)=>SY(y*DIR(per));
 // is ~6 units. Goals get a little more presence.
 // Only one figure is on the ice at a time, so it can afford presence and detail.
 const FIG_SZ=9, FIG_BIG=11.5;
-// The rink is 200 units wide and renders around 860px, so a unit is ~4.3px.
-// This only drives the figure's drop-detail-when-small threshold, never its
-// geometry, so an approximation is honest here -- but without it a 9-unit
-// figure is judged as "9 pixels" and loses its face on a screen where there is
-// plenty of room for one.
-const UNIT_PX=4.3;
 // THE TEAMS' OWN COLOURS, and this is the whole defect being fixed. These were
 // literals -- Minnesota green and Buffalo gold, from the one game that used to be
 // compiled into this page -- used as "the away colour" and "the home colour" for
@@ -154,13 +142,6 @@ const AWAYCOL=colourOf(AAB), HOMECOL=colourOf(HAB);
  el.style.setProperty('--away-text',readableInk(AWAYCOL));
  el.style.setProperty('--home-text',readableInk(HOMECOL));})();
 let T=0, REDUCED=matchMedia('(prefers-reduced-motion:reduce)').matches;
-/* ONE FIGURE, AND `figTabletop` IS NOT DEAD CODE. The picker is gone from this
-   page; `src/goalie-eye-view.html` still offers both and carries its own copy of
-   the module, so the alternative figure has a live caller and a live test. What
-   went is the CONTROL and the cross-page `rtg.fig` preference it wrote -- a
-   setting made on another page, applied here through a control this page no
-   longer has, is a state nothing on screen accounts for. */
-const figStyle='mascot';
 /* WHETHER THIS IS A FIRST VISIT — a fact the page has never had, and the reason
    230 words of teaching copy were either permanent furniture or absent.
    Kevin: "what they don't know, they have no idea what it means... they need to
@@ -1182,13 +1163,6 @@ let workOpen=false;
    the moment it became generic: it read the right NAME off the chip and the
    wrong NUMBERS off corsi, for every layer. Caught by a test that took its
    expected totals from each reducer rather than from the page. */
-/* Plurals for the collapsed line. A TABLE, for the reason `PEN` and `WHY` are
-   tables: `type+'s'` gives "period-starts" and "shot-on-goals", and a name the
-   league controls is never inflected by us. */
-const PLURAL={faceoff:'faceoffs',hit:'hits',giveaway:'giveaways',takeaway:'takeaways',
- penalty:'penalties',stoppage:'whistles',goal:'goals','shot-on-goal':'shots on goal',
- 'missed-shot':'missed shots','blocked-shot':'blocked shots','period-start':'period starts',
- 'period-end':'period ends','game-end':'the final horn','delayed-penalty':'delayed penalties'};
 /* ⭐ THE CHIP'S NAME, AND ONE READER OF IT — the fourth design this seam has
    decided, and the first one it decided TWICE. Each metric chip carries a live
    count beside its label, so `chip.textContent` reads "Goaltending10". `capFor`

@@ -32,9 +32,23 @@ import { FIG } from './figures.js';
 
 const ATT = ATTEMPT_TYPES;
 
+/* How each play LANDS. Paired opposites on purpose: a takeaway snatches inward
+   and a giveaway slips loose; a hit jolts and a blocked shot halts dead. The
+   names are the CSS animations in src/app.css. */
 const ARRIVE={goal:'flare',hit:'jolt','blocked-shot':'halt',
               giveaway:'slip',takeaway:'snatch'};
+// The rink is 200 units wide and renders around 860px, so a unit is ~4.3px.
+// This only drives the figure's drop-detail-when-small threshold, never its
+// geometry, so an approximation is honest here -- but without it a 9-unit
+// figure is judged as "9 pixels" and loses its face on a screen where there is
+// plenty of room for one.
 const UNIT_PX=4.3;
+/* ONE FIGURE, AND `figTabletop` IS NOT DEAD CODE. The picker is gone from the
+   replay page; `src/goalie-eye-view.html` still offers both and carries its own
+   copy of the module, so the alternative figure has a live caller and a live
+   test. What went is the CONTROL and the cross-page `rtg.fig` preference it
+   wrote -- a setting made on another page, applied here through a control that
+   page no longer has, is a state nothing on screen accounts for. */
 const figStyle='mascot';
 
 /**

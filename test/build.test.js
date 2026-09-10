@@ -8,6 +8,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { declarations } from '../tools/jslex.mjs';
 
 const read = p => readFileSync(new URL(p, import.meta.url), 'utf8');
 const app = read('../src/read-the-game.html');
@@ -257,4 +258,143 @@ test('⭐ the bundle list is closed and ordered, derived from the real imports',
   assert.deepEqual(disordered, [],
     'a module is concatenated before something it depends on — a top-level const '
     + 'would be undefined at load, and only a hoisted function would survive it');
+});
+
+
+/**
+ * ⭐⭐ THE BUNDLE IS ONE SCOPE, AND NOTHING SAID SO.
+ *
+ * `_inline` strips each module's imports, drops its `export` keywords and
+ * concatenates. The browser therefore does not get twenty-seven module scopes,
+ * it gets ONE, and every top-level name in `src/lib` shares it. Two modules
+ * declaring the same name is a live hazard with no symptom:
+ *
+ *   function  redeclaration is SILENT — sloppy mode and strict mode alike, the
+ *             last one simply wins. Verified, not assumed.
+ *   const     redeclaration is a SyntaxError, which kills the page and would
+ *             take all 1,100 tests with it.
+ *
+ * ⭐ SO THE ONLY DANGEROUS HALF IS THE SILENT ONE, and it is exactly the half no
+ * existing check can see. The loud half needs no guard: it cannot reach a
+ * commit. This guard exists for the quiet one.
+ *
+ * ⚠️ IT HAS BITTEN ONCE ALREADY. `layers/whistle.js` declares its own `zoneOf`;
+ * `census.js` grew a second one with a different signature, the later won, and
+ * the fix was a rename to `attackZone`. `whistle.js` also publishes `marks`,
+ * `latest`, `restarts` and `WHY` into this shared namespace — four names generic
+ * enough that a new layer could plausibly reach for any of them.
+ *
+ * ⭐ AND THE SECOND PROPERTY IS THE ONE THAT ACTUALLY EXPLAINS A LAYER BREAKING
+ * A DIFFERENT LAYER. `src/app.js` ships as a single `boot()` whose whole body is
+ * written at column zero, so its 146 names are function LOCALS. A local cannot
+ * overwrite a bundle name — it SHADOWS it, for the entire function, from the
+ * first line. Declare `marks` anywhere inside `boot` and every caller of the
+ * whistle layer's `marks` silently gets the wrong one, with no error, no throw,
+ * and nothing for a `try/catch` to catch. That is the shape of the regression
+ * that made a zone-start draw call guarded by `if(zoneOn)` cost the whistle
+ * layer its rings.
+ *
+ * Both hold today (135 bundle names, 146 boot locals, 0 and 0). Five shadows
+ * existed when this was written -- `ARRIVE`, `ATT`, `PLURAL`, `UNIT_PX`,
+ * `figStyle`, every one a byte-identical copy of a non-exported lib internal and
+ * every one DEAD, left behind when `marks.js` and `work.js` were extracted. They
+ * were removed rather than allowed for: an allowlist of known collisions is the
+ * pinned fixture this repo has been bitten by before.
+ */
+test('⭐ the declaration scanner can fail — the control for the two guards below', () => {
+  const names = src => declarations(src, 0).map(d => d.name);
+
+  /* ⚠️ THE SHAPE THAT PRODUCED A FALSE FINDING, FIRST. A line-anchored regex
+     reads every column-zero declaration as top-level, and `src/app.js` writes
+     its entire body at column zero INSIDE `boot` -- so that scanner reports 146
+     top-level names where there is one, and a review built on it filed 31
+     collisions that do not exist. Same family as the 70 write sites. */
+  assert.deepEqual(names('function boot(){\nconst LENS=1;\nfunction draw(){}\n}'), ['boot'],
+    'declarations at depth 0 must not include a function body, however it is indented');
+  assert.deepEqual(declarations('function boot(){\nconst LENS=1;\n}', 1).map(d => d.name), ['LENS'],
+    'depth 1 must reach the body — otherwise the shadow guard below is vacuous');
+
+  // A DECLARATOR LIST DECLARES EVERY NAME IN IT. `strength.js` ships
+  // `export const SKATERS_MIN = 3, SKATERS_MAX = 6;` and a scanner that takes
+  // only the first name is blind to half of it.
+  assert.deepEqual(names('const A = 1, B = 2;'), ['A', 'B']);
+  // ...but a comma inside parens or braces declares nothing.
+  assert.deepEqual(names('const f = (a, b) => a + b;'), ['f']);
+  assert.deepEqual(names('const T = {a: 1, b: 2};'), ['T']);
+  assert.deepEqual(names('const g = function h(){};'), ['g'],
+    'a named function EXPRESSION does not declare its own name in this scope');
+
+  // The lexer's own job: none of these are code.
+  assert.deepEqual(names('/* const GHOST = 1; */\nconst real = 1;'), ['real']);
+  assert.deepEqual(names('const s = "const GHOST = 1";'), ['s']);
+  assert.deepEqual(names('const r = /const GHOST = 1/;'), ['r']);
+
+  // AND THE POSITIVE DIRECTION, or the guards below pass by finding nothing.
+  assert.deepEqual(names('function marks(){}\nconst latest = 1;\nclass P {}\nlet q;'),
+                   ['marks', 'latest', 'P', 'q']);
+});
+
+test('⭐ no two bundled modules declare the same top-level name', () => {
+  const lib = bundled();
+  const owner = new Map();
+  const clashes = [];
+  let scanned = 0;
+  for (const name of lib) {
+    /* The builder's own import-stripping, because what collides is what the
+       browser gets. An import binding is not a declaration in the bundle -- it
+       is satisfied by the concatenation itself. */
+    const src = read(`../src/lib/${name}`)
+      .replace(/^[ \t]*import(?=[\s{'"*])[^;]*?;[ \t]*$/gm, '');
+
+    /* ⚠️ THE DOCUMENTED HOLE, WATCHED RATHER THAN ASSUMED AWAY. `declarations`
+       cannot see a destructured binding, because the `{` that opens it raises
+       the brace depth. No LIB module has one today; the day one does, this says
+       so instead of quietly under-reporting.
+
+       ⛔ ANCHORED AT COLUMN ZERO, AND THE FIRST DRAFT WAS NOT. With `\s*` in
+       front it matched `  const { ab, own, opp } = relativeTo(s, ctx);` inside a
+       function in `strength.js` and reported a top-level destructure that does
+       not exist -- the same over-broad-pattern failure this whole guard is
+       about, committed inside the guard. Column zero is not a stylistic guess:
+       `_inline` states and depends on it ("Every export in this repo is a
+       declaration at column zero"). */
+    assert.equal(/^(?:export )?(?:const|let|var)\s*[{[]/m.test(src), false,
+      `${name} destructures at top level, which the declaration scanner cannot see`);
+
+    for (const { name: id, kind } of declarations(src, 0)) {
+      scanned++;
+      if (owner.has(id)) clashes.push(`${id} (${kind}) — declared by both ${owner.get(id)} and ${name}`);
+      else owner.set(id, name);
+    }
+  }
+  assert.ok(scanned >= 120, `only ${scanned} declarations found across ${lib.length} modules — the scan has stopped seeing them`);
+  assert.deepEqual(clashes, [],
+    'two modules in the one browser scope declare the same name. A duplicate '
+    + '`function` is silent and last-one-wins, so the loser simply stops working '
+    + 'with no error anywhere — this is the `zoneOf` defect');
+});
+
+test('⭐ nothing inside boot() shadows a name the bundle declares', () => {
+  const owner = new Set();
+  for (const name of bundled()) {
+    const src = read(`../src/lib/${name}`).replace(/^[ \t]*import(?=[\s{'"*])[^;]*?;[ \t]*$/gm, '');
+    for (const d of declarations(src, 0)) owner.add(d.name);
+  }
+  const appSrc = read('../src/app.js');
+  const ANCHOR = '\nexport function boot(';
+  assert.equal(appSrc.split(ANCHOR).length - 1, 1,
+    'the anchor must appear exactly once, or the wrong half of app.js is scanned');
+  const shipped = appSrc.slice(appSrc.indexOf(ANCHOR));
+
+  assert.deepEqual(declarations(shipped, 0).map(d => d.name), ['boot'],
+    'the shipped half of app.js declares one name — if this changes, the depth '
+    + 'the shadow scan uses is no longer the right one');
+
+  const locals = [...new Set(declarations(shipped, 1).map(d => d.name))];
+  assert.ok(locals.length >= 100, `only ${locals.length} locals found inside boot — the scan has stopped seeing them`);
+  const shadows = locals.filter(n => owner.has(n)).sort();
+  assert.deepEqual(shadows, [],
+    'a local inside boot() has the same name as something the bundle declares. '
+    + 'It shadows it for the WHOLE function from the first line, so every use of '
+    + 'the library one silently becomes the local — no error, nothing to catch');
 });

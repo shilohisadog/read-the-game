@@ -228,6 +228,73 @@ export function referenced(src) {
 }
 
 /**
+ * The names `src` DECLARES at brace depth `depth` — 0 for a file's own top
+ * level, 1 for the body of a single top-level function.
+ *
+ * ⭐⭐ WHY THIS EXISTS. `builders/build_main.py` ships the site as ONE SCRIPT:
+ * `_inline` strips each module's imports, drops its `export` keywords and
+ * concatenates. So the twenty-seven `LIB` modules do not have twenty-seven
+ * scopes in the browser, they have one, and two modules declaring the same name
+ * is a live hazard with no symptom — `function` redeclaration is SILENT in both
+ * sloppy and strict mode, last one wins. It has bitten once already (`zoneOf`,
+ * renamed to `attackZone`) and it is the only mechanism that explains a layer's
+ * draw call breaking a DIFFERENT layer.
+ *
+ * ⚠️ `depth` IS A BRACE COUNT, NOT A SCOPE. It is exactly enough for the two
+ * questions `test/build.test.js` asks — what the bundle declares, and what
+ * `boot` declares inside it — and it is not a substitute for scope analysis.
+ * `src/app.js` writes its whole body at column zero INSIDE `boot`, so a
+ * line-anchored regex reports 146 top-level names where there is one; that is
+ * the same over-broad-pattern failure as the 70 write sites, and the reason
+ * this counts braces from a token stream instead of matching text.
+ *
+ * ⚠️ WHAT IT DOES NOT SEE, said out loud because a scanner's silence is not
+ * evidence: destructured bindings (`const {a} = x` — the brace hides them) and
+ * the name of a named function EXPRESSION. `test/build.test.js` asserts no LIB
+ * module uses the first, so the hole is watched rather than assumed away.
+ *
+ *   [{name, kind}]  kind is the keyword — 'function' | 'const' | 'let' | 'var' | 'class'
+ */
+const DECLARES = new Set(['function', 'const', 'let', 'var', 'class']);
+
+export function declarations(src, depth = 0) {
+  const out = [];
+  let braces = 0, parens = 0;   // parens counts `(` and `[` alike: both hide commas
+  let kind = null;              // the keyword whose declarator list we are inside
+  let want = false;             // the next identifier is a name being declared
+  walk(src, t => {
+    if (t.t === 'op') {
+      const v = t.v;
+      if (v === '{') { braces++; want = false; }
+      else if (v === '}') { braces--; want = false; }
+      else if (v === '(' || v === '[') parens++;
+      else if (v === ')' || v === ']') parens--;
+      else if (v === ';') { kind = null; want = false; }
+      // A COMMA CONTINUES A DECLARATOR LIST, and only at the declaration's own
+      // depth: `export const SKATERS_MIN = 3, SKATERS_MAX = 6;` declares two,
+      // while the commas in `{a:1,b:2}` and `(a,b)=>` declare none. Without the
+      // paren guard every arrow-function parameter would be read as a binding.
+      else if (v === ',' && kind && braces === depth && parens === 0) want = true;
+      return;
+    }
+    if (t.t !== 'id') { want = false; return; }   // a string or number ends a name, never the list
+    if (t.member || t.key) { want = false; return; }
+    if (want && braces === depth && parens === 0) {
+      out.push({ name: t.v, kind });
+      want = false;
+      if (kind === 'function' || kind === 'class') kind = null;   // these declare one name, and have no `;`
+      return;
+    }
+    // `kind === null` is what keeps `const f = function(){}` from starting a
+    // second declaration and claiming the expression's own name.
+    if (kind === null && DECLARES.has(t.v) && braces === depth && parens === 0) {
+      kind = t.v; want = true;
+    }
+  });
+  return out;
+}
+
+/**
  * Every module specifier `src` imports — static, re-exported, or dynamic.
  *
  * ⭐⭐ WHY THIS IS NOT A REGEX, AND THE REASON IS IN THIS REPO'S OWN HISTORY.
