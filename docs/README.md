@@ -106,6 +106,7 @@ of this repo found rather than one we noticed.
 | **[homepage.md](homepage.md)** | ✅ shipped — written against the live page, not against intentions. |
 | **[site-chrome.md](site-chrome.md)** | ✅ shipped — the header, footer and nav that made a multi-page site possible. |
 | **[discovery.md](discovery.md)** | ✅ shipped — C1, the calendar as the date index into the archive. |
+| **[score-effects.md](score-effects.md)** | 📐 design, for review — the archive already publishes the answer to the site's own headline (**54.3%** of games are lost by the team with more attempts; **39.7%** by the team that controlled play while the score was LEVEL) and no surface puts the two together. Argues it is a control, not a seventh chip, and that the reducer for it already runs. |
 | **[layer-ideas.md](layer-ideas.md)** | 📐 design, for review — the next two layers and one attribute. Zone starts (its base rate is already published over 165,420 draws), defencemen's attempts, and who was on the ice. Carries three traps: a blocked shot is recorded where it was STOPPED, the shift interval is `s < t <= e`, and a small sample erred in the flattering direction for the third time. |
 | **[game-page-fold.md](game-page-fold.md)** | 📐 design, for review — the game page at a laptop's width, and a rule for which blocks may leave the ice: invariance under playhead movement. |
 | **[front-door.md](front-door.md)** | 📐 design, for review — a page that changes every morning. Three defects shipped ahead of it; the daily block, the fold, and what the pipeline already throws away. |
