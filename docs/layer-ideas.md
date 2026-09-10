@@ -73,10 +73,21 @@ comment says it is *"the one a sentence may quote"*:
 
 | | attempts in the window after the draw | n |
 |---|---:|---:|
-| **being in the offensive zone**, having *lost* the draw | **1.163** | 165,420 |
-| **winning the draw** there, on top of that | **+0.52** | |
+| the club **attacking that end**, having **lost** the draw | **1.163** | 165,420 |
+| the same club, having **won** it | **1.683** | |
+| **what winning is worth**, therefore | **0.52** | |
 
-> **Where the draw is taken is worth about 2.2× what winning it is.**
+> ⛔ **THE OBVIOUS SENTENCE IS AN OVER-CLAIM, AND IT WAS LIVE FOR A DAY**
+> (corrected 2026-09-10). *"Where the draw is taken is worth about 2.2× what
+> winning it is"* asserts a **place effect measured against not being there**,
+> and this table has **no such baseline** — it fixes the END and varies only the
+> winner. `zoneWorth` is a **level**; `winningWorth` is a **difference**. Writing
+> both with a `+` is what made a reader parse it as *losing gets you more*.
+>
+> ⭐ **What it supports is a decomposition of one number: of the 1.683 an
+> attacking club gets from an offensive-zone draw, 1.163 arrives whether or not
+> it wins — and that part is 2.2× the 0.52 winning adds.** Same ratio, and a
+> claim the measurement can carry.
 
 ⚠️ **The uncontrolled table is the one that misleads**, and it is why `endZone`
 exists: `faceoffZone` reads **2.395×** in the offensive zone, **1.132×** neutral,
@@ -371,10 +382,12 @@ CHENG: **the census already says which one matters.**
 
 | | |
 |---|---:|
-| being in the offensive zone | **+1.163** attempts |
-| winning the draw there | **+0.52** |
+| the attacking club, having **lost** the draw | **1.163** attempts |
+| what **winning** adds | **0.52** |
 
-> **Where is worth 2.2× who.** So a mark carrying both is not a competing lesson
+> **The part you get anyway is 2.2× the part winning adds** — ⚠️ NOT "where is
+> worth 2.2× who", which claims a baseline this table does not have (§2.2).
+> So a mark carrying both is not a competing lesson
 > — it is **the comparison that makes the lesson land**, and it explains the
 > site's cleanest null in the same breath.
 
