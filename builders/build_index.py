@@ -1391,7 +1391,15 @@ __HELPERS__
      hands back the instant and this is the one line that reads it. */
   function drawDaily(slate, schedule, games) {
     var d = daily(slate, schedule, new Date().toISOString());
-    if (d.state === 'none') return;
+    /* ⭐ IT ANSWERS WHETHER IT RENDERED, because the freshness line below now
+       depends on the answer and `$('daily').hidden` is the wrong way to ask.
+       The markup carries `hidden`, so a browser reports `true` here -- but the
+       unit DOM makes elements on demand and its `hidden` is `undefined`, which
+       is falsy, so a check reading the property would have believed the card was
+       on screen in every test where it is not. A fake that cannot express the
+       state is the defect this file's own `getElementById` comment was written
+       about. A return value is true in both. */
+    if (d.state === 'none') return false;
 
     $('dailykick').textContent = d.kicker + (d.count == null ? '' :
       ' \u00b7 ' + d.count + (d.count === 1 ? ' game' : ' games'));
@@ -1477,6 +1485,7 @@ __HELPERS__
       }
     }
     $('daily').hidden = false;
+    return true;
   }
 
   /* ⭐ schedule.json JOINS THE FETCH, AND IT IS THE DOCUMENT'S FIRST READER.
@@ -1494,6 +1503,11 @@ __HELPERS__
     .then(function (r) {
       var cat = r[0], measures = r[1], index = r[2], schedule = r[3], slate = r[4];
       var games = (cat && cat.games) || [];
+      /* ⚠️ DECLARED OUT HERE, not in the branch that sets it. The card is drawn
+         on the front door only; a team page and a failed catalog never reach
+         `drawDaily` at all, and on those the line below is the only thing on the
+         page that says how current any of this is. */
+      var dailyShown = false;
       if (!games.length) {
         $('teams').appendChild(el('p', 'note',
           'The archive could not be loaded, so there are no teams to show.'));
@@ -1508,7 +1522,7 @@ __HELPERS__
            asked, so a league-wide slate is an interruption there -- and the
            block is placed in the hero's sixth grid row, which on a team page has
            no card to sit in. */
-        drawDaily(slate, schedule, games);
+        dailyShown = drawDaily(slate, schedule, games);
       }
       /* ⚠️ TWO ARGUMENTS, NOT THREE. `describe` took the schedule for one day,
          when the quiet state was the only forward-looking sentence on the page
@@ -1518,6 +1532,36 @@ __HELPERS__
       var s = describe(index, new Date().toISOString());
       $('state').setAttribute('data-state', s.state);
       $('state').textContent = s.lines.join(' ');
+      /* ⭐⭐ HEALTH IS NOT NEWS, AND IT WAS BEING PRINTED TWICE.
+         Kevin, on the live page: "this copy stayed in, I don't think we need it
+         anymore, since we have 'Next' up at the top: Data through 14 June 2026.
+         No games in the last 14 days."
+         He is right about the observable. In the dark states the card above
+         already says "The last night we hold is 14 June 2026 - see it ->" with a
+         door on it, and "Preseason opens 19 September 2026" - so this line
+         repeated the same date in duller words and then restated the emptiness
+         the card had just explained. The builder's own note two hundred lines up
+         warns about "a front door naming two different last dates in two
+         places"; naming the SAME one twice is the same seam, one degree milder.
+
+         ⛔ BUT THE ELEMENT DOES NOT GO, AND THAT IS THE WHOLE POINT.
+         `describe()` has seven states and this is the site's only monitoring
+         surface -- src/lib/ingest-state.js: "a stalled pipeline becomes
+         something users and we can see... with no monitoring service in
+         existence", Doctrine 3. Deleting the line would delete `halted`
+         ("Updates paused 3 March. The league's feed contains something we don't
+         recognise yet"), `stalled` ("Last checked 4 days ago") and `behind` ("We
+         have 7 of the 12 games played in the last 14 days") -- the three that
+         report a limit, none of which can be seen in June, which is exactly when
+         the decision to remove it would be made.
+
+         SO THE RULE IS THE ONE THE MODULE ALREADY IMPLIES: the line speaks when
+         it has something the page is not otherwise saying. `current` and `quiet`
+         are the two states that announce that nothing is wrong, and only those
+         two go quiet -- and only where the card is actually on screen to carry
+         the fact instead. */
+      var SAME_NEWS = { current: 1, quiet: 1 };
+      $('state').hidden = !!(SAME_NEWS[s.state] && dailyShown);
     });
 })();
 </script>"""

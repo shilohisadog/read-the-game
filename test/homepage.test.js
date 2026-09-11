@@ -1711,3 +1711,105 @@ test('the freshness line lands on the first column, not near it', () => {
   assert.equal(Number(state[2]), Number(gap[1]) / 2,
     `the line subtracts ${state[2]}px where half the grid gap is ${Number(gap[1]) / 2}px`);
 });
+
+/* ─────────────────────── THE FRESHNESS LINE SPEAKS WHEN IT HAS NEWS ─────────
+ * Kevin, on the live page: *"this copy stayed in, I don't think we need it
+ * anymore, since we have 'Next' up at the top: Data through 14 June 2026. No
+ * games in the last 14 days."*
+ *
+ * He is right about what he is looking at. In the dark states the card at the
+ * top already says "The last night we hold is 14 June 2026 — see it →" with a
+ * door on it, so this line repeated the date in duller words and then restated
+ * the emptiness the card had just explained with a reopening date.
+ *
+ * ⛔ AND THE ELEMENT STAYS, WHICH IS WHAT THESE TESTS ARE FOR. `describe()` has
+ * seven states and this is the site's only monitoring surface (Doctrine §3, and
+ * src/lib/ingest-state.js says so in its first paragraph). The three that report
+ * a limit — `halted`, `stalled`, `behind` — are invisible in June, which is
+ * precisely when someone looking at the page decides the line is redundant. A
+ * deletion would have been judged on the one state that says nothing.
+ *
+ * ⚠️ EVERY CASE HERE ASSERTS THE SENTENCE TOO, not only the flag. "It is hidden"
+ * and "it says nothing" are different failures, and a renderer that stopped
+ * writing the text would satisfy a test that only read `.hidden`.
+ */
+const FRESH_CASES = [
+  { name: 'quiet, with the card above it — Kevin\'s case',
+    index: INDEX, recent: { asOf: new Date().toISOString(), games: [] },
+    quiet: true, says: /Data through 14 June 2026\./ },
+  { name: 'current, with a slate above it',
+    index: { ...INDEX, coverage: { windowDays: 14, finalInWindow: 2, gamesInWindow: 2,
+                                   heldInWindow: 2, refusedInWindow: 0 } },
+    recent: RECENT, quiet: true, says: /Data through 14 June 2026\./ },
+  { name: 'behind — a limit the card never mentions',
+    index: { ...INDEX, coverage: { windowDays: 14, finalInWindow: 12, gamesInWindow: 12,
+                                   heldInWindow: 7, refusedInWindow: 0 } },
+    recent: RECENT, quiet: false, says: /We have 7 of the 12 games played/ },
+  { name: 'stalled — nothing else on the site can say this',
+    index: { ...INDEX, lastRun: new Date(Date.now() - 4 * 86400000).toISOString() },
+    recent: RECENT, quiet: false, says: /Last checked 4 days ago/ },
+  { name: 'halted — the loudest thing we can tell a reader',
+    index: { ...INDEX, halted: { since: '2026-03-03' } },
+    recent: RECENT, quiet: false, says: /Updates paused 3 March 2026/ },
+  { name: 'unknown — an index older than the schema',
+    index: { dataThrough: '2026-06-14' },
+    recent: RECENT, quiet: false, says: /When we last checked is unknown/ },
+];
+
+for (const c of FRESH_CASES) {
+  test(`the freshness line: ${c.name}`, async () => {
+    const r = run({ docs: { ...ALL, 'index.json': c.index,
+                            'recent.json': c.recent, 'schedule.json': SCHEDULE } });
+    await r.settle(); await r.settle();
+    assert.equal(r.ids.daily.hidden, false,
+      'the card is not on screen, so this case is not testing what it claims');
+    assert.match(r.ids.state.textContent, c.says,
+      `the line stopped saying it: "${r.ids.state.textContent}"`);
+    assert.equal(r.ids.state.hidden, c.quiet,
+      c.quiet ? `the line still shows "${r.ids.state.textContent}" beside a card that said it`
+              : `a state that reports a limit was hidden: "${r.ids.state.textContent}"`);
+  });
+}
+
+test('with no card above it the freshness line always speaks', async () => {
+  /* TWO WAYS TO HAVE NO CARD, and both must keep the line, because on those
+     views it is the only thing on the page that says how current any of this is.
+     ⚠️ IT IS NOT ASKED OF `$('daily').hidden`. The markup carries `hidden`, so a
+     browser answers true and this fake — which makes elements on demand —
+     answers `undefined`. A renderer reading the property would have believed the
+     card was up in every test where it is not, and every assertion here would
+     have been about the wrong branch. `drawDaily` returns the answer instead. */
+  const noDocs = run({ docs: ALL });             // recent.json/schedule.json 404
+  await noDocs.settle(); await noDocs.settle();
+  /* ⭐ THE ELEMENT WAS NEVER TOUCHED, which is a stronger fact than `hidden`.
+     This fake records an id the first time the page asks for it, so an absent
+     entry means `drawDaily` returned before it reached the card at all -- and
+     `undefined` here is the same thing the first draft of this assertion tripped
+     over while trying to read `.hidden` off it. */
+  assert.equal(noDocs.ids.daily, undefined,
+    'the card was drawn without its documents, so this case proves nothing');
+  assert.notEqual(noDocs.ids.state.hidden, true,
+    'the page went silent about its own freshness with nothing else saying it');
+  assert.match(noDocs.ids.state.textContent, /Data through/);
+
+  const team = run({ search: '?team=BUF',
+                     docs: { ...MULTI_DOCS, 'recent.json': RECENT, 'schedule.json': SCHEDULE } });
+  await team.settle(); await team.settle();
+  assert.equal(team.ids.daily, undefined,
+    'a league-wide slate reached a team page — the card is deliberately front-door only');
+  assert.notEqual(team.ids.state.hidden, true,
+    'a team page lost its freshness line to a card that is not drawn there');
+});
+
+test('the line that goes quiet keeps its state, for the stylesheet and for us', () => {
+  // The four accent colours are selected on `data-state`, and the attribute is
+  // what a person reading the DOM sees when they ask why the page is silent.
+  // Hiding is a decision about SPEAKING, not about knowing.
+  const script = html.match(/<script>([\s\S]*?)<\/script>/)[1].replace(/\/\*[\s\S]*?\*\//g, '');
+  const at = script.indexOf("$('state').hidden");
+  assert.notEqual(at, -1, 'nothing decides whether the line speaks any more');
+  assert.ok(script.lastIndexOf("setAttribute('data-state'", at) !== -1,
+    'the state attribute is no longer set before the line is silenced');
+  assert.ok(script.lastIndexOf("$('state').textContent", at) !== -1,
+    'the sentence is no longer written before the line is silenced');
+});
