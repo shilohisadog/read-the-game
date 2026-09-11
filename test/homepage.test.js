@@ -1642,3 +1642,72 @@ test('⭐ …and a hero with no second rate says the first one alone', () =>
       assert.doesNotMatch(cap, /while the score was level|turns over|and it holds/,
         `a dangling clause survived the missing rate: "${cap}"`);
     }));
+
+/* ───────────────────────── THE FRONT DOOR'S TWO CARD BLOCKS ─────────────────
+ * Kevin, 2026-09-11, looking at the laptop below the fold: *"seems like we
+ * should make the 'what we claim' section multi column to align with everything
+ * else"*. `.limits` was the one block on the page that did not reach the edge
+ * the three above it reach — a 78ch cap on a full-width single column, which
+ * fixed the measure and bought a 460px empty gutter beside every card.
+ *
+ * ⭐ THE CLAIM THIS PINS IS THE AGREEMENT, NOT EITHER NUMBER. `.cgrid` and
+ * `.limits` are the same object twice — a bordered box, a bold line, a paragraph
+ * — two sections apart. A viewport where one is two columns and the other is one
+ * is a viewport where the page looks half-built, and nothing else on earth would
+ * report that: the unit DOM has no CSS and the screenshot tool asserts nothing.
+ * So the two breakpoints are read out of the built stylesheet and compared to
+ * EACH OTHER. Move one and this goes red; move both together, deliberately, and
+ * it stays green, which is the only behaviour worth having.
+ *
+ * ⚠️ COMMENTS ARE STRIPPED FIRST. This stylesheet's comments quote its own
+ * rules, and a check that cannot tell code from the words about code is not a
+ * check about code — `var when` cost a full cycle learning that on 2026-09-11.
+ */
+const CSS = html.replace(/\/\*[\s\S]*?\*\//g, '');
+
+test('the claims block and the measurement block break at the same width', () => {
+  const cols = sel => {
+    const m = new RegExp('@media \\(min-width:(\\d+)px\\)\\{\\' + sel +
+                         '\\{grid-template-columns:repeat\\((\\d+),').exec(CSS);
+    assert.ok(m, `${sel} has no two-column rule in the built stylesheet at all`);
+    return { at: Number(m[1]), n: Number(m[2]) };
+  };
+  const counts = cols('.cgrid');
+  const limits = cols('.limits');
+  assert.equal(limits.at, counts.at,
+    `the claims block goes wide at ${limits.at}px and the measurements at ` +
+    `${counts.at}px — between the two the page is half one layout and half the other`);
+  assert.equal(limits.n, counts.n,
+    `${limits.n} columns of claims beside ${counts.n} of measurements`);
+  // AND IT IS TWO. Not a floor and not "more than one": `.grid`'s auto-fill
+  // would give FOUR of these at 1240 and set the longest prose on the page
+  // three words to a line. The number is a judgement and it is written down.
+  assert.equal(limits.n, 2, 'the front door\'s card blocks are two columns wide');
+  // ⛔ AND THE CAP THAT MADE THE GUTTER IS GONE. With the measure coming from the
+  // column, a max-width on the block itself puts the empty gutter straight back
+  // — this is the rule Kevin was looking at, so it is named rather than implied.
+  assert.doesNotMatch(CSS, /\.wrap\.front \.limits\{[^}]*max-width/,
+    'the claims block has a width cap again, which is what left the gutter');
+});
+
+test('the freshness line lands on the first column, not near it', () => {
+  // It sits directly under `.limits` with no heading between them, so at any
+  // width where that block is two columns this line's own 70ch cap agrees with
+  // nothing on screen: measured at 1400 it was 843px — 228 wider than the card
+  // above it and 397 short of the block's right edge. A near miss reads as a
+  // mistake; LOOKING is what showed it, and this is what keeps it fixed.
+  const state = /@media \(min-width:(\d+)px\)\{\.state\{max-width:calc\(50% - ([\d.]+)px\)\}\}/.exec(CSS);
+  assert.ok(state, 'the freshness line no longer follows the grid beside it');
+  const limits = /@media \(min-width:(\d+)px\)\{\.limits\{grid-template-columns/.exec(CSS);
+  assert.equal(Number(state[1]), Number(limits[1]),
+    'the freshness line and the block above it change shape at different widths');
+  /* ⭐ THE HALF-GAP IS DERIVED FROM THE GRID'S OWN DECLARATION. A column is
+     (100% - gap)/2, so the line matches it at 50% - gap/2 and the two right
+     edges are IDENTICAL rather than approximately so. The two numbers live in
+     different rules written by different hands; this asserts they agree, which
+     is a different thing from restating either one. */
+  const gap = /\.limits\{[^}]*gap:(\d+)px/.exec(CSS);
+  assert.ok(gap, 'the claims grid no longer declares a gap to halve');
+  assert.equal(Number(state[2]), Number(gap[1]) / 2,
+    `the line subtracts ${state[2]}px where half the grid gap is ${Number(gap[1]) / 2}px`);
+});

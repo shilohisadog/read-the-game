@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-JMTlCER5sOBSb3fnWkI4w86P9jAn4S25DHQdnMbnWGo=' 'sha256-O+tFRbevUhlyOt78ng1txnNkMDpdOHwapteYPqeRxx0=' 'sha256-QvEwa5mnRZXr+qnCA2z3ITvUXoZeXm1hVG6swMGeUgk='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-suaTx8vZfMPazCuNXSzA6FPpGEnxgf/z8B5t4E5qXRs=' 'sha256-O+tFRbevUhlyOt78ng1txnNkMDpdOHwapteYPqeRxx0=' 'sha256-QvEwa5mnRZXr+qnCA2z3ITvUXoZeXm1hVG6swMGeUgk='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -346,10 +346,16 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
   .opener .pucknote{display:block;grid-column:2;grid-row:1/span 2;align-self:end;
    margin:0;max-width:58ch;font-size:.87rem;line-height:1.5;color:var(--muted)}
   .opener .pucknote b{color:var(--ink);font-weight:650}
-  /* The one block on this page with no measure of its own. Every other paragraph
-     caps at 56-70ch already; the limits cards are full-width boxes, so at 1240
-     their text would run to about a hundred characters a line. */
-  .wrap.front .limits{max-width:78ch}
+  /* ⛔ THE 78ch CAP IS GONE, AND IT WAS SOLVING THE WRONG HALF OF THE PROBLEM.
+     It existed because the cards were full-width boxes in ONE column, so at
+     1240 their text would have run to about a hundred characters a line. The
+     cap fixed the measure and bought a 460px empty gutter beside every card --
+     the only block on the front door that does not reach the edge the three
+     above it reach. Kevin, looking at the laptop: "seems like we should make
+     the 'what we claim' section multi column to align with everything else".
+     TWO COLUMNS FIX BOTH: the measure comes from the COLUMN now, exactly as it
+     does for `.cgrid` directly above, so there is nothing left for a cap to do.
+     See the breakpoint beside `.limits` itself -- it is `.cgrid`'s, on purpose. */
   .hero:not([hidden]){
     display:grid;
     grid-template-columns:minmax(320px,400px) minmax(0,1fr);
@@ -478,6 +484,16 @@ p.disputed{font-size:.8rem;color:#5d6f7c;margin:10px 0 0;max-width:62ch}
 .bydate a{color:var(--blue);text-decoration:none;font-weight:600}
 .bydate a:hover{text-decoration:underline}
 .limits{display:grid;gap:11px;margin:0;padding:0;list-style:none}
+/* ⭐ THE SAME BREAKPOINT AS `.cgrid`, AND THAT IS THE POINT RATHER THAN A
+   COINCIDENCE. These four cards sit two sections below the four measurement
+   cards and are the same object -- a bordered box with a bold line and a
+   paragraph under it -- so a width where one block is two columns and the other
+   is one is a width where the page looks half-finished. A test pins the two
+   numbers together so they cannot drift apart.
+   TWO, NOT auto-fill: `.grid`'s `minmax(255px,1fr)` would give FOUR columns at
+   1240 and set these sentences three words to a line. The limits carry the
+   longest prose on the page, not the shortest. */
+@media (min-width:760px){.limits{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .limits li{background:#fff;border:1px solid var(--edge);border-left:3px solid var(--blue);
  border-radius:0 10px 10px 0;padding:12px 16px}
 .limits b{display:block;font-size:.93rem;margin-bottom:2px}
@@ -486,6 +502,18 @@ p.disputed{font-size:.8rem;color:#5d6f7c;margin:10px 0 0;max-width:62ch}
 .state{font-size:.83rem;color:var(--muted);margin:0 0 22px;padding:9px 14px;
  background:#fff;border:1px solid var(--edge);border-left:3px solid var(--edge);
  border-radius:0 9px 9px 0;max-width:70ch}
+/* ⚠️ IT LANDS IN THE FIRST COLUMN, BECAUSE A NEAR-MISS READS AS A MISTAKE.
+   This line sits directly under `.limits`, and the day that block became two
+   columns its own 70ch cap (843px at 1400) stopped agreeing with anything on
+   screen -- 228px wider than the card above it and 397 short of the block's
+   right edge, which LOOKING showed as a stray fifth card hanging off the corner.
+   Same breakpoint again, so above it the line is exactly one column and below it
+   the grid is one column anyway and 70ch is the narrower cap. It is the only
+   element on the site with this class, so the selector needs no page scope. */
+/* 5.5px is HALF THE GRID GAP: `.limits` columns are (100% - 11px)/2, and this
+   line shares their containing block, so the two right edges are identical
+   rather than approximately so. */
+@media (min-width:760px){.state{max-width:calc(50% - 5.5px)}}
 .state[data-state="stalled"],.state[data-state="halted"]{border-left-color:var(--flag,#d9662b)}
 .state[data-state="behind"]{border-left-color:var(--buf)}
 .state[data-state="current"],.state[data-state="quiet"]{border-left-color:var(--min)}
