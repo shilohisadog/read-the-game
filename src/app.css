@@ -621,6 +621,18 @@
    which is a DIFFERENT colour for the six clubs whose primary cannot be read
    there. The distinction is `paint()`'s and is documented at its definition. */
 #rg .nextup a .sw.a{background:var(--away)}#rg .nextup a .sw.h{background:var(--home)}
+/* ⭐ THE INDEX TAKES THE WHOLE ROW, because it is not a third club.
+   The two links above it are a PAIR -- one per side, each with its own sweater
+   swatch -- and the date index is a different kind of destination that happens
+   to follow them. With four links this grid was a tidy 2x2; deleting the one
+   that named a page this site does not have (Kevin, 2026-09-11) left three, and
+   at the two columns this column is wide enough for, the third sat beside an
+   empty cell reading as a missing fourth card. Spanning says "the pair, then the
+   index", which is what the block actually offers.
+   ⛔ A CLASS RATHER THAN `:last-child`: the rule is about what this link IS, and
+   `:last-child` would silently move onto a fourth club-shaped link the day one
+   is added -- the position standing in for the meaning. */
+#rg .nextup a.idx{grid-column:1/-1}
 #rg .fdot{fill:var(--red);opacity:.55}#rg .fdot.ctr{fill:var(--blue)}
 #rg .npl{font-size:3.4px;font-weight:700;text-anchor:middle;fill:var(--ink)}
 #rg .nplsub{font-size:2.9px;text-anchor:middle;fill:var(--ink);opacity:.72}

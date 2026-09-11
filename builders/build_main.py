@@ -755,7 +755,22 @@ function say(m,bad){if(!MSG)return;
 // links go to the same place.
 function waysOut(){
   var n=document.getElementById('shellout');if(!n)return;
-  n.innerHTML='<a href="/">Watch the most recent game</a>'
+  /* ⛔ IT SAID "Watch the most recent game" AND THAT WAS TWO CLAIMS, BOTH BAD.
+     Found by pulling the thread on the one Kevin pressed under "Other games":
+     the same destination, the same shape of promise, one surface over.
+     ⚠️ IT IS LIVE-WRONG, NOT MERELY LOOSE. The hero stopped being "the most
+     recent game" the day it started being chosen on the attempt counter -- the
+     front door's own kicker says "up to its first goal" whenever the loop rule
+     picks, and only falls back to "the most recent game in the archive". Today
+     it is 21 May 2026 while the last night we hold is 14 June: a link promising
+     the newest game, pointing at a page showing one three weeks older.
+     AND "WATCH" IS THE WORD KEVIN IS REMOVING (2026-09-11), which misleads
+     exactly where nothing beside it corrects the streaming reading. A chip in a
+     list of three has nothing beside it.
+     THE HONEST LABEL IS WHAT `/` IS IN EVERY HERO STATE, and it is the
+     vocabulary `_header(minimal=True)` already used: "What is this?". Its two
+     neighbours are indexes; this one is the site. */
+  n.innerHTML='<a href="/">What this site is</a>'
     +'<a href="/calendar.html">Browse by date</a>'
     +'<a href="/#teams">All teams</a>';}
 // REVEAL BEFORE boot(), never after: an element with `hidden` has no box, so

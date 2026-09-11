@@ -644,10 +644,18 @@ test('BOTH WAYS INTO THE ARCHIVE ARE REACHABLE FROM EVERY PAGE', () => {
   // asymmetry nobody chose: a reader on a team page or a game page could reach
   // the team browse from any page on the site and the date browse from none."
   //
-  // C1 fixed that by adding "By date" to `_NAV` — and the game page runs the
-  // MINIMAL header by CHENG's ruling, so it does not use `_NAV` at all. The one
-  // page the comment names as the victim is the one page the fix could not
-  // reach, and nothing noticed because every header is individually valid.
+  // C1 fixed that by adding "By date" to `_NAV` — and at the time the game page
+  // ran the MINIMAL header by CHENG's ruling, so it did not use `_NAV` at all.
+  // The one page the comment named as the victim was the one page the fix could
+  // not reach, and nothing noticed because every header is individually valid.
+  //
+  // ⚠️ THE PREMISE EXPIRED ON 2026-08-26 and three comments kept asserting it in
+  // the present tense, this one included. Kevin overruled the minimal header
+  // that day, `page.py` builds this page with `chrome="full"`, and `_header`'s
+  // own docstring says `minimal` "is now unused by the game page". The test
+  // below is unaffected — it reads what each page ACTUALLY carries — but a
+  // reader deciding whether the funnel's date link is redundant would have been
+  // told the wrong thing by the comment explaining why it exists.
   //
   // ⚠️ AND THE FIRST VERSION OF THIS TEST PASSED ON THE WRONG EVIDENCE.
   // It grepped the whole file for `href="/#teams"`, and game.html contains one
@@ -697,8 +705,19 @@ test('and the date link says the words the reader already met', () => {
   // A third name for one destination is how a reader stops believing two links
   // go to the same place. The front door says "Or browse by date", the chrome
   // nav says "By date"; the funnel must not invent a fourth.
-  const s = scriptOf(shell);
-  const funnel = s.slice(s.indexOf('function nextUp('), s.indexOf('function nextUp(') + 1600);
+  /* ⚠️ THE SLICE IS TO THE FUNCTION'S END, NOT 1600 CHARACTERS INTO IT, AND THE
+     COMMENTS COME OFF FIRST. Both halves went red on 2026-09-11 for reasons that
+     had nothing to do with the claim: a note explaining why a fourth link was
+     deleted pushed `Browse by date` past character 1600, and a check that cannot
+     tell code from the words about code is not a check about code -- the same
+     shape that cost `var when` a cycle the same day. A window measured in
+     characters is a window whose size is set by prose. */
+  const s = scriptOf(shell).replace(/\/\*[\s\S]*?\*\//g, '');
+  const from = s.indexOf('function nextUp(');
+  assert.notEqual(from, -1, 'the funnel is no longer built by nextUp()');
+  const funnel = s.slice(from, s.indexOf("].join('')", from));
+  assert.ok(funnel.length > 0 && funnel.length < 2000,
+    `the funnel slice is ${funnel.length} chars — it is not the link list`);
   assert.match(funnel, /Browse by date/, 'the funnel does not reach the date index');
   assert.doesNotMatch(funnel, /Schedule|By day|Calendar view/i,
     'the funnel invented a new name for the date index');
@@ -957,4 +976,54 @@ test('no page takes the `lede` class — it has a rule attached and is spoken fo
   // then, not left standing as a rule with no reason.
   assert.ok(withRule >= 1,
     'no page ships a `.lede` rule any more — this guard has outlived its reason');
+});
+
+/* ───────────── A LINK TO THE FRONT DOOR MAY NOT PROMISE WHAT IT PICKS ───────
+ * Kevin, pressing one: *"under 'Other Games', the 'Every game in the archive'
+ * links back to the home page, which doesn't align very well."*
+ *
+ * Two links on the game page pointed at `/` and described it, and both
+ * descriptions were false:
+ *
+ *   `<a href="/">Every game in the archive</a>`      — the funnel
+ *   `<a href="/">Watch the most recent game</a>`     — the dead-end ways out
+ *
+ * The front door is a hero game, four measurement cards and a grid of club
+ * chips. It has never listed every game; no page does. And it stopped showing
+ * the most recent game the day the hero started being chosen on the attempt
+ * counter — today it is 21 May 2026 while the last night we hold is 14 June.
+ *
+ * ⭐ THE RULE IS THE ONE THING BOTH DEFECTS SHARE: `/` decides at RUNTIME what
+ * it shows, so a link into it may name the site and may not name its contents.
+ * Everything the front door displays is fetched — the builder says so in as many
+ * words — which means any link that describes the collection is a claim compiled
+ * into a page that cannot check it.
+ */
+test('no link describes the front door as a collection or a newest anything', () => {
+  const OVERCLAIM = /every game|all games|all \d|most recent|latest|newest|the whole archive/i;
+  let seen = 0;
+  for (const name of readdirSync(SRC).filter(f => f.endsWith('.html'))) {
+    const page = readFileSync(new URL(name, SRC), 'utf8');
+    /* ⚠️ THE WHOLE FILE, MARKUP AND SCRIPT ALIKE. Both defects were built at
+       runtime from a string inside a <script>, so a probe that parsed only the
+       body would have found neither — and the one that was in the funnel was
+       reachable on every working page while the other only rendered when the
+       page had failed. A text search reaches both, and the wordmark below
+       proves it reached anything at all. */
+    const labels = [...page.matchAll(/<a\b[^>]*href="\/"[^>]*>([\s\S]*?)<\/a>/g)]
+      .map(m => m[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
+    // THE CONTROL: every page carries the wordmark, so a page reporting no
+    // links to `/` means this regex stopped matching, not that the page is
+    // clean. A guard that cannot tell "nothing wrong" from "nothing read" is
+    // the vacuous shape this suite keeps finding in its own checks.
+    assert.ok(labels.includes('Read the Game'),
+      `${name}: the probe found no wordmark, so it found nothing`);
+    for (const text of labels) {
+      seen++;
+      assert.doesNotMatch(text, OVERCLAIM,
+        `${name}: "${text}" points at the front door, which chooses what it ` +
+        `shows when it loads and cannot keep that promise`);
+    }
+  }
+  assert.ok(seen >= 10, `only ${seen} links to the front door across the site`);
 });

@@ -39,7 +39,27 @@ test('the game page offers a way onward, and it is about THIS game', () => {
   assert.ok(links.includes(`/?team=${away}`), `no route to more ${away} games`);
   assert.match(nav, new RegExp(`More ${home} games`));
   assert.match(nav, new RegExp(`More ${away} games`));
-  assert.ok(links.includes('/'), 'no route to the archive');
+  /* ⛔ IT USED TO ASSERT `links.includes('/')` AND CALL THAT "a route to the
+     archive". It is not one: `/` is the front door -- a hero game, four
+     measurement cards and a grid of club chips -- and the link that satisfied
+     this was labelled "Every game in the archive", naming a page this site has
+     never had. Kevin found it by pressing it: "links back to the home page,
+     which doesn't align very well." The check announced a claim about the
+     ARCHIVE and accepted the HOME PAGE, which is this project's dominant
+     failure mode wearing a one-character expectation.
+     SO IT ASKS FOR THE THING IT MEANT. The date index IS a list of games, and
+     with the two club links above it the funnel reaches the collection three
+     ways. */
+  assert.ok(links.includes('/calendar.html'),
+    'no route from a finished game to the date index');
+  /* AND THE FRONT DOOR IS NOT ONE OF THEM. The wordmark at the top left of this
+     same page already goes to `/`; a second copy under a heading that says
+     "Other games" is the duplicate funnel removed twice before, pointed at a
+     page that is not a list of games. */
+  assert.ok(!links.includes('/'),
+    'the funnel offers the front door again, which the wordmark already is');
+  assert.doesNotMatch(nav, /[Ee]very game in the archive/,
+    'a link names a page this site does not have');
 
   // THE TEAMS ARE READ, NEVER ASSUMED. A block that hard-coded the reference
   // game's two clubs would satisfy everything above on this fixture and be wrong

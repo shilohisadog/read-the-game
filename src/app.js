@@ -1888,11 +1888,26 @@ $('gl').textContent=`${AAB} at ${HAB}${WHEN?' · '+WHEN:''}`;
 
      C1 added "By date" to `_NAV` for a reason stated there in as many words:
      "a reader on a team page or a game page could reach the team browse from
-     any page on the site and the date browse from none." The game page runs
-     the MINIMAL header -- deliberately, CHENG's ruling, because the moment
-     that matters is when the game ENDS and that is below the rink rather than
-     above it -- so it does not use `_NAV`, and the fix passed by the one page
+     any page on the site and the date browse from none." When this shipped the
+     game page ran the MINIMAL header -- CHENG's ruling, because the moment that
+     matters is when the game ENDS and that is below the rink rather than above
+     it -- so it did not use `_NAV` at all, and the fix passed by the one page
      the comment names.
+
+     ⚠️ THAT PREMISE EXPIRED ON 2026-08-26 AND THIS PARAGRAPH KEPT ASSERTING IT.
+     Kevin overruled the minimal header that day -- "the topmost header on the
+     page... I think that should be on the game page" -- so `page.py` builds this
+     page with `chrome="full"` and `By date` HAS been in its nav ever since.
+     `_header`'s own docstring says `minimal` "is now unused by the game page".
+     A reason that expired without being re-examined is this project's named
+     failure mode, and it was sitting directly above a link being judged for
+     redundancy.
+
+     ⭐ THE LINK STAYS ANYWAY, on the argument that survives: this is the funnel,
+     not the chrome. `nextUp`'s own docstring is that the moment worth spending
+     is when a replay ENDS, and the calendar is a list of GAMES, which is what
+     the section is headed. That is exactly what the line below it could not
+     claim -- see the note there.
 
      THE DIAGNOSIS THIS ARRIVED WITH WOULD HAVE REVERSED A LIVE RULING. It was
      filed as "game.html opts out of the nav every other page has", i.e. put
@@ -1903,8 +1918,21 @@ $('gl').textContent=`${AAB} at ${HAB}${WHEN?' · '+WHEN:''}`;
      browse by date" and the chrome nav says "By date"; a third name for one
      destination is how a reader stops believing two links go to the same
      place. */
-  `<a href="/calendar.html">Browse by date</a>`,
-  `<a href="/">Every game in the archive</a>`,
+  `<a class="idx" href="/calendar.html">Browse by date</a>`,
+  /* ⛔ "EVERY GAME IN THE ARCHIVE" IS GONE (Kevin, 2026-09-11): *"under 'Other
+     Games', the 'Every game in the archive' links back to the home page, which
+     doesn't align very well."*
+     THE LABEL PROMISED A PAGE THIS SITE DOES NOT HAVE. It pointed at `/`, and
+     the front door is a hero game, four measurement cards and a grid of 33 club
+     chips -- it does not list every game, and no page does. The three links
+     above are the actual ways into the collection: two clubs, and the date
+     index. A fourth line naming a page that cannot exist is worse than a missing
+     link, because a reader who presses it learns the words on this site are
+     approximate.
+     AND ITS DESTINATION WAS ALREADY ON THE PAGE. `/` is the wordmark's, top
+     left, on every page. That is the duplicate-funnel defect this project has
+     now removed three times -- the calendar refused it on the home page, the
+     chrome lost "Watch a game" to it on 2026-09-11, and this is the third. */
  ].join('');})();
 document.querySelectorAll('#rg .cc.a .lb').forEach(n=>n.childNodes[0].nodeValue=AAB+' attempts');
 document.querySelectorAll('#rg .cc.h .lb').forEach(n=>n.childNodes[0].nodeValue=HAB+' attempts');
