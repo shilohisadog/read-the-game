@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-AO7mloA+YC/aQSkJshXEFsm1e0cu5/rwYRdHJ633Qj8=' 'sha256-O+tFRbevUhlyOt78ng1txnNkMDpdOHwapteYPqeRxx0=' 'sha256-ZlR8nYXWaGVBAUjeIv0fr67KaAACbKN+Ojd5dkhh0vo='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-JMTlCER5sOBSb3fnWkI4w86P9jAn4S25DHQdnMbnWGo=' 'sha256-O+tFRbevUhlyOt78ng1txnNkMDpdOHwapteYPqeRxx0=' 'sha256-ZlR8nYXWaGVBAUjeIv0fr67KaAACbKN+Ojd5dkhh0vo='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -71,6 +71,11 @@ h1.says{font-weight:400;letter-spacing:normal}
    land before "who we made it for". `display:block` gives it its own line
    without a second paragraph's margin. */
 .says .by{display:block;margin-top:5px;font-size:.95rem;color:var(--muted)}
+/* HIDDEN UNTIL THE SPACE EXISTS. `display:none` rather than a narrower column:
+   below 1180 the hero card is a single column and there is no room beside the
+   lede at all, so this would stack underneath and lengthen a phone screen that
+   is already 4.5 screens tall. Kevin's call, with that number in front of him. */
+.pucknote{display:none}
 .conc{margin:0 0 26px}
 .conc .ck{margin:0 0 7px;font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;
  color:var(--muted);font-weight:700}
@@ -311,6 +316,36 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
      and three of them are prose that has no business at 1240px. The home page's
      own BODY carries the class; nothing else can be widened by accident. */
   .wrap.front{max-width:1240px}
+  /* ⭐ THE OPENING BLOCK BECOMES TWO COLUMNS, THE SAME MOVE THE CARD BELOW MAKES.
+     ⛔⛔ IT IS `.opener` AND NOT `.lede`, AND THE REPO HAD ALREADY SAID SO. I
+     named it `.lede`, and this stylesheet has carried `.lede{max-width:62ch}`
+     all along — so the grid silently capped at 662px of a 1240px row, `1fr`
+     collapsed to the note's longest WORD (32px), and the card was pushed 527px
+     down the page. `build_main.py:54` warns in as many words: "NOT
+     class=\"lede\" -- that name is spoken for", and `render-notes.test.js:1238`
+     forbids it. The warning existed, in a comment, and I did not grep for it
+     before taking the name. See the site-wide guard that now covers every page
+     rather than only the one where the collision was first paid for.
+     ⚠️ THE FIRST COLUMN IS WIDER THAN THE SENTENCE IN IT, AND THAT IS THE POINT.
+     Borrowing the card's `minmax(320px,400px)` would squeeze the opening line
+     from two rows to four — a layout change to the sentence a visitor judges the
+     site by, paid for a note beside it. ⛔ AND `56ch` WAS NOT SAFE EITHER, WHICH
+     ONLY MEASURING SHOWED: `ch` resolves against THIS element's font size and
+     `.says` caps at 56ch of its OWN larger one, so the column came out 597.9px
+     against the sentence's 603.5px cap — SIX PIXELS, and the lede wrapped to
+     three lines. ⚠️ THE TWO-LINE LEDE THEREFORE HAS ABOUT 6px OF MARGIN and any
+     type change flips it; the column is 62ch so the sentence keeps its own cap
+     and nothing here decides its wrapping. The second column takes what is
+     left. */
+  .opener{display:grid;grid-template-columns:minmax(0,62ch) minmax(0,1fr);
+   column-gap:clamp(20px,2.4vw,34px);align-items:end}
+  .opener .eyebrow{grid-column:1;grid-row:1}
+  .opener .says{grid-column:1;grid-row:2;margin-bottom:0}
+  /* Bottom-aligned with the sentence beside it, so the two blocks share a
+     baseline rather than both hanging from the top of an uneven grid. */
+  .opener .pucknote{display:block;grid-column:2;grid-row:1/span 2;align-self:end;
+   margin:0;max-width:58ch;font-size:.87rem;line-height:1.5;color:var(--muted)}
+  .opener .pucknote b{color:var(--ink);font-weight:650}
   /* The one block on this page with no measure of its own. Every other paragraph
      caps at 56-70ch already; the limits cards are full-width boxes, so at 1240
      their text would run to about a hundred characters a line. */

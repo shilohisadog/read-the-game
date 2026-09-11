@@ -1007,6 +1007,64 @@ test('the measurement strip resolved every figure it promised', () => {
     `${JSON.stringify(both)} appears in both strips — the two halves have merged`);
 });
 
+/**
+ * ⭐⭐ THE ONE THING THE RINK DOES THAT A STRANGER READS AS BROKEN.
+ *
+ * Kevin: "we don't mention we don't track puck movement... that's an integral
+ * part of what we can't show." Before this it was said in exactly ONE place on
+ * the whole site — the game page's legend, four words, `puck — jumps between
+ * real events`, on the page where the behaviour is already happening.
+ *
+ * ⛔ THE CLAIM IS ABOUT OUR FEED, NOT ABOUT THE WORLD, and that is the assertion
+ * worth keeping. The league DOES track the puck; it is simply not in the public
+ * play-by-play we read. "Nothing records where it went" would be false in
+ * exactly the way this site exists to catch other people being false.
+ *
+ * ⛔ AND ONE SENTENCE IT MUST NEVER BECOME. "Watch the marks, not the puck" was
+ * the obvious line and it is FALSE about this rink: measured through three full
+ * loops on 2026-09-11, `#events` holds ONE event at a time, on the front door
+ * and in the replay alike. Nothing accumulates, so there are no marks to watch.
+ */
+test('the front door says what the puck is doing, and blames the right thing', () => {
+  const note = /<p class="pucknote">([\s\S]*?)<\/p>/.exec(html);
+  assert.ok(note, 'the front door no longer says why the puck jumps');
+  const text = note[1].replace(/<[^>]+>/g, ' ').replace(/&mdash;/g, '—')
+                      .replace(/\s+/g, ' ').trim();
+  assert.match(text, /feed/i,
+    `the note does not say WHOSE record is missing the movement: "${text}"`);
+  assert.doesNotMatch(text, /nobody|no one|nothing records|not tracked|no tracking/i,
+    `the note claims the movement is unrecorded ANYWHERE, and the league tracks `
+    + `it — this is about our feed: "${text}"`);
+  assert.doesNotMatch(text, /watch the marks/i,
+    'the note tells a reader to watch marks that do not accumulate');
+});
+
+/**
+ * ⚠️ AND IT COSTS A PHONE NOTHING, WHICH IS THE TRADE KEVIN MADE.
+ *
+ * Above 1180 it occupies space already being spent — 637x100 to the right of a
+ * lede that caps its own width, directly above the rink. Below 1180 the hero
+ * card is one column, that space does not exist, and the note would stack under
+ * the lede and lengthen a first screen already 4.5 screens deep. He chose the
+ * length. THE COST, STATED: a phone reader does not get this sentence.
+ *
+ * ⭐ ASSERTED ON THE CSS, because the fake DOM this suite runs has no layout and
+ * cannot tell shown from hidden — the same blindness that let a roster render
+ * inside a 165px preview hero past a green suite. What CAN be checked here is
+ * that the default is hidden and the reveal is inside the width query; the
+ * pixels harness is what confirmed it renders.
+ */
+test('the puck note is hidden until the space for it exists', () => {
+  const css = [...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)]
+    .map(m => m[1]).join('\n').replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.match(css, /\.pucknote\{[^}]*display:none/,
+    'the note is not hidden by default, so it stacks on a phone');
+  const wide = /@media \(min-width:1180px\)\{([\s\S]*)$/.exec(css);
+  assert.ok(wide, 'the wide-screen query is gone — this check has lost its subject');
+  assert.match(wide[1], /\.opener \.pucknote\{[^}]*display:block/,
+    'the note is never revealed, so it ships hidden at every width');
+});
+
 test('the front door leads with the most recent game, and it PLAYS', () => {
   const r = run({ docs: ALL });
   return r.settle().then(() => {

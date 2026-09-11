@@ -919,3 +919,42 @@ test('no heading offers to watch the content either', () => {
   assert.ok(checked >= 4,
     `only ${checked} headings scanned — this check has lost its subject`);
 });
+
+/**
+ * ⛔⛔ `class="lede"` IS SPOKEN FOR, ON EVERY PAGE — not only on the one that paid.
+ *
+ * `render-notes.test.js` already forbids it on the GAME page, because `.lede`
+ * was the read-once opening paragraph the first-visit block replaced on measured
+ * grounds (576px → 305px), and taking the name back for a different element
+ * would leave that guard passing on a page no longer containing what it was
+ * written to keep out. `build_main.py:54` says so in as many words.
+ *
+ * ⛔ THE SCOPE WAS TOO NARROW AND I WALKED INTO IT ON 2026-09-11. The front door
+ * gained a two-column opening block and I named it `.lede`. This stylesheet has
+ * carried `.lede{max-width:62ch}` all along and it is SHARED by four BODY
+ * templates — so my grid silently capped at 662px of a 1240px row, `1fr`
+ * collapsed to the note's longest WORD (32px wide, 605px tall), and the hero
+ * card was pushed 527px down the page. Every test stayed green: the guard that
+ * knew about this name was looking at a different file.
+ *
+ * ⭐ THE RULE IS THE SHARED STYLESHEET, SO THE GUARD IS THE SHARED SURFACE. A
+ * name with a live rule attached is spoken for everywhere that rule ships.
+ */
+test('no page takes the `lede` class — it has a rule attached and is spoken for', () => {
+  let checked = 0, withRule = 0;
+  for (const f of readdirSync(SRC).filter(n => n.endsWith('.html'))) {
+    const src = readFileSync(new URL(f, SRC), 'utf8').replace(/<!--[\s\S]*?-->/g, '');
+    checked++;
+    if (/\.lede\s*\{/.test(src)) withRule++;
+    for (const m of src.matchAll(/class="([^"]*)"/g))
+      assert.ok(!m[1].split(/\s+/).includes('lede'),
+        `${f} takes class="lede", which this stylesheet caps at 62ch — an element `
+        + 'given that name inherits a width nobody chose for it');
+  }
+  assert.ok(checked >= 10, `only ${checked} pages scanned — this check lost its subject`);
+  // AND THE RULE IS STILL THERE. If `.lede{}` is ever deleted the name stops
+  // being spoken for and this check becomes superstition — it should be removed
+  // then, not left standing as a rule with no reason.
+  assert.ok(withRule >= 1,
+    'no page ships a `.lede` rule any more — this guard has outlived its reason');
+});
