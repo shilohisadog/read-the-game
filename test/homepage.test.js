@@ -1392,6 +1392,73 @@ test('a team page gets no slate — it is a question already asked', async () =>
   assert.equal(shown(front), true);
 });
 
+/**
+ * ⭐⭐ THE DARK STATES GET A DOOR, AND THEY HAD NONE.
+ *
+ * `slate` renders six game rows and a tail link; `upcoming` and `offseason`
+ * rendered one sentence and stopped. Measured on a 390px phone: that sentence —
+ * "Preseason opens 19 September 2026…" — was the LAST THING above the fold, so
+ * the block whose whole job is to differ from one morning to the next ended the
+ * first screen on a dead end.
+ *
+ * ⚠️ A NIGHT, NOT THE CALENDAR. `/calendar.html` is already reachable from the
+ * nav AND from "Or browse by date" under the team grid; a third link to it would
+ * be the duplicate-funnel defect removed twice already today. `?date=` is
+ * somewhere neither of those goes.
+ *
+ * ⚠️ AND THE DATE IS COMPARED AGAINST THE CATALOG, NOT TYPED. The door must name
+ * the newest game the archive publishes; a literal here passes on the day the
+ * rule starts reading the wrong end of the list.
+ */
+test('a dark night still opens onto the last night the archive holds', async () => {
+  const OFFSEASON = { asOf: new Date().toISOString(), games: [] };
+  const r = run({ docs: { ...ALL, 'recent.json': OFFSEASON, 'schedule.json': SCHEDULE } });
+  await r.settle(); await r.settle();
+  assert.equal(r.ids.daily.hidden, false,
+    'the block never revealed itself — the off-season state renders nothing at all');
+  const doors = r.ids.dailylist.kids.filter(k => k.href);
+  assert.equal(doors.length, 1, `the dark state offers ${doors.length} doors, not one`);
+  // The newest PUBLISHED, IN-SCOPE game in the fixture, computed the way the
+  // hero computes it rather than restated — 2023020300 is refused and 2023020400
+  // is out of scope, so a rule reading "the last row" would pick the wrong one.
+  const newest = CATALOG.games.filter(g => g.v && g.id < 2024000000)
+    .map(g => g.d).sort().pop();
+  assert.equal(doors[0].href, 'calendar.html?date=' + newest,
+    `the door opens ${doors[0].href} and the newest published night is ${newest}`);
+  assert.match(doors[0].textContent, /last night we hold/);
+});
+
+/**
+ * ⛔ AND `drawDaily` MUST NOT SHADOW THE PAGE'S DATE FORMATTER.
+ *
+ * It declared `var when` — a STRING — inside a function whose enclosing scope
+ * defines `when(date)` as the formatter every other block on this page uses. So
+ * the formatter was shadowed for all of `drawDaily`, and `var` hoisting made it
+ * shadowed by `undefined` on every path where `d.next` is null, which is every
+ * dark night. Calling it there is a TypeError that takes
+ * `$('daily').hidden = false` down with it and renders NOTHING, silently.
+ *
+ * LATENT, NOT LIVE: nothing inside that function called the formatter, so the
+ * trap sat harmless until the door above needed a date. It cost one build to
+ * find and would have cost the next person the same, so it is pinned rather than
+ * just fixed.
+ */
+test('the daily renderer does not shadow the page date formatter', () => {
+  /* ⚠️ COMMENTS STRIPPED FIRST, AND THE FIRST DRAFT OF THIS TEST PROVED WHY: it
+     went red against the FIXED code, because the comment explaining the fix
+     contains the words `var when`. A scan that cannot tell code from a mention
+     of code is not a check about code — this project's own phrase, and
+     hero-loop.test.js already strips for the identical reason. */
+  const code = html.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '');
+  const body = /function drawDaily\([\s\S]*?\n  \}/.exec(code);
+  assert.ok(body, 'drawDaily is gone — this check has lost its subject');
+  assert.doesNotMatch(body[0], /\bvar when\b/,
+    'drawDaily declares `var when`, shadowing the page formatter of the same '
+    + 'name — and `var` hoisting shadows it with undefined on every dark night');
+  assert.match(html, /function when\(d\)/,
+    'the page formatter is gone — the shadowing check has lost its subject');
+});
+
 test('no recent.json and no schedule.json: the block stays hidden, page intact', async () => {
   // `grab` answers null for anything that 404s, so this is the state a deploy
   // reaches the morning a document is renamed — and the rest of the fold must

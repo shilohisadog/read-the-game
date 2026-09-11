@@ -1251,7 +1251,7 @@ __HELPERS__
      day-name the module produced would be wrong for about half a slate. The
      browser is the only party that knows the reader's timezone, so `daily`
      hands back the instant and this is the one line that reads it. */
-  function drawDaily(slate, schedule) {
+  function drawDaily(slate, schedule, games) {
     var d = daily(slate, schedule, new Date().toISOString());
     if (d.state === 'none') return;
 
@@ -1260,10 +1260,18 @@ __HELPERS__
 
     var lines = d.lines.slice();
     if (d.next) {
-      var when = new Date(d.next.startTimeUTC).toLocaleString(undefined,
+      /* ⚠️ NOT `when`, AND THE RENAME IS A BUG FIX RATHER THAN TIDINESS. This
+         was `var when`, a STRING, inside a function whose enclosing scope
+         defines `when(date)` as the page's date formatter -- so the formatter is
+         shadowed for the whole of `drawDaily`, and `var` hoisting means it is
+         shadowed by `undefined` on every path where `d.next` is null, which is
+         every dark night. Calling the formatter here is a TypeError that takes
+         `$('daily').hidden = false` down with it and renders NOTHING, silently.
+         Found by adding the door below and watching the block vanish. */
+      var startsAt = new Date(d.next.startTimeUTC).toLocaleString(undefined,
         { weekday: 'long', month: 'long', day: 'numeric',
           hour: 'numeric', minute: '2-digit' });
-      lines.push(d.next.away + ' at ' + d.next.home + ', ' + when + '.');
+      lines.push(d.next.away + ' at ' + d.next.home + ', ' + startsAt + '.');
     }
     $('dailysay').textContent = lines.join(' ');
 
@@ -1293,6 +1301,42 @@ __HELPERS__
         d.more + ' more that night \u2014 see the whole slate \u2192');
       all.href = 'calendar.html?date=' + d.date;
       list.appendChild(all);
+    }
+
+    /* ⭐⭐ AND THE DARK STATES GET A DOOR, WHICH THEY HAD NONE OF.
+       `slate` renders six rows and a tail link; `upcoming` and `offseason`
+       rendered one sentence and stopped. Measured on the phone before this: that
+       sentence -- "Preseason opens 19 September 2026, the regular season 29
+       September 2026." -- was the LAST THING above an 844px fold, so the block
+       whose whole job is to change from one morning to the next ended the first
+       screen on a dead end.
+
+       THE LAST NIGHT WE HOLD, and it is a real destination rather than a second
+       copy of one. `/calendar.html` is already reachable from the nav AND from
+       "Or browse by date" under the team grid; a third link to the same place is
+       the duplicate-funnel defect this project has now removed twice. A specific
+       NIGHT is somewhere neither of those goes.
+
+       ⚠️ COMPUTED FROM THE SAME POPULATION THE HERO PICKS FROM -- published, in
+       scope -- rather than from `index.json`'s through-date. Those two can differ
+       (one is what we ingested, the other what we publish), and a front door
+       naming two different "last" dates in two places is the seam this page keeps
+       being audited for.
+       ⛔ AND IT LIVES HERE RATHER THAN IN `daily()`. That module is pure and
+       tested against fixtures for branches the calendar cannot reach until the
+       end of September; this needs the catalog, which is the renderer's to hold.
+       The same split the timezone line above already documents. */
+    if (d.state === 'upcoming' || d.state === 'offseason') {
+      var last = null;
+      (games || []).forEach(function (g) {
+        if (g.v && inScope(g.id) && (!last || g.d > last)) last = g.d;
+      });
+      if (last) {
+        var back = el('a', 'dmore',
+          'The last night we hold is ' + when(last) + ' \u2014 see it \u2192');
+        back.href = 'calendar.html?date=' + last;
+        list.appendChild(back);
+      }
     }
     $('daily').hidden = false;
   }
@@ -1326,7 +1370,7 @@ __HELPERS__
            asked, so a league-wide slate is an interruption there -- and the
            block is placed in the hero's sixth grid row, which on a team page has
            no card to sit in. */
-        drawDaily(slate, schedule);
+        drawDaily(slate, schedule, games);
       }
       /* ⚠️ TWO ARGUMENTS, NOT THREE. `describe` took the schedule for one day,
          when the quiet state was the only forward-looking sentence on the page
