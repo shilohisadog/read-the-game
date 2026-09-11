@@ -1448,12 +1448,29 @@ __HELPERS__
 # IN WORDS. They meet it as a moving rink and as the paired rate in the card,
 # which is that argument in its strongest form anyway.
 #
-# ⚠️ THE EM DASH IS NOT THE REASON, though it is the reason Kevin raised it
-# ("it screams AI built this"). Counted before agreeing: 121 em dashes in the
-# site's visible text, nine of them on this page and twenty-one on the learn
-# page. It is the house punctuation, so removing one changes nothing a reader
-# concludes. What actually read as machine-written was one sentence doing four
-# jobs; the dash left with the structure rather than for its own sake.
+# ⛔⛔ THE EM DASH STAYS EVERYWHERE ELSE — RULED BY KEVIN, 2026-09-11, AND
+# WRITTEN HERE SO IT IS NOT RE-PROPOSED. He raised it on this line ("it screams
+# AI built this") and, given the count, ruled: *"keep the em dashes, I just
+# didn't care for the one being front and center on the opening line a visitor
+# would judge the site by."*
+#
+# COUNTED BEFORE AGREEING, which is what turned one sentence's problem into a
+# decision about the house voice: 121 em dashes in the site's visible text — nine
+# on this page, twenty-one on the learn page, thirteen on the game page. Removing
+# one changes nothing a reader concludes, because they meet nine more before they
+# have scrolled past the hero.
+#
+# SO THE DASH WAS NEVER THE DEFECT. What read as machine-written was ONE SENTENCE
+# DOING FOUR JOBS, and the dash left with the structure rather than for its own
+# sake. The rule this leaves behind is about POSITION, not punctuation: the line a
+# visitor judges the site by gets no subordinate clause, and everything below it
+# keeps the voice the rest of the site is written in.
+#
+# ⚠️ IF YOU ARE HERE BECAUSE THE DASHES LOOK LIKE A TELL: that case was made,
+# measured and decided. Reopening it needs new evidence, not the observation —
+# this project has twice re-proposed something already declined because the
+# decline was written somewhere nobody looked (docs/status.md §E once, a code
+# comment above `const PACE` the other time).
 SAYS = ("Every NHL game since 2023, replayed event by event. "
         "<span class=\"by\">We made it for people who like hockey and were "
         "never shown how to read it.</span>")
