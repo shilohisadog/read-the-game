@@ -1144,11 +1144,28 @@ __HELPERS__
        the attempts, then the archive's own rate, then `Watch the whole game`.
        NOTHING IS HIDDEN, and nothing here is newly withheld that the scoreboard
        does not fill in as the game plays. */
+    /* ⛔⛔ THE SCOPE IS STATED, BECAUSE THE PICTURE BESIDE IT SHOWS A FRACTION OF
+       IT. CHENG, 2026-09-11: *"82 to 45 is 127 attempts before the first goal.
+       Those are whole-game totals, not loop totals — the scoreboard reads 0-0 at
+       19:46 of the first period, so almost none of those 127 have happened yet.
+       A reader who joins them concludes the loop is about to show 127
+       attempts."* He is right, and the comment below has said WHOLE GAME, NOT THE
+       LOOP'S WINDOW all along — to the code, never to the reader.
+       ⛔ AND HIS OTHER SUGGESTED FIX WOULD HAVE BROKEN SOMETHING. Moving the
+       sentence under `Watch the whole game`, where whole-game scope is implied,
+       separates it from the archive rate that follows — and that rate is
+       CONDITIONED ON FINAL TOTALS (see below, and CHENG's own earlier ruling that
+       it must never sit beside a LIVE count). The pairing is the argument; only
+       the scope was missing.
+       ⚠️ NOT "Across", which is how the archive sentence two lines down opens.
+       Two adjacent sentences beginning with the same word read as one list. */
     if (lead == null) {
-      $('herosub').textContent = 'Both teams took ' + a + ' shot attempts.';
+      $('herosub').textContent =
+        'Over the whole game, both teams took ' + a + ' shot attempts.';
     } else {
       var hi = Math.max(a, h), lo = Math.min(a, h);
-      $('herosub').textContent = lead + ' took more shot attempts, ' + hi + ' to ' + lo + '.';
+      $('herosub').textContent = 'Over the whole game, ' + lead
+        + ' took more shot attempts, ' + hi + ' to ' + lo + '.';
     }
 
     /* IS THIS THE USUAL CASE? COMPUTED, NEVER WRITTEN -- unchanged in shape from

@@ -1127,8 +1127,14 @@ test('the shot line reads the LEADER, home or away, and says it both ways round'
     // NAMED, NOT ABBREVIATED, since 2026-09-11: this sat directly under a
     // headline reading "Buffalo Sabres" and said "BUF" — the same club, two
     // vocabularies, an inch apart, seen only by looking at the rendered card.
+    /* ⛔ AND IT NAMES ITS SCOPE, since 2026-09-11. CHENG: "82 to 45 is 127
+       attempts before the first goal ... the scoreboard reads 0-0, so almost none
+       of those 127 have happened yet." These are WHOLE-GAME totals sitting beside
+       a loop that shows the opening seconds — both true, different scopes, and
+       nothing said so. The builder comment had said "WHOLE GAME, NOT THE LOOP'S
+       WINDOW" all along: to the code, never to the reader. */
     assert.match(home.ids.herosub.textContent,
-      /^Buffalo Sabres took more shot attempts, 33 to 22\.$/);
+      /^Over the whole game, Buffalo Sabres took more shot attempts, 33 to 22\.$/);
   });
 
   // BUF away, 30 attempts to 20, and lost 2-5.
@@ -1147,7 +1153,7 @@ test('the shot line reads the LEADER, home or away, and says it both ways round'
   const p2 = away.settle().then(() => {
     away.post({ rtg: 'attempts', game: AWAY.games[0].id, a: 30, h: 20 });
     assert.match(away.ids.herosub.textContent,
-      /^Buffalo Sabres took more shot attempts, 30 to 20\.$/);
+      /^Over the whole game, Buffalo Sabres took more shot attempts, 30 to 20\.$/);
     assert.doesNotMatch(away.ids.herosub.textContent, /\b(won|lost)\b/,
       'the away-leader arm still states the result');
   });
@@ -1157,7 +1163,7 @@ test('the shot line reads the LEADER, home or away, and says it both ways round'
   const even = run({ docs: { ...ALL, 'catalog.json': EVEN } });
   const p3 = even.settle().then(() => {
     even.post({ rtg: 'attempts', game: EVEN.games[0].id, a: 27, h: 27 });
-    assert.match(even.ids.herosub.textContent, /^Both teams took 27 shot attempts\.$/);
+    assert.match(even.ids.herosub.textContent, /^Over the whole game, both teams took 27 shot attempts\.$/);
   });
 
   /* ⭐ AND IT IS REFUSED FROM ANYWHERE ELSE. The totals decide a sentence on the
