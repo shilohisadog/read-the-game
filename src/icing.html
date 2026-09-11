@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-1dvJQX3BQaBWMA3E+2adwYpqkvAIR391Ea5vICigKSU=' 'sha256-O+tFRbevUhlyOt78ng1txnNkMDpdOHwapteYPqeRxx0=' 'sha256-CJvcE79g40V06JKW6XB8B50UdIUBZbtULta25KmjZpE='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-GEVLtto1hHoOyhCWz8W74LOPY3GUgZS+AXMqJDeBSvo=' 'sha256-O+tFRbevUhlyOt78ng1txnNkMDpdOHwapteYPqeRxx0=' 'sha256-CJvcE79g40V06JKW6XB8B50UdIUBZbtULta25KmjZpE='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -260,9 +260,16 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
    MEASURED FIRST, at 1900x1065: the document is 2.05 screens, `.wrap` renders
    944px of 1900 (half the viewport is gutter), and the hero card alone is 729px
    of a 1065px fold -- 68%. The card stacks the loop above four lines of text, so
-   `Watch the whole game` sits at y=903 and `Watch your team` at 982, and the fold
-   ends there. Everything a reader might act on is pushed down by the one thing
-   they are meant to look at.
+   `Watch the whole game` sits at y=903 and the club grid's heading at 982, and
+   the fold ends there. Everything a reader might act on is pushed down by the one
+   thing they are meant to look at.
+   ⚠️ IT READ `Watch your team` WHEN THIS WAS MEASURED, and is `Pick your team`
+   since 2026-09-11 — the word implied streaming and a heading over a grid of
+   club codes has nothing beside it to say otherwise. The MEASUREMENT is
+   unchanged; what moved is that the line above no longer cites the heading by a
+   name the codebase has stopped containing, which would send the next reader
+   grepping for something that is not there. Stated here once, where it is
+   explained, rather than left in the record as a live-looking quotation.
    SO THE CARD BECOMES TWO COLUMNS: what you READ on the left, the loop on the
    right. The proposition lands whole in the first screen, and the space this
    frees on the left is where the daily block goes when its data exists

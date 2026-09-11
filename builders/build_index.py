@@ -337,9 +337,16 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
    MEASURED FIRST, at 1900x1065: the document is 2.05 screens, `.wrap` renders
    944px of 1900 (half the viewport is gutter), and the hero card alone is 729px
    of a 1065px fold -- 68%. The card stacks the loop above four lines of text, so
-   `Watch the whole game` sits at y=903 and `Watch your team` at 982, and the fold
-   ends there. Everything a reader might act on is pushed down by the one thing
-   they are meant to look at.
+   `Watch the whole game` sits at y=903 and the club grid's heading at 982, and
+   the fold ends there. Everything a reader might act on is pushed down by the one
+   thing they are meant to look at.
+   ⚠️ IT READ `Watch your team` WHEN THIS WAS MEASURED, and is `Pick your team`
+   since 2026-09-11 — the word implied streaming and a heading over a grid of
+   club codes has nothing beside it to say otherwise. The MEASUREMENT is
+   unchanged; what moved is that the line above no longer cites the heading by a
+   name the codebase has stopped containing, which would send the next reader
+   grepping for something that is not there. Stated here once, where it is
+   explained, rather than left in the record as a live-looking quotation.
    SO THE CARD BECOMES TWO COLUMNS: what you READ on the left, the loop on the
    right. The proposition lands whole in the first screen, and the space this
    frees on the left is where the daily block goes when its data exists
