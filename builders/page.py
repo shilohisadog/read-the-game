@@ -279,9 +279,28 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 # is a DOOR being closed, not a deletion; `build_workshop()` still runs and
 # `src/workshop.html` still exists, reachable by typing the URL and by nothing
 # else. See docs/status.md §0.00-κ for what may follow it.
-_NAV = [("/", "Watch a game"), ("/#teams", "Teams"),
+# ⛔ "WATCH A GAME" IS GONE (Kevin, 2026-09-11), FOR TWO REASONS THAT AGREE.
+# His: *"I don't think the 'Watch a game' link buys us anything (further, it's
+# actually detrimental since it implies a streaming type capability)"* -- and he
+# is right that this site is a REPLAY and not a stream, which is settled
+# positioning rather than a nuance (docs/site-purpose.md).
+# AND IT WAS A DUPLICATE, MEASURED: it pointed at `/`, and so does the wordmark
+# 40px to its left -- two of the five links at the top of every page with one
+# destination between them. build_index.py's calendar already refuses exactly
+# this, in its own words: "a second copy of the same link 40px lower is the home
+# page's old duplicate-funnel defect". This is that defect in the chrome.
+# NOBODY IS STRANDED. The wordmark is the way home from every page and always
+# was; what leaves is the second copy of it, not the route.
+#
+# ⭐ AND THE LABEL THAT TEACHES NOW SAYS SO. "What you can see" was the ONLY
+# route to fourteen learn cards and six drawn rule pages -- twenty teaching
+# artifacts behind one 129x27 link, worded so it read as a sibling of "By date"
+# rather than as the way in. It also carries the one word the front door never
+# said: measured 2026-09-11, "hockey" appeared ZERO times in the visible page.
+# The room for a longer label is exactly the room the removed link freed.
+_NAV = [("/#teams", "Teams"),
         ("/calendar.html", "By date"),
-        ("/what-you-can-see.html", "What you can see")]
+        ("/what-you-can-see.html", "How to read hockey")]
 
 
 def _header(current=None, minimal=False):

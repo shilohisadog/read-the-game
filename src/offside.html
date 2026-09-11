@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-SXVL8q3cew5fRbh6pT65U3cf96sAvv0zUMtPb/E3Rkc=' 'sha256-O+tFRbevUhlyOt78ng1txnNkMDpdOHwapteYPqeRxx0=' 'sha256-xFjZ9sRme/bNt9SJN8r1rFahM9J/HY9HRzkwgJGTdow='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-5FdbAHwtJajWLrIep9zOxCUBGbwlBo233QN+qcxKoXs=' 'sha256-O+tFRbevUhlyOt78ng1txnNkMDpdOHwapteYPqeRxx0=' 'sha256-xFjZ9sRme/bNt9SJN8r1rFahM9J/HY9HRzkwgJGTdow='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -126,9 +126,39 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 /* The frame carries the rink's own aspect, so it does not letterbox on a phone
    or crop on a desktop. 200x85 is the rink; the scoreboard above it takes the
    rest, measured from the rendered page rather than guessed. */
-.heroframe{margin:0 0 13px;background:var(--ice);border:1px solid var(--edge);
- border-radius:10px;overflow:hidden}
-.heroframe iframe{display:block;width:100%;aspect-ratio:200/117;border:0}
+/* ⭐⭐ THE BIGGEST THING ON THE PAGE WAS NOT A DOOR.
+   Measured 2026-09-11 in a real browser: the frame is 26.9% of a 1325x959
+   laptop screen and 21.1% of a 390x844 phone -- the largest element on the front
+   door and the only one that MOVES -- and clicking the middle of it navigated
+   nowhere. The cursor did not even change: `auto`, over a playing rink.
+   Every instinct a visitor has points at the moving picture, and above the fold
+   on a phone the one content link sits at y=739 of an 844px fold, 87% of the way
+   down. So the loop was an advertisement for a door the reader had to scroll to.
+
+   ⭐ THE SAME DEFECT, THE THIRD TIME. `a6454fa` -- "the whole goal figure is
+   clickable, and the older reader had the same bug" -- and the calendar's rows
+   are anchors rather than text-with-a-link-in-it for the same reason. The fix
+   is structural each time: make the RECTANGLE the target.
+
+   POINTER-EVENTS OFF THE FRAME, because a click landing inside an iframe never
+   reaches a parent anchor wrapped around it. The preview hides every control it
+   has (`#rg.preview` in app.css), so there is nothing inside to click and
+   nothing is taken away.
+
+   ⚠️ AND IT IS AN AFFORDANCE, NOT A SECOND LINK. `aria-hidden` and `tabindex=-1`
+   keep it out of the tab order and out of the accessibility tree, because
+   `Watch the whole game` sits directly beneath it with the same destination --
+   a keyboard user would otherwise meet the same link twice with nothing to tell
+   them apart, which is a duplicate-funnel defect wearing accessibility clothes.
+   The frame itself already carried `tabindex=-1` for the same reason. */
+.heroframe{position:relative;margin:0 0 13px;background:var(--ice);
+ border:1px solid var(--edge);border-radius:10px;overflow:hidden}
+.heroframe iframe{display:block;width:100%;aspect-ratio:200/117;border:0;
+ pointer-events:none}
+/* The border answers the pointer, in the treatment `.drow` already uses for
+   exactly this question -- "is this rectangle a door". */
+.herohit{position:absolute;inset:0;cursor:pointer}
+.heroframe:hover{border-color:var(--blue)}
 /* A TALLER FRAME ON A PHONE, because the scoreboard inside it is not
    proportional even after it was made to shrink. Measured in a real browser:
    the chrome is 87px of an 856px-wide frame (10%) and 49px of a 287px one
@@ -517,7 +547,7 @@ footer p{margin:0 0 8px}
 </style>
 </head>
 <body>
-<header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/">Watch a game</a><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html" aria-current="page">What you can see</a></nav></header>
+<header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html" aria-current="page">How to read hockey</a></nav></header>
 <div class="wrap rulep">
 <p class="eyebrow">Read the Game</p>
 <p class="rback"><a href="/what-you-can-see.html">&larr; What you can see here</a></p>

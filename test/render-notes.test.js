@@ -62,12 +62,29 @@ const GAME_STATE_KEYS = { 'lk-ends': 'endskey', 'lk-unrec': 'unrec' };
  */
 test('the game page ships the same nav as the front page', () => {
   const index = readFileSync(new URL('../src/index.html', import.meta.url), 'utf8');
+  const pagePy = readFileSync(new URL('../builders/page.py', import.meta.url), 'utf8')
+    .replace(/^\s*#.*$/gm, '');        // comments quote nav labels; code only
   const nav = src => {
     const m = /<header class="sitehdr">([\s\S]*?)<\/header>/.exec(src.replace(/<!--[\s\S]*?-->/g, ''));
     return m && [...m[1].matchAll(/<a [^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>/g)].map(x => `${x[2]} -> ${x[1]}`);
   };
   const g = nav(app), i = nav(index);
-  assert.ok(g && g.length >= 5, `the game page header has ${g ? g.length : 0} links: ${JSON.stringify(g)}`);
+  /* ⚠️ THE FLOOR IS READ FROM `_NAV`, NOT TYPED. This said `>= 5`, which was the
+     nav's size on the day it was written -- so when "Watch a game" came off on
+     2026-09-11 (a duplicate of the wordmark beside it) the check went red for a
+     reason that had nothing to do with what it tests, and the obvious fix was to
+     decrement a magic number. A tripwire whose value is a cache of the code
+     needs hand-editing every time the code moves, and each edit is a chance to
+     set it to whatever makes the failure stop.
+     DERIVED, IT IS ALSO STRONGER: the count is now the wordmark plus EVERY entry
+     page.py declares, so a nav item silently missing from a BUILT page fails
+     here, which the old floor could not see at all. */
+  const NAV = [...pagePy.matchAll(/\("(\/[^"]*)", "([^"]+)"\)/g)];
+  assert.ok(NAV.length >= 3, 'page.py no longer declares _NAV as literal pairs — '
+    + 'this check has lost its subject');
+  assert.equal(g && g.length, NAV.length + 1,
+    `the game page header has ${g ? g.length : 0} links and page.py declares `
+    + `${NAV.length} plus the wordmark: ${JSON.stringify(g)}`);
   assert.deepEqual(g, i, 'the two headers have drifted apart');
 
   // AND THE LEDE IS BACK, in its own words rather than the front page's.

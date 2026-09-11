@@ -676,6 +676,109 @@ test('a loop with no counter recorded is not a hero either', () => {
   });
 });
 
+/**
+ * ⭐⭐ THE MOVING PICTURE IS A DOOR.
+ *
+ * Measured in a real browser on 2026-09-11: the frame is 26.9% of a 1325x959
+ * laptop screen and 21.1% of a 390x844 phone — the largest element on the page
+ * and the only one that moves — and clicking the middle of it went nowhere, with
+ * the cursor still reading `auto`. On the phone the one content link was at
+ * y=739 of an 844px fold.
+ *
+ * ⚠️ THE DESTINATION IS COMPARED AGAINST THE BUTTON'S, NOT TYPED. An id typed
+ * here passes on the day the hero rule changes and the rectangle keeps opening
+ * last week's game — the two must agree because they are the same offer, so the
+ * assertion is that they agree.
+ */
+test('the hero rectangle opens the same game its button does', () => {
+  const r = run({ docs: ALL });
+  return r.settle().then(() => {
+    const hit = walk(r.ids.heroframe).find(n => /\bherohit\b/.test(n.className || ''));
+    assert.ok(hit, 'the moving picture is not a door — nothing covers the frame');
+    // ⚠️ THE TAG, BECAUSE THE FAKE DOM LETS ANY ELEMENT CARRY AN `href`. Swapping
+    // `el('a', …)` for `el('span', …)` left every assertion below green while the
+    // rectangle stopped being clickable in a browser — a mutation that landed,
+    // survived, and was only caught by running it. A door is an anchor.
+    assert.equal(hit.tag, 'a',
+      `the overlay is a <${hit.tag}> — only an anchor navigates`);
+    assert.equal(hit.href, r.ids.herogo.href,
+      'the rectangle and the button offer different games');
+    // AND IT IS AN AFFORDANCE, NOT A SECOND LINK. `Watch the whole game` sits
+    // directly under it with the same destination, so a keyboard or screen
+    // reader user meeting this as well would meet one offer twice with nothing
+    // to tell the two apart — the duplicate-funnel defect in accessible clothing.
+    assert.equal(hit.attrs['aria-hidden'], 'true',
+      'the overlay is in the accessibility tree, duplicating the button');
+    assert.equal(hit.attrs.tabindex, '-1',
+      'the overlay is in the tab order, duplicating the button');
+  });
+});
+
+/**
+ * ⛔ THE PAGE NEVER NAMED THE SPORT.
+ *
+ * Measured 2026-09-11: "hockey" appeared ZERO times in the visible front door.
+ * It appeared once in the whole file — the `<title>`, "Read the Game — hockey,
+ * made legible" — which is the most welcoming sentence the site has and was
+ * rendering where only a browser tab shows it. A page whose whole purpose is a
+ * newcomer to the sport did not say which sport.
+ *
+ * ⚠️ THE VISIBLE PAGE, WITH `<title>` AND SCRIPT STRIPPED. Grepping the file
+ * would pass on the state this test exists to forbid — the word was always in
+ * the file. What is asserted is that a reader meets it.
+ */
+test('the front door says which sport it is about, ABOVE the legal small print', () => {
+  /* ⛔⛔ THE FIRST VERSION OF THIS TEST WAS VACUOUS AND WOULD HAVE PASSED ON THE
+     DEFECT IT WAS WRITTEN FOR. It grepped the whole visible page for "hockey" —
+     and the footer has always carried "not affiliated with … the National Hockey
+     League" plus a `ReadTheGameOfHockey@` address. So the page that said the word
+     ZERO times where a reader meets it as a promise said it twice in the legal
+     line at the bottom, and the check could not tell those apart.
+     THE FOOTER IS EXCLUDED, and that is the whole point: a disclaimer naming the
+     league is not the page telling a newcomer what this is about. */
+  const src = readFileSync(new URL('../src/index.html', import.meta.url), 'utf8');
+  const body = src
+    .replace(/<script[\s\S]*?<\/script>/g, '')
+    .replace(/<style[\s\S]*?<\/style>/g, '')
+    .replace(/<title>[\s\S]*?<\/title>/g, '')
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<footer[\s\S]*?<\/footer>/g, '');
+  assert.doesNotMatch(body, /National Hockey League/,
+    'the footer survived the strip — this check is reading the legal line again');
+  const visible = body.replace(/<[^>]*>/g, ' ');
+  assert.ok(visible.replace(/\s+/g, ' ').trim().length > 400,
+    'almost nothing survived the strip — this check has lost its subject');
+  assert.match(visible, /hockey/i,
+    'the front door never names the sport outside its own footer — the one place '
+    + 'it said "hockey" was the <title>, which only a browser tab renders');
+});
+
+/**
+ * ⛔ AND IT PRINTED ITS OWN NAME TWICE.
+ *
+ * The eyebrow read "Read the Game" — 40px under the wordmark "Read the Game",
+ * inside the first 270px of a phone screen. Not a duplicate LINK (the nav's was
+ * that, and went the same day) but a duplicate STATEMENT, spending the one slot
+ * a reader's eye reaches first on something they had just read.
+ *
+ * ⚠️ A COUNT, NOT AN ABSENCE. Asserting the eyebrow says something particular
+ * pins today's copy and forbids tomorrow's; what is actually wrong is saying it
+ * TWICE, so that is what is counted. The wordmark itself must still be there —
+ * hence `1` rather than `<= 1`.
+ */
+test('the front door prints the wordmark once', () => {
+  const visible = readFileSync(new URL('../src/index.html', import.meta.url), 'utf8')
+    .replace(/<script[\s\S]*?<\/script>/g, '')
+    .replace(/<style[\s\S]*?<\/style>/g, '')
+    .replace(/<title>[\s\S]*?<\/title>/g, '')
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<[^>]*>/g, ' ');
+  const n = (visible.match(/Read the Game/g) || []).length;
+  assert.equal(n, 1,
+    `the visible front door says "Read the Game" ${n} times — the masthead is the `
+    + 'one place the site names itself');
+});
+
 test('the front door leads with the most recent game, and it PLAYS', () => {
   const r = run({ docs: ALL });
   return r.settle().then(() => {

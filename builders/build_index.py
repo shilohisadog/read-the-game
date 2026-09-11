@@ -203,9 +203,39 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 /* The frame carries the rink's own aspect, so it does not letterbox on a phone
    or crop on a desktop. 200x85 is the rink; the scoreboard above it takes the
    rest, measured from the rendered page rather than guessed. */
-.heroframe{margin:0 0 13px;background:var(--ice);border:1px solid var(--edge);
- border-radius:10px;overflow:hidden}
-.heroframe iframe{display:block;width:100%;aspect-ratio:200/117;border:0}
+/* ⭐⭐ THE BIGGEST THING ON THE PAGE WAS NOT A DOOR.
+   Measured 2026-09-11 in a real browser: the frame is 26.9% of a 1325x959
+   laptop screen and 21.1% of a 390x844 phone -- the largest element on the front
+   door and the only one that MOVES -- and clicking the middle of it navigated
+   nowhere. The cursor did not even change: `auto`, over a playing rink.
+   Every instinct a visitor has points at the moving picture, and above the fold
+   on a phone the one content link sits at y=739 of an 844px fold, 87% of the way
+   down. So the loop was an advertisement for a door the reader had to scroll to.
+
+   ⭐ THE SAME DEFECT, THE THIRD TIME. `a6454fa` -- "the whole goal figure is
+   clickable, and the older reader had the same bug" -- and the calendar's rows
+   are anchors rather than text-with-a-link-in-it for the same reason. The fix
+   is structural each time: make the RECTANGLE the target.
+
+   POINTER-EVENTS OFF THE FRAME, because a click landing inside an iframe never
+   reaches a parent anchor wrapped around it. The preview hides every control it
+   has (`#rg.preview` in app.css), so there is nothing inside to click and
+   nothing is taken away.
+
+   ⚠️ AND IT IS AN AFFORDANCE, NOT A SECOND LINK. `aria-hidden` and `tabindex=-1`
+   keep it out of the tab order and out of the accessibility tree, because
+   `Watch the whole game` sits directly beneath it with the same destination --
+   a keyboard user would otherwise meet the same link twice with nothing to tell
+   them apart, which is a duplicate-funnel defect wearing accessibility clothes.
+   The frame itself already carried `tabindex=-1` for the same reason. */
+.heroframe{position:relative;margin:0 0 13px;background:var(--ice);
+ border:1px solid var(--edge);border-radius:10px;overflow:hidden}
+.heroframe iframe{display:block;width:100%;aspect-ratio:200/117;border:0;
+ pointer-events:none}
+/* The border answers the pointer, in the treatment `.drow` already uses for
+   exactly this question -- "is this rectangle a door". */
+.herohit{position:absolute;inset:0;cursor:pointer}
+.heroframe:hover{border-color:var(--blue)}
 /* A TALLER FRAME ON A PHONE, because the scoreboard inside it is not
    proportional even after it was made to shrink. Measured in a real browser:
    the chrome is 87px of an 856px-wide frame (10%) and 49px of a 287px one
@@ -517,7 +547,20 @@ HELPERS = r"""  var $ = function (id) { return document.getElementById(id); };
   }"""
 
 BODY = r"""<div class="wrap front">
-<p class="eyebrow">Read the Game</p>
+<!-- ⭐ THE SENTENCE THAT WAS RENDERING IN THE BROWSER TAB.
+     This read "Read the Game" -- the wordmark, 40px under the wordmark, a third
+     statement of the site's name in the first 270px of a phone screen. What went
+     in its place is not new copy: it is the second half of this page's own
+     `<title>`, "Read the Game — hockey, made legible", which is the most
+     welcoming sentence the site has and was reaching nobody who does not read
+     browser tabs.
+     ⛔ AND IT IS THE ONLY PLACE THE PAGE SAYS "HOCKEY". Measured 2026-09-11: the
+     word appeared ZERO times in the visible front door -- once in the whole
+     file, in that title. A page whose job is to welcome someone who does not
+     know the sport never named the sport.
+     NO HEIGHT IS ADDED. One line replaces one line, in the slot the eye reaches
+     first, and the duplicate leaves with it. -->
+<p class="eyebrow">Hockey, made legible</p>
 <!-- WHAT THIS IS, IN ONE SENTENCE, WHICH THE PAGE DID NOT SAY AT ALL.
      A stranger's questions are, in order: what is this, why should I care, what
      do I do. Only the third had an answer above the fold, and it was a button. -->
@@ -1035,6 +1078,15 @@ __HELPERS__
       sayHero(g, measures, m);
     });
     $('heroframe').appendChild(f);
+    /* THE RECTANGLE, over the frame rather than around it -- see `.herohit`.
+       Built here and not in the markup for the same reason the frame is: it
+       carries the chosen game's id, and a visitor who never gets a game must
+       not be handed a link to `game.html` with nothing after it. */
+    var hit = el('a', 'herohit');
+    hit.href = 'game.html?game=' + g.id;
+    hit.setAttribute('aria-hidden', 'true');
+    hit.setAttribute('tabindex', '-1');
+    $('heroframe').appendChild(hit);
 
     /* ⭐ AND IT DOES NOT SAY HOW THE GAME ENDS.
        This read "CAR 5, VGK 3 — 9 June 2026" directly under a loop that now

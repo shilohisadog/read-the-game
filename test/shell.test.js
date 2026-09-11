@@ -769,3 +769,42 @@ test('the probe gate can tell a booted page from an un-booted one', () => {
   assert.doesNotMatch(code, /\/final\/\.test\(gl/,
     'the probe is keyed to the game line stating the result again');
 });
+
+/**
+ * ⛔ NO TWO LINKS IN THE CHROME MAY GO TO THE SAME PLACE.
+ *
+ * "Watch a game" pointed at `/` and so does the wordmark 40px to its left — two
+ * of the five links at the top of every page on this site with one destination
+ * between them, for months. Kevin found it from the other end (*"it implies a
+ * streaming type capability"*) and both reasons land on the same link.
+ *
+ * ⭐ THE PROJECT ALREADY REFUSED THIS, ELSEWHERE AND IN ITS OWN WORDS.
+ * `build_index.py`, on the calendar's month view: *"The chrome directly above it
+ * already says 'Watch a game', and a second copy of the same link 40px lower is
+ * the home page's old duplicate-funnel defect at smaller scale."* The rule was
+ * understood, written down, applied to the calendar — and the chrome it names as
+ * the source was the thing doing it.
+ *
+ * ⚠️ A RULE, NOT A SNAPSHOT. Asserting "Watch a game is gone" passes forever
+ * after one deletion and says nothing about the next duplicate. What is
+ * forbidden is the SHAPE, so the check outlives the instance that prompted it.
+ */
+test('the chrome never offers one destination twice', () => {
+  const pages = readdirSync(SRC).filter(f => f.endsWith('.html'));
+  let checked = 0;
+  for (const f of pages) {
+    const src = readFileSync(new URL(f, SRC), 'utf8').replace(/<!--[\s\S]*?-->/g, '');
+    const m = /<header class="sitehdr">([\s\S]*?)<\/header>/.exec(src);
+    if (!m) continue;                       // a page with no chrome has none to duplicate
+    checked++;
+    const hrefs = [...m[1].matchAll(/href="([^"]+)"/g)].map(x => x[1]);
+    const dupes = hrefs.filter((h, i) => hrefs.indexOf(h) !== i);
+    assert.deepEqual(dupes, [],
+      `${f}: the header offers ${JSON.stringify(dupes)} more than once — `
+      + 'two links, one destination, which is the duplicate-funnel defect');
+  }
+  // The tripwire this file's neighbours all carry: a regex that stops matching
+  // would make the loop vacuous and the check would pass by examining nothing.
+  assert.ok(checked >= 5, `only ${checked} pages carried a chrome header — this `
+    + 'check has lost its subject');
+});
