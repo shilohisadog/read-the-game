@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-5FdbAHwtJajWLrIep9zOxCUBGbwlBo233QN+qcxKoXs=' 'sha256-O+tFRbevUhlyOt78ng1txnNkMDpdOHwapteYPqeRxx0=' 'sha256-4UFZO+EeAbyE8ixYxtNoVxY7GjtE1fvn3fyYtBStcw8='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-Y8GP+eH3PCmjLBQo48A5PxtvEI11zQwWhcktuSi7GzI=' 'sha256-O+tFRbevUhlyOt78ng1txnNkMDpdOHwapteYPqeRxx0=' 'sha256-4UFZO+EeAbyE8ixYxtNoVxY7GjtE1fvn3fyYtBStcw8='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -216,6 +216,26 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .drow .datt{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 .dmore{display:block;margin:3px 0 0;font-size:.83rem;color:var(--blue);text-decoration:none}
 .dmore:hover,.dmore:focus-visible{text-decoration:underline}
+
+/* THE RULES STRIP. Same rectangle as `.drow` and for the same reason: each tile
+   IS a door, so the whole rectangle is the hit target rather than a line of text
+   with a link in it. That is the 2026-09-08 defect in its fourth form, and the
+   border answering the pointer is the treatment this page already uses to say
+   "this is a door".
+   ONE COLUMN UNTIL 640, because the hook is a sentence and three sentences side
+   by side on a phone are three columns of two words each. The breakpoint is the
+   grid's own, not the card's: above it there is room for three real lines. */
+.learnin{margin:30px 0 0}
+.lgrid{display:grid;gap:8px;margin:11px 0 0}
+@media (min-width:640px){.lgrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.lcard{display:flex;flex-direction:column;gap:4px;text-decoration:none;color:inherit;
+ background:var(--bg);border:1px solid var(--edge);border-radius:8px;padding:11px 13px}
+.lcard:hover,.lcard:focus-visible{border-color:var(--blue)}
+.lcard .lt{font-weight:650}
+.lcard .ld{font-size:.85rem;color:var(--muted);line-height:1.45}
+.lmore{margin:9px 0 0;font-size:.87rem}
+.lmore a{color:var(--blue);text-decoration:none}
+.lmore a:hover,.lmore a:focus-visible{text-decoration:underline}
 
 /* ⭐⭐ THE FOLD, AT A LAPTOP'S WIDTH -- docs/front-door.md §5.4.
    Kevin, with the live page above the fold on his laptop: "encourages daily

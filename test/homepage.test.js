@@ -17,9 +17,15 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 
 const html = readFileSync(new URL('../src/index.html', import.meta.url), 'utf8');
+// EVERY BUILT PAGE, so a front-door link can be resolved against what exists
+// rather than merely matched as a string — see the rules-strip tests below.
+const SRC_DIR = new URL('../src/', import.meta.url);
+const PAGES = new Set(readdirSync(SRC_DIR).filter(f => f.endsWith('.html')));
+const PAGE_SRC = new Map([...PAGES].map(f =>
+  [f, readFileSync(new URL(f, SRC_DIR), 'utf8')]));
 const PAGES_TO_CHECK = Object.fromEntries(['index.html','game.html','read-the-game.html','goalie-eye-view.html']
   .map(f => [f, readFileSync(new URL('../src/' + f, import.meta.url), 'utf8')]));
 const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
@@ -777,6 +783,84 @@ test('the front door prints the wordmark once', () => {
   assert.equal(n, 1,
     `the visible front door says "Read the Game" ${n} times — the masthead is the `
     + 'one place the site names itself');
+});
+
+/**
+ * ⭐⭐ THE TEACHING IS ONE CLICK FROM THE FRONT DOOR.
+ *
+ * Measured 2026-09-11: fourteen learn cards and six drawn rule pages were
+ * reachable ONLY through `/what-you-can-see.html`, and NOTHING on the site
+ * linked to a rule page at all — twenty teaching artifacts behind a single
+ * 129x27 nav link. The front door offered one game, thirty-two three-letter club
+ * codes and a calendar.
+ *
+ * ⚠️ EACH DESTINATION IS RESOLVED AGAINST THE BUILT PAGES, not just matched as a
+ * string. A strip of links to `/offside.html` looks perfect in the markup and is
+ * four 404s if the rule builder stops emitting them, which is the shape that put
+ * `__PLACEHOLDER__` on a production page once.
+ */
+test('the front door opens onto the rules, and every one of them exists', () => {
+  /* ⚠️ THE OPEN TAG IS MATCHED LOOSELY AND `hidden` IS ASSERTED SEPARATELY.
+     The first draft anchored on the exact string `<section class="learnin">`, so
+     a mutation adding `hidden` to the tag failed this test — by breaking the
+     REGEX, not by being detected. A check that goes red for the wrong reason is
+     one refactor away from going green for the wrong reason, and this file has
+     already shipped two vacuous assertions today. */
+  const open = /<section class="learnin"([^>]*)>/.exec(html);
+  assert.ok(open, 'the rules strip is gone from the front door');
+  assert.doesNotMatch(open[1], /\bhidden\b/,
+    'the rules strip ships hidden — present in the markup and absent to a reader');
+  const strip = /<section class="learnin"[^>]*>([\s\S]*?)<\/section>/.exec(html);
+  const hrefs = [...strip[1].matchAll(/href="\/([a-z-]+)\.html"/g)].map(m => m[1]);
+  const rules = hrefs.filter(h => h !== 'what-you-can-see');
+  assert.ok(rules.length >= 3,
+    `the strip names ${rules.length} rules — it was built to name three`);
+  for (const r of rules)
+    assert.ok(PAGES.has(r + '.html'),
+      `the front door links to /${r}.html and no such page is built`);
+});
+
+/**
+ * ⛔ THE STRIP PROMOTES THE RULES HALF ONLY, AND THE SPLIT IS THE POINT.
+ *
+ * `LEARN_CARDS` keeps two groups apart deliberately — its own comment calls the
+ * split "the page's best idea": the first group is HOCKEY, the second is OURS,
+ * and merging them "would let our measurements borrow the rulebook's authority".
+ * A front-door strip mixing both with no heading between them does exactly that,
+ * so the builder refuses a non-rules id with a SystemExit and this asserts the
+ * artifact it produces.
+ */
+test('the strip never promotes one of OUR measurements as if it were a rule', () => {
+  const learn = PAGE_SRC.get('what-you-can-see.html');
+  const strip = /<section class="learnin"[^>]*>([\s\S]*?)<\/section>/.exec(html)[1];
+  // The measurement half, read off the learn page's own grouping rather than
+  // restated here — the `ours` cards are the ones under the second heading.
+  const ours = learn.slice(learn.indexOf('each showing its work'));
+  const ourIds = [...ours.matchAll(/<a class="card" id="([a-z-]+)"/g)].map(m => m[1]);
+  assert.ok(ourIds.length >= 6,
+    `found ${ourIds.length} measurement cards — this check has lost its subject`);
+  for (const id of ourIds)
+    assert.doesNotMatch(strip, new RegExp(`href="/${id}\\.html"`),
+      `the strip offers \`${id}\`, which is one of OUR measurements, beside the rules`);
+});
+
+/**
+ * ⭐ THE COUNT IN THE LINK IS THE COUNT ON THE PAGE IT OPENS.
+ *
+ * "All 14 lessons" is a promise about another document, and the two are built by
+ * different functions. Counted on the learn page's own artifact rather than
+ * against `LEARN_CARDS`, so this is two BUILT PAGES agreeing — a shared constant
+ * would let both drift together, which is the mirror this project keeps finding.
+ */
+test('the front door promises as many lessons as the learn page holds', () => {
+  const learn = PAGE_SRC.get('what-you-can-see.html');
+  const onLearnPage = [...learn.matchAll(/<a class="card" id="[a-z-]+"/g)].length;
+  assert.ok(onLearnPage >= 10,
+    `counted ${onLearnPage} cards on the learn page — this check has lost its subject`);
+  const promised = /All (\d+) lessons/.exec(html);
+  assert.ok(promised, 'the front door no longer says how many lessons there are');
+  assert.equal(Number(promised[1]), onLearnPage,
+    `the front door promises ${promised[1]} lessons and the page it opens has ${onLearnPage}`);
 });
 
 test('the front door leads with the most recent game, and it PLAYS', () => {

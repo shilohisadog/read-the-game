@@ -294,6 +294,26 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .dmore{display:block;margin:3px 0 0;font-size:.83rem;color:var(--blue);text-decoration:none}
 .dmore:hover,.dmore:focus-visible{text-decoration:underline}
 
+/* THE RULES STRIP. Same rectangle as `.drow` and for the same reason: each tile
+   IS a door, so the whole rectangle is the hit target rather than a line of text
+   with a link in it. That is the 2026-09-08 defect in its fourth form, and the
+   border answering the pointer is the treatment this page already uses to say
+   "this is a door".
+   ONE COLUMN UNTIL 640, because the hook is a sentence and three sentences side
+   by side on a phone are three columns of two words each. The breakpoint is the
+   grid's own, not the card's: above it there is room for three real lines. */
+.learnin{margin:30px 0 0}
+.lgrid{display:grid;gap:8px;margin:11px 0 0}
+@media (min-width:640px){.lgrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.lcard{display:flex;flex-direction:column;gap:4px;text-decoration:none;color:inherit;
+ background:var(--bg);border:1px solid var(--edge);border-radius:8px;padding:11px 13px}
+.lcard:hover,.lcard:focus-visible{border-color:var(--blue)}
+.lcard .lt{font-weight:650}
+.lcard .ld{font-size:.85rem;color:var(--muted);line-height:1.45}
+.lmore{margin:9px 0 0;font-size:.87rem}
+.lmore a{color:var(--blue);text-decoration:none}
+.lmore a:hover,.lmore a:focus-visible{text-decoration:underline}
+
 /* ⭐⭐ THE FOLD, AT A LAPTOP'S WIDTH -- docs/front-door.md §5.4.
    Kevin, with the live page above the fold on his laptop: "encourages daily
    visits, offers valuable information right from the get go, and encourages a
@@ -632,6 +652,42 @@ BODY = r"""<div class="wrap front">
     </section>
   </div>
 </main>
+<!-- ⭐⭐ THE TEACHING WAS TWO CLICKS DEEP BEHIND ONE AMBIGUOUS LABEL.
+     Measured 2026-09-11: fourteen learn cards and six drawn rule pages — twenty
+     teaching artifacts — were reachable ONLY through `/what-you-can-see.html`,
+     and nothing else on the site linked to any rule page at all. The front door
+     offered one game, thirty-two three-letter club codes, and a calendar. A
+     visitor who does not know what offside is had no way to find out that the
+     site would tell them.
+
+     RULES ONLY, AND THAT IS THE SPLIT BEING RESPECTED RATHER THAN A SAMPLE.
+     `LEARN_CARDS` keeps two groups apart on purpose — "the page's best idea",
+     per its own comment: the first is HOCKEY, the second is OURS, and merging
+     them "would let our measurements borrow the rulebook's authority". A strip
+     mixing three cards from both halves would do exactly that with no heading to
+     separate them, so this promotes the rules half only. The measurement half
+     keeps its own door, one line down.
+
+     ⚠️ THE HOOKS ARE NEW COPY AND THAT IS DELIBERATE, NOT LAZINESS. The obvious
+     move was to reuse each card's first sentence and it does not survive
+     reading: offside's opens "This is the one rule we can draw but never replay"
+     — a sentence about OUR FEED's limits, which is the right thing to say to
+     someone already on the learn page and the wrong first thing to say to
+     someone who does not know the rule. Penalties' blurb is a single 230-
+     character sentence with no split point at all. So each hook states the RULE,
+     in the site's own vocabulary ("a skater short" is the penalties card's own
+     phrase), and `_front_rules()` refuses any id that is not a real rules card.
+
+     ⛔ NO FREQUENCIES HERE. The wall between the halves lets the rules side say
+     what the record CONTAINS and reserves how often for the measurement side, so
+     "the three that stop play most" — the natural heading — is not available and
+     is not written. -->
+<section class="learnin">
+<h2 id="learn-h">New to hockey?</h2>
+<p class="note">The rules that stop play are the hardest part to pick up by
+watching. Each of these is drawn first, then shown in a real game.</p>
+__FRONT_RULES__
+</section>
 <h2 id="teams-h">Watch your team</h2>
 <p class="note">Every game each club played, newest first. Arizona became Utah in
 2024 &mdash; both are here, because both played.</p>
@@ -1729,6 +1785,48 @@ def _learn():
 # Merging them would let our measurements borrow the rulebook's authority. The
 # groups get headings AND a visual difference: the measurement cards take the
 # blue left edge that already means "our claim" on `.limits`.
+# WHICH RULES THE FRONT DOOR NAMES, and the hook it names them with. Three,
+# because a strip is a taste and the fourth row is the link to all of them.
+#
+# ⚠️ THE IDS ARE CHECKED AGAINST `LEARN_CARDS`, NOT TRUSTED. A typo here would
+# ship a front-door link to a rule page that does not exist, and the page would
+# look completely normal — the same shape as a learn card with no door, which
+# this builder already refuses with a SystemExit.
+FRONT_RULES = [
+    ("offside", "You cannot enter the attacking zone ahead of the puck."),
+    ("icing", "Shoot it the length of the ice and the faceoff comes all the way back."),
+    ("penalties", "Break a rule and your team plays a skater short."),
+]
+
+
+def _front_rules():
+    """The strip under the hero: three rules, each to its drawn page."""
+    kinds = {c[1]: c[0] for c in LEARN_CARDS}
+    titles = {c[1]: c[2] for c in LEARN_CARDS}
+    figures = _fig_json()
+    out = ['<div class="lgrid">']
+    for cid, hook in FRONT_RULES:
+        if kinds.get(cid) != "rules":
+            raise SystemExit(
+                f"front door: `{cid}` is not a rules card ({kinds.get(cid)!r}) — "
+                "the strip promotes the rules half only, so the two groups stay apart")
+        # A HOOK THAT LANDS ON A DIAGRAM, so "drawn first" above is true of every
+        # tile rather than of most of them. The learn page makes the same
+        # distinction in each card's footer line.
+        if cid not in figures:
+            raise SystemExit(
+                f"front door: `{cid}` has no drawn figure, but the strip promises "
+                "every one of them is drawn first")
+        out.append(f'<a class="lcard" href="/{cid}.html">'
+                   f'<span class="lt">{titles[cid]}</span>'
+                   f'<span class="ld">{hook}</span></a>')
+    out.append("</div>")
+    out.append(f'<p class="lmore"><a href="/what-you-can-see.html">All '
+               f'{len(LEARN_CARDS)} lessons, including what we count '
+               f'&amp; how &rarr;</a></p>')
+    return "\n".join(out)
+
+
 LEARN_CARDS = [
     ("rules", "icing", "Icing",
      "The puck is sent the length of the ice and play comes straight back. "
@@ -2737,6 +2835,7 @@ def build():
              .replace("__HELPERS__", HELPERS)
              .replace("__ORIGIN__", repr(DATA_ORIGIN).replace("'", '"'))
              .replace("__SAYS__", SAYS)
+             .replace("__FRONT_RULES__", _front_rules())
              .replace("__LIMITS__", _limits()))
     # Stamped last: the hashes must cover the final bytes of the script and
     # style, and the CSP itself sits in <head>, outside both.
