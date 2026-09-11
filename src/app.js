@@ -1556,6 +1556,86 @@ $('play').onclick=()=>playing?stop():play();
    that a test could satisfy without the real control working. There is no pause
    branch: it is only on screen at the resting frame, where `playing` is false. */
 if($('pressplay'))$('pressplay').onclick=()=>play();
+/* ⭐⭐ THE ICE IS THE PLAY/PAUSE CONTROL.
+   Kevin, reviewing on his phone: "can we figure out how to make the rink
+   play/pause enabled by tapping on it? The play/pause control is below the fold
+   on my phone and being able to tap the rink to play and pause just makes
+   intuitive sense."
+   THE ARGUMENT IS GEOMETRY, NOT PREFERENCE. `#play` is a 44px button under the
+   scrubber; the rink is the largest object on the page and the only one a reader
+   is already looking at. On a phone it is the thing on screen and the button is
+   not, which is the same complaint that moved the newcomer block beside the
+   controls it describes.
+
+   ⛔ THE SVG, NOT `.rinkbox`. The box also holds the penalty boxes, the active
+   player line, the on-ice list and the work panel -- every one of which has its
+   own job, and an enumeration of exclusions is a list that goes stale the next
+   time something is added to the card. Listening on the ICE means the exclusion
+   is structural: nothing that is not the drawing can reach this.
+
+   ⛔ AND THE WORK PANEL IS STILL AN EXCEPTION, because it is `inset:0 0 auto 0`
+   -- it covers the ice from the top down to its own height and leaves the bottom
+   of the rink exposed whenever it is shorter. A tap there would start the replay
+   running BEHIND the panel, which is precisely the state 2026-08-31 made
+   impossible: "you cannot watch and read the same rectangle at once."
+
+   NO ROLE AND NO TAB STOP, the same ruling `.pressplay` carries two elements up:
+   `#play` already offers this action with a real label and a keyboard path, and
+   a second tab stop for one command is noise to a screen reader. This is a
+   POINTER affordance layered on a control that already exists.
+
+   NOT IN THE PREVIEW. The hero has no transport and autoplays; a tap that paused
+   it would leave a reader with a frozen rink and nothing on the frame to say
+   why, and on the front door an anchor covers that iframe anyway. */
+/* ⭐⭐ AND A DOUBLE TAP STEPS, LEFT BACK AND RIGHT FORWARD.
+   Kevin, same review: "would it be possible to also do something like the
+   youtube video controls where a user could double-tap on the right hand side to
+   move to the next event and double-tap on the left hand side to go back an
+   event?"
+
+   ⭐ IT IS THE PLATFORM'S OWN DOUBLE-TAP, NOT A TIMER OF OURS. Measured in a real
+   browser before this was written, because the whole design turns on it -- a
+   double tap on BOTH a touchscreen and a mouse produces exactly:
+       click detail=1 -> click detail=2 -> dblclick detail=2
+   so `detail>1` is the second press of a pair and belongs to the gesture below,
+   and `dblclick` is the gesture itself. A hand-rolled 250ms window -- what every
+   video player does -- would have put a quarter-second of lag on PLAY/PAUSE,
+   which is the common action, to serve the rare one. There is no lag here at all.
+   The probe also showed the sequence bubbling intact from a mark inside the svg.
+
+   ⚠️ `preI` IS THE FRAME THE GESTURE STARTED ON, and without it the two ends of
+   the game misbehave: `play()` restarts from 0 whenever `i` is the last frame or
+   the pre-game one, so the first press of a double tap at the horn would rewind
+   the game and the step would then count from THERE. Snapshotting on `detail===1`
+   is exact -- that press is the first of the burst by definition. What remains is
+   a ~150ms flash of frame 0 at the horn, which no design without a delay can
+   avoid, and which costs nothing at the other 267 frames.
+
+   ⛔ LEFT AND RIGHT ARE ABOUT TIME, NOT ABOUT THE ICE. The rink turns over at the
+   period breaks in as-played mode and the clubs change ends with it; this gesture
+   does not follow them, because it is a transport control wearing a video
+   player's idiom and `◀ Prev`/`Next ▶` is what it copies.
+
+   AND A DOOR STILL WINS. The marks and labels consume a double press the same way
+   they consume a single one, so double-tapping a goal opens its highlight and
+   does not also step the replay past it. */
+const DBL_BACK=-1,DBL_FWD=1;
+if(!PREVIEW){
+ const ice=$('ice');
+ if(ice){
+  let preI=null;
+  ice.addEventListener('click',ev=>{
+   if(ev.detail>1)return;                  // the second of a pair; the gesture owns it
+   doorOpened=false;                       // this press reached the ice, so no door took it
+   preI=i;
+   if(workOpen)return;
+   playing?stop():play();});
+  ice.addEventListener('dblclick',ev=>{
+   if(doorOpened){doorOpened=false;return;} // the gesture began on a door -- see doorDidOpen
+   if(workOpen)return;
+   const r=ice.getBoundingClientRect();
+   const back=r.width>0&&ev.clientX<r.left+r.width/2;
+   stop();set((preI==null?i:preI)+(back?DBL_BACK:DBL_FWD),'jump');});}}
 /**
  * ONE PLAY AT A TIME, IN EITHER DIRECTION — the control this transport did not
  * have, and the slider is measurably unable to substitute for.
@@ -1985,8 +2065,13 @@ function hideWhy(){$('whyBk').classList.remove('on');}
 const markAt=ev=>{const t=ev.target;
  const c=t&&t.closest?t.closest('[data-i]'):null;
  return c&&c.dataset.i!=null?+c.dataset.i:null;};
+/* ⛔ AND A DOOR THAT OPENS CONSUMES THE TAP. The ice is a play/pause control
+   (see the rink listener in the transport section), so every handler on a mark
+   has to say whether the press was for it. `stopPropagation`, not
+   `stopImmediatePropagation`: the clip handler below is on this same node and
+   must still get its turn -- a mark can be both a slot shot and a goal. */
 $('events').addEventListener('click',ev=>{const k=markAt(ev);
- if(k!=null&&hdOn&&isHD(EV[k]))showWhy(k);});
+ if(k!=null&&hdOn&&isHD(EV[k])){showWhy(k);doorDidOpen();ev.stopPropagation();}});
 /* ⭐ THE GOAL ON THE ICE IS A DOOR TO ITS OWN HIGHLIGHT. Kevin: "is there any way
    to make the goal event link to the replay frame?" -- and the line above is the
    idiom, so this is the same click on the same channel and a reader who learned
@@ -2005,10 +2090,16 @@ $('events').addEventListener('click',ev=>{const k=markAt(ev);
    `drawLabel` draws the CURRENT event and carries no index, so a press anywhere
    in the label means "this frame" -- and `#clipbox`'s own hidden state already
    answers whether this frame has one. No second copy of that question. */
+/* ⭐ IT ANSWERS WHETHER IT OPENED ANYTHING, because the ice underneath is a
+   play/pause control now and only a door that ACTUALLY OPENED may swallow the
+   tap. Both early returns below are real: `#labels` is pressed on every frame
+   and carries a clip on nine of 268, so a handler that stopped the event
+   unconditionally would have made the words on the ice a dead zone for the whole
+   game except the goals. */
 function openClip(k){
- const b=$('clipbox');if(!b||b.hidden)return;
+ const b=$('clipbox');if(!b||b.hidden)return false;
  if(k!=null&&k!==i)set(k,'jump');
- if(b.hidden)return;                       // the jump may have left the goal
+ if(b.hidden)return false;                 // the jump may have left the goal
  b.open=true;buildClip();
  /* ⛔ THE SCROLL RUNS AFTER THE SECTION HAS ITS HEIGHT. Calling this on the line
     after `open=true` centres a 57px box -- `.clipframe:empty` is display:none and
@@ -2022,7 +2113,8 @@ function openClip(k){
    if(r.top<0||r.bottom>window.innerHeight)t.scrollIntoView({block:'center',behavior:'auto'});};
   if(t.firstChild)t.firstChild.addEventListener('load',settle,{once:true});
   setTimeout(settle,900);};
- requestAnimationFrame(()=>requestAnimationFrame(bring));}
+ requestAnimationFrame(()=>requestAnimationFrame(bring));
+ return true;}
 function buildClip(){
  const f=$('clipFrame'),b=$('clipbox');
  if(!f||!b||!b.open||f.firstChild||!b.dataset.id)return;
@@ -2034,8 +2126,33 @@ function buildClip(){
  el.setAttribute('title','NHL.com broadcast highlight of this goal');
  f.appendChild(el);}
 $('events').addEventListener('click',ev=>{const k=markAt(ev);
- if(k!=null&&EV[k]&&EV[k].clip!=null)openClip(k);});
-$('labels').addEventListener('click',()=>openClip(null));
+ if(k!=null&&EV[k]&&EV[k].clip!=null&&openClip(k)){doorDidOpen();ev.stopPropagation();}});
+$('labels').addEventListener('click',ev=>{if(openClip(null)){doorDidOpen();ev.stopPropagation();}});
+/* ⛔ AND THE SAME DOORS CONSUME A DOUBLE PRESS. The handlers above are on `click`
+   only, so without these a double tap that happened to land on a goal would open
+   the highlight AND step the replay past it -- the gesture reaching through a
+   door it had already opened. Asked, never acted on: this only reports whether a
+   door is there, because the click handlers have already opened it. */
+const doorAt=ev=>{const k=markAt(ev);
+ return k!=null&&((hdOn&&isHD(EV[k]))||(EV[k]&&EV[k].clip!=null));};
+$('events').addEventListener('dblclick',ev=>{if(doorAt(ev))ev.stopPropagation();});
+$('labels').addEventListener('dblclick',ev=>{const b=$('clipbox');
+ if(b&&!b.hidden)ev.stopPropagation();});
+/* ⛔⛔ AND stopPropagation IS NOT ENOUGH, WHICH ONLY LOOKING SHOWED.
+   Measured on a 390px touchscreen against the built page: a double tap on a goal
+   label left the highlight SHUT and stepped the replay back one play. On a 1400px
+   laptop the identical gesture was correct. The cause is not the handler chain --
+   it is that `openClip` SCROLLS the section to the centre of the screen, so by the
+   time the second tap of the gesture lands, the page has moved and the finger is
+   over the ice instead of over the label. The `dblclick` that follows therefore
+   has a target the door never sees, and no amount of stopping propagation inside
+   the door can reach it.
+   SO THE DOOR RAISES A FLAG INSTEAD OF RELYING ON THE TARGET. The ice's own click
+   handler lowers it on every FIRST press that reaches the ice, which is exactly
+   the presses the gesture is allowed to start from -- no timer, no window, and
+   nothing to tune. */
+let doorOpened=false;
+const doorDidOpen=()=>{doorOpened=true;};
 /* The third door, and the only one that says so in words. Delegated because the
    button is written into `#who` on every goal frame rather than living in the
    markup, so there is no element to bind at boot. */

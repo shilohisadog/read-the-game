@@ -156,11 +156,64 @@ export function fakeDom() {
     // so `.click()` on any of them fired nothing at all. Not a vacuous
     // assertion: a test that pressed Play and then checked the page had not
     // started would have passed against a page that never started anything.
-    click() {
-      (this._on.click || []).forEach(fn => fn({ target: this }));
-      if (typeof this.onclick === 'function') this.onclick({ target: this });
+    /* Firing this element's own handlers with an event somebody else may have
+       made, so a bubbled press arrives carrying its ORIGINAL target. */
+    _fire(ev) {
+      (this._on.click || []).forEach(fn => fn(ev));
+      if (typeof this.onclick === 'function') this.onclick(ev);
+    },
+    /* ⭐⭐ THE PRESS BUBBLES, AND IT HAS TO SINCE 2026-09-11.
+       The ice is a play/pause control now: a tap anywhere on the drawing toggles
+       the replay, and the marks and labels drawn INSIDE it call
+       `stopPropagation()` when they open a door of their own. A fake that fired
+       only the pressed element's handlers could not tell those two apart — every
+       assertion about "a tap on a goal opens the clip and does not also start
+       the replay" would have been about a mechanism this harness does not have.
+       ⛔ ONE LEVEL, TO THE ICE, AND THE PATH IS READ OUT OF THE BUILT MARKUP
+       rather than written down here. `#events`, `#labels` and the rest are `<g>`
+       children of `<svg id="ice">`; a hand-kept list would be a second statement
+       of the document's shape, and this file has already had to have that beaten
+       out of it once (see `#rg .lrow`, deleted from the page and modelled here
+       for eleven days). Nothing else in this app depends on propagation. */
+    click(detail = 1) {
+      let stopped = false;
+      const ev = { target: this, detail, stopPropagation() { stopped = true; } };
+      this._fire(ev);
+      if (!stopped && this._up) this._up._fire(ev);
+      return ev;
+    },
+    /* ⭐⭐ THE EXACT SEQUENCE A BROWSER PRODUCES, MEASURED RATHER THAN ASSUMED.
+       Probed in chromium on 2026-09-11, on a touchscreen context and with a
+       mouse, both identical:
+           click detail=1 -> click detail=2 -> dblclick detail=2
+       The ice reads `detail>1` to know the second press belongs to the gesture
+       rather than to play/pause, so a fake that fired only `dblclick` would let a
+       page that ignores the ordering pass, and one that fired two plain clicks
+       would make the double tap toggle the replay twice. Both of those are the
+       bug this models the way out of. */
+    dblclick(x) { this.click(1); this.click(2); return this.dblOnly(x); },
+    /* ⭐ THE LAST EVENT ON ITS OWN, because the two taps of a gesture do not
+       always land on the same element. Measured on a 390px touchscreen: pressing
+       a goal label opens the highlight and SCROLLS it to the centre, so the
+       second tap lands on the ice instead and the `dblclick` that follows has a
+       target the door never sees. That is a real sequence and a test has to be
+       able to spell it — `labels.click(1)`, `ice.click(2)`, `ice.dblOnly(x)`. */
+    dblOnly(x) {
+      let stopped = false;
+      const ev = { target: this, detail: 2, clientX: x,
+                   stopPropagation() { stopped = true; } };
+      (this._on.dblclick || []).forEach(fn => fn(ev));
+      if (!stopped && this._up) (this._up._on.dblclick || []).forEach(fn => fn(ev));
+      return ev;
     },
   });
+
+  /* Every id drawn INSIDE the rink's <svg>, from the page itself. The capture is
+     the svg's CONTENT, so `ice` is not in its own list and nothing recurses. */
+  const ICE = /<svg id="ice"[^>]*>([\s\S]*?)<\/svg>/.exec(app);
+  const ON_ICE = new Set(ICE ? [...ICE[1].matchAll(/id="([^"]+)"/g)].map(m => m[1]) : []);
+  assert.ok(ON_ICE.size >= 5,
+    'this harness found no groups inside the rink svg — the bubbling path is imaginary');
 
   const byId = new Map();
   // Selector -> the buttons that selector really matches in the markup. Written
@@ -251,7 +304,12 @@ export function fakeDom() {
       return e;
     },
     getElementById(id) {
-      if (!byId.has(id)) byId.set(id, el());
+      if (!byId.has(id)) {
+        const node = el();
+        // Wired at creation, so a group the page asks for later still bubbles.
+        if (ON_ICE.has(id)) node._up = this.getElementById('ice');
+        byId.set(id, node);
+      }
       return byId.get(id);
     },
     querySelectorAll(sel) {
@@ -352,12 +410,43 @@ export function bundle(globals, src = SCRIPT, give = 'boot') {
  * walks up would otherwise be free to stop answering for the marks that never
  * needed it.
  */
+/**
+ * The first frame of this fixture that carries a published highlight.
+ *
+ * ⭐ FOUND BY SCRUBBING, NEVER TYPED. A literal index here would silently name
+ * the wrong frame the day the extract is re-derived, and every assertion about
+ * "pressing the goal" would still pass. Moved here from render-clip.test.js on
+ * 2026-09-11, when the transport tests needed the same subject: the ice is a
+ * play/pause control now, and the frames that DO open a door are exactly the
+ * ones that must not also toggle it.
+ */
+export function frameOf(a) {
+  const NOT = /const SKIP=new Set\(Object\.keys\(NOT_A_PLAY\)\)/;
+  assert.match(app, NOT, 'the page no longer derives its playable set from NOT_A_PLAY');
+  const scrub = a.$('scrub');
+  for (let k = 0; k <= +scrub.max; k++) {
+    scrub.value = String(k); scrub.oninput({ target: { value: scrub.value } });
+    if (a.$('clipbox').dataset.id) return k;
+  }
+  return null;
+}
+
 export function markClick(a, k, { leaf = true } = {}) {
   const carrier = { dataset: { i: String(k) } };
   const target = leaf
     ? { dataset: {}, closest: sel => (sel === '[data-i]' ? carrier : null) }
     : { ...carrier, closest: () => carrier };
-  for (const fn of a.$('events')._on.click || []) fn({ target });
+  /* ⭐ THE SAME EVENT SHAPE A PRESS MAKES, AND IT BUBBLES THE SAME WAY.
+     Since 2026-09-11 the handlers on `#events` call `stopPropagation()` when
+     they open a door, because the ice underneath is a play/pause control. A
+     probe that handed them a bare `{target}` threw on the first one -- and had
+     it not thrown, every "a tap on a mark does not also start the replay" would
+     have been checking a path this helper does not walk. */
+  let stopped = false;
+  const ev = { target, stopPropagation() { stopped = true; } };
+  a.$('events')._fire(ev);
+  if (!stopped) a.$('ice')._fire(ev);
+  return { reachedIce: !stopped };
 }
 
 /**

@@ -279,7 +279,12 @@ function popupPass() {
        because this tool boots the page itself and imports none of that. */
     const carrier = { dataset: { i: String(k) } };
     const target = { dataset: {}, closest: sel => (sel === '[data-i]' ? carrier : null) };
-    for (const fn of events._on.click || []) fn({ target });
+    /* ⚠️ AND THE EVENT CARRIES `stopPropagation`, because since 2026-09-11 the
+       handler calls it: the ice under these marks is a play/pause control and a
+       door that opens has to say the press was for it. A bare `{target}` threw
+       here the day that shipped. This pass only opens popups, so the bubble is
+       not walked -- what it needs is an event the page can actually use. */
+    for (const fn of events._on.click || []) fn({ target, stopPropagation() {} });
     /* `writes` rather than the backdrop's class: nothing ever CLOSES the popup
        during this pass, so `whyBk` stays `on` after the first open and would
        report every later click as a render. The write is the signal itself —

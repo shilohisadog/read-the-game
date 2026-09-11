@@ -230,7 +230,13 @@ test('the page names the shading where a newcomer will be, and admits it is ours
 test('the group is under the marks, so a mark is never hidden by its own circle', () => {
   // SVG paints in document order. `cue` after `events` would draw the hint on
   // top of the thing it is pointing at.
-  const svg = app.match(/<svg viewBox="0 0 200 85">([\s\S]*?)<\/svg>/)[1];
+  /* ⚠️ THE OPENING TAG IS MATCHED BY ITS ID, NOT BY ITS ATTRIBUTE STRING. This
+     read `<svg viewBox="0 0 200 85">` literally and went null the day the rink
+     gained `id="ice"` (it is a play/pause control now) -- a probe whose subject
+     is DOCUMENT ORDER, failing on an attribute it has no opinion about. */
+  const m = app.match(/<svg id="ice"[^>]*>([\s\S]*?)<\/svg>/);
+  assert.ok(m, 'the rink svg is no longer #ice — this probe lost its subject');
+  const svg = m[1];
   assert.ok(svg.indexOf('id="cue"') < svg.indexOf('id="events"'),
     'the circle is painted over the mark it is announcing');
 });

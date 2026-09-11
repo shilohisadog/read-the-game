@@ -2065,6 +2065,22 @@
 /* The cursor says which things are doors, on BOTH groups — the mark a reader
    aims at and the label they actually press. */
 #rg.hasclip #events [data-i],#rg.hasclip #labels{cursor:pointer}
+/* ⭐ AND THE ICE ITSELF IS PRESSABLE, so it says so. A pointer affordance that
+   looks like a picture is one nobody tries; the whole reason this exists is that
+   the play button is below the fold on a phone, and a phone has no cursor at all
+   -- this is the desktop half of the same change, where a reader CAN be told.
+   ⛔ NOT WHILE THE WORK PANEL IS OPEN: the panel is `inset:0 0 auto 0` and leaves
+   the bottom of the rink exposed when it is shorter, and the listener refuses
+   that tap. A cursor promising a press that is declined is worse than none. */
+/* ⭐ POINTER HYGIENE FOR THE DOUBLE TAP (2026-09-11). `touch-action:manipulation`
+   removes the browser's own double-tap-to-zoom on this element, which would
+   otherwise spend the second tap of the gesture on a zoom; `user-select:none`
+   stops a double press selecting the SVG text it happens to land on -- the ice
+   carries the club and the event in words, and a selection highlight over them
+   is the page answering a gesture with the wrong thing. Both apply everywhere,
+   including the preview, because neither is about whether the ice is a control. */
+#rg #ice{touch-action:manipulation;user-select:none;-webkit-user-select:none}
+#rg:not(.preview):not(.working) #ice{cursor:pointer}
 /* THE HIGHLIGHT LINK IN THE ACTIVE-PLAYER ROW — see `sayWho` in app.js.
    ⭐ IT INHERITS THE ROW RATHER THAN DRESSING ITSELF. `#rg .who` already sets the
    size, weight, line-height and the reserved `min-height`; a button that brought

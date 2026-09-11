@@ -27,7 +27,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { app, PAGE_CSS, boot, rich, markClick } from './helpers/page.js';
+import { app, PAGE_CSS, boot, rich, markClick, frameOf } from './helpers/page.js';
 
 /** The reference game's own goals, and what the league published for each. */
 const GOALS = rich.events.filter(e => e.type === 'goal');
@@ -48,16 +48,8 @@ const seek = (a, k) => {
 };
 
 /** Drive the page to the frame showing `ev`, using the app's own playable set. */
-function frameOf(a) {
-  const NOT = /const SKIP=new Set\(Object\.keys\(NOT_A_PLAY\)\)/;
-  assert.match(app, NOT, 'the page no longer derives its playable set from NOT_A_PLAY');
-  const scrub = a.$('scrub');
-  for (let k = 0; k <= +scrub.max; k++) {
-    scrub.value = String(k); scrub.oninput({ target: { value: scrub.value } });
-    if (a.$('clipbox').dataset.id) return k;
-  }
-  return null;
-}
+/* `frameOf` moved to test/helpers/page.js on 2026-09-11 — the transport tests
+   need the same subject, and two copies of a search is two chances to drift. */
 
 test('a goal with a published highlight gets a section, shut', () => {
   const a = boot();

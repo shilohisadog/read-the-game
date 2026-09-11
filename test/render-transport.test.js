@@ -8,7 +8,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { rich, app, SCRIPT, PAGE_CSS, boot, paceOf , pickLayer } from './helpers/page.js';
+import { rich, app, SCRIPT, PAGE_CSS, boot, paceOf , pickLayer, markClick, frameOf } from './helpers/page.js';
 import { ANNOUNCEMENTS } from '../src/lib/announce.js';
 import { stints } from '../src/lib/box.js';
 
@@ -813,4 +813,269 @@ test('the caption pill is not inside a container the stylesheet hides', () => {
     'the pill no longer clears the layer box by that box\'s height and the rink padding');
   assert.match(PAGE_CSS, /#rg \.lbox\{[^}]*[;{]height:var\(--lboxh\)/,
     'the layer box no longer takes its height from the property the caption reads');
+});
+
+/* ─────────────────────────── THE ICE IS THE PLAY/PAUSE CONTROL ──────────────
+ * Kevin, reviewing on his phone: *"can we figure out how to make the rink
+ * play/pause enabled by tapping on it? The play/pause control is below the fold
+ * on my phone and being able to tap the rink to play and pause just makes
+ * intuitive sense."*
+ *
+ * The argument is geometry. `#play` is a 44px button under the scrubber; the
+ * rink is the largest object on the page and the only one a reader is already
+ * looking at. On a phone it is the thing on screen and the button is not.
+ *
+ * ⭐ WHAT MAKES THIS TESTABLE AT ALL IS THAT THE HARNESS NOW BUBBLES. The marks
+ * and labels drawn inside the rink call `stopPropagation()` when they open a
+ * door of their own; before 2026-09-11 this fake fired only the pressed
+ * element's handlers, so every assertion below would have been about a mechanism
+ * it does not have. See the note on `click()` in test/helpers/page.js.
+ */
+const playing = a => /Pause/.test(a.$('play').textContent);
+
+test('⭐ a tap on the rink starts the replay, and a second one stops it', () => {
+  const a = boot();
+  assert.equal(playing(a), false, 'the harness booted already playing');
+  a.$('ice').click();
+  assert.equal(playing(a), true, 'a tap on the rink did not start the replay');
+  a.$('ice').click();
+  assert.equal(playing(a), false, 'a second tap did not pause it');
+  // ⛔ AND IT IS THE REAL CONTROL, NOT A LOOKALIKE — the same rule `.pressplay`
+  // is held to. The button's own label is what moved, so the two are one state.
+  assert.match(a.$('play').textContent, /Play|Replay/);
+});
+
+test('⛔ a mark that opens a door does NOT also toggle the replay', () => {
+  const a = boot();
+  const k = frameOf(a);
+  assert.notEqual(k, null,
+    'no goal with a published clip in this fixture — this test has no subject');
+  assert.equal(playing(a), false, 'the scrub left the replay running');
+  const reached = markClick(a, k);
+  assert.ok(a.$('clipbox').open, 'the door never opened, so nothing was consumed');
+  assert.equal(reached.reachedIce, false, 'the press bubbled to the ice anyway');
+  assert.equal(playing(a), false,
+    'pressing a goal opened its highlight AND started the replay behind it');
+});
+
+test('⭐ …and a mark with no door DOES, because a dead zone cannot be explained', () => {
+  /* THE OTHER HALF, AND WITHOUT IT THE RULE IS "marks are inert". Most marks
+     open nothing: no clip, and the why-card only exists while the slot layer is
+     on. If those swallowed the press too, the ice would be a control with holes
+     in it wherever a play happened to be drawn — and a reader cannot see which
+     dots are the dead ones. */
+  const a = boot();
+  const reached = markClick(a, 0);
+  assert.equal(reached.reachedIce, true, 'a mark with nothing to open swallowed the press');
+  assert.equal(playing(a), true, 'a tap on an ordinary mark did nothing at all');
+});
+
+test('⭐ the goal label consumes the press; on any other frame it plays', () => {
+  const a = boot();
+  const k = frameOf(a);
+  a.$('labels').click();
+  assert.ok(a.$('clipbox').open, 'the label did not open the highlight');
+  assert.equal(playing(a), false, 'opening the highlight also started the replay');
+
+  /* ⚠️ THE SAME ELEMENT, A FRAME WITH NO CLIP ON IT. `drawLabel` writes `#labels`
+     on EVERY frame and only nine of 268 carry a highlight, so a handler that
+     stopped the event unconditionally would have made the words on the ice a
+     dead zone for the whole game except the goals. `openClip` answers whether it
+     opened anything and that answer is what decides. */
+  const s = a.$('scrub');
+  s.value = '0'; s.oninput({ target: { value: '0' } });
+  assert.equal(a.$('clipbox').hidden, true, 'frame 0 has a clip — pick another subject');
+  a.$('labels').click();
+  assert.equal(playing(a), true, 'the label is inert on the 259 frames that are not goals');
+});
+
+test('⛔ the work panel is open, so the ice is not a control', () => {
+  /* The panel is `inset:0 0 auto 0`: it covers the rink from the top down to its
+     own height and leaves the bottom exposed whenever it is shorter. A tap there
+     would start the replay running BEHIND it — the counters moving, the caption
+     firing — which is exactly the state 2026-08-31 made impossible: "you cannot
+     watch and read the same rectangle at once." */
+  const a = boot();
+  a.$('work').click();
+  assert.equal(playing(a), false, 'opening the work did not stop the replay');
+  a.$('ice').click();
+  assert.equal(playing(a), false, 'a tap on the exposed ice started the replay behind the panel');
+  a.$('work').click();
+  a.$('ice').click();
+  assert.equal(playing(a), true, 'and closing the panel did not give the ice back');
+});
+
+test('⛔ the preview has no tap-to-pause, because it has no transport', () => {
+  /* The hero autoplays and its chrome is hidden. A tap that paused it would
+     leave a reader with a frozen rink and nothing on the frame to say why. */
+  const p = boot(rich, null, '?game=2023020204&preview=1');
+  assert.equal((p.$('ice')._on.click || []).length, 0,
+    'the preview wired a play/pause listener onto a page with no way to resume');
+  const a = boot();
+  assert.equal((a.$('ice')._on.click || []).length, 1,
+    'the game page did not wire one — the check above passes for the wrong reason');
+});
+
+test('⭐ the ice is a POINTER affordance, not a second tab stop', () => {
+  // `#play` already offers this action with a real label and a keyboard path;
+  // a second tab stop for one command is noise to a screen reader. Same ruling
+  // `.pressplay` carries, which is `tabindex="-1" aria-hidden="true"` for the
+  // same reason — and this one is not even a button.
+  const tag = app.match(/<svg id="ice"[^>]*>/);
+  assert.ok(tag, 'the rink svg is no longer #ice');
+  assert.doesNotMatch(tag[0], /tabindex|role=|aria-/,
+    `the ice was given its own accessibility surface: ${tag[0]}`);
+  assert.match(app, /<button class="play" id="play">/,
+    'the real control is gone, so the tap is now the only way to play');
+
+  /* ⭐ AND THE CURSOR PROMISES EXACTLY WHAT THE LISTENER ACCEPTS. Two files, two
+     authors, one rule: a cursor offering a press that is refused is worse than
+     no cursor. The listener declines in preview and while the work is open; the
+     stylesheet must exclude the same two states. */
+  const rule = /#rg:not\(\.(\w+)\):not\(\.(\w+)\) #ice\{cursor:pointer\}/.exec(PAGE_CSS);
+  assert.ok(rule, 'nothing tells a mouse the ice can be pressed');
+  assert.deepEqual([rule[1], rule[2]].sort(), ['preview', 'working'],
+    `the cursor is suppressed in .${rule[1]}/.${rule[2]}, which is not what the listener refuses`);
+});
+
+/* ─────────────────── DOUBLE TAP: LEFT GOES BACK, RIGHT GOES ON ──────────────
+ * Kevin, same phone review: *"would it be possible to also do something like the
+ * youtube video controls where a user could double-tap on the right hand side to
+ * move to the next event and double-tap on the left hand side to go back an
+ * event?"*
+ *
+ * ⭐ THE GESTURE IS THE PLATFORM'S, NOT A TIMER OF OURS, and that was settled by
+ * measuring rather than reasoning. Probed in chromium on a touchscreen context
+ * and with a mouse, both identical:
+ *
+ *     click detail=1  ->  click detail=2  ->  dblclick detail=2
+ *
+ * So `detail>1` is the second press of a pair and `dblclick` is the gesture. The
+ * alternative every video player uses — a ~250ms window before play/pause acts —
+ * would have taxed the COMMON action to serve the rare one. There is no lag here.
+ * `dblclick()` in the harness replays that exact sequence.
+ */
+const rect = (a, w = 200) => {
+  a.$('ice').getBoundingClientRect = () =>
+    ({ left: 0, right: w, width: w, top: 0, bottom: 100, height: 100 });
+  return { left: w * 0.25, right: w * 0.75 };
+};
+
+test('⭐ a double tap steps — right goes on, left goes back', () => {
+  const a = boot();
+  const at = () => +a.$('scrub').value;
+  const side = rect(a);
+
+  a.$('fwd').click(); a.$('fwd').click();
+  const from = at();
+  assert.ok(from >= 1, 'the fixture never advanced, so there is nowhere to step back to');
+
+  a.$('ice').dblclick(side.right);
+  assert.equal(at(), from + 1, 'a double tap on the right did not go on one play');
+  a.$('ice').dblclick(side.left);
+  assert.equal(at(), from, 'a double tap on the left did not come back one play');
+  // ⭐ AND IT LANDS PAUSED, which is `jump`'s own contract — "stepping takes the
+  // replay off automatic" — not a new rule invented for the gesture.
+  assert.equal(playing(a), false, 'the gesture left the replay running');
+});
+
+test('⛔ the gesture counts from where it STARTED, so the horn does not rewind', () => {
+  /* `play()` restarts from 0 whenever `i` is the last frame or the pre-game one.
+     The first press of a double tap is an ordinary press, so without the
+     snapshot a double tap at the horn would rewind the game and then step from
+     THERE — landing on frame 1 instead of the play before the final one. */
+  const a = boot();
+  const side = rect(a);
+  const last = +a.$('scrub').max;
+  const s = a.$('scrub');
+  s.value = String(last); s.oninput({ target: { value: s.value } });
+  assert.equal(+s.value, last, 'the fixture would not go to its last frame');
+
+  a.$('ice').dblclick(side.left);
+  assert.equal(+a.$('scrub').value, last - 1,
+    'a double tap at the horn rewound the game instead of stepping back one play');
+});
+
+test('⛔ a door still wins a DOUBLE press, as it wins a single one', () => {
+  const a = boot();
+  const k = frameOf(a);
+  assert.notEqual(k, null, 'no goal with a clip in this fixture — no subject');
+  rect(a);
+  const before = +a.$('scrub').value;
+  // The label, which is the thing a reader can actually hit — 106×21px against
+  // a 6px ring, and the half that was dead on the live site once already.
+  a.$('labels').dblclick(150);
+  assert.ok(a.$('clipbox').open, 'the highlight did not open');
+  assert.equal(+a.$('scrub').value, before,
+    'double-tapping a goal opened its highlight AND stepped the replay past it');
+});
+
+test('⛔ and neither gesture reaches the ice while the work panel is open', () => {
+  const a = boot();
+  const side = rect(a);
+  a.$('fwd').click();
+  const from = +a.$('scrub').value;
+  a.$('work').click();
+  a.$('ice').dblclick(side.right);
+  assert.equal(+a.$('scrub').value, from,
+    'a double tap on the exposed ice stepped the replay behind the panel');
+});
+
+test('⛔ the preview wires neither gesture', () => {
+  const p = boot(rich, null, '?game=2023020204&preview=1');
+  assert.equal((p.$('ice')._on.dblclick || []).length, 0,
+    'the hero can be stepped by a gesture it offers no way to undo');
+  const a = boot();
+  assert.equal((a.$('ice')._on.dblclick || []).length, 1,
+    'the game page wired none either — the check above passes for the wrong reason');
+});
+
+test('⭐ the ice does not swallow double-tap zoom or turn the drawing into text', () => {
+  // Both are pointer hygiene the gesture needs: without `touch-action`
+  // a phone may spend the second tap on its own zoom, and without
+  // `user-select` a double press selects whatever SVG text it lands on.
+  assert.match(PAGE_CSS, /#ice\{[^}]*touch-action:manipulation/,
+    'the ice does not opt out of double-tap zoom, which eats the gesture');
+  assert.match(PAGE_CSS, /#ice\{[^}]*user-select:none/,
+    'a double press on the ice selects text instead of stepping');
+});
+
+test('⛔⛔ a gesture that BEGAN on a door does not step, even when the page moved', () => {
+  /* ⭐ THE DEFECT ONLY LOOKING COULD FIND, and it was a phone and not a laptop.
+     Measured on a 390px touchscreen against the built page: a double tap on a
+     goal label left the highlight SHUT and stepped the replay back one play. The
+     same gesture at 1400px was correct, and every unit test was green.
+     THE CAUSE IS NOT THE HANDLER CHAIN. `openClip` scrolls the section to the
+     centre of the screen, so by the second tap the page has MOVED and the finger
+     is over the ice rather than over the label — the `dblclick` that follows has
+     a target the door never sees, and stopping propagation inside the door
+     cannot reach it. So the door raises a flag, and the ice lowers it on every
+     first press that actually reaches the ice. */
+  const a = boot();
+  const k = frameOf(a);
+  assert.notEqual(k, null, 'no goal with a clip in this fixture — no subject');
+  rect(a);
+  const before = +a.$('scrub').value;
+
+  a.$('labels').click(1);                    // tap one: the door opens, and scrolls
+  assert.ok(a.$('clipbox').open, 'the door never opened, so this is not the case');
+  a.$('ice').click(2);                       // tap two: the page moved; this is the ice
+  a.$('ice').dblOnly(20);                    // and the gesture resolves on the ice
+  assert.equal(+a.$('scrub').value, before,
+    'the replay stepped away from the goal whose highlight had just been opened');
+
+  /* ⭐ AND THE FLAG IS NOT STICKY — A LONE PRESS ON A DOOR RAISES IT, and the
+     next gesture that genuinely begins on the ice must still step. Without the
+     ice lowering it on its own first press, opening one highlight would turn the
+     gesture off for the rest of the game.
+     ⛔ THE FIRST VERSION OF THIS ASSERTION PASSED FOR THE WRONG REASON, and a
+     mutation is what showed it: deleting `doorOpened=false` from the ice's click
+     handler left the whole suite green. The early return above CLEARS the flag
+     itself, so anything checked after it is checked against a flag that is down
+     either way. It has to be raised again, by a press that no gesture follows. */
+  a.$('labels').click(1);
+  assert.ok(a.$('clipbox').open, 'the door did not re-open, so the flag is not raised');
+  a.$('ice').dblclick(150);
+  assert.equal(+a.$('scrub').value, before + 1,
+    'the ice stopped stepping once a door had ever been opened');
 });
