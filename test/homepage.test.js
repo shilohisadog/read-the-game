@@ -863,6 +863,74 @@ test('the front door promises as many lessons as the learn page holds', () => {
     `the front door promises ${promised[1]} lessons and the page it opens has ${onLearnPage}`);
 });
 
+/**
+ * ⭐ THE HERO NAMES ITS CLUBS, AND THE BOARD ABOVE IT STILL SHOWS THE CODES.
+ *
+ * "MTL at CAR" asks a newcomer to already know the league. The frame's
+ * scoreboard keeps the three-letter badges — that pairing is the point rather
+ * than a leftover: the code and the name are on screen an inch apart, which is
+ * how someone learns that MTL is Montreal.
+ *
+ * ⚠️ AND THE LINE BELOW IT HAD TO MOVE TOO. `sayHero` read "CAR took more shot
+ * attempts" directly under a headline saying "Carolina Hurricanes" — the same
+ * club, two vocabularies, one inch apart. Only visible by looking at the card.
+ */
+test('the hero names its clubs in full, in the headline and the line under it', () => {
+  const r = run({ docs: ALL });
+  return r.settle().then(() => {
+    // The fixture's newest in-scope game is TOR at BUF.
+    assert.match(r.ids.heroline.textContent, /Toronto Maple Leafs at Buffalo Sabres/,
+      `the hero headline reads ${JSON.stringify(r.ids.heroline.textContent)}`);
+    assert.doesNotMatch(r.ids.heroline.textContent, /\bTOR\b|\bBUF\b/,
+      'the headline still carries a three-letter code');
+    // AND THE DATE IS NOT IN THE HEADLINE. Spelled out, "… — 21 May 2026" ran to
+    // three lines on a 390px phone and broke as "— 21 / May 2026", orphaning the
+    // day from its month in the largest type on the page. It lives on the
+    // provenance line now, which was already there and had room.
+    assert.doesNotMatch(r.ids.heroline.textContent, /\d{4}/,
+      'the date is back in the headline, where it wraps');
+    assert.match(r.ids.herokick.textContent, /\d{1,2} \w+ \d{4}/,
+      'the provenance line lost the date the headline gave up');
+  });
+});
+
+/**
+ * ⛔⛔ THE FOOTER CLAIMED SOMETHING THE SITE HAD ALREADY STOPPED DOING.
+ *
+ * In bold, on every page: "teams are identified by colour and three-letter
+ * abbreviation only." Measured in a real browser on 2026-09-11, before this
+ * changed:
+ *
+ *   a team page    five full club names in VISIBLE TEXT — "Carolina
+ *                  Hurricanes", "Montreal Canadiens" … with that footer beneath
+ *   the front door all thirty-two grid tiles carry `aria-label="Anaheim Ducks"`
+ *                  and so on, so a screen-reader user was handed precisely what
+ *                  the footer said they were not given
+ *
+ * The legally meaningful half — no logos, wordmarks or crests — was and is true.
+ * The half that narrowed it to abbreviations was false on the pages making it.
+ *
+ * ⚠️ THIS IS A CLAIM-LEVEL GUARD, NOT A RENDERING ONE, and says so rather than
+ * implying more. The front door's names are produced by `nameOf()` at runtime
+ * and the abbreviations come from the catalog, so no static scan can see what a
+ * reader gets; what CAN be checked is that the site never re-makes the promise
+ * it broke. For a project whose pitch is "check our work", a false sentence in
+ * bold on every page is a correctness defect.
+ */
+test('no page promises that clubs are identified by abbreviation ALONE', () => {
+  let checked = 0;
+  for (const [f, src] of PAGE_SRC) {
+    const foot = /<footer[\s\S]*?<\/footer>/.exec(src);
+    if (!foot) continue;
+    checked++;
+    assert.doesNotMatch(foot[0], /abbreviation only/i,
+      `${f}: the footer says clubs are identified by abbreviation ONLY, and the `
+      + 'team pages spell them out in visible text');
+  }
+  assert.ok(checked >= 5,
+    `only ${checked} pages carried a footer — this check has lost its subject`);
+});
+
 test('the front door leads with the most recent game, and it PLAYS', () => {
   const r = run({ docs: ALL });
   return r.settle().then(() => {
@@ -874,9 +942,22 @@ test('the front door leads with the most recent game, and it PLAYS', () => {
     // final score: the loop builds to a goal and the line under it used to
     // answer the question that loop is asking. Both clubs and the date still
     // come from the catalog, which is what this assertion was ever about.
-    assert.match(r.ids.heroline.textContent, /^TOR at BUF — 9 February 2024$/);
-    assert.doesNotMatch(r.ids.heroline.textContent, /\d\D+\d.*—/,
+    // ⭐ SPELLED OUT SINCE 2026-09-11, and the date went with the change. "TOR at
+    // BUF" asks a newcomer to already know the league; the frame's scoreboard
+    // keeps the three-letter badges, so the code and the name are on screen an
+    // inch apart. The date left the headline because "… — 9 February 2024" ran
+    // to three lines on a 390px phone and broke as "— 21 / May 2026" on the live
+    // hero, orphaning the day from its month in the largest type on the page.
+    assert.match(r.ids.heroline.textContent,
+      /^Toronto Maple Leafs at Buffalo Sabres$/);
+    // AND IT STILL DOES NOT STATE A SCORE, which is what this guard was for --
+    // the line printed the final score until 2026-08-25, answering the question
+    // the button below it asks. With the date gone there is no legitimate digit
+    // left in it at all, so the check is simply that there are none.
+    assert.doesNotMatch(r.ids.heroline.textContent, /\d/,
       'the hero line is stating a score again');
+    assert.match(r.ids.herokick.textContent, /9 February 2024/,
+      'the provenance line lost the date the headline gave up');
     assert.equal(r.ids.herogo.href, 'game.html?game=2023020200');
 
     // THE FRAME IS THE REAL RENDERER, not a recording — and it is built in
@@ -886,7 +967,8 @@ test('the front door leads with the most recent game, and it PLAYS', () => {
     assert.ok(frame, 'the hero has no moving picture at all');
     assert.equal(frame.src, 'game.html?game=2023020200&preview=1');
     assert.equal(frame.attrs.loading, 'lazy', 'the frame loads eagerly on every visit');
-    assert.ok(frame.attrs.title && /TOR/.test(frame.attrs.title), 'the frame is unnamed to a screen reader');
+    assert.ok(frame.attrs.title && /Toronto Maple Leafs/.test(frame.attrs.title),
+      'the frame is unnamed to a screen reader');
   });
 });
 
@@ -908,7 +990,11 @@ test('the shot line reads the LEADER, home or away, and says it both ways round'
       'the sentence rendered before any measure existed');
     home.post({ rtg: 'attempts', game: NEWEST_ID, a: 22, h: 33 });
     // WAS `..., 33 to 22, and won.` — the outcome came off on 2026-08-25.
-    assert.match(home.ids.herosub.textContent, /^BUF took more shot attempts, 33 to 22\.$/);
+    // NAMED, NOT ABBREVIATED, since 2026-09-11: this sat directly under a
+    // headline reading "Buffalo Sabres" and said "BUF" — the same club, two
+    // vocabularies, an inch apart, seen only by looking at the rendered card.
+    assert.match(home.ids.herosub.textContent,
+      /^Buffalo Sabres took more shot attempts, 33 to 22\.$/);
   });
 
   // BUF away, 30 attempts to 20, and lost 2-5.
@@ -926,7 +1012,8 @@ test('the shot line reads the LEADER, home or away, and says it both ways round'
   const away = run({ docs: { ...ALL, 'catalog.json': AWAY } });
   const p2 = away.settle().then(() => {
     away.post({ rtg: 'attempts', game: AWAY.games[0].id, a: 30, h: 20 });
-    assert.match(away.ids.herosub.textContent, /^BUF took more shot attempts, 30 to 20\.$/);
+    assert.match(away.ids.herosub.textContent,
+      /^Buffalo Sabres took more shot attempts, 30 to 20\.$/);
     assert.doesNotMatch(away.ids.herosub.textContent, /\b(won|lost)\b/,
       'the away-leader arm still states the result');
   });

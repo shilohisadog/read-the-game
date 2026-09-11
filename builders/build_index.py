@@ -995,7 +995,14 @@ __HELPERS__
   function sayHero(g, measures, att) {
     var a = att.a, h = att.h;
     if (!a && !h) return;                 /* nothing counted: say nothing */
-    var lead = a === h ? null : (a > h ? g.a : g.h);
+    /* ⚠️ NAMED, NOT ABBREVIATED, BECAUSE THE LINE ABOVE IT IS. The headline reads
+       "Carolina Hurricanes" and this read "CAR took more shot attempts" directly
+       under it -- the same club, two vocabularies, one inch apart. Seen only by
+       looking at the rendered card. The SCOREBOARD inside the frame still shows
+       the three-letter badge, and that is the point rather than a leftover: the
+       code and the name are on screen together, which is how a newcomer learns
+       that MTL is Montreal. */
+    var lead = a === h ? null : nameOf(a > h ? g.a : g.h);
     /* ⭐ AND IT NO LONGER SAYS WHO WON.
        Kevin, reading the front door after the score came off the line above:
        "VGK took more shot attempts, 50 to 44, and lost ... i.e. we still give
@@ -1110,9 +1117,18 @@ __HELPERS__
     /* WHAT THE VISITOR IS ABOUT TO WATCH, in the words the branch earns. The
        goal branch is the common one and says what the loop actually does; the
        fallback says the older, weaker thing, which is still true of it. */
-    $('herokick').textContent = pick.toGoal
-      ? 'A recent game, up to its first goal'
-      : 'The most recent game in the archive';
+    /* ⭐ THE DATE MOVED UP HERE, AND THE REASON IS TYPOGRAPHY THAT ONLY LOOKING
+       SHOWS. With the clubs spelled out, "Montreal Canadiens at Carolina
+       Hurricanes — 21 May 2026" ran to THREE lines on a 390px phone and broke as
+       "... — 21 / May 2026", orphaning the day from its month in the largest type
+       on the page. This line was already the provenance line; the date is
+       provenance, and it costs no height here because the kicker was one line
+       with room to spare. The headline is now the two clubs and nothing else.
+       BOTH BRANCHES KEEP THEIR OWN WORDS -- the kicker says which selection rule
+       ran, and that is the thing a fixed string got wrong once already. */
+    $('herokick').textContent = when(g.d) + ' \u00b7 ' + (pick.toGoal
+      ? 'up to its first goal'
+      : 'the most recent game in the archive');
 
     /* THE FIVE-SECOND TASTE, and it is this site's own renderer in a frame.
        Created here rather than in the markup so it cannot load for a visitor who
@@ -1120,7 +1136,7 @@ __HELPERS__
        typed. */
     var f = document.createElement('iframe');
     f.src = 'game.html?game=' + g.id + '&preview=1';
-    f.setAttribute('title', 'A few seconds of ' + g.a + ' at ' + g.h + ', playing');
+    f.setAttribute('title', 'A few seconds of ' + nameOf(g.a) + ' at ' + nameOf(g.h) + ', playing');
     f.setAttribute('loading', 'lazy');
     f.setAttribute('scrolling', 'no');
     f.setAttribute('tabindex', '-1');
@@ -1159,7 +1175,7 @@ __HELPERS__
        argument and removing it would gut the pitch. So this is the margin
        withheld, not the outcome -- stated here rather than left to be
        discovered, because the two lines are eight pixels apart. */
-    $('heroline').textContent = g.a + ' at ' + g.h + ' — ' + when(g.d);
+    $('heroline').textContent = nameOf(g.a) + ' at ' + nameOf(g.h);
 
     $('herogo').href = 'game.html?game=' + g.id;
 

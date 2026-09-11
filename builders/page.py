@@ -362,8 +362,9 @@ def _footer(tip=True):
 # one. Three refusals and two subjects, because a club is not the league.
         "stored. Not affiliated with, endorsed by, or a product of the National "
         "Hockey League or any club. <strong>No NHL or club "
-        "logos, wordmarks or crests appear anywhere on this site</strong> — teams are "
-        "identified by colour and three-letter abbreviation only.</p>"
+        "logos, wordmarks or crests appear anywhere on this site</strong> — clubs "
+        "are named in plain text, and identified by colour and three-letter "
+        "abbreviation.</p>"
         '<p><a href="https://github.com/shilohisadog/read-the-game">Source on GitHub</a>'
         " — every number here is a function of stored events, and you can read the "
         "function. Found one that looks wrong? "

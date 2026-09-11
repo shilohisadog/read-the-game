@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-+eB5rlsJBZdOtX+UXPMLmAQ0yKhXwDl5E03Wqpwzsbc=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-Y8GP+eH3PCmjLBQo48A5PxtvEI11zQwWhcktuSi7GzI='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-/5myHOZ12UwCRy8jVimw+PmDzMiybXZfb9zw7RG3N38=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-Y8GP+eH3PCmjLBQo48A5PxtvEI11zQwWhcktuSi7GzI='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -2288,7 +2288,14 @@ function disputedNote(n) {
   function sayHero(g, measures, att) {
     var a = att.a, h = att.h;
     if (!a && !h) return;                 /* nothing counted: say nothing */
-    var lead = a === h ? null : (a > h ? g.a : g.h);
+    /* ⚠️ NAMED, NOT ABBREVIATED, BECAUSE THE LINE ABOVE IT IS. The headline reads
+       "Carolina Hurricanes" and this read "CAR took more shot attempts" directly
+       under it -- the same club, two vocabularies, one inch apart. Seen only by
+       looking at the rendered card. The SCOREBOARD inside the frame still shows
+       the three-letter badge, and that is the point rather than a leftover: the
+       code and the name are on screen together, which is how a newcomer learns
+       that MTL is Montreal. */
+    var lead = a === h ? null : nameOf(a > h ? g.a : g.h);
     /* ⭐ AND IT NO LONGER SAYS WHO WON.
        Kevin, reading the front door after the score came off the line above:
        "VGK took more shot attempts, 50 to 44, and lost ... i.e. we still give
@@ -2403,9 +2410,18 @@ function disputedNote(n) {
     /* WHAT THE VISITOR IS ABOUT TO WATCH, in the words the branch earns. The
        goal branch is the common one and says what the loop actually does; the
        fallback says the older, weaker thing, which is still true of it. */
-    $('herokick').textContent = pick.toGoal
-      ? 'A recent game, up to its first goal'
-      : 'The most recent game in the archive';
+    /* ⭐ THE DATE MOVED UP HERE, AND THE REASON IS TYPOGRAPHY THAT ONLY LOOKING
+       SHOWS. With the clubs spelled out, "Montreal Canadiens at Carolina
+       Hurricanes — 21 May 2026" ran to THREE lines on a 390px phone and broke as
+       "... — 21 / May 2026", orphaning the day from its month in the largest type
+       on the page. This line was already the provenance line; the date is
+       provenance, and it costs no height here because the kicker was one line
+       with room to spare. The headline is now the two clubs and nothing else.
+       BOTH BRANCHES KEEP THEIR OWN WORDS -- the kicker says which selection rule
+       ran, and that is the thing a fixed string got wrong once already. */
+    $('herokick').textContent = when(g.d) + ' \u00b7 ' + (pick.toGoal
+      ? 'up to its first goal'
+      : 'the most recent game in the archive');
 
     /* THE FIVE-SECOND TASTE, and it is this site's own renderer in a frame.
        Created here rather than in the markup so it cannot load for a visitor who
@@ -2413,7 +2429,7 @@ function disputedNote(n) {
        typed. */
     var f = document.createElement('iframe');
     f.src = 'game.html?game=' + g.id + '&preview=1';
-    f.setAttribute('title', 'A few seconds of ' + g.a + ' at ' + g.h + ', playing');
+    f.setAttribute('title', 'A few seconds of ' + nameOf(g.a) + ' at ' + nameOf(g.h) + ', playing');
     f.setAttribute('loading', 'lazy');
     f.setAttribute('scrolling', 'no');
     f.setAttribute('tabindex', '-1');
@@ -2452,7 +2468,7 @@ function disputedNote(n) {
        argument and removing it would gut the pitch. So this is the margin
        withheld, not the outcome -- stated here rather than left to be
        discovered, because the two lines are eight pixels apart. */
-    $('heroline').textContent = g.a + ' at ' + g.h + ' — ' + when(g.d);
+    $('heroline').textContent = nameOf(g.a) + ' at ' + nameOf(g.h);
 
     $('herogo').href = 'game.html?game=' + g.id;
 
@@ -2581,6 +2597,6 @@ function disputedNote(n) {
     });
 })();
 </script>
-<footer class="sitefoot"><p>Game data from the NHL's public play-by-play feed, fetched once and stored. Not affiliated with, endorsed by, or a product of the National Hockey League or any club. <strong>No NHL or club logos, wordmarks or crests appear anywhere on this site</strong> — teams are identified by colour and three-letter abbreviation only.</p><p><a href="https://github.com/shilohisadog/read-the-game">Source on GitHub</a> — every number here is a function of stored events, and you can read the function. Found one that looks wrong? <!--email_off--><a href="mailto:ReadTheGameOfHockey@gmail.com">ReadTheGameOfHockey@gmail.com</a><!--/email_off--></p><p>Nothing here is paywalled. If it helped you read a game, you can <a href="https://buymeacoffee.com/readthegameofhockey">buy me a coffee</a>.</p></footer>
+<footer class="sitefoot"><p>Game data from the NHL's public play-by-play feed, fetched once and stored. Not affiliated with, endorsed by, or a product of the National Hockey League or any club. <strong>No NHL or club logos, wordmarks or crests appear anywhere on this site</strong> — clubs are named in plain text, and identified by colour and three-letter abbreviation.</p><p><a href="https://github.com/shilohisadog/read-the-game">Source on GitHub</a> — every number here is a function of stored events, and you can read the function. Found one that looks wrong? <!--email_off--><a href="mailto:ReadTheGameOfHockey@gmail.com">ReadTheGameOfHockey@gmail.com</a><!--/email_off--></p><p>Nothing here is paywalled. If it helped you read a game, you can <a href="https://buymeacoffee.com/readthegameofhockey">buy me a coffee</a>.</p></footer>
 </body>
 </html>
