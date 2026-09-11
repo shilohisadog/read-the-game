@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-GEVLtto1hHoOyhCWz8W74LOPY3GUgZS+AXMqJDeBSvo='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-AO7mloA+YC/aQSkJshXEFsm1e0cu5/rwYRdHJ633Qj8='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -65,6 +65,12 @@ h1{font-size:clamp(1.8rem,4vw,2.5rem);letter-spacing:-.025em;font-weight:800;mar
 h1.says{font-weight:400;letter-spacing:normal}
 .says{font-size:1.06rem;line-height:1.5;color:var(--ink);margin:0 0 22px;max-width:56ch}
 .says b{font-weight:700}
+/* THE PERSONAL LINE, INSIDE the heading rather than beside it. It is the second
+   half of what this page says it is, so semantically it belongs to the same
+   sentence pair; typographically it is quieter, because "what this is" should
+   land before "who we made it for". `display:block` gives it its own line
+   without a second paragraph's margin. */
+.says .by{display:block;margin-top:5px;font-size:.95rem;color:var(--muted)}
 .conc{margin:0 0 26px}
 .conc .ck{margin:0 0 7px;font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;
  color:var(--muted);font-weight:700}

@@ -1182,7 +1182,32 @@ test('the page states what it is, above everything else', () => {
   // the same move as the attribution guard when the ice sublines were retired.
   const h1 = html.match(/<h1 class="says">([\s\S]*?)<\/h1>/);
   assert.ok(h1, 'the one sentence is no longer the page\'s heading');
-  assert.ok(h1[1].length > 60, `"${h1[1]}" is not a sentence`);
+  /* ⚠️ THE TRIPWIRE IS THE PROPERTY NOW, NOT A CHARACTER COUNT. This asserted
+     `length > 60` on the raw INNER HTML — so on 2026-09-11, when the lede gained
+     a `<span class="by">` for its second sentence, it passed on 148 characters
+     of which 29 were a tag. A length check that markup can satisfy is not a
+     check about prose, and lowering or raising the number to suit is the shape
+     the nav-parity floor already had to have beaten out of it. What the 60 stood
+     in for is "this is a sentence, not a label", so that is what is asked. */
+  const text = h1[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  assert.match(text, /\.$/, `"${text}" does not end as a sentence does`);
+  assert.ok(text.split(/\s+/).length >= 8, `"${text}" is a label, not a sentence`);
+  // ⭐ AND IT SAYS WHO IT IS FOR, not only what it is. `build_index.py` records
+  // the design: "A stranger's questions are, in order: what is this, why should
+  // I care, what do I do." One sentence answered the first; the second answers
+  // for whom, in the site's own first person — the voice `We say what we could
+  // not read` has used in the limits block all along.
+  assert.ok(text.split('. ').length >= 2,
+    `the lede is one sentence again: "${text}"`);
+  /* ⚠️ AND IT STILL STATES THE ARCHIVE'S SCOPE, which is a PROPERTY rather than
+     the words. A mutation cutting the first sentence to "Hockey, replayed." left
+     every assertion above green — it is a sentence, there are two of them, it
+     says who it is for — while the page had stopped saying how much hockey is
+     here. That also silently kills the carve-out below: "since 2023" is the one
+     number allowed in this copy, and with no year left the exception guards
+     nothing. A YEAR, not a year, so the scope can move without touching this. */
+  assert.match(text, /\b(19|20)\d{2}\b/,
+    `the lede no longer says how far back the archive goes: "${text}"`);
   // AND IT IS FIRST. Anything above it is chrome, not content.
   // ⚠️ THE ANCHOR IS A PATTERN, NOT A LITERAL. This read `'<div class="wrap">'`
   // and went red on 2026-09-09 when the home page's wrap gained a second class

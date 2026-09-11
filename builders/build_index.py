@@ -142,6 +142,12 @@ h1{font-size:clamp(1.8rem,4vw,2.5rem);letter-spacing:-.025em;font-weight:800;mar
 h1.says{font-weight:400;letter-spacing:normal}
 .says{font-size:1.06rem;line-height:1.5;color:var(--ink);margin:0 0 22px;max-width:56ch}
 .says b{font-weight:700}
+/* THE PERSONAL LINE, INSIDE the heading rather than beside it. It is the second
+   half of what this page says it is, so semantically it belongs to the same
+   sentence pair; typographically it is quieter, because "what this is" should
+   land before "who we made it for". `display:block` gives it its own line
+   without a second paragraph's margin. */
+.says .by{display:block;margin-top:5px;font-size:.95rem;color:var(--muted)}
 .conc{margin:0 0 26px}
 .conc .ck{margin:0 0 7px;font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;
  color:var(--muted);font-weight:700}
@@ -1407,8 +1413,50 @@ __HELPERS__
 # count would be a claim that goes stale between deploys. "Every NHL game since
 # 2023" is a claim about SCOPE, which the limits block below states exactly and
 # which does not move.
-SAYS = ("Every NHL game since 2023, replayed event by event &mdash; with the counts "
-        "built in front of you, so you can see <b>where a number comes from</b>.")
+# THE FIRST THING A STRANGER READS. Two short sentences: what this is, and who
+# it is for.
+#
+# ⛔ IT WAS ONE SENTENCE DOING FOUR JOBS -- scope, mechanism, promise and
+# justification, stacked behind an em dash: "... replayed event by event — with
+# the counts built in front of you, so you can see where a number comes from."
+# Kevin: that is the very first thing a new visitor reads and it does not capture
+# what we want to capture.
+#
+# ⛔⛔ AND THE SECOND HALF REFERRED TO THINGS THE READER HAD NOT MET. "THE counts"
+# and "A number" are definite references arriving before anything has been
+# counted or numbered -- at that point the page has said a masthead, a nav, and
+# "Hockey, made legible". The em dash hid it by making the clause an apposition;
+# splitting the sentence, which was the plan, stands the dangling reference up.
+# (Kevin again, and he is right: "we don't preface that context".)
+#
+# ⭐ SO THE PROVENANCE BEAT HANDS OFF RATHER THAN BEING REWORDED, AND IT CAN NOW,
+# WHICH IT COULD NOT WHEN IT WAS WRITTEN. That clause was once the ONLY place the
+# site made this claim. As of today the page carries `What we counted` -- "Our
+# own measurements rather than the league's, over 4,192 games. Each one opens the
+# page that shows its working" -- which is the same promise made concretely, with
+# four doors proving it, plus the hero card's paired rate above the fold. The
+# heading no longer has to carry the argument alone, so it can stop using words
+# the reader has not earned yet.
+#
+# ⚠️ AND IT IS SHORTER THAN WHAT IT REPLACES, WHICH IS THE POINT. Measured on a
+# 390px phone, the first screen already carried 669px of reading before the first
+# button. Naming the metric instead ("every shot attempt counted in front of
+# you") was the other candidate and would have made the top TALLER at exactly the
+# place that is already too tall.
+#
+# THE COST, STATED: a visitor who never scrolls does not meet the differentiator
+# IN WORDS. They meet it as a moving rink and as the paired rate in the card,
+# which is that argument in its strongest form anyway.
+#
+# ⚠️ THE EM DASH IS NOT THE REASON, though it is the reason Kevin raised it
+# ("it screams AI built this"). Counted before agreeing: 121 em dashes in the
+# site's visible text, nine of them on this page and twenty-one on the learn
+# page. It is the house punctuation, so removing one changes nothing a reader
+# concludes. What actually read as machine-written was one sentence doing four
+# jobs; the dash left with the structure rather than for its own sake.
+SAYS = ("Every NHL game since 2023, replayed event by event. "
+        "<span class=\"by\">We made it for people who like hockey and were "
+        "never shown how to read it.</span>")
 
 
 def _lib(*names):
