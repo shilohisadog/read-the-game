@@ -862,7 +862,22 @@ def _csp(html):
     return P.csp(html, connect=DATA_ORIGIN)
 
 
-TITLE = "Read the Game — watch a hockey game and see what the numbers are made of"
+# ⛔ "WATCH" IS GONE FROM HERE, AND THIS WAS THE WORST PLACE IT APPEARED.
+# Kevin: the word implies a streaming capability this site does not have. The
+# rule that came out of separating the eleven uses is that it misleads only
+# where NOTHING BESIDE IT CORRECTS IT — the hero's button sits under a moving
+# rink that is plainly not video, and is safe; this is a <title>, which is the
+# browser tab AND the Google result, seen BEFORE THE PAGE EXISTS and therefore
+# with no demonstration anywhere near it. It is also on the page a stranger is
+# most likely to land on cold from a shared link.
+# AND IT WAS OUT OF STEP WITH ITS OWN DESCRIPTION, which has said "replayed"
+# all along — one <head>, two accounts of what this is.
+# THE SUBJECT LEADS, like every other page here ("Icing — Read the Game"). This
+# one wore the HOME page's shape, brand first, on a sub-page.
+# ⚠️ STATIC, AND IT HAS TO BE: one built page serves every game in the archive,
+# so the title cannot name the clubs. "An NHL game" is what is true of all of
+# them.
+TITLE = "An NHL game, replayed event by event — Read the Game"
 DESC = ("An NHL game replayed so a new fan can see what the numbers are made of. "
         "Nothing modelled, nothing invented.")
 

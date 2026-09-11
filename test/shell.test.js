@@ -808,3 +808,114 @@ test('the chrome never offers one destination twice', () => {
   assert.ok(checked >= 5, `only ${checked} pages carried a chrome header — this `
     + 'check has lost its subject');
 });
+
+/**
+ * ⛔ "WATCH" MUST NOT APPEAR IN TEXT A READER MEETS BEFORE THE PAGE RENDERS.
+ *
+ * Kevin, 2026-09-11: the word implies a streaming capability this site does not
+ * have. It is a REPLAY, which is settled positioning rather than a nuance.
+ *
+ * ⭐ BUT NOT A BAN, AND THE BOUNDARY IS THE WHOLE POINT. Of the eleven visible
+ * uses on the site, five are teaching instructions and are among its best
+ * sentences — "Watch where the faceoff goes, that dot is the whole punishment",
+ * "in a real game, watch the line rather than the play". Those do not mean
+ * *stream*; they mean direct your eyes here, and deleting them would cost the
+ * pedagogy to fix a misreading they cannot cause.
+ *
+ * THE RULE THAT SEPARATES THEM: the word misleads only where NOTHING BESIDE IT
+ * CORRECTS IT. The hero's `Watch the whole game` sits directly under a moving
+ * rink that is 26.9% of a laptop screen and plainly not video — the demo
+ * outranks the label, and that button is deliberately left alone (open question,
+ * for the novice tester). A `<title>`, a description and an og: card are the
+ * opposite case BY DEFINITION: they are what a tab, a search result and a shared
+ * link show BEFORE the page exists, so nothing can be beside them.
+ *
+ * This is where it was worst and where nobody had looked: `game.html` — the page
+ * a stranger is most likely to land on cold from a shared link — was titled
+ * "Read the Game — watch a hockey game …" while its own description on the same
+ * <head> said "replayed". One head, two accounts of what the site is.
+ */
+test('no pre-render metadata offers to WATCH the content', () => {
+  const FIELDS = [
+    [/<title>([\s\S]*?)<\/title>/, 'title'],
+    [/<meta name="description" content="([^"]*)"/, 'description'],
+    [/<meta property="og:title" content="([^"]*)"/, 'og:title'],
+    [/<meta property="og:description" content="([^"]*)"/, 'og:description'],
+    [/<meta name="twitter:title" content="([^"]*)"/, 'twitter:title'],
+    [/<meta name="twitter:description" content="([^"]*)"/, 'twitter:description'],
+  ];
+  let checked = 0;
+  for (const f of readdirSync(SRC).filter(n => n.endsWith('.html'))) {
+    const src = readFileSync(new URL(f, SRC), 'utf8');
+    // ⚠️ THE HEAD ONLY. `game.html` carries SEVEN <title> elements — six are SVG
+    // marks inside the inlined renderer, which are accessible names for dots on
+    // the ice and have nothing to do with what a search result shows. A scan of
+    // the whole file would be reading the rink.
+    const head = src.slice(0, src.indexOf('</head>'));
+    assert.ok(head.length > 200, `${f}: no <head> found — this check lost its subject`);
+    for (const [re, name] of FIELDS) {
+      const m = re.exec(head);
+      if (!m) continue;
+      checked++;
+      /* ⚠️ THE OBJECT, NOT THE VERB — AND THE FIRST DRAFT OF THIS CHECK WAS
+         TOO BROAD, WHICH RUNNING IT IS WHAT SHOWED. It forbade the word outright
+         in every pre-render field and went red on `icing.html`, whose meta
+         description IS that rule's teaching sentence: "Watch where the faceoff
+         goes — that dot is the whole punishment." A search result carrying that
+         promises nobody a stream; the object of the verb is a PLACE ON THE ICE,
+         and the sentence corrects itself.
+         WHAT MISLEADS IS OFFERING TO WATCH THE CONTENT — a game, a team, hockey
+         — because that is the phrase a reader maps onto video. So the pattern
+         asks what the verb is pointed at. `offside.html`'s "in a real game,
+         watch the line rather than the play" passes for the right reason: the
+         object is the line.
+         THE NARROWING IS DELIBERATE AND SAID OUT LOUD rather than quietly
+         tuned — a check that tests less than its name is this project's most
+         repeated defect, so the name changed with the pattern. */
+      assert.doesNotMatch(m[1], /\bwatch(?:ing|es)?\b[^.]{0,24}?\b(?:game|team|hockey|match)\b/i,
+        `${f}'s ${name} offers to watch the content, and it is read before the `
+        + `page exists — nothing beside it can say this is a replay: `
+        + JSON.stringify(m[1]));
+    }
+  }
+  assert.ok(checked >= 20,
+    `only ${checked} metadata fields scanned — this check has lost its subject`);
+});
+
+/**
+ * ⛔ AND THE SAME RULE ON THE SURFACE THE METADATA RULE CANNOT SEE: a HEADING.
+ *
+ * "Watch your team" stood over a grid of thirty-two three-letter club codes with
+ * nothing beside it to say this is a replay rather than a stream — the same
+ * exposure a `<title>` has, on the page itself. It is "Pick your team" now,
+ * which is also what the section is: the line under the grid already reads "Or
+ * browse by date", so the two ways into the archive finally tell a reader what
+ * to DO in the same voice. `_NAV`'s own comment has called them "the same kind
+ * of thing" since C1.
+ *
+ * ⭐ AND THE HERO'S BUTTON IS OUT OF SCOPE BY THE RULE'S OWN LOGIC, not by an
+ * exemption bolted on to make this pass. `Watch the whole game` sits directly
+ * beneath a moving rink that is 26.9% of a laptop screen and plainly not video;
+ * the demonstration outranks the label, which is exactly the thing a heading
+ * over a grid of codes does not have. Kevin is holding that one open for the
+ * novice tester, who can answer "did you expect video?" in one sentence — and
+ * that is the right instrument for it, not an argument between us.
+ *
+ * A RULE, NOT A SNAPSHOT: asserting the heading reads "Pick your team" pins
+ * today's copy and forbids tomorrow's. What is forbidden is the SHAPE.
+ */
+test('no heading offers to watch the content either', () => {
+  const OFFER = /\bwatch(?:ing|es)?\b[^.]{0,24}?\b(?:game|team|hockey|match)\b/i;
+  let checked = 0;
+  for (const f of readdirSync(SRC).filter(n => n.endsWith('.html'))) {
+    const src = readFileSync(new URL(f, SRC), 'utf8').replace(/<!--[\s\S]*?-->/g, '');
+    for (const m of src.matchAll(/<h[12][^>]*>([^<]{1,80})<\/h[12]>/g)) {
+      checked++;
+      assert.doesNotMatch(m[1], OFFER,
+        `${f}: the heading ${JSON.stringify(m[1])} offers to watch the content, `
+        + 'with nothing beside it to show this is a replay');
+    }
+  }
+  assert.ok(checked >= 4,
+    `only ${checked} headings scanned — this check has lost its subject`);
+});
