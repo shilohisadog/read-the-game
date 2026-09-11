@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-/5myHOZ12UwCRy8jVimw+PmDzMiybXZfb9zw7RG3N38=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-Y8GP+eH3PCmjLBQo48A5PxtvEI11zQwWhcktuSi7GzI='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-/5myHOZ12UwCRy8jVimw+PmDzMiybXZfb9zw7RG3N38=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-1dvJQX3BQaBWMA3E+2adwYpqkvAIR391Ea5vICigKSU='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -233,6 +233,22 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .lcard:hover,.lcard:focus-visible{border-color:var(--blue)}
 .lcard .lt{font-weight:650}
 .lcard .ld{font-size:.85rem;color:var(--muted);line-height:1.45}
+/* THE MEASUREMENT STRIP. Same rectangle-as-door as `.lcard`, plus the blue left
+   edge `.grid.learn.ours` and `.limits` both already use for "this is our claim
+   and not the league's". A reader has met the distinction before arriving here.
+   TWO COLUMNS, NOT THREE: these sentences carry figures and denominators, so
+   they are twice the length of a rule's hook and a third of the width would set
+   them four words to a line. */
+.countsin{margin:26px 0 0}
+.cgrid{display:grid;gap:8px;margin:11px 0 0}
+@media (min-width:760px){.cgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.ccard{display:flex;flex-direction:column;gap:4px;text-decoration:none;color:inherit;
+ background:#fff;border:1px solid var(--edge);border-left:3px solid var(--blue);
+ border-radius:8px;padding:11px 13px}
+.ccard:hover,.ccard:focus-visible{border-color:var(--blue)}
+.ccard .lt{font-weight:650}
+.ccard .ld{font-size:.85rem;color:var(--muted);line-height:1.45;
+ font-variant-numeric:tabular-nums}
 .lmore{margin:9px 0 0;font-size:.87rem}
 .lmore a{color:var(--blue);text-decoration:none}
 .lmore a:hover,.lmore a:focus-visible{text-decoration:underline}
@@ -586,6 +602,31 @@ watching. Each of these is drawn first, then shown in a real game.</p>
 <a class="lcard" href="/penalties.html"><span class="lt">Penalties</span><span class="ld">Break a rule and your team plays a skater short.</span></a>
 </div>
 <p class="lmore"><a href="/what-you-can-see.html">All 14 lessons, including what we count &amp; how &rarr;</a></p>
+</section>
+<!-- ⭐ THE OTHER HALF OF THE WALL, AND IT IS MARKED AS SUCH.
+     The strip above is the league's rules; this is what WE chose to count, and
+     `LEARN_GROUPS` keeps exactly this distinction on the learn page with exactly
+     this treatment — the blue left edge that already means "our claim" on
+     `.limits`. Two headings, two tints, no sentence spanning both.
+     ⛔ EVERY FIGURE IS SUBSTITUTED FROM THE PUBLISHED MEASUREMENTS, never typed.
+     `_front_counts()` refuses a sentence carrying no figure marker at all, and
+     refuses one stating a figure its own learn card does not — so these cannot
+     become a second, drifting account of the same finding. (This paragraph says
+     "figure marker" rather than writing one out: the placeholder gate scans the
+     BUILT page and cannot tell prose about a marker from a marker.)
+     WHY THESE THREE: a place (the slot), a duration (the shift) and the reason
+     the paradox in the card above is a paradox (score effects). Each is a fact
+     about hockey that a newcomer cannot get by watching, which is the only kind
+     worth spending the front door on. -->
+<section class="countsin">
+<h2 id="counts-h">What we counted</h2>
+<p class="note">Our own measurements rather than the league&rsquo;s, over 4,192 games. Each one opens the page that shows its working.</p>
+<div class="cgrid">
+<a class="ccard" href="/slot.html"><span class="lt">Shots from the slot</span><span class="ld">A shot from inside the slot goes in 11.4% of the time &mdash; 19,304 goals from 168,910 attempts. From outside it, 3.3%.</span></a>
+<a class="ccard" href="/game.html?game=2023020204&at=1-09:06&strength=all"><span class="lt">How long a shift is</span><span class="ld">A shift lasts a median of 46 seconds and 76% of them are under a minute, measured over 3,101,105 shifts.</span></a>
+<a class="ccard" href="/game.html?game=2023020204&at=3-15:52&layer=corsi&strength=even"><span class="lt">Score effects</span><span class="ld">Per 60 minutes of even-strength play a club takes 64 shot attempts while trailing, 59 level, 53 while leading.</span></a>
+<a class="ccard" href="/game.html?game=2023020204&at=1-14:56&layer=zonestart&strength=all"><span class="lt">The attacking zone</span><span class="ld">After a face-off in one team&rsquo;s end, the club attacking that end takes 1.42 shot attempts before the next whistle, against 0.77 for the club defending it &mdash; across 165,420 draws.</span></a>
+</div>
 </section>
 <h2 id="teams-h">Watch your team</h2>
 <p class="note">Every game each club played, newest first. Arizona became Utah in

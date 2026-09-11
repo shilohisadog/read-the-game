@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-Y8GP+eH3PCmjLBQo48A5PxtvEI11zQwWhcktuSi7GzI=' 'sha256-O+tFRbevUhlyOt78ng1txnNkMDpdOHwapteYPqeRxx0=' 'sha256-QvEwa5mnRZXr+qnCA2z3ITvUXoZeXm1hVG6swMGeUgk='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-1dvJQX3BQaBWMA3E+2adwYpqkvAIR391Ea5vICigKSU=' 'sha256-O+tFRbevUhlyOt78ng1txnNkMDpdOHwapteYPqeRxx0=' 'sha256-QvEwa5mnRZXr+qnCA2z3ITvUXoZeXm1hVG6swMGeUgk='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -233,6 +233,22 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .lcard:hover,.lcard:focus-visible{border-color:var(--blue)}
 .lcard .lt{font-weight:650}
 .lcard .ld{font-size:.85rem;color:var(--muted);line-height:1.45}
+/* THE MEASUREMENT STRIP. Same rectangle-as-door as `.lcard`, plus the blue left
+   edge `.grid.learn.ours` and `.limits` both already use for "this is our claim
+   and not the league's". A reader has met the distinction before arriving here.
+   TWO COLUMNS, NOT THREE: these sentences carry figures and denominators, so
+   they are twice the length of a rule's hook and a third of the width would set
+   them four words to a line. */
+.countsin{margin:26px 0 0}
+.cgrid{display:grid;gap:8px;margin:11px 0 0}
+@media (min-width:760px){.cgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.ccard{display:flex;flex-direction:column;gap:4px;text-decoration:none;color:inherit;
+ background:#fff;border:1px solid var(--edge);border-left:3px solid var(--blue);
+ border-radius:8px;padding:11px 13px}
+.ccard:hover,.ccard:focus-visible{border-color:var(--blue)}
+.ccard .lt{font-weight:650}
+.ccard .ld{font-size:.85rem;color:var(--muted);line-height:1.45;
+ font-variant-numeric:tabular-nums}
 .lmore{margin:9px 0 0;font-size:.87rem}
 .lmore a{color:var(--blue);text-decoration:none}
 .lmore a:hover,.lmore a:focus-visible{text-decoration:underline}

@@ -310,6 +310,22 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .lcard:hover,.lcard:focus-visible{border-color:var(--blue)}
 .lcard .lt{font-weight:650}
 .lcard .ld{font-size:.85rem;color:var(--muted);line-height:1.45}
+/* THE MEASUREMENT STRIP. Same rectangle-as-door as `.lcard`, plus the blue left
+   edge `.grid.learn.ours` and `.limits` both already use for "this is our claim
+   and not the league's". A reader has met the distinction before arriving here.
+   TWO COLUMNS, NOT THREE: these sentences carry figures and denominators, so
+   they are twice the length of a rule's hook and a third of the width would set
+   them four words to a line. */
+.countsin{margin:26px 0 0}
+.cgrid{display:grid;gap:8px;margin:11px 0 0}
+@media (min-width:760px){.cgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.ccard{display:flex;flex-direction:column;gap:4px;text-decoration:none;color:inherit;
+ background:#fff;border:1px solid var(--edge);border-left:3px solid var(--blue);
+ border-radius:8px;padding:11px 13px}
+.ccard:hover,.ccard:focus-visible{border-color:var(--blue)}
+.ccard .lt{font-weight:650}
+.ccard .ld{font-size:.85rem;color:var(--muted);line-height:1.45;
+ font-variant-numeric:tabular-nums}
 .lmore{margin:9px 0 0;font-size:.87rem}
 .lmore a{color:var(--blue);text-decoration:none}
 .lmore a:hover,.lmore a:focus-visible{text-decoration:underline}
@@ -687,6 +703,25 @@ BODY = r"""<div class="wrap front">
 <p class="note">The rules that stop play are the hardest part to pick up by
 watching. Each of these is drawn first, then shown in a real game.</p>
 __FRONT_RULES__
+</section>
+<!-- ⭐ THE OTHER HALF OF THE WALL, AND IT IS MARKED AS SUCH.
+     The strip above is the league's rules; this is what WE chose to count, and
+     `LEARN_GROUPS` keeps exactly this distinction on the learn page with exactly
+     this treatment — the blue left edge that already means "our claim" on
+     `.limits`. Two headings, two tints, no sentence spanning both.
+     ⛔ EVERY FIGURE IS SUBSTITUTED FROM THE PUBLISHED MEASUREMENTS, never typed.
+     `_front_counts()` refuses a sentence carrying no figure marker at all, and
+     refuses one stating a figure its own learn card does not — so these cannot
+     become a second, drifting account of the same finding. (This paragraph says
+     "figure marker" rather than writing one out: the placeholder gate scans the
+     BUILT page and cannot tell prose about a marker from a marker.)
+     WHY THESE THREE: a place (the slot), a duration (the shift) and the reason
+     the paradox in the card above is a paradox (score effects). Each is a fact
+     about hockey that a newcomer cannot get by watching, which is the only kind
+     worth spending the front door on. -->
+<section class="countsin">
+<h2 id="counts-h">What we counted</h2>
+__FRONT_COUNTS__
 </section>
 <h2 id="teams-h">Watch your team</h2>
 <p class="note">Every game each club played, newest first. Arizona became Utah in
@@ -1715,9 +1750,9 @@ def _learn():
             # footer line says which kind of destination it is, because "Period 1
             # · 04:48 left" on a card that opens a drawing would be a small lie.
             if cid in figures:
-                href, at = f"/{cid}.html", "Diagram &middot; then a real example"
+                href, at = _card_href(cid, doors, figures), "Diagram &middot; then a real example"
             else:
-                href = f'/game.html{door["href"]}'
+                href = _card_href(cid, doors, figures)
                 # THE PAGE'S OWN WORDS FOR THE MOMENT, from `src/lib/period.js`
                 # via the doors artifact -- not a second naming rule here. It
                 # reads "Period 1" in regulation and "Overtime · 3-on-3" in the
@@ -1813,6 +1848,107 @@ FRONT_RULES = [
     ("icing", "Shoot it the length of the ice and the faceoff comes all the way back."),
     ("penalties", "Break a rule and your team plays a skater short."),
 ]
+
+
+def _card_href(cid, doors, figures):
+    """Where a learn card leads. ONE statement of the rule, three readers.
+
+    ⭐ A CARD WITH A DIAGRAM LEADS TO THE DIAGRAM, NOT STRAIGHT TO THE GAME --
+    Kevin's call after seeing the figure inside the card, and the real moment is
+    one step further on. `_learn()` had this inline and the front door needed it
+    too; a second spelling is how `learn-doors.mjs` once drifted far enough to
+    put two cards on one frame.
+    """
+    return f"/{cid}.html" if cid in figures else f'/game.html{doors[cid]["href"]}'
+
+
+# WHAT THE ARCHIVE SAYS, ON THE FRONT DOOR. Three measured sentences, each a door
+# into the card that shows its working.
+#
+# ⛔ EVERY FIGURE IS A TOKEN, NEVER A TYPED NUMBER, and `_front_counts()` refuses
+# a sentence with no token in it. This is the rule the whole site runs on -- the
+# slot card computed its sentence rather than carrying a constant precisely
+# because a typed 79.4% was live and wrong for weeks -- and a front-door strip is
+# the easiest place in the codebase to forget it.
+#
+# ⭐ AND THE MEASURED CLAUSE IS THE CARD'S OWN. Each of these restates the
+# figures its card states and stops there; the card keeps the "so what" sentence
+# that follows ("That gap is what the slot shading is for"), so the click earns
+# something rather than repeating what the reader just read. The builder asserts
+# that every token here also appears in that card's blurb, so the two surfaces
+# cannot come to state different figures for the same finding.
+#
+# ⭐ AND THAT RULE PAYS A SECOND TIME, FOR FREE. `tools/measures_fresh.py` guards
+# a NAMED list of measurement paths — named rather than globbed, because the
+# claim it makes is "what a PAGE has printed" and a glob widens that quietly.
+# Since this strip may only state figures its card already states, every path it
+# depends on is one that list already watches: the front door cannot introduce a
+# page-facing figure with no staleness alarm on it. A strip free to quote any
+# measurement would have needed that list extended, and forgetting is exactly how
+# `census.pace` sat stale across a strength.js fix on 2026-09-10.
+FRONT_COUNTS = [
+    ("slot", "A shot from inside the slot goes in __SLOT_IN_PCT__% of the time "
+             "&mdash; __SLOT_IN_GOALS__ goals from __SLOT_IN_ATT__ attempts. "
+             "From outside it, __SLOT_OUT_PCT__%."),
+    ("shifts", "A shift lasts a median of __SHIFT_MED__ seconds and "
+               "__SHIFT_UNDER__% of them are under a minute, measured over "
+               "__SHIFT_N__ shifts."),
+    ("score", "Per 60 minutes of even-strength play a club takes "
+              "__EVEN_TRAIL_PER60__ shot attempts while trailing, "
+              "__EVEN_TIED_PER60__ level, __EVEN_LEAD_PER60__ while leading."),
+    # ⭐ THE FOURTH IS FOR THE GRID, AND IT IS NOT FILLER. Three cards in a
+    # two-column grid leave the last one alone beside a dead half-row -- seen
+    # only by looking at the rendered page. On a laptop the fourth costs NOTHING
+    # because it occupies space already being spent; on a phone it is one card
+    # taller. And it is the one finding of the four a viewer can act on while
+    # watching: it says what keeping the puck in the attacking zone is worth.
+    ("zones", "After a face-off in one team&rsquo;s end, the club attacking that "
+              "end takes __ZONE_ATK__ shot attempts before the next whistle, "
+              "against __ZONE_DEF__ for the club defending it &mdash; across "
+              "__ZONE_DRAWS__ draws."),
+]
+
+
+def _front_counts():
+    """The measurement strip: three findings, each to the card that proves it."""
+    import re as _re
+    kinds = {c[1]: c[0] for c in LEARN_CARDS}
+    titles = {c[1]: c[2] for c in LEARN_CARDS}
+    blurbs = {c[1]: c[3] for c in LEARN_CARDS}
+    doors = json.loads((ROOT / "data" / "learn-doors.json").read_text())["doors"]
+    figures, arch = _fig_json(), _archive()
+    # THE NOTE IS BUILT HERE, NOT IN THE MARKUP, because it carries a figure
+    # too — the archive's own size — and the body template substitutes only the
+    # three markers it names. A sentence with a number in it belongs wherever the
+    # numbers are resolved.
+    out = [f'<p class="note">Our own measurements rather than the league&rsquo;s, '
+           f'over {arch["__ARCHIVE_GAMES__"]} games. Each one opens the page that '
+           f'shows its working.</p>',
+           '<div class="cgrid">']
+    for cid, line in FRONT_COUNTS:
+        if kinds.get(cid) != "ours":
+            raise SystemExit(
+                f"front door: `{cid}` is not one of our measurements "
+                f"({kinds.get(cid)!r}) — this strip is the OTHER half of the wall")
+        toks = set(_re.findall(r"__[A-Z0-9_]+__", line))
+        if not toks:
+            raise SystemExit(
+                f"front door: `{cid}`'s sentence carries no __TOKEN__ — every "
+                "figure on this site is read from the published measurements, "
+                "never typed")
+        missing = toks - set(_re.findall(r"__[A-Z0-9_]+__", blurbs[cid]))
+        if missing:
+            raise SystemExit(
+                f"front door: `{cid}` states {sorted(missing)} and its learn card "
+                "does not — the two surfaces would be describing one finding with "
+                "different figures")
+        for tok, val in arch.items():
+            line = line.replace(tok, val)
+        out.append(f'<a class="ccard" href="{_card_href(cid, doors, figures)}">'
+                   f'<span class="lt">{titles[cid]}</span>'
+                   f'<span class="ld">{line}</span></a>')
+    out.append("</div>")
+    return "\n".join(out)
 
 
 def _front_rules():
@@ -2852,6 +2988,7 @@ def build():
              .replace("__ORIGIN__", repr(DATA_ORIGIN).replace("'", '"'))
              .replace("__SAYS__", SAYS)
              .replace("__FRONT_RULES__", _front_rules())
+             .replace("__FRONT_COUNTS__", _front_counts())
              .replace("__LIMITS__", _limits()))
     # Stamped last: the hashes must cover the final bytes of the script and
     # style, and the CSP itself sits in <head>, outside both.

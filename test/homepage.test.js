@@ -931,6 +931,82 @@ test('no page promises that clubs are identified by abbreviation ALONE', () => {
     `only ${checked} pages carried a footer — this check has lost its subject`);
 });
 
+/**
+ * ⭐⭐ THE FRONT DOOR AND THE LEARN CARD STATE THE SAME NUMBERS.
+ *
+ * The measurement strip restates the figures its card states and stops before
+ * the card's "so what" sentence, so the click earns something. The risk that
+ * buys is two surfaces drifting into two accounts of one finding — the shape
+ * this project has paid for repeatedly.
+ *
+ * ⚠️ TWO BUILT ARTIFACTS, NOT A SHARED CONSTANT. Both pages substitute from
+ * `_archive()`, so asserting each against that table would let both move
+ * together and prove nothing. Every number printed on the front door is looked
+ * for on the learn page instead — different builders, different templates, one
+ * set of facts.
+ */
+test('every figure the front door prints appears on the card that proves it', () => {
+  const learn = PAGE_SRC.get('what-you-can-see.html');
+  const strip = /<section class="countsin"[^>]*>([\s\S]*?)<\/section>/.exec(html);
+  assert.ok(strip, 'the measurement strip is gone from the front door');
+  const cards = [...strip[1].matchAll(/<a class="ccard" href="([^"]+)"[\s\S]*?<span class="ld">([\s\S]*?)<\/span>/g)];
+  // FOUR, AND THE COUNT IS PINNED BECAUSE THE GRID IS TWO WIDE: an odd number
+  // leaves the last card alone beside a dead half-row, which is what three of
+  // them looked like on the laptop before a fourth joined.
+  assert.equal(cards.length, 4, `the strip holds ${cards.length} findings, not four`);
+  let figures = 0;
+  for (const [, href, line] of cards) {
+    const nums = line.match(/\d[\d,.]*/g) || [];
+    assert.ok(nums.length >= 2,
+      `${href} prints ${nums.length} figure(s) — a finding needs more than one number`);
+    /* ⚠️ AND THE SLOT LINE KEEPS ITS COUNTS, PINNED SEPARATELY AND ON PURPOSE.
+       A mutation deleting "— 19,304 goals from 168,910 attempts" left this test
+       green: the sentence still held two figures (11.4 and 3.3) and both are on
+       the learn page, so every general assertion above passed while the line had
+       become two bare rates. "A share with no base rate loses the argument" is
+       this project's own rule and a count-of-numbers check cannot express it.
+       What CAN be checked is that the one sentence here whose value IS the pair
+       still carries both sides of it. Matched on shape — a figure in the
+       thousands — rather than on the digits, so re-deriving the archive moves
+       the numbers without touching this. */
+    if (/\/slot\.html/.test(href)) {
+      const counts = nums.filter(n => n.includes(','));
+      assert.equal(counts.length, 2,
+        `the slot line prints ${counts.length} count(s) — a rate needs the goals `
+        + 'and the attempts it came from, not just a percentage');
+    }
+    for (const n of nums) {
+      figures++;
+      assert.ok(learn.includes(n),
+        `the front door prints ${n} for ${href} and the learn page never does`);
+    }
+  }
+  assert.ok(figures >= 8,
+    `only ${figures} figures compared — this check has lost its subject`);
+});
+
+/**
+ * ⛔ AND NOTHING IS TYPED. Every figure on this site is read from the published
+ * measurements: the slot card computed its sentence rather than carrying a
+ * constant precisely because a typed 79.4% was live and wrong for weeks. A
+ * front-door strip is the easiest place in the codebase to forget that, so the
+ * builder refuses a sentence with no figure marker in it — and this asserts the
+ * artifact, where a marker that never got substituted would show up as prose.
+ */
+test('the measurement strip resolved every figure it promised', () => {
+  const strip = /<section class="countsin"[^>]*>([\s\S]*?)<\/section>/.exec(html)[1];
+  assert.doesNotMatch(strip, /_{2}[A-Z0-9_]+_{2}/,
+    'the strip shipped an unsubstituted figure marker');
+  // AND IT IS THE OTHER HALF OF THE WALL. The rules strip promotes `rules` cards
+  // and this one promotes `ours`; a card appearing in both would put our
+  // measurement beside the rulebook with nothing saying which is which.
+  const rulesStrip = /<section class="learnin"[^>]*>([\s\S]*?)<\/section>/.exec(html)[1];
+  const hrefs = t => [...t.matchAll(/href="([^"]+)"/g)].map(m => m[1]);
+  const both = hrefs(strip).filter(h => hrefs(rulesStrip).includes(h));
+  assert.deepEqual(both, [],
+    `${JSON.stringify(both)} appears in both strips — the two halves have merged`);
+});
+
 test('the front door leads with the most recent game, and it PLAYS', () => {
   const r = run({ docs: ALL });
   return r.settle().then(() => {
