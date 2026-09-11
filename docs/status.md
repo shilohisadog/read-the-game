@@ -33,7 +33,99 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 This section is the orientation. Everything below §0 is the detail, organised by
 state.
 
-## ⏭ 0.00 PICK UP HERE
+## ⏭ 0.00 PICK UP HERE — 2026-09-11
+
+⏭ **THREE THINGS ARE WAITING ON KEVIN, AND NOTHING IS HALF-BUILT.**
+
+1. ⏸ **PAGE LENGTH — he is judging it.** The front door is **2.59 screens on a
+   1325×959 laptop and 4.57 on a 390×844 phone**, against **2.01 and 3.20** on
+   the morning of 2026-09-11. Everything added is teaching or measurement, and
+   the cost is stated rather than hidden. ⚠️ **It inverts on 19 September**: the
+   daily slate closes the hero card's dead ~116px left column and pushes the club
+   grid further down. Cheapest lever is `SHOWN` in `src/lib/daily.js` (6 → 4 ≈
+   134px).
+2. ⏸ **`Watch the whole game` — HELD for the novice tester.** Of eleven visible
+   uses of the word, five are teaching instructions and stay; the `<title>` and
+   the club-grid heading lost it. ⭐ **The rule is that it misleads only where
+   NOTHING BESIDE IT CORRECTS IT** — that button sits under a moving rink that is
+   26.9% of the screen and plainly not video. *"Did you expect video?"* is one
+   sentence from her and settles it.
+3. ⏸ **THREE POPULATIONS RENDER ON THE FRONT DOOR AND ONLY ONE EXPLAINS ITSELF:**
+   **4,192** games (the `What we counted` strip), **4,100** (games with an
+   attempts leader) and **3,925** (games with a leader in the level-strength
+   count). CHENG raised the 4,100/3,925 gap; adding 4,192 on 2026-09-11 made it
+   sharper, because an archive-sized number now sits above two that look like
+   they should reconcile. **A copy call, not a defect.**
+
+⏭ **AND THE OLDER THREAD IS STILL THE RIGHT ONE AFTER THAT: the situation
+vocabulary across the site** — the front door's paired base rates, the game
+page's newcomer block, the `All situations` card, and the replay's power-play
+pill plus its `MODE()` line. **Two of four surfaces are done; nothing has ever
+audited them as one vocabulary.** The section below is unchanged and still the
+brief.
+
+## ✅ WHAT SHIPPED 2026-09-11 — twelve commits, all live
+
+| | |
+|---|---|
+| **the hero is chosen on `ha`** | `hl` counts PLAYS; the h1 promises the COUNTS. Over all 2,045 candidates walked across 717 dates, `[3,8]` reaches a median of 3 and a **p10 of 2** — the live hero reached **2**. A floor of 3 costs **one day** of p90 staleness. |
+| **teaching doors 1 → 9** | 14 learn cards and 6 rule pages were behind ONE 129×27 nav link. Now a rules strip, a measurement strip, and a label that says *How to read hockey*. |
+| **the moving rink is a door** | 26.9% of a laptop screen, the only thing that moves, and clicking it did nothing. |
+| **the page names its sport, its clubs and its reader** | "hockey" appeared ZERO times in the visible front door; clubs were three-letter codes; the lede promised provenance in words a newcomer has not earned. |
+| **the puck note** | what the rink does that a stranger reads as broken, said above the rink — and only where the space already exists. |
+
+### ⛔⛔ FOUR THINGS WERE WRONG ON THE LIVE SITE AND NOBODY HAD LOOKED
+
+1. **The footer claimed, in bold on every page**, *"teams are identified by colour
+   and three-letter abbreviation only."* A team page showed five full club names
+   in visible text; the front door handed a screen reader all 32 via
+   `aria-label`. The no-logos half was and remains true.
+2. **`drawDaily` declared `var when`** — a STRING — shadowing the page's
+   `when(date)` formatter, hoisted as `undefined` on **every dark night**.
+   Calling it takes `$('daily').hidden = false` down with it and the block
+   renders nothing. Latent until a door needed a date.
+3. **`docs/ten-second-hero.md` was wrong in its own filename** — it claims 6–15s;
+   the loop is **21.5s**. `PACE` halved 2026-08-29, four days after that table
+   was written.
+4. **The hero's attempts line stated whole-game totals beside a loop showing the
+   opening seconds** (CHENG). The builder comment had said *WHOLE GAME, NOT THE
+   LOOP'S WINDOW* all along — to the code, never to the reader.
+
+### ⭐⭐ AND THE MEASUREMENT RULE GOT STRICTER
+
+**A mutation is not evidence until it lands WHERE THE CHECK IS LOOKING.** The
+expression under test appeared THREE times in `build_index.py`, so
+`replace(old, new, 1)` mutated the calendar while the hero was the subject — and
+the grep confirming "landed" matched an unrelated occurrence. **Assert
+`count == 1`, mutate to a unique marker, check the build's exit code, and rebuild
+before testing** (the tests read the BUILT page).
+
+⛔ **Five of CC's own checks were vacuous the same day**, each found by mutating
+rather than by reading: a length check markup satisfied; a *"says hockey"* grep
+the FOOTER already passed; a strip test that went red by breaking its own regex
+rather than detecting `hidden`; a comment-blind scan that found `var when` inside
+the comment explaining its removal; and a figure-count check that could not
+express *"a share with no base rate loses the argument"*.
+
+⚠️ **And one verification command measured an empty string:**
+`curl -sS --fail https://readthegame.co/game.html` returns **exit 0 and zero
+bytes** — Pages 308s `.html` to the extensionless form and 308 is not a failure.
+**Use `-sSL`.** The deploy gate was checked rather than assumed and already does.
+
+### ⛔ A CLASS NAME WITH A RULE ATTACHED IS SPOKEN FOR ON EVERY PAGE
+
+CC named a new container `.lede`. The shared stylesheet carries
+`.lede{max-width:62ch}`, so the grid capped at 662px of a 1240px row, `1fr`
+collapsed to the longest WORD (32px wide, 605px tall) and the hero card was
+pushed **527px** down the page. ⭐ **The repo had already written the warning** —
+`build_main.py:54`, *"NOT class=\"lede\" -- that name is spoken for"* — and
+`render-notes.test.js` forbade it **on the game page only**, so the guard watched
+a different file while the shared rule did the damage. It covers every built page
+now, and carries its own expiry.
+
+---
+
+## ⏭ 0.00b THE OLDER PICK-UP, UNCHANGED
 
 ⏭ **NEXT CONVERSATION, KEVIN'S: the situation vocabulary across the site.** *"I'd
 like to brainstorm score-effects, even strength, power play/penalty kill type of
