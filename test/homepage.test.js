@@ -572,8 +572,12 @@ test('the hero takes an older game to get a goal, and the kicker says which rule
   // 2023020100 is OLDER than the newest in-scope game, and it is the only row
   // with a loop inside the window. Choosing it is therefore a real preference,
   // not the newest game wearing a new field.
+  // `ha` JOINED THE SEED ON 2026-09-11. The rule reads two fields now — a loop
+  // inside the window AND a counter that reaches the floor — so a row carrying
+  // only `hl` no longer qualifies, and seeding only `hl` would make this test
+  // assert the fallback while claiming to assert the preference.
   const cat = { games: CATALOG.games.map(g =>
-    g.id === 2023020100 ? { ...g, hl: 5 } : g) };
+    g.id === 2023020100 ? { ...g, hl: 5, ha: 4 } : g) };
   assert.notEqual(2023020100, NEWEST_ID,
     'the qualifying game must not also be the newest, or this proves nothing');
   const r = run({ docs: { ...ALL, 'catalog.json': cat } });
@@ -607,15 +611,69 @@ test('a loop OUTSIDE the window is not a hero', () => {
   // the whole case is green without running — the "tests that pass by not
   // running" shape this project has been bitten by before. Promise.all is what
   // makes the loop a check.
+  // ⚠️ THE COUNTER IS HELD ABOVE ITS FLOOR SO THE WINDOW IS THE ONLY VARIABLE.
+  // Without `ha` these rows would be rejected for the OTHER reason and the test
+  // would pass no matter what the window did — a check satisfied by the wrong
+  // mechanism, which is this project's most-repeated defect.
   return Promise.all([1, 2, 9, 30].map(hl => {
     const cat = { games: CATALOG.games.map(g =>
-      g.id === 2023020100 ? { ...g, hl } : g) };
+      g.id === 2023020100 ? { ...g, hl, ha: 9 } : g) };
     const r = run({ docs: { ...ALL, 'catalog.json': cat } });
     return r.settle().then(() => {
       assert.equal(r.ids.herogo.href, 'game.html?game=' + NEWEST_ID,
         `a loop of ${hl} plays was accepted — it is outside [3,8]`);
     });
   }));
+});
+
+/**
+ * ⭐⭐ THE COUNTER FLOOR — AND THE PAIR IS WHAT MAKES IT A CHECK.
+ *
+ * `hl` counts PLAYS and the h1 promises "the counts built in front of you", so
+ * the hero is chosen on the attempt counter as well as the loop length. The two
+ * come apart: measured over the whole archive, inside [3,8] the counter reaches
+ * a median of 3 and a p10 of 2, and the hero live on 2026-09-11 reached 2.
+ *
+ * NEITHER HALF IS SAFE ALONE, the same shape as the ends-switching pair.
+ * "A low counter is rejected" is satisfied by a rule that rejects the game for
+ * its LOOP, or for being the wrong id, or by a page that never picks anything;
+ * "a high counter is accepted" is satisfied by a rule that ignores the counter
+ * entirely. The two rows differ in `ha` and in nothing else, so only a reader
+ * that actually reads `ha` passes both.
+ */
+test('a game whose counter never gets going is not a hero, and one that does IS', () => {
+  const seed = ha => ({ games: CATALOG.games.map(g =>
+    g.id === 2023020100 ? { ...g, hl: 5, ha } : g) });
+  const below = run({ docs: { ...ALL, 'catalog.json': seed(2) } });
+  const above = run({ docs: { ...ALL, 'catalog.json': seed(3) } });
+  return Promise.all([
+    below.settle().then(() => {
+      assert.equal(below.ids.herogo.href, 'game.html?game=' + NEWEST_ID,
+        'a loop whose counter moves twice was accepted as the front door');
+      assert.match(below.ids.herokick.textContent, /most recent game/,
+        'it fell back, so the kicker must say so rather than promise a goal');
+    }),
+    above.settle().then(() => {
+      assert.equal(above.ids.herogo.href, 'game.html?game=2023020100',
+        'the SAME game one attempt higher was rejected — the floor is off by one '
+        + 'or the counter is not being read at all');
+    }),
+  ]);
+});
+
+test('a loop with no counter recorded is not a hero either', () => {
+  // The migration state, stated as behaviour rather than left to be discovered:
+  // `ha` arrives with a derivation, so between the reader deploying and that run
+  // finishing every row carries `hl` and none carries `ha`. The front door falls
+  // back to the newest game and says so — exactly what `hl` itself did on its
+  // first day. A reader treating the absence as "no opinion" would be kinder for
+  // half an hour and would hide the field disappearing forever.
+  const cat = { games: CATALOG.games.map(g =>
+    g.id === 2023020100 ? { ...g, hl: 5 } : g) };
+  const r = run({ docs: { ...ALL, 'catalog.json': cat } });
+  return r.settle().then(() => {
+    assert.equal(r.ids.herogo.href, 'game.html?game=' + NEWEST_ID);
+  });
 });
 
 test('the front door leads with the most recent game, and it PLAYS', () => {

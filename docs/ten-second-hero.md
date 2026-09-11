@@ -195,6 +195,65 @@ Days behind "the newest game", measured by walking the archive's own timeline:
 Ten seconds sits in the middle of the shipped row, and it is where the cost stops
 being free — tightening one play each way triples the p90 staleness.
 
+### ⛔ THE SECONDS COLUMN ABOVE IS HALF THE TRUTH, AND THIS FILE'S NAME WITH IT
+
+**Measured 2026-09-11 on the live hero, in a real browser, three full cycles:**
+
+```
+idx=1  VGK · Hit              count 0-0
+idx=2  CAR · Shot on goal     count 1-0   +3.6s
+idx=3  VGK · Hit              count 1-0   +3.6s
+idx=4  VGK · Hit              count 1-0   +3.6s
+idx=5  CAR · Won the faceoff  count 1-0   +3.6s
+idx=6  🚨 GOAL — Stankoven     count 2-0   +4.5s   (captioned)
+                                          +2.6s   hold, then restart
+```
+
+**21.5 seconds, not the 6–15 above.** The arithmetic is `hl` frames at `dwell`
+— 3.6s, or 4.5s when the frame carries a caption — plus a 2.6s hold on the goal.
+So the shipped window is **13.4s at `hl`=3 and 31.4–38.6s at `hl`=8**.
+
+This file was last written **2026-08-25**. `PACE` halved to 3600ms on
+**2026-08-29** (`18f606c`), four days later, and every loop doubled. The table
+was never re-run, so the number in the filename has been wrong for two weeks —
+the *"reason that expired without being re-examined"* shape, in a document whose
+whole job is to hold the reasons.
+
+### The third number: `ha`, and why the window was never enough
+
+`hl` counts **plays**. The h1 promises *"the counts built in front of you"*, and
+what a visitor watches accumulate is the **attempt counter** — which the play
+count does not determine.
+
+Measured over every candidate in the archive (2,045 games with a loop, walked
+across 717 dates, `ha` computed by `derive.py` itself):
+
+| rule | pool | lag med | p90 | p99 | counter (p10) | loop |
+|---|---:|---:|---:|---:|---:|---:|
+| **[3,8]** *(was shipped)* | 434 | 1 | 5 | 16 | 3 **(2)** | 21s |
+| **[3,8] & counter ≥ 3** *(shipped)* | 331 | 1 | **6** | 22 | **4** (3) | 24s |
+| [3,8] & counter ≥ 4 | 176 | 2 | **13** | 28 | 4 (4) | 28s |
+| [3,10] & counter ≥ 4 | 305 | 1 | 7 | 24 | **5** (4) | 31s |
+
+The p10 of **2** is the finding. The hero live on 2026-09-11 — CAR at VGK, five
+plays — reached a counter of **2**, the p23 of its own window, and the hero does
+not change again until the season opens: three months of a front door
+demonstrating provenance with a number that moves twice, chosen by a rule that
+could not see the difference.
+
+**The floor is 3 and it costs one day of p90 staleness.** `≥ 4` costs thirteen
+and blanks 19 dates onto the fallback; `[3,10] & ≥ 4` buys a median of 5 but runs
+31s, past what a taste is. Three is where the cost is still one day.
+
+⚠️ **`ha` is not an estimate the way `hl` is.** `hl`'s floor is 3 because
+derive.py counts the first attempt of any strength while the renderer's opening
+frame comes from corsi's even-strength counted set. That caveat is about a
+configuration the preview does not run — `evenOnly` is false there — so the only
+exclusions left are the shootout and an attempt with no resolvable team.
+Verified by running **the real reducer** (`src/lib/layers/corsi.js`, not a Python
+restatement) over 300 archive extracts and walking the renderer's own window:
+**300 of 300 exact, on both fields.**
+
 ### ⚠️ And it broke a true sentence
 
 The kicker above the rink was a fixed string in the markup reading *"The most

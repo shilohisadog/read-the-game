@@ -1599,7 +1599,16 @@ class TheReplacedRowIsWholesale(unittest.TestCase):
                           # which is why this line had to move. Present only when
                           # there IS such a loop, so a row may legitimately lack
                           # it; see `_hl`.
-                          "hl"},
+                          # WIDENED AGAIN 2026-09-11 FOR `ha` -- the attempts
+                          # the preview's counter reaches inside that loop.
+                          # `hl` is a PROXY for the thing the h1 promises and
+                          # this is the thing itself: measured over 300 games
+                          # inside the shipped [3, 8] window the counter
+                          # reaches a median of 3, p10 2, p90 5 -- so play
+                          # count alone cannot tell a front door whose number
+                          # moves five times from one where it moves twice.
+                          # Written and read together with `hl`, never alone.
+                          "hl", "ha"},
                          "read this class's docstring before widening this set")
 
 
@@ -2162,13 +2171,16 @@ class HeroLoop(unittest.TestCase):
         # opening frame is play 1 and the loop is 5 - 1 = 4 plays.
         events = [self.ev("faceoff"), self.ev("hit"), self.ev("shot-on-goal"),
                   self.ev("hit"), self.ev("giveaway"), self.ev("goal")]
-        self.assertEqual(D._hero_loop(events), 4)
+        # Two of those six plays are attempts -- the shot on goal and the goal
+        # itself -- and the counter on screen therefore reaches 2.
+        self.assertEqual(D._hero_loop(events), (4, 2))
 
     def test_a_goal_that_is_ITSELF_the_first_attempt_still_has_a_loop(self):
         # Plays:  0 faceoff  1 hit  2 goal  -- the goal is the first attempt, so
         # the opening frame is play 1 and the loop is a single play.
         events = [self.ev("faceoff"), self.ev("hit"), self.ev("goal")]
-        self.assertEqual(D._hero_loop(events), 1)
+        # The goal is the only attempt, so the counter moves exactly once.
+        self.assertEqual(D._hero_loop(events), (1, 1))
         # And the reader's floor is 3, so this game is not a hero. That is the
         # floor doing its job rather than a defect here.
 
@@ -2179,7 +2191,7 @@ class HeroLoop(unittest.TestCase):
                   self.ev("stoppage"), self.ev("shot-on-goal"),
                   self.ev("delayed-penalty"), self.ev("hit"),
                   self.ev("giveaway"), self.ev("period-end"), self.ev("goal")]
-        self.assertEqual(D._hero_loop(events), 4)
+        self.assertEqual(D._hero_loop(events), (4, 2))
 
     def test_a_shootout_goal_is_not_a_goal_here(self):
         # Excluded on `pt`, NEVER on period number -- period 5 is a shootout in
@@ -2208,7 +2220,58 @@ class HeroLoop(unittest.TestCase):
     def test_the_fragment_is_the_only_place_the_field_is_named(self):
         events = [self.ev("faceoff"), self.ev("hit"), self.ev("shot-on-goal"),
                   self.ev("hit"), self.ev("giveaway"), self.ev("goal")]
-        self.assertEqual(D._hl(events), {"hl": 4})
+        self.assertEqual(D._hl(events), {"hl": 4, "ha": 2})
+
+    def test_the_goal_ITSELF_is_one_of_the_attempts(self):
+        # `goal` is in ATTEMPT_TYPES and the counter on screen ticks when the
+        # goal lands, so a count that stopped one short of the payoff would
+        # describe a loop nobody watches. Two attempts here, not one.
+        events = [self.ev("faceoff"), self.ev("shot-on-goal"), self.ev("goal")]
+        self.assertEqual(D._hero_loop(events), (2, 2))
+
+    def test_every_kind_of_attempt_moves_the_counter(self):
+        # The layer counts on goal, missed and blocked alike -- "all three are
+        # the team moving the puck at the net" (corsi.js). A count that saw only
+        # shots on goal would under-report the very games this field exists to
+        # find, and would do it silently.
+        events = [self.ev("faceoff"), self.ev("missed-shot"),
+                  self.ev("blocked-shot"), self.ev("hit"),
+                  self.ev("shot-on-goal"), self.ev("goal")]
+        # The first attempt is play 1, so the opening frame is play 0 and the
+        # loop is 5 - 0 = 5 plays; four of those five are attempts.
+        self.assertEqual(D._hero_loop(events), (5, 4))
+
+    def test_the_two_fields_COME_APART_which_is_why_the_second_one_exists(self):
+        # ⭐ THE POINT OF THE FIELD, AS A TEST. Same loop length, same wall
+        # clock, same number of frames a visitor sits through -- and a counter
+        # that reaches 2 in one and 5 in the other. A selector reading `hl`
+        # alone cannot tell these two front doors apart, and the h1 promises the
+        # number that separates them.
+        quiet = [self.ev("faceoff"), self.ev("shot-on-goal"), self.ev("hit"),
+                 self.ev("hit"), self.ev("giveaway"), self.ev("goal")]
+        busy = [self.ev("faceoff"), self.ev("shot-on-goal"), self.ev("missed-shot"),
+                self.ev("blocked-shot"), self.ev("shot-on-goal"), self.ev("goal")]
+        self.assertEqual(D._hero_loop(quiet)[0], D._hero_loop(busy)[0],
+                         "the two games must be the same LENGTH or this proves nothing")
+        self.assertEqual(D._hero_loop(quiet)[1], 2)
+        self.assertEqual(D._hero_loop(busy)[1], 5)
+
+    def test_the_published_numbers_for_a_real_game(self):
+        """⭐ PAIRED WITH test/hero-loop.test.js, WHICH COMPUTES THE SAME TWO
+        NUMBERS FROM THE RENDERER'S OWN REDUCER.
+
+        Neither side is safe alone: this one is a second statement of derive.py's
+        arithmetic, and the JavaScript one is a second statement of the
+        renderer's. They share only the LITERALS below, reached by two
+        implementations that never call each other -- so a drift in either shows
+        up as a failure rather than as two mirrors moving together.
+
+        Measured across 300 archive extracts the same way: 300 of 300 exact on
+        both fields.
+        """
+        ev = json.loads((DATA.parent / "test" / "fixtures" / "extracts"
+                         / "2024030413.json").read_text())["events"]
+        self.assertEqual(D._hl(ev), {"hl": 8, "ha": 4})
 
 
 class ExtractorSchemaBackfills(unittest.TestCase):

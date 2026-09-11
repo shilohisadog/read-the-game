@@ -150,14 +150,42 @@ ATTEMPT_TYPES = {"shot-on-goal", "missed-shot", "blocked-shot", "goal"}
 
 
 def _hero_loop(events):
-    """Plays from the preview's opening frame to the first goal, or None.
+    """The preview's loop: (plays to the first goal, attempts inside it), or None.
 
     None means "no hero here", which covers a late first goal, a game with no
     goal, and a goal that arrives before any attempt has been counted. The
     reader treats all three the same and none of them is a front door.
+
+    ⭐ THE SECOND NUMBER IS THE ONE THE HEADLINE PROMISES, AND THE FIRST IS ONLY
+    A PROXY FOR IT. The h1 says "the counts built in front of you", and what a
+    visitor watches accumulate is the attempt counter -- not the play count.
+    Those come apart: measured over 300 games inside the shipped [3, 8] window,
+    the counter reaches a MEDIAN OF 3 with a p10 of 2 and a p90 of 5, so the same
+    loop length admits both a front door where the number moves five times and
+    one where it moves twice. The hero live on 2026-09-11 reaches 2, which is the
+    p23 of its own window -- a below-average draw that selecting on plays alone
+    cannot see, because plays are all it looks at.
+
+    ⚠️ THE GOAL IS ONE OF THE ATTEMPTS and is counted here, because it is counted
+    on screen: `goal` is in ATTEMPT_TYPES and the counter ticks when it lands.
+    A count that stopped one short of the payoff would describe a loop nobody
+    watches.
+
+    ⭐⭐ AND UNLIKE `hl` THIS IS NOT AN ESTIMATE -- VERIFIED, NOT ASSUMED. The
+    caveat above ATTEMPT_TYPES says the start is an estimate because corsi's
+    counted set respects even strength while this counts every strength. That
+    caveat is about a configuration the preview does not run: `evenOnly` is false
+    there (src/app.js), so the only exclusions left are the shootout and an
+    attempt whose team the roster cannot resolve. Checked by running the REAL
+    reducer -- src/lib/layers/corsi.js, not a Python restatement of it -- over
+    300 archive extracts and walking the renderer's own window: 300 of 300 exact,
+    on BOTH fields. If the preview ever runs even-strength, this becomes an upper
+    bound and the one-sided error the ATTEMPT_TYPES comment describes arrives
+    here too.
     """
     first_att = None
     n = 0
+    attempts = 0
     for e in events or ():
         # The shootout is excluded on `pt`, NEVER on period number: period 5 is
         # a shootout in the regular season and a THIRD OVERTIME in the playoffs.
@@ -166,10 +194,15 @@ def _hero_loop(events):
         t = e.get("type")
         if first_att is None and t in ATTEMPT_TYPES:
             first_att = n
+        # Counted BEFORE the goal branch returns, so the goal is included. The
+        # opening frame is one before the first attempt, so nothing countable
+        # precedes `first_att` and this needs no window check of its own.
+        if first_att is not None and t in ATTEMPT_TYPES:
+            attempts += 1
         if t == "goal":
             if first_att is None:
                 return None
-            return n - max(0, first_att - 1)
+            return n - max(0, first_att - 1), attempts
         n += 1
         if first_att is not None and n - max(0, first_att - 1) > HERO_LOOP_CAP:
             return None
@@ -177,9 +210,24 @@ def _hero_loop(events):
 
 
 def _hl(events):
-    """The catalog fragment, so both derive paths spell the field once."""
-    n = _hero_loop(events)
-    return {"hl": n} if n is not None else {}
+    """The catalog fragment, so every derive path spells the fields once.
+
+    TWO FIELDS, ONE WALK. A second pass for the attempts would be a second
+    statement of where the loop starts and ends, and this project has paid for
+    that shape before -- `tools/pixels.sh` once restated the hero rule in shell
+    and broke silently the day the rule moved.
+
+    ⚠️ THE SELECTOR STILL READS ONLY `hl`. This publishes `ha` so the window can
+    be chosen against a measured lag table instead of a 300-game sample; the
+    threshold is a separate decision and belongs in the reader
+    (`build_index.py`, HERO_LOOP), where changing it is a rebuild rather than a
+    re-derivation of the archive.
+    """
+    loop = _hero_loop(events)
+    if loop is None:
+        return {}
+    plays, attempts = loop
+    return {"hl": plays, "ha": attempts}
 
 
 def _write_catalog(store, rows):

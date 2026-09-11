@@ -145,12 +145,18 @@ for row in cat['games']:
     p = have.get(row['id'])
     if not p:
         continue
-    hl = derive._hero_loop(json.load(open(p)).get('events'))
-    if hl is not None:
-        row['hl'] = hl
+    # ⭐ THE WHOLE FRAGMENT, NOT ONE FIELD. This called `_hero_loop` and copied
+    # its single number into `hl`, which meant the day the loop gained a second
+    # published field (`ha`, the attempts the counter reaches) this tool would
+    # have kept serving a catalog that has one and not the other -- a local page
+    # selecting on a field the harness never patched in. `_hl` IS the fragment
+    # the derive writes, so whatever the derive publishes, this serves.
+    frag = derive._hl(json.load(open(p)).get('events'))
+    if frag:
+        row.update(frag)
         n += 1
 json.dump(cat, open('catalog.json', 'w'))
-print(f'  patched {n} of {len(have)} local extracts with `hl` (derive.py)')
+print(f'  patched {n} of {len(have)} local extracts with the hero loop fields (derive.py)')
 PY
 
 # --------------------------------------------------- THE SLATE THE CALENDAR HIDES

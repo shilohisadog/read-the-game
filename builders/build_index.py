@@ -818,15 +818,57 @@ __HELPERS__
      AND IT FALLS BACK RATHER THAN FAILING. If nothing qualifies -- an archive
      too small, a run of goalless openings -- the hero is the newest game, which
      is exactly what it was before, and the preview runs its budget the way it
-     always did. A front door with no game is worse than one that opens quietly. */
-  var HERO_LOOP = { min: 3, max: 8 };
+     always did. A front door with no game is worse than one that opens quietly.
+
+     ⭐⭐ AND `counter` IS THE THIRD NUMBER, BECAUSE THE FIRST TWO MEASURE A PROXY.
+     `hl` counts PLAYS. The h1 promises "the counts built in front of you", and
+     what a visitor watches accumulate is the ATTEMPT COUNTER -- which the play
+     count does not determine. Measured over the whole archive (2,045 games with
+     a loop, walked across 717 dates): inside [3,8] the counter reaches a median
+     of 3 but a p10 of 2, so the same window admits a front door whose number
+     moves four times and one where it moves twice.
+
+     ⛔ AND IT WAS SHOWING THE TWO. The hero live on 2026-09-11 -- CAR at VGK,
+     5 plays -- reached a counter of 2, the p23 of its own window, and the hero
+     does not change again until the season opens. Three months of a front door
+     demonstrating provenance with a number that moves twice, chosen by a rule
+     that cannot see the difference.
+
+     THE FLOOR IS 3 AND THE COST IS ONE DAY. Walked over the same 717 dates,
+     against the shipped rule:
+
+         rule                    pool   lag med   p90   p99   counter (p10)   loop
+         [3,8]                    434         1     5    16       3   (2)      21s
+         [3,8] & counter >= 3     331         1     6    22       4   (3)      24s
+         [3,8] & counter >= 4     176         2    13    28       4   (4)      28s
+         [3,10] & counter >= 4    305         1     7    24       5   (4)      31s
+
+     One day of p90 staleness to raise the floor of what the counter does from 2
+     to 3, and the median from 3 to 4. `>= 4` costs THIRTEEN days at p90 and
+     blanks 19 dates entirely; `[3,10] & >= 4` buys a median of 5 but runs 31s,
+     past the length this loop is meant to be. Three is where the cost is still
+     one day. (The seconds are measured, not modelled: 3.6s a frame at the
+     replay's own pace, 4.5s when the frame carries a caption, plus a 2.6s hold
+     on the goal. The live loop is 21.5s, which is not the 6-15s
+     docs/ten-second-hero.md still claims -- that table predates the 2026-08-29
+     pace halving by four days.)
+
+     ⚠️ A ROW WITHOUT `ha` CANNOT QUALIFY, and that is deliberate rather than an
+     oversight. The field arrives with a derivation, so between this deploying
+     and that run finishing no row carries it and the hero falls back to the
+     newest game -- exactly what `hl` did on its own first day, and the fallback
+     below is why that is quiet rather than broken. A reader that treated a
+     missing field as "no opinion" would be kinder for half an hour and would
+     hide the field going away forever. */
+  var HERO_LOOP = { min: 3, max: 8, counter: 3 };
 
   function hero(games) {
     var v = games.filter(function (g) { return g.v && inScope(g.id); });
     v.sort(function (a, b) { return a.d === b.d ? a.id - b.id : (a.d < b.d ? -1 : 1); });
     for (var k = v.length - 1; k >= 0; k--) {
       var g = v[k], n = g.hl;
-      if (typeof n === 'number' && n >= HERO_LOOP.min && n <= HERO_LOOP.max)
+      if (typeof n === 'number' && n >= HERO_LOOP.min && n <= HERO_LOOP.max
+          && typeof g.ha === 'number' && g.ha >= HERO_LOOP.counter)
         return { game: g, toGoal: true };
     }
     /* THE FALLBACK IS NAMED, not left to be inferred from a null. The caller has

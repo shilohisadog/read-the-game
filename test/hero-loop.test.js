@@ -104,3 +104,51 @@ test('the last frame is held longer than the goal caption it is showing', () => 
   assert.ok(Number(hold[1]) > Number(cap[1]) * 1000,
     `the loop restarts after ${hold[1]}ms but the caption runs for ${cap[1]}s`);
 });
+
+/**
+ * ⭐ THE NUMBER THE HEADLINE PROMISES, FROM derive.py TO THE PIXELS.
+ *
+ * `hl` is a proxy: it counts PLAYS, and the h1 promises "the counts built in
+ * front of you" — which is the attempt counter, not the play count. Those come
+ * apart. Measured over 300 archive extracts inside the shipped [3, 8] window the
+ * counter reaches a median of 3 with a p10 of 2 and a p90 of 5, so one loop
+ * length admits both a front door whose number moves five times and one where it
+ * moves twice. `ha` is the thing itself, and this is the end of its chain.
+ *
+ * ⭐⭐ PAIRED WITH test_derive.py's `test_the_published_numbers_for_a_real_game`,
+ * WHICH REACHES THE SAME TWO LITERALS DOWN A DIFFERENT PATH. That one is
+ * derive.py's arithmetic over the same fixture; this one boots the real renderer
+ * and reads the board a visitor would read. They share the literals and nothing
+ * else — neither calls the other — so a drift in either language fails here or
+ * there rather than moving both sides together. `hl` alone has been guarded that
+ * way since it shipped; the second field arrives with the same pair.
+ */
+test('the attempts derive.py publishes are the attempts the counter reaches', () => {
+  const a = boot(early, null, '?preview=1');
+  const EV = playable(early);
+  const at = Number(a.$('scrub').value);
+  // Stated here rather than inherited from the test above: a figure read off
+  // "wherever the loop happened to stop" is about a frame, not about the loop.
+  assert.equal(EV[at].type, 'goal',
+    'the loop must be sitting on its final goal frame or this counts nothing');
+  /* ⚠️ `hl` IS NOT `at`, AND THE FIRST DRAFT OF THIS ASSERTED THAT IT WAS.
+     `hl` is the DISTANCE from the opening frame to the goal; `at` is the goal's
+     absolute index in the playable stream, which is larger by however many plays
+     precede the opening frame — 9 against 8 on this fixture. Checking the
+     distance here would mean restating the renderer's start rule in the test,
+     which is the mirror this file's header refuses. The distance is pinned on
+     the Python side; what THIS side can see that Python cannot is the board. */
+
+  /* ⚠️ WHAT THIS FIXTURE'S WINDOW CAN AND CANNOT SEPARATE, STATED RATHER THAN
+     IMPLIED. Its eight plays are hit, SHOT, faceoff, hit, SHOT, faceoff, SHOT,
+     faceoff, GOAL — three shots on goal and the goal, and no missed or blocked
+     shot anywhere in it. So this check cannot tell a counter that honours the
+     whole attempt vocabulary from one that counts only shots on goal; a mutation
+     removing blocked shots from the reducer leaves it green, which was verified
+     rather than assumed. That half is covered synthetically, on the Python side,
+     by `test_every_kind_of_attempt_moves_the_counter`. What this one covers is
+     the chain: derive.py's number is the number a visitor's board reaches. */
+  const shown = Number(a.$('cA').textContent) + Number(a.$('cH').textContent);
+  assert.equal(shown, 4,
+    `derive.py publishes ha: 4 for this game; the board reaches ${shown}`);
+});

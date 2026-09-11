@@ -421,7 +421,15 @@ test('EVERY FIELD derive.py PUTS ON A CATALOG ROW HAS A READER', () => {
   // is D10 exactly, committed inside the gate written to prevent D10.
   // Found by adding `hl` and asking what the denominator was, rather than by the
   // check going red: it could not go red, which is the point.
-  const fragSrc = [...derive.matchAll(/return \{"[a-z]{1,3}": [a-z_]+\}/g)].map(m => m[0]).join('\n');
+  // ⚠️ MULTI-KEY FRAGMENTS, since 2026-09-11. This matched a SINGLE `"k": v` pair
+  // and `_hl` returned exactly one; the day it began returning two (`hl` and
+  // `ha` from one walk) the pattern stopped matching at all and this check went
+  // red rather than blind — which is the tripwire below doing its job, and the
+  // reason it is an assertion and not a comment. The `hl` entry in the must-list
+  // further down reaches the field set ONLY through this scan, so a pattern that
+  // narrows again fails there too.
+  const fragSrc = [...derive.matchAll(/return \{"[a-z]{1,3}": [a-z_]+(?:, "[a-z]{1,3}": [a-z_]+)*\}/g)]
+    .map(m => m[0]).join('\n');
   assert.ok(fragSrc.length, 'the row-fragment scan found no helper — it has lost its subject');
   const fields = new Set([...(rowSrc + boxSrc + fragSrc).matchAll(/"([a-z]{1,3})":/g)].map(m => m[1]));
   // A tripwire on the extractor itself: if the source moves and the slice comes
@@ -429,7 +437,7 @@ test('EVERY FIELD derive.py PUTS ON A CATALOG ROW HAS A READER', () => {
   // `mixnight` fixture and the blind CSP probe both had.
   assert.ok(fields.size >= 10,
     `only ${fields.size} row fields found — this check has lost its subject`);
-  for (const must of ['id', 'd', 't', 'v', 'u', 'r', 'a', 'h', 'hl'])
+  for (const must of ['id', 'd', 't', 'v', 'u', 'r', 'a', 'h', 'hl', 'ha'])
     assert.ok(fields.has(must), `the field scan missed \`${must}\``);
 
   const strip = t => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
