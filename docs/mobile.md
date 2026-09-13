@@ -201,6 +201,64 @@ Landscape is worth having *after* the output is one line — at which point 762 
 a phone. Before that it is a bigger picture of a game you have to scroll away
 from to read about.
 
+---
+
+## 4c. PORTRAIT IS OUT — and the laptop layout does transfer, prototyped
+
+**Kevin, 2026-09-13:** *"I have decided portrait isn't salvageable, there's no way
+that portrait will work for a novice, heck it doesn't work for me and I know what
+it's trying to show. Portrait is out on mobile… can we replicate the laptop
+approach on mobile, with the controls side by side with the rink?"*
+
+**Yes — and it inverts the rule the laptop layout is built on.**
+
+`app.css` gates two columns at `min-width:1360px`, and its comment derives that
+number honestly: *"1360 is the smallest width at which nothing regresses: beside
+a 340px column and a 28px gap the rink gets 992px against today's 900."* That
+rule protects the rink's WIDTH, because width is what a laptop has spare.
+
+**In landscape the scarce dimension is height, and the rink's height is its width
+× 0.425.** So the same move is made for the opposite reason: take width from the
+rink *on purpose*, because that is the only way to buy back the vertical room the
+caption and the transport need.
+
+### The prototype, measured
+
+Injected CSS over the built page; the two blocks whose content does not change
+with the playhead — the board and the transport — moved into the control column.
+
+| | ice | area | vs portrait | caption ends | controls end |
+|---|---|---:|---:|---:|---:|
+| portrait today | 386 × 164 | 63,304 px² | 1.00× | 0.57 | 0.81+ |
+| landscape stacked, today | 762 × 324 | 246,888 px² | 3.90× | 1.52 | 2.04 |
+| **landscape, side by side** | **488 × 207** | **101,016 px²** | **1.60×** | **0.70** | **0.99** |
+| …at 844 × 320 | 488 × 207 | 101,016 px² | 1.60× | 0.86 | **1.21 ✗** |
+
+⭐ **The rink, the sentence under it, the scoreboard, Play, Prev/Next and the
+scrubber are on one screen with no scrolling** at 844 × 390 — which is the thing
+neither portrait nor stacked landscape can do at any size.
+
+⚠️ **1.60×, not 3.90×.** The control column costs 260px of width and therefore
+110px of rink height. That is the trade, and it is the right one: a 3.9× drawing
+you must scroll away from to read about is the defect, not the goal.
+
+### Two things the prototype shows are not yet right
+
+1. **The scoreboard breaks in a 260px column** — visible in the screenshot: `MTL
+   3` wraps, `CAR` is clipped at the column edge and the `1` escapes the card. It
+   is a three-across flex built for a wide card and needs a stacked variant.
+2. **844 × 320 does not fit** — the real landscape fold after browser chrome. The
+   column holds board 114 + transport 156 + scrubber. Stacking the board (~70)
+   and folding Play in with Prev/Next (~100) brings the controls to ≈0.90
+   screens. The speed stepper is the row to move: a double tap already steps.
+
+### What is still open
+
+**What portrait does.** "Out" can mean a rotate prompt, or the portrait layout we
+have with a banner, or a different page. A prompt is the convention video
+established, but a reader with orientation lock on must still get something. That
+is a product call, not a measurement.
+
 ## 5. The recommendation
 
 **R1 first, and it is no longer optional.** §4b turns it from the cheap warm-up
