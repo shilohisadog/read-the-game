@@ -88,6 +88,7 @@ of this repo found rather than one we noticed.
 | **[active-player.md](active-player.md)** | ✅ shipped — the named player on each frame, and why a bare name is ambiguous without its verb. |
 | **[blocked-card.md](blocked-card.md)** | the blocked-shots card as a picture rather than prose. |
 | **[scoreboard-mobile.md](scoreboard-mobile.md)** | ✅ shipped — the scoreboard on a phone. |
+| **[mobile.md](mobile.md)** | 🔎 **open** — one measurement of the phone's first screen, taken before proposing anything. The drawing gets 19.4% of it; an empty box gets 14.2%. Three ways out, with the arithmetic, and the one that changes the ratio is unprototyped. |
 | **[ten-second-hero.md](ten-second-hero.md)** | ✅ shipped 2026-08-25 — three changes to the front door, each claim naming its file and line. |
 
 ## Teaching surfaces
