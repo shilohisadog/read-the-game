@@ -112,16 +112,24 @@ Cheap, entirely additive, and it does not change what the site IS.
 
 ### R2 — Turn the rink vertical in portrait. Ends at the top and the bottom.
 
-The only move that changes the ratio. At a height of 520px the rink is
-`520 × 85/200 = 221px` wide:
+The only move that changes the ratio in portrait. At a height of 520px the rink
+is `520 × 85/200 = 221px` wide:
 
-| layout | drawing | area |
-|---|---|---:|
-| horizontal, today | 350 × 149 | 52,150 px² |
-| vertical at 520 tall | 221 × 520 | **114,920 px²** |
+| layout | drawing | area | vs today |
+|---|---|---:|---:|
+| horizontal, today (**measured**, not arithmetic) | 386 × 164 | 63,304 px² | 1.00× |
+| vertical at 520 tall | 221 × 520 | 114,920 px² | **1.82×** |
+| vertical at 600 tall | 255 × 600 | 153,000 px² | 2.42× |
+| vertical at 700 tall | 298 × 700 | 208,600 px² | 3.30× |
 
-**2.2× the drawing**, and "whose end is whose" becomes top and bottom — which is
-the other complaint from the same review, on a hero whose two clubs are both red.
+⚠️ **THIS TABLE CORRECTS THIS DOCUMENT'S FIRST DRAFT**, which said 2.2× from
+`350 × 149`. The ice measures **386 × 164**, so the gain at 520px tall is 1.82×,
+not 2.2× — and the row that matters is the one underneath it: *the vertical rink
+buys drawing area by spending the same fold the caption needs.* At 700px tall it
+is 3.3× the drawing and 144px of screen left for everything else.
+
+"whose end is whose" becomes top and bottom, which is the other complaint from
+the same review, on a hero whose two clubs are both red.
 
 Costs, stated rather than waved at: every text annotation on the ice would be
 drawn sideways by a naive rotation and needs counter-rotating; `AX`/`AY` own the
@@ -148,9 +156,68 @@ prerequisite for R1's fourth row, not a substitute for any of this.
 
 ---
 
+---
+
+## 4b. LANDSCAPE — CHENG's option, measured, and it fails on his own diagnosis
+
+CHENG proposed rotation first: *"your own landscape screenshot was the best this
+rink has ever looked… people already know to rotate a phone to watch something…
+Rotated, 844 × 390 gives a rink around 816 × 347 — more than double the ice, with
+room beneath it."*
+
+**The drawing arithmetic is right and the conclusion is wrong.** Measured, same
+page, same frame:
+
+| | portrait 390×844 | landscape 844×390 | landscape 844×320 |
+|---|---:|---:|---:|
+| ice | 386 × 164 | **762 × 324** | 762 × 324 |
+| drawing area | 63,304 px² | **246,888 px² (3.90×)** | 246,888 px² |
+| ice as a share of the fold | 19.4% | **83.1%** | **101.3%** |
+| the caption `#who` | 0.57 screens | **1.52 screens** | 1.85 screens |
+| the transport | 0.81 screens | **2.04 screens** | 2.49 screens |
+| whole page | 2.42 screens | **4.57 screens** | 5.57 screens |
+
+⛔ **THERE IS NO ROOM BENEATH IT.** The ice alone is 83% of a 390px-tall viewport
+and **more than all of it** at 320, which is what a landscape phone really has
+after browser chrome. The screenshot at the top of the fold shows header, eyebrow
+and scoreboard, with the rink only beginning at the bottom edge — **you cannot
+see any of the ice without scrolling.**
+
+⭐ **AND IT MAKES CHENG'S OWN DIAGNOSIS WORSE.** His sentence is the best one in
+either analysis — *"the ice and the thing that explains the ice cannot occupy the
+screen together"* — and rotation moves the caption from 0.57 screens to 1.52. The
+furniture does not shrink when the phone turns; it simply eats a 390px viewport
+instead of an 844px one.
+
+### 4b.1 What this actually proves
+
+Drawing area and everything-else trade against one fixed budget, in every
+orientation. Landscape spends the whole budget on the drawing; the vertical rink
+spends it in proportion; only R1 changes the budget itself.
+
+**So R1 is not the cheap warm-up. It is the precondition for both of the others.**
+Landscape is worth having *after* the output is one line — at which point 762 ×
+324 of ice with a single caption under it is the best frame this site can show on
+a phone. Before that it is a bigger picture of a game you have to scroll away
+from to read about.
+
 ## 5. The recommendation
 
-**R1 now, R2 looked at.** R1 is measured, cheap and strictly better; it should
-not wait on a decision about R2. But R1 alone leaves the ratio untouched, and the
-ratio is the complaint — so R2 deserves a prototype and a screenshot before
-anyone argues about it, including me.
+**R1 first, and it is no longer optional.** §4b turns it from the cheap warm-up
+into the precondition: every other option spends fold the furniture is already
+holding, so nothing else can pay off until the output is one line.
+
+**Then landscape, which is cheap and which CHENG is right about for the wrong
+reason** — not because rotation fixes the layout, but because once the furniture
+is gone, a 762 × 324 rink is 3.9× the drawing and the only frame on this site
+where a phone shows more ice than a laptop's fold does.
+
+**R2 stays unprototyped and should not be argued about until it is drawn.** Its
+honest number is 1.82× at a height that still leaves room to read, against
+landscape's 3.90× for a rotation — and it costs every coordinate transform, the
+ends work and the learn diagrams. CHENG expects it to be rejected. On these
+numbers so do I, but it is rejected on evidence rather than on effort.
+
+**And the novice test decides whether portrait is salvageable at all.** She is on
+a phone; *does she understand what she is watching* is the question. One session
+answers it, and none of the above should be treated as settled before it.
