@@ -30,7 +30,14 @@ const PHONE = (() => {
   // rather than as an index-of on a literal because the stylesheet is authored
   // with newlines and a scan for `…){#rg .board` finds nothing the moment it is
   // formatted — a test that cannot find its subject reports innocence.
-  const re = /@media\s*\(max-width:520px\)\s*\{/g;
+  /* ⚠️ THE QUERY IS NOW A LIST, AND THE FIRST VERSION OF THIS SCAN DEMANDED A
+     BRACE IMMEDIATELY AFTER IT. On 2026-09-13 the board's narrow shape was
+     extended to the landscape phone by appending a second condition -- a comma
+     is a media query OR -- and this file threw at import: "no 520px query
+     carries the board", which is the failure it was written to report when the
+     RULES were gone, on a stylesheet where they were fine. The subject is the
+     block reached at 520px, not the punctuation after the condition. */
+  const re = /@media\s*\(max-width:520px\)[^{]*\{/g;
   for (let m; (m = re.exec(CSS)); ) {
     let d = 0;
     for (let k = m.index + m[0].length - 1; k < CSS.length; k++) {

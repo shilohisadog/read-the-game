@@ -19,7 +19,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { PAGE_CSS } from './helpers/page.js';
+import { PAGE_CSS, app, SCRIPT } from './helpers/page.js';
 
 /** The horizontal padding `#rg` applies to the page. */
 const pagePad = () => {
@@ -35,10 +35,17 @@ const wrapPad = () => {
   return m[1] + 'px';
 };
 
+/* ⚠️ THE RULE IS FOUND BY WHAT IT DOES, NOT BY BEING FIRST. This took the first
+   `#rg:not(.preview) .rinkbox{...}` in the stylesheet, and on 2026-09-13 the
+   landscape-phone layout added an earlier one (`grid-column:2`) -- so every test
+   below started reporting on a rule with no opinion about bleed at all. A probe
+   whose subject is "the first match" has its subject chosen by file order. */
 const bleedRule = () => {
-  const m = /#rg:not\(\.preview\) \.rinkbox\{([^}]*)\}/.exec(PAGE_CSS);
-  assert.ok(m, 'the full-bleed rule for the rink card is gone');
-  return m[1];
+  const all = [...PAGE_CSS.matchAll(/#rg:not\(\.preview\) \.rinkbox\{([^}]*)\}/g)]
+    .map(m => m[1]).filter(body => body.includes('margin-inline'));
+  assert.equal(all.length, 1,
+    `${all.length} rules bleed the rink card — the probe cannot say which is the subject`);
+  return all[0];
 };
 
 test('the rink cancels exactly the chrome the page puts beside it', () => {
@@ -71,7 +78,14 @@ test('the full-bleed applies to the phone and leaves the hero alone', () => {
      the homepage hero renders the same markup at card size, where an edge-to-edge
      rink would break out of the card containing it. The same pairing the mobile
      board rules already use, one block up. */
-  const i = PAGE_CSS.indexOf('#rg:not(.preview) .rinkbox{');
+  /* ⚠️ THE SAME CORRECTION AS `bleedRule` ABOVE. `indexOf` found the FIRST
+     `#rg:not(.preview) .rinkbox{` and on 2026-09-13 that became the landscape
+     layout's `grid-column:2` — so this reported on the query around a rule that
+     has no opinion about bleed, and failed a stylesheet that was correct. */
+  const bleeds = [...PAGE_CSS.matchAll(/#rg:not\(\.preview\) \.rinkbox\{([^}]*)\}/g)]
+    .filter(m => m[1].includes('margin-inline'));
+  assert.equal(bleeds.length, 1, `${bleeds.length} rules bleed the rink card`);
+  const i = bleeds[0].index;
   assert.ok(i > 0, 'no full-bleed rule');
   const before = PAGE_CSS.slice(0, i);
   const lastQuery = before.lastIndexOf('@media');
@@ -112,4 +126,119 @@ test('the penalty seat is untouched — its reservation is a ruling, not slack',
     'the penalty seat no longer holds its ground — the board will resize mid-replay again');
   assert.doesNotMatch(PAGE_CSS, /\.pens:empty\{[^}]*display:none/,
     'an :empty rule is collapsing the penalty seat, which is the shift Kevin reported');
+});
+
+/* ─────────────── THE LANDSCAPE PHONE — THE LAPTOP'S COLUMNS, INVERTED ───────
+ * Kevin, 2026-09-13: *"I have decided portrait isn't salvageable… can we
+ * replicate the laptop approach on mobile, with the controls side by side with
+ * the rink?"* and *"a rotate prompt would be the best portrait approach."*
+ *
+ * Measured (docs/mobile.md §4c): stacked landscape gives 762×324 of ice — 3.90×
+ * portrait — with the caption 1.52 screens down. Beside a 260px column the ice
+ * is 480×204 and the rink, its sentence, the board, Play, Prev/Next and the
+ * scrubber all land on one screen. Width is taken FROM the rink on purpose,
+ * because the rink's height IS its width × 0.425.
+ */
+const LAND = (() => {
+  const css = PAGE_CSS.replace(/\/\*[\s\S]*?\*\//g, '');
+  const at = css.indexOf('@media (orientation:landscape) and (max-height:500px){');
+  assert.notEqual(at, -1, 'the landscape-phone layout is gone');
+  let d = 0;
+  for (let k = css.indexOf('{', at); k < css.length; k++) {
+    if (css[k] === '{') d++;
+    else if (css[k] === '}' && --d === 0) return css.slice(at, k + 1);
+  }
+  throw new assert.AssertionError({ message: 'the landscape block is never closed' });
+})();
+
+test('⛔ every landscape rule exempts the preview, because the HERO is landscape', () => {
+  /* ⚠️ THE TRAP IS IN THE QUERY ITSELF. `orientation` is a property of the
+     DOCUMENT's viewport, and the front door's hero is an iframe measured at
+     315×220 on a portrait phone — landscape, under 500px tall, a match. Without
+     `:not(.preview)` the preview would take the game page's two-column layout
+     inside a box with no second column to give, on the one surface a stranger
+     sees first. Verified in a browser: the hero reports `preview:true`,
+     `rink 301×122`, unchanged.
+     The header rules are the exception and are named: the chrome lives OUTSIDE
+     `#rg`, so no `#rg` selector can reach it, and the preview has no header at
+     all (`test/render-preview.test.js`: preview takes the shared chrome off). */
+  const selectors = LAND
+    .slice(LAND.indexOf('{') + 1, -1)
+    .split('}').map(s => s.split('{')[0].trim()).filter(Boolean)
+    .flatMap(s => s.split(',').map(x => x.trim()));
+  assert.ok(selectors.length >= 6,
+    `only ${selectors.length} selectors found — this probe lost its subject`);
+  const unguarded = selectors.filter(s =>
+    !s.startsWith('#rg:not(.preview)') && !s.startsWith('header.sitehdr'));
+  assert.deepEqual(unguarded, [],
+    'these landscape rules would reach the front door\'s hero, which is an ' +
+    'iframe that is itself landscape and under 500px tall');
+});
+
+test('⭐ the rink takes the second column and everything else takes the first', () => {
+  // The `.side` wrapper is `display:contents` at this width, so its children are
+  // already grid items of `.wrap` — pulling only the rink across leaves every
+  // other block to flow down column one in document order, and `#who` travels
+  // with the rink because it lives inside it. Placing two dozen children by hand
+  // would be a second statement of the document's shape.
+  assert.match(LAND, /#rg:not\(\.preview\) \.wrap\{[^}]*grid-template-columns:minmax\(0,(\d+)px\) minmax\(0,1fr\)/,
+    'the landscape layout is not two columns');
+  assert.match(LAND, /#rg:not\(\.preview\) \.rinkbox\{[^}]*grid-column:2/,
+    'the rink is not in the second column');
+  assert.match(LAND, /#rg:not\(\.preview\) \.side > \*\{[^}]*grid-column:1/,
+    "the side column's children were left to auto-place, which alternates columns");
+  // ⛔ AND THE SPAN IS NOT `1 / -1`. With no explicit rows `-1` resolves to line
+  // 1 and collapses the span — the defect the 1360 rule records having hit.
+  const span = /#rg:not\(\.preview\) \.rinkbox\{[^}]*grid-row:1\/span (\d+)/.exec(LAND);
+  assert.ok(span, 'the rink does not span the rows beside it');
+  assert.ok(+span[1] >= 30, `the rink spans ${span[1]} rows, fewer than this wrap can hold`);
+});
+
+test('⭐ the board is stacked by BOTH the narrow phone and the narrow column', () => {
+  /* The board breaks because its COLUMN is narrow, not because the viewport is:
+     in the landscape layout it sits in 260px while the viewport is 844, and the
+     three-across grid put `CAR` through the column edge and the `1` outside the
+     card. A comma is a media query OR, so the stacked shape reviewed for a phone
+     is REUSED rather than restated — two copies would be two things to keep in
+     step. */
+  const css = PAGE_CSS.replace(/\/\*[\s\S]*?\*\//g, '');
+  const q = /@media\(max-width:520px\),\(orientation:landscape\) and \(max-height:500px\)\{/.exec(css);
+  assert.ok(q, 'the board no longer stacks on both conditions');
+  assert.ok(css.slice(q.index, q.index + 400).includes('.board{grid-template-columns:1fr 1fr'),
+    'the query that carries both conditions is not the one that stacks the board');
+});
+
+/* ─────────────────────────── THE PORTRAIT ROTATE PROMPT ────────────────────── */
+
+test('⭐ portrait on a phone asks for a rotation, and is not a wall', () => {
+  assert.match(app, /<div class="rotate" id="rotate">/, 'the prompt is gone from the markup');
+  assert.match(app, /<button class="rotgo" id="rotgo"/, 'the way past it is gone');
+
+  const css = PAGE_CSS.replace(/\/\*[\s\S]*?\*\//g, '');
+  // Hidden by default, everywhere. The media query is what reveals it, so a
+  // viewport that is not a phone held upright never sees it at all.
+  assert.match(css, /#rg \.rotate\{display:none\}/,
+    'the prompt is not hidden by default — every other viewport would carry it');
+  const at = css.indexOf('@media (orientation:portrait) and (max-width:560px){');
+  assert.notEqual(at, -1, 'the prompt has no viewport that asks for it');
+  const block = css.slice(at, css.indexOf('.side > *{display:none}', at) + 24);
+  assert.match(block, /#rg:not\(\.preview\):not\(\.showanyway\) \.rotate\{display:block\}/,
+    'the prompt is not revealed, or is revealed in the preview, or ignores the dismiss');
+
+  /* ⛔ THE ESCAPE IS LOAD-BEARING. A reader with orientation lock on is not
+     making a mistake, and a prompt that cannot be dismissed decides on their
+     behalf whether they are able to turn their phone. */
+  assert.match(SCRIPT, /\$\('rotgo'\)\.onclick=\(\)=>[^;]*classList\.add\('showanyway'\)/,
+    'pressing "Show it anyway" does nothing');
+  assert.match(block, /:not\(\.showanyway\)[^{]*\.wrap > \*:not\(\.rotate\):not\(\.board\)/,
+    'the dismiss does not bring the page back');
+
+  /* ⭐ AND THE SCOREBOARD IS EXEMPT, so a reader arriving from a shared link can
+     see they reached the right game before being asked to do anything. */
+  assert.match(block, /:not\(\.board\)/, 'the prompt hides the board too — the page says nothing');
+  // ⚠️ `.side` is display:contents here, so its children are named rather than
+  // hidden with their wrapper: when you hide a container, enumerate what was
+  // inside it. This file carries that scar already.
+  assert.match(block, /\.side > \*\{display:none\}/,
+    'the layer controls stay on screen behind the prompt, with no rink to control');
 });

@@ -1556,6 +1556,14 @@ $('play').onclick=()=>playing?stop():play();
    that a test could satisfy without the real control working. There is no pause
    branch: it is only on screen at the resting frame, where `playing` is false. */
 if($('pressplay'))$('pressplay').onclick=()=>play();
+/* ⭐ THE WAY PAST THE ROTATE PROMPT, and it is a CLASS rather than storage.
+   A reader with orientation lock on is not making a mistake, so the prompt has
+   to be dismissible -- but nothing about this decision is worth remembering
+   across pages: turning the phone answers it, and a stored "I said no once"
+   would keep the cramped layout after the reader had already rotated. The
+   element does not exist on every surface this bundle runs on, so it is guarded
+   the way `#pressplay` two lines up already is. */
+if($('rotgo'))$('rotgo').onclick=()=>document.getElementById('rg').classList.add('showanyway');
 /* ⭐⭐ THE ICE IS THE PLAY/PAUSE CONTROL.
    Kevin, reviewing on his phone: "can we figure out how to make the rink
    play/pause enabled by tapping on it? The play/pause control is below the fold

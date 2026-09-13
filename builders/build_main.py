@@ -57,6 +57,29 @@ __CSS__</style>
      the name back for a different element would have left that guard passing on
      a page that no longer contains what it was written to keep out. -->
 <h1 class="pagelede">Learn to read hockey · event by event first, add layers after</h1>
+<!-- ⭐⭐ PORTRAIT IS OUT ON A PHONE (Kevin, 2026-09-13): "I have decided portrait
+     isn't salvageable, there's no way that portrait will work for a novice, heck
+     it doesn't work for me and I know what it's trying to show... a rotate
+     prompt would be the best portrait approach."
+     THE REASON IS A RATIO AND THE PROMPT SAYS SO. The rink is 200x85 and a
+     portrait phone is 0.46:1, so the drawing's height is set by the container's
+     WIDTH -- measured at 390x844, the ice is 19.4% of the first screen and the
+     layer's own sentence is 1.62 screens below the ice it describes
+     (docs/mobile.md §1). Rotating is not a preference; it is the only way the
+     two can be on screen together.
+     ⛔ AND IT IS NOT A WALL. `Show it anyway` reveals the page exactly as it is
+     today. A reader with orientation lock on -- an accessibility setting, not a
+     mistake -- must not be shut out of the site by a layout opinion, and a
+     prompt that cannot be dismissed is one that decides on their behalf whether
+     they are able to turn their phone.
+     THE SCOREBOARD STAYS VISIBLE BESIDE IT, so a reader arriving from a shared
+     link can see they reached the right game before being asked to do anything. -->
+<div class="rotate" id="rotate">
+  <p class="rotsay"><b>Turn your phone sideways.</b> A rink is two and a half
+  times wider than it is tall. Upright, the ice gets a fifth of the screen and
+  everything that explains it sits below the fold.</p>
+  <button class="rotgo" id="rotgo" type="button">Show it anyway</button>
+</div>
 <div class="board">
   <p class="foot" id="gl">—</p>
   <div class="tm a"><span class="ab" id="aAb">&mdash;</span><span class="sc" id="aSc">0</span><div class="pens" id="penA"></div></div>

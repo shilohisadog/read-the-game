@@ -115,7 +115,15 @@
    whichever way the badge and score are mirrored. It still holds its ground when
    empty (see `.pens`); this changes where it sits, never whether it is there. */
 #rg:not(.preview) .pens{flex-basis:100%;order:3;width:100%;align-items:center}
-@media(max-width:520px){
+/* ⭐ AND THE SAME LIST NOW CARRIES THE LANDSCAPE PHONE. The board breaks because
+   its COLUMN is narrow, not because the viewport is -- in the two-column
+   landscape layout below it sits in 260px while the viewport is 844, and the
+   three-across grid put `CAR` through the column edge and the `1` outside the
+   card (prototyped 2026-09-13, docs/mobile.md §4c). A comma is a media query OR,
+   so the stacked shape that was already reviewed for a narrow phone is reused
+   rather than restated -- two copies of this board's fallback would be two
+   things to keep in step. */
+@media(max-width:520px),(orientation:landscape) and (max-height:500px){
  #rg:not(.preview) .board{grid-template-columns:1fr 1fr;grid-template-areas:"game game" "away home" "state state";
    gap:9px 10px;padding:11px 12px}
  #rg:not(.preview) .tm.a{grid-area:away}#rg:not(.preview) .tm.h{grid-area:home}
@@ -360,6 +368,12 @@
    the hero can paint before a script runs and a control a visitor can press on
    the front door is a control that does something they did not ask for. */
 #rg.preview .oiwrap,#rg.preview .onice,
+/* ⭐ AND THE ROTATE PROMPT, which is `display:none` by default anyway — but this
+   list is the page's statement of what a visitor cannot press on the front door,
+   and a control kept out of it by the accident of a base rule is one that
+   arrives the day the base rule changes. `render-preview.test.js` reads the list,
+   not the outcome. */
+#rg.preview .rotate,
 #rg.preview .pressplay,
 #rg.preview .newcomer,#rg.preview h1,#rg.preview .transport,#rg.preview .zone,#rg.preview .disclose,
 #rg.preview .figpick,#rg.preview .icenote,#rg.preview .whistlepanel,#rg.preview .blockpanel,
@@ -524,6 +538,89 @@
     that ends at 1359 -- so the side column inherits the wrapped shape rather than
     restating it. See `#rg .pickrow` for why it is a grid at all. */
 }
+/* ⭐⭐ THE LANDSCAPE PHONE — THE LAPTOP'S TWO COLUMNS, FOR THE OPPOSITE REASON.
+   Kevin, 2026-09-13: "can we replicate the laptop approach on mobile, with the
+   controls side by side with the rink?"
+
+   ⛔ AND THE RULE INVERTS. The 1360 query above protects the rink's WIDTH — "the
+   smallest width at which nothing regresses… the rink gets 992px against today's
+   900" — because width is what a laptop has spare. Here the scarce dimension is
+   HEIGHT, and the rink's height is its width x 0.425 (200x85, a fact about the
+   sheet rather than a choice). So width is taken FROM the rink on purpose: it is
+   the only way to buy back the vertical room the caption and the transport need.
+
+   MEASURED, docs/mobile.md §4c. Stacked landscape gives 762x324 of ice — 3.90x
+   portrait — with the caption 1.52 screens down and the transport at 2.04, which
+   is CHENG's own diagnosis made worse: "the ice and the thing that explains the
+   ice cannot occupy the screen together." Beside a 260px column the ice is
+   488x207, 1.60x portrait, and the rink, its sentence, the scoreboard, Play,
+   Prev/Next and the scrubber are ALL ON ONE SCREEN.
+
+   ⛔ THE RINK MOVES, NOT EVERYTHING ELSE. `.side` is `display:contents` at this
+   width, so its children are already grid items of `.wrap`; pulling only
+   `.rinkbox` into column two leaves every other block to flow down column one in
+   document order, and `#who` travels with the rink because it lives inside it.
+   The alternative — placing two dozen children by hand — is a second statement
+   of the document's shape.
+
+   ⚠️ `:not(.preview)` ON EVERY RULE, and this is the trap in the query itself.
+   `orientation` is a property of the DOCUMENT's viewport, and the hero is an
+   iframe about 350x200 on a phone — landscape, under 500px tall, a match. Without
+   the guard the front door's preview would take the game page's two-column layout
+   inside a box that has no second column to give.
+
+   500px OF HEIGHT is the discriminator. A landscape phone is 320-430 tall after
+   browser chrome; an iPad in landscape is 768 and a laptop 900. A short, wide
+   desktop window matches too, and should: it has the same problem. */
+@media (orientation:landscape) and (max-height:500px){
+ #rg:not(.preview) .wrap{max-width:none;padding:8px 12px;display:grid;
+  grid-template-columns:minmax(0,260px) minmax(0,1fr);column-gap:14px;align-items:start}
+ #rg:not(.preview) .wrap > *,#rg:not(.preview) .side > *{grid-column:1;min-width:0}
+ /* `span 40` for the reason the laptop rule says `span 30`: with no explicit
+    rows, `-1` resolves to line 1 and collapses the span. Forty is more than the
+    children this wrap can hold; the extra tracks are empty and zero-height. */
+ #rg:not(.preview) .rinkbox{grid-column:2;grid-row:1/span 40}
+ /* 39px of shouting, above a rink that has none to spare. The page keeps its
+    heading for a screen reader and for every other viewport. */
+ #rg:not(.preview) .pagelede{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+ #rg:not(.preview) .board{margin-bottom:8px;padding:8px 10px;gap:6px 10px}
+ /* ⛔ THE GAME LINE GOES, and it is the one thing on this board a reader does not
+    need while the replay is running. "MTL at CAR · 21 May 2026" answers WHICH
+    GAME -- the question a shared link already answered on the way in, and the one
+    the two club chips under it answer again. In 320px of landscape it is 25px
+    that the transport needs in order to be on the same screen as the rink. */
+ #rg:not(.preview) .board .foot{display:none}
+ #rg:not(.preview) .transport{margin-top:8px;gap:6px}
+ #rg:not(.preview) .transport .grp{gap:6px}
+ /* The site header is 75px of a 320px fold — the whole caption's worth. It keeps
+    the wordmark, which is the way home from every page, and drops the nav that
+    is one tap away on the page it links to. */
+ header.sitehdr nav{display:none}
+ header.sitehdr{padding-top:6px;padding-bottom:6px}
+}
+
+/* ⭐⭐ PORTRAIT ON A PHONE ASKS THE READER TO TURN IT. See the markup in
+   builders/build_main.py for why, and for why it is not a wall.
+   560px AND PORTRAIT: a phone held upright. A portrait iPad is 768 or 820 wide
+   and is not asked; neither is a narrow desktop window, which has the height. */
+#rg .rotate{display:none}
+@media (orientation:portrait) and (max-width:560px){
+ #rg:not(.preview):not(.showanyway) .rotate{display:block}
+ /* Everything but the prompt and the scoreboard. `.side` is `display:contents`
+    here, so its children are hidden by name rather than with their wrapper —
+    the scar this file already carries: when you hide a container, enumerate what
+    was inside it. */
+ #rg:not(.preview):not(.showanyway) .wrap > *:not(.rotate):not(.board),
+ #rg:not(.preview):not(.showanyway) .side > *{display:none}
+}
+#rg .rotate{background:#fff;border:1px solid var(--edge);border-left:3px solid var(--blue);
+ border-radius:0 12px 12px 0;padding:14px 16px;margin:0 0 12px}
+#rg .rotsay{margin:0 0 12px;font-size:.92rem;line-height:1.5;color:var(--muted)}
+#rg .rotsay b{color:var(--ink);display:block;font-size:1.05rem;margin-bottom:4px}
+#rg .rotgo{font:inherit;font-size:.86rem;font-weight:650;min-height:44px;padding:0 16px;
+ border:1px solid var(--edge);border-radius:9px;background:var(--bg);color:var(--ink);cursor:pointer}
+#rg .rotgo:hover,#rg .rotgo:focus-visible{border-color:var(--ink)}
+
 #rg.preview{--lboxh:0px;padding:0;min-height:0;height:100vh;overflow:hidden}
 #rg.preview .wrap{max-width:none;padding:0;height:100%;
  display:flex;flex-direction:column;min-height:0}

@@ -109,6 +109,14 @@ function buriedIds(html, dark) {
  * Un-parking a zone should DELETE lines from this list, never leave them.
  */
 const ENUMERATED = {
+  /* ⭐ THE ROTATE PROMPT'S WAY OUT (2026-09-13). `.rotate` is `display:none`
+     until a portrait phone asks for it, so this button is inside a parked
+     container by construction and the renderer binds a handler to it at boot --
+     exactly the shape this ledger exists to make deliberate. It is not parked in
+     the sense the counters below are: it is a control that only one viewport is
+     ever offered, and the handler has to exist before the viewport is known,
+     because a stylesheet reveals it without telling the script. */
+  rotgo: 'dismisses the portrait rotate prompt — revealed by media query, never by JS',
   /* ⭐ `.cbar`'s SIX CHILDREN ARRIVED HERE ON 2026-09-09, and the note they
      replace said they could not. It read: the bar is parked on the game page and
      lit on the front door, the difference is one `:not(.preview)`, and that is a
