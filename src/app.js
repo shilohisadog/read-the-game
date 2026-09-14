@@ -321,8 +321,8 @@ let rinkPer=null;
  */
 function drawRink(per){if(per===rinkPer)return;rinkPer=per;
  $('rink').innerHTML=furniture()
-  +netGlyph('netHome',AX(-NET_X,per),HOMECOL)
-  +netGlyph('netAway',AX(NET_X,per),AWAYCOL);}
+  +netGlyph('netHome',AX(-NET_X,per),HOMECOL,{text:HAB,ink:'var(--home-text)'})
+  +netGlyph('netAway',AX(NET_X,per),AWAYCOL,{text:AAB,ink:'var(--away-text)'});}
 /**
  * A goaltender in each crease -- unless the feed says one has been pulled.
  *

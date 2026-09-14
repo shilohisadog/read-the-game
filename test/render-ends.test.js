@@ -12,6 +12,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { colourOf } from '../src/lib/teams.js';
 import { WHY, whistle } from '../src/lib/layers/whistle.js';
 import { rich, SCRIPT, fakeDom, bundle, boot , pickLayer, app as APP_HTML, PAGE_CSS as ENDS_CSS } from './helpers/page.js';
 
@@ -383,6 +384,65 @@ test('as-played rotates the periods the arena rotated, and only those', () => {
   }
   assert.ok(rotated > 20, `only ${rotated} rotated frames — the fixture is not exercising the flip`);
   assert.ok(held > 20, `only ${held} held frames — the control is not being exercised`);
+});
+
+/**
+ * ⭐⭐ THE NET LABEL FLIPS WITH THE NET, AND THAT IS THE WHOLE REASON IT IS
+ * ALLOWED TO EXIST.
+ *
+ * `ATTACKS →` was deleted partly because it asserted ONE direction for sixty
+ * minutes on ice that turns over twice — `docs/ends-switching.md` §10.1: *"the
+ * page states a claim, in words, that contradicts what hockey does at every
+ * intermission."* The club name behind a net is the opposite kind of claim: it
+ * names WHOSE NET THIS IS, and it is placed from `gx`, the same `AX(±NET_X,per)`
+ * that put the net there. There is no second statement of which end is which.
+ *
+ * ⛔ SO THE PAIR IS NOT OPTIONAL, for `walkRink`'s reason one test up. "It moves"
+ * is satisfied by a label that wanders off on its own; "it agrees with the
+ * goalie" is satisfied by a label welded to a net that never flips. Written
+ * together, the only thing that passes both is a label that travels WITH its net.
+ */
+function walkTags(search) {
+  const a = boot(null, null, search);
+  const hAb = a.$('hAb').textContent, hCol = colourOf(hAb);
+  return a.every(d => {
+    const tag = [...d.$('rink').innerHTML.matchAll(/<text class="netlab" x="([-\d.]+)"[^>]*>([^<]+)</g)]
+      .find(m => m[2] === hAb);
+    const gk = [...d.$('netmen').innerHTML.matchAll(/<rect class="gkbody" x="([-\d.]+)"[^>]*fill="([^"]+)"/g)]
+      .find(m => m[2].toLowerCase() === hCol.toLowerCase());
+    return { per: d.$('per').textContent, tag: tag ? +tag[1] : null, gk: gk ? +gk[1] : null };
+  });
+}
+
+test('the club behind the net travels with the net when the ends turn over', () => {
+  const played = walkTags('?ends=as-played'), fixed = walkTags('?ends=fixed');
+  assert.equal(played.length, fixed.length);
+
+  let rotated = 0, held = 0, agreed = 0;
+  for (let k = 0; k < fixed.length; k++) {
+    const p = played[k], f = fixed[k];
+    assert.ok(p.tag != null, `frame ${k}: the host net is not named`);
+
+    // HALF ONE — IT REALLY MOVES, and to the exact mirrored position. SX(x)=100-x
+    // and the rotation sends x to -x, so the two screen positions must SUM to
+    // 200. A label that merely "differs" between the modes fails here.
+    if (p.per === 'Period 2') { assert.equal(p.tag + f.tag, 200,
+      `frame ${k}: the label did not rotate about centre ice`); rotated++; }
+    else { assert.equal(p.tag, f.tag,
+      `frame ${k} (${p.per}) moved, and the feed says that period was not rotated`); held++; }
+
+    // HALF TWO — IT MOVES WITH ITS OWN NET. The host's name and the host's
+    // goaltender are on the same side of centre ice in every frame of both
+    // modes. This is the assertion `ATTACKS →` could not have passed.
+    if (p.gk != null) {
+      assert.equal(p.tag > 100, p.gk > 100,
+        `frame ${k}: the host is named at one end and defends the other`);
+      agreed++;
+    }
+  }
+  assert.ok(rotated > 20, `only ${rotated} rotated frames — the fixture is not exercising the flip`);
+  assert.ok(held > 20, `only ${held} held frames — the control is not being exercised`);
+  assert.ok(agreed > 20, `only ${agreed} frames had a host goaltender to agree with`);
 });
 
 test('the ends toggle never reaches a count', () => {

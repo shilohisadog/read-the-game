@@ -8,6 +8,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { colourOf } from '../src/lib/teams.js';
+import { NET_X } from '../src/lib/rink.js';
+import { SX, BOARD } from '../src/lib/rinkart.js';
 import { whistle } from '../src/lib/layers/whistle.js';
 import { readFileSync } from 'node:fs';
 import { rich, app, SCRIPT, PAGE_CSS, prose, boot , pickLayer } from './helpers/page.js';
@@ -227,9 +229,59 @@ test('a goaltender stands in each crease, and the sides agree with the scoreboar
   assert.equal(visitor.stroke, colourOf(a.$('aAb').textContent), 'trimmed in its club colour');
   assert.ok(host.x > 100 && visitor.x < 100, 'host right, visitor left');
 
-  // And no text tag survives.
-  assert.doesNotMatch(a.$('rink').innerHTML, /class="netlab"/, 'the vertical tag is gone');
-  assert.doesNotMatch(app, /\$\{ab\} net</, 'and so is the copy that built it');
+  /* ⭐⭐ THE VERTICAL TAG IS BACK, AND THIS ASSERTION USED TO FORBID IT.
+     It read `doesNotMatch(/class="netlab"/, 'the vertical tag is gone')`, pinning
+     76e7a86 (2026-08-13, 11:12): *"put a goalie in front of the net and the
+     ambiguity resolves, so the text tags can go... a goaltender standing in the
+     crease says the net is defended AND THE CLUB'S COLOUR SAYS WHOSE."*
+
+     ⛔ THAT PREMISE IS THE ONE KEVIN DISPROVED, from his own phone, on MTL at
+     CAR: *"the hero game is two red or white colored teams... it's super
+     difficult to figure out who's end is who's."* The club's colour says whose
+     only when the two clubs have different colours, and eleven of the 33 are red.
+
+     So the element returns — but NOT the element that was deleted, and the three
+     differences are what this test now pins instead of the ban:
+
+       BEHIND the net, not on it. 52f9b5c put the tag at `SX(-89)+2` = 191, inside
+       the net's own 189..193 body, competing with the mesh, the strands, the post
+       and the goaltender standing in front of all three. It now sits in the strip
+       between the net's BACK and the boards, which is empty ice.
+
+       UNDER the game, not over it. It is the first child of the first `<g>`, so
+       the 3.5% of placed events that land behind a goal line (420 of 12,024 over
+       41 archive games) draw across it.
+
+       BESIDE the goaltender, not instead of him. Both August commits treated the
+       two as alternatives — one shipped the tag and dropped the captions, the
+       next shipped the figure and dropped the tag. Kevin's complaint is that
+       NEITHER is sufficient alone: the figure says the net is defended, the fill
+       says host or visitor, and only the LETTERS survive two clubs in red. The
+       goalie assertions above and these run in one test on purpose. */
+  const tags = [...a.$('rink').innerHTML.matchAll(
+    /<text class="netlab" x="([-\d.]+)"[^>]*>([^<]+)</g)]
+    .map(m => ({ x: +m[1], ab: m[2] })).sort((p, q) => p.x - q.x);
+  assert.equal(tags.length, 2, 'one tag per net');
+  assert.equal(tags[1].ab, a.$('hAb').textContent, 'the host is named at the host end');
+  assert.equal(tags[0].ab, a.$('aAb').textContent, 'the visitor at the visitor end');
+
+  // BEHIND THE NET AND INSIDE THE BOARDS, derived from the same geometry the net
+  // is — not from 196 and 4 typed here, which would be this test agreeing with a
+  // number rather than with a position.
+  const back = 4, half = SX(-NET_X);                   // the net is 4 deep
+  assert.ok(tags[1].x > half + back && tags[1].x < BOARD.x + BOARD.w,
+    `the host tag is between the net's back and the boards, not on the net`);
+  assert.ok(tags[0].x < SX(NET_X) - back && tags[0].x > BOARD.x,
+    `the visitor tag likewise`);
+
+  // AND IT IS THE DEEPEST INK ON THE ICE. `#rink` is the first <g> in the svg and
+  // the tag is the first thing in it, so everything the game draws covers it.
+  assert.match(a.$('rink').innerHTML.slice(a.$('rink').innerHTML.indexOf('<g class="netg">')),
+    /^<g class="netg"><text class="netlab"/, 'the tag is not first inside the net group');
+
+  // ⛔ THE TWO-WORD FORM STAYS DELETED. 52f9b5c wrote `WSH net` up the post; the
+  // noun was the clutter Kevin named, and the goaltender does say `net` already.
+  assert.doesNotMatch(app, /\$\{ab\} net</, 'the "WSH net" copy came back');
 });
 
 test('the goaltender LEAVES when the feed says the goalie was pulled', () => {

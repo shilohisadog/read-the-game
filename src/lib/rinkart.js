@@ -28,6 +28,7 @@
  */
 import { NET_X, BLUE_LINE_X, ZONE_BAND_FT, NEUTRAL_DOT_X,
          SLOT_HALF_WIDTH, HIGH_DANGER_FT } from './rink.js';
+import { ESC } from './esc.js';
 
 // THE HOST DEFENDS THE RIGHT-HAND END, which is the arrangement a television
 // viewer expects (Kevin) -- and it is ours to choose, because the feed does not
@@ -279,7 +280,49 @@ export function furniture(id='',tints=true){
  //
  // The sweater convention carries over: the host's mesh is filled with its
  // colour, the visitor's is white inside its own frame.
-export const netGlyph=(id,gx,col)=>{
+/* ⭐⭐ THE CLUB'S NAME BEHIND ITS OWN NET — Kevin, 2026-09-11 and again 09-14:
+   *"the hero game is two red or white colored teams, that's a problem... it's
+   super difficult to figure out who's end is who's."*
+
+   ⚠️ IT IS NOT A COLOUR-DISTANCE PROBLEM, and the arithmetic is what says so.
+   The game he hit it on is MTL at CAR, which is ΔE 29.3 apart in Lab — a hero
+   rule keyed on colour distance would have picked it anyway. The real clashes
+   are five pairs with IDENTICAL hex (BOS-NSH, DET-NJD, EDM-WPG, FLA-WSH,
+   TOR-VAN) over 39 of 4,192 published games, 0.9%. So picking a different hero
+   fixes nothing.
+
+   WHAT THE MECHANISM ACTUALLY WAS: the ends are already distinguished — by the
+   goaltenders, and by FILL rather than by hue, the host solid in its colour and
+   the visitor white inside its frame. At 390px that figure is 3.5 x 5 px. Two
+   reds simply remove the hue you would otherwise fall back on, and five pixels
+   of fill are then carrying *whose end is this* alone.
+
+   ⛔⛔ AND THIS WAS PREDICTED, IN THIS REPO, AND THE OTHER ARGUMENT WON.
+   `docs/scoreboard-mobile.md` §5.2, arguing to KEEP `ATTACKS →` on phones:
+   *"the goalies answer only once you already know which colour is which — and
+   the colours are exactly what a novice does not know."* `ATTACKS →` was
+   removed anyway for two reasons that were also correct: it overflowed the
+   phone scoreboard, and once the ice started flipping as-played a direction
+   constant for the whole game became a claim contradicted at every
+   intermission (`docs/ends-switching.md` §10.1).
+   ⭐ A REASON THAT EXPIRES DOES NOT TAKE THE PROBLEM WITH IT. Deleting the
+   arrow was right; what went undone was the job it had been doing badly.
+
+   ⭐ SO THIS IS A DIFFERENT CLAIM, AND THAT IS THE WHOLE DESIGN. The arrow said
+   which WAY a club was going — one direction, asserted for sixty minutes, false
+   for forty of them. This names WHOSE NET THIS IS: a fact about the frame in
+   front of you, placed by `gx`, which is `AX(±NET_X, per)`. It is derived from
+   the same transform that put the net there, so it cannot disagree with the
+   flip — there is no second statement of which end is which to keep in sync.
+
+   ⭐ AND THE INK IS THE CALLER'S, WHICH IS NOT FUSSINESS. A label that fails in
+   the same case as the thing it is fixing is not a fix: two red clubs would get
+   two red words. `app.js` passes `var(--home-text)`/`var(--away-text)`, which
+   `readableInk` has already resolved to the club's colour when it can be READ
+   on white and to plain ink when it cannot — six of the 33 primaries cannot,
+   Boston gold at 1.73:1. The LETTERS carry the identity; the colour is
+   redundant when it works and absent when it would not. */
+export const netGlyph=(id,gx,col,label)=>{
   // Which way is "behind" is read from where the goal line sits on screen, so a
   // reflection of SX carries the whole net with it and cannot leave one end
   // pointing the wrong way.
@@ -295,7 +338,31 @@ export const netGlyph=(id,gx,col)=>{
   for(let k=1;k<=2;k++){const t=k/3, mx=gx+(back-gx)*t;
    strands+=`<line class="strand" x1="${mx.toFixed(1)}" y1="${(top+0.8*t).toFixed(1)}" `
           + `x2="${mx.toFixed(1)}" y2="${(bot-0.8*t).toFixed(1)}" stroke="${col}"/>`;}
+  /* ⭐ BETWEEN THE BACK OF THE NET AND THE BOARDS, WHICH IS SIX UNITS, and the
+     six is the rink's and not a margin anyone picked: the goal line is at |x|=89
+     and the boards at |x|=99, the net is four deep, so what is left behind it is
+     the ten feet a real sheet leaves minus the net standing in it. Vertical,
+     because that strip is 6 wide and 57 tall — Kevin: *"vertical aligned text
+     between the net and the end boards."*
+     ⭐ AND IT IS FIRST IN THE GROUP, SO EVERYTHING DRAWS OVER IT. `#rink` is the
+     bottom-most `<g>` in the svg, ahead of netmen, lines, whistles, draws, cue,
+     events, puck and labels; inside the group the label precedes even the net's
+     own paint. MEASURED, because Kevin asked for it not to interfere: over 43
+     archive games, 196 of 12,585 placed events land on the label — 1.56%, median
+     4 a game, worst game 12. That is not nothing, which is why the label is under
+     them AND faint rather than either one alone.
+     ⚠️ THE FIRST VERSION OF THAT FIGURE WAS 3.4%, AND IT WAS THE WRONG SHAPE.
+     It counted the band `|y| <= 10` because that is roughly how tall the label
+     LOOKS. The label's height is its TEXT LENGTH — 11.65 units — so the real
+     half-height is 5.83. Guessing at the footprint of the thing being measured
+     inflated the answer by 2.2x; the figures above are the rendered box. */
+  const lx=back-3*dir;
+  const lab=label&&label.text
+   ? `<text class="netlab" x="${lx}" y="42.5" fill="${label.ink||col}"`
+     + ` transform="rotate(-90 ${lx} 42.5)">${ESC(label.text)}</text>`
+   : '';
   return `<g class="netg">`
+   + lab
    + `<path class="crease" d="M ${gx} ${42.5-6} A 6 6 0 0 ${dir>0?1:0} ${gx} ${42.5+6}"/>`
    + `<path class="mesh" d="${body}" fill="#fff" fill-opacity=".5" stroke="${col}"/>`
    + strands

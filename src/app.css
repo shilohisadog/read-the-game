@@ -772,6 +772,24 @@
 #rg .nplsub{font-size:2.9px;text-anchor:middle;fill:var(--ink);opacity:.72}
 #rg .crease{fill:#cfe0f2;stroke:var(--blue);stroke-width:.4;opacity:.55}
 #rg .mesh{stroke-width:.8;opacity:.9}#rg .strand{stroke-width:.35;opacity:.5}#rg .post{stroke-width:1.1;stroke-linecap:round}
+/* ⭐ THE CLUB BEHIND ITS OWN NET — faint on purpose, and Kevin set the brief:
+   *"the text can be partially opaque, so not to interfere with the event display
+   too... just enough visual to be abundantly clear which end is which."*
+   So it is sized to the STRIP and dimmed to stay under the game, in the 6-unit
+   gap between the net's back and the boards.
+   ⭐ 5.2 WAS FOUND BY LOOKING AND THEN CHECKED, not chosen. At 6px the glyph box
+   spans 192.43..199.57 — overrunning the net AND the boards by 0.57 each, which
+   is exactly what the screenshot showed. At 5.2 it is 192.97..199.03: the gap to
+   within three hundredths. The INK clears both, because every one of the 33
+   abbreviations is three capitals with NO DESCENDER, so cap height and not the
+   em box is the only case that ever renders. It is the deepest ink on
+   the ice — first child of the first `<g>` — so the 3.5% of events that land
+   back there draw straight over it.
+   ⛔ `pointer-events:none` BECAUSE THE ICE IS A CONTROL NOW. Tapping the rink
+   plays and pauses it and a double-tap steps events; a `<text>` node that could
+   become `ev.target` would be a dead patch in the middle of that gesture. */
+#rg .netlab{font-size:5.2px;font-weight:800;text-anchor:middle;dominant-baseline:central;
+ letter-spacing:.35px;opacity:.38;pointer-events:none;font-family:system-ui,sans-serif}
 #rg .gkbody,#rg .gkhead{stroke-width:.4}#rg .gkstick{stroke-width:.55;stroke-linecap:round}
 #rg .gk{transform-box:fill-box;transform-origin:center;animation:gkin .35s ease}
 @keyframes gkin{0%{opacity:0}100%{opacity:1}}
