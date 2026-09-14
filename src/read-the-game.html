@@ -39,7 +39,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-3kqoM67TBioSx+UzjBZnRy/KgXu6Jgm7vkOIVS8Ihp8=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-+FFY3NFFvo/iP7fkrxLMWs/ICY8uqeISskfU1lgro4k='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-3kqoM67TBioSx+UzjBZnRy/KgXu6Jgm7vkOIVS8Ihp8=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-BjSZOowK4g61sc0ZtuTFXoWAnMvbALNV7IV8Je22yDM='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">How to read hockey</a></nav></header>
@@ -620,7 +620,13 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    desktop window matches too, and should: it has the same problem. */
 @media (orientation:landscape) and (max-height:500px){
  #rg:not(.preview) .wrap{max-width:none;padding:8px 12px;display:grid;
-  grid-template-columns:minmax(0,260px) minmax(0,1fr);column-gap:14px;align-items:start}
+  /* ⭐ 230, NOT 260, AND THE TYPE PASS IS WHAT PAID FOR IT. Every 10px the
+     control column gives back is 10px of rink WIDTH and 4.25 of rink HEIGHT, so
+     shrinking the controls and enlarging the drawing are the same edit here —
+     which is exactly the ratio Kevin is complaining about, attacked from both
+     ends at once. The floor is the transport: Play, Prev and Next share one row
+     and must not wrap. */
+  grid-template-columns:minmax(0,230px) minmax(0,1fr);column-gap:14px;align-items:start}
  #rg:not(.preview) .wrap > *,#rg:not(.preview) .side > *{grid-column:1;min-width:0}
  /* `span 40` for the reason the laptop rule says `span 30`: with no explicit
     rows, `-1` resolves to line 1 and collapses the span. Forty is more than the
@@ -638,6 +644,37 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
  #rg:not(.preview) .board .foot{display:none}
  #rg:not(.preview) .transport{margin-top:8px;gap:6px}
  #rg:not(.preview) .transport .grp{gap:6px}
+ /* ⭐⭐ THE TYPE SCALES WITH THE COLUMN IT SITS IN, NOT WITH THE VIEWPORT.
+    Kevin, on the shipped landscape view: "The scoreboard appears to be 2/3 the
+    size of the rink, it looks way too big, same with the controls (text and
+    button sizing)... we need to scale down everything on the phone."
+    HE IS RIGHT AND THE MEASUREMENT NAMES THE CAUSE: at 844x350 EVERY type size
+    on this page was identical to a 1400x900 laptop's — the score 28.8px in both,
+    the chips 14.4, the clock 12.48, every transport button 13.28, the caption
+    13.12. The board came to 0.57 of the rink's height here against 0.31 there,
+    which is 1.8x the laptop's ratio for the same two elements.
+    ⛔ AND IT IS U11's OWN DEFECT WEARING A NEW VIEWPORT. That work tied the score
+    to `clamp(1.6rem,5.4vw,2.2rem)` because "the board held 160.6px at 360, 390
+    and 430 alike — its type is set in rem, and rem does not care how wide the
+    screen is." The repair assumed viewport width IS element width. In landscape
+    that assumption breaks completely: the viewport is 844 and the board is in
+    260. 5.4vw of 844 pins the clamp at its ceiling, so the phone gets the
+    laptop's score beside a rink less than half the laptop's size. The same shape
+    as the board's three-across grid breaking in this column, one property over.
+    ⛔⛔ 44px SURVIVES EVERY LINE BELOW. Text shrinks; the tap target does not.
+    A landscape phone is still a finger, and `render-notes.test.js` holds this
+    floor for the selector chips on the grounds that "the surface whose reviewer
+    is on a phone" is the one that cannot afford to lose it. Padding comes off
+    and `min-height` goes on in the same declaration, so the two can never drift. */
+ #rg:not(.preview) .board .sc{font-size:1.25rem}
+ #rg:not(.preview) .tm .ab{font-size:.7rem;padding:1px 6px}
+ #rg:not(.preview) .gs{font-size:.66rem}
+ #rg:not(.preview) .pens{min-height:22px}
+ #rg:not(.preview) .pb{min-height:22px;padding:3px 7px;font-size:.68rem}
+ #rg:not(.preview) .transport button{font-size:.72rem;padding:0 10px;min-height:44px}
+ #rg:not(.preview) .who{font-size:.72rem;margin-top:6px}
+ #rg:not(.preview) .oibtn{font-size:.64rem}
+ #rg:not(.preview) .lcap,#rg:not(.preview) .fnote{font-size:.7rem}
  /* The site header is 75px of a 320px fold — the whole caption's worth. It keeps
     the wordmark, which is the way home from every page, and drops the nav that
     is one tap away on the page it links to. */

@@ -242,3 +242,64 @@ test('⭐ portrait on a phone asks for a rotation, and is not a wall', () => {
   assert.match(block, /\.side > \*\{display:none\}/,
     'the layer controls stay on screen behind the prompt, with no rink to control');
 });
+
+/* ───────────── THE TYPE SCALES WITH ITS COLUMN, NOT WITH THE VIEWPORT ───────
+ * Kevin, on the shipped landscape view: *"The scoreboard appears to be 2/3 the
+ * size of the rink, it looks way too big, same with the controls (text and
+ * button sizing)… we need to scale down everything on the phone."*
+ *
+ * Measured before touching anything: at 844×350 EVERY type size on this page was
+ * identical to a 1400×900 laptop's — score 28.8px in both, chips 14.4, clock
+ * 12.48, every transport button 13.28, the caption 13.12. The board came to 0.57
+ * of the rink's height here against 0.31 there.
+ *
+ * ⛔ IT IS U11's OWN DEFECT IN A NEW VIEWPORT. That work replaced a rem constant
+ * with `clamp(1.6rem,5.4vw,2.2rem)` because "rem does not care how wide the
+ * screen is" — and assumed viewport width IS element width. In landscape the
+ * viewport is 844 and the board is in 230, so `vw` pins the clamp at its ceiling
+ * and hands a phone the laptop's score beside half the laptop's rink.
+ */
+test('⭐ the landscape score is sized for its column, and not in vw', () => {
+  const css = PAGE_CSS.replace(/\/\*[\s\S]*?\*\//g, '');
+  const base = /#rg \.sc\{font-size:([\d.]+)rem/.exec(css);
+  assert.ok(base, 'the base score size is gone — nothing to be smaller than');
+  const land = /#rg:not\(\.preview\) \.board \.sc\{font-size:([\d.]+)rem\}/.exec(LAND);
+  assert.ok(land, 'the landscape phone gets the page-wide score size again');
+  assert.ok(+land[1] < +base[1],
+    `the landscape score is ${land[1]}rem against a base of ${base[1]}rem — not smaller`);
+  /* ⛔ AND IT IS A FIXED SIZE RATHER THAN A SECOND `vw` CLAMP. `vw` is the
+     viewport, and the viewport is the one thing that does NOT describe this
+     element here — that is the whole defect being repaired. A clamp would have
+     looked like the careful fix and reproduced it. */
+  assert.doesNotMatch(land[0], /vw/,
+    'the landscape score is sized in vw, which is the measurement that was wrong');
+});
+
+test('⛔ the type pass never shrinks a tap target', () => {
+  /* Text comes down; the finger does not. A landscape phone is still a phone,
+     and `render-notes.test.js` holds the 44px floor for the selector chips on
+     the grounds that "the surface whose reviewer is on a phone" is the one that
+     cannot afford to lose it. The padding reduction and the floor are in the
+     SAME declaration so the two can never drift apart. */
+  const rule = /#rg:not\(\.preview\) \.transport button\{([^}]*)\}/.exec(LAND);
+  assert.ok(rule, 'the transport type is no longer scaled for its column');
+  assert.match(rule[1], /padding:/,
+    'the padding is untouched, so there was never anything threatening the floor');
+  assert.match(rule[1], /min-height:44px/,
+    'the buttons lost their padding and nothing holds them at 44px');
+});
+
+test('⭐ every size the landscape block sets is a shrink, never a growth', () => {
+  /* The block exists to take weight OFF this column. A rule that raised a size
+     would be doing the opposite of what it is for, and would be invisible here
+     among two dozen declarations — so the direction is asserted rather than
+     read. Sizes are compared against the same property elsewhere in the sheet.
+     ⚠️ COUNTED, so a block that stops setting sizes fails instead of passing on
+     an empty list — the vacuous shape this suite keeps finding in itself. */
+  const sizes = [...LAND.matchAll(/font-size:([\d.]+)rem/g)].map(m => +m[1]);
+  assert.ok(sizes.length >= 6,
+    `only ${sizes.length} sized rules in the landscape block — the probe lost its subject`);
+  const tooBig = sizes.filter(v => v > 1.3);
+  assert.deepEqual(tooBig, [],
+    `these landscape sizes are larger than anything a 230px column should carry: ${tooBig}`);
+});
