@@ -32,37 +32,116 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 
 This section is the orientation. Everything below §0 is the detail, organised by
 state.
+## ⏭ 0.00 PICK UP HERE — 2026-09-14
 
-## ⏭ 0.00 PICK UP HERE — 2026-09-11
+⏭ **NEXT: THE RED-ON-RED ENDS PROBLEM (Kevin's call, 2026-09-14: *"we'll pick
+back up with 3. (probably), the red on red is a problem"*).**
 
-⏭ **THREE THINGS ARE WAITING ON KEVIN, AND NOTHING IS HALF-BUILT.**
+**What it is.** On the hero — MTL at CAR — a reader cannot tell which end belongs
+to which club. The ends are distinguished by FILL, not by hue: `drawNetmen` draws
+the home goalie solid and the away goalie **white with a coloured outline**, the
+same sweater convention the marks use. At 390px that goaltender is a **3.5 × 5px
+figure**, and the distinction is being asked to carry "whose end is this" on five
+pixels. Two reds simply remove the hue you would otherwise fall back on.
 
-1. ⏸ **PAGE LENGTH — he is judging it.** The front door is **2.59 screens on a
-   1325×959 laptop and 4.57 on a 390×844 phone**, against **2.01 and 3.20** on
-   the morning of 2026-09-11. Everything added is teaching or measurement, and
-   the cost is stated rather than hidden. ⚠️ **It inverts on 19 September**: the
-   daily slate closes the hero card's dead ~116px left column and pushes the club
-   grid further down. Cheapest lever is `SHOWN` in `src/lib/daily.js` (6 → 4 ≈
-   134px).
-2. ⏸ **`Watch the whole game` — HELD for the novice tester.** Of eleven visible
-   uses of the word, five are teaching instructions and stay; the `<title>` and
-   the club-grid heading lost it. ⭐ **The rule is that it misleads only where
-   NOTHING BESIDE IT CORRECTS IT** — that button sits under a moving rink that is
-   26.9% of the screen and plainly not video. *"Did you expect video?"* is one
-   sentence from her and settles it.
-3. ⏸ **THREE POPULATIONS RENDER ON THE FRONT DOOR AND ONLY ONE EXPLAINS ITSELF:**
-   **4,192** games (the `What we counted` strip), **4,100** (games with an
-   attempts leader) and **3,925** (games with a leader in the level-strength
-   count). CHENG raised the 4,100/3,925 gap; adding 4,192 on 2026-09-11 made it
-   sharper, because an archive-sized number now sits above two that look like
-   they should reconcile. **A copy call, not a defect.**
+**⚠️ IT IS NOT A COLOUR-DISTANCE PROBLEM, AND THE ARITHMETIC SAYS SO.** MTL–CAR
+is **ΔE 29.3** — not a close pair. The real clashes are five pairs with
+*identical* hex: BOS–NSH, DET–NJD, EDM–WPG, FLA–WSH, TOR–VAN — **39 published
+games (0.9%)**; under ΔE 10 it is 239 (5.7%), under ΔE 20 it is 557 (13.3%). **A
+hero rule keyed on colour distance would have picked this game anyway.**
 
-⏭ **AND THE OLDER THREAD IS STILL THE RIGHT ONE AFTER THAT: the situation
-vocabulary across the site** — the front door's paired base rates, the game
-page's newcomer block, the `All situations` card, and the replay's power-play
-pill plus its `MODE()` line. **Two of four surfaces are done; nothing has ever
-audited them as one vocabulary.** The section below is unchanged and still the
-brief.
+**⚠️ AND THE LEGEND NAMES THE CONVENTION FOR SHOTS AND NOT FOR THE NETS.** It
+says *"visitor shot — white, like the sweaters"*. A reader who works that out for
+the marks is never told it also decides the ends.
+
+**⛔⛔ THIS WAS PREDICTED IN THE REPO, BY CC, AND THE OTHER ARGUMENT WON.**
+`docs/scoreboard-mobile.md` §5.2, when `ATTACKS →` was on the table for deletion:
+
+> CHENG has separately argued the goalies already settle which end is whose
+> *without words*…
+> **I would argue against.** The arrow answers *which way is this team going*,
+> which the goalies answer **only once you already know which colour is which —
+> and the colours are exactly what a novice does not know.**
+
+That is the exact failure, found on Kevin's phone. The same document records
+CHENG *proposing* moving the indicator onto the ice (§190) — never built.
+
+**THE PROPOSAL, NOT YET APPROVED:** name each **net** with the club defending it
+— a small abbreviation behind each crease, flipping with the ends. It differs in
+kind from the thing that was deleted: `ATTACKS →` was a *direction constant* that
+contradicted the ends switching, in the scoreboard where it overflowed. This is a
+*fact about the frame*, on the ice, per end, so it cannot contradict the flip —
+and it works for all 4,192 games rather than the 39 with matching hexes.
+
+---
+
+⏭ **MOBILE IS REBUILT AND LIVE. PORTRAIT IS OUT BY KEVIN'S RULING.**
+
+*"I have decided portrait isn't salvageable, there's no way that portrait will
+work for a novice, heck it doesn't work for me and I know what it's trying to
+show."* → landscape gets the laptop's two columns; portrait asks you to rotate.
+
+| | ice | board ÷ rink | ends at |
+|---|---|---:|---:|
+| portrait, before | 386 × 164 (19.4% of the fold) | — | caption 0.57, controls 0.81+ |
+| landscape stacked | 762 × 324 | — | caption **1.52**, controls **2.04** |
+| **landscape, shipped** | **510 × 217** | **0.44** | **0.95 at 844×350** |
+| laptop 1400×900 | 924 × 393 | 0.31 | unchanged |
+
+**⭐ THE RULE INVERTS, and that is the whole design.** The 1360 query protects the
+rink's WIDTH because width is what a laptop has spare. In landscape the scarce
+dimension is HEIGHT and the rink's height IS its width × 0.425 — so width is
+taken FROM the rink on purpose. Shrinking the controls and enlarging the drawing
+are the same edit.
+
+**⛔ THE TRAP WAS IN THE MEDIA QUERY ITSELF.** `orientation` is a property of the
+DOCUMENT's viewport, and the front door's hero is an iframe measured at **315×220**
+on a portrait phone — landscape, under 500px tall, a match. Every landscape rule
+carries `:not(.preview)` and a test walks the block's selectors to prove it.
+
+**⛔ AND THE TYPE WAS THE LAPTOP'S, EXACTLY.** At 844×350 every size on the page
+was identical to a 1400×900 laptop — score 28.8px in both, buttons 13.28, caption
+13.12. It is U11's own defect in a new viewport: that work replaced a rem
+constant with `clamp(1.6rem,5.4vw,2.2rem)` and **assumed viewport width IS
+element width**. In landscape the viewport is 844 and the board is in 230.
+**44px survives every line of the fix** — text shrinks, the tap target does not,
+and the padding cut and `min-height:44px` live in the same declaration.
+
+⏭ **STILL OPEN ON MOBILE, NONE OF IT BLOCKING:**
+
+1. **The board's ~22px reserved penalty band** — why the card still looks emptier
+   than its content. Reclaimable only by accepting jitter when a penalty appears,
+   which is Kevin's rule to relax.
+2. **844×320** — the scrubber's last pixels sit below the fold on smaller phones.
+   The next cut is the speed stepper; dropping a control on one viewport is a
+   product call.
+3. **`#lbox` (120px) and `#lcap` at 1.62 screens** — portrait-path defects from
+   `docs/mobile.md` §1, now behind the rotate prompt. Worth fixing only if
+   *Show it anyway* turns out to be a common path.
+
+⏭ **AND THE THREE FRONT-DOOR ITEMS FROM 2026-09-11 ARE STILL WAITING ON KEVIN:**
+page length (2.59 laptop / 4.57 phone screens, and it inverts on 19 September —
+cheapest lever is `SHOWN` in `src/lib/daily.js`); the `Watch the whole game` CTA,
+held for the novice tester; and the three populations that render on the front
+door with only one explaining itself (**4,192 / 4,100 / 3,925**).
+
+⏭ **THE OLDER THREAD AFTER THAT: the situation vocabulary across four surfaces,
+two of four done.**
+
+**⭐⭐ WHAT THE LAST TWO DAYS EARNED, and both were paid for twice:**
+
+> **A probe whose subject is "the first match" has its subject chosen by file
+> order.** Three of them failed a *correct* stylesheet in one afternoon —
+> `scoreboard.test.js` demanded a brace immediately after `(max-width:520px)`
+> and threw at import when the query became a list; `u11-mobile.test.js` took the
+> first `#rg:not(.preview) .rinkbox{…}` in two places and the new landscape rule
+> became that first. All three now find their subject by what it DOES.
+
+> **A layout claim is a claim about a viewport, and a phone is not a small
+> laptop.** The double-tap-on-a-goal bug was correct at 1400 and wrong at 390,
+> with 1,257 tests green: `openClip` SCROLLS, so by the second tap the page had
+> moved and the finger was over the ice. Nothing in the handler chain could see
+> it. **Both orientations, both sizes, every time.**
 
 ## ✅ WHAT SHIPPED 2026-09-11 — twelve commits, all live
 
