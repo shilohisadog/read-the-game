@@ -324,6 +324,66 @@ function drawRink(per){if(per===rinkPer)return;rinkPer=per;
   +netGlyph('netHome',AX(-NET_X,per),HOMECOL,{text:HAB,ink:'var(--home-text)'})
   +netGlyph('netAway',AX(NET_X,per),AWAYCOL,{text:AAB,ink:'var(--away-text)'});}
 /**
+ * ⭐⭐ THE PAGE'S AWAY/HOME AXIS FOLLOWS THE ICE — ONE CLASS, NINE PAIRS.
+ *
+ * Kevin, 2026-09-14: *"I think the scoreboard should align with the ice, while
+ * that may not follow any generally accepted standards, I think it makes sense
+ * in our use case."*
+ *
+ * ⭐ THE PROBLEM THE NET LABELS EXPOSED RATHER THAN CAUSED. `rinkart.js`'s own
+ * header records why the host was put on the screen-RIGHT: *"the scoreboard
+ * reads away-then-host, so the host's badge sits on the RIGHT; with the host
+ * defending the left end, the same three letters appeared on opposite sides of
+ * one screen. Kevin read the pair as swapped."* As-played then made that
+ * arrangement a per-period fact — measured across the 43 extracts on disk, the
+ * host's end opens on the screen-LEFT in 32 of them (74%) — and the disagreement
+ * came back, invisibly, because the only on-ice signal of it was goalie fill on
+ * a 3.5x5px figure. Writing the club's name behind each net made it legible for
+ * the first time. It did not create it.
+ *
+ * ⛔ AND IT IS SIX LIVE PAIRS, NOT ONE. Measured in a real browser with the layers
+ * on: the scoreboard's badges, scores and penalty rows; the penalty box; the
+ * attempt counters; the control bar and its percentages; and the layer output's
+ * figures and names — every one of them horizontal, away-left, and at least two
+ * of them on screen together. Flipping the board alone would have put `CAR` on
+ * the left of the board and `MTL` on the left of the box six inches beneath it:
+ * the same defect, moved one surface over.
+ * ⚠️ THE FIRST COUNT WAS NINE AND THREE OF THOSE NEVER RENDER. `.cbar`,
+ * `.counters` and `.pboxes` are `display:none` under every one of the seven
+ * layers — established by switching each layer on in a browser, after I had
+ * found them hidden and ASSUMED a layer would reveal them. Their flips ship
+ * anyway so a revival is not born mirrored, and the ledger asserts they are
+ * still parked so that reviving one sends the next reader to look.
+ *
+ * ⭐ SO IT IS ONE STATEMENT OF THE FACT AND NINE READERS OF IT. `hostleft` is
+ * derived here, from `DIR(per)` — the same function that places the nets — and
+ * every surface expresses its own flip in CSS against that class. Nine rules
+ * that each decided for themselves which way round they were would be nine
+ * things to keep in step, and the day one of them drifted the page would
+ * contradict itself in a corner nobody screenshots.
+ *
+ * ⛔⛔ PRESENTATION ONLY, AND THIS IS NOT NEGOTIABLE. `render-ends.test.js` has
+ * a test whose entire job is *"the ends toggle never reaches a count"* — the
+ * guarantee the whole as-played design rests on. Nothing here moves a DOM value,
+ * reorders a node, or lets a reducer see the flip: it toggles one class and CSS
+ * does the rest. `#aSc` still holds the away score in every period.
+ *
+ * ONLY ON CHANGE, for `drawNetmen`'s reason above: this is read on every frame
+ * of a ~250-event game, and the transitions in `.bar span` would restart on each
+ * one. Redrawing on change also makes the moment mean something — it fires at
+ * the intermission, with `#endpill` announcing it in the same board.
+ */
+let sidesAre=null;
+function drawSides(per){
+ // DIR(per) is -1 when the feed says the host defended the `right` end, which
+ // `AX` reflects to SX(+NET_X) = 11 — the screen LEFT. Read from the transform
+ // rather than from `SIDES` directly, so a rink that stopped flipping and a
+ // board that stopped flipping could never disagree.
+ const hostLeft=DIR(per)<0;
+ if(hostLeft===sidesAre)return;
+ sidesAre=hostLeft;
+ $('rg').classList.toggle('hostleft',hostLeft);}
+/**
  * A goaltender in each crease -- unless the feed says one has been pulled.
  *
  * NOT DECORATION. `sit` is the situation code on every event,
@@ -736,6 +796,7 @@ function render(i,how){
  const evs=EV.slice(0,i+1),L=lens(i),cur=EV[i];
  const PER=cur?cur.per:1;     // pre-game shows the first period's arrangement
  drawRink(PER);
+ drawSides(PER);
  // null before the first play: both boxes empty. `cur` goes in as well because
  // the box has a question it could not ask from a second alone -- "did a penalty
  // end on THIS goal" -- and several events can share one second.

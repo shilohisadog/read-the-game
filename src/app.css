@@ -37,6 +37,62 @@
    The label keeps its size and its grey, so the line gains no bulk: what changes
    is which half of it you see first. */
 #rg .tm.a .ab{background:var(--away);color:var(--away-ink)}#rg .tm.h .ab{background:var(--home);color:var(--home-ink)}
+/* ⭐⭐ ONE CLASS, SIX LIVE PAIRS AND THREE PARKED — THE PAGE'S AWAY/HOME AXIS
+   FOLLOWS THE ICE.
+   Kevin, 2026-09-14: "I think the scoreboard should align with the ice, while
+   that may not follow any generally accepted standards, I think it makes sense
+   in our use case."
+   `#rg.hostleft` is set by `drawSides` in app.js from `DIR(per)` — the same
+   function that places the nets — and the reasoning lives there. EVERY flip on
+   the page is in this block on purpose: nine rules scattered across nine
+   surfaces would be nine things to keep in step, and the day one drifted the
+   page would contradict itself in a corner nobody screenshots.
+   ⚠️ THE PRINCIPLE IS ONE CLASS, NOT ONE BLOCK, and two flips prove it: a flip
+   that OVERRIDES a placement stated elsewhere has to live beside that statement
+   or specificity decides the page's meaning by accident. Both are marked at
+   their sites — the board's narrow form (placed by `grid-template-areas`, which
+   `order` cannot move) and the team block's internal badge/score mirror.
+   ⛔ NOTHING HERE MOVES A VALUE. `#aSc` holds the away score in every period;
+   only where it is painted changes. `render-ends.test.js` — "the ends toggle
+   never reaches a count" — is the guarantee this must not dent.
+
+   ⚠️ I COUNTED NINE PAIRS AND SIX OF THEM RENDER. `.cbar`, `.counters` and
+   `.pboxes` are `display:none` under EVERY ONE of the seven layers — checked in
+   a browser by switching each layer on in turn, not by reading the cascade,
+   which is how the first count went wrong: I found them hidden, assumed a layer
+   would reveal them, and counted them as live. `#lbox` is what replaced them
+   ("its scoreboard (`.cbar`), which is the same information in the space it
+   has"). Their flips stay, because a parked surface that comes back should come
+   back correct rather than quietly mirrored — but nothing below claims they were
+   SEEN, and `render-ends.test.js` asserts they are still parked, so reviving one
+   fails the ledger and sends the next reader to look at it. */
+/* THE SCOREBOARD. Explicit base orders identical to document order, so the
+   unflipped board renders exactly as it did; `.foot` must stay first because it
+   is `grid-column:1/-1` and auto-placement would otherwise push the whole board
+   down a row. Only the two team blocks ever swap. */
+#rg .board .foot{order:0}#rg .board .tm.a{order:1}#rg .board .mid{order:2}#rg .board .tm.h{order:3}
+#rg.hostleft .board .tm.h{order:1}#rg.hostleft .board .tm.a{order:3}
+/* ⏸ PARKED — THE PENALTY BOX under the ice. The penalties a reader actually
+   sees are `#penA`/`#penH` INSIDE `.tm`, so they travel with the team block and
+   need no rule of their own. `.pblab` spans 1/-1 and stays first, same reason. */
+#rg .pboxes .pb.a{order:1}#rg .pboxes .pb.h{order:2}
+#rg.hostleft .pboxes .pb.h{order:1}#rg.hostleft .pboxes .pb.a{order:2}
+/* ⏸ PARKED — THE ATTEMPT COUNTERS. Never displayed under any layer; wired so a
+   revival is not born mirrored. AND IT IS NOT A PLAIN SWAP. `.cc.a` is
+   written [number, label] and `.cc.h` [label, number], so the big figures sit on
+   the OUTSIDE edges of the row — a mirror hand-written into the markup. Reversing
+   the row alone would move the clubs and leave both numbers hugging the middle,
+   so each half is reversed too and the figures stay outboard. */
+#rg.hostleft .counters,#rg.hostleft .cc{flex-direction:row-reverse}
+/* ⏸ PARKED — THE CONTROL BAR AND ITS PERCENTAGES. `.bar` is a proportion, so it has to turn
+   over with the clubs or it would be reading right-to-left against its own
+   labels. `.pct` is [away, name, home] and reverses to [home, name, away]. */
+#rg.hostleft .bar,#rg.hostleft .pct{flex-direction:row-reverse}
+/* THE LAYER OUTPUT. Placed by column rather than by order, so the columns swap —
+   and the text alignment with them, or the figures would pull away from the edge
+   they are meant to sit against. */
+#rg.hostleft .lxa,#rg.hostleft .lxan{grid-column:3;text-align:right}
+#rg.hostleft .lxh,#rg.hostleft .lxhn{grid-column:1;text-align:left}
 /* ⭐ THE SCORE IS THE ONE NUMBER ON THIS PAGE A STRANGER ALREADY KNOWS HOW TO
    READ, and it was set in a monospace family at 2.2rem — a 21px-wide numeral,
    which is a code listing rather than a scoreboard. Kevin: "the whole vibe of
@@ -111,6 +167,26 @@
  gap:7px;flex-wrap:wrap}
 #rg:not(.preview) .tm.a .ab{order:1}#rg:not(.preview) .tm.a .sc{order:2}
 #rg:not(.preview) .tm.h .sc{order:1}#rg:not(.preview) .tm.h .ab{order:2}
+/* ⛔⛔ AND THE MIRROR TURNS OVER WITH THE CLUBS. THE TESTS DID NOT CATCH THIS;
+   A SCREENSHOT DID. The two rules above are a hand-written mirror — the BADGE
+   sits outboard on both sides and the scores face the middle. Swapping which
+   team block is on the left, and leaving the mirror alone, inverts it: at
+   1400x900 the flipped board rendered `1 CAR ... MTL 0` (scores outboard)
+   against the unflipped `MTL 2 ... 3 CAR` (badges outboard). Both are
+   internally symmetric, which is exactly why nothing failed — the nine-pair
+   ledger passed, `hostleft` agreed with the host's net on all 353 frames, and
+   the board was still wrong.
+   ⭐ THE PAIR I ENUMERATED WAS "WHICH BLOCK IS ON THE LEFT" AND THE DEFECT WAS
+   INSIDE THE BLOCK. Same shape as `.counters`, which I did anticipate and fix in
+   the same edit — and the reason I anticipated it there is that its mirror is
+   written in the MARKUP, where reading the builder shows it. This one is written
+   in CSS four lines further down, and I had already read past it.
+   ⚠️ NOT `flex-direction:row-reverse`, which would reverse these two AND the
+   `.pens` row that wraps beneath them — `order:3` keeps the penalty slot last in
+   the flow, but in a reversed row the wrapped line starts from the other edge.
+   Restating the two orders touches only what mirrors. */
+#rg:not(.preview).hostleft .tm.h .ab{order:1}#rg:not(.preview).hostleft .tm.h .sc{order:2}
+#rg:not(.preview).hostleft .tm.a .sc{order:1}#rg:not(.preview).hostleft .tm.a .ab{order:2}
 /* The penalty slot keeps its own line under BOTH arrangements — `order:3` works
    whichever way the badge and score are mirrored. It still holds its ground when
    empty (see `.pens`); this changes where it sits, never whether it is there. */
@@ -127,6 +203,19 @@
  #rg:not(.preview) .board{grid-template-columns:1fr 1fr;grid-template-areas:"game game" "away home" "state state";
    gap:9px 10px;padding:11px 12px}
  #rg:not(.preview) .tm.a{grid-area:away}#rg:not(.preview) .tm.h{grid-area:home}
+ /* ⭐ THE NINTH FLIP, AND THE ONLY ONE THAT COULD NOT LIVE WITH THE OTHER EIGHT.
+    `order` does not move an item placed by `grid-area`, so the block above is
+    inert here and the swap has to be stated against the rule it overrides.
+    `away` and `home` are names for the LEFT and RIGHT cells, so exchanging them
+    is the whole flip. See the hostleft block near `.tm.a .ab`.
+    ⚠️ `#rg:not(.preview).hostleft` AND NOT `#rg.hostleft:not(.preview)`, which is
+    the identical selector. `scoreboard.test.js` requires every rule in this query
+    to read `#rg:not(.preview)` with nothing between — the hero is an iframe that
+    is itself landscape and short, so it MATCHES this query, and a phone rule that
+    reaches it re-flows the first surface a stranger sees. Writing the guard to
+    accept a class in the gap would have widened it for every future rule to save
+    reordering one selector. */
+ #rg:not(.preview).hostleft .tm.a{grid-area:home}#rg:not(.preview).hostleft .tm.h{grid-area:away}
  #rg:not(.preview) .board .foot{grid-area:game}
  /* THE 150px FLOOR GOES. `#rg.preview .mid` already zeroes it for the hero and
     the game page never got the same repair — one fix, two surfaces, one missed. */
