@@ -1,6 +1,6 @@
 # The test tier — an architecture nobody declared
 
-**Written 2026-09-15 for CHENG's review. Nothing here is built.**
+**Written 2026-09-15 for CHENG's review. ✅ RULED — see §7. T1 and T2 are being built; T3 and T4 are not.**
 
 Kevin, after deleting one `<div>` touched eleven files: *"I'm still not tracking
 with why the removal of the penalty box touched so many files… I thought we just
@@ -235,3 +235,114 @@ guard that fires on every run is a guard somebody switches off (`guard-where-the
    must name a parked element by its nature. An invariant with no exception
    mechanism gets switched off; one with a free-text exception becomes a
    rubber stamp.
+
+
+---
+
+# 7. RULED by CHENG, 2026-09-15 — with three corrections that did not survive checking
+
+CHENG answered Q4 first, *"because it decides whether any of the others
+survive contact"*, which is the right order.
+
+## Q4 — the exception is a CATEGORY from a closed vocabulary, not free text
+
+> *"Free text can't be audited; a closed set can — you can grep it, count it, and
+> notice when one category starts growing."*
+
+Accepted. The precedent is this project's own: **known vocabulary values get
+labels, unrecognised ones halt** — the `rsn` rule, the `situationCode` rule, the
+vocabulary gate. The guard fails on any annotation it does not recognise, so a
+new category is a deliberate change to the checker rather than a sentence written
+at 11pm.
+
+⭐ **AND THE EXCEPTION COUNT IS ITSELF A MEASUREMENT** (CHENG). One
+`@reads-parked: subject` means the invariant is healthy; twenty means the rule is
+wrong, and the number says so before anyone argues.
+
+⛔ **MY OBJECTION, AND IT IS CHENG'S OWN STANDARD TURNED AROUND.** His Q2 ruling
+is that a declared subject must be **checkable against the file's own imports**,
+because a declaration nobody can verify is a lie waiting to happen. An annotation
+comment is exactly that — a claim the author writes about themselves. This
+document's own headline is *prose is not an instrument*, and a parsed comment is
+still prose unless something can contradict it.
+
+> ⭐ **SO THE ANNOTATION MUST BE VERIFIABLE, NOT MERELY WELL-FORMED.** A file
+> claiming `@reads-parked: subject` must itself COMPUTE the parking model —
+> import or derive `darkClasses`. `park.test.js` does. A file that merely wants
+> the exemption does not, and the guard can tell them apart. That is the
+> difference between a closed vocabulary and a closed vocabulary that means
+> something.
+
+## Q1 — `test/` becomes a tier. ⚠️ And its boundary rule is not the obvious one
+
+> *"A tier model that omits its biggest component isn't describing the codebase…
+> a tier boundary is where drift gets checked, so code outside the model has no
+> boundary to drift across."*
+
+Accepted. CHENG adds that **`test/helpers/page.js` is a different kind of object**
+— the harness, whose permissiveness caused this finding — and that the rules which
+should govern it (*must not invent ids*, *must fail on absence*) are the OPPOSITE
+of the rules for tests. Agreed, and it is the sharpest addition in his reply.
+
+⛔ **CORRECTION, CHECKED: THE OBVIOUS BOUNDARY RULE IS ALREADY VIOLATED.**
+`tools/dom-golden.mjs:56` imports `test/helpers/page.js`. So *"nothing outside
+`test/` imports `test/`"* is false today — and the violation is a TOOL importing
+the HARNESS, which is precisely the object CHENG wants treated separately. The
+harness is already a shared dependency of the suite and the tooling.
+
+> ⚠️ **A TIER WITHOUT A BOUNDARY RULE IS A ROW IN A TABLE.** Every declared tier
+> carries one — *pure, no DOM, no network*. If `test/` is declared and its rule
+> cannot be stated, we have bought a line count and called it architecture. The
+> candidate rule, given the above, is about the HARNESS rather than the suite:
+> the harness may be imported by tests and tools; a test may import any tier;
+> no production tier may import either.
+
+## Q2 — a DECLARED subject, not one derived from the filename
+
+> *"`render-board.test.js` → subject `board` works until someone writes
+> `render-board-and-pill.test.js`, and then it's wrong with no signal… A declared
+> header is checkable against the file's own imports. A filename can't be checked
+> against anything."*
+
+Accepted, and the supporting evidence is this project's own scorecard:
+`KNOWN_SITUATIONS`, `FINAL_STATES`, the five-event window, the `LIB` directory
+check — **every one correct when written and silently wrong later**, because the
+mapping held at the moment it was made.
+
+⛔ **CORRECTION: NOT EVERY TEST HAS ONE SUBJECT, AND ONE SAYS SO IN ITS OWN
+HEADER.** `smoke.test.js`: *"Every other test in this suite checks the modules or
+the text of the bundle. None of them execute the app."* It is cross-cutting BY
+DESIGN — that is the whole reason it exists, and it caught a blank page that 43
+green tests missed. So the subject vocabulary needs a category for it, which
+reintroduces Q4's exception problem one level up. The 85 edits are not 85
+one-word answers, and the subject vocabulary has to be designed before the sweep
+rather than discovered during it.
+
+## Q3 — separate lists, derived one from the other
+
+> *"`park.test.js`'s ledger says this container is deliberately hidden. T2's
+> exception says this test deliberately reads inside a hidden container. Those
+> are one-to-many in principle… But derive one from the other."*
+
+Accepted.
+
+⛔ **CORRECTION: THE DERIVATION HAS NO SOURCE AS STATED.** `ENUMERATED` is keyed
+by **id** (`rotgo`, `ba`, `slotSay`), not by container; there are no containers in
+it to grant an exception against. The container-level list is `darkClasses(CSS)`,
+computed in the same file but separately. The derivation is right and must hang
+off `darkClasses`.
+
+## What CHENG endorsed, and the order
+
+**T1 and T2 first** — *"T2 landing before any future parking is what makes the
+next `.pboxes` incident impossible rather than documented."* T3 and T4 wait on the
+subject vocabulary, which §7/Q2 above now says has to be designed first.
+
+⭐ **AND TWO SENTENCES HE ASKED TO KEEP PAST THIS DOCUMENT:**
+
+> *Six independent authors hit the same hazard, each wrote it down, and none of
+> them could make it fail. Prose is not an instrument.* — and the sample size is
+> what makes it a measurement rather than an anecdote.
+
+> *Coverage is visible to reading; coupling is only visible to deletion.* The
+> first is a review; the second is a mutation.

@@ -63,9 +63,20 @@ import subprocess
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# ⛔⛔ `tools/*.mjs` WAS MISSING UNTIL 2026-09-15, AND THE SYMPTOM WAS A LIE.
+# `builders/*.mjs` was here and `tools/*.mjs` was not, so a citation of
+# `tools/dom-golden.mjs:56` -- a file that plainly exists, at a line that says
+# exactly what the citing document claimed -- was reported as "no such file in
+# the repo". Five tools were uncitable: box-witness, dom-golden, jslex,
+# snapshots, tiers.
+# ⭐ A GLOB THAT STOPS MATCHING REPORTS THE WRONG ANSWER RATHER THAN NO ANSWER,
+# which `tools/tiers.mjs` warns about in its own header for its own globs. The
+# failure mode is worse here than a missed citation: it tells an author their
+# correct reference is broken, and the cheapest way to make the gate pass is to
+# DELETE a true citation. An instrument that pays you to remove evidence.
 SOURCE_GLOBS = ("src/*.js", "src/*.css", "src/lib/*.js", "src/lib/layers/*.js",
                 "builders/*.py", "builders/*.mjs", "test/*.js", "test/*.py",
-                "tools/*.sh", "tools/*.py")
+                "tools/*.sh", "tools/*.py", "tools/*.mjs")
 # [rev:]path/to/name.ext:123[ "anchor"], with or without backticks and dirs.
 # The rev is a git revision -- `914e638` or `914e638^` -- and its presence is
 # what makes a citation historical rather than current.
