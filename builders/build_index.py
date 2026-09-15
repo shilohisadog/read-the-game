@@ -1280,6 +1280,43 @@ __HELPERS__
         rel.appendChild(el('b', null,
           b[0] + ' ' + b[1].toLocaleString() + ' of ' + lv.n.toLocaleString() + '.'));
       }
+      /* ⭐⭐ WHY THREE TOTALS, AND THE READER CAN SEE ALL THREE OF THEM.
+         The page says "over 4,192 games" a few lines up and then quotes 4,100
+         and 3,925 here — three populations, one archive, and until 2026-09-15
+         only the first explained itself. For a site whose whole pitch is CHECK
+         OUR WORK, three unexplained denominators invite "well, which is it?",
+         and that is a correctness problem wearing a legibility costume. Kevin
+         asked for the clause; this is it.
+
+         THE RULE IS `eligible()` IN `src/lib/archive.js`, and it is one line:
+         a game LEVEL on a measure is dropped from that measure, because a tie
+         is not a case for "the leader lost" in either direction. Nothing is
+         being hidden — the games are simply not evidence about a leader they
+         do not have.
+
+         ⭐ AND THE TWO GAPS DIFFER FOR A REASON A READER CAN CHECK. Attempts
+         over a whole game are large numbers and rarely tie; attempts taken only
+         while the score was LEVEL are a smaller count, so they tie more often.
+         Anyone who doubts it can subtract: the totals are all on this line.
+
+         ⛔ COMPUTED, NEVER TYPED. `prose-constants.test.js` forbids writing a
+         number the code owns into the sentence describing it, and all three of
+         these belong to the archive. `measured` is the same population the
+         rates are drawn from — `measure.mjs` filters with `inScope` BEFORE
+         pushing, so `summarise`'s own `records.filter(inScope)` is a no-op and
+         the subtraction is honest. That was checked rather than assumed: the
+         two could have been different populations, and `measured` is
+         `records.length` unfiltered. */
+      if (measures.measured && measures.measured >= at.n) {
+        var gap = ' Totals differ because a game level on a measure is not a case '
+          + 'for it: of ' + measures.measured.toLocaleString() + ' games measured, '
+          + (measures.measured - at.n).toLocaleString() + ' were level on attempts';
+        if (lv && lv.n && measures.measured >= lv.n) {
+          gap += ' and ' + (measures.measured - lv.n).toLocaleString()
+            + ' on attempts while the score was level';
+        }
+        rel.appendChild(el('span', null, gap + '.'));
+      }
     }
   }
 

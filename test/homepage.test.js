@@ -291,7 +291,7 @@ test('a relocated team explains itself rather than trailing off', () => {
    them is the preview. `ash`/`hsh` stay on the row and are ignored on purpose --
    if the page ever reads them again this fixture makes the wrong number
    obvious, because they disagree with the posted totals. */
-function heroRelation({ aAtt, hAtt, as, hs, count, n, level }) {
+function heroRelation({ aAtt, hAtt, as, hs, count, n, level, measured }) {
   const cat = { games: [{ id: 2023020200, d: '2024-02-09', a: 'TOR', h: 'BUF',
                           as, hs, ash: 9, hsh: 9, t: 2, v: 1 }] };
   const measures = { ...MEASURES, baseRates: { ...MEASURES.baseRates,
@@ -300,13 +300,76 @@ function heroRelation({ aAtt, hAtt, as, hs, count, n, level }) {
     /* `level` is optional: passing null REMOVES the second rate, which is the
        only way to test that the hero degrades to the single sentence rather
        than printing a dangling connective. */
-    ...(level === undefined ? {} : { moreLevelControlLost: level }) } };
+    ...(level === undefined ? {} : { moreLevelControlLost: level }) },
+    /* `measured` is optional for the same reason `level` is: passing nothing
+       REMOVES the population clause, which is the only way to test that the line
+       degrades to the two rates rather than printing a subtraction from zero. */
+    ...(measured === undefined ? {} : { measured }) };
   const r = run({ docs: { ...ALL, 'catalog.json': cat, 'measures.json': measures } });
   return r.settle().then(() => {
     r.post({ rtg: 'attempts', game: 2023020200, a: aAtt, h: hAtt });
     return textOf(r.ids.herorel);
   });
 }
+/**
+ * ⭐⭐ THREE TOTALS ON ONE LINE, AND THE READER CAN CHECK THE ARITHMETIC.
+ *
+ * The hero says "over N games" and then quotes two smaller denominators. Until
+ * 2026-09-15 nothing said why they differ, which on a site whose pitch is CHECK
+ * OUR WORK reads as sloppiness rather than as the rule it is: `eligible()` in
+ * `src/lib/archive.js` drops a game LEVEL on a measure, because a tie is not a
+ * case for "the leader lost" in either direction. Kevin asked for the clause.
+ *
+ * ⛔ THE FIGURES ARE SUBTRACTED, NOT TYPED, so the test computes what it expects
+ * from the fixture rather than restating the sentence — otherwise this would be
+ * a mirror of the builder and would pass against any arithmetic at all.
+ */
+test('the hero says why its three totals differ, and the subtraction holds', async () => {
+  const line = await heroRelation({ ...BUF_LED_SHOTS, as: 1, hs: 4,
+    ...LEADERS_LOSE, level: { count: 300, n: 900 }, measured: 1200 });
+
+  // 1200 measured, 1000 with an attempts leader, 900 with a level-score leader.
+  assert.match(line, /1,200 games measured/, 'the population is not named');
+  assert.match(line, /200 were level on attempts/, '1200 - 1000 = 200');
+  assert.match(line, /300 on attempts while the score was level/, '1200 - 900 = 300');
+  assert.match(line, /not a case for it/, 'the RULE is missing, so the numbers explain nothing');
+
+  /* ⭐ AND EVERY TOTAL ON THE LINE MUST RECONCILE, which is the claim a reader
+     would actually make with a pencil. Parsed back out of the rendered sentence
+     by an independent path: the two denominators plus the two gaps must each
+     reach the measured population. */
+  // `textOf` joins adjacent spans, so the sentence arrives with doubled spaces.
+  const flat = line.replace(/\s+/g, ' ');
+  const num = (re, what) => {
+    const m = re.exec(flat);
+    assert.ok(m, `${what} is not on the line: ${JSON.stringify(line)}`);
+    return +m[1].replace(/,/g, '');
+  };
+  const attempts = num(/more shot attempts \w+ [\d,]+ of ([\d,]+) games\./, 'the attempts total');
+  const levelN   = num(/that team \w+ [\d,]+ of ([\d,]+)\./, 'the level-score total');
+  const population = num(/of ([\d,]+) games measured/, 'the measured population');
+  const gapA = num(/([\d,]+) were level on attempts/, 'the attempts gap');
+  const gapL = num(/and ([\d,]+) on attempts while the score was level/, 'the level-score gap');
+
+  assert.equal(attempts + gapA, population,
+    `${attempts} + ${gapA} is not ${population} — the attempts gap does not reconcile`);
+  assert.equal(levelN + gapL, population,
+    `${levelN} + ${gapL} is not ${population} — the level-score gap does not reconcile`);
+});
+
+test('⛔ …and with no population published the clause stays off, rather than subtracting from nothing', async () => {
+  /* THE HALF THAT MAKES THE TEST ABOVE MEAN SOMETHING. `measured` is a key in a
+     document the pipeline writes; an older `measures.json` has the rates and not
+     the population. Printing "of 0 games measured, -1,000 were level" is exactly
+     the shape this project refuses elsewhere — a figure computed from an absence.
+     Mutating the guard away makes this red. */
+  const line = await heroRelation({ ...BUF_LED_SHOTS, as: 1, hs: 4,
+    ...LEADERS_LOSE, level: { count: 300, n: 900 } });
+  assert.match(line, /of 1,000 games/, 'the rates themselves stopped rendering');
+  assert.doesNotMatch(line, /games measured/, 'the clause printed without a population to subtract from');
+  assert.doesNotMatch(line, /-\d/, 'a negative gap reached the page');
+});
+
 // The attempts leader loses 20% of the time — so the leader USUALLY WINS, 80%.
 const LEADERS_WIN = { count: 200, n: 1000 };
 // And the mirror: the leader loses 80% of the time.
