@@ -8,6 +8,20 @@ went through an architecture cleanup effort and now this surfaces."* And then th
 standard: *"this is an open source project where any code (app centric or test
 centric or whatever) smells are unacceptable."*
 
+**WHAT PROMPTED IT, for a reader arriving cold.** This repo builds a hockey
+replay site: `builders/*.py` generate `src/*.html`, `src/lib/**` holds the pure
+analysis modules, and `npm run gates` enforces the tier boundaries described in
+`docs/architecture.md`. On 2026-09-15 a penalty-box band under the ice was
+deleted — one line of markup, superseded three weeks earlier when penalties
+moved onto the scoreboard. The change touched eleven files. Kevin asked why, and
+the answer turned out not to be about penalties at all.
+
+**THE CLAIM THIS DOCUMENT MAKES:** the test suite has an architecture, it has
+never been declared, nothing checks it, and the coupling that made a one-line
+deletion expensive is invisible to the kind of review this project already does
+well. Every figure below is measured; the scripts are one-off and the numbers
+are reproducible from the repo at this commit.
+
 ---
 
 ## 1. The gap, measured
