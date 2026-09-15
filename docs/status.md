@@ -119,11 +119,56 @@ and the padding cut and `min-height:44px` live in the same declaration.
    `docs/mobile.md` §1, now behind the rotate prompt. Worth fixing only if
    *Show it anyway* turns out to be a common path.
 
-⏭ **AND THE THREE FRONT-DOOR ITEMS FROM 2026-09-11 ARE STILL WAITING ON KEVIN:**
-page length (2.59 laptop / 4.57 phone screens, and it inverts on 19 September —
-cheapest lever is `SHOWN` in `src/lib/daily.js`); the `Watch the whole game` CTA,
-held for the novice tester; and the three populations that render on the front
-door with only one explaining itself (**4,192 / 4,100 / 3,925**).
+⏭ **AND THE THREE FRONT-DOOR ITEMS FROM 2026-09-11 ARE STILL WAITING ON KEVIN.**
+
+**1. Page length — RE-MEASURED 2026-09-15, and the lever this row used to name
+was the wrong one.** It said *"cheapest lever is `SHOWN` in `src/lib/daily.js`"*.
+`SHOWN` is **6**, so the slate list is already capped and the season barely moves
+the page at all — measured in a browser with `RTG_PIXELS_SLATE` rather than
+reasoned about:
+
+| front door | laptop 1400×900 | phone 390×844 |
+|---|---:|---:|
+| off-season (today) | 2.46 screens | 4.47 |
+| a median night — **5 games** | 2.62 | 4.66 |
+| the busiest night in the archive — **16 games** | 2.69 | **4.75** |
+
+**Five games to sixteen costs 0.09 screens.** Lowering `SHOWN` buys about a
+tenth of a screen, so "it inverts on 19 September" is true and small. ⚠️ The old
+2.59 / 4.57 figures were also taken before `.limits` went two-column and the
+freshness line came out; both shortened the page, and this row quoted them for
+four days after they stopped being true.
+
+**WHERE THE 4,008px ACTUALLY GOES** (phone, full slate, blocks over 40px):
+
+| block | px | share |
+|---|---:|---:|
+| `hero` | 971 | **24.2%** |
+| `limits` — *what this does and does not claim* | 756 | **18.9%** |
+| `countsin` | 601 | 15.0% |
+| `learnin` | 413 | 10.3% |
+| `teams` | 330 | 8.2% |
+| `sitefoot` | 314 | 7.8% |
+
+⭐ **`.limits` IS THE CANDIDATE, AND THE FIX THIS WEEK DOES NOT REACH IT.** It
+went two-column at `min-width:760px` on 2026-09-14, which aligns it on a laptop
+and leaves a **390px phone below the breakpoint and unchanged** — three-quarters
+of a screen of caveats, on the surface a newcomer meets before they have watched
+anything. The hero is bigger and is the pitch. **Kevin's call, not measured into
+one.**
+
+**2. The `Watch the whole game` CTA** — held for the novice tester, and Kevin
+parked that until beta on 2026-09-15.
+
+**3. The three populations**, still the live defect: the front door renders
+**4,192**, **4,100** and **3,925** and only the first explains itself. The rule
+is `eligible()` in `src/lib/archive.js` — a game is dropped when the two sides
+are LEVEL on that measure, because a tie is not a case for "the leader lost". So
+**92 games** are tied on shot attempts and **267** have no level-play edge.
+⚠️ The subtraction is only valid because `builders/measure.mjs` filters with
+`inScope` BEFORE pushing, making `summarise`'s own `records.filter(inScope)` a
+no-op — `measured` is `records.length`, unfiltered, so the two could have been
+different populations.
 
 ⏭ **THE OLDER THREAD AFTER THAT: the situation vocabulary across four surfaces,
 two of four done.**
