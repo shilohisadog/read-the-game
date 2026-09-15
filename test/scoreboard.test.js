@@ -152,27 +152,13 @@ test('⭐ `order` is applied exactly where `.tm` is a ROW, and nowhere else', ()
      the rule that mirrors and the rule that makes a row must cover the same
      elements. Both are `:not(.preview)`, which is what keeps the hero — still a
      column — out of it. Change either scope alone and this goes red. */
-  /* ⭐⭐ AND SINCE 2026-09-14 THERE ARE TWO SETS OF THESE, WHICH IS WHY THIS NO
-     LONGER COUNTS TO FOUR. `#rg.hostleft` turns the page's away/home axis over
-     with the ice, so the mirror needs a mirrored counterpart — and the hazard a
-     bare count could never state is that the two sets might cover DIFFERENT
-     elements. If the base mirrors `.tm.a .ab` and the flip forgets it, one side
-     of the board turns over and the other does not: exactly the defect a
-     screenshot caught the day this shipped, when the flip existed for the team
-     BLOCKS and not for the badge/score pair inside them. So the assertion is
-     that the two sets name the same elements, which a count cannot say. */
   const scope = /#rg:not\(\.preview\)/;
-  const all = [...CSS.matchAll(/(#rg[^{,]*?) (\.tm\.[ah] \.\w+)\{order:\d\}/g)]
-    .map(m => ({ sel: m[1], el: m[2] }));
-  assert.ok(all.length >= 8, `${all.length} order rules; the pair and its flip are eight`);
-  for (const { sel } of all)
+  const orders = [...CSS.matchAll(/(#rg[^{,]*?) \.tm\.[ah] \.\w+\{order:\d\}/g)].map(m => m[1]);
+  assert.equal(orders.length, 4, `${orders.length} order rules, not the four that mirror a pair`);
+  for (const sel of orders) {
     assert.match(sel, scope,
       `\`${sel}\` mirrors a team block the hero also owns, where .tm is still a column`);
-
-  const base = new Set(all.filter(r => !/\.hostleft/.test(r.sel)).map(r => r.el));
-  const flip = new Set(all.filter(r => /\.hostleft/.test(r.sel)).map(r => r.el));
-  assert.deepEqual([...base].sort(), [...flip].sort(),
-    'the mirror and its hostleft counterpart cover different elements, so half the board turns over');
+  }
   const row = /#rg:not\(\.preview\) \.tm\{[^}]*flex-direction:row/.exec(CSS);
   assert.ok(row, 'nothing makes `.tm` a row, so every `order` rule above is restacking a column');
 });
