@@ -111,12 +111,20 @@ test('⭐ the two widths get opposite layouts, because the free space is opposit
     'the pill can grow the clock line again, which shifts the board');
 });
 
-test('the team chip is the penalty box’s, not a second implementation', () => {
-  // Two ways to draw a club chip is two things to keep in step with the club
-  // colours, and they drift apart the first time either is touched.
+test('the team chip is the ONLY implementation of a club chip', () => {
+  /* Two ways to draw a club chip is two things to keep in step with the club
+     colours, and they drift apart the first time either is touched.
+     ⏹ THIS USED TO ASSERT `.pb::before` CARRIED THE SAME PATTERN — the penalty
+     box under the ice, which `b22156b` superseded with penalties on the
+     scoreboard and which was deleted on 2026-09-15. The claim inverts rather than
+     weakens: there is no second implementation to agree WITH, so what this now
+     requires is that no second one has appeared. A test asserting agreement with
+     a deleted sibling would have gone quietly vacuous. */
   assert.match(ruleFor('#rg .ppill::before'), /content:attr\(data-ab\)/);
-  assert.match(PAGE_CSS, /#rg \.pb::before\{content:attr\(data-ab\)/,
-    'the pattern this borrows from has moved');
+  const chips = [...PAGE_CSS.matchAll(/([^{},]+)::before\{content:attr\(data-ab\)/g)]
+    .map(m => m[1].trim());
+  assert.deepEqual(chips, ['#rg .ppill'],
+    `${chips.length} club-chip implementations, not one: ${chips.join(', ')}`);
   assert.match(PAGE_CSS, /#rg \.ppill\.a::before\{background:var\(--away\)/);
   assert.match(PAGE_CSS, /#rg \.ppill\.h::before\{background:var\(--home\)/);
 });

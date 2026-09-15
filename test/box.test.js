@@ -246,23 +246,27 @@ test('at five-on-three the goal releases the EARLIEST, and only one of them', ()
   assert.equal(occupants(all, 181, HOME).length, 1, 'one man still sitting');
 });
 
-test('the band is OUTSIDE the rink’s viewBox, so the rink cannot shrink for it', () => {
-  // MEASURED, NOT ASSUMED: the rink is 136px tall on a 390px phone against 373px
-  // on a laptop, so a band placed inside the viewBox costs most where there is
-  // least. The suite cannot see a pixel, but it can see containment -- and
-  // containment is the property the measurement turned into a rule.
-  const page = readFileSync(new URL('../src/read-the-game.html', import.meta.url), 'utf8');
-  const svg = page.slice(page.indexOf('<svg viewBox="0 0 200 85"'));
-  const inner = svg.slice(0, svg.indexOf('</svg>'));
-  assert.ok(page.includes('class="pboxes"'), 'the band is on the page at all');
-  assert.ok(!inner.includes('pboxes'),
-            'the penalty box must not live inside the rink svg');
-  // And it is emitted unconditionally -- a band that appears only when occupied
-  // moves everything below it twice a period.
-  assert.ok(/<div class="pboxes"[^>]*>[\s\S]{0,220}?id="pbH"/.test(page),
-            'both boxes are present in the markup, empty or not');
-});
+/* ⏹ TWO TESTS OF THE PENALTY BAND UNDER THE ICE LEFT ON 2026-09-15, and what
+   they proved is kept here because both are traps, not features. Kevin,
+   2026-08-27: the boxes under the ice "are (now) rather wasted space... let's
+   display penalties on the scoreboard, with the offending party identified under
+   the applicable team" — `b22156b` did that, `#penA`/`#penH` inside `.tm` is the
+   replacement, and the band has been `display:none` ever since.
 
+   ⭐ ANYTHING PUT BACK UNDER THE ICE INHERITS BOTH FINDINGS:
+
+   1. KEEP IT OUT OF THE RINK'S viewBox. The rink is 136px tall on a 390px phone
+      against 373px on a laptop, so a band placed INSIDE the viewBox costs most
+      where there is least. The suite cannot see a pixel but it can see
+      containment, which is what that measurement turned into a rule.
+
+   2. `#rg.preview .rinkbox` IS `display:flex`, so a block added inside it does
+      NOT stack under the rink — it becomes a flex SIBLING and lands beside it.
+      The boxes rendered in the right-hand margin of the ice on the live front
+      page, label floating above them, while every test here stayed green. Kevin
+      found it by looking. The fix was `flex-direction:column` plus `flex:0 0
+      auto` on the block and `flex:1 1 auto` on the svg — a height-capped preview
+      gives anything that stretches straight out of the ice. */
 test('the occupancy the reference game actually shows, counted', () => {
   // A COUNT DISCRIMINATES WHERE A PREDICATE CANNOT. Every assertion above could
   // hold while the box was empty for most of the game; this pins how much box
@@ -389,37 +393,6 @@ test('the page carries the disclosure, and it is empty until it is earned', () =
   // halves are carried, on a fragment short enough to survive the concatenation.
   assert.ok(page.includes('changed ends'), 'the rule sentence is in the bundle');
   assert.ok(page.includes('hold the rink the same way'), 'and so is the display half');
-});
-
-test('the preview STACKS the band under the ice rather than beside it', () => {
-  // THE BUG THIS EXISTS FOR SHIPPED TO THE FRONT PAGE. `.rinkbox` is `display:flex`
-  // under `#rg.preview`, so a block added inside it does not stack under the rink
-  // -- it becomes a flex SIBLING and lands beside it. The penalty boxes rendered
-  // in the right-hand margin of the ice on the homepage, with the label floating
-  // above them, while every test here stayed green. Kevin found it by looking.
-  //
-  // THE FIRST FIX WAS TO HIDE THEM, AND THAT WAS THE WRONG CALL -- mine, not his.
-  // Kevin: the hero should show "the general vibe of the rink plus the penalty
-  // box... more representative of what the rest of the games on the site have as
-  // a base layer." So the layout is fixed instead of the element removed, and
-  // this test asserts the fix rather than the workaround.
-  const page = readFileSync(new URL('../src/read-the-game.html', import.meta.url), 'utf8');
-
-  assert.ok(/#rg\.preview \.rinkbox\{[^}]*flex-direction:column/.test(page),
-    'a flex ROW is what put the band beside the ice; the column is the actual fix');
-  assert.ok(/#rg\.preview \.pboxes\{[^}]*flex:0 0 auto/.test(page),
-    'the band must never stretch — the preview is height-capped, so anything it '
-    + 'takes comes straight out of the rink');
-  assert.ok(/#rg\.preview \.rinkbox svg\{[^}]*flex:1 1 auto/.test(page),
-    'and the ice is what absorbs the remaining space');
-
-  // The disclosure stays out: it is a transient sentence, not part of the base
-  // layer the hero is meant to represent.
-  const hide = /#rg\.preview[^{]*\{display:none!important\}/.exec(page);
-  assert.ok(hide && hide[0].includes('#rg.preview .endnote'),
-            'the ends note is not base-layer furniture and stays out of the hero');
-  assert.ok(!hide[0].includes('#rg.preview .pboxes'),
-            'the penalty box is base-layer furniture and belongs in the hero');
 });
 
 test('⛔⛔ a BENCH minor ends on a power-play goal, exactly as a player minor does', () => {

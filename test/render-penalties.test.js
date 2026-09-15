@@ -108,7 +108,19 @@ test('the scoreboard seats two and counts the rest', () => {
   // lives in "the seat is reserved and the columns align at the top".
   assert.doesNotMatch(PAGE_CSS, /#rg \.pens:empty\{display:none\}/,
     'the block collapses when empty again, which is the resize that was reported');
-  assert.match(PAGE_CSS, /#rg \.pboxes\{display:none\}/, 'the old penalty-box row is back under the ice');
+  /* ⭐ DELETED BEATS PARKED. This required `#rg .pboxes{display:none}` to still be
+     in the stylesheet — the old penalty band under the ice, parked since
+     `b22156b` moved penalties onto the scoreboard at Kevin's word: *"the penalty
+     boxes under the ice are (now) rather wasted space... let's display penalties
+     on the scoreboard, with the offending party identified under the applicable
+     team."* The band was deleted on 2026-09-15, so the park rule went with it and
+     asserting the rule would now fail for the right reason in the wrong
+     direction. The claim that replaces it is stronger: a parked row comes back by
+     one changed selector, a deleted one cannot come back at all. */
+  assert.doesNotMatch(app, /class="[^"]*\bpboxes\b/,
+    'the old penalty-box row is back under the ice — penalties belong on the scoreboard');
+  assert.doesNotMatch(PAGE_CSS, /\.pboxes/,
+    'the deleted row has rules again');
 });
 
 /**

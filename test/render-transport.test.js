@@ -796,13 +796,23 @@ test('a goal is not captioned twice, and IS captioned when the ice is silent', (
  * the rink box. `test/park.test.js` is the general form of the first half.
  */
 test('the caption pill is not inside a container the stylesheet hides', () => {
+  /* ⏹ THIS WATCHED ONE CONTAINER, AND THAT CONTAINER IS GONE. It checked the
+     caption was not inside `.pboxes` — the penalty band under the ice, which
+     `b22156b` superseded with penalties on the scoreboard and which was deleted
+     on 2026-09-15. Re-pointing it at a different single container would just move
+     the same fragility, so the claim is generalised to the thing it was always
+     about: the caption must not be buried in ANY container the stylesheet hides.
+     That is strictly stronger, and it cannot lose its subject the way the old
+     one did — a park added tomorrow is covered without anyone editing this. */
   const markup = readFileSync(new URL('../src/game.html', import.meta.url), 'utf8');
-  const row = /<div class="pboxes" id="pboxes">([\s\S]*?)<\/div>/.exec(markup);
-  assert.ok(row, 'the penalty box row is gone — this check has lost its subject');
-  assert.doesNotMatch(row[1], /id="caption"/,
-    'the caption is inside .pboxes, which the stylesheet parks with display:none');
-  assert.match(PAGE_CSS, /#rg \.pboxes\{[^}]*display:none|#rg \.pboxes\{display:none\}/,
-    'the row is no longer parked — re-read whether the pill should move back into it');
+  const hidden = [...PAGE_CSS.replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .matchAll(/#rg \.([\w-]+)\{[^}]*display:\s*none/g)].map(m => m[1]);
+  assert.ok(hidden.length > 2, `only ${hidden.length} parked containers found — the scan is not finding them`);
+  for (const cls of hidden) {
+    const box = new RegExp(`<div class="[^"]*\\b${cls}\\b[^"]*"[^>]*>([\\s\\S]*?)</div>`).exec(markup);
+    if (box) assert.doesNotMatch(box[1], /id="caption"/,
+      `the caption is inside .${cls}, which the stylesheet hides with display:none`);
+  }
   /* ⭐ AND THE PILL'S OFFSET IS THE BOX'S HEIGHT, FROM ONE SOURCE.
      `--lboxh` sizes the layer box and lifts the caption clear of it. Two
      numbers would drift the day the box changes height, and the drift's symptom

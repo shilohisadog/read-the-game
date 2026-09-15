@@ -152,8 +152,13 @@ const ENUMERATED = {
 
 test('every live element inside a parked container is on the ledger', () => {
   const dark = darkClasses(CSS);
-  assert.ok(dark.includes('pboxes'),
-    'the penalty-box row reads as lit — the darkness model has lost its subject');
+  /* ⚠️ THE SENTINEL MOVED WHEN ITS SUBJECT WAS DELETED. This named `pboxes` until
+     2026-09-15, when the penalty band under the ice came out — and a sentinel
+     naming a class no page produces goes quietly false, which is the one failure
+     it exists to prevent. `blockpanel` is parked by the same rule and is still on
+     the page. */
+  assert.ok(dark.includes('blockpanel'),
+    'the blocked panel reads as lit — the darkness model has lost its subject');
 
   const writes = new Set([...APP_JS.matchAll(/\$\('([\w-]+)'\)|getElementById\('([\w-]+)'\)/g)]
     .map(m => m[1] || m[2]));

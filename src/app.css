@@ -171,9 +171,16 @@
    that draws itself -- the attribute would be set, the tests would pass on it,
    and the chip would sit on the scoreboard through even-strength play.
 
-   THE CHIP IS `.pb`'s, DELIBERATELY. Same `content:attr(data-ab)`, same padding
-   and radius, same two colour rules -- a viewer meets one team chip on this
-   board, not two that nearly match.
+   ⏹ THE CHIP WAS `.pb`'s, AND `.pb` IS GONE (2026-09-15). Kevin, 2026-08-27:
+   the penalty boxes under the ice "are (now) rather wasted space... let's display
+   penalties on the scoreboard, with the offending party identified under the
+   applicable team" -- `b22156b` did that, `#penA`/`#penH` inside `.tm` is the
+   result, and the band under the ice has been `display:none` ever since. Its
+   markup and rules come out here. THIS CHIP IS NOW THE ONLY STATEMENT of
+   `content:attr(data-ab)`, which was the original point ("a viewer meets one team
+   chip on this board, not two that nearly match") reached from the other side.
+   Named rather than silently re-pointed, because the sentence this replaces sent
+   a reader to a rule that no longer exists.
 
    ⭐ AND IT SITS ON ITS OWN LINE HERE, WHICH THE PIXELS DECIDED. `.mid` is the
    `auto` column of `1fr auto 1fr` and `min-width:150px` is a FLOOR, not a cap --
@@ -307,13 +314,6 @@
    because a positioning context with nothing positioned in it costs nothing --
    whereas removing it and later restoring the child silently restores the
    overlap. If the row is deleted rather than parked, this goes with it. */
-#rg .pboxes{position:relative;margin-top:9px;display:grid;grid-template-columns:1fr 1fr;gap:6px}
-#rg .pblab{grid-column:1/-1;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:center}
-#rg .pb{display:flex;align-items:center;gap:7px;min-height:30px;padding:5px 9px;border:1px solid var(--edge);border-radius:9px;background:#fff;font-size:.79rem;line-height:1.25}
-#rg .pb::before{content:attr(data-ab);font-size:.62rem;font-weight:750;letter-spacing:.04em;padding:2px 5px;border-radius:4px}
-#rg .pb.a::before{background:var(--away);color:var(--away-ink)}
-#rg .pb.h::before{background:var(--home);color:var(--home-ink)}
-#rg .pb.empty{color:var(--muted);background:transparent;border-style:dashed}
 #rg svg{display:block;width:100%;height:auto}
 #rg .boards{fill:var(--ice);stroke:var(--edge);stroke-width:1.1}
 /* ⭐ THE SLOT, AS FURNITURE. `--hd` is the SAME colour the high-danger ring and
@@ -624,7 +624,6 @@
  #rg:not(.preview) .tm .ab{font-size:.7rem;padding:1px 6px}
  #rg:not(.preview) .gs{font-size:.66rem}
  #rg:not(.preview) .pens{min-height:22px}
- #rg:not(.preview) .pb{min-height:22px;padding:3px 7px;font-size:.68rem}
  #rg:not(.preview) .transport button{font-size:.72rem;padding:0 10px;min-height:44px}
  #rg:not(.preview) .who{font-size:.72rem;margin-top:6px}
  #rg:not(.preview) .oibtn{font-size:.64rem}
@@ -679,11 +678,6 @@
    43px of a 146px rink -- the ice letterboxed and visibly shrank, which is the
    thing the band was never allowed to do. Inline, the label sits beside the
    boxes and the whole band is one row. Measured both ways. */
-#rg.preview .pboxes{flex:0 0 auto;margin-top:5px;gap:5px;grid-template-columns:auto 1fr 1fr;align-items:center}
-#rg.preview .pblab{grid-column:auto;text-align:left;white-space:nowrap}
-#rg.preview .pblab{font-size:min(2.1vw,.54rem);letter-spacing:.08em}
-#rg.preview .pb{min-height:0;padding:3px 7px;font-size:min(2.7vw,.72rem);border-radius:7px}
-#rg.preview .pb::before{font-size:min(2.1vw,.56rem);padding:1px 4px}
 #rg.preview .rinkbox svg{width:100%;height:auto;flex:1 1 auto;min-height:0}
 /* AND THE SCOREBOARD HAS TO SHRINK WITH THE FRAME, which is the half the flex
    column could not fix on its own. Measured in a real browser at two widths:
@@ -1064,13 +1058,15 @@
 #rg .lbox.empty .lxn{font-style:italic}
 
 /* ⭐ ANCHORED TO `.rinkbox`, AND THE HISTORY IS THE WARNING.
-   It was `bottom:14px` here once, then moved INSIDE `.pboxes` with
-   `bottom:calc(100% + 6px)` so it would sit on the row's top edge -- the bottom
-   of the ice -- instead of overlapping the penalty boxes. That was right for
-   exactly as long as the row was furniture.
+   It was `bottom:14px` here once, then moved INSIDE the penalty band under the
+   ice with `bottom:calc(100% + 6px)` so it would sit on that row's top edge --
+   the bottom of the ice -- instead of overlapping the boxes. That was right for
+   exactly as long as the row was furniture. (⏹ The band itself was superseded by
+   penalties on the scoreboard in `b22156b` and deleted on 2026-09-15; the pill
+   stays anchored to `.rinkbox`, which is the point of the warning below.)
 
-   ⚠️ PARKING THE ROW TOOK THE PILL WITH IT. `#rg .pboxes{display:none}` is not
-   something a child can override, so from 6b3d655 to this commit every penalty
+   ⚠️ PARKING THE ROW TOOK THE PILL WITH IT. A parked container's `display:none`
+   is not something a child can override, so from 6b3d655 to that commit every penalty
    and every unplaced (shootout) goal announced into a dark element -- 98 and 4
    across the seven fixture games -- while `dwell()` still held the replay open
    to give a caption room that never appeared. The rule this project already
@@ -2138,7 +2134,6 @@
 /* ⏸ AND THE ROW UNDER THE ICE IS PARKED, not deleted. Kevin: "I know I was the
    one that originally wanted them but have since changed my mind." The markup
    still ships; `drawBoxes` no longer writes to it. */
-#rg .pboxes{display:none}
 
 /* ⏸ ═══ PARKED 2026-08-27 — EVERY LAYER'S OUTPUT, NOT ITS CONTROL ═══
    Kevin: "let's hide (not remove, but temporarily hide) the layer information
