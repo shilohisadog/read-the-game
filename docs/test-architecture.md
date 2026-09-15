@@ -146,6 +146,47 @@ deleted control.
 > and then broken is UN-INSTRUMENTED* (`stale-fixtures`) — and *a defect fixed in
 > one call site is not fixed; it is a search nobody ran.*
 
+## 4b. How big is the cleanup, measured
+
+Kevin: *"there are 30K SLOC in the test directory, this cleanup should be pretty
+good-sized I would imagine."*
+
+**Lines are the wrong unit — violations are.** The tier is 30,550 lines, but only
+**15,816 are code**; 12,374 are comment and 2,360 blank, which is this project's
+house style rather than bulk. What matters is the **3,892 assertions**.
+
+| class | candidate sites | files | mechanically decidable? |
+|---|---:|---:|---|
+| a test looks up an id no page has (Q1) | 2 | 2 | **yes** |
+| a test reads an element no reader can see (Q2) | 13 | 8 | **yes** |
+| a numeric claim a reducer test already owns (Q3) | ~9 | 2 | **yes** |
+| anchored on SOURCE TEXT rather than behaviour | **107** | 23 | no — see below |
+| presence-not-content (`assert.ok` round a match) | **174** | 37 | no |
+| assertions inside a data-dependent branch (§H4) | 15 | 9 | partly |
+
+**≈320 of 3,892 assertions — about 8%.** So the answer to "is this good-sized" is
+yes, and my first estimate of 0.6% was four questions' worth rather than the
+suite's.
+
+⚠️ **BUT THE TOP TWO ARE CANDIDATES, NOT DEFECTS, AND THE DIFFERENCE IS THE WHOLE
+DIFFICULTY.** `build.test.js` asserting against the bundle IS its subject — source
+text is what a build test is about. `park.test.js` scanning `APP_JS` for writes is
+legitimate for the same reason. Source-anchoring is a smell only when the claim is
+about BEHAVIOUR, and no regex separates those. The same is true of
+presence-not-content: `assert.ok(x.includes(y))` is weak only when `y` is
+trivially present, which needs reading `y`.
+
+> ⭐ **SO THE WORK SPLITS IN TWO, AND ONLY ONE HALF IS AUTOMATABLE.** ~24 sites are
+> decidable by a standing check and can be fixed now. ~300 need triage, one at a
+> time, by someone reading what the assertion is *for*. Reporting 320 as a defect
+> count would be the same error this document is about: a number that has not
+> asked whether its subject is really its subject.
+
+⭐ **ONE SIGNAL WORTH FOLLOWING.** `render-ends.test.js` carries the most
+data-dependent branches (5), and is also the file whose ends-invariance test was
+found this week to drive five phantom controls and compare `"" === ""` on a sixth
+observable. Concentration is evidence; that file should be triaged first.
+
 ## 5. Proposed invariants
 
 Each is mechanical, needs no judgement, and names the case it would have caught.
