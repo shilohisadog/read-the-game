@@ -34,6 +34,13 @@ This section is the orientation. Everything below §0 is the detail, organised b
 state.
 ## ⏭ 0.00 PICK UP HERE — 2026-09-16
 
+⏭ **THE TEST PROGRAM IS BEING RE-ARCHITECTED FROM EVIDENCE — `docs/defect-corpus.md`.**
+Kevin's plan, in order: (1) ✅ commit the defect corpus; (2) a human relabels
+~30 entries; (3) the survivorship experiment — mutate `src/app.js` decisions and
+record which layer catches each; (4) can a branch preview load data under the
+current CORS and CSP; (5) the architecture document for CHENG — layers by oracle
+crossed with pipeline stages; (6) T1/T2, seam B and `.counters`/`.cbar` wait on it.
+
 ⏸ **HELD FOR CHENG — `docs/frame-model.md`.** Kevin asked whether T1–T4 cleanse
 the test tier or only police its smells. Measured, there are TWO couplings:
 **value** (tests read the page's words to learn app state — one wording change

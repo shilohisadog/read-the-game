@@ -1,0 +1,65 @@
+{
+  "_what": "Entries each extractor reported it was UNSURE were defects (design calls, conversation-only claims, thin detail, drafts that never shipped). Kept in the corpus and flagged here rather than deleted, so a relabel can decide. Keyed by corpus file; tools/defect-corpus.mjs fails if any slug here does not exist in its file.",
+  "docs-below-mobile.jsonl": [
+    "cheng-attacks-removal-arithmetic", "cheng-landscape-room-beneath", "cheng-play-from-start-revert-claim",
+    "cheng-44px-floor-explanation", "cheng-newcomerwhy-wrong-block", "cheng-ice-y690-extrapolated",
+    "cc-claimed-nothing-overflows-390", "blocked-first-diagnosis-wrong", "mobile-doc-first-draft-2x-gain",
+    "layer-caption-1056px-below-ice", "goaltending-name-ambiguous", "slot-ledger-3176px-wall",
+    "board-height-steps-with-penalties", "legend-marks-unnamed", "blocked-box-counted-by-shooter",
+    "outer-overflow-gate-blind-inside-hero", "eleven-broken-citations", "lboxh-guessed-wrong",
+    "figure-named-blocker-not-shooter", "lede-guard-tripped-on-comment"
+  ],
+  "docs-frontdoor-replay.jsonl": [
+    "calendar-letterspaced-caps-sentence", "calendar-empty-month-note-below-grid", "layer-picker-below-fold-on-laptop",
+    "game-line-prints-final-score-at-first-paint", "hero-caption-still-gives-away-outcome", "archive-under-same-game-heading",
+    "faceoff-skew-misread-as-goalie-relative", "cheng-sketch-labels-out-of-scope-as-preseason", "clock-holds-at-restart-false",
+    "restart-frame-stillness-premise-false", "cheng-reference-class-41pct-unqueried", "cheng-save-fraction-misdiagnosed-as-bypass",
+    "fold-numbers-overstated-in-conversation", "nights-with-refusals-from-validation-gate-bug", "frames-pause-for-nothing",
+    "lede-enumerated-four-layers-of-five", "csp-hashes-first-style-block-only", "svg-mask-probe-read-opacity-from-invisible-element",
+    "stale-fixtures-wrong-refusals", "describe-no-games-over-preseason-slate", "sentence-js-stale-roster-inference-hedge"
+  ],
+  "docs-status.jsonl": [
+    "score-effects-card-method-sentence", "all-situations-card-all-three-undercount", "daily-no-games-last-night-draft",
+    "penalties-exception-draft1-same-whistle", "penalties-exception-draft2-matching", "bundle-dead-shadow-locals",
+    "css-orphan-selectors", "newcomer-selector-matches-two", "ingest-partition-check-files-unvetted",
+    "layers-change-nothing-claim", "layer-box-dimensions-claim", "census-four-times-headline",
+    "offside-crosscheck-bad-proxy", "layer-chip-markup-unguarded", "no-games-no-season-start", "d3-soft-404",
+    "u5-tip-jar-homeless-false", "k3-97-percent-from-shots", "opening-faceoff-named-draw-winner",
+    "svg-mask-undefined-class-rendered-nothing", "chip-density-overrides-lost-cascade", "ends-note-above-rink-pushed-drawing"
+  ],
+  "docs-data-layers.jsonl": [
+    "lastrun-halt-carveout-conflation", "strength-breakdown-7v5-artifact", "captioned-suppression-wrong-predicate",
+    "banned-words-blacklist-proposal", "no-game-data-test-fails-by-design", "attempts-headline-without-correcting-rate",
+    "trails-shot-chart-by-default", "goalie-card-thin-threshold-20", "blocked-card-fraction-and-percentage",
+    "classify-window-filter-untested", "shot-types-exclusion-unpinned", "shootout-scoring-per-attempt",
+    "boxscore-contradiction-refused-73", "memory-attempts-null-stale", "flagship-number-propagated-four-artifacts",
+    "toronto-block-wrong-end-report"
+  ],
+  "docs-app-architecture.jsonl": [
+    "scrubber-unaimable-no-step-control", "game-page-zero-links-dead-end", "whistle-card-stale-without-saying",
+    "doctrine-seam-not-built", "main-app-html-not-regenerable", "boot-harness-runs-stale-built-bundle",
+    "inline-write-classification-overclaimed", "q1-ghost-id-instrument-noisy", "boot-binding-analyser-five-failures",
+    "css-transform-box-test-false-positives", "park-test-parked-ancestor-check-noisy-draft", "tests-used-penalty-box-as-landmark",
+    "tests-read-period-wording-for-identity", "homepage-test-asserted-undefined", "23-tests-drove-deleted-control",
+    "blank-page-missed-by-43-green-tests", "build-index-shipped-slot-placeholder", "pages-shipped-without-viewport-tag",
+    "lastHD-missed-by-let-scan"
+  ],
+  "git.jsonl": [
+    "stick-blade-invisible", "scoreboard-bare-percentage", "ends-fixed-undisclosed", "replay-opens-at-final-event",
+    "host-side-contradiction", "desktop-board-too-tall", "control-notes-empty-default", "game-page-picker-below-fold",
+    "picker-chips-misaligned-separator", "hero-selection-on-plays-not-attempts", "front-door-never-names-sport",
+    "lede-definite-references", "root-404-no-index", "shootout-counted-as-play", "sync-pointer-before-bytes",
+    "validate-score-sum-blind-to-order", "build-rules-pushed-to-remote", "css-orphan-rules", "label-goal-row-dead",
+    "red-push-comment-quoted-markers", "red-push-doc-paths", "red-push-tier-block"
+  ],
+  "notes.jsonl": [
+    "cheng-kevin-never-introduced", "glyph-marks-no-legend", "by-date-missing-from-nav",
+    "blocked-card-header-decided-for-laptop", "three-different-scoreboards", "high-danger-borrowed-term",
+    "rank-4th-of-32-no-sample", "game-picker-below-fold", "bare-lowercase-goal-label",
+    "column-consistency-rule-overrode-ruling", "tip-jar-removed-everywhere", "math-abs-defect-reference",
+    "high-danger-distance-bug", "sog-goals-ratio-unsanctioned", "next-event-table-one-game-inflated",
+    "hero-loop-problem-not-one", "levi-special-teams-story", "running-counter-read-stale-snapshot",
+    "sides-alternates-shootout-period", "team-season-7-8-uncheckable", "artifact-review-overwritten",
+    "git-checkout-ate-mutation-work", "backup-file-deleted-builders"
+  ]
+}
