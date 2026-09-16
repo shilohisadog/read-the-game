@@ -32,161 +32,125 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 
 This section is the orientation. Everything below §0 is the detail, organised by
 state.
-## ⏭ 0.00 PICK UP HERE — 2026-09-14
+## ⏭ 0.00 PICK UP HERE — 2026-09-16
 
-⏭ **NEXT: THE RED-ON-RED ENDS PROBLEM (Kevin's call, 2026-09-14: *"we'll pick
-back up with 3. (probably), the red on red is a problem"*).**
+⏭ **NEXT: BUILD T1 AND T2 FROM `docs/test-architecture.md`.** CHENG has ruled all
+four questions (§7 of that document) and endorsed the order: *"T2 landing before
+any future parking is what makes the next `.pboxes` incident impossible rather
+than documented."* Nothing is built yet.
 
-**What it is.** On the hero — MTL at CAR — a reader cannot tell which end belongs
-to which club. The ends are distinguished by FILL, not by hue: `drawNetmen` draws
-the home goalie solid and the away goalie **white with a coloured outline**, the
-same sweater convention the marks use. At 390px that goaltender is a **3.5 × 5px
-figure**, and the distinction is being asked to carry "whose end is this" on five
-pixels. Two reds simply remove the hue you would otherwise fall back on.
+**T1** — every id a test looks up must exist in some built page.
+**T2** — no test may read an element inside a container the stylesheet hides,
+unless it is the test *of* that parking.
 
-**⚠️ IT IS NOT A COLOUR-DISTANCE PROBLEM, AND THE ARITHMETIC SAYS SO.** MTL–CAR
-is **ΔE 29.3** — not a close pair. The real clashes are five pairs with
-*identical* hex: BOS–NSH, DET–NJD, EDM–WPG, FLA–WSH, TOR–VAN — **39 published
-games (0.9%)**; under ΔE 10 it is 239 (5.7%), under ΔE 20 it is 557 (13.3%). **A
-hero rule keyed on colour distance would have picked this game anyway.**
+⚠️ **FOUR THINGS TO CARRY INTO THE BUILD, three of them corrections to CHENG's
+own ruling that were checked rather than assumed:**
 
-**⚠️ AND THE LEGEND NAMES THE CONVENTION FOR SHOTS AND NOT FOR THE NETS.** It
-says *"visitor shot — white, like the sweaters"*. A reader who works that out for
-the marks is never told it also decides the ends.
+1. **T2's exception must be VERIFIABLE, not merely well-formed.** CHENG ruled the
+   exception is a category from a closed vocabulary (`@reads-parked: subject`),
+   never free text — *"free text can't be audited; a closed set can."* Correct,
+   **but an annotation is a claim the author writes about themselves**, and this
+   document's own headline is *prose is not an instrument*. His Q2 ruling demands
+   a declared subject be checkable against the file's imports; the same standard
+   applies to his Q4 answer. **A file claiming `subject` must itself COMPUTE the
+   parking model** — import or derive `darkClasses`. `park.test.js` does; a file
+   that merely wants the exemption does not.
+2. **T2's derivation has no source as CHENG stated it.** He said exceptions should
+   be grantable only for containers in the parking ledger. `ENUMERATED` is keyed
+   by **id** (`rotgo`, `ba`, `slotSay`) — there are no containers in it. Hang the
+   derivation off **`darkClasses(CSS)`**, computed in the same file.
+3. **The exception count is itself a measurement** (CHENG, and keep it): one
+   `@reads-parked: subject` means the invariant is healthy; twenty means the rule
+   is wrong, and the number says so before anyone argues.
+4. **A guard that fires on every run is a guard somebody switches off.** T1 has
+   two real violations today and T2 has thirteen; both must land green after the
+   fixes, not amber forever.
 
-**⛔⛔ THIS WAS PREDICTED IN THE REPO, BY CC, AND THE OTHER ARGUMENT WON.**
-`docs/scoreboard-mobile.md` §5.2, when `ATTACKS →` was on the table for deletion:
+⏭ **THEN: THE `.counters` / `.cbar` REMOVAL, held deliberately, with a shape.**
+Ten ids inside two containers `display:none` under **every one of the seven
+layers**, parked at Kevin's word on 2026-08-27 and superseded by `#lbox` four
+hours later. Eleven test files read them. **Do NOT re-point them wholesale —
+that moves a smell rather than fixing one.** The audit (`docs/test-architecture.md`
+§3) classified all 28 assertions:
 
-> CHENG has separately argued the goalies already settle which end is whose
-> *without words*…
-> **I would argue against.** The arrow answers *which way is this team going*,
-> which the goalies answer **only once you already know which colour is which —
-> and the colours are exactly what a novice does not know.**
+| group | n | what it really claims | do |
+|---|---:|---|---|
+| duplicated arithmetic | 9 | 80/55, 48/38 | **delete** — `layers.test.js:69`, `attribution.test.js:39` and `strength.test.js:216` already assert these **on the reducer** |
+| genuine rendering | 12 | the mode label reaches the board; the bar is the proportion | move to `#lbox`, or delete with the bar |
+| playhead position | 7 | *"first paint is pre-game"*, *"the preview begins where the layer first counts"* | **re-subject** — they use `cA` as a handy readout; their subject is which FRAME |
 
-That is the exact failure, found on Kevin's phone. The same document records
-CHENG *proposing* moving the indicator onto the ice (§190) — never built.
-
-**THE PROPOSAL, NOT YET APPROVED:** name each **net** with the club defending it
-— a small abbreviation behind each crease, flipping with the ends. It differs in
-kind from the thing that was deleted: `ATTACKS →` was a *direction constant* that
-contradicted the ends switching, in the scoreboard where it overflowed. This is a
-*fact about the frame*, on the ice, per end, so it cannot contradict the flip —
-and it works for all 4,192 games rather than the 39 with matching hexes.
+⛔ **THAT THIRD GROUP IS THE TRAP.** Mechanically re-pointing them to `lxA` would
+preserve a coincidence rather than the claim.
 
 ---
 
-⏭ **MOBILE IS REBUILT AND LIVE. PORTRAIT IS OUT BY KEVIN'S RULING.**
+## ✅ WHAT SHIPPED 2026-09-14 → 09-16
 
-*"I have decided portrait isn't salvageable, there's no way that portrait will
-work for a novice, heck it doesn't work for me and I know what it's trying to
-show."* → landscape gets the laptop's two columns; portrait asks you to rotate.
+**1. The club's name behind its own net (`f35ef78`) — the red-on-red fix.**
+Kevin: *"vertical aligned text between the net and the end boards identifying
+that teams net… partially opaque, so not to interfere with the event display."*
+5.2px, `.38` opacity, first child of `#rink` so every mark draws over it, in the
+6-unit strip between the net's back and the boards. Ink is `readableInk`, so a
+club whose colour cannot be read on white gets plain ink — **a label that failed
+in the same case as the thing it is fixing would not be a fix.**
 
-| | ice | board ÷ rink | ends at |
-|---|---|---:|---:|
-| portrait, before | 386 × 164 (19.4% of the fold) | — | caption 0.57, controls 0.81+ |
-| landscape stacked | 762 × 324 | — | caption **1.52**, controls **2.04** |
-| **landscape, shipped** | **510 × 217** | **0.44** | **0.95 at 844×350** |
-| laptop 1400×900 | 924 × 393 | 0.31 | unchanged |
+⛔⛔⛔ **AND IT HAD SHIPPED AND BEEN DELETED BEFORE, TWO HOURS APART IN AUGUST**
+(`52f9b5c` 09:01, `76e7a86` 11:12). Neither `docs/ends-switching.md` §10 nor
+`docs/scoreboard-mobile.md` §5.2 — the two places the record pointed at —
+mentions it. A firing test assertion and `git log -S netlab` found it.
+**GREP THE REPO IS NOT ENOUGH: `git log -S` the identifier you are about to
+reintroduce.** The deletion's reason was *"the club's colour says whose"* — the
+exact premise Kevin disproved from his phone a month later.
 
-**⭐ THE RULE INVERTS, and that is the whole design.** The 1360 query protects the
-rink's WIDTH because width is what a laptop has spare. In landscape the scarce
-dimension is HEIGHT and the rink's height IS its width × 0.425 — so width is
-taken FROM the rink on purpose. Shrinking the controls and enlarging the drawing
-are the same edit.
+**2. The scoreboard following the ice — BUILT, THEN DECLINED (`8477719`,
+reverted `b631b17`).** Kevin asked for it, I found it was six live pairs and
+built it as one class, it worked at all three viewports — and he reversed it the
+next day: *"I just don't see how switching the scoreboard aligns with anything to
+teach the novice the game of hockey."* **He is right and my argument for it was a
+bad analogy**: a rink that does not flip contradicts a FACT ABOUT HOCKEY, while a
+scoreboard's left-right order is a LAYOUT CONVENTION a novice holds no prior
+about. The labels did not expose a defect further down the page — **they made the
+board's job smaller.** `git log -S hostleft` lands on the reason.
 
-**⛔ THE TRAP WAS IN THE MEDIA QUERY ITSELF.** `orientation` is a property of the
-DOCUMENT's viewport, and the front door's hero is an iframe measured at **315×220**
-on a portrait phone — landscape, under 500px tall, a match. Every landscape rule
-carries `:not(.preview)` and a test walks the block's selectors to prove it.
+**3. The three totals now say why they differ (`3a55fb2`).** The front door quoted
+4,192 / 4,100 / 3,925 with only the first explaining itself. The rule is
+`eligible()` in `src/lib/archive.js`: a game **level** on a measure is not a case
+for it. 92 games are tied on attempts, 267 on level-score attempts. Computed,
+never typed.
 
-**⛔ AND THE TYPE WAS THE LAPTOP'S, EXACTLY.** At 844×350 every size on the page
-was identical to a 1400×900 laptop — score 28.8px in both, buttons 13.28, caption
-13.12. It is U11's own defect in a new viewport: that work replaced a rem
-constant with `clamp(1.6rem,5.4vw,2.2rem)` and **assumed viewport width IS
-element width**. In landscape the viewport is 844 and the board is in 230.
-**44px survives every line of the fix** — text shrinks, the tap target does not,
-and the padding cut and `min-height:44px` live in the same declaration.
+**4. The penalty band under the ice is deleted (`c44373b`).** Ratifies Kevin's own
+`b22156b` ruling; `#penA`/`#penH` on the scoreboard is the replacement.
 
-⏭ **STILL OPEN ON MOBILE, NONE OF IT BLOCKING:**
+**5. `refcheck.py` could not cite `tools/*.mjs` (`95920f6`).** Five tools
+uncitable, and the symptom was a LIE — "no such file in the repo" about a file
+that exists. **A glob that stops matching reports the wrong answer rather than no
+answer**, and this one pays an author to delete a true citation.
 
-1. **The board's ~22px reserved penalty band** — why the card still looks emptier
-   than its content. Reclaimable only by accepting jitter when a penalty appears,
-   which is Kevin's rule to relax.
-2. **844×320** — the scrubber's last pixels sit below the fold on smaller phones.
-   The next cut is the speed stepper; dropping a control on one viewport is a
-   product call.
-3. **`#lbox` (120px) and `#lcap` at 1.62 screens** — portrait-path defects from
-   `docs/mobile.md` §1, now behind the rotate prompt. Worth fixing only if
-   *Show it anyway* turns out to be a common path.
+---
 
-⏭ **AND THE THREE FRONT-DOOR ITEMS FROM 2026-09-11 ARE STILL WAITING ON KEVIN.**
+## ⏭ STILL OPEN, IN KEVIN'S ORDER
 
-**1. Page length — RE-MEASURED 2026-09-15, and the lever this row used to name
-was the wrong one.** It said *"cheapest lever is `SHOWN` in `src/lib/daily.js`"*.
-`SHOWN` is **6**, so the slate list is already capped and the season barely moves
-the page at all — measured in a browser with `RTG_PIXELS_SLATE` rather than
-reasoned about:
+1. **T1/T2**, above.
+2. **`.counters`/`.cbar`**, above.
+3. **The wider test-tier work — T3 and T4.** Both need a declared SUBJECT per test
+   file, and **`smoke.test.js` proves not every file has one**: *"Every other test
+   in this suite checks the modules or the text of the bundle. None of them
+   execute the app."* Cross-cutting by design. **The subject vocabulary has to be
+   designed before the 85-file sweep, not discovered during it.**
+4. **Is `test/` a declared tier?** CHENG says yes. ⚠️ But a tier without a
+   boundary rule is a row in a table, every other tier carries one, and the
+   obvious rule is **already violated** — `tools/dom-golden.mjs:56` imports the
+   harness. CHENG's sharpest point: **`test/helpers/page.js` is a different kind
+   of object**, and its rules (*must not invent ids, must fail on absence*) are
+   the OPPOSITE of the rules for tests.
+5. **The novice test — PARKED until beta** by Kevin, 2026-09-15: *"on hold until
+   we get a feature complete and everything locked and loaded."* The
+   `Watch the whole game` CTA is parked with it.
+6. **The situation vocabulary across four surfaces**, two of four done.
 
-| front door | laptop 1400×900 | phone 390×844 |
-|---|---:|---:|
-| off-season (today) | 2.46 screens | 4.47 |
-| a median night — **5 games** | 2.62 | 4.66 |
-| the busiest night in the archive — **16 games** | 2.69 | **4.75** |
-
-**Five games to sixteen costs 0.09 screens.** Lowering `SHOWN` buys about a
-tenth of a screen, so "it inverts on 19 September" is true and small. ⚠️ The old
-2.59 / 4.57 figures were also taken before `.limits` went two-column and the
-freshness line came out; both shortened the page, and this row quoted them for
-four days after they stopped being true.
-
-**WHERE THE 4,008px ACTUALLY GOES** (phone, full slate, blocks over 40px):
-
-| block | px | share |
-|---|---:|---:|
-| `hero` | 971 | **24.2%** |
-| `limits` — *what this does and does not claim* | 756 | **18.9%** |
-| `countsin` | 601 | 15.0% |
-| `learnin` | 413 | 10.3% |
-| `teams` | 330 | 8.2% |
-| `sitefoot` | 314 | 7.8% |
-
-⭐ **`.limits` IS THE CANDIDATE, AND THE FIX THIS WEEK DOES NOT REACH IT.** It
-went two-column at `min-width:760px` on 2026-09-14, which aligns it on a laptop
-and leaves a **390px phone below the breakpoint and unchanged** — three-quarters
-of a screen of caveats, on the surface a newcomer meets before they have watched
-anything. The hero is bigger and is the pitch. **Kevin's call, not measured into
-one.**
-
-**2. The `Watch the whole game` CTA** — held for the novice tester, and Kevin
-parked that until beta on 2026-09-15.
-
-**3. The three populations**, still the live defect: the front door renders
-**4,192**, **4,100** and **3,925** and only the first explains itself. The rule
-is `eligible()` in `src/lib/archive.js` — a game is dropped when the two sides
-are LEVEL on that measure, because a tie is not a case for "the leader lost". So
-**92 games** are tied on shot attempts and **267** have no level-play edge.
-⚠️ The subtraction is only valid because `builders/measure.mjs` filters with
-`inScope` BEFORE pushing, making `summarise`'s own `records.filter(inScope)` a
-no-op — `measured` is `records.length`, unfiltered, so the two could have been
-different populations.
-
-⏭ **THE OLDER THREAD AFTER THAT: the situation vocabulary across four surfaces,
-two of four done.**
-
-**⭐⭐ WHAT THE LAST TWO DAYS EARNED, and both were paid for twice:**
-
-> **A probe whose subject is "the first match" has its subject chosen by file
-> order.** Three of them failed a *correct* stylesheet in one afternoon —
-> `scoreboard.test.js` demanded a brace immediately after `(max-width:520px)`
-> and threw at import when the query became a list; `u11-mobile.test.js` took the
-> first `#rg:not(.preview) .rinkbox{…}` in two places and the new landscape rule
-> became that first. All three now find their subject by what it DOES.
-
-> **A layout claim is a claim about a viewport, and a phone is not a small
-> laptop.** The double-tap-on-a-goal bug was correct at 1400 and wrong at 390,
-> with 1,257 tests green: `openClip` SCROLLS, so by the second tap the page had
-> moved and the finger was over the ice. Nothing in the handler chain could see
-> it. **Both orientations, both sizes, every time.**
+✅ **CLOSED: front-door page length.** Measured rather than argued — 2.46 laptop /
+4.75 phone screens with the busiest slate in the archive, and `SHOWN` is already
+6 so the season moves it 0.09 screens. There was no decision in it.
 
 ## ✅ WHAT SHIPPED 2026-09-11 — twelve commits, all live
 
