@@ -34,6 +34,15 @@ This section is the orientation. Everything below §0 is the detail, organised b
 state.
 ## ⏭ 0.00 PICK UP HERE — 2026-09-16
 
+⏸ **HELD FOR CHENG — `docs/frame-model.md`.** Kevin asked whether T1–T4 cleanse
+the test tier or only police its smells. Measured, there are TWO couplings:
+**value** (tests read the page's words to learn app state — one wording change
+to the period label failed 9 tests about other things) and **layout** (tests
+regex the stylesheet because the fake DOM cannot see it — all five test files
+the `.pboxes` deletion touched). A frame model addresses only the first. **Do
+not build T1 or T2 until that document is ruled**; the paragraph below is the
+plan it may change.
+
 ⏭ **NEXT: BUILD T1 AND T2 FROM `docs/test-architecture.md`.** CHENG has ruled all
 four questions (§7 of that document) and endorsed the order: *"T2 landing before
 any future parking is what makes the next `.pboxes` incident impossible rather
