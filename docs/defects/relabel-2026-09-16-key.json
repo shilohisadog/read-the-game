@@ -1,0 +1,302 @@
+[
+ {
+  "n": 1,
+  "slug": "preview-hide-list-hand-array",
+  "hash": "c56a33a",
+  "found_by": "kevin-looking",
+  "who": "K",
+  "oracle": "repo",
+  "O": "R",
+  "unsure": false
+ },
+ {
+  "n": 2,
+  "slug": "whynoteven-docstring-backwards",
+  "hash": "2db1e8e",
+  "found_by": "cc-audit",
+  "who": "M",
+  "oracle": "repo",
+  "O": "R",
+  "unsure": false
+ },
+ {
+  "n": 3,
+  "slug": "double-minor-released-outright",
+  "hash": "7f0271a",
+  "found_by": "cc-measurement",
+  "who": "M",
+  "oracle": "other: NHL rulebook",
+  "O": "?",
+  "unsure": false
+ },
+ {
+  "n": 4,
+  "slug": "preview-restart-pause-dead",
+  "hash": "cef1bd1",
+  "found_by": "cc-audit",
+  "who": "M",
+  "oracle": "repo",
+  "O": "R",
+  "unsure": false
+ },
+ {
+  "n": 5,
+  "slug": "offside-diagram-wrong-actors",
+  "hash": "dc675f6",
+  "found_by": "kevin-looking",
+  "who": "K",
+  "oracle": "human-eye",
+  "O": "E",
+  "unsure": false
+ },
+ {
+  "n": 6,
+  "slug": "visitor-gate-blank-expectation",
+  "hash": "f12336c",
+  "found_by": "cc-audit",
+  "who": "M",
+  "oracle": "repo",
+  "O": "R",
+  "unsure": false
+ },
+ {
+  "n": 7,
+  "slug": "empty-net-shot-goes-in-overstated",
+  "hash": "fc56754",
+  "found_by": "kevin-looking",
+  "who": "K",
+  "oracle": "other: hockey rules",
+  "O": "?",
+  "unsure": false
+ },
+ {
+  "n": 8,
+  "slug": "pp-kill-displaced-by-goal",
+  "hash": "123c054",
+  "found_by": "kevin-looking",
+  "who": "K",
+  "oracle": "app-decision",
+  "O": "D",
+  "unsure": false
+ },
+ {
+  "n": 9,
+  "slug": "tiers-check-rows-only",
+  "hash": "cc90f79",
+  "found_by": "cc-audit",
+  "who": "M",
+  "oracle": "repo",
+  "O": "R",
+  "unsure": false
+ },
+ {
+  "n": 10,
+  "slug": "missed-shot-labels-no-subject",
+  "hash": "b561f5c",
+  "found_by": "kevin-looking",
+  "who": "K",
+  "oracle": "human-eye",
+  "O": "E",
+  "unsure": false
+ },
+ {
+  "n": 11,
+  "slug": "dated-docs-read-as-current",
+  "hash": "50a71c0",
+  "found_by": "kevin-question",
+  "who": "K",
+  "oracle": "league-or-archive",
+  "O": "L",
+  "unsure": false
+ },
+ {
+  "n": 12,
+  "slug": "diagram-opens-on-frame-zero",
+  "hash": "dc675f6",
+  "found_by": "browser-check",
+  "who": "A",
+  "oracle": "human-eye",
+  "O": "E",
+  "unsure": false
+ },
+ {
+  "n": 13,
+  "slug": "picker-chips-misaligned-separator",
+  "hash": "405c99f",
+  "found_by": "kevin-looking",
+  "who": "K",
+  "oracle": "human-eye",
+  "O": "E",
+  "unsure": true
+ },
+ {
+  "n": 14,
+  "slug": "metronome-test-reference-game-luck",
+  "hash": "1cb80fa",
+  "found_by": "cc-measurement",
+  "who": "M",
+  "oracle": "league-or-archive",
+  "O": "L",
+  "unsure": false
+ },
+ {
+  "n": 15,
+  "slug": "lede-two-layers",
+  "hash": "5d53ee2",
+  "found_by": "unknown",
+  "who": "?",
+  "oracle": "repo",
+  "O": "R",
+  "unsure": false
+ },
+ {
+  "n": 16,
+  "slug": "app-state-phase2-false-premise",
+  "hash": "5072955",
+  "found_by": "cc-audit",
+  "who": "M",
+  "oracle": "repo",
+  "O": "R",
+  "unsure": false
+ },
+ {
+  "n": 17,
+  "slug": "teams-docstring-false-guard",
+  "hash": "f7d7e32",
+  "found_by": "kevin-question",
+  "who": "K",
+  "oracle": "league-or-archive",
+  "O": "L",
+  "unsure": false
+ },
+ {
+  "n": 18,
+  "slug": "sog-guard-tests-returned-early",
+  "hash": "107ca04",
+  "found_by": "mutation",
+  "who": "A",
+  "oracle": "repo",
+  "O": "R",
+  "unsure": false
+ },
+ {
+  "n": 19,
+  "slug": "dvf-layer-uncontrolled-recommendation",
+  "hash": "1f9bb3a",
+  "found_by": "kevin-question",
+  "who": "K",
+  "oracle": "measurement",
+  "O": "L",
+  "unsure": false
+ },
+ {
+  "n": 20,
+  "slug": "slot-card-attribution-contradiction",
+  "hash": "2281b11",
+  "found_by": "cheng-review",
+  "who": "M",
+  "oracle": "definition-or-hand-count",
+  "O": "H",
+  "unsure": false
+ },
+ {
+  "n": 21,
+  "slug": "danger-distance-nearer-net",
+  "hash": "ee4bde6",
+  "found_by": "cheng-review",
+  "who": "M",
+  "oracle": "definition-or-hand-count",
+  "O": "H",
+  "unsure": false
+ },
+ {
+  "n": 22,
+  "slug": "deploy-diagnostic-conflated",
+  "hash": "2c9e378",
+  "found_by": "ci-gate",
+  "who": "A",
+  "oracle": "production",
+  "O": "P",
+  "unsure": false
+ },
+ {
+  "n": 23,
+  "slug": "park-test-intersection-gap",
+  "hash": "fe1784f",
+  "found_by": "cc-audit",
+  "who": "M",
+  "oracle": "repo",
+  "O": "R",
+  "unsure": false
+ },
+ {
+  "n": 24,
+  "slug": "fake-textcontent-no-coerce",
+  "hash": "34b68fd",
+  "found_by": "cc-audit",
+  "who": "M",
+  "oracle": "real-browser",
+  "O": "B",
+  "unsure": false
+ },
+ {
+  "n": 25,
+  "slug": "zonestart-counts-illegible",
+  "hash": "3e076cf",
+  "found_by": "kevin-looking",
+  "who": "K",
+  "oracle": "human-eye",
+  "O": "E",
+  "unsure": false
+ },
+ {
+  "n": 26,
+  "slug": "doc-slot-79-percent",
+  "hash": "c4820b5",
+  "found_by": "cc-measurement",
+  "who": "M",
+  "oracle": "league-or-archive",
+  "O": "L",
+  "unsure": false
+ },
+ {
+  "n": 27,
+  "slug": "additive-gate-hand-typed-keys",
+  "hash": "c1d19bd",
+  "found_by": "cc-audit",
+  "who": "M",
+  "oracle": "repo",
+  "O": "R",
+  "unsure": false
+ },
+ {
+  "n": 28,
+  "slug": "firstatclock-untested",
+  "hash": "9f4ff62",
+  "found_by": "mutation",
+  "who": "A",
+  "oracle": "repo",
+  "O": "R",
+  "unsure": false
+ },
+ {
+  "n": 29,
+  "slug": "red-on-red-ends-ambiguous",
+  "hash": "f35ef78",
+  "found_by": "kevin-looking",
+  "who": "K",
+  "oracle": "human-eye",
+  "O": "E",
+  "unsure": false
+ },
+ {
+  "n": 30,
+  "slug": "diagram-tokens-rink-units",
+  "hash": "93cf6b6",
+  "found_by": "browser-check",
+  "who": "A",
+  "oracle": "human-eye",
+  "O": "E",
+  "unsure": false
+ }
+]

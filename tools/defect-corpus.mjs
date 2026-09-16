@@ -8,8 +8,10 @@
  * do, this is what re-derives them.
  *
  * ⚠️ THE LABELS ARE ONE EXTRACTOR'S JUDGEMENT EACH. `found_by`, `oracle` and
- * `nature` were assigned by a model reading the source, and a 16-entry spot-check
- * is the only audit so far. Quote category-level shares, never decimals.
+ * `nature` were assigned by a model reading the source. ⛔ A BLIND HUMAN RELABEL
+ * OF 30 (scored at the bottom of this file) found `oracle` NOT REPRODUCIBLE and
+ * `found_by` reliable only as "Kevin versus anyone else" — read those tables with
+ * that result beside them.
  *
  *   node tools/defect-corpus.mjs           validate, then print every table
  *   node tools/defect-corpus.mjs --check   validate only; non-zero on any defect in the corpus itself
@@ -58,6 +60,27 @@ for (const [f, slugs] of Object.entries(unsure)) {
   for (const s of slugs) if (!have.has(s)) problems.push(`unsure.json names "${s}", which ${f} does not contain`);
 }
 
+/* ⭐⭐ THE HUMAN RELABEL, 2026-09-16 — the one check on these labels not made by
+   the model that made them. Kevin labelled 30 random commit entries BLIND (the
+   extractor's labels were sealed until he finished); the key is what was sealed.
+   Parsed and scored here so the agreement figures in docs/defect-corpus.md are
+   derived, never typed. */
+const SHEET = readFileSync(new URL('relabel-2026-09-16.md', DIR), 'utf8');
+const KEY = JSON.parse(readFileSync(new URL('relabel-2026-09-16-key.json', DIR), 'utf8'));
+const answers = new Map();
+const blocks = SHEET.split(/^### (\d+)\. /m);
+for (let k = 1; k < blocks.length; k += 2) {
+  const pick = q => (new RegExp(q + '\\? → *(\\S*)').exec(blocks[k + 1]) || [])[1];
+  answers.set(+blocks[k], { real: pick('Real'), who: pick('Found by'), oracle: pick('Could have known') });
+}
+const gitSlugs = new Set((corpus['git.jsonl'] || []).map(r => r.slug));
+if (KEY.length !== 30 || answers.size !== 30) problems.push(`the relabel has ${answers.size} answered entries and a key of ${KEY.length}; both should be 30`);
+for (const k of KEY) {
+  if (!gitSlugs.has(k.slug)) problems.push(`the relabel key names "${k.slug}", which git.jsonl does not contain`);
+  const a = answers.get(k.n);
+  if (!a || !a.real || !a.who || !a.oracle) problems.push(`relabel entry ${k.n} is not fully answered`);
+}
+
 if (problems.length) {
   console.error(`THE CORPUS HAS ${problems.length} PROBLEM(S):\n  ` + problems.join('\n  '));
   process.exit(1);
@@ -90,3 +113,23 @@ table('COMMITS THAT REACHED THE LIVE SITE — who found it', live, finder);
 table('COMMITS THAT REACHED THE LIVE SITE — what knew the right answer', live, r => head(r.oracle));
 table('DOCS + NOTES (overlapping, includes pre-commit catches) — who found it', rest, finder);
 table('DOCS + NOTES — what knew the right answer', rest, r => head(r.oracle));
+
+// ---- the human relabel --------------------------------------------------------
+{
+  const COARSE = { B: 'visual', E: 'visual', L: 'data', H: 'data', D: 'code', R: 'code', P: 'production', N: 'novice' };
+  const score = (same, a, b) => {
+    const both = KEY.filter(k => a(k) !== '?' && b(k) !== '?');
+    return `${both.filter(k => same(a(k), b(k))).length} of ${both.length}`;
+  };
+  const ans = k => answers.get(k.n);
+  console.log(`\nHUMAN RELABEL — 30 random commit entries, labelled blind by Kevin`);
+  const real = [...answers.values()].map(a => a.real);
+  console.log(`  real defect?  yes ${real.filter(x => x === 'y').length} · no ${real.filter(x => x === 'n').length} · unsure ${real.filter(x => x === '?').length}`
+    + `  (the extractors flagged ${KEY.filter(k => k.unsure).length} of these 30 as unsure)`);
+  console.log(`  found by, exact (Kevin / model review / automated)      ${score((x, y) => x === y, k => ans(k).who, k => k.who)}`);
+  console.log(`  found by, Kevin versus anyone else                      ${score((x, y) => (x === 'K') === (y === 'K'), k => ans(k).who, k => k.who)}`);
+  console.log(`  could have known, exact (8 categories)                  ${score((x, y) => x === y, k => ans(k).oracle, k => k.O)}`);
+  console.log(`  could have known, coarse (visual/data/code/production)  ${score((x, y) => COARSE[x] === COARSE[y], k => ans(k).oracle, k => k.O)}`);
+  const vis = KEY.filter(k => ans(k).oracle === 'B');
+  console.log(`  of the ${vis.length} Kevin said a real BROWSER could have caught, the extractor said a human eye on ${vis.filter(k => k.O === 'E').length}`);
+}

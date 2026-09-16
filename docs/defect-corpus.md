@@ -63,10 +63,16 @@ commit history structurally cannot.
 **Who found the 201 defects that reached the live site:** Kevin looking at or
 asking about the site 102 · model review 66 · browser checks 15 · mutation,
 CI gate and pipeline alarm 2 each · unknown 12 · **the unit test suite 0**.
+⚠️ Only the **Kevin / not-Kevin** split survived the human relabel (§4.1); read
+the rest as the extractors' account, checked against commit text but not by a
+second reader.
 
-**What knew the right answer for those 201:** a human eye 49 · a real browser 48
-· the league or the archive 29 · the repo 23 · an app decision 22 · a definition
-or hand count 11 · production 10 · a measurement 3 · a novice 3 · other 3.
+⛔ **WHAT KNEW THE RIGHT ANSWER IS NOT QUOTED HERE, ON PURPOSE.** The `oracle`
+field was extracted and is in the files, but it did not survive a blind human
+relabel (§4.1). An earlier version of this section sized test layers from it —
+*about half of what shipped needed a browser or a human eye* — and that sizing
+is withdrawn. `node tools/defect-corpus.mjs` still prints the table, beside the
+relabel result.
 
 **What kind of defect, all 420 commits:** defects in a CHECK 126 (the largest
 class) · a false claim 84 · layout or visibility 49 · rendering or wiring 27 ·
@@ -75,9 +81,51 @@ deploy and hosting 12 · stale derived data 8 · metric logic 8 · other 35.
 
 ## 4. How far to trust it
 
+### 4.1 ⛔ A blind human relabel, and the labels did not all survive it
+
+Kevin labelled 30 random commit entries (excluding the 16 spot-checked below)
+with the extractor's labels **sealed** until he had finished:
+`docs/defects/relabel-2026-09-16.md` is his sheet, `docs/defects/relabel-2026-09-16-key.json`
+beside it is what was sealed, and the tool scores one against the other.
+
+| question | agreement |
+|---|---|
+| found by — Kevin versus anyone else | **20 of 26** |
+| found by — Kevin / model review / an automated check | 9 of 26 |
+| could have known — coarse (visual / data / code / production) | 14 of 25 |
+| could have known — eight categories | **2 of 25** |
+| a real defect at all? | yes 22 · unsure **8** · no 0 — the extractors had flagged 1 of those 30 |
+
+**What the disagreements were made of, read against the commit text:**
+
+1. ⭐ **`found_by` conflates who PROMPTED a finding with what DETECTED it.** In
+   three entries Kevin asked a question and CC's audit or measurement found the
+   defect; the extractor recorded Kevin, Kevin recorded the detector. Both are
+   right about different things. **The field needs to be two fields.**
+2. **"Model review" versus "automated check" held for the extractor**: on 7
+   disagreements read against their commits, the commit names CHENG's review or
+   CC's audit or measurement on 6. The page's owner has no way to see which of
+   the developer's activities surfaced a defect — that is visibility, not error.
+3. ⛔ **`oracle` is a COUNTERFACTUAL, and two readers could not apply it.** *What
+   could have known the right answer* is not written in any commit; it is a
+   judgement about a check that did not exist. The sharpest disagreement is the
+   one that matters most to a test architecture: **on all 4 entries Kevin said a
+   real browser could have caught, the extractor said only a human eye.** That
+   is precisely the line between an automated browser layer and a human review
+   layer, and it cannot be drawn by labelling. **It has to be drawn by
+   experiment** — build the check and see whether it goes red.
+4. **8 of 30 were not clearly defects to a human reader**, against 1 of 30 the
+   extractors flagged. The corpus is looser than its own `docs/defects/unsure.json` says.
+
+⚠️ **n=30 supports "broadly reliable or not", never a percentage** — the
+interval on 20 of 26 is wide.
+
+### 4.2 Everything else
+
 - **Every label is one model's judgement.** A random 16 commit entries were read
-  beside their commits: `found_by` agreed on **15**, `oracle` was defensible on
-  about **13**. Quote category-level shares, never decimals.
+  beside their commits by the same model: `found_by` agreed on **15**, `oracle`
+  was defensible on about **13**. ⛔ **§4.1 shows what that self-check was worth
+  on `oracle`**: a check made by the labeller agreed with the labeller.
 - **143 entries are flagged** in `docs/defects/unsure.json` — the extractors'
   own list of design calls, conversation-only claims, drafts that never shipped
   and thinly described incidents. They are counted above.
@@ -102,9 +150,11 @@ deploy and hosting 12 · stale derived data 8 · metric logic 8 · other 35.
 
 ## 5. What comes next
 
-1. **A human relabels ~30 random entries** — the only check on these labels that
-   is not correlated with the model that made them.
+1. ✅ **A human relabelled 30 random entries** — §4.1. `oracle` did not survive.
 2. **The survivorship experiment** — mutate decisions in `src/app.js` and record
    which layer catches each: the node suite, a browser journey, or nothing.
+   ⭐ **After §4.1 this is no longer a side question.** It is the only instrument
+   left for what `oracle` was meant to answer — which kind of check catches what —
+   and it answers by running checks rather than by labelling them.
 3. Then the test-program architecture, for CHENG's review, with this corpus
    attached.
