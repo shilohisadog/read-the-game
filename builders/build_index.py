@@ -1053,26 +1053,30 @@ __HELPERS__
      LOOP ENDS ON IT instead of running out a budget.
      ⚠️ THAT REASON EXPIRED ON 2026-09-17 (the hero shows no counter), AND THE RULE
      WAS KEPT ON ITS OWN MERITS. Kevin, asked whether the loop should start nearer
-     the goal: "I don't mind a longer-ish loop, so no." The lead-in stays: the
-     loop opens one frame before the first attempt and runs to the goal.
+     the goal: "I don't mind a longer-ish loop, so no." And the same day, the other
+     end: "start the hero at the opening faceoff -- that level sets everything and
+     it's what a novice fan would expect." The loop runs from the faceoff to the
+     goal.
 
-     `hl` IS THE LOOP, NOT THE GOAL'S INDEX. derive.py stores the distance from
-     the preview's opening frame to the first goal. Selecting on the raw index
-     was measured to be wrong: "goal within 12 plays" gives a median loop of FIVE
-     plays and a p10 of ONE, because the loop does not start at play zero.
+     `hl` IS THE FIRST GOAL'S INDEX AMONG THE PLAYS, which since 2026-09-17 is the
+     loop exactly, because the loop starts at play zero. (Before, it opened one
+     play before the first attempt, and `hl` was the distance from there.)
 
      THE WINDOW IS KEVIN'S TEN SECONDS, MEASURED OUTWARDS. At the replay's own
      pace 30s buys a median 16 plays, so ten seconds is about five. [3,8] is
      6-15s around that, and it is the range where the cost stops being free:
      across 4,192 in-scope games the newest qualifying game is a MEDIAN OF 0 DAYS
      behind the newest game (p90 3, p99 20), where the tighter [4,6] is p90 SEVEN
-     and p99 forty-eight. Kevin: "let's start with that and work outwards (if
+     and p99 forty-eight. ⚠️ MEASURED UNDER THE OLD START (one play before the first
+     attempt). From the faceoff the same [3,8] admits a slightly different pool --
+     4 and 4 games of 54, 3 in both -- so these figures are unverified until
+     re-measured from the catalog the next derive publishes. Kevin: "let's start with that and work outwards (if
      needed)" -- so the two numbers are here, together, to be moved together.
 
-     THE FLOOR IS 3 AND NOT 1 BECAUSE `hl` IS AN ESTIMATE. derive.py counts the
-     first attempt of any strength; the real opening frame comes from corsi's
-     even-strength counted set and can only be LATER, so the true loop is never
-     longer than `hl` and the floor absorbs the difference.
+     ⏹ `hl` WAS AN ESTIMATE UNTIL 2026-09-17 -- derive.py found the first attempt
+     by event type, the page by the layer's reducer -- and the floor of 3 was said
+     to absorb the difference. From the faceoff there is nothing to estimate; the
+     floor stays 3 as the lower edge of Kevin's ten seconds.
 
      AND IT FALLS BACK RATHER THAN FAILING. If nothing qualifies -- an archive
      too small, a run of goalless openings -- the hero is the newest game, which

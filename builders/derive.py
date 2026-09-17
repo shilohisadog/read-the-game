@@ -140,43 +140,42 @@ def _quote(box_raw):
 HERO_LOOP_CAP = 30
 
 # THE SAME STREAM THE PREVIEW STEPS THROUGH, duplicated from src/app.js because
-# one file is Python and the other JavaScript. Both sets are guarded against
-# drift by test/hero-loop.test.js, which reads the JavaScript rather than
-# restating it -- a builder holding a private idea of what the renderer plays is
-# how the index and the page come to disagree.
+# one file is Python and the other JavaScript. Guarded against drift by
+# test/hero-loop.test.js, which reads the JavaScript rather than restating it --
+# a builder holding a private idea of what the renderer plays is how the index
+# and the page come to disagree.
+# ⏹ `ATTEMPT_TYPES` lived beside it until 2026-09-17, read only by the loop's
+# old start rule; a constant nobody reads is a constant nobody checks.
 PLAYABLE_SKIP = {"stoppage", "period-start", "period-end", "game-end",
                  "delayed-penalty"}
-ATTEMPT_TYPES = {"shot-on-goal", "missed-shot", "blocked-shot", "goal"}
 
 
 def _hero_loop(events):
-    """The preview's loop: plays to the first goal, or None.
+    """The preview's loop: plays from the opening faceoff to the first goal, or None.
 
-    None means "no hero here", which covers a late first goal, a game with no
-    goal, and a goal that arrives before any attempt has been counted. The
-    reader treats all three the same and none of them is a front door.
+    None means "no hero here": a game with no goal, or a first goal beyond the
+    storage cap. The reader treats both the same.
+
+    ⭐ FROM THE FACEOFF, SINCE 2026-09-17 (Kevin: "start the hero at the opening
+    faceoff"). It counted from one play before the FIRST ATTEMPT, for an attempt
+    counter the hero stopped showing on 2026-09-09 -- and "first attempt" was the
+    event type here but the layer's reducer on the page, so the loop chosen and
+    the loop played could differ. Now it is the first goal's index among the plays
+    the renderer draws, which is exactly where the page's loop ends.
 
     ⏹ IT ALSO COUNTED THE ATTEMPTS INSIDE THE LOOP, published as `ha`, until
-    2026-09-17. The front door chose its hero for a loop whose attempt COUNTER
-    moved at least three times -- and the hero has shown no counter since
-    2026-09-09. Kevin: drop the rule. With no reader the field went too.
+    2026-09-17 -- dropped at Kevin's word with the rule that read it.
     """
-    first_att = None
     n = 0
     for e in events or ():
         # The shootout is excluded on `pt`, NEVER on period number: period 5 is
         # a shootout in the regular season and a THIRD OVERTIME in the playoffs.
         if e.get("pt") == "SO" or e.get("type") in PLAYABLE_SKIP:
             continue
-        t = e.get("type")
-        if first_att is None and t in ATTEMPT_TYPES:
-            first_att = n
-        if t == "goal":
-            if first_att is None:
-                return None
-            return n - max(0, first_att - 1)
+        if e.get("type") == "goal":
+            return n
         n += 1
-        if first_att is not None and n - max(0, first_att - 1) > HERO_LOOP_CAP:
+        if n > HERO_LOOP_CAP:
             return None
     return None
 

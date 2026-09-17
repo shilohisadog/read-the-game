@@ -11,6 +11,8 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { TEAMS, colourOf } from '../src/lib/teams.js';
 import { whistle } from '../src/lib/layers/whistle.js';
 import { corsi } from '../src/lib/layers/corsi.js';
+import { NOT_A_PLAY } from '../src/lib/layer.js';
+import { ATTEMPT_TYPES } from '../src/lib/attribution.js';
 import { rich, app, PAGE_CSS, prose, bundle, boot, delaysOf, paceOf , pickLayer } from './helpers/page.js';
 import { measureGame } from '../builders/measure.mjs';
 import { perGame } from '../src/lib/archive.js';
@@ -419,41 +421,22 @@ test('dwell does not collapse to a constant — the whole replay, not the openin
     `the pace produced ${seen.size} distinct waits (${[...seen].sort((a, b) => a - b).join(', ')}); the rule has two states`);
 });
 
-test('⭐ the preview begins where the layer first counts something', () => {
-  // KEVIN REFRESHED THE FRONT DOOR AND THE COUNTER SAT AT 0-0 FOR THE WHOLE LOOP.
-  // Measured over 230 games: the counter is still empty after 14s in 6% of them
-  // -- and the hero is the most recent game, so between June and October that is
-  // one frozen fixture and the tail is the whole experience. The reference game
-  // here opens with plays that count for nothing, exactly as the live one did.
-  //
-  // THE START IS THE FIX, NOT THE LENGTH: at the same budget the live hero went
-  // from a counter of 0 to a counter of 4, while stretching the loop to 30s from
-  // the faceoff also only reached 4.
+test('⭐ the preview begins at the opening faceoff', () => {
+  // Kevin, 2026-09-17: "start the hero at the opening faceoff -- that level sets
+  // everything and it's what a novice fan would expect." It had opened one frame
+  // before the first counted attempt, for an attempt counter the hero stopped
+  // showing on 2026-09-09, and skipped the opening plays of most games.
   const { at } = delaysOf('?preview=1', 40);
-  assert.ok(at[0] > 0,
-    'the preview still opens at the faceoff — if the game happens to start with '
-    + 'attempts this is vacuous, so the assertion below says it is not');
-
-  // AND IT SKIPS NOTHING THE LAYER COUNTS, which is what keeps the counter
-  // honest: it is still 0-0 on the first frame and still moves in front of you.
+  assert.equal(at[0], 0, `the preview opens at frame ${at[0]}, not the game's first`);
   const a = boot(rich, null, '?game=2023020204&preview=1');
-  // COUNTED BY THE REDUCER AT THE FRAME THE HARNESS HANDS BACK (seam B), not read
-  // off #cA: the counters are parked, and this test's subject is WHERE the loop
-  // starts relative to the first attempt, which the reducer defines.
-  const CTX = { roster: rich.roster, homeId: rich.teams.home.id, awayId: rich.teams.away.id,
-                homeAb: rich.teams.home.ab, awayAb: rich.teams.away.ab };
-  const countAt = k => a.at(k, (d, f) => {
-    const L = corsi.reduce(rich.events.slice(0, f.n + 1), CTX);
-    return (L.t[CTX.awayId] || 0) + (L.t[CTX.homeId] || 0);
-  });
-
-  // IT OPENS ON ZERO AND MOVES ON THE VERY NEXT FRAME. Both halves matter and
-  // neither is sufficient: opening on the first attempt shows a counter reading
-  // 1 before the viewer has seen anything happen, and opening any earlier is the
-  // dead air this whole change exists to skip.
-  assert.equal(countAt(at[0]), 0, 'the loop opens with the count already moved');
-  assert.notEqual(countAt(at[0] + 1), 0,
-    'the second frame still counts nothing — the start is not adjacent to the first attempt');
+  assert.equal(a.at(at[0], (d, f) => f.ev.type), 'faceoff', 'the first frame the preview shows is not a faceoff');
+  // ⚠️ NOT VACUOUS, and this says why: the reference game's first attempt is
+  // NOT its second play, so the old rule opened later than frame 0 here. Counted
+  // from the game file with the page's own vocabulary, not from the renderer.
+  const plays = rich.events.filter(e => e.pt !== 'SO' && !NOT_A_PLAY[e.type]);
+  const firstAttempt = plays.findIndex(e => ATTEMPT_TYPES.has(e.type));
+  assert.ok(firstAttempt > 1,
+    `the reference game's first attempt is play ${firstAttempt}, where the old start rule also opened at 0 — this test could not tell the rules apart`);
 });
 
 test('the preview is a taste: it restarts inside about half a minute', () => {
@@ -466,9 +449,9 @@ test('the preview is a taste: it restarts inside about half a minute', () => {
   // pause's value. Recognising it by `=== 1500` would put a second copy of that
   // constant in here, free to agree with a wrong first copy.
   //
-  // It used to look for a return to ZERO, and that stopped being the marker when
-  // the loop began starting at the layer's first counted event instead of the
-  // opening faceoff. Zero was never the property -- going back was.
+  // Going back is the property, not a return to zero -- which is also where the
+  // loop starts again since 2026-09-17, so both would pass; the marker stays the
+  // one that does not depend on where the start is.
   //
   // A RANGE, NOT A VALUE. How long the loop runs is a visual judgement and the
   // one number left in the preview; pinning it exactly would just be that same
@@ -478,9 +461,9 @@ test('the preview is a taste: it restarts inside about half a minute', () => {
   const back = at.findIndex((v, k) => k > 0 && v < at[k - 1]);
   assert.ok(back > 0, `the preview never looped in 40 ticks: ${at.join(',')}`);
   assert.ok(back >= 4, `only ${back} events fit — that is a slideshow, not a replay`);
-  // AND IT RESTARTS WHERE IT BEGAN, not at the faceoff. A loop that rewinds past
-  // its own start replays the dead plays the start rule exists to skip -- every
-  // pass after the first -- and a mutation proved nothing else here noticed.
+  // AND IT RESTARTS WHERE IT BEGAN. A loop that restarts somewhere else replays
+  // a different taste on every pass after the first -- and a mutation proved
+  // nothing else here noticed.
   assert.equal(at[back], at[0],
     `the loop restarts at ${at[back]} but began at ${at[0]} — it rewinds past its own start`);
   const playing = delays.slice(0, back - 1).reduce((a, b) => a + b, 0);

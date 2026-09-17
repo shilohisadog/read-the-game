@@ -18,12 +18,23 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { boot, rich, PAGE_CSS } from './helpers/page.js';
 import { NOT_A_PLAY } from '../src/lib/layer.js';
-import { ATTEMPT_TYPES } from '../src/lib/attribution.js';
 
 const derive = readFileSync(new URL('../builders/derive.py', import.meta.url), 'utf8');
 const appjs = readFileSync(new URL('../src/app.js', import.meta.url), 'utf8');
-const early = JSON.parse(readFileSync(
+const fixture = JSON.parse(readFileSync(
   new URL('./fixtures/extracts/2024030413.json', import.meta.url)));
+/* ⚠️ THE GAME WITH A GOAL IN REACH IS THIS FIXTURE LESS ITS FIRST HIT, and says so.
+   Since 2026-09-17 the loop starts at the opening faceoff, and this fixture's
+   first goal is play 9 from there -- outside the hero window (3 to 8 plays,
+   builders/build_index.py) and, at 3.6s a frame, past the 30s budget. No fixture
+   has a first goal inside the window, so one hit is removed: the goal lands on
+   play 8, the window's own upper bound, which is the hardest case a real hero
+   can be. */
+const early = (() => {
+  const g = structuredClone(fixture);
+  g.events.splice(g.events.findIndex(e => e.type === 'hit'), 1);
+  return g;
+})();
 
 /** The set literal named in derive.py, read from the source rather than restated. */
 function pySet(name) {
@@ -41,16 +52,17 @@ const same = (a, b) => a.size === b.size && [...a].every(x => b.has(x));
  */
 const playable = g => g.events.filter(e => e.pt !== 'SO' && !NOT_A_PLAY[e.type]);
 
-test('the builder and the renderer agree on what a play is, and what an attempt is', () => {
-  // derive.py decides which games can be heroes by counting plays and attempts.
+test('the builder and the renderer agree on what a play is', () => {
+  // derive.py decides which games can be heroes by counting plays.
+  // ⏹ And attempts, until 2026-09-17: the loop opened one play before the first
+  // attempt. It opens at the faceoff now, derive.py no longer holds the set, and
+  // its half of this test left with it.
   // It is Python and the renderer is JavaScript, so the vocabulary is spelled
   // twice — and a builder holding a private idea of what the page plays is how
   // the index and the page come to disagree. Compared against the MODULES, not
   // against a restatement of them in this file.
   assert.ok(same(pySet('PLAYABLE_SKIP'), new Set(Object.keys(NOT_A_PLAY))),
     'derive.py skips different events than src/lib/layer.js calls not-a-play');
-  assert.ok(same(pySet('ATTEMPT_TYPES'), ATTEMPT_TYPES),
-    'derive.py counts different events as attempts than src/lib/attribution.js');
   /* ⭐ THE RENDERER'S THIRD STATEMENT IS GONE, AND THIS PINS THAT IT STAYS GONE.
      app.js typed the same five literals; it derives them from `NOT_A_PLAY` now,
      so the two cannot disagree BY CONSTRUCTION rather than by this check
@@ -72,7 +84,7 @@ test('the preview STOPS ON THE GOAL', () => {
   const a = boot(early, null, '?preview=1');
   const EV = playable(early);
   const goal = EV.findIndex(e => e.type === 'goal');
-  assert.ok(goal > 0, 'the fixture must contain a goal, or this proves nothing');
+  assert.equal(goal, 8, 'the goal is meant to sit on the hero window\u2019s upper bound, play 8');
   assert.equal(Number(a.$('scrub').value), goal,
     'the hero loop should end on the first goal, not where the budget ran out');
 });

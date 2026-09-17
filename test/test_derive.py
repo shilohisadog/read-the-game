@@ -2159,21 +2159,30 @@ class HeroLoop(unittest.TestCase):
     def ev(type_, **kw):
         return {"type": type_, **kw}
 
-    def test_the_loop_is_measured_from_the_frame_BEFORE_the_first_attempt(self):
+    def test_the_loop_is_measured_from_the_opening_faceoff(self):
         # Plays:  0 faceoff  1 hit  2 shot-on-goal  3 hit  4 giveaway  5 goal
-        # The preview opens one frame before the first counted attempt, so the
-        # opening frame is play 1 and the loop is 5 - 1 = 4 plays.
+        # The preview opens on the faceoff (play 0) and ends on the goal, so the
+        # loop is 5 plays. Until 2026-09-17 it opened one play before the first
+        # attempt and this game measured 4.
         events = [self.ev("faceoff"), self.ev("hit"), self.ev("shot-on-goal"),
                   self.ev("hit"), self.ev("giveaway"), self.ev("goal")]
-        self.assertEqual(D._hero_loop(events), 4)
+        self.assertEqual(D._hero_loop(events), 5)
 
-    def test_a_goal_that_is_ITSELF_the_first_attempt_still_has_a_loop(self):
-        # Plays:  0 faceoff  1 hit  2 goal  -- the goal is the first attempt, so
-        # the opening frame is play 1 and the loop is a single play.
-        events = [self.ev("faceoff"), self.ev("hit"), self.ev("goal")]
-        self.assertEqual(D._hero_loop(events), 1)
-        # And the reader's floor is 3, so this game is not a hero. That is the
-        # floor doing its job rather than a defect here.
+    def test_WHERE_the_first_attempt_falls_no_longer_moves_the_loop(self):
+        # THE PAIR IS THE POINT. The same five plays with the first attempt moved
+        # from play 1 to play 3. The old rule answered 4 and 2 -- the start chased
+        # the attempt. From the faceoff both are 4.
+        early = [self.ev("faceoff"), self.ev("missed-shot"), self.ev("hit"),
+                 self.ev("hit"), self.ev("goal")]
+        late = [self.ev("faceoff"), self.ev("hit"), self.ev("hit"),
+                self.ev("blocked-shot"), self.ev("goal")]
+        self.assertEqual(D._hero_loop(early), 4)
+        self.assertEqual(D._hero_loop(late), 4)
+
+    def test_a_goal_on_the_second_play_is_a_loop_of_one(self):
+        # Plays:  0 faceoff  1 goal. The reader's floor is 3, so this game is not
+        # a hero -- the floor doing its job, not a defect here.
+        self.assertEqual(D._hero_loop([self.ev("faceoff"), self.ev("goal")]), 1)
 
     def test_events_the_renderer_never_plays_do_not_move_the_count(self):
         # The same six plays as the first case with four unplayable events shot
@@ -2182,7 +2191,7 @@ class HeroLoop(unittest.TestCase):
                   self.ev("stoppage"), self.ev("shot-on-goal"),
                   self.ev("delayed-penalty"), self.ev("hit"),
                   self.ev("giveaway"), self.ev("period-end"), self.ev("goal")]
-        self.assertEqual(D._hero_loop(events), 4)
+        self.assertEqual(D._hero_loop(events), 5)
 
     def test_a_shootout_goal_is_not_a_goal_here(self):
         # Excluded on `pt`, NEVER on period number -- period 5 is a shootout in
@@ -2194,13 +2203,15 @@ class HeroLoop(unittest.TestCase):
         self.assertIsNone(D._hero_loop(events))
 
     def test_a_goal_beyond_the_storage_cap_is_not_recorded(self):
-        # An attempt at play 1, then the cap's worth of plays, then a goal. The
-        # field exists to keep the catalog small; a game whose goal is this far
-        # out is not a hero under any reader threshold.
-        events = ([self.ev("faceoff"), self.ev("shot-on-goal")]
-                  + [self.ev("hit")] * (D.HERO_LOOP_CAP + 2)
+        # The cap's worth of plays and two more, then a goal. The field exists to
+        # keep the catalog small; a goal this far out is no hero under any reader
+        # threshold.
+        events = ([self.ev("faceoff")] + [self.ev("hit")] * (D.HERO_LOOP_CAP + 2)
                   + [self.ev("goal")])
         self.assertIsNone(D._hero_loop(events))
+        # AND THE CAP IS A BOUND, NOT AN OFF-BY-ONE: a goal exactly at it is kept.
+        at_cap = [self.ev("hit")] * D.HERO_LOOP_CAP + [self.ev("goal")]
+        self.assertEqual(D._hero_loop(at_cap), D.HERO_LOOP_CAP)
 
     def test_a_goalless_game_has_no_loop_and_no_field(self):
         events = [self.ev("faceoff"), self.ev("shot-on-goal"), self.ev("hit")]
@@ -2211,36 +2222,21 @@ class HeroLoop(unittest.TestCase):
     def test_the_fragment_is_the_only_place_the_field_is_named(self):
         events = [self.ev("faceoff"), self.ev("hit"), self.ev("shot-on-goal"),
                   self.ev("hit"), self.ev("giveaway"), self.ev("goal")]
-        self.assertEqual(D._hl(events), {"hl": 4})
-
-    def test_every_kind_of_attempt_opens_the_loop(self):
-        # The layer counts on goal, missed and blocked alike -- "all three are
-        # the team moving the puck at the net" (corsi.js) -- and the loop opens
-        # one frame before the FIRST of them. A start that saw only shots on goal
-        # would open at play 3 and report 2 plays; seeing a missed shot at play 1
-        # it opens at play 0 and reports 5.
-        # ⏹ Until 2026-09-17 this also counted the attempts inside (`ha`).
-        events = [self.ev("faceoff"), self.ev("missed-shot"),
-                  self.ev("blocked-shot"), self.ev("hit"),
-                  self.ev("shot-on-goal"), self.ev("goal")]
-        self.assertEqual(D._hero_loop(events), 5)
+        self.assertEqual(D._hl(events), {"hl": 5})
 
     def test_the_published_numbers_for_a_real_game(self):
         """The loop derive.py publishes for a real fixture, counted by hand.
 
-        ⚠️ ONLY HALF-PAIRED, SAID PLAINLY (2026-09-17). test/hero-loop.test.js
-        checks the renderer ENDS the loop on the first goal; nothing on the
-        JavaScript side checks where it STARTS, so the length is this file's
-        arithmetic alone. The attempts field `ha` was the half that was fully
-        paired, and it left with the rule that read it.
-
-        Measured across 300 archive extracts the same way: 300 of 300 exact.
-        (`ha`, the attempts inside the loop, was the second field until
-        2026-09-17.)
+        Counted over the page's own vocabulary (`NOT_A_PLAY`, src/lib/layer.js),
+        not Python's: faceoff, hit, shot-on-goal, faceoff, hit, shot-on-goal,
+        faceoff, shot-on-goal, faceoff, GOAL -- the goal is play 9. It was 8 under
+        the old start, which opened one play before the first attempt (play 2).
+        ⭐ PAIRED ON THE JAVASCRIPT SIDE NOW: test/render-preview.test.js checks the
+        page starts at frame 0 and test/hero-loop.test.js that it ends on the goal.
         """
         ev = json.loads((DATA.parent / "test" / "fixtures" / "extracts"
                          / "2024030413.json").read_text())["events"]
-        self.assertEqual(D._hl(ev), {"hl": 8})
+        self.assertEqual(D._hl(ev), {"hl": 9})
 
 
 class ExtractorSchemaBackfills(unittest.TestCase):

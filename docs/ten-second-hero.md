@@ -87,6 +87,22 @@ Kevin: *"we should show the goal during the first ten seconds of the hero game �
 that's where the most visualization takes place"*, then *"let's end the hero
 replay right after the goal"*.
 
+> ✅ **2026-09-17 — THE LOOP STARTS AT THE OPENING FACEOFF.** Kevin, noticing the
+> hero no longer opened on one: *"start the hero at the opening faceoff — that
+> level sets everything and it's what a novice fan would expect."* The start
+> described below — one frame before the first counted attempt — existed for the
+> attempt counter, gone from the hero since 2026-09-09. Measured before changing
+> it: it skipped 1 to 10 opening plays in **33 of 54** archive games, including
+> the hero live that day (CAR at VGK opened on a hit). `hl` is now the first
+> goal's index among the plays, so **"`hl` is an estimate"** (§ The field, point 1)
+> no longer applies, and `derive.py` no longer holds `ATTEMPT_TYPES`. The
+> freshness figures for [3,8] below were measured under the old start and are
+> unverified until re-measured from the catalog the next derive publishes; on
+> 54 games the pool barely moved (4 and 4, 3 in both). Residual, measured and
+> not fixed: a hero whose goal is play 8 misses it if two of the frames before
+> it carry a caption (4.5s each against a 30s budget) — 0 of the 4 in-window
+> games of 62 checked did. The sections below are the record as argued.
+
 He is right about the renderer, and I was wrong to doubt it before checking: a
 goal is the only event with a real treatment — radius 3.2 against 1.7
 (`app.js:509`), a 0.7s flare from 3.6× (`app.css:237`), a 1.3s net flash
