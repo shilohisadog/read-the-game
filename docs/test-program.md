@@ -402,6 +402,19 @@ the strongest case against it.
   green tests). *Against:* "named reasons" can become an excuse list, so the count
   still has to fall.
 
+### 11.2 ✅ RULED — CHENG, then Kevin, 2026-09-17
+
+CHENG accepted all six and sharpened each; Kevin agreed with CC's two objections.
+
+| Q | ruling | as built into step 6 |
+|---|---|---|
+| **Q1** | accept the frame; performance ranked last. **An empty cell carries its reason.** | ⚠️ the builders' unit cell's reason is **"none; correctness rests on the tests that read built markup — open"**, NOT "byte identity is stronger": `--verify` reproduces a baked-in error (CHENG's own docstring in `builders/extract.py`) |
+| **Q3** | zero-dependency; dispatch at `elementFromPoint`. **A dispatch that lands on an unexpected element is a finding, not a retry** (CHENG) — after the page has settled, or animation becomes findings | when a gesture probe is written |
+| **Q4** | the DOM golden stays a gate until the gallery exists; **report the size of its diff** (CHENG) | a count line on `tools/dom-golden.mjs` |
+| **Q5** | build T1, not T2. ⚠️ **The trigger is NOT "a commit adds `display:none`"** (CHENG's proposal): measured, **52 commits added one in six weeks** and `src/app.css` holds 49 — it would fire daily and be switched off. **The trigger is the thing feared: test reads inside hidden containers, 13 today, may not grow**, counted with the darkness model `test/park.test.js` already computes | a ratchet test |
+| **Q6** | option **B**; C deferred; `docs/frame-model.md` closed. **§8.1's replay is the falsifier: if `#scrub` (20 files) does not fall, B did not work** | seam B in the harness |
+| **Q7** | a ratchet, and each remaining off-subject failure names a **category from a closed set** (`cross-cutting`, `harness`); an unknown category fails; counts per category are the measurement. ⚠️ **A category is a claim the author makes about their own test**, so `cross-cutting` is allowed only in files that declare no single subject | with the churn replay |
+
 ## 12. Corrections to the record, owed from the earlier thread
 
 - *"49 of 85 test files boot the whole page"* did not reproduce: **35** call

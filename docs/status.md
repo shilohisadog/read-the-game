@@ -84,6 +84,17 @@ were not independent of production: they measure pages the phone-fit step
 downloads from the live site, so moving them earlier meant a deployed page that
 is not yet production — which is the preview.
 
+✅ **CHENG RULED Q1 and Q3–Q7 the same day** (`docs/test-program.md` §11.2), with
+Kevin agreeing to CC's two objections (Q1's reason for the builders' empty cell;
+Q5's trigger, which would have fired on 52 commits in six weeks).
+`docs/frame-model.md` is closed: option B.
+
+⏭ **STEP 6, in order:** (a) measure the `.counters`/`.cbar` churn replay BEFORE
+seam B, so B has a baseline; (b) T1 in the harness; (c) the hidden-reads
+ratchet (13, may not grow); (d) a diff-size line on the DOM golden; (e) seam B;
+(f) replay all three intended changes against §8; (g) the `.counters`/`.cbar`
+removal.
+
 ⏭ **AT BETA:** make Kevin the required reviewer on the production deploy step
 (`environment:` on that step), and the fallback becomes hold.
 

@@ -1,7 +1,11 @@
 # The frame model — are we cleansing the test tier, or its smells?
 
-**Written 2026-09-16 for CHENG's review. Nothing here is built.** It comes
-before T1 is built, because the answer changes how T1 is built.
+**Written 2026-09-16 for CHENG's review.** ✅ **CLOSED 2026-09-17: option B,
+C deferred** — ruled in `docs/test-program.md` §11.2 (Q6), which supersedes this
+document's plan. The harness hands tests the frame; nothing in `src/app.js`
+changes. **The falsifier is that document's §8.1 churn replay: if the number of
+test files naming `#scrub` (20) does not fall, B did not work.** The
+measurements below stand.
 
 Kevin, reading the plan to build T1 and T2 from `docs/test-architecture.md`:
 *"are we truly cleansing the test/ architecture or are we simply cleaning up the
