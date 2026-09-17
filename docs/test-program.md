@@ -1,7 +1,14 @@
 # The test program — what each function is checked by, and when it gates
 
-**For CHENG's review, relayed by Kevin. Written 2026-09-17. ⏳ Nothing in it is
-built.** Step 5 of the plan in `docs/status.md` §0.00.
+**For CHENG's review, relayed by Kevin. Written 2026-09-17.** Step 5 of the plan
+in `docs/status.md` §0.00.
+
+✅ **RULED 2026-09-17, after CHENG's first review — Kevin approved a five-step
+plan:** (1) this document corrected (§3.1, §8, §9, §11); (2) the two `localhost`
+Chrome steps moved before the deploy; (3) range checks on the published numbers,
+verified by re-planting the five escapes; (4) the data pipeline's checks split
+into before and after the sync; (5) **the release gate of §5.1**. Everything
+else here is still for review.
 
 **FOR A READER ARRIVING COLD.** This repo builds an NHL replay-teaching site,
 live at readthegame.co. Kevin is its owner; CC is the developer model that wrote
@@ -80,6 +87,25 @@ A test program needs three things, and this project's discussion had supplied on
 **Regression is not a level.** It is the property that every stage re-runs
 everything below it on every change, which this repo already has.
 
+### 3.1 Three kinds of check, and why the favourite measured nothing
+
+CHENG's review named the distinction the 0 of 187 exposed; step 3 added a third:
+
+| kind | asks | example | can fail when |
+|---|---|---|---|
+| **bookkeeping** | does our arithmetic agree with our own arithmetic | `conservation()` (`src/lib/layer.js`) | an event is dropped, doubled or unexplained — and nothing else |
+| **witness** | does our output agree with an **independent source** | the extract against the boxscore; blocked shots against `rosterSpots` | the data or our reading of it is wrong in any way the source can see |
+| **range** | is the published output **possible at all** | a count ≥ 0, a share in [0, 1], no `NaN` in a sentence | the output broke the way step 3's escapes broke |
+
+**Breadth is not power.** `conservation()` runs on every layer of every game and
+fails only on bookkeeping, so a planted change to what is counted or drawn left
+it balanced 187 times. ⚠️ **But "no independent source, so near-worthless" is
+wrong too:** the published figures that escaped (`census.hits.r`, `slotShare`)
+have no witness, and 3–4 of the 5 broke a range. **The test for keeping a check is
+whether it can fail the way this output actually broke.** And a witness that
+admission already filters on — *SOG reproduces the boxscore* — cannot fail over
+the published games; it earns its place where new data arrives.
+
 ## 4. The matrix today — measured 2026-09-17
 
 JS suite: **1,266 tests, 85 files, 29,741 lines**; 35 files boot the whole page.
@@ -119,6 +145,28 @@ speed, not the gates.
 **Today there is one stage.** Every push to `main` runs the gates and deploys to
 production; most system checks and all acceptance happen after release. Step 4
 showed the missing stage is buildable.
+
+### 5.1 ✅ The release gate — RULED by Kevin, 2026-09-17
+
+**No branches.** Work still lands on `main`, and the stage is inside the deploy:
+
+- **Before beta:** a push to `main` that changes `src/` deploys **first as a
+  preview**. The automatic checks that today run against the live site run
+  against the preview; only if they pass does **the same commit** deploy to
+  production. Kevin reviews what shipped **in batches, afterwards**. With no
+  audience yet, the fallback when he is unavailable is **ship**.
+- **At beta:** Kevin becomes the **required reviewer** on the production deploy
+  (a GitHub deployment environment; this repo is public, where that is
+  available). The fallback becomes **hold**. One configuration change, made the
+  day beta starts.
+
+⚠️ **A preview cannot show a changed NUMBER.** A change to `src/lib` changes
+`src/`, so it gets a preview — but the published figures are rebuilt by the weekly
+derive, so the preview shows the old ones. **For calculation changes the gate is
+the range check (§7.1) before every sync, not the look.**
+
+The table below is the full program; S2–S4 are what §5.1 builds first, without
+the branch.
 
 | stage | runs on | what runs | exit |
 |---|---|---|---|
@@ -184,13 +232,13 @@ churn comes from:
 
 ## 7. The new checks, each from a measured escape
 
-### 7.1 Published-output properties — calculate × system, S1 and pre-sync
+### 7.1 Range checks on the published output — calculate × system, S1 and pre-sync
 
-Nothing asserts on `measures.json` or `teams.json`. Properties that need no right
-answer: **every count ≥ 0, every share in [0, 1], no `NaN` or `undefined` in any
-string, every histogram the length its definition says.** Three or four of the
-five number escapes break one. **Verify by re-planting the five** — a hypothesis
-until then.
+Nothing asserts on `measures.json` or `teams.json`. Checks that need no right
+answer (§3.1, the **range** kind): **every count ≥ 0, every share in [0, 1], no
+`NaN` or `undefined` in any string, every histogram the length its definition
+says.** Three or four of the five number escapes break one. **Verify by
+re-planting the five** — a hypothesis until then.
 
 ### 7.2 Browser states for the blind spots — display × system, S2
 
@@ -235,8 +283,11 @@ measured.
    **Target: zero off-subject.**
 2. **Detection does not regress.** Re-run the 187 step-3 mutants: caught per
    function **≥ 52 / 45 / 28**.
-3. **The escapes close.** The 5 number escapes against §7.1; the 19 reader-facing
-   escapes against §7.2. Report the counts; no target is guessed.
+3. **The escapes close — reported PER FUNCTION** (CHENG): a program that improves
+   calculate while display stays flat must not read as an overall gain. The 5
+   number escapes against §7.1; the 19 reader-facing escapes against §7.2. Report
+   the counts; no target is guessed. ⚠️ *Detection ≥ today* can be met by changing
+   nothing; **this is the criterion that shows the program did something.**
 4. **The churn surface.** Ids named by more than three test files: **22 today**,
    reported after.
 5. **Speed.** S1 and S2 wall-clock, measured; a stage people wait on is a stage
@@ -247,7 +298,8 @@ measured.
 1. **Branches change how work lands, and the loop is the project's engine.** A
    push reaches live in a few minutes today (today's deploy run took 2m0s). Branch, preview, human
    approval, promote — every step adds wait, and **zero merges in this repo's
-   history** says the working style has never needed one.
+   history** says the working style has never needed one. ✅ *Answered by §5.1:
+   no branches, and no human wait before beta.*
 2. **Pre-beta, production has no audience.** The 201 live defects cost Kevin's
    time and nobody else's; `readthegame.co` effectively *is* staging. The stages
    start paying at beta. *Counter:* Kevin's time is the scarcest resource, and S3
@@ -267,9 +319,12 @@ measured.
 7. **The evidence is narrow.** Single-token mutants; 52 games; 47 page states;
    one human reviewer; six UI-heavy weeks before the season opens on 29
    September. The mix will move toward data and claims.
-8. **Don't build it now.** Every week spent here is a week the novice test waits.
-   By this program's own logic the most valuable acceptance test is the novice,
-   and it is parked.
+8. **Don't build it now.** Every week spent here is a week not spent reaching
+   feature-complete. ⚠️ **Corrected:** an earlier version said the *novice test*
+   waits on this program. It does not — Kevin parked it until beta on 2026-09-15
+   (*"on hold until we get a feature complete and everything locked and
+   loaded"*). And the two answer different questions: a novice cannot tell a
+   wrong share, which is the class that got past everything.
 
 ## 10. Order, if built — by attrition, each step with its own exit
 
@@ -293,13 +348,11 @@ Steps 1–3 need no new infrastructure and close the worst measured seam first.
 - **Q1 — the frame.** Six functions and three cross-cutting rows × five levels ×
   the stages of §5. Is that the organising axis, or does one of them not earn its
   place?
-- **Q2 — branch and promote, or trunk with an automatic S2?** §9.1 is the case
-  against promotion. The alternative keeps pushing to `main`: S1 runs, the commit
-  deploys first as a **preview** (step 4 showed a non-production deploy leaves
-  production untouched), S2 runs against it, and only then does the same commit
-  deploy to production — with no human gate, and S3 judging batches after they
-  ship. It keeps the loop and moves every system check before release; it gives
-  up acceptance before release.
+- ✅ **Q2 — RULED by Kevin: §5.1.** Trunk, a preview inside the deploy, no human
+  wait before beta; a required reviewer from beta. CHENG proposed routing by
+  *"`build --verify` says byte-identical"*; ⚠️ that gate compares a fresh build to
+  the committed pages, which gates already force equal, so it cannot route — the
+  signal is **`src/` against what production serves**.
 - **Q3 — the browser tool.** The runner's Chrome and no dependency (can it
   double-click?), or a driver in test tooling only, with the shipped page still
   at zero?

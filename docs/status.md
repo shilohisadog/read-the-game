@@ -40,9 +40,16 @@ Kevin's plan, in order: (1) ✅ commit the defect corpus; (2) ✅ a human relabe
 25 coarse)**, so no test layer may be sized from them; `found_by` holds only as
 Kevin versus anyone else (20 of 26); (3) ✅ **the survivorship experiment —
 `docs/survivorship-experiment.md`**, summarised below; (4) ✅ **a branch preview
-reads production data under the current CORS and CSP** — below; (5) ✅ **written, FOR CHENG —
-`docs/test-program.md`** (functions × levels × pipeline stages, with a churn
-acceptance test); ⏸ **waiting on CHENG's rulings (its §11, Q1–Q7)**;
+reads production data under the current CORS and CSP** — below; (5) ✅ **`docs/test-program.md`**
+(functions × levels × pipeline stages, with a churn acceptance test) — CHENG
+reviewed it, and ✅ **Kevin approved a five-step plan on 2026-09-17**: ① correct
+the document; ② move the two `localhost` Chrome steps before the deploy; ③ range
+checks on the published numbers, verified by re-planting the five escapes; ④ split
+the data pipeline's checks into before and after the sync; ⑤ **the release gate**
+— no branches; a push that changes `src/` deploys first as a preview, the
+automatic checks run against it, then the same commit ships; Kevin reviews batches
+afterwards until beta, and becomes the required reviewer at beta. Q1 and Q3–Q7
+still await CHENG;
 (6) T1/T2, seam B and `.counters`/`.cbar` wait on it.
 
 ⭐⭐ **STEP 5 CARRIES A CHURN ACCEPTANCE TEST — agreed with Kevin 2026-09-17.** He
