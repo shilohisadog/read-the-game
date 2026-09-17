@@ -758,7 +758,7 @@ export function paceOf(ticks, setup) {
                 // goal its extra time. Measuring speech by the caption alone
                 // therefore reported a frame that was long and silent, which is
                 // exactly the defect the invariant below exists to forbid.
-                goal: (dom.$('labels').innerHTML.match(/🚨 GOAL[^<]*/) || [''])[0] });
+                goal: (dom.$('labels').innerHTML.match(/🚨[^<]*GOAL[^<]*/) || [''])[0] });
     if (n++ < ticks) fn();
     return 0;
   };

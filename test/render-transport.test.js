@@ -103,8 +103,12 @@ test('stepping takes the replay off automatic', () => {
  * The CLAIM these tests make did not change: whatever the game holds, exactly
  * its goals and penalties get a moment of their own. Only the element carrying
  * it did, and a test welded to the element would have read that as the moment
- * disappearing. Both surfaces carry the same `🚨 GOAL` token, so the readers
+ * disappearing. Both surfaces carry the siren and the word GOAL, so the readers
  * below are untouched.
+ * ⚠️ THE TOKEN IS THE SIREN, THEN GOAL -- NOT `🚨 GOAL` ADJACENT. Since 2026-09-17
+ * the ice names the club between them ("🚨 BUF · GOAL — Jokiharju"), and the
+ * pill puts its club chip before the siren; a reader welded to the adjacent pair
+ * counted 0 of 5 goals on that change.
  */
 /* ⚠️ THE GOAL BRANCH OF THE LABEL, NOT THE WHOLE LABELS GROUP. The first version
    of this concatenated `#labels` wholesale — and that group is rewritten on
@@ -112,7 +116,7 @@ test('stepping takes the replay off automatic', () => {
    Every frame then read as a moment and the walk counted 266 of them. What is a
    moment on the ice is the goal branch specifically, which is the only one that
    carries the siren. */
-const goalOnIce = a => (a.$('labels').innerHTML.match(/🚨 GOAL[^<]*/) || [''])[0];
+const goalOnIce = a => (a.$('labels').innerHTML.match(/🚨[^<]*GOAL[^<]*/) || [''])[0];
 /* AND AN ARRIVAL, NOT ANY CHANGE. The label group is rewritten every frame, so
    the goal branch goes non-empty and then empty again one frame later -- and a
    plain "did it change" reader counted that clearing as a second moment, five
@@ -201,7 +205,7 @@ test('letting go of the scrubber calls the play you landed on', () => {
   assert.equal(flared(), false, 'dragging THROUGH a goal already called it');
   a.$('scrub').onchange({ target: { value: String(goal) } });
   assert.equal(flared(), true, 'letting go of the scrubber on a goal called nothing');
-  assert.match(a.$('labels').innerHTML, /🚨 GOAL/,
+  assert.match(a.$('labels').innerHTML, /🚨[^<]*GOAL/,
     'the release landed on something other than the goal it was aimed at');
 });
 
@@ -238,7 +242,7 @@ test('a penalty is CALLED on the ice, like a goal and unlike a giveaway', () => 
   const a = boot();
   const offsides = rich.events.filter(e => e.type === 'stoppage' && e.rsn === 'offside').length;
   const marks = callsWhileStepping(a, (h) =>
-    /🚨 GOAL/.test(h) ? 'goal' : /⛔ Penalty/.test(h) ? 'penalty'
+    /🚨[^<]*GOAL/.test(h) ? 'goal' : /⛔ Penalty/.test(h) ? 'penalty'
       : /🛡 Penalty killed/.test(h) ? 'kill'
       : /🧊 Icing/.test(h) ? 'icing'
       : /🔵 Offside/.test(h) ? 'offside'
@@ -670,12 +674,12 @@ test('speed is a stepper: two buttons, three paces, all of them reachable', () =
  * safe; a fixture that really goes to a shootout is what keeps it honest.
  */
 test('a goal is not captioned twice, and IS captioned when the ice is silent', () => {
-  const goalCaps = a => callsWhileStepping(a, h => (/🚨 GOAL/.test(h) ? 'goal' : 'other'))
+  const goalCaps = a => callsWhileStepping(a, h => (/🚨[^<]*GOAL/.test(h) ? 'goal' : 'other'))
     .filter(x => x === 'goal').length;
 
   const on = boot();
   const capsWithLabels = callsWhileStepping(on, (h, d) =>
-    /🚨 GOAL/.test(d.$('caption').innerHTML) ? 'pill' : 'other').filter(x => x === 'pill');
+    /🚨[^<]*GOAL/.test(d.$('caption').innerHTML) ? 'pill' : 'other').filter(x => x === 'pill');
   assert.equal(capsWithLabels.length, 0,
     'the ice already names the scorer, and the pill said it again');
 
@@ -694,7 +698,7 @@ test('a goal is not captioned twice, and IS captioned when the ice is silent', (
 
   const shoot = boot(so);
   const pills = callsWhileStepping(shoot, (h, d) =>
-    /🚨 GOAL/.test(d.$('caption').innerHTML) ? 'pill' : 'other').filter(x => x === 'pill');
+    /🚨[^<]*GOAL/.test(d.$('caption').innerHTML) ? 'pill' : 'other').filter(x => x === 'pill');
   assert.equal(pills.length, soGoals.length,
     'a shootout goal draws nothing on the ice AND says nothing in the pill');
 });

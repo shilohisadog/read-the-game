@@ -225,8 +225,13 @@ test('the short-handed tag fires on a short-handed goal and not on a pulled goal
   // goal is announced by its LABEL ON THE ICE; only an unplaced one falls
   // through to the caption pill. A tag in the caption alone never appears on a
   // located goal, which is most of them.
+  // The label's words are `playSaid`'s since 2026-09-17, so the question moved
+  // there; that the tag is DRAWN on a real short-handed goal is walked in
+  // render-labels.test.js ("a goal on the ice reads TEAM · GOAL — scorer").
   const label = /function drawLabel\(e\)\{[\s\S]*?glab[\s\S]*?return;\}/.exec(app)[0];
-  assert.match(label, /shortHanded\(e\)/, 'a located goal is never told it was short-handed');
+  assert.match(label, /playSaid\(e\)/, 'a located goal no longer says what playSaid says');
+  const said = /function playSaid\(e\)\{[\s\S]*?\n\}/.exec(app)[0];
+  assert.match(said, /shortHanded\(e\)/, 'a located goal is never told it was short-handed');
   const cap = /function caption\(e,kind\)\{[\s\S]*?\n \/\*/.exec(app)[0];
   assert.match(cap, /shortHanded\(e\)/, 'an unplaced goal is never told it was short-handed');
 

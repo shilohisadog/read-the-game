@@ -7,6 +7,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readdirSync } from 'node:fs';
 import { rich, app, PAGE_CSS, prose, boot, panel, CURVE_AND_MIX , pickLayer } from './helpers/page.js';
 
 test('a play label is a NAME and nothing else — the table cannot hold a second line', () => {
@@ -34,11 +35,10 @@ test('the goal row is gone, and goals still get their scorer and assists', () =>
   // table reads as coverage -- the third instance of that shape here.
   assert.doesNotMatch(app, /const LAB=\{[^}]*goal:\[/,
     'the dead goal row is back in the label table');
-  // ⚠️ THE DASH IS NO LONGER ADJACENT TO THE WORD. A short-handed goal reads
-  // "🚨 GOAL · SHORT-HANDED — Chatfield", so a pattern anchored on `GOAL — `
-  // asserts the ABSENCE of a tag it knows nothing about. Anchored on the two
-  // parts that are always there instead.
-  assert.match(app, /🚨 GOAL\$\{[^}]*\} — |🚨 GOAL — /, 'goals lost their own label');
+  // The goal's words are `playSaid`'s, so the ice and the share confirmation
+  // cannot word one moment two ways again; WHAT they say is walked below
+  // ("a goal on the ice reads TEAM · GOAL — scorer").
+  assert.match(app, /class="glab"[^`]*>🚨 \$\{ESC\(playSaid\(e\)\)\}</, 'the goal on the ice has its own sentence again');
   assert.match(app, /assists: /, 'goals lost their assists');
 });
 
@@ -449,4 +449,46 @@ test('⭐ the shipped page says it, on real missed shots, in the base view', () 
   assert.ok(misses.some(s => /went wide/.test(s)), `no "went wide" in ${JSON.stringify(misses)}`);
   assert.ok(!misses.some(s => /Missed shot/.test(s)),
     `the generic phrase is still being shown: ${JSON.stringify(misses)}`);
+});
+
+/**
+ * ⭐ A GOAL SAYS WHOSE IT WAS, IN THE SAME ORDER AS EVERY OTHER PLAY: TEAM · EVENT · PLAYER.
+ *
+ * Kevin, 2026-09-17: "When a goal is scored it says 'Goal - Goal scorer', but not
+ * which team he plays for." Every other label on the ice named its club
+ * ("MIN · Won the faceoff"); the goal took its own branch and said "🚨 GOAL —
+ * Stankoven", leaving the club to the label's COLOUR — and batch 1's hero before
+ * the change was Montreal at Carolina, two red clubs, where the colour answers
+ * nothing. The share confirmation already said "CAR · GOAL — …" through
+ * `playSaid`, so the page worded one moment two ways.
+ *
+ * THE EXPECTED CLUB COMES FROM THE GAME FILE (`teams.away/home`), not from the
+ * page's own AAB/HAB, and the scorer from the file's roster — a second path, so
+ * a renderer that named the wrong club would not agree with itself here.
+ */
+const FIXTURES = readdirSync(new URL('./fixtures/extracts/', import.meta.url))
+  .filter(f => f.endsWith('.json'))
+  .map(f => JSON.parse(readFileSync(new URL(`./fixtures/extracts/${f}`, import.meta.url))));
+const unESC = s => s.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+
+test('a goal on the ice reads TEAM · GOAL — scorer, naming the club that scored', () => {
+  let goals = 0, tagged = 0;
+  for (const g of [rich, ...FIXTURES]) {
+    const clubOf = id => id === g.teams.away.id ? g.teams.away.ab : id === g.teams.home.id ? g.teams.home.ab : null;
+    boot(g).every((d, f) => {
+      if (!f.ev || f.ev.type !== 'goal') return null;
+      const m = /class="glab"[^>]*>([^<]*)</.exec(d.$('labels').innerHTML);
+      if (!m) return null;                                   // a goal with no coordinates takes the pill
+      const said = unESC(m[1]);
+      const club = clubOf(f.ev.own), who = g.roster[f.ev.actor];
+      assert.ok(club, `goal ${g.game.id} frame ${f.k} belongs to neither club in the file`);
+      const want = new RegExp(`^🚨 ${club} · GOAL( · SHORT-HANDED)?${who ? ` — ${who.nm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}` : ''}$`);
+      assert.match(said, want, `${g.game.id} frame ${f.k}: the goal label does not name ${club} first`);
+      if (said.includes('SHORT-HANDED')) tagged++;
+      goals++;
+      return null;
+    });
+  }
+  assert.ok(goals > 40, `only ${goals} goal labels were drawn across ${FIXTURES.length + 1} games — the walk saw too little`);
+  assert.ok(tagged > 0, 'no short-handed goal was walked, so the tagged form is unchecked');
 });
