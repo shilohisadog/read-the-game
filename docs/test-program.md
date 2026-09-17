@@ -292,8 +292,14 @@ measured.
 
    ~~**Target: zero off-subject.**~~ **Ruled a ratchet (§11.2 Q7):** the count
    falls on each replay, and each remaining one names a closed-set category.
-2. **Detection does not regress.** Re-run the 187 step-3 mutants: caught per
-   function **≥ 52 / 45 / 28**.
+2. ✅ **Detection does not regress — MEASURED 2026-09-17**, `docs/defects/mutation-rerun-2026-09-17/`.
+   The 187 were re-planted in today's code by `tools/mutate.mjs` (relocated through
+   `git diff`, not re-sampled) and every verdict is unchanged: **52 / 43 / 28** caught,
+   0 lost, 0 gained, and 3 now caught by an ADDITIONAL test file. ⚠️ Display reads 43 and
+   not 45 because 4 mutants sit on the counter code `c9aafaf` deleted — 2 of them caught —
+   so 43 of 43 re-plantable is the whole of what can be measured. A defect whose code is
+   gone is not a detection loss. Every other outcome matches too (19 golden-only, 2 build
+   errors, 1 extract gate, 40 uncaught).
 3. **The escapes close — reported PER FUNCTION** (CHENG): a program that improves
    calculate while display stays flat must not read as an overall gain. The 5
    number escapes against §7.1; the 19 reader-facing escapes against §7.2. Report
@@ -349,7 +355,7 @@ measured.
 | 6 | harness seam B + T1 | ids-over-three count, before and after |
 | 7 | visibility claims → S2, file by file, each move a churn replay | §8.1 |
 | 8 | new browser states for the blind spots | re-plant the 19 |
-| 9 | the weekly mutation run with check mutants | a planted disarmed gate is reported |
+| 9 | the weekly mutation run with check mutants | a planted disarmed gate is reported — ⏳ the engine is built and run once (`tools/mutate.mjs`, §8.2); what is open is the SCHEDULE, a fresh sample, and check mutants |
 | 10 | the performance budget | an alarm on a planted heavy page |
 
 Steps 1–3 need no new infrastructure and close the worst measured seam first.
