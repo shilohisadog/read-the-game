@@ -343,6 +343,11 @@ measured.
 
 Steps 1–3 need no new infrastructure and close the worst measured seam first.
 
+✅ **Built 2026-09-17, in Kevin's approved order rather than this table's:**
+rows 1 and 3, and row 4 **without branches** (§5.1) — the preview is inside the
+deploy. Row 2's range check caught **4 of the 5** re-planted escapes. The record,
+with commits and what each was seen to catch, is in `docs/status.md` §0.00.
+
 ## 11. What I want ruled
 
 - **Q1 — the frame.** Six functions and three cross-cutting rows × five levels ×

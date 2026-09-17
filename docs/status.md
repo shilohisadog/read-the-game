@@ -49,7 +49,8 @@ the data pipeline's checks into before and after the sync; ⑤ **the release gat
 — no branches; a push that changes `src/` deploys first as a preview, the
 automatic checks run against it, then the same commit ships; Kevin reviews batches
 afterwards until beta, and becomes the required reviewer at beta. Q1 and Q3–Q7
-still await CHENG;
+still await CHENG. ✅ **ALL FIVE BUILT 2026-09-17** — see *THE FIVE STEPS, BUILT*
+below;
 (6) T1/T2, seam B and `.counters`/`.cbar` wait on it.
 
 ⭐⭐ **STEP 5 CARRIES A CHURN ACCEPTANCE TEST — agreed with Kevin 2026-09-17.** He
@@ -68,6 +69,23 @@ the DOM golden caught, `render-transport.test.js` caught 14 (the only such test 
 without that baseline could silently cost detection. ⚠️ In conversation CC first
 said "1 alone / 0 alone", counting the golden as a second catcher; the golden is a
 change detector, so the figures here are the right ones.
+
+### ✅ THE FIVE STEPS, BUILT — 2026-09-17
+
+| # | what | commit | seen to work |
+|---|---|---|---|
+| 1 | `docs/test-program.md` corrected: three kinds of check (bookkeeping, witness, range), escapes per function, the release gate, the novice correction | `7856415` | — |
+| 2+5 | **the release gate** in `deploy.yml`: a push that changes `src/` deploys a **preview**, all six browser checks run against it, then the same commit ships; production then checks only what production alone can answer. A push that changes nothing under `src/` ships nothing | `cbaedb2` | the push skipped (1m08s); a run by hand deployed preview `2fbe00d0`, passed all six, shipped (2m07s, was ~1m55s) |
+| 3 | **range checks on the published numbers** — `tools/published_ranges.py`, in `npm run gates` over the 8 fixtures and in `derive.yml` before the sync | `74bb241` | **4 of the 5 escapes caught**, on 52 games AND on the 8 fixtures; +1 of the 23 other number-moving mutants; all 17 failure sites disarmed and seen red |
+| 4 | **validate before the sync, read back after** in `derive.yml` and `ingest.yml` | `f774340` | five planted bad documents each turn a pre-sync step red; clean copies pass. ⏳ **First real runs: ingest 2026-09-18 11:00 UTC, derive 2026-09-21** |
+
+⚠️ **Steps 2 and 5 were built as one change.** The two "localhost" browser steps
+were not independent of production: they measure pages the phone-fit step
+downloads from the live site, so moving them earlier meant a deployed page that
+is not yet production — which is the preview.
+
+⏭ **AT BETA:** make Kevin the required reviewer on the production deploy step
+(`environment:` on that step), and the fallback becomes hold.
 
 ### ✅ STEP 4 — A BRANCH PREVIEW READS PRODUCTION DATA, 2026-09-17
 
