@@ -45,6 +45,7 @@
  */
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
+import { playable } from '../../src/lib/layer.js';
 
 export const rich = JSON.parse(readFileSync(new URL('../../data/rich.json', import.meta.url)));
 export const app = readFileSync(new URL('../../src/read-the-game.html', import.meta.url), 'utf8');
@@ -562,8 +563,30 @@ export function boot(game, rates, search = '', store = null) {
   const scrub = dom.$('scrub');
   dom.posted = posted;
   assert.ok(+scrub.max > 100, `the reference game should have hundreds of plays, not ${scrub.max}`);
+  /* ⭐⭐ SEAM B — THE HARNESS HANDS A TEST THE FRAME, so it never has to read the
+     page's WORDS to learn where it is. Ruled 2026-09-17 (docs/test-program.md
+     §11.2 Q6, `docs/frame-model.md` option B). One wording change to the period
+     label failed nine tests about other things, each filtering on the text
+     "Period 1" to learn which period a frame was in; twenty test files named
+     #scrub because it was the only handle on the playhead.
+
+     THE TIMELINE IS THE LIBRARY'S, NOT A COPY. `playable()` in src/lib/layer.js
+     is the rule app.js applies (`SKIP` over `NOT_A_PLAY`), and the length is
+     checked against the page's own scrubber, so a harness that drifted from the
+     page fails here rather than handing a test the wrong event.
+     `every`, `at` and `sweep` pass `{ k, ev }` as the second argument; a read
+     that ignores it is unaffected. */
+  const TIMELINE = playable((game || rich).events);
+  assert.equal(TIMELINE.length - 1, +scrub.max,
+    'the harness timeline and the page scrubber disagree -- playable() and app.js no longer apply one rule');
+  const frame = k => ({ k, ev: TIMELINE[k] });
   return {
     ...dom,
+    /** The page's playable timeline, and the frame at `k`, for tests that need a place, not a page. */
+    timeline: TIMELINE,
+    frame,
+    /** The frame the page is on right now -- after a link, a click or a step. */
+    now: () => frame(+scrub.value),
     /* ⚠️ A GETTER, BECAUSE THE SPREAD ABOVE IS A SNAPSHOT. The share control
        writes to the clipboard when a test presses it, which is long after this
        object is built — read through `...dom` it is forever undefined, and an
@@ -596,7 +619,7 @@ export function boot(game, rates, search = '', store = null) {
       for (let k = 0; k <= +scrub.max; k++) {
         scrub.value = String(k);
         scrub.oninput({ target: { value: scrub.value } });
-        out.push(read(dom));
+        out.push(read(dom, frame(k)));
       }
       return out;
     },
@@ -608,16 +631,17 @@ export function boot(game, rates, search = '', store = null) {
     at(k, read) {
       scrub.value = String(k);
       scrub.oninput({ target: { value: scrub.value } });
-      return read(dom);
+      return read(dom, frame(k));
     },
     /** Drag the scrubber the way a viewer does, and report what got drawn. */
     sweep(read) {
       const out = [];
       const n = +scrub.max;
       for (let k = 0; k <= 30; k++) {
-        scrub.value = String(Math.round(n * k / 30));
+        const at = Math.round(n * k / 30);
+        scrub.value = String(at);
         scrub.oninput({ target: { value: scrub.value } });
-        out.push(read(dom));
+        out.push(read(dom, frame(at)));
       }
       return out;
     },

@@ -25,6 +25,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { LAYER_TOKENS } from '../src/lib/deeplink.js';
+import { playable } from '../src/lib/layer.js';
 
 const rich = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url)));
 const app = readFileSync(new URL('../src/read-the-game.html', import.meta.url), 'utf8');
@@ -209,7 +210,9 @@ test('a link to a moment opens there, and says nothing', () => {
   const { e } = soleClock();
   const d = open(`?at=${e.per}-${e.rem}`);
   assert.equal(d.$('clk').textContent, e.rem, 'the scoreboard must show the clock the link named');
-  assert.equal(d.$('per').textContent, 'Period ' + e.per, 'and the period it named');
+  // WHICH PERIOD by where the playhead landed, not by the scoreboard's words: the
+  // label's wording is not this test's subject (frame-model.md §2.4).
+  assert.equal(playable(rich.events)[+d.$('scrub').value].per, e.per, 'and the period it named');
   assert.equal(d.$('atnote').textContent, '', 'an honoured link has nothing to apologise for');
   assert.notEqual(+d.$('scrub').value, 0, 'a mid-game link is not the start of the game');
 });

@@ -226,14 +226,16 @@ test('a link to the opening faceoff still lands on it', () => {
   const a = boot(null, null, '?at=1-20:00');
   assert.match(a.$('labels').innerHTML, /Won the faceoff/,
                'an explicit link to 20:00 in the first period stopped showing the draw');
-  assert.equal(a.$('per').textContent, 'Period 1');
+  // WHICH PERIOD from the frame from the harness (seam B), not the scoreboard's words: one wording change to the label
+  // failed this test and eight others about other things (frame-model.md §2.4).
+  assert.equal(a.now().ev.per, 1, 'the link landed outside the first period');
 });
 
 test('the first step forward lands on the opening draw', () => {
   const a = boot();
   a.$('fwd').click();
   assert.match(a.$('labels').innerHTML, /Won the faceoff/);
-  assert.equal(a.$('per').textContent, 'Period 1');
+  assert.equal(a.now().ev.per, 1, 'the first step left the first period');
   // THE PAIRING IS KEPT, DELIBERATELY. The draw really is won at 20:00, and
   // moving the clock to make the sentence sit better would be inventing a time.
   // What changed is who asked for the frame.
@@ -355,7 +357,8 @@ const puckAt = d => {
 
 function walkRink(search) {
   const a = boot(null, null, search);
-  return a.every(d => ({ per: d.$('per').textContent, puck: puckAt(d),
+  // `per` is the frame from the harness (seam B), not the scoreboard's words.
+  return a.every((d, f) => ({ per: f.ev.per, puck: puckAt(d),
                          nets: d.$('rink').innerHTML.length && d.$('netmen').innerHTML }));
 }
 
@@ -368,7 +371,7 @@ test('as-played rotates the periods the arena rotated, and only those', () => {
   for (let k = 0; k < fixed.length; k++) {
     const p = played[k], f = fixed[k];
     if (!p.puck || !f.puck) continue;
-    if (p.per === 'Period 2') {
+    if (p.per === 2) {
       // THE EXACT RELATIONSHIP, NOT MERELY "DIFFERENT". SX(x)=100-x, and the
       // rotation sends x to -x, so SX(-x)=100+x and the two screen positions
       // must SUM to 200. Likewise SY(y)=42.5-y, so the pair sums to 85. A flip
@@ -405,12 +408,12 @@ test('as-played rotates the periods the arena rotated, and only those', () => {
 function walkTags(search) {
   const a = boot(null, null, search);
   const hAb = a.$('hAb').textContent, hCol = colourOf(hAb);
-  return a.every(d => {
+  return a.every((d, f) => {
     const tag = [...d.$('rink').innerHTML.matchAll(/<text class="netlab" x="([-\d.]+)"[^>]*>([^<]+)</g)]
       .find(m => m[2] === hAb);
     const gk = [...d.$('netmen').innerHTML.matchAll(/<rect class="gkbody" x="([-\d.]+)"[^>]*fill="([^"]+)"/g)]
       .find(m => m[2].toLowerCase() === hCol.toLowerCase());
-    return { per: d.$('per').textContent, tag: tag ? +tag[1] : null, gk: gk ? +gk[1] : null };
+    return { per: f.ev.per, tag: tag ? +tag[1] : null, gk: gk ? +gk[1] : null };
   });
 }
 
@@ -426,7 +429,7 @@ test('the club behind the net travels with the net when the ends turn over', () 
     // HALF ONE — IT REALLY MOVES, and to the exact mirrored position. SX(x)=100-x
     // and the rotation sends x to -x, so the two screen positions must SUM to
     // 200. A label that merely "differs" between the modes fails here.
-    if (p.per === 'Period 2') { assert.equal(p.tag + f.tag, 200,
+    if (p.per === 2) { assert.equal(p.tag + f.tag, 200,
       `frame ${k}: the label did not rotate about centre ice`); rotated++; }
     else { assert.equal(p.tag, f.tag,
       `frame ${k} (${p.per}) moved, and the feed says that period was not rotated`); held++; }
@@ -648,7 +651,7 @@ test('a zone-start ring turns over with the rink, and only in the periods that d
   const walk = search => {
     const a = boot(null, null, search);
     pickLayer(a, 'zonestart');
-    return a.every(d => ({ per: d.$('per').textContent, ring: nowRing(d) }));
+    return a.every((d, f) => ({ per: f.ev.per, ring: nowRing(d) }));
   };
   const played = walk('?ends=as-played'), fixed = walk('?ends=fixed');
   assert.equal(played.length, fixed.length);
@@ -657,7 +660,7 @@ test('a zone-start ring turns over with the rink, and only in the periods that d
   for (let k = 0; k < fixed.length; k++) {
     const p = played[k], f = fixed[k];
     if (!p.ring || !f.ring) continue;
-    if (p.per === 'Period 2') {
+    if (p.per === 2) {
       // THE EXACT RELATIONSHIP, as for the puck above: SX(x)=100-x and the
       // rotation sends x to -x, so the two screen positions must sum to 200,
       // and the two y positions to 85. Any other displacement satisfies

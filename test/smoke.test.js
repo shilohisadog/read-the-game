@@ -25,6 +25,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { corsi } from '../src/lib/layers/corsi.js';
+import { playable } from '../src/lib/layer.js';
 
 /** The feed, for computing what the counter OUGHT to say at any point. */
 const rich = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url)));
@@ -327,7 +328,10 @@ test('the clock shows time remaining, not elapsed', () => {
   const n = toEnd(run());   // these read a WATCHED game, so drive it there
   // The last PLAYABLE event, not the period-end marker -- so a small remainder
   // rather than 00:00, and certainly not the 19:58 an elapsed clock would show.
-  assert.equal(String(n.get('per').textContent), 'Period 3');
+  // THE LAST PLAYABLE EVENT IS IN THE THIRD, stated from the fixture rather than
+  // read off the scoreboard's words -- toEnd() put the playhead there, and the
+  // label's wording is not this test's subject (frame-model.md §2.4).
+  assert.equal(playable(JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url))).events).at(-1).per, 3);
   assert.match(String(n.get('clk').textContent), /^00:0\d$/, 'counting down, near zero');
 });
 

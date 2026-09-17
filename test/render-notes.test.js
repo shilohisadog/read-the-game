@@ -833,19 +833,21 @@ test('the ends key arrives at the first period the ends did NOT switch', () => {
   // when a reader who knows hockey expects the teams to swap and they do not.
   // Before that nothing has yet failed to happen, so there is nothing to defend.
   //
-  // READ THROUGH THE SCOREBOARD, not through `cur.per`. The class is set from
-  // the event's period, so asserting it against the same field would be the
-  // check built from the implementation's own model of its input. `#per` is
-  // written by `periodLabel`, a different function with its own rules for
-  // overtime and the shootout, and it is what a viewer actually sees.
+  // ⚠️ THIS USED TO READ THROUGH THE SCOREBOARD, "not through `cur.per`", on the
+  // argument that `#per` is a different function and so an independent path.
+  // Checked 2026-09-17: `periodLabel(e)` formats that same `e.per`, so for "first
+  // period or later" it was never a second source -- only a second SPELLING, and
+  // one wording change failed this test about the ends key. The period now
+  // comes from the harness (seam B). What keeps this from being a mirror is
+  // unchanged: which period gets the key is stated HERE, not read from the app.
   // THE CONTROL, EXPLICITLY. This gate is one-direction's, and its reason -- that
   // nothing has yet failed to occur -- is true only of the mode that holds the
   // rink still. Booting the default here would test the wrong sentence.
   const a = boot(null, null, '?ends=fixed');
-  const frames = a.every(d => ({ per: d.$('per').textContent,
+  const frames = a.every((d, at) => ({ per: at.ev.per,
                                  key: d.$('rg').classList.contains('endskey') }));
-  const first = frames.filter(f => f.per === 'Period 1');
-  const later = frames.filter(f => f.per !== 'Period 1');
+  const first = frames.filter(f => f.per === 1);
+  const later = frames.filter(f => f.per !== 1);
   assert.ok(first.length > 20 && later.length > 20,
     `the walk needs both sides of a period change, got ${first.length}/${later.length}`);
   assert.ok(first.every(f => !f.key), 'the key is up in the first period, before anything is owed');
@@ -870,10 +872,10 @@ test('the empty-net note is present exactly while a net is really empty', () => 
   // recorded field through separate code, so disagreement is a real defect.
   // Counting figures also cannot be satisfied by the note's own logic.
   const a = boot();
-  const frames = a.every(d => ({
+  const frames = a.every((d, at) => ({
     note: d.$('iceNote').textContent,
     gks: (d.$('netmen').innerHTML.match(/class="gkbody"/g) || []).length,
-    per: d.$('per').textContent, clk: d.$('clk').textContent }));
+    per: at.ev.per, clk: d.$('clk').textContent }));
 
   const withNote = frames.filter(f => f.note);
   assert.ok(withNote.length > 5, `only ${withNote.length} frames carry the note — it never fires`);
@@ -886,7 +888,7 @@ test('the empty-net note is present exactly while a net is really empty', () => 
   // clock.test.js pins the same window independently: Minnesota pulls at 01:40
   // of the third, and the situation code reads 0651 to the horn.
   const toSecs = s => { const [m, x] = String(s).split(':').map(Number); return m * 60 + x; };
-  assert.ok(withNote.every(f => f.per === 'Period 3'), 'the note appears outside the third period');
+  assert.ok(withNote.every(f => f.per === 3), 'the note appears outside the third period');
   assert.ok(withNote.every(f => toSecs(f.clk) <= 100),
     'the note appears earlier than the pull the feed records');
 
