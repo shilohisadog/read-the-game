@@ -38,12 +38,86 @@ state.
 Kevin's plan, in order: (1) ✅ commit the defect corpus; (2) ✅ a human relabelled
 30 entries blind — ⛔ **the `oracle` labels did NOT survive (2 of 25 exact, 14 of
 25 coarse)**, so no test layer may be sized from them; `found_by` holds only as
-Kevin versus anyone else (20 of 26); (3) the survivorship experiment — mutate
-`src/app.js` decisions and record which layer catches each, now the ONLY
-instrument for what `oracle` was meant to answer; (4) can a branch preview load
-data under the current CORS and CSP; (5) the architecture document for CHENG —
-layers crossed with pipeline stages; (6) T1/T2, seam B and `.counters`/`.cbar`
-wait on it.
+Kevin versus anyone else (20 of 26); (3) ✅ **the survivorship experiment —
+`docs/survivorship-experiment.md`**, summarised below; ⏭ (4) **NEXT:** can a
+branch preview load data under the current CORS and CSP; (5) the architecture
+document for CHENG — the system's functions × test levels × pipeline stages;
+(6) T1/T2, seam B and `.counters`/`.cbar` wait on it.
+
+⭐⭐ **STEP 5 CARRIES A CHURN ACCEPTANCE TEST — agreed with Kevin 2026-09-17.** He
+asked how any of this reduces the churn of deleting the penalty band. **Honest
+answer: steps 1–3 do not** — they measure tests that stay green on a DEFECT;
+churn is tests that go red on an INTENDED change they are not about. Of the
+eleven files `c44373b` touched, 4 were generated, 2 were the deletion, 2 were
+tests of the box, and **3 were off-subject** — all reading stylesheet text,
+because the fake DOM has no CSS. So the architecture must **replay intended
+changes** — that deletion, the period-label wording change (9 off-subject
+failures), the `.counters`/`.cbar` removal — and show **only on-subject failures
+while still catching what step 3's mutants are caught by today.** Step 3's role
+in churn is that second clause: of the 101 mutants a JS test other than
+the DOM golden caught, `render-transport.test.js` caught 14 (the only such test on
+3), `render-strength-pill.test.js` 9 (only on 1), `park.test.js` 0 — decoupling
+without that baseline could silently cost detection. ⚠️ In conversation CC first
+said "1 alone / 0 alone", counting the golden as a second catcher; the golden is a
+change detector, so the figures here are the right ones.
+
+### ✅ STEP 3 — THE SURVIVORSHIP EXPERIMENT, 2026-09-16 — `docs/survivorship-experiment.md`
+
+**The record:** `docs/defects/survivorship-2026-09-16/` (`scripts/` — the engine
+and probes as run, plus `docs/defects/survivorship-2026-09-16/scripts/tabulate.py`, which reprints every figure from `data/`
+alone) and `docs/defects/review-2026-09-16/` (Kevin's filled blind review sheet
+and its crops). ⚠️ The engine's paths point at a scratch directory that no
+longer exists; the data is the record.
+
+**Method.** Random single-token mutants (lexer-chosen, fixed seeds), each
+rebuilt and run through: both test suites, `extract` gates, `conservation()` on 52
+real published games, the full `measure.mjs` publication step, and real Chrome
+on 37 replay deep-link states + 10 static pages at 1400×900 and 844×390. Two
+disjoint samples (seeds 20260916 and 916), n=187.
+
+| function | n | caught by suite/build | caught ONLY by the DOM golden | ESCAPED | nothing observable |
+|---|---:|---:|---:|---:|---:|
+| calculate (`src/lib`) | 90 | 52 (58%) | 13 (9 visibly wrong) | **6** — 5 wrong published numbers, 1 wrong diagram | 19 |
+| display (`app.js`) | 60 | 45 (75%) | 4 (2 visible) | 0 | 11 |
+| interpret (`extract.py`) | 37 | 28 (76%) + 3 gates | — | not probed | 6 |
+
+⭐ **The survivorship question is answered: the suite prevents most planted
+defects** — "0 of 201 shipped" was structural. ⛔ **The weak seam is calculation
+→ published figures**: `measures.json`/`teams.json` changed with every test green,
+and nothing asserts on that output. **Redundancy is thin**: remove the one test
+file that caught a defect and nothing else in the suite does (18 calc → 8 golden-only,
+4 wrong published numbers, 6 unseen). **Literals are least caught** (24 of 53).
+**Snapshots cannot replace node tests**: 14 of 36 test-proven defects showed nothing
+in 47 page states. **8 of 8 historical defects are caught today. 1 of 5 false
+claims is** (a front-page sentence claiming the feed records the puck's whole path
+escaped). **Nothing checks the checks**: a disarmed ledger gate plus a test broken
+the historical way went undetected.
+
+**The 30 "nothing observable" — blind code-reading by CHENG, adjudicated against
+the code:** 18 real & visible, 1 real number, 5 real only on inputs data never
+produces, 4 equivalent, 1 invisible, 1 unresolved (#10, needs an archive count).
+**19 reader-facing changes got past every detector** — the blind spots are the
+non-default `Tabletop` figure style, animation timing, and gestures. Exact match to
+the adjudication: CC 23/30, CHENG 24/30 — CC **misread which token changed** twice.
+
+**Kevin's blind review (A/B random, controls):** noticed **7 of 13** planted visual
+differences, judged the planted one wrong **6 of 7** times, got the identical control
+right, and **missed the text control** ("missed" → "wide"). Pixel count did not
+predict noticing (21 px noticed, 4,214 missed). Numbers: 2 of 5 picked, 1 picked the
+clean one, 2 no call. ⭐ **A person is a poor spotter and a good judge** → a review
+gallery should SHOW the mechanical diff and ask "is this wrong", never ask a person
+to find it. ⭐ **3–4 of the 5 escaped numbers break a writable property** of the
+published document (count < 0, share outside 0–1, "NaN" in a string).
+
+**Five defects in CC's own instruments, all caught before reporting:** the DOM hash
+included inline `<script>` (every mutant "changed the DOM"); the invariant checker
+imported the mutated `conservation()`; the numbers probe skipped `measure.mjs main()`;
+`terrain-3d` screenshots are WebGL noise under load; removing a test file tripped
+`doc-paths.test.js`. Plus a text control that CSS upper-casing made invisible.
+
+✅ **`docs/defect-corpus.md` corrected in the same commit:** "the suite found 0 of
+201" is STRUCTURAL (a pre-release check cannot appear among released defects), not
+merely survivorship-blind; and the `nature` labels were never human-checked.
 
 ⏸ **HELD FOR CHENG — `docs/frame-model.md`.** Kevin asked whether T1–T4 cleanse
 the test tier or only police its smells. Measured, there are TWO couplings:

@@ -1,0 +1,122 @@
+{
+ "s20260916-10": [
+  "RV",
+  "stick-blade geometry in a figure pose the sampled states never draw"
+ ],
+ "s20260916-12": [
+  "RU",
+  "refusal sentence becomes NaN, only for skater codes that never occur"
+ ],
+ "s20260916-16": [
+  "U",
+  "jersey stripe inside a clip region; may be clipped away"
+ ],
+ "s20260916-21": [
+  "E",
+  "only caller passes a non-null event object; latent crash on null"
+ ],
+ "s20260916-23": [
+  "RV",
+  "idle-bob frequency; animation only, reduced-motion screenshots cannot see it"
+ ],
+ "s20260916-24": [
+  "RV",
+  "stick line endpoint in an undrawn pose"
+ ],
+ "s20260916-31": [
+  "RV",
+  "goal glow blur radius"
+ ],
+ "s20260916-34": [
+  "RV",
+  "next-game tie-break when two games share a start time; front door"
+ ],
+ "s20260916-37": [
+  "RV",
+  "ellipse rotation in a figure"
+ ],
+ "s20260916-40": [
+  "RV",
+  "level-of-detail choice for figures given an explicit px"
+ ],
+ "s20260916-58": [
+  "RN",
+  "dropped-for-strength count in a note; surface reachable only by URL"
+ ],
+ "s20260916-62": [
+  "RU",
+  "posts 1 instead of 0 for a game with zero away attempts"
+ ],
+ "s20260916-69": [
+  "RV",
+  "a link to the first event lands one frame late"
+ ],
+ "s20260916-70": [
+  "RI",
+  "percentage for an empty population, written to a parked hidden element"
+ ],
+ "s20260916-71": [
+  "U",
+  "empty-goaltending sentence condition; depends on how sa/sh/fa/fh can relate"
+ ],
+ "s20260916-78": [
+  "E",
+  "a goal-ended penalty always has time left, so max(0) vs max(1) never differs"
+ ],
+ "s20260916-81": [
+  "RV",
+  "short-handed goals lose their caption tag"
+ ],
+ "s20260916-82": [
+  "RV",
+  "double-tap on any mark stops propagation; step gesture lost on marks"
+ ],
+ "s20260916-85": [
+  "E",
+  "5200 vs 5201 ms pace; imperceptible"
+ ],
+ "s20260916-95": [
+  "RV",
+  "first attempt of a play-through does not flash the counter"
+ ],
+ "s20260916-96": [
+  "E",
+  "exact-midpoint tap tie; imperceptible"
+ ],
+ "s916-1": [
+  "RV",
+  "arm geometry in a figure pose"
+ ],
+ "s916-6": [
+  "RU",
+  "zone lift with zero defensive-zone draws; never zero on the archive"
+ ],
+ "s916-14": [
+  "RV",
+  "clubs whose colour contrast on white is between 3 and 4 lose their colour ink"
+ ],
+ "s916-16": [
+  "RV",
+  "outline geometry in a figure"
+ ],
+ "s916-22": [
+  "RU",
+  "zero-variance correlation; never on the archive"
+ ],
+ "s916-23": [
+  "RU",
+  "a tie counted as the leader losing; final scores cannot tie"
+ ],
+ "s916-24": [
+  "RV",
+  "arm geometry in a figure pose"
+ ],
+ "s916-30": [
+  "RU",
+  "per-60 rate with exactly one second of play; never on the archive"
+ ],
+ "s916-50": [
+  "RV",
+  "double-tap on a label stops propagation in the wrong clip state"
+ ]
+}

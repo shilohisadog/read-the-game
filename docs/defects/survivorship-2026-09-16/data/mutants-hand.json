@@ -1,0 +1,306 @@
+{
+ "mutants": [
+  {
+   "id": "BC3",
+   "kind": "control",
+   "pop": "display",
+   "lang": "js",
+   "cls": "control",
+   "file": "src/app.js",
+   "find": "On goal, missed or blocked",
+   "replace": "On goal, wide or blocked",
+   "note": "browser control: visible replay text (corsi layer box)",
+   "probesOnly": true,
+   "alwaysBrowser": true,
+   "also": []
+  },
+  {
+   "id": "H1",
+   "kind": "historical",
+   "pop": "calculate",
+   "lang": "js",
+   "cls": "historical",
+   "note": "distance to the NEARER net, not the attacking one (the pre-ee4bde6 bug)",
+   "file": "src/lib/rink.js",
+   "find": "return Math.hypot(NET_X - x * dir, y);",
+   "replace": "return Math.hypot(NET_X - Math.abs(x), y);",
+   "also": [],
+   "alwaysBrowser": true
+  },
+  {
+   "id": "H2",
+   "kind": "historical",
+   "pop": "calculate",
+   "lang": "js",
+   "cls": "historical",
+   "note": "a double minor released outright on a power-play goal (7f0271a)",
+   "file": "src/lib/box.js",
+   "find": "if (first.min === 4 && first.end === full && e.s < first.start + 120) {",
+   "replace": "if (false) {",
+   "also": [],
+   "alwaysBrowser": true
+  },
+  {
+   "id": "H3",
+   "kind": "historical",
+   "pop": "calculate",
+   "lang": "js",
+   "cls": "historical",
+   "note": "attempt attribution through the team field, not the shooting player (the blocked-shot flip)",
+   "file": "src/lib/attribution.js",
+   "find": "  const p = roster[ev.actor];\n  return p ? p.tid : null;",
+   "replace": "  return ev.own ?? null;",
+   "also": [],
+   "alwaysBrowser": true
+  },
+  {
+   "id": "H4",
+   "kind": "historical",
+   "pop": "calculate",
+   "lang": "js",
+   "cls": "historical",
+   "note": "situation codes as a literal allowlist from one game (2db1e8e)",
+   "file": "src/lib/strength.js",
+   "find": "  if (typeof code !== 'string' || !/^[0-9]{4}$/.test(code)) return null;",
+   "replace": "  if (typeof code !== 'string' || !/^[0-9]{4}$/.test(code)) return null;\n  if (!['1551','1451','1541','1441','1450','1540','1010','0101'].includes(code)) return null;",
+   "also": [],
+   "alwaysBrowser": true
+  },
+  {
+   "id": "H5",
+   "kind": "historical",
+   "pop": "calculate",
+   "lang": "js",
+   "cls": "historical",
+   "note": "the shootout counted as play",
+   "file": "src/lib/layer.js",
+   "find": "  return e.pt === 'SO'\n",
+   "replace": "  return e.pt === 'SO_NEVER'\n",
+   "also": [],
+   "alwaysBrowser": true
+  },
+  {
+   "id": "H6",
+   "kind": "historical",
+   "pop": "calculate",
+   "lang": "js",
+   "cls": "historical",
+   "note": "preseason games in scope for published numbers",
+   "file": "src/lib/competitions.js",
+   "find": "  return type === 2 || type === 3;",
+   "replace": "  return type === 1 || type === 2 || type === 3;",
+   "also": [],
+   "alwaysBrowser": true
+  },
+  {
+   "id": "H7",
+   "kind": "historical",
+   "pop": "calculate",
+   "lang": "js",
+   "cls": "historical",
+   "note": "skater counts quoted from the wrong side (471ce57)",
+   "file": "src/lib/strength.js",
+   "find": "  const { ab, own, opp } = relativeTo(s, ctx);",
+   "replace": "  const { ab, own: opp, opp: own } = relativeTo(s, ctx);",
+   "also": [],
+   "alwaysBrowser": true
+  },
+  {
+   "id": "H8",
+   "kind": "historical",
+   "pop": "calculate",
+   "lang": "js",
+   "cls": "historical",
+   "note": "the slot reaching past the goal line (third clause removed)",
+   "file": "src/lib/rink.js",
+   "find": "    && Math.abs(y) <= SLOT_HALF_WIDTH\n    && x * dir <= NET_X;",
+   "replace": "    && Math.abs(y) <= SLOT_HALF_WIDTH;",
+   "also": [],
+   "alwaysBrowser": true
+  },
+  {
+   "id": "CH1a",
+   "kind": "check",
+   "pop": "store",
+   "lang": "py",
+   "cls": "check",
+   "note": "ledger gate disarmed: exits 0 on a ledger that does not close",
+   "file": "builders/ledger.py",
+   "find": "    if bad:\n        return 1\n",
+   "replace": "    if bad:\n        return 0\n",
+   "also": [],
+   "alwaysBrowser": false,
+   "runPy": true
+  },
+  {
+   "id": "CH1b",
+   "kind": "check",
+   "pop": "store",
+   "lang": "py",
+   "cls": "check",
+   "note": "ledger disarmed AND its test derives the exit code from check() (asserting the ledger, never the outcome)",
+   "file": "builders/ledger.py",
+   "find": "    if bad:\n        return 1\n",
+   "replace": "    if bad:\n        return 0\n",
+   "also": [
+    {
+     "file": "test/test_ledger.py",
+     "find": "                return L.main([i, c])",
+     "replace": "                return 1 if L.check(idx, games) else 0"
+    }
+   ],
+   "alwaysBrowser": false,
+   "runPy": true
+  },
+  {
+   "id": "CH1c",
+   "kind": "check",
+   "pop": "store",
+   "lang": "py",
+   "cls": "check",
+   "note": "the ledger test mirrors check() \u2014 the broken check alone",
+   "file": "test/test_ledger.py",
+   "find": "                return L.main([i, c])",
+   "replace": "                return 1 if L.check(idx, games) else 0",
+   "also": [],
+   "alwaysBrowser": false,
+   "runPy": true
+  },
+  {
+   "id": "CH2a",
+   "kind": "check",
+   "pop": "calculate",
+   "lang": "js",
+   "cls": "check",
+   "note": "conservation() always reports ok",
+   "file": "src/lib/layer.js",
+   "find": "    ok: !both.length && !missing.length && !strayS.length && !noWhy.length\n        && counted.size + excluded.size === totalEvents,",
+   "replace": "    ok: true,",
+   "also": [],
+   "alwaysBrowser": true
+  },
+  {
+   "id": "CH2b",
+   "kind": "check",
+   "pop": "calculate",
+   "lang": "js",
+   "cls": "check",
+   "note": "conservation() always ok AND the \"conservation can fail\" assertions removed",
+   "file": "src/lib/layer.js",
+   "find": "    ok: !both.length && !missing.length && !strayS.length && !noWhy.length\n        && counted.size + excluded.size === totalEvents,",
+   "replace": "    ok: true,",
+   "also": [
+    {
+     "file": "test/layers.test.js",
+     "find": "  assert.equal(conservation(dropped, EVENTS.length).ok, false, 'a lost event must fail');",
+     "replace": "// NEUTERED"
+    },
+    {
+     "file": "test/layers.test.js",
+     "find": "  assert.equal(conservation(doubled, EVENTS.length).ok, false, 'double-counting must fail');",
+     "replace": "// NEUTERED"
+    },
+    {
+     "file": "test/layers.test.js",
+     "find": "  assert.equal(conservation(silent, EVENTS.length).ok, false, 'a silent exclusion must fail');",
+     "replace": "// NEUTERED"
+    }
+   ],
+   "alwaysBrowser": true
+  },
+  {
+   "id": "CH2c",
+   "kind": "check",
+   "pop": "calculate",
+   "lang": "js",
+   "cls": "check",
+   "note": "the \"conservation can fail\" assertions removed \u2014 the broken check alone",
+   "file": "test/layers.test.js",
+   "find": "  assert.equal(conservation(dropped, EVENTS.length).ok, false, 'a lost event must fail');",
+   "replace": "// NEUTERED",
+   "also": [
+    {
+     "file": "test/layers.test.js",
+     "find": "  assert.equal(conservation(doubled, EVENTS.length).ok, false, 'double-counting must fail');",
+     "replace": "// NEUTERED"
+    },
+    {
+     "file": "test/layers.test.js",
+     "find": "  assert.equal(conservation(silent, EVENTS.length).ok, false, 'a silent exclusion must fail');",
+     "replace": "// NEUTERED"
+    }
+   ],
+   "alwaysBrowser": true
+  },
+  {
+   "id": "K1",
+   "kind": "claim",
+   "pop": "calculate",
+   "lang": "js",
+   "cls": "claim",
+   "note": "whyNotEven docstring says the opposite of the code (the 2db1e8e claim)",
+   "file": "src/lib/strength.js",
+   "find": " * \u2b50 NULL MEANS EVEN, AND ONLY EVEN. An unreadable code returns a REASON, so the",
+   "replace": " * \u2b50 NULL MEANS EVEN, OR AN UNREADABLE CODE. An unreadable code returns null, so the",
+   "also": [],
+   "alwaysBrowser": true,
+   "gates": true
+  },
+  {
+   "id": "K2",
+   "kind": "claim",
+   "pop": "display",
+   "lang": "js",
+   "cls": "claim",
+   "note": "the footer says clubs are identified by colour and abbreviation ONLY (false: names are shown)",
+   "file": "builders/page.py",
+   "find": "\"are named in plain text, and identified by colour and three-letter \"\n        \"abbreviation.</p>\"",
+   "replace": "\"are identified by colour and three-letter \"\n        \"abbreviation only.</p>\"",
+   "also": [],
+   "alwaysBrowser": true,
+   "gates": true
+  },
+  {
+   "id": "K3",
+   "kind": "claim",
+   "pop": "display",
+   "lang": "js",
+   "cls": "claim",
+   "note": "the front page says the feed records the puck's whole path (false, and against DOCTRINE rule 4)",
+   "file": "builders/build_index.py",
+   "find": "The feed we read records those moments and\nnothing in between, so that is all we draw.",
+   "replace": "The feed we read records the puck's whole path\nfrom one moment to the next, so that is what we draw.",
+   "also": [],
+   "alwaysBrowser": true,
+   "gates": true
+  },
+  {
+   "id": "K4",
+   "kind": "claim",
+   "pop": "docs",
+   "lang": "js",
+   "cls": "claim",
+   "note": "a doc's arithmetic made false: 19,304 of 25,597 goals = 79.4%",
+   "file": "docs/below-the-rink-2.md",
+   "find": "slot share   19,304 of 25,597 goals = 75.4%",
+   "replace": "slot share   19,304 of 25,597 goals = 79.4%",
+   "also": [],
+   "alwaysBrowser": false,
+   "gates": true
+  },
+  {
+   "id": "K5",
+   "kind": "claim",
+   "pop": "calculate",
+   "lang": "js",
+   "cls": "claim",
+   "note": "a constant's comment misstates it: 22 ft \"in total\" rather than either side",
+   "file": "src/lib/rink.js",
+   "find": "export const SLOT_HALF_WIDTH = 22;   // feet either side of centre",
+   "replace": "export const SLOT_HALF_WIDTH = 22;   // feet in total, 11 either side of centre",
+   "also": [],
+   "alwaysBrowser": true,
+   "gates": true
+  }
+ ]
+}

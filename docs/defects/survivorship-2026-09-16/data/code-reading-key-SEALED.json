@@ -1,0 +1,182 @@
+[
+ {
+  "n": 1,
+  "id": "s20260916-31",
+  "cc": "RV",
+  "cc_why": "goal glow blur radius"
+ },
+ {
+  "n": 2,
+  "id": "s20260916-21",
+  "cc": "E",
+  "cc_why": "only caller passes a non-null event object; latent crash on null"
+ },
+ {
+  "n": 3,
+  "id": "s916-1",
+  "cc": "RV",
+  "cc_why": "arm geometry in a figure pose"
+ },
+ {
+  "n": 4,
+  "id": "s20260916-62",
+  "cc": "RU",
+  "cc_why": "posts 1 instead of 0 for a game with zero away attempts"
+ },
+ {
+  "n": 5,
+  "id": "s916-22",
+  "cc": "RU",
+  "cc_why": "zero-variance correlation; never on the archive"
+ },
+ {
+  "n": 6,
+  "id": "s916-30",
+  "cc": "RU",
+  "cc_why": "per-60 rate with exactly one second of play; never on the archive"
+ },
+ {
+  "n": 7,
+  "id": "s916-50",
+  "cc": "RV",
+  "cc_why": "double-tap on a label stops propagation in the wrong clip state"
+ },
+ {
+  "n": 8,
+  "id": "s20260916-71",
+  "cc": "U",
+  "cc_why": "empty-goaltending sentence condition; depends on how sa/sh/fa/fh can relate"
+ },
+ {
+  "n": 9,
+  "id": "s20260916-82",
+  "cc": "RV",
+  "cc_why": "double-tap on any mark stops propagation; step gesture lost on marks"
+ },
+ {
+  "n": 10,
+  "id": "s20260916-12",
+  "cc": "RU",
+  "cc_why": "refusal sentence becomes NaN, only for skater codes that never occur"
+ },
+ {
+  "n": 11,
+  "id": "s20260916-34",
+  "cc": "RV",
+  "cc_why": "next-game tie-break when two games share a start time; front door"
+ },
+ {
+  "n": 12,
+  "id": "s916-6",
+  "cc": "RU",
+  "cc_why": "zone lift with zero defensive-zone draws; never zero on the archive"
+ },
+ {
+  "n": 13,
+  "id": "s916-14",
+  "cc": "RV",
+  "cc_why": "clubs whose colour contrast on white is between 3 and 4 lose their colour ink"
+ },
+ {
+  "n": 14,
+  "id": "s20260916-40",
+  "cc": "RV",
+  "cc_why": "level-of-detail choice for figures given an explicit px"
+ },
+ {
+  "n": 15,
+  "id": "s20260916-16",
+  "cc": "U",
+  "cc_why": "jersey stripe inside a clip region; may be clipped away"
+ },
+ {
+  "n": 16,
+  "id": "s20260916-96",
+  "cc": "E",
+  "cc_why": "exact-midpoint tap tie; imperceptible"
+ },
+ {
+  "n": 17,
+  "id": "s20260916-85",
+  "cc": "E",
+  "cc_why": "5200 vs 5201 ms pace; imperceptible"
+ },
+ {
+  "n": 18,
+  "id": "s916-23",
+  "cc": "RU",
+  "cc_why": "a tie counted as the leader losing; final scores cannot tie"
+ },
+ {
+  "n": 19,
+  "id": "s20260916-78",
+  "cc": "E",
+  "cc_why": "a goal-ended penalty always has time left, so max(0) vs max(1) never differs"
+ },
+ {
+  "n": 20,
+  "id": "s20260916-81",
+  "cc": "RV",
+  "cc_why": "short-handed goals lose their caption tag"
+ },
+ {
+  "n": 21,
+  "id": "s20260916-24",
+  "cc": "RV",
+  "cc_why": "stick line endpoint in an undrawn pose"
+ },
+ {
+  "n": 22,
+  "id": "s20260916-37",
+  "cc": "RV",
+  "cc_why": "ellipse rotation in a figure"
+ },
+ {
+  "n": 23,
+  "id": "s20260916-58",
+  "cc": "RN",
+  "cc_why": "dropped-for-strength count in a note; surface reachable only by URL"
+ },
+ {
+  "n": 24,
+  "id": "s916-16",
+  "cc": "RV",
+  "cc_why": "outline geometry in a figure"
+ },
+ {
+  "n": 25,
+  "id": "s20260916-69",
+  "cc": "RV",
+  "cc_why": "a link to the first event lands one frame late"
+ },
+ {
+  "n": 26,
+  "id": "s20260916-95",
+  "cc": "RV",
+  "cc_why": "first attempt of a play-through does not flash the counter"
+ },
+ {
+  "n": 27,
+  "id": "s20260916-10",
+  "cc": "RV",
+  "cc_why": "stick-blade geometry in a figure pose the sampled states never draw"
+ },
+ {
+  "n": 28,
+  "id": "s20260916-23",
+  "cc": "RV",
+  "cc_why": "idle-bob frequency; animation only, reduced-motion screenshots cannot see it"
+ },
+ {
+  "n": 29,
+  "id": "s20260916-70",
+  "cc": "RI",
+  "cc_why": "percentage for an empty population, written to a parked hidden element"
+ },
+ {
+  "n": 30,
+  "id": "s916-24",
+  "cc": "RV",
+  "cc_why": "arm geometry in a figure pose"
+ }
+]

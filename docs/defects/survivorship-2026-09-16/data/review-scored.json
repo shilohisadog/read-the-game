@@ -1,0 +1,291 @@
+{
+ "answers": {
+  "V1": [
+   "y",
+   "A"
+  ],
+  "V2": [
+   "n",
+   "neither"
+  ],
+  "V3": [
+   "n",
+   "neither"
+  ],
+  "V4": [
+   "n",
+   "neither"
+  ],
+  "V5": [
+   "y",
+   "B"
+  ],
+  "V6": [
+   "y",
+   "B"
+  ],
+  "V7": [
+   "y",
+   "B"
+  ],
+  "V8": [
+   "n",
+   "neither"
+  ],
+  "V9": [
+   "y",
+   "B"
+  ],
+  "V10": [
+   "y",
+   "A"
+  ],
+  "V11": [
+   "n",
+   "neither"
+  ],
+  "V12": [
+   "y",
+   "B"
+  ],
+  "V13": [
+   "n",
+   "neither"
+  ],
+  "V14": [
+   "n",
+   "neither"
+  ],
+  "N1": [
+   null,
+   "neither"
+  ],
+  "N2": [
+   null,
+   "B"
+  ],
+  "N3": [
+   null,
+   "B"
+  ],
+  "N4": [
+   null,
+   "B"
+  ],
+  "N5": [
+   null,
+   "?"
+  ]
+ },
+ "scored": [
+  [
+   "V1",
+   "s20260916-54",
+   21,
+   "real",
+   "y",
+   "A",
+   "A",
+   "noticed",
+   "picked planted"
+  ],
+  [
+   "V2",
+   "s20260916-22",
+   4214,
+   "real",
+   "n",
+   "neither",
+   "B",
+   "missed",
+   ""
+  ],
+  [
+   "V3",
+   "s916-5",
+   308,
+   "real",
+   "n",
+   "neither",
+   "B",
+   "missed",
+   ""
+  ],
+  [
+   "V4",
+   "s916-10",
+   18,
+   "real",
+   "n",
+   "neither",
+   "B",
+   "missed",
+   ""
+  ],
+  [
+   "V5",
+   "s916-9",
+   131,
+   "real",
+   "y",
+   "B",
+   "B",
+   "noticed",
+   "picked planted"
+  ],
+  [
+   "V6",
+   "s20260916-18",
+   28,
+   "real",
+   "y",
+   "B",
+   "B",
+   "noticed",
+   "picked planted"
+  ],
+  [
+   "V7",
+   "s20260916-100",
+   57,
+   "real",
+   "y",
+   "B",
+   "A",
+   "noticed",
+   "picked CLEAN"
+  ],
+  [
+   "V8",
+   "s916-2",
+   93,
+   "real",
+   "n",
+   "neither",
+   "B",
+   "missed",
+   ""
+  ],
+  [
+   "V9",
+   "s20260916-39",
+   1033,
+   "real",
+   "y",
+   "B",
+   "B",
+   "noticed",
+   "picked planted"
+  ],
+  [
+   "V10",
+   "s916-60",
+   2083,
+   "real",
+   "y",
+   "A",
+   "A",
+   "noticed",
+   "picked planted"
+  ],
+  [
+   "V11",
+   "BC3",
+   1891,
+   "real",
+   "n",
+   "neither",
+   "B",
+   "missed",
+   ""
+  ],
+  [
+   "V12",
+   "s916-26",
+   223,
+   "real",
+   "y",
+   "B",
+   "B",
+   "noticed",
+   "picked planted"
+  ],
+  [
+   "V13",
+   "s916-7",
+   56,
+   "real",
+   "n",
+   "neither",
+   "B",
+   "missed",
+   ""
+  ],
+  [
+   "V14",
+   "NULL",
+   0,
+   "NULL",
+   "n",
+   "neither",
+   "neither (identical)",
+   "missed",
+   ""
+  ],
+  [
+   "N1",
+   "s20260916-3",
+   1,
+   "number",
+   null,
+   "neither",
+   "B",
+   "",
+   "no call: neither"
+  ],
+  [
+   "N2",
+   "s20260916-19",
+   2,
+   "number",
+   null,
+   "B",
+   "B",
+   "",
+   "picked planted"
+  ],
+  [
+   "N3",
+   "s20260916-20",
+   1404,
+   "number",
+   null,
+   "B",
+   "A",
+   "",
+   "picked CLEAN"
+  ],
+  [
+   "N4",
+   "s916-3",
+   2,
+   "number",
+   null,
+   "B",
+   "B",
+   "",
+   "picked planted"
+  ],
+  [
+   "N5",
+   "s916-4",
+   2,
+   "number",
+   null,
+   "?",
+   "B",
+   "",
+   "no call: ?"
+  ]
+ ]
+}

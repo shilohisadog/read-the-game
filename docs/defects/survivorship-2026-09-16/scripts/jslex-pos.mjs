@@ -1,0 +1,340 @@
+/**
+ * A JavaScript lexer, because `src/app.js` must never be measured by regex again.
+ *
+ * ⭐⭐ WHY THIS EXISTS. Until 2026-09-04 `src/app.js` was a build template, so no
+ * parser could load it and every question about a 3,300-line file was answered
+ * by text-matching. Four answers in one review were wrong, and the first of them
+ * is the one this file is calibrated against: `(?<![.\w])i\s*=` admits a hyphen,
+ * so every `data-i="${k}"` in the mark-drawing code counted as a write to the
+ * playhead, and "70 write sites" became a number Kevin started designing around.
+ * The playhead has two.
+ *
+ * The general form of that mistake -- Kevin's, and it is the sharpest sentence
+ * of the review -- is that A CODEBASE THAT CAN ONLY BE ANALYSED BY REGEX WILL BE
+ * ANALYSED BY REGEX, BADLY. Making the file a module removed the cause. This
+ * removes the excuse.
+ *
+ * ⚠️ WHAT THIS IS NOT. It is a LEXER, not a parser: it answers "does this
+ * identifier appear as a token here", never "what does this identifier mean".
+ * It does not know scope, so it cannot tell a shadowed local from a free
+ * reference, and any caller asking a question about BINDING must say so and
+ * handle it. Lexical questions it answers exactly; semantic ones it must not be
+ * asked. Its control lives in `test/app-imports.test.js`.
+ */
+
+const ID_START = c => /[A-Za-z_$]/.test(c);
+const ID_PART = c => /[A-Za-z0-9_$]/.test(c);
+
+/**
+ * Tokens after which a `/` opens a REGEX rather than dividing.
+ *
+ * This is the one genuinely hard part of lexing JavaScript, and getting it
+ * wrong is silent: mistake `a / b / c` for a regex and everything between the
+ * slashes disappears from the token stream, taking real identifiers with it.
+ */
+const REGEX_OK = new Set([
+  'return', 'typeof', 'instanceof', 'in', 'of', 'new', 'delete', 'void',
+  'throw', 'case', 'do', 'else', 'yield', 'await',
+  '(', ',', '=', ':', '[', '!', '&', '|', '?', '{', '}', ';', '+', '-', '*',
+  '%', '<', '>', '~', '^', '=>', '&&', '||', '??', '===', '!==', '==', '!=',
+]);
+
+const THREE = ['===', '!==', '**=', '...', '&&=', '||=', '??='];
+const TWO = ['=>', '&&', '||', '??', '==', '!=', '<=', '>=', '++', '--',
+             '+=', '-=', '*=', '/=', '?.', '**'];
+
+/**
+ * Every identifier token in `src`, each tagged with what it is doing there.
+ *
+ *   {name, member, key}
+ *     member — preceded by `.` or `?.`, so it is a property, not a reference
+ *     key    — an object-literal key written `name:`, likewise not a reference
+ *
+ * Comments, string bodies, regex literals and template TEXT are dropped;
+ * `${...}` inside a template is lexed as the code it is.
+ */
+export function lex(src) {
+  const out = [];
+  walk(src, t => { if (t.t === 'id') out.push({ name: t.v, member: t.member, key: t.key }); });
+  return out;
+}
+
+/**
+ * Every token in `src`, handed to `emit` in order. The scanner both public
+ * questions are built on.
+ *
+ * ⭐ ONE SCANNER, THREE QUESTIONS. `lex` asks which identifiers appear;
+ * `specifiers` asks which modules are imported; `test/prose-constants.test.js`
+ * asks what the prose says. All three need the same hard part — knowing when a
+ * `/` opens a regex, and when a quote opens a body that is not code — and written
+ * three times they would agree right up until one of them was fixed.
+ *
+ *   {t, v, member, key}
+ *     t       'id' | 'str' | 'tstr' | 'num' | 're' | 'op'
+ *     v       the identifier name, the raw string BODY, or the operator text
+ *     member  identifiers only — preceded by `.` or `?.`
+ *     key     identifiers only — an object-literal key written `name:`
+ *
+ * ⭐ `tstr` IS THE TEXT OF A TEMPLATE LITERAL, AND IT USED TO BE DROPPED. That was
+ * right while every caller asked about code, and became a hole the moment one
+ * asked about prose: `docs/status.md` §0.00-α's copy rule is enforced by reading
+ * string bodies, and half the user-facing sentences in `src/lib` are templates —
+ * a scanner blind to those reports a clean corpus forever. It is a SEPARATE type
+ * from `str` so that no existing caller's behaviour moves: `lex` filters to `id`,
+ * and `specifiers` skips it explicitly rather than by luck.
+ */
+export function walk(src, emit) {
+  let prev = null;            // last significant token, for the regex/divide call
+  let i = 0;
+  const n = src.length;
+
+  while (i < n) {
+    const c = src[i]; const pos = i;
+
+    if (/\s/.test(c)) { i++; continue; }
+
+    if (c === '/' && src[i + 1] === '/') { while (i < n && src[i] !== '\n') i++; continue; }
+    if (c === '/' && src[i + 1] === '*') {
+      i += 2;
+      while (i < n && !(src[i] === '*' && src[i + 1] === '/')) i++;
+      i += 2; continue;
+    }
+
+    if (c === '"' || c === "'") {
+      const q = c; i++;
+      const s = i;
+      while (i < n && src[i] !== q) { if (src[i] === '\\') i++; i++; }
+      emit({ t: 'str', v: src.slice(s, i) });
+      i++; prev = '<str>'; continue;
+    }
+
+    if (c === '`') { i = template(src, i, emit); prev = '<tmpl>'; continue; }
+
+    if (c === '/') {
+      if (prev === null || REGEX_OK.has(prev)) {
+        i++;
+        let inClass = false;
+        while (i < n) {
+          if (src[i] === '\\') { i += 2; continue; }
+          if (src[i] === '[') inClass = true;
+          else if (src[i] === ']') inClass = false;
+          else if (src[i] === '/' && !inClass) { i++; break; }
+          else if (src[i] === '\n') break;              // unterminated: not a regex
+          i++;
+        }
+        while (i < n && /[a-z]/.test(src[i])) i++;      // flags
+        emit({ t: 're' }); prev = '<re>'; continue;
+      }
+      i++; emit({ t: 'op', v: '/' }); prev = '/'; continue;
+    }
+
+    if (/[0-9]/.test(c) || (c === '.' && /[0-9]/.test(src[i + 1] || ''))) {
+      while (i < n && /[0-9a-fA-FxXoObBeE._n]/.test(src[i])) {
+        if ((src[i] === 'e' || src[i] === 'E') && /[+-]/.test(src[i + 1] || '')) i++;
+        i++;
+      }
+      emit({ t: 'num', at: pos, end: i }); prev = '<num>'; continue;
+    }
+
+    if (ID_START(c)) {
+      const s = i;
+      while (i < n && ID_PART(src[i])) i++;
+      const name = src.slice(s, i);
+      let j = i;
+      while (j < n && /\s/.test(src[j])) j++;
+      emit({
+        t: 'id',
+        v: name,
+        member: prev === '.' || prev === '?.',
+        // `{name: …}` and `{a, name: …}` only. Over-cautious on purpose: this
+        // flag can only ever DISCARD a candidate, so a false positive costs a
+        // name we would have imported and a false negative costs nothing.
+        key: src[j] === ':' && (prev === '{' || prev === ','),
+      });
+      prev = name; continue;
+    }
+
+    const three = src.slice(i, i + 3), two = src.slice(i, i + 2);
+    if (THREE.includes(three)) { i += 3; emit({ t: 'op', v: three, at: pos, end: i }); prev = three; continue; }
+    if (TWO.includes(two)) { i += 2; emit({ t: 'op', v: two, at: pos, end: i }); prev = two; continue; }
+    i++; emit({ t: 'op', v: c, at: pos, end: i }); prev = c;
+  }
+}
+
+/**
+ * A template literal: emit its text as `tstr`, walk each `${…}`. Returns the
+ * index after it.
+ *
+ * ⚠️ ONE `tstr` PER TEXT RUN, NOT ONE PER LITERAL. `` `within ${FT} ft of the
+ * net` `` is two runs with a walked expression between them, so a caller looking
+ * for a number beside a unit sees `" ft of the net"` and not `"within 33 ft"` —
+ * which is exactly the distinction the prose rule is about, and why the
+ * interpolated form is invisible to it while the typed form is not.
+ */
+function template(src, i, emit) {
+  const n = src.length;
+  i++;                                          // past the opening backtick
+  let text = i;                                 // where the current text run began
+  const flush = k => { if (k > text) emit({ t: 'tstr', v: src.slice(text, k) }); };
+  while (i < n) {
+    if (src[i] === '\\') { i += 2; continue; }
+    if (src[i] === '`') { flush(i); return i + 1; }
+    if (src[i] === '$' && src[i + 1] === '{') {
+      flush(i);
+      const start = i + 2;
+      const end = closeBrace(src, start);
+      walk(src.slice(start, end), emit);
+      i = end + 1; text = i; continue;
+    }
+    i++;
+  }
+  flush(i);
+  return i;
+}
+
+/** Index of the `}` closing an interpolation opened at `start`, nesting-aware. */
+function closeBrace(src, start) {
+  const n = src.length;
+  let i = start, depth = 1;
+  while (i < n && depth > 0) {
+    const c = src[i];
+    if (c === '{') depth++;
+    else if (c === '}') { depth--; if (!depth) return i; }
+    else if (c === '"' || c === "'") {
+      const q = c; i++;
+      while (i < n && src[i] !== q) { if (src[i] === '\\') i++; i++; }
+    } else if (c === '`') { i = template(src, i, () => {}) - 1; }
+    else if (c === '/' && src[i + 1] === '/') { while (i < n && src[i] !== '\n') i++; continue; }
+    else if (c === '/' && src[i + 1] === '*') {
+      i += 2;
+      while (i < n && !(src[i] === '*' && src[i + 1] === '/')) i++;
+      i++;
+    }
+    i++;
+  }
+  return i;
+}
+
+/**
+ * The identifier names `src` REFERENCES — member accesses and object keys removed.
+ *
+ * ⚠️ Still not a scope analysis: a local named `parse` and an imported `parse`
+ * are one entry here. Callers that care must check for a declaration themselves.
+ */
+export function referenced(src) {
+  const s = new Set();
+  for (const t of lex(src)) if (!t.member && !t.key) s.add(t.name);
+  return s;
+}
+
+/**
+ * The names `src` DECLARES at brace depth `depth` — 0 for a file's own top
+ * level, 1 for the body of a single top-level function.
+ *
+ * ⭐⭐ WHY THIS EXISTS. `builders/build_main.py` ships the site as ONE SCRIPT:
+ * `_inline` strips each module's imports, drops its `export` keywords and
+ * concatenates. So the twenty-seven `LIB` modules do not have twenty-seven
+ * scopes in the browser, they have one, and two modules declaring the same name
+ * is a live hazard with no symptom — `function` redeclaration is SILENT in both
+ * sloppy and strict mode, last one wins. It has bitten once already (`zoneOf`,
+ * renamed to `attackZone`) and it is the only mechanism that explains a layer's
+ * draw call breaking a DIFFERENT layer.
+ *
+ * ⚠️ `depth` IS A BRACE COUNT, NOT A SCOPE. It is exactly enough for the two
+ * questions `test/build.test.js` asks — what the bundle declares, and what
+ * `boot` declares inside it — and it is not a substitute for scope analysis.
+ * `src/app.js` writes its whole body at column zero INSIDE `boot`, so a
+ * line-anchored regex reports 146 top-level names where there is one; that is
+ * the same over-broad-pattern failure as the 70 write sites, and the reason
+ * this counts braces from a token stream instead of matching text.
+ *
+ * ⚠️ WHAT IT DOES NOT SEE, said out loud because a scanner's silence is not
+ * evidence: destructured bindings (`const {a} = x` — the brace hides them) and
+ * the name of a named function EXPRESSION. `test/build.test.js` asserts no LIB
+ * module uses the first, so the hole is watched rather than assumed away.
+ *
+ *   [{name, kind}]  kind is the keyword — 'function' | 'const' | 'let' | 'var' | 'class'
+ */
+const DECLARES = new Set(['function', 'const', 'let', 'var', 'class']);
+
+export function declarations(src, depth = 0) {
+  const out = [];
+  let braces = 0, parens = 0;   // parens counts `(` and `[` alike: both hide commas
+  let kind = null;              // the keyword whose declarator list we are inside
+  let want = false;             // the next identifier is a name being declared
+  walk(src, t => {
+    if (t.t === 'op') {
+      const v = t.v;
+      if (v === '{') { braces++; want = false; }
+      else if (v === '}') { braces--; want = false; }
+      else if (v === '(' || v === '[') parens++;
+      else if (v === ')' || v === ']') parens--;
+      else if (v === ';') { kind = null; want = false; }
+      // A COMMA CONTINUES A DECLARATOR LIST, and only at the declaration's own
+      // depth: `export const SKATERS_MIN = 3, SKATERS_MAX = 6;` declares two,
+      // while the commas in `{a:1,b:2}` and `(a,b)=>` declare none. Without the
+      // paren guard every arrow-function parameter would be read as a binding.
+      else if (v === ',' && kind && braces === depth && parens === 0) want = true;
+      return;
+    }
+    if (t.t !== 'id') { want = false; return; }   // a string or number ends a name, never the list
+    if (t.member || t.key) { want = false; return; }
+    if (want && braces === depth && parens === 0) {
+      out.push({ name: t.v, kind });
+      want = false;
+      if (kind === 'function' || kind === 'class') kind = null;   // these declare one name, and have no `;`
+      return;
+    }
+    // `kind === null` is what keeps `const f = function(){}` from starting a
+    // second declaration and claiming the expression's own name.
+    if (kind === null && DECLARES.has(t.v) && braces === depth && parens === 0) {
+      kind = t.v; want = true;
+    }
+  });
+  return out;
+}
+
+/**
+ * Every module specifier `src` imports — static, re-exported, or dynamic.
+ *
+ * ⭐⭐ WHY THIS IS NOT A REGEX, AND THE REASON IS IN THIS REPO'S OWN HISTORY.
+ * The check that used this before matched `^[ \t]*import…from '…'` on raw text,
+ * which is safe only by being anchored at the start of a line — and PROSE
+ * IMPERSONATING CODE has broken three things here already. `src/lib/marks.js`
+ * has a header paragraph about importing `rinkart.js`; `src/lib/rinkart.js`
+ * carries the ruling about who may import it. A scanner that reads comments as
+ * code reports those, and one loosened to stop reporting them starts missing
+ * real imports. Neither failure announces itself.
+ *
+ * A specifier is a string literal in exactly one of three positions:
+ *
+ *   import … from 'x'   ·   export … from 'x'      the token before it is `from`
+ *   import 'x'                                     the token before it is `import`
+ *   import('x')                                    `import` then `(`
+ *
+ * ⚠️ STATIC ONLY, AND THAT IS A REAL LIMIT. `import(expr)` where `expr` is not a
+ * literal returns nothing here, because there is nothing to return. A caller
+ * building an import GRAPH must therefore treat a computed import as an edge it
+ * cannot see, and say so rather than reporting a complete walk.
+ */
+export function specifiers(src) {
+  const out = [];
+  let prev = null, prev2 = null;
+  const isWord = (t, w) => t && t.t === 'id' && !t.member && t.v === w;
+  walk(src, t => {
+    /* ⭐ TEMPLATE TEXT IS SKIPPED HERE ON PURPOSE, not by the type check below.
+       `tstr` arrives in this stream too, and letting it into the `prev` chain
+       would change what "the token before the string" means for a shape nobody
+       has audited — a silent widening of a load-bearing guard as a side effect
+       of teaching the lexer a new answer. This function's behaviour is exactly
+       what it was; `import(`./${x}.js`)` stays the unseeable edge the note above
+       already declares. */
+    if (t.t === 'tstr') return;
+    if (t.t === 'str'
+        && (isWord(prev, 'from') || isWord(prev, 'import')
+            || (prev && prev.t === 'op' && prev.v === '(' && isWord(prev2, 'import'))))
+      out.push(t.v);
+    prev2 = prev; prev = t;
+  });
+  return out;
+}

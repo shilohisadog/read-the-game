@@ -63,6 +63,8 @@ commit history structurally cannot.
 **Who found the 201 defects that reached the live site:** Kevin looking at or
 asking about the site 102 · model review 66 · browser checks 15 · mutation,
 CI gate and pipeline alarm 2 each · unknown 12 · **the unit test suite 0**.
+⛔ **That zero is structural, not a finding about the suite** (§4.2) — measured
+directly in `docs/survivorship-experiment.md`.
 ⚠️ Only the **Kevin / not-Kevin** split survived the human relabel (§4.1); read
 the rest as the extractors' account, checked against commit text but not by a
 second reader.
@@ -122,6 +124,9 @@ interval on 20 of 26 is wide.
 
 ### 4.2 Everything else
 
+- ⚠️ **`nature` was never checked by a human.** The relabel (§4.1) covered
+  `found_by`, `oracle` and *is this a defect*; the defect-kind table in §3 (126
+  defects in checks, 84 false claims) is the extractors' reading alone.
 - **Every label is one model's judgement.** A random 16 commit entries were read
   beside their commits by the same model: `found_by` agreed on **15**, `oracle`
   was defensible on about **13**. ⛔ **§4.1 shows what that self-check was worth
@@ -129,9 +134,13 @@ interval on 20 of 26 is wide.
 - **143 entries are flagged** in `docs/defects/unsure.json` — the extractors'
   own list of design calls, conversation-only claims, drafts that never shipped
   and thinly described incidents. They are counted above.
-- ⛔ **SURVIVORSHIP.** The commit history records what ESCAPED. A defect the unit
-  suite caught before a commit leaves no trace, so *"the suite found 0 of 201"*
-  cannot distinguish a useless suite from one quietly preventing a great deal.
+- ⛔ **SURVIVORSHIP — AND THE ZERO IS STRUCTURAL.** The commit history records what
+  ESCAPED. A defect the unit suite caught before a commit leaves no trace, so
+  *"the suite found 0 of 201"* is not merely blind to a working suite: **a check
+  that runs before release cannot, by construction, appear among defects found
+  after release.** The zero measures where the suite runs, not what it catches.
+  ✅ `docs/survivorship-experiment.md` measured that directly: it catches 58–76% of
+  planted defects, depending on the code.
   The docs and notes credit it with 70 of 1,148, but nobody writes up a red test
   fixed in a minute. **Nothing may be deleted on this corpus alone.**
 - **Six weeks, UI-heavy.** 2026-08-07 to 2026-09-16, mostly layout and teaching
@@ -151,8 +160,10 @@ interval on 20 of 26 is wide.
 ## 5. What comes next
 
 1. ✅ **A human relabelled 30 random entries** — §4.1. `oracle` did not survive.
-2. **The survivorship experiment** — mutate decisions in `src/app.js` and record
-   which layer catches each: the node suite, a browser journey, or nothing.
+2. ✅ **The survivorship experiment** — `docs/survivorship-experiment.md`. Planted
+   defects in the calculation modules, the replay page and the feed interpreter,
+   and recorded which layer caught each: the node suite, the published numbers,
+   a real browser, or nothing.
    ⭐ **After §4.1 this is no longer a side question.** It is the only instrument
    left for what `oracle` was meant to answer — which kind of check catches what —
    and it answers by running checks rather than by labelling them.

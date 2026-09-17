@@ -1,0 +1,214 @@
+[
+ {
+  "item": "V1",
+  "id": "s20260916-54",
+  "planted": "A",
+  "capture": "1400-replay2",
+  "diffPixels": 21,
+  "box": [
+   700,
+   345,
+   700,
+   350
+  ]
+ },
+ {
+  "item": "V2",
+  "id": "s20260916-22",
+  "planted": "B",
+  "capture": "1400-replay0",
+  "diffPixels": 4214,
+  "box": [
+   537,
+   229,
+   700,
+   509
+  ]
+ },
+ {
+  "item": "V3",
+  "id": "s916-5",
+  "planted": "B",
+  "capture": "1400-replay2",
+  "diffPixels": 308,
+  "box": [
+   700,
+   357,
+   700,
+   350
+  ]
+ },
+ {
+  "item": "V4",
+  "id": "s916-10",
+  "planted": "B",
+  "capture": "1400-replay0",
+  "diffPixels": 18,
+  "box": [
+   418,
+   312,
+   932,
+   350
+  ]
+ },
+ {
+  "item": "V5",
+  "id": "s916-9",
+  "planted": "B",
+  "capture": "1400-replay2",
+  "diffPixels": 131,
+  "box": [
+   700,
+   366,
+   700,
+   350
+  ]
+ },
+ {
+  "item": "V6",
+  "id": "s20260916-18",
+  "planted": "B",
+  "capture": "1400-replay2",
+  "diffPixels": 28,
+  "box": [
+   700,
+   329,
+   700,
+   350
+  ]
+ },
+ {
+  "item": "V7",
+  "id": "s20260916-100",
+  "planted": "A",
+  "capture": "1400-replay26",
+  "diffPixels": 57,
+  "box": [
+   627,
+   411,
+   700,
+   350
+  ]
+ },
+ {
+  "item": "V8",
+  "id": "s916-2",
+  "planted": "B",
+  "capture": "1400-replay2",
+  "diffPixels": 93,
+  "box": [
+   691,
+   359,
+   700,
+   350
+  ]
+ },
+ {
+  "item": "V9",
+  "id": "s20260916-39",
+  "planted": "B",
+  "capture": "1400-replay2",
+  "diffPixels": 1033,
+  "box": [
+   700,
+   345,
+   700,
+   350
+  ]
+ },
+ {
+  "item": "V10",
+  "id": "s916-60",
+  "planted": "A",
+  "capture": "1400-replay0",
+  "diffPixels": 2083,
+  "box": [
+   535,
+   599,
+   700,
+   350
+  ]
+ },
+ {
+  "item": "V11",
+  "id": "BC3",
+  "planted": "B",
+  "capture": "1400-replay17",
+  "diffPixels": 1891,
+  "box": [
+   534,
+   616,
+   700,
+   350
+  ]
+ },
+ {
+  "item": "V12",
+  "id": "s916-26",
+  "planted": "B",
+  "capture": "1400-penalties",
+  "diffPixels": 223,
+  "box": [
+   537,
+   364,
+   700,
+   350
+  ]
+ },
+ {
+  "item": "V13",
+  "id": "s916-7",
+  "planted": "B",
+  "capture": "1400-replay2",
+  "diffPixels": 56,
+  "box": [
+   700,
+   368,
+   700,
+   350
+  ]
+ },
+ {
+  "item": "V14",
+  "id": "NULL",
+  "planted": "neither (identical)",
+  "capture": "1400-replay10",
+  "diffPixels": 0,
+  "box": [
+   0,
+   0,
+   760,
+   460
+  ]
+ },
+ {
+  "item": "N1",
+  "id": "s20260916-3",
+  "planted": "B",
+  "differing": 1
+ },
+ {
+  "item": "N2",
+  "id": "s20260916-19",
+  "planted": "B",
+  "differing": 2
+ },
+ {
+  "item": "N3",
+  "id": "s20260916-20",
+  "planted": "A",
+  "differing": 1404
+ },
+ {
+  "item": "N4",
+  "id": "s916-3",
+  "planted": "B",
+  "differing": 2
+ },
+ {
+  "item": "N5",
+  "id": "s916-4",
+  "planted": "B",
+  "differing": 2
+ }
+]

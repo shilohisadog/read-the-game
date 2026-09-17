@@ -1,0 +1,242 @@
+[
+ {
+  "n": 1,
+  "id": "s20260916-31",
+  "cc": "RV",
+  "cheng": "RV",
+  "adjudicated": "RV",
+  "basis": "CC and CHENG agreed"
+ },
+ {
+  "n": 2,
+  "id": "s20260916-21",
+  "cc": "E",
+  "cheng": "RU",
+  "adjudicated": "E",
+  "basis": "only caller passes a checked non-null event; definitional (E vs RU)"
+ },
+ {
+  "n": 3,
+  "id": "s916-1",
+  "cc": "RV",
+  "cheng": "RV",
+  "adjudicated": "RV",
+  "basis": "CC and CHENG agreed"
+ },
+ {
+  "n": 4,
+  "id": "s20260916-62",
+  "cc": "RU",
+  "cheng": "RU",
+  "adjudicated": "RU",
+  "basis": "CC and CHENG agreed"
+ },
+ {
+  "n": 5,
+  "id": "s916-22",
+  "cc": "RU",
+  "cheng": "RN",
+  "adjudicated": "RU",
+  "basis": "hits correlation is archive-wide; zero variance never occurs"
+ },
+ {
+  "n": 6,
+  "id": "s916-30",
+  "cc": "RU",
+  "cheng": "RU",
+  "adjudicated": "RU",
+  "basis": "CC and CHENG agreed"
+ },
+ {
+  "n": 7,
+  "id": "s916-50",
+  "cc": "RV",
+  "cheng": "RV",
+  "adjudicated": "RV",
+  "basis": "CC and CHENG agreed"
+ },
+ {
+  "n": 8,
+  "id": "s20260916-71",
+  "cc": "U",
+  "cheng": "RV",
+  "adjudicated": "RV",
+  "basis": "fh sign flip: sum is 0 when one goalie faced and saved every shot and the other faced none \u2014 early-game ordinary"
+ },
+ {
+  "n": 9,
+  "id": "s20260916-82",
+  "cc": "RV",
+  "cheng": "RV",
+  "adjudicated": "RV",
+  "basis": "CC and CHENG agreed"
+ },
+ {
+  "n": 10,
+  "id": "s20260916-12",
+  "cc": "RU",
+  "cheng": "RV",
+  "adjudicated": "U",
+  "basis": "NaN refusal sentence only if a declined skater code appears; needs an archive count"
+ },
+ {
+  "n": 11,
+  "id": "s20260916-34",
+  "cc": "RV",
+  "cheng": "RV",
+  "adjudicated": "RV",
+  "basis": "CC and CHENG agreed"
+ },
+ {
+  "n": 12,
+  "id": "s916-6",
+  "cc": "RU",
+  "cheng": "RU",
+  "adjudicated": "RU",
+  "basis": "CC and CHENG agreed"
+ },
+ {
+  "n": 13,
+  "id": "s916-14",
+  "cc": "RV",
+  "cheng": "RV",
+  "adjudicated": "RV",
+  "basis": "CC and CHENG agreed"
+ },
+ {
+  "n": 14,
+  "id": "s20260916-40",
+  "cc": "RV",
+  "cheng": "U",
+  "adjudicated": "RV",
+  "basis": "shownAt gates `if (shownAt > 20)` detail"
+ },
+ {
+  "n": 15,
+  "id": "s20260916-16",
+  "cc": "U",
+  "cheng": "RV",
+  "adjudicated": "RV",
+  "basis": "stripe moves outside the jersey clip and disappears"
+ },
+ {
+  "n": 16,
+  "id": "s20260916-96",
+  "cc": "E",
+  "cheng": "RV",
+  "adjudicated": "RV",
+  "basis": "one-pixel midpoint boundary; imperceptible, definitional"
+ },
+ {
+  "n": 17,
+  "id": "s20260916-85",
+  "cc": "E",
+  "cheng": "RI",
+  "adjudicated": "RI",
+  "basis": "1 ms pace; definitional"
+ },
+ {
+  "n": 18,
+  "id": "s916-23",
+  "cc": "RU",
+  "cheng": "RU",
+  "adjudicated": "RU",
+  "basis": "CC and CHENG agreed"
+ },
+ {
+  "n": 19,
+  "id": "s20260916-78",
+  "cc": "E",
+  "cheng": "RV",
+  "adjudicated": "E",
+  "basis": "release requires end > e.s and endedBy goal, so time left >= 1 and max(0) == max(1)"
+ },
+ {
+  "n": 20,
+  "id": "s20260916-81",
+  "cc": "RV",
+  "cheng": "RV",
+  "adjudicated": "RV",
+  "basis": "CC and CHENG agreed"
+ },
+ {
+  "n": 21,
+  "id": "s20260916-24",
+  "cc": "RV",
+  "cheng": "RV",
+  "adjudicated": "RV",
+  "basis": "CC and CHENG agreed"
+ },
+ {
+  "n": 22,
+  "id": "s20260916-37",
+  "cc": "RV",
+  "cheng": "RV",
+  "adjudicated": "RV",
+  "basis": "CC and CHENG agreed"
+ },
+ {
+  "n": 23,
+  "id": "s20260916-58",
+  "cc": "RN",
+  "cheng": "RN",
+  "adjudicated": "RN",
+  "basis": "CC and CHENG agreed"
+ },
+ {
+  "n": 24,
+  "id": "s916-16",
+  "cc": "RV",
+  "cheng": "RV",
+  "adjudicated": "RV",
+  "basis": "CC and CHENG agreed"
+ },
+ {
+  "n": 25,
+  "id": "s20260916-69",
+  "cc": "RV",
+  "cheng": "U",
+  "adjudicated": "E",
+  "basis": "frameOf result reaches only set(), which clamps to EV.length-1"
+ },
+ {
+  "n": 26,
+  "id": "s20260916-95",
+  "cc": "RV",
+  "cheng": "RV",
+  "adjudicated": "RV",
+  "basis": "CC and CHENG agreed"
+ },
+ {
+  "n": 27,
+  "id": "s20260916-10",
+  "cc": "RV",
+  "cheng": "RV",
+  "adjudicated": "RV",
+  "basis": "CC and CHENG agreed"
+ },
+ {
+  "n": 28,
+  "id": "s20260916-23",
+  "cc": "RV",
+  "cheng": "RV",
+  "adjudicated": "RV",
+  "basis": "CC and CHENG agreed"
+ },
+ {
+  "n": 29,
+  "id": "s20260916-70",
+  "cc": "RI",
+  "cheng": "E",
+  "adjudicated": "E",
+  "basis": "pa read only when the bar is drawn; definitional"
+ },
+ {
+  "n": 30,
+  "id": "s916-24",
+  "cc": "RV",
+  "cheng": "RV",
+  "adjudicated": "RV",
+  "basis": "CC and CHENG agreed"
+ }
+]
