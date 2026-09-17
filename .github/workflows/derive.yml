@@ -153,6 +153,84 @@ jobs:
       - name: the published numbers are possible — before the sync
         run: python3 tools/published_ranges.py ingest
 
+      # ⭐ WHAT THIS RUN IS ABOUT TO PUBLISH IS SOUND — CHECKED BEFORE THE SYNC.
+      #
+      # These three checks used to run only AFTER the sync, against the bucket, so
+      # a ledger that did not close or a team whose record did not add up was
+      # already public by the time it failed (docs/test-program.md §5, the data
+      # pipeline row: validate before, read back after). Every one of them reads
+      # files this run wrote into ingest/, so none needs production to answer.
+      # The read-back half stays below the sync, where it proves the bucket holds
+      # these exact bytes.
+      #
+      # 1. The archive ledger answers to the catalog -- see the read-back step for
+      #    why the instrument is the OTHER document and never this run's report.
+      # 2. THE PER-TEAM SEASONS, checked for the property that cannot be checked by
+      #    looking at one number: a team's row and the archive row it sits beside
+      #    must be the same quantity. A card puts them on the same line, and two
+      #    documents computed by two paths is the shape this project keeps repairing
+      #    -- so the baseline travels IN this document, and the fractions it
+      #    publishes are asserted to be fractions of something.
+      # 3. The measurement is the thing that decides what a novice sees first, so it
+      #    is checked the way every other published claim is: asserted to carry the
+      #    sentence that produced it, before anyone can read it. A featured game with no rule
+      #    attached is a number we are asking to be trusted.
+      - name: what this run will publish is sound — before the sync
+        run: |
+          python3 builders/ledger.py ingest/index.json ingest/catalog.json
+          python3 - <<'PY'
+          import json, sys
+          t = json.load(open('ingest/teams.json'))
+          if not t.get('seasons'):
+              sys.exit("::error::teams.json carries no seasons")
+          for k, r in t['archive'].items():
+              if not r.get('what'):
+                  sys.exit(f"::error::{k} is published with no statement of what it counts")
+              if r['rate'] is not None and not r['n']:
+                  sys.exit(f"::error::{k} has a rate over an empty population")
+              print(f"  archive {k}: {r['count']} of {r['n']}")
+          for yr, teams in sorted(t['seasons'].items()):
+              # Every game a team played must land in exactly one bucket. A record
+              # that is quietly out by one is the failure this cannot see any
+              # other way -- the numbers all look like plausible records.
+              for ab, s in teams.items():
+                  played = sum(s['record']['reg'].values()) + sum(s['record']['post'].values())
+                  if played != s['games']:
+                      sys.exit(f"::error::{yr} {ab}: {s['games']} games but {played} results")
+                  if s['record']['reg']['undecided'] or s['record']['post']['undecided']:
+                      sys.exit(f"::error::{yr} {ab} has a game with no winner")
+                  # The goalie rows ARE the team line. Not a second computation
+                  # of it -- if these ever diverge the card's arithmetic is a lie
+                  # a reader can check by eye.
+                  if sum(g['saves'] for g in s['goalies']) != s['saves']['count']:
+                      sys.exit(f"::error::{yr} {ab}: goalie rows do not sum to the team save line")
+              print(f"  {yr}: {len(teams)} teams")
+          PY
+          python3 - <<'PY'
+          import json, sys
+          m = json.load(open('ingest/measures.json'))
+          if not m.get('rule'):
+              sys.exit("::error::measures.json carries numbers with no stated rule")
+          if not m.get('featured'):
+              sys.exit("::error::no game was featured — the homepage would have no hero")
+          f = m['featured'][0]
+          print(f"  featured: {f['ab']} controlled by {f['edge']} while level and lost "
+                f"(game {f['id']})")
+          print(f"  rule: {m['rule']}")
+          for k, r in m['baseRates'].items():
+              if r['rate'] is None:
+                  continue
+              # A RATE WITHOUT ITS DENOMINATOR IS THE THING THIS SITE TEACHES
+              # AGAINST. It is not enough that we computed n -- it has to be
+              # published beside the number, or a reader cannot check it.
+              if not r.get('n') or not r.get('population'):
+                  sys.exit(f"::error::{k} published without n or population: {r}")
+              print(f"  {r['what']}: {r['rate']*100:.1f}% of {r['n']} ({r['population']})")
+          if m['measured'] < 3000:
+              sys.exit(f"::error::only {m['measured']} games measured — that is not "
+                       f"the whole archive, and a partial ranking looks like an answer")
+          PY
+
       # Same ordering discipline as the ingest: the document that ADVERTISES
       # what we hold goes last, so index.json can never claim a game whose
       # extract is not yet in the bucket. `set -e` is what makes it a guarantee.
@@ -260,49 +338,21 @@ jobs:
                 f"{sum(len(v) for v in i['run'].get('noted', {}).values())} values")
           PY
 
-      # THE PER-TEAM SEASONS, checked for the property that cannot be checked by
-      # looking at one number: a team's row and the archive row it sits beside
-      # must be the same quantity. A card puts them on the same line, and two
-      # documents computed by two paths is the shape this project keeps repairing
-      # -- so the baseline travels IN this document, and the fractions it
-      # publishes are asserted to be fractions of something.
-      - name: the per-team seasons carry their own reference class
+      # AND WHAT LANDED IS WHAT THIS RUN WROTE. The two documents were validated
+      # above, before the sync; here the public origin -- what a visitor fetches --
+      # must serve those exact bytes. A sound document that did not arrive, or
+      # arrived half-written, is the failure only a read-back can see.
+      - name: the published teams.json and measures.json are the ones this run wrote
         run: |
-          curl -sS --fail "https://data.readthegame.co/teams.json?cb=${GITHUB_RUN_ID}" \
-            -o live-teams.json
-          python3 - <<'PY'
-          import json, sys
-          t = json.load(open('live-teams.json'))
-          if not t.get('seasons'):
-              sys.exit("::error::teams.json carries no seasons")
-          for k, r in t['archive'].items():
-              if not r.get('what'):
-                  sys.exit(f"::error::{k} is published with no statement of what it counts")
-              if r['rate'] is not None and not r['n']:
-                  sys.exit(f"::error::{k} has a rate over an empty population")
-              print(f"  archive {k}: {r['count']} of {r['n']}")
-          for yr, teams in sorted(t['seasons'].items()):
-              # Every game a team played must land in exactly one bucket. A record
-              # that is quietly out by one is the failure this cannot see any
-              # other way -- the numbers all look like plausible records.
-              for ab, s in teams.items():
-                  played = sum(s['record']['reg'].values()) + sum(s['record']['post'].values())
-                  if played != s['games']:
-                      sys.exit(f"::error::{yr} {ab}: {s['games']} games but {played} results")
-                  if s['record']['reg']['undecided'] or s['record']['post']['undecided']:
-                      sys.exit(f"::error::{yr} {ab} has a game with no winner")
-                  # The goalie rows ARE the team line. Not a second computation
-                  # of it -- if these ever diverge the card's arithmetic is a lie
-                  # a reader can check by eye.
-                  if sum(g['saves'] for g in s['goalies']) != s['saves']['count']:
-                      sys.exit(f"::error::{yr} {ab}: goalie rows do not sum to the team save line")
-              print(f"  {yr}: {len(teams)} teams")
-          PY
+          for f in teams.json measures.json; do
+            curl -sS --fail "https://data.readthegame.co/$f?cb=${GITHUB_RUN_ID}" -o "live-$f"
+            if ! cmp -s "live-$f" "ingest/$f"; then
+              echo "::error::the public $f is not the one this run wrote ($(wc -c < "live-$f") bytes, wrote $(wc -c < "ingest/$f"))"
+              exit 1
+            fi
+            echo "  $f: the public origin serves this run's $(wc -c < "ingest/$f") bytes"
+          done
 
-      # The measurement is the thing that decides what a novice sees first, so it
-      # is checked the way every other published claim is: read back, and asserted
-      # to carry the sentence that produced it. A featured game with no rule
-      # attached is a number we are asking to be trusted.
       # ⚠️ THE COMMITTED COPY IS A DERIVED ARTIFACT IN A REPO OF INPUTS, which is
       # exactly how five stale fixtures sat green for months. `data/measures.json`
       # is a BUILD INPUT because the learn pages carry no scripts and cannot fetch
@@ -315,35 +365,6 @@ jobs:
       # on the count.
       - name: the committed measures.json still agrees with what was just published
         run: python3 tools/measures_fresh.py
-
-      - name: the measurement is published with its rule and its denominators
-        run: |
-          curl -sS --fail "https://data.readthegame.co/measures.json?cb=${GITHUB_RUN_ID}" \
-            -o live-measures.json
-          python3 - <<'PY'
-          import json, sys
-          m = json.load(open('live-measures.json'))
-          if not m.get('rule'):
-              sys.exit("::error::measures.json carries numbers with no stated rule")
-          if not m.get('featured'):
-              sys.exit("::error::no game was featured — the homepage would have no hero")
-          f = m['featured'][0]
-          print(f"  featured: {f['ab']} controlled by {f['edge']} while level and lost "
-                f"(game {f['id']})")
-          print(f"  rule: {m['rule']}")
-          for k, r in m['baseRates'].items():
-              if r['rate'] is None:
-                  continue
-              # A RATE WITHOUT ITS DENOMINATOR IS THE THING THIS SITE TEACHES
-              # AGAINST. It is not enough that we computed n -- it has to be
-              # published beside the number, or a reader cannot check it.
-              if not r.get('n') or not r.get('population'):
-                  sys.exit(f"::error::{k} published without n or population: {r}")
-              print(f"  {r['what']}: {r['rate']*100:.1f}% of {r['n']} ({r['population']})")
-          if m['measured'] < 3000:
-              sys.exit(f"::error::only {m['measured']} games measured — that is not "
-                       f"the whole archive, and a partial ranking looks like an answer")
-          PY
 
       - name: an extract a visitor can actually read
         run: |

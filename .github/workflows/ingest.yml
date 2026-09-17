@@ -247,6 +247,35 @@ jobs:
           cat report.json
           exit 1
 
+      # ⭐ WHAT THIS RUN IS ABOUT TO PUBLISH IS SOUND — CHECKED BEFORE THE SYNC.
+      # The index's own contract and the archive ledger used to be asserted only
+      # after the sync, against the bucket, so a ledger that did not close was
+      # already public when it failed. Both read files this run wrote into ingest/
+      # (docs/test-program.md §5: validate before, read back after). The read-back
+      # steps below the sync still prove the bucket holds these exact bytes.
+      - name: what this run will publish is sound — before the sync
+        if: steps.fetch.outputs.code != '2' && hashFiles('ingest/index.json') != ''
+        run: |
+          python3 builders/ledger.py ingest/index.json ingest/catalog.json
+          python3 - <<'PY'
+          import json, sys
+          i = json.load(open('ingest/index.json'))
+          missing = [k for k in ('lastRun', 'games', 'coverage') if k not in i]
+          if missing:
+              sys.exit(f"::error::index is missing {missing}")
+          c = i['coverage']
+          held, err = c['heldInWindow'], c['erroredInWindow']
+          refused = c['refusedInWindow']
+          if c['finalInWindow'] != held + err + refused:
+              sys.exit(f"::error::coverage ledger does not close: {c}")
+          undated = [g['id'] for g in i['games'] if not g.get('date')]
+          if undated:
+              sys.exit(f"::error::games without a date, so dataThrough is unreliable: {undated[:5]}")
+          print(f"  {len(i['games'])} games | dataThrough={i.get('dataThrough')} "
+                f"| lastRun={i['lastRun']} | halted={bool(i.get('halted'))}")
+          print(f"  ledger closes: {c['finalInWindow']} = {held} + {err} + {refused}")
+          PY
+
       # Exit 1 means some games failed to fetch. Those wrote nothing at all, so
       # the games that DID succeed are complete and correct and should be
       # published. The job still fails at the end so the failure is not silent.
@@ -415,30 +444,15 @@ jobs:
             echo "::error::the index in R2 is not the index we just wrote"
             exit 1
           fi
+          # Its CONTRACT (the coverage ledger closes, every game dated) is asserted
+          # on ingest/index.json before the sync; byte identity carries it here.
+          echo "  the index in R2 is byte-identical to the one this run wrote and checked"
           # ASSERT THE CONTRACT, do not print prose about it. The first version
           # of this step ended in an f-string quoting `lastIngest`, and when that
           # field was removed the step failed -- after cmp had already proved the
           # sync was byte-correct. A green pipeline reported red because of a
           # decoration, which is a false red, and false reds are how a working
           # gate gets ignored. Anything worth printing here is worth checking.
-          python3 - <<'PY'
-          import json, sys
-          i = json.load(open('remote-index.json'))
-          missing = [k for k in ('lastRun', 'games', 'coverage') if k not in i]
-          if missing:
-              sys.exit(f"::error::index is missing {missing}")
-          c = i['coverage']
-          held, err = c['heldInWindow'], c['erroredInWindow']
-          refused = c['refusedInWindow']
-          if c['finalInWindow'] != held + err + refused:
-              sys.exit(f"::error::coverage ledger does not close: {c}")
-          undated = [g['id'] for g in i['games'] if not g.get('date')]
-          if undated:
-              sys.exit(f"::error::games without a date, so dataThrough is unreliable: {undated[:5]}")
-          print(f"  {len(i['games'])} games | dataThrough={i.get('dataThrough')} "
-                f"| lastRun={i['lastRun']} | halted={bool(i.get('halted'))}")
-          print(f"  ledger closes: {c['finalInWindow']} = {held} + {err} + {refused}")
-          PY
 
       # ⭐ AND THE ARCHIVE LEDGER ANSWERS TO THE CATALOG -- ON THE NIGHTLY,
       # WHICH IS THE RUN THAT BROKE.
