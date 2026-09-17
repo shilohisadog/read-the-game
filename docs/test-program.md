@@ -367,6 +367,41 @@ with commits and what each was seen to catch, is in `docs/status.md` §0.00.
 - **Q7 — §8's thresholds.** Zero off-subject failures is strict; is it the right
   bar, or does it force tests to stop asserting things they should?
 
+### 11.1 CC's recommendations on the open six — for CHENG to rule, 2026-09-17
+
+Kevin has read these and asked for them to be sent as they stand. Each carries
+the strongest case against it.
+
+- **Q1 — accept the frame.** It sorted every finding and drove the five builds.
+  *Against:* the performance column is empty in every row; keep it, ranked last.
+- **Q3 — stay zero-dependency.** Measured: `src/app.js` never checks `isTrusted`
+  (0 uses), so an in-page probe can dispatch a double-click the handlers accept,
+  and `deploy.yml` already drives controls that way. **Rule: dispatch to
+  `document.elementFromPoint(x, y)`, never to the element by id** — otherwise
+  the probe clicks through an overlay a person could not (the `force: true`
+  trap). *Against:* multi-step drag and touch are painful by hand; revisit when a
+  real check needs one.
+- **Q4 — the DOM golden stays a gate until the review gallery exists.** It was
+  the only catcher of 17 of the 187 planted defects, 11 visibly wrong; before
+  beta, review happens after release, so demoting it now ships those.
+  *Against:* it fails on intended edits and is regenerated unread — which is why
+  it moves to S3 once the gallery exists.
+- **Q5 — do not build T2; build T1 in the harness.** T2 is a CSS parser standing
+  in for a browser, and two copies already exist (`park.test.js`, and the one
+  written during the `.pboxes` fix). Visibility claims move to the preview stage
+  file by file, asked as a visitor would, which never names a container.
+  *Against:* that move takes weeks, and a new parking before it repeats the
+  `.pboxes` incident. **Fallback: build T2 only if a parking happens first.**
+- **Q6 — option B now, C deferred; `docs/frame-model.md` closes.** B removes the
+  measured cause (`#scrub` named by 20 files, 9 off-subject failures) with no
+  change to `app.js`; no measurement needs C. *Against:* CC and CHENG converged on
+  B and are correlated; the churn replay (§8.1) is the independent test.
+- **Q7 — not zero; a ratchet.** Off-subject failures must fall on each replay, and
+  every one that remains names why it is legitimate. Zero pushes tests to stop
+  asserting real cross-cutting claims (`smoke.test.js` caught a blank page past 43
+  green tests). *Against:* "named reasons" can become an excuse list, so the count
+  still has to fall.
+
 ## 12. Corrections to the record, owed from the earlier thread
 
 - *"49 of 85 test files boot the whole page"* did not reproduce: **35** call
