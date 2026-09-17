@@ -358,7 +358,13 @@ Steps 1–3 need no new infrastructure and close the worst measured seam first.
 rows 1, 2, 3 and 6, and row 4 **without branches** (§5.1) — the preview is inside
 the deploy. Row 2's range check caught **4 of the 5** re-planted escapes; row 6's
 seam B took the churn replays' off-subject failures from 9 to 0 and 5 to 1.
-**Open: rows 5, 7, 8, 9 and 10.** The record,
+✅ **Row 5 built the same day, moved to the front by Kevin:** `tools/gallery.mjs`
+renders two commits' `src/` in real Chromium against one data snapshot and puts
+every visible difference on a sheet ([docs/reviews/README.md](reviews/README.md));
+**its exit is met — Kevin judged batch 1** (1 item, 0 wrong). The pixel and
+sentence diffs are in it; the DOM golden stays a gate (§11.2 Q4) until batches
+have been judged long enough to trust the gallery in its place.
+**Open: rows 7, 8, 9 and 10.** The record,
 with commits and what each was seen to catch, is in `docs/status.md` §0.00.
 
 ## 11. What I want ruled

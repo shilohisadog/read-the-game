@@ -1,0 +1,26 @@
+{
+ "base": "2ef986aebb38711dd1125a802db8d870db746753",
+ "head": "b8da2071cac08640544e3de3c6e7b896ec12157f",
+ "time": 1789656385848,
+ "seconds": 265,
+ "states": 100,
+ "differing": 78,
+ "items": 1,
+ "documentOnly": 4,
+ "selfCheck": {
+  "sampled": 100,
+  "noisy": 0
+ },
+ "data": [
+  "catalog.json",
+  "extract/2023020204.json",
+  "extract/2025030311.json",
+  "extract/2025030414.json",
+  "index.json",
+  "measures.json",
+  "recent.json",
+  "schedule.json"
+ ],
+ "plants": [],
+ "stripCsp": false
+}
