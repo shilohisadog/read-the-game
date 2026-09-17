@@ -142,6 +142,17 @@ jobs:
         shell: bash
         run: node builders/measure.mjs --out ingest | tee measured.json
 
+      # ⭐ THE PUBLISHED NUMBERS MUST BE POSSIBLE, AND THIS IS THE LAST PLACE THAT
+      # CAN STOP THEM. docs/survivorship-experiment.md planted 187 defects and five
+      # changed measures.json or teams.json with every test green; four of those
+      # five fail this check (a count of -4,641, a share of 8.7, "NaN(" in a
+      # sentence, buckets past a histogram's max). `npm run gates` already runs it
+      # over the 8 committed fixtures; here it reads the WHOLE archive's output,
+      # before the sync, so an impossible figure never reaches the bucket.
+      # It cannot see a figure that is wrong but possible -- nothing here can.
+      - name: the published numbers are possible — before the sync
+        run: python3 tools/published_ranges.py ingest
+
       # Same ordering discipline as the ingest: the document that ADVERTISES
       # what we hold goes last, so index.json can never claim a game whose
       # extract is not yet in the bucket. `set -e` is what makes it a guarantee.
