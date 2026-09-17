@@ -53,10 +53,13 @@ test('on the ice, the ONLY second line left is a goal\u2019s assists', () => {
   // blocked layer replaces the whole thing, and a mutation restoring ITS second
   // line survived a walk that had left the layer switched off. The base view is
   // walked too, or turning every layer on would hide a regression in neither.
-  const LAYERS = ['corsi', 'slot', 'goaltending', 'whistle', 'blocked'];
-  for (const on of [[], LAYERS]) {
-    const a = boot();
-    on.forEach(id => a.$(id).click());
+  // ⛔ EACH LAYER ON ITS OWN, THROUGH THE PICKER. This clicked ids; `corsi` and
+  // `whistle` exist on no page, the fake invented them (T1), and the picker is
+  // one-of-n -- so "every layer on" was really "blocked on, the others never".
+  const LAYERS = ['none', 'corsi', 'slot', 'goaltending', 'whistle', 'blocked', 'zonestart'];
+  for (const layer of LAYERS) {
+    const on = layer === 'none' ? [] : [layer];
+    const a = pickLayer(boot(), layer);
     const subs = new Set();
     const heads = new Set();
     a.every(d => {
@@ -65,7 +68,7 @@ test('on the ice, the ONLY second line left is a goal\u2019s assists', () => {
       for (const m of h.matchAll(/class="(?:plabel|glab)"[^>]*>([^<]*)</g)) heads.add(m[1]);
       return null;
     });
-    const where = on.length ? 'with every layer on' : 'in the base view';
+    const where = on.length ? `with ${layer} on` : 'in the base view';
     assert.ok(heads.size > 4, `only ${heads.size} distinct labels were ever drawn ${where}`);
     assert.ok(subs.size > 0, `no second line at all ${where} — the goal lost its assists`);
     for (const t of subs) {

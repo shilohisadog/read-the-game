@@ -44,11 +44,38 @@
  * There is no equivalent for ids, because inventing them is the feature.
  */
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 
 export const rich = JSON.parse(readFileSync(new URL('../../data/rich.json', import.meta.url)));
 export const app = readFileSync(new URL('../../src/read-the-game.html', import.meta.url), 'utf8');
 export const SCRIPT = app.match(/<script>([\s\S]*)<\/script>/)[1];
+
+/* ⭐⭐ T1 — AN ID NO PAGE HAS IS AN ERROR, NOT A STUB. Ruled 2026-09-17
+   (docs/test-program.md §11.2 Q5: "build T1, in the harness").
+
+   `getElementById` below still creates an element on first use — a test should
+   not have to enumerate the page to read one node — but ONLY for an id some
+   built page actually carries. Six test files documented the invention in prose
+   and nothing enforced it; turning it on found three tests driving a ghost: the
+   ends-invariance walk clicked five layer rows deleted in 70f41db, so "every
+   layer is switched on" switched none on and compared "" with "" for months.
+
+   RUNTIME_IDS are ids the app creates itself, in strings no built page contains.
+   Each must still appear quoted in src/app.js, so an entry cannot outlive the
+   code that made it. */
+const PAGE_IDS = new Set();
+for (const f of readdirSync(new URL('../../src/', import.meta.url)))
+  if (f.endsWith('.html'))
+    for (const m of readFileSync(new URL('../../src/' + f, import.meta.url), 'utf8').matchAll(/\bid="([^"]+)"/g))
+      PAGE_IDS.add(m[1]);
+const APP_JS = readFileSync(new URL('../../src/app.js', import.meta.url), 'utf8');
+export const RUNTIME_IDS = {
+  netHome: 'drawn by netGlyph() into #ice on every render',
+  netAway: 'drawn by netGlyph() into #ice on every render',
+};
+for (const id of Object.keys(RUNTIME_IDS))
+  assert.ok(APP_JS.includes(`'${id}'`), `RUNTIME_IDS names "${id}", which src/app.js no longer creates`);
+export const KNOWN_IDS = new Set([...PAGE_IDS, ...Object.keys(RUNTIME_IDS)]);
 
 /**
  * EVERY stylesheet on the page, not the first one.
@@ -305,6 +332,10 @@ export function fakeDom() {
     },
     getElementById(id) {
       if (!byId.has(id)) {
+        if (!KNOWN_IDS.has(id))
+          throw new Error(`#${id} is in no built page -- a browser returns null here, and a fake `
+            + `that invents it lets a test drive a ghost (T1, test/helpers/page.js). If the app `
+            + `creates it at runtime, add it to RUNTIME_IDS with where.`);
         const node = el();
         // Wired at creation, so a group the page asks for later still bubbles.
         if (ON_ICE.has(id)) node._up = this.getElementById('ice');

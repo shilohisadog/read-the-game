@@ -209,10 +209,12 @@ test('the base view is the game — every layer off, no trails, at boot', () => 
   // Doctrine §6 and the page's own headline (watch first, add metrics after)
   // both depend on this, so it is asserted rather than remembered.
   const a = boot();
-  for (const id of ['lyCorsi', 'lyHd', 'lyGoalie', 'lyWhistle', 'lyBlock']) {
-    assert.equal(a.$(id)['aria-pressed'], undefined,
-      `${id} announced a state before anyone touched it`);
-  }
+  // THE PICKER SAYS "NONE", AND NOTHING ELSE. This read `aria-pressed` off five
+  // layer rows deleted in 70f41db -- elements the fake invented, whose
+  // attribute was undefined by construction, so it could not fail (T1).
+  assert.deepEqual(
+    a.$$('#rg .pk').filter(b => String(b['aria-checked']) === 'true').map(b => b.dataset.l),
+    ['none'], 'the picker announced a layer before anyone touched it');
   assert.equal(a.$('rg').classList.contains('corsi'), false, 'no control panel');
   assert.equal(a.$('rg').classList.contains('goalie'), false, 'no goalie cards');
   assert.equal(a.$('rg').classList.contains('whistle'), false, 'no whistle panel');

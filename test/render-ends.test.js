@@ -449,27 +449,35 @@ test('the ends toggle never reaches a count', () => {
   // THE INVARIANCE CLAIM, END TO END. Not "reducers ignore x" -- `danger` and
   // `goaltending` legitimately read it, on normalized input. The claim is that
   // the MODE is applied at draw time, downstream of every count, so no reducer
-  // can see it. Every layer is switched on, because a reducer nobody rendered is
-  // a reducer this cannot speak for.
-  const walk = search => {
-    const a = boot(null, null, search);
-    ['lyCorsi', 'lyHd', 'lyGoalie', 'lyWhistle', 'lyBlock'].forEach(id => a.$(id).click());
+  // can see it. EVERY LAYER IS WALKED, because a reducer nobody rendered is a
+  // reducer this cannot speak for.
+  // ⛔ ONE AT A TIME, AND THROUGH THE REAL PICKER. Until 2026-09-17 this clicked
+  // five layer ROWS deleted in 70f41db; the fake DOM invented them, so no layer
+  // ever switched on and the panels below compared "" with "" -- found the day
+  // T1 made an unknown id throw. The picker is one-of-n, so a layer is a walk.
+  const walk = (search, layer) => {
+    const a = pickLayer(boot(null, null, search), layer);
     return a.every(d => JSON.stringify({
       aSc: String(d.$('aSc').textContent), hSc: String(d.$('hSc').textContent),
-      cA: String(d.$('cA').textContent), cH: String(d.$('cH').textContent),
-      pa: String(d.$('pa').textContent), ph: String(d.$('ph').textContent),
-      nSit: d.$('nSit').textContent,
+      lxA: String(d.$('lxA').textContent), lxH: String(d.$('lxH').textContent),
+      lxK: String(d.$('lxK').textContent), lxN: String(d.$('lxN').textContent),
       goalies: d.$('goaliePanel').innerHTML,
       whistle: d.$('whistlePanel').innerHTML,
       block: d.$('blockPanel').innerHTML,
     }));
   };
-  const played = walk('?ends=as-played'), fixed = walk('?ends=fixed');
-  assert.equal(played.length, fixed.length);
-  assert.ok(played.length > 100, 'the walk must cover the game, not a sample');
-  for (let k = 0; k < fixed.length; k++) {
-    assert.equal(played[k], fixed[k],
-      `frame ${k}: a count moved when the rink turned over, so the mode reached a reducer`);
+  for (const layer of ['corsi', 'slot', 'blocked', 'goaltending', 'whistle', 'zonestart']) {
+    const played = walk('?ends=as-played', layer), fixed = walk('?ends=fixed', layer);
+    assert.equal(played.length, fixed.length);
+    assert.ok(played.length > 100, 'the walk must cover the game, not a sample');
+    // AND THE LAYER MUST HAVE SAID SOMETHING, or equal is "" against "" again.
+    // A whistle has no club, so its figure is the key ("44 STOPPAGES"), not a side.
+    assert.ok(played.some(s => { const o = JSON.parse(s); return o.lxA !== '' || o.lxH !== '' || o.lxK !== ''; }),
+      `${layer}: its box never showed a figure, so this walk compared nothing`);
+    for (let k = 0; k < fixed.length; k++) {
+      assert.equal(played[k], fixed[k],
+        `${layer}, frame ${k}: a count moved when the rink turned over, so the mode reached a reducer`);
+    }
   }
 });
 
