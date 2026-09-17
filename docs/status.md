@@ -107,11 +107,19 @@ nothing a visitor could see. Kevin: *"drop both rules."* The selector reads `hl`
 alone, `derive.py` no longer publishes `ha` (a field with no reader), and the
 preview runs the base view.
 
-⏸ **A THIRD, SAME CAUSE, LEFT FOR KEVIN:** the loop does not start AT the goal
-because "the counter is watched from zero" (`builders/build_index.py`). That
-reason expired too; the loop's other bound — not earlier than the first
-attempt, to skip dead air — still stands. The rule is kept, marked expired in
-its comment, pending a call on whether the loop should start nearer the goal.
+✅ **A THIRD, SAME CAUSE, KEPT AT KEVIN'S WORD:** the loop does not start AT the
+goal because "the counter is watched from zero" (`builders/build_index.py`).
+That reason expired too. Kevin: *"I don't mind a longer-ish loop, so no don't
+start nearer the goal."* The rule stands on that.
+
+⚠️ **THE "FLAKY FRESHNESS TEST" WAS NOT REPRODUCED, AND IS NOT FIXED BY GUESSING.**
+It failed once, during a full run taken mid-edit, with its message not saved; a
+second gates failure the same day was never identified because its output went
+to /dev/null. 8 parallel runs of `test/homepage.test.js` and 10 back-to-back
+full runs were all green, and the code path is promise-only (the whole fetch →
+describe → write chain drains before one `setTimeout(0)`), so load cannot reorder
+it. The test is unchanged. What changed is the habit that lost the evidence:
+gates output is kept in a log on every commit.
 
 ⏭ **AT BETA:** make Kevin the required reviewer on the production deploy step
 (`environment:` on that step), and the fallback becomes hold.

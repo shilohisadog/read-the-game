@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-9DCwc+TQB9XVQgMvwvFrxnmpKu8b5kGm50DBfBMLcjs=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-suaTx8vZfMPazCuNXSzA6FPpGEnxgf/z8B5t4E5qXRs='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-KOeobBY0B/Y2Z3/+ldTuZcQAyYGvKGV57RfXhZk0KTA=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-suaTx8vZfMPazCuNXSzA6FPpGEnxgf/z8B5t4E5qXRs='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -2350,9 +2350,10 @@ function disputedNote(n) {
      watched from zero, because "a counter you join at 24-11 is a number you did
      not watch being built" (src/app.js). So the goal has to come to us, and the
      LOOP ENDS ON IT instead of running out a budget.
-     ⚠️ THAT REASON EXPIRED ON 2026-09-17: the hero shows no counter and no longer
-     runs a layer. The rule is kept -- unexamined, not re-justified -- pending
-     Kevin's call on whether the loop should start nearer the goal (status.md).
+     ⚠️ THAT REASON EXPIRED ON 2026-09-17 (the hero shows no counter), AND THE RULE
+     WAS KEPT ON ITS OWN MERITS. Kevin, asked whether the loop should start nearer
+     the goal: "I don't mind a longer-ish loop, so no." The lead-in stays: the
+     loop opens one frame before the first attempt and runs to the goal.
 
      `hl` IS THE LOOP, NOT THE GOAL'S INDEX. derive.py stores the distance from
      the preview's opening frame to the first goal. Selecting on the raw index

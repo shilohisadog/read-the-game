@@ -1051,9 +1051,10 @@ __HELPERS__
      watched from zero, because "a counter you join at 24-11 is a number you did
      not watch being built" (src/app.js). So the goal has to come to us, and the
      LOOP ENDS ON IT instead of running out a budget.
-     ⚠️ THAT REASON EXPIRED ON 2026-09-17: the hero shows no counter and no longer
-     runs a layer. The rule is kept -- unexamined, not re-justified -- pending
-     Kevin's call on whether the loop should start nearer the goal (status.md).
+     ⚠️ THAT REASON EXPIRED ON 2026-09-17 (the hero shows no counter), AND THE RULE
+     WAS KEPT ON ITS OWN MERITS. Kevin, asked whether the loop should start nearer
+     the goal: "I don't mind a longer-ish loop, so no." The lead-in stays: the
+     loop opens one frame before the first attempt and runs to the goal.
 
      `hl` IS THE LOOP, NOT THE GOAL'S INDEX. derive.py stores the distance from
      the preview's opening frame to the first goal. Selecting on the raw index

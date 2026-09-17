@@ -3601,9 +3601,10 @@ if(PREVIEW){
     counters since 2026-09-09, so the layer changed nothing a visitor could see.
     Kevin: drop it. The hero is the base view -- the game itself -- and the
     attempts reach the front door as a sentence, posted below. The loop still
-    opens one frame before the first attempt -- see START below; its "not
-    earlier" half is about dead air, its "not later" half was about the counter,
-    and that half awaits Kevin (status.md). */
+    opens one frame before the first attempt -- see START below. Its "not
+    earlier" half skips dead air; its "not later" half was about the counter and
+    was kept at Kevin's word when that reason expired: "I don't mind a
+    longer-ish loop." */
  /* ⭐ AND THE FRAME HANDS THE PARENT THE NUMBER IT ALREADY HAS.
     The home page describes this game in a sentence under the rink, and that
     sentence had to be about the SAME measure the bar above it showed -- Kevin:
