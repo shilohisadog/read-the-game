@@ -39,9 +39,10 @@ Kevin's plan, in order: (1) ✅ commit the defect corpus; (2) ✅ a human relabe
 30 entries blind — ⛔ **the `oracle` labels did NOT survive (2 of 25 exact, 14 of
 25 coarse)**, so no test layer may be sized from them; `found_by` holds only as
 Kevin versus anyone else (20 of 26); (3) ✅ **the survivorship experiment —
-`docs/survivorship-experiment.md`**, summarised below; ⏭ (4) **NEXT:** can a
-branch preview load data under the current CORS and CSP; (5) the architecture
-document for CHENG — the system's functions × test levels × pipeline stages;
+`docs/survivorship-experiment.md`**, summarised below; (4) ✅ **a branch preview
+reads production data under the current CORS and CSP** — below; ⏭ (5) **NEXT:**
+the architecture document for CHENG — the system's functions × test levels ×
+pipeline stages;
 (6) T1/T2, seam B and `.counters`/`.cbar` wait on it.
 
 ⭐⭐ **STEP 5 CARRIES A CHURN ACCEPTANCE TEST — agreed with Kevin 2026-09-17.** He
@@ -60,6 +61,38 @@ the DOM golden caught, `render-transport.test.js` caught 14 (the only such test 
 without that baseline could silently cost detection. ⚠️ In conversation CC first
 said "1 alone / 0 alone", counting the golden as a second catcher; the golden is a
 change detector, so the figures here are the right ones.
+
+### ✅ STEP 4 — A BRANCH PREVIEW READS PRODUCTION DATA, 2026-09-17
+
+**Yes, after one dashboard change.** Before it, the bucket echoed only the three
+named origins, so every `<hash>.read-the-game.pages.dev` and
+`<branch>.read-the-game.pages.dev` would have rendered *"No data loaded yet"*;
+the CSP was never the obstacle (`connect-src` names the data host). Kevin added
+`https://*.read-the-game.pages.dev` to the R2 CORS policy. **R2 accepts the
+pattern although Cloudflare's CORS docs do not say so** — measured from outside:
+our subdomains are echoed; `evilread-the-game.pages.dev`,
+`read-the-game.pages.dev.evil.com`, an `http` origin and `example.com` are not.
+So `*` was not needed and the 2026-08-10 named-origin decision stands;
+`.github/workflows/r2-cors.yml` records the pattern and now verifies all four
+look-alikes (`4b69f4e`, both halves broken and seen to fail).
+
+**Then a real preview.** A throwaway branch deployed `src/` with `--branch
+preview-check`. In CI's Chrome, both the deployment URL and the branch alias
+showed *"Data through 14 June 2026"* on the home page and *"CAR at VGK · 14 June
+2026"* on `/game`, with no CSP violation logged and no CORS console line. A local
+Playwright load returned 200 with the alias echoed on `catalog.json`, the extract
+and `measures.json`, zero failed requests, zero console messages, and a drawn rink.
+The deployment was deleted through the API (both URLs 404) and the branch removed.
+⚠️ The CSP half had no canary, unlike `deploy.yml`'s — its evidence is that the
+data loaded at all, which a `connect-src` refusal would have prevented.
+
+⭐ **What a preview is FOR, written in `r2-cors.yml`:** looking at a UI change
+against production data before it ships — CHENG's point that the largest source
+of found defects (Kevin, 102 of 201) is a look at the live site, and a preview
+moves that look before release. **Never a way to test pipeline changes**, which
+would need data of their own. ⚠️ **It is not yet a look BEFORE release:**
+`deploy.yml` deploys `--branch main` on every push, so a preview stage needs
+pushes that do not go straight to production. That is step 5's pipeline question.
 
 ### ✅ STEP 3 — THE SURVIVORSHIP EXPERIMENT, 2026-09-16 — `docs/survivorship-experiment.md`
 
