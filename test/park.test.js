@@ -35,7 +35,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { app as PAGE, PAGE_CSS } from './helpers/page.js';
 
 const APP_JS = readFileSync(new URL('../src/app.js', import.meta.url), 'utf8');
@@ -169,6 +169,52 @@ test('every live element inside a parked container is on the ledger', () => {
   assert.deepEqual(unlisted, [],
     'the renderer writes into an element the stylesheet hides, and nobody said so. ' +
     'Either move it out of the parked container, or add it to ENUMERATED with a reason.');
+});
+
+/**
+ * ⭐⭐ THE HIDDEN-READS RATCHET — T2's trigger, ruled 2026-09-17
+ * (docs/test-program.md §11.2 Q5).
+ *
+ * T2 ("no test may read an element no reader can see") was NOT built: it is a
+ * CSS parser standing in for a browser, and visibility claims are moving to the
+ * preview stage instead. The risk of not building it is the `.pboxes` incident
+ * again — tests quietly leaning on elements a stylesheet has hidden — so the
+ * trigger is that risk, counted: every (hidden id, test file) pair where a test
+ * READS an element inside a parked container. CHENG's first trigger, "a commit
+ * adds display:none", would have fired on 52 commits in six weeks.
+ *
+ * It uses THIS FILE's darkness model, so it adds no second parser. It fails when
+ * the count GROWS — a new test leaning on the dark — and when it FALLS, so the
+ * ceiling is lowered in the same commit that earned it and the slack cannot be
+ * spent later. If it grows and the read is deliberate, that is the day to build T2.
+ *
+ * Reads are `$('id')`, `getElementById('id')`, the fake page's own `.get('id')`,
+ * and a `'#id'` selector. `smoke.test.js` reads through `.get(`, and a first
+ * count without it missed eight pairs.
+ */
+const HIDDEN_READS_CEILING = 31;
+
+test('⭐⭐ tests lean on hidden elements no more than they did — the T2 trigger', () => {
+  const buried = [...new Set(buriedIds(PAGE, darkClasses(CSS)).map(b => b.id))];
+  const dir = new URL('./', import.meta.url);
+  const pairs = [];
+  for (const f of readdirSync(dir).filter(f => f.endsWith('.test.js') && f !== 'park.test.js')) {
+    const text = readFileSync(new URL(f, dir), 'utf8');
+    for (const id of buried) {
+      const q = `['"\`]${id}['"\`]`;
+      if (new RegExp(`\\$\\(\\s*${q}|getElementById\\(\\s*${q}|\\.get\\(\\s*${q}|['"\`]#${id}\\b`).test(text))
+        pairs.push(`${id} <- ${f}`);
+    }
+  }
+  // THE COUNTER MUST SEE A READ IT IS KNOWN TO HAVE, or a broken pattern reads as progress.
+  assert.ok(pairs.includes('cA <- smoke.test.js'),
+    'the counter no longer sees smoke.test.js reading #cA — the patterns are broken, not the suite fixed');
+  assert.ok(pairs.length <= HIDDEN_READS_CEILING,
+    `${pairs.length} test reads of hidden elements, ceiling ${HIDDEN_READS_CEILING} — a test started `
+    + `leaning on something no reader can see. Move it to the visible element, or if it is deliberate, `
+    + `this is the trigger to build T2.\n  ${pairs.join('\n  ')}`);
+  assert.equal(pairs.length, HIDDEN_READS_CEILING,
+    `only ${pairs.length} hidden reads remain — lower HIDDEN_READS_CEILING to ${pairs.length} in this commit`);
 });
 
 /**
