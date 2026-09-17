@@ -1,0 +1,119 @@
+{
+ "measured": "2026-09-17",
+ "after": "seam B and the migrations in this commit",
+ "method": "as before-seam-b.json: the same patch, applied to this checkout, npm run build, each test file on its own. Kinds are CC's judgement from what each test reads.",
+ "replays": {
+  "counters-cbar": {
+   "failing": 16,
+   "files": 8,
+   "byKind": {
+    "on-subject": 12,
+    "change-detector": 1,
+    "off-subject": 1,
+    "cross-cutting": 2
+   },
+   "tests": [
+    {
+     "file": "css-orphans.test.js",
+     "test": "⛔ every rule in app.css targets something a page can carry",
+     "kind": "on-subject"
+    },
+    {
+     "file": "deeplink-render.test.js",
+     "test": "the scoreboard states the mode the URL asked for: \"?strength=even\" -> EVEN STRENGTH",
+     "kind": "on-subject"
+    },
+    {
+     "file": "deeplink-render.test.js",
+     "test": "the scoreboard states the mode the URL asked for: \"?strength=all\" -> ALL SITUATIONS",
+     "kind": "on-subject"
+    },
+    {
+     "file": "deeplink-render.test.js",
+     "test": "the scoreboard states the mode the URL asked for: \"\" -> ALL SITUATIONS",
+     "kind": "on-subject"
+    },
+    {
+     "file": "deeplink-render.test.js",
+     "test": "the scoreboard states the mode the URL asked for: \"?strength=sideways\" -> ALL SITUATIONS",
+     "kind": "on-subject"
+    },
+    {
+     "file": "dom-golden.test.js",
+     "test": "⭐ the rendered DOM is identical to the golden, frame for frame",
+     "kind": "change-detector"
+    },
+    {
+     "file": "park.test.js",
+     "test": "⭐⭐ tests lean on hidden elements no more than they did — the T2 trigger",
+     "kind": "on-subject"
+    },
+    {
+     "file": "park.test.js",
+     "test": "the ledger lists nothing that is already back in the light",
+     "kind": "on-subject"
+    },
+    {
+     "file": "render-board.test.js",
+     "test": "no bare percentage survives on the scoreboard",
+     "kind": "on-subject"
+    },
+    {
+     "file": "render-board.test.js",
+     "test": "the strength mode reaches the scoreboard, not only the counters",
+     "kind": "on-subject"
+    },
+    {
+     "file": "render-preview.test.js",
+     "test": "⭐ the preview runs with the Control layer ON, so the hero shows what the h1 promises",
+     "kind": "off-subject"
+    },
+    {
+     "file": "render-preview.test.js",
+     "test": "⭐ the control bar claims nothing before anything has been counted",
+     "kind": "on-subject"
+    },
+    {
+     "file": "render-transport.test.js",
+     "test": "a deep link lands without pretending the whole game just happened",
+     "kind": "on-subject"
+    },
+    {
+     "file": "render-transport.test.js",
+     "test": "⭐⭐ a scrub re-bases the flash, so playing after a drag does not fire for the drag",
+     "kind": "on-subject"
+    },
+    {
+     "file": "smoke.test.js",
+     "test": "a full render at the end puts the right numbers in the DOM",
+     "kind": "cross-cutting"
+    },
+    {
+     "file": "smoke.test.js",
+     "test": "the strength filter moves the numbers on screen, with the mode attached",
+     "kind": "cross-cutting"
+    }
+   ]
+  },
+  "period-label": {
+   "failing": 2,
+   "files": 2,
+   "byKind": {
+    "change-detector": 1,
+    "on-subject": 1
+   },
+   "tests": [
+    {
+     "file": "dom-golden.test.js",
+     "test": "⭐ the rendered DOM is identical to the golden, frame for frame",
+     "kind": "change-detector"
+    },
+    {
+     "file": "render-board.test.js",
+     "test": "overtime is NAMED, and says how many skaters are on the ice",
+     "kind": "on-subject"
+    }
+   ]
+  }
+ }
+}

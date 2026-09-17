@@ -25,7 +25,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { corsi } from '../src/lib/layers/corsi.js';
-import { playable } from '../src/lib/layer.js';
+import { playable, NOT_A_PLAY } from '../src/lib/layer.js';
 
 /** The feed, for computing what the counter OUGHT to say at any point. */
 const rich = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url)));
@@ -162,8 +162,9 @@ test('first paint is the PRE-GAME state, not the final score and not a play', ()
   // named the winner of a draw on a clock reading 20:00. This pins the frame
   // rather than leaving it to be re-broken quietly.
   const n = run();
-  assert.equal(String(n.get('cA').textContent), '0', 'a counter is already running');
-  assert.equal(String(n.get('cH').textContent), '0');
+  // THE VISIBLE BOX, not the parked counters (#cA/#cH are hidden on every surface).
+  assert.equal(String(n.el('lxA').textContent), '', 'the layer box already shows a count');
+  assert.equal(String(n.el('lxH').textContent), '');
   assert.equal(String(n.get('aSc').textContent), '0', 'the score is already shown');
   assert.equal(String(n.get('hSc').textContent), '0');
   assert.equal(String(n.el('scrub').value), '-1', 'the scrubber is not at the pre-game frame');
@@ -351,13 +352,15 @@ test('a metric added mid-replay catches up, tracks forward, and tears down', () 
   const el = n.el;
   const scrub = el('scrub');
   const at = k => { scrub.value = k; scrub.oninput({ target: { value: k } }); };
-  const shown = () => ({ a: +el('cA').textContent, h: +el('cH').textContent });
+  // THE LAYER BOX A VISITOR SEES, not the parked #cA/#cH it replaced.
+  const shown = () => ({ a: +el('lxA').textContent, h: +el('lxH').textContent });
   const visible = () => el('rg').classList.contains('corsi');
 
   // The playable timeline, and the ledger truth at any point on it.
-  const SKIP = new Set(['stoppage', 'period-start', 'period-end', 'game-end', 'delayed-penalty']);
+  // FROM THE LIBRARY, not five literals typed again: `NOT_A_PLAY` is the rule
+  // app.js applies, and a hand copy here is the drift layer.js's comment names.
   const EVI = [];
-  rich.events.forEach((e, idx) => { if (!SKIP.has(e.type)) EVI.push(idx); });
+  rich.events.forEach((e, idx) => { if (!(e.type in NOT_A_PLAY)) EVI.push(idx); });
   const CTX = {
     roster: rich.roster,
     homeId: rich.teams.home.id, awayId: rich.teams.away.id,

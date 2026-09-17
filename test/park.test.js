@@ -192,7 +192,7 @@ test('every live element inside a parked container is on the ledger', () => {
  * and a `'#id'` selector. `smoke.test.js` reads through `.get(`, and a first
  * count without it missed eight pairs.
  */
-const HIDDEN_READS_CEILING = 31;
+const HIDDEN_READS_CEILING = 27;
 
 test('⭐⭐ tests lean on hidden elements no more than they did — the T2 trigger', () => {
   const buried = [...new Set(buriedIds(PAGE, darkClasses(CSS)).map(b => b.id))];

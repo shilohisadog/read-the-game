@@ -89,11 +89,18 @@ Kevin agreeing to CC's two objections (Q1's reason for the builders' empty cell;
 Q5's trigger, which would have fired on 52 commits in six weeks).
 `docs/frame-model.md` is closed: option B.
 
-⏭ **STEP 6, in order:** (a) measure the `.counters`/`.cbar` churn replay BEFORE
-seam B, so B has a baseline; (b) T1 in the harness; (c) the hidden-reads
-ratchet (13, may not grow); (d) a diff-size line on the DOM golden; (e) seam B;
-(f) replay all three intended changes against §8; (g) the `.counters`/`.cbar`
-removal.
+**STEP 6, in order:** ✅ (a) the churn baseline before seam B `6069b3e`; ✅ (b) T1
+in the harness — found three ghost tests `ff87dd2`; ✅ (c) the hidden-reads
+ratchet (31 then, **27 now**) `86e883c`; ✅ (d) the golden's diff size `4f620e1`;
+✅ (e) seam B `1bdd89e`; ✅ (f) the replays — **off-subject failures: period label
+9 → 0, counters removal 5 → 1** (`docs/test-program.md` §8.1); ⏭ (g) **the
+`.counters`/`.cbar` removal itself, next.**
+
+⚠️ **A PRODUCT QUESTION FOUND ON THE WAY, FOR KEVIN:** `build_index.py` picks the
+hero game only if its loop holds at least 3 attempts (`HERO_LOOP.counter`, fed by
+`ha` from `derive.py`) — so "the counter has something to show". The hero has
+shown no counter since 2026-09-09. The rule still decides which game the front
+door features, and its reason has expired.
 
 ⏭ **AT BETA:** make Kevin the required reviewer on the production deploy step
 (`environment:` on that step), and the fallback becomes hold.

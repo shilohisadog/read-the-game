@@ -18,6 +18,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { boot, rich, PAGE_CSS } from './helpers/page.js';
 import { NOT_A_PLAY } from '../src/lib/layer.js';
+import { corsi } from '../src/lib/layers/corsi.js';
 import { ATTEMPT_TYPES } from '../src/lib/attribution.js';
 
 const derive = readFileSync(new URL('../builders/derive.py', import.meta.url), 'utf8');
@@ -147,8 +148,20 @@ test('the attempts derive.py publishes are the attempts the counter reaches', ()
      removing blocked shots from the reducer leaves it green, which was verified
      rather than assumed. That half is covered synthetically, on the Python side,
      by `test_every_kind_of_attempt_moves_the_counter`. What this one covers is
-     the chain: derive.py's number is the number a visitor's board reaches. */
-  const shown = Number(a.$('cA').textContent) + Number(a.$('cH').textContent);
+     the chain: derive.py's number is the number the page's own loop reaches.
+
+     ⚠️ COUNTED BY THE REDUCER AT THE PAGE'S FRAME, NOT READ OFF #cA, since
+     2026-09-17. The hero has shown no counter since 2026-09-09 -- `.counters`
+     and `.cbar` are parked -- so reading them compared derive.py with a span no
+     visitor sees, and removing them would fail this test about something else.
+     What survives is the part that was always the point: derive.py's window and
+     the renderer's loop must end on the same frame with the same count. The
+     frame is the page's (`a.now()`, seam B); the count is corsi's. */
+  const f = a.now();
+  const L = corsi.reduce(early.events.slice(0, f.n + 1), {
+    roster: early.roster, homeId: early.teams.home.id, awayId: early.teams.away.id,
+    homeAb: early.teams.home.ab, awayAb: early.teams.away.ab });
+  const shown = (L.t[early.teams.away.id] || 0) + (L.t[early.teams.home.id] || 0);
   assert.equal(shown, 4,
-    `derive.py publishes ha: 4 for this game; the board reaches ${shown}`);
+    `derive.py publishes ha: 4 for this game; the page's loop reaches ${shown}`);
 });

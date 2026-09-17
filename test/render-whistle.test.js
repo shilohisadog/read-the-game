@@ -255,11 +255,23 @@ test('the trails control reports its own state to a screen reader', () => {
 
 test('the whistle layer changes no other layer\'s numbers', () => {
   // The recorded gate for a new layer: adding it touches nothing existing.
+  // ⚠️ THROUGH THE VISIBLE BOX, since 2026-09-17. This read the parked #cA/#cH
+  // on a one-of-n picker, so "whistle on" never shared the page with another
+  // layer; removing the counters made it throw under T1, where the old fake
+  // would have compared "" with "" and passed. The risk the gate exists for is
+  // SHARED STATE: a layer that was on leaves something behind. So one page has
+  // the whistle layer on for a whole sweep before Attempts is picked, the other
+  // only ever had Attempts, and the box and the score must agree frame for frame.
   const a = boot(), b = boot();
   pickLayer(a, 'whistle');
-  const read = d => [d.$('cA').textContent, d.$('cH').textContent,
+  a.sweep(() => null);
+  pickLayer(a, 'corsi');
+  pickLayer(b, 'corsi');
+  const read = d => [d.$('lxA').textContent, d.$('lxH').textContent, d.$('lxN').textContent,
                      d.$('aSc').textContent, d.$('hSc').textContent].join('/');
-  assert.deepEqual(b.sweep(read), a.sweep(read));
+  const after = a.sweep(read), fresh = b.sweep(read);
+  assert.ok(fresh.some(r => !r.startsWith('/')), 'the Attempts box never showed a figure — this compared nothing');
+  assert.deepEqual(after, fresh);
 });
 
 /* ------------------------------------------------------------------ *

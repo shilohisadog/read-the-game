@@ -501,9 +501,15 @@ test('⭐ the preview begins where the layer first counts something', () => {
   // AND IT SKIPS NOTHING THE LAYER COUNTS, which is what keeps the counter
   // honest: it is still 0-0 on the first frame and still moves in front of you.
   const a = boot(rich, null, '?game=2023020204&preview=1');
-  const sc = a.$('scrub');
-  const countAt = k => { sc.value = String(k); sc.oninput({ target: { value: sc.value } });
-                         return +a.$('cA').textContent + +a.$('cH').textContent; };
+  // COUNTED BY THE REDUCER AT THE FRAME THE HARNESS HANDS BACK (seam B), not read
+  // off #cA: the counters are parked, and this test's subject is WHERE the loop
+  // starts relative to the first attempt, which the reducer defines.
+  const CTX = { roster: rich.roster, homeId: rich.teams.home.id, awayId: rich.teams.away.id,
+                homeAb: rich.teams.home.ab, awayAb: rich.teams.away.ab };
+  const countAt = k => a.at(k, (d, f) => {
+    const L = corsi.reduce(rich.events.slice(0, f.n + 1), CTX);
+    return (L.t[CTX.awayId] || 0) + (L.t[CTX.homeId] || 0);
+  });
 
   // IT OPENS ON ZERO AND MOVES ON THE VERY NEXT FRAME. Both halves matter and
   // neither is sufficient: opening on the first attempt shows a counter reading

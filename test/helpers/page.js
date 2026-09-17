@@ -574,12 +574,15 @@ export function boot(game, rates, search = '', store = null) {
      is the rule app.js applies (`SKIP` over `NOT_A_PLAY`), and the length is
      checked against the page's own scrubber, so a harness that drifted from the
      page fails here rather than handing a test the wrong event.
-     `every`, `at` and `sweep` pass `{ k, ev }` as the second argument; a read
+     `every`, `at` and `sweep` pass `{ k, ev, n }` as the second argument; a read
      that ignores it is unaffected. */
-  const TIMELINE = playable((game || rich).events);
+  const EVENTS = (game || rich).events, TIMELINE = playable(EVENTS);
   assert.equal(TIMELINE.length - 1, +scrub.max,
     'the harness timeline and the page scrubber disagree -- playable() and app.js no longer apply one rule');
-  const frame = k => ({ k, ev: TIMELINE[k] });
+  // `n` is the event's index in the WHOLE game -- what a reducer needs to count
+  // "everything up to this frame", non-plays included. Found by identity, because
+  // playable() filters the same objects rather than restating which ones.
+  const frame = k => ({ k, ev: TIMELINE[k], n: k < 0 ? -1 : EVENTS.indexOf(TIMELINE[k]) });
   return {
     ...dom,
     /** The page's playable timeline, and the frame at `k`, for tests that need a place, not a page. */

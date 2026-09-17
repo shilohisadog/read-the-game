@@ -277,12 +277,17 @@ measured.
    | change | off-subject failures today |
    |---|---:|
    | the penalty-band deletion, `c44373b` | 3 files — ⚠️ **not replayable**: that commit already edited the tests that read the band, so replaying it on today's suite shows 0 whether or not anything improved |
-   | the period-label wording change | **9 tests** (of 11 failing, 6 files) — re-measured 2026-09-17, unchanged |
-   | the `.counters`/`.cbar` removal | **5 tests** off-subject + 2 cross-cutting (of 19 failing, 9 files) — measured 2026-09-17 |
+   | the period-label wording change | **9 tests** (of 11 failing, 6 files) — re-measured 2026-09-17, unchanged → ✅ **after seam B: 0** (of 2 failing: the golden and the label's own test) |
+   | the `.counters`/`.cbar` removal | **5 tests** off-subject + 2 cross-cutting (of 19 failing, 9 files) — measured 2026-09-17 → ✅ **after seam B: 1** (of 16 failing) — the preview test whose failing lines are the parked bar's own wiring, which leave with the bar |
 
    **The baseline is committed so the same change can be replayed after seam B:**
    `docs/defects/churn-replay-2026-09-17/` holds both patches and
-   `docs/defects/churn-replay-2026-09-17/before-seam-b.json`, every failing test with its kind. ⚠️ The kinds are CC's
+   `docs/defects/churn-replay-2026-09-17/before-seam-b.json`, every failing test with its kind, and
+   `docs/defects/churn-replay-2026-09-17/after-seam-b.json` beside it. ⭐ **The falsifier CHENG named
+   (§11.2 Q6) came out the way B predicted.** And one number went the other way
+   on purpose: the counters replay now also fails `render-whistle`'s invariance
+   test under T1, where the old fake would have compared "" with "" — it was
+   moved to the visible box in the same commit. ⚠️ The kinds are CC's
    judgement from what each test reads, not checked by a second reader.
 
    ~~**Target: zero off-subject.**~~ **Ruled a ratchet (§11.2 Q7):** the count
