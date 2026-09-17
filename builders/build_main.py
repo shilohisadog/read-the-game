@@ -102,8 +102,6 @@ __CSS__</style>
        (`#rg .pb::before{content:attr(data-ab)}`) -- a second way to draw a team
        chip is a second thing to keep in step with the club colours. -->
   <div class="mid"><div class="gs"><span id="per">Pre-game</span> · <span class="cl" id="clk">20:00</span> <i class="clw">left</i> <span class="ppill" id="ppill" hidden></span><span class="endpill" id="endpill" hidden>&#8646; Ends changed</span></div>
-    <div class="cbar"><div class="bar"><span class="ba" id="ba"></span><span class="bh" id="bh"></span></div>
-    <div class="pct"><span id="pa">0</span><span class="plab"><i class="pname" id="pName">CONTROL</i><i class="mode" id="pMode">ALL SITUATIONS</i></span><span id="ph">0</span></div></div>
   </div>
   <div class="tm h"><span class="ab" id="hAb">&mdash;</span><span class="sc" id="hSc">0</span><div class="pens" id="penH"></div></div>
 </div>
@@ -181,7 +179,6 @@ __CSS__</style>
        aria-hidden because `#play` already offers this action with a real label;
        a second tab stop for the same command is noise to a screen reader. -->
   <button class="pressplay" id="pressplay" tabindex="-1" aria-hidden="true">&#9654; Press Play</button>
-  <div class="counters"><div class="cc a"><span class="n" id="cA">0</span><span class="lb">Away attempts<span class="mode" id="mA">ALL SITUATIONS</span></span></div><div class="cc h"><span class="lb">Home attempts<span class="mode" id="mH">ALL SITUATIONS</span></span><span class="n" id="cH">0</span></div></div>
   <!-- ⭐ THE LAYER'S OUTPUT, IN ONE FIXED SHAPE. docs/below-the-rink-2.md §31.
        Kevin: "the layer information/counters should live [below the rink]. The
        requirement is that the space utilization is consistent so the graphics

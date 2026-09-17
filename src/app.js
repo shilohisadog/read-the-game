@@ -413,23 +413,17 @@ function flashNet(scorer){
  // class off, a reflow, then on.
  const net=scorer===AID?$('netHome'):$('netAway');
  net.classList.remove('netflash');void net.offsetWidth;net.classList.add('netflash');}
-let prevA=0,prevH=0;
 /**
  * WHAT JUST HAPPENED TO THE PLAYHEAD — which is not the same question as
  * "is this the newest event", and the two used to share one boolean.
  *
- *   'play'  the replay advanced by one: mark the moment AND bump the counters.
+ *   'play'  the replay advanced by one: mark the moment.
  *   'jump'  the viewer went somewhere: mark the moment, and do NOT bump.
  *   ''      a redraw of the same frame — a layer toggled, the work panel
  *           opened, the scrubber dragged THROUGH here on the way somewhere
  *           else. Mark nothing.
  *
- * THE SPLIT IS NOT COSMETIC. `prevA`/`prevH` hold the attempt counts at the
- * previous frame, so `a>prevA` means "one more attempt than a moment ago" only
- * when the playhead moved a moment. Jump forward across a period and forty
- * attempts arrive at once, and the counter would flash exactly as it does for a
- * single shot -- a bump that says "that just happened" about something that
- * happened forty times, minutes ago. The caption is the opposite case: calling
+ * THE SPLIT IS NOT COSMETIC. Jump forward across a period and calling a
  * the goal again is the whole reason to jump to it.
  */
 /* WHO IS SITTING, at one instant — ON THE SCOREBOARD, the way a rink shows it.
@@ -823,29 +817,6 @@ function render(i,how){
  drawNetmen(cur);
  drawPill(cur);
  $('aSc').textContent=L.as;$('hSc').textContent=L.hs;
- const a=L.t[AID],h=L.t[HID],tot=a+h,pa=tot?Math.round(100*a/tot):0;
- /* ⭐ NO BAR OVER AN EMPTY POPULATION, and this was a real defect on the front
-    door. `tot=a+h||1` avoided the division by zero and then DREW THE RESULT
-    ANYWAY: at 0-0 it made pa=0, so the whole bar rendered in the home colour and
-    the opening faceoff of every game announced that one team had all of the
-    control before a puck had been shot. Seen only by looking -- it is a
-    rendering, and the suite has no pixels.
-
-    The rule already exists one file over. archive.js refuses a rate over an
-    empty population and says why: "0 reads as a finding, and 'we measured
-    nothing' is a different statement from 'it never happened'." A proportion of
-    nothing drawn as certainty is that sentence in paint. Both segments stay at
-    zero width, so what shows is the empty track -- which is what we know. */
- $('ba').style.width=(tot?pa:0)+'%';$('bh').style.width=(tot?100-pa:0)+'%';
- // A FRACTION, NOT A PERCENTAGE, and the bar carries the proportion (CHENG).
- // `58%` over nineteen attempts asserts three significant figures on a
- // denominator that moves 2.5 points per shot, and it swings visibly through
- // the first period looking like information. `11` beside `8` claims exactly
- // what it is. Same rule as the goalie card and the per-game sentence: no
- // minimum-n threshold is needed, because a fraction carries its own.
- $('pa').textContent=a;$('ph').textContent=h;
- $('cA').textContent=a;$('cH').textContent=h;
- if(how==='play'){if(a>prevA)flash('cA');if(h>prevH)flash('cH');}
  drawLBox(i,L);
  if(moment){
    /* ⭐ THE GOAL PILL IS NOT DRAWN WHEN THE ICE IS ALREADY SAYING IT.
@@ -908,20 +879,6 @@ function render(i,how){
      case 'kill': captionEnded(cur); break;
      case 'slot': caption(cur,'hd'); break;
    }}
- /* ⭐⭐ UPDATED ON EVERY FRAME, INCLUDING A SCRUB, AND THAT IS THE WHOLE POINT.
-    These two are the only temporal state left in the drawing path: the flash
-    above asks "did this club's count go UP since the last frame drawn", and that
-    question is only meaningful against the frame the viewer was actually looking
-    at. Drag the scrubber from the opening face-off to the third period and every
-    counter climbs, silently, because a scrub is not a moment. Press Play and the
-    next frame must compare against where the drag LEFT you.
-    ⛔ PUTTING THIS INSIDE `if(how==='play')` IS THE BUG, and it is an easy one to
-    write, because the line looks like bookkeeping that only the flash needs. It
-    would leave `prevA` holding whatever was on screen before the drag, so the
-    first played frame afterwards would flash for every attempt accumulated
-    during it — the counters going off at once for shots taken minutes ago.
-    `test/render-transport.test.js` walks exactly that: scrub deep, then play. */
- prevA=a;prevH=h;
  sayWho(cur);
  // AT REST ONLY -- `render` runs on every frame including during playback, and
  // `sayOnIce` reads `playing` itself rather than being called from two places.
@@ -934,7 +891,6 @@ function render(i,how){
     a step. Same trap `drawLBox` names in its own comment. */
  if(workOpen)renderWork(L,cur,i);
 }
-function flash(id){const el=$(id);el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump');}
 /* ⭐ A SHORT-HANDED GOAL, AND THE TEST FOR ONE IS NOT "FEWER SKATERS".
    ⚠️ NAMED IN BOTH PLACES A GOAL IS ANNOUNCED, because there are two. A goal the
    feed placed is announced by its LABEL ON THE ICE; only an unplaced one falls
@@ -1531,7 +1487,7 @@ function step(){if(i>=EV.length-1){stop();return;}set(i+1,'play');timer=setTimeo
    screen until the NEXT render, which at 3600ms is up to three and a half
    seconds of a list that is no longer true. Neither transition produces a frame
    of its own, so both have to say so. */
-function play(){if(i>=EV.length-1||i<0){prevA=0;prevH=0;set(0,'play');}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);sayOnIce(EV[i]);timer=setTimeout(step,dwell(EV[i]));}
+function play(){if(i>=EV.length-1||i<0){set(0,'play');}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);sayOnIce(EV[i]);timer=setTimeout(step,dwell(EV[i]));}
 /* ⭐ ALL THREE LABELS ARE SHORT, AND THAT IS A LAYOUT GUARANTEE AS WELL AS A COPY
    CHOICE. Kevin, 2026-09-07: *"let's change the control button to just 'Play', I
    can't remember why we have 'Play from start'."* Measured: `▶ Play from start`
@@ -3021,7 +2977,7 @@ function ack(want){
  const chip=[...chips].find(b=>b.dataset&&b.dataset.l===want);
  if(!chip)return;
  // Force a reflow between remove and add: re-adding a class an element already
- // carries does not restart an animation. Same three lines as `flash()`.
+ // carries does not restart an animation.
  void chip.offsetWidth;chip.classList.add('ack');}
 /* ⭐ WHERE THE LAYER'S INFORMATION LIVES — and the selector answered it.
    Kevin, 2026-08-27: "I think we now can figure out where the layer information
@@ -3406,10 +3362,7 @@ function syncStrength(){
     the filter is reached by `?strength=even` alone. Kept as a function because
     `setStrength` is the one place that changes `evenOnly` and a reader looking
     for "what happens when the filter moves" should find one answer, not none. */
- // EVERY site that shows this quantity carries the mode. The scoreboard is the
- // prominent one and was the unqualified one -- same number, two places, one
- // of them saying what it was measured under (CHENG).
- const lbl=MODE().toUpperCase();$('mA').textContent=lbl;$('mH').textContent=lbl;$('pMode').textContent=lbl;}
+}
 function setStrength(v){evenOnly=(v==='even');syncStrength();render(i,'');}
 /* ⏹ AND THE LISTENER WENT WITH THE CHIPS. `setStrength` survives because the
    deep link calls it; nothing on the page does. */
@@ -3507,7 +3460,6 @@ const AT=resolve(G.events,LINK.at);
    landing would apologise on most honest links. */
 $('atnote').textContent=AT.why?AT.why.text
  :(LINK.problems.some(p=>/^at[:.]/.test(p))?LINK_NOTES.unreadable.text:'');
-prevA=0;prevH=0;
 /* WHERE THE PAGE OPENS. `resolve` answers index 0 both when a link asked for the
    first play and when no link asked for anything, so the question is put to
    `LINK.at` -- did a URL name a moment at all -- and never to the frame it
@@ -3664,28 +3616,16 @@ if(PREVIEW){
     is a class, a button label and an aria-pressed value, and reaching past the
     function for the one part the preview happens to need is how the two drift.
 
-    THIS DELIBERATELY DOES NOT UNHIDE `.counters`. The board's `.cbar` carries the
-    bar and both counts already and is outside the preview's hide list; the
-    counters repeat the same two numbers larger, INSIDE the rink box, where the
-    only thing they can spend is ice. And the board figures are counts, not a
-    percentage -- CHENG's ruling that `11` beside `8` claims exactly what it is --
-    so the compact form is not a rate that has lost its denominator. */
+    ⏹ THE BOARD'S BAR AND COUNTERS THIS ONCE EXPLAINED WERE REMOVED ON
+    2026-09-17. The hero has shown no running figure since 2026-09-09 -- a
+    whole-game instrument in a ten-second loop can only show the extreme -- and
+    the attempts reach the front door as a sentence, posted below. */
  corsiOn=true;setCorsi();
- /* ⭐ AND THE BOARD NAMES ITS UNIT, because in preview nothing else does.
-    On the game page `.counters` says "MIN attempts / BUF attempts" and the unit
-    is named; preview hides that element on purpose, so the board said CONTROL,
-    the sentence below the rink said shots on goal, and NOTHING on screen said
-    those were different quantities. Two unlabelled numbers that look like they
-    contradict each other, which a reader takes for an error rather than a
-    distinction (CHENG).
-    ONLY IN PREVIEW, and only because that is the only place the companion label
-    is missing. The game page keeps CONTROL, where the layer's own name is the
-    useful word and the counters carry the unit two inches below. */
- $('pName').textContent='SHOT ATTEMPTS';
  /* ⭐ AND THE FRAME HANDS THE PARENT THE NUMBER IT ALREADY HAS.
     The home page describes this game in a sentence under the rink, and that
-    sentence has to be about the SAME measure the bar above it shows -- Kevin:
-    "they need to be the same measure". The parent cannot compute it: attempts
+    sentence had to be about the SAME measure the bar above it showed -- Kevin:
+    "they need to be the same measure" -- and the bar is gone, but the sentence
+    still has to be ours rather than the league's. The parent cannot compute it: attempts
     are decided by `corsi`, the catalog is built in Python, and it carries the
     LEAGUE's quoted numbers rather than any of ours.
 
@@ -3785,7 +3725,7 @@ if(PREVIEW){
    const shown=EV[k],last=k>=WINDOW,
     wait=last?(GOAL>=0?GOAL_HOLD_MS:1500):dwell(shown);
    set(k,k>0?'play':'');
-   if(last){k=START;prevA=0;prevH=0;}else{k++;}
+   if(last){k=START;}else{k++;}
    setTimeout(tick,wait);};
   tick();}}
 }

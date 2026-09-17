@@ -205,11 +205,6 @@
  letter-spacing:.04em;padding:1px 5px;border-radius:4px}
 #rg .ppill.a::before{background:var(--away);color:var(--away-ink)}
 #rg .ppill.h::before{background:var(--home);color:var(--home-ink)}
-#rg .bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--edge)}#rg .bar span{transition:width .4s ease}#rg .ba{background:#fff;box-shadow:inset 0 0 0 2px var(--away);width:50%}#rg .bh{background:var(--home);width:50%}
-#rg .pct{display:flex;justify-content:space-between;align-items:center;font-size:.9rem;margin-top:5px;font-family:ui-monospace,Menlo,monospace;font-weight:700}
-#rg .pct #pa{color:var(--away-text)}#rg .pct #ph{color:var(--home-text)}
-#rg .plab i{font-style:normal}
-#rg .plab{display:flex;flex-direction:column;align-items:center;font-size:.66rem;letter-spacing:.1em;color:var(--muted);font-weight:600;line-height:1.35}
 /* The deep-link notice. `:empty` rather than a `hidden` attribute, so the one
    place that writes the sentence is the only place that controls whether it
    shows -- a second switch is a second thing to get out of step. */
@@ -393,8 +388,9 @@
    added inside it does not stack under the rink -- it becomes a flex sibling
    and eats the ice. The comment above asks anything added inside `.rinkbox` to
    answer this question; this is the answer, and it was found by LOOKING at the
-   hero rather than by remembering to. The hero already carries the attempts on
-   its scoreboard (`.cbar`), which is the same information in the space it has. */
+   hero rather than by remembering to. (The hero once carried the attempts on its
+   scoreboard instead; that bar was parked on 2026-09-09 and removed 2026-09-17,
+   and the attempts reach the front door as a sentence — `#herosub`.) */
 #rg.preview .lbox,
 #rg.preview .endnote,
 /* ⭐ AND THE STRENGTH PILL, FOR THE PENALTY BOX'S REASON THREE COMMENTS UP: it
@@ -429,8 +425,7 @@
    only ever fail on a class somebody remembered to type into it. The check that
    would have caught it derives the question from the page -- see
    test/render-preview.test.js, `every control the built page can produce`. */
-#rg.preview .sharerow,
-#rg.preview .counters{display:none!important}
+#rg.preview .sharerow{display:none!important}
 /* THE PREVIEW FITS ITSELF TO WHATEVER BOX IT IS GIVEN.
    Kevin: "the bottom 1/3 of the rink is clipped off within the frame."
    The homepage sizes the frame by aspect-ratio -- 200x108, the rink's 200x85
@@ -718,16 +713,6 @@
 #rg.preview .sc{font-size:min(7.4vw,2.2rem)}
 #rg.preview .gs{font-size:min(2.9vw,.78rem);margin-bottom:min(1vw,6px)}
 #rg.preview .gs .clw{font-size:min(2.3vw,.62rem)}
-/* AND THE CONTROL ROW SCALES TOO, which it never had to before the hero started
-   running a layer. Every other child of the board above is already `min(Xvw, its
-   own size)`; `.cbar` was simply never in preview, so it kept absolute rem and
-   the board grew to 68px of a 184px frame -- over the third that the deploy's
-   own gate allows, and it said so. THAT IS THE rem-DOES-NOT-SCALE FAILURE THE
-   PIXEL TOOL WAS BUILT AFTER, arriving in the one element that had been exempt.
-   These are not new judgements, they are the existing pattern finished. */
-#rg.preview .bar{height:min(1.8vw,8px)}
-#rg.preview .pct{font-size:min(3.3vw,.9rem);margin-top:min(1.2vw,5px)}
-#rg.preview .plab{font-size:min(2.4vw,.66rem);line-height:1.25;letter-spacing:.06em}
 /* ⭐ A GRID, NOT A WRAPPING FLEX ROW. Centred and wrapping, the four ways out
    stacked into four full-width rows on a phone -- 209px, and the heaviest,
    most designed-looking thing below the rink, for LEAVING. Two up halves it,
@@ -1183,11 +1168,6 @@
    an empty line is the defect the row under the ice was deleted for; a name we
    cannot supply is not a reason to say nothing at all. */
 #rg .who.plain{color:var(--muted);font-weight:500}
-#rg .counters{display:flex;justify-content:space-between;padding:2px 6px;margin-top:8px}
-#rg .cc{display:flex;align-items:baseline;gap:7px}#rg .cc .n{font-family:ui-monospace,Menlo,monospace;font-size:1.5rem;font-weight:700}#rg .cc.a .n{color:var(--away-text)}#rg .cc.h .n{color:var(--home-text)}
-#rg .cc .mode{display:block;font-size:.6rem;letter-spacing:.06em;color:var(--flag);font-weight:700}
-#rg .cc .lb{font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
-#rg .bump{animation:bump .32s ease}@keyframes bump{40%{transform:scale(1.35);color:var(--flag)}}
 #rg .transport{display:flex;align-items:center;gap:10px;margin:14px 0 4px;flex-wrap:wrap}
 #rg button{font:inherit;font-size:.83rem;font-weight:600;border-radius:8px;border:1px solid var(--edge);background:#fff;color:var(--ink);padding:9px 14px;cursor:pointer}
 #rg .play{background:var(--ink);color:#fff;border-color:var(--ink)}
@@ -1574,15 +1554,6 @@
 #rg .plabsub{font-size:2.8px;fill:var(--muted);stroke:#fff;stroke-width:.8px;paint-order:stroke;font-family:system-ui,sans-serif}
 #rg .plabgrp{animation:plfade .28s ease}@keyframes plfade{0%{opacity:0}100%{opacity:1}}
 
-/* ⚠️ `#work` LEFT THESE RULES ON 2026-08-27. They were written when the button
-   belonged to Attempts -- hidden by default, shown under `.corsi`, parked with
-   the rest -- and the button now belongs to the SELECTOR, so a corsi-keyed rule
-   made it `display:none` under every other layer. Found by trying to click it in
-   a real browser: `getComputedStyle().visibility` said "visible" and the element
-   had a 0x0 box, which is what a display rule looks like from a visibility
-   check. Its display now lives with `.lxw`, keyed on the base view alone. */
-#rg .cbar,#rg .counters{display:none}
-#rg.corsi .cbar{display:block}#rg.corsi .counters{display:flex}
 #rg .figpick{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 2px 0}
 /* ⭐ B2 — THE CONTROL FOLLOWS THE LAYER. CHENG's ruling: when a layer is active
    its control lives with it, and the base view carries none. The progressive
@@ -2145,54 +2116,21 @@
    under the selector, that works" -- and what goes is the DISPLAY each layer
    produces: the counters and the split bar, the goaltender cards, the whistle
    and blocked panels, the amber tip, and `Show me the work`.
-   ⏹ TWO HAVE SINCE LEFT THIS BLOCK IN OPPOSITE DIRECTIONS. `Show me the work`
-   came back, driven by the layer contract. The amber tip was REMOVED on
-   2026-09-07 rather than un-parked: the caption already named the ring and
-   taught the click, and the tip's one unique clause named `trails`, parked here
-   since the same day. A park whose subject is redundant is not debt.
+   ⏹ THREE HAVE SINCE LEFT THIS BLOCK. `Show me the work` came back, driven by
+   the layer contract. The amber tip was REMOVED on 2026-09-07 rather than
+   un-parked: the caption already named the ring and taught the click, and the
+   tip's one unique clause named `trails`, parked here since the same day. A park
+   whose subject is redundant is not debt. And THE COUNTERS AND THE SPLIT BAR
+   were REMOVED on 2026-09-17: `#lbox` had carried the same figures, visibly,
+   since the afternoon they were parked, and for three weeks the parked copies
+   were read by eleven test files and seen by nobody (docs/test-architecture.md
+   §3, docs/test-program.md §8).
 
-   ⚠️ WHAT THIS COSTS, SAID OUT LOUD. Two of the five layers have no other
-   output: `Attempts` draws no mark of its own (the counters WERE its display)
-   and `Goaltending` builds cards. With this block on, choosing either changes
-   the caption and nothing else on screen. `Slot`, `Blocked` and `Stoppages`
-   still change the ice. That is the state Kevin asked for and it is temporary.
-
-   ⚠️ AND IT MUST SIT AFTER THE RULES IT OVERRIDES. `#rg.corsi .counters` is
+   ⚠️ AND IT MUST SIT AFTER THE RULES IT OVERRIDES. `#rg.goalie .goalies` is
    (1,2,0) and so is this; the later rule wins, and "later" is the only reason
    this works. Moving this block up the file silently un-parks half of it --
    which is the CSS-that-is-valid-and-situationally-wrong defect this project
    has now hit four times. Hence the end of the file, and hence this note. */
-/* ⛔⛔ `.cbar` WAS SCOPED AWAY FROM THE PREVIEW UNTIL 2026-09-09, AND THE HERO
-      IS WHY IT IS NOT ANY MORE. The scoping was itself a fix -- the park took the
-      front door's split bar with it and left a scoreboard with no bar above a
-      sentence about attempts -- and it was right about the pair and wrong about
-      which half to restore.
-
-      MEASURED ON THE LIVE HERO, sampling the frame every 700ms across an
-      18-second loop: the bar reads 0-0, then `1 - 0` for about FIFTEEN OF THE
-      EIGHTEEN SECONDS, then 2-0, then restarts. The sentence beside it says
-      "Both teams took 52 shot attempts."
-      ⛔ AND THE BAR IS PROPORTIONAL -- `width:(pa)%` -- so at 1-0 it draws
-      ENTIRELY ONE COLOUR. For most of every loop the front door showed a picture
-      asserting one club took every shot attempt in a game its own caption calls
-      52-52. That is not an inconsistency with the game page; it is the drawing
-      contradicting the text six inches away.
-
-      ⭐ THE DIAGNOSIS IS THE WINDOW, NOT THE SURFACE. A split bar is a WHOLE-GAME
-      instrument and the preview is a ten-second loop, so the bar can only ever
-      show the extreme -- the very swing this element's own comment refuses to
-      print a percentage for, "looking like information". The game page shows the
-      same instrument over a whole game and it works there.
-
-      Kevin, choosing between three options: "we could also remove attempts from
-      the hero game (since that isn't how we surface the information on the game
-      pages), this is the option I am leaning towards."
-      ⭐ THE UNIT IS STILL NAMED WHERE THE NUMBER IS. `#herosub` on the parent
-      page says "Both teams took 52 shot attempts" and gets that figure by
-      postMessage from this frame, over the WHOLE game -- so what leaves is a
-      contradicting picture, not the fact. */
-#rg.corsi .cbar,
-#rg.corsi .counters,
 #rg.goalie .goalies,
 #rg.whistle .whistlepanel,
 #rg.blocked .blockpanel{display:none}

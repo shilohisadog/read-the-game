@@ -223,22 +223,17 @@ test('a full render at the end puts the right numbers in the DOM', () => {
   // the app happened to start. String() because the app assigns numbers to
   // textContent, and a real DOM would coerce them.
   const n = toEnd(run());
-  assert.equal(String(n.get('cA').textContent), '80', 'MIN attempts counter');
-  assert.equal(String(n.get('cH').textContent), '55', 'BUF attempts counter');
   assert.equal(String(n.get('aSc').textContent), '2', 'MIN score');
   assert.equal(String(n.get('hSc').textContent), '3', 'BUF score');
-  // THE BAR CARRIES THE PROPORTION; THE NUMBERS CARRY THE COUNT. This asserted
-  // '59%' until the scoreboard stopped printing a bare percentage over a
-  // denominator it did not show (CHENG). What replaces it is stronger: the two
-  // numbers must be the same two the counters show, and the bar must be the
-  // proportion they make — so the picture and the arithmetic cannot drift.
-  assert.equal(String(n.get('pa').textContent), '80', 'control, visitor side');
-  assert.equal(String(n.get('ph').textContent), '55', 'control, host side');
-  assert.equal(n.get('ba').style.width, `${Math.round(100 * 80 / 135)}%`,
-    'the bar is the proportion of the numbers beside it');
-  assert.equal(n.get('bh').style.width, `${100 - Math.round(100 * 80 / 135)}%`);
-  assert.equal(String(n.get('pMode').textContent), 'ALL SITUATIONS',
-    'and it says what it was measured under, like the counters below it');
+  // ⏹ THE COUNTERS AND THE SPLIT BAR WERE REMOVED ON 2026-09-17 (parked, and
+  // seen by nobody, since 2026-08-27; docs/test-program.md §8). The golden
+  // numbers are asserted where a visitor sees them: the layer box, with Attempts
+  // chosen. The bar's "proportion of the numbers beside it" left with the bar.
+  n.pick('corsi').click();
+  assert.equal(String(n.el('lxA').textContent), '80', 'MIN attempts');
+  assert.equal(String(n.el('lxH').textContent), '55', 'BUF attempts');
+  assert.match(String(n.el('lxN').textContent), /· all situations\.$/,
+    'and it says what it was measured under');
 });
 
 test('the scrubber is wired to the timeline', () => {
@@ -286,22 +281,25 @@ test('the strength filter moves the numbers on screen, with the mode attached', 
   // The end-to-end proof of docs/strength-filter.md: all situations by default,
   // even-strength on demand, and the label travelling WITH the number so it
   // cannot be screenshotted away from its scope.
+  // ⏹ Read off the parked counters until 2026-09-17; the layer box shows them now.
+  const shown = m => { m.pick('corsi').click();
+    return [String(m.el('lxA').textContent), String(m.el('lxH').textContent), String(m.el('lxN').textContent)]; };
   const n = toEnd(run());   // these read a WATCHED game, so drive it there
-  assert.equal(String(n.get('cA').textContent), '80', 'opens at all situations');
-  assert.equal(String(n.get('mA').textContent), 'ALL SITUATIONS', 'and says so');
+  const [a0, , note0] = shown(n);
+  assert.equal(a0, '80', 'opens at all situations');
+  assert.match(note0, /· all situations\.$/, 'and says so');
 
   /* ⏹ THE CHIPS WENT ON 2026-09-07 AND THE FILTER DID NOT, so the mode is entered
      the way a visitor can still enter it — `?strength=even`. That makes this two
      boots rather than a toggle, and the reversibility claim becomes what it
      always meant: the two modes are two readings of the same game, and the
      unfiltered one is what the page opens in. */
-  const e = toEnd(run('?strength=even'));
-  assert.equal(String(e.get('cA').textContent), '48', 'MIN drops to 48');
-  assert.equal(String(e.get('cH').textContent), '38', 'BUF drops to 38');
-  assert.equal(String(e.get('mA').textContent), 'EVEN STRENGTH', 'the label follows');
+  const [ea, eh, en] = shown(toEnd(run('?strength=even')));
+  assert.equal(ea, '48', 'MIN drops to 48');
+  assert.equal(eh, '38', 'BUF drops to 38');
+  assert.match(en, /· even strength\.$/, 'the label follows');
 
-  const back = toEnd(run());
-  assert.equal(String(back.get('cA').textContent), '80', 'the default is still every attempt');
+  assert.equal(shown(toEnd(run()))[0], '80', 'the default is still every attempt');
 });
 
 test('the ledger explains the filtered-out attempts, on screen', () => {

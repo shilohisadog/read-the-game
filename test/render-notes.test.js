@@ -398,22 +398,23 @@ test('the layer displays are parked, by a rule that has to come last', () => {
   /* ⏹ `#rg.slot .hint` LEFT THIS LIST ON 2026-09-07 with the tip itself — not
      un-parked, removed, because the caption already said it and better. Slot's
      display is the amber rings on the ice, which were never in this block. */
-  const PARKED = ['#rg.corsi .counters', '#rg.corsi .cbar',
-                  '#rg.goalie .goalies', '#rg.whistle .whistlepanel', '#rg.blocked .blockpanel'];
-  const park = /#rg\.corsi \.cbar,[\s\S]*?\{display:none\}/.exec(PAGE_CSS);
+  /* ⏹ `#rg.corsi .counters` AND `#rg.corsi .cbar` LEFT THIS LIST ON 2026-09-17 —
+     removed, not un-parked: `#lbox` had shown the same figures since the day they
+     were parked (docs/test-program.md §8). */
+  const PARKED = ['#rg.goalie .goalies', '#rg.whistle .whistlepanel', '#rg.blocked .blockpanel'];
+  const park = /#rg\.goalie \.goalies,[\s\S]*?\{display:none\}/.exec(PAGE_CSS);
   assert.ok(park, 'the layer displays are back — nothing parks them');
   for (const sel of PARKED)
     assert.ok(park[0].includes(sel.replace('#rg', '')) || park[0].includes(sel),
       `${sel} is not in the parking rule, so that layer still draws its display`);
 
-  // ⭐ AND THE ORDER IS THE WHOLE MECHANISM. `#rg.corsi .counters{display:flex}`
+  // ⭐ AND THE ORDER IS THE WHOLE MECHANISM. `#rg.goalie .goalies{display:grid}`
   // and the rule that parks it are BOTH (1,2,0) — the later one wins, and that
   // is the only reason this works. Move the block up the file and half of it
   // silently stops applying, which is the CSS-valid-but-situationally-wrong
   // defect this repo has hit four times. Nothing about specificity says so; the
   // position does, so the position is what is asserted.
-  for (const [reveal, sel] of [[/#rg\.corsi \.counters\{display:flex\}/, '.counters'],
-                               [/#rg\.goalie \.goalies\{display:grid/, '.goalies'],
+  for (const [reveal, sel] of [[/#rg\.goalie \.goalies\{display:grid/, '.goalies'],
                                [/#rg\.whistle \.whistlepanel\{display:block/, '.whistlepanel']]) {
     const m = reveal.exec(PAGE_CSS);
     assert.ok(m, `the rule that reveals ${sel} is gone — this test is describing a page that moved on`);

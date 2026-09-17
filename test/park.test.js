@@ -113,28 +113,13 @@ const ENUMERATED = {
      until a portrait phone asks for it, so this button is inside a parked
      container by construction and the renderer binds a handler to it at boot --
      exactly the shape this ledger exists to make deliberate. It is not parked in
-     the sense the counters below are: it is a control that only one viewport is
+     the sense the removed counters were: it is a control that only one viewport is
      ever offered, and the handler has to exist before the viewport is known,
      because a stylesheet reveals it without telling the script. */
   rotgo: 'dismisses the portrait rotate prompt — revealed by media query, never by JS',
-  /* ⭐ `.cbar`'s SIX CHILDREN ARRIVED HERE ON 2026-09-09, and the note they
-     replace said they could not. It read: the bar is parked on the game page and
-     lit on the front door, the difference is one `:not(.preview)`, and that is a
-     specificity fact across two contexts which `darkClasses` deliberately does
-     not model — so a ledger line would be a claim the instrument cannot support.
-     THE SCOPING IS GONE, so the gap it named is gone with it. The bar is parked
-     on both surfaces now, `darkClasses` reads it as dark on the one surface it
-     models, and these six become exactly what this ledger is for: elements the
-     renderer still writes into, deliberately, behind a park. */
-  ba: 'the away half of the split bar — still written, so un-parking needs no rewiring',
-  bh: 'the home half of the split bar',
-  pa: 'the away attempts figure',
-  ph: 'the home attempts figure',
-  pName: 'the unit the two figures count — still set, and read by the preview test',
-  pMode: 'the situation they count under',
-  // The Attempts layer's counters, parked 2026-08-27 with the rest.
-  cA: 'the away attempts count', mA: 'and the situation it counts under',
-  cH: 'the home attempts count', mH: 'and the situation it counts under',
+  // ✅ `.cbar`'s SIX CHILDREN AND THE FOUR COUNTER IDS LEFT ON 2026-09-17 —
+  // removed from the page, not lit: `#lbox` had shown the same figures since the
+  // afternoon they were parked. The second test in this file is what said so.
   // ✅ THE OLD LAYER MENU'S SIX LINES LEFT ON 2026-09-07, and the second test in
   // this file is what would have caught them staying: the menu was DELETED, so
   // its ids are not merely back in the light, they are not on the page at all.
@@ -189,10 +174,11 @@ test('every live element inside a parked container is on the ledger', () => {
  * spent later. If it grows and the read is deliberate, that is the day to build T2.
  *
  * Reads are `$('id')`, `getElementById('id')`, the fake page's own `.get('id')`,
- * and a `'#id'` selector. `smoke.test.js` reads through `.get(`, and a first
- * count without it missed eight pairs.
+ * and a `'#id'` selector. `smoke.test.js` read through `.get(`, and a first
+ * count without it missed eight pairs. 31 on 2026-09-17 before seam B; 5 after
+ * the `.counters`/`.cbar` removal the same day.
  */
-const HIDDEN_READS_CEILING = 27;
+const HIDDEN_READS_CEILING = 5;
 
 test('⭐⭐ tests lean on hidden elements no more than they did — the T2 trigger', () => {
   const buried = [...new Set(buriedIds(PAGE, darkClasses(CSS)).map(b => b.id))];
@@ -207,8 +193,11 @@ test('⭐⭐ tests lean on hidden elements no more than they did — the T2 trig
     }
   }
   // THE COUNTER MUST SEE A READ IT IS KNOWN TO HAVE, or a broken pattern reads as progress.
-  assert.ok(pairs.includes('cA <- smoke.test.js'),
-    'the counter no longer sees smoke.test.js reading #cA — the patterns are broken, not the suite fixed');
+  // ⚠️ THE SENTINEL MOVED WHEN ITS SUBJECT WAS DELETED, like the one above: it was
+  // `cA <- smoke.test.js` until #cA was removed on 2026-09-17. `slotSay` is a
+  // deliberate reference-zone read on this file's own ledger.
+  assert.ok(pairs.includes('slotSay <- render-notes.test.js'),
+    'the counter no longer sees render-notes.test.js reading #slotSay — the patterns are broken, not the suite fixed');
   assert.ok(pairs.length <= HIDDEN_READS_CEILING,
     `${pairs.length} test reads of hidden elements, ceiling ${HIDDEN_READS_CEILING} — a test started `
     + `leaning on something no reader can see. Move it to the visible element, or if it is deliberate, `
@@ -252,23 +241,24 @@ test('the ledger lists nothing that is already back in the light', () => {
  * this frame — so what left the hero is a contradicting picture, not the fact.
  */
 test('⛔ the hero shows no metric readout at all — it has no window for one', () => {
-  assert.match(CSS, /(?:^|[,\s])#rg\.corsi \.cbar\s*,/,
-    'the cbar park is scoped away from the preview again — the hero is back to '
-    + 'drawing a 100%/0% bar under a caption that says the game was even');
-  assert.doesNotMatch(CSS, /#rg:not\(\.preview\)\.corsi \.cbar/,
-    'the preview exception is back in the stylesheet');
+  /* ⏹ THIS ASSERTED THE `.cbar` AND `.counters` PARKS UNTIL 2026-09-17, when both
+     were removed (docs/test-program.md §8): they were the hero's loop-window
+     readout, and a bar that read `1 - 0` beside a caption saying 52-52 is why the
+     hero has none. The claim survives the removal and is about the whole board —
+     nothing in the preview may carry a running figure whose window is the loop
+     rather than the game.
 
-  /* ⚠️ AND THE PAIRED HALF, DERIVED. "Hide the bar" is satisfied by a hero that
-     grows a different attempts readout tomorrow — the counters are parked by the
-     same rule, but a NEW element would not be. So the claim is about the whole
-     board: nothing in the preview may carry a running figure whose window is the
-     loop rather than the game. */
+     ⚠️ SO THE ELEMENTS ARE GONE, AND THE ONE THAT CARRIES RUNNING FIGURES NOW IS
+     THE LAYER BOX. It must be hidden in the preview, and the removed ids must not
+     come back into the markup under a new parent. */
   const previewHides = [...CSS.replace(/\/\*[\s\S]*?\*\//g, ' ')
     .matchAll(/([^{}]*)\{[^}]*display:none[^}]*\}/g)]
     .flatMap(m => m[1].split(',').map(x => x.trim()));
-  for (const sel of ['#rg.corsi .counters', '#rg.corsi .cbar'])
-    assert.ok(previewHides.includes(sel),
-      `${sel} is not parked, so the preview can show a loop-window figure again`);
+  assert.ok(previewHides.includes('#rg.preview .lbox'),
+    'the layer box is not hidden in the preview, so the hero can show a loop-window figure again');
+  for (const id of ['cA', 'cH', 'pa', 'ph', 'ba', 'bh'])
+    assert.doesNotMatch(PAGE, new RegExp(`id="${id}"`),
+      `#${id} is back in the markup — a removed running figure has returned`);
 });
 
 /**

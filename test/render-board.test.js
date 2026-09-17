@@ -14,22 +14,24 @@ import { whistle } from '../src/lib/layers/whistle.js';
 import { readFileSync } from 'node:fs';
 import { rich, app, SCRIPT, PAGE_CSS, prose, boot , pickLayer } from './helpers/page.js';
 
-test('no bare percentage survives on the scoreboard', () => {
+test('no bare percentage survives in the layer box', () => {
   // The rule the goalie card and the per-game sentence already follow, applied
   // to the surface where the denominator is smallest and moves fastest: early in
   // a game one attempt swings the share ~2.5 points, and "58%" asserts a
   // precision that "11 – 8" does not claim (CHENG).
+  // ⏹ Read off the scoreboard's split bar until 2026-09-17, when the parked bar
+  // was removed; the layer box is where these figures are shown.
   const a = boot();
   pickLayer(a, 'corsi');
-  for (const [pa, ph, mode] of a.sweep(d => [d.$('pa').textContent, d.$('ph').textContent,
-                                             d.$('pMode').textContent])) {
-    assert.match(String(pa), /^\d+$/, `the control figure reads "${pa}"`);
-    assert.match(String(ph), /^\d+$/, `the control figure reads "${ph}"`);
-    assert.equal(mode, 'ALL SITUATIONS', 'every site carrying this number carries its mode');
+  for (const [xa, xh, note] of a.sweep(d => [d.$('lxA').textContent, d.$('lxH').textContent,
+                                             d.$('lxN').textContent])) {
+    assert.match(String(xa), /^\d+$/, `the away figure reads "${xa}"`);
+    assert.match(String(xh), /^\d+$/, `the home figure reads "${xh}"`);
+    assert.match(String(note), /· all situations\.$/, 'every site carrying this number carries its mode');
   }
 });
 
-test('the strength mode reaches the scoreboard, not only the counters', () => {
+test('the strength mode reaches the layer box', () => {
   /* ⏹ THE CHIPS WENT ON 2026-09-07 and the FILTER did not, so the mode is
      entered the way a visitor can still enter it: `?strength=even`. Driving a
      control the page no longer has is the trap this repo hit in August — the fake
@@ -38,8 +40,9 @@ test('the strength mode reaches the scoreboard, not only the counters', () => {
      assert the other one. */
   const a = boot(null, null, '?strength=even');
   pickLayer(a, 'corsi');
-  assert.equal(a.$('pMode').textContent, 'EVEN STRENGTH');
-  assert.equal(a.$('mA').textContent, 'EVEN STRENGTH', 'and the two agree');
+  // At a frame with something counted: before the first attempt the note says
+  // "Press play — nothing has been counted yet." and names no mode, correctly.
+  a.at(a.timeline.length - 1, d => assert.match(String(d.$('lxN').textContent), /· even strength\.$/));
 });
 
 test('each mode discloses what it actually does, and neither borrows the other', () => {

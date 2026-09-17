@@ -190,28 +190,10 @@ test('⭐ the preview runs with the Control layer ON, so the hero shows what the
   assert.equal(String(a.GROUPS['#rg .pk'].find(b => b.dataset.l === 'corsi')
                        .getAttribute('aria-checked')), 'true');
 
-  /* ⏹ "AND THE BOARD NAMES ITS UNIT" ENDED ON 2026-09-09, because the board
-     stopped showing a figure for a unit to be about. `.cbar` is parked on both
-     surfaces now — measured, it read `1 - 0` for fifteen of an eighteen-second
-     loop and drew that as a 100%/0% bar beside a caption saying 52-52, so a
-     whole-game instrument had no window to work in. See park.test.js.
-
-     ⚠️ THE LABEL IS STILL SET AND THAT IS THE POINT OF KEEPING THIS LINE. The
-     renderer writes `pName` whether or not a stylesheet shows it, so asserting
-     the text proves nothing about what a reader sees — the two-mechanisms-one-
-     observable hole park.test.js exists to close. It is asserted here as WIRING,
-     so un-parking the bar needs no rewiring, and the visibility half is asserted
-     there, against the stylesheet. */
-  assert.match(a.$('pName').textContent, /attempt/i,
-    'the label the parked bar would carry is no longer written, so un-parking it '
-    + 'would light a bar that says CONTROL — a name, not a unit');
-  // AND THE GAME PAGE IS UNCHANGED, which is the paired half. Checked in the
-  // MARKUP, not through a boot: the default label is a text node the document
-  // ships with, and this fake's elements start empty -- so asserting it through
-  // `boot()` would only be measuring what the harness cannot see.
-  assert.match(app, /id="pName">CONTROL</,
-    'the game page no longer names the layer — CONTROL is the useful word there, '
-    + 'because .counters carries the unit two inches below it');
+  /* ⏹ THE PARKED BAR'S WIRING WAS ASSERTED HERE — `pName` still written, and
+     the game page's markup still naming CONTROL — so un-parking the bar would
+     need no rewiring. The bar and its label were REMOVED on 2026-09-17
+     (docs/test-program.md §8), so there is nothing left to un-park. */
 
   // EXACTLY ONE, because the conversion is stated as one metric layer turned on.
   // Three layers at once is a different claim about the product, and without
@@ -228,36 +210,14 @@ test('⭐ the preview runs with the Control layer ON, so the hero shows what the
     'the full page now opens with a layer already applied');
 });
 
-test('⭐ the control bar claims nothing before anything has been counted', () => {
-  // A REAL DEFECT, FOUND BY LOOKING AT THE FRONT DOOR. `tot=a+h||1` avoided the
-  // division by zero and then drew the result anyway: at 0-0 it made pa=0, so
-  // the whole bar rendered in the HOME colour and the opening faceoff announced
-  // that one team held all of the control before a puck had been shot. It was
-  // on the hero, in the first frame of every visit.
-  //
-  // NOT A PREVIEW BUG -- it is what the layer does at the start of any game, so
-  // it is checked on the ordinary page where a visitor meets it.
-  const a = boot();
-  pickLayer(a, 'corsi');
-  // Numeric, because the fake stores what the page assigned -- a number -- and
-  // a real DOM stores a string. Pinning either spelling would test the harness.
-  assert.equal(+a.$('cA').textContent, 0, 'the fixture is past the opening faceoff');
-  assert.equal(+a.$('cH').textContent, 0, 'and this test is no longer about zero');
-  assert.equal(a.$('ba').style.width, '0%', 'the away segment claims a share of nothing');
-  assert.equal(a.$('bh').style.width, '0%', 'the home segment claims a share of nothing');
-
-  // THE PAIRED HALF: once there IS a population, the bar is drawn and the two
-  // segments account for all of it. Without this the rule above is satisfied by
-  // a bar that never renders at all.
-  const sc = a.$('scrub');
-  sc.value = sc.max;
-  sc.oninput({ target: { value: sc.value } });
-  assert.notEqual(+a.$('cA').textContent + +a.$('cH').textContent, 0,
-    'nothing was counted, so the paired half proves nothing');
-  const w = s => +String(s).replace('%', '');
-  assert.equal(w(a.$('ba').style.width) + w(a.$('bh').style.width), 100,
-    'the bar no longer accounts for the whole population');
-});
+/* ⏹ `the control bar claims nothing before anything has been counted` LIVED HERE
+   until 2026-09-17, when the split bar was removed with the counters
+   (docs/test-program.md §8). Its lesson outlives it and is enforced where
+   proportions are still drawn: a share over an empty population is refused in
+   src/lib/archive.js ("0 reads as a finding, and 'we measured nothing' is a
+   different statement from 'it never happened'"), and the layer box shows counts,
+   never a share. It was a real defect — the opening faceoff of every visit
+   announced one club held all the control. */
 
 /** A plain boot, named because two tests want the same negative half. */
 function plainOff() { return boot(); }

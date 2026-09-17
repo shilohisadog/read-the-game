@@ -268,8 +268,11 @@ test('an inexact landing is not an apology: a moment between events says nothing
 
 /* --------------------------------------------------------------- the mode
    CHENG's framing: not "strength= is mandatory" but "the URL and the on-screen
-   mode can never disagree", because the mode is part of the number's identity
-   and the scoreboard already carries MODE() beside it. */
+   mode can never disagree", because the mode is part of the number's identity.
+   ⏹ THE SCOREBOARD CARRIED IT UNTIL 2026-09-17, on the parked `.counters` and
+   `.cbar`; they were removed and the claim moved to the surface that shows the
+   number -- the layer box, whose note ends with the mode. `layer=corsi` is added
+   to each link because the box speaks only for a chosen layer. */
 
 for (const [q, , label] of [
   ['?strength=even', 'even', 'EVEN STRENGTH'],
@@ -277,18 +280,17 @@ for (const [q, , label] of [
   ['', 'all', 'ALL SITUATIONS'],                 // the page's own default
   ['?strength=sideways', 'all', 'ALL SITUATIONS'], // garbage falls back, visibly
 ]) {
-  test(`the scoreboard states the mode the URL asked for: "${q}" -> ${label}`, () => {
-    const d = open(q);
-    assert.equal(d.$('pMode').textContent, label);
-    assert.equal(d.$('mA').textContent, label, 'both scoreboard sides, not just one');
-    assert.equal(d.$('mH').textContent, label);
+  test(`the layer box states the mode the URL asked for: "${q}" -> ${label}`, () => {
+    const d = open(q ? `${q}&layer=corsi&at=2-10:00` : '?layer=corsi&at=2-10:00');
+    assert.ok(String(d.$('lxA').textContent) !== '', 'the Attempts box is not showing -- this reads nothing');
+    assert.match(String(d.$('lxN').textContent), new RegExp(`· ${label.toLowerCase()}\\.$`),
+      'the box does not say which situations its figures count');
     /* ⏹ THIS READ `aria-pressed` OFF THE `.sbtn` CHIPS UNTIL 2026-09-07, when
        Kevin removed them: *"we are making an 'advanced' toggle available to a
        novice, without really explaining what the relative importance of the
        toggle is."* The FILTER is untouched and this test is about the FILTER —
-       so the claim moves to the surface that still exists. The scoreboard's mode
-       label is now the whole answer, and it is asserted three times above
-       (`pMode` and both club sides), which is what a viewer actually sees. */
+       so the claim moves to the surface that still exists -- the layer box's
+       note, asserted above, which is what a viewer actually sees. */
     assert.equal((d.GROUPS['#rg .sbtn'] || []).length, 0,
       'the situations chips are back — if that is deliberate, this test should '
       + 'read their pressed state again rather than only the scoreboard');
