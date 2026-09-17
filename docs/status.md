@@ -32,10 +32,42 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 
 This section is the orientation. Everything below §0 is the detail, organised by
 state.
-## ⏭ 0.00 PICK UP HERE — 2026-09-16
+## ⏭ 0.00 PICK UP HERE — 2026-09-17
 
-⏭ **THE TEST PROGRAM IS BEING RE-ARCHITECTED FROM EVIDENCE — `docs/defect-corpus.md`.**
-Kevin's plan, in order: (1) ✅ commit the defect corpus; (2) ✅ a human relabelled
+✅ **THE TEST-PROGRAM RE-ARCHITECTURE IS BUILT AND LIVE — Kevin's seven steps, all
+done 2026-09-16/17.** What now exists, each seen to work:
+
+- **The release gate** (`.github/workflows/deploy.yml`): a push that changes
+  `src/` deploys a **preview** first, every browser check runs against it, then
+  the same commit ships. Pushes that change nothing under `src/` ship nothing.
+  Two real changes have gone through it green.
+- **Range checks on the published numbers** (`tools/published_ranges.py`): in
+  `npm run gates` over the 8 fixtures, and in `derive.yml` before the sync —
+  caught 4 of the 5 numbers that once escaped every test.
+- **The pipelines validate before they sync and read back after**
+  (`derive.yml`, `ingest.yml`); both run by hand, green.
+- **T1** in `test/helpers/page.js` (an id no page has throws), **seam B** (the
+  harness hands tests `{k, ev, n}` and `a.now()`), the **hidden-reads ratchet**
+  (5), the DOM golden's **diff size** — and the churn replays: **off-subject
+  failures 9 → 0 and 5 → 1**.
+- **Removed:** the parked `.counters`/`.cbar`, and two hero rules whose reason
+  expired (`ha`, the preview's Attempts layer).
+
+⏭ **WHAT IS OPEN, none of it started** — the rest of `docs/test-program.md` §10:
+the review gallery with mechanical diffs (row 5); visibility claims moving to the
+preview stage, file by file (row 7); browser states for the blind spots — Tabletop
+style, motion, gestures — re-planting the 19 (row 8); a weekly mutation run with
+check mutants (row 9); a performance budget (row 10). Also: Q7's closed-set
+off-subject categories; T3/T4 declared subjects; whether `test/` is a tier with a
+boundary rule. **At beta:** Kevin becomes required reviewer on the production
+deploy. **The novice test** stays parked until feature-complete.
+
+⚠️ **HOW TO COMMIT NOW:** `npm run gates > LOG 2>&1; rc=$?` and read `rc` — never
+`>/dev/null` chained into `git commit -q`, which failed silently twice on
+2026-09-17. After an edit, stale generated blocks are the usual cause:
+`node builders/health.mjs`, `node tools/tiers.mjs`.
+
+**THE RECORD, in the order it happened:** Kevin's plan: (1) ✅ commit the defect corpus; (2) ✅ a human relabelled
 30 entries blind — ⛔ **the `oracle` labels did NOT survive (2 of 25 exact, 14 of
 25 coarse)**, so no test layer may be sized from them; `found_by` holds only as
 Kevin versus anyone else (20 of 26); (3) ✅ **the survivorship experiment —
@@ -48,10 +80,10 @@ checks on the published numbers, verified by re-planting the five escapes; ④ s
 the data pipeline's checks into before and after the sync; ⑤ **the release gate**
 — no branches; a push that changes `src/` deploys first as a preview, the
 automatic checks run against it, then the same commit ships; Kevin reviews batches
-afterwards until beta, and becomes the required reviewer at beta. Q1 and Q3–Q7
-still await CHENG. ✅ **ALL FIVE BUILT 2026-09-17** — see *THE FIVE STEPS, BUILT*
-below;
-(6) T1/T2, seam B and `.counters`/`.cbar` wait on it.
+afterwards until beta, and becomes the required reviewer at beta. ✅ **ALL FIVE
+BUILT 2026-09-17**, and CHENG ruled Q1 and Q3–Q7 the same day — see *THE FIVE
+STEPS, BUILT* below; (6) ✅ T1 built, T2 replaced by a ratchet, seam B built,
+`.counters`/`.cbar` removed — see *STEP 6* below.
 
 ⭐⭐ **STEP 5 CARRIES A CHURN ACCEPTANCE TEST — agreed with Kevin 2026-09-17.** He
 asked how any of this reduces the churn of deleting the penalty band. **Honest
@@ -91,7 +123,7 @@ Q5's trigger, which would have fired on 52 commits in six weeks).
 
 **STEP 6, in order:** ✅ (a) the churn baseline before seam B `6069b3e`; ✅ (b) T1
 in the harness — found three ghost tests `ff87dd2`; ✅ (c) the hidden-reads
-ratchet (31 then, **27 now**) `86e883c`; ✅ (d) the golden's diff size `4f620e1`;
+ratchet (31 then) `86e883c`; ✅ (d) the golden's diff size `4f620e1`;
 ✅ (e) seam B `1bdd89e`; ✅ (f) the replays — **off-subject failures: period label
 9 → 0, counters removal 5 → 1** (`docs/test-program.md` §8.1); ✅ (g) **the
 `.counters`/`.cbar` removal** — 10 ids, their CSS, the flash and its state; the
@@ -319,8 +351,8 @@ answer**, and this one pays an author to delete a true citation.
 
 ## ⏭ STILL OPEN, IN KEVIN'S ORDER
 
-1. **T1/T2**, above.
-2. **`.counters`/`.cbar`**, above.
+1. ✅ **T1/T2** — T1 built, T2 replaced by the hidden-reads ratchet (§0.00).
+2. ✅ **`.counters`/`.cbar`** — removed 2026-09-17 (§0.00).
 3. **The wider test-tier work — T3 and T4.** Both need a declared SUBJECT per test
    file, and **`smoke.test.js` proves not every file has one**: *"Every other test
    in this suite checks the modules or the text of the bundle. None of them

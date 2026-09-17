@@ -355,8 +355,10 @@ measured.
 Steps 1–3 need no new infrastructure and close the worst measured seam first.
 
 ✅ **Built 2026-09-17, in Kevin's approved order rather than this table's:**
-rows 1 and 3, and row 4 **without branches** (§5.1) — the preview is inside the
-deploy. Row 2's range check caught **4 of the 5** re-planted escapes. The record,
+rows 1, 2, 3 and 6, and row 4 **without branches** (§5.1) — the preview is inside
+the deploy. Row 2's range check caught **4 of the 5** re-planted escapes; row 6's
+seam B took the churn replays' off-subject failures from 9 to 0 and 5 to 1.
+**Open: rows 5, 7, 8, 9 and 10.** The record,
 with commits and what each was seen to catch, is in `docs/status.md` §0.00.
 
 ## 11. What I want ruled
