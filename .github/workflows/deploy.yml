@@ -28,6 +28,7 @@ concurrency:
 permissions:
   contents: read
   deployments: write
+  actions: read      # to find the last successful deploy run (did this push change the site)
 
 env:
   PROJECT: read-the-game
@@ -63,13 +64,11 @@ jobs:
 
       - name: gates
         run: npm run gates
-
       # A generated file that differs from what its builder produces means the
       # HTML was hand-edited. Shipping that publishes something no builder can
       # reproduce, and the next build silently reverts it.
       - name: the working tree must be unchanged by a build
         run: git diff --exit-code
-
       # The pages that inline their whole game must still call nobody. This grep
       # is a blacklist over an open vocabulary and cannot close -- it is blind to
       # import(), EventSource, sendBeacon and window["fetch"] -- so it is a
@@ -121,7 +120,6 @@ jobs:
           [ "$both" -gt 0 ] && [ "$neither" -gt 0 ] || {
             echo "::error::every page landed in one bucket -- this gate stopped separating anything"; fail=1; }
           exit $fail
-
       # ⭐ EVERY PAGE, NOT THE TWO WE REMEMBERED TO NAME.
       #
       # The step below proves index.html may run under its own policy, and the
@@ -185,7 +183,6 @@ jobs:
             exit 1
           fi
           echo "  all $(ls src/*.html | wc -l) pages run under their own policy"
-
       # THE CSP MUST EXECUTE, NOT MERELY BE PRESENT. A hash-pinned policy with a
       # stale hash is a blank page that passes every grep we could write, so the
       # only honest check is a real browser. This runs pre-deploy over file://
@@ -238,7 +235,6 @@ jobs:
           fi
           [ "$after" != "$before" ] || { echo "::error::the script never ran"; exit 1; }
           echo "  the script is permitted by the policy"
-
       # WHAT A LAYER DRAWS, checked in an engine that has a stylesheet.
       #
       # test/render-*.test.js boot the same bundle against a fake document and
@@ -464,254 +460,6 @@ jobs:
           fi
           exit $fail
 
-      - name: ensure the Pages project exists
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          # Creating an existing project is an error, so ask first rather than
-          # swallowing failures with `|| true` -- that would also hide a bad
-          # token, and the deploy would fail later with a confusing message.
-          if npx --yes "$WRANGLER" pages project list | grep -qw "$PROJECT"; then
-            echo "project $PROJECT already exists"
-          else
-            echo "creating project $PROJECT"
-            npx --yes "$WRANGLER" pages project create "$PROJECT" \
-              --production-branch main
-          fi
-
-      - name: deploy
-        id: deploy
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          npx --yes "$WRANGLER" pages deploy src \
-            --project-name "$PROJECT" \
-            --branch main \
-            --commit-dirty=true | tee deploy.log
-          echo "url=$(grep -oE 'https://[a-z0-9.-]+\.pages\.dev' deploy.log | tail -1)" >> "$GITHUB_OUTPUT"
-
-      # Deploying and assuming it worked is not verification. Fetch every page
-      # back over the public internet and compare it byte for byte against the
-      # file in this checkout -- 200 OK only proves something answered, not that
-      # what is public is what we committed.
-      #
-      # RETRY EVERY PAGE, NOT JUST THE FIRST. A brand-new *.pages.dev hostname
-      # takes roughly 40 seconds to come up and answers 522 until it does. The
-      # first version of this step retried the root and then checked the other
-      # pages once each, so the root spent six attempts waiting out propagation
-      # and the very next request failed on the tail of the same cold start.
-      # The deploy was fine; the check was shaped wrong.
-      #
-      # DIFF AGAINST THE DEPLOYMENT URL, NOT THE PRODUCTION HOSTNAME. Pages
-      # gives every deployment its own immutable <hash>.<project>.pages.dev,
-      # which is the artifact just uploaded with nothing aliased or cached in
-      # front of it. The production hostname is a moving pointer with an edge
-      # cache, and it served the previous build for minutes after a correct
-      # deploy -- `?cb=1` on the same URL returned the new bytes, so the alias
-      # had switched and only the cached object was stale. Diffing there tests
-      # Cloudflare's cache invalidation, which is not our invariant. Production
-      # is checked separately, for reachability, with the cache defeated.
-      - name: fetch the live site back and diff it against the repo
-        env:
-          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
-        run: |
-          if [ -z "$DEPLOY_URL" ]; then
-            echo "::error::no deployment URL was captured from wrangler — cannot verify"
-            exit 1
-          fi
-          URL="$DEPLOY_URL"
-          echo "checking $URL"
-
-          # AS A BROWSER, NOT AS CURL, AND THAT IS NOT A DETAIL.
-          #
-          # This step compares published bytes to committed bytes and passed
-          # every run while Cloudflare injected a Web Analytics beacon into the
-          # HTML — because the injection was USER-AGENT GATED. curl's default
-          # agent got bytes identical to the repo; a Chrome agent got an extra
-          # <script>. The step was measuring something no visitor receives, which
-          # is this project's most-repeated defect, found inside the step written
-          # to close it. Found by reading the live page's console in a real
-          # browser, not by reading this file.
-          #
-          # The edge may rewrite HTML for a browser in other ways too (Rocket
-          # Loader, email obfuscation, auto-minify are all UA- and content-type
-          # sensitive). Asking as a browser is the only version of this question
-          # whose answer is about the site people actually load.
-          #
-          # Checked before this line was written: all nine pages byte-identical
-          # under a Chrome agent, the day after the beacon was turned off.
-          VISITOR_UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'
-
-          # Retries on 5xx (edge not ready) but NOT on 404 -- a missing file is
-          # a real answer, and waiting 60s to report it just hides the cause.
-          fetch() {  # fetch <path> <destination>
-            local path="$1" dest="$2" code
-            for i in $(seq 1 12); do
-              # 000 is curl's code for a transport failure, which for a hostname
-              # minutes old usually means DNS has not propagated yet -- another
-              # thing to wait out rather than report as a broken site.
-              code=$(curl -sS -A "$VISITOR_UA" -H 'Accept: text/html' \
-                          -o "$dest" -w '%{http_code}' -L "$URL/$path") || code=000
-              case "$code" in
-                200)     return 0 ;;
-                5*|000)  echo "    attempt $i: HTTP $code — edge not ready"; sleep 6 ;;
-                *)       echo "::error::/$path returned HTTP $code"; return 1 ;;
-              esac
-            done
-            echo "::error::/$path never became available (last HTTP $code)"
-            return 1
-          }
-
-          # THE ONE NORMALISATION, AND IT IS NARROW ON PURPOSE.
-          #
-          # Cloudflare's Scrape Shield rewrites every mailto in the served HTML
-          # into /cdn-cgi/l/email-protection#<hex> and injects a decoder script
-          # to put it back. script-src here is hash-pinned, so the browser
-          # REFUSES the decoder and the footer reads, to a real visitor, the
-          # literal string "[email protected]". `<!--email_off-->` is
-          # Cloudflare's documented per-block opt-out and it works -- the address
-          # arrives intact -- but the zone CONSUMES the two marker comments, so
-          # the served bytes are 33 shorter than the committed bytes.
-          #
-          # BOTH SIDES, not just the live one. This same step checks the
-          # *.pages.dev deployment, which is not on the zone and therefore keeps
-          # the markers. Stripping only the repo side would pass on the custom
-          # domain and fail on the preview.
-          #
-          # What this can hide is exactly two literal comment strings that we put
-          # in for the CDN to eat, and nothing else -- every other byte is still
-          # compared. It comes out the moment Email Address Obfuscation is turned
-          # off in the dashboard, which is the cleaner end state and Kevin's call.
-          # TWO EDGE REWRITES, BOTH NAMED. (1) `<!--email_off-->` is a marker WE
-          # add for Scrape Shield to eat so the mailto survives. (2) The Web
-          # Analytics beacon is a THIRD-PARTY SCRIPT in the reader's page, on
-          # deliberately, named in script-src so it runs — but never in our bytes.
-          # Removed by an EXACT pattern, so anything else the edge adds, or any
-          # change to the beacon's shape, still fails this comparison and is
-          # printed. A gate that silently deletes injected scripts cannot do its
-          # job; this one deletes exactly one known tag and reports that it did.
-          strip() {
-            # THE WHOLE LINE, ANCHORED. Substituting the tag alone left the
-            # newline Cloudflare wrote with it, so the compare failed by exactly
-            # one byte and the printed diff showed a blank line -- which reads as
-            # nothing at all. The beacon is injected on its own line before
-            # </body>; ^…$ means an inline one, or a moved one, does NOT get
-            # deleted and fails the comparison instead. Canaried both ways.
-            sed -e 's|<!--/\?email_off-->||g' \
-                -e '\%^<script type="module" src="https://static\.cloudflareinsights\.com/beacon\.min\.js/[^>]*></script>$%d' "$1"
-          }
-          beacon_note() {
-            grep -q 'static\.cloudflareinsights\.com' "$1" \
-              && echo "      (edge injected the Web Analytics beacon — in script-src, stripped for this diff)" || true
-          }
-
-          # The root is its own case: it is not a file we deploy but a route
-          # Pages resolves to index.html, and getting that wrong is a 404 on
-          # the front page with every deep link still working.
-          fetch "" root.html
-          if ! cmp -s <(strip root.html) <(strip src/index.html); then
-            echo "::error::the site root is not src/index.html"
-            exit 1
-          fi
-          echo "  /  ->  index.html  ($(wc -c < root.html) bytes, identical)"
-          beacon_note root.html
-
-          fail=0
-          for f in src/*.html; do
-            page=$(basename "$f")
-            fetch "$page" live.html || { fail=1; continue; }
-            if cmp -s <(strip live.html) <(strip "$f"); then
-              echo "  /$page  ($(wc -c < "$f") bytes, identical)"
-              beacon_note live.html
-            else
-              echo "::error::/$page differs from $f — published bytes are not committed bytes"
-              fail=1
-            fi
-          done
-          [ "$fail" = 0 ] || exit 1
-          echo "all $(ls src/*.html | wc -l) pages match the checkout byte for byte"
-
-          # Production is a separate question: does each public hostname resolve
-          # to this deployment at all?
-          #
-          # RETRY THE COMPARISON, NOT ONLY THE STATUS. The fetch helper retries
-          # 5xx and 000 -- "not ready yet" -- but a hostname that has just been
-          # deployed to can be perfectly ready and briefly serve the PREVIOUS
-          # bytes with a 200. That is what happened on the first run of this
-          # check: readthegame.co is tested first, seconds after the upload, and
-          # failed while www and pages.dev, tested moments later, passed. The
-          # deploy was correct and the site was correct within seconds.
-          #
-          # So a mismatch is not immediately a failure; it is "propagating"
-          # until it has been given a bounded amount of time to stop being one.
-          # A cache-busting query defeats the edge cache but cannot hurry the
-          # alias itself.
-          echo
-          for host in $PUBLIC_HOSTS; do
-            URL="https://${host}"
-            matched=0
-            for i in $(seq 1 10); do
-              if fetch "?cb=${GITHUB_RUN_ID}-${i}" prod.html && cmp -s <(strip prod.html) <(strip src/index.html); then
-                matched=1; break
-              fi
-              echo "    $host: serving a different build — attempt $i, waiting"
-              sleep 6
-            done
-            if [ "$matched" = 1 ]; then
-              echo "  https://${host} serves the current index"
-              beacon_note prod.html
-            else
-              # ONE MESSAGE WAS STANDING FOR TWO DIFFERENT FAILURES, and it cost
-              # a wasted re-run to find that out. The loop breaks only when the
-              # fetch AND the compare both succeed, so content that never matches
-              # exhausts the retries and reports "never served this deployment" --
-              # which reads as a DNS or alias problem and sends you to the wrong
-              # dashboard. Same shape as the caption's `on` class: a single signal
-              # that cannot distinguish the two states it is asked about.
-              if [ -s prod.html ]; then
-                echo "::error::https://${host} answers, but serves bytes we did not commit"
-                echo "  fetched $(wc -c < prod.html) bytes, repo has $(wc -c < src/index.html)"
-                echo "  --- what the edge added or changed (first 20 lines) ---"
-                diff <(sed 's/></>\n</g' prod.html) <(sed 's/></>\n</g' src/index.html) | head -20 || true
-                echo "  Injected <script> here usually means a Cloudflare feature was"
-                echo "  re-enabled in the dashboard. The CSP refuses them, so they do"
-                echo "  nothing except break this check and log an error for every visitor."
-              else
-                echo "::error::https://${host} never served this deployment (no response body)"
-              fi
-              fail=1
-            fi
-          done
-          [ "$fail" = 0 ] || exit 1
-
-      # THE CHECK THAT WOULD HAVE CAUGHT THE CORS BUG. Everything above proves
-      # the bytes we published are the bytes we committed; none of it proves a
-      # BROWSER can use them. Load the live site as a visitor does and require
-      # the freshness line to say something real -- "No data loaded yet" on a
-      # site holding games means the data could not be read, whatever the reason.
-      - name: a visitor can actually read the data
-        run: |
-          fail=0
-          for i in $(seq 1 8); do
-            google-chrome --headless --no-sandbox --disable-gpu \
-              --virtual-time-budget=15000 --dump-dom \
-              "https://readthegame.co/?cb=${GITHUB_RUN_ID}-${i}" > live.html 2>/dev/null || true
-            state=$(grep -o 'id="state"[^>]*>[^<]*' live.html | sed 's/.*>//' || true)
-            case "$state" in
-              *"Data through"*) echo "  the live site reports: $state"; fail=0; break ;;
-              "") echo "    attempt $i: page not rendered yet"; fail=1 ;;
-              *) echo "    attempt $i: \"$state\""; fail=1 ;;
-            esac
-            sleep 8
-          done
-          if [ "$fail" != 0 ]; then
-            echo "::error::a visitor cannot read the data — last state: \"$state\""
-            echo "  if this says 'No data loaded yet', check the R2 CORS policy (r2-cors workflow)"
-            exit 1
-          fi
-
       # THE LEARN PAGE'S DOORS POINT AT ONE GAME, so that game being published
       # is a production dependency of nine links on a page a stranger reads.
       #
@@ -758,6 +506,134 @@ jobs:
           print("  canary: an absent id is absent, so the lookup can miss")
           PYCANARY
 
+      # ⭐ THE RELEASE GATE, RULED BY KEVIN 2026-09-17 (docs/test-program.md §5.1).
+      #
+      # Until this change every browser check that needed the DEPLOYED page ran
+      # after production had already been replaced -- 6 of the 9 browser steps in
+      # this file tested the release instead of gating it. Now a push that
+      # changes src/ deploys FIRST as a preview (step 4 of the test
+      # re-architecture proved a preview reads production data), every browser
+      # check runs against that preview, and only if they pass does the SAME
+      # commit deploy to production. After production, only what production
+      # alone can answer: the custom domains serve these bytes, a visitor on the
+      # real origin can read the data, and the zone's edge rewrites trip no
+      # policy. Byte identity (the diff step) is what lets a check on the preview
+      # stand for production.
+      #
+      # No human waits here before beta; Kevin reviews what shipped in batches.
+      # AT BETA he becomes the required reviewer on the production deploy -- one
+      # `environment:` line on that step, and the fallback becomes hold.
+      #
+      # AND A PUSH THAT CHANGES NOTHING A VISITOR RECEIVES SHIPS NOTHING. Docs,
+      # tests and tooling are compared against the last SUCCESSFUL deploy run;
+      # anything uncertain (no earlier run, a commit not in this clone, a run by
+      # hand) deploys, because the safe error here is an unnecessary deploy.
+      - name: did this push change the site
+        id: site
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" = workflow_dispatch ]; then
+            echo "  run by hand: deploying regardless"
+            echo "changed=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          last=$(gh run list --workflow deploy.yml --branch main --status success \
+                   --limit 1 --json headSha -q '.[0].headSha' 2>/dev/null || true)
+          if [ -z "$last" ] || ! git cat-file -e "${last}^{commit}" 2>/dev/null; then
+            echo "  no earlier successful deploy to compare with ('$last') -- deploying"
+            changed=true
+          elif git diff --quiet "$last" HEAD -- src/; then
+            echo "  src/ is unchanged since $last, the last successful deploy -- nothing to ship"
+            changed=false
+          else
+            echo "  src/ changed since $last, the last successful deploy:"
+            git --no-pager diff --stat "$last" HEAD -- src/ | tail -8
+            changed=true
+          fi
+          echo "changed=$changed" >> "$GITHUB_OUTPUT"
+
+      - name: ensure the Pages project exists
+        if: steps.site.outputs.changed == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # Creating an existing project is an error, so ask first rather than
+          # swallowing failures with `|| true` -- that would also hide a bad
+          # token, and the deploy would fail later with a confusing message.
+          if npx --yes "$WRANGLER" pages project list | grep -qw "$PROJECT"; then
+            echo "project $PROJECT already exists"
+          else
+            echo "creating project $PROJECT"
+            npx --yes "$WRANGLER" pages project create "$PROJECT" \
+              --production-branch main
+          fi
+
+      # THE PREVIEW IS THIS COMMIT, PROVEN BEFORE ANYTHING IS MEASURED ON IT.
+      # A new hostname answers 522 for roughly 40 seconds (see the diff step), and
+      # a check that measured an error page, or an older deployment, would be
+      # grading something nobody is about to ship. *.pages.dev is not on the zone,
+      # so no edge rewrite applies and the comparison is raw bytes.
+      - name: deploy this commit as a preview
+        id: preview
+        if: steps.site.outputs.changed == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx --yes "$WRANGLER" pages deploy src \
+            --project-name "$PROJECT" \
+            --branch candidate \
+            --commit-dirty=true | tee preview.log
+          url=$(grep -oE 'https://[a-z0-9.-]+\.pages\.dev' preview.log | head -1)
+          if [ -z "$url" ]; then
+            echo "::error::no preview URL was captured from wrangler -- nothing to check, so nothing ships"
+            exit 1
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          for page in index.html game.html; do
+            ok=0
+            for i in $(seq 1 15); do
+              code=$(curl -sS -L -o got.html -w '%{http_code}' "$url/$page?cb=${GITHUB_RUN_ID}-$i") || code=000
+              if [ "$code" = 200 ] && cmp -s got.html "src/$page"; then ok=1; break; fi
+              echo "    $page: HTTP $code, not yet this commit -- attempt $i"
+              sleep 6
+            done
+            if [ "$ok" != 1 ]; then
+              echo "::error::the preview never served this commit's $page"; exit 1
+            fi
+            echo "  $url serves this commit's $page"
+          done
+
+      # THE CHECK THAT WOULD HAVE CAUGHT THE CORS BUG. Everything above proves
+      # the bytes we published are the bytes we committed; none of it proves a
+      # BROWSER can use them. Load the live site as a visitor does and require
+      # the freshness line to say something real -- "No data loaded yet" on a
+      # site holding games means the data could not be read, whatever the reason.
+      - name: a visitor can actually read the data — on the preview
+        if: steps.site.outputs.changed == 'true'
+        env:
+          SITE: ${{ steps.preview.outputs.url }}
+        run: |
+          fail=0
+          for i in $(seq 1 8); do
+            google-chrome --headless --no-sandbox --disable-gpu \
+              --virtual-time-budget=15000 --dump-dom \
+              "$SITE/?cb=${GITHUB_RUN_ID}-${i}" > live.html 2>/dev/null || true
+            state=$(grep -o 'id="state"[^>]*>[^<]*' live.html | sed 's/.*>//' || true)
+            case "$state" in
+              *"Data through"*) echo "  the live site reports: $state"; fail=0; break ;;
+              "") echo "    attempt $i: page not rendered yet"; fail=1 ;;
+              *) echo "    attempt $i: \"$state\""; fail=1 ;;
+            esac
+            sleep 8
+          done
+          if [ "$fail" != 0 ]; then
+            echo "::error::a visitor cannot read the data — last state: \"$state\""
+            echo "  if this says 'No data loaded yet', check the R2 CORS policy (r2-cors workflow)"
+            exit 1
+          fi
+
       # THE SHELL IS THE PAGE A LINK POINTS AT, so it is the page a stranger
       # meets first — and the only one that fetches a GAME rather than a
       # freshness line. Everything above proves the bytes are ours; this proves
@@ -798,10 +674,13 @@ jobs:
       # name localhost and an empty page overflows nothing -- it would pass while
       # proving nothing.
       - name: the pages fit a phone
+        if: steps.site.outputs.changed == 'true'
+        env:
+          SITE: ${{ steps.preview.outputs.url }}
         run: |
           mkdir -p phone && cd phone
-          curl -sSL "https://readthegame.co/?cb=${GITHUB_RUN_ID}" -o index.html
-          curl -sSL "https://readthegame.co/game?cb=${GITHUB_RUN_ID}" -o game.html
+          curl -sSL "$SITE/?cb=${GITHUB_RUN_ID}" -o index.html
+          curl -sSL "$SITE/game?cb=${GITHUB_RUN_ID}" -o game.html
           for d in catalog.json measures.json index.json; do
             curl -sS --fail "https://data.readthegame.co/$d" -o "$d"
           done
@@ -997,6 +876,7 @@ jobs:
       # anything, because "a server answered" and "my server answered" are
       # different facts and only one of them was true.
       - name: the front door's preview fits its frame
+        if: steps.site.outputs.changed == 'true'
         run: |
           cd phone
           mkdir -p extract
@@ -1145,6 +1025,7 @@ jobs:
       # gap the fake document cannot see across. So this step measures BOXES:
       # the width of the track, and where in it the dot's centre actually is.
       - name: the verdict dot lands where the sentence says
+        if: steps.site.outputs.changed == 'true'
         run: |
           cd phone
           # Up to five recent games, because the card legitimately shows no track
@@ -1314,6 +1195,9 @@ jobs:
           exit $fail
 
       - name: a visitor can actually watch a game
+        if: steps.site.outputs.changed == 'true'
+        env:
+          SITE: ${{ steps.preview.outputs.url }}
         run: |
           # The zone eats `<!--email_off-->`; see the long note at the diff step.
           # THIS IS THE THIRD COMPARISON SITE and the reason they are being
@@ -1344,15 +1228,15 @@ jobs:
               && echo "      (edge injected the Web Analytics beacon — in script-src, stripped for this diff)" || true
           }
           for i in $(seq 1 12); do
-            curl -sSL -o live-shell.html "https://readthegame.co/game?cb=${GITHUB_RUN_ID}-w${i}" || true
+            curl -sSL -o live-shell.html "$SITE/game?cb=${GITHUB_RUN_ID}-w${i}" || true
             cmp -s <(strip live-shell.html) <(strip src/game.html) && break
-            echo "    attempt $i: production is still serving a different build"
+            echo "    attempt $i: $SITE is still serving a different build"
             sleep 6
           done
           if ! cmp -s <(strip live-shell.html) <(strip src/game.html); then
-            echo "::error::production never served this build of game.html"; exit 1
+            echo "::error::$SITE never served this build of game.html"; exit 1
           fi
-          echo "  production is serving this build; loading it in a browser"
+          echo "  $SITE is serving this build; loading it in a browser"
 
           # What the page SHOULD say, derived from the same catalog it reads --
           # not a string typed here. A hard-coded expectation is the defect this
@@ -1395,7 +1279,7 @@ jobs:
           for i in $(seq 1 8); do
             google-chrome --headless --no-sandbox --disable-gpu \
               --virtual-time-budget=20000 --dump-dom \
-              "https://readthegame.co/game?cb=${GITHUB_RUN_ID}-${i}" > g.html 2>/dev/null || true
+              "$SITE/game?cb=${GITHUB_RUN_ID}-${i}" > g.html 2>/dev/null || true
             line=$(grep -o 'id="gl"[^>]*>[^<]*' g.html | sed 's/.*>//' || true)
             case "$line" in
               *"could not be loaded"*) echo "::error::the shell says: $line"; exit 1 ;;
@@ -1444,7 +1328,10 @@ jobs:
       # that instance. This step closes the CLASS: it asks the browser whether the
       # live page, under its real policy and with its real data, was refused
       # anything at all — a question no grep of ours can answer.
-      - name: the live game raises no policy refusal
+      - name: the game raises no policy refusal — on the preview
+        if: steps.site.outputs.changed == 'true'
+        env:
+          SITE: ${{ steps.preview.outputs.url }}
         run: |
           # A CANARY FIRST, and it is not decoration here. A console grep that has
           # never matched is indistinguishable from a console that is not being
@@ -1497,7 +1384,332 @@ jobs:
           google-chrome --headless --no-sandbox --disable-gpu \
             --enable-logging=stderr --log-level=0 \
             --virtual-time-budget=20000 --dump-dom \
-            "https://readthegame.co/game?cb=${GITHUB_RUN_ID}-csp" > /dev/null 2> live.log || true
+            "$SITE/game?cb=${GITHUB_RUN_ID}-csp" > /dev/null 2> live.log || true
+          # ONE EXCEPTION, AND IT USED TO BE TWO.
+          #
+          # favicon: the implicit /favicon.ico request is browser-initiated and
+          # reported inconsistently. The page did not ask for it.
+          #
+          # `cloudflareinsights` WAS the second, and its removal is the point of
+          # this comment. Cloudflare was injecting a Web Analytics beacon into
+          # every BROWSER request for this site — invisible to `fetch the live
+          # site back and diff it against the repo`, because that step uses curl
+          # and the injection is user-agent gated: curl's default agent got bytes
+          # identical to the repo, a Chrome agent got an extra <script>. Our own
+          # script-src refused it, so "this page calls nobody" was being held by
+          # the CSP rather than by the HTML being clean.
+          #
+          # Kevin turned Web Analytics off (it was set to "Enable, excluding
+          # visitor data in the EU", which still injects outside the EU). Verified
+          # both ways afterwards: zero occurrences in the HTML under a Chrome
+          # user-agent, and ZERO console messages on / and /game in a real
+          # browser, where there had been two and one.
+          #
+          # So the exception goes with it. A named exception that outlives its
+          # reason is an allowance nobody remembers granting, and it would let the
+          # NEXT injection through in silence — which is the entire failure this
+          # step exists to catch.
+          if grep -i "$VIOLATION" live.log | grep -vi favicon; then
+            echo "::error::the live game page was refused something by its own CSP"
+            echo "  static styling belongs in the stylesheet; dynamic styling goes"
+            echo "  through the CSSOM (el.style.x = y), which no policy restricts."
+            exit 1
+          fi
+          echo "  the live game page ran under its real policy with nothing unexpected refused"
+
+      - name: deploy to production — the same commit the preview passed
+        if: steps.site.outputs.changed == 'true'
+        id: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx --yes "$WRANGLER" pages deploy src \
+            --project-name "$PROJECT" \
+            --branch main \
+            --commit-dirty=true | tee deploy.log
+          echo "url=$(grep -oE 'https://[a-z0-9.-]+\.pages\.dev' deploy.log | tail -1)" >> "$GITHUB_OUTPUT"
+
+      # Deploying and assuming it worked is not verification. Fetch every page
+      # back over the public internet and compare it byte for byte against the
+      # file in this checkout -- 200 OK only proves something answered, not that
+      # what is public is what we committed.
+      #
+      # RETRY EVERY PAGE, NOT JUST THE FIRST. A brand-new *.pages.dev hostname
+      # takes roughly 40 seconds to come up and answers 522 until it does. The
+      # first version of this step retried the root and then checked the other
+      # pages once each, so the root spent six attempts waiting out propagation
+      # and the very next request failed on the tail of the same cold start.
+      # The deploy was fine; the check was shaped wrong.
+      #
+      # DIFF AGAINST THE DEPLOYMENT URL, NOT THE PRODUCTION HOSTNAME. Pages
+      # gives every deployment its own immutable <hash>.<project>.pages.dev,
+      # which is the artifact just uploaded with nothing aliased or cached in
+      # front of it. The production hostname is a moving pointer with an edge
+      # cache, and it served the previous build for minutes after a correct
+      # deploy -- `?cb=1` on the same URL returned the new bytes, so the alias
+      # had switched and only the cached object was stale. Diffing there tests
+      # Cloudflare's cache invalidation, which is not our invariant. Production
+      # is checked separately, for reachability, with the cache defeated.
+      - name: fetch the live site back and diff it against the repo
+        if: steps.site.outputs.changed == 'true'
+        env:
+          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          if [ -z "$DEPLOY_URL" ]; then
+            echo "::error::no deployment URL was captured from wrangler — cannot verify"
+            exit 1
+          fi
+          URL="$DEPLOY_URL"
+          echo "checking $URL"
+
+          # AS A BROWSER, NOT AS CURL, AND THAT IS NOT A DETAIL.
+          #
+          # This step compares published bytes to committed bytes and passed
+          # every run while Cloudflare injected a Web Analytics beacon into the
+          # HTML — because the injection was USER-AGENT GATED. curl's default
+          # agent got bytes identical to the repo; a Chrome agent got an extra
+          # <script>. The step was measuring something no visitor receives, which
+          # is this project's most-repeated defect, found inside the step written
+          # to close it. Found by reading the live page's console in a real
+          # browser, not by reading this file.
+          #
+          # The edge may rewrite HTML for a browser in other ways too (Rocket
+          # Loader, email obfuscation, auto-minify are all UA- and content-type
+          # sensitive). Asking as a browser is the only version of this question
+          # whose answer is about the site people actually load.
+          #
+          # Checked before this line was written: all nine pages byte-identical
+          # under a Chrome agent, the day after the beacon was turned off.
+          VISITOR_UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'
+
+          # Retries on 5xx (edge not ready) but NOT on 404 -- a missing file is
+          # a real answer, and waiting 60s to report it just hides the cause.
+          fetch() {  # fetch <path> <destination>
+            local path="$1" dest="$2" code
+            for i in $(seq 1 12); do
+              # 000 is curl's code for a transport failure, which for a hostname
+              # minutes old usually means DNS has not propagated yet -- another
+              # thing to wait out rather than report as a broken site.
+              code=$(curl -sS -A "$VISITOR_UA" -H 'Accept: text/html' \
+                          -o "$dest" -w '%{http_code}' -L "$URL/$path") || code=000
+              case "$code" in
+                200)     return 0 ;;
+                5*|000)  echo "    attempt $i: HTTP $code — edge not ready"; sleep 6 ;;
+                *)       echo "::error::/$path returned HTTP $code"; return 1 ;;
+              esac
+            done
+            echo "::error::/$path never became available (last HTTP $code)"
+            return 1
+          }
+
+          # THE ONE NORMALISATION, AND IT IS NARROW ON PURPOSE.
+          #
+          # Cloudflare's Scrape Shield rewrites every mailto in the served HTML
+          # into /cdn-cgi/l/email-protection#<hex> and injects a decoder script
+          # to put it back. script-src here is hash-pinned, so the browser
+          # REFUSES the decoder and the footer reads, to a real visitor, the
+          # literal string "[email protected]". `<!--email_off-->` is
+          # Cloudflare's documented per-block opt-out and it works -- the address
+          # arrives intact -- but the zone CONSUMES the two marker comments, so
+          # the served bytes are 33 shorter than the committed bytes.
+          #
+          # BOTH SIDES, not just the live one. This same step checks the
+          # *.pages.dev deployment, which is not on the zone and therefore keeps
+          # the markers. Stripping only the repo side would pass on the custom
+          # domain and fail on the preview.
+          #
+          # What this can hide is exactly two literal comment strings that we put
+          # in for the CDN to eat, and nothing else -- every other byte is still
+          # compared. It comes out the moment Email Address Obfuscation is turned
+          # off in the dashboard, which is the cleaner end state and Kevin's call.
+          # TWO EDGE REWRITES, BOTH NAMED. (1) `<!--email_off-->` is a marker WE
+          # add for Scrape Shield to eat so the mailto survives. (2) The Web
+          # Analytics beacon is a THIRD-PARTY SCRIPT in the reader's page, on
+          # deliberately, named in script-src so it runs — but never in our bytes.
+          # Removed by an EXACT pattern, so anything else the edge adds, or any
+          # change to the beacon's shape, still fails this comparison and is
+          # printed. A gate that silently deletes injected scripts cannot do its
+          # job; this one deletes exactly one known tag and reports that it did.
+          strip() {
+            # THE WHOLE LINE, ANCHORED. Substituting the tag alone left the
+            # newline Cloudflare wrote with it, so the compare failed by exactly
+            # one byte and the printed diff showed a blank line -- which reads as
+            # nothing at all. The beacon is injected on its own line before
+            # </body>; ^…$ means an inline one, or a moved one, does NOT get
+            # deleted and fails the comparison instead. Canaried both ways.
+            sed -e 's|<!--/\?email_off-->||g' \
+                -e '\%^<script type="module" src="https://static\.cloudflareinsights\.com/beacon\.min\.js/[^>]*></script>$%d' "$1"
+          }
+          beacon_note() {
+            grep -q 'static\.cloudflareinsights\.com' "$1" \
+              && echo "      (edge injected the Web Analytics beacon — in script-src, stripped for this diff)" || true
+          }
+
+          # The root is its own case: it is not a file we deploy but a route
+          # Pages resolves to index.html, and getting that wrong is a 404 on
+          # the front page with every deep link still working.
+          fetch "" root.html
+          if ! cmp -s <(strip root.html) <(strip src/index.html); then
+            echo "::error::the site root is not src/index.html"
+            exit 1
+          fi
+          echo "  /  ->  index.html  ($(wc -c < root.html) bytes, identical)"
+          beacon_note root.html
+
+          fail=0
+          for f in src/*.html; do
+            page=$(basename "$f")
+            fetch "$page" live.html || { fail=1; continue; }
+            if cmp -s <(strip live.html) <(strip "$f"); then
+              echo "  /$page  ($(wc -c < "$f") bytes, identical)"
+              beacon_note live.html
+            else
+              echo "::error::/$page differs from $f — published bytes are not committed bytes"
+              fail=1
+            fi
+          done
+          [ "$fail" = 0 ] || exit 1
+          echo "all $(ls src/*.html | wc -l) pages match the checkout byte for byte"
+
+          # Production is a separate question: does each public hostname resolve
+          # to this deployment at all?
+          #
+          # RETRY THE COMPARISON, NOT ONLY THE STATUS. The fetch helper retries
+          # 5xx and 000 -- "not ready yet" -- but a hostname that has just been
+          # deployed to can be perfectly ready and briefly serve the PREVIOUS
+          # bytes with a 200. That is what happened on the first run of this
+          # check: readthegame.co is tested first, seconds after the upload, and
+          # failed while www and pages.dev, tested moments later, passed. The
+          # deploy was correct and the site was correct within seconds.
+          #
+          # So a mismatch is not immediately a failure; it is "propagating"
+          # until it has been given a bounded amount of time to stop being one.
+          # A cache-busting query defeats the edge cache but cannot hurry the
+          # alias itself.
+          echo
+          for host in $PUBLIC_HOSTS; do
+            URL="https://${host}"
+            matched=0
+            for i in $(seq 1 10); do
+              if fetch "?cb=${GITHUB_RUN_ID}-${i}" prod.html && cmp -s <(strip prod.html) <(strip src/index.html); then
+                matched=1; break
+              fi
+              echo "    $host: serving a different build — attempt $i, waiting"
+              sleep 6
+            done
+            if [ "$matched" = 1 ]; then
+              echo "  https://${host} serves the current index"
+              beacon_note prod.html
+            else
+              # ONE MESSAGE WAS STANDING FOR TWO DIFFERENT FAILURES, and it cost
+              # a wasted re-run to find that out. The loop breaks only when the
+              # fetch AND the compare both succeed, so content that never matches
+              # exhausts the retries and reports "never served this deployment" --
+              # which reads as a DNS or alias problem and sends you to the wrong
+              # dashboard. Same shape as the caption's `on` class: a single signal
+              # that cannot distinguish the two states it is asked about.
+              if [ -s prod.html ]; then
+                echo "::error::https://${host} answers, but serves bytes we did not commit"
+                echo "  fetched $(wc -c < prod.html) bytes, repo has $(wc -c < src/index.html)"
+                echo "  --- what the edge added or changed (first 20 lines) ---"
+                diff <(sed 's/></>\n</g' prod.html) <(sed 's/></>\n</g' src/index.html) | head -20 || true
+                echo "  Injected <script> here usually means a Cloudflare feature was"
+                echo "  re-enabled in the dashboard. The CSP refuses them, so they do"
+                echo "  nothing except break this check and log an error for every visitor."
+              else
+                echo "::error::https://${host} never served this deployment (no response body)"
+              fi
+              fail=1
+            fi
+          done
+          [ "$fail" = 0 ] || exit 1
+
+      # The same check again, on the real origin: CORS names readthegame.co
+      # separately from the preview hostnames, and only production proves it.
+      - name: a visitor can actually read the data — on production
+        if: steps.site.outputs.changed == 'true'
+        env:
+          SITE: https://readthegame.co
+        run: |
+          fail=0
+          for i in $(seq 1 8); do
+            google-chrome --headless --no-sandbox --disable-gpu \
+              --virtual-time-budget=15000 --dump-dom \
+              "$SITE/?cb=${GITHUB_RUN_ID}-${i}" > live.html 2>/dev/null || true
+            state=$(grep -o 'id="state"[^>]*>[^<]*' live.html | sed 's/.*>//' || true)
+            case "$state" in
+              *"Data through"*) echo "  the live site reports: $state"; fail=0; break ;;
+              "") echo "    attempt $i: page not rendered yet"; fail=1 ;;
+              *) echo "    attempt $i: \"$state\""; fail=1 ;;
+            esac
+            sleep 8
+          done
+          if [ "$fail" != 0 ]; then
+            echo "::error::a visitor cannot read the data — last state: \"$state\""
+            echo "  if this says 'No data loaded yet', check the R2 CORS policy (r2-cors workflow)"
+            exit 1
+          fi
+
+      # The same check again, on the custom domain: the ZONE can inject into
+      # production (it has, twice -- see the diff step) and never into *.pages.dev.
+      - name: the live game raises no policy refusal — on production
+        if: steps.site.outputs.changed == 'true'
+        env:
+          SITE: https://readthegame.co
+        run: |
+          # A CANARY FIRST, and it is not decoration here. A console grep that has
+          # never matched is indistinguishable from a console that is not being
+          # captured, and this whole step is one grep of one log. So: a page with
+          # the same SHAPE of policy — hashes only, no 'unsafe-inline' — and one
+          # inline style on it. The step FAILS IF THIS COMES BACK CLEAN. The hash
+          # below is arbitrary and that is the point: no attribute can ever match
+          # any hash, which is exactly the situation on the real page.
+          cat > canary-csp.html <<'HTML'
+          <!doctype html><html><head><meta charset="utf-8">
+          <meta http-equiv="Content-Security-Policy"
+                content="default-src 'none'; style-src 'sha256-3w1CAvQ0dwQ8i7dr8jNAwLnzsQpx8bLTPjB7C4yRcVs='">
+          <title>canary</title></head>
+          <body><p style="color:#c00">this style must be refused</p></body></html>
+          HTML
+          google-chrome --headless --no-sandbox --disable-gpu \
+            --enable-logging=stderr --log-level=0 \
+            --virtual-time-budget=4000 --dump-dom \
+            "file://$PWD/canary-csp.html" > /dev/null 2> canary.log || true
+          # "violates the following Content Security Policy", NOT "Refused to".
+          #
+          # This canary went red twice on two different causes, and it was right
+          # both times. First: Chrome routes console output nowhere without
+          # --enable-logging (fixed above, and it exposed the same blindness in
+          # the index step). Then, with the console finally captured, it went red
+          # again — because CHROME CHANGED THE WORDING. What it says today is
+          #
+          #   "Applying inline style violates the following Content Security
+          #    Policy directive 'style-src ...'"
+          #
+          # and the old "Refused to apply inline style ... because it violates
+          # the following ..." is gone. Grepping for the verb was grepping for a
+          # sentence Chrome no longer writes. The clause both wordings share is
+          # the one below, and it also excludes the INFORMATIONAL messages —
+          # "The Content Security Policy directive 'frame-ancestors' is ignored"
+          # is a warning, not a denial, and matched the pattern this replaced.
+          #
+          # Established by running it: playwright's chromium locally, printing
+          # every console message verbatim, rather than a third guess in CI.
+          VIOLATION='violates the following Content Security Policy'
+          if ! grep -qi "$VIOLATION" canary.log; then
+            echo "::error::the canary's refusal was never captured — this step cannot see a violation"
+            echo "  an inline style under a hash-only style-src MUST be reported, and was not."
+            echo "  either the console is not reaching stderr, or the wording moved again."
+            grep -i 'CONSOLE' canary.log | head -5 || echo "  (no CONSOLE lines at all)"
+            exit 1
+          fi
+          echo "  canary: a refused inline style is visible to this step"
+
+          google-chrome --headless --no-sandbox --disable-gpu \
+            --enable-logging=stderr --log-level=0 \
+            --virtual-time-budget=20000 --dump-dom \
+            "$SITE/game?cb=${GITHUB_RUN_ID}-csp" > /dev/null 2> live.log || true
           # ONE EXCEPTION, AND IT USED TO BE TWO.
           #
           # favicon: the implicit /favicon.ico request is browser-initiated and
@@ -1531,6 +1743,7 @@ jobs:
           echo "  the live game page ran under its real policy with nothing unexpected refused"
 
       - name: summary
+        if: steps.site.outputs.changed == 'true'
         run: |
           {
             echo "### Deployed"
@@ -1540,4 +1753,6 @@ jobs:
             for host in $PUBLIC_HOSTS; do echo "- https://${host}"; done
             echo ""
             echo "Immutable URL for this commit: ${{ steps.deploy.outputs.url }}"
+            echo ""
+            echo "Checked first as a preview: ${{ steps.preview.outputs.url }}"
           } >> "$GITHUB_STEP_SUMMARY"
