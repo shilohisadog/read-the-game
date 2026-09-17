@@ -353,7 +353,7 @@ measured.
 | 4 | **S2**: work branches deploy previews; live checks retargeted at the preview; promotion by fast-forward | one real change goes branch → preview → `main` |
 | 5 | the review gallery with mechanical diffs (pixels, sentences, the DOM golden) | Kevin judges one batch |
 | 6 | harness seam B + T1 | ids-over-three count, before and after |
-| 7 | visibility claims → S2, file by file, each move a churn replay | §8.1 |
+| 7 | visibility claims → S2, file by file, each move a churn replay | §8.1 — ⏳ the browser checks now live in `tools/browser/` (runnable locally, judgement unit-tested), which is what a file-by-file move needs |
 | 8 | new browser states for the blind spots | re-plant the 19 |
 | 9 | the weekly mutation run with check mutants | a planted disarmed gate is reported — ⏳ the engine is built and run once (`tools/mutate.mjs`, §8.2); what is open is the SCHEDULE, a fresh sample, and check mutants |
 | 10 | the performance budget | an alarm on a planted heavy page |

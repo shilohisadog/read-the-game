@@ -18,6 +18,8 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { TEAMS } from '../src/lib/teams.js';
 import { boot } from './helpers/page.js';
 import { createHash } from 'node:crypto';
+import { GAME_LINE, usable, judgeLine } from '../tools/browser/watch-a-game.mjs';
+import { probeHtml } from '../tools/browser/verdict-dot.mjs';
 
 const SRC = new URL('../src/', import.meta.url);
 const shell = readFileSync(new URL('game.html', SRC), 'utf8');
@@ -559,21 +561,20 @@ test('NO PLACEHOLDER IN THE MARKUP IS A REAL CLUB', () => {
 
 test('the deploy gate cannot pass on a blank expectation', () => {
   // THE HOLE THAT WAS IN IT. The gate derives what the page should say from
-  // catalog.json, then greps the rendered line for it — which is right, and was
-  // built precisely so no expectation is typed by hand. But the derivation ran
-  // inside `$(...)` feeding `read`, and `read` succeeds on empty input: an empty
-  // catalog threw, printed a traceback, and left the expectation blank. `case
-  // "$line" in *""*` matches EVERY string, so the check below it became
-  // vacuous. It went red anyway, on a different branch — correct by accident,
-  // which is indistinguishable from correct by design until the accident stops.
-  const wf = readFileSync(new URL('../.github/workflows/deploy.yml', import.meta.url), 'utf8');
-  const step = wf.slice(wf.indexOf('a visitor can actually watch a game'));
-  assert.match(step, /would pass on anything/,
-    'a blank expectation must be an error, not a match-all');
-  const blank = step.indexOf('would pass on anything');
-  const compare = step.indexOf('which does not contain');
-  assert.ok(blank !== -1 && compare !== -1 && blank < compare,
-    'and it must be rejected BEFORE the comparison it would defeat');
+  // catalog.json — right, and built precisely so no expectation is typed by hand.
+  // But the derivation ran inside `$(...)` feeding `read`, and `read` succeeds on
+  // empty input: an empty catalog threw, printed a traceback, and left the
+  // expectation blank. `case "$line" in *""*` matches EVERY string, so the check
+  // below it became vacuous. It went red anyway, on a different branch — correct
+  // by accident, which is indistinguishable from correct by design until the
+  // accident stops happening.
+  // ⭐ ASKED OF THE CHECK ITSELF since 2026-09-17, not of deploy.yml's shell.
+  assert.equal(usable({ teams: '', date: '' }), false);
+  assert.equal(usable({ teams: 'MTL at TOR', date: '' }), false, 'half an expectation is still blank');
+  assert.equal(usable(null), false);
+  assert.equal(usable({ teams: 'MTL at TOR', date: '14 June 2026' }), true);
+  // And a blank one REJECTS rather than matching anything handed to it.
+  assert.equal(judgeLine('MTL at TOR · 14 June 2026', { teams: '', date: '' }).ok, false);
 });
 
 /* --------------------------------------------------------------- preview
@@ -742,27 +743,19 @@ test('and the date link says the words the reader already met', () => {
  * two languages, one string, and nothing else compares them.
  */
 test('the deploy gate greps for a game line this page actually renders', () => {
-  const yml = readFileSync(
-    new URL('../.github/workflows/deploy.yml', import.meta.url), 'utf8');
-
-  // The live-watch step's success arm, e.g.  *" at "*) fail=0; break ;;
-  const arm = /\*"([^"]+)"\*\)\s*fail=0;\s*break/.exec(yml);
-  assert.ok(arm, 'the live-watch step no longer has a success pattern — '
-    + 'this check has lost its subject');
-  const needle = arm[1];
-
+  // The pattern the live-watch check waits for, against what the page puts in #gl.
   const a = boot();
   const line = String(a.$('gl').textContent || '');
-  assert.ok(line.includes(needle),
-    `deploy.yml waits for ${JSON.stringify(needle)} in #gl, but the page renders `
-    + `${JSON.stringify(line)} — the gate would call a working page dead`);
+  assert.ok(line.includes(GAME_LINE),
+    `the check waits for ${JSON.stringify(GAME_LINE)} in #gl, but the page renders `
+    + `${JSON.stringify(line)} — it would call a working page dead`);
 
   // AND THE PLACEHOLDER MUST NOT MATCH IT, or the gate passes on a page that
   // never ran. `#gl` ships as an em-dash, so "not empty" was never the signal.
   const raw = readFileSync(new URL('../src/game.html', import.meta.url), 'utf8');
   const ph = /id="gl"[^>]*>([^<]*)</.exec(raw);
   assert.ok(ph, 'no #gl in the built markup — this check has lost its subject');
-  assert.ok(!ph[1].includes(needle),
+  assert.ok(!ph[1].includes(GAME_LINE),
     `the un-booted placeholder ${JSON.stringify(ph[1])} already contains the `
     + `pattern the gate waits for, so the gate cannot tell boot from no-boot`);
 });
@@ -772,21 +765,24 @@ test('the deploy gate greps for a game line this page actually renders', () => {
  * `#rg` must ship hidden, so that "visible" means "reveal() ran".
  */
 test('the probe gate can tell a booted page from an un-booted one', () => {
-  const yml = readFileSync(
-    new URL('../.github/workflows/deploy.yml', import.meta.url), 'utf8');
   // ⚠️ COMMENTS STRIPPED FIRST, and this check caught itself doing the thing it
-  // exists to prevent: the fix in deploy.yml QUOTES the old broken line in its
-  // own explanation, so a raw scan finds `/final/.test(gl` in prose and fails on
-  // a file that is correct. A check that cannot tell code from the words about
-  // the code is not a check about code — the fourth instance in this project.
-  // Both comment syntaxes: `#` is YAML's, and the embedded browser script has
-  // its own `/* */`. The quote that tripped this was in the JavaScript one.
-  const code = yml.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*#.*$/gm, '');
+  // exists to prevent: the probe QUOTES the old broken line in its own
+  // explanation, so a raw scan finds `/final/.test(gl` in prose and fails on a
+  // file that is correct. A check that cannot tell code from the words about the
+  // code is not a check about code — the fourth instance in this project.
+  const code = probeHtml('game.html', 1).replace(/\/\*[\s\S]*?\*\//g, '');
   assert.match(code, /var booted = rg && !rg\.hidden/,
     'the verdict probe no longer keys on #rg — if it keys on copy again, the '
     + 'next wording change fails the deploy on a working site');
   assert.doesNotMatch(code, /\/final\/\.test\(gl/,
     'the probe is keyed to the game line stating the result again');
+  // AND THE MECHANISM IT DEPENDS ON: the shell HIDES the app before it fetches and
+  // `reveal()` unhides it, so "visible" means "boot ran" with no prose in the path.
+  // ⚠️ Not in the markup — it is `APP.hidden=true` in the bootstrap, and asserting
+  // a `hidden` attribute on the built `#rg` failed on a correct page.
+  const raw = readFileSync(new URL('../src/game.html', import.meta.url), 'utf8');
+  assert.match(raw, /if\(APP\)APP\.hidden=true;/, 'the shell no longer hides the app before fetching');
+  assert.match(raw, /function reveal\(\)\{[^}]*APP\.hidden=false/, 'nothing unhides the app, so the probe cannot see a boot');
 });
 
 /**
