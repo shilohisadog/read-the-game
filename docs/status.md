@@ -40,9 +40,9 @@ Kevin's plan, in order: (1) ✅ commit the defect corpus; (2) ✅ a human relabe
 25 coarse)**, so no test layer may be sized from them; `found_by` holds only as
 Kevin versus anyone else (20 of 26); (3) ✅ **the survivorship experiment —
 `docs/survivorship-experiment.md`**, summarised below; (4) ✅ **a branch preview
-reads production data under the current CORS and CSP** — below; ⏭ (5) **NEXT:**
-the architecture document for CHENG — the system's functions × test levels ×
-pipeline stages;
+reads production data under the current CORS and CSP** — below; (5) ✅ **written, FOR CHENG —
+`docs/test-program.md`** (functions × levels × pipeline stages, with a churn
+acceptance test); ⏸ **waiting on CHENG's rulings (its §11, Q1–Q7)**;
 (6) T1/T2, seam B and `.counters`/`.cbar` wait on it.
 
 ⭐⭐ **STEP 5 CARRIES A CHURN ACCEPTANCE TEST — agreed with Kevin 2026-09-17.** He
