@@ -1,0 +1,13 @@
+diff --git a/src/lib/period.js b/src/lib/period.js
+index ec49854..76e5a7b 100644
+--- a/src/lib/period.js
++++ b/src/lib/period.js
+@@ -23,7 +23,7 @@
+ export function periodLabel(e) {
+   if (!e) return 'Pre-game';
+   if (e.pt === 'SO') return 'Shootout';
+-  if (e.pt !== 'OT') return 'Period ' + e.per;
++  if (e.pt !== 'OT') return 'Zqx ' + e.per;
+   // Playoff games run 2OT, 3OT and beyond; regulation is three periods, so the
+   // overtime's own number is the period minus three.
+   const n = e.per - 3, name = n > 1 ? n + 'OT' : 'Overtime';

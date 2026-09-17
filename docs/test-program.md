@@ -276,11 +276,17 @@ measured.
 
    | change | off-subject failures today |
    |---|---:|
-   | the penalty-band deletion, `c44373b` | 3 files |
-   | the period-label wording change | 9 tests |
-   | the `.counters`/`.cbar` removal | not yet measured |
+   | the penalty-band deletion, `c44373b` | 3 files — ⚠️ **not replayable**: that commit already edited the tests that read the band, so replaying it on today's suite shows 0 whether or not anything improved |
+   | the period-label wording change | **9 tests** (of 11 failing, 6 files) — re-measured 2026-09-17, unchanged |
+   | the `.counters`/`.cbar` removal | **5 tests** off-subject + 2 cross-cutting (of 19 failing, 9 files) — measured 2026-09-17 |
 
-   **Target: zero off-subject.**
+   **The baseline is committed so the same change can be replayed after seam B:**
+   `docs/defects/churn-replay-2026-09-17/` holds both patches and
+   `docs/defects/churn-replay-2026-09-17/before-seam-b.json`, every failing test with its kind. ⚠️ The kinds are CC's
+   judgement from what each test reads, not checked by a second reader.
+
+   ~~**Target: zero off-subject.**~~ **Ruled a ratchet (§11.2 Q7):** the count
+   falls on each replay, and each remaining one names a closed-set category.
 2. **Detection does not regress.** Re-run the 187 step-3 mutants: caught per
    function **≥ 52 / 45 / 28**.
 3. **The escapes close — reported PER FUNCTION** (CHENG): a program that improves

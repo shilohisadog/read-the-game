@@ -1,0 +1,182 @@
+{
+ "measured": "2026-09-17",
+ "base": "85048c2",
+ "method": "apply the patch to a clean clone at base, npm run build, node --test each test/*.test.js file on its own, record every top-level not-ok. Classification is CC's judgement from what each test READS (docs/test-program.md §8.1) -- not checked by a second reader.",
+ "replays": {
+  "counters-cbar": {
+   "patch": "docs/defects/churn-replay-2026-09-17/counters-cbar.patch",
+   "failing": 19,
+   "files": 9,
+   "byKind": {
+    "on-subject": 11,
+    "change-detector": 1,
+    "off-subject": 5,
+    "cross-cutting": 2
+   },
+   "tests": [
+    {
+     "file": "css-orphans.test.js",
+     "test": "⛔ every rule in app.css targets something a page can carry",
+     "kind": "on-subject"
+    },
+    {
+     "file": "deeplink-render.test.js",
+     "test": "the scoreboard states the mode the URL asked for: \"?strength=even\" -> EVEN STRENGTH",
+     "kind": "on-subject"
+    },
+    {
+     "file": "deeplink-render.test.js",
+     "test": "the scoreboard states the mode the URL asked for: \"?strength=all\" -> ALL SITUATIONS",
+     "kind": "on-subject"
+    },
+    {
+     "file": "deeplink-render.test.js",
+     "test": "the scoreboard states the mode the URL asked for: \"\" -> ALL SITUATIONS",
+     "kind": "on-subject"
+    },
+    {
+     "file": "deeplink-render.test.js",
+     "test": "the scoreboard states the mode the URL asked for: \"?strength=sideways\" -> ALL SITUATIONS",
+     "kind": "on-subject"
+    },
+    {
+     "file": "dom-golden.test.js",
+     "test": "⭐ the rendered DOM is identical to the golden, frame for frame",
+     "kind": "change-detector"
+    },
+    {
+     "file": "hero-loop.test.js",
+     "test": "the attempts derive.py publishes are the attempts the counter reaches",
+     "kind": "off-subject"
+    },
+    {
+     "file": "park.test.js",
+     "test": "the ledger lists nothing that is already back in the light",
+     "kind": "on-subject"
+    },
+    {
+     "file": "render-board.test.js",
+     "test": "no bare percentage survives on the scoreboard",
+     "kind": "on-subject"
+    },
+    {
+     "file": "render-board.test.js",
+     "test": "the strength mode reaches the scoreboard, not only the counters",
+     "kind": "on-subject"
+    },
+    {
+     "file": "render-preview.test.js",
+     "test": "⭐ the preview runs with the Control layer ON, so the hero shows what the h1 promises",
+     "kind": "off-subject"
+    },
+    {
+     "file": "render-preview.test.js",
+     "test": "⭐ the control bar claims nothing before anything has been counted",
+     "kind": "on-subject"
+    },
+    {
+     "file": "render-preview.test.js",
+     "test": "⭐ the preview begins where the layer first counts something",
+     "kind": "off-subject"
+    },
+    {
+     "file": "render-transport.test.js",
+     "test": "a deep link lands without pretending the whole game just happened",
+     "kind": "on-subject"
+    },
+    {
+     "file": "render-transport.test.js",
+     "test": "⭐⭐ a scrub re-bases the flash, so playing after a drag does not fire for the drag",
+     "kind": "on-subject"
+    },
+    {
+     "file": "smoke.test.js",
+     "test": "first paint is the PRE-GAME state, not the final score and not a play",
+     "kind": "off-subject"
+    },
+    {
+     "file": "smoke.test.js",
+     "test": "a full render at the end puts the right numbers in the DOM",
+     "kind": "cross-cutting"
+    },
+    {
+     "file": "smoke.test.js",
+     "test": "the strength filter moves the numbers on screen, with the mode attached",
+     "kind": "cross-cutting"
+    },
+    {
+     "file": "smoke.test.js",
+     "test": "a metric added mid-replay catches up, tracks forward, and tears down",
+     "kind": "off-subject"
+    }
+   ]
+  },
+  "period-label": {
+   "patch": "docs/defects/churn-replay-2026-09-17/period-label.patch",
+   "failing": 11,
+   "files": 6,
+   "byKind": {
+    "off-subject": 9,
+    "change-detector": 1,
+    "on-subject": 1
+   },
+   "tests": [
+    {
+     "file": "deeplink-render.test.js",
+     "test": "a link to a moment opens there, and says nothing",
+     "kind": "off-subject"
+    },
+    {
+     "file": "dom-golden.test.js",
+     "test": "⭐ the rendered DOM is identical to the golden, frame for frame",
+     "kind": "change-detector"
+    },
+    {
+     "file": "render-board.test.js",
+     "test": "overtime is NAMED, and says how many skaters are on the ice",
+     "kind": "on-subject"
+    },
+    {
+     "file": "render-ends.test.js",
+     "test": "a link to the opening faceoff still lands on it",
+     "kind": "off-subject"
+    },
+    {
+     "file": "render-ends.test.js",
+     "test": "the first step forward lands on the opening draw",
+     "kind": "off-subject"
+    },
+    {
+     "file": "render-ends.test.js",
+     "test": "as-played rotates the periods the arena rotated, and only those",
+     "kind": "off-subject"
+    },
+    {
+     "file": "render-ends.test.js",
+     "test": "the club behind the net travels with the net when the ends turn over",
+     "kind": "off-subject"
+    },
+    {
+     "file": "render-ends.test.js",
+     "test": "a zone-start ring turns over with the rink, and only in the periods that did",
+     "kind": "off-subject"
+    },
+    {
+     "file": "render-notes.test.js",
+     "test": "the ends key arrives at the first period the ends did NOT switch",
+     "kind": "off-subject"
+    },
+    {
+     "file": "render-notes.test.js",
+     "test": "the empty-net note is present exactly while a net is really empty",
+     "kind": "off-subject"
+    },
+    {
+     "file": "smoke.test.js",
+     "test": "the clock shows time remaining, not elapsed",
+     "kind": "off-subject"
+    }
+   ]
+  }
+ }
+}

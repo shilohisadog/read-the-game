@@ -1,0 +1,156 @@
+diff --git a/builders/build_main.py b/builders/build_main.py
+index b237070..151b33f 100644
+--- a/builders/build_main.py
++++ b/builders/build_main.py
+@@ -102,8 +102,6 @@ __CSS__</style>
+        (`#rg .pb::before{content:attr(data-ab)}`) -- a second way to draw a team
+        chip is a second thing to keep in step with the club colours. -->
+   <div class="mid"><div class="gs"><span id="per">Pre-game</span> · <span class="cl" id="clk">20:00</span> <i class="clw">left</i> <span class="ppill" id="ppill" hidden></span><span class="endpill" id="endpill" hidden>&#8646; Ends changed</span></div>
+-    <div class="cbar"><div class="bar"><span class="ba" id="ba"></span><span class="bh" id="bh"></span></div>
+-    <div class="pct"><span id="pa">0</span><span class="plab"><i class="pname" id="pName">CONTROL</i><i class="mode" id="pMode">ALL SITUATIONS</i></span><span id="ph">0</span></div></div>
+   </div>
+   <div class="tm h"><span class="ab" id="hAb">&mdash;</span><span class="sc" id="hSc">0</span><div class="pens" id="penH"></div></div>
+ </div>
+@@ -181,7 +179,6 @@ __CSS__</style>
+        aria-hidden because `#play` already offers this action with a real label;
+        a second tab stop for the same command is noise to a screen reader. -->
+   <button class="pressplay" id="pressplay" tabindex="-1" aria-hidden="true">&#9654; Press Play</button>
+-  <div class="counters"><div class="cc a"><span class="n" id="cA">0</span><span class="lb">Away attempts<span class="mode" id="mA">ALL SITUATIONS</span></span></div><div class="cc h"><span class="lb">Home attempts<span class="mode" id="mH">ALL SITUATIONS</span></span><span class="n" id="cH">0</span></div></div>
+   <!-- ⭐ THE LAYER'S OUTPUT, IN ONE FIXED SHAPE. docs/below-the-rink-2.md §31.
+        Kevin: "the layer information/counters should live [below the rink]. The
+        requirement is that the space utilization is consistent so the graphics
+diff --git a/src/app.js b/src/app.js
+index 3242ffa..2457214 100644
+--- a/src/app.js
++++ b/src/app.js
+@@ -413,23 +413,17 @@ function flashNet(scorer){
+  // class off, a reflow, then on.
+  const net=scorer===AID?$('netHome'):$('netAway');
+  net.classList.remove('netflash');void net.offsetWidth;net.classList.add('netflash');}
+-let prevA=0,prevH=0;
+ /**
+  * WHAT JUST HAPPENED TO THE PLAYHEAD — which is not the same question as
+  * "is this the newest event", and the two used to share one boolean.
+  *
+- *   'play'  the replay advanced by one: mark the moment AND bump the counters.
++ *   'play'  the replay advanced by one: mark the moment.
+  *   'jump'  the viewer went somewhere: mark the moment, and do NOT bump.
+  *   ''      a redraw of the same frame — a layer toggled, the work panel
+  *           opened, the scrubber dragged THROUGH here on the way somewhere
+  *           else. Mark nothing.
+  *
+- * THE SPLIT IS NOT COSMETIC. `prevA`/`prevH` hold the attempt counts at the
+- * previous frame, so `a>prevA` means "one more attempt than a moment ago" only
+- * when the playhead moved a moment. Jump forward across a period and forty
+- * attempts arrive at once, and the counter would flash exactly as it does for a
+- * single shot -- a bump that says "that just happened" about something that
+- * happened forty times, minutes ago. The caption is the opposite case: calling
++ * THE SPLIT IS NOT COSMETIC. Jump forward across a period and calling a
+  * the goal again is the whole reason to jump to it.
+  */
+ /* WHO IS SITTING, at one instant — ON THE SCOREBOARD, the way a rink shows it.
+@@ -823,29 +817,6 @@ function render(i,how){
+  drawNetmen(cur);
+  drawPill(cur);
+  $('aSc').textContent=L.as;$('hSc').textContent=L.hs;
+- const a=L.t[AID],h=L.t[HID],tot=a+h,pa=tot?Math.round(100*a/tot):0;
+- /* ⭐ NO BAR OVER AN EMPTY POPULATION, and this was a real defect on the front
+-    door. `tot=a+h||1` avoided the division by zero and then DREW THE RESULT
+-    ANYWAY: at 0-0 it made pa=0, so the whole bar rendered in the home colour and
+-    the opening faceoff of every game announced that one team had all of the
+-    control before a puck had been shot. Seen only by looking -- it is a
+-    rendering, and the suite has no pixels.
+-
+-    The rule already exists one file over. archive.js refuses a rate over an
+-    empty population and says why: "0 reads as a finding, and 'we measured
+-    nothing' is a different statement from 'it never happened'." A proportion of
+-    nothing drawn as certainty is that sentence in paint. Both segments stay at
+-    zero width, so what shows is the empty track -- which is what we know. */
+- $('ba').style.width=(tot?pa:0)+'%';$('bh').style.width=(tot?100-pa:0)+'%';
+- // A FRACTION, NOT A PERCENTAGE, and the bar carries the proportion (CHENG).
+- // `58%` over nineteen attempts asserts three significant figures on a
+- // denominator that moves 2.5 points per shot, and it swings visibly through
+- // the first period looking like information. `11` beside `8` claims exactly
+- // what it is. Same rule as the goalie card and the per-game sentence: no
+- // minimum-n threshold is needed, because a fraction carries its own.
+- $('pa').textContent=a;$('ph').textContent=h;
+- $('cA').textContent=a;$('cH').textContent=h;
+- if(how==='play'){if(a>prevA)flash('cA');if(h>prevH)flash('cH');}
+  drawLBox(i,L);
+  if(moment){
+    /* ⭐ THE GOAL PILL IS NOT DRAWN WHEN THE ICE IS ALREADY SAYING IT.
+@@ -908,20 +879,6 @@ function render(i,how){
+      case 'kill': captionEnded(cur); break;
+      case 'slot': caption(cur,'hd'); break;
+    }}
+- /* ⭐⭐ UPDATED ON EVERY FRAME, INCLUDING A SCRUB, AND THAT IS THE WHOLE POINT.
+-    These two are the only temporal state left in the drawing path: the flash
+-    above asks "did this club's count go UP since the last frame drawn", and that
+-    question is only meaningful against the frame the viewer was actually looking
+-    at. Drag the scrubber from the opening face-off to the third period and every
+-    counter climbs, silently, because a scrub is not a moment. Press Play and the
+-    next frame must compare against where the drag LEFT you.
+-    ⛔ PUTTING THIS INSIDE `if(how==='play')` IS THE BUG, and it is an easy one to
+-    write, because the line looks like bookkeeping that only the flash needs. It
+-    would leave `prevA` holding whatever was on screen before the drag, so the
+-    first played frame afterwards would flash for every attempt accumulated
+-    during it — the counters going off at once for shots taken minutes ago.
+-    `test/render-transport.test.js` walks exactly that: scrub deep, then play. */
+- prevA=a;prevH=h;
+  sayWho(cur);
+  // AT REST ONLY -- `render` runs on every frame including during playback, and
+  // `sayOnIce` reads `playing` itself rather than being called from two places.
+@@ -934,7 +891,6 @@ function render(i,how){
+     a step. Same trap `drawLBox` names in its own comment. */
+  if(workOpen)renderWork(L,cur,i);
+ }
+-function flash(id){const el=$(id);el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump');}
+ /* ⭐ A SHORT-HANDED GOAL, AND THE TEST FOR ONE IS NOT "FEWER SKATERS".
+    ⚠️ NAMED IN BOTH PLACES A GOAL IS ANNOUNCED, because there are two. A goal the
+    feed placed is announced by its LABEL ON THE ICE; only an unplaced one falls
+@@ -1531,7 +1487,7 @@ function step(){if(i>=EV.length-1){stop();return;}set(i+1,'play');timer=setTimeo
+    screen until the NEXT render, which at 3600ms is up to three and a half
+    seconds of a list that is no longer true. Neither transition produces a frame
+    of its own, so both have to say so. */
+-function play(){if(i>=EV.length-1||i<0){prevA=0;prevH=0;set(0,'play');}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);sayOnIce(EV[i]);timer=setTimeout(step,dwell(EV[i]));}
++function play(){if(i>=EV.length-1||i<0){set(0,'play');}playing=true;$('play').textContent='⏸ Pause';clearTimeout(timer);sayOnIce(EV[i]);timer=setTimeout(step,dwell(EV[i]));}
+ /* ⭐ ALL THREE LABELS ARE SHORT, AND THAT IS A LAYOUT GUARANTEE AS WELL AS A COPY
+    CHOICE. Kevin, 2026-09-07: *"let's change the control button to just 'Play', I
+    can't remember why we have 'Play from start'."* Measured: `▶ Play from start`
+@@ -3406,10 +3362,7 @@ function syncStrength(){
+     the filter is reached by `?strength=even` alone. Kept as a function because
+     `setStrength` is the one place that changes `evenOnly` and a reader looking
+     for "what happens when the filter moves" should find one answer, not none. */
+- // EVERY site that shows this quantity carries the mode. The scoreboard is the
+- // prominent one and was the unqualified one -- same number, two places, one
+- // of them saying what it was measured under (CHENG).
+- const lbl=MODE().toUpperCase();$('mA').textContent=lbl;$('mH').textContent=lbl;$('pMode').textContent=lbl;}
++}
+ function setStrength(v){evenOnly=(v==='even');syncStrength();render(i,'');}
+ /* ⏹ AND THE LISTENER WENT WITH THE CHIPS. `setStrength` survives because the
+    deep link calls it; nothing on the page does. */
+@@ -3507,7 +3460,6 @@ const AT=resolve(G.events,LINK.at);
+    landing would apologise on most honest links. */
+ $('atnote').textContent=AT.why?AT.why.text
+  :(LINK.problems.some(p=>/^at[:.]/.test(p))?LINK_NOTES.unreadable.text:'');
+-prevA=0;prevH=0;
+ /* WHERE THE PAGE OPENS. `resolve` answers index 0 both when a link asked for the
+    first play and when no link asked for anything, so the question is put to
+    `LINK.at` -- did a URL name a moment at all -- and never to the frame it
+@@ -3681,7 +3633,6 @@ if(PREVIEW){
+     ONLY IN PREVIEW, and only because that is the only place the companion label
+     is missing. The game page keeps CONTROL, where the layer's own name is the
+     useful word and the counters carry the unit two inches below. */
+- $('pName').textContent='SHOT ATTEMPTS';
+  /* ⭐ AND THE FRAME HANDS THE PARENT THE NUMBER IT ALREADY HAS.
+     The home page describes this game in a sentence under the rink, and that
+     sentence has to be about the SAME measure the bar above it shows -- Kevin:
+@@ -3785,7 +3736,7 @@ if(PREVIEW){
+    const shown=EV[k],last=k>=WINDOW,
+     wait=last?(GOAL>=0?GOAL_HOLD_MS:1500):dwell(shown);
+    set(k,k>0?'play':'');
+-   if(last){k=START;prevA=0;prevH=0;}else{k++;}
++   if(last){k=START;}else{k++;}
+    setTimeout(tick,wait);};
+   tick();}}
+ }
