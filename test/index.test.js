@@ -80,13 +80,31 @@ test('the test can actually fail — a bogus link is caught', () => {
  * reader cannot tell it from a mistake.
  */
 const UNLISTED = new Map([
-  ['workshop.html',
-   'Kevin, 2026-09-08: "let\'s remove the link (thereby removing visitor access '
-   + 'to it) and then discuss goalie-eye-view." Two of its three rows are still '
-   + 'under discussion, and one of them — read-the-game.html — is not a prototype '
-   + 'at all: build_main.py builds it and 35 test files boot it. So the nav entry '
-   + 'went and the page stayed. See docs/status.md §0.00-κ.'],
+  ['read-the-game.html',
+   'The reference game, compiled in and working offline: build_main.py builds it '
+   + 'and 35 test files boot it, so it is infrastructure rather than a page the '
+   + 'site offers. Its door was the Workshop, which went on 2026-09-17 with the '
+   + 'goaltender\'s-eye view. See docs/status.md.'],
+  ['terrain-3d.html',
+   'A prototype the Workshop used to link — shot locations as terrain. It outlived '
+   + 'its door on 2026-09-17 and is kept for the same reason the goalie view was '
+   + 'not: it is the one view of WHERE chances come from, and no decision has been '
+   + 'taken about it. Unlisted, and this is where that is written down.'],
 ]);
+
+/** Every page a reader can actually walk to, starting at the front door. */
+function reachableFrom(read, start = 'index.html') {
+  const linked = new Set(), seen = new Set([start]), queue = [start];
+  while (queue.length) {
+    for (const m of read(queue.shift()).matchAll(/href="([^"#?]+)/g)) {
+      const t = m[1].replace(/^\//, '');
+      if (!t.endsWith('.html')) continue;
+      linked.add(t);
+      if (!seen.has(t)) { seen.add(t); queue.push(t); }
+    }
+  }
+  return linked;
+}
 
 test('no page in src/ ships unlinked', () => {
   // An orphan page is published but unreachable, and nobody finds out. If a
@@ -97,14 +115,19 @@ test('no page in src/ ships unlinked', () => {
   // workshop list moved to its own page, so the prototypes are no longer named
   // on the front door — and they are not orphans, they are one click further.
   // Scanning only index.html would have called nine reachable pages unreachable.
-  const linked = new Set();
-  for (const f of readdirSync(new URL(SRC)).filter(f => f.endsWith('.html'))) {
-    const h = readFileSync(new URL(f, SRC), 'utf8');
-    for (const m of h.matchAll(/href="([^"#?]+)/g)) {
-      const t = m[1].replace(/^\//, '');
-      if (t.endsWith('.html')) linked.add(t);
-    }
-  }
+  /* ⛔⛔ REACHABLE FROM THE FRONT DOOR, TRANSITIVELY — AND THAT IS THE HOLE THIS
+     CHECK SHIPPED WITH. It collected links from EVERY page in `src/`, including
+     the unlisted ones, so an unlisted page still counted as a source of links:
+     `workshop.html` was on the ledger, unreachable by any reader, and its own
+     links kept `goalie-eye-view.html` and `terrain-3d.html` looking "linked" for
+     nine days. One page's exemption was silently excusing two more.
+     Kevin found it by eye ("we removed the surfacing of the goalie eye view...
+     shouldn't they be removed from the source code?"), which is the half a
+     reachability check is supposed to do for him. A walk from index.html cannot
+     be fed by a page nobody can walk to. */
+  const linked = reachableFrom(f => {
+    try { return readFileSync(new URL(f, SRC), 'utf8'); } catch { return ''; }
+  });
   const orphans = pages.filter(p => !linked.has(p) && !UNLISTED.has(p));
   assert.deepEqual(orphans, [], `unreachable page(s): ${orphans.join(', ')}`);
 
@@ -124,11 +147,25 @@ test('⭐ …and the orphan check can still fail, ledger or no ledger', () => {
      proves the shape of is an off switch. This asserts the two halves separately:
      a page NOT on the ledger is still reported, and the ledger's excuse is keyed
      to the filename rather than being a blanket. */
-  const pages = ['workshop.html', 'some-forgotten-draft.html'];
+  const pages = ['read-the-game.html', 'some-forgotten-draft.html'];
   const linked = new Set();
   const orphans = pages.filter(p => !linked.has(p) && !UNLISTED.has(p));
   assert.deepEqual(orphans, ['some-forgotten-draft.html'],
     'the ledger is excusing pages it does not name');
+
+  /* ⭐ AND THE WALK MUST NOT BE FED BY A PAGE NOBODY CAN REACH, which is the hole
+     that hid the goaltender's-eye view for nine days: it was linked from the
+     workshop, and the workshop was on the ledger. */
+  const site = {
+    'index.html': '<a href="learn.html">learn</a>',
+    'learn.html': '<a href="index.html">home</a>',
+    'unlisted.html': '<a href="hidden.html">a child of an unreachable page</a>',
+    'hidden.html': '',
+  };
+  const reach = reachableFrom(f => site[f] || '');
+  assert.ok(reach.has('learn.html'), 'the walk does not follow a link it should');
+  assert.ok(!reach.has('hidden.html'),
+    'a page linked only from an unlisted page still counts as reachable — the walk is fed by pages nobody can walk to');
 });
 
 test('⭐ the limits block names EVERY competition the site excludes', () => {

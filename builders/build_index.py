@@ -56,16 +56,12 @@ def _csp(html, *, connect=DATA_ORIGIN):
 # measurement at load time and renders whatever the archive currently holds.
 # Same rule game.html already follows, and the same reason.
 
-# The workshop. Kept, because each answers a question the main app does not, and
-# demoted, because they were competing with the front door.
-WORKSHOP = [
-    ("read-the-game.html", "The reference game",
-     "MIN at BUF, 10 November 2023, compiled in — the one page that works offline."),
-    ("goalie-eye-view.html", "From the crease",
-     "The same shots, seen from where the goalie stood."),
-    ("terrain-3d.html", "Where the chances came from",
-     "Shot locations as terrain — height is attempts, not danger."),
-]
+# ⏹ THE WORKSHOP WENT ON 2026-09-17, with the goaltender's-eye view it linked.
+# Its link had already left the chrome on 2026-09-08 (Kevin: the earlier views
+# were competing with the front door), so both were reachable only by typing a
+# URL. ⏭ IF THE GOALIE VIEW COMES BACK, its card comes back with it:
+# `git show <this commit>^:builders/build_index.py` holds the whole builder, and
+# `git log -S goalie-eye-view` finds every surface that ever named it.
 
 # The honest limits, on the page rather than in a README nobody opens.
 # Doctrine 9 -- selective honesty is worse than none, because it looks rigorous.
@@ -1674,11 +1670,6 @@ def _competitions():
     """The gameType table, inlined as JSON for the page. See page.competitions."""
     return P.competitions()
 
-def _workshop():
-    return "\n".join(
-        f'  <a class="card" href="{href}"><p class="t">{title}</p><p>{blurb}</p></a>'
-        for href, title, blurb in WORKSHOP)
-
 def _excluded():
     """The competitions deliberately left out of every number, from the table.
 
@@ -2670,13 +2661,6 @@ LEARN_GROUPS = [
     ("ours", "What we count &mdash; our own measurements, each showing its work"),
 ]
 
-WORKSHOP_PAGE = r"""<h1>Workshop</h1>
-<p class="note">Earlier views, each answering a question the main app does not.
-They are explorations, not front doors, and several are pinned to one game.</p>
-<div class="grid">
-__WORKSHOP__
-</div>"""
-
 # ---------------------------------------------------------------------------
 # TWO PAGES THAT USED TO BE SECTIONS.
 #
@@ -2698,11 +2682,6 @@ __WORKSHOP__
 LEARN_BODY = r"""<div class="wrap">
 <p class="eyebrow">Read the Game</p>
 __LEARN__
-</div>"""
-
-WORKSHOP_BODY = r"""<div class="wrap">
-<p class="eyebrow">Read the Game</p>
-__WORKSHOP_PAGE__
 </div>"""
 
 # \u2500\u2500 THE RULE DIAGRAMS \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
@@ -2814,11 +2793,6 @@ LEARN_TITLE = "What you can see here \u2014 Read the Game"
 LEARN_DESC = ("The hockey rules this site names as they happen \u2014 icing, offside, "
               "faceoffs, penalties, the empty net \u2014 and the measurements it counts "
               "itself, each one showing the events behind it.")
-WORKSHOP_TITLE = "Workshop \u2014 Read the Game"
-WORKSHOP_DESC = ("Earlier views of the same NHL data, each answering a question the main "
-                 "app does not. Explorations rather than front doors.")
-
-
 def build_learn():
     # NO FIGURE CSS HERE ANY MORE. The diagrams moved to their own pages, so the
     # learn page is back to what it was: a grid of short cards, scannable on a
@@ -2877,16 +2851,6 @@ def build_rule(cid):
                       current="/what-you-can-see.html",
                       head='<meta http-equiv="Content-Security-Policy" content="__CSP__">\n'
                            + css)
-    return html.replace("__CSP__", _csp(html, connect=None))
-
-
-def build_workshop():
-    html = WORKSHOP_BODY.replace("__WORKSHOP_PAGE__", WORKSHOP_PAGE.replace("__WORKSHOP__", _workshop()))
-    html = P.document(html, title=WORKSHOP_TITLE, description=WORKSHOP_DESC,
-                      url="https://readthegame.co/workshop.html",
-                      current="/workshop.html",
-                      head='<meta http-equiv="Content-Security-Policy" content="__CSP__">\n'
-                           + STYLE)
     return html.replace("__CSP__", _csp(html, connect=None))
 
 
@@ -3306,13 +3270,12 @@ def build():
     return html.replace("__CSP__", _csp(html))
 
 def main():
-    # FOUR PAGES, ONE BUILDER, AND THE VERIFY COVERS ALL OF THEM. Two sections
+    # THREE PAGES, ONE BUILDER, AND THE VERIFY COVERS ALL OF THEM. Two sections
     # of the home page became pages of their own; emitting them from a second
-    # builder would put the shared stylesheet and the workshop list in two
-    # places, which is where the next divergence hides.
+    # builder would put the shared stylesheet in two places, which is where the
+    # next divergence hides. (A fourth, the workshop, went on 2026-09-17.)
     pages = [(OUT, build()),
              (ROOT / "src" / "what-you-can-see.html", build_learn()),
-             (ROOT / "src" / "workshop.html", build_workshop()),
              (ROOT / "src" / "calendar.html", build_calendar())]
     # ONE PAGE PER RULE WE DREW. The list comes from the figures themselves, so a
     # new diagram is a page without anyone remembering to add it here -- and a
@@ -3320,13 +3283,6 @@ def main():
     # is what keeps the link and the file from disagreeing.
     pages += [(ROOT / "src" / f"{cid}.html", build_rule(cid))
               for cid in sorted(_fig_json())]
-
-    # A link to a file that does not exist is a 404 in production. Cheapest
-    # possible gate, run on every build, before the byte comparison.
-    missing = [h for h, *_ in WORKSHOP if not (ROOT / "src" / h).exists()]
-    if missing:
-        print("BROKEN LINKS -- these files do not exist: " + ", ".join(missing))
-        return 1
 
     # A PLACEHOLDER THAT SURVIVES THE BUILD IS A PAGE WITH A HOLE IN IT, and
     # this builder shipped one: extracting HELPERS out of BODY substituted it
@@ -3357,7 +3313,7 @@ def main():
 
     for path, html in pages:
         path.write_text(html)
-    print(f"wrote {OUT} {len(pages[0][1].encode())} bytes; {len(WORKSHOP)} links checked; "
+    print(f"wrote {OUT} {len(pages[0][1].encode())} bytes; "
           f"plus {', '.join(p.name for p, _ in pages[1:])}")
     return 0
 

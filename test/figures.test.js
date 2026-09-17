@@ -12,7 +12,8 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { FIG, FIG_LABEL } from '../src/lib/figures.js';
+import { readFileSync, readdirSync } from 'node:fs';
+import { FIG } from '../src/lib/figures.js';
 import { SvgPen } from '../src/lib/svgpen.js';
 
 const STYLES = Object.keys(FIG);
@@ -33,9 +34,22 @@ function recordingPen() {
   return p;
 }
 
-test('both styles exist and are labelled', () => {
-  assert.deepEqual(STYLES.sort(), ['mascot', 'tabletop']);
-  for (const s of STYLES) assert.ok(FIG_LABEL[s], `${s} has a label`);
+test('⭐ every figure the module offers is one a surface can actually select', () => {
+  // ⛔ THE SHAPE THAT WENT UNCHECKED FOR WEEKS. `FIG` held two styles and the
+  // replay pages pick with `const figStyle='mascot'` — a constant — so
+  // `figTabletop` could not be reached from any page a reader could open, while a
+  // comment in marks.js asserted the opposite ("figTabletop is NOT dead code").
+  // A claim in a comment is not a check. The style went with the goaltender's-eye
+  // view on 2026-09-17; what stays is the rule that made it findable.
+  const marks = readFileSync(new URL('../src/lib/marks.js', import.meta.url), 'utf8');
+  const fixed = /const figStyle\s*=\s*'([a-z]+)'/.exec(marks);
+  const selectable = new Set(fixed ? [fixed[1]] : []);
+  for (const f of readdirSync(new URL('../src/', import.meta.url)).filter(f => f.endsWith('.html'))) {
+    const html = readFileSync(new URL(`../src/${f}`, import.meta.url), 'utf8');
+    for (const m of html.matchAll(/data-f="([a-z]+)"/g)) selectable.add(m[1]);   // a picker on a page
+  }
+  assert.deepEqual(STYLES.sort(), [...selectable].sort(),
+    'the module ships a figure no surface can choose, or a surface offers one the module does not have');
 });
 
 for (const style of STYLES) {
@@ -83,12 +97,11 @@ test('idle motion is off when asked, and moves the figure when on', () => {
   assert.notEqual(a.toSvg(), b.toSvg(), 'time must matter when motion is on');
 });
 
-test('SvgPen honours clipping, which the tabletop jersey stripes need', () => {
-  const pen = new SvgPen('t');
-  FIG.tabletop(pen, 0, 0, 10, '#fff', 'save', { motion: false, glow: false });
-  assert.ok(pen.defs.length > 0, 'a clipPath was emitted');
-  assert.match(pen.toSvg(), /clip-path="url\(#t/, 'and something is clipped by it');
-});
+/* ⏹ `SvgPen honours clipping, which the tabletop jersey stripes need` LIVED HERE
+   until 2026-09-17. Clipping was the tabletop jersey's stripe mask and nothing
+   else on the rink uses it; the figure went with the goaltender's-eye view, and a
+   test whose subject is deleted is not a test. SvgPen still implements `clip()`
+   for whatever asks next — `git log -S figTabletop` finds both. */
 
 test('detail drops out at small sizes, on purpose', () => {
   // Most shots in a real game are far out, so the figure has to survive being

@@ -26,7 +26,7 @@ const SRC_DIR = new URL('../src/', import.meta.url);
 const PAGES = new Set(readdirSync(SRC_DIR).filter(f => f.endsWith('.html')));
 const PAGE_SRC = new Map([...PAGES].map(f =>
   [f, readFileSync(new URL(f, SRC_DIR), 'utf8')]));
-const PAGES_TO_CHECK = Object.fromEntries(['index.html','game.html','read-the-game.html','goalie-eye-view.html']
+const PAGES_TO_CHECK = Object.fromEntries(['index.html','game.html','read-the-game.html']
   .map(f => [f, readFileSync(new URL('../src/' + f, import.meta.url), 'utf8')]));
 const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
 

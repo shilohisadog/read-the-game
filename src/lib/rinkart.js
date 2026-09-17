@@ -424,8 +424,9 @@ export const goalieGlyph=(gx,col,fill,cls='gk')=>{
  *
  * ⭐ IT DID NOT EXIST, AND THE THING THAT LOOKED LIKE IT WOULD HAVE LIED. Kevin,
  * on the empty-net diagram: *"can we please show a skater glyph (we should have
- * one somewhere)."* We have `figMascot` and `figTabletop` in src/lib/figures.js,
- * and they are the wrong thing twice over: they are SHOT markers whose pose
+ * one somewhere)."* We have `figMascot` in src/lib/figures.js (and had a second
+ * style until 2026-09-17), and it is the wrong thing twice over: these are SHOT
+ * markers whose pose
  * encodes the outcome the feed recorded — saved or scored — and they wear a
  * jersey, which is the provenance grammar's word for "recorded". A player
  * stepping over the boards has no shot and no club, so borrowing that figure

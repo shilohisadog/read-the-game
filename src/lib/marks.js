@@ -43,12 +43,11 @@ const ARRIVE={goal:'flare',hit:'jolt','blocked-shot':'halt',
 // figure is judged as "9 pixels" and loses its face on a screen where there is
 // plenty of room for one.
 const UNIT_PX=4.3;
-/* ONE FIGURE, AND `figTabletop` IS NOT DEAD CODE. The picker is gone from the
-   replay page; `src/goalie-eye-view.html` still offers both and carries its own
-   copy of the module, so the alternative figure has a live caller and a live
-   test. What went is the CONTROL and the cross-page `rtg.fig` preference it
-   wrote -- a setting made on another page, applied here through a control that
-   page no longer has, is a state nothing on screen accounts for. */
+/* ONE FIGURE, AND NOW ONLY ONE EXISTS. The picker went from the replay page
+   first (a setting made on another page, applied here through a control this page
+   does not have, is a state nothing on screen accounts for); the alternative
+   figure itself went on 2026-09-17 with the goaltender's-eye view, which was the
+   only surface that could still select it. */
 const figStyle='mascot';
 
 /**

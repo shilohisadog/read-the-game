@@ -11,7 +11,7 @@ import { colourOf } from '../src/lib/teams.js';
 import { NET_X } from '../src/lib/rink.js';
 import { SX, BOARD } from '../src/lib/rinkart.js';
 import { whistle } from '../src/lib/layers/whistle.js';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { rich, app, SCRIPT, PAGE_CSS, prose, boot , pickLayer } from './helpers/page.js';
 
 test('no bare percentage survives in the layer box', () => {
@@ -158,11 +158,8 @@ test('the controls explain themselves without referring to their own history', (
  *              goal branch used to be reachable only with it off; it survives
  *              because `place()` returns nothing for a shootout event, which
  *              render-transport now proves against a real shootout fixture.
- *   players    `figTabletop` is NOT dead code — `src/goalie-eye-view.html`
- *              offers both figures and carries its own copy of the module. What
- *              went is the control and the cross-page `rtg.fig` preference: a
- *              setting made on another page, applied here through a control this
- *              page no longer has, is state nothing on screen accounts for.
+ *   players    the one figure this rink draws is `figMascot`; the second style
+ *              went with the goaltender's-eye view on 2026-09-17
  */
 test('the figure picker and the narration pair are gone, and nothing is orphaned', () => {
   for (const cls of ['fbtn', 'nbtn']) {
@@ -174,12 +171,17 @@ test('the figure picker and the narration pair are gone, and nothing is orphaned
   assert.doesNotMatch(SCRIPT, /localStorage\.setItem\('rtg\.fig'/,
     'the page still writes a figure preference no control on it can set');
 
-  // AND THE ALTERNATIVE FIGURE STILL HAS A HOME. Without this the deletion above
-  // would read as a licence to delete `figTabletop` too, which would break a
-  // page nobody was looking at.
-  const gv = readFileSync(new URL('../src/goalie-eye-view.html', import.meta.url), 'utf8');
-  assert.match(gv, /data-f="tabletop"/,
-    'the goalie view no longer offers the tabletop figure, so it really is dead code now');
+  /* ⏹ AND THE ALTERNATIVE FIGURE NO LONGER HAS A HOME EITHER. This used to require
+     that `src/goalie-eye-view.html` still offered the tabletop style — "without
+     this the deletion above would read as a licence to delete figTabletop too,
+     which would break a page nobody was looking at". Nobody was looking at it
+     because nothing linked to it: the page went on 2026-09-17 and the figure with
+     it. What is asserted now is that NO page offers a figure picker, which is the
+     claim that keeps the deletion honest in both directions. */
+  for (const f of readdirSync(new URL('../src/', import.meta.url)).filter(f => f.endsWith('.html'))) {
+    const html = readFileSync(new URL(`../src/${f}`, import.meta.url), 'utf8');
+    assert.doesNotMatch(html, /data-f="tabletop"/, `${f} offers a figure the module no longer has`);
+  }
 });
 
 /**

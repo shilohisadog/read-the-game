@@ -50,6 +50,18 @@ const GONE = {
   'builders/build_B.py': 'same',
   'src/active-play.html': 'prototype removed 2026-09-03; see status.md B8',
   'src/on-the-ice.html': 'prototype removed 2026-09-03; see status.md B8',
+  // ⏹ Removed 2026-09-17: the goaltender's-eye view and the Workshop that linked
+  // it. The Workshop's own link left the chrome on 2026-09-08, so both were
+  // reachable only by typing a URL; `figTabletop`, which only the goalie view
+  // could select, went with them. Kevin: "we removed the surfacing ... shouldn't
+  // they be removed from the source code?" ⏭ The goalie view may come back —
+  // `git log -S goalie-eye-view` is the whole of it.
+  'src/goalie-eye-view.html': "the goaltender's-eye view, removed 2026-09-17; may be resurrected",
+  'src/workshop.html': 'the Workshop index, removed 2026-09-17 with the page it linked',
+  'build_gv.py': "built the goaltender's-eye view, removed 2026-09-17",
+  'builders/build_gv.py': 'same',
+  'tools/figure-bench.py': 'the two-figure design bench, removed 2026-09-17 with the second figure',
+  'test/goalie-view.test.js': 'the goalie view had a test until 2026-09-17; the page went and so did it',
   // Renamed since the document that cites them was written.
   'deeplink-render.js': 'the suite file is test/deeplink-render.test.js',
   'test/ingest.test.js': 'now test/ingest-state.test.js',

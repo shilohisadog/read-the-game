@@ -12,9 +12,9 @@
  * nodes, because "check our work" is made physical by being able to inspect
  * them, and because the why-popup hangs off click handlers.
  *
- * Two styles ship and which one you see is a viewer setting:
- *   mascot    the default — big head, soft shapes, a face. Legible small.
- *   tabletop  the rod-hockey tin man — flat colour, heavy outline, on its peg.
+ * ONE STYLE SHIPS: the mascot — big head, soft shapes, a face, legible small.
+ * ⏹ A second (`tabletop`, the rod-hockey tin man) lived here until 2026-09-17 and
+ * went with the goaltender's-eye view, the only surface that could select it.
  *
  * Both are MARKERS, not claims (Doctrine §5). A figure says "the player this
  * coordinate belongs to was here, and this is what happened". USUALLY that is
@@ -26,7 +26,7 @@
  * else; it does not claim the figure was shooting. Neither asserts anything
  * about how a player stood, moved or skated.
  *
- *   FIG[style](pen, px, py, size, jersey, out, { t, motion, glow, light })
+ *   FIG.mascot(pen, px, py, size, jersey, out, { t, motion, glow, light })
  *
  * px,py is the figure's FEET. size is its height.
  */
@@ -114,65 +114,10 @@ export function figMascot(g,px,py,size,jersey,out,o){
  g.restore();
 }
 
-export function figTabletop(g,px,py,size,jersey,out,o){
- o=o||{}; const t=o.t||0, motion=o.motion!==false, glow=o.glow!==false, light=!!o.light;
- // How large the figure will actually APPEAR, which is not `size` when drawing
- // into a scaled SVG viewBox. Detail is dropped by apparent size, so a 9-unit
- // figure on a rink that renders 4.3px per unit keeps its face.
- // (Not named `px` -- that is already this function's x coordinate.)
- const shownAt = o.px == null ? size : o.px;
- const u=size/10, goal=out==='goal', ink='#080b0e', pants='#e7edf2', skin='#f2d3ad';
- g.save(); g.lineJoin='miter'; g.lineCap='butt';
- g.fillStyle=light?'rgba(20,40,60,.20)':'rgba(0,0,0,.42)';
- g.beginPath(); g.ellipse(px,py+u*0.55,u*3.0,u*0.85,0,0,7); g.fill();
- const wob=motion?Math.sin(t*1.25+px*0.03)*0.055:0;
- g.translate(px,py); g.rotate(wob);
- const O=(fill,lw)=>{g.fillStyle=fill;g.fill();g.strokeStyle=ink;g.lineWidth=u*(lw||0.52);g.stroke();};
- g.fillStyle='#22323f'; g.beginPath(); g.ellipse(0,u*0.28,u*2.35,u*0.68,0,0,7); g.fill();
- g.fillStyle='#33485c'; g.beginPath(); g.ellipse(0,u*0.06,u*1.95,u*0.52,0,0,7); g.fill();
- g.beginPath(); g.moveTo(-u*1.72,u*0.05); g.lineTo(-u*0.38,u*0.05);
- g.lineTo(-u*0.52,-u*3.4); g.lineTo(-u*1.62,-u*3.4); g.closePath(); O(pants);
- g.beginPath(); g.moveTo(u*0.38,u*0.05); g.lineTo(u*1.72,u*0.05);
- g.lineTo(u*1.62,-u*3.4); g.lineTo(u*0.52,-u*3.4); g.closePath(); O(pants);
- if(glow){g.shadowColor=goal?'#ff5566':'#4aa3e0'; g.shadowBlur=goal?u*4.6:u*2.2;}
- g.beginPath(); g.moveTo(-u*1.78,-u*3.2); g.lineTo(u*1.78,-u*3.2);
- g.lineTo(u*2.52,-u*6.55); g.lineTo(-u*2.52,-u*6.55); g.closePath(); O(jersey);
- g.shadowBlur=0;
- g.save(); g.clip();
- g.fillStyle='rgba(255,255,255,.88)';
- g.fillRect(-u*3,-u*4.62,u*6,u*0.38); g.fillRect(-u*3,-u*4.02,u*6,u*0.38);
- g.restore();
- g.save(); g.globalAlpha=0.42; g.strokeStyle='#ff4d5e'; g.lineWidth=u*0.26;
- g.beginPath(); g.moveTo(-u*2.02,-u*3.44); g.lineTo(u*1.54,-u*3.44);
- g.lineTo(u*2.28,-u*6.79); g.lineTo(-u*2.76,-u*6.79); g.closePath(); g.stroke(); g.restore();
- const arm=(x1,y1,x2,y2)=>{
-  g.lineCap='round';
-  g.strokeStyle=ink; g.lineWidth=u*1.52; g.beginPath(); g.moveTo(x1,y1); g.lineTo(x2,y2); g.stroke();
-  g.strokeStyle=jersey; g.lineWidth=u*0.92; g.beginPath(); g.moveTo(x1,y1); g.lineTo(x2,y2); g.stroke();
-  g.lineCap='butt';};
- if(!goal){
-  arm(-u*2.15,-u*5.95, u*1.55,-u*4.65);
-  arm(u*2.15,-u*5.95, u*3.35,-u*3.95);
-  g.lineCap='round';
-  g.strokeStyle=ink; g.lineWidth=u*0.86;
-  g.beginPath(); g.moveTo(u*0.85,-u*5.15); g.lineTo(u*5.75,-u*0.28); g.stroke();
-  g.strokeStyle='#c98b45'; g.lineWidth=u*0.40;
-  g.beginPath(); g.moveTo(u*1.00,-u*5.02); g.lineTo(u*5.62,-u*0.34); g.stroke();
-  _blade(g,u*5.30,-u*0.30,u*7.40,-u*0.04,u,0.98);
-  g.lineCap='butt';
- }else{
-  arm(-u*2.25,-u*6.15, -u*4.05,-u*9.35);
-  arm(u*2.25,-u*6.15, u*4.05,-u*9.35);
- }
- g.beginPath(); g.arc(0,-u*7.85,u*1.55,0,7); O(skin,0.46);
- g.beginPath(); g.arc(0,-u*7.95,u*1.63,Math.PI,0); g.closePath(); O(jersey,0.46);
- if(shownAt>20){
-  g.fillStyle=ink;
-  g.beginPath(); g.arc(-u*0.56,-u*7.55,u*0.19,0,7); g.fill();
-  g.beginPath(); g.arc(u*0.56,-u*7.55,u*0.19,0,7); g.fill();
- }
- g.restore();
-}
-
-export const FIG={mascot:figMascot,tabletop:figTabletop};
-export const FIG_LABEL={mascot:'Mascot',tabletop:'Tabletop'};
+/* ⏹ `figTabletop` — THE ROD-HOCKEY FIGURE — WAS DELETED 2026-09-17 with the
+   goaltender's-eye view, the only page that could draw it: `figStyle` is the
+   constant 'mascot' everywhere else, so it had shipped unreachable in both replay
+   pages for weeks. ⏭ IF THE GOALIE VIEW COMES BACK, so does its figure:
+   `git log -S figTabletop` finds both, and `git show <this commit>^:src/lib/figures.js`
+   is the whole module with both styles in it. See docs/status.md. */
+export const FIG = { mascot: figMascot };

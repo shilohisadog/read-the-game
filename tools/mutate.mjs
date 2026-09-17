@@ -39,7 +39,7 @@ const ROOT = new URL('..', import.meta.url).pathname;
 const WORK = process.env.RTG_MUTATE_WORK || '/tmp/rtg-mutate';
 
 /** The step-3 build, verbatim: generators only, no `--verify` (a mutant changes the bytes by design). */
-export const BUILD = 'export PYTHONDONTWRITEBYTECODE=1; node builders/attribution.mjs >/dev/null && node builders/learn-doors.mjs >/dev/null && node builders/learn-figures.mjs >/dev/null && python3 builders/build_main.py >/dev/null && python3 builders/build_index.py >/dev/null && for b in build_gv build_3d; do python3 builders/$b.py >/dev/null || exit 1; done';
+export const BUILD = 'export PYTHONDONTWRITEBYTECODE=1; node builders/attribution.mjs >/dev/null && node builders/learn-doors.mjs >/dev/null && node builders/learn-figures.mjs >/dev/null && python3 builders/build_main.py >/dev/null && python3 builders/build_index.py >/dev/null && python3 builders/build_3d.py >/dev/null';
 /** A detector that fails on ANY change, right or wrong — not a catcher (test-program.md §11.2 Q4). */
 export const CHANGE_DETECTORS = new Set(['dom-golden.test.js']);
 
