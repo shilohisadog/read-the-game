@@ -56,6 +56,17 @@ jobs:
           # design, that is a decision about OUR pages rather than everyone's.
           # Anyone wanting the raw feeds can still fetch them directly -- CORS
           # governs browsers, not people.
+          #
+          # ONE PATTERN, AND IT IS STILL OUR PAGES. Every Pages deployment gets its
+          # own https://<hash>.read-the-game.pages.dev and every branch preview
+          # https://<branch>.read-the-game.pages.dev, so no list of names can keep
+          # up. R2 accepts a single-label wildcard here (measured 2026-09-17, it is
+          # not in Cloudflare's CORS docs): it echoes any subdomain of OUR project
+          # and nothing else -- not `evilread-the-game.pages.dev`, not
+          # `read-the-game.pages.dev.evil.com`, not http. Added so a preview can
+          # show a UI change against production data BEFORE it ships. A preview
+          # is for looking at the page; it is never a way to test pipeline
+          # changes, which would need data of their own.
           cat > cors.json <<'JSON'
           {
             "CORSRules": [
@@ -63,7 +74,8 @@ jobs:
                 "AllowedOrigins": [
                   "https://readthegame.co",
                   "https://www.readthegame.co",
-                  "https://read-the-game.pages.dev"
+                  "https://read-the-game.pages.dev",
+                  "https://*.read-the-game.pages.dev"
                 ],
                 "AllowedMethods": ["GET", "HEAD"],
                 "AllowedHeaders": ["*"],
@@ -87,7 +99,7 @@ jobs:
       - name: prove a browser would be allowed
         run: |
           fail=0
-          for origin in https://readthegame.co https://www.readthegame.co; do
+          for origin in https://readthegame.co https://www.readthegame.co https://read-the-game.pages.dev https://cors-check.read-the-game.pages.dev; do
             for i in $(seq 1 10); do
               acao=$(curl -sS -D - -o /dev/null -m 20 \
                        -H "Origin: $origin" \
@@ -106,14 +118,18 @@ jobs:
           done
 
           # A disallowed origin must NOT be echoed back, or the policy is wider
-          # than it reads.
-          bad=$(curl -sS -D - -o /dev/null -m 20 -H "Origin: https://example.com" \
-                  "https://data.readthegame.co/index.json?cb=${GITHUB_RUN_ID}-x" \
-                | grep -i '^access-control-allow-origin:' || true)
-          if [ -n "$bad" ]; then
-            echo "::error::an unlisted origin was allowed: $bad"
-            fail=1
-          else
-            echo "  https://example.com -> correctly not allowed"
-          fi
+          # than it reads. The look-alikes are what a careless pattern would
+          # admit: a suffix match, a prefix match, and the wrong scheme.
+          for origin in https://example.com https://evilread-the-game.pages.dev \
+                        https://read-the-game.pages.dev.evil.com http://x.read-the-game.pages.dev; do
+            bad=$(curl -sS -D - -o /dev/null -m 20 -H "Origin: $origin" \
+                    "https://data.readthegame.co/index.json?cb=${GITHUB_RUN_ID}-x" \
+                  | grep -i '^access-control-allow-origin:' || true)
+            if [ -n "$bad" ]; then
+              echo "::error::an unlisted origin was allowed: $origin -> $bad"
+              fail=1
+            else
+              echo "  $origin -> correctly not allowed"
+            fi
+          done
           [ "$fail" = 0 ] || exit 1
