@@ -657,35 +657,51 @@ test('the hero takes an older game to get a goal, and the kicker says which rule
   });
 });
 
-test('and with no game in reach it falls back to the newest, and says THAT', () => {
-  // No row carries `hl`, which is the state of the published catalog until the
-  // archive is re-derived — and a front door with no game is worse than one that
-  // opens quietly, so the fallback is the behaviour, not an error.
+test('and with no loop anywhere it falls back to the newest, and says THAT', () => {
+  // No row carries `hl`: a catalog not yet derived, or an archive where no game's
+  // first goal is within derive.py's cap. A front door with no game is worse than
+  // one that opens quietly, so the fallback is the behaviour, not an error.
   const r = run({ docs: ALL });
   return r.settle().then(() => {
     assert.equal(r.ids.herogo.href, 'game.html?game=' + NEWEST_ID);
     assert.match(r.ids.herokick.textContent, /most recent game/,
-      'the kicker promised a goal the fallback loop will not reach');
+      'the kicker promised a goal the fallback has no loop to reach');
   });
 });
 
-test('a loop OUTSIDE the window is not a hero', () => {
-  // The floor exists because `hl` is an estimate that can only run long, and the
-  // ceiling because the loop has to fit in the taste. A row carrying the field
-  // is not automatically eligible — otherwise the window is decoration.
+test('a loop inside the window beats a NEWER loop outside it', () => {
+  // The window still decides first. 2023020200 is the newest in-scope game and
+  // carries a loop of 9 plays -- a goal, but outside [3,8]; the older in-window
+  // game must win, or the window is decoration.
+  const cat = { games: CATALOG.games.map(g =>
+    g.id === 2023020100 ? { ...g, hl: 5 } : g.id === NEWEST_ID ? { ...g, hl: 9 } : g) };
+  assert.equal(NEWEST_ID, 2023020200, 'the seed changed; this pairing needs the newest game to be 2023020200');
+  const r = run({ docs: { ...ALL, 'catalog.json': cat } });
+  return r.settle().then(() => {
+    assert.equal(r.ids.herogo.href, 'game.html?game=2023020100',
+      'a newer loop outside the window displaced the one inside it');
+  });
+});
+
+test('⭐ with nothing in the window, a loop OUTSIDE it beats a game with none — the hero ends on a goal', () => {
+  // Kevin, 2026-09-17: "the hero always needs to end with a goal." Until then a
+  // loop outside [3,8] was never a hero, and the front door fell back to the
+  // newest game -- which may have no goal for its loop to end on. Too short (1, 2)
+  // or too long (9, 30) is still a goal; the newest game here carries no loop.
   //
   // ⚠️ AWAITED, AND THAT IS NOT A DETAIL. Written as a bare `.then()` inside the
   // loop, every assertion below settles AFTER the test has already passed, and
   // the whole case is green without running — the "tests that pass by not
-  // running" shape this project has been bitten by before. Promise.all is what
-  // makes the loop a check.
+  // running" shape this project has been bitten by before.
   return Promise.all([1, 2, 9, 30].map(hl => {
     const cat = { games: CATALOG.games.map(g =>
       g.id === 2023020100 ? { ...g, hl } : g) };
     const r = run({ docs: { ...ALL, 'catalog.json': cat } });
     return r.settle().then(() => {
-      assert.equal(r.ids.herogo.href, 'game.html?game=' + NEWEST_ID,
-        `a loop of ${hl} plays was accepted — it is outside [3,8]`);
+      assert.equal(r.ids.herogo.href, 'game.html?game=2023020100',
+        `a loop of ${hl} plays lost to a game with no loop at all`);
+      assert.match(r.ids.herokick.textContent, /up to its first goal/,
+        `with a loop of ${hl} plays the kicker did not say it runs to a goal`);
     });
   }));
 });

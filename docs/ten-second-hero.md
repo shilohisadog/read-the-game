@@ -96,12 +96,24 @@ replay right after the goal"*.
 > the hero live that day (CAR at VGK opened on a hit). `hl` is now the first
 > goal's index among the plays, so **"`hl` is an estimate"** (§ The field, point 1)
 > no longer applies, and `derive.py` no longer holds `ATTEMPT_TYPES`. The
-> freshness figures for [3,8] below were measured under the old start and are
-> unverified until re-measured from the catalog the next derive publishes; on
-> 54 games the pool barely moved (4 and 4, 3 in both). Residual, measured and
-> not fixed: a hero whose goal is play 8 misses it if two of the frames before
-> it carry a caption (4.5s each against a 30s budget) — 0 of the 4 in-window
-> games of 62 checked did. The sections below are the record as argued.
+> freshness figures for [3,8] below were measured under the old start. Re-measured
+> from the faceoff on the catalog the hand-run derive published the same day
+> (4,192 in-scope games, 1,829 with a loop, 429 inside [3,8], all 667 game dates):
+> the newest qualifying game is a median of **1 day** behind, p90 **5**, p99 **128** —
+> the p99 is season openers (8 of the 10 dates over 20 days are in October).
+>
+> ✅ **2026-09-17, later — THE HERO ALWAYS ENDS ON A GOAL.** Kevin: *"the hero
+> always needs to end with a goal."* Two ways it could not: the page searched for
+> the goal only inside `BUDGET_MS`, so a goal on play 8 was missed whenever two
+> frames before it carried a caption (4.5s each, 36s against 30s — 0 of the 4
+> in-window games of 62 checked, but possible); and when nothing in the archive
+> was inside [3,8] the front door took the newest game, which may have no goal to
+> end on. Now the page stops on the first non-shootout goal however far it is —
+> the loop's length is the selector's bound, not the page's — and the selector
+> works outwards: [3,8], then the newest game with any `hl`, and only then the
+> newest game at all (kicker: *"the most recent game in the archive"*). The
+> budget is left holding a game with no goal to stop on. The sections below are
+> the record as argued.
 
 He is right about the renderer, and I was wrong to doubt it before checking: a
 goal is the only event with a real treatment — radius 3.2 against 1.7

@@ -13,7 +13,7 @@ import { whistle } from '../src/lib/layers/whistle.js';
 import { corsi } from '../src/lib/layers/corsi.js';
 import { NOT_A_PLAY } from '../src/lib/layer.js';
 import { ATTEMPT_TYPES } from '../src/lib/attribution.js';
-import { rich, app, PAGE_CSS, prose, bundle, boot, delaysOf, paceOf , pickLayer } from './helpers/page.js';
+import { rich, app, PAGE_CSS, prose, bundle, boot, delaysOf, paceOf , pickLayer, HERO_GAME } from './helpers/page.js';
 import { measureGame } from '../builders/measure.mjs';
 import { perGame } from '../src/lib/archive.js';
 import { mostUnusual } from '../src/lib/distribution.js';
@@ -457,7 +457,11 @@ test('the preview is a taste: it restarts inside about half a minute', () => {
   // one number left in the preview; pinning it exactly would just be that same
   // second copy. The bounds are what the thing has to be to be the thing: long
   // enough to read as hockey, short enough that a stranger sees it loop.
-  const { delays, at } = delaysOf('?preview=1', 40);
+  // ON A GAME THE FRONT DOOR COULD CHOOSE. Since 2026-09-17 the loop runs to the
+  // first goal however far it is, so its length is the SELECTOR's bound, and the
+  // reference game (first goal at play 73) is not a hero. HERO_GAME's goal is on
+  // play 8, the window's upper bound -- the longest a chosen hero can be.
+  const { delays, at } = delaysOf('?preview=1', 40, HERO_GAME);
   const back = at.findIndex((v, k) => k > 0 && v < at[k - 1]);
   assert.ok(back > 0, `the preview never looped in 40 ticks: ${at.join(',')}`);
   assert.ok(back >= 4, `only ${back} events fit — that is a slideshow, not a replay`);

@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-0FvydqLMPMwrahNoc+6aSe6eSXL+of3QZKUfwc9UARc=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-KxtoclFGzSuPX6sx1zGb4LXvnk45aClWzZsy9oqxCmY='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-LDjuzYnQvs8XOPtsYALXXgDHSVriIyL0i3p4yNs7s9I=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-KxtoclFGzSuPX6sx1zGb4LXvnk45aClWzZsy9oqxCmY='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">How to read hockey</a></nav></header>
@@ -11973,23 +11973,26 @@ if(PREVIEW){
  let acc=0,W=START;
  while(W<EV.length-1&&acc+dwell(EV[W])<=BUDGET_MS){acc+=dwell(EV[W]);W++;}
  const BUDGETED=Math.max(START,W);
- /* ⭐ AND THE LOOP ENDS ON THE GOAL WHEN THERE IS ONE IN REACH.
-    Kevin: "let's end the hero replay right after the goal". BUDGET_MS stops
-    being the loop's length and becomes its BOUND -- the taste now ends on the
-    one event this renderer gives a real moment to, instead of wherever thirty
-    seconds happened to run out. Build-up, payoff, restart.
+ /* ⭐ AND THE LOOP ENDS ON THE GOAL.
+    Kevin: "let's end the hero replay right after the goal". The taste ends on
+    the one event this renderer gives a real moment to, instead of wherever
+    thirty seconds happened to run out. Build-up, payoff, restart.
 
-    THE LENGTH IS THEREFORE THE DATA'S, NOT A NUMBER WE PICK, which is the same
-    move START made at the other end: the opening frame is the game's first, and
-    the closing frame is the first goal. Two ends, both the game's, and BUDGET_MS is left holding only the case where the archive
-    hands us a game with no goal nearby.
-
-    THE HERO IS CHOSEN SO THIS FIRES. builders/build_index.py picks the most
-    recent game whose first goal is 3 to 8 plays after the opening faceoff. When it cannot (a small archive, a run
-    of goalless openings) the fallback is the newest game, this search finds
-    nothing, and the loop runs its budget exactly as it did before. */
- const GOAL=(()=>{for(let k=START;k<=BUDGETED;k++)
-   if(EV[k]&&EV[k].type==='goal')return k;return -1;})();
+    THE LENGTH IS THEREFORE THE DATA'S, NOT A NUMBER WE PICK: the opening frame
+    is the game's first and the closing frame is its first goal. Two ends, both
+    the game's. builders/build_index.py picks the most recent game whose first
+    goal is 3 to 8 plays after the faceoff, then the newest with any first goal
+    within derive.py's cap, and only then the newest game at all. */
+ /* ⭐ AND IT ALWAYS ENDS ON THE GOAL, HOWEVER FAR THE GOAL IS. Kevin, 2026-09-17:
+    "the hero always needs to end with a goal." The search was bounded by
+    BUDGET_MS, so a hero whose goal is play 8 missed it whenever two frames
+    before it carried a caption (4.5s against 3.6s: 8 frames can run 36s against
+    a 30s budget) and the loop restarted on a hit. How long the loop runs is the
+    SELECTOR'S job now (builders/build_index.py chooses a first goal 3 to 8 plays
+    from the faceoff); the page's is only to stop on it. BUDGET_MS is left holding
+    the one case with no goal to stop on -- a game whose goals, if any, all came
+    in the shootout, which is not a place on the ice. */
+ const GOAL=EV.findIndex((e,k)=>k>=START&&e.type==='goal'&&e.pt!=='SO');
  const WINDOW=GOAL>=0?GOAL:BUDGETED;
  if(REDUCED){set(WINDOW,'');}
  else{let k=START;

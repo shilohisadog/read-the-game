@@ -703,13 +703,35 @@ export const CURVE_AND_MIX = {
  * were not: the transport tests reach for `paceOf` across a file boundary,
  * which is the difference between a subject and a harness.
  */
+/**
+ * ⭐ A GAME THE FRONT DOOR COULD CHOOSE: fixture 2024030413 less its first hit.
+ * The hero is a game whose first goal is 3 to 8 plays from the opening faceoff
+ * (builders/build_index.py), and no fixture has one -- 2024030413's is play 9.
+ * One hit removed puts the goal on play 8, the window's own upper bound, which is
+ * the hardest real case. The reference game (`rich`) is not a hero: its first
+ * goal is play 73, and its preview runs to it.
+ */
+export const HERO_GAME = (() => {
+  const g = JSON.parse(readFileSync(new URL('../fixtures/extracts/2024030413.json', import.meta.url)));
+  g.events.splice(g.events.findIndex(e => e.type === 'hit'), 1);
+  return g;
+})();
+
 /** Boot with a recording clock and return the delays the page asked for. */
-export function delaysOf(search, ticks) {
+export function delaysOf(search, ticks, game = rich) {
   const dom = fakeDom();
   const delays = [];
   let n = 0;
   const at = [];
+  /* ⛔ ONLY THE BOOT THE TEST ASKED FOR IS RECORDED. The bundle boots its own
+     embedded game when it loads, and this clock runs a timer the moment it is
+     scheduled -- so that boot's preview loop ran first and spent every tick.
+     Invisible while its loop was eight frames long; on 2026-09-17 the loop began
+     running to the first goal (play 73 in the embedded game) and a test handed
+     HERO_GAME recorded frames 0 to 40 of a different game. */
+  let live = false;
   const timer = (fn, ms) => {
+    if (!live) return 0;
     delays.push(ms); at.push(+dom.$('scrub').value);
     if (n++ < ticks) fn();
     return 0;
@@ -721,7 +743,8 @@ export function delaysOf(search, ticks) {
     location: { search, origin: 'https://x', pathname: '/game' },
     navigator: { clipboard: { writeText: () => Promise.resolve() } },
     window: { parent: { postMessage: () => {} } } });
-  b(rich, null);
+  live = true;
+  b(game, null);
   return { dom, delays, at };
 }
 

@@ -16,25 +16,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { boot, rich, PAGE_CSS } from './helpers/page.js';
+import { boot, rich, PAGE_CSS, HERO_GAME } from './helpers/page.js';
 import { NOT_A_PLAY } from '../src/lib/layer.js';
 
 const derive = readFileSync(new URL('../builders/derive.py', import.meta.url), 'utf8');
 const appjs = readFileSync(new URL('../src/app.js', import.meta.url), 'utf8');
-const fixture = JSON.parse(readFileSync(
-  new URL('./fixtures/extracts/2024030413.json', import.meta.url)));
-/* ⚠️ THE GAME WITH A GOAL IN REACH IS THIS FIXTURE LESS ITS FIRST HIT, and says so.
-   Since 2026-09-17 the loop starts at the opening faceoff, and this fixture's
-   first goal is play 9 from there -- outside the hero window (3 to 8 plays,
-   builders/build_index.py) and, at 3.6s a frame, past the 30s budget. No fixture
-   has a first goal inside the window, so one hit is removed: the goal lands on
-   play 8, the window's own upper bound, which is the hardest case a real hero
-   can be. */
-const early = (() => {
-  const g = structuredClone(fixture);
-  g.events.splice(g.events.findIndex(e => e.type === 'hit'), 1);
-  return g;
-})();
+/* The game with a goal in reach is the harness's HERO_GAME -- fixture 2024030413
+   less its first hit, putting the goal on play 8 (see test/helpers/page.js). */
+const early = HERO_GAME;
 
 /** The set literal named in derive.py, read from the source rather than restated. */
 function pySet(name) {
@@ -89,18 +78,47 @@ test('the preview STOPS ON THE GOAL', () => {
     'the hero loop should end on the first goal, not where the budget ran out');
 });
 
-test('and a game with no goal in reach still runs its budget', () => {
-  // rich.json's first goal is far outside the window (derive.py scores it as no
-  // hero at all). The loop must therefore NOT be sitting on a goal — otherwise
-  // "stops on the goal" above is satisfied by a loop that stops anywhere.
+test('⭐ a goal beyond the old thirty-second budget is STILL where the loop ends', () => {
+  // Kevin, 2026-09-17: "the hero always needs to end with a goal." The search was
+  // bounded by BUDGET_MS, so a far goal was never reached and the loop restarted
+  // on whatever frame the time ran out. The reference game's first goal is play
+  // 73 -- minutes past any budget -- which is what makes it the hard case.
   const a = boot(rich, null, '?preview=1');
   const EV = playable(rich);
-  const at = Number(a.$('scrub').value);
+  const goal = EV.findIndex(e => e.type === 'goal');
+  const budget = Number(/const BUDGET_MS=(\d+)/.exec(appjs)[1]);
+  assert.ok(goal * 3600 > budget,
+    `the first goal is play ${goal}, inside the budget — this cannot tell a bounded search from an unbounded one`);
+  assert.equal(Number(a.$('scrub').value), goal, 'the loop stopped short of the goal');
+});
+
+test('and only a game with no goal to stop on runs its budget', () => {
+  // The paired half: "it ends on the goal" is satisfied by a loop that always
+  // runs to the last frame. With every goal removed there is nothing to stop
+  // on, and the loop must end early, inside the budget, not at the game's end.
+  const g = { ...rich, events: rich.events.filter(e => e.type !== 'goal') };
+  const a = boot(g, null, '?preview=1');
+  const at = Number(a.$('scrub').value), EV = playable(g);
   assert.ok(at > 0, 'the preview drew nothing at all');
-  assert.notEqual(EV[at].type, 'goal',
-    'this game has no goal in reach, so the loop cannot be ending on one');
-  assert.ok(EV.slice(0, at + 1).every(e => e.type !== 'goal'),
-    'a goal inside the window would make this fixture the wrong control');
+  assert.ok(at < EV.length - 1, `a goalless loop ran to frame ${at} of ${EV.length} — the budget no longer bounds it`);
+});
+
+/* ⭐ AND A SHOOTOUT GOAL IS NOT A GOAL TO STOP ON: it is not a place on the ice,
+   and derive.py already skips it. A game whose only goals came in the shootout
+   runs its budget rather than looping to the end of the game. */
+test('a game whose only goals are in the shootout runs its budget', () => {
+  const g = { ...rich, events: rich.events.map(e => e.type === 'goal' ? { ...e, pt: 'SO' } : e) };
+  const a = boot(g, null, '?preview=1');
+  const at = Number(a.$('scrub').value);
+  // THE SCRUBBER'S TIMELINE KEEPS SHOOTOUT EVENTS, so the goal is found on it the
+  // way the page finds it -- not through `playable` above, which drops them. A
+  // loop that stops anywhere short of the game's end would satisfy "not the last
+  // frame"; the claim is that it stops SHORT OF THE GOAL. (A version checking only
+  // the last frame stayed green with the shootout exclusion deleted.)
+  const onTimeline = g.events.filter(e => !NOT_A_PLAY[e.type]).findIndex(e => e.type === 'goal');
+  assert.ok(onTimeline > 0, 'the shootout-marked goal is not on the timeline, so this proves nothing');
+  assert.ok(at > 0 && at < onTimeline,
+    `the loop ran to frame ${at}, chasing the shootout goal at ${onTimeline}`);
 });
 
 test('the last frame is held longer than the goal caption it is showing', () => {

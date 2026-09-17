@@ -1067,10 +1067,14 @@ __HELPERS__
      6-15s around that, and it is the range where the cost stops being free:
      across 4,192 in-scope games the newest qualifying game is a MEDIAN OF 0 DAYS
      behind the newest game (p90 3, p99 20), where the tighter [4,6] is p90 SEVEN
-     and p99 forty-eight. ⚠️ MEASURED UNDER THE OLD START (one play before the first
-     attempt). From the faceoff the same [3,8] admits a slightly different pool --
-     4 and 4 games of 54, 3 in both -- so these figures are unverified until
-     re-measured from the catalog the next derive publishes. Kevin: "let's start with that and work outwards (if
+     and p99 forty-eight. ⚠️ THOSE WERE MEASURED UNDER THE OLD START (one play before
+     the first attempt). ✅ RE-MEASURED 2026-09-17 FROM THE FACEOFF, on the catalog
+     the hand-run derive published (4,192 in-scope games, 1,829 with a loop, 429
+     inside [3,8]), walking all 667 game dates and taking the newest qualifying game
+     on or before each: median 1 day behind, p90 5, p99 128 -- and the p99 is the
+     season openers (8 of the 10 dates over 20 days are October, reaching back to
+     the spring). [4,6] is median 2, p90 11. The method differs from the figures
+     above, so compare within a line, not across. Kevin: "let's start with that and work outwards (if
      needed)" -- so the two numbers are here, together, to be moved together.
 
      ⏹ `hl` WAS AN ESTIMATE UNTIL 2026-09-17 -- derive.py found the first attempt
@@ -1098,9 +1102,18 @@ __HELPERS__
       if (typeof n === 'number' && n >= HERO_LOOP.min && n <= HERO_LOOP.max)
         return { game: g, toGoal: true };
     }
-    /* THE FALLBACK IS NAMED, not left to be inferred from a null. The caller has
-       to say something true above the rink and the two branches are showing
-       different things -- one runs to a goal, the other runs a budget. */
+    /* ⭐ AND OUTWARDS BEFORE GIVING UP ON A GOAL. Kevin, 2026-09-17: "the hero
+       always needs to end with a goal." When nothing in the archive is inside the
+       window, the newest game with ANY loop -- a first goal within HERO_LOOP_CAP
+       plays of the faceoff, derive.py -- is still a loop that ends on a goal,
+       where the newest game may not have one to end on. Longer or shorter than a
+       taste, but it keeps the promise the kicker makes. */
+    for (var j = v.length - 1; j >= 0; j--)
+      if (typeof v[j].hl === 'number') return { game: v[j], toGoal: true };
+    /* THE LAST FALLBACK IS NAMED, not left to be inferred from a null. No game in
+       the archive has a first goal within the cap -- a catalog not yet derived, or
+       an archive too small -- and a front door with no game is worse than one that
+       opens quietly. The kicker says which rule ran. */
     return v.length ? { game: v[v.length - 1], toGoal: false } : null;
   }
 
