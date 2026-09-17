@@ -20,7 +20,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { capture, differences, read } from '../tools/dom-golden.mjs';
+import { capture, differences, diffSize, read } from '../tools/dom-golden.mjs';
 import { LAYER_TOKENS } from '../src/lib/deeplink.js';
 
 const gold = read();
@@ -33,7 +33,22 @@ test('⭐ the rendered DOM is identical to the golden, frame for frame', () => {
     + 'deliberate, run `node tools/dom-golden.mjs`, READ what it prints, and commit '
     + 'the fixture with the change that caused it. If it was not, a refactor moved '
     + 'more than code.\n'
+    + (diff.length ? (z => `  SIZE: ${z.frames} differing frame(s) across ${z.elements} element(s) in ${z.walks} walk(s)\n`)(diffSize(gold, made)) : '')
     + diff.map(d => `  #${d.id} ${d.at === null ? '' : `frame ${d.at}`}`).join('\n'));
+});
+
+/* ⭐ THE SIZE COUNTS EVERY FRAME, NOT EVERY ELEMENT. `differences()` names the
+   first differing frame of each element on purpose; a size that inherited that
+   break would call an element wrong in every frame "1", which is the one number
+   this exists to stop a reviewer from underestimating (§11.2 Q4). */
+test('the diff size counts every differing frame, where differences() stops at the first', () => {
+  assert.deepEqual(diffSize(made, made), { frames: 0, elements: 0, walks: 0 }, 'an identical capture has size 0');
+  const bent = JSON.parse(JSON.stringify(made));
+  const id = Object.keys(bent.el).find(k => Array.isArray(bent.el[k]) && bent.el[k].length >= 3);
+  assert.ok(id, 'no element with three or more frames to bend — this check has lost its subject');
+  for (const k of [0, 1, 2]) bent.el[id][k] = `bent ${k}`;
+  assert.equal(differences(made, bent).filter(d => d.id === id).length, 1, 'differences() names the first frame only');
+  assert.deepEqual(diffSize(made, bent), { frames: 3, elements: 1, walks: 1 });
 });
 
 /* ⚠️ THE TWO CONTROLS BELOW COMPARE `made` WITH A BENT COPY OF `made`, NEVER WITH

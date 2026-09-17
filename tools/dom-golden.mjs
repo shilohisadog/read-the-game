@@ -360,6 +360,48 @@ function elementDiffs(gold, made) {
   return out;
 }
 
+/**
+ * ⭐ HOW BIG IS WHAT YOU ARE ABOUT TO APPROVE — ruled 2026-09-17
+ * (docs/test-program.md §11.2 Q4, CHENG): *"a 4-line golden diff gets read; a
+ * 400-line one doesn't, and knowing which you're looking at is most of the
+ * discipline."*
+ *
+ * `differences()` stops at each element's FIRST differing frame, so it names
+ * WHERE to look, and its length is not a size: an element wrong in 200 frames is
+ * one line. This counts every differing frame, in every walk, so a regeneration
+ * says how much moved before anyone decides it was deliberate.
+ */
+export function diffSize(gold, made) {
+  let frames = 0;
+  const elements = new Set(), walks = new Set();
+  const walk = (name, g, m) => {
+    for (const id of new Set([...Object.keys(g.el), ...Object.keys(m.el)])) {
+      const a = g.el[id], b = m.el[id];
+      let n = 0;
+      if (a === undefined || b === undefined) n = Math.max(g.frames, m.frames);
+      else {
+        const aa = Array.isArray(a), ba = Array.isArray(b);
+        const len = Math.max(aa ? a.length : g.frames, ba ? b.length : m.frames);
+        for (let k = 0; k < len; k++) if ((aa ? a[k] : a) !== (ba ? b[k] : b)) n++;
+      }
+      if (n) { frames += n; elements.add(`${name}/${id}`); walks.add(name); }
+    }
+  };
+  walk('base', gold, made);
+  for (const [kind, gw, mw] of [['layer', gold.layers || {}, made.layers || {}],
+                               ['control', gold.controls || {}, made.controls || {}],
+                               ['moment', gold.play || {}, made.play || {}]])
+    for (const name of new Set([...Object.keys(gw), ...Object.keys(mw)])) {
+      const empty = { el: {}, frames: 0 };
+      walk(`${kind}:${name}`, gw[name] || empty, mw[name] || empty);
+    }
+  const gp = gold.popup || { at: {} }, mp = made.popup || { at: {} };
+  for (const k of new Set([...Object.keys(gp.at), ...Object.keys(mp.at)]))
+    if (gp.at[k] !== mp.at[k]) { frames++; elements.add('popup/whyContent'); walks.add('popup'); }
+  return { frames, elements: elements.size, walks: walks.size };
+}
+const sizeLine = z => `${z.frames} differing frame(s) across ${z.elements} element(s) in ${z.walks} walk(s)`;
+
 export const read = () => JSON.parse(readFileSync(FIXTURE, 'utf8'));
 
 if (import.meta.url === `file://${process.argv[1]}`) {
@@ -374,13 +416,14 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const diff = differences(read(), made);
   if (!diff.length) { console.log(`  rendered DOM unchanged: ${made.frames} frames, ${made.elements} elements`); process.exit(0); }
   const lines = diff.map(d => `    #${d.id}  ${d.at === null ? '' : `frame ${d.at}`}  ${d.was} -> ${d.now}`);
+  const size = sizeLine(diffSize(read(), made));
   if (check) {
-    console.error(`::error::the rendered DOM changed at ${diff.length} element(s) — `
+    console.error(`::error::the rendered DOM changed: ${size} — `
       + 'if that was deliberate, run `node tools/dom-golden.mjs` and read what it prints');
     console.error(lines.join('\n'));
     process.exit(1);
   }
-  console.log(`  ${diff.length} element(s) changed — READ THIS BEFORE COMMITTING:`);
+  console.log(`  ${size} — READ THIS BEFORE COMMITTING (first differing frame of each):`);
   console.log(lines.join('\n'));
   writeFileSync(FIXTURE, JSON.stringify(made));
   console.log('  golden rewritten.');
