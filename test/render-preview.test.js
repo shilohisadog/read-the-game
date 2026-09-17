@@ -170,44 +170,22 @@ test('PREVIEW hides everything but the game, and plays by itself', () => {
   assert.equal(plain.$('rg').classList.contains('preview'), false);
 });
 
-test('⭐ the preview runs with the Control layer ON, so the hero shows what the h1 promises', () => {
-  // THE HEADLINE AND THE HERO USED TO DISAGREE. The h1 offers "the counts built
-  // in front of you, so you can see where a number comes from" and the frame
-  // below it ran with no layer at all -- the one configuration that is not the
-  // stated conversion. Nothing failed; the front door simply advertised the
-  // base view.
+test('⭐ the preview runs the base view — no layer, because the hero has no figure to build', () => {
+  /* ⏹ THIS ASSERTED THE OPPOSITE UNTIL 2026-09-17: the preview turned the
+     Attempts layer on so "the counts are built in front of you". The hero hides
+     the layer box and has had no counters since 2026-09-09, so the layer changed
+     nothing a visitor could see. Kevin: drop it.
+
+     SO THE CLAIM IS NOW "NO LAYER", AND THE PICKER MUST AGREE. A preview that
+     cleared the class but left the picker saying Attempts would be the two-states
+     drift the old test caught in the other direction. */
   const a = boot(rich, null, '?game=2023020204&preview=1');
-  assert.ok(a.$('rg').classList.contains('corsi'),
-    'the preview is running the base view — the counts are nowhere on the hero');
-
-  // THROUGH setCorsi, NOT PAST IT. The on-state is a class, a button label and
-  // an aria value; a preview that set only the class would look right and leave
-  // the other two saying the layer is off. This is the half that catches it.
-  // String() because the fake stores what setCorsi passed -- a boolean -- while
-  // a real DOM stores "true". Asserting either spelling would pin the harness
-  // rather than the behaviour.
-  /* The picker is the control now; the layer rows were deleted 2026-09-07. */
-  assert.equal(String(a.GROUPS['#rg .pk'].find(b => b.dataset.l === 'corsi')
-                       .getAttribute('aria-checked')), 'true');
-
-  /* ⏹ THE PARKED BAR'S WIRING WAS ASSERTED HERE — `pName` still written, and
-     the game page's markup still naming CONTROL — so un-parking the bar would
-     need no rewiring. The bar and its label were REMOVED on 2026-09-17
-     (docs/test-program.md §8), so there is nothing left to un-park. */
-
-  // EXACTLY ONE, because the conversion is stated as one metric layer turned on.
-  // Three layers at once is a different claim about the product, and without
-  // this the preview could quietly acquire them one at a time with nothing
-  // failing -- which a mutation adding a second layer proved.
-  for (const off of ['slot', 'goalie', 'whistle', 'blocked']) {
-    assert.equal(a.$('rg').classList.contains(off), false,
-      `the preview turned on ${off} as well — the taste is one layer, not a pile`);
-  }
-
-  // AND THE ORDINARY PAGE IS UNTOUCHED, which is the paired half: turning it on
-  // for the hero must not turn it on for a visitor who opened a game to watch it.
-  assert.equal(plainOff().$('rg').classList.contains('corsi'), false,
-    'the full page now opens with a layer already applied');
+  for (const layer of ['corsi', 'slot', 'goalie', 'whistle', 'blocked'])
+    assert.equal(a.$('rg').classList.contains(layer), false,
+      `the preview turned on ${layer} — the hero runs the game itself`);
+  assert.deepEqual(
+    a.GROUPS['#rg .pk'].filter(b => String(b.getAttribute('aria-checked')) === 'true').map(b => b.dataset.l),
+    ['none'], 'the picker says a layer is on in the preview');
 });
 
 /* ⏹ `the control bar claims nothing before anything has been counted` LIVED HERE
@@ -219,8 +197,6 @@ test('⭐ the preview runs with the Control layer ON, so the hero shows what the
    never a share. It was a real defect — the opening faceoff of every visit
    announced one club held all the control. */
 
-/** A plain boot, named because two tests want the same negative half. */
-function plainOff() { return boot(); }
 
 // `the preview asks for nothing it does not show` used to live here as a regex
 // over the shell's source, pinned to the exact expression that tested for

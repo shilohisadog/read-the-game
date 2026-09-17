@@ -221,6 +221,11 @@ whole job is to hold the reasons.
 
 ### The third number: `ha`, and why the window was never enough
 
+⏹ **DROPPED 2026-09-17, at Kevin's word.** The hero has shown no counter since
+2026-09-09, so choosing it for a counter that moves was choosing for a number
+nobody could see. The selector reads `hl` alone; `derive.py` no longer publishes
+`ha`. The measurement below is kept as the record of why it once existed.
+
 `hl` counts **plays**. The h1 promises *"the counts built in front of you"*, and
 what a visitor watches accumulate is the **attempt counter** — which the play
 count does not determine.

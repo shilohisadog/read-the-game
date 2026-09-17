@@ -437,7 +437,8 @@ test('EVERY FIELD derive.py PUTS ON A CATALOG ROW HAS A READER', () => {
   // `mixnight` fixture and the blind CSP probe both had.
   assert.ok(fields.size >= 10,
     `only ${fields.size} row fields found — this check has lost its subject`);
-  for (const must of ['id', 'd', 't', 'v', 'u', 'r', 'a', 'h', 'hl', 'ha'])
+  // `ha` LEFT THIS LIST ON 2026-09-17 with the rule that read it (docs/status.md).
+  for (const must of ['id', 'd', 't', 'v', 'u', 'r', 'a', 'h', 'hl'])
     assert.ok(fields.has(must), `the field scan missed \`${must}\``);
 
   const strip = t => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');

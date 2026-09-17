@@ -147,9 +147,9 @@ for row in cat['games']:
         continue
     # ⭐ THE WHOLE FRAGMENT, NOT ONE FIELD. This called `_hero_loop` and copied
     # its single number into `hl`, which meant the day the loop gained a second
-    # published field (`ha`, the attempts the counter reaches) this tool would
-    # have kept serving a catalog that has one and not the other -- a local page
-    # selecting on a field the harness never patched in. `_hl` IS the fragment
+    # published field (`ha`, 2026-09-11 to 09-17) this tool would have kept
+    # serving a catalog that had one and not the other -- a local page selecting
+    # on a field the harness never patched in. `_hl` IS the fragment
     # the derive writes, so whatever the derive publishes, this serves.
     frag = derive._hl(json.load(open(p)).get('events'))
     if frag:

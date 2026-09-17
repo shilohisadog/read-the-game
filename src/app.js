@@ -3596,31 +3596,14 @@ if(PREVIEW){
  /* AND THE CHROME GOES, from the one place chrome is defined (page.py). The
     shared header and footer are real height inside a box sized for a rink. */
  document.body.classList.add('previewing');
- /* ⭐ THE PREVIEW RUNS WITH A LAYER ON, and Control is the one.
-
-    THE HERO USED TO CONTRADICT THE HEADLINE ABOVE IT. The h1 promises "the
-    counts built in front of you, so you can see where a number comes from" and
-    the frame under it showed plays with no counts anywhere. The stated
-    conversion is a visitor watching one game WITH ONE METRIC LAYER TURNED ON, so
-    the front door was demonstrating the single configuration that is not it.
-
-    IT STARTS AT ZERO ON PURPOSE, and the small number is the point rather than a
-    cost. The persuasive Corsi sentence is "the scoreboard says 0-0, attempts say
-    12-7" and none of it fits in seven plays -- but the headline does not promise
-    a big number, it promises PROVENANCE, and a counter you join at 24-11 is a
-    number you did not watch being built. Zero is the only honest place for
-    "where a number comes from" to begin, which is the same reason the loop opens
-    at the faceoff instead of the final whistle.
-
-    CALLED THROUGH setCorsi() RATHER THAN SETTING THE CLASS. The layer's on-state
-    is a class, a button label and an aria-pressed value, and reaching past the
-    function for the one part the preview happens to need is how the two drift.
-
-    ⏹ THE BOARD'S BAR AND COUNTERS THIS ONCE EXPLAINED WERE REMOVED ON
-    2026-09-17. The hero has shown no running figure since 2026-09-09 -- a
-    whole-game instrument in a ten-second loop can only show the extreme -- and
-    the attempts reach the front door as a sentence, posted below. */
- corsiOn=true;setCorsi();
+ /* ⏹ THE PREVIEW RAN WITH THE ATTEMPTS LAYER ON UNTIL 2026-09-17, so "the counts
+    are built in front of you". The hero hides the layer box and has had no
+    counters since 2026-09-09, so the layer changed nothing a visitor could see.
+    Kevin: drop it. The hero is the base view -- the game itself -- and the
+    attempts reach the front door as a sentence, posted below. The loop still
+    opens one frame before the first attempt -- see START below; its "not
+    earlier" half is about dead air, its "not later" half was about the counter,
+    and that half awaits Kevin (status.md). */
  /* ⭐ AND THE FRAME HANDS THE PARENT THE NUMBER IT ALREADY HAS.
     The home page describes this game in a sentence under the rink, and that
     sentence had to be about the SAME measure the bar above it showed -- Kevin:

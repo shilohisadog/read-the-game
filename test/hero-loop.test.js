@@ -18,7 +18,6 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { boot, rich, PAGE_CSS } from './helpers/page.js';
 import { NOT_A_PLAY } from '../src/lib/layer.js';
-import { corsi } from '../src/lib/layers/corsi.js';
 import { ATTEMPT_TYPES } from '../src/lib/attribution.js';
 
 const derive = readFileSync(new URL('../builders/derive.py', import.meta.url), 'utf8');
@@ -106,62 +105,7 @@ test('the last frame is held longer than the goal caption it is showing', () => 
     `the loop restarts after ${hold[1]}ms but the caption runs for ${cap[1]}s`);
 });
 
-/**
- * ⭐ THE NUMBER THE HEADLINE PROMISES, FROM derive.py TO THE PIXELS.
- *
- * `hl` is a proxy: it counts PLAYS, and the h1 promises "the counts built in
- * front of you" — which is the attempt counter, not the play count. Those come
- * apart. Measured over 300 archive extracts inside the shipped [3, 8] window the
- * counter reaches a median of 3 with a p10 of 2 and a p90 of 5, so one loop
- * length admits both a front door whose number moves five times and one where it
- * moves twice. `ha` is the thing itself, and this is the end of its chain.
- *
- * ⭐⭐ PAIRED WITH test_derive.py's `test_the_published_numbers_for_a_real_game`,
- * WHICH REACHES THE SAME TWO LITERALS DOWN A DIFFERENT PATH. That one is
- * derive.py's arithmetic over the same fixture; this one boots the real renderer
- * and reads the board a visitor would read. They share the literals and nothing
- * else — neither calls the other — so a drift in either language fails here or
- * there rather than moving both sides together. `hl` alone has been guarded that
- * way since it shipped; the second field arrives with the same pair.
- */
-test('the attempts derive.py publishes are the attempts the counter reaches', () => {
-  const a = boot(early, null, '?preview=1');
-  const EV = playable(early);
-  const at = Number(a.$('scrub').value);
-  // Stated here rather than inherited from the test above: a figure read off
-  // "wherever the loop happened to stop" is about a frame, not about the loop.
-  assert.equal(EV[at].type, 'goal',
-    'the loop must be sitting on its final goal frame or this counts nothing');
-  /* ⚠️ `hl` IS NOT `at`, AND THE FIRST DRAFT OF THIS ASSERTED THAT IT WAS.
-     `hl` is the DISTANCE from the opening frame to the goal; `at` is the goal's
-     absolute index in the playable stream, which is larger by however many plays
-     precede the opening frame — 9 against 8 on this fixture. Checking the
-     distance here would mean restating the renderer's start rule in the test,
-     which is the mirror this file's header refuses. The distance is pinned on
-     the Python side; what THIS side can see that Python cannot is the board. */
-
-  /* ⚠️ WHAT THIS FIXTURE'S WINDOW CAN AND CANNOT SEPARATE, STATED RATHER THAN
-     IMPLIED. Its eight plays are hit, SHOT, faceoff, hit, SHOT, faceoff, SHOT,
-     faceoff, GOAL — three shots on goal and the goal, and no missed or blocked
-     shot anywhere in it. So this check cannot tell a counter that honours the
-     whole attempt vocabulary from one that counts only shots on goal; a mutation
-     removing blocked shots from the reducer leaves it green, which was verified
-     rather than assumed. That half is covered synthetically, on the Python side,
-     by `test_every_kind_of_attempt_moves_the_counter`. What this one covers is
-     the chain: derive.py's number is the number the page's own loop reaches.
-
-     ⚠️ COUNTED BY THE REDUCER AT THE PAGE'S FRAME, NOT READ OFF #cA, since
-     2026-09-17. The hero has shown no counter since 2026-09-09 -- `.counters`
-     and `.cbar` are parked -- so reading them compared derive.py with a span no
-     visitor sees, and removing them would fail this test about something else.
-     What survives is the part that was always the point: derive.py's window and
-     the renderer's loop must end on the same frame with the same count. The
-     frame is the page's (`a.now()`, seam B); the count is corsi's. */
-  const f = a.now();
-  const L = corsi.reduce(early.events.slice(0, f.n + 1), {
-    roster: early.roster, homeId: early.teams.home.id, awayId: early.teams.away.id,
-    homeAb: early.teams.home.ab, awayAb: early.teams.away.ab });
-  const shown = (L.t[early.teams.away.id] || 0) + (L.t[early.teams.home.id] || 0);
-  assert.equal(shown, 4,
-    `derive.py publishes ha: 4 for this game; the page's loop reaches ${shown}`);
-});
+/* ⏹ `the attempts derive.py publishes are the attempts the counter reaches` LIVED
+   HERE until 2026-09-17. `ha` — the attempts inside the hero loop — fed a hero
+   rule about a counter the hero no longer shows; Kevin dropped the rule and the
+   field went with it (docs/status.md). */
