@@ -200,12 +200,20 @@ function run({ search = '', responses = {} } = {}) {
     style: { setProperty() {}, getPropertyValue() { return ''; } },
     classList: { add() {}, remove() {}, toggle() {}, contains() { return false; } },
     setAttribute() {}, getAttribute() { return null; }, addEventListener() {},
+    /* ⭐ THE PAGE BUILDS NODES. The goal ticks under the scrubber are created
+       with `document.createElement` and positioned through CSSOM, because a
+       `style` attribute is inert under this site's hash-pinned `style-src`.
+       Without these the bundle threw at boot, and this fake watches the NETWORK
+       -- so the failure surfaced as "a permalink cost a catalog round trip",
+       a message about the wrong subject entirely. */
+    appendChild(c) { return c; },
   });
   const el = mk();
   // `body` is modelled for the same reason as the rest: preview hides the
   // shared chrome through a class on it.
   const document = {
     body: el,
+    createElement: () => mk(),
     getElementById: id => (els[id] || (els[id] = mk())),
     querySelectorAll: () => [],
     // Lenient like the line above -- this fake watches the NETWORK, not the DOM.

@@ -506,7 +506,15 @@ test('the step pair and the speed gears are each one non-wrapping group', () => 
   // inserted between the two — a test that fails because a NEIGHBOUR moved is
   // reporting on the wrong subject. The scrubber is the transport's last
   // element and is inside the thing being measured.
-  const transport = app.match(/<div class="transport">[\s\S]*?<input class="scrub"[^>]*>\s*<\/div>/)[0];
+  // ⚠️ AND IT MOVED AGAIN ON 2026-09-18, for the reason the note above predicts.
+  // The scrubber stopped being the transport's last element when it gained a
+  // wrapper carrying the goal ticks, so `<input …>\s*</div>` matched nothing and
+  // this threw on `[0]` — null, not a useful message. The anchor is now the
+  // wrapper that OPENS around the scrubber: still inside the subject, and it
+  // does not care what is added beside the input inside it.
+  const m = app.match(/<div class="transport">[\s\S]*?<div class="scrubwrap">/);
+  assert.ok(m, 'the transport no longer wraps the scrubber — this check has lost its anchor');
+  const transport = m[0];
   const grp = transport.match(/<div class="grp"[^>]*>[\s\S]*?<\/div>/g) || [];
   assert.equal(grp.length, 2, `expected two control groups in the transport, found ${grp.length}`);
 

@@ -31,6 +31,7 @@ import { penName } from './lib/penalties.js';
 import { spokenGap } from './lib/transition.js';
 import { whyMarkup } from './lib/why.js';
 import { ESC } from './lib/esc.js';
+import { goalTicks, tickLeft } from './lib/scrub.js';
 import { workMarkup } from './lib/work.js';
 import { eventMarks, puckMark, shotLine } from './lib/marks.js';
 import { iceNote, trailsNote } from './lib/notes.js';
@@ -1313,6 +1314,59 @@ function set(v,how){i=Math.max(-1,Math.min(EV.length-1,v));$('scrub').value=i;re
    clamps, so a press at either end is already harmless -- but a button that
    accepts a press and does nothing is a button that says the page is broken. */
 function syncStep(){$('back').disabled=i<=-1;$('fwd').disabled=i>=EV.length-1;}
+/* ⭐⭐ THE GOALS, MARKED ON THE SCRUBBER — Kevin, 2026-09-18: "I can also see a
+   more advanced user wanting to fast forward to a specific time of the game...
+   let's go with goal ticks only, I don't want to overcrowd the scrubber area."
+
+   ⭐ IT IS NAVIGATION, NOT A FILTER, AND THE DIFFERENCE IS THE WHOLE DESIGN. A
+   filter changes what is counted and every number on the page has to move with
+   it (`docs/strength-filter.md` is that other thing, and it needs an exclusion
+   ledger before it can ship). A tick changes only WHERE YOU ARE. Nothing here
+   touches a reducer, so no total can disagree with the ice because of it.
+
+   ⛔⛔ THE POSITION IS SET THROUGH CSSOM, NEVER AS A `style` ATTRIBUTE. This site
+   pins `style-src` by hash with no `unsafe-inline`, so a style attribute written
+   into markup is INERT -- silently, with no console error and a green build. That
+   is not theory: it is how a canary in the row-8 blind-spot work changed the
+   source, passed every check and had no effect. `el.style.setProperty` is the
+   CSSOM path and is not inline style; it is what already paints the club colours
+   at the top of this file.
+
+   ⭐ THE LABEL IS `clipNames`, THE BOARD'S OWN SENTENCE. "MIN scored at 16:13 of
+   Period 1" is already how the clip box names a goal, and it routes overtime and
+   the shootout through `periodLabel` the way the scoreboard does. A second
+   sentence here would be a second thing free to disagree.
+
+   ⚠️ `f` IS OVER THE SCRUB'S OWN RANGE, WHICH STARTS AT -1. The playhead floor is
+   a real frame (pre-game), so the range is `-1 .. EV.length-1` and the fraction
+   of the track for frame k is `(k+1)/EV.length`, not `k/(EV.length-1)`. Getting
+   that wrong puts every tick one frame's width to the left and nothing looks
+   broken. */
+function drawGoalTicks(){
+ const T=$('gticks');if(!T)return;
+ T.innerHTML='';
+ for(const {k,f} of goalTicks(EV)){
+  const e=EV[k], say=clipNames(e);
+  const b=document.createElement('button');
+  b.setAttribute('type','button');
+  b.setAttribute('class','gtick');
+  b.setAttribute('data-k',String(k));
+  b.setAttribute('title',say);
+  b.setAttribute('aria-label','Jump to '+say);
+  b.style.setProperty('left',tickLeft(f));
+  b.style.setProperty('color',e.own===HID?HOMECOL:AWAYCOL);
+  T.appendChild(b);
+ }
+}
+/* DELEGATED, because the strip is rebuilt and the ticks are not permanent -- the
+   same reason the why-popup's close button is listened for on the backdrop. */
+if($('gticks'))$('gticks').addEventListener('click',ev=>{
+ const t=ev.target;
+ if(!t||!t.classList||!t.classList.contains('gtick'))return;
+ stop();set(+t.getAttribute('data-k'),'jump');});
+/* ONCE, AT BOOT. The goals in a finished game do not change while it is being
+   watched, so this is furniture and not part of `render`. */
+drawGoalTicks();
 /* THE CONDITIONS THE PRECEDENCE RULE RANKS, read at the moment of asking.
    ⚠️ BUILT FRESH ON EVERY CALL, AND THAT IS NOT AN OVERSIGHT. `hdOn` is a live
    control -- a viewer turning the slot layer on changes which frames speak, and

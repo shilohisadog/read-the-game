@@ -282,7 +282,7 @@ __CSS__</style>
 <div class="transport"><button class="play" id="play">▶ Play</button>
   <div class="grp" role="group" aria-label="Step through the events"><button class="spd stepb" id="back" aria-label="Previous event">◀ Prev</button><button class="spd stepb" id="fwd" aria-label="Next event">Next ▶</button></div>
   <div class="grp" role="group" aria-label="Replay speed"><button class="spd stepb" id="slower">&#9664; Slower</button><button class="spd stepb" id="faster">Faster &#9654;</button></div>
-  <input class="scrub" id="scrub" type="range" min="-1" max="1" value="-1"></div>
+  <div class="scrubwrap"><input class="scrub" id="scrub" type="range" min="-1" max="1" value="-1"><div class="gticks" id="gticks" role="group" aria-label="Goals in this game"></div></div></div>
 <!-- ⭐ COPY A LINK TO THIS MOMENT. The read side has been built and tested since
      the learn-page doors -- `deeplink.js::format` even says in its own docstring
      that it is "the link a copy this moment control emits" -- and nothing ever
@@ -615,6 +615,13 @@ LIB = ["rink.js", "attribution.js", "layer.js", "strength.js", "box.js", "penalt
        # BEFORE sentence.js, which asks it which competition a game is.
        "competitions.js",
        "teams.js", "layers/tied.js", "sentence.js",
+       # WHERE A FRAME SITS ON THE SCRUB TRACK. Depends on nothing, so it can sit
+       # anywhere; it is a LIB module rather than a few lines in app.js because
+       # the two numbers in it -- the `(k+1)/n` fraction and the thumb-inset
+       # correction -- are both off-by-ones that draw a tidy row of ticks in the
+       # wrong place, and the page's fake DOM cannot report a computed `left`.
+       # Pure, so it is checked directly in test/scrub.test.js.
+       "scrub.js",
        # LAST, and it has to be: deeplink.js derives its URL vocabulary from the
        # layer objects themselves, so all FIVE must already exist in the bundle.
        "deeplink.js"]

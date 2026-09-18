@@ -68,6 +68,15 @@ function fakeDom() {
     getAttribute(k) { return this[k]; },
     addEventListener(t, fn) { (this._on[t] = this._on[t] || []).push(fn); },
     click() { (this._on.click || []).forEach(fn => fn({ target: this })); },
+    /* ⭐ THE PAGE BUILDS NODES, SO THE FAKE MUST BE ABLE TO HOLD THEM. The goal
+       ticks under the scrubber are created with `document.createElement` and
+       positioned through CSSOM -- a `style` ATTRIBUTE would be inert here, since
+       this site pins `style-src` by hash. Without these two the bundle threw at
+       boot and every test in this file failed at once, which is the honest
+       outcome: a fake that cannot express what the page does makes every
+       assertion made through it vacuous. */
+    _kids: [],
+    appendChild(c) { this._kids.push(c); return c; },
   });
   const byId = new Map();
   const GROUPS = {
@@ -117,6 +126,7 @@ function fakeDom() {
     // hides the shared chrome through a class on it -- so the fake models it
     // rather than the app defending against its absence.
     body: el(),
+    createElement: () => el(),
     getElementById(id) { if (!byId.has(id)) byId.set(id, el()); return byId.get(id); },
     querySelectorAll(sel) {
       assert.ok(GROUPS[sel], `the page queried "${sel}", which this fake does not model`);

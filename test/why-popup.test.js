@@ -162,7 +162,16 @@ function openPopup() {
 }
 
 test('⭐⭐ the ✕ closes the popup, and the class it needs is the one the app listens for', () => {
-  const listens = /classList\.contains\('([a-z]+)'\)/.exec(APP_SRC);
+  /* ⚠️ ANCHORED TO THE BACKDROP'S OWN LISTENER, AND IT WAS NOT UNTIL 2026-09-18.
+     This read the FIRST `classList.contains('…')` anywhere in the bundle and
+     called it "the class the app listens for". That was true only while the
+     backdrop happened to own the first one; adding a delegated listener for the
+     goal ticks earlier in the file made this assert about `gtick` and fail with
+     a message about the ✕ button. The check announced a claim about one listener
+     and tested a property of the whole file — this repo's dominant failure mode,
+     caught by an unrelated change rather than by a test of its own. */
+  const listens = /\$\('whyBk'\)\.addEventListener\([\s\S]{0,400}?classList\.contains\('([a-z]+)'\)/
+    .exec(APP_SRC);
   assert.ok(listens, 'the backdrop listener no longer delegates by class — re-read this test');
   const cls = listens[1];
 

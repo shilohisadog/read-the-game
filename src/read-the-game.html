@@ -39,7 +39,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-6yHbMaaW6p8jqAH/cKLT4bX2NZBHVB984qxsnlFFCU0=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-1PBeC2fysmB9Hagyk+93N44Qb7ZT9fdfZA+CLL/9eDA='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Rodi+av3pOTOh4OPf/Nw3XYska0N5zwGYjn/OwXQsAA=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-sKbOtNv4tOPgrSjePy/PDHITe9ZLgl2YA3DH9Faz8So='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">How to read hockey</a></nav></header>
@@ -1291,7 +1291,64 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    the drag worse to do it. On its own row the track is the full width of the
    controls at every viewport instead of whatever flex-wrap happens to leave,
    and it stops being a function of how many buttons sit beside it. */
-#rg .scrub{flex:1 0 100%;accent-color:var(--ink);cursor:pointer;min-width:120px;height:44px;margin:0}
+/* ⭐⭐ GOAL TICKS UNDER THE SCRUBBER — Kevin, 2026-09-18: "let's go with goal ticks
+   only, I don't want to overcrowd the scrubber area, so let's start small."
+
+   ⛔⛔ `--scrub-thumb` IS THE ONE NUMBER HERE THAT IS NOT MEASURED, and it is a
+   variable rather than a literal for exactly that reason. A native range's thumb
+   does NOT travel from 0 to 100%: it is inset by half a thumb width at each end,
+   so a tick placed at a naive percentage drifts from the thumb by up to half a
+   thumb -- worst at the very start and the very end of the game, which is where
+   empty-net goals live. The correct position is
+
+       left = f x 100%  +  thumb x (0.5 - f)
+
+   which is the inset formula rearranged so one calc() per tick reads one
+   variable.
+
+   ⚠️ AND THE THUMB'S WIDTH CANNOT BE READ FROM SCRIPT. Both routes were tried in
+   real Chromium on 2026-09-18: synthetic clicks do not drive a native range at
+   all (an untrusted event never starts the internal slider drag, so the value
+   never moves), and `getComputedStyle(el, '::-webkit-slider-thumb')` hands back
+   the INPUT's own box -- 420px wide -- not the thumb's. 16px is the platform
+   default with `accent-color` set, and it is an ASSUMPTION, which is why it is
+   named once here instead of baked into every tick.
+   ⭐ THE ERROR DEGRADES GENTLY, which is what makes the assumption affordable:
+   being wrong by d pixels misplaces a tick by d x |0.5 - f|, so at most d/2, and
+   zero at mid-game. Ignoring the inset entirely would be wrong by the whole
+   half-thumb. And clicking is EXACT regardless -- a tick carries its frame index
+   and jumps there, so the navigation never depends on this number.
+   ⏭ If the ticks ever look off, the fix is to style the thumb ourselves and make
+   this a fact instead of a default; nothing else changes. */
+#rg{--scrub-thumb:16px}
+/* THE WRAPPER TAKES THE FLEX ROLE the input used to hold, because the ticks are
+   positioned against the input's own width and need a positioned ancestor that
+   is exactly as wide. The input keeps its 44px touch target. */
+#rg .scrubwrap{flex:1 0 100%;position:relative;min-width:120px}
+#rg .scrub{display:block;width:100%;accent-color:var(--ink);cursor:pointer;height:44px;margin:0}
+/* ⛔ `pointer-events:none` ON THE STRIP AND `auto` ON THE TICKS. The strip lies
+   over the lower third of a 44px control; without this it would eat every drag
+   that started there, which is the whole scrubber on a phone. */
+#rg .gticks{position:absolute;left:0;right:0;bottom:3px;height:9px;pointer-events:none}
+/* ⭐ A 14px TARGET AROUND A 2px LINE. The mark wants to be thin and the tap wants
+   to be fat, and those are different boxes: the button carries the target and
+   the pseudo-element draws the tick, centred in it. A 2px-wide button would be
+   unpressable on the surface this site is judged on. */
+/* ⛔⛔ SCOPED THROUGH `.transport`, AND IT HAS TO BE — found by LOOKING, with
+   1,323 tests green. A tick is a `<button>` inside the transport, so
+   `#rg:not(.preview) .transport button` claims it at specificity (1,2,1) and
+   beat the (1,1,0) this rule started as: the ticks rendered 20x44 instead of
+   14x9, wearing the Prev/Next buttons' `min-height:44px` and their 10px side
+   padding. `#rg .transport .gticks .gtick` is (1,3,0), which wins on class count
+   rather than on source order -- a tie broken by position is a tie the next edit
+   can lose. `min-height` and `padding` are then reset by NAME, because the rule
+   that set them is about a different kind of button entirely. */
+#rg .transport .gticks .gtick{position:absolute;top:0;height:100%;min-height:0;width:14px;
+  box-sizing:border-box;transform:translateX(-7px);padding:0;border:0;background:transparent;
+  border-radius:0;pointer-events:auto;cursor:pointer}
+#rg .transport .gticks .gtick::before{content:'';position:absolute;left:6px;top:0;width:2px;
+  height:100%;background:currentColor;border-radius:1px}
+#rg .transport .gticks .gtick:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
 /* THE SHARE ROW. Quiet by default -- it is not a transport control and must not
    read as one -- and the confirmation sits beside it rather than replacing the
    label, so the button a reader just pressed is still where they left it.
@@ -2539,7 +2596,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 <div class="transport"><button class="play" id="play">▶ Play</button>
   <div class="grp" role="group" aria-label="Step through the events"><button class="spd stepb" id="back" aria-label="Previous event">◀ Prev</button><button class="spd stepb" id="fwd" aria-label="Next event">Next ▶</button></div>
   <div class="grp" role="group" aria-label="Replay speed"><button class="spd stepb" id="slower">&#9664; Slower</button><button class="spd stepb" id="faster">Faster &#9654;</button></div>
-  <input class="scrub" id="scrub" type="range" min="-1" max="1" value="-1"></div>
+  <div class="scrubwrap"><input class="scrub" id="scrub" type="range" min="-1" max="1" value="-1"><div class="gticks" id="gticks" role="group" aria-label="Goals in this game"></div></div></div>
 <!-- ⭐ COPY A LINK TO THIS MOMENT. The read side has been built and tested since
      the learn-page doors -- `deeplink.js::format` even says in its own docstring
      that it is "the link a copy this moment control emits" -- and nothing ever
@@ -7657,6 +7714,63 @@ function sentenceFor(o) {
   };
 }
 
+/* --- src/lib/scrub.js --- */
+/**
+ * Where a frame sits on the scrub track.
+ *
+ * ⭐ THIS IS HERE RATHER THAN IN `app.js` BECAUSE IT IS THE PART THAT CAN BE
+ * WRONG WITHOUT LOOKING WRONG. The two numbers below decide where a goal tick
+ * lands, and both of them have an off-by-one that draws a perfectly tidy row of
+ * marks in the wrong place — the failure mode this project spends most of its
+ * effort on. The page's fake DOM cannot report an element's computed `left`, so
+ * a test driving the page could only ever count the ticks, not check them. As a
+ * pure function it is checked directly.
+ *
+ * ⚠️ THE RANGE STARTS AT -1, AND THAT IS NOT AN OFF-BY-ONE TO BE TIDIED AWAY.
+ * The playhead floor is a real frame — index -1 draws the rink, both
+ * goaltenders, a 0-0 board and two empty boxes — so the scrubber's range is
+ * `-1 .. n-1` and its length is `n`, not `n-1`. The fraction of the track for
+ * frame k is therefore `(k + 1) / n`. Using `k / (n - 1)` puts every tick one
+ * frame to the left, which on a 300-event game is under a pixel at the start and
+ * still under a pixel at the end: invisible, and wrong everywhere.
+ */
+
+/** Every goal in a playable event list, with its fraction of the scrub track. */
+function goalTicks(events) {
+  const n = events.length;
+  const out = [];
+  if (!n) return out;
+  events.forEach((e, k) => {
+    if (e && e.type === 'goal') out.push({ k, f: (k + 1) / n });
+  });
+  return out;
+}
+
+/**
+ * The CSS `left` for a tick at fraction `f`, as a `calc()` over one variable.
+ *
+ * ⛔⛔ A NATIVE RANGE'S THUMB DOES NOT TRAVEL 0 → 100%. It is inset by half a
+ * thumb width at each end, so the thumb's centre at fraction f is at
+ *
+ *     thumb/2 + f x (track - thumb)
+ *
+ * which rearranges to `f x 100% + thumb x (0.5 - f)` — the form below, so one
+ * `calc()` reads one variable and the thumb width stays a single named number.
+ * Placing ticks at a bare `f x 100%` is wrong by `thumb x (0.5 - f)`: zero at
+ * mid-game and a full half-thumb at either end, which is exactly where an
+ * empty-net goal sits.
+ *
+ * ⚠️ `--scrub-thumb` IS AN ASSUMPTION, NOT A MEASUREMENT, and `app.css` carries
+ * the reason: the thumb's width cannot be read from script. Synthetic clicks do
+ * not drive a native range (an untrusted event never starts the internal drag),
+ * and `getComputedStyle(el, '::-webkit-slider-thumb')` returns the input's own
+ * box. Being wrong by d pixels misplaces a tick by `d x |0.5 - f|` — at most
+ * d/2 — so the error degrades gently, and clicking never depends on it: a tick
+ * carries its frame index.
+ */
+const tickLeft = f =>
+  `calc(${(f * 100).toFixed(3)}% + var(--scrub-thumb) * ${(0.5 - f).toFixed(5)})`;
+
 /* --- src/lib/deeplink.js --- */
 /**
  * The deep-link seam: one place that reads the URL, one place that answers
@@ -9676,6 +9790,59 @@ function set(v,how){i=Math.max(-1,Math.min(EV.length-1,v));$('scrub').value=i;re
    clamps, so a press at either end is already harmless -- but a button that
    accepts a press and does nothing is a button that says the page is broken. */
 function syncStep(){$('back').disabled=i<=-1;$('fwd').disabled=i>=EV.length-1;}
+/* ⭐⭐ THE GOALS, MARKED ON THE SCRUBBER — Kevin, 2026-09-18: "I can also see a
+   more advanced user wanting to fast forward to a specific time of the game...
+   let's go with goal ticks only, I don't want to overcrowd the scrubber area."
+
+   ⭐ IT IS NAVIGATION, NOT A FILTER, AND THE DIFFERENCE IS THE WHOLE DESIGN. A
+   filter changes what is counted and every number on the page has to move with
+   it (`docs/strength-filter.md` is that other thing, and it needs an exclusion
+   ledger before it can ship). A tick changes only WHERE YOU ARE. Nothing here
+   touches a reducer, so no total can disagree with the ice because of it.
+
+   ⛔⛔ THE POSITION IS SET THROUGH CSSOM, NEVER AS A `style` ATTRIBUTE. This site
+   pins `style-src` by hash with no `unsafe-inline`, so a style attribute written
+   into markup is INERT -- silently, with no console error and a green build. That
+   is not theory: it is how a canary in the row-8 blind-spot work changed the
+   source, passed every check and had no effect. `el.style.setProperty` is the
+   CSSOM path and is not inline style; it is what already paints the club colours
+   at the top of this file.
+
+   ⭐ THE LABEL IS `clipNames`, THE BOARD'S OWN SENTENCE. "MIN scored at 16:13 of
+   Period 1" is already how the clip box names a goal, and it routes overtime and
+   the shootout through `periodLabel` the way the scoreboard does. A second
+   sentence here would be a second thing free to disagree.
+
+   ⚠️ `f` IS OVER THE SCRUB'S OWN RANGE, WHICH STARTS AT -1. The playhead floor is
+   a real frame (pre-game), so the range is `-1 .. EV.length-1` and the fraction
+   of the track for frame k is `(k+1)/EV.length`, not `k/(EV.length-1)`. Getting
+   that wrong puts every tick one frame's width to the left and nothing looks
+   broken. */
+function drawGoalTicks(){
+ const T=$('gticks');if(!T)return;
+ T.innerHTML='';
+ for(const {k,f} of goalTicks(EV)){
+  const e=EV[k], say=clipNames(e);
+  const b=document.createElement('button');
+  b.setAttribute('type','button');
+  b.setAttribute('class','gtick');
+  b.setAttribute('data-k',String(k));
+  b.setAttribute('title',say);
+  b.setAttribute('aria-label','Jump to '+say);
+  b.style.setProperty('left',tickLeft(f));
+  b.style.setProperty('color',e.own===HID?HOMECOL:AWAYCOL);
+  T.appendChild(b);
+ }
+}
+/* DELEGATED, because the strip is rebuilt and the ticks are not permanent -- the
+   same reason the why-popup's close button is listened for on the backdrop. */
+if($('gticks'))$('gticks').addEventListener('click',ev=>{
+ const t=ev.target;
+ if(!t||!t.classList||!t.classList.contains('gtick'))return;
+ stop();set(+t.getAttribute('data-k'),'jump');});
+/* ONCE, AT BOOT. The goals in a finished game do not change while it is being
+   watched, so this is furniture and not part of `render`. */
+drawGoalTicks();
 /* THE CONDITIONS THE PRECEDENCE RULE RANKS, read at the moment of asking.
    ⚠️ BUILT FRESH ON EVERY CALL, AND THAT IS NOT AN OVERSIGHT. `hdOn` is a live
    control -- a viewer turning the slot layer on changes which frames speak, and
