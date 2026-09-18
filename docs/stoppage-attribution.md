@@ -5,7 +5,7 @@ of the puck', do we know which team was offside? I'm not sure a casual fan would
 what was happening there (same with icing) unless we say which team was offside (or iced
 the puck)."*
 
-**Not started. This is the measurement, not a design.**
+✅ **BUILT 2026-09-18** — the measurement is below, and what shipped is at the end.
 
 ## The feed does not say
 
@@ -100,3 +100,59 @@ and sometimes does not risks teaching a novice that the silence means something.
 The walk is `docs/defects/stoppage-attribution-2026-09-18/derive.mjs`, run against the
 public origin; it fetches every published game and reduces each to its icing and offside
 stoppages. 0 of 4,490 games failed.
+
+
+---
+
+# ✅ What shipped — Kevin's ruling, 2026-09-18
+
+*"name the team when we know and for the 5.6% say something like 'Offsides — data not
+conclusive'… Either in the pill or as an overlay on the ice. This is the first time we've
+had this happen, so it's uncharted territory."*
+
+⭐ **It was not uncharted: the site already had a form for it.** *"No comparison shown —
+this is not a regular-season or playoff game"*; an unknown club gets **nobody's colour**
+rather than `undefined`; the faceoff ring is **grey when two clubs are even**. The pattern
+is to state the absence where the presence would go, with a reason about the world rather
+than about our database — which is also why the copy is not *"data not conclusive"*: by
+Kevin's own ruling on the penalties lede, a sentence about what OUR RECORD contains does
+not belong on a teaching surface. The test is whether it teaches the rule.
+
+**A restart is now a frame about the whistle, and four surfaces say one thing:**
+
+| surface | nameable | not nameable |
+|---|---|---|
+| the ice label | `BUF · Iced the puck` / `NYR · Offside` | `Offside` |
+| the mark | the offending club's colour | **neutral — nobody's** |
+| the caption pill | the club on its chip | no chip, and the clause below |
+| the line under the rink | *(silent)* | *(silent)* |
+
+The unknown case adds *"— a centre-ice draw names neither club"*, which is a fact the
+reader can SEE: the dot is right there, and it is the same fact that tells them the draw's
+position is how the club is known at all.
+
+## ⛔ Three things the build found that the design did not
+
+1. **The mark, the label and the line are ONE surface.** With the ice naming the offender
+   and the line still leading with the face-off WINNER,
+   `active-player.test.js` went red on three frames — ice `BUF` against line `MIN`, which
+   is *"text says CAR, visual shows Vegas"*. **The draw is won by the offending club only
+   45.1% of the time after an icing and 50.0% after an offside** (600 games), so they
+   disagree about half the time. The line is now silent on these frames, which is Kevin's
+   own ruling on the goal for the same reason — at a cost of the draw's narration on
+   **13.0 frames a game**.
+2. **A measured doctrine said the ice must NOT name a stoppage** — *"exactly one surface
+   names the stoppage"*, because over 53 games the ice and the box named DIFFERENT
+   stoppages on 3.5% of frames. ⭐ It narrowed rather than blocked, on its own reason:
+   that 3.5% was a PAIRING disagreement, and `restarts()` refuses to pair across a second
+   whistle, so on a frame the ice can name, the paired whistle IS the latest one. The rule
+   still binds every other reason, and the test now asserts the agreement it relied on.
+3. **Reverting the mark's colour to the draw winner left 107 tests green** and was seen
+   only by the DOM golden, which is a change detector and not a catcher. The three
+   surfaces now have one rule over a walk, and a planted revert turns it red.
+
+The pill's cost was measured, because that is what the icing caption's own comment
+demands: at **844×390** — the landscape phone Kevin's ruling makes the surface — every
+caption on this pill is 3 lines and 25% of the ice, the new clause included. At 667×375
+the clause reaches 4 lines and 53%, which is exactly what icing already cost there. It
+never sets a new worst case.

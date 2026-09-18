@@ -60,6 +60,59 @@ function zoneOf(x, homeAb, awayAb) {
 }
 
 /**
+ * ⭐⭐ WHICH CLUB THE STOPPAGE IS ABOUT — the one thing the feed never records.
+ *
+ * Kevin, 2026-09-18, from the live site: *"'Offside — a skater crossed the blue
+ * line ahead of the puck', do we know which team was offside? I'm not sure a
+ * casual fan would know what was happening there (same with icing) unless we say
+ * which team was offside (or iced the puck)."*
+ *
+ * Every stoppage in the archive carries `own: null`, no actor and no coordinate.
+ * **The dot the draw comes back to answers it, and the rulebook is the reason:**
+ *
+ *   Rule 81.1  an icing draw is taken "at the end face-off spot in the OFFENDING
+ *              team's defending zone" — so the club whose end it is, is the club
+ *              that iced it. `zoneOf` already answers exactly that question.
+ *   Rule 83.2  an offside draw is taken outside the blue line of the zone that
+ *              was ENTERED — so the offender is the club ATTACKING that zone,
+ *              which is the other one. ⛔ THE SIGN IS THE OPPOSITE OF ICING'S.
+ *              An INTENTIONAL offside goes back to the offender's own end
+ *              instead, and reads like an icing (5.97% of them).
+ *
+ * ⛔ NOTHING HERE INFERS POSSESSION, and that is deliberate. `own` means four
+ * different things depending on the event type, and a possession guess was
+ * already wrong on Kevin's own specimen. This is a coordinate and a rule — the
+ * same division of labour the rest of this module argues for: a rule states, a
+ * coordinate shows. It is also NOT the face-off winner: measured over 600 games,
+ * the draw after an icing is won by the offending club 45.1% of the time and
+ * after an offside 50.0%, so `own` would be wrong more often than right.
+ *
+ * ⚠️ AND IT RETURNS `null` RATHER THAN A GUESS. A draw at centre ice names
+ * nobody: 5.60% of offsides and 0.01% of icings. Two fallbacks for those were
+ * tested and both died — the better one, "the last located play says which end
+ * the rush was heading into", was run against the 3,816 offsides the dot ALREADY
+ * names and agreed **54.38%** of the time, a coin flip, and got worse the deeper
+ * that play was. Without that control it would have shipped and named the wrong
+ * club about half the time on a page that exists to teach the rule.
+ *
+ * Measured over all 4,490 published games (`docs/stoppage-attribution.md`):
+ * **icing 99.99% nameable, offside 94.40%**, and the attribution is checked
+ * against a prediction the rules make in BOTH directions — a short-handed team
+ * may ice the puck legally, so the icing offender is short-handed 0.43% against
+ * the other club's 1.30%, while for offside it flips to 1.93% against 9.71%.
+ */
+export function offendingTeam(rsn, x, homeAb, awayAb) {
+  if (x == null || x === 0) return null;
+  const zone = zoneOf(x, homeAb, awayAb);
+  // An end-zone draw is the offender's own end, whichever rule sent it there.
+  if (zone) return zone;
+  // Otherwise it is a neutral-zone dot, and only offside restarts there: the
+  // draw is outside the blue line of the zone ENTERED, so the offender attacks it.
+  if (rsn !== 'offside') return null;
+  return x < 0 ? awayAb : homeAb;
+}
+
+/**
  * The lines the rule NAMES, so the ice can show the geometry a sentence cannot.
  *
  * THIS IS A DERIVATION AND IT IS WORTH BEING EXPLICIT ABOUT. Nothing here draws a
@@ -408,6 +461,7 @@ export function restarts(events, ctx, rsn) {
       if (events[k].type !== 'faceoff') continue;
       out.push({ event: events[k],
                  zone: zoneOf(events[k].x, ctx.homeAb, ctx.awayAb),
+                 offender: offendingTeam(rsn, events[k].x, ctx.homeAb, ctx.awayAb),
                  lines: linesFor(rsn, events[k].x) });
       return;
     }

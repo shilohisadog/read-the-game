@@ -243,12 +243,21 @@ test('⭐ the sentence resolves on every frame the replay shows, or says the eve
      it: *"let's just render nothing on a Goal, the rink description is
      sufficient."* It costs no jitter — `min-height` reserves the row either way.
      So the count is two, and each is named, because "some branches are blank" is
-     not a claim anybody can check. */
+     not a claim anybody can check.
+
+     ⭐ A THIRD ARRIVED 2026-09-18, AND IT IS THE SAME REASON AS THE GOAL'S. An
+     icing or offside RESTART is now a frame about the whistle: the ice says
+     "BUF · Offside" and the pill says the rule, so a line adding "#38 Hartman won
+     the draw" is a third surface, a different subject, and — because the draw is
+     won by the offending club only 45.1% / 50.0% of the time — usually a
+     DIFFERENT CLUB. It failed `the line and the ice beside it never name opposite
+     clubs` on three frames of the reference game before it was suppressed. */
   const say = fnSrc('sayWho');
   const blanks = say.match(/innerHTML=''/g) || [];
-  assert.equal(blanks.length, 2,
-    `${blanks.length} branches of sayWho render an empty line. There are exactly two: `
-    + 'the pre-game frame, and a frame whose name the caption pill already carries');
+  assert.equal(blanks.length, 3,
+    `${blanks.length} branches of sayWho render an empty line. There are exactly three: `
+    + 'the pre-game frame, a frame whose name the caption pill already carries, and an '
+    + 'icing or offside restart, where the ice itself now names the offending club');
   assert.match(say, /if\(!e\)\{w\.innerHTML=''/,
     'the pre-game branch is no longer one of the empty ones');
   /* ⭐ THE SUPPRESSED BRANCH GAINED A CONDITION ON 2026-09-08 AND STAYED BLANK.

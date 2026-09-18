@@ -26,7 +26,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { whistle, WHY, marks, latest } from '../src/lib/layers/whistle.js';
+import { whistle, WHY, marks, latest, icingRestarts, offsideRestarts } from '../src/lib/layers/whistle.js';
 
 const HOME = 10, AWAY = 20;
 const CTX = { roster: { 1: { nm: 'A', tid: AWAY, pos: 'C' } },
@@ -381,4 +381,77 @@ test('and the legend names both rules the line serves', () => {
   const key = /\bwhistle:'([^']*)'/.exec(SHELL)[1];
   for (const w of ['icing', 'offside', 'centre line', 'blue line'])
     assert.ok(key.includes(w), `the rule-line key never mentions ${w}: "${key}"`);
+});
+
+/**
+ * ⭐⭐ WHO ICED IT, WHO WAS OFFSIDE — the club the feed does not name.
+ *
+ * Kevin, 2026-09-18, from the live site: *"'Offside — a skater crossed the blue
+ * line ahead of the puck', do we know which team was offside? I'm not sure a
+ * casual fan would know what was happening there (same with icing)."*
+ *
+ * The feed does not: every stoppage carries `own: null`, no actor, no
+ * coordinates. **The restart dot plus the rulebook does.** Rule 81.1 puts an
+ * icing draw at the end face-off spot in the OFFENDING team's defending zone;
+ * Rule 83.2 puts an offside draw at the neutral-zone dot outside the blue line
+ * of the zone that was ENTERED — so there the offender is the club attacking
+ * that zone, which is the other one. An intentional offside goes back to the
+ * offender's own end, like an icing.
+ *
+ * ⛔ NOTHING HERE INFERS POSSESSION. `own` means four different things by event
+ * type and a possession guess was already wrong on Kevin's own specimen
+ * (`docs/status.md`). This is a coordinate and a rule.
+ *
+ * Measured over all 4,490 published games (`docs/stoppage-attribution.md`):
+ * icing nameable 99.99%, offside 94.40%, the remainder a centre-ice draw that
+ * names nobody. ⭐ Checked against a prediction the rules make IN BOTH
+ * DIRECTIONS — a short-handed team may ice legally, so the icing offender is
+ * short-handed 0.43% against the other club's 1.30%, while for offside it flips
+ * to 1.93% against 9.71%.
+ */
+const END = 69, NEUTRAL_DOT = 20;
+
+test('⭐ an icing names the club whose end the draw came back to', () => {
+  // Rule 81.1: the draw is in the OFFENDING team's defending zone, and
+  // coordinates are normalised so the home side defends -x.
+  const home = icingRestarts([stop('icing'), faceoff(-END, 22)], CTX)[0];
+  assert.equal(home.offender, 'HME');
+  const away = icingRestarts([stop('icing'), faceoff(END, -22)], CTX)[0];
+  assert.equal(away.offender, 'AWY');
+});
+
+test('⭐⭐ an offside names the OTHER club — the draw is outside the zone that was entered', () => {
+  // The neutral-zone dot at -20 is outside the HOME team's blue line, so the
+  // zone entered is home's and the club attacking it is the away side.
+  // ⛔ THE SIGN IS THE OPPOSITE OF ICING'S, which is the whole reason this is a
+  // rule per stoppage and not one shared helper reading the coordinate.
+  assert.equal(offsideRestarts([stop('offside'), faceoff(-NEUTRAL_DOT, 22)], CTX)[0].offender, 'AWY');
+  assert.equal(offsideRestarts([stop('offside'), faceoff(NEUTRAL_DOT, 22)], CTX)[0].offender, 'HME');
+});
+
+test('an INTENTIONAL offside goes back to the offender\'s own end, like an icing', () => {
+  // 5.97% of offsides across the archive restart inside an end zone.
+  assert.equal(offsideRestarts([stop('offside'), faceoff(-END, 22)], CTX)[0].offender, 'HME');
+  assert.equal(offsideRestarts([stop('offside'), faceoff(END, 22)], CTX)[0].offender, 'AWY');
+});
+
+test('⛔ a centre-ice draw names NOBODY, and says so rather than guessing', () => {
+  // 5.60% of offsides. Two fallbacks were tested and both died — the better one
+  // agreed with the dot 54.38% of the time, a coin flip
+  // (docs/stoppage-attribution.md). Silence here is the measured answer.
+  assert.equal(offsideRestarts([stop('offside'), faceoff(0, 0)], CTX)[0].offender, null);
+  assert.equal(icingRestarts([stop('icing'), faceoff(0, 0)], CTX)[0].offender, null);
+});
+
+test('a restart with no coordinate names nobody, and does not throw', () => {
+  assert.equal(offsideRestarts([stop('offside'), faceoff(null, null)], CTX)[0].offender, null);
+});
+
+test('⛔ the offender is never read off the faceoff WINNER, which is a different club half the time', () => {
+  // Measured over 600 games: the draw after an icing is won by the offending
+  // club 45.1% of the time, and after an offside 50.0%. Reading `own` would be
+  // wrong more often than right — and would put two different clubs on one frame.
+  const drop = faceoff(-END, 22);          // HOME's end → HOME iced it
+  drop.own = AWAY;                          // …and the AWAY club won the draw
+  assert.equal(icingRestarts([stop('icing'), drop], CTX)[0].offender, 'HME');
 });
