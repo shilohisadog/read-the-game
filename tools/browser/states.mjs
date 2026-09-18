@@ -95,6 +95,19 @@ export const STATES = [
        + 'mark opened nothing while the caption invited it (src/app.js, `closest` not `ev.target`)',
   },
   {
+    key: 'mark-swallows-step',
+    setup: { layer: 'slot' },
+    seek: '.clickable',
+    then: { layer: 'none' },
+    gesture: 'dblclick-mark',
+    why: '⛔ A DOUBLE PRESS ON A MARK MUST NOT REACH THROUGH THE DOOR IT OPENED — and the other '
+       + 'half of that rule is that WITHOUT a door the same gesture steps. With no layer on a slot '
+       + 'mark has no door, so a double-click on it steps the replay like any other. Widening '
+       + '`doorAt` from `hdOn && isHD(e)` to `||` swallows it instead and the replay silently stops '
+       + 'answering a gesture — `s20260916-82`, one of the 19 escapes, and the only one of them a '
+       + 'browser state was finally able to reach',
+  },
+  {
     key: 'step-back',
     seek: '.fig.att',
     gesture: 'dblclick-left',
@@ -123,7 +136,7 @@ export function probeHtml(state) {
 <iframe id="f" src="${state.page || 'read-the-game.html'}" style="width:1100px;height:900px;border:0"></iframe>
 <script type="text/plain" id="out">pending</script>
 <script>
-var S = ${JSON.stringify({ at: state.at ?? null, seek: state.seek || null, setup: state.setup || null, gesture: state.gesture || null })};
+var S = ${JSON.stringify({ at: state.at ?? null, seek: state.seek || null, setup: state.setup || null, then: state.then || null, gesture: state.gesture || null })};
 function fire(doc, type, x, y, detail) {
   var el = doc.elementFromPoint(x, y);
   if (!el) return { on: 'nothing at ' + x + ',' + y };
@@ -149,6 +162,10 @@ setTimeout(function () {
       if (!r.entered) r.note = 'no frame in ' + (+s.max + 1) + ' draws ' + S.seek;
     } else { at(S.at || 0); r.entered = true; r.frame = S.at || 0; }
     if (r.entered) {
+      /* ⭐ SEEK IN ONE STATE, ACT IN ANOTHER. The mark has to be FOUND with the slot
+         layer on — that is what makes it a mark with a door — and then pressed with
+         the layer off, which is the condition the claim is actually about. */
+      if (S.then && S.then.layer) d.querySelector('#rg .pk[data-l="' + S.then.layer + '"]').click();
       r.scrubBefore = +s.value;
       var lab = d.querySelector('#labels text');
       r.label = lab ? lab.textContent : '';
@@ -157,6 +174,24 @@ setTimeout(function () {
         var b = ice.getBoundingClientRect(), y = b.top + b.height / 2;
         if (S.gesture === 'dblclick-left') r.land = fire(d, 'dblclick', b.left + b.width * 0.25, y, 2).on;
         if (S.gesture === 'dblclick-right') r.land = fire(d, 'dblclick', b.left + b.width * 0.75, y, 2).on;
+        if (S.gesture === 'dblclick-mark') {
+          /* The same aim-where-a-person-can-hit sweep as click-mark, then a double
+             press ON the mark rather than on open ice. */
+          var dm = d.querySelector('#events ' + (S.seek || '[data-i]')) || d.querySelector('#events [data-i]');
+          if (!dm) { r.land = 'no mark on the ice at this frame'; }
+          else {
+            var did = dm.getAttribute('data-i'), db = dm.getBoundingClientRect(), dhit = 0, dn = 0, daim = null;
+            for (var ax = 0; ax < 9; ax++) for (var ay = 0; ay < 9; ay++) {
+              var qx = db.left + db.width * (ax + 0.5) / 9, qy = db.top + db.height * (ay + 0.5) / 9;
+              dn++;
+              var qe = d.elementFromPoint(qx, qy), qo = qe && qe.closest('[data-i]');
+              if (qo && qo.getAttribute('data-i') === did) { dhit++; if (!daim) daim = [qx, qy]; }
+            }
+            r.hitPct = Math.round(dhit / dn * 100);
+            r.box = Math.round(db.width) + 'x' + Math.round(db.height);
+            r.land = daim ? fire(d, 'dblclick', daim[0], daim[1], 2).on : 'no point in the mark\\'s own box is the mark';
+          }
+        }
         if (S.gesture === 'click-mark') {
           /* ⛔ AIM WHERE A PERSON CAN ACTUALLY HIT, AND SAY WHAT FRACTION THAT IS.
              A mark drawn as a figure is a stick figure in a square box: clicking
@@ -245,6 +280,19 @@ export function judgeStates(seen) {
         `slot-door: only ${r.hitPct}% of the mark's ${r.box} box can be pressed (the floor is ${HIT_FLOOR}%) — the target has thinned`);
       want(r.why === 1, `slot-door: pressing a clickable mark on frame ${r.frame} did not open the why-card (landed on ${r.land})`);
       want(r.whyText > 20, `slot-door: the why-card opened holding ${r.whyText} characters — it is empty`);
+    }
+
+    if (s.key === 'mark-swallows-step') {
+      want(r.hitPct > 0, `mark-swallows-step: no point in the mark's own ${r.box} box is the mark`);
+      /* ⚠️ THE DIRECTION IS DATA, NOT A CLAIM. A double press steps back on the ice's
+         left half and forward on its right, so which way this mark steps depends on
+         where the shot was taken. What the claim is about is that the gesture is not
+         SWALLOWED: exactly one frame, either way. */
+      want(Math.abs(r.scrubAfter - r.scrubBefore) === 1,
+        `mark-swallows-step: with NO layer on, a double press on a mark moved frame ${r.scrubBefore} to `
+        + `${r.scrubAfter} — one step either way was due, so the mark swallowed a gesture it has no door `
+        + `for (landed on ${r.land})`);
+      want(r.why === 0, 'mark-swallows-step: a why-card opened with no layer on — the mark has a door it should not have');
     }
 
     if (s.key === 'step-back')

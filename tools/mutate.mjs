@@ -148,6 +148,21 @@ async function detect(dir, lang) {
   if (b.code !== 0) r.buildTail = b.out.slice(-300);
   const js = await sh('node --test --test-concurrency=4 test/*.test.js 2>&1', dir, 400);
   r.js = js.code; r.jsFail = js.code === 0 ? [] : failingFiles(js.out);
+  /* ⛔⛔ A CATCH MUST REPRODUCE, AND TWICE IT DID NOT. Running three worktrees at
+     once — each a build plus a 4-way suite — made `homepage.test.js` go red under
+     load on two mutants (`s20260916-82`, `s20260916-96`) that are NOT caught: both
+     came back `not-caught` at `--workers 1`, and the same suite passes with either
+     planted. A false CAUGHT is the worst error this engine can make: it reports
+     detection the suite does not have, which is the exact claim the whole program
+     rests on. So a red is confirmed by re-running JUST the files that failed — the
+     narrow re-run costs a second or two, and only mutants that went red pay it.
+     A red that does not reproduce is recorded as `flaky` and NOT counted as a
+     catch. (docs/defects/blind-spots-2026-09-17/) */
+  if (js.code !== 0 && r.jsFail.length) {
+    const again = await sh(`node --test ${r.jsFail.map(f => `test/${f}`).join(' ')} 2>&1`, dir, 300);
+    if (again.code === 0) { r.flaky = r.jsFail; r.js = 0; r.jsFail = []; }
+    else r.jsFail = failingFiles(again.out);
+  }
   if (lang === 'py') {
     const py = await sh('PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s test -p "test_*.py" 2>&1', dir, 300);
     r.py = py.code;

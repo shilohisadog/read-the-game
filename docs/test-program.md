@@ -257,9 +257,17 @@ SPECIMEN** — the `teams.js` contrast threshold moves exactly one of 33 clubs
 (Philadelphia, 3.55), and the other two need a short-handed goal and a goaltender
 who faced and saved everything — and **2 are gestures**.
 
-⭐⭐ **So the answer to "how many does a new state catch" is TWO, and the lesson is
-that a probe which walks one game is evidence about one game.** The remaining work
-is a second specimen, not a seventh state.
+⭐⭐ **So the answer to "how many does a new state catch" is ONE** — measured, after
+predicting two and being wrong: planting the two "gesture" escapes against the new
+states caught neither, because both gestures were aimed at open ice and the defect
+lives on a MARK. The state that does catch it (`mark-swallows-step`) seeks the mark
+with the slot layer on and presses it with the layer off. **Two more were closed by
+tests at the right level** — an untested function and a grep standing in for a
+behaviour — and the "needs another specimen" diagnosis was wrong about all three
+specimens: two were already in committed fixtures nothing used for them.
+⛔ **Row 8 also found a defect in the measuring engine**: at `--workers 3` it reported
+two mutants CAUGHT that are not, a test having gone red under load. A red is now
+confirmed by re-running the files that failed. `docs/defects/blind-spots-2026-09-17/CLOSED.md`.
 
 ⭐ **And the first version of the states measured nothing.** It sampled 0.55 of the
 scrub, which is a faceoff, and faceoffs are not drawn as figures — so the states
@@ -372,7 +380,7 @@ measured.
 | 5 | the review gallery with mechanical diffs (pixels, sentences, the DOM golden) | Kevin judges one batch |
 | 6 | harness seam B + T1 | ids-over-three count, before and after |
 | 7 | visibility claims → S2, file by file, each move a churn replay | §8.1 — ⏳ the browser checks now live in `tools/browser/` (runnable locally, judgement unit-tested), which is what a file-by-file move needs |
-| 8 | new browser states for the blind spots | re-plant the 19 — ✅ **DONE 2026-09-17, and it reframed the row**: new states catch 2; 9 were gone with their code, 3 are equivalent, 1 was dead code, 1 is on another page, 3 need another SPECIMEN (§7.2) |
+| 8 | new browser states for the blind spots | re-plant the 19 — ✅ **CLOSED 2026-09-17/18.** 11 gone with their code, **3 now caught** (2 suite, 1 a browser state), 5 remain with a written reason each: 3 equivalent or imperceptible, 1 on another page, 1 needs a game with a video clip. §7.2 and `docs/defects/blind-spots-2026-09-17/CLOSED.md` |
 | 9 | the weekly mutation run with check mutants | a planted disarmed gate is reported — ⏳ the engine is built and run once (`tools/mutate.mjs`, §8.2); what is open is the SCHEDULE, a fresh sample, and check mutants |
 | 10 | the performance budget | an alarm on a planted heavy page |
 
@@ -388,7 +396,7 @@ every visible difference on a sheet ([docs/reviews/README.md](reviews/README.md)
 **its exit is met — Kevin judged batch 1** (1 item, 0 wrong). The pixel and
 sentence diffs are in it; the DOM golden stays a gate (§11.2 Q4) until batches
 have been judged long enough to trust the gallery in its place.
-**Open: rows 7, 9 and 10** — row 8 is measured and written up (§7.2); what it leaves open is a SECOND SPECIMEN GAME, not more states. The record,
+**Open: rows 7, 9 and 10.** Row 8 is closed (§7.2). ⛔ Row 9 gained a first customer: the mutation engine reported two FALSE CATCHES under load, which is precisely the checks-on-checks failure row 9 exists for. The record,
 with commits and what each was seen to catch, is in `docs/status.md` §0.00.
 
 ## 11. What I want ruled

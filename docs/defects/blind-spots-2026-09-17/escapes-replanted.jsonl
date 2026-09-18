@@ -1,0 +1,8 @@
+{"id":"s20260916-31","pop":"calculate","file":"src/lib/figures.js","line":75,"from":"5.0","to":"6","head":"89e3504355ac6d1e0f8861c4be3a22297009b9e8","build":0,"js":0,"jsFail":[],"outcome":"not-caught"}
+{"id":"s20260916-23","pop":"calculate","file":"src/lib/figures.js","line":68,"from":"1.7","to":"3.4","head":"89e3504355ac6d1e0f8861c4be3a22297009b9e8","build":0,"js":0,"jsFail":[],"outcome":"not-caught"}
+{"id":"s20260916-34","pop":"calculate","file":"src/lib/daily.js","line":144,"from":"-","to":"+","head":"89e3504355ac6d1e0f8861c4be3a22297009b9e8","build":0,"js":0,"jsFail":[],"outcome":"not-caught"}
+{"id":"s20260916-82","pop":"display","file":"src/app.js","line":2101,"from":"&&","to":"||","head":"89e3504355ac6d1e0f8861c4be3a22297009b9e8","build":0,"js":0,"jsFail":[],"outcome":"not-caught"}
+{"id":"s20260916-96","pop":"display","file":"src/app.js","line":1601,"from":"<","to":"<=","head":"89e3504355ac6d1e0f8861c4be3a22297009b9e8","build":0,"js":0,"jsFail":[],"outcome":"not-caught"}
+{"id":"s20260916-81","pop":"display","file":"src/app.js","line":944,"from":"===","to":"!==","head":"89e3504355ac6d1e0f8861c4be3a22297009b9e8","build":0,"js":1,"jsFail":["render-penalties.test.js"],"outcome":"suite"}
+{"id":"s916-14","pop":"calculate","file":"src/lib/teams.js","line":200,"from":"3","to":"4","head":"89e3504355ac6d1e0f8861c4be3a22297009b9e8","build":0,"js":1,"jsFail":["teams.test.js"],"outcome":"suite"}
+{"id":"s916-50","pop":"display","file":"src/app.js","line":2104,"from":"!","to":"","head":"89e3504355ac6d1e0f8861c4be3a22297009b9e8","build":0,"js":0,"jsFail":[],"outcome":"not-caught"}

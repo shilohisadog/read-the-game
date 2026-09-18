@@ -248,12 +248,15 @@ const GOOD = {
   'goal-figure':    { entered: true, frame: 73, label: '🚨 BUF · GOAL — Jokiharju' },
   'slot-door':      { entered: true, frame: 13, label: 'BUF · Shot on goal · from the slot',
                       land: 'path', why: 1, whyText: 897, hitPct: 33, box: '51x48' },
+  'mark-swallows-step': { entered: true, frame: 13, label: 'BUF · Shot on goal',
+                      land: 'path', why: 0, whyText: 0, hitPct: 33, box: '51x48',
+                      scrubBefore: 13, scrubAfter: 12 },
   'step-back':      { entered: true, frame: 3, scrubBefore: 3, scrubAfter: 2, land: 'line.shotline' },
   'step-forward':   { entered: true, frame: 3, scrubBefore: 3, scrubAfter: 4, land: 'rect.boards' },
 };
 const stateBroke = over => judgeStates({ ...GOOD, ...over }).filter(v => !v.ok).map(v => v.why);
 
-test('the six states as the reference game actually renders them are a pass', () => {
+test('the seven states as the reference game actually renders them are a pass', () => {
   assert.deepEqual(stateBroke({}), []);
 });
 
@@ -306,4 +309,18 @@ test('the probe reads its own report back', () => {
   assert.equal(r.frame, 7);
   assert.equal(readState('<script type="text/plain" id="out">pending</script>'), null);
   assert.equal(readState('<html></html>'), null);
+});
+
+test('⭐ a mark with NO door must not swallow a double press — the one escape a state reached', () => {
+  // `s20260916-82` widened `doorAt` from `hdOn && isHD(e)` to `||`, so with no
+  // layer on a slot mark swallowed the gesture and the replay stopped answering.
+  // Planted, the frame does not move at all: 13 → 13.
+  const stuck = { ...GOOD['mark-swallows-step'], scrubAfter: 13 };
+  assert.match(stateBroke({ 'mark-swallows-step': stuck })[0], /swallowed a gesture it has no door for/);
+  // ⚠️ AND THE DIRECTION IS DATA. This mark sits on the ice's left half so it steps
+  // BACK; a mark on the right steps forward. One frame either way is the claim.
+  assert.equal(stateBroke({ 'mark-swallows-step': { ...GOOD['mark-swallows-step'], scrubAfter: 14 } }).length, 0,
+    'a forward step is read as a failure — the check has welded itself to one side of the ice');
+  assert.match(stateBroke({ 'mark-swallows-step': { ...GOOD['mark-swallows-step'], why: 1 } })[0],
+    /a why-card opened with no layer on/);
 });
