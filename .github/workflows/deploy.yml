@@ -50,15 +50,15 @@ jobs:
       # at revision 29f4c30" on the first CI run after it shipped. Green locally,
       # red here, because full history is the thing a laptop has and a runner
       # does not.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.x'
 
