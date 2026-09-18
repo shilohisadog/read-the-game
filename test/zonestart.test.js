@@ -1,8 +1,16 @@
 /**
- * Zone starts — the reducer, built 2026-09-09, NOT yet wired to the page.
+ * Zone starts — the reducer, built 2026-09-09, and the ice marks it draws.
  *
- * ⚠️ THE PAGE WIRING WAS BUILT AND REVERTED THE SAME EVENING, and the reason is
- * recorded rather than hidden: with the layer's draw call added to `render()`,
+ * ⚠️⚠️ THIS HEADER SAID "NOT yet wired to the page" UNTIL 2026-09-18, and it was
+ * wrong — `drawZoneStarts` runs from `render()` and the layer is on the row under
+ * the scrubber. The wiring landed after the note below was written and nobody
+ * came back to it, which is this repo's own warning about inherited claims: a
+ * sentence in a header is not evidence, and the file that states it is the last
+ * place anyone looks. What follows is the history, kept because the defect it
+ * describes is real; it is no longer the current state.
+ *
+ * ⚠️ THE PAGE WIRING WAS BUILT AND REVERTED THE SAME EVENING (2026-09-09), and the
+ * reason is recorded rather than hidden: with the layer's draw call added to `render()`,
  * the WHISTLE layer stopped drawing its on-ice marks — 1 ring across the
  * reference sweep became 0 — and the cause was not found. The reducer is
  * exonerated by the probe that narrowed it: `whistle.reduce` still places 44 of
@@ -19,6 +27,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { zonestart } from '../src/lib/layers/zonestart.js';
 import { attackZone } from '../src/lib/rink.js';
+import { boot, pickLayer } from './helpers/page.js';
+
+const APP_JS = readFileSync(new URL('../src/app.js', import.meta.url), 'utf8');
 
 const load = p => JSON.parse(readFileSync(new URL(p, import.meta.url)));
 const GAMES = ['../data/rich.json',
@@ -166,4 +177,73 @@ test('the even-strength filter reaches this layer, because a draw is worth more 
     'the strength filter changed nothing, so it is not wired to this layer');
   for (const x of even.excluded.filter(e => g.events[e.id].type === 'faceoff'))
     assert.ok(x.dims.strength || x.dims.play, 'a draw was excluded without saying why');
+});
+
+/**
+ * ⭐ EVERY RING CARRIES ITS COUNT, AND THE LONE DRAW IS THE POINT — 2026-09-18.
+ *
+ * Kevin: "we don't show the number 1 when there's only 1 draw on a face-off dot
+ * ... I think we should show the number, even if it's 1."
+ *
+ * ⛔ WHAT THE OLD RULE WAS, AND WHY IT WENT. `drawZoneStarts` wrote the number
+ * only when `n > 1`, on the reasoning that a count exists because the marks STACK
+ * — nine dots hold every draw in a game — so a ring with one draw says one
+ * already. That makes ABSENCE carry meaning, and the only place the convention
+ * was ever stated is the layer's own help text ("no number means one"), which is
+ * a rule about our drawing and not a fact about hockey.
+ *
+ * ⚠️ AND NOTHING TESTED THE COUNT AT ALL BEFORE THIS. `render-ends.test.js` reads
+ * the ring to check it turns over with the rink; no test had ever read `.zsn`. The
+ * digit on the ice was an untested claim, which is why the change is landing with
+ * a check rather than after one.
+ *
+ * ⭐ THE FRAME WITH A LONE DRAW IS FOUND, NOT ASSUMED. A test that only asserted
+ * "as many numbers as rings" would pass on a page that still hid the 1 — the
+ * counts and the rings would simply both be zero at that moment. So this walks the
+ * replay, requires that a dot with exactly one draw really occurs, and reads the
+ * digit off the ice at that frame.
+ */
+test('every zone-start ring shows its count, and a single draw shows a 1', () => {
+  const a = boot();
+  pickLayer(a, 'zonestart');
+  const rings = html => [...html.matchAll(/<circle class="zs(?: now)?"/g)].length;
+  const nums  = html => [...html.matchAll(/<text class="zsn"[^>]*>(\d+)</g)].map(m => +m[1]);
+
+  let sawLone = 0, frames = 0;
+  a.every(d => {
+    const h = String(d.$('draws').innerHTML);
+    const r = rings(h), n = nums(h);
+    if (!r) return;
+    frames++;
+    assert.equal(n.length, r,
+      `${r} ring(s) on the ice and ${n.length} number(s) — a ring without its count is back`);
+    sawLone += n.filter(x => x === 1).length ? 1 : 0;
+  });
+
+  assert.ok(frames > 0, 'no frame ever drew a zone-start ring, so this proves nothing');
+  assert.ok(sawLone > 0,
+    'no dot in the whole replay ever held exactly one draw, so the case Kevin asked '
+    + 'about was never exercised — this test would pass with the old n>1 rule');
+});
+
+/**
+ * ⭐ AND THE HELP TEXT MAY NOT OUTLIVE THE RULE IT DESCRIBES. The sentence "no
+ * number means one" was true of the drawing and is now false; a layer whose copy
+ * teaches a convention the ice no longer uses is the same defect as a legend
+ * naming a mark nothing paints.
+ */
+test('the zone-start copy no longer teaches the convention that was removed', () => {
+  /* ⚠️ THE COPY STRING, NOT THE FILE — and the first version of this test got that
+     wrong in the way this repo keeps re-learning. Scanning all of `app.js` for the
+     phrase turned red on the COMMENT above `drawZoneStarts`, which quotes it to
+     explain why it went. A check that cannot tell code from the words about the
+     code is not a check about code; `layer-copy.test.js` reads the layer's copy
+     the same way, by pulling the string out first. */
+  const copy = /\bzonestart:'((?:[^'\\]|\\.)*)'/.exec(APP_JS);
+  assert.ok(copy, 'the zone-start copy is gone, so this check has lost its subject');
+  assert.doesNotMatch(copy[1], /no number means one/i,
+    'the help text still says an absent number means one draw, and every ring now '
+    + 'carries its count');
+  assert.match(copy[1], /number inside it is how many draws/,
+    'the copy stopped explaining what the number on a ring is');
 });

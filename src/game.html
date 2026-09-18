@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-JrRCJxD8t3zKU7Rk428sFjunFGe5avTb5KxdwERQn+s=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-1PBeC2fysmB9Hagyk+93N44Qb7ZT9fdfZA+CLL/9eDA='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-hS3AQGZeOTESsP//im1GR7EF/Ul+nHOeefeigBiVT0o=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-1PBeC2fysmB9Hagyk+93N44Qb7ZT9fdfZA+CLL/9eDA='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">How to read hockey</a></nav></header>
@@ -9564,7 +9564,7 @@ const DRAWS={
     without the comparison is where it would become who took it" -- a weaker
     lesson, and a false one, since who wins draws is the archive's cleanest null
     at 50.4%. The figures are `census.endZone` over 165,420 end-zone draws. */
- zonestart:'Every faceoff in hockey is taken on one of nine painted dots. A ring marks each dot that has been used, and the number inside it is how many draws have been taken there \u2014 no number means one. The ring takes the colour of the club that has won MORE of them, grey when they are even, and the boldest ring is the most recent draw. The two figures below the ice are the part the ice cannot show by itself: a draw is an OFFENSIVE-zone start for the club that won it in the end that club was attacking, and a defensive-zone start for the other \u2014 so the same dot means opposite things to the two clubs. Why it is worth watching: over 165,420 end-zone draws in the archive, the club attacking that end averages 1.683 shot attempts before the next whistle when it WINS the draw, and 1.163 when it LOSES it. Winning is worth the difference \u2014 0.52 of an attempt \u2014 while the 1.163 arrives either way, 2.2 times as much. Most of what an offensive-zone start is worth has nothing to do with winning the draw.',
+ zonestart:'Every faceoff in hockey is taken on one of nine painted dots. A ring marks each dot that has been used, and the number inside it is how many draws have been taken there. The ring takes the colour of the club that has won MORE of them, grey when they are even, and the boldest ring is the most recent draw. The two figures below the ice are the part the ice cannot show by itself: a draw is an OFFENSIVE-zone start for the club that won it in the end that club was attacking, and a defensive-zone start for the other \u2014 so the same dot means opposite things to the two clubs. Why it is worth watching: over 165,420 end-zone draws in the archive, the club attacking that end averages 1.683 shot attempts before the next whistle when it WINS the draw, and 1.163 when it LOSES it. Winning is worth the difference \u2014 0.52 of an attempt \u2014 while the 1.163 arrives either way, 2.2 times as much. Most of what an offensive-zone start is worth has nothing to do with winning the draw.',
  blocked:'Blocked attempts keep their ring and every other mark dims, so the ones a body stopped stand out. The box below the ice credits each block to the club that MADE it, the way a broadcast does. A block by a teammate is credited to neither club, so the two figures need not add up to the total.'};
 /** The layer object behind a picker id, or null for `none`. */
 const layerOf=id=>LENS[id]||null;
@@ -10916,7 +10916,19 @@ function drawZoneStarts(Z,slice){
      one font-size -- so the size lived in the CSS and its centring lived here,
      and changing one silently un-centred the other. `dominant-baseline:central`
      puts BOTH in the stylesheet and leaves this with nothing to keep in sync. */
-  if(d.n>1)out.push(`<text class="zsn" x="${d.cx.toFixed(1)}" y="${d.cy.toFixed(1)}">${d.n}</text>`);
+  /* ⭐ EVERY RING CARRIES ITS COUNT, INCLUDING 1 — Kevin, 2026-09-18: "we don't
+     show the number 1 when there's only 1 draw on a face-off dot... I think we
+     should show the number, even if it's 1."
+     ⛔ WHAT THE OLD `d.n>1` WAS FOR, AND WHY IT DOES NOT SURVIVE. The count was
+     added because the marks STACK: nine dots hold every draw in a game, so eight
+     draws at one dot are one circle unless a number says otherwise. By that
+     reasoning a lone draw needs no digit -- the ring already says one. But it
+     makes ABSENCE carry meaning, and a reader then has to know the convention to
+     read the ice. The only place it was ever stated is this layer's own help
+     text, and "no number means one" is a rule about our drawing rather than
+     anything about hockey. A number on every ring is read the same way by
+     someone who was never told. */
+  out.push(`<text class="zsn" x="${d.cx.toFixed(1)}" y="${d.cy.toFixed(1)}">${d.n}</text>`);
  }
  $('draws').innerHTML=out.join('');
 }
