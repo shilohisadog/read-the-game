@@ -234,6 +234,12 @@ test('the short-handed tag fires on a short-handed goal and not on a pulled goal
   assert.match(said, /shortHanded\(e\)/, 'a located goal is never told it was short-handed');
   const cap = /function caption\(e,kind\)\{[\s\S]*?\n \/\*/.exec(app)[0];
   assert.match(cap, /shortHanded\(e\)/, 'an unplaced goal is never told it was short-handed');
+  // ⛔⛔ AND THE LINE ABOVE IS A GREP, WHICH IS WHY A PLANTED DEFECT WALKED PAST IT.
+  // `s916-...`/`s20260916-81` inverted `kind==='goal'` to `kind!=='goal'` in exactly
+  // that function: `shortHanded(e)` is still spelled there, so this assertion — and
+  // every other detector — stayed green while the tag was silently unreachable.
+  // A check that cannot tell code from the WORDS ABOUT the code is not a check about
+  // code. The behavioural version is the test below.
 
   // AND THE TEST FOR IT ASKS BOTH QUESTIONS.
   const fn = /function shortHanded\(e\)\{[\s\S]*?\n\}/.exec(app)[0];
@@ -488,4 +494,76 @@ test('a penalty that expires on a goal\'s own second is still not "ended by" it'
     'the page says a goal ended a penalty that simply ran out beside it — the '
     + 'renderer is keying on "a stint ends here" rather than on box.js\'s own '
     + `endedBy. It rendered: ${JSON.stringify(said)}`);
+});
+
+/**
+ * ⛔⛔ THE UNPLACED GOAL'S TAG, EXERCISED RATHER THAN GREPPED.
+ *
+ * A located goal is announced by its label on the ice; only a goal the feed did
+ * not place falls through to `caption(e,'goal')` and the pill. That branch had
+ * no behavioural test, and a planted inversion of its `kind==='goal'` guard
+ * escaped every detector in the survivorship experiment — the assertion above
+ * matched the function's TEXT and could not see the condition around it.
+ *
+ * ⭐ THE COORDINATES ARE REMOVED ON PURPOSE, AND THAT IS NOT AN INVENTED CASE.
+ * `place()` returning false IS the branch's entry condition — the feed omits
+ * coordinates on some goals and the page has this path because of it. Taking a
+ * real short-handed goal and dropping `x`/`y` produces exactly the input the
+ * branch exists for, without inventing a strength, a penalty box or a scorer.
+ * (0 of the 49 goals across the 8 extract fixtures are unplaced, which is why
+ * the condition has to be made rather than found — and is itself worth knowing
+ * about how rare the branch is.)
+ */
+function unplace(game, pick) {
+  const copy = JSON.parse(JSON.stringify(game));
+  const e = copy.events.find(pick);
+  assert.ok(e, 'the fixture no longer holds the event this test is about');
+  e.x = null; e.y = null;
+  return { game: copy, at: e };
+}
+
+test('⭐ an unplaced SHORT-HANDED goal still says so, and an unplaced even-strength one does not', () => {
+  // ⚠️ THE PILL IS WRITTEN ON A MOMENT, NOT ON A SCRUB (`how==='play'||'jump'` in
+  // render), so the replay is STEPPED — the same way render-transport.test.js
+  // drives it — and `writes` counts the assignment rather than a changed string.
+  const short = e => e.type === 'goal' && e.s === 2159;   // CAR, sit 1451, short-handed
+  const even  = e => e.type === 'goal' && e.s === 2828;   // CAR, sit 1551, even strength
+
+  for (const [name, pick, want] of [['short-handed', short, true], ['even strength', even, false]]) {
+    const { game } = unplace(SHORTY, pick);
+    const a = boot(game, null);
+    const cap = a.$('caption');
+    const said = [];
+    let seen = cap.writes;
+    a.$('scrub').oninput({ target: { value: '0' } });
+    for (let k = 0; k < +a.$('scrub').max; k++) {
+      a.$('fwd').click();
+      if (cap.writes > seen) { seen = cap.writes; said.push(cap.innerHTML); }
+    }
+    const goals = said.filter(c => /GOAL/.test(c));
+    assert.equal(goals.length, 1,
+      `${goals.length} goal pills for the ${name} goal — the unplaced branch was not entered exactly once, `
+      + 'so this test measured nothing');
+    assert.equal(/short-handed/.test(goals[0]), want,
+      `the ${name} goal's pill reads "${goals[0].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()}"`);
+  }
+});
+
+test('⭐ …and no pill that is not a goal ever carries the tag', () => {
+  // The other half of the inverted guard: with `kind!=='goal'` the tag would be
+  // offered to every penalty and slot caption instead. Nothing else may wear it.
+  const a = boot(SHORTY, null);
+  const cap = a.$('caption');
+  const wrong = [];
+  let seen = cap.writes;
+  a.$('scrub').oninput({ target: { value: '0' } });
+  for (let k = 0; k < +a.$('scrub').max; k++) {
+    a.$('fwd').click();
+    if (cap.writes > seen) {
+      seen = cap.writes;
+      if (/short-handed/.test(cap.innerHTML) && !/GOAL/.test(cap.innerHTML))
+        wrong.push(cap.innerHTML.replace(/<[^>]*>/g, ' ').trim().slice(0, 60));
+    }
+  }
+  assert.deepEqual(wrong, [], 'a pill that is not a goal is wearing the short-handed tag');
 });

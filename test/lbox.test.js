@@ -1127,3 +1127,49 @@ test('before the first play the link carries no moment', async () => {
   assert.match(a.$('sharesaid').innerHTML, /start of the game/,
     'the confirmation does not say where the link opens');
 });
+
+/**
+ * ⭐⭐ THE GOALTENDING NOTE, ON EVERY FRAME — the sentence nobody had ever seen.
+ *
+ * `the goaltending layer counts the club…` above asserts `b.n === ''` at the LAST
+ * frame, which is the note's ABSENCE and the only half anyone had checked. The
+ * note itself — *"No shot has reached a goaltender yet."* — had no test, and a
+ * planted sign flip in the expression behind it escaped every detector in the
+ * survivorship experiment (`s20260916-71`).
+ *
+ * ⭐ THE SECOND PATH IS THE EVENTS, NOT THE LAYER'S OWN FIGURES. Asking the box
+ * whether its numbers are zero and then asserting the sentence that those numbers
+ * produce is a mirror. A shot reaches a goaltender when a `shot-on-goal` or a
+ * `goal` carries one (`src/lib/layers/goaltending.js` — a goal is a shot the
+ * goalie did not stop), so the events answer the question independently.
+ */
+const FIXTURES = ['rich.json', 'rich-ot.json'].map(f =>
+  [f, JSON.parse(readFileSync(new URL(`../data/${f}`, import.meta.url), 'utf8'))]);
+
+test('⭐ the note says a goaltender has faced nothing exactly while that is true', () => {
+  const NOTE = /No shot has reached a goaltender/;
+  // A shot REACHES a goaltender when a shot-on-goal or a goal carries one; the
+  // layer's own rule, read from the events rather than from the box it fills.
+  const reaches = e => !!e && (e.type === 'shot-on-goal' || e.type === 'goal') && !!e.goalie;
+
+  for (const [name, game] of FIXTURES) {
+    const a = boot(game, null);
+    pick(a, 'goaltending');
+    const rows = a.every((d, { ev }) => ({ shown: NOTE.test(d.$('lxN').textContent), ev }));
+
+    let faced = 0, wrong = [], sawBoth = [0, 0];
+    for (let k = 0; k < rows.length; k++) {
+      // The box at frame k counts everything up to AND INCLUDING frame k.
+      if (reaches(rows[k].ev)) faced++;
+      const want = faced === 0;
+      sawBoth[want ? 0 : 1]++;
+      if (rows[k].shown !== want)
+        wrong.push(`frame ${k}: the note is ${rows[k].shown ? 'shown' : 'absent'} while `
+          + `${faced} shot(s) had reached a goaltender`);
+    }
+    assert.ok(sawBoth[0] > 0 && sawBoth[1] > 0,
+      `${name}: ${sawBoth[0]} frames before the first shot faced and ${sawBoth[1]} after — `
+      + 'one side is empty, so this fixture cannot witness the note');
+    assert.deepEqual(wrong.slice(0, 5), [], `${name}: ${wrong.length} frame(s) disagree`);
+  }
+});

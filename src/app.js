@@ -3249,7 +3249,18 @@ function lboxFor(id,at,L){
       property of the lens, true before the puck drops. The box says what is true
       NOW, which is who is in net -- and that is also where relief shows up, in
       the 12.2% of games that use more than two goaltenders. */
-   n:(sa+sh+fa+fh)?'':'No shot has reached a goaltender yet.'};}
+   /* ⭐ THE SENTENCE IS ABOUT SHOTS FACED, SO THE TEST IS THE TWO `faced` FIGURES.
+      It read `sa+sh+fa+fh`, summing the SAVES into a question about whether any
+      shot has reached anyone. That is exactly equivalent today — a save is a
+      subset of a facing, so the sum is zero only when both denominators are —
+      but it says something the sentence does not mean, and a reader checking the
+      line has to prove the equivalence before believing it. `fa||fh` IS the
+      sentence: has either goaltender faced a shot. (It also puts the expression
+      where a wrong sign is reachable: `fa&&fh` is false for as long as only one
+      club has shot, which is the first minutes of most games — the old form's
+      failure needed one goalie to have faced exactly the other's total, which no
+      fixture we hold ever reaches. docs/defects/blind-spots-2026-09-17/.) */
+   n:(fa||fh)?'':'No shot has reached a goaltender yet.'};}
  if(id==='whistle'){
   const W=whistle.reduce(sl,CTX), n=W.whistles.length, w=latest(W);
   const nm=w?(WHY[w.rsn]&&WHY[w.rsn].name)||w.rsn:null;

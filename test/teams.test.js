@@ -17,7 +17,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { TEAMS, NOTES, inkOn, nameOf, colourOf, NEUTRAL, contrast } from '../src/lib/teams.js';
+import { TEAMS, NOTES, inkOn, nameOf, colourOf, NEUTRAL, contrast, readableInk } from '../src/lib/teams.js';
 
 /**
  * Every team appearing in an in-scope game of the live archive, 2026-08-11.
@@ -126,4 +126,56 @@ test('the identical-colour matchups are real, so colour alone cannot carry ident
       `${x} and ${y} no longer share a colour — if that is a deliberate correction, `
       + `the second channel is still required for the others`);
   }
+});
+
+/**
+ * ⭐⭐ `readableInk` HAD NO TEST AT ALL, and that is how a planted change to its
+ * threshold escaped every detector in the survivorship experiment
+ * (`s916-14`, docs/defects/blind-spots-2026-09-17/). `inkOn` — which decides the
+ * ink ON a coloured chip — is exercised hard above, and the two were read as one
+ * thing. They are not: this one decides whether a club's own colour may be used
+ * as TEXT ON WHITE, and its answer is what `--away-text` and `--home-text` carry.
+ *
+ * ⛔ THE LIST IS NAMED, NOT COMPUTED. Writing `contrast(hex,'#fff') >= 3` here
+ * would be the rule restated in its own test — a mirror, which cannot fail
+ * (CONTRIBUTING §H). The six are the ones `src/lib/teams.js` names in its own
+ * doc comment, and the threshold is WCAG 2.1's published 3:1 for large text and
+ * graphical objects (SC 1.4.3, 1.4.11), not a number we chose.
+ */
+const CANNOT_BE_TEXT = { BOS: 1.73, NSH: 1.73, PIT: 1.79, UTA: 2.34, ANA: 2.73, VGK: 2.79 };
+const FALLBACK = '#0f1a23';
+
+test('⭐ the clubs whose colour cannot be read as text on white, named and no others', () => {
+  const fell = Object.entries(TEAMS)
+    .filter(([, t]) => readableInk(t.colour) !== t.colour)
+    .map(([ab]) => ab).sort();
+  assert.deepEqual(fell, Object.keys(CANNOT_BE_TEXT).sort(),
+    'the set of clubs denied their own colour as text has moved — either a colour changed, '
+    + "or the threshold did. Both are decisions, and neither may happen quietly.");
+  for (const ab of fell) assert.equal(readableInk(TEAMS[ab].colour), FALLBACK,
+    `${ab} falls back to something other than the one dark ink`);
+});
+
+test('⭐⭐ PHILADELPHIA IS THE CLUB THE THRESHOLD IS DECIDED ON — 3.55:1, and it keeps its colour', () => {
+  // The planted defect moved the floor from 3 to 4. Exactly ONE of the 33 clubs
+  // lies between: PHI at 3.55. Every other club is either comfortably above (the
+  // next is 4.5+) or already below, so PHI alone is the witness — and the reason
+  // no walk of the reference game (BUF at MIN) could ever have shown it.
+  const phi = TEAMS.PHI.colour;
+  assert.equal(phi, '#F74902');
+  const c = contrast(phi, '#ffffff');
+  assert.ok(c >= 3 && c < 4, `PHI is ${c.toFixed(2)}:1 — it has left the band that makes this test the witness`);
+  assert.equal(readableInk(phi), phi, 'Philadelphia has lost its colour as text');
+  // And the ones just below must NOT be readmitted by the same move.
+  for (const [ab, was] of Object.entries(CANNOT_BE_TEXT))
+    assert.ok(contrast(TEAMS[ab].colour, '#ffffff') < 3,
+      `${ab} was ${was}:1 and is now at or above the floor`);
+});
+
+test('the second argument is the background the ink is judged against, not decoration', () => {
+  // Default is white. Against a dark background the same colour can be readable.
+  assert.equal(readableInk('#F74902', '#ffffff'), '#F74902');
+  assert.equal(readableInk('#FFB81C', '#ffffff'), FALLBACK, 'Boston gold is not text on white');
+  assert.notEqual(readableInk('#FFB81C', '#0f1a23'), FALLBACK,
+    'the background is ignored — the function always judges against white');
 });
