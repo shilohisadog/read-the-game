@@ -1,0 +1,3860 @@
+[
+ {
+  "id": "s20260916-1",
+  "pop": "calculate",
+  "cls": "negation",
+  "lang": "js",
+  "file": "src/lib/layer.js",
+  "from": "!",
+  "to": "",
+  "was": {
+   "line": 197,
+   "at": 9556,
+   "final": "suite",
+   "jsFail": [
+    "layers.test.js",
+    "strength.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 197,
+  "at": 9556
+ },
+ {
+  "id": "s20260916-2",
+  "pop": "calculate",
+  "cls": "boundary",
+  "lang": "js",
+  "file": "src/lib/census.js",
+  "from": ">",
+  "to": ">=",
+  "was": {
+   "line": 232,
+   "at": 12962,
+   "final": "suite",
+   "jsFail": [
+    "census.test.js",
+    "measure.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 232,
+  "at": 12962
+ },
+ {
+  "id": "s20260916-3",
+  "pop": "calculate",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/lib/census.js",
+  "from": "-",
+  "to": "+",
+  "was": {
+   "line": 510,
+   "at": 27100,
+   "final": "ESCAPE:number",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 510,
+  "at": 27100
+ },
+ {
+  "id": "s20260916-4",
+  "pop": "calculate",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/lib/rink.js",
+  "from": "-",
+  "to": "+",
+  "was": {
+   "line": 30,
+   "at": 1698,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "rink.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 30,
+  "at": 1698
+ },
+ {
+  "id": "s20260916-5",
+  "pop": "calculate",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/lib/figures.js",
+  "from": "0.92",
+  "to": "1.84",
+  "was": {
+   "line": 92,
+   "at": 5182,
+   "final": "golden-only:not-seen",
+   "jsFail": [
+    "dom-golden.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 92,
+  "at": 5206
+ },
+ {
+  "id": "s20260916-6",
+  "pop": "calculate",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/lib/svgpen.js",
+  "from": "+",
+  "to": "-",
+  "was": {
+   "line": 86,
+   "at": 3522,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "figures.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 86,
+  "at": 3522
+ },
+ {
+  "id": "s20260916-7",
+  "pop": "calculate",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/lib/calendar.js",
+  "from": "7",
+  "to": "8",
+  "was": {
+   "line": 136,
+   "at": 5653,
+   "final": "suite",
+   "jsFail": [
+    "calendar.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 136,
+  "at": 5653
+ },
+ {
+  "id": "s20260916-8",
+  "pop": "calculate",
+  "cls": "negation",
+  "lang": "js",
+  "file": "src/lib/period.js",
+  "from": "!",
+  "to": "",
+  "was": {
+   "line": 24,
+   "at": 1240,
+   "final": "suite",
+   "jsFail": [
+    "active-player.test.js",
+    "arrival.test.js",
+    "css-transform-box.test.js",
+    "deeplink-render.test.js",
+    "dom-golden.test.js",
+    "hero-loop.test.js",
+    "layers.test.js",
+    "lbox.test.js",
+    "learn-figures.test.js",
+    "learn.test.js",
+    "onice-ui.test.js",
+    "press-play.test.js",
+    "render-blocked.test.js",
+    "render-board.test.js",
+    "render-clip.test.js",
+    "render-cue.test.js",
+    "render-ends.test.js",
+    "render-icing.test.js",
+    "render-labels.test.js",
+    "render-notes.test.js",
+    "render-penalties.test.js",
+    "render-preview.test.js",
+    "render-strength-pill.test.js",
+    "render-teams.test.js",
+    "render-transport.test.js",
+    "render-whistle.test.js",
+    "rink-lines.test.js",
+    "rink-memo.test.js",
+    "rink.test.js",
+    "scoreboard.test.js",
+    "shell.test.js",
+    "smoke.test.js",
+    "why-popup.test.js",
+    "work-overlay.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 24,
+  "at": 1240
+ },
+ {
+  "id": "s20260916-9",
+  "pop": "calculate",
+  "cls": "logical",
+  "lang": "js",
+  "file": "src/lib/box.js",
+  "from": "&&",
+  "to": "||",
+  "was": {
+   "line": 122,
+   "at": 6246,
+   "final": "suite",
+   "jsFail": [
+    "box.test.js",
+    "dom-golden.test.js",
+    "render-penalties.test.js",
+    "render-strength-pill.test.js",
+    "render-transport.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 122,
+  "at": 6246
+ },
+ {
+  "id": "s20260916-10",
+  "pop": "calculate",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/lib/figures.js",
+  "from": "-",
+  "to": "+",
+  "was": {
+   "line": 161,
+   "at": 9025,
+   "final": "no-observable",
+   "jsFail": []
+  },
+  "status": "gone"
+ },
+ {
+  "id": "s20260916-11",
+  "pop": "calculate",
+  "cls": "equality",
+  "lang": "js",
+  "file": "src/lib/calendar.js",
+  "from": "===",
+  "to": "!==",
+  "was": {
+   "line": 153,
+   "at": 6289,
+   "final": "suite",
+   "jsFail": [
+    "calendar.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 153,
+  "at": 6289
+ },
+ {
+  "id": "s20260916-12",
+  "pop": "calculate",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/lib/strength.js",
+  "from": "+",
+  "to": "-",
+  "was": {
+   "line": 114,
+   "at": 6474,
+   "final": "no-observable",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 114,
+  "at": 6474
+ },
+ {
+  "id": "s20260916-13",
+  "pop": "calculate",
+  "cls": "negation",
+  "lang": "js",
+  "file": "src/lib/onice.js",
+  "from": "!",
+  "to": "",
+  "was": {
+   "line": 65,
+   "at": 3337,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "onice-ui.test.js",
+    "onice.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 65,
+  "at": 3337
+ },
+ {
+  "id": "s20260916-14",
+  "pop": "calculate",
+  "cls": "negation",
+  "lang": "js",
+  "file": "src/lib/rink.js",
+  "from": "!",
+  "to": "",
+  "was": {
+   "line": 215,
+   "at": 11177,
+   "final": "suite",
+   "jsFail": [
+    "box.test.js",
+    "dom-golden.test.js",
+    "render-board.test.js",
+    "render-ends.test.js",
+    "render-notes.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 215,
+  "at": 11177
+ },
+ {
+  "id": "s20260916-15",
+  "pop": "calculate",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/lib/distribution.js",
+  "from": "0",
+  "to": "1",
+  "was": {
+   "line": 97,
+   "at": 5565,
+   "final": "suite",
+   "jsFail": [
+    "measure.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 97,
+  "at": 5565
+ },
+ {
+  "id": "s20260916-16",
+  "pop": "calculate",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/lib/figures.js",
+  "from": "-",
+  "to": "+",
+  "was": {
+   "line": 143,
+   "at": 8051,
+   "final": "no-observable",
+   "jsFail": []
+  },
+  "status": "gone"
+ },
+ {
+  "id": "s20260916-17",
+  "pop": "calculate",
+  "cls": "equality",
+  "lang": "js",
+  "file": "src/lib/archive.js",
+  "from": "===",
+  "to": "!==",
+  "was": {
+   "line": 605,
+   "at": 29165,
+   "final": "suite",
+   "jsFail": [
+    "calendar-page.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 605,
+  "at": 29165
+ },
+ {
+  "id": "s20260916-18",
+  "pop": "calculate",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/lib/figures.js",
+  "from": "7.95",
+  "to": "15.9",
+  "was": {
+   "line": 106,
+   "at": 5891,
+   "final": "golden-only:visible",
+   "jsFail": [
+    "dom-golden.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 106,
+  "at": 5915
+ },
+ {
+  "id": "s20260916-19",
+  "pop": "calculate",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/lib/team-season.js",
+  "from": "+",
+  "to": "-",
+  "was": {
+   "line": 147,
+   "at": 7156,
+   "final": "ESCAPE:number",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 147,
+  "at": 7156
+ },
+ {
+  "id": "s20260916-20",
+  "pop": "calculate",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/lib/distribution.js",
+  "from": "-",
+  "to": "+",
+  "was": {
+   "line": 81,
+   "at": 4876,
+   "final": "ESCAPE:number",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 81,
+  "at": 4876
+ },
+ {
+  "id": "s20260916-21",
+  "pop": "calculate",
+  "cls": "logical",
+  "lang": "js",
+  "file": "src/lib/onice.js",
+  "from": "&&",
+  "to": "||",
+  "was": {
+   "line": 54,
+   "at": 2901,
+   "final": "no-observable",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 54,
+  "at": 2901
+ },
+ {
+  "id": "s20260916-22",
+  "pop": "calculate",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/lib/rinkart.js",
+  "from": "100",
+  "to": "101",
+  "was": {
+   "line": 232,
+   "at": 14925,
+   "final": "golden-only:visible",
+   "jsFail": [
+    "dom-golden.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 232,
+  "at": 14925
+ },
+ {
+  "id": "s20260916-23",
+  "pop": "calculate",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/lib/figures.js",
+  "from": "1.7",
+  "to": "3.4",
+  "was": {
+   "line": 68,
+   "at": 3724,
+   "final": "no-observable",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 68,
+  "at": 3748
+ },
+ {
+  "id": "s20260916-24",
+  "pop": "calculate",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/lib/figures.js",
+  "from": "0.34",
+  "to": "0.68",
+  "was": {
+   "line": 160,
+   "at": 8988,
+   "final": "no-observable",
+   "jsFail": []
+  },
+  "status": "gone"
+ },
+ {
+  "id": "s20260916-25",
+  "pop": "calculate",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/lib/transition.js",
+  "from": "60",
+  "to": "61",
+  "was": {
+   "line": 111,
+   "at": 5754,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "transition.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 111,
+  "at": 5754
+ },
+ {
+  "id": "s20260916-26",
+  "pop": "calculate",
+  "cls": "negation",
+  "lang": "js",
+  "file": "src/lib/distribution.js",
+  "from": "!",
+  "to": "",
+  "was": {
+   "line": 179,
+   "at": 9423,
+   "final": "suite",
+   "jsFail": [
+    "measure.test.js",
+    "render-preview.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 179,
+  "at": 9423
+ },
+ {
+  "id": "s20260916-27",
+  "pop": "calculate",
+  "cls": "boundary",
+  "lang": "js",
+  "file": "src/lib/rink.js",
+  "from": "<=",
+  "to": "<",
+  "was": {
+   "line": 112,
+   "at": 5986,
+   "final": "suite",
+   "jsFail": [
+    "rink.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 112,
+  "at": 5986
+ },
+ {
+  "id": "s20260916-28",
+  "pop": "calculate",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/lib/rinkart.js",
+  "from": "+",
+  "to": "-",
+  "was": {
+   "line": 366,
+   "at": 23620,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "learn-figures.test.js",
+    "render-board.test.js",
+    "render-ends.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 366,
+  "at": 23620
+ },
+ {
+  "id": "s20260916-29",
+  "pop": "calculate",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/lib/svgpen.js",
+  "from": "1",
+  "to": "0",
+  "was": {
+   "line": 122,
+   "at": 4719,
+   "final": "golden-only:not-seen",
+   "jsFail": [
+    "dom-golden.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 122,
+  "at": 4719
+ },
+ {
+  "id": "s20260916-30",
+  "pop": "calculate",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/lib/census.js",
+  "from": "0",
+  "to": "1",
+  "was": {
+   "line": 117,
+   "at": 6337,
+   "final": "suite",
+   "jsFail": [
+    "census.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 117,
+  "at": 6337
+ },
+ {
+  "id": "s20260916-31",
+  "pop": "calculate",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/lib/figures.js",
+  "from": "5.0",
+  "to": "6",
+  "was": {
+   "line": 75,
+   "at": 4192,
+   "final": "no-observable",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 75,
+  "at": 4216
+ },
+ {
+  "id": "s20260916-32",
+  "pop": "calculate",
+  "cls": "logical",
+  "lang": "js",
+  "file": "src/lib/layers/blocked.js",
+  "from": "&&",
+  "to": "||",
+  "was": {
+   "line": 146,
+   "at": 7964,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "layers.test.js",
+    "measure.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 146,
+  "at": 7964
+ },
+ {
+  "id": "s20260916-33",
+  "pop": "calculate",
+  "cls": "negation",
+  "lang": "js",
+  "file": "src/lib/strength.js",
+  "from": "!",
+  "to": "",
+  "was": {
+   "line": 163,
+   "at": 8823,
+   "final": "suite",
+   "jsFail": [
+    "census.test.js",
+    "strength.test.js",
+    "tied.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 163,
+  "at": 8823
+ },
+ {
+  "id": "s20260916-34",
+  "pop": "calculate",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/lib/daily.js",
+  "from": "-",
+  "to": "+",
+  "was": {
+   "line": 144,
+   "at": 7581,
+   "final": "no-observable",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 144,
+  "at": 7581
+ },
+ {
+  "id": "s20260916-35",
+  "pop": "calculate",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/lib/rinkart.js",
+  "from": "+",
+  "to": "-",
+  "was": {
+   "line": 127,
+   "at": 7680,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "rink-lines.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 127,
+  "at": 7680
+ },
+ {
+  "id": "s20260916-36",
+  "pop": "calculate",
+  "cls": "logical",
+  "lang": "js",
+  "file": "src/lib/layers/tied.js",
+  "from": "||",
+  "to": "&&",
+  "was": {
+   "line": 117,
+   "at": 6439,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "measure.test.js",
+    "tied.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 117,
+  "at": 6439
+ },
+ {
+  "id": "s20260916-37",
+  "pop": "calculate",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/lib/figures.js",
+  "from": "0",
+  "to": "1",
+  "was": {
+   "line": 132,
+   "at": 7428,
+   "final": "no-observable",
+   "jsFail": []
+  },
+  "status": "gone"
+ },
+ {
+  "id": "s20260916-38",
+  "pop": "calculate",
+  "cls": "logical",
+  "lang": "js",
+  "file": "src/lib/marks.js",
+  "from": "&&",
+  "to": "||",
+  "was": {
+   "line": 128,
+   "at": 8116,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "marks.test.js",
+    "render-notes.test.js",
+    "render-teams.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 127,
+  "at": 8019
+ },
+ {
+  "id": "s20260916-39",
+  "pop": "calculate",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/lib/figures.js",
+  "from": "2.55",
+  "to": "5.1",
+  "was": {
+   "line": 98,
+   "at": 5519,
+   "final": "golden-only:visible",
+   "jsFail": [
+    "dom-golden.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 98,
+  "at": 5543
+ },
+ {
+  "id": "s20260916-40",
+  "pop": "calculate",
+  "cls": "equality",
+  "lang": "js",
+  "file": "src/lib/figures.js",
+  "from": "==",
+  "to": "!=",
+  "was": {
+   "line": 123,
+   "at": 6788,
+   "final": "no-observable",
+   "jsFail": []
+  },
+  "status": "gone"
+ },
+ {
+  "id": "s20260916-41",
+  "pop": "calculate",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/lib/teams.js",
+  "from": "+",
+  "to": "-",
+  "was": {
+   "line": 93,
+   "at": 5068,
+   "final": "suite",
+   "jsFail": [
+    "render-teams.test.js",
+    "teams.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 93,
+  "at": 5068
+ },
+ {
+  "id": "s20260916-42",
+  "pop": "calculate",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/lib/team-season.js",
+  "from": "+",
+  "to": "-",
+  "was": {
+   "line": 150,
+   "at": 7386,
+   "final": "suite",
+   "jsFail": [
+    "measure.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 150,
+  "at": 7386
+ },
+ {
+  "id": "s20260916-43",
+  "pop": "calculate",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/lib/work.js",
+  "from": "+",
+  "to": "-",
+  "was": {
+   "line": 192,
+   "at": 12342,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "lbox.test.js",
+    "smoke.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 192,
+  "at": 12342
+ },
+ {
+  "id": "s20260916-44",
+  "pop": "calculate",
+  "cls": "logical",
+  "lang": "js",
+  "file": "src/lib/penalties.js",
+  "from": "&&",
+  "to": "||",
+  "was": {
+   "line": 79,
+   "at": 3859,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "render-penalties.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 79,
+  "at": 3859
+ },
+ {
+  "id": "s20260916-45",
+  "pop": "calculate",
+  "cls": "equality",
+  "lang": "js",
+  "file": "src/lib/box.js",
+  "from": "===",
+  "to": "!==",
+  "was": {
+   "line": 121,
+   "at": 6198,
+   "final": "suite",
+   "jsFail": [
+    "box.test.js",
+    "dom-golden.test.js",
+    "render-penalties.test.js",
+    "render-strength-pill.test.js",
+    "render-transport.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 121,
+  "at": 6198
+ },
+ {
+  "id": "s20260916-46",
+  "pop": "calculate",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/lib/rinkart.js",
+  "from": "-",
+  "to": "+",
+  "was": {
+   "line": 128,
+   "at": 7757,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "rink-lines.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 128,
+  "at": 7757
+ },
+ {
+  "id": "s20260916-47",
+  "pop": "calculate",
+  "cls": "negation",
+  "lang": "js",
+  "file": "src/lib/calendar.js",
+  "from": "!",
+  "to": "",
+  "was": {
+   "line": 68,
+   "at": 2978,
+   "final": "suite",
+   "jsFail": [
+    "calendar-page.test.js",
+    "calendar.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 68,
+  "at": 2978
+ },
+ {
+  "id": "s20260916-48",
+  "pop": "calculate",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/lib/rink.js",
+  "from": "1",
+  "to": "0",
+  "was": {
+   "line": 77,
+   "at": 4347,
+   "final": "suite",
+   "jsFail": [
+    "census.test.js",
+    "dom-golden.test.js",
+    "layers.test.js",
+    "marks.test.js",
+    "phase1.test.js",
+    "render-preview.test.js",
+    "rink.test.js",
+    "why-markup.test.js",
+    "zonestart.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 77,
+  "at": 4347
+ },
+ {
+  "id": "s20260916-49",
+  "pop": "calculate",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/lib/archive.js",
+  "from": "0",
+  "to": "1",
+  "was": {
+   "line": 472,
+   "at": 22862,
+   "final": "suite",
+   "jsFail": [
+    "measure.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 472,
+  "at": 22862
+ },
+ {
+  "id": "s20260916-50",
+  "pop": "calculate",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/lib/work.js",
+  "from": "+",
+  "to": "-",
+  "was": {
+   "line": 113,
+   "at": 6808,
+   "final": "golden-only:not-seen",
+   "jsFail": [
+    "dom-golden.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 113,
+  "at": 6808
+ },
+ {
+  "id": "s20260916-51",
+  "pop": "calculate",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/lib/strength.js",
+  "from": "+",
+  "to": "-",
+  "was": {
+   "line": 136,
+   "at": 7327,
+   "final": "build-error",
+   "jsFail": [
+    "build.test.js",
+    "census.test.js",
+    "learn.test.js",
+    "measure.test.js",
+    "render-strength-pill.test.js",
+    "strength.test.js",
+    "tied.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 136,
+  "at": 7327
+ },
+ {
+  "id": "s20260916-52",
+  "pop": "calculate",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/lib/rinkart.js",
+  "from": "2.2",
+  "to": "4.4",
+  "was": {
+   "line": 406,
+   "at": 26175,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "learn-figures.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 406,
+  "at": 26175
+ },
+ {
+  "id": "s20260916-53",
+  "pop": "calculate",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/lib/ingest-state.js",
+  "from": "10",
+  "to": "11",
+  "was": {
+   "line": 97,
+   "at": 4564,
+   "final": "suite",
+   "jsFail": [
+    "ingest-state.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 97,
+  "at": 4564
+ },
+ {
+  "id": "s20260916-54",
+  "pop": "calculate",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/lib/figures.js",
+  "from": "0.95",
+  "to": "1.9",
+  "was": {
+   "line": 106,
+   "at": 5883,
+   "final": "golden-only:visible",
+   "jsFail": [
+    "dom-golden.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 106,
+  "at": 5907
+ },
+ {
+  "id": "s20260916-55",
+  "pop": "calculate",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/lib/archive.js",
+  "from": "0",
+  "to": "1",
+  "was": {
+   "line": 141,
+   "at": 6442,
+   "final": "suite",
+   "jsFail": [
+    "archive.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 141,
+  "at": 6442
+ },
+ {
+  "id": "s20260916-56",
+  "pop": "calculate",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/lib/rinkart.js",
+  "from": "-",
+  "to": "+",
+  "was": {
+   "line": 109,
+   "at": 6626,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "learn-figures.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 109,
+  "at": 6626
+ },
+ {
+  "id": "s20260916-57",
+  "pop": "calculate",
+  "cls": "logical",
+  "lang": "js",
+  "file": "src/lib/census.js",
+  "from": "||",
+  "to": "&&",
+  "was": {
+   "line": 183,
+   "at": 10470,
+   "final": "suite",
+   "jsFail": [
+    "census.test.js",
+    "measure.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 183,
+  "at": 10470
+ },
+ {
+  "id": "s20260916-58",
+  "pop": "calculate",
+  "cls": "logical",
+  "lang": "js",
+  "file": "src/lib/layer.js",
+  "from": "&&",
+  "to": "||",
+  "was": {
+   "line": 172,
+   "at": 8596,
+   "final": "no-observable",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 172,
+  "at": 8596
+ },
+ {
+  "id": "s20260916-59",
+  "pop": "calculate",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/lib/marks.js",
+  "from": "0",
+  "to": "1",
+  "was": {
+   "line": 67,
+   "at": 3764,
+   "final": "golden-only:not-seen",
+   "jsFail": [
+    "dom-golden.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 66,
+  "at": 3667
+ },
+ {
+  "id": "s20260916-60",
+  "pop": "calculate",
+  "cls": "logical",
+  "lang": "js",
+  "file": "src/lib/census.js",
+  "from": "&&",
+  "to": "||",
+  "was": {
+   "line": 214,
+   "at": 11742,
+   "final": "suite",
+   "jsFail": [
+    "census.test.js",
+    "measure.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 214,
+  "at": 11742
+ },
+ {
+  "id": "s20260916-61",
+  "pop": "display",
+  "cls": "equality",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "===",
+  "to": "!==",
+  "was": {
+   "line": 2458,
+   "at": 159518,
+   "final": "suite",
+   "jsFail": [
+    "active-player.test.js",
+    "dom-golden.test.js",
+    "lbox.test.js",
+    "render-ends.test.js",
+    "render-labels.test.js",
+    "render-whistle.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 2430,
+  "at": 157506
+ },
+ {
+  "id": "s20260916-62",
+  "pop": "display",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "0",
+  "to": "1",
+  "was": {
+   "line": 3707,
+   "at": 240522,
+   "final": "no-observable",
+   "jsFail": []
+  },
+  "status": "moved",
+  "line": 3646,
+  "at": 236314
+ },
+ {
+  "id": "s20260916-63",
+  "pop": "display",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "+",
+  "to": "-",
+  "was": {
+   "line": 2340,
+   "at": 151189,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "lbox.test.js",
+    "render-blocked.test.js",
+    "render-whistle.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 2296,
+  "at": 148004
+ },
+ {
+  "id": "s20260916-64",
+  "pop": "display",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "+",
+  "to": "-",
+  "was": {
+   "line": 2351,
+   "at": 152180,
+   "final": "golden-only:not-seen",
+   "jsFail": [
+    "dom-golden.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 2323,
+  "at": 150168
+ },
+ {
+  "id": "s20260916-65",
+  "pop": "display",
+  "cls": "negation",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "!",
+  "to": "",
+  "was": {
+   "line": 2512,
+   "at": 163000,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "render-ends.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 2486,
+  "at": 161125
+ },
+ {
+  "id": "s20260916-66",
+  "pop": "display",
+  "cls": "logical",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "||",
+  "to": "&&",
+  "was": {
+   "line": 1889,
+   "at": 122065,
+   "final": "suite",
+   "jsFail": [
+    "render-preview.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 1845,
+  "at": 118880
+ },
+ {
+  "id": "s20260916-67",
+  "pop": "display",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "0",
+  "to": "1",
+  "was": {
+   "line": 839,
+   "at": 51661,
+   "final": "suite",
+   "jsFail": [
+    "render-preview.test.js"
+   ]
+  },
+  "status": "gone"
+ },
+ {
+  "id": "s20260916-68",
+  "pop": "display",
+  "cls": "equality",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "===",
+  "to": "!==",
+  "was": {
+   "line": 1065,
+   "at": 67486,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "render-strength-pill.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 1021,
+  "at": 64317
+ },
+ {
+  "id": "s20260916-69",
+  "pop": "display",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "1",
+  "to": "0",
+  "was": {
+   "line": 99,
+   "at": 6109,
+   "final": "no-observable",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 99,
+  "at": 6109
+ },
+ {
+  "id": "s20260916-70",
+  "pop": "display",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "0",
+  "to": "1",
+  "was": {
+   "line": 826,
+   "at": 50805,
+   "final": "no-observable",
+   "jsFail": []
+  },
+  "status": "gone"
+ },
+ {
+  "id": "s20260916-71",
+  "pop": "display",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "+",
+  "to": "-",
+  "was": {
+   "line": 3278,
+   "at": 213205,
+   "final": "no-observable",
+   "jsFail": []
+  },
+  "status": "moved",
+  "line": 3252,
+  "at": 211299
+ },
+ {
+  "id": "s20260916-72",
+  "pop": "display",
+  "cls": "logical",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "&&",
+  "to": "||",
+  "was": {
+   "line": 647,
+   "at": 39441,
+   "final": "suite",
+   "jsFail": [
+    "active-player.test.js",
+    "arrival.test.js",
+    "css-transform-box.test.js",
+    "deeplink-render.test.js",
+    "dom-golden.test.js",
+    "hero-loop.test.js",
+    "layers.test.js",
+    "lbox.test.js",
+    "learn-figures.test.js",
+    "learn.test.js",
+    "onice-ui.test.js",
+    "press-play.test.js",
+    "render-blocked.test.js",
+    "render-board.test.js",
+    "render-clip.test.js",
+    "render-cue.test.js",
+    "render-ends.test.js",
+    "render-icing.test.js",
+    "render-labels.test.js",
+    "render-notes.test.js",
+    "render-penalties.test.js",
+    "render-preview.test.js",
+    "render-strength-pill.test.js",
+    "render-teams.test.js",
+    "render-transport.test.js",
+    "render-whistle.test.js",
+    "rink-lines.test.js",
+    "rink-memo.test.js",
+    "rink.test.js",
+    "scoreboard.test.js",
+    "shell.test.js",
+    "smoke.test.js",
+    "why-popup.test.js",
+    "work-overlay.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 641,
+  "at": 39000
+ },
+ {
+  "id": "s20260916-73",
+  "pop": "display",
+  "cls": "equality",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "===",
+  "to": "!==",
+  "was": {
+   "line": 322,
+   "at": 20349,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "learn-figures.test.js",
+    "render-board.test.js",
+    "render-ends.test.js",
+    "render-preview.test.js",
+    "rink-lines.test.js",
+    "rink-memo.test.js",
+    "rink.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 322,
+  "at": 20349
+ },
+ {
+  "id": "s20260916-74",
+  "pop": "display",
+  "cls": "boundary",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "<",
+  "to": "<=",
+  "was": {
+   "line": 87,
+   "at": 5157,
+   "final": "golden-only:not-seen",
+   "jsFail": [
+    "dom-golden.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 87,
+  "at": 5157
+ },
+ {
+  "id": "s20260916-75",
+  "pop": "display",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "-",
+  "to": "+",
+  "was": {
+   "line": 1666,
+   "at": 107439,
+   "final": "suite",
+   "jsFail": [
+    "press-play.test.js",
+    "render-transport.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 1622,
+  "at": 104254
+ },
+ {
+  "id": "s20260916-76",
+  "pop": "display",
+  "cls": "equality",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "===",
+  "to": "!==",
+  "was": {
+   "line": 509,
+   "at": 31059,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "render-penalties.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 503,
+  "at": 30618
+ },
+ {
+  "id": "s20260916-77",
+  "pop": "display",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "+",
+  "to": "-",
+  "was": {
+   "line": 3252,
+   "at": 211326,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "lbox.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 3226,
+  "at": 209420
+ },
+ {
+  "id": "s20260916-78",
+  "pop": "display",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "0",
+  "to": "1",
+  "was": {
+   "line": 544,
+   "at": 33243,
+   "final": "no-observable",
+   "jsFail": []
+  },
+  "status": "moved",
+  "line": 538,
+  "at": 32802
+ },
+ {
+  "id": "s20260916-79",
+  "pop": "display",
+  "cls": "equality",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "!==",
+  "to": "===",
+  "was": {
+   "line": 3704,
+   "at": 240360,
+   "final": "suite",
+   "jsFail": [
+    "shell.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 3643,
+  "at": 236152
+ },
+ {
+  "id": "s20260916-80",
+  "pop": "display",
+  "cls": "boundary",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "<",
+  "to": "<=",
+  "was": {
+   "line": 973,
+   "at": 60834,
+   "final": "suite",
+   "jsFail": [
+    "render-penalties.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 929,
+  "at": 57665
+ },
+ {
+  "id": "s20260916-81",
+  "pop": "display",
+  "cls": "equality",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "===",
+  "to": "!==",
+  "was": {
+   "line": 988,
+   "at": 62015,
+   "final": "no-observable",
+   "jsFail": []
+  },
+  "status": "moved",
+  "line": 944,
+  "at": 58846
+ },
+ {
+  "id": "s20260916-82",
+  "pop": "display",
+  "cls": "logical",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "&&",
+  "to": "||",
+  "was": {
+   "line": 2145,
+   "at": 138286,
+   "final": "no-observable",
+   "jsFail": []
+  },
+  "status": "moved",
+  "line": 2101,
+  "at": 135101
+ },
+ {
+  "id": "s20260916-83",
+  "pop": "display",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "60",
+  "to": "61",
+  "was": {
+   "line": 544,
+   "at": 33266,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "render-penalties.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 538,
+  "at": 32825
+ },
+ {
+  "id": "s20260916-84",
+  "pop": "display",
+  "cls": "equality",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "===",
+  "to": "!==",
+  "was": {
+   "line": 1783,
+   "at": 115416,
+   "final": "suite",
+   "jsFail": [
+    "render-notes.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 1739,
+  "at": 112231
+ },
+ {
+  "id": "s20260916-85",
+  "pop": "display",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "5200",
+  "to": "5201",
+  "was": {
+   "line": 1304,
+   "at": 84236,
+   "final": "no-observable",
+   "jsFail": []
+  },
+  "status": "moved",
+  "line": 1260,
+  "at": 81067
+ },
+ {
+  "id": "s20260916-86",
+  "pop": "display",
+  "cls": "logical",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "&&",
+  "to": "||",
+  "was": {
+   "line": 769,
+   "at": 46996,
+   "final": "suite",
+   "jsFail": [
+    "active-player.test.js",
+    "arrival.test.js",
+    "css-transform-box.test.js",
+    "deeplink-render.test.js",
+    "dom-golden.test.js",
+    "hero-loop.test.js",
+    "layers.test.js",
+    "lbox.test.js",
+    "learn.test.js",
+    "onice-ui.test.js",
+    "press-play.test.js",
+    "render-blocked.test.js",
+    "render-board.test.js",
+    "render-clip.test.js",
+    "render-cue.test.js",
+    "render-ends.test.js",
+    "render-icing.test.js",
+    "render-labels.test.js",
+    "render-notes.test.js",
+    "render-penalties.test.js",
+    "render-preview.test.js",
+    "render-strength-pill.test.js",
+    "render-teams.test.js",
+    "render-transport.test.js",
+    "render-whistle.test.js",
+    "rink-memo.test.js",
+    "shell.test.js",
+    "smoke.test.js",
+    "why-popup.test.js",
+    "work-overlay.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 763,
+  "at": 46555
+ },
+ {
+  "id": "s20260916-87",
+  "pop": "display",
+  "cls": "logical",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "&&",
+  "to": "||",
+  "was": {
+   "line": 624,
+   "at": 38140,
+   "final": "suite",
+   "jsFail": [
+    "active-player.test.js",
+    "arrival.test.js",
+    "css-transform-box.test.js",
+    "deeplink-render.test.js",
+    "dom-golden.test.js",
+    "hero-loop.test.js",
+    "layers.test.js",
+    "lbox.test.js",
+    "learn-figures.test.js",
+    "learn.test.js",
+    "onice-ui.test.js",
+    "press-play.test.js",
+    "render-blocked.test.js",
+    "render-board.test.js",
+    "render-clip.test.js",
+    "render-cue.test.js",
+    "render-ends.test.js",
+    "render-icing.test.js",
+    "render-labels.test.js",
+    "render-notes.test.js",
+    "render-penalties.test.js",
+    "render-preview.test.js",
+    "render-strength-pill.test.js",
+    "render-teams.test.js",
+    "render-transport.test.js",
+    "render-whistle.test.js",
+    "rink-lines.test.js",
+    "rink-memo.test.js",
+    "rink.test.js",
+    "scoreboard.test.js",
+    "shell.test.js",
+    "smoke.test.js",
+    "why-popup.test.js",
+    "work-overlay.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 618,
+  "at": 37699
+ },
+ {
+  "id": "s20260916-88",
+  "pop": "display",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "+",
+  "to": "-",
+  "was": {
+   "line": 2888,
+   "at": 188517,
+   "final": "suite",
+   "jsFail": [
+    "render-notes.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 2862,
+  "at": 186642
+ },
+ {
+  "id": "s20260916-89",
+  "pop": "display",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "-",
+  "to": "+",
+  "was": {
+   "line": 3524,
+   "at": 229715,
+   "final": "suite",
+   "jsFail": [
+    "active-player.test.js",
+    "deeplink-render.test.js",
+    "dom-golden.test.js",
+    "lbox.test.js",
+    "render-ends.test.js",
+    "render-penalties.test.js",
+    "render-transport.test.js",
+    "smoke.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 3494,
+  "at": 227472
+ },
+ {
+  "id": "s20260916-90",
+  "pop": "display",
+  "cls": "negation",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "!",
+  "to": "",
+  "was": {
+   "line": 1375,
+   "at": 89012,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "render-clip.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 1331,
+  "at": 85843
+ },
+ {
+  "id": "s20260916-91",
+  "pop": "display",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "+",
+  "to": "-",
+  "was": {
+   "line": 662,
+   "at": 40403,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "render-ends.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 656,
+  "at": 39962
+ },
+ {
+  "id": "s20260916-92",
+  "pop": "display",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "0",
+  "to": "1",
+  "was": {
+   "line": 514,
+   "at": 31286,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "render-penalties.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 508,
+  "at": 30845
+ },
+ {
+  "id": "s20260916-93",
+  "pop": "display",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "+",
+  "to": "-",
+  "was": {
+   "line": 1794,
+   "at": 116095,
+   "final": "suite",
+   "jsFail": [
+    "render-notes.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 1750,
+  "at": 112910
+ },
+ {
+  "id": "s20260916-94",
+  "pop": "display",
+  "cls": "equality",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "===",
+  "to": "!==",
+  "was": {
+   "line": 977,
+   "at": 61136,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "render-transport.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 933,
+  "at": 57967
+ },
+ {
+  "id": "s20260916-95",
+  "pop": "display",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "0",
+  "to": "1",
+  "was": {
+   "line": 416,
+   "at": 25578,
+   "final": "no-observable",
+   "jsFail": []
+  },
+  "status": "gone"
+ },
+ {
+  "id": "s20260916-96",
+  "pop": "display",
+  "cls": "boundary",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "<",
+  "to": "<=",
+  "was": {
+   "line": 1645,
+   "at": 106239,
+   "final": "no-observable",
+   "jsFail": []
+  },
+  "status": "moved",
+  "line": 1601,
+  "at": 103054
+ },
+ {
+  "id": "s20260916-97",
+  "pop": "display",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "1",
+  "to": "0",
+  "was": {
+   "line": 1666,
+   "at": 107440,
+   "final": "suite",
+   "jsFail": [
+    "press-play.test.js",
+    "render-transport.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 1622,
+  "at": 104255
+ },
+ {
+  "id": "s20260916-98",
+  "pop": "display",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "+",
+  "to": "-",
+  "was": {
+   "line": 1868,
+   "at": 120696,
+   "final": "suite",
+   "jsFail": [
+    "render-preview.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 1824,
+  "at": 117511
+ },
+ {
+  "id": "s20260916-99",
+  "pop": "display",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "-",
+  "to": "+",
+  "was": {
+   "line": 1318,
+   "at": 85261,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "render-transport.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 1274,
+  "at": 82092
+ },
+ {
+  "id": "s20260916-100",
+  "pop": "display",
+  "cls": "boundary",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": ">",
+  "to": ">=",
+  "was": {
+   "line": 2551,
+   "at": 165435,
+   "final": "golden-only:visible",
+   "jsFail": [
+    "dom-golden.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 2525,
+  "at": 163560
+ },
+ {
+  "id": "s20260916-101",
+  "pop": "interpret",
+  "cls": "literal",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "1",
+  "to": "0",
+  "was": {
+   "line": 654,
+   "at": 36621,
+   "final": "suite",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 654,
+  "at": 36621
+ },
+ {
+  "id": "s20260916-102",
+  "pop": "interpret",
+  "cls": "literal",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "0",
+  "to": "1",
+  "was": {
+   "line": 820,
+   "at": 46554,
+   "final": "suite",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 820,
+  "at": 46554
+ },
+ {
+  "id": "s20260916-103",
+  "pop": "interpret",
+  "cls": "equality",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "!=",
+  "to": "==",
+  "was": {
+   "line": 817,
+   "at": 46357,
+   "final": "suite",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 817,
+  "at": 46357
+ },
+ {
+  "id": "s20260916-104",
+  "pop": "interpret",
+  "cls": "negation",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "not ",
+  "to": "",
+  "was": {
+   "line": 768,
+   "at": 43490,
+   "final": "suite",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 768,
+  "at": 43490
+ },
+ {
+  "id": "s20260916-105",
+  "pop": "interpret",
+  "cls": "equality",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "!=",
+  "to": "==",
+  "was": {
+   "line": 671,
+   "at": 37472,
+   "final": "suite",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 671,
+  "at": 37472
+ },
+ {
+  "id": "s20260916-106",
+  "pop": "interpret",
+  "cls": "arithmetic",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "-",
+  "to": "+",
+  "was": {
+   "line": 109,
+   "at": 5556,
+   "final": "suite",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 109,
+  "at": 5556
+ },
+ {
+  "id": "s20260916-107",
+  "pop": "interpret",
+  "cls": "negation",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "not ",
+  "to": "",
+  "was": {
+   "line": 750,
+   "at": 42361,
+   "final": "suite",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 750,
+  "at": 42361
+ },
+ {
+  "id": "s20260916-108",
+  "pop": "interpret",
+  "cls": "literal",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "0",
+  "to": "1",
+  "was": {
+   "line": 664,
+   "at": 37238,
+   "final": "suite",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 664,
+  "at": 37238
+ },
+ {
+  "id": "s20260916-109",
+  "pop": "interpret",
+  "cls": "equality",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "!=",
+  "to": "==",
+  "was": {
+   "line": 653,
+   "at": 36583,
+   "final": "suite",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 653,
+  "at": 36583
+ },
+ {
+  "id": "s20260916-110",
+  "pop": "interpret",
+  "cls": "logical",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "or",
+  "to": "and",
+  "was": {
+   "line": 845,
+   "at": 47975,
+   "final": "unobserved",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 845,
+  "at": 47975
+ },
+ {
+  "id": "s20260916-111",
+  "pop": "interpret",
+  "cls": "boundary",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": ">",
+  "to": ">=",
+  "was": {
+   "line": 710,
+   "at": 39809,
+   "final": "suite",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 710,
+  "at": 39809
+ },
+ {
+  "id": "s20260916-112",
+  "pop": "interpret",
+  "cls": "literal",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "1",
+  "to": "0",
+  "was": {
+   "line": 103,
+   "at": 5367,
+   "final": "change-detector",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 103,
+  "at": 5367
+ },
+ {
+  "id": "s20260916-113",
+  "pop": "interpret",
+  "cls": "negation",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "not ",
+  "to": "",
+  "was": {
+   "line": 427,
+   "at": 23870,
+   "final": "suite",
+   "jsFail": [
+    "strength.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 427,
+  "at": 23870
+ },
+ {
+  "id": "s20260916-114",
+  "pop": "interpret",
+  "cls": "literal",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "8",
+  "to": "9",
+  "was": {
+   "line": 945,
+   "at": 52891,
+   "final": "unobserved",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 945,
+  "at": 52891
+ },
+ {
+  "id": "s20260916-115",
+  "pop": "interpret",
+  "cls": "literal",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "1",
+  "to": "0",
+  "was": {
+   "line": 335,
+   "at": 18889,
+   "final": "suite",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 335,
+  "at": 18889
+ },
+ {
+  "id": "s20260916-116",
+  "pop": "interpret",
+  "cls": "literal",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "1",
+  "to": "0",
+  "was": {
+   "line": 818,
+   "at": 46460,
+   "final": "unobserved",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 818,
+  "at": 46460
+ },
+ {
+  "id": "s20260916-117",
+  "pop": "interpret",
+  "cls": "arithmetic",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "+",
+  "to": "-",
+  "was": {
+   "line": 962,
+   "at": 53691,
+   "final": "unobserved",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 962,
+  "at": 53691
+ },
+ {
+  "id": "s20260916-118",
+  "pop": "interpret",
+  "cls": "literal",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "0",
+  "to": "1",
+  "was": {
+   "line": 427,
+   "at": 23852,
+   "final": "suite",
+   "jsFail": [
+    "strength.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 427,
+  "at": 23852
+ },
+ {
+  "id": "s20260916-119",
+  "pop": "interpret",
+  "cls": "equality",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "==",
+  "to": "!=",
+  "was": {
+   "line": 955,
+   "at": 53294,
+   "final": "change-detector",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 955,
+  "at": 53294
+ },
+ {
+  "id": "s20260916-120",
+  "pop": "interpret",
+  "cls": "logical",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "or",
+  "to": "and",
+  "was": {
+   "line": 628,
+   "at": 35063,
+   "final": "suite",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 628,
+  "at": 35063
+ },
+ {
+  "id": "s20260916-121",
+  "pop": "interpret",
+  "cls": "equality",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "==",
+  "to": "!=",
+  "was": {
+   "line": 174,
+   "at": 8782,
+   "final": "suite",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 174,
+  "at": 8782
+ },
+ {
+  "id": "s20260916-122",
+  "pop": "interpret",
+  "cls": "equality",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "==",
+  "to": "!=",
+  "was": {
+   "line": 335,
+   "at": 18886,
+   "final": "suite",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 335,
+  "at": 18886
+ },
+ {
+  "id": "s20260916-123",
+  "pop": "interpret",
+  "cls": "literal",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "4",
+  "to": "5",
+  "was": {
+   "line": 424,
+   "at": 23712,
+   "final": "suite",
+   "jsFail": [
+    "strength.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 424,
+  "at": 23712
+ },
+ {
+  "id": "s20260916-124",
+  "pop": "interpret",
+  "cls": "logical",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "and",
+  "to": "or",
+  "was": {
+   "line": 783,
+   "at": 44387,
+   "final": "suite",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 783,
+  "at": 44387
+ },
+ {
+  "id": "s20260916-125",
+  "pop": "interpret",
+  "cls": "logical",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "and",
+  "to": "or",
+  "was": {
+   "line": 666,
+   "at": 37309,
+   "final": "suite",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 666,
+  "at": 37309
+ },
+ {
+  "id": "s916-1",
+  "pop": "calculate",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/lib/figures.js",
+  "from": "4.05",
+  "to": "8.1",
+  "was": {
+   "line": 164,
+   "at": 9111,
+   "final": "no-observable",
+   "jsFail": []
+  },
+  "status": "gone"
+ },
+ {
+  "id": "s916-2",
+  "pop": "calculate",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/lib/figures.js",
+  "from": "+",
+  "to": "-",
+  "was": {
+   "line": 51,
+   "at": 2690,
+   "final": "golden-only:visible",
+   "jsFail": [
+    "dom-golden.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 51,
+  "at": 2714
+ },
+ {
+  "id": "s916-3",
+  "pop": "calculate",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/lib/archive.js",
+  "from": "+",
+  "to": "-",
+  "was": {
+   "line": 275,
+   "at": 12876,
+   "final": "ESCAPE:number",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 275,
+  "at": 12876
+ },
+ {
+  "id": "s916-4",
+  "pop": "calculate",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/lib/team-season.js",
+  "from": "+",
+  "to": "-",
+  "was": {
+   "line": 147,
+   "at": 7183,
+   "final": "ESCAPE:number",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 147,
+  "at": 7183
+ },
+ {
+  "id": "s916-5",
+  "pop": "calculate",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/lib/svgpen.js",
+  "from": "2",
+  "to": "3",
+  "was": {
+   "line": 28,
+   "at": 1327,
+   "final": "golden-only:visible",
+   "jsFail": [
+    "dom-golden.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 28,
+  "at": 1327
+ },
+ {
+  "id": "s916-6",
+  "pop": "calculate",
+  "cls": "boundary",
+  "lang": "js",
+  "file": "src/lib/census.js",
+  "from": ">",
+  "to": ">=",
+  "was": {
+   "line": 392,
+   "at": 20527,
+   "final": "no-observable",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 392,
+  "at": 20527
+ },
+ {
+  "id": "s916-7",
+  "pop": "calculate",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/lib/figures.js",
+  "from": "0.5",
+  "to": "1",
+  "was": {
+   "line": 78,
+   "at": 4360,
+   "final": "golden-only:visible",
+   "jsFail": [
+    "dom-golden.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 78,
+  "at": 4384
+ },
+ {
+  "id": "s916-8",
+  "pop": "calculate",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/lib/archive.js",
+  "from": "-",
+  "to": "+",
+  "was": {
+   "line": 462,
+   "at": 22478,
+   "final": "suite",
+   "jsFail": [
+    "measure.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 462,
+  "at": 22478
+ },
+ {
+  "id": "s916-9",
+  "pop": "calculate",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/lib/figures.js",
+  "from": "3.3",
+  "to": "6.6",
+  "was": {
+   "line": 83,
+   "at": 4626,
+   "final": "golden-only:visible",
+   "jsFail": [
+    "dom-golden.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 83,
+  "at": 4650
+ },
+ {
+  "id": "s916-10",
+  "pop": "calculate",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/lib/rinkart.js",
+  "from": "2",
+  "to": "3",
+  "was": {
+   "line": 410,
+   "at": 26421,
+   "final": "golden-only:visible",
+   "jsFail": [
+    "dom-golden.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 410,
+  "at": 26421
+ },
+ {
+  "id": "s916-11",
+  "pop": "calculate",
+  "cls": "equality",
+  "lang": "js",
+  "file": "src/lib/census.js",
+  "from": "===",
+  "to": "!==",
+  "was": {
+   "line": 240,
+   "at": 13377,
+   "final": "suite",
+   "jsFail": [
+    "census.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 240,
+  "at": 13377
+ },
+ {
+  "id": "s916-12",
+  "pop": "calculate",
+  "cls": "equality",
+  "lang": "js",
+  "file": "src/lib/layers/zonestart.js",
+  "from": "===",
+  "to": "!==",
+  "was": {
+   "line": 172,
+   "at": 9271,
+   "final": "build-error",
+   "jsFail": [
+    "build.test.js",
+    "learn.test.js",
+    "zonestart.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 172,
+  "at": 9271
+ },
+ {
+  "id": "s916-13",
+  "pop": "calculate",
+  "cls": "logical",
+  "lang": "js",
+  "file": "src/lib/census.js",
+  "from": "||",
+  "to": "&&",
+  "was": {
+   "line": 465,
+   "at": 24966,
+   "final": "suite",
+   "jsFail": [
+    "census.test.js",
+    "measure.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 465,
+  "at": 24966
+ },
+ {
+  "id": "s916-14",
+  "pop": "calculate",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/lib/teams.js",
+  "from": "3",
+  "to": "4",
+  "was": {
+   "line": 200,
+   "at": 10280,
+   "final": "no-observable",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 200,
+  "at": 10280
+ },
+ {
+  "id": "s916-15",
+  "pop": "calculate",
+  "cls": "negation",
+  "lang": "js",
+  "file": "src/lib/layers/danger.js",
+  "from": "!",
+  "to": "",
+  "was": {
+   "line": 110,
+   "at": 6599,
+   "final": "suite",
+   "jsFail": [
+    "lbox.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 110,
+  "at": 6599
+ },
+ {
+  "id": "s916-16",
+  "pop": "calculate",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/lib/figures.js",
+  "from": "-",
+  "to": "+",
+  "was": {
+   "line": 147,
+   "at": 8290,
+   "final": "no-observable",
+   "jsFail": []
+  },
+  "status": "gone"
+ },
+ {
+  "id": "s916-17",
+  "pop": "calculate",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/lib/calendar.js",
+  "from": "7",
+  "to": "8",
+  "was": {
+   "line": 136,
+   "at": 5620,
+   "final": "suite",
+   "jsFail": [
+    "calendar.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 136,
+  "at": 5620
+ },
+ {
+  "id": "s916-18",
+  "pop": "calculate",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/lib/distribution.js",
+  "from": "-",
+  "to": "+",
+  "was": {
+   "line": 80,
+   "at": 4839,
+   "final": "suite",
+   "jsFail": [
+    "measure.test.js",
+    "render-preview.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 80,
+  "at": 4839
+ },
+ {
+  "id": "s916-19",
+  "pop": "calculate",
+  "cls": "equality",
+  "lang": "js",
+  "file": "src/lib/layers/corsi.js",
+  "from": "===",
+  "to": "!==",
+  "was": {
+   "line": 78,
+   "at": 3626,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "layers.test.js",
+    "phase1.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 78,
+  "at": 3626
+ },
+ {
+  "id": "s916-20",
+  "pop": "calculate",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/lib/layers/whistle.js",
+  "from": "-",
+  "to": "+",
+  "was": {
+   "line": 57,
+   "at": 2986,
+   "final": "suite",
+   "jsFail": [
+    "whistle.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 57,
+  "at": 2986
+ },
+ {
+  "id": "s916-21",
+  "pop": "calculate",
+  "cls": "equality",
+  "lang": "js",
+  "file": "src/lib/layers/whistle.js",
+  "from": "===",
+  "to": "!==",
+  "was": {
+   "line": 87,
+   "at": 4481,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "render-blocked.test.js",
+    "whistle.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 87,
+  "at": 4481
+ },
+ {
+  "id": "s916-22",
+  "pop": "calculate",
+  "cls": "boundary",
+  "lang": "js",
+  "file": "src/lib/census.js",
+  "from": ">",
+  "to": ">=",
+  "was": {
+   "line": 512,
+   "at": 27240,
+   "final": "no-observable",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 512,
+  "at": 27240
+ },
+ {
+  "id": "s916-23",
+  "pop": "calculate",
+  "cls": "boundary",
+  "lang": "js",
+  "file": "src/lib/daily.js",
+  "from": "<",
+  "to": "<=",
+  "was": {
+   "line": 110,
+   "at": 5807,
+   "final": "no-observable",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 110,
+  "at": 5807
+ },
+ {
+  "id": "s916-24",
+  "pop": "calculate",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/lib/figures.js",
+  "from": "2.25",
+  "to": "4.5",
+  "was": {
+   "line": 164,
+   "at": 9094,
+   "final": "no-observable",
+   "jsFail": []
+  },
+  "status": "gone"
+ },
+ {
+  "id": "s916-25",
+  "pop": "calculate",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/lib/census.js",
+  "from": "0",
+  "to": "1",
+  "was": {
+   "line": 89,
+   "at": 4874,
+   "final": "suite",
+   "jsFail": [
+    "census.test.js",
+    "measure.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 89,
+  "at": 4874
+ },
+ {
+  "id": "s916-26",
+  "pop": "calculate",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/lib/rinkart.js",
+  "from": "+",
+  "to": "-",
+  "was": {
+   "line": 475,
+   "at": 30311,
+   "final": "ESCAPE:visible",
+   "jsFail": []
+  },
+  "status": "moved",
+  "line": 476,
+  "at": 30336
+ },
+ {
+  "id": "s916-27",
+  "pop": "calculate",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/lib/strength.js",
+  "from": "+",
+  "to": "-",
+  "was": {
+   "line": 440,
+   "at": 24972,
+   "final": "suite",
+   "jsFail": [
+    "strength.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 440,
+  "at": 24972
+ },
+ {
+  "id": "s916-28",
+  "pop": "calculate",
+  "cls": "equality",
+  "lang": "js",
+  "file": "src/lib/layers/whistle.js",
+  "from": "===",
+  "to": "!==",
+  "was": {
+   "line": 474,
+   "at": 22312,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "render-ends.test.js",
+    "whistle.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 474,
+  "at": 22312
+ },
+ {
+  "id": "s916-29",
+  "pop": "calculate",
+  "cls": "negation",
+  "lang": "js",
+  "file": "src/lib/team-season.js",
+  "from": "!",
+  "to": "",
+  "was": {
+   "line": 110,
+   "at": 5573,
+   "final": "suite",
+   "jsFail": [
+    "measure.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 110,
+  "at": 5573
+ },
+ {
+  "id": "s916-30",
+  "pop": "calculate",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/lib/census.js",
+  "from": "0",
+  "to": "1",
+  "was": {
+   "line": 450,
+   "at": 23966,
+   "final": "no-observable",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 450,
+  "at": 23966
+ },
+ {
+  "id": "s916-46",
+  "pop": "display",
+  "cls": "boundary",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": ">",
+  "to": ">=",
+  "was": {
+   "line": 1636,
+   "at": 105778,
+   "final": "suite",
+   "jsFail": [
+    "render-transport.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 1592,
+  "at": 102593
+ },
+ {
+  "id": "s916-47",
+  "pop": "display",
+  "cls": "negation",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "!",
+  "to": "",
+  "was": {
+   "line": 647,
+   "at": 39438,
+   "final": "suite",
+   "jsFail": [
+    "active-player.test.js",
+    "arrival.test.js",
+    "css-transform-box.test.js",
+    "deeplink-render.test.js",
+    "dom-golden.test.js",
+    "hero-loop.test.js",
+    "layers.test.js",
+    "lbox.test.js",
+    "learn-figures.test.js",
+    "learn.test.js",
+    "onice-ui.test.js",
+    "press-play.test.js",
+    "render-blocked.test.js",
+    "render-board.test.js",
+    "render-clip.test.js",
+    "render-cue.test.js",
+    "render-ends.test.js",
+    "render-icing.test.js",
+    "render-labels.test.js",
+    "render-notes.test.js",
+    "render-penalties.test.js",
+    "render-preview.test.js",
+    "render-strength-pill.test.js",
+    "render-teams.test.js",
+    "render-transport.test.js",
+    "render-whistle.test.js",
+    "rink-lines.test.js",
+    "rink-memo.test.js",
+    "rink.test.js",
+    "scoreboard.test.js",
+    "shell.test.js",
+    "smoke.test.js",
+    "why-popup.test.js",
+    "work-overlay.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 641,
+  "at": 38997
+ },
+ {
+  "id": "s916-48",
+  "pop": "display",
+  "cls": "boundary",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "<",
+  "to": "<=",
+  "was": {
+   "line": 796,
+   "at": 48935,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "press-play.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 790,
+  "at": 48494
+ },
+ {
+  "id": "s916-49",
+  "pop": "display",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "100",
+  "to": "101",
+  "was": {
+   "line": 1864,
+   "at": 120474,
+   "final": "suite",
+   "jsFail": [
+    "render-preview.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 1820,
+  "at": 117289
+ },
+ {
+  "id": "s916-50",
+  "pop": "display",
+  "cls": "negation",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "!",
+  "to": "",
+  "was": {
+   "line": 2148,
+   "at": 138490,
+   "final": "no-observable",
+   "jsFail": []
+  },
+  "status": "moved",
+  "line": 2104,
+  "at": 135305
+ },
+ {
+  "id": "s916-51",
+  "pop": "display",
+  "cls": "equality",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "==",
+  "to": "!=",
+  "was": {
+   "line": 3249,
+   "at": 211177,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "lbox.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 3223,
+  "at": 209271
+ },
+ {
+  "id": "s916-53",
+  "pop": "display",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "+",
+  "to": "-",
+  "was": {
+   "line": 2934,
+   "at": 191817,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "render-cue.test.js",
+    "render-labels.test.js",
+    "render-notes.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 2908,
+  "at": 189942
+ },
+ {
+  "id": "s916-54",
+  "pop": "display",
+  "cls": "equality",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "===",
+  "to": "!==",
+  "was": {
+   "line": 2303,
+   "at": 149018,
+   "final": "suite",
+   "jsFail": [
+    "active-player.test.js",
+    "dom-golden.test.js",
+    "render-ends.test.js",
+    "render-labels.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 2259,
+  "at": 145833
+ },
+ {
+  "id": "s916-55",
+  "pop": "display",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "+",
+  "to": "-",
+  "was": {
+   "line": 2739,
+   "at": 178263,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "render-blocked.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 2713,
+  "at": 176388
+ },
+ {
+  "id": "s916-56",
+  "pop": "display",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "+",
+  "to": "-",
+  "was": {
+   "line": 2740,
+   "at": 178329,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "render-blocked.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 2714,
+  "at": 176454
+ },
+ {
+  "id": "s916-57",
+  "pop": "display",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "+",
+  "to": "-",
+  "was": {
+   "line": 2887,
+   "at": 188440,
+   "final": "suite",
+   "jsFail": [
+    "render-notes.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 2861,
+  "at": 186565
+ },
+ {
+  "id": "s916-58",
+  "pop": "display",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "+",
+  "to": "-",
+  "was": {
+   "line": 826,
+   "at": 50773,
+   "final": "suite",
+   "jsFail": [
+    "smoke.test.js"
+   ]
+  },
+  "status": "gone"
+ },
+ {
+  "id": "s916-59",
+  "pop": "display",
+  "cls": "equality",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "===",
+  "to": "!==",
+  "was": {
+   "line": 3570,
+   "at": 232244,
+   "final": "suite",
+   "jsFail": [
+    "lbox.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 3540,
+  "at": 230001
+ },
+ {
+  "id": "s916-60",
+  "pop": "display",
+  "cls": "negation",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "!",
+  "to": "",
+  "was": {
+   "line": 3167,
+   "at": 206276,
+   "final": "golden-only:visible",
+   "jsFail": [
+    "dom-golden.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 3141,
+  "at": 204370
+ },
+ {
+  "id": "s916-61",
+  "pop": "display",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "+",
+  "to": "-",
+  "was": {
+   "line": 2672,
+   "at": 173580,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "render-blocked.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 2646,
+  "at": 171705
+ },
+ {
+  "id": "s916-62",
+  "pop": "display",
+  "cls": "equality",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "!=",
+  "to": "==",
+  "was": {
+   "line": 2137,
+   "at": 137641,
+   "final": "suite",
+   "jsFail": [
+    "render-clip.test.js",
+    "render-transport.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 2093,
+  "at": 134456
+ },
+ {
+  "id": "s916-63",
+  "pop": "display",
+  "cls": "arithmetic",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "+",
+  "to": "-",
+  "was": {
+   "line": 2938,
+   "at": 192114,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "render-notes.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 2912,
+  "at": 190239
+ },
+ {
+  "id": "s916-64",
+  "pop": "display",
+  "cls": "equality",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "===",
+  "to": "!==",
+  "was": {
+   "line": 2457,
+   "at": 159475,
+   "final": "suite",
+   "jsFail": [
+    "active-player.test.js",
+    "dom-golden.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 2429,
+  "at": 157463
+ },
+ {
+  "id": "s916-65",
+  "pop": "display",
+  "cls": "equality",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "===",
+  "to": "!==",
+  "was": {
+   "line": 171,
+   "at": 10877,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "render-ends.test.js",
+    "render-teams.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 171,
+  "at": 10877
+ },
+ {
+  "id": "s916-66",
+  "pop": "display",
+  "cls": "literal",
+  "lang": "js",
+  "file": "src/app.js",
+  "from": "100",
+  "to": "101",
+  "was": {
+   "line": 2674,
+   "at": 173637,
+   "final": "suite",
+   "jsFail": [
+    "dom-golden.test.js",
+    "render-blocked.test.js"
+   ]
+  },
+  "status": "moved",
+  "line": 2648,
+  "at": 171762
+ },
+ {
+  "id": "s916-76",
+  "pop": "interpret",
+  "cls": "logical",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "or",
+  "to": "and",
+  "was": {
+   "line": 747,
+   "at": 42168,
+   "final": "suite",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 747,
+  "at": 42168
+ },
+ {
+  "id": "s916-77",
+  "pop": "interpret",
+  "cls": "equality",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "==",
+  "to": "!=",
+  "was": {
+   "line": 109,
+   "at": 5572,
+   "final": "suite",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 109,
+  "at": 5572
+ },
+ {
+  "id": "s916-78",
+  "pop": "interpret",
+  "cls": "logical",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "and",
+  "to": "or",
+  "was": {
+   "line": 846,
+   "at": 48031,
+   "final": "extract-gate",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 846,
+  "at": 48031
+ },
+ {
+  "id": "s916-79",
+  "pop": "interpret",
+  "cls": "literal",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "2",
+  "to": "3",
+  "was": {
+   "line": 850,
+   "at": 48284,
+   "final": "unobserved",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 850,
+  "at": 48284
+ },
+ {
+  "id": "s916-80",
+  "pop": "interpret",
+  "cls": "logical",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "and",
+  "to": "or",
+  "was": {
+   "line": 653,
+   "at": 36567,
+   "final": "suite",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 653,
+  "at": 36567
+ },
+ {
+  "id": "s916-82",
+  "pop": "interpret",
+  "cls": "arithmetic",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "+",
+  "to": "-",
+  "was": {
+   "line": 824,
+   "at": 46776,
+   "final": "suite",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 824,
+  "at": 46776
+ },
+ {
+  "id": "s916-83",
+  "pop": "interpret",
+  "cls": "logical",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "or",
+  "to": "and",
+  "was": {
+   "line": 806,
+   "at": 45848,
+   "final": "suite",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 806,
+  "at": 45848
+ },
+ {
+  "id": "s916-84",
+  "pop": "interpret",
+  "cls": "literal",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "1",
+  "to": "0",
+  "was": {
+   "line": 442,
+   "at": 24781,
+   "final": "suite",
+   "jsFail": [
+    "strength.test.js"
+   ]
+  },
+  "status": "same",
+  "line": 442,
+  "at": 24781
+ },
+ {
+  "id": "s916-85",
+  "pop": "interpret",
+  "cls": "logical",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "and",
+  "to": "or",
+  "was": {
+   "line": 629,
+   "at": 35110,
+   "final": "suite",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 629,
+  "at": 35110
+ },
+ {
+  "id": "s916-86",
+  "pop": "interpret",
+  "cls": "arithmetic",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "-",
+  "to": "+",
+  "was": {
+   "line": 552,
+   "at": 30703,
+   "final": "suite",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 552,
+  "at": 30703
+ },
+ {
+  "id": "s916-87",
+  "pop": "interpret",
+  "cls": "arithmetic",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "-",
+  "to": "+",
+  "was": {
+   "line": 686,
+   "at": 38247,
+   "final": "unobserved",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 686,
+  "at": 38247
+ },
+ {
+  "id": "s916-88",
+  "pop": "interpret",
+  "cls": "arithmetic",
+  "lang": "py",
+  "file": "builders/extract.py",
+  "from": "+",
+  "to": "-",
+  "was": {
+   "line": 103,
+   "at": 5377,
+   "final": "suite",
+   "jsFail": []
+  },
+  "status": "same",
+  "line": 103,
+  "at": 5377
+ }
+]

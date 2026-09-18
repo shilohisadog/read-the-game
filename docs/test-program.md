@@ -240,15 +240,33 @@ answer (§3.1, the **range** kind): **every count ≥ 0, every share in [0, 1], 
 says.** Three or four of the five number escapes break one. **Verify by
 re-planting the five** — a hypothesis until then.
 
-### 7.2 Browser states for the blind spots — display × system, S2
+### 7.2 ✅ Browser states for the blind spots — display × system, S2 — MEASURED 2026-09-17
 
-The 19 reader-facing escapes cluster in states no probe visited:
+The 19 reader-facing escapes were said to cluster in states no probe visited: the
+non-default `Tabletop` figure style, animation timing, and gestures.
 
-- **the non-default `Tabletop` figure style** — a state, cheap;
-- **animation timing** — two samples of one moving frame, or motion left on;
-- **gestures** — a double-click journey.
+⛔ **They were re-planted, and the diagnosis was wrong about most of them**
+(`docs/defects/blind-spots-2026-09-17/`). Nine are gone with the code they sat on
+(eight Tabletop, one on the deleted counters) — **nine, not the eight this document
+used to say**. Of the ten still plantable: **3 are equivalent** (there is no
+animation loop at all — `T` is declared `0` and never assigned, so a change to the
+bob's `t` multiplier can never be seen; `shadowBlur` is passed `glow:false` and
+`SvgPen` ignores it anyway), **1 is dead code** (`droppedForStrength`, no caller
+since 2026-09-07, now deleted), **1 is on another page**, **3 need another
+SPECIMEN** — the `teams.js` contrast threshold moves exactly one of 33 clubs
+(Philadelphia, 3.55), and the other two need a short-handed goal and a goaltender
+who faced and saved everything — and **2 are gestures**.
 
-**Verify by re-planting the 19.** How many a new state catches is the measurement.
+⭐⭐ **So the answer to "how many does a new state catch" is TWO, and the lesson is
+that a probe which walks one game is evidence about one game.** The remaining work
+is a second specimen, not a seventh state.
+
+⭐ **And the first version of the states measured nothing.** It sampled 0.55 of the
+scrub, which is a faceoff, and faceoffs are not drawn as figures — so the states
+written to exercise the figure code reported clean, reproducible hashes of a
+circle. **A state now names the SUBJECT it needs and goes red if it never found
+one**; entering is the first claim `judgeStates` makes. Six planted defects turn
+the six states red, including the one that was live in both readers.
 
 ### 7.3 Checks on checks — C × all, scheduled
 
@@ -354,7 +372,7 @@ measured.
 | 5 | the review gallery with mechanical diffs (pixels, sentences, the DOM golden) | Kevin judges one batch |
 | 6 | harness seam B + T1 | ids-over-three count, before and after |
 | 7 | visibility claims → S2, file by file, each move a churn replay | §8.1 — ⏳ the browser checks now live in `tools/browser/` (runnable locally, judgement unit-tested), which is what a file-by-file move needs |
-| 8 | new browser states for the blind spots | re-plant the 19 |
+| 8 | new browser states for the blind spots | re-plant the 19 — ✅ **DONE 2026-09-17, and it reframed the row**: new states catch 2; 9 were gone with their code, 3 are equivalent, 1 was dead code, 1 is on another page, 3 need another SPECIMEN (§7.2) |
 | 9 | the weekly mutation run with check mutants | a planted disarmed gate is reported — ⏳ the engine is built and run once (`tools/mutate.mjs`, §8.2); what is open is the SCHEDULE, a fresh sample, and check mutants |
 | 10 | the performance budget | an alarm on a planted heavy page |
 
@@ -370,7 +388,7 @@ every visible difference on a sheet ([docs/reviews/README.md](reviews/README.md)
 **its exit is met — Kevin judged batch 1** (1 item, 0 wrong). The pixel and
 sentence diffs are in it; the DOM golden stays a gate (§11.2 Q4) until batches
 have been judged long enough to trust the gallery in its place.
-**Open: rows 7, 8, 9 and 10.** The record,
+**Open: rows 7, 9 and 10** — row 8 is measured and written up (§7.2); what it leaves open is a SECOND SPECIMEN GAME, not more states. The record,
 with commits and what each was seen to catch, is in `docs/status.md` §0.00.
 
 ## 11. What I want ruled

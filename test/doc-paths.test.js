@@ -61,6 +61,10 @@ const GONE = {
   'build_gv.py': "built the goaltender's-eye view, removed 2026-09-17",
   'builders/build_gv.py': 'same',
   'tools/figure-bench.py': 'the two-figure design bench, removed 2026-09-17 with the second figure',
+  // Removed 2026-09-17 by the row-8 measurement: nothing has imported it since the
+  // figure JS moved to src/lib/figures.js, and its docstring still described two
+  // styles and two deleted pages. `git log -S figures.py` is the whole of it.
+  'builders/figures.py': 'the figure inliner, removed 2026-09-17 — build_main.py inlines src/lib/figures.js itself',
   'test/goalie-view.test.js': 'the goalie view had a test until 2026-09-17; the page went and so did it',
   // Renamed since the document that cites them was written.
   'deeplink-render.js': 'the suite file is test/deeplink-render.test.js',

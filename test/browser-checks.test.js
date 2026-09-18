@@ -16,6 +16,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { judge, stateOf } from '../tools/browser/data-readable.mjs';
 import { CHECKS } from '../tools/browser/run.mjs';
+import { HIT_FLOOR, judgeStates, readState } from '../tools/browser/states.mjs';
 
 test('the freshness line is read out of the rendered page', () => {
   assert.equal(stateOf('<p id="state" class="x">Data through 14 June 2026.</p>'), 'Data through 14 June 2026.');
@@ -232,4 +233,77 @@ test('the sweater convention is a PAIR: white visitor, and not both clubs alike'
   assert.equal(same.length, 1);
   assert.match(same[0], /painted identically/);
   assert.equal(readIce('<title>ICE 59 79 1 409 BOX 0 1 0 HERO -14 -6 MOVED 1 VIS a|b HOST c|d</title>').rings, 1);
+});
+
+/* --------------------------------------------------------------- the replay's states
+ * ⛔ THE FIRST VERSION OF THIS CHECK MEASURED NOTHING AND SAID SO CONFIDENTLY. It
+ * sampled the scrub at 55%, which on the reference game is a faceoff, and faceoffs
+ * are not drawn as figures — so the states written to exercise the figure code
+ * reported clean hashes of a circle. Every case below is from that measurement or
+ * from a defect that was live.
+ */
+const GOOD = {
+  opening:          { entered: true, frame: 0,  label: 'MIN · Won the faceoff' },
+  'attempt-figure': { entered: true, frame: 3,  label: 'BUF · Shot on goal' },
+  'goal-figure':    { entered: true, frame: 73, label: '🚨 BUF · GOAL — Jokiharju' },
+  'slot-door':      { entered: true, frame: 13, label: 'BUF · Shot on goal · from the slot',
+                      land: 'path', why: 1, whyText: 897, hitPct: 33, box: '51x48' },
+  'step-back':      { entered: true, frame: 3, scrubBefore: 3, scrubAfter: 2, land: 'line.shotline' },
+  'step-forward':   { entered: true, frame: 3, scrubBefore: 3, scrubAfter: 4, land: 'rect.boards' },
+};
+const stateBroke = over => judgeStates({ ...GOOD, ...over }).filter(v => !v.ok).map(v => v.why);
+
+test('the six states as the reference game actually renders them are a pass', () => {
+  assert.deepEqual(stateBroke({}), []);
+});
+
+test('⭐⭐ NOT ENTERING IS THE FIRST FAILURE — a probe that never found its subject measured nothing', () => {
+  const why = stateBroke({ 'attempt-figure': { entered: false, note: 'no frame in 269 draws .fig.att' } });
+  assert.equal(why.length, 1);
+  assert.match(why[0], /never entered its subject/);
+  assert.match(why[0], /no frame in 269/, 'the report must carry the probe\'s own reason');
+  assert.match(stateBroke({ 'goal-figure': undefined })[0], /never reported/);
+});
+
+test('the goal label must name the club, the word and the siren — Kevin found the club missing from the live site', () => {
+  assert.match(stateBroke({ 'goal-figure': { ...GOOD['goal-figure'], label: '🚨 GOAL — Jokiharju' } })[0],
+    /does not name the club/);
+  assert.match(stateBroke({ 'goal-figure': { ...GOOD['goal-figure'], label: 'BUF · GOAL — Jokiharju' } })[0],
+    /lost its siren/);
+  assert.match(stateBroke({ 'goal-figure': { ...GOOD['goal-figure'], label: 'BUF · Shot on goal' } })
+    .join(' '), /does not say GOAL/);
+});
+
+test('⛔ the door that was live-broken in BOTH readers: a goal is a <g>, so ev.target missed it', () => {
+  const why = stateBroke({ 'slot-door': { ...GOOD['slot-door'], why: 0, whyText: 0 } });
+  assert.equal(why.length, 2, 'the card not opening and the card being empty are separate sentences');
+  assert.match(why[0], /did not open the why-card/);
+});
+
+test('⭐ a mark nobody can press is a different failure from a door that does not open', () => {
+  // Planted `pointer-events="none"` on the figure: no point in its own box is it.
+  assert.match(stateBroke({ 'slot-door': { ...GOOD['slot-door'], hitPct: 0, why: 0, whyText: 0 } })[0],
+    /NO point inside the mark's own 51x48 box/);
+  // ⚠️ And the canary BEFORE that one was inert: an inline `style` attribute does
+  // nothing on these pages, because `style-src` is hash-pinned with no
+  // 'unsafe-inline'. A mutation that cannot land is not evidence.
+  assert.match(stateBroke({ 'slot-door': { ...GOOD['slot-door'], hitPct: 12 } })[0], /the target has thinned/);
+  assert.equal(stateBroke({ 'slot-door': { ...GOOD['slot-door'], hitPct: HIT_FLOOR } }).length, 0,
+    'the floor itself is allowed');
+});
+
+test('a double-click steps exactly one frame, each way', () => {
+  assert.match(stateBroke({ 'step-back': { ...GOOD['step-back'], scrubAfter: 1 } })[0], /moved frame 3 to 1, not 2/);
+  assert.match(stateBroke({ 'step-forward': { ...GOOD['step-forward'], scrubAfter: 5 } })[0], /not 4/);
+  assert.equal(stateBroke({ 'step-back': { ...GOOD['step-back'], scrubAfter: 3 } }).length, 1,
+    'a gesture that moved nothing is a failure, not a pass');
+});
+
+test('the probe reads its own report back', () => {
+  const html = '<script type="text/plain" id="out">JSON {"entered":true,"frame":7}\nTEXT hello\nDOM <body></body></script>';
+  const r = readState(html);
+  assert.equal(r.entered, true);
+  assert.equal(r.frame, 7);
+  assert.equal(readState('<script type="text/plain" id="out">pending</script>'), null);
+  assert.equal(readState('<html></html>'), null);
 });

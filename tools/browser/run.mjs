@@ -22,6 +22,7 @@ export const CHECKS = {
   'pages-csp': () => import('./pages-csp.mjs'),
   'index-runs': () => import('./index-runs.mjs'),
   'stylesheet-settles': () => import('./stylesheet-settles.mjs'),
+  'replay-states': () => import('./states.mjs'),
 };
 
 function args(argv) {

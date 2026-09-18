@@ -146,30 +146,15 @@ export const NOT_A_PLAY = {
 export const isNearMiss = x =>
   !x.dims?.type && Object.keys(x.dims || {}).some(k => k !== 'type');
 
-/**
- * How many events the STRENGTH filter, and nothing else, took out.
- *
- * ⭐ THIS IS THE NUMBER UNDER THE SITUATIONS CONTROL, and it is the difference
- * between a claim and evidence. "Watch which attempts drop out" asks a reader to
- * go and look; *"11 attempts have dropped out so far"* says how many did, in the
- * game in front of them, at the frame they are on.
- *
- * ⛔ AND STRENGTH ALONE IS THE WHOLE POINT. An event that was also not an attempt
- * (`type`) or not a play at all (`play`) was never going to count, so including
- * it would inflate the control's number with things even strength did not remove
- * — the sentence would say the filter did more than it did. Same shape as
- * `isNearMiss` directly above: a dimension test that reads as arithmetic and is
- * really a claim about what a surface is telling someone.
- *
- * ⚠️ IT LIVES HERE BECAUSE IT WAS A REDUCER'S QUESTION BEING ASKED IN A RENDERER.
- * Until 2026-09-04 this was one inline `.filter().length` in `render` — an
- * analysis computation over the ledger's own dimensions, in the binding tier, with
- * no test of its own and its correctness asserted only by the sentence it fed.
- * CHENG: *"the tier boundary being crossed quietly, and the one item that is a
- * genuine move rather than a note."*
- */
-export const droppedForStrength = excluded =>
-  excluded.filter(x => x.dims?.strength && !x.dims.type && !x.dims.play).length;
+/* ⏹ `droppedForStrength` WAS HERE, AND IT SHIPPED UNREACHABLE FOR TEN DAYS.
+   It counted the events the strength filter alone removed, for a sentence under
+   the situations control -- "11 attempts have dropped out so far". Kevin's "no
+   strength chips" call took that sentence out on 2026-09-07 (`4ed08c2`), the
+   caller went with it, and the function stayed, exported, under a comment that
+   still said "THIS IS THE NUMBER UNDER THE SITUATIONS CONTROL". Nothing said so:
+   the same shape as `figTabletop` (docs/status.md), found the same way -- by
+   asking what a planted defect in it could possibly change.
+   ⏭ To bring it back with its sentence: `git log -S droppedForStrength`. */
 
 /**
  * Does this result account for every event exactly once?

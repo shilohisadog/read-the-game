@@ -142,6 +142,15 @@ jobs:
       - name: what only a stylesheet can settle
         run: node tools/browser/run.mjs stylesheet-settles
 
+      # `tools/browser/states.mjs` — the states no probe was entering. Each one
+      # SEEKS its subject and goes red if it never found it, which is the fault
+      # the first version had: it sampled 55% of the scrub, landed on a faceoff,
+      # and reported a clean hash of a frame with no figure on it. Six planted
+      # defects turn these red, including the one that was live in both readers
+      # (a goal's mark is a `<g>` with children, so `ev.target` missed the door).
+      - name: the replay's states, entered on purpose
+        run: node tools/browser/run.mjs replay-states
+
       # THE LEARN PAGE'S DOORS POINT AT ONE GAME, so that game being published
       # is a production dependency of nine links on a page a stranger reads.
       #
