@@ -318,7 +318,17 @@ measured.
 
    ~~**Target: zero off-subject.**~~ **Ruled a ratchet (§11.2 Q7):** the count
    falls on each replay, and each remaining one names a closed-set category.
-2. ✅ **Detection does not regress — MEASURED 2026-09-17**, `docs/defects/mutation-rerun-2026-09-17/`.
+2. ✅ **Detection does not regress — RE-MEASURED 2026-09-18 with the CONFIRMING engine:
+   53 / 44 / 28**, `docs/defects/mutation-rerun-2026-09-18/`. 0 lost, 2 gained, and the
+   two gains are tests written during row 8 (`teams.test.js` on a contrast threshold,
+   `render-penalties.test.js` on a short-handed comparison). ⚠️ **The 2026-09-17 figure
+   below was produced before the engine was found to report false catches under load,
+   and re-deriving it was the point of the re-run: it was NOT inflated — the direction
+   CC predicted was wrong.** ⛔ The re-run had **zero flaky demotions**, so it validates
+   the numbers and **not** the fix; the evidence for the confirmation step is still the
+   manual check in `docs/defects/blind-spots-2026-09-17/`.
+   The superseded run, kept because the comparison is verdict-for-verdict against it —
+   `docs/defects/mutation-rerun-2026-09-17/`.
    The 187 were re-planted in today's code by `tools/mutate.mjs` (relocated through
    `git diff`, not re-sampled) and every verdict is unchanged: **52 / 43 / 28** caught,
    0 lost, 0 gained, and 3 now caught by an ADDITIONAL test file. ⚠️ Display reads 43 and

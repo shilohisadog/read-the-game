@@ -37,12 +37,18 @@ state.
 ### ⏭ THE SHORT VERSION, IF YOU READ NOTHING ELSE
 
 **Do next, in order:**
-1. **Re-run §8.2 with the confirming engine.** `docs/defects/mutation-rerun-2026-09-17/`
-   says 52 / 43 / 28 and it was produced by `tools/mutate.mjs` BEFORE that engine was
-   found to report false catches under load. Until it is re-run, that number is in the
-   docs and not trusted. `node tools/mutate.mjs relocate <base> <record-dir> out.json`
-   then `run` — it backgrounds cleanly.
+1. ~~**Re-run §8.2 with the confirming engine.**~~ ✅ **DONE 2026-09-18: 53 / 44 / 28**,
+   0 lost, 2 gained — `docs/defects/mutation-rerun-2026-09-18/`. **The untrusted number
+   was not inflated; it was right.** CC predicted display would come DOWN and it went
+   up, and both gains are row-8's own tests. ⛔ **Zero flaky demotions, so the run
+   validates the numbers and NOT the fix** — the confirm step never had to fire.
 2. **Rows 7, 9, 10** of `docs/test-program.md` §10 — row 8 is CLOSED.
+   ⚠️ **Row 6 is marked ✅ and its own §10 exit was never evaluated.** That exit is
+   *"ids-over-three count, before and after"*; measured 2026-09-18 on the same ruler at
+   both trees it went **20 → 21**, and `#scrub` is driven by **18 test files then and 18
+   now — identical sets, 133 → 135 call sites, not one migrated**. Seam B's mechanism is
+   real and new tests use it (21 files call `.every(`), but the migration §6 describes
+   never happened, so the churn surface has not moved. Belongs with row 7.
 3. **Two pages still need Kevin's ruling:** `terrain-3d.html` (its door was the deleted
    Workshop) and `read-the-game.html` (deployed and unreachable; 35 test files read it
    FROM DISK, which does not require publishing it). Link, keep with a fresh reason, or
