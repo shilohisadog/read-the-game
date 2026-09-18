@@ -32,7 +32,37 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 
 This section is the orientation. Everything below §0 is the detail, organised by
 state.
-## ⏭ 0.00 PICK UP HERE — 2026-09-17
+## ⏭ 0.00 PICK UP HERE — 2026-09-18
+
+### ⏭ THE SHORT VERSION, IF YOU READ NOTHING ELSE
+
+**Do next, in order:**
+1. **Re-run §8.2 with the confirming engine.** `docs/defects/mutation-rerun-2026-09-17/`
+   says 52 / 43 / 28 and it was produced by `tools/mutate.mjs` BEFORE that engine was
+   found to report false catches under load. Until it is re-run, that number is in the
+   docs and not trusted. `node tools/mutate.mjs relocate <base> <record-dir> out.json`
+   then `run` — it backgrounds cleanly.
+2. **Rows 7, 9, 10** of `docs/test-program.md` §10 — row 8 is CLOSED.
+3. **Two pages still need Kevin's ruling:** `terrain-3d.html` (its door was the deleted
+   Workshop) and `read-the-game.html` (deployed and unreachable; 35 test files read it
+   FROM DISK, which does not require publishing it). Link, keep with a fresh reason, or
+   delete.
+4. **Designed, not built:** the UNLISTED-ledger expiry rule, and the runtime-coverage
+   instrument (full text further down this section).
+
+**Open holes written down rather than quietly left:**
+- nothing but the DOM golden asserts **which club a face-off mark is painted for** — a
+  planted revert of that colour left 107 tests green. Belongs with row 7.
+- `src/lib/layers/whistle.js::offendingTeam` is live on the site; the **line under the
+  rink goes back to narrating the draw**, which Kevin ruled after seeing the first build.
+
+**How to work here:** `npm run gates > LOG 2>&1; rc=$?` — never `>/dev/null`. After any
+edit, regenerate `node builders/health.mjs` and `node tools/tiers.mjs` or the stale
+generated blocks fail the gates. A `src/` change deploys a preview, runs every browser
+check against it, then ships the same commit.
+
+---
+
 
 ✅ **THE TEST-PROGRAM RE-ARCHITECTURE IS BUILT AND LIVE — Kevin's seven steps, all
 done 2026-09-16/17.** What now exists, each seen to work:
@@ -230,6 +260,48 @@ failed; a red that does not reproduce is recorded as `flaky` and is not a catch.
 ⚠️ **This puts a caveat on `docs/defects/mutation-rerun-2026-09-17/`** (52/43/28), which
 ran with the unconfirmed engine — re-run it before quoting it again. It is also row 9's
 first real customer: a check on the checks, which is exactly what row 9 is for.
+
+✅ **WHO ICED IT AND WHO WAS OFFSIDE — SHIPPED 2026-09-18** (`af4924c`, `dd91bdb`,
+`5ebcfee`). Kevin, from the live site: *"do we know which team was offside? … same with
+icing."* The feed does not — every stoppage carries `own: null` — but **the restart dot
+plus the rulebook does**: Rule 81.1 puts an icing draw in the offending team's end, Rule
+83.2 puts an offside draw outside the blue line of the zone ENTERED (the opposite sign),
+and `extract.py::_norm` makes the home team always defend −x.
+`layers/whistle.js::offendingTeam`. Over all 4,490 published games: **icing 99.99%
+nameable, offside 94.40%**; `docs/stoppage-attribution.md` has the method and both dead
+fallbacks.
+
+- ⭐⭐ **THE ATTRIBUTION IS CHECKED AGAINST A PREDICTION THE RULES MAKE, IN BOTH
+  DIRECTIONS.** A short-handed team may ice legally, so the icing offender is
+  short-handed **0.43%** against the other club's 1.30%; offside has no such exemption
+  and the attacker is usually on the power play, so it flips to **1.93% against 9.71%**.
+  Reversed, both rows would contradict the rulebook.
+- ⛔ **MY FIRST SHORT-HANDED CHECK CONTRADICTED THE RULE at 4.91%** — it read skater
+  counts, which is the pulled-goalie trap this repo had already documented (5.62% of
+  icings have a goalie pulled). Against the real box it resolved. **A proxy that
+  disagrees with a rule is evidence about the proxy first.**
+- ⛔ **TWO FALLBACKS FOR THE UNNAMEABLE 5.60% WERE KILLED BY A CONTROL.** "The last
+  located play says which end the rush was going" agreed with the dot **54.38%** of the
+  time when run against the 3,816 offsides we CAN name — a coin flip, worse the deeper
+  the play was. Without that control it would have shipped.
+- ⭐⭐ **AND KEVIN SENT THE FIRST BUILD BACK, correctly.** It made the restart one frame
+  about the whistle — ice label, mark and pill all naming the offender. He saw
+  *"CAR Iced the puck … pointing at the faceoff dot"* and ruled the ice back to the
+  face-off. **The reason is stronger than the duplication he pointed at: a mark on this
+  rink asserts a PLACE, and an icing has no coordinate at all.** Now the pill narrates
+  the stoppage (club on its chip, or *"— a centre-ice draw names neither club"*), and the
+  ice, the mark and the line narrate the face-off. The DOM golden proved the revert exact:
+  `#labels`, `#who`, `#events` returned to their pre-change hashes.
+
+✅ **THE GITHUB ACTIONS ARE OFF NODE 20 — 2026-09-18 (`a0a0f73`).** checkout v4→v5,
+setup-node v4→v5, setup-python v5→v6: **the first major on node24 for each**, not the
+newest (v7s are three ahead and every major between is unrelated breaking change).
+`setup-node@v5` auto-caches when `package.json` has a `packageManager` field — inert here
+because we have no dependencies, no lockfile and no `npm ci`. ⛔ The real defect was that
+a warning printed on every run had **no check behind it**: `test/workflows.test.js` now
+holds the pin as a ledger with its reason, and both halves were seen red. Confirmed on the
+next real run: **0 Node 20 warnings**. ⏭ One informational annotation arrived with it and
+needs nothing yet: **`ubuntu-latest` migrates to Ubuntu 26 from 19 October 2026.**
 
 ⏭ **WHAT IS OPEN** — the rest of `docs/test-program.md` §10: visibility claims moving to
 the preview stage, file by file (row 7); a weekly mutation run with check mutants, plus
