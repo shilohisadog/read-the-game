@@ -168,28 +168,19 @@ const NEWCOMER=(()=>{try{
  }catch(e){return true;}})();
 let finalA=0,finalH=0; for(const e of EV){if(e.type==='goal')(e.own===HID?finalH++:finalA++);}
 function attemptTeam(e){return corsiTeam(e,R);}  // renamed: `corsi` is the layer object
-/**
- * ⭐ THE CLUB A MARK BELONGS TO — and on a restart that is the club the WHISTLE
- * was about, not the one that won the draw.
- *
- * Kevin ruled on 2026-09-18 that an icing or offside restart is a frame ABOUT the
- * stoppage: the ice label, the caption and the mark all say the offending club.
- * ⛔ THE MARK HAD TO MOVE WITH THE SENTENCE OR THE FIX WOULD BE THE OLD DEFECT IN
- * COLOUR. The draw is won by the offending club 45.1% of the time after an icing
- * and 50.0% after an offside (600 games), so a mark still painted by `own` would
- * show one club while the label beside it named another — *"text says CAR, visual
- * shows Vegas"*, which is the shape Kevin caught once already and which
- * `active-player.test.js` guards across every frame.
- *
- * ⚠️ `'x'` IS NOBODY'S COLOUR, AND IT IS AN ANSWER. A draw at centre ice names no
- * club (5.60% of offsides), so the mark goes neutral rather than picking a side —
- * the convention `colourOf` already uses for a club the table cannot answer for,
- * and the grey the faceoff ring already takes when two clubs are even.
- */
-function tk(e){
- const r=ICING.get(e)||OFFSIDE.get(e);
- if(r)return r.offender===AAB?'a':r.offender===HAB?'h':'x';
- const c=attemptTeam(e);return c===AID?'a':c===HID?'h':'x';}
+/* ⏹ FOR TWO HOURS ON 2026-09-18 THIS PAINTED THE MARK BY THE OFFENDING CLUB, and
+   Kevin sent it back from the live site: *"the ice also shows CAR Iced the puck and
+   pointing at the faceoff dot… icing and the faceoff occur at the same clock time,
+   [as] two different events."*
+   ⭐⭐ HE IS RIGHT, AND THE REASON IS STRONGER THAN THE DUPLICATION HE POINTED AT:
+   A MARK ON THIS RINK ASSERTS A PLACE. An icing has no coordinate at all — the
+   stoppage carries none — and the dot is where the RESTART is, not where the puck
+   was iced. Labelling it with the offender made a location claim the feed cannot
+   support, which is the same rule that forbids drawing a figure on a faceoff
+   (Doctrine §5). So each surface narrates ONE event: the pill says the icing and
+   names the club that caused it, the ice says the face-off and names the club that
+   won it. `git log -S offendingTeam` has the version that did otherwise. */
+function tk(e){const c=attemptTeam(e);return c===AID?'a':c===HID?'h':'x';}
 function shotDir(e){const t=shootingTeam(e,R);return t==null?null:attackDirection(t,HID);}
 let evenOnly=false;
 // TRAILS. Every attempt used to persist for the rest of the game, which makes a
@@ -1458,21 +1449,6 @@ function sayOnIce(e){const b=$('onIce'),t=$('onIceBtn');if(!b)return;
  t.onclick=()=>{onIceOn=!onIceOn;sayOnIce(EV[i]);};})();
 function sayWho(e){const w=$('who');if(!w)return;
  if(!e){w.innerHTML='';w.className='who';return;}
- /* ⭐⭐ A RESTART FRAME IS ABOUT THE WHISTLE, SO THE LINE SAYS NOTHING — Kevin's own
-    ruling on the goal, for the same reason: *"let's just render nothing on a Goal,
-    the rink description is sufficient."* Since 2026-09-18 the ice says "BUF ·
-    Offside" and the pill says the rule, so a third surface adding "#38 Hartman won
-    the draw" is both a different club and a different subject on one frame.
-    ⛔ AND THAT WAS NOT A STYLE CHOICE — IT WAS A DEFECT THIS CAUSED AND THIS FIXES.
-    With the ice naming the offender and the line still leading with the face-off
-    WINNER, `active-player.test.js` went red on three frames of the reference game:
-    ice "BUF" against line "MIN", which is precisely *"text says CAR, visual shows
-    Vegas"*. The mark, the label and the line are ONE surface and had to move
-    together.
-    ⚠️ IT COSTS THE DRAW'S NARRATION ON 13.0 FRAMES A GAME (8.49 icings + 4.51
-    offsides). The dot is still drawn, the zone-start layer still counts every
-    draw, and `min-height` reserves the row so nothing moves. */
- if(ICING.has(e)||OFFSIDE.has(e)){w.innerHTML='';w.className='who';return;}
  const a=ATTRIBUTION[e.type],p=a&&R[e.actor];
  // ⭐ SUPPRESSED WHERE THE NAME IS ALREADY ON SCREEN, on the site's own precedent:
  // the offside blurb shrank when its figure arrived, because a card with a diagram
@@ -2497,17 +2473,6 @@ function playSaid(e){
  // naming the club a second time where a person would be.
  if(e.type==='goal'){const p=R[e.actor];
    return `${lab?lab+' · ':''}GOAL${shortHanded(e)?' · SHORT-HANDED':''}${p?' — '+p.nm:''}`;}
- /* ⭐ A RESTART IS A FRAME ABOUT THE WHISTLE, NOT ABOUT THE DRAW. Kevin, from the
-    live site: *"do we know which team was offside? … same with icing"*. The feed
-    never says — every stoppage carries `own: null` — but the dot the draw comes
-    back to does, by Rule 81.1 and Rule 83.2 (`layers/whistle.js::offendingTeam`).
-    Before this the ice said "MIN · Won the faceoff" while the pill said "Offside",
-    which is two subjects on one frame; now both say the same thing.
-    ⚠️ THE CLUB IS OPTIONAL HERE, exactly as it is on a goal: a centre-ice draw
-    names nobody, and the mark going neutral is what says so on the ice. */
- const st=ICING.get(e)?'Iced the puck':OFFSIDE.get(e)?'Offside':null;
- if(st){const who=(ICING.get(e)||OFFSIDE.get(e)).offender;
-   return `${who?who+' · ':''}${st}`;}
  const info=e.type==='missed-shot'?missSay(e):LAB[e.type];
  if(!info)return lab||'';
  return `${lab?lab+' · ':''}${info}`;}

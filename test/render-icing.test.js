@@ -151,7 +151,7 @@ function stepTo(a, k) {
   a.$('fwd').click();
 }
 
-test('⭐ an offside names the club, on both sides of the ice', () => {
+test('⭐ an offside names the club ON THE PILL, on both sides of the ice', () => {
   const EV = OFF.events.filter(e => !SKIP_T.has(e.type));
   const named = offsideRestarts(OFF.events, OFF_CTX).filter(r => r.offender);
   assert.ok(named.length >= 4, `only ${named.length} nameable offsides in this fixture`);
@@ -165,12 +165,20 @@ test('⭐ an offside names the club, on both sides of the ice', () => {
     stepTo(a, k);
     assert.match(a.$('caption').innerHTML, new RegExp(`<span class="tag [ah]">${r.offender}</span>`),
       `the pill does not name ${r.offender} on the offside at frame ${k}`);
-    assert.match(a.$('labels').innerHTML, new RegExp(`${r.offender} · Offside`),
-      `the ice does not say "${r.offender} · Offside" at frame ${k}`);
+    /* ⭐⭐ AND THE ICE NARRATES THE FACE-OFF, WHICH IS THE OTHER EVENT ON THIS FRAME.
+       Kevin, 2026-09-18, from the live site: *"icing and the faceoff occur at the
+       same clock time, [as] two different events… I'd rather keep the popup the way
+       it is, since it details the icing event, and change the ice description to who
+       won the faceoff."* The reason is stronger than the duplication he pointed at:
+       A MARK ON THIS RINK ASSERTS A PLACE, the ice label hangs off one with a leader
+       line, and an icing has NO coordinate — the dot is where the restart is. So the
+       ice may never say the stoppage here, and this is the half that keeps it out. */
+    assert.doesNotMatch(a.$('labels').innerHTML, /Offside|Iced the puck/,
+      `frame ${k}: the ice is naming the stoppage, whose place it does not know`);
   }
 });
 
-test('⭐⭐ a centre-ice draw names NOBODY — and the page says so three ways', () => {
+test('⭐⭐ a centre-ice draw names NOBODY, and the pill says why', () => {
   const EV = OFF.events.filter(e => !SKIP_T.has(e.type));
   const blind = offsideRestarts(OFF.events, OFF_CTX).filter(r => !r.offender);
   assert.ok(blind.length > 0, 'this fixture no longer holds an offside the dot cannot attribute');
@@ -180,89 +188,37 @@ test('⭐⭐ a centre-ice draw names NOBODY — and the page says so three ways'
     const k = EV.indexOf(r.event);
     if (k < 1) continue;
     stepTo(a, k);
-    const pill = a.$('caption').innerHTML, ice = a.$('labels').innerHTML;
-
-    // 1 — the pill still teaches the rule, and says why it is not naming a club.
+    const pill = a.$('caption').innerHTML;
     assert.match(pill, /🔵 Offside/, `the offside at frame ${k} said nothing at all`);
     assert.match(pill, /centre-ice draw names neither club/,
       `the pill is silent about WHY no club is named at frame ${k}: "${pill}"`);
     assert.doesNotMatch(pill, /<span class="tag/,
       `the pill wears a club chip on an offside nobody can be blamed for: "${pill}"`);
-
-    // 2 — the ice names the rule and no club.
-    assert.match(ice, /Offside/, `the ice does not name the offside at frame ${k}`);
-    assert.doesNotMatch(ice, new RegExp(`(${OFF_CTX.homeAb}|${OFF_CTX.awayAb}) · Offside`),
-      `the ice blames a club on an offside the draw cannot attribute: "${ice}"`);
-
-    // 3 — ⭐ and the MARK goes neutral rather than taking a side. This is the half
-    // a sentence cannot carry: `x` is nobody's colour, the same convention
-    // `colourOf` uses for a club the table cannot answer for.
-    assert.match(a.$('events').innerHTML, /class="ev [^"]*\bcur\b[^"]*\bx\b/,
-      `the mark took a club's colour on an offside nobody can be blamed for`);
   }
 });
 
-test('⛔ the club is never read off the face-off WINNER', () => {
-  // Measured over 600 games: the draw after an offside is won by the offending
-  // club exactly 50.0% of the time, so `own` would be a coin flip — and would put
-  // two different clubs on one frame, which is the defect Kevin caught on the
-  // figure ("text says CAR, visual shows Vegas").
+test('⛔ the club on the pill is never the face-off WINNER', () => {
+  /* Measured over 600 games: the draw after an offside is won by the offending club
+     exactly 50.0% of the time and after an icing 45.1%, so reading `own` would be a
+     coin flip. ⭐ THE FIXTURE IS CHECKED FOR THE DISAGREEMENT FIRST — on a game where
+     the two never differ this test would pass on a page that read the winner. */
   const EV = OFF.events.filter(e => !SKIP_T.has(e.type));
   const named = offsideRestarts(OFF.events, OFF_CTX).filter(r => r.offender);
-  const disagree = named.filter(r => {
-    const won = r.event.own === OFF_CTX.homeId ? OFF_CTX.homeAb : OFF_CTX.awayAb;
-    return won !== r.offender;
-  });
-  assert.ok(disagree.length > 0,
+  const differ = named.filter(r =>
+    (r.event.own === OFF_CTX.homeId ? OFF_CTX.homeAb : OFF_CTX.awayAb) !== r.offender);
+  assert.ok(differ.length > 0,
     'in this fixture the draw winner and the offender never differ, so this test cannot fail');
 
   const a = boot(OFF, null);
-  for (const r of disagree) {
+  for (const r of differ) {
     const k = EV.indexOf(r.event);
     if (k < 1) continue;
     stepTo(a, k);
     const won = r.event.own === OFF_CTX.homeId ? OFF_CTX.homeAb : OFF_CTX.awayAb;
-    assert.doesNotMatch(a.$('labels').innerHTML, new RegExp(`${won} · Offside`),
-      `the ice blamed ${won}, who WON the draw, instead of ${r.offender}, who was offside`);
+    assert.doesNotMatch(a.$('caption').innerHTML, new RegExp(`<span class="tag [ah]">${won}</span>`),
+      `the pill blamed ${won}, who WON the draw, instead of ${r.offender}, who was offside`);
+    // …and the ice DOES name the winner, because that is the event the dot is.
+    assert.match(a.$('labels').innerHTML, new RegExp(`${won} · Won the faceoff`),
+      `frame ${k}: the ice should narrate the draw ${won} won`);
   }
-});
-
-test('⭐⭐ on a restart the MARK, the ICE and the PILL name one club — or none', () => {
-  /* ⛔ THIS IS THE ASSERTION THE FIRST BUILD DID NOT HAVE, and a planted defect
-     found the hole: reverting `tk` to the face-off winner left 107 tests green and
-     was seen only by the DOM golden, which is a change detector and not a catcher
-     (test-program.md §11.2 Q4). The three surfaces are ONE surface to a reader —
-     the mark's colour, the label above it and the chip on the pill — and the draw
-     is won by the offending club only 45.1% of the time after an icing and 50.0%
-     after an offside, so a mark left on `own` disagrees with the label on about
-     half of these frames. That is *"text says CAR, visual shows Vegas"*.
-     ⭐ WRITTEN AS ONE RULE OVER A WALK, not as three separate checks, because the
-     defect is a DISAGREEMENT and neither surface is wrong on its own. */
-  const EV = OFF.events.filter(e => !SKIP_T.has(e.type));
-  const restarts = [...offsideRestarts(OFF.events, OFF_CTX), ...icingRestarts(OFF.events, OFF_CTX)];
-  assert.ok(restarts.length >= 8, `only ${restarts.length} restarts in this fixture`);
-
-  const a = boot(OFF, null);
-  let named = 0, blind = 0;
-  for (const r of restarts) {
-    const k = EV.indexOf(r.event);
-    if (k < 1) continue;
-    stepTo(a, k);
-    const side = r.offender === OFF_CTX.awayAb ? 'a' : r.offender === OFF_CTX.homeAb ? 'h' : 'x';
-    const mark = /class="ev ([^"]*\bcur\b[^"]*)"/.exec(a.$('events').innerHTML);
-    assert.ok(mark, `no current mark on the ice at restart frame ${k}`);
-    assert.ok(mark[1].split(/\s+/).includes(side),
-      `frame ${k}: the offender is ${r.offender || 'nobody'} (${side}) and the mark is "${mark[1]}" — `
-      + 'the colour under the label disagrees with it');
-
-    if (r.offender) {
-      named++;
-      assert.match(a.$('labels').innerHTML, new RegExp(`${r.offender} · (Offside|Iced the puck)`),
-        `frame ${k}: the ice does not name ${r.offender}`);
-      assert.match(a.$('caption').innerHTML, new RegExp(`<span class="tag ${side}">${r.offender}</span>`),
-        `frame ${k}: the pill does not name ${r.offender}`);
-    } else blind++;
-  }
-  assert.ok(named > 4 && blind > 0,
-    `${named} named and ${blind} unattributable restarts walked — both sides of the rule are needed`);
 });

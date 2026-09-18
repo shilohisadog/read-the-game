@@ -308,40 +308,15 @@ test('the stoppage is named by the box and not by the ice', () => {
     'the box never names a stoppage, so the ledger half of the rule is not working '
     + 'and the other assertion below would pass on a dead page');
 
-  /* ⭐⭐ TWO REASONS ARE NOW THE ICE'S, AND THE RULE'S OWN REASON IS WHY IT CAN
-     NARROW. Kevin ruled on 2026-09-18 that an icing or offside restart is a frame
-     ABOUT the stoppage, so the ice names the offending club
-     (`layers/whistle.js::offendingTeam`). That looks like the duplication this
-     test removed — and it is not, because the 3.5% was a PAIRING disagreement:
-     the ice showed the whistle the reducer paired with that dot while the box
-     shows the LATEST, and two whistles before one face-off is all it takes.
-     ⛔ `restarts()` REFUSES TO PAIR ACROSS A SECOND WHISTLE (`if (events[k].type
-     === 'stoppage') return`), so a frame the ice can name has no stoppage between
-     the whistle and the draw — the paired whistle IS the latest one, and the two
-     surfaces cannot disagree. Measured on both fixtures: 24 frames where both
-     speak, 0 disagreements.
-     THE RULE STILL BINDS EVERY OTHER REASON, which is where the 3.5% lived. */
-  const OURS = ['Icing', 'Offside'];
-  for (const n of inBox.filter(n => !OURS.includes(n)))
+  /* ⏹ FOR TWO HOURS ON 2026-09-18 THE ICE NAMED TWO OF THEM, and this rule was
+     narrowed to allow it. Kevin sent it back from the live site — a mark asserts a
+     PLACE, and an icing has no coordinate — so the ice narrates the face-off again
+     and the rule is whole. The pill still names the offending club, which this test
+     has never been about: it compares `#labels` with the box. */
+  for (const n of inBox)
     assert.ok(!ice.includes(n),
       `the ice names "${n}" as well as the box — two surfaces for one fact, which `
       + 'disagree on 3.5% of frames because they pair differently');
-
-  // AND THE NARROWING IS NOT A HOLE: where the ice DOES name one, it must agree
-  // with the box on every frame, which is the property that made it safe.
-  const rows = a.every(d => [d.$('labels').innerHTML || '', d.$('lxN').textContent || '']);
-  let both = 0;
-  for (const [iceRow, boxRow] of rows) {
-    const said = /Offside|Iced the puck/.exec(iceRow);
-    if (!said) continue;
-    const want = said[0] === 'Offside' ? 'Offside' : 'Icing';
-    const boxName = names.find(n => boxRow.includes(n));
-    if (!boxName) continue;
-    both++;
-    assert.equal(boxName, want,
-      `the ice says "${want}" while the box says "${boxName}" — the pairing guarantee has gone`);
-  }
-  assert.ok(both > 5, `only ${both} frames had both surfaces speaking — this half measured nothing`);
 
   // AND THE ICE STILL NARRATES ITS OWN EVENT. Removing the clause must not have
   // taken the label with it.

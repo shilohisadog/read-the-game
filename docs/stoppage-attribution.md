@@ -118,38 +118,57 @@ than about our database — which is also why the copy is not *"data not conclus
 Kevin's own ruling on the penalties lede, a sentence about what OUR RECORD contains does
 not belong on a teaching surface. The test is whether it teaches the rule.
 
-**A restart is now a frame about the whistle, and four surfaces say one thing:**
+⭐⭐ **AND KEVIN SENT THE FIRST BUILD BACK FROM THE LIVE SITE, correctly.** It had made
+the restart *one* frame about the whistle — the ice label, the mark and the caption all
+naming the offending club. He looked at it and said: *"the ice also shows CAR Iced the
+puck and pointing at the faceoff dot… icing and the faceoff occur at the same clock time,
+[as] two different events. I'd rather keep the popup the way it is, since it details the
+icing event, and change the ice description to who won the faceoff."*
 
-| surface | nameable | not nameable |
+**His framing is better than the one it replaced, and the reason is stronger than the
+duplication he pointed at: A MARK ON THIS RINK ASSERTS A PLACE.** The ice label hangs off
+a mark with a leader line, and an icing has **no coordinate at all** — the stoppage
+carries none. The dot is where the RESTART is, not where the puck was iced. Labelling it
+"CAR · Iced the puck" made a location claim the feed cannot support, which is the same
+rule that forbids drawing a player figure on a face-off (Doctrine §5).
+
+**So each surface narrates one of the two events on that frame:**
+
+| surface | what it says | when nobody can be named |
 |---|---|---|
-| the ice label | `BUF · Iced the puck` / `NYR · Offside` | `Offside` |
-| the mark | the offending club's colour | **neutral — nobody's** |
-| the caption pill | the club on its chip | no chip, and the clause below |
-| the line under the rink | *(silent)* | *(silent)* |
+| the caption pill | the stoppage, with the offending club on its chip | no chip, plus *"— a centre-ice draw names neither club"* |
+| the ice label and mark | the face-off, with the club that won it | unchanged — the draw always has a winner |
+| the line under the rink | the player who won the draw | unchanged |
 
-The unknown case adds *"— a centre-ice draw names neither club"*, which is a fact the
-reader can SEE: the dot is right there, and it is the same fact that tells them the draw's
-position is how the club is known at all.
+⭐ **The cost that decided it was measured, not assumed.** The objection to taking the club
+off the ice is that the pill only writes on a *moment*, so a viewer who never presses play
+might never see it. Measured in the code: dragging the scrubber is silent
+(`oninput` → `set(v,'')`), but **releasing it fires a moment** (`onchange` → `'jump'`), as
+do the step buttons and a double-click. Every way a viewer lands on a frame shows the
+pill, so nothing is lost.
+
+⏹ **What the first build cost, and got back:** it had to silence the line under the rink on
+13.0 frames a game, because with the ice naming the offender and the line still leading
+with the face-off WINNER they named different clubs — the draw is won by the offending
+club only 45.1% of the time after an icing and 50.0% after an offside. Kevin's version
+returns the draw's narration and lets `render-whistle`'s *"exactly one surface names the
+stoppage"* rule stand whole instead of narrowed.
 
 ## ⛔ Three things the build found that the design did not
 
-1. **The mark, the label and the line are ONE surface.** With the ice naming the offender
-   and the line still leading with the face-off WINNER,
-   `active-player.test.js` went red on three frames — ice `BUF` against line `MIN`, which
-   is *"text says CAR, visual shows Vegas"*. **The draw is won by the offending club only
-   45.1% of the time after an icing and 50.0% after an offside** (600 games), so they
-   disagree about half the time. The line is now silent on these frames, which is Kevin's
-   own ruling on the goal for the same reason — at a cost of the draw's narration on
-   **13.0 frames a game**.
+1. **The mark, the label and the line are ONE surface**, and the first build proved it the
+   hard way: with the ice naming the offender and the line still leading with the face-off
+   WINNER, `active-player.test.js` went red on three frames — ice `BUF` against line `MIN`,
+   which is *"text says CAR, visual shows Vegas"*. That is what made the design suspect
+   before Kevin ruled on it.
 2. **A measured doctrine said the ice must NOT name a stoppage** — *"exactly one surface
    names the stoppage"*, because over 53 games the ice and the box named DIFFERENT
-   stoppages on 3.5% of frames. ⭐ It narrowed rather than blocked, on its own reason:
-   that 3.5% was a PAIRING disagreement, and `restarts()` refuses to pair across a second
-   whistle, so on a frame the ice can name, the paired whistle IS the latest one. The rule
-   still binds every other reason, and the test now asserts the agreement it relied on.
-3. **Reverting the mark's colour to the draw winner left 107 tests green** and was seen
-   only by the DOM golden, which is a change detector and not a catcher. The three
-   surfaces now have one rule over a walk, and a planted revert turns it red.
+   stoppages on 3.5% of frames. The first build narrowed it; Kevin's version does not need
+   to, and the rule stands whole.
+3. **Reverting the mark's colour left 107 tests green** and was seen only by the DOM
+   golden, which is a change detector and not a catcher. ⚠️ **That hole is still open for
+   the ice**: nothing but the golden asserts which club a face-off mark is painted for.
+   Worth closing when row 7 moves visibility claims to the browser.
 
 The pill's cost was measured, because that is what the icing caption's own comment
 demands: at **844×390** — the landscape phone Kevin's ruling makes the surface — every
