@@ -39,7 +39,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-TbQbd2hHHMMGhLSdldS9JS7hafg9jfcuOF6CnlRNCkM=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-KxtoclFGzSuPX6sx1zGb4LXvnk45aClWzZsy9oqxCmY='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-TbQbd2hHHMMGhLSdldS9JS7hafg9jfcuOF6CnlRNCkM=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-1PBeC2fysmB9Hagyk+93N44Qb7ZT9fdfZA+CLL/9eDA='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">How to read hockey</a></nav></header>
@@ -376,6 +376,12 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    feet against two clipped discs; at equal opacity the neutral zone becomes the
    loudest thing on the rink and the slot stops being the point. Both numbers are
    visual judgements and are here to be looked at rather than proved. */
+/* ⭐ THIS RULE STILL PAINTS IT; WHETHER IT IS SHOWN AT ALL IS DECIDED FURTHER
+   DOWN, with the area cards -- since 2026-09-18 the band is furniture that
+   follows the ZONE-STARTS layer rather than sitting on the base ice. The colour
+   and the opacity stay here, and stay asserted, because they are still the
+   claim: blue because it borrows the line it explains, fainter than the slot
+   because it covers far more ice. */
 #rg .zoneband{fill:var(--blue);opacity:.055}
 /* ⭐ THE TWO TINTS GET A LINE EACH, because furniture nobody explains is just a
    smudge on the ice. They are the only marks on the base view a visitor did not
@@ -1326,6 +1332,66 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 #rg .area .asay,#rg .area .lim{display:block;margin-top:6px;padding-left:9px;border-left:2px solid var(--edge)}
 #rg .area .asay{border-left-color:var(--hd);color:var(--ink)}
 #rg .area .asay:empty{display:none}
+/* ⭐⭐ THE BLUE-LINE BAND FOLLOWS THE LAYER, 2026-09-18. Kevin, from the live
+   site: "the more I watch replays, the less important that area becomes... I
+   don't think it's important enough to show a novice and have them question why
+   the shading is there."
+
+   ⭐ THE REASON IS NOT THAT IT IS UNIMPORTANT, IT IS THAT IT CANNOT BE CHECKED.
+   `rinkart.js` has always said this out loud: the slot lozenge and the blue-line
+   band are both OUR measurements drawn as furniture, but the first is "a
+   geometric rule of ours" and the second "an aesthetic argument about where the
+   game is contested". The slot pays its way because a viewer can CHECK it --
+   `HIGH_DANGER_FT` and `SLOT_HALF_WIDTH` are the same two constants
+   `isHighDanger()` tests, so a mark inside the tint is a mark the layer counted.
+   Every other thing on this ice resolves to something too: the nine dots to the
+   archive, the five lines to the league. The band resolved only to an opinion,
+   and it was the one tint a curious novice could not follow to an answer on a
+   site whose whole pitch is check our work.
+
+   ⚠️ AND ITS DEFENCE WAS UNFALSIFIABLE, WHICH WE KNEW. Only 6.2% of located
+   plays fall within five feet of a blue line, and the standing answer is that
+   holding a line produces no recordable event -- so the feed's silence is a
+   property of the recording. That is probably true, and it means no measurement
+   could ever move this element in either direction.
+
+   ⭐ SO IT IS NOT DELETED, IT IS CONDITIONAL -- Kevin's own hockey argument
+   ("offense wants to hold play in, defense wants to keep play out") is sound and
+   a novice does not know it. It now appears with ZONE STARTS, the one layer
+   whose claim is about zones, and zones are what the blue lines define
+   (`zonestart.js` already derives them from `BLUE_LINE_X`, "the same constant
+   the blue-line band is painted from"). The progressive-legend principle applied
+   to furniture: the explanation arrives with the thing it explains.
+
+   ⛔ NOT ON THE WHISTLE LAYER, AND THAT IS DELIBERATE. `linesFor` already lights
+   the exact line each rule names -- and for ICING those are the centre line and
+   the far goal line. A band under both blue lines during an icing would point at
+   the wrong lines while the right one was lit.
+
+   ⛔⛔ AND THE CARD THAT EXPLAINED IT IS ALREADY PARKED -- found by trying to
+   move it and being refused. The first version of this change also gated the
+   "Either blue line" card, and `park.test.js` rejected the rule: *a descendant
+   cannot un-hide itself*, because the whole "What the marks mean" block sits in
+   a collapsible zone carrying `.zone.zref`, and `#rg .zref` is `display:none`
+   (⚠️ and the tag is NAMED rather than quoted here: this stylesheet is inlined
+   into the page, and a literal disclosure tag written in a comment is counted as
+   one by the zone checks -- which is how the first version of this note failed
+   two tests in `render-notes.test.js`. Kevin,
+   parking the page down to its core: "let's just remove all the extra stuff, for
+   now"). So the band has been shipping as furniture with NO key anywhere on the
+   page naming it -- which is most of why a novice would have to ask. There is
+   nothing to move; the card stays where it is, parked, and `rink.test.js` holds
+   a tripwire so that unparking it forces this decision to be re-made rather than
+   quietly restoring a key for a strip the base view no longer paints.
+
+   ⚠️ A PLAIN CLASS SELECTOR, ON PURPOSE. `park.test.js`'s darkness model only
+   considers simple `#rg .cls` selectors, so a compound one would slip past the
+   instrument rather than satisfy it. As written, `.zoneband` is hidden and then
+   LIT by a state class, which is what the model already understands about
+   `.whybk` and `.pressplay` -- it reads as lit, so the hidden-reads ratchet is
+   untouched because the element is not dark. */
+#rg .zoneband{display:none}
+#rg.zonestart .zoneband{display:inline}
 /* ⭐ ROWS, NOT A PARAGRAPH. Five marks set as a wrapping flex line read as a
    block of prose that happens to contain dots -- Kevin's "additional text in
    that area". A grid gives every mark the same left edge and its own line, so

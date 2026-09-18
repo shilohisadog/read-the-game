@@ -14,7 +14,7 @@ import { attackDirection, distanceToNet, isHighDanger,
          NET_X, HIGH_DANGER_FT, SLOT_HALF_WIDTH,
          BLUE_LINE_X, NEUTRAL_DOT_X, ZONE_BAND_FT } from '../src/lib/rink.js';
 import { shootingTeam, SHOT_TYPES } from '../src/lib/attribution.js';
-import { boot, PAGE_CSS } from './helpers/page.js';
+import { boot, PAGE_CSS, pickLayer } from './helpers/page.js';
 
 const rich = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url)));
 const R = rich.roster;
@@ -236,6 +236,75 @@ test('the blue-line band reaches exactly to the neutral-zone dots', () => {
  * distinction is that they look different — a different shape and a different
  * colour, each borrowed from the mark it explains.
  */
+/**
+ * ⭐⭐ THE BAND IS NOT ON THE BASE ICE, AND THE CARD GOES WITH IT — 2026-09-18.
+ *
+ * Kevin, from the live site: a novice should not have to ask why that strip is
+ * shaded. The reason it moved rather than the slot is that the slot can be
+ * CHECKED against the marks it explains and the band cannot — `rinkart.js` has
+ * called it "an aesthetic argument" since it was built, and only 6.2% of located
+ * plays fall within five feet of a blue line with no event recorded for the
+ * thing that makes it matter. So it now arrives with ZONE STARTS, the layer
+ * whose claim is about zones.
+ *
+ * ⭐ BOTH HALVES, JOINED. Asserting the stylesheet alone would leave the class
+ * that lights it unproven, and asserting the class alone would not show the band
+ * is hidden without it — two mechanisms and one observable proves neither. So
+ * this reads the CSS for the rule and then drives the page for the hook.
+ */
+test('the blue-line band arrives with the zone-starts layer, not before', () => {
+  /* ⚠️ THE LAST `display` FOR A SELECTOR, NOT THE FIRST RULE THAT MENTIONS IT —
+     and the first version of this test got exactly that wrong. `#rg .zoneband`
+     appears twice: once to paint it (fill and opacity, no display) and once to
+     hide it. A regex taking the first match read the paint rule, found no
+     `display`, and reported the band was still on the base ice when it was not.
+     This mirrors `park.test.js`'s model: strip comments, group by selector
+     context, take the last declaration. */
+  const css = PAGE_CSS.replace(/\/\*[\s\S]*?\*\//g, ' ');
+  const seen = new Map();
+  for (const m of css.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
+    const d = /(?:^|;)\s*display:\s*([\w-]+)/.exec(m[2]);
+    if (!d) continue;
+    for (const part of m[1].split(',')) seen.set(part.trim(), d[1]);
+  }
+  const ctx = sel => (seen.has(sel) ? 'display:' + seen.get(sel) : null);
+  const off = ctx('#rg .zoneband');
+  assert.ok(off && /display:\s*none/.test(off),
+    'the band is not hidden in the base view — the shading is back on the base ice');
+  // And lit by the layer, or the move deleted the teaching instead of relocating it.
+  const on = ctx('#rg.zonestart .zoneband');
+  assert.ok(on && /display:\s*(?!none)[\w-]+/.test(on),
+    'the band is never shown, even with the zone-starts layer on — it was deleted, not moved');
+
+  // THE HOOK IS REAL. `#rg` must actually gain `zonestart`, or every rule above
+  // is styling a state the page never enters.
+  const a = boot();
+  assert.equal(a.$('rg').classList.contains('zonestart'), false,
+    'the zone-starts class is on with no layer picked');
+  pickLayer(a, 'zonestart');
+  assert.ok(a.$('rg').classList.contains('zonestart'),
+    'picking zone starts does not put the class on #rg, so the band can never appear');
+
+  // ⛔ AND NOT ON THE WHISTLE LAYER. `linesFor` lights the line each rule names,
+  // and for ICING those are the centre line and the far goal line — a band under
+  // both blue lines there would point at the wrong lines while the right one lit.
+  assert.equal(ctx('#rg.whistle .zoneband'), null,
+    'the band is painted on the whistle layer, where an icing points at other lines');
+
+  /* ⛔⛔ THE TRIPWIRE. The "Either blue line" card lives inside
+     `<details class="zone zref">`, which is PARKED -- so the band has been
+     shipping with no key on the page naming it, and there was nothing to move
+     when the band became conditional. If that block is ever unparked, the card
+     comes back describing "the shaded strip at each blue line" on a base view
+     that no longer paints one. This fails at that moment, on purpose, so the
+     decision is re-made rather than inherited. */
+  const zref = ctx('#rg .zref');
+  assert.ok(zref && /display:\s*none/.test(zref),
+    '"What the marks mean" has been unparked, and the blue-line card in it still '
+    + 'describes a shaded strip the base view no longer paints — move the card onto '
+    + 'the zone-starts layer with the band, or reword it');
+});
+
 test('the slot and the blue-line band are visibly different kinds of thing', () => {
   const css = PAGE_CSS;
   const slot = /#rg \.slotzone\{fill:var\(--([a-z]+)\);opacity:([\d.]+)\}/.exec(css);
