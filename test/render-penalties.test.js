@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { stints, occupants } from '../src/lib/box.js';
 import { PEN, penName } from '../src/lib/penalties.js';
+import { playable } from '../src/lib/layer.js';
 import { app, PAGE_CSS, boot, rich } from './helpers/page.js';
 
 const mmssOf = n => `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`;
@@ -613,4 +614,84 @@ test('⛔ every vetted penalty has prose, and every prose entry is vetted', () =
   assert.deepEqual(notVetted, [],
     `given prose in penalties.js but not vetted in extract.py, so they render nicely and are `
     + `HIDDEN from the drift report — the trap that table's own comment names: ${notVetted.join(', ')}`);
+});
+
+/**
+ * ⭐⭐ A DOUBLE MINOR IS NAMED WHERE IT HAPPENS — 2026-09-20.
+ *
+ * Kevin: *"a novice won't know what a 'double minor' is unless we explain it…
+ * we should say it's a double minor at occurrence and move on."*
+ *
+ * ⛔ WHAT MADE IT NECESSARY. `penalties.js` deliberately drops the phrase from
+ * the NAME — `high-sticking-double-minor` renders "High-sticking" — because "the
+ * clock beside the name already says 4:00". The box chip renders `left`, the
+ * time REMAINING, so it says 4:00 for one instant; scrub into the middle of one
+ * and the page reads "High-sticking 3:12" with nothing saying this penalty was
+ * twice the usual length. **The assessed duration reached no surface at all.**
+ *
+ * ⭐ BOTH DIRECTIONS, OR IT PROVES NOTHING. "The tag appears" is satisfied by a
+ * page that tags every penalty; "it is absent" by one that tags none. The
+ * reference game carries one four-minute penalty and seven two-minute ones, so
+ * the pair is real rather than constructed.
+ */
+test('⭐ the caption says "double minor" on a four-minute penalty, and only there', () => {
+  const EV = playable(rich.events);
+  const pens = EV.map((e, k) => ({ e, k })).filter(x => x.e.type === 'penalty');
+  const four = pens.filter(x => x.e.min === 4);
+  const two = pens.filter(x => x.e.min === 2);
+  assert.ok(four.length >= 1, 'the reference game has no four-minute penalty — this cannot fail');
+  assert.ok(two.length >= 2, 'the reference game has too few ordinary penalties to contrast with');
+
+  const a = boot();
+  const captionAt = k => {
+    // STEPPED ONTO, NOT DRAGGED TO: `oninput` is a scrub and captions are silent
+    // on one. `fwd` is the control a reader actually presses.
+    a.$('scrub').oninput({ target: { value: String(k - 1) } });
+    a.$('fwd').click();
+    return String(a.$('caption').innerHTML);
+  };
+
+  for (const x of four) {
+    const h = captionAt(x.k);
+    assert.match(h, /⛔ Penalty/, `frame ${x.k} is a penalty and the caption said something else: ${h}`);
+    assert.match(h, /class="dmn">double minor</,
+      `frame ${x.k} is a ${x.e.min}-minute penalty and the caption never says so: ${h}`);
+  }
+  for (const x of two) {
+    const h = captionAt(x.k);
+    assert.doesNotMatch(h, /double minor/,
+      `frame ${x.k} is an ordinary ${x.e.min}-minute penalty and the caption called it a double minor: ${h}`);
+  }
+});
+
+/**
+ * ⛔⛔ THE DURATION AND THE DESCRIPTOR MUST AGREE, AND THE CAPTION TRUSTS THE
+ * DURATION.
+ *
+ * `min === 4` is the trigger, not `pen.endsWith('-double-minor')`: four minutes
+ * IS two minors by rule, and a duration cannot drift when the league invents a
+ * spelling — which it just did. `roughing-double-minor` halted the nightly
+ * ingest on 2026-09-19 and appears in none of the 4,553 games archived before
+ * it. Sampled 60 published games / 464 penalties: every four-minute penalty
+ * carried a `-double-minor` key and every such key was four minutes.
+ *
+ * ⚠️ THAT SAMPLE HELD ONLY FIVE DOUBLE MINORS, so this pins the agreement over
+ * the fixtures rather than trusting it. If the two ever part company that is a
+ * finding about the feed, not a test to relax.
+ */
+test('⛔ every four-minute penalty is a double minor by name, and every double minor is four minutes', () => {
+  const files = readdirSync(new URL('fixtures/extracts/', import.meta.url)).filter(f => f.endsWith('.json'));
+  let seen = 0;
+  for (const f of [...files.map(f => `fixtures/extracts/${f}`), '../data/rich.json']) {
+    const g = JSON.parse(readFileSync(new URL(f, import.meta.url), 'utf8'));
+    for (const e of g.events || []) {
+      if (e.type !== 'penalty' || e.pen == null || e.min == null) continue;
+      const named = e.pen.includes('double-minor');
+      if (named || e.min === 4) seen++;
+      assert.equal(e.min === 4, named,
+        `${f}: "${e.pen}" is ${e.min} minutes — the descriptor and the duration disagree, `
+        + 'so the caption trigger and the penalty name are telling a reader different things');
+    }
+  }
+  assert.ok(seen >= 3, `only ${seen} double minor(s) across the fixtures — this check has too little to bite on`);
 });

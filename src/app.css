@@ -2160,7 +2160,12 @@
    it is a fact about THAT goal rather than a state of the game: the ice already
    moved on by the next event. Amber rather than either club's colour, so it
    cannot be read as belonging to one of them. */
-#rg .shg{display:inline-block;margin-left:7px;padding:1px 7px;border-radius:99px;
+/* ⭐ `.dmn` SHARES THIS AND DOES NOT REUSE THE NAME. A double-minor tag is the
+   same KIND of thing as the short-handed one — a fact about THIS event rather
+   than a state of the game, in amber so it belongs to neither club — but `shg`
+   is short-handed GOAL and a name with a rule attached is spoken for. One rule,
+   two names, so the two tags cannot drift apart visually. */
+#rg .shg,#rg .dmn{display:inline-block;margin-left:7px;padding:1px 7px;border-radius:99px;
  background:var(--hd);color:#fff;font-size:.62rem;font-weight:800;letter-spacing:.09em;
  text-transform:uppercase;vertical-align:middle}
 

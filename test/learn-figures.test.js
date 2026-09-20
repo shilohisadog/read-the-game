@@ -1057,3 +1057,35 @@ test('⛔ a step does not claim an outcome is universal when it is not', () => {
     'the note no longer mentions a game misconduct — a player who does not come back '
     + 'is the case a viewer is least able to explain from the other two');
 });
+
+/**
+ * ⛔⛔ A TERM THE REPLAY PUTS ON SCREEN MUST BE DEFINED SOMEWHERE A READER CAN
+ * REACH — 2026-09-20.
+ *
+ * Kevin: *"a novice won't know what a 'double minor' is unless we explain it."*
+ * The answer was a split: the replay TAGS one where it happens (`app.js` writes
+ * `<span class="dmn">double minor</span>` on any four-minute penalty) and the
+ * penalties card DEFINES it. That split only works while both halves exist —
+ * drop the card sentence and the tag becomes exactly the unexplained jargon the
+ * change was made to avoid, with nothing failing.
+ *
+ * ⭐ IT ASSERTS THE PAIR, NOT THE WORDING. What matters is that the term the
+ * page shows is the term the card names, and that the card says what it costs.
+ * The sentence around it is free to be rewritten.
+ */
+test('⛔ the term the replay tags is defined on the card that teaches penalties', () => {
+  const APP = readFileSync(new URL('../src/app.js', import.meta.url), 'utf8');
+  const tag = /<span class="dmn">([^<]+)<\/span>/.exec(APP);
+  assert.ok(tag, 'the replay no longer tags a double minor — if that was deliberate, this pair is over');
+  const term = tag[1];                                   // "double minor"
+
+  const note = figures.penalties && figures.penalties.note;
+  assert.ok(note, 'the penalties figure has no note, so the tagged term is defined nowhere');
+  assert.match(note.replace(/<[^>]+>/g, ''), new RegExp(term, 'i'),
+    `the replay shows a reader "${term}" and the penalties card never names it`);
+  // AND SAYS WHAT IT COSTS. The tag deliberately carries the term only — the
+  // arithmetic is the card's job, so the card has to actually do it.
+  assert.match(note.replace(/<[^>]+>/g, ''), /four for a double minor/i,
+    'the card names the double minor without saying it is four minutes, which is the '
+    + 'one fact that makes an unfamiliar term legible');
+});

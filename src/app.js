@@ -955,7 +955,33 @@ function caption(e,kind){const c=$('caption');const tid=e.own;const ab=tid===AID
  // The tag is a fact about the goal, so it sits with the label and not with the
  // scorer: "GOAL · SHORT-HANDED · #16 Name" reads as one sentence about one shot.
  const sh=kind==='goal'&&shortHanded(e)?'<span class="shg">short-handed</span>':'';
- sayCaption(side,ab,label,`${sh} · ${who}`,e);}
+ /* ⭐⭐ A DOUBLE MINOR IS NAMED WHERE IT HAPPENS — Kevin, 2026-09-20: "a novice
+    won't know what a double minor is unless we explain it... we should say it's
+    a double minor at occurrence and move on", with the explanation itself going
+    on the penalties learn card.
+
+    ⛔ THE REASON THE PHRASE WAS HIDDEN TURNED OUT NOT TO HOLD. `penalties.js`
+    drops "double minor" from the NAME ("High-sticking", not "High-sticking
+    (double minor)") because "the clock beside the name already says 4:00" -- and
+    the box chip renders `left`, the time REMAINING. It reads 4:00 for one
+    instant. Scrub into the middle of one and the page says "High-sticking 3:12"
+    with nothing anywhere saying this penalty was twice the usual length. The
+    assessed duration is in the data (`min`) and reached no surface at all.
+
+    ⭐ TRIGGERED ON THE DURATION, NOT ON THE KEY SPELLING. Four minutes IS two
+    minors by rule, so `min === 4` is the fact rather than a proxy for it -- and
+    it cannot drift when the league invents a new descriptor, which it just did:
+    `roughing-double-minor` halted the ingest on 2026-09-19 and appears nowhere
+    in the 4,553 games archived before it. Sampled 60 published games, 464
+    penalties: every 4-minute penalty carried a `-double-minor` key and every
+    such key was 4 minutes, so the two signals agree -- and `penalties.test.js`
+    asserts that over the fixtures, so a disagreement becomes a finding.
+
+    ⚠️ THE TAG SAYS THE TERM AND NOT THE ARITHMETIC. "Four minutes" would be the
+    pill saying what the box is already counting down, and this pill WRAPS on a
+    phone. The card carries the meaning; this names the thing so the two connect. */
+ const dm=kind==='penalty'&&e.min===4?'<span class="dmn">double minor</span>':'';
+ sayCaption(side,ab,label,`${sh}${dm} · ${who}`,e);}
 /* ⭐ ONE WRITER FOR THE PILL, because there are now two callers and they differ
    in WHOSE club the tag names. Every caption above is about the event's own
    team (`e.own` -- the scorer, the offender, the shooter); a penalty kill is

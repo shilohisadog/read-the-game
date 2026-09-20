@@ -977,9 +977,20 @@ function penalties() {
         + 'tripping, hooking, holding, interference; <b>stick</b> &mdash; slashing, '
         + 'high-sticking, cross-checking; and <b>physical</b> &mdash; roughing, '
         + 'boarding, charging. A few are none of those: delay of game, too many men. '
+        /* ⭐ THE DOUBLE MINOR WAS MISSING FROM THIS LIST — Kevin, 2026-09-20:
+           "a novice won't know what a double minor is unless we explain it."
+           The replay now tags one where it happens and the meaning lives here,
+           which is the split this card already uses for "matching": the words
+           explain the concept, the term is named where a reader can learn it.
+           ⛔ NO FREQUENCY. The rules half may say what the record CONTAINS and
+           only the measurements half may say how often, so "four minutes" is
+           here and "about one penalty in a hundred" is not — the same wall that
+           took "79 of 109" off the offside card. It is also categorical and
+           checkable against the rulebook: four minutes IS two minors. */
         + 'They are not all the same length either: <b>two minutes</b> for a minor, '
-        + 'five for a major, and a <b>game misconduct</b> sends a player off for the '
-        + 'rest of the night. Two calls that arrive together and carry the same time '
+        + '<b>four</b> for a <b>double minor</b> &mdash; two minors served one after '
+        + 'the other &mdash; five for a major, and a <b>game misconduct</b> sends a '
+        + 'player off for the rest of the night. Two calls that arrive together and carry the same time '
         + 'are <b>matching</b>, whatever the two infractions were &mdash; both '
         + 'players sit, and the sides stay even.',
     css: [travel(id + 'g', G0, G1, ...GO_G), travel(id + 'p', P0, P1, ...GO_P),
