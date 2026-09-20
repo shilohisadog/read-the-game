@@ -324,3 +324,57 @@ test('⭐ a mark with NO door must not swallow a double press — the one escape
   assert.match(stateBroke({ 'mark-swallows-step': { ...GOOD['mark-swallows-step'], why: 1 } })[0],
     /a why-card opened with no layer on/);
 });
+
+/**
+ * ⛔⛔ THE WINDOW AND THE PAGE'S PICK ARE DIFFERENT QUESTIONS — 2026-09-20.
+ *
+ * `recentGameIds` is a WINDOW of recent games and says so in its own docstring:
+ * *"never a prediction of the page's pick."* `sitecopy` depended on it to be
+ * exactly that anyway, because the copied extracts are what let the game page
+ * boot. The two agreed for months and then stopped: the window filters to
+ * `t === 2 || t === 3` (regular season, playoffs) and the page filters on
+ * nothing but `v`. The first preseason games of 2026-27 published on 2026-09-19,
+ * the page's default became a type-1 game whose extract nobody had copied, and
+ * `phone-fit` found a game page with **no scoreboard on it**.
+ *
+ * ⭐ THE GATE WAS RIGHT AND THAT IS THE POINT. It refused to measure an empty
+ * page rather than reporting "it fits" — *"this gate measured a page with
+ * nothing on it, which is how a 25px overflow shipped."* An instrument that had
+ * shrugged would have passed a page a visitor could not use.
+ *
+ * ⭐ SO THIS PINS THE DIFFERENCE, NOT EITHER FUNCTION ALONE. A catalog whose
+ * newest viewable game is PRESEASON is the case that broke, and the two answers
+ * must disagree on it: if they ever agree here, one of them has silently taken
+ * on the other's rule.
+ */
+test('⛔ the page opens the newest viewable game even when the window will not carry it', async () => {
+  const { mkdtempSync, writeFileSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { defaultGameId, recentGameIds } = await import('../tools/browser/lib.mjs');
+
+  const dir = mkdtempSync(join(tmpdir(), 'rtg-pick-'));
+  const cat = { games: [
+    { id: 2025030416, d: '2026-06-14', t: 3, v: 1 },   // a playoff game, older
+    { id: 2026010008, d: '2026-09-20', t: 1, v: 1 },   // PRESEASON, newest viewable
+    { id: 2026010009, d: '2026-09-21', t: 1, v: 0 },   // newer still and REFUSED
+  ] };
+  writeFileSync(join(dir, 'catalog.json'), JSON.stringify(cat));
+  // The page's own rule, in the shape `defaultGameId` extracts it from the built page.
+  writeFileSync(join(dir, 'game.html'), `<script>function pick(c){
+  var v=c.games.filter(function(g){return g.v;});
+  if(!v.length)throw new Error('the catalog lists no game we can show');
+  v.sort(function(a,b){return a.d===b.d?a.id-b.id:(a.d<b.d?-1:1);});
+  return v[v.length-1].id;
+}</script>`);
+
+  const opens = await defaultGameId(join(dir, 'catalog.json'), join(dir, 'game.html'));
+  const win = await recentGameIds(join(dir, 'catalog.json'), 10);
+
+  assert.equal(opens, 2026010008,
+    'the page no longer opens the newest VIEWABLE game — a refused game or a type filter has crept in');
+  assert.ok(!win.includes(opens),
+    'the window now carries the preseason pick too, so this test no longer describes the case that '
+    + 'broke — if that is a deliberate change to recentGameIds, re-argue this check rather than deleting it');
+  assert.ok(win.includes(2025030416), 'the window lost the playoff game it is supposed to carry');
+});

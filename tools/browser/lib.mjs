@@ -112,4 +112,33 @@ export async function recentGameIds(catalogPath, n = 10) {
     .slice(-n).map(g => g.id);
 }
 
+/**
+ * The game the PAGE opens when no `?game=` is given, by RUNNING THE PAGE'S OWN
+ * RULE rather than restating it.
+ *
+ * ⛔⛔ WHY THIS EXISTS, 2026-09-20. `recentGameIds` above says in its own
+ * docstring that it is "a WINDOW, never a prediction of the page's pick" — and
+ * `sitecopy` depended on it to be exactly that, because the copied extracts are
+ * what lets the game page boot at all. The two agreed only while no preseason
+ * games existed: the window filters to `t === 2 || t === 3` (regular season and
+ * playoffs) and the page filters on NOTHING but `v`. The first preseason games
+ * of the 2026-27 season published on 2026-09-19, the page's default became a
+ * type-1 game whose extract nobody had copied, and `phone-fit` measured a page
+ * with no scoreboard on it. The gate was right; this function was the gap.
+ *
+ * ⭐ DERIVED, NOT COPIED. The rule is four lines and the temptation is to write
+ * them again here — which would be a second answer free to drift from the first,
+ * and drift is the entire defect above. `pick()` is extracted from the built
+ * page and evaluated, so if the page changes how it chooses, this follows.
+ */
+export async function defaultGameId(catalogPath, pageHtmlPath) {
+  const { readFile } = await import('node:fs/promises');
+  const cat = JSON.parse(await readFile(catalogPath, 'utf8'));
+  const html = await readFile(pageHtmlPath, 'utf8');
+  const src = /function pick\(c\)\{[\s\S]*?\n\}/.exec(html);
+  if (!src) throw new Error(`no pick() in ${pageHtmlPath} — the page chooses its game some other way now`);
+  // eslint-disable-next-line no-new-func
+  return new Function(`${src[0]}; return pick;`)()(cat);
+}
+
 export const sleep = ms => new Promise(r => setTimeout(r, ms));

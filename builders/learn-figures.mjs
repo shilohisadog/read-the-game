@@ -989,7 +989,22 @@ function penalties() {
            checkable against the rulebook: four minutes IS two minors. */
         + 'They are not all the same length either: <b>two minutes</b> for a minor, '
         + '<b>four</b> for a <b>double minor</b> &mdash; two minors served one after '
-        + 'the other &mdash; five for a major, and a <b>game misconduct</b> sends a '
+        /* ⭐⭐ AND THE TEN-MINUTE MISCONDUCT IS THE EXCEPTION TO THIS CARD'S OWN
+           OPENING SENTENCE. The blurb says a penalty is "the offender sits, and
+           his team plays a skater short"; a misconduct is the one where the
+           first half is true and the second is not. It is also the one a reader
+           can SEE and misread: the penalty box on the scoreboard is an
+           OCCUPANCY display, not a strength display (`app.js` and `box.js` are
+           both emphatic that `sit` answers strength and the box answers who is
+           sitting), so a misconduct shows a man in the box while the feed reads
+           five on five. Without this clause a novice watching one concludes the
+           box is broken. Measured while adding it: 9 of 115 penalties across the
+           fixtures are misconducts, so it is not a corner case.
+           ⛔ Still no frequency here — the rules half says what the record
+           contains, never how often. */
+        + 'the other &mdash; five for a major, and a <b>misconduct</b> is ten. A misconduct '
+        + 'is the odd one out: the player sits, but his team is <b>not</b> a skater short, '
+        + 'because a substitute takes his place on the ice. A <b>game misconduct</b> sends a '
         + 'player off for the rest of the night. Two calls that arrive together and carry the same time '
         + 'are <b>matching</b>, whatever the two infractions were &mdash; both '
         + 'players sit, and the sides stay even.',

@@ -21,7 +21,7 @@
  */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { download, recentGameIds, say } from './lib.mjs';
+import { defaultGameId, download, recentGameIds, say } from './lib.mjs';
 
 export const DATA_ORIGIN = 'https://data.readthegame.co';
 /** Every archive-level document the two pages read. Missing one renders a real but WRONG state. */
@@ -40,8 +40,23 @@ export async function sitecopy(site, dir, { games = 10, cb = process.env.GITHUB_
     writeFileSync(join(dir, name), localise(readFileSync(join(dir, name), 'utf8')));
   }
   await Promise.all(DOCS.map(d => download(`${DATA_ORIGIN}/${d}`, join(dir, d))));
-  const ids = await recentGameIds(join(dir, 'catalog.json'), games);
+  /* ⛔⛔ THE WINDOW IS NOT THE PAGE'S PICK, AND ON 2026-09-20 THEY PARTED.
+     `recentGameIds` filters to `t === 2 || t === 3` — regular season and
+     playoffs — and the game page filters on nothing but `v`. That difference was
+     invisible for months because the newest viewable game was always a playoff
+     game. The first preseason games published on 2026-09-19, the page's default
+     became a type-1 game whose extract this function had not copied, and
+     `phone-fit` found a game page with no scoreboard on it. It refused to
+     measure rather than reporting "it fits", which is the only reason this was
+     caught at all.
+     ⭐ SO THE PICK IS COPIED EXPLICITLY, derived by running the PAGE's own
+     `pick()`. The window stays — other checks want a spread of games — but what
+     makes the page boot is now named rather than hoped for. */
+  const win = await recentGameIds(join(dir, 'catalog.json'), games);
+  const opens = await defaultGameId(join(dir, 'catalog.json'), join(dir, 'game.html'));
+  const ids = [...new Set([...win, opens])];
   await Promise.all(ids.map(id => download(`${DATA_ORIGIN}/extract/${id}.json`, join(dir, 'extract', `${id}.json`))));
-  say(`copied the site and ${ids.length} extracts, so the pages can boot`);
-  return { dir, ids };
+  say(`copied the site and ${ids.length} extracts, so the pages can boot`
+    + ` (the page opens ${opens}${win.includes(opens) ? '' : ', which the window does not carry'})`);
+  return { dir, ids, opens };
 }
