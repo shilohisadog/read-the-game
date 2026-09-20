@@ -524,6 +524,14 @@ KNOWN_PENALTIES = {
     "closing-hand-on-puck", "too-many-men-on-the-ice", "goalie-removed-own-mask",
     "high-sticking-double-minor", "butt-ending-double-minor",
     "ps-slash-on-breakaway",
+    # ⭐ FROM THE DRIFT REPORT, 2026-09-19/20 — and this is the list working as
+    # designed rather than a list that was wrong. The first preseason games of
+    # the new season halted the nightly ingest on four descriptors that do not
+    # appear in any of the 4,553 games already archived; `fighting` is what
+    # preseason produces. Each was read, given prose in src/lib/penalties.js,
+    # and only then added here. `roughing-double-minor` renders as "Roughing":
+    # the duration is in the key and the clock beside the name already says 4:00.
+    "fighting", "instigator", "roughing-double-minor", "throwing-equipment",
 }
 
 

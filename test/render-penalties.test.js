@@ -567,3 +567,50 @@ test('⭐ …and no pill that is not a goal ever carries the tag', () => {
   }
   assert.deepEqual(wrong, [], 'a pill that is not a goal is wearing the short-handed tag');
 });
+
+/**
+ * ⛔⛔ THE PROSE TABLE AND THE VETTED LIST MUST NAME THE SAME PENALTIES.
+ *
+ * Two lists in two languages describe one set: `PEN` in `src/lib/penalties.js`
+ * turns a descriptor into words, and `KNOWN_PENALTIES` in `builders/extract.py`
+ * is what the archive-wide vocabulary alarm forgives. Nothing enforced that they
+ * agree until 2026-09-20, and each way they can disagree is a real defect with
+ * no symptom:
+ *
+ *   - **vetted but no prose** — the alarm stays silent and the page renders the
+ *     raw `delaying-game-face-off-violation` at a reader. `extract.py` says it
+ *     out loud: *"Raw on screen is survivable; unnoticed is not."*
+ *   - **prose but not vetted** — the descriptor renders beautifully and is
+ *     HIDDEN from the drift report, which is exactly the trap `penalties.js`
+ *     warns about when it says adding a plausible `spearing` would hide it.
+ *
+ * ⭐ THIS IS NOT A COUNT. A count passes when one is added to each side and the
+ * two additions are different words — the failure a list-length check invites.
+ * The sets are compared by name, in both directions.
+ *
+ * Found by the four preseason descriptors that halted the ingest on 2026-09-19
+ * and 2026-09-20: the lists were in sync then (29 and 29), so this is written
+ * against a passing state rather than a bug — and proven able to fail by
+ * removing one name from either side.
+ */
+test('⛔ every vetted penalty has prose, and every prose entry is vetted', () => {
+  const py = readFileSync(new URL('../builders/extract.py', import.meta.url), 'utf8');
+  const block = /KNOWN_PENALTIES = \{([\s\S]*?)\n\}/.exec(py);
+  assert.ok(block, 'KNOWN_PENALTIES is gone from extract.py — this check has lost half its subject');
+  // ⚠️ COMMENTS OUT FIRST. The block carries prose explaining each arrival, and a
+  // scanner that reads the explanation as data is a trap this repo has hit six
+  // times; `# "spearing"` in a comment must not read as a vetted value.
+  const vetted = new Set([...block[1].replace(/#[^\n]*/g, ' ').matchAll(/"([a-z0-9-]+)"/g)].map(m => m[1]));
+  const prose = new Set(Object.keys(PEN));
+
+  assert.ok(vetted.size > 25, `only ${vetted.size} vetted penalties parsed — the scan is not working`);
+  const noProse = [...vetted].filter(k => !prose.has(k)).sort();
+  const notVetted = [...prose].filter(k => !vetted.has(k)).sort();
+
+  assert.deepEqual(noProse, [],
+    `vetted in extract.py with no prose in penalties.js, so the vocabulary alarm forgives them `
+    + `and the page shows a reader the raw descriptor: ${noProse.join(', ')}`);
+  assert.deepEqual(notVetted, [],
+    `given prose in penalties.js but not vetted in extract.py, so they render nicely and are `
+    + `HIDDEN from the drift report — the trap that table's own comment names: ${notVetted.join(', ')}`);
+});

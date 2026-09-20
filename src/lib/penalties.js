@@ -43,6 +43,17 @@ export const PEN = {
   'game-misconduct': 'Game misconduct',
   'holding-the-stick': 'Holding the stick',
   'unsportsmanlike-conduct': 'Unsportsmanlike conduct',
+  /* ⭐ ARRIVED FROM THE DRIFT REPORT, 2026-09-19/20 — the first preseason games
+     of the new season halted the nightly ingest with four descriptors the
+     archive had never held. That is `guard-where-the-archive-is` working: the
+     league invents vocabulary and only an archive-wide sweep sees it. `fighting`
+     is what preseason produces, and none of the four had appeared in 4,553
+     games. ⭐ `instigator` stays BARE. This table's rule is the feed's own
+     descKey RE-WORDED and never a rule we looked up, so explaining that it is
+     the player who started the fight would be us writing rulebook copy here. */
+  fighting: 'Fighting',
+  instigator: 'Instigator',
+  'throwing-equipment': 'Throwing equipment',
 
   // These are the ones the table exists for. Each is a phrase a broadcast uses
   // and a de-hyphenation does not produce.
@@ -63,6 +74,7 @@ export const PEN = {
   // left both halves naming the slot.
   'high-sticking-double-minor': 'High-sticking',
   'butt-ending-double-minor': 'Butt-ending',
+  'roughing-double-minor': 'Roughing',
 
   // Not box time at all -- a penalty shot is taken on the ice. It is in the
   // table because it is in the feed, and `box.js` is what keeps it out of a seat.
