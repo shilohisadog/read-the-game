@@ -36,6 +36,14 @@ state.
 
 ### ⏭ THE SHORT VERSION, IF YOU READ NOTHING ELSE
 
+⚠️⚠️ **HOCKEY IS BACK — 2026-09-19/20, and it broke four things in one day.** The archive
+had not gained a game since the Cup final on 2026-06-14; preseason resumed and the
+nightly ingest halted two nights running. **Every one was a latent assumption that the
+season never ends**, and the next fortnight is when the rest of them will surface.
+Regular season opens **29 September**. See the block further down, and
+[[season-restart-traps]] in memory. ⭐ The one rule that pays: *when the newest game in
+the archive changes KIND, every rule that picks "the newest game" is a suspect.*
+
 **Do next, in order:**
 1. ~~**Re-run §8.2 with the confirming engine.**~~ ✅ **DONE 2026-09-18: 53 / 44 / 28**,
    0 lost, 2 gained — `docs/defects/mutation-rerun-2026-09-18/`. **The untrusted number
@@ -68,6 +76,44 @@ generated blocks fail the gates. A `src/` change deploys a preview, runs every b
 check against it, then ships the same commit.
 
 ---
+
+✅ **HOCKEY CAME BACK, AND FOUR THINGS BROKE — 2026-09-19/20.** In order found:
+
+- ⛔ **The nightly ingest halted two nights, publishing nothing.** *"the feed used
+  vocabulary we have never seen: penalty descKey ["fighting", "instigator",
+  "roughing-double-minor", "throwing-equipment"]"*. **This is the vocabulary alarm
+  working** — a value the LEAGUE can invent, caught by an archive-wide sweep. None of
+  the four appears in the 4,553 games archived before it; `fighting` is what preseason
+  produces. It halts BEFORE the sync, so nothing was corrupted. All four given prose
+  (`instigator` stays bare — the table's rule is *the feed's descKey re-worded, never a
+  rule we looked up*). ⚠️ **Nothing kept `PEN` and `KNOWN_PENALTIES` in sync** and each
+  way they can disagree is silent; now checked as SETS, not counts.
+- ⛔ **`phone-fit` failed: "game.html laid out with NO SUBJECT".** `sitecopy` got its
+  extracts from `recentGameIds`, which **says in its own docstring** it is *"a WINDOW,
+  never a prediction of the page's pick"* — and was depended on as exactly that. The
+  window filters `t === 2 || t === 3`; the page filters on nothing but `v`. Fixed by
+  running the PAGE'S OWN `pick()`, extracted from the built page. ⭐ **The gate was right
+  and refusing to measure is the only reason it was caught.**
+- ⛔ **The front door said the archive stops in June** while `/game` opened last night's
+  game — *"Next CAR at FLA, Sunday, September 20… The last night we hold is 14 June
+  2026"*. A **rates predicate doing duty as a visibility rule**: `inScope` is the
+  population a rate may pool, and `isLeague` says these types are *"archived, derived and
+  VIEWABLE, and never enter a computed number"*. Kevin on the fixture comment that
+  encoded the stronger reading — *"this isn't true (and I don't remember why we said
+  this)"*. It was a true rule copied one notch stronger than its source.
+- ✅ **Kevin, from the live site: "a novice won't know what a double minor is."** The
+  replay now tags one where it happens and the penalties card defines it. ⛔ The reason
+  the phrase was hidden did not hold: the chip renders time REMAINING, so *"the clock
+  beside the name already says 4:00"* is true for one instant. The card also gained the
+  **ten-minute misconduct**, the exception to its own opening sentence — the player sits
+  and his team is **not** short, which is why the box can show a man during 5-on-5.
+
+⭐⭐ **THE SHAPE, THREE TIMES IN ONE DAY: one question answered by two rules that agreed
+only while hockey was out of season.** Preseason is not new — the archive has held
+viewable preseason games since 2023-09-23, **294 of them**. What changed is that the
+NEWEST viewable game became one, which happens for about a fortnight every September.
+⏭ **Residue:** `pick()` is pure `v`, so `/game` could in principle open an exhibition
+(11 exist — All-Star, Four Nations); it needs a February week with no other games.
 
 ✅ **GOAL TICKS ON THE SCRUBBER — 2026-09-18.** Kevin: *"let's go with goal ticks only,
 I don't want to overcrowd the scrubber area, so let's start small."* Each goal gets a
