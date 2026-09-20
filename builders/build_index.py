@@ -1491,9 +1491,28 @@ __HELPERS__
        end of September; this needs the catalog, which is the renderer's to hold.
        The same split the timezone line above already documents. */
     if (d.state === 'upcoming' || d.state === 'offseason') {
+      /* ⛔⛔ VIEWABLE, NOT IN SCOPE — corrected 2026-09-20, and it was live and
+         self-contradictory. This read `g.v && inScope(g.id)`, and on 20 September
+         the front door said "Next CAR at FLA, Sunday, September 20" and, in the
+         same breath, "The last night we hold is 14 June 2026" — while the
+         archive held games from the 19th and the 20th and `/game` opened one.
+
+         ⭐ `inScope` IS A PREDICATE ABOUT NUMBERS AND THIS IS NOT A NUMBER.
+         `competitions.js::isLeague` says it exactly: preseason, the all-star
+         games, the Olympics and the 4 Nations Face-Off are "archived, derived
+         and VIEWABLE, and never enter a computed number". A rate may not pool
+         them; a sentence about what this archive HOLDS must not exclude them, or
+         it is false. The bug was a rates rule applied to a factual claim.
+
+         ⚠️ IT WAS LATENT FOR THREE YEARS. The archive has held viewable
+         preseason games since 2023-09-23 (294 of them); what changed is that the
+         NEWEST viewable game became one, which happens for about two weeks every
+         September. Same root as the `sitecopy` failure the same day: one
+         question answered by two rules that agreed only while hockey was out of
+         season. */
       var last = null;
       (games || []).forEach(function (g) {
-        if (g.v && inScope(g.id) && (!last || g.d > last)) last = g.d;
+        if (g.v && (!last || g.d > last)) last = g.d;
       });
       if (last) {
         var back = el('a', 'dmore',

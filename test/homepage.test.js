@@ -83,7 +83,9 @@ const CATALOG = { games: [
   { id: 2023020100, d: '2024-01-05', a: 'BUF', h: 'TOR', as: 2, hs: 5, ash: 30, hsh: 20, t: 2, v: 1 },
   { id: 2023020200, d: '2024-02-09', a: 'TOR', h: 'BUF', as: 1, hs: 4, ash: 22, hsh: 33, t: 2, v: 1 },
   { id: 2023020300, d: '2024-03-11', a: 'BUF', h: 'OTT', as: 0, hs: 1, ash: 40, hsh: 12, t: 2, v: 0, r: 'validation' },
-  // Out of scope: preseason, and the Olympics. Neither may reach a surface.
+  // Out of the RATES population: preseason, and the Olympics. Neither may enter a
+  // computed number (competitions.js::isLeague), and both are viewable — so a
+  // sentence about what the archive HOLDS may name them. See the dark-night test.
   { id: 2023010001, d: '2023-09-24', a: 'BUF', h: 'CBJ', as: 3, hs: 2, ash: 25, hsh: 25, t: 1, v: 1 },
   { id: 2025090030, d: '2026-02-22', a: 'SVK', h: 'FIN', as: 4, hs: 1, ash: 25, hsh: 40, t: 9, v: 1 },
 ]};
@@ -1551,11 +1553,22 @@ test('a dark night still opens onto the last night the archive holds', async () 
     'the block never revealed itself — the off-season state renders nothing at all');
   const doors = r.ids.dailylist.kids.filter(k => k.href);
   assert.equal(doors.length, 1, `the dark state offers ${doors.length} doors, not one`);
-  // The newest PUBLISHED, IN-SCOPE game in the fixture, computed the way the
-  // hero computes it rather than restated — 2023020300 is refused and 2023020400
-  // is out of scope, so a rule reading "the last row" would pick the wrong one.
-  const newest = CATALOG.games.filter(g => g.v && g.id < 2024000000)
-    .map(g => g.d).sort().pop();
+  /* ⛔⛔ VIEWABLE, NOT IN SCOPE — re-argued 2026-09-20 rather than loosened.
+     This read "the newest PUBLISHED, IN-SCOPE game", and that was a rates rule
+     applied to a factual claim. `competitions.js::isLeague` is explicit that
+     preseason, the all-star games, the Olympics and the 4 Nations Face-Off are
+     "archived, derived and VIEWABLE, and never enter a computed number" — so a
+     rate may not pool them and a sentence about what this archive HOLDS may not
+     exclude them. It went live: on 20 September 2026 the front door said "Next
+     CAR at FLA, Sunday, September 20" beside "The last night we hold is 14 June
+     2026", with games from the 19th and 20th in the catalog.
+
+     ⚠️ THE FIXTURE'S OWN COMMENT SAID MORE THAN THE FUNCTION DOES. It called
+     preseason and the Olympics rows out of scope and added "Neither may reach a
+     surface", which `isLeague` does not say and this sentence disproves. A
+     refused game still may not — that is what `v` is for, and 2023020300 is
+     still skipped. */
+  const newest = CATALOG.games.filter(g => g.v).map(g => g.d).sort().pop();
   assert.equal(doors[0].href, 'calendar.html?date=' + newest,
     `the door opens ${doors[0].href} and the newest published night is ${newest}`);
   assert.match(doors[0].textContent, /last night we hold/);
@@ -1856,4 +1869,53 @@ test('the line that goes quiet keeps its state, for the stylesheet and for us', 
     'the state attribute is no longer set before the line is silenced');
   assert.ok(script.lastIndexOf("$('state').textContent", at) !== -1,
     'the sentence is no longer written before the line is silenced');
+});
+
+/**
+ * ⛔⛔ THE FRONT DOOR AND THE GAME PAGE ANSWER ONE QUESTION AND MUST AGREE.
+ *
+ * "Which is the newest game we can show?" is asked twice in this repo, in two
+ * languages, in two builders: `build_index.py`'s dark-night door and
+ * `build_main.py`'s `pick()`. On 2026-09-20 they disagreed in public — the front
+ * door said "The last night we hold is 14 June 2026" while `/game` opened a
+ * preseason game from the 20th — because one carried a rates filter and the
+ * other did not.
+ *
+ * ⭐ IT RUNS BOTH RATHER THAN READING EITHER. A regex asserting "neither mentions
+ * inScope" would pass on two rules that disagree for some other reason, which is
+ * this repo's dominant failure mode. `pick()` is extracted from the built game
+ * page and evaluated; the door's answer comes from rendering the real front
+ * door. Same catalog, same question, one answer.
+ *
+ * ⚠️ AND THE CATALOG IT ASKS ABOUT IS THE ONE THAT BROKE: the newest viewable
+ * game is PRESEASON and an older one is in scope, so a rates filter anywhere in
+ * either path shows up here.
+ */
+test('⛔ the dark-night door and the game page name the same newest game', async () => {
+  const CAT = { games: [
+    { id: 2023020100, d: '2024-01-05', a: 'BUF', h: 'TOR', as: 2, hs: 5, ash: 30, hsh: 20, t: 2, v: 1 },
+    { id: 2026010008, d: '2026-09-20', a: 'NYI', h: 'NJD', as: 1, hs: 2, ash: 20, hsh: 25, t: 1, v: 1 },
+    { id: 2026010009, d: '2026-09-21', a: 'BUF', h: 'OTT', as: 0, hs: 1, ash: 9, hsh: 9, t: 1, v: 0, r: 'validation' },
+  ] };
+
+  const r = run({ docs: { ...ALL, 'catalog.json': CAT,
+                          'recent.json': { asOf: new Date().toISOString(), games: [] },
+                          'schedule.json': SCHEDULE } });
+  await r.settle(); await r.settle();
+  const door = r.ids.dailylist.kids.filter(k => k.href)[0];
+  assert.ok(door, 'the dark state offered no door, so there is nothing to compare');
+  const doorDate = /date=([\d-]+)/.exec(door.href)[1];
+
+  // The game page's own rule, extracted from the built page and run.
+  const html = readFileSync(new URL('../src/game.html', import.meta.url), 'utf8');
+  const src = /function pick\(c\)\{[\s\S]*?\n\}/.exec(html);
+  assert.ok(src, 'no pick() in the built game page — it chooses its game some other way now');
+  const opens = new Function(`${src[0]}; return pick;`)()(CAT);
+  const openDate = CAT.games.find(g => g.id === opens).d;
+
+  assert.equal(doorDate, openDate,
+    `the front door sends a reader to ${doorDate} and /game opens a game from ${openDate} — `
+    + 'one of these two is filtering on something the other is not, which is exactly how '
+    + '"The last night we hold is 14 June 2026" shipped beside a September fixture');
+  assert.equal(openDate, '2026-09-20', 'neither picked the newest VIEWABLE game (the refused one must be skipped)');
 });

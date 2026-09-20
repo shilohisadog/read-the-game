@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-8YGpJnpz0mgmd3vPgoQUyzuNa0+7ZHVzjP2ni+PekZQ=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-suaTx8vZfMPazCuNXSzA6FPpGEnxgf/z8B5t4E5qXRs='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-+eaq6Y8o5ZNur9S4a31IbGuiKVYtmNM5AN2Og1YbiFA=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-suaTx8vZfMPazCuNXSzA6FPpGEnxgf/z8B5t4E5qXRs='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -2794,9 +2794,28 @@ function disputedNote(n) {
        end of September; this needs the catalog, which is the renderer's to hold.
        The same split the timezone line above already documents. */
     if (d.state === 'upcoming' || d.state === 'offseason') {
+      /* ⛔⛔ VIEWABLE, NOT IN SCOPE — corrected 2026-09-20, and it was live and
+         self-contradictory. This read `g.v && inScope(g.id)`, and on 20 September
+         the front door said "Next CAR at FLA, Sunday, September 20" and, in the
+         same breath, "The last night we hold is 14 June 2026" — while the
+         archive held games from the 19th and the 20th and `/game` opened one.
+
+         ⭐ `inScope` IS A PREDICATE ABOUT NUMBERS AND THIS IS NOT A NUMBER.
+         `competitions.js::isLeague` says it exactly: preseason, the all-star
+         games, the Olympics and the 4 Nations Face-Off are "archived, derived
+         and VIEWABLE, and never enter a computed number". A rate may not pool
+         them; a sentence about what this archive HOLDS must not exclude them, or
+         it is false. The bug was a rates rule applied to a factual claim.
+
+         ⚠️ IT WAS LATENT FOR THREE YEARS. The archive has held viewable
+         preseason games since 2023-09-23 (294 of them); what changed is that the
+         NEWEST viewable game became one, which happens for about two weeks every
+         September. Same root as the `sitecopy` failure the same day: one
+         question answered by two rules that agreed only while hockey was out of
+         season. */
       var last = null;
       (games || []).forEach(function (g) {
-        if (g.v && inScope(g.id) && (!last || g.d > last)) last = g.d;
+        if (g.v && (!last || g.d > last)) last = g.d;
       });
       if (last) {
         var back = el('a', 'dmore',
