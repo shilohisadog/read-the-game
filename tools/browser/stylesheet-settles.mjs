@@ -39,10 +39,11 @@ export const NEEDS_SITE = false;
 export const PILL_CEILING = 25;
 
 export function readIce(html) {
-  const m = /ICE (\d+) (\d+) (\d+) (\d+) BOX (\d+) (\d+) (-?\d+) HERO (-?\d+) (-?\d+) MOVED (\d) VIS (\S+) HOST ([^ <]+)/.exec(html);
+  const m = /ICE (\d+) (\d+) (\d+) (\d+) BOX (\d+) (\d+) (-?\d+) SUBJ (\d+) (\d+) (\d+) HERO (-?\d+) (-?\d+) MOVED (\d) VIS (\S+) HOST ([^ <]+)/.exec(html);
   if (!m) return null;
   return { shut: +m[1], open: +m[2], rings: +m[3], text: +m[4], clipped: +m[5], heights: +m[6],
-           clear: +m[7], heroPill390: +m[8], heroPill900: +m[9], moved: +m[10], visitor: m[11], host: m[12] };
+           clear: +m[7], boxh: +m[8], boxw: +m[9], capw: +m[10],
+           heroPill390: +m[11], heroPill900: +m[12], moved: +m[13], visitor: m[14], host: m[15] };
 }
 
 /** Every claim, as its own sentence, so a failure names the one that broke. */
@@ -55,6 +56,15 @@ export function judgeIce(m) {
   want(m.text >= 40, `the caption is visible and explains nothing (${m.text} chars)`);
   want(m.moved === 1, 'the caption never changed when the layer went on — the control is mute');
   want(m.rings >= 1, 'no whistle mark reached the ice in a real browser');
+  /* ⛔⛔ THE SUBJECT FIRST, BECAUSE A HIDDEN BOX ANSWERS THE NEXT THREE AGREEABLY.
+     Measured 2026-09-20: framed in portrait the box is 0x0, and "1 distinct
+     height", "0 clipped" and "clears by 0px" are all TRUE of nothing. §7.2 had
+     already learned this once — "a state now names the SUBJECT it needs and goes
+     red if it never found one" — and this check was written four days later
+     without it. */
+  want(m.boxh > 0, `the layer box measured ${m.boxh}px tall — the probe framed the page in a state that hides it, so every judgement below is a claim about nothing`);
+  want(m.boxw > 0, `the layer box measured ${m.boxw}px wide — see above`);
+  want(m.capw > 0, `the caption pill measured ${m.capw}px wide, so "the pill clears the box" compared two empty rectangles`);
   want(m.clipped === 0, `${m.clipped} of six layers has its sentence CLIPPED by the box's fixed height — a box that hides half a sentence about the numbers beside it is worse than a taller box`);
   want(m.heights === 1, `the box takes ${m.heights} different heights across the six layers — the requirement is that the graphics do not adjust based on which layer is selected`);
   want(m.clear >= 0, `the caption pill overlaps the layer box by ${Math.abs(m.clear)}px — the offset has lost a term`);
@@ -109,21 +119,41 @@ setTimeout(function () {
     return (c.fill + '|' + c.stroke).replace(/ /g, '');
   };
   var f = document.getElementById('f');
-  f.style.width = '360px';
-  var clipped = 0, heights = {};
+  /* THE LANDSCAPE PHONE, BECAUSE A PORTRAIT ONE SHOWS THE ROTATE PROMPT AND
+     NOTHING ELSE. This framed the page at 360x900 from 2026-08-27, and it worked
+     until a1b6f33 (2026-09-13) ruled portrait out: under
+     (orientation:portrait) and (max-width:560px) the page hides every child of
+     .wrap but the prompt and the board, so #lbox measured 0x0 and the three
+     judgements below all passed on zeros -- one distinct height, nothing
+     clipped, a pill clearing by exactly 0. Green on an absence for a week, and
+     ae6901d carried it into this file.
+
+     568x320 is an iPhone SE in landscape: the NARROWEST surface that survives
+     that ruling, and the one the numbers below are worth measuring at. The box
+     is 219px wide there, narrower than any width --lboxh was ever measured at,
+     which is how the goaltending sentence came to print 14px past the rink
+     card's bottom border with this check reporting green. Measured at the worst
+     supported surface on purpose: 660px is where the box first overflows, so
+     anything wider is slack. */
+  f.style.width = '568px'; f.style.height = '320px';
+  var clipped = 0, heights = {}, boxh = 0;
   ['none','corsi','slot','blocked','goaltending','whistle'].forEach(function (l) {
     d.querySelector('#rg .pk[data-l="' + l + '"]').click();
     s.value = s.max; s.dispatchEvent(new Event('input'));
     var bx = d.getElementById('lbox');
     if (bx.scrollHeight > bx.clientHeight + 1) clipped++;
-    heights[Math.round(bx.getBoundingClientRect().height)] = 1;
+    var bh = Math.round(bx.getBoundingClientRect().height);
+    heights[bh] = 1; boxh = Math.max(boxh, bh);
   });
   /* CSS bottom is measured from the rink box's padding box, so the offset needs the
      box height AND the rink's padding. Negative means overlap. */
   var bx = d.getElementById('lbox').getBoundingClientRect();
   var cp = d.querySelector('#rg .caption').getBoundingClientRect();
   var clear = Math.round(bx.top - cp.bottom);
-  f.style.width = '1100px';
+  /* THE SUBJECT, REPORTED SO IT CAN BE MISSING. Every number above is a claim
+     about a box, and a hidden box answers all three of them agreeably. */
+  var boxw = Math.round(bx.width), capw = Math.round(cp.width);
+  f.style.width = '1100px'; f.style.height = '900px';
 
   /* The hero's pill as a FRACTION of the ice it sits on: 0 is the bottom edge,
      and a pixel threshold would be a constant nobody could check. */
@@ -137,6 +167,7 @@ setTimeout(function () {
   };
   document.title = 'ICE ' + shut + ' ' + open + ' ' + rings + ' ' + text
     + ' BOX ' + clipped + ' ' + Object.keys(heights).length + ' ' + clear
+    + ' SUBJ ' + boxh + ' ' + boxw + ' ' + capw
     + ' HERO ' + upAt('pv') + ' ' + upAt('pvw')
     + ' MOVED ' + moved
     + ' VIS ' + paint('.att.a') + ' HOST ' + paint('.att.h');
@@ -153,7 +184,7 @@ export async function check({ chrome, repo = process.cwd() }) {
     if (m) {
       say(`caption, base view : ${m.shut}px tall`);
       say(`caption, layer on  : ${m.open}px tall, holding ${m.text} characters, changed=${m.moved}, ${m.rings} whistle marks on the ice`);
-      say(`layer box, 360px   : ${m.heights} distinct height(s) over six states, ${m.clipped} clipped, pill clears it by ${m.clear}px`);
+      say(`layer box, 568x320 : ${m.boxh}x${m.boxw}px, ${m.heights} distinct height(s) over six states, ${m.clipped} clipped, pill (${m.capw}px) clears it by ${m.clear}px`);
       say(`hero pill          : ${m.heroPill390}% up the ice at 390, ${m.heroPill900}% at 900`);
       say(`marks              : visitor ${m.visitor}, host ${m.host}`);
     }

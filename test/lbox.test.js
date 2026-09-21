@@ -289,14 +289,17 @@ test('the box is a constant height and the caption clears it from one source', (
   // test green. A separator before the property is what makes it a distinction.
   assert.doesNotMatch(PAGE_CSS, /#rg \.lbox\{[^}]*min-height:var\(--lboxh\)/,
     'the box has a MINIMUM height, not a fixed one — it will grow with the layer');
-  // ⚠️ BOTH TERMS, BECAUSE ONE OF THEM WAS MISSING AND IT SHOWED. `bottom` is
-  // measured from the padding box of `.rinkbox`, so clearing the layer box needs
-  // the rink's own padding as well — without it the pill sat 4px INTO the box,
-  // measured in a browser. Two named values, no arithmetic anyone has to redo.
-  assert.match(PAGE_CSS, /#rg \.caption\{[^}]*bottom:calc\(var\(--lboxh\) \+ var\(--rinkpad\) \+ 6px\)/,
-    'the caption pill does not clear the box by the box height plus the rink padding');
-  assert.match(PAGE_CSS, /#rg \.rinkbox\{[^}]*padding:var\(--rinkpad\)/,
-    'the rink box no longer takes the padding the caption is compensating for');
+  /* ⏭ MOVED TO S2, 2026-09-20 — the two assertions that used to stand here read
+     the caption's `bottom:calc(--lboxh + --rinkpad + 6px)` and `.rinkbox`'s
+     padding out of the stylesheet TEXT. `stylesheet-settles` now measures the
+     outcome they were proxies for: the gap between the pill's bottom edge and
+     the box's top edge, in a real browser, at 568x320. Dropping the
+     `var(--rinkpad)` term turns it red at -4px, which is the same defect these
+     two described and could only describe in the second person.
+     ⚠️ THE MOVE WAS PROVEN, NOT ASSUMED: under the OLD framing (360x900, which
+     `a1b6f33` turned into the rotate prompt) that same mutation was NOT caught,
+     because the probe was measuring a hidden box. A claim is not moved until the
+     thing it moved to has been seen to fail. */
   // ⚠️ TWO LINES RESERVED, NOT ONE. "Constant" means across LAYERS at a width,
   // which is what was asked for; the population sentence wraps at 360 and not
   // at 1100, so one reserved line would make the box jump between widths and

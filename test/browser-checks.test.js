@@ -195,7 +195,8 @@ test('the front door script must REPLACE the placeholder, not merely leave one',
 /* ------------------------------------------ what only a stylesheet can settle */
 import { judgeIce, readIce, PILL_CEILING } from '../tools/browser/stylesheet-settles.mjs';
 
-const ICE = { shut: 59, open: 79, rings: 1, text: 409, clipped: 0, heights: 1, clear: 0,
+const ICE = { shut: 59, open: 79, rings: 1, text: 409, clipped: 0, heights: 1, clear: 6,
+              boxh: 120, boxw: 391, capw: 30,
               heroPill390: -14, heroPill900: -6, moved: 1,
               visitor: 'rgb(255,255,255)|rgb(21,71,52)', host: 'rgb(0,48,135)|none' };
 const broke = over => judgeIce({ ...ICE, ...over }).filter(v => !v.ok).map(v => v.why);
@@ -218,6 +219,34 @@ test('the layer box must not clip, must be ONE height, and must not be overlappe
   assert.match(broke({ clear: -4 })[0], /overlaps the layer box by 4px/);
 });
 
+/**
+ * ⛔⛔ AND THE THREE ABOVE ARE ALL TRUE OF A BOX THAT IS NOT THERE — which is not
+ * hypothetical, it is what this check did.
+ *
+ * The probe framed the page at 360x900 from 2026-08-27. On 2026-09-13 `a1b6f33`
+ * ruled portrait out: under `(orientation:portrait) and (max-width:560px)` the
+ * page hides every child of `.wrap` but the rotate prompt and the board. From
+ * that day `#lbox` measured 0x0 and the caption 0x0, so the probe reported ONE
+ * distinct height (zero), NOTHING clipped (nothing to clip) and a pill clearing
+ * by exactly 0 — three green judgements about an absence. `ae6901d` then moved
+ * the check into `tools/browser/` and unit-tested `judgeIce` HERE, against
+ * synthetic numbers, which cannot notice that the probe found no subject.
+ *
+ * ⭐ Measured 2026-09-20: re-framed at 740x360, the same mutation the `clear`
+ * judgement exists for — dropping `var(--rinkpad)` from the caption's offset —
+ * goes red, and under the old framing it did not. §7.2 wrote the rule four days
+ * before this check was built: a state names the SUBJECT it needs and goes red
+ * if it never found one.
+ */
+test('⛔⛔ a box that is not there satisfies all three, so the subject is judged first', () => {
+  const blind = broke({ boxh: 0, boxw: 0, capw: 0, clipped: 0, heights: 1, clear: 0 });
+  assert.equal(blind.length, 3,
+    'the probe reported no box and no pill and this raised ' + blind.length
+    + ' failure(s) — the three judgements below it are all satisfied by nothing');
+  assert.match(blind[0], /claim about nothing/);
+  assert.match(blind[2], /two empty rectangles/);
+});
+
 test('⭐ the hero pill is judged at BOTH widths — one of them would have described the wrong bug', () => {
   // Measured before the fix: 96% up the rink at 390 and 34% at 900.
   assert.equal(broke({ heroPill390: 96, heroPill900: 34 }).length, 2);
@@ -232,7 +261,10 @@ test('the sweater convention is a PAIR: white visitor, and not both clubs alike'
   const same = broke({ host: ICE.visitor });
   assert.equal(same.length, 1);
   assert.match(same[0], /painted identically/);
-  assert.equal(readIce('<title>ICE 59 79 1 409 BOX 0 1 0 HERO -14 -6 MOVED 1 VIS a|b HOST c|d</title>').rings, 1);
+  const r = readIce('<title>ICE 59 79 1 409 BOX 0 1 6 SUBJ 120 391 30 HERO -14 -6 MOVED 1 VIS a|b HOST c|d</title>');
+  assert.equal(r.rings, 1);
+  assert.deepEqual([r.boxh, r.boxw, r.capw], [120, 391, 30],
+    'the probe reports its subject and the reader drops it on the floor');
 });
 
 /* --------------------------------------------------------------- the replay's states
