@@ -32,38 +32,57 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 
 This section is the orientation. Everything below §0 is the detail, organised by
 state.
-## ⏭ 0.00 PICK UP HERE — 2026-09-18
+## ⏭ 0.00 PICK UP HERE — 2026-09-21
 
 ### ⏭ THE SHORT VERSION, IF YOU READ NOTHING ELSE
 
-⚠️⚠️ **HOCKEY IS BACK — 2026-09-19/20, and it broke four things in one day.** The archive
-had not gained a game since the Cup final on 2026-06-14; preseason resumed and the
-nightly ingest halted two nights running — ⚠️ **two DIFFERENT halts, and the 09-19 one
-was FALSE** (see the correction below). **Every one was a latent assumption that the
-season never ends**, and the next fortnight is when the rest of them will surface.
-Regular season opens **29 September**. See the block further down, and
-[[season-restart-traps]] in memory. ⭐ The one rule that pays: *when the newest game in
+⚠️⚠️ **HOCKEY CAME BACK ON 19 SEPTEMBER AND IT HAS BROKEN SOMETHING EVERY DAY SINCE.**
+The archive had not gained a game since the Cup final on **2026-06-14**; preseason
+resumed and, across three days, **eight separate things failed** — every one a latent
+assumption that the season never ends. **Regular season opens 29 September**, which is
+the next kind-change and the next crop. ⭐ The rule that pays: *when the newest game in
 the archive changes KIND, every rule that picks "the newest game" is a suspect.*
+⭐⭐ And the deeper one, found 09-21: **the pipeline modelled two outcomes — final, or
+incomprehensible — and hockey has a third: NOT YET.** See [[season-restart-traps]].
+
+**Everything below is ✅ done and pushed.** Live at `e6a3c82`, gates **1,341 JS + 222
+Python**, deploy and ingest both green, front door reading `current`.
 
 **Do next, in order:**
-1. ~~**Re-run §8.2 with the confirming engine.**~~ ✅ **DONE 2026-09-18: 53 / 44 / 28**,
-   0 lost, 2 gained — `docs/defects/mutation-rerun-2026-09-18/`. **The untrusted number
-   was not inflated; it was right.** CC predicted display would come DOWN and it went
-   up, and both gains are row-8's own tests. ⛔ **Zero flaky demotions, so the run
-   validates the numbers and NOT the fix** — the confirm step never had to fire.
-2. **Rows 7, 9, 10** of `docs/test-program.md` §10 — row 8 is CLOSED.
-   ⚠️ **Row 6 is marked ✅ and its own §10 exit was never evaluated.** That exit is
-   *"ids-over-three count, before and after"*; measured 2026-09-18 on the same ruler at
-   both trees it went **20 → 21**, and `#scrub` is driven by **18 test files then and 18
-   now — identical sets, 133 → 135 call sites, not one migrated**. Seam B's mechanism is
-   real and new tests use it (21 files call `.every(`), but the migration §6 describes
-   never happened, so the churn surface has not moved. Belongs with row 7.
-3. **Two pages still need Kevin's ruling:** `terrain-3d.html` (its door was the deleted
-   Workshop) and `read-the-game.html` (deployed and unreachable; 35 test files read it
-   FROM DISK, which does not require publishing it). Link, keep with a fresh reason, or
-   delete.
-4. **Designed, not built:** the UNLISTED-ledger expiry rule, and the runtime-coverage
+1. **ROW 7 of `docs/test-program.md` §10 — the parser increment.** The row has a ruler
+   now (`tools/css-noop.mjs`, a stylesheet change no reader can see) and it reads
+   **20 tests across 15 files**. ⛔ **Retiring assertions one at a time cannot move it**,
+   because the ruler counts TESTS: proven on 2026-09-20 by retiring two from `lbox` and
+   re-measuring at 20. **The lever is a helper that answers *what does selector X declare
+   for property P*** — `a{x;y}` and `a{x}a{y}` would then read alike and most of the 20
+   go to zero without weakening one claim. ⚠️ Row 6 is marked ✅ with its own exit never
+   evaluated (churn surface 20 → 21; 135 `$('scrub')` call sites across 18 files, not one
+   migrated); it belongs with row 7.
+2. **Rows 9 and 10** — row 9 needs the SCHEDULE, a fresh sample and check mutants; the
+   engine exists. Row 10 is the performance budget, unstarted. Row 8 is CLOSED.
+3. **Two pages still need Kevin's ruling** (he is *"still pondering those two bits"* as
+   of 09-21): `terrain-3d.html` (its door was the deleted Workshop) and
+   `read-the-game.html`. ⭐ **The second now has a concrete reason to keep it**:
+   `tools/browser/stylesheet-settles.mjs` reads it FROM DISK as the fixture for every
+   claim only a browser can settle.
+4. **TABLED by Kevin, 09-21: where to surface the defencemen sentence** (32.5% of a
+   club's shot attempts, 500,720 attempts). The front strip holds four cards for a
+   GEOMETRY reason — three strand a half-row — so a fifth would need a sixth. The natural
+   home is a ninth `ours` card on `what-you-can-see.html`, which needs a door built
+   (*the first attempt taken by a defenceman*). CC's read: build the door as a probe
+   first and look at what it opens; if the frame is an indistinguishable shot attempt,
+   the sentence has no lesson and belongs in prose.
+5. **Designed, not built:** the UNLISTED-ledger expiry rule, and the runtime-coverage
    instrument (full text further down this section).
+
+⏭ **TWO THINGS HAPPEN ON THEIR OWN — glance at both.** The nightly ingest (cron says
+11:00 UTC, has NEVER run on time — measured spread is in `docs/front-door.md` §6.1, which
+owns that number) is now the first unattended run of the new three-outcome
+classification. And **29 September** is the first morning that could exercise the
+NARROWED halt, which needs a window with nothing final AND something genuinely
+unreadable.
+
+---
 
 ✅ **ROW 7 OPENED — THE FACE-OFF COLOUR HOLE IS CLOSED, AND THE ROW HAS A RULER — 2026-09-20.**
 
