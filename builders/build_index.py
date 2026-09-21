@@ -705,7 +705,7 @@ BODY = r"""<div class="wrap front">
      for length. THE COST, STATED: a phone reader does not get this sentence. They
      get the game page's four-word legend entry if they open a game, and nothing
      before that. -->
-<p class="pucknote"><b>The puck only appears where something happened</b>
+<p class="pucknote" id="pucknote"><b>The puck only appears where something happened</b>
 &mdash; a shot, a hit, a faceoff. The feed we read records those moments and
 nothing in between, so that is all we draw.</p>
 </div>
@@ -929,8 +929,22 @@ __HELPERS__
      the same string and two spellings of it is one page saying 2023-2024. */
 
   function drawTeam(ab, games, want) {
+    /* ⛔⛔ NOT `inScope`, AND THIS IS THE THIRD PLACE THAT PREDICATE WAS DOING A
+       JOB IT IS NOT FOR. Kevin, 2026-09-21: "I would have expected preseason
+       game(s) to appear in the game list (even though we don't count them in any
+       numbers)" — and that parenthesis is the whole distinction. `isLeague` says
+       these competitions are "archived, derived and VIEWABLE, and never enter a
+       computed number"; a LIST OF GAMES A CLUB PLAYED is not a computed number.
+       ⚠️ THE RULE WAS ALREADY WRITTEN INTO THIS FILE on 2026-09-20, ~560 lines
+       down, when the front door said the archive stopped in June: "inScope IS A
+       PREDICATE ABOUT NUMBERS AND THIS IS NOT A NUMBER". The sweep that day
+       reported the rest sound and did not reach this function. Writing a rule
+       down is not the same as applying it.
+       MEASURED before changing: WSH goes 260 → 279 rows, all 19 of them
+       gameType 1, 18 viewable. No Olympic or 4 Nations game can appear on a club
+       page anyway — those carry country codes, so `g.a === ab` never matches. */
     var all = games.filter(function (g) {
-      return inScope(g.id) && (g.a === ab || g.h === ab);
+      return g.a === ab || g.h === ab;
     }).sort(function (x, y) { return x.d === y.d ? y.id - x.id : (x.d < y.d ? 1 : -1); });
 
     var seasons = [];
@@ -1569,7 +1583,17 @@ __HELPERS__
            ⏸ WHAT STAYS, and it is deliberate: the lessons and the limits. A club
            link is a front door for whoever follows it, and those two are the
            page explaining itself rather than offering a route already taken. */
-        ['teams-h', 'teams-note', 'teams'].forEach(function (id) { $(id).hidden = true; });
+        /* ⛔ AND THE PUCK NOTE, WHICH IS EXPLAINING A PICTURE THAT IS NOT THERE.
+           Kevin, same message: "the 'puck only appears....' text is definitely
+           out of place". Its own comment gives the argument against it — it was
+           justified as costing nothing because it sits "directly above the
+           rink", and on a team page `#hero` is still `hidden`, because
+           `drawHero` is front-door only. So it describes a rink the reader
+           cannot see, which is this project's own rule about a sentence
+           belonging beside the thing it is about, failing in the one direction
+           nobody checked. */
+        ['teams-h', 'teams-note', 'teams', 'pucknote']
+          .forEach(function (id) { $(id).hidden = true; });
       } else {
         drawGrid(games);
         /* ONLY ON THE FRONT DOOR. A fan who asked for BUF is not looking for a

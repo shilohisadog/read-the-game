@@ -209,14 +209,15 @@ test('the date browse arrives WITH the chips, and never dangles without them', a
 test('the picker is hidden on a team page and present on the front door', async () => {
   const team = run({ search: '?team=BUF', docs: ALL });
   await team.settle();
-  for (const id of ['teams-h', 'teams-note', 'teams'])
+  for (const id of ['teams-h', 'teams-note', 'teams', 'pucknote'])
     assert.equal(team.ids[id] && team.ids[id].hidden, true,
-      `#${id} is still on screen on a team page — the section invites a choice `
-      + `already made, and the grid under it is empty`);
+      `#${id} is still on screen on a team page — the picker invites a choice `
+      + `already made over an empty grid, and the puck note explains a rink that `
+      + `is not rendered there (#hero stays hidden; drawHero is front-door only)`);
 
   const front = run({ docs: ALL });
   await front.settle();
-  for (const id of ['teams-h', 'teams-note', 'teams'])
+  for (const id of ['teams-h', 'teams-note', 'teams', 'pucknote'])
     assert.notEqual(front.ids[id] && front.ids[id].hidden, true,
       `#${id} is hidden on the FRONT DOOR — the archive has lost its way in`);
 });
@@ -261,16 +262,39 @@ test('TWO CLICKS: a team chip, then the top game, and you are watching', () => {
   });
 });
 
-test('a team view lists that team newest first, and nobody else', () => {
+/**
+ * ⛔⛔ THIS TEST USED TO DEMAND THE DEFECT — inverted 2026-09-21.
+ *
+ * It asserted "three in-scope games, preseason excluded" and that a preseason
+ * opponent "must not appear", which is the behaviour Kevin reported from the
+ * live WSH page: "I would have expected preseason game(s) to appear in the game
+ * list (even though we don't count them in any numbers)."
+ *
+ * ⭐ THE PARENTHESIS IS THE WHOLE RULE. `competitions.js::isLeague` says these
+ * competitions are "archived, derived and VIEWABLE, and never enter a computed
+ * number". A list of games a club played is not a computed number. `inScope` is
+ * the population a RATE may pool, and it had been doing visibility duty here —
+ * the third place in this file, after the front door's dark-night door on
+ * 2026-09-20 and the fixture comment that encoded the same rule one notch too
+ * strong.
+ *
+ * ⚠️ AND A TEST THAT DEMANDS THE WRONG ANSWER PASSES FOREVER. This one was
+ * green every day it was wrong, and it is the second of its kind in this repo —
+ * `stale-fixtures` records the first.
+ */
+test('a team view lists every game that team played, newest first', () => {
   const r = run({ search: '?team=BUF', docs: ALL });
   return r.settle().then(() => {
     const rows = walk(r.ids.main).filter(n => n.tag === 'li');
-    assert.equal(rows.length, 3, 'three in-scope games, preseason excluded');
+    assert.equal(rows.length, 4,
+      'three league games and the preseason one — a club page shows what it played');
     const text = textOf(r.ids.main);
-    assert.doesNotMatch(text, /Columbus/, 'a preseason opponent must not appear');
+    assert.match(text, /Columbus/,
+      'the preseason opponent is missing, so the list is the rates population again');
     const ids = linksOf(r.ids.main).filter(h => h.startsWith('game.html'));
-    assert.deepEqual(ids, ['game.html?game=2023020200', 'game.html?game=2023020100'],
-      'newest first, and the refused game is not a link');
+    assert.deepEqual(ids, ['game.html?game=2023020200', 'game.html?game=2023020100',
+                           'game.html?game=2023010001'],
+      'newest first, the refused game is not a link, and the preseason game is last');
   });
 });
 
@@ -1112,7 +1136,10 @@ test('the measurement strip resolved every figure it promised', () => {
  * and in the replay alike. Nothing accumulates, so there are no marks to watch.
  */
 test('the front door says what the puck is doing, and blames the right thing', () => {
-  const note = /<p class="pucknote">([\s\S]*?)<\/p>/.exec(html);
+  // ⚠️ ATTRIBUTES, NOT AN EXACT TAG. This read `<p class="pucknote">` and went
+  // red the moment the element gained an `id` so a team page could hide it —
+  // a check about a SENTENCE failing over markup it never meant to pin.
+  const note = /<p class="pucknote"[^>]*>([\s\S]*?)<\/p>/.exec(html);
   assert.ok(note, 'the front door no longer says why the puck jumps');
   const text = note[1].replace(/<[^>]+>/g, ' ').replace(/&mdash;/g, '—')
                       .replace(/\s+/g, ' ').trim();
