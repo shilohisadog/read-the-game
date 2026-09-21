@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-9A+qd1ijVIj4pk9zPW0QdoaibpdP+s/jcLdi8bzbPC8=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-7cXihqJZjk35qGPKpWcE8DeAsNLsMD1pf0pkmE17RZM='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-A6wsPEyImnetlC65mvK4Yh3AkI4mMinSYLzMj83tsE4=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-7cXihqJZjk35qGPKpWcE8DeAsNLsMD1pf0pkmE17RZM='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -4214,6 +4214,17 @@ const PEN = {
   fighting: 'Fighting',
   instigator: 'Instigator',
   'throwing-equipment': 'Throwing equipment',
+  /* ⭐ AND TWO MORE THE NEXT NIGHT, 2026-09-21 — which is the shape of this
+     rather than a one-off. Preseason keeps producing infractions the regular
+     season rarely does, so the archive keeps meeting its first one. Neither
+     appears in the 4,567 games walked before them.
+     `instigator-misconduct` renders as `Instigator` for the same reason
+     `roughing-double-minor` renders as `Roughing`: the suffix names the
+     PUNISHMENT, not the infraction, and the punishment is already on screen —
+     the replay tags a double minor where it happens and the box shows a man
+     sitting. Writing it into the name would say it twice in one line. */
+  'illegal-equipment': 'Illegal equipment',
+  'instigator-misconduct': 'Instigator',
 
   // These are the ones the table exists for. Each is a phrase a broadcast uses
   // and a de-hyphenation does not produce.
@@ -6387,6 +6398,35 @@ const WHY = {
     name: 'Puck frozen by a skater',
     say: 'A skater, not the goaltender, froze the puck against the boards or the '
        + 'net, and play stopped.',
+    from: 'field: rsn',
+  },
+  /* ⭐ THE THREE THAT WERE REACHING READERS AS RAW DESCRIPTORS — 2026-09-21.
+     `RSN` falls back to the key with its dashes turned into spaces, so a
+     stoppage with no entry here renders as "chlg vis goal interference". That
+     one has been VETTED SINCE BEFORE THIS TABLE EXISTED and never given prose,
+     which is the exact half of the drift the penalties table was taught about
+     yesterday: a value on the allowlist stops being reported and still arrives
+     at a reader unworded. `chlg-vis-off-side` and `rink-repair` came in with the
+     preseason games on 2026-09-21 and would have joined it.
+     ⚠️ `vis` ALMOST CERTAINLY MEANS THE VISITING SIDE — the sibling keys are
+     `home-timeout` and `visitor-timeout` — but the name does not say so, because
+     which bench challenged is not something we have confirmed and the sentence
+     reads correctly without it. */
+  'chlg-vis-goal-interference': {
+    name: 'Goal challenged for goaltender interference',
+    say: 'A goal was challenged on the claim that the goaltender was interfered '
+       + 'with, and play stopped while it was reviewed.',
+    from: 'field: rsn',
+  },
+  'chlg-vis-off-side': {
+    name: 'Goal challenged for offside',
+    say: 'A goal was challenged on the claim that the play was offside before it '
+       + 'was scored, and play stopped while it was reviewed.',
+    from: 'field: rsn',
+  },
+  'rink-repair': {
+    name: 'Rink repair',
+    say: 'Play stopped so the ice or the boards could be repaired.',
     from: 'field: rsn',
   },
   'puck-in-netting': {

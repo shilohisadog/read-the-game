@@ -394,6 +394,11 @@ KNOWN_STOPPAGES = {
     "puck-in-netting", "puck-in-benches", "puck-in-crowd", "puck-in-penalty-benches",
     "referee-or-linesman", "tv-timeout", "video-review", "home-timeout", "visitor-timeout",
     "player-injury", "net-dislodged-defensive-skater", "chlg-vis-goal-interference",
+    # From the drift report, 2026-09-21, with the preseason games. Noted rather
+    # than blocking -- a stoppage reason has never halted a run -- so these were
+    # reaching readers through RSN's dash-to-space fallback. Prose first, in
+    # src/lib/layers/whistle.js, then vetted here.
+    "chlg-vis-off-side", "rink-repair",
 }
 # A RULE, NOT A LIST. This was eight strings -- every situationCode one November
 # game happened to contain -- and a season contains nineteen. The missing ones
@@ -529,9 +534,19 @@ KNOWN_PENALTIES = {
     # the new season halted the nightly ingest on four descriptors that do not
     # appear in any of the 4,553 games already archived; `fighting` is what
     # preseason produces. Each was read, given prose in src/lib/penalties.js,
-    # and only then added here. `roughing-double-minor` renders as "Roughing":
-    # the duration is in the key and the clock beside the name already says 4:00.
+    # and only then added here.
+    #
+    # ⛔ THE JUSTIFICATION THAT USED TO STAND HERE WAS FALSE and is corrected
+    # rather than deleted: it said `roughing-double-minor` renders as "Roughing"
+    # because "the clock beside the name already says 4:00". The chip renders
+    # time REMAINING, so 4:00 is true for one instant and wrong for the rest of
+    # the penalty. Kevin found it the same day -- "a novice won't know what a
+    # double minor is" -- and the replay now tags one where it happens.
+    # The naming rule survives the bad reason: the suffix names the PUNISHMENT
+    # and the table words the INFRACTION.
     "fighting", "instigator", "roughing-double-minor", "throwing-equipment",
+    # 2026-09-21, the next night's preseason games, walked over 4,567.
+    "illegal-equipment", "instigator-misconduct",
 }
 
 

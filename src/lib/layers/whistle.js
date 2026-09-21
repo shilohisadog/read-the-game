@@ -217,6 +217,35 @@ export const WHY = {
        + 'net, and play stopped.',
     from: 'field: rsn',
   },
+  /* ⭐ THE THREE THAT WERE REACHING READERS AS RAW DESCRIPTORS — 2026-09-21.
+     `RSN` falls back to the key with its dashes turned into spaces, so a
+     stoppage with no entry here renders as "chlg vis goal interference". That
+     one has been VETTED SINCE BEFORE THIS TABLE EXISTED and never given prose,
+     which is the exact half of the drift the penalties table was taught about
+     yesterday: a value on the allowlist stops being reported and still arrives
+     at a reader unworded. `chlg-vis-off-side` and `rink-repair` came in with the
+     preseason games on 2026-09-21 and would have joined it.
+     ⚠️ `vis` ALMOST CERTAINLY MEANS THE VISITING SIDE — the sibling keys are
+     `home-timeout` and `visitor-timeout` — but the name does not say so, because
+     which bench challenged is not something we have confirmed and the sentence
+     reads correctly without it. */
+  'chlg-vis-goal-interference': {
+    name: 'Goal challenged for goaltender interference',
+    say: 'A goal was challenged on the claim that the goaltender was interfered '
+       + 'with, and play stopped while it was reviewed.',
+    from: 'field: rsn',
+  },
+  'chlg-vis-off-side': {
+    name: 'Goal challenged for offside',
+    say: 'A goal was challenged on the claim that the play was offside before it '
+       + 'was scored, and play stopped while it was reviewed.',
+    from: 'field: rsn',
+  },
+  'rink-repair': {
+    name: 'Rink repair',
+    say: 'Play stopped so the ice or the boards could be repaired.',
+    from: 'field: rsn',
+  },
   'puck-in-netting': {
     name: 'Puck into the netting',
     say: 'The puck was shot out of play into the netting above the glass.',

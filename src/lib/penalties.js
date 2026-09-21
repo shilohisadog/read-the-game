@@ -54,6 +54,17 @@ export const PEN = {
   fighting: 'Fighting',
   instigator: 'Instigator',
   'throwing-equipment': 'Throwing equipment',
+  /* ⭐ AND TWO MORE THE NEXT NIGHT, 2026-09-21 — which is the shape of this
+     rather than a one-off. Preseason keeps producing infractions the regular
+     season rarely does, so the archive keeps meeting its first one. Neither
+     appears in the 4,567 games walked before them.
+     `instigator-misconduct` renders as `Instigator` for the same reason
+     `roughing-double-minor` renders as `Roughing`: the suffix names the
+     PUNISHMENT, not the infraction, and the punishment is already on screen —
+     the replay tags a double minor where it happens and the box shows a man
+     sitting. Writing it into the name would say it twice in one line. */
+  'illegal-equipment': 'Illegal equipment',
+  'instigator-misconduct': 'Instigator',
 
   // These are the ones the table exists for. Each is a phrase a broadcast uses
   // and a de-hyphenation does not produce.

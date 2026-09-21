@@ -805,11 +805,20 @@ class ForgivenessIsRecorded(unittest.TestCase):
                  # every goal — 198 of 198 across three sampled seasons — so a fixture
                  # without it is not a smaller game, it is an impossible one.
                  awayScore=1, homeScore=0),
-            play("stoppage", 150, reason="rink-repair", eventOwnerTeamId=30),
+            # ⚠️ AN INVENTED REASON, AND THAT IS THE POINT — the sibling test above
+            # already had it right with "zamboni-on-fire" and this one did not.
+            # It used "rink-repair", a REAL feed value that simply had not been
+            # vetted yet, so the test quietly depended on our allowlist staying
+            # ignorant of it. On 2026-09-21 the preseason games produced it for
+            # the first time, it was given prose and vetted, and this test
+            # errored — not because forgiveness broke, but because its specimen
+            # stopped being forgivable. A test about the UNKNOWN has to use a
+            # string the league can never send.
+            play("stoppage", 150, reason="organist-fainted", eventOwnerTeamId=30),
         ]))
         D.derive(store, now="2026-01-11T11:30:00Z")
         idx = json.loads(store.get("index.json").decode())
-        self.assertEqual(idx["run"]["noted"]["stoppage reason"], ["rink-repair"])
+        self.assertEqual(idx["run"]["noted"]["stoppage reason"], ["organist-fainted"])
 
 
 class TheShootoutIsNotPlay(unittest.TestCase):
