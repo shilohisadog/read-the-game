@@ -305,6 +305,7 @@ measured.
    | the penalty-band deletion, `c44373b` | 3 files — ⚠️ **not replayable**: that commit already edited the tests that read the band, so replaying it on today's suite shows 0 whether or not anything improved |
    | the period-label wording change | **9 tests** (of 11 failing, 6 files) — re-measured 2026-09-17, unchanged → ✅ **after seam B: 0** (of 2 failing: the golden and the label's own test) |
    | the `.counters`/`.cbar` removal | **5 tests** off-subject + 2 cross-cutting (of 19 failing, 9 files) — measured 2026-09-17 → ✅ **after seam B: 1** (of 16 failing) — the preview test whose failing lines are the parked bar's own wiring, which leave with the bar |
+   | ⭐ **a stylesheet change no reader can see** — `tools/css-noop.mjs` rewrites every `a{x;y;z}` as `a{x}a{y;z}` | **20 tests, 15 files** — measured 2026-09-20, the before-figure for row 7. ⭐ **This one needs no judgement**: same selector, same specificity, same cascade order, same declarations in the same order, so every computed style is unchanged BY CONSTRUCTION and every red is off-subject. The two replays above cannot measure row 7 at all — neither touches CSS |
 
    **The baseline is committed so the same change can be replayed after seam B:**
    `docs/defects/churn-replay-2026-09-17/` holds both patches and
@@ -389,7 +390,7 @@ measured.
 | 4 | **S2**: work branches deploy previews; live checks retargeted at the preview; promotion by fast-forward | one real change goes branch → preview → `main` |
 | 5 | the review gallery with mechanical diffs (pixels, sentences, the DOM golden) | Kevin judges one batch |
 | 6 | harness seam B + T1 | ids-over-three count, before and after |
-| 7 | visibility claims → S2, file by file, each move a churn replay | §8.1 — ⏳ the browser checks now live in `tools/browser/` (runnable locally, judgement unit-tested), which is what a file-by-file move needs |
+| 7 | visibility claims → S2, file by file, each move a churn replay | §8.1, **on the stylesheet replay** — the two committed replays touch no CSS and cannot measure this row. ⏳ **Before: 20 tests, 15 files** (`tools/css-noop.mjs`, 2026-09-20). The instrument already exists: `tools/browser/stylesheet-settles.mjs` runs locally off `src/` and already settles caption reveal, layer-box height and clipping, pill clearance and which club's mark is white |
 | 8 | new browser states for the blind spots | re-plant the 19 — ✅ **CLOSED 2026-09-17/18.** 11 gone with their code, **3 now caught** (2 suite, 1 a browser state), 5 remain with a written reason each: 3 equivalent or imperceptible, 1 on another page, 1 needs a game with a video clip. §7.2 and `docs/defects/blind-spots-2026-09-17/CLOSED.md` |
 | 9 | the weekly mutation run with check mutants | a planted disarmed gate is reported — ⏳ the engine is built and run once (`tools/mutate.mjs`, §8.2); what is open is the SCHEDULE, a fresh sample, and check mutants |
 | 10 | the performance budget | an alarm on a planted heavy page |

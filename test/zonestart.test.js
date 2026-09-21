@@ -27,7 +27,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { zonestart } from '../src/lib/layers/zonestart.js';
 import { attackZone } from '../src/lib/rink.js';
-import { boot, pickLayer } from './helpers/page.js';
+import { boot, pickLayer, PAGE_CSS } from './helpers/page.js';
+import { colourOf } from '../src/lib/teams.js';
 
 const APP_JS = readFileSync(new URL('../src/app.js', import.meta.url), 'utf8');
 
@@ -246,4 +247,94 @@ test('the zone-start copy no longer teaches the convention that was removed', ()
     + 'carries its count');
   assert.match(copy[1], /number inside it is how many draws/,
     'the copy stopped explaining what the number on a ring is');
+});
+
+/**
+ * ⭐⭐ WHICH CLUB A FACE-OFF RING IS PAINTED FOR — the hole row 7 was opened for.
+ *
+ * ⛔ MEASURED FIRST, 2026-09-20. `drawZoneStarts` strokes each dot with the
+ * colour of the club that won more draws there. Swapping `HOMECOL` and `AWAYCOL`
+ * in that one expression — every ring on the ice painted for the wrong club, on
+ * a layer whose entire claim is *who starts where* — left **1,329 of 1,330 tests
+ * green**. The single red was the DOM golden, which reported a hash moving from
+ * `78728c3c` to `d93f2e47`: a change detector cannot tell a reversed club colour
+ * from an intended edit, and §6 of `docs/test-program.md` already ruled that it
+ * is not to be counted as a catcher. So nothing ASSERTED this.
+ *
+ * ⭐ THE LEADER IS READ BY COUNT, NOT BY POSITION, and that is the whole design
+ * of this check. The obvious version — "the club named first in the tooltip is
+ * the club the ring is stroked for" — reads the same `d.h > d.a` twice, so a
+ * mutant that swapped the colour AND the sentence would pass. The tooltip pairs
+ * each club with ITS OWN number (`MIN 1, BUF 0`), so the larger number names the
+ * leader whatever order they are printed in, and the only way past this check is
+ * to corrupt the counts as well — which the ring-count test above and the
+ * reducer's own tallies hold.
+ *
+ * ⚠️ WHAT THIS CANNOT PROVE, said out loud: a presentation attribute is outranked
+ * by ANY stylesheet rule, so `#rg .zs{stroke:red}` would paint every ring red and
+ * leave this green. That is why the companion check below exists, and it is a
+ * claim about the stylesheet as a file — the honest kind §6 keeps rather than
+ * moves. The outright proof is a browser reading the computed stroke; the
+ * attribute plus the absence of an overriding rule is what S1 can carry.
+ */
+test('⭐⭐ a face-off ring is stroked for the club that won the draws at that dot', () => {
+  const RING = /<circle class="zs(?: now)?"[^>]*stroke="([^"]*)"[^>]*><title>([^<]*)<\/title>/g;
+  /* `N draw(s) here — AB n, AB n` and, when the two are level, `— even`. The
+     abbreviations are checked against the fixture below so a harness booting the
+     wrong game cannot make this vacuous. */
+  const TITLE = /^(\d+) draws? here — ([A-Z]{2,3}) (\d+), ([A-Z]{2,3}) (\d+)( — even)?$/;
+
+  for (const g of GAMES) {
+    const home = g.teams.home.ab, away = g.teams.away.ab;
+    const a = boot(g);
+    pickLayer(a, 'zonestart');
+
+    const branch = { home: 0, away: 0, even: 0 };
+    let rings = 0;
+    a.every(d => {
+      const html = String(d.$('draws').innerHTML);
+      for (const m of html.matchAll(RING)) {
+        rings++;
+        const t = TITLE.exec(m[2]);
+        assert.ok(t, `a ring's tooltip does not read as a split: ${JSON.stringify(m[2])}`);
+        const [, n, ab1, n1, ab2, n2, even] = t;
+        assert.deepEqual(new Set([ab1, ab2]), new Set([home, away]),
+          `a ring names ${ab1}/${ab2} in a game between ${away} and ${home}`);
+        assert.equal(+n, +n1 + +n2,
+          `a ring says ${n} draw(s) and its split adds to ${+n1 + +n2}`);
+
+        const lead = +n1 === +n2 ? null : (+n1 > +n2 ? ab1 : ab2);
+        const want = lead === null ? 'var(--edge)' : colourOf(lead);
+        assert.equal(m[1], want, lead === null
+          ? `a dot split ${ab1} ${n1}, ${ab2} ${n2} is level and should be neutral, `
+            + `and it is stroked ${m[1]}`
+          : `${lead} won ${Math.max(+n1, +n2)} of the ${n} draw(s) at this dot and the `
+            + `ring is stroked ${m[1]}, which is not ${lead}'s colour (${want}) — `
+            + `the ice is naming the wrong club`);
+        branch[lead === null ? 'even' : lead === home ? 'home' : 'away']++;
+      }
+    });
+
+    assert.ok(rings > 0, `${away} at ${home} drew no zone-start ring at all, so this proves nothing`);
+    for (const k of ['home', 'away', 'even'])
+      assert.ok(branch[k] > 0,
+        `no dot in ${away} at ${home} ever came out "${k}", so that branch of the `
+        + `colour rule was never exercised — the check is one third vacuous`);
+  }
+});
+
+/**
+ * ⚠️ AND NOTHING IN THE STYLESHEET MAY OUTRANK THE ATTRIBUTE ABOVE. A
+ * presentation attribute loses to every CSS rule, so a single `stroke:` on `.zs`
+ * would silently make the club colour decorative and the check above a test of a
+ * dead string. `render-teams.test.js` already forbids a stylesheet naming a club
+ * colour; this forbids it naming this property at all, for the same reason in the
+ * other direction — the colour must arrive from the game, not from the sheet.
+ */
+test('no stylesheet rule strokes the zone-start ring, or the club colour is inert', () => {
+  const css = PAGE_CSS.replace(/\/\*[\s\S]*?\*\//g, ' ');
+  for (const [, sel, body] of css.matchAll(/([^{}]*\.zs\b[^{}]*)\{([^}]*)\}/g))
+    assert.doesNotMatch(body, /(^|;)\s*stroke\s*:/,
+      `\`${sel.trim()}\` sets a stroke colour, which outranks the club colour the `
+      + `page paints on each ring`);
 });
