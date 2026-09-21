@@ -189,6 +189,23 @@ appear in the game list (even though we don't count them in any numbers)"* and *
   games, preseason excluded"* and that a preseason opponent *"must not appear"* — green
   every day it was wrong. **The second test in this repo found demanding the wrong
   answer**; `stale-fixtures` records the first. Inverted, not patched.
+- ⛔⛔ **AND THE FIRST FIX DID NOT WORK, WHILE CC REPORTED IT VERIFIED.** Kevin, after
+  the deploy: *"This text still shows up on the team page."* He was right. The check read
+  the `hidden` ATTRIBUTE out of the DOM and called it done — but `.opener
+  .pucknote{display:block}` is an author rule and outranks the UA sheet's `[hidden]`, so
+  the attribute was **inert**. `.teams{display:grid}` had the same problem and only
+  *looked* fixed because the grid is empty. ⭐⭐ **THE WARNING WAS ALREADY IN THIS FILE,
+  ~250 LINES ABOVE, ON `.hero`:** *"`:not([hidden])` IS LOAD-BEARING, NOT TIDINESS… a bare
+  `display:grid` here would OVERRIDE it."* Understood for one element; the two rules beside
+  it were a bare `display:block` and a bare `display:grid`, latent until something tried to
+  hide them. ⚠️ **Verifying an ATTRIBUTE is not verifying VISIBILITY** — the same error as
+  the layer box this morning, twice in one day.
+  ⏭ **And the probe was wrong three times before it said anything true:** it pointed at
+  `data.readthegame.co` and hit CORS; rewriting the origin changed the inline script's
+  bytes so the **hash-pinned CSP refused the whole script** and it measured a dead page;
+  and `textContent` reports hidden text, so the first indicator read "ON SCREEN" for an
+  element of zero height. Settled with computed `display` plus `innerText`: **none/0px on
+  a club page, block/63px on the front door.**
 - ✅ **The puck note is hidden on a club page.** Its own comment is the argument against
   it: justified as costing nothing because it sits *"directly above the rink"* — and on a
   club page `#hero` is still `hidden`, because `drawHero` is front-door only. It was

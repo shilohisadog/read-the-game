@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-suaTx8vZfMPazCuNXSzA6FPpGEnxgf/z8B5t4E5qXRs='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-t3c4Wqg5YBq13X2mlJqcfnJqQNZtjfrqdbOwkLPKSLY='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -93,7 +93,11 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 
 /* THE TEAM GRID IS ONE OBJECT, not thirty-three. Uniform chips, no typing, one
    click. Google-clean was the brief: above the fold is this and one link. */
-.teams{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));
+/* `:not([hidden])` for the same reason as `.opener .pucknote` and `.hero`: a bare
+   `display:grid` outranks the UA sheet's `[hidden]`, so the empty grid a team page
+   hides would stay in the flow. It has no children there, which is exactly why
+   this one was invisible rather than obvious. */
+.teams:not([hidden]){display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));
  gap:7px;margin:0 0 26px}
 .chip{display:flex;align-items:center;justify-content:center;height:46px;
  border-radius:9px;text-decoration:none;font-weight:800;letter-spacing:.06em;
@@ -343,7 +347,12 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
   .opener .says{grid-column:1;grid-row:2;margin-bottom:0}
   /* Bottom-aligned with the sentence beside it, so the two blocks share a
      baseline rather than both hanging from the top of an uneven grid. */
-  .opener .pucknote{display:block;grid-column:2;grid-row:1/span 2;align-self:end;
+  /* ⚠️ `:not([hidden])` FOR THE REASON `.hero` CARRIES IT, ~250 lines up: "a bare
+     display:grid here would OVERRIDE it". This was a bare `display:block`, so
+     when a team page set `hidden` on this note the attribute was inert and the
+     sentence stayed on screen — Kevin saw it there after the fix shipped. The
+     warning was already written for the element next door. */
+  .opener .pucknote:not([hidden]){display:block;grid-column:2;grid-row:1/span 2;align-self:end;
    margin:0;max-width:58ch;font-size:.87rem;line-height:1.5;color:var(--muted)}
   .opener .pucknote b{color:var(--ink);font-weight:650}
   /* ⛔ THE 78ch CAP IS GONE, AND IT WAS SOLVING THE WRONG HALF OF THE PROBLEM.

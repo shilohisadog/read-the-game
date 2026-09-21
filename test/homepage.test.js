@@ -1174,7 +1174,14 @@ test('the puck note is hidden until the space for it exists', () => {
     'the note is not hidden by default, so it stacks on a phone');
   const wide = /@media \(min-width:1180px\)\{([\s\S]*)$/.exec(css);
   assert.ok(wide, 'the wide-screen query is gone — this check has lost its subject');
-  assert.match(wide[1], /\.opener \.pucknote\{[^}]*display:block/,
+  /* ⚠️ THE QUALIFIER IS OPTIONAL HERE ON PURPOSE. This pinned the selector's
+     exact spelling, `.opener .pucknote{`, and went red when the rule gained
+     `:not([hidden])` — which it gained precisely so the element could be hidden
+     on a team page, a thing this check has no opinion about. The claim is that
+     the note is REVEALED inside the width query; how the rule is qualified is
+     not part of it. (docs/test-program.md row 7: a check about an outcome must
+     not be a check about the text of a selector.) */
+  assert.match(wide[1], /\.opener \.pucknote(?::not\(\[hidden\]\))?\{[^}]*display:block/,
     'the note is never revealed, so it ships hidden at every width');
 });
 
