@@ -363,7 +363,8 @@ def ingest(end, days, transport, store, now=None):
         # PENDING AND UNKNOWN BOTH, which is what this list has always held: a
         # fixture is any game the league lists that is not over, and a state we
         # cannot read is not a reason to stop telling a reader a game exists.
-        for g in classify(payload, None, now).pending + classify(payload, None, now).unknown:
+        ahead = classify(payload, None, now)
+        for g in ahead.pending + ahead.unknown:
             if g["id"] in upcoming:
                 continue
             upcoming[g["id"]] = {

@@ -22,7 +22,20 @@ name: ingest
 
 on:
   schedule:
-    - cron: '0 11 * * *'   # 11:00 UTC — after the latest North American games finish
+    # ⚠️ THIS IS THE TIME WE ASK FOR, NOT THE TIME IT RUNS, and the comment that
+    # used to sit here — "11:00 UTC — after the latest North American games
+    # finish" — stated the second as if it were a fact about the pipeline.
+    # GitHub deprioritises scheduled workflows and this has NEVER once started on
+    # time; the measured spread is in docs/front-door.md §6.1, which is the one
+    # place that owns the number. Do not restate it here: this file already had a
+    # second copy of a sentence drift away from its original (the halt step
+    # below, which named the wrong cause for a year), and a third copy of a
+    # measurement is the same defect waiting.
+    #
+    # THE REASONING IS UNAFFECTED, which is why the drift has been harmless: the
+    # latest North American games finish by about 05:00 UTC, so 11:00 and every
+    # time it actually runs both clear them.
+    - cron: '0 11 * * *'
   workflow_dispatch:
     inputs:
       end:
