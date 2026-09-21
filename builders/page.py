@@ -298,9 +298,23 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 # rather than as the way in. It also carries the one word the front door never
 # said: measured 2026-09-11, "hockey" appeared ZERO times in the visible page.
 # The room for a longer label is exactly the room the removed link freed.
+#
+# ⛔ AND IT OVERREACHED. Kevin, 2026-09-20: *"the link to What you can see here is
+# called 'How to read hockey', which I think is a bit presumptuous of us"*. He is
+# right, and there is a second reason he did not have to give: the page's own
+# `<title>` and `<h1>` BOTH read "What you can see here", so the link and its
+# destination have been calling one page two different names since the label
+# changed. A link that does not say where it goes is a worse defect than a label
+# that does not say the word "hockey" -- and the "hockey" argument above was
+# about a measurement of the FRONT DOOR, which now says it in the thesis line
+# and the lesson cards regardless of what the chrome is called.
+# ⏹ THE RENAME CLAIM ABOVE IS KEPT RATHER THAN DELETED: the reasoning for a
+# longer, way-in label still holds, and "What you can see here" is four words
+# rather than the three it started as. What it stops doing is promising to teach
+# a reader to read the sport.
 _NAV = [("/#teams", "Teams"),
         ("/calendar.html", "By date"),
-        ("/what-you-can-see.html", "How to read hockey")]
+        ("/what-you-can-see.html", "What you can see here")]
 
 
 def _header(current=None, minimal=False):
