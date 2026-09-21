@@ -38,6 +38,30 @@ export function isLeague(type) {
 }
 
 /**
+ * NHL CLUBS PLAYING EACH OTHER — preseason (01) as well as 02 and 03.
+ *
+ * ⭐ A DIFFERENT QUESTION FROM `isLeague`, and the reason it exists as its own
+ * name rather than an inline `type <= 3`. `isLeague` answers *may a RATE pool
+ * this*; this answers *are these the clubs this site is about*. Preseason is
+ * NHL clubs in NHL sweaters on half-strength rosters — worth showing, never
+ * worth averaging. The all-star games, the Olympics and the 4 Nations Face-Off
+ * are not clubs at all.
+ *
+ * Kevin, 2026-09-21, ruling that the front door's showcase replay may be a
+ * preseason game: "preseason game can be a front-door hero." Widening `hero`
+ * with a bare `g.v` instead let the fixture's OLYMPIC game take the door, which
+ * is a thing nobody ruled — the tests caught it. So the line being drawn is
+ * club hockey, and it is drawn once, here.
+ *
+ * ⛔ NOT A VISIBILITY RULE EITHER. A club page lists what the club played and
+ * filters on the abbreviation, which no country code can match; it needs no
+ * predicate and must not grow one.
+ */
+export function isClubGame(type) {
+  return type === 1 || type === 2 || type === 3;
+}
+
+/**
  * The label for a competition, from the table in `data/competitions.json`.
  *
  * THE RAW FALLBACK IS A LAST RESORT, NOT THE POLICY. An unnamed type fails the

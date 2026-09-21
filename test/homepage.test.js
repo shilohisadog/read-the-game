@@ -1323,7 +1323,16 @@ const heroShown = r => !!(r.ids.hero && r.ids.hero.hidden === false);
 test('the hero names no game when the archive holds none it may show', () => {
   // A hero with a typed fallback is a claim that outlives its data. Absent is the
   // honest state, and the rest of the page still works.
-  const NONE = { games: CATALOG.games.filter(g => !g.v || String(g.id).slice(4, 6) !== '02') };
+  /* ⚠️ THE FIXTURE HAD TO WIDEN WITH THE RULE, AND THE CLAIM DID NOT. It built
+     "an archive holding nothing we may show" by dropping viewable type-02 games,
+     which was the whole showable population until 2026-09-21 — Kevin then ruled a
+     preseason game may be the hero, so a viewable `01` is showable too and the
+     old fixture quietly stopped describing an empty archive. What is left here is
+     a REFUSED league game and an OLYMPIC one: one we hold and cannot show, one we
+     can show and may not feature. */
+  const SHOWABLE = /^(01|02|03)$/;
+  const NONE = { games: CATALOG.games.filter(g => !g.v || !SHOWABLE.test(String(g.id).slice(4, 6))) };
+  assert.ok(NONE.games.length >= 2, 'the fixture stripped everything, so this proves nothing');
   const r = run({ docs: { ...ALL, 'catalog.json': NONE } });
   return r.settle().then(() => {
     assert.equal(heroShown(r), false, 'a hero appeared with nothing behind it');

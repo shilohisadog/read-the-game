@@ -210,6 +210,23 @@ appear in the game list (even though we don't count them in any numbers)"* and *
   it: justified as costing nothing because it sits *"directly above the rink"* — and on a
   club page `#hero` is still `hidden`, because `drawHero` is front-door only. It was
   explaining a picture the reader cannot see.
+✅ **RULED BY KEVIN, 2026-09-21** — the four questions the preseason work raised:
+1. **The chip grid stays as it is.** *"the chips are currently correct, just NHL teams are
+   in scope."* `teamsIn`'s use of `inScope` is RIGHT here, and the reason is now written
+   down so the next sweep does not "fix" it: every NHL club has league games, so the
+   predicate names the 33 clubs and excludes national sides and exhibition squads.
+2. ✅ **A preseason game MAY be the front door's hero — BUILT.** Measured before and
+   after: the hero was **CAR at VGK from 9 June**; it is now **NSH at TBL, 20 September**.
+   ⛔ **The first attempt widened it too far** — a bare `g.v` handed the door to the
+   fixture's OLYMPIC game, which nobody ruled, and **the tests caught it**. So the line is
+   drawn once, by name: `competitions.js::isClubGame` (01, 02, 03) — *are these the clubs
+   this site is about*, as against `isLeague`'s *may a rate pool this*.
+   ⚠️ `g.hl` still gates the door: 133 of 334 preseason games carry one and 24 sit inside
+   `HERO_LOOP`, so this widens the pool rather than featuring whatever happened last.
+3. **The sparse season tab is fine.** *"there will be several preseason games, so the
+   current season tab is good (albeit sparse)."*
+4. **The bottom of a club page is fine as it stands** — lessons and limits stay.
+
 - ⏭ **TWO MORE `inScope` SITES, DELIBERATELY LEFT, and both are Kevin's call rather than
   bugs:** `teamsIn` (which clubs get a chip — the outcome is right, since a club needs a
   league game to be a club you can browse, but the predicate is answering *"is this an NHL

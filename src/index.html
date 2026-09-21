@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-92CTD4lwUaBk0l4Zv3LQW9G59ebG3AWMNSfzizLf+yU=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-t3c4Wqg5YBq13X2mlJqcfnJqQNZtjfrqdbOwkLPKSLY='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-K02i+zVnT2HjpP/NaOROQDSFqmG4pr36DLF+RFXwgyM=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-t3c4Wqg5YBq13X2mlJqcfnJqQNZtjfrqdbOwkLPKSLY='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -1307,6 +1307,30 @@ function isLeague(type) {
 }
 
 /**
+ * NHL CLUBS PLAYING EACH OTHER — preseason (01) as well as 02 and 03.
+ *
+ * ⭐ A DIFFERENT QUESTION FROM `isLeague`, and the reason it exists as its own
+ * name rather than an inline `type <= 3`. `isLeague` answers *may a RATE pool
+ * this*; this answers *are these the clubs this site is about*. Preseason is
+ * NHL clubs in NHL sweaters on half-strength rosters — worth showing, never
+ * worth averaging. The all-star games, the Olympics and the 4 Nations Face-Off
+ * are not clubs at all.
+ *
+ * Kevin, 2026-09-21, ruling that the front door's showcase replay may be a
+ * preseason game: "preseason game can be a front-door hero." Widening `hero`
+ * with a bare `g.v` instead let the fixture's OLYMPIC game take the door, which
+ * is a thing nobody ruled — the tests caught it. So the line being drawn is
+ * club hockey, and it is drawn once, here.
+ *
+ * ⛔ NOT A VISIBILITY RULE EITHER. A club page lists what the club played and
+ * filters on the abbreviation, which no country code can match; it needs no
+ * predicate and must not grow one.
+ */
+function isClubGame(type) {
+  return type === 1 || type === 2 || type === 3;
+}
+
+/**
  * The label for a competition, from the table in `data/competitions.json`.
  *
  * THE RAW FALLBACK IS A LAST RESORT, NOT THE POLICY. An unnamed type fails the
@@ -2448,7 +2472,18 @@ function disputedNote(n) {
   var HERO_LOOP = { min: 3, max: 8 };
 
   function hero(games) {
-    var v = games.filter(function (g) { return g.v && inScope(g.id); });
+    /* ⭐ PRESEASON MAY BE THE HERO — Kevin, 2026-09-21: "preseason game can be a
+       front-door hero." This filtered `inScope` too, which is a predicate about
+       which games a RATE may pool; choosing a showcase replay is curation, and
+       the hero quotes no rate. The cost of the old rule was visible every
+       September: measured 2026-09-21, the hero was CAR at VGK from 9 JUNE while
+       the archive held last night's game.
+       ⚠️ `g.hl` still gates it, and that is the real filter — a game reaches the
+       front door only if the distance from the preview's opening frame to its
+       first goal falls in HERO_LOOP. 133 of 334 preseason games carry an `hl` at
+       all and 24 sit in the window, so this widens the pool rather than handing
+       the door to whatever happened last. */
+    var v = games.filter(function (g) { return g.v && isClubGame(typeOf(g.id)); });
     v.sort(function (a, b) { return a.d === b.d ? a.id - b.id : (a.d < b.d ? -1 : 1); });
     for (var k = v.length - 1; k >= 0; k--) {
       var g = v[k], n = g.hl;

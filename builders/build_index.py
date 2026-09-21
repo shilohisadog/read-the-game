@@ -1114,7 +1114,18 @@ __HELPERS__
   var HERO_LOOP = { min: 3, max: 8 };
 
   function hero(games) {
-    var v = games.filter(function (g) { return g.v && inScope(g.id); });
+    /* ⭐ PRESEASON MAY BE THE HERO — Kevin, 2026-09-21: "preseason game can be a
+       front-door hero." This filtered `inScope` too, which is a predicate about
+       which games a RATE may pool; choosing a showcase replay is curation, and
+       the hero quotes no rate. The cost of the old rule was visible every
+       September: measured 2026-09-21, the hero was CAR at VGK from 9 JUNE while
+       the archive held last night's game.
+       ⚠️ `g.hl` still gates it, and that is the real filter — a game reaches the
+       front door only if the distance from the preview's opening frame to its
+       first goal falls in HERO_LOOP. 133 of 334 preseason games carry an `hl` at
+       all and 24 sit in the window, so this widens the pool rather than handing
+       the door to whatever happened last. */
+    var v = games.filter(function (g) { return g.v && isClubGame(typeOf(g.id)); });
     v.sort(function (a, b) { return a.d === b.d ? a.id - b.id : (a.d < b.d ? -1 : 1); });
     for (var k = v.length - 1; k >= 0; k--) {
       var g = v[k], n = g.hl;
