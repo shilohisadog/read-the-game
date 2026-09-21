@@ -311,3 +311,77 @@ test('a third argument is ignored rather than obeyed', () => {
     { season: { regularSeasonStartDate: '2026-09-29' }, upcoming: [] });
   assert.deepEqual(three, two);
 });
+
+/**
+ * ⛔⛔ THE NIGHT THE FRONT DOOR CALLED TONIGHT'S HOCKEY UNREADABLE — 2026-09-20.
+ *
+ * Live, at the bottom of every page: *"We have 8 of the 14 games played in the
+ * last 14 days. 6 are listed in a state we don't recognise yet, so we haven't
+ * read them."* The league's own schedule for that window held 14 games, 7 on the
+ * 19th and 7 on the 20th, and at the 21:20Z run **8 were final and the other 6
+ * were `LIVE` or `FUT`** — being played, or not started. Both states are ones we
+ * read perfectly well, and neither game had been played.
+ *
+ * ⭐ THE DENOMINATOR HAD BEEN MOVED ONCE TOO FAR. `finalInWindow` was too small,
+ * because it excluded games we could not read and so flattered us exactly when
+ * we were doing worst. `gamesInWindow` is too large, because it counts games
+ * nobody has played. What belongs in it is every game that is OVER as far as we
+ * can tell: the ones we read, plus the ones we could not and therefore cannot
+ * rule out. A game in progress is neither held nor missing — it is not yet.
+ *
+ * ⚠️ The whole coverage model was written 2026-08-10, in the offseason, when the
+ * window was always empty. The 19th was the first scheduled game it ever saw.
+ */
+const nightOfTheNineteenth = {
+  windowDays: 14, gamesInWindow: 14, finalInWindow: 8, heldInWindow: 8,
+  erroredInWindow: 0, refusedInWindow: 0, unknownStateInWindow: 0,
+  pendingInWindow: 6, asOf: '2026-01-15T11:00:00Z',
+};
+
+test('⭐⭐ a game nobody has played yet is not a game we failed to read', () => {
+  const r = describe(idx({ coverage: nightOfTheNineteenth }), NOW);
+  assert.doesNotMatch(text(r), /state we don't recognise/,
+    'the page tells a reader the feed is unreadable because hockey is on tonight');
+  assert.doesNotMatch(text(r), /8 of the 14/,
+    'six games that have not been played are being counted as games played');
+  assert.equal(r.state, 'current',
+    `we hold every game that has finished, so nothing is behind — got "${r.state}"`);
+});
+
+test('and a state we genuinely cannot read still says so, beside them', () => {
+  // ⭐ THE NARROWING MUST NOT MUTE THE ALARM. Six unplayed games and two we
+  // really cannot parse: the first must vanish from the count and the second
+  // must not.
+  const r = describe(idx({ coverage: {
+    ...nightOfTheNineteenth, gamesInWindow: 16, unknownStateInWindow: 2 } }), NOW);
+  assert.equal(r.state, 'behind');
+  assert.match(text(r), /We have 8 of the 10 games played/,
+    'the denominator is the games that are over, not every game on the calendar');
+  assert.match(text(r), /2 are listed in a state we don't recognise yet/);
+});
+
+test('an index written before the field behaves exactly as it did', () => {
+  /* ⚠️ A DEFAULT IS A CLAIM ABOUT DOCUMENTS THAT ALREADY EXIST. Older indexes
+     carry no `pendingInWindow`, and defaulting it to anything but 0 would invent
+     a correction for a run that never measured one. */
+  const { pendingInWindow, ...older } = nightOfTheNineteenth;
+  const r = describe(idx({ coverage: { ...older, unknownStateInWindow: 6 } }), NOW);
+  assert.equal(r.state, 'behind');
+  assert.match(text(r), /We have 8 of the 14 games played/);
+});
+
+test("⚠️ and an empty scoreboard does not say \"no games\" over a full slate", () => {
+  /* Taking the unplayed games out of the denominator makes it ZERO on exactly
+     the morning the league lists a slate that starts this evening — seven games
+     on 2026-09-19 — and "No games in the last 14 days" printed over a slate is
+     the same shape of false sentence the denominator was changed to stop. */
+  const r = describe(idx({ coverage: {
+    windowDays: 14, gamesInWindow: 7, finalInWindow: 0, heldInWindow: 0,
+    erroredInWindow: 0, refusedInWindow: 0, unknownStateInWindow: 0,
+    pendingInWindow: 7, asOf: '2026-01-15T11:00:00Z' } }), NOW);
+  assert.doesNotMatch(text(r), /No games in the last 14 days/,
+    'seven games are scheduled today and the page says the calendar is empty');
+  assert.match(text(r), /No games have finished in the last 14 days\./);
+  assert.match(text(r), /7 are scheduled or being played now\./);
+  assert.equal(r.state, 'quiet', 'the daily card carries the fixture, so this line still hides');
+});

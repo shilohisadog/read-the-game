@@ -175,7 +175,10 @@ Flagged because they were unilateral and several rewrote things CHENG designed.
 - **The coverage ledger gained a second law.** Games in an unrecognised state
   were excluded from `finalInWindow`, so they sat outside the only equation that
   could fail — 90 refusals in 100 left the ledger closing perfectly and the front
-  page reporting health. Now `gamesInWindow = finalInWindow + unknownStateInWindow`.
+  page reporting health. Now `gamesInWindow = finalInWindow + pendingInWindow +
+  unknownStateInWindow` — the third term added 2026-09-20, because a game that has not
+  been played is neither held nor missing, and folding it into either one made the front
+  door call tonight's hockey unreadable.
 
 - **The front page was saying something false.** With every game unreadable,
   `finalInWindow` is 0 and it announced "No games in the last 14 days" over a

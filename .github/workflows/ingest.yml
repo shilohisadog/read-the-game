@@ -237,13 +237,28 @@ jobs:
         shell: bash
         run: node builders/measure.mjs --out ingest --slate
 
-      # Exit 2 is the vocabulary halt: the same unrecognised gameState appeared
-      # in more than one game, which is a feed change rather than an oddity.
-      # Nothing was fetched, so there is nothing to sync and the run stops here.
+      # Exit 2 is a HALT. Nothing was fetched, so there is nothing to sync and
+      # the run stops here.
+      #
+      # ⛔⛔ AND THIS STEP NAMED THE WRONG CAUSE FOR A YEAR, WHICH COST A DAY.
+      # It read "the run halted on a feed vocabulary change", and the comment
+      # above it described the OLD correlation halt — the same unrecognised
+      # gameState in more than one game — which `fetch_nhl.py` replaced. On
+      # 2026-09-19 the run halted because no game in the window was final (seven
+      # preseason openers, all `FUT` at 14:15 UTC) and reported itself as a
+      # vocabulary change. The wrong label was believed, written into
+      # docs/status.md and into memory, and the real cause went unexamined for a
+      # day while a separate, genuine vocabulary halt on the 20th seemed to
+      # confirm it.
+      #
+      # ⭐ SO THE STEP PRINTS THE HALT'S OWN REASON. `fetch_nhl.py` already
+      # composes a sentence naming what it saw and why it stopped; restating it
+      # here is a second copy free to drift from the first, and it did.
       - name: refuse to publish a run that halted
         if: steps.fetch.outputs.code == '2'
         run: |
-          echo "::error::the run halted on a feed vocabulary change — nothing published"
+          why=$(python3 -c 'import json,sys; print(json.load(open("report.json")).get("haltReason") or "")' 2>/dev/null)
+          echo "::error::the run halted and published nothing: ${why:-report.json carries no haltReason}"
           cat report.json
           exit 1
 

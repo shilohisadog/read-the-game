@@ -126,12 +126,43 @@ export function describe(index, now) {
     // Older indexes predate `gamesInWindow`, so reconstruct it rather than
     // defaulting to zero — defaulting would reintroduce the false sentence on
     // precisely the indexes written before the fix.
-    const played = Number.isFinite(c.gamesInWindow)
+    // ⛔⛔ AND `gamesInWindow` IS NOT "PLAYED" EITHER — 2026-09-20, live.
+    //
+    // It counts every game the league LISTED, which on any evening includes the
+    // ones starting later tonight. The front door read: "We have 8 of the 14
+    // games played in the last 14 days. 6 are listed in a state we don't
+    // recognise yet, so we haven't read them." Six of those fourteen were `LIVE`
+    // or `FUT` — being played, or not started. We recognise both perfectly well,
+    // and neither had been played.
+    //
+    // So the denominator moved once too far. `finalInWindow` was too small
+    // because it excluded what we could not read; `gamesInWindow` is too large
+    // because it includes what nobody has played. What belongs in it is every
+    // game that is OVER as far as we can tell — the ones we read, plus the ones
+    // we could not, which might be over and we cannot say. A game in progress is
+    // neither held nor missing. It is not yet.
+    //
+    // Older indexes predate `pendingInWindow`, so it defaults to 0, which
+    // reproduces the previous arithmetic exactly rather than inventing a
+    // correction for a document that never carried the field.
+    const pending = c.pendingInWindow || 0;
+    const played = (Number.isFinite(c.gamesInWindow)
       ? c.gamesInWindow
-      : c.finalInWindow + unread;
+      : c.finalInWindow + unread) - pending;
 
     if (played === 0) {
-      lines.push(`No games in the last ${c.windowDays} days.`);
+      /* ⚠️ AND "NO GAMES" WOULD BE A NEW FALSE SENTENCE ON OPENING NIGHT. Taking
+         the unplayed games out of the denominator makes it zero on exactly the
+         morning the league lists a full slate that starts this evening — 7
+         games on 2026-09-19 — and "No games in the last 14 days" over a slate is
+         the same shape of lie the denominator was changed to stop telling.
+         The STATE stays `quiet`, because the observable it drives is still
+         right: the daily card is carrying the next fixture, so this line has
+         nothing to add and hides. Only the sentence has to be true. */
+      lines.push(pending > 0
+        ? `No games have finished in the last ${c.windowDays} days. `
+          + `${pending} ${pending === 1 ? 'is' : 'are'} scheduled or being played now.`
+        : `No games in the last ${c.windowDays} days.`);
       // ⭐ `quiet` MEANS THE LEAGUE LISTED NO GAMES -- we looked, recently, and
       // the window was empty -- so it is the one state where "no games" is a
       // fact about hockey rather than a symptom of us. That distinction is why

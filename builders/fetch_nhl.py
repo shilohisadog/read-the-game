@@ -70,6 +70,31 @@ FEEDS = {
 # re-checks it either way, so an early read costs nothing.
 FINAL_STATES = frozenset({"OFF", "FINAL"})
 
+# ⭐⭐ AND THE THIRD OUTCOME: NOT YET.
+#
+# This module modelled exactly two: a game is final, or its state is something
+# we cannot read. Hockey has a third, and it is the commonest one of all — the
+# game has not been played. Conflating it with incomprehension cost two real
+# failures on the first two nights of the 2026-27 preseason:
+#
+#   ⛔ 2026-09-19, the ingest HALTED with "none of the 7 games in the window are
+#      in a state we recognise as final (saw 'FUT'×7) — we can no longer read
+#      this feed; refusing the whole run". Seven preseason openers at 14:15 UTC,
+#      every one starting at 23:00 UTC. The feed was perfectly readable. The
+#      window simply held nothing that had been played yet, which is what the
+#      first day after a break longer than the window ALWAYS looks like.
+#   ⛔ The front page then told visitors "6 are listed in a state we don't
+#      recognise yet, so we haven't read them" about games that were under way
+#      or had not started, and counted them in "games played".
+#
+# ⚠️ OBSERVED, NOT ASSUMED. `FUT` was seen on 7 games on 2026-09-19 and `LIVE`
+# on 3 games on 2026-09-20. `PRE` and `CRIT` are in the feed's documented
+# vocabulary and we have NOT seen either, so neither is listed here: an
+# unobserved value stays unrecognised, which is this file's standing rule
+# ("OUR IGNORANCE IS NOT THE LEAGUE'S CHANGE" — and its converse, that we do not
+# claim to know a value we have never been sent).
+PENDING_STATES = frozenset({"FUT", "LIVE"})
+
 SCHEDULE_SPAN = 7   # /v1/schedule/{date} answers with a seven-day week (verified)
 
 
@@ -111,16 +136,30 @@ def schedule_urls(dates):
 @dataclass
 class Classified:
     final: list = field(default_factory=list)
+    pending: list = field(default_factory=list)   # scheduled, or under way
     unknown: list = field(default_factory=list)
 
 
-def classify(schedule, dates=None):
-    """Split a schedule payload into games we may ingest and games we may not.
+def classify(schedule, dates=None, now=None):
+    """Split a schedule payload three ways: final, not yet played, unreadable.
 
-    The state field is the ONLY thing consulted. A game can carry a full score
-    and a date two years past and still not be final; inferring completeness
-    from anything other than the feed's own answer is exactly the guess this
-    module refuses to make.
+    The state field is the ONLY thing consulted for FINALITY. A game can carry a
+    full score and a date two years past and still not be final; inferring
+    completeness from anything other than the feed's own answer is exactly the
+    guess this module refuses to make.
+
+    ⭐ THE START TIME IS CONSULTED FOR THE OPPOSITE CLAIM, AND THAT IS NOT THE
+    SAME GUESS. "This game has not been played" follows from a start time in the
+    future without reading the state at all, and it is the one direction that
+    needs no vocabulary: whatever `PRE` or any future string turns out to mean,
+    a game that starts in four hours has not been played. So a game we have no
+    word for is still classified correctly as long as it has not started, and
+    only a game that has STARTED and is in a state we have never seen falls to
+    `unknown` — which is exactly the population the halt should care about.
+
+    `now` is the run's own stamp in the feed's own format, so the comparison is
+    two ISO-8601 Z strings and needs no parsing. Without it the start-time test
+    is skipped rather than guessed at.
     """
     got = Classified()
     for week in schedule.get("gameWeek", []):
@@ -139,7 +178,14 @@ def classify(schedule, dates=None):
             # cost a request to the league to undo; a filter at render time costs
             # a line of code, and the asymmetry only points one way.
             g = {**g, "date": week.get("date")}
-            (got.final if g.get("gameState") in FINAL_STATES else got.unknown).append(g)
+            st = g.get("gameState")
+            start = g.get("startTimeUTC")
+            if st in FINAL_STATES:
+                got.final.append(g)
+            elif st in PENDING_STATES or (now and start and start > now):
+                got.pending.append(g)
+            else:
+                got.unknown.append(g)
     return got
 
 
@@ -153,12 +199,17 @@ class Report:
     amended: int = 0        # games the league has changed since we stored them
     refused: int = 0        # games rejected by the extraction vocabulary gate
     unknown_state: int = 0  # games whose gameState we do not recognise
+    # Scheduled or under way. NOT a failure to read the feed, and kept apart
+    # from `unknown_state` so neither the halt nor the front page can mistake
+    # tonight's puck drop for a feed we have lost the ability to parse.
+    pending_in_window: int = 0
     final_in_window: int = 0
     games_in_window: int = 0  # every game the league listed, read or not
     errored: int = 0
     window_days: int = 0
     errors: list = field(default_factory=list)
     unknown_states: dict = field(default_factory=dict)
+    pending_states: dict = field(default_factory=dict)
     halted: bool = False
     halt_reason: str = ""
     games: list = field(default_factory=list)
@@ -187,6 +238,8 @@ class Report:
         return {"fetched": self.fetched, "unchanged": self.unchanged,
                 "amended": self.amended, "refused": self.refused,
                 "unknownState": self.unknown_state, "finalInWindow": self.final_in_window,
+                "pendingInWindow": self.pending_in_window,
+                "pendingStates": self.pending_states,
                 "gamesInWindow": self.games_in_window,
                 "errored": self.errored, "errors": self.errors,
                 "unknownStates": self.unknown_states,
@@ -279,7 +332,7 @@ def ingest(end, days, transport, store, now=None):
             continue
         # The schedule is parsed: it is routing, not interpretation.
         payload = json.loads(body.decode())
-        got = classify(payload, dates)
+        got = classify(payload, dates, now)
 
         # KEPT VERBATIM, AND ONLY WHEN THE LEAGUE SENT SOMETHING. A key present
         # and null would otherwise overwrite a real date with nothing on the next
@@ -307,7 +360,10 @@ def ingest(end, days, transport, store, now=None):
         # venue. "Which game is a team's next one" is a min() over start times
         # and belongs where it is read, not in a module whose whole discipline
         # is that it never decides anything.
-        for g in classify(payload).unknown:
+        # PENDING AND UNKNOWN BOTH, which is what this list has always held: a
+        # fixture is any game the league lists that is not over, and a state we
+        # cannot read is not a reason to stop telling a reader a game exists.
+        for g in classify(payload, None, now).pending + classify(payload, None, now).unknown:
             if g["id"] in upcoming:
                 continue
             upcoming[g["id"]] = {
@@ -324,6 +380,11 @@ def ingest(end, days, transport, store, now=None):
             if g["id"] not in seen:
                 seen.add(g["id"])
                 schedule_games.append(g)
+        for g in got.pending:
+            if g["id"] not in seen:
+                seen.add(g["id"])
+                rep.pending_in_window += 1
+                rep.pending_states.setdefault(g.get("gameState"), []).append(g["id"])
         for g in got.unknown:
             if g["id"] not in seen:
                 seen.add(g["id"])
@@ -332,7 +393,8 @@ def ingest(end, days, transport, store, now=None):
                 rep.unknown_states.setdefault(st, []).append(g["id"])
 
     rep.final_in_window = len(schedule_games)
-    rep.games_in_window = rep.final_in_window + rep.unknown_state
+    rep.games_in_window = (rep.final_in_window + rep.pending_in_window
+                           + rep.unknown_state)
 
     # TOTAL INCOMPREHENSION, NOT CORRELATION.
     #
@@ -362,12 +424,28 @@ def ingest(end, days, transport, store, now=None):
     # reported as healthy. Refusals are inside an equation now, and the front
     # page says what it did not understand. Remove that and this halt is too
     # weak; they ship together or not at all.
-    if rep.games_in_window and not schedule_games:
+    #
+    # ⛔⛔ AND IT FIRED FALSELY ON ITS FIRST NIGHT OF HOCKEY — 2026-09-19, "none of
+    # the 7 games in the window are in a state we recognise as final (saw
+    # 'FUT'×7)". Every one was a preseason opener at 14:15 UTC starting at 23:00
+    # UTC. Nothing was wrong with the feed; nothing had been PLAYED. The rule
+    # above is right about what it is protecting and was asking the wrong
+    # question: "are any of these final" answers no on every opening night, after
+    # every break longer than the window, and on any quiet enough afternoon.
+    #
+    # The question it means to ask is whether we have lost the ability to read
+    # finality, and the evidence for that is a game we cannot account for AT ALL
+    # — started, and in a state we have never seen. A window of games that have
+    # not been played is not evidence of anything except the calendar, so the
+    # run publishes nothing and carries on, which is what an empty window has
+    # always done.
+    if rep.games_in_window and not schedule_games and rep.unknown_state:
         seen = ", ".join(f"{st!r}×{len(ids)}" for st, ids in sorted(rep.unknown_states.items()))
         rep.halted = True
         rep.halt_reason = (f"none of the {rep.games_in_window} games in the window are in a "
-                           f"state we recognise as final (saw {seen}) — we can no longer read "
-                           f"this feed; refusing the whole run")
+                           f"state we recognise as final, and {rep.unknown_state} of them "
+                           f"started in a state we have never seen (saw {seen}) — we can no "
+                           f"longer read this feed; refusing the whole run")
         # A HALT IS RUNNING. lastRun advances, because the alternative makes
         # a deliberate stop byte-identical to a dead pipeline -- the same
         # conflation this state model was written to remove. Coverage is NOT
@@ -437,7 +515,7 @@ def _write_index(store, rep, now, coverage=True):
 
     TWO LEDGERS, BECAUSE THERE ARE TWO QUESTIONS:
 
-        gamesInWindow = finalInWindow + unknownStateInWindow
+        gamesInWindow = finalInWindow + pendingInWindow + unknownStateInWindow
         finalInWindow = heldInWindow + erroredInWindow + refusedInWindow
 
     The second is the original, the same conservation discipline as
@@ -457,6 +535,16 @@ def _write_index(store, rep, now, coverage=True):
     questions and folding them together is the conflation this schema exists to
     end. So `gamesInWindow` counts every game the league listed, read or not,
     and nothing can now fall outside both equations.
+
+    ⭐ AND `pendingInWindow` IS THE THIRD TERM, ADDED 2026-09-20. "Every game the
+    league listed" includes the ones starting tonight, so the first equation was
+    being read as "games played" by the only surface that consumes it, and the
+    front page announced that six games being played at that moment were "listed
+    in a state we don't recognise". A game that has not been played is neither
+    held nor missing: it is not yet, and it needs its own term rather than a
+    share of somebody else's. `src/lib/ingest-state.js` subtracts it to get the
+    denominator it actually wants, which is the games that are OVER as far as we
+    can tell.
     """
     stamp = now or datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     prev_raw = store.get("index.json")
@@ -500,6 +588,9 @@ def _write_index(store, rep, now, coverage=True):
             "erroredInWindow": rep.errored,
             "refusedInWindow": rep.refused,
             "unknownStateInWindow": rep.unknown_state,
+            # Games the league listed that have not been played: scheduled, or
+            # under way. Neither held nor missing — not yet.
+            "pendingInWindow": rep.pending_in_window,
             "asOf": stamp,
         }
 

@@ -66,9 +66,15 @@ def schedule_payload(date, games, season=None):
     return json.dumps(body).encode()
 
 
-def game(gid, state="OFF", gtype=2, away="MIN", home="BUF"):
-    return {"id": gid, "gameState": state, "gameType": gtype,
-            "awayTeam": {"abbrev": away}, "homeTeam": {"abbrev": home}}
+def game(gid, state="OFF", gtype=2, away="MIN", home="BUF", start=None):
+    g = {"id": gid, "gameState": state, "gameType": gtype,
+         "awayTeam": {"abbrev": away}, "homeTeam": {"abbrev": home}}
+    # ⭐ OPTIONAL, BECAUSE A PAYLOAD WITHOUT IT IS A CASE THE READER MUST SURVIVE
+    # — and because every call written before the start-time rule describes a
+    # game whose start we never asked about, which must keep meaning what it did.
+    if start:
+        g["startTimeUTC"] = start
+    return g
 
 
 def transport_for(routes, default=(404, b"")):
@@ -164,11 +170,55 @@ class Classification(unittest.TestCase):
         self.assertEqual(set(F.FINAL_STATES), {"OFF", "FINAL"})
 
     def test_an_unknown_state_is_refused_and_named(self):
+        # ⚠️ THIS TEST USED `LIVE` AS ITS EXAMPLE OF A STATE WE CANNOT READ, which
+        # was the defect in miniature: a game in progress is not a game we failed
+        # to understand, and treating it as one is what put "6 are listed in a
+        # state we don't recognise yet" on the front page about hockey that was
+        # being played at the time. The specimen has to be a string the feed has
+        # never sent us.
         got = F.classify(json.loads(schedule_payload("2026-01-10", [
-            game(1, state="OFF"), game(2, state="LIVE"),
+            game(1, state="OFF"), game(2, state="WHO_KNOWS"),
         ]).decode()))
         self.assertEqual([g["id"] for g in got.final], [1])
-        self.assertEqual([(g["id"], g["gameState"]) for g in got.unknown], [(2, "LIVE")])
+        self.assertEqual([(g["id"], g["gameState"]) for g in got.unknown], [(2, "WHO_KNOWS")])
+
+    def test_a_game_not_yet_played_is_neither_final_nor_unreadable(self):
+        """The third outcome, and the commonest one: not yet."""
+        got = F.classify(json.loads(schedule_payload("2026-09-19", [
+            game(1, state="OFF"), game(2, state="FUT"), game(3, state="LIVE"),
+        ]).decode()))
+        self.assertEqual([g["id"] for g in got.final], [1])
+        self.assertEqual([g["id"] for g in got.pending], [2, 3])
+        self.assertEqual(got.unknown, [])
+
+    def test_a_state_we_have_never_seen_is_pending_if_it_has_not_started(self):
+        """The start time answers the opposite question, and needs no vocabulary.
+
+        `PRE` is in the league's documented vocabulary and we have never been
+        sent it, so it is deliberately NOT in PENDING_STATES. It still must not
+        read as "we cannot parse this feed", because a game starting in four
+        hours has not been played whatever it is called.
+        """
+        payload = json.loads(schedule_payload("2026-09-19", [
+            game(2, state="PRE", start="2026-09-19T23:00:00Z"),
+        ]).decode())
+        got = F.classify(payload, None, "2026-09-19T14:15:00Z")
+        self.assertEqual([g["id"] for g in got.pending], [2])
+        self.assertEqual(got.unknown, [])
+
+        # ...and the same game, once it has started, is one we cannot account
+        # for. That is the population the halt exists for.
+        after = F.classify(payload, None, "2026-09-20T02:00:00Z")
+        self.assertEqual(after.pending, [])
+        self.assertEqual([g["id"] for g in after.unknown], [2])
+
+    def test_without_a_clock_the_start_time_is_not_guessed_at(self):
+        # No `now` means the test is skipped rather than invented, so a caller
+        # that cannot say what time it is gets the vocabulary answer alone.
+        got = F.classify(json.loads(schedule_payload("2026-09-19", [
+            game(2, state="PRE", start="2999-01-01T00:00:00Z"),
+        ]).decode()))
+        self.assertEqual([g["id"] for g in got.unknown], [2])
 
     def test_classification_never_guesses_from_the_score_or_the_date(self):
         # A game can look finished in every other respect and not be final. The
@@ -641,6 +691,43 @@ class TheHaltIsForTotalIncomprehension(unittest.TestCase):
         self.assertIn("NEWSTATE", str(rep.halt_reason))
         self.assertIn("OTHER", str(rep.halt_reason))
 
+    def test_a_window_of_games_nobody_has_played_yet_does_not_halt(self):
+        """⛔⛔ THE FALSE HALT OF 2026-09-19, and the reason this test exists.
+
+        The live run said: "none of the 7 games in the window are in a state we
+        recognise as final (saw 'FUT'×7) — we can no longer read this feed;
+        refusing the whole run". They were the seven preseason openers, read at
+        14:15 UTC, every one starting at 23:00 UTC. Nothing was wrong with the
+        feed. Nothing had been PLAYED.
+
+        "Are any of these final" answers NO on every opening night, after every
+        break longer than the window, and on any quiet enough afternoon — so the
+        halt asked a question whose answer is routinely no for reasons that have
+        nothing to do with the feed. It now also requires a game we cannot
+        account for at all.
+        """
+        rep, store = self.run_with([game(i, state="FUT") for i in range(1, 8)])
+        self.assertFalse(rep.halted,
+                         f"a window of unplayed games halted the run: {rep.halt_reason}")
+        self.assertEqual(rep.unknown_state, 0, "a scheduled game is not one we could not read")
+        self.assertEqual(rep.pending_in_window, 7)
+        self.assertEqual(rep.final_in_window, 0)
+        self.assertEqual(rep.games_in_window, 7, "the league still listed seven games")
+
+    def test_a_window_of_hockey_being_played_right_now_does_not_halt(self):
+        rep, store = self.run_with([game(1, state="LIVE"), game(2, state="FUT")])
+        self.assertFalse(rep.halted)
+        self.assertEqual(rep.pending_in_window, 2)
+
+    def test_but_nothing_final_and_something_unreadable_still_halts(self):
+        # ⭐ THE NARROWING MUST NOT DISARM THE GATE. A window with no final game
+        # AND a game in a state we have never seen is still the catastrophe: we
+        # have no evidence the feed's word for finality still reads.
+        rep, store = self.run_with([game(1, state="FUT"), game(2, state="NEWSTATE")])
+        self.assertTrue(rep.halted, "the halt was narrowed into uselessness")
+        self.assertIn("NEWSTATE", str(rep.halt_reason))
+        self.assertEqual(rep.fetched, 0)
+
     def test_one_recognised_game_is_enough_to_prove_the_feed_still_reads(self):
         # MUTATION GUARD on the rule above. If the halt were "most games are
         # unknown" or any other threshold, this would trip it -- one game in
@@ -817,17 +904,28 @@ class IngestState(unittest.TestCase):
         # different: "how many games did the league play" and "of the ones we
         # could read, how many did we get". So there are two.
         #
-        #     gamesInWindow = finalInWindow + unknownStateInWindow
+        #     gamesInWindow = finalInWindow + pendingInWindow + unknownStateInWindow
         #     finalInWindow = heldInWindow + erroredInWindow + refusedInWindow
+        #
+        # ⭐ THE THIRD TERM ARRIVED 2026-09-20. "Every game the league listed"
+        # includes the ones starting tonight, and the only surface that consumes
+        # this was reading the total as "games played" -- so the front page
+        # announced that six games being played at that moment were "listed in a
+        # state we don't recognise". A game not yet played is neither held nor
+        # missing, and it needs its own term rather than a share of another's.
+        # The conservation law is what makes that safe: adding a bucket cannot
+        # quietly lose a game, because this equation would stop closing.
         store = DictStore()
         t = transport_for({**feed_routes(), "/v1/schedule/": (200, schedule_payload(
-            "2026-01-10", [game(1), game(2, state="ODD_A"), game(3, state="ODD_B")]))})
+            "2026-01-10", [game(1), game(2, state="ODD_A"), game(3, state="ODD_B"),
+                           game(4, state="FUT"), game(5, state="LIVE")]))})
         F.ingest("2026-01-10", 1, t, store, now="2026-01-11T11:00:00Z")
         c = self.index(store)["coverage"]
-        self.assertEqual(c["gamesInWindow"], 3, "every game the league listed")
+        self.assertEqual(c["gamesInWindow"], 5, "every game the league listed")
+        self.assertEqual(c["pendingInWindow"], 2, "one scheduled and one under way")
         self.assertEqual(c["gamesInWindow"],
-                         c["finalInWindow"] + c["unknownStateInWindow"],
-                         f"no game may fall outside both equations: {c}")
+                         c["finalInWindow"] + c["pendingInWindow"] + c["unknownStateInWindow"],
+                         f"no game may fall outside all three buckets: {c}")
 
     def test_a_window_we_mostly_could_not_read_cannot_report_as_complete(self):
         # MUTATION GUARD. The bug was not that a number was wrong -- every
