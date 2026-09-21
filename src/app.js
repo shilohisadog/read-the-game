@@ -2652,10 +2652,20 @@ function drawWhistles(W){
  const g=[];
  for(const m of marks(W,{trails:trails,dir:DIR})){const cx=SX(m.x),cy=SY(m.y);
   g.push(`<circle class="wh${m.now?' now':''}" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3.4"><title>play restarted here — ${ESC(m.reasons.map(RSN).join(', '))}</title></circle>`);
-  // A COUNT, BECAUSE THE MARKS STACK. Nine faceoff dots hold every restart in the
-  // game, so eight icings at one dot draw as one circle and the ice would be
-  // showing a number it is not saying.
-  if(m.n>1)g.push(`<text class="whn" x="${cx.toFixed(1)}" y="${(cy+1.2).toFixed(1)}">${m.n}</text>`);}
+  /* A COUNT, BECAUSE THE MARKS STACK. Nine faceoff dots hold every restart in the
+     game, so eight icings at one dot draw as one circle and the ice would be
+     showing a number it is not saying.
+     ⭐ AND IT IS DRAWN FOR ONE RESTART TOO, 2026-09-20, which is the rule zone
+     starts adopted on 09-18 — the site was carrying TWO conventions for the same
+     mark on the same ice, a zone-start ring that always shows its number beside a
+     whistle ring that shows nothing when there is one. The argument is the one
+     Kevin made there: an absent number makes ABSENCE carry meaning, and a reader
+     has to be told the convention to read the ice.
+     ⛔ AND THIS LAYER NEVER TOLD ANYONE. Zone starts at least stated it in their
+     own help text ("no number means one"), which had to be removed with the rule;
+     the whistle copy has never mentioned it, so the only way to learn this
+     convention was to count rings against the box. */
+  g.push(`<text class="whn" x="${cx.toFixed(1)}" y="${(cy+1.2).toFixed(1)}">${m.n}</text>`);}
  // THE LINES THE RULE NAMES, for the whistle being explained. A novice is told
  // an icing is about the centre line and the far goal line; this is the only way
  // to say WHICH lines those are on the ice in front of them. Nothing here draws a

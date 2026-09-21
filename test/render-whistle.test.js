@@ -323,3 +323,48 @@ test('the stoppage is named by the box and not by the ice', () => {
   assert.match(ice, /Won the faceoff/,
     'the ice stopped naming the faceoff too — the removal took the label with it');
 });
+
+/**
+ * ⭐⭐ EVERY WHISTLE RING SHOWS ITS COUNT, INCLUDING 1 — 2026-09-20.
+ *
+ * ⛔ THE SITE WAS CARRYING TWO CONVENTIONS FOR THE SAME MARK. Zone starts dropped
+ * `d.n > 1` on 2026-09-18 at Kevin's asking; the whistle layer kept the identical
+ * `m.n > 1`, so a zone-start ring always showed its number while a whistle ring
+ * beside it showed nothing when there was one restart. Two rules for one ice is
+ * worse than either rule, because a reader cannot tell which one they are
+ * looking at.
+ *
+ * ⛔ AND THIS LAYER NEVER STATED THE CONVENTION ANYWHERE. Zone starts at least
+ * said it in their own help text — "no number means one" — which had to be
+ * deleted with the rule. The whistle copy has never mentioned it, so an absent
+ * number was a rule a reader could only infer by counting rings against the box.
+ *
+ * ⭐ THE LONE RESTART IS FOUND, NOT ASSUMED — the same trap as the zone-start
+ * check. "As many numbers as rings" passes on a page that still hides the 1,
+ * because at such a frame both counts are simply zero. So this walks the replay,
+ * requires a dot holding exactly one restart to really occur, and reads the digit
+ * off the ice at that frame.
+ */
+test('⭐⭐ every whistle ring shows its count, and a single restart shows a 1', () => {
+  const a = boot();
+  pickLayer(a, 'whistle');
+  const ringsOf = html => [...html.matchAll(/<circle class="wh(?: now)?"/g)].length;
+  const numsOf  = html => [...html.matchAll(/<text class="whn"[^>]*>(\d+)</g)].map(m => +m[1]);
+
+  let sawLone = 0, frames = 0;
+  a.every(d => {
+    const h = String(d.$('whistles').innerHTML);
+    const r = ringsOf(h), n = numsOf(h);
+    if (!r) return;
+    frames++;
+    assert.equal(n.length, r,
+      `${r} ring(s) on the ice and ${n.length} number(s) — a restart mark without `
+      + `its count is back, and zone starts next door always show theirs`);
+    sawLone += n.filter(x => x === 1).length ? 1 : 0;
+  });
+
+  assert.ok(frames > 0, 'no frame ever drew a whistle ring, so this proves nothing');
+  assert.ok(sawLone > 0,
+    'no dot in the whole replay ever held exactly one restart, so the case this '
+    + 'change is about was never exercised — this would pass with the old n>1 rule');
+});
