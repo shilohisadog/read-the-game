@@ -162,10 +162,18 @@ const MULTI_DOCS = { ...ALL, 'catalog.json': MULTI };
 
 test('the date browse arrives WITH the chips, and never dangles without them', async () => {
   // C1's front-door entry (docs/discovery.md §10.4). It is revealed by drawGrid
-  // rather than sitting in the markup, and this test is why: `#teams-h`, its
-  // note and the empty `.teams` div all stay on screen when a team is chosen,
-  // so a statically-visible line would hang under an empty box on every team
-  // page saying "or browse by date" for no reason.
+  // rather than sitting in the markup, and this test is why: a statically
+  // visible line would hang under an empty box on every team page saying "or
+  // browse by date" for no reason.
+  //
+  // ⛔⛔ AND THE EMPTY BOX WAS WRITTEN DOWN HERE AS A PREMISE AND NEVER QUESTIONED.
+  // This comment used to read "`#teams-h`, its note and the empty `.teams` div
+  // all stay on screen when a team is chosen" — stated as the GROUND for hiding
+  // one line, with nobody asking why the heading and the empty div were allowed
+  // to stay. Kevin found it from the live site on 2026-09-20: "why does it say
+  // 'pick your team' in the middle of it?" They are hidden now (the test below),
+  // and the reasoning for revealing this line rather than shipping it visible is
+  // unchanged and still right.
   //
   // TWO HALVES, AND EITHER ALONE IS SATISFIED BY A BUG. "The script never
   // touched it" only means hidden if the markup says hidden — so the markup is
@@ -179,6 +187,38 @@ test('the date browse arrives WITH the chips, and never dangles without them', a
   await team.settle();
   assert.equal(team.ids.bydate, undefined,
     'never even asked for on a team page, so the markup’s hidden stands');
+});
+
+/**
+ * ⭐ A TEAM PAGE DOES NOT ASK YOU TO PICK A TEAM.
+ *
+ * `drawTeam` rebuilds `#main` and nothing else, and the picker sits outside it,
+ * so a team page ended with a heading telling you to pick a team, the paragraph
+ * explaining the grid, and an EMPTY div — empty because `drawGrid` is what fills
+ * it and a team page never calls it. Kevin, from the live WSH page: "why does it
+ * say 'pick your team' in the middle of it?"
+ *
+ * ⭐ THE RULING WAS ALREADY MADE TWICE, for the hero and the daily slate: "a fan
+ * who asked for BUF is not looking for a Dallas game", "a team page is a question
+ * already asked". The grid is the same case and was never asked the question,
+ * because it is markup rather than a call — which is exactly how it escaped.
+ *
+ * ⚠️ BOTH DIRECTIONS, because "hidden on a team page" is also satisfied by hiding
+ * it everywhere, which would delete the front door's only route to the archive.
+ */
+test('the picker is hidden on a team page and present on the front door', async () => {
+  const team = run({ search: '?team=BUF', docs: ALL });
+  await team.settle();
+  for (const id of ['teams-h', 'teams-note', 'teams'])
+    assert.equal(team.ids[id] && team.ids[id].hidden, true,
+      `#${id} is still on screen on a team page — the section invites a choice `
+      + `already made, and the grid under it is empty`);
+
+  const front = run({ docs: ALL });
+  await front.settle();
+  for (const id of ['teams-h', 'teams-note', 'teams'])
+    assert.notEqual(front.ids[id] && front.ids[id].hidden, true,
+      `#${id} is hidden on the FRONT DOOR — the archive has lost its way in`);
 });
 
 test('the team grid is read from the archive, never typed', () => {

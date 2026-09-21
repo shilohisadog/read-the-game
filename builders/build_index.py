@@ -841,7 +841,7 @@ __FRONT_COUNTS__
      the archive now both tell a reader what to DO. `_NAV`'s own comment says
      they are the same kind of thing; they finally read like it. -->
 <h2 id="teams-h">Pick your team</h2>
-<p class="note">Every game each club played, newest first. Arizona became Utah in
+<p class="note" id="teams-note">Every game each club played, newest first. Arizona became Utah in
 2024 &mdash; both are here, because both played.</p>
 <div class="teams" id="teams"></div>
 <!-- THE SECOND WAY IN, and it is a LINE rather than a second index.
@@ -1550,6 +1550,26 @@ __HELPERS__
           'The archive could not be loaded, so there are no teams to show.'));
       } else if (team) {
         drawTeam(team, games, season);
+        /* ⛔ AND THE PICKER GOES WITH THE REST OF THE FRONT DOOR. Kevin, from the
+           live site, 2026-09-20: "why does it say 'pick your team' in the middle
+           of it?" -- at the bottom of a WSH page.
+
+           `drawTeam` rebuilds `#main` and nothing else, and this section sits
+           outside it, so a team page ended with a heading telling you to pick a
+           team, the paragraph explaining the grid, and an EMPTY div. Empty
+           because `drawGrid` is the thing that fills it -- and the same function
+           reveals "Or browse by date", which is why that line was missing too.
+           A section inviting a choice you have already made, with nothing in it
+           to choose, reads as a page that failed to load.
+
+           THE RULING IS ALREADY MADE, twice, in the two blocks below: "a fan who
+           asked for BUF is not looking for a Dallas game" and "a team page is a
+           question already asked". The grid is the same case and was simply
+           never asked the question, because it is markup rather than a call.
+           ⏸ WHAT STAYS, and it is deliberate: the lessons and the limits. A club
+           link is a front door for whoever follows it, and those two are the
+           page explaining itself rather than offering a route already taken. */
+        ['teams-h', 'teams-note', 'teams'].forEach(function (id) { $(id).hidden = true; });
       } else {
         drawGrid(games);
         /* ONLY ON THE FRONT DOOR. A fan who asked for BUF is not looking for a
