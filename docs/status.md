@@ -135,6 +135,16 @@ SUBJECT it needs and goes red if it never found one.*
   a 144px worst case the two are indistinguishable; the outcome only differs once the
   margin is gone, and then `clipped` or `heights` fires. It stays a source check with the
   reason written where it lives — §6's "still a source check, and that is honest".
+- ⛔⛔ **AND THE FIX WAS LOST BEFORE IT SHIPPED — the gate caught it, on the deploy.**
+  `b3d061c` carried the CHECK and not the CSS: re-measuring the ruler ended with
+  `git checkout src/app.css`, and HEAD at that moment was `c71906c`, which predates the
+  media query. The local run had reported 162x219 green; the commit shipped 120x219 with
+  **2 clipped**, and the release gate refused the deploy. ⭐ **This is the release gate
+  doing the one thing it exists for** — the suite was green, because the suite cannot see
+  a pixel, and the browser check ran against what was actually committed rather than what
+  had been measured. ⚠️ Recovering it broke the stylesheet a second way (a media query
+  short one `}`), which `css-parse.test.js` caught — twice in one day that file has been
+  the thing standing between a mangled sheet and a deploy.
 - ⏭ **The ruler did not move: still 20 tests, 15 files.** Retiring two assertions from a
   test that still reads CSS text for its other claims cannot move a count of TESTS.
   **The lever is a parser, not deletion:** a helper that answers *what does selector X

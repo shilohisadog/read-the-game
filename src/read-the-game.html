@@ -39,7 +39,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-+sB7UgqSw1WavLF5QEVnHa3uyg7aBeP3dCtQmS5EhpE=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-7lOrvSEzRETDuj6WIENkdKHDMtlPbTt0Kbq46o9mmeA='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-+sB7UgqSw1WavLF5QEVnHa3uyg7aBeP3dCtQmS5EhpE=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-7cXihqJZjk35qGPKpWcE8DeAsNLsMD1pf0pkmE17RZM='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">How to read hockey</a></nav></header>
@@ -984,6 +984,28 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    nothing is worse than no control; the row is laid out so it has somewhere to
    go that does not move anything else. */
 #rg{--lboxh:120px;--rinkpad:10px}
+/* ⛔⛔ AND THE LANDSCAPE PHONE MAKES A NARROWER BOX THAN ANY WIDTH 120 WAS
+   MEASURED AT. 120 is the worst case over "six layer states x three widths x two
+   games" -- all of them measured BEFORE a1b6f33 (2026-09-13) gave landscape the
+   laptop's two columns. Beside a 230px control column the box is 219px wide at
+   568, which is narrower than the narrowest width in that sweep, so the constant
+   was never wrong: its population changed underneath it.
+
+   MEASURED 2026-09-20, at 568x320 with the box 219px wide: goaltending needs
+   144px and slot 134px in a 120px box. `overflow` is visible, so nothing is
+   clipped -- the sentence SPILLS, printing 14px and 4px past the rink card's
+   bottom border, text crossing the frame it belongs to. 162px is the 144 that
+   fits plus one 17.28px line of `.lxw`, so a game whose sentence wraps one line
+   further still holds. The band is real and bounded: the box first overflows at
+   660px wide and fits again below ~520 where the layout restacks, so the query
+   is capped at 660 rather than open-ended.
+   ⭐ Costs nothing at the fold, measured: the transport already sits at 419px in
+   a 320px viewport and the page already needs 2,229px, both unchanged at 162.
+   ⚠️ Portrait is untouched and does not need it -- at 600 and 700 the box is 503
+   and 603 wide and needs 119; below 560 portrait shows the rotate prompt. */
+@media (orientation:landscape) and (max-height:500px) and (max-width:660px){
+ #rg:not(.preview){--lboxh:162px}
+}
 /* ⭐ U11 — THE RINK GOES EDGE TO EDGE ON A PHONE, AND THE SECOND KNOB EXISTS
    AFTER ALL.
    Kevin, 2026-08-28: "the first thing that jumps out is how large the scoreboard
