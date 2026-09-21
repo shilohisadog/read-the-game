@@ -83,8 +83,16 @@ test('neither defect can reappear in the shipped app', () => {
 test('the app reduces through the extracted modules, not a copy', () => {
   // Phase 1's whole point. If someone reinlines a reducer here, the golden test
   // keeps passing -- it tests the modules -- while the app quietly diverges.
-  assert.ok(app.includes('function lens(k){return corsi.reduce(upto(k),CTX);}'),
-    'Corsi goes through the layer');
+  /* ⚠️ THE CLAIM IS THE MODULE, NOT THE LINE. This pinned the exact source of
+     `lens()` and went red when the Attempts count grew a second rung on
+     2026-09-21 — a check about "is a reducer reinlined here" failing because a
+     reducer it approves of gained a caller. What matters is that both counts
+     are reached through their modules and neither is reimplemented. */
+  assert.match(app, /function counted\(slice\)\{return levelOnly\?tiedControl\.reduce\(slice,CTX\)/,
+    'the level rung does not go through tiedControl');
+  assert.match(app, /:corsi\.reduce\(slice,CTX\);\}/, 'Corsi goes through the layer');
+  assert.ok(app.includes('function lens(k){return counted(upto(k));}'),
+    'the Attempts count has more than one way in, so two call sites can disagree');
   assert.ok(app.includes('function goalieStats(k){return goaltending.reduce(upto(k),CTX).g;}'),
     'goaltending goes through the layer');
   assert.ok(app.includes('drawWhistles(whistle.reduce(upto(i),CTX))'),

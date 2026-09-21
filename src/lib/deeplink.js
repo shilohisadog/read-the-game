@@ -51,7 +51,11 @@ export const LAYER_TOKENS = [corsi, goaltending, danger, whistle, blocked, zones
 
 /** The page counts every attempt unless a link says otherwise. */
 const DEFAULT_STRENGTH = 'all';
-const STRENGTHS = ['all', 'even'];
+/* ⭐ THREE SINCE 2026-09-21, and the order is the ladder's: each token names a
+   population strictly inside the one before it. `level` is even strength AND a
+   level score AND regulation, which is `tiedControl`'s definition — the deep
+   link cannot ask for "level but not even", because no such count exists. */
+const STRENGTHS = ['all', 'even', 'level'];
 
 /**
  * WHICH RINK THE REPLAY DRAWS. `as-played` follows the arena and turns the ice

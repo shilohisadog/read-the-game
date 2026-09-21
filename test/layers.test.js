@@ -11,7 +11,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { boot } from './helpers/page.js';
+import { boot, pickLayer } from './helpers/page.js';
 import { conservation, summarise } from '../src/lib/layer.js';
 import { corsi } from '../src/lib/layers/corsi.js';
 import { goaltending } from '../src/lib/layers/goaltending.js';
@@ -483,4 +483,62 @@ test('the controls that DO reach the base view stay in it', () => {
     + `${before} for the current moment alone. If the control genuinely stopped applying here, `
     + 'it should move out of the base view too — but it has not, so this is a regression.');
   assert.doesNotMatch(CSS, /#rg \.figpick\.(fig|trail)\{display:none\}/);
+});
+
+/**
+ * ⭐⭐ THE COUNTING LADDER — three rungs, each a STRICT SUBSET of the one above.
+ *
+ * Built 2026-09-21 on Kevin's ruling, reopening a hold from 2026-09-07. The
+ * control was removed then because *"a novice cannot decide whether to press it
+ * without a paragraph about why power-play shots inflate a count, and that
+ * paragraph is exactly what the learn cards refuse to carry"*. The hold had a
+ * stated expiry and both halves have since shipped as cards a reader can open
+ * from this page: `All situations` for the strength half, `Score effects` for
+ * the score half.
+ *
+ * ⭐ WHAT MAKES IT A LADDER rather than three unrelated options is that each rung
+ * removes a NAMED population and keeps the rest, so the count can only fall.
+ * `tiedControl` is the third rung and it already existed — it excludes on play,
+ * type, regulation, score level AND strength — which is why this needed no new
+ * reducer. If an edit ever made `level` anything but `even` plus two more
+ * exclusions, this is the check that says so.
+ *
+ * ⚠️ READ OFF THE PAGE, not from a reducer called here. A test that re-runs the
+ * reducers proves they agree with themselves; the claim is that pressing the
+ * control changes the number a reader sees.
+ */
+test('⭐⭐ each rung of the counting ladder is a subset of the one above', () => {
+  const a = boot();
+  pickLayer(a, 'corsi');
+  const press = s => {
+    const b = (a.GROUPS['#rg .sbtn'] || []).find(x => x.dataset.s === s);
+    assert.ok(b, `no chip for "${s}" — the ladder lost a rung`);
+    b.click();
+  };
+  const shown = () => {
+    const n = Number(String(a.$('n_corsi').textContent).trim());
+    assert.ok(Number.isFinite(n), 'the Attempts chip is not showing a number');
+    return n;
+  };
+
+  const seen = {};
+  a.every(() => {});                       // run the replay to the end
+  for (const s of ['all', 'even', 'level']) { press(s); seen[s] = shown(); }
+
+  assert.ok(seen.all >= seen.even,
+    `even strength counts ${seen.even} of ${seen.all} — a rung added attempts`);
+  assert.ok(seen.even >= seen.level,
+    `while-level counts ${seen.level} against even strength's ${seen.even} — the `
+    + `third rung is not inside the second`);
+  assert.ok(seen.all > seen.level,
+    `every rung counts the same ${seen.all} attempts, so the control changes `
+    + `nothing a reader can see and this test is vacuous`);
+
+  // AND THE CONTROL SAYS WHICH RUNG IS ON, because a filtered count with nothing
+  // naming it is the defect the drawer's summary exists to prevent.
+  press('level');
+  assert.match(String(a.$('zCountOn').textContent), /score was level/i,
+    'the drawer summary does not name the rung that is on');
+  press('all');
+  assert.match(String(a.$('zCountOn').textContent), /all situations/i);
 });

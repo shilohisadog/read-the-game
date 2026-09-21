@@ -602,7 +602,18 @@ test('every zone below the rink is a disclosure, with a 44px summary', () => {
   // whatever layer is on, and disappears with the frame rather than with a
   // control. ⚠️ It is also the only zone that is not always present, which is why
   // the next assertion checks the hidden case rather than assuming it away.
-  assert.equal(zones.length, 5, `expected five collapsible zones, found ${zones.length}`);
+  // ⭐ SIX SINCE 2026-09-21 and `zcount`, the counting ladder. READ AGAINST BOTH
+  // PROPERTIES, which is what this tripwire is for:
+  //   1. its summary carries the pressed rung's own label (`zCountOn`, written by
+  //      `syncStrength` from the button's text), so a filtered count can never sit
+  //      on screen with nothing accounting for it;
+  //   2. it OPENS ITSELF when a deep link arrives asking for a rung other than
+  //      `all` — a link that narrows the count and leaves the control folded away
+  //      would show a number a reader cannot restore.
+  // ⚠️ It is also the second zone that is not always present: it is scoped to the
+  // Attempts layer, because its third rung has an archive rate to compare against
+  // on no other layer.
+  assert.equal(zones.length, 6, `expected six collapsible zones, found ${zones.length}`);
   // AND THE TRANSIENT ONE SHIPS SHUT AND HIDDEN, or a page with no goal on screen
   // carries an empty heading nothing can explain.
   assert.match(app, /<details class="zone zclip" id="clipbox" hidden>/,

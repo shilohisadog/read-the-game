@@ -81,6 +81,8 @@ function fakeDom() {
   const byId = new Map();
   const GROUPS = {
     '#rg .tbtn': ['off', 'all'].map(t => Object.assign(el(), { dataset: { t } })),
+    '#rg .sbtn': [['all', 'All situations'], ['even', 'Even strength only'], ['level', 'While the score was level']]
+      .map(([s, textContent]) => Object.assign(el(), { dataset: { s }, textContent })),
     /* ⏹ THE `.sbtn` STUB WENT ON 2026-09-07 WITH THE CONTROL ITSELF, and it is
        named here rather than silently dropped: a fake that keeps modelling a
        deleted control is how 23 tests drove a ghost for a day in August without
@@ -284,11 +286,12 @@ test('an inexact landing is not an apology: a moment between events says nothing
    number -- the layer box, whose note ends with the mode. `layer=corsi` is added
    to each link because the box speaks only for a chosen layer. */
 
-for (const [q, , label] of [
+for (const [q, want, label] of [
   ['?strength=even', 'even', 'EVEN STRENGTH'],
   ['?strength=all', 'all', 'ALL SITUATIONS'],
   ['', 'all', 'ALL SITUATIONS'],                 // the page's own default
   ['?strength=sideways', 'all', 'ALL SITUATIONS'], // garbage falls back, visibly
+  ['?strength=level', 'level', 'SCORE LEVEL, EVEN STRENGTH, REGULATION'],
 ]) {
   test(`the layer box states the mode the URL asked for: "${q}" -> ${label}`, () => {
     const d = open(q ? `${q}&layer=corsi&at=2-10:00` : '?layer=corsi&at=2-10:00');
@@ -296,14 +299,22 @@ for (const [q, , label] of [
     assert.match(String(d.$('lxN').textContent), new RegExp(`· ${label.toLowerCase()}\\.$`),
       'the box does not say which situations its figures count');
     /* ⏹ THIS READ `aria-pressed` OFF THE `.sbtn` CHIPS UNTIL 2026-09-07, when
-       Kevin removed them: *"we are making an 'advanced' toggle available to a
-       novice, without really explaining what the relative importance of the
-       toggle is."* The FILTER is untouched and this test is about the FILTER —
-       so the claim moves to the surface that still exists -- the layer box's
-       note, asserted above, which is what a viewer actually sees. */
-    assert.equal((d.GROUPS['#rg .sbtn'] || []).length, 0,
-      'the situations chips are back — if that is deliberate, this test should '
-      + 'read their pressed state again rather than only the scoreboard');
+       Kevin removed them, and the assertion moved to the layer box's note. ⭐ THE
+       CHIPS CAME BACK on 2026-09-21 as a ladder of three, and the guard left
+       here for that day — "if that is deliberate, this test should read their
+       pressed state again" — is why this is a restoration rather than a
+       rediscovery. BOTH surfaces are read now: the note a viewer sees, and the
+       control's own pressed state, because a URL that moves the filter without
+       moving the button leaves the page telling two stories. */
+    const chips = d.GROUPS['#rg .sbtn'] || [];
+    assert.ok(chips.length, 'the situations chips are gone again — this half reads nothing');
+    const pressed = chips.filter(b => String(b.getAttribute('aria-pressed')) === 'true');
+    assert.equal(pressed.length, 1,
+      `${pressed.length} chips are pressed — a radio group with none or two is a `
+      + `control that cannot say what the count is`);
+    assert.equal(pressed[0].dataset.s, want,
+      `the URL asked for "${want || 'the default'}" and the chip showing as pressed `
+      + `is "${pressed[0].dataset.s}" — the filter moved and the button did not`);
   });
 }
 

@@ -250,7 +250,12 @@ export function fakeDom() {
   // clicks nothing.
   const GROUPS = {
     '#rg .tbtn': ['off', 'all'].map(t => Object.assign(el(), { dataset: { t } })),
-    '#rg .sbtn': ['all', 'even'].map(s => Object.assign(el(), { dataset: { s } })),
+    /* ⚠️ THE LABELS ARE REAL, for the reason the ring's buttons carry theirs:
+       `syncStrength` copies the pressed button's own text into the drawer's
+       summary, so a fake with empty text lets a summary that says NOTHING pass
+       as one that says what is on. Three rungs since 2026-09-21. */
+    '#rg .sbtn': [['all', 'All situations'], ['even', 'Even strength only'], ['level', 'While the score was level']]
+      .map(([s, textContent]) => Object.assign(el(), { dataset: { s }, textContent })),
     // The next-play ring. Its buttons carry the real labels, because `syncCue`
     // copies the pressed one into the drawer's summary — a fake with empty text
     // would let a summary that says nothing pass as a summary that says what is on.

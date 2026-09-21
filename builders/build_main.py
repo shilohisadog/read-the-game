@@ -423,6 +423,17 @@ __CSS__</style>
 <p class="disclose lkey lk-ends" id="endsKey"></p>
 <p class="disclose lkey lk-unrec" id="unrecKey"></p>
 <div class="whybk" id="whyBk"><div class="why" id="whyContent"></div></div>
+<!-- ⭐ THE COUNTING LADDER, AND IT ONLY EXISTS WHERE IT MEANS SOMETHING. Scoped
+     to the Attempts layer by `#rg.corsi .zcount` rather than shown everywhere:
+     `docs/score-effects.md` §6.2 puts the level control "on the Attempts layer",
+     the two cards that unblock it are both about attempts, and the third rung
+     has an archive rate to compare against on no other layer. Widening it later
+     costs a selector; shipping it wide would put a button on screen whose third
+     position is sometimes meaningless, which is the "a dare" rule. -->
+<details class="zone zcount" id="zCount"><summary class="zh">Counting<span class="zon" id="zCountOn"></span></summary>
+<div class="figpick"><div class="grp" role="group" aria-label="Which attempts are counted"><button class="lyr sbtn" data-s="all" aria-pressed="true">All situations</button><button class="lyr sbtn" data-s="even" aria-pressed="false">Even strength only</button><button class="lyr sbtn" data-s="level" aria-pressed="false">While the score was level</button></div>
+<span class="fnote" id="nCount"></span></div>
+</details>
 <details class="zone zdisp"><summary class="zh">Trails<span class="zon" id="zTrailsOn"></span></summary>
 <div class="figpick"><div class="grp" role="group" aria-label="How long marks stay on the ice"><button class="lyr tbtn" data-t="off" aria-pressed="true">Current moment</button><button class="lyr tbtn" data-t="all" aria-pressed="false">Keep every mark</button></div>
 <span class="fnote" id="nTrails"></span></div>

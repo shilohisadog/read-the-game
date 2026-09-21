@@ -2056,6 +2056,12 @@
    loses to ANY CSS declaration of the same property. One `stroke:` line here
    would repaint all nine rings a single colour and the mark would silently stop
    saying who won, which is half of what CHENG made a condition. */
+/* ⭐ THE COUNTING LADDER FOLLOWS ITS LAYER. `#rg` carries the live layer as a
+   class, so the control is present exactly where its third rung has a meaning —
+   the Attempts layer. Parked rather than deleted on every other layer, which is
+   what `park.test.js` reads this pair as. */
+#rg .zcount{display:none}
+#rg.corsi .zcount{display:block}
 #rg .zs{fill:none;stroke-width:.7;opacity:.7}
 #rg .zs.now{stroke-width:1.2;opacity:1}
 /* ⭐ THE HALO IS THE LEGIBILITY FIX, AND THE SIZE ALONE WAS NOT ENOUGH. Kevin,
