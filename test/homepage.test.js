@@ -2002,3 +2002,109 @@ test('⛔ the dark-night door and the game page name the same newest game', asyn
     + '"The last night we hold is 14 June 2026" shipped beside a September fixture');
   assert.equal(openDate, '2026-09-20', 'neither picked the newest VIEWABLE game (the refused one must be skipped)');
 });
+
+/**
+ * ⭐⭐ TONIGHT — the whole night, and the half only a browser decides.
+ *
+ * `test/daily.test.js` holds what the module decides: which night, how many games
+ * are in it, that a started game stays. What is tested HERE is the half that file
+ * cannot have — the reader's own date and clock. `docs/front-door-tonight.md`.
+ */
+/** The local calendar date of an instant, the way a reader's browser sees it. */
+const localDate = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+  + `-${String(d.getDate()).padStart(2, '0')}`;
+/** A night of `n` fixtures `hours` from now, all carrying the league's own date. */
+function tonight(n, { hours = 3, gameType = 1, date = null } = {}) {
+  const start = new Date(Date.now() + hours * 3600000);
+  return { asOf: new Date().toISOString(), season: SCHEDULE.season,
+    upcoming: Array.from({ length: n }, (_, k) => ({
+      id: 900 + k, date: date || localDate(start), gameType, state: 'FUT',
+      away: ['BUF', 'DET', 'NYR', 'PHI', 'OTT', 'COL', 'MIN', 'STL'][k % 8],
+      home: ['PIT', 'CBJ', 'NJD', 'WSH', 'MTL', 'WPG', 'CHI', 'DAL'][k % 8],
+      startTimeUTC: new Date(start.getTime() + k * 60000).toISOString(),
+    })) };
+}
+const EMPTY = { asOf: new Date().toISOString(), games: [] };
+
+test('⭐ a night of eight is a night of eight, and the kicker says whose night it is', async () => {
+  const r = run({ docs: { ...ALL, 'recent.json': EMPTY, 'schedule.json': tonight(8) } });
+  await r.settle(); await r.settle();
+  assert.equal(r.ids.daily.hidden, false);
+  assert.match(r.ids.dailykick.textContent, /^Tonight · 8 preseason games$/,
+    `the kicker read "${r.ids.dailykick.textContent}"`);
+  const rows = r.ids.dailylist.kids.filter(k => k.className === 'dfix');
+  assert.equal(rows.length, 6, 'capped like the slate, six rows');
+  assert.match(rows[0].textContent, /BUF at PIT/);
+  assert.match(rows[0].textContent, /\d{1,2}:\d{2}/, 'the start, in the reader\'s own clock');
+});
+
+test('⛔ NO ROW IN THE UPCOMING STATE PRODUCES AN href — a future game has no page', async () => {
+  /* CHENG's §5.3: the property, not the instance. `.drow` is an anchor because
+     every row in the slate opens a replay; a game that has not been played has
+     nothing to open, and a link that goes nowhere is worse than text. A test
+     naming one row would pass the day a second kind of row is added. */
+  const r = run({ docs: { ...ALL, 'recent.json': EMPTY, 'schedule.json': tonight(8) } });
+  await r.settle(); await r.settle();
+  /* ⚠️ AND IT NAMES THE SUBJECT IT NEEDS. "no row has an href" is true of a block
+     that rendered no rows, which is how a probe passes on an absence — §7.2's
+     rule, and the defect that blinded the browser check for a week. */
+  const rows = walk(r.ids.dailylist).filter(n => n.className === 'dfix');
+  assert.equal(rows.length, 8, 'all eight render — six in the list, two behind the disclosure');
+  const linked = walk(r.ids.dailylist).filter(n => n.href && !/calendar\.html/.test(n.href));
+  assert.deepEqual(linked.map(n => n.href), [],
+    'a fixture was rendered as a door to a page that cannot exist');
+});
+
+test('the rest of the night opens in place, and the summary says how many', async () => {
+  /* There is no page to link: `calendar.html` renders games we HOLD, and a future
+     night is by definition games we do not hold. So the tail is a disclosure —
+     CLOSED on first paint, which is the height §12.2's budget applies to, and
+     labelled, which is what makes it a disclosure rather than a mystery box. */
+  const r = run({ docs: { ...ALL, 'recent.json': EMPTY, 'schedule.json': tonight(8) } });
+  await r.settle(); await r.settle();
+  const det = r.ids.dailylist.kids.find(k => k.tag === 'details');
+  assert.ok(det, 'the two games past the cap are nowhere');
+  assert.equal(det.attrs.open, undefined, 'it must be closed when the page paints');
+  const sum = det.kids.find(k => k.tag === 'summary');
+  assert.match(sum.textContent, /2 more tonight/);
+  assert.equal(det.kids.filter(k => k.className === 'dfix').length, 2);
+});
+
+test('⭐ IN SEASON THE BLOCK STILL LOOKS FORWARD, in one line', async () => {
+  /* The defect that arrives on 29 September: with results to show, the block
+     showed nothing about tonight. One line, because the results rows already
+     spend the slack beside the rink (§12.2). */
+  const r = run({ docs: { ...ALL, 'recent.json': RECENT, 'schedule.json': tonight(11, { gameType: 2 }) } });
+  await r.settle(); await r.settle();
+  assert.match(r.ids.dailykick.textContent, /2 games$/, 'last night is unchanged');
+  assert.equal(r.ids.dailylist.kids.filter(k => k.href && /game\.html/.test(k.href)).length, 2,
+    'the doors to last night survive');
+  const line = r.ids.dailylist.kids.find(k => k.className === 'dtonight');
+  assert.ok(line, 'nothing on the page says there is hockey tonight');
+  assert.match(line.textContent, /^Tonight · 11 games from \d{1,2}:\d{2}/);
+});
+
+test('a night that is not the reader\'s tonight is named by its day', async () => {
+  /* §12.5's rule, reused: the word is EARNED. A reader in Europe, for whom a 7pm
+     Eastern game starts after midnight, is not having their tonight. */
+  const day = new Date(Date.now() + 36 * 3600000);
+  const r = run({ docs: { ...ALL, 'recent.json': EMPTY,
+    'schedule.json': tonight(3, { hours: 36, gameType: 2, date: localDate(day) }) } });
+  await r.settle(); await r.settle();
+  assert.doesNotMatch(r.ids.dailykick.textContent, /tonight/i,
+    `it claimed tonight for ${r.ids.dailykick.textContent}`);
+  assert.match(r.ids.dailykick.textContent, /· 3 games$/);
+});
+
+test('⚠️ a schedule with no league dates still says when the next game is', async () => {
+  /* The deploy seam: the site ships on push, the pipeline lands at the next
+     ingest. For up to a day the fixtures carry no date, and the failure state is
+     the sentence this block has always written. */
+  const undated = tonight(4);
+  undated.upcoming = undated.upcoming.map(({ date, ...g }) => g);
+  const r = run({ docs: { ...ALL, 'recent.json': EMPTY, 'schedule.json': undated } });
+  await r.settle(); await r.settle();
+  assert.equal(r.ids.daily.hidden, false);
+  assert.match(r.ids.dailykick.textContent, /^Next$/);
+  assert.match(r.ids.dailysay.textContent, /BUF at PIT/, 'the one fixture, as before');
+});

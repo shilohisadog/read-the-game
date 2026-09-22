@@ -132,18 +132,84 @@ function attemptsTally(rows) {
  * that can be right.
  */
 function nextFixture(schedule, now) {
-  const rows = ((schedule && schedule.upcoming) || [])
+  /* ⚠️ THE FILTER IS `startTimeUTC > now`, AND IT BELONGS HERE RATHER THAN IN
+     `upcomingFrom`. `upcoming` is rebuilt each run from games the payload
+     reported in a state we could not read as final, and such a game does not
+     leave that list by being played — so the single-fixture sentence would put
+     last Tuesday's game on the front door under the word "Next". A NIGHT keeps
+     its started games (see `nextNight`); a sentence naming one game may not. */
+  return upcomingFrom(schedule, now).filter(g => g.startTimeUTC > now)[0] || null;
+}
+
+/** The fixtures ahead of `now`, soonest first, ties by id so two runs agree. */
+function upcomingFrom(schedule, now) {
+  return ((schedule && schedule.upcoming) || [])
     /* ⚠️ AND IT MUST PARSE. The renderer's only job with this value is
        `new Date(startTimeUTC).toLocaleString(...)`, which answers "Invalid Date"
        rather than throwing — so an unparseable instant would reach the front
        door as a sentence, not as an error. A value this module will not vouch
        for is not handed on. */
-    .filter(g => g && typeof g.startTimeUTC === 'string' && g.startTimeUTC > now
+    .filter(g => g && typeof g.startTimeUTC === 'string'
       && Number.isFinite(Date.parse(g.startTimeUTC)))
     .sort((a, b) => (a.startTimeUTC === b.startTimeUTC
       ? (a.id || 0) - (b.id || 0)
       : (a.startTimeUTC < b.startTimeUTC ? -1 : 1)));
-  return rows.length ? rows[0] : null;
+}
+
+/**
+ * ⭐⭐ THE NEXT NIGHT — every game the league lists for it, not the first one.
+ *
+ * The block used to name one fixture, and `docs/front-door.md` §12.3 is why: a
+ * count over a window we cannot date honestly is a number with no population, and
+ * no UTC date names an NHL night — a 7pm Eastern game is 23:00Z the same day, a
+ * 10:30pm Pacific one 05:30Z the next.
+ *
+ * ⭐ THE LEAGUE DATES IT AND WE WERE THROWING THAT AWAY. `classify()` in
+ * `fetch_nhl.py` attaches `week.date` to every game; the loop building `upcoming`
+ * copied seven fields and not that one. So the night's population is the league's
+ * own label, quoted — nothing here reads a clock, and §12.3's reasoning survives
+ * intact: this still formats no time and names no day.
+ *
+ * ⛔ A GAME UNDER WAY IS STILL TONIGHT. Selecting the night needs a fixture that
+ * has not started; PRINTING it does not. Dropping the started ones would shrink
+ * the list from under a reader at 9pm and make the count disagree with the rows.
+ *
+ * ⚠️ AND AN UNDATED DOCUMENT IS THE OLD SHAPE, ALL OF IT. The site deploys on
+ * push and the pipeline lands at the next ingest, so for up to a day these
+ * fixtures carry no `date`. The caller gets `null` and falls back to the single
+ * fixture, which is TODAY'S BEHAVIOUR rather than an error or an empty block. One
+ * undated fixture is enough: a night whose count is quietly short is worse than
+ * the sentence it replaces, and the ingest refuses to publish that shape anyway.
+ */
+function nextNight(schedule, now) {
+  const rows = upcomingFrom(schedule, now);
+  if (!rows.length) return null;
+  if (rows.some(g => typeof g.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(g.date)))
+    return null;
+
+  const ahead = rows.filter(g => g.startTimeUTC > now);
+  if (!ahead.length) return null;
+  const date = ahead.reduce((min, g) => (g.date < min ? g.date : min), ahead[0].date);
+
+  const fixtures = rows.filter(g => g.date === date)
+    .map(g => ({ ...g, started: !(g.startTimeUTC > now) }));
+  return {
+    date,
+    count: fixtures.length,
+    /* THE COUNT IS THE NIGHT AND THE CAP IS THE LAYOUT — §12.2's rule, one state
+       over: a block saying "6 games" on a sixteen-game night would be a false
+       claim about hockey made to save a card's height. */
+    fixtures: fixtures.slice(0, SHOWN),
+    /* ⛔ THE REST ARE RETURNED, NOT COUNTED, and that is the difference from the
+       slate's tail. The slate's overflow has somewhere to go — `calendar.html`
+       renders a whole night we HOLD — and a future night is by definition games
+       we do not hold, so there is no page to link and the remainder opens in
+       place. A count alone would leave the renderer with nothing to open. */
+    rest: fixtures.slice(SHOWN),
+    /* ⛔ EVERY game, not the first one. A late-September night mixes preseason
+       and regular season, and one word for both is wrong for half of it. */
+    preseason: fixtures.every(g => g.gameType === 1),
+  };
 }
 
 /**
@@ -210,7 +276,7 @@ export function whenHockeyReturns(schedule, now) {
  */
 export function daily(recent, schedule, now) {
   const none = { state: 'none', kicker: null, count: null, lines: [], games: [],
-    date: null, more: 0, next: null };
+    date: null, more: 0, next: null, night: null };
 
   const { date, rows } = newestDay(recent && recent.games);
   if (rows.length) {
@@ -235,8 +301,15 @@ export function daily(recent, schedule, now) {
         : `the ${n} where one team had more.`;
       lines.push(`The team with more shot attempts lost ${lost} of ${tail}`);
     }
+    /* ⭐ AND THE SLATE LOOKS FORWARD TOO, which is the defect that arrives with
+       the regular season. This branch fires whenever recent.json holds games and
+       it used to carry nothing about what is on tonight — invisible all
+       preseason, because preseason is out of scope for recent.json and the
+       `upcoming` branch was what a reader saw. From the first morning of the
+       regular season most days hold results, and the forward look vanished. */
     return { state: 'slate', kicker, count: rows.length, lines, date,
-      games: rows.slice(0, SHOWN), more: Math.max(0, rows.length - SHOWN), next: null };
+      games: rows.slice(0, SHOWN), more: Math.max(0, rows.length - SHOWN),
+      next: null, night: nextNight(schedule, now) };
   }
 
   const next = nextFixture(schedule, now);
@@ -254,8 +327,16 @@ export function daily(recent, schedule, now) {
        COMPREHENSION OF IT. Absence of a record is not absence of a game, so the
        block claims no absence at all and answers the question a reader on a dark
        night is actually asking, which is when the next one is. */
-    return { state: 'upcoming', kicker: 'Next', count: null,
-      lines: [], games: [], date: null, more: 0, next };
+    /* ⛔ THE TWO SHAPES ARE EXCLUSIVE, so a renderer can never print both. With
+       the league's dates the block shows the NIGHT and names no single game;
+       without them it degrades to the one fixture and the sentence it has always
+       written. `kicker` goes with it: "Next" belongs to the sentence, while a
+       night's kicker needs the reader's own date to know whether the word is
+       "Tonight", and only the browser knows that. */
+    const night = nextNight(schedule, now);
+    return { state: 'upcoming', kicker: night ? null : 'Next', count: null,
+      lines: [], games: [], date: null, more: 0,
+      next: night ? null : next, night };
   }
 
   const back = whenHockeyReturns(schedule, now);
@@ -267,7 +348,7 @@ export function daily(recent, schedule, now) {
     // way is CHENG's q4 ruling, and printing both halves in both places is what
     // it ruled against.
     return { state: 'offseason', kicker: 'Next', count: null,
-      lines: [back], games: [], date: null, more: 0, next: null };
+      lines: [back], games: [], date: null, more: 0, next: null, night: null };
   }
 
   return none;

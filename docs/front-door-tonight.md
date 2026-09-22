@@ -1,7 +1,7 @@
 # Tonight on the front door — the whole night, not the first game in it
 
 **Written 2026-09-22 as a plan for review; §4's three decisions are ruled by
-Kevin and the plan is otherwise unchanged.** Nothing is built. It changes the
+Kevin, CHENG endorsed it in §5 — and ✅ IT IS BUILT, §7.** It changes the
 daily block that `docs/front-door.md` §5 designed and §12 built, and it must not
 break a ruling that document made, so that ruling is answered first (§2).
 
@@ -207,3 +207,44 @@ a slate from a real date and needs the same for `schedule.json`.
 The `offseason` state, the hero, the one-live-preview rule (§5.3), the phone's
 portrait prompt, and every computed number — nothing here counts, rates or
 compares; it lists what the league has scheduled.
+
+## 7. ✅ BUILT — 2026-09-22
+
+Gates green at **1,358 JS + 224 Python**. Every claim below was measured after
+the change, not predicted by it.
+
+**What shipped, against the plan:**
+
+| | |
+|---|---|
+| A1, A2 | `fetch_nhl.py` carries `date` onto every fixture and asks for one week past the window. ⚠️ An existing test handed the run exactly two pages and broke on the third request — updated to three, which also makes the blanking payload arrive twice, the harder case for the rule it tests. |
+| B1–B4 | `nextNight()` in `src/lib/daily.js`. ⭐ **The plan's `more` count became `rest`, the fixtures themselves** — the slate's overflow has a page to go to and a night still to be played does not, so the renderer needs the games, not a number. |
+| B5 | An undated document degrades to the single fixture, and **one** undated fixture is enough to treat the whole document as the old shape. |
+| C1–C3 | `.dfix` rows are `<p>`, never anchors; the overflow is a `<details>` closed on first paint whose summary carries the count; in season one `.dtonight` line. |
+| §5.1 | The ingest pre-sync check refuses to publish a fixture with no league date, warns when every fixture shares one night, and prints the span. ⭐ **Exercised against four shapes before it shipped** — two nights (passes), one night (warns), a fixture with no date (exit 1), empty (vacuous). |
+| §5.2 | `tools/pixels.sh` gained `RTG_PIXELS_TONIGHT=n` (invented fixtures, announced loudly as invented) and `RTG_PIXELS_HEIGHT`, because the phone this site supports is a LANDSCAPE one and the harness was fixed at 900px tall. |
+
+**The layout, measured at 1100 px:**
+
+| state | card height |
+|---|---|
+| results only, 11-game slate (the baseline) | **1,054 px** |
+| the same, plus tonight's one line | **1,089 px** — the line costs **35 px** |
+| a night of 8 fixtures, no results | **996 px** |
+| a night of **16**, no results | **996 px** — identical, which is the cap doing its job |
+
+⭐ **A sixteen-game night and an eight-game night are the same height**, so §12.2's
+finding cannot recur through this state. Landscape phone (568 × 320): the card is
+**524 × 777**, the disclosure closed, nothing clipped — and it was LOOKED at, not
+only measured.
+
+⚠️ **Two of the new renderer tests passed before the renderer existed.** "No row
+produces an href" is true of a block that rendered no rows — the same vacuous
+pass §7.2 of `docs/test-program.md` warns about and the same hole that blinded
+`stylesheet-settles` for a week. Both now assert their subject is present first.
+
+⏭ **What a reader sees tonight, before the next ingest:** the live
+`schedule.json` predates A1, so its fixtures carry no date and the page shows the
+single-fixture sentence it shows today. The night appears after the next nightly
+run — which is B5 working, and the ingest check is what turns "it did not happen"
+into a refusal rather than a silence.

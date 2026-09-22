@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-t3c4Wqg5YBq13X2mlJqcfnJqQNZtjfrqdbOwkLPKSLY='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-2yjZ/PgzHsn4YtD5lnDdH8CUuU7/gKT2CxLauWLGeoE='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -223,6 +223,13 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
  text-decoration:none;color:inherit;background:var(--bg);border:1px solid var(--edge);
  border-radius:8px;padding:7px 11px;font-size:.85rem}
 .drow:hover,.drow:focus-visible{border-color:var(--blue)}
+/* A FIXTURE IS NOT A DOOR. It sits in the same list and must not read as one:
+   no border, no hover, no pointer -- the game has not been played and there is
+   nothing to open. The day the club preview gives it a destination, it becomes a
+   `.drow` and this rule goes. */
+.dfix{margin:0;font-size:.85rem;color:var(--muted);padding:3px 2px}
+.dtonight{margin:9px 0 0;font-size:.85rem;color:var(--muted)}
+.dmoretonight>summary{font-size:.8rem;color:var(--muted);cursor:pointer;padding:3px 2px}
 .drow .dscore{font-weight:650;font-variant-numeric:tabular-nums}
 /* The attempts figure is the reason the row is here rather than in a scores
    list, and it is `--muted` for the same reason `.herorel` is: it is the second

@@ -127,6 +127,15 @@ def schedule_urls(dates):
     while cursor <= last:
         out.append(f"{WEB}/schedule/{cursor}")
         cursor = shift_date(cursor, SCHEDULE_SPAN)
+    # ⭐ AND ONE REQUEST PAST THE WINDOW, WHICH IS THE ONLY WAY TOMORROW IS SEEN.
+    # A 14-day window is exactly two weeks, so the last call above ends on the
+    # run's own date and `upcoming` never held a game past today: on a night with
+    # no games the front door could name nothing, and once the last game of a
+    # night started there was nothing left to say until the next run. This costs
+    # ONE request and buys the seven days after the window.
+    # `cursor` is already the day after `last` covered, so it is that week.
+    if cursor not in [u.rsplit("/", 1)[-1] for u in out]:
+        out.append(f"{WEB}/schedule/{cursor}")
     return out
 
 
@@ -369,6 +378,14 @@ def ingest(end, days, transport, store, now=None):
                 continue
             upcoming[g["id"]] = {
                 "id": g["id"],
+                # ⭐ THE LEAGUE'S OWN NIGHT, CARRIED RATHER THAN DERIVED. `classify`
+                # attaches `week.date` above for `dataThrough`'s sake, and this loop
+                # used to drop it -- so a reader wanting "the games of the 8th" had
+                # to group by `startTimeUTC`, which splits one night in two: a
+                # 10:30pm Pacific game is 05:30Z the NEXT day. front-door.md §12.3
+                # refused to invent that date and was right to; the league already
+                # publishes it. See docs/front-door-tonight.md §2.
+                "date": g.get("date"),
                 "startTimeUTC": g.get("startTimeUTC"),
                 "gameType": g.get("gameType"),
                 "state": g.get("gameState"),

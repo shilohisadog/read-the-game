@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-K02i+zVnT2HjpP/NaOROQDSFqmG4pr36DLF+RFXwgyM=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-t3c4Wqg5YBq13X2mlJqcfnJqQNZtjfrqdbOwkLPKSLY='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-V8fqYdlXU6bYqtjDfkvJh2Tg2JxtRv4KQlqQbjk4DkI=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-2yjZ/PgzHsn4YtD5lnDdH8CUuU7/gKT2CxLauWLGeoE='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -223,6 +223,13 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
  text-decoration:none;color:inherit;background:var(--bg);border:1px solid var(--edge);
  border-radius:8px;padding:7px 11px;font-size:.85rem}
 .drow:hover,.drow:focus-visible{border-color:var(--blue)}
+/* A FIXTURE IS NOT A DOOR. It sits in the same list and must not read as one:
+   no border, no hover, no pointer -- the game has not been played and there is
+   nothing to open. The day the club preview gives it a destination, it becomes a
+   `.drow` and this rule goes. */
+.dfix{margin:0;font-size:.85rem;color:var(--muted);padding:3px 2px}
+.dtonight{margin:9px 0 0;font-size:.85rem;color:var(--muted)}
+.dmoretonight>summary{font-size:.8rem;color:var(--muted);cursor:pointer;padding:3px 2px}
 .drow .dscore{font-weight:650;font-variant-numeric:tabular-nums}
 /* The attempts figure is the reason the row is here rather than in a scores
    list, and it is `--muted` for the same reason `.herorel` is: it is the second
@@ -1127,18 +1134,84 @@ function attemptsTally(rows) {
  * that can be right.
  */
 function nextFixture(schedule, now) {
-  const rows = ((schedule && schedule.upcoming) || [])
+  /* ⚠️ THE FILTER IS `startTimeUTC > now`, AND IT BELONGS HERE RATHER THAN IN
+     `upcomingFrom`. `upcoming` is rebuilt each run from games the payload
+     reported in a state we could not read as final, and such a game does not
+     leave that list by being played — so the single-fixture sentence would put
+     last Tuesday's game on the front door under the word "Next". A NIGHT keeps
+     its started games (see `nextNight`); a sentence naming one game may not. */
+  return upcomingFrom(schedule, now).filter(g => g.startTimeUTC > now)[0] || null;
+}
+
+/** The fixtures ahead of `now`, soonest first, ties by id so two runs agree. */
+function upcomingFrom(schedule, now) {
+  return ((schedule && schedule.upcoming) || [])
     /* ⚠️ AND IT MUST PARSE. The renderer's only job with this value is
        `new Date(startTimeUTC).toLocaleString(...)`, which answers "Invalid Date"
        rather than throwing — so an unparseable instant would reach the front
        door as a sentence, not as an error. A value this module will not vouch
        for is not handed on. */
-    .filter(g => g && typeof g.startTimeUTC === 'string' && g.startTimeUTC > now
+    .filter(g => g && typeof g.startTimeUTC === 'string'
       && Number.isFinite(Date.parse(g.startTimeUTC)))
     .sort((a, b) => (a.startTimeUTC === b.startTimeUTC
       ? (a.id || 0) - (b.id || 0)
       : (a.startTimeUTC < b.startTimeUTC ? -1 : 1)));
-  return rows.length ? rows[0] : null;
+}
+
+/**
+ * ⭐⭐ THE NEXT NIGHT — every game the league lists for it, not the first one.
+ *
+ * The block used to name one fixture, and `docs/front-door.md` §12.3 is why: a
+ * count over a window we cannot date honestly is a number with no population, and
+ * no UTC date names an NHL night — a 7pm Eastern game is 23:00Z the same day, a
+ * 10:30pm Pacific one 05:30Z the next.
+ *
+ * ⭐ THE LEAGUE DATES IT AND WE WERE THROWING THAT AWAY. `classify()` in
+ * `fetch_nhl.py` attaches `week.date` to every game; the loop building `upcoming`
+ * copied seven fields and not that one. So the night's population is the league's
+ * own label, quoted — nothing here reads a clock, and §12.3's reasoning survives
+ * intact: this still formats no time and names no day.
+ *
+ * ⛔ A GAME UNDER WAY IS STILL TONIGHT. Selecting the night needs a fixture that
+ * has not started; PRINTING it does not. Dropping the started ones would shrink
+ * the list from under a reader at 9pm and make the count disagree with the rows.
+ *
+ * ⚠️ AND AN UNDATED DOCUMENT IS THE OLD SHAPE, ALL OF IT. The site deploys on
+ * push and the pipeline lands at the next ingest, so for up to a day these
+ * fixtures carry no `date`. The caller gets `null` and falls back to the single
+ * fixture, which is TODAY'S BEHAVIOUR rather than an error or an empty block. One
+ * undated fixture is enough: a night whose count is quietly short is worse than
+ * the sentence it replaces, and the ingest refuses to publish that shape anyway.
+ */
+function nextNight(schedule, now) {
+  const rows = upcomingFrom(schedule, now);
+  if (!rows.length) return null;
+  if (rows.some(g => typeof g.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(g.date)))
+    return null;
+
+  const ahead = rows.filter(g => g.startTimeUTC > now);
+  if (!ahead.length) return null;
+  const date = ahead.reduce((min, g) => (g.date < min ? g.date : min), ahead[0].date);
+
+  const fixtures = rows.filter(g => g.date === date)
+    .map(g => ({ ...g, started: !(g.startTimeUTC > now) }));
+  return {
+    date,
+    count: fixtures.length,
+    /* THE COUNT IS THE NIGHT AND THE CAP IS THE LAYOUT — §12.2's rule, one state
+       over: a block saying "6 games" on a sixteen-game night would be a false
+       claim about hockey made to save a card's height. */
+    fixtures: fixtures.slice(0, SHOWN),
+    /* ⛔ THE REST ARE RETURNED, NOT COUNTED, and that is the difference from the
+       slate's tail. The slate's overflow has somewhere to go — `calendar.html`
+       renders a whole night we HOLD — and a future night is by definition games
+       we do not hold, so there is no page to link and the remainder opens in
+       place. A count alone would leave the renderer with nothing to open. */
+    rest: fixtures.slice(SHOWN),
+    /* ⛔ EVERY game, not the first one. A late-September night mixes preseason
+       and regular season, and one word for both is wrong for half of it. */
+    preseason: fixtures.every(g => g.gameType === 1),
+  };
 }
 
 /**
@@ -1205,7 +1278,7 @@ function whenHockeyReturns(schedule, now) {
  */
 function daily(recent, schedule, now) {
   const none = { state: 'none', kicker: null, count: null, lines: [], games: [],
-    date: null, more: 0, next: null };
+    date: null, more: 0, next: null, night: null };
 
   const { date, rows } = newestDay(recent && recent.games);
   if (rows.length) {
@@ -1230,8 +1303,15 @@ function daily(recent, schedule, now) {
         : `the ${n} where one team had more.`;
       lines.push(`The team with more shot attempts lost ${lost} of ${tail}`);
     }
+    /* ⭐ AND THE SLATE LOOKS FORWARD TOO, which is the defect that arrives with
+       the regular season. This branch fires whenever recent.json holds games and
+       it used to carry nothing about what is on tonight — invisible all
+       preseason, because preseason is out of scope for recent.json and the
+       `upcoming` branch was what a reader saw. From the first morning of the
+       regular season most days hold results, and the forward look vanished. */
     return { state: 'slate', kicker, count: rows.length, lines, date,
-      games: rows.slice(0, SHOWN), more: Math.max(0, rows.length - SHOWN), next: null };
+      games: rows.slice(0, SHOWN), more: Math.max(0, rows.length - SHOWN),
+      next: null, night: nextNight(schedule, now) };
   }
 
   const next = nextFixture(schedule, now);
@@ -1249,8 +1329,16 @@ function daily(recent, schedule, now) {
        COMPREHENSION OF IT. Absence of a record is not absence of a game, so the
        block claims no absence at all and answers the question a reader on a dark
        night is actually asking, which is when the next one is. */
-    return { state: 'upcoming', kicker: 'Next', count: null,
-      lines: [], games: [], date: null, more: 0, next };
+    /* ⛔ THE TWO SHAPES ARE EXCLUSIVE, so a renderer can never print both. With
+       the league's dates the block shows the NIGHT and names no single game;
+       without them it degrades to the one fixture and the sentence it has always
+       written. `kicker` goes with it: "Next" belongs to the sentence, while a
+       night's kicker needs the reader's own date to know whether the word is
+       "Tonight", and only the browser knows that. */
+    const night = nextNight(schedule, now);
+    return { state: 'upcoming', kicker: night ? null : 'Next', count: null,
+      lines: [], games: [], date: null, more: 0,
+      next: night ? null : next, night };
   }
 
   const back = whenHockeyReturns(schedule, now);
@@ -1262,7 +1350,7 @@ function daily(recent, schedule, now) {
     // way is CHENG's q4 ruling, and printing both halves in both places is what
     // it ruled against.
     return { state: 'offseason', kicker: 'Next', count: null,
-      lines: [back], games: [], date: null, more: 0, next: null };
+      lines: [back], games: [], date: null, more: 0, next: null, night: null };
   }
 
   return none;
@@ -2811,8 +2899,44 @@ function disputedNote(n) {
        about. A return value is true in both. */
     if (d.state === 'none') return false;
 
-    $('dailykick').textContent = d.kicker + (d.count == null ? '' :
-      ' \u00b7 ' + d.count + (d.count === 1 ? ' game' : ' games'));
+    /* ⭐ "TONIGHT" IS EARNED, THE SAME WAY "LAST NIGHT" IS. §12.5 reads that
+       phrase from the game dates rather than from a timestamp; this reads it from
+       the LEAGUE's date for the night against the READER's own calendar date. A
+       reader in Europe, for whom a 7pm Eastern game starts after midnight, is not
+       having their tonight and gets the day's name instead — which is correct
+       rather than a shortfall.
+       ⚠️ THE LOCAL DATE IS BUILT FROM PARTS, never parsed. `new Date('2026-01-16')`
+       is UTC midnight, which in every western timezone renders as the 15th — the
+       off-by-one this whole feature exists to avoid, one line lower. */
+    function nightWord(date) {
+      var t = new Date();
+      var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+      var today = t.getFullYear() + '-' + pad(t.getMonth() + 1) + '-' + pad(t.getDate());
+      if (date === today) return 'Tonight';
+      var p = date.split('-');
+      return new Date(+p[0], +p[1] - 1, +p[2])
+        .toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+    }
+    function clockOf(iso) {
+      return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+    }
+    function fixtureRow(g) {
+      /* ⛔ NOT A `.drow`, AND THE CLASS NAME CARRIES THE REASON. Every row in the
+         slate is an anchor into a replay — "each row is a door" — and a game that
+         has not been played has nothing to open. A link that goes nowhere is worse
+         than text, so a fixture is a `<p>` and cannot acquire an href by accident. */
+      return el('p', 'dfix', g.away + ' at ' + g.home + ' \u00b7 ' + clockOf(g.startTimeUTC)
+        + (g.started ? ' \u00b7 under way' : ''));
+    }
+
+    var night = d.night;
+    if (night && d.state !== 'slate') {
+      $('dailykick').textContent = nightWord(night.date) + ' \u00b7 ' + night.count
+        + (night.preseason ? ' preseason' : '') + (night.count === 1 ? ' game' : ' games');
+    } else {
+      $('dailykick').textContent = d.kicker + (d.count == null ? '' :
+        ' \u00b7 ' + d.count + (d.count === 1 ? ' game' : ' games'));
+    }
 
     var lines = d.lines.slice();
     if (d.next) {
@@ -2847,6 +2971,35 @@ function disputedNote(n) {
         row.appendChild(el('span', 'datt', 'attempts ' + at.a + '\u2013' + at.h));
       list.appendChild(row);
     });
+    if (night && d.state !== 'slate') {
+      night.fixtures.forEach(function (g) { list.appendChild(fixtureRow(g)); });
+      /* ⭐ THE REST OPENS IN PLACE, because there is nowhere to send it. The
+         slate's tail links to `calendar.html?date=`, which renders a night we
+         HOLD; a night still to be played is by definition games we do not hold,
+         and giving the calendar a second data source would give it a second
+         notion of what a game is. CLOSED on first paint — that is the height
+         §12.2's budget applies to — and the summary carries the count, which is
+         the difference between a disclosure and a mystery box. */
+      if (night.rest.length) {
+        var det = el('details', 'dmoretonight');
+        det.appendChild(el('summary', null, night.rest.length + ' more tonight'));
+        night.rest.forEach(function (g) { det.appendChild(fixtureRow(g)); });
+        list.appendChild(det);
+      }
+    }
+    /* ⭐⭐ AND IN SEASON THE BLOCK KEEPS LOOKING FORWARD — one line, not rows.
+       `slate` fires whenever we hold last night's games, and it used to say
+       nothing about tonight: invisible through preseason, and from 29 September
+       the state a reader meets on most mornings. The rows are the slate's, which
+       already spend the slack beside the rink (§12.2, ~440px at 1900 and 42px a
+       row), so tonight gets ONE line and the doors stay with the games that have
+       one. Kevin, 2026-09-22: "one line is fine." */
+    if (night && d.state === 'slate') {
+      list.appendChild(el('p', 'dtonight', nightWord(night.date) + ' \u00b7 ' + night.count
+        + (night.preseason ? ' preseason' : '') + (night.count === 1 ? ' game' : ' games')
+        + ' from ' + clockOf(night.fixtures[0].startTimeUTC) + '.'));
+    }
+
     /* ⭐ THE REST OF THE NIGHT, AND IT IS A BETTER DOOR THAN THE ROWS IT
        REPLACES. `calendar.html?date=` renders the whole slate including the
        games we hold and cannot publish, which this list can never show. So the

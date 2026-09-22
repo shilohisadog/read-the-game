@@ -296,6 +296,13 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
  text-decoration:none;color:inherit;background:var(--bg);border:1px solid var(--edge);
  border-radius:8px;padding:7px 11px;font-size:.85rem}
 .drow:hover,.drow:focus-visible{border-color:var(--blue)}
+/* A FIXTURE IS NOT A DOOR. It sits in the same list and must not read as one:
+   no border, no hover, no pointer -- the game has not been played and there is
+   nothing to open. The day the club preview gives it a destination, it becomes a
+   `.drow` and this rule goes. */
+.dfix{margin:0;font-size:.85rem;color:var(--muted);padding:3px 2px}
+.dtonight{margin:9px 0 0;font-size:.85rem;color:var(--muted)}
+.dmoretonight>summary{font-size:.8rem;color:var(--muted);cursor:pointer;padding:3px 2px}
 .drow .dscore{font-weight:650;font-variant-numeric:tabular-nums}
 /* The attempts figure is the reason the row is here rather than in a scores
    list, and it is `--muted` for the same reason `.herorel` is: it is the second
@@ -1453,8 +1460,44 @@ __HELPERS__
        about. A return value is true in both. */
     if (d.state === 'none') return false;
 
-    $('dailykick').textContent = d.kicker + (d.count == null ? '' :
-      ' \u00b7 ' + d.count + (d.count === 1 ? ' game' : ' games'));
+    /* ⭐ "TONIGHT" IS EARNED, THE SAME WAY "LAST NIGHT" IS. §12.5 reads that
+       phrase from the game dates rather than from a timestamp; this reads it from
+       the LEAGUE's date for the night against the READER's own calendar date. A
+       reader in Europe, for whom a 7pm Eastern game starts after midnight, is not
+       having their tonight and gets the day's name instead — which is correct
+       rather than a shortfall.
+       ⚠️ THE LOCAL DATE IS BUILT FROM PARTS, never parsed. `new Date('2026-01-16')`
+       is UTC midnight, which in every western timezone renders as the 15th — the
+       off-by-one this whole feature exists to avoid, one line lower. */
+    function nightWord(date) {
+      var t = new Date();
+      var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+      var today = t.getFullYear() + '-' + pad(t.getMonth() + 1) + '-' + pad(t.getDate());
+      if (date === today) return 'Tonight';
+      var p = date.split('-');
+      return new Date(+p[0], +p[1] - 1, +p[2])
+        .toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+    }
+    function clockOf(iso) {
+      return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+    }
+    function fixtureRow(g) {
+      /* ⛔ NOT A `.drow`, AND THE CLASS NAME CARRIES THE REASON. Every row in the
+         slate is an anchor into a replay — "each row is a door" — and a game that
+         has not been played has nothing to open. A link that goes nowhere is worse
+         than text, so a fixture is a `<p>` and cannot acquire an href by accident. */
+      return el('p', 'dfix', g.away + ' at ' + g.home + ' \u00b7 ' + clockOf(g.startTimeUTC)
+        + (g.started ? ' \u00b7 under way' : ''));
+    }
+
+    var night = d.night;
+    if (night && d.state !== 'slate') {
+      $('dailykick').textContent = nightWord(night.date) + ' \u00b7 ' + night.count
+        + (night.preseason ? ' preseason' : '') + (night.count === 1 ? ' game' : ' games');
+    } else {
+      $('dailykick').textContent = d.kicker + (d.count == null ? '' :
+        ' \u00b7 ' + d.count + (d.count === 1 ? ' game' : ' games'));
+    }
 
     var lines = d.lines.slice();
     if (d.next) {
@@ -1489,6 +1532,35 @@ __HELPERS__
         row.appendChild(el('span', 'datt', 'attempts ' + at.a + '\u2013' + at.h));
       list.appendChild(row);
     });
+    if (night && d.state !== 'slate') {
+      night.fixtures.forEach(function (g) { list.appendChild(fixtureRow(g)); });
+      /* ⭐ THE REST OPENS IN PLACE, because there is nowhere to send it. The
+         slate's tail links to `calendar.html?date=`, which renders a night we
+         HOLD; a night still to be played is by definition games we do not hold,
+         and giving the calendar a second data source would give it a second
+         notion of what a game is. CLOSED on first paint — that is the height
+         §12.2's budget applies to — and the summary carries the count, which is
+         the difference between a disclosure and a mystery box. */
+      if (night.rest.length) {
+        var det = el('details', 'dmoretonight');
+        det.appendChild(el('summary', null, night.rest.length + ' more tonight'));
+        night.rest.forEach(function (g) { det.appendChild(fixtureRow(g)); });
+        list.appendChild(det);
+      }
+    }
+    /* ⭐⭐ AND IN SEASON THE BLOCK KEEPS LOOKING FORWARD — one line, not rows.
+       `slate` fires whenever we hold last night's games, and it used to say
+       nothing about tonight: invisible through preseason, and from 29 September
+       the state a reader meets on most mornings. The rows are the slate's, which
+       already spend the slack beside the rink (§12.2, ~440px at 1900 and 42px a
+       row), so tonight gets ONE line and the doors stay with the games that have
+       one. Kevin, 2026-09-22: "one line is fine." */
+    if (night && d.state === 'slate') {
+      list.appendChild(el('p', 'dtonight', nightWord(night.date) + ' \u00b7 ' + night.count
+        + (night.preseason ? ' preseason' : '') + (night.count === 1 ? ' game' : ' games')
+        + ' from ' + clockOf(night.fixtures[0].startTimeUTC) + '.'));
+    }
+
     /* ⭐ THE REST OF THE NIGHT, AND IT IS A BETTER DOOR THAN THE ROWS IT
        REPLACES. `calendar.html?date=` renders the whole slate including the
        games we hold and cannot publish, which this list can never show. So the

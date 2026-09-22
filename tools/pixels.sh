@@ -207,6 +207,45 @@ print(' '.join(str(x['id']) for x in g if x.get('d')==d and x.get('v') and x.get
   echo "      but a date months old, where production publishes {\"games\":[]}."
 fi
 
+# ------------------------------------------------ THE NIGHT THAT HAS NOT HAPPENED
+# ⏰ THE SAME PROBLEM ONE STATE OVER, and worse: the slate at least EXISTS in the
+# archive and can be rebuilt from real extracts. A schedule is a claim about the
+# FUTURE, so there is no date in the archive that produces one — production
+# publishes today's fixtures and nothing else, and on most days of the year that
+# is an empty list. The two states that break this layout are a full night of
+# rows and a results-plus-tonight morning, and neither can be reached from
+# production before the season starts.
+#
+# ⛔ SO THIS ONE IS INVENTED, AND IT SAYS SO LOUDLY. Unlike the slate above,
+# nothing here is the archive's: the clubs are real abbreviations and everything
+# else is made up. It exists to answer "does the card still fit", which is a
+# question about box heights and not about hockey.
+#
+# RTG_PIXELS_TONIGHT=8   eight fixtures, three hours from now, on the league date
+#                        the reader's own clock will call today.
+if [ -n "${RTG_PIXELS_TONIGHT:-}" ]; then
+  python3 - "$RTG_PIXELS_TONIGHT" <<'PY'
+import json, sys, datetime as dt
+n = int(sys.argv[1])
+start = dt.datetime.now().astimezone() + dt.timedelta(hours=3)
+clubs = [("BUF","PIT"),("DET","CBJ"),("NYR","NJD"),("PHI","WSH"),("OTT","MTL"),
+         ("COL","WPG"),("MIN","CHI"),("STL","DAL"),("VAN","SEA"),("CGY","EDM"),
+         ("LAK","SJS"),("ANA","VGK"),("TBL","FLA"),("CAR","NSH"),("BOS","TOR"),("NYI","UTA")]
+sched = json.load(open("schedule.json"))
+sched["upcoming"] = [
+    {"id": 2026010000 + k, "date": start.strftime("%Y-%m-%d"), "gameType": 1, "state": "FUT",
+     "away": clubs[k % len(clubs)][0], "home": clubs[k % len(clubs)][1],
+     "startTimeUTC": (start + dt.timedelta(minutes=k)).astimezone(dt.timezone.utc)
+                     .strftime("%Y-%m-%dT%H:%M:%SZ"),
+     "venue": "Somewhere Arena"}
+    for k in range(n)]
+json.dump(sched, open("schedule.json", "w"))
+PY
+  echo "  ⚠️  RTG_PIXELS_TONIGHT: schedule.json holds $RTG_PIXELS_TONIGHT INVENTED fixtures."
+  echo "      Nothing here is the archive's — a schedule is a claim about the future"
+  echo "      and no date in the archive produces one. It answers a layout question."
+fi
+
 # A server, not file://. The hero is an iframe of a sibling page and the fetches
 # are relative; file:// origins make both of those behave differently.
 PORT="${RTG_PIXELS_PORT:-8099}"
@@ -222,7 +261,12 @@ const out = process.env.RTG_PIXELS_OUT;
 const b = await chromium.launch({ channel: 'chromium' });
 for (const raw of widths) {
   const w = Number(raw);
-  const ctx = await b.newContext({ viewport: { width: w, height: 900 }, deviceScaleFactor: 2 });
+  // ⭐ THE HEIGHT IS SETTABLE, because the phone this site supports is a LANDSCAPE
+  // one — 568x320 is the narrowest surface the portrait ruling leaves — and a
+  // fixed 900 could never frame it. Default unchanged, so every earlier run means
+  // what it meant.
+  const vh = +(process.env.RTG_PIXELS_HEIGHT || 900);
+  const ctx = await b.newContext({ viewport: { width: w, height: vh }, deviceScaleFactor: 2 });
   const p = await ctx.newPage();
   const problems = [];
   p.on('pageerror', e => problems.push('pageerror: ' + e.message));
@@ -268,8 +312,18 @@ for (const raw of widths) {
                                 text: (el.textContent || '').trim().slice(0, 90) }; };
     const d = document.getElementById('daily');
     if (!d || d.hidden) return { daily: d ? 'HIDDEN — no state fired' : 'ABSENT' };
+    const det = document.querySelector('#dailylist details');
     return { kick: one('#dailykick'), say: one('#dailysay'),
              rows: document.querySelectorAll('#dailylist .drow').length,
+             // ⭐ A FIXTURE IS NOT A `.drow` — it is text, because a game that has
+             // not been played has nothing to open. Counted separately or this
+             // probe reports 0 rows for a full night and nobody looks again.
+             fixtures: document.querySelectorAll('#dailylist .dfix').length,
+             tonight: (document.querySelector('#dailylist .dtonight') || {}).textContent || null,
+             // CLOSED is the state the height budget applies to: it is what every
+             // visitor sees, and the open height exists only on request.
+             disclosure: det ? (det.open ? 'OPEN' : 'closed') + ' ' + det.querySelector('summary').textContent : null,
+             card: one('#hero') && one('#hero').box,
              list: one('#dailylist'),
              fold: Math.round(d.getBoundingClientRect().top + scrollY) < 900 };
   });

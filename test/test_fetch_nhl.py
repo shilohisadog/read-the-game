@@ -327,6 +327,48 @@ class UpcomingFixtures(unittest.TestCase):
         got = self._run([self._fixture(1, "CBJ", "BUF", "2026-10-08T23:00:00Z", state="FINAL")])
         self.assertEqual(got["upcoming"], [])
 
+    def test_the_league_s_own_date_rides_along_with_the_fixture(self):
+        """⭐ THE FIELD THE COPY LOOP DROPPED — `docs/front-door-tonight.md` §2.
+
+        `classify` already attaches `week.date` to every game ("the league's own
+        labelling of which day this game belongs to"), and this loop copied seven
+        fields and not that one. Without it the front door cannot name a NIGHT
+        without deriving a date from an instant, which §12.3 of front-door.md
+        refused: a 10:30pm Pacific game is 05:30Z the following day.
+        MUTATION: drop the field from the copy loop."""
+        got = self._run([self._fixture(1, "UTA", "BOS", "2026-10-09T02:30:00Z")])
+        self.assertEqual(got["upcoming"][0]["date"], "2026-10-08",
+                         "the night the LEAGUE says this game belongs to")
+
+    def test_the_forward_window_reaches_past_today(self):
+        """⭐ ONE MORE REQUEST, AND IT BUYS A WEEK. The window is 14 days and the
+        endpoint answers with the week STARTING at the date asked for, so two
+        requests cover exactly the window and the last one ends on the run's own
+        date. `upcoming` therefore never held a game past today: on a quiet night
+        the block could name nothing, and once the last game started it had
+        nothing left to say until the next run.
+        MUTATION: remove the extra URL, and every fixture here is today's."""
+        dates = F.dates_in_window("2026-10-08", 14)
+        urls = F.schedule_urls(dates)
+        self.assertIn(f"{F.WEB}/schedule/2026-10-09", urls,
+                      "the week AFTER the window is what makes tomorrow visible")
+
+        # and end to end: a payload whose week carries two later days
+        store, seen = DictStore(), []
+
+        def transport(url):
+            seen.append(url)
+            body = {"gameWeek": [
+                {"date": "2026-10-08", "games": [self._fixture(1, "UTA", "BOS", "2026-10-08T23:00:00Z")]},
+                {"date": "2026-10-10", "games": [self._fixture(2, "NYR", "CGY", "2026-10-11T01:00:00Z")]},
+            ]}
+            return 200, json.dumps(body).encode()
+
+        F.ingest("2026-10-08", 14, transport, store, now="2026-10-08T11:00:00Z")
+        got = json.loads(store.obj["schedule.json"].decode())
+        self.assertEqual([g["date"] for g in got["upcoming"]], ["2026-10-08", "2026-10-10"],
+                         "a fixture beyond the window's last day is still a fixture")
+
     def test_the_empty_offseason_is_WRITTEN_not_skipped(self):
         """Not a synthesised case: the live endpoint answers 2026-08-17 with
         seven days and zero games. A run that skipped the write here would
@@ -413,8 +455,15 @@ class SeasonBoundaries(unittest.TestCase):
     def test_a_null_never_overwrites_a_date_the_league_did_send(self):
         """A fourteen-day window makes several schedule calls, and only one has
         to answer without the fields for a blanket copy to blank them."""
+        # THREE pages, because the window's two calls are followed by the one
+        # that reaches past it (docs/front-door-tonight.md §3.1 A2) -- and the
+        # blanking payload is answered TWICE here, which is the harder case for
+        # the rule this test is about.
         pages = iter([schedule_payload("2026-09-09", [], self.LEAGUE),
                       schedule_payload("2026-09-16", [],
+                                       {"preSeasonStartDate": None,
+                                        "regularSeasonStartDate": None}),
+                      schedule_payload("2026-09-23", [],
                                        {"preSeasonStartDate": None,
                                         "regularSeasonStartDate": None})])
         store = DictStore()

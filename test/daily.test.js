@@ -373,3 +373,128 @@ test('…and a night that fits prints no tail', () => {
   assert.equal(r.games.length, 2);
   assert.equal(r.more, 0);
 });
+
+/* ----------------------------------------------------- THE NIGHT, NOT THE GAME
+ * `docs/front-door-tonight.md`. The block named the first fixture of eight because
+ * §12.3 of `docs/front-door.md` refused to invent a date for a group: an NHL night
+ * has no UTC date. THE LEAGUE HAS ONE — `classify()` attaches `week.date` to every
+ * game and the copy loop that builds `upcoming` dropped it — so the night has an
+ * honest population and nothing here reads a clock to get it.
+ */
+const dated = (o = {}) => fixture({ date: '2026-01-16', ...o });
+/** A night of `n` fixtures on one league date, starting at 7pm ET (00:00Z next day). */
+const night = (n, o = {}) => Array.from({ length: n }, (_, k) =>
+  dated({ id: 100 + k, away: 'A' + k, home: 'H' + k, ...o }));
+
+test('⭐ THE NIGHT IS EVERY FIXTURE THE LEAGUE LISTS FOR THAT DATE', () => {
+  const r = daily(recent([]), sched(LEAGUE, night(8)), NOW);
+  assert.equal(r.state, 'upcoming');
+  assert.equal(r.night.date, '2026-01-16');
+  assert.equal(r.night.count, 8, 'the whole night, not the rows that fit');
+  assert.equal(r.night.fixtures.length, SHOWN, 'capped like the slate');
+  assert.equal(r.night.rest.length, 8 - SHOWN, 'the rest are handed over, not counted');
+});
+
+test('⛔ A COUNT IS THE NIGHT AND A CAP IS THE LAYOUT — §12.2\'s rule, one state over', () => {
+  /* MUTATION: publish `fixtures.length` as the count. A block saying "6 games" on a
+     sixteen-game night is a false claim about hockey made to save a layout. */
+  const r = daily(recent([]), sched(LEAGUE, night(16)), NOW);
+  assert.equal(r.night.count, 16);
+  assert.equal(r.night.fixtures.length + r.night.rest.length, r.night.count);
+});
+
+test('⭐ a game already under way stays in its night, marked', () => {
+  /* MUTATION: filter `startTimeUTC > now` per fixture, which is what the single-
+     fixture code did. At 9pm a reader would see the night shrink to the late games
+     and the count contradict the rows. */
+  const r = daily(recent([]), sched(LEAGUE, [
+    dated({ id: 1, startTimeUTC: '2026-01-15T11:00:00Z' }),   // an hour before NOW
+    dated({ id: 2, startTimeUTC: '2026-01-16T00:00:00Z' }),
+  ]), NOW);
+  assert.equal(r.night.count, 2);
+  assert.equal(r.night.fixtures[0].started, true, 'it has begun and it is still tonight');
+  assert.equal(r.night.fixtures[1].started, false);
+});
+
+test('⛔ …and a night whose games have ALL started is not the next night', () => {
+  /* MUTATION: take the earliest date that has any fixture. At midnight the block
+     would still be offering last night as "tonight". */
+  const r = daily(recent([]), sched(LEAGUE, [
+    dated({ id: 1, date: '2026-01-14', startTimeUTC: '2026-01-15T00:00:00Z' }),
+    dated({ id: 2, date: '2026-01-17', startTimeUTC: '2026-01-18T00:00:00Z' }),
+  ]), NOW);
+  assert.equal(r.night.date, '2026-01-17');
+});
+
+test('⛔ THE NIGHT IS THE LEAGUE\'S DATE, NEVER THE INSTANT\'S — the 10:30 Pacific case', () => {
+  /* MUTATION: group by `startTimeUTC.slice(0, 10)`. A 10:30pm Pacific game is 05:30Z
+     the NEXT day, so that grouping splits one night in two and names the second half
+     as a night of its own — the exact error §12.3 refused to make. */
+  const r = daily(recent([]), sched(LEAGUE, [
+    dated({ id: 1, startTimeUTC: '2026-01-16T00:00:00Z' }),   // 7pm Eastern
+    dated({ id: 2, startTimeUTC: '2026-01-17T05:30:00Z' }),   // 10:30pm Pacific, same night
+  ]), NOW);
+  assert.equal(r.night.count, 2, 'one night, whatever the instants say');
+  assert.deepEqual(r.night.fixtures.map(f => f.id), [1, 2]);
+});
+
+test('⭐⭐ A DOCUMENT WITHOUT LEAGUE DATES DEGRADES TO THE SINGLE FIXTURE, and says which it is', () => {
+  /* The site deploys on push; the pipeline change lands at the next ingest. For up to
+     a day the page reads fixtures with no `date`. The failure state is TODAY'S
+     BEHAVIOUR — not an error, not an empty block.
+     MUTATION, either side: throw on the undated shape, or render an empty night. */
+  const old = daily(recent([]), sched(LEAGUE, [fixture({ id: 1 }), fixture({ id: 2 })]), NOW);
+  assert.equal(old.state, 'upcoming');
+  assert.equal(old.night, null, 'no night can be named without the league naming it');
+  assert.equal(old.next.id, 1, 'and the block still says when the next game is');
+
+  /* HALF-MIGRATED IS THE OLD SHAPE. One undated fixture means the night's count
+     would be short, and a count that is quietly wrong is worse than the old sentence. */
+  const half = daily(recent([]), sched(LEAGUE, [dated({ id: 1 }), fixture({ id: 2 })]), NOW);
+  assert.equal(half.night, null);
+  assert.equal(half.next.id, 1);
+});
+
+test('⛔ the two shapes are exclusive — a renderer can never print both', () => {
+  const now = daily(recent([]), sched(LEAGUE, night(3)), NOW);
+  assert.ok(now.night && now.next == null, 'dated: the night, and no single fixture');
+  const then = daily(recent([]), sched(LEAGUE, [fixture()]), NOW);
+  assert.ok(then.next && then.night == null, 'undated: the fixture, and no night');
+});
+
+test('⭐ IN SEASON THE BLOCK KEEPS LOOKING FORWARD — the defect that arrives on 29 September', () => {
+  /* `slate` fires whenever recent.json holds games, and it carried `next: null`. In
+     preseason recent.json is empty so the reader sees the fixtures; from the regular
+     season's first morning most days hold results and tonight vanished.
+     MUTATION: return `night: null` from the slate branch. */
+  const r = daily(recent([leaderLost(), leaderWon()]), sched(LEAGUE, night(11)), NOW);
+  assert.equal(r.state, 'slate');
+  assert.equal(r.count, 2, 'last night is unchanged');
+  assert.equal(r.night.count, 11, 'and tonight is there too');
+});
+
+test('preseason is named from the league\'s own gameType, per fixture', () => {
+  /* MUTATION: label the night from its first fixture. A late-September night mixes
+     preseason and regular season, and one word for both is wrong for half of it. */
+  const pre = daily(recent([]), sched(LEAGUE, night(3, { gameType: 1 })), NOW);
+  assert.equal(pre.night.preseason, true);
+  const mixed = daily(recent([]),
+    sched(LEAGUE, [dated({ id: 1, gameType: 1 }), dated({ id: 2, gameType: 2 })]), NOW);
+  assert.equal(mixed.night.preseason, false, 'not every game in it is preseason');
+});
+
+test('the night is ordered by start, then by id, so two runs agree', () => {
+  const r = daily(recent([]), sched(LEAGUE, [
+    dated({ id: 9, startTimeUTC: '2026-01-16T02:00:00Z' }),
+    dated({ id: 4, startTimeUTC: '2026-01-16T00:00:00Z' }),
+    dated({ id: 2, startTimeUTC: '2026-01-16T00:00:00Z' }),
+  ]), NOW);
+  assert.deepEqual(r.night.fixtures.map(f => f.id), [2, 4, 9]);
+});
+
+test('⛔ a night still computes no date and no day-name — only the renderer can', () => {
+  const r = daily(recent([]), sched(LEAGUE, night(4)), NOW);
+  assert.equal(r.night.date, '2026-01-16', 'the league\'s own label, quoted');
+  for (const f of r.night.fixtures) assert.equal(typeof f.startTimeUTC, 'string');
+  for (const line of r.lines) assert.doesNotMatch(line, /January|Friday|tonight/i);
+});

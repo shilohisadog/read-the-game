@@ -302,6 +302,31 @@ jobs:
           print(f"  {len(i['games'])} games | dataThrough={i.get('dataThrough')} "
                 f"| lastRun={i['lastRun']} | halted={bool(i.get('halted'))}")
           print(f"  ledger closes: {c['finalInWindow']} = {held} + {err} + {refused}")
+
+          # ⭐ THE FIXTURES CARRY THE LEAGUE'S OWN NIGHT, OR WE DO NOT PUBLISH.
+          # The front door names a whole night from `date`, and without it the page
+          # DEGRADES to naming one game -- correctly, quietly, and indefinitely.
+          # CHENG: nothing would distinguish "the pipeline has not run yet" from
+          # "the pipeline is broken", and the observed failure mode on this site is
+          # that nobody notices. So the run refuses rather than reports.
+          # Vacuous when `upcoming` is empty, which is five months of the year.
+          import os
+          sp = 'ingest/schedule.json'
+          if os.path.exists(sp):
+              up = json.load(open(sp)).get('upcoming') or []
+              undatedf = [g['id'] for g in up if not g.get('date')]
+              if undatedf:
+                  sys.exit(f"::error::fixtures without the league's date, so the front "
+                           f"door cannot name a night: {undatedf[:5]}")
+              nights = sorted({g['date'] for g in up})
+              print(f"  {len(up)} fixtures over {len(nights)} nights"
+                    + (f" ({nights[0]}..{nights[-1]})" if nights else ""))
+              # ⚠️ AND THE WEEK-AHEAD REQUEST FAILING LOOKS EXACTLY LIKE SUCCESS:
+              # every fixture is today's, every field is present, every check above
+              # passes. One night is what that looks like, so it is said out loud.
+              if len(nights) == 1:
+                  print(f"::warning::every fixture is on {nights[0]} — the forward "
+                        f"request may not be reaching past today")
           PY
 
       # Exit 1 means some games failed to fetch. Those wrote nothing at all, so
