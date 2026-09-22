@@ -1,8 +1,9 @@
 # What to watch for, and naming Corsi — a game preview built from the archive
 
-**Written 2026-09-21 for CHENG's review; reviewed 2026-09-22 — his rulings,
-the measurements they prompted and my corrections are §9, and two questions go
-back to him in §9.4.** Nothing here is built. Four points are already ruled by
+**Written 2026-09-21 for CHENG's review; reviewed 2026-09-22 (§9). ⭐ THE
+DESIGN THEN CONVERGED WITH KEVIN — §10 is the current plan and SUPERSEDES the
+selection and silence rulings of §9; §9.4's two questions are withdrawn in
+favour of §10.5.** Nothing here is built. Four points are already ruled by
 Kevin and are stated as rulings (§1); the original questions are numbered in §7. Every figure is measured, with the probe that
 produced it named beside it (§8), over the **2025-26 regular season: 1,312
 games, 32 clubs, 82 games each**.
@@ -359,3 +360,98 @@ non-goal attempt in 125**, and no witness in the feed can settle those at a
 one-second resolution. Proposal: ship, and say so where the lesson is taught. The
 alternative is marking those frames — which needs its own rule for *which* reading
 to draw.
+
+## 10. Converged with Kevin, 2026-09-22 — THE PLAN OF RECORD
+
+Kevin, after §9: *"I'm not sure we are aiming at the right type of 'what to watch
+for' lessons"* — and then, rejecting a curriculum ("lesson of the night") that I
+proposed in its place: *"after let's say 10 games, WSH plays whoever on their 11th
+game, the preview card will provide data centric information … centered around
+the 5 items … that's the same approach we'll take when we are discussing game 82.
+Consistent throughout the season, the only thing that changes is the data becomes
+more and more telling."*
+
+### 10.1 The card
+
+- **Six fixed rows, every game, both clubs**, from each club's CURRENT season
+  (regular season and playoffs only — `inScope`, the same population as every
+  computed number on the site):
+
+  | Row | Count shown | League beside it | Settles at (§5, 0.7) |
+  |---|---|---|---|
+  | Penalties | penalties taken, per games played | per game | 61 games |
+  | Power-play goals | goals with the extra skater, per games played | per game | **never within a season** — kept anyway (Kevin: a novice notices power plays more than anything on the list) |
+  | Shots from the slot | slot attempts of located attempts | of every 100 | 39 |
+  | Defencemen shooting | attempts by defencemen of all attempts | of every 100 | 18 |
+  | Offside | offsides committed, per games played | per game | 35 |
+  | 5-on-5 CF% | 5-on-5 attempts for, of both clubs' — then *"a 5-on-5 CF% of N"* as its translation (§9.1 Q6, Q8) | 50 by definition | 21 |
+
+- **Every row carries its n and the league figure**, and a *watch for* line that
+  names something visible on a screen. No row says what will happen tonight.
+- **From each club's first game onward.** ⚠️ *Before* its first game a club has
+  n = 0: proposed, the rows show the league figure and the watch-for line, with
+  "has not played yet" in the club's column — the card still teaches what to look
+  at on opening night.
+- **Each row labels itself *still forming* until the club reaches that row's game
+  count, then *settled*.** The labels change row by row; the card never changes
+  shape. This replaces §9.1 Q4's silence: early rows SPEAK, and say how much they
+  can be trusted.
+
+### 10.2 Why the label is required, not decoration
+
+PHI 2025-26, after 10 games against after 82 (`tools/probes/preview/`):
+
+| | after 10 | after 82 |
+|---|---|---|
+| penalties / game | **5.2** | 3.93 |
+| offsides / game | **2.9** | 2.24 |
+| power-play goals / game | **0.60** (league average) | 0.44 (**last**) |
+| slot, of every 100 | 52 | 50 |
+| defencemen, of every 100 | 30.7 | 30.5 |
+| 5-on-5 CF% | 47.4 | 47.7 |
+
+And WSH's 5-on-5 CF% went **55.4 → 49.4**. Early figures are not merely noisy;
+some are confidently wrong, and the rows that moved are the ones §5 says settle
+late. The label is how a card that speaks from game 1 stays honest.
+
+### 10.3 What this retires
+
+- **§9.1 Q2 (selection)** — nothing is selected; all six rows always show. The
+  middle-half problem (§3) and the Q1 probability gate (§9.2) no longer have a job.
+- **§9.1 Q4 (silence)** — replaced by the label, above.
+- **§9.4 R1** — there is no claim about tonight to phrase.
+- Kept whole: the Corsi rules (§9.1 Q5, Q6, Q8) and the reliability arithmetic.
+
+### 10.4 A gateway to per-player CF%, built as a seam
+
+Kevin: *"we might be adding per player Corsi for % in the not too distant future,
+so this panel needs to provide a gateway."* The 5-on-5 CF% row is the natural
+door: a club's CF% is the sum over its skaters' on-ice attempts, so *"who drives
+this number"* is the question the row itself raises.
+
+Proposed, on the mechanism-not-policy line: each row is a record, and a record
+has an OPTIONAL `detail` target. The CF% row's target is the club's per-player
+on-ice 5-on-5 CF% (raw and relative, §6), computed through the shipped `onIce()`.
+**Until that surface exists the slot is empty and nothing is drawn** — no dead
+link, no "coming soon". The seam costs a field; the door appears the day there is
+a room behind it. §9.4 R2 (the defending five uncertain on ~1 non-goal 5v5 attempt
+in 125) belongs to that future surface, not to this card.
+
+### 10.5 For CHENG
+
+**P1.** Is *still forming / settled* by a per-row game count the right honesty
+device for a card that speaks from game 1 — or should an early row show its
+uncertainty directly (a range), and what does a novice read either as?
+
+**P2.** The game counts come from ONE season's split halves, which flatter (§3).
+Re-derive them each season from the archive and let the labels move, or pin them
+and re-examine yearly?
+
+**P3.** Two clubs side by side is two populations side by side. The adjacency rule
+(`docs/front-door.md` §5.2) was about a one-game figure beside an archive rate;
+two season-to-date figures of the same kind, each beside the league value, is the
+comparison the card exists to invite. Agree that this is not the adjacency case —
+and is the case different when one club has played 12 games and the other 9?
+
+**P4.** The `detail` seam for per-player CF%: right place, and right to draw
+nothing until the surface exists?
