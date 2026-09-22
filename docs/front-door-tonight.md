@@ -152,7 +152,57 @@ measurement, not by this argument.
 **Q3. Is +1 request per night acceptable? ✅ YES.** It is the whole of the pipeline change
 that isn't a field copy, and the club preview needs it anyway.
 
-## 5. What this does not touch
+## 5. CHENG's review — 2026-09-22, endorsed with four additions
+
+He called the core right — *"the league's own date is already fetched and
+discarded in a copy loop … the same shape as the `hl` field and `drew`, a fact
+the pipeline holds and throws away"* — and added four things, all adopted.
+
+**5.1 B5 must ANNOUNCE its degradation.** *"Nothing distinguishes 'the pipeline
+hasn't run yet' from 'the pipeline is broken.' Both render one fixture,
+indefinitely, with no signal … the observed failure mode on this site is that
+nobody notices — the stale `#start` link, the hero's fixed string, the parked
+strength control."*
+
+⭐ **Adopted, and placed one step earlier than he proposed.** He suggested the
+health block, beside the ledger. The ledger is READER-FACING copy — *Data through
+20 September. Checked daily.* — and *"fixtures with a league date: 0 of 13"* is
+not a sentence for a novice. The run can do better than report it: `ingest.yml`
+already carries a **pre-sync check** that refuses to publish (*"games without a
+date, so dataThrough is unreliable"*), and the same block gains
+
+- ⛔ every fixture in `upcoming` carries a `date`, or the run does not publish;
+- ⚠️ a warning when every fixture shares ONE date, which is what A2 silently not
+  working looks like — the check that would otherwise pass forever;
+- the counts printed beside the others, so a reader of the log sees the span.
+
+Vacuous when `upcoming` is empty, which is five months of the year.
+
+**5.2 C2 — the disclosure is CLOSED on first paint, and the closed height is the
+budget.** §12.2's numbers are what every visitor sees, so the browser check
+measures it closed; the open height is a separate figure that exists only on
+request. **And the summary carries the count** — `2 more tonight`, not a bare
+chevron: *"the difference between a disclosure and a mystery box."*
+He also sharpened WHY there is no page to link: **`calendar.html` shows games we
+HOLD, and a future night is by definition games we do not hold.** A page would
+mean teaching the calendar to read `schedule.json` — a second data source and a
+second notion of what a game is.
+
+**5.3 One more test, as a PROPERTY.** Not *this row is not an anchor* but: **no
+row rendered in the `upcoming` state produces an `href` at all**, so a future
+change that adds one fails on arrival rather than passing the instance check.
+
+**5.4 The Europe case is a correct oddity, not a defect.** A reader for whom a
+7 pm Eastern game starts after midnight sees the day's name rather than *Tonight*
+— *"it isn't their tonight"* — and it follows from §12.5's rule rather than a new
+one.
+
+⭐ **And the fixture path is the only way to see this before the season starts.**
+A 16-game night and a results-plus-tonight morning are the two states that break
+the layout, and neither exists in September; `tools/pixels.sh` can already rebuild
+a slate from a real date and needs the same for `schedule.json`.
+
+## 6. What this does not touch
 
 The `offseason` state, the hero, the one-live-preview rule (§5.3), the phone's
 portrait prompt, and every computed number — nothing here counts, rates or
