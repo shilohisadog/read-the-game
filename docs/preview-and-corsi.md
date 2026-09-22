@@ -1,8 +1,9 @@
 # What to watch for, and naming Corsi — a game preview built from the archive
 
-**Written 2026-09-21 for CHENG's review.** Nothing here is built. Four points are
-already ruled by Kevin and are stated as rulings (§1); the open questions are
-numbered in §7. Every figure is measured, with the probe that
+**Written 2026-09-21 for CHENG's review; reviewed 2026-09-22 — his rulings,
+the measurements they prompted and my corrections are §9, and two questions go
+back to him in §9.4.** Nothing here is built. Four points are already ruled by
+Kevin and are stated as rulings (§1); the original questions are numbered in §7. Every figure is measured, with the probe that
 produced it named beside it (§8), over the **2025-26 regular season: 1,312
 games, 32 clubs, 82 games each**.
 
@@ -35,7 +36,9 @@ on every frame since August and never called by its name.
    on a figure that meets the standard definition, strict 5-on-5.* Where our
    figure is all-situations, or our "even strength" (which also admits 4-on-4 and
    3-on-3), it keeps its own name. Proposed and agreed: a learn card *What people
-   mean by Corsi*; the attempts layer named so it carries the term; the one-game
+   mean by Corsi*; the attempts layer named so it carries the term (⛔ **reversed
+   by CHENG's Q5, §9.1** — no filter is strict 5-on-5, so the layer keeps its
+   name); the one-game
    figure stays a fraction and the percentage is TAUGHT as what that fraction is
    called, never printed in its place.
 
@@ -148,28 +151,40 @@ club items. No special case.
 
 ## 6. Per-player CF% — the data supports it; the reader question is open
 
-Per-player Corsi needs who was on the ice at each attempt, from the shift
-records. Measured:
+> ⛔ **REWRITTEN 2026-09-22.** The first version of this section presented the
+> shift-boundary rule as a new finding, "decided by a witness, not chosen". It
+> was not new: `builders/extract.py` and `src/lib/onice.js` already state it,
+> with CHENG's own earlier ruling in the comment and the faceoff exception
+> beside it. The probes had REIMPLEMENTED a rule the site owns, and its figures
+> — "99.9% against 55.7%", "the wrong line on about one attempt in twelve" —
+> were dominated by goals and overstated the risk. Those probes are deleted.
+> What follows uses the shipped `onIce()`. The correction is §9.3.
+
+Per-player Corsi needs who was on the ice at each attempt. The site already
+answers that: `src/lib/onice.js::onIce(game, event)`, live behind the replay's
+*on the ice* toggle. Measured with it:
 
 - **Every game carries skater shifts**: 1,312 of 1,312.
-- **The ice reconstructs.** 99.2% of the 121,073 strict 5-on-5 attempts resolve
-  to exactly five skaters a side, which is a check against the league's own
-  situation code rather than against ourselves.
-- ⭐⭐ **THE BOUNDARY RULE IS DECIDED BY A WITNESS, NOT CHOSEN.** On **8.6%** of
-  attempts (10,450) a line change and the attempt share a second, and the two
-  candidate rules — a shift ending at *t* includes *t*, or a shift starting at
-  *t* does — name different skaters while **both** still count five a side. The
-  count cannot tell them apart. The shooter must be on the ice: of the 9,363
-  boundary cases with a usable shooter, **end-inclusive puts the shooter on the
-  ice 99.9%** of the time, start-inclusive 55.7%. The wrong rule would credit the
-  wrong line on about one attempt in twelve, and pass the five-a-side check.
-- ⚠️ **HALF-WITNESSED.** The shooter confirms the SHOOTING side. That the
-  defending side follows the same convention is assumed. A blocked shot's
-  blocker, if the feed names one, would witness it; not yet checked. The 1,087
-  blocked shots were excluded from the witness because which field names the
-  shooter on them was not re-verified for this probe.
-- **Spread**: 685 of 940 skaters were on the ice for ≥500 strict 5-on-5 attempts;
-  their CF% runs **37.7–61.9%**, middle half **46.9–52.2%**.
+- **The ice reconstructs.** `onIce()` gives exactly five skaters a side on
+  **99.85%** of the 121,073 strict 5-on-5 attempts (120,888) — a check against the
+  league's own situation code rather than against ourselves.
+- **The convention is the shipped one, re-confirmed over a full season.** At an
+  event that ENDS play the finishing line is on the ice — goals **6,405 of 6,405**,
+  penalties **9,048 of 9,048**; at a FACEOFF the arriving line is — the winner's
+  shift starts on the draw's second **43,039 of 44,158 (97.5%)**. `onice.js`
+  measured the faceoff half over 87 games; this is 1,312.
+- **Where the one-second resolution leaves a set uncertain.** Of the 115,711
+  non-goal strict 5-on-5 attempts, the alternative reading of the second names a
+  different ATTACKING five on **3.90%** (4,513) and a different DEFENDING five on
+  **0.80%** (928). Mid-play witnesses lean to the shipped reading — shooter
+  **117 of 123**, giveaway 168 of 169 — and more weakly on the defending side:
+  hits 39 of 52, blockers 11 of 19.
+- **Spread**: 687 of 940 skaters were on the ice for ≥500 strict 5-on-5 attempts;
+  their CF% runs **37.7–61.8%**, middle half **46.9–52.2%**.
+- *Incidental*: 8,405 of 992,876 shift rows have zero length and 8,366 of them
+  sit on a goal's second — markers, not shifts. `onIce()` never matches them
+  (both its intervals are open at one end) and the census drops rows with no
+  duration, so nothing shipped reads them.
 
 The open problems are about the reader, not the data:
 
@@ -240,13 +255,15 @@ label — a test that every surface printing the word computes over `1551` only?
 sh tools/probes/preview/fetch.sh DIR                   # 1,312 extracts + schedule, ~110 MB, read-only
 node tools/probes/preview/club-profiles.mjs DIR        # §3, including tonight's flags per matchup
 node tools/probes/preview/club-cf5.mjs DIR             # §4 and the CF% row of §5
-node tools/probes/preview/on-ice.mjs DIR               # §6: 99.2% and the player spread
-node tools/probes/preview/shift-boundary.mjs DIR       # §6: the boundary witness
+node tools/probes/preview/onice-uncertainty.mjs DIR    # §6: 99.85%, the per-side uncertainty, the player spread
+node tools/probes/preview/witness-by-event.mjs DIR     # §6: the convention by event type
+node tools/probes/preview/watch-probability.mjs DIR    # §9.2: Q1, club items and the two universals
 ```
 
 The probes import the site's own reducers — `corsi` for which events are
 attempts, `corsiTeam` for whose attempt it is (a blocked shot credited to the
-shooter), `measureGame` for slot and located counts, `situation()` for
+shooter), `onIce()` for who was on the ice, `measureGame` for slot and
+located counts, `situation()` for
 power-play goals, `icingRestarts`/`offsideRestarts` for who committed the
 stoppage — so no domain rule is restated. ⭐ **`tools/probes/preview/club-profiles.mjs` cross-checks its
 attempt count against `measureGame`'s own record on every game: 0 mismatches in
@@ -254,3 +271,91 @@ attempt count against `measureGame`'s own record on every game: 0 mismatches in
 values printed by the probes (per-game reliability ρ₁ = r / (41 − 40r); games
 to target R = R(1 − ρ₁) / (ρ₁(1 − R))). `schedule.json` changes nightly, so
 "tonight's flags" reproduce only on the night they were run (2026-09-21).
+
+## 9. CHENG's review (2026-09-22), what it prompted, and what goes back
+
+### 9.1 Ruled
+
+CHENG verified one claim in the code before ruling: the strength control offers
+`all`, `even` and `level` (`builders/build_main.py`), **no strict 5-on-5 setting
+exists**, and `even` admits `1331` and `1441` — `isEven`'s docstring has said
+*5v5, 4v4 or 3v3* throughout. Checked, and it holds.
+
+| Q | Ruling |
+|---|---|
+| **Q1** | The third test is the **probability a single game shows the club's direction**, not effect size at the extremes: a viewer sees one draw from the distribution, and a *watch for* that fails four nights in ten is a failed forecast from the reader's chair. |
+| **Q2** | **(b) selects, (c) caps, Q1 fills the cap** — the items most likely to be visible tonight. |
+| **Q3** | State the consequence, not the coefficient: *in October we say little about clubs; by February, more, because the season has measured more.* The number stays in `docs/`. |
+| **Q4** | **Silence.** Opening night is club-silent, not silent. Borrowing last season's figure is the stale-date defect as a design choice. ⭐ Adds a second universal item: **faceoff LOCATION** (wins stay out). |
+| **Q5** | ⛔ **The attempts layer keeps its name under every filter.** Neither fix is free — a fourth strength setting on a row compressed to fit 360px, or redefining `even` and undoing the `1331` fix — and a label that changes with a filter is the mode-label problem in reverse. Corsi lives only where the figure is over `1551` by construction: the learn card and the preview. This reverses §1.4's "the attempts layer named so it carries the term". |
+| **Q6** | A percentage derived from the fraction beside it is a **translation**, not adjacency. Rule: a taught one-game percentage never appears in the same breath as a season or archive rate. |
+| **Q7** | Agree on the line-level lesson; **gate it on a defending-side witness** via `blk`. |
+| **Q8** | The label names the variant: **"5-on-5 CF%"**, and *unadjusted* on the learn card — CF% is quoted score-adjusted, venue-adjusted and both. The guard is the D10 shape: scan every surface for the label, assert each computes over `1551`, so a new surface fails on arrival. |
+
+### 9.2 Q1, measured — and it disqualifies the universals too
+
+`tools/probes/preview/watch-probability.mjs`. For each club outside the middle
+half, the share of its 82 games that land on its side of the league value:
+
+| Measure | Median flagged club | Range over flagged clubs | Most extreme clubs |
+|---|---|---|---|
+| Defencemen's share | **67%** | 57–83% | COL 83%, LAK 79% |
+| Club 5-on-5 CF% | **63%** | 57–87% | CAR 87%, TOR 76% |
+| Slot share | **62%** | 54–78% | DAL 78%, BOS 65% |
+| Penalties taken | **59%** | 49–67% | TBL 66%, NJD 62% |
+| Power-play goals | **59%** | 48–67% | CGY 67%, DAL 61% |
+
+The two universals, under the same test:
+
+- **The trailing push**: the trailing club out-attempts its opponent while
+  trailing in **1,241 of 1,776** club-games (**69.9%**); 69.5% with ≥10 attempts
+  while trailing; 69.8% judged as trailing share above level share.
+- **Faceoff location**, end-zone draws seen from the club attacking that end,
+  draw to next whistle: the attacker takes the first attempt on **29,973 of
+  50,870** (58.9%) at all strengths and **20,064 of 36,901 (54.4%)** at strict
+  5-on-5; **one draw in five** reaches the whistle with no attempt at all; the
+  attacker out-attempts the defender over the run on 46.1% at 5-on-5.
+  ⚠️ So the proposed sentence — *"a draw in a team's own end usually means the
+  other team is about to shoot"* — overstates it at 5-on-5. The census's 2.395x
+  is a TOTAL over draws won, not a per-draw probability: the distinction Q1
+  itself draws.
+
+⭐ **By Q1's own example — four nights in ten is a failure — the median club
+item fails, and so do both universals.** Any pass mark would be a tuned constant,
+which Q2 was ruled to avoid.
+
+### 9.3 Q7, and my corrections
+
+The gate as ruled cannot work, and the premise it answered was mine and wrong.
+
+1. **The boundary rule was not new** — see the note heading §6. CHENG ruled on it
+   once already, in `builders/extract.py`, and `src/lib/onice.js` carries the
+   faceoff exception. I restated it in a probe instead of importing it.
+2. **My 99.9% was mostly goals**: 4,046 of the cases where the two readings
+   disagreed about the shooter were goals, where every shift closes on the goal's
+   second.
+3. **"One attempt in twelve" overstated the risk the gate was built against.**
+   Through the shipped function the defending five is boundary-sensitive on
+   **0.80%** of non-goal 5v5 attempts, not 8.6%.
+4. **The blocker cannot witness it.** Only **19** blocked shots have the blocker's
+   own shift boundary on the attempt's second, split **11 to 8** — a coin at that n.
+   Defending-side witnesses pooled (hits and blockers) lean to the shipped reading
+   **50 of 71**.
+5. **The lesson's surface already exists**: the *on the ice* toggle.
+
+### 9.4 Back to CHENG — two questions
+
+**R1. Probability as WORDING, not as a gate?** Proposal: every *watch for* states
+its own rate — *"When a team falls behind, it usually starts outshooting the
+other team — in about 7 games of 10."* A sentence that carries its frequency is
+never wrong about tonight, needs no pass mark, and is carry-your-n applied to the
+preview. The probability still orders items within the cap (Q2). The case
+against: a novice may read "7 in 10" as a forecast of this game after all, and a
+rate on every line is heavier copy.
+
+**R2. Ship the line-level lesson with the limit disclosed, rather than gated?**
+The defending five rests on the convention rather than the record on about **1
+non-goal attempt in 125**, and no witness in the feed can settle those at a
+one-second resolution. Proposal: ship, and say so where the lesson is taught. The
+alternative is marking those frames — which needs its own rule for *which* reading
+to draw.
