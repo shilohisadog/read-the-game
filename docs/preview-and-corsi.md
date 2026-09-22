@@ -1,9 +1,8 @@
 # What to watch for, and naming Corsi — a game preview built from the archive
 
-**Written 2026-09-21 for CHENG's review; reviewed 2026-09-22 (§9). ⭐ THE
-DESIGN THEN CONVERGED WITH KEVIN — §10 is the current plan and SUPERSEDES the
-selection and silence rulings of §9; §9.4's two questions are withdrawn in
-favour of §10.5.** Nothing here is built. Four points are already ruled by
+**Written 2026-09-21 for CHENG's review; reviewed 2026-09-22 (§9). The design
+converged with Kevin (§10), CHENG ruled on it, and three seasons of measurement
+reshaped it — ⭐ §11 IS THE CURRENT CARD and supersedes §10.1's six club rows.** Nothing here is built. Four points are already ruled by
 Kevin and are stated as rulings (§1); the original questions are numbered in §7. Every figure is measured, with the probe that
 produced it named beside it (§8), over the **2025-26 regular season: 1,312
 games, 32 clubs, 82 games each**.
@@ -259,6 +258,9 @@ node tools/probes/preview/club-cf5.mjs DIR             # §4 and the CF% row of 
 node tools/probes/preview/onice-uncertainty.mjs DIR    # §6: 99.85%, the per-side uncertainty, the player spread
 node tools/probes/preview/witness-by-event.mjs DIR     # §6: the convention by event type
 node tools/probes/preview/watch-probability.mjs DIR    # §9.2: Q1, club items and the two universals
+sh tools/probes/preview/fetch.sh DIR3 "2023 2024 2025" # three seasons, into a DIFFERENT dir (see fetch.sh)
+node tools/probes/preview/seasons.mjs DIR3             # §11.2: chronological settle counts, raw vs level CF%
+node tools/probes/preview/power-play.mjs DIR3          # §11.2: every power-play metric
 ```
 
 The probes import the site's own reducers — `corsi` for which events are
@@ -455,3 +457,118 @@ and is the case different when one club has played 12 games and the other 9?
 
 **P4.** The `detail` seam for per-player CF%: right place, and right to draw
 nothing until the surface exists?
+
+## 11. CHENG on §10, three seasons of measurement, and the card as ruled (2026-09-22)
+
+### 11.1 CHENG's rulings on P1–P4
+
+| | Ruling |
+|---|---|
+| **P1** | The label, **without the cliff**: a binary *still forming → settled* invents a discontinuity at game 61 that the data does not have. Show progress — *"10 of 61 games — still forming"*. It also answers the 12-games-against-9 case: *12 of 35* beside *9 of 35* says both are forming and how far each has come. A range was rejected: a novice reads `3.4–7.0` as its midpoint or not at all. |
+| **P2** | **Pool every season in the archive, pin the counts for the season, re-examine yearly.** And the bias runs the dangerous way: alternating-game halves share a season's opponents and schedule, which INFLATES reliability and makes the settle counts TOO SMALL — labels that tell a reader to trust a figure early. |
+| **P3** | Not adjacency for the trait rows — comparing clubs is the point. **But for 5-on-5 CF% it is partly the trap:** strict `1551` spans every score state, every trailing club pushes (§3), so season CF% is biased toward the club that trails more. Prefer **5-on-5 CF% at a level score**. |
+| **P4** | Right, and **exercise the seam before the room exists**: an optional field that is always empty is a code path that never runs. A fixture record with a `detail` target and one test that it draws a door. |
+
+### 11.2 Measured over three seasons
+
+`tools/probes/preview/seasons.mjs` and `tools/probes/preview/power-play.mjs`, over **2023-24, 2024-25
+and 2025-26: 3,936 regular-season games, 96 club-seasons**, each season centred
+before pooling so a league-wide shift is not read as a club trait.
+
+**P2 — confirmed, and larger than stated.** A CHRONOLOGICAL split (first half of
+the season against the second) gives lower reliability than alternate games on
+six of seven measures. And 2025-26 alone was the flattering season for two of
+them (offside 0.73 against 0.51 and 0.51; power-play goals 0.49 against 0.32 and
+0.41). Games to reach 0.7:
+
+| Measure | §5 (2025-26, alternate) | three seasons, alternate | **three seasons, chronological** |
+|---|---|---|---|
+| Defencemen shooting | 18 | 12 | **23** |
+| 5-on-5 CF%, raw | 21 | 17 | **23** |
+| 5-on-5 CF%, level score | — | 27 | **35** |
+| Shots from the slot | 39 | 37 | **37** |
+| Penalties taken | 61 | 44 | **73** |
+| Offside | 35 | 68 | **85 — never within a season** |
+| Power-play goals | 100 | 145 | **160 — never** |
+
+The chronological counts are the ones the card promises — *does the early figure
+describe the club's later self* — and they are the conservative direction CHENG
+asked for. Their one flaw is the honest one: they also count real mid-season
+change (trades, injuries) as unreliability.
+
+**P3 — the direction is right; the size is small.** Raw minus level-score CF%
+correlates **−0.30** with goal differential, so raw does flatter the outscored
+club: **+0.28 points** for the bottom quarter by goal differential, **−0.49** for
+the top. Both correlate with goal differential about equally (raw **0.63**, level
+**0.65**). They disagree on which of two clubs is higher in **175 of 1,488**
+same-season pairs (11.8%), and there goal differential sides with the level-score
+figure **100** times to raw's **74**. At a season's scale the push moves CF% by
+about half a point; in ONE game it is what makes the attempts leader lose 54% of
+the time.
+
+**No power-play metric settles in a season** — asked by Kevin, *is there an
+industry power-play metric we can lean into?* League figures match the NHL's own
+(a **21.9%** power play on **2.71** chances per club per game):
+
+| Metric | League | Club range | Games to 0.7 (chrono) |
+|---|---|---|---|
+| PP goals / game | 0.60 | 0.31–0.85 | 160 |
+| **PP%** | 21.9% | 11.6–32.2% | **150** |
+| PP opportunities / game | 2.71 | 2.11–3.33 | 235 |
+| PP goals / 60 PP min | 7.06 | 3.5–11.2 | 180 |
+| **PP shot attempts / 60 PP min** | 95 | 73–121 | **78** |
+| PP shots on goal / 60 PP min | 48.6 | 36.6–63.4 | 105 |
+| **PK%** | 78.1% | 68.8–85.9% | **383** |
+| PK attempts against / 60 PK min | 95 | 67–116 | 86 |
+
+PP% and PK% — the numbers a broadcast quotes — are close to noise at the club
+level over a season. What a club controls is how much it shoots with the extra
+skater, and even that needs 78 games.
+
+### 11.3 Kevin's principle, and the card it produces
+
+Kevin: *"we are a teaching centric site, at the core. If a data element doesn't
+settle during a season … what are we telling the novice reader?"* A row that never
+settles is not a row about an irrelevant thing — power plays score at **7.6 goals
+per 60 against 5.1** at even strength — it is a row where the differences between
+clubs are mostly luck over a season. Presented as a trait, it teaches something
+false.
+
+So the six rows split in two, and the card keeps its shape:
+
+**CLUB ROWS — settle in-season, so they describe the club.** Both clubs, current
+season, count with its n and the league figure, and a progress count (P1):
+
+| Row | Settles at | League (3 seasons) |
+|---|---|---|
+| **5-on-5 CF%, score tied** — Kevin chose the level-score variant (P3); the label names it (§9.1 Q8) | 35 games | 50 by definition |
+| **Defencemen shooting** | 23 games | 32.5 of every 100 attempts |
+| **Shots from the slot** | 37 games | 46.8 of every 100 located attempts |
+
+**LEAGUE ROWS — do not settle, so they teach what is normal.** The same every
+game, true every night, and each with something to watch tonight:
+
+| Row | What it says | Why a league row |
+|---|---|---|
+| **Power play** | scores about **1 time in 5** (21.9%) from about **2.7** chances per team per game; over a season which teams do better is mostly luck — what a team controls is how much it shoots with the extra skater | nothing in §11.2 settles |
+| **Penalties** | about **3.6** per team per game — and each is the other team's power play | Kevin: *"penalties naturally tie into power plays"* — each one IS an opportunity, and opportunities never settle (235) |
+| **Offside** | about **2.1** per team per game — watch the blue line on the way in | 85 games |
+
+⭐ **P1's never-finishing progress bar disappears with the split**: every club row
+settles inside a season (23, 35, 37), so every progress count can reach its end.
+
+**What changes from §10:** three club rows became league rows; CF% is the
+level-score variant, label *"5-on-5 CF%, score tied"*; the `detail` seam (§10.4)
+stays on the CF% row and gets a fixture test now (P4); the counts are pinned from
+the three-season chronological estimate and re-derived each summer (P2).
+
+### 11.4 For CHENG
+
+**Q9.** The level-score variant as a *club* row: 35 games to settle on a smaller n
+than raw. Agree that the label *"5-on-5 CF%, score tied"* satisfies Q8 — and
+that "score tied" (level throughout regulation, `tiedControl`) is the right
+English for a novice, given the industry's "score-close" means something else?
+
+**Q10.** League rows repeat identically on every card. Is a row that never
+changes still worth its space on a card whose point is *this game*, or does it
+belong once, above both clubs, as the frame the club rows sit inside?
