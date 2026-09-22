@@ -2,7 +2,8 @@
 
 **Written 2026-09-21 for CHENG's review; reviewed 2026-09-22 (§9). The design
 converged with Kevin (§10), CHENG ruled on it, and three seasons of measurement
-reshaped it — ⭐ §11 IS THE CURRENT CARD and supersedes §10.1's six club rows.** Nothing here is built. Four points are already ruled by
+reshaped it — ⭐ §11 IS THE CURRENT CARD, with §12's close-out (wording, layout,
+admission rule) on top; §11 supersedes §10.1's six club rows.** Nothing here is built. Four points are already ruled by
 Kevin and are stated as rulings (§1); the original questions are numbered in §7. Every figure is measured, with the probe that
 produced it named beside it (§8), over the **2025-26 regular season: 1,312
 games, 32 clubs, 82 games each**.
@@ -572,3 +573,62 @@ English for a novice, given the industry's "score-close" means something else?
 **Q10.** League rows repeat identically on every card. Is a row that never
 changes still worth its space on a card whose point is *this game*, or does it
 belong once, above both clubs, as the frame the club rows sit inside?
+
+## 12. Close-out (2026-09-22) — wording, layout, and the admission rule
+
+**CHENG on his own P3:** *"right in direction and wrong in size, and worth owning
+precisely"* — a half-point season effect presented as if it were the front door's
+single-game headline. Level-score stands on the tiebreak (goal differential sides
+with it **100 to 74** where they disagree), and the reason is recorded as
+*slightly better*, not *corrects a trap*. P2 is the stronger finding.
+
+**Q9 — "level", never "tied".** Verified in the built pages: *score was level*
+appears **37 times** across `src/game.html`, `src/index.html`,
+`src/read-the-game.html` and `src/calendar.html`; *score tied* **0**. (*"a tied
+game"* appears once, for the shootout — tied after overtime, a different
+condition.) A second name for one condition is the synonym defect, and *tied*
+also misreads: *"CF%, score tied"* reads as tied GAMES when it means tied MOMENTS.
+**The row is labelled *"5-on-5 CF% while the score was level"*** — the front
+door's own phrase, *while* included, because *while* is what makes it a moment.
+The industry's *score-close* is a different defined term and is never used.
+
+**Q10 — league rows appear ONCE, above both clubs.** Not for redundancy: **a
+league figure inside a club's column reads as a club figure** — *3.6* under WSH
+and under PHI says the two clubs are equal on penalties, which neither number
+claims. Reading order is *what is normal*, then *how these two clubs differ from
+it*, and the two kinds of row look different: league rows teach, club rows
+compare.
+
+**The admission rule — Kevin and CHENG, made mechanical:**
+
+> ⛔ **A row is a CLUB row only if its three-season chronological settle count is
+> at most HALF A SEASON (41 games). Otherwise it is a LEAGUE row.**
+
+CHENG proposed *"settles within a season"*; as worded that admits penalties (73
+games), which Kevin had moved to the league section as the other side of the power
+play. Half a season keeps the rule and the card in agreement with no named
+exception: it admits **5-on-5 CF% while the score was level (35), defencemen
+shooting (23), slot (37)** and sends **penalties (73), offside (85) and every
+power-play metric (78+)** to the league section. It also means a club row reads
+*settled* for most of the season rather than its last weeks — all three settle by
+about the end of December. 41 is a policy number, stated here once; it is the
+rule a future row is judged by, so the card cannot drift back to presenting an
+unsettleable club trait as one.
+
+**The card, final:**
+
+```
+WHAT'S NORMAL (once, above both clubs)
+  Power play   scores about 1 time in 5 (21.9%), from ~2.7 chances per team per game
+  Penalties    about 3.6 per team per game — each one is the other team's power play
+  Offside      about 2.1 per team per game
+
+HOW THESE TWO DIFFER (both clubs, current season, count + n + league + progress)
+  5-on-5 CF% while the score was level      · N of 35 games
+  Defencemen shooting                       · N of 23 games
+  Shots from the slot                       · N of 37 games     [detail seam on the CF% row]
+```
+
+**Settled, nothing open for CHENG.** Next is the build process's own next step:
+tests, then implementation — including the P4 fixture that exercises the
+`detail` seam before per-player CF% exists.
