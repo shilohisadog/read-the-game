@@ -48,6 +48,18 @@ incomprehensible — and hockey has a third: NOT YET.** See [[season-restart-tra
 **Everything below is ✅ done and pushed.** Live at `e6a3c82`, gates **1,341 JS + 222
 Python**, deploy and ingest both green, front door reading `current`.
 
+✅ **TONIGHT IS ON THE FRONT DOOR — 2026-09-22, `docs/front-door-tonight.md` §7.**
+Kevin, from the live site: *Next* named one game of eight. It was one by design
+(`front-door.md` §12.3: no UTC date names an NHL night) — and `classify()` has been
+attaching **the league's own date** to every game all along while the `upcoming` copy
+loop dropped it. Carrying that field gives a night an honest population with no clock
+in it. ⛔ It also fixes the defect that would have arrived on **29 September**: the
+`slate` state carried no forward look, so tonight's games would have vanished from the
+front door on every morning that had results. The nightly now asks for one week past
+its window, the pre-sync check REFUSES to publish a fixture with no league date, and
+⏭ **the first unattended run of that gate is the next ingest** — until it runs, the
+page shows the single-fixture sentence, which is the degradation working.
+
 **Do next, in order:**
 1. **ROW 7 of `docs/test-program.md` §10 — the parser increment.** The row has a ruler
    now (`tools/css-noop.mjs`, a stylesheet change no reader can see) and it reads
