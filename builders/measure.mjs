@@ -30,7 +30,7 @@ import { danger } from '../src/lib/layers/danger.js';
 import { goaltending } from '../src/lib/layers/goaltending.js';
 import { whistle } from '../src/lib/layers/whistle.js';
 import { zonestart } from '../src/lib/layers/zonestart.js';
-import { shootingTeam, SHOT_TYPES } from '../src/lib/attribution.js';
+import { shootingTeam, corsiTeam as corsiTeamOf, SHOT_TYPES } from '../src/lib/attribution.js';
 import { situation, DECLINED } from '../src/lib/strength.js';
 // The SAME two functions danger.js calls at line 118 — a distance measured here
 // cannot disagree with a distance measured by the layer.
@@ -116,6 +116,35 @@ export function measureGame(g) {
   // total attempts would divide by a population containing blocked shots, whose
   // origin is not in the feed at all — the numerator and the denominator have to
   // mean the same thing, which is the lesson extract.py's SOG check paid for.
+  /* ⭐ THE DEFENCEMEN'S SHARE, AND THE POSITION COMES FROM THE ROSTER ROW.
+     `census.js` groups shooters the same way and off the same field (`pos`), so
+     this is that question asked per club rather than per archive. The attempt is
+     credited by `corsi`'s own attribution — a blocked shot to the SHOOTER — so
+     the numerator and `attempts` below are drawn from one set. */
+  const dAtt = { h: 0, a: 0 };
+  for (const id of all.counted) {
+    const e = g.events[id];
+    if ((g.roster?.[e.actor] || {}).pos !== 'D') continue;
+    const s = sideOf(shootingTeam(e, g.roster));
+    if (s) dAtt[s]++;
+  }
+
+  /* ⭐⭐ 5-ON-5 WHILE THE SCORE WAS LEVEL — the card's one industry label, and the
+     narrowest population on this record. `tiedControl` is even strength in
+     regulation while the score is level, which ADMITS 4-on-4 and 3-on-3; the
+     label "5-on-5 CF%" may only sit on strict `1551` (docs/preview-and-corsi.md
+     §9.1 Q5/Q8), so the level set is narrowed by the league's own situation code
+     rather than by a second reading of strength. Both halves matter: level score
+     removes the chasing (`tied.js`), and `1551` is what the label means. */
+  const inLevel = new Set(level.counted);
+  const lvl5 = { h: 0, a: 0 };
+  for (const id of all.counted) {
+    const e = g.events[id];
+    if (e.sit !== '1551' || !inLevel.has(id)) continue;
+    const s = sideOf(corsiTeamOf(e, g.roster));
+    if (s) lvl5[s]++;
+  }
+
   const located = { h: 0, a: 0 };
   for (const id of all.counted) {
     const e = g.events[id];
@@ -223,6 +252,8 @@ export function measureGame(g) {
     sog: { h: g.quoted.home.sog, a: g.quoted.away.sog },
     attempts: { h: all.t[ctx.homeId], a: all.t[ctx.awayId] },
     level: level.diff,
+    // The preview card's two club rows that nothing else needed. See above.
+    dAtt, lvl5,
   };
 }
 
@@ -387,8 +418,14 @@ export function slateOf(records, now) {
   return {
     asOf: now,
     games: records
+      /* ⭐ TEN FIELDS NOW, AND THE FOUR NEW ONES HAVE A READER — D10 pointed
+         forwards. `teams.json` is rebuilt WEEKLY and the preview card prints a
+         club's season as "12 of 35 games", so between Mondays it would be up to
+         three games short with no symptom. The card adds the games dated after
+         `teams.json`'s `through`, and these are what those games are worth. */
       .map(r => ({ id: r.id, date: r.date, awayAb: r.awayAb, homeAb: r.homeAb,
-                   score: r.score, attempts: r.attempts }))
+                   score: r.score, attempts: r.attempts,
+                   slot: r.slot, located: r.located, dAtt: r.dAtt, lvl5: r.lvl5 }))
       // Sorted by date then id, so "last night" is a suffix of this list rather
       // than a scan, and two runs over the same games produce the same bytes.
       .sort((a, b) => (a.date === b.date ? a.id - b.id : (a.date < b.date ? -1 : 1))),

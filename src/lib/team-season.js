@@ -29,6 +29,15 @@ function blankTeam() {
     record: { reg: { w: 0, l: 0, otl: 0, undecided: 0 }, post: { w: 0, l: 0, undecided: 0 } },
     attempts: { for: 0, against: 0 },
     slot: { count: 0, n: 0 },
+    /* ⭐ THE PREVIEW CARD'S OTHER TWO CLUB ROWS (docs/preview-page.md §3.2).
+       `dmen` is a share of the club's OWN attempts — how much of this club's
+       shooting comes from the blue line. `level5` keeps both sides because CF%
+       is a share of the two clubs together, and it is strict 5-on-5 while the
+       score was level: the label may only sit on `1551` (preview-and-corsi.md
+       §9.1 Q8) and the level condition is what stops a club that trails a lot
+       from being flattered by its own chasing (§9.2). */
+    dmen: { count: 0, n: 0 },
+    level5: { for: 0, against: 0 },
     blocks: { count: 0, n: 0 },
     saves: { count: 0, n: 0 },
     goalies: {},                        // pid -> row; becomes a sorted array below
@@ -78,6 +87,13 @@ export function teamSeasons(records) {
 
       t.attempts.for += g.attempts[side];
       t.attempts.against += g.attempts[opp];
+
+      /* A RECORD FROM AN OLDER RUN HAS NEITHER FIELD, and this table is built
+         from whatever `measure.mjs` last wrote — so a missing field adds nothing
+         rather than adding `NaN`, which is the shape `published_ranges.py`
+         exists to catch one document later. */
+      if (g.dAtt) { t.dmen.count += g.dAtt[side]; t.dmen.n += g.attempts[side]; }
+      if (g.lvl5) { t.level5.for += g.lvl5[side]; t.level5.against += g.lvl5[opp]; }
 
       // WHAT SHARE OF THE SHOTS AIMED AT THEM DID THEY BLOCK. The denominator is
       // the OPPONENT's attempts, because that is the population being blocked —
@@ -136,8 +152,19 @@ export function teamSeasons(records) {
     }
   }
 
+  /* ⛔ WHAT THIS TABLE IS CURRENT TO, AND IT IS READ FROM THE GAMES.
+     `teams.json` is rebuilt WEEKLY while `recent.json` is nightly, and the
+     preview card adds the games dated after this — so without it the card would
+     print a club's season as of last Monday, three games short, with no symptom.
+     THE DATE IS THE NEWEST GAME IN THE TABLE, never a clock: the same rule as
+     the front door's "Last night" (front-door.md §12.5), for the same reason —
+     a timestamp would go on being current while the games stopped arriving. */
+  const through = games.reduce(
+    (max, g) => (typeof g.date === 'string' && g.date > max ? g.date : max), '') || null;
+
   return {
     scope: POPULATION,
+    through,
     // The reference class for every fraction on a team's row, computed from the
     // same games in the same pass. See the note above.
     archive: {

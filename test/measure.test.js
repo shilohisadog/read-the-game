@@ -23,6 +23,7 @@ import { TEAMS } from '../src/lib/teams.js';
 import { summarise, slotShare, perGame, reachOf, goalieNight } from '../src/lib/archive.js';
 import { distribution, quantile, shareAtOrBelow, mostUnusual } from '../src/lib/distribution.js';
 import { corsi } from '../src/lib/layers/corsi.js';
+import { tiedControl } from '../src/lib/layers/tied.js';
 import { danger } from '../src/lib/layers/danger.js';
 import { blocked } from '../src/lib/layers/blocked.js';
 import { goaltending } from '../src/lib/layers/goaltending.js';
@@ -1095,7 +1096,7 @@ test('⭐ --slate writes the slate and NEITHER archive document', () => {
     `--slate wrote archive documents: ${wrote.join(', ')}`);
 });
 
-test('the slate carries six fields, sorted, and says when it was computed', () => {
+test('the slate carries ten fields, sorted, and says when it was computed', () => {
   const recs = [
     { id: 3, date: '2026-01-06', awayAb: 'TOR', homeAb: 'BUF', score: { h: 1, a: 2 },
       attempts: { h: 40, a: 55 }, reach: { big: 1 }, goalies: [{ pid: 1 }], lens: {} },
@@ -1109,8 +1110,14 @@ test('the slate carries six fields, sorted, and says when it was computed', () =
   assert.deepEqual(doc.games.map(g => g.id), [1, 2, 3], 'not sorted by date then id');
   // ⭐ D10, POINTED FORWARDS: a field with no reader does not ship. `reach` and
   // the per-goalie rows are 58% of a record's bytes and no surface reads them.
+  // ⭐ FOUR JOINED on 2026-09-22, and the rule is why: the preview card reads
+  // them (docs/preview-page.md §3.2). `teams.json` is weekly, this is nightly,
+  // and the card adds the games dated after the weekly table's `through` — so
+  // these are exactly what a game since Monday is worth to a club's row. They
+  // are `undefined` here because these fixtures predate them, which is the
+  // shape a record from an older run has and the merge must survive.
   assert.deepEqual(Object.keys(doc.games[0]).sort(),
-    ['attempts', 'awayAb', 'date', 'homeAb', 'id', 'score']);
+    ['attempts', 'awayAb', 'dAtt', 'date', 'homeAb', 'id', 'located', 'lvl5', 'score', 'slot']);
   // AND THE SAME RECORDS GIVE THE SAME BYTES, which is why `now` is injected.
   assert.equal(stable(slateOf(recs, 'x')), stable(slateOf([...recs].reverse(), 'x')));
 });
@@ -1214,4 +1221,91 @@ test('⛔ the nightly passes --slate, and the sync treats recent.json as adverti
   // …and the partition check knows all three, or the sync refuses to run at all.
   assert.match(wf, /grep -vxE 'index\\\.json\|catalog\\\.json\|recent\\\.json'/,
     'the partition check does not know about recent.json');
+});
+
+/* --------------------------------------------- WHAT THE PREVIEW CARD NEEDS
+ * `docs/preview-page.md` §3.2. The card's three club rows are the slot share
+ * (already carried), the defencemen's share of a club's attempts, and 5-on-5
+ * CF% WHILE THE SCORE WAS LEVEL. The last two are computed per game by reducers
+ * this file already drives and were simply not published.
+ *
+ * ⛔ THE FIGURES ARE CHECKED AGAINST THE REDUCERS, NOT AGAINST A NUMBER I TYPED.
+ * A fixture asserting `dAtt.h === 12` is a mirror of whatever the code does;
+ * these assert the RELATIONSHIPS that make the row mean what it says.
+ */
+const EXTRACT = JSON.parse(readFileSync(
+  join('test', 'fixtures', 'extracts', readdirSync(join('test', 'fixtures', 'extracts'))
+    .filter(f => f.endsWith('.json')).sort()[0]), 'utf8'));
+
+test('⭐ a game record carries the defencemen\'s attempts, and they are a SUBSET of the attempts', () => {
+  const r = measureGame(EXTRACT);
+  for (const side of ['h', 'a']) {
+    assert.ok(Number.isInteger(r.dAtt[side]), 'a count, not a share');
+    assert.ok(r.dAtt[side] > 0, `no defenceman took an attempt for ${side} — the fixture cannot test this`);
+    assert.ok(r.dAtt[side] < r.attempts[side],
+      'defencemen took every attempt, which is not hockey — the denominator is wrong');
+  }
+});
+
+test('⭐ …and 5-on-5 attempts while the score was level, both sides, from the SAME population', () => {
+  /* MUTATION: count at all strengths, or over the whole game rather than while
+     level. Either makes `lvl5` exceed the attempts it is drawn from. */
+  const r = measureGame(EXTRACT);
+  const both = r.lvl5.h + r.lvl5.a;
+  assert.ok(both > 0, 'the fixture holds no level-score 5-on-5 attempts at all');
+  assert.ok(r.lvl5.h <= r.attempts.h && r.lvl5.a <= r.attempts.a,
+    'a subset that is bigger than its superset');
+  /* ⭐ AND IT IS NARROWER THAN THE EVEN-STRENGTH FIGURE ALREADY CARRIED. `level`
+     is tiedControl's difference at EVEN strength — which admits 4-on-4 and 3-on-3
+     — so a strict 5-on-5 count drawn from the same whistle must be no larger than
+     the even-strength count on at least one side, and the label "5-on-5" is a lie
+     if this file ever stops narrowing it. */
+  const tied = tiedControl.reduce(EXTRACT.events, {
+    roster: EXTRACT.roster, homeId: EXTRACT.teams.home.id, awayId: EXTRACT.teams.away.id,
+    homeAb: EXTRACT.teams.home.ab, awayAb: EXTRACT.teams.away.ab });
+  assert.ok(both <= tied.counted.length,
+    'more strict 5-on-5 level attempts than even-strength level attempts');
+});
+
+test('⭐ the season table sums both, and a share is count over count', () => {
+  const rec = (id, o = {}) => ({ id, date: '2023-10-11', end: 'REG', homeAb: 'HME', awayAb: 'AWY',
+    score: { h: 1, a: 0 }, sog: { h: 1, a: 0 }, attempts: { h: 50, a: 40 },
+    blocks: { h: 0, a: 0 }, slot: { h: 0, a: 0 }, located: { h: 0, a: 0 }, level: 0,
+    dAtt: { h: 15, a: 12 }, lvl5: { h: 20, a: 18 }, goalies: [], ...o });
+  const t = teamSeasons([rec(2023020001), rec(2023020002)]).seasons['2023'];
+  assert.equal(t.HME.dmen.count, 30, 'defencemen attempts add');
+  assert.equal(t.HME.dmen.n, 100, 'and the denominator is the club\'s own attempts');
+  assert.equal(t.AWY.dmen.count, 24);
+  assert.equal(t.HME.level5.for, 40);
+  assert.equal(t.HME.level5.against, 36, 'the opponent\'s level-score 5-on-5 attempts');
+  assert.equal(t.AWY.level5.for, 36);
+});
+
+test('⛔ THE SEASON TABLE SAYS WHAT IT IS CURRENT TO, or the card cannot', () => {
+  /* The card prints "12 of 35 games". teams.json is rebuilt WEEKLY, so without a
+     through-date the page cannot know whether to add the nightly tail — and a
+     count silently three games short is the stale-figure defect with no symptom.
+     MUTATION: drop the field, or write the run's clock into it. It is a fact
+     about the GAMES, like "Last night" (front-door.md §12.5), so it is the newest
+     game date in the table and never a timestamp. */
+  const rec = (id, date) => ({ id, date, end: 'REG', homeAb: 'HME', awayAb: 'AWY',
+    score: { h: 1, a: 0 }, sog: { h: 1, a: 0 }, attempts: { h: 50, a: 40 },
+    blocks: { h: 0, a: 0 }, slot: { h: 0, a: 0 }, located: { h: 0, a: 0 }, level: 0,
+    dAtt: { h: 15, a: 12 }, lvl5: { h: 20, a: 18 }, goalies: [] });
+  const t = teamSeasons([rec(2023020002, '2023-12-20'), rec(2023020001, '2023-10-11')]);
+  assert.equal(t.through, '2023-12-20', 'the newest game in the table, whatever order it arrived in');
+});
+
+test('⭐ the nightly slate carries the same three rows, so the page can add last night', () => {
+  /* ⛔ D10: A FIELD WITH NO READER DOES NOT SHIP — and this is that rule pointed
+     forwards. recent.json grows because the preview card reads it: teams.json is
+     weekly and in season that is up to 7 days and ~3 games stale on a card whose
+     honesty device is a game count.
+     MUTATION: publish the six fields it had, and the card silently reports a
+     club's season as of last Monday. */
+  const r = measureGame(EXTRACT);
+  const row = slateOf([r], '2026-01-15T11:00:00Z').games[0];
+  for (const k of ['slot', 'located', 'dAtt', 'lvl5'])
+    assert.deepEqual(row[k], r[k], `the slate dropped ${k}`);
+  assert.equal(row.id, r.id, 'and the id, so a merge can tell the games apart');
 });
