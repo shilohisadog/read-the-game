@@ -521,11 +521,27 @@ jobs:
           # ninety seconds later. The middleware did not manufacture the 404 — it
           # passed through exactly what the asset server said.
           #
-          # ⭐ THE ROOT ONLY, AND THAT IS THE WHOLE DISTINCTION. `/` is not a file
-          # we deploy, it is a route Pages resolves to index.html — this step's own
-          # comment below already says so. A named page that 404s IS a missing
-          # file and still fails on the first answer, so the rule's original reason
-          # survives intact for every case it was written about.
+          # ⛔⛔⛔ AND THE "ROOT ONLY" VERSION OF THAT FIX WAS WRONG, FALSIFIED THE
+          # SAME DAY IT SHIPPED. It read: *"A named page that 404s IS a missing
+          # file and still fails on the first answer."* Eight hours later
+          # `/faceoffs.html` 404'd on the candidate while the other thirteen pages
+          # — including one added in the same commit — came back byte-identical,
+          # and the SAME candidate URL served that page 200 a few minutes later.
+          # The asset manifest does not propagate atomically, so any path can be
+          # briefly absent, and "is this missing or is this slow?" cannot be
+          # answered from one response. It is answered by waiting.
+          #
+          # ⭐ SO THE PAGE LOOP RETRIES 404 TOO, AND THE ORIGINAL RULE'S REASON
+          # SURVIVES ANYWAY: that loop's list of pages comes from `src/*.html` in
+          # this very checkout, so a 404 there can only be propagation or a deploy
+          # that genuinely failed to upload — and both are worth waiting out. The
+          # cause is not hidden, it is just reported 72 seconds later, by the
+          # "never became available" line at the bottom of this function.
+          #
+          # ⚠️ THE PRODUCTION POLL BELOW DOES NOT, and that is deliberate: it has
+          # its own outer retry loop, so a 404 there is one cheap attempt of many
+          # rather than a verdict, and making each attempt wait 72 seconds would
+          # turn a two-minute poll into half an hour.
           fetch() {  # fetch <path> <destination> [retry404]
             local path="$1" dest="$2" retry404="${3:-}" code
             for i in $(seq 1 12); do
@@ -607,7 +623,7 @@ jobs:
           fail=0
           for f in src/*.html; do
             page=$(basename "$f")
-            fetch "$page" live.html || { fail=1; continue; }
+            fetch "$page" live.html retry404 || { fail=1; continue; }
             if cmp -s <(strip live.html) <(strip "$f"); then
               echo "  /$page  ($(wc -c < "$f") bytes, identical)"
               beacon_note live.html
