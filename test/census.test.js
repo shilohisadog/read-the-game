@@ -794,3 +794,20 @@ test('⛔⛔ and the PUBLISHED census carries them — the accumulator is not th
   }
   assert.ok(pub.whistles.penalties > 0, 'and the fixture must actually produce some');
 });
+
+test('⭐ icing is counted the same way offside is, and published the same way', () => {
+  /* Offside's sibling and the only line rule the card did not name. Same field,
+     one reducer over — so the risk is not the arithmetic, it is that the counter
+     is summed and never published, which is exactly what happened to the whole
+     whistles block on 2026-09-23.
+     MUTATION: drop `icings` from the projection list and the last assertion
+     fires while the first two still pass. */
+  const ctx = { roster: {}, homeId: 1, awayId: 2, homeAb: 'HME', awayAb: 'AWY' };
+  const st = (s, rsn) => ({ type: 'stoppage', s, rsn, per: 1, pt: 'REG', sit: '1551' });
+  const c = censusGame([st(10, 'icing'), st(20, 'offside'), st(30, 'icing'),
+                        st(40, 'goalie-stopped-after-sog')], ctx);
+  assert.equal(c.whistles.icings, 2, 'only the two iced pucks');
+  assert.equal(c.whistles.offsides, 1, 'and offside is untouched by the new counter');
+  assert.equal(censusRates(censusAdd({}, c)).whistles.icings, 2,
+    'counted but never published is invisible to every page');
+});

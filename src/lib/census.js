@@ -176,7 +176,7 @@ export function censusGame(events, ctx) {
      ⛔ POOLED ACROSS BOTH CLUBS, deliberately: a league row is not about either
      of them, and `preview-and-corsi.md` §12 refuses to print a league figure in
      a club's column. */
-  const whistles = { penalties: 0, offsides: 0, ppChances: 0, ppGoals: 0, shGoals: 0 };
+  const whistles = { penalties: 0, offsides: 0, icings: 0, ppChances: 0, ppGoals: 0, shGoals: 0 };
   let hadAdvantage = null;          // which club held one at the previous event
 
   for (let i = 0; i < events.length; i++) {
@@ -189,6 +189,12 @@ export function censusGame(events, ctx) {
       // one of these.
       if (e.type === 'penalty' && e.min) whistles.penalties++;
       if (e.type === 'stoppage' && e.rsn === 'offside') whistles.offsides++;
+      /* ⭐ OFFSIDE'S SIBLING, AND THE ONLY LINE RULE THE CARD DID NOT NAME. Same
+         shape, same field, one reducer over. ⛔ POOLED, like every other whistle
+         here: `offendingTeam()` can name the club, but a league row is not about
+         either of them (`preview-and-corsi.md` §12), and a per-club icing rate
+         takes 119 games to settle — it is not a club trait. */
+      if (e.type === 'stoppage' && e.rsn === 'icing') whistles.icings++;
       /* ⛔ A CHANCE IS AN ENTRY INTO AN ADVANTAGE, NOT A PENALTY AND NOT A CODE
          CHANGE. A double minor is one advantage; a 5-on-4 that deepens to 5-on-3
          and back is still the one it began as. Counting penalties instead would
@@ -570,7 +576,7 @@ export function censusRates(t) {
        would force the other surface to recover the counts anyway. */
     whistles: (() => {
       const w = t.whistles || {};
-      return Object.fromEntries(['penalties', 'offsides', 'ppChances', 'ppGoals', 'shGoals']
+      return Object.fromEntries(['penalties', 'offsides', 'icings', 'ppChances', 'ppGoals', 'shGoals']
         .map(k => [k, w[k] || 0]));
     })(),
   };

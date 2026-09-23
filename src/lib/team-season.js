@@ -37,6 +37,9 @@ function blankTeam() {
        §9.1 Q8) and the level condition is what stops a club that trails a lot
        from being flattered by its own chasing (§9.2). */
     dmen: { count: 0, n: 0 },
+    // The share of a club's own attempts that missed the net entirely — the
+    // member of the attempt partition that turns out to describe the CLUB.
+    missed: { count: 0, n: 0 },
     level5: { for: 0, against: 0 },
     blocks: { count: 0, n: 0 },
     saves: { count: 0, n: 0 },
@@ -93,6 +96,7 @@ export function teamSeasons(records) {
          rather than adding `NaN`, which is the shape `published_ranges.py`
          exists to catch one document later. */
       if (g.dAtt) { t.dmen.count += g.dAtt[side]; t.dmen.n += g.attempts[side]; }
+      if (g.missedBy) { t.missed.count += g.missedBy[side]; t.missed.n += g.attempts[side]; }
       if (g.lvl5) { t.level5.for += g.lvl5[side]; t.level5.against += g.lvl5[opp]; }
 
       // WHAT SHARE OF THE SHOTS AIMED AT THEM DID THEY BLOCK. The denominator is

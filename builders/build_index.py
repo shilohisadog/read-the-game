@@ -3841,6 +3841,16 @@ __HELPERS__
         'Watch the blue line as a team carries the puck in.'));
       t.appendChild(learnLink('offside', 'What offside means'));
 
+    } else if (r.key === 'icing') {
+      big.textContent = r.perClubGame.toFixed(1);
+      big.appendChild(el('span', 'pvunit', ' a game'));
+      t.appendChild(big);
+      t.appendChild(el('p', 'pvtlab', 'times a team ices the puck'));
+      t.appendChild(el('p', 'pvwatch', 'The faceoff comes all the way back, and '
+        + 'the team that iced it may not change its line. Watch who is stuck out '
+        + 'there and how tired they are.'));
+      t.appendChild(learnLink('icing', 'What icing is'));
+
     } else if (r.key === 'attempts') {
       /* ⭐ THE ONE FIGURE ON THIS CARD THAT CAN HONESTLY BE A STACKED BAR: three
          shares of one defined whole, summing to the attempt total exactly. The
@@ -4002,7 +4012,8 @@ def _preview_doors():
     # and a row that arrives back with no door is the silent dead link this
     # function exists to prevent.
     want = {"powerplay": "penalties", "penalties": "penalties", "offside": "offside",
-            "level5": "control", "dmen": "control", "slot": "slot"}
+            "level5": "control", "dmen": "control", "slot": "slot",
+            "icing": "icing", "missed": "control"}
     out = {}
     for key, cid in want.items():
         if cid not in doors:

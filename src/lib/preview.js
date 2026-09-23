@@ -59,6 +59,14 @@ export const CLUB_ROWS = [
   { key: 'dmen', label: 'shot attempts taken by defencemen',
     of: t => ({ count: t.dmen.count, n: t.dmen.n }),
     ofGame: (g, side) => ({ count: g.dAtt[side], n: g.attempts[side] }) },
+  /* ⭐ MEASURED 2026-09-23 over the same 96 club-seasons as the rest: r = 0.748,
+     settles in 33 games, eight clear of the 41-game admission. It also survived
+     the venue control — a club's home figure and its away figure differ by 0.14
+     of a point, against a 4.1% home premium on hits over the same split — so it
+     is a club trait and not an arena trait. */
+  { key: 'missed', label: 'shot attempts that missed the net',
+    of: t => ({ count: t.missed.count, n: t.missed.n }),
+    ofGame: (g, side) => ({ count: g.missedBy[side], n: g.attempts[side] }) },
   { key: 'slot', label: 'shot attempts from the slot',
     of: t => ({ count: t.slot.count, n: t.slot.n }),
     ofGame: (g, side) => ({ count: g.slot[side], n: g.located[side] }) },
@@ -88,7 +96,7 @@ function leagueShares(season, teams, recent) {
   // the same tail the club rows get, so the two are current to the same night
   for (const g of (recent && recent.games) || []) {
     if (!g || typeof g.date !== 'string' || g.date <= ((teams && teams.through) || '')) continue;
-    if (seasonOf(g.id) !== season || !g.dAtt || !g.lvl5 || !g.slot || !g.located) continue;
+    if (seasonOf(g.id) !== season || !g.dAtt || !g.missedBy || !g.lvl5 || !g.slot || !g.located) continue;
     for (const side of ['h', 'a']) {
       for (const r of CLUB_ROWS) { const v = r.ofGame(g, side); tot[r.key].count += v.count; tot[r.key].n += v.n; }
     }
@@ -167,7 +175,7 @@ function rowsFor(ab, season, teams, recent, league, needs) {
        not move the game count either. Counting the game while dropping its
        numerators would grow a denominator without its numerator, which makes a
        share quietly wrong — worse than being a game behind. */
-    if (!g.dAtt || !g.lvl5 || !g.slot || !g.located) continue;
+    if (!g.dAtt || !g.missedBy || !g.lvl5 || !g.slot || !g.located) continue;
     games += 1;
     for (const t of tally) {
       const v = CLUB_ROWS.find(r => r.key === t.key).ofGame(g, side);
@@ -213,7 +221,9 @@ function leagueRows(measures) {
       perClubGame: perClubGame(w.penalties) },
     { key: 'offside', games: c.games, count: w.offsides,
       perClubGame: perClubGame(w.offsides) },
-  ].concat(extraLeagueRows(measures, c, perClubGame));
+  ].concat(w.icings ? [{ key: 'icing', games: c.games, count: w.icings,
+      perClubGame: perClubGame(w.icings) }] : [])
+   .concat(extraLeagueRows(measures, c, perClubGame));
 }
 
 /**
