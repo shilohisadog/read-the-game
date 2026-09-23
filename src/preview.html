@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-gDSRbrII3YbtnOW9q8+cDksswpFvwgr92t5tyxn9FcY=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-tLcBAn+O62owHlftoX8XlsOjhKIqi3uuCaoW1VLisgA='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Dac0FMumEnAvTz0MZLnUjluFTg0ejPxJ3OfW5E5v0Cs=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-tLcBAn+O62owHlftoX8XlsOjhKIqi3uuCaoW1VLisgA='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -1293,8 +1293,14 @@ function preview(id, docs, now) {
       p.league.forEach(function (r) {
         var row = el('p', 'pvnorm');
         if (r.key === 'powerplay') {
-          row.textContent = 'Power play — about ' + pct(r.rate) + ' of power plays'
-            + ' produce a goal, from about ' + r.chancesPerClubGame.toFixed(1)
+          /* ⛔ "about 22 of power plays" IS WHAT THIS SAID, live, for a day.
+             `pct` returns a bare number because the club rows supply their own
+             unit — "22 of every 100" — and this sentence forgot to. The repair
+             uses that same phrasing rather than a % sign: the card's whole voice
+             is counts a novice can picture, and one surface speaking percent
+             while the one below it speaks hundreds is two dialects on one page. */
+          row.textContent = 'Power play — about ' + pct(r.rate) + ' of every 100 power'
+            + ' plays produce a goal, from about ' + r.chancesPerClubGame.toFixed(1)
             + ' chances a team a game. Watch who is a skater short, and for how long.';
         } else if (r.key === 'penalties') {
           row.textContent = 'Penalties — a team takes about ' + r.perClubGame.toFixed(1)

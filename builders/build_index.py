@@ -3575,8 +3575,14 @@ __HELPERS__
       p.league.forEach(function (r) {
         var row = el('p', 'pvnorm');
         if (r.key === 'powerplay') {
-          row.textContent = 'Power play — about ' + pct(r.rate) + ' of power plays'
-            + ' produce a goal, from about ' + r.chancesPerClubGame.toFixed(1)
+          /* ⛔ "about 22 of power plays" IS WHAT THIS SAID, live, for a day.
+             `pct` returns a bare number because the club rows supply their own
+             unit — "22 of every 100" — and this sentence forgot to. The repair
+             uses that same phrasing rather than a % sign: the card's whole voice
+             is counts a novice can picture, and one surface speaking percent
+             while the one below it speaks hundreds is two dialects on one page. */
+          row.textContent = 'Power play — about ' + pct(r.rate) + ' of every 100 power'
+            + ' plays produce a goal, from about ' + r.chancesPerClubGame.toFixed(1)
             + ' chances a team a game. Watch who is a skater short, and for how long.';
         } else if (r.key === 'penalties') {
           row.textContent = 'Penalties — a team takes about ' + r.perClubGame.toFixed(1)

@@ -203,6 +203,25 @@ test('with a season under way the page draws both frames and both clubs', async 
   assert.match(ids.pvh1.textContent, /Buffalo Sabres at Pittsburgh Penguins/);
 });
 
+test('⛔ every figure in the league frame carries its unit', async () => {
+  /* THE DEFECT, read off the live page once the frame could finally draw:
+     "Power play — about 22 of power plays produce a goal". `pct()` returns a bare
+     number because the club rows below supply their own unit ("22 of every 100"),
+     and this sentence forgot to — so the one figure on the card that is a
+     PERCENTAGE was the one with nothing saying so.
+
+     MUTATION: drop "of every 100" and the second assertion fires. The first is
+     here because a frame that failed to render would pass the second vacuously. */
+  const { ids, settle } = run({}, `?game=${GID}`, '2026-10-01T12:00:00Z');
+  await settle();
+  const said = textOf(ids.pv);
+  assert.match(said, /Power play —/, 'the subject: the row must be on the page');
+  assert.match(said, /\d+ of every 100 power plays produce a goal/);
+  assert.ok(!/\d+ of power plays/.test(said), said.slice(0, 200));
+  // The two per-game figures are counts, not shares, and must not grow a unit.
+  assert.match(said, /a team takes about \d+\.\d a game/, 'penalties stay a plain count');
+});
+
 test('a census with no whistle counters drops the frame rather than inventing one', async () => {
   const { ids, settle } = run({ 'measures.json': { census: { games: 4192 } } },
     `?game=${GID}`, '2026-10-01T12:00:00Z');
