@@ -207,16 +207,38 @@ function leagueRows(measures) {
 }
 
 /**
+ * ⭐ WHEN THIS SEASON'S NUMBERS BEGIN — FROM THE LEAGUE, NOT FROM US.
+ *
+ * ⛔ THE CARD WAS A DEAD END FOR TEN DAYS AND SAID NOTHING ABOUT IT. Preseason
+ * is excluded from every number here, so from the first preseason game until the
+ * opener both columns read *"No games counted yet this season."* and stopped —
+ * true, and to a reader it is indistinguishable from a page that is broken.
+ * Kevin, from the live site on 23 September 2026, with exactly that screenshot.
+ *
+ * The repair is to say WHEN instead of only that there is nothing: `schedule.json`
+ * already carries the league's own `regularSeasonStartDate`, so the sentence is
+ * quoted from the feed and moves by itself every year. No date is typed, and a
+ * document that predates the field degrades to the bare sentence rather than
+ * inventing one.
+ */
+function countingFrom(schedule, now) {
+  const startsOn = ((schedule || {}).season || {}).regularSeasonStartDate || null;
+  const today = String(now || '').slice(0, 10);
+  return { startsOn, started: !!(startsOn && today && today >= startsOn) };
+}
+
+/**
  * @param id       the game this card is about
  * @param docs     {schedule, teams, measures, recent, catalog} — all published
  * @param now      ISO instant, injected so this is testable and deterministic
  *
- * @returns {{state, game, result, clubs, league}}
- *   state   'before' | 'underway' | 'played' | 'unknown'
- *   game    {id, away, home, startTimeUTC, date, preseason} or null
- *   result  {score, watch} once the archive holds it, else null
- *   clubs   {away, home} — each {ab, games, rows}
- *   league  the frame, or [] when the census predates it
+ * @returns {{state, game, result, clubs, league, counting}}
+ *   state    'before' | 'started' | 'played' | 'unknown'
+ *   game     {id, away, home, startTimeUTC, date, preseason} or null
+ *   result   {score, watch} once the archive holds it, else null
+ *   clubs    {away, home} — each {ab, games, rows}
+ *   league   the frame, or [] when the census predates it
+ *   counting {startsOn, started} — when this season's numbers begin
  */
 export function preview(id, docs, now) {
   const gid = Number(id);
@@ -238,17 +260,25 @@ export function preview(id, docs, now) {
     // The league's own type, quoted: 1 is preseason, which our numbers exclude.
     preseason: (fix ? fix.gameType : held.t) === 1 };
 
+  /* ⛔⛔ 'started', NOT 'underway', AND THE RENAME IS THE FIX. A start time that
+     has passed is all we know; a game is over about two and a half hours later
+     and the next ingest is up to thirteen hours after that, so `underway` was a
+     claim that went false on its own and stayed on the page — the shape of
+     defect this project has now made three times (`next-play-shading`). It was
+     also a REAL-TIME claim on a site whose whole position is that it is a replay
+     and never live. `started` is a fact about the clock that cannot expire, and
+     the renderer prints the start itself rather than a status. */
   let state = 'before', result = null;
   if (held && held.v) {
     state = 'played';
     result = { score: { a: held.as, h: held.hs }, watch: `game.html?game=${gid}` };
   } else if (fix && fix.startTimeUTC && !(fix.startTimeUTC > now)) {
-    state = 'underway';
+    state = 'started';
   }
 
   const shares = leagueShares(season, d.teams, d.recent);
   const needs = needsFrom(d.measures);
-  return { state, game, result,
+  return { state, game, result, counting: countingFrom(d.schedule, now),
     clubs: { away: rowsFor(away, season, d.teams, d.recent, shares, needs),
              home: rowsFor(home, season, d.teams, d.recent, shares, needs) },
     league: leagueRows(d.measures) };

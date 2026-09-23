@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-AM5fOUyXeoajXawsPsb1ZKolQprW8hYkK06rsg4p3Qg=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ztGkjRBPUmNx/YWvbcmpMnPV2vtz1JiVMyxAAu/MZls='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-+Piyd2ngKgvabR+RnsQYZ7VZ6Ue5tmPqnNdmZCx55pE=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ztGkjRBPUmNx/YWvbcmpMnPV2vtz1JiVMyxAAu/MZls='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -4255,6 +4255,15 @@ const PEN = {
   'too-many-men-on-the-ice': 'Too many men on the ice',
   'goalie-removed-own-mask': 'Goaltender removed his own mask',
   'unsportsmanlike-conduct-bench': 'Unsportsmanlike conduct — bench',
+
+  /* 2026-09-23, the third preseason night to halt the nightly, over 4,585 games.
+     Both take the league's own key as their words rather than an interpretation
+     of the rulebook: `delaying-game-equipment` could be read as adjusting
+     equipment or as leaving it on the ice, and this table's job is to render a
+     phrase a broadcast uses, not to adjudicate which rule was called. The
+     `— bench` suffix already has a precedent one line up. */
+  'delaying-game-equipment': 'Delay of game — equipment',
+  'interference-bench': 'Interference — bench',
 
   // ⚠️ THE DURATION IS IN THE KEY AND IS NOT REPEATED IN THE WORDS. The clock
   // beside the name already says 4:00, and "High-sticking (double minor) 4:00"

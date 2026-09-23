@@ -79,6 +79,15 @@ export const PEN = {
   'goalie-removed-own-mask': 'Goaltender removed his own mask',
   'unsportsmanlike-conduct-bench': 'Unsportsmanlike conduct — bench',
 
+  /* 2026-09-23, the third preseason night to halt the nightly, over 4,585 games.
+     Both take the league's own key as their words rather than an interpretation
+     of the rulebook: `delaying-game-equipment` could be read as adjusting
+     equipment or as leaving it on the ice, and this table's job is to render a
+     phrase a broadcast uses, not to adjudicate which rule was called. The
+     `— bench` suffix already has a precedent one line up. */
+  'delaying-game-equipment': 'Delay of game — equipment',
+  'interference-bench': 'Interference — bench',
+
   // ⚠️ THE DURATION IS IN THE KEY AND IS NOT REPEATED IN THE WORDS. The clock
   // beside the name already says 4:00, and "High-sticking (double minor) 4:00"
   // says the same thing twice -- the defect the slot caption hit when a rename

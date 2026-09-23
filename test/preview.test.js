@@ -58,10 +58,50 @@ test('⭐ before the game: the two clubs, the start, and no result', () => {
   assert.equal(p.result, null);
 });
 
-test('a game that has started is under way, not "before"', () => {
+test('⛔ a game that has started says STARTED, and never says it is under way', () => {
+  /* THE STATE WAS `underway` AND THAT IS A CLAIM WITH AN EXPIRY. A game ends
+     about two and a half hours after it starts, and the archive does not hold it
+     until the night is ingested — up to thirteen hours later — so the page told
+     a reader a finished game was live. Kevin saw exactly that on the live site
+     on 23 September 2026. It was also a real-time claim on a site whose whole
+     position is that it is a replay and never live.
+
+     MUTATION: rename the state back and the first assertion fires; give it an
+     elapsed-time cutoff and the last one does. */
   const p = preview(2025020500, docs(), '2026-01-16T01:00:00Z');
-  assert.equal(p.state, 'underway');
+  assert.equal(p.state, 'started');
   assert.equal(p.result, null, 'we hold nothing until the nightly runs');
+  const late = preview(2025020500, docs(), '2026-01-17T12:00:00Z');
+  assert.equal(late.state, 'started',
+    'a day later and still not in the archive — nothing here learns a game has ENDED');
+});
+
+/* ------------------------------------------------- WHEN COUNTING BEGINS */
+
+test('⛔ before the opener the card says WHEN its numbers start, quoting the league', () => {
+  /* Both columns read "No games counted yet this season." and stopped, for the
+     ten days between the first preseason game and the opener — true, and to a
+     reader indistinguishable from a page that is broken.
+     MUTATION: type the date into the module instead of reading `schedule.json`,
+     and changing the fixture below stops moving the answer. */
+  const sched = { ...schedule(), season: { regularSeasonStartDate: '2026-09-29' } };
+  const p = preview(2025020500, docs({ schedule: sched }), '2026-09-23T12:00:00Z');
+  assert.equal(p.counting.startsOn, '2026-09-29');
+  assert.equal(p.counting.started, false);
+});
+
+test('on the opener and after it, the card stops promising a start date', () => {
+  const sched = { ...schedule(), season: { regularSeasonStartDate: '2026-09-29' } };
+  for (const now of ['2026-09-29T00:01:00Z', '2026-11-02T12:00:00Z']) {
+    assert.equal(preview(2025020500, docs({ schedule: sched }), now).counting.started, true, now);
+  }
+});
+
+test('a schedule with no season block promises nothing rather than inventing a date', () => {
+  // The same degradation the front door makes when fixtures carry no date.
+  const p = preview(2025020500, docs(), NOW);
+  assert.equal(p.counting.startsOn, null);
+  assert.equal(p.counting.started, false);
 });
 
 test('⭐⭐ ONCE IT IS PLAYED THE SAME URL OPENS THE REPLAY — the reason this is one page', () => {

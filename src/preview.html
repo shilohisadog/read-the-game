@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-xB+PmtX/wZTuv5K8AO22Wp+5WMWCnP98tjiIWzgx6+E=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-tLcBAn+O62owHlftoX8XlsOjhKIqi3uuCaoW1VLisgA='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-gDSRbrII3YbtnOW9q8+cDksswpFvwgr92t5tyxn9FcY=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-tLcBAn+O62owHlftoX8XlsOjhKIqi3uuCaoW1VLisgA='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -1108,16 +1108,38 @@ function leagueRows(measures) {
 }
 
 /**
+ * ⭐ WHEN THIS SEASON'S NUMBERS BEGIN — FROM THE LEAGUE, NOT FROM US.
+ *
+ * ⛔ THE CARD WAS A DEAD END FOR TEN DAYS AND SAID NOTHING ABOUT IT. Preseason
+ * is excluded from every number here, so from the first preseason game until the
+ * opener both columns read *"No games counted yet this season."* and stopped —
+ * true, and to a reader it is indistinguishable from a page that is broken.
+ * Kevin, from the live site on 23 September 2026, with exactly that screenshot.
+ *
+ * The repair is to say WHEN instead of only that there is nothing: `schedule.json`
+ * already carries the league's own `regularSeasonStartDate`, so the sentence is
+ * quoted from the feed and moves by itself every year. No date is typed, and a
+ * document that predates the field degrades to the bare sentence rather than
+ * inventing one.
+ */
+function countingFrom(schedule, now) {
+  const startsOn = ((schedule || {}).season || {}).regularSeasonStartDate || null;
+  const today = String(now || '').slice(0, 10);
+  return { startsOn, started: !!(startsOn && today && today >= startsOn) };
+}
+
+/**
  * @param id       the game this card is about
  * @param docs     {schedule, teams, measures, recent, catalog} — all published
  * @param now      ISO instant, injected so this is testable and deterministic
  *
- * @returns {{state, game, result, clubs, league}}
- *   state   'before' | 'underway' | 'played' | 'unknown'
- *   game    {id, away, home, startTimeUTC, date, preseason} or null
- *   result  {score, watch} once the archive holds it, else null
- *   clubs   {away, home} — each {ab, games, rows}
- *   league  the frame, or [] when the census predates it
+ * @returns {{state, game, result, clubs, league, counting}}
+ *   state    'before' | 'started' | 'played' | 'unknown'
+ *   game     {id, away, home, startTimeUTC, date, preseason} or null
+ *   result   {score, watch} once the archive holds it, else null
+ *   clubs    {away, home} — each {ab, games, rows}
+ *   league   the frame, or [] when the census predates it
+ *   counting {startsOn, started} — when this season's numbers begin
  */
 function preview(id, docs, now) {
   const gid = Number(id);
@@ -1139,17 +1161,25 @@ function preview(id, docs, now) {
     // The league's own type, quoted: 1 is preseason, which our numbers exclude.
     preseason: (fix ? fix.gameType : held.t) === 1 };
 
+  /* ⛔⛔ 'started', NOT 'underway', AND THE RENAME IS THE FIX. A start time that
+     has passed is all we know; a game is over about two and a half hours later
+     and the next ingest is up to thirteen hours after that, so `underway` was a
+     claim that went false on its own and stayed on the page — the shape of
+     defect this project has now made three times (`next-play-shading`). It was
+     also a REAL-TIME claim on a site whose whole position is that it is a replay
+     and never live. `started` is a fact about the clock that cannot expire, and
+     the renderer prints the start itself rather than a status. */
   let state = 'before', result = null;
   if (held && held.v) {
     state = 'played';
     result = { score: { a: held.as, h: held.hs }, watch: `game.html?game=${gid}` };
   } else if (fix && fix.startTimeUTC && !(fix.startTimeUTC > now)) {
-    state = 'underway';
+    state = 'started';
   }
 
   const shares = leagueShares(season, d.teams, d.recent);
   const needs = needsFrom(d.measures);
-  return { state, game, result,
+  return { state, game, result, counting: countingFrom(d.schedule, now),
     clubs: { away: rowsFor(away, season, d.teams, d.recent, shares, needs),
              home: rowsFor(home, season, d.teams, d.recent, shares, needs) },
     league: leagueRows(d.measures) };
@@ -1194,6 +1224,15 @@ function preview(id, docs, now) {
   function pct(v) { return v == null ? '—' : Math.round(v * 100) + ''; }
   function num(n) { return (n || 0).toLocaleString(); }
 
+  /* ⛔ AN EMPTY COLUMN SAYS WHEN, NOT ONLY THAT IT IS EMPTY. The date is the
+     league's own `regularSeasonStartDate`, carried by `preview.js` — see the
+     comment on `countingFrom` for why this sentence exists at all. */
+  function noneYet(counting) {
+    return 'No games counted yet this season'
+      + (counting && counting.startsOn && !counting.started
+         ? ' — the regular season starts ' + when(counting.startsOn) + '.' : '.');
+  }
+
   function draw(p) {
     if (p.state === 'unknown') {
       $('pv').appendChild(el('p', 'note',
@@ -1208,13 +1247,32 @@ function preview(id, docs, now) {
        door's night follows: an NHL game at 7pm Eastern is 23:00Z the same day
        and one at 10:30pm Pacific is 05:30Z the next, so only the browser can
        name the day and the hour a reader is in. */
+    var stamp = g.startTimeUTC ? new Date(g.startTimeUTC).toLocaleString(undefined,
+      { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
     var says = [];
     if (g.preseason) says.push('Preseason');
     if (p.state === 'played') says.push('Played ' + when(g.date));
-    else if (p.state === 'underway') says.push('Under way');
-    else if (g.startTimeUTC) says.push(new Date(g.startTimeUTC).toLocaleString(undefined,
-      { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' }));
+    /* ⛔ THE START, NOT A STATUS. This said "Under way", which is true for about
+       two and a half hours and then stayed on the page for up to thirteen more,
+       because nothing here learns a game has ended until the night is ingested.
+       A timestamp cannot go stale. `preview.js` renamed the state for the same
+       reason; the sentence below says what is actually being waited for. */
+    else if (p.state === 'started') says.push('Started ' + stamp);
+    else if (stamp) says.push(stamp);
     $('pvwhen').textContent = says.join(' · ');
+
+    if (p.state === 'started') {
+      $('pv').appendChild(el('p', 'note',
+        'No score here yet — a game joins the archive after the night it is played.'));
+    }
+    /* THE DISCLOSURE EVERY OTHER SURFACE ALREADY MAKES. The calendar cell, the
+       night list and the front door all name preseason as out of the numbers;
+       this page printed the bare word and left a novice to guess why both
+       columns were empty. */
+    if (g.preseason) {
+      $('pv').appendChild(el('p', 'note',
+        'Nothing in a preseason game is counted in any number on this site.'));
+    }
 
     if (p.result) {
       var done = el('p', 'pvresult',
@@ -1262,7 +1320,7 @@ function preview(id, docs, now) {
         /* ⛔ PRESEASON, AND THE CARD SAYS SO RATHER THAN QUOTING LAST SEASON. Our
            numbers exclude preseason, so before the season opens there is nothing
            to report -- and last year's figures describe a different roster. */
-        box.appendChild(el('p', 'pvnone', 'No games counted yet this season.'));
+        box.appendChild(el('p', 'pvnone', noneYet(p.counting)));
       } else {
         c.rows.forEach(function (r) {
           var row = el('div', 'pvrow');

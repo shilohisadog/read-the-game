@@ -547,6 +547,10 @@ KNOWN_PENALTIES = {
     "fighting", "instigator", "roughing-double-minor", "throwing-equipment",
     # 2026-09-21, the next night's preseason games, walked over 4,567.
     "illegal-equipment", "instigator-misconduct",
+    # 2026-09-23, the third such night, walked over 4,585. Preseason keeps
+    # producing descriptors three full seasons never did, which is the argument
+    # for the halt rather than a reason to pre-load the list with guesses.
+    "delaying-game-equipment", "interference-bench",
 }
 
 

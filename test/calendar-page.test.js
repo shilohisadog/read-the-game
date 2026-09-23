@@ -192,8 +192,43 @@ test('the screen reader is told what the dashed box means, since it cannot see i
   await settle();
   const spoken = withClass(ids.main, 'cell').map(c => c.attrs['aria-label']).filter(Boolean);
   const mixed = spoken.find(s => /13 February/.test(s));
-  assert.match(mixed, /1 NHL game/);
+  assert.match(mixed, /1 game counted/);
   assert.match(mixed, /not counted here: Olympics/);
+});
+
+test('⛔ a month of nothing but preseason never claims it holds no games', async () => {
+  /* THE DEFECT, FROM THE LIVE SITE, 23 September 2026. September 2026 holds 22
+     preseason games and nothing else, and the aside read "0 NHL games this
+     month" directly above a grid of 22 boxes. Both halves of that sentence were
+     wrong to a reader: the count excludes out-of-scope games by design, and
+     "NHL" then claimed the excluded ones belonged to some other league — every
+     one of them is an NHL preseason game.
+
+     MUTATION THIS MUST FAIL AGAINST: restore `plural(nhl, 'NHL game')` and the
+     first assertion fires on the literal "0 games", the second on the word. */
+  // `t` is derived from the id, as the fixture's own comment requires — these
+  // are 2026-season preseason ids, so they are preseason without being told so.
+  const pre = [row(2026010001, '2026-09-19'), row(2026010002, '2026-09-19'),
+               row(2026010003, '2026-09-21')];
+  const { ids, settle } = run(pre, '?month=2026-09');
+  await settle();
+  const said = textOf(ids.main);
+  // The subject must be present, or every assertion below passes vacuously.
+  assert.match(said, /September 2026/, 'the month heading is what carries the aside');
+  assert.ok(!/\b0 games\b/.test(said), `a zero above three boxes: ${said.slice(0, 160)}`);
+  assert.ok(!/NHL game/.test(said), 'a preseason game is an NHL game, so "NHL" cannot be the divider');
+  assert.match(said, /3 games this month, none of them counted/);
+});
+
+test('a month that mixes counted and uncounted says both numbers', async () => {
+  /* The other two states of the same aside, so the repair above is not a
+     special case bolted on for September. MUTATION: drop the `other` term and
+     the mixed month silently under-reports what is on screen. */
+  const { ids, settle } = run(MONTH, '?month=2026-02');
+  await settle();
+  const said = textOf(ids.main);
+  assert.match(said, /counted this month/, 'the counted figure still leads');
+  assert.match(said, /, \d+ not/, 'and the uncounted ones are not dropped from the line');
 });
 
 test('⭐ no percentage reaches this page, because a date selects on no outcome', async () => {

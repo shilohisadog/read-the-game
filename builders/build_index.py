@@ -1525,8 +1525,11 @@ __HELPERS__
          ships", which is what `/preview.html?game=` now is. The row still carries
          its own class rather than `.drow`: a preview is not a replay, and the two
          must not read as the same promise. */
+      /* "started", not "under way", the same correction the preview page took:
+         nothing here learns that a game has ENDED, so a status claim goes false
+         by itself and a fact about the clock cannot. */
       var row = el('a', 'dfix', g.away + ' at ' + g.home + ' \u00b7 ' + clockOf(g.startTimeUTC)
-        + (g.started ? ' \u00b7 under way' : ''));
+        + (g.started ? ' \u00b7 started' : ''));
       row.href = '/preview.html?game=' + g.id;
       return row;
     }
@@ -3154,6 +3157,23 @@ __HELPERS__
     return h;
   }
 
+  /* ⛔⛔ THE ASIDE SAYS "COUNTED", NEVER "NHL", AND THAT IS A CORRECTION.
+     It read `plural(nhl, 'NHL game') + ' this month'`, and on 23 September 2026
+     it printed "0 NHL games this month" directly above a grid showing 22 boxes.
+     Kevin, from the live site. TWO things were wrong and only the second is
+     visible: the count omits out-of-scope games BY DESIGN, and the label then
+     claimed the omitted ones were not the league's — every one of those 22 is an
+     NHL preseason game. The distinction this site actually turns on is COUNTED
+     against NOT COUNTED, which is the word the front door, the night view and
+     the dashed-count note below already use, so it is the word here too.
+     "NHL" survives only in the night view, where the other group is named right
+     beside it and the contrast is the point. */
+  function asideFor(nhl, other, held) {
+    if (!held) return null;
+    if (!nhl) return plural(other, 'game') + ' this month, none of them counted';
+    return plural(nhl, 'game') + ' counted this month' + (other ? ', ' + other + ' not' : '');
+  }
+
   /* ---- the month ------------------------------------------------------- */
 
   function drawMonth(games, month, months, asked) {
@@ -3166,12 +3186,13 @@ __HELPERS__
        take you. */
     var nights = nightsOf(games);
     var weeks = monthGrid(games, month, nights);
-    var nhl = 0, held = 0;
+    var nhl = 0, other = 0, held = 0;
     weeks.forEach(function (w) {
-      w.forEach(function (c) { if (c) { nhl += c.count; held += c.held; } });
+      w.forEach(function (c) {
+        if (c) { nhl += c.count; other += c.other || 0; held += c.held; }
+      });
     });
-    main.appendChild(headline(monthName(month),
-      held ? plural(nhl, 'NHL game') + ' this month' : null));
+    main.appendChild(headline(monthName(month), asideFor(nhl, other, held)));
 
     /* A URL WE CANNOT ANSWER IS SAID OUT LOUD, not silently redirected. A month
        outside the archive's span has no season tab and no month row to sit in,
@@ -3258,7 +3279,9 @@ __HELPERS__
            reader who is not looking at it. Sentences rather than dashes, so the
            reader hears a full stop where the eye sees a separate box. */
         var says = [when(c.date)];
-        if (c.count) says.push(plural(c.count, 'NHL game'));
+        /* "counted", for the reason `asideFor` carries: a preseason game is an
+           NHL game, so "NHL" cannot be the word that separates the two counts. */
+        if (c.count) says.push(plural(c.count, 'game') + ' counted');
         if (c.other) {
           says.push(plural(c.other, 'game') + ' not counted here: '
             + join(c.types.map(function (t) { return competitionOf(t, NAMES); })));
@@ -3483,6 +3506,15 @@ __HELPERS__
   function pct(v) { return v == null ? '—' : Math.round(v * 100) + ''; }
   function num(n) { return (n || 0).toLocaleString(); }
 
+  /* ⛔ AN EMPTY COLUMN SAYS WHEN, NOT ONLY THAT IT IS EMPTY. The date is the
+     league's own `regularSeasonStartDate`, carried by `preview.js` — see the
+     comment on `countingFrom` for why this sentence exists at all. */
+  function noneYet(counting) {
+    return 'No games counted yet this season'
+      + (counting && counting.startsOn && !counting.started
+         ? ' — the regular season starts ' + when(counting.startsOn) + '.' : '.');
+  }
+
   function draw(p) {
     if (p.state === 'unknown') {
       $('pv').appendChild(el('p', 'note',
@@ -3497,13 +3529,32 @@ __HELPERS__
        door's night follows: an NHL game at 7pm Eastern is 23:00Z the same day
        and one at 10:30pm Pacific is 05:30Z the next, so only the browser can
        name the day and the hour a reader is in. */
+    var stamp = g.startTimeUTC ? new Date(g.startTimeUTC).toLocaleString(undefined,
+      { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
     var says = [];
     if (g.preseason) says.push('Preseason');
     if (p.state === 'played') says.push('Played ' + when(g.date));
-    else if (p.state === 'underway') says.push('Under way');
-    else if (g.startTimeUTC) says.push(new Date(g.startTimeUTC).toLocaleString(undefined,
-      { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' }));
+    /* ⛔ THE START, NOT A STATUS. This said "Under way", which is true for about
+       two and a half hours and then stayed on the page for up to thirteen more,
+       because nothing here learns a game has ended until the night is ingested.
+       A timestamp cannot go stale. `preview.js` renamed the state for the same
+       reason; the sentence below says what is actually being waited for. */
+    else if (p.state === 'started') says.push('Started ' + stamp);
+    else if (stamp) says.push(stamp);
     $('pvwhen').textContent = says.join(' · ');
+
+    if (p.state === 'started') {
+      $('pv').appendChild(el('p', 'note',
+        'No score here yet — a game joins the archive after the night it is played.'));
+    }
+    /* THE DISCLOSURE EVERY OTHER SURFACE ALREADY MAKES. The calendar cell, the
+       night list and the front door all name preseason as out of the numbers;
+       this page printed the bare word and left a novice to guess why both
+       columns were empty. */
+    if (g.preseason) {
+      $('pv').appendChild(el('p', 'note',
+        'Nothing in a preseason game is counted in any number on this site.'));
+    }
 
     if (p.result) {
       var done = el('p', 'pvresult',
@@ -3551,7 +3602,7 @@ __HELPERS__
         /* ⛔ PRESEASON, AND THE CARD SAYS SO RATHER THAN QUOTING LAST SEASON. Our
            numbers exclude preseason, so before the season opens there is nothing
            to report -- and last year's figures describe a different roster. */
-        box.appendChild(el('p', 'pvnone', 'No games counted yet this season.'));
+        box.appendChild(el('p', 'pvnone', noneYet(p.counting)));
       } else {
         c.rows.forEach(function (r) {
           var row = el('div', 'pvrow');

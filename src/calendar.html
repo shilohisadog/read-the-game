@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-JL/oMokNGQrVS9vhYbJJO05mdo+I2m++V+FbfxYMYOE=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-tLcBAn+O62owHlftoX8XlsOjhKIqi3uuCaoW1VLisgA='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-GAC77leDo/40ImRNR8RDyO8aEeypILIeLpEWsRbD2X0=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-tLcBAn+O62owHlftoX8XlsOjhKIqi3uuCaoW1VLisgA='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -1838,6 +1838,23 @@ function otherInMonth(games, month) {
     return h;
   }
 
+  /* ⛔⛔ THE ASIDE SAYS "COUNTED", NEVER "NHL", AND THAT IS A CORRECTION.
+     It read `plural(nhl, 'NHL game') + ' this month'`, and on 23 September 2026
+     it printed "0 NHL games this month" directly above a grid showing 22 boxes.
+     Kevin, from the live site. TWO things were wrong and only the second is
+     visible: the count omits out-of-scope games BY DESIGN, and the label then
+     claimed the omitted ones were not the league's — every one of those 22 is an
+     NHL preseason game. The distinction this site actually turns on is COUNTED
+     against NOT COUNTED, which is the word the front door, the night view and
+     the dashed-count note below already use, so it is the word here too.
+     "NHL" survives only in the night view, where the other group is named right
+     beside it and the contrast is the point. */
+  function asideFor(nhl, other, held) {
+    if (!held) return null;
+    if (!nhl) return plural(other, 'game') + ' this month, none of them counted';
+    return plural(nhl, 'game') + ' counted this month' + (other ? ', ' + other + ' not' : '');
+  }
+
   /* ---- the month ------------------------------------------------------- */
 
   function drawMonth(games, month, months, asked) {
@@ -1850,12 +1867,13 @@ function otherInMonth(games, month) {
        take you. */
     var nights = nightsOf(games);
     var weeks = monthGrid(games, month, nights);
-    var nhl = 0, held = 0;
+    var nhl = 0, other = 0, held = 0;
     weeks.forEach(function (w) {
-      w.forEach(function (c) { if (c) { nhl += c.count; held += c.held; } });
+      w.forEach(function (c) {
+        if (c) { nhl += c.count; other += c.other || 0; held += c.held; }
+      });
     });
-    main.appendChild(headline(monthName(month),
-      held ? plural(nhl, 'NHL game') + ' this month' : null));
+    main.appendChild(headline(monthName(month), asideFor(nhl, other, held)));
 
     /* A URL WE CANNOT ANSWER IS SAID OUT LOUD, not silently redirected. A month
        outside the archive's span has no season tab and no month row to sit in,
@@ -1942,7 +1960,9 @@ function otherInMonth(games, month) {
            reader who is not looking at it. Sentences rather than dashes, so the
            reader hears a full stop where the eye sees a separate box. */
         var says = [when(c.date)];
-        if (c.count) says.push(plural(c.count, 'NHL game'));
+        /* "counted", for the reason `asideFor` carries: a preseason game is an
+           NHL game, so "NHL" cannot be the word that separates the two counts. */
+        if (c.count) says.push(plural(c.count, 'game') + ' counted');
         if (c.other) {
           says.push(plural(c.other, 'game') + ' not counted here: '
             + join(c.types.map(function (t) { return competitionOf(t, NAMES); })));
