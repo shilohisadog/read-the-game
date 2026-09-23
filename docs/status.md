@@ -32,7 +32,67 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 
 This section is the orientation. Everything below §0 is the detail, organised by
 state.
-## ⏭ 0.00 PICK UP HERE — 2026-09-23 (afternoon)
+## ⏭ 0.00 PICK UP HERE — 2026-09-23 (evening)
+
+### ⛔⛔⛔ THE INSTRUMENT THAT DECIDES THE CARD WAS BIASED, AND OUR OWN DOC SAID SO
+
+`src/lib/reliability.js` decides which measures describe a CLUB and which describe
+HOCKEY. It **pooled three seasons without centring them**, against the method
+`preview-and-corsi.md` §11.2 states in as many words — and it argued for the
+omission in a comment that was true and drew the wrong conclusion.
+
+**The evidence was printed in both files for weeks.** The doc's table says the
+slot row needs **37** games; the published document said **42**; `dmen` (23) and
+`level5` (35) matched exactly, because their league level barely moves. *Two
+agree, one disagrees, and the one that disagrees is the one that drifts.*
+
+It cost a row the same afternoon: `missed` shipped on r = 0.748 / 33 games and was
+pulled — centred it needs **113**, because the league's miss rate rose 15% across
+three seasons. `slot` came back at **38**. Fixed, with a test whose fixture makes
+the two answers differ in SIGN (uncentred r = +0.95). [[mechanize-the-review]] §140.
+
+⭐ **`docs/what-settles.md` is new and is the most important document here now:**
+all 47 candidates measured, the collinearity (Corsi / Fenwick / SF% / attempt
+differential are pairwise 0.84–0.98 — one measurement, not four), the four venue
+instruments and ⚠️ **the fact that they disagree**, and the four criticisms of our
+approach with an honest verdict on each. Three of them are CORRECT.
+
+### ✅ THE PREVIEW PAGE IS A REAL PAGE NOW
+
+Kevin, on the first version: *"it's (honestly) ugly."* The cause was blunter than
+a design disagreement — **the renderer emitted twelve class hooks and not one had
+a CSS rule.** It now has a stylesheet, measure-first rows with both clubs on a
+shared axis, an axis measured from what real clubs did over a full season, Kevin's
+opacity ramp (`games / need`, outline solid), seven league tiles each in the form
+that fits its data, and a learn door on every figure. Two rounds of **looking**
+found six defects behind fifteen green tests.
+
+### ✅ AND THE UNFURL SHIPPED — a shared link names its own game
+
+`functions/_middleware.js`, the first server-side code here. ⭐ It answered the
+question no unit test could: `wrangler pages deploy src` **does** pick up a
+`functions/` at the repo root. ⛔ Its arrival broke two things in the deploy gate,
+both now fixed — the change-trigger watched `src/` alone, and a fresh
+deployment's root 404s while propagating, which the gate deliberately never
+retried. See [[deploy-cloudflare]].
+
+### ⏰ AND THE PIPELINE HAS A DELIVERY TARGET
+
+Kevin: last night's games on the site by **10:00 Eastern, daily**. Three ingest
+crons (07:23 / 08:53 / 10:23 UTC), derive moved to Mondays 15:47. `front-door.md`
+§6.1.0 owns every measurement behind those numbers.
+
+### ⏭ WHAT IS NOT BUILT
+
+`avgShiftLen` (12 games, orthogonal, the one genuinely new club row available) ·
+a site-wide **og:image** · and the big one: **a door from every figure to its
+WORK**, which is [[show-the-work-or-do-not-print-it]] — today's doors teach what a
+metric IS, and *"14 of 35 games"* has no door at all. `what-settles.md` is the
+content for that page; it is not surfaced to readers yet.
+
+---
+
+## ⏭ 0.001 THE PREVIOUS ENTRY — 2026-09-23 (afternoon)
 
 ### ⭐ KEVIN READ TWO PAGES OFF THE LIVE SITE AND BOTH WERE WRONG
 

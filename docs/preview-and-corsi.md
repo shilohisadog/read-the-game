@@ -472,6 +472,20 @@ nothing until the surface exists?
 
 ### 11.2 Measured over three seasons
 
+> ⛔⛔⛔ **CORRECTION, 2026-09-23 — THIS SECTION WAS RIGHT AND THE CODE WAS NOT.**
+> The method stated below ("each season centred before pooling") is correct and
+> `src/lib/reliability.js` shipped WITHOUT it, arguing its way out in a comment.
+> The disagreement was printed in both places the whole time: this table says the
+> slot row needs **37** games and the published document said **42**, while
+> `dmen` (23) and `level5` (35) matched exactly. Two agree, one disagrees, and the
+> one that disagrees is the one whose league level drifts.
+>
+> Fixed. Centred, the counts are **dmen 23 · level5 35 · slot 38**. It cost a row:
+> `missed` shipped on 33 games pooled and needs **113** centred. ⭐ **The full
+> re-measurement — all 47 candidates, the collinearity, the venue instruments and
+> the arguments against this whole approach — is `docs/what-settles.md`, which
+> supersedes the table below for anything except its history.**
+
 `tools/probes/preview/seasons.mjs` and `tools/probes/preview/power-play.mjs`, over **2023-24, 2024-25
 and 2025-26: 3,936 regular-season games, 96 club-seasons**, each season centred
 before pooling so a league-wide shift is not read as a club trait.
