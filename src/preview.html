@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-GgI6c7XuiN809uuhPMmvaSvtxp6baC3luDoROlIeRSo=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-tLcBAn+O62owHlftoX8XlsOjhKIqi3uuCaoW1VLisgA=' 'sha256-+sdtA1pm8AKHeciT09RqyI32Ag+qLAodi6DKohy82IA='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-W/UG/6DqG6fEind9MsQMuGWvpIGUyEbjjebAJ7Z3ELY=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-tLcBAn+O62owHlftoX8XlsOjhKIqi3uuCaoW1VLisgA=' 'sha256-cSh7ynv4aRFHThhxU/ZnuiGia+e1NC/Z5JBAOGhsY/M='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -589,7 +589,7 @@ footer p{margin:0 0 8px}
    league figure that is a PROPORTION OF A DEFINED WHOLE, so it gets the picture a
    novice can count; a rate per game is not out of anything and gets a numeral. */
 .pvdots{margin:11px 0 0;display:grid;grid-template-columns:repeat(10,1fr);
- gap:3px;max-width:132px}
+ gap:2px;max-width:104px}
 .pvdots i{display:block;aspect-ratio:1;border-radius:50%;background:var(--edge)}
 .pvdots i.on{background:var(--blue)}
 
@@ -613,6 +613,15 @@ footer p{margin:0 0 8px}
  text-align:right;min-width:2.1em}
 .pvv.none{font-weight:500;color:var(--muted);font-size:.8rem;min-width:0}
 .pvsvg{display:block;width:100%;height:17px}
+/* ⛔ THE AXIS NAMES ITS OWN ENDS, AND LOOKING IS WHAT FOUND THIS. Before the
+   season the axis and the shaded band are the SAME span — every club-season sits
+   inside it by construction — so the track rendered as one flat pale bar and read
+   as an empty progress meter rather than a scale. A chart with no axis labels is
+   the defect `mixRow` already names one page over. The numbers are the axis's own
+   endpoints, so they cost no constant. */
+.pvends{grid-column:2;display:flex;justify-content:space-between;
+ font-size:.7rem;color:var(--muted);font-variant-numeric:tabular-nums;
+ margin:-2px 0 2px}
 .pvfoot{margin:9px 0 0;font-size:.76rem;color:var(--muted);line-height:1.45;
  font-variant-numeric:tabular-nums}
 .pvnone{margin:0;color:var(--muted);font-size:.9rem}
@@ -1360,6 +1369,14 @@ function preview(id, docs, now) {
         s.value == null ? 'no games yet' : pct(s.value));
       wrap.appendChild(v);
     });
+    /* The scale, under the last club's bar. Column 2 of the grid, so it lines up
+       with the tracks above it and with nothing else. */
+    wrap.appendChild(el('span'));
+    var ends = el('div', 'pvends');
+    ends.appendChild(el('span', null, pct(lo)));
+    ends.appendChild(el('span', null, pct(hi)));
+    wrap.appendChild(ends);
+    wrap.appendChild(el('span'));
     return { node: wrap, lo: lo, hi: hi };
   }
 

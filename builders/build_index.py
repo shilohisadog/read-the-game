@@ -3514,7 +3514,7 @@ PREVCSS = r"""<style>
    league figure that is a PROPORTION OF A DEFINED WHOLE, so it gets the picture a
    novice can count; a rate per game is not out of anything and gets a numeral. */
 .pvdots{margin:11px 0 0;display:grid;grid-template-columns:repeat(10,1fr);
- gap:3px;max-width:132px}
+ gap:2px;max-width:104px}
 .pvdots i{display:block;aspect-ratio:1;border-radius:50%;background:var(--edge)}
 .pvdots i.on{background:var(--blue)}
 
@@ -3538,6 +3538,15 @@ PREVCSS = r"""<style>
  text-align:right;min-width:2.1em}
 .pvv.none{font-weight:500;color:var(--muted);font-size:.8rem;min-width:0}
 .pvsvg{display:block;width:100%;height:17px}
+/* ⛔ THE AXIS NAMES ITS OWN ENDS, AND LOOKING IS WHAT FOUND THIS. Before the
+   season the axis and the shaded band are the SAME span — every club-season sits
+   inside it by construction — so the track rendered as one flat pale bar and read
+   as an empty progress meter rather than a scale. A chart with no axis labels is
+   the defect `mixRow` already names one page over. The numbers are the axis's own
+   endpoints, so they cost no constant. */
+.pvends{grid-column:2;display:flex;justify-content:space-between;
+ font-size:.7rem;color:var(--muted);font-variant-numeric:tabular-nums;
+ margin:-2px 0 2px}
 .pvfoot{margin:9px 0 0;font-size:.76rem;color:var(--muted);line-height:1.45;
  font-variant-numeric:tabular-nums}
 .pvnone{margin:0;color:var(--muted);font-size:.9rem}
@@ -3650,6 +3659,14 @@ __HELPERS__
         s.value == null ? 'no games yet' : pct(s.value));
       wrap.appendChild(v);
     });
+    /* The scale, under the last club's bar. Column 2 of the grid, so it lines up
+       with the tracks above it and with nothing else. */
+    wrap.appendChild(el('span'));
+    var ends = el('div', 'pvends');
+    ends.appendChild(el('span', null, pct(lo)));
+    ends.appendChild(el('span', null, pct(hi)));
+    wrap.appendChild(ends);
+    wrap.appendChild(el('span'));
     return { node: wrap, lo: lo, hi: hi };
   }
 

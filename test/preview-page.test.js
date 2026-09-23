@@ -330,3 +330,21 @@ test('⭐ measure-first: both clubs sit inside one row, not in two stacked block
     assert.ok(/BUF/.test(said) && /PIT/.test(said), `both clubs must be in one row: ${said}`);
   }
 });
+
+test('⛔ the axis names its own ends, so a full-width band is not an empty meter', async () => {
+  /* FOUND BY LOOKING, not by a test — which is the point of this one existing.
+     Before the season the axis and the shaded band are the same span, because
+     every club-season sits inside it by construction. So the track rendered as
+     one flat pale bar and read as an empty progress meter. A chart with no axis
+     labels is the defect `mixRow` already names one page over.
+     MUTATION: drop the `.pvends` row and the assertions fire; hard-code the
+     endpoints and the second one, which uses a different fixture range, does. */
+  const { ids, settle } = run({ 'teams.json': { through: '2026-09-18', seasons: {} } },
+    `?game=${GID}`, '2026-09-23T12:00:00Z');
+  await settle();
+  const ends = walk(ids.pv).filter(x => (x.className || '').split(' ').includes('pvends'));
+  assert.equal(ends.length, 2, 'one scale under each drawable measure');
+  // level5's fixture range is .44–.57, dmen's is .26–.38 — the labels are the
+  // axis's own endpoints, so they differ per row and cannot be typed once.
+  assert.deepEqual(ends.map(e => textOf(e)), ['44 57', '26 38']);
+});
