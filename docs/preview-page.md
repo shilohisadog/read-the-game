@@ -1,6 +1,8 @@
 # The preview page — a shareable URL for a game nobody has played
 
-**Written 2026-09-22 as a plan for review.** Nothing is built. It surfaces the
+**Written 2026-09-22 as a plan for review; ✅ §3 IS BUILT AND LIVE (§10), §4 IS
+NOT.** The page, its data and the doors shipped 2026-09-23; the edge middleware
+that gives a shared link a per-game unfurl has not been written. It surfaces the
 card `docs/preview-and-corsi.md` §11–§12 settled, and it is the first thing this
 project will run **server-side** (at the edge, and only over `<head>`).
 
@@ -226,3 +228,46 @@ games, which keeps the row**. Not centring gives 0.698 → 42, which drops it.
 answer keeps a row.** My read is that centring is more correct, for the reason
 above, and I am recording that it is also the answer that happens to suit the
 card — which is exactly when to be suspicious of it.
+
+## 10. ✅ BUILT — 2026-09-23 (steps 1–2 of §6; steps 3–4 remain)
+
+Live at `https://readthegame.co/preview.html?game=<id>`. Gates green,
+**1,396 JS + 224 Python**. Loaded in a real browser against the live site before
+this was written: title, heading, state line and both club columns render, and
+the club columns say *"No games counted yet this season"* — which is preseason
+answering correctly.
+
+| shipped | |
+|---|---|
+| the card | `src/lib/preview.js`, pure and fixture-tested; `src/preview.html` is only its renderer. Three states, and the played state carries the replay door. |
+| the doors | the front door's tonight rows (text → links, `front-door-tonight.md` §4 Q1's own condition), and a **Next** line on every club page. |
+| the data | `measureGame` carries `dAtt`/`lvl5`; `teamSeasons` sums them and publishes `through`; `recent.json` grew to ten fields; the census counts penalties, offsides, power-play chances and power-play goals. |
+| ⛔ the PP trap | `census.state.pp.goals` counts goals scored WHILE a power play was on, short-handed ones included: 24.5% of chances against the league's own 21.9%. `whistles.ppGoals` is the numerator the card uses, and a test holds the two to partitioning. |
+| ⭐ the counts | `src/lib/reliability.js` — §8. |
+
+**Two defects this build made, both caught by the suite:**
+
+- ⛔ **`var when` shadowed the page's date formatter, again.** `drawDaily` carries
+  a comment about that exact trap from 2026-09-11, 700 lines away, and I wrote the
+  shadow anyway. Four team-page tests went red inside a minute.
+- ⚠️ **A reliability test could not fail.** The fixture defined `of`, the module
+  called `of`, and the card's real rows carry `ofGame` — a fake that answers
+  whichever question the code asks cannot fail the way production does. It threw
+  on the first real record.
+
+**And one check was measuring the markup while claiming to measure reachability**:
+`test/index.test.js` read `href="…"` only, so every door this site builds in
+script was invisible to it and `preview.html` was reported an orphan. It now reads
+both.
+
+### 10.1 ⏭ What is NOT built
+
+- **§4, the edge middleware** — a shared link still unfurls with the site's generic
+  title. This is the half Kevin asked to ship together with the page.
+- **The og:image** — no page on the site has one.
+- **Three open items:** §9's estimator question (it decides whether the slot row
+  exists); the league rows are absent live until the WEEKLY derive rebuilds
+  `measures.json` (Kevin was asked whether to trigger it by hand); and the
+  *"Under way"* state reads for about thirteen hours after a game has finished,
+  because nothing tells us it ended until the nightly run. Proposed copy:
+  *"Started 7:00 PM — the replay appears after tonight's run."*

@@ -60,6 +60,29 @@ its window, the pre-sync check REFUSES to publish a fixture with no league date,
 ⏭ **the first unattended run of that gate is the next ingest** — until it runs, the
 page shows the single-fixture sentence, which is the degradation working.
 
+✅ **THE PREVIEW PAGE IS LIVE — 2026-09-23, `docs/preview-page.md` §10.**
+`preview.html?game=<id>`, one URL per game, three states (before / under way /
+played → the replay door), reached from the front door's tonight rows and from a new
+**Next** line on every club page. The card is `src/lib/preview.js`: three CLUB rows that
+settle inside half a season, and three LEAGUE rows that teach what is normal because no
+club difference in them settles within a season at all (`preview-and-corsi.md` §11–§12).
+⛔⛔ **`census.state.pp.goals` includes SHORT-HANDED goals** — 24.5% against the league's
+own 21.9%; `whistles.ppGoals` is the honest numerator.
+
+⭐⭐ **AND NO MEASURED VALUE IS TYPED ANY MORE** (Kevin, 2026-09-23: *"there should never
+be hard coded values, anywhere"*). `src/lib/reliability.js` derives how many games each
+row needs, over chronological halves of every club-season in a season the archive shows
+as FINISHED, and `measure.mjs` publishes it. **Deriving changed the card**: the slot row
+measures 42 games against the 41-game admission rule, so the rule drops it — my typed 37
+was the flattering number.
+
+⏭ **NEXT, AND KEVIN WANTS IT WITH THE PAGE:** `functions/_middleware.js` so a shared link
+unfurls with the game's own name (HTMLRewriter, ONE path, pass through on error, no
+figure computed, and the deploy's byte-diff gate taught about it), then a site-wide
+**og:image** — no page has one. ⏭ Three open items in `preview-page.md` §10.1: the
+estimator choice that decides whether the slot row exists, the WEEKLY derive that the
+league rows wait on, and the *"Under way"* copy that outlives the game by ~13 hours.
+
 **Do next, in order:**
 1. **ROW 7 of `docs/test-program.md` §10 — the parser increment.** The row has a ruler
    now (`tools/css-noop.mjs`, a stylesheet change no reader can see) and it reads
