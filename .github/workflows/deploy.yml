@@ -233,12 +233,20 @@ jobs:
           if [ -z "$last" ] || ! git cat-file -e "${last}^{commit}" 2>/dev/null; then
             echo "  no earlier successful deploy to compare with ('$last') -- deploying"
             changed=true
-          elif git diff --quiet "$last" HEAD -- src/; then
-            echo "  src/ is unchanged since $last, the last successful deploy -- nothing to ship"
+          # ⛔ `functions/` IS PART OF THE SITE, AND FORGETTING THAT WOULD HAVE
+          # SHIPPED NOTHING. This compared `src/` alone, which was right while
+          # every byte a visitor received came from there. `functions/_middleware.js`
+          # runs at the edge on the way out, so a change to it changes what readers
+          # get while `src/` is untouched — and this step would have answered "nothing
+          # to ship", skipping the deploy AND the gate written to prove the
+          # middleware works. A deploy trigger that cannot see half the deployable
+          # surface is the quietest possible failure.
+          elif git diff --quiet "$last" HEAD -- src/ functions/; then
+            echo "  src/ and functions/ are unchanged since $last, the last successful deploy -- nothing to ship"
             changed=false
           else
-            echo "  src/ changed since $last, the last successful deploy:"
-            git --no-pager diff --stat "$last" HEAD -- src/ | tail -8
+            echo "  the site changed since $last, the last successful deploy:"
+            git --no-pager diff --stat "$last" HEAD -- src/ functions/ | tail -8
             changed=true
           fi
           echo "changed=$changed" >> "$GITHUB_OUTPUT"
@@ -295,6 +303,78 @@ jobs:
             fi
             echo "  $url serves this commit's $page"
           done
+
+      # ⭐⭐ THE UNFURL, PROVEN ON THE CANDIDATE BEFORE PRODUCTION SEES IT.
+      #
+      # `functions/_middleware.js` rewrites the <head> of /preview.html when the
+      # link carries a `game=`, so a shared link names the two clubs instead of
+      # unfurling identically for every game of the season. TWO THINGS ARE AT RISK
+      # and only a real deployment can settle either:
+      #
+      # (1) PLACEMENT. The deploy command is `wrangler pages deploy src` while
+      #     `functions/` sits at the repo root, and whether wrangler picks it up
+      #     from there is a question no unit test can answer. If it does not, the
+      #     title below is the generic one and this step fails — on the candidate,
+      #     so production never ships it.
+      # (2) THE REWRITE ITSELF. `HTMLRewriter` is a Cloudflare runtime global;
+      #     node has none, so `test/unfurl.test.js` drives the routing and the
+      #     copy and explicitly cannot execute the transform. This is where it runs.
+      #
+      # ⛔ AND THE PAIRED HALF, WHICH IS THE POINT. The same page WITHOUT a `game=`
+      # must come back byte-identical to the committed file — that is the promise
+      # the site-wide byte-diff gate below depends on, since it fetches exactly
+      # that URL. A middleware that rewrote every request would pass the first
+      # assertion here and quietly break the gate's meaning; this catches it.
+      #
+      # ⚠️ THE GAME ID IS READ FROM THE PUBLISHED SCHEDULE, never typed. A pinned
+      # id rots the moment that game leaves the window, and a gate that fails for
+      # a reason unrelated to the change is a gate people learn to ignore.
+      - name: a shared link names its own game — on the preview
+        if: steps.site.outputs.changed == 'true'
+        env:
+          URL: ${{ steps.preview.outputs.url }}
+        run: |
+          curl -sS --fail "https://data.readthegame.co/schedule.json?cb=${GITHUB_RUN_ID}" -o sched.json
+          id=$(node -e '
+            const s = require("./sched.json");
+            const g = (s.upcoming || [])[0];
+            if (!g) { console.error("no upcoming fixture to test the unfurl with"); process.exit(1); }
+            process.stdout.write(String(g.id) + " " + g.away + " " + g.home);
+          ') || { echo "::error::could not choose a game from the published schedule"; exit 1; }
+          set -- $id
+          gid=$1; away=$2; home=$3
+          echo "  unfurling game $gid ($away at $home)"
+
+          code=$(curl -sS -L -o unfurl.html -w '%{http_code}' \
+                   "$URL/preview.html?game=$gid&cb=${GITHUB_RUN_ID}") || code=000
+          [ "$code" = 200 ] || { echo "::error::the unfurl path answered HTTP $code"; exit 1; }
+
+          title=$(sed -n 's:.*<title>\(.*\)</title>.*:\1:p' unfurl.html | head -1)
+          echo "  <title> $title"
+          case "$title" in
+            *" at "*" — what to watch for")  ;;
+            *) echo "::error::the unfurl did not name the game — got: $title"
+               echo "::error::if this says 'What to watch for — Read the Game', functions/ was not deployed"
+               exit 1 ;;
+          esac
+          for prop in 'og:title' 'og:description' 'og:url'; do
+            grep -q "property=\"$prop\"" unfurl.html \
+              || { echo "::error::$prop is missing from the unfurled page"; exit 1; }
+          done
+          grep -q 'property="og:url" content="https://readthegame.co/preview?game='"$gid"'"' unfurl.html \
+            || { echo "::error::og:url does not name this game"; exit 1; }
+
+          # ⛔ THE PAIRED HALF: no `game=`, no rewrite, byte for byte.
+          code=$(curl -sS -L -o bare.html -w '%{http_code}' \
+                   "$URL/preview.html?cb=${GITHUB_RUN_ID}") || code=000
+          [ "$code" = 200 ] || { echo "::error::/preview.html answered HTTP $code"; exit 1; }
+          if ! cmp -s bare.html src/preview.html; then
+            echo "::error::/preview.html with no game= is NOT the committed file —"
+            echo "::error::the middleware is rewriting requests the byte-diff gate relies on"
+            diff <(head -c 2000 bare.html) <(head -c 2000 src/preview.html) | head -20
+            exit 1
+          fi
+          echo "  /preview.html with no game= is byte-identical to the checkout"
 
       # THE CHECK THAT WOULD HAVE CAUGHT THE CORS BUG. Everything above proves
       # the bytes we published are the bytes we committed; none of it proves a
