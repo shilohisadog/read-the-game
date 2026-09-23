@@ -443,3 +443,41 @@ test('⛔⛔⛔ the page is written for a hockey fan, not for us', async () => {
   assert.match(rendered, /Is that the team, or is it just ten games\?/);
   assert.match(rendered, /beside a team\u2019s name/);
 });
+
+test('⛔ the front door has ONE door to the methods page, in the block that asks for it', () => {
+  /* KEVIN, AFTER THE FIRST PLACEMENT: *"I would have thought you would have put
+     the card in the what this (site) does and does not claim?"* He is right, and
+     the section's own heading is the argument — a reader there is already asking
+     what we claim, and *how did you count it* is the next sentence.
+
+     ⛔ AND ONE DOOR, NOT TWO. It briefly had a card in the measurement strip as
+     well, which is the duplicate funnel `_NAV`'s own comment names ("a second
+     copy of the same link 40px lower"). Two routes to one page teach a reader
+     that the two are different places.
+
+     ⚠️ THE FIRST VERSION OF THIS ENTRY WAS ALREADY IN THE RIGHT BLOCK AND DID NOT
+     READ AS A DOOR — fourth of five, link buried mid-sentence in the same grey
+     as the prose around it. So this asserts the link is the LAST thing in the
+     last limit, not merely that it exists somewhere in the list. A door nobody
+     recognises as a door is the same as no door.
+
+     MUTATION: add a second link anywhere on the page and the count fires; move
+     the entry out of `.limits` and the placement assertion does. */
+  const html = readFileSync(new URL('../src/index.html', import.meta.url), 'utf8');
+  const doors = [...html.matchAll(/href="\/?how-we-measure\.html"/g)];
+  assert.equal(doors.length, 1, `the front door has ${doors.length} routes to one page`);
+
+  const list = html.slice(html.indexOf('<ul class="limits">'),
+                          html.indexOf('</ul>', html.indexOf('<ul class="limits">')));
+  assert.ok(list.includes('how-we-measure.html'),
+    'the door is not in "What this does and does not claim"');
+  const items = list.split('<li>').slice(1);
+  assert.ok(items[items.length - 1].includes('how-we-measure.html'),
+    'the door must be the LAST limit — it is the one that answers the others');
+  assert.match(items[items.length - 1], /how-we-measure\.html[^<]*">[^<]*&rarr;<\/a>\s*<\/span>/,
+    'the link must END the entry and carry an arrow, not sit buried in the prose');
+
+  /* AND THE SECTION STILL SAYS WHAT IT IS. A door added to a block whose heading
+     had drifted would be a door in the wrong room. */
+  assert.match(html, /<h2>What this does and does not claim<\/h2>/);
+});

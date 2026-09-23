@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ai7drdenA148ohU+D6Yer6qbwL/Y+hScggEhdK1R1JY=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-yOaplj5zt8CswdO4EsbxQdeMHe810xxby88iasWAO58='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ai7drdenA148ohU+D6Yer6qbwL/Y+hScggEhdK1R1JY=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-SoKtCDd7KRve+ACHwrXBfIGh8mK1I6nyyuUoQQZdjXw='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -276,18 +276,16 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .ccard .lt{font-weight:650}
 .ccard .ld{font-size:.85rem;color:var(--muted);line-height:1.45;
  font-variant-numeric:tabular-nums}
-/* ⭐⭐⭐ THE WAY INTO THE WORK, AND IT IS SHAPED DIFFERENTLY ON PURPOSE. The three
-   cards above it are FINDINGS — each states a measured fact and opens the lesson
-   that teaches it. This one states no fact; it opens the page that shows how
-   every number on the site was counted. Kevin asked for it after reading the
-   methods page: *"we should include a card on the front page as an entry point
-   to the page, no?"*
-   ⛔ IT SPANS THE GRID AND CARRIES A DARK EDGE rather than the blue one, because
-   a fourth identical card would read as a fourth finding and a reader would
-   expect a number in it. It is the same distinction the card's own two doors
-   make: a lesson teaches the thing, the work shows the counting. */
-.wcard{grid-column:1/-1;border-left-color:var(--ink)}
-.wcard .ld::after{content:" \2192";color:var(--blue)}
+/* ⏹ A `.wcard` LIVED HERE FOR AN HOUR — the methods door as a fifth card in the
+   measurement strip. Kevin moved it: *"I would have thought you would have put
+   the card in the what this (site) does and does not claim?"* He is right, and
+   the section's own heading is the argument: a reader in the limits block is
+   already asking what we claim, and *how did you count it* is the next sentence.
+   ⛔ AND TWO DOORS TO ONE PAGE IS THE DUPLICATE FUNNEL this page has already had
+   once (`_NAV`: "a second copy of the same link 40px lower"). The strip's card
+   also had to be appended AFTER the loop to dodge `_front_counts`'s own check
+   that every card in it is one of our measurements — routing around a guard
+   rather than satisfying it, which is its own answer about whether it belonged. */
 .lmore{margin:9px 0 0;font-size:.87rem}
 .lmore a{color:var(--blue);text-decoration:none}
 .lmore a:hover,.lmore a:focus-visible{text-decoration:underline}
@@ -531,6 +529,15 @@ p.disputed{font-size:.8rem;color:#5d6f7c;margin:10px 0 0;max-width:62ch}
  border-radius:0 10px 10px 0;padding:12px 16px}
 .limits b{display:block;font-size:.93rem;margin-bottom:2px}
 .limits span{font-size:.87rem;color:var(--muted)}
+/* ⭐⭐ THE ONE LIMIT THAT IS A DOOR LOOKS LIKE ONE. The others state a boundary
+   and end; this one answers all four and has somewhere to go. It spans the two
+   columns so it reads as the block's closing line rather than a fifth peer, and
+   its link is a line of its own — buried mid-sentence in the same grey as the
+   prose, it was invisible as a route and Kevin read the section as having none. */
+.limits li:last-child{grid-column:1/-1;border-left-color:var(--ink)}
+.lgo{display:block;margin-top:7px;color:var(--blue);font-weight:600;
+ text-decoration:none}
+.lgo:hover,.lgo:focus-visible{text-decoration:underline}
 
 .state{font-size:.83rem;color:var(--muted);margin:0 0 22px;padding:9px 14px;
  background:#fff;border:1px solid var(--edge);border-left:3px solid var(--edge);
@@ -765,13 +772,12 @@ watching. Each of these is drawn first, then shown in a real game.</p>
      worth spending the front door on. -->
 <section class="countsin">
 <h2 id="counts-h">What we counted</h2>
-<p class="note">Our own measurements rather than the league&rsquo;s, over 4,192 games. Each opens the lesson behind it &mdash; and the last card opens the page that shows how all of them were counted.</p>
+<p class="note">Our own measurements rather than the league&rsquo;s, over 4,192 games. Each one opens the lesson behind it.</p>
 <div class="cgrid">
 <a class="ccard" href="/slot.html"><span class="lt">Shots from the slot</span><span class="ld">A shot from inside the slot goes in 11.4% of the time &mdash; 19,304 goals from 168,910 attempts. From outside it, 3.3%.</span></a>
 <a class="ccard" href="/game.html?game=2023020204&at=1-09:06&strength=all"><span class="lt">How long a shift is</span><span class="ld">A shift lasts a median of 46 seconds and 76% of them are under a minute, measured over 3,101,105 shifts.</span></a>
 <a class="ccard" href="/game.html?game=2023020204&at=3-15:52&layer=corsi&strength=even"><span class="lt">Score effects</span><span class="ld">Per 60 minutes of even-strength play a club takes 64 shot attempts while trailing, 59 level, 53 while leading.</span></a>
 <a class="ccard" href="/game.html?game=2023020204&at=1-14:56&layer=zonestart&strength=all"><span class="lt">The attacking zone</span><span class="ld">After a face-off in one team&rsquo;s end, the club attacking that end takes 1.42 shot attempts before the next whistle, against 0.77 for the club defending it &mdash; across 165,420 draws.</span></a>
-<a class="ccard wcard" href="/how-we-measure.html"><span class="lt">How we measure</span><span class="ld">Every number above, and every number on the rest of the site: what we counted, what we divided it by, how much of a season it takes before it tells you anything, and what is wrong with it. Including the criticisms we think are right.</span></a>
 </div>
 </section>
 <!-- ⛔ WAS "Watch your team". The word implies streaming (Kevin), and unlike the
@@ -802,8 +808,8 @@ watching. Each of these is drawn first, then shown in a real game.</p>
   <li><b>Regular season and playoffs, three seasons.</b><span>2023-24 through 2025-26. Other competitions in the archive &mdash; preseason, all-star, Olympics and 4 Nations &mdash; are deliberately left out of every number here. They are different competitions, and averaging across them would describe none. <a href="calendar.html">They are on the calendar</a>, counted separately and never added to an NHL total.</span></li>
   <li><b>A replay, not live coverage.</b><span>Every game here is over. Nothing is fetched from the league while you watch; the events were pulled once, checked against the league's own boxscore, and stored.</span></li>
   <li><b>Nothing is modelled or invented.</b><span>Every mark traces to a recorded event. There is no expected-goals number, because that would be our estimate presented as the game's fact.</span></li>
-  <li><b>Every number, shown being counted.</b><span>How each figure is derived, how many games it takes before it means anything, and the arguments against our method &mdash; including the ones we think are right. <a href="how-we-measure.html">How we measure</a>.</span></li>
   <li><b>We say what we could not read.</b><span>Games we hold but cannot show are listed anyway, with the check that stopped them. A schedule that hid them would be a map of our successes.</span></li>
+  <li><b>How we counted all of this.</b><span>Every number on this site, in one place: what we counted, what we divided it by, how much of a season it takes before it tells you anything, and what is wrong with it &mdash; including the criticisms of our own method that we think are right. <a class="lgo" href="how-we-measure.html">How we measure &rarr;</a></span></li>
 </ul>
 
 <p class="state" id="state" data-state="empty">Checking how current this data is&hellip;</p>

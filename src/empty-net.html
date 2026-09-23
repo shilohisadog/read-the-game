@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-yOaplj5zt8CswdO4EsbxQdeMHe810xxby88iasWAO58=' 'sha256-O+tFRbevUhlyOt78ng1txnNkMDpdOHwapteYPqeRxx0=' 'sha256-ZlR8nYXWaGVBAUjeIv0fr67KaAACbKN+Ojd5dkhh0vo='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-SoKtCDd7KRve+ACHwrXBfIGh8mK1I6nyyuUoQQZdjXw=' 'sha256-O+tFRbevUhlyOt78ng1txnNkMDpdOHwapteYPqeRxx0=' 'sha256-ZlR8nYXWaGVBAUjeIv0fr67KaAACbKN+Ojd5dkhh0vo='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -276,18 +276,16 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .ccard .lt{font-weight:650}
 .ccard .ld{font-size:.85rem;color:var(--muted);line-height:1.45;
  font-variant-numeric:tabular-nums}
-/* ⭐⭐⭐ THE WAY INTO THE WORK, AND IT IS SHAPED DIFFERENTLY ON PURPOSE. The three
-   cards above it are FINDINGS — each states a measured fact and opens the lesson
-   that teaches it. This one states no fact; it opens the page that shows how
-   every number on the site was counted. Kevin asked for it after reading the
-   methods page: *"we should include a card on the front page as an entry point
-   to the page, no?"*
-   ⛔ IT SPANS THE GRID AND CARRIES A DARK EDGE rather than the blue one, because
-   a fourth identical card would read as a fourth finding and a reader would
-   expect a number in it. It is the same distinction the card's own two doors
-   make: a lesson teaches the thing, the work shows the counting. */
-.wcard{grid-column:1/-1;border-left-color:var(--ink)}
-.wcard .ld::after{content:" \2192";color:var(--blue)}
+/* ⏹ A `.wcard` LIVED HERE FOR AN HOUR — the methods door as a fifth card in the
+   measurement strip. Kevin moved it: *"I would have thought you would have put
+   the card in the what this (site) does and does not claim?"* He is right, and
+   the section's own heading is the argument: a reader in the limits block is
+   already asking what we claim, and *how did you count it* is the next sentence.
+   ⛔ AND TWO DOORS TO ONE PAGE IS THE DUPLICATE FUNNEL this page has already had
+   once (`_NAV`: "a second copy of the same link 40px lower"). The strip's card
+   also had to be appended AFTER the loop to dodge `_front_counts`'s own check
+   that every card in it is one of our measurements — routing around a guard
+   rather than satisfying it, which is its own answer about whether it belonged. */
 .lmore{margin:9px 0 0;font-size:.87rem}
 .lmore a{color:var(--blue);text-decoration:none}
 .lmore a:hover,.lmore a:focus-visible{text-decoration:underline}
@@ -531,6 +529,15 @@ p.disputed{font-size:.8rem;color:#5d6f7c;margin:10px 0 0;max-width:62ch}
  border-radius:0 10px 10px 0;padding:12px 16px}
 .limits b{display:block;font-size:.93rem;margin-bottom:2px}
 .limits span{font-size:.87rem;color:var(--muted)}
+/* ⭐⭐ THE ONE LIMIT THAT IS A DOOR LOOKS LIKE ONE. The others state a boundary
+   and end; this one answers all four and has somewhere to go. It spans the two
+   columns so it reads as the block's closing line rather than a fifth peer, and
+   its link is a line of its own — buried mid-sentence in the same grey as the
+   prose, it was invisible as a route and Kevin read the section as having none. */
+.limits li:last-child{grid-column:1/-1;border-left-color:var(--ink)}
+.lgo{display:block;margin-top:7px;color:var(--blue);font-weight:600;
+ text-decoration:none}
+.lgo:hover,.lgo:focus-visible{text-decoration:underline}
 
 .state{font-size:.83rem;color:var(--muted);margin:0 0 22px;padding:9px 14px;
  background:#fff;border:1px solid var(--edge);border-left:3px solid var(--edge);

@@ -102,21 +102,30 @@ LIMITS = [
     ("Nothing is modelled or invented.",
      "Every mark traces to a recorded event. There is no expected-goals number, "
      "because that would be our estimate presented as the game's fact."),
-    # ⭐⭐⭐ THE DOOR TO THE WORK, IN THE BLOCK THAT ALREADY STATES OUR LIMITS.
-    # Kevin, 2026-09-23: *"every metric and number needs to have an opportunity
-    # for a critic to 'be shown the work'."* Every figure on the preview card
-    # links into `how-we-measure.html`, but a reader who arrives at the front door
-    # to check us had no route to it at all -- and a methods page nobody can find
-    # is the same as no methods page. It belongs HERE rather than in the chrome:
-    # this block is the site saying what it cannot do, and the next question a
-    # reader has after reading it is how the things it CAN do were counted.
-    ("Every number, shown being counted.",
-     "How each figure is derived, how many games it takes before it means "
-     "anything, and the arguments against our method &mdash; including the ones "
-     "we think are right. <a href=\"how-we-measure.html\">How we measure</a>."),
     ("We say what we could not read.",
      "Games we hold but cannot show are listed anyway, with the check that stopped "
      "them. A schedule that hid them would be a map of our successes."),
+    # ⭐⭐⭐ AND THE DOOR TO THE WORK, LAST, BECAUSE IT ANSWERS THE FOUR ABOVE IT.
+    #
+    # Kevin, 2026-09-23: *"every metric and number needs to have an opportunity
+    # for a critic to 'be shown the work'."* This block is the site saying what it
+    # does and does not claim, and the next question a reader has after reading it
+    # is how the things it DOES claim were counted. Kevin put it here himself when
+    # the card went somewhere else: *"I would have thought you would have put the
+    # card in the what this (site) does and does not claim?"*
+    #
+    # ⛔ AND IT WAS ALREADY HERE AND DID NOT READ AS A DOOR, which is why he asked.
+    # It sat fourth of five with its link buried mid-sentence, in the same grey as
+    # the prose around it -- a limit that happened to mention a page, not the way
+    # in. It is now last, spans the block, and ends on an arrow. A door that
+    # nobody recognises as a door is the same as no door, which is the lesson the
+    # work-door audit already taught one surface over.
+    ("How we counted all of this.",
+     "Every number on this site, in one place: what we counted, what we divided "
+     "it by, how much of a season it takes before it tells you anything, and what "
+     "is wrong with it &mdash; including the criticisms of our own method that we "
+     "think are right. "
+     "<a class=\"lgo\" href=\"how-we-measure.html\">How we measure &rarr;</a>"),
 ]
 
 TITLE = "Read the Game — hockey, made legible"
@@ -361,18 +370,16 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .ccard .lt{font-weight:650}
 .ccard .ld{font-size:.85rem;color:var(--muted);line-height:1.45;
  font-variant-numeric:tabular-nums}
-/* ⭐⭐⭐ THE WAY INTO THE WORK, AND IT IS SHAPED DIFFERENTLY ON PURPOSE. The three
-   cards above it are FINDINGS — each states a measured fact and opens the lesson
-   that teaches it. This one states no fact; it opens the page that shows how
-   every number on the site was counted. Kevin asked for it after reading the
-   methods page: *"we should include a card on the front page as an entry point
-   to the page, no?"*
-   ⛔ IT SPANS THE GRID AND CARRIES A DARK EDGE rather than the blue one, because
-   a fourth identical card would read as a fourth finding and a reader would
-   expect a number in it. It is the same distinction the card's own two doors
-   make: a lesson teaches the thing, the work shows the counting. */
-.wcard{grid-column:1/-1;border-left-color:var(--ink)}
-.wcard .ld::after{content:" \2192";color:var(--blue)}
+/* ⏹ A `.wcard` LIVED HERE FOR AN HOUR — the methods door as a fifth card in the
+   measurement strip. Kevin moved it: *"I would have thought you would have put
+   the card in the what this (site) does and does not claim?"* He is right, and
+   the section's own heading is the argument: a reader in the limits block is
+   already asking what we claim, and *how did you count it* is the next sentence.
+   ⛔ AND TWO DOORS TO ONE PAGE IS THE DUPLICATE FUNNEL this page has already had
+   once (`_NAV`: "a second copy of the same link 40px lower"). The strip's card
+   also had to be appended AFTER the loop to dodge `_front_counts`'s own check
+   that every card in it is one of our measurements — routing around a guard
+   rather than satisfying it, which is its own answer about whether it belonged. */
 .lmore{margin:9px 0 0;font-size:.87rem}
 .lmore a{color:var(--blue);text-decoration:none}
 .lmore a:hover,.lmore a:focus-visible{text-decoration:underline}
@@ -616,6 +623,15 @@ p.disputed{font-size:.8rem;color:#5d6f7c;margin:10px 0 0;max-width:62ch}
  border-radius:0 10px 10px 0;padding:12px 16px}
 .limits b{display:block;font-size:.93rem;margin-bottom:2px}
 .limits span{font-size:.87rem;color:var(--muted)}
+/* ⭐⭐ THE ONE LIMIT THAT IS A DOOR LOOKS LIKE ONE. The others state a boundary
+   and end; this one answers all four and has somewhere to go. It spans the two
+   columns so it reads as the block's closing line rather than a fifth peer, and
+   its link is a line of its own — buried mid-sentence in the same grey as the
+   prose, it was invisible as a route and Kevin read the section as having none. */
+.limits li:last-child{grid-column:1/-1;border-left-color:var(--ink)}
+.lgo{display:block;margin-top:7px;color:var(--blue);font-weight:600;
+ text-decoration:none}
+.lgo:hover,.lgo:focus-visible{text-decoration:underline}
 
 .state{font-size:.83rem;color:var(--muted);margin:0 0 22px;padding:9px 14px;
  background:#fff;border:1px solid var(--edge);border-left:3px solid var(--edge);
@@ -2451,9 +2467,8 @@ def _front_counts():
     # which teach what the thing is and say nothing about how it was counted. The
     # sentence promised a work door for two weeks and delivered a teaching door.
     out = [f'<p class="note">Our own measurements rather than the league&rsquo;s, '
-           f'over {arch["__ARCHIVE_GAMES__"]} games. Each opens the lesson behind '
-           f'it &mdash; and the last card opens the page that shows how all of '
-           f'them were counted.</p>',
+           f'over {arch["__ARCHIVE_GAMES__"]} games. Each one opens the lesson '
+           f'behind it.</p>',
            '<div class="cgrid">']
     for cid, line in FRONT_COUNTS:
         if kinds.get(cid) != "ours":
@@ -2477,17 +2492,6 @@ def _front_counts():
         out.append(f'<a class="ccard" href="{_card_href(cid, doors, figures)}">'
                    f'<span class="lt">{titles[cid]}</span>'
                    f'<span class="ld">{line}</span></a>')
-    # ⭐⭐⭐ AND THE DOOR TO THE WORK, LAST IN THE STRIP. See `.wcard` in STYLE for
-    # why it is shaped differently. The figure in it is the archive's own size,
-    # substituted like every other figure here rather than typed — a card about
-    # showing our work may not be the one card on the page carrying a constant.
-    out.append(f'<a class="ccard wcard" href="/how-we-measure.html">'
-               f'<span class="lt">How we measure</span>'
-               f'<span class="ld">Every number above, and every number on the '
-               f'rest of the site: what we counted, what we divided it by, how '
-               f'much of a season it takes before it tells you anything, and '
-               f'what is wrong with it. Including the criticisms we think are '
-               f'right.</span></a>')
     out.append("</div>")
     return "\n".join(out)
 
