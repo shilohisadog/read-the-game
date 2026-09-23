@@ -72,6 +72,25 @@ export function gamesToTarget(r, half, target = TARGET) {
 }
 
 /**
+ * ⭐ WHAT A FULL SEASON OF CLUBS LOOKS LIKE ON ONE MEASURE — the card's axis.
+ *
+ * ⛔ IT IS `min`..`max`, NOT A QUANTILE BAND, and that is the whole reason this
+ * is honest. A p10–p90 axis would clip a fifth of the clubs off the ends of a
+ * picture whose entire job is to say how far apart clubs get, and choosing WHICH
+ * fifth is the tuned constant this repo refuses. The extremes are real
+ * club-seasons; they are the edges by definition.
+ *
+ * `median` is carried for nothing but a label, and `n` because a span drawn from
+ * four club-seasons is not the same claim as one drawn from ninety-six.
+ */
+export function spreadOf(values) {
+  const xs = values.filter(v => Number.isFinite(v)).sort((a, b) => a - b);
+  if (!xs.length) return null;
+  return { min: xs[0], max: xs[xs.length - 1], median: xs[Math.floor(xs.length / 2)],
+           n: xs.length };
+}
+
+/**
  * @param records  the per-game records `measureGame` produces, whole archive
  * @param rows     [{key, ofGame(record, side) -> {count, n}}] — the PER-GAME form
  *                 of the card's own rows, passed in so this file states no measure
@@ -108,7 +127,7 @@ export function reliability(records, rows) {
   const out = {};
   let half = 0;
   for (const row of rows) {
-    const first = [], second = [];
+    const first = [], second = [], whole = [];
     for (const list of by.values()) {
       if (list.length < 4) continue;
       const mid = Math.floor(list.length / 2);
@@ -121,13 +140,24 @@ export function reliability(records, rows) {
       const a = share(list.slice(0, mid)), b = share(list.slice(mid));
       if (a == null || b == null) continue;
       first.push(a); second.push(b);
+      /* ⭐ THE SAME CLUB-SEASON, UNDIVIDED — AND IT IS WHAT THE CARD'S AXIS IS
+         MADE OF. A bar needs a span, and the tempting span is a round number of
+         points either side of the league, which is a constant nobody measured.
+         This publishes the span the LEAGUE actually occupies: the full-season
+         figures real clubs posted. The edge of the bar then means "the edge of
+         what clubs do", which is the question a novice is really asking when
+         they ask whether 52 is a lot. Same population as the reliability above,
+         so it introduces no second rule about which club-seasons count. */
+      const w = share(list);
+      if (w != null) whole.push(w);
     }
     /* ⛔ CENTRED PER SEASON IS NOT NEEDED HERE and would be a second rule: every
        club-season is one point, and a league-wide shift between years moves both
        halves of the same point together. What it must not do is pool a club's
        two halves as if they were two clubs, which is why the pairing is kept. */
     const r = pearson(first, second);
-    out[row.key] = { r, clubSeasons: first.length, games: gamesToTarget(r, half) };
+    out[row.key] = { r, clubSeasons: first.length, games: gamesToTarget(r, half),
+      clubRange: spreadOf(whole) };
   }
   return { target: TARGET, admission: ADMISSION, seasons: [...finished].sort(), half, rows: out };
 }
