@@ -3556,6 +3556,9 @@ PREVCSS = r"""<style>
  font-variant-numeric:tabular-nums}
 .pvfoot span{display:block}
 .pvnone{margin:0;color:var(--muted);font-size:.9rem}
+.pvlearn{display:inline-block;margin:9px 0 0;font-size:.82rem;font-weight:600}
+.pvfoot .pvlearn{margin-top:7px}
+.pvtile .pvlearn{margin-top:auto;padding-top:11px}
 .pvlinks{margin:26px 0 0;display:flex;flex-wrap:wrap;gap:8px 22px;font-size:.93rem}
 @media (max-width:430px){
  .pvbig{font-size:1.8rem}
@@ -3573,6 +3576,9 @@ PREV_BODY = r"""<div class="wrap">
 __LIB__
 __HELPERS__
   var q = (/[?&]game=(\d+)/.exec(location.search) || [])[1];
+  /* WHERE EACH ROW LEADS. Resolved at build time by `_card_href`, the same
+     function the front door and the learn strip use — see `_preview_doors`. */
+  var DOORS = __DOORS__;
 
   /* THE FIVE DOCUMENTS, IN PARALLEL, AND A NULL FROM ANY OF THEM IS A STATE.
      `grab` answers null for a 404 or a failed fetch, and `preview()` degrades
@@ -3738,7 +3744,8 @@ __HELPERS__
       var frame = el('section', 'pvframe');
       frame.appendChild(el('p', 'pvkick', 'What is normal'));
       var tiles = el('div', 'pvtiles');
-      p.league.forEach(function (r) { tiles.appendChild(tileFor(r)); });
+      var pp = p.league.filter(function (r) { return r.key === 'powerplay'; })[0];
+      p.league.forEach(function (r) { tiles.appendChild(tileFor(r, pp)); });
       frame.appendChild(tiles);
       frame.appendChild(el('p', 'pvn', 'Measured over ' + num(p.league[0].games)
         + ' games in this archive. Which teams do better than this over a season is '
@@ -3773,7 +3780,13 @@ __HELPERS__
     $('pv').appendChild(sect);
   }
 
-  function tileFor(r) {
+  function learnLink(key, text) {
+    var a = el('a', 'pvlearn', text + ' \u2192');
+    a.href = DOORS[key];
+    return a;
+  }
+
+  function tileFor(r, pp) {
     var t = el('div', 'pvtile');
     var big = el('p', 'pvbig');
     if (r.key === 'powerplay') {
@@ -3785,15 +3798,30 @@ __HELPERS__
       var on = Math.round(r.rate * 100);
       for (var i = 0; i < 100; i++) dots.appendChild(el('i', i < on ? 'on' : null));
       t.appendChild(dots);
-      t.appendChild(el('p', 'pvwatch', 'A team gets about '
-        + r.chancesPerClubGame.toFixed(1) + ' a game. Watch who is a skater short, '
-        + 'and for how long.'));
+      t.appendChild(el('p', 'pvwatch',
+        'A team gets about ' + r.chancesPerClubGame.toFixed(1)
+        + ' a game. Watch who is a skater short, and for how long.'));
+      t.appendChild(learnLink('powerplay', 'What a power play is'));
     } else if (r.key === 'penalties') {
       big.textContent = r.perClubGame.toFixed(1);
       big.appendChild(el('span', 'pvunit', ' a game'));
       t.appendChild(big);
       t.appendChild(el('p', 'pvtlab', 'penalties a team takes'));
-      t.appendChild(el('p', 'pvwatch', 'Each one is the other team’s power play.'));
+      /* ⛔⛔ THE TWO NUMBERS BESIDE EACH OTHER LOOKED LIKE A CONTRADICTION, and
+         Kevin caught it: this tile says a team takes 3.7 penalties a game while
+         the one before it says a team gets 2.7 power plays. Both are right —
+         30,827 penalties produced 22,872 power plays over the archive — and the
+         gap is 25.8% of every penalty called. That is worth teaching, so the
+         card says the relation instead of leaving two figures to argue.
+         ⚠️ AND IT DOES NOT SAY WHY. Offsetting minors, misconducts and penalties
+         taken while already short-handed are the obvious candidates and NONE of
+         them is measured yet, so naming them here would be a cause invented to
+         tidy a sentence. The numbers are measured; the reason is not, so the
+         reason is not printed. */
+      t.appendChild(el('p', 'pvwatch', 'Only about ' + (pp ? pp.chancesPerClubGame.toFixed(1)
+        : '\u2014') + ' of those become a power play for the other team — the rest '
+        + 'leave nobody a skater up.'));
+      t.appendChild(learnLink('penalties', 'What a penalty costs'));
     } else {
       big.textContent = r.perClubGame.toFixed(1);
       big.appendChild(el('span', 'pvunit', ' a game'));
@@ -3801,6 +3829,7 @@ __HELPERS__
       t.appendChild(el('p', 'pvtlab', 'times a team is offside'));
       t.appendChild(el('p', 'pvwatch',
         'Watch the blue line as a team carries the puck in.'));
+      t.appendChild(learnLink('offside', 'What offside means'));
     }
     return t;
   }
@@ -3810,7 +3839,7 @@ __HELPERS__
     var head = el('div', 'pvmh');
     head.appendChild(el('p', 'pvlab', ar.label));
     head.appendChild(el('span', 'pvref', ar.league == null
-      ? 'no league figure yet this season' : 'league ' + pct(ar.league)));
+      ? 'no league figure yet this season' : 'league ' + pct(ar.league) + '%'));
     box.appendChild(head);
 
     var sides = [ar, hr].map(function (r, i) {
@@ -3841,18 +3870,31 @@ __HELPERS__
        any full season produced, which early in a season is common and is the
        most interesting thing the picture can show. So the sentence says which
        case the reader is looking at. */
+    /* ⭐ THE SCALE, SAID IN FULL. Kevin: the old line "was not very helpful or
+       intuitive" — it named a span and never said what the span was measured
+       over, which is the one thing this site puts on every other figure.
+       ⚠️ AND IT USES `%` WHILE THE TILES SAY "of every 100". That is a
+       deliberate split, not a drift: a chart AXIS is read as percent by anyone
+       who has seen a chart, and this row's own label already says CF%. The tiles
+       are prose for a novice, where "22 of every 100" is the friendlier form. */
     if (ar.range && track) {
       var wider = track.lo < ar.range.min || track.hi > ar.range.max;
-      foot.push((wider
-        ? 'Shaded: what clubs did over a full season, '
-        : 'The scale is what clubs did over a full season, ')
-        + pct(ar.range.min) + ' to ' + pct(ar.range.max)
-        + ' across ' + ar.range.n + ' club-seasons'
+      foot.push((wider ? 'Shaded' : 'The scale')
+        + ': what clubs did across a full season, '
+        + pct(ar.range.min) + '% to ' + pct(ar.range.max) + '%'
+        + (ar.range.games ? ', measured over ' + num(ar.range.games) + ' club-games' : '')
+        + ' in ' + ar.range.n + ' club-seasons'
         + (wider ? ' — a bar past it is beyond anything a full season has produced.' : '.'));
     }
     if (!foot.length) foot.push(noneYet(p.counting));
     var fp = el('p', 'pvfoot');
     foot.forEach(function (line) { fp.appendChild(el('span', null, line)); });
+    /* ⭐ THE GRAPH IS A DOOR TOO. Kevin: "The graph should also be a front door to
+       a CF% learning card." There is no such page and there does not need to be:
+       `control` is a learn door onto the exact frame of a replay where the
+       Control layer counts an attempt, which is what CF% is made of. A diagram
+       would explain the metric; the replay shows it happening. */
+    if (DOORS[ar.key]) fp.appendChild(learnLink(ar.key, 'See an attempt being counted'));
     box.appendChild(fp);
     return box;
   }
@@ -3861,9 +3903,45 @@ __HELPERS__
 </script>
 """
 
+def _preview_doors():
+    """Where each row of the preview card leads, resolved ONCE by `_card_href`.
+
+    ⭐ KEVIN, 2026-09-23: *"I think the cards need to also serve as a front door to
+    the learning cards, no?"* They do, and the destination is already decided
+    elsewhere: a rule with a diagram page goes to the diagram, and a rule without
+    one goes to the exact frame in a replay where it happens. That is
+    `_card_href`, and calling it here rather than writing hrefs into the renderer
+    is the difference between one statement of the rule and two.
+
+    ⚠️ THE IDS ARE CHECKED, NOT TRUSTED — a typo would ship a dead link that looks
+    completely normal, which is the failure `FRONT_RULES` already guards against.
+
+    ⛔ CF% AND THE DEFENCEMEN ROW BOTH LEAD TO `control`, AND THAT IS CORRECT
+    RATHER THAN LAZY: both are shot attempts, and the Control layer is the one
+    surface that shows an attempt being counted. Sending them to two different
+    doors would imply the site counts them two different ways.
+    """
+    d = json.loads((ROOT / "data" / "learn-doors.json").read_text())
+    doors, figures = d["doors"], d.get("figures", {})
+    # ⭐ EVERY CLUB_ROW KEY IS HERE, INCLUDING ONE THE CARD CURRENTLY DROPS. `slot`
+    # needs 42 games and the admission rule is 41, so it is not on the card today
+    # — but the rule is measured and could admit it after any summer's re-derive,
+    # and a row that arrives back with no door is the silent dead link this
+    # function exists to prevent.
+    want = {"powerplay": "penalties", "penalties": "penalties", "offside": "offside",
+            "level5": "control", "dmen": "control", "slot": "slot"}
+    out = {}
+    for key, cid in want.items():
+        if cid not in doors:
+            raise SystemExit(f"preview: no learn door named {cid!r} for row {key!r}")
+        out[key] = _card_href(cid, doors, figures)
+    return json.dumps(out, sort_keys=True)
+
+
 def build_preview():
     html = (PREV_BODY.replace("__LIB__", _lib("competitions.js", "teams.js", "preview.js"))
                      .replace("__HELPERS__", HELPERS)
+                     .replace("__DOORS__", _preview_doors())
                      .replace("__ORIGIN__", repr(DATA_ORIGIN).replace("'", '"')))
     html = P.document(html, title=PREV_TITLE, description=PREV_DESC,
                       url="https://readthegame.co/preview.html",

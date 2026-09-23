@@ -258,7 +258,8 @@ test('⭐⭐ the measure row draws BEFORE the season, because the axis is itself
   const said = textOf(ids.pv);
   assert.match(said, /5-on-5 CF% while the score was level/, 'the measure is named');
   assert.match(said, /no games yet/, 'and each club says it has nothing on it');
-  assert.match(said, /The scale is what clubs did over a full season, 44 to 57 across 96 club-seasons/);
+  assert.match(said, /The scale: what clubs did across a full season, 44% to 57% in 96 club-seasons/,
+    'the caption names the span AND what it was measured over');
   // ⛔ AND NO BAR IS DRAWN FOR A CLUB WITH NO FIGURE. The row is a template, and a
   // template that draws a club's bar at zero would be inventing a measurement.
   const filled = rectsIn(ids.pv).filter(r => r['fill-opacity'] != null);
@@ -359,7 +360,7 @@ test('⛔ the caption says SHADED only when there is something shaded to see', (
   return (async () => {
     const inside = run({}, `?game=${GID}`, '2026-10-01T12:00:00Z');
     await inside.settle();
-    assert.match(textOf(inside.ids.pv), /The scale is what clubs did over a full season/);
+    assert.match(textOf(inside.ids.pv), /The scale: what clubs did across a full season/);
     assert.ok(!/Shaded:/.test(textOf(inside.ids.pv)));
 
     // A club at 71 of every 100 is past the fixture's 57 high-water mark.
@@ -370,7 +371,42 @@ test('⛔ the caption says SHADED only when there is something shaded to see', (
       seasons: { 2026: { BUF: wild, PIT: club() } } } }, `?game=${GID}`, '2026-10-01T12:00:00Z');
     await out.settle();
     const said = textOf(out.ids.pv);
-    assert.match(said, /Shaded: what clubs did over a full season/);
+    assert.match(said, /Shaded: what clubs did across a full season/);
     assert.match(said, /beyond anything a full season has produced/);
   })();
+});
+
+/* -------------------------------------------------------- THE LEARN DOORS */
+
+test('⭐ every tile and every measure row is a door into the lesson behind it', async () => {
+  /* Kevin: "the cards need to also serve as a front door to the learning cards"
+     and "the graph should also be a front door to a CF% learning card."
+     MUTATION: drop a `learnLink` call and the count fires; point a row at a card
+     id that has no door and `_preview_doors` exits the BUILD, which is the half
+     this test cannot reach and does not pretend to. */
+  const { ids, settle } = run({}, `?game=${GID}`, '2026-10-01T12:00:00Z');
+  await settle();
+  const doors = walk(ids.pv).filter(x => (x.className || '').split(' ').includes('pvlearn'));
+  assert.equal(doors.length, 6, 'three tiles and three measure rows');
+  for (const d of doors) {
+    // Either a rule page we build, or a deep link into the replay at the frame
+    // where the thing happens. Nothing else is a lesson.
+    assert.match(d.href, /^\/(offside|penalties)\.html$|^\/game\.html\?game=\d+&at=/,
+      `a door leads nowhere useful: ${d.href}`);
+    assert.match(d.textContent, /→$/, 'a door is marked as one');
+  }
+});
+
+test('⛔ the CF% row leads to an attempt being counted, not to a page that explains it', async () => {
+  /* There is no Corsi rule page and there does not need to be: `control` is a
+     door onto the exact frame where the Control layer counts an attempt. A
+     diagram would explain the metric; the replay shows it happening.
+     MUTATION: send it to a static page and the layer assertion fires. */
+  const { ids, settle } = run({}, `?game=${GID}`, '2026-10-01T12:00:00Z');
+  await settle();
+  const rows = walk(ids.pv).filter(x => (x.className || '').split(' ').includes('pvm'));
+  const cf = rows.find(r => /CF%/.test(textOf(r)));
+  const door = walk(cf).find(x => (x.className || '').split(' ').includes('pvlearn'));
+  assert.ok(door, 'the CF% row has no door at all');
+  assert.match(door.href, /layer=corsi/, 'the door must arrive with the Control layer on');
 });

@@ -71,6 +71,13 @@ export function gamesToTarget(r, half, target = TARGET) {
   return Math.ceil(target * (1 - p1) / (p1 * (1 - target)));
 }
 
+/** The spread, plus how many club-games are behind it — Kevin asked the caption
+ *  to say what it was measured over, and a span with no n is the figure this
+ *  project refuses everywhere else. */
+function withGames(spread, games) {
+  return spread ? { ...spread, games } : null;
+}
+
 /**
  * ⭐ WHAT A FULL SEASON OF CLUBS LOOKS LIKE ON ONE MEASURE — the card's axis.
  *
@@ -128,6 +135,7 @@ export function reliability(records, rows) {
   let half = 0;
   for (const row of rows) {
     const first = [], second = [], whole = [];
+    let wholeGames = 0;          // club-games behind the spread, for the caption
     for (const list of by.values()) {
       if (list.length < 4) continue;
       const mid = Math.floor(list.length / 2);
@@ -149,7 +157,7 @@ export function reliability(records, rows) {
          they ask whether 52 is a lot. Same population as the reliability above,
          so it introduces no second rule about which club-seasons count. */
       const w = share(list);
-      if (w != null) whole.push(w);
+      if (w != null) { whole.push(w); wholeGames += list.length; }
     }
     /* ⛔ CENTRED PER SEASON IS NOT NEEDED HERE and would be a second rule: every
        club-season is one point, and a league-wide shift between years moves both
@@ -157,7 +165,7 @@ export function reliability(records, rows) {
        two halves as if they were two clubs, which is why the pairing is kept. */
     const r = pearson(first, second);
     out[row.key] = { r, clubSeasons: first.length, games: gamesToTarget(r, half),
-      clubRange: spreadOf(whole) };
+      clubRange: withGames(spreadOf(whole), wholeGames) };
   }
   return { target: TARGET, admission: ADMISSION, seasons: [...finished].sort(), half, rows: out };
 }
