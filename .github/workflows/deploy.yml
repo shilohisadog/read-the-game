@@ -290,18 +290,25 @@ jobs:
             exit 1
           fi
           echo "url=$url" >> "$GITHUB_OUTPUT"
-          for page in index.html game.html; do
+          # ⛔ THE ROOT IS IN THIS LIST AND WAS NOT, WHICH IS HOW A BROKEN ROOT
+          # REACHED PRODUCTION. This checked index.html and game.html — both FILES
+          # — and never `/`, the ROUTE Pages resolves to index.html. Those are
+          # different questions, and the one nobody asked is the one that failed
+          # on 2026-09-23 after Functions were added. The candidate exists to find
+          # exactly this before production does.
+          for page in "" index.html game.html; do
             ok=0
+            want="src/${page:-index.html}"
             for i in $(seq 1 15); do
               code=$(curl -sS -L -o got.html -w '%{http_code}' "$url/$page?cb=${GITHUB_RUN_ID}-$i") || code=000
-              if [ "$code" = 200 ] && cmp -s got.html "src/$page"; then ok=1; break; fi
-              echo "    $page: HTTP $code, not yet this commit -- attempt $i"
+              if [ "$code" = 200 ] && cmp -s got.html "$want"; then ok=1; break; fi
+              echo "    ${page:-/}: HTTP $code, not yet this commit -- attempt $i"
               sleep 6
             done
             if [ "$ok" != 1 ]; then
-              echo "::error::the preview never served this commit's $page"; exit 1
+              echo "::error::the preview never served this commit's ${page:-/}"; exit 1
             fi
-            echo "  $url serves this commit's $page"
+            echo "  $url serves this commit's ${page:-/}"
           done
 
       # ⭐⭐ THE UNFURL, PROVEN ON THE CANDIDATE BEFORE PRODUCTION SEES IT.
@@ -502,8 +509,25 @@ jobs:
 
           # Retries on 5xx (edge not ready) but NOT on 404 -- a missing file is
           # a real answer, and waiting 60s to report it just hides the cause.
-          fetch() {  # fetch <path> <destination>
-            local path="$1" dest="$2" code
+          #
+          # ⛔⛔ AND SINCE 2026-09-23 THE ROOT RETRIES 404 TOO, BECAUSE A WORKER
+          # CHANGED WHAT 404 MEANS. Before `functions/_middleware.js` existed, a
+          # deployment that was not ready answered 5xx or nothing, and a 404 could
+          # only mean a missing file — so not retrying it reported the real cause
+          # immediately, which is what the rule above is for. With Functions in
+          # front, the Worker goes live before the asset manifest has finished
+          # propagating: `next()` finds no asset for `/` and returns an honest
+          # 404, and the gate failed a deploy whose site was serving correctly
+          # ninety seconds later. The middleware did not manufacture the 404 — it
+          # passed through exactly what the asset server said.
+          #
+          # ⭐ THE ROOT ONLY, AND THAT IS THE WHOLE DISTINCTION. `/` is not a file
+          # we deploy, it is a route Pages resolves to index.html — this step's own
+          # comment below already says so. A named page that 404s IS a missing
+          # file and still fails on the first answer, so the rule's original reason
+          # survives intact for every case it was written about.
+          fetch() {  # fetch <path> <destination> [retry404]
+            local path="$1" dest="$2" retry404="${3:-}" code
             for i in $(seq 1 12); do
               # 000 is curl's code for a transport failure, which for a hostname
               # minutes old usually means DNS has not propagated yet -- another
@@ -513,6 +537,12 @@ jobs:
               case "$code" in
                 200)     return 0 ;;
                 5*|000)  echo "    attempt $i: HTTP $code — edge not ready"; sleep 6 ;;
+                404)     if [ -n "$retry404" ]; then
+                           echo "    attempt $i: HTTP 404 — the route is not resolving yet"
+                           sleep 6
+                         else
+                           echo "::error::/$path returned HTTP 404"; return 1
+                         fi ;;
                 *)       echo "::error::/$path returned HTTP $code"; return 1 ;;
               esac
             done
@@ -566,7 +596,7 @@ jobs:
           # The root is its own case: it is not a file we deploy but a route
           # Pages resolves to index.html, and getting that wrong is a 404 on
           # the front page with every deep link still working.
-          fetch "" root.html
+          fetch "" root.html retry404
           if ! cmp -s <(strip root.html) <(strip src/index.html); then
             echo "::error::the site root is not src/index.html"
             exit 1
