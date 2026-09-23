@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-V8fqYdlXU6bYqtjDfkvJh2Tg2JxtRv4KQlqQbjk4DkI=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-2yjZ/PgzHsn4YtD5lnDdH8CUuU7/gKT2CxLauWLGeoE='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-/Wz3g4hvxe14dZKIb1dIrkIzjUOG30ntbkP2uPJwXXs=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-tLcBAn+O62owHlftoX8XlsOjhKIqi3uuCaoW1VLisgA='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -227,7 +227,12 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
    no border, no hover, no pointer -- the game has not been played and there is
    nothing to open. The day the club preview gives it a destination, it becomes a
    `.drow` and this rule goes. */
-.dfix{margin:0;font-size:.85rem;color:var(--muted);padding:3px 2px}
+.dfix{display:block;margin:0;font-size:.85rem;color:var(--muted);padding:3px 2px;
+ text-decoration:none}
+.dfix:hover,.dfix:focus-visible{color:var(--ink);text-decoration:underline}
+.teamnext{margin:10px 0 0;font-size:.9rem}
+.teamnext .k{font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;
+ color:var(--muted);font-weight:700;margin-right:8px}
 .dtonight{margin:9px 0 0;font-size:.85rem;color:var(--muted)}
 .dmoretonight>summary{font-size:.8rem;color:var(--muted);cursor:pointer;padding:3px 2px}
 .drow .dscore{font-weight:650;font-variant-numeric:tabular-nums}
@@ -2429,6 +2434,37 @@ function disputedNote(n) {
     main.appendChild(head);
     if (NOTES[ab]) main.appendChild(el('p', 'note', NOTES[ab]));
 
+    /* ⭐ WHAT THIS CLUB PLAYS NEXT, which is the question a club page has never
+       answered. Everything else here is the past; a fan who asked for WSH is
+       asking about WSH now, and this is also the only thing on the page that
+       differs from one morning to the next.
+       ⛔ THE FIXTURE IS THE SCHEDULE'S, NOT OURS. `nextNight` picks a night for
+       the whole league; this wants the soonest fixture involving THIS club, which
+       is a min over start times and belongs where it is read (fetch_nhl.py's own
+       note). A club with nothing listed gets no line rather than an empty one. */
+    var ahead = ((SCHEDULE && SCHEDULE.upcoming) || []).filter(function (g) {
+      return (g.away === ab || g.home === ab) && g.startTimeUTC;
+    }).sort(function (x, y) { return x.startTimeUTC < y.startTimeUTC ? -1 : 1; })[0];
+    if (ahead) {
+      var nx = el('p', 'teamnext');
+      nx.appendChild(el('span', 'k', 'Next'));
+      /* ⚠️ NOT `var when`, AND THIS FILE HAS PAID FOR IT ONCE ALREADY. The page
+         defines `when(date)` as its date formatter; a `var when` here shadows it
+         for the whole of `drawTeam` and `var` hoisting makes it `undefined` on
+         every path above this line — which is every team page whose club has no
+         fixture listed. `drawDaily` carries the same warning 700 lines up, from
+         2026-09-11, and I wrote this shadow anyway. The suite went red on four
+         team-page tests in one run. */
+      var startsAt = new Date(ahead.startTimeUTC).toLocaleString(undefined,
+        { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+      var to = el('a', null, (ahead.away === ab ? 'at ' + nameOf(ahead.home)
+                                                : 'vs ' + nameOf(ahead.away))
+                             + ' \u00b7 ' + startsAt + ' \u2014 what to watch for \u2192');
+      to.href = '/preview.html?game=' + ahead.id;
+      nx.appendChild(to);
+      main.appendChild(nx);
+    }
+
     if (seasons.length > 1) {
       var bar = el('p', 'seasons');
       seasons.forEach(function (s) {
@@ -2862,6 +2898,7 @@ function disputedNote(n) {
     $('hero').hidden = false;
   }
 
+  var SCHEDULE = null;           // set when the documents land; see below
   var team = (/[?&]team=([A-Za-z]{2,3})/.exec(location.search) || [])[1];
   if (team) team = team.toUpperCase();
   /* A URL THAT NAMES A CLUB HAS ALREADY ASKED. This is an INTENT signal, not a
@@ -2921,12 +2958,16 @@ function disputedNote(n) {
       return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
     }
     function fixtureRow(g) {
-      /* ⛔ NOT A `.drow`, AND THE CLASS NAME CARRIES THE REASON. Every row in the
-         slate is an anchor into a replay — "each row is a door" — and a game that
-         has not been played has nothing to open. A link that goes nowhere is worse
-         than text, so a fixture is a `<p>` and cannot acquire an href by accident. */
-      return el('p', 'dfix', g.away + ' at ' + g.home + ' \u00b7 ' + clockOf(g.startTimeUTC)
+      /* ⭐ NOW A DOOR, AND IT WAS TEXT FOR EIGHT HOURS ON PURPOSE. A fixture had
+         nothing to open — `game.html` is a replay and there is nothing to replay —
+         so `docs/front-door-tonight.md` §4 Q1 ruled it text "until the preview
+         ships", which is what `/preview.html?game=` now is. The row still carries
+         its own class rather than `.drow`: a preview is not a replay, and the two
+         must not read as the same promise. */
+      var row = el('a', 'dfix', g.away + ' at ' + g.home + ' \u00b7 ' + clockOf(g.startTimeUTC)
         + (g.started ? ' \u00b7 under way' : ''));
+      row.href = '/preview.html?game=' + g.id;
+      return row;
     }
 
     var night = d.night;
@@ -3084,6 +3125,10 @@ function disputedNote(n) {
                grab('schedule.json'), grab('recent.json')])
     .then(function (r) {
       var cat = r[0], measures = r[1], index = r[2], schedule = r[3], slate = r[4];
+      /* ⚠️ HOISTED FOR `drawTeam`, which is called below and needs the fixtures
+         for its "Next" line. Passing it as a sixth argument would thread it
+         through a signature three other callers do not need. */
+      SCHEDULE = schedule;
       var games = (cat && cat.games) || [];
       /* ⚠️ DECLARED OUT HERE, not in the branch that sets it. The card is drawn
          on the front door only; a team page and a failed catalog never reach

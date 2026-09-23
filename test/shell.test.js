@@ -895,7 +895,18 @@ test('no pre-render metadata offers to WATCH the content', () => {
          THE NARROWING IS DELIBERATE AND SAID OUT LOUD rather than quietly
          tuned — a check that tests less than its name is this project's most
          repeated defect, so the name changed with the pattern. */
-      assert.doesNotMatch(m[1], /\bwatch(?:ing|es)?\b[^.]{0,24}?\b(?:game|team|hockey|match)\b/i,
+      /* ⚠️ AND THE SITE'S OWN NAME IS NOT AN OBJECT. Every title ends "— Read the
+         Game", so a page whose title contains the word `watch` at all matched the
+         brand rather than a promise: "What to watch for — Read the Game" went red
+         on 2026-09-23, and the thing it offers to watch is `for`. The suffix is
+         stripped before the question is asked. NARROWED OUT LOUD, like the last
+         time, and the line below proves the pattern still has teeth: a title that
+         really does offer a game fails whether the suffix is there or not. */
+      const said = m[1].replace(/\s*[—-]\s*Read the Game\s*$/i, '');
+      assert.match('Watch the game — Read the Game'.replace(/\s*[—-]\s*Read the Game\s*$/i, ''),
+        /\bwatch(?:ing|es)?\b[^.]{0,24}?\b(?:game|team|hockey|match)\b/i,
+        'the pattern stopped catching an outright offer — the strip went too far');
+      assert.doesNotMatch(said, /\bwatch(?:ing|es)?\b[^.]{0,24}?\b(?:game|team|hockey|match)\b/i,
         `${f}'s ${name} offers to watch the content, and it is read before the `
         + `page exists — nothing beside it can say this is a replay: `
         + JSON.stringify(m[1]));

@@ -705,3 +705,68 @@ test('⭐ a goal is counted in the score state it was taken in, not the one it c
     'the opening goal was counted as taken by a club already leading');
   assert.equal(r.pace.lead.attempts, 0, 'the goal was credited to the lead it created');
 });
+
+/* ------------------------------------------- WHAT THE PREVIEW CARD'S LEAGUE ROWS NEED
+ * `docs/preview-page.md` §3.2. Three of the card's six rows describe HOCKEY rather
+ * than a club, because `preview-and-corsi.md` §11.2 measured that no club
+ * difference in them settles inside a season. They are archive figures, so they
+ * are counted HERE — where the whole archive is walked — and never typed into a
+ * page. The census already carried power-play GOALS and MINUTES; what it could
+ * not say is how often a power play is awarded, or how often a whistle goes for
+ * a penalty or an offside.
+ */
+test('⭐ the census counts penalties, offsides and power-play chances', () => {
+  const c = censusGame(rich.events, ctxOf(rich));
+  assert.ok(Number.isInteger(c.whistles.penalties) && c.whistles.penalties > 0);
+  assert.ok(Number.isInteger(c.whistles.offsides) && c.whistles.offsides > 0);
+  assert.ok(Number.isInteger(c.whistles.ppChances) && c.whistles.ppChances > 0);
+  /* ⛔ A CHANCE IS AN ENTRY INTO A POWER PLAY, NOT A PENALTY. A double minor is
+     one advantage; a 5-on-4 that becomes 5-on-3 is still one advantage, deeper.
+     MUTATION: count penalty events as chances, and the two figures collapse into
+     one number wearing two labels. */
+  assert.ok(c.whistles.ppChances <= c.whistles.penalties,
+    'more power plays than penalties — coincidental minors and misconducts give none');
+});
+
+test('⛔ a power play that deepens is still ONE chance, and a new one is a new chance', () => {
+  /* The mutation this exists for: counting every event whose situation is a power
+     play, or every change of situation code. Both turn one advantage into many. */
+  const ctx = { roster: {}, homeId: 1, awayId: 2, homeAb: 'HME', awayAb: 'AWY' };
+  const at = (s, sit, type = 'faceoff') => ({ type, s, sit, per: 1, pt: 'REG', own: 1 });
+  const c = censusGame([
+    at(0, '1551'), at(10, '1541'), at(20, '1531'), at(30, '1541'), at(40, '1551'),
+    at(50, '1541'), at(60, '1551'),
+  ], ctx);
+  assert.equal(c.whistles.ppChances, 2, 'one advantage that deepened, then a second');
+});
+
+test('⛔⛔ A GOAL SCORED DURING A POWER PLAY IS NOT A POWER-PLAY GOAL', () => {
+  /* `state.pp.goals` is every goal scored while an advantage was on — including
+     the SHORT-HANDED ones. Over three seasons that is 5,242 against 21,360
+     chances, which reads as a 24.5% power play; the league's own figure is about
+     21%, and the gap is the short-handed goals. A card printing the first as
+     "PP%" would be wrong by three points in the direction that flatters.
+     THE INVARIANT, not a typed number: the two buckets partition the goals the
+     census already counts while a power play is on. */
+  const ctx = { roster: {}, homeId: 1, awayId: 2, homeAb: 'HME', awayAb: 'AWY' };
+  const ev = (s, sit, type, own) => ({ type, s, sit, per: 1, pt: 'REG', own });
+  const c = censusGame([
+    ev(0, '1551', 'faceoff', 1),
+    ev(10, '1541', 'faceoff', 1),      // HOME up a skater (away has 4)
+    ev(20, '1541', 'goal', 1),         // the club WITH the advantage scores
+    ev(30, '1541', 'goal', 2),         // the short-handed club scores
+    ev(40, '1551', 'faceoff', 1),
+  ], ctx);
+  assert.equal(c.whistles.ppGoals, 1, 'only the advantaged club\'s goal');
+  assert.equal(c.whistles.shGoals, 1);
+  assert.equal(c.whistles.ppGoals + c.whistles.shGoals, c.state.pp.goals,
+    'the two buckets must partition the goals scored while a power play was on');
+});
+
+test('the archive folds the three, and a rate is counts over the census games', () => {
+  const ctx = ctxOf(rich);
+  const t = censusAdd(censusAdd({}, censusGame(rich.events, ctx)), censusGame(rich.events, ctx));
+  const one = censusGame(rich.events, ctx);
+  assert.equal(t.whistles.penalties, one.whistles.penalties * 2, 'counts add');
+  assert.equal(t.games, 2, 'and the denominator the card divides by is the games');
+});

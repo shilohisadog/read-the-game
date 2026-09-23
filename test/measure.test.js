@@ -59,6 +59,12 @@ const TIER = [
   // CAUGHT BY THIS TEST, third time — the tier goes stale in the same edit that
   // changes the graph, every time.
   'layers/whistle.js',
+  // preview.js and reliability.js joined on 2026-09-23, and CAUGHT BY THIS TEST
+  // for the fifth time. The pipeline now measures how many games each preview row
+  // needs instead of the card carrying three numbers I typed — so the driver
+  // imports the card's own row definitions, which is the point: the thing
+  // measured and the thing shown cannot drift apart if they are one definition.
+  'preview.js', 'reliability.js',
   'layers/zonestart.js',
   // census.js joined when the archive was asked four questions it had never been
   // asked: what a faceoff win is worth by zone, what winning it adds once the

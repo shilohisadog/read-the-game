@@ -176,3 +176,53 @@ instead inject a marker the gate can subtract?
 league rows and three *no games yet* rows. Is that a card worth publishing, or
 does the preseason state want different copy — *"what to watch for in any game"* —
 with the club rows appearing only once they have something to say?
+
+## 8. ⛔ NO MEASURED VALUE IS TYPED — Kevin, 2026-09-23
+
+*"There should never be hard coded values, anywhere … everything should derive
+from ingested, calculated, or applicable variables."* He said it looking at this
+build, and he was right about it: `CLUB_ROWS` carried `need: 35`, `23`, `37` —
+three numbers I had measured by hand in a probe and typed into `src/lib/preview.js`.
+
+**The split we settled**, and it is the rule going forward:
+
+| | |
+|---|---|
+| **a measurement** | derived from the archive, every time, published like every other figure. A typed one is a figure nobody can check and nobody re-derives. |
+| **a policy** | a CHOICE — the 0.7 reliability target, the half-season admission rule, `SHOWN = 6`. Nothing derives it; it is declared once, named, with its reason beside it, so it can be argued with. |
+
+**Built:** `src/lib/reliability.js` splits every club-season in a FINISHED season
+chronologically, correlates the halves across all of them, and inverts
+Spearman–Brown to the games each row needs. `measure.mjs` publishes it as
+`measures.json`'s `settle` block, using **the card's own row definitions**
+(`CLUB_ROWS`), so the thing measured and the thing shown cannot drift apart.
+⭐ A season counts as finished when the archive holds a PLAYOFF game for it —
+read from the games, never a clock — which is what pins the counts inside a
+season (CHENG's P2) and re-derives them by themselves after a Cup final.
+
+⭐⭐ **AND THE DERIVED NUMBERS CHANGED THE CARD.** Over 96 club-seasons:
+
+| row | typed | **measured** | |
+|---|---|---|---|
+| 5-on-5 CF% while level | 35 | **35** (r 0.733) | club row |
+| defencemen shooting | 23 | **23** (r 0.811) | club row |
+| shots from the slot | 37 | **42** (r 0.698) | ⛔ **over the 41-game admission rule — dropped** |
+
+My typed 37 was the flattering one. The rule now runs rather than being
+remembered: a row the archive says needs more than half a season leaves the card
+by itself, and the card shows **two** club rows until a re-derivation says
+otherwise. ⚠️ It is borderline — 42 against 41 — and §9 asks the question that
+decides it.
+
+## 9. Open, and it decides whether the slot row exists
+
+**The estimator has a choice in it.** My hand probe centred each season's club
+values before pooling; `reliability.js` pairs club-seasons without centring.
+Centring removes a league-wide shift between seasons — a year in which everybody
+shoots more from the slot is not a club difference — and it gives **r 0.72 → 37
+games, which keeps the row**. Not centring gives 0.698 → 42, which drops it.
+
+⚠️ **The methodological question must be answered on its merits, not on which
+answer keeps a row.** My read is that centring is more correct, for the reason
+above, and I am recording that it is also the answer that happens to suit the
+card — which is exactly when to be suspicious of it.

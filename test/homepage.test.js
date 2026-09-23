@@ -2038,21 +2038,27 @@ test('⭐ a night of eight is a night of eight, and the kicker says whose night 
   assert.match(rows[0].textContent, /\d{1,2}:\d{2}/, 'the start, in the reader\'s own clock');
 });
 
-test('⛔ NO ROW IN THE UPCOMING STATE PRODUCES AN href — a future game has no page', async () => {
-  /* CHENG's §5.3: the property, not the instance. `.drow` is an anchor because
-     every row in the slate opens a replay; a game that has not been played has
-     nothing to open, and a link that goes nowhere is worse than text. A test
-     naming one row would pass the day a second kind of row is added. */
+test('⭐ EVERY ROW IN THE UPCOMING STATE OPENS ITS OWN PREVIEW — and none opens a replay', async () => {
+  /* ⭐ THE PROPERTY, NOT THE INSTANCE — CHENG's §5.3, kept when the premise
+     changed under it. It read "no row produces an href", because a fixture had
+     nothing to open; `/preview.html?game=` is what it opens now, which is
+     `front-door-tonight.md` §4 Q1's own condition: text "until the preview
+     ships". What must STILL hold is that no fixture row points at `game.html` —
+     that is the replay, and a game nobody has played has none. A test naming one
+     row would pass the day a second kind of row is added. */
   const r = run({ docs: { ...ALL, 'recent.json': EMPTY, 'schedule.json': tonight(8) } });
   await r.settle(); await r.settle();
-  /* ⚠️ AND IT NAMES THE SUBJECT IT NEEDS. "no row has an href" is true of a block
-     that rendered no rows, which is how a probe passes on an absence — §7.2's
-     rule, and the defect that blinded the browser check for a week. */
+  /* ⚠️ AND IT NAMES THE SUBJECT IT NEEDS. A claim about "every row" is true of a
+     block that rendered no rows, which is how a probe passes on an absence —
+     §7.2's rule, and the defect that blinded the browser check for a week. */
   const rows = walk(r.ids.dailylist).filter(n => n.className === 'dfix');
   assert.equal(rows.length, 8, 'all eight render — six in the list, two behind the disclosure');
-  const linked = walk(r.ids.dailylist).filter(n => n.href && !/calendar\.html/.test(n.href));
-  assert.deepEqual(linked.map(n => n.href), [],
-    'a fixture was rendered as a door to a page that cannot exist');
+  for (const row of rows)
+    assert.match(row.href || '', /^\/preview\.html\?game=\d+$/,
+      `a fixture row opens ${row.href} — every one must open its own preview`);
+  const replays = walk(r.ids.dailylist).filter(n => /game\.html/.test(n.href || ''));
+  assert.deepEqual(replays.map(n => n.href), [],
+    'a fixture was rendered as a door to a replay that cannot exist');
 });
 
 test('the rest of the night opens in place, and the summary says how many', async () => {

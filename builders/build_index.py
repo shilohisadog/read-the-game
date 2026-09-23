@@ -300,7 +300,12 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
    no border, no hover, no pointer -- the game has not been played and there is
    nothing to open. The day the club preview gives it a destination, it becomes a
    `.drow` and this rule goes. */
-.dfix{margin:0;font-size:.85rem;color:var(--muted);padding:3px 2px}
+.dfix{display:block;margin:0;font-size:.85rem;color:var(--muted);padding:3px 2px;
+ text-decoration:none}
+.dfix:hover,.dfix:focus-visible{color:var(--ink);text-decoration:underline}
+.teamnext{margin:10px 0 0;font-size:.9rem}
+.teamnext .k{font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;
+ color:var(--muted);font-weight:700;margin-right:8px}
 .dtonight{margin:9px 0 0;font-size:.85rem;color:var(--muted)}
 .dmoretonight>summary{font-size:.8rem;color:var(--muted);cursor:pointer;padding:3px 2px}
 .drow .dscore{font-weight:650;font-variant-numeric:tabular-nums}
@@ -990,6 +995,37 @@ __HELPERS__
     main.appendChild(head);
     if (NOTES[ab]) main.appendChild(el('p', 'note', NOTES[ab]));
 
+    /* ⭐ WHAT THIS CLUB PLAYS NEXT, which is the question a club page has never
+       answered. Everything else here is the past; a fan who asked for WSH is
+       asking about WSH now, and this is also the only thing on the page that
+       differs from one morning to the next.
+       ⛔ THE FIXTURE IS THE SCHEDULE'S, NOT OURS. `nextNight` picks a night for
+       the whole league; this wants the soonest fixture involving THIS club, which
+       is a min over start times and belongs where it is read (fetch_nhl.py's own
+       note). A club with nothing listed gets no line rather than an empty one. */
+    var ahead = ((SCHEDULE && SCHEDULE.upcoming) || []).filter(function (g) {
+      return (g.away === ab || g.home === ab) && g.startTimeUTC;
+    }).sort(function (x, y) { return x.startTimeUTC < y.startTimeUTC ? -1 : 1; })[0];
+    if (ahead) {
+      var nx = el('p', 'teamnext');
+      nx.appendChild(el('span', 'k', 'Next'));
+      /* ⚠️ NOT `var when`, AND THIS FILE HAS PAID FOR IT ONCE ALREADY. The page
+         defines `when(date)` as its date formatter; a `var when` here shadows it
+         for the whole of `drawTeam` and `var` hoisting makes it `undefined` on
+         every path above this line — which is every team page whose club has no
+         fixture listed. `drawDaily` carries the same warning 700 lines up, from
+         2026-09-11, and I wrote this shadow anyway. The suite went red on four
+         team-page tests in one run. */
+      var startsAt = new Date(ahead.startTimeUTC).toLocaleString(undefined,
+        { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+      var to = el('a', null, (ahead.away === ab ? 'at ' + nameOf(ahead.home)
+                                                : 'vs ' + nameOf(ahead.away))
+                             + ' \u00b7 ' + startsAt + ' \u2014 what to watch for \u2192');
+      to.href = '/preview.html?game=' + ahead.id;
+      nx.appendChild(to);
+      main.appendChild(nx);
+    }
+
     if (seasons.length > 1) {
       var bar = el('p', 'seasons');
       seasons.forEach(function (s) {
@@ -1423,6 +1459,7 @@ __HELPERS__
     $('hero').hidden = false;
   }
 
+  var SCHEDULE = null;           // set when the documents land; see below
   var team = (/[?&]team=([A-Za-z]{2,3})/.exec(location.search) || [])[1];
   if (team) team = team.toUpperCase();
   /* A URL THAT NAMES A CLUB HAS ALREADY ASKED. This is an INTENT signal, not a
@@ -1482,12 +1519,16 @@ __HELPERS__
       return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
     }
     function fixtureRow(g) {
-      /* ⛔ NOT A `.drow`, AND THE CLASS NAME CARRIES THE REASON. Every row in the
-         slate is an anchor into a replay — "each row is a door" — and a game that
-         has not been played has nothing to open. A link that goes nowhere is worse
-         than text, so a fixture is a `<p>` and cannot acquire an href by accident. */
-      return el('p', 'dfix', g.away + ' at ' + g.home + ' \u00b7 ' + clockOf(g.startTimeUTC)
+      /* ⭐ NOW A DOOR, AND IT WAS TEXT FOR EIGHT HOURS ON PURPOSE. A fixture had
+         nothing to open — `game.html` is a replay and there is nothing to replay —
+         so `docs/front-door-tonight.md` §4 Q1 ruled it text "until the preview
+         ships", which is what `/preview.html?game=` now is. The row still carries
+         its own class rather than `.drow`: a preview is not a replay, and the two
+         must not read as the same promise. */
+      var row = el('a', 'dfix', g.away + ' at ' + g.home + ' \u00b7 ' + clockOf(g.startTimeUTC)
         + (g.started ? ' \u00b7 under way' : ''));
+      row.href = '/preview.html?game=' + g.id;
+      return row;
     }
 
     var night = d.night;
@@ -1645,6 +1686,10 @@ __HELPERS__
                grab('schedule.json'), grab('recent.json')])
     .then(function (r) {
       var cat = r[0], measures = r[1], index = r[2], schedule = r[3], slate = r[4];
+      /* ⚠️ HOISTED FOR `drawTeam`, which is called below and needs the fixtures
+         for its "Next" line. Passing it as a sixth argument would thread it
+         through a signature three other callers do not need. */
+      SCHEDULE = schedule;
       var games = (cat && cat.games) || [];
       /* ⚠️ DECLARED OUT HERE, not in the branch that sets it. The card is drawn
          on the front door only; a team page and a failed catalog never reach
@@ -3396,6 +3441,157 @@ __HELPERS__
 </script>"""
 
 
+# --------------------------------------------------------------------- PREVIEW
+PREV_TITLE = "What to watch for — Read the Game"
+# ⚠️ NOT "what to watch for in tonight's game", WHICH THIS FIELD MAY NOT SAY.
+# `test/shell.test.js` forbids pre-render metadata that offers to WATCH the
+# content, because a link preview is read before the page exists and nothing
+# beside it can say this is a replay of a game already played. The page's own
+# heading still says "what to watch for"; a reader is there by then.
+PREV_DESC = ("What each club does more than the league this season, and what is "
+             "normal in hockey. Nothing forecast, and no video.")
+
+# ⛔ THE CARD IS `src/lib/preview.js` AND THIS IS ONLY ITS RENDERER. Which rows
+# exist, what settles, what preseason may say -- all of that is the module's, and
+# it is the module the tests drive. A figure computed here would be the second
+# implementation this project keeps almost building.
+PREV_BODY = r"""<div class="wrap">
+<p class="eyebrow">Read the Game</p>
+<h1 id="pvh1">What to watch for</h1>
+<p class="note" id="pvwhen"></p>
+<main id="pv"></main>
+</div>
+<script>
+__LIB__
+__HELPERS__
+  var q = (/[?&]game=(\d+)/.exec(location.search) || [])[1];
+
+  /* THE FIVE DOCUMENTS, IN PARALLEL, AND A NULL FROM ANY OF THEM IS A STATE.
+     `grab` answers null for a 404 or a failed fetch, and `preview()` degrades
+     row by row: no census, no league rows; no season, no club figures. A page
+     that renders less is not a page that breaks. */
+  function boot() {
+    if (!q) { $('pv').appendChild(el('p', 'note', 'No game was named in the link.')); return; }
+    Promise.all([grab('schedule.json'), grab('teams.json'), grab('measures.json'),
+                 grab('recent.json'), grab('catalog.json')])
+      .then(function (r) {
+        draw(preview(q, { schedule: r[0], teams: r[1], measures: r[2],
+                          recent: r[3], catalog: r[4] }, new Date().toISOString()));
+      });
+  }
+
+  function pct(v) { return v == null ? '—' : Math.round(v * 100) + ''; }
+  function num(n) { return (n || 0).toLocaleString(); }
+
+  function draw(p) {
+    if (p.state === 'unknown') {
+      $('pv').appendChild(el('p', 'note',
+        'We have no record of that game — it may not be scheduled yet.'));
+      return;
+    }
+    var g = p.game;
+    $('pvh1').textContent = nameOf(g.away) + ' at ' + nameOf(g.home);
+    document.title = nameOf(g.away) + ' at ' + nameOf(g.home) + ' — what to watch for';
+
+    /* ⚠️ THE START IS LOCALISED HERE AND NOWHERE ELSE, the same rule the front
+       door's night follows: an NHL game at 7pm Eastern is 23:00Z the same day
+       and one at 10:30pm Pacific is 05:30Z the next, so only the browser can
+       name the day and the hour a reader is in. */
+    var says = [];
+    if (g.preseason) says.push('Preseason');
+    if (p.state === 'played') says.push('Played ' + when(g.date));
+    else if (p.state === 'underway') says.push('Under way');
+    else if (g.startTimeUTC) says.push(new Date(g.startTimeUTC).toLocaleString(undefined,
+      { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' }));
+    $('pvwhen').textContent = says.join(' · ');
+
+    if (p.result) {
+      var done = el('p', 'pvresult',
+        g.away + ' ' + p.result.score.a + ' – ' + g.home + ' ' + p.result.score.h + '. ');
+      var a = el('a', null, 'Watch the whole game →');
+      a.href = p.result.watch;
+      done.appendChild(a);
+      $('pv').appendChild(done);
+    }
+
+    /* ⭐ WHAT IS NORMAL, ONCE, ABOVE BOTH CLUBS. CHENG's Q10: a league figure
+       inside a club's column reads as a club figure -- 3.6 under each of two
+       clubs says the clubs are equal on penalties, which neither number claims.
+       So the frame comes first and the clubs sit inside it. */
+    if (p.league.length) {
+      var frame = el('section', 'pvframe');
+      frame.appendChild(el('p', 'pvkick', 'What is normal'));
+      p.league.forEach(function (r) {
+        var row = el('p', 'pvnorm');
+        if (r.key === 'powerplay') {
+          row.textContent = 'Power play — about ' + pct(r.rate) + ' of power plays'
+            + ' produce a goal, from about ' + r.chancesPerClubGame.toFixed(1)
+            + ' chances a team a game. Watch who is a skater short, and for how long.';
+        } else if (r.key === 'penalties') {
+          row.textContent = 'Penalties — a team takes about ' + r.perClubGame.toFixed(1)
+            + ' a game, and each one is the other team’s power play.';
+        } else {
+          row.textContent = 'Offside — about ' + r.perClubGame.toFixed(1)
+            + ' a team a game. Watch the blue line as a team carries the puck in.';
+        }
+        frame.appendChild(row);
+      });
+      frame.appendChild(el('p', 'pvn', 'Measured over ' + num(p.league[0].games)
+        + ' games in this archive. Which teams do better than this over a season is '
+        + 'mostly luck, so these are not counted against either club.'));
+      $('pv').appendChild(frame);
+    }
+
+    var cols = el('section', 'pvclubs');
+    ['away', 'home'].forEach(function (side) {
+      var c = p.clubs[side];
+      var box = el('div', 'pvclub');
+      box.appendChild(el('p', 'pvkick', nameOf(c.ab)));
+      if (!c.games) {
+        /* ⛔ PRESEASON, AND THE CARD SAYS SO RATHER THAN QUOTING LAST SEASON. Our
+           numbers exclude preseason, so before the season opens there is nothing
+           to report -- and last year's figures describe a different roster. */
+        box.appendChild(el('p', 'pvnone', 'No games counted yet this season.'));
+      } else {
+        c.rows.forEach(function (r) {
+          var row = el('div', 'pvrow');
+          row.appendChild(el('p', 'pvlab', r.label));
+          row.appendChild(el('p', 'pvfig', pct(r.value) + ' of every 100'
+            + (r.league == null ? '' : ' · league ' + pct(r.league))));
+          /* ⭐ THE PROGRESS, NOT A BADGE. CHENG's P1: a binary settled/forming
+             label invents a cliff the data does not have, and "12 of 35 games"
+             says the same thing continuously -- and tells two clubs with 12 and 9
+             games apart, which a badge cannot. */
+          row.appendChild(el('p', 'pvn', num(r.count) + ' of ' + num(r.n) + ' · '
+            + r.games + ' of ' + r.need + ' games'
+            + (r.settled ? ' · settled' : ' · still forming')));
+          box.appendChild(row);
+        });
+      }
+      var link = el('a', 'pvteam', 'Every ' + nameOf(c.ab) + ' game we hold →');
+      link.href = '/?team=' + c.ab;
+      box.appendChild(link);
+      cols.appendChild(box);
+    });
+    $('pv').appendChild(cols);
+  }
+
+  boot();
+</script>
+"""
+
+def build_preview():
+    html = (PREV_BODY.replace("__LIB__", _lib("competitions.js", "teams.js", "preview.js"))
+                     .replace("__HELPERS__", HELPERS)
+                     .replace("__ORIGIN__", repr(DATA_ORIGIN).replace("'", '"')))
+    html = P.document(html, title=PREV_TITLE, description=PREV_DESC,
+                      url="https://readthegame.co/preview.html",
+                      current="/preview.html",
+                      head='<meta http-equiv="Content-Security-Policy" content="__CSP__">\n'
+                           + STYLE)
+    return html.replace("__CSP__", _csp(html))
+
+
 def build_calendar():
     html = (CAL_BODY.replace("__LIB__", _lib("competitions.js", "teams.js", "archive.js", "calendar.js"))
                     .replace("__HELPERS__", HELPERS)
@@ -3431,7 +3627,11 @@ def main():
     # next divergence hides. (A fourth, the workshop, went on 2026-09-17.)
     pages = [(OUT, build()),
              (ROOT / "src" / "what-you-can-see.html", build_learn()),
-             (ROOT / "src" / "calendar.html", build_calendar())]
+             (ROOT / "src" / "calendar.html", build_calendar()),
+             # THE PREVIEW, and it is a page rather than a section for one reason:
+             # a link posted before a game is read again after it. See
+             # docs/preview-page.md §3.1.
+             (ROOT / "src" / "preview.html", build_preview())]
     # ONE PAGE PER RULE WE DREW. The list comes from the figures themselves, so a
     # new diagram is a page without anyone remembering to add it here -- and a
     # learn card links to `/{cid}.html` under exactly the same condition, which

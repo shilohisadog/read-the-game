@@ -165,8 +165,48 @@ export function censusGame(events, ctx) {
      appears when it breaks is a bucket nobody notices arriving. */
   const shift = { n: 0, secs: 0, over: 0, players: 0, bins: {} };
 
+  /* ⭐ THE THREE FIGURES THE PREVIEW CARD'S LEAGUE ROWS ARE MADE OF.
+     `docs/preview-and-corsi.md` §11.2 measured that no club difference in
+     penalties, offside or anything about the power play settles inside a season —
+     so those rows describe HOCKEY, and an archive figure is counted where the
+     archive is walked rather than typed into a page (`guard where the archive
+     is`). The census already knew power-play GOALS and MINUTES; what it could
+     not say is how often an advantage is AWARDED, which is the denominator of
+     the one power-play number a broadcast quotes.
+     ⛔ POOLED ACROSS BOTH CLUBS, deliberately: a league row is not about either
+     of them, and `preview-and-corsi.md` §12 refuses to print a league figure in
+     a club's column. */
+  const whistles = { penalties: 0, offsides: 0, ppChances: 0, ppGoals: 0, shGoals: 0 };
+  let hadAdvantage = null;          // which club held one at the previous event
+
   for (let i = 0; i < events.length; i++) {
     const e = events[i];
+
+    // ---- what the whistle was for, and who had the extra skater -------------
+    if (e.pt !== 'SO') {
+      // A BOX PENALTY, which is what puts a club a skater short. `min` is the
+      // admission test box.js uses; a penalty shot carries no minutes and is not
+      // one of these.
+      if (e.type === 'penalty' && e.min) whistles.penalties++;
+      if (e.type === 'stoppage' && e.rsn === 'offside') whistles.offsides++;
+      /* ⛔ A CHANCE IS AN ENTRY INTO AN ADVANTAGE, NOT A PENALTY AND NOT A CODE
+         CHANGE. A double minor is one advantage; a 5-on-4 that deepens to 5-on-3
+         and back is still the one it began as. Counting penalties instead would
+         over-count (coincidental minors give nobody a power play) and counting
+         situation changes would over-count every deepening. */
+      const sit = situation(e.sit, ctx);
+      const adv = sit && sit.kind === POWER_PLAY ? sit.advantage : null;
+      if (adv != null && adv !== hadAdvantage) whistles.ppChances++;
+      hadAdvantage = adv;
+      /* ⛔⛔ AND A GOAL SCORED DURING A POWER PLAY IS NOT A POWER-PLAY GOAL.
+         `state.pp.goals` above counts both sides — over three seasons that is
+         24.5% of chances against the league's own ~21%, and the gap is the
+         short-handed goals. The card quotes the industry number, so the two are
+         split here and `test/census.test.js` holds them to partitioning. */
+      if (adv != null && e.type === 'goal' && e.own != null) {
+        if (e.own === adv) whistles.ppGoals++; else whistles.shGoals++;
+      }
+    }
 
     // ---- per-club totals, for the hits-against-attempts question ------------
     if (e.own != null && e.pt !== 'SO') {
@@ -317,7 +357,7 @@ export function censusGame(events, ctx) {
   }
   shift.players = seen.size;
 
-  return { faceoffZone, endZone, drawStrength, state, club, hitCorr, shooter, pace, shift };
+  return { faceoffZone, endZone, drawStrength, state, club, hitCorr, shooter, pace, shift, whistles };
 }
 
 /** Add one game's census into a running total, in place. */

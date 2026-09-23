@@ -96,7 +96,17 @@ const UNLISTED = new Map([
 function reachableFrom(read, start = 'index.html') {
   const linked = new Set(), seen = new Set([start]), queue = [start];
   while (queue.length) {
-    for (const m of read(queue.shift()).matchAll(/href="([^"#?]+)/g)) {
+    const src = read(queue.shift());
+    /* ⭐ AND A DOOR BUILT IN SCRIPT IS STILL A DOOR. This read `href="…"` only,
+       so it saw the markup and none of the links this site actually makes: every
+       game row, every club chip and the preview are `node.href = '…'` in a
+       renderer. `preview.html` shipped reachable from the front door's tonight
+       rows and from a club page, and this check called it an orphan — a check
+       that measured the MARKUP while claiming to measure what a reader can
+       reach. Widening it costs nothing and removes a class of false orphan. */
+    const hrefs = [...src.matchAll(/href="([^"#?]+)/g),
+                   ...src.matchAll(/\.href\s*=\s*['"]([^'"#?]+)/g)];
+    for (const m of hrefs) {
       const t = m[1].replace(/^\//, '');
       if (!t.endsWith('.html')) continue;
       linked.add(t);

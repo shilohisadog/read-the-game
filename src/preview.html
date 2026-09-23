@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Shots from the slot — Read the Game</title>
-<meta name="description" content="A shot taken from inside the slot goes in 11.4% of the time &mdash; 19,304 goals from 168,910 attempts. From outside it, 3.3%. That gap is what the slot shading is for.">
+<title>What to watch for — Read the Game</title>
+<meta name="description" content="What each club does more than the league this season, and what is normal in hockey. Nothing forecast, and no video.">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Shots from the slot — Read the Game">
-<meta property="og:description" content="A shot taken from inside the slot goes in 11.4% of the time &mdash; 19,304 goals from 168,910 attempts. From outside it, 3.3%. That gap is what the slot shading is for.">
+<meta property="og:title" content="What to watch for — Read the Game">
+<meta property="og:description" content="What each club does more than the league this season, and what is normal in hockey. Nothing forecast, and no video.">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Shots from the slot — Read the Game">
-<meta name="twitter:description" content="A shot taken from inside the slot goes in 11.4% of the time &mdash; 19,304 goals from 168,910 attempts. From outside it, 3.3%. That gap is what the slot shading is for.">
-<meta property="og:url" content="https://readthegame.co/slot.html">
+<meta name="twitter:title" content="What to watch for — Read the Game">
+<meta name="twitter:description" content="What each club does more than the league this season, and what is normal in hockey. Nothing forecast, and no video.">
+<meta property="og:url" content="https://readthegame.co/preview.html">
 <style>
 .sitehdr,.sitefoot{font:500 .9rem/1.5 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
  background:#f4f7fa;color:#0f1a23;-webkit-text-size-adjust:100%}
@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-tLcBAn+O62owHlftoX8XlsOjhKIqi3uuCaoW1VLisgA=' 'sha256-O+tFRbevUhlyOt78ng1txnNkMDpdOHwapteYPqeRxx0=' 'sha256-4UFZO+EeAbyE8ixYxtNoVxY7GjtE1fvn3fyYtBStcw8='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-UsYeIhomkbgObyNfbxZj2DwcA2u4Pt5BO/lLLdye7nA=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-tLcBAn+O62owHlftoX8XlsOjhKIqi3uuCaoW1VLisgA='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -570,123 +570,692 @@ footer p{margin:0 0 8px}
    is the same rule, finally saying the same thing. */
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
-<style>
-.dgfig{margin:9px 0 10px;padding:0}
-.dgice{display:block;width:100%;height:auto;background:var(--ice);
-  border:1px solid var(--edge);border-radius:9px}
-/* THE RINK, RESTATED FROM app.css -- same numbers, because it is the same ice. */
-.dgpaint .boards{fill:var(--ice);stroke:var(--edge);stroke-width:1.1}
-.dgpaint .slotzone{fill:#e0932a;opacity:.09}
-.dgpaint .zoneband{fill:var(--blue);opacity:.055}
-.dgpaint .ln{fill:none;stroke-linecap:round}
-.dgpaint .ln.red{stroke:var(--red);stroke-width:.7;opacity:.42}
-.dgpaint .ln.blue{stroke:var(--blue);stroke-width:.9;opacity:.42}
-.dgpaint .ln.thick{stroke-width:1.1;opacity:.52}
-.dgpaint .fdot{fill:var(--red);opacity:.55}
-.dgpaint .fdot.ctr{fill:var(--blue)}
-/* THE NET IS EQUIPMENT, and in a CROP it is also the compass. Kevin: "the rink
-   snippet just doesn't look right without a net and goalie" -- a full sheet has
-   two nets and is obviously symmetric, but a crop has one end, and without the
-   net that end is just more ice. Same values as app.css; the colour comes in on
-   the element, and for a diagram it is the neutral grey, never a club's. */
-.dgpaint .crease{fill:#cfe0f2;stroke:var(--blue);stroke-width:.4;opacity:.55}
-.dgpaint .mesh{stroke-width:.8;opacity:.9}
-.dgpaint .strand{stroke-width:.35;opacity:.5}
-.dgpaint .post{stroke-width:1.1;stroke-linecap:round}
-.dgpaint .flashpath{display:none}
-/* THE ILLUSTRATION. Outlined, neutral, never a club's colour. */
-.dgplay .dgtok{fill:var(--ice);stroke:var(--ink);stroke-width:1.1}
-.dgplay .dgpuck{fill:var(--ink);stroke:var(--ice);stroke-width:.5}
-.dgplay .dgghost{fill:none;stroke:var(--muted);stroke-width:.7;stroke-dasharray:2 1.6;opacity:.75}
-/* THE GOALTENDER. ⚠️ app.css's weights are scoped under `#rg`, which no rule page
-   has, so the glyph arrived here with SVG's default 1px stroke on a 4.6-unit
-   figure -- a black blob. A shared function does not carry its stylesheet.
-   ⭐ BUT THE WIDTH IS NOT SET HERE. The diagram scales him, and a scale takes the
-   stroke with it, so `gk` in learn-figures.mjs divides it out and the group
-   INHERITS one rendered weight -- see the note there. A number in this file would
-   be a second copy that stops matching the moment the scale moves. */
-.dgplay .dggk .gkstick,.dgplay .dgsk .skstick,
-.dgplay .dgof .ofarm{stroke-linecap:round}
-/* The ghost each of them left behind is the SAME figure, dashed — a `<g>`, so the
-   rule has to reach the shapes rather than sit on the group. ⚠️ THE DASH ITSELF IS
-   NOT HERE: these figures are scaled, and a pattern in rink units shatters the
-   outline into blobs at 1.74x. `dashes` in learn-figures.mjs divides the scale
-   out, next to where the scale is set. */
-.dgplay .dgghost .dggk *,.dgplay .dgghost .dgsk *,
-.dgplay .dgghost .dgof *{opacity:.75;fill:none}
-.dgplay .dgarrow{stroke:var(--muted);stroke-width:.8;stroke-linecap:round;opacity:.85}
-.dgheadp{fill:var(--muted);opacity:.85}
-/* The line where the rule is decided, and the spot the draw comes back to. */
-.dgplay .dghot{stroke-width:2.2;opacity:.5;stroke-linecap:round}
-.dgplay .dghot.blue{stroke:var(--blue)}
-.dgplay .dghot.red{stroke:var(--red)}
-.dgplay .dgspot{fill:none;stroke:var(--red);stroke-width:1;opacity:.8}
-/* A SHOT THAT COUNTS AND ONE THAT DOES NOT — only on the slot figure, where the
-   subject is our own rule and the lesson is that you can check a mark against
-   it. Solid means the rule admits it; hollow means it does not, which is the
-   same "outlined = not the thing" the ghosts already use. */
-.dgbadge circle{fill:var(--ink);opacity:.88}
-/* ⭐ SIZE COMES FROM THE ELEMENT, NOT FROM HERE. Each figure scales its
-   annotation by how tightly it is framed, so a badge is the same number of
-   PIXELS on the full sheet and on the slot's crop. The stylesheet owns the
-   weight, the family and the colour; the figure owns the size. */
-.dgbadge text{fill:#fff;font-weight:700;font-family:system-ui,sans-serif;
-  line-height:1;text-anchor:middle}
-/* It says what it is, quietly. See learn-figures.mjs: this is not the guard. */
-.dgstamp{fill:var(--muted);opacity:.6;font-weight:600;
-  font-family:system-ui,sans-serif;line-height:1;text-transform:uppercase}
-/* THE CAPTION IS A NUMBERED LIST BECAUSE THE RULE IS A SEQUENCE, and the numbers
-   are the badges on the ice. It is always fully visible -- the animation
-   illustrates these lines, it never replaces them, so a reader who arrives after
-   a loop has finished has lost nothing. */
-.dgsteps{margin:0;padding:0 0 0 20px;font-size:.82rem;color:var(--muted);line-height:1.45}
-.dgsteps li{margin:0 0 4px}
-.dgsteps li::marker{color:var(--ink);font-weight:700}
-/* ⭐ A NOTE IS NOT A STEP, AND IT LOOKS LIKE IT. The numbered list is tied to
-   badges on the ice; this is the part that has no place to point at, so it is
-   unnumbered, indented no further than the figure and set a shade quieter. */
-.dgnote{margin:9px 0 0;font-size:.8rem;color:var(--muted);line-height:1.45}
-.dgnote b{color:var(--ink);font-weight:650}
-/* THE ONE LINK ON THESE PAGES THAT IS NOT A DOOR INTO THE REPLAY. Quieter than
-   the door and set apart from it, because it leads sideways rather than onward. */
-.dgsee{margin:8px 0 0;font-size:.8rem;color:var(--muted)}
-.dgsee a{color:#2a5d86;font-weight:650;text-decoration:none;border-bottom:1px solid #cfe0ec}
-.dgsee a:hover{border-bottom-color:#2a5d86}
-.dgsteps b{color:var(--ink);font-weight:600}
-
-</style>
-<style>
-.rulep{max-width:760px}
-.rback{margin:0 0 4px;font-size:.86rem}
-.rback a{color:var(--muted);text-decoration:none}
-.rback a:hover,.rback a:focus-visible{color:var(--blue);text-decoration:underline}
-.rulep h1{margin:0 0 6px}
-.rlede{margin:0 0 14px;color:var(--muted);max-width:60ch}
-/* THE RINK'S OWN FRAME, taken from app.css so the stage is the game's stage. */
-.rulep .dgfig{margin:0 0 16px}
-.rulep .dgice{background:var(--ice);border:1px solid var(--edge);border-radius:15px;
-  padding:6px;box-shadow:0 6px 22px rgba(16,32,45,.08)}
-.rulep .dgsteps{margin:14px 0 0;font-size:.94rem;max-width:60ch}
-.rulep .dgsteps li{margin:0 0 8px}
-.rdoor{margin:20px 0 6px}
-.rgo{display:inline-block;background:var(--blue);color:#fff;text-decoration:none;
-  font-weight:600;font-size:.94rem;padding:10px 16px;border-radius:9px}
-.rgo:hover,.rgo:focus-visible{background:var(--ink)}
-.rat{margin:0;font-size:.78rem;letter-spacing:.05em;color:var(--muted);text-transform:uppercase}
-
-</style>
 </head>
 <body>
-<header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html" aria-current="page">What you can see here</a></nav></header>
-<div class="wrap rulep">
+<header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
+<div class="wrap">
 <p class="eyebrow">Read the Game</p>
-<p class="rback"><a href="/what-you-can-see.html">&larr; What you can see here</a></p>
-<h1>Shots from the slot</h1>
-<p class="rlede">A shot taken from inside the slot goes in 11.4% of the time &mdash; 19,304 goals from 168,910 attempts. From outside it, 3.3%. That gap is what the slot shading is for.</p>
-<figure class="dgfig sl"><svg class="dgice" viewBox="100 0 99 85" role="img" aria-label="Diagram: the slot — within 33 feet of the net, between the face-off dots, and in front of the goal line."><defs><marker id="sl-head" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path class="dgheadp" d="M 0 0 L 8 4 L 0 8 z"/></marker></defs><g class="dgpaint"><rect class="boards" x="1" y="1" width="198" height="83" rx="27"/><clipPath id="sl-slotband"><rect x="0" y="20.5" width="200" height="44"/></clipPath><clipPath id="sl-slotfrontA"><rect x="11" y="0" width="200" height="85"/></clipPath><clipPath id="sl-slotfrontB"><rect x="0" y="0" width="189" height="85"/></clipPath><g class="slotzone" clip-path="url(#sl-slotband)"><g clip-path="url(#sl-slotfrontA)"><circle cx="11" cy="42.5" r="33"/></g><g clip-path="url(#sl-slotfrontB)"><circle cx="189" cy="42.5" r="33"/></g></g><line class="ln red" x1="189" y1="7.02" x2="189" y2="77.98"/><line class="ln red" x1="11" y1="7.02" x2="11" y2="77.98"/><line class="ln blue" x1="125" y1="1.00" x2="125" y2="84.00"/><line class="ln blue" x1="75" y1="1.00" x2="75" y2="84.00"/><line class="ln red thick" x1="100" y1="1.00" x2="100" y2="84.00"/><circle class="ln blue" cx="100" cy="42.5" r="15"/><circle class="ln red" cx="169" cy="64.5" r="15"/><circle class="ln red" cx="169" cy="20.5" r="15"/><circle class="ln red" cx="31" cy="64.5" r="15"/><circle class="ln red" cx="31" cy="20.5" r="15"/><circle class="fdot" cx="169" cy="64.5" r="1"/><circle class="fdot" cx="169" cy="20.5" r="1"/><circle class="fdot" cx="31" cy="64.5" r="1"/><circle class="fdot" cx="31" cy="20.5" r="1"/><circle class="fdot" cx="120" cy="64.5" r="1"/><circle class="fdot" cx="120" cy="20.5" r="1"/><circle class="fdot" cx="80" cy="64.5" r="1"/><circle class="fdot" cx="80" cy="20.5" r="1"/><circle class="fdot ctr" cx="100" cy="42.5" r="1"/><g class="netg"><path class="crease" d="M 189 36.5 A 6 6 0 0 0 189 48.5"/><path class="mesh" d="M 189 39.5 L 193 40.3 L 193 44.7 L 189 45.5 Z" fill="#fff" fill-opacity=".5" stroke="#5b6d7a"/><line class="strand" x1="190.3" y1="39.8" x2="190.3" y2="45.2" stroke="#5b6d7a"/><line class="strand" x1="191.7" y1="40.0" x2="191.7" y2="45.0" stroke="#5b6d7a"/><line class="post" x1="189" y1="39.5" x2="189" y2="45.5" stroke="#5b6d7a"/><path id="sl-netA" class="flashpath" d="M 189 39.5 L 193 40.3 L 193 44.7 L 189 45.5 Z" fill="#5b6d7a" opacity="0"/></g><g class="netg"><path class="crease" d="M 11 36.5 A 6 6 0 0 1 11 48.5"/><path class="mesh" d="M 11 39.5 L 7 40.3 L 7 44.7 L 11 45.5 Z" fill="#fff" fill-opacity=".5" stroke="#5b6d7a"/><line class="strand" x1="9.7" y1="39.8" x2="9.7" y2="45.2" stroke="#5b6d7a"/><line class="strand" x1="8.3" y1="40.0" x2="8.3" y2="45.0" stroke="#5b6d7a"/><line class="post" x1="11" y1="39.5" x2="11" y2="45.5" stroke="#5b6d7a"/><path id="sl-netB" class="flashpath" d="M 11 39.5 L 7 40.3 L 7 44.7 L 11 45.5 Z" fill="#5b6d7a" opacity="0"/></g></g><g class="dgplay"><g class="dgbadge"><circle cx="170" cy="37.5" r="2.28"/><text x="170" y="37.5" dy="0.94" font-size="2.77">1</text></g><g class="dgbadge"><circle cx="180" cy="16.5" r="2.28"/><text x="180" y="16.5" dy="0.94" font-size="2.77">2</text></g><g class="dgbadge"><circle cx="193" cy="30.5" r="2.28"/><text x="193" y="30.5" dy="0.94" font-size="2.77">3</text></g><text class="dgstamp" x="103" y="6.5" font-size="2.18" letter-spacing="0.2">Diagram</text></g></svg><ol class="dgsteps"><li><b>Close in</b> &mdash; within 33 feet of the net. This one counts.</li><li><b>And between the face-off dots.</b> The shaded band is exactly that wide, so you can check a mark against it: this one is too far out to the side.</li><li><b>And in front of the goal line.</b> A shot recorded from behind the net is close to the slot, but it is not from the slot.</li></ol><p class="dgnote">The slot is not rare, and that is the point: 168,910 of 361,840 located attempts &mdash; 46.7% &mdash; are already taken from inside it. So the shading does not mark where the shots are; it marks where they <b>go in</b>. Blocked shots are in neither count, because the coordinate the feed records for one is where the puck was <b>stopped</b> &mdash; the blocker&rsquo;s position, not the shooter&rsquo;s.</p></figure>
-<p class="rdoor"><a class="rgo" href="/game.html?game=2023020204&at=1-16:03&layer=slot&strength=all">See a shot from the slot in our replay &rarr;</a></p>
-<p class="rat">MIN at BUF, 10 November 2023 &middot; period 1, 16:03 left</p>
+<h1 id="pvh1">What to watch for</h1>
+<p class="note" id="pvwhen"></p>
+<main id="pv"></main>
 </div>
+<script>
+/**
+ * WHICH COMPETITION A GAME BELONGS TO, and whether it counts.
+ *
+ * The league carries `gameType` as a bare integer in characters 4–6 of the game
+ * id and names it nowhere in the feed, so a human has to — in
+ * `data/competitions.json`, which `derive.py` walks the whole archive against.
+ * This file is the only code that reads a game's type or turns one into words.
+ *
+ * WHY IT IS ITS OWN MODULE. Three surfaces need it and they do not overlap: the
+ * calendar names a night's competition, the verdict card says why a game gets no
+ * comparison, and `archive.js` decides what enters a base rate. Each of them had
+ * its own spelling of `String(id).slice(4, 6)` — `archive.js::inScope`,
+ * `calendar.js::competitionOf` and a private `TYPE` map in `sentence.js` that
+ * knew about preseason and nothing else. Three readings of one field is three
+ * chances for them to disagree about the same game.
+ *
+ * NO TABLE LIVES HERE EITHER. `names` is passed in, from the JSON, because a
+ * copy in JavaScript is the defect this project keeps almost building. Every
+ * builder inlines the same file.
+ */
+
+/** The league's own gameType, read off the id. Never a lookup, never a date. */
+function typeOf(gameId) {
+  return Number(String(gameId).slice(4, 6));
+}
+
+/**
+ * Regular season (02) and playoffs (03) — the population every rate covers.
+ *
+ * Preseason, the all-star games, the Olympics and the 4 Nations Face-Off are
+ * archived, derived and viewable, and never enter a computed number. A rate
+ * pooled across preseason split squads, national sides under different roster
+ * rules and an all-star exhibition is not a claim about NHL hockey; it is an
+ * average over four competitions.
+ */
+function isLeague(type) {
+  return type === 2 || type === 3;
+}
+
+/**
+ * NHL CLUBS PLAYING EACH OTHER — preseason (01) as well as 02 and 03.
+ *
+ * ⭐ A DIFFERENT QUESTION FROM `isLeague`, and the reason it exists as its own
+ * name rather than an inline `type <= 3`. `isLeague` answers *may a RATE pool
+ * this*; this answers *are these the clubs this site is about*. Preseason is
+ * NHL clubs in NHL sweaters on half-strength rosters — worth showing, never
+ * worth averaging. The all-star games, the Olympics and the 4 Nations Face-Off
+ * are not clubs at all.
+ *
+ * Kevin, 2026-09-21, ruling that the front door's showcase replay may be a
+ * preseason game: "preseason game can be a front-door hero." Widening `hero`
+ * with a bare `g.v` instead let the fixture's OLYMPIC game take the door, which
+ * is a thing nobody ruled — the tests caught it. So the line being drawn is
+ * club hockey, and it is drawn once, here.
+ *
+ * ⛔ NOT A VISIBILITY RULE EITHER. A club page lists what the club played and
+ * filters on the abbreviation, which no country code can match; it needs no
+ * predicate and must not grow one.
+ */
+function isClubGame(type) {
+  return type === 1 || type === 2 || type === 3;
+}
+
+/**
+ * The label for a competition, from the table in `data/competitions.json`.
+ *
+ * THE RAW FALLBACK IS A LAST RESORT, NOT THE POLICY. An unnamed type fails the
+ * derive run loudly; this exists so that in the window between the league
+ * inventing one and a human naming it, a reader sees `game type 21` rather than
+ * `undefined`. Rendering raw was briefly the whole answer and that was wrong:
+ * `gameType` is a small closed enum, so a value nobody has seen is an EVENT, not
+ * the open-ended vocabulary a missed-shot reason is.
+ *
+ * Naming is not cosmetic. Lumping these under "preseason" — the tempting
+ * shorthand, since 320 of 361 are — would be false on every Olympic and
+ * 4 Nations night, which is 38 of the 60 dates the calendar makes visible at all.
+ */
+function competitionOf(type, names) {
+  // `names[type]` and not `names[String(type)]`: object keys ARE strings and the
+  // lookup coerces, so the second form was a branch no mutation could reach.
+  // The table arrives from JSON with string keys and the catalog carries `t` as
+  // a number; that is one expression, not two.
+  return (names && names[type]) || `game type ${type}`;
+}
+
+/**
+ * ⭐ THE COMPETITIONS THIS SITE DELIBERATELY LEAVES OUT, named from the table.
+ *
+ * WHY THIS IS DERIVED AND NOT WRITTEN. The front door's limits block read
+ * "Preseason, the Olympics and the 4 Nations Face-Off", and it had been wrong
+ * since February 2024: the archive also holds four ALL-STAR games, which that
+ * sentence never named. Nothing could see it — the sentence is prose in a
+ * builder, and prose cannot be compared to a table by anything but a person
+ * remembering to.
+ *
+ * That is the same shape as the deploy gate that exempted two pages by filename
+ * and the night list that labelled a group only when it was not alone: a rule
+ * written against the cases that existed, silently wrong when a fourth arrived.
+ * The league mints a competition whenever it invents one — 19 and 20 in February
+ * 2025, 9 in February 2026, both after this archive started — so a hand-written
+ * list here is a claim with an expiry date nobody is told about.
+ *
+ * DISTINCT NAMES, because two types can share one: 4 and 12 are both all-star,
+ * 19 and 20 are both 4 Nations. Ordered by the lowest type carrying each name,
+ * so the order is stable and derived rather than chosen.
+ */
+function excludedCompetitions(names) {
+  const seen = new Map();
+  for (const key of Object.keys(names || {})) {
+    const type = Number(key);
+    if (isLeague(type)) continue;
+    const name = competitionOf(type, names);
+    if (!seen.has(name) || seen.get(name) > type) seen.set(name, type);
+  }
+  return [...seen].sort((a, b) => a[1] - b[1]).map(([name]) => name);
+}
+
+/**
+ * Team identity — the one table on this site that is not derived from the feed.
+ *
+ * WHAT THIS IS AND IS NOT. Colours and names are public reference data, entered by
+ * hand (Kevin, 2026-08-11). Nothing here is a measurement, so nothing here can be
+ * wrong in the way a number can be wrong — but it CAN be incomplete, and that is
+ * the failure this file's test exists to catch.
+ *
+ * NO LEAGUE OR CLUB MARKS. Colours and three-letter abbreviations identify a team;
+ * logos and wordmarks do not appear anywhere on this site and must not be added
+ * here. The site says so on its own front page.
+ *
+ * THIRTY-THREE, NOT THIRTY-TWO. Arizona relocated to Utah inside the window this
+ * archive covers: ARI played 82 games in 2023-24 and none after, UTA begins in
+ * 2024-25. A "32 NHL clubs" list would have been wrong on the first day. The set
+ * the page renders is read from the CATALOG, never from this file — this file only
+ * has to be able to answer for whatever the catalog contains.
+ *
+ * ⚠️ THIS PARAGRAPH USED TO END "the next relocation or expansion team fails
+ * loudly instead of rendering a blank chip", AND THAT WAS NOT TRUE. The
+ * completeness test compares this table to a hand-pinned fixture, so a new club
+ * would have rendered as a grey chip and every check would have stayed green
+ * until a human re-pinned the list. It failed loudly only AFTER somebody noticed,
+ * which is the opposite of what the sentence promised.
+ *
+ * It is true now, and not because of that test. `builders/measure.mjs` walks
+ * every extract, collects the abbreviations the archive actually contains, and
+ * exits non-zero naming any club with no entry here — after writing measures.json
+ * and teams.json, because a missing NAME cannot change a number and withholding
+ * the archive over one would be the mistake the 73 refused games already were.
+ * The unit test below is the edit-time half; that is the day-it-happens half.
+ *
+ * The rule it came from, which cost a day to learn: A VALUE THE LEAGUE CAN
+ * INVENT NEEDS A CHECK WHERE THE WHOLE ARCHIVE IS WALKED, not a unit test
+ * holding a copy of last year's answer. See data/competitions.json.
+ */
+
+/** ab -> { name, colour }. `colour` is the club's primary, for a chip background. */
+const TEAMS = {
+  ANA: { name: 'Anaheim Ducks',          colour: '#F47A38' },
+  ARI: { name: 'Arizona Coyotes',        colour: '#8C2633' },
+  BOS: { name: 'Boston Bruins',          colour: '#FFB81C' },
+  BUF: { name: 'Buffalo Sabres',         colour: '#003087' },
+  CAR: { name: 'Carolina Hurricanes',    colour: '#CC0000' },
+  CBJ: { name: 'Columbus Blue Jackets',  colour: '#002654' },
+  CGY: { name: 'Calgary Flames',         colour: '#D2001C' },
+  CHI: { name: 'Chicago Blackhawks',     colour: '#CF0A2C' },
+  COL: { name: 'Colorado Avalanche',     colour: '#6F263D' },
+  DAL: { name: 'Dallas Stars',           colour: '#006847' },
+  DET: { name: 'Detroit Red Wings',      colour: '#CE1126' },
+  EDM: { name: 'Edmonton Oilers',        colour: '#041E42' },
+  FLA: { name: 'Florida Panthers',       colour: '#C8102E' },
+  LAK: { name: 'Los Angeles Kings',      colour: '#111111' },
+  MIN: { name: 'Minnesota Wild',         colour: '#154734' },
+  MTL: { name: 'Montreal Canadiens',     colour: '#AF1E2D' },
+  NJD: { name: 'New Jersey Devils',      colour: '#CE1126' },
+  NSH: { name: 'Nashville Predators',    colour: '#FFB81C' },
+  NYI: { name: 'New York Islanders',     colour: '#00539B' },
+  NYR: { name: 'New York Rangers',       colour: '#0038A8' },
+  OTT: { name: 'Ottawa Senators',        colour: '#C52032' },
+  PHI: { name: 'Philadelphia Flyers',    colour: '#F74902' },
+  PIT: { name: 'Pittsburgh Penguins',    colour: '#FCB514' },
+  SEA: { name: 'Seattle Kraken',         colour: '#001628' },
+  SJS: { name: 'San Jose Sharks',        colour: '#006D75' },
+  STL: { name: 'St. Louis Blues',        colour: '#002F87' },
+  TBL: { name: 'Tampa Bay Lightning',    colour: '#002868' },
+  TOR: { name: 'Toronto Maple Leafs',    colour: '#00205B' },
+  UTA: { name: 'Utah Mammoth',           colour: '#71AFE5' },
+  VAN: { name: 'Vancouver Canucks',      colour: '#00205B' },
+  VGK: { name: 'Vegas Golden Knights',   colour: '#B4975A' },
+  WPG: { name: 'Winnipeg Jets',          colour: '#041E42' },
+  WSH: { name: 'Washington Capitals',    colour: '#C8102E' },
+};
+
+/**
+ * A note a team's own page owes the reader, or null.
+ *
+ * Only where the archive itself would otherwise mislead: a fan clicking ARI finds
+ * one season and then nothing, and the honest answer is a fact, not an empty page.
+ */
+const NOTES = {
+  ARI: 'Relocated to Utah after the 2023-24 season.',
+  UTA: 'Began play in 2024-25, after the Arizona club relocated.',
+};
+
+/** WCAG 2.1 relative luminance, and the contrast ratio built from it. */
+function luminance(hex) {
+  const c = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255)
+    .map(v => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+}
+function contrast(a, b) {
+  const [x, y] = [luminance(a) + 0.05, luminance(b) + 0.05];
+  return Math.max(x, y) / Math.min(x, y);
+}
+
+/**
+ * Readable ink for a chip of this colour — MEASURED, not guessed.
+ *
+ * This used to pick by Rec. 601 luma against a threshold of 0.6, and 0.6 was a
+ * number we chose. It cost real contrast: Anaheim's orange got white ink at
+ * **2.73:1**, below WCAG's 3:1 floor for even large text, and Vegas 2.79 and
+ * Philadelphia 3.55 were not much better. The heuristic was answering a question
+ * ("is this colour light?") next to the one that matters ("which ink can be read
+ * on it?").
+ *
+ * Asking the real question needs no threshold at all: take whichever ink
+ * contrasts more. The worst case across the 33 clubs goes from 2.73:1 to
+ * **4.96:1**, and three clubs change ink — Anaheim 2.73 → 6.45, Vegas 2.79 →
+ * 6.30, Philadelphia 3.55 → 4.96.
+ *
+ * Same species of fix as the goalie card's `thin = f < 20`: a chosen constant
+ * dissolves when you measure the thing it was standing in for.
+ */
+function inkOn(hex) {
+  return contrast('#0f1a23', hex) >= contrast('#ffffff', hex) ? '#0f1a23' : '#ffffff';
+}
+
+/** The label for a team, falling back to the abbreviation we were given. */
+function nameOf(ab) {
+  return (TEAMS[ab] && TEAMS[ab].name) || ab;
+}
+
+/**
+ * Nobody's colour. Used for the 42 games in the archive whose teams this table
+ * cannot answer for — national sides at the 4 Nations Face-Off and the Olympics
+ * (CAN, USA, FIN, SWE, SVK, SUI, CZE, GER, ITA, FRA, LAT, DEN) and the All-Star
+ * squads (MCD, MAT, MKN, HGS, KNG, KLS, MUN).
+ *
+ * A slate grey ON PURPOSE and not a guess at a flag. Those competitions are
+ * deliberately outside every computed number on this site, and inventing colours
+ * for them would be adding reference data for teams we have decided not to make
+ * claims about. The game page can still open them; it just does not pretend to
+ * know what colour they wear.
+ */
+const NEUTRAL = '#5b6d7a';
+
+/**
+ * ⭐ THE SIDES WE HAVE DELIBERATELY NOT NAMED — as a list the code can read.
+ *
+ * The paragraph above has always said which teams these are, and a paragraph is
+ * not a check. `measure.mjs` walks every extract and reports any club `TEAMS`
+ * cannot answer for, so that a relocation or an expansion team fails loudly
+ * instead of arriving as a grey chip nobody notices. Fired against the real
+ * archive it names CAN, FIN, HGS, KLS, KNG, MAT, MCD, MKN, SWE and USA — every
+ * one of them a side this file has decided, on the record, not to describe.
+ *
+ * ⛔ A GUARD THAT FIRES ON EVERY RUN IS A GUARD SOMEBODY SWITCHES OFF. Its own
+ * test says so — *"a check that fired on every run would be turned off within a
+ * week, and then the expansion team would arrive invisibly"* — and until
+ * 2026-09-09 it never got the chance, because `main()` threw a ReferenceError
+ * two lines before the exit code that was supposed to be the alert.
+ *
+ * SO THE EXCEPTION IS NAMED, NOT INFERRED. Membership here is a decision with a
+ * reason attached, and `test/teams.test.js` requires every entry to be a side
+ * `TEAMS` really does not name — an entry that shadowed a real club would be a
+ * hole in the check rather than an exception to it.
+ */
+const NATIONAL = 'a national side — the 4 Nations Face-Off and the Olympics are '
+  + 'outside every computed number here, so we do not invent a badge for them';
+const ALLSTAR = 'an All-Star squad, drafted for one weekend and never a club';
+const NOT_A_CLUB = new Map([
+  ['CAN', NATIONAL], ['USA', NATIONAL], ['FIN', NATIONAL], ['SWE', NATIONAL],
+  ['SVK', NATIONAL], ['SUI', NATIONAL], ['CZE', NATIONAL], ['GER', NATIONAL],
+  ['ITA', NATIONAL], ['FRA', NATIONAL], ['LAT', NATIONAL], ['DEN', NATIONAL],
+  ['MCD', ALLSTAR], ['MAT', ALLSTAR], ['MKN', ALLSTAR], ['HGS', ALLSTAR],
+  ['KNG', ALLSTAR], ['KLS', ALLSTAR], ['MUN', ALLSTAR],
+]);
+
+/**
+ * The colour to paint this team, or NEUTRAL if it is not one of the 33 clubs.
+ *
+ * NEVER THROWS AND NEVER RETURNS UNDEFINED. `nameOf` falls back to the
+ * abbreviation, which reads fine as text; a colour has no such fallback, and
+ * `undefined` reaching a CSS custom property is an invisible mark rather than a
+ * loud failure.
+ */
+function colourOf(ab) {
+  return (TEAMS[ab] && TEAMS[ab].colour) || NEUTRAL;
+}
+
+/**
+ * A team's colour when it can be READ as text on white, and plain ink when it
+ * cannot.
+ *
+ * Six of the 33 primaries fail: Boston and Nashville gold at 1.73:1, Pittsburgh
+ * 1.79, Utah 2.34, Anaheim 2.73, Vegas 2.79. Gold text on a white card is a
+ * decision to make a number harder to read in order to decorate it.
+ *
+ * THE THRESHOLD IS NOT OURS. 3:1 is WCAG 2.1's minimum for large text and for
+ * graphical objects (SC 1.4.3, 1.4.11) — a published standard, cited, in the way
+ * a stoppage sentence cites NHL Rule 81. This project refuses numbers it chose
+ * itself; this is a number somebody else chose and wrote down.
+ *
+ * Identity does not depend on this. The abbreviation chip carries the true colour
+ * with `inkOn` deciding its ink, so a team whose gold cannot be read as text is
+ * still shown IN gold — on a chip, where it has a background to be read against.
+ */
+function readableInk(hex, on = '#ffffff') {
+  return contrast(hex, on) >= 3 ? hex : '#0f1a23';
+}
+
+/**
+ * The preview card — what is worth watching for in a game nobody has played yet.
+ *
+ * `docs/preview-and-corsi.md` settled WHAT it says, over three seasons and two
+ * rounds of review; `docs/preview-page.md` settled where it lives. The short of
+ * it, because the reason is the whole design:
+ *
+ * ⭐⭐ A ROW IS A CLUB ROW ONLY IF IT SETTLES INSIDE HALF A SEASON. Measured over
+ * 3,936 regular-season games (96 club-seasons, split chronologically), the
+ * club-to-club differences in penalties (73 games), offside (85) and every
+ * power-play measure (PP% 150, PK% 383) do not settle within a season at all.
+ * Presented as a trait, such a row tells a novice something false — the
+ * differences are mostly luck. Kevin: *"we are a teaching centric site, at the
+ * core."* So those three became LEAGUE rows that teach what is normal, and the
+ * three that do settle stayed CLUB rows.
+ *
+ * ⛔ NOTHING HERE FORECASTS. The site's own headline is that the club with more
+ * shot attempts LOSES 2,228 of 4,100 games; a card implying who will win would
+ * contradict the page it is linked from. Every row is a fact with its n, and the
+ * copy that surrounds it says what to watch for, never what will happen.
+ *
+ * ⛔ AND NO FIGURE IS TYPED. The league rows are counted where the archive is
+ * walked (`census.js`, published in measures.json) and the club rows are summed
+ * where the seasons are (`team-season.js`, published in teams.json). What this
+ * module does is divide, once, and say what each figure is drawn from.
+ */
+
+/**
+ * ⭐ THE THREE ROWS THAT SETTLE, AND THE GAMES EACH ONE NEEDS.
+ *
+ * `need` is the number of games a club must have played before its figure
+ * describes the club rather than the sample — reliability 0.7, derived from the
+ * three-season chronological split in `docs/preview-and-corsi.md` §11.2.
+ *
+ * ⚠️ IT IS PINNED FOR THE SEASON AND RE-DERIVED EACH SUMMER, which is CHENG's
+ * P2 ruling: re-deriving inside a season moves the labels for a reason no reader
+ * can see, and pinning from ONE season inherits its flattery. The estimate is
+ * pooled across every season in the archive and it is deliberately the
+ * CONSERVATIVE one — alternate-game halves share a season's opponents and
+ * schedule, which inflates reliability and would let a row say *settled* before
+ * it has earned it.
+ *
+ * ⛔ 41 IS THE ADMISSION RULE (`preview-and-corsi.md` §12), not a target: a row
+ * that needs more than half a season is a LEAGUE row. Adding a club row with a
+ * `need` above 41 is the drift that rule exists to stop, and a test holds it.
+ */
+const CLUB_ROWS = [
+  { key: 'level5', need: 35, label: '5-on-5 CF% while the score was level',
+    /* THE ONE INDUSTRY LABEL ON THE SITE, and it may only sit on strict 5-on-5
+       (`1551`) — score-close and score-adjusted CF% are different defined terms.
+       The level condition is not decoration: every trailing club pushes, so a
+       season's raw CF% flatters whoever trails more. */
+    of: t => ({ count: t.level5.for, n: t.level5.for + t.level5.against }) },
+  { key: 'dmen', need: 23, label: 'shot attempts taken by defencemen',
+    of: t => ({ count: t.dmen.count, n: t.dmen.n }) },
+  { key: 'slot', need: 37, label: 'shot attempts from the slot',
+    of: t => ({ count: t.slot.count, n: t.slot.n }) },
+];
+
+/** The season a game id belongs to, the way every other reader of an id reads it. */
+function seasonOf(id) {
+  return String(id).slice(0, 4);
+}
+
+/**
+ * ⭐ WHAT THE LEAGUE IS DOING THIS SEASON, for the club rows to sit beside.
+ *
+ * A share with no base rate loses the argument — 32 of every 100 attempts means
+ * nothing to a novice until the league's own figure is next to it. It is summed
+ * over THIS season's clubs rather than taken from the archive block, because the
+ * club figure beside it is this season's: comparing a club's October to three
+ * seasons of everybody would be two populations wearing one label.
+ */
+function leagueShares(season, teams, recent) {
+  const bucket = (teams && teams.seasons && teams.seasons[season]) || {};
+  const tot = CLUB_ROWS.map(() => ({ count: 0, n: 0 }));
+  for (const t of Object.values(bucket)) {
+    CLUB_ROWS.forEach((r, i) => { const v = r.of(t); tot[i].count += v.count; tot[i].n += v.n; });
+  }
+  // the same tail the club rows get, so the two are current to the same night
+  for (const g of (recent && recent.games) || []) {
+    if (!g || typeof g.date !== 'string' || g.date <= ((teams && teams.through) || '')) continue;
+    if (seasonOf(g.id) !== season || !g.dAtt || !g.lvl5 || !g.slot || !g.located) continue;
+    for (const side of ['h', 'a']) {
+      const other = side === 'h' ? 'a' : 'h';
+      tot[0].count += g.lvl5[side]; tot[0].n += g.lvl5[side] + g.lvl5[other];
+      tot[1].count += g.dAtt[side]; tot[1].n += g.attempts[side];
+      tot[2].count += g.slot[side]; tot[2].n += g.located[side];
+    }
+  }
+  return tot.map(t => (t.n > 0 ? t.count / t.n : null));
+}
+
+/** A club's season row, plus the games played since the weekly table was built. */
+function rowsFor(ab, season, teams, recent, league) {
+  const base = ((teams && teams.seasons && teams.seasons[season]) || {})[ab] || null;
+  /* ⛔⛔ NO CURRENT SEASON MEANS NO FIGURES, AND NOTHING BORROWED. Our numbers
+     exclude preseason, so from June until the season opens there is no row here
+     at all — and last season's row describes a different roster. Kevin and CHENG
+     both ruled silence: a stale figure presented as current is the stale-date
+     defect chosen on purpose. The rows still appear, saying they have nothing
+     yet, because the card's shape may not change from one week to the next. */
+  const tally = CLUB_ROWS.map(r => ({ key: r.key, label: r.label, need: r.need,
+    count: 0, n: 0 }));
+  let games = 0;
+  if (base) {
+    games = base.games;
+    tally.forEach((t, i) => { const v = CLUB_ROWS[i].of(base); t.count = v.count; t.n = v.n; });
+  }
+
+  /* ⭐ THE NIGHTLY TAIL. `teams.json` is rebuilt weekly and `recent.json` every
+     night, so in season the table is up to seven days and ~3 games short — on a
+     card whose entire honesty device is a game count. THE DATES DECIDE IT, not a
+     set of ids: `through` is the newest game the table contains, so anything
+     after it is a game the table has not seen. A merge on id-presence would need
+     the table to list its games, which it does not and should not. */
+  const through = (teams && teams.through) || '';
+  for (const g of (recent && recent.games) || []) {
+    if (!g || typeof g.date !== 'string' || g.date <= through) continue;
+    if (seasonOf(g.id) !== season) continue;
+    const side = g.homeAb === ab ? 'h' : g.awayAb === ab ? 'a' : null;
+    if (!side) continue;
+    /* ⚠️ A RECORD FROM BEFORE THESE FIELDS EXISTED CANNOT BE ADDED, and it does
+       not move the game count either. Counting the game while dropping its
+       numerators would grow a denominator without its numerator, which makes a
+       share quietly wrong — worse than being a game behind. */
+    if (!g.dAtt || !g.lvl5 || !g.slot || !g.located) continue;
+    const other = side === 'h' ? 'a' : 'h';
+    games += 1;
+    for (const t of tally) {
+      if (t.key === 'level5') { t.count += g.lvl5[side]; t.n += g.lvl5[side] + g.lvl5[other]; }
+      if (t.key === 'dmen') { t.count += g.dAtt[side]; t.n += g.attempts[side]; }
+      if (t.key === 'slot') { t.count += g.slot[side]; t.n += g.located[side]; }
+    }
+  }
+
+  return { ab, games, rows: tally.map((t, i) => ({ ...t, games,
+    league: (league && league[i]) ?? null,
+    /* A SHARE IS COUNT OVER COUNT and the row carries both, so the card can print
+       its own evidence: "320 of 1,000 attempts" beside the league's figure. */
+    value: t.n > 0 ? t.count / t.n : null,
+    settled: games >= t.need })) };
+}
+
+/**
+ * ⭐ WHAT IS NORMAL, ONCE, ABOVE BOTH CLUBS.
+ *
+ * CHENG's Q10: a league figure inside a club's column READS as a club figure —
+ * `3.6` under each of two clubs says the clubs are equal on penalties, which
+ * neither number claims. So these are a frame, not content, and the renderer
+ * prints them once.
+ *
+ * ⛔ AND THEY COME FROM THE CENSUS, which walks every game in the archive. A
+ * document written before those counters existed has no `whistles` block, and
+ * this returns NOTHING rather than inventing a figure — the same degradation the
+ * front door makes when fixtures carry no date.
+ */
+function leagueRows(measures) {
+  const c = (measures && measures.census) || null;
+  const w = c && c.whistles;
+  if (!c || !w || !c.games) return [];
+  const perClubGame = n => n / (2 * c.games);
+  return [
+    { key: 'powerplay', games: c.games,
+      /* ⛔⛔ POWER-PLAY GOALS, NOT GOALS SCORED DURING A POWER PLAY. The census
+         counts both; the second includes the short-handed ones and reads three
+         points higher than the league's own figure. */
+      goals: w.ppGoals, chances: w.ppChances, rate: w.ppGoals / w.ppChances,
+      chancesPerClubGame: perClubGame(w.ppChances) },
+    { key: 'penalties', games: c.games, count: w.penalties,
+      perClubGame: perClubGame(w.penalties) },
+    { key: 'offside', games: c.games, count: w.offsides,
+      perClubGame: perClubGame(w.offsides) },
+  ];
+}
+
+/**
+ * @param id       the game this card is about
+ * @param docs     {schedule, teams, measures, recent, catalog} — all published
+ * @param now      ISO instant, injected so this is testable and deterministic
+ *
+ * @returns {{state, game, result, clubs, league}}
+ *   state   'before' | 'underway' | 'played' | 'unknown'
+ *   game    {id, away, home, startTimeUTC, date, preseason} or null
+ *   result  {score, watch} once the archive holds it, else null
+ *   clubs   {away, home} — each {ab, games, rows}
+ *   league  the frame, or [] when the census predates it
+ */
+function preview(id, docs, now) {
+  const gid = Number(id);
+  const d = docs || {};
+  const fix = (((d.schedule || {}).upcoming) || []).find(g => g && Number(g.id) === gid) || null;
+  /* ⭐ THE CATALOG IS THE WITNESS THAT A GAME WAS PLAYED, not the clock. A
+     postponed game whose start has passed is not a game we hold, and deciding
+     from `now` would open a replay that does not exist. */
+  const held = (((d.catalog || {}).games) || []).find(g => g && Number(g.id) === gid) || null;
+
+  if (!fix && !held) return { state: 'unknown', game: null, result: null, clubs: null, league: [] };
+
+  const away = fix ? fix.away : held.a;
+  const home = fix ? fix.home : held.h;
+  const season = seasonOf(gid);
+  const game = { id: gid, away, home,
+    startTimeUTC: fix ? fix.startTimeUTC : null,
+    date: fix ? fix.date : held.d,
+    // The league's own type, quoted: 1 is preseason, which our numbers exclude.
+    preseason: (fix ? fix.gameType : held.t) === 1 };
+
+  let state = 'before', result = null;
+  if (held && held.v) {
+    state = 'played';
+    result = { score: { a: held.as, h: held.hs }, watch: `game.html?game=${gid}` };
+  } else if (fix && fix.startTimeUTC && !(fix.startTimeUTC > now)) {
+    state = 'underway';
+  }
+
+  const shares = leagueShares(season, d.teams, d.recent);
+  return { state, game, result,
+    clubs: { away: rowsFor(away, season, d.teams, d.recent, shares),
+             home: rowsFor(home, season, d.teams, d.recent, shares) },
+    league: leagueRows(d.measures) };
+}
+
+  var $ = function (id) { return document.getElementById(id); };
+  var ORIGIN = "https://data.readthegame.co";
+  var MON = ['January','February','March','April','May','June','July','August',
+             'September','October','November','December'];
+
+  function when(d) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || '');
+    return m ? (+m[3]) + ' ' + MON[+m[2] - 1] + ' ' + m[1] : (d || '');
+  }
+  function grab(name) {
+    return fetch(ORIGIN + '/' + name, { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function () { return null; });
+  }
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+  var q = (/[?&]game=(\d+)/.exec(location.search) || [])[1];
+
+  /* THE FIVE DOCUMENTS, IN PARALLEL, AND A NULL FROM ANY OF THEM IS A STATE.
+     `grab` answers null for a 404 or a failed fetch, and `preview()` degrades
+     row by row: no census, no league rows; no season, no club figures. A page
+     that renders less is not a page that breaks. */
+  function boot() {
+    if (!q) { $('pv').appendChild(el('p', 'note', 'No game was named in the link.')); return; }
+    Promise.all([grab('schedule.json'), grab('teams.json'), grab('measures.json'),
+                 grab('recent.json'), grab('catalog.json')])
+      .then(function (r) {
+        draw(preview(q, { schedule: r[0], teams: r[1], measures: r[2],
+                          recent: r[3], catalog: r[4] }, new Date().toISOString()));
+      });
+  }
+
+  function pct(v) { return v == null ? '—' : Math.round(v * 100) + ''; }
+  function num(n) { return (n || 0).toLocaleString(); }
+
+  function draw(p) {
+    if (p.state === 'unknown') {
+      $('pv').appendChild(el('p', 'note',
+        'We have no record of that game — it may not be scheduled yet.'));
+      return;
+    }
+    var g = p.game;
+    $('pvh1').textContent = nameOf(g.away) + ' at ' + nameOf(g.home);
+    document.title = nameOf(g.away) + ' at ' + nameOf(g.home) + ' — what to watch for';
+
+    /* ⚠️ THE START IS LOCALISED HERE AND NOWHERE ELSE, the same rule the front
+       door's night follows: an NHL game at 7pm Eastern is 23:00Z the same day
+       and one at 10:30pm Pacific is 05:30Z the next, so only the browser can
+       name the day and the hour a reader is in. */
+    var says = [];
+    if (g.preseason) says.push('Preseason');
+    if (p.state === 'played') says.push('Played ' + when(g.date));
+    else if (p.state === 'underway') says.push('Under way');
+    else if (g.startTimeUTC) says.push(new Date(g.startTimeUTC).toLocaleString(undefined,
+      { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' }));
+    $('pvwhen').textContent = says.join(' · ');
+
+    if (p.result) {
+      var done = el('p', 'pvresult',
+        g.away + ' ' + p.result.score.a + ' – ' + g.home + ' ' + p.result.score.h + '. ');
+      var a = el('a', null, 'Watch the whole game →');
+      a.href = p.result.watch;
+      done.appendChild(a);
+      $('pv').appendChild(done);
+    }
+
+    /* ⭐ WHAT IS NORMAL, ONCE, ABOVE BOTH CLUBS. CHENG's Q10: a league figure
+       inside a club's column reads as a club figure -- 3.6 under each of two
+       clubs says the clubs are equal on penalties, which neither number claims.
+       So the frame comes first and the clubs sit inside it. */
+    if (p.league.length) {
+      var frame = el('section', 'pvframe');
+      frame.appendChild(el('p', 'pvkick', 'What is normal'));
+      p.league.forEach(function (r) {
+        var row = el('p', 'pvnorm');
+        if (r.key === 'powerplay') {
+          row.textContent = 'Power play — about ' + pct(r.rate) + ' of power plays'
+            + ' produce a goal, from about ' + r.chancesPerClubGame.toFixed(1)
+            + ' chances a team a game. Watch who is a skater short, and for how long.';
+        } else if (r.key === 'penalties') {
+          row.textContent = 'Penalties — a team takes about ' + r.perClubGame.toFixed(1)
+            + ' a game, and each one is the other team’s power play.';
+        } else {
+          row.textContent = 'Offside — about ' + r.perClubGame.toFixed(1)
+            + ' a team a game. Watch the blue line as a team carries the puck in.';
+        }
+        frame.appendChild(row);
+      });
+      frame.appendChild(el('p', 'pvn', 'Measured over ' + num(p.league[0].games)
+        + ' games in this archive. Which teams do better than this over a season is '
+        + 'mostly luck, so these are not counted against either club.'));
+      $('pv').appendChild(frame);
+    }
+
+    var cols = el('section', 'pvclubs');
+    ['away', 'home'].forEach(function (side) {
+      var c = p.clubs[side];
+      var box = el('div', 'pvclub');
+      box.appendChild(el('p', 'pvkick', nameOf(c.ab)));
+      if (!c.games) {
+        /* ⛔ PRESEASON, AND THE CARD SAYS SO RATHER THAN QUOTING LAST SEASON. Our
+           numbers exclude preseason, so before the season opens there is nothing
+           to report -- and last year's figures describe a different roster. */
+        box.appendChild(el('p', 'pvnone', 'No games counted yet this season.'));
+      } else {
+        c.rows.forEach(function (r) {
+          var row = el('div', 'pvrow');
+          row.appendChild(el('p', 'pvlab', r.label));
+          row.appendChild(el('p', 'pvfig', pct(r.value) + ' of every 100'
+            + (r.league == null ? '' : ' · league ' + pct(r.league))));
+          /* ⭐ THE PROGRESS, NOT A BADGE. CHENG's P1: a binary settled/forming
+             label invents a cliff the data does not have, and "12 of 35 games"
+             says the same thing continuously -- and tells two clubs with 12 and 9
+             games apart, which a badge cannot. */
+          row.appendChild(el('p', 'pvn', num(r.count) + ' of ' + num(r.n) + ' · '
+            + r.games + ' of ' + r.need + ' games'
+            + (r.settled ? ' · settled' : ' · still forming')));
+          box.appendChild(row);
+        });
+      }
+      var link = el('a', 'pvteam', 'Every ' + nameOf(c.ab) + ' game we hold →');
+      link.href = '/?team=' + c.ab;
+      box.appendChild(link);
+      cols.appendChild(box);
+    });
+    $('pv').appendChild(cols);
+  }
+
+  boot();
+</script>
 <footer class="sitefoot"><p>Game data from the NHL's public play-by-play feed, fetched once and stored. Not affiliated with, endorsed by, or a product of the National Hockey League or any club. <strong>No NHL or club logos, wordmarks or crests appear anywhere on this site</strong> — clubs are named in plain text, and identified by colour and three-letter abbreviation.</p><p><a href="https://github.com/shilohisadog/read-the-game">Source on GitHub</a> — every number here is a function of stored events, and you can read the function. Found one that looks wrong? <!--email_off--><a href="mailto:ReadTheGameOfHockey@gmail.com">ReadTheGameOfHockey@gmail.com</a><!--/email_off--></p><p>Nothing here is paywalled. If it helped you read a game, you can <a href="https://buymeacoffee.com/readthegameofhockey">buy me a coffee</a>.</p></footer>
 </body>
 </html>

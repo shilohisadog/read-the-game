@@ -37,6 +37,8 @@ import { situation, DECLINED } from '../src/lib/strength.js';
 import { attackDirection, distanceToNet } from '../src/lib/rink.js';
 import { inScope, summarise } from '../src/lib/archive.js';
 import { teamSeasons } from '../src/lib/team-season.js';
+import { reliability } from '../src/lib/reliability.js';
+import { CLUB_ROWS } from '../src/lib/preview.js';
 import { censusGame, censusAdd, censusRates } from '../src/lib/census.js';
 import { TEAMS, NOT_A_CLUB } from '../src/lib/teams.js';
 
@@ -525,8 +527,17 @@ function main(argv) {
   /* THE DIVISION HAPPENS ONCE, HERE, on the finished totals. Every tally that
      reached this point is an integer, so the archive folds in exactly and no
      game is weighted by how many events it happened to contain. */
+  /* ⭐ HOW MANY GAMES EACH PREVIEW ROW NEEDS, MEASURED HERE RATHER THAN TYPED.
+     Kevin, 2026-09-23: *"there should never be hard coded values, anywhere."*
+     The card's progress counts ("12 of 35 games") began as three numbers from a
+     probe I ran by hand and wrote into `preview.js`. `reliability.js` derives
+     them from the archive — chronological halves of every club-season in a
+     FINISHED season, so the figures cannot move mid-season — and the card reads
+     what is published. The row definitions come from `preview.js` itself, so the
+     thing measured and the thing shown cannot drift apart. */
   const doc = { ...summarise(records), measured: records.length,
-                census: censusRates(census) };
+                census: censusRates(census),
+                settle: reliability(records, CLUB_ROWS) };
   // NO TIMESTAMP, and KEYS SORTED. Same extracts in, same bytes out, so any diff
   // on a re-run is a real change of opinion or of data — the same property
   // catalog.json holds through `sort_keys=True`. Freshness is index.json's job.
