@@ -326,3 +326,128 @@ performed the arithmetic**, and it read as finished. `work` exists because of
 that screenshot. The same pass caught *"the middle value of 3,101,105"*: a bare
 number with no noun, on the page whose entire subject is what our numbers are
 made of.
+
+### 11.4 ⛔⛔⛔ Written for us, and Kevin stopped reading it
+
+> *"I started reading the how we measure page but stopped pretty quickly. We need
+> to change the subject of the wording, currently it's not really in a public
+> facing tone, it's more of an internal type phrasing… Like the title of the first
+> blurb is '…if it settles…', I doubt a novice hockey fan is going to grasp what
+> 'settles' means right away… let's not talk 'down' to anybody, that's not what
+> I'm saying, but we need to reframe the audience of the page."*
+
+⭐ **IT IS THE SAME DEFECT AS A NAKED NUMBER.** The page exists so a stranger can
+check our work; a stranger who has to learn our vocabulary first cannot. The house
+wording defeats the page exactly as completely as having no page would. ⚠️ And it
+was invisible to me because I had written every one of those words.
+
+The words that went: *settles, admission rule, club row, league row, reliability,
+chronological, centred, club-season, denominator, orthogonal.*
+
+| before | after |
+|---|---|
+| A figure describes a CLUB only if it settles inside half a season | **Is that the team, or is it just ten games?** |
+| 1. "A chronological split is conservative — you under-credit everything." | **1. Comparing the first half of a season against the second is a hard test. Aren't you selling every number short?** → *Yes, and on purpose.* |
+| the reliability we ask for. A choice, not a measurement | how closely a team's first half has to match its second before we will show a number for that team |
+
+⛔ **Nothing was simplified away** — the agreement matrix, the sensitivity of every
+count to both policy choices, and the four conceded criticisms all survive. The
+rule is *shorter words for our concepts, never fewer concepts.*
+
+⭐⭐ **The durable form is a word list checked against RENDERED text.** Tone cannot
+be asserted; the specific words that made it unreadable can be, and they are the
+ones that creep back. It reads what the page draws, not the source — the source is
+full of `measures.settle` and `policy.admission`, identifiers a reader never meets,
+and a check that cannot tell those from prose gets weakened until it says nothing.
+
+### 11.5 The front-door card, and where it actually belongs
+
+Kevin asked for one; it went into **What we counted** and he moved it:
+
+> *"I would have thought you would have put the card in the what this (site) does
+> and does not claim?"*
+
+He is right and the section's own heading is the argument. ⛔ **And it had been in
+that block all along without reading as a door** — fourth of five, link buried
+mid-sentence in the same grey as the prose. It is now last (it answers the four
+above it), spans both columns with a dark edge, and ends on an arrow.
+⭐ **A door nobody recognises as a door is the same as no door.**
+
+The duplicate in the measurement strip is gone: two routes to one page is the
+duplicate-funnel defect `_NAV` already names. ⚠️ And that card had to be appended
+*after* `_front_counts`'s loop to dodge its own check that every card in the strip
+is one of our measurements — **routing around a guard rather than satisfying it,
+which was its own answer about whether it belonged.**
+
+### 11.6 ⛔⛔ Two of Kevin's eleven notes were defects, not wording
+
+**The CF% caveat was about the wrong number.** It said we divide by games played
+and should divide by minutes of five-on-five ice time, *"so our figure quietly
+includes time spent on power plays and penalty kills."* `level5` is a **share** of
+two teams' strictly-1551 attempts: no per-game denominator, no special-teams time.
+The criticism does not apply to it at all.
+
+⭐ **What is true is worse for being specific.** `dmen` and `slot` are computed over
+**all situations**, so a team that draws a lot of penalties is partly being
+described by its power play. The vague criticism let us off; the precise one does
+not. The limits section said the same wrong thing about "the numbers above" and now
+says what is the case. **A criticism aimed at the wrong number is not a
+concession** — it is a concession-shaped object, and it passes every check we have.
+
+**An unmeasured mechanism was explaining the score condition.** Kevin: *"we say
+this on the Corsi% … because a team that is losing throws everything at the net.
+We don't measure that, nor can we 'show the work' conclusively that that's the
+case, so why do we include that snippet?"*
+
+⭐ **The fix was not deletion.** The archive has counted the EFFECT since the site
+began, in `baseRates`, read by the front door and by nothing else. The condition is
+now argued by two published counts carrying their own published descriptions:
+
+- **2,228 of 4,100** — the team with more shot attempts lost
+- **1,560 of 3,925** — the team that controlled play while the score was level lost
+
+The `what` string travels with the count from `archive.js`, so the page never
+restates what a base rate is about.
+
+The other nine: *"What is wrong with it"* → *"What could be wrong with it"* (the
+first reads as a confession that argues against printing the figure at all);
+question anchors and links, with a pointer under the lede; **32 × 3 = 96**
+team-seasons spelled out, the team count divided out of two published numbers and
+the sum claimed only when it comes out whole; the *"beside a team's name"*
+paragraph rewritten because it described a surface the reader was not on; *"the
+gentler test"* defined before use; *"we have counted none of them"* now says
+**why** (all three look countable from what we already store); the fatigue claim
+cut for the second time; and *"Power plays decide games"* replaced — no power-play
+number passes our test, which does not make power plays unimportant, it means the
+test cannot speak to importance.
+
+### 11.7 ⏭ OPEN — should the page be dispersed?
+
+Kevin: *"do we want to disperse these sections across the site… it seems like a
+shame to consolidate all of it into one place and not put the specific bits closer
+to the cards or metrics that surface that specific information."*
+
+**Two pieces of evidence found while answering, both of which say yes:**
+
+1. ⛔ **The hits caveat is already duplicated.** The card renderer hardcodes
+   *"Counted by each home rink's own crew, which records about 4% more hits at
+   home…"* and `DERIVATION.hits.caveat` says the same thing in different words.
+   Two statements of one fact, free to drift — the exact defect `methods.js` was
+   built to prevent, live on the card now.
+2. ⛔ **`icing`, `offside`, `penalties` and `slot` carry 7–16 figures each in
+   visible text and not one word about how any of them was counted.** The naked
+   number problem is still live on four pages.
+
+**The shape of the answer.** Disperse the per-figure half — *counted / out of / the
+division / what could be wrong with it* — because `methods.js` is a module and any
+surface can import it. **Do not disperse the instrument**: the test, the two policy
+choices and the seven questions have to be auditable in one sitting, and scattering
+them makes them unauditable. The methods page becomes the index and the argument
+rather than the only home, and the existing gate extends to *every surface that
+prints a figure resolves to its derivation* — which would go red on those four rule
+pages immediately, correctly.
+
+⏭ **The decision Kevin has not made:** rule pages first (most naked figures, no
+layout risk) or the preview card first (fixes the live duplication, but the card is
+dense and the novice tester is on a phone, so it likely needs a disclosure rather
+than more text). Recommendation on the table: rule pages first.

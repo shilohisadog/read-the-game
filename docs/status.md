@@ -32,32 +32,30 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 
 This section is the orientation. Everything below §0 is the detail, organised by
 state.
-## ⏭ 0.00 PICK UP HERE — 2026-09-23 (late evening)
+## ⏭ 0.00 PICK UP HERE — 2026-09-23 (night)
 
-### ✅ SHOW THE WORK IS NOW A GATE — `how-we-measure.html`
+### ✅ SHOW THE WORK IS A SURFACE AND A GATE — `readthegame.co/how-we-measure`
 
-Kevin approved two things and both shipped: **show the possession family once,
-provided the card quantifies what the family is**, and **disclose the methodology
+Kevin approved two things and both are live: **show the possession family once,
+provided the card quantifies what the family is**, and **publish the methodology
 in full, criticisms included**.
 
-**What is live.** Every one of the preview card's ten figures carries a second
-door — *How this is counted →* — into a new page that prints, per figure, what it
-was counted from, **the division itself** (*"5,011 ÷ 22,872 = 21.9 goals for every
-100 power plays"*), why it is on the card, and what is wrong with it. Below the
-figures, seven arguments against our own method, **four of them conceded as
-correct**, as static markup so they survive a dead data origin. Reachable from the
-front door's limits block as well as from the card.
+Every one of the preview card's ten figures carries a second door — *How this is
+counted →* — into a page that prints, per figure: what it was counted from, **the
+division itself** (*"5,011 ÷ 22,872 = 21.9 goals for every 100 power plays"*), why
+it is shown, and what could be wrong with it. Below that, seven questions people
+fairly ask, **four answered "you are right"**, as static markup so they outlive a
+dead data origin. Reached from every figure and from the last entry in the front
+door's *What this does and does not claim*.
 
-**The possession family, quantified.** `reliability.agreement` now correlates the
-CF% row against the three measures we withhold — Corsi, Fenwick, shots-on-goal
-share — over the same 96 club-seasons with the same per-season centring.
-**Weakest pair 0.85, strongest 0.98.** That sentence is the answer to *"why only
-one possession row?"* and it is on the page rather than in a repo file.
+**The possession family, quantified** — Kevin's condition for showing it once.
+`reliability.agreement` correlates the CF% row against the three measures we
+withhold, over the same 96 team-seasons with the same per-season centring.
+**Weakest pair 0.85, strongest 0.98.**
 
-**The sensitivity of our own answer, published per row.** Each club row now
-carries what it would need on alternate-game halves and at r = 0.6 / 0.8:
+**The sensitivity of our own answer, per row:**
 
-| | published | alternate halves | at 0.6 | at 0.8 |
+| | published | every-other-game | at 0.6 | at 0.8 |
 |---|---|---|---|---|
 | `dmen` | **23** | 13 | 15 | 40 |
 | `level5` | **35** | 27 | 23 | 60 |
@@ -66,60 +64,75 @@ carries what it would need on alternate-game halves and at r = 0.6 / 0.8:
 ⭐ The criticism lands unevenly — ten games on `dmen`, one on `slot` — which is
 itself the argument for publishing it per row instead of as a blanket disclaimer.
 
-**⭐⭐ IT IS A GATE, NOT AN INTENTION.** `test/methods.test.js` renders BOTH real
-pages and compares them: every work-door href must resolve to a section the
-methods page actually rendered, and the door count must equal the figure count.
-Ten mutations were run across the two suites and all ten fail.
+**⭐⭐ IT IS A GATE.** `test/methods.test.js` renders **both real pages** and
+compares them: every work-door href must resolve to a section the methods page
+actually rendered, and the door count must equal the figure count. Eighteen tests;
+every mutation run against them fails.
 
-**⚠️ Found by looking, twice.** The first rendering explained in prose what each
-figure was counted from and then printed only the archive size — a page called
-*how this is counted* that never performed the arithmetic, and it read as
-finished. The same pass caught *"the middle value of 3,101,105"*: a bare number
-with no noun, on the page about where our numbers come from.
+### ⛔⛔ Four things in this build that the suite could not see
 
-**⛔⛔⛔ AND THEN KEVIN STOPPED READING IT.** *"It's not really in a public facing
-tone, it's more of an internal type phrasing… the title of the first blurb is
-'…if it settles…', I doubt a novice hockey fan is going to grasp what 'settles'
-means right away… we need to reframe the audience of the page."* He is right, and
-it is the same defect as a naked number: the page exists so a stranger can check
-our work, and a stranger who has to learn our vocabulary first cannot. Rewritten
-the same evening. *"A figure describes a CLUB only if it settles inside half a
-season"* became **"Is that the team, or is it just ten games?"** The seven
-arguments are now questions in the words someone would actually ask. The words
-that went: settles, admission rule, club row, league row, reliability,
-chronological, centred, club-season, denominator, orthogonal. ⭐ A word list in
-`test/methods.test.js`, scanned against the RENDERED text rather than the source,
-is what keeps them out — the source is full of `measures.settle` and
-`policy.admission`, which a reader never meets.
+1. **A page called *how this is counted* that never did the arithmetic.** The first
+   rendering explained in prose what each figure was counted from and printed only
+   the archive size. It read as finished. Found by looking; `work` exists because
+   of that screenshot.
+2. **Written in our own vocabulary.** Kevin stopped reading a few paragraphs in.
+   *A reader who has to learn our words before they can check our work cannot check
+   our work* — the same defect as a naked figure. Rewritten; a word list in the
+   test, scanned against RENDERED text, keeps them out. §11.4 of `preview-page.md`.
+3. **A door that did not read as a door.** The methods entry was in the right block
+   all along — fourth of five, link buried mid-sentence — and Kevin read the
+   section as having no way in. ⭐ *A door nobody recognises as a door is the same
+   as no door.* §11.5.
+4. **A criticism aimed at the wrong number.** The CF% caveat conceded a per-60
+   problem that does not apply to a share; the real fault is that `dmen` and `slot`
+   count all situations. **A concession-shaped object passes every check we have.**
+   §11.6.
 
-**✅ And a front-door card** — Kevin: *"we should include a card on the front page
-as an entry point to the page, no?"* It went into **What we counted** first and he
-moved it: *"I would have thought you would have put the card in the what this
-(site) does and does not claim?"* He is right, and that section's own heading is
-the whole argument — a reader there is already asking what we claim, and *how did
-you count it* is the next sentence.
+### ⛔⛔⛔ And two rules of mine were falsified the same day I wrote them
 
-⛔ **AND IT HAD BEEN IN THAT BLOCK ALL ALONG AND DID NOT READ AS A DOOR**, which
-is why he asked. Fourth of five, link buried mid-sentence in the same grey as the
-prose around it. It is now last, spans both columns with a dark edge, and ends on
-an arrow. ⭐ **A door nobody recognises as a door is the same as no door** — the
-same lesson as the work-door audit, one surface over, found the same way. The
-duplicate in the measurement strip is gone: two routes to one page is the
-duplicate funnel `_NAV` already names, and that card had to be appended after
-`_front_counts`'s own loop to dodge its check that every card in the strip is one
-of our measurements — routing around a guard rather than satisfying it, which was
-its own answer about whether it belonged.
+- **The 404 retry.** The Worker made a not-ready deployment answer 404 instead of
+  5xx, so the gate learned to retry 404 **on the root only**, reasoning that "a
+  named page that 404s IS a missing file". Eight hours later `/faceoffs.html`
+  404'd on the candidate and served 200 from the same URL minutes afterwards.
+  ⭐ **Both times I narrowed a rule to the one case I had evidence for and wrote
+  the narrowing up as a principle.** *Is this missing or is it slow* cannot be
+  answered from one response; it is answered by waiting. [[deploy-cloudflare]]
+- ⚠️ **The byte-diff gate runs AFTER production is updated.** A red gate does not
+  mean the site is broken — check production first. Twice today the content was
+  live and correct while the gate was red.
 
-⚠️ That strip's note also said *"Each one opens the page that shows its working"*
-and had been false for a fortnight: all of them open LESSONS. It now says so.
+### ✅ A test that could not fail for twenty-one hours a day
 
-**⏭ Open from this work.** The chrome does not link the page (Kevin's call — the
-nav is three items and the measurement behind it is in `page.py`); `avgShiftLen`
-is still the one genuinely new club row available; no page has an `og:image`.
+A deploy failed on two homepage tests that had nothing to do with the commit. They
+build a night three hours from `Date.now()` and assert the page says *Tonight* —
+true for twenty-one hours, false for three, and CI landed at 21:45Z. ⭐ Not flaky:
+**unfalsifiable**. Fixed by pinning the clock as a bound parameter, plus
+**`tools/clock-sweep.sh` in `npm run gates`** — the suite re-run with the calendar
+boundary an hour either side, 6.6s a pass, proven to reproduce both CI failures
+against the unfixed code. New review shape 10 in [[mechanize-the-review]] §141.
+
+### ⏭ WHAT IS OPEN, IN THE ORDER I WOULD DO IT
+
+1. **⏳ DECIDE — disperse the methods page?** Kevin's idea, and two pieces of
+   evidence say yes: the hits caveat is **already duplicated** between the card
+   renderer and `DERIVATION`, and `icing` / `offside` / `penalties` / `slot` carry
+   **7–16 figures each with no derivation language at all**. Disperse the
+   per-figure half (any surface can import `methods.js`); keep the instrument in
+   one auditable place. **The open choice: rule pages first, or the card first?**
+   Recommendation on the table — rule pages, no layout risk. `preview-page.md` §11.7.
+2. **`avgShiftLen`** — 12 games, orthogonal, survives every control. The one
+   genuinely new club row available. Needs per-club shift plumbing, and 57
+   consecutive 2024-25 games carry no shift block.
+3. **A site-wide `og:image`** — no page has one.
+4. **The chrome does not link the methods page** — Kevin's call; the nav is three
+   items and its width was measured before the third went in (`page.py`).
+5. **Per-sixty-of-even-strength** — needs time on ice by situation. It gates the
+   rate statistics we cannot currently offer, and it is the honest answer to the
+   loudest remaining criticism.
 
 ---
 
-## 0.00-a — 2026-09-23 (evening)
+## 0.00-a — 2026-09-23 (evening)## 0.00-a — 2026-09-23 (evening)
 
 ### ⛔⛔⛔ THE INSTRUMENT THAT DECIDES THE CARD WAS BIASED, AND OUR OWN DOC SAID SO
 
