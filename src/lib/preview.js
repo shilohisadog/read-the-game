@@ -90,6 +90,57 @@ export const CLUB_ROWS = [
     ofGame: (g, side) => ({ count: g.slot[side], n: g.located[side] }) },
 ];
 
+/**
+ * ⭐⭐ THE MEASURES WE DELIBERATELY DO NOT SHOW, DEFINED SO THE CARD CAN SAY WHY.
+ *
+ * Kevin, 2026-09-23: *"as long as we quantify what 'possession family' means (so
+ * a novice can connect the dots), then yes, I'm good with showing it once."*
+ *
+ * Corsi, Fenwick and shots-on-goal share are separate names in public hockey
+ * analysis and each of them clears our admission rule on its own. They are not on
+ * the card because they are **the same measurement as the CF% row** — over full
+ * club-seasons they move together almost perfectly, and four rows that agree read
+ * to a novice as four pieces of evidence rather than one. `reliability.agreement`
+ * computes exactly how tightly, over the same club-seasons and with the same
+ * centring, and the card prints that number instead of the rows.
+ *
+ * ⛔ THEY ARE HERE AND NOT IN THE PIPELINE, because a measure the site declines
+ * to show is still a claim the site makes, and a claim belongs beside the rows it
+ * is about. Nothing renders these; `measure.mjs` reads them to compute one figure.
+ *
+ * ⚠️ EVERY FIELD BELOW ALREADY EXISTS ON THE PER-GAME RECORD. Adding a withheld
+ * measure that needed new plumbing would be paying for a row we are not going to
+ * draw — if one ever does, that is a reason to argue about it, not to build it.
+ */
+const WITHHELD = [
+  { key: 'corsi', label: 'shot-attempt share, all situations',
+    of: g => ({ h: g.attempts.h, a: g.attempts.a }) },
+  /* UNBLOCKED ATTEMPTS = a side's attempts minus the blocks CREDITED TO THE OTHER
+     SIDE. `measureGame` credits a block to the team that made it, which is the
+     defending team, so the away side's blocks are what removed home attempts. The
+     first draft subtracted a side's own blocks and produced a Fenwick share that
+     moved the wrong way; the fields are named for who did the blocking. */
+  { key: 'fenwick', label: 'unblocked shot-attempt share',
+    of: g => ({ h: g.attempts.h - (g.blocks.a || 0), a: g.attempts.a - (g.blocks.h || 0) }) },
+  { key: 'sog', label: 'shots-on-goal share',
+    of: g => ({ h: g.sog.h, a: g.sog.a }) },
+].map(m => ({ key: m.key, label: m.label,
+  /* A SHARE OF THE TWO SIDES' TOTAL, in the `{count, n}` contract every other row
+     uses. A game whose boxscore carried no figure contributes 0 to both rather
+     than a guess — the same degradation `rowsFor` makes. */
+  ofGame: (g, side) => {
+    const v = m.of(g);
+    return Number.isFinite(v.h) && Number.isFinite(v.a) && v.h + v.a > 0
+      ? { count: v[side], n: v.h + v.a } : { count: 0, n: 0 };
+  } }));
+
+/**
+ * The CF% row and the three measures it stands in for, as one list — so the
+ * agreement figure is computed over the shown row and the withheld ones together
+ * and nobody has to compose that pairing at the call site.
+ */
+export const POSSESSION_FAMILY = [CLUB_ROWS.find(r => r.key === 'level5'), ...WITHHELD];
+
 /** The season a game id belongs to, the way every other reader of an id reads it. */
 function seasonOf(id) {
   return String(id).slice(0, 4);

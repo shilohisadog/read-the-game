@@ -10,7 +10,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { reliability, gamesToTarget, spreadOf, TARGET, ADMISSION, SEASON_GAMES } from '../src/lib/reliability.js';
+import { reliability, agreement, gamesToTarget, spreadOf, TARGET, ADMISSION, SEASON_GAMES } from '../src/lib/reliability.js';
 
 /* A club-season of games, with a per-game share this club holds at `p`, jittered
    by `noise` so the halves agree to a degree the test controls. */
@@ -210,4 +210,172 @@ test('⭐ and centring leaves a measure whose league level is flat exactly where
   const out = reliability(recs, rows);
   assert.ok(out.rows.steady.r > 0.99,
     `a club that is itself in both halves must still read as reliable: ${out.rows.steady.r}`);
+});
+
+/* ------------------------- THE TWO SENSITIVITIES, AND WHY THEY ARE PUBLISHED */
+
+/**
+ * Twelve clubs that each CHANGE at midseason, by an amount that is their own.
+ *
+ * ⚠️ THE SWING HAS TO VARY BETWEEN CLUBS, AND THE FIRST DRAFT MISSED IT. With
+ * every club swinging by the same ±0.06 the swing is a constant offset, which a
+ * correlation cannot see at all: both splittings returned exactly r = 1 and the
+ * test that was supposed to separate them passed nothing. A chronological split
+ * is only penalised by change it cannot predict, so the swing is scrambled
+ * against the club's level rather than shared by all of them.
+ *
+ * Alternate halves each draw five games from both regimes, so they see the level
+ * and none of the change; chronological halves see one regime each.
+ */
+function swingy() {
+  const recs = [];
+  for (let c = 0; c < 12; c++) {
+    const base = 0.40 + c * 0.010;               // the club's own level
+    const swing = (((c * 5) % 12) - 5.5) * 0.006; // its own change, scrambled against it
+    for (let i = 0; i < 20; i++) {
+      const v = base + (i < 10 ? swing : -swing);
+      recs.push({ id: Number(`202302${String(c * 20 + i).padStart(4, '0')}`),
+        date: `2024-01-${String(1 + i).padStart(2, '0')}`,
+        homeAb: 'C' + c, awayAb: `Z${c}_${i}`,   // a one-game away club is dropped
+        v: { h: v, a: 1 - v } });
+    }
+  }
+  recs.push({ id: 2023030001, date: '2024-05-01', homeAb: 'C0', awayAb: 'C1',
+    v: { h: 0.5, a: 0.5 } });
+  return recs;
+}
+const SWING_ROW = [{ key: 'swings',
+  ofGame: (g, side) => ({ count: Math.round(g.v[side] * 100000), n: 100000 }) }];
+
+test('⭐⭐ the ALTERNATE split is published beside the one we use, and it flatters', () => {
+  /* Criticism 1 in `docs/what-settles.md` §5: a chronological split charges real
+     mid-season change against the measure, so every count we publish is too
+     high. That is CORRECT and deliberate, and the only honest answer is to
+     publish what the other splitting says — the size of the criticism, not a
+     rebuttal of it.
+
+     The fixture is a club that CHANGES at midseason: high for the first half,
+     low for the second. Alternate halves cannot see that — each gets both
+     regimes — so they agree almost perfectly, while chronological halves
+     disagree by construction. Nothing else distinguishes the two splittings.
+
+     MUTATION: point `SPLITS.alternate` at the chronological cut and the two
+     answers become identical, which the first assertion forbids. */
+  const r = reliability(swingy(), SWING_ROW).rows.swings;
+
+  assert.ok(r.alternate.r > r.r,
+    `alternate halves must flatter a mid-season change: ${r.alternate.r} vs ${r.r}`);
+  assert.ok(r.alternate.games < r.games,
+    `and must therefore ask for fewer games: ${r.alternate.games} vs ${r.games}`);
+  assert.equal(r.alternate.clubSeasons, r.clubSeasons,
+    'both splittings must run over the SAME club-seasons, or the gap is partly population');
+});
+
+test('⛔ the published count is the CONSERVATIVE one, never the flattering one', () => {
+  /* The card reads `games`. If that field ever carried the alternate estimate a
+     row would claim to be settled sooner than it has earned, which is the whole
+     failure the chronological split exists to prevent — and it would be
+     invisible, because both numbers are plausible.
+     MUTATION: publish `gamesToTarget(alt.r, half)` as `games` and this fires. */
+  const out = reliability(swingy(), SWING_ROW);
+  const r = out.rows.swings;
+  assert.equal(r.games, gamesToTarget(r.r, out.half),
+    'the published count must be stepped up from the chronological correlation');
+  assert.notEqual(r.games, r.alternate.games, 'the fixture must distinguish the two');
+});
+
+test('⭐ what the answer would be at a different threshold, published beside it', () => {
+  /* Criticism 2: r = 0.7 is a declared policy and nothing derives it. CONCEDED,
+     and answered by showing the reader how much of "35 games" is the choice.
+     MUTATION: step the probes up from the alternate correlation and the middle
+     assertion fires, because the probe band would no longer bracket `games`. */
+  const recs = [];
+  for (let c = 0; c < 20; c++) recs.push(...games(2023, 'C' + c, 20, 0.3 + c * 0.01, 0.05));
+  recs.push(playoff(2023));
+  const out = reliability(recs, ROW);
+  const at = Object.fromEntries(out.rows.x.atTarget.map(p => [p.target, p.games]));
+
+  assert.deepEqual(out.probes, [0.6, 0.8], 'the probe band is declared policy');
+  assert.deepEqual(out.rows.x.atTarget.map(p => p.target), [0.6, 0.8]);
+  assert.ok(at[0.6] < out.rows.x.games && out.rows.x.games < at[0.8],
+    `the published count must sit inside its own probe band: ${at[0.6]} / ${out.rows.x.games} / ${at[0.8]}`);
+});
+
+/* -------------------------------------- ONE MEASUREMENT WEARING FOUR NAMES */
+
+/** Club-seasons in which two measures are whatever the caller says they are. */
+function pairFixture(perSeason) {
+  const recs = [];
+  for (const [yr, clubs] of Object.entries(perSeason)) {
+    clubs.forEach(([x, y], c) => {
+      for (let i = 0; i < 10; i++) {
+        recs.push({ id: Number(`${yr}02${String(c * 10 + i).padStart(4, '0')}`),
+          date: `${Number(yr) + 1}-01-${String(1 + i).padStart(2, '0')}`,
+          homeAb: 'C' + c, awayAb: `Z${yr}_${c}_${i}`,       // one game each: dropped
+          x: { h: x, a: 1 - x }, y: { h: y, a: 1 - y } });
+      }
+    });
+    recs.push({ id: Number(`${yr}030001`), date: `${Number(yr) + 1}-05-01`,
+      homeAb: 'C0', awayAb: 'C1', x: { h: 0.5, a: 0.5 }, y: { h: 0.5, a: 0.5 } });
+  }
+  return recs;
+}
+const PAIR_ROWS = ['x', 'y'].map(k => ({ key: k,
+  ofGame: (g, side) => ({ count: Math.round(g[k][side] * 1000), n: 1000 }) }));
+
+test('⭐⭐ two names for one measurement read as one, and two measurements do not', () => {
+  /* The figure Kevin asked for: *"as long as we quantify what 'possession family'
+     means."* Corsi and CF% are not shown side by side because they agree; this
+     is the test that the number saying so can tell agreement from independence.
+     MUTATION: return `pearson(x, y)` of the RAW per-game values rather than the
+     club-season figures and the separation collapses. */
+  const same = pairFixture({ 2023: Array.from({ length: 16 },
+    (_, c) => [0.40 + c * 0.01, 0.40 + c * 0.01 + (c % 2 ? 0.002 : -0.002)]) });
+  const apart = pairFixture({ 2023: Array.from({ length: 16 },
+    (_, c) => [0.40 + c * 0.01, 0.40 + ((c * 7) % 16) * 0.01] ) });
+
+  const a = agreement(same, PAIR_ROWS), b = agreement(apart, PAIR_ROWS);
+  assert.equal(a.pairs.length, 1, 'two measures make exactly one pair');
+  assert.deepEqual([a.pairs[0].a, a.pairs[0].b], ['x', 'y']);
+  assert.ok(a.pairs[0].r > 0.98, `two names for one thing must agree: ${a.pairs[0].r}`);
+  assert.ok(Math.abs(b.pairs[0].r) < 0.5,
+    `two different things must not: ${b.pairs[0].r}`);
+  assert.equal(a.pairs[0].n, 16, 'the pair carries the club-seasons it was measured over');
+});
+
+test('⛔⛔⛔ the agreement figure is CENTRED TOO, or it measures the calendar', () => {
+  /* THE SAME DEFECT THAT PUT A ROW ON THE CARD THAT SHOULD NOT HAVE BEEN THERE
+     (§1 of `docs/what-settles.md`), in the place it would do the most damage: a
+     disclosure computed with the bug we just fixed is worse than no disclosure,
+     because it is published as the proof that we checked.
+
+     Two measures that move OPPOSITELY inside every season, whose league levels
+     both rise across seasons. Uncentred the drift dominates and they look like
+     one measurement; centred they are opposites.
+     MUTATION: drop `centre()` from `agreement` and r flips sign. */
+  const LEVEL = { 2023: 0.30, 2024: 0.50, 2025: 0.70 };
+  const perSeason = {};
+  for (const [yr, base] of Object.entries(LEVEL)) {
+    perSeason[yr] = Array.from({ length: 12 }, (_, c) => {
+      const swing = (c - 5.5) * 0.004;
+      return [base + swing, base - swing];         // opposite within the season
+    });
+  }
+  const out = agreement(pairFixture(perSeason), PAIR_ROWS);
+  assert.equal(out.clubSeasons, 36, 'twelve clubs, three seasons');
+  assert.ok(out.pairs[0].r < -0.9,
+    `the league drift was read as agreement between two measures: ${out.pairs[0].r}`);
+});
+
+test('every unordered pair appears once, and nothing is paired with itself', () => {
+  /* A matrix printed on the methods page with a duplicated or missing cell is a
+     legibility defect on the one page whose job is to be checked. */
+  const rows = ['a', 'b', 'c', 'd'].map(k => ({ key: k,
+    ofGame: (g, side) => ({ count: Math.round(g.x[side] * 1000), n: 1000 }) }));
+  const out = agreement(pairFixture({ 2023: Array.from({ length: 8 },
+    (_, c) => [0.4 + c * 0.01, 0.5]) }), rows);
+  assert.equal(out.pairs.length, 6, 'four measures make six pairs');
+  const seen = out.pairs.map(p => [p.a, p.b].sort().join('|'));
+  assert.equal(new Set(seen).size, 6, 'a pair was repeated');
+  assert.ok(!out.pairs.some(p => p.a === p.b), 'a measure was paired with itself');
 });

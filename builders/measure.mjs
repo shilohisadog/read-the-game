@@ -37,8 +37,8 @@ import { situation, DECLINED } from '../src/lib/strength.js';
 import { attackDirection, distanceToNet } from '../src/lib/rink.js';
 import { inScope, summarise } from '../src/lib/archive.js';
 import { teamSeasons } from '../src/lib/team-season.js';
-import { reliability } from '../src/lib/reliability.js';
-import { CLUB_ROWS } from '../src/lib/preview.js';
+import { reliability, agreement } from '../src/lib/reliability.js';
+import { CLUB_ROWS, POSSESSION_FAMILY } from '../src/lib/preview.js';
 import { censusGame, censusAdd, censusRates } from '../src/lib/census.js';
 import { TEAMS, NOT_A_CLUB } from '../src/lib/teams.js';
 
@@ -538,7 +538,15 @@ function main(argv) {
      thing measured and the thing shown cannot drift apart. */
   const doc = { ...summarise(records), measured: records.length,
                 census: censusRates(census),
-                settle: reliability(records, CLUB_ROWS) };
+                settle: { ...reliability(records, CLUB_ROWS),
+                          /* ⭐ AND WHY THERE IS ONLY ONE POSSESSION ROW, AS A
+                             NUMBER. Corsi, Fenwick and SF% each clear the
+                             admission rule alone; they are withheld because they
+                             are the CF% row wearing other names. Publishing how
+                             tightly they agree is the difference between a claim
+                             and a shown piece of work — `POSSESSION_FAMILY` is
+                             defined beside the rows it explains. */
+                          family: agreement(records, POSSESSION_FAMILY) } };
   // NO TIMESTAMP, and KEYS SORTED. Same extracts in, same bytes out, so any diff
   // on a re-run is a real change of opinion or of data — the same property
   // catalog.json holds through `sort_keys=True`. Freshness is index.json's job.

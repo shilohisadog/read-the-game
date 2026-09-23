@@ -118,21 +118,20 @@ export function spreadOf(values) {
 }
 
 /**
- * @param records  the per-game records `measureGame` produces, whole archive
- * @param rows     [{key, ofGame(record, side) -> {count, n}}] — the PER-GAME form
- *                 of the card's own rows, passed in so this file states no measure
- *                 of its own. ⚠️ `ofGame`, not `of`: the card's `of` reads a
- *                 SEASON total and this reads one game, and the first version of
- *                 this file called `of` — which every unit test accepted, because
- *                 the fixture defined whichever name the code asked for. It threw
- *                 on the first real record. A fake that answers any question
- *                 cannot fail the way production does.
- * @returns {{target, seasons, half, rows: {key: {r, games, clubSeasons}}}}
+ * ⭐ THE ONE WALK OF THE ARCHIVE THAT EVERY ESTIMATE IN THIS FILE IS BUILT ON.
+ *
+ * Three questions are asked of the same population — how well a measure repeats
+ * across a season's halves, what the same estimate says under the OTHER splitting
+ * of those halves, and how strongly two measures agree with each other. Building
+ * the club-seasons three times would be three chances for the eligibility rule to
+ * drift apart, and a difference between two of the answers would then be partly
+ * about which games each one looked at. It is built once and shared.
+ *
+ * ⚠️ A SEASON IS COMPLETE WHEN THE ARCHIVE HOLDS A PLAYOFF GAME FOR IT. The
+ * current season is therefore excluded until it ends, which is the pinning P2
+ * asked for, and it happens with no date arithmetic and nothing to maintain.
  */
-export function reliability(records, rows) {
-  /* A SEASON IS COMPLETE WHEN THE ARCHIVE HOLDS A PLAYOFF GAME FOR IT. The
-     current season is therefore excluded until it ends, which is the pinning P2
-     asked for, and it happens with no date arithmetic and nothing to maintain. */
+function clubSeasons(records) {
   const finished = new Set();
   for (const g of records) if (isPlayoff(g.id)) finished.add(season(g.id));
 
@@ -151,23 +150,89 @@ export function reliability(records, rows) {
   for (const list of by.values()) list.sort((a, b) => (a.g.date === b.g.date
     ? a.g.id - b.g.id : (a.g.date < b.g.date ? -1 : 1)));
 
-  const out = {};
+  /* ⛔ FOUR GAMES IS THE FLOOR AND IT IS ARITHMETIC, NOT A THRESHOLD: below it a
+     "half" is one game, and a correlation between single games is a correlation
+     between two nights. Applied here so all three estimates inherit it. */
+  for (const [key, list] of [...by.entries()]) if (list.length < 4) by.delete(key);
+
   let half = 0;
+  for (const list of by.values()) half = Math.max(half, Math.floor(list.length / 2));
+  return { by, half, finished: [...finished].sort() };
+}
+
+/** The share a row holds over a slice of a club-season, or null if it has no
+ *  denominator there — a game recorded before a field existed adds 0 to both. */
+function shareOf(row, part) {
+  let count = 0, n = 0;
+  for (const { g, side } of part) { const v = row.ofGame(g, side); count += v.count; n += v.n; }
+  return n > 0 ? count / n : null;
+}
+
+/**
+ * ⭐⭐ THE TWO WAYS TO CUT A SEASON IN HALF, AND THE CHOICE IS THE FIRST THING A
+ * CRITIC WILL ATTACK — so both are computed and both are published.
+ *
+ * `chronological` is what the card's counts are made of, and it is the
+ * CONSERVATIVE one: the first half and the second half of a season differ in
+ * opponent, roster health and form, so real mid-season change is charged against
+ * the measure as unreliability. `alternate` hands each half the same schedule and
+ * the same roster, which inflates every measure — and that is exactly why it is
+ * here. It is the honest upper bound on our own numbers, and the difference
+ * between the two is the size of the criticism rather than an answer to it.
+ *
+ * ⛔ BOTH ARE STEPPED UP FROM THE SAME `half`, so the two counts differ only by
+ * the correlation and never by the arithmetic underneath it.
+ */
+const SPLITS = {
+  chronological: list => [list.slice(0, Math.floor(list.length / 2)),
+                          list.slice(Math.floor(list.length / 2))],
+  alternate: list => [list.filter((_, i) => i % 2 === 0), list.filter((_, i) => i % 2 === 1)],
+};
+
+/**
+ * ⭐ THE SENSITIVITY OF THE ANSWER TO THE POLICY THAT PRODUCED IT.
+ *
+ * `TARGET` is a declared choice and nothing derives it, which is a criticism we
+ * concede rather than argue with (`docs/what-settles.md` §5.2). The only honest
+ * response to "your threshold is arbitrary" is to publish what the answer would
+ * be at other thresholds, so a reader can see how much of the conclusion rests on
+ * the choice. These two bracket it and are declared here for the same reason
+ * `TARGET` is: they are policy, stated once, out loud, so they can be argued with.
+ */
+export const PROBES = [0.6, 0.8];
+
+/**
+ * @param records  the per-game records `measureGame` produces, whole archive
+ * @param rows     [{key, ofGame(record, side) -> {count, n}}] — the PER-GAME form
+ *                 of the card's own rows, passed in so this file states no measure
+ *                 of its own. ⚠️ `ofGame`, not `of`: the card's `of` reads a
+ *                 SEASON total and this reads one game, and the first version of
+ *                 this file called `of` — which every unit test accepted, because
+ *                 the fixture defined whichever name the code asked for. It threw
+ *                 on the first real record. A fake that answers any question
+ *                 cannot fail the way production does.
+ * @returns {{target, admission, probes, seasons, half, rows: {key: {r, games,
+ *           clubSeasons, clubRange, alternate, atTarget}}}}
+ */
+export function reliability(records, rows) {
+  const { by, half, finished } = clubSeasons(records);
+
+  const out = {};
   for (const row of rows) {
-    const first = [], second = [], whole = [], seasons = [];
-    let wholeGames = 0;          // club-games behind the spread, for the caption
+    const cut = mode => {
+      const first = [], second = [], seasons = [];
+      for (const [key, list] of by.entries()) {
+        const [x, y] = SPLITS[mode](list);
+        const a = shareOf(row, x), b = shareOf(row, y);
+        if (a == null || b == null) continue;
+        first.push(a); second.push(b); seasons.push(key.slice(0, key.indexOf(':')));
+      }
+      return { r: pearson(centre(first, seasons), centre(second, seasons)), n: first.length };
+    };
+
+    const whole = [];
+    let wholeGames = 0;            // club-games behind the spread, for the caption
     for (const [key, list] of by.entries()) {
-      if (list.length < 4) continue;
-      const mid = Math.floor(list.length / 2);
-      half = Math.max(half, mid);
-      const share = part => {
-        let count = 0, n = 0;
-        for (const { g, side } of part) { const v = row.ofGame(g, side); count += v.count; n += v.n; }
-        return n > 0 ? count / n : null;
-      };
-      const a = share(list.slice(0, mid)), b = share(list.slice(mid));
-      if (a == null || b == null) continue;
-      first.push(a); second.push(b); seasons.push(key.slice(0, key.indexOf(':')));
       /* ⭐ THE SAME CLUB-SEASON, UNDIVIDED — AND IT IS WHAT THE CARD'S AXIS IS
          MADE OF. A bar needs a span, and the tempting span is a round number of
          points either side of the league, which is a constant nobody measured.
@@ -176,7 +241,7 @@ export function reliability(records, rows) {
          what clubs do", which is the question a novice is really asking when
          they ask whether 52 is a lot. Same population as the reliability above,
          so it introduces no second rule about which club-seasons count. */
-      const w = share(list);
+      const w = shareOf(row, list);
       if (w != null) { whole.push(w); wholeGames += list.length; }
     }
     /* ⛔⛔⛔ THIS COMMENT USED TO SAY CENTRING WAS NOT NEEDED, AND IT WAS WRONG —
@@ -202,9 +267,60 @@ export function reliability(records, rows) {
        now removes it by itself, which is the rule doing its job — and is the
        second time this month that deriving a figure rather than trusting one
        changed which rows exist. */
-    const r = pearson(centre(first, seasons), centre(second, seasons));
-    out[row.key] = { r, clubSeasons: first.length, games: gamesToTarget(r, half),
-      clubRange: withGames(spreadOf(whole), wholeGames) };
+    const chrono = cut('chronological'), alt = cut('alternate');
+    out[row.key] = { r: chrono.r, clubSeasons: chrono.n,
+      games: gamesToTarget(chrono.r, half),
+      clubRange: withGames(spreadOf(whole), wholeGames),
+      /* ⭐ THE TWO SENSITIVITIES, PUBLISHED BESIDE THE ANSWER THEY QUALIFY. Both
+         are the same row measured a different way, so a reader can see how much
+         of "23 games" is the archive and how much is our two policies. Neither
+         is used to draw anything; they exist to be read on the methods page and
+         quoted at a critic. */
+      alternate: { r: alt.r, clubSeasons: alt.n, games: gamesToTarget(alt.r, half) },
+      atTarget: PROBES.map(t => ({ target: t, games: gamesToTarget(chrono.r, half, t) })) };
   }
-  return { target: TARGET, admission: ADMISSION, seasons: [...finished].sort(), half, rows: out };
+  return { target: TARGET, admission: ADMISSION, probes: PROBES,
+           seasons: finished, half, rows: out };
+}
+
+/**
+ * ⭐⭐ HOW STRONGLY TWO MEASURES AGREE WITH EACH OTHER — the answer to "why is
+ * there only one possession row?"
+ *
+ * Kevin, 2026-09-23, on showing the possession family once: *"as long as we
+ * quantify what 'possession family' means (so a novice can connect the dots),
+ * then yes."* This is that quantity. Corsi, Fenwick, shots-on-goal share and
+ * shot-attempt differential are separate names in public hockey analysis, and
+ * over full club-seasons they move together so tightly that printing four of them
+ * shows one piece of evidence four times — which is worse than showing it once,
+ * because a reader counts agreement as corroboration.
+ *
+ * ⛔ IT IS THE SAME CENTRING AND THE SAME POPULATION AS `reliability`. A pair
+ * correlated across pooled seasons would be partly measuring which season a point
+ * came from, exactly as the split-half was until 2026-09-23 — and a disclosure
+ * computed with the defect we just fixed would be worse than no disclosure.
+ *
+ * ⚠️ AND IT IS FULL-SEASON FIGURES, NOT HALVES. The claim is that these are one
+ * measurement, which is a claim about the quantity itself; halving it would drag
+ * the measure's own noise into a number that is not about noise.
+ *
+ * @returns {{clubSeasons, pairs: [{a, b, r, n}]}} every unordered pair, once.
+ */
+export function agreement(records, rows) {
+  const { by } = clubSeasons(records);
+  const keys = [...by.keys()];
+  const seasons = keys.map(k => k.slice(0, k.indexOf(':')));
+  const vals = rows.map(row => keys.map(k => shareOf(row, by.get(k))));
+
+  const pairs = [];
+  for (let i = 0; i < rows.length; i++) {
+    for (let j = i + 1; j < rows.length; j++) {
+      // only the club-seasons where BOTH measures have a denominator
+      const at = keys.map((_, k) => k).filter(k => vals[i][k] != null && vals[j][k] != null);
+      const yr = at.map(k => seasons[k]);
+      const r = pearson(centre(at.map(k => vals[i][k]), yr), centre(at.map(k => vals[j][k]), yr));
+      pairs.push({ a: rows[i].key, b: rows[j].key, r, n: at.length });
+    }
+  }
+  return { clubSeasons: keys.length, pairs };
 }

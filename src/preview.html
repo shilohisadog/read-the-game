@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-spJ6WQ5EcL3IBiO1lKKJqPtIPYc3FyPpxAQ/ZQ8/nA0=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-tLcBAn+O62owHlftoX8XlsOjhKIqi3uuCaoW1VLisgA=' 'sha256-rWMcK8wlgRUVoLmD8asEfY+VHY2SGKwnp2hTmPuuP6o='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-leKKgfdO35ey8NLmhbq31UoJaImMOZbjgBT7WMUle4s=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-tLcBAn+O62owHlftoX8XlsOjhKIqi3uuCaoW1VLisgA=' 'sha256-rWMcK8wlgRUVoLmD8asEfY+VHY2SGKwnp2hTmPuuP6o='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -1070,6 +1070,57 @@ const CLUB_ROWS = [
     of: t => ({ count: t.slot.count, n: t.slot.n }),
     ofGame: (g, side) => ({ count: g.slot[side], n: g.located[side] }) },
 ];
+
+/**
+ * ⭐⭐ THE MEASURES WE DELIBERATELY DO NOT SHOW, DEFINED SO THE CARD CAN SAY WHY.
+ *
+ * Kevin, 2026-09-23: *"as long as we quantify what 'possession family' means (so
+ * a novice can connect the dots), then yes, I'm good with showing it once."*
+ *
+ * Corsi, Fenwick and shots-on-goal share are separate names in public hockey
+ * analysis and each of them clears our admission rule on its own. They are not on
+ * the card because they are **the same measurement as the CF% row** — over full
+ * club-seasons they move together almost perfectly, and four rows that agree read
+ * to a novice as four pieces of evidence rather than one. `reliability.agreement`
+ * computes exactly how tightly, over the same club-seasons and with the same
+ * centring, and the card prints that number instead of the rows.
+ *
+ * ⛔ THEY ARE HERE AND NOT IN THE PIPELINE, because a measure the site declines
+ * to show is still a claim the site makes, and a claim belongs beside the rows it
+ * is about. Nothing renders these; `measure.mjs` reads them to compute one figure.
+ *
+ * ⚠️ EVERY FIELD BELOW ALREADY EXISTS ON THE PER-GAME RECORD. Adding a withheld
+ * measure that needed new plumbing would be paying for a row we are not going to
+ * draw — if one ever does, that is a reason to argue about it, not to build it.
+ */
+const WITHHELD = [
+  { key: 'corsi', label: 'shot-attempt share, all situations',
+    of: g => ({ h: g.attempts.h, a: g.attempts.a }) },
+  /* UNBLOCKED ATTEMPTS = a side's attempts minus the blocks CREDITED TO THE OTHER
+     SIDE. `measureGame` credits a block to the team that made it, which is the
+     defending team, so the away side's blocks are what removed home attempts. The
+     first draft subtracted a side's own blocks and produced a Fenwick share that
+     moved the wrong way; the fields are named for who did the blocking. */
+  { key: 'fenwick', label: 'unblocked shot-attempt share',
+    of: g => ({ h: g.attempts.h - (g.blocks.a || 0), a: g.attempts.a - (g.blocks.h || 0) }) },
+  { key: 'sog', label: 'shots-on-goal share',
+    of: g => ({ h: g.sog.h, a: g.sog.a }) },
+].map(m => ({ key: m.key, label: m.label,
+  /* A SHARE OF THE TWO SIDES' TOTAL, in the `{count, n}` contract every other row
+     uses. A game whose boxscore carried no figure contributes 0 to both rather
+     than a guess — the same degradation `rowsFor` makes. */
+  ofGame: (g, side) => {
+    const v = m.of(g);
+    return Number.isFinite(v.h) && Number.isFinite(v.a) && v.h + v.a > 0
+      ? { count: v[side], n: v.h + v.a } : { count: 0, n: 0 };
+  } }));
+
+/**
+ * The CF% row and the three measures it stands in for, as one list — so the
+ * agreement figure is computed over the shown row and the withheld ones together
+ * and nobody has to compose that pairing at the call site.
+ */
+const POSSESSION_FAMILY = [CLUB_ROWS.find(r => r.key === 'level5'), ...WITHHELD];
 
 /** The season a game id belongs to, the way every other reader of an id reads it. */
 function seasonOf(id) {

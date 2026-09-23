@@ -14,7 +14,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { preview, CLUB_ROWS } from '../src/lib/preview.js';
+import { preview, CLUB_ROWS, POSSESSION_FAMILY } from '../src/lib/preview.js';
 import { censusGame, censusAdd, censusRates } from '../src/lib/census.js';
 
 const NOW = '2026-01-15T18:00:00Z';
@@ -366,4 +366,70 @@ test('⛔⛔ the league rows draw from a census this repo actually PRODUCES', ()
   const pp = p.league.find(r => r.key === 'powerplay');
   assert.ok(pp.chances > 0 && Number.isInteger(pp.chances), 'chances is a raw count');
   assert.ok(pp.rate > 0 && pp.rate < 1, `a success rate, got ${pp.rate}`);
+});
+
+/* ------------------------------------ THE MEASURES WE DELIBERATELY WITHHOLD */
+
+test('⭐⭐ the possession family contains the row it explains, plus the ones we do not show', () => {
+  /* The card shows one possession row and says the others are the same
+     measurement. That claim is only checkable if the published agreement figure
+     was computed over the SHOWN row and the withheld ones TOGETHER — a matrix of
+     three measures none of which is on the card would prove nothing about the
+     card.
+     MUTATION: drop `CLUB_ROWS.find(...)` from the head of the list and the first
+     assertion fires. */
+  assert.equal(POSSESSION_FAMILY[0].key, 'level5', 'the family must lead with the row we print');
+  assert.equal(POSSESSION_FAMILY[0], CLUB_ROWS.find(r => r.key === 'level5'),
+    'it must be the SAME definition the card draws, not a second copy of it');
+  assert.deepEqual(POSSESSION_FAMILY.map(r => r.key), ['level5', 'corsi', 'fenwick', 'sog']);
+  for (const r of POSSESSION_FAMILY) {
+    assert.equal(typeof r.ofGame, 'function', `${r.key} has no per-game form`);
+    assert.ok(r.label, `${r.key} has no label for the methods page`);
+  }
+});
+
+test('⛔⛔ unblocked attempts subtract the OTHER side’s blocks, which is what the field means', () => {
+  /* `measureGame` credits a block to the team that MADE it — the defending team
+     — so the blocks that removed home attempts are the away side's. Subtracting
+     a side's own blocks produces a Fenwick share that moves the wrong way, and it
+     is plausible enough to survive review: both versions are shares, both sum to
+     one, both look like Fenwick.
+     MUTATION: swap `g.blocks.a` for `g.blocks.h` and the home share becomes
+     25/37 rather than 22/37 — a five-point error in a figure published as the
+     proof that we checked our work. */
+  const g = { attempts: { h: 30, a: 20 }, blocks: { h: 5, a: 8 },
+              sog: { h: 12, a: 9 } };
+  const fen = POSSESSION_FAMILY.find(r => r.key === 'fenwick');
+  assert.deepEqual(fen.ofGame(g, 'h'), { count: 22, n: 37 });
+  assert.deepEqual(fen.ofGame(g, 'a'), { count: 15, n: 37 });
+
+  const corsi = POSSESSION_FAMILY.find(r => r.key === 'corsi');
+  assert.deepEqual(corsi.ofGame(g, 'h'), { count: 30, n: 50 });
+  const sog = POSSESSION_FAMILY.find(r => r.key === 'sog');
+  assert.deepEqual(sog.ofGame(g, 'a'), { count: 9, n: 21 });
+});
+
+test('⛔ a game whose boxscore carried no figure contributes NOTHING, not a zero share', () => {
+  /* The league's shot line is quoted, not derived, and `measureGame` stores null
+     rather than guessing. A row that returned `{count: 0, n: 0}` as `0 of 0` is
+     harmless; one that returned `{count: 0, n: 1}` would score the club at zero
+     percent for that night and drag a full-season figure down invisibly.
+     MUTATION: drop the `Number.isFinite` guard and `n` becomes NaN, which
+     silently poisons every sum it reaches. */
+  const sog = POSSESSION_FAMILY.find(r => r.key === 'sog');
+  for (const bad of [{ h: null, a: 9 }, { h: 12, a: undefined }, { h: 0, a: 0 }]) {
+    assert.deepEqual(sog.ofGame({ sog: bad }, 'h'), { count: 0, n: 0 },
+      `a missing shot line was read as ${JSON.stringify(bad)}`);
+  }
+});
+
+test('⛔ nothing withheld is ever rendered as a club row', () => {
+  /* The whole point of the family is that it is NOT on the card. A withheld
+     measure that leaked into CLUB_ROWS would be the one defect this disclosure
+     cannot survive: the page would print four rows while the text beside them
+     explained that it prints one. */
+  const shown = new Set(CLUB_ROWS.map(r => r.key));
+  for (const r of POSSESSION_FAMILY.slice(1)) {
+    assert.ok(!shown.has(r.key), `${r.key} is withheld and also on the card`);
+  }
 });
