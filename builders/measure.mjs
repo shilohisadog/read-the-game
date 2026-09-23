@@ -131,21 +131,6 @@ export function measureGame(g) {
     if (s) dAtt[s]++;
   }
 
-  /* ⭐ THE THIRD THING AN ATTEMPT CAN BE — and it is counted here rather than
-     subtracted, which is the whole reason this loop exists. `attempts − credited
-     blocks − shots on goal` overshoots the real total by 11,682 across the
-     archive, because `blocked.js` credits a block to the BLOCKER and a shot
-     blocked by a teammate is credited to nobody. A share whose numerator is a
-     residual of three other numbers is wrong by every error in all three.
-     Same population and same attribution as `dAtt` above, so the numerator and
-     `attempts` are drawn from one set. */
-  const missedBy = { h: 0, a: 0 };
-  for (const id of all.counted) {
-    const e = g.events[id];
-    if (e.type !== 'missed-shot') continue;
-    const s = sideOf(shootingTeam(e, g.roster));
-    if (s) missedBy[s]++;
-  }
 
   /* ⭐⭐ 5-ON-5 WHILE THE SCORE WAS LEVEL — the card's one industry label, and the
      narrowest population on this record. `tiedControl` is even strength in
@@ -271,7 +256,7 @@ export function measureGame(g) {
     attempts: { h: all.t[ctx.homeId], a: all.t[ctx.awayId] },
     level: level.diff,
     // The preview card's two club rows that nothing else needed. See above.
-    dAtt, missedBy, lvl5,
+    dAtt, lvl5,
   };
 }
 
@@ -443,8 +428,7 @@ export function slateOf(records, now) {
          `teams.json`'s `through`, and these are what those games are worth. */
       .map(r => ({ id: r.id, date: r.date, awayAb: r.awayAb, homeAb: r.homeAb,
                    score: r.score, attempts: r.attempts,
-                   slot: r.slot, located: r.located, dAtt: r.dAtt,
-                   missedBy: r.missedBy, lvl5: r.lvl5 }))
+                   slot: r.slot, located: r.located, dAtt: r.dAtt, lvl5: r.lvl5 }))
       // Sorted by date then id, so "last night" is a suffix of this list rather
       // than a scan, and two runs over the same games produce the same bytes.
       .sort((a, b) => (a.date === b.date ? a.id - b.id : (a.date < b.date ? -1 : 1))),

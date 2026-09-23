@@ -43,6 +43,26 @@ export const TARGET = 0.7;
 export const SEASON_GAMES = 82;
 export const ADMISSION = SEASON_GAMES / 2;
 
+/**
+ * Each season's points shifted to a mean of zero, so pooling cannot read a
+ * league-wide change between years as a difference between clubs.
+ *
+ * ⭐ IT CHANGES ONLY THE LEVEL, NEVER THE PAIRING. A club-season's two halves keep
+ * their identity as one observation; all this removes is the season each one sat
+ * in. A measure whose league level is flat across seasons is unaffected, which is
+ * both the proof it is doing the right thing and the reason nobody noticed it was
+ * missing: `dmen` and `level5` return the identical counts either way.
+ */
+function centre(values, seasons) {
+  const sum = new Map(), n = new Map();
+  for (let i = 0; i < values.length; i++) {
+    const k = seasons[i];
+    sum.set(k, (sum.get(k) || 0) + values[i]);
+    n.set(k, (n.get(k) || 0) + 1);
+  }
+  return values.map((v, i) => v - sum.get(seasons[i]) / n.get(seasons[i]));
+}
+
 function pearson(x, y) {
   const n = x.length;
   if (n < 3) return null;
@@ -134,9 +154,9 @@ export function reliability(records, rows) {
   const out = {};
   let half = 0;
   for (const row of rows) {
-    const first = [], second = [], whole = [];
+    const first = [], second = [], whole = [], seasons = [];
     let wholeGames = 0;          // club-games behind the spread, for the caption
-    for (const list of by.values()) {
+    for (const [key, list] of by.entries()) {
       if (list.length < 4) continue;
       const mid = Math.floor(list.length / 2);
       half = Math.max(half, mid);
@@ -147,7 +167,7 @@ export function reliability(records, rows) {
       };
       const a = share(list.slice(0, mid)), b = share(list.slice(mid));
       if (a == null || b == null) continue;
-      first.push(a); second.push(b);
+      first.push(a); second.push(b); seasons.push(key.slice(0, key.indexOf(':')));
       /* ⭐ THE SAME CLUB-SEASON, UNDIVIDED — AND IT IS WHAT THE CARD'S AXIS IS
          MADE OF. A bar needs a span, and the tempting span is a round number of
          points either side of the league, which is a constant nobody measured.
@@ -159,11 +179,30 @@ export function reliability(records, rows) {
       const w = share(list);
       if (w != null) { whole.push(w); wholeGames += list.length; }
     }
-    /* ⛔ CENTRED PER SEASON IS NOT NEEDED HERE and would be a second rule: every
-       club-season is one point, and a league-wide shift between years moves both
-       halves of the same point together. What it must not do is pool a club's
-       two halves as if they were two clubs, which is why the pairing is kept. */
-    const r = pearson(first, second);
+    /* ⛔⛔⛔ THIS COMMENT USED TO SAY CENTRING WAS NOT NEEDED, AND IT WAS WRONG —
+       it is kept here in corrected form rather than deleted, because the
+       reasoning that produced it is the trap.
+       It read: *"a league-wide shift between years moves both halves of the same
+       point together."* True, and that is precisely the MECHANISM of the bias
+       rather than a reason there is none. Pool three seasons whose league levels
+       differ and the Pearson partly measures WHICH SEASON a point came from, not
+       whether a club's October describes its April.
+
+       ⭐ AND THE REPO ALREADY KNEW. `docs/preview-and-corsi.md` §11.2 specifies
+       the method in as many words — *"each season centred before pooling so a
+       league-wide shift is not read as a club trait"* — and the code shipped
+       without it. The gap was VISIBLE the whole time: the doc records the slot
+       row at 37 games and this file computed 42, while `dmen` (23) and `level5`
+       (35) matched exactly, because their league level barely moves between
+       seasons and a share of both clubs' totals cannot move at all.
+
+       ⛔ WHAT IT COST. `missed` measures 33 games pooled and 113 centred, because
+       the league's miss rate rose 15% across the three seasons. It shipped as a
+       club row on the strength of a number the drift produced. The admission rule
+       now removes it by itself, which is the rule doing its job — and is the
+       second time this month that deriving a figure rather than trusting one
+       changed which rows exist. */
+    const r = pearson(centre(first, seasons), centre(second, seasons));
     out[row.key] = { r, clubSeasons: first.length, games: gamesToTarget(r, half),
       clubRange: withGames(spreadOf(whole), wholeGames) };
   }

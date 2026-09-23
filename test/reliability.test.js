@@ -126,3 +126,88 @@ test('⛔ every club row publishes a spread alongside its settle count', () => {
   assert.ok(out.rows.k.clubRange.n > 0);
   assert.ok(out.rows.k.clubRange.min <= out.rows.k.clubRange.max);
 });
+
+/* ------------------------------ THE BIAS THE DOC SPECIFIED AND THE CODE DROPPED */
+
+test('⛔⛔⛔ a league-wide drift between seasons is NOT read as a club trait', () => {
+  /* THE DEFECT, FOUND 2026-09-23 BY AN ADVERSARIAL RE-MEASUREMENT, and the repo
+     knew the answer the whole time: `docs/preview-and-corsi.md` §11.2 specifies
+     "each season centred before pooling so a league-wide shift is not read as a
+     club trait", and this file shipped without it. The gap was visible in the
+     documents — the doc records the slot row at 37 games and the code computed
+     42, while `dmen` and `level5` matched exactly, because their league level
+     barely moves and a share of both clubs' totals cannot move at all.
+
+     It cost a real row: `missed` measures 33 games pooled and 113 centred,
+     because the league's miss rate rose 15% across three seasons. It shipped.
+
+     THE FIXTURE MAKES THE TWO ANSWERS DIFFER IN SIGN, which no tolerance can
+     paper over. Two seasons whose league levels are far apart (0.20 and 0.40),
+     and inside each season a club's first half is PERFECTLY ANTI-correlated with
+     its second. Pooled, the season gap alone drives r strongly positive and the
+     measure looks like the most reliable thing in hockey. Centred, the truth
+     survives: r is negative and no number of games ever reaches the target.
+
+     MUTATION: drop the `centre()` calls and `r` comes back above +0.9. */
+  const CLUBS = ['AAA', 'BBB', 'CCC', 'DDD'];
+  // (first-half share, second-half share) — within a season, higher first means
+  // lower second, so the honest correlation is negative.
+  const SHAPE = [[-0.02, +0.02], [+0.02, -0.02], [-0.01, +0.01], [+0.01, -0.01]];
+  const LEVEL = { 2023: 0.20, 2024: 0.40 };   // the league-wide drift
+
+  const recs = [];
+  for (const yr of [2023, 2024]) {
+    for (let p = 0; p < 2; p++) {                       // two fixed pairings
+      const home = CLUBS[p * 2], away = CLUBS[p * 2 + 1];
+      for (let i = 0; i < 8; i++) {                     // 8 games, mid = 4
+        const halfIdx = i < 4 ? 0 : 1;
+        const v = {};
+        for (const [ab, k] of [[home, p * 2], [away, p * 2 + 1]]) {
+          v[ab === home ? 'h' : 'a'] = LEVEL[yr] + SHAPE[k][halfIdx];
+        }
+        recs.push({ id: Number(`${yr}02${String(i + p * 10).padStart(4, '0')}`),
+          date: `${yr + 1}-01-${String(i + 1 + p * 10).padStart(2, '0')}`,
+          homeAb: home, awayAb: away, v });
+      }
+    }
+    // a playoff game, which is how this module learns the season is complete
+    recs.push({ id: Number(`${yr}030001`), date: `${yr + 1}-05-01`,
+      homeAb: CLUBS[0], awayAb: CLUBS[1], v: { h: LEVEL[yr], a: LEVEL[yr] } });
+  }
+
+  const rows = [{ key: 'drifty',
+    ofGame: (g, side) => ({ count: Math.round(g.v[side] * 1000), n: 1000 }) }];
+  const out = reliability(recs, rows);
+
+  assert.equal(out.seasons.length, 2, 'both seasons must be counted as finished');
+  assert.equal(out.rows.drifty.clubSeasons, 8, 'four clubs, two seasons');
+  assert.ok(out.rows.drifty.r < 0,
+    `the season gap was read as club signal: r = ${out.rows.drifty.r}`);
+  assert.equal(out.rows.drifty.games, null,
+    'a measure with no within-season signal must settle at no number of games');
+});
+
+test('⭐ and centring leaves a measure whose league level is flat exactly where it was', () => {
+  /* THE PAIRED HALF, and it is why nobody noticed the bug: centring is a no-op on
+     a stable measure. Same shape as above with ONE league level, so the only
+     signal is the club's own — which must survive untouched. */
+  const CLUBS = ['AAA', 'BBB'];
+  const recs = [];
+  for (const yr of [2023, 2024]) {
+    for (let i = 0; i < 8; i++) {
+      const hi = i < 4;
+      recs.push({ id: Number(`${yr}02${String(i).padStart(4, '0')}`),
+        date: `${yr + 1}-01-${String(i + 1).padStart(2, '0')}`,
+        homeAb: 'AAA', awayAb: 'BBB',
+        // AAA is consistently high in both halves, BBB consistently low
+        v: { h: 0.60, a: 0.40 } });
+    }
+    recs.push({ id: Number(`${yr}030001`), date: `${yr + 1}-05-01`,
+      homeAb: 'AAA', awayAb: 'BBB', v: { h: 0.6, a: 0.4 } });
+  }
+  const rows = [{ key: 'steady',
+    ofGame: (g, side) => ({ count: Math.round(g.v[side] * 1000), n: 1000 }) }];
+  const out = reliability(recs, rows);
+  assert.ok(out.rows.steady.r > 0.99,
+    `a club that is itself in both halves must still read as reliable: ${out.rows.steady.r}`);
+});

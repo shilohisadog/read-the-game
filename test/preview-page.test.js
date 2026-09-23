@@ -57,7 +57,6 @@ const FIXTURE = { id: GID, date: '2026-10-02', gameType: 2, state: 'FUT',
 
 const club = (o = {}) => ({ games: 12, attempts: { for: 600, against: 590 },
   slot: { count: 140, n: 300 }, dmen: { count: 190, n: 600 },
-  missed: { count: 145, n: 600 },
   level5: { for: 240, against: 230 }, ...o });
 
 const DOCS = {
@@ -312,7 +311,7 @@ test('a settled row is drawn at full strength and never past it', async () => {
   // The paired half: a ramp with no ceiling would keep darkening past 1.
   const many = { games: 60, attempts: { for: 3000, against: 2900 },
     slot: { count: 700, n: 1500 }, dmen: { count: 950, n: 3000 },
-    missed: { count: 725, n: 3000 }, level5: { for: 1200, against: 1150 } };
+    level5: { for: 1200, against: 1150 } };
   const { ids, settle } = run({ 'teams.json': { through: '2026-12-01',
     seasons: { 2026: { BUF: many, PIT: many } } } }, `?game=${GID}`, '2026-12-02T12:00:00Z');
   await settle();
@@ -375,7 +374,7 @@ test('⛔ the caption says SHADED only when there is something shaded to see', (
     // A club at 71 of every 100 is past the fixture's 57 high-water mark.
     const wild = { games: 6, attempts: { for: 300, against: 290 },
       slot: { count: 70, n: 150 }, dmen: { count: 95, n: 300 },
-      missed: { count: 72, n: 300 }, level5: { for: 710, against: 290 } };
+      level5: { for: 710, against: 290 } };
     const out = run({ 'teams.json': { through: '2026-10-01',
       seasons: { 2026: { BUF: wild, PIT: club() } } } }, `?game=${GID}`, '2026-10-01T12:00:00Z');
     await out.settle();

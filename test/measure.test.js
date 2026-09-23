@@ -1102,7 +1102,7 @@ test('⭐ --slate writes the slate and NEITHER archive document', () => {
     `--slate wrote archive documents: ${wrote.join(', ')}`);
 });
 
-test('the slate carries eleven fields, sorted, and says when it was computed', () => {
+test('the slate carries ten fields, sorted, and says when it was computed', () => {
   const recs = [
     { id: 3, date: '2026-01-06', awayAb: 'TOR', homeAb: 'BUF', score: { h: 1, a: 2 },
       attempts: { h: 40, a: 55 }, reach: { big: 1 }, goalies: [{ pid: 1 }], lens: {} },
@@ -1122,13 +1122,15 @@ test('the slate carries eleven fields, sorted, and says when it was computed', (
   // these are exactly what a game since Monday is worth to a club's row. They
   // are `undefined` here because these fixtures predate them, which is the
   // shape a record from an older run has and the merge must survive.
-  // ⭐ `missedBy` JOINED 2026-09-23 with the fourth club row. A club row whose
-  // field is not carried here is the exact defect preview.js:166 warns about —
-  // the nightly tail would add the game to the denominator and drop its
-  // numerator, making the share quietly wrong rather than merely stale.
+  // ⭐ THE RULE THAT DECIDES THIS LIST: a club row's field must be carried here or
+  // the nightly tail adds the game to the denominator and drops its numerator,
+  // making the share quietly wrong rather than merely stale (preview.js). And the
+  // converse, D10: a field with no reader does not ship. `missedBy` was added and
+  // removed on 2026-09-23 when the row it fed turned out to be an artefact of an
+  // uncentred instrument — both directions of the rule in one day.
   assert.deepEqual(Object.keys(doc.games[0]).sort(),
     ['attempts', 'awayAb', 'dAtt', 'date', 'homeAb', 'id', 'located', 'lvl5',
-     'missedBy', 'score', 'slot']);
+     'score', 'slot']);
   // AND THE SAME RECORDS GIVE THE SAME BYTES, which is why `now` is injected.
   assert.equal(stable(slateOf(recs, 'x')), stable(slateOf([...recs].reverse(), 'x')));
 });

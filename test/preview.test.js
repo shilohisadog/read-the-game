@@ -25,7 +25,6 @@ const schedule = (up = [FIXTURE]) => ({ asOf: NOW, upcoming: up, season: {} });
 /** A club's season row, in the shape `teamSeasons` publishes. */
 const club = (o = {}) => ({ games: 20, attempts: { for: 1000, against: 950 },
   slot: { count: 240, n: 500 }, dmen: { count: 320, n: 1000 },
-  missed: { count: 240, n: 1000 },
   level5: { for: 400, against: 380 }, ...o });
 const teams = (o = {}) => ({ scope: 'NHL regular season and playoffs',
   through: '2026-01-13',
@@ -39,14 +38,12 @@ const measures = (o = {}) => ({ census: { games: 4192,
   state: { pp: { goals: 5542, minutes: 42615.7 } } },
   settle: { target: 0.7, admission: 41, seasons: ['2023', '2024'],
     rows: { level5: { r: 0.73, games: 35 }, dmen: { r: 0.81, games: 23 },
-            missed: { r: 0.75, games: 33 },
             slot: { r: 0.72, games: 37 } } }, ...o });
 
 const recent = (games = []) => ({ asOf: NOW, games });
 const played = (o = {}) => ({ id: 2025020500, date: '2026-01-15', awayAb: 'BUF', homeAb: 'PIT',
   score: { a: 2, h: 3 }, attempts: { a: 55, h: 61 }, slot: { a: 12, h: 15 },
-  located: { a: 30, h: 33 }, dAtt: { a: 18, h: 20 }, missedBy: { a: 13, h: 15 },
-  lvl5: { a: 30, h: 35 }, ...o });
+  located: { a: 30, h: 33 }, dAtt: { a: 18, h: 20 }, lvl5: { a: 30, h: 35 }, ...o });
 const catalog = (games = []) => ({ games });
 
 const docs = (o = {}) => ({ schedule: schedule(), teams: teams(), measures: measures(),
@@ -273,7 +270,7 @@ test('⛔⛔ THE ADMISSION RULE RUNS, it is not remembered: a row that needs mor
   const m = measures();
   m.settle.rows.slot.games = 60;
   const p = preview(2025020500, docs({ measures: m }), NOW);
-  assert.deepEqual(p.clubs.away.rows.map(r => r.key), ['level5', 'dmen', 'missed'],
+  assert.deepEqual(p.clubs.away.rows.map(r => r.key), ['level5', 'dmen'],
     'a row needing more than half a season stayed on the card');
 });
 
@@ -284,7 +281,7 @@ test('⛔ a measure the archive cannot settle at ANY number of games is not a cl
   const m = measures();
   m.settle.rows.dmen.games = null;
   const p = preview(2025020500, docs({ measures: m }), NOW);
-  assert.deepEqual(p.clubs.home.rows.map(r => r.key), ['level5', 'missed', 'slot']);
+  assert.deepEqual(p.clubs.home.rows.map(r => r.key), ['level5', 'slot']);
 });
 
 test('⚠️ before the pipeline has measured the targets, the rows show their figures and claim nothing', () => {
