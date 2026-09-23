@@ -553,5 +553,25 @@ export function censusRates(t) {
                opposite: +(c.opposite / c.n).toFixed(3),
                totalHits: (t.club?.h?.hits || 0) + (t.club?.a?.hits || 0) };
     })(),
+
+    /* ⛔⛔ PUBLISHED RAW — AND THIS LINE WAS MISSING FOR A DAY WHILE EVERY TEST
+       WAS GREEN. `censusGame` counts the whistles and `censusAdd` sums them, both
+       under test; this projection is the ONLY one that reaches measures.json and
+       it dropped them on the floor. So the preview card's three league rows could
+       not draw on any archive, ever — and `test/preview.test.js` passed the whole
+       time because its fixture WROTE a `census.whistles` block by hand, inventing
+       a document shape nothing produces. A fixture free to invent the producer's
+       output cannot fail the way production does; the same lesson as
+       `reliability.js` calling `of` instead of `ofGame` two days ago.
+
+       ⭐ COUNTS, NOT RATES, although this function is named for rates. The card
+       divides them two different ways — goals over CHANCES for the success rate,
+       and chances over club-games for the frequency — so publishing one quotient
+       would force the other surface to recover the counts anyway. */
+    whistles: (() => {
+      const w = t.whistles || {};
+      return Object.fromEntries(['penalties', 'offsides', 'ppChances', 'ppGoals', 'shGoals']
+        .map(k => [k, w[k] || 0]));
+    })(),
   };
 }

@@ -13,7 +13,9 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { preview, CLUB_ROWS } from '../src/lib/preview.js';
+import { censusGame, censusAdd, censusRates } from '../src/lib/census.js';
 
 const NOW = '2026-01-15T18:00:00Z';
 const FIXTURE = { id: 2025020500, date: '2026-01-15', gameType: 2, state: 'FUT',
@@ -310,4 +312,41 @@ test('⭐ the card never says who will win, and carries no word that forecasts',
     else if (typeof v === 'object') for (const k of Object.keys(v)) walk(v[k], `${path}.${k}`);
   };
   walk(p, 'preview');
+});
+
+/* ------------------------------------- THE DOCUMENT THE PIPELINE REALLY WRITES
+ *
+ * ⛔⛔ EVERY FIXTURE ABOVE IS HAND-WRITTEN, AND ONE OF THEM WAS A LIE. The
+ * `measures()` helper types out a `census.whistles` block, and for a day nothing
+ * in the pipeline produced one: `censusRates` — the only projection that reaches
+ * `measures.json` — did not publish the counters `censusGame` had been summing.
+ * The league rows could not draw on the live site, and this suite was green
+ * throughout, because a fixture is free to invent the producer's output.
+ *
+ * So this one asks the producer. It is slower and it is the only test here that
+ * would have failed.
+ */
+test('⛔⛔ the league rows draw from a census this repo actually PRODUCES', () => {
+  const rich = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url)));
+  const real = censusRates(censusAdd({}, censusGame(rich.events, { roster: rich.roster,
+    homeId: rich.teams.home.id, awayId: rich.teams.away.id,
+    homeAb: rich.teams.home.ab, awayAb: rich.teams.away.ab })));
+
+  const p = preview(2025020500, docs({ measures: { census: real } }), NOW);
+  const keys = p.league.map(r => r.key);
+  assert.deepEqual(keys, ['powerplay', 'penalties', 'offside'],
+    'a real census must produce all three rows, in the order the card prints them');
+
+  // ⭐ AND THE FIGURES MUST BE FINITE, not NaN from a missing denominator — the
+  // renderer calls .toFixed() on these and NaN would reach the page as "NaN".
+  for (const r of p.league) {
+    for (const [k, v] of Object.entries(r)) {
+      if (typeof v === 'number') assert.ok(Number.isFinite(v), `${r.key}.${k} is ${v}`);
+    }
+  }
+  // MUTATION: publish whistles as rates instead of counts and this fires, because
+  // the card's two divisions both need the raw chance count.
+  const pp = p.league.find(r => r.key === 'powerplay');
+  assert.ok(pp.chances > 0 && Number.isInteger(pp.chances), 'chances is a raw count');
+  assert.ok(pp.rate > 0 && pp.rate < 1, `a success rate, got ${pp.rate}`);
 });

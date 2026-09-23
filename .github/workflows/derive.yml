@@ -25,8 +25,15 @@ on:
   #
   # It also exercises the full pipeline on a schedule instead of only when
   # someone remembers, which is the cheapest October de-risking available.
+  #
+  # ⛔⛔ AND IT RUNS AFTER THE DAILY DEADLINE, NOT BEFORE IT. This was Mondays at
+  # 09:20 UTC, which shares the `ingest` concurrency group below with a job that
+  # now has a delivery target — and this one takes the better part of an hour. A
+  # nightly queued behind a late-starting derive would land after 10:00 Eastern
+  # every Monday, so the weekly is moved to the far side of that deadline. It has
+  # no deadline of its own: nothing on the site goes stale in the hours it waits.
   schedule:
-    - cron: '20 9 * * 1'
+    - cron: '47 15 * * 1'
 
 concurrency:
   group: ingest        # shares R2 with the nightly; never both at once

@@ -770,3 +770,27 @@ test('the archive folds the three, and a rate is counts over the census games', 
   assert.equal(t.whistles.penalties, one.whistles.penalties * 2, 'counts add');
   assert.equal(t.games, 2, 'and the denominator the card divides by is the games');
 });
+
+test('⛔⛔ and the PUBLISHED census carries them — the accumulator is not the document', () => {
+  /* THE DEFECT THIS EXISTS FOR, found on the live site 2026-09-23. Every test
+     above drives `censusGame` or `censusAdd`; `censusRates` is the only one of
+     the three whose output reaches `measures.json`, and it did not project
+     `whistles` at all. The preview card's three league rows read
+     `census.whistles` and could never draw, on any archive. Two suites were
+     green over it: these tests stopped one call short of publication, and
+     `test/preview.test.js` hand-wrote the block its fixture needed.
+
+     ⭐ THE SHAPE IS ASSERTED AGAINST THE ACCUMULATOR, not against a list typed
+     here, so a counter added upstream is published or this fails.
+     MUTATION: drop the projection and every assertion below fires. */
+  const ctx = ctxOf(rich);
+  const t = censusAdd({}, censusGame(rich.events, ctx));
+  const pub = censusRates(t);
+  assert.ok(pub.whistles, 'the published document has no whistles block at all');
+  assert.deepEqual(Object.keys(pub.whistles).sort(), Object.keys(t.whistles).sort(),
+    'a counter that is summed but never published is invisible to every page');
+  for (const k of Object.keys(t.whistles)) {
+    assert.equal(pub.whistles[k], t.whistles[k], `${k} changed on the way out`);
+  }
+  assert.ok(pub.whistles.penalties > 0, 'and the fixture must actually produce some');
+});

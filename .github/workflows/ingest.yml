@@ -21,21 +21,30 @@
 name: ingest
 
 on:
+  # ⚠️ THESE ARE THE TIMES WE ASK FOR, NOT THE TIMES IT RUNS. GitHub deprioritises
+  # scheduled workflows and this one is late nearly every day; the measured spread,
+  # the latest puck drop it has to clear and the deadline the three entries are
+  # sized against all live in docs/front-door.md §6.1, which is the one place that
+  # owns them. Do not restate any of it here — this file already had a sentence
+  # drift away from its original (the halt step below, which named the wrong cause
+  # for a year), and a second copy of a measurement is that defect waiting.
+  #
+  # ⭐ THREE ENTRIES BECAUSE THE JOB CONVERGES, WHICH IS THE CHEAPEST POSSIBLE
+  # DEFENCE AGAINST A SCHEDULER WE DO NOT CONTROL. The window is 14 days and the
+  # run is idempotent, so a second attempt that finds nothing new reports
+  # `unchanged` and exits in about a minute. Only ONE of the three has to land
+  # inside the window; the others cost almost nothing when it does. Kevin,
+  # 2026-09-23, set the target this is sized for: last night's games ingested,
+  # processed and on the site by 10:00 Eastern, daily.
+  #
+  # ⛔ AND NOT ON THE HOUR OR THE HALF HOUR. Those are the two slots every cron on
+  # the platform is written to, and they are where the deprioritisation bites
+  # hardest. The odd minutes are free and there is no reason to queue behind
+  # everyone else.
   schedule:
-    # ⚠️ THIS IS THE TIME WE ASK FOR, NOT THE TIME IT RUNS, and the comment that
-    # used to sit here — "11:00 UTC — after the latest North American games
-    # finish" — stated the second as if it were a fact about the pipeline.
-    # GitHub deprioritises scheduled workflows and this has NEVER once started on
-    # time; the measured spread is in docs/front-door.md §6.1, which is the one
-    # place that owns the number. Do not restate it here: this file already had a
-    # second copy of a sentence drift away from its original (the halt step
-    # below, which named the wrong cause for a year), and a third copy of a
-    # measurement is the same defect waiting.
-    #
-    # THE REASONING IS UNAFFECTED, which is why the drift has been harmless: the
-    # latest North American games finish by about 05:00 UTC, so 11:00 and every
-    # time it actually runs both clear them.
-    - cron: '0 11 * * *'
+    - cron: '23 7 * * *'
+    - cron: '53 8 * * *'
+    - cron: '23 10 * * *'
   workflow_dispatch:
     inputs:
       end:

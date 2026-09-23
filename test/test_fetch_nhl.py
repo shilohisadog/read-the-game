@@ -164,9 +164,15 @@ class Classification(unittest.TestCase):
         #
         # STILL OPEN, and only October can answer it: whether a regular-season
         # game passes through `FINAL` transiently between the final horn and
-        # being officialised. If it does, the 11:00 UTC run meets last night's
-        # games in a state it now recognises -- which is the right outcome
-        # either way, and the 14-day window re-checks them regardless.
+        # being officialised. If it does, the nightly meets last night's games in
+        # a state it now recognises -- which is the right outcome either way, and
+        # the 14-day window re-checks them regardless.
+        #
+        # ⚠️ 2026-09-23: THIS QUESTION GOT SHARPER, because the margin shrank.
+        # The crons moved from 11:00 UTC to 07:23/08:53/10:23 to meet a 10:00
+        # Eastern delivery target (docs/front-door.md §6.1.0), so the first
+        # attempt now lands about an hour after the latest possible final horn
+        # instead of five. Recognising both states is what makes that safe.
         self.assertEqual(set(F.FINAL_STATES), {"OFF", "FINAL"})
 
     def test_an_unknown_state_is_refused_and_named(self):
@@ -682,7 +688,7 @@ class TheHaltIsForTotalIncomprehension(unittest.TestCase):
     WHY IT CHANGED. `FINAL` appears on all 56 preseason games in a sampled
     season. Under the correlation rule a backfill halts before fetching a single
     byte, and if regular-season games ever sit in `FINAL` briefly after the horn,
-    the 11:00 UTC run destroys a whole night's ingest over two games. The rule
+    the nightly destroys a whole night's ingest over two games. The rule
     treats "a value we have not enumerated" as "a value the league has changed",
     and those are different things -- 133 offseason games taught us one word of a
     vocabulary and we wrote it down as the whole language.

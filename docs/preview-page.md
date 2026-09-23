@@ -34,7 +34,7 @@ together"* — page and unfurl, within days, in time for preseason.
 
 | | |
 |---|---|
-| `teams.json` | published, 53 KB, per club per season: `games`, `attempts{for,against}`, `slot{count,n}`, `blocks`, `saves`, `record`, `goalies`. ⭐ **The slot row is already there.** Written by the WEEKLY derive (`cron: 20 9 * * 1`). |
+| `teams.json` | published, 53 KB, per club per season: `games`, `attempts{for,against}`, `slot{count,n}`, `blocks`, `saves`, `record`, `goalies`. ⭐ **The slot row is already there.** Written by the WEEKLY derive (`cron: 47 15 * * 1`). |
 | missing from it | defencemen's share; 5-on-5 CF% while the score was level; and any **through-date** — so a card could not say how current it is. |
 | `recent.json` | rebuilt NIGHTLY, last 14 days, six fields per game (`id,date,awayAb,homeAb,score,attempts`). The figures the club rows need are already computed per game in `measureGame` and simply not published. |
 | `schedule.json` | nightly, and since `front-door-tonight.md` carries the league's own `date` per fixture and reaches a week ahead. |

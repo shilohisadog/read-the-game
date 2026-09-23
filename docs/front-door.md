@@ -295,18 +295,67 @@ handed and throws away.**
 
 ### 6.1 ⛔ The scheduling fact that decides this
 
-**`measure.mjs` does not run in the nightly.** `ingest.yml` is daily at 11:00 UTC
-and runs fetch + `derive.py`; `derive.yml` runs `measure.mjs` **weekly**, Mondays
-at 09:20 UTC.
+**`measure.mjs` does not run in the nightly.** `ingest.yml` is daily and runs
+fetch + `derive.py`; `derive.yml` runs `measure.mjs` **weekly**, Mondays.
 
-⚠️ **`11:00 UTC` is the cron, not the behaviour.** GitHub deprioritises scheduled
-workflows, and measured over the last twelve runs the nightly started **+2.7h to
-+10.3h late, median ~+4h, and never once on time** — so it lands between roughly
-14:00 and 16:00 UTC. That does not affect `STALE_HOURS = 36`, which tolerates it
-with room. It does mean **anything that has to reach a given night's run must be
-pushed by ~13:30 UTC**, not by 11:00, and any sentence planned against the cron is
-planning against a number the pipeline has never hit. So the per-game attempts for last night's games do not exist until
-the following Monday.
+⚠️ **A cron is the time we ask for, not the behaviour.** GitHub deprioritises
+scheduled workflows: measured over the **31 scheduled runs** on record the nightly
+started **+0.3h to +10.3h late, median +3.9h**, with only 4 of 31 inside half an
+hour. That does not affect `STALE_HOURS = 36`, which tolerates it with room. It
+does mean **anything that has to reach a given night's run must be pushed hours
+before the cron**, and any sentence planned against a cron is planning against a
+number the pipeline rarely hits. So the per-game attempts for last night's games
+do not exist until the following Monday.
+
+#### 6.1.0 ⭐ The delivery target, and the three numbers it is sized against
+
+Kevin, 2026-09-23: *"I'd like all of the previous nights games to be ingested,
+processed and available on the site by 1000 Eastern, daily."* Three measurements
+decide what the crons can be, and this section owns all three — the workflow
+files cite it and must not restate it.
+
+| | measured | source |
+|---|---|---|
+| **latest puck drop** | **03:30 UTC**, on 10 of 167 nights | every regular-season start the league scheduled in 2025-26 — 1,312 games, read from its own schedule feed. The most common last start is 03:00 UTC (64 nights). |
+| **scheduler lateness** | **+0.3h to +10.3h, median +3.9h** | 31 scheduled `ingest` runs |
+| **run duration** | **3–8 minutes** | the same runs |
+
+⛔ **Game length is NOT in that table, because nothing we hold can measure it.**
+The play-by-play carries period clocks and no wall clock, so the ~2h30m
+regulation / ~2h50m with overtime and a shootout behind the reasoning below is an
+estimate quoted from the sport, not a number from our data. It is the one soft
+input here and it is named so nobody later mistakes it for measured.
+
+**The window that follows.** Last horn ≈ 03:30 + ~2h50m ≈ **06:20 UTC**, plus a
+little for the league to finalise the feed. 10:00 Eastern is 14:00 UTC in EDT and
+15:00 UTC in EST, so **14:00 UTC is the deadline that holds year-round**, and an
+8-minute run must *start* by ~13:50. That leaves a start window of roughly
+**07:00–13:50 UTC**.
+
+⚠️ **No single cron fits a 6h50m window against a scheduler with a 10h tail.**
+From 07:23, 28 of the 31 observed runs would have landed in time (90%); the +9.9h
+and +10.3h ones would not. Hence three entries — 07:23, 08:53, 10:23 UTC — since
+the job converges and only one has to land. **Off the hour and the half hour on
+purpose:** those are the two slots every cron on the platform is written to.
+
+⛔ **And `derive.yml` moved to Mondays 15:47 UTC, from 09:20.** It shares the
+`ingest` concurrency group and takes the better part of an hour, so a nightly
+queued behind a late-starting derive would miss 10:00 Eastern every Monday. The
+weekly has no deadline of its own; it belongs on the far side of the daily one.
+
+✅ **Ruled 2026-09-23: the 90% is accepted for now.** The remaining tail is
+GitHub's queue, and the fix for it is an external trigger — `workflow_dispatch`
+is not deprioritised — most cheaply a Cloudflare Worker cron POSTing to the
+dispatch API, which would make the start time ours and put the run on the site
+by about 03:40 Eastern. Kevin: *"let's stay with the 90 percent plus and see how
+we do… then we can see how the regular season starts out and then decide."*
+⚠️ It would need a GitHub token as a Worker secret, and it does **not** violate
+`ingest.yml`'s "no Worker in the pipeline" rule: that rule is about the
+extraction producing every number on the site, and a trigger computes nothing.
+
+⛔ **One limit no schedule can fix.** A vocabulary halt refuses to publish
+anything, by design — three nights in September 2026 alone. The target is a
+target for a healthy pipeline.
 
 Three ways out, and only one of them is allowed:
 
