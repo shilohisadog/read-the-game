@@ -258,7 +258,7 @@ test('⭐⭐ the measure row draws BEFORE the season, because the axis is itself
   const said = textOf(ids.pv);
   assert.match(said, /5-on-5 CF% while the score was level/, 'the measure is named');
   assert.match(said, /no games yet/, 'and each club says it has nothing on it');
-  assert.match(said, /Shaded: what clubs did over a full season, 44 to 57 across 96 club-seasons/);
+  assert.match(said, /The scale is what clubs did over a full season, 44 to 57 across 96 club-seasons/);
   // ⛔ AND NO BAR IS DRAWN FOR A CLUB WITH NO FIGURE. The row is a template, and a
   // template that draws a club's bar at zero would be inventing a measurement.
   const filled = rectsIn(ids.pv).filter(r => r['fill-opacity'] != null);
@@ -347,4 +347,30 @@ test('⛔ the axis names its own ends, so a full-width band is not an empty mete
   // level5's fixture range is .44–.57, dmen's is .26–.38 — the labels are the
   // axis's own endpoints, so they differ per row and cannot be typed once.
   assert.deepEqual(ends.map(e => textOf(e)), ['44 57', '26 38']);
+});
+
+test('⛔ the caption says SHADED only when there is something shaded to see', () => {
+  /* The axis runs from the lowest club-season to the highest, so the band fills
+     the whole track and there is nothing to point at — unless a club is currently
+     outside anything a full season produced, which is common in October and is
+     the most interesting thing the picture can show. Calling it "shaded" in both
+     cases names a visual that usually is not there.
+     MUTATION: make the wording unconditional and one of these two fires. */
+  return (async () => {
+    const inside = run({}, `?game=${GID}`, '2026-10-01T12:00:00Z');
+    await inside.settle();
+    assert.match(textOf(inside.ids.pv), /The scale is what clubs did over a full season/);
+    assert.ok(!/Shaded:/.test(textOf(inside.ids.pv)));
+
+    // A club at 71 of every 100 is past the fixture's 57 high-water mark.
+    const wild = { games: 6, attempts: { for: 300, against: 290 },
+      slot: { count: 70, n: 150 }, dmen: { count: 95, n: 300 },
+      level5: { for: 710, against: 290 } };
+    const out = run({ 'teams.json': { through: '2026-10-01',
+      seasons: { 2026: { BUF: wild, PIT: club() } } } }, `?game=${GID}`, '2026-10-01T12:00:00Z');
+    await out.settle();
+    const said = textOf(out.ids.pv);
+    assert.match(said, /Shaded: what clubs did over a full season/);
+    assert.match(said, /beyond anything a full season has produced/);
+  })();
 });

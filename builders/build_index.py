@@ -3513,8 +3513,13 @@ PREVCSS = r"""<style>
 /* ⭐ A HUNDRED DOTS, BECAUSE THE UNIT IS LITERALLY "OF EVERY 100". This is the one
    league figure that is a PROPORTION OF A DEFINED WHOLE, so it gets the picture a
    novice can count; a rate per game is not out of anything and gets a numeral. */
-.pvdots{margin:11px 0 0;display:grid;grid-template-columns:repeat(10,1fr);
- gap:2px;max-width:104px}
+/* ⛔ TWENTY ACROSS, NOT TEN. A 10x10 grid is the tidy shape and it made this tile
+   twice the height of the two beside it, which stretch to match — so two tiles
+   carrying one sentence each held a hundred pixels of nothing. Same hundred dots,
+   five rows instead of ten. Found by looking; the suite counts dots and cannot
+   see a column of dead space. */
+.pvdots{margin:11px 0 2px;display:grid;grid-template-columns:repeat(20,1fr);
+ gap:2px;max-width:100%}
 .pvdots i{display:block;aspect-ratio:1;border-radius:50%;background:var(--edge)}
 .pvdots i.on{background:var(--blue)}
 
@@ -3547,8 +3552,9 @@ PREVCSS = r"""<style>
 .pvends{grid-column:2;display:flex;justify-content:space-between;
  font-size:.7rem;color:var(--muted);font-variant-numeric:tabular-nums;
  margin:-2px 0 2px}
-.pvfoot{margin:9px 0 0;font-size:.76rem;color:var(--muted);line-height:1.45;
+.pvfoot{margin:9px 0 0;font-size:.76rem;color:var(--muted);line-height:1.5;
  font-variant-numeric:tabular-nums}
+.pvfoot span{display:block}
 .pvnone{margin:0;color:var(--muted);font-size:.9rem}
 .pvlinks{margin:26px 0 0;display:flex;flex-wrap:wrap;gap:8px 22px;font-size:.93rem}
 @media (max-width:430px){
@@ -3641,8 +3647,6 @@ __HELPERS__
          opener there is no such figure, and substituting the three-season one
          would be two populations wearing one label — the trap `leagueShares`
          already names. So the tick is simply absent and the caption says so. */
-      if (s.league != null) svg.appendChild(svgEl('rect', { x: at(s.league) - 0.25,
-        y: 1.5, width: 0.5, height: 7, fill: '#5b6d7a' }));
       if (s.value != null) {
         var from = s.league == null ? at(range ? range.median : s.value) : at(s.league);
         var to = at(s.value);
@@ -3653,6 +3657,12 @@ __HELPERS__
         svg.appendChild(svgEl('rect', { x: x, y: 2.2, width: w, height: 5.6, rx: 0.8,
           fill: 'none', stroke: ink, 'stroke-width': 0.35 }));
       }
+      /* ⛔ THE TICK IS DRAWN LAST, AND IT WAS INVISIBLE BECAUSE IT WAS DRAWN
+         FIRST. Every bar starts ON the league value, so the bar's rounded end
+         covered the one mark the whole picture is measured against. SVG has no
+         z-index; paint order is document order. */
+      if (s.league != null) svg.appendChild(svgEl('rect', { x: at(s.league) - 0.22,
+        y: 1.2, width: 0.44, height: 7.6, fill: '#2b3b46' }));
       wrap.appendChild(svg);
 
       var v = el('span', s.value == null ? 'pvv none' : 'pvv',
@@ -3825,11 +3835,25 @@ __HELPERS__
         + ' · ' + r.games + ' of ' + r.need + ' games'
         + (r.settled ? ' · settled' : ' · still forming'));
     });
-    if (ar.range) foot.push('Shaded: what clubs did over a full season, '
-      + pct(ar.range.min) + ' to ' + pct(ar.range.max)
-      + ' across ' + ar.range.n + ' club-seasons.');
+    /* ⛔ "SHADED" WAS A WORD FOR SOMETHING USUALLY INVISIBLE. The axis runs from
+       the lowest to the highest club-season, so the band fills the whole track
+       and there is no shading to see — unless a club is currently OUTSIDE what
+       any full season produced, which early in a season is common and is the
+       most interesting thing the picture can show. So the sentence says which
+       case the reader is looking at. */
+    if (ar.range && track) {
+      var wider = track.lo < ar.range.min || track.hi > ar.range.max;
+      foot.push((wider
+        ? 'Shaded: what clubs did over a full season, '
+        : 'The scale is what clubs did over a full season, ')
+        + pct(ar.range.min) + ' to ' + pct(ar.range.max)
+        + ' across ' + ar.range.n + ' club-seasons'
+        + (wider ? ' — a bar past it is beyond anything a full season has produced.' : '.'));
+    }
     if (!foot.length) foot.push(noneYet(p.counting));
-    box.appendChild(el('p', 'pvfoot', foot.join('  ')));
+    var fp = el('p', 'pvfoot');
+    foot.forEach(function (line) { fp.appendChild(el('span', null, line)); });
+    box.appendChild(fp);
     return box;
   }
 
