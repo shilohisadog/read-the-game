@@ -288,8 +288,8 @@ test('⭐ the page shows the sensitivity of its own answer, in games', async () 
   assert.match(said, /14 games/, 'the alternate-split count for level5 is missing');
   assert.match(said, /23 games/, 'the r = 0.6 count for level5 is missing');
   assert.match(said, /60 games/, 'the r = 0.8 count for level5 is missing');
-  assert.match(said, /argument 1/, 'the alternate count must point at the argument it answers');
-  assert.match(said, /argument 2/);
+  assert.match(said, /question 1/, 'the gentler-test count must point at the question it answers');
+  assert.match(said, /question 2/);
   assert.match(said, /0\.85/, 'the weakest pair in the possession family is the headline');
 });
 
@@ -301,9 +301,9 @@ test('⛔⛔ the arguments AGAINST us are in the page itself, not fetched', asyn
      MUTATION: move any of these into the rendered part and this fires. */
   const { html } = pageOf('how-we-measure.html');
   const body = html.slice(0, html.indexOf('<script>'));
-  for (const said of ['Correct, deliberately', 'Correct.</b> Nothing derives it',
-                      'Partly.', 'the criticism we agree with most',
-                      'changed what is on the card', 'we found it ourselves',
+  for (const said of ['Yes, and on purpose', 'Nowhere. It is a choice',
+                      'Half a fact, half a choice', 'the criticism we agree with most',
+                      'it changed what is on the card', 'we found it ourselves',
                       'It rejects the standings']) {
     assert.ok(body.includes(said), `the page no longer concedes: ${said}`);
   }
@@ -392,4 +392,54 @@ test('⛔ the league frame carries what it was counted over, in its own unit', (
   assert.equal(by.penalties.population, 'games');
   assert.equal(leagueRows(MEASURES).length, m.league.length,
     'the page must explain exactly the tiles the card drew');
+});
+
+
+/* --------------------------------------------- WHO THE PAGE IS WRITTEN FOR */
+
+test('⛔⛔⛔ the page is written for a hockey fan, not for us', async () => {
+  /* KEVIN, READING THE FIRST VERSION AND STOPPING A FEW PARAGRAPHS IN: *"it's not
+     really in a public facing tone, it's more of an internal type phrasing…
+     the title of the first blurb is '…if it settles…', I doubt a novice hockey
+     fan is going to grasp what 'settles' means right away."*
+
+     ⭐ AND IT IS THE SAME DEFECT AS A NAKED NUMBER. This page exists so a reader
+     can check our work; a reader who has to learn our vocabulary first cannot.
+     A legibility defect here IS a correctness defect, which is what the
+     cold-reader rule already says about every other surface.
+
+     ⚠️ WHY A WORD LIST RATHER THAN A JUDGEMENT. Tone cannot be asserted, but the
+     specific house words that made the page unreadable can be, and they are the
+     ones that will creep back — every one below was in the first draft. A word
+     that earns its place can be removed from this list in the same commit that
+     reintroduces it, deliberately and in writing.
+
+     ⛔ IT READS WHAT A READER SEES, not the source. Scanning the file would trip
+     over `measures.settle`, `policy.admission` and `clubRange`, which are
+     identifiers a reader never meets — and a check that cannot tell those apart
+     from prose gets weakened until it says nothing. */
+  const page = render('how-we-measure.html', { 'measures.json': MEASURES });
+  await page.settle();
+  const rendered = walk(page.ids.hm).map(n => n.textContent).filter(Boolean).join(' ');
+
+  const { html } = pageOf('how-we-measure.html');
+  const staticBody = html.slice(0, html.indexOf('<script>'))
+    .replace(/<!--[\s\S]*?-->/g, ' ')        // builder comments are not the page
+    .replace(/<style[\s\S]*?<\/style>/g, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/[\w./-]+\.(?:md|js|py|html)\b/g, ' ');   // a filename is a citation
+
+  const seen = (staticBody + ' ' + rendered).replace(/&[a-z]+;/g, ' ');
+  const HOUSE = ['settle', 'admission', 'club-season', 'club-game', 'chronolog',
+                 'centred', 'centered', 'reliabilit', 'spearman', 'pearson',
+                 'collinear', 'orthogon', 'club row', 'league row', 'denominator',
+                 'per-game', 'doctrine', 'CLUB_ROWS'];
+  const found = HOUSE.filter(w => new RegExp(w, 'i').test(seen));
+  assert.deepEqual(found, [],
+    `the page speaks to a reader in words only we use: ${found.join(', ')}`);
+
+  /* AND THE PLAIN VERSION IS ACTUALLY THERE — a word list alone would pass a page
+     that had deleted the explanation rather than rewritten it. */
+  assert.match(rendered, /Is that the team, or is it just ten games\?/);
+  assert.match(rendered, /beside a team\u2019s name/);
 });

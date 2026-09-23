@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-0fvpSRXf2lX9MqM0xDX4ZF8a/JrMS3iEKY3xBom1QTI=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-tLcBAn+O62owHlftoX8XlsOjhKIqi3uuCaoW1VLisgA=' 'sha256-POKa4TBZVZlra5xt5sUrWS0If/LeF6QeGLK3HO5icVE='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-d6Yt75BEnMnfodtVJ1H/a/4MEd0T3WzOFaiMoOo7qBU=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-yOaplj5zt8CswdO4EsbxQdeMHe810xxby88iasWAO58=' 'sha256-lraClBJiplvfiYexLypVcYXg2kynb6qOdbCtpPJ2CIM='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -276,6 +276,18 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .ccard .lt{font-weight:650}
 .ccard .ld{font-size:.85rem;color:var(--muted);line-height:1.45;
  font-variant-numeric:tabular-nums}
+/* ⭐⭐⭐ THE WAY INTO THE WORK, AND IT IS SHAPED DIFFERENTLY ON PURPOSE. The three
+   cards above it are FINDINGS — each states a measured fact and opens the lesson
+   that teaches it. This one states no fact; it opens the page that shows how
+   every number on the site was counted. Kevin asked for it after reading the
+   methods page: *"we should include a card on the front page as an entry point
+   to the page, no?"*
+   ⛔ IT SPANS THE GRID AND CARRIES A DARK EDGE rather than the blue one, because
+   a fourth identical card would read as a fourth finding and a reader would
+   expect a number in it. It is the same distinction the card's own two doors
+   make: a lesson teaches the thing, the work shows the counting. */
+.wcard{grid-column:1/-1;border-left-color:var(--ink)}
+.wcard .ld::after{content:" \2192";color:var(--blue)}
 .lmore{margin:9px 0 0;font-size:.87rem}
 .lmore a{color:var(--blue);text-decoration:none}
 .lmore a:hover,.lmore a:focus-visible{text-decoration:underline}
@@ -576,9 +588,13 @@ footer p{margin:0 0 8px}
 .hmsec{margin:0 0 26px}
 .hmsec h2{font-size:1.15rem;margin:0 0 8px}
 .hmsec p{line-height:1.6;margin:0 0 10px}
-.hmpol{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0 0;padding:0;list-style:none}
+/* ⛔ A GRID, NOT A WRAPPING FLEX ROW. Each cell sized to its own content, and
+   once the labels became sentences a reader could follow, the four of them
+   staircased down the page at four different widths. Found by looking. */
+.hmpol{display:grid;gap:10px;margin:12px 0 0;padding:0;list-style:none;
+ grid-template-columns:repeat(auto-fit,minmax(255px,1fr))}
 .hmpol li{background:#fff;border:1px solid var(--edge);border-radius:9px;
- padding:9px 12px;font-size:.85rem;color:var(--muted);line-height:1.35}
+ padding:9px 12px;font-size:.85rem;color:var(--muted);line-height:1.4}
 .hmpol b{display:block;font-size:1.25rem;color:var(--ink);font-weight:800;
  font-variant-numeric:tabular-nums}
 
@@ -605,8 +621,8 @@ footer p{margin:0 0 8px}
 .hmnone{color:var(--muted);font-size:.86rem;margin:0}
 
 /* ---- the family matrix ------------------------------------------------ */
-.hmpairs{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:7px}
-.hmpairs li{display:grid;grid-template-columns:1fr 78px 3.1em;gap:10px;
+.hmpairs{list-style:none;margin:12px 0 14px;padding:0;display:grid;gap:7px}
+.hmpairs li{display:grid;grid-template-columns:1fr 150px 3.1em;gap:10px;
  align-items:center;font-size:.83rem}
 .hmpairs svg{display:block;width:100%;height:9px}
 .hmpairs b{font-variant-numeric:tabular-nums;text-align:right;font-weight:700}
@@ -623,106 +639,121 @@ footer p{margin:0 0 8px}
 <div class="wrap">
 <p class="eyebrow">Read the Game</p>
 <h1>How we measure</h1>
-<p class="note hmlede">Every figure on this site is counted from the league&rsquo;s own
-play-by-play, by code in this repository, over an archive you can count yourself.
-This page says what each one was counted from, how many games it takes before it
-means anything, and what is wrong with it.</p>
-<p class="note">Where a criticism of our method is correct, it says so.</p>
+<p class="note hmlede">Every number on this site comes out of the league&rsquo;s own
+record of what happened in a game &mdash; who shot, from where, who was on the ice.
+Nothing here is a projection or an estimate.</p>
+<p class="note">This page takes each number in turn and shows you what we counted,
+what we divided it by, how much of a season it takes before it tells you anything,
+and what is wrong with it. Where we think a criticism of our method is right, we
+say so.</p>
 
 <main id="hm"></main>
 
 <!-- ⛔ STATIC, AND DELIBERATELY BELOW THE MEASURED PART. Everything above this
      point is read from the published document and disappears if it cannot be
      fetched; everything here is an argument and is always on the page. A reader
-     who arrives to check our work and finds a blank page has been told nothing. -->
+     who arrives to check our work and finds a blank page has been told nothing.
+     ⚠️ AND IT IS WRITTEN FOR A HOCKEY FAN, NOT FOR US. Kevin stopped reading the
+     first version a few paragraphs in: *"it's more of an internal type
+     phrasing... I doubt a novice hockey fan is going to grasp what 'settles'
+     means right away."* He is right, and it is the same defect as a naked figure
+     — a reader who has to learn our vocabulary before they can check our work
+     cannot check our work. The words that went: settles, admission rule, club
+     row, league row, reliability, chronological, centred, club-season. The
+     arguments are now QUESTIONS, in the words someone would actually ask. -->
 <section class="hmsec" id="criticisms">
-<p class="hmkick">The arguments against this</p>
+<p class="hmkick">Fair questions about all this</p>
 
-<h2>1. &ldquo;A chronological split is conservative &mdash; you under-credit everything.&rdquo;</h2>
-<p><b>Correct, deliberately.</b> Cutting a season into its first half and its second
-half means the two halves differ in opponent, roster health and form, so real
-mid-season change is charged against the measure as unreliability. Alternate-game
-halves share all of that and every measure looks steadier. We publish both: each
-figure above carries what it would need if the halves alternated, and it is
-always the smaller number. We keep the chronological one because it answers the
-question the card&rsquo;s label actually asks &mdash; does what this club has done so
-far describe what it will do next? &mdash; but the honest statement is a band, and
-the band is printed.</p>
+<h2>1. Comparing the first half of a season against the second is a hard test.
+Aren&rsquo;t you selling every number short?</h2>
+<p><b>Yes, and on purpose.</b> A team in October is not quite the team it is in
+March &mdash; the schedule is different, players get hurt, lines change. Our test
+counts all of that against the number, even though some of it is real change
+rather than luck. The gentler version is to compare every other game instead:
+each half then gets the same schedule and the same healthy roster, and everything
+looks steadier. We show you both. Under every number above, the smaller figure is
+what that gentler test says. We publish the harder one, because the question the
+site is actually answering is <em>does what this team has done so far tell you
+what it will do next</em>, and that is the harder question.</p>
 
-<h2>2. &ldquo;Your reliability threshold is arbitrary.&rdquo;</h2>
-<p><b>Correct.</b> Nothing derives it. It is a declared choice about how sure we
-want to be before telling a novice that a number describes a club rather than a
-sample, and the only useful answer to the criticism is to show what the answer
-would be at other thresholds &mdash; which each figure above does.</p>
+<h2>2. Where does your cut-off for &ldquo;steady enough&rdquo; come from?</h2>
+<p><b>Nowhere. It is a choice.</b> We picked how closely a team&rsquo;s first half
+has to match its second before we are willing to put a number beside a team&rsquo;s
+name, and nothing in the data picked it for us. The only useful answer to that is
+to show you what changes if you pick differently, so every number above also
+carries what it would need at a looser bar and at a stricter one.</p>
 
-<h2>3. &ldquo;Half a season is arbitrary too.&rdquo;</h2>
-<p><b>Partly.</b> The admission rule is half of the league&rsquo;s 82-game season, so
-it is half of a fact about the schedule rather than a tuned constant, and it
-moves by itself if the league changes the schedule. But choosing <em>half</em> is
-a choice, and a different fraction would admit a different set of rows.</p>
+<h2>3. And where does half a season come from?</h2>
+<p><b>Half a fact, half a choice.</b> A season is 82 games, so 41 is half of
+something real rather than a number we tuned, and it will move by itself if the
+league ever changes the schedule. But deciding that <em>half</em> is the right
+fraction was still us deciding.</p>
 
-<h2>4. &ldquo;Reliability is not usefulness.&rdquo;</h2>
-<p><b>Correct, and it is the criticism we agree with most.</b> A measure can
-matter enormously and still not settle inside a season. Power plays score at
-roughly half again the rate of even-strength play, and no power-play measure
-settles &mdash; which is exactly why power plays are on the card as something
-<em>hockey</em> does rather than as something a club is. Reliability answers one
-question, does this number describe this club, and says nothing at all about
-whether the thing it measures matters.</p>
+<h2>4. A number can matter enormously without being steady.</h2>
+<p><b>Right, and this is the criticism we agree with most.</b> Power plays decide
+games, and no power-play number passes our test &mdash; which is exactly why power
+plays are on the card as something <em>hockey</em> does rather than as something a
+team is. Our test answers one question, <em>does this number describe this
+team</em>, and it says nothing whatsoever about whether the thing being measured
+is important.</p>
 
-<h2>5. &ldquo;A split-half cannot see scorer bias &mdash; both halves share a home rink.&rdquo;</h2>
-<p><b>Correct, and it changed what is on the card.</b> A quantity recorded by a
-human in the building is recorded the same way in both halves of the season, so
-it looks highly reliable while partly measuring the scorer. We test for it
-separately, by asking whether a home club&rsquo;s figure moves with its
-<em>visitors&rsquo;</em> figure inside the same building. A measure of shots that
-missed passed every reliability test we had and failed that one; it was on this
-site for about four hours.</p>
+<h2>5. Your test cannot see a scorekeeper&rsquo;s bias. Both halves of a season
+share the same home rink.</h2>
+<p><b>Right, and it changed what is on the card.</b> Some things in the record are
+counted by a person in the building, and that person counts the same way in
+October as in March &mdash; so the number looks beautifully steady while partly
+measuring the scorekeeper. We test for it separately, by asking whether the home
+team&rsquo;s figure moves together with its <em>visitors&rsquo;</em> figure in the
+same building. A measure of shots that missed the net passed every steadiness test
+we had and failed that one badly. It was on this site for about four hours.</p>
 
-<h2>6. &ldquo;You pooled seasons without centring them.&rdquo;</h2>
-<p><b>Correct, and we found it ourselves on 23 September 2026.</b> Three seasons
-were pooled without removing each season&rsquo;s own level, so a league-wide change
-between years was partly read as a difference between clubs &mdash; and the
-league&rsquo;s recording of some events changed a great deal between those years.
-Our own specification had said to centre them and the code did not. Fixed, with a
-test whose fixture makes the two answers differ in sign. It cost us one row, which
-was removed, and returned another, which was added.</p>
+<h2>6. You combined three seasons without levelling them first.</h2>
+<p><b>Right, and we found it ourselves on 23 September 2026.</b> The league&rsquo;s
+recording of some events changed a great deal between those seasons &mdash;
+giveaways nearly doubled in one off-season, which no team did. Pooled without
+removing each season&rsquo;s own level, a league-wide change like that reads as a
+difference between teams. Our own written method said to level them and the code
+did not. It is fixed, with a test that fails if it ever stops happening. It cost
+us one number, which came off the card, and gave back another, which went on.</p>
 
-<h2>7. &ldquo;Your bar is rigged to reject fancystats.&rdquo;</h2>
-<p><b>It rejects the standings.</b> Points percentage, goal differential and
-save percentage at even strength all need more games than the admission rule
-allows, so none of them is on the card either. The bar is demanding, and it is
-demanding of the numbers every broadcast leads with before it is demanding of
-anyone else&rsquo;s.</p>
+<h2>7. Your bar is rigged to reject anything clever.</h2>
+<p><b>It rejects the standings.</b> Points percentage, goal difference and save
+percentage at even strength all need more games than we allow, so none of them is
+beside a team&rsquo;s name either. The bar is demanding of the numbers every
+broadcast leads with before it is demanding of anyone else&rsquo;s.</p>
 </section>
 
 <section class="hmsec" id="limits">
 <p class="hmkick">What we cannot measure, and will not pretend to</p>
 <p><b>Zone entries and exits, controlled-entry rate.</b> Not in the public feed at
-any level. The complete stored event vocabulary is faceoff, stoppage, hit,
+any level. Everything the league records for a game is: faceoff, stoppage, hit,
 giveaway, shot on goal, takeaway, missed shot, blocked shot, goal, penalty,
-delayed penalty, and the period markers. A metric built on entries would be a
-metric built on something we do not have.</p>
+delayed penalty, and the markers for a period starting and ending. A number built
+on zone entries would be a number built on something we simply do not have.</p>
 <p><b>Expected goals, score-adjusted possession, RAPM, GAR and WAR.</b> These are
-models. This site shows what happened and counts it; a modelled number cannot be
-checked against the replay it sits beside, which is the one thing every figure
-here can be.</p>
-<p><b>PDO.</b> It is the sum of two rates rather than a ratio, so it does not fit
-the counted-out-of-counted contract every figure here uses. Both of its parts
-need far more than a season to settle, and PDO is <em>designed</em> to measure
-luck &mdash; presenting it as something a club is would invert its own meaning.</p>
-<p><b>Anything per sixty minutes of even-strength play.</b> The industry&rsquo;s
-preferred denominator needs time on ice by situation, which means walking the
-strength code between timestamps and deciding what to do with the gaps. We have
-not built it. Until we do, our rates are per game and mix in special-teams time,
-and that is the strongest remaining attack on the numbers above.</p>
+models &mdash; someone&rsquo;s estimate of how much a chance was worth. This site
+shows what happened and counts it, so that anything we print can be checked
+against the replay sitting next to it. An estimate cannot be.</p>
+<p><b>PDO.</b> It adds two rates together rather than dividing one thing by
+another, so it does not fit the shape every number here takes. Both of its parts
+need far more than a season to steady. And PDO is <em>designed</em> to measure
+luck &mdash; presenting it as something a team is would turn its own meaning
+inside out.</p>
+<p><b>Anything per sixty minutes of even-strength play.</b> That is what the
+analytics world divides by, and working it out needs the time each team spent on
+the ice broken down by how many players were on it &mdash; which we have not
+built. Until we do, we divide by games played, which quietly includes power plays
+and penalty kills. It is the strongest criticism of the numbers above that we have
+no answer to.</p>
 </section>
 
-<p class="hmr">The full search &mdash; every candidate measure we tested, the
-collinearity between them, the venue instruments and where they disagree with each
-other &mdash; is <a href="https://github.com/shilohisadog/read-the-game/blob/main/docs/what-settles.md">docs/what-settles.md</a>
-in the repository. The code that produces every figure on this page is
-<a href="https://github.com/shilohisadog/read-the-game/blob/main/src/lib/reliability.js">src/lib/reliability.js</a>.</p>
+<p class="hmr">The whole search &mdash; all 47 measures we tested, how much they
+overlap, and the four different ways we tried to detect scorekeeper bias (they do
+not fully agree with each other, and we say so) &mdash; is in
+<a href="https://github.com/shilohisadog/read-the-game/blob/main/docs/what-settles.md">docs/what-settles.md</a>.
+The code behind every number on this page is
+<a href="https://github.com/shilohisadog/read-the-game/blob/main/src/lib/reliability.js">src/lib/reliability.js</a>.
+Both are open, and so is everything else here.</p>
 </div>
 <script>
 /**
@@ -1546,32 +1577,39 @@ function preview(id, docs, now) {
 const DERIVATION = {
   /* ---------------------------------------------------------- the club rows */
   level5: {
-    count: 'shot attempts by this club while the situation code was 1551 and the score was level',
-    of: 'both clubs’ attempts under the same two conditions',
-    why: 'It is the closest thing hockey has to "who had the puck", and it is the '
-       + 'one industry label on this site. The level-score condition is not '
-       + 'decoration: every club that is losing pushes, so a season’s raw figure '
-       + 'flatters whoever trailed most.',
-    caveat: 'The denominator is per game rather than per sixty minutes of 5-on-5, '
-          + 'because we cannot yet derive time on ice by situation. That is the '
-          + 'strongest remaining attack on this number and we have not answered it.' },
+    count: 'shots this team tried while both sides had five skaters and a goalie '
+         + 'on the ice, and the score was tied',
+    of: 'both teams\u2019 attempts under those same two conditions \u2014 so 50% means '
+      + 'the two traded shots evenly',
+    why: 'It is the closest thing hockey has to "who had the puck": a team that is '
+       + 'shooting is a team that has it. We only count it while the score is tied '
+       + 'because a team that is losing throws everything at the net, so a whole '
+       + 'season of it mostly tells you who spent more time behind.',
+    caveat: 'We divide by games played. What we should divide by is minutes of '
+          + 'five-on-five ice time, which we cannot work out from the league\u2019s '
+          + 'feed yet \u2014 so our figure quietly includes time spent on power plays '
+          + 'and penalty kills. This is the strongest fair criticism of this '
+          + 'number and we have not answered it.' },
   dmen: {
     count: 'shot attempts taken by a player the roster lists as a defenceman',
-    of: 'every shot attempt by that club',
-    why: 'It is a shape a novice can see from the first shift — whether the puck '
-       + 'goes back to the line or stays low — and it is nearly independent of '
-       + 'possession, so it says something the CF% row does not.',
-    caveat: 'Position is the roster’s word, not a judgement about where a player '
-          + 'actually played. A forward who spent a season on the point counts as '
-          + 'a forward here.' },
+    of: 'every shot attempt by that team',
+    why: 'You can see this one from the first shift: does the puck keep going back '
+       + 'out to the blue line, or does this team work it down low? And it is close '
+       + 'to independent of who has the puck, so it tells you something the number '
+       + 'above does not.',
+    caveat: 'Defenceman is what the roster says, not a judgement about where a '
+          + 'player actually played. A forward who spent the season up on the point '
+          + 'still counts here as a forward.' },
   slot: {
-    count: 'shot attempts whose recorded coordinate falls inside the slot',
-    of: 'that club’s attempts that carry a coordinate at all',
-    why: 'Where a team shoots from, rather than how often. The slot is the same '
-       + 'polygon the replay shades, so a reader can watch it being counted.',
-    caveat: 'The coordinate is the league’s, recorded by hand in the building, and '
-          + 'attempts with no coordinate are excluded from both halves rather than '
-          + 'counted as outside.' },
+    count: 'shot attempts from inside the slot \u2014 the area in front of the net '
+         + 'that most goals come from',
+    of: 'that team\u2019s attempts the league recorded a location for',
+    why: 'Where a team shoots from, rather than how often. The slot we use is the '
+       + 'same shape the replay shades, so you can watch a shot being counted '
+       + 'instead of taking our word for it.',
+    caveat: 'The location is the league\u2019s, written down by hand in the building. '
+          + 'Attempts with no location recorded are left out of both halves of the '
+          + 'division rather than counted as "outside".' },
 
   /* -------------------------------------------------------- the league frame */
   powerplay: {
@@ -1579,73 +1617,82 @@ const DERIVATION = {
     label: 'How often a power play produces a goal',
     count: 'power-play goals',
     of: 'power plays',
-    why: 'The single most consequential thing that happens away from open play, '
-       + 'and the figure a novice most often guesses wrongly high.',
-    caveat: 'Power-play goals, not goals scored during a power play — the second '
-          + 'includes short-handed goals and reads about three points higher than '
-          + 'the league’s own figure.' },
+    why: 'The most consequential thing that happens away from open play \u2014 and '
+       + 'the number new fans guess far too high. Most power plays end with '
+       + 'nothing at all.',
+    caveat: 'Power-play goals, not every goal scored while a team was on a power '
+          + 'play. The second includes goals scored BY the short-handed team, and '
+          + 'reads about three points higher than the league\u2019s own figure.' },
   penalties: {
-    unit: 'penalties, per club per game',
+    unit: 'penalties, per team per game',
     label: 'How many penalties a team takes',
-    count: 'penalty events in the archive',
-    of: 'two per game, so the figure is per club per game',
-    why: 'It is the number the power-play tile is measured against, and the gap '
-       + 'between them is itself worth teaching.',
-    caveat: 'About a quarter of penalties start no power play — offsetting minors, '
-          + 'misconducts and penalties taken while already short-handed are the '
-          + 'obvious candidates and NONE of them is measured here, so we state the '
-          + 'gap and do not explain it.' },
+    count: 'penalties called',
+    of: 'two teams per game, so the answer is per team per game',
+    why: 'This is the number the power-play figure sits against, and the gap '
+       + 'between them is worth knowing: taking a penalty does not always hand '
+       + 'the other team a power play.',
+    caveat: 'About a quarter of penalties never give the other team a power play. '
+          + 'Offsetting minors, misconducts, and penalties taken while a team is '
+          + 'already short-handed are the obvious explanations \u2014 and we have '
+          + 'measured none of them, so we state the gap and do not explain it.' },
   offside: {
-    unit: 'times offside, per club per game',
+    unit: 'times offside, per team per game',
     label: 'How often a team is offside',
-    count: 'stoppages the rulebook attributes to offside',
-    of: 'two per game',
-    why: 'The first rule that makes a newcomer ask why play stopped, and the '
-       + 'one that explains why a team carrying the puck up the ice sometimes '
-       + 'slows down at a blue line for no visible reason.',
-    caveat: 'Attributed by the restart faceoff’s location plus the rule, not by a '
-          + 'label in the feed.' },
+    count: 'times play was stopped for offside',
+    of: 'two teams per game',
+    why: 'The first rule that makes a newcomer ask why play just stopped \u2014 and '
+       + 'the reason a team carrying the puck up the ice sometimes slows down at a '
+       + 'blue line for no visible reason.',
+    caveat: 'The league\u2019s feed does not label a stoppage "offside". We work it '
+          + 'out from where the restart faceoff was placed, plus the rule. That is '
+          + 'a dependable reading, but it is a reading.' },
   icing: {
-    unit: 'icings, per club per game',
+    unit: 'icings, per team per game',
     label: 'How often a team ices the puck',
-    count: 'stoppages the rulebook attributes to icing',
-    of: 'two per game',
-    why: 'The other stoppage a newcomer cannot read, and the one with a visible '
-       + 'consequence: the offending club may not change its line.',
-    caveat: 'Same attribution as offside, and it inherits the same risk — a proxy '
-          + 'that disagrees with the rule is evidence about the proxy first.' },
+    count: 'times play was stopped for icing',
+    of: 'two teams per game',
+    why: 'The other stoppage a newcomer cannot read, and the one with a '
+       + 'consequence you can watch: the team that iced it may not change its '
+       + 'line, so tired players have to stay out for the faceoff.',
+    caveat: 'Read the same way as offside, from the restart faceoff and the rule, '
+          + 'and it carries the same risk. Where our reading disagrees with the '
+          + 'rulebook, that is evidence about our reading first.' },
   attempts: {
     unit: 'of every 100 attempts reached the goalie',
     label: 'Where a shot attempt ends',
-    count: 'shot attempts of each ending — reached the goalie, blocked, missed',
+    count: 'attempts of each ending \u2014 reached the goalie, blocked, missed',
     of: 'every shot attempt in the archive',
-    why: 'It is the one figure on the card that is a true partition, so it is the '
-       + 'one that can honestly be drawn as a stacked bar. It also frames the CF% '
-       + 'row: most attempts never become a shot.',
-    caveat: 'Whether an attempt MISSED rather than was SAVED is a person in the '
-          + 'arena deciding. We measured how building-dependent that judgement is '
-          + 'and it is why no club row is built on it.' },
+    why: 'This is the one figure here that is a clean split of a whole, so it is '
+       + 'the one that can honestly be drawn as a single bar. It also frames the '
+       + 'possession number above: about half of all attempts never reach the '
+       + 'goalie at all.',
+    caveat: 'Whether an attempt "missed" rather than "was saved" is a person in '
+          + 'the arena making a call. We measured how much that judgement varies '
+          + 'from building to building, and it is why no number we show beside a '
+          + 'team is built on it.' },
   shift: {
     unit: 'seconds',
     label: 'How long a shift lasts',
-    count: 'the median length of a shift, in seconds',
-    of: 'every shift in the archive that carries a start and an end',
+    count: 'the middle shift length, in seconds',
+    of: 'every shift in the archive with a start and an end recorded',
     why: 'The most bewildering thing about a first hockey game is that nobody '
-       + 'stays on the ice.',
-    caveat: 'The middle half is the 25th to 75th percentile — a definition, not a '
-          + 'chosen band. Games whose extract carries no shift block are absent '
-          + 'from the denominator rather than counted as zero.' },
+       + 'stays on the ice. Players change every forty-odd seconds, while play is '
+       + 'still going, and nothing on the broadcast explains it.',
+    caveat: 'The middle half means the 25th to the 75th percentile \u2014 a '
+          + 'definition, not a band we chose. Games whose record carries no shift '
+          + 'information are left out of the count rather than treated as zero.' },
   hits: {
-    unit: 'hits, per club per game',
+    unit: 'hits, per team per game',
     label: 'How many hits a team lands',
-    count: 'hit events credited to a club',
-    of: 'two per game',
-    why: 'A novice will hear "they are really taking it to them physically" all '
-       + 'night. This is our answer: we looked, and it does not go with having '
-       + 'the puck.',
-    caveat: 'Counted by each home rink’s own crew, which records about 4% more '
-          + 'hits at home than the same clubs record away. A figure we know is '
-          + 'scorer-dependent is not printed as though it were clean.' },
+    count: 'hits credited to a team',
+    of: 'two teams per game',
+    why: 'You will hear "they are really taking it to them physically" all night. '
+       + 'This is our answer: we looked, and hitting more does not go with having '
+       + 'the puck more.',
+    caveat: 'Hits are counted by each home rink\u2019s own crew, and the same teams '
+          + 'are credited with about 4% more hits at home than away. A number we '
+          + 'know depends on who is scoring it does not get printed as though it '
+          + 'were clean.' },
 };
 
 /**
@@ -1868,32 +1915,45 @@ function methods(measures) {
 
   function clubNums(m, policy) {
     var out = [];
+    /* ⚠️ THE PROBE CELLS NAME THE BAR THEY MOVE FROM. "0.6 instead" means
+       nothing to a reader who has not been told what we normally ask for, and by
+       the time they reach a figure the policy block is a screen and a half up. */
+    var policyTarget = policy ? policy.target : null;
     if (m.games != null) {
       out.push(stat(num(m.games) + ' games',
-        'before a club’s figure describes the club rather than the sample'));
+        'a team has to play before this number is telling you about the team'));
     }
     if (m.r != null) {
-      out.push(stat(r3(m.r), 'how well a club’s first half of a season predicts its second'
-        + (policy && policy.clubSeasons ? ', over ' + num(policy.clubSeasons) + ' club-seasons' : '')));
+      out.push(stat(r3(m.r), 'how closely a team’s first half of a season matched '
+        + 'its second, where 1.00 would be a perfect match'
+        + (policy && policy.clubSeasons ? ', across ' + num(policy.clubSeasons) + ' team-seasons' : '')));
     }
     /* THE SIZE OF CRITICISM 1, BESIDE THE NUMBER IT CRITICISES. */
     if (m.alternate && m.alternate.games != null) {
       out.push(stat(num(m.alternate.games) + ' games',
-        'if the two halves alternated instead of being first and second — see argument 1'));
+        'what it would be under the gentler test — every other game, rather than '
+        + 'first half against second — see question 1'));
     }
     /* AND OF CRITICISM 2. */
     (m.atTarget || []).forEach(function (t) {
       out.push(stat(num(t.games) + ' games',
-        'if we asked for a reliability of ' + t.target + ' instead — see argument 2'));
+        'what it would be if we wanted to be ' + (t.target < policyTarget ? 'less' : 'more')
+        + ' sure — ' + t.target + ' in place of ' + policyTarget + ' — see question 2'));
     });
     if (m.clubRange) {
       out.push(stat(pct(m.clubRange.min) + '–' + pct(m.clubRange.max),
-        'what real clubs did across a full season, over ' + num(m.clubRange.games)
-        + ' club-games in ' + num(m.clubRange.n) + ' club-seasons'));
+        'the range real teams landed in over a full season, from '
+        + num(m.clubRange.games) + ' team-games in ' + num(m.clubRange.n)
+        + ' team-seasons'));
     }
     if (m.games != null && policy) {
-      out.push(stat(num(m.games) + ' ≤ ' + num(policy.admission),
-        'so it is shown as a club figure. Above that line it would be a league figure.'));
+      /* ⚠️ THE VERDICT IS THE BIG WORD AND THE ARITHMETIC IS THE LABEL. This
+         read "35 of 41", which every other cell in the row has trained the eye to
+         read as a progress count — 35 games of the 41 needed. It is the opposite:
+         35 is what the number needs and 41 is the ceiling. Found by looking. */
+      out.push(stat('under ' + num(policy.admission),
+        num(m.games) + ' games is inside our half-season line, so this number is '
+        + 'shown beside a team’s name'));
     }
     return listOf('hmnums', out);
   }
@@ -1914,22 +1974,27 @@ function methods(measures) {
   function familyBlock(f) {
     var sec = el('section', 'hmsec');
     sec.id = 'possession-family';
-    sec.appendChild(kick('Why there is only one possession row'));
-    sec.appendChild(el('h2', null, 'Corsi, Fenwick and shots-on-goal share are the same measurement'));
+    sec.appendChild(kick('Why there is only one “who had the puck” number'));
+    sec.appendChild(el('h2', null,
+        'Corsi, Fenwick and shot share are one thing wearing three names'));
 
     var names = {};
     f.members.forEach(function (m) { names[m.key] = m.label; });
     var withheld = f.members.filter(function (m) { return !m.shown; });
 
-    sec.appendChild(el('p', null, 'Public hockey analysis has several names for '
-      + 'how much of the shooting a team did, and each of them clears our '
-      + 'admission rule on its own. We show one. The reason is that over a full '
-      + 'season they move together so tightly that printing all of them would '
-      + 'show one piece of evidence ' + f.members.length + ' times — and a reader '
-      + 'counts agreement as corroboration. Across ' + num(f.clubSeasons)
-      + ' club-seasons, the LEAST similar pair of them still agrees at '
-      + r2(f.min) + ', and the closest at ' + r2(f.max) + '.'));
-    sec.appendChild(el('p', null, 'What we withhold, and would be entitled to show: '
+    sec.appendChild(el('p', null, 'Hockey analysis has several names for roughly '
+      + 'one idea: how much of the shooting a team did. Corsi counts every attempt. '
+      + 'Fenwick drops the ones that got blocked. Shot share counts only the ones '
+      + 'that reached the goalie. Each of the other ' + withheld.length
+      + ' passes our test on its own, and we still show only one.'));
+    sec.appendChild(el('p', null, 'Here is why. Over a full season these barely '
+      + 'disagree with each other. Below is how closely each pair moved together '
+      + 'across ' + num(f.clubSeasons) + ' team-seasons, where 1.00 would mean '
+      + 'identical. The least alike pair is ' + r2(f.min) + '. The closest is '
+      + r2(f.max) + '. Putting all ' + f.members.length + ' on one card would look '
+      + 'like ' + f.members.length + ' pieces of evidence and be one.'));
+    sec.appendChild(el('p', null, 'The ones we leave off, any of which we could '
+      + 'fairly have shown instead: '
       + withheld.map(function (m) { return m.label; }).join('; ') + '.'));
 
     var ul = el('ul', 'hmpairs');
@@ -1947,9 +2012,10 @@ function methods(measures) {
       ul.appendChild(li);
     });
     sec.appendChild(ul);
-    sec.appendChild(el('p', 'hmr', 'Each bar runs from 0 to 1, which is a '
-      + 'correlation’s own range rather than a span we picked. Every season is '
-      + 'centred before the seasons are pooled, for the reason argument 6 gives.'));
+    sec.appendChild(el('p', 'hmr', 'Each bar runs from 0 to 1 — the whole range '
+      + 'this kind of comparison can take, rather than a span we picked. Each '
+      + 'season is levelled before the three are put together, for the reason '
+      + 'question 6 gives.'));
     return sec;
   }
 
@@ -1963,56 +2029,67 @@ function methods(measures) {
        no explanation of why, would reasonably conclude we never had any. */
     if (!m.policy) {
       host.appendChild(el('p', 'hmnone', 'The measured figures could not be '
-        + 'loaded just now, so the counts are missing below. What each figure is '
-        + 'counted from, and the arguments against our method, do not depend on them.'));
+        + 'loaded just now, so the counts below are missing. What each number is '
+        + 'counted from, and the questions at the foot of the page, do not '
+        + 'depend on them.'));
     }
 
     if (m.policy) {
       var pol = el('section', 'hmsec');
       pol.id = 'the-rule';
-      pol.appendChild(kick('The one rule the card is built on'));
-      pol.appendChild(el('h2', null,
-        'A figure describes a CLUB only if it settles inside half a season'));
-      pol.appendChild(el('p', null, 'Some things a team does are the team. Others '
-        + 'look like the team over ten games and are mostly luck. To tell them '
-        + 'apart we take every club’s completed season, cut it in half by date, '
-        + 'work out each half’s figure, and ask how strongly the first half '
-        + 'predicts the second across every club-season in the archive. Stepping '
-        + 'that up tells us how many games a figure needs before it means '
-        + 'something about the club.'));
-      pol.appendChild(el('p', null, 'A figure that needs more than half a season '
-        + 'is not shown as a club figure at all. It becomes part of what is '
-        + 'normal in hockey, which is a true thing to teach a newcomer, instead '
-        + 'of a club trait, which would not be.'));
+      pol.appendChild(kick('The question behind every number here'));
+      pol.appendChild(el('h2', null, 'Is that the team, or is it just ten games?'));
+      pol.appendChild(el('p', null, 'Ten games into a season a team is taking a lot '
+        + 'of penalties. Is that how they play, or is it ten games? Those are two '
+        + 'very different things to tell somebody, and telling a new fan the wrong '
+        + 'one is the mistake this whole site is built to avoid.'));
+      pol.appendChild(el('p', null, 'So we check, the same way for every number. '
+        + 'Take a season a team has already finished, split it down the middle by '
+        + 'date, and work the number out for each half on its own. If the first '
+        + 'half tells you what the second half is going to look like — not for '
+        + 'one team, but across every team and every season we hold — then the '
+        + 'number is about the team. If it does not, it was mostly luck. From that '
+        + 'we work out how many games a team has to play before the number is '
+        + 'worth anything at all.'));
+      pol.appendChild(el('p', null, 'A number that needs more than half a season '
+        + 'never appears beside a team’s name. It goes into the section below '
+        + 'about what is normal in hockey instead — which is a true and useful '
+        + 'thing to tell a newcomer, where "this team takes a lot of penalties" '
+        + 'would not be.'));
       var ul = el('ul', 'hmpol');
-      ul.appendChild(stat(m.policy.target, 'the reliability we ask for. A choice, not a measurement — argument 2'));
-      ul.appendChild(stat(m.policy.admission, 'games: above this a figure is not a club figure — argument 3'));
-      ul.appendChild(stat(num(m.policy.clubSeasons), 'club-seasons behind every count on this page'));
-      ul.appendChild(stat(m.policy.seasons.length, 'completed seasons: '
-        + m.policy.seasons.join(', ') + '. A season joins when its playoffs are in the archive.'));
+      ul.appendChild(stat(m.policy.target, 'how closely a team’s first half has to '
+        + 'match its second before we will put a number beside a team’s name. '
+        + 'Our choice, not something we measured — question 2'));
+      ul.appendChild(stat(m.policy.admission, 'games. A number needing more than '
+        + 'this never appears beside a team’s name — question 3'));
+      ul.appendChild(stat(num(m.policy.clubSeasons), 'team-seasons behind every count on this page'));
+      ul.appendChild(stat(m.policy.seasons.length, 'finished seasons: '
+        + m.policy.seasons.join(', ') + '. A season counts once its playoffs are in our archive.'));
       pol.appendChild(ul);
-      pol.appendChild(el('p', 'hmr', 'The counts are re-derived only when a season '
-        + 'completes, so they never move mid-season for a reason a reader cannot see.'));
+      pol.appendChild(el('p', 'hmr', 'These counts only change when a season '
+        + 'finishes. They never shift part-way through one, which would be moving '
+        + 'the goalposts while you were watching.'));
       host.appendChild(pol);
     }
 
     if (m.family) host.appendChild(familyBlock(m.family));
 
     if (m.club.length) {
-      host.appendChild(kick('What each club figure is, and what it costs to believe it'));
+      host.appendChild(kick('The numbers we show beside a team'));
       m.club.forEach(function (c) { host.appendChild(figure(c, clubNums(c, m.policy))); });
     }
 
     if (m.league.length) {
-      host.appendChild(kick('What is normal in hockey, and where those figures come from'));
-      var intro = el('p', 'hmwhy', 'None of these settles inside a season, which '
-        + 'is why none of them is shown as something a club is. They are counted '
-        + 'across the whole archive'
-        + (m.games ? ' — ' + num(m.games) + ' games' : '') + '.');
+      host.appendChild(kick('What is normal in hockey'));
+      var intro = el('p', 'hmwhy', 'None of these passes the test above, so none of '
+        + 'them ever appears beside a team’s name. What they are good for is '
+        + 'telling you what ordinary looks like, and for that they are counted '
+        + 'across every game we hold'
+        + (m.games ? ' — ' + num(m.games) : '') + '.');
       host.appendChild(intro);
       m.league.forEach(function (r) {
         host.appendChild(figure(r, listOf('hmnums', r.over
-          ? [stat(num(r.over.n), r.over.unit + ' it was counted over')] : [])));
+          ? [stat(num(r.over.n), r.over.unit + ' counted')] : [])));
       });
     }
 

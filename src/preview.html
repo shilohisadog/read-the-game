@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-IqBx6YdknDxLD7xosTguE6R6pOfZXXqvAXtddvLum44=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-tLcBAn+O62owHlftoX8XlsOjhKIqi3uuCaoW1VLisgA=' 'sha256-3X9HVvxM/3yUsTAYNxLhsF9xK7Hi2mREYVg1+zQCEYc='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-9dYRs4yMUb1+SZhL+xw46AFz2qXoedLT2kq9VI5MmuA=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-yOaplj5zt8CswdO4EsbxQdeMHe810xxby88iasWAO58=' 'sha256-3X9HVvxM/3yUsTAYNxLhsF9xK7Hi2mREYVg1+zQCEYc='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -276,6 +276,18 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .ccard .lt{font-weight:650}
 .ccard .ld{font-size:.85rem;color:var(--muted);line-height:1.45;
  font-variant-numeric:tabular-nums}
+/* ⭐⭐⭐ THE WAY INTO THE WORK, AND IT IS SHAPED DIFFERENTLY ON PURPOSE. The three
+   cards above it are FINDINGS — each states a measured fact and opens the lesson
+   that teaches it. This one states no fact; it opens the page that shows how
+   every number on the site was counted. Kevin asked for it after reading the
+   methods page: *"we should include a card on the front page as an entry point
+   to the page, no?"*
+   ⛔ IT SPANS THE GRID AND CARRIES A DARK EDGE rather than the blue one, because
+   a fourth identical card would read as a fourth finding and a reader would
+   expect a number in it. It is the same distinction the card's own two doors
+   make: a lesson teaches the thing, the work shows the counting. */
+.wcard{grid-column:1/-1;border-left-color:var(--ink)}
+.wcard .ld::after{content:" \2192";color:var(--blue)}
 .lmore{margin:9px 0 0;font-size:.87rem}
 .lmore a{color:var(--blue);text-decoration:none}
 .lmore a:hover,.lmore a:focus-visible{text-decoration:underline}
@@ -1487,32 +1499,39 @@ function preview(id, docs, now) {
 const DERIVATION = {
   /* ---------------------------------------------------------- the club rows */
   level5: {
-    count: 'shot attempts by this club while the situation code was 1551 and the score was level',
-    of: 'both clubs’ attempts under the same two conditions',
-    why: 'It is the closest thing hockey has to "who had the puck", and it is the '
-       + 'one industry label on this site. The level-score condition is not '
-       + 'decoration: every club that is losing pushes, so a season’s raw figure '
-       + 'flatters whoever trailed most.',
-    caveat: 'The denominator is per game rather than per sixty minutes of 5-on-5, '
-          + 'because we cannot yet derive time on ice by situation. That is the '
-          + 'strongest remaining attack on this number and we have not answered it.' },
+    count: 'shots this team tried while both sides had five skaters and a goalie '
+         + 'on the ice, and the score was tied',
+    of: 'both teams\u2019 attempts under those same two conditions \u2014 so 50% means '
+      + 'the two traded shots evenly',
+    why: 'It is the closest thing hockey has to "who had the puck": a team that is '
+       + 'shooting is a team that has it. We only count it while the score is tied '
+       + 'because a team that is losing throws everything at the net, so a whole '
+       + 'season of it mostly tells you who spent more time behind.',
+    caveat: 'We divide by games played. What we should divide by is minutes of '
+          + 'five-on-five ice time, which we cannot work out from the league\u2019s '
+          + 'feed yet \u2014 so our figure quietly includes time spent on power plays '
+          + 'and penalty kills. This is the strongest fair criticism of this '
+          + 'number and we have not answered it.' },
   dmen: {
     count: 'shot attempts taken by a player the roster lists as a defenceman',
-    of: 'every shot attempt by that club',
-    why: 'It is a shape a novice can see from the first shift — whether the puck '
-       + 'goes back to the line or stays low — and it is nearly independent of '
-       + 'possession, so it says something the CF% row does not.',
-    caveat: 'Position is the roster’s word, not a judgement about where a player '
-          + 'actually played. A forward who spent a season on the point counts as '
-          + 'a forward here.' },
+    of: 'every shot attempt by that team',
+    why: 'You can see this one from the first shift: does the puck keep going back '
+       + 'out to the blue line, or does this team work it down low? And it is close '
+       + 'to independent of who has the puck, so it tells you something the number '
+       + 'above does not.',
+    caveat: 'Defenceman is what the roster says, not a judgement about where a '
+          + 'player actually played. A forward who spent the season up on the point '
+          + 'still counts here as a forward.' },
   slot: {
-    count: 'shot attempts whose recorded coordinate falls inside the slot',
-    of: 'that club’s attempts that carry a coordinate at all',
-    why: 'Where a team shoots from, rather than how often. The slot is the same '
-       + 'polygon the replay shades, so a reader can watch it being counted.',
-    caveat: 'The coordinate is the league’s, recorded by hand in the building, and '
-          + 'attempts with no coordinate are excluded from both halves rather than '
-          + 'counted as outside.' },
+    count: 'shot attempts from inside the slot \u2014 the area in front of the net '
+         + 'that most goals come from',
+    of: 'that team\u2019s attempts the league recorded a location for',
+    why: 'Where a team shoots from, rather than how often. The slot we use is the '
+       + 'same shape the replay shades, so you can watch a shot being counted '
+       + 'instead of taking our word for it.',
+    caveat: 'The location is the league\u2019s, written down by hand in the building. '
+          + 'Attempts with no location recorded are left out of both halves of the '
+          + 'division rather than counted as "outside".' },
 
   /* -------------------------------------------------------- the league frame */
   powerplay: {
@@ -1520,73 +1539,82 @@ const DERIVATION = {
     label: 'How often a power play produces a goal',
     count: 'power-play goals',
     of: 'power plays',
-    why: 'The single most consequential thing that happens away from open play, '
-       + 'and the figure a novice most often guesses wrongly high.',
-    caveat: 'Power-play goals, not goals scored during a power play — the second '
-          + 'includes short-handed goals and reads about three points higher than '
-          + 'the league’s own figure.' },
+    why: 'The most consequential thing that happens away from open play \u2014 and '
+       + 'the number new fans guess far too high. Most power plays end with '
+       + 'nothing at all.',
+    caveat: 'Power-play goals, not every goal scored while a team was on a power '
+          + 'play. The second includes goals scored BY the short-handed team, and '
+          + 'reads about three points higher than the league\u2019s own figure.' },
   penalties: {
-    unit: 'penalties, per club per game',
+    unit: 'penalties, per team per game',
     label: 'How many penalties a team takes',
-    count: 'penalty events in the archive',
-    of: 'two per game, so the figure is per club per game',
-    why: 'It is the number the power-play tile is measured against, and the gap '
-       + 'between them is itself worth teaching.',
-    caveat: 'About a quarter of penalties start no power play — offsetting minors, '
-          + 'misconducts and penalties taken while already short-handed are the '
-          + 'obvious candidates and NONE of them is measured here, so we state the '
-          + 'gap and do not explain it.' },
+    count: 'penalties called',
+    of: 'two teams per game, so the answer is per team per game',
+    why: 'This is the number the power-play figure sits against, and the gap '
+       + 'between them is worth knowing: taking a penalty does not always hand '
+       + 'the other team a power play.',
+    caveat: 'About a quarter of penalties never give the other team a power play. '
+          + 'Offsetting minors, misconducts, and penalties taken while a team is '
+          + 'already short-handed are the obvious explanations \u2014 and we have '
+          + 'measured none of them, so we state the gap and do not explain it.' },
   offside: {
-    unit: 'times offside, per club per game',
+    unit: 'times offside, per team per game',
     label: 'How often a team is offside',
-    count: 'stoppages the rulebook attributes to offside',
-    of: 'two per game',
-    why: 'The first rule that makes a newcomer ask why play stopped, and the '
-       + 'one that explains why a team carrying the puck up the ice sometimes '
-       + 'slows down at a blue line for no visible reason.',
-    caveat: 'Attributed by the restart faceoff’s location plus the rule, not by a '
-          + 'label in the feed.' },
+    count: 'times play was stopped for offside',
+    of: 'two teams per game',
+    why: 'The first rule that makes a newcomer ask why play just stopped \u2014 and '
+       + 'the reason a team carrying the puck up the ice sometimes slows down at a '
+       + 'blue line for no visible reason.',
+    caveat: 'The league\u2019s feed does not label a stoppage "offside". We work it '
+          + 'out from where the restart faceoff was placed, plus the rule. That is '
+          + 'a dependable reading, but it is a reading.' },
   icing: {
-    unit: 'icings, per club per game',
+    unit: 'icings, per team per game',
     label: 'How often a team ices the puck',
-    count: 'stoppages the rulebook attributes to icing',
-    of: 'two per game',
-    why: 'The other stoppage a newcomer cannot read, and the one with a visible '
-       + 'consequence: the offending club may not change its line.',
-    caveat: 'Same attribution as offside, and it inherits the same risk — a proxy '
-          + 'that disagrees with the rule is evidence about the proxy first.' },
+    count: 'times play was stopped for icing',
+    of: 'two teams per game',
+    why: 'The other stoppage a newcomer cannot read, and the one with a '
+       + 'consequence you can watch: the team that iced it may not change its '
+       + 'line, so tired players have to stay out for the faceoff.',
+    caveat: 'Read the same way as offside, from the restart faceoff and the rule, '
+          + 'and it carries the same risk. Where our reading disagrees with the '
+          + 'rulebook, that is evidence about our reading first.' },
   attempts: {
     unit: 'of every 100 attempts reached the goalie',
     label: 'Where a shot attempt ends',
-    count: 'shot attempts of each ending — reached the goalie, blocked, missed',
+    count: 'attempts of each ending \u2014 reached the goalie, blocked, missed',
     of: 'every shot attempt in the archive',
-    why: 'It is the one figure on the card that is a true partition, so it is the '
-       + 'one that can honestly be drawn as a stacked bar. It also frames the CF% '
-       + 'row: most attempts never become a shot.',
-    caveat: 'Whether an attempt MISSED rather than was SAVED is a person in the '
-          + 'arena deciding. We measured how building-dependent that judgement is '
-          + 'and it is why no club row is built on it.' },
+    why: 'This is the one figure here that is a clean split of a whole, so it is '
+       + 'the one that can honestly be drawn as a single bar. It also frames the '
+       + 'possession number above: about half of all attempts never reach the '
+       + 'goalie at all.',
+    caveat: 'Whether an attempt "missed" rather than "was saved" is a person in '
+          + 'the arena making a call. We measured how much that judgement varies '
+          + 'from building to building, and it is why no number we show beside a '
+          + 'team is built on it.' },
   shift: {
     unit: 'seconds',
     label: 'How long a shift lasts',
-    count: 'the median length of a shift, in seconds',
-    of: 'every shift in the archive that carries a start and an end',
+    count: 'the middle shift length, in seconds',
+    of: 'every shift in the archive with a start and an end recorded',
     why: 'The most bewildering thing about a first hockey game is that nobody '
-       + 'stays on the ice.',
-    caveat: 'The middle half is the 25th to 75th percentile — a definition, not a '
-          + 'chosen band. Games whose extract carries no shift block are absent '
-          + 'from the denominator rather than counted as zero.' },
+       + 'stays on the ice. Players change every forty-odd seconds, while play is '
+       + 'still going, and nothing on the broadcast explains it.',
+    caveat: 'The middle half means the 25th to the 75th percentile \u2014 a '
+          + 'definition, not a band we chose. Games whose record carries no shift '
+          + 'information are left out of the count rather than treated as zero.' },
   hits: {
-    unit: 'hits, per club per game',
+    unit: 'hits, per team per game',
     label: 'How many hits a team lands',
-    count: 'hit events credited to a club',
-    of: 'two per game',
-    why: 'A novice will hear "they are really taking it to them physically" all '
-       + 'night. This is our answer: we looked, and it does not go with having '
-       + 'the puck.',
-    caveat: 'Counted by each home rink’s own crew, which records about 4% more '
-          + 'hits at home than the same clubs record away. A figure we know is '
-          + 'scorer-dependent is not printed as though it were clean.' },
+    count: 'hits credited to a team',
+    of: 'two teams per game',
+    why: 'You will hear "they are really taking it to them physically" all night. '
+       + 'This is our answer: we looked, and hitting more does not go with having '
+       + 'the puck more.',
+    caveat: 'Hits are counted by each home rink\u2019s own crew, and the same teams '
+          + 'are credited with about 4% more hits at home than away. A number we '
+          + 'know depends on who is scoring it does not get printed as though it '
+          + 'were clean.' },
 };
 
 /**

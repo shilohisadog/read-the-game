@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ai7drdenA148ohU+D6Yer6qbwL/Y+hScggEhdK1R1JY=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-tLcBAn+O62owHlftoX8XlsOjhKIqi3uuCaoW1VLisgA='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ai7drdenA148ohU+D6Yer6qbwL/Y+hScggEhdK1R1JY=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-yOaplj5zt8CswdO4EsbxQdeMHe810xxby88iasWAO58='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -276,6 +276,18 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .ccard .lt{font-weight:650}
 .ccard .ld{font-size:.85rem;color:var(--muted);line-height:1.45;
  font-variant-numeric:tabular-nums}
+/* ⭐⭐⭐ THE WAY INTO THE WORK, AND IT IS SHAPED DIFFERENTLY ON PURPOSE. The three
+   cards above it are FINDINGS — each states a measured fact and opens the lesson
+   that teaches it. This one states no fact; it opens the page that shows how
+   every number on the site was counted. Kevin asked for it after reading the
+   methods page: *"we should include a card on the front page as an entry point
+   to the page, no?"*
+   ⛔ IT SPANS THE GRID AND CARRIES A DARK EDGE rather than the blue one, because
+   a fourth identical card would read as a fourth finding and a reader would
+   expect a number in it. It is the same distinction the card's own two doors
+   make: a lesson teaches the thing, the work shows the counting. */
+.wcard{grid-column:1/-1;border-left-color:var(--ink)}
+.wcard .ld::after{content:" \2192";color:var(--blue)}
 .lmore{margin:9px 0 0;font-size:.87rem}
 .lmore a{color:var(--blue);text-decoration:none}
 .lmore a:hover,.lmore a:focus-visible{text-decoration:underline}
@@ -753,12 +765,13 @@ watching. Each of these is drawn first, then shown in a real game.</p>
      worth spending the front door on. -->
 <section class="countsin">
 <h2 id="counts-h">What we counted</h2>
-<p class="note">Our own measurements rather than the league&rsquo;s, over 4,192 games. Each one opens the page that shows its working.</p>
+<p class="note">Our own measurements rather than the league&rsquo;s, over 4,192 games. Each opens the lesson behind it &mdash; and the last card opens the page that shows how all of them were counted.</p>
 <div class="cgrid">
 <a class="ccard" href="/slot.html"><span class="lt">Shots from the slot</span><span class="ld">A shot from inside the slot goes in 11.4% of the time &mdash; 19,304 goals from 168,910 attempts. From outside it, 3.3%.</span></a>
 <a class="ccard" href="/game.html?game=2023020204&at=1-09:06&strength=all"><span class="lt">How long a shift is</span><span class="ld">A shift lasts a median of 46 seconds and 76% of them are under a minute, measured over 3,101,105 shifts.</span></a>
 <a class="ccard" href="/game.html?game=2023020204&at=3-15:52&layer=corsi&strength=even"><span class="lt">Score effects</span><span class="ld">Per 60 minutes of even-strength play a club takes 64 shot attempts while trailing, 59 level, 53 while leading.</span></a>
 <a class="ccard" href="/game.html?game=2023020204&at=1-14:56&layer=zonestart&strength=all"><span class="lt">The attacking zone</span><span class="ld">After a face-off in one team&rsquo;s end, the club attacking that end takes 1.42 shot attempts before the next whistle, against 0.77 for the club defending it &mdash; across 165,420 draws.</span></a>
+<a class="ccard wcard" href="/how-we-measure.html"><span class="lt">How we measure</span><span class="ld">Every number above, and every number on the rest of the site: what we counted, what we divided it by, how much of a season it takes before it tells you anything, and what is wrong with it. Including the criticisms we think are right.</span></a>
 </div>
 </section>
 <!-- ⛔ WAS "Watch your team". The word implies streaming (Kevin), and unlike the

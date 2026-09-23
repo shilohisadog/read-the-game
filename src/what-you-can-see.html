@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-tLcBAn+O62owHlftoX8XlsOjhKIqi3uuCaoW1VLisgA='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src  https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-yOaplj5zt8CswdO4EsbxQdeMHe810xxby88iasWAO58='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -276,6 +276,18 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .ccard .lt{font-weight:650}
 .ccard .ld{font-size:.85rem;color:var(--muted);line-height:1.45;
  font-variant-numeric:tabular-nums}
+/* ⭐⭐⭐ THE WAY INTO THE WORK, AND IT IS SHAPED DIFFERENTLY ON PURPOSE. The three
+   cards above it are FINDINGS — each states a measured fact and opens the lesson
+   that teaches it. This one states no fact; it opens the page that shows how
+   every number on the site was counted. Kevin asked for it after reading the
+   methods page: *"we should include a card on the front page as an entry point
+   to the page, no?"*
+   ⛔ IT SPANS THE GRID AND CARRIES A DARK EDGE rather than the blue one, because
+   a fourth identical card would read as a fourth finding and a reader would
+   expect a number in it. It is the same distinction the card's own two doors
+   make: a lesson teaches the thing, the work shows the counting. */
+.wcard{grid-column:1/-1;border-left-color:var(--ink)}
+.wcard .ld::after{content:" \2192";color:var(--blue)}
 .lmore{margin:9px 0 0;font-size:.87rem}
 .lmore a{color:var(--blue);text-decoration:none}
 .lmore a:hover,.lmore a:focus-visible{text-decoration:underline}
