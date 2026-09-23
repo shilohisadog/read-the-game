@@ -271,7 +271,7 @@ test('⛔ the methods page renders a section for every figure, named and caveate
     const sec = nodes.find(n => n.id === anchorOf(key));
     assert.ok(sec, `no section for ${key}`);
     const said = walk(sec).map(n => n.textContent).filter(Boolean).join(' ');
-    assert.match(said, /What is wrong with it/, `${key} rendered without its caveat`);
+    assert.match(said, /What could be wrong with it/, `${key} rendered without its caveat`);
     assert.match(said, /Counted/, `${key} rendered without saying what it counts`);
   }
 });
@@ -480,4 +480,92 @@ test('⛔ the front door has ONE door to the methods page, in the block that ask
   /* AND THE SECTION STILL SAYS WHAT IT IS. A door added to a block whose heading
      had drifted would be a door in the wrong room. */
   assert.match(html, /<h2>What this does and does not claim<\/h2>/);
+});
+
+test('⛔⛔ every "see question N" resolves to a question that exists on the page', () => {
+  /* The figures point at the questions by number and the questions are nine
+     screens below them, so they are links. A link to `#q8` would look completely
+     normal and go nowhere — the same dead-link shape as a work door pointing at a
+     section that was never written, one page in.
+     MUTATION: reference question 8, or drop an `id="qN"`, and this fires. */
+  const html = readFileSync(new URL('../src/how-we-measure.html', import.meta.url), 'utf8');
+  const ids = new Set([...html.matchAll(/<h2 id="(q\d+)">/g)].map(m => m[1]));
+  assert.ok(ids.size >= 7, `only ${ids.size} questions carry an anchor`);
+  for (const [, ref] of html.matchAll(/'#q' \+ (\w+)/g)) {
+    assert.ok(ref, 'the anchor must be built from the question number');
+  }
+  /* The numbers the renderer actually passes, read out of the source so a new
+     cross-reference cannot be added without an anchor to land on. */
+  for (const [, n] of html.matchAll(/\}, (\d)\)\);/g)) {
+    assert.ok(ids.has('q' + n), `a figure links to question ${n} and there is none`);
+  }
+  assert.match(html, /href="#criticisms"/,
+    'the top of the page must point at the questions at the foot of it');
+});
+
+test('⭐⭐ the score condition is argued with published counts, not with a mechanism', async () => {
+  /* KEVIN, ON THE CF% ROW: *"we say this … because a team that is losing throws
+     everything at the net. We don't measure that, nor can we 'show the work'
+     conclusively that that's the case, so why do we include that snippet?"* He is
+     right, and on this page above all. The fix was not to delete the claim — the
+     archive has counted the EFFECT since the site began, in `baseRates`, which
+     the front door reads and nothing else did.
+
+     ⛔ AND THE DESCRIPTION TRAVELS WITH THE COUNT. `what` is written where the
+     rate is computed (`archive.js`); a sentence describing a base rate, typed on
+     this page instead, is a second account of one finding.
+     MUTATION: type either sentence into the renderer and the identity check
+     against the published strings fires. */
+  const m = methods({ ...MEASURES, baseRates: {
+    moreAttemptsLost: { count: 2228, n: 4100, rate: 0.543,
+      what: 'the team with more shot attempts lost' },
+    moreLevelControlLost: { count: 1560, n: 3925, rate: 0.397,
+      what: 'the team that controlled play while the score was level lost' } } });
+  const lvl = m.club.find(c => c.key === 'level5');
+  assert.equal(lvl.evidence.length, 2);
+  assert.equal(lvl.evidence[0].what, 'the team with more shot attempts lost');
+  assert.ok(lvl.evidenceLead && lvl.evidenceTail, 'the counts need a sentence around them');
+  assert.equal(m.club.find(c => c.key === 'dmen').evidence, null,
+    'a row with no base rate of its own must not borrow one');
+
+  /* ⛔ AND IT DEGRADES: the published document had no `baseRates` for the first
+     weeks of this page's life, and a missing block may not take the page down. */
+  assert.equal(methods(MEASURES).club.find(c => c.key === 'level5').evidence, null);
+
+  const page = render('how-we-measure.html', { 'measures.json': { ...MEASURES,
+    baseRates: { moreAttemptsLost: { count: 2228, n: 4100,
+      what: 'the team with more shot attempts lost' } } } });
+  await page.settle();
+  const said = walk(page.ids.hm).map(n => n.textContent).filter(Boolean).join(' ');
+  assert.match(said, /2,228 of 4,100/, 'the count must be rendered with its n');
+  assert.match(said, /the team with more shot attempts lost/);
+  assert.ok(!/throws everything at the net/.test(said),
+    'the unmeasured mechanism must not have come back');
+});
+
+test('⭐ a team-season is spelled out as its own arithmetic, and only when it is true', async () => {
+  /* Kevin: *"We should be crystal clear about what 'team-seasons' are, e.g. there
+     are 32 teams and we hold 3 seasons of data, hence 32 x 3 = 96."*
+     ⛔ THE MULTIPLICATION IS ONLY CLAIMED WHEN IT COMES OUT WHOLE. A season the
+     league played with an odd number of clubs — an expansion year, a relocation
+     mid-season — would otherwise have this page asserting a tidy sum that is not
+     true, which is the one thing a methods page may not do.
+     MUTATION: drop the Number.isInteger guard and the second case prints
+     "one for each of the 31.67 teams". */
+  const page = render('how-we-measure.html', { 'measures.json': MEASURES });
+  await page.settle();
+  const said = walk(page.ids.hm).map(n => n.textContent).filter(Boolean).join(' ');
+  assert.match(said, /96 team-seasons/);
+  assert.match(said, /one for each of the 32 teams, in each of the 3 finished seasons/);
+
+  const odd = JSON.parse(JSON.stringify(MEASURES));
+  odd.settle.rows.level5.clubSeasons = 95;
+  odd.settle.rows.dmen.clubSeasons = 95;
+  odd.settle.rows.slot.clubSeasons = 95;
+  const p2 = render('how-we-measure.html', { 'measures.json': odd });
+  await p2.settle();
+  const said2 = walk(p2.ids.hm).map(n => n.textContent).filter(Boolean).join(' ');
+  assert.match(said2, /95 team-seasons/);
+  assert.ok(!/one for each of the/.test(said2),
+    'a sum that does not come out whole must not be asserted');
 });

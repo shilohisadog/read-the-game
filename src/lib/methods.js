@@ -47,15 +47,29 @@ const DERIVATION = {
          + 'on the ice, and the score was tied',
     of: 'both teams\u2019 attempts under those same two conditions \u2014 so 50% means '
       + 'the two traded shots evenly',
-    why: 'It is the closest thing hockey has to "who had the puck": a team that is '
-       + 'shooting is a team that has it. We only count it while the score is tied '
-       + 'because a team that is losing throws everything at the net, so a whole '
-       + 'season of it mostly tells you who spent more time behind.',
-    caveat: 'We divide by games played. What we should divide by is minutes of '
-          + 'five-on-five ice time, which we cannot work out from the league\u2019s '
-          + 'feed yet \u2014 so our figure quietly includes time spent on power plays '
-          + 'and penalty kills. This is the strongest fair criticism of this '
-          + 'number and we have not answered it.' },
+    why: 'It is the closest thing hockey has to "who had the puck": a team that '
+       + 'is shooting is a team that has it.',
+    /* ⛔⛔ THIS SENTENCE USED TO EXPLAIN THE SCORE CONDITION BY A MECHANISM WE DO
+       NOT MEASURE — "a team that is losing throws everything at the net". Kevin
+       caught it: *"We don't measure that, nor can we 'show the work'
+       conclusively that that's the case, so why do we include that snippet?"*
+       He is right, and on this page of all pages. The replacement is not a
+       deletion: the archive has counted the EFFECT for as long as the site has
+       existed, it is the front door's own headline, and it was sitting one
+       document away. So the claim is made by two published counts instead of by
+       an assertion about what teams do. `evidence` in `methods()` reads them. */
+    evidenceLead: 'Why the score has to be tied \u2014 the site\u2019s own count, over '
+                + 'every game it holds. Two different counts of two different '
+                + 'things, so the totals differ:',
+    evidenceTail: 'Shot attempts on their own point the wrong way: the team with '
+                + 'more of them lost slightly more often than it won. Filter to '
+                + 'even strength with the score level and that turns around. '
+                + 'That is what the condition is doing.',
+    caveat: 'An attempt is an attempt. A point shot from sixty feet counts here '
+          + 'exactly the same as a tip at the edge of the crease, and this number '
+          + 'cannot tell them apart \u2014 which is why the slot number below exists '
+          + 'alongside it. It is also a slice of the game rather than the game: '
+          + 'strictly five skaters a side, and only while the score is tied.' },
   dmen: {
     count: 'shot attempts taken by a player the roster lists as a defenceman',
     of: 'every shot attempt by that team',
@@ -63,9 +77,12 @@ const DERIVATION = {
        + 'out to the blue line, or does this team work it down low? And it is close '
        + 'to independent of who has the puck, so it tells you something the number '
        + 'above does not.',
-    caveat: 'Defenceman is what the roster says, not a judgement about where a '
-          + 'player actually played. A forward who spent the season up on the point '
-          + 'still counts here as a forward.' },
+    caveat: 'Two things. Defenceman is what the roster says, not a judgement '
+          + 'about where a player actually played \u2014 a forward who spent the '
+          + 'season up on the point still counts here as a forward. And this one '
+          + 'counts every attempt a team took, including on the power play, where '
+          + 'the setup puts more pucks on the points: a team that draws a lot of '
+          + 'penalties is partly being described by its power play.' },
   slot: {
     count: 'shot attempts from inside the slot \u2014 the area in front of the net '
          + 'that most goals come from',
@@ -73,9 +90,11 @@ const DERIVATION = {
     why: 'Where a team shoots from, rather than how often. The slot we use is the '
        + 'same shape the replay shades, so you can watch a shot being counted '
        + 'instead of taking our word for it.',
-    caveat: 'The location is the league\u2019s, written down by hand in the building. '
-          + 'Attempts with no location recorded are left out of both halves of the '
-          + 'division rather than counted as "outside".' },
+    caveat: 'The location is the league\u2019s, written down by hand in the '
+          + 'building. Attempts with no location recorded are left out of both '
+          + 'halves of the division rather than counted as "outside". And like '
+          + 'the number above it, this counts every situation, so a team with a '
+          + 'lot of power-play time is partly being described by its power play.' },
 
   /* -------------------------------------------------------- the league frame */
   powerplay: {
@@ -97,10 +116,12 @@ const DERIVATION = {
     why: 'This is the number the power-play figure sits against, and the gap '
        + 'between them is worth knowing: taking a penalty does not always hand '
        + 'the other team a power play.',
-    caveat: 'About a quarter of penalties never give the other team a power play. '
-          + 'Offsetting minors, misconducts, and penalties taken while a team is '
-          + 'already short-handed are the obvious explanations \u2014 and we have '
-          + 'measured none of them, so we state the gap and do not explain it.' },
+    caveat: 'About a quarter of penalties never give the other team a power '
+          + 'play. Offsetting minors, misconducts, and penalties taken while a '
+          + 'team is already short-handed are the obvious explanations, and we '
+          + 'have counted none of them. That is not a limit of the feed \u2014 all '
+          + 'three look countable from what we already store, and we have simply '
+          + 'not done it. So we state the gap and do not explain it.' },
   offside: {
     unit: 'times offside, per team per game',
     label: 'How often a team is offside',
@@ -117,9 +138,15 @@ const DERIVATION = {
     label: 'How often a team ices the puck',
     count: 'times play was stopped for icing',
     of: 'two teams per game',
-    why: 'The other stoppage a newcomer cannot read, and the one with a '
-       + 'consequence you can watch: the team that iced it may not change its '
-       + 'line, so tired players have to stay out for the faceoff.',
+    /* ⛔ "so tired players have to stay out" WAS HERE AND HAS BEEN CUT TWICE.
+       Kevin: *"I remember we cut this phrase once, but it snuck back in."* We
+       measure shift lengths; we do not measure fatigue, and whether the players
+       caught out there are tired is exactly the kind of thing this page is for
+       refusing. The RULE is the consequence, and the rule is checkable. */
+    why: 'The other stoppage a newcomer cannot read, and the one whose '
+       + 'consequence you can watch: the team that iced the puck may not change '
+       + 'its line before the faceoff, and the faceoff is all the way back in '
+       + 'its own end.',
     caveat: 'Read the same way as offside, from the restart faceoff and the rule, '
           + 'and it carries the same risk. Where our reading disagrees with the '
           + 'rulebook, that is evidence about our reading first.' },
@@ -212,6 +239,19 @@ export function methods(measures) {
                        clubSeasons: Object.values(s.rows || {})
                          .map(r => r.clubSeasons).find(n => n != null) || null } : null;
 
+  /* ⭐⭐⭐ THE EVIDENCE FOR A CLAIM THE PROSE USED TO JUST MAKE. `baseRates` has
+     been published since the site began and the front door reads it; nothing
+     else did. A figure explaining WHY a measure is defined the way it is belongs
+     next to that measure, and it is the difference between "a losing team throws
+     everything at the net" (which we do not measure) and two counts a reader can
+     check. Only `level5` has one; a row without evidence renders without it,
+     rather than being given a figure that is not about it. */
+  const base = (measures && measures.baseRates) || {};
+  const EVIDENCE = {
+    level5: [base.moreAttemptsLost, base.moreLevelControlLost]
+      .filter(b => b && b.count != null && b.n),
+  };
+
   const club = CLUB_ROWS.map(r => {
     const pub = (s && s.rows && s.rows[r.key]) || null;
     return { key: r.key, anchor: anchorOf(r.key),
@@ -228,7 +268,12 @@ export function methods(measures) {
              r: pub ? pub.r : null, games: pub ? pub.games : null,
              alternate: pub ? pub.alternate || null : null,
              atTarget: pub ? pub.atTarget || null : null,
-             clubRange: pub ? pub.clubRange || null : null };
+             clubRange: pub ? pub.clubRange || null : null,
+             /* The published `what` string travels WITH the count, so the page
+                never restates what a base rate is about. A sentence describing
+                a figure, typed somewhere other than where the figure is made, is
+                the drift this module exists to avoid. */
+             evidence: (EVIDENCE[r.key] || []).length ? EVIDENCE[r.key] : null };
   });
 
   const frame = leagueRows(measures).map(row => {

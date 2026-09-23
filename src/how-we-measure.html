@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-d6Yt75BEnMnfodtVJ1H/a/4MEd0T3WzOFaiMoOo7qBU=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-SoKtCDd7KRve+ACHwrXBfIGh8mK1I6nyyuUoQQZdjXw=' 'sha256-lraClBJiplvfiYexLypVcYXg2kynb6qOdbCtpPJ2CIM='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Kic7Ztqw3mpEd1rmelvMd7LT3XiF64zSYEM85oM5tVs=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-SoKtCDd7KRve+ACHwrXBfIGh8mK1I6nyyuUoQQZdjXw=' 'sha256-aqeywNWn3SPftPJoF2PCFsGtwWdivi/pVVr9umJmim4='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -622,6 +622,14 @@ footer p{margin:0 0 8px}
 /* ⚠️ THE CAVEAT IS NOT SMALL PRINT AND IS NOT STYLED AS SMALL PRINT. It is the
    half of this page a critic is here for, so it reads at the same size as the
    rest of the block with a rule down its side rather than shrinking away. */
+/* ⭐⭐⭐ THE COUNTS BEHIND A DEFINITION, where the page used to assert a reason.
+   Same treatment as `.hmwork` because it is the same kind of thing: arithmetic
+   a reader can check, rather than a sentence they have to take. */
+.hmev{margin:0 0 10px;padding:9px 11px;background:#f4f8fb;border-radius:8px;
+ font-size:.86rem;line-height:1.55}
+.hmev ul{list-style:none;margin:7px 0 7px;padding:0;display:grid;gap:4px}
+.hmev li{font-variant-numeric:tabular-nums}
+.hmev b{font-weight:700}
 .hmcav{margin:0;padding:8px 0 8px 11px;border-left:3px solid #d6c07a;
  font-size:.86rem;line-height:1.55}
 .hmcav b{font-weight:700}
@@ -651,8 +659,15 @@ record of what happened in a game &mdash; who shot, from where, who was on the i
 Nothing here is a projection or an estimate.</p>
 <p class="note">This page takes each number in turn and shows you what we counted,
 what we divided it by, how much of a season it takes before it tells you anything,
-and what is wrong with it. Where we think a criticism of our method is right, we
-say so.</p>
+and what could be wrong with it.</p>
+<!-- ⭐ THE QUESTIONS ARE AT THE FOOT AND THE FIGURES POINT AT THEM BY NUMBER, so
+     a reader meeting "see question 2" nine screens above it needs to have been
+     told they exist. Kevin: *"We refer to question numbers, but the questions
+     aren't until the very bottom, we need to point readers to them."* -->
+<p class="note">Seven questions people fairly ask about how we do this &mdash;
+four of which we think are right &mdash; are answered at the foot of the page:
+<a href="#criticisms">Fair questions about all this</a>. Figures below that
+depend on one of them link straight to it.</p>
 
 <main id="hm"></main>
 
@@ -671,7 +686,7 @@ say so.</p>
 <section class="hmsec" id="criticisms">
 <p class="hmkick">Fair questions about all this</p>
 
-<h2>1. Comparing the first half of a season against the second is a hard test.
+<h2 id="q1">1. Comparing the first half of a season against the second is a hard test.
 Aren&rsquo;t you selling every number short?</h2>
 <p><b>Yes, and on purpose.</b> A team in October is not quite the team it is in
 March &mdash; the schedule is different, players get hurt, lines change. Our test
@@ -683,28 +698,30 @@ what that gentler test says. We publish the harder one, because the question the
 site is actually answering is <em>does what this team has done so far tell you
 what it will do next</em>, and that is the harder question.</p>
 
-<h2>2. Where does your cut-off for &ldquo;steady enough&rdquo; come from?</h2>
+<h2 id="q2">2. Where does your cut-off for &ldquo;steady enough&rdquo; come from?</h2>
 <p><b>Nowhere. It is a choice.</b> We picked how closely a team&rsquo;s first half
 has to match its second before we are willing to put a number beside a team&rsquo;s
 name, and nothing in the data picked it for us. The only useful answer to that is
 to show you what changes if you pick differently, so every number above also
 carries what it would need at a looser bar and at a stricter one.</p>
 
-<h2>3. And where does half a season come from?</h2>
+<h2 id="q3">3. And where does half a season come from?</h2>
 <p><b>Half a fact, half a choice.</b> A season is 82 games, so 41 is half of
 something real rather than a number we tuned, and it will move by itself if the
 league ever changes the schedule. But deciding that <em>half</em> is the right
 fraction was still us deciding.</p>
 
-<h2>4. A number can matter enormously without being steady.</h2>
-<p><b>Right, and this is the criticism we agree with most.</b> Power plays decide
-games, and no power-play number passes our test &mdash; which is exactly why power
-plays are on the card as something <em>hockey</em> does rather than as something a
-team is. Our test answers one question, <em>does this number describe this
-team</em>, and it says nothing whatsoever about whether the thing being measured
-is important.</p>
+<h2 id="q4">4. A number can matter enormously without being steady.</h2>
+<p><b>Right, and this is the criticism we agree with most.</b> Our test answers
+exactly one question &mdash; <em>does this number describe this team</em> &mdash;
+and it has nothing at all to say about whether the thing being measured matters.
+No power-play number passes it. That does not make power plays unimportant; it
+means our test cannot speak to importance, and we are not going to pretend it
+can. It is why power plays appear as something <em>hockey</em> does rather than
+as something a team is, and that is a limitation of the test rather than a
+defence of it.</p>
 
-<h2>5. Your test cannot see a scorekeeper&rsquo;s bias. Both halves of a season
+<h2 id="q5">5. Your test cannot see a scorekeeper&rsquo;s bias. Both halves of a season
 share the same home rink.</h2>
 <p><b>Right, and it changed what is on the card.</b> Some things in the record are
 counted by a person in the building, and that person counts the same way in
@@ -714,7 +731,7 @@ team&rsquo;s figure moves together with its <em>visitors&rsquo;</em> figure in t
 same building. A measure of shots that missed the net passed every steadiness test
 we had and failed that one badly. It was on this site for about four hours.</p>
 
-<h2>6. You combined three seasons without levelling them first.</h2>
+<h2 id="q6">6. You combined three seasons without levelling them first.</h2>
 <p><b>Right, and we found it ourselves on 23 September 2026.</b> The league&rsquo;s
 recording of some events changed a great deal between those seasons &mdash;
 giveaways nearly doubled in one off-season, which no team did. Pooled without
@@ -723,7 +740,7 @@ difference between teams. Our own written method said to level them and the code
 did not. It is fixed, with a test that fails if it ever stops happening. It cost
 us one number, which came off the card, and gave back another, which went on.</p>
 
-<h2>7. Your bar is rigged to reject anything clever.</h2>
+<h2 id="q7">7. Your bar is rigged to reject anything clever.</h2>
 <p><b>It rejects the standings.</b> Points percentage, goal difference and save
 percentage at even strength all need more games than we allow, so none of them is
 beside a team&rsquo;s name either. The bar is demanding of the numbers every
@@ -746,12 +763,24 @@ another, so it does not fit the shape every number here takes. Both of its parts
 need far more than a season to steady. And PDO is <em>designed</em> to measure
 luck &mdash; presenting it as something a team is would turn its own meaning
 inside out.</p>
+<!-- ⛔⛔ THIS PARAGRAPH USED TO SAY THE PER-60 PROBLEM WAS "the strongest
+     criticism of the numbers above", AND IT WAS NOT A CRITICISM OF THEM AT ALL.
+     Kevin's note about the CF% caveat sent me back to the definitions: every
+     team number here is a SHARE of two teams' totals, not a rate per game, so
+     the denominator the industry argues about does not appear in any of them.
+     What IS true, and is worse for being specific, is that two of the three
+     count every situation. The vague version let us off; the precise one does
+     not. Same defect as a figure with no door — a criticism aimed at the wrong
+     number is not a concession. -->
 <p><b>Anything per sixty minutes of even-strength play.</b> That is what the
-analytics world divides by, and working it out needs the time each team spent on
-the ice broken down by how many players were on it &mdash; which we have not
-built. Until we do, we divide by games played, which quietly includes power plays
-and penalty kills. It is the strongest criticism of the numbers above that we have
-no answer to.</p>
+analytics world divides rate statistics by, and working it out needs each
+team&rsquo;s ice time split by how many players were on the ice &mdash; which we
+cannot get from the league&rsquo;s feed yet. It is the reason we publish no rate
+as a team number: every team number above is a share of what the two teams did,
+which needs no such division. <b>Two of those three still count every situation
+rather than even strength only</b>, so a team that spends a lot of time on the
+power play is partly being described by its power play. That is said on each of
+them, and it is the thing we would fix first.</p>
 </section>
 
 <p class="hmr">The whole search &mdash; all 47 measures we tested, how much they
@@ -1588,15 +1617,29 @@ const DERIVATION = {
          + 'on the ice, and the score was tied',
     of: 'both teams\u2019 attempts under those same two conditions \u2014 so 50% means '
       + 'the two traded shots evenly',
-    why: 'It is the closest thing hockey has to "who had the puck": a team that is '
-       + 'shooting is a team that has it. We only count it while the score is tied '
-       + 'because a team that is losing throws everything at the net, so a whole '
-       + 'season of it mostly tells you who spent more time behind.',
-    caveat: 'We divide by games played. What we should divide by is minutes of '
-          + 'five-on-five ice time, which we cannot work out from the league\u2019s '
-          + 'feed yet \u2014 so our figure quietly includes time spent on power plays '
-          + 'and penalty kills. This is the strongest fair criticism of this '
-          + 'number and we have not answered it.' },
+    why: 'It is the closest thing hockey has to "who had the puck": a team that '
+       + 'is shooting is a team that has it.',
+    /* ⛔⛔ THIS SENTENCE USED TO EXPLAIN THE SCORE CONDITION BY A MECHANISM WE DO
+       NOT MEASURE — "a team that is losing throws everything at the net". Kevin
+       caught it: *"We don't measure that, nor can we 'show the work'
+       conclusively that that's the case, so why do we include that snippet?"*
+       He is right, and on this page of all pages. The replacement is not a
+       deletion: the archive has counted the EFFECT for as long as the site has
+       existed, it is the front door's own headline, and it was sitting one
+       document away. So the claim is made by two published counts instead of by
+       an assertion about what teams do. `evidence` in `methods()` reads them. */
+    evidenceLead: 'Why the score has to be tied \u2014 the site\u2019s own count, over '
+                + 'every game it holds. Two different counts of two different '
+                + 'things, so the totals differ:',
+    evidenceTail: 'Shot attempts on their own point the wrong way: the team with '
+                + 'more of them lost slightly more often than it won. Filter to '
+                + 'even strength with the score level and that turns around. '
+                + 'That is what the condition is doing.',
+    caveat: 'An attempt is an attempt. A point shot from sixty feet counts here '
+          + 'exactly the same as a tip at the edge of the crease, and this number '
+          + 'cannot tell them apart \u2014 which is why the slot number below exists '
+          + 'alongside it. It is also a slice of the game rather than the game: '
+          + 'strictly five skaters a side, and only while the score is tied.' },
   dmen: {
     count: 'shot attempts taken by a player the roster lists as a defenceman',
     of: 'every shot attempt by that team',
@@ -1604,9 +1647,12 @@ const DERIVATION = {
        + 'out to the blue line, or does this team work it down low? And it is close '
        + 'to independent of who has the puck, so it tells you something the number '
        + 'above does not.',
-    caveat: 'Defenceman is what the roster says, not a judgement about where a '
-          + 'player actually played. A forward who spent the season up on the point '
-          + 'still counts here as a forward.' },
+    caveat: 'Two things. Defenceman is what the roster says, not a judgement '
+          + 'about where a player actually played \u2014 a forward who spent the '
+          + 'season up on the point still counts here as a forward. And this one '
+          + 'counts every attempt a team took, including on the power play, where '
+          + 'the setup puts more pucks on the points: a team that draws a lot of '
+          + 'penalties is partly being described by its power play.' },
   slot: {
     count: 'shot attempts from inside the slot \u2014 the area in front of the net '
          + 'that most goals come from',
@@ -1614,9 +1660,11 @@ const DERIVATION = {
     why: 'Where a team shoots from, rather than how often. The slot we use is the '
        + 'same shape the replay shades, so you can watch a shot being counted '
        + 'instead of taking our word for it.',
-    caveat: 'The location is the league\u2019s, written down by hand in the building. '
-          + 'Attempts with no location recorded are left out of both halves of the '
-          + 'division rather than counted as "outside".' },
+    caveat: 'The location is the league\u2019s, written down by hand in the '
+          + 'building. Attempts with no location recorded are left out of both '
+          + 'halves of the division rather than counted as "outside". And like '
+          + 'the number above it, this counts every situation, so a team with a '
+          + 'lot of power-play time is partly being described by its power play.' },
 
   /* -------------------------------------------------------- the league frame */
   powerplay: {
@@ -1638,10 +1686,12 @@ const DERIVATION = {
     why: 'This is the number the power-play figure sits against, and the gap '
        + 'between them is worth knowing: taking a penalty does not always hand '
        + 'the other team a power play.',
-    caveat: 'About a quarter of penalties never give the other team a power play. '
-          + 'Offsetting minors, misconducts, and penalties taken while a team is '
-          + 'already short-handed are the obvious explanations \u2014 and we have '
-          + 'measured none of them, so we state the gap and do not explain it.' },
+    caveat: 'About a quarter of penalties never give the other team a power '
+          + 'play. Offsetting minors, misconducts, and penalties taken while a '
+          + 'team is already short-handed are the obvious explanations, and we '
+          + 'have counted none of them. That is not a limit of the feed \u2014 all '
+          + 'three look countable from what we already store, and we have simply '
+          + 'not done it. So we state the gap and do not explain it.' },
   offside: {
     unit: 'times offside, per team per game',
     label: 'How often a team is offside',
@@ -1658,9 +1708,15 @@ const DERIVATION = {
     label: 'How often a team ices the puck',
     count: 'times play was stopped for icing',
     of: 'two teams per game',
-    why: 'The other stoppage a newcomer cannot read, and the one with a '
-       + 'consequence you can watch: the team that iced it may not change its '
-       + 'line, so tired players have to stay out for the faceoff.',
+    /* ⛔ "so tired players have to stay out" WAS HERE AND HAS BEEN CUT TWICE.
+       Kevin: *"I remember we cut this phrase once, but it snuck back in."* We
+       measure shift lengths; we do not measure fatigue, and whether the players
+       caught out there are tired is exactly the kind of thing this page is for
+       refusing. The RULE is the consequence, and the rule is checkable. */
+    why: 'The other stoppage a newcomer cannot read, and the one whose '
+       + 'consequence you can watch: the team that iced the puck may not change '
+       + 'its line before the faceoff, and the faceoff is all the way back in '
+       + 'its own end.',
     caveat: 'Read the same way as offside, from the restart faceoff and the rule, '
           + 'and it carries the same risk. Where our reading disagrees with the '
           + 'rulebook, that is evidence about our reading first.' },
@@ -1753,6 +1809,19 @@ function methods(measures) {
                        clubSeasons: Object.values(s.rows || {})
                          .map(r => r.clubSeasons).find(n => n != null) || null } : null;
 
+  /* ⭐⭐⭐ THE EVIDENCE FOR A CLAIM THE PROSE USED TO JUST MAKE. `baseRates` has
+     been published since the site began and the front door reads it; nothing
+     else did. A figure explaining WHY a measure is defined the way it is belongs
+     next to that measure, and it is the difference between "a losing team throws
+     everything at the net" (which we do not measure) and two counts a reader can
+     check. Only `level5` has one; a row without evidence renders without it,
+     rather than being given a figure that is not about it. */
+  const base = (measures && measures.baseRates) || {};
+  const EVIDENCE = {
+    level5: [base.moreAttemptsLost, base.moreLevelControlLost]
+      .filter(b => b && b.count != null && b.n),
+  };
+
   const club = CLUB_ROWS.map(r => {
     const pub = (s && s.rows && s.rows[r.key]) || null;
     return { key: r.key, anchor: anchorOf(r.key),
@@ -1769,7 +1838,12 @@ function methods(measures) {
              r: pub ? pub.r : null, games: pub ? pub.games : null,
              alternate: pub ? pub.alternate || null : null,
              atTarget: pub ? pub.atTarget || null : null,
-             clubRange: pub ? pub.clubRange || null : null };
+             clubRange: pub ? pub.clubRange || null : null,
+             /* The published `what` string travels WITH the count, so the page
+                never restates what a base rate is about. A sentence describing
+                a figure, typed somewhere other than where the figure is made, is
+                the drift this module exists to avoid. */
+             evidence: (EVIDENCE[r.key] || []).length ? EVIDENCE[r.key] : null };
   });
 
   const frame = leagueRows(measures).map(row => {
@@ -1857,11 +1931,21 @@ function methods(measures) {
     for (var k in attrs) n.setAttribute(k, attrs[k]);
     return n;
   }
-  /** A labelled number. `b` is the figure, the rest says what it is. */
-  function stat(value, said) {
+  /** A labelled number. `b` is the figure, the rest says what it is.
+      ⭐ `q` MAKES THE CROSS-REFERENCE A LINK RATHER THAN AN INSTRUCTION. Kevin,
+      reading the page: *"We refer to question numbers, but the questions aren't
+      until the very bottom, we need to point readers to them."* A page about
+      showing the work cannot answer "see question 2" with a scroll. */
+  function stat(value, said, q) {
     var li = el('li');
     li.appendChild(el('b', null, value));
     li.appendChild(el('span', null, said));
+    if (q) {
+      li.appendChild(el('span', null, ' — see '));
+      var a = el('a', null, 'question ' + q);
+      a.href = '#q' + q;
+      li.appendChild(a);
+    }
     return li;
   }
   function kick(text) { return el('p', 'hmkick', text); }
@@ -1890,6 +1974,28 @@ function methods(measures) {
     return p;
   }
 
+  /* ⭐⭐⭐ WHY A MEASURE IS DEFINED THE WAY IT IS, IN COUNTS RATHER THAN IN PROSE.
+     The CF% row's score condition used to be explained by a mechanism we do not
+     measure. The archive had counted the EFFECT since the site began — it is the
+     front door's own headline — so the explanation is now two published figures
+     and their own published descriptions. Nothing here divides or names a rate:
+     `what` travels with the count from `archive.js`. */
+  function evidenceBlock(m) {
+    if (!m.evidence || !m.evidence.length) return null;
+    var box = el('div', 'hmev');
+    if (m.evidenceLead) box.appendChild(el('span', null, m.evidenceLead));
+    var ul = el('ul');
+    m.evidence.forEach(function (e) {
+      var li = el('li');
+      li.appendChild(el('b', null, num(e.count) + ' of ' + num(e.n)));
+      li.appendChild(el('span', null, ' — ' + e.what));
+      ul.appendChild(li);
+    });
+    box.appendChild(ul);
+    if (m.evidenceTail) box.appendChild(el('span', null, m.evidenceTail));
+    return box;
+  }
+
   function figure(m, nums) {
     var s = el('section', 'hmf');
     s.id = m.anchor;
@@ -1903,6 +2009,8 @@ function methods(measures) {
     var work = workLine(m);
     if (work) s.appendChild(work);
     s.appendChild(el('p', 'hmwhy', m.why));
+    var ev = evidenceBlock(m);
+    if (ev) s.appendChild(ev);
     /* ⚠️ `nums` IS NULL WHEN THERE IS NOTHING TO SAY, RATHER THAN AN EMPTY LIST.
        This asked `nums.childNodes.length` and the page's own test harness has no
        `childNodes` — which is not the harness being wrong. A renderer that reads
@@ -1914,7 +2022,15 @@ function methods(measures) {
        would render a block that reads as though nothing is wrong with it, which
        is the one thing this page may not do. A test holds the data side. */
     var c = el('p', 'hmcav');
-    c.appendChild(el('b', null, 'What is wrong with it. '));
+    /* ⚠️ "COULD BE", NOT "IS". Kevin: *"could (or should?) this say 'What could
+       be wrong with it', mainly to soften the decisiveness of saying it's flat
+       out wrong (then why would we include it on our site?)"* He is right, and
+       it is not a hedge: the heading is an invitation to doubt the figure, and
+       "what is wrong with it" is a confession that argues against printing the
+       figure at all. Where something IS measurably wrong — hits carry a 4%
+       home-ice premium — the body still says so flatly, so nothing is softened
+       except the promise the heading makes. */
+    c.appendChild(el('b', null, 'What could be wrong with it. '));
     c.appendChild(el('span', null, m.caveat));
     s.appendChild(c);
     return s;
@@ -1938,14 +2054,14 @@ function methods(measures) {
     /* THE SIZE OF CRITICISM 1, BESIDE THE NUMBER IT CRITICISES. */
     if (m.alternate && m.alternate.games != null) {
       out.push(stat(num(m.alternate.games) + ' games',
-        'what it would be under the gentler test — every other game, rather than '
-        + 'first half against second — see question 1'));
+        'what it would be if we compared every other game instead of the first '
+        + 'half against the second', 1));
     }
     /* AND OF CRITICISM 2. */
     (m.atTarget || []).forEach(function (t) {
       out.push(stat(num(t.games) + ' games',
         'what it would be if we wanted to be ' + (t.target < policyTarget ? 'less' : 'more')
-        + ' sure — ' + t.target + ' in place of ' + policyTarget + ' — see question 2'));
+        + ' sure — ' + t.target + ' in place of ' + policyTarget, 2));
     });
     if (m.clubRange) {
       out.push(stat(pct(m.clubRange.min) + '–' + pct(m.clubRange.max),
@@ -1960,7 +2076,7 @@ function methods(measures) {
          35 is what the number needs and 41 is the ceiling. Found by looking. */
       out.push(stat('under ' + num(policy.admission),
         num(m.games) + ' games is inside our half-season line, so this number is '
-        + 'shown beside a team’s name'));
+        + 'shown for each of the two teams on a game’s preview'));
     }
     return listOf('hmnums', out);
   }
@@ -2058,18 +2174,47 @@ function methods(measures) {
         + 'number is about the team. If it does not, it was mostly luck. From that '
         + 'we work out how many games a team has to play before the number is '
         + 'worth anything at all.'));
-      pol.appendChild(el('p', null, 'A number that needs more than half a season '
-        + 'never appears beside a team’s name. It goes into the section below '
-        + 'about what is normal in hockey instead — which is a true and useful '
-        + 'thing to tell a newcomer, where "this team takes a lot of penalties" '
-        + 'would not be.'));
+      pol.appendChild(el('p', null, 'There is a gentler way to run that same '
+        + 'test — compare every other game rather than the first half against '
+        + 'the second — and it makes every number look steadier than it is. '
+        + 'Each figure below carries what that version would say, so you can see '
+        + 'the size of the difference, and question 1 at the foot of the page is '
+        + 'about why we do not use it.'));
+      /* ⛔ THIS PARAGRAPH DESCRIBED A SURFACE THE READER WAS NOT ON. It said a
+         failing number "never appears beside a team's name" and goes "into the
+         section below" — but this page shows no team names at all, and two
+         sections sit between here and the one it meant. Kevin: *"the first part
+         of this sentence doesn't align with the page."* It now names both places
+         a number can end up, on the site and on this page. */
+      pol.appendChild(el('p', null, 'A number that passes is shown for each of '
+        + 'the two teams on a game’s preview page — they are the three under '
+        + '"The numbers we show beside a team" below. A number that fails is '
+        + 'still worth knowing; it just describes hockey rather than a team, so '
+        + 'it is shown once above both teams instead, and it is under "What is '
+        + 'normal in hockey" further down. Telling a newcomer that a shift lasts '
+        + 'three quarters of a minute is useful and true. Telling them a team '
+        + '"takes a lot of penalties" after ten games would not be.'));
       var ul = el('ul', 'hmpol');
       ul.appendChild(stat(m.policy.target, 'how closely a team’s first half has to '
-        + 'match its second before we will put a number beside a team’s name. '
-        + 'Our choice, not something we measured — question 2'));
+        + 'match its second before we will show a number for that team. '
+        + 'Our choice, not something we measured', 2));
       ul.appendChild(stat(m.policy.admission, 'games. A number needing more than '
-        + 'this never appears beside a team’s name — question 3'));
-      ul.appendChild(stat(num(m.policy.clubSeasons), 'team-seasons behind every count on this page'));
+        + 'this is not shown for a team at all', 3));
+      /* ⭐ WHAT A "TEAM-SEASON" IS, SPELLED OUT AS ITS OWN ARITHMETIC. Kevin:
+         *"We should be crystal clear about what 'team-seasons' are, e.g. there
+         are 32 teams and we hold 3 seasons of data, hence 32 x 3 = 96."* The
+         count of teams is DIVIDED OUT of the two published numbers rather than
+         typed, and the sentence only claims the multiplication when it comes out
+         whole — a season the league played with an odd roster of clubs would
+         otherwise have this page asserting a tidy sum that is not true. */
+      var perYear = m.policy.seasons.length
+        ? m.policy.clubSeasons / m.policy.seasons.length : null;
+      ul.appendChild(stat(num(m.policy.clubSeasons), 'team-seasons behind every '
+        + 'count on this page'
+        + (Number.isInteger(perYear)
+            ? ' — one for each of the ' + perYear + ' teams, in each of the '
+              + m.policy.seasons.length + ' finished seasons below'
+            : '')));
       ul.appendChild(stat(m.policy.seasons.length, 'finished seasons: '
         + m.policy.seasons.join(', ') + '. A season counts once its playoffs are in our archive.'));
       pol.appendChild(ul);
