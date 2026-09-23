@@ -26,7 +26,11 @@ function fakeDom() {
     setAttribute(k, v) { this.attrs[k] = v; },
   });
   const ids = {};
-  const doc = { title: '', createElement: make,
+  // ⚠️ THE TRACK IS SVG, and `createElementNS` is a different method. The first
+  // run of this harness had only `createElement`, so every test that reached the
+  // chart threw inside the renderer — which the suite reports as an assertion
+  // failure on whatever came after, not as "the page did not draw".
+  const doc = { title: '', createElement: make, createElementNS: (_ns, t) => make(t),
     getElementById(id) {
       // Only ids the built page really carries, so a reference to a deleted
       // element is a null here exactly as it is in a browser.
@@ -63,7 +67,8 @@ const DOCS = {
   'measures.json': { census: { games: 4192,
     whistles: { penalties: 30434, offsides: 18700, ppChances: 22720, ppGoals: 4982, shGoals: 560 } },
     settle: { target: 0.7, admission: 41, seasons: ['2023', '2024'],
-      rows: { level5: { r: 0.73, games: 35 }, dmen: { r: 0.81, games: 23 },
+      rows: { level5: { r: 0.73, games: 35, clubRange: { min: 0.44, max: 0.57, median: 0.5, n: 96 } },
+              dmen: { r: 0.81, games: 23, clubRange: { min: 0.26, max: 0.38, median: 0.32, n: 96 } },
               slot: { r: 0.72, games: 37 } } } },
   'recent.json': { asOf: '2026-10-01T12:00:00Z', games: [] },
   'catalog.json': { games: [] },
@@ -196,7 +201,9 @@ test('with a season under way the page draws both frames and both clubs', async 
   await settle();
   const said = textOf(ids.pv);
   assert.match(said, /What is normal/, 'the league frame');
-  assert.match(said, /Power play/);
+  assert.match(said, /power plays produce a goal/, 'the power-play tile');
+  assert.match(said, /penalties a team takes/, 'the penalties tile');
+  assert.match(said, /times a team is offside/, 'the offside tile');
   assert.match(said, /5-on-5 CF% while the score was level/, 'a club row');
   assert.match(said, /12 of 35 games/, 'the progress, not a badge');
   assert.match(said, /Every Buffalo Sabres game we hold/);
@@ -215,11 +222,11 @@ test('⛔ every figure in the league frame carries its unit', async () => {
   const { ids, settle } = run({}, `?game=${GID}`, '2026-10-01T12:00:00Z');
   await settle();
   const said = textOf(ids.pv);
-  assert.match(said, /Power play —/, 'the subject: the row must be on the page');
-  assert.match(said, /\d+ of every 100 power plays produce a goal/);
+  assert.match(said, /power plays produce a goal/, 'the subject: the tile must be on the page');
+  assert.match(said, /\d+\s+of every 100/, 'the share names its unit');
   assert.ok(!/\d+ of power plays/.test(said), said.slice(0, 200));
-  // The two per-game figures are counts, not shares, and must not grow a unit.
-  assert.match(said, /a team takes about \d+\.\d a game/, 'penalties stay a plain count');
+  // The two per-game figures are counts, not shares, and must not grow a "of 100".
+  assert.match(said, /\d+\.\d\s+a game/, 'penalties stay a plain rate with its unit');
 });
 
 test('a census with no whistle counters drops the frame rather than inventing one', async () => {
@@ -229,4 +236,97 @@ test('a census with no whistle counters drops the frame rather than inventing on
   const said = textOf(ids.pv);
   assert.ok(!/What is normal/.test(said), said.slice(0, 200));
   assert.match(said, /Every Buffalo Sabres game we hold/, 'the rest of the page still renders');
+});
+
+/* ------------------------------------------------------------- THE CHART */
+
+const rectsIn = n => walk(n).filter(x => x.tag === 'rect').map(x => x.attrs);
+
+test('⭐⭐ the measure row draws BEFORE the season, because the axis is itself measured', async () => {
+  /* Kevin, 2026-09-23: *"I think I want to show each row, even if it's currently
+     blank, just to get a feel for what the UX will look like."* The site's rule is
+     that nothing is drawn on an empty population — and this row is not empty. The
+     shaded band is the min and max of the full-season figures real clubs posted
+     over three seasons, so the axis carries real data and only the two club bars
+     are missing.
+
+     MUTATION: skip the row when every club value is null and the first two
+     assertions fire; drop the band rect and the third does. */
+  const { ids, settle } = run({ 'teams.json': { through: '2026-09-18', seasons: {} } },
+    `?game=${GID}`, '2026-09-23T12:00:00Z');
+  await settle();
+  const said = textOf(ids.pv);
+  assert.match(said, /5-on-5 CF% while the score was level/, 'the measure is named');
+  assert.match(said, /no games yet/, 'and each club says it has nothing on it');
+  assert.match(said, /Shaded: what clubs did over a full season, 44 to 57 across 96 club-seasons/);
+  // ⛔ AND NO BAR IS DRAWN FOR A CLUB WITH NO FIGURE. The row is a template, and a
+  // template that draws a club's bar at zero would be inventing a measurement.
+  const filled = rectsIn(ids.pv).filter(r => r['fill-opacity'] != null);
+  assert.equal(filled.length, 0, 'a club with no games was given a bar');
+});
+
+test('⛔ no league tick before the season has a league figure', async () => {
+  /* Substituting the three-season figure would be two populations wearing one
+     label — the trap `leagueShares` already names. So the tick is absent and the
+     header says so. MUTATION: fall back to the archive median and this fires. */
+  const { ids, settle } = run({ 'teams.json': { through: '2026-09-18', seasons: {} } },
+    `?game=${GID}`, '2026-09-23T12:00:00Z');
+  await settle();
+  assert.match(textOf(ids.pv), /no league figure yet this season/);
+});
+
+test('⭐⭐ the bar\'s ink is games over need, so twelve games cannot look like sixty', async () => {
+  /* Kevin ruled the ramp. It is continuous and derived — no cliff, which is
+     CHENG's P1, and no chosen floor, because the outline carries visibility.
+     The fixture gives both clubs 12 games; level5 needs 35 and dmen needs 23,
+     so the SAME club must render fainter on the row that needs more.
+     MUTATION: make the opacity constant and the inequality fires; floor it at a
+     typed minimum and the exact ratios do. */
+  const { ids, settle } = run({}, `?game=${GID}`, '2026-10-01T12:00:00Z');
+  await settle();
+  const op = rectsIn(ids.pv).filter(r => r['fill-opacity'] != null)
+    .map(r => Number(r['fill-opacity']));
+  /* FOUR, not six, and the missing pair is the degradation working: the fixture
+     gives `slot` no `clubRange`, and both clubs hold the identical slot figure, so
+     that row has no span to draw on and falls back to text. A zero-width axis puts
+     every value on one pixel, which is a chart that lies about being a chart. */
+  assert.equal(op.length, 4, 'two drawable measures, two clubs — four bars');
+  const level5 = op.slice(0, 2), dmen = op.slice(2);
+  assert.ok(level5.every(v => v < 1) && dmen.every(v => v < 1), 'nothing has settled at 12 games');
+  assert.ok(level5[0] < dmen[0],
+    `35 games to settle must draw fainter than 23: ${level5[0]} vs ${dmen[0]}`);
+  assert.equal(level5[0].toFixed(3), (12 / 35).toFixed(3), 'the ramp is games/need, nothing else');
+});
+
+test('a settled row is drawn at full strength and never past it', async () => {
+  // The paired half: a ramp with no ceiling would keep darkening past 1.
+  const many = { games: 60, attempts: { for: 3000, against: 2900 },
+    slot: { count: 700, n: 1500 }, dmen: { count: 950, n: 3000 },
+    level5: { for: 1200, against: 1150 } };
+  const { ids, settle } = run({ 'teams.json': { through: '2026-12-01',
+    seasons: { 2026: { BUF: many, PIT: many } } } }, `?game=${GID}`, '2026-12-02T12:00:00Z');
+  await settle();
+  const op = rectsIn(ids.pv).filter(r => r['fill-opacity'] != null)
+    .map(r => Number(r['fill-opacity']));
+  assert.ok(op.length > 0, 'no bars were drawn at all');
+  assert.ok(op.every(v => v === 1), `an opacity above 1 is not a stronger claim: ${op}`);
+  assert.match(textOf(ids.pv), /settled/);
+});
+
+test('⭐ measure-first: both clubs sit inside one row, not in two stacked blocks', async () => {
+  /* The structural repair. Grouped club-first, the one comparison the card exists
+     to make was the one the layout forbade.
+     MUTATION: go back to a block per club and the ordering assertion fires. */
+  const { ids, settle } = run({}, `?game=${GID}`, '2026-10-01T12:00:00Z');
+  await settle();
+  const rows = walk(ids.pv).filter(x => (x.className || '').split(' ').includes('pvm'));
+  /* THREE, not two: the fixture's `slot` still needs 37 games, inside the
+     41-game admission. The live archive measures 42 and the card drops it — the
+     fixture keeps it admitted on purpose, so this suite exercises a third row
+     and the admission rule stays tested where it belongs, in preview.test.js. */
+  assert.equal(rows.length, 3, 'one row per admitted measure');
+  for (const r of rows) {
+    const said = textOf(r);
+    assert.ok(/BUF/.test(said) && /PIT/.test(said), `both clubs must be in one row: ${said}`);
+  }
 });

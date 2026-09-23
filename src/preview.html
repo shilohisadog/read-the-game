@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Dac0FMumEnAvTz0MZLnUjluFTg0ejPxJ3OfW5E5v0Cs=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-tLcBAn+O62owHlftoX8XlsOjhKIqi3uuCaoW1VLisgA='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-GgI6c7XuiN809uuhPMmvaSvtxp6baC3luDoROlIeRSo=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-tLcBAn+O62owHlftoX8XlsOjhKIqi3uuCaoW1VLisgA=' 'sha256-+sdtA1pm8AKHeciT09RqyI32Ag+qLAodi6DKohy82IA='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -569,6 +569,58 @@ footer p{margin:0 0 8px}
    the first figure shipped. app.css:1127 has always had the blanket form; this
    is the same rule, finally saying the same thing. */
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style><style>
+.pvflag{color:var(--muted);font-size:.9rem;margin:6px 0 0}
+.pvresult{margin:14px 0 0;font-size:1.05rem;font-weight:600}
+.pvkick{font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;
+ color:var(--muted);font-weight:700;margin:34px 0 12px}
+.pvn{font-size:.8rem;color:var(--muted);margin:10px 0 0;line-height:1.45}
+
+/* ---- what is normal: three tiles ------------------------------------- */
+.pvtiles{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(215px,1fr))}
+.pvtile{background:#fff;border:1px solid var(--edge);border-radius:11px;
+ padding:14px 15px 15px;display:flex;flex-direction:column}
+.pvbig{margin:0;font-size:2.1rem;line-height:1;font-weight:800;
+ font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.pvunit{font-size:.82rem;font-weight:600;color:var(--muted);letter-spacing:0}
+.pvtlab{margin:5px 0 0;font-size:.9rem;font-weight:600}
+.pvwatch{margin:10px 0 0;font-size:.85rem;color:var(--muted);line-height:1.45}
+/* ⭐ A HUNDRED DOTS, BECAUSE THE UNIT IS LITERALLY "OF EVERY 100". This is the one
+   league figure that is a PROPORTION OF A DEFINED WHOLE, so it gets the picture a
+   novice can count; a rate per game is not out of anything and gets a numeral. */
+.pvdots{margin:11px 0 0;display:grid;grid-template-columns:repeat(10,1fr);
+ gap:3px;max-width:132px}
+.pvdots i{display:block;aspect-ratio:1;border-radius:50%;background:var(--edge)}
+.pvdots i.on{background:var(--blue)}
+
+/* ---- the two clubs: one track per measure ---------------------------- */
+.pvm{margin:0 0 20px;padding:14px 15px 12px;background:#fff;
+ border:1px solid var(--edge);border-radius:11px}
+.pvmh{display:flex;flex-wrap:wrap;gap:2px 12px;align-items:baseline;
+ justify-content:space-between;margin:0 0 10px}
+.pvlab{margin:0;font-size:.95rem;font-weight:700}
+.pvref{font-size:.78rem;color:var(--muted);font-variant-numeric:tabular-nums}
+/* ⛔ THE ROW IS DRAWN EVEN WITH NO CLUB FIGURE ON IT, and that is not a chart of
+   nothing. The shaded band and its median are MEASURED — the full-season figures
+   real clubs posted over three seasons — so the axis carries real data before the
+   season starts and only the two club bars are missing. Kevin asked to see the
+   template; what makes it allowed is that the template is itself a measurement. */
+.pvtrack{display:grid;grid-template-columns:auto 1fr auto;gap:5px 9px;
+ align-items:center}
+.pvab{font-size:.78rem;font-weight:800;letter-spacing:.04em;
+ font-variant-numeric:tabular-nums}
+.pvv{font-size:.95rem;font-weight:700;font-variant-numeric:tabular-nums;
+ text-align:right;min-width:2.1em}
+.pvv.none{font-weight:500;color:var(--muted);font-size:.8rem;min-width:0}
+.pvsvg{display:block;width:100%;height:17px}
+.pvfoot{margin:9px 0 0;font-size:.76rem;color:var(--muted);line-height:1.45;
+ font-variant-numeric:tabular-nums}
+.pvnone{margin:0;color:var(--muted);font-size:.9rem}
+.pvlinks{margin:26px 0 0;display:flex;flex-wrap:wrap;gap:8px 22px;font-size:.93rem}
+@media (max-width:430px){
+ .pvbig{font-size:1.8rem}
+ .pvm{padding:12px 12px 10px}
+}
 </style>
 </head>
 <body>
@@ -1017,8 +1069,16 @@ function needsFrom(measures) {
   if (!s || !s.rows) return null;
   const out = {};
   for (const r of CLUB_ROWS) {
-    const need = (s.rows[r.key] || {}).games;
-    if (need != null && need <= (s.admission || Infinity)) out[r.key] = need;
+    const pub = s.rows[r.key] || {};
+    const need = pub.games;
+    if (need == null || need > (s.admission || Infinity)) continue;
+    /* ⭐ THE AXIS TRAVELS WITH THE ROW. `clubRange` is the min/max of the
+       full-season figures real clubs posted (`reliability.js`), and it is what
+       the card's bar is drawn against — so the edge of the bar means the edge of
+       what clubs do rather than a span somebody picked. A row published before
+       that field existed carries `null` and the renderer prints the figure with
+       no bar, which is the same degradation every other missing document gets. */
+    out[r.key] = { need, range: pub.clubRange || null };
   }
   return out;
 }
@@ -1033,7 +1093,9 @@ function rowsFor(ab, season, teams, recent, league, needs) {
      defect chosen on purpose. The rows still appear, saying they have nothing
      yet, because the card's shape may not change from one week to the next. */
   const tally = CLUB_ROWS.filter(r => !needs || needs[r.key] != null)
-    .map(r => ({ key: r.key, label: r.label, need: needs ? needs[r.key] : null,
+    .map(r => ({ key: r.key, label: r.label,
+      need: needs ? needs[r.key].need : null,
+      range: needs ? needs[r.key].range : null,
       count: 0, n: 0 }));
   let games = 0;
   if (base) {
@@ -1233,6 +1295,74 @@ function preview(id, docs, now) {
          ? ' — the regular season starts ' + when(counting.startsOn) + '.' : '.');
   }
 
+  function svgEl(name, attrs) {
+    var n = document.createElementNS('http://www.w3.org/2000/svg', name);
+    for (var k in attrs) n.setAttribute(k, attrs[k]);
+    return n;
+  }
+
+  /* ⭐⭐ THE TRACK, AND EVERY EDGE OF IT IS A MEASUREMENT.
+     `range` is the min and max of the FULL-SEASON figures real clubs posted
+     (`reliability.js` → measures.json), drawn as a shaded band, so the axis says
+     "this is what clubs do" instead of spanning a number somebody picked. The
+     axis itself stretches to hold whatever the two clubs are doing right now —
+     which in October is routinely OUTSIDE the band, and seeing a club sit past
+     the edge of every full season on record is the lesson, not a glitch.
+
+     ⛔ FILL OPACITY IS `games / need`, OUTLINE ALWAYS SOLID. A bar drawn at full
+     strength on twelve games looks exactly as authoritative as one drawn on
+     sixty, and the whole point of the settle counts is that it is not. Kevin
+     ruled the ramp; it is continuous, derived, and invents no cliff, which is
+     CHENG's P1. The outline is what keeps a faint bar from reading as absent —
+     it is a presentation floor with no number in it. */
+  function trackFor(row, sides) {
+    var range = row.range;
+    var vals = sides.map(function (s) { return s.value; })
+      .filter(function (v) { return v != null; });
+    if (!range && !vals.length) return null;
+
+    var lo = range ? range.min : Math.min.apply(null, vals);
+    var hi = range ? range.max : Math.max.apply(null, vals);
+    vals.forEach(function (v) { lo = Math.min(lo, v); hi = Math.max(hi, v); });
+    if (!(hi > lo)) return null;                 /* a zero-width axis draws nothing */
+    var at = function (v) { return 100 * (v - lo) / (hi - lo); };
+
+    var wrap = el('div', 'pvtrack');
+    sides.forEach(function (s) {
+      wrap.appendChild(el('span', 'pvab', s.ab));
+
+      var svg = svgEl('svg', { 'class': 'pvsvg', viewBox: '0 0 100 10',
+        preserveAspectRatio: 'none', 'aria-hidden': 'true' });
+      svg.appendChild(svgEl('rect', { x: 0, y: 3.5, width: 100, height: 3,
+        rx: 1.5, fill: '#e6edf3' }));
+      if (range) svg.appendChild(svgEl('rect', { x: at(range.min), y: 3.5,
+        width: Math.max(at(range.max) - at(range.min), 0.4), height: 3,
+        fill: '#cfe0ee' }));
+      /* THE REFERENCE IS THIS SEASON'S LEAGUE FIGURE AND NOTHING ELSE. Before the
+         opener there is no such figure, and substituting the three-season one
+         would be two populations wearing one label — the trap `leagueShares`
+         already names. So the tick is simply absent and the caption says so. */
+      if (s.league != null) svg.appendChild(svgEl('rect', { x: at(s.league) - 0.25,
+        y: 1.5, width: 0.5, height: 7, fill: '#5b6d7a' }));
+      if (s.value != null) {
+        var from = s.league == null ? at(range ? range.median : s.value) : at(s.league);
+        var to = at(s.value);
+        var x = Math.min(from, to), w = Math.max(Math.abs(to - from), 0.6);
+        var ink = readableInk(colourOf(s.ab));
+        svg.appendChild(svgEl('rect', { x: x, y: 2.2, width: w, height: 5.6, rx: 0.8,
+          fill: ink, 'fill-opacity': s.trust.toFixed(3) }));
+        svg.appendChild(svgEl('rect', { x: x, y: 2.2, width: w, height: 5.6, rx: 0.8,
+          fill: 'none', stroke: ink, 'stroke-width': 0.35 }));
+      }
+      wrap.appendChild(svg);
+
+      var v = el('span', s.value == null ? 'pvv none' : 'pvv',
+        s.value == null ? 'no games yet' : pct(s.value));
+      wrap.appendChild(v);
+    });
+    return { node: wrap, lo: lo, hi: hi };
+  }
+
   function draw(p) {
     if (p.state === 'unknown') {
       $('pv').appendChild(el('p', 'note',
@@ -1262,7 +1392,7 @@ function preview(id, docs, now) {
     $('pvwhen').textContent = says.join(' · ');
 
     if (p.state === 'started') {
-      $('pv').appendChild(el('p', 'note',
+      $('pv').appendChild(el('p', 'pvflag',
         'No score here yet — a game joins the archive after the night it is played.'));
     }
     /* THE DISCLOSURE EVERY OTHER SURFACE ALREADY MAKES. The calendar cell, the
@@ -1270,7 +1400,7 @@ function preview(id, docs, now) {
        this page printed the bare word and left a novice to guess why both
        columns were empty. */
     if (g.preseason) {
-      $('pv').appendChild(el('p', 'note',
+      $('pv').appendChild(el('p', 'pvflag',
         'Nothing in a preseason game is counted in any number on this site.'));
     }
 
@@ -1290,65 +1420,110 @@ function preview(id, docs, now) {
     if (p.league.length) {
       var frame = el('section', 'pvframe');
       frame.appendChild(el('p', 'pvkick', 'What is normal'));
-      p.league.forEach(function (r) {
-        var row = el('p', 'pvnorm');
-        if (r.key === 'powerplay') {
-          /* ⛔ "about 22 of power plays" IS WHAT THIS SAID, live, for a day.
-             `pct` returns a bare number because the club rows supply their own
-             unit — "22 of every 100" — and this sentence forgot to. The repair
-             uses that same phrasing rather than a % sign: the card's whole voice
-             is counts a novice can picture, and one surface speaking percent
-             while the one below it speaks hundreds is two dialects on one page. */
-          row.textContent = 'Power play — about ' + pct(r.rate) + ' of every 100 power'
-            + ' plays produce a goal, from about ' + r.chancesPerClubGame.toFixed(1)
-            + ' chances a team a game. Watch who is a skater short, and for how long.';
-        } else if (r.key === 'penalties') {
-          row.textContent = 'Penalties — a team takes about ' + r.perClubGame.toFixed(1)
-            + ' a game, and each one is the other team’s power play.';
-        } else {
-          row.textContent = 'Offside — about ' + r.perClubGame.toFixed(1)
-            + ' a team a game. Watch the blue line as a team carries the puck in.';
-        }
-        frame.appendChild(row);
-      });
+      var tiles = el('div', 'pvtiles');
+      p.league.forEach(function (r) { tiles.appendChild(tileFor(r)); });
+      frame.appendChild(tiles);
       frame.appendChild(el('p', 'pvn', 'Measured over ' + num(p.league[0].games)
         + ' games in this archive. Which teams do better than this over a season is '
         + 'mostly luck, so these are not counted against either club.'));
       $('pv').appendChild(frame);
     }
 
-    var cols = el('section', 'pvclubs');
-    ['away', 'home'].forEach(function (side) {
-      var c = p.clubs[side];
-      var box = el('div', 'pvclub');
-      box.appendChild(el('p', 'pvkick', nameOf(c.ab)));
-      if (!c.games) {
-        /* ⛔ PRESEASON, AND THE CARD SAYS SO RATHER THAN QUOTING LAST SEASON. Our
-           numbers exclude preseason, so before the season opens there is nothing
-           to report -- and last year's figures describe a different roster. */
-        box.appendChild(el('p', 'pvnone', noneYet(p.counting)));
-      } else {
-        c.rows.forEach(function (r) {
-          var row = el('div', 'pvrow');
-          row.appendChild(el('p', 'pvlab', r.label));
-          row.appendChild(el('p', 'pvfig', pct(r.value) + ' of every 100'
-            + (r.league == null ? '' : ' · league ' + pct(r.league))));
-          /* ⭐ THE PROGRESS, NOT A BADGE. CHENG's P1: a binary settled/forming
-             label invents a cliff the data does not have, and "12 of 35 games"
-             says the same thing continuously -- and tells two clubs with 12 and 9
-             games apart, which a badge cannot. */
-          row.appendChild(el('p', 'pvn', num(r.count) + ' of ' + num(r.n) + ' · '
-            + r.games + ' of ' + r.need + ' games'
-            + (r.settled ? ' · settled' : ' · still forming')));
-          box.appendChild(row);
-        });
-      }
-      var link = el('a', 'pvteam', 'Every ' + nameOf(c.ab) + ' game we hold →');
-      link.href = '/?team=' + c.ab;
-      box.appendChild(link);
-      cols.appendChild(box);
+    var sect = el('section', 'pvclubs');
+    sect.appendChild(el('p', 'pvkick', 'The two clubs'));
+    /* ⭐ MEASURE-FIRST, NOT CLUB-FIRST, AND THAT IS THE STRUCTURAL REPAIR. This
+       was two stacked club blocks, so the one comparison the card exists to make
+       -- how do these two differ, and from normal -- was the one thing the layout
+       forbade: the eye had to carry a number 200px down the page. One row per
+       measure puts both clubs on the same axis. */
+    var rows = p.clubs.away.rows;
+    if (!rows.length) {
+      sect.appendChild(el('p', 'pvnone', noneYet(p.counting)));
+    }
+    rows.forEach(function (ar, i) {
+      var hr = p.clubs.home.rows[i];
+      sect.appendChild(measureFor(ar, hr, p));
     });
-    $('pv').appendChild(cols);
+
+    var links = el('p', 'pvlinks');
+    ['away', 'home'].forEach(function (side) {
+      var ab = p.clubs[side].ab;
+      var link = el('a', null, 'Every ' + nameOf(ab) + ' game we hold →');
+      link.href = '/?team=' + ab;
+      links.appendChild(link);
+    });
+    sect.appendChild(links);
+    $('pv').appendChild(sect);
+  }
+
+  function tileFor(r) {
+    var t = el('div', 'pvtile');
+    var big = el('p', 'pvbig');
+    if (r.key === 'powerplay') {
+      big.textContent = pct(r.rate);
+      big.appendChild(el('span', 'pvunit', ' of every 100'));
+      t.appendChild(big);
+      t.appendChild(el('p', 'pvtlab', 'power plays produce a goal'));
+      var dots = el('div', 'pvdots');
+      var on = Math.round(r.rate * 100);
+      for (var i = 0; i < 100; i++) dots.appendChild(el('i', i < on ? 'on' : null));
+      t.appendChild(dots);
+      t.appendChild(el('p', 'pvwatch', 'A team gets about '
+        + r.chancesPerClubGame.toFixed(1) + ' a game. Watch who is a skater short, '
+        + 'and for how long.'));
+    } else if (r.key === 'penalties') {
+      big.textContent = r.perClubGame.toFixed(1);
+      big.appendChild(el('span', 'pvunit', ' a game'));
+      t.appendChild(big);
+      t.appendChild(el('p', 'pvtlab', 'penalties a team takes'));
+      t.appendChild(el('p', 'pvwatch', 'Each one is the other team’s power play.'));
+    } else {
+      big.textContent = r.perClubGame.toFixed(1);
+      big.appendChild(el('span', 'pvunit', ' a game'));
+      t.appendChild(big);
+      t.appendChild(el('p', 'pvtlab', 'times a team is offside'));
+      t.appendChild(el('p', 'pvwatch',
+        'Watch the blue line as a team carries the puck in.'));
+    }
+    return t;
+  }
+
+  function measureFor(ar, hr, p) {
+    var box = el('div', 'pvm');
+    var head = el('div', 'pvmh');
+    head.appendChild(el('p', 'pvlab', ar.label));
+    head.appendChild(el('span', 'pvref', ar.league == null
+      ? 'no league figure yet this season' : 'league ' + pct(ar.league)));
+    box.appendChild(head);
+
+    var sides = [ar, hr].map(function (r, i) {
+      var c = i === 0 ? p.clubs.away : p.clubs.home;
+      /* ⭐ HOW MUCH INK THE BAR HAS EARNED. Continuous in `games / need`, capped
+         at 1 and never floored — the outline carries visibility, so no minimum
+         had to be chosen. */
+      var trust = (r.need && r.games) ? Math.min(1, r.games / r.need) : 0;
+      return { ab: c.ab, value: r.value, league: r.league, trust: trust };
+    });
+    var track = trackFor(ar, sides);
+    if (track) box.appendChild(track.node);
+
+    var foot = [];
+    [ar, hr].forEach(function (r, i) {
+      var ab = (i === 0 ? p.clubs.away : p.clubs.home).ab;
+      /* ⭐ THE PROGRESS, NOT A BADGE. CHENG's P1: a binary settled/forming label
+         invents a cliff the data does not have, and "12 of 35 games" says the
+         same thing continuously -- and tells two clubs with 12 and 9 games
+         apart, which a badge cannot. */
+      if (r.value != null) foot.push(ab + ' ' + num(r.count) + ' of ' + num(r.n)
+        + ' · ' + r.games + ' of ' + r.need + ' games'
+        + (r.settled ? ' · settled' : ' · still forming'));
+    });
+    if (ar.range) foot.push('Shaded: what clubs did over a full season, '
+      + pct(ar.range.min) + ' to ' + pct(ar.range.max)
+      + ' across ' + ar.range.n + ' club-seasons.');
+    if (!foot.length) foot.push(noneYet(p.counting));
+    box.appendChild(el('p', 'pvfoot', foot.join('  ')));
+    return box;
   }
 
   boot();

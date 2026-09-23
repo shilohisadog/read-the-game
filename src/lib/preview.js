@@ -116,8 +116,16 @@ function needsFrom(measures) {
   if (!s || !s.rows) return null;
   const out = {};
   for (const r of CLUB_ROWS) {
-    const need = (s.rows[r.key] || {}).games;
-    if (need != null && need <= (s.admission || Infinity)) out[r.key] = need;
+    const pub = s.rows[r.key] || {};
+    const need = pub.games;
+    if (need == null || need > (s.admission || Infinity)) continue;
+    /* ⭐ THE AXIS TRAVELS WITH THE ROW. `clubRange` is the min/max of the
+       full-season figures real clubs posted (`reliability.js`), and it is what
+       the card's bar is drawn against — so the edge of the bar means the edge of
+       what clubs do rather than a span somebody picked. A row published before
+       that field existed carries `null` and the renderer prints the figure with
+       no bar, which is the same degradation every other missing document gets. */
+    out[r.key] = { need, range: pub.clubRange || null };
   }
   return out;
 }
@@ -132,7 +140,9 @@ function rowsFor(ab, season, teams, recent, league, needs) {
      defect chosen on purpose. The rows still appear, saying they have nothing
      yet, because the card's shape may not change from one week to the next. */
   const tally = CLUB_ROWS.filter(r => !needs || needs[r.key] != null)
-    .map(r => ({ key: r.key, label: r.label, need: needs ? needs[r.key] : null,
+    .map(r => ({ key: r.key, label: r.label,
+      need: needs ? needs[r.key].need : null,
+      range: needs ? needs[r.key].range : null,
       count: 0, n: 0 }));
   let games = 0;
   if (base) {
