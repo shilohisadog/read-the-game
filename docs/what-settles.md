@@ -130,6 +130,23 @@ avgShiftLen         -0.06 -0.15  -0.15  -0.15  -0.14 -0.12  -0.16  -0.11   0.01 
 **Corsi, Fenwick, SF%, attempt differential and attempts-for are pairwise
 0.84–0.98. They are one measurement.** Putting Fenwick beside Corsi on a teaching
 card shows one piece of evidence twice, which is worse than showing it once.
+
+⭐ **THE PIPELINE NOW MEASURES THIS ITSELF AND THE SITE PRINTS IT.** Kevin,
+2026-09-23, approving one possession row: *"as long as we quantify what
+'possession family' means (so a novice can connect the dots), then yes."*
+`reliability.agreement` correlates the shown row against the three we withhold,
+over the same 96 club-seasons with the same per-season centring, and publishes
+every pair. An independent path to the table above, and it agrees with it:
+
+| | corsi | fenwick | sog |
+|---|---|---|---|
+| **level5** (shown) | 0.926 | 0.905 | 0.850 |
+| corsi | — | 0.979 | 0.933 |
+| fenwick | | — | 0.971 |
+
+**Weakest pair 0.85, strongest 0.98.** That sentence is the card's answer to
+*"why is there only one possession row?"*, and it is on `how-we-measure.html`
+rather than in this file where nobody would find it.
 `avgShiftLen ↔ shiftsPerGame = −1.00` exactly — total ice time per game is fixed,
 so they are reciprocals and may never both appear.
 
@@ -172,13 +189,32 @@ declared policies, not measurements: **0.7** and **41 games**.
 a season's opponents, schedule and roster health, which inflates reliability;
 chronological halves count real mid-season change as unreliability. At admission
 41, **27 of 47** qualify on alternate games against **22** chronological.
-`sogShare` goes 37 → 14, `hitsPerGame` 49 → 11, `dmen` 23 → 12. We keep
-chronological because it is the question the card's label asks. But the honest
-statement is a band: `dmen` is somewhere between 12 and 23 games and we publish 23.
+`sogShare` goes 37 → 14, `hitsPerGame` 49 → 11. We keep chronological because it
+is the question the card's label asks. But the honest statement is a band.
+
+⭐ **AND THE BAND IS NOW PUBLISHED PER ROW, NOT ONLY RECORDED HERE.**
+`reliability.js` computes both splittings over the same club-seasons and writes
+`alternate` beside every count in measures.json; `how-we-measure.html` prints it
+under each figure, pointing at this argument. Measured 2026-09-23 by the pipeline:
+
+| | chronological (published) | alternate-game halves |
+|---|---|---|
+| `dmen` | **23** (r = 0.806) | 13 (r = 0.886) |
+| `level5` | **35** (r = 0.735) | 27 (r = 0.781) |
+| `slot` | **38** (r = 0.720) | 37 (r = 0.726) |
+
+⚠️ The exploratory figures above (`dmen` 23 → 12) came from the throwaway script
+that produced this table; the pipeline says 13. Where the two disagree, **the
+pipeline is the number the site prints** and this row is the one to trust.
+Note also how unevenly the criticism lands: it is worth ten games on `dmen` and
+one on `slot`, which is itself an argument for publishing it per row rather than
+as a blanket disclaimer.
 
 **2. "r = 0.7 is arbitrary."** **CORRECT.** It is a declared policy and nothing
 derives it. At admission 41: **34 of 47** qualify at r = 0.6, **22** at 0.7,
-**9** at 0.8. `level5` needs 23 / 35 / 60 games at those thresholds.
+**9** at 0.8. ⭐ **Also published per row now** as `atTarget`, and printed on the
+methods page: `level5` 23 / **35** / 60, `dmen` 15 / **23** / 40, `slot`
+24 / **38** / 64, at r = 0.6 / 0.7 / 0.8.
 
 **3. "41 games is arbitrary."** **PARTLY.** 41 is half of 82, so it is half of a
 fact about the schedule rather than a tuned constant, and it moves if the league

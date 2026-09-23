@@ -274,25 +274,39 @@ function rowsFor(ab, season, teams, recent, league, needs) {
  * this returns NOTHING rather than inventing a figure — the same degradation the
  * front door makes when fixtures carry no date.
  */
-function leagueRows(measures) {
+export function leagueRows(measures) {
   const c = (measures && measures.census) || null;
   const w = c && c.whistles;
   if (!c || !w || !c.games) return [];
   const perClubGame = n => n / (2 * c.games);
+  /* ⭐⭐⭐ `work` IS THE DIVISION ITSELF, CARRIED SO A CRITIC CAN SEE IT DONE.
+     The methods page renders "30,827 ÷ 8,384 = 3.68" from this. It is built as
+     the PRIMITIVE and the displayed figure is read back off it — `rate` is
+     `pp.value`, not a second `w.ppGoals / w.ppChances` — because two spellings
+     of one division is how a card and its own explanation come to disagree about
+     what the card says.
+     ⚠️ `count` IS NULL WHERE THERE IS NO DIVISION. A median is a percentile, not
+     a ratio, and printing it as one would be a false arithmetic on the page whose
+     job is showing true arithmetic. */
+  const ratio = (count, n) => ({ count, n, value: n > 0 ? count / n : null });
+  const pp = ratio(w.ppGoals, w.ppChances);
+  const pen = ratio(w.penalties, 2 * c.games);
+  const off = ratio(w.offsides, 2 * c.games);
+  const ice = ratio(w.icings, 2 * c.games);
   return [
     { key: 'powerplay', games: c.games,
       /* ⛔⛔ POWER-PLAY GOALS, NOT GOALS SCORED DURING A POWER PLAY. The census
          counts both; the second includes the short-handed ones and reads three
          points higher than the league's own figure. */
-      goals: w.ppGoals, chances: w.ppChances, rate: w.ppGoals / w.ppChances,
+      goals: w.ppGoals, chances: w.ppChances, rate: pp.value, work: pp,
       chancesPerClubGame: perClubGame(w.ppChances) },
     { key: 'penalties', games: c.games, count: w.penalties,
-      perClubGame: perClubGame(w.penalties) },
+      perClubGame: pen.value, work: pen },
     { key: 'offside', games: c.games, count: w.offsides,
-      perClubGame: perClubGame(w.offsides) },
+      perClubGame: off.value, work: off },
   ].concat(w.icings ? [{ key: 'icing', games: c.games, count: w.icings,
-      perClubGame: perClubGame(w.icings) }] : [])
-   .concat(extraLeagueRows(measures, c, perClubGame));
+      perClubGame: ice.value, work: ice }] : [])
+   .concat(extraLeagueRows(measures, c, perClubGame, ratio));
 }
 
 /**
@@ -313,7 +327,7 @@ function leagueRows(measures) {
  * someone who has never seen a hockey game. A figure with no such answer belongs
  * in the archive pages, not on a card a novice reads before a puck drops.
  */
-function extraLeagueRows(measures, c, perClubGame) {
+function extraLeagueRows(measures, c, perClubGame, ratio) {
   const out = [];
 
   /* WHERE A SHOT ATTEMPT ENDS. Three shares of one defined whole, which is the
@@ -327,6 +341,9 @@ function extraLeagueRows(measures, c, perClubGame) {
     const blocked = t['blocked-shot'] || 0, missed = t['missed-shot'] || 0;
     const total = goalie + blocked + missed;
     if (total > 0) out.push({ key: 'attempts', games: mix.games || c.games, total,
+      /* THE DIVISION THE TILE'S HEADLINE IS: the share that reached the goalie.
+         The other two parts are on the card's bar and in the key beside it. */
+      work: ratio(goalie, total),
       parts: [{ k: 'goalie', label: 'reached the goalie', v: goalie },
               { k: 'blocked', label: 'blocked by a body', v: blocked },
               { k: 'missed', label: 'missed the net', v: missed }] });
@@ -337,6 +354,10 @@ function extraLeagueRows(measures, c, perClubGame) {
      three seasons in a field no surface reads. */
   const sh = c.shift;
   if (sh && sh.n > 0 && sh.median != null) out.push({ key: 'shift', n: sh.n,
+    /* ⛔ NO NUMERATOR, BECAUSE THERE IS NO DIVISION. The median is the middle
+       value of 3.1 million shifts; writing it as a ratio would be arithmetic we
+       did not do, on the page that exists to show the arithmetic we did. */
+    work: { count: null, n: sh.n, value: sh.median },
     median: sh.median, p25: sh.p25, p75: sh.p75, underMinute: sh.underMinute });
 
   /* ⛔⛔ A MEASURED NULL, PUBLISHED AS ONE. `opposite` is the share of games in
@@ -349,7 +370,8 @@ function extraLeagueRows(measures, c, perClubGame) {
      scorer-dependent may not be printed as though it were clean. */
   const h = c.hits;
   if (h && h.n > 0 && typeof h.opposite === 'number' && h.totalHits) {
-    out.push({ key: 'hits', games: h.n, perClubGame: h.totalHits / (2 * h.n),
+    const hw = ratio(h.totalHits, 2 * h.n);
+    out.push({ key: 'hits', games: h.n, perClubGame: hw.value, work: hw,
       opposite: h.opposite, r: h.r });
   }
   return out;

@@ -102,6 +102,18 @@ LIMITS = [
     ("Nothing is modelled or invented.",
      "Every mark traces to a recorded event. There is no expected-goals number, "
      "because that would be our estimate presented as the game's fact."),
+    # ⭐⭐⭐ THE DOOR TO THE WORK, IN THE BLOCK THAT ALREADY STATES OUR LIMITS.
+    # Kevin, 2026-09-23: *"every metric and number needs to have an opportunity
+    # for a critic to 'be shown the work'."* Every figure on the preview card
+    # links into `how-we-measure.html`, but a reader who arrives at the front door
+    # to check us had no route to it at all -- and a methods page nobody can find
+    # is the same as no methods page. It belongs HERE rather than in the chrome:
+    # this block is the site saying what it cannot do, and the next question a
+    # reader has after reading it is how the things it CAN do were counted.
+    ("Every number, shown being counted.",
+     "How each figure is derived, how many games it takes before it means "
+     "anything, and the arguments against our method &mdash; including the ones "
+     "we think are right. <a href=\"how-we-measure.html\">How we measure</a>."),
     ("We say what we could not read.",
      "Games we hold but cannot show are listed anyway, with the check that stopped "
      "them. A schedule that hid them would be a map of our successes."),
@@ -3566,9 +3578,15 @@ PREVCSS = r"""<style>
  font-variant-numeric:tabular-nums}
 .pvfoot span{display:block}
 .pvnone{margin:0;color:var(--muted);font-size:.9rem}
-.pvlearn{display:inline-block;margin:9px 0 0;font-size:.82rem;font-weight:600}
-.pvfoot .pvlearn{margin-top:7px}
-.pvtile .pvlearn{margin-top:auto;padding-top:11px}
+.pvlearn,.pvwork{font-size:.82rem;font-weight:600}
+/* ⭐⭐⭐ TWO DOORS, AND THEY ARE NOT THE SAME KIND OF DOOR. One teaches what the
+   thing IS; the other shows how the number was counted. Kevin, 2026-09-23: *"every
+   metric and number needs to have an opportunity for a critic to 'be shown the
+   work'."* Five of seven tiles had a lesson door and NONE had a work door, and I
+   had been counting the first as though it satisfied the second. */
+.pvdoors{display:flex;flex-wrap:wrap;gap:3px 16px;margin:0;padding:11px 0 0}
+.pvtile .pvdoors{margin-top:auto}
+.pvwork{color:var(--muted)}
 .pvlinks{margin:26px 0 0;display:flex;flex-wrap:wrap;gap:8px 22px;font-size:.93rem}
 @media (max-width:430px){
  .pvbig{font-size:1.8rem}
@@ -3796,8 +3814,31 @@ __HELPERS__
     return a;
   }
 
+  /* ⭐⭐⭐ THE DOOR TO THE WORK, WHICH EVERY FIGURE ON THIS CARD NOW HAS.
+     `anchorOf` is `src/lib/methods.js`, inlined above, and the methods page
+     writes its section ids with the same call — so this href cannot drift from
+     the heading it points at. A figure whose key has no section there is caught
+     by `test/methods.test.js` before it ships, not by a reader. */
+  function workLink(key) {
+    var a = el('a', 'pvwork', 'How this is counted \u2192');
+    a.href = '/how-we-measure.html#' + anchorOf(key);
+    return a;
+  }
+
+  /** The lesson door, where there is one, and the work door, which is always. */
+  function doors(key, learn) {
+    var p = el('p', 'pvdoors');
+    if (learn) p.appendChild(learn);
+    p.appendChild(workLink(key));
+    return p;
+  }
+
   function tileFor(r, pp) {
     var t = el('div', 'pvtile');
+    /* SET BY THE BRANCHES THAT HAVE A LESSON TO POINT AT. The shift and hits
+       tiles have none — there is no card that teaches "how long a shift is" —
+       and they still get a work door, which is the half that is not optional. */
+    var learn = null;
     var big = el('p', 'pvbig');
     if (r.key === 'powerplay') {
       big.textContent = pct(r.rate);
@@ -3811,7 +3852,7 @@ __HELPERS__
       t.appendChild(el('p', 'pvwatch',
         'A team gets about ' + r.chancesPerClubGame.toFixed(1)
         + ' a game. Watch who is a skater short, and for how long.'));
-      t.appendChild(learnLink('powerplay', 'What a power play is'));
+      learn = learnLink('powerplay', 'What a power play is');
     } else if (r.key === 'penalties') {
       big.textContent = r.perClubGame.toFixed(1);
       big.appendChild(el('span', 'pvunit', ' a game'));
@@ -3831,7 +3872,7 @@ __HELPERS__
       t.appendChild(el('p', 'pvwatch', 'Only about ' + (pp ? pp.chancesPerClubGame.toFixed(1)
         : '\u2014') + ' of those become a power play for the other team — the rest '
         + 'leave nobody a skater up.'));
-      t.appendChild(learnLink('penalties', 'What a penalty costs'));
+      learn = learnLink('penalties', 'What a penalty costs');
     } else if (r.key === 'offside') {
       big.textContent = r.perClubGame.toFixed(1);
       big.appendChild(el('span', 'pvunit', ' a game'));
@@ -3839,7 +3880,7 @@ __HELPERS__
       t.appendChild(el('p', 'pvtlab', 'times a team is offside'));
       t.appendChild(el('p', 'pvwatch',
         'Watch the blue line as a team carries the puck in.'));
-      t.appendChild(learnLink('offside', 'What offside means'));
+      learn = learnLink('offside', 'What offside means');
 
     } else if (r.key === 'icing') {
       big.textContent = r.perClubGame.toFixed(1);
@@ -3849,7 +3890,7 @@ __HELPERS__
       t.appendChild(el('p', 'pvwatch', 'The faceoff comes all the way back, and '
         + 'the team that iced it may not change its line. Watch who is stuck out '
         + 'there and how tired they are.'));
-      t.appendChild(learnLink('icing', 'What icing is'));
+      learn = learnLink('icing', 'What icing is');
 
     } else if (r.key === 'attempts') {
       /* ⭐ THE ONE FIGURE ON THIS CARD THAT CAN HONESTLY BE A STACKED BAR: three
@@ -3882,7 +3923,7 @@ __HELPERS__
       t.appendChild(key);
       t.appendChild(el('p', 'pvwatch', 'The other half never gets there — '
         + 'a body steps in front, or it misses.'));
-      t.appendChild(learnLink('level5', 'See an attempt being counted'));
+      learn = learnLink('level5', 'See an attempt being counted');
 
     } else if (r.key === 'shift') {
       /* THE MOST BEWILDERING THING ABOUT A FIRST HOCKEY GAME is that nobody stays
@@ -3914,6 +3955,7 @@ __HELPERS__
       t.appendChild(el('p', 'pvfine', 'Counted by each home rink’s own crew, which '
         + 'records about 4% more hits at home than the same clubs record away.'));
     }
+    t.appendChild(doors(r.key, learn));
     return t;
   }
 
@@ -3977,14 +4019,447 @@ __HELPERS__
        `control` is a learn door onto the exact frame of a replay where the
        Control layer counts an attempt, which is what CF% is made of. A diagram
        would explain the metric; the replay shows it happening. */
-    if (DOORS[ar.key]) fp.appendChild(learnLink(ar.key, 'See an attempt being counted'));
     box.appendChild(fp);
+    box.appendChild(doors(ar.key,
+      DOORS[ar.key] ? learnLink(ar.key, 'See an attempt being counted') : null));
     return box;
   }
 
   boot();
 </script>
 """
+
+# ------------------------------------------------------------- HOW WE MEASURE
+# ⭐⭐⭐ KEVIN'S STANDING RULE, BUILT RATHER THAN PROMISED. 2026-09-23: *"We are
+# open source and transparent. Everything we claim on the site needs to be
+# adversarially challenged internally, cause it's going to be challenged
+# externally for sure (at least I hope it will be)….. every metric and number
+# needs to have an opportunity for a critic to 'be shown the work' and the work
+# needs to be squared away."*
+#
+# ⛔ THE AUDIT THAT PRODUCED THIS PAGE. The preview card had ten figures. Five
+# carried a door and EVERY ONE OF THOSE DOORS LED TO A LESSON — `penalties.html`
+# teaches what a penalty is and says nothing about how 3.7 a game was counted.
+# Two had no door at all. The most attackable number on the card, "14 of 35
+# games", was naked: no reader could learn what 35 was or what it assumes. A
+# lesson door and a work door are not substitutes and I had been counting one as
+# the other.
+#
+# ⚠️ THE ARGUMENTS AGAINST US ARE ON THE PAGE, NOT IN A FOOTNOTE. Four of the six
+# criticisms in `docs/what-settles.md` §5 are CORRECT and are printed as correct.
+# A concession we made internally and did not publish is a concession a reader is
+# entitled to think we were hiding — and the reader most likely to check is the
+# one whose opinion carries furthest.
+HOW_TITLE = "How we measure — Read the Game"
+HOW_DESC = ("Every figure on this site, what it was counted from, how many games "
+            "it takes to mean anything, and the arguments against it.")
+
+HOWCSS = r"""<style>
+.hmlede{font-size:1.05rem;line-height:1.6;margin:0 0 6px}
+.hmkick{font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;
+ color:var(--muted);font-weight:700;margin:40px 0 10px}
+.hmsec{margin:0 0 26px}
+.hmsec h2{font-size:1.15rem;margin:0 0 8px}
+.hmsec p{line-height:1.6;margin:0 0 10px}
+.hmpol{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0 0;padding:0;list-style:none}
+.hmpol li{background:#fff;border:1px solid var(--edge);border-radius:9px;
+ padding:9px 12px;font-size:.85rem;color:var(--muted);line-height:1.35}
+.hmpol b{display:block;font-size:1.25rem;color:var(--ink);font-weight:800;
+ font-variant-numeric:tabular-nums}
+
+/* ---- one block per figure -------------------------------------------- */
+.hmf{background:#fff;border:1px solid var(--edge);border-radius:11px;
+ padding:15px 16px 14px;margin:0 0 14px}
+.hmf h3{margin:0 0 9px;font-size:1rem}
+.hmfrom{margin:0 0 10px;display:grid;grid-template-columns:auto 1fr;gap:3px 12px;
+ font-size:.86rem;line-height:1.5}
+.hmfrom dt{color:var(--muted);font-weight:700;white-space:nowrap}
+.hmfrom dd{margin:0}
+.hmwhy{margin:0 0 10px;font-size:.9rem;line-height:1.55}
+.hmnums{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 10px;padding:0;list-style:none}
+.hmnums li{border:1px solid var(--edge);border-radius:8px;padding:7px 10px;
+ font-size:.76rem;color:var(--muted);line-height:1.3;max-width:15em}
+.hmnums b{display:block;font-size:1.05rem;color:var(--ink);font-weight:800;
+ font-variant-numeric:tabular-nums}
+/* ⚠️ THE CAVEAT IS NOT SMALL PRINT AND IS NOT STYLED AS SMALL PRINT. It is the
+   half of this page a critic is here for, so it reads at the same size as the
+   rest of the block with a rule down its side rather than shrinking away. */
+.hmcav{margin:0;padding:8px 0 8px 11px;border-left:3px solid #d6c07a;
+ font-size:.86rem;line-height:1.55}
+.hmcav b{font-weight:700}
+.hmnone{color:var(--muted);font-size:.86rem;margin:0}
+
+/* ---- the family matrix ------------------------------------------------ */
+.hmpairs{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:7px}
+.hmpairs li{display:grid;grid-template-columns:1fr 78px 3.1em;gap:10px;
+ align-items:center;font-size:.83rem}
+.hmpairs svg{display:block;width:100%;height:9px}
+.hmpairs b{font-variant-numeric:tabular-nums;text-align:right;font-weight:700}
+.hmshown{font-weight:700}
+.hmr{font-size:.78rem;color:var(--muted);margin:10px 0 0}
+@media (max-width:430px){
+ .hmpairs li{grid-template-columns:1fr 46px 3.1em}
+ .hmf{padding:13px 12px 12px}
+}
+</style>"""
+
+HOW_BODY = r"""<div class="wrap">
+<p class="eyebrow">Read the Game</p>
+<h1>How we measure</h1>
+<p class="note hmlede">Every figure on this site is counted from the league&rsquo;s own
+play-by-play, by code in this repository, over an archive you can count yourself.
+This page says what each one was counted from, how many games it takes before it
+means anything, and what is wrong with it.</p>
+<p class="note">Where a criticism of our method is correct, it says so.</p>
+
+<main id="hm"></main>
+
+<!-- ⛔ STATIC, AND DELIBERATELY BELOW THE MEASURED PART. Everything above this
+     point is read from the published document and disappears if it cannot be
+     fetched; everything here is an argument and is always on the page. A reader
+     who arrives to check our work and finds a blank page has been told nothing. -->
+<section class="hmsec" id="criticisms">
+<p class="hmkick">The arguments against this</p>
+
+<h2>1. &ldquo;A chronological split is conservative &mdash; you under-credit everything.&rdquo;</h2>
+<p><b>Correct, deliberately.</b> Cutting a season into its first half and its second
+half means the two halves differ in opponent, roster health and form, so real
+mid-season change is charged against the measure as unreliability. Alternate-game
+halves share all of that and every measure looks steadier. We publish both: each
+figure above carries what it would need if the halves alternated, and it is
+always the smaller number. We keep the chronological one because it answers the
+question the card&rsquo;s label actually asks &mdash; does what this club has done so
+far describe what it will do next? &mdash; but the honest statement is a band, and
+the band is printed.</p>
+
+<h2>2. &ldquo;Your reliability threshold is arbitrary.&rdquo;</h2>
+<p><b>Correct.</b> Nothing derives it. It is a declared choice about how sure we
+want to be before telling a novice that a number describes a club rather than a
+sample, and the only useful answer to the criticism is to show what the answer
+would be at other thresholds &mdash; which each figure above does.</p>
+
+<h2>3. &ldquo;Half a season is arbitrary too.&rdquo;</h2>
+<p><b>Partly.</b> The admission rule is half of the league&rsquo;s 82-game season, so
+it is half of a fact about the schedule rather than a tuned constant, and it
+moves by itself if the league changes the schedule. But choosing <em>half</em> is
+a choice, and a different fraction would admit a different set of rows.</p>
+
+<h2>4. &ldquo;Reliability is not usefulness.&rdquo;</h2>
+<p><b>Correct, and it is the criticism we agree with most.</b> A measure can
+matter enormously and still not settle inside a season. Power plays score at
+roughly half again the rate of even-strength play, and no power-play measure
+settles &mdash; which is exactly why power plays are on the card as something
+<em>hockey</em> does rather than as something a club is. Reliability answers one
+question, does this number describe this club, and says nothing at all about
+whether the thing it measures matters.</p>
+
+<h2>5. &ldquo;A split-half cannot see scorer bias &mdash; both halves share a home rink.&rdquo;</h2>
+<p><b>Correct, and it changed what is on the card.</b> A quantity recorded by a
+human in the building is recorded the same way in both halves of the season, so
+it looks highly reliable while partly measuring the scorer. We test for it
+separately, by asking whether a home club&rsquo;s figure moves with its
+<em>visitors&rsquo;</em> figure inside the same building. A measure of shots that
+missed passed every reliability test we had and failed that one; it was on this
+site for about four hours.</p>
+
+<h2>6. &ldquo;You pooled seasons without centring them.&rdquo;</h2>
+<p><b>Correct, and we found it ourselves on 23 September 2026.</b> Three seasons
+were pooled without removing each season&rsquo;s own level, so a league-wide change
+between years was partly read as a difference between clubs &mdash; and the
+league&rsquo;s recording of some events changed a great deal between those years.
+Our own specification had said to centre them and the code did not. Fixed, with a
+test whose fixture makes the two answers differ in sign. It cost us one row, which
+was removed, and returned another, which was added.</p>
+
+<h2>7. &ldquo;Your bar is rigged to reject fancystats.&rdquo;</h2>
+<p><b>It rejects the standings.</b> Points percentage, goal differential and
+save percentage at even strength all need more games than the admission rule
+allows, so none of them is on the card either. The bar is demanding, and it is
+demanding of the numbers every broadcast leads with before it is demanding of
+anyone else&rsquo;s.</p>
+</section>
+
+<section class="hmsec" id="limits">
+<p class="hmkick">What we cannot measure, and will not pretend to</p>
+<p><b>Zone entries and exits, controlled-entry rate.</b> Not in the public feed at
+any level. The complete stored event vocabulary is faceoff, stoppage, hit,
+giveaway, shot on goal, takeaway, missed shot, blocked shot, goal, penalty,
+delayed penalty, and the period markers. A metric built on entries would be a
+metric built on something we do not have.</p>
+<p><b>Expected goals, score-adjusted possession, RAPM, GAR and WAR.</b> These are
+models. This site shows what happened and counts it; a modelled number cannot be
+checked against the replay it sits beside, which is the one thing every figure
+here can be.</p>
+<p><b>PDO.</b> It is the sum of two rates rather than a ratio, so it does not fit
+the counted-out-of-counted contract every figure here uses. Both of its parts
+need far more than a season to settle, and PDO is <em>designed</em> to measure
+luck &mdash; presenting it as something a club is would invert its own meaning.</p>
+<p><b>Anything per sixty minutes of even-strength play.</b> The industry&rsquo;s
+preferred denominator needs time on ice by situation, which means walking the
+strength code between timestamps and deciding what to do with the gaps. We have
+not built it. Until we do, our rates are per game and mix in special-teams time,
+and that is the strongest remaining attack on the numbers above.</p>
+</section>
+
+<p class="hmr">The full search &mdash; every candidate measure we tested, the
+collinearity between them, the venue instruments and where they disagree with each
+other &mdash; is <a href="https://github.com/shilohisadog/read-the-game/blob/main/docs/what-settles.md">docs/what-settles.md</a>
+in the repository. The code that produces every figure on this page is
+<a href="https://github.com/shilohisadog/read-the-game/blob/main/src/lib/reliability.js">src/lib/reliability.js</a>.</p>
+</div>
+<script>
+__LIB__
+__HELPERS__
+
+  function num(n) { return (n == null ? '—' : n.toLocaleString()); }
+  function pct(v) { return v == null ? '—' : Math.round(v * 100) + '%'; }
+  function r2(v) { return v == null ? '—' : v.toFixed(2); }
+  /* ⭐ HOW A MEASURED FIGURE IS PRINTED, IN ONE PLACE. A count of seconds is an
+     integer and reads wrong as "46.00"; a share reads wrong as "0.22" beside a
+     unit that says "for every 100". Three shapes, one rule, no per-row config. */
+  function fig(v) {
+    if (v == null) return '—';
+    return Number.isInteger(v) ? String(v) : (v < 1 ? (v * 100).toFixed(1) : v.toFixed(2));
+  }
+  function r3(v) { return v == null ? '—' : v.toFixed(3); }
+
+  function svgEl(name, attrs) {
+    var n = document.createElementNS('http://www.w3.org/2000/svg', name);
+    for (var k in attrs) n.setAttribute(k, attrs[k]);
+    return n;
+  }
+  /** A labelled number. `b` is the figure, the rest says what it is. */
+  function stat(value, said) {
+    var li = el('li');
+    li.appendChild(el('b', null, value));
+    li.appendChild(el('span', null, said));
+    return li;
+  }
+  function kick(text) { return el('p', 'hmkick', text); }
+
+  /* ⭐ ONE BLOCK PER FIGURE, AND ITS `id` IS WHAT THE CARD'S DOOR POINTS AT.
+     `anchorOf` in `src/lib/methods.js` is the single spelling of that string;
+     writing 'm-' + key here as well would be the second statement of it, which
+     is how a link that looks completely normal stops resolving. */
+  /* ⭐⭐⭐ THE ARITHMETIC, PERFORMED ON THE PAGE. "5,011 ÷ 22,872 = 21.9 goals
+     for every 100 power plays" is the answer to *show me the work*; the sentence
+     above it is only the promise of one. The numbers come off `row.work`, which
+     the card's own row computed — nothing here divides. */
+  function workLine(m) {
+    var w = m.work;
+    if (!w || w.value == null) return null;
+    var p = el('p', 'hmwork');
+    if (w.count != null) {
+      p.appendChild(el('span', null, num(w.count) + ' ÷ ' + num(w.n) + ' = '));
+    }
+    p.appendChild(el('b', null, fig(w.value)));
+    /* ⛔ A MEDIAN HAS NO NUMERATOR, so it says what it is instead of pretending
+       to be a ratio — and it still names the population it is the middle of. */
+    p.appendChild(el('span', null, ' ' + m.unit
+      + (w.count == null ? ', the middle value of ' + num(w.n)
+          + (m.population ? ' ' + m.population : '') : '')));
+    return p;
+  }
+
+  function figure(m, nums) {
+    var s = el('section', 'hmf');
+    s.id = m.anchor;
+    s.appendChild(el('h3', null, m.label));
+    var dl = el('dl', 'hmfrom');
+    dl.appendChild(el('dt', null, 'Counted'));
+    dl.appendChild(el('dd', null, m.count));
+    dl.appendChild(el('dt', null, 'Out of'));
+    dl.appendChild(el('dd', null, m.of));
+    s.appendChild(dl);
+    var work = workLine(m);
+    if (work) s.appendChild(work);
+    s.appendChild(el('p', 'hmwhy', m.why));
+    /* ⚠️ `nums` IS NULL WHEN THERE IS NOTHING TO SAY, RATHER THAN AN EMPTY LIST.
+       This asked `nums.childNodes.length` and the page's own test harness has no
+       `childNodes` — which is not the harness being wrong. A renderer that reads
+       a DOM property to find out what it just built is asking the browser a
+       question it already knows the answer to. */
+    if (nums) s.appendChild(nums);
+    /* ⛔ THE CAVEAT IS UNCONDITIONAL IN THE DATA AND SO IT IS HERE. Every entry
+       in `DERIVATION` carries one; a figure that reached this page without one
+       would render a block that reads as though nothing is wrong with it, which
+       is the one thing this page may not do. A test holds the data side. */
+    var c = el('p', 'hmcav');
+    c.appendChild(el('b', null, 'What is wrong with it. '));
+    c.appendChild(el('span', null, m.caveat));
+    s.appendChild(c);
+    return s;
+  }
+
+  function clubNums(m, policy) {
+    var out = [];
+    if (m.games != null) {
+      out.push(stat(num(m.games) + ' games',
+        'before a club’s figure describes the club rather than the sample'));
+    }
+    if (m.r != null) {
+      out.push(stat(r3(m.r), 'how well a club’s first half of a season predicts its second'
+        + (policy && policy.clubSeasons ? ', over ' + num(policy.clubSeasons) + ' club-seasons' : '')));
+    }
+    /* THE SIZE OF CRITICISM 1, BESIDE THE NUMBER IT CRITICISES. */
+    if (m.alternate && m.alternate.games != null) {
+      out.push(stat(num(m.alternate.games) + ' games',
+        'if the two halves alternated instead of being first and second — see argument 1'));
+    }
+    /* AND OF CRITICISM 2. */
+    (m.atTarget || []).forEach(function (t) {
+      out.push(stat(num(t.games) + ' games',
+        'if we asked for a reliability of ' + t.target + ' instead — see argument 2'));
+    });
+    if (m.clubRange) {
+      out.push(stat(pct(m.clubRange.min) + '–' + pct(m.clubRange.max),
+        'what real clubs did across a full season, over ' + num(m.clubRange.games)
+        + ' club-games in ' + num(m.clubRange.n) + ' club-seasons'));
+    }
+    if (m.games != null && policy) {
+      out.push(stat(num(m.games) + ' ≤ ' + num(policy.admission),
+        'so it is shown as a club figure. Above that line it would be a league figure.'));
+    }
+    return listOf('hmnums', out);
+  }
+
+  /** A `<ul>` of the cells, or NULL when there are none — see `figure`. */
+  function listOf(cls, cells) {
+    if (!cells.length) return null;
+    var ul = el('ul', cls);
+    cells.forEach(function (c) { ul.appendChild(c); });
+    return ul;
+  }
+
+  /* ⭐⭐ WHY THERE IS ONE POSSESSION ROW, DRAWN RATHER THAN ASSERTED.
+     Kevin: *"as long as we quantify what 'possession family' means (so a novice
+     can connect the dots), then yes, I'm good with showing it once."* The axis is
+     0 to 1 because that is a correlation's own range, so the bar needs no chosen
+     span — the same rule the card's club tracks follow. */
+  function familyBlock(f) {
+    var sec = el('section', 'hmsec');
+    sec.id = 'possession-family';
+    sec.appendChild(kick('Why there is only one possession row'));
+    sec.appendChild(el('h2', null, 'Corsi, Fenwick and shots-on-goal share are the same measurement'));
+
+    var names = {};
+    f.members.forEach(function (m) { names[m.key] = m.label; });
+    var withheld = f.members.filter(function (m) { return !m.shown; });
+
+    sec.appendChild(el('p', null, 'Public hockey analysis has several names for '
+      + 'how much of the shooting a team did, and each of them clears our '
+      + 'admission rule on its own. We show one. The reason is that over a full '
+      + 'season they move together so tightly that printing all of them would '
+      + 'show one piece of evidence ' + f.members.length + ' times — and a reader '
+      + 'counts agreement as corroboration. Across ' + num(f.clubSeasons)
+      + ' club-seasons, the LEAST similar pair of them still agrees at '
+      + r2(f.min) + ', and the closest at ' + r2(f.max) + '.'));
+    sec.appendChild(el('p', null, 'What we withhold, and would be entitled to show: '
+      + withheld.map(function (m) { return m.label; }).join('; ') + '.'));
+
+    var ul = el('ul', 'hmpairs');
+    f.pairs.forEach(function (p) {
+      var li = el('li');
+      li.appendChild(el('span', null, (names[p.a] || p.a) + ' ↔ ' + (names[p.b] || p.b)));
+      var svg = svgEl('svg', { viewBox: '0 0 100 6', preserveAspectRatio: 'none',
+        'aria-hidden': 'true' });
+      svg.appendChild(svgEl('rect', { x: 0, y: 1.5, width: 100, height: 3, rx: 1.5,
+        fill: '#e6edf3' }));
+      svg.appendChild(svgEl('rect', { x: 0, y: 0.5, width: Math.max(Math.abs(p.r) * 100, 0.6),
+        height: 5, rx: 1.5, fill: 'var(--blue)' }));
+      li.appendChild(svg);
+      li.appendChild(el('b', null, r2(p.r)));
+      ul.appendChild(li);
+    });
+    sec.appendChild(ul);
+    sec.appendChild(el('p', 'hmr', 'Each bar runs from 0 to 1, which is a '
+      + 'correlation’s own range rather than a span we picked. Every season is '
+      + 'centred before the seasons are pooled, for the reason argument 6 gives.'));
+    return sec;
+  }
+
+  function draw(m) {
+    var host = $('hm');
+
+    /* ⛔ THE DEFINITIONS SURVIVE A DEAD DOCUMENT AND THE COUNTS DO NOT, so the
+       page says which half is missing. `CLUB_ROWS` is code and renders whatever
+       happens; every figure beside it is read from the bucket. A reader who
+       arrived to check our work and found the derivations with no numbers, and
+       no explanation of why, would reasonably conclude we never had any. */
+    if (!m.policy) {
+      host.appendChild(el('p', 'hmnone', 'The measured figures could not be '
+        + 'loaded just now, so the counts are missing below. What each figure is '
+        + 'counted from, and the arguments against our method, do not depend on them.'));
+    }
+
+    if (m.policy) {
+      var pol = el('section', 'hmsec');
+      pol.id = 'the-rule';
+      pol.appendChild(kick('The one rule the card is built on'));
+      pol.appendChild(el('h2', null,
+        'A figure describes a CLUB only if it settles inside half a season'));
+      pol.appendChild(el('p', null, 'Some things a team does are the team. Others '
+        + 'look like the team over ten games and are mostly luck. To tell them '
+        + 'apart we take every club’s completed season, cut it in half by date, '
+        + 'work out each half’s figure, and ask how strongly the first half '
+        + 'predicts the second across every club-season in the archive. Stepping '
+        + 'that up tells us how many games a figure needs before it means '
+        + 'something about the club.'));
+      pol.appendChild(el('p', null, 'A figure that needs more than half a season '
+        + 'is not shown as a club figure at all. It becomes part of what is '
+        + 'normal in hockey, which is a true thing to teach a newcomer, instead '
+        + 'of a club trait, which would not be.'));
+      var ul = el('ul', 'hmpol');
+      ul.appendChild(stat(m.policy.target, 'the reliability we ask for. A choice, not a measurement — argument 2'));
+      ul.appendChild(stat(m.policy.admission, 'games: above this a figure is not a club figure — argument 3'));
+      ul.appendChild(stat(num(m.policy.clubSeasons), 'club-seasons behind every count on this page'));
+      ul.appendChild(stat(m.policy.seasons.length, 'completed seasons: '
+        + m.policy.seasons.join(', ') + '. A season joins when its playoffs are in the archive.'));
+      pol.appendChild(ul);
+      pol.appendChild(el('p', 'hmr', 'The counts are re-derived only when a season '
+        + 'completes, so they never move mid-season for a reason a reader cannot see.'));
+      host.appendChild(pol);
+    }
+
+    if (m.family) host.appendChild(familyBlock(m.family));
+
+    if (m.club.length) {
+      host.appendChild(kick('What each club figure is, and what it costs to believe it'));
+      m.club.forEach(function (c) { host.appendChild(figure(c, clubNums(c, m.policy))); });
+    }
+
+    if (m.league.length) {
+      host.appendChild(kick('What is normal in hockey, and where those figures come from'));
+      var intro = el('p', 'hmwhy', 'None of these settles inside a season, which '
+        + 'is why none of them is shown as something a club is. They are counted '
+        + 'across the whole archive'
+        + (m.games ? ' — ' + num(m.games) + ' games' : '') + '.');
+      host.appendChild(intro);
+      m.league.forEach(function (r) {
+        host.appendChild(figure(r, listOf('hmnums', r.over
+          ? [stat(num(r.over.n), r.over.unit + ' it was counted over')] : [])));
+      });
+    }
+
+  }
+
+  grab('measures.json').then(function (mj) { draw(methods(mj)); });
+</script>
+"""
+
+
+def build_methods():
+    html = (HOW_BODY.replace("__LIB__", _lib("competitions.js", "teams.js",
+                                             "preview.js", "methods.js"))
+                    .replace("__HELPERS__", HELPERS)
+                    .replace("__ORIGIN__", repr(DATA_ORIGIN).replace("'", '"')))
+    html = P.document(html, title=HOW_TITLE, description=HOW_DESC,
+                      url="https://readthegame.co/how-we-measure.html",
+                      current="/how-we-measure.html",
+                      head='<meta http-equiv="Content-Security-Policy" content="__CSP__">\n'
+                           + STYLE + HOWCSS)
+    return html.replace("__CSP__", _csp(html))
+
 
 def _preview_doors():
     """Where each row of the preview card leads, resolved ONCE by `_card_href`.
@@ -4023,7 +4498,12 @@ def _preview_doors():
 
 
 def build_preview():
-    html = (PREV_BODY.replace("__LIB__", _lib("competitions.js", "teams.js", "preview.js"))
+    # ⭐ `methods.js` IS HERE FOR ONE FUNCTION: `anchorOf`. The card writes the
+    # href and the methods page writes the id, and two spellings of one string is
+    # the dead link that looks completely normal. Inlining the module is cheaper
+    # than asserting agreement between two literals.
+    html = (PREV_BODY.replace("__LIB__", _lib("competitions.js", "teams.js",
+                                              "preview.js", "methods.js"))
                      .replace("__HELPERS__", HELPERS)
                      .replace("__DOORS__", _preview_doors())
                      .replace("__ORIGIN__", repr(DATA_ORIGIN).replace("'", '"')))
@@ -4074,7 +4554,11 @@ def main():
              # THE PREVIEW, and it is a page rather than a section for one reason:
              # a link posted before a game is read again after it. See
              # docs/preview-page.md §3.1.
-             (ROOT / "src" / "preview.html", build_preview())]
+             (ROOT / "src" / "preview.html", build_preview()),
+             # ⭐⭐⭐ THE WORK, FOR A CRITIC. Every figure the card draws has a door
+             # into this page, and `test/methods.test.js` fails the build if one
+             # does not resolve. See the header above `HOW_TITLE`.
+             (ROOT / "src" / "how-we-measure.html", build_methods())]
     # ONE PAGE PER RULE WE DREW. The list comes from the figures themselves, so a
     # new diagram is a page without anyone remembering to add it here -- and a
     # learn card links to `/{cid}.html` under exactly the same condition, which

@@ -1,10 +1,11 @@
 # The preview page — a shareable URL for a game nobody has played
 
-**Written 2026-09-22 as a plan for review; ✅ §3 IS BUILT AND LIVE (§10), §4 IS
-NOT.** The page, its data and the doors shipped 2026-09-23; the edge middleware
-that gives a shared link a per-game unfurl has not been written. It surfaces the
-card `docs/preview-and-corsi.md` §11–§12 settled, and it is the first thing this
-project will run **server-side** (at the edge, and only over `<head>`).
+**Written 2026-09-22 as a plan for review; ✅ §3, §4 AND §11 ARE BUILT AND LIVE.**
+The page, its data and the doors shipped 2026-09-23, the edge middleware that
+gives a shared link a per-game unfurl the same day, and the door from every figure
+to its derivation (§11) that evening. It surfaces the card
+`docs/preview-and-corsi.md` §11–§12 settled, and the middleware is the first thing
+this project runs **server-side** (at the edge, and only over `<head>`).
 
 **WHAT PROMPTED IT, for a reader arriving cold.** This repo builds an NHL replay
 site for a novice. `docs/preview-and-corsi.md` settled WHAT a pre-game card says:
@@ -271,3 +272,57 @@ both.
   *"Under way"* state reads for about thirteen hours after a game has finished,
   because nothing tells us it ended until the nightly run. Proposed copy:
   *"Started 7:00 PM — the replay appears after tonight's run."*
+
+---
+
+## 11. ✅ THE WORK DOOR — 2026-09-23, and it is a gate rather than a promise
+
+**Kevin, restating a standing rule after the #fancystats discussion:** *"We are
+open source and transparent. Everything we claim on the site needs to be
+adversarially challenged internally, cause it's going to be challenged externally
+for sure (at least I hope it will be)….. every metric and number needs to have an
+opportunity for a critic to 'be shown the work' and the work needs to be squared
+away."*
+
+**⛔ THE AUDIT THAT FOLLOWED, THE SAME AFTERNOON.** The card had ten figures.
+Five carried a door, and **every one of those doors led to a LESSON** — the
+penalties tile linked to `penalties.html`, which teaches what a penalty is and
+says nothing about how 3.7 a game was counted. Two figures had no door at all.
+And *"14 of 35 games"*, the most attackable number on the card, was naked. A
+lesson door and a work door are not substitutes and I had been counting one as
+the other.
+
+### 11.1 What shipped
+
+- **`src/how-we-measure.html`** — one block per figure, each carrying what it was
+  counted from, **the division itself**, why it is on the card, and what is wrong
+  with it. The seven arguments against our method are static markup below the
+  measured part, so a reader who arrives when the data origin is unreachable still
+  finds them. Four of the seven are conceded as correct.
+- **`src/lib/methods.js`** — pairs every key the card can render with its
+  derivation. `keysOf()` asks the CARD what it draws rather than restating a list,
+  and `anchorOf()` is the single spelling of the anchor both pages use.
+- **`work` on every league row** (`preview.js`) — the numerator, denominator and
+  quotient the tile already computed, carried so the methods page can print
+  *"5,011 ÷ 22,872 = 21.9"*. ⛔ The row divides once and both surfaces read the
+  result; nothing on the methods page divides.
+- **Two doors on every figure**, and a route from the front door's limits block,
+  which is the section a reader checking our work reaches first.
+
+### 11.2 ⭐ The gate
+
+`test/methods.test.js` renders **both real pages** and compares their output: every
+`href` the card writes into a work door must resolve to a section id the methods
+page actually rendered, and the door count must equal the figure count. Checking
+either side alone would pass two pages that disagree about how the anchor is
+spelled — the dead link that looks completely normal. Five mutations were run
+against it and all five fail.
+
+### 11.3 ⚠️ Found by looking, not by the suite
+
+The first rendering explained in prose what each figure was counted from and then
+printed only the archive size — **a page called *how this is counted* that never
+performed the arithmetic**, and it read as finished. `work` exists because of
+that screenshot. The same pass caught *"the middle value of 3,101,105"*: a bare
+number with no noun, on the page whose entire subject is what our numbers are
+made of.

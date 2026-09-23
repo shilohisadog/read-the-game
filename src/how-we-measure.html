@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>What to watch for — Read the Game</title>
-<meta name="description" content="What each club does more than the league this season, and what is normal in hockey. Nothing forecast, and no video.">
+<title>How we measure — Read the Game</title>
+<meta name="description" content="Every figure on this site, what it was counted from, how many games it takes to mean anything, and the arguments against it.">
 <meta property="og:type" content="website">
-<meta property="og:title" content="What to watch for — Read the Game">
-<meta property="og:description" content="What each club does more than the league this season, and what is normal in hockey. Nothing forecast, and no video.">
+<meta property="og:title" content="How we measure — Read the Game">
+<meta property="og:description" content="Every figure on this site, what it was counted from, how many games it takes to mean anything, and the arguments against it.">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="What to watch for — Read the Game">
-<meta name="twitter:description" content="What each club does more than the league this season, and what is normal in hockey. Nothing forecast, and no video.">
-<meta property="og:url" content="https://readthegame.co/preview.html">
+<meta name="twitter:title" content="How we measure — Read the Game">
+<meta name="twitter:description" content="Every figure on this site, what it was counted from, how many games it takes to mean anything, and the arguments against it.">
+<meta property="og:url" content="https://readthegame.co/how-we-measure.html">
 <style>
 .sitehdr,.sitefoot{font:500 .9rem/1.5 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
  background:#f4f7fa;color:#0f1a23;-webkit-text-size-adjust:100%}
@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-IqBx6YdknDxLD7xosTguE6R6pOfZXXqvAXtddvLum44=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-tLcBAn+O62owHlftoX8XlsOjhKIqi3uuCaoW1VLisgA=' 'sha256-3X9HVvxM/3yUsTAYNxLhsF9xK7Hi2mREYVg1+zQCEYc='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-0fvpSRXf2lX9MqM0xDX4ZF8a/JrMS3iEKY3xBom1QTI=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-tLcBAn+O62owHlftoX8XlsOjhKIqi3uuCaoW1VLisgA=' 'sha256-POKa4TBZVZlra5xt5sUrWS0If/LeF6QeGLK3HO5icVE='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -570,90 +570,51 @@ footer p{margin:0 0 8px}
    is the same rule, finally saying the same thing. */
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style><style>
-.pvflag{color:var(--muted);font-size:.9rem;margin:6px 0 0}
-.pvresult{margin:14px 0 0;font-size:1.05rem;font-weight:600}
-.pvkick{font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;
- color:var(--muted);font-weight:700;margin:34px 0 12px}
-.pvn{font-size:.8rem;color:var(--muted);margin:10px 0 0;line-height:1.45}
-
-/* ---- what is normal: three tiles ------------------------------------- */
-.pvtiles{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(215px,1fr))}
-.pvtile{background:#fff;border:1px solid var(--edge);border-radius:11px;
- padding:14px 15px 15px;display:flex;flex-direction:column}
-.pvbig{margin:0;font-size:2.1rem;line-height:1;font-weight:800;
- font-variant-numeric:tabular-nums;letter-spacing:-.01em}
-.pvunit{font-size:.82rem;font-weight:600;color:var(--muted);letter-spacing:0}
-.pvtlab{margin:5px 0 0;font-size:.9rem;font-weight:600}
-.pvwatch{margin:10px 0 0;font-size:.85rem;color:var(--muted);line-height:1.45}
-/* ⭐ A HUNDRED DOTS, BECAUSE THE UNIT IS LITERALLY "OF EVERY 100". This is the one
-   league figure that is a PROPORTION OF A DEFINED WHOLE, so it gets the picture a
-   novice can count; a rate per game is not out of anything and gets a numeral. */
-/* ⛔ TWENTY ACROSS, NOT TEN. A 10x10 grid is the tidy shape and it made this tile
-   twice the height of the two beside it, which stretch to match — so two tiles
-   carrying one sentence each held a hundred pixels of nothing. Same hundred dots,
-   five rows instead of ten. Found by looking; the suite counts dots and cannot
-   see a column of dead space. */
-.pvdots{margin:11px 0 2px;display:grid;grid-template-columns:repeat(20,1fr);
- gap:2px;max-width:100%}
-.pvdots i{display:block;aspect-ratio:1;border-radius:50%;background:var(--edge)}
-.pvdots i.on{background:var(--blue)}
-/* the stacked bar, in the game page's own idiom — rects, never divs with widths,
-   because this page's CSP refuses an inline `style` attribute just as that one's does */
-.pvmix{display:block;width:100%;height:13px;border-radius:6px;margin:11px 0 7px}
-.mgoalie{fill:var(--blue)}.mblocked{fill:#9db4c8}.mmissed{fill:#d3dee7}
-.pvkey{margin:0;display:flex;flex-wrap:wrap;gap:2px 12px;font-size:.78rem;color:var(--muted)}
-.pvkey b{color:var(--ink);font-variant-numeric:tabular-nums}
-.pvkey i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px}
-.pvkey i.mgoalie{background:var(--blue)}.pvkey i.mblocked{background:#9db4c8}
-.pvkey i.mmissed{background:#d3dee7}
-.pvfine{margin:8px 0 0;font-size:.74rem;color:var(--muted);line-height:1.45}
-
-/* ---- the two clubs: one track per measure ---------------------------- */
-.pvm{margin:0 0 20px;padding:14px 15px 12px;background:#fff;
- border:1px solid var(--edge);border-radius:11px}
-.pvmh{display:flex;flex-wrap:wrap;gap:2px 12px;align-items:baseline;
- justify-content:space-between;margin:0 0 10px}
-.pvlab{margin:0;font-size:.95rem;font-weight:700}
-.pvref{font-size:.78rem;color:var(--muted);font-variant-numeric:tabular-nums}
-/* ⛔ THE ROW IS DRAWN EVEN WITH NO CLUB FIGURE ON IT, and that is not a chart of
-   nothing. The shaded band and its median are MEASURED — the full-season figures
-   real clubs posted over three seasons — so the axis carries real data before the
-   season starts and only the two club bars are missing. Kevin asked to see the
-   template; what makes it allowed is that the template is itself a measurement. */
-.pvtrack{display:grid;grid-template-columns:auto 1fr auto;gap:5px 9px;
- align-items:center}
-.pvab{font-size:.78rem;font-weight:800;letter-spacing:.04em;
+.hmlede{font-size:1.05rem;line-height:1.6;margin:0 0 6px}
+.hmkick{font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;
+ color:var(--muted);font-weight:700;margin:40px 0 10px}
+.hmsec{margin:0 0 26px}
+.hmsec h2{font-size:1.15rem;margin:0 0 8px}
+.hmsec p{line-height:1.6;margin:0 0 10px}
+.hmpol{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0 0;padding:0;list-style:none}
+.hmpol li{background:#fff;border:1px solid var(--edge);border-radius:9px;
+ padding:9px 12px;font-size:.85rem;color:var(--muted);line-height:1.35}
+.hmpol b{display:block;font-size:1.25rem;color:var(--ink);font-weight:800;
  font-variant-numeric:tabular-nums}
-.pvv{font-size:.95rem;font-weight:700;font-variant-numeric:tabular-nums;
- text-align:right;min-width:2.1em}
-.pvv.none{font-weight:500;color:var(--muted);font-size:.8rem;min-width:0}
-.pvsvg{display:block;width:100%;height:17px}
-/* ⛔ THE AXIS NAMES ITS OWN ENDS, AND LOOKING IS WHAT FOUND THIS. Before the
-   season the axis and the shaded band are the SAME span — every club-season sits
-   inside it by construction — so the track rendered as one flat pale bar and read
-   as an empty progress meter rather than a scale. A chart with no axis labels is
-   the defect `mixRow` already names one page over. The numbers are the axis's own
-   endpoints, so they cost no constant. */
-.pvends{grid-column:2;display:flex;justify-content:space-between;
- font-size:.7rem;color:var(--muted);font-variant-numeric:tabular-nums;
- margin:-2px 0 2px}
-.pvfoot{margin:9px 0 0;font-size:.76rem;color:var(--muted);line-height:1.5;
+
+/* ---- one block per figure -------------------------------------------- */
+.hmf{background:#fff;border:1px solid var(--edge);border-radius:11px;
+ padding:15px 16px 14px;margin:0 0 14px}
+.hmf h3{margin:0 0 9px;font-size:1rem}
+.hmfrom{margin:0 0 10px;display:grid;grid-template-columns:auto 1fr;gap:3px 12px;
+ font-size:.86rem;line-height:1.5}
+.hmfrom dt{color:var(--muted);font-weight:700;white-space:nowrap}
+.hmfrom dd{margin:0}
+.hmwhy{margin:0 0 10px;font-size:.9rem;line-height:1.55}
+.hmnums{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 10px;padding:0;list-style:none}
+.hmnums li{border:1px solid var(--edge);border-radius:8px;padding:7px 10px;
+ font-size:.76rem;color:var(--muted);line-height:1.3;max-width:15em}
+.hmnums b{display:block;font-size:1.05rem;color:var(--ink);font-weight:800;
  font-variant-numeric:tabular-nums}
-.pvfoot span{display:block}
-.pvnone{margin:0;color:var(--muted);font-size:.9rem}
-.pvlearn,.pvwork{font-size:.82rem;font-weight:600}
-/* ⭐⭐⭐ TWO DOORS, AND THEY ARE NOT THE SAME KIND OF DOOR. One teaches what the
-   thing IS; the other shows how the number was counted. Kevin, 2026-09-23: *"every
-   metric and number needs to have an opportunity for a critic to 'be shown the
-   work'."* Five of seven tiles had a lesson door and NONE had a work door, and I
-   had been counting the first as though it satisfied the second. */
-.pvdoors{display:flex;flex-wrap:wrap;gap:3px 16px;margin:0;padding:11px 0 0}
-.pvtile .pvdoors{margin-top:auto}
-.pvwork{color:var(--muted)}
-.pvlinks{margin:26px 0 0;display:flex;flex-wrap:wrap;gap:8px 22px;font-size:.93rem}
+/* ⚠️ THE CAVEAT IS NOT SMALL PRINT AND IS NOT STYLED AS SMALL PRINT. It is the
+   half of this page a critic is here for, so it reads at the same size as the
+   rest of the block with a rule down its side rather than shrinking away. */
+.hmcav{margin:0;padding:8px 0 8px 11px;border-left:3px solid #d6c07a;
+ font-size:.86rem;line-height:1.55}
+.hmcav b{font-weight:700}
+.hmnone{color:var(--muted);font-size:.86rem;margin:0}
+
+/* ---- the family matrix ------------------------------------------------ */
+.hmpairs{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:7px}
+.hmpairs li{display:grid;grid-template-columns:1fr 78px 3.1em;gap:10px;
+ align-items:center;font-size:.83rem}
+.hmpairs svg{display:block;width:100%;height:9px}
+.hmpairs b{font-variant-numeric:tabular-nums;text-align:right;font-weight:700}
+.hmshown{font-weight:700}
+.hmr{font-size:.78rem;color:var(--muted);margin:10px 0 0}
 @media (max-width:430px){
- .pvbig{font-size:1.8rem}
- .pvm{padding:12px 12px 10px}
+ .hmpairs li{grid-template-columns:1fr 46px 3.1em}
+ .hmf{padding:13px 12px 12px}
 }
 </style>
 </head>
@@ -661,9 +622,107 @@ footer p{margin:0 0 8px}
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
 <div class="wrap">
 <p class="eyebrow">Read the Game</p>
-<h1 id="pvh1">What to watch for</h1>
-<p class="note" id="pvwhen"></p>
-<main id="pv"></main>
+<h1>How we measure</h1>
+<p class="note hmlede">Every figure on this site is counted from the league&rsquo;s own
+play-by-play, by code in this repository, over an archive you can count yourself.
+This page says what each one was counted from, how many games it takes before it
+means anything, and what is wrong with it.</p>
+<p class="note">Where a criticism of our method is correct, it says so.</p>
+
+<main id="hm"></main>
+
+<!-- ⛔ STATIC, AND DELIBERATELY BELOW THE MEASURED PART. Everything above this
+     point is read from the published document and disappears if it cannot be
+     fetched; everything here is an argument and is always on the page. A reader
+     who arrives to check our work and finds a blank page has been told nothing. -->
+<section class="hmsec" id="criticisms">
+<p class="hmkick">The arguments against this</p>
+
+<h2>1. &ldquo;A chronological split is conservative &mdash; you under-credit everything.&rdquo;</h2>
+<p><b>Correct, deliberately.</b> Cutting a season into its first half and its second
+half means the two halves differ in opponent, roster health and form, so real
+mid-season change is charged against the measure as unreliability. Alternate-game
+halves share all of that and every measure looks steadier. We publish both: each
+figure above carries what it would need if the halves alternated, and it is
+always the smaller number. We keep the chronological one because it answers the
+question the card&rsquo;s label actually asks &mdash; does what this club has done so
+far describe what it will do next? &mdash; but the honest statement is a band, and
+the band is printed.</p>
+
+<h2>2. &ldquo;Your reliability threshold is arbitrary.&rdquo;</h2>
+<p><b>Correct.</b> Nothing derives it. It is a declared choice about how sure we
+want to be before telling a novice that a number describes a club rather than a
+sample, and the only useful answer to the criticism is to show what the answer
+would be at other thresholds &mdash; which each figure above does.</p>
+
+<h2>3. &ldquo;Half a season is arbitrary too.&rdquo;</h2>
+<p><b>Partly.</b> The admission rule is half of the league&rsquo;s 82-game season, so
+it is half of a fact about the schedule rather than a tuned constant, and it
+moves by itself if the league changes the schedule. But choosing <em>half</em> is
+a choice, and a different fraction would admit a different set of rows.</p>
+
+<h2>4. &ldquo;Reliability is not usefulness.&rdquo;</h2>
+<p><b>Correct, and it is the criticism we agree with most.</b> A measure can
+matter enormously and still not settle inside a season. Power plays score at
+roughly half again the rate of even-strength play, and no power-play measure
+settles &mdash; which is exactly why power plays are on the card as something
+<em>hockey</em> does rather than as something a club is. Reliability answers one
+question, does this number describe this club, and says nothing at all about
+whether the thing it measures matters.</p>
+
+<h2>5. &ldquo;A split-half cannot see scorer bias &mdash; both halves share a home rink.&rdquo;</h2>
+<p><b>Correct, and it changed what is on the card.</b> A quantity recorded by a
+human in the building is recorded the same way in both halves of the season, so
+it looks highly reliable while partly measuring the scorer. We test for it
+separately, by asking whether a home club&rsquo;s figure moves with its
+<em>visitors&rsquo;</em> figure inside the same building. A measure of shots that
+missed passed every reliability test we had and failed that one; it was on this
+site for about four hours.</p>
+
+<h2>6. &ldquo;You pooled seasons without centring them.&rdquo;</h2>
+<p><b>Correct, and we found it ourselves on 23 September 2026.</b> Three seasons
+were pooled without removing each season&rsquo;s own level, so a league-wide change
+between years was partly read as a difference between clubs &mdash; and the
+league&rsquo;s recording of some events changed a great deal between those years.
+Our own specification had said to centre them and the code did not. Fixed, with a
+test whose fixture makes the two answers differ in sign. It cost us one row, which
+was removed, and returned another, which was added.</p>
+
+<h2>7. &ldquo;Your bar is rigged to reject fancystats.&rdquo;</h2>
+<p><b>It rejects the standings.</b> Points percentage, goal differential and
+save percentage at even strength all need more games than the admission rule
+allows, so none of them is on the card either. The bar is demanding, and it is
+demanding of the numbers every broadcast leads with before it is demanding of
+anyone else&rsquo;s.</p>
+</section>
+
+<section class="hmsec" id="limits">
+<p class="hmkick">What we cannot measure, and will not pretend to</p>
+<p><b>Zone entries and exits, controlled-entry rate.</b> Not in the public feed at
+any level. The complete stored event vocabulary is faceoff, stoppage, hit,
+giveaway, shot on goal, takeaway, missed shot, blocked shot, goal, penalty,
+delayed penalty, and the period markers. A metric built on entries would be a
+metric built on something we do not have.</p>
+<p><b>Expected goals, score-adjusted possession, RAPM, GAR and WAR.</b> These are
+models. This site shows what happened and counts it; a modelled number cannot be
+checked against the replay it sits beside, which is the one thing every figure
+here can be.</p>
+<p><b>PDO.</b> It is the sum of two rates rather than a ratio, so it does not fit
+the counted-out-of-counted contract every figure here uses. Both of its parts
+need far more than a season to settle, and PDO is <em>designed</em> to measure
+luck &mdash; presenting it as something a club is would invert its own meaning.</p>
+<p><b>Anything per sixty minutes of even-strength play.</b> The industry&rsquo;s
+preferred denominator needs time on ice by situation, which means walking the
+strength code between timestamps and deciding what to do with the gaps. We have
+not built it. Until we do, our rates are per game and mix in special-teams time,
+and that is the strongest remaining attack on the numbers above.</p>
+</section>
+
+<p class="hmr">The full search &mdash; every candidate measure we tested, the
+collinearity between them, the venue instruments and where they disagree with each
+other &mdash; is <a href="https://github.com/shilohisadog/read-the-game/blob/main/docs/what-settles.md">docs/what-settles.md</a>
+in the repository. The code that produces every figure on this page is
+<a href="https://github.com/shilohisadog/read-the-game/blob/main/src/lib/reliability.js">src/lib/reliability.js</a>.</p>
 </div>
 <script>
 /**
@@ -1726,429 +1785,240 @@ function methods(measures) {
     if (text != null) n.textContent = text;
     return n;
   }
-  var q = (/[?&]game=(\d+)/.exec(location.search) || [])[1];
-  /* WHERE EACH ROW LEADS. Resolved at build time by `_card_href`, the same
-     function the front door and the learn strip use — see `_preview_doors`. */
-  var DOORS = {"dmen": "/game.html?game=2023020204&at=1-18:40.1&layer=corsi&strength=all", "icing": "/game.html?game=2023020204&at=1-15:02&layer=whistle&strength=all", "level5": "/game.html?game=2023020204&at=1-18:40.1&layer=corsi&strength=all", "missed": "/game.html?game=2023020204&at=1-18:40.1&layer=corsi&strength=all", "offside": "/game.html?game=2023020204&at=1-04:48&layer=whistle&strength=all", "penalties": "/game.html?game=2023020204&at=1-19:35.1&layer=whistle&strength=all", "powerplay": "/game.html?game=2023020204&at=1-19:35.1&layer=whistle&strength=all", "slot": "/game.html?game=2023020204&at=1-16:03&layer=slot&strength=all"};
 
-  /* THE FIVE DOCUMENTS, IN PARALLEL, AND A NULL FROM ANY OF THEM IS A STATE.
-     `grab` answers null for a 404 or a failed fetch, and `preview()` degrades
-     row by row: no census, no league rows; no season, no club figures. A page
-     that renders less is not a page that breaks. */
-  function boot() {
-    if (!q) { $('pv').appendChild(el('p', 'note', 'No game was named in the link.')); return; }
-    Promise.all([grab('schedule.json'), grab('teams.json'), grab('measures.json'),
-                 grab('recent.json'), grab('catalog.json')])
-      .then(function (r) {
-        draw(preview(q, { schedule: r[0], teams: r[1], measures: r[2],
-                          recent: r[3], catalog: r[4] }, new Date().toISOString()));
-      });
+  function num(n) { return (n == null ? '—' : n.toLocaleString()); }
+  function pct(v) { return v == null ? '—' : Math.round(v * 100) + '%'; }
+  function r2(v) { return v == null ? '—' : v.toFixed(2); }
+  /* ⭐ HOW A MEASURED FIGURE IS PRINTED, IN ONE PLACE. A count of seconds is an
+     integer and reads wrong as "46.00"; a share reads wrong as "0.22" beside a
+     unit that says "for every 100". Three shapes, one rule, no per-row config. */
+  function fig(v) {
+    if (v == null) return '—';
+    return Number.isInteger(v) ? String(v) : (v < 1 ? (v * 100).toFixed(1) : v.toFixed(2));
   }
-
-  function pct(v) { return v == null ? '—' : Math.round(v * 100) + ''; }
-  function num(n) { return (n || 0).toLocaleString(); }
-
-  /* ⛔ AN EMPTY COLUMN SAYS WHEN, NOT ONLY THAT IT IS EMPTY. The date is the
-     league's own `regularSeasonStartDate`, carried by `preview.js` — see the
-     comment on `countingFrom` for why this sentence exists at all. */
-  function noneYet(counting) {
-    return 'No games counted yet this season'
-      + (counting && counting.startsOn && !counting.started
-         ? ' — the regular season starts ' + when(counting.startsOn) + '.' : '.');
-  }
+  function r3(v) { return v == null ? '—' : v.toFixed(3); }
 
   function svgEl(name, attrs) {
     var n = document.createElementNS('http://www.w3.org/2000/svg', name);
     for (var k in attrs) n.setAttribute(k, attrs[k]);
     return n;
   }
-
-  /* ⭐⭐ THE TRACK, AND EVERY EDGE OF IT IS A MEASUREMENT.
-     `range` is the min and max of the FULL-SEASON figures real clubs posted
-     (`reliability.js` → measures.json), drawn as a shaded band, so the axis says
-     "this is what clubs do" instead of spanning a number somebody picked. The
-     axis itself stretches to hold whatever the two clubs are doing right now —
-     which in October is routinely OUTSIDE the band, and seeing a club sit past
-     the edge of every full season on record is the lesson, not a glitch.
-
-     ⛔ FILL OPACITY IS `games / need`, OUTLINE ALWAYS SOLID. A bar drawn at full
-     strength on twelve games looks exactly as authoritative as one drawn on
-     sixty, and the whole point of the settle counts is that it is not. Kevin
-     ruled the ramp; it is continuous, derived, and invents no cliff, which is
-     CHENG's P1. The outline is what keeps a faint bar from reading as absent —
-     it is a presentation floor with no number in it. */
-  function trackFor(row, sides) {
-    var range = row.range;
-    var vals = sides.map(function (s) { return s.value; })
-      .filter(function (v) { return v != null; });
-    if (!range && !vals.length) return null;
-
-    var lo = range ? range.min : Math.min.apply(null, vals);
-    var hi = range ? range.max : Math.max.apply(null, vals);
-    vals.forEach(function (v) { lo = Math.min(lo, v); hi = Math.max(hi, v); });
-    if (!(hi > lo)) return null;                 /* a zero-width axis draws nothing */
-    var at = function (v) { return 100 * (v - lo) / (hi - lo); };
-
-    var wrap = el('div', 'pvtrack');
-    sides.forEach(function (s) {
-      wrap.appendChild(el('span', 'pvab', s.ab));
-
-      var svg = svgEl('svg', { 'class': 'pvsvg', viewBox: '0 0 100 10',
-        preserveAspectRatio: 'none', 'aria-hidden': 'true' });
-      svg.appendChild(svgEl('rect', { x: 0, y: 3.5, width: 100, height: 3,
-        rx: 1.5, fill: '#e6edf3' }));
-      if (range) svg.appendChild(svgEl('rect', { x: at(range.min), y: 3.5,
-        width: Math.max(at(range.max) - at(range.min), 0.4), height: 3,
-        fill: '#cfe0ee' }));
-      /* THE REFERENCE IS THIS SEASON'S LEAGUE FIGURE AND NOTHING ELSE. Before the
-         opener there is no such figure, and substituting the three-season one
-         would be two populations wearing one label — the trap `leagueShares`
-         already names. So the tick is simply absent and the caption says so. */
-      if (s.value != null) {
-        var from = s.league == null ? at(range ? range.median : s.value) : at(s.league);
-        var to = at(s.value);
-        var x = Math.min(from, to), w = Math.max(Math.abs(to - from), 0.6);
-        var ink = readableInk(colourOf(s.ab));
-        svg.appendChild(svgEl('rect', { x: x, y: 2.2, width: w, height: 5.6, rx: 0.8,
-          fill: ink, 'fill-opacity': s.trust.toFixed(3) }));
-        svg.appendChild(svgEl('rect', { x: x, y: 2.2, width: w, height: 5.6, rx: 0.8,
-          fill: 'none', stroke: ink, 'stroke-width': 0.35 }));
-      }
-      /* ⛔ THE TICK IS DRAWN LAST, AND IT WAS INVISIBLE BECAUSE IT WAS DRAWN
-         FIRST. Every bar starts ON the league value, so the bar's rounded end
-         covered the one mark the whole picture is measured against. SVG has no
-         z-index; paint order is document order. */
-      if (s.league != null) svg.appendChild(svgEl('rect', { x: at(s.league) - 0.22,
-        y: 1.2, width: 0.44, height: 7.6, fill: '#2b3b46' }));
-      wrap.appendChild(svg);
-
-      var v = el('span', s.value == null ? 'pvv none' : 'pvv',
-        s.value == null ? 'no games yet' : pct(s.value));
-      wrap.appendChild(v);
-    });
-    /* The scale, under the last club's bar. Column 2 of the grid, so it lines up
-       with the tracks above it and with nothing else. */
-    wrap.appendChild(el('span'));
-    var ends = el('div', 'pvends');
-    ends.appendChild(el('span', null, pct(lo)));
-    ends.appendChild(el('span', null, pct(hi)));
-    wrap.appendChild(ends);
-    wrap.appendChild(el('span'));
-    return { node: wrap, lo: lo, hi: hi };
+  /** A labelled number. `b` is the figure, the rest says what it is. */
+  function stat(value, said) {
+    var li = el('li');
+    li.appendChild(el('b', null, value));
+    li.appendChild(el('span', null, said));
+    return li;
   }
+  function kick(text) { return el('p', 'hmkick', text); }
 
-  function draw(p) {
-    if (p.state === 'unknown') {
-      $('pv').appendChild(el('p', 'note',
-        'We have no record of that game — it may not be scheduled yet.'));
-      return;
+  /* ⭐ ONE BLOCK PER FIGURE, AND ITS `id` IS WHAT THE CARD'S DOOR POINTS AT.
+     `anchorOf` in `src/lib/methods.js` is the single spelling of that string;
+     writing 'm-' + key here as well would be the second statement of it, which
+     is how a link that looks completely normal stops resolving. */
+  /* ⭐⭐⭐ THE ARITHMETIC, PERFORMED ON THE PAGE. "5,011 ÷ 22,872 = 21.9 goals
+     for every 100 power plays" is the answer to *show me the work*; the sentence
+     above it is only the promise of one. The numbers come off `row.work`, which
+     the card's own row computed — nothing here divides. */
+  function workLine(m) {
+    var w = m.work;
+    if (!w || w.value == null) return null;
+    var p = el('p', 'hmwork');
+    if (w.count != null) {
+      p.appendChild(el('span', null, num(w.count) + ' ÷ ' + num(w.n) + ' = '));
     }
-    var g = p.game;
-    $('pvh1').textContent = nameOf(g.away) + ' at ' + nameOf(g.home);
-    document.title = nameOf(g.away) + ' at ' + nameOf(g.home) + ' — what to watch for';
-
-    /* ⚠️ THE START IS LOCALISED HERE AND NOWHERE ELSE, the same rule the front
-       door's night follows: an NHL game at 7pm Eastern is 23:00Z the same day
-       and one at 10:30pm Pacific is 05:30Z the next, so only the browser can
-       name the day and the hour a reader is in. */
-    var stamp = g.startTimeUTC ? new Date(g.startTimeUTC).toLocaleString(undefined,
-      { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
-    var says = [];
-    if (g.preseason) says.push('Preseason');
-    if (p.state === 'played') says.push('Played ' + when(g.date));
-    /* ⛔ THE START, NOT A STATUS. This said "Under way", which is true for about
-       two and a half hours and then stayed on the page for up to thirteen more,
-       because nothing here learns a game has ended until the night is ingested.
-       A timestamp cannot go stale. `preview.js` renamed the state for the same
-       reason; the sentence below says what is actually being waited for. */
-    else if (p.state === 'started') says.push('Started ' + stamp);
-    else if (stamp) says.push(stamp);
-    $('pvwhen').textContent = says.join(' · ');
-
-    if (p.state === 'started') {
-      $('pv').appendChild(el('p', 'pvflag',
-        'No score here yet — a game joins the archive after the night it is played.'));
-    }
-    /* THE DISCLOSURE EVERY OTHER SURFACE ALREADY MAKES. The calendar cell, the
-       night list and the front door all name preseason as out of the numbers;
-       this page printed the bare word and left a novice to guess why both
-       columns were empty. */
-    if (g.preseason) {
-      $('pv').appendChild(el('p', 'pvflag',
-        'Nothing in a preseason game is counted in any number on this site.'));
-    }
-
-    if (p.result) {
-      var done = el('p', 'pvresult',
-        g.away + ' ' + p.result.score.a + ' – ' + g.home + ' ' + p.result.score.h + '. ');
-      var a = el('a', null, 'Watch the whole game →');
-      a.href = p.result.watch;
-      done.appendChild(a);
-      $('pv').appendChild(done);
-    }
-
-    /* ⭐ WHAT IS NORMAL, ONCE, ABOVE BOTH CLUBS. CHENG's Q10: a league figure
-       inside a club's column reads as a club figure -- 3.6 under each of two
-       clubs says the clubs are equal on penalties, which neither number claims.
-       So the frame comes first and the clubs sit inside it. */
-    if (p.league.length) {
-      var frame = el('section', 'pvframe');
-      frame.appendChild(el('p', 'pvkick', 'What is normal'));
-      var tiles = el('div', 'pvtiles');
-      var pp = p.league.filter(function (r) { return r.key === 'powerplay'; })[0];
-      p.league.forEach(function (r) { tiles.appendChild(tileFor(r, pp)); });
-      frame.appendChild(tiles);
-      frame.appendChild(el('p', 'pvn', 'Measured over ' + num(p.league[0].games)
-        + ' games in this archive. Which teams do better than this over a season is '
-        + 'mostly luck, so these are not counted against either club.'));
-      $('pv').appendChild(frame);
-    }
-
-    var sect = el('section', 'pvclubs');
-    sect.appendChild(el('p', 'pvkick', 'The two clubs'));
-    /* ⭐ MEASURE-FIRST, NOT CLUB-FIRST, AND THAT IS THE STRUCTURAL REPAIR. This
-       was two stacked club blocks, so the one comparison the card exists to make
-       -- how do these two differ, and from normal -- was the one thing the layout
-       forbade: the eye had to carry a number 200px down the page. One row per
-       measure puts both clubs on the same axis. */
-    var rows = p.clubs.away.rows;
-    if (!rows.length) {
-      sect.appendChild(el('p', 'pvnone', noneYet(p.counting)));
-    }
-    rows.forEach(function (ar, i) {
-      var hr = p.clubs.home.rows[i];
-      sect.appendChild(measureFor(ar, hr, p));
-    });
-
-    var links = el('p', 'pvlinks');
-    ['away', 'home'].forEach(function (side) {
-      var ab = p.clubs[side].ab;
-      var link = el('a', null, 'Every ' + nameOf(ab) + ' game we hold →');
-      link.href = '/?team=' + ab;
-      links.appendChild(link);
-    });
-    sect.appendChild(links);
-    $('pv').appendChild(sect);
-  }
-
-  function learnLink(key, text) {
-    var a = el('a', 'pvlearn', text + ' \u2192');
-    a.href = DOORS[key];
-    return a;
-  }
-
-  /* ⭐⭐⭐ THE DOOR TO THE WORK, WHICH EVERY FIGURE ON THIS CARD NOW HAS.
-     `anchorOf` is `src/lib/methods.js`, inlined above, and the methods page
-     writes its section ids with the same call — so this href cannot drift from
-     the heading it points at. A figure whose key has no section there is caught
-     by `test/methods.test.js` before it ships, not by a reader. */
-  function workLink(key) {
-    var a = el('a', 'pvwork', 'How this is counted \u2192');
-    a.href = '/how-we-measure.html#' + anchorOf(key);
-    return a;
-  }
-
-  /** The lesson door, where there is one, and the work door, which is always. */
-  function doors(key, learn) {
-    var p = el('p', 'pvdoors');
-    if (learn) p.appendChild(learn);
-    p.appendChild(workLink(key));
+    p.appendChild(el('b', null, fig(w.value)));
+    /* ⛔ A MEDIAN HAS NO NUMERATOR, so it says what it is instead of pretending
+       to be a ratio — and it still names the population it is the middle of. */
+    p.appendChild(el('span', null, ' ' + m.unit
+      + (w.count == null ? ', the middle value of ' + num(w.n)
+          + (m.population ? ' ' + m.population : '') : '')));
     return p;
   }
 
-  function tileFor(r, pp) {
-    var t = el('div', 'pvtile');
-    /* SET BY THE BRANCHES THAT HAVE A LESSON TO POINT AT. The shift and hits
-       tiles have none — there is no card that teaches "how long a shift is" —
-       and they still get a work door, which is the half that is not optional. */
-    var learn = null;
-    var big = el('p', 'pvbig');
-    if (r.key === 'powerplay') {
-      big.textContent = pct(r.rate);
-      big.appendChild(el('span', 'pvunit', ' of every 100'));
-      t.appendChild(big);
-      t.appendChild(el('p', 'pvtlab', 'power plays produce a goal'));
-      var dots = el('div', 'pvdots');
-      var on = Math.round(r.rate * 100);
-      for (var i = 0; i < 100; i++) dots.appendChild(el('i', i < on ? 'on' : null));
-      t.appendChild(dots);
-      t.appendChild(el('p', 'pvwatch',
-        'A team gets about ' + r.chancesPerClubGame.toFixed(1)
-        + ' a game. Watch who is a skater short, and for how long.'));
-      learn = learnLink('powerplay', 'What a power play is');
-    } else if (r.key === 'penalties') {
-      big.textContent = r.perClubGame.toFixed(1);
-      big.appendChild(el('span', 'pvunit', ' a game'));
-      t.appendChild(big);
-      t.appendChild(el('p', 'pvtlab', 'penalties a team takes'));
-      /* ⛔⛔ THE TWO NUMBERS BESIDE EACH OTHER LOOKED LIKE A CONTRADICTION, and
-         Kevin caught it: this tile says a team takes 3.7 penalties a game while
-         the one before it says a team gets 2.7 power plays. Both are right —
-         30,827 penalties produced 22,872 power plays over the archive — and the
-         gap is 25.8% of every penalty called. That is worth teaching, so the
-         card says the relation instead of leaving two figures to argue.
-         ⚠️ AND IT DOES NOT SAY WHY. Offsetting minors, misconducts and penalties
-         taken while already short-handed are the obvious candidates and NONE of
-         them is measured yet, so naming them here would be a cause invented to
-         tidy a sentence. The numbers are measured; the reason is not, so the
-         reason is not printed. */
-      t.appendChild(el('p', 'pvwatch', 'Only about ' + (pp ? pp.chancesPerClubGame.toFixed(1)
-        : '\u2014') + ' of those become a power play for the other team — the rest '
-        + 'leave nobody a skater up.'));
-      learn = learnLink('penalties', 'What a penalty costs');
-    } else if (r.key === 'offside') {
-      big.textContent = r.perClubGame.toFixed(1);
-      big.appendChild(el('span', 'pvunit', ' a game'));
-      t.appendChild(big);
-      t.appendChild(el('p', 'pvtlab', 'times a team is offside'));
-      t.appendChild(el('p', 'pvwatch',
-        'Watch the blue line as a team carries the puck in.'));
-      learn = learnLink('offside', 'What offside means');
-
-    } else if (r.key === 'icing') {
-      big.textContent = r.perClubGame.toFixed(1);
-      big.appendChild(el('span', 'pvunit', ' a game'));
-      t.appendChild(big);
-      t.appendChild(el('p', 'pvtlab', 'times a team ices the puck'));
-      t.appendChild(el('p', 'pvwatch', 'The faceoff comes all the way back, and '
-        + 'the team that iced it may not change its line. Watch who is stuck out '
-        + 'there and how tired they are.'));
-      learn = learnLink('icing', 'What icing is');
-
-    } else if (r.key === 'attempts') {
-      /* ⭐ THE ONE FIGURE ON THIS CARD THAT CAN HONESTLY BE A STACKED BAR: three
-         shares of one defined whole, summing to the attempt total exactly. The
-         form is the game page's `mixRow` — an SVG of rects, because this page's
-         CSP refuses an inline `style` attribute exactly as that one's does. */
-      var reached = r.parts[0];
-      big.textContent = pct(reached.v / r.total);
-      big.appendChild(el('span', 'pvunit', ' of every 100'));
-      t.appendChild(big);
-      t.appendChild(el('p', 'pvtlab', 'shot attempts reach the goalie'));
-      var bar = svgEl('svg', { 'class': 'pvmix', viewBox: '0 0 100 8',
-        preserveAspectRatio: 'none', 'aria-hidden': 'true' });
-      var x = 0;
-      r.parts.forEach(function (part) {
-        var w = 100 * part.v / r.total;
-        bar.appendChild(svgEl('rect', { x: x.toFixed(3), y: 0, width: w.toFixed(3),
-          height: 8, 'class': 'm' + part.k }));
-        x += w;
-      });
-      t.appendChild(bar);
-      var key = el('p', 'pvkey');
-      r.parts.forEach(function (part) {
-        var k = el('span', null);
-        k.appendChild(el('i', 'm' + part.k));
-        k.appendChild(el('b', null, pct(part.v / r.total)));
-        k.appendChild(el('span', null, ' ' + part.label));
-        key.appendChild(k);
-      });
-      t.appendChild(key);
-      t.appendChild(el('p', 'pvwatch', 'The other half never gets there — '
-        + 'a body steps in front, or it misses.'));
-      learn = learnLink('level5', 'See an attempt being counted');
-
-    } else if (r.key === 'shift') {
-      /* THE MOST BEWILDERING THING ABOUT A FIRST HOCKEY GAME is that nobody stays
-         on the ice. The archive answered it three seasons ago in a field no
-         surface read. ⛔ THE MIDDLE HALF IS A DEFINITION, not a chosen band. */
-      big.textContent = String(r.median);
-      big.appendChild(el('span', 'pvunit', ' seconds'));
-      t.appendChild(big);
-      t.appendChild(el('p', 'pvtlab', 'is how long a shift lasts'));
-      t.appendChild(el('p', 'pvwatch', 'The middle half run ' + r.p25 + ' to '
-        + r.p75 + ' seconds, and ' + pct(r.underMinute) + ' of every 100 are under a '
-        + 'minute. Watch the bench change while play is still going.'));
-
-    } else {
-      /* ⛔⛔ A MEASURED NULL, PRINTED AS ONE. A novice will hear "they are really
-         taking it to them physically" all night; this is the site's answer. The
-         club that landed more hits had FEWER shot attempts in 48 of every 100
-         games — a coin flip, over every game in the archive.
-         ⚠️ AND THE HOME PREMIUM SHIPS WITH IT. Hits are counted by the home rink's
-         own crew and carry a measured +4.1% home-ice premium. A figure we know is
-         scorer-dependent may not be printed as though it were clean. */
-      big.textContent = r.perClubGame.toFixed(1);
-      big.appendChild(el('span', 'pvunit', ' a game'));
-      t.appendChild(big);
-      t.appendChild(el('p', 'pvtlab', 'hits a team lands'));
-      t.appendChild(el('p', 'pvwatch', 'The team that hits more has the puck less in '
-        + pct(r.opposite) + ' of every 100 games — a coin flip. Hitting and '
-        + 'controlling play are not the same thing.'));
-      t.appendChild(el('p', 'pvfine', 'Counted by each home rink’s own crew, which '
-        + 'records about 4% more hits at home than the same clubs record away.'));
-    }
-    t.appendChild(doors(r.key, learn));
-    return t;
+  function figure(m, nums) {
+    var s = el('section', 'hmf');
+    s.id = m.anchor;
+    s.appendChild(el('h3', null, m.label));
+    var dl = el('dl', 'hmfrom');
+    dl.appendChild(el('dt', null, 'Counted'));
+    dl.appendChild(el('dd', null, m.count));
+    dl.appendChild(el('dt', null, 'Out of'));
+    dl.appendChild(el('dd', null, m.of));
+    s.appendChild(dl);
+    var work = workLine(m);
+    if (work) s.appendChild(work);
+    s.appendChild(el('p', 'hmwhy', m.why));
+    /* ⚠️ `nums` IS NULL WHEN THERE IS NOTHING TO SAY, RATHER THAN AN EMPTY LIST.
+       This asked `nums.childNodes.length` and the page's own test harness has no
+       `childNodes` — which is not the harness being wrong. A renderer that reads
+       a DOM property to find out what it just built is asking the browser a
+       question it already knows the answer to. */
+    if (nums) s.appendChild(nums);
+    /* ⛔ THE CAVEAT IS UNCONDITIONAL IN THE DATA AND SO IT IS HERE. Every entry
+       in `DERIVATION` carries one; a figure that reached this page without one
+       would render a block that reads as though nothing is wrong with it, which
+       is the one thing this page may not do. A test holds the data side. */
+    var c = el('p', 'hmcav');
+    c.appendChild(el('b', null, 'What is wrong with it. '));
+    c.appendChild(el('span', null, m.caveat));
+    s.appendChild(c);
+    return s;
   }
 
-  function measureFor(ar, hr, p) {
-    var box = el('div', 'pvm');
-    var head = el('div', 'pvmh');
-    head.appendChild(el('p', 'pvlab', ar.label));
-    head.appendChild(el('span', 'pvref', ar.league == null
-      ? 'no league figure yet this season' : 'league ' + pct(ar.league) + '%'));
-    box.appendChild(head);
-
-    var sides = [ar, hr].map(function (r, i) {
-      var c = i === 0 ? p.clubs.away : p.clubs.home;
-      /* ⭐ HOW MUCH INK THE BAR HAS EARNED. Continuous in `games / need`, capped
-         at 1 and never floored — the outline carries visibility, so no minimum
-         had to be chosen. */
-      var trust = (r.need && r.games) ? Math.min(1, r.games / r.need) : 0;
-      return { ab: c.ab, value: r.value, league: r.league, trust: trust };
-    });
-    var track = trackFor(ar, sides);
-    if (track) box.appendChild(track.node);
-
-    var foot = [];
-    [ar, hr].forEach(function (r, i) {
-      var ab = (i === 0 ? p.clubs.away : p.clubs.home).ab;
-      /* ⭐ THE PROGRESS, NOT A BADGE. CHENG's P1: a binary settled/forming label
-         invents a cliff the data does not have, and "12 of 35 games" says the
-         same thing continuously -- and tells two clubs with 12 and 9 games
-         apart, which a badge cannot. */
-      if (r.value != null) foot.push(ab + ' ' + num(r.count) + ' of ' + num(r.n)
-        + ' · ' + r.games + ' of ' + r.need + ' games'
-        + (r.settled ? ' · settled' : ' · still forming'));
-    });
-    /* ⛔ "SHADED" WAS A WORD FOR SOMETHING USUALLY INVISIBLE. The axis runs from
-       the lowest to the highest club-season, so the band fills the whole track
-       and there is no shading to see — unless a club is currently OUTSIDE what
-       any full season produced, which early in a season is common and is the
-       most interesting thing the picture can show. So the sentence says which
-       case the reader is looking at. */
-    /* ⭐ THE SCALE, SAID IN FULL. Kevin: the old line "was not very helpful or
-       intuitive" — it named a span and never said what the span was measured
-       over, which is the one thing this site puts on every other figure.
-       ⚠️ AND IT USES `%` WHILE THE TILES SAY "of every 100". That is a
-       deliberate split, not a drift: a chart AXIS is read as percent by anyone
-       who has seen a chart, and this row's own label already says CF%. The tiles
-       are prose for a novice, where "22 of every 100" is the friendlier form. */
-    if (ar.range && track) {
-      var wider = track.lo < ar.range.min || track.hi > ar.range.max;
-      foot.push((wider ? 'Shaded' : 'The scale')
-        + ': what clubs did across a full season, '
-        + pct(ar.range.min) + '% to ' + pct(ar.range.max) + '%'
-        + (ar.range.games ? ', measured over ' + num(ar.range.games) + ' club-games' : '')
-        + ' in ' + ar.range.n + ' club-seasons'
-        + (wider ? ' — a bar past it is beyond anything a full season has produced.' : '.'));
+  function clubNums(m, policy) {
+    var out = [];
+    if (m.games != null) {
+      out.push(stat(num(m.games) + ' games',
+        'before a club’s figure describes the club rather than the sample'));
     }
-    if (!foot.length) foot.push(noneYet(p.counting));
-    var fp = el('p', 'pvfoot');
-    foot.forEach(function (line) { fp.appendChild(el('span', null, line)); });
-    /* ⭐ THE GRAPH IS A DOOR TOO. Kevin: "The graph should also be a front door to
-       a CF% learning card." There is no such page and there does not need to be:
-       `control` is a learn door onto the exact frame of a replay where the
-       Control layer counts an attempt, which is what CF% is made of. A diagram
-       would explain the metric; the replay shows it happening. */
-    box.appendChild(fp);
-    box.appendChild(doors(ar.key,
-      DOORS[ar.key] ? learnLink(ar.key, 'See an attempt being counted') : null));
-    return box;
+    if (m.r != null) {
+      out.push(stat(r3(m.r), 'how well a club’s first half of a season predicts its second'
+        + (policy && policy.clubSeasons ? ', over ' + num(policy.clubSeasons) + ' club-seasons' : '')));
+    }
+    /* THE SIZE OF CRITICISM 1, BESIDE THE NUMBER IT CRITICISES. */
+    if (m.alternate && m.alternate.games != null) {
+      out.push(stat(num(m.alternate.games) + ' games',
+        'if the two halves alternated instead of being first and second — see argument 1'));
+    }
+    /* AND OF CRITICISM 2. */
+    (m.atTarget || []).forEach(function (t) {
+      out.push(stat(num(t.games) + ' games',
+        'if we asked for a reliability of ' + t.target + ' instead — see argument 2'));
+    });
+    if (m.clubRange) {
+      out.push(stat(pct(m.clubRange.min) + '–' + pct(m.clubRange.max),
+        'what real clubs did across a full season, over ' + num(m.clubRange.games)
+        + ' club-games in ' + num(m.clubRange.n) + ' club-seasons'));
+    }
+    if (m.games != null && policy) {
+      out.push(stat(num(m.games) + ' ≤ ' + num(policy.admission),
+        'so it is shown as a club figure. Above that line it would be a league figure.'));
+    }
+    return listOf('hmnums', out);
   }
 
-  boot();
+  /** A `<ul>` of the cells, or NULL when there are none — see `figure`. */
+  function listOf(cls, cells) {
+    if (!cells.length) return null;
+    var ul = el('ul', cls);
+    cells.forEach(function (c) { ul.appendChild(c); });
+    return ul;
+  }
+
+  /* ⭐⭐ WHY THERE IS ONE POSSESSION ROW, DRAWN RATHER THAN ASSERTED.
+     Kevin: *"as long as we quantify what 'possession family' means (so a novice
+     can connect the dots), then yes, I'm good with showing it once."* The axis is
+     0 to 1 because that is a correlation's own range, so the bar needs no chosen
+     span — the same rule the card's club tracks follow. */
+  function familyBlock(f) {
+    var sec = el('section', 'hmsec');
+    sec.id = 'possession-family';
+    sec.appendChild(kick('Why there is only one possession row'));
+    sec.appendChild(el('h2', null, 'Corsi, Fenwick and shots-on-goal share are the same measurement'));
+
+    var names = {};
+    f.members.forEach(function (m) { names[m.key] = m.label; });
+    var withheld = f.members.filter(function (m) { return !m.shown; });
+
+    sec.appendChild(el('p', null, 'Public hockey analysis has several names for '
+      + 'how much of the shooting a team did, and each of them clears our '
+      + 'admission rule on its own. We show one. The reason is that over a full '
+      + 'season they move together so tightly that printing all of them would '
+      + 'show one piece of evidence ' + f.members.length + ' times — and a reader '
+      + 'counts agreement as corroboration. Across ' + num(f.clubSeasons)
+      + ' club-seasons, the LEAST similar pair of them still agrees at '
+      + r2(f.min) + ', and the closest at ' + r2(f.max) + '.'));
+    sec.appendChild(el('p', null, 'What we withhold, and would be entitled to show: '
+      + withheld.map(function (m) { return m.label; }).join('; ') + '.'));
+
+    var ul = el('ul', 'hmpairs');
+    f.pairs.forEach(function (p) {
+      var li = el('li');
+      li.appendChild(el('span', null, (names[p.a] || p.a) + ' ↔ ' + (names[p.b] || p.b)));
+      var svg = svgEl('svg', { viewBox: '0 0 100 6', preserveAspectRatio: 'none',
+        'aria-hidden': 'true' });
+      svg.appendChild(svgEl('rect', { x: 0, y: 1.5, width: 100, height: 3, rx: 1.5,
+        fill: '#e6edf3' }));
+      svg.appendChild(svgEl('rect', { x: 0, y: 0.5, width: Math.max(Math.abs(p.r) * 100, 0.6),
+        height: 5, rx: 1.5, fill: 'var(--blue)' }));
+      li.appendChild(svg);
+      li.appendChild(el('b', null, r2(p.r)));
+      ul.appendChild(li);
+    });
+    sec.appendChild(ul);
+    sec.appendChild(el('p', 'hmr', 'Each bar runs from 0 to 1, which is a '
+      + 'correlation’s own range rather than a span we picked. Every season is '
+      + 'centred before the seasons are pooled, for the reason argument 6 gives.'));
+    return sec;
+  }
+
+  function draw(m) {
+    var host = $('hm');
+
+    /* ⛔ THE DEFINITIONS SURVIVE A DEAD DOCUMENT AND THE COUNTS DO NOT, so the
+       page says which half is missing. `CLUB_ROWS` is code and renders whatever
+       happens; every figure beside it is read from the bucket. A reader who
+       arrived to check our work and found the derivations with no numbers, and
+       no explanation of why, would reasonably conclude we never had any. */
+    if (!m.policy) {
+      host.appendChild(el('p', 'hmnone', 'The measured figures could not be '
+        + 'loaded just now, so the counts are missing below. What each figure is '
+        + 'counted from, and the arguments against our method, do not depend on them.'));
+    }
+
+    if (m.policy) {
+      var pol = el('section', 'hmsec');
+      pol.id = 'the-rule';
+      pol.appendChild(kick('The one rule the card is built on'));
+      pol.appendChild(el('h2', null,
+        'A figure describes a CLUB only if it settles inside half a season'));
+      pol.appendChild(el('p', null, 'Some things a team does are the team. Others '
+        + 'look like the team over ten games and are mostly luck. To tell them '
+        + 'apart we take every club’s completed season, cut it in half by date, '
+        + 'work out each half’s figure, and ask how strongly the first half '
+        + 'predicts the second across every club-season in the archive. Stepping '
+        + 'that up tells us how many games a figure needs before it means '
+        + 'something about the club.'));
+      pol.appendChild(el('p', null, 'A figure that needs more than half a season '
+        + 'is not shown as a club figure at all. It becomes part of what is '
+        + 'normal in hockey, which is a true thing to teach a newcomer, instead '
+        + 'of a club trait, which would not be.'));
+      var ul = el('ul', 'hmpol');
+      ul.appendChild(stat(m.policy.target, 'the reliability we ask for. A choice, not a measurement — argument 2'));
+      ul.appendChild(stat(m.policy.admission, 'games: above this a figure is not a club figure — argument 3'));
+      ul.appendChild(stat(num(m.policy.clubSeasons), 'club-seasons behind every count on this page'));
+      ul.appendChild(stat(m.policy.seasons.length, 'completed seasons: '
+        + m.policy.seasons.join(', ') + '. A season joins when its playoffs are in the archive.'));
+      pol.appendChild(ul);
+      pol.appendChild(el('p', 'hmr', 'The counts are re-derived only when a season '
+        + 'completes, so they never move mid-season for a reason a reader cannot see.'));
+      host.appendChild(pol);
+    }
+
+    if (m.family) host.appendChild(familyBlock(m.family));
+
+    if (m.club.length) {
+      host.appendChild(kick('What each club figure is, and what it costs to believe it'));
+      m.club.forEach(function (c) { host.appendChild(figure(c, clubNums(c, m.policy))); });
+    }
+
+    if (m.league.length) {
+      host.appendChild(kick('What is normal in hockey, and where those figures come from'));
+      var intro = el('p', 'hmwhy', 'None of these settles inside a season, which '
+        + 'is why none of them is shown as something a club is. They are counted '
+        + 'across the whole archive'
+        + (m.games ? ' — ' + num(m.games) + ' games' : '') + '.');
+      host.appendChild(intro);
+      m.league.forEach(function (r) {
+        host.appendChild(figure(r, listOf('hmnums', r.over
+          ? [stat(num(r.over.n), r.over.unit + ' it was counted over')] : [])));
+      });
+    }
+
+  }
+
+  grab('measures.json').then(function (mj) { draw(methods(mj)); });
 </script>
 <footer class="sitefoot"><p>Game data from the NHL's public play-by-play feed, fetched once and stored. Not affiliated with, endorsed by, or a product of the National Hockey League or any club. <strong>No NHL or club logos, wordmarks or crests appear anywhere on this site</strong> — clubs are named in plain text, and identified by colour and three-letter abbreviation.</p><p><a href="https://github.com/shilohisadog/read-the-game">Source on GitHub</a> — every number here is a function of stored events, and you can read the function. Found one that looks wrong? <!--email_off--><a href="mailto:ReadTheGameOfHockey@gmail.com">ReadTheGameOfHockey@gmail.com</a><!--/email_off--></p><p>Nothing here is paywalled. If it helped you read a game, you can <a href="https://buymeacoffee.com/readthegameofhockey">buy me a coffee</a>.</p></footer>
 </body>
