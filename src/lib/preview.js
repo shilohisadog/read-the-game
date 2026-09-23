@@ -213,7 +213,67 @@ function leagueRows(measures) {
       perClubGame: perClubGame(w.penalties) },
     { key: 'offside', games: c.games, count: w.offsides,
       perClubGame: perClubGame(w.offsides) },
-  ];
+  ].concat(extraLeagueRows(measures, c, perClubGame));
+}
+
+/**
+ * ⭐ THE REST OF THE FRAME — MEASURED LONG AGO AND READ BY NOTHING.
+ *
+ * Kevin, 2026-09-23: *"I'd like to add what's feasible, even if we aren't
+ * consistent in display characteristics."* Relaxing that changes nothing about
+ * the CLUB rows — the binding constraint there is the 41-game admission rule and
+ * only one candidate in the whole archive clears it — but the league frame has no
+ * admission rule at all, which is the entire point of the split. So it can grow,
+ * and every figure below was already being computed and published and never read.
+ *
+ * ⛔ EACH ROW GUARDS ITSELF AND VANISHES RATHER THAN GUESSING. A document written
+ * before any of these counters existed returns the three original rows and
+ * nothing else — the same degradation the whistles block already makes.
+ *
+ * ⛔ AND THE FRAME IS NOT A STAT DUMP. Every row here answers "watch for this" for
+ * someone who has never seen a hockey game. A figure with no such answer belongs
+ * in the archive pages, not on a card a novice reads before a puck drops.
+ */
+function extraLeagueRows(measures, c, perClubGame) {
+  const out = [];
+
+  /* WHERE A SHOT ATTEMPT ENDS. Three shares of one defined whole, which is the
+     only figure on this card that can honestly be a stacked bar — and it is the
+     frame the `missed` club row sits inside, the same arithmetic at two
+     distances. `byType` sums to the attempt total exactly. */
+  const mix = (measures && measures.attemptMix) || null;
+  const t = mix && mix.byType;
+  if (t && typeof t['shot-on-goal'] === 'number') {
+    const goalie = (t['shot-on-goal'] || 0) + (t.goal || 0);
+    const blocked = t['blocked-shot'] || 0, missed = t['missed-shot'] || 0;
+    const total = goalie + blocked + missed;
+    if (total > 0) out.push({ key: 'attempts', games: mix.games || c.games, total,
+      parts: [{ k: 'goalie', label: 'reached the goalie', v: goalie },
+              { k: 'blocked', label: 'blocked by a body', v: blocked },
+              { k: 'missed', label: 'missed the net', v: missed }] });
+  }
+
+  /* HOW LONG A SHIFT IS. The single most bewildering thing about a first hockey
+     game is that nobody stays on the ice, and the archive has answered it for
+     three seasons in a field no surface reads. */
+  const sh = c.shift;
+  if (sh && sh.n > 0 && sh.median != null) out.push({ key: 'shift', n: sh.n,
+    median: sh.median, p25: sh.p25, p75: sh.p75, underMinute: sh.underMinute });
+
+  /* ⛔⛔ A MEASURED NULL, PUBLISHED AS ONE. `opposite` is the share of games in
+     which the club that landed more hits had FEWER shot attempts — 0.481 is a
+     coin flip, over every game in the archive. It is on the card because a novice
+     will hear "they're really taking it to them physically" all night, and this
+     is the site's answer: we looked, and it does not go with having the puck.
+     ⚠️ THE HOME PREMIUM SHIPS WITH IT. Hits are counted by the home rink's own
+     crew and carry a measured +4.1% home-ice premium; a figure that we know is
+     scorer-dependent may not be printed as though it were clean. */
+  const h = c.hits;
+  if (h && h.n > 0 && typeof h.opposite === 'number' && h.totalHits) {
+    out.push({ key: 'hits', games: h.n, perClubGame: h.totalHits / (2 * h.n),
+      opposite: h.opposite, r: h.r });
+  }
+  return out;
 }
 
 /**

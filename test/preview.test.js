@@ -334,8 +334,23 @@ test('⛔⛔ the league rows draw from a census this repo actually PRODUCES', ()
 
   const p = preview(2025020500, docs({ measures: { census: real } }), NOW);
   const keys = p.league.map(r => r.key);
-  assert.deepEqual(keys, ['powerplay', 'penalties', 'offside'],
-    'a real census must produce all three rows, in the order the card prints them');
+  /* ⭐ THE THREE ORIGINALS LEAD, IN ORDER, AND EVERY OTHER KEY MUST BE ONE THE
+     RENDERER KNOWS HOW TO DRAW. A row the module emits and the renderer has no
+     branch for renders as an empty tile — which is the shape of defect that put
+     an unstyled page in front of Kevin in the first place. `attempts` is absent
+     here because it comes from `attemptMix`, which is measure.mjs's, not the
+     census's; the renderer test covers that one. */
+  assert.deepEqual(keys.slice(0, 3), ['powerplay', 'penalties', 'offside'],
+    'a real census must produce the three original rows, in the order the card prints them');
+  const KNOWN = new Set(['powerplay', 'penalties', 'offside', 'attempts', 'shift', 'hits']);
+  for (const k of keys) assert.ok(KNOWN.has(k), `no renderer branch draws ${k}`);
+  assert.ok(keys.includes('hits'), 'the census publishes hits, so the frame must pick them up');
+  /* ⛔ AND THE PAIRED HALF: `shift` is ABSENT here, correctly. The fixture is one
+     game with no shift chart attached, so `census.shift.n` is 0 and the row
+     withholds rather than printing a median of nothing. A guard that only ever
+     sees data present has never been shown to work. */
+  assert.ok(!keys.includes('shift'),
+    'a shift row was drawn from a fixture that carries no shifts');
 
   // ⭐ AND THE FIGURES MUST BE FINITE, not NaN from a missing denominator — the
   // renderer calls .toFixed() on these and NaN would reach the page as "NaN".

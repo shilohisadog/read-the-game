@@ -3522,6 +3522,16 @@ PREVCSS = r"""<style>
  gap:2px;max-width:100%}
 .pvdots i{display:block;aspect-ratio:1;border-radius:50%;background:var(--edge)}
 .pvdots i.on{background:var(--blue)}
+/* the stacked bar, in the game page's own idiom — rects, never divs with widths,
+   because this page's CSP refuses an inline `style` attribute just as that one's does */
+.pvmix{display:block;width:100%;height:13px;border-radius:6px;margin:11px 0 7px}
+.mgoalie{fill:var(--blue)}.mblocked{fill:#9db4c8}.mmissed{fill:#d3dee7}
+.pvkey{margin:0;display:flex;flex-wrap:wrap;gap:2px 12px;font-size:.78rem;color:var(--muted)}
+.pvkey b{color:var(--ink);font-variant-numeric:tabular-nums}
+.pvkey i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px}
+.pvkey i.mgoalie{background:var(--blue)}.pvkey i.mblocked{background:#9db4c8}
+.pvkey i.mmissed{background:#d3dee7}
+.pvfine{margin:8px 0 0;font-size:.74rem;color:var(--muted);line-height:1.45}
 
 /* ---- the two clubs: one track per measure ---------------------------- */
 .pvm{margin:0 0 20px;padding:14px 15px 12px;background:#fff;
@@ -3822,7 +3832,7 @@ __HELPERS__
         : '\u2014') + ' of those become a power play for the other team — the rest '
         + 'leave nobody a skater up.'));
       t.appendChild(learnLink('penalties', 'What a penalty costs'));
-    } else {
+    } else if (r.key === 'offside') {
       big.textContent = r.perClubGame.toFixed(1);
       big.appendChild(el('span', 'pvunit', ' a game'));
       t.appendChild(big);
@@ -3830,6 +3840,69 @@ __HELPERS__
       t.appendChild(el('p', 'pvwatch',
         'Watch the blue line as a team carries the puck in.'));
       t.appendChild(learnLink('offside', 'What offside means'));
+
+    } else if (r.key === 'attempts') {
+      /* ⭐ THE ONE FIGURE ON THIS CARD THAT CAN HONESTLY BE A STACKED BAR: three
+         shares of one defined whole, summing to the attempt total exactly. The
+         form is the game page's `mixRow` — an SVG of rects, because this page's
+         CSP refuses an inline `style` attribute exactly as that one's does. */
+      var reached = r.parts[0];
+      big.textContent = pct(reached.v / r.total);
+      big.appendChild(el('span', 'pvunit', ' of every 100'));
+      t.appendChild(big);
+      t.appendChild(el('p', 'pvtlab', 'shot attempts reach the goalie'));
+      var bar = svgEl('svg', { 'class': 'pvmix', viewBox: '0 0 100 8',
+        preserveAspectRatio: 'none', 'aria-hidden': 'true' });
+      var x = 0;
+      r.parts.forEach(function (part) {
+        var w = 100 * part.v / r.total;
+        bar.appendChild(svgEl('rect', { x: x.toFixed(3), y: 0, width: w.toFixed(3),
+          height: 8, 'class': 'm' + part.k }));
+        x += w;
+      });
+      t.appendChild(bar);
+      var key = el('p', 'pvkey');
+      r.parts.forEach(function (part) {
+        var k = el('span', null);
+        k.appendChild(el('i', 'm' + part.k));
+        k.appendChild(el('b', null, pct(part.v / r.total)));
+        k.appendChild(el('span', null, ' ' + part.label));
+        key.appendChild(k);
+      });
+      t.appendChild(key);
+      t.appendChild(el('p', 'pvwatch', 'The other half never gets there — '
+        + 'a body steps in front, or it misses.'));
+      t.appendChild(learnLink('level5', 'See an attempt being counted'));
+
+    } else if (r.key === 'shift') {
+      /* THE MOST BEWILDERING THING ABOUT A FIRST HOCKEY GAME is that nobody stays
+         on the ice. The archive answered it three seasons ago in a field no
+         surface read. ⛔ THE MIDDLE HALF IS A DEFINITION, not a chosen band. */
+      big.textContent = String(r.median);
+      big.appendChild(el('span', 'pvunit', ' seconds'));
+      t.appendChild(big);
+      t.appendChild(el('p', 'pvtlab', 'is how long a shift lasts'));
+      t.appendChild(el('p', 'pvwatch', 'The middle half run ' + r.p25 + ' to '
+        + r.p75 + ' seconds, and ' + pct(r.underMinute) + ' of every 100 are under a '
+        + 'minute. Watch the bench change while play is still going.'));
+
+    } else {
+      /* ⛔⛔ A MEASURED NULL, PRINTED AS ONE. A novice will hear "they are really
+         taking it to them physically" all night; this is the site's answer. The
+         club that landed more hits had FEWER shot attempts in 48 of every 100
+         games — a coin flip, over every game in the archive.
+         ⚠️ AND THE HOME PREMIUM SHIPS WITH IT. Hits are counted by the home rink's
+         own crew and carry a measured +4.1% home-ice premium. A figure we know is
+         scorer-dependent may not be printed as though it were clean. */
+      big.textContent = r.perClubGame.toFixed(1);
+      big.appendChild(el('span', 'pvunit', ' a game'));
+      t.appendChild(big);
+      t.appendChild(el('p', 'pvtlab', 'hits a team lands'));
+      t.appendChild(el('p', 'pvwatch', 'The team that hits more has the puck less in '
+        + pct(r.opposite) + ' of every 100 games — a coin flip. Hitting and '
+        + 'controlling play are not the same thing.'));
+      t.appendChild(el('p', 'pvfine', 'Counted by each home rink’s own crew, which '
+        + 'records about 4% more hits at home than the same clubs record away.'));
     }
     return t;
   }

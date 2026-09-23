@@ -64,8 +64,13 @@ const DOCS = {
     season: { preSeasonStartDate: '2026-09-19', regularSeasonStartDate: OPENER } },
   'teams.json': { through: '2026-10-01',
     seasons: { 2026: { BUF: club(), PIT: club({ games: 11 }) } } },
-  'measures.json': { census: { games: 4192,
-    whistles: { penalties: 30434, offsides: 18700, ppChances: 22720, ppGoals: 4982, shGoals: 560 } },
+  'measures.json': {
+    attemptMix: { games: 4192, byType: { 'shot-on-goal': 215529, goal: 25597,
+      'blocked-shot': 138880, 'missed-shot': 120714 } },
+    census: { games: 4192,
+      shift: { n: 3101105, median: 46, p25: 34, p75: 59, underMinute: 0.759 },
+      hits: { n: 4192, r: -0.07, opposite: 0.481, totalHits: 188512 },
+      whistles: { penalties: 30434, offsides: 18700, ppChances: 22720, ppGoals: 4982, shGoals: 560 } },
     settle: { target: 0.7, admission: 41, seasons: ['2023', '2024'],
       rows: { level5: { r: 0.73, games: 35, clubRange: { min: 0.44, max: 0.57, median: 0.5, n: 96 } },
               dmen: { r: 0.81, games: 23, clubRange: { min: 0.26, max: 0.38, median: 0.32, n: 96 } },
@@ -204,6 +209,9 @@ test('with a season under way the page draws both frames and both clubs', async 
   assert.match(said, /power plays produce a goal/, 'the power-play tile');
   assert.match(said, /penalties a team takes/, 'the penalties tile');
   assert.match(said, /times a team is offside/, 'the offside tile');
+  assert.match(said, /shot attempts reach the goalie/, 'the attempt partition');
+  assert.match(said, /is how long a shift lasts/, 'the shift tile');
+  assert.match(said, /hits a team lands/, 'the hits tile');
   assert.match(said, /5-on-5 CF% while the score was level/, 'a club row');
   assert.match(said, /12 of 35 games/, 'the progress, not a badge');
   assert.match(said, /Every Buffalo Sabres game we hold/);
@@ -387,7 +395,7 @@ test('⭐ every tile and every measure row is a door into the lesson behind it',
   const { ids, settle } = run({}, `?game=${GID}`, '2026-10-01T12:00:00Z');
   await settle();
   const doors = walk(ids.pv).filter(x => (x.className || '').split(' ').includes('pvlearn'));
-  assert.equal(doors.length, 6, 'three tiles and three measure rows');
+  assert.equal(doors.length, 7, 'four tiles with a lesson behind them, and three measure rows');
   for (const d of doors) {
     // Either a rule page we build, or a deep link into the replay at the frame
     // where the thing happens. Nothing else is a lesson.
@@ -409,4 +417,62 @@ test('⛔ the CF% row leads to an attempt being counted, not to a page that expl
   const door = walk(cf).find(x => (x.className || '').split(' ').includes('pvlearn'));
   assert.ok(door, 'the CF% row has no door at all');
   assert.match(door.href, /layer=corsi/, 'the door must arrive with the Control layer on');
+});
+
+/* ---------------------------------------------- THE FRAME KEVIN ASKED TO GROW */
+
+test('⭐ the attempt partition is a stacked bar, and its three parts sum to the whole', async () => {
+  /* The one figure on this card that can honestly be a stacked bar: three shares
+     of one defined whole. `byType` sums to the attempt total exactly, which is
+     what makes the bar a partition rather than three numbers side by side.
+     MUTATION: drop a part and the widths stop reaching 100. */
+  const { ids, settle } = run({}, `?game=${GID}`, '2026-10-01T12:00:00Z');
+  await settle();
+  // ⚠️ `svgEl` sets class with setAttribute, so it lands in attrs, not className —
+  // the same split that made the first version of this check find nothing.
+  const bar = walk(ids.pv).find(x => (x.attrs && x.attrs.class) === 'pvmix');
+  assert.ok(bar, 'no stacked bar was drawn');
+  const w = walk(bar).filter(x => x.tag === 'rect').map(r => Number(r.attrs.width));
+  assert.equal(w.length, 3, 'reached the goalie, blocked, missed');
+  assert.ok(Math.abs(w.reduce((a, b) => a + b, 0) - 100) < 0.01,
+    `a partition must fill the bar, got ${w.reduce((a, b) => a + b, 0)}`);
+  // 215,529 + 25,597 of 500,720 = 48.2%, and the first rect must be that share.
+  assert.ok(Math.abs(w[0] - 48.16) < 0.05, `the goalie share is wrong: ${w[0]}`);
+  assert.match(textOf(ids.pv), /48 of every 100/);
+});
+
+test('⛔⛔ the hits tile prints a NULL, and never without its home-rink premium', async () => {
+  /* A novice hears "they're really taking it to them physically" all night. This
+     is the site's answer: the club that hits more has the puck less in 48 of
+     every 100 games — a coin flip over 4,192 games.
+     ⚠️ AND HITS ARE SCORER-DEPENDENT: the home rink's own crew records about 4%
+     more of them. A figure we KNOW is biased may not be printed as though it were
+     clean, so the disclosure is asserted, not trusted to survive an edit.
+     MUTATION: delete the `.pvfine` line and the second half fires. */
+  const { ids, settle } = run({}, `?game=${GID}`, '2026-10-01T12:00:00Z');
+  await settle();
+  const said = textOf(ids.pv);
+  assert.match(said, /48 of every 100 games — a coin flip/);
+  assert.match(said, /home rink’s own crew/);
+  assert.match(said, /about 4% more hits at home/);
+  /* ⛔ AND THE TILE MUST NOT READ AS A VERDICT ON HITTING. Scoped to the tile, not
+     the page: the frame's own caption legitimately says "which teams do BETTER
+     than this over a season is mostly luck", and the first version of this check
+     scanned everything and failed on that sentence — a guard that tests a wider
+     claim than it announces, which is this file's own recurring defect. */
+  const tiles = walk(ids.pv).filter(x => (x.className || '').split(' ').includes('pvtile'));
+  const hits = tiles.find(t => /hits a team lands/.test(textOf(t)));
+  assert.ok(hits, 'no hits tile to check');
+  assert.ok(!/\b(better|worse|dominant|tougher|physical)\b/i.test(textOf(hits)),
+    textOf(hits).slice(0, 200));
+});
+
+test('a census with no shift chart draws no shift tile rather than a median of nothing', async () => {
+  const { ids, settle } = run({ 'measures.json': { ...DOCS['measures.json'],
+    census: { ...DOCS['measures.json'].census, shift: { n: 0, median: null } } } },
+    `?game=${GID}`, '2026-10-01T12:00:00Z');
+  await settle();
+  const said = textOf(ids.pv);
+  assert.ok(!/how long a shift lasts/.test(said), said.slice(0, 200));
+  assert.match(said, /hits a team lands/, 'the rest of the frame still draws');
 });
