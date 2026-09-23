@@ -120,7 +120,21 @@ const INDEX = {
 
 const ORIGIN = 'https://readthegame.co';
 
-function run({ search = '', docs = {} } = {}) {
+/**
+ * ⏰ `at` PINS THE READER'S CLOCK, AND IT IS BOUND AS A PARAMETER RATHER THAN
+ * SWAPPED ON THE GLOBAL — the same fix, for the same reason, as
+ * `test/preview-page.test.js`: the page reads the moment inside a `.then`, so a
+ * global swapped and restored around the call always loses the race and the test
+ * silently runs against the real clock.
+ *
+ * ⛔⛔ WHY IT HAD TO EXIST. The "tonight" tests built a night three hours from
+ * `Date.now()` and asserted the page called it TONIGHT. Between 21:00 and
+ * midnight in the runner's timezone, three hours from now is TOMORROW, the page
+ * correctly named the day instead, and the deploy failed on a commit that had
+ * touched none of it. A test whose answer depends on when it runs is not a test
+ * of the page; it is a test of the hour.
+ */
+function run({ search = '', docs = {}, at = null } = {}) {
   const { ids, document } = fakeDom();
   const fetch = url => {
     const key = Object.keys(docs).find(k => url.includes(k));
@@ -133,8 +147,13 @@ function run({ search = '', docs = {} } = {}) {
      `window` could not boot it at all, let alone see the message. */
   const heard = {};
   const win = { addEventListener: (t, fn) => (heard[t] = heard[t] || []).push(fn) };
-  new Function('document', 'fetch', 'location', 'window', script)(
-    document, fetch, { search, origin: ORIGIN }, win);
+  const Real = Date;
+  const Clock = at ? class extends Real {
+    constructor(...a) { super(...(a.length ? a : [at])); }
+    static now() { return new Real(at).getTime(); }
+  } : Real;
+  new Function('document', 'fetch', 'location', 'window', 'Date', script)(
+    document, fetch, { search, origin: ORIGIN }, win, Clock);
   const frame = () => (ids.heroframe && ids.heroframe.kids[0]) || null;
   return {
     ids,
@@ -2013,10 +2032,21 @@ test('⛔ the dark-night door and the game page name the same newest game', asyn
 /** The local calendar date of an instant, the way a reader's browser sees it. */
 const localDate = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
   + `-${String(d.getDate()).padStart(2, '0')}`;
-/** A night of `n` fixtures `hours` from now, all carrying the league's own date. */
+/**
+ * ⏰ THE READER'S CLOCK FOR THIS WHOLE BLOCK, AND IT IS LOCAL ON PURPOSE.
+ *
+ * A fixed UTC instant would still land on a different calendar DAY depending on
+ * where the suite runs, which is the bug this constant exists to end. Built from
+ * local components, it is 1pm on 23 September 2026 in whatever timezone the
+ * runner is in — so "three hours from now" is always the same afternoon, and
+ * "thirty-six hours from now" is always two days later, everywhere.
+ */
+const AT = new Date(2026, 8, 23, 13, 0, 0);
+
+/** A night of `n` fixtures `hours` from `AT`, all carrying the league's own date. */
 function tonight(n, { hours = 3, gameType = 1, date = null } = {}) {
-  const start = new Date(Date.now() + hours * 3600000);
-  return { asOf: new Date().toISOString(), season: SCHEDULE.season,
+  const start = new Date(AT.getTime() + hours * 3600000);
+  return { asOf: AT.toISOString(), season: SCHEDULE.season,
     upcoming: Array.from({ length: n }, (_, k) => ({
       id: 900 + k, date: date || localDate(start), gameType, state: 'FUT',
       away: ['BUF', 'DET', 'NYR', 'PHI', 'OTT', 'COL', 'MIN', 'STL'][k % 8],
@@ -2024,10 +2054,10 @@ function tonight(n, { hours = 3, gameType = 1, date = null } = {}) {
       startTimeUTC: new Date(start.getTime() + k * 60000).toISOString(),
     })) };
 }
-const EMPTY = { asOf: new Date().toISOString(), games: [] };
+const EMPTY = { asOf: AT.toISOString(), games: [] };
 
 test('⭐ a night of eight is a night of eight, and the kicker says whose night it is', async () => {
-  const r = run({ docs: { ...ALL, 'recent.json': EMPTY, 'schedule.json': tonight(8) } });
+  const r = run({ at: AT, docs: { ...ALL, 'recent.json': EMPTY, 'schedule.json': tonight(8) } });
   await r.settle(); await r.settle();
   assert.equal(r.ids.daily.hidden, false);
   assert.match(r.ids.dailykick.textContent, /^Tonight · 8 preseason games$/,
@@ -2046,7 +2076,7 @@ test('⭐ EVERY ROW IN THE UPCOMING STATE OPENS ITS OWN PREVIEW — and none ope
      ships". What must STILL hold is that no fixture row points at `game.html` —
      that is the replay, and a game nobody has played has none. A test naming one
      row would pass the day a second kind of row is added. */
-  const r = run({ docs: { ...ALL, 'recent.json': EMPTY, 'schedule.json': tonight(8) } });
+  const r = run({ at: AT, docs: { ...ALL, 'recent.json': EMPTY, 'schedule.json': tonight(8) } });
   await r.settle(); await r.settle();
   /* ⚠️ AND IT NAMES THE SUBJECT IT NEEDS. A claim about "every row" is true of a
      block that rendered no rows, which is how a probe passes on an absence —
@@ -2066,7 +2096,7 @@ test('the rest of the night opens in place, and the summary says how many', asyn
      night is by definition games we do not hold. So the tail is a disclosure —
      CLOSED on first paint, which is the height §12.2's budget applies to, and
      labelled, which is what makes it a disclosure rather than a mystery box. */
-  const r = run({ docs: { ...ALL, 'recent.json': EMPTY, 'schedule.json': tonight(8) } });
+  const r = run({ at: AT, docs: { ...ALL, 'recent.json': EMPTY, 'schedule.json': tonight(8) } });
   await r.settle(); await r.settle();
   const det = r.ids.dailylist.kids.find(k => k.tag === 'details');
   assert.ok(det, 'the two games past the cap are nowhere');
@@ -2080,7 +2110,7 @@ test('⭐ IN SEASON THE BLOCK STILL LOOKS FORWARD, in one line', async () => {
   /* The defect that arrives on 29 September: with results to show, the block
      showed nothing about tonight. One line, because the results rows already
      spend the slack beside the rink (§12.2). */
-  const r = run({ docs: { ...ALL, 'recent.json': RECENT, 'schedule.json': tonight(11, { gameType: 2 }) } });
+  const r = run({ at: AT, docs: { ...ALL, 'recent.json': RECENT, 'schedule.json': tonight(11, { gameType: 2 }) } });
   await r.settle(); await r.settle();
   assert.match(r.ids.dailykick.textContent, /2 games$/, 'last night is unchanged');
   assert.equal(r.ids.dailylist.kids.filter(k => k.href && /game\.html/.test(k.href)).length, 2,
@@ -2093,8 +2123,8 @@ test('⭐ IN SEASON THE BLOCK STILL LOOKS FORWARD, in one line', async () => {
 test('a night that is not the reader\'s tonight is named by its day', async () => {
   /* §12.5's rule, reused: the word is EARNED. A reader in Europe, for whom a 7pm
      Eastern game starts after midnight, is not having their tonight. */
-  const day = new Date(Date.now() + 36 * 3600000);
-  const r = run({ docs: { ...ALL, 'recent.json': EMPTY,
+  const day = new Date(AT.getTime() + 36 * 3600000);
+  const r = run({ at: AT, docs: { ...ALL, 'recent.json': EMPTY,
     'schedule.json': tonight(3, { hours: 36, gameType: 2, date: localDate(day) }) } });
   await r.settle(); await r.settle();
   assert.doesNotMatch(r.ids.dailykick.textContent, /tonight/i,
@@ -2108,7 +2138,7 @@ test('⚠️ a schedule with no league dates still says when the next game is', 
      the sentence this block has always written. */
   const undated = tonight(4);
   undated.upcoming = undated.upcoming.map(({ date, ...g }) => g);
-  const r = run({ docs: { ...ALL, 'recent.json': EMPTY, 'schedule.json': undated } });
+  const r = run({ at: AT, docs: { ...ALL, 'recent.json': EMPTY, 'schedule.json': undated } });
   await r.settle(); await r.settle();
   assert.equal(r.ids.daily.hidden, false);
   assert.match(r.ids.dailykick.textContent, /^Next$/);
