@@ -352,9 +352,14 @@ jobs:
           gid=$1; away=$2; home=$3
           echo "  unfurling game $gid ($away at $home)"
 
-          code=$(curl -sS -L -o unfurl.html -w '%{http_code}' \
-                   "$URL/preview.html?game=$gid&cb=${GITHUB_RUN_ID}") || code=000
-          [ "$code" = 200 ] || { echo "::error::the unfurl path answered HTTP $code"; exit 1; }
+          # ⛔ BOTH FETCHES WAIT OUT A 404, AND NEITHER USED TO. On 2026-09-24
+          # this step failed because `/preview.html` answered 404 on the
+          # candidate while `/preview.html?game=...` — the same deployment, the
+          # same step, seconds earlier — answered 200 with the right title. The
+          # asset manifest had not finished propagating. See tools/edge-fetch.sh.
+          . tools/edge-fetch.sh
+          edge_fetch "preview.html?game=$gid&cb=${GITHUB_RUN_ID}" unfurl.html retry404 \
+            || { echo "::error::the unfurl path never became available"; exit 1; }
 
           title=$(sed -n 's:.*<title>\(.*\)</title>.*:\1:p' unfurl.html | head -1)
           echo "  <title> $title"
@@ -372,9 +377,8 @@ jobs:
             || { echo "::error::og:url does not name this game"; exit 1; }
 
           # ⛔ THE PAIRED HALF: no `game=`, no rewrite, byte for byte.
-          code=$(curl -sS -L -o bare.html -w '%{http_code}' \
-                   "$URL/preview.html?cb=${GITHUB_RUN_ID}") || code=000
-          [ "$code" = 200 ] || { echo "::error::/preview.html answered HTTP $code"; exit 1; }
+          edge_fetch "preview.html?cb=${GITHUB_RUN_ID}" bare.html retry404 \
+            || { echo "::error::/preview.html never became available"; exit 1; }
           if ! cmp -s bare.html src/preview.html; then
             echo "::error::/preview.html with no game= is NOT the committed file —"
             echo "::error::the middleware is rewriting requests the byte-diff gate relies on"
@@ -505,66 +509,13 @@ jobs:
           #
           # Checked before this line was written: all nine pages byte-identical
           # under a Chrome agent, the day after the beacon was turned off.
-          VISITOR_UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'
 
-          # Retries on 5xx (edge not ready) but NOT on 404 -- a missing file is
-          # a real answer, and waiting 60s to report it just hides the cause.
-          #
-          # ⛔⛔ AND SINCE 2026-09-23 THE ROOT RETRIES 404 TOO, BECAUSE A WORKER
-          # CHANGED WHAT 404 MEANS. Before `functions/_middleware.js` existed, a
-          # deployment that was not ready answered 5xx or nothing, and a 404 could
-          # only mean a missing file — so not retrying it reported the real cause
-          # immediately, which is what the rule above is for. With Functions in
-          # front, the Worker goes live before the asset manifest has finished
-          # propagating: `next()` finds no asset for `/` and returns an honest
-          # 404, and the gate failed a deploy whose site was serving correctly
-          # ninety seconds later. The middleware did not manufacture the 404 — it
-          # passed through exactly what the asset server said.
-          #
-          # ⛔⛔⛔ AND THE "ROOT ONLY" VERSION OF THAT FIX WAS WRONG, FALSIFIED THE
-          # SAME DAY IT SHIPPED. It read: *"A named page that 404s IS a missing
-          # file and still fails on the first answer."* Eight hours later
-          # `/faceoffs.html` 404'd on the candidate while the other thirteen pages
-          # — including one added in the same commit — came back byte-identical,
-          # and the SAME candidate URL served that page 200 a few minutes later.
-          # The asset manifest does not propagate atomically, so any path can be
-          # briefly absent, and "is this missing or is this slow?" cannot be
-          # answered from one response. It is answered by waiting.
-          #
-          # ⭐ SO THE PAGE LOOP RETRIES 404 TOO, AND THE ORIGINAL RULE'S REASON
-          # SURVIVES ANYWAY: that loop's list of pages comes from `src/*.html` in
-          # this very checkout, so a 404 there can only be propagation or a deploy
-          # that genuinely failed to upload — and both are worth waiting out. The
-          # cause is not hidden, it is just reported 72 seconds later, by the
-          # "never became available" line at the bottom of this function.
-          #
-          # ⚠️ THE PRODUCTION POLL BELOW DOES NOT, and that is deliberate: it has
-          # its own outer retry loop, so a 404 there is one cheap attempt of many
-          # rather than a verdict, and making each attempt wait 72 seconds would
-          # turn a two-minute poll into half an hour.
-          fetch() {  # fetch <path> <destination> [retry404]
-            local path="$1" dest="$2" retry404="${3:-}" code
-            for i in $(seq 1 12); do
-              # 000 is curl's code for a transport failure, which for a hostname
-              # minutes old usually means DNS has not propagated yet -- another
-              # thing to wait out rather than report as a broken site.
-              code=$(curl -sS -A "$VISITOR_UA" -H 'Accept: text/html' \
-                          -o "$dest" -w '%{http_code}' -L "$URL/$path") || code=000
-              case "$code" in
-                200)     return 0 ;;
-                5*|000)  echo "    attempt $i: HTTP $code — edge not ready"; sleep 6 ;;
-                404)     if [ -n "$retry404" ]; then
-                           echo "    attempt $i: HTTP 404 — the route is not resolving yet"
-                           sleep 6
-                         else
-                           echo "::error::/$path returned HTTP 404"; return 1
-                         fi ;;
-                *)       echo "::error::/$path returned HTTP $code"; return 1 ;;
-              esac
-            done
-            echo "::error::/$path never became available (last HTTP $code)"
-            return 1
-          }
+          # ⭐ THE WAITING RULE LIVES IN `tools/edge-fetch.sh`, WITH THE THREE
+          # VERSIONS OF IT THAT WERE WRONG. It is a file rather than a function
+          # here because Actions steps cannot share one, and the unfurl check
+          # below needs the identical behaviour — which it did not have, and a
+          # deploy failed for it on 2026-09-24.
+          . tools/edge-fetch.sh
 
           # THE ONE NORMALISATION, AND IT IS NARROW ON PURPOSE.
           #
@@ -612,7 +563,7 @@ jobs:
           # The root is its own case: it is not a file we deploy but a route
           # Pages resolves to index.html, and getting that wrong is a 404 on
           # the front page with every deep link still working.
-          fetch "" root.html retry404
+          edge_fetch "" root.html retry404
           if ! cmp -s <(strip root.html) <(strip src/index.html); then
             echo "::error::the site root is not src/index.html"
             exit 1
@@ -623,7 +574,7 @@ jobs:
           fail=0
           for f in src/*.html; do
             page=$(basename "$f")
-            fetch "$page" live.html retry404 || { fail=1; continue; }
+            edge_fetch "$page" live.html retry404 || { fail=1; continue; }
             if cmp -s <(strip live.html) <(strip "$f"); then
               echo "  /$page  ($(wc -c < "$f") bytes, identical)"
               beacon_note live.html
@@ -655,7 +606,7 @@ jobs:
             URL="https://${host}"
             matched=0
             for i in $(seq 1 10); do
-              if fetch "?cb=${GITHUB_RUN_ID}-${i}" prod.html && cmp -s <(strip prod.html) <(strip src/index.html); then
+              if edge_fetch "?cb=${GITHUB_RUN_ID}-${i}" prod.html && cmp -s <(strip prod.html) <(strip src/index.html); then
                 matched=1; break
               fi
               echo "    $host: serving a different build — attempt $i, waiting"
