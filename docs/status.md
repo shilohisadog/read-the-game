@@ -36,20 +36,82 @@ state.
 
 ### ⏭ THE ONE THING TO DO NEXT
 
-**Wire the four new derivations to read published text, and put the doors on
-`what-you-can-see.html`.** Everything it depends on is in place and verified:
-`census.pace.what` and `census.endZone.what` are LIVE, and the zone numerators
-are published, so `235,614 ÷ 165,420 = 1.424` now reproduces from the document a
-reader can fetch. The four are `slotGoals`, `pace`, `scoreEffects`, `zoneStarts`;
-the drafts are in this session's history and the evidence is `docs/what-settles.md`
-plus the `what` strings themselves. `data/measures.json` was refreshed from the
-origin after the derive, so the cache is current.
+**After the next derive — Mondays 15:47 UTC — give `census.faceoffZone` its own
+`PRINTED` entry and move the Zone starts layer's door onto it.** The sentence is
+written and committed; it is not in the published document until `derive.yml`
+republishes, and `data/measures.json` is a CACHE of that document rather than the
+document. Today the layer opens `m-zoneStarts`, which PRICES an end-zone draw
+rather than tallying one — the right door for what a viewer is asking and the
+wrong one in the narrow sense that it is a different numerator.
 
-Then, in Kevin's order: **rules live in the layer descriptors** (`src/lib/layers/*.js`,
-where `counts:` already is), rendered inline on the replay and INDEXED by the
-methods page — not as sections on it; **a `counts:` for Stoppages**, which has
-none; and **collapse the slot definition**, which is one geometry constant in
-`rink.js` and three prose descriptions.
+⚠️ **CHECK BEFORE BUILDING IT:** `printed()` degrades by dropping a figure whose
+sentence is missing and saying so on the page. That path is built and tested, so
+a door added early renders "the published document carries no description for
+`census.faceoffZone` yet" — honest, and not something to ship deliberately.
+
+Then: **collapse the slot definition**, which is one geometry constant in
+`rink.js` (`HIGH_DANGER_FT`, `SLOT_HALF_WIDTH`) and three prose descriptions in
+`danger.js`, `methods.js` and `preview.js`. Three measurements already share the
+word slot and the definition of the SHAPE is written four times.
+
+### ✅ THE CENSUS DEBT IS CLOSED — all nine sub-objects publish a `what`
+
+`whistles`, `shift`, `hits`, `state`, `faceoffZone`, `drawStrength` and `shooter`
+joined `pace` and `endZone`. Each sentence says what the numerator counts, what
+the denominator counts, and the thing that would otherwise be misread:
+
+- **`faceoffZone`** — its O and D rows are the SAME draws sorted by who won them,
+  so the place cannot be separated from the win. `endZone` is the pair that can.
+- **`hits`** — counted by each home rink's own crew, and the same clubs are
+  credited with more at home than away. The figure we know is dirty says so.
+- **`whistles`** — counts and not rates, because the card divides them two ways;
+  and a power-play chance is not a penalty, since one trip to the box can be two.
+- **`state`** — names the `unknown` bucket, which is published even at zero,
+  because a bucket that appears only when it is full is one nobody notices.
+- **`shift`** — the sentence sits ABOVE the empty-archive branch, because the
+  first version wrote it into the populated return only and an archive with no
+  shift data published figures with nothing saying what they are. ⭐ **A
+  description is a property of the measurement, so it cannot depend on whether
+  the measurement found anything.** Caught by the gate one minute later.
+
+⭐⭐ **AND THE LIST IS NOW ASKED OF THE REDUCER RATHER THAN TYPED.** The old test
+named the two that were done and the seven that were not — a hand-written list
+that could not know about a tenth sub-object, which is exactly how the first nine
+went unnoticed. Every published object must carry a `what`; a new one arrives red.
+
+### ✅ EVERY FIGURE ON THE SITE NOW HAS A DOOR TO ITS WORK
+
+Kevin's standing rule, closed on every surface that prints a number. Measured by
+marker census — every placeholder replaced with a unique string, the site
+rebuilt, the built pages grepped:
+
+| surface | figures | doors |
+|---|---|---|
+| `what-you-can-see.html` | 17 | 6, one per card that prints one |
+| `index.html` | 14 (13 + the archive size) | 4, one per tile in the strip |
+| `slot.html` | 7 | 2 — the lede and the note under the drawing |
+| the replay | one box per layer | 6, one per layer a viewer can switch on |
+| the other five rule pages | 0 | 0, asserted |
+
+**`how-we-measure.html` grew a third section and an index.** The third section is
+the figures the rest of the site prints — `slotGoals`, `slotAttempts`, `pace`,
+`scoreEffects`, `zoneStarts`, `saves` — and none of them types its own
+description: the sentence a reader sees IS the published `what`, read at render
+time, and the gate reads the TABLE because `printed()` builds its output field by
+field and a typed `count` would never reach it. The index is the replay's six
+layers, printing each one's own `counts` and `credits` verbatim out of
+`data/layer-rules.json`, which node writes by asking the descriptors.
+
+⭐⭐⭐ **THE ONE GATE THAT IS NOT CIRCULAR, and it is the only one worth the
+words.** Every other check on these doors is computed from the same table the
+builder writes them from: it proves the renderer works and nothing about the
+AIM. A door pointing at the wrong derivation resolves, renders, and answers
+*where did that come from?* by describing a different measurement — strictly
+worse than no door. So the numbers are read off the BUILT copy (Python
+substitution) and off `methods()` (JavaScript), and the door must have one in
+common. It caught a real one within the hour: the figure under the drawing on
+`slot.html` pointed at `slotShare`, the CARD's row, and 46.7% would have opened
+on *r = 0.72 over 38 games*. Three denominators share the word slot.
 
 ### ✅ WHAT SHIPPED TODAY, IN ORDER
 
@@ -83,6 +145,21 @@ none; and **collapse the slot definition**, which is one geometry constant in
    published.
 6. **`tools/edge-fetch.sh`** — one way to ask a fresh deployment for a page. See
    §0.00-c.
+7. **The four derivations, reading published text.** `PRINTED` in `methods.js`,
+   plus a third section on the methods page. `src/lib/anchors.js` came out of it:
+   `preview.html` was inlining the whole of `methods.js` for one function and is
+   now **17.6KB smaller than it was this morning** — 131,197 → 113,549 — on the
+   one page of this site built to be pasted into a chat window.
+8. **Doors on every surface that prints a figure**, built from
+   `FIGURE_DERIVATION`, which is keyed by the TOKEN and not by the card: a map
+   from card to derivation goes stale silently the first time a card's copy is
+   rewritten around a different measurement, because the sentence moves and the
+   door does not. `_archive()` now refuses to publish a token nobody has claimed.
+9. **`work` on the layer descriptors, and the methods page as their index.**
+   `builders/layer-rules.mjs` asks the six layers and writes one document; it
+   refuses a layer with no `work`, an empty `counts`, or a key `methods.js`
+   cannot explain. The `where` line on a section stopped being typed twice: the
+   replay half is the INVERSE of that document, so the page derives it.
 
 ### ⛔⛔⛔ THE LESSON OF THE DAY, AND IT COST THE MOST TIME
 
@@ -95,8 +172,23 @@ real thing, and its output reported as the fact.**
 | a regex for `%` and thousands separators | "what-you-can-see has 6 figures" | **17.** It missed every small integer — 46 seconds, 21 shifts, 64/59/53 attempts |
 | `GET /workers/scripts` returning 200 | "not a permissions problem at this level" | that is Workers Scripts **Read**; the deploy needs **Edit** |
 
-⭐⭐ And the fourth, on a silence rather than a number: **I read "the scheduler
-stopped firing" into two days with no scheduled run, and my own commit explains
+⭐⭐⭐ **AND THE AFTERNOON ADDED THE SHAPE UNDERNEATH ALL THREE: a check that
+reads a narrower thing than it announces.** Four instances in one afternoon, and
+three of them were in checks written that same hour:
+
+| the check | what it announced | what it read |
+|---|---|---|
+| "a printed figure does not carry a description of its own" | the TABLE | `printed()`'s output — which is built field by field, so a typed `count` could never appear there. It reported the rule as kept |
+| `test_one_statement.py`, after its first fix | "a figure is printed by nothing" | any reference in a string literal — and the new door map names every placeholder, so it **could not fire in any condition this suite runs under** |
+| "the Learn More row renders a link per card" ×2 | one row | every `<a href=` in the panel. Went red on a second row — the same defect arriving as a false ALARM, which is the lucky half of it |
+| a mutation harness | "the gate did not catch it" | a build that had REFUSED the mutation; the test ran against a stale page |
+
+⭐ The only reason any of them surfaced is mutation: writing the defect in on
+purpose and requiring the named test to fail. Two of the four were found by a
+mutation the gate was written for, and would have shipped otherwise.
+
+⭐⭐ And the fourth of the morning's, on a silence rather than a number: **I read
+"the scheduler stopped firing" into two days with no scheduled run, and my own commit explains
 it** — the three-cron change landed 09-23T13:08Z, after that day's 11:00 entry
 could fire and after all three new entries had passed. **An absence is where the
 flattering direction is hardest to catch, because there is no second figure to

@@ -312,13 +312,24 @@ test('⭐ the census measurements that a page prints say what they are', () => {
      sentence describing a figure, typed somewhere other than where the figure is
      made, is the drift that module exists to avoid.
 
-     ⚠️ SCOPE, STATED: this covers the two that `how-we-measure` reads today.
-     `whistles`, `shift`, `hits`, `state`, `faceoffZone`, `drawStrength` and
-     `shooter` still publish no `what` and their derivations are still
-     hand-written. That is known debt, not an oversight, and this list is where
-     it becomes visible when it shrinks. */
+     ✅ THE DEBT IS CLOSED, 2026-09-24. This used to cover the two that
+     `how-we-measure` read and name the seven that published nothing —
+     `whistles`, `shift`, `hits`, `state`, `faceoffZone`, `drawStrength`,
+     `shooter`. All nine now carry one.
+
+     ⛔⛔ AND THE LIST IS ASKED OF THE REDUCER, NOT TYPED. A tenth sub-object
+     added next spring would publish figures with no sentence and this would stay
+     green, because a hand-written list of nine cannot know about a tenth — which
+     is the exact defect that let the first nine go unnoticed. So every published
+     object that carries an `n` or a set of counts is required to carry a `what`,
+     and a new one arrives red. */
   const r = censusRates(censusAdd({}, censusGame(GAMES[0].events, ctxOf(GAMES[0]))));
-  for (const k of ['pace', 'endZone']) {
+  const published = Object.keys(r).filter(k => r[k] && typeof r[k] === 'object');
+  assert.ok(published.length >= 9,
+    `only ${published.length} census sub-objects found — the scan is looking at the wrong shape`);
+  assert.deepEqual(published.filter(k => typeof r[k].what !== 'string'), [],
+    'a census sub-object publishes figures and no sentence saying what they are');
+  for (const k of published) {
     assert.equal(typeof r[k].what, 'string', `census.${k} publishes no what`);
     assert.ok(r[k].what.length > 80, `census.${k}'s what is too short to describe anything`);
     assert.doesNotMatch(r[k].what, /\d[\d,]*\.?\d*\s?%|\b\d{3,}\b/,
@@ -834,7 +845,13 @@ test('⛔⛔ and the PUBLISHED census carries them — the accumulator is not th
   const t = censusAdd({}, censusGame(rich.events, ctx));
   const pub = censusRates(t);
   assert.ok(pub.whistles, 'the published document has no whistles block at all');
-  assert.deepEqual(Object.keys(pub.whistles).sort(), Object.keys(t.whistles).sort(),
+  /* ⚠️ A SUBSET, NOT AN EQUALITY, AND THE EXTRA IS NAMED. The published block
+     also carries `what` — the sentence saying what these counts are — which is
+     a description and not a counter, so an equality here would either fail or
+     force the documentation out of the document. Every counter must still be
+     published, which is the claim; the allowance is one key, stated. */
+  assert.deepEqual(Object.keys(pub.whistles).filter(k => k !== 'what').sort(),
+    Object.keys(t.whistles).sort(),
     'a counter that is summed but never published is invisible to every page');
   for (const k of Object.keys(t.whistles)) {
     assert.equal(pub.whistles[k], t.whistles[k], `${k} changed on the way out`);

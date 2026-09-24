@@ -405,12 +405,27 @@ export function censusRates(t) {
   return {
     games: t.games || 0,
     // What a draw is worth where it happens, and who it is worth it to.
-    faceoffZone: Object.fromEntries(['O', 'N', 'D'].map(k => {
-      const z = t.faceoffZone?.[k] || { n: 0 };
-      return [k, { n: z.n || 0, winnerPerDraw: perDraw(z),
-                   loserPerDraw: z.n > 0 ? +(z.al / z.n).toFixed(3) : null,
-                   ratio: ratio(z.aw, z.al) }];
-    })),
+    faceoffZone: {
+      ...Object.fromEntries(['O', 'N', 'D'].map(k => {
+        const z = t.faceoffZone?.[k] || { n: 0 };
+        return [k, { n: z.n || 0, winnerPerDraw: perDraw(z),
+                     loserPerDraw: z.n > 0 ? +(z.al / z.n).toFixed(3) : null,
+                     ratio: ratio(z.aw, z.al) }];
+      })),
+      /* ⚠️ THE SENTENCE SAYS THE THING THAT MAKES THIS FIGURE EASY TO MISREAD.
+         O and D are the SAME physical draws sorted by who won them, so "the
+         offensive zone" here means "draws this club won in it" and the place
+         cannot be separated from the win. `endZone` is the version that can.
+         A reader who does not know that will read these three rows as a
+         comparison of places, which they are not. */
+      what: 'face-offs sorted by the zone the club that WON them was attacking '
+          + 'toward, and the shot attempts each club took before the next '
+          + 'whistle (n counts FACE-OFFS, not games). The offensive and '
+          + 'defensive rows are the same draws seen from the two sides, so this '
+          + 'cannot separate where a draw happened from who won it \u2014 '
+          + 'endZone is the pair that can, because it splits by which club was '
+          + 'attacking that end rather than by the winner.',
+    },
     /* THE CONTROLLED ANSWER, and the one a sentence may quote. `zoneWorth` is
        what the attacking club generates having LOST the draw — that is what
        being there is worth on its own — and `winningWorth` is what winning it
@@ -470,7 +485,13 @@ export function censusRates(t) {
     shooter: (() => {
       const groups = ['D', 'F', 'G', 'unknown'];
       const tot = groups.reduce((a, k) => a + ((t.shooter?.[k]?.n) || 0), 0);
-      const out = { attempts: tot, outcomesMatch: true };
+      const out = { attempts: tot, outcomesMatch: true,
+        what: 'shot attempts split by the position the roster lists for the '
+            + 'player who took them, and for each group what became of those '
+            + 'attempts \u2014 blocked, on goal, missed, or a goal (n counts '
+            + 'ATTEMPTS, not games). Position is what the roster says and not a '
+            + 'judgement about where a player was standing, so a defenceman who '
+            + 'has walked to the top of the circle is still counted as one.' };
       for (const k of groups) {
         const z = t.shooter?.[k] || { n: 0 };
         const n = z.n || 0;
@@ -482,14 +503,36 @@ export function censusRates(t) {
       }
       return out;
     })(),
-    drawStrength: Object.fromEntries(['even', 'pp'].map(k => {
-      const z = t.drawStrength?.[k] || { n: 0 };
-      return [k, { n: z.n || 0, ratio: ratio(z.aw, z.al) }];
-    })),
-    state: Object.fromEntries(['even', 'pp', 'en', 'unknown'].map(k => {
-      const s = t.state?.[k] || { secs: 0, goals: 0 };
-      return [k, { minutes: +(s.secs / 60).toFixed(1), goals: s.goals, per60: per60(s) }];
-    })),
+    drawStrength: {
+      ...Object.fromEntries(['even', 'pp'].map(k => {
+        const z = t.drawStrength?.[k] || { n: 0 };
+        return [k, { n: z.n || 0, ratio: ratio(z.aw, z.al) }];
+      })),
+      what: 'face-offs split by whether the club that won them was at even '
+          + 'strength or on the power play, and the shot attempts that club '
+          + 'took before the next whistle set against the attempts the club '
+          + 'that lost the draw took (n counts FACE-OFFS, not games). A draw '
+          + 'won on the power play is followed by a power play, so this says '
+          + 'what winning one is worth in that situation and not what the draw '
+          + 'itself contributed.',
+    },
+    state: {
+      ...Object.fromEntries(['even', 'pp', 'en', 'unknown'].map(k => {
+        const s = t.state?.[k] || { secs: 0, goals: 0 };
+        return [k, { minutes: +(s.secs / 60).toFixed(1), goals: s.goals, per60: per60(s) }];
+      })),
+      /* ⚠️ `unknown` IS NAMED IN THE SENTENCE, because a bucket a reader cannot
+         see is a bucket they will assume is empty. It is the play whose skater
+         count the record does not let us settle, and its size is the honest
+         limit on every other row here. */
+      what: 'the minutes played in each situation and the goals scored in them, '
+          + 'scaled to sixty \u2014 even strength, on the power play, and with a '
+          + 'net empty (minutes counts MINUTES and goals counts GOALS, neither '
+          + 'counts games). The unknown row is play whose skater count the '
+          + 'record does not settle, and it is published even at zero because a '
+          + 'bucket that appears only when it is full is one nobody notices '
+          + 'arriving.',
+    },
     /* ⭐⭐ HOW FAST A CLUB ATTEMPTS, BY THE TWO CONDITIONS THAT MOVE THE COUNT
        WITHOUT ANYBODY PLAYING BETTER. `attemptMix` says what an attempt becomes
        and `state` says how often a goal arrives; neither says how the SITUATION
@@ -551,11 +594,29 @@ export function censusRates(t) {
        ⭐ `underMinute` IS A FRACTION, never a percentage, and it carries `n`
        like every other published share. */
     shift: (() => {
+      /* ⛔ THE SENTENCE SITS ABOVE THE BRANCH BECAUSE A BRANCH CAN LOSE IT. The
+         first version wrote it into the populated return only, and an archive
+         with no shift data published figures with nothing saying what they are —
+         caught by the gate one minute later. A description is a property of the
+         MEASUREMENT, so it does not depend on whether the measurement found
+         anything.
+         ⚠️ IT SAYS "MIDDLE VALUE" AND NOT "AVERAGE", because the two differ here
+         and the difference is the whole reason the bins exist. It also names the
+         goaltender exclusion, which is the one a reader would otherwise catch us
+         on: a goaltender's shift is most of the game. */
+      const what = 'how long a skater\u2019s shift lasts, in seconds, taken from '
+          + 'the whole archive\u2019s shifts rather than by averaging each '
+          + 'game\u2019s own middle value (n counts SHIFTS, not games). The '
+          + 'middle half is the twenty-fifth to the seventy-fifth of them, which '
+          + 'is a definition and not a band anybody chose. Goaltenders are left '
+          + 'out, since a goaltender\u2019s shift is most of the game, and a '
+          + 'shift the record gives no end for is left out rather than counted '
+          + 'as nothing.';
       const t2 = t.shift || {};
       const bins = t2.bins || {};
       const n = t2.n || 0;
       if (!n) return { n: 0, median: null, p25: null, p75: null, underMinute: null,
-                       perPlayerGame: null, over: 0 };
+                       perPlayerGame: null, over: 0, what };
       const at = (frac) => {
         const want = frac * n;
         let seen = 0;
@@ -573,6 +634,7 @@ export function censusRates(t) {
         underMinute: +(under / n).toFixed(3),
         perPlayerGame: t2.players ? +(n / t2.players).toFixed(1) : null,
         over: t2.over || 0,
+        what,
       };
     })(),
     /* DOES HITTING RUN INVERSE TO HAVING THE PUCK? CHENG's hypothesis, killed on
@@ -588,7 +650,22 @@ export function censusRates(t) {
       const den = Math.sqrt(c.n * c.sxx - c.sx * c.sx) * Math.sqrt(c.n * c.syy - c.sy * c.sy);
       return { n: c.n, r: den > 0 ? +(num / den).toFixed(3) : null,
                opposite: +(c.opposite / c.n).toFixed(3),
-               totalHits: (t.club?.h?.hits || 0) + (t.club?.a?.hits || 0) };
+               totalHits: (t.club?.h?.hits || 0) + (t.club?.a?.hits || 0),
+               /* ⛔ THE SCOREKEEPER GOES IN THE SENTENCE. Hits are counted by
+                  each home rink\u2019s own crew and the same clubs are credited
+                  with about four per cent more of them at home than away \u2014
+                  a figure we know is dirty, printed beside it rather than
+                  conceded in a file nobody opens. */
+               what: 'whether a club that lands more hits in a game also takes '
+                   + 'fewer shot attempts in it, measured two ways over every '
+                   + 'game we hold (n counts GAMES). The first is how strongly '
+                   + 'the two move together, where a negative number means they '
+                   + 'run opposite; the second asks the same thing without any '
+                   + 'assumption about the shape of the data \u2014 the share of '
+                   + 'games in which the club with more hits had fewer attempts. '
+                   + 'Hits are counted by each home rink\u2019s own crew, and the '
+                   + 'same clubs are credited with more of them at home than '
+                   + 'away, so this measures the scorers as well as the play.' };
     })(),
 
     /* ⛔⛔ PUBLISHED RAW — AND THIS LINE WAS MISSING FOR A DAY WHILE EVERY TEST
@@ -607,8 +684,24 @@ export function censusRates(t) {
        would force the other surface to recover the counts anyway. */
     whistles: (() => {
       const w = t.whistles || {};
-      return Object.fromEntries(['penalties', 'offsides', 'icings', 'ppChances', 'ppGoals', 'shGoals']
-        .map(k => [k, w[k] || 0]));
+      return {
+        ...Object.fromEntries(['penalties', 'offsides', 'icings', 'ppChances', 'ppGoals', 'shGoals']
+          .map(k => [k, w[k] || 0])),
+        /* ⚠️ THE SENTENCE HAS TO SAY THESE ARE COUNTS AND NOT RATES, because
+           every other block in this document publishes a quotient and a reader
+           who assumes one here will divide by the wrong thing. The card divides
+           them two ways \u2014 goals over chances, and chances over club-games
+           \u2014 which is why neither quotient is published.
+           ⛔ AND A CHANCE IS NOT A PENALTY. A double minor is one trip to the
+           box and can be two chances; a chance also ends early on a goal. */
+        what: 'how often play stops for each reason across the archive, as '
+            + 'counts rather than as rates: penalties called, plays ruled '
+            + 'offside, pucks iced, power plays begun, and the goals scored by '
+            + 'each side during them. A power play is counted where the '
+            + 'advantage CHANGES, so it is not the same thing as a penalty '
+            + '\u2014 one trip to the box can be two of them, and one ends early '
+            + 'when a goal is scored.',
+      };
     })(),
   };
 }
