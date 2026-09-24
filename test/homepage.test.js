@@ -1892,6 +1892,36 @@ test('the freshness line lands on the first column, not near it', () => {
  * and "it says nothing" are different failures, and a renderer that stopped
  * writing the text would satisfy a test that only read `.hidden`.
  */
+/* ⏰ THE ONE CASE THAT NEEDS A CLOCK PINS IT, AND ITS OFFSET IS NOT A WHOLE
+ * NUMBER OF DAYS.
+ *
+ * ⛔⛔ THE DEFECT, 2026-09-24. This case used to read
+ * `lastRun: new Date(Date.now() - 4 * 86400000).toISOString()` and assert the
+ * page says "4 days ago". `ago()` in ingest-state.js is `Math.floor(h / 24)`,
+ * so an offset of EXACTLY four days puts the assertion on the floor boundary
+ * with ZERO MARGIN: it holds only while the instant the page renders at is
+ * greater than or equal to the instant this file was loaded at. `Date.now()` is
+ * the wall clock and is not monotonic — any backwards correction between the two
+ * reads, of any size, makes the elapsed time 95.999… hours and the page says
+ * "3 days ago", correctly. It went red exactly that way under `clock-sweep`, and
+ * green on the identical code in the same UTC minute.
+ *
+ * ⭐ THE SHAPE IS SHAPE 10 ONE TURN FURTHER IN: not "a check that cannot fail in
+ * the conditions you run it under" but a check whose outcome NOTHING IN THE REPO
+ * CONTROLS. The sweep moves the calendar, which is how it surfaced, but the
+ * sweep cannot be the fix — no timezone makes an unpinned delta safe.
+ *
+ * ⭐ SO IT IS PINNED, with the `at` this harness already carries, and the offset
+ * is 4 days 12 HOURS. Twelve hours of margin either side of the boundary is what
+ * makes the assertion a statement about `ago()` rather than about how long this
+ * file took to load. The other five cases do no arithmetic on the clock — their
+ * `lastRun` is "now", which is 36 hours clear of `STALE_HOURS` in the direction
+ * they need — so they stay on the reader's real clock, which is the more honest
+ * thing for them to be tested against.
+ */
+const STALLED_AT  = '2026-06-18T12:00:00.000Z';
+const STALLED_RUN = '2026-06-14T00:00:00.000Z';   // 4 days 12 hours before it
+
 const FRESH_CASES = [
   { name: 'quiet, with the card above it — Kevin\'s case',
     index: INDEX, recent: { asOf: new Date().toISOString(), games: [] },
@@ -1905,7 +1935,7 @@ const FRESH_CASES = [
                                    heldInWindow: 7, refusedInWindow: 0 } },
     recent: RECENT, quiet: false, says: /We have 7 of the 12 games played/ },
   { name: 'stalled — nothing else on the site can say this',
-    index: { ...INDEX, lastRun: new Date(Date.now() - 4 * 86400000).toISOString() },
+    at: STALLED_AT, index: { ...INDEX, lastRun: STALLED_RUN },
     recent: RECENT, quiet: false, says: /Last checked 4 days ago/ },
   { name: 'halted — the loudest thing we can tell a reader',
     index: { ...INDEX, halted: { since: '2026-03-03' } },
@@ -1917,7 +1947,8 @@ const FRESH_CASES = [
 
 for (const c of FRESH_CASES) {
   test(`the freshness line: ${c.name}`, async () => {
-    const r = run({ docs: { ...ALL, 'index.json': c.index,
+    const r = run({ at: c.at || null,
+                    docs: { ...ALL, 'index.json': c.index,
                             'recent.json': c.recent, 'schedule.json': SCHEDULE } });
     await r.settle(); await r.settle();
     assert.equal(r.ids.daily.hidden, false,
