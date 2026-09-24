@@ -343,15 +343,73 @@ purpose:** those are the two slots every cron on the platform is written to.
 queued behind a late-starting derive would miss 10:00 Eastern every Monday. The
 weekly has no deadline of its own; it belongs on the far side of the daily one.
 
-✅ **Ruled 2026-09-23: the 90% is accepted for now.** The remaining tail is
-GitHub's queue, and the fix for it is an external trigger — `workflow_dispatch`
-is not deprioritised — most cheaply a Cloudflare Worker cron POSTing to the
-dispatch API, which would make the start time ours and put the run on the site
-by about 03:40 Eastern. Kevin: *"let's stay with the 90 percent plus and see how
-we do… then we can see how the regular season starts out and then decide."*
-⚠️ It would need a GitHub token as a Worker secret, and it does **not** violate
-`ingest.yml`'s "no Worker in the pipeline" rule: that rule is about the
-extraction producing every number on the site, and a trigger computes nothing.
+⏭ **Ruled 2026-09-23, reopened and BUILT 2026-09-24 — see §6.1.3.** The
+remaining tail is GitHub's queue, and the fix for it is an external trigger:
+`workflow_dispatch` is not deprioritised. Kevin, on 09-23: *"let's stay with the
+90 percent plus and see how we do… then we can see how the regular season starts
+out and then decide."* What reopened it the next morning is in §6.1.3.
+
+#### 6.1.3 ✅ BUILT — the trigger is ours now
+
+⚠️ **WHAT REOPENED IT.** On 2026-09-24 the scheduled `ingest` runs had been
+unbroken daily from 09-11 to **2026-09-22T15:25Z** and then stopped: no
+`schedule` event on 09-23 at all, and none on 09-24 by 08:47Z. The two runs on
+09-23 were both `workflow_dispatch`, by hand. That is not the +10.3h tail this
+section sized three crons against — it is the scheduler not firing, which no
+number of entries in `ingest.yml` can fix. ⭐ **The three crons were sized
+against LATENESS, and the failure that arrived was ABSENCE.** Five days before
+the regular season opens, Kevin ruled it built.
+
+**`worker/trigger.js`** — a Cloudflare cron that POSTs a dispatch to
+`ingest.yml` and does nothing else. The times, from the table above and nothing
+new:
+
+| | |
+|---|---|
+| last horn | ≈ **06:20 UTC** — 03:30 latest puck drop + ~2h50m |
+| first fire | **06:47 UTC** |
+| run duration | **3–8 min** ⇒ on the site by ≈ **06:55 UTC** |
+| in Eastern | **≈ 02:55 EDT / 01:55 EST**, against a 10:00 target |
+
+⭐ **THE MARGIN IS SEVEN HOURS, AND IT IS THE SAME SEVEN HOURS IN WINTER.** Every
+figure above is UTC, and the latest-puck-drop measurement is taken from every
+regular-season start the league scheduled across a season that spans both EST
+and EDT — so the changeover is already inside it. The deadline is 14:00 UTC for
+exactly the same reason.
+
+⏰ **TWO FIRES, 06:47 and 08:17 UTC.** The second is not redundancy against a
+scheduler we now control; it is cover for the one input in the table above that
+**nothing here has measured** — how long the league takes to finalise a feed
+after the horn. A game that is not final yet is not published (the pipeline's
+third outcome), and a run with nothing new reports `unchanged` and exits in
+about a minute, so the second fire costs almost nothing on the nights the first
+already did the work.
+
+⛔ **AND `ingest.yml`'s THREE CRONS STAY.** They are no longer the primary and
+they are not tidy, and removing them is exactly the change to resist: they are
+what keeps the site current on the day this Worker's token expires. Whether to
+thin them is a separate decision, and it needs a record of the Worker actually
+firing before anyone has the evidence to make it.
+
+⚠️ **IT DOES NOT VIOLATE `ingest.yml`'s "no Worker in the pipeline" RULE.** That
+rule is about the extraction producing every number on the site. This posts a
+constant body to a constant URL at a constant time; `test/trigger.test.js`
+asserts the body carries the ref and nothing else, so the day it needs to know
+something about hockey the suite says so.
+
+⛔⛔ **WHAT HAPPENS WHEN IT BREAKS IS THE PART WORTH KNOWING.** A revoked or
+expired token makes the dispatch 401. Nothing pages anyone — there is no
+monitoring service here by design — and the fallback crons keep the site current
+at the old 90%, so **the freshness line never trips and the failure is silent**.
+That is the safe direction and it is also the reason the deploy workflow ends by
+asserting a token is bound to the Worker at all: the quiet version of this
+shipping dead is a first deploy onto an account where the secret was never set.
+
+**The one step that is not in this repo:** a fine-grained PAT with `actions:
+write` on this repository and nothing else, put in place once with
+`npx wrangler@4.120.0 secret put GITHUB_TOKEN --config worker/wrangler.toml`.
+It is not routed through GitHub Actions on purpose — that would mean storing a
+GitHub credential in GitHub in order to hand it to Cloudflare.
 
 ⛔ **One limit no schedule can fix.** A vocabulary halt refuses to publish
 anything, by design — three nights in September 2026 alone. The target is a

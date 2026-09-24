@@ -1,0 +1,26 @@
+# The ingest trigger. See trigger.js for why a Worker is allowed to exist here
+# at all, and docs/front-door.md §6.1.0 for the measurements behind the times.
+
+name = "readthegame-ingest-trigger"
+main = "trigger.js"
+compatibility_date = "2026-09-24"
+
+# ⛔ NO PUBLIC URL. There is no fetch handler worth reaching, and a workers.dev
+# hostname on something that talks to our CI is a door with nothing behind it
+# that someone will eventually try. The cron runs without one.
+workers_dev = false
+
+# So a refused dispatch is visible somewhere. It is NOT monitoring — see the
+# note in trigger.js about what actually happens when this breaks.
+[observability]
+enabled = true
+
+# ⏰ TWO FIRES, AND NEITHER IS ON THE HOUR OR THE HALF HOUR — the same rule
+# ingest.yml states, for the same reason. The first is the one that meets the
+# target; the second exists because the league finalising its feed is the one
+# input in §6.1.0 that nothing here has measured, and a game that is not final
+# yet is simply not published until a later run picks it up. A run with nothing
+# new reports `unchanged` and exits in about a minute, so the second costs
+# almost nothing on the nights the first already did the work.
+[triggers]
+crons = ["47 6 * * *", "17 8 * * *"]

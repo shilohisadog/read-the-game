@@ -41,6 +41,14 @@ on:
   # the platform is written to, and they are where the deprioritisation bites
   # hardest. The odd minutes are free and there is no reason to queue behind
   # everyone else.
+  # ⭐⭐ AND SINCE 2026-09-24 THESE ARE THE FALLBACK, NOT THE PRIMARY.
+  # `worker/trigger.js` is a Cloudflare cron that POSTs a `workflow_dispatch` to
+  # this file, because a dispatch is not deprioritised and a schedule is -- and
+  # because on 09-23 the scheduler did not fire here AT ALL, which is a different
+  # failure from the lateness these three entries were sized against. They stay
+  # exactly as they are: they are what keeps the site current on the day that
+  # Worker's token expires, and its failure is silent by construction.
+  # docs/front-door.md §6.1.3 owns that reasoning; do not restate it here.
   schedule:
     - cron: '23 7 * * *'
     - cron: '53 8 * * *'
