@@ -280,6 +280,53 @@ test('⭐ the zone figure is the SAME draws summed the other way — the attacki
     + 'either the direction is inverted or the claim is false on this population');
 });
 
+test('⭐⭐ a reader holding only the published block can reproduce both zone rates', () => {
+  /* ⛔⛔ THE GAP THIS CLOSES, 2026-09-24. `ezAtk` and `ezDef` were computed and
+     thrown away: the document carried `atkPerDraw`, `defPerDraw` and `n`, and
+     nothing a reader could multiply back. On a site whose whole promise is that
+     every figure shows its division, this was the one figure that could not —
+     and it was invisible, because a rate looks complete on its own.
+
+     ⭐ THE CHECK IS THE READER'S, NOT OURS. The test above divides the
+     ACCUMULATOR and compares; that proves `censusRates` did its arithmetic. This
+     one touches nothing but the published block, which is all a critic has, and
+     asks whether the numbers in it agree with each other.
+     MUTATION: publish `atk: ezAtk + 1` and this is the only test that notices. */
+  let t = {};
+  for (const g of GAMES) t = censusAdd(t, censusGame(g.events, ctxOf(g)));
+  const r = censusRates(t).endZone;
+
+  assert.ok(Number.isFinite(r.atk) && Number.isFinite(r.def) && r.n > 0,
+    'the published block carries no numerators, so a reader cannot check the rates at all');
+  assert.equal(+(r.atk / r.n).toFixed(3), r.atkPerDraw,
+    `${r.atk} ÷ ${r.n} does not give the published ${r.atkPerDraw}`);
+  assert.equal(+(r.def / r.n).toFixed(3), r.defPerDraw,
+    `${r.def} ÷ ${r.n} does not give the published ${r.defPerDraw}`);
+});
+
+test('⭐ the census measurements that a page prints say what they are', () => {
+  /* ⛔ `archive.js` has always carried a `what` on every measurement, because
+     `share()` will not build one without it. `census.js` carried none — nine
+     sub-objects, zero sentences — so the surfaces printing these numbers had
+     nowhere to read a description from, and `methods.js` hand-wrote one. A
+     sentence describing a figure, typed somewhere other than where the figure is
+     made, is the drift that module exists to avoid.
+
+     ⚠️ SCOPE, STATED: this covers the two that `how-we-measure` reads today.
+     `whistles`, `shift`, `hits`, `state`, `faceoffZone`, `drawStrength` and
+     `shooter` still publish no `what` and their derivations are still
+     hand-written. That is known debt, not an oversight, and this list is where
+     it becomes visible when it shrinks. */
+  const r = censusRates(censusAdd({}, censusGame(GAMES[0].events, ctxOf(GAMES[0]))));
+  for (const k of ['pace', 'endZone']) {
+    assert.equal(typeof r[k].what, 'string', `census.${k} publishes no what`);
+    assert.ok(r[k].what.length > 80, `census.${k}'s what is too short to describe anything`);
+    assert.doesNotMatch(r[k].what, /\d[\d,]*\.?\d*\s?%|\b\d{3,}\b/,
+      `census.${k}'s what states a FIGURE — a number typed into prose beside the `
+      + 'code that computes it is the same drift one step earlier');
+  }
+});
+
 test('a power-play draw was won BY the club with the advantage, and the gap is the refusal', () => {
   /* ⚠️ THE OBVIOUS IMPLEMENTATION IS WRONG AND IT IS WRONG QUIETLY. "A faceoff
      that happened during a power play" counts the SHORT-HANDED club's wins into

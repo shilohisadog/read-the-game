@@ -433,8 +433,24 @@ export function censusRates(t) {
          what getting the puck out and back up the ice looks like. So the pair
          says how strongly play tends to stay where the whistle put it, which is
          the reason a line worth holding is worth holding. */
+      /* ⛔⛔ THE NUMERATORS ARE PUBLISHED, 2026-09-24, AND THEY WERE NOT BEFORE.
+         `ezAtk` and `ezDef` were computed here and thrown away, so the document
+         carried two rates and the draw count and nothing a reader could
+         multiply back. On a site whose promise is that every figure shows its
+         division, this was the one that could not — and the gap was invisible
+         because a rate looks complete. Publishing them costs two integers. */
+      atk: ezAtk,
+      def: ezDef,
       atkPerDraw: ezN > 0 ? +(ezAtk / ezN).toFixed(3) : null,
       defPerDraw: ezN > 0 ? +(ezDef / ezN).toFixed(3) : null,
+      what: 'shot attempts taken before the next whistle after an end-zone '
+          + 'face-off, counted for the club attacking that end and for the club '
+          + 'defending it, out of every end-zone face-off (n counts FACE-OFFS, '
+          + 'not games). The defending club\u2019s attempts are shots at the FAR '
+          + 'end \u2014 what getting the puck out and back up the ice looks like '
+          + '\u2014 so the pair says how strongly play tends to stay where the '
+          + 'whistle put it, and says nothing about the contest at the line '
+          + 'itself, which leaves no event in the record.',
       zoneLift: ezDef > 0 ? +(ezAtk / ezDef).toFixed(3) : null,
       zoneWorth: lostPer == null ? null : +lostPer.toFixed(3),
       winningWorth: (wonPer == null || lostPer == null) ? null : +(wonPer - lostPer).toFixed(3),
@@ -495,6 +511,21 @@ export function censusRates(t) {
         out[k] = { attempts: z.a, minutes: +(z.secs / 60).toFixed(1),
                    per60: z.secs > 0 ? +(z.a / (z.secs / 3600)).toFixed(3) : null };
       }
+      /* ⭐⭐ THE SENTENCE TRAVELS WITH THE FIGURE, which is the rule `archive.js`
+         has always kept and this file never did. Every measurement there carries
+         a `what` because `share()` will not build one without it; nothing in
+         census did, so the surfaces that print these numbers had nowhere to read
+         a description FROM — and `methods.js` ended up hand-writing one, which
+         is a second statement of the method, free to drift from the arithmetic
+         three lines above it. One sentence here, quoted by every surface.
+         ⛔ AND NO FIGURE IS NAMED IN IT. A number typed into prose beside the
+         code that computes it is the same defect one step earlier. */
+      out.what = 'shot attempts taken in one situation, out of the minutes played '
+        + 'in that situation, scaled to sixty \u2014 so a power-play rate and an '
+        + 'even-strength rate can be set beside each other (attempts counts '
+        + 'ATTEMPTS and minutes counts MINUTES, neither counts games). The '
+        + 'power play and the penalty kill are divided by the SAME minutes, '
+        + 'counted once from each side, as are trailing and leading.';
       /* THE TWO SENTENCES, DERIVED HERE so no surface divides two published
          numbers and gets a third answer. Null when either side is missing —
          never 0, which would publish "no effect" as a finding. */
