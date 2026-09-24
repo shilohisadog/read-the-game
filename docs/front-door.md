@@ -351,14 +351,34 @@ out and then decide."* What reopened it the next morning is in §6.1.3.
 
 #### 6.1.3 ✅ BUILT — the trigger is ours now
 
-⚠️ **WHAT REOPENED IT.** On 2026-09-24 the scheduled `ingest` runs had been
-unbroken daily from 09-11 to **2026-09-22T15:25Z** and then stopped: no
-`schedule` event on 09-23 at all, and none on 09-24 by 08:47Z. The two runs on
-09-23 were both `workflow_dispatch`, by hand. That is not the +10.3h tail this
-section sized three crons against — it is the scheduler not firing, which no
-number of entries in `ingest.yml` can fix. ⭐ **The three crons were sized
-against LATENESS, and the failure that arrived was ABSENCE.** Five days before
-the regular season opens, Kevin ruled it built.
+⛔⛔⛔ **WHAT I SAID REOPENED IT WAS WRONG, AND THE CORRECTION IS THE POINT OF
+THIS PARAGRAPH.** At 08:47Z on 2026-09-24 I reported that scheduled `ingest` runs
+had been unbroken daily from 09-11 to **2026-09-22T15:25Z** and then stopped — no
+`schedule` event on 09-23 at all, none yet on 09-24 — and called it *the
+scheduler not firing, which no number of entries in `ingest.yml` can fix.*
+
+**Both facts were right and the cause was mine.** The three-cron change landed
+**2026-09-23T13:08Z**, replacing `0 11 * * *`. That day's 11:00 entry had not yet
+fired at that moment — the median +3.9h would have put it near 14:50Z — and all
+three new entries had already passed for the day. ⭐ **Replacing a schedule
+mid-day produces a day with no scheduled run, with no scheduler fault required.**
+And 09-24's runs did land: **12:46Z and 13:50Z, +5.4h and +4.9h**, both inside
+the 14:00 deadline, the second by four minutes, and both inside the +0.3h–10.3h
+this section already measured.
+
+⭐⭐ **NOTHING IN THE EVIDENCE EVER POINTED AT GITHUB.** Two readings fitted the
+same silence — *the scheduler is broken* and *I edited the schedule yesterday* —
+and I took the one that made the build I was about to start urgent. That is the
+flattering-direction failure applied to an ABSENCE rather than to a number, and
+an absence is where it is hardest to notice, because there is no second figure to
+disagree with.
+
+✅ **THE WORKER IS STILL THE RIGHT BUILD, on the case that survives:** a
+throwaway cron fired at **14:51:03Z** and GitHub created the run at
+**14:51:05Z — two seconds** — against +4.9h for the same job from a schedule the
+same afternoon. That is an argument about owning a TAIL that leaves four minutes
+of margin. It is not an argument about a broken scheduler, and it did not need
+the urgency I gave it.
 
 **`worker/trigger.js`** — a Cloudflare cron that POSTs a dispatch to
 `ingest.yml` and does nothing else. The times, from the table above and nothing

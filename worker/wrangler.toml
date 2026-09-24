@@ -23,7 +23,7 @@ enabled = true
 # new reports `unchanged` and exits in about a minute, so the second costs
 # almost nothing on the nights the first already did the work.
 [triggers]
-# ⏳ TEMPORARY, 2026-09-24 — the third entry is a one-shot end-to-end proof that
-# a cron in this file reaches `ingest.yml`, which nothing before it establishes.
-# Reverted in the next commit.
-crons = ["47 6 * * *", "17 8 * * *", "51 14 * * *"]
+# ⭐ PROVEN END TO END, 2026-09-24: a throwaway third entry at 14:51 fired, and
+# GitHub had the run created at 14:51:05 — TWO SECONDS. Removed again the same
+# hour. The two scheduled runs that day started +5.4h and +4.9h late.
+crons = ["47 6 * * *", "17 8 * * *"]

@@ -34,20 +34,38 @@ This section is the orientation. Everything below §0 is the detail, organised b
 state.
 ## ⏭ 0.00 PICK UP HERE — 2026-09-24 (morning)
 
-### ⛔⛔⛔ THE SCHEDULER STOPPED FIRING, AND THREE CRONS COULD NOT HAVE HELPED
+### ⛔⛔⛔ I READ AN ALARMING CAUSE INTO EVIDENCE THAT DID NOT NEED ONE
 
-Scheduled `ingest` runs were unbroken daily from 09-11 to **2026-09-22T15:25Z**
-and then stopped: **no `schedule` event on 09-23 at all**, and none on 09-24 by
-08:47Z. Both of 09-23's runs were `workflow_dispatch`, by hand.
+**What I reported at 08:47Z:** scheduled `ingest` runs unbroken daily from 09-11
+to **2026-09-22T15:25Z**, then **no `schedule` event on 09-23 at all** and none
+yet on 09-24. I called it *"the scheduler stopped firing"* and wrote **"the three
+crons were sized against LATENESS and the failure that arrived was ABSENCE"* into
+this file, `front-door.md` §6.1.3, a commit message and a memory.
 
-⭐⭐ **THE THREE CRONS WERE SIZED AGAINST LATENESS AND THE FAILURE THAT ARRIVED
-WAS ABSENCE.** §6.1.0 of `front-door.md` measured GitHub's tail at +0.3h to
-+10.3h, median +3.9h, and answered it with three entries because the job
-converges. Nothing in that reasoning is wrong and none of it covers a scheduler
-that does not fire. **A defence sized against a distribution does not cover the
-event outside it.**
+⛔⛔⛔ **IT IS FALSE, AND MY OWN COMMIT IS THE EXPLANATION.** The three-cron
+change landed **2026-09-23T13:08Z**, replacing `0 11 * * *`. At that moment the
+day's 11:00 entry had not yet fired — median lateness would have put it near
+14:50Z — and all three new entries' times for that day had already passed. **A
+day with no scheduled run is exactly what replacing a schedule mid-day produces,
+and it needs no scheduler fault at all.** And 09-24's runs did land, at
+**12:46Z and 13:50Z: +5.4h and +4.9h**, both inside the 14:00 deadline, the
+second by four minutes. Both sit inside §6.1.0's measured +0.3h–10.3h.
 
-✅ **BUILT THE SAME MORNING, on Kevin's ruling, five days before the opener:**
+⭐⭐ **THE DIRECTION IS THE LESSON.** Two readings were available for the same
+two facts — *the scheduler is broken* and *I edited the schedule yesterday* — and
+I took the one that made the thing I was about to build urgent. [[verify-inherited-claims]]
+says a disagreement has a direction and I assume the flattering one; this was the
+same move applied to a silence rather than to a number, and nothing in the
+evidence ever pointed at GitHub.
+
+✅ **THE WORKER IS STILL RIGHT, ON THE HONEST CASE, which is the measured one:**
+the throwaway cron fired at **14:51:03Z** and GitHub had the run created at
+**14:51:05Z — two seconds**, against +4.9h for the same job on a schedule the
+same afternoon. Owning the start time is worth having when the alternative leaves
+four minutes of margin. ⛔ But that is a case about a TAIL, not about a failure,
+and it did not need five-days-before-the-opener urgency to justify it.
+
+✅ **BUILT, on Kevin's ruling:**
 `worker/trigger.js`, a Cloudflare cron that POSTs a `workflow_dispatch` to
 `ingest.yml` at **06:47 and 08:17 UTC** — a dispatch is not deprioritised, so
 the start time is ours. Last horn ≈06:20 UTC, run 3–8 min, on the site by ≈06:55
@@ -55,6 +73,13 @@ UTC = **02:55 EDT / 01:55 EST against a 10:00 Eastern target**, and the margin i
 the same in winter because every figure is UTC. `front-door.md` **§6.1.3** owns
 all of it; `ingest.yml`'s three crons stay as the FALLBACK and the reason they
 must not be tidied away is written where someone would go to tidy them.
+
+✅ **AND IT IS PROVEN END TO END**, which nothing short of a real fire could do:
+a throwaway third cron, deployed and removed within the hour, produced an
+`ingest` run two seconds later. ⭐ The first attempt at nine minutes' lead
+produced nothing and the retry at nineteen worked, so a newly registered
+Cloudflare schedule appears to need some minutes to take — not measured, stated
+as the one observation there is.
 
 ⛔ **IT COMPUTES NOTHING, and the suite holds that line** — `test/trigger.test.js`
 asserts the body carries the ref and nothing else. It also asserts the thing that
