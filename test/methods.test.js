@@ -44,7 +44,11 @@ const MEASURES = {
       what: 'of the unblocked attempts taken from INSIDE the slot, this many were goals' },
     scoredFromOutside: { count: 6293, n: 192930, rate: 0.032618047996682734,
       population: 'NHL regular season and playoffs',
-      what: 'of the unblocked attempts taken from OUTSIDE the slot, this many were goals' } },
+      what: 'of the unblocked attempts taken from OUTSIDE the slot, this many were goals' },
+    attempts: { count: 168910, n: 361840, rate: 0.4668085341587442,
+      population: 'NHL regular season and playoffs',
+      what: 'of the unblocked shot attempts whose location the feed records, this '
+          + 'many were taken from inside the slot' } },
   census: { games: 4192,
     pace: { what: 'shot attempts taken in one situation, out of the minutes played '
               + 'in that situation, scaled to sixty',
@@ -691,7 +695,12 @@ test('⛔⛔ the paths are checked against the REAL published document, not the 
     assert.equal(e.missing, null,
       `${e.key} cannot be read out of the published document: `
       + JSON.stringify(e.missing));
-    assert.ok(e.lines >= 2, `${e.key} read only ${e.lines} figure(s)`);
+    /* ⚠️ ONE LINE IS ENOUGH AND THIS USED TO DEMAND TWO. Every entry happened to
+       have a pair when it was written, so the bar was set at the shape the data
+       had rather than at the claim — and `slotAttempts`, which is one share of
+       one population, failed a test that meant to check it read ANYTHING. The
+       real assertion is `missing === null` directly above. */
+    assert.ok(e.lines >= 1, `${e.key} read nothing out of the published document`);
   }
   /* AND THE DIVISION REPRODUCES FROM THE PUBLISHED FILE. This is the claim the
      zone numerators were published for: 235,614 ÷ 165,420 = 1.424, from a
@@ -794,7 +803,67 @@ test('⛔⛔ one published sentence is printed once on the page, and the second 
     `the second cut must link to the section that carries the sentence, got ${links.join(', ')}`);
 });
 
-test('⛔⛔⛔ EVERY DOOR ON "WHAT YOU CAN SEE" LANDS ON A SECTION THAT EXISTS', async () => {
+/**
+ * ⭐⭐ EVERY SURFACE THAT PRINTS A FIGURE, AND THE SHAPE ITS DOOR SITS IN.
+ *
+ * Measured rather than listed: every placeholder `_archive()` publishes was
+ * replaced with a unique marker, the site rebuilt and the built pages grepped.
+ * Three pages print figures — `what-you-can-see.html` (17), `index.html` (14,
+ * one of which is the size of the archive) and `slot.html` (7). The other five
+ * rule pages print none, which is the fact that killed the first dispersion
+ * plan.
+ *
+ * ⛔ THE REGEXES ARE PER SURFACE ON PURPOSE, AND THE COUNT IS CHECKED. A single
+ * clever pattern that walked backwards from each door would quietly stop
+ * matching when a surface's markup changed, and a test that finds three doors
+ * where twelve exist passes. So the doors matched here are counted against every
+ * `class="cw"` on disk, and a shortfall names the difference.
+ */
+const DOOR = /<p class="cw"><a href="\/how-we-measure\.html#m-([^"]+)">/;
+const SURFACES = [
+  { page: 'what-you-can-see.html', what: 'a learn card',
+    re: new RegExp('<div class="cardw"><a class="card" id="[^"]+"[^>]*>'
+      + '<p class="t">[^<]*<\\/p><p>([\\s\\S]*?)<\\/p>[\\s\\S]*?' + DOOR.source, 'g') },
+  { page: 'index.html', what: 'a front-door tile',
+    re: new RegExp('<div class="cardw"><a class="ccard"[^>]*><span class="lt">[^<]*<\\/span>'
+      + '<span class="ld">([\\s\\S]*?)<\\/span><\\/a>' + DOOR.source, 'g') },
+  { page: 'slot.html', what: 'a rule page’s lede',
+    re: new RegExp('<p class="rlede">([\\s\\S]*?)<\\/p>\\s*' + DOOR.source, 'g') },
+  { page: 'slot.html', what: 'the note under a rule page’s drawing',
+    re: new RegExp('<p class="dgnote">([\\s\\S]*?)<\\/p>\\s*<\\/figure>\\s*' + DOOR.source, 'g') },
+];
+/** Every door on the site, as {copy, key, where} — matched, then counted. */
+function everyDoor() {
+  const out = [];
+  for (const s of SURFACES) {
+    const html = readFileSync(new URL(`../src/${s.page}`, import.meta.url), 'utf8');
+    for (const m of html.matchAll(s.re)) {
+      out.push({ copy: m[1], key: m[2], where: `${s.page} / ${s.what}` });
+    }
+  }
+  return out;
+}
+
+test('⛔⛔ every door the site writes was found by this file, not most of them', () => {
+  /* ⭐ THE CHECK ON THE CHECKS. Both tests below iterate what `everyDoor()`
+     returns, so a surface whose markup drifted out of its pattern would be
+     silently exempted from every assertion about doors — and both would still
+     pass, on fewer doors. The pages are the ones the marker census found; a new
+     one that starts printing figures has to be added here.
+     MUTATION: break any pattern above and this names the shortfall. */
+  const PAGES = ['index.html', 'what-you-can-see.html', 'slot.html', 'icing.html',
+                 'offside.html', 'penalties.html', 'faceoffs.html', 'empty-net.html'];
+  const onDisk = PAGES.reduce((n, f) => n
+    + (readFileSync(new URL(`../src/${f}`, import.meta.url), 'utf8')
+        .match(/<p class="cw">/g) || []).length, 0);
+  const found = everyDoor();
+  assert.equal(found.length, onDisk,
+    `${onDisk} work doors are on disk and these patterns match ${found.length} `
+    + `(${found.map(d => d.where).join(', ')})`);
+  assert.ok(onDisk >= 12, `only ${onDisk} doors on the whole site`);
+});
+
+test('⛔⛔⛔ EVERY WORK DOOR ON THE SITE LANDS ON A SECTION THAT EXISTS', async () => {
   /* ⭐⭐⭐ THE SECOND SURFACE, AND THE SAME GATE. The preview card's doors have
      been checked end to end since 23 September; `what-you-can-see.html` printed
      17 measured figures with no door to anything at all, so a reader following
@@ -810,10 +879,8 @@ test('⛔⛔⛔ EVERY DOOR ON "WHAT YOU CAN SEE" LANDS ON A SECTION THAT EXISTS'
      MUTATION: change `anchorOf` to return anything but `'m-' + key` and this
      fires, because the page's ids move and the builder's hrefs do not. Change
      `METHODS_ANCHOR` in the builder and it fires from the other side. */
-  const learn = readFileSync(new URL('../src/what-you-can-see.html', import.meta.url), 'utf8');
-  const doors = [...learn.matchAll(/<a href="\/how-we-measure\.html#([^"]+)"/g)].map(m => m[1]);
-  assert.ok(doors.length >= 6,
-    `only ${doors.length} work doors on what-you-can-see.html — six cards print figures`);
+  const doors = everyDoor().map(d => 'm-' + d.key);
+  assert.ok(doors.length >= 12, `only ${doors.length} work doors across the site`);
 
   const page = render('how-we-measure.html', { 'measures.json': MEASURES });
   await page.settle();
@@ -862,6 +929,12 @@ test('⛔⛔⛔ a door opens the work behind THE NUMBER THE CARD PRINTS', async 
     const w = r.work || {};
     shown[r.key] = [w.count, w.n, w.value, r.over && r.over.n].filter(v => v != null);
   }
+  /* ⚠️ A CLUB ROW PUBLISHES ITS STEADINESS AND ITS GAMES, NOT A COUNT — so a
+     figure printed in prose can never match one, and a door aimed at a club row
+     is caught here rather than looking plausible. Not theoretical: the figure
+     under the drawing on `slot.html` pointed at `slotShare` for an hour, and
+     46.7% would have opened on r = 0.72 over 38 games. */
+  for (const c of m.club) shown[c.key] = [c.r, c.games].filter(v => v != null);
 
   /* ⚠️ ONE DECLARED EXCEPTION, WITH THE REASON AND A CHECK ON THE REASON. The
      `blocked` card's "75 of 135" is counted in the ONE GAME it opens, not across
@@ -871,19 +944,17 @@ test('⛔⛔⛔ a door opens the work behind THE NUMBER THE CARD PRINTS', async 
      or they will read our archive split as the figure they just saw. That
      sentence is the thing this exception rests on, so it is asserted rather than
      trusted. */
-  const ONE_GAME = { blocked: /in this game/ };
+  const ONE_GAME = /never reached the goaltender/;
 
-  const page = readFileSync(new URL('../src/what-you-can-see.html', import.meta.url), 'utf8');
-  const cards = [...page.matchAll(
-    /<div class="cardw"><a class="card" id="([^"]+)"[\s\S]*?<p>([\s\S]*?)<\/p>[\s\S]*?<p class="cw"><a href="\/how-we-measure\.html#m-([^"]+)">/g)];
-  assert.ok(cards.length >= 6, `only ${cards.length} carded doors found — the markup moved`);
+  const doors = everyDoor();
+  assert.ok(doors.length >= 12, `only ${doors.length} doors found — the markup moved`);
 
-  for (const [, cid, blurb, key] of cards) {
-    const text = blurb.replace(/&[a-z]+;/g, ' ');
-    if (ONE_GAME[cid]) {
-      assert.match(text, ONE_GAME[cid],
-        `${cid} is excused from matching an archive figure because its number is `
-        + 'one game’s — and it no longer says so, so a reader will read the '
+  for (const { copy, key, where } of doors) {
+    const text = copy.replace(/&[a-z]+;/g, ' ');
+    if (ONE_GAME.test(text)) {
+      assert.match(text, /in this game/,
+        `${where} is excused from matching an archive figure because its number `
+        + 'is one game’s — and it no longer says so, so a reader will read the '
         + 'archive split behind the door as the number they just saw');
       continue;
     }
@@ -891,12 +962,13 @@ test('⛔⛔⛔ a door opens the work behind THE NUMBER THE CARD PRINTS', async 
       .map(x => parseFloat(x[0].replace(/,/g, '')));
     const behind = (shown[key] || []).filter(v => v != null);
     assert.ok(behind.length, `#m-${key} shows no published figures at all`);
+    assert.ok(onCard.length, `${where} carries a work door and prints no figure`);
     /* ROUNDED AT EVERY PRECISION THE SITE USES, because the card prints 95 and
        the work prints 95.059 — the same measurement, formatted for two readers. */
     const met = onCard.filter(g => behind.some(h =>
       [0, 1, 2, 3].some(d => Math.abs(g - Number(h.toFixed(d))) < 1e-9)));
     assert.ok(met.length,
-      `the ${cid} card prints [${onCard}] and its door opens #m-${key}, which shows `
+      `${where} prints [${onCard}] and its door opens #m-${key}, which shows `
       + `[${behind.map(h => +h.toFixed(3))}] — not one number in common, so the door `
       + 'explains a different measurement from the one the reader just read');
   }

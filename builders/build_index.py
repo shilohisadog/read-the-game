@@ -546,7 +546,7 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
    card grows to fill it, which keeps a row of tiles the same height whether or
    not they carry one. */
 .cardw{display:flex;flex-direction:column}
-.cardw .card{flex:1}
+.cardw .card,.cardw .ccard{flex:1}
 .cw{margin:6px 2px 0;font-size:.74rem;line-height:1.3}
 .cw a{color:var(--blue);text-decoration:none;font-weight:600}
 .cw a:hover,.cw a:focus-visible{text-decoration:underline}
@@ -1964,7 +1964,9 @@ RULE_BODY = r"""<div class="wrap rulep">
 <p class="rback"><a href="/what-you-can-see.html">&larr; What you can see here</a></p>
 <h1>__RULE_TITLE__</h1>
 <p class="rlede">__RULE_LEDE__</p>
+__RULE_WORK_LEDE__
 __RULE_FIG__
+__RULE_WORK_FIG__
 <p class="rdoor"><a class="rgo" href="/game.html__RULE_HREF__">__RULE_DOOR__ &rarr;</a></p>
 <p class="rat">__RULE_AT__</p>
 </div>"""
@@ -2536,13 +2538,17 @@ FIGURE_DERIVATION = {
     "__SLOT_OUT_PCT__":       "slotGoals",
     "__SLOT_IN_GOALS__":      "slotGoals",
     "__SLOT_IN_ATT__":        "slotGoals",
-    # ⚠️ A DIFFERENT MEASUREMENT WITH THE SAME WORD IN IT. This is the share of
-    # located attempts TAKEN from inside the slot; the four above are how often
-    # one of them goes in. Two denominators, one noun -- the same collision that
-    # made `DERIVATION.slot` into `DERIVATION.slotShare`.
-    "__SLOT_ATT_PCT__":       "slotShare",
-    "__SLOT_ATT_IN__":        "slotShare",
-    "__SLOT_ATT_N__":         "slotShare",
+    # ⚠️⚠️ A DIFFERENT MEASUREMENT WITH THE SAME WORD IN IT, AND THERE ARE THREE.
+    # This is the LEAGUE's share of located attempts TAKEN from inside the slot;
+    # the four above are how often one of them goes in; and `slotShare`, the card
+    # row, is one CLUB's share of its own attempts. Three denominators, one noun
+    # -- the collision that made `DERIVATION.slot` into `DERIVATION.slotShare`,
+    # arriving a third time. These pointed at `slotShare` for an hour, which
+    # resolved and rendered and would have answered "where did 46.7% come from?"
+    # with r = 0.72 over 38 games.
+    "__SLOT_ATT_PCT__":       "slotAttempts",
+    "__SLOT_ATT_IN__":        "slotAttempts",
+    "__SLOT_ATT_N__":         "slotAttempts",
     "__EVEN_PER60__":         "pace",
     "__PP_PER60__":           "pace",
     "__PK_PER60__":           "pace",
@@ -2575,6 +2581,21 @@ FIGURE_DERIVATION = {
 # builder wrote to be the string it returns. Two literals agreeing by luck is the
 # dead link that looks completely normal.
 METHODS_ANCHOR = "m-"
+
+
+def _work_line(text, cid, said="How we counted this"):
+    """The rendered door line for a piece of copy, or "" when it prints no figure.
+
+    ⭐ THE LINE GOES UNDER THE PARAGRAPH THAT CARRIES THE FIGURES, which is why
+    it takes the copy rather than the surface. `slot.html` prints two different
+    measurements in two different places -- how often a shot from there goes in,
+    and how many attempts are taken from there -- and one door at the foot of the
+    page could only be right about one of them. Under its own paragraph, "this"
+    has an antecedent and needs no label, so nothing here restates a name that
+    `methods.js` already owns.
+    """
+    href = _how_door(text, cid)
+    return f'<p class="cw"><a href="{href}">{said} &rarr;</a></p>' if href else ""
 
 
 def _how_door(blurb, cid):
@@ -2654,11 +2675,21 @@ def _front_counts():
                 f"front door: `{cid}` states {sorted(missing)} and its learn card "
                 "does not — the two surfaces would be describing one finding with "
                 "different figures")
+        # ⛔ THE DOOR IS TAKEN FROM THE UNSUBSTITUTED SENTENCE. After the loop
+        # below there is nothing left to decide from: "11.4%" does not say which
+        # measurement it is, and the token is the only form in which a figure
+        # names itself.
+        work = _work_line(line, cid)
         for tok, val in arch.items():
             line = line.replace(tok, val)
-        out.append(f'<a class="ccard" href="{_card_href(cid, doors, figures)}">'
-                   f'<span class="lt">{titles[cid]}</span>'
-                   f'<span class="ld">{line}</span></a>')
+        card = (f'<a class="ccard" href="{_card_href(cid, doors, figures)}">'
+                f'<span class="lt">{titles[cid]}</span>'
+                f'<span class="ld">{line}</span></a>')
+        # ⭐ WRAPPED, BECAUSE THE TILE IS ITSELF A LINK. An anchor inside an
+        # anchor is invalid and browsers unnest it, which would ship a door that
+        # renders and does not work. Every tile in this strip states a figure, so
+        # unlike the learn grid there is no unwrapped case.
+        out.append(f'<div class="cardw">{card}{work}</div>' if work else card)
     out.append("</div>")
     return "\n".join(out)
 
@@ -3227,12 +3258,24 @@ def build_rule(cid):
     # once. Substituted before `desc` is derived from it, so the meta description
     # cannot carry a token either.
     arch = _archive()
+    raw_blurb = blurb
     for tok, val in arch.items():
         blurb = blurb.replace(tok, val)
     y, m, day = g["date"].split("-")
+    # ⭐⭐ TWO DOORS, BECAUSE THIS PAGE CAN PRINT TWO MEASUREMENTS. `slot.html`
+    # states how often a shot from the slot goes in (its lede) and how many
+    # attempts are taken from there (the note under the drawing) -- two
+    # denominators, one noun, and the collision that `DERIVATION.slotShare`
+    # exists because of. One door at the foot could only be right about one.
+    # Both are decided from the copy BEFORE substitution; the other five rule
+    # pages print no figures at all and get neither.
+    lede_work = _work_line(raw_blurb, cid)
+    fig_work = _work_line(fig.get("note", ""), cid)
     html = (RULE_BODY
             .replace("__RULE_TITLE__", title)
             .replace("__RULE_LEDE__", blurb)
+            .replace("__RULE_WORK_LEDE__", lede_work)
+            .replace("__RULE_WORK_FIG__", fig_work)
             .replace("__RULE_FIG__", _figures()[cid])
             .replace("__RULE_HREF__", door["href"])
             # THE PROMISE IS THE FIGURE'S, not this template's: what lies

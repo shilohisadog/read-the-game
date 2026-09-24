@@ -1,9 +1,16 @@
-"""⭐⭐⭐ EVERY FIGURE ON `what-you-can-see.html` HAS A DOOR TO ITS WORK.
+"""⭐⭐⭐ EVERY FIGURE ON THE SITE HAS A DOOR TO ITS WORK.
 
 Kevin's standing rule is not "most figures": a reader who finds one naked number
-has learned that "check our work" is decorative. On 24 September 2026 that page
-printed 17 measured figures and carried ZERO doors, while the preview card had
-carried one per figure since the day before.
+has learned that "check our work" is decorative. On 24 September 2026 three pages
+printed measured figures and carried ZERO doors between them, while the preview
+card had carried one per figure since the day before.
+
+⭐ WHICH THREE, MEASURED RATHER THAN LISTED. Every placeholder `_archive()`
+publishes was replaced with a unique marker, the site rebuilt and the built pages
+grepped: `what-you-can-see.html` 17, `index.html` 14 (one of which is the size of
+the archive), `slot.html` 7. The other five rule pages print none — the fact that
+killed the first dispersion plan, which had been recommended on a `len()` of a
+dict whose keys were a drawing's.
 
 ⛔ THE CHECK RUNS FROM THE DATA TO THE BYTES, in both directions. The builder
 decides a card's door from the TOKENS in its unsubstituted copy, and this
@@ -25,10 +32,16 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "builders"))
 import build_index as B                                     # noqa: E402
 
-PAGE = (ROOT / "src" / "what-you-can-see.html").read_text(encoding="utf-8")
+def page(name):
+    return (ROOT / "src" / name).read_text(encoding="utf-8")
 
 
-class LearnDoors(unittest.TestCase):
+LEARN = page("what-you-can-see.html")
+FRONT = page("index.html")
+SLOT = page("slot.html")
+
+
+class WorkDoors(unittest.TestCase):
 
     def test_every_published_figure_names_a_derivation(self):
         """A token the reducers publish and nobody claimed is a naked number.
@@ -71,15 +84,55 @@ class LearnDoors(unittest.TestCase):
         # the markup rather than assumed from document order.
         found = dict(re.findall(
             r'<div class="cardw"><a class="card" id="([^"]+)"[\s\S]*?'
-            r'<p class="cw"><a href="([^"]+)">', PAGE))
+            r'<p class="cw"><a href="([^"]+)">', LEARN))
         self.assertEqual(found, expected)
 
         # ⛔ AND NO CARD OUTSIDE THAT SET CARRIES ONE. A door under a card that
         # prints no figure sends a reader to work that explains nothing they
         # just read.
-        all_doors = re.findall(r'<p class="cw"><a href="([^"]+)">', PAGE)
+        all_doors = re.findall(r'<p class="cw"><a href="([^"]+)">', LEARN)
         self.assertEqual(len(all_doors), len(expected),
                          "a door was rendered under a card that prints no figure")
+
+    def test_the_front_door_and_the_rule_page_carry_theirs_too(self):
+        """The other two surfaces, recomputed from their own copy.
+
+        ⭐ THE FRONT-DOOR STRIP IS ALL FIGURES. Every tile in it states a
+        measurement -- that is what the strip is -- so unlike the learn grid
+        there is no unwrapped case, and a tile without a door is a miss rather
+        than a card that happens to print none.
+
+        ⭐⭐ AND `slot.html` CARRIES TWO, one under the lede and one under the
+        drawing, because it prints two different measurements: how often a shot
+        from the slot goes in, and how many attempts are taken from there. Two
+        denominators, one noun. A single door at the foot of the page could only
+        have been right about one of them.
+
+        MUTATION: drop the wrapper from `_front_counts` and the first assertion
+        names the shortfall; delete either `__RULE_WORK_*__` from RULE_BODY and
+        the second does.
+        """
+        front = re.findall(r'<p class="cw"><a href="([^"]+)">', FRONT)
+        want = [B._how_door(line, cid) for cid, line in B.FRONT_COUNTS]
+        self.assertTrue(all(want), "a tile in the measurement strip states no figure")
+        self.assertEqual(front, want)
+
+        slot = re.findall(r'<p class="cw"><a href="([^"]+)">', SLOT)
+        blurb = next(b for _, c, _, b in B.LEARN_CARDS if c == "slot")
+        note = B._fig_json()["slot"].get("note", "")
+        self.assertEqual(slot, [B._how_door(blurb, "slot"), B._how_door(note, "slot")])
+        self.assertEqual(len(set(slot)), 2,
+                         "both doors on the slot page lead to the same derivation, "
+                         "and the page prints two different measurements")
+
+        # ⛔ AND THE FIVE RULE PAGES THAT PRINT NOTHING CARRY NOTHING. A door on
+        # a page with no figure sends a reader to work that explains nothing
+        # they just read.
+        for cid in sorted(B._fig_json()):
+            if cid == "slot":
+                continue
+            self.assertNotIn('class="cw"', page(f"{cid}.html"),
+                             f"{cid}.html prints no figure and carries a work door")
 
     def test_a_card_printing_two_measurements_stops_the_build(self):
         """One card cannot carry one door to two derivations.

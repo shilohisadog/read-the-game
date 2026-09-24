@@ -250,6 +250,36 @@ const PRINTED = {
           + 'shot from the slot is partly the reward for something that already '
           + 'went right, so this cannot tell you that the same shot moved '
           + 'twenty feet in would go in three times as often.' },
+  slotAttempts: {
+    /* ⛔⛔ THE THIRD MEASUREMENT CALLED "SLOT", AND THE REASON IT IS ITS OWN
+       ENTRY. `slotGoals` is how often a shot from there goes in; the CARD's
+       `slot` row is one club's share of its own attempts taken from there, and
+       this is the LEAGUE's share of every located attempt. Three denominators,
+       one noun. The figure under the drawing on `slot.html` first pointed at the
+       card row's derivation, which is the same definition over a different
+       population — so the door resolved, rendered, and would have answered a
+       reader's "where did 46.7% come from?" with r = 0.72 over 38 games. Caught
+       by the gate that requires a door's section to show a number the copy
+       shows, which is the one check here that is not circular. */
+    label: 'How many shot attempts are taken from the slot',
+    where: 'The note under the drawing on the Shots from the slot rule page.',
+    reads: [
+      { is: 'Taken from inside the slot', at: ['slot', 'attempts'],
+        num: 'count', den: 'n', out: 'rate', as: 'ratio', unit: '%' },
+    ],
+    why: 'It is the reply to the obvious objection. "Shots from the slot go in '
+       + 'three and a half times as often" invites "that is because that is '
+       + 'where everybody shoots" — and the reply is half right, which is '
+       + 'worth printing rather than arguing with. Nearly half of all located '
+       + 'attempts are already taken from inside it, and the conversion gap '
+       + 'survives that.',
+    caveat: 'A blocked attempt is not in either count, and that is not '
+          + 'tidiness: the coordinate the feed records for a block is where the '
+          + 'puck was STOPPED, which is the blocker\u2019s position rather than '
+          + 'the shooter\u2019s. Counting those would put attempts in the slot '
+          + 'that were taken from the point. The boundary is also ours — 33 '
+          + 'feet from the net and 22 from centre — drawn on coordinates a '
+          + 'person in the building recorded.' },
   pace: {
     /* ⛔ THIS LABEL SAID "an hour of hockey" AND THAT IS A DIFFERENT NUMBER.
         `census.pace` counts one CLUB's attempts against the minutes that club
