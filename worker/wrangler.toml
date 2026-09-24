@@ -23,4 +23,7 @@ enabled = true
 # new reports `unchanged` and exits in about a minute, so the second costs
 # almost nothing on the nights the first already did the work.
 [triggers]
-crons = ["47 6 * * *", "17 8 * * *"]
+# ⏳ TEMPORARY, 2026-09-24 — the third entry is a one-shot end-to-end proof that
+# a cron in this file reaches `ingest.yml`, which nothing before it establishes.
+# Reverted in the next commit.
+crons = ["47 6 * * *", "17 8 * * *", "24 14 * * *"]
