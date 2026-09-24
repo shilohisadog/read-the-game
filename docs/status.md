@@ -32,7 +32,84 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 
 This section is the orientation. Everything below §0 is the detail, organised by
 state.
-## ⏭ 0.00 PICK UP HERE — 2026-09-24 (morning)
+## ⏭ 0.00 PICK UP HERE — 2026-09-24 (end of day)
+
+### ⏭ THE ONE THING TO DO NEXT
+
+**Wire the four new derivations to read published text, and put the doors on
+`what-you-can-see.html`.** Everything it depends on is in place and verified:
+`census.pace.what` and `census.endZone.what` are LIVE, and the zone numerators
+are published, so `235,614 ÷ 165,420 = 1.424` now reproduces from the document a
+reader can fetch. The four are `slotGoals`, `pace`, `scoreEffects`, `zoneStarts`;
+the drafts are in this session's history and the evidence is `docs/what-settles.md`
+plus the `what` strings themselves. `data/measures.json` was refreshed from the
+origin after the derive, so the cache is current.
+
+Then, in Kevin's order: **rules live in the layer descriptors** (`src/lib/layers/*.js`,
+where `counts:` already is), rendered inline on the replay and INDEXED by the
+methods page — not as sections on it; **a `counts:` for Stoppages**, which has
+none; and **collapse the slot definition**, which is one geometry constant in
+`rink.js` and three prose descriptions.
+
+### ✅ WHAT SHIPPED TODAY, IN ORDER
+
+1. **A fixture balanced on a rounding boundary.** `homepage.test.js` built a
+   stale index at exactly `Date.now() - 4 * 86400000` and asserted "4 days ago";
+   `ago()` floors on 24h, so it held only while the render instant was ≥ the
+   module-load instant, and the wall clock is not monotonic. Red under
+   clock-sweep and green on identical code **in the same UTC minute**. Pinned,
+   with 12 hours of margin. ⭐⭐ Shape 10 one turn further in: not a check that
+   cannot fail in the conditions you run it under, but **a check whose outcome
+   nothing in the repo controls.**
+2. **✅ THE CLOUDFLARE TRIGGER — built, proven and live.** `worker/trigger.js`
+   fires at 06:47 and 08:17 UTC. A throwaway cron fired at 14:51:03Z and GitHub
+   created the run at **14:51:05Z — two seconds**, against +4.9h for the same job
+   from a schedule the same afternoon. ⛔⛔⛔ **The reason I gave for building it
+   was FALSE** — see §0.00-a.
+3. **One statement of each measurement.** Four were written out twice, once in
+   the front-door strip and once in the card that proves them, and the words had
+   already drifted. `FIGURE_CLAUSE` + `test/test_one_statement.py`.
+4. **A row key and a derivation key are not the same namespace.** `EXPLAINS`
+   declares which derivation explains which row; there is no string-equality path
+   left. ⛔ Kevin ruled "rename the card's key" and **the card's key indexes
+   published data** — `settle.rows` is keyed by it — so the derivation moved
+   instead. A rename that reads as cosmetic would have degraded a live card until
+   Monday's derive.
+5. **census publishes what it counted.** `archive.js` has always carried a `what`
+   on every measurement because `share()` will not build one without it;
+   **`census.js` published none — nine sub-objects, zero sentences** — which is
+   why the census-backed derivations had nowhere to read from and got
+   hand-written. `pace` and `endZone` now have one, and the zone numerators are
+   published.
+6. **`tools/edge-fetch.sh`** — one way to ask a fresh deployment for a page. See
+   §0.00-c.
+
+### ⛔⛔⛔ THE LESSON OF THE DAY, AND IT COST THE MOST TIME
+
+**Three measurement errors, all the same shape: a cheap proxy standing in for the
+real thing, and its output reported as the fact.**
+
+| what I measured | what I claimed | what was true |
+|---|---|---|
+| `len()` of a dict in `learn-figures.json` | "the rule pages carry 7–16 figures each" | those are a DIAGRAM's keys — `viewBox, group, label, svg…`. **Five of the six rule pages carry NO figures at all.** |
+| a regex for `%` and thousands separators | "what-you-can-see has 6 figures" | **17.** It missed every small integer — 46 seconds, 21 shifts, 64/59/53 attempts |
+| `GET /workers/scripts` returning 200 | "not a permissions problem at this level" | that is Workers Scripts **Read**; the deploy needs **Edit** |
+
+⭐⭐ And the fourth, on a silence rather than a number: **I read "the scheduler
+stopped firing" into two days with no scheduled run, and my own commit explains
+it** — the three-cron change landed 09-23T13:08Z, after that day's 11:00 entry
+could fire and after all three new entries had passed. **An absence is where the
+flattering direction is hardest to catch, because there is no second figure to
+disagree with.** The check not run: `git log` on the workflow file, before
+blaming the platform that reads it.
+
+⭐ The dispersion plan was built on the first of these and Kevin approved it on
+my framing. It was void: rule pages have nothing to disperse to. **Start from the
+measured table, not from the recommendation.**
+
+---
+
+## 0.00-a — 2026-09-24 (morning)
 
 ### ⛔⛔⛔ I READ AN ALARMING CAUSE INTO EVIDENCE THAT DID NOT NEED ONE
 
@@ -129,6 +206,36 @@ hand-rolled scanner cannot do. It classifies LINES now, which cannot desync.
 `npm run gates 2>&1 | tail -40` reports the exit code of `tail`. The suite was
 red and the pipe said 0 — the same defect already written up in
 [[mechanize-the-review]], committed again the morning after reading it.
+
+---
+
+## 0.00-c — 2026-09-24 — the deploy gate, and the 404 rule for the third time
+
+`/preview.html` answered **404 on the candidate** while `/preview.html?game=...`
+— the same deployment, the same step, seconds earlier — answered 200 with the
+right title. Both served 200 minutes later, and the site was never wrong: that
+commit changed no built page, because `census.js` is not inlined anywhere.
+
+⛔⛔⛔ **THE RULE WAS WRITTEN DOWN ON 09-23 AND APPLIED TO ONE OF THE TWO PLACES
+THAT FETCH FROM A CANDIDATE.** The page loop had a helper that waits out a 404,
+with the whole history of the rule above it; the unfurl check, added later with
+`functions/_middleware.js`, used a bare one-shot `curl`. **Actions steps cannot
+share a shell function, so the second spelling was not laziness — a file was the
+only thing that would have worked and nobody reached for one.** `tools/edge-fetch.sh`
+is that file, and no bare `curl` against a candidate is left in `deploy.yml`.
+
+⭐⭐ **AND THE FIRST TEST I WROTE FOR IT PROVED NOTHING.** It pointed the helper at
+production and asked for a path that does not exist, expecting the 404 branch.
+**`readthegame.co` answers 200 for any missing path**, so the branch under test
+was never entered. It serves 404 twice then 200 against a controlled server now,
+and asserts the server was asked three times. ⛔ The first version of that test
+also deadlocked: `execFileSync` blocks the event loop, so the in-process server
+could never accept the connection the child was waiting on. **A synchronous child
+and an in-process server are a deadlock, always.**
+
+⚠️ **AND `curl` WITHOUT `-L` SAYS 308 FOR EVERY PAGE ON THIS SITE** — the `.html`
+suffix is redirected away. Checking production with a bare `curl` reads as broken
+when it is fine. This bit the diagnosis before it bit anything else.
 
 ---
 
