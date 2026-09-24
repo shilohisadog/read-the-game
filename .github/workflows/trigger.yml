@@ -10,16 +10,25 @@
 #
 # ⛔ THE SECRET IS NOT SET FROM HERE, ON PURPOSE. `GITHUB_TOKEN` is a
 # fine-grained PAT with `actions: write` on this repository and nothing else, put
-# in place once by hand:
+# in place once by hand. Routing it through GitHub Actions would mean storing a
+# GitHub credential in GitHub in order to hand it to Cloudflare, which is a copy
+# of a key in a place that does not need one.
 #
-#     npx wrangler@4.120.0 secret put GITHUB_TOKEN --config worker/wrangler.toml
+# ⚠️ AND IT IS SET IN THE CLOUDFLARE DASHBOARD, NOT WITH WRANGLER. The obvious
+# instruction -- `wrangler secret put GITHUB_TOKEN` -- CANNOT BE RUN HERE:
+# wrangler 4.x refuses to start on Node below 22 and the development machine runs
+# 20, pinned, because that is what the suite is tested against. deploy.yml has
+# said so at the top of the file since it was written, in the paragraph about why
+# the site is published from CI and not from a laptop, and this workflow shipped
+# with the impossible instruction in it anyway. The route that works needs no
+# local runtime at all: Workers & Pages -> readthegame-ingest-trigger -> Settings
+# -> Variables and Secrets -> add a SECRET named exactly GITHUB_TOKEN. The Worker
+# has to exist first, which is what the deploy step below does.
 #
-# Routing it through GitHub Actions would mean storing a GitHub credential in
-# GitHub in order to hand it to Cloudflare, which is a copy of a key in a place
-# that does not need one. The last step below checks it is THERE without ever
-# seeing it, because the failure it prevents is the quiet one: a Worker that
-# deploys green, 401s every morning, and is covered for by the fallback crons in
-# ingest.yml while nothing says so.
+# The last step checks the secret is THERE without ever seeing it, because the
+# failure it prevents is the quiet one: a Worker that deploys green, 401s every
+# morning, and is covered for by the fallback crons in ingest.yml while nothing
+# says so.
 name: trigger
 
 on:
@@ -83,6 +92,6 @@ jobs:
           set -o pipefail
           npx -y $WRANGLER secret list --config worker/wrangler.toml | tee /tmp/secrets.txt
           grep -q 'GITHUB_TOKEN' /tmp/secrets.txt || {
-            echo "::error::the Worker is deployed with no GITHUB_TOKEN bound, so every dispatch will 401. Run: npx $WRANGLER secret put GITHUB_TOKEN --config worker/wrangler.toml"
+            echo "::error::the Worker is deployed with no GITHUB_TOKEN bound, so every dispatch will 401. Add it in the Cloudflare dashboard: Workers & Pages > readthegame-ingest-trigger > Settings > Variables and Secrets > add a SECRET named GITHUB_TOKEN. (Not with wrangler: it needs Node 22 and the dev machine is pinned to 20.)"
             exit 1
           }

@@ -64,12 +64,18 @@ in these files.
 
 ⏭ **TWO STEPS ARE KEVIN'S AND THE DEPLOY IS RED UNTIL THEY HAPPEN**, by design:
 
-1. a fine-grained PAT, `actions: write` on this repo and nothing else, then
-   `npx wrangler@4.120.0 secret put GITHUB_TOKEN --config worker/wrangler.toml`.
-   Not routed through Actions: that would store a GitHub credential in GitHub in
-   order to hand it to Cloudflare.
-2. `CLOUDFLARE_API_TOKEN` needs **Workers Scripts:Edit**; the existing one was
-   made for Pages and may not carry it.
+1. `CLOUDFLARE_API_TOKEN` needs **Workers Scripts:Edit**; the existing one was
+   made for Pages and the first deploy said so — *"No access to the specified
+   resource."* This is FIRST, because the Worker has to exist before a secret can
+   be attached to it.
+2. a fine-grained PAT, `actions: write` on this repo and nothing else, bound as a
+   Worker secret named `GITHUB_TOKEN` **in the Cloudflare dashboard**. Not routed
+   through Actions: that would store a GitHub credential in GitHub in order to
+   hand it to Cloudflare. ⛔⛔ **And NOT with `wrangler secret put`, which I wrote
+   into three files before checking:** wrangler 4.x will not start below Node 22
+   and this machine is pinned to 20 — a fact `deploy.yml` has stated in its
+   opening paragraph since the day it was written. ⭐ *A constraint already
+   written down in this repo is still an inherited claim.*
 
 ⭐ **The last step of `trigger.yml` asserts a token is bound**, without ever
 seeing it, because the quiet failure is a Worker that deploys green, 401s every

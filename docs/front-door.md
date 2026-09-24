@@ -406,10 +406,23 @@ asserting a token is bound to the Worker at all: the quiet version of this
 shipping dead is a first deploy onto an account where the secret was never set.
 
 **The one step that is not in this repo:** a fine-grained PAT with `actions:
-write` on this repository and nothing else, put in place once with
-`npx wrangler@4.120.0 secret put GITHUB_TOKEN --config worker/wrangler.toml`.
-It is not routed through GitHub Actions on purpose — that would mean storing a
-GitHub credential in GitHub in order to hand it to Cloudflare.
+write` on this repository and nothing else, bound to the Worker as a secret named
+`GITHUB_TOKEN`. It is not routed through GitHub Actions on purpose — that would
+mean storing a GitHub credential in GitHub in order to hand it to Cloudflare.
+
+⛔⛔ **AND IT IS SET IN THE DASHBOARD, NOT WITH WRANGLER — this section said
+otherwise for an hour.** The obvious instruction is `wrangler secret put
+GITHUB_TOKEN`, and **wrangler 4.x refuses to start on Node below 22 while the
+development machine runs 20**, pinned, because that is the runtime the suite is
+tested against. `deploy.yml` has opened with that exact fact since it was written
+— *"Wrangler requires Node >= 22 and the development machine runs 20"* — in the
+paragraph explaining why the site is published from CI and not from a laptop. I
+wrote the impossible instruction into three files while that paragraph was four
+directories away. ⭐ **A constraint already written down in this repo is still an
+inherited claim, and I did not check it.** The route that needs no local runtime:
+*Workers & Pages → `readthegame-ingest-trigger` → Settings → Variables and
+Secrets → add a **secret** named exactly `GITHUB_TOKEN`*. The Worker must exist
+first, so the token fix and one deploy come before it.
 
 ⛔ **One limit no schedule can fix.** A vocabulary halt refuses to publish
 anything, by design — three nights in September 2026 alone. The target is a
