@@ -94,8 +94,14 @@ export async function fire(env, fetchImpl) {
 export default {
   async scheduled(event, env) {
     /* Awaited, not `waitUntil`ed: a rejected promise handed to waitUntil after
-       the handler resolves is reported as a success by the runtime. */
-    await fire(env, fetch);
+       the handler resolves is reported as a success by the runtime.
+
+       ⚠️ AND `fetch` IS WRAPPED, NOT PASSED. Handing the global straight to
+       `fire` detaches it from its receiver, which some runtimes answer with
+       "Illegal invocation" — and this is the one line in the file that NO TEST
+       EXERCISES, because every test supplies its own fetch. A path that only
+       production runs is a path to write defensively. */
+    await fire(env, (url, init) => fetch(url, init));
   },
   async fetch() {
     return new Response('not a door\n', { status: 404 });
