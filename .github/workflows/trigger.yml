@@ -71,6 +71,41 @@ jobs:
       - name: gates
         run: npm run gates
 
+      # ⭐⭐ NAME THE REFUSAL BEFORE WRANGLER SWALLOWS IT. `wrangler deploy`
+      # answers a permissions problem with "No access to the specified resource"
+      # and the URL it tried, and that one sentence covers THREE causes with
+      # three different fixes: the token is not valid at all, the token is valid
+      # but carries no Workers Scripts permission, or the permission was added to
+      # a different account from the one CLOUDFLARE_ACCOUNT_ID names. Guessing
+      # between them costs a round trip through somebody else's dashboard each
+      # time. These two calls separate them, and neither prints anything derived
+      # from the token.
+      - name: what the Cloudflare token can actually do
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -u
+          AUTH="Authorization: Bearer $CLOUDFLARE_API_TOKEN"
+
+          v=$(curl -s -o /tmp/verify.json -w '%{http_code}' -H "$AUTH" \
+              https://api.cloudflare.com/client/v4/user/tokens/verify)
+          echo "token verify        : HTTP $v  status=$(jq -r '.result.status // "-"' /tmp/verify.json)  $(jq -c '[.errors[]?.message]' /tmp/verify.json)"
+
+          w=$(curl -s -o /tmp/scripts.json -w '%{http_code}' -H "$AUTH" \
+              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts")
+          echo "workers scripts list: HTTP $w  $(jq -c '[.errors[]?.message]' /tmp/scripts.json)  scripts=$(jq -r '[.result[]?.id] | join(",")' /tmp/scripts.json)"
+
+          if [ "$v" != "200" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN is not a valid token (HTTP $v) — expired, revoked, or the secret holds something that is not a token. Nothing about Workers permissions can be concluded until this is 200."
+            exit 1
+          fi
+          if [ "$w" != "200" ]; then
+            echo "::error::the token is valid but cannot list Workers scripts on account $CLOUDFLARE_ACCOUNT_ID (HTTP $w). Either it has no 'Account > Workers Scripts > Edit' — which is an ACCOUNT permission, not a zone one — or that permission was added to a DIFFERENT account from the one this id names."
+            exit 1
+          fi
+          echo "the token can see this account's Workers. Whatever the deploy does next is not a permissions problem at this level."
+
       - name: deploy the Worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
