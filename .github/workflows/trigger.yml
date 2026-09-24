@@ -104,13 +104,36 @@ jobs:
             echo "::error::the token is valid but cannot list Workers scripts on account $CLOUDFLARE_ACCOUNT_ID (HTTP $w). Either it has no 'Account > Workers Scripts > Edit' — which is an ACCOUNT permission, not a zone one — or that permission was added to a DIFFERENT account from the one this id names."
             exit 1
           fi
-          echo "the token can see this account's Workers. Whatever the deploy does next is not a permissions problem at this level."
+          # ⛔⛔ AND THIS IS AS FAR AS A READ CAN TAKE IT. Listing scripts needs
+          # Workers Scripts:READ; the deploy below needs Workers Scripts:EDIT.
+          # The first version of this step ended by announcing "not a permissions
+          # problem at this level" on the strength of a 200 here, which is the
+          # oldest mistake in this repo's book -- verifying a proxy is not
+          # verifying the thing -- and it said it on the very run where Edit was
+          # what was missing. There is no read-only call that establishes Edit.
+          # The deploy IS the probe; the step after it reads the result.
+          echo "READ access confirmed. This says NOTHING about Edit, which is what the deploy needs."
 
       - name: deploy the Worker
+        id: deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: npx -y $WRANGLER deploy --config worker/wrangler.toml
+
+      # ⭐⭐ THE INFERENCE, WRITTEN DOWN WHERE IT IS EARNED. Reaching here means
+      # the two facts are in hand and they point at one cause between them: the
+      # token is valid and CAN read this account's Workers, and the same token
+      # cannot write. Read yes, write no, on one account, with one token. There
+      # is no read-only call that could have said this in advance.
+      # ⚠️ SCOPED TO THE DEPLOY, NOT TO `failure()`. A bare `if: failure()` also
+      # fires when GATES fail, and this message would then announce a Cloudflare
+      # permission as the cause of a broken test — a step asserting more than it
+      # knows, in a step written to stop exactly that.
+      - name: what the refusal means, given what the preflight proved
+        if: failure() && steps.deploy.conclusion == 'failure'
+        run: |
+          echo "::error::the deploy was refused while the same token listed this account's Workers successfully. Read works and write does not, so the token carries 'Workers Scripts: Read' where it needs 'Workers Scripts: Edit'. In the Cloudflare token editor that is the LEVEL dropdown on the Workers Scripts row, not a second row."
 
       # ⭐ THE STEP THAT STOPS THIS SHIPPING DEAD. `wrangler secret list` prints
       # the NAMES of the secrets bound to the Worker and never their values, so
