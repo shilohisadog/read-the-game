@@ -541,6 +541,15 @@ h2{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu
 .grid.learn.ours .card{border-left:3px solid var(--blue)}
 .card .at{margin-top:8px;font-size:.72rem;letter-spacing:.05em;color:var(--muted);
  font-variant-numeric:tabular-nums}
+/* ⭐ THE DOOR TO THE WORK SITS UNDER THE CARD, NOT INSIDE IT. `.card` is an
+   anchor, so the second link cannot be nested; the wrapper is a column and the
+   card grows to fill it, which keeps a row of tiles the same height whether or
+   not they carry one. */
+.cardw{display:flex;flex-direction:column}
+.cardw .card{flex:1}
+.cw{margin:6px 2px 0;font-size:.74rem;line-height:1.3}
+.cw a{color:var(--blue);text-decoration:none;font-weight:600}
+.cw a:hover,.cw a:focus-visible{text-decoration:underline}
 
 /* THE CALENDAR (C1). In the shared sheet because the learn page's selectors
    already are: one stylesheet for the pages this builder emits, so there is one
@@ -2158,6 +2167,18 @@ def _archive():
         if not sh or sh.get("rate") is None or not sh.get("n") or not sh.get("population"):
             raise SystemExit(f"learn: measures.json slot.{k} has no rate, n or population -- "
                              "re-run derive and refresh data/measures.json")
+    # ⭐⭐⭐ AND EVERY FIGURE THIS PUBLISHES HAS A DOOR TO ITS WORK, OR SAYS WHY
+    # NOT. Kevin's standing rule is not "most figures": a reader who finds one
+    # naked number has learned that the pitch is decorative. This is the point
+    # where a new measurement enters the pages, so it is the point that refuses
+    # to let one in without a derivation named for it. `FIGURE_DERIVATION` is
+    # defined further down the file and resolved when this runs.
+    naked = sorted(t for t in out if t not in FIGURE_DERIVATION)
+    if naked:
+        raise SystemExit(
+            f"learn: {naked} would be printed on a page with no derivation named "
+            "for them. Add them to FIGURE_DERIVATION -- or to `None` there, which "
+            "is a decision that they are not a measurement about hockey.")
     return out
 
 
@@ -2271,6 +2292,11 @@ def _learn():
         out.append(f'  <div class="grid learn {kind}">')
         for _, cid, title, blurb in cards:
             door = doors[cid]
+            # ⛔ THE DOOR IS DECIDED BEFORE SUBSTITUTION, because after it there
+            # is nothing left to decide from: "11.4%" does not say which
+            # measurement it is and "46" could be anything. The token is the only
+            # form in which a figure names itself.
+            blurb_raw = blurb
             blurb = (blurb.replace("__UNREACHED__", str(fig["unreached"]["count"]))
                           .replace("__ATTEMPTS__", str(fig["unreached"]["n"])))
             for tok, val in arch.items():
@@ -2299,9 +2325,25 @@ def _learn():
                 # reads "Period 1" in regulation and "Overtime · 3-on-3" in the
                 # one card that needed a different game.
                 at = f'{door["label"]} &middot; {door["rem"]} left'
-            out.append(f'    <a class="card" id="{cid}" href="{href}">'
-                       f'<p class="t">{title}</p><p>{blurb}</p>'
-                       f'<p class="at">{at}</p></a>')
+            card = (f'<a class="card" id="{cid}" href="{href}">'
+                    f'<p class="t">{title}</p><p>{blurb}</p>'
+                    f'<p class="at">{at}</p></a>')
+            # ⭐⭐⭐ THE DOOR TO THE WORK, AND IT IS OUTSIDE THE CARD BECAUSE THE
+            # CARD IS ITSELF A LINK. An anchor inside an anchor is invalid and
+            # browsers unnest it, which would have shipped a door that renders
+            # and does not work. The wrapper keeps the whole tile clickable for
+            # the card's own destination and gives the second link its own row.
+            #
+            # ⚠️ THE WRAPPER IS ONLY WHERE THERE IS A DOOR. A card that prints no
+            # figure needs no second link, and wrapping it anyway would put an
+            # empty row under two thirds of the page.
+            work = _how_door(blurb_raw, cid)
+            if work:
+                out.append(f'    <div class="cardw">{card}'
+                           f'<p class="cw"><a href="{work}">How we counted this '
+                           f'&rarr;</a></p></div>')
+            else:
+                out.append(f'    {card}')
         out.append("  </div>")
 
     p1 = sum(1 for c in LEARN_CARDS if doors[c[1]]["per"] == 1)
@@ -2468,6 +2510,97 @@ def _says(key):
     """The clause as a sentence of its own: capitalised, closed."""
     c = FIGURE_CLAUSE[key]
     return c[0].upper() + c[1:] + "."
+
+
+# ⭐⭐⭐ WHICH DERIVATION EXPLAINS WHICH PRINTED FIGURE, KEYED BY THE PLACEHOLDER.
+#
+# ⛔ THE DEFECT THIS CLOSES, 2026-09-24. `what-you-can-see.html` printed 17
+# measured figures and carried ZERO doors to the work. A reader who followed
+# Kevin's standing rule -- every number needs a door to its derivation -- reached
+# a lesson, which teaches what the thing is and says nothing about how it was
+# counted. The preview card has had those doors since 23 September; this page had
+# never had one.
+#
+# ⭐⭐ AND IT IS KEYED BY THE TOKEN RATHER THAN BY THE CARD, because the token is
+# what a FIGURE is. A map from card to derivation would go stale silently the
+# first time a card's copy is rewritten around a different measurement -- the
+# sentence would move and the door would not. The tokens are substituted by
+# `_archive()`, so a figure that appears on a card is a figure that named itself.
+#
+# ⛔ EVERY TOKEN `_archive()` PUBLISHES MUST BE HERE, and `None` is a decision
+# rather than an omission: `__ARCHIVE_GAMES__` is how big the archive is, not
+# something we measured about hockey, so it has nothing to derive. A new figure
+# added to the reducers stops the build until somebody says which it is.
+FIGURE_DERIVATION = {
+    "__SLOT_IN_PCT__":        "slotGoals",
+    "__SLOT_OUT_PCT__":       "slotGoals",
+    "__SLOT_IN_GOALS__":      "slotGoals",
+    "__SLOT_IN_ATT__":        "slotGoals",
+    # ⚠️ A DIFFERENT MEASUREMENT WITH THE SAME WORD IN IT. This is the share of
+    # located attempts TAKEN from inside the slot; the four above are how often
+    # one of them goes in. Two denominators, one noun -- the same collision that
+    # made `DERIVATION.slot` into `DERIVATION.slotShare`.
+    "__SLOT_ATT_PCT__":       "slotShare",
+    "__SLOT_ATT_IN__":        "slotShare",
+    "__SLOT_ATT_N__":         "slotShare",
+    "__EVEN_PER60__":         "pace",
+    "__PP_PER60__":           "pace",
+    "__PK_PER60__":           "pace",
+    "__EVEN_TRAIL_PER60__":   "scoreEffects",
+    "__EVEN_TIED_PER60__":    "scoreEffects",
+    "__EVEN_LEAD_PER60__":    "scoreEffects",
+    "__SHIFT_MED__":          "shift",
+    "__SHIFT_UNDER__":        "shift",
+    "__SHIFT_PER__":          "shift",
+    "__SHIFT_N__":            "shift",
+    "__ZONE_ATK__":           "zoneStarts",
+    "__ZONE_DEF__":           "zoneStarts",
+    "__ZONE_DRAWS__":         "zoneStarts",
+    # HOW BIG THE ARCHIVE IS. A count of the games we hold is not a claim about
+    # hockey, so there is no derivation to open and no door to write.
+    "__ARCHIVE_GAMES__":      None,
+    # ⭐ NOT FROM `_archive()`. These two come out of `data/learn-figures.json`
+    # and are substituted a few lines below it, which is exactly why they are
+    # listed here: a figure is a figure whatever published it, and the one that
+    # arrives by a different route is the one a token-based gate would miss.
+    "__UNREACHED__":          "attempts",
+    "__ATTEMPTS__":           "attempts",
+}
+
+# ⚠️ THE ANCHOR PREFIX, WRITTEN IN PYTHON AND ASSERTED AGAINST THE JAVASCRIPT.
+# `anchorOf` in `src/lib/anchors.js` is the one spelling of this string, and this
+# builder cannot call it. So the seam is ASSERTED rather than assumed, which is
+# the same arrangement `_excluded()` already has with `excludedCompetitions`:
+# test/methods.test.js runs the real function and requires every door this
+# builder wrote to be the string it returns. Two literals agreeing by luck is the
+# dead link that looks completely normal.
+METHODS_ANCHOR = "m-"
+
+
+def _how_door(blurb, cid):
+    """The href to the work behind a card's figures, or None if it prints none.
+
+    ⛔ ONE DOOR PER CARD, ENFORCED. A card whose copy came to print two different
+    measurements would need two links and a sentence saying which is which, and
+    that is a decision rather than a render -- so it stops the build instead of
+    quietly sending a reader to the first of them.
+    """
+    toks = sorted(set(re.findall(r"__[A-Z0-9_]+__", blurb)))
+    unknown = [t for t in toks if t not in FIGURE_DERIVATION]
+    if unknown:
+        raise SystemExit(
+            f"learn: card `{cid}` prints {unknown} and FIGURE_DERIVATION does not "
+            "say which derivation explains them -- every figure on this site needs "
+            "a door to its work, or an explicit None saying why it has none")
+    keys = sorted({FIGURE_DERIVATION[t] for t in toks if FIGURE_DERIVATION[t]})
+    if not keys:
+        return None
+    if len(keys) > 1:
+        raise SystemExit(
+            f"learn: card `{cid}` prints figures from {keys} -- one card cannot "
+            "carry one door to two derivations, so this needs a copy decision "
+            "rather than a link")
+    return f"/how-we-measure.html#{METHODS_ANCHOR}{keys[0]}"
 
 
 FRONT_COUNTS = [

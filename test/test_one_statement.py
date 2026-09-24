@@ -31,6 +31,17 @@ the line classifier instead, for the reason recorded in `fixtures.test.js`:
 deciding whether `/` opens a regex or divides is the one thing a hand-rolled
 scanner cannot do, so it never tries.
 
+⭐⭐ AND A NAME IS NOT A STATEMENT, WHICH THIS LEARNED THE HARD WAY ON 24
+SEPTEMBER 2026. `FIGURE_DERIVATION` in `build_index.py` maps every placeholder to
+the derivation that explains it, so every figure suddenly appeared in two string
+literals and this went red across the board — while nothing had been written
+twice. The rule was always about the SENTENCE; counting string literals was the
+proxy, and the proxy broke the first time a placeholder was used as a key. So a
+placeholder is STATED only where the string around it says something else too. A
+string that is nothing but the placeholder is a reference — a dict key, a lookup,
+an argument to `replace` — and references are what a single statement is reached
+BY.
+
 ⚠️ ITS TWO LIMITS, STATED. A measurement spelled out by hand rather than through
 a placeholder is invisible here — the mechanism is the placeholder, so anything
 bypassing it bypasses this too. And a placeholder used once inside a function two
@@ -64,6 +75,23 @@ def _strings(path):
     return [ln for ln in text.split("\n") if not re.match(r"\s*(\*|//|/\*)", ln)]
 
 
+def _stated(literal, token):
+    """How many times this string STATES `token`, as opposed to naming it.
+
+    ⛔ THE DISTINCTION IS THE WHOLE RULE. `"__ZONE_ATK__"` as a dict key is how a
+    map reaches the one statement; `"the club takes __ZONE_ATK__ attempts"` IS a
+    statement. Counting both made this test red the day a door map was added, with
+    nothing written twice — a check whose proxy had drifted from its claim.
+
+    ⚠️ IT ASKS FOR TWO LETTERS TOGETHER, not for any character. A key written with
+    a trailing comma, a colon or a space is still just a name.
+    """
+    if token not in literal:
+        return 0
+    rest = literal.replace(token, " ")
+    return literal.count(token) if re.search(r"[A-Za-z]{2}", rest) else 0
+
+
 def _archive_body():
     """The source of `_archive()` in build_index.py, where the figures are defined."""
     lines = (ROOT / "builders" / "build_index.py").read_text(encoding="utf-8").split("\n")
@@ -93,11 +121,31 @@ class OneStatement(unittest.TestCase):
         body = _archive_body()
         keys = sorted(set(re.findall(r'"(__[A-Z0-9_]+__)"\s*:', body)))
         strings = {p: _strings(p) for p in BUILDERS}
+        sources = {p: p.read_text(encoding="utf-8") for p in BUILDERS}
 
-        sites = {}
+        # ⛔ TWO QUESTIONS, TWO COUNTS, AND CONFLATING THEM IS WHAT BROKE THIS.
+        # "Is it written out twice?" is about PROSE — two sentences free to
+        # drift. "Is it printed by nothing?" is about the sites that PRINT it,
+        # which are prose plus one other form: `__ARCHIVE_GAMES__` is reached by
+        # a direct `arch["__ARCHIVE_GAMES__"]` lookup rather than by
+        # substitution, and that is a perfectly good way to print a figure and no
+        # kind of second statement.
+        #
+        # ⛔⛔⛔ AND THE FIRST FIX FOR THAT MADE THE SECOND CHECK UNFALSIFIABLE.
+        # It counted ANY reference in a string literal, and `FIGURE_DERIVATION`
+        # now names every placeholder — so every figure had a reference forever,
+        # and "printed by nothing" could not fire again in any condition this
+        # suite runs under. Found by deleting a card's only sentence and watching
+        # it stay green. A door map is a reference; only prose and a subscript
+        # PRINT.
+        sites, used = {}, {}
         for k in keys:
-            n = sum(s.count(k) for ss in strings.values() for s in ss)
-            sites[k] = n - body.count(k)          # discount where it is DEFINED
+            sites[k] = sum(_stated(s, k) for ss in strings.values() for s in ss)
+            defined = len(re.findall(rf'"{k}"\s*:', body))
+            self.assertEqual(defined, 1,
+                             f"{k} is not defined exactly once in _archive()")
+            used[k] = sites[k] + sum(len(re.findall(rf'\[\s*"{k}"\s*\]', src))
+                                     for src in sources.values())
 
         twice = {k: n for k, n in sites.items() if n > 1}
         self.assertEqual(
@@ -107,7 +155,7 @@ class OneStatement(unittest.TestCase):
             "is exactly how the slot sentence came to exist in two versions. "
             "Quote FIGURE_CLAUSE from both surfaces instead: " + repr(twice))
 
-        never = [k for k, n in sites.items() if n == 0]
+        never = [k for k, n in used.items() if n == 0]
         self.assertEqual(
             never, [],
             "a figure is derived from the archive and printed by nothing. Either a "

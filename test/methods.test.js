@@ -793,3 +793,111 @@ test('⛔⛔ one published sentence is printed once on the page, and the second 
   assert.ok(links.includes('#' + anchorOf('pace')),
     `the second cut must link to the section that carries the sentence, got ${links.join(', ')}`);
 });
+
+test('⛔⛔⛔ EVERY DOOR ON "WHAT YOU CAN SEE" LANDS ON A SECTION THAT EXISTS', async () => {
+  /* ⭐⭐⭐ THE SECOND SURFACE, AND THE SAME GATE. The preview card's doors have
+     been checked end to end since 23 September; `what-you-can-see.html` printed
+     17 measured figures with no door to anything at all, so a reader following
+     Kevin's rule from the front page reached a LESSON — which teaches what the
+     thing is and says nothing about how it was counted.
+
+     ⭐⭐ AND THIS IS THE SEAM BETWEEN PYTHON AND JAVASCRIPT. `build_index.py`
+     writes `#m-<key>` because it cannot call `anchorOf`, and the methods page
+     writes its ids by calling it. Two literals agreeing is the dead link that
+     looks completely normal — the same arrangement `_excluded()` has with
+     `excludedCompetitions`, asserted rather than assumed.
+
+     MUTATION: change `anchorOf` to return anything but `'m-' + key` and this
+     fires, because the page's ids move and the builder's hrefs do not. Change
+     `METHODS_ANCHOR` in the builder and it fires from the other side. */
+  const learn = readFileSync(new URL('../src/what-you-can-see.html', import.meta.url), 'utf8');
+  const doors = [...learn.matchAll(/<a href="\/how-we-measure\.html#([^"]+)"/g)].map(m => m[1]);
+  assert.ok(doors.length >= 6,
+    `only ${doors.length} work doors on what-you-can-see.html — six cards print figures`);
+
+  const page = render('how-we-measure.html', { 'measures.json': MEASURES });
+  await page.settle();
+  const sections = new Set(walk(page.ids.hm).map(n => n.id).filter(Boolean));
+
+  for (const frag of doors) {
+    assert.ok(sections.has(frag),
+      `a card links to #${frag} and the methods page renders no such section `
+      + `(it has ${[...sections].join(', ')})`);
+  }
+  /* AND THE FRAGMENT IS THE ONE `anchorOf` SPELLS, not merely one that happens to
+     exist. A door pointing at a real section for the WRONG figure resolves
+     perfectly and explains the wrong number — worse than a dead link. */
+  const known = new Set([...EXPLAINED, ...PRINTED_KEYS].map(anchorOf));
+  for (const frag of doors) {
+    assert.ok(known.has(frag),
+      `#${frag} is not a spelling \`anchorOf\` produces for any figure we explain`);
+  }
+});
+
+test('⛔⛔⛔ a door opens the work behind THE NUMBER THE CARD PRINTS', async () => {
+  /* ⭐⭐⭐ THE CHECK THAT IS NOT CIRCULAR, AND IT IS THE ONLY ONE HERE THAT ISN'T.
+     Every other assertion about these doors is computed from the same table the
+     builder writes them from, so it proves the renderer works and proves nothing
+     about the MAPPING. A door aimed at the wrong derivation resolves perfectly,
+     renders perfectly, and answers "where did that come from?" with a confident
+     description of a different measurement — strictly worse than no door. That
+     is not hypothetical: `slot` the card row and `slot` the conversion rate are
+     two measurements with one word, and string matching would have paired them.
+
+     ⭐ SO THE TWO ENDS ARE READ INDEPENDENTLY. The numbers come off the BUILT
+     card, substituted from `measures.json` by Python; the numbers behind the
+     door come from `methods()` in JavaScript. They meet only if the door is
+     aimed at the measurement the card is about.
+
+     MUTATION: point `__ZONE_ATK__` at `pace` in FIGURE_DERIVATION, rebuild, and
+     this fires — where every other door test still passes, because both of their
+     ends moved together. */
+  const live = JSON.parse(readFileSync(new URL('../data/measures.json', import.meta.url), 'utf8'));
+  const m = methods(live);
+  const shown = {};
+  for (const e of printed(live)) {
+    shown[e.key] = e.groups.flatMap(g => g.lines.flatMap(l => [l.count, l.n, l.value]));
+  }
+  for (const r of m.league) {
+    const w = r.work || {};
+    shown[r.key] = [w.count, w.n, w.value, r.over && r.over.n].filter(v => v != null);
+  }
+
+  /* ⚠️ ONE DECLARED EXCEPTION, WITH THE REASON AND A CHECK ON THE REASON. The
+     `blocked` card's "75 of 135" is counted in the ONE GAME it opens, not across
+     the archive, so it cannot match an archive figure and should not. The door
+     is still right — `m-attempts` is where the rule for what an attempt's ending
+     means is written — but the reader has to be told the number is one game's,
+     or they will read our archive split as the figure they just saw. That
+     sentence is the thing this exception rests on, so it is asserted rather than
+     trusted. */
+  const ONE_GAME = { blocked: /in this game/ };
+
+  const page = readFileSync(new URL('../src/what-you-can-see.html', import.meta.url), 'utf8');
+  const cards = [...page.matchAll(
+    /<div class="cardw"><a class="card" id="([^"]+)"[\s\S]*?<p>([\s\S]*?)<\/p>[\s\S]*?<p class="cw"><a href="\/how-we-measure\.html#m-([^"]+)">/g)];
+  assert.ok(cards.length >= 6, `only ${cards.length} carded doors found — the markup moved`);
+
+  for (const [, cid, blurb, key] of cards) {
+    const text = blurb.replace(/&[a-z]+;/g, ' ');
+    if (ONE_GAME[cid]) {
+      assert.match(text, ONE_GAME[cid],
+        `${cid} is excused from matching an archive figure because its number is `
+        + 'one game’s — and it no longer says so, so a reader will read the '
+        + 'archive split behind the door as the number they just saw');
+      continue;
+    }
+    const onCard = [...text.matchAll(/\d[\d,]*\.?\d*/g)]
+      .map(x => parseFloat(x[0].replace(/,/g, '')));
+    const behind = (shown[key] || []).filter(v => v != null);
+    assert.ok(behind.length, `#m-${key} shows no published figures at all`);
+    /* ROUNDED AT EVERY PRECISION THE SITE USES, because the card prints 95 and
+       the work prints 95.059 — the same measurement, formatted for two readers. */
+    const met = onCard.filter(g => behind.some(h =>
+      [0, 1, 2, 3].some(d => Math.abs(g - Number(h.toFixed(d))) < 1e-9)));
+    assert.ok(met.length,
+      `the ${cid} card prints [${onCard}] and its door opens #m-${key}, which shows `
+      + `[${behind.map(h => +h.toFixed(3))}] — not one number in common, so the door `
+      + 'explains a different measurement from the one the reader just read');
+  }
+});
