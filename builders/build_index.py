@@ -3874,13 +3874,15 @@ __HELPERS__
   }
 
   /* ⭐⭐⭐ THE DOOR TO THE WORK, WHICH EVERY FIGURE ON THIS CARD NOW HAS.
-     `anchorOf` is `src/lib/methods.js`, inlined above, and the methods page
-     writes its section ids with the same call — so this href cannot drift from
-     the heading it points at. A figure whose key has no section there is caught
+     `anchorFor` is `src/lib/methods.js`, inlined above, and the methods page
+     writes its section ids from the same map — so this href cannot drift from
+     the heading it points at. ⭐ It takes a ROW key and resolves the derivation
+     through `EXPLAINS`, because the two are deliberately not the same namespace:
+     see that map for the slot collision it exists to prevent. A figure whose key has no section there is caught
      by `test/methods.test.js` before it ships, not by a reader. */
   function workLink(key) {
     var a = el('a', 'pvwork', 'How this is counted \u2192');
-    a.href = '/how-we-measure.html#' + anchorOf(key);
+    a.href = '/how-we-measure.html#' + anchorFor(key);
     return a;
   }
 

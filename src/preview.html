@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-qWSQSDUGzir2W0wEqJu7qJAN2qFLXe8Yo4LjD5k71NA=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-SoKtCDd7KRve+ACHwrXBfIGh8mK1I6nyyuUoQQZdjXw=' 'sha256-3X9HVvxM/3yUsTAYNxLhsF9xK7Hi2mREYVg1+zQCEYc='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-8vtUy6FaC0iOQMoVHgHADtwSv12kcxKWZDpLd9K3GMU=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-SoKtCDd7KRve+ACHwrXBfIGh8mK1I6nyyuUoQQZdjXw=' 'sha256-3X9HVvxM/3yUsTAYNxLhsF9xK7Hi2mREYVg1+zQCEYc='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -1546,7 +1546,7 @@ const DERIVATION = {
           + 'counts every attempt a team took, including on the power play, where '
           + 'the setup puts more pucks on the points: a team that draws a lot of '
           + 'penalties is partly being described by its power play.' },
-  slot: {
+  slotShare: {
     count: 'shot attempts from inside the slot \u2014 the area in front of the net '
          + 'that most goals come from',
     of: 'that team\u2019s attempts the league recorded a location for',
@@ -1668,8 +1668,45 @@ function keysOf(measures) {
   return [...CLUB_ROWS.map(r => r.key), ...leagueRows(measures).map(r => r.key)];
 }
 
+/**
+ * ⭐⭐ WHICH DERIVATION EXPLAINS WHICH ROW, DECLARED RATHER THAN MATCHED BY NAME.
+ *
+ * ⛔⛔ THE DEFECT THIS CLOSES, 2026-09-24. Every entry used to be found by
+ * `DERIVATION[row.key]`, so a row and a derivation were the same thing whenever
+ * they happened to share a string. The card's `slot` row is A CLUB'S SHARE OF
+ * ITS ATTEMPTS TAKEN FROM THE SLOT; the front door, `what-you-can-see` and
+ * `slot.html` all print a different measurement that is also called slot — HOW
+ * OFTEN A SHOT FROM THERE GOES IN, 11.4%. Two measurements, two denominators,
+ * one word. Under string matching, giving the second one a derivation would have
+ * silently handed it the first one's, and the door would have opened on a
+ * confident, wrong explanation — worse than no door.
+ *
+ * ⚠️ AND THE ROW KEY IS NOT OURS TO RENAME, which is why the DERIVATION moved
+ * instead. `preview.js` reads `settle.rows[row.key]` out of the published
+ * `measures.json`, whose live keys are `dmen`, `level5`, `slot`. Renaming the
+ * row would leave that lookup undefined until `derive.yml` next republished —
+ * Mondays 15:47 UTC — so a rename that reads as cosmetic would have degraded a
+ * live card for days. A derivation key is internal and costs nothing.
+ *
+ * ⭐ A NEW ROW WITH NO ENTRY HERE IS A BUILD FAILURE, not a silent fallback: the
+ * gate requires this map to cover everything `keysOf()` reports.
+ */
+const EXPLAINS = {
+  level5: 'level5', dmen: 'dmen', slot: 'slotShare',
+  powerplay: 'powerplay', penalties: 'penalties', offside: 'offside',
+  icing: 'icing', attempts: 'attempts', shift: 'shift', hits: 'hits',
+};
+
+/** The derivation that explains a row, or undefined if none is declared. */
+function explains(rowKey) {
+  return EXPLAINS[rowKey];
+}
+
 /** Every key this module can explain. The gate compares the two. */
 const EXPLAINED = Object.keys(DERIVATION);
+
+/** Every row the card can draw, as declared here. */
+const EXPLAINED_ROWS = Object.keys(EXPLAINS);
 
 /**
  * ⭐ THE ANCHOR A FIGURE'S DOOR POINTS AT, stated once.
@@ -1680,6 +1717,15 @@ const EXPLAINED = Object.keys(DERIVATION);
  */
 function anchorOf(key) {
   return 'm-' + key;
+}
+
+/**
+ * The anchor for a ROW, which is the form every caller outside this module
+ * holds. It exists so that no caller has to know a row key and a derivation key
+ * are different things — the one place that knows is `EXPLAINS`.
+ */
+function anchorFor(rowKey) {
+  return anchorOf(explains(rowKey));
 }
 
 /**
@@ -1717,8 +1763,8 @@ function methods(measures) {
 
   const club = CLUB_ROWS.map(r => {
     const pub = (s && s.rows && s.rows[r.key]) || null;
-    return { key: r.key, anchor: anchorOf(r.key),
-             ...DERIVATION[r.key],
+    return { key: r.key, anchor: anchorFor(r.key),
+             ...DERIVATION[explains(r.key)],
              /* ⛔ THE CARD'S LABEL WINS, AND IT IS SET AFTER THE SPREAD ON PURPOSE.
                 A methods page that names a row differently from the row it explains
                 is a page a reader cannot match up — and the spread would silently
@@ -1745,7 +1791,8 @@ function methods(measures) {
        page prints the one the row actually has. */
     const over = row.games != null ? { n: row.games, unit: 'games' }
                : row.n != null ? { n: row.n, unit: 'shifts' } : null;
-    return { key: row.key, anchor: anchorOf(row.key), ...DERIVATION[row.key],
+    return { key: row.key, anchor: anchorFor(row.key),
+      ...DERIVATION[explains(row.key)],
       /* ⭐⭐⭐ THE DIVISION, CARRIED FROM THE ROW THAT DID IT. This is the whole
          point of the page: "power-play goals out of power plays" is a sentence,
          and "5,011 ÷ 22,872 = 21.9" is the work. The row computed it once and
@@ -2018,13 +2065,15 @@ function methods(measures) {
   }
 
   /* ⭐⭐⭐ THE DOOR TO THE WORK, WHICH EVERY FIGURE ON THIS CARD NOW HAS.
-     `anchorOf` is `src/lib/methods.js`, inlined above, and the methods page
-     writes its section ids with the same call — so this href cannot drift from
-     the heading it points at. A figure whose key has no section there is caught
+     `anchorFor` is `src/lib/methods.js`, inlined above, and the methods page
+     writes its section ids from the same map — so this href cannot drift from
+     the heading it points at. ⭐ It takes a ROW key and resolves the derivation
+     through `EXPLAINS`, because the two are deliberately not the same namespace:
+     see that map for the slot collision it exists to prevent. A figure whose key has no section there is caught
      by `test/methods.test.js` before it ships, not by a reader. */
   function workLink(key) {
     var a = el('a', 'pvwork', 'How this is counted \u2192');
-    a.href = '/how-we-measure.html#' + anchorOf(key);
+    a.href = '/how-we-measure.html#' + anchorFor(key);
     return a;
   }
 

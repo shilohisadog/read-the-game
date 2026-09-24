@@ -24,7 +24,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { methods, keysOf, anchorOf, EXPLAINED } from '../src/lib/methods.js';
+import { methods, keysOf, anchorOf, anchorFor, explains, EXPLAINED, EXPLAINED_ROWS }
+  from '../src/lib/methods.js';
 import { CLUB_ROWS, leagueRows } from '../src/lib/preview.js';
 
 /* ------------------------------------------------------------------ FIXTURE */
@@ -75,11 +76,24 @@ test('⛔⛔⛔ every figure the card can draw is explained, and nothing else is
      MUTATION: add a CLUB_ROW or a league counter without a DERIVATION entry and
      the first assertion names it. */
   const drawn = keysOf(MEASURES);
-  assert.deepEqual([...drawn].sort().filter(k => !EXPLAINED.includes(k)), [],
-    'a figure is drawn on the card with no derivation on the methods page');
-  assert.deepEqual(EXPLAINED.filter(k => !drawn.includes(k)), [],
-    'the methods page explains a figure the card cannot draw');
+  assert.ok(drawn.length >= 8,
+    `only ${drawn.length} figures reported — the fixture is not a full document, so neither `
+    + 'direction below proves anything');
+  assert.deepEqual([...drawn].sort().filter(k => !explains(k)), [],
+    'a figure is drawn on the card with no derivation DECLARED for it in EXPLAINS');
+  assert.deepEqual(EXPLAINED_ROWS.filter(k => !drawn.includes(k)), [],
+    'EXPLAINS declares a derivation for a row the card cannot draw');
   assert.equal(drawn.length, new Set(drawn).size, 'a key is drawn twice');
+
+  /* ⭐⭐ AND THE MAP MUST LAND. A declared mapping to a derivation that does not
+     exist is worse than the string matching it replaced: the spread yields
+     `undefined`, every field goes missing, and the section renders empty rather
+     than absent — which the door-resolves test below would still pass, because
+     the id is written from the same map.
+     MUTATION: point any EXPLAINS value at a name DERIVATION does not carry. */
+  const unresolved = EXPLAINED_ROWS.map(explains).filter(d => !EXPLAINED.includes(d));
+  assert.deepEqual(unresolved, [],
+    'EXPLAINS points a row at a derivation that does not exist');
 });
 
 test('⛔ no figure reaches the page without a caveat, and none of them is filler', () => {
@@ -268,7 +282,7 @@ test('⛔ the methods page renders a section for every figure, named and caveate
   await page.settle();
   const nodes = walk(page.ids.hm);
   for (const key of keysOf(MEASURES)) {
-    const sec = nodes.find(n => n.id === anchorOf(key));
+    const sec = nodes.find(n => n.id === anchorFor(key));
     assert.ok(sec, `no section for ${key}`);
     const said = walk(sec).map(n => n.textContent).filter(Boolean).join(' ');
     assert.match(said, /What could be wrong with it/, `${key} rendered without its caveat`);

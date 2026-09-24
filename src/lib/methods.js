@@ -83,7 +83,7 @@ const DERIVATION = {
           + 'counts every attempt a team took, including on the power play, where '
           + 'the setup puts more pucks on the points: a team that draws a lot of '
           + 'penalties is partly being described by its power play.' },
-  slot: {
+  slotShare: {
     count: 'shot attempts from inside the slot \u2014 the area in front of the net '
          + 'that most goals come from',
     of: 'that team\u2019s attempts the league recorded a location for',
@@ -205,8 +205,45 @@ export function keysOf(measures) {
   return [...CLUB_ROWS.map(r => r.key), ...leagueRows(measures).map(r => r.key)];
 }
 
+/**
+ * ⭐⭐ WHICH DERIVATION EXPLAINS WHICH ROW, DECLARED RATHER THAN MATCHED BY NAME.
+ *
+ * ⛔⛔ THE DEFECT THIS CLOSES, 2026-09-24. Every entry used to be found by
+ * `DERIVATION[row.key]`, so a row and a derivation were the same thing whenever
+ * they happened to share a string. The card's `slot` row is A CLUB'S SHARE OF
+ * ITS ATTEMPTS TAKEN FROM THE SLOT; the front door, `what-you-can-see` and
+ * `slot.html` all print a different measurement that is also called slot — HOW
+ * OFTEN A SHOT FROM THERE GOES IN, 11.4%. Two measurements, two denominators,
+ * one word. Under string matching, giving the second one a derivation would have
+ * silently handed it the first one's, and the door would have opened on a
+ * confident, wrong explanation — worse than no door.
+ *
+ * ⚠️ AND THE ROW KEY IS NOT OURS TO RENAME, which is why the DERIVATION moved
+ * instead. `preview.js` reads `settle.rows[row.key]` out of the published
+ * `measures.json`, whose live keys are `dmen`, `level5`, `slot`. Renaming the
+ * row would leave that lookup undefined until `derive.yml` next republished —
+ * Mondays 15:47 UTC — so a rename that reads as cosmetic would have degraded a
+ * live card for days. A derivation key is internal and costs nothing.
+ *
+ * ⭐ A NEW ROW WITH NO ENTRY HERE IS A BUILD FAILURE, not a silent fallback: the
+ * gate requires this map to cover everything `keysOf()` reports.
+ */
+const EXPLAINS = {
+  level5: 'level5', dmen: 'dmen', slot: 'slotShare',
+  powerplay: 'powerplay', penalties: 'penalties', offside: 'offside',
+  icing: 'icing', attempts: 'attempts', shift: 'shift', hits: 'hits',
+};
+
+/** The derivation that explains a row, or undefined if none is declared. */
+export function explains(rowKey) {
+  return EXPLAINS[rowKey];
+}
+
 /** Every key this module can explain. The gate compares the two. */
 export const EXPLAINED = Object.keys(DERIVATION);
+
+/** Every row the card can draw, as declared here. */
+export const EXPLAINED_ROWS = Object.keys(EXPLAINS);
 
 /**
  * ⭐ THE ANCHOR A FIGURE'S DOOR POINTS AT, stated once.
@@ -217,6 +254,15 @@ export const EXPLAINED = Object.keys(DERIVATION);
  */
 export function anchorOf(key) {
   return 'm-' + key;
+}
+
+/**
+ * The anchor for a ROW, which is the form every caller outside this module
+ * holds. It exists so that no caller has to know a row key and a derivation key
+ * are different things — the one place that knows is `EXPLAINS`.
+ */
+export function anchorFor(rowKey) {
+  return anchorOf(explains(rowKey));
 }
 
 /**
@@ -254,8 +300,8 @@ export function methods(measures) {
 
   const club = CLUB_ROWS.map(r => {
     const pub = (s && s.rows && s.rows[r.key]) || null;
-    return { key: r.key, anchor: anchorOf(r.key),
-             ...DERIVATION[r.key],
+    return { key: r.key, anchor: anchorFor(r.key),
+             ...DERIVATION[explains(r.key)],
              /* ⛔ THE CARD'S LABEL WINS, AND IT IS SET AFTER THE SPREAD ON PURPOSE.
                 A methods page that names a row differently from the row it explains
                 is a page a reader cannot match up — and the spread would silently
@@ -282,7 +328,8 @@ export function methods(measures) {
        page prints the one the row actually has. */
     const over = row.games != null ? { n: row.games, unit: 'games' }
                : row.n != null ? { n: row.n, unit: 'shifts' } : null;
-    return { key: row.key, anchor: anchorOf(row.key), ...DERIVATION[row.key],
+    return { key: row.key, anchor: anchorFor(row.key),
+      ...DERIVATION[explains(row.key)],
       /* ⭐⭐⭐ THE DIVISION, CARRIED FROM THE ROW THAT DID IT. This is the whole
          point of the page: "power-play goals out of power plays" is a sentence,
          and "5,011 ÷ 22,872 = 21.9" is the work. The row computed it once and
