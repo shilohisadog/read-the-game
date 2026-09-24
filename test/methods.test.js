@@ -24,8 +24,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { methods, keysOf, anchorOf, anchorFor, explains, EXPLAINED, EXPLAINED_ROWS }
-  from '../src/lib/methods.js';
+import { methods, keysOf, anchorOf, anchorFor, explains, EXPLAINED, EXPLAINED_ROWS,
+         printed, PRINTED_KEYS, PRINTED } from '../src/lib/methods.js';
 import { CLUB_ROWS, leagueRows } from '../src/lib/preview.js';
 
 /* ------------------------------------------------------------------ FIXTURE */
@@ -34,7 +34,29 @@ import { CLUB_ROWS, leagueRows } from '../src/lib/preview.js';
 const MEASURES = {
   attemptMix: { games: 4192, byType: { 'shot-on-goal': 215529, goal: 25597,
     'blocked-shot': 138880, 'missed-shot': 120714 } },
+  /* ⭐ THE SLOT AND THE CENSUS RATES ARE HERE BECAUSE THE THIRD SECTION READS
+     THEM. Shapes copied from the published document, `what` sentences included —
+     a fixture that carried the numbers and not the sentences would exercise the
+     degradation path and call it the happy one. */
+  slot: {
+    scoredFromInside: { count: 19304, n: 168910, rate: 0.11428571428571428,
+      population: 'NHL regular season and playoffs',
+      what: 'of the unblocked attempts taken from INSIDE the slot, this many were goals' },
+    scoredFromOutside: { count: 6293, n: 192930, rate: 0.032618047996682734,
+      population: 'NHL regular season and playoffs',
+      what: 'of the unblocked attempts taken from OUTSIDE the slot, this many were goals' } },
   census: { games: 4192,
+    pace: { what: 'shot attempts taken in one situation, out of the minutes played '
+              + 'in that situation, scaled to sixty',
+      even: { attempts: 406964, minutes: 416349.7, per60: 58.647 },
+      ppFor: { attempts: 67517, minutes: 42615.7, per60: 95.059 },
+      ppAgainst: { attempts: 9268, minutes: 42615.7, per60: 13.049 },
+      evenTrail: { attempts: 140384, minutes: 132482.4, per60: 63.579 },
+      evenTied: { attempts: 149096, minutes: 151384.9, per60: 59.093 },
+      evenLead: { attempts: 117484, minutes: 132482.4, per60: 53.207 } },
+    endZone: { what: 'shot attempts taken before the next whistle after an '
+                 + 'end-zone face-off, out of every end-zone face-off',
+      atk: 235614, def: 126603, n: 165420, atkPerDraw: 1.424, defPerDraw: 0.765 },
     shift: { n: 3101105, median: 46, p25: 34, p75: 59, underMinute: 0.759 },
     hits: { n: 4192, r: -0.07, opposite: 0.481, totalHits: 188512 },
     whistles: { penalties: 30827, offsides: 18700, icings: 35930,
@@ -582,4 +604,192 @@ test('⭐ a team-season is spelled out as its own arithmetic, and only when it i
   assert.match(said2, /95 team-seasons/);
   assert.ok(!/one for each of the/.test(said2),
     'a sum that does not come out whole must not be asserted');
+});
+
+/* ------------------------- THE FIGURES THE REST OF THE SITE PRINTS (§ THIRD) */
+
+test('⛔⛔⛔ a printed figure reads its description; it does not carry one of its own', () => {
+  /* ⭐⭐⭐ KEVIN'S RULING, 2026-09-24: *"always go with the proper, transparent
+     approach."* Every row on the card carries a `count` and an `of` written in
+     `methods.js`, one file away from the arithmetic that makes them true, and
+     nothing but a re-reading stops the two drifting. These four do not have to
+     take that risk — `archive.js` and `census.js` publish a `what` beside each
+     figure — so the sentence a reader sees IS the one the measurement travels
+     with.
+
+     MUTATION: give any PRINTED entry a `count:` and the first assertion names
+     it; that is the whole defence, because a typed sentence is exactly what
+     would be reached for the next time a figure is added in a hurry. */
+  /* ⛔ READ AT THE TABLE, NOT AT THE RESULT. `printed()` builds its output field
+     by field, so a typed `count` would never appear there and this test would
+     report the rule as kept while the rule was broken — the narrower-claim
+     defect, inside the check written to prevent it. Caught by mutating. */
+  for (const key of PRINTED_KEYS) {
+    for (const forbidden of ['count', 'of', 'what', 'said']) {
+      assert.ok(!(forbidden in PRINTED[key]),
+        `PRINTED.${key} types its own \`${forbidden}\` — that sentence belongs `
+        + 'in the published document, beside the arithmetic that makes it true');
+    }
+  }
+  const out = printed(MEASURES);
+  assert.equal(out.length, PRINTED_KEYS.length);
+  for (const e of out) {
+    assert.ok(e.groups.length, `${e.key} read nothing out of the document`);
+    for (const g of e.groups) {
+      /* AND THE SENTENCE IS THE DOCUMENT'S, CHARACTER FOR CHARACTER. Resolving a
+         path and then rendering something else would pass a shape check. */
+      const said = g.from.split('.').reduce((o, k) => o[k], MEASURES).what;
+      assert.equal(g.what, said, `${e.key} shows a sentence the document does not carry at ${g.from}`);
+    }
+  }
+});
+
+test('⛔⛔⛔ the arithmetic printed beside a figure is the arithmetic that made it', () => {
+  /* ⭐⭐ THE CHECK THAT IS NOT ABOUT SHAPE. Every other assertion here would pass
+     a page printing three published numbers that have nothing to do with each
+     other — which is precisely what a wrong `num`/`den` would produce, and it
+     would look completely normal: three real figures, correctly formatted, in a
+     row. So the numerator and denominator are DIVIDED here and required to
+     produce the published result.
+
+     ⚠️ TWO SHAPES, BECAUSE A RATE PER SIXTY IS NOT A QUOTIENT. 67,517 ÷ 42,615.7
+     is 1.58, not 95.06. A test that divided everything would have forced the
+     page to print the 1.58, and the page would have been wrong in the same way
+     the test was.
+
+     MUTATION: swap `num` and `den` on any read, or point `out` at a neighbouring
+     field, and this fires with the key named. */
+  for (const e of printed(MEASURES)) {
+    for (const g of e.groups) {
+      for (const l of g.lines) {
+        const got = l.as === 'scaled' ? (l.count / l.n) * 60 : l.count / l.n;
+        assert.ok(Math.abs(got - l.value) < Math.max(0.001, Math.abs(l.value) * 0.001),
+          `${e.key}/${l.is}: the page shows ${l.count} and ${l.n} beside ${l.value}, `
+          + `but they make ${got.toFixed(4)}`);
+      }
+    }
+  }
+});
+
+test('⛔⛔ the paths are checked against the REAL published document, not the fixture', () => {
+  /* ⭐⭐ THE FIXTURE CANNOT CATCH A RENAMED FIELD, because I would rename it in
+     both. `census.js` publishes `atk`, `def` and `n`; if a future reducer calls
+     one of them something else, every test above still passes and the live page
+     silently loses a figure — the shape of failure this whole module exists
+     against, one file further out.
+
+     ⚠️ `data/measures.json` IS A CACHE AND NOT THE ARCHIVE, which is why this
+     asserts only that the SHAPE resolves and asserts nothing about the values.
+     The cache is refreshed from the origin, so a field that vanished upstream
+     shows up here within a derive.
+
+     MUTATION: point any `at` path at a field name that does not exist and this
+     names it. */
+  const live = JSON.parse(readFileSync(new URL('../data/measures.json', import.meta.url), 'utf8'));
+  const out = printed(live);
+  for (const e of out) {
+    assert.equal(e.missing, null,
+      `${e.key} cannot be read out of the published document: `
+      + JSON.stringify(e.missing));
+    assert.ok(e.lines >= 2, `${e.key} read only ${e.lines} figure(s)`);
+  }
+  /* AND THE DIVISION REPRODUCES FROM THE PUBLISHED FILE. This is the claim the
+     zone numerators were published for: 235,614 ÷ 165,420 = 1.424, from a
+     document a reader can fetch. */
+  for (const e of out) {
+    for (const g of e.groups) {
+      for (const l of g.lines) {
+        const got = l.as === 'scaled' ? (l.count / l.n) * 60 : l.count / l.n;
+        assert.ok(Math.abs(got - l.value) < Math.max(0.001, Math.abs(l.value) * 0.001),
+          `${e.key}/${l.is} does not reproduce from the published file`);
+      }
+    }
+  }
+});
+
+test('⛔ a figure with no published sentence is not printed at all', () => {
+  /* ⭐ THE RULE APPLIED TO OURSELVES. `census.js` published no `what` on nine
+     sub-objects until 24 September 2026, and the four derivations that needed
+     them were hand-written for exactly that reason. If a sentence goes missing
+     again the page must lose the figure and SAY so, rather than print a number
+     with nothing behind it on the one page that refuses those.
+     MUTATION: render the figure anyway when `what` is absent and this fires. */
+  const gone = JSON.parse(JSON.stringify(MEASURES));
+  delete gone.census.pace.what;
+  const pace = printed(gone).find(e => e.key === 'pace');
+  assert.equal(pace.lines, 0, 'a figure was printed with no published description');
+  assert.deepEqual(pace.missing.map(m => m.why), ['description', 'description', 'description']);
+  assert.ok(pace.why.length > 60, 'the argument does not depend on the document and must survive');
+
+  /* AND THE OTHER DIRECTION READS DIFFERENTLY, because they are two different
+     confessions: one of them ours to fix in a reducer, the other a stale file. */
+  const bare = JSON.parse(JSON.stringify(MEASURES));
+  delete bare.census.endZone.atk;
+  assert.deepEqual(printed(bare).find(e => e.key === 'zoneStarts').missing.map(m => m.why),
+    ['figures']);
+  assert.equal(printed(null).find(e => e.key === 'pace').lines, 0);
+  assert.equal(printed({}).find(e => e.key === 'slotGoals').groups.length, 0);
+});
+
+test('⛔ no printed figure collides with a card row, on the page or in the anchor', () => {
+  /* The defect one namespace above this one: `slot` the row and `slot` the
+     conversion rate are two measurements with one word, and the fix was to stop
+     matching keys by string. A PRINTED key that collided with a derivation key
+     would put two sections on the page with the same `id`, and the browser would
+     silently resolve every door to the first.
+     MUTATION: rename `slotGoals` to `slotShare` and this fires. */
+  const anchors = [...EXPLAINED, ...PRINTED_KEYS].map(anchorOf);
+  assert.equal(anchors.length, new Set(anchors).size,
+    'two sections would be written with the same id');
+});
+
+test('⛔ every printed figure reaches the page with its work, its source and its caveat', async () => {
+  /* ⚠️ THE ROUND TRIP, NOT THE HALVES. `printed()` returning good data proves
+     nothing about what a reader sees; the renderer is a separate file that can
+     drop any field silently. This runs the page's real inlined script.
+     MUTATION: delete the `hmcav` block from `printedBlock` and this fires. */
+  const page = render('how-we-measure.html', { 'measures.json': MEASURES });
+  await page.settle();
+  const nodes = walk(page.ids.hm);
+  for (const key of PRINTED_KEYS) {
+    const sec = nodes.find(n => n.id === anchorOf(key));
+    assert.ok(sec, `no section for ${key}`);
+    const said = walk(sec).map(n => n.textContent).filter(Boolean).join(' ');
+    assert.match(said, /What could be wrong with it/, `${key} rendered without its caveat`);
+    assert.match(said, /Where this appears/, `${key} does not say where a reader met it`);
+    assert.match(said, /÷|in .* minutes =/, `${key} rendered without its arithmetic`);
+  }
+  /* THE PUBLISHED NUMBERS THEMSELVES, FORMATTED — a section could render every
+     label above and no figures at all. */
+  const all = nodes.map(n => n.textContent).filter(Boolean).join(' ');
+  for (const want of ['19,304 ÷ 168,910 = 11.4%', '235,614 ÷ 165,420 = 1.42 attempts per face-off',
+                      '67,517 in 42,615.7 minutes = 95.06 per 60 minutes']) {
+    assert.ok(all.includes(want), `the page does not show: ${want}`);
+  }
+  /* ⛔ 0.765 ATTEMPTS PER FACE-OFF IS NOT 76.5%. `fig()` reads anything under 1
+     as a share, which is right for every figure it was written for and wrong
+     for this one. MUTATION: use `fig` in `readLine` and this fires. */
+  assert.ok(all.includes('0.77 attempts per face-off'), 'a rate under 1 was printed as a percentage');
+  assert.ok(!all.includes('76.5'), 'a rate under 1 was multiplied by a hundred');
+});
+
+test('⛔⛔ one published sentence is printed once on the page, and the second links to it', async () => {
+  /* ⭐⭐ THE SAME DEFECT AS THE FRONT DOOR'S, FROM THE OTHER SIDE. `FIGURE_CLAUSE`
+     closed "one statement written twice"; this closes "one statement READ
+     twice". `pace` and `scoreEffects` are two cuts of a single published
+     measurement, so its description belongs under one of them with a link from
+     the other.
+     MUTATION: drop the `sameAs` branch from `printedBlock` and the count is 2. */
+  const page = render('how-we-measure.html', { 'measures.json': MEASURES });
+  await page.settle();
+  const nodes = walk(page.ids.hm);
+  const all = nodes.map(n => n.textContent).filter(Boolean).join(' ');
+  const said = MEASURES.census.pace.what;
+  const hits = all.split(said).length - 1;
+  assert.equal(hits, 1, `the same published sentence is on the page ${hits} times`);
+
+  const second = nodes.find(n => n.id === anchorOf('scoreEffects'));
+  const links = walk(second).filter(n => n.href).map(n => n.href);
+  assert.ok(links.includes('#' + anchorOf('pace')),
+    `the second cut must link to the section that carries the sentence, got ${links.join(', ')}`);
 });

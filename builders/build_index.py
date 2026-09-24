@@ -4161,6 +4161,14 @@ HOWCSS = r"""<style>
  font-size:.86rem;line-height:1.55}
 .hmcav b{font-weight:700}
 .hmnone{color:var(--muted);font-size:.86rem;margin:0}
+/* ---- the figures the rest of the site prints -------------------------- */
+.hmwhere{font-size:.78rem;color:var(--muted);margin:-2px 0 10px;line-height:1.45}
+/* ⭐ THE PATH IS SET IN THE MONOSPACE A READER EXPECTS FOR A FIELD NAME, because
+   it is an instruction: open measures.json and look HERE. Prose styling would
+   read as a phrase rather than as somewhere to go. */
+.hmsrc{margin:0 0 4px}
+.hmsrc code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+ font-size:.93em;background:#e7eef4;border-radius:4px;padding:1px 4px}
 
 /* ---- the family matrix ------------------------------------------------ */
 .hmpairs{list-style:none;margin:12px 0 14px;padding:0;display:grid;gap:7px}
@@ -4442,6 +4450,108 @@ __HELPERS__
     return s;
   }
 
+  /* ⭐⭐⭐ THE ARITHMETIC OF A FIGURE PRINTED SOMEWHERE ELSE, AND NOTHING HERE
+     DIVIDES. Numerator, denominator and result are three published fields; this
+     places them side by side and rounds for the page. Rounding is presentation
+     — the division happened in `census.js` or `archive.js` and is not repeated.
+
+     ⛔ TWO SHAPES, BECAUSE A RATE PER SIXTY MINUTES IS NOT A QUOTIENT. Writing
+     "67,517 ÷ 42,615.7 = 95.06" would put a false sum on the page whose whole
+     subject is checkable arithmetic: that division is 1.58, and the 60 is the
+     scaling the published sentence describes. So a scaled figure says "in", and
+     a true ratio says "÷".
+
+     ⚠️ AND `fig()` IS NOT USED HERE. It reads anything under 1 as a share and
+     multiplies by 100 — correct for every figure it was written for, and wrong
+     for 0.765 shot attempts per face-off, which it would print as 76.5. The
+     unit decides, and the unit is published beside the figure. */
+  function readLine(l) {
+    var right = l.unit === '%' ? (l.value * 100).toFixed(1) + '%'
+                               : r2(l.value) + ' ' + l.unit;
+    return l.as === 'scaled'
+      ? num(l.count) + ' in ' + num(l.n) + ' ' + l.denUnit + ' = ' + right
+      : num(l.count) + ' ÷ ' + num(l.n) + ' = ' + right;
+  }
+
+  /* ⭐⭐⭐ A FIGURE THE REST OF THE SITE PRINTS. Same block as `figure()` above
+     with one deliberate difference: there is no "Counted / Out of" pair written
+     in `methods.js`, because these figures travel with their own description in
+     the published document. The page prints THAT sentence, names the path it
+     read it from, and a reader can open the same file and check. See the header
+     over `PRINTED` in src/lib/methods.js for why that asymmetry is on purpose. */
+  function printedBlock(e, labelOf) {
+    var s = el('section', 'hmf');
+    s.id = e.anchor;
+    s.appendChild(el('h3', null, e.label));
+    s.appendChild(el('p', 'hmwhere', 'Where this appears: ' + e.where));
+    var box = el('div', 'hmev');
+    /* ⭐⭐ ONE GROUP PER PUBLISHED SENTENCE: the figures that sentence describes,
+       and then the sentence. The published `what` for the slot ends "…this many
+       were goals", and "this many" needs its number directly above it.
+
+       ⭐⭐ AND A SENTENCE IS PRINTED ONCE PER PAGE. Two of these figures are cut
+       out of a single published measurement, and printing its description under
+       both would be the same paragraph twice — the defect the front door's
+       `FIGURE_CLAUSE` closed the day before this was written, arriving from the
+       other direction. `sameAs` is the anchor of the section that has it. */
+    e.groups.forEach(function (g) {
+      var ul = el('ul');
+      g.lines.forEach(function (l) {
+        var li = el('li');
+        li.appendChild(el('b', null, readLine(l)));
+        li.appendChild(el('span', null, ' — ' + l.is));
+        ul.appendChild(li);
+      });
+      box.appendChild(ul);
+      if (g.sameAs) {
+        var p = el('p', null, 'Counted exactly as ');
+        var a = el('a', null, labelOf[g.sameAs] || 'the figure above');
+        a.href = '#' + g.sameAs;
+        p.appendChild(a);
+        p.appendChild(el('span', null, ' — one published measurement cut a '
+          + 'different way, so its description is there rather than repeated here.'));
+        box.appendChild(p);
+        return;
+      }
+      var src = el('p', 'hmsrc');
+      src.appendChild(el('span', null, 'What that counts, published beside the '
+        + 'figure itself — measures.json, at '));
+      src.appendChild(el('code', null, g.from));
+      src.appendChild(el('span', null, ':'));
+      box.appendChild(src);
+      box.appendChild(el('p', null, g.what));
+    });
+    s.appendChild(box);
+    /* ⛔ AND IT SAYS WHICH HALF IS MISSING, IN THE WORDS OF WHICH HALF IT IS. A
+       document that predates a field is ordinary here; a page that quietly drew
+       three lines where four belong is not.
+
+       ⚠️ ONE SENTENCE WHEN THE WHOLE FIGURE IS GONE, one per line when part of
+       it is. A dead document would otherwise print the same confession three
+       times under a block that has nothing in it, under a banner at the top of
+       the page already saying the counts could not be loaded. */
+    if (e.missing && !e.lines) {
+      s.appendChild(el('p', 'hmnone', 'The published figures for this one could '
+        + 'not be read, so the counts are not shown. What follows does not '
+        + 'depend on them.'));
+    } else {
+      (e.missing || []).forEach(function (mi) {
+        s.appendChild(el('p', 'hmnone', mi.why === 'description'
+          ? 'The published document carries no description for ' + mi.path
+            + ' yet, so that line is not shown — we do not print a figure here '
+            + 'without the sentence that says what it counted.'
+          : 'The published document carries no figures at ' + mi.path
+            + ' yet, so that line is not shown.'));
+      });
+    }
+    s.appendChild(el('p', 'hmwhy', e.why));
+    var c = el('p', 'hmcav');
+    c.appendChild(el('b', null, 'What could be wrong with it. '));
+    c.appendChild(el('span', null, e.caveat));
+    s.appendChild(c);
+    return s;
+  }
+
   function clubNums(m, policy) {
     var out = [];
     /* ⚠️ THE PROBE CELLS NAME THE BAR THEY MOVE FROM. "0.6 instead" means
@@ -4651,6 +4761,27 @@ __HELPERS__
       });
     }
 
+    /* ⭐⭐⭐ THE THIRD SECTION, AND THE REASON IT EXISTS. Everything above is a
+       row on a game's preview card. The front door and `what-you-can-see.html`
+       print seventeen more figures that are not rows at all, and until this
+       section they had no door to anything — a reader following "show the work"
+       from the front door landed on a LESSON. */
+    if (m.printed && m.printed.length) {
+      host.appendChild(kick('The other figures on this site'));
+      host.appendChild(el('p', 'hmwhy', 'These are not shown beside a team '
+        + 'either. They are the counts behind the sentences on the front page '
+        + 'and on “What you can see here” — what a shot from the slot is worth, '
+        + 'what a power play does to the pace, what the scoreboard does to it, '
+        + 'and what a face-off in one end is worth. Each one shows the two '
+        + 'numbers it was made of, and then the description published beside '
+        + 'the figure itself rather than written out again here.'));
+      var labelOf = {};
+      m.printed.forEach(function (e) { labelOf[e.anchor] = e.label; });
+      m.printed.forEach(function (e) {
+        host.appendChild(printedBlock(e, labelOf));
+      });
+    }
+
   }
 
   grab('measures.json').then(function (mj) { draw(methods(mj)); });
@@ -4659,8 +4790,13 @@ __HELPERS__
 
 
 def build_methods():
+    # ⭐ `anchors.js` FIRST, AND IT IS NOT OPTIONAL. `_module()` strips the import
+    # lines, so a module this page needs and does not name is a `ReferenceError`
+    # at render time rather than a build failure -- which is exactly how this
+    # broke the moment the anchor moved into a file of its own.
     html = (HOW_BODY.replace("__LIB__", _lib("competitions.js", "teams.js",
-                                             "preview.js", "methods.js"))
+                                             "preview.js", "anchors.js",
+                                             "methods.js"))
                     .replace("__HELPERS__", HELPERS)
                     .replace("__ORIGIN__", repr(DATA_ORIGIN).replace("'", '"')))
     html = P.document(html, title=HOW_TITLE, description=HOW_DESC,
@@ -4708,12 +4844,18 @@ def _preview_doors():
 
 
 def build_preview():
-    # ⭐ `methods.js` IS HERE FOR ONE FUNCTION: `anchorOf`. The card writes the
+    # ⭐ `anchors.js` IS HERE FOR ONE FUNCTION: `anchorFor`. The card writes the
     # href and the methods page writes the id, and two spellings of one string is
-    # the dead link that looks completely normal. Inlining the module is cheaper
+    # the dead link that looks completely normal. Calling one function is cheaper
     # than asserting agreement between two literals.
+    #
+    # ⛔ IT USED TO INLINE THE WHOLE OF `methods.js`, AND THAT COST 12KB. Adding
+    # `PRINTED` put every caveat and every argument on this page, which can
+    # render none of them -- on the one page of this site built to be pasted into
+    # a chat window. The anchor moved into a file of its own; the rule that there
+    # is exactly one spelling of it did not change.
     html = (PREV_BODY.replace("__LIB__", _lib("competitions.js", "teams.js",
-                                              "preview.js", "methods.js"))
+                                              "preview.js", "anchors.js"))
                      .replace("__HELPERS__", HELPERS)
                      .replace("__DOORS__", _preview_doors())
                      .replace("__ORIGIN__", repr(DATA_ORIGIN).replace("'", '"')))

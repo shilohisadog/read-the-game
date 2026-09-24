@@ -30,6 +30,7 @@
  * entitled to think we were hiding.
  */
 import { CLUB_ROWS, POSSESSION_FAMILY, leagueRows } from './preview.js';
+import { anchorOf, anchorFor, explains, EXPLAINED_ROWS } from './anchors.js';
 
 /**
  * What each figure is COUNTED FROM, in the words a reader can check us on.
@@ -189,6 +190,247 @@ const DERIVATION = {
 };
 
 /**
+ * ⭐⭐⭐ THE FIGURES THE REST OF THE SITE PRINTS, AND WHY THEY ARE A SECOND TABLE.
+ *
+ * `DERIVATION` explains the preview card's rows, and `keysOf()` asks the CARD
+ * what those are so that the two lists cannot drift apart. The front door and
+ * `what-you-can-see.html` print seventeen more figures that are not card rows at
+ * all — how often a shot from the slot goes in, what the power play does to the
+ * pace, what the scoreboard does to it, what a zone start is worth — and on
+ * 2026-09-24 not one of them had a door to anything. A reader following Kevin's
+ * standing rule from the front door arrived at a LESSON, which teaches what the
+ * thing is and says nothing about how it was counted. That is the same
+ * conflation `methods.js` was built to end, one surface further out.
+ *
+ * ⛔⛔ AND AN ENTRY HERE MAY NOT TYPE ITS OWN `count` AND `of`. Every row in
+ * `DERIVATION` carries two sentences written HERE, one file away from the
+ * arithmetic that makes them true, and the only thing stopping them drifting is
+ * that somebody re-reads both. For these four there is no need to take that
+ * risk: `archive.js` has always published a `what` beside its shares, and as of
+ * 2026-09-24 `census.js` does too — in the same document this page already
+ * fetches. So the sentence a reader is shown IS the sentence the measurement
+ * travels with, read at render time, and `test/methods.test.js` fails an entry
+ * that grows a `count` or an `of`. `why` and `caveat` stay written here because
+ * they are ARGUMENTS about a figure rather than descriptions of it, and an
+ * argument has no published field to read.
+ *
+ * ⭐ EACH `read` NAMES ITS THREE FIELDS RATHER THAN INFERRING THEM. `count ÷ n`,
+ * `attempts ÷ minutes` and `atk ÷ n` are three spellings of one idea and the
+ * document is not going to unify them; a resolver that guessed which field was
+ * the numerator would be a second place the shape of the archive is written
+ * down. Naming them makes the path greppable: a reader can open `measures.json`
+ * at `census.endZone`, find `atk` and `n`, and do the division themselves.
+ *
+ * ⚠️ `is` IS A LABEL AND NOT A DESCRIPTION. It says WHICH published object a
+ * line is reading — "on the power play", not what a power play is — because the
+ * field name (`ppFor`) is ours and means nothing to a reader. Anything that
+ * describes the MEASUREMENT belongs in the published `what`.
+ */
+const PRINTED = {
+  slotGoals: {
+    label: 'How often a shot from the slot goes in',
+    where: 'The front door, the Shots from the slot card on What you can '
+         + 'see here, and the Shots from the slot rule page.',
+    reads: [
+      { is: 'From inside the slot', at: ['slot', 'scoredFromInside'],
+        num: 'count', den: 'n', out: 'rate', as: 'ratio', unit: '%' },
+      { is: 'From outside it', at: ['slot', 'scoredFromOutside'],
+        num: 'count', den: 'n', out: 'rate', as: 'ratio', unit: '%' },
+    ],
+    why: 'It is what turns the shaded patch in front of the net from a piece of '
+       + 'decoration into a fact. A first-time watcher is told that shots from '
+       + 'there are better ones; this says how much better, and the answer is a '
+       + 'factor of three and a half rather than a nudge.',
+    caveat: 'Three things, and the third is the one that matters. Blocked '
+          + 'attempts are out of both counts, so this is how often a shot that '
+          + 'got through goes in, not how often a shot is worth taking. The '
+          + 'boundary is our line drawn on the league’s coordinates, and '
+          + 'those coordinates are recorded by a person in the building. And it '
+          + 'counts where a shot was TAKEN, not what a team did to get there: a '
+          + 'shot from the slot is partly the reward for something that already '
+          + 'went right, so this cannot tell you that the same shot moved '
+          + 'twenty feet in would go in three times as often.' },
+  pace: {
+    /* ⛔ THIS LABEL SAID "an hour of hockey" AND THAT IS A DIFFERENT NUMBER.
+        `census.pace` counts one CLUB's attempts against the minutes that club
+        played, so an hour of even-strength hockey holds about 117 of these
+        between the two of them — not 59. A label on the methods page that
+        doubles a figure is the worst place on the site to be loose. */
+    label: 'How many shot attempts a club takes in an hour',
+    /* ⛔ AND THIS USED TO CLAIM THE GAME PAGE TOO. It does not print this
+       figure: the box under the ice counts attempts, and the per-60 rate is
+       printed on exactly one surface. Measured by grepping the built pages for
+       the substituted clause, after a first version asserted the surface from
+       memory — which is the flattering direction on a question nobody had
+       asked. ⏭ The gate that makes this mechanical arrives with the doors. */
+    where: 'The All situations card on What you can see here.',
+    reads: [
+      { is: 'On the power play', at: ['census', 'pace', 'ppFor'],
+        said: ['census', 'pace'], num: 'attempts', den: 'minutes', out: 'per60',
+        as: 'scaled', denUnit: 'minutes', unit: 'per 60 minutes' },
+      { is: 'At even strength', at: ['census', 'pace', 'even'],
+        said: ['census', 'pace'], num: 'attempts', den: 'minutes', out: 'per60',
+        as: 'scaled', denUnit: 'minutes', unit: 'per 60 minutes' },
+      { is: 'A skater short', at: ['census', 'pace', 'ppAgainst'],
+        said: ['census', 'pace'], num: 'attempts', den: 'minutes', out: 'per60',
+        as: 'scaled', denUnit: 'minutes', unit: 'per 60 minutes' },
+    ],
+    why: 'Because the box under the ice counts every situation together, and a '
+       + 'club that has spent ten minutes on the power play is not being '
+       + 'compared like for like with one that has not. This is the size of '
+       + 'that effect, so a reader can tell how much of an attempt lead is the '
+       + 'team and how much is the referee.',
+    caveat: 'A rate over minutes is not a rate over chances: a power play is '
+          + 'also a period of play in which one club is TRYING to shoot, and '
+          + 'this cannot separate the extra skater from the intent. The two '
+          + 'sides of a penalty are divided by the same minutes on purpose, '
+          + 'counted once from each side, which is why the pair can be read '
+          + 'against each other and why neither can be added to the other.' },
+  scoreEffects: {
+    label: 'What the scoreboard does to the same number',
+    where: 'The front door, and the Score effects card on '
+         + 'What you can see here.',
+    reads: [
+      { is: 'While trailing', at: ['census', 'pace', 'evenTrail'],
+        said: ['census', 'pace'], num: 'attempts', den: 'minutes', out: 'per60',
+        as: 'scaled', denUnit: 'minutes', unit: 'per 60 minutes' },
+      { is: 'While the score is level', at: ['census', 'pace', 'evenTied'],
+        said: ['census', 'pace'], num: 'attempts', den: 'minutes', out: 'per60',
+        as: 'scaled', denUnit: 'minutes', unit: 'per 60 minutes' },
+      { is: 'While leading', at: ['census', 'pace', 'evenLead'],
+        said: ['census', 'pace'], num: 'attempts', den: 'minutes', out: 'per60',
+        as: 'scaled', denUnit: 'minutes', unit: 'per 60 minutes' },
+    ],
+    /* ⚠️ IT USED TO SAY "the first figure on this page", which is a claim about
+       ORDER rather than about a measurement, and the order is decided by
+       `CLUB_ROWS` two files away. Naming the figure costs nothing and cannot
+       drift. */
+    why: 'It is the evidence behind the condition on the 5-on-5 number above. '
+       + 'That one is measured only while the score is level, '
+       + 'and this is why: the same clubs, at the same strength, take a '
+       + 'measurably different number of attempts depending on nothing but the '
+       + 'scoreboard. Part of any attempt lead is the time a club spent behind.',
+    caveat: 'These three are cut out of even strength, so the pulled goalie — '
+          + 'which is a club trailing with six skaters — is not in them. That '
+          + 'is deliberate, because it is the obvious reply to the finding. What '
+          + 'remains is still a description and not a cause: a club that is '
+          + 'behind is also, on average, the weaker club that night, and this '
+          + 'measurement cannot take that apart.' },
+  zoneStarts: {
+    label: 'What a face-off in one end is worth',
+    where: 'The front door, and The attacking zone card on '
+         + 'What you can see here.',
+    reads: [
+      { is: 'The club attacking that end', at: ['census', 'endZone'],
+        num: 'atk', den: 'n', out: 'atkPerDraw', as: 'ratio',
+        unit: 'attempts per face-off' },
+      { is: 'The club defending it', at: ['census', 'endZone'],
+        num: 'def', den: 'n', out: 'defPerDraw', as: 'ratio',
+        unit: 'attempts per face-off' },
+    ],
+    why: 'It prices the blue-line band. A novice is told that where a face-off '
+       + 'is taken matters; this says by how much, in the only currency the '
+       + 'record holds — shot attempts before the next whistle.',
+    caveat: 'It says nothing at all about the contest AT the line, which is '
+          + 'what the shaded band is drawn around: holding a blue line produces '
+          + 'no event in the record, so there is nothing to count. And a draw in '
+          + 'one end is not randomly assigned — the club already pressing is '
+          + 'the club that gets them — so part of this gap is the teams and '
+          + 'not the place.' },
+};
+
+/**
+ * ⭐ ONE FIELD OUT OF THE PUBLISHED DOCUMENT, OR NULL.
+ *
+ * Every read is null-safe the whole way down, because a document that predates a
+ * field is the ordinary case on this site and not an error: `measures.json` is
+ * republished weekly and the page is fetched by whoever arrives. The page
+ * degrades by saying which half is missing — see `printed()`.
+ */
+function at(measures, path) {
+  return path.reduce((o, k) => (o == null ? null : o[k]), measures);
+}
+
+/**
+ * ⭐ THE TABLE ITSELF IS EXPORTED SO THE GATE CAN LOOK AT IT, and that is not a
+ * convenience. `printed()` builds its result field by field, so an entry that
+ * grew a typed `count` would never reach the output and a test reading the
+ * OUTPUT would report the rule as kept — a check asking a narrower question than
+ * it announces, which is the failure this project keeps paying for. The rule is
+ * about what is WRITTEN here, so the gate reads what is written here.
+ */
+export { PRINTED };
+
+/** Every figure printed elsewhere on the site that this page explains. */
+export const PRINTED_KEYS = Object.keys(PRINTED);
+
+/**
+ * The entries for the third section: one per figure, each carrying the published
+ * arithmetic and the published sentence that says what it is.
+ *
+ * ⛔ A READ WHOSE NUMBERS OR WHOSE SENTENCE ARE MISSING IS DROPPED AND COUNTED,
+ * never rendered half-built. The alternative — a figure with no sentence — is a
+ * number with no derivation, on the one page that exists to refuse those, so
+ * `missing` travels out and the page says which half it lost.
+ *
+ * ⭐⭐ AND A PUBLISHED SENTENCE IS PRINTED ONCE PER PAGE, NOT ONCE PER FIGURE.
+ * `pace` and `scoreEffects` are two different figures cut out of ONE published
+ * measurement, so they read one `what` between them — and rendering it under
+ * both would put the same paragraph on the page twice. That is the defect
+ * `FIGURE_CLAUSE` closed on the front door the day before this was written,
+ * arriving from the other direction: not one statement written twice, but one
+ * statement READ twice. So the first entry to reach a sentence prints it and
+ * every later one carries `sameAs`, the anchor of the section that has it.
+ */
+export function printed(measures) {
+  /* path → the anchor of the first entry that printed that sentence. Built as
+     the list is walked, which is why this is a map rather than a second pass:
+     the order entries are rendered in IS the order they claim a sentence in. */
+  const seen = {};
+  return PRINTED_KEYS.map(key => {
+    const e = PRINTED[key];
+    const anchor = anchorOf(key);
+    const groups = [], missing = [];
+    e.reads.forEach(r => {
+      const o = at(measures, r.at);
+      const from = (r.said || r.at).join('.');
+      const sentence = at(measures, r.said || r.at);
+      const path = r.at.join('.');
+      /* ⛔ THE REASON TRAVELS WITH THE PATH. The page says out loud what it
+         could not show, and "no description published for X" and "no figures
+         published for X" are two different confessions — one of them ours to
+         fix in `census.js` and the other a stale document. A single `missing`
+         list would have the page announcing a narrower claim than it knows. */
+      if (!o || o[r.num] == null || !o[r.den] || o[r.out] == null) {
+        missing.push({ path, why: 'figures' }); return;
+      }
+      if (!sentence || !sentence.what) {
+        missing.push({ path, why: 'description' }); return;
+      }
+      /* ⭐ GROUPED UNDER THE SENTENCE THAT DESCRIBES THEM, not listed and then
+         described. The published `what` for the slot reads "…this many were
+         goals", and "this many" has to have a number immediately above it or
+         the reader is reassembling the page in their head. Three rates that
+         share one sentence group under it; two that have one each sit under
+         their own. */
+      let g = groups.find(x => x.from === from);
+      if (!g) {
+        groups.push(g = { from, what: sentence.what, sameAs: seen[from] || null,
+                          lines: [] });
+        if (!seen[from]) seen[from] = anchor;
+      }
+      g.lines.push({ is: r.is, from: path, as: r.as, unit: r.unit,
+                     denUnit: r.denUnit || null,
+                     count: o[r.num], n: o[r.den], value: o[r.out] });
+    });
+    return { key, anchor, label: e.label, where: e.where,
+             why: e.why, caveat: e.caveat, groups,
+             lines: groups.reduce((n, g) => n + g.lines.length, 0),
+             missing: missing.length ? missing : null };
+  });
+}
+
+/**
  * ⭐ EVERY KEY THE CARD CAN DRAW, ASKED OF THE CARD RATHER THAN LISTED BY HAND.
  *
  * The club keys come from `CLUB_ROWS` directly. The league keys cannot: they are
@@ -205,65 +447,16 @@ export function keysOf(measures) {
   return [...CLUB_ROWS.map(r => r.key), ...leagueRows(measures).map(r => r.key)];
 }
 
-/**
- * ⭐⭐ WHICH DERIVATION EXPLAINS WHICH ROW, DECLARED RATHER THAN MATCHED BY NAME.
- *
- * ⛔⛔ THE DEFECT THIS CLOSES, 2026-09-24. Every entry used to be found by
- * `DERIVATION[row.key]`, so a row and a derivation were the same thing whenever
- * they happened to share a string. The card's `slot` row is A CLUB'S SHARE OF
- * ITS ATTEMPTS TAKEN FROM THE SLOT; the front door, `what-you-can-see` and
- * `slot.html` all print a different measurement that is also called slot — HOW
- * OFTEN A SHOT FROM THERE GOES IN, 11.4%. Two measurements, two denominators,
- * one word. Under string matching, giving the second one a derivation would have
- * silently handed it the first one's, and the door would have opened on a
- * confident, wrong explanation — worse than no door.
- *
- * ⚠️ AND THE ROW KEY IS NOT OURS TO RENAME, which is why the DERIVATION moved
- * instead. `preview.js` reads `settle.rows[row.key]` out of the published
- * `measures.json`, whose live keys are `dmen`, `level5`, `slot`. Renaming the
- * row would leave that lookup undefined until `derive.yml` next republished —
- * Mondays 15:47 UTC — so a rename that reads as cosmetic would have degraded a
- * live card for days. A derivation key is internal and costs nothing.
- *
- * ⭐ A NEW ROW WITH NO ENTRY HERE IS A BUILD FAILURE, not a silent fallback: the
- * gate requires this map to cover everything `keysOf()` reports.
- */
-const EXPLAINS = {
-  level5: 'level5', dmen: 'dmen', slot: 'slotShare',
-  powerplay: 'powerplay', penalties: 'penalties', offside: 'offside',
-  icing: 'icing', attempts: 'attempts', shift: 'shift', hits: 'hits',
-};
-
-/** The derivation that explains a row, or undefined if none is declared. */
-export function explains(rowKey) {
-  return EXPLAINS[rowKey];
-}
-
 /** Every key this module can explain. The gate compares the two. */
 export const EXPLAINED = Object.keys(DERIVATION);
 
-/** Every row the card can draw, as declared here. */
-export const EXPLAINED_ROWS = Object.keys(EXPLAINS);
-
-/**
- * ⭐ THE ANCHOR A FIGURE'S DOOR POINTS AT, stated once.
- *
- * The card writes this href and the page writes this id. Two spellings of one
- * string is the shape of dead link that looks completely normal, so there is one
- * spelling and both sides call it.
- */
-export function anchorOf(key) {
-  return 'm-' + key;
-}
-
-/**
- * The anchor for a ROW, which is the form every caller outside this module
- * holds. It exists so that no caller has to know a row key and a derivation key
- * are different things — the one place that knows is `EXPLAINS`.
- */
-export function anchorFor(rowKey) {
-  return anchorOf(explains(rowKey));
-}
+/* ⭐ RE-EXPORTED, NOT RE-STATED. Every caller outside this file holds
+   `methods.js` as the one place that knows about derivations, and moving the
+   anchor into its own file is a page-weight decision rather than a change to
+   that. ⛔ `export … from` IS NOT USED: `_module()` in the builder strips import
+   lines and deletes the word `export`, which would leave the browser a bare
+   `{ … } from './anchors.js';`. Two statements survive that transform. */
+export { anchorOf, anchorFor, explains, EXPLAINED_ROWS };
 
 /**
  * The page's content: the policy, then one entry per figure, then the family.
@@ -365,6 +558,10 @@ export function methods(measures) {
   } : null;
 
   return { policy, club, league: frame, family,
+           /* ⭐ THE THIRD SECTION RIDES ALONG rather than being a second fetch.
+              The page grabs one document and calls one function; a surface that
+              had to remember to call two would eventually call one. */
+           printed: printed(measures),
            /* The archive the league frame was counted over, so the page can say
               it once above the tiles instead of on each of them. */
            games: c && c.games != null ? c.games : null };
