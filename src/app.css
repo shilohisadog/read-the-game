@@ -1553,6 +1553,18 @@
 #rg .wlearn a{color:var(--ink);text-decoration:underline;text-underline-offset:3px;
  text-decoration-color:var(--edge)}
 #rg .wlearn a:hover{text-decoration-color:var(--ink)}
+/* ⭐ THE DOOR TO THE WORK BORROWS THE LEARN ROW'S SHAPE, AND THAT IS THE POINT.
+   Two rows of links in one panel styled two ways would read as two different
+   kinds of thing; they are one kind — somewhere else to go — separated by what
+   they lead to. What differs is position: this one closes the rule it belongs
+   to, inside the Counted column, and `.wlearn` closes the whole panel. So the
+   rule above it needs no divider and gets none.
+   ⚠️ IT WRAPS FOR THE SAME REASON: Stoppages carries three. */
+#rg .wwork{display:flex;flex-wrap:wrap;align-items:baseline;gap:5px 12px;
+ margin:9px 0 0;font-size:.78rem}
+#rg .wwork a{color:var(--ink);text-decoration:underline;text-underline-offset:3px;
+ text-decoration-color:var(--edge)}
+#rg .wwork a:hover{text-decoration-color:var(--ink)}
 /* ⭐ IT WAS FLOATING IN THE GAP BETWEEN TWO ZONES -- centred, in its own
    whitespace, with every other thing on the surface left-aligned under a
    heading. It is the identity of the game you just watched, and the first two

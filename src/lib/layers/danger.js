@@ -60,6 +60,12 @@ export const danger = {
    * both correctly for their own question — so it belongs beside the reducer that
    * makes the choice, not in a panel that would have to remember it.
    */
+  /* ⭐ `slotAttempts`, NOT `slotGoals`. This layer counts attempts taken from
+     the slot, so the archive figure that matches it is how many attempts are
+     taken from there — 46.7% of located ones. How often one goes IN is the
+     reason the shading exists and is one link further on, from the card. Three
+     measurements share the word slot and this is the one this layer is. */
+  work: ['slotAttempts'],
   counts: `attempts from within ${HIGH_DANGER_FT} ft of the net, between the face-off dots`,
   credits: 'Credited to the club that shot. Blocked attempts are excluded because the coordinate the feed records is where the puck stopped — so we know who shot it, but not from where.',
   id: 'slot',

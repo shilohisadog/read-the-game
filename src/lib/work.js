@@ -54,6 +54,7 @@ const PLURAL={faceoff:'faceoffs',hit:'hits',giveaway:'giveaways',takeaway:'takea
  *   sl        the event slice, for looking up an excluded event's type
  *   name      the layer's chip label, already resolved
  *   lds lat   the layer's description and attribution note, read off the page
+ *   work      [{anchor, label}] — where this layer's rule is derived, or []
  *   box       `lboxFor`'s output — the SAME figures the layer box shows
  *   cards     the learn-card row, or ''
  *   mode      "ALL SITUATIONS" or "EVEN STRENGTH", already rendered
@@ -61,7 +62,7 @@ const PLURAL={faceoff:'faceoffs',hit:'hits',giveaway:'giveaways',takeaway:'takea
  *   evenOnly  whether the strength filter is on, for the footnote
  *   AAB HAB   the two club abbreviations
  */
-export function workMarkup({ id, L, sl, name, lds, lat, box: b, cards, mode, when, evenOnly, AAB, HAB }) {
+export function workMarkup({ id, L, sl, name, lds, lat, work, box: b, cards, mode, when, evenOnly, AAB, HAB }) {
  /* ⭐ ONE EXAMPLE PER GROUP, so a categorical reason keeps a real measurement
     beside it. CHENG on the specific form: "36 against 33 teaches the rule
     better than the rule statement does" -- right, and the way to keep that
@@ -168,7 +169,26 @@ export function workMarkup({ id, L, sl, name, lds, lat, box: b, cards, mode, whe
     behind on the first pass and the panel rendered the word "undefined" to a
     reader -- caught by the golden's layer walk, which had existed for an hour. */
  +`<p>${lds?ESC(lds)+'.':''}</p>`
- +(lat?`<p class="wattr">${ESC(lat)}</p>`:'')+`</div>`
+ +(lat?`<p class="wattr">${ESC(lat)}</p>`:'')
+ /* ⭐⭐⭐ THE DOOR OUT OF THIS GAME AND INTO THE ARCHIVE. Kevin, 2026-09-24:
+    *"every layer should have a link (i.e. door) to a 'how we count' page."* The
+    two lines above are this layer's own rule and they are complete — what it
+    counts, who it credits — and they say nothing at all about what ORDINARY
+    looks like. A viewer watching .900 build in front of them cannot tell from
+    this panel whether that is good.
+
+    ⭐ IT SITS IN THE COUNTED COLUMN, WITH THE RULE, and not beside the ledger.
+    The ledger is arithmetic about this game; the rule is what the arithmetic
+    applied, and where it came from is the same subject one level up. `cards`
+    stays where Kevin put it, below everything, because a lesson is not evidence.
+
+    ⛔ `work` MAY BE EMPTY AND RENDERS NOTHING WHEN IT IS. An empty row would
+    advertise a gap, which is the argument `cardsFor` already settled. */
+ +(work&&work.length
+    ?`<p class="wwork"><span class="wll">How we counted this</span>`
+      +work.map(w=>`<a href="/how-we-measure.html#${ESC(w.anchor)}">${ESC(w.label)}</a>`).join('')
+      +`</p>`
+    :'')+`</div>`
  /* ⭐⭐ THE SAME SHAPE AS THE COLUMN BESIDE IT: one row per RULE, with its count
     and one measurement. Until 2026-09-07 this printed `surprising[0].why` under
     "For example:" and then "the other N each carry their own reason, written by

@@ -1293,7 +1293,7 @@ function renderWork(_,cur,at){
     no module for a library file to import it from. */
  $('workBody').innerHTML=workMarkup({
   id,L,sl,name,
-  lds:lyr?lyr.counts:'',lat:lyr?lyr.credits:'',
+  lds:lyr?lyr.counts:'',lat:lyr?lyr.credits:'',work:LAYERWORK[id]||[],
   box:lboxFor(id,at,counted(sl)),cards:cardsFor(id),
   mode:MODE(),when:cur?`through P${cur.per} ${cur.rem}`:'pre-game',
   evenOnly,AAB,HAB});}

@@ -67,6 +67,36 @@ export const blocked = {
    * both correctly for their own question — so it belongs beside the reducer that
    * makes the choice, not in a panel that would have to remember it.
    */
+  /**
+   * ⭐⭐⭐ WHERE A VIEWER GOES FROM HERE, AND WHY IT LIVES ON THE LAYER.
+   *
+   * Kevin, 2026-09-24: *"every layer should have a link (i.e. door) to a 'how we
+   * count' page, that seems like the cleanest, most accessible way to integrate
+   * the answer to 'where did that come from?'"* — and the ruling that followed:
+   * the RULES live in the layer descriptors and the methods page INDEXES them,
+   * rather than the methods page growing a section per layer. `counts` and
+   * `credits` already obey that; this is the third field of the same kind, and
+   * it is here for the same reason CHENG gave for the first two: *"the layer
+   * owns what it counts and why; the page owns how that reads."*
+   *
+   * ⚠️ IT IS A LIST BECAUSE ONE LAYER CAN REPORT SEVERAL MEASUREMENTS. Stoppages
+   * names the rule that stopped play, and we publish a separate archive figure
+   * for penalties, for offsides and for icings — one door would have to pick,
+   * and picking silently is how a reader gets a confident answer to a question
+   * they did not ask.
+   *
+   * ⛔ AND THE NUMBER BEHIND THE DOOR IS THE ARCHIVE'S, NOT THIS GAME'S. The box
+   * under the ice counts one night; the section it opens counts every game we
+   * hold. That is the point of the trip — it is what turns "4 blocks" into
+   * something a newcomer can place — but it means the two figures will not
+   * match, and nothing here should pretend otherwise.
+   */
+  /* ⭐ THE SAME DOOR AS ATTEMPTS, ON PURPOSE. A block is one of the three
+     endings `attempts` splits, so the archive figure a viewer needs is the one
+     that says how often an attempt is stopped by a body. Sending this layer
+     somewhere else would imply the site counts blocks separately from attempts,
+     which is the opposite of what `credits` above is careful to explain. */
+  work: ['attempts'],
   counts: 'the attempts a body stopped before they reached the goalie',
   credits: 'Each block is credited to the club that made it, the way a broadcast does. A block by a teammate is credited to neither, so the two figures need not add up.',
   id: 'blocked',

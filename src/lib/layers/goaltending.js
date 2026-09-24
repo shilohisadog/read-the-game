@@ -39,6 +39,10 @@ export const goaltending = {
    * both correctly for their own question — so it belongs beside the reducer that
    * makes the choice, not in a panel that would have to remember it.
    */
+  /* ⭐ THE FIGURE THIS LAYER BUILDS IN FRONT OF A VIEWER IS A SAVE FRACTION,
+     and .900 sounds like a school grade to a newcomer. `saves` exists so the
+     number on screen can be placed against what ordinary is. */
+  work: ['saves'],
   counts: 'every shot each goaltender faced, and what became of it — saved, scored on, or missed the net',
   credits: 'Each goaltender is counted for the club he plays for, against the other club’s shots — so these two columns read the opposite way round.',
   id: 'goaltending',

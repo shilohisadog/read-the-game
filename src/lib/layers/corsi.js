@@ -28,6 +28,12 @@ export const corsi = {
    * both correctly for their own question — so it belongs beside the reducer that
    * makes the choice, not in a panel that would have to remember it.
    */
+  /* ⭐ THE DEFINITION OF AN ATTEMPT IS WHAT A VIEWER OF THIS LAYER IS ASKING
+     ABOUT, and `attempts` is the archive-wide statement of it: the three
+     endings, over every attempt we hold. Not `pace`, which answers a different
+     question — how the SITUATION changes the rate — and is a click away on the
+     All situations card this panel already links to. */
+  work: ['attempts'],
   counts: 'every shot attempt the league recorded: on goal, missed, or blocked, because all three are the team moving the puck at the net',
   credits: 'A blocked attempt is credited to the club that shot it — the shot was still taken, it just never arrived.',
   id: 'corsi',

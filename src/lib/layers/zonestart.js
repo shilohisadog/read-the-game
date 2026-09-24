@@ -86,6 +86,17 @@ export const zonestart = {
    * per CHENG's ruling that the layer owns what it counts and the page owns how
    * that reads.
    */
+  /* ⚠️ THE NEAREST PUBLISHED FIGURE, AND IT IS NOT THE SAME COUNT. This layer
+     counts DRAWS by zone; `zoneStarts` counts the attempts that follow an
+     end-zone draw — it prices a zone start rather than tallying one. It is the
+     right door because it answers what a viewer is actually asking (does where
+     the draw happens matter, and by how much), and the wrong one in the narrow
+     sense that it is a different numerator.
+     ⏭ THE EXACT MATCH IS `census.faceoffZone`, which is published and carries
+     no `what` — one of the nine sub-objects `census.js` was still silent about
+     on 2026-09-24. When it has one, this becomes its own entry and the door
+     moves. Recorded in test/census.test.js with the rest of that debt. */
+  work: ['zoneStarts'],
   counts: 'every faceoff, and for the club that won it, whether that draw was in its offensive zone, the neutral zone, or its defensive zone',
   credits: 'Each draw is credited to the club that won it, in the zone that club was attacking toward — so the same dot is an offensive-zone start for one club and a defensive-zone start for the other. The league records the winner and not the loser, so a draw has one club and never two.',
   id: 'zonestart',

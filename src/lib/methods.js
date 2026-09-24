@@ -280,6 +280,40 @@ const PRINTED = {
           + 'that were taken from the point. The boundary is also ours — 33 '
           + 'feet from the net and 22 from centre — drawn on coordinates a '
           + 'person in the building recorded.' },
+  saves: {
+    /* ⭐ THE ONE ENTRY HERE THAT IS NOT ON A STATIC PAGE. Every other figure in
+       this table is printed in prose the builder substitutes; this one is
+       printed by the REPLAY, once per game, by the Goaltending layer. A reader
+       watching a save percentage build in front of them has exactly the same
+       question a reader of the front door does, and until now the layer could
+       only answer it with its own counting rule — true, and silent about what
+       ordinary looks like. */
+    label: 'How often a goaltender makes the save',
+    /* ⚠️ NO `where`, AND THAT IS NOT AN OMISSION. This figure is printed on no
+       static page at all — the Goaltending layer builds it in front of a viewer,
+       once per game — and the line saying so is DERIVED from the layer
+       descriptors rather than typed here. A `where` would have been the same
+       sentence twice on one screen, which is the defect `FIGURE_CLAUSE` closed
+       on the front door. The gate requires a figure to say where a reader met
+       it; it does not require that sentence to be typed. */
+    reads: [
+      { is: 'Saved', at: ['attemptMix', 'saveFraction'],
+        num: 'count', den: 'n', out: 'rate', as: 'ratio', unit: '%' },
+    ],
+    why: 'It is the number a first-time watcher will hear all night and the one '
+       + 'they are least equipped to read: .900 sounds like a school grade and '
+       + 'is in fact roughly average. Printing what ordinary is turns the '
+       + 'figure on screen from a score into a comparison.',
+    /* ⚠️ THIS SAID "THE DENOMINATOR", AND THE COLD-READER GATE CAUGHT IT. That
+       is a word only we use, on the page whose whole subject is being checkable
+       by somebody who does not work here. What it divides by can be said in the
+       words a reader already has. */
+    caveat: 'What it divides by is the shots the goaltender actually FACED, so '
+          + 'an empty-net goal is in neither half and a shootout attempt is out '
+          + 'altogether. It also treats every shot as one shot: a tip from the '
+          + 'edge of the crease and a point shot through clean air count the '
+          + 'same, which is most of what separates two goaltenders with the '
+          + 'same number.' },
   pace: {
     /* ⛔ THIS LABEL SAID "an hour of hockey" AND THAT IS A DIFFERENT NUMBER.
         `census.pace` counts one CLUB's attempts against the minutes that club
@@ -479,6 +513,21 @@ export function keysOf(measures) {
 
 /** Every key this module can explain. The gate compares the two. */
 export const EXPLAINED = Object.keys(DERIVATION);
+
+/**
+ * What a figure is called, for a surface that links to it rather than renders it.
+ *
+ * ⭐ THE REPLAY'S LAYER DOORS NEED THIS AND CANNOT IMPORT THIS FILE. Stoppages
+ * opens three sections — penalties, offsides, icings — and three links all
+ * reading "How we counted this" would be a menu with no labels on it. The game
+ * page carries `anchors.js` and not the whole of `methods.js`, for the 12KB
+ * reason recorded there, so the labels are baked into `data/layer-rules.json` by
+ * node at build time and injected. Either way they are read from here once.
+ */
+export function explainedLabel(key) {
+  const e = DERIVATION[key] || PRINTED[key];
+  return e ? e.label : null;
+}
 
 /* ⭐ RE-EXPORTED, NOT RE-STATED. Every caller outside this file holds
    `methods.js` as the one place that knows about derivations, and moving the

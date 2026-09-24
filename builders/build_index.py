@@ -4337,6 +4337,16 @@ HOWCSS = r"""<style>
  font-size:.86rem;line-height:1.55}
 .hmcav b{font-weight:700}
 .hmnone{color:var(--muted);font-size:.86rem;margin:0}
+/* ---- the replay's layers, indexed ------------------------------------- */
+.hmlay{display:grid;gap:10px;margin:14px 0 0}
+@media (min-width:720px){.hmlay{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.hmlay>div{background:#fff;border:1px solid var(--edge);border-left:3px solid var(--blue);
+ border-radius:9px;padding:12px 14px}
+.hmlay h3{margin:0 0 7px;font-size:.95rem}
+.hmlay p{margin:0 0 6px;font-size:.86rem;line-height:1.5}
+.hmlay b{font-weight:700}
+.hmlc{color:var(--muted)}
+.hmld{margin:8px 0 0 !important;font-size:.8rem !important}
 /* ---- the figures the rest of the site prints -------------------------- */
 .hmwhere{font-size:.78rem;color:var(--muted);margin:-2px 0 10px;line-height:1.45}
 /* ⭐ THE PATH IS SET IN THE MONOSPACE A READER EXPECTS FOR A FIELD NAME, because
@@ -4392,6 +4402,8 @@ depend on one of them link straight to it.</p>
      cannot check our work. The words that went: settles, admission rule, club
      row, league row, reliability, chronological, centred, club-season. The
      arguments are now QUESTIONS, in the words someone would actually ask. -->
+__LAYER_RULES__
+
 <section class="hmsec" id="criticisms">
 <p class="hmkick">Fair questions about all this</p>
 
@@ -4586,10 +4598,35 @@ __HELPERS__
     return box;
   }
 
+  /* ⭐⭐ WHICH LAYERS ON THE REPLAY OPEN THIS SECTION, READ RATHER THAN TYPED.
+     `where` above is prose and this is the half of it that can be derived: the
+     layer descriptors record which figure each one opens, node writes that into
+     `data/layer-rules.json`, and this is its inverse. A sentence typed here
+     would be the second statement of a pairing the layers already own — and the
+     one on this page that claimed a surface the figure is not printed on
+     survived a whole morning. */
+  var LAYER_FOR = __LAYER_FOR__;
+  function onTheReplay(anchor) {
+    var ls = LAYER_FOR[anchor];
+    if (!ls || !ls.length) return null;
+    /* ⚠️ A LIST, NOT A JOIN. The first version read "the Control (Corsi) layer,
+       the Blocked shots layers are counting" — two layers open the same section,
+       which was never going to be the common case and so was never read aloud.
+       Found by looking at the rendered page. */
+    var named = ls.length > 1
+      ? ls.slice(0, -1).join(', ') + ' and ' + ls[ls.length - 1]
+      : ls[0];
+    return el('p', 'hmwhere', 'On a game page, this is what the ' + named
+      + (ls.length > 1 ? ' layers are' : ' layer is')
+      + ' counting \u2014 for one night rather than for the archive.');
+  }
+
   function figure(m, nums) {
     var s = el('section', 'hmf');
     s.id = m.anchor;
     s.appendChild(el('h3', null, m.label));
+    var rep = onTheReplay(m.anchor);
+    if (rep) s.appendChild(rep);
     var dl = el('dl', 'hmfrom');
     dl.appendChild(el('dt', null, 'Counted'));
     dl.appendChild(el('dd', null, m.count));
@@ -4659,7 +4696,14 @@ __HELPERS__
     var s = el('section', 'hmf');
     s.id = e.anchor;
     s.appendChild(el('h3', null, e.label));
-    s.appendChild(el('p', 'hmwhere', 'Where this appears: ' + e.where));
+    /* ⛔ A FIGURE MUST SAY WHERE A READER MET IT, AND EITHER HALF WILL DO. Most
+       are printed in prose a builder substituted and name their surfaces in
+       `where`; one is printed only by the replay, and for that one the sentence
+       is derived from the layer rather than written twice. A test requires one
+       of the two to be present. */
+    if (e.where) s.appendChild(el('p', 'hmwhere', 'Where this appears: ' + e.where));
+    var rep = onTheReplay(e.anchor);
+    if (rep) s.appendChild(rep);
     var box = el('div', 'hmev');
     /* ⭐⭐ ONE GROUP PER PUBLISHED SENTENCE: the figures that sentence describes,
        and then the sentence. The published `what` for the slot ends "…this many
@@ -4965,12 +5009,86 @@ __HELPERS__
 """
 
 
+def _layer_for():
+    """{anchor: [layer name]} — which replay layers open each figure's section.
+
+    ⭐⭐ DERIVED, BECAUSE `where` IS PROSE AND PROSE GOES STALE. Every entry on
+    the methods page carries a line saying where a reader met the figure, typed
+    beside it — and this morning one of them claimed a surface that does not
+    print it at all, which is the flattering direction on a question nobody had
+    asked. The replay half of that answer is already recorded in
+    `data/layer-rules.json`, written by node out of the descriptors, so the page
+    reads it rather than being told it twice.
+
+    ⚠️ IT IS THE INVERSE OF THE SAME DOCUMENT. A layer names the figures it
+    opens; a figure cannot name the layers that open it without a second list.
+    Inverting is not a second list.
+    """
+    d = json.loads((ROOT / "data" / "layer-rules.json").read_text())
+    out = {}
+    for l in d["layers"]:
+        name = l["label"].lstrip("＋").strip()
+        for w in l["work"]:
+            out.setdefault(w["anchor"], []).append(name)
+    return json.dumps(out, sort_keys=True, separators=(",", ":"))
+
+
+def _layer_rules():
+    """The replay's layers, indexed — read from the document node wrote.
+
+    ⭐⭐⭐ KEVIN'S RULING, 2026-09-24: the rules live in the layer descriptors,
+    rendered inline on the replay, and the methods page INDEXES them. Not a
+    section per layer written here, which would be a second copy of `counts` and
+    `credits` in a second language, free to drift from the reducer that makes
+    them true. `builders/layer-rules.mjs` asks the layers; this renders the
+    answer and states nothing of its own.
+
+    ⭐ IT IS STATIC, LIKE THE QUESTIONS BELOW IT AND UNLIKE EVERYTHING ABOVE. A
+    layer's rule is code and does not depend on the published measurements, so it
+    survives a document that cannot be fetched -- which is the condition a reader
+    who came to check our work is most likely to be in when they need it.
+
+    ⚠️ THE `＋` COMES OFF THE LABEL. It is the chip's affordance -- the glyph that
+    says this control adds a layer to the ice -- and on a page with no chips it
+    is a character with no referent. The rest of the label is the name a reader
+    saw on screen and is not touched.
+    """
+    d = json.loads((ROOT / "data" / "layer-rules.json").read_text())
+    out = ['<section class="hmsec" id="the-layers">',
+           '<p class="hmkick">What the replay counts</p>',
+           '<h2>Six switches, and the rule behind each one</h2>',
+           '<p>A game page carries six layers you can turn on. Each one counts '
+           'something different out of the same night, and each states its own '
+           'rule beside the count while you watch. They are collected here so '
+           'the rules can be read in one place &mdash; and each says which of '
+           'the figures above it belongs to.</p>',
+           '<div class="hmlay">']
+    for l in d["layers"]:
+        label = l["label"].lstrip("＋").strip()
+        doors = " &middot; ".join(
+            f'<a href="#{w["anchor"]}">{w["label"]}</a>' for w in l["work"])
+        out.append(f'<div><h3>{label}</h3>'
+                   f'<p><b>Counts</b> {l["counts"]}.</p>'
+                   f'<p class="hmlc">{l["credits"]}</p>'
+                   f'<p class="hmld">Counted across every game we hold: {doors}</p>'
+                   f'</div>')
+    out.append("</div>")
+    out.append('<p class="hmr">These are the layers themselves, not a '
+               'description of them: the sentences above are the ones the game '
+               'page prints beside each count, read out of the same code that '
+               'does the counting.</p>')
+    out.append("</section>")
+    return "\n".join(out)
+
+
 def build_methods():
     # ⭐ `anchors.js` FIRST, AND IT IS NOT OPTIONAL. `_module()` strips the import
     # lines, so a module this page needs and does not name is a `ReferenceError`
     # at render time rather than a build failure -- which is exactly how this
     # broke the moment the anchor moved into a file of its own.
-    html = (HOW_BODY.replace("__LIB__", _lib("competitions.js", "teams.js",
+    html = (HOW_BODY.replace("__LAYER_RULES__", _layer_rules())
+                    .replace("__LAYER_FOR__", _layer_for())
+                    .replace("__LIB__", _lib("competitions.js", "teams.js",
                                              "preview.js", "anchors.js",
                                              "methods.js"))
                     .replace("__HELPERS__", HELPERS)

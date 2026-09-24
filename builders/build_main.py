@@ -713,7 +713,27 @@ def _lib():
     out.append("/* --- which learn cards teach which layer --- */\n"
                "const LEARNCARDS = "
                + json.dumps(_learn_by_layer(), separators=(",", ":")) + ";")
+    # ⭐⭐ WHERE EACH LAYER'S DOOR TO THE WORK LEADS, written by node out of the
+    # layer descriptors and `methods.js`. Injected rather than imported for the
+    # reason recorded in `anchors.js`: the game page carries the anchor and not
+    # the 12KB of derivations the label would otherwise come with.
+    out.append("/* --- data/layer-rules.json: each layer's door to the work --- */\n"
+               "const LAYERWORK = " + json.dumps(_layer_work(), separators=(",", ":")) + ";")
     return "\n".join(out)
+
+
+def _layer_work():
+    """{layerId: [{anchor, label}]} — read from the document node wrote.
+
+    ⛔ NOT RESTATED HERE, AND NOT DERIVED HERE EITHER. `work` is a property of
+    the layer, the anchor spelling belongs to `anchors.js` and the label belongs
+    to `methods.js`; all three are JavaScript and this is Python. So node answers
+    once into `data/layer-rules.json` and this reads it, the same arrangement
+    `_learn_by_layer` has with `learn-doors.json`.
+    """
+    d = json.loads((ROOT / "data" / "layer-rules.json").read_text())
+    return {l["id"]: [{"anchor": w["anchor"], "label": w["label"]} for w in l["work"]]
+            for l in d["layers"]}
 
 
 def _learn_by_layer():

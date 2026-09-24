@@ -323,6 +323,12 @@ export const whistle = {
    * both correctly for their own question — so it belongs beside the reducer that
    * makes the choice, not in a panel that would have to remember it.
    */
+  /* ⭐⭐ THREE, AND THIS IS THE LAYER THE LIST EXISTS FOR. A stoppage is not one
+     measurement: we publish how often a penalty is called, how often a play is
+     offside and how often the puck is iced, each over the whole archive and
+     each with its own denominator. A viewer looking at this layer's tally is
+     looking at all three at once, so all three are offered. */
+  work: ['penalties', 'offside', 'icing'],
   counts: 'the rule that stopped play, and the dot it restarted on',
   credits: 'A stoppage names a rule and never a club, so nothing here is credited to either side.',
   id: 'whistle',

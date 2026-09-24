@@ -33,7 +33,10 @@ import { CLUB_ROWS, leagueRows } from '../src/lib/preview.js';
 /** A measures.json carrying EVERY counter, so `keysOf` reports the full set. */
 const MEASURES = {
   attemptMix: { games: 4192, byType: { 'shot-on-goal': 215529, goal: 25597,
-    'blocked-shot': 138880, 'missed-shot': 120714 } },
+    'blocked-shot': 138880, 'missed-shot': 120714 },
+    saveFraction: { count: 215529, n: 239526, rate: 0.8998146339019564,
+      population: 'NHL regular season and playoffs',
+      what: 'of the shots a goalie actually faced, this many were saved' } },
   /* ⭐ THE SLOT AND THE CENSUS RATES ARE HERE BECAUSE THE THIRD SECTION READS
      THEM. Shapes copied from the published document, `what` sentences included —
      a fixture that carried the numbers and not the sentences would exercise the
@@ -765,7 +768,12 @@ test('⛔ every printed figure reaches the page with its work, its source and it
     assert.ok(sec, `no section for ${key}`);
     const said = walk(sec).map(n => n.textContent).filter(Boolean).join(' ');
     assert.match(said, /What could be wrong with it/, `${key} rendered without its caveat`);
-    assert.match(said, /Where this appears/, `${key} does not say where a reader met it`);
+    /* ⚠️ EITHER HALF. `saves` is printed by no static page — the Goaltending
+       layer builds it once per game — so its surface is derived from the layer
+       descriptor rather than typed into `where`. Demanding the typed one would
+       force a sentence that is already on the screen. */
+    assert.match(said, /Where this appears|On a game page/,
+      `${key} does not say where a reader met it`);
     assert.match(said, /÷|in .* minutes =/, `${key} rendered without its arithmetic`);
   }
   /* THE PUBLISHED NUMBERS THEMSELVES, FORMATTED — a section could render every
@@ -972,4 +980,113 @@ test('⛔⛔⛔ a door opens the work behind THE NUMBER THE CARD PRINTS', async 
       + `[${behind.map(h => +h.toFixed(3))}] — not one number in common, so the door `
       + 'explains a different measurement from the one the reader just read');
   }
+});
+
+/* ------------------------------ THE REPLAY'S LAYERS, AND WHERE THEY LEAD */
+
+test('⛔⛔⛔ every layer a viewer can switch on has a door to the work behind it', async () => {
+  /* ⭐⭐⭐ KEVIN'S RULING, 2026-09-24: *"every layer should have a link (i.e.
+     door) to a 'how we count' page"* — and then, on where it lives: the rules
+     stay in the layer descriptors, rendered inline on the replay and INDEXED by
+     the methods page, rather than the methods page growing a section per layer.
+
+     ⛔ THE SET IS ASKED OF THE MODULES, NOT LISTED. A seventh layer added next
+     spring would ship with no door and nothing would notice, because every other
+     check here iterates the document that the six were written into. So this
+     imports the real descriptors and requires the document to cover exactly what
+     a viewer can switch on — `＋` in the label is what makes a layer a chip.
+     MUTATION: add a layer with a `＋` label and no `work`, and the build refuses
+     it; drop one from `layer-rules.mjs`'s list and this names it. */
+  const mods = await Promise.all(['blocked', 'corsi', 'danger', 'goaltending',
+    'whistle', 'zonestart', 'tied'].map(n => import(`../src/lib/layers/${n}.js`)));
+  const every = mods.flatMap(m => Object.values(m)).filter(v => v && v.label);
+  const chips = every.filter(l => l.label.startsWith('＋'));
+  assert.equal(chips.length, 6, `${chips.length} layers carry a chip label`);
+  assert.equal(every.length - chips.length, 1,
+    'tiedControl is the one descriptor that is not a chip; something else grew a label');
+
+  const doc = JSON.parse(readFileSync(new URL('../data/layer-rules.json', import.meta.url), 'utf8'));
+  assert.deepEqual(doc.layers.map(l => l.id).sort(), chips.map(l => l.id).sort(),
+    'the layer document and the layers a viewer can switch on disagree');
+
+  const known = new Set([...EXPLAINED, ...PRINTED_KEYS]);
+  for (const l of doc.layers) {
+    const src = chips.find(c => c.id === l.id);
+    /* ⛔ THE SENTENCES ARE THE DESCRIPTOR'S, CHARACTER FOR CHARACTER. A document
+       that paraphrased them would be the second copy this arrangement exists to
+       prevent, and it would look completely correct. */
+    assert.equal(l.counts, src.counts, `${l.id}: the document's \`counts\` is not the layer's`);
+    assert.equal(l.credits, src.credits, `${l.id}: the document's \`credits\` is not the layer's`);
+    assert.ok(l.work.length, `${l.id} has no door to the work`);
+    for (const w of l.work) {
+      assert.ok(known.has(w.key), `${l.id} opens ${w.key}, which nothing explains`);
+      assert.equal(w.anchor, anchorOf(w.key), `${l.id}'s door is spelled by hand`);
+      assert.ok(w.label && w.label.length > 6, `${l.id}'s door to ${w.key} has no name`);
+    }
+  }
+
+  /* AND EVERY ONE OF THEM LANDS. The replay writes these hrefs and the methods
+     page writes the ids; two spellings of one string is the dead link that looks
+     completely normal. */
+  const page = render('how-we-measure.html', { 'measures.json': MEASURES });
+  await page.settle();
+  const sections = new Set(walk(page.ids.hm).map(n => n.id).filter(Boolean));
+  for (const l of doc.layers) {
+    for (const w of l.work) {
+      assert.ok(sections.has(w.anchor),
+        `the ${l.id} layer opens #${w.anchor} and the methods page renders no such section`);
+    }
+  }
+});
+
+test('⚠️ a section two layers open names both, in a sentence that reads', async () => {
+  /* ⭐ THE CASE THAT WAS NEVER GOING TO BE THE COMMON ONE. Attempts and Blocked
+     both open `m-attempts`, and the first version of that line read "the Control
+     (Corsi) layer, the Blocked shots layers are counting" — a join standing in
+     for a list, in copy nobody would write by hand. Found by looking at the
+     rendered page, which is the only way this class of defect is ever found;
+     this is the part of it a test can hold.
+     MUTATION: go back to a join and this fires on the plural. */
+  const page = render('how-we-measure.html', { 'measures.json': MEASURES });
+  await page.settle();
+  const sec = walk(page.ids.hm).find(n => n.id === anchorOf('attempts'));
+  const said = walk(sec).map(n => n.textContent).filter(Boolean).join(' ');
+  assert.match(said, /the Control \(Corsi\) and Blocked shots layers are counting/,
+    'two layers open this section and the sentence naming them does not read');
+
+  const one = walk(page.ids.hm).find(n => n.id === anchorOf('saves'));
+  assert.match(walk(one).map(n => n.textContent).filter(Boolean).join(' '),
+    /the Goaltending layer is counting/, 'the singular form broke');
+});
+
+test('⛔⛔ the methods page indexes every layer, in the layer’s own words', () => {
+  /* ⚠️ THE INDEX IS STATIC MARKUP AND THAT IS THE POINT — a reader who arrives
+     when the published figures cannot be fetched still finds what each layer
+     counts, the same way they still find the questions at the foot. So it is
+     asserted against the BYTES rather than against a render.
+
+     MUTATION: paraphrase any `counts` sentence in `_layer_rules` and this fires;
+     drop a layer from the loop and the count does. */
+  const html = readFileSync(new URL('../src/how-we-measure.html', import.meta.url), 'utf8');
+  const body = html.slice(0, html.indexOf('<script>'));
+  assert.ok(body.includes('id="the-layers"'), 'the layer index is not in the static half');
+
+  const doc = JSON.parse(readFileSync(new URL('../data/layer-rules.json', import.meta.url), 'utf8'));
+  for (const l of doc.layers) {
+    assert.ok(body.includes(l.counts),
+      `the index does not print the ${l.id} layer's own \`counts\` sentence`);
+    assert.ok(body.includes(l.credits),
+      `the index does not print the ${l.id} layer's own \`credits\` sentence`);
+    for (const w of l.work) {
+      assert.ok(body.includes(`href="#${w.anchor}"`),
+        `the index gives the ${l.id} layer no route to #${w.anchor}`);
+    }
+    /* ⚠️ AND THE CHIP GLYPH COMES OFF. `＋` says "this control adds a layer to
+       the ice", which is an affordance and not a name; on a page with no chips
+       it is a character with no referent. */
+    assert.ok(body.includes(`<h3>${l.label.replace('＋', '').trim()}</h3>`),
+      `the ${l.id} layer is not named in the index as a reader saw it`);
+  }
+  assert.equal((body.match(/<div><h3>/g) || []).length, doc.layers.length,
+    'the index and the layer document disagree about how many layers there are');
 });

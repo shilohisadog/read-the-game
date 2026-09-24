@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-BZFQmqYfBzJAY8tr5zQfHFuClbYqkvH0E/r3g/09IdA=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig=' 'sha256-3KOUUvArdbYXuPId+NP3dHW+aAMRgQQe2ZhNGGAzpyw='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-fRBMzcBhFEk+Qyaq9h+N4cF1G5Pf+v41JUWKRvlkxx0=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig=' 'sha256-i5XVgIuwkrHTLzprasqkHRNozuaBFpgoBml3njMpx24='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -643,6 +643,16 @@ footer p{margin:0 0 8px}
  font-size:.86rem;line-height:1.55}
 .hmcav b{font-weight:700}
 .hmnone{color:var(--muted);font-size:.86rem;margin:0}
+/* ---- the replay's layers, indexed ------------------------------------- */
+.hmlay{display:grid;gap:10px;margin:14px 0 0}
+@media (min-width:720px){.hmlay{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.hmlay>div{background:#fff;border:1px solid var(--edge);border-left:3px solid var(--blue);
+ border-radius:9px;padding:12px 14px}
+.hmlay h3{margin:0 0 7px;font-size:.95rem}
+.hmlay p{margin:0 0 6px;font-size:.86rem;line-height:1.5}
+.hmlay b{font-weight:700}
+.hmlc{color:var(--muted)}
+.hmld{margin:8px 0 0 !important;font-size:.8rem !important}
 /* ---- the figures the rest of the site prints -------------------------- */
 .hmwhere{font-size:.78rem;color:var(--muted);margin:-2px 0 10px;line-height:1.45}
 /* ⭐ THE PATH IS SET IN THE MONOSPACE A READER EXPECTS FOR A FIELD NAME, because
@@ -700,6 +710,21 @@ depend on one of them link straight to it.</p>
      cannot check our work. The words that went: settles, admission rule, club
      row, league row, reliability, chronological, centred, club-season. The
      arguments are now QUESTIONS, in the words someone would actually ask. -->
+<section class="hmsec" id="the-layers">
+<p class="hmkick">What the replay counts</p>
+<h2>Six switches, and the rule behind each one</h2>
+<p>A game page carries six layers you can turn on. Each one counts something different out of the same night, and each states its own rule beside the count while you watch. They are collected here so the rules can be read in one place &mdash; and each says which of the figures above it belongs to.</p>
+<div class="hmlay">
+<div><h3>Control (Corsi)</h3><p><b>Counts</b> every shot attempt the league recorded: on goal, missed, or blocked, because all three are the team moving the puck at the net.</p><p class="hmlc">A blocked attempt is credited to the club that shot it — the shot was still taken, it just never arrived.</p><p class="hmld">Counted across every game we hold: <a href="#m-attempts">Where a shot attempt ends</a></p></div>
+<div><h3>Shots from the slot</h3><p><b>Counts</b> attempts from within 33 ft of the net, between the face-off dots.</p><p class="hmlc">Credited to the club that shot. Blocked attempts are excluded because the coordinate the feed records is where the puck stopped — so we know who shot it, but not from where.</p><p class="hmld">Counted across every game we hold: <a href="#m-slotAttempts">How many shot attempts are taken from the slot</a></p></div>
+<div><h3>Blocked shots</h3><p><b>Counts</b> the attempts a body stopped before they reached the goalie.</p><p class="hmlc">Each block is credited to the club that made it, the way a broadcast does. A block by a teammate is credited to neither, so the two figures need not add up.</p><p class="hmld">Counted across every game we hold: <a href="#m-attempts">Where a shot attempt ends</a></p></div>
+<div><h3>Goaltending</h3><p><b>Counts</b> every shot each goaltender faced, and what became of it — saved, scored on, or missed the net.</p><p class="hmlc">Each goaltender is counted for the club he plays for, against the other club’s shots — so these two columns read the opposite way round.</p><p class="hmld">Counted across every game we hold: <a href="#m-saves">How often a goaltender makes the save</a></p></div>
+<div><h3>Why play stopped</h3><p><b>Counts</b> the rule that stopped play, and the dot it restarted on.</p><p class="hmlc">A stoppage names a rule and never a club, so nothing here is credited to either side.</p><p class="hmld">Counted across every game we hold: <a href="#m-penalties">How many penalties a team takes</a> &middot; <a href="#m-offside">How often a team is offside</a> &middot; <a href="#m-icing">How often a team ices the puck</a></p></div>
+<div><h3>Zone starts</h3><p><b>Counts</b> every faceoff, and for the club that won it, whether that draw was in its offensive zone, the neutral zone, or its defensive zone.</p><p class="hmlc">Each draw is credited to the club that won it, in the zone that club was attacking toward — so the same dot is an offensive-zone start for one club and a defensive-zone start for the other. The league records the winner and not the loser, so a draw has one club and never two.</p><p class="hmld">Counted across every game we hold: <a href="#m-zoneStarts">What a face-off in one end is worth</a></p></div>
+</div>
+<p class="hmr">These are the layers themselves, not a description of them: the sentences above are the ones the game page prints beside each count, read out of the same code that does the counting.</p>
+</section>
+
 <section class="hmsec" id="criticisms">
 <p class="hmkick">Fair questions about all this</p>
 
@@ -1943,6 +1968,40 @@ const PRINTED = {
           + 'that were taken from the point. The boundary is also ours — 33 '
           + 'feet from the net and 22 from centre — drawn on coordinates a '
           + 'person in the building recorded.' },
+  saves: {
+    /* ⭐ THE ONE ENTRY HERE THAT IS NOT ON A STATIC PAGE. Every other figure in
+       this table is printed in prose the builder substitutes; this one is
+       printed by the REPLAY, once per game, by the Goaltending layer. A reader
+       watching a save percentage build in front of them has exactly the same
+       question a reader of the front door does, and until now the layer could
+       only answer it with its own counting rule — true, and silent about what
+       ordinary looks like. */
+    label: 'How often a goaltender makes the save',
+    /* ⚠️ NO `where`, AND THAT IS NOT AN OMISSION. This figure is printed on no
+       static page at all — the Goaltending layer builds it in front of a viewer,
+       once per game — and the line saying so is DERIVED from the layer
+       descriptors rather than typed here. A `where` would have been the same
+       sentence twice on one screen, which is the defect `FIGURE_CLAUSE` closed
+       on the front door. The gate requires a figure to say where a reader met
+       it; it does not require that sentence to be typed. */
+    reads: [
+      { is: 'Saved', at: ['attemptMix', 'saveFraction'],
+        num: 'count', den: 'n', out: 'rate', as: 'ratio', unit: '%' },
+    ],
+    why: 'It is the number a first-time watcher will hear all night and the one '
+       + 'they are least equipped to read: .900 sounds like a school grade and '
+       + 'is in fact roughly average. Printing what ordinary is turns the '
+       + 'figure on screen from a score into a comparison.',
+    /* ⚠️ THIS SAID "THE DENOMINATOR", AND THE COLD-READER GATE CAUGHT IT. That
+       is a word only we use, on the page whose whole subject is being checkable
+       by somebody who does not work here. What it divides by can be said in the
+       words a reader already has. */
+    caveat: 'What it divides by is the shots the goaltender actually FACED, so '
+          + 'an empty-net goal is in neither half and a shootout attempt is out '
+          + 'altogether. It also treats every shot as one shot: a tip from the '
+          + 'edge of the crease and a point shot through clean air count the '
+          + 'same, which is most of what separates two goaltenders with the '
+          + 'same number.' },
   pace: {
     /* ⛔ THIS LABEL SAID "an hour of hockey" AND THAT IS A DIFFERENT NUMBER.
         `census.pace` counts one CLUB's attempts against the minutes that club
@@ -2142,6 +2201,21 @@ function keysOf(measures) {
 
 /** Every key this module can explain. The gate compares the two. */
 const EXPLAINED = Object.keys(DERIVATION);
+
+/**
+ * What a figure is called, for a surface that links to it rather than renders it.
+ *
+ * ⭐ THE REPLAY'S LAYER DOORS NEED THIS AND CANNOT IMPORT THIS FILE. Stoppages
+ * opens three sections — penalties, offsides, icings — and three links all
+ * reading "How we counted this" would be a menu with no labels on it. The game
+ * page carries `anchors.js` and not the whole of `methods.js`, for the 12KB
+ * reason recorded there, so the labels are baked into `data/layer-rules.json` by
+ * node at build time and injected. Either way they are read from here once.
+ */
+function explainedLabel(key) {
+  const e = DERIVATION[key] || PRINTED[key];
+  return e ? e.label : null;
+}
 
 /* ⭐ RE-EXPORTED, NOT RE-STATED. Every caller outside this file holds
    `methods.js` as the one place that knows about derivations, and moving the
@@ -2363,10 +2437,35 @@ function methods(measures) {
     return box;
   }
 
+  /* ⭐⭐ WHICH LAYERS ON THE REPLAY OPEN THIS SECTION, READ RATHER THAN TYPED.
+     `where` above is prose and this is the half of it that can be derived: the
+     layer descriptors record which figure each one opens, node writes that into
+     `data/layer-rules.json`, and this is its inverse. A sentence typed here
+     would be the second statement of a pairing the layers already own — and the
+     one on this page that claimed a surface the figure is not printed on
+     survived a whole morning. */
+  var LAYER_FOR = {"m-attempts":["Control (Corsi)","Blocked shots"],"m-icing":["Why play stopped"],"m-offside":["Why play stopped"],"m-penalties":["Why play stopped"],"m-saves":["Goaltending"],"m-slotAttempts":["Shots from the slot"],"m-zoneStarts":["Zone starts"]};
+  function onTheReplay(anchor) {
+    var ls = LAYER_FOR[anchor];
+    if (!ls || !ls.length) return null;
+    /* ⚠️ A LIST, NOT A JOIN. The first version read "the Control (Corsi) layer,
+       the Blocked shots layers are counting" — two layers open the same section,
+       which was never going to be the common case and so was never read aloud.
+       Found by looking at the rendered page. */
+    var named = ls.length > 1
+      ? ls.slice(0, -1).join(', ') + ' and ' + ls[ls.length - 1]
+      : ls[0];
+    return el('p', 'hmwhere', 'On a game page, this is what the ' + named
+      + (ls.length > 1 ? ' layers are' : ' layer is')
+      + ' counting \u2014 for one night rather than for the archive.');
+  }
+
   function figure(m, nums) {
     var s = el('section', 'hmf');
     s.id = m.anchor;
     s.appendChild(el('h3', null, m.label));
+    var rep = onTheReplay(m.anchor);
+    if (rep) s.appendChild(rep);
     var dl = el('dl', 'hmfrom');
     dl.appendChild(el('dt', null, 'Counted'));
     dl.appendChild(el('dd', null, m.count));
@@ -2436,7 +2535,14 @@ function methods(measures) {
     var s = el('section', 'hmf');
     s.id = e.anchor;
     s.appendChild(el('h3', null, e.label));
-    s.appendChild(el('p', 'hmwhere', 'Where this appears: ' + e.where));
+    /* ⛔ A FIGURE MUST SAY WHERE A READER MET IT, AND EITHER HALF WILL DO. Most
+       are printed in prose a builder substituted and name their surfaces in
+       `where`; one is printed only by the replay, and for that one the sentence
+       is derived from the layer rather than written twice. A test requires one
+       of the two to be present. */
+    if (e.where) s.appendChild(el('p', 'hmwhere', 'Where this appears: ' + e.where));
+    var rep = onTheReplay(e.anchor);
+    if (rep) s.appendChild(rep);
     var box = el('div', 'hmev');
     /* ⭐⭐ ONE GROUP PER PUBLISHED SENTENCE: the figures that sentence describes,
        and then the sentence. The published `what` for the slot ends "…this many
