@@ -440,11 +440,20 @@ test('⭐⭐ the score-effects card is measured at EVEN STRENGTH, and says so', 
 
   assert.match(blurb, /even-strength play/,
     'the card no longer states the population its figures are over');
-  assert.match(blurb, new RegExp(`${r('evenTrail')} while trailing`),
+  /* ⚠️ THE UNIT MAY SIT BETWEEN A FIGURE AND ITS SUBJECT, and that is not a
+     loosening. This asserted a BARE `64 while trailing`, which was incidental to
+     the card's old wording rather than part of the claim above — the card now
+     quotes `FIGURE_CLAUSE.score` in `build_index.py`, one statement shared with
+     the front-door strip, and the strip has to name what is being counted
+     ("a club takes 64 shot attempts while trailing") because it stands alone.
+     ⭐ What the claim needs is ADJACENCY, and adjacency is what is still
+     enforced: swap two of these three and every one of them goes red. */
+  const tied = (fig, subject) => new RegExp(`${fig}(?: shot attempts)? ${subject}`);
+  assert.match(blurb, tied(r('evenTrail'), 'while trailing'),
     `the trailing rate (${r('evenTrail')}) is not the one attributed to trailing`);
-  assert.match(blurb, new RegExp(`${r('evenTied')} while the score is level`),
+  assert.match(blurb, tied(r('evenTied'), 'while the score is level'),
     `the level rate (${r('evenTied')}) is not the one attributed to a level score`);
-  assert.match(blurb, new RegExp(`${r('evenLead')} while leading`),
+  assert.match(blurb, tied(r('evenLead'), 'while leading'),
     `the leading rate (${r('evenLead')}) is not the one attributed to leading`);
 
   /* ⛔ AND THE ALL-SITUATIONS ROW IS ABSENT, which is the correction itself. If

@@ -2427,26 +2427,60 @@ def _card_href(cid, doors, figures):
 # page-facing figure with no staleness alarm on it. A strip free to quote any
 # measurement would have needed that list extended, and forgetting is exactly how
 # `census.pace` sat stale across a strength.js fix on 2026-09-10.
-FRONT_COUNTS = [
-    ("slot", "A shot from inside the slot goes in __SLOT_IN_PCT__% of the time "
-             "&mdash; __SLOT_IN_GOALS__ goals from __SLOT_IN_ATT__ attempts. "
-             "From outside it, __SLOT_OUT_PCT__%."),
-    ("shifts", "A shift lasts a median of __SHIFT_MED__ seconds and "
-               "__SHIFT_UNDER__% of them are under a minute, measured over "
-               "__SHIFT_N__ shifts."),
-    ("score", "Per 60 minutes of even-strength play a club takes "
+# ⭐⭐ ONE STATEMENT OF EACH MEASUREMENT, QUOTED BY EVERY SURFACE THAT PRINTS IT.
+#
+# ⛔ FOUR MEASUREMENTS WERE WRITTEN OUT TWICE, ONCE HERE AND ONCE IN THE CARD
+# THAT PROVES THEM, AND THE WORDS HAD ALREADY DRIFTED: the strip said "A shot
+# FROM inside the slot goes in..." while the card said "A shot TAKEN FROM inside
+# the slot goes in...". The NUMBERS could never drift -- both sides substitute
+# __SLOT_IN_PCT__ and the rest out of the same published measurement -- so the
+# guard that existed was aimed at the half that was safe.
+#
+# ⭐ A CLAUSE, NOT A SENTENCE, because the two surfaces need different shapes:
+# the strip states the finding alone, the card wraps it in what the finding
+# MEANS. `_says()` closes it for standalone use. What is shared is exactly the
+# part that carries figures, which is the part that must not be said twice.
+#
+# ⛔ AND THE RULE THIS FILE ALREADY STATED IS NOW MECHANICAL. The comment below
+# says the strip "may only state figures its card already states"; that was an
+# intention, enforced by nobody. `test/test_one_statement.py` now fails the build
+# if any figure placeholder defined in `_archive()` is written at more than one
+# site, in any builder. Adding a second copy is what goes red.
+FIGURE_CLAUSE = {
+    "slot": ("a shot taken from inside the slot goes in __SLOT_IN_PCT__% of the "
+             "time &mdash; __SLOT_IN_GOALS__ goals from __SLOT_IN_ATT__ "
+             "attempts. From outside it, __SLOT_OUT_PCT__%"),
+    "shifts": ("a shift lasts a median of __SHIFT_MED__ seconds, "
+               "__SHIFT_UNDER__% of them under a minute, measured over "
+               "__SHIFT_N__ shifts"),
+    "score": ("per 60 minutes of even-strength play a club takes "
               "__EVEN_TRAIL_PER60__ shot attempts while trailing, "
-              "__EVEN_TIED_PER60__ level, __EVEN_LEAD_PER60__ while leading."),
+              "__EVEN_TIED_PER60__ while the score is level, and "
+              "__EVEN_LEAD_PER60__ while leading"),
+    "zones": ("after a face-off in one team&rsquo;s end, the club attacking "
+              "that end takes __ZONE_ATK__ shot attempts before the next "
+              "whistle, against __ZONE_DEF__ for the club defending it "
+              "&mdash; across __ZONE_DRAWS__ draws"),
+}
+
+
+def _says(key):
+    """The clause as a sentence of its own: capitalised, closed."""
+    c = FIGURE_CLAUSE[key]
+    return c[0].upper() + c[1:] + "."
+
+
+FRONT_COUNTS = [
+    ("slot", _says("slot")),
+    ("shifts", _says("shifts")),
+    ("score", _says("score")),
     # ⭐ THE FOURTH IS FOR THE GRID, AND IT IS NOT FILLER. Three cards in a
     # two-column grid leave the last one alone beside a dead half-row -- seen
     # only by looking at the rendered page. On a laptop the fourth costs NOTHING
     # because it occupies space already being spent; on a phone it is one card
     # taller. And it is the one finding of the four a viewer can act on while
     # watching: it says what keeping the puck in the attacking zone is worth.
-    ("zones", "After a face-off in one team&rsquo;s end, the club attacking that "
-              "end takes __ZONE_ATK__ shot attempts before the next whistle, "
-              "against __ZONE_DEF__ for the club defending it &mdash; across "
-              "__ZONE_DRAWS__ draws."),
+    ("zones", _says("zones")),
 ]
 
 
@@ -2720,9 +2754,7 @@ LEARN_CARDS = [
     # wearing a frequency, and "shoot from the slot" advice. Neither is here,
     # and every figure carries its n on the same line.
     ("ours", "slot", "Shots from the slot",
-     "A shot taken from inside the slot goes in __SLOT_IN_PCT__% of the time "
-     "&mdash; __SLOT_IN_GOALS__ goals from __SLOT_IN_ATT__ attempts. From "
-     "outside it, __SLOT_OUT_PCT__%. That gap is what the slot shading is for."),
+     _says("slot") + " That gap is what the slot shading is for."),
     ("ours", "goaltending", "Goaltending",
      "Saves as a fraction, built while you watch. This is the first shot the "
      "goaltender had to deal with."),
@@ -2814,12 +2846,10 @@ LEARN_CARDS = [
     ("ours", "zones", "The attacking zone",
      "Two blue lines cut the ice into three zones. The shaded strip at each one "
      "is a boundary one club is trying to hold play inside and the other to "
-     "push it out. After a face-off in one team&rsquo;s end, the club attacking that end "
-     "takes __ZONE_ATK__ shot attempts before the next whistle, against "
-     "__ZONE_DEF__ for the club defending it &mdash; across __ZONE_DRAWS__ "
-     "draws. Those defending attempts are shots at the far end, which is what "
-     "getting the puck out looks like; at the line itself we count nothing, "
-     "because holding it leaves no event in the record."),
+     "push it out. " + _says("zones") + " Those defending attempts are shots at "
+     "the far end, which is what getting the puck out looks like; at the line "
+     "itself we count nothing, because holding it leaves no event in the "
+     "record."),
     # ⭐⭐ THE TWELFTH CARD, AND IT IS THE OTHER HALF OF THE TENTH'S LESSON.
     # `All situations` says part of an attempt lead is the power play; this says
     # part of it is the scoreboard. The two are deliberately built to the same
@@ -2882,18 +2912,15 @@ LEARN_CARDS = [
     # there a minute ago, which is what those 46 seconds MEAN.
     ("ours", "shifts", "How long a shift is",
      "Nobody stays on the ice for long. Hockey is played in short bursts and "
-     "skaters come off while the play is still running &mdash; a shift lasts a "
-     "median of __SHIFT_MED__ seconds, __SHIFT_UNDER__% of them under a minute, "
-     "and a skater takes about __SHIFT_PER__ of them a night, measured over "
-     "__SHIFT_N__ shifts. So the five in front of you now are mostly not the "
-     "five who were there a minute ago."),
+     "skaters come off while the play is still running &mdash; a skater takes "
+     "about __SHIFT_PER__ shifts a night, and " + FIGURE_CLAUSE["shifts"] + ". "
+     "So the five in front of you now are mostly not the five who were there a "
+     "minute ago."),
     ("ours", "score", "Score effects",
      "A club that is behind takes more shot attempts, and a club that is ahead "
-     "takes fewer &mdash; that is what <em>score effects</em> means. Measured "
-     "per 60 minutes of even-strength play: __EVEN_TRAIL_PER60__ while trailing, "
-     "__EVEN_TIED_PER60__ while the score is level, __EVEN_LEAD_PER60__ while "
-     "leading. So part of a club&rsquo;s attempt lead can be nothing but the "
-     "time it spent behind."),
+     "takes fewer &mdash; that is what <em>score effects</em> means: "
+     + FIGURE_CLAUSE["score"] + ". So part of a club&rsquo;s attempt lead can be "
+     "nothing but the time it spent behind."),
 ]
 
 # Spelled out rather than via strftime("%B"): this builder gates on BYTES, and

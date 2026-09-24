@@ -434,9 +434,35 @@ to the cards or metrics that surface that specific information."*
    home…"* and `DERIVATION.hits.caveat` says the same thing in different words.
    Two statements of one fact, free to drift — the exact defect `methods.js` was
    built to prevent, live on the card now.
-2. ⛔ **`icing`, `offside`, `penalties` and `slot` carry 7–16 figures each in
-   visible text and not one word about how any of them was counted.** The naked
-   number problem is still live on four pages.
+2. ⛔⛔ **THIS ENTRY WAS WRONG AND IS CORRECTED 2026-09-24.** It said *"`icing`,
+   `offside`, `penalties` and `slot` carry 7–16 figures each in visible text and
+   not one word about how any of them was counted."* Measured against the built
+   pages: **`icing`, `offside`, `penalties`, `faceoffs` and `empty-net` carry NO
+   statistical figures at all** — they are a rule, a diagram and a door to a
+   replay — and none of them renders a number at runtime either (no `toFixed`,
+   no `toLocaleString`, no read of `measures.json`). Only `slot.html` carries
+   any: **six**. ⭐ The 7–16 came from counting the KEYS of each page's entry in
+   `data/learn-figures.json` — `viewBox, group, label, door, svg, steps, css` —
+   a file whose "figures" are DIAGRAMS. A length was read out of a structure
+   nobody opened.
+
+   **Where the naked figures actually are**, swept across every built page:
+
+   | surface | figures in visible text | per-figure doors |
+   |---|---|---|
+   | `index.html` front-door strip | 7 | 0 (one site-wide link) |
+   | `what-you-can-see.html` | 6 | 0 |
+   | `slot.html` | 6 | 0 |
+   | `game.html` / `read-the-game.html` | rendered at runtime | 0 |
+   | `preview.html` | 10, at runtime | 10 |
+
+   ⭐⭐ **AND THE DUPLICATION IS NOT ONLY IN THE HITS CAVEAT.** One measurement —
+   the slot conversion — is printed by two separately hand-written sentences in
+   `builders/build_index.py`, and **they have already drifted**: L2431 says *"A
+   shot from inside the slot goes in…"*, L2723 says *"A shot taken from inside
+   the slot goes in…"*. The NUMBERS cannot go stale (both substitute
+   `__SLOT_IN_PCT__` etc. from `measures.json`); the WORDS did. That is the
+   defect this dispersal exists to end, and it is the second live instance.
 
 **The shape of the answer.** Disperse the per-figure half — *counted / out of / the
 division / what could be wrong with it* — because `methods.js` is a module and any
@@ -447,7 +473,12 @@ rather than the only home, and the existing gate extends to *every surface that
 prints a figure resolves to its derivation* — which would go red on those four rule
 pages immediately, correctly.
 
-⏭ **The decision Kevin has not made:** rule pages first (most naked figures, no
-layout risk) or the preview card first (fixes the live duplication, but the card is
-dense and the novice tester is on a phone, so it likely needs a disclosure rather
-than more text). Recommendation on the table: rule pages first.
+⏭ **THE ORDER, REVISED ON THE MEASUREMENT ABOVE.** "Rule pages first" was
+recommended and approved on the strength of the count that turned out to be a
+length; rule pages have no figures to disperse to, so that ordering is void. The
+surfaces that actually print figures with no derivation behind them are the
+**front-door strip (`FRONT_COUNTS`), `what-you-can-see.html` and `slot.html`** —
+three surfaces sharing about four measurements, all of which `methods.js` already
+covers (`slot`, `shift`) or could. The preview card stays second: its ten figures
+are already doored, and what it needs is the hits duplication deleted, which is a
+design question on a dense page a novice meets on a phone.
