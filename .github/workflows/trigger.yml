@@ -25,6 +25,14 @@
 # -> Variables and Secrets -> add a SECRET named exactly GITHUB_TOKEN. The Worker
 # has to exist first, which is what the deploy step below does.
 #
+# ⛔⛔ AND THAT ORDER IS NOT ADVICE, IT IS THE TRAP. 2026-09-24: the secret was
+# added before the first deploy could succeed, so there was no Worker to attach it
+# to and it landed on the Pages project one row away in the same list -- which
+# accepted it, showed it, and is not what reads it. `wrangler secret list` came
+# back `[]` against a Worker that had deployed cleanly seconds earlier. ⭐ A
+# resource that does not exist yet does not refuse your write; the neighbour takes
+# it and looks right.
+#
 # The last step checks the secret is THERE without ever seeing it, because the
 # failure it prevents is the quiet one: a Worker that deploys green, 401s every
 # morning, and is covered for by the fallback crons in ingest.yml while nothing
@@ -150,6 +158,6 @@ jobs:
           set -o pipefail
           npx -y $WRANGLER secret list --config worker/wrangler.toml | tee /tmp/secrets.txt
           grep -q 'GITHUB_TOKEN' /tmp/secrets.txt || {
-            echo "::error::the Worker is deployed with no GITHUB_TOKEN bound, so every dispatch will 401. Add it in the Cloudflare dashboard: Workers & Pages > readthegame-ingest-trigger > Settings > Variables and Secrets > add a SECRET named GITHUB_TOKEN. (Not with wrangler: it needs Node 22 and the dev machine is pinned to 20.)"
+            echo "::error::the Worker is deployed with no GITHUB_TOKEN bound, so every dispatch will 401. Add it at Workers & Pages > readthegame-ingest-trigger > Settings > Variables and Secrets > add a SECRET named GITHUB_TOKEN, then Deploy. TWO WAYS THIS GOES WRONG AND BOTH LOOK LIKE SUCCESS: (1) the Pages project 'read-the-game' is ONE ROW AWAY in that same list and will happily accept the secret, where nothing reads it; (2) the Worker did not exist until its first successful deploy, so a secret added before that went somewhere else by definition. Check the page you are on is the WORKER. (Not with wrangler: it needs Node 22 and the dev machine is pinned to 20.)"
             exit 1
           }
