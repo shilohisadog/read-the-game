@@ -32,7 +32,63 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 
 This section is the orientation. Everything below §0 is the detail, organised by
 state.
-## ⏭ 0.00 PICK UP HERE — 2026-09-24 (end of day)
+## ⏭ 0.00 PICK UP HERE — 2026-09-25
+
+### ⛔⛔⛔ A LABEL STOPPED THE ARCHIVE FOR 31 HOURS, AND IT WAS THE FOURTH TIME
+
+Five nightly runs failed on three new penalty descriptors. The words were the
+least interesting part: **the archive did not publish, and two documents said it
+would.** `data/vocabulary-seen.json` — *"the exit happens after publishing,
+because … withholding the archive over a label is the mistake the 73 refused
+games already were"*. `derive.py` — *"the archive is published in full and the
+RUN goes red."* Both true of the FUNCTION, false of the pipeline: `ingest.yml`
+ran derive as an ordinary step, exit 1 halted the job, `sync to R2` never ran.
+The games were fetched, derived and thrown away, five times.
+
+**The same exit code meant the opposite thing next door.** `derive.yml` piped
+derive through `tee` under the default shell — no `-o pipefail` — so the step
+reported tee's status and the weekly alarm **has never fired once**. Two
+workflows, one code, three behaviours, none of them the documented one.
+
+⭐⭐⭐ **WHY THREE PREVIOUS FIXES MISSED IT.** This halted on 09-19, 09-21 and
+09-23 too. All three commits touched `extract.py` and `penalties.js` and **no
+workflow at all**. The word was fixed correctly every time; the halt was never
+treated as a question. `KNOWN_PENALTIES`' comment records it as *"halted the
+nightly ingest"* — a fact of life rather than a defect. The recurring EVENT was
+handled and the recurring COST was paid, four times.
+
+⭐⭐ **AND THE CONTRADICTION WAS READABLE THE WHOLE TIME.** Two documents assert
+a behaviour; the observed behaviour is its opposite. That is review rule #9 —
+*when a doc and the code both state a method, diff what they produce* — and it
+sat in the open for six days, including a day I spent editing the file that
+carries the comment.
+
+### ✅ THE FIX IS GATES, NOT A FOURTH COMMENT
+
+| | |
+|---|---|
+| `derive.py` | exits **2** = complete and safe to publish, a label needs a human. **1** (Python's crash code) = do not trust this output. The severity is in the code, not a paragraph. |
+| `ingest.yml` | reads it. 2 continues to the sync and fails the run at the END, beside the step that already does that for the fetcher. |
+| `derive.yml` | stops letting `tee` eat it, and alarms after ITS sync too. |
+| `deploy.yml` | two more instances of the same swallow, found by the new gate within a minute of it existing. Both wrangler deploys. |
+| `test_derive.py` | the exit-code contract, every branch, and that 2 ≠ 1. |
+| `workflows.test.js` | the alarm is ordered AFTER the sync in both files; derive publishes its code and cannot halt on 2; and **no step in any workflow lets a pipe swallow a status it is judged on**. |
+
+Seven mutations run. One was a no-op — `shell: bash` beside a `PIPESTATUS` read is
+two mechanisms for one guarantee — so the redundant one went and the load-bearing
+one is the one that goes red.
+
+⏭ **`charging` IS WORTH A SECOND LOOK.** It is a common infraction and appears in
+none of the three full seasons this archive holds. Either the regular-season feed
+spells it differently or the league changed descriptors this preseason — and the
+second means more are coming.
+
+⏭ Then: `census.faceoffZone` gets its own `PRINTED` entry after the next derive
+(Mondays 15:47 UTC), and the slot definition collapse. Both in §0.00-y below.
+
+---
+
+## 0.00-y — 2026-09-24 (end of day)
 
 ### ⏭ THE ONE THING TO DO NEXT
 
