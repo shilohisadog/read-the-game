@@ -92,3 +92,121 @@ test('⛔ no workflow runs an action on a Node runtime GitHub has deprecated', (
     'these run on a deprecated Node runtime — every run prints a warning that nobody reads '
     + 'until the forced upgrade stops being forced and the job fails');
 });
+
+/* --------------------------- WHERE A DRIFT ALARM FIRES RELATIVE TO THE SYNC */
+
+/**
+ * ⛔⛔⛔ THE DEFECT THIS EXISTS FOR — 2026-09-25, and it cost 31 hours.
+ *
+ * `derive.py` alarms on a NAMING gap: a competition with no name, a feed value
+ * we have never seen. None of them can change a number, every one of them fires
+ * over an archive that is already written and correct, and both `derive.py`'s
+ * docstring and `data/vocabulary-seen.json` said so in as many words — the exit
+ * happens *"after publishing, because ... withholding the archive over a label
+ * is the mistake the 73 refused games already were."*
+ *
+ * It was true of the function and false of the pipeline. `ingest.yml` ran derive
+ * as an ordinary step, so a non-zero exit halted the job and `sync to R2` never
+ * ran. Three new penalty descriptors stopped the site at `dataThrough
+ * 2026-09-23` for five consecutive runs.
+ *
+ * ⭐⭐ AND THE SAME EXIT CODE MEANT THE OPPOSITE THING NEXT DOOR. `derive.yml`
+ * piped derive through `tee` with the default shell, which has no `pipefail`, so
+ * the step reported `tee`'s status and the weekly alarm had never fired once.
+ * Two workflows, one exit code, three behaviours, none of them the documented
+ * one — and the fix for the `tee` half was written out thirteen lines below the
+ * step that needed it, applied to its neighbour.
+ *
+ * ⭐⭐⭐ SO THE CHECK IS ABOUT ORDER AND ABOUT THE PIPE, because those are what
+ * were wrong. Both are invisible to every other test in this repo: the YAML
+ * parses, the steps run, and the archive quietly does not publish.
+ */
+const yamlSteps = (file) => {
+  const text = readFileSync(new URL(file, DIR), 'utf8');
+  /* ⚠️ A DELIBERATELY SMALL PARSER, and it asserts what it found. Pulling in a
+     YAML dependency for two fields is a larger change than the fix; a regex that
+     silently matched nothing would make every assertion below vacuous, which is
+     the shape this repo keeps paying for. So the step count is checked. */
+  const steps = [...text.matchAll(/^      - name: (.+)$/gm)].map((m, i) => ({
+    name: m[1].trim(), at: m.index, i,
+  }));
+  assert.ok(steps.length >= 8,
+    `${file}: found ${steps.length} steps — the parser is not reading this file`);
+  return { text, steps };
+};
+
+const find = (steps, re, file, what) => {
+  const hit = steps.filter(s => re.test(s.name));
+  assert.equal(hit.length, 1,
+    `${file}: expected exactly one ${what} step, found ${hit.length} (${hit.map(h => h.name).join(' | ')})`);
+  return hit[0];
+};
+
+test('⛔⛔⛔ a naming alarm fires AFTER the archive is published, in every workflow that derives', () => {
+  /* MUTATION: move either `a label the feed invented` step above its sync and
+     this fires. That move is exactly the defect, and it is silent otherwise. */
+  for (const [file, syncRe] of [['ingest.yml', /^sync to R2$/],
+                                ['derive.yml', /^sync the extracts, then the index$/]]) {
+    const { steps } = yamlSteps(file);
+    const sync = find(steps, syncRe, file, 'sync');
+    const alarm = find(steps, /^a label the feed invented/, file, 'drift alarm');
+    assert.ok(alarm.i > sync.i,
+      `${file}: the drift alarm runs at step ${alarm.i + 1} and the sync at `
+      + `${sync.i + 1}. A label would withhold the archive — the mistake `
+      + 'data/vocabulary-seen.json names in its own header.');
+  }
+});
+
+test('⛔⛔ the drift alarm reads derive’s code, and derive cannot halt on it', () => {
+  /* ⭐ BOTH HALVES, because either one alone leaves the defect. An alarm that
+     reads nothing never fires; a derive step that exits on 2 never reaches it.
+     MUTATION: drop the `[ "$code" != 2 ]` guard and the second assertion fires;
+     change the alarm's `if:` to a different code and the first does. */
+  for (const file of ['ingest.yml', 'derive.yml']) {
+    const { text, steps } = yamlSteps(file);
+    const alarm = find(steps, /^a label the feed invented/, file, 'drift alarm');
+    const body = text.slice(alarm.at, text.indexOf('\n      - name:', alarm.at + 1));
+    assert.match(body, /steps\.derive\.outputs\.code == '2'/,
+      `${file}: the drift alarm does not read derive's exit code`);
+
+    const derive = find(steps, /^derive /, file, 'derive');
+    const dbody = text.slice(derive.at, text.indexOf('\n      - name:', derive.at + 1));
+    assert.match(dbody, /\[ "\$code" != 0 \] && \[ "\$code" != 2 \]/,
+      `${file}: derive halts the job on any non-zero code, so a label still `
+      + 'withholds the archive');
+    assert.match(dbody, /echo "code=\$code" >> "\$GITHUB_OUTPUT"/,
+      `${file}: derive does not publish its exit code, so the alarm reads nothing`);
+  }
+});
+
+test('⛔⛔ no step lets a pipe swallow an exit code it is judged on', () => {
+  /* ⭐ THE SHAPE, NOT THE INSTANCE. `derive.yml` piped derive through `tee`
+     under the default `bash -e {0}`, which has no `-o pipefail`, so the step
+     reported `tee`'s status — always 0. The weekly's vocabulary alarm had
+     therefore never fired. The same trap is described in a comment in that file
+     about `measure.mjs`, applied to one step and not its neighbour, which is why
+     this is a rule rather than a second comment.
+     MUTATION: remove `shell: bash` or the `PIPESTATUS` read from the derive
+     step and this names it. */
+  for (const file of FILES) {
+    const text = readFileSync(new URL(file, DIR), 'utf8');
+    const blocks = text.split(/^      - name: /m).slice(1);
+    for (const b of blocks) {
+      const name = b.split('\n')[0].trim();
+      const piped = /^\s*(?:run:\s*)?[^#\n]*\|\s*tee\s/m.test(b);
+      if (!piped) continue;
+      /* ⚠️ THREE SPELLINGS OF ONE GUARANTEE, and accepting all three is not a
+         weakening: `shell: bash` gets `-o pipefail` from the runner, `set -o
+         pipefail` asks for it directly, and reading `PIPESTATUS` takes the code
+         by hand. `trigger.yml` uses the second and `ingest.yml`'s fetch step the
+         third — both were already careful, which is what makes the two that
+         were not worth a gate rather than a comment. */
+      const safe = /shell: bash/.test(b) || /PIPESTATUS/.test(b)
+                || /set -o pipefail/.test(b);
+      assert.ok(safe,
+        `${file} / "${name}" pipes into tee under the default shell, so the step `
+        + "reports tee's status and the real exit code is discarded. Name the "
+        + 'shell for -o pipefail, or read PIPESTATUS.');
+    }
+  }
+});

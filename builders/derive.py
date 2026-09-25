@@ -66,6 +66,13 @@ def _competitions():
     return json.loads((ROOT / "data" / "competitions.json").read_text())["names"]
 
 
+#: The exit code that means: EVERYTHING IS WRITTEN AND SAFE TO PUBLISH, and a
+#: name or a label needs a human before a reader meets it raw. Distinct from 1,
+#: which is what Python exits with on an uncaught exception and therefore means
+#: the output cannot be trusted. See `_alarms()` for the whole argument.
+PUBLISHED_BUT_UNNAMED = 2
+
+
 def _vocabulary_seen():
     """Values we have looked at and deliberately left unnamed, by field.
 
@@ -744,8 +751,35 @@ def verdict(out, say=lambda m: print(m, file=sys.stderr)):
     # THE RUN, and that asymmetry is the fix, not an oversight: a name is right
     # or wrong about the whole archive whatever tonight fetched, while a feed
     # value can only be seen by a run that read a feed.
-    return 1 if (arch.get("unnamedTypes") or arch.get("unheldTypes")
-                 or run.get("unseenVocabulary")) else 0
+    #
+    # ⛔⛔⛔ 2 AND NOT 1, AND THE DIFFERENCE IS THE WHOLE POINT OF THIS FUNCTION.
+    # 2026-09-25: five nightly runs in a row died here on three new penalty
+    # descriptors, and the archive did not publish for 31 hours. The docstring
+    # above says these fire "AFTER everything is written"; `data/vocabulary-seen.json`
+    # says the exit happens "after publishing, because ... withholding the
+    # archive over a label is the mistake the 73 refused games already were."
+    # BOTH WERE TRUE OF THIS FUNCTION AND FALSE OF THE PIPELINE. `ingest.yml`
+    # ran derive as an ordinary step, so exit 1 halted the job and the sync
+    # never ran -- a display label withholding real hockey, which is the exact
+    # mistake both comments name.
+    #
+    # ⭐ SO THE SEVERITY IS IN THE EXIT CODE RATHER THAN IN A COMMENT. There is
+    # no case in which this function means "do not publish": every branch above
+    # is a naming gap over an archive that is already written and correct. A
+    # CRASH means do not publish, and a crash exits 1 with a traceback. So:
+    #
+    #     0  clean
+    #     2  the output is complete and safe to publish; a label needs a human
+    #     1  (or any other) the output cannot be trusted -- do not publish
+    #
+    # `ingest.yml` reads this: 2 continues to the sync and fails the run at the
+    # end, beside the step that already does that for the fetcher. The same `2`
+    # idiom is already how `steps.fetch.outputs.code` says "nothing to do".
+    # test/test_derive.py holds the contract and test/workflows.test.js holds
+    # the ORDERING, because the ordering is what was wrong.
+    return PUBLISHED_BUT_UNNAMED if (arch.get("unnamedTypes")
+                                     or arch.get("unheldTypes")
+                                     or run.get("unseenVocabulary")) else 0
 
 
 if __name__ == "__main__":

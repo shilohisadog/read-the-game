@@ -626,7 +626,12 @@ class TheArchiveLedgerIsCountedFromTheArchive(unittest.TestCase):
         self.assertEqual(out["run"]["gameTypes"], {}, "the run really saw none")
         self.assertEqual(out["archive"]["unnamedTypes"], ["21"],
                          "the archive still holds it, so the alarm still holds")
-        self.assertEqual(D.verdict(out, say=lambda m: None), 1,
+        # ⚠️ THE CONSTANT, NEVER THE LITERAL. These read "the run goes red",
+        # and red is `PUBLISHED_BUT_UNNAMED` — 2 — because a naming gap fires
+        # over an archive that is already written. A literal 1 here would be
+        # asserting the crash code, which is the distinction the pipeline now
+        # depends on. See `test_the_code_says_PUBLISHED_and_a_crash_does_not`.
+        self.assertEqual(D.verdict(out, say=lambda m: None), D.PUBLISHED_BUT_UNNAMED,
                          "an unnamed competition went unreported for a week")
 
     def test_the_archive_unreconciled_count_is_not_this_run_s(self):
@@ -706,7 +711,7 @@ class TheArchiveLedgerIsCountedFromTheArchive(unittest.TestCase):
         out = D.derive(store, now="2026-01-11T11:30:00Z").as_dict()
         self.assertTrue(out["archive"]["unheldTypes"],
                         "a non-empty archive missing seven named types is silent")
-        self.assertEqual(D.verdict(out, say=lambda m: None), 1)
+        self.assertEqual(D.verdict(out, say=lambda m: None), D.PUBLISHED_BUT_UNNAMED)
 
 
 class TheSituationCodeIsARule(unittest.TestCase):
@@ -1054,7 +1059,8 @@ class ANewCompetitionIsAnEventNotNoise(unittest.TestCase):
                 ("archive", "unheldTypes", ["9"]),
                 ("run", "unseenVocabulary", {"stoppage reason": ["new-thing"]})):
             said = []
-            self.assertEqual(D.verdict({block: {key: value}}, say=said.append), 1,
+            self.assertEqual(D.verdict({block: {key: value}}, say=said.append),
+                             D.PUBLISHED_BUT_UNNAMED,
                              f"{key} drifted and the run stayed green")
             self.assertTrue(any("::error::" in m for m in said),
                             f"{key} exited non-zero and said nothing about why")
@@ -1187,7 +1193,7 @@ class ANewCompetitionIsAnEventNotNoise(unittest.TestCase):
         held = out["archive"]["unheldTypes"]
         self.assertIn("1", held, "preseason is named and nothing holds it")
         self.assertNotIn("2", held)
-        self.assertEqual(D.verdict(out, say=lambda m: None), 1)
+        self.assertEqual(D.verdict(out, say=lambda m: None), D.PUBLISHED_BUT_UNNAMED)
 
     def test_a_run_that_holds_every_named_type_is_silent(self):
         # MUTATION GUARD, the same one its twin carries: a check that fires on
@@ -1270,6 +1276,41 @@ class ForgivenessIsRecordedAndDriftIsLOUD(unittest.TestCase):
         seed(store)
         D.derive(store, now="2026-01-11T11:30:00Z")
         self.assertIn("unseenVocabulary", self.index(store)["run"])
+
+    def test_the_code_says_PUBLISHED_and_a_crash_does_not(self):
+        """⛔⛔⛔ THE CONTRACT THAT COST 31 HOURS OF A STALE SITE, 2026-09-25.
+
+        Five nightly runs in a row died on three new penalty descriptors and the
+        archive did not publish. Both derive.py's docstring and
+        `data/vocabulary-seen.json` said the alarm fires "after publishing" —
+        true of the FUNCTION and false of the pipeline, because `ingest.yml` ran
+        derive as an ordinary step and exit 1 halted the job before the sync.
+
+        ⭐ SO THE SEVERITY LIVES IN THE CODE AND NOT IN A COMMENT. Every branch
+        in `verdict` is a naming gap over an archive already written and correct,
+        so all of them return 2 — "published, needs a human". 1 is what Python
+        exits with on an uncaught exception and must keep meaning "do not trust
+        this output", or a workflow cannot tell a label apart from a crash.
+
+        MUTATION: return 1 from `verdict` and this fires; return 0 and the test
+        above fires. `test/workflows.test.js` holds the other half — that the
+        workflows read it, and read it in the right order.
+        """
+        self.assertEqual(D.PUBLISHED_BUT_UNNAMED, 2)
+        self.assertNotEqual(D.PUBLISHED_BUT_UNNAMED, 1,
+                            "the drift code must differ from Python's own crash "
+                            "code, or a workflow cannot tell a label from a traceback")
+        self.assertEqual(D.verdict({}, say=[].append), 0)
+        # ⚠️ EVERY ALARM, NOT ONE OF THEM. A branch returning 1 while its
+        # neighbours return 2 would halt the pipeline on that one condition and
+        # nothing else would notice — the defect this closes, surviving in a
+        # third of the cases.
+        for block, key, value in (
+                ("archive", "unnamedTypes", ["21"]),
+                ("archive", "unheldTypes", ["9"]),
+                ("run", "unseenVocabulary", {"penalty descKey": ["charging"]})):
+            self.assertEqual(D.verdict({block: {key: value}}, say=[].append), 2,
+                             f"{key} does not report itself as publishable")
 
     def test_every_value_the_LIVE_archive_forgives_is_acknowledged(self):
         # The 23 read off index.json on 2026-08-21. If this list and the live

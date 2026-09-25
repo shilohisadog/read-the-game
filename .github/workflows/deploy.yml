@@ -273,8 +273,15 @@ jobs:
       # a check that measured an error page, or an older deployment, would be
       # grading something nobody is about to ship. *.pages.dev is not on the zone,
       # so no edge rewrite applies and the comparison is raw bytes.
+      # ⛔ `shell: bash` FOR `-o pipefail` — 2026-09-25, found by the gate written
+      # for the same defect in derive.yml. `wrangler ... | tee preview.log` under
+      # the default `bash -e {0}` reports TEE's status, so a failed deploy did not
+      # fail this step. The URL check below caught the common case and is why this
+      # never shipped a silent failure; it does not catch a deploy that errors
+      # AFTER printing a URL. The exit code costs nothing to honour.
       - name: deploy this commit as a preview
         id: preview
+        shell: bash
         if: steps.site.outputs.changed == 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -445,9 +452,14 @@ jobs:
         if: steps.site.outputs.changed == 'true'
         run: node tools/browser/run.mjs csp-refusal --site "${{ steps.preview.outputs.url }}"
 
+      # ⛔ `shell: bash` FOR `-o pipefail`, same as the preview deploy above and
+      # found by the same gate. Here the read-back below is what has been
+      # catching a failed deploy; honouring the exit code means the step that
+      # failed is the step that reports it.
       - name: deploy to production — the same commit the preview passed
         if: steps.site.outputs.changed == 'true'
         id: deploy
+        shell: bash
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

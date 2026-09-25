@@ -132,8 +132,47 @@ jobs:
           fi
           echo "pulled $(find ingest/raw -name latest.json | wc -l) games, $(du -sh ingest | cut -f1)"
 
+      # ⛔⛔⛔ THIS PIPELINE ATE derive.py's EXIT CODE FOR AS LONG AS IT EXISTED.
+      # The default shell is `bash -e {0}` WITHOUT `-o pipefail`, so the step
+      # reported `tee`'s status — which always succeeds. The comment on the step
+      # immediately below says exactly this, tells the story of `measure.mjs`
+      # going green for weeks with a stack trace in the log, and was applied to
+      # that step and not to this one. So the weekly's vocabulary alarm has never
+      # fired once: `ingest.yml` halted on drift and this went green on it, the
+      # same exit code meaning opposite things in two workflows and neither of
+      # them what the code says it means. Found 2026-09-25.
+      #
+      # ⭐ `set +e` AND AN EXPLICIT READ, rather than `shell: bash` alone.
+      # pipefail would have made this HALT on a naming gap, which is the defect
+      # just removed from the nightly — the weekly publishes `measures.json` and
+      # withholding it over a label costs a week, not a night. 2 means published
+      # and unnamed; anything else means the output cannot be trusted.
+      # ⚠️ NO `shell: bash` HERE, AND THAT IS DELIBERATE. `${PIPESTATUS[0]}` reads
+      # derive's own status whatever the shell does about pipefail, so naming the
+      # shell as well would be two mechanisms for one guarantee — and a reader
+      # would have to work out which one is load-bearing. Proved by mutation:
+      # removing `shell: bash` changed nothing, removing PIPESTATUS goes red.
       - name: derive everything
-        run: python3 builders/derive.py --out ingest | tee derived.json
+        id: derive
+        run: |
+          set +e
+          python3 builders/derive.py --out ingest | tee derived.json
+          code=${PIPESTATUS[0]}
+          set -e
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          if [ "$code" != 0 ] && [ "$code" != 2 ]; then
+            echo "::error::derive exited $code — the output cannot be trusted, so nothing is published"
+            exit "$code"
+          fi
+          # ⚠️ AN `if`, NOT `[ … ] && echo …`. Under `set -e` an AND-list whose
+          # test fails is exempt from the exit rule by a clause most people have
+          # to look up — and this is the step that exists because a shell
+          # swallowed a status quietly. A construct I have to reason about twice
+          # does not belong in it.
+          if [ "$code" = 2 ]; then
+            echo "  derive: published, and a label needs a name (exit 2)"
+          fi
+          exit 0
 
       # MEASURE AFTER DERIVE, over the extracts derive just wrote. This ranks the
       # whole archive and produces the number that decides what a novice sees
@@ -392,6 +431,19 @@ jobs:
           import json; g=json.load(open('one.json'))
           print(f\"  {g['teams']['away']['ab']} at {g['teams']['home']['ab']}, \"
                 f\"{len(g['events'])} events, from {g['game']['src']['play-by-play'][:12]}…\")"
+
+      # ⭐⭐⭐ AFTER THE SYNC, FOR THE SAME REASON IT IS AFTER THE SYNC IN THE
+      # NIGHTLY: a naming gap fires over an archive that is already written and
+      # already published, so the run goes red and the reader still gets the
+      # numbers. test/workflows.test.js compares this step's position with the
+      # sync's in both files, because moving it up restores the defect silently.
+      - name: a label the feed invented, over an archive that published
+        if: steps.derive.outputs.code == '2'
+        run: |
+          echo "::error::the feed used a name we have never seen — the archive and "\
+               "measures.json are published and current, and something on the page "\
+               "will render raw until it is given words. See the report above."
+          exit 1
 
       - name: summary
         if: always()

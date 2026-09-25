@@ -234,12 +234,50 @@ jobs:
       #
       # The window is passed for REPORTING only: refusedInWindow is a window
       # figure and derivation has no window of its own.
+      #
+      # ⛔⛔⛔ THE EXIT CODE IS READ, NOT INHERITED — 2026-09-25. This step used to
+      # let derive.py's code fail the job, and derive.py exits non-zero on a
+      # NAMING gap over an archive it has already written correctly. So three new
+      # penalty descriptors stopped the sync for 31 hours and the site sat at
+      # `dataThrough 2026-09-23` — a display label withholding real hockey, which
+      # is the mistake `data/vocabulary-seen.json` and derive.py's own docstring
+      # both name and neither could prevent, because both were comments.
+      #
+      # 2 means everything is written and safe to publish and a label needs a
+      # human. Anything else means the output cannot be trusted, and the `exit`
+      # below halts the job before the sync exactly as before. The alarm for 2
+      # fires AFTER the sync — see `a label the feed invented`, and
+      # test/workflows.test.js asserts that ordering.
+      #
+      # ⚠️ `set +e` AROUND ONE COMMAND, NOT THE STEP. The default shell is
+      # `bash -e {0}`; capturing `$?` from a command that is allowed to fail
+      # needs the flag off for that command and back on immediately, or a later
+      # failure in this step passes silently — which is the `git add &&` defect
+      # in its shell spelling.
       - name: derive the games we just fetched
+        id: derive
         if: steps.fetch.outputs.code != '2'
         run: |
           END="${{ inputs.end }}"
           [ -n "$END" ] || END=$(date -u +%F)
+          set +e
           python3 builders/derive.py --out ingest --end "$END" --days "${WINDOW}"
+          code=$?
+          set -e
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          if [ "$code" != 0 ] && [ "$code" != 2 ]; then
+            echo "::error::derive exited $code — the output cannot be trusted, so nothing is published"
+            exit "$code"
+          fi
+          # ⚠️ AN `if`, NOT `[ … ] && echo …`. Under `set -e` an AND-list whose
+          # test fails is exempt from the exit rule by a clause most people have
+          # to look up — and this is the step that exists because a shell
+          # swallowed a status quietly. A construct I have to reason about twice
+          # does not belong in it.
+          if [ "$code" = 2 ]; then
+            echo "  derive: published, and a label needs a name (exit 2)"
+          fi
+          exit 0
 
       # ⭐ THE SLATE — last night's games, measured by the SAME reducers the
       # browser runs, so a daily surface can state a count without a second
@@ -645,6 +683,25 @@ jobs:
               echo "The fetcher produced no report."
             fi
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # ⭐⭐⭐ AFTER THE SYNC, AND THE POSITION IS THE WHOLE FIX. derive.py's naming
+      # alarms fire over an archive that is already written and already public by
+      # the time this runs, so the run goes red and the reader still gets the
+      # games. The report above names the value; `src/lib/penalties.js` and
+      # `builders/extract.py::KNOWN_PENALTIES` are where a penalty descriptor
+      # goes once it has been read, and `data/vocabulary-seen.json` is where a
+      # value goes that we have decided to render raw.
+      #
+      # ⛔ MOVING THIS STEP ABOVE THE SYNC RESTORES THE DEFECT IT WAS WRITTEN FOR,
+      # silently and with every test green. test/workflows.test.js compares the
+      # two positions.
+      - name: a label the feed invented, over an archive that published
+        if: steps.derive.outputs.code == '2'
+        run: |
+          echo "::error::the feed used a name we have never seen — the archive is "\
+               "published and current, and something on the page will render raw "\
+               "until it is given words. See the derive report above."
+          exit 1
 
       - name: fail the run if any game errored
         if: steps.fetch.outputs.code != '0'

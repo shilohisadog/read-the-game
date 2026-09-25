@@ -88,6 +88,23 @@ export const PEN = {
   'delaying-game-equipment': 'Delay of game — equipment',
   'interference-bench': 'Interference — bench',
 
+  /* 2026-09-25, the FOURTH preseason night to halt the nightly, over 4,600
+     games — and `charging` is the one worth stopping on. It is a common
+     infraction, called in most weeks of a season, and it appears in none of the
+     three full seasons this archive holds. That is not a rare event; either the
+     regular-season feed spells it differently or the league changed its
+     descriptors this preseason. Recorded here so the next person asking has the
+     question in front of them. See docs/status.md §0.00.
+
+     ⭐ THE SUFFIX RULE, THIRD APPLICATION. `roughing-double-minor` renders as
+     `Roughing` because the suffix names the PUNISHMENT, which is already on
+     screen. `removing-opponents-helmet` names what he DID, so it stays — the
+     same distinction `interference-bench` makes one line up. */
+  charging: 'Charging',
+  'head-butting': 'Head-butting',
+  'roughing-removing-opponents-helmet':
+    'Roughing \u2014 removing an opponent\u2019s helmet',
+
   // ⚠️ THE DURATION IS IN THE KEY AND IS NOT REPEATED IN THE WORDS. The clock
   // beside the name already says 4:00, and "High-sticking (double minor) 4:00"
   // says the same thing twice -- the defect the slot caption hit when a rename

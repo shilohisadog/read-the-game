@@ -536,6 +536,16 @@ KNOWN_PENALTIES = {
     # preseason produces. Each was read, given prose in src/lib/penalties.js,
     # and only then added here.
     #
+    # ⛔⛔⛔ "HALTED THE NIGHTLY INGEST" IS WHAT NOBODY QUESTIONED FOR SIX DAYS.
+    # It happened here on 09-19, 09-21, 09-23 and 09-25, and the first three
+    # fixes touched this file and src/lib/penalties.js and no workflow at all —
+    # the word got fixed correctly every time and the HALT was never treated as
+    # a question. It should not have halted anything: `data/vocabulary-seen.json`
+    # and derive.py both said the alarm fires AFTER publishing, and both were
+    # true of the function and false of the pipeline. The fourth one cost 31
+    # hours of a stale site before anybody compared the comment to the behaviour.
+    # The recurrence of new WORDS is by design and stays; the halt is gone.
+    #
     # ⛔ THE JUSTIFICATION THAT USED TO STAND HERE WAS FALSE and is corrected
     # rather than deleted: it said `roughing-double-minor` renders as "Roughing"
     # because "the clock beside the name already says 4:00". The chip renders
@@ -551,6 +561,12 @@ KNOWN_PENALTIES = {
     # producing descriptors three full seasons never did, which is the argument
     # for the halt rather than a reason to pre-load the list with guesses.
     "delaying-game-equipment", "interference-bench",
+    # 2026-09-25, the fourth such night, walked over 4,600. ⚠️ `charging` is the
+    # one that does not fit the pattern: it is a COMMON infraction and it appears
+    # in none of the three full seasons here. Either the regular-season feed
+    # spells it differently or the league changed its descriptors this preseason,
+    # and the difference matters because the second means more are coming.
+    "charging", "head-butting", "roughing-removing-opponents-helmet",
 }
 
 
