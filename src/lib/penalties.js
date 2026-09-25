@@ -102,6 +102,13 @@ export const PEN = {
      same distinction `interference-bench` makes one line up. */
   charging: 'Charging',
   'head-butting': 'Head-butting',
+  /* ⭐ `aggressor` ARRIVED ON THE FIRST RUN AFTER THE HALT WAS REMOVED, and it
+     is the pair to `instigator` two blocks up: the instigator starts the fight
+     and the aggressor is the one still throwing when it is over. Preseason
+     again. ⭐⭐ IT IS ALSO THE PROOF THE FIX WORKS — the archive published to
+     `dataThrough 2026-09-24` on the same run that reported this, where every
+     night before it the word cost the whole sync. */
+  aggressor: 'Aggressor',
   'roughing-removing-opponents-helmet':
     'Roughing \u2014 removing an opponent\u2019s helmet',
 

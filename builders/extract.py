@@ -567,6 +567,11 @@ KNOWN_PENALTIES = {
     # spells it differently or the league changed its descriptors this preseason,
     # and the difference matters because the second means more are coming.
     "charging", "head-butting", "roughing-removing-opponents-helmet",
+    # ⭐ AND `aggressor` THE SAME EVENING, on the first run after the halt was
+    # removed -- the pair to `instigator`, and the first one of these that cost
+    # nothing: the archive published to dataThrough 2026-09-24 on the same run
+    # that reported it.
+    "aggressor",
 }
 
 

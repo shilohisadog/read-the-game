@@ -39,9 +39,9 @@ header, and §4 records what it cost us the one time we did it anyway.
 | tier | what it does | where it lives | lines |
 |---|---|---|---|
 | **acquisition** | talks to the league, stores bytes | `fetch_nhl.py` | 749 |
-| **interpretation** | feed → events; the two gates | `extract.py` | 1,017 |
+| **interpretation** | feed → events; the two gates | `extract.py` | 1,022 |
 | **orchestration** | walks the store, judges, writes documents | `derive.py` | 787 |
-| **analysis** | events → meaning; pure, no DOM, no network | `src/lib/**` (42 modules) | 9,755 |
+| **analysis** | events → meaning; pure, no DOM, no network | `src/lib/**` (42 modules) | 9,762 |
 | **measurement** | the archive, reduced by the SAME modules | `measure.mjs` | 706 |
 | **presentation** | generates the pages | `build_*.py` (8) | 7,217 |
 | **the app** | **the one exception — see §2** | `src/app.js` | 3,937 |
