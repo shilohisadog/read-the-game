@@ -32,55 +32,64 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 
 This section is the orientation. Everything below §0 is the detail, organised by
 state.
-## ⏭ 0.00 PICK UP HERE — 2026-09-26
+## ⏭ 0.00 PICK UP HERE — 2026-09-26 (evening)
 
-### ✅ THE PIPELINE IS HEALTHY AND THE FIX HELD
+### ✅ `IS THAT A LOT?` IS BUILT — THE ARCHIVE'S ANSWER, OVER THE RINK
 
-**Four consecutive green ingest runs on 09-26**, including the 08:17 Worker
-dispatch. Live: `dataThrough 2026-09-25`, **4,604 games**, `refusedInWindow 0`.
-Before the fix the site sat at `dataThrough 2026-09-23` through five failed runs.
+Kevin's 09-25 complaint is closed: *"how we counted this"* was 2 clicks and a page
+load away, and leaving the replay cost you your position in the game, the layer
+and the frame. The layer box now carries **two doors** — `How we counted`
+(renamed from `Show me the work`) and `Is that a lot?` — drawing into the **same
+overlay space** over the rink, mutually exclusive, with one owner.
 
-⭐⭐ **AND THE PROOF CAME ON THE FIRST RUN AFTER THE FIX**, better than a green
-pipeline would have been. A fifth new descriptor — `aggressor`, the pair to
-`instigator` — arrived that same evening:
+⭐ **The naming is Kevin's and it is better than mine.** I proposed `Is that a
+lot?` as a way AROUND a collision; he removed the collision by putting `How we
+counted` on the panel that IS the count. **When two labels collide, check whether
+one of them is on the wrong thing before rewording either.**
 
-```
-9.  derive the games we just fetched   success   (exit 2, captured)
-13. sync to R2                         success   THE ARCHIVE PUBLISHED
-18. a label the feed invented…         failure   red, AFTER the sync
-```
+⭐⭐ **ONE RENDERER.** The section moved out of `build_index.py`'s page script into
+`src/lib/sections.js`, with its stylesheet (`src/sections.css`); both builders
+inline both. A copy written for the overlay would have been a second statement of
+every figure's arithmetic.
 
-Every night before it, that word would have cost the whole sync. The step log says
-it in its own words: `derive: published, and a label needs a name (exit 2)`.
+### ⛔⛔⛔ AND IT SHIPPED COVERING THREE LAYERS OF SIX
 
-### ⏭ THE ONE THING TO DO NEXT
+Built against `printed.js` alone — but four of the seven layer doors land on the
+OTHER kind of figure, one whose count and denominator are prose in
+`derivation.js`. Opening it on Control drew a heading over an empty body, with a
+green suite. **Found by opening the page in a browser.** Root cause: a design note
+written from the doors' NAMES rather than from what renders them. Fixed, and the
+invariant is now a gate that is not circular.
 
-**Look at `charging`.** It appears in none of the three full seasons this archive
-holds, and that is not plausible for a penalty called most weeks of a season.
-Either the regular-season feed spells it differently or the league changed its
-descriptors this preseason — and the second means these arrive all season rather
-than stopping when real games start. Five new ones landed in seven days
-(`charging`, `head-butting`, `roughing-removing-opponents-helmet`, `aggressor`,
-plus the 09-23 pair). ⚠️ Each now costs a commit instead of a night, so this is a
-question about VOLUME rather than an outage.
+### ⛔⛔ THE GATE THAT PRODUCED, AND TWO MORE IT FOUND
 
-Then, from 09-24 and unchanged: **`census.faceoffZone` gets its own `PRINTED`
-entry** after the next derive (Mondays 15:47 UTC) and the Zone starts layer's door
-moves onto it; then **collapse the slot definition** — one geometry constant in
-`rink.js` and three prose descriptions.
+Both inliners strip `import` lines, so a page inlining a module without that
+module's own imports **builds clean and throws at render time**. `build_methods`
+has said so in prose for weeks; it happened again to `preview.html` the moment
+`leagueRows` moved. `test/lib-closure.test.js` checks presence AND order (the
+files are concatenated, so a top-level `const` is in a dead zone until its line
+runs — `function` declarations hoist and hide it).
 
-⏭ **AND KEVIN'S OPEN DESIGN CALL, from 09-25 and not yet built:** *"how we counted
-this" is 2–3 clicks from a replay layer and it takes you off the page.* His
-proposal — a second door beside "Show me the work" in `.lbox`, opening an overlay
-over the rink the same way the work panel does. My thoughts are in the thread:
-`measures.json` is already fetched by the game page, the overlay pattern and the
-mutually-exclusive rule are already his own August ruling, and the real work is
-that the section renderer lives inside `build_index.py`'s page script and must
-become a module both pages inline — otherwise the overlay is a second
-implementation of the section. Three calls were left with him: the button's
-wording (`Is that a lot?` is my pick over `How we counted this`, which sounds
-identical to its neighbour), whether the in-panel door stays as a second trigger,
-and the layout risk in `.lbox`, which the suite is blind to.
+⚠️ **IT IMMEDIATELY FOUND `archive.js` importing `rink.js` and `distribution.js`
+on the front door and the calendar**, reached by nothing today. Closing it costs
+**+22.6KB on each of those two pages for code neither executes.** Correct, costly,
+reversible — ⏭ **Kevin's call** whether to keep it or split `archive.js` instead.
+
+### ⏭ THE THINGS STILL OPEN
+
+- **`charging`: closed as a question.** Kevin, 09-26: *"i'd guess the league
+  changed descriptors, we'll just have to deal with it as it happens."* Each now
+  costs a commit instead of a night.
+- **`census.faceoffZone` gets its own `PRINTED` entry** after the next derive
+  (Mondays 15:47 UTC — next is **2026-09-28**), and the Zone starts layer's door
+  moves onto it. The sentence is committed, not yet in the published document.
+- **Collapse the slot definition** — one geometry constant in `rink.js` and three
+  prose descriptions in `danger.js`, `printed.js` and `preview.js`.
+- **The page weight.** `game.html` is +77KB (+9.9%) for the two tables and the
+  shared renderers; `index.html` and `calendar.html` +22.6KB each for the
+  lib-closure fix. Nobody has measured what that costs a phone.
+
+**Gates EXIT=0 — 1,513 JS + 231 Python, 0 failures, 46 analysis modules, 0 impure.**
 
 ---
 
