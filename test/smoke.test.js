@@ -394,7 +394,7 @@ test('a metric added mid-replay catches up, tracks forward, and tears down', () 
   n.pick('none').click();
   assert.equal(visible(), false, 'the layer is gone');
   assert.equal(el('workPanel').hidden, true, 'and it takes the ledger with it');
-  assert.match(String(el('work').textContent), /Show me the work/, 'the button resets');
+  assert.match(String(el('work').textContent), /How we counted/, 'the button resets');
 
   // Turning it back on somewhere else catches up again — not resumes from where
   // it was, which would show a count that never happened.

@@ -1043,11 +1043,29 @@
    moved 21 of 21 controls above. A verification affordance nobody can hit on a
    phone is the same as no verification affordance. The row is part of
    `--lboxh`, so the box is still ONE height across every layer. */
-#rg .lxw{grid-column:1/-1;grid-row:3;justify-self:stretch;align-self:end;
- min-height:34px;margin-top:4px;
- background:none;border:0;border-top:1px solid var(--edge);padding:6px;
- font:inherit;font-size:.72rem;font-weight:700;letter-spacing:.03em;
+/* ⭐⭐ TWO BUTTONS IN THE ONE ROW — 2026-09-26. `How we counted` and `Is that a
+   lot?` are Kevin's pair, and the row is a WRAPPER rather than two grid cells:
+   the columns above are `1fr auto 1fr`, so no span of them is a 50/50 split, and
+   the `border-top` has to be ONE line across the box rather than two abutting
+   ones. Side by side, never stacked — stacking would move `--lboxh`, which is the
+   one thing the box is not allowed to do (see the paragraph above). */
+#rg .lxws{grid-column:1/-1;grid-row:3;justify-self:stretch;align-self:end;
+ display:flex;margin-top:4px;border-top:1px solid var(--edge)}
+/* ⚠️ THE SIZE IS CLAMPED, AND THE NARROW END IS WHY. At 568x320 — the narrowest
+   surface the portrait ruling leaves — the box is ~256px wide, so each button
+   gets 113px and `How we counted` needs 112px of text in a 105px content area.
+   It WRAPPED, measured and then looked at: two ragged lines beside a neighbour
+   on one. Same mechanism `.lbox.wide` uses for the figures — the type takes the
+   viewport's size with a floor, rather than the copy being shortened around a
+   width nobody checked. `.72rem` is the ceiling, so every width that reads well
+   today is unchanged. */
+#rg .lxw{flex:1 1 0;min-width:0;min-height:34px;
+ background:none;border:0;padding:6px 4px;
+ font:inherit;font-size:clamp(.62rem,1.75vw,.72rem);font-weight:700;letter-spacing:.03em;
  color:var(--muted);cursor:pointer}
+/* A HAIRLINE BETWEEN THEM, because two borderless labels 4px apart read as one
+   wrapped sentence rather than two controls. */
+#rg .lxw+.lxw{border-left:1px solid var(--edge)}
 #rg .lxw:hover{color:var(--ink)}
 /* HIDDEN, NOT REMOVED, IN THE BASE VIEW: `Just events` has no ledger to show,
    and a button that vanishes would change the box's height, which is the one

@@ -408,9 +408,13 @@ test('⛔⛔⛔ EVERY LEAGUE FIGURE PRINTS ITS OWN DIVISION, not a promise of on
      does not divide at all, and the only place that is visible is the line that
      hands the row's own object along. If the field is ever renamed, rename it
      here too rather than deleting the check. */
-  const src = readFileSync(new URL('../src/lib/methods.js', import.meta.url), 'utf8');
+  /* ⏹ THE JOIN MOVED TO `derivation.js` ON 2026-09-26 — the replay's overlay
+     draws league sections too, and written twice the two surfaces would be free
+     to join a row to its prose differently. The claim is unchanged; only its
+     address is, so the check follows it rather than being deleted. */
+  const src = readFileSync(new URL('../src/lib/derivation.js', import.meta.url), 'utf8');
   assert.match(src.replace(/\/\*[\s\S]*?\*\//g, ''), /work:\s*row\.work/,
-    'methods.js must pass the row\u2019s division along, never compute its own');
+    'derivation.js must pass the row\u2019s division along, never compute its own');
 });
 
 test('⛔ the league frame carries what it was counted over, in its own unit', () => {
@@ -759,7 +763,11 @@ test('⛔ every printed figure reaches the page with its work, its source and it
   /* ⚠️ THE ROUND TRIP, NOT THE HALVES. `printed()` returning good data proves
      nothing about what a reader sees; the renderer is a separate file that can
      drop any field silently. This runs the page's real inlined script.
-     MUTATION: delete the `hmcav` block from `printedBlock` and this fires. */
+     ⭐ AND THE RENDERER IS `src/lib/printed-section.js` SINCE 2026-09-26, shared
+     with the replay's overlay. All three mutations below were re-run against the
+     module and all three still fire, which is what makes this a check on the
+     SECTION rather than on one page's copy of it.
+     MUTATION: delete the `hmcav` block from `printedSection` and this fires. */
   const page = render('how-we-measure.html', { 'measures.json': MEASURES });
   await page.settle();
   const nodes = walk(page.ids.hm);
@@ -796,7 +804,7 @@ test('⛔⛔ one published sentence is printed once on the page, and the second 
      twice". `pace` and `scoreEffects` are two cuts of a single published
      measurement, so its description belongs under one of them with a link from
      the other.
-     MUTATION: drop the `sameAs` branch from `printedBlock` and the count is 2. */
+     MUTATION: drop the `sameAs` branch from `printedSection` and the count is 2. */
   const page = render('how-we-measure.html', { 'measures.json': MEASURES });
   await page.settle();
   const nodes = walk(page.ids.hm);

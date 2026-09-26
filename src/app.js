@@ -52,6 +52,14 @@ import { colourOf, inkOn, readableInk } from './lib/teams.js';
 import { tiedControl } from './lib/layers/tied.js';
 import { sentenceFor } from './lib/sentence.js';
 import { DEFAULT_ENDS, LINK_NOTES, format, parse, resolve } from './lib/deeplink.js';
+/* ⭐⭐ THE ARCHIVE DOOR'S MODULES — Kevin's `Is that a lot?` overlay. Both kinds
+   of figure the site prints, and the two renderers `how-we-measure.html` uses.
+   The builder concatenates these, so the names would resolve without this line;
+   `test/app-imports.test.js` exists because that is exactly why nothing else in
+   this repo would ever tell you they were missing. */
+import { printed } from './lib/printed.js';
+import { leagueFigures } from './lib/derivation.js';
+import { sections } from './lib/sections.js';
 /* ⭐ THE ONE IMPORT THAT IS NOT SATISFIED ABOVE THE FUNCTION -- see the marker
    inside it, and the note beside it, for why the rink's paint lands elsewhere. */
 import { SX, SY, furniture, goalieGlyph, netGlyph } from './lib/rinkart.js';
@@ -1297,6 +1305,97 @@ function renderWork(_,cur,at){
   box:lboxFor(id,at,counted(sl)),cards:cardsFor(id),
   mode:MODE(),when:cur?`through P${cur.per} ${cur.rem}`:'pre-game',
   evenOnly,AAB,HAB});}
+/* ⭐⭐⭐ `IS THAT A LOT?` — THE ARCHIVE'S ANSWER, OVER THE RINK.
+   Kevin, 2026-09-25: *"It takes 3 or 4 mouse clicks to get to 'how we counted
+   this' from a replay-layer and it takes us away from the replay page."* It was
+   two clicks and a PAGE LOAD, and the clicks were never the cost — leaving the
+   replay loses your position in the game, the layer you chose and the frame you
+   were looking at. This is the section from `how-we-measure.html`, drawn here.
+
+   ⭐⭐ AND IT IS THE SAME RENDERER, WHICH IS THE ENTIRE POINT. `printedSection`
+   is `src/lib/printed-section.js`, inlined by both builders. A version written
+   for this panel would be a second statement of every figure's arithmetic, on
+   the one site whose pitch is that you can check our work.
+
+   ⚠️ NO `layerFor`. On the methods page each section says "on a game page, this
+   is what the Control layer is counting"; here the reader IS on the game page
+   with that layer on, and the rink is behind this panel. The sentence would be
+   telling them what they are looking at.
+
+   ⚠️ AND `href` IS ABSOLUTE. A cross-reference between two figures cut from one
+   published measurement is `#anchor` on the methods page, where both sections
+   exist. This panel holds one layer's figures, so a bare fragment would scroll
+   the GAME page to an element that is not on it. */
+/* ⭐ BOUND ONCE, to this page's way of making an element. `sections.js` takes
+   `create` rather than reaching for `document`, which is what keeps `src/lib`
+   inside the purity boundary `tools/tiers.mjs` counts. See its header. */
+const SECTION=sections(t=>document.createElement(t));
+function renderAlot(){
+ const id=whichPick();
+ const host=$('alotBody');
+ const want=(LAYERWORK[id]||[]).map(w=>w.anchor);
+ /* ⛔ THE HONEST EMPTY STATES, AND THEY ARE TWO DIFFERENT SENTENCES. A layer
+    with no archive figure is our gap; a document that did not arrive is the
+    network's. `read-the-game.html` reaches nothing at all by design, so the
+    second one is a STATE THAT SHIPS rather than an error path — the same
+    branch the per-game comparison already takes. */
+ if(!want.length){
+  host.innerHTML='<h2>Is that a lot?</h2><p class="wnone">This layer counts '
+   +'something the archive does not publish a rate for yet, so there is nothing '
+   +'to compare tonight against.</p>';
+  return;}
+ if(!RATES){
+  host.innerHTML='<h2>Is that a lot?</h2><p class="wnone">The archive figures '
+   +'could not be read, so there is nothing to compare tonight against. The '
+   +'replay itself does not depend on them.</p>';
+  return;}
+ host.innerHTML='';
+ const h=document.createElement('h2');
+ h.textContent='Is that a lot? ';
+ const sub=document.createElement('span');
+ sub.className='wsub';
+ /* THE SUBHEAD NAMES THE SWITCH, because the panel covers the ice and the chip
+    that opened it. A reader who pressed the wrong one must be able to tell. */
+ sub.textContent='— '+chipLabel(id)+', across every game in the archive';
+ h.appendChild(sub);
+ host.appendChild(h);
+ /* ⛔⛔ BOTH KINDS, AND SHIPPING ONE OF THEM WAS THE DEFECT. Four of the seven
+    layer doors land on a figure whose count and denominator are PROSE we wrote
+    (`derivation.js`, drawn by `figureSection`) and three on a figure that
+    travels with its own published description (`printed.js`, drawn by
+    `printedSection`). Built against the second alone, this panel opened on the
+    Control layer, put that layer's name in its heading and drew NOTHING — a
+    design note written from the doors' names rather than from what renders them.
+    The lookup is by anchor because the anchor is what `LAYERWORK` carries; which
+    table an anchor belongs to is a fact about the tables, so it is asked of
+    them rather than restated here. */
+ const printedBy={},labelOf={};
+ printed(RATES).forEach(e=>{printedBy[e.anchor]=e;labelOf[e.anchor]=e.label;});
+ const leagueBy={};
+ leagueFigures(RATES).forEach(r=>{leagueBy[r.anchor]=r;labelOf[r.anchor]=r.label;});
+ /* IN THE LAYER'S OWN ORDER, not either table's. `LAYERWORK` is the layer
+    descriptor's `work` list, and Stoppages names penalties, offsides and icings
+    in the order the layer itself teaches them. */
+ let drew=0;
+ want.forEach(a=>{
+  /* ⚠️ `href` IS ABSOLUTE. A cross-reference between two figures cut from one
+     published measurement is `#anchor` on the methods page, where both sections
+     exist. This panel holds one layer's, so a bare fragment would scroll the
+     GAME page to an element that is not on it. */
+  if(printedBy[a]){
+   host.appendChild(SECTION.printedSection(printedBy[a],
+    {labelOf,href:x=>'/how-we-measure.html#'+x}));drew++;return;}
+  if(leagueBy[a]){
+   host.appendChild(SECTION.figureSection(leagueBy[a],SECTION.leagueNums(leagueBy[a]),{}));drew++;}});
+ /* ⛔ AND IT SAYS SO RATHER THAN SHOWING A HEADING OVER NOTHING. An anchor in
+    `layer-rules.json` that neither table answers to is our gap, and the empty
+    panel above is exactly how it hid the first time. */
+ if(!drew){
+  host.appendChild(document.createElement('p')).className='wnone';
+  host.lastChild.textContent='The archive figures behind this layer could not '
+   +'be read from the published document, so there is nothing to compare '
+   +'tonight against. The replay itself does not depend on them.';}}
+
 /* The learn-card row for a layer, or '' when the layer has none. `LEARNCARDS`
    is built by `builders/build_main.py::_learn_by_layer` out of the two
    documents that already own the answer -- never restated here. */
@@ -1824,25 +1923,48 @@ setGear(gear);
    alone, picking `Just events` while the work was open would have left the rink
    invisible with nothing over it. The same shape as `place()` and `chipLabel`:
    remove the opportunity to disagree rather than add a second correct line. */
-function setWork(open){
- workOpen=open;
- $('workPanel').hidden=!open;
- document.getElementById('rg').classList.toggle('working',open);
- $('work').setAttribute('aria-expanded',open);
- $('work').textContent=open?'Hide the work':'Show me the work';
- if(open&&playing)stop();}
+/* ⭐⭐⭐ AND SINCE 2026-09-26 THE OWNER OWNS A SPACE, NOT A PANEL. Kevin put a
+   second door in the layer box — `Is that a lot?`, the archive beside tonight —
+   and ruled that both draw in the same place: *"I want both is that a lot and
+   how we counted to overlay the rink, same space, different overlays."*
+   ⚠️ WHICH MAKES `working` A SHARED RESOURCE, and the paragraph above is
+   already the record of what a second writer to it costs. Each panel minding the
+   other would be two correct lines that are free to disagree; `setOverlay` takes
+   WHICH panel is open — `null`, `'work'` or `'alot'` — so "both open" and "the
+   ice hidden with nothing over it" are not states this page can reach.
+   `setWork` stays as the name every other call site already uses. */
+function setOverlay(which){
+ workOpen=which==='work';
+ const archOpen=which==='alot';
+ $('workPanel').hidden=!workOpen;
+ $('alotPanel').hidden=!archOpen;
+ document.getElementById('rg').classList.toggle('working',!!which);
+ $('work').setAttribute('aria-expanded',workOpen);
+ $('alot').setAttribute('aria-expanded',archOpen);
+ /* ⭐ `Hide`, NOT `Hide the work` — 2026-09-26. The label flips because
+    pressing the open door closes it, and there are now TWO doors in the row:
+    a verb phrase naming which one would have to fit half a row at 568px, the
+    narrowest surface the portrait ruling leaves. One word fits, and the panel
+    it closes is on screen beside it. */
+ $('work').textContent=workOpen?'Hide':'How we counted';
+ $('alot').textContent=archOpen?'Hide':'Is that a lot?';
+ if(which&&playing)stop();
+ if(archOpen)renderAlot();}
+function setWork(open){setOverlay(open?'work':null);}
 $('work').onclick=()=>{setWork(!workOpen);if(workOpen)render(i,'');};
-/* THE OVERLAY'S CLOSER DELEGATES rather than calling `setWork` itself, so there
-   is exactly one closer and no way for two call sites to drift about what
-   closing means. `#work` is still the control; this is the copy of it that is
-   reachable while the overlay covers the original. */
+$('alot').onclick=()=>setOverlay($('alotPanel').hidden?'alot':null);
+/* THE OVERLAYS' CLOSERS DELEGATE rather than calling the owner themselves, so
+   there is exactly one closer per door and no way for two call sites to drift
+   about what closing means. The buttons in `.lbox` are still the controls; these
+   are the copies of them that are reachable while the overlay covers the box. */
 $('workClose').onclick=()=>$('work').click();
+$('alotClose').onclick=()=>$('alot').click();
 /* AND THE SHUT STATE IS ESTABLISHED BY THE SAME OWNER AT BOOT, the way
    `setGear` establishes the pace. The markup carries `hidden` so the page reads
    correctly before JS runs; without this line that attribute would be a SECOND
-   statement of the closed state, free to disagree with `setWork` the day either
+   statement of the closed state, free to disagree with the owner the day either
    one moves. Same argument as the mode label two rows down. */
-setWork(false);
+setOverlay(null);
 $('aAb').textContent=AAB;$('hAb').textContent=HAB;
 /* ⭐ THE DIRECTION INDICATOR IS GONE, AND THE QUESTION THAT CREATED IT IS NOT.
    Kevin, 2026-08-25: "remove both 'attacks' and the arrows completely. They are

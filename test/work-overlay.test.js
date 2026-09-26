@@ -100,7 +100,7 @@ test('⭐ ONE OWNER for the open state — closing by lens change clears everyth
   assert.equal(a.$('workPanel').hidden, true, 'the panel stayed open');
   assert.equal(a.$("rg").classList.contains("working"), false,
     'the ice is still hidden with no panel over it');
-  assert.equal(a.$('work').textContent, 'Show me the work', 'the button still says Hide');
+  assert.equal(a.$('work').textContent, 'How we counted', 'the button still says Hide');
 });
 
 test('⭐ opening the work stops the replay', () => {

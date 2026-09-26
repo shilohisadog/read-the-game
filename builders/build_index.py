@@ -1915,7 +1915,13 @@ def _lib(*names):
     """
     return "\n".join(_module(n) for n in
                       (names or ("ingest-state.js", "daily.js", "competitions.js",
-                                 "teams.js", "archive.js")))
+                                 # ⚠️ `archive.js` IMPORTS THESE TWO and the inliner
+                                 # strips the import; see the note at the calendar
+                                 # page's list. A page that carries a module and
+                                 # not what the module needs builds clean and
+                                 # throws when a reader reaches the path.
+                                 "teams.js", "rink.js", "distribution.js",
+                                 "archive.js")))
 
 
 def _competitions():
@@ -4309,34 +4315,9 @@ HOWCSS = r"""<style>
  font-variant-numeric:tabular-nums}
 
 /* ---- one block per figure -------------------------------------------- */
-.hmf{background:#fff;border:1px solid var(--edge);border-radius:11px;
- padding:15px 16px 14px;margin:0 0 14px}
-.hmf h3{margin:0 0 9px;font-size:1rem}
-.hmfrom{margin:0 0 10px;display:grid;grid-template-columns:auto 1fr;gap:3px 12px;
- font-size:.86rem;line-height:1.5}
-.hmfrom dt{color:var(--muted);font-weight:700;white-space:nowrap}
-.hmfrom dd{margin:0}
-.hmwhy{margin:0 0 10px;font-size:.9rem;line-height:1.55}
-.hmnums{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 10px;padding:0;list-style:none}
-.hmnums li{border:1px solid var(--edge);border-radius:8px;padding:7px 10px;
- font-size:.76rem;color:var(--muted);line-height:1.3;max-width:15em}
-.hmnums b{display:block;font-size:1.05rem;color:var(--ink);font-weight:800;
- font-variant-numeric:tabular-nums}
-/* ⚠️ THE CAVEAT IS NOT SMALL PRINT AND IS NOT STYLED AS SMALL PRINT. It is the
-   half of this page a critic is here for, so it reads at the same size as the
-   rest of the block with a rule down its side rather than shrinking away. */
-/* ⭐⭐⭐ THE COUNTS BEHIND A DEFINITION, where the page used to assert a reason.
-   Same treatment as `.hmwork` because it is the same kind of thing: arithmetic
-   a reader can check, rather than a sentence they have to take. */
-.hmev{margin:0 0 10px;padding:9px 11px;background:#f4f8fb;border-radius:8px;
- font-size:.86rem;line-height:1.55}
-.hmev ul{list-style:none;margin:7px 0 7px;padding:0;display:grid;gap:4px}
-.hmev li{font-variant-numeric:tabular-nums}
-.hmev b{font-weight:700}
-.hmcav{margin:0;padding:8px 0 8px 11px;border-left:3px solid #d6c07a;
- font-size:.86rem;line-height:1.55}
-.hmcav b{font-weight:700}
-.hmnone{color:var(--muted);font-size:.86rem;margin:0}
+/* ⏹ THE FIGURE BLOCKS’ RULES MOVED TO `src/sections.css` on 2026-09-26. The replay's `Is that a lot?`
+   overlay draws the same blocks, and a second copy of their rules would diverge
+   silently on a surface no unit test can see. Substituted below. */
 /* ---- the replay's layers, indexed ------------------------------------- */
 .hmlay{display:grid;gap:10px;margin:14px 0 0}
 @media (min-width:720px){.hmlay{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -4347,15 +4328,6 @@ HOWCSS = r"""<style>
 .hmlay b{font-weight:700}
 .hmlc{color:var(--muted)}
 .hmld{margin:8px 0 0 !important;font-size:.8rem !important}
-/* ---- the figures the rest of the site prints -------------------------- */
-.hmwhere{font-size:.78rem;color:var(--muted);margin:-2px 0 10px;line-height:1.45}
-/* ⭐ THE PATH IS SET IN THE MONOSPACE A READER EXPECTS FOR A FIELD NAME, because
-   it is an instruction: open measures.json and look HERE. Prose styling would
-   read as a phrase rather than as somewhere to go. */
-.hmsrc{margin:0 0 4px}
-.hmsrc code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
- font-size:.93em;background:#e7eef4;border-radius:4px;padding:1px 4px}
-
 /* ---- the family matrix ------------------------------------------------ */
 .hmpairs{list-style:none;margin:12px 0 14px;padding:0;display:grid;gap:7px}
 .hmpairs li{display:grid;grid-template-columns:1fr 150px 3.1em;gap:10px;
@@ -4366,8 +4338,8 @@ HOWCSS = r"""<style>
 .hmr{font-size:.78rem;color:var(--muted);margin:10px 0 0}
 @media (max-width:430px){
  .hmpairs li{grid-template-columns:1fr 46px 3.1em}
- .hmf{padding:13px 12px 12px}
 }
+__SECTIONCSS__
 </style>"""
 
 HOW_BODY = r"""<div class="wrap">
@@ -4519,36 +4491,12 @@ __HELPERS__
   function num(n) { return (n == null ? '—' : n.toLocaleString()); }
   function pct(v) { return v == null ? '—' : Math.round(v * 100) + '%'; }
   function r2(v) { return v == null ? '—' : v.toFixed(2); }
-  /* ⭐ HOW A MEASURED FIGURE IS PRINTED, IN ONE PLACE. A count of seconds is an
-     integer and reads wrong as "46.00"; a share reads wrong as "0.22" beside a
-     unit that says "for every 100". Three shapes, one rule, no per-row config. */
-  function fig(v) {
-    if (v == null) return '—';
-    return Number.isInteger(v) ? String(v) : (v < 1 ? (v * 100).toFixed(1) : v.toFixed(2));
-  }
   function r3(v) { return v == null ? '—' : v.toFixed(3); }
 
   function svgEl(name, attrs) {
     var n = document.createElementNS('http://www.w3.org/2000/svg', name);
     for (var k in attrs) n.setAttribute(k, attrs[k]);
     return n;
-  }
-  /** A labelled number. `b` is the figure, the rest says what it is.
-      ⭐ `q` MAKES THE CROSS-REFERENCE A LINK RATHER THAN AN INSTRUCTION. Kevin,
-      reading the page: *"We refer to question numbers, but the questions aren't
-      until the very bottom, we need to point readers to them."* A page about
-      showing the work cannot answer "see question 2" with a scroll. */
-  function stat(value, said, q) {
-    var li = el('li');
-    li.appendChild(el('b', null, value));
-    li.appendChild(el('span', null, said));
-    if (q) {
-      li.appendChild(el('span', null, ' — see '));
-      var a = el('a', null, 'question ' + q);
-      a.href = '#q' + q;
-      li.appendChild(a);
-    }
-    return li;
   }
   function kick(text) { return el('p', 'hmkick', text); }
 
@@ -4560,217 +4508,23 @@ __HELPERS__
      for every 100 power plays" is the answer to *show me the work*; the sentence
      above it is only the promise of one. The numbers come off `row.work`, which
      the card's own row computed — nothing here divides. */
-  function workLine(m) {
-    var w = m.work;
-    if (!w || w.value == null) return null;
-    var p = el('p', 'hmwork');
-    if (w.count != null) {
-      p.appendChild(el('span', null, num(w.count) + ' ÷ ' + num(w.n) + ' = '));
-    }
-    p.appendChild(el('b', null, fig(w.value)));
-    /* ⛔ A MEDIAN HAS NO NUMERATOR, so it says what it is instead of pretending
-       to be a ratio — and it still names the population it is the middle of. */
-    p.appendChild(el('span', null, ' ' + m.unit
-      + (w.count == null ? ', the middle value of ' + num(w.n)
-          + (m.population ? ' ' + m.population : '') : '')));
-    return p;
-  }
-
-  /* ⭐⭐⭐ WHY A MEASURE IS DEFINED THE WAY IT IS, IN COUNTS RATHER THAN IN PROSE.
-     The CF% row's score condition used to be explained by a mechanism we do not
-     measure. The archive had counted the EFFECT since the site began — it is the
-     front door's own headline — so the explanation is now two published figures
-     and their own published descriptions. Nothing here divides or names a rate:
-     `what` travels with the count from `archive.js`. */
-  function evidenceBlock(m) {
-    if (!m.evidence || !m.evidence.length) return null;
-    var box = el('div', 'hmev');
-    if (m.evidenceLead) box.appendChild(el('span', null, m.evidenceLead));
-    var ul = el('ul');
-    m.evidence.forEach(function (e) {
-      var li = el('li');
-      li.appendChild(el('b', null, num(e.count) + ' of ' + num(e.n)));
-      li.appendChild(el('span', null, ' — ' + e.what));
-      ul.appendChild(li);
-    });
-    box.appendChild(ul);
-    if (m.evidenceTail) box.appendChild(el('span', null, m.evidenceTail));
-    return box;
-  }
-
   /* ⭐⭐ WHICH LAYERS ON THE REPLAY OPEN THIS SECTION, READ RATHER THAN TYPED.
      `where` above is prose and this is the half of it that can be derived: the
      layer descriptors record which figure each one opens, node writes that into
-     `data/layer-rules.json`, and this is its inverse. A sentence typed here
-     would be the second statement of a pairing the layers already own — and the
-     one on this page that claimed a surface the figure is not printed on
-     survived a whole morning. */
+     `data/layer-rules.json`, and this is its inverse.
+     ⏹ THE RENDERER ITSELF IS IN `src/lib/printed-section.js` NOW. It draws on
+     the replay too, and a copy written for that surface would be a second
+     implementation of the section. This page keeps the TABLE and hands it over. */
   var LAYER_FOR = __LAYER_FOR__;
-  function onTheReplay(anchor) {
-    var ls = LAYER_FOR[anchor];
-    if (!ls || !ls.length) return null;
-    /* ⚠️ A LIST, NOT A JOIN. The first version read "the Control (Corsi) layer,
-       the Blocked shots layers are counting" — two layers open the same section,
-       which was never going to be the common case and so was never read aloud.
-       Found by looking at the rendered page. */
-    var named = ls.length > 1
-      ? ls.slice(0, -1).join(', ') + ' and ' + ls[ls.length - 1]
-      : ls[0];
-    return el('p', 'hmwhere', 'On a game page, this is what the ' + named
-      + (ls.length > 1 ? ' layers are' : ' layer is')
-      + ' counting \u2014 for one night rather than for the archive.');
-  }
 
-  function figure(m, nums) {
-    var s = el('section', 'hmf');
-    s.id = m.anchor;
-    s.appendChild(el('h3', null, m.label));
-    var rep = onTheReplay(m.anchor);
-    if (rep) s.appendChild(rep);
-    var dl = el('dl', 'hmfrom');
-    dl.appendChild(el('dt', null, 'Counted'));
-    dl.appendChild(el('dd', null, m.count));
-    dl.appendChild(el('dt', null, 'Out of'));
-    dl.appendChild(el('dd', null, m.of));
-    s.appendChild(dl);
-    var work = workLine(m);
-    if (work) s.appendChild(work);
-    s.appendChild(el('p', 'hmwhy', m.why));
-    var ev = evidenceBlock(m);
-    if (ev) s.appendChild(ev);
-    /* ⚠️ `nums` IS NULL WHEN THERE IS NOTHING TO SAY, RATHER THAN AN EMPTY LIST.
-       This asked `nums.childNodes.length` and the page's own test harness has no
-       `childNodes` — which is not the harness being wrong. A renderer that reads
-       a DOM property to find out what it just built is asking the browser a
-       question it already knows the answer to. */
-    if (nums) s.appendChild(nums);
-    /* ⛔ THE CAVEAT IS UNCONDITIONAL IN THE DATA AND SO IT IS HERE. Every entry
-       in `DERIVATION` carries one; a figure that reached this page without one
-       would render a block that reads as though nothing is wrong with it, which
-       is the one thing this page may not do. A test holds the data side. */
-    var c = el('p', 'hmcav');
-    /* ⚠️ "COULD BE", NOT "IS". Kevin: *"could (or should?) this say 'What could
-       be wrong with it', mainly to soften the decisiveness of saying it's flat
-       out wrong (then why would we include it on our site?)"* He is right, and
-       it is not a hedge: the heading is an invitation to doubt the figure, and
-       "what is wrong with it" is a confession that argues against printing the
-       figure at all. Where something IS measurably wrong — hits carry a 4%
-       home-ice premium — the body still says so flatly, so nothing is softened
-       except the promise the heading makes. */
-    c.appendChild(el('b', null, 'What could be wrong with it. '));
-    c.appendChild(el('span', null, m.caveat));
-    s.appendChild(c);
-    return s;
-  }
-
-  /* ⭐⭐⭐ THE ARITHMETIC OF A FIGURE PRINTED SOMEWHERE ELSE, AND NOTHING HERE
-     DIVIDES. Numerator, denominator and result are three published fields; this
-     places them side by side and rounds for the page. Rounding is presentation
-     — the division happened in `census.js` or `archive.js` and is not repeated.
-
-     ⛔ TWO SHAPES, BECAUSE A RATE PER SIXTY MINUTES IS NOT A QUOTIENT. Writing
-     "67,517 ÷ 42,615.7 = 95.06" would put a false sum on the page whose whole
-     subject is checkable arithmetic: that division is 1.58, and the 60 is the
-     scaling the published sentence describes. So a scaled figure says "in", and
-     a true ratio says "÷".
-
-     ⚠️ AND `fig()` IS NOT USED HERE. It reads anything under 1 as a share and
-     multiplies by 100 — correct for every figure it was written for, and wrong
-     for 0.765 shot attempts per face-off, which it would print as 76.5. The
-     unit decides, and the unit is published beside the figure. */
-  function readLine(l) {
-    var right = l.unit === '%' ? (l.value * 100).toFixed(1) + '%'
-                               : r2(l.value) + ' ' + l.unit;
-    return l.as === 'scaled'
-      ? num(l.count) + ' in ' + num(l.n) + ' ' + l.denUnit + ' = ' + right
-      : num(l.count) + ' ÷ ' + num(l.n) + ' = ' + right;
-  }
-
-  /* ⭐⭐⭐ A FIGURE THE REST OF THE SITE PRINTS. Same block as `figure()` above
-     with one deliberate difference: there is no "Counted / Out of" pair written
-     in `methods.js`, because these figures travel with their own description in
-     the published document. The page prints THAT sentence, names the path it
-     read it from, and a reader can open the same file and check. See the header
-     over `PRINTED` in src/lib/methods.js for why that asymmetry is on purpose. */
-  function printedBlock(e, labelOf) {
-    var s = el('section', 'hmf');
-    s.id = e.anchor;
-    s.appendChild(el('h3', null, e.label));
-    /* ⛔ A FIGURE MUST SAY WHERE A READER MET IT, AND EITHER HALF WILL DO. Most
-       are printed in prose a builder substituted and name their surfaces in
-       `where`; one is printed only by the replay, and for that one the sentence
-       is derived from the layer rather than written twice. A test requires one
-       of the two to be present. */
-    if (e.where) s.appendChild(el('p', 'hmwhere', 'Where this appears: ' + e.where));
-    var rep = onTheReplay(e.anchor);
-    if (rep) s.appendChild(rep);
-    var box = el('div', 'hmev');
-    /* ⭐⭐ ONE GROUP PER PUBLISHED SENTENCE: the figures that sentence describes,
-       and then the sentence. The published `what` for the slot ends "…this many
-       were goals", and "this many" needs its number directly above it.
-
-       ⭐⭐ AND A SENTENCE IS PRINTED ONCE PER PAGE. Two of these figures are cut
-       out of a single published measurement, and printing its description under
-       both would be the same paragraph twice — the defect the front door's
-       `FIGURE_CLAUSE` closed the day before this was written, arriving from the
-       other direction. `sameAs` is the anchor of the section that has it. */
-    e.groups.forEach(function (g) {
-      var ul = el('ul');
-      g.lines.forEach(function (l) {
-        var li = el('li');
-        li.appendChild(el('b', null, readLine(l)));
-        li.appendChild(el('span', null, ' — ' + l.is));
-        ul.appendChild(li);
-      });
-      box.appendChild(ul);
-      if (g.sameAs) {
-        var p = el('p', null, 'Counted exactly as ');
-        var a = el('a', null, labelOf[g.sameAs] || 'the figure above');
-        a.href = '#' + g.sameAs;
-        p.appendChild(a);
-        p.appendChild(el('span', null, ' — one published measurement cut a '
-          + 'different way, so its description is there rather than repeated here.'));
-        box.appendChild(p);
-        return;
-      }
-      var src = el('p', 'hmsrc');
-      src.appendChild(el('span', null, 'What that counts, published beside the '
-        + 'figure itself — measures.json, at '));
-      src.appendChild(el('code', null, g.from));
-      src.appendChild(el('span', null, ':'));
-      box.appendChild(src);
-      box.appendChild(el('p', null, g.what));
-    });
-    s.appendChild(box);
-    /* ⛔ AND IT SAYS WHICH HALF IS MISSING, IN THE WORDS OF WHICH HALF IT IS. A
-       document that predates a field is ordinary here; a page that quietly drew
-       three lines where four belong is not.
-
-       ⚠️ ONE SENTENCE WHEN THE WHOLE FIGURE IS GONE, one per line when part of
-       it is. A dead document would otherwise print the same confession three
-       times under a block that has nothing in it, under a banner at the top of
-       the page already saying the counts could not be loaded. */
-    if (e.missing && !e.lines) {
-      s.appendChild(el('p', 'hmnone', 'The published figures for this one could '
-        + 'not be read, so the counts are not shown. What follows does not '
-        + 'depend on them.'));
-    } else {
-      (e.missing || []).forEach(function (mi) {
-        s.appendChild(el('p', 'hmnone', mi.why === 'description'
-          ? 'The published document carries no description for ' + mi.path
-            + ' yet, so that line is not shown — we do not print a figure here '
-            + 'without the sentence that says what it counted.'
-          : 'The published document carries no figures at ' + mi.path
-            + ' yet, so that line is not shown.'));
-      });
-    }
-    s.appendChild(el('p', 'hmwhy', e.why));
-    var c = el('p', 'hmcav');
-    c.appendChild(el('b', null, 'What could be wrong with it. '));
-    c.appendChild(el('span', null, e.caveat));
-    s.appendChild(c);
-    return s;
-  }
+  /* ⭐ THE RENDERERS, BOUND TO THIS PAGE'S WAY OF MAKING AN ELEMENT.
+     `sections.js` takes `create` rather than reaching for `document`, so the
+     purity `tools/tiers.mjs` counts over `src/lib` survives a module that builds
+     DOM. See its header. */
+  var S = sections(function (tag) { return document.createElement(tag); });
+  var printedSection = S.printedSection, figureSection = S.figureSection,
+      onTheReplay = S.onTheReplay, cell = S.cell, cellList = S.cellList,
+      leagueNums = S.leagueNums;
 
   function clubNums(m, policy) {
     var out = [];
@@ -4779,28 +4533,28 @@ __HELPERS__
        the time they reach a figure the policy block is a screen and a half up. */
     var policyTarget = policy ? policy.target : null;
     if (m.games != null) {
-      out.push(stat(num(m.games) + ' games',
+      out.push(cell(num(m.games) + ' games',
         'a team has to play before this number is telling you about the team'));
     }
     if (m.r != null) {
-      out.push(stat(r3(m.r), 'how closely a team’s first half of a season matched '
+      out.push(cell(r3(m.r), 'how closely a team’s first half of a season matched '
         + 'its second, where 1.00 would be a perfect match'
         + (policy && policy.clubSeasons ? ', across ' + num(policy.clubSeasons) + ' team-seasons' : '')));
     }
     /* THE SIZE OF CRITICISM 1, BESIDE THE NUMBER IT CRITICISES. */
     if (m.alternate && m.alternate.games != null) {
-      out.push(stat(num(m.alternate.games) + ' games',
+      out.push(cell(num(m.alternate.games) + ' games',
         'what it would be if we compared every other game instead of the first '
         + 'half against the second', 1));
     }
     /* AND OF CRITICISM 2. */
     (m.atTarget || []).forEach(function (t) {
-      out.push(stat(num(t.games) + ' games',
+      out.push(cell(num(t.games) + ' games',
         'what it would be if we wanted to be ' + (t.target < policyTarget ? 'less' : 'more')
         + ' sure — ' + t.target + ' in place of ' + policyTarget, 2));
     });
     if (m.clubRange) {
-      out.push(stat(pct(m.clubRange.min) + '–' + pct(m.clubRange.max),
+      out.push(cell(pct(m.clubRange.min) + '–' + pct(m.clubRange.max),
         'the range real teams landed in over a full season, from '
         + num(m.clubRange.games) + ' team-games in ' + num(m.clubRange.n)
         + ' team-seasons'));
@@ -4810,21 +4564,14 @@ __HELPERS__
          read "35 of 41", which every other cell in the row has trained the eye to
          read as a progress count — 35 games of the 41 needed. It is the opposite:
          35 is what the number needs and 41 is the ceiling. Found by looking. */
-      out.push(stat('under ' + num(policy.admission),
+      out.push(cell('under ' + num(policy.admission),
         num(m.games) + ' games is inside our half-season line, so this number is '
         + 'shown for each of the two teams on a game’s preview'));
     }
-    return listOf('hmnums', out);
+    return cellList('hmnums', out);
   }
 
   /** A `<ul>` of the cells, or NULL when there are none — see `figure`. */
-  function listOf(cls, cells) {
-    if (!cells.length) return null;
-    var ul = el('ul', cls);
-    cells.forEach(function (c) { ul.appendChild(c); });
-    return ul;
-  }
-
   /* ⭐⭐ WHY THERE IS ONE POSSESSION ROW, DRAWN RATHER THAN ASSERTED.
      Kevin: *"as long as we quantify what 'possession family' means (so a novice
      can connect the dots), then yes, I'm good with showing it once."* The axis is
@@ -4931,10 +4678,10 @@ __HELPERS__
         + 'three quarters of a minute is useful and true. Telling them a team '
         + '"takes a lot of penalties" after ten games would not be.'));
       var ul = el('ul', 'hmpol');
-      ul.appendChild(stat(m.policy.target, 'how closely a team’s first half has to '
+      ul.appendChild(cell(m.policy.target, 'how closely a team’s first half has to '
         + 'match its second before we will show a number for that team. '
         + 'Our choice, not something we measured', 2));
-      ul.appendChild(stat(m.policy.admission, 'games. A number needing more than '
+      ul.appendChild(cell(m.policy.admission, 'games. A number needing more than '
         + 'this is not shown for a team at all', 3));
       /* ⭐ WHAT A "TEAM-SEASON" IS, SPELLED OUT AS ITS OWN ARITHMETIC. Kevin:
          *"We should be crystal clear about what 'team-seasons' are, e.g. there
@@ -4945,13 +4692,13 @@ __HELPERS__
          otherwise have this page asserting a tidy sum that is not true. */
       var perYear = m.policy.seasons.length
         ? m.policy.clubSeasons / m.policy.seasons.length : null;
-      ul.appendChild(stat(num(m.policy.clubSeasons), 'team-seasons behind every '
+      ul.appendChild(cell(num(m.policy.clubSeasons), 'team-seasons behind every '
         + 'count on this page'
         + (Number.isInteger(perYear)
             ? ' — one for each of the ' + perYear + ' teams, in each of the '
               + m.policy.seasons.length + ' finished seasons below'
             : '')));
-      ul.appendChild(stat(m.policy.seasons.length, 'finished seasons: '
+      ul.appendChild(cell(m.policy.seasons.length, 'finished seasons: '
         + m.policy.seasons.join(', ') + '. A season counts once its playoffs are in our archive.'));
       pol.appendChild(ul);
       pol.appendChild(el('p', 'hmr', 'These counts only change when a season '
@@ -4964,7 +4711,7 @@ __HELPERS__
 
     if (m.club.length) {
       host.appendChild(kick('The numbers we show beside a team'));
-      m.club.forEach(function (c) { host.appendChild(figure(c, clubNums(c, m.policy))); });
+      m.club.forEach(function (c) { host.appendChild(figureSection(c, clubNums(c, m.policy), { layerFor: LAYER_FOR })); });
     }
 
     if (m.league.length) {
@@ -4976,8 +4723,10 @@ __HELPERS__
         + (m.games ? ' — ' + num(m.games) : '') + '.');
       host.appendChild(intro);
       m.league.forEach(function (r) {
-        host.appendChild(figure(r, listOf('hmnums', r.over
-          ? [stat(num(r.over.n), r.over.unit + ' counted')] : [])));
+        /* THE CELLS COME FROM THE MODULE TOO — the overlay draws these same
+           rows, and "what a league row is counted over" written in two places
+           is the drift the shared renderer exists to stop. */
+        host.appendChild(figureSection(r, leagueNums(r), { layerFor: LAYER_FOR }));
       });
     }
 
@@ -4998,7 +4747,10 @@ __HELPERS__
       var labelOf = {};
       m.printed.forEach(function (e) { labelOf[e.anchor] = e.label; });
       m.printed.forEach(function (e) {
-        host.appendChild(printedBlock(e, labelOf));
+        /* THE SHARED RENDERER, with the two things that differ between this page
+           and the replay: the layer table, and how a cross-reference addresses
+           another section. Here they are all on one page, so a fragment. */
+        host.appendChild(printedSection(e, { labelOf: labelOf, layerFor: LAYER_FOR }));
       });
     }
 
@@ -5081,6 +4833,19 @@ def _layer_rules():
     return "\n".join(out)
 
 
+def _section_css(css):
+    """Substitute the shared section stylesheet, and require the marker.
+
+    ⚠️ `str.replace` CANNOT FAIL — it just does not happen — and this builder
+    has shipped a live `__PLACEHOLDER__` before, which is why every substitution
+    here is asserted where it is made rather than trusted.
+    """
+    assert css.count("__SECTIONCSS__") == 1, \
+        f"the methods stylesheet holds {css.count('__SECTIONCSS__')} copies of " \
+        "__SECTIONCSS__, and it must hold one"
+    return css.replace("__SECTIONCSS__", (ROOT / "src" / "sections.css").read_text())
+
+
 def build_methods():
     # ⭐ `anchors.js` FIRST, AND IT IS NOT OPTIONAL. `_module()` strips the import
     # lines, so a module this page needs and does not name is a `ReferenceError`
@@ -5089,15 +4854,17 @@ def build_methods():
     html = (HOW_BODY.replace("__LAYER_RULES__", _layer_rules())
                     .replace("__LAYER_FOR__", _layer_for())
                     .replace("__LIB__", _lib("competitions.js", "teams.js",
-                                             "preview.js", "anchors.js",
-                                             "methods.js"))
+                                             "league-rows.js", "preview.js",
+                                             "anchors.js", "printed.js",
+                                             "derivation.js", "methods.js",
+                                             "sections.js"))
                     .replace("__HELPERS__", HELPERS)
                     .replace("__ORIGIN__", repr(DATA_ORIGIN).replace("'", '"')))
     html = P.document(html, title=HOW_TITLE, description=HOW_DESC,
                       url="https://readthegame.co/how-we-measure.html",
                       current="/how-we-measure.html",
                       head='<meta http-equiv="Content-Security-Policy" content="__CSP__">\n'
-                           + STYLE + HOWCSS)
+                           + STYLE + _section_css(HOWCSS))
     return html.replace("__CSP__", _csp(html))
 
 
@@ -5148,8 +4915,14 @@ def build_preview():
     # render none of them -- on the one page of this site built to be pasted into
     # a chat window. The anchor moved into a file of its own; the rule that there
     # is exactly one spelling of it did not change.
+    # ⚠️ `league-rows.js` BEFORE `preview.js`, which imports it. `_module()` strips
+    # the import line, so a module this page needs and does not name here is a
+    # `ReferenceError` at RENDER time rather than a build failure — which is how
+    # this page broke the moment `leagueRows` moved into a file of its own.
+    # `test/lib-closure.test.js` now makes that a build-time question.
     html = (PREV_BODY.replace("__LIB__", _lib("competitions.js", "teams.js",
-                                              "preview.js", "anchors.js"))
+                                              "league-rows.js", "preview.js",
+                                              "anchors.js"))
                      .replace("__HELPERS__", HELPERS)
                      .replace("__DOORS__", _preview_doors())
                      .replace("__ORIGIN__", repr(DATA_ORIGIN).replace("'", '"')))
@@ -5162,7 +4935,13 @@ def build_preview():
 
 
 def build_calendar():
-    html = (CAL_BODY.replace("__LIB__", _lib("competitions.js", "teams.js", "archive.js", "calendar.js"))
+    # ⚠️ `rink.js` AND `distribution.js` BECAUSE `archive.js` IMPORTS THEM, and
+    # the inliner strips that import. Nothing this page calls reaches them TODAY,
+    # which is the whole problem: it would work until somebody added one call, and
+    # then throw at render time with a clean build. `test/lib-closure.test.js`
+    # found both on its first run.
+    html = (CAL_BODY.replace("__LIB__", _lib("competitions.js", "teams.js", "rink.js",
+                                             "distribution.js", "archive.js", "calendar.js"))
                     .replace("__HELPERS__", HELPERS)
                     .replace("__ORIGIN__", repr(DATA_ORIGIN).replace("'", '"'))
                     .replace("__NAMES__", _competitions()))

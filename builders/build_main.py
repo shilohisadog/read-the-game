@@ -196,7 +196,30 @@ __CSS__</style>
        against the other club's shot. Where a column reads the other way round
        the caption says so, and the box's line carries whichever fact belongs to
        the GAME rather than to either club. -->
-  <div class="lbox" id="lbox"><span class="lxa" id="lxA"></span><span class="lxk" id="lxK"></span><span class="lxh" id="lxH"></span><span class="lxan" id="lxAn"></span><span class="lxhn" id="lxHn"></span><span class="lxn" id="lxN"></span><button class="lxw" id="work" aria-expanded="false" aria-controls="workPanel">Show me the work</button></div>
+  <!-- ⭐⭐ TWO DOORS, ONE ROW, AND THE NAMING IS THE POINT. Kevin, 2026-09-26:
+       *"how about 'Is that a lot?' and 'How we counted'? ... I want both is that
+       a lot and how we counted to overlay the rink, same space, different
+       overlays."*
+       ⏹ `Show me the work` WAS THIS BUTTON'S LABEL until then, and the rename is
+       not cosmetic. The new door first read `How we counted this`, which sat
+       beside `Show me the work` saying nearly the same thing — two phrasings of
+       one question, and a reader who cannot tell two adjacent buttons apart
+       presses neither. Kevin's move reassigns rather than rewords: `How we
+       counted` goes on the panel that IS the event-by-event count for this game,
+       and the archive door takes the reader's actual question. Two labels, two
+       questions.
+       ⚠️ THE ROW HEIGHT IS THE CONSTRAINT, not the width. `.lxw` is row 3 of a
+       grid whose height is `--lboxh`, MEASURED and fixed (`app.css`), and "the
+       box is fixed height because that is the requirement the whole thing was
+       built to". So the two buttons sit SIDE BY SIDE in the one row rather than
+       stacking: `--lboxh` does not move, and the 44px touch floor the R audit set
+       is met by the row. They share a WRAPPER rather than taking grid cells from
+       the columns above, because those are `1fr auto 1fr` — a 50/50 split is not
+       expressible in them.
+       ⚠️ MEASURED AFTERWARDS, NOT REASONED ABOUT: at 568x320 `How we counted`
+       needed 112px of text in a 105px box and WRAPPED onto two lines beside a
+       neighbour on one. `app.css` clamps the type for that; see the rule. -->
+  <div class="lbox" id="lbox"><span class="lxa" id="lxA"></span><span class="lxk" id="lxK"></span><span class="lxh" id="lxH"></span><span class="lxan" id="lxAn"></span><span class="lxhn" id="lxHn"></span><span class="lxn" id="lxN"></span><div class="lxws"><button class="lxw" id="work" aria-expanded="false" aria-controls="workPanel">How we counted</button><button class="lxw" id="alot" aria-expanded="false" aria-controls="alotPanel">Is that a lot?</button></div></div>
   <!-- THE PILL IS A CHILD OF .rinkbox, NOT OF THE PENALTY-BOX ROW. It lived
        inside the band under the ice so it could anchor to that row's top edge,
        which was the bottom of the ice -- correct exactly while the row was
@@ -234,7 +257,21 @@ __CSS__</style>
        WHICH IS WHY THE BODY IS ITS OWN ELEMENT: `renderWork` replaces
        `#workBody`, so the button can live in the panel without being wiped on
        every frame. -->
-  <div class="work" id="workPanel" hidden><button class="wx" id="workClose" type="button">Hide the work</button><div id="workBody"></div></div>
+  <div class="work" id="workPanel" hidden><button class="wx" id="workClose" type="button">Hide</button><div id="workBody"></div></div>
+  <!-- ⭐⭐⭐ THE ARCHIVE DOOR, IN THE SAME SPACE AS THE LEDGER. Kevin, 2026-09-26:
+       *"I want both is that a lot and how we counted to overlay the rink, same
+       space, different overlays."* Same `.work` class, so the geometry is not
+       restated — one stylesheet rule decides where an overlay sits, and the day
+       it moves both move together.
+       ⚠️ MUTUALLY EXCLUSIVE, WHICH IS KEVIN'S OWN AUGUST RULING ("let's overlay
+       it over the ice, make them mutually exclusive") and is enforced by ONE
+       owner in `app.js` rather than by each button minding the other. Two owners
+       toggling one `working` class is how the ice ends up hidden with nothing
+       over it — the defect `setWork`'s header already records.
+       ⚠️ AND IT CARRIES ITS OWN CLOSER for the reason the ledger's does: at 390
+       the panel covers `.lbox`, so the button in the box is underneath the thing
+       it closes. -->
+  <div class="work" id="alotPanel" hidden><button class="wx" id="alotClose" type="button">Hide</button><div id="alotBody"></div></div>
 </div>
 <!-- ⭐ THE PARKED LAYER MENU IS GONE (2026-09-07). Five `.lrow` toggles, their
      `Off` state spans, the `#zLayersOn` counter and five legend swatches, all
@@ -544,7 +581,12 @@ def _rink_const(name):
 assert T.count("__SLOT_FT__") == 1, \
     f"the template holds {T.count('__SLOT_FT__')} copies of __SLOT_FT__, and it must hold one"
 
-T = (T.replace("__CSS__", (ROOT / "src" / "app.css").read_text())
+# ⭐ `sections.css` IS THE SAME FILE `how-we-measure.html` READS. The replay
+# draws that page's figure blocks in the `Is that a lot?` overlay, and one
+# component with two stylesheets diverges silently on a surface no unit test
+# can see. See the header of `src/sections.css`.
+T = (T.replace("__CSS__", (ROOT / "src" / "app.css").read_text()
+                          + (ROOT / "src" / "sections.css").read_text())
       .replace("__SLOT_FT__", _rink_const("HIGH_DANGER_FT"))
       .replace("__JS__", _app()))
 # ⚠️ `str.replace` CANNOT FAIL -- it just does not happen, and a `__PLACEHOLDER__`
@@ -633,6 +675,21 @@ LIB = ["rink.js", "attribution.js", "layer.js", "strength.js", "box.js", "penalt
        # wrong place, and the page's fake DOM cannot report a computed `left`.
        # Pure, so it is checked directly in test/scrub.test.js.
        "scrub.js",
+       # ⭐⭐ THE ARCHIVE DOOR OVER THE RINK — 2026-09-26, Kevin's `Is that a lot?`.
+       # `anchors.js` spells the anchor; `printed.js` and `derivation.js` hold the
+       # two kinds of figure the site prints, `league-rows.js` the archive counts
+       # the second kind divides; `sections.js` draws BOTH — the SAME renderers
+       # `how-we-measure.html` uses, which is the whole point: a copy written for
+       # the overlay would be a second statement of every figure's derivation.
+       # ⚠️ IN DEPENDENCY ORDER, and `test/lib-closure.test.js` now checks that
+       # rather than trusting this comment: the files are CONCATENATED, so a
+       # top-level `const` read before its own line has run is a dead zone.
+       # ⚠️ `methods.js` AND `preview.js` ARE DELIBERATELY NOT HERE. `methods()`
+       # resolves the preview card's CLUB rows and pulls `CLUB_ROWS` in with it;
+       # the replay draws neither. See `derivation.js` for why "it would have
+       # worked anyway" was the worse answer.
+       "anchors.js", "league-rows.js", "printed.js", "derivation.js",
+       "sections.js",
        # LAST, and it has to be: deeplink.js derives its URL vocabulary from the
        # layer objects themselves, so all FIVE must already exist in the bundle.
        "deeplink.js"]

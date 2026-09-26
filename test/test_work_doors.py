@@ -57,13 +57,20 @@ class WorkDoors(unittest.TestCase):
         # typo here would write a door to a section that does not exist, which
         # the JavaScript round trip catches -- but it catches it in the rendered
         # page, and this says which TABLE ENTRY is wrong.
-        js = (ROOT / "src" / "lib" / "methods.js").read_text(encoding="utf-8")
+        # ⏹ THE TWO TABLES, BECAUSE THERE ARE TWO. `DERIVATION` and `PRINTED`
+        # split into files of their own on 2026-09-26 so the replay's overlay
+        # could carry them without the preview card; a door may name an entry in
+        # either. Reading only `methods.js` — which now re-exports both and
+        # defines neither — made this test go red on a figure that was fine.
+        js = "".join((ROOT / "src" / "lib" / f).read_text(encoding="utf-8")
+                     for f in ("derivation.js", "printed.js"))
         for token, key in B.FIGURE_DERIVATION.items():
             if key is None:
                 continue
             self.assertTrue(
                 re.search(rf"^  {re.escape(key)}: {{", js, re.M),
-                f"{token} names `{key}` and methods.js defines no such entry")
+                f"{token} names `{key}` and neither derivation.js nor printed.js "
+                "defines such an entry")
 
     def test_the_built_page_carries_exactly_the_doors_the_figures_ask_for(self):
         """Recomputed from the cards' copy, then compared with the bytes on disk.

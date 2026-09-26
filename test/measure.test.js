@@ -73,6 +73,12 @@ const TIER = [
   // time — the tier goes stale in the same edit that changes the graph, every
   // time, and that is the whole argument for naming it rather than globbing it.
   'census.js',
+  // league-rows.js joined on 2026-09-26 when `leagueRows` was split out of
+  // preview.js, so the replay's `Is that a lot?` overlay could draw a league
+  // section without inlining the whole preview card. CAUGHT BY THIS TEST, sixth
+  // time — the tier goes stale in the same edit that changes the graph, every
+  // time, and that is the whole argument for naming it rather than globbing it.
+  'league-rows.js',
 ];
 
 test('the analysis tier runs outside a browser', () => {
