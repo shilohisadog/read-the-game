@@ -77,6 +77,35 @@ test('⭐ the overlay spans the card rather than copying its padding', () => {
     'the overlay is inset by a copied padding constant again');
 });
 
+test('⛔⛔⛔ the overlay can never END INSIDE the layer box', () => {
+  /* THE SEVEN-PIXEL STRIPE, ARRIVING FROM THE OTHER END. That one was the panel
+     being SHORTER than the ice. This is the panel ending part-way down the LAYER
+     BOX: the height is content-driven, so where its bottom edge lands is an
+     accident of how long a figure's caveat happens to be. Kevin's screenshot on
+     2026-09-27 caught it landing through a line of type, and one viewport wider
+     it lands through the BUTTON ROW — a control cut in half.
+
+       1612x921   `On goal, missed or blocked · all situations.` sliced
+       1400x1000  the button row sliced
+       1280x800   box fully covered, which is correct
+
+     ⚠️ THIS FILE CANNOT SEE ANY OF THAT and says so at the top: no CSS, no
+     layout. What it can hold is the RELATIONSHIP that makes the middle case
+     unreachable — the panel is at least as tall as the box it is positioned
+     inside, so it covers the box or it covers the card, and there is no third
+     outcome. Measured in a real Chromium at all four widths above; the numbers
+     are in the commit message.
+     MUTATION: drop `min-height` and the middle case comes back. */
+  const r = ruleFor('#rg:not(.preview) .work');
+  assert.match(r, /min-height:100%/,
+    'the overlay may again stop part-way down the layer box, slicing a line of type or a button');
+  /* ⭐ AND `border-box` WITH IT, or the 18px padding pushes the panel past the
+     card by exactly that much — a floor stated in one box model and applied in
+     another, which is how "at least as tall" quietly becomes "always taller". */
+  assert.match(r, /box-sizing:border-box/,
+    'the min-height is stated in a different box model from the padding it carries');
+});
+
 test('⭐ the ice is hidden while the work is open, and by visibility not display', () => {
   // `display:none` would collapse the svg, and the card sizes to it — which is
   // the shift this whole change exists to remove, reintroduced by its own fix.

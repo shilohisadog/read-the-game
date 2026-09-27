@@ -1166,6 +1166,11 @@ function ruleLines(lines,per){
  return (lines||[]).map(lx=>
   `<line class="rulel" x1="${AX(lx,per)}" y1="2" x2="${AX(lx,per)}" y2="83"/>`).join('');}
 let workOpen=false;
+/* ⚠️ AND THE ARCHIVE'S, BESIDE IT. This was read off `$('alotPanel').hidden` —
+   a SECOND statement of the open state, living in the DOM, free to disagree with
+   the owner the day either moves. That is the exact argument `setOverlay`'s own
+   header makes about the `working` class, and I wrote it while breaking it. */
+let archOpen=false;
 /**
  * ⭐ SHOW ME THE WORK — ONE PANEL, DRIVEN BY THE LAYER CONTRACT.
  *
@@ -1935,7 +1940,7 @@ setGear(gear);
    `setWork` stays as the name every other call site already uses. */
 function setOverlay(which){
  workOpen=which==='work';
- const archOpen=which==='alot';
+ archOpen=which==='alot';
  $('workPanel').hidden=!workOpen;
  $('alotPanel').hidden=!archOpen;
  document.getElementById('rg').classList.toggle('working',!!which);
@@ -1952,7 +1957,7 @@ function setOverlay(which){
  if(archOpen)renderAlot();}
 function setWork(open){setOverlay(open?'work':null);}
 $('work').onclick=()=>{setWork(!workOpen);if(workOpen)render(i,'');};
-$('alot').onclick=()=>setOverlay($('alotPanel').hidden?'alot':null);
+$('alot').onclick=()=>setOverlay(archOpen?null:'alot');
 /* THE OVERLAYS' CLOSERS DELEGATE rather than calling the owner themselves, so
    there is exactly one closer per door and no way for two call sites to drift
    about what closing means. The buttons in `.lbox` are still the controls; these
@@ -3631,10 +3636,30 @@ function syncPick(){
  // place. It also refreshes every frame from `render()`; this call is what
  // makes a TOGGLE change it without waiting for the next event.
  drawLBox();
- // The base view has no work to show, so the panel closes with the last layer;
- // any other change redraws it against the layer that is now on.
- if(cur==='none'){if(workOpen)closeWork();}
- else if(workOpen)render(i,'');}
+ /* The base view has no work to show, so the panel closes with the last layer;
+    any other change redraws it against the layer that is now on.
+
+    ⛔⛔ AND THE SECOND PANEL BELONGS ON THIS LINE, which is where I left it off.
+    Kevin, 2026-09-27, from the live site: *"I had clicked on zone starts first,
+    hence zone starts in the panel. then I moved to attempts."* The page then
+    showed Attempts pressed, Attempts' description in the sidebar, and ZONE
+    STARTS' derivation over the rink — numbers about a different layer from the
+    counts on screen, on the surface whose whole promise is that you can check
+    our work.
+
+    ⭐⭐ THE LEDGER HAS BEEN RIGHT SINCE AUGUST AND THE COMMENT ABOVE SAYS SO. It
+    was written when `setCorsi` closed the panel and "turning that layer off left
+    a panel explaining nothing" — the same defect, already diagnosed, already
+    fixed once, on the line a second panel had to be added to and was not. A rule
+    kept in one branch of a two-branch decision is a rule that has not been kept.
+
+    ⚠️ REDRAWN, NOT CLOSED. Switching Attempts → Slot with the door open means the
+    reader wants the other layer's derivation, not the panel shut in their face.
+    `renderAlot` reads `whichPick()` itself, so it needs no argument. */
+ if(cur==='none'){if(workOpen||archOpen)setOverlay(null);}
+ else{
+  if(workOpen)render(i,'');
+  if(archOpen)renderAlot();}}
 /** The one active layer, or `none`. The single reader of the five booleans. */
 function whichPick(){
  const on=PICKS.filter(([,get])=>get()).map(([id])=>id);

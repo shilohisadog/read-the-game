@@ -87,6 +87,16 @@ test('⭐⭐ BOTH KINDS ARE REACHED, so a renderer cannot be dropped and go unno
 /** Turn a layer on through the one-of-N selector the page actually listens to. */
 const pick = (a, id) => a.$$('#rg .pk').find(b => b.dataset.l === id).click();
 
+/** Which sections the archive panel is currently showing.
+
+    ⚠️ READ OFF `_kids`, WHICH IS THE HARNESS'S OWN MODEL OF CHILDREN, because
+    `innerHTML` cannot answer this: the fake's `createElement` renders a tag with
+    a fixed attribute list that does not include `id`. Asserting on innerHTML
+    here would be asking a question the stand-in answers differently from the
+    thing it stands in for — the defect `test/helpers/page.js` names twice in its
+    own comments. */
+const showing = a => (a.$('alotBody')._kids || []).map(n => n.id).filter(Boolean);
+
 test('⛔⛔ ONE OWNER FOR THE OVERLAY SPACE — opening one door closes the other', () => {
   /* ⭐ KEVIN'S AUGUST RULING, KEPT BY STRUCTURE RATHER THAN BY EACH BUTTON
      MINDING THE OTHER: *"let's overlay it over the ice, make them mutually
@@ -148,4 +158,54 @@ test('⛔ EVERY LAYER DRAWS SOMETHING — the empty panel, caught where it happe
     a.$('alot').click();
   }
   assert.deepEqual(empty, [], 'these layers open the archive door onto nothing: ' + empty.join(', '));
+});
+
+test('⛔⛔⛔ THE ARCHIVE PANEL FOLLOWS THE SELECTOR — Kevin’s own sequence', () => {
+  /* ⛔ SHIPPED, AND HE FOUND IT FROM THE LIVE SITE. Kevin, 2026-09-27: *"I had
+     clicked on zone starts first, hence zone starts in the panel. then I moved to
+     attempts."* The page showed Attempts pressed, Attempts’ description in the
+     sidebar, and ZONE STARTS’ derivation over the rink — numbers about a
+     different layer from the counts on screen.
+
+     ⭐⭐ AND THE RULE WAS ALREADY WRITTEN DOWN, ONE LINE AWAY. `syncPick` has
+     carried it since August for the ledger: *"any other change redraws it against
+     the layer that is now on."* I put a second panel in that space and did not
+     add it to that line. A rule kept in one branch of a two-branch decision is a
+     rule that has not been kept.
+
+     ⚠️ REDRAWN, NOT CLOSED, which is a different claim and worth its own
+     assertion: shutting the door on a reader who switched layers would be
+     "correct" by a narrower reading and is not what the ledger does.
+     MUTATION: drop `if(archOpen)renderAlot()` from `syncPick` and the section id
+     stays `m-zoneStarts` while the chip says Attempts. */
+  const a = page();
+  pick(a, 'zonestart');
+  a.$('alot').click();
+  assert.deepEqual(showing(a), ['m-zoneStarts'], 'the archive did not draw the zone-start figure');
+
+  pick(a, 'corsi');
+  assert.equal(a.$('alotPanel').hidden, false, 'switching layers SHUT the door instead of redrawing it');
+  assert.deepEqual(showing(a), ['m-attempts'],
+    'the panel still explains the layer that is no longer on');
+
+  /* ⛔ AND THE BASE VIEW CLOSES IT, because `Just events` has no work to show —
+     the other half of the same branch, and the half that was right. */
+  pick(a, 'none');
+  assert.equal(a.$('alotPanel').hidden, true, 'the base view left a panel explaining nothing');
+  assert.equal(a.$('rg').classList.contains('working'), false, 'the ice is hidden with no panel over it');
+});
+
+test('⭐ the open state is a variable, not a question asked of the DOM', () => {
+  /* The ledger’s state is `workOpen`; the archive’s was read back off
+     `$('alotPanel').hidden` — a SECOND statement of the same fact, living in the
+     document, free to disagree with the owner the day either one moves. That is
+     the argument `setOverlay`’s own header makes about the `working` class, and
+     it was broken in the same commit that made it.
+     MUTATION: toggle `hidden` anywhere but in `setOverlay` and the two diverge. */
+  const src = readFileSync(new URL('../src/app.js', import.meta.url), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, ' ');
+  assert.match(src, /\blet archOpen\b/, 'the archive panel has no owned open state');
+  const reads = src.match(/\$\('alotPanel'\)\.hidden/g) || [];
+  assert.equal(reads.length, 1,
+    `\`alotPanel.hidden\` is touched ${reads.length} times; exactly one owner may write it`);
 });
