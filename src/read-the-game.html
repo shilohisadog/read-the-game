@@ -39,7 +39,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ro3YefjSnwUKCQ1fQZZQJsDiUdZSFOjiM291ICrGn8s=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-gxDr35xPwA9wVhPQ9J5rE111oR+mphRHrQMR890iLmI='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-9ZZuGju8dGYT+M1GEZftutuiulvZynswn3w3SitgKWk=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-oxAS9C1hyMqBbQN793n6J6vX7ZWrhzxbRpY8cQNsuiQ='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -1568,27 +1568,39 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    any flow child by construction, at every breakpoint, and it cannot drift the
    next time the card's padding moves -- the same reason U11's own guard asserts
    a relationship rather than a pinned 15.6px. */
-/* ⛔⛔⛔ `min-height:100%`, AND IT IS THE SEVEN-PIXEL STRIPE BELOW ARRIVING FROM
-   THE OTHER END. That one was the panel being SHORTER than the ice; this is the
-   panel ending in the middle of the LAYER BOX. The height is content-driven, so
-   where its bottom edge lands is an accident of how long a figure's caveat is —
-   and Kevin's screenshot on 2026-09-27 caught it landing through a line of type:
+/* ⛔⛔⛔ `inset:0` — THE PANEL IS THE CARD'S RECTANGLE, NEVER MORE AND NEVER LESS.
+   Two defects from two of Kevin's screenshots close here, and they are the same
+   one from opposite ends: the panel's height was CONTENT-DRIVEN, so where its
+   bottom edge landed was an accident of how long a figure's caveat happened to
+   be.
+
+   ⭐ TOO SHORT (2026-09-27, the first shot). It ended part-way down the layer box:
 
      1612x921   the sentence `On goal, missed or blocked · all situations.`
                 sliced horizontally
      1400x1000  THE BUTTON ROW sliced horizontally — a control cut in half
      1280x800   box fully covered, which is correct and intended
 
-   A control cut in half is the bad one, and nothing in the suite can see any of
-   it. `min-height:100%` resolves against `.rinkbox`, so the panel is always at
-   least the card's height: it covers the box or it covers the whole card, and
-   the middle case stops existing. It costs white space under a short panel,
-   which is what an overlay looks like and is not a rendering fault.
-   ⭐ IT ALSO SETTLES THE TWO `Hide`s. With the box always covered, the way out is
-   always the panel's own closer rather than sometimes that and sometimes the
-   flipped button in the row underneath it. */
-#rg:not(.preview) .work{position:absolute;z-index:6;inset:0 0 auto 0;margin-top:0;
- min-height:100%;box-sizing:border-box}
+   ⛔⛔ TOO TALL (2026-09-27, the Stoppages shot, and this one is worse). Three
+   sections make a 1,183px panel over a 620px card — 563px of overhang, landing
+   on `▶ Play`, `◀ Prev`, `Next ▶`, `◀ Slower`, `Faster ▶` and the scrubber, and
+   then the page footer. WITH THE DOOR OPEN THE READER CANNOT REACH A CONTROL,
+   and the Play button showed a 1px dark sliver past the panel's left edge, which
+   reads as a rendering fault. Measured, not estimated.
+
+   Pinning both edges to the card makes both cases unreachable: the panel is
+   exactly the rink's rectangle and scrolls inside itself. It costs white space
+   under a short panel, which is what an overlay looks like.
+   ⭐ IT ALSO SETTLES THE TWO `Hide`s that were on screen together under a short
+   panel: the way out is always the panel's own closer. */
+#rg:not(.preview) .work{position:absolute;z-index:6;inset:0;margin-top:0;
+ overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box}
+/* ⭐ AND THE WAY OUT STAYS ON SCREEN. The closer is a float so the heading wraps
+   around it (see above); inside a scrolling box a float scrolls away with the
+   text, so the panel could be scrolled into a state with no visible exit — the
+   BLOCKING DEFECT this button was added to fix, reintroduced by the fix for the
+   overhang. `sticky` keeps the float in flow, so the heading still wraps. */
+#rg:not(.preview) .wx{position:sticky;top:0;z-index:7}
 /* ⭐ MUTUALLY EXCLUSIVE MEANS THE ICE GOES AWAY, and this was FOUND BY LOOKING.
    The panel is opaque, so the first build read as correct at a glance. At 1100
    the card is 523 tall, the panel 366 and the ice 373 -- so a SEVEN-PIXEL
@@ -2487,6 +2499,12 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .hmsrc code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
  font-size:.93em;background:#e7eef4;border-radius:4px;padding:1px 4px}
 @media (max-width:430px){.hmf{padding:13px 12px 12px}}
+
+/* The population every section in a panel shares, said once above them.
+   ⭐ IT IS NOT A FIGURE TILE. `.hmnums` is for a number a reader weighs; this is
+   the denominator under all of them, so it reads as a caption rather than
+   competing with the arithmetic it qualifies. */
+.wpop{margin:0 0 12px;font-size:.82rem;color:var(--muted)}
 </style>
 <!-- ⭐ THE SHELL'S STATUS LINE, AND IT IS OUTSIDE `#rg` ON PURPOSE (D9).
      It used to be `#gl`, the game line -- which sits at the BOTTOM of the app,
@@ -11376,6 +11394,18 @@ function renderAlot(){
  printed(RATES).forEach(e=>{printedBy[e.anchor]=e;labelOf[e.anchor]=e.label;});
  const leagueBy={};
  leagueFigures(RATES).forEach(r=>{leagueBy[r.anchor]=r;labelOf[r.anchor]=r.label;});
+ /* ⭐ THE POPULATION, ONCE, ABOVE THEM ALL. On the methods page each league row
+    carries its own `4,192 games counted` tile and they sit pages apart; this
+    panel STACKS them, so Kevin's Stoppages screenshot printed the same number
+    three times in one box. Every section here is counted over the same archive,
+    so it is said once — read off the rows rather than typed, and SILENT when
+    they disagree, because one sentence about a mixed population would be the
+    tidy false version of this. */
+ const overs=want.map(a=>leagueBy[a]&&leagueBy[a].over).filter(Boolean);
+ if(overs.length===want.length&&overs.every(o=>o.n===overs[0].n&&o.unit===overs[0].unit)){
+  const n=document.createElement('p');n.className='wpop';
+  n.textContent='Counted over '+overs[0].n.toLocaleString()+' '+overs[0].unit+'.';
+  host.appendChild(n);}
  /* IN THE LAYER'S OWN ORDER, not either table's. `LAYERWORK` is the layer
     descriptor's `work` list, and Stoppages names penalties, offsides and icings
     in the order the layer itself teaches them. */
@@ -11389,7 +11419,11 @@ function renderAlot(){
    host.appendChild(SECTION.printedSection(printedBy[a],
     {labelOf,href:x=>'/how-we-measure.html#'+x}));drew++;return;}
   if(leagueBy[a]){
-   host.appendChild(SECTION.figureSection(leagueBy[a],SECTION.leagueNums(leagueBy[a]),{}));drew++;}});
+   /* ⛔ NO PER-SECTION `n` TILE, because the line above already said it — unless
+      it could not, in which case each section carries its own again rather than
+      the panel quietly dropping the denominator. */
+   host.appendChild(SECTION.figureSection(leagueBy[a],
+    overs.length===want.length?null:SECTION.leagueNums(leagueBy[a]),{}));drew++;}});
  /* ⛔ AND IT SAYS SO RATHER THAN SHOWING A HEADING OVER NOTHING. An anchor in
     `layer-rules.json` that neither table answers to is our gap, and the empty
     panel above is exactly how it hid the first time. */

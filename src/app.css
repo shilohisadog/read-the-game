@@ -1522,27 +1522,39 @@
    any flow child by construction, at every breakpoint, and it cannot drift the
    next time the card's padding moves -- the same reason U11's own guard asserts
    a relationship rather than a pinned 15.6px. */
-/* ⛔⛔⛔ `min-height:100%`, AND IT IS THE SEVEN-PIXEL STRIPE BELOW ARRIVING FROM
-   THE OTHER END. That one was the panel being SHORTER than the ice; this is the
-   panel ending in the middle of the LAYER BOX. The height is content-driven, so
-   where its bottom edge lands is an accident of how long a figure's caveat is —
-   and Kevin's screenshot on 2026-09-27 caught it landing through a line of type:
+/* ⛔⛔⛔ `inset:0` — THE PANEL IS THE CARD'S RECTANGLE, NEVER MORE AND NEVER LESS.
+   Two defects from two of Kevin's screenshots close here, and they are the same
+   one from opposite ends: the panel's height was CONTENT-DRIVEN, so where its
+   bottom edge landed was an accident of how long a figure's caveat happened to
+   be.
+
+   ⭐ TOO SHORT (2026-09-27, the first shot). It ended part-way down the layer box:
 
      1612x921   the sentence `On goal, missed or blocked · all situations.`
                 sliced horizontally
      1400x1000  THE BUTTON ROW sliced horizontally — a control cut in half
      1280x800   box fully covered, which is correct and intended
 
-   A control cut in half is the bad one, and nothing in the suite can see any of
-   it. `min-height:100%` resolves against `.rinkbox`, so the panel is always at
-   least the card's height: it covers the box or it covers the whole card, and
-   the middle case stops existing. It costs white space under a short panel,
-   which is what an overlay looks like and is not a rendering fault.
-   ⭐ IT ALSO SETTLES THE TWO `Hide`s. With the box always covered, the way out is
-   always the panel's own closer rather than sometimes that and sometimes the
-   flipped button in the row underneath it. */
-#rg:not(.preview) .work{position:absolute;z-index:6;inset:0 0 auto 0;margin-top:0;
- min-height:100%;box-sizing:border-box}
+   ⛔⛔ TOO TALL (2026-09-27, the Stoppages shot, and this one is worse). Three
+   sections make a 1,183px panel over a 620px card — 563px of overhang, landing
+   on `▶ Play`, `◀ Prev`, `Next ▶`, `◀ Slower`, `Faster ▶` and the scrubber, and
+   then the page footer. WITH THE DOOR OPEN THE READER CANNOT REACH A CONTROL,
+   and the Play button showed a 1px dark sliver past the panel's left edge, which
+   reads as a rendering fault. Measured, not estimated.
+
+   Pinning both edges to the card makes both cases unreachable: the panel is
+   exactly the rink's rectangle and scrolls inside itself. It costs white space
+   under a short panel, which is what an overlay looks like.
+   ⭐ IT ALSO SETTLES THE TWO `Hide`s that were on screen together under a short
+   panel: the way out is always the panel's own closer. */
+#rg:not(.preview) .work{position:absolute;z-index:6;inset:0;margin-top:0;
+ overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box}
+/* ⭐ AND THE WAY OUT STAYS ON SCREEN. The closer is a float so the heading wraps
+   around it (see above); inside a scrolling box a float scrolls away with the
+   text, so the panel could be scrolled into a state with no visible exit — the
+   BLOCKING DEFECT this button was added to fix, reintroduced by the fix for the
+   overhang. `sticky` keeps the float in flow, so the heading still wraps. */
+#rg:not(.preview) .wx{position:sticky;top:0;z-index:7}
 /* ⭐ MUTUALLY EXCLUSIVE MEANS THE ICE GOES AWAY, and this was FOUND BY LOOKING.
    The panel is opaque, so the first build read as correct at a glance. At 1100
    the card is 523 tall, the panel 366 and the ice 373 -- so a SEVEN-PIXEL

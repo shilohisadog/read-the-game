@@ -57,3 +57,9 @@
 .hmsrc code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
  font-size:.93em;background:#e7eef4;border-radius:4px;padding:1px 4px}
 @media (max-width:430px){.hmf{padding:13px 12px 12px}}
+
+/* The population every section in a panel shares, said once above them.
+   ⭐ IT IS NOT A FIGURE TILE. `.hmnums` is for a number a reader weighs; this is
+   the denominator under all of them, so it reads as a caption rather than
+   competing with the arithmetic it qualifies. */
+.wpop{margin:0 0 12px;font-size:.82rem;color:var(--muted)}

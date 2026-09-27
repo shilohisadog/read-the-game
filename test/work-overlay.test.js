@@ -72,7 +72,13 @@ test('⭐ the overlay spans the card rather than copying its padding', () => {
   // padding to 2px below 520px while `--rinkpad` stays 10, so the layer box
   // behind the panel showed 8px of itself down each edge.
   const r = ruleFor('#rg:not(.preview) .work');
-  assert.match(r, /inset:0 0 auto 0/, 'the overlay no longer spans the card');
+  /* ⏹ `inset:0 0 auto 0` BECAME `inset:0` ON 2026-09-27. The claim this test
+     makes is unchanged — the overlay spans the card rather than copying its
+     padding — and the new spelling makes it of all four edges instead of three.
+     The reason the fourth edge joined is in `work-overlay`'s own height test and
+     in the stylesheet: an unpinned bottom made the panel's height an accident of
+     how long a caveat happened to be. */
+  assert.match(r, /inset:0[;}]/, 'the overlay no longer spans the card');
   assert.doesNotMatch(r, /(left|right):var\(--rinkpad\)/,
     'the overlay is inset by a copied padding constant again');
 });
@@ -97,13 +103,44 @@ test('⛔⛔⛔ the overlay can never END INSIDE the layer box', () => {
      are in the commit message.
      MUTATION: drop `min-height` and the middle case comes back. */
   const r = ruleFor('#rg:not(.preview) .work');
-  assert.match(r, /min-height:100%/,
-    'the overlay may again stop part-way down the layer box, slicing a line of type or a button');
-  /* ⭐ AND `border-box` WITH IT, or the 18px padding pushes the panel past the
-     card by exactly that much — a floor stated in one box model and applied in
-     another, which is how "at least as tall" quietly becomes "always taller". */
+  /* ⏹ THIS ASSERTED `min-height:100%` FOR ABOUT AN HOUR, which fixed the too-short
+     case and said nothing about the too-tall one. The second screenshot showed a
+     1,183px panel over a 620px card burying every transport control, so the
+     property was never "at least as tall" — it is "exactly the card". Pinning
+     both edges makes BOTH failures unreachable with one declaration. */
+  assert.match(r, /inset:0[;}]/,
+    'the overlay is not pinned to all four edges of its card, so its height is an '
+    + 'accident of how long a caveat happens to be');
+  assert.match(r, /overflow-y:auto/, 'a pinned panel with no scroll simply hides its own tail');
+  /* ⭐ AND `border-box`, or the 18px padding pushes the panel past the card by
+     exactly that much — a size stated in one box model and applied in another. */
   assert.match(r, /box-sizing:border-box/,
-    'the min-height is stated in a different box model from the padding it carries');
+    'the panel is sized in a different box model from the padding it carries');
+  /* ⛔ THE CLOSER MUST SURVIVE THE SCROLL. It is a float so the heading wraps
+     around it, and a float inside a scrolling box scrolls away with the text —
+     which would reintroduce the BLOCKING DEFECT this button was added for: a
+     panel that can be opened and not shut. Measured in a real Chromium at
+     1450x1100, 1280x800 and 568x320, scrolled to the bottom, closer still on
+     screen; the relationship is what is held here. */
+  assert.match(ruleFor('#rg:not(.preview) .wx'), /position:sticky/,
+    'the way out scrolls away with the text');
+});
+
+test('⛔⛔ the overlay never buries the transport — it is the CARD\u2019s rectangle', () => {
+  /* Kevin's Stoppages screenshot, 2026-09-27: three sections made a 1,183px panel
+     over a 620px card, 563px of overhang landing on Play, Prev, Next, Slower,
+     Faster and the scrubber. With the door open the reader could not reach a
+     control, and the Play button showed a 1px dark sliver past the panel's left
+     edge — which reads as a rendering fault, the same way the seven-pixel stripe
+     of rink did.
+     ⚠️ THE RELATIONSHIP, NOT THE PIXELS: the panel is positioned in `.rinkbox`
+     and pinned to it, so it cannot reach anything outside that box whatever its
+     content says. The transport is a SIBLING of the card, so "inside the card"
+     and "clear of the transport" are the same claim. */
+  assert.match(ruleFor('#rg .rinkbox'), /position:relative/,
+    'the card is not the containing block, so the overlay is pinned to the PAGE');
+  assert.doesNotMatch(ruleFor('#rg:not(.preview) .work'), /min-height/,
+    'a min-height would let the panel grow past the card again');
 });
 
 test('⭐ the ice is hidden while the work is open, and by visibility not display', () => {

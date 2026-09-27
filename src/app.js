@@ -1378,6 +1378,18 @@ function renderAlot(){
  printed(RATES).forEach(e=>{printedBy[e.anchor]=e;labelOf[e.anchor]=e.label;});
  const leagueBy={};
  leagueFigures(RATES).forEach(r=>{leagueBy[r.anchor]=r;labelOf[r.anchor]=r.label;});
+ /* ⭐ THE POPULATION, ONCE, ABOVE THEM ALL. On the methods page each league row
+    carries its own `4,192 games counted` tile and they sit pages apart; this
+    panel STACKS them, so Kevin's Stoppages screenshot printed the same number
+    three times in one box. Every section here is counted over the same archive,
+    so it is said once — read off the rows rather than typed, and SILENT when
+    they disagree, because one sentence about a mixed population would be the
+    tidy false version of this. */
+ const overs=want.map(a=>leagueBy[a]&&leagueBy[a].over).filter(Boolean);
+ if(overs.length===want.length&&overs.every(o=>o.n===overs[0].n&&o.unit===overs[0].unit)){
+  const n=document.createElement('p');n.className='wpop';
+  n.textContent='Counted over '+overs[0].n.toLocaleString()+' '+overs[0].unit+'.';
+  host.appendChild(n);}
  /* IN THE LAYER'S OWN ORDER, not either table's. `LAYERWORK` is the layer
     descriptor's `work` list, and Stoppages names penalties, offsides and icings
     in the order the layer itself teaches them. */
@@ -1391,7 +1403,11 @@ function renderAlot(){
    host.appendChild(SECTION.printedSection(printedBy[a],
     {labelOf,href:x=>'/how-we-measure.html#'+x}));drew++;return;}
   if(leagueBy[a]){
-   host.appendChild(SECTION.figureSection(leagueBy[a],SECTION.leagueNums(leagueBy[a]),{}));drew++;}});
+   /* ⛔ NO PER-SECTION `n` TILE, because the line above already said it — unless
+      it could not, in which case each section carries its own again rather than
+      the panel quietly dropping the denominator. */
+   host.appendChild(SECTION.figureSection(leagueBy[a],
+    overs.length===want.length?null:SECTION.leagueNums(leagueBy[a]),{}));drew++;}});
  /* ⛔ AND IT SAYS SO RATHER THAN SHOWING A HEADING OVER NOTHING. An anchor in
     `layer-rules.json` that neither table answers to is our gap, and the empty
     panel above is exactly how it hid the first time. */
