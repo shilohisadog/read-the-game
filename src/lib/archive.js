@@ -169,6 +169,28 @@ export function rowFor(curve, diff) {
 /**
  * Every lens's per-game count, distributed, keyed by SEASON and then by the
  * page's own lens ids. See the measurement above for why the season key exists.
+ *
+ * ⛔⛔ THE LENS LIST IS ASKED OF THE RECORDS, AND THAT IS THE WHOLE REPAIR.
+ * `said` below was typed on 2026-08-28 and named five lenses. `zonestart` was
+ * added to `measure.mjs` on 2026-09-10 — thirteen days later — and nothing told
+ * this table. So for eighteen days the archive measured a sixth lens on every
+ * game it derived and published no distribution for it, and one layer of six
+ * could not be asked *is that a lot?* while the other five could. The suite was
+ * green the whole time, because every check on this function walked `said` —
+ * which is the list that was wrong.
+ *
+ * ⭐⭐ IT IS THE SHAPE THE CENSUS PAID FOR FOUR DAYS EARLIER, surviving in a
+ * second place. That repair — *"the list is now asked of the reducer rather than
+ * typed"* — was applied to the file the defect was found in, and this is the
+ * same defect one directory away. So the KEYS come from the records now and only
+ * the WORDING is written here, which is the half that cannot be derived.
+ *
+ * ⛔ AND A LENS WITH NO WORDING STILL PUBLISHES, without a `noun`. Withholding a
+ * measurement over a missing sentence is precisely the mistake that cost 31
+ * hours of archive in September. `sitsIn` already refuses to lead on a
+ * distribution with no noun, so the page stays silent while the histogram sits
+ * in the document for anyone reading the file — and `test/measure.test.js` goes
+ * red at COMMIT time, rather than a week later when a derive republishes.
  */
 export function perGame(records) {
   // Keyed by the PAGE'S lens ids, so the selector and the reference class name
@@ -184,9 +206,25 @@ export function perGame(records) {
     goaltending: ['shots the two goaltenders faced between them in one game',
                   'shots the goaltenders faced'],
     whistle: ['whistles that stopped play in one game', 'stoppages'],
+    /* ⚠️ THE NOUN IS `face-offs`, NOT `zone starts`, and the gap between the two
+       is the reason this field exists. The chip says Zone starts; the reducer
+       counts every draw outside the shootout, placed or not. "between 56 and 66
+       zone starts" would be a quantity nobody counted wearing the label of one
+       that was — the second-vocabulary trap `measure.mjs` names two comments
+       above its own `lens` block. The layer's LESSON is where the draw was; its
+       COUNT is face-offs. */
+    zonestart: ['face-offs in one game, both clubs, at all strengths', 'face-offs'],
   };
   const bySeason = {};
   for (const g of records) (bySeason[season(g.id)] ||= []).push(g);
+  /* ⭐ A UNION, NOT A SWITCH FROM ONE LIST TO THE OTHER. Everything `said` names
+     is published whether or not this archive still carries it — a lens that
+     stopped being measured should go null and visible rather than vanish — and
+     everything the RECORDS carry is published whether or not anyone wrote a
+     sentence for it. Neither list can silently shorten the document. */
+  const seen = new Set();
+  for (const g of records) for (const k of Object.keys(g.lens || {})) seen.add(k);
+  const lenses = [...Object.keys(said), ...[...seen].filter(k => !said[k]).sort()];
   const out = {};
   for (const y of Object.keys(bySeason).sort()) {
     // ⭐ THE POPULATION IS WELDED TO THE NUMBER, and here that is the whole
@@ -195,13 +233,16 @@ export function perGame(records) {
     // quoting a season as though it were the league.
     const pop = `${POPULATION}, ${seasonLabel(y)}`;
     out[y] = {};
-    for (const k of Object.keys(said)) {
+    for (const k of lenses) {
       // A record written before `lens` existed contributes nothing rather than a
       // zero: "we did not measure it" and "there were none" are different facts,
       // which is why `distribution` filters on Number.isInteger.
+      const s = said[k];
       out[y][k] = { ...distribution(bySeason[y].map(g => g.lens?.[k]),
-                                    `${said[k][0]} (n counts GAMES, not events)`, pop),
-                    noun: said[k][1] };
+                                    `${s ? s[0] : k} (n counts GAMES, not events)`, pop),
+                    // No invented noun for a lens nobody has written a sentence
+                    // for. Absent, so `sitsIn` refuses rather than printing an id.
+                    ...(s ? { noun: s[1] } : {}) };
     }
   }
   return out;

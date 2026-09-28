@@ -21,7 +21,7 @@ import { join } from 'node:path';
 import { measureGame, stable, firstAtClock, endedIn, measureAll, slateOf, archiveIsWhole } from '../builders/measure.mjs';
 import { TEAMS } from '../src/lib/teams.js';
 import { summarise, slotShare, perGame, reachOf, goalieNight } from '../src/lib/archive.js';
-import { distribution, quantile, shareAtOrBelow, mostUnusual } from '../src/lib/distribution.js';
+import { distribution, quantile, shareAtOrBelow, mostUnusual, sitsIn } from '../src/lib/distribution.js';
 import { corsi } from '../src/lib/layers/corsi.js';
 import { tiedControl } from '../src/lib/layers/tied.js';
 import { danger } from '../src/lib/layers/danger.js';
@@ -901,6 +901,85 @@ test('every lens the selector counts has a distribution of the same quantity', (
     assert.ok(rec.lens[k] > 0,
       `${k}: this game holds none, so the assertion above compared 0 to 0`);
   }
+});
+
+/**
+ * ⛔⛔⛔ EVERY LENS THE ARCHIVE MEASURES GETS A SENTENCE, OR THIS GOES RED.
+ *
+ * THE DEFECT THIS EXISTS FOR, found 2026-09-28 and eighteen days old. `perGame`
+ * built its output by walking a table of five lens ids typed on 2026-08-28.
+ * `zonestart` joined `measure.mjs` on 2026-09-10 and nothing told that table, so
+ * the archive counted a sixth lens on every game it derived and published no
+ * distribution for it. One layer of six carried no answer to *is that a lot?*
+ * and five did, for no reason a reader could see.
+ *
+ * ⭐⭐ THE TEST ABOVE COULD NOT SEE IT, AND THE REASON IS THE POINT. It asks
+ * whether the SELECTOR and the RECORD name the same lenses — which they did,
+ * both six — and never whether the published TABLE names them too. A third list
+ * was in the loop and only two of the three were ever compared. ⭐ When a check
+ * compares two lists, ask what the third one is.
+ *
+ * THE PATH IS INDEPENDENT (H1): the left side is what `measureGame` writes on a
+ * real extract, the right is what `perGame` chose to publish about it. Neither
+ * is computed from the other, and a seventh lens added tomorrow arrives red
+ * here — at commit time — rather than silently absent until somebody opens the
+ * panel on it.
+ */
+test('⛔⛔ every lens the archive measures is published with a noun to say it in', () => {
+  /* MUTATION: delete the `zonestart` line from `said` in `perGame` and this
+     fires naming it; give it a `what` and no noun and it fires the same way,
+     because a histogram nothing can phrase is a histogram the page will skip. */
+  const rich = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url), 'utf8'));
+  const rec = measureGame(rich);
+  const table = perGame([rec]);
+  const season = Object.keys(table)[0];
+  assert.ok(season, 'perGame published no season for a measured game');
+
+  const measured = Object.keys(rec.lens).sort();
+  assert.ok(measured.length >= 6, `only ${measured.length} lenses measured — the record has shrunk`);
+  const unsayable = measured.filter(k => !table[season][k] || !table[season][k].noun);
+  assert.deepEqual(unsayable, [], 'the archive measures a lens the published table cannot phrase, '
+    + 'so its layer carries no answer: ' + unsayable.join(', '));
+
+  /* ⚠️ AND THE NOUN IS A NOUN, not the lens id wearing a label's clothes. The
+     sentence reads "between 56 and 66 <noun>", so `zonestart` or `corsi` there
+     would print an internal key to a reader. */
+  for (const k of measured) {
+    const noun = table[season][k].noun;
+    assert.notEqual(noun, k, `${k}'s noun is its own id, which is not English`);
+    assert.ok(/^[a-z]/.test(noun), `${k}'s noun "${noun}" does not read as a plural noun`);
+  }
+});
+
+/**
+ * ⛔ A LENS NOBODY HAS WORDED IS STILL PUBLISHED. The measurement is not
+ * withheld over a missing sentence — that is the mistake that cost the archive
+ * 31 hours in September, where a penalty LABEL stopped a whole night's games
+ * reaching the bucket. The histogram goes into the document where anyone reading
+ * the file can use it; the PAGE stays silent, because `sitsIn` refuses a
+ * distribution with no noun and the test above has already gone red.
+ *
+ * ⭐ THIS IS WHAT MAKES THE UNION LOAD-BEARING. Without it the unworded lens is
+ * simply absent from the table, which the test above also catches — so the
+ * *degradation* would be an untested comment rather than a behaviour.
+ */
+test('⛔ a lens the records carry and nobody has worded publishes anyway, without a noun', () => {
+  /* MUTATION: drop the `seen` union from `perGame` and walk `Object.keys(said)`
+     again — `pending` vanishes from the table entirely and this fires. */
+  const made = [{ id: 2025020001, lens: { corsi: 50, pending: 7 } },
+                { id: 2025020002, lens: { corsi: 60, pending: 9 } }];
+  const table = perGame(made)['2025'];
+  assert.ok(table.pending, 'an unworded lens was dropped from the document instead of published');
+  assert.equal(table.pending.n, 2, 'the unworded lens published no population');
+  assert.equal(table.pending.noun, undefined,
+    'an unworded lens was given a noun, which nobody wrote');
+  assert.ok(/pending/.test(table.pending.what),
+    'the unworded lens does not even say which lens it is');
+  // And it is inert on the page for exactly that reason.
+  assert.equal(sitsIn(table.pending, 7), null,
+    'a distribution with no noun would lead a panel with a sentence nobody wrote');
+  // The worded one beside it is unaffected.
+  assert.equal(table.corsi.noun, 'shot attempts');
 });
 
 /**

@@ -268,12 +268,19 @@ test('⭐⭐ THE ANSWER IS DERIVED FROM THE PUBLISHED TABLE, never typed', () =>
     .filter(k => sitsIn(MEASURES.perGame[latest][k], null));
   const layers = RULES.layers.map(l => l.id);
   const unanswerable = layers.filter(l => !answered.includes(l));
-  /* ⛔ AND THE GAP IS NAMED RATHER THAN TOLERATED SILENTLY. `zonestart` has no
-     per-game distribution published, so its panel carries no lead — which is
-     honest and is also a hole in the feature. This asserts the SIZE of the hole,
-     so it cannot quietly grow. */
-  assert.deepEqual(unanswerable, ['zonestart'],
-    'the set of layers the archive cannot answer for has changed: ' + unanswerable.join(', '));
+  /* ⛔ AND THE GAP IS NAMED RATHER THAN TOLERATED SILENTLY. A layer with no
+     per-game distribution published carries no lead — which is honest and is
+     also a hole in the feature. This asserts the hole CANNOT GROW.
+     ⚠️ IT READS THE CACHE, so it can only see what the last derive published.
+     `zonestart` was fixed in `perGame` on 2026-09-28 and this test kept passing
+     with the hole still in it until a derive republished `measures.json` — which
+     is exactly why the CODE-level version lives in `test/measure.test.js`
+     instead, where it goes red at commit time. Both are needed and neither is
+     the other: this one is about the DOCUMENT the browser fetches. */
+  const known = ['zonestart'];
+  const grown = unanswerable.filter(l => !known.includes(l));
+  assert.deepEqual(grown, [],
+    'a layer the archive used to answer for has lost its distribution: ' + grown.join(', '));
   /* And every one it CAN answer for has the three things the sentence needs. */
   for (const k of answered) {
     const r = sitsIn(MEASURES.perGame[latest][k], null);
