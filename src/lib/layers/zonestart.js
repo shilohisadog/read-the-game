@@ -92,10 +92,29 @@ export const zonestart = {
      right door because it answers what a viewer is actually asking (does where
      the draw happens matter, and by how much), and the wrong one in the narrow
      sense that it is a different numerator.
-     ⏭ THE EXACT MATCH IS `census.faceoffZone`, which is published and carries
-     no `what` — one of the nine sub-objects `census.js` was still silent about
-     on 2026-09-24. When it has one, this becomes its own entry and the door
-     moves. Recorded in test/census.test.js with the rest of that debt. */
+
+     ⛔⛔⛔ AND IT STAYS HERE. A ⏭ note stood in this spot from 2026-09-10 to
+     2026-09-28 saying the door should move to `census.faceoffZone` once that
+     object carried a `what`. **It contradicted the prohibition forty lines above
+     it in this same file** — *"THE UNCONTROLLED TABLE MAY NOT BE QUOTED ON A
+     SURFACE"* — and `census.test.js` and `census.js` both side with the
+     prohibition. `census.faceoffZone` sorts draws by the zone the WINNER was
+     attacking toward, so the same physical draw lands in the O row or the D row
+     depending only on who won it; `endZone` fixes the end and lets the winner
+     vary, which is why it exists and why it is the pair a surface may print.
+     `census.faceoffZone` got its `what` in the 2026-09-28 derive. The door did
+     not move, and Kevin ruled it closed.
+
+     ⭐ THE REAL GAP THE NOTE WAS POINTING AT IS CLOSED BY SOMETHING ELSE. It was
+     right that this layer had no figure of its own; it was wrong about where one
+     would come from. `archive.js::perGame` now publishes this layer's per-game
+     face-off distribution under its own id, so the `Is that a lot?` door leads
+     with the quantity the chip counts and the section below keeps the controlled
+     `endZone` figures. Two questions, two numbers, neither borrowed.
+
+     ⭐⭐ TWO COMMENTS IN ONE FILE DISAGREED FOR EIGHTEEN DAYS and a planned build
+     followed the wrong one into `docs/status.md`. A file is not a single voice:
+     when a note plans work, check it against the rules stated ABOVE it. */
   work: ['zoneStarts'],
   counts: 'every faceoff, and for the club that won it, whether that draw was in its offensive zone, the neutral zone, or its defensive zone',
   credits: 'Each draw is credited to the club that won it, in the zone that club was attacking toward — so the same dot is an offensive-zone start for one club and a defensive-zone start for the other. The league records the winner and not the loser, so a draw has one club and never two.',

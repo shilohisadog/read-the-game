@@ -1506,8 +1506,27 @@ function renderAlot(){
     tidy false version of this. */
  const overs=want.map(a=>leagueBy[a]&&leagueBy[a].over).filter(Boolean);
  if(overs.length===want.length&&overs.every(o=>o.n===overs[0].n&&o.unit===overs[0].unit)){
+  /* ⛔⛔ AND IT SAYS WHICH FIGURES IT IS THE POPULATION OF, which it did not until
+     2026-09-28. It read `Counted over 4,192 games.` and sat one line under a lead
+     ending *"the middle half of the 1,394 games we hold for the 2025-26 season"*.
+     Two populations, one line apart, the larger one second and attached to
+     nothing — so the nearer reading binds it UPWARD and the panel appears to give
+     two answers for how many games it counted.
+
+     ⭐⭐ THE TWO NUMBERS ARE BOTH RIGHT AND THE DIFFERENCE IS THE POINT. The lead
+     is SEASON-SCOPED on purpose: pooling seasons moves a game's rank by 12.5
+     places against a random-draw p50 of about 5, which is why `perGame` is keyed
+     by season at all. The sections are archive-wide census figures. So the repair
+     is not to make one number match the other — it is to say which is which, and
+     let the sentence explain why the second is bigger.
+
+     ⚠️ DERIVED, NOT TYPED: `n` and the noun are read off the rows, and the line
+     is still SILENT when the rows disagree — the rule from the Stoppages
+     screenshot that printed one number three times. */
   const n=document.createElement('p');n.className='wpop';
-  n.textContent='Counted over '+overs[0].n.toLocaleString()+' '+overs[0].unit+'.';
+  n.textContent='The figures below are counted over all '
+   +overs[0].n.toLocaleString()+' '+overs[0].unit+' in the archive, across every '
+   +'season we hold.';
   host.appendChild(n);}
  /* IN THE LAYER'S OWN ORDER, not either table's. `LAYERWORK` is the layer
     descriptor's `work` list, and Stoppages names penalties, offsides and icings

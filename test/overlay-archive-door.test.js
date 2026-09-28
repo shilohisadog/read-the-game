@@ -357,3 +357,73 @@ test('⛔ `Where this appears` sits at the foot of a section, not at its head', 
       `"${after}" is not above the cross-reference — a reader meets the other pages first`);
   }
 });
+
+/**
+ * ⛔⛔ TWO POPULATIONS IN ONE PANEL, AND EACH SAYS WHICH FIGURES IT BELONGS TO.
+ *
+ * THE DEFECT, found by reading the live panel on 2026-09-28. The lead ends *"the
+ * middle half of the 1,394 games we hold for the 2025-26 season"* and the very
+ * next line read *"Counted over 4,192 games."* — a bare count, attached to
+ * nothing, one line under a different count. The nearer reading binds it upward,
+ * so the panel appeared to give two answers to how many games it had counted.
+ *
+ * ⭐⭐ BOTH NUMBERS ARE RIGHT AND THE DIFFERENCE IS LOAD-BEARING. The lead is
+ * season-scoped because pooling seasons moves a game's rank by 12.5 places
+ * against a random-draw p50 of about 5 — the measurement that put the season key
+ * in `perGame` in the first place. The sections are archive-wide census figures.
+ * ⛔ So the repair is NOT to make the numbers equal. Equal numbers here would
+ * mean one of the two measurements had been widened to match the other's prose,
+ * which is the tidy false version of this panel.
+ *
+ * ⚠️ WHAT THIS CAN AND CANNOT CHECK. It cannot decide whether a sentence reads
+ * ambiguously — that took a person looking at it. It CAN hold the structural
+ * property that made the ambiguity possible: two population figures in one panel
+ * where at least one named no subject. Both must now name theirs.
+ */
+test('⛔ neither population figure in the panel is a bare count', () => {
+  /* MUTATION: put `'Counted over ' + n + ' games.'` back in `renderAlot` and the
+     second assertion fires — which is exactly what shipped. */
+  /* ⚠️ THE LEAD IS BUILT WITH `innerHTML` AND THE SECTIONS WITH `appendChild`, so
+     one sentence is read off the markup and the other off the harness's node
+     model. Asking either the wrong way returns an empty string and this test
+     would pass by finding nothing — the shape `_kids` was introduced for at the
+     top of this file. Both are asserted non-empty below for that reason. */
+  const txt = n => n.innerHTML ? n.innerHTML.replace(/<[^>]+>/g, '')
+    : (n._kids && n._kids.length) ? n._kids.map(txt).join(' ') : (n.textContent || '');
+  const a = page();
+  pick(a, 'whistle');
+  a.$('alot').click();
+  const kids = a.$('alotBody')._kids || [];
+  const lead = kids.find(n => n.className === 'walot');
+  const pop = kids.find(n => n.className === 'wpop');
+  assert.ok(lead, 'the panel drew no lead, so this test is not looking at the case it is about');
+  assert.ok(pop, 'the panel drew no population line');
+
+  const leadText = txt(lead), popText = txt(pop);
+  assert.ok(leadText.length > 40 && popText.length > 40,
+    `one of the two sentences read back empty (${leadText.length} / ${popText.length} chars) — `
+    + 'this test would then pass by finding nothing');
+
+  /* THE LEAD'S FIGURE IS WELDED TO ONE SEASON, in the sentence, where it is read. */
+  assert.match(leadText, /season/i,
+    'the lead states a population without saying it is one season');
+
+  /* AND THE SECTIONS' FIGURE SAYS WHICH FIGURES IT COUNTS, so it cannot be read
+     as a correction of the sentence above it. */
+  assert.match(popText, /figures below/i,
+    'the population line is a bare count — it names no subject, so a reader binds '
+    + 'it to the sentence above: ' + JSON.stringify(popText));
+  assert.match(popText, /every season/i,
+    'the population line does not say it spans more than one season, which is the '
+    + 'whole reason its number is larger than the lead’s');
+
+  /* ⭐ AND THE TWO REALLY ARE DIFFERENT NUMBERS, which is what makes the naming
+     load-bearing rather than decorative. If a future change made them equal this
+     goes red and should: it would mean one measurement had been re-scoped. */
+  const num = t => (t.match(/([\d,]{3,})/g) || []).map(x => +x.replace(/,/g, ''));
+  const inLead = num(leadText), inPop = num(popText);
+  assert.ok(inPop.length === 1, 'the population line prints more than one figure');
+  assert.ok(inLead.length && !inLead.includes(inPop[0]),
+    'the lead and the population line now print the same figure — one of the two '
+    + 'measurements has been re-scoped, and the panel no longer states two populations');
+});
