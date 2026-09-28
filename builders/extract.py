@@ -572,6 +572,47 @@ KNOWN_PENALTIES = {
     # nothing: the archive published to dataThrough 2026-09-24 on the same run
     # that reported it.
     "aggressor",
+    # ⭐⭐⭐ AND THEN TWENTY-NINE AT ONCE, 2026-09-28, walked over 4,618 games.
+    # Every entry above arrived in ones and twos because the nightly HALTED at the
+    # first unknown descriptor, so every drift report was a report of one. The
+    # halt came off on 2026-09-25; the first full archive sweep under the new
+    # contract reported the whole set in a single list.
+    #
+    # ⛔⛔ THEY WERE ALL ALREADY IN THE ARCHIVE. Four nights were spent fixing one
+    # word each and concluding the vocabulary had drifted by one word, and the
+    # comment two blocks up asks the right question in the wrong direction: it
+    # wonders whether "more are coming". They had already come. What was missing
+    # was not the words, it was the COUNT — and the halt is what made the count
+    # unknowable, because a stop at the first item cannot report the length of
+    # the list.
+    #
+    # ⚠️ MEASURED BEFORE IT WAS FIXED: 175 games sampled across the published
+    # archive hold 1,274 penalties, 8 of them with no prose — 0.6% of penalties,
+    # in 8 of the 175 games, or 4.6%. About one game in twenty-two showed a
+    # reader `illegal-check-to-head` instead of words, and that descriptor alone
+    # is half of the eight.
+    #
+    # ⭐ `charging` ABOVE IS ANSWERED BY THIS. It asked whether the league changed
+    # its descriptors this preseason. The sweep says no: `spearing`,
+    # `checking-from-behind` and `illegal-check-to-head` are ordinary
+    # regular-season infractions and they are here, in three full seasons of
+    # archive, having never been vetted. The vocabulary did not drift — it was
+    # never fully walked, because nothing ever got past the first new word.
+    #
+    # Each was read, given prose in src/lib/penalties.js, and only then added
+    # here. `test/render-penalties.test.js` holds the two lists to each other and
+    # it named all twenty-nine when the prose landed and this did not.
+    "abuse-of-officials", "abusive-language", "bench", "broken-stick",
+    "checking-from-behind", "clipping", "illegal-check-to-head", "illegal-stick",
+    "ineligible-player", "playing-without-a-helmet", "spearing",
+    "tripping-obstruction", "20-minute-game-misconduct", "spearing-double-minor",
+    "match-penalty", "game-misconduct-head-coach",
+    "goalie-leave-crease", "goalie-participation-beyond-center",
+    "delaying-game-bench", "delaying-game-bench-face-off-violation",
+    "delaying-game-smothering-puck",
+    "penalty-shot", "penalty-shot-minor", "ps-covering-puck-in-crease",
+    "ps-holding-on-breakaway", "ps-hooking-on-breakaway",
+    "ps-tripping-on-breakaway", "ps-net-displaced", "ps-throwing-object-at-puck",
 }
 
 
