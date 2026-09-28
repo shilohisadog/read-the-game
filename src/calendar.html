@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-a5gkul2LDUf17icBcNN7AeFP5JkEzuGKM9Gwempx778=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ycNQ6ccryghkvdjE9Lf1a/CghcDG7M5+L/G1UdBlRvM=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -1313,6 +1313,61 @@ function shareAtOrBelow(d, value) {
  * season, or an empty one. A caller must then say nothing at all, which is the
  * verdict card's standing rule.
  */
+/**
+ * ⭐⭐ WHERE ONE COUNT SITS IN ONE DISTRIBUTION — the whole judgement, once.
+ *
+ * ⚠️ NOT `standing`, WHICH IS `strength.js`'s AND MEANS THE SCORE STATE. The two
+ * were about to be top-level names in one concatenated bundle, where a
+ * redeclaration does not throw — the later one silently wins. `test/build.test.js`
+ * caught it on the first run after this was written, which is the gate doing
+ * exactly its job. The name here is this module's own header: *the shape of a
+ * count, and where one night sits in it.*
+ *
+ * ⭐ IT EXISTS BECAUSE A SECOND SURFACE ASKED THE SAME QUESTION. The verdict card
+ * has judged a night against its season since 2026-08-28; on 2026-09-28 Kevin's
+ * `Is that a lot?` overlay had to judge THE LAYER THE READER IS LOOKING AT,
+ * against the same distribution, in the same vocabulary. Written twice, the two
+ * surfaces would be free to disagree about what "unusual" means — and one of
+ * them would be the one a reader pressed a button labelled *is that a lot* to
+ * reach. `mostUnusual` now calls this, so there is one answer and two callers.
+ *
+ * ⭐ THE REFERENCE CLASS COMES BACK EVEN WITH NO COUNT, and that is the whole
+ * reason the two halves are separable. Mid-replay the layer's count is PARTIAL —
+ * the chip says 16 stoppages so far — and this population is of FINISHED games,
+ * so ranking one against the other would be the "two numbers about different
+ * things wearing one label" defect this file's own callers have paid for twice.
+ * What is always true and always sayable is what a finished night holds. The
+ * verdict waits for the horn; the reference class does not have to.
+ *
+ * ⚠️ `inside` IS A DEFINITION, NOT A THRESHOLD — p25 to p75, the middle half,
+ * which is not a number anybody chose. See `mostUnusual` for why a cutoff here
+ * would be a parameter with no source in the data.
+ * ⚠️ AND `beat` IS STRICT, so a tie is never claimed as a difference.
+ */
+function sitsIn(d, count) {
+  if (!d || !d.n || !d.noun) return null;
+  const lo = quantile(d, 0.25), hi = quantile(d, 0.75);
+  /* ⭐ `population` TRAVELS, because a caller that needs to name the season must
+     not construct the label. The first version of the overlay's sentence built
+     one from the key — `2025` + `–` + `11` — and printed "the 2025–11 season".
+     The document already carries "NHL regular season and playoffs, 2025-26";
+     naming a thing the archive names is the archive's job. */
+  const out = { noun: d.noun, of: d.n, lo, hi, min: d.min, max: d.max,
+                population: d.population || null };
+  if (!Number.isInteger(count)) return out;
+  const high = count > hi;
+  let beat = 0;
+  for (let k = 0; k < d.counts.length; k++) {
+    const at = d.start + k;
+    if (high ? at < count : at > count) beat += d.counts[k];
+  }
+  return { ...out, count, inside: count >= lo && count <= hi, high, beat,
+           /* Furthest from a typical night, for a caller choosing between
+              lenses. `shareAtOrBelow` is the same walk the published document
+              supports, so the ordering can be recomputed by anyone. */
+           far: Math.abs(shareAtOrBelow(d, count) - 0.5) };
+}
+
 function judgeable(dists, counts) {
   if (!dists || !counts) return 0;
   let n = 0;
@@ -1342,27 +1397,22 @@ function mostUnusual(dists, counts) {
        cannot reach for its own wording — and a document derived before nouns
        existed would otherwise have produced "55 whistle", a lens id shown to a
        reader. Skipped, because there is no honest way to say it. */
-    if (!d || !d.n || !d.noun || !Number.isInteger(v)) continue;
-    const lo = quantile(d, 0.25), hi = quantile(d, 0.75);
+    if (!Number.isInteger(v)) continue;
+    /* ⏹ THE JUDGEMENT ITSELF MOVED TO `standing` ON 2026-09-28, unchanged, so
+       the overlay and this card cannot come to mean different things by
+       "unusual". What stays here is the CHOICE BETWEEN lenses, which is this
+       function's own job and nobody else's. */
+    const st = sitsIn(d, v);
     // Ordinary by definition, and therefore not a finding.
-    if (v >= lo && v <= hi) continue;
+    if (!st || st.inside) continue;
     /* ⚠️ HOW MANY WERE UNUSUAL, because the sentence wanted to end "and nothing
        else about it was unusual" and that is a claim about the FOUR LENSES THIS
        FUNCTION DISCARDED. Reporting the furthest one says nothing about the
        others, so the caller is given the count and can only say what it holds. */
     outside++;
-    const high = v > hi;
-    // The games this one beat, or the games that beat it — counted, never
-    // interpolated, and STRICT so a tie is not claimed as a difference.
-    let n = 0;
-    for (let k = 0; k < d.counts.length; k++) {
-      const at = d.start + k;
-      if (high ? at < v : at > v) n += d.counts[k];
-    }
-    // Furthest from a typical night wins. `shareAtOrBelow` is the same walk the
-    // published document supports, so the ordering can be recomputed by anyone.
-    const far = Math.abs(shareAtOrBelow(d, v) - 0.5);
-    if (!best || far > best.far) best = { lens, count: v, high, n, of: d.n, far, noun: d.noun };
+    if (!best || st.far > best.far)
+      best = { lens, count: st.count, high: st.high, n: st.beat, of: st.of,
+               far: st.far, noun: st.noun };
   }
   return best && { ...best, outside };
 }

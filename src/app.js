@@ -37,7 +37,7 @@ import { eventMarks, puckMark, shotLine } from './lib/marks.js';
 import { iceNote, trailsNote } from './lib/notes.js';
 import { goalieCards } from './lib/goalie-card.js';
 import { announcement } from './lib/announce.js';
-import { judgeable, mostUnusual } from './lib/distribution.js';
+import { judgeable, mostUnusual, sitsIn } from './lib/distribution.js';
 import { corsi } from './lib/layers/corsi.js';
 import { goaltending, isHighDangerEvent } from './lib/layers/goaltending.js';
 import { danger } from './lib/layers/danger.js';
@@ -1378,6 +1378,99 @@ function renderAlot(){
  printed(RATES).forEach(e=>{printedBy[e.anchor]=e;labelOf[e.anchor]=e.label;});
  const leagueBy={};
  leagueFigures(RATES).forEach(r=>{leagueBy[r.anchor]=r;labelOf[r.anchor]=r.label;});
+ /* ⭐⭐⭐ THE QUESTION ON THE BUTTON, ANSWERED FIRST. Kevin, 2026-09-28: *"Is
+    that a lot should definitely answer the question of 'is that a lot', no? now
+    when the stoppages layer is active and is that a lot is pressed, the first bit
+    a viewer sees in the panel is 'how many penalties a team takes', which doesn't
+    quite align."* Exactly right, and it was two faults in one: the panel never
+    named tonight's number at all, and what it DID lead with was a component of
+    the layer rather than the layer.
+
+    ⭐⭐ AND IT IS DERIVED, NOT WRITTEN. `measures.json` publishes a per-game
+    histogram for each lens, keyed by the SAME ids the selector uses, counted off
+    the SAME reducers the chips run — an identity `test/measure.test.js` asserts
+    rather than assumes. So the answer is a walk of a published table: no typed
+    figure, no threshold anybody chose (the middle half is a DEFINITION), and a
+    layer measured for the first time next spring gets its answer with no edit
+    here. `sitsIn` is the walk, shared with the verdict card so the two surfaces
+    cannot come to mean different things by "unusual".
+
+    ⛔⛔ THE VERDICT WAITS FOR THE HORN, AND THE REFERENCE CLASS DOES NOT. The chip
+    says `Stoppages 16` SO FAR; the population is of FINISHED games. Ranking a
+    partial count against it is the "two numbers about different things wearing
+    one label" defect this page has paid for twice — and printing the finished
+    total mid-replay would spoil the game a reader is watching. So what a
+    finished night holds is always sayable and always said; where THIS game
+    landed waits for `.ended`, which is the same test the verdict card uses and
+    for the same stated reason: *a game paused one shot short has no verdict.*
+
+    ⚠️ COUNTED OVER ALL SITUATIONS, EXPLICITLY, because the reference class is.
+    Judging an even-strength-filtered count against an unfiltered distribution is
+    the same defect one turn further on, so the basis is named on the line rather
+    than left for the reader to reconcile with the chip beside it. */
+ /* ⛔⛔ AND A NEW SEASON HAS NO DISTRIBUTION YET, which is not an edge case — it
+    is the state of every game the site features between the first preseason
+    puck and the point in the autumn where enough regular-season games have been
+    measured. The archive holds 2023–2025 and today's featured game is a 2026
+    preseason game; a version of this that only used the game's own season would
+    answer nothing, on a button that asks a question, for months.
+
+    ⭐ SO THE NEAREST MEASURED SEASON IS OFFERED AS A YARDSTICK AND NAMED AS ONE.
+    What is NOT done is rank this game inside it. `distribution.js` carries the
+    measurement for that refusal — a stratified 600-game control asking how far a
+    game's rank moves when scored against the pooled archive instead of its own
+    season: 12.5 places for attempts and 15.0 for blocked against a random p50 of
+    about 5. Season matters, so a cross-season RANK would be a number we have
+    already measured to be wrong. The SHAPE of a finished night moves far less,
+    and it is the half that answers "is that a lot" at all. */
+ const seas=String((G.game&&G.game.id)||'').slice(0,4);
+ const all=(RATES&&RATES.perGame)||{};
+ const own=all[seas]&&all[seas][id];
+ const near=own?null:Object.keys(all).filter(y=>all[y]&&all[y][id])
+   .sort((a,b)=>Math.abs(+a-+seas)-Math.abs(+b-+seas)||(+b-+a))[0]||null;
+ const dist=own||(near&&all[near][id]);
+ const ref=sitsIn(dist,null);
+ if(ref){
+  /* ⚠️ THE HORN IS NOT ENOUGH — IT MUST ALSO BE THIS GAME'S OWN SEASON. Both
+     conditions are about the same thing: whether the number we would print and
+     the population we would print it against are the same quantity. */
+  const atEnd=i>=EV.length-1&&!!own;
+  const full=atEnd?LENS[id].reduce(G.events,{...CTX,evenOnly:false}).counted.length:null;
+  const st=atEnd?sitsIn(dist,full):null;
+  const lead=document.createElement('p');lead.className='walot';
+  /* A FRACTION, NEVER A PERCENTAGE — `levelCurve`'s rule, earned there: "more
+     than 1,220 of the 1,394 games" is self-limiting where "the 88th percentile"
+     is not, and it needs no minimum-n guard, because early in a season the
+     sentence says so by itself. */
+  /* `toLocaleString` at each site, because this file has no `num` helper and
+     adding one here would be a sixth spelling of a thing it already spells five
+     ways inline. */
+  const N=v=>v.toLocaleString();
+  const games=n=>N(n)+' of the '+N(ref.of)+' game'+(ref.of===1?'':'s')+' that season';
+  /* ⭐ THE SEASON IS NAMED IN THE ARCHIVE'S OWN WORDS. `population` reads
+     "NHL regular season and playoffs, 2025-26"; the tail after the last comma is
+     the season. Constructing one from the key printed "the 2025–11 season" for
+     as long as it took to read the rendered sentence. */
+  const when=near
+   ?'the '+String(ref.population||near).split(', ').pop()+' season'
+   :'this game\u2019s season';
+  const usual='<b>Most nights finish with between '+N(ref.lo)+' and '+N(ref.hi)
+   +' '+ESC(ref.noun)+'</b> — that is the middle half of the '+N(ref.of)
+   +' game'+(ref.of===1?'':'s')+' we hold for '+when+', which ran from '
+   +N(ref.min)+' to '+N(ref.max)+'. All situations, as the archive counts them.';
+  lead.innerHTML=usual+(st
+   ?' <b>This game finished with '+N(st.count)+'</b> — '
+     +(st.inside?'inside that middle half, an ordinary night by this count.'
+       :(st.beat===ref.of
+         ?(st.high?'higher':'lower')+' than all '+N(ref.of)+' of them.'
+         :(st.high?'more than ':'fewer than ')+games(st.beat)+'.'))
+   :near
+     ?' This game\u2019s own season has not been measured yet, so it is not placed '
+      +'inside that \u2014 how far a night sits from typical moves with the season, '
+      +'and we would rather say nothing than say it against the wrong year.'
+     :' The replay has not reached the final horn, so there is no figure for this '
+      +'game to compare yet — these nights are counted whole.');
+  host.appendChild(lead);}
  /* ⭐ THE POPULATION, ONCE, ABOVE THEM ALL. On the methods page each league row
     carries its own `4,192 games counted` tile and they sit pages apart; this
     panel STACKS them, so Kevin's Stoppages screenshot printed the same number

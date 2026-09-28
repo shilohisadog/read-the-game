@@ -63,3 +63,11 @@
    the denominator under all of them, so it reads as a caption rather than
    competing with the arithmetic it qualifies. */
 .wpop{margin:0 0 12px;font-size:.82rem;color:var(--muted)}
+
+/* ⭐ THE ANSWER TO THE BUTTON, ABOVE THE DERIVATIONS THAT SUPPORT IT.
+   Heavier than `.wpop` and lighter than a section heading: it is the one
+   sentence a reader pressed `Is that a lot?` to get, and everything under it is
+   the working. */
+.walot{margin:0 0 14px;padding:11px 13px;background:#f4f8fb;border-radius:8px;
+ font-size:.92rem;line-height:1.6}
+.walot b{font-weight:700}

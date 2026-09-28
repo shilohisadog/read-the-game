@@ -39,7 +39,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-9ZZuGju8dGYT+M1GEZftutuiulvZynswn3w3SitgKWk=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-oxAS9C1hyMqBbQN793n6J6vX7ZWrhzxbRpY8cQNsuiQ='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-XdMGS+QDc8HI4UmmRaIDvwegsrDFmCG8Um9TT6vmb7k=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ynFj1ps5PB2o1QBRRrFryvmPU5yOb6mV0UC1iwFMfU0='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -2505,6 +2505,14 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
    the denominator under all of them, so it reads as a caption rather than
    competing with the arithmetic it qualifies. */
 .wpop{margin:0 0 12px;font-size:.82rem;color:var(--muted)}
+
+/* ⭐ THE ANSWER TO THE BUTTON, ABOVE THE DERIVATIONS THAT SUPPORT IT.
+   Heavier than `.wpop` and lighter than a section heading: it is the one
+   sentence a reader pressed `Is that a lot?` to get, and everything under it is
+   the working. */
+.walot{margin:0 0 14px;padding:11px 13px;background:#f4f8fb;border-radius:8px;
+ font-size:.92rem;line-height:1.6}
+.walot b{font-weight:700}
 </style>
 <!-- ⭐ THE SHELL'S STATUS LINE, AND IT IS OUTSIDE `#rg` ON PURPOSE (D9).
      It used to be `#gl`, the game line -- which sits at the BOTTOM of the app,
@@ -5168,6 +5176,61 @@ function shareAtOrBelow(d, value) {
  * season, or an empty one. A caller must then say nothing at all, which is the
  * verdict card's standing rule.
  */
+/**
+ * ⭐⭐ WHERE ONE COUNT SITS IN ONE DISTRIBUTION — the whole judgement, once.
+ *
+ * ⚠️ NOT `standing`, WHICH IS `strength.js`'s AND MEANS THE SCORE STATE. The two
+ * were about to be top-level names in one concatenated bundle, where a
+ * redeclaration does not throw — the later one silently wins. `test/build.test.js`
+ * caught it on the first run after this was written, which is the gate doing
+ * exactly its job. The name here is this module's own header: *the shape of a
+ * count, and where one night sits in it.*
+ *
+ * ⭐ IT EXISTS BECAUSE A SECOND SURFACE ASKED THE SAME QUESTION. The verdict card
+ * has judged a night against its season since 2026-08-28; on 2026-09-28 Kevin's
+ * `Is that a lot?` overlay had to judge THE LAYER THE READER IS LOOKING AT,
+ * against the same distribution, in the same vocabulary. Written twice, the two
+ * surfaces would be free to disagree about what "unusual" means — and one of
+ * them would be the one a reader pressed a button labelled *is that a lot* to
+ * reach. `mostUnusual` now calls this, so there is one answer and two callers.
+ *
+ * ⭐ THE REFERENCE CLASS COMES BACK EVEN WITH NO COUNT, and that is the whole
+ * reason the two halves are separable. Mid-replay the layer's count is PARTIAL —
+ * the chip says 16 stoppages so far — and this population is of FINISHED games,
+ * so ranking one against the other would be the "two numbers about different
+ * things wearing one label" defect this file's own callers have paid for twice.
+ * What is always true and always sayable is what a finished night holds. The
+ * verdict waits for the horn; the reference class does not have to.
+ *
+ * ⚠️ `inside` IS A DEFINITION, NOT A THRESHOLD — p25 to p75, the middle half,
+ * which is not a number anybody chose. See `mostUnusual` for why a cutoff here
+ * would be a parameter with no source in the data.
+ * ⚠️ AND `beat` IS STRICT, so a tie is never claimed as a difference.
+ */
+function sitsIn(d, count) {
+  if (!d || !d.n || !d.noun) return null;
+  const lo = quantile(d, 0.25), hi = quantile(d, 0.75);
+  /* ⭐ `population` TRAVELS, because a caller that needs to name the season must
+     not construct the label. The first version of the overlay's sentence built
+     one from the key — `2025` + `–` + `11` — and printed "the 2025–11 season".
+     The document already carries "NHL regular season and playoffs, 2025-26";
+     naming a thing the archive names is the archive's job. */
+  const out = { noun: d.noun, of: d.n, lo, hi, min: d.min, max: d.max,
+                population: d.population || null };
+  if (!Number.isInteger(count)) return out;
+  const high = count > hi;
+  let beat = 0;
+  for (let k = 0; k < d.counts.length; k++) {
+    const at = d.start + k;
+    if (high ? at < count : at > count) beat += d.counts[k];
+  }
+  return { ...out, count, inside: count >= lo && count <= hi, high, beat,
+           /* Furthest from a typical night, for a caller choosing between
+              lenses. `shareAtOrBelow` is the same walk the published document
+              supports, so the ordering can be recomputed by anyone. */
+           far: Math.abs(shareAtOrBelow(d, count) - 0.5) };
+}
+
 function judgeable(dists, counts) {
   if (!dists || !counts) return 0;
   let n = 0;
@@ -5197,27 +5260,22 @@ function mostUnusual(dists, counts) {
        cannot reach for its own wording — and a document derived before nouns
        existed would otherwise have produced "55 whistle", a lens id shown to a
        reader. Skipped, because there is no honest way to say it. */
-    if (!d || !d.n || !d.noun || !Number.isInteger(v)) continue;
-    const lo = quantile(d, 0.25), hi = quantile(d, 0.75);
+    if (!Number.isInteger(v)) continue;
+    /* ⏹ THE JUDGEMENT ITSELF MOVED TO `standing` ON 2026-09-28, unchanged, so
+       the overlay and this card cannot come to mean different things by
+       "unusual". What stays here is the CHOICE BETWEEN lenses, which is this
+       function's own job and nobody else's. */
+    const st = sitsIn(d, v);
     // Ordinary by definition, and therefore not a finding.
-    if (v >= lo && v <= hi) continue;
+    if (!st || st.inside) continue;
     /* ⚠️ HOW MANY WERE UNUSUAL, because the sentence wanted to end "and nothing
        else about it was unusual" and that is a claim about the FOUR LENSES THIS
        FUNCTION DISCARDED. Reporting the furthest one says nothing about the
        others, so the caller is given the count and can only say what it holds. */
     outside++;
-    const high = v > hi;
-    // The games this one beat, or the games that beat it — counted, never
-    // interpolated, and STRICT so a tie is not claimed as a difference.
-    let n = 0;
-    for (let k = 0; k < d.counts.length; k++) {
-      const at = d.start + k;
-      if (high ? at < v : at > v) n += d.counts[k];
-    }
-    // Furthest from a typical night wins. `shareAtOrBelow` is the same walk the
-    // published document supports, so the ordering can be recomputed by anyone.
-    const far = Math.abs(shareAtOrBelow(d, v) - 0.5);
-    if (!best || far > best.far) best = { lens, count: v, high, n, of: d.n, far, noun: d.noun };
+    if (!best || st.far > best.far)
+      best = { lens, count: st.count, high: st.high, n: st.beat, of: st.of,
+               far: st.far, noun: st.noun };
   }
   return best && { ...best, outside };
 }
@@ -11394,6 +11452,99 @@ function renderAlot(){
  printed(RATES).forEach(e=>{printedBy[e.anchor]=e;labelOf[e.anchor]=e.label;});
  const leagueBy={};
  leagueFigures(RATES).forEach(r=>{leagueBy[r.anchor]=r;labelOf[r.anchor]=r.label;});
+ /* ⭐⭐⭐ THE QUESTION ON THE BUTTON, ANSWERED FIRST. Kevin, 2026-09-28: *"Is
+    that a lot should definitely answer the question of 'is that a lot', no? now
+    when the stoppages layer is active and is that a lot is pressed, the first bit
+    a viewer sees in the panel is 'how many penalties a team takes', which doesn't
+    quite align."* Exactly right, and it was two faults in one: the panel never
+    named tonight's number at all, and what it DID lead with was a component of
+    the layer rather than the layer.
+
+    ⭐⭐ AND IT IS DERIVED, NOT WRITTEN. `measures.json` publishes a per-game
+    histogram for each lens, keyed by the SAME ids the selector uses, counted off
+    the SAME reducers the chips run — an identity `test/measure.test.js` asserts
+    rather than assumes. So the answer is a walk of a published table: no typed
+    figure, no threshold anybody chose (the middle half is a DEFINITION), and a
+    layer measured for the first time next spring gets its answer with no edit
+    here. `sitsIn` is the walk, shared with the verdict card so the two surfaces
+    cannot come to mean different things by "unusual".
+
+    ⛔⛔ THE VERDICT WAITS FOR THE HORN, AND THE REFERENCE CLASS DOES NOT. The chip
+    says `Stoppages 16` SO FAR; the population is of FINISHED games. Ranking a
+    partial count against it is the "two numbers about different things wearing
+    one label" defect this page has paid for twice — and printing the finished
+    total mid-replay would spoil the game a reader is watching. So what a
+    finished night holds is always sayable and always said; where THIS game
+    landed waits for `.ended`, which is the same test the verdict card uses and
+    for the same stated reason: *a game paused one shot short has no verdict.*
+
+    ⚠️ COUNTED OVER ALL SITUATIONS, EXPLICITLY, because the reference class is.
+    Judging an even-strength-filtered count against an unfiltered distribution is
+    the same defect one turn further on, so the basis is named on the line rather
+    than left for the reader to reconcile with the chip beside it. */
+ /* ⛔⛔ AND A NEW SEASON HAS NO DISTRIBUTION YET, which is not an edge case — it
+    is the state of every game the site features between the first preseason
+    puck and the point in the autumn where enough regular-season games have been
+    measured. The archive holds 2023–2025 and today's featured game is a 2026
+    preseason game; a version of this that only used the game's own season would
+    answer nothing, on a button that asks a question, for months.
+
+    ⭐ SO THE NEAREST MEASURED SEASON IS OFFERED AS A YARDSTICK AND NAMED AS ONE.
+    What is NOT done is rank this game inside it. `distribution.js` carries the
+    measurement for that refusal — a stratified 600-game control asking how far a
+    game's rank moves when scored against the pooled archive instead of its own
+    season: 12.5 places for attempts and 15.0 for blocked against a random p50 of
+    about 5. Season matters, so a cross-season RANK would be a number we have
+    already measured to be wrong. The SHAPE of a finished night moves far less,
+    and it is the half that answers "is that a lot" at all. */
+ const seas=String((G.game&&G.game.id)||'').slice(0,4);
+ const all=(RATES&&RATES.perGame)||{};
+ const own=all[seas]&&all[seas][id];
+ const near=own?null:Object.keys(all).filter(y=>all[y]&&all[y][id])
+   .sort((a,b)=>Math.abs(+a-+seas)-Math.abs(+b-+seas)||(+b-+a))[0]||null;
+ const dist=own||(near&&all[near][id]);
+ const ref=sitsIn(dist,null);
+ if(ref){
+  /* ⚠️ THE HORN IS NOT ENOUGH — IT MUST ALSO BE THIS GAME'S OWN SEASON. Both
+     conditions are about the same thing: whether the number we would print and
+     the population we would print it against are the same quantity. */
+  const atEnd=i>=EV.length-1&&!!own;
+  const full=atEnd?LENS[id].reduce(G.events,{...CTX,evenOnly:false}).counted.length:null;
+  const st=atEnd?sitsIn(dist,full):null;
+  const lead=document.createElement('p');lead.className='walot';
+  /* A FRACTION, NEVER A PERCENTAGE — `levelCurve`'s rule, earned there: "more
+     than 1,220 of the 1,394 games" is self-limiting where "the 88th percentile"
+     is not, and it needs no minimum-n guard, because early in a season the
+     sentence says so by itself. */
+  /* `toLocaleString` at each site, because this file has no `num` helper and
+     adding one here would be a sixth spelling of a thing it already spells five
+     ways inline. */
+  const N=v=>v.toLocaleString();
+  const games=n=>N(n)+' of the '+N(ref.of)+' game'+(ref.of===1?'':'s')+' that season';
+  /* ⭐ THE SEASON IS NAMED IN THE ARCHIVE'S OWN WORDS. `population` reads
+     "NHL regular season and playoffs, 2025-26"; the tail after the last comma is
+     the season. Constructing one from the key printed "the 2025–11 season" for
+     as long as it took to read the rendered sentence. */
+  const when=near
+   ?'the '+String(ref.population||near).split(', ').pop()+' season'
+   :'this game\u2019s season';
+  const usual='<b>Most nights finish with between '+N(ref.lo)+' and '+N(ref.hi)
+   +' '+ESC(ref.noun)+'</b> — that is the middle half of the '+N(ref.of)
+   +' game'+(ref.of===1?'':'s')+' we hold for '+when+', which ran from '
+   +N(ref.min)+' to '+N(ref.max)+'. All situations, as the archive counts them.';
+  lead.innerHTML=usual+(st
+   ?' <b>This game finished with '+N(st.count)+'</b> — '
+     +(st.inside?'inside that middle half, an ordinary night by this count.'
+       :(st.beat===ref.of
+         ?(st.high?'higher':'lower')+' than all '+N(ref.of)+' of them.'
+         :(st.high?'more than ':'fewer than ')+games(st.beat)+'.'))
+   :near
+     ?' This game\u2019s own season has not been measured yet, so it is not placed '
+      +'inside that \u2014 how far a night sits from typical moves with the season, '
+      +'and we would rather say nothing than say it against the wrong year.'
+     :' The replay has not reached the final horn, so there is no figure for this '
+      +'game to compare yet — these nights are counted whole.');
+  host.appendChild(lead);}
  /* ⭐ THE POPULATION, ONCE, ABOVE THEM ALL. On the methods page each league row
     carries its own `4,192 games counted` tile and they sit pages apart; this
     panel STACKS them, so Kevin's Stoppages screenshot printed the same number

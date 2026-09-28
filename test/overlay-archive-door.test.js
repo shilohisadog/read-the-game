@@ -25,6 +25,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { printed } from '../src/lib/printed.js';
+import { sitsIn } from '../src/lib/distribution.js';
 import { leagueFigures } from '../src/lib/derivation.js';
 import { boot, rich } from './helpers/page.js';
 
@@ -208,4 +209,76 @@ test('⭐ the open state is a variable, not a question asked of the DOM', () => 
   const reads = src.match(/\$\('alotPanel'\)\.hidden/g) || [];
   assert.equal(reads.length, 1,
     `\`alotPanel.hidden\` is touched ${reads.length} times; exactly one owner may write it`);
+});
+
+/* ------------------------------------ THE QUESTION ON THE BUTTON, ANSWERED */
+
+test('⛔⛔⛔ THE PANEL ANSWERS `IS THAT A LOT?` BEFORE IT EXPLAINS ANYTHING', () => {
+  /* Kevin, 2026-09-28: *"Is that a lot should definitely answer the question of
+     'is that a lot', no? now when the stoppages layer is active and is that a lot
+     is pressed, the first bit a viewer sees in the panel is 'how many penalties a
+     team takes', which doesn't quite align."* Two faults in one: the panel never
+     named tonight's number, and what it led with was a COMPONENT of the layer
+     rather than the layer.
+     MUTATION: append the lead instead of prepending it and the order assertion
+     fires; drop it and the first assertion does. */
+  const a = page();
+  pick(a, 'whistle');
+  a.$('alot').click();
+  const kids = (a.$('alotBody')._kids || []);
+  const classes = kids.map(n => n.className).filter(Boolean);
+  assert.ok(classes.includes('walot'), 'the panel does not answer its own button at all');
+  /* ⭐ THE ORDER IS THE CLAIM. `walot` must come before the first `.hmf`, because
+     "which doesn't quite align" was about what a reader meets FIRST. */
+  assert.ok(classes.indexOf('walot') < kids.findIndex(n => n.className === 'hmf'),
+    'a component section is still the first thing in the panel');
+});
+
+test('⛔⛔ A PARTIAL COUNT IS NEVER RANKED AGAINST FINISHED GAMES', () => {
+  /* The chip says `Stoppages 16` SO FAR and the population is of FINISHED games.
+     Ranking one against the other is the "two numbers about different things
+     wearing one label" defect this page has paid for twice — and printing the
+     finished total mid-replay would spoil the game a reader is watching.
+     ⭐ THE REFERENCE CLASS IS NOT WITHHELD WITH IT: what a finished night holds is
+     always true and always said. Two different facts, two different guards.
+     MUTATION: drop the `i>=EV.length-1` test and the mid-replay panel starts
+     naming a final total. */
+  const src = readFileSync(new URL('../src/app.js', import.meta.url), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, ' ');
+  const fn = src.slice(src.indexOf('function renderAlot('), src.indexOf('function cardsFor('));
+  assert.match(fn, /atEnd\s*=\s*i>=EV\.length-1/,
+    'the lead no longer waits for the horn before naming this game\u2019s figure');
+  assert.match(fn, /evenOnly:false/,
+    'the judged count is filtered while the population it is judged against is not');
+});
+
+test('⭐⭐ THE ANSWER IS DERIVED FROM THE PUBLISHED TABLE, never typed', () => {
+  /* Kevin, 2026-09-28: *"we have all of the data (somewhere in the software),
+     isn't there a way to programmatically (and automatically) extract the answer
+     to 'is that a lot' and surface that answer?"* This is that, checked: every
+     figure in the sentence is a walk of `perGame`, so a layer measured for the
+     first time next spring gets an answer with no edit to the page.
+     ⚠️ NOT CIRCULAR: the left side is the LAYER IDS the selector offers, the
+     right is the keys the published document happens to carry. Neither is
+     derived from the other, and today they disagree by exactly one. */
+  const seasons = Object.keys(MEASURES.perGame || {});
+  assert.ok(seasons.length, 'the published document carries no per-game distributions');
+  const latest = seasons.sort().pop();
+  const answered = Object.keys(MEASURES.perGame[latest])
+    .filter(k => sitsIn(MEASURES.perGame[latest][k], null));
+  const layers = RULES.layers.map(l => l.id);
+  const unanswerable = layers.filter(l => !answered.includes(l));
+  /* ⛔ AND THE GAP IS NAMED RATHER THAN TOLERATED SILENTLY. `zonestart` has no
+     per-game distribution published, so its panel carries no lead — which is
+     honest and is also a hole in the feature. This asserts the SIZE of the hole,
+     so it cannot quietly grow. */
+  assert.deepEqual(unanswerable, ['zonestart'],
+    'the set of layers the archive cannot answer for has changed: ' + unanswerable.join(', '));
+  /* And every one it CAN answer for has the three things the sentence needs. */
+  for (const k of answered) {
+    const r = sitsIn(MEASURES.perGame[latest][k], null);
+    assert.ok(r.noun, `${k} has no noun, so the sentence would print a lens id`);
+    assert.ok(r.population, `${k} has no population, so the season cannot be named`);
+    assert.ok(r.lo <= r.hi && r.min <= r.lo && r.hi <= r.max, `${k}'s quartiles are not inside its range`);
+  }
 });
