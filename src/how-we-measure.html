@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-gzkAD8vB7zFSCzNHyy/rxI5cHBlonC1KwUJdhcEz5Kk=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig=' 'sha256-0bhpsWnzVu6NAX0uBc63E29t3q3jxrExtXCS/7jaJVQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-85ypLWuFU5uBTaMioVM9q0RyI/WDZYfJvTnsRKm+XUY=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig=' 'sha256-0bhpsWnzVu6NAX0uBc63E29t3q3jxrExtXCS/7jaJVQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -1984,12 +1984,32 @@ const PRINTED = {
         num: 'def', den: 'n', out: 'defPerDraw', as: 'ratio',
         unit: 'attempts per face-off' },
     ],
-    why: 'It prices the blue-line band. A novice is told that where a face-off '
-       + 'is taken matters; this says by how much, in the only currency the '
+    /* ⛔⛔⛔ THIS PROSE POINTED AT THINGS THE READER CANNOT SEE, and both
+       surfaces that print it are surfaces where they are not on screen. It read
+       *"It prices the blue-line band"* and *"which is what the shaded band is
+       drawn around"*. On `how-we-measure.html` there is no rink at all; in the
+       overlay over the replay there is one and the panel sets it to
+       `visibility:hidden` — measured on production 2026-09-28, both the band and
+       the ice, while those exact sentences were on screen.
+
+       ⭐⭐ THE COST WAS A FALSE BUG REPORT FROM THE PERSON WHO BUILT IT. Kevin
+       read this card with the Zone starts layer ON and concluded the shading had
+       been removed, because the only place the band was named was a paragraph
+       covering it up. When a sentence's referent is invisible, a reader does not
+       conclude *I cannot see it* — they conclude *it is not there*.
+
+       ⭐ AND IT NAMES NO GEOMETRY, deliberately. The band's width has exactly one
+       source — `ZONE_BAND_FT` in `rink.js`, measured off the paint — and
+       spelling "five feet either side" here would be a fourth prose copy of a
+       constant, which is the open debt this project already carries for the
+       slot. The sentence says what the QUESTION is; the shape stays where it is
+       defined. */
+    why: 'It prices the place a face-off is taken. A novice is told that where a '
+       + 'draw happens matters; this says by how much, in the only currency the '
        + 'record holds — shot attempts before the next whistle.',
-    caveat: 'It says nothing at all about the contest AT the line, which is '
-          + 'what the shaded band is drawn around: holding a blue line produces '
-          + 'no event in the record, so there is nothing to count. And a draw in '
+    caveat: 'It says nothing at all about the contest AT the blue line, which is '
+          + 'a different question and one the record cannot answer: holding a '
+          + 'line produces no event, so there is nothing to count. And a draw in '
           + 'one end is not randomly assigned — the club already pressing is '
           + 'the club that gets them — so part of this gap is the teams and '
           + 'not the place.' },
@@ -2639,14 +2659,6 @@ function sections(create) {
     const s = mk('section', 'hmf');
     s.id = e.anchor;
     s.appendChild(mk('h3', null, e.label));
-    /* ⛔ A FIGURE MUST SAY WHERE A READER MET IT, AND EITHER HALF WILL DO. Most
-       are printed in prose a builder substituted and name their surfaces in
-       `where`; one is printed only by the replay, and for that one the sentence
-       is derived from the layer rather than written twice. A test requires one
-       of the two to be present. */
-    if (e.where) s.appendChild(mk('p', 'hmwhere', 'Where this appears: ' + e.where));
-    const rep = onTheReplay(e.anchor, ctx && ctx.layerFor);
-    if (rep) s.appendChild(rep);
     const box = mk('div', 'hmev');
     /* ⭐⭐ ONE GROUP PER PUBLISHED SENTENCE: the figures that sentence describes,
        and then the sentence. The published `what` for the slot ends "…this many
@@ -2724,6 +2736,24 @@ function sections(create) {
     c.appendChild(mk('b', null, 'What could be wrong with it. '));
     c.appendChild(mk('span', null, e.caveat));
     s.appendChild(c);
+    /* ⛔ A FIGURE MUST SAY WHERE A READER MET IT, AND EITHER HALF WILL DO. Most
+       are printed in prose a builder substituted and name their surfaces in
+       `where`; one is printed only by the replay, and for that one the sentence
+       is derived from the layer rather than written twice. A test requires one
+       of the two to be present.
+
+       ⛔⛔ AND IT SITS AT THE FOOT, WHICH IT DID NOT UNTIL 2026-09-28. This block
+       led the section, so the first line a reader met in the overlay over the
+       rink was *"Where this appears: The front door, and The attacking zone card
+       on What you can see here."* — a list of other places, offered to somebody
+       who is standing in one of them and asked a question. Measured on
+       production, on the Zone starts door, with the lead sentence missing.
+       ⭐ A CROSS-REFERENCE IS PROVENANCE, NOT AN ANSWER. It belongs after the
+       figure, its source, its point and its caveat, on both surfaces — the
+       reading page gains the same way and neither needs a special case. */
+    if (e.where) s.appendChild(mk('p', 'hmwhere', 'Where this appears: ' + e.where));
+    const rep = onTheReplay(e.anchor, ctx && ctx.layerFor);
+    if (rep) s.appendChild(rep);
     return s;
   }
 

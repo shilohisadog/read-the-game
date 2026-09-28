@@ -1285,7 +1285,33 @@ const LEDGER=Object.fromEntries(Object.entries(LENS).map(([id,m])=>
  [id,id==='corsi'?counted:sl=>m.reduce(sl,CTX)]));
 function renderWork(_,cur,at){
  const id=whichPick();
- if(id==='none'||!LEDGER[id]||at<0){$('workBody').innerHTML='';return;}
+ /* ⛔⛔⛔ `at<0` USED TO BLANK THIS PANEL, AND THAT IS THE STATE EVERY REPLAY
+    OPENS IN. A viewer who lands on a game, turns a layer on and presses `How we
+    counted` before pressing Play — which is the first thing a careful novice
+    does, and the panel is FOR the careful novice — got a white box with a Hide
+    button in it and no sentence saying why.
+
+    ⭐⭐ AND THE TELL WAS IN MY OWN TEST FOR WEEKS. `work-overlay.test.js` carries
+    *"renderWork returns early at `at < 0`, so a panel opened on the pre-game
+    frame is empty by design — and three assertions about its contents failed for
+    that reason before they could say anything."* Three assertions found the
+    blank, and the repair was to move the playhead past it. A test that steps
+    AROUND a behaviour has decided to tolerate it; `by design` was doing the work
+    of a decision nobody made.
+
+    ⭐ NOTHING HAS TO BE INVENTED TO FIX IT, which is the sign the early return
+    was over-broad rather than load-bearing. `upto(-1)` is already `[]` and every
+    reducer answers an empty stream with an empty reduction, so the panel draws
+    what it always draws: the rule, the attribution, the learn door and a count
+    of nothing — the half of this panel that does not depend on the playhead at
+    all, and the half a viewer most wants BEFORE the puck drops. `when` has said
+    `pre-game` since the panel was written and no surface could ever reach it.
+
+    ⚠️ THE OTHER TWO CONDITIONS STAY. `none` and an unknown id mean there is no
+    layer to describe; `at<0` means the game has not started. Lumping them was
+    the error — the same distinction this project draws everywhere else between
+    *we cannot place this* and *there is nothing here*. */
+ if(id==='none'||!LEDGER[id]){$('workBody').innerHTML='';return;}
  const sl=upto(at), L=LEDGER[id](sl);
  const lyr=layerOf(id);
  /* ⭐ HOW THE LAYER ATTRIBUTES WHAT IT COUNTS, and this panel is where that

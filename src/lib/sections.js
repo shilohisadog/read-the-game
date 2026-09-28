@@ -156,14 +156,6 @@ export function sections(create) {
     const s = mk('section', 'hmf');
     s.id = e.anchor;
     s.appendChild(mk('h3', null, e.label));
-    /* ⛔ A FIGURE MUST SAY WHERE A READER MET IT, AND EITHER HALF WILL DO. Most
-       are printed in prose a builder substituted and name their surfaces in
-       `where`; one is printed only by the replay, and for that one the sentence
-       is derived from the layer rather than written twice. A test requires one
-       of the two to be present. */
-    if (e.where) s.appendChild(mk('p', 'hmwhere', 'Where this appears: ' + e.where));
-    const rep = onTheReplay(e.anchor, ctx && ctx.layerFor);
-    if (rep) s.appendChild(rep);
     const box = mk('div', 'hmev');
     /* ⭐⭐ ONE GROUP PER PUBLISHED SENTENCE: the figures that sentence describes,
        and then the sentence. The published `what` for the slot ends "…this many
@@ -241,6 +233,24 @@ export function sections(create) {
     c.appendChild(mk('b', null, 'What could be wrong with it. '));
     c.appendChild(mk('span', null, e.caveat));
     s.appendChild(c);
+    /* ⛔ A FIGURE MUST SAY WHERE A READER MET IT, AND EITHER HALF WILL DO. Most
+       are printed in prose a builder substituted and name their surfaces in
+       `where`; one is printed only by the replay, and for that one the sentence
+       is derived from the layer rather than written twice. A test requires one
+       of the two to be present.
+
+       ⛔⛔ AND IT SITS AT THE FOOT, WHICH IT DID NOT UNTIL 2026-09-28. This block
+       led the section, so the first line a reader met in the overlay over the
+       rink was *"Where this appears: The front door, and The attacking zone card
+       on What you can see here."* — a list of other places, offered to somebody
+       who is standing in one of them and asked a question. Measured on
+       production, on the Zone starts door, with the lead sentence missing.
+       ⭐ A CROSS-REFERENCE IS PROVENANCE, NOT AN ANSWER. It belongs after the
+       figure, its source, its point and its caveat, on both surfaces — the
+       reading page gains the same way and neither needs a special case. */
+    if (e.where) s.appendChild(mk('p', 'hmwhere', 'Where this appears: ' + e.where));
+    const rep = onTheReplay(e.anchor, ctx && ctx.layerFor);
+    if (rep) s.appendChild(rep);
     return s;
   }
 

@@ -256,9 +256,15 @@ const textIn = row => [...row.matchAll(/<a href="[^"]+">([^<]+)<\/a>/g)].map(m =
 
 test('⭐ the row renders a real anchored link per card, for the layer that is on', () => {
   const a = boot(rich, null, '?layer=slot');
-  // ⚠️ THE PLAYHEAD FIRST. `renderWork` returns early at `at < 0`, so a panel
-  // opened on the pre-game frame is empty by design — and three assertions
-  // about its contents failed for that reason before they could say anything.
+  /* ⚠️ THE PLAYHEAD FIRST, and this comment used to end *"a panel opened on the
+     pre-game frame is empty by design — and three assertions about its contents
+     failed for that reason before they could say anything."* It was not by
+     design. Three assertions found a blank panel in the state every replay opens
+     in and the repair was to move the playhead past it; `by design` was doing
+     the work of a decision nobody made, for weeks, in the file that found it.
+     ⭐ A TEST THAT STEPS AROUND A BEHAVIOUR HAS DECIDED TO TOLERATE IT. The
+     stepping stays here, because this test is about the learn row at a real
+     moment — the pre-game frame has its own test below. */
   a.$('scrub').oninput({ target: { value: '120' } });
   a.$('work').click();
   const html = a.$('workBody').innerHTML;
@@ -354,4 +360,54 @@ test('a layer with no card renders no row at all', () => {
   assert.ok(html.length > 100, 'the panel drew nothing, so this proves nothing');
   assert.doesNotMatch(html, /class="wlearn"/,
     'an empty Learn More row advertises a gap the Blocked layer has');
+});
+
+/**
+ * ⛔⛔⛔ THE PANEL DRAWS IN THE STATE EVERY REPLAY OPENS IN.
+ *
+ * `renderWork` returned early at `at < 0` until 2026-09-28, and `at < 0` is the
+ * pre-game frame — where the scrubber sits on load, before anything is pressed.
+ * So a viewer who arrived, turned a layer on and opened `How we counted` before
+ * pressing Play got a white box with a Hide button in it. That is the first
+ * thing a careful novice does, and this panel exists FOR the careful novice.
+ *
+ * ⭐ IT WENT UNSEEN BECAUSE EVERY CHECK ON THE PANEL MOVED THE PLAYHEAD FIRST —
+ * including the one directly above, which said so in a comment and called it
+ * design. Found by opening the live site and pressing the button in the order a
+ * reader would, which is the fifth defect in four days found that way and none
+ * by the suite.
+ *
+ * ⚠️ THE ASSERTION IS ABOUT THE HALF THAT DOES NOT DEPEND ON THE PLAYHEAD: the
+ * rule the layer counts by, its attribution, and the conservation line. A count
+ * of 0 is correct pre-game and is not what this is about.
+ */
+test('⛔⛔ `How we counted` explains itself on the pre-game frame, before Play is pressed', () => {
+  /* MUTATION: put `||at<0` back into `renderWork`'s early return and this fires
+     on the first assertion — which is exactly what shipped. */
+  const a = boot(rich, null, '?layer=slot');
+  assert.equal(String(a.$('scrub').value), '-1', 'the replay no longer opens on the pre-game frame');
+  a.$('work').click();
+  const html = a.$('workBody').innerHTML;
+
+  assert.ok(html.length > 200,
+    `the panel is blank on the frame every replay opens in (${html.length} chars)`);
+  assert.match(html, /between the face-off dots/,
+    'the panel does not say what the layer counts, which is the half of it that has no playhead');
+  assert.match(html, /Credited to/,
+    'the panel does not say who the count is credited to');
+  assert.match(html, /pre-game/,
+    'the panel does not say WHICH moment it is describing, so 0 reads as a defect');
+  assert.match(html, /class="wlearn"/, 'the learn door is missing before the game starts');
+
+  /* ⭐ AND THE COUNT IS HONEST RATHER THAN SUPPRESSED. Zero here is a fact about
+     a game that has not started, not a missing measurement — the distinction
+     `unplaced` draws in the zone-start reducer and `rate: null` draws in the
+     archive. The conservation line still closes. */
+  assert.match(html, /0 counted \+ 0 other/,
+    'the conservation line does not close over an empty stream');
+
+  // And the panel a step later is a superset: nothing was traded for this.
+  a.$('scrub').oninput({ target: { value: '120' } });
+  assert.ok(a.$('workBody').innerHTML.length > html.length,
+    'the panel stopped growing with the playhead');
 });

@@ -289,3 +289,71 @@ test('⭐⭐ THE ANSWER IS DERIVED FROM THE PUBLISHED TABLE, never typed', () =>
     assert.ok(r.lo <= r.hi && r.min <= r.lo && r.hi <= r.max, `${k}'s quartiles are not inside its range`);
   }
 });
+
+/**
+ * ⛔⛔⛔ THE PROSE IN THE OVERLAY DOES NOT POINT AT THINGS THE OVERLAY HIDES.
+ *
+ * THE DEFECT, 2026-09-28. The Zone starts section read *"It prices the blue-line
+ * band"* and *"which is what the shaded band is drawn around"*. Both surfaces
+ * that print it make those referents unavailable: `how-we-measure.html` has no
+ * rink at all, and this overlay covers the one it has — measured on production,
+ * `visibility:hidden` on both the band and the ice while those sentences were on
+ * screen. Kevin read the card with the layer ON and concluded the shading had
+ * been removed. ⭐ A reader whose referent is invisible does not conclude *I
+ * cannot see it*; they conclude *it is not there*.
+ *
+ * ⚠️⚠️ THIS CHECK IS NARROWER THAN THE DEFECT, AND SAYS SO RATHER THAN DRESSING
+ * IT UP. The general property — *a sentence must be readable without seeing the
+ * surface* — is not decidable from a string. The two other phrases a keyword
+ * sweep flags here are both fine (*"the shaded patch in front of the net"*
+ * carries its own location; *"the figure on screen"* is the broadcast's, not
+ * ours), so a regex tuned to fire on this instance and not those would be a
+ * check announcing a class while testing an example — the failure mode this
+ * project logs most often. This is a REGRESSION TEST for two sentences, by name.
+ * The class is closed by a habit and not by this file: open the surface and read
+ * it in the order a reader would, once per surface.
+ */
+test('⛔ the zone-starts prose names its subject instead of pointing at the ice', () => {
+  /* MUTATION: put either phrase back into `PRINTED.zoneStarts` and this fires. */
+  const e = printed(MEASURES).find(x => x.anchor === 'm-zoneStarts');
+  assert.ok(e, 'the zone-starts figure is no longer published under that anchor');
+  const prose = [e.why, e.caveat].join(' ');
+  for (const dead of ['the blue-line band', 'shaded band', 'drawn around']) {
+    assert.ok(!prose.includes(dead),
+      `the zone-starts prose says "${dead}", which names something this panel is covering up`);
+  }
+  /* AND IT STILL SAYS THE TWO THINGS THE SENTENCES WERE FOR: what the figure
+     prices, and the question it cannot answer. Removing the pointer must not
+     remove the point — a caveat that lost its subject is worse than a vague one. */
+  assert.match(e.why, /where a draw happens|place a face-off is taken/i,
+    'the why no longer says what the figure prices');
+  assert.match(e.caveat, /contest AT the blue line/,
+    'the caveat no longer names the question this measurement cannot answer');
+});
+
+/**
+ * ⛔⛔ AND THE CROSS-REFERENCE IS NOT THE FIRST THING A READER MEETS.
+ *
+ * `Where this appears:` led every section until 2026-09-28, so the first line in
+ * the overlay over the rink was a list of OTHER pages — offered to somebody
+ * standing on one of them who has just asked a question. Provenance is not an
+ * answer. It now sits after the figure, its source, its point and its caveat.
+ */
+test('⛔ `Where this appears` sits at the foot of a section, not at its head', () => {
+  /* MUTATION: move the `hmwhere` append back above `const box` in sections.js.
+     ⚠️ THROUGH THE PAGE, NOT A STAND-IN. This is a claim about the order a
+     reader meets things in the overlay, so it is read off the overlay. */
+  const a = page();
+  pick(a, 'zonestart');
+  a.$('alot').click();
+  const sec = (a.$('alotBody')._kids || []).find(n => n.id === 'm-zoneStarts');
+  assert.ok(sec, 'the zone-starts section is not in the archive panel');
+  const classes = (sec._kids || []).map(k => k.className || k.tagName);
+  const where = classes.indexOf('hmwhere');
+  assert.ok(where >= 0, 'the section stopped saying where the reader met this figure');
+  for (const after of ['hmev', 'hmwhy', 'hmcav']) {
+    const i = classes.indexOf(after);
+    assert.ok(i >= 0 && i < where,
+      `"${after}" is not above the cross-reference — a reader meets the other pages first`);
+  }
+});

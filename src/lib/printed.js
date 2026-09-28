@@ -228,12 +228,32 @@ const PRINTED = {
         num: 'def', den: 'n', out: 'defPerDraw', as: 'ratio',
         unit: 'attempts per face-off' },
     ],
-    why: 'It prices the blue-line band. A novice is told that where a face-off '
-       + 'is taken matters; this says by how much, in the only currency the '
+    /* ⛔⛔⛔ THIS PROSE POINTED AT THINGS THE READER CANNOT SEE, and both
+       surfaces that print it are surfaces where they are not on screen. It read
+       *"It prices the blue-line band"* and *"which is what the shaded band is
+       drawn around"*. On `how-we-measure.html` there is no rink at all; in the
+       overlay over the replay there is one and the panel sets it to
+       `visibility:hidden` — measured on production 2026-09-28, both the band and
+       the ice, while those exact sentences were on screen.
+
+       ⭐⭐ THE COST WAS A FALSE BUG REPORT FROM THE PERSON WHO BUILT IT. Kevin
+       read this card with the Zone starts layer ON and concluded the shading had
+       been removed, because the only place the band was named was a paragraph
+       covering it up. When a sentence's referent is invisible, a reader does not
+       conclude *I cannot see it* — they conclude *it is not there*.
+
+       ⭐ AND IT NAMES NO GEOMETRY, deliberately. The band's width has exactly one
+       source — `ZONE_BAND_FT` in `rink.js`, measured off the paint — and
+       spelling "five feet either side" here would be a fourth prose copy of a
+       constant, which is the open debt this project already carries for the
+       slot. The sentence says what the QUESTION is; the shape stays where it is
+       defined. */
+    why: 'It prices the place a face-off is taken. A novice is told that where a '
+       + 'draw happens matters; this says by how much, in the only currency the '
        + 'record holds — shot attempts before the next whistle.',
-    caveat: 'It says nothing at all about the contest AT the line, which is '
-          + 'what the shaded band is drawn around: holding a blue line produces '
-          + 'no event in the record, so there is nothing to count. And a draw in '
+    caveat: 'It says nothing at all about the contest AT the blue line, which is '
+          + 'a different question and one the record cannot answer: holding a '
+          + 'line produces no event, so there is nothing to count. And a draw in '
           + 'one end is not randomly assigned — the club already pressing is '
           + 'the club that gets them — so part of this gap is the teams and '
           + 'not the place.' },
