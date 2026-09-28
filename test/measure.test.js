@@ -79,6 +79,16 @@ const TIER = [
   // time — the tier goes stale in the same edit that changes the graph, every
   // time, and that is the whole argument for naming it rather than globbing it.
   'league-rows.js',
+  // ⭐ scope.js and disputed.js joined on 2026-09-28 when `inScope` and the
+  // disputed-shot mark were split out of archive.js, so the front door and the
+  // calendar could call a one-line predicate without inlining every season-wide
+  // rate in the project — 18.7KB and 18.6KB gzipped off two pages. CAUGHT BY
+  // THIS TEST, seventh time — the tier goes stale in the same edit that changes
+  // the graph, every time, and that is the whole argument for naming it rather
+  // than globbing it. ⚠️ They are here because the PIPELINE pulls them in
+  // through archive.js, which is a different question from which PAGE carries
+  // them; `test/page-weight.test.js` holds that one.
+  'scope.js', 'disputed.js',
 ];
 
 test('the analysis tier runs outside a browser', () => {

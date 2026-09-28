@@ -1915,13 +1915,26 @@ def _lib(*names):
     """
     return "\n".join(_module(n) for n in
                       (names or ("ingest-state.js", "daily.js", "competitions.js",
-                                 # ⚠️ `archive.js` IMPORTS THESE TWO and the inliner
-                                 # strips the import; see the note at the calendar
-                                 # page's list. A page that carries a module and
-                                 # not what the module needs builds clean and
-                                 # throws when a reader reaches the path.
-                                 "teams.js", "rink.js", "distribution.js",
-                                 "archive.js")))
+                                 # ⭐⭐ THE FRONT DOOR CARRIES THE PREDICATE, NOT
+                                 # THE ARCHIVE — 2026-09-28. This list held
+                                 # `archive.js` plus `rink.js` and
+                                 # `distribution.js`, which are here only because
+                                 # `archive.js` imports them, to call `inScope`
+                                 # and print a disputed-shot note. Nothing on
+                                 # this page computes an archive-wide figure:
+                                 # `summarise` and `slotShare` appear in this
+                                 # file only inside comments, which is how the
+                                 # weight went unnoticed. Measured: the three
+                                 # modules were 21,426 bytes gzipped, 27.1% of
+                                 # the page a stranger lands on.
+                                 # ⚠️ AND READING THE IMPORTS COULD NOT HAVE TOLD
+                                 # US. `test/lib-closure.test.js` checks that a
+                                 # page carries what its modules NEED and says
+                                 # nothing about the reverse, so the only way to
+                                 # find out whether this page used `archive.js`
+                                 # was to delete it and watch the page throw.
+                                 # `test/page-weight.test.js` now holds the size.
+                                 "teams.js", "scope.js", "disputed.js")))
 
 
 def _competitions():
@@ -4940,8 +4953,8 @@ def build_calendar():
     # which is the whole problem: it would work until somebody added one call, and
     # then throw at render time with a clean build. `test/lib-closure.test.js`
     # found both on its first run.
-    html = (CAL_BODY.replace("__LIB__", _lib("competitions.js", "teams.js", "rink.js",
-                                             "distribution.js", "archive.js", "calendar.js"))
+    html = (CAL_BODY.replace("__LIB__", _lib("competitions.js", "teams.js",
+                                             "scope.js", "disputed.js", "calendar.js"))
                     .replace("__HELPERS__", HELPERS)
                     .replace("__ORIGIN__", repr(DATA_ORIGIN).replace("'", '"'))
                     .replace("__NAMES__", _competitions()))

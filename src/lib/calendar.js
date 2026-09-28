@@ -23,7 +23,7 @@
  * the team page already refuses to be one.
  */
 
-import { inScope } from './archive.js';
+import { inScope } from './scope.js';
 // competitionOf lives in competitions.js: the verdict card names the same
 // thing from the same table, and two lookups is two chances to disagree.
 import { competitionOf } from './competitions.js';
