@@ -29,8 +29,35 @@ export const BLUE_LINE_X = 25;      // zone boundary, and what an offside is abo
 export const NEUTRAL_DOT_X = 20;
 export const ZONE_BAND_FT = BLUE_LINE_X - NEUTRAL_DOT_X;   // 5 ft either side
 export const CENTRE_X = 0;
-export const SLOT_HALF_WIDTH = 22;   // feet either side of centre
-export const HIGH_DANGER_FT = 33;    // Doctrine section 7: a rule, not a model
+/* ⛔⛔⛔ THESE TWO NUMBERS HAVE NO SOURCE, and saying so is the only honest thing
+   to do with them. They arrived in the initial commit `be8bc01` (2026-08-07) and
+   no file, document or commit message in this repository says where they came
+   from. Kevin, asked directly on 2026-09-28: *"I don't remember if we made it up
+   or borrowed it from a high-danger definition on one of the analytics sites…
+   either way, it's definitely not a rule."*
+
+   ⚠️ DOCTRINE §7 IS NOT THE PROVENANCE, THOUGH IT READS LIKE ONE. It says
+   high-danger is *"a geometric rule — distance to net ≤ 33 ft, |y| ≤ 22 …
+   because a rule is inspectable and a viewer can verify it with a ruler"*. That
+   defends the KIND of definition — a stated threshold as against a fitted model.
+   It says nothing about where the two values came from. ⭐ **A sentence that
+   justifies the FORM of a choice is not a record of the choice.**
+
+   ⭐⭐ SO IT IS A POLICY, NOT A MEASUREMENT — a declared choice — and every
+   surface stating it has to declare it as ours. `why.js` already did: *"this is
+   our own geometric rule, not a model and not anybody else's statistic."*
+   `layers/danger.js` and `printed.js` were brought to that voice on 2026-09-28.
+
+   ⛔ AND `SLOT_HALF_WIDTH` IS NOT THE FACE-OFF DOTS, though it lands on them.
+   `rinkart.js` paints the end-zone dots at |y| = 22 from MEASUREMENT — 2,134
+   draws across 39 games land on nine coordinates. This 22 is typed separately
+   and means a different thing: our chosen lateral bound. Two prose surfaces used
+   to describe our rule as *"between the face-off dots"*, which made the
+   description true by coincidence of two literals — move the measured dot and
+   the sentence about OUR rule goes quietly false. Nothing says it now. If the
+   two are ever meant to be one thing, derive one from the other and say why. */
+export const SLOT_HALF_WIDTH = 22;   // feet either side of centre — OUR choice, unsourced
+export const HIGH_DANGER_FT = 33;    // feet from the net — OUR choice, unsourced
 
 /**
  * Which zone a point is in, for the club attacking in `dir`.

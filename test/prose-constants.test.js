@@ -244,3 +244,48 @@ test('⭐ what a VISITOR sees states the number as it stands today', () => {
     + 'a derive run that has not been made — or the page is quoting a measurement, '
     + 'which belongs in data/measures.json with its n.');
 });
+
+/**
+ * ⛔⛔⛔ A QUANTITY MAY NOT BE SPLIT ACROSS A CONCATENATION BOUNDARY.
+ *
+ * THE BLIND SPOT THIS FILE HAD, found 2026-09-28 by reading a sentence rather
+ * than by any check. `printed.js` carried *"The boundary is also ours — 33 feet
+ * from the net and 22 from centre"*, both values typed while `rink.js` owned
+ * them. Every test above passed, and for two separate reasons:
+ *
+ *   - `22 from centre` carries no unit, which the header already declares out of
+ *     reach: *"a sentence stating a distance without saying it is one is out of
+ *     reach of any scanner that is not also a reader."* Declared, so it stands.
+ *   - `33 ` ended one string and `'feet from the net…'` began the next. The
+ *     quantity existed only in the CONCATENATION, which nothing here reassembles
+ *     — and that was never declared. An undeclared blind spot is the one that
+ *     misleads, because the file's silence reads as coverage.
+ *
+ * ⭐⭐ IT IS REFUSED RATHER THAN RECONSTRUCTED. Joining adjacent literals means
+ * parsing expressions, and a half-built joiner would report confidently about
+ * text it assembled wrongly — the defect `test/lib-closure.test.js` and the
+ * clock-sweep net both paid for. The rule instead is that prose must not put a
+ * number and its unit on opposite sides of a `+`. That is cheap to check, always
+ * decidable, and the fix at every call site is to move one space.
+ *
+ * ⚠️ IT DOES NOT CLAIM TO FIND EVERY SPLIT QUANTITY — only the split that hides
+ * one from the scanner above: a string ending in digits, immediately followed by
+ * a string opening with a length unit. A number split from a unit by an
+ * interpolation is a different shape and is not looked for.
+ */
+test('⛔⛔ no source string ends in a number whose unit begins the next one', () => {
+  /* MUTATION: restore `+ 'ours — 33 '` / `+ 'feet from the net…'` in printed.js
+     and this fires — which is exactly the pair that shipped and hid from every
+     other test in this file. */
+  const SPLIT = /(['"])([^'"\\]*?\d)\s*\1\s*\+\s*(['"])\s*(ft|feet|foot)\b/g;
+  const found = [];
+  for (const f of corpus()) {
+    for (const m of read(f).matchAll(SPLIT)) {
+      const line = read(f).slice(0, m.index).split('\n').length;
+      found.push(`${f}:${line} — "…${m[2].slice(-24)}" + "${m[4]}…"`);
+    }
+  }
+  assert.deepEqual(found, [], 'a number and its unit sit on opposite sides of a `+`, so the '
+    + 'quantity exists only in the concatenation and every scanner in this repo reads past it:\n  '
+    + found.join('\n  '));
+});

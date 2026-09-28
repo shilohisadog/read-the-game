@@ -109,13 +109,36 @@ const PRINTED = {
        + 'worth printing rather than arguing with. Nearly half of all located '
        + 'attempts are already taken from inside it, and the conversion gap '
        + 'survives that.',
+    /* ⛔⛔ THE TWO FIGURES CAME OUT OF THIS SENTENCE, 2026-09-28, rather than
+       being derived. It read *"the boundary is also ours — 33 feet from the net
+       and 22 from centre"*, both typed — and the shape is already stated in one
+       place: the slot layer's own `counts`, which interpolates both constants
+       and is printed on every surface this caveat reaches, the replay panel and
+       `how-we-measure.html`, where `data/layer-rules.json` carries it verbatim.
+       ⭐ **Deleting a second copy beats deriving a second copy.** Deriving would
+       have meant importing `rink.js` into this module, and this module is
+       inlined on `how-we-measure.html`, which does not carry it — 5.4KB gzipped
+       to restate a number the page already prints.
+
+       ⚠️ AND THE OLD SENTENCE WAS INVISIBLE TO ITS OWN GATE, TWICE OVER.
+       `test/prose-constants.test.js` anchors on the UNIT, so `22 from centre`
+       was out of reach by that file's own declared rule — and `33 ` ended one
+       concatenated string while `feet` began the next, so the quantity was split
+       across a boundary nothing in this repo reassembles. The second one was
+       undeclared, and is refused outright by that file now.
+
+       ⭐ THE CLAIM THE SENTENCE WAS FOR SURVIVES AND IS SHARPER. `33` and `22`
+       arrived in the initial commit and no file, doc or commit message says
+       where from; Doctrine §7 defends the KIND of definition, not these values.
+       So the sentence says CHOICE where it used to say numbers. */
     caveat: 'A blocked attempt is not in either count, and that is not '
           + 'tidiness: the coordinate the feed records for a block is where the '
           + 'puck was STOPPED, which is the blocker\u2019s position rather than '
           + 'the shooter\u2019s. Counting those would put attempts in the slot '
-          + 'that were taken from the point. The boundary is also ours — 33 '
-          + 'feet from the net and 22 from centre — drawn on coordinates a '
-          + 'person in the building recorded.' },
+          + 'that were taken from the point. And the boundary itself is ours: '
+          + 'the slot is a shape we chose and state, not one the rulebook draws '
+          + 'or the league publishes, applied to coordinates a person in the '
+          + 'building recorded.' },
   saves: {
     /* ⭐ THE ONE ENTRY HERE THAT IS NOT ON A STATIC PAGE. Every other figure in
        this table is printed in prose the builder substitutes; this one is

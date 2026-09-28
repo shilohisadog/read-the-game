@@ -391,7 +391,13 @@ test('⛔⛔ `How we counted` explains itself on the pre-game frame, before Play
 
   assert.ok(html.length > 200,
     `the panel is blank on the frame every replay opens in (${html.length} chars)`);
-  assert.match(html, /between the face-off dots/,
+  /* ⚠️ THE LAYER'S OWN WORDS, and they changed on 2026-09-28: this read
+     `/between the face-off dots/` until the slot's description stopped naming a
+     landmark it does not derive from. The assertion is about the panel carrying
+     the layer's `counts` at all, so it tracks that string rather than owning a
+     wording — but it is a literal, so it goes red on a reword and gets read,
+     which is the right cost for a check whose subject is prose. */
+  assert.match(html, /ft either side of the middle/,
     'the panel does not say what the layer counts, which is the half of it that has no playhead');
   assert.match(html, /Credited to/,
     'the panel does not say who the count is credited to');

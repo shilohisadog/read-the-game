@@ -66,7 +66,20 @@ export const danger = {
      reason the shading exists and is one link further on, from the card. Three
      measurements share the word slot and this is the one this layer is. */
   work: ['slotAttempts'],
-  counts: `attempts from within ${HIGH_DANGER_FT} ft of the net, between the face-off dots`,
+    /* ⛔⛔ THIS SAID `between the face-off dots` UNTIL 2026-09-28, and the dots do
+     not define this boundary — we do. `SLOT_HALF_WIDTH` is 22 in `rink.js` and
+     the end-zone dots are painted at |y| = 22 in `rinkart.js`, measured off
+     2,134 draws. Two literals that happen to agree, so the sentence was true by
+     coincidence: move the measured dot and the description of OUR rule goes
+     quietly false. ⭐ Kevin, 2026-09-28, on where 33 and 22 came from: *"I don't
+     remember if we made it up or borrowed it… either way, it's definitely not a
+     rule."* It is a POLICY — a declared choice — and a policy that describes
+     itself by someone else's landmark has stopped declaring anything.
+     ⭐ `why.js` already had the voice this now matches: *"within ±22 ft of the
+     middle … this is our own geometric rule, not a model and not anybody else's
+     statistic."* Both numbers interpolated, so `test/prose-constants.test.js`
+     can see them. */
+  counts: `attempts from within ${HIGH_DANGER_FT} ft of the net and ${SLOT_HALF_WIDTH} ft either side of the middle`,
   credits: 'Credited to the club that shot. Blocked attempts are excluded because the coordinate the feed records is where the puck stopped — so we know who shot it, but not from where.',
   id: 'slot',
   label: '＋ Shots from the slot',

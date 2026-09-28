@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-85ypLWuFU5uBTaMioVM9q0RyI/WDZYfJvTnsRKm+XUY=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig=' 'sha256-0bhpsWnzVu6NAX0uBc63E29t3q3jxrExtXCS/7jaJVQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-eCAjk0LTta8++Vg02gax9svEzG92fk5ZEpfft9/CFf8=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig=' 'sha256-0bhpsWnzVu6NAX0uBc63E29t3q3jxrExtXCS/7jaJVQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -755,7 +755,7 @@ depend on one of them link straight to it.</p>
 <p>A game page carries six layers you can turn on. Each one counts something different out of the same night, and each states its own rule beside the count while you watch. They are collected here so the rules can be read in one place &mdash; and each says which of the figures above it belongs to.</p>
 <div class="hmlay">
 <div><h3>Control (Corsi)</h3><p><b>Counts</b> every shot attempt the league recorded: on goal, missed, or blocked, because all three are the team moving the puck at the net.</p><p class="hmlc">A blocked attempt is credited to the club that shot it — the shot was still taken, it just never arrived.</p><p class="hmld">Counted across every game we hold: <a href="#m-attempts">Where a shot attempt ends</a></p></div>
-<div><h3>Shots from the slot</h3><p><b>Counts</b> attempts from within 33 ft of the net, between the face-off dots.</p><p class="hmlc">Credited to the club that shot. Blocked attempts are excluded because the coordinate the feed records is where the puck stopped — so we know who shot it, but not from where.</p><p class="hmld">Counted across every game we hold: <a href="#m-slotAttempts">How many shot attempts are taken from the slot</a></p></div>
+<div><h3>Shots from the slot</h3><p><b>Counts</b> attempts from within 33 ft of the net and 22 ft either side of the middle.</p><p class="hmlc">Credited to the club that shot. Blocked attempts are excluded because the coordinate the feed records is where the puck stopped — so we know who shot it, but not from where.</p><p class="hmld">Counted across every game we hold: <a href="#m-slotAttempts">How many shot attempts are taken from the slot</a></p></div>
 <div><h3>Blocked shots</h3><p><b>Counts</b> the attempts a body stopped before they reached the goalie.</p><p class="hmlc">Each block is credited to the club that made it, the way a broadcast does. A block by a teammate is credited to neither, so the two figures need not add up.</p><p class="hmld">Counted across every game we hold: <a href="#m-attempts">Where a shot attempt ends</a></p></div>
 <div><h3>Goaltending</h3><p><b>Counts</b> every shot each goaltender faced, and what became of it — saved, scored on, or missed the net.</p><p class="hmlc">Each goaltender is counted for the club he plays for, against the other club’s shots — so these two columns read the opposite way round.</p><p class="hmld">Counted across every game we hold: <a href="#m-saves">How often a goaltender makes the save</a></p></div>
 <div><h3>Why play stopped</h3><p><b>Counts</b> the rule that stopped play, and the dot it restarted on.</p><p class="hmlc">A stoppage names a rule and never a club, so nothing here is credited to either side.</p><p class="hmld">Counted across every game we hold: <a href="#m-penalties">How many penalties a team takes</a> &middot; <a href="#m-offside">How often a team is offside</a> &middot; <a href="#m-icing">How often a team ices the puck</a></p></div>
@@ -1865,13 +1865,36 @@ const PRINTED = {
        + 'worth printing rather than arguing with. Nearly half of all located '
        + 'attempts are already taken from inside it, and the conversion gap '
        + 'survives that.',
+    /* ⛔⛔ THE TWO FIGURES CAME OUT OF THIS SENTENCE, 2026-09-28, rather than
+       being derived. It read *"the boundary is also ours — 33 feet from the net
+       and 22 from centre"*, both typed — and the shape is already stated in one
+       place: the slot layer's own `counts`, which interpolates both constants
+       and is printed on every surface this caveat reaches, the replay panel and
+       `how-we-measure.html`, where `data/layer-rules.json` carries it verbatim.
+       ⭐ **Deleting a second copy beats deriving a second copy.** Deriving would
+       have meant importing `rink.js` into this module, and this module is
+       inlined on `how-we-measure.html`, which does not carry it — 5.4KB gzipped
+       to restate a number the page already prints.
+
+       ⚠️ AND THE OLD SENTENCE WAS INVISIBLE TO ITS OWN GATE, TWICE OVER.
+       `test/prose-constants.test.js` anchors on the UNIT, so `22 from centre`
+       was out of reach by that file's own declared rule — and `33 ` ended one
+       concatenated string while `feet` began the next, so the quantity was split
+       across a boundary nothing in this repo reassembles. The second one was
+       undeclared, and is refused outright by that file now.
+
+       ⭐ THE CLAIM THE SENTENCE WAS FOR SURVIVES AND IS SHARPER. `33` and `22`
+       arrived in the initial commit and no file, doc or commit message says
+       where from; Doctrine §7 defends the KIND of definition, not these values.
+       So the sentence says CHOICE where it used to say numbers. */
     caveat: 'A blocked attempt is not in either count, and that is not '
           + 'tidiness: the coordinate the feed records for a block is where the '
           + 'puck was STOPPED, which is the blocker\u2019s position rather than '
           + 'the shooter\u2019s. Counting those would put attempts in the slot '
-          + 'that were taken from the point. The boundary is also ours — 33 '
-          + 'feet from the net and 22 from centre — drawn on coordinates a '
-          + 'person in the building recorded.' },
+          + 'that were taken from the point. And the boundary itself is ours: '
+          + 'the slot is a shape we chose and state, not one the rulebook draws '
+          + 'or the league publishes, applied to coordinates a person in the '
+          + 'building recorded.' },
   saves: {
     /* ⭐ THE ONE ENTRY HERE THAT IS NOT ON A STATIC PAGE. Every other figure in
        this table is printed in prose the builder substitutes; this one is
