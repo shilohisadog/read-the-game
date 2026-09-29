@@ -39,6 +39,36 @@ export function readVerdict(html) {
   return m ? { booted: +m[1], hasTrack: +m[2], width: +m[3], pct: +m[4], count: +m[5], n: +m[6] } : null;
 }
 
+/**
+ * ⛔⛔⛔ THE PROBE READS THE SENTENCE, SO IT IS STATED ONCE AND TESTED IN GATES.
+ *
+ * This pattern lived as a literal inside the injected script — a template
+ * literal, running only in a browser, only in deploy — and on 2026-09-30 the
+ * verdict card started printing its figures with thousands separators. `(\d+)`
+ * then matched the tail of `1,608 of 1,234` as `608 of 1`, the probe computed
+ * 60800% of the track, and the deploy failed on a page that was working.
+ *
+ * ⚠️ AND THE TEST WRITTEN TO PREVENT EXACTLY THIS CHECKED THE OTHER HALF.
+ * `shell.test.js` asserts the probe does not key on the game line's copy,
+ * saying in its own message: *"if it keys on copy again, the next wording change
+ * fails the deploy on a working site."* It does key on copy, twelve lines below
+ * the line that test reads — a check whose claim is narrower than its message,
+ * which is this repo's most expensive recurring shape.
+ *
+ * ⭐ SO THE PATTERN IS A VALUE, interpolated into the page script rather than
+ * typed there, and `browser-checks.test.js` runs it against a sentence
+ * `sentence.js` actually produced. A wording change now goes red in the suite,
+ * where it costs a minute, instead of in the deploy, where it costs a release.
+ * Commas are optional in the pattern so it reads both the old form and the new.
+ */
+export const LOST_RE = /it lost ([\d,]+) of ([\d,]+)/;
+
+/** The two figures the sentence states, as numbers. */
+export const lostFrom = text => {
+  const m = LOST_RE.exec(text || '');
+  return m ? { count: +m[1].replace(/,/g, ''), n: +m[2].replace(/,/g, '') } : null;
+};
+
 /** Where the sentence says the dot belongs. */
 export const wantPct = (count, n) => (count / n) * 100;
 
@@ -76,7 +106,7 @@ setTimeout(function () {
     var sc = d.getElementById('scrub');
     if (sc) { sc.value = sc.max; sc.oninput({ target: { value: sc.value } }); }
     var tr = d.querySelector('#rg .vtrack'), pt = d.getElementById('vpt');
-    var m = (v && v.textContent || '').match(/it lost (\\d+) of (\\d+)/);
+    var m = (v && v.textContent || '').match(${LOST_RE});
     if (!booted || !tr || !pt || !m) { document.title = 'VERD ' + booted + ' 0 0 0 0 0'; return; }
     var a = tr.getBoundingClientRect(), b = pt.getBoundingClientRect();
     /* The CENTRE of the dot as a fraction of its track. \`.vpt\` is
@@ -84,7 +114,11 @@ setTimeout(function () {
        style.left back would only re-report what the script wrote, which is the
        number that was already green while the pixels were wrong. */
     var pct = a.width ? ((b.left + b.width / 2 - a.left) / a.width * 100) : -1;
-    document.title = 'VERD 1 1 ' + Math.round(a.width) + ' ' + pct.toFixed(1) + ' ' + m[1] + ' ' + m[2];
+    /* COMMAS STRIPPED BEFORE THE TITLE. The title is parsed back by readVerdict
+       with a digits-only pattern, so a comma there would break the outer read as
+       surely as it broke the inner one. One place strips, one place reads. */
+    document.title = 'VERD 1 1 ' + Math.round(a.width) + ' ' + pct.toFixed(1)
+      + ' ' + m[1].replace(/,/g, '') + ' ' + m[2].replace(/,/g, '');
   } catch (e) { document.title = 'VERD throw ' + e.message; }
 }, 6000);
 </script></body></html>`;

@@ -110,7 +110,8 @@ test('a cropped or sideways preview fails, and the canary must be rejected', () 
 });
 
 /* ----------------------------------------------------------- the verdict dot */
-import { judgeVerdict, judgeCanary, readVerdict, MIN_TRACK } from '../tools/browser/verdict-dot.mjs';
+import { judgeVerdict, judgeCanary, readVerdict, lostFrom, wantPct, MIN_TRACK } from '../tools/browser/verdict-dot.mjs';
+import { sentenceFor } from '../src/lib/sentence.js';
 
 test('⭐ the dot must land where the sentence says, and a collapsed track is the defect', () => {
   // "it lost 243 of 708" is 34.3% of the track.
@@ -132,6 +133,55 @@ test('the canary is the defect itself: an inline track must measure small, and m
   assert.equal(judgeCanary({ booted: 1, hasTrack: 1, width: 541, pct: 34, count: 1, n: 2 }).ok, false);
   assert.equal(judgeCanary({ booted: 0, hasTrack: 0, width: 0, pct: 0, count: 0, n: 0 }).ok, false);
   assert.equal(readVerdict('<title>VERD 1 1 541 34.3 243 708</title>').width, 541);
+});
+
+/**
+ * ⛔⛔⛔ THE PROBE READS THE VERDICT SENTENCE, AND NOTHING RAN ITS READER IN GATES.
+ *
+ * The pattern lived as a literal inside the injected page script — a template
+ * literal, executed only in a browser, only in deploy. On 2026-09-30 the card
+ * started printing its figures with thousands separators; `(\d+)` matched the
+ * tail of `1,608 of 1,234` as `608 of 1`, the probe computed 60800% of the
+ * track, and the deploy failed on a page that was working. The suite was green.
+ *
+ * ⚠️ AND THE TEST WRITTEN FOR THIS CHECKED THE OTHER HALF. `shell.test.js` asserts
+ * the probe does not key on the game line's copy, and says so in its message:
+ * *"if it keys on copy again, the next wording change fails the deploy on a
+ * working site."* It did key on copy, twelve lines further down the same
+ * function. A check whose claim is narrower than its message.
+ *
+ * ⭐⭐ NOT CIRCULAR: the left-hand side is `sentence.js` composing a real verdict,
+ * the right-hand side is the probe's own pattern. Neither is derived from the
+ * other, so a wording change on either side moves one of them and not both.
+ *
+ * MUTATION: drop the comma class from `LOST_RE` and the separated form returns
+ * `608 of 1` — the exact figures that failed the deploy.
+ */
+test('⛔⛔ the probe can read the sentence the page actually writes', () => {
+  const HOME = 10, AWAY = 20;
+  const said = sentenceFor({
+    homeAb: 'BUF', awayAb: 'MIN', homeId: HOME, awayId: AWAY, gameId: 2023020204,
+    attempts: { [HOME]: 55, [AWAY]: 47 }, levelCounts: { [HOME]: 30, [AWAY]: 18 },
+    diff: 12, score: { h: 2, a: 3 },
+    /* FOUR DIGITS EITHER SIDE, because the separator only appears past a
+       thousand and a three-figure fixture would pass with the old pattern. The
+       archive's own curve rows are this size. */
+    curve: [{ k: 12, n: 3386, count: 1334 }],
+  });
+  assert.ok(said.rate, 'the fixture produced no rate sentence, so this test has no subject');
+
+  const got = lostFrom(said.rate);
+  assert.deepEqual(got, { count: 1334, n: 3386 },
+    `the deploy probe cannot read the sentence the card writes: ${JSON.stringify(said.rate)}`);
+
+  /* ⭐ AND THE PLACE IT PUTS THE DOT, because reading two numbers is only half of
+     it — a reader that swapped them would still parse. */
+  assert.equal(wantPct(got.count, got.n).toFixed(1), (1334 / 3386 * 100).toFixed(1),
+    'the probe would place the dot somewhere the sentence does not say');
+
+  /* THE OLDER, SEPARATOR-FREE FORM STILL READS, so this is a widening and not a
+     swap — pages deployed before today are still measurable by the same probe. */
+  assert.deepEqual(lostFrom('..., it lost 243 of 708.'), { count: 243, n: 708 });
 });
 
 /* ------------------------------------------------- a visitor can watch a game */
