@@ -458,8 +458,13 @@ export function bundle(globals, src = SCRIPT, give = 'boot') {
  * ones that must not also toggle it.
  */
 export function frameOf(a) {
-  const NOT = /const SKIP=new Set\(Object\.keys\(NOT_A_PLAY\)\)/;
-  assert.match(app, NOT, 'the page no longer derives its playable set from NOT_A_PLAY');
+  /* ⭐ THE PAGE STILL TAKES ITS TIMELINE FROM layer.js, which is what makes
+     scrubbing for the frame a search of the SAME timeline the page draws. The
+     spelling changed on 2026-09-30 — a set built from `NOT_A_PLAY` became the
+     module's own `framed` predicate, because the final horn is not a play AND
+     does get a frame — and the property this guards did not. */
+  const NOT = /if\(framed\(e\)\)\{EV\.push\(e\)/;
+  assert.match(app, NOT, 'the page no longer takes its playable set from layer.js');
   const scrub = a.$('scrub');
   for (let k = 0; k <= +scrub.max; k++) {
     scrub.value = String(k); scrub.oninput({ target: { value: scrub.value } });
@@ -576,7 +581,7 @@ export function boot(game, rates, search = '', store = null) {
      #scrub because it was the only handle on the playhead.
 
      THE TIMELINE IS THE LIBRARY'S, NOT A COPY. `playable()` in src/lib/layer.js
-     is the rule app.js applies (`SKIP` over `NOT_A_PLAY`), and the length is
+     is the rule app.js applies (`framed`, asked per event), and the length is
      checked against the page's own scrubber, so a harness that drifted from the
      page fails here rather than handing a test the wrong event.
      `every`, `at` and `sweep` pass `{ k, ev, n }` as the second argument; a read

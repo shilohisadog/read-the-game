@@ -189,8 +189,13 @@ export function sentenceFor(o) {
   }
   return {
     lead,
+    /* ⛔ THE FIGURES CARRY THEIR SEPARATORS, because this sentence sits on the same
+       card as a per-game comparison that already did — `it lost 1334 of 3386`
+       beside `the middle half of the 1,394 games`. Kevin ruled the comma form on
+       2026-09-30. `level` is deliberately bare: it is a lead of 2 or 5, never a
+       figure in the thousands, and a comma there would be noise. */
     rate: `Of the games where a team led that count by ${level} or more, it lost `
-        + `${row.count} of ${row.n}.`,
+        + `${row.count.toLocaleString()} of ${row.n.toLocaleString()}.`,
     absent: null,
     // THE ROW THAT PRODUCED THE SENTENCE, handed back rather than looked up
     // again by the caller. The game page draws this rate as well as saying it,

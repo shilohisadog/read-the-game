@@ -17,7 +17,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { boot, rich, PAGE_CSS, HERO_GAME } from './helpers/page.js';
-import { NOT_A_PLAY } from '../src/lib/layer.js';
+import { NOT_A_PLAY, framed } from '../src/lib/layer.js';
 
 const derive = readFileSync(new URL('../builders/derive.py', import.meta.url), 'utf8');
 const appjs = readFileSync(new URL('../src/app.js', import.meta.url), 'utf8');
@@ -39,7 +39,7 @@ const same = (a, b) => a.size === b.size && [...a].every(x => b.has(x));
  * app which frame the goal was on and then checked the app stopped there, it
  * would be a mirror: the two sides would move together.
  */
-const playable = g => g.events.filter(e => e.pt !== 'SO' && !NOT_A_PLAY[e.type]);
+const playable = g => g.events.filter(e => e.pt !== 'SO' && framed(e));
 
 test('the builder and the renderer agree on what a play is', () => {
   // derive.py decides which games can be heroes by counting plays.
@@ -63,7 +63,13 @@ test('the builder and the renderer agree on what a play is', () => {
      literal form, and a scan that cannot tell code from a mention of code is not
      a check about code. */
   const code = appjs.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '');
-  assert.match(code, /const SKIP=new Set\(Object\.keys\(NOT_A_PLAY\)\)/,
+  /* ⏹ AND THE DERIVATION MOVED UP A LEVEL ON 2026-09-30. app.js builds no set at
+     all now: it asks `framed`, layer.js's own predicate, because *is this a
+     play* and *does this get a frame* stopped having the same answer at the
+     final horn. The property pinned here is unchanged — no private copy of the
+     vocabulary in the renderer — and it is pinned one step harder, because a
+     predicate cannot be half-restated the way a set can. */
+  assert.match(code, /if\(framed\(e\)\)\{EV\.push\(e\)/,
     'the renderer states the not-a-play set itself again instead of deriving it');
   assert.doesNotMatch(code, /const SKIP=new Set\(\[/,
     'a literal not-a-play set is back in the renderer');

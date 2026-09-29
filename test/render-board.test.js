@@ -442,7 +442,16 @@ test('a shootout attempt NEVER becomes a mark on the ice', () => {
   const pucks = a.every(d => d.$('puck').innerHTML);
   for (let k = last - added + 1; k <= last; k++)
     assert.equal(pucks[k], '', `the puck jumped to a shootout coordinate at frame ${k}`);
-  assert.ok(pucks[last - added] !== '', 'and the puck is still drawn for real play');
+  /* ⛔ AND THE CONTROL FRAME IS FOUND, NOT COUNTED BACKWARDS. It used to be
+     `last - added` — the slot immediately before the appended block — which was
+     the last regulation play until 2026-09-30, when the final horn became a
+     frame of its own and slid into that position. The horn draws no puck, which
+     is correct, so a positional control turned a passing check into a failing
+     one without anything about the shootout changing. The claim was always *a
+     real play still draws a puck*; it now asks for one. */
+  const real = pucks.findLastIndex((html, k) => k < last - added + 1 && html !== '');
+  assert.ok(real >= 0, 'no frame in this fixture draws a puck at all, so the control is vacuous');
+  assert.ok(pucks[real] !== '', 'and the puck is still drawn for real play');
 
   // AND THE ICE SAYS SO, rather than going quietly blank. Removing the marks
   // without a word would leave the replay ending level while the scoreboard

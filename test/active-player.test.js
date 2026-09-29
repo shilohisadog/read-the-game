@@ -249,12 +249,22 @@ test('⭐ the sentence resolves on every frame the replay shows, or says the eve
      offending club on an icing restart, this line had to stop naming the face-off
      winner — it failed the opposite-clubs rule below on three frames. Kevin ruled
      the ice back to the face-off (a mark asserts a place; an icing has none), so
-     the line narrates the draw again and the count is two. */
+     the line narrates the draw again and the count is two.
+
+     ⭐ A THIRD ARRIVED ON 2026-09-30 AND IS THE SECOND ONE'S RULE APPLIED AGAIN.
+     The final horn became a frame (`layer.js::STILL_A_FRAME`), and `ATTRIBUTION`
+     has no `game-end` and neither does `LAB` — so this line would have fallen
+     through to the fallback and printed a lowercase "game end" beneath a pill
+     already saying Final, a clock reading 00:00 and a board carrying the score.
+     Blank for the same stated reason as a goal: the name is already on screen. */
   const say = fnSrc('sayWho');
   const blanks = say.match(/innerHTML=''/g) || [];
-  assert.equal(blanks.length, 2,
-    `${blanks.length} branches of sayWho render an empty line. There are exactly two: `
-    + 'the pre-game frame, and a frame whose name the caption pill already carries');
+  assert.equal(blanks.length, 3,
+    `${blanks.length} branches of sayWho render an empty line. There are exactly three: `
+    + 'the pre-game frame, the final horn, and a frame whose name the caption pill '
+    + 'already carries');
+  assert.match(say, /if\(e\.type==='game-end'\)\{w\.innerHTML=''/,
+    'the horn is no longer one of the empty ones');
   assert.match(say, /if\(!e\)\{w\.innerHTML=''/,
     'the pre-game branch is no longer one of the empty ones');
   /* ⭐ THE SUPPRESSED BRANCH GAINED A CONDITION ON 2026-09-08 AND STAYED BLANK.

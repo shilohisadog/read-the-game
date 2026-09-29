@@ -27,7 +27,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { zonestart } from '../src/lib/layers/zonestart.js';
 import { attackZone } from '../src/lib/rink.js';
-import { boot, pickLayer, PAGE_CSS } from './helpers/page.js';
+import { boot, pickLayer, rich, PAGE_CSS } from './helpers/page.js';
+const MEASURES = JSON.parse(readFileSync(new URL('../data/measures.json', import.meta.url), 'utf8'));
 import { colourOf } from '../src/lib/teams.js';
 
 const APP_JS = readFileSync(new URL('../src/app.js', import.meta.url), 'utf8');
@@ -234,18 +235,23 @@ test('every zone-start ring shows its count, and a single draw shows a 1', () =>
  * naming a mark nothing paints.
  */
 test('the zone-start copy no longer teaches the convention that was removed', () => {
-  /* ⚠️ THE COPY STRING, NOT THE FILE — and the first version of this test got that
-     wrong in the way this repo keeps re-learning. Scanning all of `app.js` for the
-     phrase turned red on the COMMENT above `drawZoneStarts`, which quotes it to
-     explain why it went. A check that cannot tell code from the words about the
-     code is not a check about code; `layer-copy.test.js` reads the layer's copy
-     the same way, by pulling the string out first. */
-  const copy = /\bzonestart:'((?:[^'\\]|\\.)*)'/.exec(APP_JS);
-  assert.ok(copy, 'the zone-start copy is gone, so this check has lost its subject');
-  assert.doesNotMatch(copy[1], /no number means one/i,
+  /* ⚠️ THE RENDERED SENTENCE, NOT THE FILE — and this test has now been wrong in
+     BOTH available directions. It began by scanning all of `app.js` for the
+     phrase and turned red on the COMMENT above `drawZoneStarts`, which quotes it
+     to explain why it went; a check that cannot tell code from the words about
+     the code is not a check about code. The fix then pulled one quoted string
+     out of the source, which held until 2026-09-30, when the copy stopped being
+     a quoted string at all: its archive figures are computed from `census` now,
+     so there is no literal left to grep. Driving the page answers the question
+     the test is actually asking — what does a reader see — and is immune to both. */
+  const a = boot(rich, MEASURES);
+  pickLayer(a, 'zonestart');
+  const copy = String(a.$('lcap').innerHTML).replace(/<[^>]+>/g, '');
+  assert.ok(copy.length > 200, 'the zone-start copy is gone, so this check has lost its subject');
+  assert.doesNotMatch(copy, /no number means one/i,
     'the help text still says an absent number means one draw, and every ring now '
     + 'carries its count');
-  assert.match(copy[1], /number inside it is how many draws/,
+  assert.match(copy, /number inside it is how many draws/,
     'the copy stopped explaining what the number on a ring is');
 });
 

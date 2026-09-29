@@ -27,6 +27,8 @@ import { readFileSync } from 'node:fs';
 import { methods, keysOf, anchorOf, anchorFor, explains, EXPLAINED, EXPLAINED_ROWS,
          printed, PRINTED_KEYS, PRINTED } from '../src/lib/methods.js';
 import { CLUB_ROWS, leagueRows } from '../src/lib/preview.js';
+import { leagueFigures } from '../src/lib/derivation.js';
+import { sections } from '../src/lib/sections.js';
 
 /* ------------------------------------------------------------------ FIXTURE */
 
@@ -680,6 +682,49 @@ test('⛔⛔⛔ the arithmetic printed beside a figure is the arithmetic that ma
       }
     }
   }
+});
+
+test('⛔⛔⛔ and the OTHER kind of figure prints a division that comes out', () => {
+  /* ⭐ THE TEST ABOVE CHECKS THE PUBLISHED FIELDS; THIS CHECKS THE RENDERED LINE.
+     Those are different claims, and the gap between them shipped: `workRow`
+     printed `241,126 ÷ 500,720 = 48.2 of every 100 attempts reached the goalie`
+     from fields that were all correct. The division is 0.482. Every check in
+     this file passed, because none of them read the sentence a person reads.
+
+     Kevin found it on the Attempts door, 2026-09-30 — on the panel whose whole
+     purpose is to let someone check our work.
+
+     ⭐⭐ THE ARITHMETIC IS DONE FROM THE PRINTED TEXT, not from the model behind
+     it. The numerator, the denominator and the result are parsed back out of the
+     rendered string and divided, so this cannot be satisfied by a renderer that
+     is internally consistent and puts a false sum on the page.
+
+     MUTATION: drop the `figScaled` branch in `workRow` and the two share figures
+     fire with the quotient they should have printed. */
+  const mk = t => ({ tag: t, className: '', textContent: '', href: null, _kids: [],
+                     appendChild(n) { this._kids.push(n); } });
+  const txt = n => (n.textContent || '') + n._kids.map(txt).join('');
+  const S = sections(mk);
+  const live = JSON.parse(readFileSync(new URL('../data/measures.json', import.meta.url), 'utf8'));
+
+  let checked = 0;
+  for (const r of leagueFigures(live)) {
+    const sec = S.figureSection(r, null, {});
+    const line = sec._kids.find(k => k.className === 'hmwork');
+    if (!line) continue;
+    const said = txt(line);
+    const m = /^([\d,]+) ÷ ([\d,.]+) = (-?[\d.]+)/.exec(said);
+    if (!m) continue;                       // a median says so instead; see workRow
+    checked++;
+    const num = Number(m[1].replace(/,/g, '')), den = Number(m[2].replace(/,/g, ''));
+    const shown = Number(m[3]);
+    const got = num / den;
+    assert.ok(Math.abs(got - shown) < Math.max(0.0006, Math.abs(got) * 0.005),
+      `${r.anchor}: the page prints "${said.trim()}" — but ${num} ÷ ${den} is `
+      + `${got.toFixed(4)}, not ${shown}`);
+  }
+  assert.ok(checked >= 5,
+    `only ${checked} rendered division(s) were checked — this test is not reaching the figures`);
 });
 
 test('⛔⛔ the paths are checked against the REAL published document, not the fixture', () => {

@@ -30,6 +30,7 @@ const ask = (e, on = {}) => announcement(e, {
 const ev = type => ({ type });
 
 test('⭐ each condition alone produces its own announcement', () => {
+  assert.equal(ask(ev('game-end')), 'final');
   assert.equal(ask(ev('goal')), 'goal');
   assert.equal(ask(ev('penalty')), 'penalty');
   assert.equal(ask(ev('faceoff'), { icing: true }), 'icing');
@@ -56,10 +57,11 @@ test('⭐⭐ the whole order, pair by pair, including collisions no game has giv
      to run. Asserted as a LADDER rather than fifteen hand-written cases, so a
      rank inserted in the middle is checked against everything on both sides
      rather than against whichever neighbours somebody remembered. */
-  const flag = { goal: null, penalty: null, icing: 'icing', offside: 'offside',
-                 kill: 'kill', slot: 'slot' };
-  const type = { goal: 'goal', penalty: 'penalty', icing: 'faceoff',
-                 offside: 'faceoff', kill: 'hit', slot: 'shot-on-goal' };
+  const flag = { final: null, goal: null, penalty: null, icing: 'icing',
+                 offside: 'offside', kill: 'kill', slot: 'slot' };
+  const type = { final: 'game-end', goal: 'goal', penalty: 'penalty',
+                 icing: 'faceoff', offside: 'faceoff', kill: 'hit',
+                 slot: 'shot-on-goal' };
 
   for (let hi = 0; hi < ANNOUNCEMENTS.length; hi++)
     for (let lo = hi + 1; lo < ANNOUNCEMENTS.length; lo++) {
@@ -86,8 +88,13 @@ test('⭐⭐ …and the ladder is proven to be an ORDER, not six independent tes
      sweep is a mirror of `ANNOUNCEMENTS` and asserts nothing about hockey. This
      is the order as argued, written out, so changing it is a deliberate edit to
      a stated claim rather than a reordering nothing notices. */
+  /* ⭐ `final` WAS INSERTED AT THE TOP ON 2026-09-30, when the horn became a frame
+     (`layer.js::STILL_A_FRAME`). The rank it had to beat was `kill`, and that
+     pair is a real collision rather than a hypothetical: `sayAt` indexes the
+     whole event list, so a penalty expiring at 00:00 lands "Penalty killed" on
+     the horn. The sweep above now checks it against every rank below it. */
   assert.deepEqual(ANNOUNCEMENTS,
-    ['goal', 'penalty', 'icing', 'offside', 'kill', 'slot'],
+    ['final', 'goal', 'penalty', 'icing', 'offside', 'kill', 'slot'],
     'the precedence order changed — the argument for it is in announce.js and '
     + 'moving a rank means amending that argument, not this list');
 });

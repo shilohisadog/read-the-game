@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-p/eIv56YovUSFjjFsw4CYGFA8byAyKTR/nXoXzoPDR0=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-hdmkx4spNMqW2vdB8R5JVRtlYMOegPJCT8OeQko3FiQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-rqiIulXuWb1qc974CZAujg1glC+Vn1ZIDQu3oMeOVfQ=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-hdmkx4spNMqW2vdB8R5JVRtlYMOegPJCT8OeQko3FiQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -3604,8 +3604,42 @@ const NOT_AN_ATTEMPT = {
  * has no symptom at all" defect learn-doors.mjs was written to prevent.
  *
  * Which events are not plays is one rule. It lives here, beside the reasons.
+ *
+ * ⭐⭐ AND IT IS NOT THE SAME QUESTION AS *does this get a frame*, which is where
+ * the final horn comes apart from the rest. Both questions were answered by one
+ * list until 2026-09-30, and for four of the five types the answers agree: a
+ * stoppage, a period boundary and a delayed-penalty signal are neither plays nor
+ * moments a viewer needs to stand on. The horn is not a play AND is the moment
+ * the game ends — so filtering it off the timeline left a replay that stopped on
+ * whatever shot happened to be last, with 28 seconds still on the clock in the
+ * game this was found on, and nothing anywhere saying that was the end of it.
+ *
+ * Kevin, 2026-09-30: *"we don't have an event at the end of the game... when the
+ * scrubber is moved all the way to the right we should consider the game
+ * complete."* The league records one — `game-end`, last of 343 events in that
+ * game, `rem 00:00` — and we were the ones dropping it.
+ *
+ * ⚠️ THAT IT IS THE LAST EVENT IS MEASURED, NOT ASSUMED, AND NOTHING HERE RELIES
+ * ON IT. Across a random 120 of the 2025-26 archive, 13 of them decided in a
+ * shootout, every game carries exactly one `game-end` and it is the last event
+ * every time — the horn sits after the shootout, not before it. So the last
+ * frame IS the horn today. The two claims are still kept apart on purpose: the
+ * `ended` class asks *is the playhead at the last frame* and the caption asks
+ * *is this event the horn*. If the feed ever ordered one differently the page
+ * degrades into saying two true things on two frames, rather than one wrong
+ * thing on one.
+ *
+ * ⚠️ IT COSTS NO COUNT, AND THAT IS CHECKABLE RATHER THAN ASSUMED. The reducers
+ * read the whole event list and exclude by `NOT_A_PLAY`, which still holds the
+ * horn and still gives its reason; only the TIMELINE changed. So every layer
+ * count is identical and the exclusion ledger gains a row that says why.
  */
-const playable = events => events.filter(e => !(e.type in NOT_A_PLAY));
+const STILL_A_FRAME = { 'game-end': 'the final horn' };
+
+/** Does this event get a frame of its own on the timeline? */
+const framed = e => !(e.type in NOT_A_PLAY) || (e.type in STILL_A_FRAME);
+
+const playable = events => events.filter(framed);
 
 const NOT_A_PLAY = {
   'period-start': 'period start — not a play',
@@ -6147,7 +6181,7 @@ function goalieCards(goalies, roster, stats, { AID, AAB, HAB, mode }) {
  */
 
 /** Every answer this can give, in rank order. `null` is a frame that says nothing. */
-const ANNOUNCEMENTS = ['goal', 'penalty', 'icing', 'offside', 'kill', 'slot'];
+const ANNOUNCEMENTS = ['final', 'goal', 'penalty', 'icing', 'offside', 'kill', 'slot'];
 
 /**
  * The single claim `e` announces, or null.
@@ -6175,6 +6209,22 @@ const ANNOUNCEMENTS = ['goal', 'penalty', 'icing', 'offside', 'kill', 'slot'];
 function announcement(e, { isIcing, isOffside, isKill, isSlot, slotOn }) {
   if (!e) return null;
 
+  /* 0 — THE FINAL HORN, which is the one frame on the timeline that is not a
+     play at all. `layer.js::STILL_A_FRAME` argues why it gets a frame; this
+     argues why it gets the sentence on that frame.
+
+     ⚠️ IT OUTRANKS THE KILL FOR A REASON THAT IS NOT MERELY RANK, and the
+     collision is real rather than decorative. `sayAt` indexes the whole event
+     list, so a penalty that runs out at 00:00 puts "🛡 Penalty killed" on the
+     horn — and it did not have to be considered before, because the horn was
+     not a frame and the sentence had nowhere to land. A power play expiring
+     BECAUSE the game ended is not a kill in any sense a viewer means, so this is
+     the more true claim as well as the larger one.
+
+     It cannot collide with a goal or a penalty: those are event types, and this
+     frame's type is `game-end`. Placing it first is legibility, not arbitration. */
+  if (e.type === 'game-end') return 'final';
+
   /* 1 — A GOAL. The largest thing that can happen, and the only event that
      changes the number the whole page is organised around. */
   if (e.type === 'goal') return 'goal';
@@ -6197,7 +6247,7 @@ function announcement(e, { isIcing, isOffside, isKill, isSlot, slotOn }) {
      THE PILL ALREADY CARRIES THE CONDITION. A power play ending turns the
      scoreboard badge dark, on screen, at that frame — so the kill caption
      AMPLIFIES a signal the page already gives. An icing or an offside has no
-     other surface at all: the stoppage is not even a frame (`SKIP` drops it), so
+     other surface at all: the stoppage is not even a frame (`framed` drops it), so
      the restart is the only place the rule can ever be named. Given one pill and
      two facts, it goes to the fact with nowhere else to go.
 
@@ -8357,8 +8407,13 @@ function sentenceFor(o) {
   }
   return {
     lead,
+    /* ⛔ THE FIGURES CARRY THEIR SEPARATORS, because this sentence sits on the same
+       card as a per-game comparison that already did — `it lost 1334 of 3386`
+       beside `the middle half of the 1,394 games`. Kevin ruled the comma form on
+       2026-09-30. `level` is deliberately bare: it is a lead of 2 or 5, never a
+       figure in the thousands, and a comma there would be noise. */
     rate: `Of the games where a team led that count by ${level} or more, it lost `
-        + `${row.count} of ${row.n}.`,
+        + `${row.count.toLocaleString()} of ${row.n.toLocaleString()}.`,
     absent: null,
     // THE ROW THAT PRODUCED THE SENTENCE, handed back rather than looked up
     // again by the caller. The game page draws this rate as well as saying it,
@@ -9162,14 +9217,62 @@ const DERIVATION = {
     label: 'Where a shot attempt ends',
     count: 'attempts of each ending \u2014 reached the goalie, blocked, missed',
     of: 'every shot attempt in the archive',
-    why: 'This is the one figure here that is a clean split of a whole, so it is '
-       + 'the one that can honestly be drawn as a single bar. It also frames the '
-       + 'possession number above: about half of all attempts never reach the '
-       + 'goalie at all.',
-    caveat: 'Whether an attempt "missed" rather than "was saved" is a person in '
-          + 'the arena making a call. We measured how much that judgement varies '
-          + 'from building to building, and it is why no number we show beside a '
-          + 'team is built on it.' },
+    /* ⛔⛔ THIS PROSE NAMED TWO THINGS THAT ARE NOT THERE, and they were not there
+       on EITHER surface. It promised a single bar — nothing draws one, here or on
+       the methods page — and it pointed at "the possession number above", where
+       what sits above is how often a team ices the puck. Kevin, 2026-09-30,
+       reading the Attempts door: *"there is no 'possession number'."*
+
+       ⭐ IT WAS WRITTEN FOR A NEIGHBOUR IT NO LONGER HAS. A `why` travels with its
+       figure to every surface that draws it, so a sentence about what is beside it
+       is a sentence that is true in at most one place. This one says only what is
+       true of the figure itself, wherever it is read.
+
+       ⚠️ AND IT CANNOT GO STALE. It used to state the share in words — "about half"
+       — beside a number published weekly, so a feed that moved to 60% would have
+       left the prose quietly wrong. It now describes THE REST of the split, which
+       is whatever the printed figure is not. */
+    /* ⛔⛔⛔ AND THE FIRST REWRITE OVER-CLAIMED IN THE OTHER DIRECTION. It said an
+       attempt "ends in exactly one of three ways: it reaches the goalie, a
+       DEFENDER blocks it, or it misses the net" — a taxonomy of the ICE, and
+       false. Kevin, 2026-09-30: *"the shot could be deflected by a teammate, the
+       shot could hit a teammate too, there are (at least) 5 ways a shot attempt
+       could end."* Right, and the tell was already in the document: the archive's
+       own published description of that bucket reads *blocked by a BODY*, which
+       is the hedge my sentence removed.
+
+       ⭐ WHAT IS TRUE IS A FACT ABOUT THE RECORD, AND IT IS ALREADY GATED. Every
+       attempt carries exactly one of the four recorded types and they sum to the
+       denominator — `test/measure.test.js`, *the archive shares are of ATTEMPTS*,
+       asserts both halves against the producer, so it holds for any archive and
+       not merely for this week's. That is the property this sentence rests on,
+       and it survives the ice being messier than three words. The numbers are
+       deliberately NOT quoted here: a sum typed into a comment beside a document
+       rewritten every Monday is a claim with a half-life.
+
+       ⏹ AND THE MESSINESS MOVED TO THE CAVEAT, which is the section that asks
+       what could be wrong with it — rather than being answered by a `why` that
+       simply did not mention it. */
+    why: 'Every attempt in the archive is filed as ending one of three ways \u2014 it '
+       + 'reached the goaltender, a body blocked it, or it missed the net \u2014 and '
+       + 'the three account for all of them with none left over. That is what '
+       + 'makes the figure above readable on its own: an attempt it does not '
+       + 'count is one the goaltender never had to face.',
+    /* ⛔ AND THE CAVEAT SPOKE TO THE WRONG READER. Kevin: *"this sentence doesn't
+       really talk to our audience \u2014 even though it's geared toward the
+       #fancystats crowd, it still needs to be understandable by all."* It leaned
+       on two scorer's categories in quotation marks, named the person only as
+       "a person in the arena", and closed on house vocabulary. Same three claims,
+       said the way you would say them out loud: it is a human call, we measured
+       how far apart the rinks are, and that measurement constrains what we are
+       willing to publish. */
+    caveat: 'Three headings are coarser than what happens on the ice \u2014 a puck '
+          + 'deflected off a teammate still has to be filed under one of them \u2014 '
+          + 'and somebody in the arena decides which. Whether a shot that did not '
+          + 'go in was stopped by the goaltender or simply missed the net is that '
+          + 'person\u2019s call, and rinks do not all make it the same way. We '
+          + 'measured how far apart they are, which is why we never put a number '
+          + 'beside a club when that judgement is what the number rests on.' },
   shift: {
     unit: 'seconds',
     label: 'How long a shift lasts',
@@ -9338,8 +9441,23 @@ function readLine(l) {
     print as 76.5. */
 function figFmt(v) {
   if (v == null) return '\u2014';
-  return Number.isInteger(v) ? String(v) : (v < 1 ? (v * 100).toFixed(1) : v.toFixed(2));
+  return figScaled(v) ? (v * 100).toFixed(1)
+       : Number.isInteger(v) ? String(v) : v.toFixed(2);
 }
+
+/**
+ * ⭐ DOES `figFmt` MULTIPLY THIS BY 100 TO PRINT IT? Asked rather than re-derived,
+ * because the answer changes what an equals sign is allowed to claim: a caller
+ * writing "241,126 ÷ 500,720 = 48.2" has put a division on the page that does not
+ * come out — see `workRow`. Two statements of the same condition is how the line
+ * and the figure would come to disagree about which one is scaled.
+ */
+const figScaled = v => v != null && !Number.isInteger(v) && v < 1;
+
+/** The quotient as a reader checking the division would get it, agreeing to the
+    last digit with the scaled figure printed beside it — derived FROM that
+    figure, so the two cannot round apart. */
+const figQuotient = v => (Number(figFmt(v)) / 100).toFixed(3);
 
 /**
  * THE RENDERERS, BOUND TO A WAY OF MAKING AN ELEMENT.
@@ -9516,8 +9634,28 @@ function sections(create) {
     const w = m.work;
     if (!w || w.value == null) return null;
     const p = mk('p', 'hmwork');
+    /* ⛔⛔ THE EQUALS SIGN HAS TO BE TRUE, and for two of these figures it was not.
+       Kevin, 2026-09-30, reading the Attempts door: `241,126 ÷ 500,720 = 48.2 of
+       every 100 attempts reached the goalie`. That division is 0.482. On a site
+       whose whole pitch is CHECK OUR WORK, the one reader who actually does the
+       arithmetic gets a different number than the one after the sign — and this
+       is the panel they opened to see the work.
+
+       ⭐ SO THE QUOTIENT IS SHOWN, THEN THE FIGURE THE UNIT IS ABOUT. Both are
+       said because both are wanted: the division is what makes the line
+       checkable, and `48.2 of every 100` is what a person can hold. The scaled
+       figure keeps the bold, because it is the one the sentence after it names.
+       `figQuotient` is derived from the printed figure rather than from the raw
+       value, so the two sides cannot round apart on a reader who checks them.
+
+       ⚠️ ONLY WHERE `figFmt` SCALED — asked of `figScaled`, not re-tested here.
+       Two of the seven league figures are shares (`m-attempts`, `m-powerplay`);
+       the rest are already true quotients and gain nothing from a second copy of
+       themselves. It is the same two-shapes argument `readLine` makes one screen
+       up, one rounding rule further in. */
     if (w.count != null) {
-      p.appendChild(mk('span', null, commas(w.count) + ' \u00f7 ' + commas(w.n) + ' = '));
+      p.appendChild(mk('span', null, commas(w.count) + ' \u00f7 ' + commas(w.n) + ' = '
+        + (figScaled(w.value) ? figQuotient(w.value) + ' \u2014 ' : '')));
     }
     p.appendChild(mk('b', null, figFmt(w.value)));
     /* ⛔ A MEDIAN HAS NO NUMERATOR, so it says what it is instead of pretending
@@ -10410,12 +10548,14 @@ const officialGlyph=(gx,col,fill,cls='of')=>{
 // nothing, and the sentence then says the comparison is missing -- which is true
 // of a page that makes no requests at all.
 const R=G.roster, HID=G.teams.home.id, AID=G.teams.away.id, HAB=G.teams.home.ab, AAB=G.teams.away.ab;
-// ⭐ DERIVED FROM `NOT_A_PLAY`, NOT TYPED AGAIN. This was five string literals
-// stating a second time what layer.js already states beside its reasons; the
-// two agreed by luck, and a THIRD implicit copy in learn-doors.mjs did not.
-const SKIP=new Set(Object.keys(NOT_A_PLAY));
+// ⭐ ASKED OF layer.js, NOT TYPED AGAIN. This was five string literals stating a
+// second time what layer.js already states beside its reasons; the two agreed by
+// luck, and a THIRD implicit copy in learn-doors.mjs did not. It is now a
+// PREDICATE rather than a set, because the question the timeline asks and the
+// question the layers ask stopped having the same answer at the final horn —
+// `framed` is where that difference is argued.
 const EV=[],EVI=[];
-G.events.forEach((e,n)=>{if(!SKIP.has(e.type)){EV.push(e);EVI.push(n);}});
+G.events.forEach((e,n)=>{if(framed(e)){EV.push(e);EVI.push(n);}});
 // The timeline is the playable events; the LEDGER is the whole game. Layers get
 // every event so the 51 non-plays are excluded with reasons instead of vanishing.
 const upto=k=>k<0?[]:G.events.slice(0,EVI[k]+1);
@@ -10567,7 +10707,7 @@ const PBOX=stints(G.events,CTX);
 const ENDED=new Map(powerPlayOver(EV,PBOX,CTX).map(k=>[EV[k.sayAt],k]));
 /* ⭐ AND THE RESTART EACH ICING FORCES. Keyed by the event object for `KILLED`'s
    reason -- `captioned` takes one event and nothing else. Built from ALL events
-   rather than `EV`, because the icing itself is a `stoppage` and the SKIP set
+   rather than `EV`, because the icing itself is a `stoppage` and `framed`
    drops it: the whistle is not a frame, and the faceoff it forces is. */
 const ICING=new Map(icingRestarts(G.events,CTX).map(r=>[r.event,r]));
 /* ⭐ AND THE SAME FOR OFFSIDE, which is the rule the feed is quietest about:
@@ -11156,6 +11296,11 @@ function render(i,how){
 
  $('nTrails').textContent=trailsNote(trails,ASPLAYED);
  document.getElementById('rg').classList.toggle('ended',i>=EV.length-1);
+ /* ⛔ AND THE ARCHIVE DOOR HEARS THE HORN — see `alotDrawnAtEnd`. `i` here is
+    `render`'s parameter, the frame being DRAWN, which is the reading the `ended`
+    class one line up already takes; the same frame is handed on, so the panel
+    and the class cannot answer the question differently. */
+ if(archOpen&&alotDrawnAtEnd!==(i>=EV.length-1))renderAlot(i);
  /* THE PRE-GAME FRAME IS THE ONLY ONE THAT NEEDS AN INSTRUCTION, and `i<0` is the
     whole test -- `play()` leaves the resting frame at once from either end, so a
     playing replay can never be at -1 and no `playing` term is needed here. Same
@@ -11251,6 +11396,14 @@ function render(i,how){
      case 'offside': captionOffside(cur); break;
      case 'kill': captionEnded(cur); break;
      case 'slot': caption(cur,'hd'); break;
+     /* ⭐ THE HORN, AND IT SAYS ONE WORD ON PURPOSE. Kevin, 2026-09-30: *"'Final'
+        would be a good horn frame."* The board beside it already carries the
+        score and the clock already reads 00:00 at this frame, so a pill
+        repeating either would be the same sentence twice, eight inches apart —
+        the rule the goal pill's own branch is written around. `sayCaption` takes
+        no club here for the same reason the centre-ice offside takes none: a
+        chip would have to name one side of a thing that belongs to both. */
+     case 'final': sayCaption(null,null,'🏁 Final','',cur); break;
    }}
  sayWho(cur);
  // AT REST ONLY -- `render` runs on every frame including during playback, and
@@ -11583,6 +11736,59 @@ const LENS={corsi:corsi,slot:danger,blocked:blocked,goaltending:goaltending,whis
  * project keeps being bitten by, so `test/layer-copy.test.js` asserts these keys
  * are exactly the layer set — derived from the modules, never listed twice.
  */
+/* ⛔⛔⛔ FIVE ARCHIVE FIGURES WERE TYPED INTO THIS SENTENCE, and the archive is
+   about to start moving. Kevin, 2026-09-30, the night the season opened: *"any
+   number contained on the site is derived (calculated) starting with league
+   provided data... we shouldn't have any constants or enumerations of constants
+   anywhere in the code, no?"* The split he ratified on 2026-09-23 is the working
+   form — a MEASUREMENT is derived and published, a POLICY is a declared choice —
+   and all five of these are measurements: the draw count, what the attacking club
+   gets having won, what it gets having lost, the difference, and the ratio
+   between the two.
+
+   ⏹ THEY WERE NOT UNGUARDED, AND THAT IS THE POINT RATHER THAN A DEFENCE.
+   `test/layer-copy.test.js` already read `measures.json` and required this
+   sentence to quote `zoneWorth`, `winningWorth` and their sum, so a derive would
+   have turned it red rather than letting it rot. But a check that a typed number
+   is still correct leaves a typed number: from tonight that gate goes red every
+   Monday and somebody retypes five figures by hand. A treadmill is not a guard,
+   and the only figure that cannot drift is the one nobody wrote down.
+
+   ⛔⛔ AND THE INLINED PAGE WAS QUOTING AN ARCHIVE IT SWEARS IT NEVER ASKS FOR.
+   `read-the-game.html` carries its whole game inside it and reaches nothing —
+   its own verdict card says *"this page carries a single game and never asks for
+   the archive"* — and this sentence put `165,420` on it three times. The figures
+   were true; the page's claim about itself was not. So the absent case DEGRADES:
+   it keeps the lesson, drops the numbers, and says which page it is on.
+
+   ⭐ ONLY TWO FIELDS ARE READ, AND THE OTHER THREE COME OUT OF THEM. `zoneWorth`
+   is a LEVEL (what the attacking club generates having LOST the draw) and
+   `winningWorth` is a DIFFERENCE; the total is their sum and the ratio is their
+   quotient. Reading a third published field for the total would let the document
+   disagree with itself on this sentence, which is the arithmetic the reader is
+   invited to check. */
+const ZONE_SAY=(()=>{
+ const ICE='Every faceoff in hockey is taken on one of nine painted dots. A ring marks each dot that has been used, and the number inside it is how many draws have been taken there. The ring takes the colour of the club that has won MORE of them, grey when they are even, and the boldest ring is the most recent draw. The two figures below the ice are the part the ice cannot show by itself: a draw is an OFFENSIVE-zone start for the club that won it in the end that club was attacking, and a defensive-zone start for the other \u2014 so the same dot means opposite things to the two clubs. ';
+ const ez=RATES&&RATES.census&&RATES.census.endZone;
+ const lost=ez&&ez.zoneWorth, add=ez&&ez.winningWorth, n=ez&&ez.n;
+ if(lost==null||add==null||!n)
+  return ICE+'Why it is worth watching: across the archive the club attacking '
+   +'that end takes more attempts before the next whistle when it wins the draw '
+   +'than when it loses it \u2014 but most of what an offensive-zone start is worth '
+   +'arrives either way. The figures for that are not on this page, which carries '
+   +'a single game and asks for nothing else.';
+ /* THE PUBLISHED FIGURES KEEP THEIR OWN PRECISION — `String`, not a `toFixed`
+    chosen here. The document rounds when it publishes; rounding again would be a
+    second opinion about how precise a measurement is, held by the surface that
+    is only supposed to be reading it. The two DERIVED figures round because
+    floating point has to be told: 1.163 + 0.52 is 1.6830000000000003. */
+ const won=+(lost+add).toFixed(3), ratio=(lost/add).toFixed(1);
+ return ICE+'Why it is worth watching: over '+n.toLocaleString()+' end-zone draws '
+  +'in the archive, the club attacking that end averages '+won+' shot attempts '
+  +'before the next whistle when it WINS the draw, and '+lost+' when it LOSES it. '
+  +'Winning is worth the difference \u2014 '+add+' of an attempt \u2014 while the '+lost
+  +' arrives either way, '+ratio+' times as much. Most of what an offensive-zone '
+  +'start is worth has nothing to do with winning the draw.';})();
 const DRAWS={
  corsi:'The box below the ice counts every attempt for each club as the replay runs.',
  slot:'An amber ring marks each one. Click a ring to see the distance and angle it was measured by.',
@@ -11592,7 +11798,7 @@ const DRAWS={
     without the comparison is where it would become who took it" -- a weaker
     lesson, and a false one, since who wins draws is the archive's cleanest null
     at 50.4%. The figures are `census.endZone` over 165,420 end-zone draws. */
- zonestart:'Every faceoff in hockey is taken on one of nine painted dots. A ring marks each dot that has been used, and the number inside it is how many draws have been taken there. The ring takes the colour of the club that has won MORE of them, grey when they are even, and the boldest ring is the most recent draw. The two figures below the ice are the part the ice cannot show by itself: a draw is an OFFENSIVE-zone start for the club that won it in the end that club was attacking, and a defensive-zone start for the other \u2014 so the same dot means opposite things to the two clubs. Why it is worth watching: over 165,420 end-zone draws in the archive, the club attacking that end averages 1.683 shot attempts before the next whistle when it WINS the draw, and 1.163 when it LOSES it. Winning is worth the difference \u2014 0.52 of an attempt \u2014 while the 1.163 arrives either way, 2.2 times as much. Most of what an offensive-zone start is worth has nothing to do with winning the draw.',
+ zonestart:ZONE_SAY,
  blocked:'Blocked attempts keep their ring and every other mark dims, so the ones a body stopped stand out. The box below the ice credits each block to the club that MADE it, the way a broadcast does. A block by a teammate is credited to neither club, so the two figures need not add up to the total.'};
 /** The layer object behind a picker id, or null for `none`. */
 const layerOf=id=>LENS[id]||null;
@@ -11686,8 +11892,43 @@ function renderWork(_,cur,at){
    `create` rather than reaching for `document`, which is what keeps `src/lib`
    inside the purity boundary `tools/tiers.mjs` counts. See its header. */
 const SECTION=sections(t=>document.createElement(t));
-function renderAlot(){
+/* ⛔⛔ THE DOOR WAS DRAWN ONCE AND THE PLAYHEAD KEPT MOVING. `renderAlot` ran when
+   the door opened and when the layer changed, and nowhere else — so a reader who
+   opened it early and then scrubbed to the horn read *"the replay has not reached
+   the final horn"* on a page whose verdict card, a screen below, was already
+   judging the finished game. Measured on the live site, same frame, same game:
+   the panel said no figure existed and the card said `94 shot attempts — fewer
+   than 1337 of the 1394`. Close the door and reopen it at that same frame and the
+   panel says `This game finished with 94`, which is how the staleness was told
+   apart from a wrong predicate.
+
+   ⚠️ THE TWO SURFACES WERE MADE TO AGREE AND THEN ALLOWED TO DRIFT ANYWAY.
+   `sitsIn` exists so the verdict card and this panel cannot come to mean
+   different things by "unusual" — and this was the same disagreement one level
+   up, in WHEN each surface is drawn rather than in what it computes. A shared
+   definition does not survive two different refresh rules.
+
+   ⭐ THE HORN IS THE ONLY THING IN THIS PANEL THAT MOVES WITH THE PLAYHEAD. Every
+   figure below the lead is archive-wide, the lead's reference class is the
+   season's, and `full` is counted over the whole game either way — so the redraw
+   is owed exactly at the flip and nowhere else. Redrawing every frame, as the
+   work panel does, would also rebuild a long panel the reader may be scrolled
+   inside, thirteen times a game.
+
+   ⚠️ AND IT IS RECORDED WHERE THE DRAWING HAPPENS, at the top of `renderAlot`
+   rather than at the call site, so it cannot claim a state the panel is not in —
+   including the two early returns, which draw a panel with no lead at all. */
+let alotDrawnAtEnd=null;
+/* ⚠️ AND IT TAKES THE FRAME RATHER THAN READING THE PLAYHEAD. Today every caller
+   of `render` passes the module playhead, so the two agree — but this function
+   is now driven BY a comparison against a frame, and a caller that ever drew one
+   frame while the playhead held another would leave the trigger and the drawing
+   permanently disagreeing, which redraws on every frame forever instead of
+   failing visibly. The default is the playhead, which is what the door's own
+   button and the layer switch mean when they ask for a redraw. */
+function renderAlot(at=i){
  const id=whichPick();
+ alotDrawnAtEnd=at>=EV.length-1;
  const host=$('alotBody');
  const want=(LAYERWORK[id]||[]).map(w=>w.anchor);
  /* ⛔ THE HONEST EMPTY STATES, AND THEY ARE TWO DIFFERENT SENTENCES. A layer
@@ -11785,7 +12026,7 @@ function renderAlot(){
   /* ⚠️ THE HORN IS NOT ENOUGH — IT MUST ALSO BE THIS GAME'S OWN SEASON. Both
      conditions are about the same thing: whether the number we would print and
      the population we would print it against are the same quantity. */
-  const atEnd=i>=EV.length-1&&!!own;
+  const atEnd=at>=EV.length-1&&!!own;
   const full=atEnd?LENS[id].reduce(G.events,{...CTX,evenOnly:false}).counted.length:null;
   const st=atEnd?sitsIn(dist,full):null;
   const lead=document.createElement('p');lead.className='walot';
@@ -11805,10 +12046,29 @@ function renderAlot(){
   const when=near
    ?'the '+String(ref.population||near).split(', ').pop()+' season'
    :'this game\u2019s season';
+  /* ⛔ THE RANGE AND THE BASIS WERE BOTH ATTACHED TO THE WRONG THING. Kevin,
+     2026-09-30: *"this bit is still very awkward: which ran from 74 to 208. All
+     situations, as the archive counts them."* He is right twice. `which` reaches
+     back past two nouns and lands on the SEASON, so the sentence read as a season
+     that ran from 74 to 208; and the basis was a fragment whose `them` had no
+     antecedent at all. Three jobs, three sentences: the middle half and its
+     population, the extremes, and what the counting includes.
+
+     ⚠️ THE EXTREMES ARE DROPPED WHEN THERE IS NOTHING TO SPREAD. A population of
+     one — the state of a lens in the first week of a season — would otherwise read
+     "the quietest finished with 74 and the busiest with 74".
+
+     ⭐ AND THE BASIS NAMES A SITUATION A READER CAN PICTURE. "All situations" is
+     our phrase; a power play is the thing it is mostly about, and it is the one a
+     newcomer has already met on the scoreboard pill. It matters here because the
+     chip beside this panel MAY be filtered and this reference class never is. */
+  const spread=ref.min===ref.max?''
+   :' The quietest of those games finished with '+N(ref.min)
+    +' and the busiest with '+N(ref.max)+'.';
   const usual='<b>Most nights finish with between '+N(ref.lo)+' and '+N(ref.hi)
    +' '+ESC(ref.noun)+'</b> — that is the middle half of the '+N(ref.of)
-   +' game'+(ref.of===1?'':'s')+' we hold for '+when+', which ran from '
-   +N(ref.min)+' to '+N(ref.max)+'. All situations, as the archive counts them.';
+   +' game'+(ref.of===1?'':'s')+' we hold for '+when+'.'+spread
+   +' All of them are counted at every strength, power plays included.';
   lead.innerHTML=usual+(st
    ?' <b>This game finished with '+N(st.count)+'</b> — '
      +(st.inside?'inside that middle half, an ordinary night by this count.'
@@ -11960,7 +12220,20 @@ function set(v,how){i=Math.max(-1,Math.min(EV.length-1,v));$('scrub').value=i;re
 /* THE ENDS ARE STATED BY THE CONTROL, not discovered by pressing it. `set`
    clamps, so a press at either end is already harmless -- but a button that
    accepts a press and does nothing is a button that says the page is broken. */
-function syncStep(){$('back').disabled=i<=-1;$('fwd').disabled=i>=EV.length-1;}
+/* ⛔ AND THE PLAY BUTTON'S LABEL IS PART OF THAT SYNC, which it was not until
+   2026-09-30. `▶ Replay` was set in `stop()` alone, so it appeared only if you
+   had PLAYED to the horn; drag the scrubber there and the button still read
+   `▶ Play` on a finished game. Pressing it did replay — `play()` has always
+   restarted from either end — so the control worked and lied about itself, which
+   is the harder version. `PLAY_REST`'s own comment had already reasoned that
+   *"`Play` after the final whistle names the wrong action"*; the reason was
+   written and one of the two paths to the horn never asked it.
+   ⚠️ THE `playing` GUARD IS WHAT LETS THIS OWN THE LABEL. `set()` runs inside
+   `play()` and inside every `step()`, where the button must keep saying Pause —
+   so the rule is stated once here and `stop()` reaches it by clearing the flag
+   first rather than spelling the label a second time. */
+function syncStep(){$('back').disabled=i<=-1;$('fwd').disabled=i>=EV.length-1;
+ if(!playing)$('play').textContent=i>=EV.length-1?'▶ Replay':PLAY_REST;}
 /* ⭐⭐ THE GOALS, MARKED ON THE SCRUBBER — Kevin, 2026-09-18: "I can also see a
    more advanced user wanting to fast forward to a specific time of the game...
    let's go with goal ticks only, I don't want to overcrowd the scrubber area."
@@ -12167,6 +12440,13 @@ function sayOnIce(e){const b=$('onIce'),t=$('onIceBtn');if(!b)return;
  t.onclick=()=>{onIceOn=!onIceOn;sayOnIce(EV[i]);};})();
 function sayWho(e){const w=$('who');if(!w)return;
  if(!e){w.innerHTML='';w.className='who';return;}
+ /* ⭐ AND THE HORN SAYS NOTHING HERE, on the goal branch's own rule: the pill
+    says Final, the clock beside it reads 00:00 and the board carries the score.
+    `ATTRIBUTION` has no `game-end` and neither does `LAB`, so without this the
+    line falls through to the id with its hyphen swapped for a space and prints
+    a lowercase "game end" under the ice — a third copy of a fact two surfaces
+    already have, in the one voice that reads like a placeholder. */
+ if(e.type==='game-end'){w.innerHTML='';w.className='who';return;}
  const a=ATTRIBUTION[e.type],p=a&&R[e.actor];
  // ⭐ SUPPRESSED WHERE THE NAME IS ALREADY ON SCREEN, on the site's own precedent:
  // the offside blurb shrank when its figure arrived, because a card with a diagram
@@ -12264,7 +12544,7 @@ const PLAY_REST='▶ Play';
    runs on the next frame when playback starts, but pausing produces no new
    frame at all -- so without this the roster would appear only when the reader
    next stepped, which is the opposite of "shown while paused". */
-function stop(){playing=false;$('play').textContent=i>=EV.length-1?'▶ Replay':PLAY_REST;clearTimeout(timer);sayOnIce(EV[i]);}
+function stop(){playing=false;syncStep();clearTimeout(timer);sayOnIce(EV[i]);}
 $('play').onclick=()=>playing?stop():play();
 /* THE OVERLAY IS THE BUTTON. It calls `play()` directly rather than synthesising a
    click on `#play`, because a forwarded click is a second path to the same state
@@ -12667,9 +12947,17 @@ document.title=`${line} — Read the Game`;
      season" — precise, self-checking, and it looks like arithmetic that has
      gone wrong. Same figure, said the way a person would. Seen in a browser on
      the Cup Final; no test here could have called it. */
-  const nights=n=>`${n} of the ${U?U.of:0} game${(U?U.of:0)===1?'':'s'} this season`;
+  /* ⛔ AND THE THOUSANDS SEPARATORS AGREE WITH THE PANEL ABOVE, which they did not
+     until 2026-09-30: this card printed `fewer than 1048 of the 1394 games` two
+     inches under a lead reading `the middle half of the 1,394 games`. One archive,
+     one screen, two spellings of the same figure — Kevin: *"1,394 would be
+     preferred."* `toLocaleString` at each site, which is the house answer here
+     (see the same note over `N` in `renderAlot`): a helper would be a seventh
+     spelling of a thing this file already spells inline. */
+  const N=v=>(v==null?'—':v.toLocaleString());
+  const nights=n=>`${N(n)} of the ${N(U?U.of:0)} game${(U?U.of:0)===1?'':'s'} this season`;
   const beat=U&&U.n===U.of
-    ?`${U.high?'higher':'lower'} than all ${U.of} game${U.of===1?'':'s'} this season`
+    ?`${U.high?'higher':'lower'} than all ${N(U.of)} game${U.of===1?'':'s'} this season`
     :`${U&&U.high?'more than':'fewer than'} ${nights(U?U.n:0)}`;
   p.push(`<span class="rate season">${U
     ?`<b>${U.count} ${ESC(U.noun)}</b> — ${beat}.`

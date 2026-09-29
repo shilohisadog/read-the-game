@@ -242,12 +242,14 @@ test('a penalty is CALLED on the ice, like a goal and unlike a giveaway', () => 
   const a = boot();
   const offsides = rich.events.filter(e => e.type === 'stoppage' && e.rsn === 'offside').length;
   const marks = callsWhileStepping(a, (h) =>
-    /🚨[^<]*GOAL/.test(h) ? 'goal' : /⛔ Penalty/.test(h) ? 'penalty'
+    /🏁 Final/.test(h) ? 'final'
+      : /🚨[^<]*GOAL/.test(h) ? 'goal' : /⛔ Penalty/.test(h) ? 'penalty'
       : /🛡 Penalty killed/.test(h) ? 'kill'
       : /🧊 Icing/.test(h) ? 'icing'
       : /🔵 Offside/.test(h) ? 'offside'
       : /⚡ Power play over/.test(h) ? 'ppover' : 'other');
-  const got = { goal: 0, penalty: 0, kill: 0, icing: 0, offside: 0, ppover: 0, other: 0 };
+  const got = { goal: 0, penalty: 0, kill: 0, icing: 0, offside: 0, ppover: 0,
+                final: 0, other: 0 };
   marks.forEach(m => got[m]++);
   const want = t => rich.events.filter(e => e.type === t).length;
   /* ⭐ ONE FEWER KILL THAN THE GAME CONTAINS, AND THAT IS THE NEW RULE, NOT A
@@ -267,11 +269,16 @@ test('a penalty is CALLED on the ice, like a goal and unlike a giveaway', () => 
                                        awayId: rich.teams.away.id })
     .filter(s => s.endedBy === 'goal').length;
   assert.ok(scored > 0, 'no power play in the fixture is scored on — ppover is untested');
+  /* ⭐ AND THE HORN, WHICH JOINED THE LADDER ON 2026-09-30. Counted off the feed
+     like every other expectation here: `game-end` is one event, so the replay
+     owes exactly one Final. A game whose feed carries no horn should show none,
+     which is why this is `want('game-end')` and not the number 1. */
   assert.deepEqual(got,
     { goal: want('goal'), penalty: want('penalty'), kill: kills - offsides,
-      icing: icings, offside: offsides, ppover: scored, other: 0 },
-    'with no layers on, exactly the goals, penalties, power-play endings, icings and offsides get a moment');
-  assert.ok(Object.values(got).slice(0, 6).every(v => v > 0), 'the walk missed a kind entirely');
+      icing: icings, offside: offsides, ppover: scored,
+      final: want('game-end'), other: 0 },
+    'with no layers on, exactly the goals, penalties, power-play endings, icings, offsides and the horn get a moment');
+  assert.ok(Object.values(got).slice(0, 7).every(v => v > 0), 'the walk missed a kind entirely');
 });
 
 test('the penalty caption names the team that TOOK it', () => {

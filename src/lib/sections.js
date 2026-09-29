@@ -85,8 +85,23 @@ export function readLine(l) {
     print as 76.5. */
 export function figFmt(v) {
   if (v == null) return '\u2014';
-  return Number.isInteger(v) ? String(v) : (v < 1 ? (v * 100).toFixed(1) : v.toFixed(2));
+  return figScaled(v) ? (v * 100).toFixed(1)
+       : Number.isInteger(v) ? String(v) : v.toFixed(2);
 }
+
+/**
+ * ⭐ DOES `figFmt` MULTIPLY THIS BY 100 TO PRINT IT? Asked rather than re-derived,
+ * because the answer changes what an equals sign is allowed to claim: a caller
+ * writing "241,126 ÷ 500,720 = 48.2" has put a division on the page that does not
+ * come out — see `workRow`. Two statements of the same condition is how the line
+ * and the figure would come to disagree about which one is scaled.
+ */
+export const figScaled = v => v != null && !Number.isInteger(v) && v < 1;
+
+/** The quotient as a reader checking the division would get it, agreeing to the
+    last digit with the scaled figure printed beside it — derived FROM that
+    figure, so the two cannot round apart. */
+export const figQuotient = v => (Number(figFmt(v)) / 100).toFixed(3);
 
 /**
  * THE RENDERERS, BOUND TO A WAY OF MAKING AN ELEMENT.
@@ -263,8 +278,28 @@ export function sections(create) {
     const w = m.work;
     if (!w || w.value == null) return null;
     const p = mk('p', 'hmwork');
+    /* ⛔⛔ THE EQUALS SIGN HAS TO BE TRUE, and for two of these figures it was not.
+       Kevin, 2026-09-30, reading the Attempts door: `241,126 ÷ 500,720 = 48.2 of
+       every 100 attempts reached the goalie`. That division is 0.482. On a site
+       whose whole pitch is CHECK OUR WORK, the one reader who actually does the
+       arithmetic gets a different number than the one after the sign — and this
+       is the panel they opened to see the work.
+
+       ⭐ SO THE QUOTIENT IS SHOWN, THEN THE FIGURE THE UNIT IS ABOUT. Both are
+       said because both are wanted: the division is what makes the line
+       checkable, and `48.2 of every 100` is what a person can hold. The scaled
+       figure keeps the bold, because it is the one the sentence after it names.
+       `figQuotient` is derived from the printed figure rather than from the raw
+       value, so the two sides cannot round apart on a reader who checks them.
+
+       ⚠️ ONLY WHERE `figFmt` SCALED — asked of `figScaled`, not re-tested here.
+       Two of the seven league figures are shares (`m-attempts`, `m-powerplay`);
+       the rest are already true quotients and gain nothing from a second copy of
+       themselves. It is the same two-shapes argument `readLine` makes one screen
+       up, one rounding rule further in. */
     if (w.count != null) {
-      p.appendChild(mk('span', null, commas(w.count) + ' \u00f7 ' + commas(w.n) + ' = '));
+      p.appendChild(mk('span', null, commas(w.count) + ' \u00f7 ' + commas(w.n) + ' = '
+        + (figScaled(w.value) ? figQuotient(w.value) + ' \u2014 ' : '')));
     }
     p.appendChild(mk('b', null, figFmt(w.value)));
     /* ⛔ A MEDIAN HAS NO NUMERATOR, so it says what it is instead of pretending

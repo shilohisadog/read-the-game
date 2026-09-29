@@ -246,10 +246,64 @@ test('⛔⛔ A PARTIAL COUNT IS NEVER RANKED AGAINST FINISHED GAMES', () => {
   const src = readFileSync(new URL('../src/app.js', import.meta.url), 'utf8')
     .replace(/\/\*[\s\S]*?\*\//g, ' ');
   const fn = src.slice(src.indexOf('function renderAlot('), src.indexOf('function cardsFor('));
-  assert.match(fn, /atEnd\s*=\s*i>=EV\.length-1/,
+  assert.match(fn, /atEnd\s*=\s*at>=EV\.length-1/,
     'the lead no longer waits for the horn before naming this game\u2019s figure');
+  /* ⛔⛔ AND WAITING FOR THE HORN IS USELESS IF THE PANEL NEVER HEARS IT ARRIVE.
+     This guard passed for two days on a panel that was drawn once, when the door
+     opened, and never again: scrub to the end with it open and it still read
+     "the replay has not reached the final horn" beside a verdict card already
+     judging the finished game. A predicate the page computes on a frame it never
+     recomputes is a guard about nothing. Behaviour, not source text, is asserted
+     for that in `the door hears the horn` below. */
+  assert.match(fn, /alotDrawnAtEnd=at>=EV\.length-1/,
+    'the panel no longer records which side of the horn it was drawn on');
   assert.match(fn, /evenOnly:false/,
     'the judged count is filtered while the population it is judged against is not');
+});
+
+test('⛔⛔ THE DOOR HEARS THE HORN — and it did not, for two days, on the live site', () => {
+  /* Kevin, 2026-09-30, from a game page with the door open and the scrubber
+     dragged to the right-hand end: the panel read *"The replay has not reached
+     the final horn"* while the verdict card a screen below already said
+     `94 shot attempts — fewer than 1337 of the 1394`. Two surfaces, one screen,
+     disagreeing about whether the game was over.
+
+     ⭐⭐ THE PREDICATE WAS NEVER WRONG, WHICH IS WHY NO SOURCE GREP COULD SEE IT.
+     `renderAlot` ran when the door opened and when the layer changed, and nowhere
+     else — so the correct test was computed against a frame the reader had left.
+     Closing the door and reopening it at that same frame printed the right
+     sentence, which is how staleness was told apart from a wrong rule.
+
+     ⚠️ SO IT IS DRIVEN, NOT READ. The guard above this one asserts the source
+     text; this one moves the playhead and reads what the panel then says. A
+     check that inspects a computation cannot see that nobody ran it.
+
+     MUTATION: delete the `archOpen && alotDrawnAtEnd !== ...` line in `render`
+     and the third assertion fires with the stale sentence still in place. */
+  const txt = n => n.innerHTML ? n.innerHTML.replace(/<[^>]+>/g, '')
+    : (n._kids && n._kids.length) ? n._kids.map(txt).join(' ') : (n.textContent || '');
+  const a = page();
+  pick(a, 'whistle');
+  a.$('alot').click();
+  const lead = () => {
+    const n = (a.$('alotBody')._kids || []).find(x => x.className === 'walot');
+    return n ? txt(n) : '';
+  };
+
+  const before = lead();
+  assert.match(before, /has not reached the final horn/i,
+    'the panel does not withhold this game\u2019s figure mid-replay, so this test '
+    + 'is not looking at the case it is about');
+
+  const scrub = a.$('scrub');
+  scrub.value = String(scrub.max);
+  scrub.oninput({ target: { value: scrub.value } });
+
+  const after = lead();
+  assert.doesNotMatch(after, /has not reached the final horn/i,
+    'the panel still says the replay has not reached the horn at the last frame: ' + after);
+  assert.match(after, /This game finished with \d/,
+    'the panel never names this game\u2019s own figure once the horn has sounded: ' + after);
 });
 
 test('⭐⭐ THE ANSWER IS DERIVED FROM THE PUBLISHED TABLE, never typed', () => {

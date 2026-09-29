@@ -103,8 +103,42 @@ export const NOT_AN_ATTEMPT = {
  * has no symptom at all" defect learn-doors.mjs was written to prevent.
  *
  * Which events are not plays is one rule. It lives here, beside the reasons.
+ *
+ * ⭐⭐ AND IT IS NOT THE SAME QUESTION AS *does this get a frame*, which is where
+ * the final horn comes apart from the rest. Both questions were answered by one
+ * list until 2026-09-30, and for four of the five types the answers agree: a
+ * stoppage, a period boundary and a delayed-penalty signal are neither plays nor
+ * moments a viewer needs to stand on. The horn is not a play AND is the moment
+ * the game ends — so filtering it off the timeline left a replay that stopped on
+ * whatever shot happened to be last, with 28 seconds still on the clock in the
+ * game this was found on, and nothing anywhere saying that was the end of it.
+ *
+ * Kevin, 2026-09-30: *"we don't have an event at the end of the game... when the
+ * scrubber is moved all the way to the right we should consider the game
+ * complete."* The league records one — `game-end`, last of 343 events in that
+ * game, `rem 00:00` — and we were the ones dropping it.
+ *
+ * ⚠️ THAT IT IS THE LAST EVENT IS MEASURED, NOT ASSUMED, AND NOTHING HERE RELIES
+ * ON IT. Across a random 120 of the 2025-26 archive, 13 of them decided in a
+ * shootout, every game carries exactly one `game-end` and it is the last event
+ * every time — the horn sits after the shootout, not before it. So the last
+ * frame IS the horn today. The two claims are still kept apart on purpose: the
+ * `ended` class asks *is the playhead at the last frame* and the caption asks
+ * *is this event the horn*. If the feed ever ordered one differently the page
+ * degrades into saying two true things on two frames, rather than one wrong
+ * thing on one.
+ *
+ * ⚠️ IT COSTS NO COUNT, AND THAT IS CHECKABLE RATHER THAN ASSUMED. The reducers
+ * read the whole event list and exclude by `NOT_A_PLAY`, which still holds the
+ * horn and still gives its reason; only the TIMELINE changed. So every layer
+ * count is identical and the exclusion ledger gains a row that says why.
  */
-export const playable = events => events.filter(e => !(e.type in NOT_A_PLAY));
+export const STILL_A_FRAME = { 'game-end': 'the final horn' };
+
+/** Does this event get a frame of its own on the timeline? */
+export const framed = e => !(e.type in NOT_A_PLAY) || (e.type in STILL_A_FRAME);
+
+export const playable = events => events.filter(framed);
 
 export const NOT_A_PLAY = {
   'period-start': 'period start — not a play',

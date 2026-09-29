@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-eCAjk0LTta8++Vg02gax9svEzG92fk5ZEpfft9/CFf8=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig=' 'sha256-0bhpsWnzVu6NAX0uBc63E29t3q3jxrExtXCS/7jaJVQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-iTBhREckcYRXBv+C4WzimAvD5tB1X0+WswOIisk6Bds=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig=' 'sha256-0bhpsWnzVu6NAX0uBc63E29t3q3jxrExtXCS/7jaJVQ='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -2273,14 +2273,62 @@ const DERIVATION = {
     label: 'Where a shot attempt ends',
     count: 'attempts of each ending \u2014 reached the goalie, blocked, missed',
     of: 'every shot attempt in the archive',
-    why: 'This is the one figure here that is a clean split of a whole, so it is '
-       + 'the one that can honestly be drawn as a single bar. It also frames the '
-       + 'possession number above: about half of all attempts never reach the '
-       + 'goalie at all.',
-    caveat: 'Whether an attempt "missed" rather than "was saved" is a person in '
-          + 'the arena making a call. We measured how much that judgement varies '
-          + 'from building to building, and it is why no number we show beside a '
-          + 'team is built on it.' },
+    /* ⛔⛔ THIS PROSE NAMED TWO THINGS THAT ARE NOT THERE, and they were not there
+       on EITHER surface. It promised a single bar — nothing draws one, here or on
+       the methods page — and it pointed at "the possession number above", where
+       what sits above is how often a team ices the puck. Kevin, 2026-09-30,
+       reading the Attempts door: *"there is no 'possession number'."*
+
+       ⭐ IT WAS WRITTEN FOR A NEIGHBOUR IT NO LONGER HAS. A `why` travels with its
+       figure to every surface that draws it, so a sentence about what is beside it
+       is a sentence that is true in at most one place. This one says only what is
+       true of the figure itself, wherever it is read.
+
+       ⚠️ AND IT CANNOT GO STALE. It used to state the share in words — "about half"
+       — beside a number published weekly, so a feed that moved to 60% would have
+       left the prose quietly wrong. It now describes THE REST of the split, which
+       is whatever the printed figure is not. */
+    /* ⛔⛔⛔ AND THE FIRST REWRITE OVER-CLAIMED IN THE OTHER DIRECTION. It said an
+       attempt "ends in exactly one of three ways: it reaches the goalie, a
+       DEFENDER blocks it, or it misses the net" — a taxonomy of the ICE, and
+       false. Kevin, 2026-09-30: *"the shot could be deflected by a teammate, the
+       shot could hit a teammate too, there are (at least) 5 ways a shot attempt
+       could end."* Right, and the tell was already in the document: the archive's
+       own published description of that bucket reads *blocked by a BODY*, which
+       is the hedge my sentence removed.
+
+       ⭐ WHAT IS TRUE IS A FACT ABOUT THE RECORD, AND IT IS ALREADY GATED. Every
+       attempt carries exactly one of the four recorded types and they sum to the
+       denominator — `test/measure.test.js`, *the archive shares are of ATTEMPTS*,
+       asserts both halves against the producer, so it holds for any archive and
+       not merely for this week's. That is the property this sentence rests on,
+       and it survives the ice being messier than three words. The numbers are
+       deliberately NOT quoted here: a sum typed into a comment beside a document
+       rewritten every Monday is a claim with a half-life.
+
+       ⏹ AND THE MESSINESS MOVED TO THE CAVEAT, which is the section that asks
+       what could be wrong with it — rather than being answered by a `why` that
+       simply did not mention it. */
+    why: 'Every attempt in the archive is filed as ending one of three ways \u2014 it '
+       + 'reached the goaltender, a body blocked it, or it missed the net \u2014 and '
+       + 'the three account for all of them with none left over. That is what '
+       + 'makes the figure above readable on its own: an attempt it does not '
+       + 'count is one the goaltender never had to face.',
+    /* ⛔ AND THE CAVEAT SPOKE TO THE WRONG READER. Kevin: *"this sentence doesn't
+       really talk to our audience \u2014 even though it's geared toward the
+       #fancystats crowd, it still needs to be understandable by all."* It leaned
+       on two scorer's categories in quotation marks, named the person only as
+       "a person in the arena", and closed on house vocabulary. Same three claims,
+       said the way you would say them out loud: it is a human call, we measured
+       how far apart the rinks are, and that measurement constrains what we are
+       willing to publish. */
+    caveat: 'Three headings are coarser than what happens on the ice \u2014 a puck '
+          + 'deflected off a teammate still has to be filed under one of them \u2014 '
+          + 'and somebody in the arena decides which. Whether a shot that did not '
+          + 'go in was stopped by the goaltender or simply missed the net is that '
+          + 'person\u2019s call, and rinks do not all make it the same way. We '
+          + 'measured how far apart they are, which is why we never put a number '
+          + 'beside a club when that judgement is what the number rests on.' },
   shift: {
     unit: 'seconds',
     label: 'How long a shift lasts',
@@ -2611,8 +2659,23 @@ function readLine(l) {
     print as 76.5. */
 function figFmt(v) {
   if (v == null) return '\u2014';
-  return Number.isInteger(v) ? String(v) : (v < 1 ? (v * 100).toFixed(1) : v.toFixed(2));
+  return figScaled(v) ? (v * 100).toFixed(1)
+       : Number.isInteger(v) ? String(v) : v.toFixed(2);
 }
+
+/**
+ * ⭐ DOES `figFmt` MULTIPLY THIS BY 100 TO PRINT IT? Asked rather than re-derived,
+ * because the answer changes what an equals sign is allowed to claim: a caller
+ * writing "241,126 ÷ 500,720 = 48.2" has put a division on the page that does not
+ * come out — see `workRow`. Two statements of the same condition is how the line
+ * and the figure would come to disagree about which one is scaled.
+ */
+const figScaled = v => v != null && !Number.isInteger(v) && v < 1;
+
+/** The quotient as a reader checking the division would get it, agreeing to the
+    last digit with the scaled figure printed beside it — derived FROM that
+    figure, so the two cannot round apart. */
+const figQuotient = v => (Number(figFmt(v)) / 100).toFixed(3);
 
 /**
  * THE RENDERERS, BOUND TO A WAY OF MAKING AN ELEMENT.
@@ -2789,8 +2852,28 @@ function sections(create) {
     const w = m.work;
     if (!w || w.value == null) return null;
     const p = mk('p', 'hmwork');
+    /* ⛔⛔ THE EQUALS SIGN HAS TO BE TRUE, and for two of these figures it was not.
+       Kevin, 2026-09-30, reading the Attempts door: `241,126 ÷ 500,720 = 48.2 of
+       every 100 attempts reached the goalie`. That division is 0.482. On a site
+       whose whole pitch is CHECK OUR WORK, the one reader who actually does the
+       arithmetic gets a different number than the one after the sign — and this
+       is the panel they opened to see the work.
+
+       ⭐ SO THE QUOTIENT IS SHOWN, THEN THE FIGURE THE UNIT IS ABOUT. Both are
+       said because both are wanted: the division is what makes the line
+       checkable, and `48.2 of every 100` is what a person can hold. The scaled
+       figure keeps the bold, because it is the one the sentence after it names.
+       `figQuotient` is derived from the printed figure rather than from the raw
+       value, so the two sides cannot round apart on a reader who checks them.
+
+       ⚠️ ONLY WHERE `figFmt` SCALED — asked of `figScaled`, not re-tested here.
+       Two of the seven league figures are shares (`m-attempts`, `m-powerplay`);
+       the rest are already true quotients and gain nothing from a second copy of
+       themselves. It is the same two-shapes argument `readLine` makes one screen
+       up, one rounding rule further in. */
     if (w.count != null) {
-      p.appendChild(mk('span', null, commas(w.count) + ' \u00f7 ' + commas(w.n) + ' = '));
+      p.appendChild(mk('span', null, commas(w.count) + ' \u00f7 ' + commas(w.n) + ' = '
+        + (figScaled(w.value) ? figQuotient(w.value) + ' \u2014 ' : '')));
     }
     p.appendChild(mk('b', null, figFmt(w.value)));
     /* ⛔ A MEDIAN HAS NO NUMERATOR, so it says what it is instead of pretending

@@ -28,7 +28,7 @@
  */
 
 /** Every answer this can give, in rank order. `null` is a frame that says nothing. */
-export const ANNOUNCEMENTS = ['goal', 'penalty', 'icing', 'offside', 'kill', 'slot'];
+export const ANNOUNCEMENTS = ['final', 'goal', 'penalty', 'icing', 'offside', 'kill', 'slot'];
 
 /**
  * The single claim `e` announces, or null.
@@ -56,6 +56,22 @@ export const ANNOUNCEMENTS = ['goal', 'penalty', 'icing', 'offside', 'kill', 'sl
 export function announcement(e, { isIcing, isOffside, isKill, isSlot, slotOn }) {
   if (!e) return null;
 
+  /* 0 — THE FINAL HORN, which is the one frame on the timeline that is not a
+     play at all. `layer.js::STILL_A_FRAME` argues why it gets a frame; this
+     argues why it gets the sentence on that frame.
+
+     ⚠️ IT OUTRANKS THE KILL FOR A REASON THAT IS NOT MERELY RANK, and the
+     collision is real rather than decorative. `sayAt` indexes the whole event
+     list, so a penalty that runs out at 00:00 puts "🛡 Penalty killed" on the
+     horn — and it did not have to be considered before, because the horn was
+     not a frame and the sentence had nowhere to land. A power play expiring
+     BECAUSE the game ended is not a kill in any sense a viewer means, so this is
+     the more true claim as well as the larger one.
+
+     It cannot collide with a goal or a penalty: those are event types, and this
+     frame's type is `game-end`. Placing it first is legibility, not arbitration. */
+  if (e.type === 'game-end') return 'final';
+
   /* 1 — A GOAL. The largest thing that can happen, and the only event that
      changes the number the whole page is organised around. */
   if (e.type === 'goal') return 'goal';
@@ -78,7 +94,7 @@ export function announcement(e, { isIcing, isOffside, isKill, isSlot, slotOn }) 
      THE PILL ALREADY CARRIES THE CONDITION. A power play ending turns the
      scoreboard badge dark, on screen, at that frame — so the kill caption
      AMPLIFIES a signal the page already gives. An icing or an offside has no
-     other surface at all: the stoppage is not even a frame (`SKIP` drops it), so
+     other surface at all: the stoppage is not even a frame (`framed` drops it), so
      the restart is the only place the rule can ever be named. Given one pill and
      two facts, it goes to the fact with nowhere else to go.
 

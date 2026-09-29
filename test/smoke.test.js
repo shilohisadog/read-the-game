@@ -25,7 +25,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { corsi } from '../src/lib/layers/corsi.js';
-import { playable, NOT_A_PLAY } from '../src/lib/layer.js';
+import { playable, framed } from '../src/lib/layer.js';
 
 /** The feed, for computing what the counter OUGHT to say at any point. */
 const rich = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url)));
@@ -238,7 +238,7 @@ test('a full render at the end puts the right numbers in the DOM', () => {
 
 test('the scrubber is wired to the timeline', () => {
   const n = run();
-  assert.equal(n.get('scrub').max, 268, 'scrubber spans the playable events');
+  assert.equal(n.get('scrub').max, 269, 'scrubber spans the playable events');
 });
 
 test('turning on the Control layer renders the ledger, and it reconciles', () => {
@@ -258,8 +258,11 @@ test('turning on the Control layer renders the ledger, and it reconciles', () =>
   // event, and both period-end and game-end sort after it. I asserted 320, then
   // 319, and was wrong both times -- so derive it from the data rather than
   // guessing, which is what I should have done first.
-  const SKIP = new Set(['stoppage','period-start','period-end','game-end','delayed-penalty']);
-  const lastPlayable = rich.events.reduce((acc, e, n) => SKIP.has(e.type) ? acc : n, -1);
+  /* ⛔ THIS WAS A FOURTH HAND COPY OF THE VOCABULARY — five string literals, in a
+     test, stating again what layer.js states beside its reasons. It agreed with
+     the page by luck until 2026-09-30, when the final horn became a frame and
+     this file's private set did not hear about it. `framed` is the one rule. */
+  const lastPlayable = rich.events.reduce((acc, e, n) => framed(e) ? n : acc, -1);
   const expected = lastPlayable + 1;
 
   /* ⭐ THE ARITHMETIC STILL CLOSES ACROSS THREE BUCKETS INSTEAD OF TWO. The
@@ -355,10 +358,10 @@ test('a metric added mid-replay catches up, tracks forward, and tears down', () 
   const visible = () => el('rg').classList.contains('corsi');
 
   // The playable timeline, and the ledger truth at any point on it.
-  // FROM THE LIBRARY, not five literals typed again: `NOT_A_PLAY` is the rule
+  // FROM THE LIBRARY, not five literals typed again: `framed` is the rule
   // app.js applies, and a hand copy here is the drift layer.js's comment names.
   const EVI = [];
-  rich.events.forEach((e, idx) => { if (!(e.type in NOT_A_PLAY)) EVI.push(idx); });
+  rich.events.forEach((e, idx) => { if (framed(e)) EVI.push(idx); });
   const CTX = {
     roster: rich.roster,
     homeId: rich.teams.home.id, awayId: rich.teams.away.id,

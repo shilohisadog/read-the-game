@@ -34,7 +34,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { LAYER_TOKENS } from '../src/lib/deeplink.js';
-import { app } from './helpers/page.js';
+import { app, boot, pickLayer, rich } from './helpers/page.js';
 
 const LIB = new URL('../src/lib/layers/', import.meta.url);
 
@@ -188,12 +188,24 @@ test('⛔ …and every chip carries the count element the renderer writes into',
  * rounded to one place; asserting the string "2.2" against a literal 2.2 here
  * would be a check that cannot tell the caption from its own copy of the answer.
  */
+const MEASURES = JSON.parse(readFileSync(new URL('../data/measures.json', import.meta.url), 'utf8'));
+
+/** The zone-start caption as a reader meets it, with or without an archive behind the page. */
+function caption(rates) {
+  const a = boot(rich, rates);
+  pickLayer(a, 'zonestart');
+  return String(a.$('lcap').innerHTML).replace(/<[^>]+>/g, '');
+}
+
 test('⛔ the zone-start caption carries the archive comparison, from the archive', () => {
-  const m = /const DRAWS=\{([\s\S]*?)\};\n/.exec(app);
-  assert.ok(m, 'DRAWS has moved — this check has lost its subject');
-  const line = /\bzonestart:'((?:[^'\\]|\\.)*)'/.exec(m[1]);
-  assert.ok(line, 'the zone-start caption has moved or changed quoting');
-  const say = line[1];
+  /* ⭐⭐ THE RENDERED SENTENCE, BECAUSE THE FIGURES ARE NO LONGER IN THE SOURCE.
+     This used to pull a quoted string out of `DRAWS` and check that the typed
+     numbers matched the document — a real guard, and one that would have gone
+     red every Monday from the night the season opened, asking a person to retype
+     five figures. They are computed from `census.endZone` now, so there is no
+     literal to grep and nothing to retype. The claim is unchanged and the
+     subject moved one step closer to the reader: what the caption SAYS. */
+  const say = caption(MEASURES);
 
   const ez = JSON.parse(readFileSync(new URL('../data/measures.json', import.meta.url), 'utf8'))
     .census.endZone;
@@ -238,4 +250,45 @@ test('⛔ the zone-start caption carries the archive comparison, from the archiv
   assert.ok(ez.zoneWorth > ez.winningWorth,
     'the archive no longer says being in the zone outweighs winning the draw — '
     + 'the caption is now telling a reader the opposite of the record');
+});
+
+/**
+ * ⛔⛔ AND THE PAGE THAT NEVER ASKS FOR THE ARCHIVE MAY NOT QUOTE IT.
+ *
+ * `read-the-game.html` carries its whole game inside it and reaches nothing — its
+ * own verdict card says so in those words, and the deploy greps the inlined pages
+ * for outbound calls. This caption put `165,420 end-zone draws` on it anyway,
+ * three times, because the figures were typed into the sentence. They were TRUE;
+ * the page's claim about itself was not, and no check here could see the
+ * difference while the numbers were constants.
+ *
+ * ⭐ THE DEGRADE KEEPS THE LESSON. Silence would have been the other option and it
+ * is the wrong one: the layer's whole reason for existing is that most of what a
+ * zone start is worth arrives whether or not you win the draw, and that sentence
+ * needs no figures to be true. What goes is the arithmetic, which is the part
+ * only the archive can supply.
+ *
+ * MUTATION: drop the `if(lost==null...)` branch in `ZONE_SAY` and this fires with
+ * the figure the offline page would have printed.
+ */
+test('⛔⛔ with no archive, the caption drops the figures and keeps the lesson', () => {
+  const ez = MEASURES.census.endZone;
+  const say = caption(null);
+
+  for (const v of [String(ez.zoneWorth), String(ez.winningWorth),
+                   String(+(ez.zoneWorth + ez.winningWorth).toFixed(3)),
+                   ez.n.toLocaleString(), String(ez.n)])
+    assert.ok(!say.includes(v),
+      `a page that asks for nothing is quoting the archive: "${v}" is in the caption`);
+  assert.doesNotMatch(say, /\d[\d,]*\.\d/,
+    'the caption still carries a measured figure with no archive behind it: ' + say);
+
+  /* ⭐ AND IT IS NOT MERELY SHORTER. Deleting the clause would satisfy every
+     assertion above; the layer would then have no stated reason to exist on the
+     one page a link most often points at. */
+  assert.match(say, /number inside it is how many draws/,
+    'the offline caption lost the part that explains the ice');
+  assert.match(say, /arrives either way/,
+    'the offline caption dropped the finding as well as the figures, which is the '
+    + 'whole point of the layer');
 });

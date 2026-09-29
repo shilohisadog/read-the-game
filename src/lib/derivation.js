@@ -142,14 +142,62 @@ const DERIVATION = {
     label: 'Where a shot attempt ends',
     count: 'attempts of each ending \u2014 reached the goalie, blocked, missed',
     of: 'every shot attempt in the archive',
-    why: 'This is the one figure here that is a clean split of a whole, so it is '
-       + 'the one that can honestly be drawn as a single bar. It also frames the '
-       + 'possession number above: about half of all attempts never reach the '
-       + 'goalie at all.',
-    caveat: 'Whether an attempt "missed" rather than "was saved" is a person in '
-          + 'the arena making a call. We measured how much that judgement varies '
-          + 'from building to building, and it is why no number we show beside a '
-          + 'team is built on it.' },
+    /* ⛔⛔ THIS PROSE NAMED TWO THINGS THAT ARE NOT THERE, and they were not there
+       on EITHER surface. It promised a single bar — nothing draws one, here or on
+       the methods page — and it pointed at "the possession number above", where
+       what sits above is how often a team ices the puck. Kevin, 2026-09-30,
+       reading the Attempts door: *"there is no 'possession number'."*
+
+       ⭐ IT WAS WRITTEN FOR A NEIGHBOUR IT NO LONGER HAS. A `why` travels with its
+       figure to every surface that draws it, so a sentence about what is beside it
+       is a sentence that is true in at most one place. This one says only what is
+       true of the figure itself, wherever it is read.
+
+       ⚠️ AND IT CANNOT GO STALE. It used to state the share in words — "about half"
+       — beside a number published weekly, so a feed that moved to 60% would have
+       left the prose quietly wrong. It now describes THE REST of the split, which
+       is whatever the printed figure is not. */
+    /* ⛔⛔⛔ AND THE FIRST REWRITE OVER-CLAIMED IN THE OTHER DIRECTION. It said an
+       attempt "ends in exactly one of three ways: it reaches the goalie, a
+       DEFENDER blocks it, or it misses the net" — a taxonomy of the ICE, and
+       false. Kevin, 2026-09-30: *"the shot could be deflected by a teammate, the
+       shot could hit a teammate too, there are (at least) 5 ways a shot attempt
+       could end."* Right, and the tell was already in the document: the archive's
+       own published description of that bucket reads *blocked by a BODY*, which
+       is the hedge my sentence removed.
+
+       ⭐ WHAT IS TRUE IS A FACT ABOUT THE RECORD, AND IT IS ALREADY GATED. Every
+       attempt carries exactly one of the four recorded types and they sum to the
+       denominator — `test/measure.test.js`, *the archive shares are of ATTEMPTS*,
+       asserts both halves against the producer, so it holds for any archive and
+       not merely for this week's. That is the property this sentence rests on,
+       and it survives the ice being messier than three words. The numbers are
+       deliberately NOT quoted here: a sum typed into a comment beside a document
+       rewritten every Monday is a claim with a half-life.
+
+       ⏹ AND THE MESSINESS MOVED TO THE CAVEAT, which is the section that asks
+       what could be wrong with it — rather than being answered by a `why` that
+       simply did not mention it. */
+    why: 'Every attempt in the archive is filed as ending one of three ways \u2014 it '
+       + 'reached the goaltender, a body blocked it, or it missed the net \u2014 and '
+       + 'the three account for all of them with none left over. That is what '
+       + 'makes the figure above readable on its own: an attempt it does not '
+       + 'count is one the goaltender never had to face.',
+    /* ⛔ AND THE CAVEAT SPOKE TO THE WRONG READER. Kevin: *"this sentence doesn't
+       really talk to our audience \u2014 even though it's geared toward the
+       #fancystats crowd, it still needs to be understandable by all."* It leaned
+       on two scorer's categories in quotation marks, named the person only as
+       "a person in the arena", and closed on house vocabulary. Same three claims,
+       said the way you would say them out loud: it is a human call, we measured
+       how far apart the rinks are, and that measurement constrains what we are
+       willing to publish. */
+    caveat: 'Three headings are coarser than what happens on the ice \u2014 a puck '
+          + 'deflected off a teammate still has to be filed under one of them \u2014 '
+          + 'and somebody in the arena decides which. Whether a shot that did not '
+          + 'go in was stopped by the goaltender or simply missed the net is that '
+          + 'person\u2019s call, and rinks do not all make it the same way. We '
+          + 'measured how far apart they are, which is why we never put a number '
+          + 'beside a club when that judgement is what the number rests on.' },
   shift: {
     unit: 'seconds',
     label: 'How long a shift lasts',
