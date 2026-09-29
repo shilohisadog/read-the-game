@@ -1667,7 +1667,24 @@ function syncStep(){$('back').disabled=i<=-1;$('fwd').disabled=i>=EV.length-1;}
 function drawGoalTicks(){
  const T=$('gticks');if(!T)return;
  T.innerHTML='';
- for(const {k,f} of goalTicks(EV)){
+ /* ⛔⛔⛔ THE MARKS ARE NAMED ON SCREEN — 2026-09-29. Kevin: *"does the viewer
+    know what the tic marks below the scrubber are, since we don't say 'goals are
+    identified below the scrubber'?"* They did not. Each tick carried a `title`
+    and an `aria-label`, so a SCREEN READER was told and a sighted viewer was
+    not — and `title` only appears on hover, which means on a phone or a tablet
+    nothing appeared at all. The one nearby mention of goals is in the
+    first-visit block, is about the event CAPTION rather than these marks, and is
+    dismissible. ⭐ A mark this project draws and does not name is the defect it
+    has shipped in every other medium; this is the same rule as the power-play
+    pill and the PK caption.
+    ⚠️ AND IT IS SILENT IN A GAME WITH NO GOALS, because "the coloured lines are
+    goals" beside an empty bar describes something that is not there. The caption
+    is driven by the ticks rather than printed beside them. */
+ const ticks=goalTicks(EV), cap=$('gtickcap');
+ if(cap){
+  cap.hidden=!ticks.length;
+  cap.textContent='The coloured lines on the bar are goals \u2014 click one to jump there.';}
+ for(const {k,f} of ticks){
   const e=EV[k], say=clipNames(e);
   const b=document.createElement('button');
   b.setAttribute('type','button');
@@ -2214,7 +2231,22 @@ const WHEN=GD?`${+GD[3]} ${MON[+GD[2]-1]} ${GD[1]}`:'';
    same reason the counter starts at zero -- and the verdict card states the
    result at the horn, where it happens. A replay of a game whose ending is on
    the title bar is a recap; the ending arriving when it arrived is a game. */
-$('gl').textContent=`${AAB} at ${HAB}${WHEN?' · '+WHEN:''}`;
+/* ⭐⭐⭐ AND THIS LINE IS THE PAGE'S HEADING AND ITS TAB TITLE — 2026-09-29.
+   Every one of the 4,551 game pages used to carry the same <h1> ("Learn to read
+   hockey · event by event first, add layers after") and the same <title> ("An
+   NHL game, replayed event by event"), so nothing a reader could see, share or
+   search named WHICH GAME they were looking at. The board said it all along;
+   it just was not a heading.
+   ⭐ ONE STRING, THREE PLACES. `#gl` is now the <h1> itself rather than a <p>
+   beside one, so there is no second copy to drift — the same move
+   `build_main.py` made when the tagline became the heading, applied to the line
+   that actually says what this page is.
+   ⛔ AND IT STILL DOES NOT SAY HOW THE GAME ENDS. The rule in the comment above
+   governs the tab and the heading too: a replay whose ending is on the title bar
+   is a recap. `line` carries clubs and date and nothing else. */
+const line=`${AAB} at ${HAB}${WHEN?' · '+WHEN:''}`;
+$('gl').textContent=line;
+document.title=`${line} — Read the Game`;
 // THE PER-GAME SENTENCE. A summary of a FINISHED game, so it sits with the game
 // line at the foot rather than beside the scoreboard, which counts up as the
 // replay plays. It discloses nothing the page has not already said -- #gl states
@@ -3627,8 +3659,14 @@ function lboxFor(id,at,L){
      applied to a second surface: if the selector is renamed the prompt renames
      itself, and if the heading disappears the fallback still makes sense. */
   const w=pickLabel();
-  return {...none,n:w?`Choose one under ${w} and this fills in as the replay runs.`
-                    :'Choose one and this fills in as the replay runs.'};}
+  /* ⚠️ "THIS AREA", NOT "THIS". Kevin, 2026-09-29, reading it on a game page:
+     the old wording was *"Choose one under Layers and this fills in as the replay
+     runs"* — and `this` was doing the work of naming the box it was printed in,
+     to a reader who has not yet been told the box exists. Both branches reworded,
+     because a fallback that drifts from the sentence it falls back from is the
+     second wording nobody reads. */
+  return {...none,n:w?`Choose under ${w} and this area fills in as the replay runs.`
+                    :'Choose a layer and this area fills in as the replay runs.'};}
  if(at<0){
   // BEFORE THE FIRST EVENT THERE IS NOTHING TO COUNT, and zeroes would be a
   // claim rather than a blank. Same rule as the split bar refusing to draw a

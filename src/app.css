@@ -18,8 +18,6 @@
    TRACKING COMES DOWN AS SIZE GOES UP. .16em was set for .7rem text, where wide
    letter-spacing is what makes small uppercase legible; at 1rem the same value
    reads as a gap between every letter. */
-#rg .pagelede{font-size:clamp(.82rem,2.5vw,1.02rem);letter-spacing:.1em;text-transform:uppercase;
-  font-weight:600;color:var(--ink);margin:0 0 12px;text-wrap:balance}
 #rg h1{font-size:clamp(1.7rem,3.8vw,2.4rem);letter-spacing:-.025em;font-weight:800;margin:0 0 10px;text-wrap:balance}
 #rg .board{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:11px;background:#fff;border:1px solid var(--edge);border-radius:13px;padding:10px 18px;box-shadow:0 5px 18px rgba(16,32,45,.07);margin-bottom:12px}
 #rg .tm{display:flex;flex-direction:column;align-items:center}#rg .tm .ab{font-weight:800;letter-spacing:.05em;font-size:.9rem}
@@ -587,16 +585,27 @@
     rows, `-1` resolves to line 1 and collapses the span. Forty is more than the
     children this wrap can hold; the extra tracks are empty and zero-height. */
  #rg:not(.preview) .rinkbox{grid-column:2;grid-row:1/span 40}
- /* 39px of shouting, above a rink that has none to spare. The page keeps its
-    heading for a screen reader and for every other viewport. */
- #rg:not(.preview) .pagelede{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+ /* ⭐ The `.pagelede` rule that stood here hid 39px of shouting from a rink with
+    none to spare, while keeping the heading for a screen reader. The element it
+    hid was deleted on 2026-09-29 — the game line is the heading now — and the
+    TECHNIQUE moved down to `.board .foot` with it, which is the whole repair
+    below. */
  #rg:not(.preview) .board{margin-bottom:8px;padding:8px 10px;gap:6px 10px}
  /* ⛔ THE GAME LINE GOES, and it is the one thing on this board a reader does not
     need while the replay is running. "MTL at CAR · 21 May 2026" answers WHICH
     GAME -- the question a shared link already answered on the way in, and the one
     the two club chips under it answer again. In 320px of landscape it is 25px
-    that the transport needs in order to be on the same screen as the rink. */
- #rg:not(.preview) .board .foot{display:none}
+    that the transport needs in order to be on the same screen as the rink.
+
+    ⛔⛔ BUT IT IS THE PAGE'S <h1> SINCE 2026-09-29, AND `display:none` WOULD TAKE
+    IT OUT OF THE ACCESSIBILITY TREE — leaving this viewport, and only this one,
+    with no heading at all. The 25px is freed either way; only one of the two ways
+    keeps the heading announced. This is the technique the `.pagelede` rule above
+    used for exactly the same trade, applied to the element that replaced it.
+    ⚠️ `clip-path` and not `display:none`, `visibility:hidden` or `width:0` —
+    each of those is read by a screen reader as absent. */
+ #rg:not(.preview) .board .foot{position:absolute;width:1px;height:1px;
+  overflow:hidden;clip-path:inset(50%);margin:0;padding:0}
  #rg:not(.preview) .transport{margin-top:8px;gap:6px}
  #rg:not(.preview) .transport .grp{gap:6px}
  /* ⭐⭐ THE TYPE SCALES WITH THE COLUMN IT SITS IN, NOT WITH THE VIEWPORT.
@@ -702,7 +711,6 @@
    it wrapped to two lines at 360, and a taste does not need to be introduced
    twice. `#rg.preview h1` in the hide list above would catch it now that it is
    an h1; this rule stays because it is the one that carries the REASON. */
-#rg.preview .pagelede{display:none!important}
 /* AND THE SECOND LINE GOES IN PREVIEW TOO -- everywhere, not just the six that
    lost it. `.plabsub` is 2.8 SVG units, which is about 6 real pixels once the
    rink is scaled into a phone-sized frame: legible in the replay, where a
@@ -1343,6 +1351,17 @@
 #rg .transport .gticks .gtick::before{content:'';position:absolute;left:6px;top:0;width:2px;
   height:100%;background:currentColor;border-radius:1px}
 #rg .transport .gticks .gtick:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
+/* ⭐ THE CAPTION SITS UNDER THE BAR IT DESCRIBES — the rule the disputed-shot
+   note was moved for when it landed 7,401px from the figure it explained.
+   ⛔⛔ BUT IT IS A SIBLING OF `.scrubwrap`, NOT A CHILD, AND THAT IS NOT A STYLE
+   CHOICE. `.gticks` is `position:absolute; bottom:3px` of `.scrubwrap`, so a
+   child that makes that box 28px taller moves every tick 28px DOWN — off the bar
+   and onto the caption. Measured before it shipped: the bar ran 929–973 and the
+   ticks rendered at 979–988. **The caption added to name the marks detached the
+   marks from the thing they mark.** A sibling changes nothing the ticks are
+   positioned against. */
+#rg .gtickcap{flex:1 0 100%;margin:2px 0 0;font-size:.7rem;line-height:1.25;
+ color:var(--muted);text-align:left}
 /* THE SHARE ROW. Quiet by default -- it is not a transport control and must not
    read as one -- and the confirmation sits beside it rather than replacing the
    label, so the button a reader just pressed is still where they left it.

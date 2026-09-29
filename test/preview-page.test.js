@@ -121,7 +121,20 @@ test('⛔ an empty column says WHEN counting starts, not only that it is empty',
      MUTATION THIS MUST FAIL AGAINST: drop the clause and only the first
      assertion survives; type the date instead of reading `schedule.json` and
      the last one, which moves the feed's date, fires. */
-  const { ids, settle } = run({ 'teams.json': { through: '2026-09-18', seasons: {} } });
+  /* ⛔⛔⛔ THE CLOCK IS PINNED, AND IT WAS NOT UNTIL 2026-09-29 — the morning the
+     2026-27 regular season opened, which is the date this fixture names. The
+     sentence only renders while `!counting.started`, so on 29 September the
+     branch became unreachable and this test failed against CORRECT code: the
+     page had stopped promising a start date because the season had started.
+     ⭐ A test whose subject is a BEFORE state must own the instant it runs at.
+     `run()` has taken a clock since the test directly below was written; this one
+     simply never passed it, and read as green for as long as the season was out.
+     Shape 10 in `memory/mechanize-the-review.md`, in its other direction: not a
+     check that cannot fail, but one that could only ever pass in conditions that
+     expire. `tools/clock-sweep.sh` exists for this class. */
+  const BEFORE = '2026-09-20T12:00:00Z';
+  const { ids, settle } = run({ 'teams.json': { through: '2026-09-18', seasons: {} } },
+    `?game=${GID}`, BEFORE);
   await settle();
   const said = textOf(ids.pv);
   assert.match(said, /No games counted yet this season/, 'the subject must be on the page');
@@ -129,7 +142,7 @@ test('⛔ an empty column says WHEN counting starts, not only that it is empty',
 
   const moved = run({ 'teams.json': { through: '2026-09-18', seasons: {} },
     'schedule.json': { ...DOCS['schedule.json'],
-      season: { regularSeasonStartDate: '2026-10-07' } } });
+      season: { regularSeasonStartDate: '2026-10-07' } } }, `?game=${GID}`, BEFORE);
   await moved.settle();
   assert.match(textOf(moved.ids.pv), /starts 7 October 2026/,
     'the date is the feed’s, so moving the feed moves the sentence');

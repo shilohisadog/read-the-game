@@ -736,7 +736,12 @@ test('the work panel heads with the lens name, never the name plus its count', (
     const label = chip.querySelector('.pkl').textContent;
     const count = a.$('n_' + l).textContent;
 
-    assert.equal(head.trim(), `How ${label} is counted`,
+    /* ⚠️ THE VERB MOVED ON 2026-09-29 and the CLAIM did not: this test is about
+       the heading naming the lens WITHOUT its count, not about the wording.
+       "How Attempts is counted" put a plural label in front of a singular verb
+       on four of six layers; the heading now finishes the sentence the button
+       starts ("How we counted"), which reads for any label. */
+    assert.equal(head.trim(), `How we count ${label}`,
       `${l}: the heading does not name the lens the reader pressed`);
     // The count is what makes the two readings differ. Without it the assertion
     // above is satisfied by the whole chip and proves nothing.

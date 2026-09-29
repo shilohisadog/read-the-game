@@ -155,7 +155,15 @@ export function workMarkup({ id, L, sl, name, lds, lat, work, box: b, cards, mod
    ...(has(b.a)||has(b.h)?(b.rest||[]).map(r=>`${r.n} ${r.say}`):[])]
    .filter(Boolean).join(' + ');
  return (
-  `<h2>How ${ESC(name)} is counted <span class="wsub">(${mode}, ${when})</span></h2>`
+  /* ⚠️ "HOW WE COUNT X", NOT "HOW X IS COUNTED" — 2026-09-29. The old form put the
+     chip label in front of a singular verb, so every plural lens read wrong:
+     "How Attempts is counted", "How Zone starts is counted". It was survivable
+     while the labels were short, and the `Slot` → `Slot shots` rename made it
+     plain. ⭐ THE NEW FORM IS THE DOOR'S OWN WORDS: the button a reader pressed
+     to get here says `How we counted`, so the heading finishes that sentence
+     instead of starting a different one — and it is number-agnostic, which is
+     why no future label can break it. */
+  `<h2>How we count ${ESC(name)} <span class="wsub">(${mode}, ${when})</span></h2>`
  +`<div class="wg">`
  +`<div class="wc"><h3>Counted <span class="n">${L.counted.length}</span></h3>`
  /* ⚠️ AND THE SENTENCE IS CLOSED HERE. `.lds` is a FRAGMENT -- it is written to

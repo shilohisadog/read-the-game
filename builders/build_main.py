@@ -56,7 +56,6 @@ __CSS__</style>
      the first-visit block replaced on measured grounds (576px -> 305px). Taking
      the name back for a different element would have left that guard passing on
      a page that no longer contains what it was written to keep out. -->
-<h1 class="pagelede">Learn to read hockey · event by event first, add layers after</h1>
 <!-- ⭐⭐ PORTRAIT IS OUT ON A PHONE (Kevin, 2026-09-13): "I have decided portrait
      isn't salvageable, there's no way that portrait will work for a novice, heck
      it doesn't work for me and I know what it's trying to show... a rotate
@@ -81,7 +80,27 @@ __CSS__</style>
   <button class="rotgo" id="rotgo" type="button">Show it anyway</button>
 </div>
 <div class="board">
-  <p class="foot" id="gl">—</p>
+  <!-- ⭐⭐⭐ THE GAME LINE IS THE PAGE'S HEADING — 2026-09-29, Kevin: "I almost
+       think we can delete this" of the tagline that used to be the <h1>. He was
+       right that it was clutter and the delete alone would have left the page
+       with NO heading, which is the state its own comment history was written to
+       prevent. So the heading becomes the line that already says which game this
+       is. `app.js` fills it, and sets <title> from the same string.
+       ⚠️ THE EM-DASH PLACEHOLDER STAYS, and it is load-bearing:
+       `tools/browser/watch-a-game.mjs` greps the game line out of the LIVE DOM
+       and tells a booted page from an unbooted one by whether it reads
+       AWAY-at-HOME or the em-dash. Its parser is tag-agnostic, so promoting the
+       element is safe; replacing that placeholder with prose is not.
+
+       ⛔⛔⛔ AND THIS COMMENT MAY NOT CONTAIN THE GATE'S OWN PATTERN. The first
+       draft of it quoted the regex and the joining word verbatim — and the
+       parser scans a DUMPED DOM, where comments are text. It matched THIS
+       COMMENT instead of the element, read a sentence containing the joining
+       word, and would have reported every dead page as healthy. Caught by
+       `test/shell.test.js` before it shipped. A comment that quotes a live
+       monitor's pattern arms the monitor against itself; describe it in words
+       instead. Same failure the word `final` caused here once. -->
+  <h1 class="foot" id="gl">—</h1>
   <div class="tm a"><span class="ab" id="aAb">&mdash;</span><span class="sc" id="aSc">0</span><div class="pens" id="penA"></div></div>
   <!-- ⭐ THE STANDING CONDITION, AND IT IS A SIBLING OF THE CLOCK RATHER THAN A
        POSITIONED BADGE. Kevin: "the power play pill should be in the bottom
@@ -319,7 +338,7 @@ __CSS__</style>
 <div class="transport"><button class="play" id="play">▶ Play</button>
   <div class="grp" role="group" aria-label="Step through the events"><button class="spd stepb" id="back" aria-label="Previous event">◀ Prev</button><button class="spd stepb" id="fwd" aria-label="Next event">Next ▶</button></div>
   <div class="grp" role="group" aria-label="Replay speed"><button class="spd stepb" id="slower">&#9664; Slower</button><button class="spd stepb" id="faster">Faster &#9654;</button></div>
-  <div class="scrubwrap"><input class="scrub" id="scrub" type="range" min="-1" max="1" value="-1"><div class="gticks" id="gticks" role="group" aria-label="Goals in this game"></div></div></div>
+  <div class="scrubwrap"><input class="scrub" id="scrub" type="range" min="-1" max="1" value="-1"><div class="gticks" id="gticks" role="group" aria-label="Goals in this game"></div></div><p class="gtickcap" id="gtickcap" hidden></p></div>
 <!-- ⭐ COPY A LINK TO THIS MOMENT. The read side has been built and tested since
      the learn-page doors -- `deeplink.js::format` even says in its own docstring
      that it is "the link a copy this moment control emits" -- and nothing ever
@@ -355,7 +374,7 @@ __CSS__</style>
      thing, even when considering past guidance (which was based on previous UX
      situation)." -->
 <div class="newcomer" id="newcomer"></div>
-<div class="pickrow" role="radiogroup" aria-label="Which layer is on the ice" id="pickrow"><span class="pklab">Layers</span><button class="pk" id="pkNone" data-l="none" role="radio" aria-checked="true"><span class="pkl">Just events</span></button><span class="pksep" aria-hidden="true"></span><button class="pk" id="pkCorsi" data-l="corsi" role="radio" aria-checked="false"><span class="pkl">Attempts</span><span class="pkn" id="n_corsi">0</span></button><button class="pk" id="pkSlot" data-l="slot" role="radio" aria-checked="false"><span class="pkl">Slot</span><span class="pkn" id="n_slot">0</span></button><button class="pk" id="pkBlocked" data-l="blocked" role="radio" aria-checked="false"><span class="pkl">Blocked</span><span class="pkn" id="n_blocked">0</span></button><button class="pk" id="pkGoalie" data-l="goaltending" role="radio" aria-checked="false"><span class="pkl">Goaltending</span><span class="pkn" id="n_goaltending">0</span></button><button class="pk" id="pkWhistle" data-l="whistle" role="radio" aria-checked="false"><span class="pkl">Stoppages</span><span class="pkn" id="n_whistle">0</span></button><button class="pk" id="pkZone" data-l="zonestart" role="radio" aria-checked="false"><span class="pkl">Zone starts</span><span class="pkn" id="n_zonestart">0</span></button></div>
+<div class="pickrow" role="radiogroup" aria-label="Which layer is on the ice" id="pickrow"><span class="pklab">Layers</span><button class="pk" id="pkNone" data-l="none" role="radio" aria-checked="true"><span class="pkl">Just events</span></button><span class="pksep" aria-hidden="true"></span><button class="pk" id="pkCorsi" data-l="corsi" role="radio" aria-checked="false"><span class="pkl">Attempts</span><span class="pkn" id="n_corsi">0</span></button><button class="pk" id="pkSlot" data-l="slot" role="radio" aria-checked="false"><span class="pkl">Slot shots</span><span class="pkn" id="n_slot">0</span></button><button class="pk" id="pkBlocked" data-l="blocked" role="radio" aria-checked="false"><span class="pkl">Blocked</span><span class="pkn" id="n_blocked">0</span></button><button class="pk" id="pkGoalie" data-l="goaltending" role="radio" aria-checked="false"><span class="pkl">Goaltending</span><span class="pkn" id="n_goaltending">0</span></button><button class="pk" id="pkWhistle" data-l="whistle" role="radio" aria-checked="false"><span class="pkl">Stoppages</span><span class="pkn" id="n_whistle">0</span></button><button class="pk" id="pkZone" data-l="zonestart" role="radio" aria-checked="false"><span class="pkl">Zone starts</span><span class="pkn" id="n_zonestart">0</span></button></div>
 <p class="lcap" id="lcap"></p>
 <details class="zone zcue"><summary class="zh">The next play<span class="zon" id="zCueOn"></span></summary>
 <div class="figpick"><div class="grp" role="group" aria-label="Whether the next play is marked before it happens"><button class="lyr cbtn" data-c="on" aria-pressed="true">Show the shading</button><button class="lyr cbtn" data-c="off" aria-pressed="false">No shading</button></div>

@@ -87,10 +87,31 @@ test('the game page ships the same nav as the front page', () => {
     + `${NAV.length} plus the wordmark: ${JSON.stringify(g)}`);
   assert.deepEqual(g, i, 'the two headers have drifted apart');
 
-  // AND THE LEDE IS BACK, in its own words rather than the front page's.
-  assert.match(app.replace(/<!--[\s\S]*?-->/g, ''),
-    /<h1 class="pagelede">Learn to read hockey[^<]*add layers after<\/h1>/,
-    'the game page lost the sentence that says what to do on it');
+  /* ⭐⭐⭐ AND THE PAGE HAS EXACTLY ONE HEADING, AND IT NAMES THE GAME — 2026-09-29.
+     This used to require the tagline `<h1 class="pagelede">Learn to read hockey ·
+     event by event first, add layers after</h1>`, which was the same heading on
+     all 4,551 game pages. Kevin: *"I almost think we can delete this"* — right
+     about the clutter, and deleting it alone would have left the page with NO
+     heading, which is the state this file's own history was written to prevent.
+     ⚠️ SO THE CHECK IS ABOUT THE COUNT AND THE SUBJECT, not about a sentence. One
+     `<h1>`, and it is `#gl` — the line that already said which game this is. A
+     second heading, or a heading that is not the game line, both go red. */
+  /* ⚠️⚠️ SCRIPT AND STYLE COME OUT FIRST, and the first draft of this check did
+     not do it. The built page INLINES ITS OWN SOURCE, so a CSS comment reading
+     *"the `<h1>` is gone (it had become the header wordmark repeated)"* counts as
+     a heading — five phantom matches, and the assertion reported eight `<h1>`
+     elements on a page that has one. ⭐ The trap this repo names most often:
+     **a scanner that reads the explanation as data.** Strip the two blocks that
+     carry prose about markup before counting markup. */
+  const clean = app.replace(/<script[\s\S]*?<\/script>/g, '')
+                   .replace(/<style[\s\S]*?<\/style>/g, '')
+                   .replace(/<!--[\s\S]*?-->/g, '');
+  const h1s = clean.match(/<h1[^>]*>/g) || [];
+  assert.equal(h1s.length, 1, `the game page has ${h1s.length} <h1> elements: ${h1s.join(' ')}`);
+  assert.match(h1s[0], /id="gl"/,
+    'the page\'s heading is not the game line, so every game page shares one heading again');
+  assert.doesNotMatch(clean, /class="pagelede"/,
+    'the tagline came back, and with the game line as the heading it is a second one');
 
   // ⚠️ AND NOTHING SHIPPED A MARKER. `str.replace` cannot fail — it just does not
   // happen — and a `__PLACEHOLDER__` has reached a built page from this builder
@@ -692,7 +713,13 @@ test('the game line is part of the scoreboard, and the gate can still read it', 
   const a = boot();
   assert.match(a.$('gl').textContent, / at /,
     'the game line stopped naming both clubs, and the live-watch gate greps for it');
-  assert.match(app, /id="gl">—<\/p>|id="gl">—<\/span>/,
+  /* ⚠️ `h1` JOINED `p` AND `span` ON 2026-09-29 when the game line became the
+     page's heading. The TAG was never the claim — `gameLineOf` matches
+     `id="gl"[^>]*>` and does not care — but the EM-DASH is, and it is the whole
+     reason this assertion exists: a placeholder containing " at " would report
+     every dead page as healthy, which is the failure the word `final` caused
+     here once already. */
+  assert.match(app, /id="gl">—<\/(p|span|h1)>/,
     'the placeholder stopped being an em-dash, so the gate can no longer tell empty from unbooted');
 });
 

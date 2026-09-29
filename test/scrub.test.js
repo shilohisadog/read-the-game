@@ -154,3 +154,50 @@ test('⛔ the goal tick out-specifies the transport button rule that once ate it
   assert.ok(strip && /pointer-events:\s*none/.test(strip[1]),
     'the tick strip captures pointer events, so it swallows drags meant for the scrubber');
 });
+
+/**
+ * ⛔⛔⛔ THE GOAL MARKS ARE NAMED ON SCREEN, AND THE CAPTION DOES NOT MOVE THEM.
+ *
+ * Kevin, 2026-09-29: *"does the viewer know what the tic marks below the scrubber
+ * are, since we don't say 'goals are identified below the scrubber'?"* They did
+ * not. Each tick carried a `title` and an `aria-label` — so a SCREEN READER was
+ * told and a sighted viewer was not, and `title` needs hover, which a phone does
+ * not have. The only nearby mention of goals is in the dismissible first-visit
+ * block and is about the event caption instead.
+ *
+ * ⛔⛔ AND THE FIRST VERSION OF THE FIX BROKE THE THING IT EXPLAINED. `.gticks` is
+ * `position:absolute; bottom:3px` of `.scrubwrap`, so putting the caption INSIDE
+ * that box made it 28px taller and pushed every tick 28px down — off the bar and
+ * onto the caption. Measured before it shipped: the bar ran 929–973 and the ticks
+ * rendered at 979–988. **The sentence added to name the marks detached the marks
+ * from the thing they mark.**
+ *
+ * ⚠️ THE SUITE CANNOT SEE PIXELS, SO IT HOLDS THE CAUSE. The defect was a
+ * containment relationship, and that IS in the markup: the caption must not be a
+ * descendant of the element the ticks are positioned against. A layout test would
+ * have needed a browser; this needs the builder's own output.
+ */
+test('⛔⛔ the goal-tick caption is a SIBLING of the scrubber, never inside it', () => {
+  /* MUTATION: move `<p id="gtickcap">` back inside `.scrubwrap` in build_main.py
+     and this fires — which is exactly what the first draft shipped. */
+  const page = readFileSync(new URL('../src/game.html', import.meta.url), 'utf8');
+  const wrap = /<div class="scrubwrap">([\s\S]*?)<\/div><\/div>/.exec(page);
+  assert.ok(wrap, 'the scrubwrap is no longer recognisable in the markup');
+  assert.doesNotMatch(wrap[1], /id="gtickcap"/,
+    'the caption is inside `.scrubwrap`, whose height is what `.gticks` is positioned '
+    + 'against — every goal tick will render below the bar instead of on it');
+  assert.match(page, /id="gticks"[^>]*>[\s\S]{0,40}<\/div><\/div><p class="gtickcap"/,
+    'the caption is no longer directly after the scrubber, so it names marks it is not beside');
+});
+
+test('⭐ the caption appears only when the game has goals to mark', () => {
+  /* A sentence saying "the coloured lines are goals" beside a bar with no lines
+     describes something that is not there — the same rule `rate: null` keeps in
+     the archive: "we measured nothing" is not "there were none". */
+  const a = boot(rich);
+  const cap = a.$('gtickcap');
+  assert.equal(cap.hidden, false, 'the reference game has goals and the caption is hidden');
+  assert.match(cap.textContent, /goals/, 'the caption does not say what the marks are');
+  assert.match(cap.textContent, /click/i, 'the caption does not say the marks are clickable, '
+    + 'which is the half of this nothing else discloses');
+});

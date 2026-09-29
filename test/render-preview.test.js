@@ -546,8 +546,16 @@ test('the preview chrome scales with the frame, so the ice cannot be crowded out
     const re = new RegExp(`#rg\\.preview [^{]*${sel}\\{[^}]*font-size:min\\(`);
     assert.match(app, re, `the preview does not scale ${sel} with its frame`);
   }
-  assert.match(app, /#rg\.preview \.pagelede\{display:none/,
-    'the tagline is still introducing a five-second taste');
+  /* ⚠️ THE TAGLINE IS GONE ENTIRELY as of 2026-09-29 — the game line became the
+     page's heading and `.pagelede` was deleted, so the rule this used to require
+     went with it (`css-orphans.test.js` named it the same afternoon). The CLAIM
+     survives and is what is checked: a five-second taste carries no page-level
+     heading chrome. Nothing to hide, plus the element that replaced it is hidden
+     here too. */
+  assert.doesNotMatch(app, /class="pagelede"/,
+    'the tagline came back, and a five-second taste does not introduce itself');
+  assert.match(app, /#rg\.preview [^{]*\.foot[,{]/,
+    'the game line — now the page heading — is not hidden in the preview frame');
   assert.match(app, /#rg\.preview \.mid\{min-width:0\}/,
     'the middle column still has a px floor, which overflows a 360px frame');
   // A cap that is not a cap would let the desktop drift, so check one by value.
