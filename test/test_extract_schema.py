@@ -57,7 +57,7 @@ EXPECTED_EVENT = {
     "sit", "srv", "type", "x", "y", "zone",
 }
 # The number that must move when either set above does.
-EXPECTED_SCHEMA = 2
+EXPECTED_SCHEMA = 3
 
 
 def _rich():
@@ -209,6 +209,75 @@ class ExtractSchema(unittest.TestCase):
             self.assertNotIn("recap", self._doc(rail),
                              f"{label}: the key is present, so absence and failure "
                              "cannot be told apart")
+
+    def test_the_final_horn_reports_the_ice_as_the_last_play_left_it(self):
+        """⛔⛔⛔ THE FEED'S SITUATION CODE ON `game-end` IS NOT A SITUATION.
+
+        It is whatever the sheet looked like after the whistle. Measured
+        2026-09-30 over 25 games: it disagrees with the last play in 13, and the
+        values include `0101` and `1010`, which are not hockey.
+
+        Read literally, `0440` says both goaltenders are pulled and the sheet is
+        four a side. On the FLA-CAR opener that put "FLA has pulled the goaltender
+        for an extra attacker. CAR has pulled the goaltender for an extra
+        attacker." under the rink, and labelled a 3-on-3 overtime
+        "Overtime · 4-on-4" -- reading the 4s out of an artifact. Kevin found both
+        from the live site within an hour of the horn becoming a frame.
+
+        ⚠️ THE LAST PLAY, NOT THE LAST EVENT. A `period-end` disagrees with the
+        play before it in 15 of 88 sampled periods, and often legitimately -- a
+        period really can end with a goaltender pulled. Walking back over
+        `PLAYABLE_SKIP` keeps the real empty net and steps over the artifacts.
+
+        MUTATION: inherit from `events[-1]` instead and the second case below
+        fails, because it would take the period-end's code rather than the play's.
+        """
+        rich = _rich()
+        def play(t, sit, **kw):
+            d = {"typeDescKey": t, "situationCode": sit, "periodDescriptor":
+                 {"number": 4, "periodType": "OT"}, "timeRemaining": "00:05",
+                 "timeInPeriod": "04:55", "details": {}}
+            d.update(kw)
+            return d
+        pbp = {
+            "id": int(rich["game"]["id"]), "gameDate": rich["game"]["date"],
+            "awayTeam": {"id": rich["teams"]["away"]["id"],
+                         "abbrev": rich["teams"]["away"]["ab"]},
+            "homeTeam": {"id": rich["teams"]["home"]["id"],
+                         "abbrev": rich["teams"]["home"]["ab"]},
+            "rosterSpots": [],
+            "plays": [play("hit", "1331"),
+                      play("period-end", "1331"),
+                      play("game-end", "0440")],
+        }
+        box = {"homeTeam": {"score": 0, "sog": 0}, "awayTeam": {"score": 0, "sog": 0}}
+        out = E.extract(pbp, {"data": []}, box)
+        horn = out["events"][-1]
+        self.assertEqual(horn["type"], "game-end", "the fixture did not reach the horn")
+        self.assertEqual(
+            horn["sit"], "1331",
+            "the horn is still reporting the feed's after-the-whistle code, so the "
+            "page will say both goaltenders were pulled and call 3-on-3 overtime "
+            "4-on-4")
+
+        # ⭐ AND IT STEPS OVER A PERIOD-END THAT CARRIES ITS OWN ODD CODE, which
+        # is what makes "the last PLAY" the rule rather than "the last event".
+        pbp["plays"] = [play("shot-on-goal", "1551"),
+                        play("period-end", "0651"),
+                        play("game-end", "1010")]
+        horn = E.extract(pbp, {"data": []}, box)["events"][-1]
+        self.assertEqual(horn["sit"], "1551",
+                         "the horn inherited the period-end's code instead of the "
+                         "last play's")
+
+        # ⛔ A REAL EMPTY NET SURVIVES, because the PLAY itself carried it. A fix
+        # that scrubbed pulled goaltenders would be a different defect wearing
+        # this one's clothes.
+        pbp["plays"] = [play("shot-on-goal", "0651"),
+                        play("game-end", "0440")]
+        horn = E.extract(pbp, {"data": []}, box)["events"][-1]
+        self.assertEqual(horn["sit"], "0651",
+                         "a game that ended with the net empty no longer says so")
 
     def test_a_recap_never_widens_the_document(self):
         """⚠️ THE PIN HAS TO SEE IT. `recap` is the first top-level key added since

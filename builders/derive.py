@@ -153,8 +153,10 @@ HERO_LOOP_CAP = 30
 # and the page come to disagree.
 # ⏹ `ATTEMPT_TYPES` lived beside it until 2026-09-17, read only by the loop's
 # old start rule; a constant nobody reads is a constant nobody checks.
-PLAYABLE_SKIP = {"stoppage", "period-start", "period-end", "game-end",
-                 "delayed-penalty"}
+# ONE STATEMENT, IN extract.py. It moved there on 2026-09-30 when the extractor
+# itself needed it — see the note over it. Restating it here is the drift that
+# file's comment names.
+PLAYABLE_SKIP = E.PLAYABLE_SKIP
 
 
 def _hero_loop(events):

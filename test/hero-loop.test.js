@@ -25,12 +25,29 @@ const appjs = readFileSync(new URL('../src/app.js', import.meta.url), 'utf8');
    less its first hit, putting the goal on play 8 (see test/helpers/page.js). */
 const early = HERO_GAME;
 
-/** The set literal named in derive.py, read from the source rather than restated. */
+/**
+ * The set literal named in the Python tier, read from the source rather than restated.
+ *
+ * ⏹ IT MOVED FILES ON 2026-09-30. `PLAYABLE_SKIP` lived in `derive.py` while
+ * derive was its only reader; the final horn needing to know what the last PLAY
+ * was made `extract.py` a second reader, and derive already imports extract — so
+ * the set went to the module that knows what an event means and derive now reads
+ * it. This check follows the definition rather than the filename it used to be in.
+ */
+const pyExtract = readFileSync(new URL('../builders/extract.py', import.meta.url), 'utf8');
 function pySet(name) {
-  const m = new RegExp(`^${name} = \\{([^}]*)\\}`, 'm').exec(derive);
-  assert.ok(m, `derive.py no longer defines ${name} — this check has lost its subject`);
+  const m = new RegExp(`^${name} = \\{([^}]*)\\}`, 'm').exec(pyExtract);
+  assert.ok(m, `extract.py no longer defines ${name} — this check has lost its subject`);
   return new Set([...m[1].matchAll(/"([^"]+)"/g)].map(x => x[1]));
 }
+
+/* ⭐ AND derive MUST STILL READ IT RATHER THAN RESTATE IT, which is the property
+   the move was made to keep. A copy pasted back into derive.py would satisfy
+   every assertion below while the two drifted apart again. */
+test('the Python tier states what is not a play exactly once', () => {
+  assert.match(derive, /^PLAYABLE_SKIP = E\.PLAYABLE_SKIP/m,
+    'derive.py defines its own not-a-play set again instead of reading extract.py\'s');
+});
 const same = (a, b) => a.size === b.size && [...a].every(x => b.has(x));
 
 /**

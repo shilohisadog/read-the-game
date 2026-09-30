@@ -65,13 +65,29 @@ GAME = "2023020204"
 # number turns the suite red.
 #
 #   1  the shape as of 2026-09-08, plus `clip` on a goal
+#   3  2026-09-30, the final horn stops reporting a situation the feed only
+#      wrote after the whistle — see the note beside `game-end` below. A VALUE
+#      changed rather than a key, which is the case this number exists for at
+#      least as much as a new field: nothing about the document's shape would
+#      have told anybody.
 #   2  2026-09-30, plus `recap` — the league's whole-game video, from the
 #      `right-rail` feed. ⚠️ THE BUMP IS NOT WHAT MAKES IT REACH THE ARCHIVE, and
 #      saying so matters: `recap` can only appear on a game whose RAW gained a
 #      fourth payload, and a new raw changes `src`, which re-derives that game by
 #      itself. The bump is here because the emitted shape changed and this number
 #      exists so that judgement is never made by forgetting.
-SCHEMA = 2
+SCHEMA = 3
+
+# ⭐ WHAT IS NOT PLAY — one statement, and `derive.py` reads it from here.
+#
+# It lived in derive.py until 2026-09-30, which was fine while derive was its
+# only reader. The final horn needing to know what the last PLAY was made this
+# file a second reader, and derive already imports this one — so the set moves to
+# the module that knows what an event MEANS rather than being stated twice in a
+# direction that cannot import. `src/lib/layer.js::NOT_A_PLAY` is the JavaScript
+# half of the same vocabulary and `test/hero-loop.test.js` holds the two together.
+PLAYABLE_SKIP = {"stoppage", "period-start", "period-end", "game-end",
+                 "delayed-penalty"}
 
 # ---------------------------------------------------------------- extraction
 
@@ -277,6 +293,45 @@ def extract(pbp, shifts, box=None, rail=None):
             # the key is missing; that is the app's problem and it is a real one.
             if d.get("highlightClip") is not None:
                 ev["clip"] = d["highlightClip"]
+        # ⛔⛔⛔ THE FINAL HORN CARRIES A SITUATION CODE THAT IS NOT A SITUATION.
+        #
+        # `situationCode` is [awayGoalie][awaySkaters][homeSkaters][homeGoalie],
+        # and on `game-end` the feed writes whatever the sheet looked like after
+        # the whistle -- goalies gone, benches emptying. Measured 2026-09-30 over
+        # 25 games (the season's first five plus twenty from the archive): it
+        # DISAGREES with the last play in 13 of them, and the values include
+        # `0101` and `1010`, which are not hockey at all.
+        #
+        # Read literally, `0440` says both goaltenders are pulled and the sheet is
+        # four a side. On the FLA-CAR opener that put "FLA has pulled the
+        # goaltender for an extra attacker. CAR has pulled the goaltender for an
+        # extra attacker." under the rink, and labelled a 3-on-3 overtime
+        # "Overtime · 4-on-4" -- reading the 4s out of an artifact. Kevin found
+        # both from the live site within an hour of the frame shipping.
+        #
+        # ⭐ SO THE HORN SHOWS THE ICE AS THE LAST PLAY LEFT IT. That is the one
+        # true answer available: the game is over, there IS no situation, and the
+        # state at the final whistle is the thing a reader is actually asking
+        # about. It is normalisation of the same kind as `_norm` rotating a
+        # period's coordinates -- the feed's own field, corrected where it
+        # describes something other than the ice.
+        #
+        # ⚠️ AND IT IS FIXED HERE RATHER THAN IN THE RENDERER because `sit` has
+        # more than one reader: the strength ladder, the on-ice boxes, the
+        # empty-net note and the period label all parse it. A renderer-side patch
+        # would fix the sentence Kevin saw and leave the others reading `0101`.
+        # ⚠️ THE LAST PLAY, NOT THE LAST EVENT, and the difference is measurable.
+        # A `period-end` disagrees with the play before it in 15 of 88 sampled
+        # periods — and often LEGITIMATELY, because a period really can end with a
+        # goaltender pulled (`0651` is a real empty net, not an artifact). Walking
+        # back to the last thing that was actually play gets both cases right: the
+        # empty net survives, because the play itself carried it, and the
+        # after-the-whistle codes are stepped over.
+        if t == "game-end":
+            for prev in reversed(events):
+                if prev["type"] not in PLAYABLE_SKIP:
+                    ev["sit"] = prev.get("sit")
+                    break
         events.append(ev)
 
         if t in ("shot-on-goal", "goal"):
