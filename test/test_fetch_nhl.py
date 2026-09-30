@@ -675,6 +675,49 @@ class NeverInterprets(unittest.TestCase):
         self.assertEqual(sorted(latest), sorted(F.ESSENTIAL),
                          "the pointer claims a feed this run never stored")
 
+    def test_a_pointer_from_before_a_new_feed_is_not_unchanged(self):
+        """⭐⭐ THE STATE EVERY ARCHIVED GAME IS IN THE DAY A FEED IS ADDED.
+
+        On 2026-09-30 `right-rail` joined FEEDS. Every pointer already in the
+        bucket names three feeds; a run that called those games UNCHANGED would
+        leave them permanently without the new payload, and the archive would
+        look healthy while the feature silently applied to nothing.
+
+        ⚠️ WRITTEN BECAUSE I ALMOST TESTED THE OPPOSITE. Adding the feed broke a
+        test about index migration whose fixture held a three-feed pointer, and
+        the fix there was to add the fourth to the fixture -- correct for that
+        test, and it left the REAL state of every live game covered by nothing.
+        A test edited to pass is a behaviour somebody decided to tolerate.
+
+        MUTATION: compare only the feeds the pointer already names -- `all(prev[n]
+        == digests[n] for n in prev)` -- and this reports unchanged, which is the
+        shape in which the recap would never have reached a single game.
+        """
+        # A POINTER NAMING ONLY THE OLD FEEDS -- exactly what is in the bucket for
+        # all 4,623 archived games this morning.
+        before = DictStore({
+            "raw/2026020001/latest.json": json.dumps({
+                "play-by-play": hashlib.sha256(PBP).hexdigest(),
+                "boxscore": hashlib.sha256(BOX).hexdigest(),
+                "shifts": hashlib.sha256(SHF).hexdigest(),
+            }).encode(),
+        })
+        rep, store, _ = self.run_one(feed_routes(), store=before)
+        self.assertEqual(rep.unchanged, 0,
+                         "a game whose pointer predates the new feed was called "
+                         "unchanged, so it would never gain one")
+
+        latest = json.loads(store.obj["raw/2026020001/latest.json"].decode())
+        self.assertIn("right-rail", latest,
+                      "the pointer was rewritten without the new feed")
+
+        # ⭐ AND THE CONTROL, so this is not merely "any pointer re-fetches":
+        # running again, now that the pointer names all four, IS unchanged.
+        again, _, _ = self.run_one(feed_routes(), store=store)
+        self.assertEqual(again.unchanged, 1,
+                         "a pointer naming every feed still re-fetches, so the "
+                         "archive would be rewritten every single night")
+
     def test_every_essential_feed_still_blocks(self):
         """⭐ THE CONTROL: the rule above must not have loosened the other three.
         Without this, `ESSENTIAL` could be emptied and the test above would still
