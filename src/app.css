@@ -1160,6 +1160,18 @@
    disagree at every speed -- the subject of docs/event-timing.md. The shorthand
    still needs A duration to be valid; `render-transport.test.js` pins that the script
    overwrites it, so if the assignment ever goes, a test does too. */
+/* ⭐⭐ THE HORN'S CAPTION DOES NOT FADE, AND THAT IS THE EXISTING RULE RATHER
+   THAN AN EXCEPTION TO IT. `sayCaption` sets this pill's duration from `dwell(e)`
+   so that it "lasts exactly as long as the frame it describes" — and the final
+   horn is the one frame that has no successor. Applied there, the same sentence
+   means indefinitely. Kevin, 2026-09-30: *"the 'Final' button needs to remain on
+   the screen, currently it displays for a few seconds and then goes away."*
+   ⚠️ `animation:none` RATHER THAN A LONGER DURATION. A very large duration is a
+   number nobody chose that still expires, on a page that may sit at the horn for
+   as long as a reader likes; this states the property instead. The base rule's
+   `transform:translateX(-50%)` applies with the animation off, so the pill does
+   not need to restate its own centring. */
+#rg .caption.stay{animation:none;opacity:1}
 #rg .caption.on{animation:cap 2.2s ease}@keyframes cap{0%{opacity:0;transform:translateX(-50%) translateY(6px)}12%{opacity:1;transform:translateX(-50%) translateY(0)}82%{opacity:1}100%{opacity:0}}
 #rg .caption .tag{font-family:ui-monospace,Menlo,monospace;font-weight:700;font-size:.72rem;padding:2px 7px;border-radius:5px;margin-right:7px}
 #rg .caption .tag.a{background:var(--away);color:var(--away-ink)}#rg .caption .tag.h{background:var(--home);color:var(--home-ink)}

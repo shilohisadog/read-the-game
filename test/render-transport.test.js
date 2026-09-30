@@ -1030,3 +1030,52 @@ test('⛔⛔ a gesture that BEGAN on a door does not step, even when the page mo
   assert.equal(+a.$('scrub').value, before + 1,
     'the ice stopped stepping once a door had ever been opened');
 });
+
+/**
+ * ⭐⭐ THE HORN'S CAPTION DOES NOT EXPIRE.
+ *
+ * Kevin, 2026-09-30, at the end of the FLA-CAR opener: *"the 'Final' button needs
+ * to remain on the screen, currently it displays for a few seconds and then goes
+ * away, I'd like it to remain."*
+ *
+ * ⭐ IT IS THE EXISTING RULE, NOT AN EXCEPTION TO IT. `sayCaption` drives the pill
+ * from `dwell(e)` so it "lasts exactly as long as the frame it describes"; the
+ * final frame has no successor, so applied there the same sentence means
+ * indefinitely. The code asks the TIMELINE rather than the event type, which is
+ * why this test drives the scrubber instead of constructing a `game-end`.
+ */
+test('⭐ the last frame keeps its caption, and leaving takes it away', () => {
+  const a = boot();
+  const s = a.$('scrub');
+  const jump = k => { s.value = String(k); s.onchange({ target: { value: s.value } }); };
+  const drag = k => { s.value = String(k); s.oninput({ target: { value: s.value } }); };
+  const cap = a.$('caption');
+  const last = +s.max;
+
+  jump(last);
+  assert.match(String(cap.innerHTML), /Final/, 'the last frame did not caption at all');
+  assert.ok(cap.classList.contains('stay'),
+    'the horn’s caption still expires, so it vanishes while the reader is reading it');
+
+  /* ⛔ AND LEAVING TAKES IT OFF. Dragging back is not a `moment`, so no caption is
+     composed on the way and nothing else would have cleared the class — the pill
+     that never expires is the one that must be removed deliberately, or "Final"
+     sits over the ice in the middle of a game. */
+  drag(last - 1);
+  assert.ok(!cap.classList.contains('stay'),
+    '"Final" is still pinned over the ice after scrubbing back into the game');
+
+  jump(last);
+  assert.ok(cap.classList.contains('stay'), 'returning to the horn does not restore the caption');
+});
+
+test('⛔ and the stylesheet is what actually stops it — a class alone proves nothing', () => {
+  /* ⚠️ VERIFYING AN ATTRIBUTE IS NOT VERIFYING VISIBILITY, twice paid for on this
+     project. `stay` could be toggled perfectly onto an element the stylesheet
+     still fades out on a timer, and every assertion above would pass while Kevin
+     watched the pill disappear exactly as before. */
+  assert.match(PAGE_CSS, /\.caption\.stay\{[^}]*animation:\s*none/,
+    'the stay class does not stop the fade, so the caption still expires');
+  assert.match(PAGE_CSS, /\.caption\.stay\{[^}]*opacity:\s*1/,
+    'the stay class does not make the caption opaque, so it stops invisible');
+});

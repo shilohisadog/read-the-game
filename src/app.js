@@ -863,6 +863,12 @@ function render(i,how){
 
  $('nTrails').textContent=trailsNote(trails,ASPLAYED);
  document.getElementById('rg').classList.toggle('ended',i>=EV.length-1);
+ /* ⛔ AND LEAVING THE HORN TAKES IT BACK OFF. Dragging the scrubber is not a
+    `moment`, so no caption is composed on the way back and nothing else would
+    have cleared `stay` — "🏁 Final" would sit over the ice in the middle of a
+    game the reader had scrubbed back into. The pill that never expires is the
+    one that has to be removed deliberately. */
+ if(i<EV.length-1){const cp=$('caption');if(cp)cp.classList.remove('stay');}
  /* ⛔ AND THE ARCHIVE DOOR HEARS THE HORN — see `alotDrawnAtEnd`. `i` here is
     `render`'s parameter, the frame being DRAWN, which is the reading the `ended`
     class one line up already takes; the same frame is handed on, so the panel
@@ -1090,6 +1096,12 @@ function sayCaption(side,ab,label,rest,e){const c=$('caption');
     to `.style` at runtime is how the verdict dot and the team colours already
     work. A duration living only in CSS would also be invisible to every test we
     have, because the render harness has no stylesheet. */
+ /* ⭐ A FRAME WITH NO SUCCESSOR KEEPS ITS SENTENCE. This asks the timeline, not
+    the event type: the rule is "as long as the frame it describes", and the last
+    frame does not end. It happens to be the horn today because `game-end` is last
+    — a game whose feed carried no horn would keep its final play's caption for
+    the same reason, which is the rule holding rather than a second one. */
+ c.classList.toggle('stay',e===EV[EV.length-1]);
  c.style.animationDuration=dwell(e)+'ms';
  c.classList.remove('on');void c.offsetWidth;c.classList.add('on');}
 /* ⭐ THE PENALTY IS OVER, AND NOTHING IN THE FEED SAYS SO. The pill names the
