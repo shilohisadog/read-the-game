@@ -440,3 +440,72 @@ test('before any goal there is no offer at all', () => {
   seek(a, 0);
   assert.equal(a.$('clipbox').hidden, true, 'the offer is up before any goal was scored');
 });
+
+/**
+ * ⭐⭐ THE WHOLE-GAME RECAP, AT THE HORN.
+ *
+ * Kevin, 2026-09-30, once the replay finally had somewhere to end: *"at the end
+ * of the game, does the NHL provide access to a 'game highlights' video that we
+ * could embed?"* It does — `gameVideo.threeMinRecap` on the `right-rail` feed,
+ * a Brightcove id of the same shape as a goal's `clip`.
+ *
+ * ⛔ THE FIXTURE CARRIES NO RECAP AND CANNOT, which is the whole reason it is set
+ * here rather than read. `data/rich.json` is a 2023 game and the archive's raw
+ * bytes predate this feed entirely; every game on the site today is in that
+ * state. So the presence case is CONSTRUCTED and the absence case is the
+ * fixture's own, which is the right way round — the untested path would otherwise
+ * be the one every visitor is on.
+ */
+const withRecap = id => { const g = JSON.parse(JSON.stringify(rich)); g.recap = id; return g; };
+const RECAP = 6398427047112;
+
+test('⭐ at the horn the offer becomes the whole game, not the last goal', () => {
+  const a = boot(withRecap(RECAP));
+  const last = +a.$('scrub').max;
+  seek(a, last);
+
+  const box = a.$('clipbox');
+  assert.equal(box.hidden, false, 'the recap is not offered at the horn');
+  assert.equal(String(box.dataset.id), String(RECAP),
+    `the box points at ${box.dataset.id}, which is not the game's recap`);
+  assert.ok(!box.open,
+    'the recap section ships open, so the advertisement runs unbidden on a reader '
+    + 'who only wanted to see the game end');
+
+  const say = a.$('clipSay').textContent;
+  assert.match(say, /whole game/i, 'the sentence does not say this is the whole game');
+  assert.match(say, /advertisement/, 'the sentence does not warn about the advertisement');
+  /* ⚠️ AND IT CLAIMS NO DURATION. The league's field is called `threeMinRecap`
+     and resolved to a 302-second video when it was loaded in a browser — five
+     minutes. We hold the id and nothing else, so any number here would be ours
+     rather than the league's, and wrong. */
+  assert.doesNotMatch(say, /\d+\s*(min|minute|second|sec)/i,
+    `the recap sentence states a duration we do not hold: ${JSON.stringify(say)}`);
+});
+
+test('⛔ one frame back, the goal clip is the offer again', () => {
+  /* The recap belongs to the horn the way the verdict card does. A version that
+     let it outlive the last frame would put "the whole game" on offer during a
+     game the reader has not finished watching. */
+  const a = boot(withRecap(RECAP));
+  const last = +a.$('scrub').max;
+  seek(a, last);
+  assert.equal(String(a.$('clipbox').dataset.id), String(RECAP));
+
+  seek(a, last - 1);
+  assert.notEqual(String(a.$('clipbox').dataset.id), String(RECAP),
+    'the whole-game recap is still on offer before the game has ended');
+});
+
+test('⛔⛔ a game with no recap is exactly as it was — which is every game today', () => {
+  /* MUTATION: drop the `recap != null` test in `drawClip` and this fires, because
+     the box would point at `undefined` on every archived game at the horn. */
+  const plain = boot(rich);
+  const last = +plain.$('scrub').max;
+  seek(plain, last);
+  const say = plain.$('clipSay').textContent;
+  assert.doesNotMatch(say, /whole game/i,
+    'a game the league published no recap for is offering one anyway');
+  assert.notEqual(String(plain.$('clipbox').dataset.id), 'undefined',
+    'the box points at an undefined video id');
+});

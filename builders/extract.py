@@ -65,7 +65,13 @@ GAME = "2023020204"
 # number turns the suite red.
 #
 #   1  the shape as of 2026-09-08, plus `clip` on a goal
-SCHEMA = 1
+#   2  2026-09-30, plus `recap` — the league's whole-game video, from the
+#      `right-rail` feed. ⚠️ THE BUMP IS NOT WHAT MAKES IT REACH THE ARCHIVE, and
+#      saying so matters: `recap` can only appear on a game whose RAW gained a
+#      fourth payload, and a new raw changes `src`, which re-derives that game by
+#      itself. The bump is here because the emitted shape changed and this number
+#      exists so that judgement is never made by forgetting.
+SCHEMA = 2
 
 # ---------------------------------------------------------------- extraction
 
@@ -108,7 +114,7 @@ def _norm(x, y, side):
         return None, None
     return (-x, -y) if side == "right" else (x, y)
 
-def extract(pbp, shifts, box=None):
+def extract(pbp, shifts, box=None, rail=None):
     home, away = pbp["homeTeam"], pbp["awayTeam"]
 
     roster = {}
@@ -351,6 +357,32 @@ def extract(pbp, shifts, box=None):
         "gshots": gshots,
         "goalies": goalies,
     }
+
+    # ⭐⭐ THE LEAGUE'S RECAP OF THE WHOLE GAME — a Brightcove id, exactly like the
+    # per-goal `clip` above, so the player the page already embeds takes it
+    # unchanged. It comes from the `right-rail` feed, which is the only endpoint
+    # that carries a `gameVideo` block.
+    #
+    # ⛔ TOP LEVEL, NOT INSIDE `game`, AND THAT IS NOT A PREFERENCE. `derive.py`
+    # REPLACES `rich["game"]` wholesale with its own block after calling this, so
+    # a field put there would be produced correctly, thrown away on every run,
+    # and never appear on any page — the same shape as the note beside `_hl` in
+    # that file: *a field derived only on the fresh path is a field every game
+    # loses on the next nightly.*
+    #
+    # ⚠️ ABSENT, NEVER NULL, on `clip`'s own reasoning one screen up: no key means
+    # the league published no recap, which is a different fact from a recap we
+    # failed to read, and a placeholder would make the two indistinguishable.
+    # Preseason is where this bites — 7 of 32 preseason games had none on
+    # 2026-09-30, against 68 of 68 regular-season and playoff games that did.
+    #
+    # ⚠️ AND THE FIELD NAME IS THE LEAGUE'S, NOT A DESCRIPTION. `threeMinRecap`
+    # resolved to a 302-second video when it was loaded in a browser — five
+    # minutes, not three — so nothing we write may quote a duration from it. We
+    # hold the id and nothing else, which is the same rule `clip` already keeps.
+    video = (rail or {}).get("gameVideo") or {}
+    if video.get("threeMinRecap") is not None:
+        out["recap"] = video["threeMinRecap"]
 
     # THE LEAGUE'S OWN NUMBERS, COPIED AND NOT COMPUTED.
     #

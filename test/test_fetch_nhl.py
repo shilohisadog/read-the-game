@@ -95,10 +95,15 @@ def transport_for(routes, default=(404, b"")):
 PBP = b'{"plays":[{"typeDescKey":"goal"}]}'
 BOX = b'{"boxscore":true}'
 SHF = b'{"data":[]}'
+# ⭐ THE FOURTH FEED, 2026-09-30 — the league's whole-game video, which lives only
+# on `right-rail`. The double answers it like the others so that "how many
+# payloads make a game" is stated in exactly one place: `F.FEEDS`.
+RAIL = b'{"gameVideo":{"threeMinRecap":6398427047112}}'
 
 
-def feed_routes(pbp=PBP, box=BOX, shf=SHF):
-    return {"play-by-play": (200, pbp), "boxscore": (200, box), "shiftcharts": (200, shf)}
+def feed_routes(pbp=PBP, box=BOX, shf=SHF, rail=RAIL):
+    return {"play-by-play": (200, pbp), "boxscore": (200, box),
+            "shiftcharts": (200, shf), "right-rail": (200, rail)}
 
 
 # --------------------------------------------------------------------------
@@ -507,12 +512,15 @@ class PointersMustResolve(unittest.TestCase):
     """
 
     def pointer(self, gid="1", **digests):
-        d = {"play-by-play": "aa", "boxscore": "bb", "shifts": "cc"}
+        d = {"play-by-play": "aa", "boxscore": "bb", "shifts": "cc",
+             "right-rail": "dd"}
         d.update(digests)
         return {F.latest_key(gid): json.dumps(d).encode()}
 
-    def keys_for(self, gid="1", feeds=("play-by-play", "boxscore", "shifts")):
-        d = {"play-by-play": "aa", "boxscore": "bb", "shifts": "cc"}
+    def keys_for(self, gid="1",
+                 feeds=("play-by-play", "boxscore", "shifts", "right-rail")):
+        d = {"play-by-play": "aa", "boxscore": "bb", "shifts": "cc",
+             "right-rail": "dd"}
         return {F.raw_key(gid, d[f], f) for f in feeds}
 
     def test_an_intact_pointer_is_left_alone(self):
@@ -524,13 +532,23 @@ class PointersMustResolve(unittest.TestCase):
         self.assertEqual(dangling, {})
         self.assertIn(F.latest_key("1"), store.obj, "an intact pointer must survive")
 
-    def test_a_pointer_missing_one_of_its_three_feeds_is_caught(self):
-        # Two of three stored is a game that looks present and is not -- the
+    def test_a_pointer_missing_any_of_its_feeds_is_caught(self):
+        # Some of them stored is a game that looks present and is not -- the
         # same failure the no-partial-writes rule prevents on the fetch side.
+        #
+        # ⚠️ THE COUNT WAS IN THE NAME AND THE NAME WENT STALE. This read "one of
+        # its THREE feeds" until 2026-09-30, when a fourth arrived; the expectation
+        # is now every feed the audit was not given, derived rather than listed, so
+        # a fifth needs no edit here.
         store = DictStore(self.pointer())
-        dangling = F.audit_pointers(store, self.keys_for(feeds=("play-by-play", "boxscore")))
+        kept = ("play-by-play", "boxscore")
+        dangling = F.audit_pointers(store, self.keys_for(feeds=kept))
         self.assertEqual(list(dangling), ["1"])
-        self.assertEqual(dangling["1"], [F.raw_key("1", "cc", "shifts")])
+        have = {"play-by-play": "aa", "boxscore": "bb", "shifts": "cc",
+                "right-rail": "dd"}
+        self.assertEqual(
+            sorted(dangling["1"]),
+            sorted(F.raw_key("1", d, n) for n, d in have.items() if n not in kept))
 
     def test_the_repair_is_to_forget_the_pointer_not_to_delete_data(self):
         # Dropping the LOCAL pointer makes the game read as new on this same
@@ -544,7 +562,8 @@ class PointersMustResolve(unittest.TestCase):
         # THE END TO END CLAIM. Without the audit this game reports `unchanged`
         # forever and its bytes are never restored.
         digests = {n: hashlib.sha256(b).hexdigest()
-                   for n, b in (("play-by-play", PBP), ("boxscore", BOX), ("shifts", SHF))}
+                   for n, b in (("play-by-play", PBP), ("boxscore", BOX),
+                                ("shifts", SHF), ("right-rail", RAIL))}
         store = DictStore({F.latest_key("1"): json.dumps(digests).encode()})
         t = transport_for({**feed_routes(), "/v1/schedule/": (200, schedule_payload(
             "2026-01-10", [game(1)]))})
@@ -616,6 +635,57 @@ class NeverInterprets(unittest.TestCase):
         rep, store, _ = self.run_one(feed_routes(pbp=junk))
         keys = [k for k in store.obj if k.endswith("play-by-play.json")]
         self.assertEqual(store.obj[keys[0]], junk)
+
+    def test_an_optional_feed_that_fails_costs_its_link_and_not_the_game(self):
+        """⛔⛔⛔ A VIDEO LINK MAY NOT COST A NIGHT OF HOCKEY.
+
+        Every feed was essential by construction until 2026-09-30: a non-200 on
+        any of them set `failed` and the game was stored NOT AT ALL, which is the
+        right rule for the three that ARE the game. `right-rail` carries a video
+        id and nothing a number depends on, so the same rule applied to it would
+        have made a fourth blocking dependency out of a nicety — a new way for a
+        night to go missing, in a pipeline that has already lost 31 hours to a
+        halt nobody questioned.
+
+        MUTATION: drop the `name not in ESSENTIAL` branch in `fetch_nhl.py` and
+        this game vanishes from the store entirely.
+        """
+        routes = feed_routes()
+        routes["right-rail"] = (500, b"")
+        rep, store, _ = self.run_one(routes)
+
+        self.assertEqual(rep.errored, 0,
+                         "a failing video feed was counted as a failed game")
+        keys = [k for k in store.obj if k.endswith("play-by-play.json")]
+        self.assertEqual(len(keys), 1, "the game was not stored at all")
+
+        # THE FAILURE IS STILL RECORDED. Silently dropping it would make an
+        # endpoint that has quietly died indistinguishable from a league that
+        # published no video, which is the same conflation `recap`'s absent key
+        # exists to prevent one tier down.
+        self.assertTrue(any(e["url"].endswith("right-rail") for e in rep.errors),
+                        "the failure was swallowed rather than reported")
+
+        # AND THE POINTER NAMES ONLY WHAT WE HOLD, so derive asks for nothing
+        # that is not there and the game extracts with no recap.
+        # FOUND IN THE STORE, not typed: the fixture's game id is this file's
+        # business and not this assertion's.
+        key = next(k for k in store.obj if k.endswith("latest.json"))
+        latest = json.loads(store.obj[key].decode())
+        self.assertEqual(sorted(latest), sorted(F.ESSENTIAL),
+                         "the pointer claims a feed this run never stored")
+
+    def test_every_essential_feed_still_blocks(self):
+        """⭐ THE CONTROL: the rule above must not have loosened the other three.
+        Without this, `ESSENTIAL` could be emptied and the test above would still
+        pass while a game with no play-by-play stored happily."""
+        for name in sorted(F.ESSENTIAL):
+            routes = feed_routes()
+            routes["shiftcharts" if name == "shifts" else name] = (500, b"")
+            rep, store, _ = self.run_one(routes)
+            self.assertEqual(rep.errored, 1, f"a missing {name} did not fail the game")
+            self.assertFalse([k for k in store.obj if k.endswith("play-by-play.json")],
+                             f"a game missing {name} was stored anyway")
 
     def test_the_path_is_the_hash_of_the_content(self):
         rep, store, _ = self.run_one(feed_routes())
@@ -1030,10 +1100,14 @@ class IngestState(unittest.TestCase):
                 "games": [{"id": 2026020001}],          # old shape: no date
                 "lastIngest": "2026-01-09T11:00:00Z",   # old field
             }).encode(),
+            # EVERY FEED, because "unchanged" means the pointer names what a
+            # fetch would produce. A pointer short one feed is the REPAIR path,
+            # which is a different test.
             "raw/2026020001/latest.json": json.dumps({
                 "play-by-play": hashlib.sha256(PBP).hexdigest(),
                 "boxscore": hashlib.sha256(BOX).hexdigest(),
                 "shifts": hashlib.sha256(SHF).hexdigest(),
+                "right-rail": hashlib.sha256(RAIL).hexdigest(),
             }).encode(),
         })
         rep = self.run_night(store, [game(2026020001)], now="2026-01-11T11:00:00Z")

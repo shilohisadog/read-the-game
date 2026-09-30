@@ -43,7 +43,44 @@ FEEDS = {
     "play-by-play": lambda g: f"{WEB}/gamecenter/{g}/play-by-play",
     "boxscore": lambda g: f"{WEB}/gamecenter/{g}/boxscore",
     "shifts": lambda g: f"{STATS}/shiftcharts?cayenneExp=gameId={g}",
+    # ⭐ THE LEAGUE'S OWN RECAP OF THE WHOLE GAME, added 2026-09-30. Kevin, having
+    # watched a replay reach the horn: *"at the end of the game, does the NHL
+    # provide access to a 'game highlights' video that we could embed?"* It does,
+    # and only here -- `landing` and `boxscore` carry no `gameVideo` block at all.
+    #
+    # ⚠️ THIS IS THE ONE FEED THAT IS NOT IN THE ARCHIVE'S RAW BYTES. The other
+    # three have been stored since the beginning, so every lesson about them is a
+    # local reprocessing pass; this one begins today, which means a game already
+    # archived has no recap until its raw is fetched. That is a deliberate
+    # forward-only start rather than four and a half thousand fresh requests
+    # against a league we do not pay -- and `src` is the digest MANIFEST, so a
+    # game that later gains this raw re-derives by itself with no schema bump.
+    #
+    # ⛔ AND A GAME WITH NO VIDEO IS NOT AN ERROR. Preseason is the common case:
+    # measured over 100 games on 2026-09-30, every one of 66 regular-season and 2
+    # playoff games carried a recap and 7 of 32 preseason games did not. The feed
+    # answers 200 either way and simply omits the block.
+    "right-rail": lambda g: f"{WEB}/gamecenter/{g}/right-rail",
 }
+
+# ⛔⛔⛔ THE FEEDS WITHOUT WHICH THERE IS NO GAME — and the one that is not.
+#
+# Every feed used to be essential by construction: a non-200 on any of them set
+# `failed` and the game was stored NOT AT ALL, on the no-partial-writes rule.
+# That rule is right for the three that ARE the game. Applied to `right-rail` it
+# would mean a hiccup on a VIDEO LINK costs the replay — a brand new way for a
+# night to go missing, over a thing no number depends on.
+#
+# ⚠️ THIS PIPELINE HAS ALREADY LOST 31 HOURS TO A HALT NOBODY QUESTIONED, over a
+# penalty label. The lesson recorded from it was to ask what the fix cost as well
+# as what it fixed; adding a fourth blocking dependency to the nightly is exactly
+# the cost that would not have been asked about.
+#
+# ⭐ SO OPTIONAL MEANS: the error is still recorded, the game still stores, and
+# the digest manifest simply has no entry for it. `derive.py` reads
+# `payloads.get("right-rail")` and produces a game with no recap, which is the
+# same state as every game archived before today.
+ESSENTIAL = {"play-by-play", "boxscore", "shifts"}
 
 # Game states known to mean "this game is over and its feed is complete".
 #
@@ -479,6 +516,9 @@ def ingest(end, days, transport, store, now=None):
             status, body = transport(url)
             if status != 200 or not body:
                 rep.errors.append({"game": gid, "url": url, "status": status})
+                # AN OPTIONAL FEED COSTS ITS OWN ABSENCE AND NOTHING ELSE.
+                if name not in ESSENTIAL:
+                    continue
                 failed = True
                 break
             payloads[name] = body

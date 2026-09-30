@@ -446,7 +446,7 @@ def _refuse(gate, detail):
     return {"gate": gate, "detail": detail}
 
 
-def judge(pbp_raw, box_raw, shifts_raw):
+def judge(pbp_raw, box_raw, shifts_raw, rail_raw=None):
     """Decide a single game. Returns (rich, refusal, noted).
 
     Exactly one of rich/refusal is None. `noted` is vocabulary we recognised as
@@ -465,6 +465,19 @@ def judge(pbp_raw, box_raw, shifts_raw):
         # own hash. This is where that gets noticed, which is where refusals
         # belong.
         return None, _refuse("parse", f"stored bytes are not JSON: {e}"), {}
+
+    # ⛔ THE RECAP FEED MAY NOT REFUSE A GAME, and it is parsed apart from the
+    # three above for exactly that reason. The other feeds ARE the game: without
+    # them there is nothing to show and withholding is the honest answer. This one
+    # carries a video id and nothing a number depends on, so unreadable bytes cost
+    # a link and must never cost the replay. Every archived game predates this
+    # feed and arrives here with `None`, which is the same path.
+    rail = None
+    if rail_raw is not None:
+        try:
+            rail = json.loads(rail_raw.decode())
+        except (ValueError, UnicodeDecodeError):
+            rail = None
 
     # REFUSE ON WHAT CAN CHANGE A NUMBER, RECORD THE REST.
     #
@@ -485,7 +498,7 @@ def judge(pbp_raw, box_raw, shifts_raw):
         return None, _refuse("vocabulary", blocking), noted
 
     try:
-        rich = E.extract(pbp, shifts, box)
+        rich = E.extract(pbp, shifts, box, rail)
     except (KeyError, TypeError, ValueError) as e:
         return None, _refuse("extract", f"{type(e).__name__}: {e}"), noted
 
@@ -608,7 +621,7 @@ def derive(store, end=None, days=None, now=None):
                 pass    # unreadable extract: derive it again
 
         rich, refusal, noted = judge(payloads["play-by-play"], payloads["boxscore"],
-                                     payloads["shifts"])
+                                     payloads["shifts"], payloads.get("right-rail"))
         for field, values in noted.items():
             rep.noted.setdefault(field, set()).update(values)
         if refusal is not None:

@@ -39,7 +39,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-xyGwfpjHSl6+QMPkjfVHWaCcj48UV84xoxn4nFBnk1w=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-hdmkx4spNMqW2vdB8R5JVRtlYMOegPJCT8OeQko3FiQ='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-SpJ1ClvFy4iY8L+Qu2kRNabJPtSdljHzlS6Ar7l9tOs=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-hdmkx4spNMqW2vdB8R5JVRtlYMOegPJCT8OeQko3FiQ='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -11129,6 +11129,36 @@ function drawClip(at){
     goal on the ice" clause travels with the affordance rather than with the box. */
  const live=!!cur&&cur.type==='goal'&&cur.clip!=null;
  document.getElementById('rg').classList.toggle('hasclip',live);
+ /* ⭐⭐ AT THE HORN THE OFFER BECOMES THE WHOLE GAME. Kevin, 2026-09-30, once the
+    replay had somewhere to end: *"at the end of the game, does the NHL provide
+    access to a 'game highlights' video that we could embed?"* It does —
+    `gameVideo.threeMinRecap` on the `right-rail` feed, a Brightcove id of exactly
+    the shape this player already takes.
+
+    ⭐ IT REPLACES THE STICKY GOAL CLIP RATHER THAN JOINING IT. `goalWithClip`
+    keeps the last goal on offer after the playhead moves past it, which is right
+    while a game is running and wrong once it has finished: at the horn the more
+    useful video is the night, not the last of its goals. One box, one offer, and
+    the reader is never asked to choose between two links that both say NHL.com.
+
+    ⚠️ NO DURATION IS CLAIMED, and the league's own field name is why. It is
+    called `threeMinRecap`; loaded in a browser on 2026-09-30 it resolved to a
+    302-second video. Five minutes, not three. We hold the id and nothing else —
+    `clip`'s rule — so the sentence says what it is and never how long.
+
+    ⛔ AND IT COSTS A COLLAPSED READER NOTHING, which is the property that makes
+    any of this defensible: the iframe is built on open and torn down on close,
+    so the thirteen third-party hosts and the advertisement above are reached
+    only by someone who pressed. A recap that autoplayed at the horn would have
+    been the same feature and an entirely different bargain. */
+ const recap=G.recap;
+ if(at>=EV.length-1&&recap!=null){
+  if(b.dataset.id!==String(recap)){shutClip();b.dataset.id=String(recap);}
+  b.hidden=false;
+  $('clipDur').textContent='NHL.com';
+  $('clipSay').textContent='NHL.com published a recap of this whole game, not one '
+   +'goal. It starts with an advertisement.';
+  return;}
  const g=goalWithClip(at);
  if(!g){shutClip();b.hidden=true;delete b.dataset.id;return;}
  /* ⛔ AND IT ONLY SHUTS WHEN THE GOAL CHANGES. `shutClip()` ran on every render,

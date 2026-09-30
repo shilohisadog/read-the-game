@@ -42,13 +42,22 @@ import extract as E  # noqa: E402
 # the failure printed, which is how a pin stops pinning anything.
 EXPECTED_DOC = {"events", "game", "goalies", "gshots", "quoted", "roster",
                 "shifts", "sides", "teams"}
+# ⚠️ KEYS THAT ARE ABSENT WHEN THE FACT IS ABSENT, which is this extractor's
+# standing convention: no key means the league published none, and a null would
+# make that indistinguishable from a read we got wrong. They are named here
+# rather than folded into a subset check, because a subset check would also
+# accept a key nobody has ever heard of.
+#   recap          the whole-game video; needs the `right-rail` raw, which the
+#                  reference game predates. Proven separately, below.
+#   unreconciled   a game whose own arithmetic did not close.
+EXPECTED_DOC_OPTIONAL = {"recap", "unreconciled"}
 EXPECTED_EVENT = {
     "a1", "a2", "actor", "blk", "clip", "clock", "drew", "goalie", "min",
     "miss", "own", "pen", "per", "pt", "rem", "rsn", "rsn2", "s", "sev",
     "sit", "srv", "type", "x", "y", "zone",
 }
 # The number that must move when either set above does.
-EXPECTED_SCHEMA = 1
+EXPECTED_SCHEMA = 2
 
 
 def _rich():
@@ -66,7 +75,7 @@ class ExtractSchema(unittest.TestCase):
 
     def test_the_emitted_keys_are_exactly_the_pinned_set(self):
         rich = _rich()
-        self.assertEqual(set(rich) - {"unreconciled"}, EXPECTED_DOC,
+        self.assertEqual(set(rich) - EXPECTED_DOC_OPTIONAL, EXPECTED_DOC,
                          "the extract document gained or lost a top-level key")
 
         seen = set()
@@ -161,6 +170,56 @@ class ExtractSchema(unittest.TestCase):
         out = E.extract(pbp, {"data": []}, box)
         self.assertEqual(len(out["events"]), 1, "the extractor did not read the play")
         return out["events"][0]
+
+    # ------------------------------------------------- the whole-game recap
+
+    def _doc(self, rail):
+        """The extractor's document for a minimal game, with a given rail feed."""
+        rich = _rich()
+        pbp = {
+            "id": int(rich["game"]["id"]), "gameDate": rich["game"]["date"],
+            "awayTeam": {"id": rich["teams"]["away"]["id"],
+                         "abbrev": rich["teams"]["away"]["ab"]},
+            "homeTeam": {"id": rich["teams"]["home"]["id"],
+                         "abbrev": rich["teams"]["home"]["ab"]},
+            "rosterSpots": [], "plays": [],
+        }
+        box = {"homeTeam": {"score": 0, "sog": 0}, "awayTeam": {"score": 0, "sog": 0}}
+        return E.extract(pbp, {"data": []}, box, rail)
+
+    def test_the_recap_is_read_from_the_rail_feed_and_absent_without_one(self):
+        """⭐ THE SHAPE IS THE LEAGUE'S, taken from a real response on 2026-09-30:
+        `/v1/gamecenter/{id}/right-rail` answers with a `gameVideo` block holding
+        `threeMinRecap`. No other endpoint carries one -- `landing` and `boxscore`
+        were both checked and have no such key.
+
+        ⛔ AND THE THREE ABSENCES ARE ONE BEHAVIOUR, not three. No feed at all (an
+        archived game, which is every game before today), a feed with no video
+        block, and a block with no recap in it must each leave the key OFF rather
+        than set it to None -- `clip`'s rule, for `clip`'s reason: a placeholder
+        cannot be told apart from a read that failed.
+        """
+        self.assertEqual(
+            self._doc({"gameVideo": {"threeMinRecap": 6398427047112}}).get("recap"),
+            6398427047112, "the recap id did not survive the extractor")
+
+        for label, rail in (("no rail feed", None),
+                            ("no gameVideo block", {"linescore": {}}),
+                            ("gameVideo with no recap", {"gameVideo": {"condensedGame": 1}})):
+            self.assertNotIn("recap", self._doc(rail),
+                             f"{label}: the key is present, so absence and failure "
+                             "cannot be told apart")
+
+    def test_a_recap_never_widens_the_document(self):
+        """⚠️ THE PIN HAS TO SEE IT. `recap` is the first top-level key added since
+        this file was written, and the check it has to pass is the one that would
+        have caught it being spelled wrong: the document's keys are still exactly
+        the pinned set plus the named optionals, with a recap present.
+        """
+        doc = self._doc({"gameVideo": {"threeMinRecap": 1}})
+        self.assertIn("recap", doc)
+        self.assertEqual(set(doc) - EXPECTED_DOC_OPTIONAL, EXPECTED_DOC,
+                         "adding the recap changed the document's shape elsewhere")
 
 
 if __name__ == "__main__":

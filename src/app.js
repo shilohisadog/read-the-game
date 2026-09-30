@@ -667,6 +667,36 @@ function drawClip(at){
     goal on the ice" clause travels with the affordance rather than with the box. */
  const live=!!cur&&cur.type==='goal'&&cur.clip!=null;
  document.getElementById('rg').classList.toggle('hasclip',live);
+ /* ⭐⭐ AT THE HORN THE OFFER BECOMES THE WHOLE GAME. Kevin, 2026-09-30, once the
+    replay had somewhere to end: *"at the end of the game, does the NHL provide
+    access to a 'game highlights' video that we could embed?"* It does —
+    `gameVideo.threeMinRecap` on the `right-rail` feed, a Brightcove id of exactly
+    the shape this player already takes.
+
+    ⭐ IT REPLACES THE STICKY GOAL CLIP RATHER THAN JOINING IT. `goalWithClip`
+    keeps the last goal on offer after the playhead moves past it, which is right
+    while a game is running and wrong once it has finished: at the horn the more
+    useful video is the night, not the last of its goals. One box, one offer, and
+    the reader is never asked to choose between two links that both say NHL.com.
+
+    ⚠️ NO DURATION IS CLAIMED, and the league's own field name is why. It is
+    called `threeMinRecap`; loaded in a browser on 2026-09-30 it resolved to a
+    302-second video. Five minutes, not three. We hold the id and nothing else —
+    `clip`'s rule — so the sentence says what it is and never how long.
+
+    ⛔ AND IT COSTS A COLLAPSED READER NOTHING, which is the property that makes
+    any of this defensible: the iframe is built on open and torn down on close,
+    so the thirteen third-party hosts and the advertisement above are reached
+    only by someone who pressed. A recap that autoplayed at the horn would have
+    been the same feature and an entirely different bargain. */
+ const recap=G.recap;
+ if(at>=EV.length-1&&recap!=null){
+  if(b.dataset.id!==String(recap)){shutClip();b.dataset.id=String(recap);}
+  b.hidden=false;
+  $('clipDur').textContent='NHL.com';
+  $('clipSay').textContent='NHL.com published a recap of this whole game, not one '
+   +'goal. It starts with an advertisement.';
+  return;}
  const g=goalWithClip(at);
  if(!g){shutClip();b.hidden=true;delete b.dataset.id;return;}
  /* ⛔ AND IT ONLY SHUTS WHEN THE GOAL CHANGES. `shutClip()` ran on every render,
