@@ -25,6 +25,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 
 const DIR = new URL('../.github/workflows/', import.meta.url);
 const FILES = readdirSync(DIR).filter(f => f.endsWith('.yml'));
@@ -209,4 +210,96 @@ test('⛔⛔ no step lets a pipe swallow an exit code it is judged on', () => {
         + 'shell for -o pipefail, or read PIPESTATUS.');
     }
   }
+});
+
+/**
+ * ⛔⛔⛔ A `sed` EXPRESSION THE SHELL REFUSES STILL EXITS 0, AND THE STEP GOES GREEN.
+ *
+ * 2026-10-02, found by reading a PASSING deploy log. The replay unfurl's spoiler
+ * guard reads `og:description` back off the live page and fails if it contains a
+ * digit. It was written as `s:.*og:description…:\1:p` — a `:` delimiter in a
+ * pattern that itself contains `og:description`. `sed` refused the expression,
+ * printed `unknown option to \`s'` to stderr, and substituted nothing; `$desc`
+ * came back EMPTY; and the `case "$desc" in *[0-9]*)` that follows matched nothing
+ * and passed. A guard that read nothing approved everything, inside a step whose
+ * own name says it checks the share card.
+ *
+ * ⭐ WHY THIS LIVES HERE RATHER THAN BEING FIXED AND FORGOTTEN. The bash inside a
+ * workflow is the one layer this repo cannot unit-test — it runs only on a push,
+ * which is exactly why the browser checks were moved out of YAML into
+ * `tools/browser/`. What is left in YAML is extraction, and an extraction that
+ * silently yields nothing is the whole failure mode. `sed` itself is the oracle:
+ * ask it whether it would accept the expression at all.
+ *
+ * ⚠️ IT CHECKS ACCEPTANCE, NOT CORRECTNESS. A valid expression that matches the
+ * wrong thing still passes here — that is what the empty-string refusal beside each
+ * one in the workflow is for. Two different claims, both needed.
+ */
+test('⛔⛔ every sed expression in a workflow is one sed will actually accept', () => {
+  const dir = new URL('../.github/workflows/', import.meta.url);
+  const files = readdirSync(dir).filter(f => f.endsWith('.yml'));
+  assert.ok(files.length, 'no workflows found, so this test is looking in the wrong place');
+  let checked = 0;
+  for (const f of files) {
+    const yml = readFileSync(new URL(f, dir), 'utf8');
+    for (const m of yml.matchAll(/sed -n '([^']*)'/g)) {
+      const expr = m[1];
+      checked++;
+      const r = spawnSync('sed', ['-n', expr], { input: '<title>x</title>\n', encoding: 'utf8' });
+      assert.equal(r.status, 0,
+        `${f}: sed refuses this expression, so the step that uses it reads NOTHING and still `
+        + `exits 0 — "${expr}": ${(r.stderr || '').trim()}`);
+    }
+  }
+  /* ⛔ AND THE SWEEP MUST HAVE FOUND SOMETHING. A regex that stops matching the
+     workflows' own shape would report every expression valid by finding none. */
+  assert.ok(checked >= 3,
+    `only ${checked} sed expressions found across ${files.length} workflow(s) — the pattern this `
+    + `test greps for no longer matches how they are written, so it is checking nothing`);
+});
+
+/**
+ * ⭐ AND A VALUE A STEP JUDGES MUST BE REFUSED WHEN IT IS EMPTY — the other half of
+ * the same defect, because even a valid expression matches nothing on a page that
+ * changed.
+ *
+ * ⛔⛔ THE CLAIM IS NARROWER THAN "EVERY `case` NEEDS A GUARD", AND THE FIRST DRAFT
+ * OF THIS TEST GOT IT WRONG. A `case` ending in a catch-all `*)` that exits is
+ * already safe: an empty string matches no specific arm, falls to the default and
+ * fails loudly. What is NOT safe is a `case` whose arms are all FAILURE conditions
+ * with no default — `case "$desc" in *[0-9]*) exit 1 ;; esac` — where an empty
+ * value matches nothing at all and the step simply continues. That is the shape
+ * that ran vacuously on 2026-10-02, and it is the only shape this asserts.
+ *
+ * ⚠️ The first draft flagged `$title`, whose `case` has a failing default and was
+ * never at risk. A test that demands a guard where none is needed teaches people to
+ * add noise, and the next real finding arrives in a file full of it.
+ */
+test('⛔ a workflow never judges a string it failed to extract', () => {
+  const yml = readFileSync(new URL('../.github/workflows/deploy.yml', import.meta.url), 'utf8');
+  const blocks = [...yml.matchAll(/case "\$(\w+)" in\n([\s\S]*?)\n\s*esac/g)];
+  assert.ok(blocks.length, 'no `case "$var" in … esac` found in deploy.yml — this test has lost its subject');
+  let withoutDefault = 0;
+  const unguarded = [];
+  for (const [, v, body] of blocks) {
+    /* A catch-all arm makes the empty string loud, whatever it is. Without one,
+       an empty value matches no arm and the step carries on as though it passed. */
+    if (/^\s*\*\)/m.test(body)) continue;
+    withoutDefault++;
+    const guarded = new RegExp(`if \\[ -z "\\$${v}" \\]`).test(yml)
+                 || new RegExp(`\\$\\{${v}:\\?`).test(yml);
+    if (!guarded) unguarded.push(v);
+  }
+  assert.deepEqual(unguarded, [],
+    `${unguarded.length} variable(s) are judged by a \`case\` that has NO catch-all arm and no `
+    + `empty check: ${unguarded.join(', ')}. If the extraction yields nothing, every pattern fails `
+    + `to match and the step passes — which is how the replay unfurl's spoiler guard ran `
+    + `vacuously on 2026-10-02.`);
+  /* ⛔ AND THE TEST MUST HAVE HAD A SUBJECT. If every `case` in the file grew a
+     default, this would pass by examining nothing — true today and worth knowing
+     the day it stops being, which is why it says so rather than staying silent. */
+  assert.ok(withoutDefault > 0,
+    'every `case` in deploy.yml now has a catch-all, so this test examined nothing. That is a fine '
+    + 'state for the workflow and means this check is no longer the one protecting it — re-argue it '
+    + 'rather than leaving a green test that cannot fail.');
 });

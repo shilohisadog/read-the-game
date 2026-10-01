@@ -450,10 +450,32 @@ jobs:
           # ⛔ NO RESULT IN A SHARE CARD. The page hides its own verdict until the
           # horn; metadata is read before the page exists and by someone who has
           # chosen nothing, so a score here is the spoiler that rule is about.
-          desc=$(sed -n 's:.*<meta property="og:description" content="\([^"]*\)".*:\1:p' replay.html | head -1)
+          #
+          # ⛔⛔⛔ THIS CHECK WAS VACUOUS ON ITS FIRST LIVE RUN AND WENT GREEN.
+          # It used `:` as the sed delimiter in a pattern containing `og:description`,
+          # so sed refused the expression, `$desc` came back EMPTY, and an empty
+          # string contains no digit — the case below matched nothing and passed. The
+          # step printed `sed: unknown option to \`s'` and `og:description` with
+          # nothing after it, and still exited 0. The delimiter is `|` now, and the
+          # EMPTY CASE IS A FAILURE, which is the part that actually makes this a
+          # check: a guard that reads nothing must not be able to approve anything.
+          desc=$(sed -n 's|.*<meta property="og:description" content="\([^"]*\)".*|\1|p' replay.html | head -1)
           echo "  og:description $desc"
+          if [ -z "$desc" ]; then
+            echo "::error::og:description could not be read from the unfurled replay —"
+            echo "::error::this check cannot pass without reading the string it judges"
+            exit 1
+          fi
           case "$desc" in
             *[0-9]*) echo "::error::a figure reached the replay's share card: $desc"; exit 1 ;;
+          esac
+          # AND THE SAME FOR THE TITLE, which is read with its own expression above:
+          # "it contains ' at '" is satisfied by the generic title too if the clubs
+          # ever stop being injected, so the DATE is required alongside them.
+          case "$title" in
+            *[0-9][0-9][0-9][0-9]) ;;
+            *) echo "::error::the replay unfurl names no year, so the per-game title did not land: $title"
+               exit 1 ;;
           esac
           grep -q 'property="og:url" content="https://readthegame.co/game?game='"$gid"'"' replay.html \
             || { echo "::error::og:url does not name this game"; exit 1; }
