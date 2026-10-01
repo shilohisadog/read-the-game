@@ -238,7 +238,7 @@ __CSS__</style>
        ⚠️ MEASURED AFTERWARDS, NOT REASONED ABOUT: at 568x320 `How we counted`
        needed 112px of text in a 105px box and WRAPPED onto two lines beside a
        neighbour on one. `app.css` clamps the type for that; see the rule. -->
-  <div class="lbox" id="lbox"><span class="lxa" id="lxA"></span><span class="lxk" id="lxK"></span><span class="lxh" id="lxH"></span><span class="lxan" id="lxAn"></span><span class="lxhn" id="lxHn"></span><span class="lxn" id="lxN"></span><div class="lxws"><button class="lxw" id="work" aria-expanded="false" aria-controls="workPanel">How we counted</button><button class="lxw" id="alot" aria-expanded="false" aria-controls="alotPanel">Is that a lot?</button></div></div>
+  <div class="lbox" id="lbox"><span class="lxa" id="lxA"></span><span class="lxk" id="lxK"></span><span class="lxh" id="lxH"></span><span class="lxan" id="lxAn"></span><span class="lxhn" id="lxHn"></span><span class="lxn" id="lxN"></span><div class="lxws"><button class="lxw" id="work" aria-expanded="false" aria-controls="workPanel">How we counted</button><button class="lxw" id="alot" aria-expanded="false" aria-controls="alotPanel">Is that a lot?</button><button class="lxw lxwe" id="sum" aria-expanded="false" aria-controls="sumPanel">What this game was</button></div></div>
   <!-- THE PILL IS A CHILD OF .rinkbox, NOT OF THE PENALTY-BOX ROW. It lived
        inside the band under the ice so it could anchor to that row's top edge,
        which was the bottom of the ice -- correct exactly while the row was
@@ -291,6 +291,28 @@ __CSS__</style>
        the panel covers `.lbox`, so the button in the box is underneath the thing
        it closes. -->
   <div class="work" id="alotPanel" hidden><button class="wx" id="alotClose" type="button">Hide</button><div id="alotBody"></div></div>
+  <!-- ⭐⭐⭐ THE THIRD OVERLAY, AND IT IS WHERE THE VERDICT CARD WENT. Kevin,
+       2026-10-01, looking at the finished FLA–CAR game: *"seems like the attempts
+       card (after the game goes final) is only one piece of the 'What this game
+       was' puzzle. Can we create a 'game summary' card that overlays the rink
+       (using the 'Is that alot' model) at the end of the game?"* — and then
+       *"The overlay should contain (or be) the What this game was information, so
+       it'll replace the card."*
+
+       ⭐ THE CARD MOVED, IT WAS NOT REBUILT. `<p id="verdict">` is the SAME
+       element, in the same place in the DOM order it always had relative to its
+       own figures, so `sentenceFor`, the dot written through the CSSOM and the
+       live `verdict-dot` deploy gate all keep reading what they already read.
+       Rebuilding the sentence here would have been a second composition of the
+       one thing this project has paid most often for duplicating.
+
+       ⚠️ AND THE ICE IS EMPTY UNDER IT. At the horn the rink carries no puck,
+       no shot and no player — just the `Final` chip — so this overlay covers
+       nothing, which is the argument for opening it there rather than asking.
+       ⚠️ ITS BUTTON IS HIDDEN UNTIL `.ended`, through the SAME CSS rule the card
+       used, because a door labelled *What this game was* mid-replay names the
+       result of a game the reader is still watching. -->
+  <div class="work" id="sumPanel" hidden><button class="wx" id="sumClose" type="button">Hide</button><p class="verdict" id="verdict"></p><div id="sumBody"></div></div>
 </div>
 <!-- ⭐ THE PARKED LAYER MENU IS GONE (2026-09-07). Five `.lrow` toggles, their
      `Off` state spans, the `#zLayersOn` counter and five legend swatches, all
@@ -385,22 +407,13 @@ __CSS__</style>
 </details>
 <div class="sharerow"><button class="share" id="share" type="button">Copy a link to this moment</button><span class="sharesaid" id="sharesaid" role="status" aria-live="polite"></span></div>
 </div>
-<!-- ⭐⭐ WHAT THIS GAME WAS, AND IT SITS BEFORE THE VIDEO RATHER THAN AFTER IT.
-     Kevin, 2026-09-30, looking at the end of the FLA-CAR opener: the card is
-     *"good information, just misplaced"*. It was — it stood sixty lines below
-     `#clipbox`, so a reader arriving at the horn met an offer to watch somebody
-     else's recap BEFORE being told anything about the game they had just
-     watched. The order at the final whistle is the order a person wants it in:
-     what happened, then how ordinary that was, then a video if they still want
-     one.
-
-     ⚠️ IT DID NOT MOVE INTO `.rinkbox`, which was the other candidate. The card
-     appears only at the horn and the ice does not, so putting it inside the box
-     would make the box grow by a screen on the last frame — the reflow-under-the-
-     thumb defect the clip section's own note above records paying for. Here it is
-     after the transport and before the video, in the flow, moving nothing that a
-     reader is pointing at. -->
-<p class="verdict" id="verdict"></p>
+<!-- ⏭ THE VERDICT CARD USED TO SIT HERE, after the transport and before the
+     video, and the note it carried argued it out of `.rinkbox` because a card
+     appearing at the horn would grow that box by a screen on the last frame.
+     That argument is intact and is the reason the overlay was the right home:
+     an overlay takes NO space in the flow, so the reflow cost the card was
+     placed here to avoid is now zero rather than merely small. See `#sumPanel`
+     in the layer box above. -->
 <!-- ⭐⭐ THE BROADCAST HIGHLIGHT, AND IT IS THE PAGE'S OWN SECTION IDIOM.
      Kevin, 2026-09-08: "put a Section header above the highlight… structured the
      same as Layers, The next play and Other games are." Those are not a header

@@ -863,6 +863,40 @@ function render(i,how){
 
  $('nTrails').textContent=trailsNote(trails,ASPLAYED);
  document.getElementById('rg').classList.toggle('ended',i>=EV.length-1);
+ /* ⭐⭐ THE SUMMARY OPENS ITSELF AT THE HORN, ONCE. Kevin asked for it over the
+    rink "using the 'Is that alot' model", and the reason it can simply appear is
+    that at the horn THE ICE IS EMPTY — no puck, no shot, no player, just the
+    `Final` chip — so this overlay covers nothing a reader is looking at. An
+    overlay that asked first would be a door to a blank rink.
+    ⚠️ ONCE, via `sumShown`: a reader who closes it and scrubs back and forth
+    would otherwise meet it again on every return to the last frame.
+    ⚠️ AND IT CLOSES ITSELF ON THE WAY BACK, because every figure in it is of a
+    FINISHED game. Left open over frame 400 it would be six final counts and a
+    verdict sitting above a replay still in its second period — the same
+    "two numbers about different things wearing one label" the reference class
+    is filtered to avoid, one surface up.
+    ⚠️ AND ONLY WHEN IT IS THE PANEL ON SCREEN. `setOverlay(null)` here would
+    shut the archive door a reader had deliberately opened mid-replay.
+    ⚠️ IT ALSO ENDS PLAYBACK ONE DWELL EARLY, through `setOverlay`'s existing
+    rule that opening a panel stops the replay — `step()` calls `set()`, this
+    runs inside the render, and `step()` would have called `stop()` itself on its
+    next tick. The end state is identical (stopped, `▶ Replay`); the button
+    simply flips at the horn instead of a dwell after it, which is the more
+    honest of the two on a game that is over. It is the only behaviour in the DOM
+    golden's blast radius that is not a new element, so it is written down here
+    rather than absorbed into a regenerated fixture. */
+ /* ⛔ AND IT NEVER TAKES A PANEL THE READER ALREADY CHOSE. The first version
+    opened unconditionally, and `test/overlay-archive-door.test.js` went red
+    naming the behaviour exactly: a reader with `Is that a lot?` open who scrubs
+    to the horn had it replaced by the summary — the door whose whole purpose is
+    to say "this game finished with 94" at precisely that moment. Auto-opening is
+    a courtesy on an empty rink; the same act over a panel someone opened is the
+    page arguing with them.
+    ⚠️ `sumShown` IS SET EITHER WAY, so the summary cannot ambush them later
+    when they close the panel they were reading. The door is in the box. */
+ const atHorn=i>=EV.length-1;
+ if(atHorn&&!sumShown){sumShown=true;if(!workOpen&&!archOpen)setOverlay('sum');}
+ else if(!atHorn&&sumOpen)setOverlay(null);
  /* ⛔ AND LEAVING THE HORN TAKES IT BACK OFF. Dragging the scrubber is not a
     `moment`, so no caption is composed on the way back and nothing else would
     have cleared `stay` — "🏁 Final" would sit over the ice in the middle of a
@@ -1228,6 +1262,12 @@ let workOpen=false;
    the owner the day either moves. That is the exact argument `setOverlay`'s own
    header makes about the `working` class, and I wrote it while breaking it. */
 let archOpen=false;
+/* ⭐ AND WHETHER THE SUMMARY HAS ALREADY SHOWN ITSELF. It opens on ARRIVAL at
+   the horn, once, and never again in the life of the page: a reader who closed
+   it and scrubbed back and forth would otherwise have it reappear on every
+   return to the last frame, which is a thing fighting the reader rather than
+   answering them. The button stays in the box, so nothing is unreachable. */
+let sumOpen=false,sumShown=false;
 /**
  * ⭐ SHOW ME THE WORK — ONE PANEL, DRIVEN BY THE LAYER CONTRACT.
  *
@@ -1505,6 +1545,91 @@ let alotDrawnAtEnd=null;
    permanently disagreeing, which redraws on every frame forever instead of
    failing visibly. The default is the playhead, which is what the door's own
    button and the layer switch mean when they ask for a redraw. */
+/**
+ * ⭐⭐⭐ WHAT THIS GAME WAS — every count it holds, and where each one sat.
+ *
+ * Kevin, 2026-10-01, on the finished FLA–CAR game: *"seems like the attempts card
+ * (after the game goes final) is only one piece of the 'What this game was'
+ * puzzle."* He is right, and the missing pieces were already measured. The card
+ * names the SINGLE most unusual lens — `mostUnusual` scores all six and discards
+ * five — so the other five were computed, ranked and thrown away on every game
+ * page the site has ever served. This draws all of them.
+ *
+ * ⭐ NOTHING NEW IS MEASURED HERE. The counts are the chips' own
+ * `counted.length` from the same reducers `perGame` was built from, and the
+ * placement is `sitsIn`, which the verdict above and the archive door next to it
+ * already share. A second way of counting in a panel whose job is to summarise
+ * the first would be the defect this page has paid for twice.
+ *
+ * ⚠️ `evenOnly:false` STAYS EXPLICIT rather than inheriting CTX, for the reason
+ * the verdict states: the reference class is built over all situations, so a
+ * strength-filtered count judged against it would be two quantities wearing one
+ * label. The subhead says so on the panel, because the CHIPS beside it may be
+ * filtered and this never is.
+ *
+ * ⛔ AND THE SEASON MUST BE FINISHED, through the same predicate as everywhere
+ * else — see `finishedSeason`. Without it this panel would have placed six counts
+ * against eight games instead of one.
+ */
+function renderSum(){
+ const host=$('sumBody');
+ host.innerHTML='';
+ const h=document.createElement('h2');
+ h.textContent='Every count in this game ';
+ const sub=document.createElement('span');
+ sub.className='wsub';
+ h.appendChild(sub);
+ host.appendChild(h);
+ const seas=String((G.game&&G.game.id)||'').slice(0,4);
+ const all=(RATES&&RATES.perGame)||{};
+ const own=finishedSeason(all,seas)?all[seas]:null;
+ const N=v=>v.toLocaleString();
+ /* ⭐⭐ THE POPULATION IS NAMED ONCE, IN THE SUBHEAD, AND NEVER AGAIN. Drawn
+    first, every row ended "… of the 1,398 games that season" and six rows said it
+    six times — 240 characters of identical tail under a heading whose whole job
+    is to establish what the rows are measured against. The rows say "of them"
+    now, and "them" has an antecedent one line above it rather than none.
+    ⚠️ READ OFF A DISTRIBUTION RATHER THAN COUNTED HERE: `n` is a property of the
+    reference class, so it is asked of the reference class. Any lens answers,
+    because `perGame` measures every lens over the same games — and if none does,
+    the subhead says only what it can. */
+ const ref=own&&Object.keys(LENS).map(k=>sitsIn(own[k],null)).find(Boolean);
+ sub.textContent='— all situations, power plays included'
+  +(ref?', against the '+N(ref.of)+' game'+(ref.of===1?'':'s')+' we hold for that season':'');
+ const ul=document.createElement('ul');
+ ul.className='srows';
+ /* ⭐ DRIVEN BY `LENS`, which is the one place a lens id is typed — so a seventh
+    layer appears here with no edit, and a layer that leaves the selector cannot
+    linger in the summary. The same rule `LENSCOUNTS` was rewritten to follow. */
+ let placed=0;
+ Object.keys(LENS).forEach(id=>{
+  const n=LENS[id].reduce(G.events,{...CTX,evenOnly:false}).counted.length;
+  const st=own?sitsIn(own[id],n):null;
+  if(st)placed++;
+  const li=document.createElement('li');
+  /* THE COUNT IS ALWAYS SAID AND THE PLACEMENT ONLY WHEN IT CAN BE. "What this
+     game was" is answerable from the game alone; "was that a lot" is not. */
+  li.innerHTML='<b>'+ESC(chipLabel(id))+' '+N(n)+'</b>'+(st
+   ?' — '+(st.inside
+     ?'inside the middle half.'
+     :st.beat===st.of
+       ?(st.high?'higher':'lower')+' than all of them.'
+       :(st.high?'more than ':'fewer than ')+N(st.beat)+' of them.')
+   :'');
+  ul.appendChild(li);});
+ host.appendChild(ul);
+ /* ⛔ THE HONEST EMPTY STATE, and it is the archive door's own sentence because
+    it is the same fact — said once here for six counts rather than six times. */
+ if(!placed){
+  const p=document.createElement('p');
+  p.className='wnone';
+  p.textContent=own
+   ?'The archive publishes no per-game figures for these counts yet, so they are '
+    +'not placed against anything.'
+   :'This game’s season has not been measured yet, so these counts are not placed '
+    +'against it — how far a night sits from typical moves with the season, and we '
+    +'would rather say nothing than say it against the wrong year.';
+  host.appendChild(p);}}
 function renderAlot(at=i){
  const id=whichPick();
  alotDrawnAtEnd=at>=EV.length-1;
@@ -2307,11 +2432,18 @@ setGear(gear);
 function setOverlay(which){
  workOpen=which==='work';
  archOpen=which==='alot';
+ /* ⭐⭐ A THIRD PANEL IN THE SAME SPACE — Kevin, 2026-10-01: *"The overlay
+    should contain (or be) the What this game was information, so it'll replace
+    the card."* It joins the owner rather than minding the other two, which is
+    the whole reason this function exists; see the header above. */
+ sumOpen=which==='sum';
  $('workPanel').hidden=!workOpen;
  $('alotPanel').hidden=!archOpen;
+ $('sumPanel').hidden=!sumOpen;
  document.getElementById('rg').classList.toggle('working',!!which);
  $('work').setAttribute('aria-expanded',workOpen);
  $('alot').setAttribute('aria-expanded',archOpen);
+ $('sum').setAttribute('aria-expanded',sumOpen);
  /* ⭐ `Hide`, NOT `Hide the work` — 2026-09-26. The label flips because
     pressing the open door closes it, and there are now TWO doors in the row:
     a verb phrase naming which one would have to fit half a row at 568px, the
@@ -2319,8 +2451,10 @@ function setOverlay(which){
     it closes is on screen beside it. */
  $('work').textContent=workOpen?'Hide':'How we counted';
  $('alot').textContent=archOpen?'Hide':'Is that a lot?';
+ $('sum').textContent=sumOpen?'Hide':'What this game was';
  if(which&&playing)stop();
- if(archOpen)renderAlot();}
+ if(archOpen)renderAlot();
+ if(sumOpen)renderSum();}
 function setWork(open){setOverlay(open?'work':null);}
 $('work').onclick=()=>{setWork(!workOpen);if(workOpen)render(i,'');};
 $('alot').onclick=()=>setOverlay(archOpen?null:'alot');
@@ -2330,6 +2464,8 @@ $('alot').onclick=()=>setOverlay(archOpen?null:'alot');
    are the copies of them that are reachable while the overlay covers the box. */
 $('workClose').onclick=()=>$('work').click();
 $('alotClose').onclick=()=>$('alot').click();
+$('sum').onclick=()=>setOverlay(sumOpen?null:'sum');
+$('sumClose').onclick=()=>$('sum').click();
 /* AND THE SHUT STATE IS ESTABLISHED BY THE SAME OWNER AT BOOT, the way
    `setGear` establishes the pace. The markup carries `hidden` so the page reads
    correctly before JS runs; without this line that attribute would be a SECOND

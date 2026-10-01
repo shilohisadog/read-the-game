@@ -1719,9 +1719,34 @@
    spoiler objection and the result-first objection together, and it is the same
    move as making first paint the opening faceoff rather than the final score. */
 #rg .verdict{display:none}
-#rg.ended .verdict{display:block;max-width:56ch;margin:22px auto 0;background:#fff;border:1px solid var(--edge);
- border-radius:13px;padding:17px 20px 18px;box-shadow:0 4px 16px rgba(16,32,45,.06);
+#rg.ended .verdict{display:block;max-width:56ch;margin:0 auto;
  font-size:.95rem;line-height:1.55}
+/* ⭐⭐⭐ THE DOOR THAT NAMES THE RESULT IS HIDDEN UNTIL THERE IS ONE, through the
+   SAME `.ended` class the card above uses, and that is the point rather than a
+   coincidence. A button reading "What this game was" is a spoiler on a replay the
+   reader is still watching — exactly the objection the card's own note three
+   rules up settles for the card. One class, one moment, two surfaces: a second
+   rule naming its own moment would be free to drift the day either moves.
+   ⚠️ `flex` AND NOT `inline-block`, because `.lxw` is a flex CHILD with
+   `flex:1 1 0`: restoring it to `inline-block` would have left the three doors
+   unable to share the row they are laid out to share. */
+#rg .lxw.lxwe{display:none}
+#rg.ended .lxw.lxwe{display:flex}
+/* INSIDE THE OVERLAY THE CARD KEEPS ITS TYPE AND DROPS ITS CHROME. `.work`
+   already draws a white panel with a border and a shadow; a bordered card inside
+   a bordered panel is two frames around one thing. The figures, the kicker and
+   the dot are untouched — only the box around them goes. */
+/* ⛔ AND THE TWO HALVES SHARE ONE LEFT EDGE. The card carries `max-width:56ch`
+   with `margin:0 auto` — right for a card centred in the page flow, and in a
+   panel it CENTRED the sentence over left-aligned rows, so the verdict began
+   160px to the right of the heading under it. Looked at, not reasoned about:
+   both halves are left-aligned at the panel's padding and both keep the 56ch
+   measure, because the reason for 56ch is reading length and that did not move. */
+#rg #sumPanel .verdict{padding:0;border:0;background:none;box-shadow:none;margin:0}
+#rg #sumBody{max-width:56ch}
+#rg .srows{margin:10px 0 0;padding-left:20px}
+#rg .srows li{margin:0 0 6px;font-size:.9rem;line-height:1.5;color:var(--muted)}
+#rg .srows b{color:var(--ink);font-weight:700}
 #rg .verdict .vk{display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
  color:var(--muted);font-weight:700;margin-bottom:8px}
 #rg .verdict .lead{color:var(--ink);font-size:1.02rem}#rg .verdict b{font-weight:700}

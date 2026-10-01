@@ -1071,12 +1071,34 @@ test('the card sits above the controls, not below them', () => {
   // the six blocks that may sit beside the ice. The claim this test is named for
   // — the summary card sits above the read-surfaces rather than below them — is
   // untouched, and the four markers that remain are the ones still in the stack.
-  const order = ['class="transport"', 'class="verdict"',
-                 'class="legend"', 'class="zone zdisp"'];
+  /* ⭐⭐⭐ THE CARD LEFT THIS STACK ON 2026-10-01, and the claim this test is named
+     for is STRONGER for it rather than weaker. Kevin: *"The overlay should
+     contain (or be) the What this game was information, so it'll replace the
+     card."* It is `#sumPanel` now — an overlay over the rink, which is above
+     every marker below and takes no space in the flow at all, so the 1,156px
+     the original finding measured cannot come back by any ordering at all.
+
+     ⛔ THE MARKER IS NOT SIMPLY DROPPED FROM THE LIST. Removing `class="verdict"`
+     and leaving the other three would be a test that stepped around the change
+     and thereby decided to tolerate anything that happened to the card. What
+     replaces it is the property that now carries the same guarantee: the card is
+     INSIDE the summary panel, and that panel is in the layer box, above the
+     transport. If it ever leaks back into the flow below the controls, the two
+     assertions below fail even though the three-marker order still holds. */
+  const panel = app.indexOf('id="sumPanel"');
+  const card = app.indexOf('class="verdict"');
+  const close = app.indexOf('</div>', panel);
+  assert.ok(panel > -1 && card > panel && card < close,
+    'the verdict card is not inside the summary overlay — it is back in the flow');
+  assert.ok(panel < app.indexOf('class="transport"'),
+    'the summary overlay sits below the controls, which is where the card was '
+    + 'found 1,156px down the page in the first place');
+
+  const order = ['class="transport"', 'class="legend"', 'class="zone zdisp"'];
   let at = -1;
   for (const marker of order) {
     const k = app.indexOf(marker);
-    assert.ok(k > at, `${marker} is out of order — the card has slipped back below the controls`);
+    assert.ok(k > at, `${marker} is out of order — the read surfaces have moved above the controls`);
     at = k;
   }
 });

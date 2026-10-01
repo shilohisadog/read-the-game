@@ -105,6 +105,18 @@ setTimeout(function () {
        replay ends. Drive the real scrubber — the class is what is under test. */
     var sc = d.getElementById('scrub');
     if (sc) { sc.value = sc.max; sc.oninput({ target: { value: sc.value } }); }
+    /* \u2b50\u2b50 AND THE CARD LIVES IN AN OVERLAY SINCE 2026-10-01, so reaching the last
+       frame is no longer enough to reach the card. This step measures a REAL
+       BOUNDING BOX -- that is the whole reason it exists, after the dot sat at 0%
+       on every game while the number behind it was right -- and a hidden panel
+       reports zero width, which would fail this step on healthy pages.
+       \u26a0\ufe0f CLICKED EXPLICITLY RATHER THAN TRUSTING THE AUTO-OPEN. The panel does
+       open itself at the horn, but only when no other overlay is on screen; a
+       gate that depended on that would be testing the courtesy rather than the
+       dot, and would go red the day the courtesy is conditioned on anything
+       else. Opening it here states what this probe needs. */
+    var sp = d.getElementById('sumPanel'), sb = d.getElementById('sum');
+    if (sp && sp.hidden && sb) sb.click();
     var tr = d.querySelector('#rg .vtrack'), pt = d.getElementById('vpt');
     var m = (v && v.textContent || '').match(${LOST_RE});
     if (!booted || !tr || !pt || !m) { document.title = 'VERD ' + booted + ' 0 0 0 0 0'; return; }

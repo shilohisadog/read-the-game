@@ -27,7 +27,7 @@ import { readFileSync } from 'node:fs';
 import { printed } from '../src/lib/printed.js';
 import { sitsIn } from '../src/lib/distribution.js';
 import { leagueFigures } from '../src/lib/derivation.js';
-import { boot, rich } from './helpers/page.js';
+import { boot, rich, app, PAGE_CSS } from './helpers/page.js';
 
 const RULES = JSON.parse(readFileSync(new URL('../data/layer-rules.json', import.meta.url), 'utf8'));
 /**
@@ -550,4 +550,90 @@ test('the overlay will not swap a measured season for the one being played', () 
     + 'rule about finishedness — it is suppressing the comparison outright');
   assert.doesNotMatch(over, /has not been measured yet/i,
     'the panel disclaimed a season it had in fact measured');
+});
+
+/**
+ * ⭐⭐⭐ THE SUMMARY OVERLAY — Kevin, 2026-10-01: *"The overlay should contain (or
+ * be) the What this game was information, so it'll replace the card."*
+ *
+ * ⚠️ THE ASSERTIONS ARE DRIVEN, NOT READ. Three of the four facts here are about
+ * WHEN something happens — on arrival at the horn, once, and not over a panel
+ * somebody opened — and a check that inspected `renderSum` could not see that
+ * nobody ran it. That is the lesson the door-hears-the-horn test above was
+ * written for, one surface over.
+ */
+test('the summary opens itself at the horn, once, and gets out of the way', () => {
+  const a = page();
+  const toEnd = () => { const s = a.$('scrub'); s.value = String(s.max);
+                        s.oninput({ target: { value: s.value } }); };
+  const back = k => { const s = a.$('scrub'); s.value = String(k);
+                      s.oninput({ target: { value: s.value } }); };
+
+  assert.equal(a.$('sumPanel').hidden, true, 'the summary was open at the opening faceoff');
+  toEnd();
+  assert.equal(a.$('sumPanel').hidden, false, 'the horn did not open the summary');
+
+  /* ⭐ IT IS THE VERDICT CARD, NOT A SECOND COMPOSITION OF IT. The same element,
+     so `sentenceFor`, the dot and the live deploy gate all keep their reader. */
+  assert.ok(a.$('verdict').innerHTML.includes('What this game was'),
+    'the summary panel does not carry the card');
+
+  /* AND EVERY LENS IS NAMED, which is the whole of Kevin's "only one piece": the
+     card nominates one and `mostUnusual` discards the rest. Counted off the
+     SELECTOR, so a seventh layer cannot be added and silently skipped here. */
+  const rows = (a.$('sumBody')._kids || []).find(n => n.className === 'srows');
+  assert.ok(rows, 'the summary drew no counts at all');
+  const chips = a.$$('#rg .pk').filter(b => b.dataset.l && b.dataset.l !== 'none');
+  assert.equal((rows._kids || []).length, chips.length,
+    `the summary names ${(rows._kids || []).length} counts and the selector offers ${chips.length}`);
+
+  /* ⛔ IT CLOSES ON THE WAY BACK, because every figure in it is of a FINISHED
+     game and leaving it open over the second period is six final counts above a
+     replay that has not produced them. */
+  back(3);
+  assert.equal(a.$('sumPanel').hidden, true,
+    'the summary stayed open over a game the reader scrubbed back into');
+
+  /* ⚠️ AND IT DOES NOT COME BACK UNINVITED. A reader who closed it and scrubs to
+     the horn again meets the button, not the panel. */
+  toEnd();
+  assert.equal(a.$('sumPanel').hidden, true,
+    'the summary re-opened itself after the reader had already dismissed it');
+  a.$('sum').click();
+  assert.equal(a.$('sumPanel').hidden, false, 'the button no longer opens the summary');
+});
+
+/**
+ * ⛔⛔ AND IT NEVER TAKES A PANEL THE READER CHOSE. Written because the first
+ * version DID: `Is that a lot?` open, scrub to the horn, and the summary replaced
+ * the one door whose entire purpose is to say "this game finished with 94" at
+ * exactly that moment. The door-hears-the-horn test above went red and named it.
+ */
+test('the horn does not snatch an overlay the reader already opened', () => {
+  for (const [door, panel] of [['alot', 'alotPanel'], ['work', 'workPanel']]) {
+    const a = page();
+    a.$(door).click();
+    assert.equal(a.$(panel).hidden, false, `${door} did not open, so this proves nothing`);
+    const s = a.$('scrub'); s.value = String(s.max);
+    s.oninput({ target: { value: s.value } });
+    assert.equal(a.$(panel).hidden, false,
+      `the horn closed the ${door} panel the reader had open`);
+    assert.equal(a.$('sumPanel').hidden, true,
+      `the summary opened on top of ${door}, and the two cannot both own the space`);
+  }
+});
+
+/**
+ * ⭐ THE DOOR THAT NAMES THE RESULT IS HIDDEN UNTIL THERE IS ONE, and it is the
+ * SAME `.ended` class the card uses rather than a second rule naming the same
+ * moment. The fake document has no CSS, so what is checkable here is the rule and
+ * the class that spends it — exactly how the card's own spoiler test is written.
+ */
+test('the summary door is not a spoiler mid-replay', () => {
+  assert.match(PAGE_CSS, /#rg \.lxw\.lxwe\{display:none\}/,
+    'the "What this game was" door is visible before the game has a result');
+  assert.match(PAGE_CSS, /#rg\.ended \.lxw\.lxwe\{display:/,
+    'nothing reveals the door once the game HAS a result');
+  assert.ok(app.includes('class="lxw lxwe" id="sum"'),
+    'the door does not carry the class the two rules above key on');
 });
