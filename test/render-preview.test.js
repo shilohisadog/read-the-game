@@ -16,7 +16,6 @@ import { ATTEMPT_TYPES } from '../src/lib/attribution.js';
 import { rich, app, PAGE_CSS, prose, bundle, boot, delaysOf, paceOf , pickLayer, HERO_GAME } from './helpers/page.js';
 import { measureGame } from '../builders/measure.mjs';
 import { perGame } from '../src/lib/archive.js';
-import { mostUnusual } from '../src/lib/distribution.js';
 import { danger } from '../src/lib/layers/danger.js';
 import { blocked } from '../src/lib/layers/blocked.js';
 import { goaltending } from '../src/lib/layers/goaltending.js';
@@ -601,208 +600,56 @@ test('the homepage gives a narrow frame the extra height its rink needs', () => 
 // is no hits counter on the page, so "not a shot" answered a question nobody
 // had -- explaining a metric we do not show is noise wearing the shape of rigour.
 
+/* ⏭ THE TEST THAT READ THE CARD'S SEASON SENTENCE STOOD HERE UNTIL 2026-10-02.
+   It reconciled `<span class="rate season">` against `mostUnusual` called
+   directly on the same counts. Kevin had the sentence removed — *"the scales fix
+   the visualization issue and the text just adds clutter"* — and `mostUnusual`
+   went with it, so there is nothing left for it to reconcile. The claim it was
+   really protecting, that the figure compared is the CHIP'S OWN count and not a
+   second way of counting, has moved to the panel that now carries the answer; see
+   `#sumPanel` in test/overlay-archive-door.test.js. */
+
 /**
- * ⭐ THE PER-GAME SUMMARY — §32.6's last item, on the card that already fires at
- * the right moment. §31.7b is why it belongs HERE and not beside a counter:
- * "Show me the work" answers *where did 34 come from*, this answers *how unusual
- * is 34*, and they are Doctrine §8's two halves split by scope.
+ * ⛔ THE CARD MAKES NO CLAIM ABOUT THE SEASON AT ALL — and that is now the rule
+ * rather than a state it falls into when it has nothing to compare against.
  *
- * THE DISTRIBUTIONS ARE BUILT FROM THE REAL FIXTURE EXTRACTS, not invented — a
- * made-up histogram would test the formatting and nothing else, which is the
- * warning `CURVE_AND_MIX` carries in its own docstring. Small `n` is not a
- * problem to hide from: the sentence is a FRACTION for exactly that reason, and
- * a nine-game season says so by construction.
+ * ⏭ Until 2026-10-02 this card ended with one sentence placing the game's most
+ * unusual count in its season, and three tests here pinned it: one reconciling
+ * the figure, one forcing both its branches, one pinning the reference class.
+ * Kevin had it removed — *"take the text off of the metric, I think the scales fix
+ * the visualization issue and the text just adds clutter"* — because `#sumPanel`
+ * draws all six lenses with a scale each directly below it.
+ *
+ * ⭐ SO THIS IS NOT THE OLD TEST WITH ITS CASES DELETED. A check that only ever
+ * boots a page with nothing to compare against would pass forever whatever the
+ * card did, which is this repo's most expensive shape. The card is offered REAL
+ * distributions built from the fixture extracts — the input that used to make the
+ * sentence appear — and must still say nothing about the season.
+ *
+ * ⚠️ AND THE REST OF THE CARD MUST SURVIVE. Deleting the paragraph is not
+ * deleting the verdict: a change that silenced the whole card would satisfy every
+ * refusal above and lose the sentence the card exists for.
  */
-test('the card says how this game sat in its season, or that it was ordinary', () => {
+test('the card says nothing about the season, even when it has one to use', () => {
   const dir = new URL('./fixtures/extracts/', import.meta.url);
   const recs = readdirSync(dir).filter(f => f.endsWith('.json'))
     .map(f => measureGame(JSON.parse(readFileSync(new URL(f, dir), 'utf8'))));
   const dists = perGame(recs);
   const y = String(rich.game.id).slice(0, 4);
-  assert.ok(dists[y], `the fixture corpus holds no ${y} game to compare against`);
+  assert.ok(dists[y], `the fixture corpus holds no ${y} game, so this test offers the card nothing`);
 
-  const a = boot(rich, { levelCurve: [{ k: 12, n: 708, count: 243 }], perGame: dists });
-  const v = a.$('verdict').innerHTML;
-  const line = /<span class="rate season">([\s\S]*?)<\/span>/.exec(v);
-  assert.ok(line, 'the card says nothing about how the game sat in its season');
-
-  /* ⭐ THE PATH IS INDEPENDENT (H1): the expectation comes from the library
-     called directly on the same counts, never from the page's own arithmetic. */
-  const ctx = { roster: rich.roster, homeId: rich.teams.home.id,
-                awayId: rich.teams.away.id, evenOnly: false };
-  const counts = { corsi: corsi.reduce(rich.events, ctx).counted.length,
-                   slot: danger.reduce(rich.events, ctx).counted.length,
-                   blocked: blocked.reduce(rich.events, ctx).counted.length,
-                   goaltending: goaltending.reduce(rich.events, ctx).counted.length,
-                   whistle: whistle.reduce(rich.events, ctx).counted.length };
-  const U = mostUnusual(dists[y], counts);
-  if (U) {
-    // (the branch actually taken is asserted below; see the both-branches test)
-    assert.ok(line[1].includes(`${U.count} ${U.noun}`),
-      `the card names a different count than the measurement: ${line[1]}`);
-    assert.ok(line[1].includes(`${U.n} of the ${U.of} game`),
-      `the card does not state the fraction it is claiming: ${line[1]}`);
-    // ⭐ A FRACTION, NEVER A BARE PERCENTAGE — levelCurve's rule, and the reason
-    // no minimum-n guard is needed anywhere in this feature.
-    assert.doesNotMatch(line[1], /\d%/, 'the season comparison was printed as a percentage');
-  } else {
-    assert.match(line[1], /middle half/, 'an ordinary game was not told it was ordinary');
-  }
-
-  /* ⭐ AND THE COUNT IT COMPARES IS THE CHIP'S OWN. Without this the sentence
-     could be right about the archive and about a different quantity. */
-  const chip = a.$('n_' + (U ? U.lens : 'corsi'));
-  a.$('scrub').oninput({ target: { value: a.$('scrub').max } });
-  if (U) assert.equal(+a.$('n_' + U.lens).textContent, U.count,
-    'the summary compares a number the selector never shows');
-  assert.ok(chip, 'the lens named by the summary has no chip');
-});
-
-/**
- * ⛔ AND WITH NO DISTRIBUTIONS IT SAYS NOTHING — the verdict card's standing
- * rule, the LIVE state until the pipeline next derives, and the permanent state
- * of the inlined page, which never asks for the archive at all.
- */
-test('a page with no distributions makes no claim about the season', () => {
-  for (const rates of [undefined, null, { levelCurve: [] }, { perGame: {} }]) {
+  /* Every shape that used to change what the card printed: a measured season of
+     its own, a season with a later one behind it, and nothing at all. */
+  for (const [what, rates] of [
+    ['its own measured season', { levelCurve: [{ k: 12, n: 708, count: 243 }], perGame: dists }],
+    ['a FINISHED own season', { perGame: { ...dists, [String(+y + 1)]: dists[y] } }],
+    ['no distributions', undefined],
+    ['an empty perGame', { perGame: {} }],
+  ]) {
     const v = boot(rich, rates).$('verdict').innerHTML;
-    assert.doesNotMatch(v, /class="rate season"/,
-      `rates=${JSON.stringify(rates)}: a season claim was made with nothing to compare against`);
-    assert.doesNotMatch(v, /middle half/, 'an ordinary-night sentence with no season behind it');
-    assert.match(v, /class="vk">What this game was</, 'and the card itself went missing');
+    assert.doesNotMatch(v, /class="rate season"/, `${what}: the season paragraph is back on the card`);
+    assert.doesNotMatch(v, /middle half/, `${what}: the card is placing the game in its season again`);
+    assert.match(v, /class="vk">What this game was</, `${what}: the card itself went missing`);
+    assert.match(v, /class="lead"/, `${what}: the verdict lost the sentence it exists for`);
   }
-});
-
-/**
- * ⚠️ BOTH BRANCHES, FORCED — and this is the test that would have caught the
- * defect the one above missed.
- *
- * That test reads `if (U) … else …`, so it renders whichever branch the fixture
- * corpus happens to produce. Nine fixture games made the reference game
- * ORDINARY, the else-branch ran, and the finding branch — the one that calls
- * `ESC` — was never executed by any test. In a browser it threw `Cannot access
- * 'ESC' before initialization`, aborted boot, and surfaced as a dead scrubber.
- * Green suite, broken page, found by looking.
- *
- * ⭐ A TEST THAT BRANCHES ON THE DATA IT HAPPENS TO GET IS NOT A TEST OF EITHER
- * BRANCH. Both are constructed here, so both are rendered.
- */
-test('both the unusual and the ordinary sentence actually render', () => {
-  const flat = n => ({ what: 'made up', population: 'p', unit: 'games', n: 100,
-                       min: 1, max: 100, start: 1,
-                       counts: Array.from({ length: 100 }, () => 1), noun: n });
-  const y = String(rich.game.id).slice(0, 4);
-  /* ⛔⛔ A LATER SEASON IS WHAT MAKES THIS ONE A REFERENCE CLASS, and these
-     fixtures carried a single key until 2026-10-01 — the shape of an archive
-     whose newest season is still being played. `finishedSeason` refuses that
-     now, and this test went red at once, which is how a one-key fixture turned
-     out to be describing a state the card must say NOTHING in. The companion
-     test below pins both sides of that refusal; here the season is finished,
-     because that is what these four cases are about. */
-  const measured = d => ({ [y]: d, [String(+y + 1)]: d });
-  const lenses = { corsi: 'shot attempts', slot: 'shots from the slot',
-                   blocked: 'blocked shots', goaltending: 'shots the goaltenders faced',
-                   whistle: 'stoppages' };
-  const dists = Object.fromEntries(Object.entries(lenses).map(([k, n]) => [k, flat(n)]));
-
-  // ORDINARY: every real count lands inside 25..75 of a flat 1..100 spread only
-  // if it happens to; so the ordinary case is built by making the middle half
-  // cover everything the game can hold.
-  const wide = Object.fromEntries(Object.entries(lenses).map(([k, n]) =>
-    [k, { ...flat(n), min: 0, start: 0, max: 999,
-          counts: Array.from({ length: 1000 }, () => 1), n: 1000 }]));
-  const ordinary = boot(rich, { perGame: measured(wide) }).$('verdict').innerHTML;
-  assert.match(ordinary, /middle half/, 'the ordinary sentence never rendered');
-
-  // UNUSUAL: a distribution every real count sits above.
-  const low = Object.fromEntries(Object.entries(lenses).map(([k, n]) =>
-    [k, { ...flat(n), min: 0, start: 0, max: 1, counts: [50, 50], n: 100 }]));
-  const found = boot(rich, { perGame: measured(low) }).$('verdict').innerHTML;
-  assert.match(found, /class="rate season"/, 'the finding sentence never rendered');
-  /* ⭐ ABOVE EVERYTHING READS AS A SENTENCE. "more than 100 of the 100 games"
-     is precise, self-checking, and looks like arithmetic that went wrong —
-     found on the Cup Final in a browser, not here. */
-  assert.match(found, /higher than all 100 games this season/,
-    'a count above every game in the population is stated as a fraction of itself');
-  assert.doesNotMatch(found, /undefined|\[object/, 'the sentence rendered a hole');
-
-  /* AND THE ORDINARY FRACTION IS STILL A FRACTION when the game has NOT beaten
-     everything — the two forms are one rule with a boundary, so both are pinned
-     or the boundary is free to move. */
-  /* 80 games at zero and 20 far above, so every real count in this game is
-     ABOVE the middle half (p75 = 0) and BELOW the top of the range — the case
-     the fraction wording exists for. The first attempt put p25 at 0 and p75 at
-     400, which made every count ORDINARY and the assertion below unreachable. */
-  const some = Object.fromEntries(Object.entries(lenses).map(([k, n]) =>
-    [k, { ...flat(n), min: 0, start: 0, max: 400,
-          counts: Array.from({ length: 401 }, (_, i) => i === 0 ? 80 : (i === 400 ? 20 : 0)),
-          n: 100 }]));
-  const part = boot(rich, { perGame: measured(some) }).$('verdict').innerHTML;
-  assert.match(part, /more than 80 of the 100 games this season/,
-    'a count inside the range is not stated as a fraction of the population');
-  assert.doesNotMatch(part, /\d%/, 'the season comparison was printed as a percentage');
-
-  /* ⭐ AND A DOCUMENT WITH NO NOUN SAYS NOTHING AT ALL — not "an ordinary
-     night", which is a claim about lenses nothing could judge.
-
-     ⚠️ THIS ASSERTION USED TO BE `doesNotMatch(/whistle|corsi/)` ALONE, and it
-     PASSED ON THE DEFECT: a page printing "every count sat inside the middle
-     half" names no lens id and satisfied it completely. `mostUnusual` returns
-     null for two different facts — nothing stood out, and nothing could be
-     judged — and the page guarded on a NEIGHBOUR of the question (do
-     distributions exist) rather than the question (can a lens be judged). */
-  const nameless = Object.fromEntries(Object.entries(low).map(([k, d]) =>
-    [k, { ...d, noun: undefined }]));
-  const quiet = boot(rich, { perGame: measured(nameless) }).$('verdict').innerHTML;
-  assert.doesNotMatch(quiet, /whistle|corsi/, 'a lens id was shown to a reader');
-  assert.doesNotMatch(quiet, /middle half/,
-    'a game was called ordinary by lenses nothing could judge');
-  assert.doesNotMatch(quiet, /class="rate season"/,
-    'a season claim was made from a document that names no measure');
-});
-
-/**
- * ⛔⛔ THE SEASON BEING PLAYED IS NOT ITS OWN REFERENCE CLASS, and both surfaces
- * had to be told. `perGame` gains a key for the current season the first time
- * the archive holds a game of it — 8 games on 1 October 2026 — and both readers
- * of that document asked only whether the key EXISTED. The next derive would
- * have moved this card from silence to "more than 6 of the 8 games this season"
- * and the overlay from a 1,394-game yardstick to an 8-game one, with every test
- * in this file green, because the fixtures above all described a finished
- * season and nothing described the transition.
- *
- * ⭐ BOTH SIDES, FROM ONE DISTRIBUTION. The refusal alone is cheap to satisfy —
- * a card that never prints a season line passes it forever, which is the same
- * hole `judgeable` was written for one measure over. So the identical counts and
- * the identical histogram are offered twice, and the ONLY difference between the
- * two boots is whether a later season exists. One must speak and one must not.
- */
-test('a season still being played is not its own reference class', () => {
-  const y = String(rich.game.id).slice(0, 4);
-  const lenses = { corsi: 'shot attempts', slot: 'shots from the slot',
-                   blocked: 'blocked shots', goaltending: 'shots the goaltenders faced',
-                   whistle: 'stoppages' };
-  // A distribution every real count in this game sits above, so a season line
-  // is what a judgeable document produces here. Nothing about it changes below.
-  const low = Object.fromEntries(Object.keys(lenses).map(k =>
-    [k, { what: 'made up', population: 'p', unit: 'games', n: 100, noun: lenses[k],
-          min: 0, max: 1, start: 0, counts: [50, 50] }]));
-
-  const finished = boot(rich, { perGame: { [y]: low, [String(+y + 1)]: low } })
-    .$('verdict').innerHTML;
-  assert.match(finished, /class="rate season"/,
-    'a FINISHED season is a reference class and the card refused to use it');
-  assert.match(finished, /this season/, 'the finished case never named the population');
-
-  const playing = boot(rich, { perGame: { [y]: low } }).$('verdict').innerHTML;
-  assert.doesNotMatch(playing, /class="rate season"/,
-    'the card judged this game against a season that is still being played');
-  assert.doesNotMatch(playing, /this season/,
-    'the card named a population it must not be using');
-
-  /* AND THE REST OF THE CARD IS UNTOUCHED — the refusal is of one paragraph, not
-     of the verdict. A guard that blanked the card would satisfy both assertions
-     above and lose the sentence the card exists for. */
-  assert.match(playing, /What this game was/,
-    'the whole card went silent, not just the season comparison');
 });

@@ -483,47 +483,42 @@ test('⛔ neither population figure in the panel is a bare count', () => {
 });
 
 /**
- * ⛔⛔ THE OVERLAY WOULD HAVE TRADED A 1,394-GAME YARDSTICK FOR AN 8-GAME ONE, and
- * the trade would have happened in the pipeline rather than in an edit.
+ * ⏭ THE OVERLAY USES THIS GAME'S OWN SEASON, FINISHED OR NOT — Kevin's ruling,
+ * 2026-10-02: *"I say next Monday is when we start using this season's data
+ * (albeit a terrible small sample size, but we'll be able to watch all of the
+ * data fill in over time)."*
  *
- * `perGame` publishes a histogram for every season the archive holds, with no
- * minimum n — which is right, because the document's job is to publish what was
- * measured. This panel asked `all[seas]`, i.e. does a key exist, and that was a
- * correct reading of the wrong question for exactly as long as the season in
- * progress had no games in the archive. On 1 October 2026 it had eight, and the
- * next `derive` would have moved the sentence from
+ * ⚠️ THIS TEST ASSERTED THE OPPOSITE FOR ONE DAY, and the inversion is the point
+ * of keeping its history. `finishedSeason` was added on 2026-10-01 because
+ * `perGame` gains a key for the season in progress as soon as the archive holds
+ * one game of it, and both readers asked only whether the key EXISTED — so the
+ * overlay would have swapped a 1,394-game yardstick for an 8-game one with no
+ * decision behind it. What was wrong was that nobody had chosen. Kevin has, and
+ * he has chosen the thin population on purpose, so this now pins his answer.
  *
- *   "the middle half of the 1,394 games we hold for the 2025-26 season … this
- *    game's own season has not been measured yet, so it is not placed inside it"
+ * ⭐ THE PAIRED SHAPE SURVIVES THE INVERSION, because half of it is still live:
+ * the ruling is about OUR OWN season, and `near` — reached only when this game's
+ * season has no histogram at all — still borrows from a FINISHED one. Asserting
+ * only that the thin season is used would pass on a panel that had simply stopped
+ * filtering anything, so the second half offers an unfinished season as the
+ * NEAREST candidate and requires it to be refused.
  *
- * to "the middle half of the 8 games we hold for this game's season … higher than
- * all 8 of them" — a worse population, asserted with more confidence, and no test
- * in this file could see it because every fixture here describes a finished one.
- *
- * ⭐ ONE DIFFERENCE BETWEEN THE TWO BOOTS, which is the whole design of the test:
- * the same two seasons, the same histograms, the same counts, and the ONLY thing
- * that changes is whether a LATER season exists — which is how the document
- * states that a season is over. Anything else moving as well and the test would
- * be evidence about something other than the rule.
- *
- * ⚠️ AND THE SECOND HALF ASSERTS THE 8-GAME POPULATION IS USED, deliberately. The
- * rule is FINISHEDNESS, not size: a season that is over is this game's own season
- * however few games it holds, and a version of this guard that also refused small
- * ones would be a threshold with no source — the thing `sitsIn` and the middle
- * half both exist to avoid. The boundary is pinned where it actually is.
+ * ⚠️ AND THE `n` IS READ BACK OUT OF THE SENTENCE. A small population is
+ * acceptable here only because the prose says how small it is; a panel that used
+ * eight games without naming them would be the percentile this feature was built
+ * as a fraction to avoid.
  */
-test('the overlay will not swap a measured season for the one being played', () => {
+test('the overlay places a game in its own season even while that season is being played', () => {
   const txt = n => n.innerHTML ? n.innerHTML.replace(/<[^>]+>/g, '')
     : (n._kids && n._kids.length) ? n._kids.map(txt).join(' ') : (n.textContent || '');
   const y = +String(rich.game.id).slice(0, 4);
-  const say = (n, counts, start) => ({ what: 'made up', unit: 'games', noun: 'stoppages',
-    population: `NHL regular season and playoffs, ${y - 1}-${String(y).slice(2)}`,
+  const say = (n, counts, start, season) => ({ what: 'made up', unit: 'games', noun: 'stoppages',
+    population: `NHL regular season and playoffs, ${season}-${String(season + 1).slice(2)}`,
     n, start, min: start, max: start + counts.length - 1, counts });
-  // A FINISHED season, broad enough that this game's stoppage count sits inside it.
-  const big = { whistle: say(1400, Array.from({ length: 100 }, () => 14), 0) };
-  // EIGHT GAMES — the real shape of the season in progress on the morning this
-  // was written. Every real count in `rich` sits above it.
-  const thin = { whistle: say(8, [1, 1, 1, 1, 1, 1, 1, 1], 0) };
+  // A broad season, wide enough that this game's stoppage count sits inside it.
+  const big = s_ => ({ whistle: say(1400, Array.from({ length: 100 }, () => 14), 0, s_) });
+  // EIGHT GAMES — the real shape of the season in progress the morning Kevin ruled.
+  const thin = s_ => ({ whistle: say(8, [1, 1, 1, 1, 1, 1, 1, 1], 0, s_) });
 
   const lead = a => {
     pick(a, 'whistle');
@@ -533,23 +528,29 @@ test('the overlay will not swap a measured season for the one being played', () 
     return txt(n);
   };
 
+  /* THE RULING: this game's season holds eight games and no later season exists,
+     so it is the season being played — and it is the one used. */
   const playing = lead(boot(rich, { ...MEASURES,
-    perGame: { [String(y - 1)]: big, [String(y)]: thin } }));
-  assert.match(playing, /1,400/,
-    'the panel abandoned the measured season for the one still being played');
-  assert.match(playing, /has not been measured yet/i,
-    'the panel placed this game without saying which season it used');
-  assert.doesNotMatch(playing, /the 8 games/,
-    'the eight games played so far were used as a reference class');
+    perGame: { [String(y - 1)]: big(y - 1), [String(y)]: thin(y) } }));
+  assert.match(playing, /8 game/,
+    'the overlay still refuses the season being played — Kevin ruled it IN on 2026-10-02');
+  assert.doesNotMatch(playing, /1,400/,
+    'the overlay reached past this game\'s own season for last season\'s population');
+  assert.doesNotMatch(playing, /has not been measured yet/i,
+    'the overlay disclaimed a season it is now using');
 
-  // THE CONTROL: one more key, and the game's own season is over.
-  const over = lead(boot(rich, { ...MEASURES,
-    perGame: { [String(y - 1)]: big, [String(y)]: thin, [String(y + 1)]: thin } }));
-  assert.match(over, /8 game/,
-    'a FINISHED season was refused as a reference class, so the guard is not a '
-    + 'rule about finishedness — it is suppressing the comparison outright');
-  assert.doesNotMatch(over, /has not been measured yet/i,
-    'the panel disclaimed a season it had in fact measured');
+  /* ⛔ THE HALF THAT IS STILL A REFUSAL. This game's season has no histogram at
+     all, so a yardstick is BORROWED — and the nearest candidate by distance is an
+     unfinished season one year back. It must be passed over for the finished one
+     two years back, or `near` has simply stopped filtering. */
+  const borrowed = lead(boot(rich, { ...MEASURES,
+    perGame: { [String(y - 2)]: big(y - 2), [String(y - 1)]: thin(y - 1) } }));
+  assert.match(borrowed, /1,400/,
+    'the overlay borrowed a yardstick from a season that is still being played');
+  assert.match(borrowed, new RegExp(`${y - 2}-${String(y - 1).slice(2)}`),
+    'the borrowed season is not named, so a reader cannot tell it is not their own');
+  assert.match(borrowed, /has not been measured yet/i,
+    'the overlay borrowed a season without saying this game\'s own was not measured');
 });
 
 /**

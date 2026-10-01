@@ -102,17 +102,65 @@ export function dayOf(g) {
  * bearing may not live only inside an edge handler node cannot run. Returns the
  * game id when this request should be rewritten, and null for everything else.
  */
+/**
+ * ⭐ TWO PAGES, NAMED IN ONE TABLE. `/preview` shipped first; the replay followed
+ * on 2026-10-02, because the shareable unit of this site is a GAME and the page a
+ * reader actually posts is the one they just watched — every one of 4,559 of them
+ * unfurled as *"An NHL game, replayed event by event."*
+ *
+ * ⛔ EACH FORM IS LISTED, NOT PATTERN-MATCHED. Cloudflare Pages serves the
+ * extensionless route and 308s the `.html` form to it, so a pasted link can be
+ * either — and a regex over "anything that looks like a page" is how a middleware
+ * that must touch exactly two paths starts touching three.
+ */
+export const PAGES = {
+  '/preview': 'preview', '/preview.html': 'preview',
+  '/game': 'replay', '/game.html': 'replay',
+};
+
 export function targetGame(urlString, contentType) {
   const url = new URL(urlString);
-  if (url.pathname !== '/preview.html' && url.pathname !== '/preview') return null;
+  const page = PAGES[url.pathname];
+  if (!page) return null;
   if (!/text\/html/i.test(contentType || '')) return null;
   const id = Number(url.searchParams.get('game'));
-  return Number.isFinite(id) && id > 0 ? id : null;
+  return Number.isFinite(id) && id > 0 ? { id, page } : null;
 }
 
-export function tagsFor(g, url) {
-  const title = `${nameOf(g.away)} at ${nameOf(g.home)} — what to watch for`;
+/**
+ * ⛔⛔ AND THE REPLAY'S UNFURL MAY NOT SPOIL THE GAME. This is not a style note:
+ * the verdict card is hidden behind `.ended` and the third door is hidden with it
+ * for exactly this reason — *"a button reading 'What this game was' is a spoiler
+ * on a replay the reader is still watching"*. A share card that opens with
+ * `PIT 7 PHI 0` would hand a stranger the ending before they reach the page the
+ * whole site exists to make them watch. So: both clubs, the night, and no score,
+ * no leader, no count. The rule the preview already keeps — no figure of any
+ * kind — does most of the work; this is the one that outranks it if they ever
+ * disagree.
+ *
+ * ⚠️ A GAME THAT HAS NOT BEEN PLAYED GETS NOTHING, and the generic tags stand.
+ * The replay page reads an extract that does not exist yet, so naming the clubs
+ * would advertise a page that cannot show them a game. The fixture already has a
+ * surface built for it, and it is the other one in this file.
+ */
+export function tagsFor(g, url, page = 'preview') {
   const day = dayOf(g);
+  const clubs = `${nameOf(g.away)} at ${nameOf(g.home)}`;
+  if (page === 'replay') {
+    if (!g.played) return null;
+    return {
+      title: day ? `${clubs} — ${day}` : clubs,
+      /* ⛔ NO PROMISE OF VIDEO. The league's recap is a BUTTON on recent games and
+         absent from the back catalogue, so an unfurl that mentioned it would be
+         wrong on most of the archive — and this file renders no figure either, for
+         the reason stated at the top. */
+      description: (g.preseason ? 'Preseason. ' : '')
+        + 'Every event of this game in order, with the counts building as it runs '
+        + 'and the work behind each one. No result here.',
+      url,
+    };
+  }
+  const title = `${clubs} — what to watch for`;
   const when = [g.preseason ? 'Preseason' : null,
                 day ? (g.played ? `played ${day}` : day) : null].filter(Boolean).join(' · ');
   /* ⛔ NO PROMISE OF VIDEO AND NO FORECAST, which are the two things pre-render
@@ -128,16 +176,19 @@ export async function onRequest(context) {
   const { request, next } = context;
   const res = await next();
   try {
-    /* ONE PATH, AND `/preview` is the same page: Cloudflare Pages serves the
-       extensionless route and 308s the .html form to it, so a reader's pasted
-       link can be either. */
-    const id = targetGame(request.url, res.headers.get('content-type'));
-    if (id == null) return res;
+    /* TWO PATHS, EACH IN BOTH ITS FORMS — see `PAGES`. */
+    const hit = targetGame(request.url, res.headers.get('content-type'));
+    if (!hit) return res;
 
-    const g = await gameOf(id);
+    const g = await gameOf(hit.id);
     if (!g || !g.away || !g.home) return res;      // a game we do not hold stays generic
 
-    const t = tagsFor(g, `https://readthegame.co/preview?game=${id}`);
+    const route = hit.page === 'replay' ? 'game' : 'preview';
+    const t = tagsFor(g, `https://readthegame.co/${route}?game=${hit.id}`, hit.page);
+    /* ⛔ AND `tagsFor` IS ALLOWED TO REFUSE. An unplayed game has no replay, so
+       the generic document is the honest one — returning it here is the same
+       pass-through every other unknown takes. */
+    if (!t) return res;
     const setContent = (el, v) => el.setAttribute('content', v);
     return new HTMLRewriter()
       .on('title', { element: el => el.setInnerContent(t.title) })

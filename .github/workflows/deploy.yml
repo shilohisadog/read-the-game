@@ -151,6 +151,16 @@ jobs:
       - name: the replay's states, entered on purpose
         run: node tools/browser/run.mjs replay-states
 
+      # `tools/browser/door-row.mjs` — the three doors under the rink share a row,
+      # and on 2026-10-02 the third one's LABEL did not line up with the other two:
+      # the boxes were identical and the text inside sat 5px from the left edge
+      # against 89-102px. The cause was that `.lxw` declared no `display` at all,
+      # so two doors took the browser's button centring and the one revealed at the
+      # horn took the `flex` its reveal rule had to name. Every fact in that
+      # sentence is a computed style or a box, which the suite cannot see.
+      - name: the three doors line up
+        run: node tools/browser/run.mjs door-row
+
       # THE LEARN PAGE'S DOORS POINT AT ONE GAME, so that game being published
       # is a production dependency of nine links on a page a stranger reads.
       #
@@ -393,6 +403,71 @@ jobs:
             exit 1
           fi
           echo "  /preview.html with no game= is byte-identical to the checkout"
+
+      # ⭐⭐ AND THE SAME PROOF FOR THE REPLAY — added 2026-10-02, when the middleware
+      # grew a second path. `/game?game=` is the link a reader actually posts: they
+      # share the game they just watched, not the preview of one they have not. It
+      # unfurled as "An NHL game, replayed event by event" for every game in the
+      # archive until this shipped.
+      #
+      # ⛔ THE GAME IS READ FROM THE CATALOG, AND IT MUST BE ONE THAT WAS PLAYED.
+      # `tagsFor` refuses an unplayed game on this path — a replay of a game with
+      # no extract is a page that cannot show anything — so a step that picked the
+      # next FIXTURE, as the preview's step above correctly does, would assert the
+      # generic title and fail on working code.
+      #
+      # ⛔⛔ AND THE PAIRED HALF AGAIN, for the same reason and against a different
+      # file: the byte-diff gate fetches `/game.html` with no query string too.
+      - name: a shared link names its own game — on the replay
+        if: steps.site.outputs.changed == 'true'
+        env:
+          URL: ${{ steps.preview.outputs.url }}
+        run: |
+          curl -sS --fail "https://data.readthegame.co/catalog.json?cb=${GITHUB_RUN_ID}" -o cat.json
+          gid=$(node -e '
+            const c = require("./cat.json");
+            /* The page\u2019s own rule for what it can show: viewable, and newest by the
+               league\u2019s date. A pinned id rots the moment it leaves the archive. */
+            const v = (c.games || []).filter(g => g && g.v);
+            if (!v.length) { console.error("the catalog lists no playable game"); process.exit(1); }
+            v.sort((a, b) => (a.d === b.d ? a.id - b.id : (a.d < b.d ? -1 : 1)));
+            process.stdout.write(String(v[v.length - 1].id));
+          ') || { echo "::error::could not choose a played game from the catalog"; exit 1; }
+          echo "  unfurling the replay of game $gid"
+
+          . tools/edge-fetch.sh
+          edge_fetch "game.html?game=$gid&cb=${GITHUB_RUN_ID}" replay.html retry404 \
+            || { echo "::error::the replay unfurl path never became available"; exit 1; }
+
+          title=$(sed -n 's:.*<title>\(.*\)</title>.*:\1:p' replay.html | head -1)
+          echo "  <title> $title"
+          case "$title" in
+            *" at "*)  ;;
+            *) echo "::error::the replay unfurl did not name the game — got: $title"
+               echo "::error::if this says 'An NHL game, replayed event by event', functions/ did not route /game"
+               exit 1 ;;
+          esac
+          # ⛔ NO RESULT IN A SHARE CARD. The page hides its own verdict until the
+          # horn; metadata is read before the page exists and by someone who has
+          # chosen nothing, so a score here is the spoiler that rule is about.
+          desc=$(sed -n 's:.*<meta property="og:description" content="\([^"]*\)".*:\1:p' replay.html | head -1)
+          echo "  og:description $desc"
+          case "$desc" in
+            *[0-9]*) echo "::error::a figure reached the replay's share card: $desc"; exit 1 ;;
+          esac
+          grep -q 'property="og:url" content="https://readthegame.co/game?game='"$gid"'"' replay.html \
+            || { echo "::error::og:url does not name this game"; exit 1; }
+
+          # ⛔ THE PAIRED HALF: no `game=`, no rewrite, byte for byte.
+          edge_fetch "game.html?cb=${GITHUB_RUN_ID}" baregame.html retry404 \
+            || { echo "::error::/game.html never became available"; exit 1; }
+          if ! cmp -s baregame.html src/game.html; then
+            echo "::error::/game.html with no game= is NOT the committed file —"
+            echo "::error::the middleware is rewriting requests the byte-diff gate relies on"
+            diff <(head -c 2000 baregame.html) <(head -c 2000 src/game.html) | head -20
+            exit 1
+          fi
+          echo "  /game.html with no game= is byte-identical to the checkout"
 
       # THE CHECK THAT WOULD HAVE CAUGHT THE CORS BUG. Everything above proves
       # the bytes we published are the bytes we committed; none of it proves a

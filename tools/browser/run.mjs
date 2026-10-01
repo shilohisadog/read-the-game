@@ -23,6 +23,7 @@ export const CHECKS = {
   'index-runs': () => import('./index-runs.mjs'),
   'stylesheet-settles': () => import('./stylesheet-settles.mjs'),
   'replay-states': () => import('./states.mjs'),
+  'door-row': () => import('./door-row.mjs'),
 };
 
 function args(argv) {

@@ -25,24 +25,40 @@ const G = (o = {}) => ({ away: 'BOS', home: 'WSH', date: '2026-09-25',
 
 /* ------------------------------------------------------- WHICH PATHS IT TOUCHES */
 
-test('⛔⛔ it fires for the preview path with a game, and for NOTHING else', () => {
+test('⛔⛔ it fires for TWO paths with a game, and for NOTHING else', () => {
   /* THE CLAIM THE DEPLOY GATE DEPENDS ON. That gate compares every page's
-     published bytes to its committed bytes and fetches `/preview.html` with no
-     query string, so if this predicate ever widened, the gate would start failing
-     on pages nobody touched — or worse, would be weakened to accommodate it.
+     published bytes to its committed bytes and fetches each page with NO QUERY
+     STRING, so if this predicate ever widened past `?game=`, the gate would start
+     failing on pages nobody touched — or worse, would be weakened to accommodate
+     it. The set of paths grew on 2026-10-02; the shape of the claim did not.
      MUTATION: drop the pathname test and the index/calendar cases fire; drop the
-     `game=` test and the bare-preview case does. */
+     `game=` test and the two bare-page cases do. */
   const U = 'https://readthegame.co';
-  assert.equal(targetGame(`${U}/preview.html?game=2026010049`, 'text/html'), 2026010049);
-  assert.equal(targetGame(`${U}/preview?game=2026010049`, 'text/html'), 2026010049,
+  assert.deepEqual(targetGame(`${U}/preview.html?game=2026010049`, 'text/html'),
+    { id: 2026010049, page: 'preview' });
+  assert.deepEqual(targetGame(`${U}/preview?game=2026010049`, 'text/html'),
+    { id: 2026010049, page: 'preview' },
     'Pages serves the extensionless route, and a pasted link can be either');
+  assert.deepEqual(targetGame(`${U}/game.html?game=2026010049`, 'text/html'),
+    { id: 2026010049, page: 'replay' },
+    'the replay page is the one a reader actually posts, and it unfurled generically for months');
+  assert.deepEqual(targetGame(`${U}/game?game=2026010049`, 'text/html'),
+    { id: 2026010049, page: 'replay' });
 
-  // the byte-diff gate's own request — this must NOT be rewritten
+  // the byte-diff gate's own requests — neither of these may be rewritten
   assert.equal(targetGame(`${U}/preview.html`, 'text/html'), null);
+  assert.equal(targetGame(`${U}/game.html`, 'text/html'), null);
   assert.equal(targetGame(`${U}/index.html?game=2026010049`, 'text/html'), null);
   assert.equal(targetGame(`${U}/calendar.html?game=2026010049`, 'text/html'), null);
-  assert.equal(targetGame(`${U}/game.html?game=2026010049`, 'text/html'), null);
+  assert.equal(targetGame(`${U}/read-the-game.html?game=2026010049`, 'text/html'), null,
+    'the self-contained page carries its own game and must not be rewritten for another');
   assert.equal(targetGame(`${U}/`, 'text/html'), null);
+
+  /* ⛔ AND THE TWO PAGES ARE TOLD APART, not merely both accepted. A table that
+     returned the same answer for both would unfurl the replay with the preview's
+     words — which promise a forecast the replay does not carry. */
+  assert.notEqual(targetGame(`${U}/preview?game=1`, 'text/html').page,
+    targetGame(`${U}/game?game=1`, 'text/html').page);
 });
 
 test('⛔ a non-HTML response is never rewritten, whatever the path says', () => {
@@ -53,7 +69,8 @@ test('⛔ a non-HTML response is never rewritten, whatever the path says', () =>
   assert.equal(targetGame(U, 'image/png'), null);
   assert.equal(targetGame(U, ''), null);
   assert.equal(targetGame(U, null), null);
-  assert.equal(targetGame(U, 'text/html; charset=utf-8'), 2026010049, 'the real header still works');
+  assert.deepEqual(targetGame(U, 'text/html; charset=utf-8'), { id: 2026010049, page: 'preview' },
+    'the real header still works');
 });
 
 test('⛔ a junk game id is a pass-through, not a crash and not a guess', () => {
@@ -124,4 +141,82 @@ test('⚠️ a fixture with no league date loses the day and keeps the rest', ()
   const t = tagsFor(G({ date: null }), 'u');
   assert.ok(!/September/.test(t.description), t.description);
   assert.match(t.title, /Boston Bruins at Washington Capitals/, 'the clubs still name the card');
+});
+
+/* ------------------------------------------------- AND THE REPLAY PAGE'S OWN TAGS */
+
+/**
+ * ⭐ THE REPLAY IS THE PAGE PEOPLE POST — built 2026-10-02, and it is the larger
+ * half of this feature by a long way. `/preview` is a page a reader may never
+ * open; `/game` is the one they have just watched, and all 4,559 of them unfurled
+ * as *"An NHL game, replayed event by event."*
+ */
+test('⭐ the replay names its two clubs and the night it was played', () => {
+  const t = tagsFor(G({ played: true }), 'u', 'replay');
+  assert.equal(t.title, 'Boston Bruins at Washington Capitals — 25 September 2026');
+  /* AND IT IS NOT THE PREVIEW'S SENTENCE. The preview promises what each club does
+     more than the league; the replay holds one game's events. One `tagsFor`
+     returning one string for both would have been the cheap version of this. */
+  assert.notEqual(t.description, tagsFor(G({ played: true }), 'u').description);
+  assert.doesNotMatch(t.description, /what each club does|normal in hockey/i,
+    'the replay is unfurling with the preview page\'s promises');
+});
+
+/**
+ * ⛔⛔ AND IT MAY NOT SPOIL THE GAME, which is the rule that outranks every other
+ * wording question here. The verdict card is hidden behind `.ended` and the third
+ * door is hidden with it because *"a button reading 'What this game was' is a
+ * spoiler on a replay the reader is still watching"* — a share card is read
+ * BEFORE the page, by someone who has not chosen to see anything at all.
+ *
+ * ⭐ THE CHECK IS THAT NO FIGURE SURVIVES, not that a particular phrase is absent.
+ * A banned-word list over an open vocabulary is the gate `whistle.js` refuses in
+ * its own header; a digit is mechanical, and the only numbers a game legitimately
+ * puts in an unfurl are its date.
+ */
+test('⛔⛔ the replay unfurl carries no result, and no figure but the date', () => {
+  for (const g of [G({ played: true }), G({ played: true, preseason: true })]) {
+    const t = tagsFor(g, 'u', 'replay');
+    assert.doesNotMatch(t.description, /\d/,
+      `a figure reached the replay's description, which is read before the page: ${t.description}`);
+    /* The title carries the day and nothing else numeric: strip the date and no
+       digit may remain, so a score added beside it goes red. */
+    assert.doesNotMatch(t.title.replace(/\d+ [A-Z][a-z]+ \d{4}/, ''), /\d/,
+      `a figure reached the replay's title beside its date: ${t.title}`);
+    const said = `${t.title} ${t.description}`;
+    assert.ok(!/\b(won|lost|beat|defeated|shutout|final score)\b/i.test(said), said);
+    /* The preview's two standing refusals hold here too. */
+    assert.ok(!/\b(stream|highlights|full game|watch the game|live)\b/i.test(said), said);
+    assert.ok(!/\b(will win|favourite|favorite|predict|projected|odds|expected to)\b/i.test(said), said);
+  }
+});
+
+/**
+ * ⛔ A GAME THAT HAS NOT BEEN PLAYED HAS NO REPLAY, so the generic document stands.
+ * ⭐ AND THE PAIRED HALF IS WHAT MAKES THIS A RULE RATHER THAN A SILENCE: the same
+ * fixture on the PREVIEW path must still unfurl, because that page is built for
+ * exactly this game. A refusal keyed to the game instead of the page would have
+ * passed the first assertion and quietly broken the feature that already shipped.
+ */
+test('⛔ an unplayed game gets no replay tags, and the preview still gets its own', () => {
+  assert.equal(tagsFor(G({ played: false }), 'u', 'replay'), null,
+    'the replay page advertised a game whose extract does not exist yet');
+  const p = tagsFor(G({ played: false }), 'u');
+  assert.ok(p && /what to watch for/.test(p.title),
+    'the fixture lost the preview unfurl that was built for it');
+  /* AND THE DEFAULT IS THE PREVIEW, so an un-passed `page` cannot silently become
+     the replay's rules on the path that shipped first. */
+  assert.deepEqual(tagsFor(G({ played: false }), 'u'), tagsFor(G({ played: false }), 'u', 'preview'));
+});
+
+/**
+ * ⚠️ A PLAYED GAME WITH NO LEAGUE DATE KEEPS ITS CLUBS. The same degradation the
+ * preview makes, asserted here because the replay's title is BUILT from the day
+ * rather than appending it — so a null date is a different code path, not the
+ * same one with an empty string in it.
+ */
+test('⚠️ the replay title survives a game the league gave no date', () => {
+  const t = tagsFor(G({ played: true, date: null }), 'u', 'replay');
+  assert.equal(t.title, 'Boston Bruins at Washington Capitals');
+  assert.doesNotMatch(t.title, /—|undefined|null/, t.title);
 });

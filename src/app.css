@@ -1067,7 +1067,24 @@
    viewport's size with a floor, rather than the copy being shortened around a
    width nobody checked. `.72rem` is the ceiling, so every width that reads well
    today is unchanged. */
+/* ⛔⛔ THE LAYOUT IS DECLARED HERE SO THE REVEAL RULE HAS NOTHING TO CHOOSE.
+   Kevin, 2026-10-02, from the live site: `What this game was` did not line up
+   with its two neighbours. Measured in a browser rather than reasoned about --
+   all three boxes were identical (290x44 at the same top) and the TEXT inside
+   the third sat 5px from its left edge and 7px from its top against 89-102px
+   and 14px for the other two.
+   The cause is that this rule declared no `display` at all, so `work` and `alot`
+   took the UA's `block` for a button, which centres its contents on both axes by
+   machinery no other display type has. `.lxwe` is hidden until the horn, so its
+   reveal rule 700 lines below HAD to name a display value -- and whichever one it
+   named was going to differ from a default nobody had written down. `flex` turned
+   the button into a flex container, whose start-aligned default is not the button
+   centring it replaced.
+   ⭐ So the three share one declaration and the reveal rule restores exactly
+   what the other two already have. A rule that can only be reached by one of three
+   siblings may not be the only place their common layout is stated. */
 #rg .lxw{flex:1 1 0;min-width:0;min-height:34px;
+ display:flex;align-items:center;justify-content:center;text-align:center;
  background:none;border:0;padding:6px 4px;
  font:inherit;font-size:clamp(.62rem,1.75vw,.72rem);font-weight:700;letter-spacing:.03em;
  color:var(--muted);cursor:pointer}
@@ -1727,9 +1744,13 @@
    reader is still watching — exactly the objection the card's own note three
    rules up settles for the card. One class, one moment, two surfaces: a second
    rule naming its own moment would be free to drift the day either moves.
-   ⚠️ `flex` AND NOT `inline-block`, because `.lxw` is a flex CHILD with
-   `flex:1 1 0`: restoring it to `inline-block` would have left the three doors
-   unable to share the row they are laid out to share. */
+   ⛔⛔ AND THE VALUE HERE MUST BE THE ONE `.lxw` ITSELF DECLARES, which is
+   now `flex` in both places rather than `flex` here against a UA default there.
+   This rule shipped as the ONLY statement of the third door's display, and the
+   two it sits beside were laid out by the browser's button machinery -- so the
+   text in this one sat 5px from its left edge while theirs was centred, for as
+   long as the door existed. The base rule carries the layout; this names only
+   the moment. `test/door-row.test.js` holds them equal. */
 #rg .lxw.lxwe{display:none}
 #rg.ended .lxw.lxwe{display:flex}
 /* INSIDE THE OVERLAY THE CARD KEEPS ITS TYPE AND DROPS ITS CHROME. `.work`

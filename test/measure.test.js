@@ -21,7 +21,7 @@ import { join } from 'node:path';
 import { measureGame, stable, firstAtClock, endedIn, measureAll, slateOf, archiveIsWhole } from '../builders/measure.mjs';
 import { TEAMS } from '../src/lib/teams.js';
 import { summarise, slotShare, perGame, reachOf, goalieNight } from '../src/lib/archive.js';
-import { distribution, quantile, shareAtOrBelow, mostUnusual, sitsIn } from '../src/lib/distribution.js';
+import { distribution, quantile, shareAtOrBelow, sitsIn } from '../src/lib/distribution.js';
 import { corsi } from '../src/lib/layers/corsi.js';
 import { tiedControl } from '../src/lib/layers/tied.js';
 import { danger } from '../src/lib/layers/danger.js';
@@ -1057,100 +1057,82 @@ test('a season is measured against itself, and says which season it is', () => {
 });
 
 /**
- * ⭐ THE ONE WAY A GAME WAS UNUSUAL — or nothing, which it must be able to say.
+ * ⭐ WHERE A COUNT SAT IN ITS SEASON — and "ordinary" is an answer it must give.
  *
- * "Three things to notice" was ruled publishable only as a MEASURED distance
- * from a base rate, with the dimensions chosen once in public, and able to
- * report that nothing stood out. The lenses are the dimensions and the game
- * supplies which one.
+ * ⏭ THESE THREE TESTS WERE WRITTEN AGAINST `mostUnusual`, WHICH WAS DELETED on
+ * 2026-10-02 with the one sentence that called it. They are kept and re-pointed
+ * at `sitsIn` rather than deleted with it, because the properties they assert
+ * are not that function's: they belong to the placement itself, and `renderSum`
+ * draws six rows and six scales out of exactly these fields. A test deleted
+ * alongside its caller takes the live claim with it.
  *
- * ⭐ NO TUNED THRESHOLD. "Unusual enough to mention" wants a cutoff, and a
- * cutoff here would be a parameter with no source in the data. What decides is
- * a DEFINITION — the middle half of nights, p25 to p75 — so this asserts the
+ * ⭐ NO TUNED THRESHOLD. "Unusual enough to mention" wants a cutoff, and a cutoff
+ * here would be a parameter with no source in the data. What decides is a
+ * DEFINITION — the middle half of nights, p25 to p75 — so this asserts the
  * boundary behaviour rather than a number somebody picked.
  */
-test('a game is unusual only outside the middle half, and can be ordinary', () => {
+test('a count is unusual only outside the middle half, and can be ordinary', () => {
   // A distribution with a known shape: 1..100, one game each, so p25 = 25 and
   // p75 = 75 by construction rather than by whatever the archive happens to hold.
   const d = { ...distribution(Array.from({ length: 100 }, (_, k) => k + 1), 'made up'),
               noun: 'stoppages' };
-  const only = v => mostUnusual({ whistle: d }, { whistle: v });
+  const at = v => sitsIn(d, v);
 
-  assert.equal(only(50), null, 'a typical count was reported as unusual');
-  assert.equal(only(25), null, 'the edge of the middle half is inside it');
-  assert.equal(only(75), null, 'the edge of the middle half is inside it');
+  assert.equal(at(50).inside, true, 'a typical count was reported as unusual');
+  assert.equal(at(25).inside, true, 'the edge of the middle half is inside it');
+  assert.equal(at(75).inside, true, 'the edge of the middle half is inside it');
 
-  const high = only(95);
-  assert.ok(high, '95 of 100 is outside the middle half and was not reported');
+  const high = at(95);
+  assert.equal(high.inside, false, '95 of 100 is outside the middle half and was not reported');
   assert.equal(high.high, true, 'a high count was reported as a low one');
   // ⭐ A COUNT, NOT A PERCENTAGE, and STRICT — 94 games scored lower than 95,
   // and the game itself is not one of them.
-  assert.equal(high.n, 94, `"more than ${high.n} of 100" is not the count of games below 95`);
+  assert.equal(high.beat, 94, `"more than ${high.beat} of 100" is not the count of games below 95`);
   assert.equal(high.of, 100, 'the population it is stated against is wrong');
   assert.equal(high.noun, 'stoppages', 'the sentence has no noun, or reached for its own');
 
-  const low = only(3);
-  assert.ok(low && !low.high, 'a low count was not reported, or was called high');
-  assert.equal(low.n, 97, 'the count of games above 3 is wrong');
+  const low = at(3);
+  assert.ok(!low.inside && !low.high, 'a low count was not reported, or was called high');
+  assert.equal(low.beat, 97, 'the count of games above 3 is wrong');
 });
 
 /**
- * ⭐ THE FURTHEST FROM TYPICAL WINS, and the finding says how many others were
- * also outside — because the sentence wanted to end "and nothing else about it
- * was unusual", which is a claim about the lenses this function DISCARDED.
+ * ⭐ AND THE DISTANCE FROM TYPICAL IS ORDERED, which is what a reader comparing
+ * six scales in `#sumPanel` is doing by eye. `far` is the field that ordering was
+ * computed from while the card still printed one sentence about it.
  */
-test('the finding is the furthest from typical, and counts the others', () => {
-  const d = n => ({ ...distribution(Array.from({ length: 100 }, (_, k) => k + 1), 'x'), noun: n });
-  const dists = { whistle: d('stoppages'), corsi: d('shot attempts'), slot: d('shots from the slot') };
-
-  const one = mostUnusual(dists, { whistle: 99, corsi: 50, slot: 50 });
-  assert.equal(one.lens, 'whistle');
-  assert.equal(one.outside, 1, 'the other two were ordinary and it said otherwise');
-
-  const many = mostUnusual(dists, { whistle: 99, corsi: 90, slot: 50 });
-  assert.equal(many.lens, 'whistle', 'the reported lens is not the furthest from typical');
-  assert.equal(many.outside, 2, 'a second unusual count was not counted');
-
-  // ⭐ AND IT REALLY IS A CONTEST. Without this the "furthest wins" claim is
-  // satisfied by a fixture where only one lens qualifies.
-  assert.equal(mostUnusual(dists, { whistle: 90, corsi: 99, slot: 50 }).lens, 'corsi',
-    'the ordering does not follow the distance from typical');
+test('the further from typical a count is, the further `far` says it is', () => {
+  const d = { ...distribution(Array.from({ length: 100 }, (_, k) => k + 1), 'x'), noun: 'stoppages' };
+  assert.ok(sitsIn(d, 99).far > sitsIn(d, 90).far, 'a more extreme count is not ranked further out');
+  assert.ok(sitsIn(d, 90).far > sitsIn(d, 50).far, 'an unusual count is not ranked past a typical one');
+  // ⭐ AND IT IS SYMMETRIC: 1 is as far from typical as 100, in opposite directions.
+  assert.equal(sitsIn(d, 1).high, false);
+  assert.ok(Math.abs(sitsIn(d, 1).far - sitsIn(d, 100).far) < 0.02,
+    'the two ends of the same distribution are not equally far from the middle');
 });
 
 /**
- * ⛔ NOTHING TO COMPARE AGAINST MEANS NOTHING SAID. This is the LIVE state until
- * the pipeline next derives — `perGame` is absent from the published document —
- * and the permanent state of the inlined page, which never asks for the archive.
+ * ⛔ NOTHING TO COMPARE AGAINST MEANS NOTHING SAID. This is the permanent state
+ * of the inlined page, which never asks for the archive, and of any season the
+ * pipeline has not measured.
  */
-test('with no distribution there is no finding, and no invented one', () => {
-  assert.equal(mostUnusual(null, { whistle: 50 }), null, 'a finding with no distributions');
-  assert.equal(mostUnusual({ whistle: null }, { whistle: 50 }), null, 'a finding from a null lens');
+test('with no distribution there is no placement, and no invented one', () => {
+  assert.equal(sitsIn(null, 50), null, 'a placement with no distribution');
   const empty = distribution([], 'nothing measured');
-  assert.equal(mostUnusual({ whistle: empty }, { whistle: 50 }), null,
-    'an empty season produced a finding — 0 of 0 is not a comparison');
-  // A lens the game has no count for is skipped, never scored as zero.
+  assert.equal(sitsIn(empty, 50), null,
+    'an empty season produced a placement — 0 of 0 is not a comparison');
+  // ⚠️ A DISTRIBUTION WITH NO `noun` IS UNUSABLE, not a finding with a gap in it:
+  // `perGame` welds the noun to the number so no sentence reaches for its own, and
+  // a document derived before nouns existed would otherwise produce "55 whistle".
   const d = { ...distribution([10, 20, 30, 40], 'x'), noun: 'stoppages' };
-  assert.equal(mostUnusual({ whistle: d }, {}), null, 'an absent count was treated as a value');
-  assert.equal(mostUnusual({ whistle: d }, { whistle: null }), null, 'a null count was scored');
+  assert.equal(sitsIn({ ...d, noun: undefined }, 20), null, 'a nounless distribution was used anyway');
+  // ⭐ AND AN ABSENT COUNT IS THE REFERENCE CLASS ALONE, never a count of zero —
+  // the split that lets a scale be drawn mid-replay while the count is partial.
+  const ref = sitsIn(d, null);
+  assert.ok(ref && ref.count === undefined && ref.of === 4,
+    'an absent count was scored as a value instead of returning the class alone');
 });
 
-/* ---------------------------------------------------------------------------
- * ⭐ THE DRIVER, RUN — and the defect that made this necessary.
- *
- * From 2026-09-03 `main()` read `declined` without destructuring it, so every
- * archive run wrote measures.json and teams.json and then died on
- * `ReferenceError: declined is not defined`. Everything after that line never
- * executed: the situation-code alert, the entire JSON summary, the faceoff
- * warning, and — the part that matters — **the exit code that the file's own
- * comment calls "the alert"**. And derive.yml pipes the step into `tee`, so the
- * pipeline returned tee's zero and the weekly job reported success. Confirmed in
- * the log of the 2026-09-08 run, which is green with the stack trace in it.
- *
- * ⛔ NOTHING IN 1,100 TESTS COULD SEE IT, because everything here called
- * `measureAll` and nothing ran the DRIVER. A unit test of the parts cannot fail
- * on a reference the parts never make. So this runs the real command, on a real
- * extract, and asserts it reaches its last line.
- * ------------------------------------------------------------------------- */
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync as readdir } from 'node:fs';
 import { NOT_A_CLUB } from '../src/lib/teams.js';

@@ -163,7 +163,8 @@ export function shareAtOrBelow(d, value) {
  * against the same distribution, in the same vocabulary. Written twice, the two
  * surfaces would be free to disagree about what "unusual" means — and one of
  * them would be the one a reader pressed a button labelled *is that a lot* to
- * reach. `mostUnusual` now calls this, so there is one answer and two callers.
+ * reach. One answer, and every surface that judges a night reads it: the verdict
+ * card's own sentence, the overlay, and the six rows of `#sumPanel`.
  *
  * ⭐ THE REFERENCE CLASS COMES BACK EVEN WITH NO COUNT, and that is the whole
  * reason the two halves are separable. Mid-replay the layer's count is PARTIAL —
@@ -174,8 +175,9 @@ export function shareAtOrBelow(d, value) {
  * verdict waits for the horn; the reference class does not have to.
  *
  * ⚠️ `inside` IS A DEFINITION, NOT A THRESHOLD — p25 to p75, the middle half,
- * which is not a number anybody chose. See `mostUnusual` for why a cutoff here
- * would be a parameter with no source in the data.
+ * which is not a number anybody chose. A cutoff here (“unusual beyond 1.5 IQR”,
+ * “the top decile”) would be a parameter with no source in the data, which is the
+ * one thing this file exists to avoid.
  * ⚠️ AND `beat` IS STRICT, so a tie is never claimed as a difference.
  */
 export function sitsIn(d, count) {
@@ -203,34 +205,39 @@ export function sitsIn(d, count) {
 }
 
 /**
- * ⛔⛔ A SEASON IN PROGRESS IS NOT A REFERENCE CLASS, and until 2026-10-01 nothing
- * here asked. `perGame` publishes a histogram for every season the archive holds,
- * with no minimum n — correctly, because withholding a measurement is how this
- * project has lost data before. The judgement about whether that histogram can
- * carry a sentence belongs to the reader of the document, and both readers
- * (`renderAlot` and the verdict card) asked only whether the key EXISTED.
+ * IS THIS SEASON OVER? — answered without a number, from the archive's own keys.
  *
- * That was right by accident for as long as the current season had no key at all.
- * On the morning of 1 October the archive held 8 games of 2026 and the next
- * derive would have given them one — flipping the overlay from "the middle half
- * of the 1,394 games we hold for the 2025-26 season", with an explicit statement
- * that this game's season is not yet measured, to "the middle half of the 8 games
- * we hold for this game's season". A worse yardstick asserted with more
- * confidence, on two surfaces at once, with every test green. The fallback was
- * written for a season that was ABSENT and nobody distinguished absent from THIN.
+ * ⏭ WHAT IT IS FOR NOW, AND IT IS NARROWER THAN WHAT IT WAS BUILT FOR. It is
+ * asked of a season we are thinking of BORROWING: `renderAlot` reaches for a
+ * nearest-season yardstick only when this game's own season has no histogram at
+ * all, and what it borrows from a different season should be settled.
+ *
+ * ⛔⛔ IT NO LONGER GATES A GAME'S OWN SEASON, and that is Kevin's ruling of
+ * 2026-10-02 rather than a drift. For one day both surfaces asked it of the
+ * season the game belongs to, so a game played in October was measured against
+ * last season or not at all. He chose to use this season from the start — *"a
+ * terrible small sample size, but we'll be able to watch all of the data fill in
+ * over time"* — against a design that states its `n` in every sentence it prints.
+ *
+ * ⚠️ THE DEFECT IT WAS WRITTEN FOR IS STILL REAL, and it is worth keeping the
+ * account because the ruling settles the trade and not the facts. `perGame`
+ * publishes a histogram for every season the archive holds with no minimum n —
+ * correctly, because withholding a measurement is how this project has lost data
+ * before — and on 1 October the archive held 8 games of 2026. Both readers asked
+ * only whether the key EXISTED, so the next derive would have swapped a
+ * 1,394-game yardstick for an 8-game one with every test green. What was wrong
+ * there was that nobody had DECIDED it. Now somebody has.
  *
  * ⭐ AND THE RULE CARRIES NO NUMBER. "Enough games" would be a threshold with no
  * source — the thing `sitsIn` and the middle half are both built to avoid. A
  * season is finished when the archive holds a game from a later one, which is a
  * fact the published document already states in its own keys. The current season
- * is always the highest key, so it is never its own reference class, and no
- * October after this one needs an edit.
+ * is always the highest key, so no October needs an edit.
  *
- * ⚠️ IT IS A POLICY AND IT HAS A KNOWN EXPIRY. By March the season in progress
- * will hold a thousand games and be the better population — the comment at the
- * top of this file prices cross-season ranking at 12.5–15 rank places against a
- * control of 7–11, which is the measurement that will decide when to switch.
- * Until that is measured, the year-old population is the one we can defend.
+ * ⚠️ THE OPEN MEASUREMENT IS UNCHANGED by the ruling: the comment at the top of
+ * this file prices cross-season ranking at 12.5–15 rank places against a control
+ * of 7–11. That is what decides whether a BORROWED season is worth borrowing at
+ * all, which is the one question this predicate still stands in front of.
  *
  * @param perGame  the published `perGame` block, keyed by season
  * @param season   the season the game belongs to, as a string or number
@@ -242,51 +249,23 @@ export function finishedSeason(perGame, season) {
   return Object.keys(perGame).some(k => Number(k) > y);
 }
 
-export function judgeable(dists, counts) {
-  if (!dists || !counts) return 0;
-  let n = 0;
-  for (const [lens, d] of Object.entries(dists))
-    if (d && d.n && d.noun && Number.isInteger(counts[lens])) n++;
-  return n;
-}
+/* ⏭ `judgeable` AND `mostUnusual` STOOD HERE UNTIL 2026-10-02, and they went
+   with their only caller.
 
-/**
- * ⚠️ AND `mostUnusual` RETURNING NULL IS TWO DIFFERENT FACTS. "Every count was
- * ordinary" and "no lens could be judged at all" are not the same statement, and
- * a caller that cannot tell them apart will say the game was ordinary without
- * having checked — which is what shipped for one commit, because the page
- * guarded on `some(d => d.n)`, a NEIGHBOUR of the question rather than the
- * question. `judgeable` above is the question: how many lenses could be judged.
- * The verdict card already makes this distinction for the curve (undefined =
- * never asked, null = asked and did not arrive, two different true sentences);
- * this is the same distinction one measure over.
- */
-export function mostUnusual(dists, counts) {
-  if (!dists || !counts) return null;
-  let best = null, outside = 0;
-  for (const [lens, d] of Object.entries(dists)) {
-    const v = counts[lens];
-    /* ⚠️ AND A DISTRIBUTION WITH NO `noun` IS UNUSABLE, not a finding with a gap
-       in it. `perGame` welds the noun to the number precisely so a sentence
-       cannot reach for its own wording — and a document derived before nouns
-       existed would otherwise have produced "55 whistle", a lens id shown to a
-       reader. Skipped, because there is no honest way to say it. */
-    if (!Number.isInteger(v)) continue;
-    /* ⏹ THE JUDGEMENT ITSELF MOVED TO `standing` ON 2026-09-28, unchanged, so
-       the overlay and this card cannot come to mean different things by
-       "unusual". What stays here is the CHOICE BETWEEN lenses, which is this
-       function's own job and nobody else's. */
-    const st = sitsIn(d, v);
-    // Ordinary by definition, and therefore not a finding.
-    if (!st || st.inside) continue;
-    /* ⚠️ HOW MANY WERE UNUSUAL, because the sentence wanted to end "and nothing
-       else about it was unusual" and that is a claim about the FOUR LENSES THIS
-       FUNCTION DISCARDED. Reporting the furthest one says nothing about the
-       others, so the caller is given the count and can only say what it holds. */
-    outside++;
-    if (!best || st.far > best.far)
-      best = { lens, count: st.count, high: st.high, n: st.beat, of: st.of,
-               far: st.far, noun: st.noun };
-  }
-  return best && { ...best, outside };
-}
+   They answered *which single lens was this game's most unusual, and how many
+   lenses could be judged at all* — one sentence on the verdict card. Kevin, from
+   the live site: *"take the text off of the metric, I think the scales fix the
+   visualization issue and the text just adds clutter."* `#sumPanel` now draws all
+   six lenses with a scale each, so the sentence was summarising a picture the
+   reader already had.
+
+   ⭐ THEY ARE DELETED RATHER THAN LEFT EXPORTED. Both had unit tests and no
+   reader could reach either: that is `workshop-inventory`'s shape exactly — code
+   that ships, passes, and is reachable from nothing anybody can do. A function
+   kept alive only by its own tests is not covered, it is unobserved.
+
+   ⚠️ THE DISTINCTION THEY TAUGHT IS NOT DELETED, because `sitsIn` still carries
+   it: "every count was ordinary" and "no lens could be judged at all" are two
+   different facts, and a caller that cannot tell them apart will say a game was
+   ordinary without having checked. `renderSum` keeps them apart structurally — a
+   lens with no distribution draws a row with the count and no placement. */

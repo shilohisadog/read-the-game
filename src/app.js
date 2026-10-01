@@ -37,7 +37,7 @@ import { eventMarks, puckMark, shotLine } from './lib/marks.js';
 import { iceNote, trailsNote } from './lib/notes.js';
 import { goalieCards } from './lib/goalie-card.js';
 import { announcement } from './lib/announce.js';
-import { judgeable, mostUnusual, sitsIn, finishedSeason } from './lib/distribution.js';
+import { sitsIn, finishedSeason } from './lib/distribution.js';
 import { corsi } from './lib/layers/corsi.js';
 import { goaltending, isHighDangerEvent } from './lib/layers/goaltending.js';
 import { danger } from './lib/layers/danger.js';
@@ -1350,20 +1350,22 @@ function chipLabel(id){
  const lab=chip.querySelector('.pkl');
  return lab?lab.textContent:chip.textContent;}
 /* ⭐⭐ THE LENS SET, WRITTEN DOWN ONCE — and it was written down FOUR TIMES.
-   `LEDGER` here, `LENSCOUNTS` in the verdict 590 lines below, `lens` in
-   `builders/measure.mjs`, and five booleans in the layer controls. Three of the
-   four were guarded and the comments on those guards describe this exact
-   failure: "a lens added to the selector with no distribution behind it fails
-   here", "a layer added to LEDGER and not to this list would go unchecked".
+   `LEDGER` here, `LENSCOUNTS` in the verdict, `lens` in `builders/measure.mjs`,
+   and five booleans in the layer controls. Three of the four were guarded and
+   the comments on those guards describe this exact failure: "a lens added to the
+   selector with no distribution behind it fails here", "a layer added to LEDGER
+   and not to this list would go unchecked".
 
-   ⚠️ `LENSCOUNTS` HAD NOTHING, AND IT IS THE ONE THAT FAILS IN SILENCE. It feeds
-   `mostUnusual`, where an ABSENT count is skipped rather than scored — so a
+   ⚠️ `LENSCOUNTS` HAD NOTHING, AND IT WAS THE ONE THAT FAILED IN SILENCE: a
    sixth lens added to `LEDGER` (which a guard forces) and forgotten there could
-   never be nominated as a game's most unusual night, for the life of the site,
-   with no symptom on any surface.
+   never have been nominated as a game's most unusual night, for the life of the
+   site, with no symptom on any surface. ⏭ That table went with the sentence it
+   fed on 2026-10-02 (see the verdict card). The lesson did not go with it, which
+   is why this note stays: `renderSum` derives its six rows from here for exactly
+   the same reason.
 
-   ⭐ SO THE DUPLICATE IS REMOVED RATHER THAN GUARDED. Both tables are derived
-   from this one, which is the only place an id is typed.
+   ⭐ SO THE DUPLICATE IS REMOVED RATHER THAN GUARDED. The remaining tables are
+   derived from this one, which is the only place an id is typed.
 
    THE KEY IS THE LENS ID AND THE VALUE IS THE MODULE, and they are deliberately
    not the same word: `danger.js` is published as `slot`, because the id is spent
@@ -1584,9 +1586,15 @@ let alotDrawnAtEnd=null;
  * Kevin, 2026-10-01, on the finished FLA–CAR game: *"seems like the attempts card
  * (after the game goes final) is only one piece of the 'What this game was'
  * puzzle."* He is right, and the missing pieces were already measured. The card
- * names the SINGLE most unusual lens — `mostUnusual` scores all six and discards
+ * above named the SINGLE most unusual lens — it scored all six and discarded
  * five — so the other five were computed, ranked and thrown away on every game
- * page the site has ever served. This draws all of them.
+ * page the site had ever served. This draws all of them.
+ *
+ * ⏭ AND THE CARD'S SENTENCE IS NOW GONE, Kevin 2026-10-02: once every lens draws
+ * its own scale here, a line above them saying which one was furthest is a
+ * summary of a picture already on the screen. So this panel is the whole of the
+ * answer rather than the larger half of it — and nothing ranks the six any more,
+ * which is the deliberate cost recorded on the card.
  *
  * ⭐ NOTHING NEW IS MEASURED HERE. The counts are the chips' own
  * `counted.length` from the same reducers `perGame` was built from, and the
@@ -1600,9 +1608,26 @@ let alotDrawnAtEnd=null;
  * label. The subhead says so on the panel, because the CHIPS beside it may be
  * filtered and this never is.
  *
- * ⛔ AND THE SEASON MUST BE FINISHED, through the same predicate as everywhere
- * else — see `finishedSeason`. Without it this panel would have placed six counts
- * against eight games instead of one.
+ * ⏭ AND IT USES THE SEASON BEING PLAYED — Kevin's ruling, 2026-10-02: *"I say
+ * next Monday is when we start using this season's data (albeit a terrible small
+ * sample size, but we'll be able to watch all of the data fill in over time)."*
+ *
+ * ⚠️ IT WAS ALREADY LIVE WHEN HE RULED IT. I had told him the key arrives with
+ * Monday's derive at roughly 39 games; `perGame` has carried `2026` since the
+ * first game of the season was archived, and the published document held EIGHT
+ * when he said it. So this is not a dated switch and there is no date in the
+ * code: the panel places a count the moment its season has a histogram, and the
+ * population grows under it.
+ *
+ * ⭐ THE SMALL `n` IS SAID OUT LOUD AND NEEDS NO GUARD. The subhead names the
+ * population — *"against the 8 games we hold for that season"* — which is the
+ * reason this feature was built as a FRACTION rather than a percentile: a
+ * percentile of 8 games hides its own weakness and a fraction cannot.
+ *
+ * ⚠️ WHAT THE READER IS NOT TOLD, and it is worth knowing before anyone trusts
+ * a screenshot: the population MOVES. The same game opened in October and in
+ * March is placed against two different seasons, both correctly labelled, and
+ * nothing on the page says the earlier reading has expired.
  */
 function renderSum(){
  const host=$('sumBody');
@@ -1615,7 +1640,7 @@ function renderSum(){
  host.appendChild(h);
  const seas=String((G.game&&G.game.id)||'').slice(0,4);
  const all=(RATES&&RATES.perGame)||{};
- const own=finishedSeason(all,seas)?all[seas]:null;
+ const own=all[seas]||null;
  const N=v=>v.toLocaleString();
  /* ⭐⭐ THE POPULATION IS NAMED ONCE, IN THE SUBHEAD, AND NEVER AGAIN. Drawn
     first, every row ended "… of the 1,398 games that season" and six rows said it
@@ -1633,7 +1658,8 @@ function renderSum(){
  ul.className='srows';
  /* ⭐ DRIVEN BY `LENS`, which is the one place a lens id is typed — so a seventh
     layer appears here with no edit, and a layer that leaves the selector cannot
-    linger in the summary. The same rule `LENSCOUNTS` was rewritten to follow. */
+    linger in the summary — the rule `LENSCOUNTS` was rewritten to follow before
+    it was deleted, and this is now the only reader of `LENS` that draws rows. */
  let placed=0;
  Object.keys(LENS).forEach(id=>{
   const n=LENS[id].reduce(G.events,{...CTX,evenOnly:false}).counted.length;
@@ -1815,17 +1841,22 @@ function renderAlot(at=i){
     and it is the half that answers "is that a lot" at all. */
  const seas=String((G.game&&G.game.id)||'').slice(0,4);
  const all=(RATES&&RATES.perGame)||{};
- /* ⛔⛔ FINISHED, NOT MERELY PRESENT. `perGame` gains a key for the current
-    season the first time the archive holds a game of it — 8 games on 1 October —
-    and this read `all[seas]` alone, so the overlay would have abandoned a
-    1,394-game yardstick for an 8-game one on the next derive, and dropped the
-    sentence saying it had not placed the game. `finishedSeason` is the question
-    both surfaces now ask; the reasoning lives there.
-    ⚠️ AND THE FALLBACK IS FILTERED THE SAME WAY, which is the half that would
-    have rebuilt the defect inside its own fix: with `own` refused, the unfinished
-    season is still a key in `all`, it sits at distance ZERO from itself, and the
-    nearest-season sort would have chosen it every time. */
- const own=finishedSeason(all,seas)&&all[seas]&&all[seas][id];
+ /* ⏭ THIS GAME'S OWN SEASON, FINISHED OR NOT — Kevin's ruling, 2026-10-02.
+    For one day this asked `finishedSeason` as well, so a game of the season being
+    played kept the previous season as a yardstick and was never placed in its
+    own. He chose the other trade: *"albeit a terrible small sample size, but
+    we'll be able to watch all of the data fill in over time."*
+    ⚠️ WHAT THAT COSTS, stated rather than discovered: the population under this
+    sentence GROWS, so the same game read in October and in March is placed
+    against two different ones. Both are true and both name their own `n`, which
+    is why the figure is a fraction and never a percentile.
+    ⛔ THE BORROWED YARDSTICK IS STILL FILTERED. `near` is reached only when this
+    game's season has no histogram AT ALL, and what it then borrows from a
+    DIFFERENT season should be the most settled thing the archive holds — the
+    ruling was about using our own data early, not about lowering the bar on
+    somebody else's. Without the filter the sort would also pick an unfinished
+    season at distance zero from itself. */
+ const own=all[seas]&&all[seas][id];
  const near=own?null:Object.keys(all)
    .filter(y=>finishedSeason(all,y)&&all[y]&&all[y][id])
    .sort((a,b)=>Math.abs(+a-+seas)-Math.abs(+b-+seas)||(+b-+a))[0]||null;
@@ -2730,87 +2761,28 @@ document.title=`${line} — Read the Game`;
       the comparison fair moved into the prose above, where it belongs. */
    + `<span class="vends"><span>0% — never lost</span>`
    + `<span>always lost — 100%</span></span></span>`);}
- /* ⭐ AND HOW THIS GAME SAT IN ITS SEASON — the per-game summary, §32.6, and the
-    payoff of the distributions `measures.json` gained on 2026-08-28.
-    §31.7b's taxonomy is why it belongs on THIS card and not beside a counter:
-    "Show me the work" answers *where did 34 come from*, this is the other half
-    of Doctrine §8 — *how unusual is 34* — and the two are one thing split by
-    scope. The card already fires at the horn, which is the moment the question
-    can be asked at all.
+ /* ⛔⛔ AND THE SENTENCE ABOUT THE SEASON IS GONE FROM THIS CARD — Kevin,
+    2026-10-02: *"take the text off of the metric, I think the scales fix the
+    visualization issue and the text just adds clutter."*
 
-    ⭐ THE COUNTS ARE THE CHIPS' OWN, at the full-game slice: the same
-    `counted.length` from the same reducers `perGame` measured, so the number
-    compared and the number distributed are one quantity. A second way of
-    counting here would be the CONTROL-versus-shots-on-goal defect rebuilt
-    inside its own answer.
+    WHAT STOOD HERE. One line naming the single most unusual of the six lenses,
+    or — far more often — *"Every count in this game sat inside the middle half of
+    the season"*, printed directly above six rows that each say where that lens
+    sat, each now drawing its own scale. The line was written when this card was
+    the ONLY answer to *was that a lot*; `#sumPanel` answers it six times over,
+    and a summary of a picture that is already on the screen is not a summary.
 
-    ⚠️ SILENT WHEN THERE IS NOTHING TO COMPARE AGAINST, which is the verdict
-    card's standing rule and is the LIVE state until the pipeline next derives:
-    `perGame` is absent from the published document today, and the inlined page
-    never asks for the archive at all. One absent-comparison sentence on a card
-    is enough — the curve's, above — and a second apology beside it would be
-    noise about a feature the reader has not been promised. */
- const season=String((G.game&&G.game.id)||'').slice(0,4);
- /* ⛔ THE SAME REFUSAL AS THE OVERLAY, through the same predicate, because this
-    card and that panel judging a night against different populations is the
-    drift `sitsIn` was extracted to make impossible. This card has no
-    nearest-season fallback and does not grow one here: it stays silent on an
-    unmeasured season, which is exactly what it does today and what Kevin was
-    looking at when he said the card was only one piece. */
- const pg=(RATES&&RATES.perGame)||null;
- const dists=finishedSeason(pg,season)?pg[season]:null;
- /* ⭐ DERIVED FROM `LENS`, so a lens cannot exist in the selector and be missing
-    here. This was a second hand-written list of the same five ids with no guard
-    on it at all; see the note on `LENS`.
-    ⚠️ `evenOnly:false` STAYS EXPLICIT rather than inheriting CTX. The reference
-    class in `measures.json` is built over all situations, so judging this game
-    through a strength filter would compare a filtered count against an
-    unfiltered distribution — the "two numbers about different things wearing one
-    label" defect. `corsi` is recomputed rather than reusing `all` above so all
-    five go through one path; it is the same reduce with the same context. */
- const LENSCOUNTS=Object.fromEntries(Object.entries(LENS).map(([id,m])=>
-   [id,m.reduce(G.events,{...CTX,evenOnly:false}).counted.length]));
- const U=mostUnusual(dists,LENSCOUNTS);
- /* ⚠️ THE GUARD ASKS THE QUESTION, not a neighbour of it. It was
-    `some(d => d.n)` — distributions exist — which is not the same as "a lens
-    could be judged": a document carrying `perGame` without `noun` has
-    distributions, judges nothing, and would have been told it was an ordinary
-    night by every lens. Two different facts behind one null. */
- if(judgeable(dists,LENSCOUNTS)){
-  /* A FRACTION, NEVER A PERCENTAGE (levelCurve's rule): "more than 182 of the
-     200 nights" is self-limiting where "the 91st percentile" is not, and it
-     needs no minimum-n guard — early in a season the sentence says so itself. */
-  /* ⚠️ AND THE EXTREME READS AS A SENTENCE, NOT AS A BUG. A count above every
-     game in the population produced "more than 200 of the 200 games this
-     season" — precise, self-checking, and it looks like arithmetic that has
-     gone wrong. Same figure, said the way a person would. Seen in a browser on
-     the Cup Final; no test here could have called it. */
-  /* ⛔ AND THE THOUSANDS SEPARATORS AGREE WITH THE PANEL ABOVE, which they did not
-     until 2026-09-30: this card printed `fewer than 1048 of the 1394 games` two
-     inches under a lead reading `the middle half of the 1,394 games`. One archive,
-     one screen, two spellings of the same figure — Kevin: *"1,394 would be
-     preferred."* `toLocaleString` at each site, which is the house answer here
-     (see the same note over `N` in `renderAlot`): a helper would be a seventh
-     spelling of a thing this file already spells inline. */
-  const N=v=>(v==null?'—':v.toLocaleString());
-  const nights=n=>`${N(n)} of the ${N(U?U.of:0)} game${(U?U.of:0)===1?'':'s'} this season`;
-  const beat=U&&U.n===U.of
-    ?`${U.high?'higher':'lower'} than all ${N(U.of)} game${U.of===1?'':'s'} this season`
-    :`${U&&U.high?'more than':'fewer than'} ${nights(U?U.n:0)}`;
-  p.push(`<span class="rate season">${U
-    ?`<b>${U.count} ${ESC(U.noun)}</b> — ${beat}.`
-      /* ⚠️ AND THE CLAUSE ABOUT THE OTHERS ONLY SAYS WHAT WAS COUNTED. It was
-         written as "Nothing else about it was unusual", which is a claim about
-         the four lenses `mostUnusual` had just discarded and never checked. */
-      /* ⚠️ AND "one of 5 counts" WHEN IT IS ALL FIVE is true and weak — the
-         stronger true sentence is that nothing about the game was ordinary. */
-      +(U.outside>=5
-        ?' Every count here sat outside the middle half — an unusual game by every lens.'
-        :U.outside>1
-        ?` One of ${U.outside} counts here that sat outside the middle half of the season.`
-        :' Every other count sat inside the middle half of the season.')
-    :'Every count in this game sat inside the middle half of the season — '
-      +'an ordinary night by every lens here.'}</span>`);}
+    ⭐ IT IS A DELETION AND NOT A HIDE, which is why `mostUnusual` and
+    `judgeable` left `distribution.js` with it. They had exactly one caller
+    between them, and a reducer kept alive by its own unit tests is the shape
+    `workshop-inventory` is about: code that ships, is tested, and is reachable
+    from nothing a reader can do. `git show` on this commit restores all of it.
+
+    ⚠️ WHAT WENT WITH IT, so the trade is on the record rather than discovered
+    later: this card no longer RANKS the six. The scales show how far each count
+    sits from its band, which is the comparison the sentence was making in prose
+    — but the panel never says "this one is the furthest", and nothing else does
+    either. Kevin's call, made looking at the rendered card. */
  $('verdict').innerHTML=p.join('');
  // THE ONE POSITION HERE THAT IS GENUINELY CONTINUOUS, and the only one that
  // cannot become a class. Written through the CSSOM, which no policy restricts;
