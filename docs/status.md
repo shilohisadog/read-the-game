@@ -38,28 +38,50 @@ state.
 list, in his order. Do not start a build off this document without checking it against
 what he is seeing. The Capitals open **Friday 2 October** at Carolina.
 
-### ⛔⛔⛔ ONE THING IS WRONG ON THE LIVE SITE RIGHT NOW
+### ✅ THE HORN SITUATION IS FIXED ACROSS THE WHOLE ARCHIVE — 2026-10-01
 
-**Every game from 2026-09-29 and earlier still reports a situation at the final horn
-that the feed only wrote AFTER the whistle.** On the FLA–CAR opener the page says
-*"FLA has pulled the goaltender for an extra attacker. CAR has pulled the goaltender for
-an extra attacker."* and labels 3-on-3 overtime **"Overtime · 4-on-4"**, because
-`situationCode` on `game-end` is `0440` and reads as *both goalies pulled, four a side*.
+Kevin dispatched `derive.yml` (run 36834284981). It pulled all 4,626 raw games and
+re-extracted every one at SCHEMA 3. Verified on the published extracts afterwards:
 
-The fix shipped on 2026-09-30 (`extract.py`, SCHEMA 3: the horn inherits the last PLAY's
-situation). **It reached the new games and not the old ones**, verified 2026-10-01:
+| game | before | after |
+|---|---|---|
+| 2026020001 | horn `0440`, last play `1331` | `1331 / 1331` |
+| 2025020001 | wrong | `0651 / 0651` |
+| 2024020001 | wrong | `1551 / 1551` |
 
-| | `ex` | horn | |
-|---|---|---|---|
-| 2026-09-30 onward | 3 | matches the last play | correct |
-| 2026-09-29 and earlier | 2 | `0440` | wrong on screen |
+A genuine empty net is still `0651`, so the repair did not flatten the real ones to
+make itself look right. The run ended RED at step 14 by design — the sync and both
+read-backs passed first, so the archive published, and the red was the committed
+`data/measures.json` going stale (`measured: 4192 -> 4200`).
 
-⛔⛔ **A SCHEMA BUMP ONLY REACHES WORK THE RUN ACTUALLY DOES.** The nightly derives only
-what it fetched — its own report reads `derived 64, absent 4558` — and a game that reads
-`unchanged` is never re-derived whatever the stamp says. **The cure is a
-`workflow_dispatch` on `derive.yml`**, which pulls the whole raw archive and re-extracts
-everything. It is free: local reprocessing, R2 egress free, minutes. The weekly run does
-it on Mondays anyway, which is AFTER the Caps game. **Not run — Kevin's call.**
+### ⛔⛔ AND THAT DERIVE FIRED A LATENT DEFECT — FOUND, FIXED, VERIFIED LIVE (`aa7ae14`)
+
+`measures.json` publishes a per-game histogram **for every season the archive holds,
+with no minimum n**, which is right: the document's job is to publish what was measured.
+Both readers of it — the `Is that a lot?` overlay and the verdict card — asked only
+whether the season's KEY EXISTED. That was a correct reading of the wrong question for
+exactly as long as the season in progress had no games in the archive. The derive gave
+2026 a key built from **eight** games. Probed live, before the fix:
+
+> *"Most nights finish with between 46 and 49 stoppages — that is the middle half of
+> **the 8 games** we hold for this game's season. The quietest of those games finished
+> with 40 and the busiest with 53."*
+
+The real answer is **42 to 51**, range 26–81. The eight-game sample was not merely thin,
+it was NARROW — it would have called ordinary games unusual on every 2026 page all season.
+
+⭐ **THE FALLBACK WAS WRITTEN FOR A SEASON THAT WAS ABSENT, AND NOBODY DISTINGUISHED
+ABSENT FROM THIN.** `distribution.js::finishedSeason` is the question both surfaces ask
+now, and it carries no number: a season is over when the archive holds a game from a
+LATER one, which the published document already states in its own keys. The current
+season is always the highest key, so it is never its own reference class and no October
+after this one needs an edit. A minimum n would have been a threshold with no source —
+the thing `sitsIn` and the middle half both exist to avoid.
+
+⚠️ **AND IT HAS A KNOWN EXPIRY.** By March the season in progress will hold a thousand
+games and be the better population. The crossover is measurable — `distribution.js`
+prices cross-season ranking at 12.5–15 rank places against a control of 7–11 — and that
+measurement, not a guess, is what should decide when to switch. **Open.**
 
 ### What shipped 2026-09-29/30 (six commits, all deployed)
 
@@ -86,7 +108,8 @@ it on Mondays anyway, which is AFTER the Caps game. **Not run — Kevin's call.*
 
 ### ⏭ Open, in the order I would take them
 
-1. **Dispatch `derive`** to put SCHEMA 3 across the archive — see above.
+1. **Measure when the season in progress becomes the better reference class** —
+   see the expiry note above. Until then every 2026 page compares against 2025-26.
 2. **Backfill recaps** for games archived before 2026-09-30. `right-rail` is in no raw
    byte of any of them, so this is a `workflow_dispatch` on `ingest.yml` with a wide
    window and `delay=0.3`. Spends requests against a league we do not pay. Kevin's call.
@@ -102,6 +125,14 @@ it on Mondays anyway, which is AFTER the Caps game. **Not run — Kevin's call.*
   field on the events around it: the tell was that it disagreed with its neighbours in
   13 of 25 games, with values like `0101` that are not hockey.
 - **I said the morning run would clear it.** It cannot. Read the artefact back.
+- **A guard that only ever REFUSES is cheap to satisfy and proves nothing.** Both new
+  tests boot twice off ONE histogram with a single difference — whether a later season
+  key exists — and pin both sides. The refusal half alone would pass forever on a page
+  that simply never printed the comparison, which is the hole `judgeable` was written
+  for one measure over.
+- **Restoring the SOURCE is not restoring the BUILD.** After reverting a mutation in
+  `src/lib/`, `/* MUTANT */` was still baked into both committed HTML pages. `npm run
+  build` is part of the restore; grep `src/*.html` to confirm.
 - **I used `git checkout --` to undo a mutation** on files whose real changes were not
   committed, which wiped the work and made the next two mutation results meaningless.
   Restore from a file backup taken before the first mutation.
