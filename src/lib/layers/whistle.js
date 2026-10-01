@@ -203,12 +203,22 @@ const CHALLENGE_INTERFERENCE = {
      + 'with, and play stopped while it was reviewed.',
   from: 'field: rsn',
 };
+const CHALLENGE_OVER_GLASS = {
+  name: 'Puck over the glass, challenged',
+  say: 'A puck-over-the-glass ruling was challenged, and play stopped while it '
+     + 'was reviewed.',
+  from: 'field: rsn',
+};
 const CHALLENGE_OFFSIDE = {
   name: 'Goal challenged for offside',
   say: 'A goal was challenged on the claim that the play was offside before it '
      + 'was scored, and play stopped while it was reviewed.',
   from: 'field: rsn',
 };
+/* ⏭ A TRIPLE, NOT A PAIR — the archive sweep, 2026-10-02. The feed also records
+   `net-dislodged-by-goaltender`, 105 times across 102 games, and it was raw for
+   the life of the site. The copy already said nothing about WHO knocked the net
+   off, so the third key is one line rather than a third sentence. */
 const NET_OFF = {
   name: 'Net off its moorings',
   say: 'The net came off its moorings, and play stopped.',
@@ -272,16 +282,16 @@ export const WHY = {
   'chlg-hm-goal-interference': CHALLENGE_INTERFERENCE,
   'chlg-vis-off-side': CHALLENGE_OFFSIDE,
   'chlg-hm-off-side': CHALLENGE_OFFSIDE,
-  /* ⛔ AND THIS ONE HAS NO SIBLING YET. `chlg-vis-puck-over-glass` is a
-     CHALLENGE OF A CALL rather than of a goal, so it does not take the form
-     above — and the `hm` half has not appeared in the archive. When it does it is
-     one line here, not a second copy of this. */
-  'chlg-vis-puck-over-glass': {
-    name: 'Puck over the glass, challenged',
-    say: 'A puck-over-the-glass ruling was challenged, and play stopped while it '
-       + 'was reviewed.',
-    from: 'field: rsn',
-  },
+  /* ⛔⛔ THIS COMMENT SAID *"the `hm` half has not appeared in the archive"* AND
+     WAS FALSE WHEN IT WAS WRITTEN. It was reasoned from a count of 69 games — one
+     season — and the sweep of all 4,559 found `chlg-hm-puck-over-glass` 6 times
+     across 6 games. ⚠️ **A SEASON IS NOT THE ARCHIVE**, and a claim about what the
+     league has never sent us is only ever as wide as what was counted. Same shape
+     as the open item this whole pass started from, made again inside its fix.
+     ⭐ A challenge of a CALL rather than of a goal, so it does not take the form
+     above; both benches take this one object. */
+  'chlg-vis-puck-over-glass': CHALLENGE_OVER_GLASS,
+  'chlg-hm-puck-over-glass': CHALLENGE_OVER_GLASS,
   'rink-repair': {
     name: 'Rink repair',
     say: 'Play stopped so the ice or the boards could be repaired.',
@@ -316,6 +326,7 @@ export const WHY = {
   },
   'net-dislodged-defensive-skater': NET_OFF,
   'net-dislodged-offensive-skater': NET_OFF,
+  'net-dislodged-by-goaltender': NET_OFF,
   /* ⏭ THE ELEVEN THAT WERE REACHING READERS RAW — 2026-10-02, counted rather
      than noticed. Across the 69 games of 2026-27 the archive held, eleven reasons
      had no entry here and arrived through `RSN`'s dash-to-space fallback: 47 of

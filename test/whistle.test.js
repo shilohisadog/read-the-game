@@ -596,3 +596,87 @@ test('every entry carries provenance, and a rule citation names a numbered rule'
         `${k} cites a rule in its sentence while claiming the feed field as its source`);
   }
 });
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   AND THE THIRD LIST — `data/vocabulary-seen.json`, added 2026-10-02 after the
+   archive sweep.
+
+   ⛔⛔⛔ THE LIST WAS RIGHT ALL ALONG AND NOTHING READ IT. The gate above compares
+   `KNOWN_STOPPAGES` against `WHY`: two files in this repo, which between them
+   cannot see a word neither has heard of. `data/vocabulary-seen.json` is the one
+   that CAN — it is written where the whole archive is walked, and it already held
+   every single reason the sweep found reaching readers raw. Thirteen of them, 491
+   occurrences across 4,559 games. The ledger was complete and accurate and no
+   check had ever crossed it against the prose.
+
+   ⭐ `derive.py`'s own docstring explains why it looked finished: *"the alarm is on
+   DRIFT. Twenty-three known values are not news; a twenty-fourth is."* That is the
+   right rule for ingest, where the question is whether the league invented a word.
+   It is the wrong rule for a reader, whose question is whether anybody ever wrote
+   the word down — and a value stops being news the moment it is forgiven, which is
+   also the moment it goes quiet while still rendering as `chlg hm missed stoppage`.
+
+   ⚠️ SO THE EXCEPTIONS ARE DECLARED, DATED AND OWED — not filtered out by shape.
+   Each one below is a reason that is live in the archive today and has no words
+   because the words are Kevin's to give. A new unworded value is not on this list
+   and goes red, which is the behaviour the drift alarm has for ingest and nothing
+   had for readers.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Reasons live in the published archive with no prose, awaiting Kevin's copy.
+ * ⛔ THIS LIST MAY ONLY SHRINK. Adding to it is a decision to leave a word on
+ * screen that nobody has read, and it needs the same conversation these did.
+ */
+const AWAITING_COPY = new Map([
+  ['player-equipment', '155 occurrences, 149 games'],
+  ['ice-problem', '96 occurrences, 93 games'],
+  ['chlg-vis-missed-stoppage', '24 occurrences, 24 games'],
+  ['chlg-hm-missed-stoppage', '21 occurrences, 21 games'],
+  ['chlg-league-goal-interference', '18 occurrences, 18 games'],
+  ['official-injury', '17 occurrences, 17 games'],
+  ['chlg-league-off-side', '16 occurrences, 15 games'],
+  ['ice-scrape', '14 occurrences, 14 games'],
+  ['chlg-league-missed-stoppage', '11 occurrences, 11 games'],
+  ['premature-substitution', '4 occurrences, 4 games'],
+  ['switch-sides', '4 occurrences, 1 game'],
+]);
+
+test('⛔⛔ every reason the ARCHIVE has shown us is worded, or declared as owed', () => {
+  const seen = JSON.parse(readFileSync(new URL('../data/vocabulary-seen.json', import.meta.url), 'utf8'))
+    .seen['stoppage reason'];
+  assert.ok(Array.isArray(seen) && seen.length > 20,
+    'data/vocabulary-seen.json no longer holds the stoppage vocabulary where this looks for it');
+  const bare = seen.filter(k => !WHY[k] && !AWAITING_COPY.has(k)).sort();
+  assert.deepEqual(bare, [],
+    `${bare.length} stoppage reason(s) the archive has really shown us have no prose and are not `
+    + `declared as owed: ${bare.join(', ')}. They render as the raw feed key with its dashes `
+    + `swapped for spaces. Write the words, or add them to AWAITING_COPY with their archive counts `
+    + `and say out loud that a reader is meeting a feed key.`);
+});
+
+/**
+ * ⭐ AND THE DEBT MAY NOT OUTLIVE ITS REASON. An exception list nobody prunes is a
+ * permanent silence wearing a TODO — `feedback-development-discipline`'s "a
+ * deferral with no trigger is a bug with a delay on it". Once a reason is worded,
+ * its entry here must go, or the next genuine omission of that key passes.
+ */
+test('⭐ the awaiting-copy list holds nothing that already has words', () => {
+  const stale = [...AWAITING_COPY.keys()].filter(k => WHY[k]).sort();
+  assert.deepEqual(stale, [],
+    `${stale.length} key(s) are declared as awaiting copy and already have it: ${stale.join(', ')}. `
+    + `Remove them, or this list stops meaning anything and the next real gap hides inside it.`);
+});
+
+/**
+ * ⛔ AND THE DECLARED DEBT IS REAL DEBT. Every key here must be one the archive has
+ * actually sent — otherwise the list grows invented entries that excuse nothing and
+ * make the gap look larger than it is.
+ */
+test('⛔ nothing is excused that the archive has never shown us', () => {
+  const seen = new Set(JSON.parse(readFileSync(new URL('../data/vocabulary-seen.json', import.meta.url), 'utf8'))
+    .seen['stoppage reason']);
+  const invented = [...AWAITING_COPY.keys()].filter(k => !seen.has(k)).sort();
+  assert.deepEqual(invented, [],
+    `${invented.length} key(s) are excused that the archive has never recorded: ${invented.join(', ')}`);
+});

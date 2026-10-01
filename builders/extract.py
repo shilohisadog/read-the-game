@@ -507,6 +507,17 @@ KNOWN_STOPPAGES = {
     # met one -- 10 times this season. Two lists, and until now nothing compared
     # them in either direction.
     "skater-puck-frozen",
+    # 2026-10-02, from the ARCHIVE SWEEP (`tools/vocab-sweep.mjs`) rather than from
+    # one season. Both are siblings of reasons already worded, so they are one line
+    # in `WHY` rather than new copy: the net coming off its moorings is the same
+    # event whichever skater or goaltender did it, and both benches challenge a
+    # puck-over-the-glass call the same way.
+    #
+    # *** AND ONE OF THEM FALSIFIED A COMMENT WRITTEN HOURS EARLIER. *** The note
+    # over `chlg-vis-puck-over-glass` said the `hm` half "has not appeared in the
+    # archive" -- reasoned from 69 games, false across 4,559, where it appears 6
+    # times. A season is not the archive.
+    "net-dislodged-by-goaltender", "chlg-hm-puck-over-glass",
 }
 # A RULE, NOT A LIST. This was eight strings -- every situationCode one November
 # game happened to contain -- and a season contains nineteen. The missing ones
