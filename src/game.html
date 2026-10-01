@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-tEcSrLVpjwThJlRT6pqEcoNHeS+SS3ZCzCdvlRUrMj8=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-7OOvrDJDPequULMG2Xgdn+kBNDCk7gA2fcJsm0hzF54='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-LZ5Sn5cjmA30iyLXqzV4pQUQWx1pXoSuR3j1z3uQBbM=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-7OOvrDJDPequULMG2Xgdn+kBNDCk7gA2fcJsm0hzF54='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -3613,8 +3613,8 @@ const ATTRIBUTION = {
 /**
  * The shootout, which is not a TYPE of event but a PLACE in the game.
  *
- * A shootout is a skills competition that decides a tied game; it is not play
- * within it. The league agrees in the only way that matters to us — its
+ * A shootout is a competition that decides a tied game; it is not part of the
+ * play. The league agrees in the only way that matters to us — its
  * boxscore excludes shootout attempts from shots on goal, and adds exactly one
  * goal to the winner however many attempts go in.
  *
@@ -3629,9 +3629,39 @@ const ATTRIBUTION = {
  */
 function inShootout(e) {
   return e.pt === 'SO'
-    ? 'the shootout — a skills competition that decides the game, not play in it'
+    ? 'the shootout — a competition that decides a tied game, not part of the play'
     : null;
 }
+
+/**
+ * ⛔⛔ THE SITUATION CODE TO READ AT AN EVENT, OR NULL WHERE THERE IS NONE — and
+ * it exists because `strength.js` already stated this rule as a guarantee the
+ * system did not have. Its own comment, over the penalty-shot branch:
+ *
+ *   "`pt === 'SO'` carries the shootout, and `inShootout` removes those before
+ *    strength is consulted — so in practice this branch describes the REGULATION
+ *    penalty shot"
+ *
+ * `inShootout` removes shootout events from the COUNTING LAYERS. Nothing removed
+ * them from the two surfaces that read the current event directly, so a shootout
+ * attempt coded `1010` — one shooter, one goalie, which is what a shootout looks
+ * like to a four-digit code — lit the scoreboard with `BOS PENALTY SHOT` and
+ * printed "BOS has pulled the goaltender for an extra attacker" under the ice.
+ * Kevin, on a preseason game, 2026-10-01. True of the function, false of the
+ * system: the same shape as the horn's `0440`, which was also a real code that
+ * was not a situation.
+ *
+ * ⭐ NOT FIXED AT EACH CALLER. Two `if (inShootout(e))` guards are two statements
+ * of one rule, free to disagree the day a third surface reads `sit` — and there
+ * WILL be a third, because reading the situation is what a replay page does. One
+ * question, asked here, answered once.
+ *
+ * ⚠️ AND IT IS NOT FIXED IN THE EXTRACTOR EITHER, which was the other candidate.
+ * The code is what the league recorded and dropping it would throw away a fact we
+ * hold; what is wrong is READING it as a situation on the ice. `sit` keeps saying
+ * what the feed said, and this says where that is a situation.
+ */
+const sitAt = e => (e && !inShootout(e) ? e.sit : null);
 
 /**
  * Who won the shootout, or null if nobody did.
@@ -11019,7 +11049,7 @@ function drawPill(e){
  // coded events) is refused by `situation` rather than guessed. Both arrive here
  // as null, and a badge that stays lit on a state we cannot read is worse than
  // no badge, because it is wrong for minutes rather than for a frame.
- const b=e?standing(e.sit,CTX):null;
+ const b=standing(sitAt(e),CTX);
  const now=b?`${b.id}|${b.said}|${b.count}`:'';
  if(now===pillIs)return;
  pillIs=now;
@@ -11515,7 +11545,7 @@ function render(i,how){
     ONE SENTENCE PER PULLED TEAM, mapped rather than branched. Both nets empty at
     once is legal and rare, and a `has`/`have` ternary for it would be a branch no
     game in the archive can reach, which is a branch no test can honestly kill. */
- $('iceNote').textContent=iceNote(cur&&cur.sit,AAB,HAB);
+ $('iceNote').textContent=iceNote(sitAt(cur),AAB,HAB);
  /* THE ENDS KEY, at the first moment the claim can be doubted. Every team
     attacks the same net all game here and switches every period in the arena,
     and the reader who NOTICES is the one who already knows hockey -- so the key
@@ -13717,7 +13747,7 @@ const LAB={faceoff:'Won the faceoff',hit:'Hit',giveaway:'Giveaway',takeaway:'Tak
 function drawNoPlace(e){
  const g=$('noplace');
  if(!e||!inShootout(e)){g.innerHTML='';return;}
- g.innerHTML=`<text class="npl" x="100" y="39">Shootout — a skills competition that decides the game, not play in it.</text>`
+ g.innerHTML=`<text class="npl" x="100" y="39">Shootout — a competition that decides a tied game, not part of the play.</text>`
    + `<text class="nplsub" x="100" y="46">Attempts are not drawn: the coordinates the feed records for them are not positions.</text>`;}
 /* ⭐ B4 — ONE NARRATOR, MANY LEDGERS. This sentence used to live inside
    drawLabel's SVG branch, which meant the ON-ICE label was the only surface

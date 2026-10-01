@@ -32,8 +32,8 @@
 /**
  * The shootout, which is not a TYPE of event but a PLACE in the game.
  *
- * A shootout is a skills competition that decides a tied game; it is not play
- * within it. The league agrees in the only way that matters to us — its
+ * A shootout is a competition that decides a tied game; it is not part of the
+ * play. The league agrees in the only way that matters to us — its
  * boxscore excludes shootout attempts from shots on goal, and adds exactly one
  * goal to the winner however many attempts go in.
  *
@@ -48,9 +48,39 @@
  */
 export function inShootout(e) {
   return e.pt === 'SO'
-    ? 'the shootout — a skills competition that decides the game, not play in it'
+    ? 'the shootout — a competition that decides a tied game, not part of the play'
     : null;
 }
+
+/**
+ * ⛔⛔ THE SITUATION CODE TO READ AT AN EVENT, OR NULL WHERE THERE IS NONE — and
+ * it exists because `strength.js` already stated this rule as a guarantee the
+ * system did not have. Its own comment, over the penalty-shot branch:
+ *
+ *   "`pt === 'SO'` carries the shootout, and `inShootout` removes those before
+ *    strength is consulted — so in practice this branch describes the REGULATION
+ *    penalty shot"
+ *
+ * `inShootout` removes shootout events from the COUNTING LAYERS. Nothing removed
+ * them from the two surfaces that read the current event directly, so a shootout
+ * attempt coded `1010` — one shooter, one goalie, which is what a shootout looks
+ * like to a four-digit code — lit the scoreboard with `BOS PENALTY SHOT` and
+ * printed "BOS has pulled the goaltender for an extra attacker" under the ice.
+ * Kevin, on a preseason game, 2026-10-01. True of the function, false of the
+ * system: the same shape as the horn's `0440`, which was also a real code that
+ * was not a situation.
+ *
+ * ⭐ NOT FIXED AT EACH CALLER. Two `if (inShootout(e))` guards are two statements
+ * of one rule, free to disagree the day a third surface reads `sit` — and there
+ * WILL be a third, because reading the situation is what a replay page does. One
+ * question, asked here, answered once.
+ *
+ * ⚠️ AND IT IS NOT FIXED IN THE EXTRACTOR EITHER, which was the other candidate.
+ * The code is what the league recorded and dropping it would throw away a fact we
+ * hold; what is wrong is READING it as a situation on the ice. `sit` keeps saying
+ * what the feed said, and this says where that is a situation.
+ */
+export const sitAt = e => (e && !inShootout(e) ? e.sit : null);
 
 /**
  * Who won the shootout, or null if nobody did.

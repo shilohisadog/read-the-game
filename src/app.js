@@ -24,7 +24,7 @@ import {
 import {
   ATTRIBUTION, corsiTeam, missSay, shootingTeam
 } from './lib/attribution.js';
-import { framed, inShootout } from './lib/layer.js';
+import { framed, inShootout, sitAt } from './lib/layer.js';
 import { powerPlayOver, standing } from './lib/strength.js';
 import { occupants, stints } from './lib/box.js';
 import { penName } from './lib/penalties.js';
@@ -436,7 +436,7 @@ function drawPill(e){
  // coded events) is refused by `situation` rather than guessed. Both arrive here
  // as null, and a badge that stays lit on a state we cannot read is worse than
  // no badge, because it is wrong for minutes rather than for a frame.
- const b=e?standing(e.sit,CTX):null;
+ const b=standing(sitAt(e),CTX);
  const now=b?`${b.id}|${b.said}|${b.count}`:'';
  if(now===pillIs)return;
  pillIs=now;
@@ -932,7 +932,7 @@ function render(i,how){
     ONE SENTENCE PER PULLED TEAM, mapped rather than branched. Both nets empty at
     once is legal and rare, and a `has`/`have` ternary for it would be a branch no
     game in the archive can reach, which is a branch no test can honestly kill. */
- $('iceNote').textContent=iceNote(cur&&cur.sit,AAB,HAB);
+ $('iceNote').textContent=iceNote(sitAt(cur),AAB,HAB);
  /* THE ENDS KEY, at the first moment the claim can be doubted. Every team
     attacks the same net all game here and switches every period in the arena,
     and the reader who NOTICES is the one who already knows hockey -- so the key
@@ -3134,7 +3134,7 @@ const LAB={faceoff:'Won the faceoff',hit:'Hit',giveaway:'Giveaway',takeaway:'Tak
 function drawNoPlace(e){
  const g=$('noplace');
  if(!e||!inShootout(e)){g.innerHTML='';return;}
- g.innerHTML=`<text class="npl" x="100" y="39">Shootout — a skills competition that decides the game, not play in it.</text>`
+ g.innerHTML=`<text class="npl" x="100" y="39">Shootout — a competition that decides a tied game, not part of the play.</text>`
    + `<text class="nplsub" x="100" y="46">Attempts are not drawn: the coordinates the feed records for them are not positions.</text>`;}
 /* ⭐ B4 — ONE NARRATOR, MANY LEDGERS. This sentence used to live inside
    drawLabel's SVG branch, which meant the ON-ICE label was the only surface

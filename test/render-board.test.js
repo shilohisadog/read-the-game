@@ -459,10 +459,71 @@ test('a shootout attempt NEVER becomes a mark on the ice', () => {
   const notes = a.every(d => d.$('noplace').innerHTML);
   assert.equal(notes[last - added], '', 'nothing is said during ordinary play');
   for (let k = last - added + 1; k <= last; k++) {
-    assert.match(notes[k], /skills competition that decides the game, not play in it/);
+    /* ⚠️ THE CLAIM, NOT THE SENTENCE. This pinned the copy verbatim and went red
+       on 2026-10-01 for a pure reword — Kevin: *"I don't want to call it a
+       'skills' competition, let's just say competition. Also the end of the
+       sentence doesn't make much sense, '… not play in it'."* What this test is
+       named for is that the ice SAYS SOMETHING rather than going quietly blank,
+       and the two facts it must carry are which part of the game this is and that
+       it is outside the play. Those are asserted; the wording is free to improve
+       without this going red on work it has no opinion about. */
+    assert.match(notes[k], /Shootout/i, 'the ice does not name what it is showing');
+    assert.match(notes[k], /not part of the play/i,
+      'the note does not say the shootout sits outside the play, which is the '
+      + 'reason the marks are missing');
     assert.match(notes[k], /coordinates the feed records for them are not positions/,
       'the disclosure has to say what we did, not only what a shootout is');
   }
+});
+
+/**
+ * ⛔⛔ A SHOOTOUT CODE IS NOT A SITUATION ON THE ICE — and `strength.js` said so
+ * as though it were already handled. Its comment over the penalty-shot branch:
+ *
+ *   "`pt === 'SO'` carries the shootout, and `inShootout` removes those before
+ *    strength is consulted — so in practice this branch describes the REGULATION
+ *    penalty shot"
+ *
+ * `inShootout` removes shootout events from the COUNTING LAYERS, which is where
+ * it was written and where all three of its callers were. The scoreboard pill and
+ * the ice note read the CURRENT EVENT directly and were never covered by it, so a
+ * shootout attempt coded `1010` — one shooter, one goalie, which is exactly what
+ * a shootout looks like to four digits — lit the board with `BOS PENALTY SHOT`
+ * and printed "BOS has pulled the goaltender for an extra attacker" under the
+ * ice. Found by Kevin on a live preseason game, 2026-10-01. True of the function,
+ * false of the system.
+ *
+ * ⭐ THE CONTROL IS THE WHOLE TEST. A guard that blanked the pill and the note on
+ * every frame would satisfy the shootout half forever, and an empty net in
+ * regulation is the thing those two surfaces EXIST to report — it is also a code
+ * with a zero in a goalie digit, which is what makes it the right control and not
+ * a comfortable one.
+ */
+test('the shootout lights no strength badge and empties no net', () => {
+  const { game, added } = withShootout();
+  const a = boot(game);
+  const last = +a.$('scrub').max;
+
+  const pills = a.every(d => (d.$('ppill').hidden ? '' : d.$('ppill').textContent));
+  const notes = a.every(d => d.$('iceNote').textContent);
+  for (let k = last - added + 1; k <= last; k++) {
+    assert.equal(pills[k], '',
+      `the scoreboard narrated a shootout code as a game state at frame ${k}: ${pills[k]}`);
+    assert.equal(notes[k], '',
+      `the page claimed a pulled goaltender during the shootout at frame ${k}: ${notes[k]}`);
+  }
+
+  /* THE CONTROL: a real empty net in regulation must still be reported, or the
+     assertions above are satisfied by a page that says nothing ever. */
+  const ev = game.events.map(e => ({ ...e }));
+  const reg = ev.findIndex(e => e.pt !== 'SO' && e.sit);
+  assert.ok(reg >= 0, 'the fixture holds no regulation event with a situation code');
+  ev[reg] = { ...ev[reg], sit: '1550' };          // home goalie pulled, six skaters
+  const b = boot({ ...game, events: ev });
+  const ctrl = b.every(d => d.$('iceNote').textContent);
+  assert.ok(ctrl.some(t => /pulled the goaltender/.test(t)),
+    'an empty net in regulation went unreported, so the shootout assertions above '
+    + 'are passing on a page that reports nothing at all');
 });
 
 test('every face-off spot the feed uses is painted on the ice', () => {
