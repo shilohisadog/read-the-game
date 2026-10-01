@@ -307,6 +307,34 @@ test('the disclosure says nothing in the first period, because nothing has chang
   assert.equal(endsNoteShowing(null, 0), false);
 });
 
+/**
+ * ⛔⛔ AND IT SAYS NOTHING IN A SHOOTOUT, because its window is measured in GAME
+ * TIME and the shootout has none. Every attempt is stamped at the same second, so
+ * `e.s - periodStart` is 0 on all of them: a note written to stand for ninety
+ * seconds stood for the whole shootout, with the board's chip lit beside it.
+ * Kevin found it on a live preseason game, 2026-10-01.
+ *
+ * ⭐ THIS TEST EXISTS BECAUSE A MUTANT SURVIVED. The page branches on the
+ * shootout before it asks this predicate, so deleting the refusal below changed
+ * nothing that any page-level test could see — one rule written in two places,
+ * with only one of them load-bearing. The rule belongs here too (a predicate
+ * should be right for any caller, including the next one), and a guard nothing
+ * exercises is how it would quietly stop being right. So it is exercised.
+ *
+ * ⚠️ ON `pt`, NEVER ON THE PERIOD NUMBER. Period 5 is a shootout in the regular
+ * season and a THIRD OVERTIME in the playoffs — which is live play, in which the
+ * clubs really have changed ends and this note really should stand.
+ */
+test('the period note says nothing in a shootout, and still speaks in a third overtime', () => {
+  assert.equal(endsNoteShowing({ per: 5, pt: 'SO', s: 4800 }, 4800), false);
+  assert.equal(endsNoteShowing({ per: 5, pt: 'SO', s: 4800 }, 0), false,
+    'a shootout is refused however its period start is computed');
+  // THE CONTROL, and it is the one the period number would get wrong: same
+  // period, real hockey.
+  assert.equal(endsNoteShowing({ per: 5, pt: 'OT', s: 4800 }, 4800), true,
+    'a third overtime is play, the clubs changed ends, and the note is owed');
+});
+
 test('it stands at the top of every LATER period, and stands down again', () => {
   // A NOTE APPEARS WHEN THE THING IT EXPLAINS HAPPENS. The moment a viewer asks
   // "why didn't they switch?" is the start of the second period.

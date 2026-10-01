@@ -526,6 +526,53 @@ test('the shootout lights no strength badge and empties no net', () => {
     + 'are passing on a page that reports nothing at all');
 });
 
+/**
+ * ⛔⛔ A NOTE TIME-BOXED IN GAME TIME MET A STRETCH OF THE GAME THAT HAS NONE.
+ *
+ * `endsNoteShowing` stands the period-change note down once `ENDS_NOTE_SECONDS`
+ * of play have passed. Every shootout attempt is stamped at the same second — the
+ * clock does not run — so `e.s - periodStart` never grew, the window never
+ * closed, and a note written to appear for ninety seconds appeared on every frame
+ * of the shootout, with the board's chip lit beside it the whole way. Kevin saw
+ * it on a live preseason game, 2026-10-01, and ruled the shape: one mention of
+ * the goaltenders changing ends at the transition, nothing after, no chip — and
+ * the sixty minutes before it left exactly as they are.
+ *
+ * ⭐ THE CONTROL IS HALF THE RULING. "Don't change the behavior during the
+ * regular 60 minutes between periods" is a requirement, not a courtesy, so a fix
+ * that silenced the note everywhere satisfies every shootout assertion here and
+ * breaks the thing he asked to keep. Both halves are checked off ONE boot.
+ */
+test('the shootout gets one word at its transition, and the periods keep theirs', () => {
+  const { game, added } = withShootout();
+  const a = boot(game);
+  const last = +a.$('scrub').max;
+  const first = last - added + 1;                 // the first shootout frame
+
+  const notes = a.every(d => d.$('endnote').innerHTML);
+  const pills = a.every(d => (d.$('endpill').hidden ? '' : 'lit'));
+
+  assert.match(notes[first], /goaltenders change ends/i,
+    'the transition into the shootout says nothing about the goaltenders');
+  assert.doesNotMatch(notes[first], /teams have just changed ends|teams just changed ends/i,
+    'the shootout still carries the period-change sentence');
+
+  for (let k = first; k <= last; k++) {
+    assert.equal(pills[k], '', `the board lit "Ends changed" in the shootout at frame ${k}`);
+    if (k > first) assert.equal(notes[k], '',
+      `the shootout note persisted past its transition at frame ${k}: ${notes[k]}`);
+  }
+
+  /* ⭐ THE CONTROL — a real period change still says what it always said. Found
+     by looking for it rather than counted from an index, because the frame a
+     period starts on moves whenever the timeline does. */
+  const per = notes.findIndex((t, k) => k < first && /changed ends/i.test(t));
+  assert.ok(per >= 0,
+    'no period change said anything at all, so the assertions above are passing '
+    + 'on a page that never shows this note');
+  assert.equal(pills[per], 'lit', 'a real period change no longer signals at the board');
+});
+
 test('every face-off spot the feed uses is painted on the ice', () => {
   // Kevin: "the rink doesn't have face off circles in their zones." The four
   // end-zone CIRCLES were there; eight of the nine SPOTS were not, and a circle

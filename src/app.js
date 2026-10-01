@@ -19,7 +19,7 @@
    ⚠️ THE PREAMBLE IS NOT SHIPPED. Prose a reader of the PAGE needs belongs
    below, not here. */
 import {
-  ENDS_KEY, ENDS_NOTE, NET_X, attackDirection, endsKeyShowing, endsNoteShowing
+  ENDS_KEY, ENDS_NOTE, ENDS_SHOOTOUT, NET_X, attackDirection, endsKeyShowing, endsNoteShowing
 } from './lib/rink.js';
 import {
   ATTRIBUTION, corsiTeam, missSay, shootingTeam
@@ -93,6 +93,13 @@ const R=G.roster, HID=G.teams.home.id, AID=G.teams.away.id, HAB=G.teams.home.ab,
 // `framed` is where that difference is argued.
 const EV=[],EVI=[];
 G.events.forEach((e,n)=>{if(framed(e)){EV.push(e);EVI.push(n);}});
+/* ⭐ THE FIRST FRAME OF THE SHOOTOUT, located once. It is the transition Kevin
+   asked for a word at — overtime giving way to the shootout — and it is found by
+   asking `inShootout`, the same predicate the layers exclude by, rather than by
+   looking for a period number: period 5 is a shootout in the regular season and a
+   THIRD OVERTIME in the playoffs, which is the whole reason the extract carries a
+   period type at all. -1 when the game never reached one. */
+const SOFIRST=EV.findIndex(e=>!!inShootout(e));
 // The timeline is the playable events; the LEDGER is the whole game. Layers get
 // every event so the 51 non-plays are excluded with reasons instead of vanishing.
 const upto=k=>k<0?[]:G.events.slice(0,EVI[k]+1);
@@ -723,23 +730,38 @@ function drawClip(at){
 /* THE SENTENCE THE PAGE HAS OWED SINCE THE ENDS DECISION -- see rink.js.
    Two sentences, two kinds: the first is about hockey, the second is about what
    WE did to the data, and the `display:` tag says which. */
-function drawEndsNote(e){
+function drawEndsNote(e,at){
  const el=$('endnote');if(!el)return;
- const on=!!e&&endsNoteShowing(e,PSTART[e.per]??0);
+ /* ⭐⭐ THE SHOOTOUT GETS ONE MENTION AT ITS OWN TRANSITION, AND NOTHING AFTER.
+    Kevin ruled the shape: a word about the goaltenders changing ends as overtime
+    gives way to the shootout, no standing "the teams have changed ends", and no
+    chip on the board. `endsNoteShowing` now refuses a shootout event outright
+    (its window is measured in game time and the shootout has none), so the only
+    thing deciding this is WHICH shootout frame we are on — a question about
+    position in the timeline, which is this page's to answer and not `rink.js`'s.
+    ⚠️ FOUND, NOT COUNTED. `SOFIRST` is the first framed shootout event, located
+    once at boot off the same `inShootout` the layers use, so it cannot drift from
+    what the rest of the page calls a shootout. -1 when there is no shootout,
+    which never equals a real frame. */
+ const so=!!e&&!!inShootout(e);
+ const on=so?(at===SOFIRST):(!!e&&endsNoteShowing(e,PSTART[e.per]??0));
  /* ⭐ THE SAME CONDITION DRIVES BOTH SURFACES, from one call. The chip is the
     signal at the scoreboard, where a reader watching the rink can see it; this
     paragraph is the explanation. Two elements, one predicate -- a second
     `endsNoteShowing` call somewhere else is how the two would drift apart and
     leave the board saying the ends changed under a page that had stopped
     explaining it. */
- const pill=$('endpill');if(pill)pill.hidden=!on;
+ /* ⛔ AND NEVER THE CHIP IN THE SHOOTOUT. "Ends changed" describes the clubs
+    swapping the ends they attack, which is not what happens here — and Kevin
+    asked for the board to stay quiet through it either way. */
+ const pill=$('endpill');if(pill)pill.hidden=!on||so;
  if(!on){el.innerHTML='';return;}
  // The `from` provenance string is deliberately NOT painted here -- see rink.js.
  // TWO SENTENCES IN ONE MODE AND ONE IN THE OTHER, because as-played captions
  // something the reader just watched and one-direction has to carry the whole
  // explanation on its own. The `from` provenance string is deliberately NOT
  // painted -- see rink.js; it cost 176px on a 390px phone.
- const N=ENDS_NOTE[ENDSMODE];
+ const N=so?ENDS_SHOOTOUT:ENDS_NOTE[ENDSMODE];
  el.innerHTML=ESC(N.rule)+(N.display?` <span class="disp">${ESC(N.display)}</span>`:'');}
 
 /* ⭐ WHERE TO LOOK NEXT — a five-foot circle on the spot the next event will
@@ -821,7 +843,7 @@ function render(i,how){
  // the box has a question it could not ask from a second alone -- "did a penalty
  // end on THIS goal" -- and several events can share one second.
  drawBoxes(cur?cur.s:null,cur);
- drawEndsNote(cur);
+ drawEndsNote(cur,i);
  drawClip(i);
  /* ⭐ EVERY INPUT NAMED, AND THERE ARE NINETEEN OF THEM. That number is the
     measurement, not a complaint: drawing one mark depends on the event, the club,

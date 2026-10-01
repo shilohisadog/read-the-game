@@ -176,6 +176,37 @@ export function isHighDanger(x, y, dir) {
  * carries the explanation, briefly, at the one instant it is the answer to a
  * question somebody is actually asking.
  */
+/**
+ * ⭐⭐ THE SHOOTOUT IS ITS OWN TRANSITION, AND IT IS NOT A PERIOD CHANGE.
+ *
+ * Kevin, on a live preseason game, 2026-10-01: *"The transition between overtime
+ * and the shootout should have a mention of the 'goalies change ends' and that's
+ * all, no persistent 'the teams have changed ends…', or pill in the scoreboard
+ * area saying 'ends changed'. That said, don't change the behavior during the
+ * regular 60 minutes between periods, that is fine, just for the shootout."*
+ *
+ * ⛔ WHY IT READ AS PERSISTENT, which is the part worth writing down. The note
+ * below is time-boxed by `endsNoteShowing`: it stands down once `ENDS_NOTE_SECONDS`
+ * of play have passed since the period began. THE SHOOTOUT CLOCK DOES NOT RUN —
+ * every attempt is stamped at the same second — so `e.s - periodStart` never
+ * grows, the window never closes, and a note designed to appear for ninety
+ * seconds appeared on every frame of the shootout. A rule expressed in GAME TIME
+ * met a stretch of the game that has none.
+ *
+ * ⭐ AND WHAT CHANGES HERE IS NOT WHAT CHANGES BETWEEN PERIODS. Between periods
+ * the clubs swap the ends they attack and the whole sheet turns over. For the
+ * shootout every attempt is taken at one end, so what moves is the GOALTENDERS —
+ * which is the fact worth one sentence, and the only one. No `display:` half for
+ * the same reason the as-played note has none: we are following the record, not
+ * transforming it.
+ */
+export const ENDS_SHOOTOUT = {
+  rule: 'The goaltenders change ends for the shootout — every attempt is taken '
+      + 'at the same end of the rink.',
+  from: 'rule: the feed records the shootout as its own period type, and both '
+      + 'clubs attempt at one end within it',
+};
+
 export const ENDS_NOTE = {
   /* AS-PLAYED: A CAPTION ON SOMETHING VISIBLE. The rink has just turned over in
      front of the reader, so the sentence names what they saw and stops. There is
@@ -258,5 +289,13 @@ export const ENDS_NOTE_SECONDS = 90;
  */
 export function endsNoteShowing(e, periodStart) {
   if (!e || !(e.per > 1)) return false;
+  /* ⛔ THE SHOOTOUT IS NOT TIME-BOXABLE, so it is not boxed here — it is refused.
+     Its clock does not run, so this comparison is `0 < 90` on every attempt and
+     the note never stood down. The shootout's own one-off note is drawn by the
+     page, which is the only place that can tell the FIRST attempt from the rest;
+     see `ENDS_SHOOTOUT`. Asking the question here and answering it somewhere else
+     would be the drift this predicate exists to prevent, so this says plainly
+     that the period-change note has nothing to say in a shootout. */
+  if (e.pt === 'SO') return false;
   return e.s - periodStart < ENDS_NOTE_SECONDS;
 }
