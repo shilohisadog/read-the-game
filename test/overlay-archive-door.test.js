@@ -562,7 +562,7 @@ test('the overlay will not swap a measured season for the one being played', () 
  * nobody ran it. That is the lesson the door-hears-the-horn test above was
  * written for, one surface over.
  */
-test('the summary opens itself at the horn, once, and gets out of the way', () => {
+test('the summary opens at the horn, and returns unless the reader turns it down', () => {
   const a = page();
   const toEnd = () => { const s = a.$('scrub'); s.value = String(s.max);
                         s.oninput({ target: { value: s.value } }); };
@@ -594,11 +594,27 @@ test('the summary opens itself at the horn, once, and gets out of the way', () =
   assert.equal(a.$('sumPanel').hidden, true,
     'the summary stayed open over a game the reader scrubbed back into');
 
-  /* ⚠️ AND IT DOES NOT COME BACK UNINVITED. A reader who closed it and scrubs to
-     the horn again meets the button, not the panel. */
+  /* ⛔⛔ AND IT COMES BACK, BECAUSE THE PAGE CLOSED IT AND NOT THE READER. This
+     assertion used to demand the opposite, and it PASSED — the flag was set on
+     first arrival, so reaching the horn, stepping back and coming forward again
+     left the summary gone for the life of the page. Kevin found it on 2025020990
+     inside an hour, doing the ordinary thing. The test agreed with the code
+     because it was written from the code: the contract in the comment above the
+     flag said DISMISSED and the implementation said SHOWN ONCE, and this is the
+     check that should have told them apart. */
+  toEnd();
+  assert.equal(a.$('sumPanel').hidden, false,
+    'the summary did not return to a horn the reader came back to — the page '
+    + 'closed it on the way out, which is not the reader turning it down');
+
+  /* AND A REAL DISMISSAL IS HONOURED. Pressing the door to close it is the
+     reader's decision, and the only thing that counts as one. */
+  a.$('sum').click();
+  assert.equal(a.$('sumPanel').hidden, true, 'the door did not close the summary');
+  back(3);
   toEnd();
   assert.equal(a.$('sumPanel').hidden, true,
-    'the summary re-opened itself after the reader had already dismissed it');
+    'the summary reappeared at the horn after the reader had turned it down');
   a.$('sum').click();
   assert.equal(a.$('sumPanel').hidden, false, 'the button no longer opens the summary');
 });

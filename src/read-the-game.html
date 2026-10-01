@@ -39,7 +39,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-g8F3Bs+X0p4Dot0pLjcVU7WMfXlHvWrJlA+R69TPGFU=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-WlITCOOVUb06ikAeJ1aZCxyW4Io8szPDKAm6hYSctsc='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Oj9rSPtODvEfxObNW3vVVpYmngGpWoZO4uikuWqnSko=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-WlITCOOVUb06ikAeJ1aZCxyW4Io8szPDKAm6hYSctsc='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -11462,7 +11462,7 @@ function render(i,how){
     ⚠️ `sumShown` IS SET EITHER WAY, so the summary cannot ambush them later
     when they close the panel they were reading. The door is in the box. */
  const atHorn=i>=EV.length-1;
- if(atHorn&&!sumShown){sumShown=true;if(!workOpen&&!archOpen)setOverlay('sum');}
+ if(atHorn&&!sumDismissed&&!sumOpen&&!workOpen&&!archOpen)setOverlay('sum');
  else if(!atHorn&&sumOpen)setOverlay(null);
  /* ⛔ AND LEAVING THE HORN TAKES IT BACK OFF. Dragging the scrubber is not a
     `moment`, so no caption is composed on the way back and nothing else would
@@ -11829,12 +11829,16 @@ let workOpen=false;
    the owner the day either moves. That is the exact argument `setOverlay`'s own
    header makes about the `working` class, and I wrote it while breaking it. */
 let archOpen=false;
-/* ⭐ AND WHETHER THE SUMMARY HAS ALREADY SHOWN ITSELF. It opens on ARRIVAL at
-   the horn, once, and never again in the life of the page: a reader who closed
-   it and scrubbed back and forth would otherwise have it reappear on every
-   return to the last frame, which is a thing fighting the reader rather than
-   answering them. The button stays in the box, so nothing is unreachable. */
-let sumOpen=false,sumShown=false;
+/* ⛔⛔ AND WHETHER THE READER TURNED IT DOWN — WHICH IS NOT "HAS IT BEEN SHOWN".
+   Shipped as `sumShown`, set on the first arrival at the horn, and Kevin found it
+   within the hour on 2025020990: reach the end, step back, come forward again and
+   the summary never returns. The two differ precisely when a reader does the
+   normal thing, and the comment this replaces argued for DISMISSAL while the code
+   under it implemented ONCE — a flag whose name was a third thing again.
+   ⭐ SO IT IS SET WHERE A READER DECIDES, in the door's own handler, and nowhere
+   else. The scrub-back close below is the PAGE's doing, not theirs, so it must
+   not set this; that distinction is the whole content of the bug. */
+let sumOpen=false,sumDismissed=false;
 /**
  * ⭐ SHOW ME THE WORK — ONE PANEL, DRIVEN BY THE LAYER CONTRACT.
  *
@@ -13031,7 +13035,10 @@ $('alot').onclick=()=>setOverlay(archOpen?null:'alot');
    are the copies of them that are reachable while the overlay covers the box. */
 $('workClose').onclick=()=>$('work').click();
 $('alotClose').onclick=()=>$('alot').click();
-$('sum').onclick=()=>setOverlay(sumOpen?null:'sum');
+/* ⛔ CLOSING IT FROM THE DOOR IS THE DISMISSAL, and it is the only thing that
+   is. `setOverlay(sumOpen?null:'sum')` alone would have been a correct toggle
+   that lost the one fact the auto-open needs. */
+$('sum').onclick=()=>{if(sumOpen){sumDismissed=true;setOverlay(null);}else setOverlay('sum');};
 $('sumClose').onclick=()=>$('sum').click();
 /* AND THE SHUT STATE IS ESTABLISHED BY THE SAME OWNER AT BOOT, the way
    `setGear` establishes the pace. The markup carries `hidden` so the page reads
