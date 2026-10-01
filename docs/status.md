@@ -32,110 +32,85 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 
 This section is the orientation. Everything below §0 is the detail, organised by
 state.
-## ⏭ 0.00 PICK UP HERE — 2026-10-01
+## ⏭ 0.00 PICK UP HERE — 2026-10-01 (end of day)
 
-**THE NEXT SESSION'S JOB: Kevin is reading the site LINE BY LINE.** The work is his
-list, in his order. Do not start a build off this document without checking it against
-what he is seeing. The Capitals open **Friday 2 October** at Carolina.
+**Kevin is reading the site LINE BY LINE. The work is his list, in his order.** Do
+not start a build off this document without checking it against what he is seeing.
+Nine commits shipped today, every one of them from something he saw on screen.
+**The Capitals open Friday 2 October at Carolina.**
 
-### ✅ THE HORN SITUATION IS FIXED ACROSS THE WHOLE ARCHIVE — 2026-10-01
+### What shipped today
 
-Kevin dispatched `derive.yml` (run 36834284981). It pulled all 4,626 raw games and
-re-extracted every one at SCHEMA 3. Verified on the published extracts afterwards:
+`18f1f01` `aa7ae14` `4c66eec` `478efd3` `ad1c1f9` `5066764` `a6b6943` `b3bf51a` `37fce93`
 
-| game | before | after |
-|---|---|---|
-| 2026020001 | horn `0440`, last play `1331` | `1331 / 1331` |
-| 2025020001 | wrong | `0651 / 0651` |
-| 2024020001 | wrong | `1551 / 1551` |
+- **The derive Kevin dispatched put SCHEMA 3 across all 4,626 games.** The horn now
+  reports the ice as the last play left it, everywhere. A genuine empty net is still
+  `0651`, so the repair did not flatten the real ones.
+- **A season still being played is not its own reference class.** That derive gave
+  `perGame` a key for 2026 built from EIGHT games, and both readers asked only
+  whether the key existed. `distribution.js::finishedSeason` is the question now: a
+  season is over when the archive holds a game from a LATER one, which carries no
+  number and needs no edit next October.
+- **The verdict card became an overlay** — `#sumPanel`, the third door in the layer
+  box, opening at the horn over an empty rink. It carries the SAME `<p id="verdict">`
+  element, so `sentenceFor`, the dot and the live gate kept their reader. Under it,
+  **all six lenses**, each drawing its own scale.
+- **The league's recap is reachable from the panel** (a button, never an embed), and
+  the clip section names what it holds instead of describing the hosting arrangement.
+- **A shootout code is not a situation on the ice.** `layer.js::sitAt` is the one
+  place that answers whether an event has a situation to read.
+- **The shootout gets one word about the goaltenders** at its transition, and no chip.
+- **The comparison states both outcomes** — *"it won 848 and lost 531 of 1,379"* — on
+  an axis that uses one verb at both ends.
 
-A genuine empty net is still `0651`, so the repair did not flatten the real ones to
-make itself look right. The run ended RED at step 14 by design — the sync and both
-read-backs passed first, so the archive published, and the red was the committed
-`data/measures.json` going stale (`measured: 4192 -> 4200`).
+### ⏭ OPEN, in the order I would take them
 
-### ⛔⛔ AND THAT DERIVE FIRED A LATENT DEFECT — FOUND, FIXED, VERIFIED LIVE (`aa7ae14`)
-
-`measures.json` publishes a per-game histogram **for every season the archive holds,
-with no minimum n**, which is right: the document's job is to publish what was measured.
-Both readers of it — the `Is that a lot?` overlay and the verdict card — asked only
-whether the season's KEY EXISTED. That was a correct reading of the wrong question for
-exactly as long as the season in progress had no games in the archive. The derive gave
-2026 a key built from **eight** games. Probed live, before the fix:
-
-> *"Most nights finish with between 46 and 49 stoppages — that is the middle half of
-> **the 8 games** we hold for this game's season. The quietest of those games finished
-> with 40 and the busiest with 53."*
-
-The real answer is **42 to 51**, range 26–81. The eight-game sample was not merely thin,
-it was NARROW — it would have called ordinary games unusual on every 2026 page all season.
-
-⭐ **THE FALLBACK WAS WRITTEN FOR A SEASON THAT WAS ABSENT, AND NOBODY DISTINGUISHED
-ABSENT FROM THIN.** `distribution.js::finishedSeason` is the question both surfaces ask
-now, and it carries no number: a season is over when the archive holds a game from a
-LATER one, which the published document already states in its own keys. The current
-season is always the highest key, so it is never its own reference class and no October
-after this one needs an edit. A minimum n would have been a threshold with no source —
-the thing `sitsIn` and the middle half both exist to avoid.
-
-⚠️ **AND IT HAS A KNOWN EXPIRY.** By March the season in progress will hold a thousand
-games and be the better population. The crossover is measurable — `distribution.js`
-prices cross-season ranking at 12.5–15 rank places against a control of 7–11 — and that
-measurement, not a guess, is what should decide when to switch. **Open.**
-
-### What shipped 2026-09-29/30 (six commits, all deployed)
-
-`0c8dc6f` `5b351f1` `43e5cad` `b6182fa` `feb2d5d` `9cfc8ad`
-
-- **The replay ends on the horn.** `layer.js::STILL_A_FRAME` splits two questions one
-  list was answering — *is this a play* and *does this get a frame*. Captions `🏁 Final`,
-  which does not expire, because the rule was always "as long as the frame it describes"
-  and the last frame has no successor.
-- **The league's whole-game recap**, `gameVideo.threeMinRecap` on
-  `/v1/gamecenter/{id}/right-rail` — a feed we had never fetched and the only one
-  carrying it. ⚠️ The name lies: ~302 seconds, so no surface may quote a duration.
-  ⛔⛔ It required `ESSENTIAL`, because every feed was blocking and a hiccup on a video
-  link would have cost the replay.
-- **The archive door redraws at the horn** (it was drawn once and the playhead kept
-  moving, so it said "has not reached the final horn" beside a verdict card already
-  judging the finished game).
-- **The work panel's division comes out** — `241,126 ÷ 500,720 = 48.2` was not a
-  division. It prints the quotient and then the figure the unit names.
-- **Zone-start figures derive from `census`** instead of being typed, and the page that
-  swears it never asks for the archive stopped quoting it.
-- **`test/prose-measurements.test.js`** scans string literals for typed measurements —
-  0 today, fires 6 against the pre-fix source.
-
-### ⏭ Open, in the order I would take them
-
-1. **Measure when the season in progress becomes the better reference class** —
-   see the expiry note above. Until then every 2026 page compares against 2025-26.
-2. **Backfill recaps** for games archived before 2026-09-30. `right-rail` is in no raw
-   byte of any of them, so this is a `workflow_dispatch` on `ingest.yml` with a wide
-   window and `delay=0.3`. Spends requests against a league we do not pay. Kevin's call.
-3. **The video box's summary still reads "External video clip"** when it is offering a
-   whole game. Shared with the goal-clip case, so it is a wording decision.
-4. **`og:title` is static across every game page** — shared links preview as *"An NHL
+1. **`player-equipment` has no words.** The 2026-10-01 17:06 run reported
+   `noted: {stoppage reason: [player-equipment]}`. `whistle.js`'s own header says a
+   reason absent from `WHY` **still renders raw**, so it is on screen as a feed key
+   right now. The fix is a `name`/`say`/`from` entry. ⚠️ It is READER-FACING COPY, so
+   converge with Kevin on the wording rather than inventing it — the archive says the
+   feed used it, and nothing says what it means.
+2. **The duplicated summary line.** The card reads *"Every count in this game sat
+   inside the middle half of the season"* directly above six rows that each say it.
+   It is not duplication when a count IS unusual (it names the furthest one, which the
+   rows do not rank), so this is a judgement call. **The scales may have solved it** —
+   Kevin's own answer when asked was *"that's why I was thinking of some eye candy
+   line graphs to break up that monotony"*, so look before changing anything.
+3. **`og:title` is static across every game page** — shared links preview as *"An NHL
    game, replayed event by event."* Needs the worker to inject per-game meta.
+4. **When does the season in progress become the better reference class?** Today every
+   2026 page compares against 2025-26. By March that is wrong. `distribution.js`
+   prices cross-season ranking at 12.5–15 rank places against a control of 7–11, so
+   the switch is a MEASUREMENT and not a guess.
 
-### ⚠️ Three things I got wrong, so the next session does not repeat them
+### ⛔ RULED OUT — do not propose again without new information
 
-- **I reported "Overtime · 4-on-4" TWICE as evidence the horn frame worked.** It was the
-  defect. When a feed field is PARSED rather than displayed, compare it against the same
-  field on the events around it: the tell was that it disagreed with its neighbours in
-  13 of 25 games, with values like `0101` that are not hockey.
-- **I said the morning run would clear it.** It cannot. Read the artefact back.
-- **A guard that only ever REFUSES is cheap to satisfy and proves nothing.** Both new
-  tests boot twice off ONE histogram with a single difference — whether a later season
-  key exists — and pin both sides. The refusal half alone would pass forever on a page
-  that simply never printed the comparison, which is the hole `judgeable` was written
-  for one measure over.
-- **Restoring the SOURCE is not restoring the BUILD.** After reverting a mutation in
-  `src/lib/`, `/* MUTANT */` was still baked into both committed HTML pages. `npm run
-  build` is part of the restore; grep `src/*.html` to confirm.
-- **I used `git checkout --` to undo a mutation** on files whose real changes were not
-  committed, which wiped the work and made the next two mutation results meaningless.
-  Restore from a file backup taken before the first mutation.
+**The recap backfill.** Kevin, 2026-10-01: *"I hesitate to pull that much information
+from a free service the NHL is providing."* ~4,600 requests against a league we do not
+pay. The back catalogue keeps no recap; the button simply does not appear there. New
+games accrue one from the nightly, which already fetches `right-rail`.
+
+### ⚠️ Five things I got wrong today, so the next session does not repeat them
+
+- **A TEST ASSERTED THE DEFECT AND PASSED.** `sumShown` was set on the first arrival
+  at the horn, so the summary appeared once per page; the comment above it argued for
+  DISMISSAL, the code implemented SHOWN ONCE, and the flag name was a third thing. The
+  test was written from the code, so the two agreed with each other and with nothing
+  else. Kevin found it in an hour doing the ordinary thing.
+- **A GUARD IN TWO PLACES, ONLY ONE LOAD-BEARING.** The page branches on the shootout
+  before it asks `endsNoteShowing`, so deleting that predicate's own refusal killed no
+  test. The rule belongs in both; the one nothing exercised is exercised now.
+- **A PICTURE CHECKED AGAINST ITS NEIGHBOUR IN THE SAME PICTURE.** The first scale test
+  asserted only that each dot sat on the correct side of its own band — and a mutant
+  pinning every dot to the band's left edge passed, because the edge satisfies "inside"
+  and "not right of" at once. It computes the position from the published min/max now.
+- **RESTORING THE SOURCE IS NOT RESTORING THE BUILD.** After reverting a mutation in
+  `src/lib/`, `/* MUTANT */` was still baked into both committed HTML pages. The
+  restore is source + `npm run build`, confirmed by grepping `src/*.html`.
+- **`curl` WITHOUT `-L` RETURNS AN EMPTY 308 BODY HERE**, and I read that as "production
+  did not promote" when it had. It is in the deploy notes and I walked into it anyway.
+  The proof is `308, bytes: 0`.
 
 ## 0.00-a — 2026-09-29 (the day the season opened)
 
