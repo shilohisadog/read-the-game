@@ -116,9 +116,13 @@ test('the game summary is a card, and its rate is DRAWN as well as said', () => 
   assert.ok(left, 'the dot was never positioned');
   // THE DOT IS THE FRACTION IN THE SENTENCE. Read both out of the page and
   // reconcile them, so a dot that drifts from its own prose fails here.
-  const frac = v.match(/it lost (\d+) of (\d+)/);
+  /* ⚠️ `lost`, NOT `it lost` — the sentence names both outcomes since 2026-10-01
+     and the word before `lost` is now a number. The clause itself was kept intact
+     precisely so this read, and the live gate's, move by one word and no further. */
+  const frac = v.match(/lost ([\d,]+) of ([\d,]+)/);
   assert.ok(frac, 'the fraction left the sentence');
-  assert.equal(left, (+frac[1] / +frac[2] * 100).toFixed(1) + '%',
+  const num = k => +frac[k].replace(/,/g, '');
+  assert.equal(left, (num(1) / num(2) * 100).toFixed(1) + '%',
     'the dot sits somewhere the sentence does not say');
   assert.match(v, /class="vhalf"/, '50% is not marked, which is the whole point of the track');
 

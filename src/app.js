@@ -2720,7 +2720,15 @@ document.title=`${line} — Read the Game`;
   pct=V.row.count/V.row.n*100;
   p.push(`<span class="vscale"><span class="vtrack"><span class="vhalf"></span>`
    + `<span class="vpt${pct>50?' hi':''}" id="vpt"></span></span>`
-   + `<span class="vends"><span>0% — that team always won</span>`
+   /* ⭐⭐ ONE VERB ON BOTH ENDS, so the axis is a scale of ONE THING and a reader
+      never flips frames halfway along it. It read `0% — that team always won`
+      against `always lost — 100%`: two outcomes on one rail, which is why moving
+      right felt like it should mean something good. Kevin, 2026-10-01: *"I would
+      think 100% would be a team always winning."* The axis measures losing —
+      because the sentence it belongs to does, and the dot must sit where the
+      sentence says — so both ends now say losing, and the WIN count that makes
+      the comparison fair moved into the prose above, where it belongs. */
+   + `<span class="vends"><span>0% — never lost</span>`
    + `<span>always lost — 100%</span></span></span>`);}
  /* ⭐ AND HOW THIS GAME SAT IN ITS SEASON — the per-game summary, §32.6, and the
     payoff of the distributions `measures.json` gained on 2026-08-28.

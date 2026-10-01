@@ -41,8 +41,39 @@ test('the leader of the level count is named, with both numbers and the result',
   assert.match(r.lead, /BUF led the attempts 55–47/);
   assert.match(r.lead, /led 30–18 while the score was level/);
   assert.match(r.lead, /BUF lost\./);
+  /* ⭐ BOTH SIDES, SUMMING TO THE POPULATION — Kevin's compromise, 2026-10-01,
+     between a loss framing that teaches and a win framing that reads naturally.
+     465 + 243 = 708, and that is asserted below rather than left to the eye. */
   assert.equal(r.rate, 'Of the games where a team led that count by 12 or more, '
-                     + 'it lost 243 of 708.');
+                     + 'it won 465 and lost 243 of 708.');
+});
+
+/**
+ * ⛔⛔ THE TWO HALVES MUST CLOSE, OR THE SENTENCE INVENTS GAMES.
+ *
+ * The win count is not published — it is `n - count`, and that subtraction is
+ * only wins because `archive.js::eligible` refuses a game whose score is level:
+ * "no winner; NHL games always have one". If a third outcome ever enters that
+ * function the sentence quietly starts claiming victories nobody had, with every
+ * other test here still green: the prose would stay grammatical, the fraction
+ * would stay a fraction, and only the arithmetic would be wrong.
+ *
+ * ⚠️ READ BACK OUT OF THE PROSE, not computed beside it. Asserting
+ * `n - count === won` against the same expression that produced it is a mirror;
+ * what is checked here is that the THREE NUMBERS A READER SEES add up.
+ */
+test('the two outcomes in the sentence add up to the population', () => {
+  for (const row of [{ k: 12, n: 708, count: 243 }, { k: 1, n: 3855, count: 1527 },
+                     { k: 35, n: 4, count: 0 }, { k: 9, n: 11, count: 11 }]) {
+    const r = say({ diff: row.k, curve: [row] });
+    const m = /won ([\d,]+) and lost ([\d,]+) of ([\d,]+)/.exec(r.rate);
+    assert.ok(m, `the sentence no longer names both outcomes: ${r.rate}`);
+    const [won, lost, all] = m.slice(1).map(v => +v.replace(/,/g, ''));
+    assert.equal(won + lost, all,
+      `${won} + ${lost} is not ${all} — the sentence is claiming games that were `
+      + 'neither won nor lost');
+    assert.equal(lost, row.count, 'the loss figure is not the one the archive published');
+  }
 });
 
 test('when the two measures DISAGREE the sentence says so, because that is the lesson', () => {
@@ -76,7 +107,7 @@ test('the rate is ALWAYS a fraction and never a bare percentage', () => {
   // the curve the archive says "0 of 4" — which as a percentage reads "0%, teams
   // that dominant never lose", and is four coin flips.
   const thin = say({ diff: 35, curve: [{ k: 35, n: 4, count: 0 }] });
-  assert.match(thin.rate, /it lost 0 of 4\./);
+  assert.match(thin.rate, /won 4 and lost 0 of 4\./);
   for (const r of [say({}), thin, say({ diff: 1, curve: [{ k: 1, n: 3855, count: 1527 }] })]) {
     assert.doesNotMatch(whole(r), /\d\s*%/, 'a percentage reached the sentence');
     assert.doesNotMatch(whole(r), /\d+\.\d/, 'and so did a decimal');

@@ -194,7 +194,33 @@ export function sentenceFor(o) {
        beside `the middle half of the 1,394 games`. Kevin ruled the comma form on
        2026-09-30. `level` is deliberately bare: it is a lead of 2 or 5, never a
        figure in the thousands, and a comma there would be noise. */
-    rate: `Of the games where a team led that count by ${level} or more, it lost `
+    /* ⭐⭐⭐ BOTH SIDES, AND THEY SUM TO THE POPULATION — Kevin, 2026-10-01, on
+       being shown the choice between a loss framing and a win framing: *"if we
+       provide both sides (so the numeric prose adds to 100), that should (or
+       might?) further explain the measurement, and allow us to go from 0 (never
+       happens) to 100 (always happens), might that be a fair compromise?"*
+
+       It is better than either thing it compromises between. The loss framing
+       alone is the LESSON — the novice believes the better team wins and the
+       archive refutes it four times in ten — and a win framing alone would read
+       as confirmation of exactly that belief. Saying both refutes it without
+       having to be grim about it: 848 and 531 side by side is a reader doing the
+       comparison themselves, which is the whole posture of this site.
+
+       ⛔ AND THE WIN COUNT IS DERIVED, NOT ASSUMED. `eligible` refuses any game
+       whose score is level — "no winner; NHL games always have one" — so `lost`
+       is a strict boolean over the cases counted and `n - count` is the number
+       won, exactly. If a third outcome ever entered that function this subtraction
+       would silently invent games, which is why the refusal is quoted here and
+       `test/sentence.test.js` asserts the two halves sum to `n`.
+
+       ⚠️ "lost X of Y" SURVIVES VERBATIM INSIDE THE NEW SENTENCE, and that is not
+       a coincidence. `tools/browser/verdict-dot.mjs` greps this prose on the live
+       site to check the dot against the figure, and rewording it out from under
+       that gate is what stopped a deploy on 0c8dc6f. The clause the gate reads is
+       intact; only what precedes it is new. */
+    rate: `Of the games where a team led that count by ${level} or more, it won `
+        + `${(row.n - row.count).toLocaleString()} and lost `
         + `${row.count.toLocaleString()} of ${row.n.toLocaleString()}.`,
     absent: null,
     // THE ROW THAT PRODUCED THE SENTENCE, handed back rather than looked up

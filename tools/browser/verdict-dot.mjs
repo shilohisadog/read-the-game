@@ -61,7 +61,15 @@ export function readVerdict(html) {
  * where it costs a minute, instead of in the deploy, where it costs a release.
  * Commas are optional in the pattern so it reads both the old form and the new.
  */
-export const LOST_RE = /it lost ([\d,]+) of ([\d,]+)/;
+/* ⚠⚠ `it lost` BECAME `lost`, 2026-10-01. The sentence now names both outcomes
+   — "it won 848 and lost 531 of 1,379" — so the word before `lost` is a number,
+   not `it`. The clause this reads was deliberately left intact inside the new
+   wording for exactly this reason; the anchor moved by one word and no further.
+   ⛔ THE DOT STILL TRACKS THE LOSS FIGURE, which is the point of this gate: the
+   picture and the prose must be the same claim. A version of this that matched
+   `won ([\d,]+)` would have checked the dot against the complement and gone green
+   on a dot drawn at 61.5% — right-looking, and the opposite of what is drawn. */
+export const LOST_RE = /lost ([\d,]+) of ([\d,]+)/;
 
 /** The two figures the sentence states, as numbers. */
 export const lostFrom = text => {

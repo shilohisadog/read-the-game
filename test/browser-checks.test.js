@@ -182,6 +182,23 @@ test('⛔⛔ the probe can read the sentence the page actually writes', () => {
   /* THE OLDER, SEPARATOR-FREE FORM STILL READS, so this is a widening and not a
      swap — pages deployed before today are still measurable by the same probe. */
   assert.deepEqual(lostFrom('..., it lost 243 of 708.'), { count: 243, n: 708 });
+
+  /* ⛔⛔ AND IT READS THE LOSS FIGURE, NOT THE WIN FIGURE BESIDE IT — a hazard
+     this sentence did not have until 2026-10-01. It used to carry ONE number
+     before `of`; it now carries two ("it won 2,052 and lost 1,334 of 3,386"),
+     so a pattern that drifted one noun to the left would still parse, still
+     return a plausible count and a plausible n, and place the dot at the
+     COMPLEMENT — 61.5% where the sentence says 38.5%. Right-looking and exactly
+     backwards, which is the failure mode this whole file exists for.
+
+     The win figure is named here explicitly so the assertion is about THAT
+     number rather than about "not the other one". */
+  const won = said.rate.match(/won ([\d,]+)/);
+  assert.ok(won, 'the sentence no longer names the wins, so this guard has no subject');
+  assert.equal(+won[1].replace(/,/g, ''), 3386 - 1334, 'the fixture is not what it claims');
+  assert.notEqual(got.count, 3386 - 1334,
+    'the probe is reading the WIN count — the dot would be drawn at the complement '
+    + 'of what the sentence says, which is a number that looks right');
 });
 
 /* ------------------------------------------------- a visitor can watch a game */
