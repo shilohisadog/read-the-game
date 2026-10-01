@@ -32,7 +32,108 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 
 This section is the orientation. Everything below §0 is the detail, organised by
 state.
-## ⏭ 0.00 PICK UP HERE — 2026-10-01 (end of day)
+## ⏭ 0.00 PICK UP HERE — 2026-10-02
+
+**Kevin is reading the site LINE BY LINE. The work is his list, in his order.** Do
+not start a build off this document without checking it against what he is seeing.
+**The Capitals opened Friday 2 October at Carolina.**
+
+### What shipped today — `6274295`, four things Kevin saw
+
+- **The three doors under the rink share one layout.** `What this game was` did not
+  line up with its neighbours. Measured before it was touched: identical 290x44
+  boxes, the third label 5px from its left edge and 7px from its top against
+  89–102px and 14px. `#rg .lxw` declared no `display`, so two doors took the UA's
+  `block` for a `<button>` — which centres its contents on both axes — and the one
+  revealed at the horn took the `flex` its reveal rule HAD to name. The layout is
+  declared once now. `tools/browser/door-row.mjs` holds it, in the deploy gate.
+- **The verdict card's season sentence is gone**, Kevin: *"take the text off of the
+  metric, I think the scales fix the visualization issue and the text just adds
+  clutter."* `mostUnusual` and `judgeable` were deleted with it — one caller between
+  them. ⚠️ **Nothing ranks the six lenses any more**; the scales show distance, the
+  panel never names the furthest.
+- **A season being played IS this game's reference class now**, Kevin's ruling. The
+  overlay and the panel both use it. ⚠️ The borrowed yardstick (`near`) still
+  requires a FINISHED season — the ruling was about our own data, not a lower bar on
+  someone else's.
+- **A shared replay link names its own game.** The middleware routed `/preview`
+  only; `/game` is the page a reader actually posts, and all 4,559 unfurled as *"An
+  NHL game, replayed event by event."* ⛔ **No result in the card** — the verdict is
+  hidden behind `.ended` because naming it is a spoiler, and metadata is read before
+  the page by someone who chose nothing. The deploy step reads the description back
+  and refuses a digit.
+
+### ⚠️ TWO THINGS I TOLD KEVIN THAT WERE WRONG
+
+- **`perGame['2026']` did not arrive Monday with ~39 games — it was already there
+  with EIGHT.** I read "Monday's derive creates it" off this document and repeated
+  it. The published `measures.json` has carried the key since the season's first
+  game was archived. The ruling has no date in the code because of it, which is the
+  better outcome, but the figure I gave him was invented by a doc and not checked.
+- **`player-equipment` is NOT on screen.** See below.
+
+### ⛔⛔⛔ THE `player-equipment` ITEM WAS FALSE, AND THE REAL ONE IS NEXT TO IT
+
+Yesterday's list said a reason absent from `WHY` *"is on screen as a feed key right
+now"*. Measured across all 73 games of 2026-27 the archive holds:
+
+- `player-equipment` is **never a primary reason**. It appears in 5 games, always as
+  `rsn2` — the SECONDARY reason — beside `rsn: referee-or-linesman`.
+- **`rsn2` has no reader.** The extractor carries it, `whistle.js` publishes it,
+  `whistle.test.js` asserts it survives — and nothing renders it, because Kevin had
+  the secondary reason removed from the card: *"remove all text after 'Play restarted
+  at the ringed faceoff dot.'"* Writing copy for it would be copy nothing shows.
+- **What IS rendered raw: 11 other reasons, 47 of 2,857 stoppages (1.6%) in 69
+  games.** `RSN()` falls back to the key with its dashes swapped for spaces.
+
+| n | key | reaches a reader as |
+|---|---|---|
+| 10 | `net-dislodged-offensive-skater` | net dislodged offensive skater |
+| 10 | `home-timeout` | home timeout |
+| 10 | `visitor-timeout` | visitor timeout |
+| 5 | `goalie-puck-frozen-played-from-beyond-center` | goalie puck frozen played from beyond center |
+| 3 | `player-injury` | player injury |
+| 2 | `chlg-hm-goal-interference` | chlg hm goal interference |
+| 2 | `puck-in-penalty-benches` | puck in penalty benches |
+| 2 | `clock-problem` | clock problem |
+| 1 | `chlg-vis-puck-over-glass` | chlg vis puck over glass |
+| 1 | `objects-on-ice` | objects on ice |
+| 1 | `chlg-hm-off-side` | chlg hm off side |
+
+⭐⭐ **AND THE SHAPE IS ONE THIS REPO HAS A NAME FOR.** On 2026-09-21 three raw
+descriptors were given words — `chlg-vis-goal-interference`, `chlg-vis-off-side`,
+`rink-repair`. The comment written that day says *"`vis` ALMOST CERTAINLY MEANS THE
+VISITING SIDE — the sibling keys are `home-timeout` and `visitor-timeout`."* It
+**named the sibling pattern in the fix and closed only one side of it**: the `hm`
+variants are still raw, and so are the two timeout keys the comment cites as
+evidence. See `mechanize-the-review` #17 — a fix that closes a narrower property
+than the one that broke.
+
+⚠️ **It is READER-FACING COPY, so the words are Kevin's.** The table above is the
+list to price; `name` is a heading, `say` teaches the rule, `from` is provenance.
+
+### ⏭ OPEN, in the order I would take them
+
+1. **Words for the 11 raw descriptors above.** Waiting on Kevin's copy.
+2. **A gate that fires when a reason reaches a reader unworded.** The 2026-09-21
+   note says a value on the vocabulary allowlist *"stops being reported and still
+   arrives at a reader unworded"* — and that is exactly what happened again, to a
+   list of eleven, for eleven days. The check belongs where the archive is walked
+   (`guard-where-the-archive-is`), and it must report the LENGTH of the list.
+3. **When does the season in progress become the better reference class?** ✅ RULED
+   — now, by Kevin. What is still open is the MEASUREMENT behind the borrowed
+   yardstick: `distribution.js` prices cross-season ranking at 12.5–15 rank places
+   against a control of 7–11.
+
+### ⛔ RULED OUT — do not propose again without new information
+
+**The recap backfill.** Kevin, 2026-10-01: *"I hesitate to pull that much information
+from a free service the NHL is providing."* ~4,600 requests against a league we do not
+pay. The back catalogue keeps no recap; the button simply does not appear there.
+
+---
+
+## 0.00-α — 2026-10-01 (end of day)
 
 **Kevin is reading the site LINE BY LINE. The work is his list, in his order.** Do
 not start a build off this document without checking it against what he is seeing.
