@@ -486,6 +486,27 @@ KNOWN_STOPPAGES = {
     # reaching readers through RSN's dash-to-space fallback. Prose first, in
     # src/lib/layers/whistle.js, then vetted here.
     "chlg-vis-off-side", "rink-repair",
+    # 2026-10-02 -- the rest of what the 2026-27 archive actually contains,
+    # COUNTED rather than noticed: eleven reasons were reaching readers through
+    # that same fallback, 47 of 2,857 stoppages across 69 games.
+    #
+    # *** AND FOUR OF THEM WERE ALREADY IN THIS SET. *** `home-timeout`,
+    # `visitor-timeout`, `player-injury` and `puck-in-penalty-benches` were vetted
+    # here with no prose ever written, which is the WORSE half of the failure the
+    # comment above describes: being on this list stops a reason being REPORTED as
+    # unknown, so it goes quiet here and stays raw on screen. The order in that
+    # comment -- prose first, then vetted here -- is now a gate rather than a
+    # convention: test/whistle.test.js holds this set and `WHY` together, both
+    # directions, and names the length of any gap.
+    "net-dislodged-offensive-skater", "chlg-hm-goal-interference", "chlg-hm-off-side",
+    "chlg-vis-puck-over-glass", "clock-problem", "objects-on-ice",
+    "goalie-puck-frozen-played-from-beyond-center",
+    # *** THE GAP IN THE OTHER DIRECTION. *** `skater-puck-frozen` has had prose
+    # since the layer shipped and was never vetted here, so a reason the page can
+    # explain in full was being reported as unknown vocabulary on every run that
+    # met one -- 10 times this season. Two lists, and until now nothing compared
+    # them in either direction.
+    "skater-puck-frozen",
 }
 # A RULE, NOT A LIST. This was eight strings -- every situationCode one November
 # game happened to contain -- and a season contains nineteen. The missing ones

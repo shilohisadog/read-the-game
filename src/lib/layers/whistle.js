@@ -176,6 +176,45 @@ function linesFor(rsn, x) {
  * mid-sentence any more, and if something ever does, it needs its own authored
  * form rather than either of these.
  */
+/**
+ * ⭐⭐ A PAIR THAT MUST AGREE IS ONE OBJECT, NOT TWO THAT MATCH.
+ *
+ * ⛔⛔⛔ THE DEFECT THIS IS THE FIX FOR, AND IT HAPPENED THREE TIMES. The feed
+ * splits several reasons by WHICH SIDE caused them — `chlg-vis-off-side` and
+ * `chlg-hm-off-side`, `net-dislodged-defensive-skater` and
+ * `net-dislodged-offensive-skater`. Each time one half was given prose and the
+ * other was left to `RSN`'s dash-to-space fallback, so a reader met
+ * *"Goal challenged for offside"* one night and *"chlg hm off side"* the next for
+ * the same event. The 2026-09-21 pass that worded three descriptors wrote, in its
+ * own comment, *"the sibling keys are `home-timeout` and `visitor-timeout`"* — it
+ * NAMED the pattern and closed one side of it.
+ *
+ * ⭐ SO THE RELATIONSHIP IS STRUCTURAL. One object under two keys cannot drift,
+ * and a third variant of the same event is one line rather than a copy somebody
+ * has to remember to keep in step. ⚠️ It also encodes the ruling already made
+ * about these: WHICH BENCH challenged, and WHICH skater knocked the net off, are
+ * not things we have confirmed — and the sentence reads correctly without them,
+ * which is why one object can serve both sides at all. The day we can attribute
+ * them is the day they stop being one object.
+ */
+const CHALLENGE_INTERFERENCE = {
+  name: 'Goal challenged for goaltender interference',
+  say: 'A goal was challenged on the claim that the goaltender was interfered '
+     + 'with, and play stopped while it was reviewed.',
+  from: 'field: rsn',
+};
+const CHALLENGE_OFFSIDE = {
+  name: 'Goal challenged for offside',
+  say: 'A goal was challenged on the claim that the play was offside before it '
+     + 'was scored, and play stopped while it was reviewed.',
+  from: 'field: rsn',
+};
+const NET_OFF = {
+  name: 'Net off its moorings',
+  say: 'The net came off its moorings, and play stopped.',
+  from: 'field: rsn',
+};
+
 export const WHY = {
   icing: {
     name: 'Icing',
@@ -229,16 +268,18 @@ export const WHY = {
      `home-timeout` and `visitor-timeout` — but the name does not say so, because
      which bench challenged is not something we have confirmed and the sentence
      reads correctly without it. */
-  'chlg-vis-goal-interference': {
-    name: 'Goal challenged for goaltender interference',
-    say: 'A goal was challenged on the claim that the goaltender was interfered '
-       + 'with, and play stopped while it was reviewed.',
-    from: 'field: rsn',
-  },
-  'chlg-vis-off-side': {
-    name: 'Goal challenged for offside',
-    say: 'A goal was challenged on the claim that the play was offside before it '
-       + 'was scored, and play stopped while it was reviewed.',
+  'chlg-vis-goal-interference': CHALLENGE_INTERFERENCE,
+  'chlg-hm-goal-interference': CHALLENGE_INTERFERENCE,
+  'chlg-vis-off-side': CHALLENGE_OFFSIDE,
+  'chlg-hm-off-side': CHALLENGE_OFFSIDE,
+  /* ⛔ AND THIS ONE HAS NO SIBLING YET. `chlg-vis-puck-over-glass` is a
+     CHALLENGE OF A CALL rather than of a goal, so it does not take the form
+     above — and the `hm` half has not appeared in the archive. When it does it is
+     one line here, not a second copy of this. */
+  'chlg-vis-puck-over-glass': {
+    name: 'Puck over the glass, challenged',
+    say: 'A puck-over-the-glass ruling was challenged, and play stopped while it '
+       + 'was reviewed.',
     from: 'field: rsn',
   },
   'rink-repair': {
@@ -273,9 +314,77 @@ export const WHY = {
        + 'allowed, so play stopped.',
     from: 'rule: NHL Rule 80',
   },
-  'net-dislodged-defensive-skater': {
-    name: 'Net off its moorings',
-    say: 'The net came off its moorings, and play stopped.',
+  'net-dislodged-defensive-skater': NET_OFF,
+  'net-dislodged-offensive-skater': NET_OFF,
+  /* ⏭ THE ELEVEN THAT WERE REACHING READERS RAW — 2026-10-02, counted rather
+     than noticed. Across the 69 games of 2026-27 the archive held, eleven reasons
+     had no entry here and arrived through `RSN`'s dash-to-space fallback: 47 of
+     2,857 stoppages, 1.6%. The names are Kevin's, given on being shown the list;
+     the sentences follow the voices already in this table, and every one of them
+     claims only what the key records.
+
+     ⚠️ FOUR OF THE ELEVEN WERE ON THE EXTRACTOR'S ALLOWLIST ALREADY —
+     `home-timeout`, `visitor-timeout`, `player-injury`, `puck-in-penalty-benches`.
+     `extract.py` says in its own comment that the order is *"Prose first, in
+     src/lib/layers/whistle.js, then vetted here"*, and those four were vetted with
+     no prose written — which stops them being REPORTED as unknown while leaving
+     them unworded on screen. `test/whistle.test.js` now holds the two lists
+     together so that cannot happen silently again. */
+  'home-timeout': {
+    name: 'Home timeout',
+    /* THE SECOND SENTENCE IS THE TEACHING HALF, and it is `tv-timeout`'s: a
+       timeout is not what STOPPED play, it is what happened during a stoppage.
+       Without it a novice reads the card as "the timeout ended the play". */
+    say: 'The home team took its timeout. Play was already stopped.',
+    from: 'field: rsn',
+  },
+  'visitor-timeout': {
+    name: 'Visitor timeout',
+    say: 'The visiting team took its timeout. Play was already stopped.',
+    from: 'field: rsn',
+  },
+  'player-injury': {
+    name: 'Injured player',
+    say: 'A player was injured, and play stopped.',
+    from: 'field: rsn',
+  },
+  'puck-in-penalty-benches': {
+    name: 'Puck into a penalty bench',
+    say: 'The puck went into a penalty bench and play stopped.',
+    from: 'field: rsn',
+  },
+  'clock-problem': {
+    name: 'Clock problem',
+    say: 'Play stopped so a problem with the game clock could be fixed.',
+    from: 'field: rsn',
+  },
+  'objects-on-ice': {
+    name: 'Objects on the ice',
+    say: 'Play stopped so objects on the ice could be cleared.',
+    from: 'field: rsn',
+  },
+  /* ⚠⚠ THE ONE NOBODY HERE COULD NAME. Kevin, shown the list: *"heck I don't
+     even know what that one means."* Neither did I, and the sentence says only
+     what the key records because of it.
+
+     ⛔ WHAT IS *NOT* CLAIMED, AND WHY. I believe this is an anti-stalling
+     provision — that the faceoff comes back to the shooting team's end and the
+     defending side may not change — the same family as icing. I have not cited a
+     rule number, because I cannot verify one from anything this project holds,
+     and an invented citation on a card whose whole purpose is provenance is worse
+     than a shorter sentence. `from` says `field: rsn` for exactly that reason.
+
+     ⭐ WHAT WAS MEASURED INSTEAD: all 5 occurrences in 69 games restart at an
+     END-ZONE faceoff dot (|x| = 69), never at neutral ice. That is consistent
+     with the rule above and is NOT evidence for it — n is five, and the archive
+     does not record which side shot the puck, which is the half that would make
+     it a test. The restart ring on the ice already SHOWS a reader where play
+     resumed, which is the division of labour `offside` settled: the sentence
+     claims the rule, the mark claims the night. Here the sentence claims less. */
+  'goalie-puck-frozen-played-from-beyond-center': {
+    name: 'Goaltender froze a puck sent from beyond centre',
+    say: 'The goaltender froze a puck that had been sent from beyond the centre '
+       + 'line, and play stopped.',
     from: 'field: rsn',
   },
   'referee-or-linesman': {

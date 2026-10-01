@@ -26,6 +26,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { whistle, WHY, marks, latest, icingRestarts, offsideRestarts } from '../src/lib/layers/whistle.js';
 
 const HOME = 10, AWAY = 20;
@@ -338,7 +339,6 @@ test('other stoppages light nothing, because their rules name no line', () => {
 // This asserts the RELATIONSHIP -- if the page can draw the line, the page must
 // name it -- rather than either half. A test pinning the legend text alone would
 // pass on a page that had stopped drawing the line at all.
-import { readFileSync } from 'node:fs';
 const SHELL = readFileSync(new URL('../src/game.html', import.meta.url), 'utf8');
 
 test('the line the rule names is explained where it is drawn', () => {
@@ -454,4 +454,145 @@ test('⛔ the offender is never read off the faceoff WINNER, which is a differen
   const drop = faceoff(-END, 22);          // HOME's end → HOME iced it
   drop.own = AWAY;                          // …and the AWAY club won the draw
   assert.equal(icingRestarts([stop('icing'), drop], CTX)[0].offender, 'HME');
+});
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE TWO LISTS THAT DESCRIBE ONE VOCABULARY — added 2026-10-02.
+
+   ⛔⛔⛔ THE DEFECT. `builders/extract.py` keeps `KNOWN_STOPPAGES`, the reasons we
+   have VETTED; this file keeps `WHY`, the reasons we can SAY something about. They
+   are two halves of one claim and nothing compared them, so both halves rotted in
+   opposite directions at once:
+
+     · four keys were vetted with no prose ever written — `home-timeout`,
+       `visitor-timeout`, `player-injury`, `puck-in-penalty-benches`. Being on the
+       allowlist stops a reason being REPORTED as unknown, so they went quiet in
+       every run report and stayed raw on screen, which is strictly worse than
+       never having been vetted at all;
+     · and `skater-puck-frozen` had prose from the day the layer shipped and was
+       never vetted, so a reason the page explains in full was reported as unknown
+       vocabulary 10 times this season.
+
+   Eleven reasons in total reached readers through `RSN`'s dash-to-space fallback —
+   47 of 2,857 stoppages across 69 games — and the thing that found them was
+   counting the archive, not any check that existed.
+
+   ⭐ `extract.py` HAD ALREADY WRITTEN THE RULE DOWN: *"Prose first, in
+   src/lib/layers/whistle.js, then vetted here."* It was a comment describing an
+   order nothing enforced. This is that comment as a gate.
+
+   ⚠️ AND IT REPORTS THE LENGTH OF THE GAP, never the first item — `mechanize-the-
+   review` #20, where a stop at the first descriptor hid 29 behind reports of one.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * ⭐ THE SET IS READ OUT OF `extract.py`, NOT RESTATED HERE. A copy of it in this
+ * file would be a third list, free to agree with neither — which is the whole
+ * shape under test. If the literal ever stops being parseable this fails loudly
+ * rather than silently comparing against an empty set, because a check that
+ * cannot find its subject must not pass.
+ */
+function vettedStoppages() {
+  const src = readFileSync(new URL('../builders/extract.py', import.meta.url), 'utf8');
+  const m = /KNOWN_STOPPAGES = \{([\s\S]*?)\n\}/.exec(src);
+  assert.ok(m, 'KNOWN_STOPPAGES is not where this test looks for it in builders/extract.py');
+  /* Comments are stripped first: this block carries prose that NAMES keys, and a
+     scan that read them would compare against the explanation rather than the
+     code — the same trap the middleware's club-name check fell into. */
+  const body = m[1].replace(/^\s*#.*$/gm, '');
+  const keys = [...body.matchAll(/"([a-z0-9-]+)"/g)].map(x => x[1]);
+  assert.ok(keys.length > 20, `only ${keys.length} keys parsed out of KNOWN_STOPPAGES — the literal moved`);
+  return new Set(keys);
+}
+
+/**
+ * ⛔ EVERY REASON WE HAVE VETTED CAN BE SAID. This is the direction that reaches a
+ * reader: a key on the allowlist is not reported as unknown by any run, so if it
+ * also has no prose there is no surface anywhere that will ever mention it again.
+ */
+test('⛔⛔ every vetted stoppage reason has words — the gap is reported by its LENGTH', () => {
+  const unworded = [...vettedStoppages()].filter(k => !WHY[k]).sort();
+  assert.deepEqual(unworded, [],
+    `${unworded.length} vetted stoppage reason(s) have no entry in WHY, so they reach readers as `
+    + `the raw feed key with its dashes swapped for spaces: ${unworded.join(', ')}. `
+    + `Write the prose in src/lib/layers/whistle.js first — that is the order extract.py's `
+    + `own comment states, and these are the keys that prove it was never enforced.`);
+});
+
+/**
+ * ⛔ AND EVERY REASON WE CAN SAY IS VETTED — the quieter direction, and the one
+ * that cost us `skater-puck-frozen` for months. Prose without vetting means the
+ * run report keeps crying unknown about a reason the page explains perfectly.
+ *
+ * ⚠️ ONE DECLARED EXCEPTION, AND IT IS DECLARED RATHER THAN FILTERED OUT BY SHAPE.
+ * `delayed-penalty` is an EVENT TYPE, not a stoppage reason — the layer maps it
+ * into this table because the type IS the reason there — so it belongs in
+ * `KNOWN_EVENTS` and not in `KNOWN_STOPPAGES`. A rule that skipped "anything not
+ * found" would exempt the next genuine omission too.
+ */
+const NOT_A_STOPPAGE_REASON = new Set(['delayed-penalty']);
+
+test('⛔ and every reason we have words for is vetted, so the run stops calling it unknown', () => {
+  const vetted = vettedStoppages();
+  const unvetted = Object.keys(WHY).filter(k => !vetted.has(k) && !NOT_A_STOPPAGE_REASON.has(k)).sort();
+  assert.deepEqual(unvetted, [],
+    `${unvetted.length} reason(s) have prose in WHY but are missing from KNOWN_STOPPAGES in `
+    + `builders/extract.py, so every run that meets one reports it as unknown vocabulary: `
+    + `${unvetted.join(', ')}`);
+});
+
+/**
+ * ⭐⭐ A PAIR THAT MUST AGREE IS ONE OBJECT. The feed splits several reasons by
+ * which side caused them, and three times one half was worded and the other left
+ * raw — `chlg-vis-off-side` against `chlg-hm-off-side`, the two `net-dislodged`
+ * keys. Matching strings would satisfy a reader today and drift the first time
+ * one of them is edited.
+ *
+ * ⛔ SO THIS ASSERTS IDENTITY, NOT EQUALITY. `deepEqual` passes on two objects
+ * that happen to match, which is exactly the state this is meant to make
+ * impossible; `assert.equal` on the reference is the claim.
+ */
+test('⭐⭐ sibling reasons are literally the same object, so they cannot drift apart', () => {
+  for (const [a, b] of [
+    ['chlg-vis-off-side', 'chlg-hm-off-side'],
+    ['chlg-vis-goal-interference', 'chlg-hm-goal-interference'],
+    ['net-dislodged-defensive-skater', 'net-dislodged-offensive-skater'],
+  ]) {
+    assert.ok(WHY[a] && WHY[b], `${a} / ${b}: one half of a sibling pair has no entry at all`);
+    assert.equal(WHY[a], WHY[b],
+      `${a} and ${b} are the same event with the side swapped, and they are two objects — `
+      + `so one can be reworded without the other. Point both keys at one object instead.`);
+  }
+  /* AND THE RULE THAT MAKES ONE OBJECT LEGITIMATE: neither sentence may name the
+     side, because which bench challenged and which skater knocked the net off are
+     not things the archive records. The day we can attribute them is the day these
+     stop being one object. */
+  for (const k of ['chlg-vis-off-side', 'net-dislodged-defensive-skater']) {
+    const said = `${WHY[k].name} ${WHY[k].say}`;
+    assert.doesNotMatch(said, /\b(home|visiting|visitor|away)\b/i,
+      `${k} names a side the feed does not record, so it cannot be shared with its sibling: ${said}`);
+  }
+});
+
+/**
+ * ⚠️ AND A SENTENCE MAY NOT CITE A RULE WE CANNOT NAME. `from` is provenance, and
+ * the card prints it: `rule: NHL Rule 81` is a claim anybody can check, and a
+ * number nobody verified is worse there than no number at all.
+ *
+ * ⭐ `goalie-puck-frozen-played-from-beyond-center` is the live case. I believe it
+ * is an anti-stalling provision in the icing family; I could not verify a rule
+ * number from anything this project holds, so its sentence claims only what the
+ * key records and `from` says `field: rsn`.
+ */
+test('every entry carries provenance, and a rule citation names a numbered rule', () => {
+  for (const [k, v] of Object.entries(WHY)) {
+    assert.ok(v.name && v.say && v.from, `${k} is missing name, say or from`);
+    assert.match(v.from, /^(rule: NHL Rule \d+(\.\d+)?|field: rsn)$/,
+      `${k}: "${v.from}" is neither a numbered NHL rule nor the feed field it came from`);
+    /* A `say` that talks about a rule while sourcing itself to the raw field is the
+       shape to catch: the sentence makes a claim its provenance does not support. */
+    if (v.from === 'field: rsn')
+      assert.doesNotMatch(v.say, /\bRule \d/,
+        `${k} cites a rule in its sentence while claiming the feed field as its source`);
+  }
 });
