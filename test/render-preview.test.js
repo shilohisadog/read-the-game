@@ -688,6 +688,14 @@ test('both the unusual and the ordinary sentence actually render', () => {
                        min: 1, max: 100, start: 1,
                        counts: Array.from({ length: 100 }, () => 1), noun: n });
   const y = String(rich.game.id).slice(0, 4);
+  /* ⛔⛔ A LATER SEASON IS WHAT MAKES THIS ONE A REFERENCE CLASS, and these
+     fixtures carried a single key until 2026-10-01 — the shape of an archive
+     whose newest season is still being played. `finishedSeason` refuses that
+     now, and this test went red at once, which is how a one-key fixture turned
+     out to be describing a state the card must say NOTHING in. The companion
+     test below pins both sides of that refusal; here the season is finished,
+     because that is what these four cases are about. */
+  const measured = d => ({ [y]: d, [String(+y + 1)]: d });
   const lenses = { corsi: 'shot attempts', slot: 'shots from the slot',
                    blocked: 'blocked shots', goaltending: 'shots the goaltenders faced',
                    whistle: 'stoppages' };
@@ -699,13 +707,13 @@ test('both the unusual and the ordinary sentence actually render', () => {
   const wide = Object.fromEntries(Object.entries(lenses).map(([k, n]) =>
     [k, { ...flat(n), min: 0, start: 0, max: 999,
           counts: Array.from({ length: 1000 }, () => 1), n: 1000 }]));
-  const ordinary = boot(rich, { perGame: { [y]: wide } }).$('verdict').innerHTML;
+  const ordinary = boot(rich, { perGame: measured(wide) }).$('verdict').innerHTML;
   assert.match(ordinary, /middle half/, 'the ordinary sentence never rendered');
 
   // UNUSUAL: a distribution every real count sits above.
   const low = Object.fromEntries(Object.entries(lenses).map(([k, n]) =>
     [k, { ...flat(n), min: 0, start: 0, max: 1, counts: [50, 50], n: 100 }]));
-  const found = boot(rich, { perGame: { [y]: low } }).$('verdict').innerHTML;
+  const found = boot(rich, { perGame: measured(low) }).$('verdict').innerHTML;
   assert.match(found, /class="rate season"/, 'the finding sentence never rendered');
   /* ⭐ ABOVE EVERYTHING READS AS A SENTENCE. "more than 100 of the 100 games"
      is precise, self-checking, and looks like arithmetic that went wrong —
@@ -725,7 +733,7 @@ test('both the unusual and the ordinary sentence actually render', () => {
     [k, { ...flat(n), min: 0, start: 0, max: 400,
           counts: Array.from({ length: 401 }, (_, i) => i === 0 ? 80 : (i === 400 ? 20 : 0)),
           n: 100 }]));
-  const part = boot(rich, { perGame: { [y]: some } }).$('verdict').innerHTML;
+  const part = boot(rich, { perGame: measured(some) }).$('verdict').innerHTML;
   assert.match(part, /more than 80 of the 100 games this season/,
     'a count inside the range is not stated as a fraction of the population');
   assert.doesNotMatch(part, /\d%/, 'the season comparison was printed as a percentage');
@@ -741,10 +749,56 @@ test('both the unusual and the ordinary sentence actually render', () => {
      distributions exist) rather than the question (can a lens be judged). */
   const nameless = Object.fromEntries(Object.entries(low).map(([k, d]) =>
     [k, { ...d, noun: undefined }]));
-  const quiet = boot(rich, { perGame: { [y]: nameless } }).$('verdict').innerHTML;
+  const quiet = boot(rich, { perGame: measured(nameless) }).$('verdict').innerHTML;
   assert.doesNotMatch(quiet, /whistle|corsi/, 'a lens id was shown to a reader');
   assert.doesNotMatch(quiet, /middle half/,
     'a game was called ordinary by lenses nothing could judge');
   assert.doesNotMatch(quiet, /class="rate season"/,
     'a season claim was made from a document that names no measure');
+});
+
+/**
+ * ⛔⛔ THE SEASON BEING PLAYED IS NOT ITS OWN REFERENCE CLASS, and both surfaces
+ * had to be told. `perGame` gains a key for the current season the first time
+ * the archive holds a game of it — 8 games on 1 October 2026 — and both readers
+ * of that document asked only whether the key EXISTED. The next derive would
+ * have moved this card from silence to "more than 6 of the 8 games this season"
+ * and the overlay from a 1,394-game yardstick to an 8-game one, with every test
+ * in this file green, because the fixtures above all described a finished
+ * season and nothing described the transition.
+ *
+ * ⭐ BOTH SIDES, FROM ONE DISTRIBUTION. The refusal alone is cheap to satisfy —
+ * a card that never prints a season line passes it forever, which is the same
+ * hole `judgeable` was written for one measure over. So the identical counts and
+ * the identical histogram are offered twice, and the ONLY difference between the
+ * two boots is whether a later season exists. One must speak and one must not.
+ */
+test('a season still being played is not its own reference class', () => {
+  const y = String(rich.game.id).slice(0, 4);
+  const lenses = { corsi: 'shot attempts', slot: 'shots from the slot',
+                   blocked: 'blocked shots', goaltending: 'shots the goaltenders faced',
+                   whistle: 'stoppages' };
+  // A distribution every real count in this game sits above, so a season line
+  // is what a judgeable document produces here. Nothing about it changes below.
+  const low = Object.fromEntries(Object.keys(lenses).map(k =>
+    [k, { what: 'made up', population: 'p', unit: 'games', n: 100, noun: lenses[k],
+          min: 0, max: 1, start: 0, counts: [50, 50] }]));
+
+  const finished = boot(rich, { perGame: { [y]: low, [String(+y + 1)]: low } })
+    .$('verdict').innerHTML;
+  assert.match(finished, /class="rate season"/,
+    'a FINISHED season is a reference class and the card refused to use it');
+  assert.match(finished, /this season/, 'the finished case never named the population');
+
+  const playing = boot(rich, { perGame: { [y]: low } }).$('verdict').innerHTML;
+  assert.doesNotMatch(playing, /class="rate season"/,
+    'the card judged this game against a season that is still being played');
+  assert.doesNotMatch(playing, /this season/,
+    'the card named a population it must not be using');
+
+  /* AND THE REST OF THE CARD IS UNTOUCHED — the refusal is of one paragraph, not
+     of the verdict. A guard that blanked the card would satisfy both assertions
+     above and lose the sentence the card exists for. */
+  assert.match(playing, /What this game was/,
+    'the whole card went silent, not just the season comparison');
 });

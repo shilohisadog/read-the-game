@@ -481,3 +481,73 @@ test('⛔ neither population figure in the panel is a bare count', () => {
     'the lead and the population line now print the same figure — one of the two '
     + 'measurements has been re-scoped, and the panel no longer states two populations');
 });
+
+/**
+ * ⛔⛔ THE OVERLAY WOULD HAVE TRADED A 1,394-GAME YARDSTICK FOR AN 8-GAME ONE, and
+ * the trade would have happened in the pipeline rather than in an edit.
+ *
+ * `perGame` publishes a histogram for every season the archive holds, with no
+ * minimum n — which is right, because the document's job is to publish what was
+ * measured. This panel asked `all[seas]`, i.e. does a key exist, and that was a
+ * correct reading of the wrong question for exactly as long as the season in
+ * progress had no games in the archive. On 1 October 2026 it had eight, and the
+ * next `derive` would have moved the sentence from
+ *
+ *   "the middle half of the 1,394 games we hold for the 2025-26 season … this
+ *    game's own season has not been measured yet, so it is not placed inside it"
+ *
+ * to "the middle half of the 8 games we hold for this game's season … higher than
+ * all 8 of them" — a worse population, asserted with more confidence, and no test
+ * in this file could see it because every fixture here describes a finished one.
+ *
+ * ⭐ ONE DIFFERENCE BETWEEN THE TWO BOOTS, which is the whole design of the test:
+ * the same two seasons, the same histograms, the same counts, and the ONLY thing
+ * that changes is whether a LATER season exists — which is how the document
+ * states that a season is over. Anything else moving as well and the test would
+ * be evidence about something other than the rule.
+ *
+ * ⚠️ AND THE SECOND HALF ASSERTS THE 8-GAME POPULATION IS USED, deliberately. The
+ * rule is FINISHEDNESS, not size: a season that is over is this game's own season
+ * however few games it holds, and a version of this guard that also refused small
+ * ones would be a threshold with no source — the thing `sitsIn` and the middle
+ * half both exist to avoid. The boundary is pinned where it actually is.
+ */
+test('the overlay will not swap a measured season for the one being played', () => {
+  const txt = n => n.innerHTML ? n.innerHTML.replace(/<[^>]+>/g, '')
+    : (n._kids && n._kids.length) ? n._kids.map(txt).join(' ') : (n.textContent || '');
+  const y = +String(rich.game.id).slice(0, 4);
+  const say = (n, counts, start) => ({ what: 'made up', unit: 'games', noun: 'stoppages',
+    population: `NHL regular season and playoffs, ${y - 1}-${String(y).slice(2)}`,
+    n, start, min: start, max: start + counts.length - 1, counts });
+  // A FINISHED season, broad enough that this game's stoppage count sits inside it.
+  const big = { whistle: say(1400, Array.from({ length: 100 }, () => 14), 0) };
+  // EIGHT GAMES — the real shape of the season in progress on the morning this
+  // was written. Every real count in `rich` sits above it.
+  const thin = { whistle: say(8, [1, 1, 1, 1, 1, 1, 1, 1], 0) };
+
+  const lead = a => {
+    pick(a, 'whistle');
+    a.$('alot').click();
+    const n = (a.$('alotBody')._kids || []).find(x => x.className === 'walot');
+    assert.ok(n, 'the panel drew no lead, so this test is not looking at its own case');
+    return txt(n);
+  };
+
+  const playing = lead(boot(rich, { ...MEASURES,
+    perGame: { [String(y - 1)]: big, [String(y)]: thin } }));
+  assert.match(playing, /1,400/,
+    'the panel abandoned the measured season for the one still being played');
+  assert.match(playing, /has not been measured yet/i,
+    'the panel placed this game without saying which season it used');
+  assert.doesNotMatch(playing, /the 8 games/,
+    'the eight games played so far were used as a reference class');
+
+  // THE CONTROL: one more key, and the game's own season is over.
+  const over = lead(boot(rich, { ...MEASURES,
+    perGame: { [String(y - 1)]: big, [String(y)]: thin, [String(y + 1)]: thin } }));
+  assert.match(over, /8 game/,
+    'a FINISHED season was refused as a reference class, so the guard is not a '
+    + 'rule about finishedness — it is suppressing the comparison outright');
+  assert.doesNotMatch(over, /has not been measured yet/i,
+    'the panel disclaimed a season it had in fact measured');
+});

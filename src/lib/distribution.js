@@ -202,6 +202,46 @@ export function sitsIn(d, count) {
            far: Math.abs(shareAtOrBelow(d, count) - 0.5) };
 }
 
+/**
+ * ⛔⛔ A SEASON IN PROGRESS IS NOT A REFERENCE CLASS, and until 2026-10-01 nothing
+ * here asked. `perGame` publishes a histogram for every season the archive holds,
+ * with no minimum n — correctly, because withholding a measurement is how this
+ * project has lost data before. The judgement about whether that histogram can
+ * carry a sentence belongs to the reader of the document, and both readers
+ * (`renderAlot` and the verdict card) asked only whether the key EXISTED.
+ *
+ * That was right by accident for as long as the current season had no key at all.
+ * On the morning of 1 October the archive held 8 games of 2026 and the next
+ * derive would have given them one — flipping the overlay from "the middle half
+ * of the 1,394 games we hold for the 2025-26 season", with an explicit statement
+ * that this game's season is not yet measured, to "the middle half of the 8 games
+ * we hold for this game's season". A worse yardstick asserted with more
+ * confidence, on two surfaces at once, with every test green. The fallback was
+ * written for a season that was ABSENT and nobody distinguished absent from THIN.
+ *
+ * ⭐ AND THE RULE CARRIES NO NUMBER. "Enough games" would be a threshold with no
+ * source — the thing `sitsIn` and the middle half are both built to avoid. A
+ * season is finished when the archive holds a game from a later one, which is a
+ * fact the published document already states in its own keys. The current season
+ * is always the highest key, so it is never its own reference class, and no
+ * October after this one needs an edit.
+ *
+ * ⚠️ IT IS A POLICY AND IT HAS A KNOWN EXPIRY. By March the season in progress
+ * will hold a thousand games and be the better population — the comment at the
+ * top of this file prices cross-season ranking at 12.5–15 rank places against a
+ * control of 7–11, which is the measurement that will decide when to switch.
+ * Until that is measured, the year-old population is the one we can defend.
+ *
+ * @param perGame  the published `perGame` block, keyed by season
+ * @param season   the season the game belongs to, as a string or number
+ */
+export function finishedSeason(perGame, season) {
+  if (!perGame || season == null || season === '') return false;
+  const y = Number(season);
+  if (!Number.isFinite(y)) return false;
+  return Object.keys(perGame).some(k => Number(k) > y);
+}
+
 export function judgeable(dists, counts) {
   if (!dists || !counts) return 0;
   let n = 0;

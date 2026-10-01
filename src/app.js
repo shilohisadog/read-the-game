@@ -37,7 +37,7 @@ import { eventMarks, puckMark, shotLine } from './lib/marks.js';
 import { iceNote, trailsNote } from './lib/notes.js';
 import { goalieCards } from './lib/goalie-card.js';
 import { announcement } from './lib/announce.js';
-import { judgeable, mostUnusual, sitsIn } from './lib/distribution.js';
+import { judgeable, mostUnusual, sitsIn, finishedSeason } from './lib/distribution.js';
 import { corsi } from './lib/layers/corsi.js';
 import { goaltending, isHighDangerEvent } from './lib/layers/goaltending.js';
 import { danger } from './lib/layers/danger.js';
@@ -1596,8 +1596,19 @@ function renderAlot(at=i){
     and it is the half that answers "is that a lot" at all. */
  const seas=String((G.game&&G.game.id)||'').slice(0,4);
  const all=(RATES&&RATES.perGame)||{};
- const own=all[seas]&&all[seas][id];
- const near=own?null:Object.keys(all).filter(y=>all[y]&&all[y][id])
+ /* ⛔⛔ FINISHED, NOT MERELY PRESENT. `perGame` gains a key for the current
+    season the first time the archive holds a game of it — 8 games on 1 October —
+    and this read `all[seas]` alone, so the overlay would have abandoned a
+    1,394-game yardstick for an 8-game one on the next derive, and dropped the
+    sentence saying it had not placed the game. `finishedSeason` is the question
+    both surfaces now ask; the reasoning lives there.
+    ⚠️ AND THE FALLBACK IS FILTERED THE SAME WAY, which is the half that would
+    have rebuilt the defect inside its own fix: with `own` refused, the unfinished
+    season is still a key in `all`, it sits at distance ZERO from itself, and the
+    nearest-season sort would have chosen it every time. */
+ const own=finishedSeason(all,seas)&&all[seas]&&all[seas][id];
+ const near=own?null:Object.keys(all)
+   .filter(y=>finishedSeason(all,y)&&all[y]&&all[y][id])
    .sort((a,b)=>Math.abs(+a-+seas)-Math.abs(+b-+seas)||(+b-+a))[0]||null;
  const dist=own||(near&&all[near][id]);
  const ref=sitsIn(dist,null);
@@ -2499,7 +2510,14 @@ document.title=`${line} — Read the Game`;
     is enough — the curve's, above — and a second apology beside it would be
     noise about a feature the reader has not been promised. */
  const season=String((G.game&&G.game.id)||'').slice(0,4);
- const dists=RATES&&RATES.perGame&&RATES.perGame[season];
+ /* ⛔ THE SAME REFUSAL AS THE OVERLAY, through the same predicate, because this
+    card and that panel judging a night against different populations is the
+    drift `sitsIn` was extracted to make impossible. This card has no
+    nearest-season fallback and does not grow one here: it stays silent on an
+    unmeasured season, which is exactly what it does today and what Kevin was
+    looking at when he said the card was only one piece. */
+ const pg=(RATES&&RATES.perGame)||null;
+ const dists=finishedSeason(pg,season)?pg[season]:null;
  /* ⭐ DERIVED FROM `LENS`, so a lens cannot exist in the selector and be missing
     here. This was a second hand-written list of the same five ids with no guard
     on it at all; see the note on `LENS`.
