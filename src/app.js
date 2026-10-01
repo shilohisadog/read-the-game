@@ -694,6 +694,12 @@ function drawClip(at){
   if(b.dataset.id!==String(recap)){shutClip();b.dataset.id=String(recap);}
   b.hidden=false;
   $('clipDur').textContent='NHL.com';
+  /* ⭐ AND THE SECTION NAMES WHAT IT HOLDS. Kevin, 2026-10-01: the way in is
+     *"the (non-obvious) 'External video clip' area"*. That label described the
+     HOSTING arrangement — true, and a thing no reader is looking for. It names
+     the video now, and still says whose it is, because the point of the original
+     wording was that this is not ours to vouch for. One label, both facts. */
+  $('clipWhat').textContent='The league\u2019s recap of this game';
   $('clipSay').textContent='NHL.com published a recap of this whole game, not one '
    +'goal. It starts with an advertisement.';
   return;}
@@ -709,6 +715,7 @@ function drawClip(at){
     hold the id and nothing else, deliberately (see extract.py), so the sentence
     carries what we DO know and the badge names the source instead. */
  $('clipDur').textContent='NHL.com';
+ $('clipWhat').textContent='The league\u2019s highlight of this goal';
  $('clipSay').textContent='NHL.com published a broadcast highlight \u2014 '
   +clipNames(g)+(live?', and you can press the goal on the ice instead':'')
   +'. It starts with an advertisement.';}
@@ -1613,15 +1620,76 @@ function renderSum(){
   const li=document.createElement('li');
   /* THE COUNT IS ALWAYS SAID AND THE PLACEMENT ONLY WHEN IT CAN BE. "What this
      game was" is answerable from the game alone; "was that a lot" is not. */
-  li.innerHTML='<b>'+ESC(chipLabel(id))+' '+N(n)+'</b>'+(st
+  const say=document.createElement('span');
+  say.innerHTML='<b>'+ESC(chipLabel(id))+' '+N(n)+'</b>'+(st
    ?' — '+(st.inside
      ?'inside the middle half.'
      :st.beat===st.of
        ?(st.high?'higher':'lower')+' than all of them.'
        :(st.high?'more than ':'fewer than ')+N(st.beat)+' of them.')
    :'');
+  li.appendChild(say);
+  /* ⭐⭐⭐ AND EACH ROW DRAWS ITS OWN SCALE. Kevin, 2026-10-01: *"the what this
+     game was card needs said line graphs beside their specific metric, add some
+     visual appeal to the card, cause right now it's just a blob of text that says
+     the same thing."* He is right about the blob: six rows reading "inside the
+     middle half" is one fact printed six times, and the thing a reader actually
+     wants — HOW FAR inside, and where the other five sit relative to each other
+     — is exactly what prose at this density cannot carry and a position can.
+
+     ⭐ IT IS THE SAME PICTURE THE LEAD SENTENCE DESCRIBES, so nothing new is
+     claimed: the band IS the middle half (p25–p75, a DEFINITION, not a threshold
+     anyone chose) and the rail runs from the quietest night that season to the
+     busiest. A reader who has read the lead can check the drawing against it.
+
+     ⛔ POSITIONS THROUGH THE CSSOM, NEVER AS A `style` ATTRIBUTE — the rule the
+     verdict dot learned the hard way, and the reason that dot sat at 0% on every
+     game in the archive for a while: this page's own CSP refuses inline style, so
+     the attribute silently does nothing. The elements are built first and
+     positioned after, which is also why this row is assembled with the DOM API
+     rather than one `innerHTML` string.
+
+     ⚠️ AND ONLY WHEN THERE IS A RANGE TO DRAW. A season whose quietest and
+     busiest night hold the same count has no scale, and a rail with one position
+     on it would be a picture of nothing. */
+  if(st&&st.max>st.min){
+   const tr=document.createElement('span');tr.className='strack';
+   const band=document.createElement('span');band.className='sband';
+   const pt=document.createElement('span');pt.className='spt'+(st.inside?'':' out');
+   tr.appendChild(band);tr.appendChild(pt);li.appendChild(tr);
+   const span=st.max-st.min;
+   const pc=v=>Math.max(0,Math.min(100,((v-st.min)/span)*100));
+   const lo=pc(st.lo),hi=pc(st.hi);
+   band.style.left=lo.toFixed(1)+'%';
+   band.style.width=Math.max(0,hi-lo).toFixed(1)+'%';
+   pt.style.left=pc(st.count).toFixed(1)+'%';}
   ul.appendChild(li);});
  host.appendChild(ul);
+ /* ⭐⭐⭐ AND THE WAY TO THE LEAGUE'S VIDEO IS IN HERE, because at the horn this
+    panel covers the page. Kevin, 2026-10-01: *"when the what this game was card
+    is surfaced, we no longer have a window to the game highlight page, we have to
+    scroll down and click the (non-obvious) 'External video clip' area."* Both
+    halves are true and the second was already on the open list.
+
+    ⛔ A BUTTON, NOT AN EMBED, and that is the whole bargain this feature was
+    allowed on. `drawClip`'s own note: the iframe is built on open and torn down
+    on close, so the thirteen third-party hosts and the advertisement in front of
+    the video are reached ONLY by someone who pressed. Putting the player in here
+    would load that stack on every finished game whether or not anyone wanted it.
+
+    ⚠️ IT OPENS THE EXISTING SECTION RATHER THAN BUILDING A SECOND PLAYER. One
+    box, one offer — the rule `drawClip` already keeps between the goal clip and
+    the recap, and a second player here would be a third thing saying NHL.com.
+    ⚠️ AND IT IS DRAWN FROM `G.recap`, so a game archived before the right-rail
+    feed existed simply has no button rather than one that opens nothing. */
+ if(G.recap!=null){
+  const go=document.createElement('button');
+  go.type='button';go.className='srecap';
+  go.textContent='\u25b6 Watch the league\u2019s recap of this game';
+  go.onclick=()=>{const b=$('clipbox');if(!b)return;
+   b.hidden=false;b.open=true;
+   if(b.scrollIntoView)b.scrollIntoView({block:'center'});};
+  host.appendChild(go);}
  /* ⛔ THE HONEST EMPTY STATE, and it is the archive door's own sentence because
     it is the same fact — said once here for six counts rather than six times. */
  if(!placed){

@@ -1745,7 +1745,22 @@
 #rg #sumPanel .verdict{padding:0;border:0;background:none;box-shadow:none;margin:0}
 #rg #sumBody{max-width:56ch}
 #rg .srows{margin:10px 0 0;padding-left:20px}
-#rg .srows li{margin:0 0 6px;font-size:.9rem;line-height:1.5;color:var(--muted)}
+#rg .srows li{margin:0 0 11px;font-size:.9rem;line-height:1.5;color:var(--muted)}
+/* ⭐ THE PER-ROW SCALE. Same vocabulary as the verdict dot above it on purpose:
+   a rail, a band, a dot. The BAND is the middle half the sentence names, so the
+   drawing and the prose are one claim; the rail runs quietest to busiest. */
+#rg .strack{display:block;position:relative;height:7px;border-radius:4px;
+ background:#eef3f7;margin:5px 0 0;max-width:34ch}
+#rg .sband{position:absolute;top:0;bottom:0;border-radius:4px;background:#ccdbe7}
+#rg .spt{position:absolute;top:50%;width:9px;height:9px;border-radius:50%;
+ transform:translate(-50%,-50%);background:#1f7a4d;border:2px solid #fff}
+/* OUTSIDE THE MIDDLE HALF IS THE ONLY THING COLOUR IS SPENT ON, and it is the
+   same red the verdict dot spends it on, for the same meaning. */
+#rg .spt.out{background:#b3341f}
+#rg .srecap{display:block;margin:16px 0 0;min-height:44px;padding:0 16px;
+ border:1px solid var(--edge);border-radius:999px;background:#fff;
+ font:inherit;font-size:.9rem;color:var(--ink);cursor:pointer}
+#rg .srecap:hover{border-color:var(--ink)}
 #rg .srows b{color:var(--ink);font-weight:700}
 #rg .verdict .vk{display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
  color:var(--muted);font-weight:700;margin-bottom:8px}

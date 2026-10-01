@@ -691,8 +691,17 @@ test('the game line is part of the scoreboard, and the gate can still read it', 
   // `watching`. Found by mutation. What Kevin actually reported is a COUNT:
   // three variants of one word stacked in 220px. So the count is what is checked,
   // over every heading on the page rather than over one element.
-  const headings = [...clean.matchAll(/<summary class="zh">([^<]*)|<span class="pklab">([^<]*)|<span class="nowlab">([^<]*)/g)]
-    .map(m => (m[1] || m[2] || m[3]).trim()).filter(Boolean);
+  /* ⛔ THE HEADING'S WHOLE TEXT, NOT THE TEXT BEFORE ITS FIRST CHILD. `([^<]*)`
+     stopped at the first tag, so the day `#clipbox`'s label was wrapped in a span
+     to be addressable at runtime, this captured the empty string and the map
+     threw on `undefined.trim()`. It had been reading that heading by luck: any
+     heading containing an element was already invisible to it, which is the
+     quieter half of the same defect — a scan that announces "every heading on the
+     page" and sees only the plain ones. Tags are stripped instead, so a heading
+     is read the way a reader reads it. */
+  const headings = [...clean.matchAll(
+      /<summary class="zh">([\s\S]*?)<\/summary>|<span class="pklab">([\s\S]*?)<\/span>|<span class="nowlab">([\s\S]*?)<\/span>/g)]
+    .map(m => (m[1] || m[2] || m[3] || '').replace(/<[^>]*>/g, ' ').trim()).filter(Boolean);
   const watchy = headings.filter(h => /watch/i.test(h));
   /* ⭐ AT MOST ONE, NOT EXACTLY `['Watching']`. The claim Kevin reported is a
      COUNT — three variants of one word stacked in 220px — so the check is on the

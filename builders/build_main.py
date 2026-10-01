@@ -436,7 +436,7 @@ __CSS__</style>
      EMPTY AND HIDDEN UNTIL `render` finds a `clip` on the frame. The iframe is
      never in this markup: it is built on the first press and torn down on close,
      so a reader who does not ask for video makes no request to anybody. -->
-<details class="zone zclip" id="clipbox" hidden><summary class="zh">External video clip<span class="zon" id="clipDur"></span></summary>
+<details class="zone zclip" id="clipbox" hidden><summary class="zh"><span id="clipWhat">External video clip</span><span class="zon" id="clipDur"></span></summary>
 <p class="clipsay" id="clipSay"></p>
 <div class="clipframe" id="clipFrame"></div>
 <p class="clipfoot">Video and advertising are NHL.com&rsquo;s. Nothing above this line changes.</p>

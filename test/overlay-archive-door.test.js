@@ -653,3 +653,135 @@ test('the summary door is not a spoiler mid-replay', () => {
   assert.ok(app.includes('class="lxw lxwe" id="sum"'),
     'the door does not carry the class the two rules above key on');
 });
+
+/**
+ * ⭐⭐⭐ EACH ROW DRAWS ITS OWN SCALE — Kevin, 2026-10-01: *"the what this game was
+ * card needs said line graphs beside their specific metric… right now it's just a
+ * blob of text that says the same thing."*
+ *
+ * ⭐ THE DRAWING AND THE SENTENCE ARE ONE CLAIM, and that is what is asserted
+ * here rather than the mere presence of an element. The band IS the middle half
+ * the row's words name, so a row reading "inside the middle half" must put its
+ * dot INSIDE its own band and a row reading "fewer than N of them" must put it
+ * outside and to the left. A picture free to disagree with the sentence beside it
+ * is the defect that stopped a deploy on 0c8dc6f, one surface over.
+ */
+test('every judged row draws a scale that agrees with its own sentence', () => {
+  const a = page();
+  const s = a.$('scrub'); s.value = String(s.max);
+  s.oninput({ target: { value: s.value } });
+  const rows = (a.$('sumBody')._kids || []).find(n => n.className === 'srows');
+  assert.ok(rows && (rows._kids || []).length, 'no rows drew at all');
+
+  /* THE LABEL->LENS MAP IS READ OFF THE PAGE'S OWN CHIPS, not written here: the
+     row is titled with `chipLabel`, so the chips are what that title means. A
+     second table of the same six names is the duplication `LENS` was created to
+     end. */
+  const chips = a.$$('#rg .pk').filter(c => c.dataset && c.dataset.l);
+  /* MATCHED ON THE CHIP'S OWN TEXT, which is what `chipLabel` returns and what
+     the row is therefore titled with. Read through `textContent` rather than a
+     `.pkl` lookup because the fake document does not resolve a descendant
+     selector, and a test that silently found nothing would map every row to
+     undefined and then assert about an empty set. */
+  const lensFor = label => {
+    const c = chips.find(x => (x.textContent || '').trim().startsWith(label));
+    return c && c.dataset.l;
+  };
+  assert.ok(chips.length >= 2, 'no lens chips were found, so the mapping is empty');
+  const season = MEASURES.perGame[String(rich.game.id).slice(0, 4)]
+    || MEASURES.perGame[Object.keys(MEASURES.perGame).sort().pop()];
+  /* The quantile the page uses, restated from the published histogram so the
+     expectation does not come from the page's own copy of it. */
+  const quart = (dd, q) => { const need = dd.n * q; let seen = 0;
+    for (let k = 0; k < dd.counts.length; k++) { seen += dd.counts[k];
+      if (seen >= need) return dd.start + k; }
+    return dd.max; };
+
+  let drew = 0;
+  for (const li of rows._kids) {
+    const kids = li._kids || [];
+    const track = kids.find(n => n.className === 'strack');
+    const text = (kids[0] && kids[0].innerHTML) || '';
+    if (!track) continue;            // a season with no range has no scale to draw
+    drew++;
+    const band = (track._kids || []).find(n => n.className === 'sband');
+    const dot = (track._kids || []).find(n => (n.className || '').startsWith('spt'));
+    assert.ok(band && dot, 'a scale drew without both a middle half and a position');
+
+    /* ⛔ POSITIONS THROUGH THE CSSOM. Read back off `style`, because this page's
+       CSP refuses an inline `style` attribute outright — the verdict dot sat at
+       0% on every game in the archive the one time this was got wrong. */
+    const pc = v => parseFloat(v);
+    assert.ok(!Number.isNaN(pc(dot.style.left)), `the dot was never positioned: ${dot.style.left}`);
+    assert.ok(!Number.isNaN(pc(band.style.left)) && !Number.isNaN(pc(band.style.width)),
+      'the middle half was never positioned');
+
+    const d = pc(dot.style.left), lo = pc(band.style.left), hi = lo + pc(band.style.width);
+    const saysInside = /inside the middle half/.test(text);
+    const out = (dot.className || '').includes('out');
+    assert.equal(saysInside, !out,
+      `the row says "${text.replace(/<[^>]+>/g, '')}" and the dot is coloured the other way`);
+
+    /* ⛔⛔ THE POSITION IS COMPUTED INDEPENDENTLY, FROM THE PUBLISHED DOCUMENT.
+       This first asserted only that the dot sat on the correct SIDE of its own
+       band — and a mutant pinning every dot to the band's left edge passed it,
+       because the edge satisfies "inside" and "not to the right of" at once. A
+       check that compares a drawing against its neighbour in the same drawing has
+       no path to the expected value; see name-the-path-to-the-expectation. The
+       expectation here is the archive's own min/max and the count printed in the
+       row, which the page did not supply to this test. */
+    const m = /^(.+?)\s+([\d,]+)<\/b>/.exec(text.replace(/^<b>/, '<b>').replace('<b>', ''));
+    assert.ok(m, `could not read the count out of the row: ${text}`);
+    const label = m[1].trim(), count = +m[2].replace(/,/g, '');
+    const lens = lensFor(label);
+    assert.ok(lens, `the row is labelled "${label}", which is no chip on this page`);
+    const dist = season[lens];
+    assert.ok(dist && dist.max > dist.min, `no published range for ${lens}`);
+    const want = Math.max(0, Math.min(100, ((count - dist.min) / (dist.max - dist.min)) * 100));
+    assert.ok(Math.abs(d - want) < 0.15,
+      `${label} ${count} should sit at ${want.toFixed(1)}% of ${dist.min}–${dist.max} `
+      + `and was drawn at ${d}%`);
+
+    /* AND THE BAND IS THE MIDDLE HALF, on the same independently computed scale. */
+    const wantLo = ((quart(dist, 0.25) - dist.min) / (dist.max - dist.min)) * 100;
+    assert.ok(Math.abs(lo - wantLo) < 0.15,
+      `the middle half starts at ${lo}% and p25 is at ${wantLo.toFixed(1)}%`);
+    assert.ok(d >= 0 && d <= 100 && hi <= 100.1, `the scale left its own rail (${d}%, ${hi}%)`);
+  }
+  assert.ok(drew >= 1, 'not one row drew a scale, so this test asserted nothing');
+});
+
+/**
+ * ⭐ THE WAY TO THE LEAGUE'S VIDEO IS IN THE PANEL — Kevin: *"when the what this
+ * game was card is surfaced, we no longer have a window to the game highlight
+ * page, we have to scroll down and click the (non-obvious) 'External video clip'
+ * area."*
+ *
+ * ⛔ AND IT IS A BUTTON, NOT AN EMBED. `drawClip`'s bargain is that the iframe,
+ * its thirteen third-party hosts and the advertisement in front of the video are
+ * reached only by someone who pressed; a player mounted in here would spend that
+ * on every finished game. So what is asserted is that pressing OPENS THE EXISTING
+ * BOX — one box, one offer — and that nothing was built beside it.
+ */
+test('the summary offers the league’s recap, and only when there is one', () => {
+  const withRecap = boot({ ...rich, recap: 6405931176112 }, MEASURES);
+  let s = withRecap.$('scrub'); s.value = String(s.max);
+  s.oninput({ target: { value: s.value } });
+  const btn = (withRecap.$('sumBody')._kids || []).find(n => n.className === 'srecap');
+  assert.ok(btn, 'a game carrying a recap offers no way to it from the summary');
+  assert.match(btn.textContent, /recap of this game/i, 'the button does not say what it opens');
+
+  assert.equal(withRecap.$('clipbox').open, false, 'the clip box was open before anyone pressed');
+  btn.onclick();
+  assert.equal(withRecap.$('clipbox').open, true, 'the button did not open the clip box');
+  assert.equal(withRecap.$('clipbox').hidden, false, 'the box opened while still hidden');
+
+  /* ⚠️ AND A GAME ARCHIVED BEFORE THE FEED EXISTED OFFERS NOTHING, rather than a
+     button that opens an empty player. Most of the archive is in this state until
+     the recap backfill runs. */
+  const without = boot({ ...rich, recap: undefined }, MEASURES);
+  s = without.$('scrub'); s.value = String(s.max);
+  s.oninput({ target: { value: s.value } });
+  assert.ok(!(without.$('sumBody')._kids || []).some(n => n.className === 'srecap'),
+    'a game with no recap still offered one');
+});
