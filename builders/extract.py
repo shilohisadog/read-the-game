@@ -518,6 +518,20 @@ KNOWN_STOPPAGES = {
     # archive" -- reasoned from 69 games, false across 4,559, where it appears 6
     # times. A season is not the archive.
     "net-dislodged-by-goaltender", "chlg-hm-puck-over-glass",
+    # 2026-10-02, the nine Kevin named after the archive sweep. `player-equipment`
+    # is the largest of them -- 155 occurrences across 149 games -- and it is the
+    # one the open list had wrongly written off as unreachable by a reader.
+    #
+    # *** `hm` AND `vis` ARE NOW MEASURED, NOT ASSUMED. *** An unsuccessful
+    # challenge draws `delaying-game-unsuccessful-challenge` against the team that
+    # challenged. Across all 4,559 published games, 214 of 214 such penalties after
+    # a `chlg-hm-*` stoppage were called on the HOME team and every `chlg-vis-*` on
+    # the away team. The copy names the bench because of that, and the three
+    # `chlg-league-*` keys are worded as REVIEWS because nobody challenged them.
+    "player-equipment", "official-injury", "ice-problem", "ice-scrape",
+    "chlg-hm-missed-stoppage", "chlg-vis-missed-stoppage",
+    "chlg-league-goal-interference", "chlg-league-off-side",
+    "chlg-league-missed-stoppage",
 }
 # A RULE, NOT A LIST. This was eight strings -- every situationCode one November
 # game happened to contain -- and a season contains nineteen. The missing ones

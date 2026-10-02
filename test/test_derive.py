@@ -1220,16 +1220,30 @@ class ANewCompetitionIsAnEventNotNoise(unittest.TestCase):
 class ForgivenessIsRecordedAndDriftIsLOUD(unittest.TestCase):
     """`noted` was a ledger. It needed to also be an alarm.
 
-    23 stoppage reasons are forgiven on every live run -- `ice-scrape`,
-    `switch-sides`, ten flavours of coach's challenge -- and each renders
-    verbatim, which whistle.js is right about: inventing a rule explanation for
-    a value nobody has read would be the guess this project refuses everywhere
-    else. What was missing is that nothing was TOLD. The workflow printed a
-    count and stayed green, which is exactly the hole an unnamed gameType sat in.
+    What was missing is that nothing was TOLD: the workflow printed a count and
+    stayed green, which is exactly the hole an unnamed gameType sat in. So the
+    alarm is on DRIFT. A value already seen is not news; a new one is. A check
+    that fired on every forgiven value each night would be switched off within a
+    week and the new one would arrive invisibly.
 
-    So the alarm is on DRIFT. Twenty-three known values are not news; a
-    twenty-fourth is. A check that fired on all 23 every night would be switched
-    off within a week and the twenty-fourth would arrive invisibly.
+    *** AND THE ALARM HAS A BLIND SIDE, FOUND 2026-10-02. *** This docstring used
+    to say 23 reasons "are forgiven on every live run -- `ice-scrape`,
+    `switch-sides`, ten flavours of coach's challenge -- and each renders
+    verbatim, which whistle.js is right about". The first clause was true. The
+    second was a decision nobody had made: an archive sweep found those values
+    reaching readers as raw feed keys -- `chlg hm goal interference`, `player
+    equipment` -- 491 times across 4,559 games.
+
+    Forgiveness here is the right call for INGEST, where the question is whether
+    a value can corrupt a FIGURE. It says nothing about whether anybody ever
+    wrote the word down, and a value stops being news at exactly the moment it
+    starts rendering unworded -- the worst possible moment to go quiet.
+
+    Kevin named them on 2026-10-02; 21 of the 23 now have prose and are vetted in
+    KNOWN_STOPPAGES. Two stay deliberately unnamed because nobody could say what
+    they mean -- Kevin: "I dunno about that one, I've never heard of those" --
+    and one of those two is the specimen below. `test/whistle.test.js` holds the
+    reader-facing half this alarm never covered.
     """
 
     def index(self, store):
@@ -1240,14 +1254,21 @@ class ForgivenessIsRecordedAndDriftIsLOUD(unittest.TestCase):
             play("stoppage", 150, reason=reason, eventOwnerTeamId=30)])
 
     def test_a_value_we_have_already_looked_at_is_silent(self):
-        # `ice-scrape` is in data/vocabulary-seen.json: seen, understood, and
-        # deliberately left to render verbatim.
+        # `switch-sides` is in data/vocabulary-seen.json and NOT in
+        # KNOWN_STOPPAGES: seen, not understood by anybody here, and deliberately
+        # left to render verbatim rather than guessed at.
+        #
+        # ⛔⛔ THE SPECIMEN USED TO BE `ice-scrape` AND THIS TEST BROKE WHEN IT WAS
+        # GIVEN WORDS on 2026-10-02. That is the test working: it asserts a
+        # property of a value that is forgiven but NOT vetted, and `ice-scrape`
+        # stopped being one. A specimen that quietly became the wrong KIND of
+        # value would have left this green while measuring nothing.
         store = DictStore()
-        seed(store, pbp=self.stoppage("ice-scrape"))
+        seed(store, pbp=self.stoppage("switch-sides"))
         rep = D.derive(store, now="2026-01-11T11:30:00Z")
         self.assertEqual(rep.published, 1)
         self.assertEqual(self.index(store)["run"]["unseenVocabulary"], {})
-        self.assertIn("ice-scrape",
+        self.assertIn("switch-sides",
                       self.index(store)["run"]["noted"]["stoppage reason"],
                       "still recorded — the ledger does not stop being a ledger")
 

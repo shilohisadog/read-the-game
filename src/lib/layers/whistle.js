@@ -197,28 +197,52 @@ function linesFor(rsn, x) {
  * which is why one object can serve both sides at all. The day we can attribute
  * them is the day they stop being one object.
  */
-const CHALLENGE_INTERFERENCE = {
-  name: 'Goal challenged for goaltender interference',
-  say: 'A goal was challenged on the claim that the goaltender was interfered '
-     + 'with, and play stopped while it was reviewed.',
-  from: 'field: rsn',
-};
-const CHALLENGE_OVER_GLASS = {
-  name: 'Puck over the glass, challenged',
-  say: 'A puck-over-the-glass ruling was challenged, and play stopped while it '
-     + 'was reviewed.',
-  from: 'field: rsn',
-};
-const CHALLENGE_OFFSIDE = {
-  name: 'Goal challenged for offside',
-  say: 'A goal was challenged on the claim that the play was offside before it '
-     + 'was scored, and play stopped while it was reviewed.',
-  from: 'field: rsn',
-};
+/**
+ * ⭐⭐⭐ `hm` IS THE HOME BENCH AND `vis` IS THE VISITING ONE — MEASURED 2026-10-02,
+ * AND IT WAS AN ASSUMPTION IN THIS FILE FOR MONTHS.
+ *
+ * The note that used to sit here said *"`vis` ALMOST CERTAINLY MEANS THE VISITING
+ * SIDE — the sibling keys are `home-timeout` and `visitor-timeout` — but the name
+ * does not say so, because which bench challenged is not something we have
+ * confirmed."* That was the right call on the evidence it had, which was a naming
+ * convention. It is not the right call any more, because the evidence exists.
+ *
+ * ⭐ THE TEST THE ARCHIVE CAN ANSWER: an unsuccessful coach's challenge draws a
+ * delay-of-game penalty against the team that challenged, and the feed names that
+ * penalty `delaying-game-unsuccessful-challenge`. So for every challenge stoppage
+ * that is followed by one, ask whose it is. Across all 4,559 published games:
+ *
+ *     chlg-hm-*    214 penalties → HOME 108, AWAY   0
+ *     chlg-vis-*   214 penalties → HOME   0, AWAY 106
+ *
+ * **214 of 214, no counterexample.** Only about a third of challenges are
+ * unsuccessful, so most carry no penalty and are silent on the question — but a
+ * silent case cannot contradict, and nothing did.
+ *
+ * ⚠️ IT IS AN INFERENCE AND IT IS NAMED AS ONE. What was measured is the side the
+ * PENALTY lands on; the step from there to "that bench challenged" is the rule
+ * about unsuccessful challenges. `from` still says `field: rsn`, because the field
+ * is where the reason comes from and no rule number is being claimed.
+ *
+ * ⛔⛔ AND THE PAIRS ARE NO LONGER ONE OBJECT. They were shared on 2026-10-02
+ * precisely BECAUSE the sentence named no side — one object could serve both only
+ * while the difference was unsayable. Naming it is what makes them two things, and
+ * `test/whistle.test.js` now holds the pair by requiring that the home and visiting
+ * copy differ in NOTHING BUT THE SIDE.
+ *
+ * ⭐ Kevin ruled the wording before the measurement existed — *"Home (Visiting) team
+ * challenged a missed stoppage"* — and the measurement was run because naming the
+ * side on one card and not on three others would have been incoherent.
+ */
 /* ⏭ A TRIPLE, NOT A PAIR — the archive sweep, 2026-10-02. The feed also records
    `net-dislodged-by-goaltender`, 105 times across 102 games, and it was raw for
    the life of the site. The copy already said nothing about WHO knocked the net
    off, so the third key is one line rather than a third sentence. */
+const RINK_REPAIR = {
+  name: 'Rink repair',
+  say: 'Play stopped so the ice or the boards could be repaired.',
+  from: 'field: rsn',
+};
 const NET_OFF = {
   name: 'Net off its moorings',
   say: 'The net came off its moorings, and play stopped.',
@@ -278,10 +302,73 @@ export const WHY = {
      `home-timeout` and `visitor-timeout` — but the name does not say so, because
      which bench challenged is not something we have confirmed and the sentence
      reads correctly without it. */
-  'chlg-vis-goal-interference': CHALLENGE_INTERFERENCE,
-  'chlg-hm-goal-interference': CHALLENGE_INTERFERENCE,
-  'chlg-vis-off-side': CHALLENGE_OFFSIDE,
-  'chlg-hm-off-side': CHALLENGE_OFFSIDE,
+  'chlg-hm-goal-interference': {
+    name: 'Home team challenged for goaltender interference',
+    say: 'The home team challenged the goal on the claim that the goaltender was '
+       + 'interfered with, and play stopped while it was reviewed.',
+    from: 'field: rsn',
+  },
+  'chlg-vis-goal-interference': {
+    name: 'Visiting team challenged for goaltender interference',
+    say: 'The visiting team challenged the goal on the claim that the goaltender was '
+       + 'interfered with, and play stopped while it was reviewed.',
+    from: 'field: rsn',
+  },
+  'chlg-hm-off-side': {
+    name: 'Home team challenged for offside',
+    say: 'The home team challenged the goal on the claim that the play was offside '
+       + 'before it was scored, and play stopped while it was reviewed.',
+    from: 'field: rsn',
+  },
+  'chlg-vis-off-side': {
+    name: 'Visiting team challenged for offside',
+    say: 'The visiting team challenged the goal on the claim that the play was offside '
+       + 'before it was scored, and play stopped while it was reviewed.',
+    from: 'field: rsn',
+  },
+  /* ⭐ KEVIN'S WORDING, 2026-10-02: *"Home (Visiting) team challenged a missed
+     stoppage."* A challenge that play should have been whistled dead before the
+     goal — the sentence says only that, and does not name which kind of stoppage
+     was missed, because the feed does not record it. */
+  'chlg-hm-missed-stoppage': {
+    name: 'Home team challenged a missed stoppage',
+    say: 'The home team challenged that play should already have stopped, and play '
+       + 'stopped while it was reviewed.',
+    from: 'field: rsn',
+  },
+  'chlg-vis-missed-stoppage': {
+    name: 'Visiting team challenged a missed stoppage',
+    say: 'The visiting team challenged that play should already have stopped, and play '
+       + 'stopped while it was reviewed.',
+    from: 'field: rsn',
+  },
+  /* ⛔⛔ THE LEAGUE'S OWN REVIEWS ARE NOT CHALLENGES, and this is the one merge
+     that was offered and refused. Kevin, 2026-10-02: *"League review of goal
+     interference or off side."* Pointing these at the bench objects would have been
+     one line and would have printed *"challenged"* about a review nobody asked for —
+     the Situation Room starts these itself. A key that looks like a sibling is not
+     one when the ACTOR differs.
+     ⚠️ `chlg-league-missed-stoppage` is MY extension of Kevin's form to the third
+     league key, which he was not shown. If the wording is wrong it is wrong here
+     and not in what he gave me. */
+  'chlg-league-goal-interference': {
+    name: 'League review of goal interference',
+    say: 'The league reviewed the goal for interference with the goaltender, and play '
+       + 'stopped while it was reviewed.',
+    from: 'field: rsn',
+  },
+  'chlg-league-off-side': {
+    name: 'League review of offside',
+    say: 'The league reviewed whether the play was offside before the goal was scored, '
+       + 'and play stopped while it was reviewed.',
+    from: 'field: rsn',
+  },
+  'chlg-league-missed-stoppage': {
+    name: 'League review of a missed stoppage',
+    say: 'The league reviewed whether play should already have stopped, and play '
+       + 'stopped while it was reviewed.',
+    from: 'field: rsn',
+  },
   /* ⛔⛔ THIS COMMENT SAID *"the `hm` half has not appeared in the archive"* AND
      WAS FALSE WHEN IT WAS WRITTEN. It was reasoned from a count of 69 games — one
      season — and the sweep of all 4,559 found `chlg-hm-puck-over-glass` 6 times
@@ -290,13 +377,25 @@ export const WHY = {
      as the open item this whole pass started from, made again inside its fix.
      ⭐ A challenge of a CALL rather than of a goal, so it does not take the form
      above; both benches take this one object. */
-  'chlg-vis-puck-over-glass': CHALLENGE_OVER_GLASS,
-  'chlg-hm-puck-over-glass': CHALLENGE_OVER_GLASS,
-  'rink-repair': {
-    name: 'Rink repair',
-    say: 'Play stopped so the ice or the boards could be repaired.',
+  'chlg-hm-puck-over-glass': {
+    name: 'Home team challenged the puck-over-the-glass call',
+    say: 'The home team challenged a puck-over-the-glass ruling, and play stopped '
+       + 'while it was reviewed.',
     from: 'field: rsn',
   },
+  'chlg-vis-puck-over-glass': {
+    name: 'Visiting team challenged the puck-over-the-glass call',
+    say: 'The visiting team challenged a puck-over-the-glass ruling, and play stopped '
+       + 'while it was reviewed.',
+    from: 'field: rsn',
+  },
+  /* ⭐ THREE KEYS, ONE SENTENCE — Kevin, 2026-10-02, shown `ice-problem` (96
+     occurrences) and `ice-scrape` (14): *"Same as existing, '…Rink repair - play
+     stopped…'"*. The sentence already said what happened without claiming WHY the
+     ice needed work, which is the only reason one object can serve all three. */
+  'rink-repair': RINK_REPAIR,
+  'ice-problem': RINK_REPAIR,
+  'ice-scrape': RINK_REPAIR,
   'puck-in-netting': {
     name: 'Puck into the netting',
     say: 'The puck was shot out of play into the netting above the glass.',
@@ -372,6 +471,19 @@ export const WHY = {
   'objects-on-ice': {
     name: 'Objects on the ice',
     say: 'Play stopped so objects on the ice could be cleared.',
+    from: 'field: rsn',
+  },
+  /* ⭐ KEVIN'S OWN SENTENCES, 2026-10-02, kept close to verbatim. `player-equipment`
+     is the largest raw descriptor the archive held — 155 occurrences across 149
+     games — and it reached readers as "player equipment" for the life of the site. */
+  'player-equipment': {
+    name: 'Player equipment',
+    say: 'Stoppage due to a player equipment issue.',
+    from: 'field: rsn',
+  },
+  'official-injury': {
+    name: 'Injury to an official',
+    say: 'Stoppage due to injury to an official.',
     from: 'field: rsn',
   },
   /* ⚠⚠ THE ONE NOBODY HERE COULD NAME. Kevin, shown the list: *"heck I don't

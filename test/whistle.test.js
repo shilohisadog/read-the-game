@@ -542,38 +542,81 @@ test('⛔ and every reason we have words for is vetted, so the run stops calling
 });
 
 /**
- * ⭐⭐ A PAIR THAT MUST AGREE IS ONE OBJECT. The feed splits several reasons by
- * which side caused them, and three times one half was worded and the other left
- * raw — `chlg-vis-off-side` against `chlg-hm-off-side`, the two `net-dislodged`
- * keys. Matching strings would satisfy a reader today and drift the first time
- * one of them is edited.
+ * ⭐⭐ A PAIR THAT MUST AGREE IS ONE OBJECT — while the thing that differs is
+ * UNSAYABLE. `net-dislodged-{defensive-skater,offensive-skater,by-goaltender}` is
+ * one object under three keys because the sentence names no actor, and WHO knocked
+ * the net off is not something the archive records.
  *
- * ⛔ SO THIS ASSERTS IDENTITY, NOT EQUALITY. `deepEqual` passes on two objects
- * that happen to match, which is exactly the state this is meant to make
- * impossible; `assert.equal` on the reference is the claim.
+ * ⛔⛔ AND THE CHALLENGE FAMILIES LEFT THIS RULE ON 2026-10-02, which is the point
+ * worth keeping. They were shared for one day, BECAUSE the copy named no side. Then
+ * the archive answered the question the sharing was hiding — 214 of 214
+ * unsuccessful-challenge penalties land on the side the key names — and Kevin ruled
+ * the side into the copy. **Sharing an object is a statement that a difference
+ * cannot be said. It stops being right the moment the difference can.**
  */
-test('⭐⭐ sibling reasons are literally the same object, so they cannot drift apart', () => {
-  for (const [a, b] of [
-    ['chlg-vis-off-side', 'chlg-hm-off-side'],
-    ['chlg-vis-goal-interference', 'chlg-hm-goal-interference'],
-    ['net-dislodged-defensive-skater', 'net-dislodged-offensive-skater'],
-  ]) {
-    assert.ok(WHY[a] && WHY[b], `${a} / ${b}: one half of a sibling pair has no entry at all`);
-    assert.equal(WHY[a], WHY[b],
-      `${a} and ${b} are the same event with the side swapped, and they are two objects — `
-      + `so one can be reworded without the other. Point both keys at one object instead.`);
+test('⭐⭐ reasons that differ only in an unsayable way are literally one object', () => {
+  const net = ['net-dislodged-defensive-skater', 'net-dislodged-offensive-skater',
+               'net-dislodged-by-goaltender'];
+  for (const k of net.slice(1)) {
+    assert.ok(WHY[net[0]] && WHY[k], `${k}: one of the net-dislodged keys has no entry at all`);
+    /* ⛔ IDENTITY, NOT EQUALITY. `deepEqual` passes on two objects that happen to
+       match, which is exactly the state this is meant to make impossible. */
+    assert.equal(WHY[net[0]], WHY[k],
+      `${net[0]} and ${k} are the same event with the actor swapped, and they are two `
+      + `objects — so one can be reworded without the other. Point both at one object.`);
   }
-  /* AND THE RULE THAT MAKES ONE OBJECT LEGITIMATE: neither sentence may name the
-     side, because which bench challenged and which skater knocked the net off are
-     not things the archive records. The day we can attribute them is the day these
-     stop being one object. */
-  for (const k of ['chlg-vis-off-side', 'net-dislodged-defensive-skater']) {
-    const said = `${WHY[k].name} ${WHY[k].say}`;
-    assert.doesNotMatch(said, /\b(home|visiting|visitor|away)\b/i,
-      `${k} names a side the feed does not record, so it cannot be shared with its sibling: ${said}`);
-  }
+  for (const k of ['ice-problem', 'ice-scrape'])
+    assert.equal(WHY[k], WHY['rink-repair'],
+      `${k} is Kevin's "same as existing" and must BE the rink-repair object, not a copy of it`);
+  /* AND THE RULE THAT MAKES ONE OBJECT LEGITIMATE: the shared sentence may not name
+     the thing that differs, or it would be false for one of the keys using it. */
+  const said = `${WHY[net[0]].name} ${WHY[net[0]].say}`;
+  assert.doesNotMatch(said, /\b(skater|goaltender|goalie)\b/i,
+    `the shared net-dislodged sentence names the actor it is shared ACROSS: ${said}`);
 });
 
+/**
+ * ⭐⭐⭐ AND A CHALLENGE NAMES ITS BENCH — Kevin, 2026-10-02: *"Home (Visiting) team
+ * challenged a missed stoppage."* Measured, not assumed: across all 4,559 published
+ * games, 214 of 214 `delaying-game-unsuccessful-challenge` penalties following a
+ * `chlg-hm-*` stoppage were called on the HOME team and every `chlg-vis-*` on the
+ * away team, with no counterexample.
+ *
+ * ⛔ SO THE PAIR IS HELD BY DIFFERENCE RATHER THAN BY IDENTITY: the home and visiting
+ * copy must agree in everything EXCEPT the side. Two separate literals are free to
+ * drift, and the whole history of this table is one half of a pair being edited and
+ * the other forgotten — three times before anybody counted.
+ */
+test('⭐⭐⭐ a bench challenge names its side, and the two sides differ in NOTHING else', () => {
+  const FAMILIES = ['goal-interference', 'off-side', 'missed-stoppage', 'puck-over-glass'];
+  for (const f of FAMILIES) {
+    const h = WHY[`chlg-hm-${f}`], v = WHY[`chlg-vis-${f}`];
+    assert.ok(h && v, `chlg-{hm,vis}-${f}: one half of the pair has no entry`);
+    /* The side is SAID — without this the pair could agree by both being side-less,
+       which is the state Kevin overruled. */
+    assert.match(h.name, /^Home team/, `chlg-hm-${f} does not name the home bench: ${h.name}`);
+    assert.match(v.name, /^Visiting team/, `chlg-vis-${f} does not name the visiting bench: ${v.name}`);
+    /* And nothing else differs: rewrite one side into the other and they must match. */
+    const asVisiting = o => ({ name: o.name.replace(/^Home team/, 'Visiting team'),
+                               say: o.say.replace(/^The home team/, 'The visiting team'),
+                               from: o.from });
+    assert.deepEqual(asVisiting(h), v,
+      `chlg-{hm,vis}-${f} differ somewhere other than the side — one half has been edited `
+      + `and the other has not, which is this table's oldest failure:\n  hm:  ${h.say}\n  vis: ${v.say}`);
+  }
+  /* ⛔ AND THE LEAGUE'S REVIEWS ARE NOT CHALLENGES. Merging them into the bench
+     objects was one line and would have printed "challenged" about a review the
+     Situation Room started itself. */
+  for (const f of ['goal-interference', 'off-side', 'missed-stoppage']) {
+    const l = WHY[`chlg-league-${f}`];
+    assert.ok(l, `chlg-league-${f} has no entry`);
+    assert.match(l.name, /^League review/, `chlg-league-${f} is not worded as a league review: ${l.name}`);
+    assert.doesNotMatch(`${l.name} ${l.say}`, /challeng/i,
+      `chlg-league-${f} says a bench challenged a review the league started: ${l.say}`);
+    assert.doesNotMatch(`${l.name} ${l.say}`, /\b(home|visiting)\b/i,
+      `chlg-league-${f} names a bench, and no bench is involved: ${l.say}`);
+  }
+});
 /**
  * ⚠️ AND A SENTENCE MAY NOT CITE A RULE WE CANNOT NAME. `from` is provenance, and
  * the card prints it: `rule: NHL Rule 81` is a claim anybody can check, and a
@@ -629,17 +672,17 @@ test('every entry carries provenance, and a rule citation names a numbered rule'
  * screen that nobody has read, and it needs the same conversation these did.
  */
 const AWAITING_COPY = new Map([
-  ['player-equipment', '155 occurrences, 149 games'],
-  ['ice-problem', '96 occurrences, 93 games'],
-  ['chlg-vis-missed-stoppage', '24 occurrences, 24 games'],
-  ['chlg-hm-missed-stoppage', '21 occurrences, 21 games'],
-  ['chlg-league-goal-interference', '18 occurrences, 18 games'],
-  ['official-injury', '17 occurrences, 17 games'],
-  ['chlg-league-off-side', '16 occurrences, 15 games'],
-  ['ice-scrape', '14 occurrences, 14 games'],
-  ['chlg-league-missed-stoppage', '11 occurrences, 11 games'],
+  /* ⛔ KEVIN COULD NOT NAME THESE, 2026-10-02: *"I dunno about that one, I've never
+     heard of those."* Neither could I, and the archive does not explain them:
+     `switch-sides` fires 4 times in ONE game (NYR at SEA, 2023-10-21) — an INDOOR
+     game, so the outdoor mid-period end change is ruled out — and three of the four
+     are mid-period, which no rule accounts for. It looks like a feed artifact.
+     ⭐ THEY STAY RAW ON PURPOSE. Inventing a sentence for a key nobody can explain
+     is the one thing this table refuses: `whistle.js`'s own header says a reason
+     absent from it renders raw because *"the fallback is the honest branch, not the
+     default one"*. 8 occurrences in 4,559 games is the price of not guessing. */
   ['premature-substitution', '4 occurrences, 4 games'],
-  ['switch-sides', '4 occurrences, 1 game'],
+  ['switch-sides', '4 occurrences, 1 game — all in NYR at SEA, 2023-10-21'],
 ]);
 
 test('⛔⛔ every reason the ARCHIVE has shown us is worded, or declared as owed', () => {

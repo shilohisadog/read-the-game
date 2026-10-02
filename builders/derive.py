@@ -74,15 +74,27 @@ PUBLISHED_BUT_UNNAMED = 2
 
 
 def _vocabulary_seen():
-    """Values we have looked at and deliberately left unnamed, by field.
+    """Values the archive has shown us that were not vetted when they arrived.
 
-    `noted` forgives a value that cannot reach a number and records it -- correct,
+    `noted` forgives a value that cannot reach a NUMBER and records it -- correct,
     and for a long time the whole story: 23 stoppage reasons were forgiven on
     every run while the workflow printed a count and stayed green. A record
     nobody is alerted by is the gap an unnamed gameType sat in, one field over.
+    So the alarm is on DRIFT. A known value is not news; a new one is.
 
-    So the alarm is on DRIFT. Twenty-three known values are not news; a
-    twenty-fourth is.
+    *** AND THAT IS THE INGEST QUESTION, NOT THE READER'S. *** Forgiveness here
+    asks whether a value can corrupt a figure. It cannot ask whether anybody ever
+    wrote the word down, and on 2026-10-02 an archive sweep found 13 of these
+    reaching readers as raw feed keys -- 491 times across 4,559 games. A value
+    stops being news at exactly the moment it starts rendering unworded, which is
+    the worst possible time for it to go quiet.
+
+    *** SO THIS FILE IS A HISTORICAL LEDGER AND NOT A LIST OF THE UNNAMED. ***
+    Most of what is in it now HAS prose and is vetted in KNOWN_STOPPAGES; it stays
+    because it is the only archive-derived record of what the league has really
+    sent, and `test/whistle.test.js` reads it to hold the reader-facing half this
+    alarm does not cover. Do not prune it to the still-unnamed: that would delete
+    the evidence and leave the gate checking two values.
     """
     return {k: set(v) for k, v in json.loads(
         (ROOT / "data" / "vocabulary-seen.json").read_text())["seen"].items()}
