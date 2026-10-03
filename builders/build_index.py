@@ -3889,9 +3889,18 @@ PREVCSS = r"""<style>
    as an empty progress meter rather than a scale. A chart with no axis labels is
    the defect `mixRow` already names one page over. The numbers are the axis's own
    endpoints, so they cost no constant. */
-.pvends{grid-column:2;display:flex;justify-content:space-between;
+.pvends{grid-column:2;position:relative;display:flex;justify-content:space-between;
  font-size:.7rem;color:var(--muted);font-variant-numeric:tabular-nums;
  margin:-2px 0 2px}
+/* ⭐⭐ THE LEAGUE TICK NAMES ITSELF, ON THE AXIS. Kevin, 2026-10-03: *"now we have
+   this wall of text that isn't very inviting to a novice... we'll have to figure
+   out how to capture some of the text into an image or graph."* The sentence
+   "and the dark tick is the league" was pure chart-reading instruction — the one
+   kind of text a picture should carry itself — so it is a label under the tick
+   and the sentence is gone. `font-variant-numeric` is reset because this is the
+   only thing in the row that is a WORD. */
+.pvlg{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap;
+ font-variant-numeric:normal}
 .pvfoot{margin:9px 0 0;font-size:.76rem;color:var(--muted);line-height:1.5;
  font-variant-numeric:tabular-nums}
 .pvfoot span{display:block}
@@ -4083,8 +4092,23 @@ __HELPERS__
     wrap.appendChild(el('span'));
     var ends = el('div', 'pvends');
     /* The axis names its own ends, WITH the unit — the same repair as the value. */
-    ends.appendChild(el('span', null, pct(lo) + '%'));
-    ends.appendChild(el('span', null, pct(hi) + '%'));
+    ends.appendChild(el('span', 'pvlo', pct(lo) + '%'));
+    ends.appendChild(el('span', 'pvhi', pct(hi) + '%'));
+    /* ⭐ AND THE TICK NAMES ITSELF. It is placed by the same `at()` the tick is
+       placed by, so the label cannot drift from the thing it names.
+       ⛔ SUPPRESSED NEAR EITHER END, because the label is centred on the tick and
+       would sit on top of an axis number — and nothing is lost when it goes: the
+       card's own header already reads "league 50%". A label that collides is
+       worse than no label, and a reader who loses it has the header. */
+    var lg = sides.length ? sides[0].league : null;
+    if (lg != null) {
+      var lx = at(lg);
+      if (lx >= 14 && lx <= 86) {
+        var tag = el('span', 'pvlg', 'league');
+        tag.style.left = lx.toFixed(2) + '%';
+        ends.appendChild(tag);
+      }
+    }
     wrap.appendChild(ends);
     wrap.appendChild(el('span'));
     return { node: wrap, lo: lo, hi: hi };
@@ -4383,61 +4407,38 @@ __HELPERS__
     if (track) box.appendChild(track.node);
 
     var foot = [];
-    [ar, hr].forEach(function (r, i) {
-      var ab = (i === 0 ? p.clubs.away : p.clubs.home).ab;
-      /* ⭐ THE PROGRESS, NOT A BADGE. CHENG's P1: a binary settled/forming label
-         invents a cliff the data does not have, and "12 of 35 games" says the
-         same thing continuously -- and tells two clubs with 12 and 9 games
-         apart, which a badge cannot.
+    /* ⭐⭐⭐ ONE LINE PER FACT, NOT ONE LINE PER TEAM. Kevin, 2026-10-03: *"now we
+       have this wall of text that isn't very inviting to a novice."*
 
-         ⭐⭐⭐ AND THE SECOND NUMBER HAD NO NOUN EITHER. Kevin, 2026-10-03, after
-         the attempts noun landed: *"go ahead and fix the other numbers."* The
-         line read `1 of 35 games`, and `1 of 35 games` reads perfectly well as
-         SEASON PROGRESS to anyone who does not already know that 35 is how many
-         games this measure needs before it holds steady -- which is every
-         novice, and is why the three cards' 35 / 23 / 38 looked like a mistake.
+       It was FOUR lines, and two of them were the same seventy-character sentence
+       twice — once under each team — because the population and the target are
+       properties of the MEASURE and were being printed per TEAM. Saying them once
+       and listing both teams' numbers after them is the same information in half
+       the characters, and it puts the two teams' figures side by side, which is
+       the comparison the card exists to make.
 
-         ⛔⛔ THE BADGE WENT WITH IT, AND NOT FOR TIDINESS. `settled` is the word
-         Kevin stopped reading `how-we-measure.html` over -- *"I doubt a novice
-         hockey fan is going to grasp what 'settles' means right away"* -- and
-         `methods.test.js` has banned it from THAT page since. It went on living
-         here, on the card a novice reaches FIRST, because the gate was written
-         against one page rather than against the word. With the noun present the
-         badge is pure repetition: "1 of the 35 games this figure needs to hold
-         steady" already says it has not.
+       ⛔ THE NOUN STAYS ON THE SAME LINE AS THE NUMBERS. That was this morning's
+       defect — "10 attempts, 43 attempts and 34 attempts… it confuses me why
+       that's the case" — and moving the counts onto a line of their own with the
+       noun somewhere else would be it again, one layout over. */
+    var live = [ar, hr].map(function (r, i) {
+      return { ab: (i === 0 ? p.clubs.away : p.clubs.home).ab, r: r };
+    }).filter(function (x) { return x.r.value != null; });
 
-         ⚠️ AND THE SETTLED BRANCH IS NOT COSMETIC. `r.games of r.need` printed
-         "60 of 23 games" once a club was past the target -- a fraction whose top
-         is bigger than its bottom, on a site whose whole pitch is check our work.
-         ⛔ THE WORDS ARE THE LEAGUE NOTE'S WORDS. It already says a figure "does
-         not hold steady from one half of a season to the next"; a second phrase
-         for one idea on one card is the defect the `counts` noun just fixed. */
-      /* ⭐ THE FIRST FIGURE GETS ITS NOUN. The line read "WSH 15 of 43 · 1 of 23
-         games" — two `of N` figures side by side, the second saying what it
-         counts and the first saying nothing. One word, and both are readable.
-
-         ⭐⭐⭐ AND ONE WORD WAS NOT ENOUGH, because all three cards used the SAME
-         one. Kevin, 2026-10-03: *"I noticed 10 attempts, 43 attempts and 34
-         attempts, obviously those are all different numbers and it confuses me
-         why that's the case."* Every figure was right: 10 is both sides at
-         5-on-5 with the score level, 43 is every attempt the club took, 34 is
-         the subset the feed gives a spot for. Three populations wearing one
-         noun — the collision this file already logs at `FIGURE_DERIVATION`,
-         arriving a fourth time, now on the surface a novice is sent to first.
-         ⛔ THE PHRASE IS `preview.js::CLUB_ROWS[].counts`, NEVER COMPOSED HERE,
-         and it reuses the wording of `says` two lines above on purpose: the
-         reader crosses from the picture to the population by recognising the
-         same words, so a second phrasing of the same fact would be the defect
-         rather than the fix. ⛔ AND THERE IS NO `|| 'attempts'` FALLBACK: a
-         default noun here IS the defect being removed, reinstated silently on
-         the one row that forgot. `render-preview.test.js` requires the field on
-         every row, so a missing one stops the build instead. */
-      if (r.value != null) foot.push(ab + ' ' + num(r.count) + ' of ' + num(r.n)
-        + ' ' + r.counts + ' · ' + (r.settled
-          ? r.games + ' games, past the ' + r.need
-          : r.games + ' of the ' + r.need + ' games')
-        + ' this figure needs to hold steady');
-    });
+    if (live.length) {
+      foot.push('Of ' + ar.counts + ': ' + live.map(function (x) {
+        return x.ab + ' ' + num(x.r.count) + ' of ' + num(x.r.n);
+      }).join(' · ') + '.');
+      /* ⭐ THE TARGET AS A STATEMENT, NOT A FRACTION. `N of the M games` printed
+         "60 of the 23 games this figure needs" once a team was past it — a
+         fraction whose top is bigger than its bottom — and needed a second branch
+         to avoid it. Two counts and a target, stated separately, are right in
+         every state and have no branch to get wrong. */
+      foot.push(live.map(function (x) {
+        return x.ab + ' ' + x.r.games + (x.r.games === 1 ? ' game' : ' games');
+      }).join(' · ') + '. This figure needs ' + ar.need
+        + ' before it holds steady.');
+    }
     /* ⛔ "SHADED" WAS A WORD FOR SOMETHING USUALLY INVISIBLE. The axis runs from
        the lowest to the highest club-season, so the band fills the whole track
        and there is no shading to see — unless a club is currently OUTSIDE what
@@ -4465,14 +4466,18 @@ __HELPERS__
         + (ar.range.games ? ', measured over ' + num(ar.range.games) + ' team-games' : '')
         + ' in ' + ar.range.n + ' team-seasons.');
     }
-    /* ⭐ WHAT THE PICTURE IS, now that nothing in it has a length. Said plainly
-       because the previous encoding was a bar whose length was a GAP, and Kevin
-       read two clubs at 40 and 25 as "lines that stop at the same point" —
-       correctly, since both bars ended on the league tick. */
-    if (track && ar.value != null) {
-      foot.push('Each team\u2019s mark sits at its own figure on the scale'
-        + (ar.league != null ? ', and the dark tick is the league' : '') + '.');
-    }
+    /* ⏹ "Each team's mark sits at its own figure on the scale, and the dark tick
+       is the league." WAS HERE, and it went INTO THE PICTURE rather than away.
+       Kevin, 2026-10-03: *"we'll have to figure out how to capture some of the
+       text into an image or graph, the wall of text just doesn't work."* The
+       sentence was pure chart-reading instruction, which is the one kind of text
+       a chart should carry itself: the axis now prints its own ends, the tick
+       prints the word "league" under itself, and `tools/browser/preview-marks.mjs`
+       is the promise that the mark really is at the number beside it — a probe,
+       not a sentence. ⚠️ IT WAS WRITTEN FOR A REAL DEFECT (bars whose LENGTH was
+       the gap from the league, which Kevin read as "lines that stop at the same
+       point"), so if the picture ever stops labelling itself this has to come
+       back rather than simply be missing. */
     if (!foot.length) foot.push(noneYet(p.counting));
     var fp = el('p', 'pvfoot');
     foot.forEach(function (line) { fp.appendChild(el('span', null, line)); });

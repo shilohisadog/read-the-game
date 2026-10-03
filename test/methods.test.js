@@ -279,8 +279,13 @@ function pageOf(name) {
 }
 
 function fakeDom(pageIds) {
+  /* ⚠️ `style` IS NOT DECORATION ON THIS FAKE. Every real element has one, and
+     the preview card's axis places its league label with `el.style.left`; a fake
+     without it threw inside the renderer, which this harness reports as whatever
+     assertion came next rather than as "the page did not draw". The sibling fake
+     in `preview-page.test.js` has carried one since it was written. */
   const make = tag => ({
-    tag, className: '', href: '', id: '', textContent: '', attrs: {}, kids: [],
+    tag, className: '', href: '', id: '', textContent: '', style: {}, attrs: {}, kids: [],
     appendChild(n) { this.kids.push(n); return n; },
     setAttribute(k, v) { this.attrs[k] = v; },
   });

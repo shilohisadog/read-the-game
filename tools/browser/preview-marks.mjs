@@ -77,7 +77,12 @@ export const CANARY =
      no longer looking at. A canary must break the thing the probe measures. */
   + "s.querySelectorAll('rect[fill-opacity], rect[stroke], rect[fill=\"#fff\"]')"
   + ".forEach(function(m){"
-  + "m.setAttribute('x', to - (+m.getAttribute('width')) / 2);});});};";
+  + "m.setAttribute('x', to - (+m.getAttribute('width')) / 2);});});"
+  /* ⚠️ AND THE AXIS LABEL IS DRAGGED OFF ITS TICK, because the probe now makes a
+     second claim and a canary that breaks only the first leaves the second
+     unfalsifiable — which is this repo's own logged shape: "a repair can make the
+     other half unfalsifiable". */
+  + "document.querySelectorAll('.pvlg').forEach(function(l){l.style.left='4%';});};";
 
 /**
  * TONIGHT'S CARD, AS DATA — the numbers Kevin was reading, exactly.
@@ -123,11 +128,26 @@ const SAMPLER = `
     for (var c = 0; c < cards.length; c++) {
       var card = cards[c];
       var label = (card.querySelector('.pvlab') || {}).textContent || '?';
-      /* THE AXIS, READ OFF THE PAGE — the two numbers printed under the track. */
+      /* THE AXIS, READ OFF THE PAGE — the two numbers printed under the track.
+         ⛔ BY CLASS, NOT BY POSITION. These were es[0] and es[1] until the axis
+         gained a third child, the word 'league' placed over its own tick: it
+         happens to be appended last, so the positional read still worked, and the
+         next thing added to that row would have silently become the axis maximum
+         and made every reconciliation here nonsense. */
       var ends = card.querySelector('.pvends');
-      var es = ends ? ends.querySelectorAll('span') : [];
-      var lo = es.length > 1 ? parseFloat(es[0].textContent) : null;
-      var hi = es.length > 1 ? parseFloat(es[1].textContent) : null;
+      var loEl = ends ? ends.querySelector('.pvlo') : null;
+      var hiEl = ends ? ends.querySelector('.pvhi') : null;
+      var lo = loEl ? parseFloat(loEl.textContent) : null;
+      var hi = hiEl ? parseFloat(hiEl.textContent) : null;
+      /* ⭐ THE LEAGUE LABEL, MEASURED BY LAYOUT RATHER THAN READ BACK. Its
+         position is written as an inline left-percent, so asking the element for
+         that string would be the renderer agreeing with itself. The browser is
+         asked where it actually PUT it, and that is reconciled against where the
+         tick actually IS.
+         NOTE: no backticks in this comment -- it lives inside a template literal,
+         and the file's own header already records a draft that terminated the
+         string it was written in. Second time. */
+      var lgEl = card.querySelector('.pvlg');
       var svgs = card.querySelectorAll('.pvsvg');
       var vals = card.querySelectorAll('.pvv');
       for (var i = 0; i < svgs.length; i++) {
@@ -147,9 +167,19 @@ const SAMPLER = `
         var printed = vals[i] ? parseFloat(vals[i].textContent) : null;
         var box = svg.getBoundingClientRect();
         var W = Math.round(box.width), H = Math.round(box.height);
+        /* THE TICK, AND THE LABEL'S RENDERED CENTRE, IN THE SAME UNITS as the
+           mark: percent along the track. */
+        var tick = svg.querySelector('rect[fill="#2b3b46"]');
+        var lgAt = null;
+        if (lgEl && box.width > 0) {
+          var lb = lgEl.getBoundingClientRect();
+          lgAt = 100 * ((lb.left + lb.width / 2) - box.left) / box.width;
+        }
         out.push({ label: label, lo: lo, hi: hi, printed: printed, w: W, h: H,
           at: mark ? (+mark.getAttribute('x')) + (+mark.getAttribute('width')) / 2 : null,
-          wide: mark ? +mark.getAttribute('width') : null });
+          wide: mark ? +mark.getAttribute('width') : null,
+          tick: tick ? (+tick.getAttribute('x')) + (+tick.getAttribute('width')) / 2 : null,
+          lgAt: lgAt, lgText: lgEl ? lgEl.textContent : null });
       }
     }
     /* ⭐ AND THE PIXELS, so "the mark is there" is not taken on the DOM's word. */
@@ -217,7 +247,7 @@ export function readMarks(html) {
 export function judgeMarks(rows, tol = TOLERANCE, ink = INK) {
   if (!rows || !rows.length) return ['the page drew no rows at all — the probe measured nothing'];
   const bad = [];
-  let reconciled = 0;
+  let reconciled = 0, labelled = 0;
   rows.forEach((r, i) => {
     const where = `${r.label || 'row ' + i}`;
     if (r.printed == null || r.lo == null || r.hi == null || r.at == null) {
@@ -239,6 +269,23 @@ export function judgeMarks(rows, tol = TOLERANCE, ink = INK) {
       return;
     }
     reconciled++;
+    /* ⭐⭐ AND THE WORD UNDER THE TICK IS UNDER THE TICK. A sentence used to say
+       "the dark tick is the league"; Kevin asked for that text to move into the
+       picture, so the axis labels it — and a label sitting somewhere else is
+       worse than the sentence it replaced, because a reader believes a chart. */
+    if (r.lgAt != null) {
+      if (!/league/i.test(r.lgText || ''))
+        bad.push(`${where}: the axis carries a label reading "${r.lgText}" where the `
+          + 'word naming the league tick should be');
+      else if (r.tick == null)
+        bad.push(`${where}: the axis says "league" and the track draws no tick for it `
+          + 'to name');
+      else if (Math.abs(r.lgAt - r.tick) > 3)
+        bad.push(`${where}: the label "league" is rendered at ${r.lgAt.toFixed(1)}% `
+          + `along the track and the tick it names is at ${r.tick.toFixed(1)}% — the `
+          + 'picture is naming a place the league is not');
+      else labelled++;
+    }
     /* ⭐ AND IT IS ACTUALLY ON SCREEN. The fill is `games / need` — 1/35 on a
        preview in October — so the mark is nearly transparent and the outline is
        all that carries it. A mark nobody can see reconciles perfectly. */
@@ -259,6 +306,7 @@ export function judgeMarks(rows, tol = TOLERANCE, ink = INK) {
   if (!bad.length && !reconciled) {
     bad.push('not one mark was reconciled against its number — the probe proved nothing');
   }
+
   return bad;
 }
 
@@ -290,7 +338,23 @@ export async function check({ chrome, work = '/tmp/rtg-preview-marks' }) {
       const bad = judgeMarks(rows);
       if (kind === 'subject') {
         if (bad.length) { bad.forEach(m => fail(m)); ok = false; }
-        else say(`${rows.length} marks, each sitting at the number printed beside it`);
+        else if (!rows.some(r => r.lgAt != null)) {
+          /* ⛔ A STATEMENT ABOUT THE PAGE, SO IT LIVES WHERE THE PAGE IS READ, not
+             in `judgeMarks` — that judge is driven by rows this repo makes up, and
+             a floor in there fails every synthetic row for not having been
+             rendered. The label is suppressed when the league sits within 14% of
+             an axis end, which is real, so "no card carried one" is
+             indistinguishable from "the label was deleted" unless this says so.
+             The fixture is the live card's own numbers; none of its three is near
+             an end. */
+          fail('not one axis named its league tick. Either the label has gone — and '
+            + 'the sentence it replaced went with it, so nothing on the card says '
+            + 'what the dark mark is — or every league figure landed in the '
+            + 'suppressed zone and this fixture no longer exercises it.');
+          ok = false;
+        } else say(`${rows.length} marks, each sitting at the number printed beside it; `
+          + `${rows.filter(r => r.lgAt != null).length} axes naming their league tick `
+          + 'under it');
       } else if (!bad.length) {
         fail('THE CANARY PASSED. Putting every mark back on the league tick restores the '
           + 'exact card Kevin could not read — marks stopping at the same point while the '
@@ -298,7 +362,11 @@ export async function check({ chrome, work = '/tmp/rtg-preview-marks' }) {
           + 'claims to.');
         ok = false;
       } else {
-        say(`canary: ${bad.length} mark(s) caught sitting away from their number — as they must`);
+        /* ⛔ IT QUOTES WHAT IT CAUGHT. "6 mark(s) caught" was printed whatever the
+           canary had broken, so a canary aimed at the axis label and a canary
+           aimed at the marks produced the identical line — and "the canary fired"
+           stopped being evidence about WHICH claim is falsifiable. */
+        say(`canary: ${bad.length} caught — as they must. First: ${bad[0]}`);
       }
     } finally { server.stop(); }
   }

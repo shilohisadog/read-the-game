@@ -226,8 +226,8 @@ test('with a season under way the page draws both frames and both clubs', async 
   assert.match(said, /is how long a shift lasts/, 'the shift tile');
   assert.match(said, /hits a team lands/, 'the hits tile');
   assert.match(said, /5-on-5 CF% while the score was level/, 'a club row');
-  assert.match(said, /12 of the 35 games this figure needs to hold steady/,
-    'the progress, with the target named — not a badge and not a bare fraction');
+  assert.match(said, /BUF 12 games · PIT 11 games\. This figure needs 35 before it holds steady/,
+    'both teams\u2019 game counts on one line, with the target named once');
   assert.match(said, /Every Buffalo Sabres game we hold/);
   assert.match(ids.pvh1.textContent, /Buffalo Sabres at Pittsburgh Penguins/);
 });
@@ -338,28 +338,28 @@ test('a settled row is drawn at full strength and never past it', async () => {
      the one house word Kevin stopped reading `how-we-measure.html` over. The
      ink claim above is what this test is for; this line is the text claim that
      the row has passed its target, now said in the league note's own words. */
-  assert.match(textOf(ids.pv), /60 games, past the \d+ this figure needs to hold steady/);
+  assert.match(textOf(ids.pv), /BUF 60 games · PIT 60 games\. This figure needs \d+ before it holds steady/);
 });
 
-test('⛔⛔ no club line ends in anything but what its game count is FOR', async () => {
-  /* ⛔⛔⛔ KEVIN, 2026-10-03, having just had the attempts figure named: *"go
-     ahead and fix the other numbers."* The line read `1 of 35 games` on one card,
-     `1 of 23 games` on the next and `1 of 38 games` on the third — and `1 of 35
-     games` reads perfectly well as SEASON PROGRESS unless you already know 35 is
-     how many games this measure needs before it holds steady. Three cards, three
-     different targets, nothing on screen saying they were targets.
+test('⛔⛔ every number on the footnote is told what it counts, and told once', async () => {
+  /* ⛔⛔⛔ KEVIN, THREE ROUNDS IN ONE DAY, and each round was the same defect one
+     layer out:
+       "10 attempts, 43 attempts and 34 attempts… it confuses me why that's the
+        case"          → the attempts figure had a noun, and all three were the SAME noun
+       "go ahead and fix the other numbers"
+                       → `1 of 35 games` reads as season progress; 35 had no noun
+       "now we have this wall of text that isn't very inviting to a novice"
+                       → the nouns were right and printed TWICE, once per team
 
-     ⭐⭐ THE RULE IS POSITIVE AND IT READS WHAT A READER SEES — not "the word
-     `settled` is absent", which is the banned-word shape that went red on my own
-     comment explaining why a phrase had gone. It requires each club's line to END
-     on what its number is for, which forbids a trailing badge WITHOUT naming one.
+     ⭐⭐ SO THE RULE IS BOTH HALVES AT ONCE: every figure is named, and nothing is
+     named twice. The population and the target belong to the MEASURE, so they are
+     stated once and both teams' numbers follow them; a per-team line that carried
+     them was the same seventy characters printed under each team.
 
-     ⛔⛔ AND IT RUNS IN BOTH STATES, because the first version of it did not. It
-     swept one fixture where no row had reached its target, so the word `settled`
-     was not on the page to catch — restoring the badge PASSED. That is the
-     easy-state defect this project logged yesterday, made again inside the fix
-     for the thing it was logged over: a check is only evidence in the state that
-     produces the defect. */
+     ⛔ AND IT RUNS IN BOTH STATES. An earlier version of this check swept only the
+     fixture where no row had reached its target, so the word it forbade was not on
+     the page to catch and restoring the defect PASSED. A check is only evidence in
+     the state that produces the defect. */
   const SETTLED = { games: 60, attempts: { for: 3000, against: 2900 },
     slot: { count: 700, n: 1500 }, dmen: { count: 950, n: 3000 },
     level5: { for: 1200, against: 1150 } };
@@ -371,40 +371,50 @@ test('⛔⛔ no club line ends in anything but what its game count is FOR', asyn
   for (const [what, data, now] of states) {
     const { ids, settle } = run(data, `?game=${GID}`, now);
     await settle();
-    /* ⛔ SCOPED TO THE CLUB-ROW CARDS AND TO THEIR FOOTNOTE. The league tiles
-       above say "the puck less in 42 of every 100 games" — a share with its own
-       noun — and a sweep of the whole page catches it and then gets weakened
-       until it says nothing. This card has already had that exact defect: a check
+    /* ⛔ SCOPED TO THE TEAM-ROW CARDS AND TO THEIR FOOTNOTE. The league tiles above
+       them say "the puck less in 42 of every 100 games" — a share with its own
+       noun — and a sweep of the whole page catches it and then gets weakened until
+       it says nothing. This card has already had that exact defect: a check
        announcing "the track" scanned the page and caught the attempt-mix tile. */
     const cards = walk(ids.pv).filter(x => (x.className || '').split(' ').includes('pvm'));
-    assert.ok(cards.length >= 2, `${what}: ${cards.length} club cards — nothing to sweep`);
+    assert.ok(cards.length >= 2, `${what}: ${cards.length} team cards — nothing to sweep`);
     let judged = 0;
     for (const card of cards) {
       const foot = walk(card).find(x => (x.className || '').split(' ').includes('pvfoot'));
-      assert.ok(foot, `${what}: a club card drew no footnote`);
-      for (const line of foot.kids.map(k => k.textContent)) {
-        // A club's own line, which is the only kind this rule is about: the scale
-        // sentence and the how-to-read sentence below it are prose.
-        if (!/^[A-Z]{2,3} [\d,]+ of /.test(line)) continue;
-        judged++;
-        assert.match(line, / this figure needs to hold steady$/,
-          `${what}: the line ends "${line.slice(-60)}" — a reader is left to guess `
-          + 'whether that game count is the season, the archive, or a target, and '
-          + 'anything after it is a word we are asking them to learn');
-        const m = line.match(/· (?:([\d,]+) of the ([\d,]+) games|([\d,]+) games, past the ([\d,]+)) this figure/);
-        assert.ok(m, `${what}: "${line}" states its progress in some other shape`);
-        /* ⛔ A FRACTION WHOSE TOP IS BIGGER THAN ITS BOTTOM. `N of the M games` ran
-           for both states once, so a club 60 games into a season was told "60 of
-           the 23 games this figure needs" — on a site whose pitch is check our
-           work. The two forms are not phrasing; which one is correct is decided
-           by the numbers, so the numbers are what this reads. */
-        const [, of, need] = m;
-        if (of != null) assert.ok(Number(of.replace(/,/g, '')) <= Number(need.replace(/,/g, '')),
-          `${what}: "${line}" counts up to a target it has already passed`);
-      }
+      assert.ok(foot, `${what}: a team card drew no footnote`);
+      const lines = foot.kids.map(k => k.textContent);
+
+      // ① THE COUNTS, with the population they came out of, on the same line.
+      const counts = lines.filter(l => /^Of .+: [A-Z]{2,3} [\d,]+ of [\d,]+/.test(l));
+      assert.equal(counts.length, 1,
+        `${what}: ${counts.length} lines state the counts and the population they `
+        + `came from; it must be exactly one:\n    ${lines.join('\n    ')}`);
+      assert.match(counts[0], /^Of attempts\b/,
+        `${what}: "${counts[0]}" does not begin by naming the attempts it counted`);
+
+      // ② THE GAMES, with the target they are measured against, once.
+      const games = lines.filter(l => /\b\d+ games?\b/.test(l));
+      assert.equal(games.length, 1,
+        `${what}: ${games.length} lines carry a game count; the target belongs to `
+        + `the measure, so it is said once:\n    ${lines.join('\n    ')}`);
+      assert.match(games[0], / This figure needs \d+ before it holds steady\.$/,
+        `${what}: "${games[0]}" leaves a reader to guess whether that game count is `
+        + 'the season, the archive, or a target');
+      /* ⛔ AND NO TEAM IS ABBREVIATED AWAY. Both teams appear on both lines, or
+         "said once" has quietly become "said about one team". */
+      for (const ab of ['BUF', 'PIT'])
+        for (const l of [counts[0], games[0]])
+          assert.ok(l.includes(ab + ' '), `${what}: ${ab} is missing from "${l}"`);
+
+      // ③ NOTHING REPEATS. The wall was the same sentence under each team.
+      assert.equal(new Set(lines).size, lines.length,
+        `${what}: a footnote line is printed twice:\n    ${lines.join('\n    ')}`);
+      assert.ok(lines.length <= 3,
+        `${what}: ${lines.length} footnote lines — this card is a wall of text again:`
+        + `\n    ${lines.join('\n    ')}`);
+      judged++;
     }
-    assert.ok(judged >= 4, `${what}: ${judged} club lines judged — two clubs, at `
-      + 'least two drawable rows, so a number this low means the sweep missed them');
+    assert.ok(judged >= 2, `${what}: ${judged} cards judged`);
   }
 });
 

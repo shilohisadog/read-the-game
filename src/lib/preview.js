@@ -102,10 +102,14 @@ export const CLUB_ROWS = [
 
        `counts` is that bridge, and the words here are deliberately the words of
        `says` above: the reader's only way across is recognising them twice.
+       ⚠️ IT IS WORDED FOR BOTH TEAMS AT ONCE ("each team"), because the footnote
+       prints it ONCE and then both teams' counts after it. It read "its own
+       games" while each team had its own line, and two lines carrying the same
+       seventy characters is half of what made the card a wall of text.
        ⚠️ "BOTH SIDES" AGAIN MEANS THIS CLUB AND ITS OPPONENTS. Spelling it "both
        clubs" would read as WSH against TBL — the trap the note above already
        names, arriving one line lower. */
-    counts: 'attempts by both sides in its own games, at 5-on-5 with the score level',
+    counts: 'attempts by both sides in each team\u2019s own games, at 5-on-5 with the score level',
     /* THE ONE INDUSTRY LABEL ON THE SITE, and it may only sit on strict 5-on-5
        (`1551`) — score-close and score-adjusted CF% are different defined terms.
        The level condition is not decoration: every trailing club pushes, so a
@@ -119,7 +123,7 @@ export const CLUB_ROWS = [
   { key: 'dmen', label: 'shot attempts taken by defencemen',
     says: 'Of every 100 shot attempts this team took, this many came from one of '
         + 'its own defencemen.',
-    counts: 'attempts it took',
+    counts: 'attempts each team took',
     of: t => ({ count: t.dmen.count, n: t.dmen.n }),
     ofGame: (g, side) => ({ count: g.dAtt[side], n: g.attempts[side] }) },
   /* ⛔⛔⛔ `missed` WAS HERE FOR ABOUT FOUR HOURS ON 2026-09-23 AND IS NOT COMING
@@ -158,7 +162,7 @@ export const CLUB_ROWS = [
        GAME: nine of that club's attempts were blocked, and a blocked shot's
        coordinate is the BLOCK POINT, so a blocked attempt has no shot location
        at all. Without the noun the two numbers read as a contradiction. */
-    counts: 'attempts it took from a spot the feed records',
+    counts: 'attempts each team took from a spot the feed records',
     of: t => ({ count: t.slot.count, n: t.slot.n }),
     ofGame: (g, side) => ({ count: g.slot[side], n: g.located[side] }) },
 ];

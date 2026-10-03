@@ -779,19 +779,26 @@ test('⭐⭐⭐ no two club rows count their attempts over the same population, 
       assert.doesNotMatch(row.counts, /both/i,
         `the ${row.key} row counts only this club's own attempts and its noun `
         + 'suggests otherwise');
-      assert.match(row.counts, /it took/i,
-        `the ${row.key} row's noun does not say the attempts are the club's own`);
+      assert.match(row.counts, /each team took/i,
+        `the ${row.key} row's noun does not say the attempts are the team's own`);
     }
   }
 });
 
 test('⭐ the card prints each row\u2019s noun beside its figure, and never a default one', () => {
-  const html = readFileSync(new URL('../src/preview.html', import.meta.url), 'utf8');
+  /* ⚠️ THE ESCAPES ARE DECODED FIRST, and the first version of this check did not
+     do it. The built page carries `\u2019` as a six-character ESCAPE while the
+     module holds the real apostrophe, so `html.includes(row.counts)` reported the
+     page as missing a sentence it renders perfectly — the page was right and the
+     test was comparing two different byte sequences. A check that can only pass
+     on nouns with no punctuation in them is not the check it announces. */
+  const html = readFileSync(new URL('../src/preview.html', import.meta.url), 'utf8')
+    .replace(/\\u([0-9a-fA-F]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
   for (const row of CLUB_ROWS)
     assert.ok(html.includes(row.counts),
       `the built preview page does not carry the ${row.key} row's noun "${row.counts}"`);
-  /* MUTATION: put the literal back and this fires. */
-  assert.match(html, /num\(r\.n\)\s*\n?\s*\+ ' ' \+ r\.counts/,
+  /* MUTATION: put a literal back in place of `ar.counts` and this fires. */
+  assert.match(html, /foot\.push\('Of ' \+ ar\.counts \+ ': '/,
     'the footnote no longer takes its noun from the row');
   /* ⛔ THE FALLBACK IS THE DEFECT. `r.counts || 'attempts'` would put the one
      ambiguous word back on exactly the row that forgot to say anything — silently,
@@ -815,18 +822,22 @@ test('⭐ the card prints that sentence, and the figures carry their unit', () =
      in the same card — the one figure a reader's eye lands on, unlabelled. */
   assert.match(html, /pct\(s\.value\) \+ '%'/, 'the club figure lost its unit again');
   assert.match(html, /pct\(lo\) \+ '%'/, 'the axis lost its unit again');
-  /* AND THE PICTURE SAYS WHAT IT IS. Nothing in it has a length any more — the
-     mark is a POSITION, because the axis starts at the lowest club-season rather
-     than at zero, and a length on a truncated axis is a lie about its own
-     proportion. Kevin read the old bars, which ran from the league figure to the
-     club's value, as "lines that stop at the same point" — correctly, since
-     with both clubs below the league every bar ended on the tick. */
-  /* ⚠️ MATCHED WITHOUT THE APOSTROPHE. The page builds that sentence from a
-     source string carrying `\u2019` as an ESCAPE, so a pattern holding the real
-     character finds nothing — the page is correct and the test is looking for a
-     different byte sequence. */
-  assert.match(html, /mark sits at its own figure on the scale/,
-    'nothing on the card says what the mark is');
+  /* ⭐⭐ AND THE PICTURE SAYS WHAT IT IS — IN THE PICTURE. Nothing in it has a
+     length any more: the mark is a POSITION, because the axis starts at the
+     lowest team-season rather than at zero, and a length on a truncated axis is a
+     lie about its own proportion. Kevin read the old bars, which ran from the
+     league figure to the team's value, as "lines that stop at the same point" —
+     correctly, since with both teams below the league every bar ended on the tick.
+
+     ⏹ THAT USED TO BE A SENTENCE IN THE FOOTNOTE and it is now a label on the
+     axis, because Kevin asked for the text to move INTO the graph. So this
+     asserts the label, not the sentence — chart-reading instruction belongs to
+     the chart. If the label ever goes, the sentence has to come back. */
+  assert.match(html, /el\('span', 'pvlg', 'league'\)/,
+    'the axis no longer names its own league tick, so nothing on the card says '
+    + 'what the dark mark is — and the sentence that used to say it is gone');
+  assert.match(html, /tag\.style\.left = lx/,
+    'the league label is drawn but not placed at the tick it names');
   assert.doesNotMatch(html, /foot\.push\('Each bar runs from/,
     'the bar wording is back in the renderer');
 });
