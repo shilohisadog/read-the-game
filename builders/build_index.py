@@ -4391,9 +4391,26 @@ __HELPERS__
          apart, which a badge cannot. */
       /* ⭐ THE FIRST FIGURE GETS ITS NOUN. The line read "WSH 15 of 43 · 1 of 23
          games" — two `of N` figures side by side, the second saying what it
-         counts and the first saying nothing. One word, and both are readable. */
+         counts and the first saying nothing. One word, and both are readable.
+
+         ⭐⭐⭐ AND ONE WORD WAS NOT ENOUGH, because all three cards used the SAME
+         one. Kevin, 2026-10-03: *"I noticed 10 attempts, 43 attempts and 34
+         attempts, obviously those are all different numbers and it confuses me
+         why that's the case."* Every figure was right: 10 is both sides at
+         5-on-5 with the score level, 43 is every attempt the club took, 34 is
+         the subset the feed gives a spot for. Three populations wearing one
+         noun — the collision this file already logs at `FIGURE_DERIVATION`,
+         arriving a fourth time, now on the surface a novice is sent to first.
+         ⛔ THE PHRASE IS `preview.js::CLUB_ROWS[].counts`, NEVER COMPOSED HERE,
+         and it reuses the wording of `says` two lines above on purpose: the
+         reader crosses from the picture to the population by recognising the
+         same words, so a second phrasing of the same fact would be the defect
+         rather than the fix. ⛔ AND THERE IS NO `|| 'attempts'` FALLBACK: a
+         default noun here IS the defect being removed, reinstated silently on
+         the one row that forgot. `render-preview.test.js` requires the field on
+         every row, so a missing one stops the build instead. */
       if (r.value != null) foot.push(ab + ' ' + num(r.count) + ' of ' + num(r.n)
-        + ' attempts · ' + r.games + ' of ' + r.need + ' games'
+        + ' ' + r.counts + ' · ' + r.games + ' of ' + r.need + ' games'
         + (r.settled ? ' · settled' : ' · still forming'));
     });
     /* ⛔ "SHADED" WAS A WORD FOR SOMETHING USUALLY INVISIBLE. The axis runs from

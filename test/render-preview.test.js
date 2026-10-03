@@ -722,6 +722,84 @@ test('⭐⭐⭐ every club row says what its number counts, and whose', () => {
     + 'mixes the two kinds, so this check no longer protects anything');
 });
 
+test('⭐⭐⭐ no two club rows count their attempts over the same population, and none says they do', () => {
+  /* ⛔⛔⛔ KEVIN, READING THE LIVE CARD ONE ROUND LATER: *"I noticed 10 attempts,
+     43 attempts and 34 attempts, obviously those are all different numbers and it
+     confuses me why that's the case."*
+
+     ⚠️ EVERY ONE OF THOSE FIGURES WAS RIGHT. 10 is both sides at 5-on-5 with the
+     score level, 43 is every attempt the club took, 34 is the subset the feed
+     gives a spot for — three populations of "attempt", printed under one noun on
+     three cards a reader scrolls through in six seconds. The previous round gave
+     that figure A noun; this one is about the noun being THE SAME noun.
+
+     ⭐⭐ THE POPULATIONS ARE PROVED DIFFERENT BY THE REDUCERS, not by reading the
+     strings. `ofGame` is fed one record and the three rows return three different
+     `n` from it, which is the independent path: if two rows ever did count the
+     same population, this test would stop demanding they be worded apart rather
+     than failing for a reason nobody could act on. */
+  const g = { lvl5: { h: 4, a: 6 }, dAtt: { h: 15, a: 3 }, attempts: { h: 43, a: 7 },
+              slot: { h: 21, a: 2 }, located: { h: 34, a: 5 } };
+  const seen = new Map();                       // n -> the row that produced it
+  for (const row of CLUB_ROWS) {
+    assert.ok(row.counts && row.counts.length > 5,
+      `the ${row.key} row carries no noun for the figure its footnote prints, so `
+      + 'its "N attempts" means whatever the reader assumes');
+    /* THE NOUN NAMES ATTEMPTS, because that is what every one of these counts and
+       the line reads "WSH 15 of 43 <noun>". A noun that started elsewhere would
+       make the sentence ungrammatical rather than merely ambiguous. */
+    assert.match(row.counts, /^attempts\b/,
+      `the ${row.key} row's noun is "${row.counts}" — the footnote reads `
+      + '"WSH 15 of 43 " + noun, so it has to start by naming the attempts');
+
+    const n = row.ofGame(g, 'h').n;
+    const twin = seen.get(n);
+    assert.ok(twin === undefined,
+      `the ${row.key} row and the ${twin} row count the same population (${n}), so `
+      + 'two separately-worded nouns now describe one thing');
+    seen.set(n, row.key);
+  }
+  /* ⛔ AND NO TWO NOUNS MAY BE EQUAL. This is the assertion Kevin's reading
+     demands: three different populations, three different words for them. */
+  const nouns = CLUB_ROWS.map(r => r.counts);
+  assert.equal(new Set(nouns).size, nouns.length,
+    `two club rows print the same noun — ${nouns.join(' | ')}`);
+
+  /* ⭐ AND EACH NOUN SAYS WHOSE, on the same derived-from-the-reducer rule the
+     sentence above it is held to. "both sides" is this club and its OPPONENTS,
+     never the two clubs on this card. */
+  for (const row of CLUB_ROWS) {
+    if (denominatorOf(row) === 'both sides') {
+      assert.match(row.counts, /both sides/i,
+        `the ${row.key} row's noun does not say its figure counts both sides`);
+      assert.doesNotMatch(row.counts, /both clubs/i,
+        `the ${row.key} row's noun says "both clubs", which on a card naming two `
+        + 'clubs reads as those two — it means this club and its opponents');
+    } else {
+      assert.doesNotMatch(row.counts, /both/i,
+        `the ${row.key} row counts only this club's own attempts and its noun `
+        + 'suggests otherwise');
+      assert.match(row.counts, /it took/i,
+        `the ${row.key} row's noun does not say the attempts are the club's own`);
+    }
+  }
+});
+
+test('⭐ the card prints each row\u2019s noun beside its figure, and never a default one', () => {
+  const html = readFileSync(new URL('../src/preview.html', import.meta.url), 'utf8');
+  for (const row of CLUB_ROWS)
+    assert.ok(html.includes(row.counts),
+      `the built preview page does not carry the ${row.key} row's noun "${row.counts}"`);
+  /* MUTATION: put the literal back and this fires. */
+  assert.match(html, /num\(r\.n\)\s*\n?\s*\+ ' ' \+ r\.counts/,
+    'the footnote no longer takes its noun from the row');
+  /* ⛔ THE FALLBACK IS THE DEFECT. `r.counts || 'attempts'` would put the one
+     ambiguous word back on exactly the row that forgot to say anything — silently,
+     and only there, which is the hardest version of this to ever see again. */
+  assert.doesNotMatch(html, /r\.counts\s*\|\|/,
+    "the footnote has a default noun again — the row that forgets now prints 'attempts'");
+});
+
 test('⭐ the card prints that sentence, and the figures carry their unit', () => {
   /* ⛔ THE STRINGS BEING IN THE PAGE PROVES ONLY THAT preview.js WAS INLINED.
      The renderer line is what puts them on screen, and the browser probe

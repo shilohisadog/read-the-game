@@ -92,6 +92,20 @@ export const CLUB_ROWS = [
        add 40 and 25 and expect 100 is worse than no sentence. */
     says: 'Of every 100 shot attempts at 5-on-5 with the score level in this '
         + 'club\u2019s own games — both sides counted — this many were its own.',
+    /* ⭐⭐⭐ THE NOUN ON THE SECOND NUMBER, AND IT IS DIFFERENT ON EVERY ROW.
+       Kevin, reading the live card on 2026-10-03: *"I noticed 10 attempts, 43
+       attempts and 34 attempts, obviously those are all different numbers and it
+       confuses me why that's the case."* All three were ARITHMETICALLY RIGHT and
+       all three said `attempts`, so the only route from the figure to the
+       population it counts was to read `says` and carry it down to a footnote
+       that repeated none of its words.
+
+       `counts` is that bridge, and the words here are deliberately the words of
+       `says` above: the reader's only way across is recognising them twice.
+       ⚠️ "BOTH SIDES" AGAIN MEANS THIS CLUB AND ITS OPPONENTS. Spelling it "both
+       clubs" would read as WSH against TBL — the trap the note above already
+       names, arriving one line lower. */
+    counts: 'attempts by both sides in its own games, at 5-on-5 with the score level',
     /* THE ONE INDUSTRY LABEL ON THE SITE, and it may only sit on strict 5-on-5
        (`1551`) — score-close and score-adjusted CF% are different defined terms.
        The level condition is not decoration: every trailing club pushes, so a
@@ -105,6 +119,7 @@ export const CLUB_ROWS = [
   { key: 'dmen', label: 'shot attempts taken by defencemen',
     says: 'Of every 100 shot attempts this club took, this many came from one of '
         + 'its own defencemen.',
+    counts: 'attempts it took',
     of: t => ({ count: t.dmen.count, n: t.dmen.n }),
     ofGame: (g, side) => ({ count: g.dAtt[side], n: g.attempts[side] }) },
   /* ⛔⛔⛔ `missed` WAS HERE FOR ABOUT FOUR HOURS ON 2026-09-23 AND IS NOT COMING
@@ -139,6 +154,11 @@ export const CLUB_ROWS = [
        attempt a body stopped has no shot location and is in neither part. */
     says: 'Of every 100 shot attempts this club took from a spot the feed records, '
         + 'this many came from the slot.',
+    /* ⚠️ AND THIS IS WHY 34 IS SMALLER THAN THE DEFENCEMEN ROW'S 43 IN THE SAME
+       GAME: nine of that club's attempts were blocked, and a blocked shot's
+       coordinate is the BLOCK POINT, so a blocked attempt has no shot location
+       at all. Without the noun the two numbers read as a contradiction. */
+    counts: 'attempts it took from a spot the feed records',
     of: t => ({ count: t.slot.count, n: t.slot.n }),
     ofGame: (g, side) => ({ count: g.slot[side], n: g.located[side] }) },
 ];
@@ -270,7 +290,7 @@ function rowsFor(ab, season, teams, recent, league, needs) {
      defect chosen on purpose. The rows still appear, saying they have nothing
      yet, because the card's shape may not change from one week to the next. */
   const tally = CLUB_ROWS.filter(r => !needs || needs[r.key] != null)
-    .map(r => ({ key: r.key, label: r.label, says: r.says,
+    .map(r => ({ key: r.key, label: r.label, says: r.says, counts: r.counts,
       need: needs ? needs[r.key].need : null,
       range: needs ? needs[r.key].range : null,
       count: 0, n: 0 }));
