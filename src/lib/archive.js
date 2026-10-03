@@ -165,6 +165,46 @@ export function rowFor(curve, diff) {
  * in the document for anyone reading the file — and `test/measure.test.js` goes
  * red at COMMIT time, rather than a week later when a derive republishes.
  */
+/**
+ * ⭐ THE NEWEST GAME DATE IN A SET OF MEASURED GAMES — the stamp that lets a
+ * histogram say what it covers.
+ *
+ * ⛔⛔⛔ WHY IT IS DERIVED FROM THE RECORDS AND NEVER FROM A CLOCK, which is the
+ * only reason it may exist in this document at all. `measures.json` carries no
+ * timestamp on purpose: `measure.mjs::stable` sorts its keys so the same
+ * extracts produce the same bytes, and any diff on a re-run is a real change of
+ * data or of opinion. A `Date.now()` here would destroy that property outright.
+ * The newest GAME DATE is a function of the input, so determinism survives
+ * intact — and it is the quantity the comparison actually needs. `recent.json`
+ * carries an `asOf` because it is a claim about a NIGHT; this is a claim about a
+ * SPAN OF HOCKEY, and the two are not the same kind of fact.
+ *
+ * ⭐ AND IT IS THE WORD `index.json` ALREADY USES. `fetch_nhl.py` defines
+ * `dataThrough` as "the game DATE of the most recent game held, from the
+ * league". Same word, same meaning, one step further down the pipeline, so the
+ * two documents compare without a translation — Kevin's ruling, 2026-10-03:
+ * *"reuse `dataThrough`, no new vocabulary."* A second word for one quantity is
+ * where the next version of this defect would live.
+ *
+ * ⚠️ A RECORD WITH NO DATE CONTRIBUTES NOTHING, AND IS NOT SILENT ELSEWHERE.
+ * It cannot be loud here — this is a pure reducer with no error channel — so
+ * `measure.mjs::measuredThrough` counts the undated records and refuses, which
+ * is the refusal `ingest.yml` already makes upstream: *"games without a date, so
+ * dataThrough is unreliable"*. An empty set has no span and answers null rather
+ * than a sentinel date that would sort as the oldest or newest thing there is.
+ */
+export function dataThrough(records) {
+  let through = null;
+  for (const g of records) {
+    const d = g && g.date;
+    /* Compared as STRINGS, which is total on ISO-8601 and needs no parse — the
+       same property catalog.json relies on to sort its rows by this field, and
+       one fewer timezone to be wrong about than `new Date()` would introduce. */
+    if (typeof d === 'string' && d && (through === null || d > through)) through = d;
+  }
+  return through;
+}
+
 export function perGame(records) {
   // Keyed by the PAGE'S lens ids, so the selector and the reference class name
   // the same things — the human label is the chip's, and lives in `what`.
@@ -217,6 +257,19 @@ export function perGame(records) {
                     // for. Absent, so `sitsIn` refuses rather than printing an id.
                     ...(s ? { noun: s[1] } : {}) };
     }
+    /* ⭐ AND THE ENTRY ITSELF IS STAMPED — Kevin, 2026-10-03: *"better yet all
+       entries get date-stamped."* A finished season's stamp never moves again; a
+       season being played moves every night, and this is the field that says
+       which night, for the one reference class whose `n` is still growing.
+
+       ⛔⛔ IT SITS BESIDE THE LENS IDS, SO NOTHING MAY READ `Object.keys(out[y])`
+       AS THE LENS LIST. `app.js` walks its own `LENS` table and indexes in,
+       which is why every surface is unaffected; the one place that inferred the
+       list from the keys is in test/overlay-archive-door.test.js and now filters
+       to the lens-shaped entries, saying why. The keys of a document are not an
+       index of it — a reader who needs the lenses asks `said` or the page's
+       table, both of which are a list somebody wrote on purpose. */
+    out[y].dataThrough = dataThrough(bySeason[y]);
   }
   return out;
 }
@@ -538,6 +591,14 @@ export function summarise(records) {
   return {
     rule: 'even-strength shot attempts taken while the score was level, in regulation',
     scope: POPULATION,
+    /* ⭐ WHAT THIS DOCUMENT IS MEASURED THROUGH — the newest game date among the
+       games above, derived from them, so this file stays a function of its input.
+       Every figure below is true OF THIS SPAN and of no other, which is the fact
+       the surfaces had no way to state until now: a reader was told "the 8 games
+       we have measured for this season" with nothing on the page saying when the
+       measuring stopped. The invariant that holds it to the archive is
+       `measure.mjs::measuredThrough`. */
+    dataThrough: dataThrough(games),
     featured: featured.slice(0, 10),
     // The reference class for a single game's edge. See levelCurve.
     levelCurve: levelCurve(games),

@@ -1914,7 +1914,12 @@ def _lib(*names):
     implementation this project keeps almost building. See docs/architecture.md.
     """
     return "\n".join(_module(n) for n in
-                      (names or ("ingest-state.js", "daily.js", "competitions.js",
+                      (names or (# ⭐ BEFORE `ingest-state.js`, WHICH IMPORTS IT. The inliner
+                                 # strips imports, so a module's dependencies are
+                                 # this list's job — `test/lib-closure.test.js`
+                                 # caught `day.js` missing here on the first run.
+                                 "day.js",
+                                 "ingest-state.js", "daily.js", "competitions.js",
                                  # ⭐⭐ THE FRONT DOOR CARRIES THE PREDICATE, NOT
                                  # THE ARCHIVE — 2026-09-28. This list held
                                  # `archive.js` plus `rink.js` and
@@ -2062,6 +2067,18 @@ __FIGKEYS__
 # require restating `distribution.js::quantile` in a second language, which is
 # the one thing the pipeline is built not to do. Those wait for the number to be
 # published beside the distribution.
+def _up_to(m):
+    """When the committed measurement stops. See `__MEASURED_UP_TO__`."""
+    said = _when(m.get("dataThrough"))
+    if not said:
+        raise SystemExit(
+            "learn: data/measures.json carries no usable `dataThrough` "
+            f"({m.get('dataThrough')!r}) -- every figure on the teaching pages is "
+            "substituted from it at build time and a static page cannot say when it "
+            "was measured without it. Re-run the derive and refresh the copy.")
+    return said
+
+
 def _archive():
     m = json.loads((ROOT / "data" / "measures.json").read_text())
     s = m["slot"]
@@ -2083,6 +2100,19 @@ def _archive():
         "__SLOT_ATT_IN__": num(s["attempts"]["count"]),
         "__SLOT_ATT_N__": num(s["attempts"]["n"]),
         "__ARCHIVE_GAMES__": num(m["measured"]),
+        # ⭐⭐ WHAT THE MEASUREMENT IS CURRENT TO — Kevin's ruling 8, 2026-10-03:
+        # *"the surfaces print what they are measured through."* These pages are
+        # STATIC: they carry no scripts and `connect-src 'self'`, so they cannot
+        # fetch the archive and every figure on them is substituted at build time
+        # from this committed copy. A reader therefore has no way at all to ask
+        # how current one is — which is the defect that produced this ruling,
+        # in its worst form, because here even a refresh would not help.
+        # ⛔ A MISSING STAMP IS A BUILD FAILURE, NOT A BLANK. The replay degrades
+        # to no clause because it reads a document over the network that may
+        # predate the field; this reads a file in the repo, and if that file has
+        # no span the right answer is to re-run the derive, not to publish a
+        # teaching page with an undated figure on it.
+        "__MEASURED_UP_TO__": _up_to(m),
     }
     # ⭐ WHAT THE SITUATION DOES TO THE NUMBER ON SCREEN. Per CLUB-hour, which
     # is what `census.pace` counts and why it counts it that way — see the
@@ -2368,8 +2398,8 @@ def _learn():
         out.append("  </div>")
 
     p1 = sum(1 for c in LEARN_CARDS if doors[c[1]]["per"] == 1)
-    y, m, day = g["date"].split("-")
-    when = f"{int(day)} {MONTHS[int(m) - 1]} {y}"
+    # `_when`, not a third inline format. See its header.
+    when = _when(g["date"])
     # ⚠️⚠️ THIS SENTENCE CONTRADICTED A CARD SITTING TWO ELEMENTS ABOVE IT.
     # It read "Every one of them is a toggle on a real game", and the empty-net
     # card's own blurb says "Nothing is toggled here -- the goalie is simply no
@@ -2405,8 +2435,7 @@ def _learn():
     # silently.
     other = [d for d in doors.values() if d.get("game")]
     ot = d.get("ot") or {}
-    oy, om, od = (ot.get("date") or "0-0-0").split("-")
-    ow = f"{int(od)} {MONTHS[int(om) - 1]} {oy}"
+    ow = _when(ot.get("date"))
     n_other = len(other)
     WORDS = {1: "one", 2: "two", 3: "three"}
     said = WORDS.get(n_other, str(n_other))
@@ -2584,6 +2613,10 @@ FIGURE_DERIVATION = {
     # HOW BIG THE ARCHIVE IS. A count of the games we hold is not a claim about
     # hockey, so there is no derivation to open and no door to write.
     "__ARCHIVE_GAMES__":      None,
+    # AND WHEN IT STOPS. A date is not a measurement about hockey either — it is
+    # the thing that makes every measurement beside it checkable — so it has
+    # nothing to open. `None` is a decision here, the same as the line above.
+    "__MEASURED_UP_TO__":     None,
     # ⭐ NOT FROM `_archive()`. These two come out of `data/learn-figures.json`
     # and are substituted a few lines below it, which is exactly why they are
     # listed here: a figure is a figure whatever published it, and the one that
@@ -2673,8 +2706,13 @@ def _front_counts():
     # the exact conflation `methods.js` exists to end: these three open LESSONS,
     # which teach what the thing is and say nothing about how it was counted. The
     # sentence promised a work door for two weeks and delivered a teaching door.
+    # ⭐ AND WHEN THE COUNTING STOPS — ruling 8. This is the front door's only
+    # statement of the population behind the strip, so it is where the date goes,
+    # by the same rule the replay panels follow: the population is named once per
+    # panel and dated where it is named.
     out = [f'<p class="note">Our own measurements rather than the league&rsquo;s, '
-           f'over {arch["__ARCHIVE_GAMES__"]} games. Each one opens the lesson '
+           f'over {arch["__ARCHIVE_GAMES__"]} games, up to '
+           f'{arch["__MEASURED_UP_TO__"]}. Each one opens the lesson '
            f'behind it.</p>',
            '<div class="cgrid">']
     for cid, line in FRONT_COUNTS:
@@ -3112,6 +3150,26 @@ LEARN_CARDS = [
 # locale-dependent build very much can.
 MONTHS = ("January", "February", "March", "April", "May", "June", "July",
           "August", "September", "October", "November", "December")
+
+
+def _when(iso):
+    """"2023-11-10" -> "10 November 2023", or None for anything that is not one.
+
+    ⭐ ONE PYTHON SPELLING, and it is ASSERTED AGAINST THE JAVASCRIPT rather than
+    trusted. `src/lib/day.js::formatDate` is the same function for the browser,
+    and this builder cannot call it — the same cross-language seam
+    `_excluded()` has with `excludedCompetitions` and the anchor prefix has with
+    `anchorOf`. `test/learn-figures.test.js` runs both over the same dates and
+    requires the same strings, because two literals agreeing by luck is the
+    arrangement this project keeps repairing.
+
+    Parsed by hand rather than with `strptime`, for the reason the table above
+    gives: this builder gates on BYTES and `strftime("%B")` follows the process
+    locale, so a locale-dependent build would produce a different page on a
+    different machine.
+    """
+    m = re.match(r"^(\d{4})-(\d{2})-(\d{2})$", str(iso or ""))
+    return f"{int(m[3])} {MONTHS[int(m[2]) - 1]} {m[1]}" if m else None
 
 LEARN_GROUPS = [
     ("rules", "The game itself &mdash; the league&rsquo;s rules, named as they happen"),
@@ -4819,6 +4877,10 @@ def _layer_rules():
     saw on screen and is not touched.
     """
     d = json.loads((ROOT / "data" / "layer-rules.json").read_text())
+    # ⭐ THE SPAN COMES FROM `_archive()` RATHER THAN BEING READ AGAIN HERE, so
+    # this page and the front door cannot come to disagree about when the
+    # measuring stopped — the same reason every figure on the site is a token.
+    arch = _archive()
     out = ['<section class="hmsec" id="the-layers">',
            '<p class="hmkick">What the replay counts</p>',
            '<h2>Six switches, and the rule behind each one</h2>',
@@ -4841,7 +4903,13 @@ def _layer_rules():
                    # the archive held 4,213 in the same scope. The measurement is
                    # rebuilt weekly and the archive grows nightly, so "every game
                    # we hold" is false for most of every week.
-                   f'<p class="hmld">Counted across every game we have measured: {doors}</p>'
+                   # ⭐ AND UP TO WHEN — ruling 8, 2026-10-03. This page is
+                   # STATIC and carries no scripts, so a reader cannot refresh
+                   # their way to a current figure and has no other way to ask
+                   # how old one is. The date is the only thing that makes the
+                   # count beside it checkable.
+                   f'<p class="hmld">Counted across every game we have measured, '
+                   f'up to {arch["__MEASURED_UP_TO__"]}: {doors}</p>'
                    f'</div>')
     out.append("</div>")
     out.append('<p class="hmr">These are the layers themselves, not a '

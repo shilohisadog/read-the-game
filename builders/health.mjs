@@ -101,7 +101,8 @@ async function ledger() {
     return r.ok ? r.json() : null;
   };
   try {
-    const [cat, idx] = await Promise.all([get('catalog.json'), get('index.json')]);
+    const [cat, idx, meas] = await Promise.all(
+      [get('catalog.json'), get('index.json'), get('measures.json')]);
     const rows = cat && cat.games;
     if (!rows || !rows.length) return null;
     const published = rows.filter(g => g.v === 1).length;
@@ -123,7 +124,20 @@ async function ledger() {
              // did the backfill happen -- and zero is the alarming number.
              loops: rows.filter(g => typeof g.hl === 'number').length,
              asOf: (idx && idx.lastRun) || null,
-             through: (idx && idx.dataThrough) || null };
+             through: (idx && idx.dataThrough) || null,
+             /* ⭐⭐ AND WHAT THE MEASUREMENT COVERS, WHICH IS A SECOND DATE AND
+                NOT THE SAME ONE. The defect of 2026-10-02 was exactly the gap
+                between these two: the archive held games through 2026-10-02 and
+                the published measurement stopped at 2026-09-30, and the only
+                document that knew either was the one nobody compared. Reported
+                HERE because this block is at the top of the file read first and
+                `tools/measured-through.mjs` is the gate — a figure and a gate
+                answer different questions, and the status doc's job is to show
+                the pair rather than to pass judgement on it.
+                ⚠️ It is NOT a failure for these to differ while `measures.json`
+                predates the stamp: `null` is "that document cannot say", which
+                is the state the whole build replaces. */
+             measured: (meas && meas.dataThrough) || null };
   } catch { return null; }
 }
 
@@ -147,6 +161,10 @@ export function block(counts, live, stamp) {
         + `site reads — as the pipeline last wrote it, whose own \`lastRun\` is `
         + `${live.asOf}, covering games through ${live.through}; the nightly `
         + `moves them with no deploy, so re-run before quoting. `
+        + `**The published measurement covers games up to `
+        + `${live.measured || 'a date it does not state'}** — the same date when `
+        + `the nightly measure has run, and the gap between the two is the defect `
+        + `of 2026-10-02 (\`tools/measured-through.mjs\` is the gate). `
         + `**\`with a hero loop\`** is how many rows carry \`hl\` — the distance `
         + `from the preview's opening frame to the first goal. **Zero means the `
         + `derivation has not run since that field was added**, and the homepage `

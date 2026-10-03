@@ -865,3 +865,85 @@ test('the anchor a card is landed on is not flush with the viewport edge', () =>
   assert.match(page, /scroll-margin-top:\s*16px/,
     'a card arrived at by anchor parks flush against the top edge again');
 });
+
+/* ────────────────────────────────────────────────────────────────────────────
+   WHAT THE STATIC PAGES ARE MEASURED UP TO — Kevin's ruling 8, 2026-10-03.
+
+   ⛔⛔⛔ WHY IT MATTERS MOST HERE. The replay reads `measures.json` over the
+   network, so a reader at least has a document that could be refreshed. These
+   pages carry NO SCRIPTS and `connect-src 'self'`: every figure on them is
+   substituted at build time from the committed copy, and until now there was
+   nothing anywhere on them saying when the counting stopped. A reader could not
+   have found out. That is the defect of 2026-10-02 in its worst form — a figure
+   whose currency could not be questioned — and the archive held 4,213 games
+   while the committed copy described 4,200.
+   ──────────────────────────────────────────────────────────────────────────── */
+import { execFileSync } from 'node:child_process';
+import { formatDate } from '../src/lib/day.js';
+
+const ROOT = new URL('../', import.meta.url);
+const MEASURES = JSON.parse(readFileSync(new URL('data/measures.json', ROOT)));
+
+test('⛔⛔ the two date formatters agree, across the language boundary', () => {
+  /* ⭐ THE SEAM THIS PROJECT ALWAYS ASSERTS RATHER THAN TRUSTS. `src/lib/day.js`
+     formats a date for the browser and `build_index.py::_when` for the static
+     pages, and the builder cannot call the module — the same arrangement
+     `_excluded()` has with `excludedCompetitions` and the anchor prefix has with
+     `anchorOf`. Two literals agreeing by luck is what this file's neighbours
+     keep repairing, and a month table is exactly the thing that drifts: the
+     comment above `HELPERS` in that builder says so in as many words — *"two
+     spellings of the month names is how one page says Feb and another February
+     for a reason nobody can find."*
+     ⚠️ STILL THREE COPIES, AND THIS CROSSES TWO. The in-page ES5 `HELPERS.when`
+     is the third; it is hand-written ES5 inside a page script on purpose and is
+     not reachable from here. Named rather than quietly left out.
+     MUTATION: change one month in either table, or swap either to a locale-
+     dependent format, and this names the date it disagreed on. */
+  /* ⛔⛔⛔ ALL TWELVE MONTHS, AND THE FIRST DRAFT CHECKED SEVEN. Mutating
+     `September` to `Septembre` in `day.js` passed, because no specimen fell in
+     September — a gate over a TABLE that samples some of its rows is the
+     dominant failure mode in this repo, a check testing a narrower claim than
+     its name. One date per month, so every row of both tables is read. */
+  const dates = [...Array(12)].map((_, k) =>
+    `2026-${String(k + 1).padStart(2, '0')}-0${(k % 8) + 1}`)
+    .concat(['2024-02-29', '2025-06-17', '2026-10-02', 'nonsense', '']);
+  const py = JSON.parse(execFileSync('python3', ['-c',
+    "import sys,json; sys.path.insert(0,'builders'); import build_index as B; "
+    + `print(json.dumps([B._when(d) for d in ${JSON.stringify(dates)}]))`],
+    { cwd: ROOT.pathname, encoding: 'utf8' }));
+  assert.equal(py.length, dates.length, 'the python side did not run');
+  for (let k = 0; k < dates.length; k++)
+    assert.equal(py[k], formatDate(dates[k]),
+      `the two formatters disagree about ${JSON.stringify(dates[k])}`);
+  /* AND THE SPECIMENS INCLUDE A REAL ANSWER, so this cannot be satisfied by two
+     functions that both return null for everything. */
+  assert.equal(formatDate('2026-10-02'), '2 October 2026');
+});
+
+test('⭐⭐ every static page that names a population says what it is measured up to', () => {
+  /* ⭐ THE ONE GATE HERE THAT IS NOT CIRCULAR, which is this project's rule for
+     checking a built page: read the PAGE and the SOURCE by independent paths and
+     require them to agree. The page's date came from `_archive()` in Python; the
+     expected string is computed here from the committed JSON through the
+     JavaScript formatter. Nothing compares the builder with itself.
+     MUTATION: drop `__MEASURED_UP_TO__` from either sentence in build_index.py,
+     or let the committed copy go stale, and this fires naming the page. */
+  const want = formatDate(MEASURES.dataThrough);
+  assert.ok(want, 'data/measures.json carries no span, so this test has no expectation');
+  const games = MEASURES.measured.toLocaleString('en-US');
+
+  for (const [page, around] of [['index.html', /over ([\d,]+) games, up to ([^.]+)\./],
+                                ['how-we-measure.html',
+                                 /Counted across every game we have measured, up to ([^:]+):/]]) {
+    const html = readFileSync(new URL(`src/${page}`, ROOT), 'utf8');
+    const m = around.exec(html);
+    assert.ok(m, `${page} states a population and never says when it was measured`);
+    assert.equal(m[m.length - 1].trim(), want,
+      `${page} is dated ${m[m.length - 1]} and the committed measurement stops at ${want}`);
+    /* ⭐ AND WHERE THE SENTENCE CARRIES THE COUNT TOO, THE PAIR MUST MATCH ONE
+       DOCUMENT. A page quoting last month's count beside this month's date would
+       be worse than the undated version it replaces — it would read as checked. */
+    if (m.length > 2)
+      assert.equal(m[1], games, `${page} quotes ${m[1]} games against ${games} measured`);
+  }
+});

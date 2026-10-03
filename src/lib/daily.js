@@ -34,7 +34,7 @@
  * different fact, rather than two instruments reporting the same one.
  */
 
-import { formatDate } from './ingest-state.js';
+import { formatDate } from './day.js';
 
 /**
  * ⛔ HOW MANY DOORS THE BLOCK PRINTS, AND THE NUMBER IS A MEASUREMENT.

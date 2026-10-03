@@ -303,3 +303,269 @@ test('⛔ a workflow never judges a string it failed to extract', () => {
     + 'state for the workflow and means this check is no longer the one protecting it — re-argue it '
     + 'rather than leaving a green test that cannot fail.');
 });
+
+/* ────────────────────────────────────────────────────────────────────────────
+   THE NIGHTLY MEASUREMENT — chained to the ingest, 2026-10-03.
+
+   ⛔⛔⛔ WHAT IT IS FOR. `measures.json` was rebuilt WEEKLY by derive.yml while
+   `catalog.json` is rewritten NIGHTLY by the ingest, so from each Monday the two
+   published documents drifted apart by design. On 2026-10-02 the published
+   measurement covered 8 games of the season while the archive held 21, and a
+   reader was told *"the 8 games we have measured for this season"*. Kevin: *"we
+   hold 21 games and say 8 games."*
+
+   ⚠️ THIS IS THE LAYER THE REPO CANNOT UNIT-TEST — the bash runs only on a push,
+   which is why the browser checks were moved out of YAML into `tools/browser/`.
+   What stays in YAML is wiring, and these are the wiring facts the job's
+   correctness rests on. Each one, if quietly edited, leaves a job that runs,
+   goes green, and does not do what its name says.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * One job's text, by name, WITH ITS COMMENT LINES REMOVED.
+ *
+ * Sliced from `jobs:` so `concurrency.group` and the other two-space keys above
+ * it cannot be mistaken for a job.
+ *
+ * ⛔⛔⛔ AND THE COMMENTS ARE STRIPPED BECAUSE ONE OF THESE GATES WAS SATISFIED
+ * BY ONE. The chain test asserted `/needs: ingest/` was present; commenting the
+ * line out to `# needs: ingest` left the text in the file, the regex matched,
+ * and the mutation passed — a job with no chain at all, approved. This repo has
+ * logged the shape twice already in the other direction: a comment quoting a
+ * live monitor's pattern arms the monitor against itself, and a dumped DOM turns
+ * a comment into text a deploy gate then judges. Here the prose that EXPLAINS a
+ * wiring fact was accepted as the fact.
+ *
+ * ⚠️ So every assertion below reads code, and a heavily commented job — which
+ * this one is, on purpose — cannot talk a gate into passing.
+ */
+function jobText(file, name) {
+  const text = readFileSync(new URL(file, DIR), 'utf8');
+  const jobs = text.slice(text.search(/^jobs:$/m));
+  const at = jobs.search(new RegExp(`^  ${name}:$`, 'm'));
+  assert.ok(at >= 0, `${file} has no \`${name}\` job — this gate is reading the wrong file`);
+  const rest = jobs.slice(at + 1);
+  const next = rest.search(/^  [a-z][\w-]*:$/m);
+  const job = rest.slice(0, next < 0 ? undefined : next);
+  const code = job.split('\n').filter(l => !/^\s*#/.test(l)).join('\n');
+  /* THE STRIP MUST NOT EAT THE JOB. These blocks are more comment than code, so
+     a bug here would leave an empty string that every `doesNotMatch` passes on
+     and every `match` fails on — loud in one direction and silent in the other. */
+  assert.ok(/^\s*runs-on:/m.test(code),
+    `stripping comments from ${file} / ${name} left no job behind`);
+  return code;
+}
+
+test('⭐⭐ the nightly measures the ARCHIVE, and `--slate` there would overwrite it', () => {
+  /* ⛔⛔⛔ THE FOOTGUN `slateOf`'s HEADER WAS WRITTEN ABOUT, now one job closer.
+     `measure.mjs --out ingest` writes measures.json, and the ingest's sync pass
+     excludes only index.json, catalog.json, recent.json and *latest.json — so a
+     nightly run in SLATE mode publishes a document describing one night over the
+     archive-wide one, and the front door begins saying "Across 8 games in this
+     archive". `archiveIsWhole` refuses that, which is exactly why this job has to
+     pull the whole extract archive first rather than reuse the ingest's tree.
+     MUTATION: add `--slate` to the measure step, or drop the extract pull, and
+     this fires. The two halves are asserted together because either alone is
+     satisfied by a job that does not measure at all. */
+  const job = jobText('ingest.yml', 'measure');
+  assert.match(job, /node builders\/measure\.mjs --out ingest/,
+    'the nightly measure step is gone');
+  assert.doesNotMatch(job, /measure\.mjs[^\n]*--slate/,
+    'the nightly runs the SLATE over the archive-wide measurement');
+  assert.match(job, /aws s3 sync "s3:\/\/\$\{BUCKET\}\/extract\/" ingest\/extract\//,
+    'it measures without pulling the extracts, so archiveIsWhole can only refuse');
+});
+
+test('⭐⭐ the span is checked on BOTH sides of the publish, in that order', () => {
+  /* ⭐ TWO DIFFERENT CLAIMS AND BOTH ARE NEEDED — the same reasoning as the
+     naming alarm above, which fires AFTER the sync on purpose. Before: refuse to
+     upload a document whose span disagrees with the catalog beside it. After:
+     confirm that what a VISITOR is served agrees, over HTTPS through the CDN,
+     because syncing and assuming it landed is not verification.
+     ⛔ ORDER IS LOAD-BEARING. If the local check moved after the upload, a bad
+     document is published first and withdrawn never.
+     MUTATION: delete either call, or swap the local one past the upload. */
+  const job = jobText('ingest.yml', 'measure');
+  const local = job.indexOf('tools/measured-through.mjs --dir ingest');
+  const upload = job.search(/aws s3 cp "ingest\/\$f"/);
+  const live = job.search(/measured-through\.mjs(?!\s*--dir)\s*$/m);
+  assert.ok(local >= 0, 'nothing checks the span before the measurement is published');
+  assert.ok(live >= 0, 'nothing checks the span of the PUBLISHED documents');
+  assert.ok(upload >= 0, 'the publish step is gone, so this ordering gate reads nothing');
+  assert.ok(local < upload, 'the span is checked only after the document is already live');
+  assert.ok(upload < live, 'the published-document check runs before anything is published');
+});
+
+test('⛔⛔ the committed build input cannot move without a deploy being asked for', () => {
+  /* ⛔⛔⛔ A PUSH MADE WITH THE GITHUB_TOKEN DOES NOT TRIGGER A WORKFLOW. GitHub
+     suppresses it to stop recursion, and `deploy.yml` triggers on
+     `push: branches: [main]` — so the commit lands and the deploy never fires.
+     `data/measures.json` is the build input for six learn pages that carry no
+     scripts and cannot fetch the archive, so without the dispatch the history
+     gains a commit saying the figures moved while the pages still print the old
+     ones. That is worse than not committing at all, because the commit is the
+     evidence someone would check.
+     MUTATION: delete the dispatch step and this names it. */
+  const job = jobText('ingest.yml', 'measure');
+  assert.match(job, /cp ingest\/measures\.json data\/measures\.json/,
+    'the learn pages’ build input is no longer refreshed');
+  assert.match(job, /gh workflow run deploy\.yml/,
+    'the build input is committed and no deploy is requested — a GITHUB_TOKEN push '
+    + 'does not trigger one, so the learn pages would hold the old figures');
+  // AND IT ASKS ONLY WHEN SOMETHING CHANGED, or every quiet night dispatches a
+  // deploy of an identical tree.
+  assert.match(job, /if: steps\.commit\.outputs\.pushed == '1'/,
+    'the deploy is dispatched unconditionally, including on nights with no change');
+  // The permissions the two steps need, named at the job. Without either, the
+  // step fails at the end of a job that has already published correctly.
+  /* ANCHORED TO THE START OF A LINE so a commented-out permission cannot
+     satisfy this, and tolerant of a TRAILING comment, which both of these carry
+     — the first spelling of this assertion rejected the real file. */
+  assert.match(job, /^\s*contents: write\s*(#.*)?$/m, 'the job cannot commit');
+  assert.match(job, /^\s*actions: write\s*(#.*)?$/m, 'the job cannot dispatch the deploy');
+
+  /* ⛔⛔⛔ AND IT MAY NOT PUSH A TREE THAT DOES NOT PASS. Refreshing that one
+     file cascades: `snapshots.mjs` rewrites a banner into sixteen design
+     documents, `health.mjs` rewrites the block at the top of docs/status.md, and
+     the learn pages and front door are rebuilt from it. Those are all generated,
+     so the job regenerates them — but `test/quoted-figures.test.js` holds
+     hand-written sentences in `sentence.js` and `blocked.js` to the published
+     figures, and a count like "1,567 of 3,946 games" moves with every night of
+     hockey. Sooner or later this step produces a tree that does not pass, and
+     `deploy.yml` runs `npm run gates` before deploying — so a red push would
+     fail the deploy it dispatches AND leave `main` red for the next person.
+     ⭐ GATES BEFORE THE PUSH, AND THE ORDER IS THE ASSERTION. Running them
+     afterwards would be a report about a commit that had already landed.
+     MUTATION: move `npm run gates` below `git push`, or delete it, and this
+     fires. */
+  const gates = job.indexOf('npm run gates');
+  const push = job.indexOf('git push');
+  assert.ok(gates >= 0,
+    'the nightly refreshes the build input and never checks the tree it is about to '
+    + 'push; the dispatched deploy runs gates and would fail, with main left red');
+  assert.ok(push >= 0, 'the commit step no longer pushes, so this ordering gate reads nothing');
+  assert.ok(gates < push, 'gates run AFTER the push — that is a report, not a gate');
+  /* AND THE GENERATED THINGS ARE REGENERATED, or gates fail every night on a
+     staleness the job itself created. Named individually: each is a separate
+     generator with its own `--check` in the gate. */
+  for (const gen of [/node tools\/snapshots\.mjs/, /node builders\/health\.mjs/,
+                     /npm run build/])
+    assert.match(job, gen,
+      `the job refreshes data/measures.json without re-running ${gen} — the gate for `
+      + 'it will fail on a staleness this job created');
+});
+
+test('⭐ the measurement is CHAINED to the ingest, not a cron of its own', () => {
+  /* ⭐ KEVIN'S RULING 5, AND IT IS THE REASON THE LAG IS ZERO RATHER THAN
+     BOUNDED. The last game of a night ends about 01:30 ET, the ingest fires
+     02:47 ET, the earliest puck drop is about 12:00 ET — so the archive is
+     frozen for roughly ten hours and a job inside that window measures a still
+     archive. A schedule of its own could drift out of the window; a `needs:`
+     cannot. He corrected a hedge of mine to get here: *"we scheduled the derive,
+     ingest, etc. in the middle of the night... for exactly that reason."*
+     AND IT RUNS ON A RED INGEST, DELIBERATELY: that job's last two steps fail
+     the run over a naming gap or one errored game, both on top of an archive
+     that published correctly, and skipping the measurement for those would leave
+     the exact drift this job closes.
+     MUTATION: comment out `needs: ingest`, drop `!cancelled()`, or remove either
+     output guard, and the chain is gone or the job is skipped on the nights it
+     matters. */
+  const job = jobText('ingest.yml', 'measure');
+  assert.match(job, /^\s*needs: ingest\s*$/m,
+    'the measurement is no longer chained to the ingest');
+  assert.doesNotMatch(job, /^\s+schedule:/m, 'the measurement has a cron of its own now');
+  assert.match(job, /!cancelled\(\)/,
+    'the job is skipped whenever the ingest job is red, including for faults that '
+    + 'sit on top of an archive that published correctly');
+  assert.match(job, /needs\.ingest\.outputs\.synced == '1'/,
+    'nothing requires the archive to have actually been published first');
+  /* ⛔ AND A HALT STOPS IT. `code == 2` is a deliberate halt in fetch_nhl.py and
+     nothing downstream of a halt should run — the same spelling the derive step
+     uses. ⚠️ The build spec glossed 2 as "changed"; it is HALTED. */
+  assert.match(job, /needs\.ingest\.outputs\.code != '2'/,
+    'the measurement would run on top of a halted fetch');
+  /* AND THE TWO OUTPUTS EXIST TO BE READ. A job condition naming an output the
+     producing job never declares is `'' != '2'` — true — so the guard would read
+     as present and gate on nothing. */
+  const ing = jobText('ingest.yml', 'ingest');
+  assert.match(ing, /^\s*code: \$\{\{ steps\.fetch\.outputs\.code \}\}\s*$/m,
+    'the measure job gates on an output the ingest job does not declare');
+  assert.match(ing, /^\s*synced: \$\{\{ steps\.sync\.outputs\.done \}\}\s*$/m,
+    'the measure job gates on an output the ingest job does not declare');
+});
+
+test('⭐ the publish step names its two documents and re-uploads nothing else', () => {
+  /* The job downloads ~0.4 GB of extracts to measure them. An `aws s3 sync
+     ingest/` afterwards would push all of it back and rewrite every extract's
+     cache headers — and extracts are served with headers chosen in the ingest's
+     own sync, which this job must not relitigate.
+     MUTATION: replace the loop with `aws s3 sync ingest/ s3://...` and this
+     fires. */
+  const job = jobText('ingest.yml', 'measure');
+  assert.match(job, /for f in measures\.json teams\.json; do/,
+    'the publish step no longer names exactly the two documents this job writes');
+  const pushes = [...job.matchAll(/aws s3 sync [^\n]*ingest\/[^\n]*s3:/g)];
+  assert.deepEqual(pushes.map(m => m[0]), [],
+    'the job syncs its whole working tree back to the bucket, re-uploading the archive');
+});
+
+/**
+ * ⛔⛔⛔ A REFERENCE TO A STEP THAT DOES NOT EXIST IS THE EMPTY STRING, AND THE
+ * EMPTY STRING PASSES A GUARD.
+ *
+ * Found 2026-10-03 by mutating the job this file's block above was written for.
+ * The `measure` job runs only `if: needs.ingest.outputs.synced == '1'`, and the
+ * ingest job declares `synced: ${{ steps.sync.outputs.done }}`. Delete `id: sync`
+ * from the step that sets it and GitHub resolves the expression to `''`, the
+ * condition is false, and **the measurement silently never runs again** — no
+ * error, no red, a skipped job in a workflow whose other job is green. The gates
+ * written minutes earlier all passed: each one checked that the reference was
+ * there, and none that it pointed at anything.
+ *
+ * ⭐ THE SHAPE IS THIS REPO'S MOST EXPENSIVE ONE, in a new place: a pair that
+ * must agree, held in two spellings, with nothing crossing them. So this is
+ * generic over every workflow rather than a patch to the one job — the next
+ * output somebody wires up gets it for free.
+ *
+ * ⚠️ IT ASSERTS BOTH HALVES. That the step exists, AND that something in the job
+ * actually writes that name into `$GITHUB_OUTPUT` — a step with the right id
+ * that sets nothing resolves to the empty string in exactly the same way.
+ */
+test('⛔⛔⛔ every `steps.X.outputs.Y` in a workflow names a step that sets it', () => {
+  let checked = 0;
+  for (const file of FILES) {
+    const text = readFileSync(new URL(file, DIR), 'utf8');
+    const jobs = text.slice(text.search(/^jobs:$/m));
+    // Each job, by its two-space key, so a reference is only ever matched
+    // against the steps of the job it is written in.
+    const names = [...jobs.matchAll(/^  ([a-z][\w-]*):$/gm)];
+    assert.ok(names.length, `${file} declares no jobs — this scan is reading it wrong`);
+    for (let k = 0; k < names.length; k++) {
+      const from = names[k].index;
+      const to = k + 1 < names.length ? names[k + 1].index : jobs.length;
+      const job = jobs.slice(from, to);
+      const code = job.split('\n').filter(l => !/^\s*#/.test(l)).join('\n');
+      const ids = new Set([...code.matchAll(/^\s*id:\s*([\w-]+)\s*$/gm)].map(m => m[1]));
+      for (const ref of code.matchAll(/steps\.([\w-]+)\.outputs\.([\w-]+)/g)) {
+        checked++;
+        const [, id, out] = ref;
+        assert.ok(ids.has(id),
+          `${file} / job \`${names[k][1]}\` reads \`steps.${id}.outputs.${out}\` and has no `
+          + `step with \`id: ${id}\`. That resolves to the empty string, so the guard or `
+          + 'output reading it is silently inert rather than failing.');
+        /* THE STEP MUST ALSO SET IT. `echo "name=…" >> "$GITHUB_OUTPUT"` is the
+           only way an output comes into being; a step with the right id that
+           writes nothing is the same empty string by a longer route. */
+        assert.match(code, new RegExp(`${out}=[^\\n]*>>[^\\n]*GITHUB_OUTPUT`),
+          `${file} / job \`${names[k][1]}\` reads \`steps.${id}.outputs.${out}\` and no step `
+          + `in it writes \`${out}=\` to $GITHUB_OUTPUT.`);
+      }
+    }
+  }
+  /* ⛔ AND THE SCAN MUST HAVE FOUND SOMETHING. A regex that matches nothing is
+     the most agreeable gate there is — the lesson a `sed` the shell refused
+     taught this repo at the cost of a guard that approved everything for days. */
+  assert.ok(checked >= 4,
+    `only ${checked} step-output references found across ${FILES.length} workflows — `
+    + 'the scan is not reading them');
+});

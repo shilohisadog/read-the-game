@@ -689,6 +689,12 @@ LIB = ["rink.js", "attribution.js", "layer.js", "strength.js", "box.js", "penalt
        # The per-game summary reads `perGame` out of measures.json — the mechanism
        # only, never the archive tier that builds it. See distribution.js.
        "distribution.js",
+       # A DATE AS A READER WOULD WRITE IT. This page dates its own measurements
+       # now (ruling 8), and app.js had its OWN month table and its own
+       # hand-rolled formatter with the same `Date.parse` warning above it as
+       # `ingest-state.js` carried — two copies of one thing, in two files, both
+       # right. `day.js` is the one implementation and both of them now call it.
+       "day.js",
        # AFTER rink.js, whose three slot constants it states in words -- it is the
        # why-popup's markup, split out of boot at `return markup` / `write to
        # document` so the purity of this tier survives the move.

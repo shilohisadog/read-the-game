@@ -18,9 +18,9 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { measureGame, stable, firstAtClock, endedIn, measureAll, slateOf, archiveIsWhole } from '../builders/measure.mjs';
+import { measureGame, stable, firstAtClock, endedIn, measureAll, slateOf, archiveIsWhole, measuredThrough } from '../builders/measure.mjs';
 import { TEAMS } from '../src/lib/teams.js';
-import { summarise, slotShare, perGame, reachOf, goalieNight } from '../src/lib/archive.js';
+import { summarise, slotShare, perGame, reachOf, goalieNight, dataThrough } from '../src/lib/archive.js';
 import { distribution, quantile, shareAtOrBelow, sitsIn } from '../src/lib/distribution.js';
 import { corsi } from '../src/lib/layers/corsi.js';
 import { tiedControl } from '../src/lib/layers/tied.js';
@@ -403,48 +403,84 @@ test('a game with no quoted boxscore is skipped, never guessed', () => {
   assert.throws(() => measureGame({ ...GAME, quoted: undefined }));
 });
 
-test('only the full-archive job may publish the measurement', () => {
-  // THE CATALOG BUG, ONE DOCUMENT OVER. A nightly that wrote measures.json would
-  // publish a ranking over a handful of games — and a partial ranking is worse
-  // than none, because it looks like an answer. derive.yml is the only job that
-  // sees the whole archive, which is why it is the only one that may measure it.
-  //
-  // Asserted rather than observed: nothing about running `node measure.mjs` in
-  // ingest.yml would fail, and the wrong ranking would simply appear.
-  //
-  // ⭐ NARROWED 2026-09-09, AND THE ARGUMENT ABOVE IS UNCHANGED. This forbade
-  // the STRING `measure.mjs`, which was the right prohibition while the tool had
-  // one mode. It now has two, and the nightly runs the other one — `--slate`
-  // writes recent.json and neither archive document (docs/front-door.md §6.1.2).
-  // A check spelled against the tool would have gone red on the correct change,
-  // which is the shape `layer-copy.test.js` shipped on 2026-09-07: a check that
-  // forbids the fix to the problem it describes. So the claim is spelled against
-  // THE THING THAT MUST NOT HAPPEN — the archive documents — plus the rule that
-  // every invocation here carries the flag that cannot write them.
-  const wf = f => readFileSync(new URL(`../.github/workflows/${f}`, import.meta.url), 'utf8');
-  /* ⚠️ COMMENTS OUT FIRST, AND THIS BIT ON THE FIRST RUN. The step that carries
-     the flag EXPLAINS why, and the explanation names `measures.json` — so a scan
-     over the raw file went red on a workflow that is correct, reading prose as
-     if it were an instruction. §H1's corollary, third instance: a check that
-     cannot tell code from the words about the code is not a check about code.
-     One rule serves both languages here: a line whose first non-space character
-     is `#` is a comment in YAML and in the shell inside a `run:` block. */
+test('⛔⛔⛔ a job that measures the ARCHIVE must have the whole archive', () => {
+  /* THE CATALOG BUG, ONE DOCUMENT OVER: a document describing a handful of games
+     published as a ranking over the archive is worse than none, because it looks
+     like an answer. The front door reads `moreAttemptsLost` out of it and would
+     begin saying "Across 8 games in this archive".
+     ⭐⭐ WHAT THIS TEST USED TO SAY, AND WHY IT CHANGED. Until 2026-10-03 it said
+     *"derive.yml is the only job that sees the whole archive, which is why it is
+     the only one that may measure it"* and forbade the nightly from naming
+     `measures.json` at all. Kevin's ruling 6 moved the measurement to the
+     nightly: the weekly's ~40 minutes is *pull raw* plus *re-extract*, and
+     re-extracting is only needed when `extract.py` changes, while measuring runs
+     over extracts that already exist (84 KB each, ≈ 0.4 GB, R2 egress free).
+     ⚠️ SO THE CLAIM IS THE SAME AND ITS SPELLING IS NOT. The old form named the
+     JOB that was allowed; the premise behind it was that only one job could have
+     the archive. That premise was a fact about the workflows, not a rule, and
+     when it changed the test became a check that forbids the fix to the problem
+     it describes — the shape `layer-copy.test.js` shipped on 2026-09-07 and the
+     reason the previous rewrite of this test already moved from naming the tool
+     to naming the thing that must not happen. It is spelled against the
+     CONDITION now: archive mode requires the archive, in whichever job runs it.
+     MUTATION: delete the extract sync from the measure job in ingest.yml and
+     this fires naming the job. */
+  const DIR = new URL('../.github/workflows/', import.meta.url);
+  /* ⚠️ COMMENTS OUT FIRST, AND THIS BIT WENT WRONG ON THE FIRST RUN of the older
+     version. The step that carries `--slate` EXPLAINS why, and the explanation
+     names `measures.json` — so a scan over the raw file went red on a workflow
+     that is correct, reading prose as if it were an instruction. One rule serves
+     both languages: a line whose first non-space character is `#` is a comment
+     in YAML and in the shell inside a `run:` block. */
   const code = t => t.split('\n').filter(l => !/^\s*#/.test(l)).join('\n');
-  const nightly = code(wf('ingest.yml'));
-  assert.doesNotMatch(nightly, /measures\.json|teams\.json/,
-    'the nightly names an archive document — it must neither compute nor upload one');
-  const runs = [...nightly.matchAll(/^ *run: (.*measure\.mjs.*)$/gm)].map(m => m[1]);
-  assert.ok(runs.length <= 1, `the nightly invokes measure.mjs ${runs.length} times`);
-  for (const r of runs)
-    assert.match(r, /--slate/,
-      `an invocation without --slate writes measures.json into ingest/: ${r}`);
-  // Anchor on the INVOCATIONS, not the file names. The first version compared
+
+  let archiveJobs = 0, slateJobs = 0;
+  for (const f of readdirSync(DIR).filter(n => n.endsWith('.yml'))) {
+    const text = code(readFileSync(new URL(f, DIR), 'utf8'));
+    const jobs = text.slice(text.search(/^jobs:$/m));
+    const names = [...jobs.matchAll(/^  ([a-z][\w-]*):$/gm)];
+    for (let k = 0; k < names.length; k++) {
+      const job = jobs.slice(names[k].index,
+        k + 1 < names.length ? names[k + 1].index : jobs.length);
+      const runs = [...job.matchAll(/measure\.mjs[^\n]*/g)].map(m => m[0]);
+      if (!runs.length) continue;
+      const where = `${f} / job \`${names[k][1]}\``;
+      assert.ok(runs.length === 1, `${where} invokes measure.mjs ${runs.length} times`);
+      if (/--slate/.test(runs[0])) { slateJobs++; continue; }
+      archiveJobs++;
+      /* ⭐ ARCHIVE MODE, SO THE JOB MUST HOLD THE ARCHIVE. Two ways to have it:
+         pull the extracts from the bucket (the nightly) or write them in this
+         same run by re-extracting from raw (the weekly). Either satisfies
+         `archiveIsWhole`; neither is optional. */
+      const has = /aws s3 sync "s3:\/\/\$\{BUCKET\}\/extract\/" ingest\/extract\//.test(job)
+               || /builders\/derive\.py/.test(job);
+      assert.ok(has,
+        `${where} runs measure.mjs in ARCHIVE mode and neither pulls the extracts `
+        + 'nor derives them in the same job, so it would measure whatever happens to '
+        + 'be on disk and publish it as a claim about the whole archive. '
+        + '`archiveIsWhole` would refuse — which is a red nightly, not a safe one.');
+      /* AND THE SPAN IS CHECKED AFTERWARDS. The write-time guards compare against
+         the catalog of their own run and cannot see the two published documents
+         drifting apart later, which is the defect of 2026-10-02 exactly. */
+      assert.match(job, /tools\/measured-through\.mjs/,
+        `${where} measures the archive and never checks that what it published `
+        + 'describes what the archive publishes.');
+    }
+  }
+  /* ⛔ AND THE SCAN MUST HAVE FOUND BOTH KINDS. A regex that matches nothing is
+     the most agreeable gate there is: with no invocations found, every assertion
+     above is vacuous and this test reports that the workflows are perfect. */
+  assert.ok(archiveJobs >= 1 && slateJobs >= 1,
+    `found ${archiveJobs} archive-mode and ${slateJobs} slate-mode invocations — `
+    + 'the scan is not reading the workflows');
+
+  // Anchor on the INVOCATIONS, not the file names. An earlier version compared
   // `indexOf('derive.py')` with `indexOf('measure.mjs')` and failed on a correct
   // workflow, because a comment above the node setup step mentions measure.mjs.
   // A check that reads prose as if it were order is not checking order.
-  const derive = wf('derive.yml');
+  const derive = readFileSync(new URL('derive.yml', DIR), 'utf8');
   const at = re => derive.search(re);
-  assert.ok(at(/node builders\/measure\.mjs/) > -1, 'derive.yml is where it runs');
+  assert.ok(at(/node builders\/measure\.mjs/) > -1, 'derive.yml still measures after a re-extract');
   assert.ok(at(/python3 builders\/derive\.py/) < at(/node builders\/measure\.mjs/),
     'and it runs AFTER derive, over the extracts derive just wrote');
 });
@@ -1138,7 +1174,13 @@ import { existsSync, mkdirSync, readdirSync as readdir } from 'node:fs';
 import { NOT_A_CLUB } from '../src/lib/teams.js';
 
 const ROOT = new URL('../', import.meta.url).pathname;
-/** A tree holding one real extract, and a catalog that agrees with it. */
+/** A tree holding one real extract, and a catalog that agrees with it.
+ *  ⭐ AGREES ON THE DATE TOO, since 2026-10-03. The rows used to carry `id`, `v`
+ *  and `t` and no `d`, which is a catalog no pipeline has ever written — every
+ *  one of the archive's 4,639 rows carries a date — and `measuredThrough` could
+ *  not compare a span against it. A fixture missing a field the real document
+ *  always has is the `stale-fixtures` shape: it makes a check look wrong when
+ *  the check is right. */
 function oneGameTree({ catalog = true } = {}) {
   const out = mkdtempSync(join(tmpdir(), 'rtg-cli-'));
   const ex = join(out, 'extract');
@@ -1146,7 +1188,7 @@ function oneGameTree({ catalog = true } = {}) {
   const g = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url), 'utf8'));
   writeFileSync(join(ex, `${g.game.id}.json`), JSON.stringify(g));
   if (catalog) writeFileSync(join(out, 'catalog.json'),
-    JSON.stringify({ games: [{ id: g.game.id, v: 1, t: 2 }] }));
+    JSON.stringify({ games: [{ id: g.game.id, v: 1, t: 2, d: g.game.date }] }));
   return { out, id: g.game.id };
 }
 const runCli = (args, out) =>
@@ -1217,10 +1259,16 @@ test('⭐ archive mode REFUSES when the extracts are not the archive', () => {
      in the nightly publishes an eight-game measures.json over the archive-wide
      one and the front door starts saying "Across 8 games in this archive". */
   const { out, id } = oneGameTree({ catalog: false });
+  /* ⭐ EVERY ROW CARRIES THE SAME DATE AS THE ONE EXTRACT ON DISK, so the only
+     thing wrong with this tree is the COUNT. The spans agree, `measuredThrough`
+     is satisfied, and the refusal this test names is the one that fires —
+     otherwise it would pass on either guard and could not tell you which. */
+  const d = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url), 'utf8'))
+    .game.date;
   writeFileSync(join(out, 'catalog.json'), JSON.stringify({ games: [
-    { id, v: 1, t: 2 }, { id: id + 1, v: 1, t: 2 }, { id: id + 2, v: 1, t: 3 },
-    { id: 2023010001, v: 1, t: 1 },        // preseason: out of scope, not counted
-    { id: id + 3, v: 0, t: 2 },            // refused: not published, not counted
+    { id, v: 1, t: 2, d }, { id: id + 1, v: 1, t: 2, d }, { id: id + 2, v: 1, t: 3, d },
+    { id: 2023010001, v: 1, t: 1, d },     // preseason: out of scope, not counted
+    { id: id + 3, v: 0, t: 2, d },         // refused: not published, not counted
   ] }));
   assert.throws(() => runCli([], out), /Command failed/);
   assert.ok(!existsSync(join(out, 'measures.json')), 'it wrote the document anyway');
@@ -1398,4 +1446,238 @@ test('⭐ the nightly slate carries the same three rows, so the page can add las
   for (const k of ['slot', 'located', 'dAtt', 'lvl5'])
     assert.deepEqual(row[k], r[k], `the slate dropped ${k}`);
   assert.equal(row.id, r.id, 'and the id, so a merge can tell the games apart');
+});
+
+
+/* ────────────────────────────────────────────────────────────────────────────
+   WHAT THIS DOCUMENT IS MEASURED THROUGH — the stamp, and the invariant.
+
+   ⛔⛔⛔ THE DEFECT, 2026-10-02. A reader on the Capitals' opener was told
+   *"the middle half of the 8 games we hold for this game's season"* while the
+   archive held 21. `sitsIn` returns `of: d.n` — how many games the MEASUREMENT
+   covers — and the prose called it an archive count. The two are EQUAL for every
+   finished season (2023 1400=1400, 2024 1398=1398, 2025 1394=1394), so the
+   mislabel was unobservable until a season in progress became a reference class.
+
+   ⭐ THE WORDING HALF SHIPPED FIRST (`bb63787`) and is held by
+   test/overlay-archive-door.test.js. This is the STRUCTURAL half: the figure now
+   carries the span it was measured over, and a published document whose span
+   disagrees with the archive beside it is a refusal rather than a sentence.
+
+   ⚠️ WHY THE FIXTURES BELOW HAVE TO BE BUILT BY HAND. Every other fixture in
+   this file derives its distributions FROM its own games, so measured and held
+   agree by construction and no fixture in the repo could exhibit the defect.
+   Two of these give the two documents DIFFERENT contents on purpose, which is
+   the only way the check is distinguishable from one that always passes.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/** A directory holding just a catalog, written for real: `measuredThrough`
+ *  checks the file EXISTS before it reads it, because a hand run over a partial
+ *  tree must not be refused for having no catalog — so an injected reader alone
+ *  would be a fixture that silently exercises the no-catalog path and passes on
+ *  anything. The subject has to be a tree. */
+function catalogTree(games) {
+  const out = mkdtempSync(join(tmpdir(), 'rtg-through-'));
+  writeFileSync(join(out, 'catalog.json'), JSON.stringify({ games }));
+  return out;
+}
+
+/** A measured record with just the fields the span and the stamp read. */
+const dated = (id, date) => ({ id, date, homeAb: 'WSH', awayAb: 'CAR',
+  score: { h: 1, a: 0 }, sog: { h: 1, a: 0 }, attempts: { h: 50, a: 40 },
+  blocks: { h: 0, a: 0 }, slot: { h: 0, a: 0 }, located: { h: 0, a: 0 },
+  level: 0, dAtt: { h: 0, a: 0 }, lvl5: { h: 0, a: 0 }, goalies: [],
+  lens: { corsi: 90, slot: 20, blocked: 12, goaltending: 55, whistle: 40, zonestart: 60 } });
+
+test('⭐ the span is the newest GAME DATE, whatever order the games arrived in', () => {
+  /* MUTATION: have the reduce answer with today's date off the wall clock and
+     every assertion below moves to today — which is the whole failure this
+     field exists to make impossible. A clock goes on being current while the
+     games stop arriving.
+     ⚠️ THE MUTATION IS DESCRIBED AND NOT SPELLED, and that is not fussiness:
+     `fixtures.test.js` scans every line of every test for the wall-clock token
+     and forgives only lines that OPEN with a comment marker, so a continuation
+     line inside a block comment reads as code. The first draft of these notes
+     quoted the expression and armed that monitor against itself — the shape this
+     repo logged when a dumped DOM turned a comment into text the deploy gate
+     then judged. A guard's own file splits the token for the same reason. */
+  assert.equal(dataThrough([dated(1, '2026-09-28'), dated(2, '2026-10-02'),
+                            dated(3, '2026-09-30')]), '2026-10-02');
+  assert.equal(dataThrough([dated(2, '2026-10-02'), dated(1, '2026-09-28')]), '2026-10-02',
+    'the order of the input changed the span');
+  // An empty set has no span. NOT a sentinel date, which would sort as either
+  // the oldest or the newest thing there is and be wrong on sight one day.
+  assert.equal(dataThrough([]), null);
+  // A record with no date contributes nothing here, because this is a pure
+  // reducer with no error channel. `measuredThrough` is what makes it loud.
+  assert.equal(dataThrough([{ id: 1, date: null }, dated(2, '2026-01-04')]), '2026-01-04');
+  assert.equal(dataThrough([{ id: 1 }]), null);
+});
+
+test('⭐ measures.json says what it is measured through, at the document and per season', () => {
+  /* ⛔ THE FIGURE THE READER WAS GIVEN HAD NO DATE ON IT ANYWHERE, which is why
+     "8" could not be questioned from the page. `measures.json` carried no date
+     field at all — not a stale one, none.
+     MUTATION: delete either `dataThrough` line from archive.js and this names
+     which one went. */
+  const doc = summarise([dated(2025020001, '2026-01-05'), dated(2025020002, '2026-01-07'),
+                         dated(2026020001, '2026-10-01'), dated(2026020002, '2026-10-02')]);
+  assert.equal(doc.dataThrough, '2026-10-02', 'the document does not say what it covers');
+  assert.equal(doc.perGame['2025'].dataThrough, '2026-01-07');
+  assert.equal(doc.perGame['2026'].dataThrough, '2026-10-02');
+  /* ⭐ A FINISHED SEASON'S STAMP DOES NOT MOVE WHEN A LATER ONE GAINS GAMES, and
+     that is the property that makes a per-entry stamp worth having: the entry a
+     reader is placed against says when ITS measuring stopped, not when the
+     document was built. Kevin: *"better yet all entries get date-stamped."* */
+  const more = summarise([dated(2025020001, '2026-01-05'), dated(2025020002, '2026-01-07'),
+                          dated(2026020001, '2026-10-01'), dated(2026020002, '2026-10-02'),
+                          dated(2026020003, '2026-10-09')]);
+  assert.equal(more.perGame['2025'].dataThrough, '2026-01-07',
+    'a finished season’s span moved because a later season gained a game');
+  assert.equal(more.perGame['2026'].dataThrough, '2026-10-09');
+});
+
+test('⛔ the stamp is derived, so the document is STILL a function of its input', () => {
+  /* ⛔⛔⛔ THE PROPERTY THE STAMP COULD HAVE DESTROYED, AND THE REASON IT IS A
+     GAME DATE RATHER THAN A CLOCK. `measures.json` deliberately carries no
+     timestamp: keys are sorted and the same extracts produce the same bytes, so
+     any diff on a re-run is a real change of data or of opinion. A wall-clock
+     timestamp would have made every weekly derive a diff and the signal would
+     have been turned off. `recent.json` carries an `asOf` because it is a claim about a
+     NIGHT; this is a claim about a SPAN OF HOCKEY.
+     MUTATION: put a clock in either `dataThrough` call and the first assertion
+     survives (one process, one millisecond) while the second fails — which is
+     why the subject is the BYTES of two separately-built documents and not one
+     document compared with itself. */
+  const recs = [dated(2026020001, '2026-10-01'), dated(2026020002, '2026-10-02')];
+  assert.equal(stable(summarise(recs)), stable(summarise([...recs].reverse())),
+    'the input order changed the bytes');
+  assert.equal(stable(summarise(recs)), stable(summarise(recs.map(r => ({ ...r })))),
+    'two builds of the same games disagree — something non-derived got in');
+  /* THE PAIRED HALF, AND IT IS NOT OPTIONAL. "The bytes are stable" is satisfied
+     perfectly by a document with no stamp in it at all, which is the state this
+     whole build exists to leave. So the determinism claim and the presence claim
+     are asserted together. */
+  assert.match(stable(summarise(recs)), /"dataThrough":"2026-10-02"/,
+    'the bytes are stable because the stamp is missing');
+});
+
+test('⭐ the per-season stamp sits beside the lens ids and is not mistaken for one', () => {
+  /* ⚠️ THE HAZARD THIS FIELD INTRODUCED, NAMED WHERE IT LIVES. `perGame[y]` was
+     lens ids and nothing else, so a reader could infer the lens list from its
+     keys — and one did (overlay-archive-door.test.js). `app.js` walks its own
+     `LENS` table and indexes in, which is why no surface moved; this asserts
+     both that every lens is still there and that the newcomer cannot be read as
+     one, so a future key-walker fails here rather than on the page.
+     MUTATION: make the stamp `{ date: '...' }` and `sitsIn` starts answering for
+     it, which is the shape that would put a date where a histogram goes. */
+  const e = perGame([dated(2026020001, '2026-10-01'), dated(2026020002, '2026-10-02')])['2026'];
+  for (const k of ['corsi', 'slot', 'blocked', 'goaltending', 'whistle', 'zonestart'])
+    assert.ok(e[k] && e[k].n === 2, `the stamp displaced the ${k} histogram`);
+  assert.equal(typeof e.dataThrough, 'string');
+  assert.equal(sitsIn(e.dataThrough, null), null,
+    'a date answered as a reference class — a key-walking reader would print it');
+});
+
+test('⭐⭐ THE SPANS MUST AGREE: a catalog newer than the extracts is a refusal', () => {
+  /* ⛔⛔⛔ THE FIXTURE THE REPO HAS NEVER HAD — EQUAL COUNTS, DIFFERENT SPANS.
+     `archiveIsWhole` compares a COUNT, so it is satisfied here and cannot see
+     this: both documents describe four games. What differs is WHICH four, and a
+     histogram destroys that by construction, which is the entire reason the
+     stamp exists. The real defect was this shape with unequal counts and a
+     WRITE-TIME check that had already passed four days earlier.
+     MUTATION: change the `===` in measuredThrough to a `>=`, or compare the
+     measurement against the wall calendar instead of the catalog, and this test
+     is the one that goes. */
+  const recs = [dated(2026020001, '2026-09-29'), dated(2026020002, '2026-09-30'),
+                dated(2026020003, '2026-09-30'), dated(2026020004, '2026-09-30')];
+  const out = catalogTree([
+    { id: 2026020001, v: 1, t: 2, d: '2026-09-29' },
+    { id: 2026020002, v: 1, t: 2, d: '2026-09-30' },
+    { id: 2026020021, v: 1, t: 2, d: '2026-10-01' },
+    { id: 2026020022, v: 1, t: 2, d: '2026-10-02' },
+  ]);
+  const why = measuredThrough(out, recs);
+  assert.ok(why, 'a document stamped 2026-09-30 was published beside an archive through 2026-10-02');
+  assert.match(why, /2026-09-30/); assert.match(why, /2026-10-02/);
+  /* AND IT NAMES THE GAMES, because a red that states only two dates sends a
+     human to derive the difference by hand, which is where an instrument stops
+     being used. */
+  assert.match(why, /2026020021/, 'the refusal does not say which games are outside the span');
+  // The count guard is BLIND to this, stated rather than assumed — if it ever
+  // stops being blind, this fixture no longer isolates what it claims to.
+  assert.equal(archiveIsWhole(out, recs), null,
+    'archiveIsWhole now catches equal-count drift, so this fixture proves less than it says');
+});
+
+test('⭐ …and it is silent when the spans DO agree — the control', () => {
+  /* The paired half. "It refuses" is satisfied by a check that refuses always,
+     which would take the nightly down every night of the season. */
+  const recs = [dated(2026020001, '2026-10-01'), dated(2026020002, '2026-10-02')];
+  const out = catalogTree([
+    { id: 2026020001, v: 1, t: 2, d: '2026-10-01' },
+    { id: 2026020002, v: 1, t: 2, d: '2026-10-02' },
+    { id: 2026010001, v: 1, t: 1, d: '2026-10-03' },   // preseason: out of scope
+    { id: 2026020003, v: 0, t: 2, d: '2026-10-03' },   // refused: not published
+  ]);
+  assert.equal(measuredThrough(out, recs), null);
+  /* ⭐ AND THE TWO ROWS THAT MUST NOT COUNT ARE DATED LATER THAN BOTH GAMES, so
+     this control also proves the comparison applies the SAME scope rule as the
+     count does. Without that, an out-of-scope preseason game would drag the
+     archive's span past the measurement's and the nightly would be red through
+     every September. */
+});
+
+test('⛔ a catalog with rows and no dates is a refusal, not a pass', () => {
+  /* ⛔⛔⛔ THE SHAPE THIS PROJECT HAS ALREADY PAID FOR ONCE. A `sed` the shell
+     refused exited 0, `$desc` came back empty, `case "" in *[0-9]*)` matched
+     nothing, and a deploy guard that read NOTHING approved everything, green.
+     ANY check with an extraction step needs an assertion that the extraction
+     found something. All 4,639 catalog rows carry `d`; if that stops being true
+     the span is unverifiable, and unverifiable is not the same as fine.
+     MUTATION: delete the `theirs === null` branch and this test is the only
+     thing between a renamed field and a check that passes on everything. */
+  const recs = [dated(2026020001, '2026-10-01')];
+  const why = measuredThrough(catalogTree([{ id: 2026020001, v: 1, t: 2 }]), recs);
+  assert.ok(why, 'a catalog carrying no dates was accepted as agreeing');
+  assert.match(why, /not one\s+carries a date|not one carries a date/);
+});
+
+test('⛔ a measured game with no date is a refusal — the stamp cannot be partly derived', () => {
+  /* `measureGame` writes `date: g.game.date || null`, so an undated game sinks
+     into the max in silence and the stamp quietly describes a shorter span than
+     the document does. `ingest.yml` already refuses upstream for this reason —
+     *"games without a date, so dataThrough is unreliable"* — and a stamp derived
+     from a field that can be absent needs the same refusal where it is derived.
+     MUTATION: drop the `undated` branch and the document publishes a span that
+     excludes real games it measured, with nothing saying so. */
+  const recs = [dated(2026020001, '2026-10-01'), { id: 2026020002, date: null }];
+  const why = measuredThrough(catalogTree([]), recs);
+  assert.ok(why && /no date/.test(why), 'an undated measured game was folded into the span');
+  assert.match(why, /2026020002/, 'the refusal does not say which game');
+});
+
+test('⭐ the CLI writes the stamp, and the run’s own log prints it', () => {
+  /* A number nobody reads is a number nobody checks — the rule the census
+     figures in `main()` are printed under. The per-season line is what would
+     have shown the 2026-10-02 defect in the derive log four days before a
+     reader found it on the page.
+     MUTATION: remove `dataThrough` from the summary and the document still has
+     it, so the file assertion passes alone — which is why both are here. */
+  const { out } = oneGameTree();
+  const stdout = runCli([], out);
+  const g = JSON.parse(readFileSync(new URL('../data/rich.json', import.meta.url), 'utf8'));
+  const doc = JSON.parse(readFileSync(join(out, 'measures.json'), 'utf8'));
+  assert.equal(doc.dataThrough, g.game.date, 'the published document carries no span');
+  const summary = JSON.parse(stdout.slice(stdout.indexOf('{')));
+  assert.equal(summary.dataThrough, g.game.date, 'the run does not say what it measured through');
+  assert.match(JSON.stringify(summary.seasonThrough), new RegExp(g.game.date),
+    'the log does not break the span down by season');
+  /* ⭐ AND teams.json AGREES, BECAUSE IT IS THE SAME REDUCTION. `team-season.js`
+     had its own eight-line `reduce` for this quantity under a comment making the
+     same argument; a pair that must agree is ONE OBJECT. Both documents are
+     written by this one run from these same records, so a disagreement could
+     only ever have been a bug in one of two copies. */
+  assert.equal(JSON.parse(readFileSync(join(out, 'teams.json'), 'utf8')).through,
+               doc.dataThrough, 'teams.json and measures.json disagree about the same games');
 });

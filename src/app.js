@@ -38,6 +38,7 @@ import { iceNote, trailsNote } from './lib/notes.js';
 import { goalieCards } from './lib/goalie-card.js';
 import { announcement } from './lib/announce.js';
 import { sitsIn, finishedSeason } from './lib/distribution.js';
+import { formatDate } from './lib/day.js';
 import { corsi } from './lib/layers/corsi.js';
 import { goaltending, isHighDangerEvent } from './lib/layers/goaltending.js';
 import { danger } from './lib/layers/danger.js';
@@ -1421,6 +1422,37 @@ const LENS={corsi:corsi,slot:danger,blocked:blocked,goaltending:goaltending,whis
    quotient. Reading a third published field for the total would let the document
    disagree with itself on this sentence, which is the arithmetic the reader is
    invited to check. */
+/**
+ * ⭐⭐ WHAT A FIGURE IS MEASURED UP TO — Kevin's ruling 8, 2026-10-03: *"the
+ * surfaces print what they are measured through."*
+ *
+ * ⛔⛔⛔ THE DEFECT THAT PRODUCED IT. A reader on the Capitals' opener was told
+ * *"the middle half of the 8 games we hold for this game's season"* while the
+ * archive held 21. The wording half of the fix made every one of these sentences
+ * say `we have measured`, which is now TRUE — and a reader still had no way to
+ * ask how current it was, because the one thing no sentence on the page could
+ * state was when the measuring stopped. `measures.json` carried no date at all.
+ * Kevin: *"shouldn't we utilize dates... then we'll know if the archive is up to
+ * date."*
+ *
+ * ⭐ ONE SPELLING, AND IT IS THE RULE THIS PANEL ALREADY LIVES BY. Every
+ * population clause on this page appends this and nothing writes its own, for
+ * the same reason the population itself is named once per panel: Kevin's
+ * Stoppages screenshot printed one number three times in one box.
+ *
+ * ⚠️ SILENT WHEN THE DOCUMENT HAS NO STAMP, which is not defensive padding — a
+ * `measures.json` published before 2026-10-03 has no `dataThrough`, and the
+ * first reader of a cached one would otherwise be shown ", up to null". An
+ * absent date and a date are different facts and only one of them belongs in a
+ * sentence; "no network is a state, not a zero", one surface over.
+ *
+ * ⚠️ AND IT SAYS `up to`, NOT `through`. `dataThrough` is the field's name all
+ * the way along the pipeline and must stay so; `through` on a reader's screen is
+ * house vocabulary, and Kevin said as much of it in conversation — *"the term
+ * 'through' is throwing me off"*. The cold-reader gate is the standing rule.
+ */
+const SPAN=d=>{const w=formatDate(d);return w?', up to '+w:'';};
+
 const ZONE_SAY=(()=>{
  const ICE='Every faceoff in hockey is taken on one of nine painted dots. A ring marks each dot that has been used, and the number inside it is how many draws have been taken there. The ring takes the colour of the club that has won MORE of them, grey when they are even, and the boldest ring is the most recent draw. The two figures below the ice are the part the ice cannot show by itself: a draw is an OFFENSIVE-zone start for the club that won it in the end that club was attacking, and a defensive-zone start for the other \u2014 so the same dot means opposite things to the two clubs. ';
  const ez=RATES&&RATES.census&&RATES.census.endZone;
@@ -1439,8 +1471,11 @@ const ZONE_SAY=(()=>{
  const won=+(lost+add).toFixed(3), ratio=(lost/add).toFixed(1);
  /* ⛔ `we have measured`, NOT `in the archive` — 2026-10-03. `n` is a published
     census figure and the archive runs ahead of it between derives. See `renderSum`. */
+ /* THE ARCHIVE'S OWN SPAN, not a season's: `census.endZone` is counted over
+    every game the measurement covers. */
  return ICE+'Why it is worth watching: over '+n.toLocaleString()+' end-zone draws '
-  +'we have measured, the club attacking that end averages '+won+' shot attempts '
+  +'we have measured'+SPAN(RATES&&RATES.dataThrough)+', the club attacking that end '
+  +'averages '+won+' shot attempts '
   +'before the next whistle when it WINS the draw, and '+lost+' when it LOSES it. '
   +'Winning is worth the difference \u2014 '+add+' of an attempt \u2014 while the '+lost
   +' arrives either way, '+ratio+' times as much. Most of what an offensive-zone '
@@ -1668,8 +1703,13 @@ function renderSum(){
     Kevin: *"Since we hold 21 games, we certainly shouldn't say '8 games we
     hold'."* ⭐ The cadence made it VISIBLE; the label made it WRONG. */
  const ref=own&&Object.keys(LENS).map(k=>sitsIn(own[k],null)).find(Boolean);
+ /* ⭐ THE SEASON'S OWN SPAN, read off the entry the figure came out of rather
+    than the document's — a finished season's stopped moving years ago and the
+    one being played moved last night, and a reader placed against 2026-27 must
+    be told which. That is the whole reason `perGame` stamps each entry. */
  sub.textContent='— all situations, power plays included'
-  +(ref?', against the '+N(ref.of)+' game'+(ref.of===1?'':'s')+' we have measured for that season':'');
+  +(ref?', against the '+N(ref.of)+' game'+(ref.of===1?'':'s')
+       +' we have measured for that season'+SPAN(own&&own.dataThrough):'');
  const ul=document.createElement('ul');
  ul.className='srows';
  /* ⭐ DRIVEN BY `LENS`, which is the one place a lens id is typed — so a seventh
@@ -1929,9 +1969,15 @@ function renderAlot(at=i){
      is the same number wearing the same wrong label. `ref.of` counts the games the
      MEASUREMENT covers; the archive can be ahead of it and was by 13 games on the
      morning Kevin found this. */
+  /* ⭐ THE SPAN OF THE ENTRY THIS SENTENCE IS ACTUALLY PLACED AGAINST, which
+     is the borrowed season's when one is borrowed. `dist` is `own` or the
+     neighbour `near` resolved to — reading the document's span here would date
+     a 2023-24 reference class to last night. */
+  const spanOf=own?(all[seas]&&all[seas].dataThrough)
+                  :(near&&all[near]&&all[near].dataThrough);
   const usual='<b>Most nights finish with between '+N(ref.lo)+' and '+N(ref.hi)
    +' '+ESC(ref.noun)+'</b> — that is the middle half of the '+N(ref.of)
-   +' game'+(ref.of===1?'':'s')+' we have measured for '+when+'.'+spread
+   +' game'+(ref.of===1?'':'s')+' we have measured for '+when+SPAN(spanOf)+'.'+spread
    +' All of them are counted at every strength, power plays included.';
   lead.innerHTML=usual+(st
    ?' <b>This game finished with '+N(st.count)+'</b> — '
@@ -1981,9 +2027,12 @@ function renderAlot(at=i){
      scope. The sentence now describes the measurement, which is the only thing the
      document behind it can support. */
   const n=document.createElement('p');n.className='wpop';
+  /* THE ARCHIVE'S SPAN, and it is a DIFFERENT population from the lead above —
+     every season rather than this game's — so it carries its own date rather
+     than inheriting one. Two populations in one panel, each dated. */
   n.textContent='The figures below are counted over all '
    +overs[0].n.toLocaleString()+' '+overs[0].unit+' we have measured, across every '
-   +'season in the archive.';
+   +'season in the archive'+SPAN(RATES&&RATES.dataThrough)+'.';
   host.appendChild(n);}
  /* IN THE LAYER'S OWN ORDER, not either table's. `LAYERWORK` is the layer
     descriptor's `work` list, and Stoppages names penalties, offsides and icings
@@ -2704,11 +2753,14 @@ $('aAb').textContent=AAB;$('hAb').textContent=HAB;
    an invariant to. The label states the truth instead. */
 document.querySelectorAll('#rg .tbtn').forEach(b=>{
  if(b.dataset.t==='all')b.textContent=ASPLAYED?'Keep this period':'Keep every mark';});
-// Hand-formatted from the ISO date, never Date.parse: '2023-11-10' is UTC
-// midnight and a western timezone would render it as the 9th.
-const MON=['January','February','March','April','May','June','July','August','September','October','November','December'];
-const GD=(G.game&&G.game.date||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
-const WHEN=GD?`${+GD[3]} ${MON[+GD[2]-1]} ${GD[1]}`:'';
+/* ⭐ `day.js`, NOT A MONTH TABLE HERE. This was twelve month names and a
+   hand-rolled parse, under the same "never Date.parse" warning that
+   `ingest-state.js` carried above ITS copy — two files, two implementations,
+   both correct, and a third would have arrived the moment this page started
+   dating its measurements. `formatDate` is the one implementation; its own
+   header carries the timezone reasoning. It answers null for anything that is
+   not an ISO date, which is the `''` this used to produce. */
+const WHEN=formatDate(G.game&&G.game.date)||'';
 /* ⭐ THE GAME LINE DOES NOT SAY HOW IT ENDS.
    It read `... · final MIN 2–3 BUF`, which put the result on screen before the
    visitor had pressed anything -- on a page whose opening frame is chosen, twice

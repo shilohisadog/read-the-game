@@ -89,6 +89,15 @@ env:
 jobs:
   ingest:
     runs-on: ubuntu-latest
+    # ⭐ WHAT THE `measure` JOB BELOW DECIDES WITH, and it is two facts rather
+    # than this job's pass/fail. The last two steps here turn a NAMING gap and an
+    # errored game into a red run over an archive that published correctly — that
+    # is deliberate (see them) — so `needs: ingest` alone would skip the
+    # measurement for a reason that has nothing to do with the measurement.
+    # `synced` says the archive was published; `code` says the fetch did not halt.
+    outputs:
+      code: ${{ steps.fetch.outputs.code }}
+      synced: ${{ steps.sync.outputs.done }}
     steps:
       - uses: actions/checkout@v5
 
@@ -388,6 +397,7 @@ jobs:
       # the games that DID succeed are complete and correct and should be
       # published. The job still fails at the end so the failure is not silent.
       - name: sync to R2
+        id: sync
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
@@ -532,6 +542,10 @@ jobs:
             fi
           done
           echo "synced"
+          # READ BY THE `measure` JOB, which must not run against a catalog that
+          # was never published. The flag is set by the step that does the
+          # publishing, so it cannot be true for a run that did not.
+          echo "done=1" >> "$GITHUB_OUTPUT"
 
       # Syncing and assuming it landed is not verification -- the same lesson the
       # deploy gate learned. Read the index back out of the bucket and confirm it
@@ -708,3 +722,210 @@ jobs:
         run: |
           echo "::error::fetch exited ${{ steps.fetch.outputs.code }} — see the report above"
           exit 1
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # MEASURE THE WHOLE ARCHIVE, every night, chained to the ingest that just
+  # published it.
+  #
+  # ⛔⛔⛔ WHY THIS JOB EXISTS. `measures.json` was rebuilt WEEKLY by derive.yml
+  # while `catalog.json` is rewritten NIGHTLY here, so from each Monday the two
+  # documents drifted apart by design. On 2026-10-02 the published measurement
+  # covered 8 games of the season while the published archive held 21, and a
+  # reader on the Capitals' opener was told *"the 8 games we have measured for
+  # this season"*. Kevin: *"we hold 21 games and say 8 games... let's figure out
+  # the root cause and fix that."* The root cause is this cadence gap; the stamp
+  # and the invariant make it visible, and this job closes it.
+  #
+  # ⭐ WHY IT IS NOT A SECOND CRON — Kevin's ruling 5, and his correction of a
+  # hedge of mine. I had said "there should never be a lag isn't quite
+  # achievable". He replied that the pipeline runs *"in the middle of the night,
+  # after all games are completed and before any game could start... for exactly
+  # that reason"*, and he was right: the last game of a night ends about 01:30
+  # ET, the ingest fires 02:47 ET, and the earliest possible puck drop is about
+  # 12:00 ET. The archive is static for roughly ten hours by construction, so a
+  # job chained inside that window measures a frozen archive and the lag is ZERO
+  # rather than bounded. A cron of its own could drift out of the window; a
+  # `needs:` cannot.
+  #
+  # ⭐ WHY IT IS SEPARATE FROM derive.yml — ruling 6. That workflow's ~40 minutes
+  # is *pull the raw feeds* plus *re-extract everything*, and re-extracting is
+  # only needed when `extract.py` changes. Measuring runs over extracts that
+  # already exist. Measured 2026-10-03: an extract averages 84 KB, so the whole
+  # archive is about 0.4 GB and R2 egress is free. The weekly re-extract stays
+  # exactly where it is.
+  #
+  # ⚠️ AND IT COMMITS TO `main`, WHICH THIS FILE'S OWN HEADER ARGUES AGAINST —
+  # read that argument before changing this. It refuses a KEEPALIVE commit,
+  # because *"a robot committing to keep a cron alive is noise in a history that
+  # is meant to be readable"*. This is the opposite kind of commit: it carries a
+  # changed build input that changes what six published pages print. Kevin
+  # approved it explicitly on 2026-10-03. See the step for why the copy must move.
+  measure:
+    needs: ingest
+    runs-on: ubuntu-latest
+    # ⭐ CONDITIONED ON THE ARCHIVE HAVING BEEN PUBLISHED, not on the ingest job
+    # being green. Its last two steps fail the run over a naming gap or a single
+    # errored game, both of which happen on top of an archive that published
+    # correctly, and skipping the measurement for those would leave the exact
+    # drift this job exists to close. `!cancelled()` rather than `always()`: a
+    # cancelled run may have been stopped mid-sync.
+    # `code == 2` is a deliberate HALT in `fetch_nhl.py`, and nothing downstream
+    # of a halt should run — the same condition and the same spelling the derive
+    # step above uses.
+    if: ${{ !cancelled() && needs.ingest.outputs.synced == '1' && needs.ingest.outputs.code != '2' }}
+    permissions:
+      contents: write      # data/measures.json, the learn pages' build input
+      actions: write       # dispatch the deploy; a GITHUB_TOKEN push cannot
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+    steps:
+      - uses: actions/checkout@v5
+
+      # PINNED, and the same majors the ingest job pins — `test/workflows.test.js`
+      # holds the ledger and the reason for each, and it caught this job using
+      # setup-node@v6 on the first run.
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+
+      # THE WHOLE EXTRACT ARCHIVE, which the ingest job has never had: its
+      # rehydrate pulls POINTERS ONLY, and derive.yml pulls raw with
+      # `--exclude 'extract/*'` because it rebuilds them. Measuring needs the
+      # extracts themselves and nothing else.
+      - name: pull the archive — extracts, catalog and index
+        run: |
+          mkdir -p ingest/extract
+          aws s3 sync "s3://${BUCKET}/extract/" ingest/extract/ \
+            --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress
+          for f in catalog.json index.json; do
+            aws s3 cp "s3://${BUCKET}/$f" "ingest/$f" \
+              --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress
+          done
+          echo "  $(ls ingest/extract | wc -l) extracts, $(du -sh ingest/extract | cut -f1)"
+
+      # ⭐ ARCHIVE MODE, NOT `--slate`, AND THE PULL ABOVE IS WHAT MAKES THAT
+      # SAFE. `archiveIsWhole` refuses to write a document that describes fewer
+      # games than the catalog publishes — that guard is the reason the nightly
+      # could never run this before, and the fix is to give it the archive rather
+      # than to weaken it.
+      #
+      # ⛔ `shell: bash` AND NO PIPE. `measure.mjs` exits non-zero on a situation
+      # code we decline or a club we cannot name, and `| tee measured.json`
+      # returns tee's zero — which is how a `ReferenceError` in this exact driver
+      # reported success for five weeks. derive.yml had to be repaired for it.
+      - name: measure the archive
+        shell: bash
+        run: node builders/measure.mjs --out ingest
+
+      # ⭐ THE INVARIANT, BEFORE ANYTHING IS PUBLISHED. Local tree: the catalog we
+      # just pulled, the document we just wrote, the index beside them. A span
+      # that disagrees stops the job here rather than being uploaded and then
+      # reported.
+      - name: the measurement describes the archive — before the sync
+        run: node tools/measured-through.mjs --dir ingest
+
+      # ONLY THE TWO DOCUMENTS THIS JOB WROTE. An `aws s3 sync ingest/` would
+      # re-upload the 0.4 GB it just downloaded and rewrite every extract's
+      # headers. Neither document names a game id, so unlike catalog.json and
+      # recent.json they have no ordering constraint against the extracts.
+      - name: publish the measurement
+        run: |
+          for f in measures.json teams.json; do
+            aws s3 cp "ingest/$f" "s3://${BUCKET}/$f" \
+              --cache-control no-cache \
+              --endpoint-url "${{ secrets.S3_API_ENDPOINT }}" --no-progress
+          done
+
+      # Syncing and assuming it landed is not verification — the lesson the
+      # deploy gate and the index read-back both paid for. This reads the three
+      # documents back over HTTPS, through the CDN a visitor uses.
+      - name: the published measurement describes the published archive
+        run: node tools/measured-through.mjs
+
+      # ⭐ RULING 7: THE COMMITTED BUILD INPUT MOVES WITH THE PUBLISHED DOCUMENT.
+      # `data/measures.json` is a DERIVED artifact committed as a build INPUT:
+      # six static learn pages carry zero scripts and `connect-src 'self'`, so
+      # they cannot fetch the archive and their figures are substituted at build
+      # time. A published document that moves nightly leaves those pages quoting
+      # the last deploy's figures.
+      #
+      # ⛔⛔⛔ AND IT REFUSES TO PUSH A TREE THAT DOES NOT PASS, WHICH IS NOT
+      # CAUTION — IT IS THE ONLY WAY THIS STEP CAN EXIST. Refreshing that one file
+      # cascades: `tools/snapshots.mjs` writes an archive-snapshot banner into
+      # SIXTEEN design documents, `builders/health.mjs` writes the block at the top
+      # of docs/status.md, and the learn pages and the front door are rebuilt from
+      # it. All of those are generated, so the nightly regenerates them.
+      #
+      # ⚠️ ONE THING IS NOT GENERATED AND CANNOT BE. `test/quoted-figures.test.js`
+      # requires that the arguments in `src/lib/sentence.js` and
+      # `src/lib/layers/blocked.js` quote the PUBLISHED figures — those are
+      # hand-written sentences explaining why a module exists, and the test was
+      # written because six of them had gone stale and nothing noticed. Counts
+      # like "1,567 of 3,946 games" move with every night of hockey, so sooner or
+      # later this step produces a tree that does not pass.
+      #
+      # THAT IS A PROMPT FOR A HUMAN AND IT MUST NOT BE A PUSH. `deploy.yml` runs
+      # `npm run gates` before deploying, so a red commit pushed from here would
+      # fail the deploy it dispatches AND leave `main` red for the next person to
+      # commit. So gates run HERE, before the push, and a failure fails this job
+      # with the archive and the published measurement already correct — the same
+      # ordering as "a label the feed invented, over an archive that published".
+      - name: refresh the learn pages' build input
+        id: commit
+        run: |
+          cp ingest/measures.json data/measures.json
+          if git diff --quiet -- data/measures.json; then
+            echo "  data/measures.json is unchanged — nothing to commit"
+            exit 0
+          fi
+          python3 tools/measures_fresh.py
+          # EVERYTHING DERIVED FROM IT, REGENERATED. Each of these is a generated
+          # block or a built page; none is a judgement.
+          node tools/snapshots.mjs
+          node builders/health.mjs
+          npm run build
+          # AND THE TREE MUST PASS BEFORE IT IS PUSHED. See the step header.
+          if ! npm run gates; then
+            echo "::error::the refreshed measurement does not pass the gates, so it was "\
+                 "NOT committed. The archive and the published measurement are current and "\
+                 "correct; what is stale is the committed copy and whatever prose quotes it "\
+                 "— almost certainly a figure in src/lib/sentence.js or "\
+                 "src/lib/layers/blocked.js that test/quoted-figures.test.js holds to the "\
+                 "published file. Update the sentence and the next run commits."
+            exit 1
+          fi
+          git config user.name  'readthegame-ingest'
+          git config user.email 'ingest@readthegame.co'
+          THROUGH=$(node -e "process.stdout.write(require('./data/measures.json').dataThrough)")
+          N=$(node -e "process.stdout.write(String(require('./data/measures.json').measured))")
+          # NAMED PATHS, not `-A`: everything above regenerates into `data/`,
+          # `docs/` and `src/`, and a blanket add would carry anything else a
+          # future step happens to leave behind.
+          git add data/measures.json docs src
+          # The span is IN the message, because this is the one commit nobody
+          # writes by hand and the thing a reader of the history wants to know is
+          # which hockey it measured.
+          git commit -m "measure: the archive up to ${THROUGH} — ${N} games" \
+                     -m "Written by the nightly ingest, with everything generated from it: the snapshot banners, the health block and the built pages. data/measures.json is the build input for the six learn pages, which carry no scripts and cannot fetch the archive." \
+                     -m "Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
+          git push
+          echo "pushed=1" >> "$GITHUB_OUTPUT"
+
+      # ⛔⛔ A PUSH MADE WITH THE GITHUB_TOKEN DOES NOT TRIGGER A WORKFLOW. That
+      # is GitHub's documented behaviour and it exists to stop recursion, so the
+      # commit above lands on `main` and `deploy.yml` — which triggers on
+      # `push: branches: [main]` — never fires. The learn pages would then hold
+      # last week's figures with a fresh commit in the history saying otherwise,
+      # which is a worse state than not committing at all. So the deploy is asked
+      # for explicitly, and only when something actually changed.
+      - name: republish the learn pages
+        if: steps.commit.outputs.pushed == '1'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run deploy.yml --ref main

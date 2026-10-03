@@ -35,7 +35,7 @@ import { situation, DECLINED } from '../src/lib/strength.js';
 // The SAME two functions danger.js calls at line 118 — a distance measured here
 // cannot disagree with a distance measured by the layer.
 import { attackDirection, distanceToNet } from '../src/lib/rink.js';
-import { inScope, summarise } from '../src/lib/archive.js';
+import { inScope, summarise, dataThrough } from '../src/lib/archive.js';
 import { teamSeasons } from '../src/lib/team-season.js';
 import { reliability, agreement } from '../src/lib/reliability.js';
 import { CLUB_ROWS, POSSESSION_FAMILY } from '../src/lib/preview.js';
@@ -468,6 +468,94 @@ export function archiveIsWhole(out, records, readJson) {
     + 'Did you mean --slate?';
 }
 
+/**
+ * Does the span this document CLAIMS match the archive it is published beside?
+ *
+ * ⛔⛔⛔ THIS IS THE CHECK `archiveIsWhole` CANNOT MAKE, AND THE DEFECT OF
+ * 2026-10-02 IS WHY IT EXISTS. That function compares a COUNT and compares it to
+ * the catalog written by its own run, so it is correct and it is blind in one
+ * direction: nothing re-checks after the write. `measures.json` is rebuilt
+ * weekly, `catalog.json` is rewritten nightly, and for four days the published
+ * measurement covered eight games of the season while the published archive held
+ * twenty-one. A reader on the Capitals' opener was told *"the 8 games we have
+ * measured for this season"* — the figure was right about the measurement and
+ * said nothing about when the measuring stopped, and no instrument anywhere
+ * compared the two documents. Kevin: *"we hold 21 games and say 8 games."*
+ *
+ * ⭐ ONE DERIVATION, BOTH SIDES. `dataThrough` reduces this run's records and the
+ * catalog's rows, so the two dates cannot disagree about what "newest" means —
+ * the rule this repo pays for again and again is that a pair which must agree is
+ * ONE OBJECT, not two implementations that happen to concur. The catalog's rows
+ * are mapped onto the field name the reducer reads rather than the reducer being
+ * taught a second spelling.
+ *
+ * ⚠️ IT IS AN EQUALITY, NOT A BOUND — Kevin's ruling 4, and ruling 5 is why
+ * there is nothing legitimate to tolerate: the last game of a night ends about
+ * 01:30 ET, the ingest fires at 02:47 ET and the earliest puck drop is about
+ * 12:00 ET, so a job inside that window measures an archive that is frozen by
+ * construction. A tolerance here would be a licence for exactly the lag the
+ * schedule was built to make impossible. ⛔ `archiveIsWhole` is deliberately a
+ * `>=` and this is deliberately an `===`; the count may legitimately exceed the
+ * catalog on a hand run over a fuller tree, but a SPAN that disagrees is two
+ * documents describing different hockey.
+ *
+ * AND IT COMPARES GAME-DATE TO GAME-DATE, NEVER TO THE WALL CALENDAR — ruling 3.
+ * On an off-day the newest game is yesterday's and that is correct; against
+ * `today` this would be red every Tuesday, through the All-Star break and all
+ * summer. Both sides come from our own documents, so it is self-correcting.
+ *
+ * @returns {string|null} what is wrong, or null if the span matches the archive
+ */
+export function measuredThrough(out, records, readJson) {
+  /* FIRST, THAT EVERY GAME HAS A DATE AT ALL. `measureGame` writes
+     `date: g.game.date || null`, so an undated game would sink into the max
+     silently and the stamp would quietly describe a shorter span than the
+     document. `ingest.yml` already refuses upstream for this reason — "games
+     without a date, so dataThrough is unreliable" — and a stamp derived from a
+     field that can be absent needs the same refusal where it is derived. */
+  const undated = records.filter(r => !r.date).map(r => r.id);
+  if (undated.length) {
+    return `${undated.length} measured game(s) carry no date, so dataThrough `
+      + `describes a shorter span than this document does: ${undated.slice(0, 5).join(', ')}`;
+  }
+  const cat = join(out, 'catalog.json');
+  // No catalog is not a failure, for archiveIsWhole's reason exactly: this tool
+  // is also run by hand against a partial tree, and the nightly always has one.
+  if (!existsSync(cat)) return null;
+  const rows = (readJson ? readJson(cat) : JSON.parse(readFileSync(cat, 'utf8'))).games || [];
+  const published = rows.filter(g => g.v === 1 && inScope(g.id));
+  // A catalog publishing nothing in scope is the hand-run case again, and there
+  // is no span to compare against. `archiveIsWhole` owns the count.
+  if (!published.length) return null;
+  const mine = dataThrough(records);
+  // The SAME reducer, fed the catalog's spelling of the same field.
+  const theirs = dataThrough(published.map(g => ({ date: g.d })));
+  /* ⛔⛔⛔ THE EXTRACTION MUST FIND SOMETHING, and this repo has paid for the
+     lesson in a workflow: a `sed` the shell refused exited 0, `$desc` was empty,
+     `case "" in *[0-9]*)` matched nothing and a guard that read NOTHING approved
+     everything. A catalog whose rows carry no date would make `theirs` null, and
+     a comparison against null is not a comparison — it is this check being
+     unable to run while reporting on a published document. Every one of the
+     4,639 rows carries `d`; if that stops being true, the span is unverifiable
+     and the answer is a refusal, not a pass. */
+  if (theirs === null) {
+    return `catalog.json publishes ${published.length} game(s) in scope and not one `
+      + 'carries a date, so the span this document claims cannot be checked against '
+      + 'the archive at all. The row field is `d`; see derive.py.';
+  }
+  if (mine === theirs) return null;
+  /* NAME THE GAMES THAT EXPLAIN IT. A red that says only "2026-09-30 !=
+     2026-10-02" sends a human to go and derive the difference by hand, which is
+     where an instrument stops being used. These are the published in-scope games
+     the measurement does not reach. */
+  const after = published.filter(g => g.d && (mine === null || g.d > mine)).map(g => g.id);
+  return `measures.json would be stamped dataThrough ${mine} while catalog.json `
+    + `publishes games through ${theirs} — ${after.length} published in-scope `
+    + `game(s) are outside the span this document claims`
+    + (after.length ? `, e.g. ${after.slice(0, 5).join(', ')}` : '')
+    + '. The extracts on disk are older than the catalog beside them.';
+}
+
 function main(argv) {
   const flag = name => { const i = argv.indexOf(name); return i === -1 ? null : argv[i + 1]; };
   const out = flag('--out') || 'ingest';
@@ -523,6 +611,14 @@ function main(argv) {
   const notWhole = archiveIsWhole(out, records);
   if (notWhole) {
     console.error(`::error::${notWhole}`);
+    process.exit(1);
+  }
+  /* ⭐ AND THE SPAN, WHICH IS A DIFFERENT QUESTION FROM THE COUNT. Checked
+     BEFORE the write, so the failure mode is a refusal to publish rather than a
+     published document with a stamp nobody believes. See `measuredThrough`. */
+  const notThrough = measuredThrough(out, records);
+  if (notThrough) {
+    console.error(`::error::${notThrough}`);
     process.exit(1);
   }
   /* THE DIVISION HAPPENS ONCE, HERE, on the finished totals. Every tally that
@@ -586,6 +682,13 @@ function main(argv) {
   const r = doc.baseRates;
   console.log(JSON.stringify({
     measured: records.length,
+    /* ⭐ THE SPAN, IN THE RUN'S OWN LOG, for the reason the census figures are
+       printed below: a number nobody reads is a number nobody checks. The
+       per-season line is the one that would have shown the 2026-10-02 defect in
+       the derive log four days before a reader found it on the page. */
+    dataThrough: doc.dataThrough,
+    seasonThrough: Object.fromEntries(Object.entries(doc.perGame)
+      .map(([y, e]) => [y, `${e.corsi && e.corsi.n} game(s) through ${e.dataThrough}`])),
     skippedNoQuote: skipped.length,
     featured: doc.featured[0],
     rates: Object.fromEntries(Object.entries(r).map(([k, v]) =>

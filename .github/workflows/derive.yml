@@ -188,6 +188,17 @@ jobs:
         shell: bash
         run: node builders/measure.mjs --out ingest | tee measured.json
 
+      # ⭐ AND THE SPAN IT CLAIMS MUST BE THE ARCHIVE'S — added 2026-10-03, and
+      # found missing by the gate written for the nightly rather than by reading
+      # this file. The weekly re-extracts and measures, so it writes the same
+      # stamp the nightly does and is subject to the same invariant: a document
+      # whose newest game is older than the catalog's beside it describes
+      # different hockey. `measure.mjs` already refuses at write time; this reads
+      # the two documents as a pair, which is the half a write-time check cannot
+      # do. `test/measure.test.js` requires it in every job that measures.
+      - name: the measurement describes the archive — before the sync
+        run: node tools/measured-through.mjs --dir ingest
+
       # ⭐ THE PUBLISHED NUMBERS MUST BE POSSIBLE, AND THIS IS THE LAST PLACE THAT
       # CAN STOP THEM. docs/survivorship-experiment.md planted 187 defects and five
       # changed measures.json or teams.json with every test green; four of those

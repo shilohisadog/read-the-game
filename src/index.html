@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-QYysStUH1WtB5DR2rcZyE0eJSZmvVdol1zfBzbDkRgE=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-WrjOX++9xo4mHr+DniTTS55zmELoarjw8Io4ZSJ3/K0=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -781,12 +781,12 @@ watching. Each of these is drawn first, then shown in a real game.</p>
      worth spending the front door on. -->
 <section class="countsin">
 <h2 id="counts-h">What we counted</h2>
-<p class="note">Our own measurements rather than the league&rsquo;s, over 4,200 games. Each one opens the lesson behind it.</p>
+<p class="note">Our own measurements rather than the league&rsquo;s, over 4,213 games, up to 2 October 2026. Each one opens the lesson behind it.</p>
 <div class="cgrid">
-<div class="cardw"><a class="ccard" href="/slot.html"><span class="lt">Shots from the slot</span><span class="ld">A shot taken from inside the slot goes in 11.4% of the time &mdash; 19,340 goals from 169,220 attempts. From outside it, 3.3%.</span></a><p class="cw"><a href="/how-we-measure.html#m-slotGoals">How we counted this &rarr;</a></p></div>
-<div class="cardw"><a class="ccard" href="/game.html?game=2023020204&at=1-09:06&strength=all"><span class="lt">How long a shift is</span><span class="ld">A shift lasts a median of 46 seconds, 76% of them under a minute, measured over 3,107,242 shifts.</span></a><p class="cw"><a href="/how-we-measure.html#m-shift">How we counted this &rarr;</a></p></div>
+<div class="cardw"><a class="ccard" href="/slot.html"><span class="lt">Shots from the slot</span><span class="ld">A shot taken from inside the slot goes in 11.4% of the time &mdash; 19,404 goals from 169,752 attempts. From outside it, 3.3%.</span></a><p class="cw"><a href="/how-we-measure.html#m-slotGoals">How we counted this &rarr;</a></p></div>
+<div class="cardw"><a class="ccard" href="/game.html?game=2023020204&at=1-09:06&strength=all"><span class="lt">How long a shift is</span><span class="ld">A shift lasts a median of 46 seconds, 76% of them under a minute, measured over 3,117,267 shifts.</span></a><p class="cw"><a href="/how-we-measure.html#m-shift">How we counted this &rarr;</a></p></div>
 <div class="cardw"><a class="ccard" href="/game.html?game=2023020204&at=3-15:52&layer=corsi&strength=even"><span class="lt">Score effects</span><span class="ld">Per 60 minutes of even-strength play a club takes 64 shot attempts while trailing, 59 while the score is level, and 53 while leading.</span></a><p class="cw"><a href="/how-we-measure.html#m-scoreEffects">How we counted this &rarr;</a></p></div>
-<div class="cardw"><a class="ccard" href="/game.html?game=2023020204&at=1-14:56&layer=zonestart&strength=all"><span class="lt">The attacking zone</span><span class="ld">After a face-off in one team&rsquo;s end, the club attacking that end takes 1.42 shot attempts before the next whistle, against 0.77 for the club defending it &mdash; across 165,720 draws.</span></a><p class="cw"><a href="/how-we-measure.html#m-zoneStarts">How we counted this &rarr;</a></p></div>
+<div class="cardw"><a class="ccard" href="/game.html?game=2023020204&at=1-14:56&layer=zonestart&strength=all"><span class="lt">The attacking zone</span><span class="ld">After a face-off in one team&rsquo;s end, the club attacking that end takes 1.42 shot attempts before the next whistle, against 0.77 for the club defending it &mdash; across 166,248 draws.</span></a><p class="cw"><a href="/how-we-measure.html#m-zoneStarts">How we counted this &rarr;</a></p></div>
 </div>
 </section>
 <!-- ⛔ WAS "Watch your team". The word implies streaming (Kevin), and unlike the
@@ -834,6 +834,29 @@ watching. Each of these is drawn first, then shown in a real game.</p>
 </div>
 <script>
 /**
+ * A DATE, AS A READER WOULD WRITE IT. "2023-11-10" -> "10 November 2023".
+ *
+ * ⭐ ITS OWN FILE SO THE REPLAY CAN HAVE IT WITHOUT THE FRONT DOOR'S STATE
+ * MODEL. This lived in `ingest-state.js`, which is 10 KB of pipeline-state prose
+ * the replay page has no use for, and the replay now has to date its own
+ * measurements (ruling 8, 2026-10-03). The alternatives were both worse: inline
+ * the 10 KB into `game.html` for one function, or write a second month table
+ * beside the first — and a second spelling of a date is this build's own subject
+ * matter. ~400 bytes, one implementation, both bundles.
+ */
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+  'August', 'September', 'October', 'November', 'December'];
+
+/** "2023-11-10" -> "10 November 2023", or null for anything that is not one.
+ *  PARSED BY HAND rather than with `Date`, which would apply the viewer's
+ *  timezone to a date that has none and can slip a day westward. */
+function formatDate(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
+  if (!m) return null;
+  return `${+m[3]} ${MONTHS[+m[2] - 1]} ${m[1]}`;
+}
+
+/**
  * What the front page says about its own data.
  *
  * This is the visible half of docs/ingest-state.md. A stalled pipeline becomes
@@ -860,17 +883,17 @@ watching. Each of these is drawn first, then shown in a real game.</p>
  *  without crying wolf, and catches two consecutive failures. */
 const STALE_HOURS = 36;
 
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
-  'August', 'September', 'October', 'November', 'December'];
+/* ⭐ MOVED TO `day.js` ON 2026-10-03, not copied. The replay page has to date
+   its own measurements now and has no use for the rest of this file, so the
+   formatter lives on its own and both bundles carry the one implementation.
+   ⛔ AND IT IS NOT RE-EXPORTED FROM HERE, which was the first attempt and broke
+   the front door with `Unexpected string`. `build_index.py::_module` inlines
+   these files by deleting `import` statements and then doing a blunt
+   `replace("", "")`, so `{ formatDate } from './day.js';` became
+   `{ formatDate } from './day.js';` — a syntax error inside the page, caught by
+   59 homepage tests at once. A convenience alias for one caller was not worth a
+   second import path anyway: `daily.js` reads it from `day.js` now. */
 
-/** "2023-11-10" -> "10 November 2023". Parsed by hand rather than with Date,
- *  which would apply the viewer's timezone to a date that has none and can slip
- *  a day westward. */
-function formatDate(iso) {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
-  if (!m) return null;
-  return `${+m[3]} ${MONTHS[+m[2] - 1]} ${m[1]}`;
-}
 
 /** Whole days between two instants, floored. */
 function daysBetween(then, now) {

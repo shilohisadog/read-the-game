@@ -25,17 +25,17 @@
  *  without crying wolf, and catches two consecutive failures. */
 export const STALE_HOURS = 36;
 
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
-  'August', 'September', 'October', 'November', 'December'];
-
-/** "2023-11-10" -> "10 November 2023". Parsed by hand rather than with Date,
- *  which would apply the viewer's timezone to a date that has none and can slip
- *  a day westward. */
-export function formatDate(iso) {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
-  if (!m) return null;
-  return `${+m[3]} ${MONTHS[+m[2] - 1]} ${m[1]}`;
-}
+/* ⭐ MOVED TO `day.js` ON 2026-10-03, not copied. The replay page has to date
+   its own measurements now and has no use for the rest of this file, so the
+   formatter lives on its own and both bundles carry the one implementation.
+   ⛔ AND IT IS NOT RE-EXPORTED FROM HERE, which was the first attempt and broke
+   the front door with `Unexpected string`. `build_index.py::_module` inlines
+   these files by deleting `import` statements and then doing a blunt
+   `replace("export ", "")`, so `export { formatDate } from './day.js';` became
+   `{ formatDate } from './day.js';` — a syntax error inside the page, caught by
+   59 homepage tests at once. A convenience alias for one caller was not worth a
+   second import path anyway: `daily.js` reads it from `day.js` now. */
+import { formatDate } from './day.js';
 
 /** Whole days between two instants, floored. */
 export function daysBetween(then, now) {

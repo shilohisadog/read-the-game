@@ -9,7 +9,8 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { describe, formatDate, daysBetween, STALE_HOURS } from '../src/lib/ingest-state.js';
+import { describe, daysBetween, STALE_HOURS } from '../src/lib/ingest-state.js';
+import { formatDate } from '../src/lib/day.js';
 
 const NOW = '2026-01-15T12:00:00Z';
 const idx = (o = {}) => ({

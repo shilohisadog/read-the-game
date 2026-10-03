@@ -471,12 +471,34 @@ test('⛔ neither population figure in the panel is a bare count', () => {
     'the population line does not say it spans more than one season, which is the '
     + 'whole reason its number is larger than the lead’s');
 
+  /* ⭐⭐ AND EACH ONE SAYS WHAT IT IS MEASURED UP TO — Kevin's ruling 8,
+     2026-10-03. The wording fix made both sentences say `we have measured`,
+     which is true; a reader still could not ask how CURRENT either was, and on
+     a season being played that is the whole question. Two populations, two
+     dates, because they are measured over different sets of games.
+     MUTATION: drop `SPAN()` from either call in app.js and this names which. */
+  const UPTO = /, up to \d{1,2} [A-Z][a-z]+ \d{4}/;
+  assert.match(leadText, UPTO,
+    'the lead names a population and never says when the measuring stopped: '
+    + JSON.stringify(leadText));
+  assert.match(popText, UPTO,
+    'the population line names a population and never says when the measuring '
+    + 'stopped: ' + JSON.stringify(popText));
+
   /* ⭐ AND THE TWO REALLY ARE DIFFERENT NUMBERS, which is what makes the naming
      load-bearing rather than decorative. If a future change made them equal this
-     goes red and should: it would mean one measurement had been re-scoped. */
-  const num = t => (t.match(/([\d,]{3,})/g) || []).map(x => +x.replace(/,/g, ''));
+     goes red and should: it would mean one measurement had been re-scoped.
+     ⚠️ THE DATE CLAUSE IS REMOVED BEFORE COUNTING FIGURES, and asserted above
+     rather than merely tolerated. A year is four digits and this scan reads any
+     run of three or more, so when the dates arrived the population line started
+     reporting TWO figures and this went red on correct code — which is the right
+     way round, and the repair is to say what a POPULATION figure is rather than
+     to loosen the count. */
+  const num = t => (t.replace(UPTO, '').match(/([\d,]{3,})/g) || [])
+    .map(x => +x.replace(/,/g, ''));
   const inLead = num(leadText), inPop = num(popText);
-  assert.ok(inPop.length === 1, 'the population line prints more than one figure');
+  assert.ok(inPop.length === 1,
+    `the population line prints ${inPop.length} figures: ${JSON.stringify(popText)}`);
   assert.ok(inLead.length && !inLead.includes(inPop[0]),
     'the lead and the population line now print the same figure — one of the two '
     + 'measurements has been re-scoped, and the panel no longer states two populations');

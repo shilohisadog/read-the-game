@@ -12,7 +12,7 @@
  * The rules it needs stay in archive.js and are imported, never restated: what
  * is in scope, what a season is, and the one sanctioned save fraction.
  */
-import { inScope, isPlayoff, season, share, saveShare, POPULATION } from './archive.js';
+import { inScope, isPlayoff, season, share, saveShare, dataThrough, POPULATION } from './archive.js';
 
 /** A team's season, before anything has been added to it. */
 function blankTeam() {
@@ -158,9 +158,19 @@ export function teamSeasons(records) {
      print a club's season as of last Monday, three games short, with no symptom.
      THE DATE IS THE NEWEST GAME IN THE TABLE, never a clock: the same rule as
      the front door's "Last night" (front-door.md §12.5), for the same reason —
-     a timestamp would go on being current while the games stopped arriving. */
-  const through = games.reduce(
-    (max, g) => (typeof g.date === 'string' && g.date > max ? g.date : max), '') || null;
+     a timestamp would go on being current while the games stopped arriving.
+
+     ⭐⭐ AND IT IS `archive.js::dataThrough`, NOT A SECOND REDUCTION. This was
+     eight lines of hand-rolled `reduce` producing the same answer as the one
+     `measures.json` is stamped with, under a comment making the same argument —
+     two implementations of one quantity, which this file's own header forbids:
+     *"The rules it needs stay in archive.js and are imported, never restated."*
+     A pair that must agree is ONE OBJECT. `measure.mjs` writes both documents in
+     the same run from the same records, so if these two ever disagreed the
+     difference could only be a bug in one of the copies. Now there is one copy.
+     ⚠️ The FIELD is still called `through` here because `preview.js` reads it by
+     that name; the quantity and the derivation are shared, the spelling is not. */
+  const through = dataThrough(games);
 
   return {
     scope: POPULATION,
