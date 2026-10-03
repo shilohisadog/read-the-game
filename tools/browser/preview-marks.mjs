@@ -27,6 +27,12 @@
  * ⚠️ AND NOTHING ANYWHERE LOOKED AT THIS CHART UNTIL TODAY. `grep trackFor test/
  * tools/` returned nothing: 1,600 tests, fourteen browser probes, and the one
  * picture on the page a novice is sent to had no check of any kind.
+ *
+ * ⏭ IT ALSO CHECKED THAT THE SHADED BAND'S EDGES STAYED VISIBLE, until Kevin had
+ * the band removed the same day: *"I don't think the shading is necessary."* The
+ * track now carries a rail, the league tick and the two club marks, so there is
+ * no boundary left to lose. Those assertions went rather than being kept green
+ * against nothing.
  */
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -141,13 +147,9 @@ const SAMPLER = `
         var printed = vals[i] ? parseFloat(vals[i].textContent) : null;
         var box = svg.getBoundingClientRect();
         var W = Math.round(box.width), H = Math.round(box.height);
-        var edges = [];
-        svg.querySelectorAll('rect[fill="#8fb0cc"]').forEach(function (m) {
-          edges.push((+m.getAttribute('x')) + (+m.getAttribute('width')) / 2);
-        });
         out.push({ label: label, lo: lo, hi: hi, printed: printed, w: W, h: H,
           at: mark ? (+mark.getAttribute('x')) + (+mark.getAttribute('width')) / 2 : null,
-          wide: mark ? +mark.getAttribute('width') : null, edges: edges });
+          wide: mark ? +mark.getAttribute('width') : null });
       }
     }
     /* ⭐ AND THE PIXELS, so "the mark is there" is not taken on the DOM's word. */
@@ -185,13 +187,6 @@ const SAMPLER = `
             most = Math.max(most, off(g.getImageData(at2, y, 1, 1).data, base));
           }
           rec.ink = most;
-          rec.edgeInk = rec.edges.map(function (ex) {
-            var e = Math.round(ex / 100 * W);
-            if (e < 5 || e > W - 5) return null;
-            var m2 = g.getImageData(e, y, 1, 1).data;
-            return { x: e, from: Math.min(off(m2, g.getImageData(e - 4, y, 1, 1).data),
-                                          off(m2, g.getImageData(e + 4, y, 1, 1).data)) };
-          }).filter(Boolean);
           if (!--pend) emit(out);
         };
         img.onerror = function () { rec.ink = null; if (!--pend) emit(out); };
@@ -222,7 +217,7 @@ export function readMarks(html) {
 export function judgeMarks(rows, tol = TOLERANCE, ink = INK) {
   if (!rows || !rows.length) return ['the page drew no rows at all — the probe measured nothing'];
   const bad = [];
-  let reconciled = 0, edgesSeen = 0;
+  let reconciled = 0;
   rows.forEach((r, i) => {
     const where = `${r.label || 'row ' + i}`;
     if (r.printed == null || r.lo == null || r.hi == null || r.at == null) {
@@ -252,14 +247,6 @@ export function judgeMarks(rows, tol = TOLERANCE, ink = INK) {
         + `it by only ${r.ink} — at this game count the fill is near zero and the `
         + 'outline is the only thing holding it, so it has gone invisible.');
     }
-    (r.edgeInk || []).forEach(e => {
-      edgesSeen++;
-      if (e.from <= ink / 2) {
-        bad.push(`${where}: the band edge at x=${e.x} is invisible — it differs from the `
-          + `page four pixels either side by ${e.from}. The caption tells the reader to `
-          + 'look for that boundary.');
-      }
-    });
   });
   /* ⛔ AND IT MUST HAVE MEASURED SOMETHING. Every assertion above is vacuous on a
      page that drew nothing, which is the shape this repo pays for most.
@@ -271,11 +258,6 @@ export function judgeMarks(rows, tol = TOLERANCE, ink = INK) {
      worth a message; "something failed" already has one. */
   if (!bad.length && !reconciled) {
     bad.push('not one mark was reconciled against its number — the probe proved nothing');
-  }
-  if (!bad.length && !edgesSeen) {
-    bad.push('not one band-edge mark was found on any row — either the marks are gone or '
-      + 'the fixture no longer draws an axis wider than its band, and both make this '
-      + 'check vacuous');
   }
   return bad;
 }

@@ -578,7 +578,7 @@ import { judgeMarks, fixture as markFixture, readMarks } from '../tools/browser/
  *  notch a mark without an outline leaves reads about 20. */
 const mark = (over = {}) => ({ label: 'shot attempts taken by defencemen',
   lo: 25, hi: 39, printed: 35, at: 100 * (35 - 25) / (39 - 25), w: 600, h: 17,
-  wide: 1.8, ink: 150, edges: [71.4], edgeInk: [{ x: 430, from: 40 }], ...over });
+  wide: 1.8, ink: 150, ...over });
 
 test('⭐⭐⭐ a mark at its own number passes, and one at the league does not', () => {
   /* ⛔ THE SECOND CASE IS THE CARD KEVIN COULD NOT READ. 35% on a 25–39 axis is
@@ -622,16 +622,18 @@ test('⛔ a mark that reconciles perfectly and cannot be seen is still a failure
   assert.deepEqual(judgeMarks([mark({ ink: null })]), []);
 });
 
-test('⛔ a band edge the card has covered is a failure — it is drawn to be seen', () => {
-  /* ⛔ THE LEAGUE TICK ALREADY PAID FOR THIS ONE, and the comment beside it says
-     so: *"it was invisible because it was drawn FIRST. SVG has no z-index; paint
-     order is document order."* The band's edges are a second mark with the same
-     hazard, and the caption points the reader straight at them. */
-  const covered = judgeMarks([mark({ edgeInk: [{ x: 430, from: 0 }] })]);
-  assert.equal(covered.length, 1, 'an edge painted under something was accepted');
-  assert.match(covered[0], /invisible/);
-  assert.match(covered[0], /caption tells the reader to look for that boundary/);
-});
+/* ⏭ A TEST STOOD HERE REQUIRING THE SHADED BAND'S EDGES TO STAY VISIBLE. The
+   band could be covered by an opaque mark, and the caption pointed the reader
+   straight at it, so the boundary was drawn as its own mark on top — the league
+   tick's own logged trap, which says *"it was invisible because it was drawn
+   FIRST. SVG has no z-index; paint order is document order."*
+
+   Kevin removed the band the same day: *"I don't think the shading is
+   necessary."* The track is a rail, the league tick and the two club marks now,
+   so there is no boundary left to lose and nothing for the rule to be about. It
+   is recorded rather than kept green against an empty list, which is how a check
+   comes to pass on a page that no longer has the thing it names. ⚠️ If a band
+   ever comes back, so does this: `git log -S '#8fb0cc'` finds all of it. */
 
 test('⛔ a probe that measured nothing is a FAILURE, never a pass', () => {
   /* ⛔⛔⛔ THE SHAPE THIS REPO PAYS FOR MOST. Every assertion above is vacuous on a
@@ -642,9 +644,13 @@ test('⛔ a probe that measured nothing is a FAILURE, never a pass', () => {
   const missing = judgeMarks([mark({ printed: null })]);
   assert.ok(missing.length, 'a row with no printed figure was skipped quietly');
   assert.match(missing[0], /not being checked at all/);
-  const noEdges = judgeMarks([mark({ edges: [], edgeInk: [] })]);
-  assert.ok(noEdges.length, 'a card with no band edge at all passed');
-  assert.match(noEdges[0], /not one band-edge mark/);
+  /* ⭐ AND A ROW THAT RECONCILES IS THE ONLY THING THAT CLEARS THE GUARD. With
+     the band gone this is the single vacuity check left, so it carries the whole
+     weight: a reading with rows in it that reconciles none of them is a probe
+     that proved nothing, not a page that is fine. */
+  const unreadable = judgeMarks([mark({ lo: 39, hi: 39 })]);
+  assert.ok(unreadable.length, 'a zero-width axis was judged rather than reported');
+  assert.match(unreadable[0], /the axis runs 39 to 39/);
 });
 
 test('⭐⭐ the fixture puts the league figure where the real card has it', () => {

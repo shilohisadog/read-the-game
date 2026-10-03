@@ -279,7 +279,7 @@ test('⭐⭐ the measure row draws BEFORE the season, because the axis is itself
   const said = textOf(ids.pv);
   assert.match(said, /5-on-5 CF% while the score was level/, 'the measure is named');
   assert.match(said, /no games yet/, 'and each club says it has nothing on it');
-  assert.match(said, /What clubs did across a full season: 44% to 57% in 96 club-seasons/,
+  assert.match(said, /Across a full season clubs ranged from 44% to 57% in 96 club-seasons/,
     'the caption names the span AND what it was measured over');
   // ⛔ AND NO BAR IS DRAWN FOR A CLUB WITH NO FIGURE. The row is a template, and a
   // template that draws a club's bar at zero would be inventing a measurement.
@@ -377,37 +377,102 @@ test('⛔ the axis names its own ends, so a full-width band is not an empty mete
   assert.deepEqual(ends.map(e => textOf(e)), ['44% 57%', '26% 38%']);
 });
 
-test('⭐⭐ every card opens its scale the same way, and only the extra fact varies', () => {
-  /* ⛔⛔⛔ THIS TEST USED TO DEMAND THE OPPOSITE, AND KEVIN OVERRULED IT.
-     2026-10-03: *"2 of the three metrics say 'shaded' and one says 'the scale',
-     shouldn't they be consistent?"*
+test('⛔ nothing is painted across the track but the rail itself', () => {
+  /* ⛔⛔⛔ KEVIN REMOVED THE SHADED BAND, 2026-10-03: *"I'd remove the shading
+     aspect of the graph, it still isn't easily understandable… I don't think the
+     shading is necessary."* Removing the rect and the sentence is easy; keeping
+     them gone is the part that needs a check, and mutating the band back in was
+     caught by NOTHING — the wording tests pass, the probe passes, and the page
+     quietly undoes a ruling.
 
-     The old rule was that the caption opens with `Shaded:` when a club sits
-     outside the band and `The scale:` when the band fills the track — written
-     because calling something shaded names a visual that usually is not there.
-     That reasoning is sound and it was MIS-SITED: the fact that varies is
-     whether a CLUB is outside the band, not what the band is called. Carrying a
-     varying fact in the NAME of a fixed thing made three cards on one page look
-     inconsistent for a reason no reader could recover.
+     ⭐ THE RULE IS POSITIVE AND GEOMETRIC, not a banned colour. What made the
+     band unreadable was that it painted a REGION of the track, which composes
+     with everything drawn over it and competes with the marks for the same
+     meaning. So: exactly one rect may span the track, and that is the rail. Any
+     second wide rect is a region, whatever colour it is and whatever it is for.
+     MUTATION: restore the band rect and this names its width. */
+  return (async () => {
+    /* ⛔⛔⛔ THE FIXTURE PUTS A CLUB OUTSIDE THE RANGE, AND THAT IS THE WHOLE
+       TEST. With every club inside it, the band spanned the entire axis — x=0,
+       width=100 — which is geometrically indistinguishable from the rail, so
+       restoring the band passed this check. The band is only a REGION when the
+       axis is wider than the range, which is exactly when it was drawn and
+       exactly when it misled. A check written against the easy state would have
+       approved the thing it was written to forbid. */
+    const wild = { games: 6, attempts: { for: 300, against: 290 },
+      slot: { count: 70, n: 150 }, dmen: { count: 95, n: 300 },
+      level5: { for: 710, against: 290 } };
+    const { ids, settle } = run({ 'teams.json': { through: '2026-10-01',
+      seasons: { 2026: { BUF: wild, PIT: club() } } } },
+      `?game=${GID}`, '2026-10-01T12:00:00Z');
+    await settle();
+    /* ⚠️ SCOPED TO THE CLUB TRACKS, and the first draft was not — it walked the
+       whole preview and caught the attempt-mix tile's stacked bar, which is a
+       different chart doing a legitimate thing. A check that announces "the
+       track" and scans the page is broader than its own name, which is this
+       repo's dominant failure mode; it happened to fail loudly rather than
+       quietly, which is luck and not design. */
+    /* ⚠️ SCOPED BY THE CARD, after two wrong tries that the vacuity guard and the
+       failure message caught in turn. `.pvsvg` is set with `setAttribute`, so an
+       SVG element's class is in the attribute bag and `className` is empty — zero
+       tracks. And filtering by TAG picks up the attempt-mix tile in the league
+       strip, which is also an `svg` and legitimately draws three stacked
+       segments. The club rows are the `.pvm` cards, which are plain divs. */
+    const tracks = walk(ids.pv).filter(x => (x.className || '').split(' ').includes('pvm'));
+    assert.ok(tracks.length >= 2, `only ${tracks.length} club tracks drawn — nothing to check`);
+    const notRail = tracks.flatMap(t => rectsIn(t))
+      .filter(r => Number(r.width) > 5)
+      .filter(r => !(Number(r.width) >= 99 && Number(r.x || 0) <= 1));
+    assert.deepEqual(notRail.map(r => `x=${r.x} w=${r.width} fill=${r.fill}`), [],
+      'something is painted across part of the track besides the rail — a region '
+      + 'like that composes with whatever is drawn over it and competes with the '
+      + 'club marks for the same meaning, which is why the band went');
+  })();
+});
 
-     ⭐ SO THE CLAIM IS NOW CONSISTENCY PLUS A CONDITIONAL EXTRA, which is two
-     assertions rather than one: every card opens identically, and the sentence
-     about being past the band appears only when a club is.
-     MUTATION: put either wording back in front and the first pair fires; make
-     the extra sentence unconditional and the second does. */
+test('⭐⭐ every card says what a full season looks like, the same way', () => {
+  /* ⛔⛔⛔ THIS TEST HAS BEEN REWRITTEN TWICE IN ONE DAY, BY TWO RULINGS, and both
+     are kept because the path is the lesson.
+
+     IT FIRST DEMANDED THE OPPOSITE: the caption opened `Shaded:` when a club sat
+     outside the band and `The scale:` when the band filled the track, so that a
+     word naming a visual was not used when the visual was not there. Kevin:
+     *"2 of the three metrics say 'shaded' and one says 'the scale', shouldn't
+     they be consistent?"* The reasoning was sound and MIS-SITED — the fact that
+     varies is whether a CLUB is outside the band, not what the band is called.
+
+     THEN THE BAND ITSELF WENT. Kevin, the same day: *"I'd remove the shading
+     aspect of the graph… I don't think the shading is necessary."* And the
+     sentence it carried could not survive him asking what it meant: *"'a mark
+     outside it' — that sentence can't be true, since the game in question should
+     be included, hence it's the top of the scale, not outside of it, no?"*
+
+     ⭐ THE ANSWER IS THAT IT WAS TRUE AND SHOULD NOT HAVE BEEN PRINTED. The band
+     was full-SEASON figures and the mark is a club after ONE GAME, so the mark is
+     not in that population and really can fall outside it — which means nearly
+     every club is outside it in October, and the card announced sampling noise in
+     the language of a record. Kevin's own objection is the second half: `lo`/`hi`
+     stretch to hold the clubs, so a club past the band BECOMES the end of the
+     scale, and the picture said "this is the end" while the words said "outside".
+
+     ⭐ WHAT IS LEFT IS ONE SENTENCE, IDENTICAL EVERYWHERE, and no conditional at
+     all. The range still defines the axis — the ends are figures real clubs
+     posted rather than a span somebody chose — and it is said in words.
+     MUTATION: make any card word it differently and the first pair fires; print
+     a second span-related sentence and the last one does. */
   return (async () => {
     const inside = run({}, `?game=${GID}`, '2026-10-01T12:00:00Z');
     await inside.settle();
     const said1 = textOf(inside.ids.pv);
-    const opens = said1.match(/What clubs did across a full season:/g) || [];
+    const opens = said1.match(/Across a full season clubs ranged from/g) || [];
     assert.ok(opens.length >= 2,
-      `only ${opens.length} cards open with the shared sentence — they have drifted apart`);
-    assert.ok(!/Shaded:|The scale:/.test(said1),
-      'a card is naming the band differently from its neighbours again');
-    assert.ok(!/beyond anything a full season has produced/.test(said1),
-      'the extra sentence is printed with every club inside the band');
+      `only ${opens.length} cards carry the shared sentence — they have drifted apart`);
+    assert.ok(!/Shaded:|The scale:|shaded band/.test(said1),
+      'the band is back, or a card is naming it differently from its neighbours');
 
-    // A club at 71 of every 100 is past the fixture's 57 high-water mark.
+    /* ⭐ AND A CLUB WAY OUTSIDE WHAT ANY FULL SEASON PRODUCED CHANGES NOTHING.
+       That used to add a sentence; it is the case the sentence was wrong about,
+       and it is here as the control — the wording must not move. */
     const wild = { games: 6, attempts: { for: 300, against: 290 },
       slot: { count: 70, n: 150 }, dmen: { count: 95, n: 300 },
       level5: { for: 710, against: 290 } };
@@ -415,12 +480,10 @@ test('⭐⭐ every card opens its scale the same way, and only the extra fact va
       seasons: { 2026: { BUF: wild, PIT: club() } } } }, `?game=${GID}`, '2026-10-01T12:00:00Z');
     await out.settle();
     const said2 = textOf(out.ids.pv);
-    assert.match(said2, /What clubs did across a full season:/,
-      'the shared opening went missing on the card that has more to say');
-    assert.match(said2, /A mark outside it is beyond anything a full season has produced/);
-    /* ⛔ AND STILL NO SECOND NAME FOR THE BAND. The whole point is that the extra
-       fact is an extra SENTENCE, not a different word for the same thing. */
-    assert.ok(!/Shaded:|The scale:/.test(said2));
+    assert.match(said2, /Across a full season clubs ranged from/,
+      'the shared sentence went missing on a card with a club outside the range');
+    assert.ok(!/beyond anything a full season has produced|outside it/.test(said2),
+      'the card is telling a reader their club is past a band it no longer draws');
   })();
 });
 

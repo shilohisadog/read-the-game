@@ -3992,9 +3992,29 @@ __HELPERS__
         preserveAspectRatio: 'none', 'aria-hidden': 'true' });
       svg.appendChild(svgEl('rect', { x: 0, y: 3.5, width: 100, height: 3,
         rx: 1.5, fill: '#e6edf3' }));
-      if (range) svg.appendChild(svgEl('rect', { x: at(range.min), y: 3.5,
-        width: Math.max(at(range.max) - at(range.min), 0.4), height: 3,
-        fill: '#cfe0ee' }));
+      /* ⛔⛔⛔ THE SHADED BAND IS GONE — Kevin, 2026-10-03: *"I'd remove the
+         shading aspect of the graph, it still isn't easily understandable…
+         either way, I don't think the shading is necessary."*
+
+         It was the min and max of the FULL-SEASON figures real clubs posted, and
+         the caption said a mark past it was beyond anything a full season had
+         produced. That sentence was literally true — a club's figure after one
+         game is not in the population of 82-game figures, so it can fall outside
+         — and it was the wrong thing to show a reader, for two reasons Kevin
+         reached from different directions:
+
+         ⚠️ THE COMPARISON OVER-CLAIMS. One game against a spread of full seasons
+         means nearly every club is "outside" in October. The card announced small
+         sample noise in the language of a record.
+         ⚠️ AND IT FOUGHT THE AXIS. `lo`/`hi` stretch to hold the clubs, so a club
+         past the band BECOMES the end of the scale — Kevin: *"the game in
+         question should be included, hence it's the top of the scale, not outside
+         of it."* The picture said "this is the end" while the words said
+         "outside", and no reader can hold both.
+
+         ⭐ THE RANGE STILL DEFINES THE AXIS, which is the half worth keeping: the
+         ends are the figures real clubs posted rather than a span somebody chose.
+         It is said in words under the track and drawn as nothing. */
       /* THE REFERENCE IS THIS SEASON'S LEAGUE FIGURE AND NOTHING ELSE. Before the
          opener there is no such figure, and substituting the three-season one
          would be two populations wearing one label — the trap `leagueShares`
@@ -4039,20 +4059,10 @@ __HELPERS__
         svg.appendChild(svgEl('rect', { x: x, y: 1.8, width: MARK, height: 6.4, rx: 0.6,
           fill: 'none', stroke: ink, 'stroke-width': 0.4 }));
       }
-      /* ⭐ AND THE BAND'S EDGES SURVIVE BEING COVERED. Making the bar opaque hid
-         the one thing the caption tells the reader to look for — *"a bar past it
-         is beyond anything a full season has produced"* — because in this very
-         card BOTH bars lie across the band's lower edge. A region that can be
-         occluded cannot carry a boundary, so the boundary is drawn as its own
-         mark, on top, and only where it falls inside the axis. Shorter and
-         paler than the league tick below, which stays the tallest, darkest mark
-         on the track because it is the one the bars are measured from. */
-      if (range) [range.min, range.max].forEach(function (v) {
-        var e = at(v);
-        if (e <= 0.4 || e >= 99.6) return;     /* flush with the axis end: no edge to mark */
-        svg.appendChild(svgEl('rect', { x: e - 0.12, y: 3.1, width: 0.24, height: 3.8,
-          fill: '#8fb0cc' }));
-      });
+      /* ⏭ THE BAND'S EDGE MARKS WENT WITH THE BAND. They existed because an
+         opaque mark could cover the boundary the caption pointed at; with no band
+         there is no boundary to lose. The league tick below is now the only
+         reference on the track, which is the whole simplification. */
       /* ⛔ THE TICK IS DRAWN LAST, AND IT WAS INVISIBLE BECAUSE IT WAS DRAWN
          FIRST. Every bar starts ON the league value, so the bar's rounded end
          covered the one mark the whole picture is measured against. SVG has no
@@ -4408,12 +4418,10 @@ __HELPERS__
        So the lead sentence is identical everywhere and the extra fact gets its
        own sentence, printed only when there is one. */
     if (ar.range && track) {
-      var wider = track.lo < ar.range.min || track.hi > ar.range.max;
-      foot.push('What clubs did across a full season: '
-        + pct(ar.range.min) + '% to ' + pct(ar.range.max) + '%'
+      foot.push('Across a full season clubs ranged from ' + pct(ar.range.min)
+        + '% to ' + pct(ar.range.max) + '%'
         + (ar.range.games ? ', measured over ' + num(ar.range.games) + ' club-games' : '')
-        + ' in ' + ar.range.n + ' club-seasons — the shaded band.'
-        + (wider ? ' A mark outside it is beyond anything a full season has produced.' : ''));
+        + ' in ' + ar.range.n + ' club-seasons.');
     }
     /* ⭐ WHAT THE PICTURE IS, now that nothing in it has a length. Said plainly
        because the previous encoding was a bar whose length was a GAP, and Kevin
