@@ -32,6 +32,98 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 
 This section is the orientation. Everything below §0 is the detail, organised by
 state.
+## ⏭ 0.00 PICK UP HERE — 2026-10-03
+
+# ⏭⏭ THE NEXT BUILD, RULED AND NOT STARTED: CARRY `dataThrough` ALONG THE PIPELINE
+
+**Kevin ruled this on 2026-10-03 after a long convergence. Build it as specified.**
+The wording half already shipped (`bb63787`); this is the structural half.
+
+## Why — the defect that produced it
+
+A reader on the Capitals' opener was told *"the middle half of the **8 games we
+hold** for this game's season"* while the archive held **21**. Kevin: *"Since we
+hold 21 games, we certainly shouldn't say '8 games we hold'."*
+
+⛔⛔⛔ **ROOT CAUSE: a figure carried a guarantee that was true when written and
+expired silently, and the prose asserted the guarantee instead of the figure.**
+`sitsIn` returns `of: d.n` — how many games the MEASUREMENT covers. The sentence
+labelled it "we hold", a claim about the ARCHIVE. The two are EQUAL for every
+finished season (2023 1400=1400, 2024 1398=1398, 2025 1394=1394) so the mislabel
+was unobservable until a season in progress became a reference class on 10-02.
+
+⭐ `builders/measure.mjs::archiveIsWhole` was written to prevent exactly this and
+says so in its own docstring — *"the document would have described eight games in
+exactly the same shape, with the same field names, and read as correct on every
+surface that quotes it."* **Eight games.** It checks at WRITE time; nothing
+re-checks afterwards.
+
+## What already works — do not rebuild it
+
+- **`coverage` in `index.json` already compares the league's schedule against the
+  archive, nightly, and is GREEN**: `windowDays 14`, `gamesInWindow 92`,
+  `finalInWindow 79`, `heldInWindow 79`, errored/refused/unknown all 0.
+- **`index.json` already carries `dataThrough`** — `fetch_nhl.py` defines it as
+  *"the game DATE of the most recent game held, from the league."* It read
+  `2026-10-02` while `measures.json` covered through `2026-09-30`.
+- ⚠️ **LIMIT:** `coverage` is a 14-day window (the league amends play-by-play, so
+  the window converges). A game lost months ago is not caught there; the standing
+  `67 refused / 74 unreconciled` are that record and are a separate subject.
+
+## The rulings — all Kevin's, all settled
+
+1. **STAMP WHERE IT CANNOT BE DERIVED.** `measures.json` MUST be stamped: it is a
+   histogram and which dates went in is destroyed by construction. **Each season's
+   entry inside it is stamped too** (Kevin: *"better yet all entries get
+   date-stamped"*) — a finished season's never moves again.
+   ⛔ **`catalog.json` is deliberately NOT stamped**: every row carries its own
+   date, so the newest is derivable, and a second representation that must agree
+   with the rows is the exact trap this whole defect was. Kevin: *"that sounds
+   reasonable, since there's already a date-stamp on the entries."*
+2. **REUSE `dataThrough`.** No new vocabulary. One word, same meaning, every link.
+3. **COMPARE GAME-DATE TO GAME-DATE, NEVER TO THE WALL CALENDAR.** On an off-day
+   the newest game is yesterday's and that is CORRECT; comparing to `today` would
+   be red every Tuesday, in the All-Star break and all summer. Both sides of the
+   comparison come from our own documents, so it is self-correcting.
+4. **IT IS AN INVARIANT, NOT A TOLERANCE.** Equality, or red. There is nothing
+   legitimate to tolerate because of ruling 5.
+5. **NIGHTLY, CHAINED TO THE INGEST COMPLETING** — not a separate cron that can
+   drift out of the window. ⭐ **Kevin's correction of my "a lag isn't quite
+   avoidable", and he was right:** the last game ends ~01:30 ET, the ingest fires
+   02:47 ET, the earliest possible puck drop is ~12:00 ET. **The archive is static
+   for ~10 hours by construction**, so a job inside that window sees a frozen
+   archive and the lag is ZERO, not bounded. Condition the chain on the ingest
+   having CHANGED something (`steps.fetch.outputs.code != 2` means changed).
+6. **SPLIT THE NIGHTLY MEASURE FROM THE WEEKLY RE-EXTRACT.** `derive.yml`'s ~40
+   minutes is *pull raw* + *derive everything*; `measure the archive` runs over
+   local extracts and is cheap. Re-extracting from raw is only needed when
+   `extract.py` changes. **Measured 2026-10-03: an extract averages 84 KB, so the
+   whole extract archive is ≈ 0.4 GB, and R2 egress is free.**
+7. **THE NIGHTLY COMMIT TO `main` IS APPROVED** (Kevin, 2026-10-03: *"go"*).
+   `data/measures.json` is a BUILD INPUT for six static learn pages that carry zero
+   scripts and `connect-src 'self'` and so cannot fetch. If the published document
+   moves nightly, that committed copy must move with it or `measures_fresh.py`
+   goes red every night — that red is deliberate, a prompt for a human. So the
+   nightly job refreshes and commits it, which triggers a deploy and republishes
+   the learn pages with current figures.
+8. **THE SURFACES PRINT IT.** The panels and the learn pages say what they are
+   measured through, so a reader is told rather than having to trust.
+
+## The check, in one line
+
+    derive(catalog.json rows)  ==  measures.json dataThrough  ==  index.json dataThrough
+
+## ✅ Already shipped, 2026-10-03 — the wording half (`bb63787`)
+
+Six surfaces said a measurement figure was an archive count. All now say
+`we have measured`. Found by sweeping RENDERED PROSE for a number adjacent to an
+archive claim, not by fixing the sentence Kevin quoted.
+`test/overlay-archive-door.test.js` holds it with the fixture that was missing —
+one where measured ≠ held, which no fixture in the repo provided, because every
+fixture builds its distributions FROM its fixture games.
+
+---
+
 ## ⏭ 0.00 PICK UP HERE — 2026-10-02
 
 **Kevin is reading the site LINE BY LINE. The work is his list, in his order.** Do
