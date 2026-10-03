@@ -32,6 +32,108 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 
 This section is the orientation. Everything below §0 is the detail, organised by
 state.
+## ⏭ 0.00 PICK UP HERE — 2026-10-03 (evening)
+
+# ✅ TWO THINGS SHIPPED TODAY, AND THE SECOND ONE TOOK FOUR TRIES
+
+Everything below is done, live and green. **Nothing is open.** The next session
+starts from whatever Kevin is reading on screen, which is how every commit in
+this file's recent history began.
+
+---
+
+# ① THE PIPELINE CARRIES `dataThrough` — built, ran, confirmed
+
+A reader on the Capitals' opener was told *"the middle half of the **8 games we
+hold** for this game's season"* while the archive held **21**. ⭐ **A figure
+carried a guarantee that was true when written and expired silently, and the
+prose asserted the guarantee instead of the figure.** Equal for every finished
+season, so invisible until a season in progress became a reference class.
+
+**`measures.json` now carries `dataThrough`** at the document and inside every
+`perGame` season entry, derived from the extracts' own game dates — never a
+clock, so the document stays a function of its input and the weekly derive still
+produces identical bytes from identical extracts. A nightly `measure` job in
+`ingest.yml` pulls the archive (4,572 extracts, 371 MB), measures it, checks the
+span on both sides of the publish, and commits the refreshed build input only if
+`npm run gates` passes. It ran for real: `5bff863`, pushed by
+`readthegame-ingest`. **A 2026-27 reader is now told "the 21 games we have
+measured… up to 2 October 2026."**
+
+## ⚠️ TWO THINGS I TOLD KEVIN THAT WERE WRONG, both settled
+
+1. **Ruling 7's premise was mine and false.** I said `measures_fresh.py` would go
+   red nightly without the commit. It runs WEEKLY, in the job that refreshes the
+   file. He confirmed the ruling anyway — *"having the learn pages up to a week
+   behind is a non-starter"* — and **the cost I quoted was also wrong**: I said
+   ~24 files of churn a night; the first real commit was **2 files, 2 lines**.
+2. **The spec's one-line check was unsound.** `index.json`'s `dataThrough` counts
+   every game held, preseason included (385 of 4,639), so equating it with the
+   measurement's span would have been red for all of preseason. Built as equality
+   where the population matches and a DIRECTION (`index >= measured`) where it
+   does not, with a test whose only job is to stop someone tightening it back.
+
+---
+
+# ② THE PREVIEW CARD, REBUILT FROM KEVIN'S READING — four rounds
+
+⭐⭐⭐ **THE ARC IS THE LESSON AND IT IS WORTH READING BEFORE TOUCHING THIS CARD.**
+He said he could not read it; I fixed the RENDERING twice before questioning the
+ENCODING, and the encoding was the problem the whole time.
+
+| round | what he said | what was actually wrong |
+|---|---|---|
+| 1 | *"something is amiss with our calculations"* | the bar was drawn at `fill-opacity: games/need` = **1/35**, so the shaded band showed through it and its edge read as a fill level |
+| 2 | *"I don't know what the 35 and 37 mean, no idea"* | the three rows are **two different kinds of share** and nothing said which — `level5` is of BOTH SIDES, `dmen` and `slot` of the club's OWN |
+| 3 | *"lines stop at the same point, but the numbers say 40 / 25"* | the bar ran **from the league figure to the value**, so its length was the GAP and every bar ended on the tick |
+| 4 | *"I'd remove the shading… 'a mark outside it' can't be true"* | the band compared a **one-game** figure against **full-season** figures, so nearly every club is "outside" in October |
+
+**What the card is now:** a rail, a league tick, and a mark at each club's own
+value. Nothing in the picture has a length. Every figure carries `%`, every row
+states its own denominator in words (`CLUB_ROWS[].says`), the counts line names
+its noun, and all three cards open the scale sentence identically.
+
+⛔ **A VALUE ON A TRUNCATED AXIS HAS ONE HONEST ENCODING: WHERE IT SITS.** The
+axis starts at the lowest club-season, not at zero, so a bar from the left edge
+would give the lowest club no bar at all. That rule is why round 3 could not be
+fixed with a different bar.
+
+⛔ **AND THE LEAGUE NOTE NO LONGER DELIVERS A VERDICT.** It said *"is mostly
+luck"*; Kevin: *"quite subjective, which we don't do."* The fix was the
+measurement the word stood in for — `settle.admission`, read from the document.
+
+## ✅ And the work doors land
+
+Every `How this is counted →` went to the page header. **Nothing was wrong with
+either end** — the hrefs are right, the ids are right, both call `anchorOf`, and
+a test already proved every door has a section. `how-we-measure.html` is a SHELL
+whose sections are drawn after `measures.json` arrives, and a browser resolves a
+fragment while PARSING, against an empty host. The boot resolves it itself now,
+and moves focus as well as the scroll.
+
+---
+
+# ⚠️ THE CHART HAD NO CHECK OF ANY KIND
+
+`grep trackFor test/ tools/` returned **nothing** on the day it broke: 1,600
+tests, fourteen browser probes, and the one picture a novice is sent to had
+nothing looking at it. ⭐ **Grepping the suite for the name of a drawing function
+is one command and finds blind spots directly.** Two probes exist now:
+
+| probe | what it asserts | its canary |
+|---|---|---|
+| `preview-marks` | each mark sits at the number printed beside it, and carries club ink | every mark put back on the league tick — the old encoding |
+| `methods-deeplink` | every work door lands on its own section, and takes focus | scroll back to the top after the page draws |
+
+⛔ **BOTH WERE WRONG SEVERAL TIMES AND THE MUTATIONS ARE WHY I KNOW.** The ones
+worth carrying forward are in `mechanize-the-review` #52–#54; the shortest is
+**a check written against the easy state approves the thing it forbids** — the
+band spans the whole axis when no club is outside it, so "no region on the track"
+passed with the band restored.
+
+---
+
+
 ## ⏭ 0.00 PICK UP HERE — 2026-10-03
 
 # ✅ BUILT: `dataThrough` IS CARRIED ALONG THE PIPELINE
