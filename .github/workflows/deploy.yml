@@ -161,6 +161,19 @@ jobs:
       - name: the three doors line up
         run: node tools/browser/run.mjs door-row
 
+      # `tools/browser/preview-bars.mjs` — a bar on the preview card is ONE SHAPE
+      # IN ONE TONE. Kevin read tonight's WSH-TBL preview on 2026-10-03 and said
+      # it "looks like something is amiss with our calculations". Nothing was: the
+      # bar's fill is `fill-opacity: games / need`, which in October is 1/35, so
+      # the bar was painted at three per cent and the shaded band showed straight
+      # through it — the band's edge landing mid-bar as a crisp step that reads as
+      # a fill level. ⚠️ `grep trackFor test/ tools/` returned NOTHING that day:
+      # 1,600 tests and fourteen probes, and the one picture on the page a novice
+      # is sent to had no check at all. This is pixels, because every structural
+      # fact about that markup was true while the picture was unreadable.
+      - name: a preview bar is one tone
+        run: node tools/browser/run.mjs preview-bars
+
       # THE LEARN PAGE'S DOORS POINT AT ONE GAME, so that game being published
       # is a production dependency of nine links on a page a stranger reads.
       #

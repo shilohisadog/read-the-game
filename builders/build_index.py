@@ -3998,11 +3998,44 @@ __HELPERS__
         var to = at(s.value);
         var x = Math.min(from, to), w = Math.max(Math.abs(to - from), 0.6);
         var ink = readableInk(colourOf(s.ab));
+        /* ⛔⛔⛔ AN OPAQUE BACKDROP, AND IT IS THE WHOLE REPAIR — Kevin, 2026-10-03,
+           reading tonight's preview: *"definitely looks like something is amiss
+           with our calculations, or else I don't understand how to read the line
+           graphs."* Nothing was amiss with the calculations.
+
+           The fill above is `fill-opacity: games / need`, and on a preview in
+           OCTOBER that is 1/35 — the bar is drawn at THREE PER CENT. So what a
+           reader saw inside the outline was not the bar at all: it was the
+           shaded band showing straight through it, and the band's edge landed
+           mid-bar as a crisp colour step. A step inside a bar reads as a FILL
+           LEVEL, which is the one thing it is not. Measured on his screenshot:
+           every bar changed tone at x=965 and the band edge computes to x=970.
+
+           ⭐ THE RAMP IS UNTOUCHED. Kevin ruled the opacity ramp and it still
+           says exactly what it said — a bar on one game is pale, a bar on forty
+           is solid. White underneath only stops the backdrop being mistaken for
+           the bar's own contents. The bar is one shape now, in one tone. */
+        svg.appendChild(svgEl('rect', { x: x, y: 2.2, width: w, height: 5.6, rx: 0.8,
+          fill: '#fff' }));
         svg.appendChild(svgEl('rect', { x: x, y: 2.2, width: w, height: 5.6, rx: 0.8,
           fill: ink, 'fill-opacity': s.trust.toFixed(3) }));
         svg.appendChild(svgEl('rect', { x: x, y: 2.2, width: w, height: 5.6, rx: 0.8,
           fill: 'none', stroke: ink, 'stroke-width': 0.35 }));
       }
+      /* ⭐ AND THE BAND'S EDGES SURVIVE BEING COVERED. Making the bar opaque hid
+         the one thing the caption tells the reader to look for — *"a bar past it
+         is beyond anything a full season has produced"* — because in this very
+         card BOTH bars lie across the band's lower edge. A region that can be
+         occluded cannot carry a boundary, so the boundary is drawn as its own
+         mark, on top, and only where it falls inside the axis. Shorter and
+         paler than the league tick below, which stays the tallest, darkest mark
+         on the track because it is the one the bars are measured from. */
+      if (range) [range.min, range.max].forEach(function (v) {
+        var e = at(v);
+        if (e <= 0.4 || e >= 99.6) return;     /* flush with the axis end: no edge to mark */
+        svg.appendChild(svgEl('rect', { x: e - 0.12, y: 3.1, width: 0.24, height: 3.8,
+          fill: '#8fb0cc' }));
+      });
       /* ⛔ THE TICK IS DRAWN LAST, AND IT WAS INVISIBLE BECAUSE IT WAS DRAWN
          FIRST. Every bar starts ON the league value, so the bar's rounded end
          covered the one mark the whole picture is measured against. SVG has no

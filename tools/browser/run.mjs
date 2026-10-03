@@ -24,6 +24,7 @@ export const CHECKS = {
   'stylesheet-settles': () => import('./stylesheet-settles.mjs'),
   'replay-states': () => import('./states.mjs'),
   'door-row': () => import('./door-row.mjs'),
+  'preview-bars': () => import('./preview-bars.mjs'),
 };
 
 function args(argv) {

@@ -553,3 +553,114 @@ test('the probe reads nothing out of a page that never wrote its answer', () => 
   assert.deepEqual(readDoors('<script type="text/plain" id="out">{"booted":true}</script>'), { booted: true });
   assert.ok(TOLERANCE > 0 && TOLERANCE < 5, 'the tolerance is a few pixels of rounding, not a licence');
 });
+
+/* ────────────────────────────────────────────────────────────────────────────
+   `preview-bars` — the judgement, with no browser anywhere near it.
+
+   The probe reads pixels; this file holds the RULE it applies to them, so the
+   rule can be pushed at with rows this repo made up. The pixel rows below are
+   what a 24-sample sweep of a bar's interior looks like.
+   ──────────────────────────────────────────────────────────────────────────── */
+import { judgeBars, fixture as barFixture, readBars } from '../tools/browser/preview-bars.mjs';
+
+/* ⚠️ A ROW CARRIES A VISIBLE BAND EDGE BY DEFAULT, because `judgeBars` refuses a
+   reading with no edge in it at all — the card's axis is wider than its band on
+   two of three rows, so no marks means either the marks are gone or the fixture
+   stopped drawing the dangerous shape. These tests are about the TONE rule, so
+   they hand it a healthy edge and vary only the pixels. */
+const row = (...runs) => ({ bar: true, w: 600, span: [40, 300],
+  edges: [{ x: 292, from: 48 }],
+  px: runs.flatMap(([rgb, n]) => Array.from({ length: n }, () => rgb)) });
+
+test('⭐ a bar of one tone passes, and a bar with a step in it does not', () => {
+  /* ⛔ THE STEP IS THE DEFECT. A bar drawn at 3% opacity over a shaded band shows
+     the band's edge as a crisp change of tone partway along, and a reader takes
+     that for a fill level. The passing row is the same bar over an opaque
+     backdrop: one shape, one tone. */
+  assert.deepEqual(judgeBars([row([[247, 250, 252], 24])]), []);
+  const stepped = judgeBars([row([[255, 255, 255], 10], [[207, 224, 238], 14])]);
+  assert.equal(stepped.length, 1, 'a bar that changes tone across itself was accepted');
+  assert.match(stepped[0], /changes tone across its own interior/);
+  assert.match(stepped[0], /fill level/, 'the message does not say what a reader sees');
+});
+
+test('⭐ antialiasing is tolerated and a real step is not — the two are far apart', () => {
+  /* The tolerance is 6 per channel. A rounded corner or a subpixel edge moves a
+     channel by a point or two; the band against the card is 48 points of blue.
+     MUTATION: raise TOLERANCE past 48 and the second half of this fires. */
+  assert.deepEqual(judgeBars([row([[247, 250, 252], 12], [[250, 252, 253], 12])]), [],
+    'a two-point drift was read as a step');
+  assert.equal(judgeBars([row([[255, 255, 255], 12], [[207, 224, 238], 12])]).length, 1);
+});
+
+test('⛔ a band edge the bar has covered is a failure — it is drawn to be seen', () => {
+  /* ⛔ THE LEAGUE TICK ALREADY PAID FOR THIS ONE, and the comment beside it in
+     build_index.py says so: *"THE TICK IS DRAWN LAST, AND IT WAS INVISIBLE
+     BECAUSE IT WAS DRAWN FIRST. SVG has no z-index; paint order is document
+     order."* The band edge is a second mark with the same hazard, and making the
+     bar opaque is what created it — before that, nothing could cover anything.
+     MUTATION: move the edge block above the bar in `trackFor` and the probe
+     reports a difference of 0 against the page either side. */
+  const covered = judgeBars([row([[247, 250, 252], 24])].map(
+    r => ({ ...r, edges: [{ x: 292, from: 0 }] })));
+  assert.equal(covered.length, 1, 'an edge painted under the bar was accepted');
+  assert.match(covered[0], /invisible/);
+  assert.match(covered[0], /caption tells the reader to look for that boundary/);
+  /* AND A FAINT-BUT-PRESENT EDGE IS FINE: the rule is visibility, not contrast. */
+  assert.deepEqual(judgeBars([row([[247, 250, 252], 24])].map(
+    r => ({ ...r, edges: [{ x: 292, from: 7 }] }))), []);
+});
+
+test('⛔ a probe that measured nothing is a FAILURE, never a pass', () => {
+  /* ⛔⛔⛔ THE SHAPE THIS REPO PAYS FOR MOST. Every assertion in `judgeBars` is
+     vacuous on a page that drew no bars, and "no bars, no steps, all good" is
+     exactly how a check comes to approve everything. Four separate ways to end
+     up with nothing, each one named. */
+  assert.ok(judgeBars(null).length, 'a silent probe passed');
+  assert.ok(judgeBars([]).length, 'an empty reading passed');
+  assert.ok(judgeBars([{ bar: false }]).length, 'a page with no outlined bar passed');
+  const thin = judgeBars([{ bar: true, w: 600, span: [434, 434], px: [],
+    edges: [{ x: 292, from: 48 }] }]);
+  assert.ok(thin.length, 'a zero-width bar was judged rather than reported');
+  assert.match(thin[0], /too narrow to judge/,
+    'the message does not say the probe is not looking at it');
+  /* ⭐ AND A READING WITH NO BAND EDGE ANYWHERE IS ALSO NOTHING. The axis on this
+     card is wider than the band on two of its three rows, so marks are expected;
+     their absence means the marks went or the fixture stopped drawing the shape
+     this probe exists for. Either way every tone assertion above is vacuous. */
+  const noEdges = judgeBars([{ bar: true, w: 600, span: [40, 300],
+    px: Array.from({ length: 24 }, () => [247, 250, 252]) }]);
+  assert.ok(noEdges.length, 'a card with no band edge at all passed');
+  assert.match(noEdges[0], /not one band-edge mark/);
+});
+
+test('⭐⭐ the fixture puts the league figure where the real card has it', () => {
+  /* ⛔ AND THAT IS WHAT MAKES THE PICTURE DANGEROUS. `leagueShares` sums over
+     every club in the season bucket, so a fixture holding only the two clubs in
+     the game puts the league figure BETWEEN them and draws bars of ZERO WIDTH —
+     which is what the first version of this probe did, skipping four of its six
+     bars while reporting a pass on the other two. The filler clubs exist to make
+     a bar long enough to cross a band edge.
+     ⚠️ ASSERTED HERE, not trusted: the arithmetic is four numbers per row and a
+     later edit to the fixture would silently flatten the bars again. */
+  const clubs = barFixture({})['teams.json'].seasons[2026];
+  const sum = f => Object.values(clubs).reduce((a, t) => a + f(t), 0);
+  const league = {
+    level5: sum(t => t.level5.for) / sum(t => t.level5.for + t.level5.against),
+    dmen: sum(t => t.dmen.count) / sum(t => t.dmen.n),
+    slot: sum(t => t.slot.count) / sum(t => t.slot.n),
+  };
+  assert.equal(Math.round(league.level5 * 100), 50, 'level5 league is not 50% — the fixture is not a league');
+  assert.equal(Math.round(league.dmen * 100), 31);
+  assert.equal(Math.round(league.slot * 100), 50);
+  /* AND THE TWO CLUBS IN THE GAME CARRY THE NUMBERS KEVIN WAS READING. */
+  assert.equal(clubs.WSH.level5.for, 4);
+  assert.equal(clubs.WSH.level5.for + clubs.WSH.level5.against, 10);
+  assert.equal(clubs.TBL.level5.for, 2);
+  assert.equal(clubs.TBL.level5.for + clubs.TBL.level5.against, 8);
+});
+
+test('⛔ the reader answers null when the page said nothing', () => {
+  assert.equal(readBars('<html><body><p>nothing here</p></body></html>'), null);
+  assert.deepEqual(readBars('<p id="barsout">BARS [{"bar":false}]</p>'), [{ bar: false }]);
+});
