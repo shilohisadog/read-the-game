@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-d1XUP/Zd5ZeZ9BzbeoonmgMiFdbSUeH6fFVbQVWVPeM=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig=' 'sha256-3X9HVvxM/3yUsTAYNxLhsF9xK7Hi2mREYVg1+zQCEYc='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-lWy+XwdK0HUWGExmuKPJD+ocnZ476ClMlaOTIPvucEQ=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig=' 'sha256-usXyJrx9wThElsVLPGF2vRZ+lCvdyn/tlCbZbzcfGWg='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -643,6 +643,12 @@ footer p{margin:0 0 8px}
  justify-content:space-between;margin:0 0 10px}
 .pvlab{margin:0;font-size:.95rem;font-weight:700}
 .pvref{font-size:.78rem;color:var(--muted);font-variant-numeric:tabular-nums}
+/* ⭐ WHAT THE NUMBER COUNTS, between the title and the picture of it. It sits
+   ABOVE the chart on purpose: a reader meets the sentence before the bar, which
+   is the order the card failed in — Kevin met the bar first and had, in his
+   words, no idea what 35 and 37 meant. */
+.pvsays{margin:-4px 0 10px;font-size:.84rem;color:var(--muted);line-height:1.45;
+ max-width:62ch}
 /* ⛔ THE ROW IS DRAWN EVEN WITH NO CLUB FIGURE ON IT, and that is not a chart of
    nothing. The shaded band and its median are MEASURED — the full-season figures
    real clubs posted over three seasons — so the axis carries real data before the
@@ -1203,8 +1209,46 @@ function extraLeagueRows(measures, c, perClubGame, ratio) {
 
 { leagueRows };
 
+/**
+ * ⭐⭐⭐ WHAT THE NUMBER COUNTS, IN WORDS — and it is a FIELD because the card
+ * could not be read without it.
+ *
+ * Kevin, 2026-10-03, reading the live card: *"on the shot attempts by defensemen
+ * section, I don't know what the 35 and 37 mean at the right side of the line
+ * graph, no idea."* He wrote the ruling this card was built from. If the author
+ * cannot read it, the novice it is for never could.
+ *
+ * ⛔⛔⛔ AND THE REASON IS NOT THAT A UNIT WAS MISSING. THESE THREE ROWS LOOK
+ * IDENTICAL AND ARE TWO DIFFERENT KINDS OF SHARE:
+ *
+ *   level5   the denominator is BOTH CLUBS' attempts — so the league figure is
+ *            50% by construction, and the two clubs in a game would sum to 100
+ *            if they had played each other.
+ *   dmen     the denominator is THIS CLUB'S OWN attempts — league 31%.
+ *   slot     the denominator is THIS CLUB'S OWN located attempts — league 50%
+ *            this season, which is a coincidence and reads exactly like level5's
+ *            50%, which is not.
+ *
+ * A reader cannot tell those apart from a bar and a number, and nothing on the
+ * card distinguished them. So each row states its own denominator in a sentence,
+ * here, once — the same rule `archive.js::perGame` already follows for the
+ * replay's lenses: *"a summary that says '55 goaltending' is a label nobody
+ * wrote, and one that reaches for its own wording is a second vocabulary."*
+ *
+ * ⚠️ "of every 100", NOT "%". The house split: a chart AXIS is read as percent,
+ * and prose for a novice says "of every 100" — the form the league tiles on this
+ * same page already use.
+ */
 const CLUB_ROWS = [
   { key: 'level5', label: '5-on-5 CF% while the score was level',
+    /* ⚠️ "BOTH SIDES" MEANS THIS CLUB AND ITS OPPONENTS, NOT THE TWO CLUBS ON
+       THIS CARD, and the first draft of this sentence said "the two clubs took
+       between them" — which reads as WSH against TBL. They have not played each
+       other: each figure is that club's own season so far, and on this card both
+       were one game against somebody else. A sentence that invites a reader to
+       add 40 and 25 and expect 100 is worse than no sentence. */
+    says: 'Of every 100 shot attempts at 5-on-5 with the score level in this '
+        + 'club\u2019s own games — both sides counted — this many were its own.',
     /* THE ONE INDUSTRY LABEL ON THE SITE, and it may only sit on strict 5-on-5
        (`1551`) — score-close and score-adjusted CF% are different defined terms.
        The level condition is not decoration: every trailing club pushes, so a
@@ -1216,6 +1260,8 @@ const CLUB_ROWS = [
        is the copy this project keeps almost making. */
     ofGame: (g, side) => ({ count: g.lvl5[side], n: g.lvl5.h + g.lvl5.a }) },
   { key: 'dmen', label: 'shot attempts taken by defencemen',
+    says: 'Of every 100 shot attempts this club took, this many came from one of '
+        + 'its own defencemen.',
     of: t => ({ count: t.dmen.count, n: t.dmen.n }),
     ofGame: (g, side) => ({ count: g.dAtt[side], n: g.attempts[side] }) },
   /* ⛔⛔⛔ `missed` WAS HERE FOR ABOUT FOUR HOURS ON 2026-09-23 AND IS NOT COMING
@@ -1245,6 +1291,11 @@ const CLUB_ROWS = [
      is a person in the arena deciding. That is the line, and it is worth more
      than this row was. */
   { key: 'slot', label: 'shot attempts from the slot',
+    /* ⚠️ THE DENOMINATOR IS THE LOCATED ATTEMPTS, NOT ALL OF THEM, and the
+       sentence says so: a blocked shot's coordinate is the BLOCK POINT, so an
+       attempt a body stopped has no shot location and is in neither part. */
+    says: 'Of every 100 shot attempts this club took from a spot the feed records, '
+        + 'this many came from the slot.',
     of: t => ({ count: t.slot.count, n: t.slot.n }),
     ofGame: (g, side) => ({ count: g.slot[side], n: g.located[side] }) },
 ];
@@ -1376,7 +1427,7 @@ function rowsFor(ab, season, teams, recent, league, needs) {
      defect chosen on purpose. The rows still appear, saying they have nothing
      yet, because the card's shape may not change from one week to the next. */
   const tally = CLUB_ROWS.filter(r => !needs || needs[r.key] != null)
-    .map(r => ({ key: r.key, label: r.label,
+    .map(r => ({ key: r.key, label: r.label, says: r.says,
       need: needs ? needs[r.key].need : null,
       range: needs ? needs[r.key].range : null,
       count: 0, n: 0 }));
@@ -1493,7 +1544,13 @@ function preview(id, docs, now) {
 
   const shares = leagueShares(season, d.teams, d.recent);
   const needs = needsFrom(d.measures);
+  /* ⭐ HOW MANY GAMES A ROW MAY NEED AND STILL BE SHOWN AS A CLUB ROW. Published
+     by `reliability.js` and carried here because the page says it OUT LOUD: the
+     league rows above the clubs are league rows precisely because they need more
+     than this, and the sentence under them used to call that "mostly luck". */
+  const settles = ((d.measures || {}).settle || {}).admission;
   return { state, game, result, counting: countingFrom(d.schedule, now),
+    settles: settles == null ? null : settles,
     clubs: { away: rowsFor(away, season, d.teams, d.recent, shares, needs),
              home: rowsFor(home, season, d.teams, d.recent, shares, needs) },
     league: leagueRows(d.measures) };
@@ -1724,16 +1781,20 @@ function anchorFor(rowKey) {
         y: 1.2, width: 0.44, height: 7.6, fill: '#2b3b46' }));
       wrap.appendChild(svg);
 
+      /* ⭐ THE UNIT IS ON THE NUMBER. It read `35` against a `league 31%` in the
+         same card — the one figure a reader's eye lands on, with nothing saying
+         what it was. */
       var v = el('span', s.value == null ? 'pvv none' : 'pvv',
-        s.value == null ? 'no games yet' : pct(s.value));
+        s.value == null ? 'no games yet' : pct(s.value) + '%');
       wrap.appendChild(v);
     });
     /* The scale, under the last club's bar. Column 2 of the grid, so it lines up
        with the tracks above it and with nothing else. */
     wrap.appendChild(el('span'));
     var ends = el('div', 'pvends');
-    ends.appendChild(el('span', null, pct(lo)));
-    ends.appendChild(el('span', null, pct(hi)));
+    /* The axis names its own ends, WITH the unit — the same repair as the value. */
+    ends.appendChild(el('span', null, pct(lo) + '%'));
+    ends.appendChild(el('span', null, pct(hi) + '%'));
     wrap.appendChild(ends);
     wrap.appendChild(el('span'));
     return { node: wrap, lo: lo, hi: hi };
@@ -1800,9 +1861,22 @@ function anchorFor(rowKey) {
       var pp = p.league.filter(function (r) { return r.key === 'powerplay'; })[0];
       p.league.forEach(function (r) { tiles.appendChild(tileFor(r, pp)); });
       frame.appendChild(tiles);
+      /* ⛔⛔⛔ THIS SAID "is mostly luck" UNTIL 2026-10-03. Kevin: *"we need to
+         rephrase that sentence, since saying '....is mostly luck....' is quite
+         subjective, which we don't do."* He is right, and the fix is not a softer
+         adjective — it is the MEASUREMENT that produced the word.
+         A row is shown as a club row only if a club's own figure for it repeats
+         between the two halves of a season within `settle.admission` games. These
+         three do not, so they are league rows. That is a measured property with a
+         published number on it, and `settles` carries it from measures.json
+         rather than this sentence naming one. */
       frame.appendChild(el('p', 'pvn', 'Measured over ' + num(p.league[0].games)
-        + ' games in this archive. Which teams do better than this over a season is '
-        + 'mostly luck, so these are not counted against either club.'));
+        + ' games in this archive. None of these is counted against either club: '
+        + 'a club\u2019s own figure for them does not hold steady from one half of a '
+        + 'season to the next'
+        + (p.settles ? ' — it would take more than ' + p.settles + ' games, more than '
+           + 'half a season, before it did' : '')
+        + ', so one season cannot tell two clubs apart on them.'));
       $('pv').appendChild(frame);
     }
 
@@ -2002,6 +2076,19 @@ function anchorFor(rowKey) {
       var trust = (r.need && r.games) ? Math.min(1, r.games / r.need) : 0;
       return { ab: c.ab, value: r.value, league: r.league, trust: trust };
     });
+    /* ⭐⭐⭐ WHAT THE NUMBER COUNTS, BEFORE THE PICTURE OF IT. Kevin, reading the
+       live card on 2026-10-03: *"on the shot attempts by defensemen section, I
+       don't know what the 35 and 37 mean at the right side of the line graph, no
+       idea."* The author of the ruling this card was built from could not read
+       it, so nobody could.
+       ⛔ AND THE MISSING THING IS THE DENOMINATOR, not a `%` sign. Two of these
+       three rows are a share of THIS CLUB'S OWN attempts and one is a share of
+       BOTH CLUBS' — identical-looking rows meaning different things, with the
+       slot row's league figure sitting at 50% this season by coincidence and
+       reading exactly like the one that is 50% by construction. The sentence is
+       `preview.js::CLUB_ROWS[].says`, stated once beside the measure it belongs
+       to, never composed here. */
+    if (ar.says) box.appendChild(el('p', 'pvsays', ar.says));
     var track = trackFor(ar, sides);
     if (track) box.appendChild(track.node);
 
@@ -2012,8 +2099,11 @@ function anchorFor(rowKey) {
          invents a cliff the data does not have, and "12 of 35 games" says the
          same thing continuously -- and tells two clubs with 12 and 9 games
          apart, which a badge cannot. */
+      /* ⭐ THE FIRST FIGURE GETS ITS NOUN. The line read "WSH 15 of 43 · 1 of 23
+         games" — two `of N` figures side by side, the second saying what it
+         counts and the first saying nothing. One word, and both are readable. */
       if (r.value != null) foot.push(ab + ' ' + num(r.count) + ' of ' + num(r.n)
-        + ' · ' + r.games + ' of ' + r.need + ' games'
+        + ' attempts · ' + r.games + ' of ' + r.need + ' games'
         + (r.settled ? ' · settled' : ' · still forming'));
     });
     /* ⛔ "SHADED" WAS A WORD FOR SOMETHING USUALLY INVISIBLE. The axis runs from
@@ -2037,6 +2127,15 @@ function anchorFor(rowKey) {
         + (ar.range.games ? ', measured over ' + num(ar.range.games) + ' club-games' : '')
         + ' in ' + ar.range.n + ' club-seasons'
         + (wider ? ' — a bar past it is beyond anything a full season has produced.' : '.'));
+    }
+    /* ⭐ AND WHAT THE BAR ITSELF IS, because its LENGTH is a distance and a
+       reader reads length as a quantity. On a card where both clubs sit below
+       the league figure, the longer bar belongs to the club further from it —
+       which is the opposite of what a bar normally says, and nothing on the card
+       said otherwise. Printed only when there is a bar to explain. */
+    if (track && ar.value != null && ar.league != null) {
+      foot.push('Each bar runs from the league figure to that club\u2019s own, so '
+        + 'its length is the gap between them and the tick is the league.');
     }
     if (!foot.length) foot.push(noneYet(p.counting));
     var fp = el('p', 'pvfoot');

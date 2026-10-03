@@ -3864,6 +3864,12 @@ PREVCSS = r"""<style>
  justify-content:space-between;margin:0 0 10px}
 .pvlab{margin:0;font-size:.95rem;font-weight:700}
 .pvref{font-size:.78rem;color:var(--muted);font-variant-numeric:tabular-nums}
+/* ⭐ WHAT THE NUMBER COUNTS, between the title and the picture of it. It sits
+   ABOVE the chart on purpose: a reader meets the sentence before the bar, which
+   is the order the card failed in — Kevin met the bar first and had, in his
+   words, no idea what 35 and 37 meant. */
+.pvsays{margin:-4px 0 10px;font-size:.84rem;color:var(--muted);line-height:1.45;
+ max-width:62ch}
 /* ⛔ THE ROW IS DRAWN EVEN WITH NO CLUB FIGURE ON IT, and that is not a chart of
    nothing. The shaded band and its median are MEASURED — the full-season figures
    real clubs posted over three seasons — so the axis carries real data before the
@@ -4044,16 +4050,20 @@ __HELPERS__
         y: 1.2, width: 0.44, height: 7.6, fill: '#2b3b46' }));
       wrap.appendChild(svg);
 
+      /* ⭐ THE UNIT IS ON THE NUMBER. It read `35` against a `league 31%` in the
+         same card — the one figure a reader's eye lands on, with nothing saying
+         what it was. */
       var v = el('span', s.value == null ? 'pvv none' : 'pvv',
-        s.value == null ? 'no games yet' : pct(s.value));
+        s.value == null ? 'no games yet' : pct(s.value) + '%');
       wrap.appendChild(v);
     });
     /* The scale, under the last club's bar. Column 2 of the grid, so it lines up
        with the tracks above it and with nothing else. */
     wrap.appendChild(el('span'));
     var ends = el('div', 'pvends');
-    ends.appendChild(el('span', null, pct(lo)));
-    ends.appendChild(el('span', null, pct(hi)));
+    /* The axis names its own ends, WITH the unit — the same repair as the value. */
+    ends.appendChild(el('span', null, pct(lo) + '%'));
+    ends.appendChild(el('span', null, pct(hi) + '%'));
     wrap.appendChild(ends);
     wrap.appendChild(el('span'));
     return { node: wrap, lo: lo, hi: hi };
@@ -4120,9 +4130,22 @@ __HELPERS__
       var pp = p.league.filter(function (r) { return r.key === 'powerplay'; })[0];
       p.league.forEach(function (r) { tiles.appendChild(tileFor(r, pp)); });
       frame.appendChild(tiles);
+      /* ⛔⛔⛔ THIS SAID "is mostly luck" UNTIL 2026-10-03. Kevin: *"we need to
+         rephrase that sentence, since saying '....is mostly luck....' is quite
+         subjective, which we don't do."* He is right, and the fix is not a softer
+         adjective — it is the MEASUREMENT that produced the word.
+         A row is shown as a club row only if a club's own figure for it repeats
+         between the two halves of a season within `settle.admission` games. These
+         three do not, so they are league rows. That is a measured property with a
+         published number on it, and `settles` carries it from measures.json
+         rather than this sentence naming one. */
       frame.appendChild(el('p', 'pvn', 'Measured over ' + num(p.league[0].games)
-        + ' games in this archive. Which teams do better than this over a season is '
-        + 'mostly luck, so these are not counted against either club.'));
+        + ' games in this archive. None of these is counted against either club: '
+        + 'a club\u2019s own figure for them does not hold steady from one half of a '
+        + 'season to the next'
+        + (p.settles ? ' — it would take more than ' + p.settles + ' games, more than '
+           + 'half a season, before it did' : '')
+        + ', so one season cannot tell two clubs apart on them.'));
       $('pv').appendChild(frame);
     }
 
@@ -4322,6 +4345,19 @@ __HELPERS__
       var trust = (r.need && r.games) ? Math.min(1, r.games / r.need) : 0;
       return { ab: c.ab, value: r.value, league: r.league, trust: trust };
     });
+    /* ⭐⭐⭐ WHAT THE NUMBER COUNTS, BEFORE THE PICTURE OF IT. Kevin, reading the
+       live card on 2026-10-03: *"on the shot attempts by defensemen section, I
+       don't know what the 35 and 37 mean at the right side of the line graph, no
+       idea."* The author of the ruling this card was built from could not read
+       it, so nobody could.
+       ⛔ AND THE MISSING THING IS THE DENOMINATOR, not a `%` sign. Two of these
+       three rows are a share of THIS CLUB'S OWN attempts and one is a share of
+       BOTH CLUBS' — identical-looking rows meaning different things, with the
+       slot row's league figure sitting at 50% this season by coincidence and
+       reading exactly like the one that is 50% by construction. The sentence is
+       `preview.js::CLUB_ROWS[].says`, stated once beside the measure it belongs
+       to, never composed here. */
+    if (ar.says) box.appendChild(el('p', 'pvsays', ar.says));
     var track = trackFor(ar, sides);
     if (track) box.appendChild(track.node);
 
@@ -4332,8 +4368,11 @@ __HELPERS__
          invents a cliff the data does not have, and "12 of 35 games" says the
          same thing continuously -- and tells two clubs with 12 and 9 games
          apart, which a badge cannot. */
+      /* ⭐ THE FIRST FIGURE GETS ITS NOUN. The line read "WSH 15 of 43 · 1 of 23
+         games" — two `of N` figures side by side, the second saying what it
+         counts and the first saying nothing. One word, and both are readable. */
       if (r.value != null) foot.push(ab + ' ' + num(r.count) + ' of ' + num(r.n)
-        + ' · ' + r.games + ' of ' + r.need + ' games'
+        + ' attempts · ' + r.games + ' of ' + r.need + ' games'
         + (r.settled ? ' · settled' : ' · still forming'));
     });
     /* ⛔ "SHADED" WAS A WORD FOR SOMETHING USUALLY INVISIBLE. The axis runs from
@@ -4357,6 +4396,15 @@ __HELPERS__
         + (ar.range.games ? ', measured over ' + num(ar.range.games) + ' club-games' : '')
         + ' in ' + ar.range.n + ' club-seasons'
         + (wider ? ' — a bar past it is beyond anything a full season has produced.' : '.'));
+    }
+    /* ⭐ AND WHAT THE BAR ITSELF IS, because its LENGTH is a distance and a
+       reader reads length as a quantity. On a card where both clubs sit below
+       the league figure, the longer bar belongs to the club further from it —
+       which is the opposite of what a bar normally says, and nothing on the card
+       said otherwise. Printed only when there is a bar to explain. */
+    if (track && ar.value != null && ar.league != null) {
+      foot.push('Each bar runs from the league figure to that club\u2019s own, so '
+        + 'its length is the gap between them and the tick is the league.');
     }
     if (!foot.length) foot.push(noneYet(p.counting));
     var fp = el('p', 'pvfoot');

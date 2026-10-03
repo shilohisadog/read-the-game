@@ -366,9 +366,15 @@ test('⛔ the axis names its own ends, so a full-width band is not an empty mete
   await settle();
   const ends = walk(ids.pv).filter(x => (x.className || '').split(' ').includes('pvends'));
   assert.equal(ends.length, 2, 'one scale under each drawable measure');
-  // level5's fixture range is .44–.57, dmen's is .26–.38 — the labels are the
-  // axis's own endpoints, so they differ per row and cannot be typed once.
-  assert.deepEqual(ends.map(e => textOf(e)), ['44 57', '26 38']);
+  /* level5's fixture range is .44–.57, dmen's is .26–.38 — the labels are the
+     axis's own endpoints, so they differ per row and cannot be typed once.
+     ⭐ AND THEY CARRY THE UNIT, since 2026-10-03. Kevin, on the live card: *"I
+     don't know what the 35 and 37 mean at the right side of the line graph, no
+     idea."* Every figure in this picture was a bare number — the club's value,
+     both axis ends — beside a header that said `league 31%`. The `%` is not
+     decoration here; it is the difference between an axis and four loose
+     numbers. */
+  assert.deepEqual(ends.map(e => textOf(e)), ['44% 57%', '26% 38%']);
 });
 
 test('⛔ the caption says SHADED only when there is something shaded to see', () => {

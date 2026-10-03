@@ -653,3 +653,123 @@ test('the card says nothing about the season, even when it has one to use', () =
     assert.match(v, /class="lead"/, `${what}: the verdict lost the sentence it exists for`);
   }
 });
+
+/* ────────────────────────────────────────────────────────────────────────────
+   WHAT THE NUMBER COUNTS — the preview card's club rows, 2026-10-03.
+
+   ⛔⛔⛔ KEVIN, READING THE LIVE CARD: *"I still have no idea what the line graph
+   or the numbers are telling me. For example, on the shot attempts by defensemen
+   section, I don't know what the 35 and 37 mean at the right side of the line
+   graph, no idea."* He wrote the ruling this card was built from.
+
+   ⚠️ AND THE MISSING THING WAS NOT A `%` SIGN. Two of the three rows are a share
+   of THIS CLUB'S OWN attempts and one is a share of BOTH SIDES' — three
+   identical-looking rows meaning two different things, with the slot row's league
+   figure sitting at 50% this season by coincidence and reading exactly like the
+   one that is 50% by construction. Nothing on the card distinguished them, and
+   nothing in the suite could have noticed, because every test here reconciles
+   NUMBERS and the defect was that the numbers had no nouns.
+   ──────────────────────────────────────────────────────────────────────────── */
+import { CLUB_ROWS } from '../src/lib/preview.js';
+
+/**
+ * ⭐⭐ THE DENOMINATOR, DERIVED FROM THE CODE RATHER THAN FROM THE SENTENCE.
+ * `ofGame` is fed a record whose two sides differ, so "n is both sides" and "n is
+ * this club's" are distinguishable by arithmetic. That is the second, independent
+ * path this project requires of any check on prose: the sentence says something,
+ * the reducer does something, and the test is the only place they meet.
+ */
+function denominatorOf(row) {
+  const g = { lvl5: { h: 4, a: 6 }, dAtt: { h: 15, a: 3 }, attempts: { h: 43, a: 7 },
+              slot: { h: 21, a: 2 }, located: { h: 34, a: 5 } };
+  const home = row.ofGame(g, 'h'), away = row.ofGame(g, 'a');
+  return home.n === away.n ? 'both sides' : 'this club';
+}
+
+test('⭐⭐⭐ every club row says what its number counts, and whose', () => {
+  /* MUTATION: delete any `says`, or give the level5 row the defencemen row's
+     wording, and this fires naming the row. */
+  assert.ok(CLUB_ROWS.length >= 3, `only ${CLUB_ROWS.length} club rows — nothing to check`);
+  let bothSides = 0, ownClub = 0;
+  for (const row of CLUB_ROWS) {
+    assert.ok(row.says && row.says.length > 40,
+      `the ${row.key} row carries no sentence saying what its number counts`);
+    /* THE NOVICE FORM, which is what the league tiles on this same page use. A
+       figure a reader meets as a bar needs the unit in words, not just on the axis. */
+    assert.match(row.says, /of every 100/i,
+      `the ${row.key} row's sentence does not say what the figure is out of`);
+
+    const kind = denominatorOf(row);
+    if (kind === 'both sides') {
+      bothSides++;
+      assert.match(row.says, /both sides/i,
+        `the ${row.key} row's denominator is BOTH clubs' attempts and its sentence `
+        + 'does not say so, which is exactly the confusion that made 35 unreadable');
+    } else {
+      ownClub++;
+      assert.match(row.says, /this club/i,
+        `the ${row.key} row's denominator is the club's OWN attempts and its sentence `
+        + 'does not say so');
+      assert.doesNotMatch(row.says, /both sides/i,
+        `the ${row.key} row counts only this club and its sentence says both sides`);
+    }
+  }
+  /* ⛔ AND BOTH KINDS MUST BE PRESENT, or this test is checking one rule against a
+     list that only ever exercises half of it — and the whole defect was that the
+     two kinds look identical. */
+  assert.ok(bothSides >= 1 && ownClub >= 1,
+    `${bothSides} both-sides rows and ${ownClub} own-club rows — the card no longer `
+    + 'mixes the two kinds, so this check no longer protects anything');
+});
+
+test('⭐ the card prints that sentence, and the figures carry their unit', () => {
+  /* ⛔ THE STRINGS BEING IN THE PAGE PROVES ONLY THAT preview.js WAS INLINED.
+     The renderer line is what puts them on screen, and the browser probe
+     `preview-bars` is what proves they are visible. Three claims, three places;
+     this one is the cheapest and runs in gates. */
+  const html = readFileSync(new URL('../src/preview.html', import.meta.url), 'utf8');
+  for (const row of CLUB_ROWS)
+    assert.ok(html.includes(row.says.slice(0, 40)),
+      `the built preview page does not carry the ${row.key} row's sentence`);
+  assert.match(html, /el\('p', 'pvsays', ar\.says\)/,
+    'the renderer no longer draws the sentence, so every string above is dead weight');
+  /* THE UNIT, ON THE NUMBER AND ON THE AXIS. It read `35` beside a `league 31%`
+     in the same card — the one figure a reader's eye lands on, unlabelled. */
+  assert.match(html, /pct\(s\.value\) \+ '%'/, 'the club figure lost its unit again');
+  assert.match(html, /pct\(lo\) \+ '%'/, 'the axis lost its unit again');
+  /* AND THE BAR SAYS WHAT IT IS. Its LENGTH is a distance from the league figure,
+     and a reader reads length as a quantity — on a card where both clubs sit
+     below the league, the longer bar is the club further from it. */
+  assert.match(html, /Each bar runs from the league figure/,
+    'nothing on the card says what the bar’s length means');
+});
+
+test('⛔ the league note states a measurement, not a verdict', () => {
+  /* ⛔⛔⛔ IT SAID "is mostly luck" UNTIL 2026-10-03. Kevin: *"we need to rephrase
+     that sentence, since saying '....is mostly luck....' is quite subjective,
+     which we don't do."*
+
+     ⭐ AND THE FIX IS A POSITIVE RULE, NOT A BANNED WORD. A list of forbidden
+     adjectives is the shape this repo already paid for once, on `we hold`: it
+     catches the instance somebody thought of and nothing else. What makes the
+     sentence honest is that it CITES the measurement that produced the word — a
+     club's figure for these rows does not hold steady across a season's halves,
+     and `settle.admission` is the published number of games that would be needed.
+     So the rule is: the note names that figure and reads it from the document.
+     MUTATION: replace the clause with any adjective and this fires. */
+  const html = readFileSync(new URL('../src/preview.html', import.meta.url), 'utf8');
+  assert.match(html, /does not hold steady from one half of a /,
+    'the league note no longer says what was measured about these rows');
+  assert.match(html, /p\.settles \? ' — it would take more than ' \+ p\.settles/,
+    'the note no longer reads the games figure from the published measurement — a '
+    + 'number typed into that sentence is the hard-coded value rule, in prose');
+  /* ⛔⛔⛔ AND THERE IS NO BANNED-WORD ASSERTION HERE, DELIBERATELY. The first
+     draft had `doesNotMatch(html, /is mostly luck/)` and it went red immediately
+     — on the COMMENT above, which quotes the phrase to explain why it went. The
+     page script ships its comments, so a scan for a string finds the prose about
+     the string. That is this repo's monitor-armed-against-itself shape for the
+     fourth time, and it was in a check written hours after being written up.
+     The two positive assertions above carry the whole claim: the note states
+     what was measured, and it reads the figure from the document. A banned word
+     would only ever have caught the instance somebody already thought of. */
+});

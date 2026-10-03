@@ -52,8 +52,46 @@
 import { leagueRows } from './league-rows.js';
 export { leagueRows };
 
+/**
+ * ⭐⭐⭐ WHAT THE NUMBER COUNTS, IN WORDS — and it is a FIELD because the card
+ * could not be read without it.
+ *
+ * Kevin, 2026-10-03, reading the live card: *"on the shot attempts by defensemen
+ * section, I don't know what the 35 and 37 mean at the right side of the line
+ * graph, no idea."* He wrote the ruling this card was built from. If the author
+ * cannot read it, the novice it is for never could.
+ *
+ * ⛔⛔⛔ AND THE REASON IS NOT THAT A UNIT WAS MISSING. THESE THREE ROWS LOOK
+ * IDENTICAL AND ARE TWO DIFFERENT KINDS OF SHARE:
+ *
+ *   level5   the denominator is BOTH CLUBS' attempts — so the league figure is
+ *            50% by construction, and the two clubs in a game would sum to 100
+ *            if they had played each other.
+ *   dmen     the denominator is THIS CLUB'S OWN attempts — league 31%.
+ *   slot     the denominator is THIS CLUB'S OWN located attempts — league 50%
+ *            this season, which is a coincidence and reads exactly like level5's
+ *            50%, which is not.
+ *
+ * A reader cannot tell those apart from a bar and a number, and nothing on the
+ * card distinguished them. So each row states its own denominator in a sentence,
+ * here, once — the same rule `archive.js::perGame` already follows for the
+ * replay's lenses: *"a summary that says '55 goaltending' is a label nobody
+ * wrote, and one that reaches for its own wording is a second vocabulary."*
+ *
+ * ⚠️ "of every 100", NOT "%". The house split: a chart AXIS is read as percent,
+ * and prose for a novice says "of every 100" — the form the league tiles on this
+ * same page already use.
+ */
 export const CLUB_ROWS = [
   { key: 'level5', label: '5-on-5 CF% while the score was level',
+    /* ⚠️ "BOTH SIDES" MEANS THIS CLUB AND ITS OPPONENTS, NOT THE TWO CLUBS ON
+       THIS CARD, and the first draft of this sentence said "the two clubs took
+       between them" — which reads as WSH against TBL. They have not played each
+       other: each figure is that club's own season so far, and on this card both
+       were one game against somebody else. A sentence that invites a reader to
+       add 40 and 25 and expect 100 is worse than no sentence. */
+    says: 'Of every 100 shot attempts at 5-on-5 with the score level in this '
+        + 'club\u2019s own games — both sides counted — this many were its own.',
     /* THE ONE INDUSTRY LABEL ON THE SITE, and it may only sit on strict 5-on-5
        (`1551`) — score-close and score-adjusted CF% are different defined terms.
        The level condition is not decoration: every trailing club pushes, so a
@@ -65,6 +103,8 @@ export const CLUB_ROWS = [
        is the copy this project keeps almost making. */
     ofGame: (g, side) => ({ count: g.lvl5[side], n: g.lvl5.h + g.lvl5.a }) },
   { key: 'dmen', label: 'shot attempts taken by defencemen',
+    says: 'Of every 100 shot attempts this club took, this many came from one of '
+        + 'its own defencemen.',
     of: t => ({ count: t.dmen.count, n: t.dmen.n }),
     ofGame: (g, side) => ({ count: g.dAtt[side], n: g.attempts[side] }) },
   /* ⛔⛔⛔ `missed` WAS HERE FOR ABOUT FOUR HOURS ON 2026-09-23 AND IS NOT COMING
@@ -94,6 +134,11 @@ export const CLUB_ROWS = [
      is a person in the arena deciding. That is the line, and it is worth more
      than this row was. */
   { key: 'slot', label: 'shot attempts from the slot',
+    /* ⚠️ THE DENOMINATOR IS THE LOCATED ATTEMPTS, NOT ALL OF THEM, and the
+       sentence says so: a blocked shot's coordinate is the BLOCK POINT, so an
+       attempt a body stopped has no shot location and is in neither part. */
+    says: 'Of every 100 shot attempts this club took from a spot the feed records, '
+        + 'this many came from the slot.',
     of: t => ({ count: t.slot.count, n: t.slot.n }),
     ofGame: (g, side) => ({ count: g.slot[side], n: g.located[side] }) },
 ];
@@ -225,7 +270,7 @@ function rowsFor(ab, season, teams, recent, league, needs) {
      defect chosen on purpose. The rows still appear, saying they have nothing
      yet, because the card's shape may not change from one week to the next. */
   const tally = CLUB_ROWS.filter(r => !needs || needs[r.key] != null)
-    .map(r => ({ key: r.key, label: r.label,
+    .map(r => ({ key: r.key, label: r.label, says: r.says,
       need: needs ? needs[r.key].need : null,
       range: needs ? needs[r.key].range : null,
       count: 0, n: 0 }));
@@ -342,7 +387,13 @@ export function preview(id, docs, now) {
 
   const shares = leagueShares(season, d.teams, d.recent);
   const needs = needsFrom(d.measures);
+  /* ⭐ HOW MANY GAMES A ROW MAY NEED AND STILL BE SHOWN AS A CLUB ROW. Published
+     by `reliability.js` and carried here because the page says it OUT LOUD: the
+     league rows above the clubs are league rows precisely because they need more
+     than this, and the sentence under them used to call that "mostly luck". */
+  const settles = ((d.measures || {}).settle || {}).admission;
   return { state, game, result, counting: countingFrom(d.schedule, now),
+    settles: settles == null ? null : settles,
     clubs: { away: rowsFor(away, season, d.teams, d.recent, shares, needs),
              home: rowsFor(home, season, d.teams, d.recent, shares, needs) },
     league: leagueRows(d.measures) };
