@@ -786,3 +786,126 @@ test('the summary offers the league’s recap, and only when there is one', () =
   assert.ok(!(without.$('sumBody')._kids || []).some(n => n.className === 'srecap'),
     'a game with no recap still offered one');
 });
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ⛔⛔⛔ A MEASUREMENT COUNT IS NOT WHAT THE ARCHIVE HOLDS — 2026-10-03.
+
+   Kevin, from the live site on the Saturday after the Capitals' opener: *"Since
+   we hold 21 games, we certainly shouldn't say '8 games we hold'."*
+
+   THE DEFECT. `sitsIn` returns `of: d.n` — how many games the MEASUREMENT was
+   built from. Two panels printed it as *"the N games **we hold** for that
+   season"*, which is a claim about the ARCHIVE. Two different quantities wearing
+   one label, and this project has paid for that shape before.
+
+   ⭐ WHY IT SURVIVED FROM THE DAY IT WAS WRITTEN. The two numbers are EQUAL for
+   every reference class the code had ever been pointed at, because a finished
+   season's measurement is complete. Measured against the live archive:
+
+       2023   archive 1,400   perGame 1,400
+       2024   archive 1,398   perGame 1,398
+       2025   archive 1,394   perGame 1,394
+       2026   archive    21   perGame     8     ⛔
+
+   On 2026-10-02 the season being played became a reference class. `measures.json`
+   is rewritten weekly by `derive.yml` and the archive grows nightly, so from the
+   first night onward the label was false and stayed false until Monday.
+
+   ⛔⛔ AND NO TEST COULD HAVE CAUGHT IT, which is the part worth fixing properly.
+   Every fixture in this repo builds its distributions FROM its fixture games, so
+   `n` is the fixture count by construction — held and measured are the same
+   number in every test that exists. **A mislabel between two quantities is
+   invisible while every fixture makes them equal.** The fixture below makes them
+   differ on purpose, which is the case that was missing rather than the assertion.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/** A distribution over `n` games, deliberately fewer than the archive would hold. */
+const measuredOver = (n, noun) => ({ what: 'made up', unit: 'games', noun,
+  population: 'NHL regular season and playoffs, 2026-27',
+  n, start: 0, min: 0, max: 1, counts: [Math.ceil(n / 2), Math.floor(n / 2)] });
+
+/**
+ * ⚠️ CHILDREN FIRST, THEN `innerHTML`. The first draft of this read `innerHTML`
+ * when it was truthy — and the panel hosts carry a non-empty `innerHTML` AND
+ * appended children, so it returned 42 characters of wrapper and reported *"the
+ * panel never stated its population"* about a panel that had. A reader that can
+ * return the wrong half of a node is a test that fails for the wrong reason, which
+ * is a slower version of one that passes for the wrong reason.
+ */
+const panelText = (a, which) => {
+  const walk = n => (n._kids && n._kids.length) ? n._kids.map(walk).join(' ')
+    : String(n.innerHTML || n.textContent || '').replace(/<[^>]+>/g, '');
+  return walk(a.$(which));
+};
+
+test('⛔⛔⛔ neither panel claims the ARCHIVE holds what the MEASUREMENT counted', () => {
+  const y = String(rich.game.id).slice(0, 4);
+  const LENSES = { corsi: 'shot attempts', slot: 'shots from the slot',
+                   blocked: 'blocked shots', goaltending: 'shots the goaltenders faced',
+                   whistle: 'stoppages', zonestart: 'face-offs' };
+  /* EIGHT — the real shape of the morning Kevin found this, against an archive of
+     21. The page cannot see the archive at all, which is exactly why it may not
+     make a claim about it: the replay reads `measures.json` and its own extract,
+     and `catalog.json` only to choose which game to open. */
+  const thin = Object.fromEntries(Object.entries(LENSES).map(([k, n]) => [k, measuredOver(8, n)]));
+  const a = boot(rich, { ...MEASURES, perGame: { [y]: thin } });
+  a.$('scrub').oninput({ target: { value: a.$('scrub').max } });
+
+  pick(a, 'corsi');
+  a.$('alot').click();
+  const alot = panelText(a, 'alotBody');
+  a.$('alot').click();
+  a.$('sum').click();
+  const sum = panelText(a, 'sumBody');
+
+  /* ⭐⭐ THE RULE IS POSITIVE, NOT A BANNED-WORD LIST, and the fourth instance is
+     why. A first draft asserted only `doesNotMatch(/we hold/i)` and it caught the
+     figures block by LUCK — that sentence read *"all 4,200 games in the archive"*
+     and happened to carry "we hold" nine words later. A sentence saying "4,200
+     games in the archive" alone would have passed a ban on the wrong phrase.
+     So: EVERY population figure the panel prints must be labelled as a
+     measurement within the clause that carries it. `whistle.js`'s own header
+     makes the same argument about copy — a blacklist over an open vocabulary
+     reads as "the copy was checked" when it has not been. */
+  const POPULATIONS = [
+    ['8', 'this season\u2019s reference class, from perGame'],
+    [MEASURES.measured.toLocaleString(), 'the archive-wide census figure, from measures.json'],
+  ];
+  for (const [where, said] of [['Is that a lot?', alot], ['What this game was', sum]]) {
+    assert.ok(/\b8\b/.test(said), `${where}: the panel never stated its population, so this test saw nothing`);
+    for (const [fig, what] of POPULATIONS) {
+      /* Only judge a figure the panel actually prints — the summary carries the
+         reference class and not the census block. */
+      const at = said.indexOf(fig);
+      if (at < 0) continue;
+      const clause = said.slice(at, at + 60);
+      assert.match(clause, /we have measured/,
+        `${where}: "${fig}" (${what}) is printed without being called a measurement — the page `
+        + `reads measures.json and cannot see the archive, so it may not describe one as the `
+        + `other. Got: …${clause}…`);
+    }
+    assert.doesNotMatch(said, /we hold/i,
+      `${where} claims the archive HOLDS something. Two quantities, one label — the shape that `
+      + `was invisible while every finished season made them equal. Got: ${said.slice(0, 200)}`);
+  }
+});
+
+/**
+ * ⭐ AND THE PAIRED HALF, because "never say we hold" is satisfied forever by a
+ * panel that says nothing at all. A FINISHED season — where held and measured
+ * really are equal — must still print its population, in the same words. The fix
+ * was a wording change and it must not have become a silence.
+ */
+test('⭐ a finished season still names its population, in the same words', () => {
+  const y = String(rich.game.id).slice(0, 4);
+  const big = Object.fromEntries(['corsi', 'slot', 'blocked', 'goaltending', 'whistle', 'zonestart']
+    .map(k => [k, measuredOver(1394, 'shot attempts')]));
+  const a = boot(rich, { ...MEASURES, perGame: { [y]: big, [String(+y + 1)]: big } });
+  a.$('scrub').oninput({ target: { value: a.$('scrub').max } });
+  pick(a, 'corsi');
+  a.$('alot').click();
+  const said = panelText(a, 'alotBody');
+  assert.match(said, /1,394 games we have measured/,
+    'a finished season lost its population line, so the wording fix turned into a silence');
+  assert.doesNotMatch(said, /we hold/i, 'the archive claim came back on the finished-season path');
+});

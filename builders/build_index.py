@@ -4835,7 +4835,13 @@ def _layer_rules():
         out.append(f'<div><h3>{label}</h3>'
                    f'<p><b>Counts</b> {l["counts"]}.</p>'
                    f'<p class="hmlc">{l["credits"]}</p>'
-                   f'<p class="hmld">Counted across every game we hold: {doors}</p>'
+                   # *** NOT "every game we hold". *** Same conflation as the
+                   # replay's panels, found 2026-10-03: these doors open on
+                   # figures from measures.json, which covered 4,200 games while
+                   # the archive held 4,213 in the same scope. The measurement is
+                   # rebuilt weekly and the archive grows nightly, so "every game
+                   # we hold" is false for most of every week.
+                   f'<p class="hmld">Counted across every game we have measured: {doors}</p>'
                    f'</div>')
     out.append("</div>")
     out.append('<p class="hmr">These are the layers themselves, not a '

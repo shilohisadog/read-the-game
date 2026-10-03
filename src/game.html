@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-x2kytFDMVK5cgIEGbpNQPOefr1JF0oHj3RCLL04UUhQ=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-CO1KyxUplQ0C6jWK9rYIP5uf3Hq5dNHaBRT6/3darw0='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-vkVjCi8iQVuWj0+ns4asf0R0l+55FmIaOZxjmOrCTPw=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-CO1KyxUplQ0C6jWK9rYIP5uf3Hq5dNHaBRT6/3darw0='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -12347,8 +12347,10 @@ const ZONE_SAY=(()=>{
     is only supposed to be reading it. The two DERIVED figures round because
     floating point has to be told: 1.163 + 0.52 is 1.6830000000000003. */
  const won=+(lost+add).toFixed(3), ratio=(lost/add).toFixed(1);
+ /* ⛔ `we have measured`, NOT `in the archive` — 2026-10-03. `n` is a published
+    census figure and the archive runs ahead of it between derives. See `renderSum`. */
  return ICE+'Why it is worth watching: over '+n.toLocaleString()+' end-zone draws '
-  +'in the archive, the club attacking that end averages '+won+' shot attempts '
+  +'we have measured, the club attacking that end averages '+won+' shot attempts '
   +'before the next whistle when it WINS the draw, and '+lost+' when it LOSES it. '
   +'Winning is worth the difference \u2014 '+add+' of an attempt \u2014 while the '+lost
   +' arrives either way, '+ratio+' times as much. Most of what an offensive-zone '
@@ -12560,10 +12562,24 @@ function renderSum(){
     ⚠️ READ OFF A DISTRIBUTION RATHER THAN COUNTED HERE: `n` is a property of the
     reference class, so it is asked of the reference class. Any lens answers,
     because `perGame` measures every lens over the same games — and if none does,
-    the subhead says only what it can. */
+    the subhead says only what it can.
+
+    ⛔⛔⛔ AND IT SAYS `we have measured`, NOT `we hold`, WHICH IS WHAT IT SAID
+    UNTIL 2026-10-03. `ref.of` is `d.n` — how many games the MEASUREMENT was built
+    from. "We hold" is a claim about the ARCHIVE. Two different quantities, one
+    label, and they were EQUAL for every reference class this code had ever been
+    pointed at: a finished season's measurement is complete, so held and measured
+    agree exactly (2023: 1400 = 1400, 2024: 1398 = 1398, 2025: 1394 = 1394).
+
+    The sentence was wrong the day it was written and could not be observed. On
+    2026-10-02 the current season became a reference class, `measures.json` is
+    rewritten weekly while the archive grows nightly, and a Saturday reader was
+    told *"the 8 games we hold for that season"* while the archive held 21.
+    Kevin: *"Since we hold 21 games, we certainly shouldn't say '8 games we
+    hold'."* ⭐ The cadence made it VISIBLE; the label made it WRONG. */
  const ref=own&&Object.keys(LENS).map(k=>sitsIn(own[k],null)).find(Boolean);
  sub.textContent='— all situations, power plays included'
-  +(ref?', against the '+N(ref.of)+' game'+(ref.of===1?'':'s')+' we hold for that season':'');
+  +(ref?', against the '+N(ref.of)+' game'+(ref.of===1?'':'s')+' we have measured for that season':'');
  const ul=document.createElement('ul');
  ul.className='srows';
  /* ⭐ DRIVEN BY `LENS`, which is the one place a lens id is typed — so a seventh
@@ -12686,8 +12702,12 @@ function renderAlot(at=i){
  const sub=document.createElement('span');
  sub.className='wsub';
  /* THE SUBHEAD NAMES THE SWITCH, because the panel covers the ice and the chip
-    that opened it. A reader who pressed the wrong one must be able to tell. */
- sub.textContent='— '+chipLabel(id)+', across every game in the archive';
+    that opened it. A reader who pressed the wrong one must be able to tell.
+    ⛔ AND IT SAYS `measured`, like the line it introduces. It read "across every
+    game in the archive" while the sentence four lines below it now says "all 4,200
+    games we have measured" — a heading and its own body disagreeing about what
+    they cover, which is the original defect in miniature. */
+ sub.textContent='— '+chipLabel(id)+', across every game we have measured';
  h.appendChild(sub);
  host.appendChild(h);
  /* ⛔⛔ BOTH KINDS, AND SHIPPING ONE OF THEM WAS THE DEFECT. Four of the seven
@@ -12815,9 +12835,13 @@ function renderAlot(at=i){
   const spread=ref.min===ref.max?''
    :' The quietest of those games finished with '+N(ref.min)
     +' and the busiest with '+N(ref.max)+'.';
+  /* ⛔⛔⛔ `we have measured`, NOT `we hold` — see the note in `renderSum`, which
+     is the same number wearing the same wrong label. `ref.of` counts the games the
+     MEASUREMENT covers; the archive can be ahead of it and was by 13 games on the
+     morning Kevin found this. */
   const usual='<b>Most nights finish with between '+N(ref.lo)+' and '+N(ref.hi)
    +' '+ESC(ref.noun)+'</b> — that is the middle half of the '+N(ref.of)
-   +' game'+(ref.of===1?'':'s')+' we hold for '+when+'.'+spread
+   +' game'+(ref.of===1?'':'s')+' we have measured for '+when+'.'+spread
    +' All of them are counted at every strength, power plays included.';
   lead.innerHTML=usual+(st
    ?' <b>This game finished with '+N(st.count)+'</b> — '
@@ -12858,10 +12882,18 @@ function renderAlot(at=i){
      ⚠️ DERIVED, NOT TYPED: `n` and the noun are read off the rows, and the line
      is still SILENT when the rows disagree — the rule from the Stoppages
      screenshot that printed one number three times. */
+  /* ⛔⛔⛔ `we have measured`, NOT `in the archive` — 2026-10-03, the same
+     conflation as the lead above it and the fourth place it was found. `overs[0].n`
+     is a figure out of `measures.json`; "in the archive" is a claim about the
+     bucket. They agreed for as long as the measurement was rebuilt whenever the
+     archive grew, and `derive.yml` runs WEEKLY while the nightly runs every night:
+     on the morning Kevin found this, 4,200 measured against 4,213 held in the same
+     scope. The sentence now describes the measurement, which is the only thing the
+     document behind it can support. */
   const n=document.createElement('p');n.className='wpop';
   n.textContent='The figures below are counted over all '
-   +overs[0].n.toLocaleString()+' '+overs[0].unit+' in the archive, across every '
-   +'season we hold.';
+   +overs[0].n.toLocaleString()+' '+overs[0].unit+' we have measured, across every '
+   +'season in the archive.';
   host.appendChild(n);}
  /* IN THE LAYER'S OWN ORDER, not either table's. `LAYERWORK` is the layer
     descriptor's `work` list, and Stoppages names penalties, offsides and icings
