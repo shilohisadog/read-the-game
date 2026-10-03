@@ -562,7 +562,7 @@ export const whistle = {
      looking at all three at once, so all three are offered. */
   work: ['penalties', 'offside', 'icing'],
   counts: 'the rule that stopped play, and the dot it restarted on',
-  credits: 'A stoppage names a rule and never a club, so nothing here is credited to either side.',
+  credits: 'A stoppage names a rule and never a team, so nothing here is credited to either side.',
   id: 'whistle',
   label: '＋ Why play stopped',
 

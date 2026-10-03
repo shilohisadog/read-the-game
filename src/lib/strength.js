@@ -96,7 +96,7 @@ export const DECLINED = (() => {
      the fifteen siblings it has no reason to be surprised by. */
   const out = {};
   const ctx = { homeId: 1, awayId: 2 };
-  const why = 'both nets empty at once — there is no club this could name';
+  const why = 'both nets empty at once — there is no team this could name';
   for (let a = SKATERS_MIN; a <= SKATERS_MAX; a++)
     for (let h = SKATERS_MIN; h <= SKATERS_MAX; h++) out[`0${a}${h}0`] = why;
 

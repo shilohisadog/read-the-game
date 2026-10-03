@@ -80,7 +80,7 @@ export const TEAMS = {
  */
 export const NOTES = {
   ARI: 'Relocated to Utah after the 2023-24 season.',
-  UTA: 'Began play in 2024-25, after the Arizona club relocated.',
+  UTA: 'Began play in 2024-25, after the Arizona team relocated.',
 };
 
 /** WCAG 2.1 relative luminance, and the contrast ratio built from it. */
@@ -158,7 +158,7 @@ export const NEUTRAL = '#5b6d7a';
  */
 const NATIONAL = 'a national side — the 4 Nations Face-Off and the Olympics are '
   + 'outside every computed number here, so we do not invent a badge for them';
-const ALLSTAR = 'an All-Star squad, drafted for one weekend and never a club';
+const ALLSTAR = 'an All-Star squad, drafted for one weekend and never a team';
 export const NOT_A_CLUB = new Map([
   ['CAN', NATIONAL], ['USA', NATIONAL], ['FIN', NATIONAL], ['SWE', NATIONAL],
   ['SVK', NATIONAL], ['SUI', NATIONAL], ['CZE', NATIONAL], ['GER', NATIONAL],

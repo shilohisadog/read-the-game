@@ -280,7 +280,7 @@ test('⭐⭐ the measure row draws BEFORE the season, because the axis is itself
   const said = textOf(ids.pv);
   assert.match(said, /5-on-5 CF% while the score was level/, 'the measure is named');
   assert.match(said, /no games yet/, 'and each club says it has nothing on it');
-  assert.match(said, /Across a full season clubs ranged from 44% to 57% in 96 club-seasons/,
+  assert.match(said, /Across a full season teams ranged from 44% to 57% in 96 team-seasons/,
     'the caption names the span AND what it was measured over');
   // ⛔ AND NO BAR IS DRAWN FOR A CLUB WITH NO FIGURE. The row is a template, and a
   // template that draws a club's bar at zero would be inventing a measurement.
@@ -537,7 +537,7 @@ test('⭐⭐ every card says what a full season looks like, the same way', () =>
     const inside = run({}, `?game=${GID}`, '2026-10-01T12:00:00Z');
     await inside.settle();
     const said1 = textOf(inside.ids.pv);
-    const opens = said1.match(/Across a full season clubs ranged from/g) || [];
+    const opens = said1.match(/Across a full season teams ranged from/g) || [];
     assert.ok(opens.length >= 2,
       `only ${opens.length} cards carry the shared sentence — they have drifted apart`);
     assert.ok(!/Shaded:|The scale:|shaded band/.test(said1),
@@ -553,7 +553,7 @@ test('⭐⭐ every card says what a full season looks like, the same way', () =>
       seasons: { 2026: { BUF: wild, PIT: club() } } } }, `?game=${GID}`, '2026-10-01T12:00:00Z');
     await out.settle();
     const said2 = textOf(out.ids.pv);
-    assert.match(said2, /Across a full season clubs ranged from/,
+    assert.match(said2, /Across a full season teams ranged from/,
       'the shared sentence went missing on a card with a club outside the range');
     assert.ok(!/beyond anything a full season has produced|outside it/.test(said2),
       'the card is telling a reader their club is past a band it no longer draws');

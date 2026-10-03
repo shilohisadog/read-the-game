@@ -375,8 +375,8 @@ def _footer(tip=True):
 # wider wording moves here instead and now covers all nine pages rather than
 # one. Three refusals and two subjects, because a club is not the league.
         "stored. Not affiliated with, endorsed by, or a product of the National "
-        "Hockey League or any club. <strong>No NHL or club "
-        "logos, wordmarks or crests appear anywhere on this site</strong> — clubs "
+        "Hockey League or any team. <strong>No NHL or team "
+        "logos, wordmarks or crests appear anywhere on this site</strong> — teams "
         "are named in plain text, and identified by colour and three-letter "
         "abbreviation.</p>"
         '<p><a href="https://github.com/shilohisadog/read-the-game">Source on GitHub</a>'

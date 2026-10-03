@@ -146,8 +146,8 @@ test('every page carries the footer, so the attribution is not optional', () => 
   for (const f of PAGES) {
     const h = readFileSync(new URL(f, SRC), 'utf8');
     assert.match(h, /<footer class="sitefoot">/, `${f} has no site footer`);
-    assert.match(h, /No NHL or club logos, wordmarks or crests/,
-      `${f} does not say that no club marks appear`);
+    assert.match(h, /No NHL or team logos, wordmarks or crests/,
+      `${f} does not say that no team marks appear`);
     // THE CLAIM, NOT ONE SPELLING OF IT. This pinned a literal sentence, so
     // widening the disclaimer broke it — and a test that breaks when a
     // disclaimer gets STRONGER is pointing at the wrong thing. What must hold
@@ -156,7 +156,7 @@ test('every page carries the footer, so the attribution is not optional', () => 
     for (const claim of [/not affiliated with/i, /endorsed by/i, /a product of/i])
       assert.match(h, claim, `${f} does not refuse: ${claim}`);
     assert.match(h, /National Hockey League|NHL/, `${f} does not name the league`);
-    assert.match(h, /any club|or club/i, `${f} disclaims the league but not its clubs`);
+    assert.match(h, /any team|or team/i, `${f} disclaims the league but not its teams`);
     // AND A WAY TO BE TOLD THE WORK IS WRONG. A site whose whole trade is "read
     // our work" is incomplete without one, and it belongs to the same rule as
     // everything else here: in the chrome, so no page can lack it.

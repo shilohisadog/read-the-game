@@ -707,7 +707,7 @@ test('⭐⭐⭐ every club row says what its number counts, and whose', () => {
         + 'does not say so, which is exactly the confusion that made 35 unreadable');
     } else {
       ownClub++;
-      assert.match(row.says, /this club/i,
+      assert.match(row.says, /this team/i,
         `the ${row.key} row's denominator is the club's OWN attempts and its sentence `
         + 'does not say so');
       assert.doesNotMatch(row.says, /both sides/i,

@@ -253,7 +253,7 @@ export function doors(game, ot) {
        in `test/learn.test.js` is what actually holds, and it holds for every
        pair rather than for the one I thought of. */
     ['zones', ['zonestart'], firstZoneStart(events, ctx),
-     'the first draw the Zone starts layer places in a club\'s offensive zone'],
+     'the first draw the Zone starts layer places in a team\'s offensive zone'],
     /* ⭐ THE SCORE CARD OPENS ON THE FIRST ATTEMPT A TRAILING CLUB TAKES, which
        is the earliest frame where the card's subject EXISTS: before the first
        goal no club is behind, so there is nothing on the scoreboard for the
@@ -279,7 +279,7 @@ export function doors(game, ot) {
     ['shifts', [], bigChange.index,
      'the frame after the biggest group of skaters to change while the play was running'],
     ['score', ['corsi'], firstWhileTrailing(corsi, events, { ...ctx, evenOnly: true }),
-     'the first attempt the Control layer counts at even strength for a club that is behind',
+     'the first attempt the Control layer counts at even strength for a team that is behind',
      'even'],
   ];
 

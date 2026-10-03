@@ -35,7 +35,7 @@ export const corsi = {
      All situations card this panel already links to. */
   work: ['attempts'],
   counts: 'every shot attempt the league recorded: on goal, missed, or blocked, because all three are the team moving the puck at the net',
-  credits: 'A blocked attempt is credited to the club that shot it — the shot was still taken, it just never arrived.',
+  credits: 'A blocked attempt is credited to the team that shot it — the shot was still taken, it just never arrived.',
   id: 'corsi',
   label: '＋ Control (Corsi)',
 

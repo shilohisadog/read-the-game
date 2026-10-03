@@ -179,7 +179,7 @@ const PRINTED = {
         played, so an hour of even-strength hockey holds about 117 of these
         between the two of them — not 59. A label on the methods page that
         doubles a figure is the worst place on the site to be loose. */
-    label: 'How many shot attempts a club takes in an hour',
+    label: 'How many shot attempts a team takes in an hour',
     /* ⛔ AND THIS USED TO CLAIM THE GAME PAGE TOO. It does not print this
        figure: the box under the ice counts attempts, and the per-60 rate is
        printed on exactly one surface. Measured by grepping the built pages for
@@ -199,12 +199,12 @@ const PRINTED = {
         as: 'scaled', denUnit: 'minutes', unit: 'per 60 minutes' },
     ],
     why: 'Because the box under the ice counts every situation together, and a '
-       + 'club that has spent ten minutes on the power play is not being '
+       + 'team that has spent ten minutes on the power play is not being '
        + 'compared like for like with one that has not. This is the size of '
        + 'that effect, so a reader can tell how much of an attempt lead is the '
        + 'team and how much is the referee.',
     caveat: 'A rate over minutes is not a rate over chances: a power play is '
-          + 'also a period of play in which one club is TRYING to shoot, and '
+          + 'also a period of play in which one team is TRYING to shoot, and '
           + 'this cannot separate the extra skater from the intent. The two '
           + 'sides of a penalty are divided by the same minutes on purpose, '
           + 'counted once from each side, which is why the pair can be read '
@@ -228,26 +228,29 @@ const PRINTED = {
        ORDER rather than about a measurement, and the order is decided by
        `CLUB_ROWS` two files away. Naming the figure costs nothing and cannot
        drift. */
-    why: 'It is the evidence behind the condition on the 5-on-5 number above. '
+    /* ⚠ AND THE COMMENT ABOVE WAS HALF-OBEYED. It named the figure, which was
+       the fix, and kept "above", which was the defect — on a page where this
+       sits in a different place entirely. */
+    why: 'It is the evidence behind the condition on the 5-on-5 number. '
        + 'That one is measured only while the score is level, '
-       + 'and this is why: the same clubs, at the same strength, take a '
+       + 'and this is why: the same teams, at the same strength, take a '
        + 'measurably different number of attempts depending on nothing but the '
-       + 'scoreboard. Part of any attempt lead is the time a club spent behind.',
+       + 'scoreboard. Part of any attempt lead is the time a team spent behind.',
     caveat: 'These three are cut out of even strength, so the pulled goalie — '
-          + 'which is a club trailing with six skaters — is not in them. That '
+          + 'which is a team trailing with six skaters — is not in them. That '
           + 'is deliberate, because it is the obvious reply to the finding. What '
-          + 'remains is still a description and not a cause: a club that is '
-          + 'behind is also, on average, the weaker club that night, and this '
+          + 'remains is still a description and not a cause: a team that is '
+          + 'behind is also, on average, the weaker team that night, and this '
           + 'measurement cannot take that apart.' },
   zoneStarts: {
     label: 'What a face-off in one end is worth',
     where: 'The front door, and The attacking zone card on '
          + 'What you can see here.',
     reads: [
-      { is: 'The club attacking that end', at: ['census', 'endZone'],
+      { is: 'The team attacking that end', at: ['census', 'endZone'],
         num: 'atk', den: 'n', out: 'atkPerDraw', as: 'ratio',
         unit: 'attempts per face-off' },
-      { is: 'The club defending it', at: ['census', 'endZone'],
+      { is: 'The team defending it', at: ['census', 'endZone'],
         num: 'def', den: 'n', out: 'defPerDraw', as: 'ratio',
         unit: 'attempts per face-off' },
     ],
@@ -277,8 +280,8 @@ const PRINTED = {
     caveat: 'It says nothing at all about the contest AT the blue line, which is '
           + 'a different question and one the record cannot answer: holding a '
           + 'line produces no event, so there is nothing to count. And a draw in '
-          + 'one end is not randomly assigned — the club already pressing is '
-          + 'the club that gets them — so part of this gap is the teams and '
+          + 'one end is not randomly assigned — the side already pressing is '
+          + 'the one that gets them — so part of this gap is the teams and '
           + 'not the place.' },
 };
 

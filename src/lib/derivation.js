@@ -54,16 +54,22 @@ const DERIVATION = {
                 + 'That is what the condition is doing.',
     caveat: 'An attempt is an attempt. A point shot from sixty feet counts here '
           + 'exactly the same as a tip at the edge of the crease, and this number '
-          + 'cannot tell them apart \u2014 which is why the slot number below exists '
-          + 'alongside it. It is also a slice of the game rather than the game: '
+          + 'cannot tell them apart \u2014 which is why we count where the attempts '
+          + 'came from as well. It is also a slice of the game rather than the game: '
           + 'strictly five skaters a side, and only while the score is tied.' },
   dmen: {
     count: 'shot attempts taken by a player the roster lists as a defenceman',
     of: 'every shot attempt by that team',
+    /* ⚠ THIS ENDED "something the number ABOVE does not" until 2026-10-03, and
+       the rule against it is written out at `attempts` further down this same
+       file: a `why` travels with its figure to every surface that draws it, so a
+       sentence about what is NEXT TO it is true in at most one place. Kevin found
+       it on the methods page, where nothing is above this at all. The replacement
+       says the useful thing without naming a neighbour. */
     why: 'You can see this one from the first shift: does the puck keep going back '
        + 'out to the blue line, or does this team work it down low? And it is close '
-       + 'to independent of who has the puck, so it tells you something the number '
-       + 'above does not.',
+       + 'to independent of who has the puck \u2014 two teams that trade shot attempts '
+       + 'evenly can be built completely differently, and this is where that shows.',
     caveat: 'Two things. Defenceman is what the roster says, not a judgement '
           + 'about where a player actually played \u2014 a forward who spent the '
           + 'season up on the point still counts here as a forward. And this one '
@@ -79,8 +85,8 @@ const DERIVATION = {
        + 'instead of taking our word for it.',
     caveat: 'The location is the league\u2019s, written down by hand in the '
           + 'building. Attempts with no location recorded are left out of both '
-          + 'halves of the division rather than counted as "outside". And like '
-          + 'the number above it, this counts every situation, so a team with a '
+          + 'halves of the division rather than counted as "outside". And this '
+          + 'one counts every situation, so a team with a '
           + 'lot of power-play time is partly being described by its power play.' },
 
   /* -------------------------------------------------------- the league frame */
@@ -181,7 +187,7 @@ const DERIVATION = {
     why: 'Every attempt in the archive is filed as ending one of three ways \u2014 it '
        + 'reached the goaltender, a body blocked it, or it missed the net \u2014 and '
        + 'the three account for all of them with none left over. That is what '
-       + 'makes the figure above readable on its own: an attempt it does not '
+       + 'makes this figure readable on its own: an attempt it does not '
        + 'count is one the goaltender never had to face.',
     /* ⛔ AND THE CAVEAT SPOKE TO THE WRONG READER. Kevin: *"this sentence doesn't
        really talk to our audience \u2014 even though it's geared toward the
@@ -197,7 +203,7 @@ const DERIVATION = {
           + 'go in was stopped by the goaltender or simply missed the net is that '
           + 'person\u2019s call, and rinks do not all make it the same way. We '
           + 'measured how far apart they are, which is why we never put a number '
-          + 'beside a club when that judgement is what the number rests on.' },
+          + 'beside a team when that judgement is what the number rests on.' },
   shift: {
     unit: 'seconds',
     label: 'How long a shift lasts',

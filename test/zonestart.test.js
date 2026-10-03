@@ -133,7 +133,7 @@ test('⛔ a draw with no recorded winner is COUNTED and credited to nobody', () 
   assert.ok(L.unplaced.includes(first), 'it was not recorded as unplaced');
   assert.equal(L.t[ctx.homeId] + L.t[ctx.awayId], base.counted.length - 1,
     'it was credited to a club anyway');
-  assert.match(L.surprising.find(s => s.id === first).why, /did not record which club/);
+  assert.match(L.surprising.find(s => s.id === first).why, /did not record which team/);
 });
 
 test('⛔ …and a draw with no coordinate is counted, credited, and placed nowhere', () => {

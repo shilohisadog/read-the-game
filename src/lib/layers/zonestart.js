@@ -116,8 +116,8 @@ export const zonestart = {
      followed the wrong one into `docs/status.md`. A file is not a single voice:
      when a note plans work, check it against the rules stated ABOVE it. */
   work: ['zoneStarts'],
-  counts: 'every faceoff, and for the club that won it, whether that draw was in its offensive zone, the neutral zone, or its defensive zone',
-  credits: 'Each draw is credited to the club that won it, in the zone that club was attacking toward — so the same dot is an offensive-zone start for one club and a defensive-zone start for the other. The league records the winner and not the loser, so a draw has one club and never two.',
+  counts: 'every faceoff, and for the team that won it, whether that draw was in its offensive zone, the neutral zone, or its defensive zone',
+  credits: 'Each draw is credited to the team that won it, in the zone that team was attacking toward — so the same dot is an offensive-zone start for one team and a defensive-zone start for the other. The league records the winner and not the loser, so a draw has one team and never two.',
   id: 'zonestart',
   label: '＋ Zone starts',
 
@@ -204,7 +204,7 @@ export const zonestart = {
         surprising.push({
           id,
           why: e.own == null || t[e.own] === undefined
-            ? 'the feed did not record which club won this draw, so it is counted '
+            ? 'the feed did not record which team won this draw, so it is counted '
             + 'and credited to neither'
             : 'the feed recorded no coordinate for this draw, so it is counted '
             + 'and placed in no zone',

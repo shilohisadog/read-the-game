@@ -98,7 +98,7 @@ export const blocked = {
      which is the opposite of what `credits` above is careful to explain. */
   work: ['attempts'],
   counts: 'the attempts a body stopped before they reached the goalie',
-  credits: 'Each block is credited to the club that made it, the way a broadcast does. A block by a teammate is credited to neither, so the two figures need not add up.',
+  credits: 'Each block is credited to the team that made it, the way a broadcast does. A block by a teammate is credited to neither, so the two figures need not add up.',
   id: 'blocked',
   label: '＋ Blocked shots',
 
@@ -191,7 +191,7 @@ export const blocked = {
         surprising.push({
           id,
           why: 'blocked by a teammate — a body stopped it, so it is counted here; '
-             + 'but no defender did, so neither club is credited with the block',
+             + 'but no defender did, so neither team is credited with the block',
           detail: blocker.nm,
           derivedFrom: `roster[event.blk].tid === roster[event.actor].tid `
                      + `(blk=${e.blk}, actor=${e.actor})`,

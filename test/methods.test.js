@@ -25,7 +25,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { methods, keysOf, anchorOf, anchorFor, explains, EXPLAINED, EXPLAINED_ROWS,
-         printed, PRINTED_KEYS, PRINTED } from '../src/lib/methods.js';
+         printed, PRINTED_KEYS, PRINTED, DERIVATION } from '../src/lib/methods.js';
 import { CLUB_ROWS, leagueRows } from '../src/lib/preview.js';
 import { leagueFigures } from '../src/lib/derivation.js';
 import { sections } from '../src/lib/sections.js';
@@ -150,6 +150,58 @@ test('⛔ no figure reaches the page without a caveat, and none of them is fille
         `${f.key}.${field} is a placeholder: ${f[field]}`);
     }
   }
+});
+
+test('⛔⛔⛔ no figure\u2019s prose points at its neighbour, because it does not have one', () => {
+  /* ⛔⛔⛔ KEVIN, READING THE METHODS PAGE, 2026-10-03, on the defencemen section:
+     *"there's this snippet: `so it tells you something the number above does
+     not` — there's no '....number above....', so this sentence doesn't make
+     sense in this context."*
+
+     ⭐⭐⭐ AND THE RULE WAS ALREADY WRITTEN OUT, TWICE, AS A COMMENT. `derivation.js`
+     says it at `attempts`: *"a `why` travels with its figure to every surface
+     that draws it, so a sentence about what is beside it is a sentence that is
+     true in at most one place."* `printed.js` says it at `pace`: *"it used to say
+     'the first figure on this page', which is a claim about ORDER... naming the
+     figure costs nothing and cannot drift."* Kevin found the same shape on the
+     Attempts door on 2026-09-30 and it was fixed THERE, in the entry he found it
+     in — and three more were left standing in the same object, one of them three
+     lines below the comment forbidding it. A rule written as a comment is a gate
+     waiting to be written; until it is written, it is only true where somebody
+     last looked.
+
+     ⚠️ IT READS THE DATA, NEVER THE FILE. Both comments above contain the very
+     phrases this forbids, and a gate run over source text would go red on the
+     explanation of why the phrase went — which is the monitor-armed-against-itself
+     defect, logged four times in this repo. Walking the exported objects cannot
+     see a comment at all. */
+  /* ⚠️ `beside` IS NOT IN THE FIRST BRANCH, and the first draft of this test had it.
+     It went red on `attempts.caveat` — *"we never put a number beside a team when
+     that judgement is what the number rests on"* — which is a correct sentence
+     about where we are willing to print figures at all, not a pointer at a
+     neighbour. A gate that cannot tell those apart gets loosened until it says
+     nothing, so it is narrow: a layout noun followed by above/below, or
+     above/below/beside followed by a pronoun standing in for another figure. */
+  const BAD = /\b(?:number|figure|card|measure|row|chart|tile)s?\s+(?:immediately\s+)?(?:above|below)\b|\b(?:above|below|beside)\s+(?:it|this|that)\b|\bfirst figure on this page\b|\bto the (?:left|right) of\b/i;
+  const strings = [];
+  const walk = (node, where) => {
+    if (typeof node === 'string') return strings.push([where, node]);
+    if (Array.isArray(node)) return node.forEach((v, i) => walk(v, `${where}[${i}]`));
+    if (node && typeof node === 'object')
+      for (const [k, v] of Object.entries(node)) walk(v, `${where}.${k}`);
+  };
+  walk(DERIVATION, 'DERIVATION');
+  walk(PRINTED, 'PRINTED');
+  /* ⛔ THE SWEEP MUST HAVE FOUND PROSE. A walk that silently matched nothing — a
+     renamed export, a shape change — passes this test forever while saying
+     nothing, which is the extraction-found-nothing defect. */
+  assert.ok(strings.length > 100,
+    `only ${strings.length} strings walked — the sweep is not reaching the prose`);
+  const found = strings.filter(([, v]) => BAD.test(v))
+    .map(([where, v]) => `${where}: “${v.match(BAD)[0]}”`);
+  assert.deepEqual(found, [], 'a figure\u2019s own words claim to know what is drawn '
+    + 'next to it. The same string is drawn on the card, on the methods page and in '
+    + 'the work overlay, so it is wrong in at least two of them:\n  ' + found.join('\n  '));
 });
 
 test('the methods page names each club row exactly as the card names it', () => {

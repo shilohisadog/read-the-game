@@ -204,7 +204,7 @@ export const ENDS_SHOOTOUT = {
   rule: 'The goaltenders change ends for the shootout — every attempt is taken '
       + 'at the same end of the rink.',
   from: 'rule: the feed records the shootout as its own period type, and both '
-      + 'clubs attempt at one end within it',
+      + 'teams attempt at one end within it',
 };
 
 export const ENDS_NOTE = {

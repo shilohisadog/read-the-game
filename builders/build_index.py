@@ -911,7 +911,7 @@ __FRONT_COUNTS__
      the archive now both tell a reader what to DO. `_NAV`'s own comment says
      they are the same kind of thing; they finally read like it. -->
 <h2 id="teams-h">Pick your team</h2>
-<p class="note" id="teams-note">Every game each club played, newest first. Arizona became Utah in
+<p class="note" id="teams-note">Every game each team played, newest first. Arizona became Utah in
 2024 &mdash; both are here, because both played.</p>
 <div class="teams" id="teams"></div>
 <!-- THE SECOND WAY IN, and it is a LINE rather than a second index.
@@ -2545,13 +2545,13 @@ FIGURE_CLAUSE = {
     "shifts": ("a shift lasts a median of __SHIFT_MED__ seconds, "
                "__SHIFT_UNDER__% of them under a minute, measured over "
                "__SHIFT_N__ shifts"),
-    "score": ("per 60 minutes of even-strength play a club takes "
+    "score": ("per 60 minutes of even-strength play a team takes "
               "__EVEN_TRAIL_PER60__ shot attempts while trailing, "
               "__EVEN_TIED_PER60__ while the score is level, and "
               "__EVEN_LEAD_PER60__ while leading"),
-    "zones": ("after a face-off in one team&rsquo;s end, the club attacking "
+    "zones": ("after a face-off in one team&rsquo;s end, the team attacking "
               "that end takes __ZONE_ATK__ shot attempts before the next "
-              "whistle, against __ZONE_DEF__ for the club defending it "
+              "whistle, against __ZONE_DEF__ for the team defending it "
               "&mdash; across __ZONE_DRAWS__ draws"),
 }
 
@@ -2930,7 +2930,7 @@ LEARN_CARDS = [
     # death is shown rather than asserted.
     ("rules", "overtime", "Overtime",
      "A hockey game does not end level. If the score is tied after sixty "
-     "minutes, both clubs drop to three skaters and a goaltender, and the next "
+     "minutes, both teams drop to three skaters and a goaltender, and the next "
      "goal wins &mdash; five minutes of it, and a shootout after that if nobody "
      "scores. In the playoffs there is no shootout and nobody leaves the ice: "
      "they play full periods, five a side, until someone scores."),
@@ -3015,12 +3015,12 @@ LEARN_CARDS = [
      # card two rows up is about a pulled goalie, which is a fourth state this
      # count also includes. `a skater short` is lifted from that card on purpose
      # -- one vocabulary across the page.
-     "Hockey is not always five on five. A penalty puts one club a skater short "
-     "&mdash; that club is killing it, the other is on the power play &mdash; "
+     "Hockey is not always five on five. A penalty puts one team a skater short "
+     "&mdash; that team is killing it, the other is on the power play &mdash; "
      "and the count under the ice adds every situation together, which is what "
      "<em>all situations</em> means. Measured per 60 minutes in each: "
      "__PP_PER60__ attempts on the power play, __EVEN_PER60__ at even strength, "
-     "__PK_PER60__ killing a penalty. So part of a club&rsquo;s attempt lead can "
+     "__PK_PER60__ killing a penalty. So part of a team&rsquo;s attempt lead can "
      "be nothing but the time it spent on the power play."),
     # ⛔⛔ THE ELEVENTH CARD, AND KEVIN FOUND IT BY READING THE TENTH'S NEIGHBOUR:
     # *"we say 'that gap is what the shading is for'. However, we don't explain
@@ -3066,7 +3066,7 @@ LEARN_CARDS = [
     # than a measurement: the card can say so and still carry a real number.
     ("ours", "zones", "The attacking zone",
      "Two blue lines cut the ice into three zones. The shaded strip at each one "
-     "is a boundary one club is trying to hold play inside and the other to "
+     "is a boundary one team is trying to hold play inside and the other to "
      "push it out. " + _says("zones") + " Those defending attempts are shots at "
      "the far end, which is what getting the puck out looks like; at the line "
      "itself we count nothing, because holding it leaves no event in the "
@@ -3138,9 +3138,9 @@ LEARN_CARDS = [
      "So the five in front of you now are mostly not the five who were there a "
      "minute ago."),
     ("ours", "score", "Score effects",
-     "A club that is behind takes more shot attempts, and a club that is ahead "
+     "A team that is behind takes more shot attempts, and a team that is ahead "
      "takes fewer &mdash; that is what <em>score effects</em> means: "
-     + FIGURE_CLAUSE["score"] + ". So part of a club&rsquo;s attempt lead can be "
+     + FIGURE_CLAUSE["score"] + ". So part of a team&rsquo;s attempt lead can be "
      "nothing but the time it spent behind."),
 ]
 
@@ -4161,17 +4161,17 @@ __HELPERS__
          published number on it, and `settles` carries it from measures.json
          rather than this sentence naming one. */
       frame.appendChild(el('p', 'pvn', 'Measured over ' + num(p.league[0].games)
-        + ' games in this archive. None of these is counted against either club: '
-        + 'a club\u2019s own figure for them does not hold steady from one half of a '
+        + ' games in this archive. None of these is counted against either team: '
+        + 'a team\u2019s own figure for them does not hold steady from one half of a '
         + 'season to the next'
         + (p.settles ? ' — it would take more than ' + p.settles + ' games, more than '
            + 'half a season, before it did' : '')
-        + ', so one season cannot tell two clubs apart on them.'));
+        + ', so one season cannot tell two teams apart on them.'));
       $('pv').appendChild(frame);
     }
 
     var sect = el('section', 'pvclubs');
-    sect.appendChild(el('p', 'pvkick', 'The two clubs'));
+    sect.appendChild(el('p', 'pvkick', 'The two teams'));
     /* ⭐ MEASURE-FIRST, NOT CLUB-FIRST, AND THAT IS THE STRUCTURAL REPAIR. This
        was two stacked club blocks, so the one comparison the card exists to make
        -- how do these two differ, and from normal -- was the one thing the layout
@@ -4344,7 +4344,7 @@ __HELPERS__
         + pct(r.opposite) + ' of every 100 games — a coin flip. Hitting and '
         + 'controlling play are not the same thing.'));
       t.appendChild(el('p', 'pvfine', 'Counted by each home rink’s own crew, which '
-        + 'records about 4% more hits at home than the same clubs record away.'));
+        + 'records about 4% more hits at home than the same teams record away.'));
     }
     t.appendChild(doors(r.key, learn));
     return t;
@@ -4460,17 +4460,17 @@ __HELPERS__
        So the lead sentence is identical everywhere and the extra fact gets its
        own sentence, printed only when there is one. */
     if (ar.range && track) {
-      foot.push('Across a full season clubs ranged from ' + pct(ar.range.min)
+      foot.push('Across a full season teams ranged from ' + pct(ar.range.min)
         + '% to ' + pct(ar.range.max) + '%'
-        + (ar.range.games ? ', measured over ' + num(ar.range.games) + ' club-games' : '')
-        + ' in ' + ar.range.n + ' club-seasons.');
+        + (ar.range.games ? ', measured over ' + num(ar.range.games) + ' team-games' : '')
+        + ' in ' + ar.range.n + ' team-seasons.');
     }
     /* ⭐ WHAT THE PICTURE IS, now that nothing in it has a length. Said plainly
        because the previous encoding was a bar whose length was a GAP, and Kevin
        read two clubs at 40 and 25 as "lines that stop at the same point" —
        correctly, since both bars ended on the league tick. */
     if (track && ar.value != null) {
-      foot.push('Each club\u2019s mark sits at its own figure on the scale'
+      foot.push('Each team\u2019s mark sits at its own figure on the scale'
         + (ar.league != null ? ', and the dark tick is the league' : '') + '.');
     }
     if (!foot.length) foot.push(noneYet(p.counting));

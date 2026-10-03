@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-kaurenVZbfAq93Laoq8aSA7BzNJWY6V59cQkpddg2hU=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig=' 'sha256-usXyJrx9wThElsVLPGF2vRZ+lCvdyn/tlCbZbzcfGWg='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-PRCJ9q7EOihLcS9FFw+EBOrjjjuG/HN8xg9ysdPMmFQ=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-ntyHSV6lrQVHHd9Pzg3Ycs3GBLvs6KxI1hRX3/tO1Ig=' 'sha256-usXyJrx9wThElsVLPGF2vRZ+lCvdyn/tlCbZbzcfGWg='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 <style>
 :root{--ice:#eef4f8;--bg:#f4f7fa;--ink:#0f1a23;--muted:#5b6d7a;--edge:#ccd8e0;
  --min:#12885a;--buf:#bd8c12;--red:#c8102e;--blue:#3a5a9c}
@@ -899,7 +899,7 @@ const TEAMS = {
  */
 const NOTES = {
   ARI: 'Relocated to Utah after the 2023-24 season.',
-  UTA: 'Began play in 2024-25, after the Arizona club relocated.',
+  UTA: 'Began play in 2024-25, after the Arizona team relocated.',
 };
 
 /** WCAG 2.1 relative luminance, and the contrast ratio built from it. */
@@ -977,7 +977,7 @@ const NEUTRAL = '#5b6d7a';
  */
 const NATIONAL = 'a national side — the 4 Nations Face-Off and the Olympics are '
   + 'outside every computed number here, so we do not invent a badge for them';
-const ALLSTAR = 'an All-Star squad, drafted for one weekend and never a club';
+const ALLSTAR = 'an All-Star squad, drafted for one weekend and never a team';
 const NOT_A_CLUB = new Map([
   ['CAN', NATIONAL], ['USA', NATIONAL], ['FIN', NATIONAL], ['SWE', NATIONAL],
   ['SVK', NATIONAL], ['SUI', NATIONAL], ['CZE', NATIONAL], ['GER', NATIONAL],
@@ -1248,7 +1248,7 @@ const CLUB_ROWS = [
        were one game against somebody else. A sentence that invites a reader to
        add 40 and 25 and expect 100 is worse than no sentence. */
     says: 'Of every 100 shot attempts at 5-on-5 with the score level in this '
-        + 'club\u2019s own games — both sides counted — this many were its own.',
+        + 'team\u2019s own games — both sides counted — this many were its own.',
     /* ⭐⭐⭐ THE NOUN ON THE SECOND NUMBER, AND IT IS DIFFERENT ON EVERY ROW.
        Kevin, reading the live card on 2026-10-03: *"I noticed 10 attempts, 43
        attempts and 34 attempts, obviously those are all different numbers and it
@@ -1274,7 +1274,7 @@ const CLUB_ROWS = [
        is the copy this project keeps almost making. */
     ofGame: (g, side) => ({ count: g.lvl5[side], n: g.lvl5.h + g.lvl5.a }) },
   { key: 'dmen', label: 'shot attempts taken by defencemen',
-    says: 'Of every 100 shot attempts this club took, this many came from one of '
+    says: 'Of every 100 shot attempts this team took, this many came from one of '
         + 'its own defencemen.',
     counts: 'attempts it took',
     of: t => ({ count: t.dmen.count, n: t.dmen.n }),
@@ -1309,7 +1309,7 @@ const CLUB_ROWS = [
     /* ⚠️ THE DENOMINATOR IS THE LOCATED ATTEMPTS, NOT ALL OF THEM, and the
        sentence says so: a blocked shot's coordinate is the BLOCK POINT, so an
        attempt a body stopped has no shot location and is in neither part. */
-    says: 'Of every 100 shot attempts this club took from a spot the feed records, '
+    says: 'Of every 100 shot attempts this team took from a spot the feed records, '
         + 'this many came from the slot.',
     /* ⚠️ AND THIS IS WHY 34 IS SMALLER THAN THE DEFENCEMEN ROW'S 43 IN THE SAME
        GAME: nine of that club's attempts were blocked, and a blocked shot's
@@ -1912,17 +1912,17 @@ function anchorFor(rowKey) {
          published number on it, and `settles` carries it from measures.json
          rather than this sentence naming one. */
       frame.appendChild(el('p', 'pvn', 'Measured over ' + num(p.league[0].games)
-        + ' games in this archive. None of these is counted against either club: '
-        + 'a club\u2019s own figure for them does not hold steady from one half of a '
+        + ' games in this archive. None of these is counted against either team: '
+        + 'a team\u2019s own figure for them does not hold steady from one half of a '
         + 'season to the next'
         + (p.settles ? ' — it would take more than ' + p.settles + ' games, more than '
            + 'half a season, before it did' : '')
-        + ', so one season cannot tell two clubs apart on them.'));
+        + ', so one season cannot tell two teams apart on them.'));
       $('pv').appendChild(frame);
     }
 
     var sect = el('section', 'pvclubs');
-    sect.appendChild(el('p', 'pvkick', 'The two clubs'));
+    sect.appendChild(el('p', 'pvkick', 'The two teams'));
     /* ⭐ MEASURE-FIRST, NOT CLUB-FIRST, AND THAT IS THE STRUCTURAL REPAIR. This
        was two stacked club blocks, so the one comparison the card exists to make
        -- how do these two differ, and from normal -- was the one thing the layout
@@ -2095,7 +2095,7 @@ function anchorFor(rowKey) {
         + pct(r.opposite) + ' of every 100 games — a coin flip. Hitting and '
         + 'controlling play are not the same thing.'));
       t.appendChild(el('p', 'pvfine', 'Counted by each home rink’s own crew, which '
-        + 'records about 4% more hits at home than the same clubs record away.'));
+        + 'records about 4% more hits at home than the same teams record away.'));
     }
     t.appendChild(doors(r.key, learn));
     return t;
@@ -2211,17 +2211,17 @@ function anchorFor(rowKey) {
        So the lead sentence is identical everywhere and the extra fact gets its
        own sentence, printed only when there is one. */
     if (ar.range && track) {
-      foot.push('Across a full season clubs ranged from ' + pct(ar.range.min)
+      foot.push('Across a full season teams ranged from ' + pct(ar.range.min)
         + '% to ' + pct(ar.range.max) + '%'
-        + (ar.range.games ? ', measured over ' + num(ar.range.games) + ' club-games' : '')
-        + ' in ' + ar.range.n + ' club-seasons.');
+        + (ar.range.games ? ', measured over ' + num(ar.range.games) + ' team-games' : '')
+        + ' in ' + ar.range.n + ' team-seasons.');
     }
     /* ⭐ WHAT THE PICTURE IS, now that nothing in it has a length. Said plainly
        because the previous encoding was a bar whose length was a GAP, and Kevin
        read two clubs at 40 and 25 as "lines that stop at the same point" —
        correctly, since both bars ended on the league tick. */
     if (track && ar.value != null) {
-      foot.push('Each club\u2019s mark sits at its own figure on the scale'
+      foot.push('Each team\u2019s mark sits at its own figure on the scale'
         + (ar.league != null ? ', and the dark tick is the league' : '') + '.');
     }
     if (!foot.length) foot.push(noneYet(p.counting));
@@ -2240,6 +2240,6 @@ function anchorFor(rowKey) {
 
   boot();
 </script>
-<footer class="sitefoot"><p>Game data from the NHL's public play-by-play feed, fetched once and stored. Not affiliated with, endorsed by, or a product of the National Hockey League or any club. <strong>No NHL or club logos, wordmarks or crests appear anywhere on this site</strong> — clubs are named in plain text, and identified by colour and three-letter abbreviation.</p><p><a href="https://github.com/shilohisadog/read-the-game">Source on GitHub</a> — every number here is a function of stored events, and you can read the function. Found one that looks wrong? <!--email_off--><a href="mailto:ReadTheGameOfHockey@gmail.com">ReadTheGameOfHockey@gmail.com</a><!--/email_off--></p><p>Nothing here is paywalled. If it helped you read a game, you can <a href="https://buymeacoffee.com/readthegameofhockey">buy me a coffee</a>.</p></footer>
+<footer class="sitefoot"><p>Game data from the NHL's public play-by-play feed, fetched once and stored. Not affiliated with, endorsed by, or a product of the National Hockey League or any team. <strong>No NHL or team logos, wordmarks or crests appear anywhere on this site</strong> — teams are named in plain text, and identified by colour and three-letter abbreviation.</p><p><a href="https://github.com/shilohisadog/read-the-game">Source on GitHub</a> — every number here is a function of stored events, and you can read the function. Found one that looks wrong? <!--email_off--><a href="mailto:ReadTheGameOfHockey@gmail.com">ReadTheGameOfHockey@gmail.com</a><!--/email_off--></p><p>Nothing here is paywalled. If it helped you read a game, you can <a href="https://buymeacoffee.com/readthegameofhockey">buy me a coffee</a>.</p></footer>
 </body>
 </html>

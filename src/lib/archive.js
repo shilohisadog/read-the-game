@@ -213,9 +213,9 @@ export function perGame(records) {
      population does — a summary that says "55 goaltending" is a label nobody
      wrote, and one that reaches for its own wording is a second vocabulary. */
   const said = {
-    corsi: ['shot attempts by both clubs in one game, at all strengths', 'shot attempts'],
-    slot: ['shot attempts from inside the slot, both clubs, in one game', 'shots from the slot'],
-    blocked: ['attempts a body stopped, both clubs, in one game', 'blocked shots'],
+    corsi: ['shot attempts by both teams in one game, at all strengths', 'shot attempts'],
+    slot: ['shot attempts from inside the slot, both teams, in one game', 'shots from the slot'],
+    blocked: ['attempts a body stopped, both teams, in one game', 'blocked shots'],
     goaltending: ['shots the two goaltenders faced between them in one game',
                   'shots the goaltenders faced'],
     whistle: ['whistles that stopped play in one game', 'stoppages'],
@@ -226,7 +226,7 @@ export function perGame(records) {
        that was — the second-vocabulary trap `measure.mjs` names two comments
        above its own `lens` block. The layer's LESSON is where the draw was; its
        COUNT is face-offs. */
-    zonestart: ['face-offs in one game, both clubs, at all strengths', 'face-offs'],
+    zonestart: ['face-offs in one game, both teams, at all strengths', 'face-offs'],
   };
   const bySeason = {};
   for (const g of records) (bySeason[season(g.id)] ||= []).push(g);

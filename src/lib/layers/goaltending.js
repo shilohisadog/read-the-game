@@ -44,7 +44,7 @@ export const goaltending = {
      number on screen can be placed against what ordinary is. */
   work: ['saves'],
   counts: 'every shot each goaltender faced, and what became of it — saved, scored on, or missed the net',
-  credits: 'Each goaltender is counted for the club he plays for, against the other club’s shots — so these two columns read the opposite way round.',
+  credits: 'Each goaltender is counted for the team he plays for, against the other team’s shots — so these two columns read the opposite way round.',
   id: 'goaltending',
   label: '＋ Goaltending',
 

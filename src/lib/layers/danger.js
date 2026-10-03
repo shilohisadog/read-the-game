@@ -80,7 +80,7 @@ export const danger = {
      statistic."* Both numbers interpolated, so `test/prose-constants.test.js`
      can see them. */
   counts: `attempts from within ${HIGH_DANGER_FT} ft of the net and ${SLOT_HALF_WIDTH} ft either side of the middle`,
-  credits: 'Credited to the club that shot. Blocked attempts are excluded because the coordinate the feed records is where the puck stopped — so we know who shot it, but not from where.',
+  credits: 'Credited to the team that shot. Blocked attempts are excluded because the coordinate the feed records is where the puck stopped — so we know who shot it, but not from where.',
   id: 'slot',
   label: '＋ Shots from the slot',
 

@@ -190,7 +190,7 @@ test('⭐⭐ a centre-ice draw names NOBODY, and the pill says why', () => {
     stepTo(a, k);
     const pill = a.$('caption').innerHTML;
     assert.match(pill, /🔵 Offside/, `the offside at frame ${k} said nothing at all`);
-    assert.match(pill, /centre-ice draw names neither club/,
+    assert.match(pill, /centre-ice draw names neither team/,
       `the pill is silent about WHY no club is named at frame ${k}: "${pill}"`);
     assert.doesNotMatch(pill, /<span class="tag/,
       `the pill wears a club chip on an offside nobody can be blamed for: "${pill}"`);

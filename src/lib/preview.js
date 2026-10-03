@@ -91,7 +91,7 @@ export const CLUB_ROWS = [
        were one game against somebody else. A sentence that invites a reader to
        add 40 and 25 and expect 100 is worse than no sentence. */
     says: 'Of every 100 shot attempts at 5-on-5 with the score level in this '
-        + 'club\u2019s own games — both sides counted — this many were its own.',
+        + 'team\u2019s own games — both sides counted — this many were its own.',
     /* ⭐⭐⭐ THE NOUN ON THE SECOND NUMBER, AND IT IS DIFFERENT ON EVERY ROW.
        Kevin, reading the live card on 2026-10-03: *"I noticed 10 attempts, 43
        attempts and 34 attempts, obviously those are all different numbers and it
@@ -117,7 +117,7 @@ export const CLUB_ROWS = [
        is the copy this project keeps almost making. */
     ofGame: (g, side) => ({ count: g.lvl5[side], n: g.lvl5.h + g.lvl5.a }) },
   { key: 'dmen', label: 'shot attempts taken by defencemen',
-    says: 'Of every 100 shot attempts this club took, this many came from one of '
+    says: 'Of every 100 shot attempts this team took, this many came from one of '
         + 'its own defencemen.',
     counts: 'attempts it took',
     of: t => ({ count: t.dmen.count, n: t.dmen.n }),
@@ -152,7 +152,7 @@ export const CLUB_ROWS = [
     /* ⚠️ THE DENOMINATOR IS THE LOCATED ATTEMPTS, NOT ALL OF THEM, and the
        sentence says so: a blocked shot's coordinate is the BLOCK POINT, so an
        attempt a body stopped has no shot location and is in neither part. */
-    says: 'Of every 100 shot attempts this club took from a spot the feed records, '
+    says: 'Of every 100 shot attempts this team took from a spot the feed records, '
         + 'this many came from the slot.',
     /* ⚠️ AND THIS IS WHY 34 IS SMALLER THAN THE DEFENCEMEN ROW'S 43 IN THE SAME
        GAME: nine of that club's attempts were blocked, and a blocked shot's

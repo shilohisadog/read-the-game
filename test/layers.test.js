@@ -371,9 +371,9 @@ test('a TEAMMATE block credits nobody, and says so in words', () => {
      it", "credited to neither club"), so the reducer uses it too. */
   assert.match(why.why, /counted/i,
     'the reason never says the block was counted, under a heading that says it was');
-  assert.match(why.why, /neither club is credited/i,
+  assert.match(why.why, /neither team is credited/i,
     'the reader is not told that nobody got the block');
-  assert.ok(why.why.indexOf('counted') < why.why.indexOf('neither club is credited'),
+  assert.ok(why.why.indexOf('counted') < why.why.indexOf('neither team is credited'),
     'the caveat lands before the fact it is a caveat to');
   assert.match(why.derivedFrom, /roster\[event\.blk\]\.tid/,
     'the claim is not checkable against the data that produced it');

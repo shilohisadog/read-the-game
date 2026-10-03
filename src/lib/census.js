@@ -418,12 +418,12 @@ export function censusRates(t) {
          cannot be separated from the win. `endZone` is the version that can.
          A reader who does not know that will read these three rows as a
          comparison of places, which they are not. */
-      what: 'face-offs sorted by the zone the club that WON them was attacking '
-          + 'toward, and the shot attempts each club took before the next '
+      what: 'face-offs sorted by the zone the team that WON them was attacking '
+          + 'toward, and the shot attempts each team took before the next '
           + 'whistle (n counts FACE-OFFS, not games). The offensive and '
           + 'defensive rows are the same draws seen from the two sides, so this '
           + 'cannot separate where a draw happened from who won it \u2014 '
-          + 'endZone is the pair that can, because it splits by which club was '
+          + 'endZone is the pair that can, because it splits by which team was '
           + 'attacking that end rather than by the winner.',
     },
     /* THE CONTROLLED ANSWER, and the one a sentence may quote. `zoneWorth` is
@@ -459,9 +459,9 @@ export function censusRates(t) {
       atkPerDraw: ezN > 0 ? +(ezAtk / ezN).toFixed(3) : null,
       defPerDraw: ezN > 0 ? +(ezDef / ezN).toFixed(3) : null,
       what: 'shot attempts taken before the next whistle after an end-zone '
-          + 'face-off, counted for the club attacking that end and for the club '
+          + 'face-off, counted for the team attacking that end and for the team '
           + 'defending it, out of every end-zone face-off (n counts FACE-OFFS, '
-          + 'not games). The defending club\u2019s attempts are shots at the FAR '
+          + 'not games). The defending team\u2019s attempts are shots at the FAR '
           + 'end \u2014 what getting the puck out and back up the ice looks like '
           + '\u2014 so the pair says how strongly play tends to stay where the '
           + 'whistle put it, and says nothing about the contest at the line '
@@ -508,9 +508,9 @@ export function censusRates(t) {
         const z = t.drawStrength?.[k] || { n: 0 };
         return [k, { n: z.n || 0, ratio: ratio(z.aw, z.al) }];
       })),
-      what: 'face-offs split by whether the club that won them was at even '
-          + 'strength or on the power play, and the shot attempts that club '
-          + 'took before the next whistle set against the attempts the club '
+      what: 'face-offs split by whether the team that won them was at even '
+          + 'strength or on the power play, and the shot attempts that team '
+          + 'took before the next whistle set against the attempts the team '
           + 'that lost the draw took (n counts FACE-OFFS, not games). A draw '
           + 'won on the power play is followed by a power play, so this says '
           + 'what winning one is worth in that situation and not what the draw '
@@ -656,15 +656,15 @@ export function censusRates(t) {
                   with about four per cent more of them at home than away \u2014
                   a figure we know is dirty, printed beside it rather than
                   conceded in a file nobody opens. */
-               what: 'whether a club that lands more hits in a game also takes '
+               what: 'whether a team that lands more hits in a game also takes '
                    + 'fewer shot attempts in it, measured two ways over every '
                    + 'game we hold (n counts GAMES). The first is how strongly '
                    + 'the two move together, where a negative number means they '
                    + 'run opposite; the second asks the same thing without any '
                    + 'assumption about the shape of the data \u2014 the share of '
-                   + 'games in which the club with more hits had fewer attempts. '
+                   + 'games in which the team with more hits had fewer attempts. '
                    + 'Hits are counted by each home rink\u2019s own crew, and the '
-                   + 'same clubs are credited with more of them at home than '
+                   + 'same teams are credited with more of them at home than '
                    + 'away, so this measures the scorers as well as the play.' };
     })(),
 

@@ -378,7 +378,7 @@ test('⭐⭐ the blue-line card states the zone figure, its n, and the limit tha
      is the assertion that feels like coverage and is not. */
   assert.match(blurb, new RegExp(`attacking that end[^.]*?takes ${ez.atkPerDraw.toFixed(2)}\\b`),
     `the attacking club's rate (${ez.atkPerDraw.toFixed(2)}) is not the one attributed to it`);
-  assert.match(blurb, new RegExp(`${ez.defPerDraw.toFixed(2)}[^.]*?club defending it`),
+  assert.match(blurb, new RegExp(`${ez.defPerDraw.toFixed(2)}[^.]*?team defending it`),
     `the defending club's rate (${ez.defPerDraw.toFixed(2)}) is not the one attributed to it`);
   assert.ok(blurb.includes(ez.n.toLocaleString('en-US')),
     'the figure is stated without its n — every published frequency must carry one');
@@ -387,7 +387,7 @@ test('⭐⭐ the blue-line card states the zone figure, its n, and the limit tha
      attacking club out-attempts the defending one is a FINDING, not an
      invariant, so `_archive()` does not refuse to build on it — a builder that
      will not start when a measurement changes its mind is a builder that hides
-     the news. The card's wording ("against X for the club defending it") does
+     the news. The card's wording ("against X for the team defending it") does
      depend on it, so a reversal has to be a failing test with a name. */
   assert.ok(ez.atkPerDraw > ez.defPerDraw,
     `the attacking club no longer out-attempts the defending one (${ez.atkPerDraw} vs `
@@ -524,7 +524,7 @@ test('⭐ the two condition cards say the same shape of thing, which is the poin
     return m[1];
   };
   for (const id of ['situations', 'score']) {
-    assert.match(grab(id), /part of a club&rsquo;s attempt lead can be nothing but the time it spent/,
+    assert.match(grab(id), /part of a team&rsquo;s attempt lead can be nothing but the time it spent/,
       `the ${id} card no longer ends on the shared sentence, so the pair stops reading as one lesson`);
     assert.match(grab(id), /per 60 minutes/,
       `the ${id} card states a rate without the sport's unit — "in an hour" was rejected once`);

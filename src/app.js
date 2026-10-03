@@ -1279,7 +1279,7 @@ function captionOffside(e){
  const who=OFFSIDE.get(e).offender;
  const side=who===AAB?'a':who===HAB?'h':null;
  sayCaption(side,who,'🔵 Offside',' &middot; a skater crossed the blue line ahead of the puck'
-  +(who?'':' &mdash; a centre-ice draw names neither club'),e);}
+  +(who?'':' &mdash; a centre-ice draw names neither team'),e);}
 /* THE TWO LINES RULE 81 NAMES, at the frame it is being explained. Same markup
    `drawWhistles` emits for the same reason, through one writer so the geometry
    and the class cannot drift into two versions. */
@@ -1454,11 +1454,11 @@ const LENS={corsi:corsi,slot:danger,blocked:blocked,goaltending:goaltending,whis
 const SPAN=d=>{const w=formatDate(d);return w?', up to '+w:'';};
 
 const ZONE_SAY=(()=>{
- const ICE='Every faceoff in hockey is taken on one of nine painted dots. A ring marks each dot that has been used, and the number inside it is how many draws have been taken there. The ring takes the colour of the club that has won MORE of them, grey when they are even, and the boldest ring is the most recent draw. The two figures below the ice are the part the ice cannot show by itself: a draw is an OFFENSIVE-zone start for the club that won it in the end that club was attacking, and a defensive-zone start for the other \u2014 so the same dot means opposite things to the two clubs. ';
+ const ICE='Every faceoff in hockey is taken on one of nine painted dots. A ring marks each dot that has been used, and the number inside it is how many draws have been taken there. The ring takes the colour of the team that has won MORE of them, grey when they are even, and the boldest ring is the most recent draw. The two figures below the ice are the part the ice cannot show by itself: a draw is an OFFENSIVE-zone start for the team that won it in the end that team was attacking, and a defensive-zone start for the other \u2014 so the same dot means opposite things to the two teams. ';
  const ez=RATES&&RATES.census&&RATES.census.endZone;
  const lost=ez&&ez.zoneWorth, add=ez&&ez.winningWorth, n=ez&&ez.n;
  if(lost==null||add==null||!n)
-  return ICE+'Why it is worth watching: across the archive the club attacking '
+  return ICE+'Why it is worth watching: across the archive the team attacking '
    +'that end takes more attempts before the next whistle when it wins the draw '
    +'than when it loses it \u2014 but most of what an offensive-zone start is worth '
    +'arrives either way. The figures for that are not on this page, which carries '
@@ -1474,23 +1474,23 @@ const ZONE_SAY=(()=>{
  /* THE ARCHIVE'S OWN SPAN, not a season's: `census.endZone` is counted over
     every game the measurement covers. */
  return ICE+'Why it is worth watching: over '+n.toLocaleString()+' end-zone draws '
-  +'we have measured'+SPAN(RATES&&RATES.dataThrough)+', the club attacking that end '
+  +'we have measured'+SPAN(RATES&&RATES.dataThrough)+', the team attacking that end '
   +'averages '+won+' shot attempts '
   +'before the next whistle when it WINS the draw, and '+lost+' when it LOSES it. '
   +'Winning is worth the difference \u2014 '+add+' of an attempt \u2014 while the '+lost
   +' arrives either way, '+ratio+' times as much. Most of what an offensive-zone '
   +'start is worth has nothing to do with winning the draw.';})();
 const DRAWS={
- corsi:'The box below the ice counts every attempt for each club as the replay runs.',
+ corsi:'The box below the ice counts every attempt for each team as the replay runs.',
  slot:'An amber ring marks each one. Click a ring to see the distance and angle it was measured by.',
- goaltending:'The box below the ice builds each club\u2019s save fraction as the replay runs. A save is against the OTHER club\u2019s shot, so those two columns read the opposite way round.',
- whistle:'The ring marks where play restarted, brightest at the most recent stoppage. The bar lights the line the rule names \u2014 for icing the centre line and the far goal line, for offside the blue line. The box below the ice counts them and names the most recent one \u2014 with no figure for either club, because a stoppage names a rule and never a team.',
+ goaltending:'The box below the ice builds each team\u2019s save fraction as the replay runs. A save is against the OTHER team\u2019s shot, so those two columns read the opposite way round.',
+ whistle:'The ring marks where play restarted, brightest at the most recent stoppage. The bar lights the line the rule names \u2014 for icing the centre line and the far goal line, for offside the blue line. The box below the ice counts them and names the most recent one \u2014 with no figure for either team, because a stoppage names a rule and never a team.',
  /* ⛔ THE RATIO IS CHENG'S CONDITION, NOT DECORATION. "Showing the winner
     without the comparison is where it would become who took it" -- a weaker
     lesson, and a false one, since who wins draws is the archive's cleanest null
     at 50.4%. The figures are `census.endZone` over 165,420 end-zone draws. */
  zonestart:ZONE_SAY,
- blocked:'Blocked attempts keep their ring and every other mark dims, so the ones a body stopped stand out. The box below the ice credits each block to the club that MADE it, the way a broadcast does. A block by a teammate is credited to neither club, so the two figures need not add up to the total.'};
+ blocked:'Blocked attempts keep their ring and every other mark dims, so the ones a body stopped stand out. The box below the ice credits each block to the team that MADE it, the way a broadcast does. A block by a teammate is credited to neither team, so the two figures need not add up to the total.'};
 /** The layer object behind a picker id, or null for `none`. */
 const layerOf=id=>LENS[id]||null;
 /* ⚠️ AND ATTEMPTS GOES THROUGH `counted`, WHICH IS THE WHOLE POINT OF `counted`.
@@ -4442,7 +4442,7 @@ const COUNT_NOTE={
       +'empty net are left out — part of an attempt lead can be nothing but time '
       +'spent a skater up.',
  level:'Attempts taken at even strength while the SCORE was level, in regulation. '
-       +'A club that is behind shoots more, so this is the count that is about '
+       +'A team that is behind shoots more, so this is the count that is about '
        +'play rather than the scoreboard.'};
 function setStrength(v){evenOnly=(v==='even');levelOnly=(v==='level');
  syncStrength();render(i,'');}
