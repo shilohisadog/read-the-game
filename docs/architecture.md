@@ -43,7 +43,7 @@ header, and §4 records what it cost us the one time we did it anyway.
 | **orchestration** | walks the store, judges, writes documents | `derive.py` | 814 |
 | **analysis** | events → meaning; pure, no DOM, no network | `src/lib/**` (49 modules) | 11,246 |
 | **measurement** | the archive, reduced by the SAME modules | `measure.mjs` | 809 |
-| **presentation** | generates the pages | `build_*.py` (8) | 7,356 |
+| **presentation** | generates the pages | `build_*.py` (8) | 7,381 |
 | **the app** | **the one exception — see §2** | `src/app.js` | 4,783 |
 
 <sub>Counted 2026-10-03 by `tools/tiers.mjs`, checked by `npm run gates`. The analysis tier is **49 modules** and **not one of them touches the DOM, the network or the filesystem** — the boundary §1 claims, verified here rather than asserted. `src/app.js` **declares 33 dependencies on that tier and exports 1 function** — it is a module, not a build template, and §2 is what remains. Of its 4,783 lines **3,464 are comment-only and 1149 are code**, and **371 comment lines carry an explicit claim** about the code beside them — which is §2's argument, counted rather than asserted.</sub>

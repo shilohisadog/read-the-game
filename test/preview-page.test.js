@@ -226,7 +226,8 @@ test('with a season under way the page draws both frames and both clubs', async 
   assert.match(said, /is how long a shift lasts/, 'the shift tile');
   assert.match(said, /hits a team lands/, 'the hits tile');
   assert.match(said, /5-on-5 CF% while the score was level/, 'a club row');
-  assert.match(said, /12 of 35 games/, 'the progress, not a badge');
+  assert.match(said, /12 of the 35 games this figure needs to hold steady/,
+    'the progress, with the target named — not a badge and not a bare fraction');
   assert.match(said, /Every Buffalo Sabres game we hold/);
   assert.match(ids.pvh1.textContent, /Buffalo Sabres at Pittsburgh Penguins/);
 });
@@ -332,7 +333,79 @@ test('a settled row is drawn at full strength and never past it', async () => {
     .map(r => Number(r['fill-opacity']));
   assert.ok(op.length > 0, 'no bars were drawn at all');
   assert.ok(op.every(v => v === 1), `an opacity above 1 is not a stronger claim: ${op}`);
-  assert.match(textOf(ids.pv), /settled/);
+  /* ⚠️ THE WORD WAS `settled` UNTIL 2026-10-03, and it was a badge: `60 of 23
+     games · settled`, a fraction whose top is bigger than its bottom, next to
+     the one house word Kevin stopped reading `how-we-measure.html` over. The
+     ink claim above is what this test is for; this line is the text claim that
+     the row has passed its target, now said in the league note's own words. */
+  assert.match(textOf(ids.pv), /60 games, past the \d+ this figure needs to hold steady/);
+});
+
+test('⛔⛔ no club line ends in anything but what its game count is FOR', async () => {
+  /* ⛔⛔⛔ KEVIN, 2026-10-03, having just had the attempts figure named: *"go
+     ahead and fix the other numbers."* The line read `1 of 35 games` on one card,
+     `1 of 23 games` on the next and `1 of 38 games` on the third — and `1 of 35
+     games` reads perfectly well as SEASON PROGRESS unless you already know 35 is
+     how many games this measure needs before it holds steady. Three cards, three
+     different targets, nothing on screen saying they were targets.
+
+     ⭐⭐ THE RULE IS POSITIVE AND IT READS WHAT A READER SEES — not "the word
+     `settled` is absent", which is the banned-word shape that went red on my own
+     comment explaining why a phrase had gone. It requires each club's line to END
+     on what its number is for, which forbids a trailing badge WITHOUT naming one.
+
+     ⛔⛔ AND IT RUNS IN BOTH STATES, because the first version of it did not. It
+     swept one fixture where no row had reached its target, so the word `settled`
+     was not on the page to catch — restoring the badge PASSED. That is the
+     easy-state defect this project logged yesterday, made again inside the fix
+     for the thing it was logged over: a check is only evidence in the state that
+     produces the defect. */
+  const SETTLED = { games: 60, attempts: { for: 3000, against: 2900 },
+    slot: { count: 700, n: 1500 }, dmen: { count: 950, n: 3000 },
+    level5: { for: 1200, against: 1150 } };
+  const states = [
+    ['still forming', {}, '2026-10-01T12:00:00Z'],
+    ['past its target', { 'teams.json': { through: '2026-12-01',
+      seasons: { 2026: { BUF: SETTLED, PIT: SETTLED } } } }, '2026-12-02T12:00:00Z'],
+  ];
+  for (const [what, data, now] of states) {
+    const { ids, settle } = run(data, `?game=${GID}`, now);
+    await settle();
+    /* ⛔ SCOPED TO THE CLUB-ROW CARDS AND TO THEIR FOOTNOTE. The league tiles
+       above say "the puck less in 42 of every 100 games" — a share with its own
+       noun — and a sweep of the whole page catches it and then gets weakened
+       until it says nothing. This card has already had that exact defect: a check
+       announcing "the track" scanned the page and caught the attempt-mix tile. */
+    const cards = walk(ids.pv).filter(x => (x.className || '').split(' ').includes('pvm'));
+    assert.ok(cards.length >= 2, `${what}: ${cards.length} club cards — nothing to sweep`);
+    let judged = 0;
+    for (const card of cards) {
+      const foot = walk(card).find(x => (x.className || '').split(' ').includes('pvfoot'));
+      assert.ok(foot, `${what}: a club card drew no footnote`);
+      for (const line of foot.kids.map(k => k.textContent)) {
+        // A club's own line, which is the only kind this rule is about: the scale
+        // sentence and the how-to-read sentence below it are prose.
+        if (!/^[A-Z]{2,3} [\d,]+ of /.test(line)) continue;
+        judged++;
+        assert.match(line, / this figure needs to hold steady$/,
+          `${what}: the line ends "${line.slice(-60)}" — a reader is left to guess `
+          + 'whether that game count is the season, the archive, or a target, and '
+          + 'anything after it is a word we are asking them to learn');
+        const m = line.match(/· (?:([\d,]+) of the ([\d,]+) games|([\d,]+) games, past the ([\d,]+)) this figure/);
+        assert.ok(m, `${what}: "${line}" states its progress in some other shape`);
+        /* ⛔ A FRACTION WHOSE TOP IS BIGGER THAN ITS BOTTOM. `N of the M games` ran
+           for both states once, so a club 60 games into a season was told "60 of
+           the 23 games this figure needs" — on a site whose pitch is check our
+           work. The two forms are not phrasing; which one is correct is decided
+           by the numbers, so the numbers are what this reads. */
+        const [, of, need] = m;
+        if (of != null) assert.ok(Number(of.replace(/,/g, '')) <= Number(need.replace(/,/g, '')),
+          `${what}: "${line}" counts up to a target it has already passed`);
+      }
+    }
+    assert.ok(judged >= 4, `${what}: ${judged} club lines judged — two clubs, at `
+      + 'least two drawable rows, so a number this low means the sweep missed them');
+  }
 });
 
 test('⭐ measure-first: both clubs sit inside one row, not in two stacked blocks', async () => {

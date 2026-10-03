@@ -4388,7 +4388,30 @@ __HELPERS__
       /* ⭐ THE PROGRESS, NOT A BADGE. CHENG's P1: a binary settled/forming label
          invents a cliff the data does not have, and "12 of 35 games" says the
          same thing continuously -- and tells two clubs with 12 and 9 games
-         apart, which a badge cannot. */
+         apart, which a badge cannot.
+
+         ⭐⭐⭐ AND THE SECOND NUMBER HAD NO NOUN EITHER. Kevin, 2026-10-03, after
+         the attempts noun landed: *"go ahead and fix the other numbers."* The
+         line read `1 of 35 games`, and `1 of 35 games` reads perfectly well as
+         SEASON PROGRESS to anyone who does not already know that 35 is how many
+         games this measure needs before it holds steady -- which is every
+         novice, and is why the three cards' 35 / 23 / 38 looked like a mistake.
+
+         ⛔⛔ THE BADGE WENT WITH IT, AND NOT FOR TIDINESS. `settled` is the word
+         Kevin stopped reading `how-we-measure.html` over -- *"I doubt a novice
+         hockey fan is going to grasp what 'settles' means right away"* -- and
+         `methods.test.js` has banned it from THAT page since. It went on living
+         here, on the card a novice reaches FIRST, because the gate was written
+         against one page rather than against the word. With the noun present the
+         badge is pure repetition: "1 of the 35 games this figure needs to hold
+         steady" already says it has not.
+
+         ⚠️ AND THE SETTLED BRANCH IS NOT COSMETIC. `r.games of r.need` printed
+         "60 of 23 games" once a club was past the target -- a fraction whose top
+         is bigger than its bottom, on a site whose whole pitch is check our work.
+         ⛔ THE WORDS ARE THE LEAGUE NOTE'S WORDS. It already says a figure "does
+         not hold steady from one half of a season to the next"; a second phrase
+         for one idea on one card is the defect the `counts` noun just fixed. */
       /* ⭐ THE FIRST FIGURE GETS ITS NOUN. The line read "WSH 15 of 43 · 1 of 23
          games" — two `of N` figures side by side, the second saying what it
          counts and the first saying nothing. One word, and both are readable.
@@ -4410,8 +4433,10 @@ __HELPERS__
          the one row that forgot. `render-preview.test.js` requires the field on
          every row, so a missing one stops the build instead. */
       if (r.value != null) foot.push(ab + ' ' + num(r.count) + ' of ' + num(r.n)
-        + ' ' + r.counts + ' · ' + r.games + ' of ' + r.need + ' games'
-        + (r.settled ? ' · settled' : ' · still forming'));
+        + ' ' + r.counts + ' · ' + (r.settled
+          ? r.games + ' games, past the ' + r.need
+          : r.games + ' of the ' + r.need + ' games')
+        + ' this figure needs to hold steady');
     });
     /* ⛔ "SHADED" WAS A WORD FOR SOMETHING USUALLY INVISIBLE. The axis runs from
        the lowest to the highest club-season, so the band fills the whole track
