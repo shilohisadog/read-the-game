@@ -781,7 +781,19 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
       AWS_DEFAULT_REGION: auto
     steps:
+      # ⛔⛔⛔ `fetch-depth: 0` BECAUSE THIS JOB RUNS `npm run gates`, and the first
+      # scheduled run on this code failed here. `npm run refcheck` reads
+      # revision-pinned citations out of the docs, and a shallow clone cannot
+      # resolve a single one — 17 of 117 broke. The tool PRINTED the diagnosis
+      # and the fix ("THIS CLONE IS SHALLOW… Fix the CHECKOUT, not the docs"),
+      # which is the only reason this took one run instead of an afternoon.
+      # `gates.yml` and `deploy.yml` have carried this for the same reason; the
+      # `ingest` job above does not need it because its own "gates" step is the
+      # Python suite alone. `test/workflows.test.js` now requires it of any job
+      # that runs the full gate.
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       # PINNED, and the same majors the ingest job pins — `test/workflows.test.js`
       # holds the ledger and the reason for each, and it caught this job using
@@ -891,13 +903,23 @@ jobs:
           node builders/health.mjs
           npm run build
           # AND THE TREE MUST PASS BEFORE IT IS PUSHED. See the step header.
+          # ⚠️ THE MESSAGE DOES NOT DIAGNOSE, AND THE FIRST VERSION DID — WRONGLY.
+          # It asserted the cause was a stale figure in `sentence.js` or
+          # `blocked.js`. The first real failure was a SHALLOW CLONE breaking
+          # `refcheck`, and the message named two files that were perfectly fine
+          # while the actual tool had already printed both the cause and the fix
+          # twenty lines above it. A guard that guesses sends the next reader to
+          # the wrong file with the right answer already on screen.
           if ! npm run gates; then
             echo "::error::the refreshed measurement does not pass the gates, so it was "\
                  "NOT committed. The archive and the published measurement are current and "\
-                 "correct; what is stale is the committed copy and whatever prose quotes it "\
-                 "— almost certainly a figure in src/lib/sentence.js or "\
-                 "src/lib/layers/blocked.js that test/quoted-figures.test.js holds to the "\
-                 "published file. Update the sentence and the next run commits."
+                 "correct — what is stale is the committed copy. The failing gate names "\
+                 "itself in the log directly above this line; read that rather than "\
+                 "guessing. One candidate worth knowing about: test/quoted-figures.test.js "\
+                 "holds the hand-written arguments in src/lib/sentence.js and "\
+                 "src/lib/layers/blocked.js to the published figures, and those counts move "\
+                 "with every night of hockey. If that is the one, update the sentence and "\
+                 "the next run commits."
             exit 1
           fi
           git config user.name  'readthegame-ingest'

@@ -569,3 +569,59 @@ test('⛔⛔⛔ every `steps.X.outputs.Y` in a workflow names a step that sets i
     `only ${checked} step-output references found across ${FILES.length} workflows — `
     + 'the scan is not reading them');
 });
+
+/**
+ * ⛔⛔⛔ A JOB THAT RUNS THE FULL GATE NEEDS THE FULL HISTORY.
+ *
+ * Found by the first scheduled run of the nightly `measure` job, 2026-10-03. It
+ * pulled the archive, measured it, checked the span, published the measurement
+ * and verified it live — every one of those green — and then failed running
+ * `npm run gates`, because `actions/checkout` defaults to a SHALLOW clone and
+ * `npm run refcheck` reads revision-pinned citations out of the design docs. 17
+ * of 117 citations could not be resolved at all.
+ *
+ * ⭐ THE TOOL SAVED THE AFTERNOON AND THE GATE SAVES THE RUN. `refcheck` prints
+ * *"THIS CLONE IS SHALLOW, so no revision-pinned citation can be read at all.
+ * The breaks above are almost certainly this and not the documents. Fix the
+ * CHECKOUT, not the docs"* — with the YAML. That is a tool that knows which of
+ * its own failures is an environment problem, and it is the reason this cost one
+ * run. But nothing ASSERTED the precondition, so the way to find out was to run
+ * it in CI against a live archive.
+ *
+ * ⚠️ `gates.yml` and `deploy.yml` had both carried `fetch-depth: 0` since they
+ * were written — the knowledge existed in two files and in neither as a rule,
+ * which is this repo's most-logged shape. The `ingest` job legitimately does not
+ * need it: its own step named "gates" is the Python suite alone, not the
+ * composite. So the rule is spelled against WHAT A JOB RUNS, not against a list
+ * of jobs that need it.
+ */
+test('⛔⛔⛔ every job that runs `npm run gates` checks out the full history', () => {
+  let checked = 0;
+  for (const file of FILES) {
+    const text = readFileSync(new URL(file, DIR), 'utf8');
+    const jobs = text.slice(text.search(/^jobs:$/m));
+    const names = [...jobs.matchAll(/^  ([a-z][\w-]*):$/gm)];
+    for (let k = 0; k < names.length; k++) {
+      const job = jobs.slice(names[k].index,
+        k + 1 < names.length ? names[k + 1].index : jobs.length)
+        .split('\n').filter(l => !/^\s*#/.test(l)).join('\n');
+      /* THE COMPOSITE GATE, NOT A STEP THAT HAPPENS TO BE CALLED "gates".
+         `ingest`'s own gates step runs `python3 -m unittest` and needs no
+         history; naming the command is what tells the two apart. */
+      if (!/npm run gates/.test(job)) continue;
+      checked++;
+      const where = `${file} / job \`${names[k][1]}\``;
+      assert.match(job, /uses: actions\/checkout@v\d+\s*\n\s*with:\s*\n\s*fetch-depth: 0/,
+        `${where} runs \`npm run gates\` and checks out shallow. \`npm run refcheck\` `
+        + 'reads revision-pinned citations from the docs and cannot resolve one in a '
+        + 'shallow clone, so the gate fails naming 17 documents that are all fine. '
+        + 'Add `with: fetch-depth: 0` to the checkout.');
+    }
+  }
+  /* ⛔ AND IT MUST HAVE FOUND THEM. Three jobs run the composite gate today —
+     gates, deploy and the nightly measure. A scan finding none would report that
+     every workflow is correct, which is the vacuous-gate shape this file exists
+     to stop. */
+  assert.ok(checked >= 3,
+    `only ${checked} jobs found running \`npm run gates\` — the scan is not reading them`);
+});
