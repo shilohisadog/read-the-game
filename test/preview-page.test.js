@@ -279,7 +279,7 @@ test('⭐⭐ the measure row draws BEFORE the season, because the axis is itself
   const said = textOf(ids.pv);
   assert.match(said, /5-on-5 CF% while the score was level/, 'the measure is named');
   assert.match(said, /no games yet/, 'and each club says it has nothing on it');
-  assert.match(said, /The scale: what clubs did across a full season, 44% to 57% in 96 club-seasons/,
+  assert.match(said, /What clubs did across a full season: 44% to 57% in 96 club-seasons/,
     'the caption names the span AND what it was measured over');
   // ⛔ AND NO BAR IS DRAWN FOR A CLUB WITH NO FIGURE. The row is a template, and a
   // template that draws a club's bar at zero would be inventing a measurement.
@@ -377,18 +377,35 @@ test('⛔ the axis names its own ends, so a full-width band is not an empty mete
   assert.deepEqual(ends.map(e => textOf(e)), ['44% 57%', '26% 38%']);
 });
 
-test('⛔ the caption says SHADED only when there is something shaded to see', () => {
-  /* The axis runs from the lowest club-season to the highest, so the band fills
-     the whole track and there is nothing to point at — unless a club is currently
-     outside anything a full season produced, which is common in October and is
-     the most interesting thing the picture can show. Calling it "shaded" in both
-     cases names a visual that usually is not there.
-     MUTATION: make the wording unconditional and one of these two fires. */
+test('⭐⭐ every card opens its scale the same way, and only the extra fact varies', () => {
+  /* ⛔⛔⛔ THIS TEST USED TO DEMAND THE OPPOSITE, AND KEVIN OVERRULED IT.
+     2026-10-03: *"2 of the three metrics say 'shaded' and one says 'the scale',
+     shouldn't they be consistent?"*
+
+     The old rule was that the caption opens with `Shaded:` when a club sits
+     outside the band and `The scale:` when the band fills the track — written
+     because calling something shaded names a visual that usually is not there.
+     That reasoning is sound and it was MIS-SITED: the fact that varies is
+     whether a CLUB is outside the band, not what the band is called. Carrying a
+     varying fact in the NAME of a fixed thing made three cards on one page look
+     inconsistent for a reason no reader could recover.
+
+     ⭐ SO THE CLAIM IS NOW CONSISTENCY PLUS A CONDITIONAL EXTRA, which is two
+     assertions rather than one: every card opens identically, and the sentence
+     about being past the band appears only when a club is.
+     MUTATION: put either wording back in front and the first pair fires; make
+     the extra sentence unconditional and the second does. */
   return (async () => {
     const inside = run({}, `?game=${GID}`, '2026-10-01T12:00:00Z');
     await inside.settle();
-    assert.match(textOf(inside.ids.pv), /The scale: what clubs did across a full season/);
-    assert.ok(!/Shaded:/.test(textOf(inside.ids.pv)));
+    const said1 = textOf(inside.ids.pv);
+    const opens = said1.match(/What clubs did across a full season:/g) || [];
+    assert.ok(opens.length >= 2,
+      `only ${opens.length} cards open with the shared sentence — they have drifted apart`);
+    assert.ok(!/Shaded:|The scale:/.test(said1),
+      'a card is naming the band differently from its neighbours again');
+    assert.ok(!/beyond anything a full season has produced/.test(said1),
+      'the extra sentence is printed with every club inside the band');
 
     // A club at 71 of every 100 is past the fixture's 57 high-water mark.
     const wild = { games: 6, attempts: { for: 300, against: 290 },
@@ -397,9 +414,13 @@ test('⛔ the caption says SHADED only when there is something shaded to see', (
     const out = run({ 'teams.json': { through: '2026-10-01',
       seasons: { 2026: { BUF: wild, PIT: club() } } } }, `?game=${GID}`, '2026-10-01T12:00:00Z');
     await out.settle();
-    const said = textOf(out.ids.pv);
-    assert.match(said, /Shaded: what clubs did across a full season/);
-    assert.match(said, /beyond anything a full season has produced/);
+    const said2 = textOf(out.ids.pv);
+    assert.match(said2, /What clubs did across a full season:/,
+      'the shared opening went missing on the card that has more to say');
+    assert.match(said2, /A mark outside it is beyond anything a full season has produced/);
+    /* ⛔ AND STILL NO SECOND NAME FOR THE BAND. The whole point is that the extra
+       fact is an extra SENTENCE, not a different word for the same thing. */
+    assert.ok(!/Shaded:|The scale:/.test(said2));
   })();
 });
 

@@ -737,11 +737,20 @@ test('⭐ the card prints that sentence, and the figures carry their unit', () =
      in the same card — the one figure a reader's eye lands on, unlabelled. */
   assert.match(html, /pct\(s\.value\) \+ '%'/, 'the club figure lost its unit again');
   assert.match(html, /pct\(lo\) \+ '%'/, 'the axis lost its unit again');
-  /* AND THE BAR SAYS WHAT IT IS. Its LENGTH is a distance from the league figure,
-     and a reader reads length as a quantity — on a card where both clubs sit
-     below the league, the longer bar is the club further from it. */
-  assert.match(html, /Each bar runs from the league figure/,
-    'nothing on the card says what the bar’s length means');
+  /* AND THE PICTURE SAYS WHAT IT IS. Nothing in it has a length any more — the
+     mark is a POSITION, because the axis starts at the lowest club-season rather
+     than at zero, and a length on a truncated axis is a lie about its own
+     proportion. Kevin read the old bars, which ran from the league figure to the
+     club's value, as "lines that stop at the same point" — correctly, since
+     with both clubs below the league every bar ended on the tick. */
+  /* ⚠️ MATCHED WITHOUT THE APOSTROPHE. The page builds that sentence from a
+     source string carrying `\u2019` as an ESCAPE, so a pattern holding the real
+     character finds nothing — the page is correct and the test is looking for a
+     different byte sequence. */
+  assert.match(html, /mark sits at its own figure on the scale/,
+    'nothing on the card says what the mark is');
+  assert.doesNotMatch(html, /foot\.push\('Each bar runs from/,
+    'the bar wording is back in the renderer');
 });
 
 test('⛔ the league note states a measurement, not a verdict', () => {

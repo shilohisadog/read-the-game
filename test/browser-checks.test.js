@@ -555,104 +555,113 @@ test('the probe reads nothing out of a page that never wrote its answer', () => 
 });
 
 /* ────────────────────────────────────────────────────────────────────────────
-   `preview-bars` — the judgement, with no browser anywhere near it.
+   `preview-marks` — the judgement, with no browser anywhere near it.
 
-   The probe reads pixels; this file holds the RULE it applies to them, so the
-   rule can be pushed at with rows this repo made up. The pixel rows below are
-   what a 24-sample sweep of a bar's interior looks like.
+   The probe reads a rendered page; this file holds the RULE it applies, so the
+   rule can be pushed at with rows this repo made up.
+
+   ⛔⛔⛔ WHAT THE CARD PROMISES NOW, AND WHY. Kevin, over two readings of the live
+   page on 2026-10-03: *"I am still having a hard time wrapping my head around a
+   graph where the lines stop at the same point, but the numbers say 40 / 25."*
+   Each club's mark was a BAR from the league figure to its value, so its length
+   was the GAP — and with both clubs below the league every bar ended on the
+   league tick. The axis starts at the lowest club-season rather than at zero, so
+   a bar from the left edge could not be the fix either: it would give the lowest
+   club no bar at all. A value on a truncated axis has one honest encoding, which
+   is where it sits, and the promise is that it sits at its own number.
    ──────────────────────────────────────────────────────────────────────────── */
-import { judgeBars, fixture as barFixture, readBars } from '../tools/browser/preview-bars.mjs';
+import { judgeMarks, fixture as markFixture, readMarks } from '../tools/browser/preview-marks.mjs';
 
-/* ⚠️ A ROW CARRIES A VISIBLE BAND EDGE BY DEFAULT, because `judgeBars` refuses a
-   reading with no edge in it at all — the card's axis is wider than its band on
-   two of three rows, so no marks means either the marks are gone or the fixture
-   stopped drawing the dangerous shape. These tests are about the TONE rule, so
-   they hand it a healthy edge and vary only the pixels. */
-const row = (...runs) => ({ bar: true, w: 600, span: [40, 300],
-  edges: [{ x: 292, from: 48 }],
-  px: runs.flatMap(([rgb, n]) => Array.from({ length: n }, () => rgb)) });
+/** A row as the probe reads it: axis, printed figure, mark position, pixels.
+ *  ⚠️ `ink: 150` is the real reading for a mark WITH its outline, measured on the
+ *  fixture — a healthy row, so these tests vary one thing at a time. The white
+ *  notch a mark without an outline leaves reads about 20. */
+const mark = (over = {}) => ({ label: 'shot attempts taken by defencemen',
+  lo: 25, hi: 39, printed: 35, at: 100 * (35 - 25) / (39 - 25), w: 600, h: 17,
+  wide: 1.8, ink: 150, edges: [71.4], edgeInk: [{ x: 430, from: 40 }], ...over });
 
-test('⭐ a bar of one tone passes, and a bar with a step in it does not', () => {
-  /* ⛔ THE STEP IS THE DEFECT. A bar drawn at 3% opacity over a shaded band shows
-     the band's edge as a crisp change of tone partway along, and a reader takes
-     that for a fill level. The passing row is the same bar over an opaque
-     backdrop: one shape, one tone. */
-  assert.deepEqual(judgeBars([row([[247, 250, 252], 24])]), []);
-  const stepped = judgeBars([row([[255, 255, 255], 10], [[207, 224, 238], 14])]);
-  assert.equal(stepped.length, 1, 'a bar that changes tone across itself was accepted');
-  assert.match(stepped[0], /changes tone across its own interior/);
-  assert.match(stepped[0], /fill level/, 'the message does not say what a reader sees');
+test('⭐⭐⭐ a mark at its own number passes, and one at the league does not', () => {
+  /* ⛔ THE SECOND CASE IS THE CARD KEVIN COULD NOT READ. 35% on a 25–39 axis is
+     71.4% along the track; anchored at the league figure of 31% it sits at 42.9%
+     and every row on the card stops in the same place.
+     MUTATION: drop the reconciliation and the second assertion goes. */
+  assert.deepEqual(judgeMarks([mark()]), []);
+  const anchored = judgeMarks([mark({ at: 100 * (31 - 25) / (39 - 25) })]);
+  assert.equal(anchored.length, 1, 'a mark sitting at the league figure was accepted');
+  assert.match(anchored[0], /the picture and the number disagree/i);
+  assert.match(anchored[0], /prints 35% on an axis of 25–39%/);
 });
 
-test('⭐ antialiasing is tolerated and a real step is not — the two are far apart', () => {
-  /* The tolerance is 6 per channel. A rounded corner or a subpixel edge moves a
-     channel by a point or two; the band against the card is 48 points of blue.
-     MUTATION: raise TOLERANCE past 48 and the second half of this fires. */
-  assert.deepEqual(judgeBars([row([[247, 250, 252], 12], [[250, 252, 253], 12])]), [],
-    'a two-point drift was read as a step');
-  assert.equal(judgeBars([row([[255, 255, 255], 12], [[207, 224, 238], 12])]).length, 1);
+test('⭐ rounding is tolerated and a real displacement is not', () => {
+  /* The card prints whole percent, so the mark may be up to half a point of the
+     axis away from where the printed figure says. On a 14-point axis that is 3.6%
+     of the track, and the rule allows it plus the 2% tolerance. A displacement
+     worth seeing is many times that. */
+  assert.deepEqual(judgeMarks([mark({ at: 100 * (35.4 - 25) / (39 - 25) })]), [],
+    'a mark inside its own rounding was called a disagreement');
+  assert.ok(judgeMarks([mark({ at: 100 * (38 - 25) / (39 - 25) })]).length,
+    'a mark three points off its number was accepted');
 });
 
-test('⛔ a band edge the bar has covered is a failure — it is drawn to be seen', () => {
-  /* ⛔ THE LEAGUE TICK ALREADY PAID FOR THIS ONE, and the comment beside it in
-     build_index.py says so: *"THE TICK IS DRAWN LAST, AND IT WAS INVISIBLE
-     BECAUSE IT WAS DRAWN FIRST. SVG has no z-index; paint order is document
-     order."* The band edge is a second mark with the same hazard, and making the
-     bar opaque is what created it — before that, nothing could cover anything.
-     MUTATION: move the edge block above the bar in `trackFor` and the probe
-     reports a difference of 0 against the page either side. */
-  const covered = judgeBars([row([[247, 250, 252], 24])].map(
-    r => ({ ...r, edges: [{ x: 292, from: 0 }] })));
-  assert.equal(covered.length, 1, 'an edge painted under the bar was accepted');
+test('⛔ a mark that reconciles perfectly and cannot be seen is still a failure', () => {
+  /* ⭐ THE FILL IS `games / need` — 1/35 on a preview in October — so the mark is
+     nearly transparent and its outline is all that carries it. Position alone is
+     satisfied by a mark drawn in white. That is the shape this repo logged as
+     "verifying an ATTRIBUTE is not verifying VISIBILITY", and the only answer is
+     to compare its pixels against the track beside it.
+     MUTATION: delete the `r.ink` branch and this fires. */
+  /* 20 is the measured reading for a mark whose outline has been deleted: the
+     opaque backdrop still displaces the track, so a white NOTCH is left behind
+     carrying none of the club's colour. That passed the first version of this
+     rule, which only asked whether the mark differed from the track at all. */
+  const faint = judgeMarks([mark({ ink: 20 })]);
+  assert.equal(faint.length, 1, 'an invisible mark in the right place was accepted');
+  assert.match(faint[0], /gone invisible/);
+  /* AND A MARK WITH NO PIXEL READING IS NOT JUDGED ON IT — `null` is "could not
+     ask", which is a different fact from "could not see". */
+  assert.deepEqual(judgeMarks([mark({ ink: null })]), []);
+});
+
+test('⛔ a band edge the card has covered is a failure — it is drawn to be seen', () => {
+  /* ⛔ THE LEAGUE TICK ALREADY PAID FOR THIS ONE, and the comment beside it says
+     so: *"it was invisible because it was drawn FIRST. SVG has no z-index; paint
+     order is document order."* The band's edges are a second mark with the same
+     hazard, and the caption points the reader straight at them. */
+  const covered = judgeMarks([mark({ edgeInk: [{ x: 430, from: 0 }] })]);
+  assert.equal(covered.length, 1, 'an edge painted under something was accepted');
   assert.match(covered[0], /invisible/);
   assert.match(covered[0], /caption tells the reader to look for that boundary/);
-  /* AND A FAINT-BUT-PRESENT EDGE IS FINE: the rule is visibility, not contrast. */
-  assert.deepEqual(judgeBars([row([[247, 250, 252], 24])].map(
-    r => ({ ...r, edges: [{ x: 292, from: 7 }] }))), []);
 });
 
 test('⛔ a probe that measured nothing is a FAILURE, never a pass', () => {
-  /* ⛔⛔⛔ THE SHAPE THIS REPO PAYS FOR MOST. Every assertion in `judgeBars` is
-     vacuous on a page that drew no bars, and "no bars, no steps, all good" is
-     exactly how a check comes to approve everything. Four separate ways to end
-     up with nothing, each one named. */
-  assert.ok(judgeBars(null).length, 'a silent probe passed');
-  assert.ok(judgeBars([]).length, 'an empty reading passed');
-  assert.ok(judgeBars([{ bar: false }]).length, 'a page with no outlined bar passed');
-  const thin = judgeBars([{ bar: true, w: 600, span: [434, 434], px: [],
-    edges: [{ x: 292, from: 48 }] }]);
-  assert.ok(thin.length, 'a zero-width bar was judged rather than reported');
-  assert.match(thin[0], /too narrow to judge/,
-    'the message does not say the probe is not looking at it');
-  /* ⭐ AND A READING WITH NO BAND EDGE ANYWHERE IS ALSO NOTHING. The axis on this
-     card is wider than the band on two of its three rows, so marks are expected;
-     their absence means the marks went or the fixture stopped drawing the shape
-     this probe exists for. Either way every tone assertion above is vacuous. */
-  const noEdges = judgeBars([{ bar: true, w: 600, span: [40, 300],
-    px: Array.from({ length: 24 }, () => [247, 250, 252]) }]);
+  /* ⛔⛔⛔ THE SHAPE THIS REPO PAYS FOR MOST. Every assertion above is vacuous on a
+     page that drew nothing, and "no rows, no disagreements, all good" is exactly
+     how a check comes to approve everything. */
+  assert.ok(judgeMarks(null).length, 'a silent probe passed');
+  assert.ok(judgeMarks([]).length, 'an empty reading passed');
+  const missing = judgeMarks([mark({ printed: null })]);
+  assert.ok(missing.length, 'a row with no printed figure was skipped quietly');
+  assert.match(missing[0], /not being checked at all/);
+  const noEdges = judgeMarks([mark({ edges: [], edgeInk: [] })]);
   assert.ok(noEdges.length, 'a card with no band edge at all passed');
   assert.match(noEdges[0], /not one band-edge mark/);
 });
 
 test('⭐⭐ the fixture puts the league figure where the real card has it', () => {
-  /* ⛔ AND THAT IS WHAT MAKES THE PICTURE DANGEROUS. `leagueShares` sums over
-     every club in the season bucket, so a fixture holding only the two clubs in
-     the game puts the league figure BETWEEN them and draws bars of ZERO WIDTH —
-     which is what the first version of this probe did, skipping four of its six
-     bars while reporting a pass on the other two. The filler clubs exist to make
-     a bar long enough to cross a band edge.
-     ⚠️ ASSERTED HERE, not trusted: the arithmetic is four numbers per row and a
-     later edit to the fixture would silently flatten the bars again. */
-  const clubs = barFixture({})['teams.json'].seasons[2026];
+  /* ⛔ AND THAT IS WHAT MAKES THE PICTURE HARD. `leagueShares` sums over every
+     club in the season bucket, so a fixture holding only the two clubs in the
+     game puts the league figure BETWEEN them — which is a card where nothing sits
+     outside the band and the hardest shape is never drawn. The filler clubs exist
+     to put it where the real card has it.
+     ⚠️ ASSERTED, not trusted: it is four numbers a row and an edit would quietly
+     flatten the fixture again. */
+  const clubs = markFixture({})['teams.json'].seasons[2026];
   const sum = f => Object.values(clubs).reduce((a, t) => a + f(t), 0);
-  const league = {
-    level5: sum(t => t.level5.for) / sum(t => t.level5.for + t.level5.against),
-    dmen: sum(t => t.dmen.count) / sum(t => t.dmen.n),
-    slot: sum(t => t.slot.count) / sum(t => t.slot.n),
-  };
-  assert.equal(Math.round(league.level5 * 100), 50, 'level5 league is not 50% — the fixture is not a league');
-  assert.equal(Math.round(league.dmen * 100), 31);
-  assert.equal(Math.round(league.slot * 100), 50);
+  assert.equal(Math.round(100 * sum(t => t.level5.for)
+    / sum(t => t.level5.for + t.level5.against)), 50,
+    'level5 league is not 50% — the fixture is not a league');
+  assert.equal(Math.round(100 * sum(t => t.dmen.count) / sum(t => t.dmen.n)), 31);
+  assert.equal(Math.round(100 * sum(t => t.slot.count) / sum(t => t.slot.n)), 50);
   /* AND THE TWO CLUBS IN THE GAME CARRY THE NUMBERS KEVIN WAS READING. */
   assert.equal(clubs.WSH.level5.for, 4);
   assert.equal(clubs.WSH.level5.for + clubs.WSH.level5.against, 10);
@@ -661,6 +670,6 @@ test('⭐⭐ the fixture puts the league figure where the real card has it', () 
 });
 
 test('⛔ the reader answers null when the page said nothing', () => {
-  assert.equal(readBars('<html><body><p>nothing here</p></body></html>'), null);
-  assert.deepEqual(readBars('<p id="barsout">BARS [{"bar":false}]</p>'), [{ bar: false }]);
+  assert.equal(readMarks('<html><body><p>nothing here</p></body></html>'), null);
+  assert.deepEqual(readMarks('<p id="marksout">MARKS [{"label":"x"}]</p>'), [{ label: 'x' }]);
 });

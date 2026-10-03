@@ -171,8 +171,8 @@ jobs:
       # 1,600 tests and fourteen probes, and the one picture on the page a novice
       # is sent to had no check at all. This is pixels, because every structural
       # fact about that markup was true while the picture was unreadable.
-      - name: a preview bar is one tone
-        run: node tools/browser/run.mjs preview-bars
+      - name: a preview mark sits at its number
+        run: node tools/browser/run.mjs preview-marks
 
       # THE LEARN PAGE'S DOORS POINT AT ONE GAME, so that game being published
       # is a production dependency of nine links on a page a stranger reads.

@@ -4000,33 +4000,44 @@ __HELPERS__
          would be two populations wearing one label — the trap `leagueShares`
          already names. So the tick is simply absent and the caption says so. */
       if (s.value != null) {
-        var from = s.league == null ? at(range ? range.median : s.value) : at(s.league);
-        var to = at(s.value);
-        var x = Math.min(from, to), w = Math.max(Math.abs(to - from), 0.6);
         var ink = readableInk(colourOf(s.ab));
-        /* ⛔⛔⛔ AN OPAQUE BACKDROP, AND IT IS THE WHOLE REPAIR — Kevin, 2026-10-03,
-           reading tonight's preview: *"definitely looks like something is amiss
-           with our calculations, or else I don't understand how to read the line
-           graphs."* Nothing was amiss with the calculations.
+        /* ⛔⛔⛔ A POSITION, NOT A LENGTH — Kevin, 2026-10-03, twice:
+           *"I am still having a hard time wrapping my head around a graph where
+           the lines stop at the same point, but the numbers say 40 / 25."*
 
-           The fill above is `fill-opacity: games / need`, and on a preview in
-           OCTOBER that is 1/35 — the bar is drawn at THREE PER CENT. So what a
-           reader saw inside the outline was not the bar at all: it was the
-           shaded band showing straight through it, and the band's edge landed
-           mid-bar as a crisp colour step. A step inside a bar reads as a FILL
-           LEVEL, which is the one thing it is not. Measured on his screenshot:
-           every bar changed tone at x=965 and the band edge computes to x=970.
+           He is describing the encoding exactly. The mark used to be a BAR drawn
+           from the league figure to the club's value, so its length was the GAP
+           between them — and on a card where both clubs sit below the league,
+           every bar ends on the league tick and the end that MOVES is the far
+           one. Two clubs at 40 and 25 therefore stopped at the same place, and
+           the longer bar belonged to the worse club. Defensible as a chart of
+           distance-from-average; unreadable as a chart of a value, which is what
+           the number beside it says it is.
 
-           ⭐ THE RAMP IS UNTOUCHED. Kevin ruled the opacity ramp and it still
-           says exactly what it said — a bar on one game is pale, a bar on forty
-           is solid. White underneath only stops the backdrop being mistaken for
-           the bar's own contents. The bar is one shape now, in one tone. */
-        svg.appendChild(svgEl('rect', { x: x, y: 2.2, width: w, height: 5.6, rx: 0.8,
+           ⭐ AND THE AXIS IS WHY A BAR CANNOT BE THE ANSWER EITHER. It starts at
+           the lowest club-season, not at zero — 25% here — so a bar grown from
+           the left edge would give the lowest club NO BAR AT ALL and make every
+           length a lie about its own proportion. A value on a truncated axis has
+           exactly one honest encoding: where it sits. The mark is at the value,
+           the number printed beside it IS that position, and nothing in the
+           picture has a length that means anything. */
+        /* ⛔ NOT CLAMPED TO THE AXIS, DELIBERATELY. Clamping would keep the whole
+           mark on screen and move its CENTRE off the value — and the one promise
+           this picture now makes is that the mark is at the number. A club at the
+           very end of the scale is drawn half-width against the edge, which is
+           both honest and the right thing to see: it is at the end. */
+        var MARK = 1.8;
+        var x = at(s.value) - MARK / 2;
+        /* The opaque backdrop stays, for the reason it arrived: the fill below is
+           `fill-opacity: games / need`, which in October is 1/35, and without
+           white underneath the shaded band shows through the mark and changes
+           its tone for a reason that has nothing to do with the club. */
+        svg.appendChild(svgEl('rect', { x: x, y: 1.8, width: MARK, height: 6.4, rx: 0.6,
           fill: '#fff' }));
-        svg.appendChild(svgEl('rect', { x: x, y: 2.2, width: w, height: 5.6, rx: 0.8,
+        svg.appendChild(svgEl('rect', { x: x, y: 1.8, width: MARK, height: 6.4, rx: 0.6,
           fill: ink, 'fill-opacity': s.trust.toFixed(3) }));
-        svg.appendChild(svgEl('rect', { x: x, y: 2.2, width: w, height: 5.6, rx: 0.8,
-          fill: 'none', stroke: ink, 'stroke-width': 0.35 }));
+        svg.appendChild(svgEl('rect', { x: x, y: 1.8, width: MARK, height: 6.4, rx: 0.6,
+          fill: 'none', stroke: ink, 'stroke-width': 0.4 }));
       }
       /* ⭐ AND THE BAND'S EDGES SURVIVE BEING COVERED. Making the bar opaque hid
          the one thing the caption tells the reader to look for — *"a bar past it
@@ -4388,23 +4399,29 @@ __HELPERS__
        deliberate split, not a drift: a chart AXIS is read as percent by anyone
        who has seen a chart, and this row's own label already says CF%. The tiles
        are prose for a novice, where "22 of every 100" is the friendlier form. */
+    /* ⭐⭐ ONE OPENING FOR ALL THREE CARDS — Kevin, 2026-10-03: *"2 of the three
+       metrics say 'shaded' and one says 'the scale', shouldn't they be
+       consistent?"* He is right, and the old split was not wrong so much as
+       mis-sited: the fact that varies is whether a CLUB is outside the band, not
+       what the band is called. Naming the same thing two ways to carry that fact
+       made three cards look inconsistent for a reason no reader could recover.
+       So the lead sentence is identical everywhere and the extra fact gets its
+       own sentence, printed only when there is one. */
     if (ar.range && track) {
       var wider = track.lo < ar.range.min || track.hi > ar.range.max;
-      foot.push((wider ? 'Shaded' : 'The scale')
-        + ': what clubs did across a full season, '
+      foot.push('What clubs did across a full season: '
         + pct(ar.range.min) + '% to ' + pct(ar.range.max) + '%'
         + (ar.range.games ? ', measured over ' + num(ar.range.games) + ' club-games' : '')
-        + ' in ' + ar.range.n + ' club-seasons'
-        + (wider ? ' — a bar past it is beyond anything a full season has produced.' : '.'));
+        + ' in ' + ar.range.n + ' club-seasons — the shaded band.'
+        + (wider ? ' A mark outside it is beyond anything a full season has produced.' : ''));
     }
-    /* ⭐ AND WHAT THE BAR ITSELF IS, because its LENGTH is a distance and a
-       reader reads length as a quantity. On a card where both clubs sit below
-       the league figure, the longer bar belongs to the club further from it —
-       which is the opposite of what a bar normally says, and nothing on the card
-       said otherwise. Printed only when there is a bar to explain. */
-    if (track && ar.value != null && ar.league != null) {
-      foot.push('Each bar runs from the league figure to that club\u2019s own, so '
-        + 'its length is the gap between them and the tick is the league.');
+    /* ⭐ WHAT THE PICTURE IS, now that nothing in it has a length. Said plainly
+       because the previous encoding was a bar whose length was a GAP, and Kevin
+       read two clubs at 40 and 25 as "lines that stop at the same point" —
+       correctly, since both bars ended on the league tick. */
+    if (track && ar.value != null) {
+      foot.push('Each club\u2019s mark sits at its own figure on the scale'
+        + (ar.league != null ? ', and the dark tick is the league' : '') + '.');
     }
     if (!foot.length) foot.push(noneYet(p.counting));
     var fp = el('p', 'pvfoot');
