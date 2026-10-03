@@ -91,7 +91,15 @@ as long as it was.
 6. ✅ **SPLIT.** The nightly measures over extracts pulled from R2; the weekly
    `derive.yml` still re-extracts and now checks its own span too — a gap found by
    the gate rather than by reading the file. **Measured: 4,572 extracts, 371 MB.**
-7. ⚠️ **KEVIN — THE NIGHTLY COMMIT'S PREMISE WAS FALSE, AND IT IS MINE.** I told
+7. ✅ **CONFIRMED BY KEVIN — the nightly commit stands.** *"Having the learn
+   pages up to a week behind is a non-starter."* ⭐ **And the cost I warned him
+   about was wrong: the first real commit was 2 FILES, 2 LINES** — the
+   measurement and the health block's timestamp. The 16 banners and the built
+   pages did not move, because they quote the archive's HEADLINE figures and only
+   a census count had changed; the commit only grows on a night when a figure a
+   page prints actually moves. I offered ~24 files/night as a reason to
+   reconsider his ruling and the real number was one dispatch away.
+   ⚠️ **ITS PREMISE WAS STILL FALSE, AND IT IS MINE.** I told
    you *"if the published document moves nightly and the committed copy does not,
    `measures_fresh.py` goes red every night."* **It does not run nightly.** It
    runs in `derive.yml`, weekly, in the same job that refreshes the copy. So the
@@ -116,7 +124,23 @@ as long as it was.
    header argues against robot noise in it.
 8. ✅ **THE SURFACES PRINT IT.** Six of them, listed at the top.
 
-## ⚠️ KEVIN — the one-line check in the spec was unsound, and it is measured
+## ✅ RAN END TO END THE SAME DAY
+
+Dispatched rather than waited for: `measure` job all green, `5bff863` pushed by
+`readthegame-ingest`, the deploy it dispatched green, and the published documents
+agreeing season by season. **A reader of a 2026-27 game is told "the 21 games we
+have measured for this game's season, up to 2 October 2026."**
+
+⚠️ One run was spent on a shallow clone: this job runs `npm run gates` and
+`refcheck` cannot resolve a revision-pinned citation without the full history.
+`fetch-depth: 0` now, and `test/workflows.test.js` requires it of every job that
+runs the composite gate — the knowledge existed in `gates.yml` and `deploy.yml`
+and in neither as a rule. ⭐ `refcheck` printed both the cause and the YAML fix,
+which is why it cost one run; my own error message, meanwhile, asserted the cause
+was a stale figure in two files that were fine. A guard states what it observed
+and points at the evidence.
+
+## ✅ The one-line check in the spec was unsound, and it is measured
 
 The spec said:
 
