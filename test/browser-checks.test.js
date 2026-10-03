@@ -679,3 +679,77 @@ test('⛔ the reader answers null when the page said nothing', () => {
   assert.equal(readMarks('<html><body><p>nothing here</p></body></html>'), null);
   assert.deepEqual(readMarks('<p id="marksout">MARKS [{"label":"x"}]</p>'), [{ label: 'x' }]);
 });
+
+/* ────────────────────────────────────────────────────────────────────────────
+   `methods-deeplink` — the judgement, with no browser anywhere near it.
+
+   ⛔⛔⛔ KEVIN, 2026-10-03: *"in the what is normal section, we provide a doorway
+   into the how we measure page. but, each link just goes to the page header, not
+   the specific section of each metric being explained."*
+
+   ⚠️ NOTHING WAS WRONG WITH EITHER END. The preview writes
+   `/how-we-measure.html#m-<key>`, the methods page gives each section
+   `id="m-<key>"`, both call `anchorOf` so they cannot drift apart, and
+   `methods.test.js` already proves every door has a section to land on. All
+   true, all green, every door landing on the header — because the page is a
+   shell whose sections are drawn after `measures.json` arrives, and the browser
+   resolves the fragment while parsing, against an empty host.
+   ──────────────────────────────────────────────────────────────────────────── */
+import { judgeDeep, readDeep } from '../tools/browser/methods-deeplink.mjs';
+
+/** A reading as the probe takes it: a door that landed, on a scrollable page. */
+const deep = (over = {}) => ({ hash: 'm-powerplay', found: true, top: 4, scrolled: 1970,
+  focused: 'm-powerplay', sections: 16, tall: 9000, view: 600, ...over });
+
+test('⭐⭐⭐ a door that landed passes, and one left at the header does not', () => {
+  /* The second case is the live site before the fix: the section exists, the
+     href is right, and it is 1,975px below the fold because nothing ever scrolled.
+     MUTATION: drop the `top` comparison and it goes. */
+  assert.deepEqual(judgeDeep(deep()), []);
+  const stuck = judgeDeep(deep({ top: 1975, scrolled: 0 }));
+  assert.equal(stuck.length, 1, 'a door that never moved the page was accepted');
+  assert.match(stuck[0], /1975px from the top of the viewport/);
+  assert.match(stuck[0], /resolved the fragment against an empty page/);
+});
+
+test('⛔ a door that scrolled but left the keyboard behind is still a failure', () => {
+  /* ⭐ THE PAGE CLAIMS THIS, so it is checked: the fix sets `tabIndex` and calls
+     `focus`, and a claim nothing checks is a comment. Scrolling moves the eye; a
+     reader on a keyboard is still at the top of the document and their next Tab
+     proves it.
+     MUTATION: delete the focus branch and this is the only thing that fires. */
+  const eyesOnly = judgeDeep(deep({ focused: null }));
+  assert.equal(eyesOnly.length, 1, 'a door that moved only the scrollbar was accepted');
+  assert.match(eyesOnly[0], /a reader on a keyboard has not been taken anywhere/);
+  /* AND IT IS NOT REPORTED WHEN THE LANDING ITSELF FAILED — focus is a second
+     property of a door that arrived, not a second way of saying it did not. */
+  const stuck = judgeDeep(deep({ top: 1975, focused: null }));
+  assert.equal(stuck.length, 1, 'one fault was reported as two');
+  assert.match(stuck[0], /from the top of the viewport/);
+});
+
+test('⛔ a probe that measured nothing is a FAILURE, never a pass', () => {
+  /* ⛔⛔⛔ EVERY ASSERTION ABOVE IS VACUOUS ON A PAGE THAT DREW NOTHING, and
+     "no sections, nothing below the fold, all good" is exactly how a check comes
+     to approve everything. Four ways to end up with nothing, each one named. */
+  assert.ok(judgeDeep(null).length, 'a silent probe passed');
+  assert.ok(judgeDeep(deep({ hash: '' })).length, 'a reading with no fragment passed');
+  const empty = judgeDeep(deep({ sections: 0 }));
+  assert.ok(empty.length, 'a page that drew no sections passed');
+  assert.match(empty[0], /drew no sections at all/);
+  /* ⭐ AND THE PAGE MUST BE TALLER THAN THE VIEWPORT. On a document that fits on
+     one screen every fragment "lands" without moving anything, so this check
+     would pass on a site whose deep links are all broken. */
+  const short = judgeDeep(deep({ tall: 620, view: 600 }));
+  assert.ok(short.length, 'a page with nowhere to scroll was judged rather than reported');
+  assert.match(short[0], /nowhere\s+to scroll to|nowhere to scroll to/);
+  /* A fragment naming no section is a DEAD door, which is a different and worse
+     fault than one that mis-lands, and it says so. */
+  const dead = judgeDeep(deep({ found: false }));
+  assert.match(dead[0], /names no section on the page/);
+});
+
+test('⛔ the reader answers null when the page said nothing', () => {
+  assert.equal(readDeep('<html><body><p>nothing here</p></body></html>'), null);
+  assert.deepEqual(readDeep('<p id="deepout">DEEP {"hash":"m-x"}</p>'), { hash: 'm-x' });
+});

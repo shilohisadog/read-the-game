@@ -25,6 +25,7 @@ export const CHECKS = {
   'replay-states': () => import('./states.mjs'),
   'door-row': () => import('./door-row.mjs'),
   'preview-marks': () => import('./preview-marks.mjs'),
+  'methods-deeplink': () => import('./methods-deeplink.mjs'),
 };
 
 function args(argv) {

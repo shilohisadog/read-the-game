@@ -4933,7 +4933,47 @@ __HELPERS__
 
   }
 
-  grab('measures.json').then(function (mj) { draw(methods(mj)); });
+  /**
+   * ⛔⛔⛔ THE DEEP LINK HAS TO BE RESOLVED BY HAND, BECAUSE THE SECTION IT NAMES
+   * DOES NOT EXIST WHEN THE BROWSER LOOKS FOR IT.
+   *
+   * Kevin, 2026-10-03: *"in the what is normal section, we provide a doorway into
+   * the how we measure page. but, each link just goes to the page header, not the
+   * specific section of each metric being explained."*
+   *
+   * Every door on this site is `/how-we-measure.html#m-<key>` and every one of
+   * those ids is real — all sixteen, checked against `anchorOf` by
+   * test/methods.test.js. They are drawn by `draw(methods(mj))` AFTER
+   * `measures.json` arrives, and the browser resolves a fragment while parsing
+   * the document, when `#hm` is still empty. It finds nothing, gives up, and
+   * never looks again. So every work door on the site landed on the page header,
+   * and the one page whose whole purpose is to answer "where did that number come
+   * from" answered "somewhere below".
+   *
+   * ⚠️ NOTHING WAS WRONG WITH THE LINKS, which is why no test saw it: the href is
+   * right, the id is right, and they match. The defect lives in the gap between
+   * two correct things — the oldest shape in this repo — and only a browser can
+   * see it, so `tools/browser/methods-deeplink.mjs` is the check.
+   *
+   * ⭐ FOCUS MOVES TOO, not just the scroll. A reader on a keyboard or a screen
+   * reader who follows a link and is left at the top of the document has not been
+   * taken anywhere, whatever the scrollbar says. `tabIndex = -1` makes a heading
+   * focusable without putting it in the tab order, and `preventScroll` stops the
+   * browser undoing the alignment we just made.
+   */
+  function openTheFragment() {
+    var want = (location.hash || '').slice(1);
+    if (!want) return;
+    var target = document.getElementById(decodeURIComponent(want));
+    /* A fragment naming nothing is not an error here. It may name a section of
+       the static argument below, which the browser already resolved itself. */
+    if (!target) return;
+    target.scrollIntoView();
+    target.tabIndex = -1;
+    target.focus({ preventScroll: true });
+  }
+
+  grab('measures.json').then(function (mj) { draw(methods(mj)); openTheFragment(); });
 </script>
 """
 
