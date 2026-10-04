@@ -1761,10 +1761,29 @@ function renderSum(){
   const L=LENS[id].reduce(G.events,{...CTX,evenOnly:false});
   const n=L.counted.length;
   const by=byClub(id,L);
-  /* THE CLASS FOLLOWS THE SPLIT. A club's count is placed against team-games; a
-     count that belongs to no club is placed against games. Two populations, two
-     documents, and the row says which one it is reading. */
-  const d=by&&perTeam?perTeam[id]:(own?own[id]:null);
+  /* ⛔⛔⛔ THE SPLIT AND ITS CLASS TRAVEL TOGETHER, OR NEITHER DOES — and the first
+     version of this line shipped the defect the whole feature exists to prevent.
+     It read `by&&perTeam ? perTeam[id] : own[id]`, so on a page whose PUBLISHED
+     `measures.json` had no `perTeamGame` yet, the clubs' counts were drawn on the
+     GAME class: 61 attempts for one club against a scale of 88–144 two-club
+     totals, clamped to the left edge, under an axis labelled with the wrong
+     population. Live for twenty minutes on 2026-10-04.
+
+     ⚠️ THE GAP IS STRUCTURAL AND WILL HAPPEN AGAIN. `data/measures.json` is a
+     build input committed with the code; the shell FETCHES the published document
+     from the data origin, which the nightly rewrites hours later. So every new
+     field in that document is absent for one night on the live site while being
+     present in every local test and every browser probe — and a fallback that
+     degrades to a DIFFERENT POPULATION is invisible in exactly the place it is
+     wrong.
+
+     ⭐ SO THE DEGRADED FORM IS THE OLD ONE: the game's own total on the game
+     class, which is what this card drew for its whole life before today. A row
+     that cannot say what each club did says what the game did, and never splits a
+     count it has nowhere honest to put. */
+  const cls=by&&perTeam?perTeam[id]:null;
+  const split=by&&cls;
+  const d=split?cls:(own?own[id]:null);
   /* ⭐ THE CLASS NAMES ARE WHOLE LITERALS, NOT `'s'+cls`. `test/css-orphans.test.js`
      counts every word inside every shipped string to decide whether a CSS rule
      still dresses anything, and a name spliced from a prefix and a letter is
@@ -1772,9 +1791,9 @@ function renderSum(){
      they were written. Its header offers a ledger for exactly that case; a whole
      literal is better than a ledger entry, because a name the scanner can see is
      also a name the next person can grep. */
-  const sides=by?[['sa',AID,AAB],['sh',HID,HAB]]:[['snone',null,null]];
-  const marks=sides.map(([cls,tid,ab])=>({cls,ab,
-   at:sitsIn(d,by?by[tid]:n)})).filter(m=>m.at);
+  const sides=split?[['sa',AID,AAB],['sh',HID,HAB]]:[['snone',null,null]];
+  const marks=sides.map(([mk,tid,ab])=>({cls:mk,ab,
+   at:sitsIn(d,split?by[tid]:n)})).filter(m=>m.at);
   if(marks.length)placed++;
   const li=document.createElement('li');
   const say=document.createElement('span');
@@ -1787,13 +1806,18 @@ function renderSum(){
      ⚠️ THE STOPPAGES ROW KEEPS ITS TOTAL AND SAYS WHY, because its rail is a
      different population from the five above it and two scales that look alike
      and mean different things is the oldest defect in this file. */
-  if(by){
+  if(split){
    say.innerHTML='<b>'+ESC(chipLabel(id))+'</b> — '
-    +sides.map(([cls,tid,ab])=>'<span class="sc '+cls+'">'+ESC(ab)+' '+N(by[tid])+'</span>')
+    +sides.map(([mk,tid,ab])=>'<span class="sc '+mk+'">'+ESC(ab)+' '+N(by[tid])+'</span>')
       .join(' · ');
   }else{
-   say.innerHTML='<b>'+ESC(chipLabel(id))+' '+N(n)+'</b> \u2014 the whole game: a '
-    +'stoppage names a rule and never a team.';
+   /* ⚠️ TWO REASONS A ROW IS NOT SPLIT, AND THEY ARE DIFFERENT CLAIMS. The whistle
+      lens CANNOT be split — a stoppage names a rule and never a team, which is the
+      layer's own lesson and worth printing. A row that merely has no per-team
+      class yet is a document that has not caught up, and printing a stoppage's
+      reason over it would be a sentence that is simply false. */
+   say.innerHTML='<b>'+ESC(chipLabel(id))+' '+N(n)+'</b> \u2014 the whole game'
+    +(by?'.':': a stoppage names a rule and never a team.');
   }
   li.appendChild(say);
   /* ⭐⭐ ONE RAIL, EVERY MARK ON IT — the picture Kevin settled on the preview

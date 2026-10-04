@@ -878,6 +878,76 @@ test('⭐⭐⭐ every row draws a mark per club, on the class that club belongs 
   assert.equal(gameRows, 1, `${gameRows} rows were placed against GAMES, not 1`);
 });
 
+test('⛔⛔⛔ a document with no per-team class draws GAME rows, never a club on a game scale', () => {
+  /* ⛔⛔⛔ THIS SHIPPED, AND IT WAS LIVE FOR TWENTY MINUTES ON 2026-10-04. The first
+     version read `by && perTeam ? perTeam[id] : own[id]` — so when the published
+     document had no `perTeamGame`, each club's own count was drawn on the GAME
+     class: 61 attempts against a scale of 88–144 two-club totals, clamped to the
+     left edge, under an axis labelled with the wrong population. The exact defect
+     the whole feature was built to prevent, reintroduced by its own fallback.
+
+     ⭐⭐ AND THE GAP IS STRUCTURAL, WHICH IS WHY THIS TEST EXISTS RATHER THAN A
+     FIXED LINE. `data/measures.json` is a build input committed WITH the code; the
+     shell FETCHES the published document from the data origin, which the nightly
+     rewrites hours later. Every new field is therefore absent on the live site for
+     one night while present in every local test and every browser probe — so a
+     fallback that degrades to a different population is invisible in exactly the
+     place it is wrong. The only way to see it is to ask the page what it does
+     without the field, which is what this does.
+
+     ⭐ THE DEGRADED FORM IS THE OLD CARD: the game's total on the game class. A row
+     that cannot say what each club did says what the game did. */
+  const old = JSON.parse(JSON.stringify(MEASURES));
+  delete old.perTeamGame;
+  const a = boot(rich, old);
+  const s = a.$('scrub'); s.value = String(s.max);
+  s.oninput({ target: { value: s.value } });
+  const rows = (a.$('sumBody')._kids || []).find(n => n.className === 'srows');
+  assert.ok(rows && (rows._kids || []).length, 'no rows drew at all');
+
+  const chips = a.$$('#rg .pk').filter(c => c.dataset && c.dataset.l);
+  const lensFor = label => {
+    const c = chips.find(x => (x.textContent || '').trim().startsWith(label));
+    return c && c.dataset.l;
+  };
+  const byGame = MEASURES.perGame[String(rich.game.id).slice(0, 4)]
+    || MEASURES.perGame[Object.keys(MEASURES.perGame).sort().pop()];
+
+  let drew = 0;
+  for (const li of rows._kids) {
+    const kids = li._kids || [];
+    const text = (kids[0] && kids[0].innerHTML) || '';
+    /* ① NOT ONE ROW SPLITS. A club chip anywhere means a club count is on screen
+       with no class of its own to be placed against. */
+    assert.ok(!/class="sc s[ah]"/.test(text),
+      `a row still names the clubs with no per-team class published: ${text}`);
+    const track = kids.find(n => n.className === 'strack');
+    if (!track) continue;
+    drew++;
+    const marks = (track._kids || []).filter(n => (n.className || '').startsWith('spt'));
+    assert.equal(marks.length, 1, 'a game row drew more than one mark');
+    assert.match(marks[0].className, /snone/,
+      'a mark wears a club colour on a row that names no club');
+
+    /* ② AND THE MARK IS THE GAME'S OWN COUNT ON THE GAME CLASS — checked against
+       the published histogram, not against the row's neighbour. */
+    const label = (/^<b>([^<0-9]+?)\s*[\d,]*<\/b>/.exec(text) || [])[1];
+    const lens = lensFor((label || '').trim());
+    const count = +((/<b>[^<]*?([\d,]+)<\/b>/.exec(text) || [])[1] || '').replace(/,/g, '');
+    const dist = byGame[lens];
+    assert.ok(dist && dist.max > dist.min, `no published game range for ${lens}`);
+    const want = Math.max(0, Math.min(100, ((count - dist.min) / (dist.max - dist.min)) * 100));
+    assert.ok(Math.abs(parseFloat(marks[0].style.left) - want) < 0.15,
+      `${lens} ${count} belongs at ${want.toFixed(1)}% of its GAME class `
+      + `${dist.min}–${dist.max} and was drawn at ${marks[0].style.left}`);
+    const ends = kids.find(n => n.className === 'sends');
+    assert.deepEqual((ends._kids || []).map(n => n.textContent),
+      [dist.min.toLocaleString(), dist.max.toLocaleString()],
+      `${lens}'s axis names the ends of a class its mark was not placed on`);
+  }
+  assert.ok(drew >= 5, `only ${drew} rows drew a scale without the per-team class`);
+});
+
 test('⛔ the clubs\u2019 counts are the lens\u2019s own, and only ONE lens may fail to add up', () => {
   /* ⭐⭐ THE SECOND PATH. Above, the row is checked against the published
      distribution; here it is checked against the REDUCERS, which is where the
