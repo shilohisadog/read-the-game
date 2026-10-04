@@ -34,11 +34,146 @@ This section is the orientation. Everything below §0 is the detail, organised b
 state.
 ## ⏭ 0.00 PICK UP HERE — 2026-10-03 (evening)
 
-# ✅ TWO THINGS SHIPPED TODAY, AND THE SECOND ONE TOOK FOUR TRIES
+# ✅ 2026-10-04 — WHAT SHIPPED, AND THE FIVE THINGS KEVIN FOUND FIRST
 
 Everything below is done, live and green. **Nothing is open.** The next session
 starts from whatever Kevin is reading on screen, which is how every commit in
-this file's recent history began.
+this file's recent history began. 2026-10-03's two builds are kept below this
+block; the day before that, below them.
+
+**Commits, oldest first:** `a714734` quoted-figures writer · `d8c727c` the horn
+carries no strength state · `baa6fff` the summary door opens from the first frame
+· `2ab4e6a` per-team marks on the summary card · `07ea3d1` the degraded fallback
+· `485d3b7` build-before-health · `049d107` the `.sc` collision · `37bf0db` the
+door moves to the sidebar + `summary=1`.
+
+---
+
+## ⭐⭐⭐ THE ONE THING WORTH READING IF YOU READ NOTHING ELSE
+
+**EVERY DEFECT TODAY WAS FOUND BY KEVIN FROM THE LIVE SITE. NONE BY A GREEN
+SUITE, AND TWO OF THEM WHILE I WAS TELLING HIM THE OPPOSITE.**
+
+| he said | what was true |
+|---|---|
+| "both of last night's ingests failed" | three figures quoted in COMMENTS went stale and blocked the commit of the data the job exists to refresh |
+| "that becomes moot, no?" (empty net after the horn) | three surfaces asserted it, not the two he named |
+| "something is amiss with the font size" | I had named a chip `.sc`, which is the scoreboard's score, 1.8rem |
+| "I don't see the button" — I replied that I had measured it | `visibility:hidden`. I had measured `display` and a box |
+| "so a viewer doesn't have to enable a layer to get to it" | exactly right, and I had asserted the opposite an hour earlier |
+
+⭐ **THE REPEATING SHAPE: I CHECKED A PROPERTY THAT WAS TRUE AND REPORTED A
+PROPERTY THAT WAS NOT.** `display:flex` and a 141x47 box are both true of an
+invisible element. A green `deploy` is true of a page whose published document
+has not caught up. A pass count is true of a suite that is failing.
+
+---
+
+## ① THE NIGHTLY'S FIRST REAL FAILURE — a treadmill with nobody on it
+
+`test/quoted-figures.test.js` holds seven hand-written sentences in `src/lib` to
+`measures.json`. Its own header said what happens when the archive moves: *"this
+goes red… and somebody updates the sentence — which is the entire point."* That
+was written when `measures.json` moved WEEKLY and a person regenerated it. On
+2026-10-03 I made the measure job NIGHTLY and put an unattended machine in a loop
+designed for a human. Both of 10-04's ingests failed on three counts in COMMENTS.
+
+⭐ The step's own comment PREDICTED it and its premise was false — *"ONE THING IS
+NOT GENERATED AND CANNOT BE."* Every one of those figures is a field of the
+published document or one subtraction from it. **`tools/quoted-figures.mjs`**
+writes them now, in the same step as the snapshot banners, before the build
+(those comments are inlined into pages whose bytes the CSP hashes). The claim
+list is ONE object: the test imports it rather than restating it.
+
+⚠️ **AND THE LOG SAID NOTHING USEFUL**, which was the real cost. `health.mjs`
+counted the suite with `execFileSync`, which THROWS on a non-zero exit — 300KB of
+truncated TAP, and the step's own `::error::` guard sits behind it and never ran.
+**A diagnostic downstream of the thing that dies is not a diagnostic.**
+
+## ② …AND THE FIX TO THAT CAUSED THE NEXT ONE
+
+Made to count-and-continue, `health.mjs` then WROTE a pass count taken while the
+suite was red (1,623 where the real figure is 1,624) and the job failed two steps
+later on `health --check` disagreeing with itself. The suite was red because
+`health.mjs` RUNS THE SUITE and the suite reads the BUILT pages — and the step
+wrote the block BEFORE `npm run build`.
+
+**Two fixes: build first, and refuse to write from a red suite.** Third behaviour
+in a day for that one call: throw → write a wrong number → refuse with a named
+reason. Gated against WHAT A STEP RUNS, not a list of jobs.
+
+## ③ THE HORN CARRIES NO STRENGTH STATE
+
+The feed writes a situation code on every event including `game-end`, so the
+scoreboard chip, the sentence under the ice AND the rink all went on asserting a
+pulled goaltender over a finished game. **A condition that outlived the thing it
+was a condition of.** Keyed on the event's TYPE (`NOT_A_PLAY`), never "the last
+frame" — `layer.js` had already argued that out.
+
+## ④ THE SUMMARY CARD — per-team marks, and three defects getting there
+
+Kevin: *"we collapse the metrics into totals for the game and that doesn't really
+help understand 'what this game was'."* Each row now draws **a mark per team on
+one rail** — the preview card's picture, reused so a reader learns one chart.
+
+**The build was the reference class.** `perGame` is a distribution of GAME totals;
+a team's own 63 attempts on it would be two quantities wearing one label.
+`measures.json` now publishes **`perTeamGame`** — same lenses, same records, per
+TEAM-GAME. Measured against the real archive (4,585 extracts, 372 MB over HTTPS).
+
+- ⛔ **Stoppages has no per-team form and that is the FACT.** A stoppage names a
+  rule and never a team. No field, no entry, neutral mark, says why on the row.
+- ⭐⭐ **I was wrong about the residuals, and measuring corrected me.** I told
+  Kevin two lenses would fail to sum to their game total. Over 4,226 games only
+  ONE does: Blocked, 7.3–8.8%, the teammate blocks credited to nobody. Zone
+  starts' `unplaced` path has never fired. The gate is exact for four, bounded
+  for one.
+- ⛔⛔ **A defect the DOM cannot show:** two teams tie on a lens constantly, and
+  two dots at one position are ONE dot. The stylesheet splits them onto different
+  LINES; `tools/browser/summary-marks.mjs` measures that in pixels. Verified both
+  ways.
+- ⛔⛔⛔ **AND I SHIPPED THE DEFECT THE FEATURE EXISTS TO PREVENT.** The fallback
+  read `by && perTeam ? perTeam[id] : own[id]`, so on a page whose PUBLISHED
+  document had no `perTeamGame` yet — which is every page until the next nightly
+  — each team's count was drawn on the GAME class. **Live for twenty minutes.**
+
+  ⭐⭐ **THE GAP IS STRUCTURAL AND WILL HAPPEN TO THE NEXT FIELD.**
+  `data/measures.json` is a build input committed WITH the code; the shell
+  FETCHES the published document, which the nightly rewrites hours later. **Every
+  new field is absent on the live site for one night while present in every local
+  test and every browser probe.** The gate drives the page with the field deleted.
+
+## ⑤ THE SUMMARY'S DOOR — hidden twice, for two different reasons
+
+It already existed, hidden until `.ended` as an anti-spoiler rule. Kevin asked
+for a button; I un-hid it and said it was there. **It was still unreachable**:
+`#rg .lbox.empty .lxw{visibility:hidden}` hides that row until a layer is chosen,
+and `Just events` is the default. I had measured `display` and a box.
+
+Moved to the sidebar beside `Copy a link to this moment` — **one control, not
+two**. The probe now samples it BEFORE any layer and judges `visibility`.
+
+⛔⛔ **AND `door-row`'s CANARY HAD STOPPED SINGING.** It restored the original
+defect declaration for declaration, naming `.lxwe` — which left with the door, so
+the injection made both remaining doors block TOGETHER: no divergence, canary
+ACCEPTED. **A canary written against a defect's INSTANCE dies with the instance.**
+
+## ⑥ `summary=1` — the panel travels in a shared link
+
+Kevin: *"a discrete link to social media at that state of the site."* A FLAG
+beside `preview`, not part of `format` — `format` emits a MOMENT, and the panel
+is not a property of the moment. Read strictly; the confirmation says what the
+link carries, read back from `parse`.
+
+## ⑦ `.sc` WAS THE SCOREBOARD'S SCORE
+
+A two-letter class name in a shared stylesheet. The tell was on screen the day
+before: `css-orphans` reported `.sa` and `.snone` as unproduced and said nothing
+about `.sc`. **A check that answers about four of five names is telling you
+something about the fifth.** Gate is about OWNERSHIP: a class worn inside
+`.srows` must be reachable only through `.srows`. Its own first version ran green
+against the collision — the chips are built as an HTML string, which the fake
+document does not parse into nodes.
 
 ---
 
