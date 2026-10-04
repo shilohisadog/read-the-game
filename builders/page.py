@@ -438,6 +438,30 @@ def _footer(tip=True):
         + "</footer>")
 
 
+# ⭐ THE CARD'S FACTS, READ OFF THE TOOL THAT DRAWS IT. `tools/card.mjs` owns the
+# size, the path and the alt text; this file would otherwise be a second copy of
+# all three, and `test/card.test.js` holds these to it either way. Parsed rather
+# than imported because that file is JavaScript and this one is Python -- the
+# same seam `builders/build_main.py` already crosses to inline `src/lib/*.js`.
+def _card_facts():
+    src = (ROOT / "tools" / "card.mjs").read_text()
+
+    def num(name):
+        m = re.search(rf"^export const {name} = (\d+);", src, re.M)
+        if not m:
+            raise SystemExit(f"tools/card.mjs no longer exports {name}")
+        return int(m.group(1))
+
+    alt = re.search(r"export const ALT = '([^']*)'\s*\+ '([^']*)';", src)
+    if not alt:
+        raise SystemExit("tools/card.mjs no longer exports ALT in the shape this reads")
+    return num("WIDTH"), num("HEIGHT"), (alt.group(1) + alt.group(2))
+
+
+CARD_W, CARD_H, CARD_ALT = _card_facts()
+CARD_URL = "https://readthegame.co/card.png"
+
+
 def document(body, *, title, description=None, url=None, head="", lang="en",
              chrome="full", current=None, tip=True):
     """Wrap a fragment in a complete, mobile-correct HTML document.
@@ -462,15 +486,40 @@ def document(body, *, title, description=None, url=None, head="", lang="en",
         # SHARING IS THE DISTRIBUTION MODEL. The shareable unit is a game, so the
         # link someone posts in a hockey forum IS the front door -- and without
         # these it arrives as a naked URL instead of a card. CHENG's point, and it
-        # is product rather than doctrine. No og:image yet: we have no artwork we
-        # are allowed to ship, since club marks are off the table by design.
+        # is product rather than doctrine.
+        #
+        # THE PICTURE ARRIVED 2026-10-04, and the reason it had not is worth
+        # keeping: this comment said "no og:image yet: we have no artwork we are
+        # allowed to ship, since club marks are off the table by design." True
+        # when it was written and false by the time anyone checked -- the card is
+        # drawn by `furniture()`, the same function that paints the ice on every
+        # replay, and carries no club mark, no logo and no sweater colour. We own
+        # every line in it. Kevin was about to post the first public link to this
+        # site, and measured first: the unfurl was correct, game-specific, spoiled
+        # no result and showed NOTHING. A site whose whole argument is a picture,
+        # arriving in public as a paragraph.
+        #
+        # `summary_large_image` IS THE WHOLE POINT OF DOING IT. `summary` renders a
+        # thumbnail beside two lines of type; the large card is the image, and a
+        # rink is only legible at that size.
+        #
+        # ⚠️ THE DIMENSIONS AND THE PATH COME FROM `tools/card.mjs`, which is what
+        # draws the file -- see CARD below. Two places stating 1200x630 would be
+        # two places free to disagree, and the one that is wrong is the one nobody
+        # looks at.
         parts += [
             '<meta property="og:type" content="website">',
             f'<meta property="og:title" content="{title}">',
             f'<meta property="og:description" content="{description}">',
-            '<meta name="twitter:card" content="summary">',
+            f'<meta property="og:image" content="{CARD_URL}">',
+            f'<meta property="og:image:width" content="{CARD_W}">',
+            f'<meta property="og:image:height" content="{CARD_H}">',
+            f'<meta property="og:image:alt" content="{CARD_ALT}">',
+            '<meta name="twitter:card" content="summary_large_image">',
             f'<meta name="twitter:title" content="{title}">',
             f'<meta name="twitter:description" content="{description}">',
+            f'<meta name="twitter:image" content="{CARD_URL}">',
+            f'<meta name="twitter:image:alt" content="{CARD_ALT}">',
         ]
         if url:
             parts.append(f'<meta property="og:url" content="{url}">')

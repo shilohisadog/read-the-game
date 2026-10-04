@@ -14,6 +14,7 @@
  * against the filesystem.
  */
 import test from 'node:test';
+import { HREF as CARD_URL } from '../tools/card.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -363,7 +364,25 @@ test('no league logos or marks are referenced', () => {
   // the disclaimer that says no logos appear -- a check aimed at prose rather
   // than at the thing prose describes. What actually matters is whether an
   // asset is REFERENCED, so match URLs and file extensions, not vocabulary.
-  assert.doesNotMatch(html, /\.(svg|png|jpe?g|webp|gif)\b/i, 'no image assets');
+  /* ⭐⭐ "NO IMAGES AT ALL" WAS A PROXY, AND IT WAS EXACT UNTIL 2026-10-04.
+     The claim is about the LEAGUE's marks; the check forbade every image, which
+     was the same thing for as long as the site shipped none. Then the sharing
+     card arrived — drawn by `furniture()`, the same function that paints the ice
+     on every replay, carrying no logo and no sweater colour — and a check about
+     league marks went red on artwork we drew ourselves.
+     ⛔ SO IT IS AN ALLOWLIST OF ONE, AND THE ONE IS DERIVED. `tools/card.mjs`
+     owns the path; a string typed here would be a second copy, and the day the
+     card moves this check would start forbidding the real one and permitting
+     whatever took its name. Every OTHER image reference is still a failure. */
+  const ours = new URL(CARD_URL).pathname.replace(/^\//, '');
+  const images = [...html.matchAll(/[\w./-]+\.(?:svg|png|jpe?g|webp|gif)\b/gi)].map(m => m[0]);
+  const foreign = images.filter(src => !src.endsWith(ours));
+  assert.deepEqual(foreign, [], `image assets that are not ours: ${foreign.join(', ')}`);
+  /* ⛔ AND THE ALLOWLIST MUST STILL BE DOING SOMETHING. If the card ever stops
+     being referenced, an allowlist for it reads as coverage while permitting a
+     path nothing uses — the dead-branch shape this repo keeps paying for. */
+  assert.ok(images.length, 'the page references no images at all, so the one '
+    + 'exception above is excusing nothing — delete it or restore the card');
   assert.doesNotMatch(html, /\b(?:nhl|nhle)\.com/i, 'nothing served from league domains');
   assert.doesNotMatch(html, /data:image/i, 'no embedded image data either');
   assert.match(html, /Not affiliated with/i, 'and the disclaimer is present');
