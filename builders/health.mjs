@@ -57,9 +57,10 @@ export function suiteCounts() {
      names the likely cause and the fix, sits BEHIND this call in `npm run gates`
      and never ran. A diagnostic downstream of the thing that dies is not a
      diagnostic.
-     ⭐ AND THE INTENT WAS ALREADY HERE: `jsFail` reads `# fail N` and line 217
-     prints a warning for it, which is unreachable code unless the output
-     survives the exit code. The output is on the thrown error; it is used. */
+     ⭐ AND THE INTENT WAS ALREADY HERE: `jsFail` reads `# fail N`, which was
+     unreachable code unless the output survives the exit code. The output is on
+     the thrown error; it is used — and the writer now REFUSES on a non-zero
+     `jsFail` rather than recording a pass count taken while the suite was red. */
   const run = cmd => {
     try {
       return execFileSync('sh', ['-c', `${cmd} 2>&1`], {
@@ -229,11 +230,29 @@ if (check) {
   }
   console.log(`  health line agrees with the suite: ${n(counts.js)} JS + ${n(counts.py)} Python`);
 } else {
+  /* ⛔⛔⛔ A RED SUITE WRITES NO BLOCK, AND IT REFUSES BEFORE WRITING. This printed a warning and wrote the number
+     anyway, and on 2026-10-04 the nightly measure job failed because of it: one
+     test was failing when this ran, so the block recorded 1,623 PASSES where the
+     suite's real figure is 1,624, and `--check` went red two steps later naming a
+     mismatch nobody could act on.
+     ⭐ A PASS COUNT FROM A RED RUN IS A FIGURE THAT WAS NEVER TRUE. The block's
+     whole purpose is that a number here cannot go stale silently — writing one
+     measured while the suite was failing is exactly that defect, introduced by the
+     guard against it.
+     ⚠️ AND THIS IS THE THIRD BEHAVIOUR THIS CALL HAS HAD IN A DAY. It used to
+     THROW on a failing suite, with 300KB of truncated TAP and no diagnosis; then
+     it counted and continued, which produced this. Refusing WITH A NAMED REASON is
+     the one that tells the next reader what to do. */
+  if (counts.jsFail) {
+    console.log(`::error::the JS suite has ${counts.jsFail} failing test(s), so the `
+      + 'health block was NOT written — a pass count measured while the suite is red '
+      + 'is a figure that was never true. Fix the suite and run this again.');
+    process.exit(1);
+  }
   const live = await ledger();
   const stamp = new Date().toISOString().slice(0, 10);
   writeFileSync(DOC, splice(doc, block(counts, live, stamp)));
   console.log(`  health block rewritten: ${n(counts.js)} JS + ${n(counts.py)} Python`
     + (live ? `, ${n(live.published)} published of ${n(live.games)}` : ', archive not read'));
-  if (counts.jsFail) console.log(`  ⚠️  ${counts.jsFail} JS tests are FAILING`);
 }
 }

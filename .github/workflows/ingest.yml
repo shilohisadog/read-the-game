@@ -922,8 +922,17 @@ jobs:
           # EVERYTHING DERIVED FROM IT, REGENERATED. Each of these is a generated
           # block or a built page; none is a judgement.
           node tools/snapshots.mjs
-          node builders/health.mjs
+          # ⛔⛔⛔ THE BUILD COMES BEFORE THE HEALTH BLOCK, AND IT DID NOT ON
+          # 2026-10-04. `health.mjs` RUNS THE SUITE to count it, and the suite
+          # reads the BUILT pages — which at this point were still built from the
+          # measurement this step has just replaced. One test compared a stale page
+          # against the fresh document and failed, so the block was written with a
+          # pass count one short, and `npm run gates` then went red on
+          # `health --check` disagreeing with its own suite. The archive, the
+          # publish and the measurement were all correct; the only thing wrong was
+          # the order of two lines.
           npm run build
+          node builders/health.mjs
           # AND THE TREE MUST PASS BEFORE IT IS PUSHED. See the step header.
           # ⚠️ THE MESSAGE DOES NOT DIAGNOSE, AND THE FIRST VERSION DID — WRONGLY.
           # It asserted the cause was a stale figure in `sentence.js` or

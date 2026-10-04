@@ -625,3 +625,47 @@ test('⛔⛔⛔ every job that runs `npm run gates` checks out the full history'
   assert.ok(checked >= 3,
     `only ${checked} jobs found running \`npm run gates\` — the scan is not reading them`);
 });
+
+/**
+ * ⛔⛔⛔ THE BUILD COMES BEFORE THE HEALTH BLOCK, IN EVERY JOB THAT RUNS BOTH.
+ *
+ * `builders/health.mjs` RUNS THE SUITE to count it, and the suite reads the BUILT
+ * pages. So a step that writes the health block before rebuilding is counting a
+ * suite pointed at pages built from the previous document.
+ *
+ * ⛔ IT COST THE NIGHTLY ON 2026-10-04. The measure job refreshed
+ * `data/measures.json`, wrote the snapshot banners, then ran `health.mjs` — and
+ * one test compared a stale built page against the fresh document and failed. The
+ * block recorded 1,623 PASSES where the real figure is 1,624; `npm run build` then
+ * fixed the pages, the suite went green, and `health --check` failed on a
+ * disagreement with itself. The archive, the publish and the measurement were all
+ * correct. The only thing wrong was the order of two lines.
+ *
+ * ⚠️ IT IS SPELLED AGAINST WHAT A STEP RUNS, not against a list of jobs — the same
+ * shape as the `fetch-depth` rule above, and for the same reason: a list of jobs
+ * is a second place for the knowledge to live and rot.
+ */
+test('⛔⛔⛔ no job writes the health block before building the pages it counts', () => {
+  let checked = 0;
+  for (const file of FILES) {
+    const text = readFileSync(new URL(file, DIR), 'utf8');
+    /* COMMENTS STRIPPED, because this very test's reason is written beside the
+       code it is about — and a scan that read prose would find `health.mjs` named
+       in the paragraph explaining the ordering and judge the explanation. Fifth
+       instance of that shape in this repo. */
+    const code = text.split('\n').filter(l => !/^\s*#/.test(l)).join('\n');
+    const build = code.indexOf('npm run build');
+    const health = code.search(/node builders\/health\.mjs(?!\s*--check)/);
+    if (build < 0 || health < 0) continue;
+    checked++;
+    assert.ok(build < health,
+      `${file} runs \`node builders/health.mjs\` at ${health} and \`npm run build\` at `
+      + `${build}. health.mjs runs the suite, the suite reads the built pages, so the `
+      + 'block would record a count taken against pages built from the last document.');
+  }
+  /* ⛔ AND IT MUST HAVE FOUND A JOB. A renamed script or a moved file turns this
+     into a test that passes on an empty set forever. */
+  assert.ok(checked >= 1,
+    'no workflow runs both `npm run build` and the health writer, so this rule is '
+    + 'guarding nothing — check the command names have not moved');
+});
