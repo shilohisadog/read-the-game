@@ -2368,9 +2368,9 @@ def _learn():
             # footer line says which kind of destination it is, because "Period 1
             # · 04:48 left" on a card that opens a drawing would be a small lie.
             if cid in figures:
-                href, at = _card_href(cid, doors, figures), "Diagram &middot; then a real example"
+                href, at = _card_href(cid, doors), "Diagram &middot; then a real example"
             else:
-                href = _card_href(cid, doors, figures)
+                href = _card_href(cid, doors)
                 # THE PAGE'S OWN WORDS FOR THE MOMENT, from `src/lib/period.js`
                 # via the doors artifact -- not a second naming rule here. It
                 # reads "Period 1" in regulation and "Overtime · 3-on-3" in the
@@ -2483,16 +2483,34 @@ FRONT_RULES = [
 ]
 
 
-def _card_href(cid, doors, figures):
-    """Where a learn card leads. ONE statement of the rule, three readers.
+def _card_href(cid, doors):
+    """Where a learn card leads. ONE statement of the rule, four readers.
 
     ⭐ A CARD WITH A DIAGRAM LEADS TO THE DIAGRAM, NOT STRAIGHT TO THE GAME --
     Kevin's call after seeing the figure inside the card, and the real moment is
     one step further on. `_learn()` had this inline and the front door needed it
     too; a second spelling is how `learn-doors.mjs` once drifted far enough to
     put two cards on one frame.
+
+    ⛔⛔⛔ IT USED TO TAKE THE DIAGRAM SET AS AN ARGUMENT, AND ONE CALLER PASSED
+    THE WRONG DICTIONARY FOR ELEVEN DAYS. **Two unrelated things in this builder
+    are called `figures`:** `_fig_json()`/`_figures()`, keyed by CARD ID, which is
+    the set of cards that own a rule diagram -- and `learn-doors.json["figures"]`,
+    which is measured figure VALUES and has exactly one key, `unreached`.
+    `_preview_doors` passed the second. `cid in figures` was therefore false for
+    every row on the preview card, so NONE of its eight doors reached a rule page
+    and all eight dropped the reader into a replay -- on the same surface, and the
+    same day, that Kevin asked the cards to be front doors to the lessons. Kevin
+    found it from the live page: *"I thought the doors such as 'What a power play
+    is' went to the learning page for a power play, it doesn't do that anymore."*
+
+    ⭐ SO THE SET IS NO LONGER SOMETHING A CALLER CAN GET WRONG. The rule reads
+    the one document that defines it. A caller that wants to ASK the same question
+    (`_learn` needs it for the footer wording) calls `_fig_json` too, and
+    `test/preview-page.test.js` pins the answer per row rather than accepting
+    either shape of href.
     """
-    return f"/{cid}.html" if cid in figures else f'/game.html{doors[cid]["href"]}'
+    return f"/{cid}.html" if cid in _fig_json() else f'/game.html{doors[cid]["href"]}'
 
 
 # WHAT THE ARCHIVE SAYS, ON THE FRONT DOOR. Three measured sentences, each a door
@@ -2739,7 +2757,7 @@ def _front_counts():
         work = _work_line(line, cid)
         for tok, val in arch.items():
             line = line.replace(tok, val)
-        card = (f'<a class="ccard" href="{_card_href(cid, doors, figures)}">'
+        card = (f'<a class="ccard" href="{_card_href(cid, doors)}">'
                 f'<span class="lt">{titles[cid]}</span>'
                 f'<span class="ld">{line}</span></a>')
         # ⭐ WRAPPED, BECAUSE THE TILE IS ITSELF A LINK. An anchor inside an
@@ -5167,7 +5185,7 @@ def _preview_doors():
     doors would imply the site counts them two different ways.
     """
     d = json.loads((ROOT / "data" / "learn-doors.json").read_text())
-    doors, figures = d["doors"], d.get("figures", {})
+    doors = d["doors"]
     # ⭐ EVERY CLUB_ROW KEY IS HERE, INCLUDING ONE THE CARD CURRENTLY DROPS. `slot`
     # needs 42 games and the admission rule is 41, so it is not on the card today
     # — but the rule is measured and could admit it after any summer's re-derive,
@@ -5180,7 +5198,7 @@ def _preview_doors():
     for key, cid in want.items():
         if cid not in doors:
             raise SystemExit(f"preview: no learn door named {cid!r} for row {key!r}")
-        out[key] = _card_href(cid, doors, figures)
+        out[key] = _card_href(cid, doors)
     return json.dumps(out, sort_keys=True)
 
 

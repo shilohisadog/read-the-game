@@ -19,6 +19,22 @@ const html = readFileSync(new URL('../src/preview.html', import.meta.url), 'utf8
 const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
 const PAGE_IDS = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]));
 
+/* ⭐⭐⭐ THE DIAGRAM SET AND THE OTHER SURFACE THAT READS IT — the two documents
+   that make the door tests below non-circular.
+
+   `data/learn-figures.json` is keyed by CARD ID and is the only statement of
+   which lessons own a rule diagram. `what-you-can-see.html` is the OTHER reader
+   of the same rule, built down a different path in `build_index.py`, and it was
+   RIGHT for the eleven days the preview was wrong -- so asking the two surfaces
+   to agree is a check neither one can satisfy alone. */
+const FIGURES = JSON.parse(
+  readFileSync(new URL('../data/learn-figures.json', import.meta.url), 'utf8'));
+const learnPage = readFileSync(
+  new URL('../src/what-you-can-see.html', import.meta.url), 'utf8');
+const cardHref = id =>
+  (new RegExp(`<a class="card" id="${id}" href="([^"]+)"`).exec(learnPage) || [])[1];
+const DOORS = JSON.parse(/var DOORS = (\{[\s\S]*?\});/.exec(html)[1]);
+
 function fakeDom() {
   const make = (tag) => ({
     tag, className: '', href: '', textContent: '', style: {}, attrs: {}, kids: [],
@@ -583,12 +599,104 @@ test('⭐ every tile and every measure row is a door into the lesson behind it',
   const doors = walk(ids.pv).filter(x => (x.className || '').split(' ').includes('pvlearn'));
   assert.equal(doors.length, 7, 'four tiles with a lesson behind them, and three measure rows');
   for (const d of doors) {
-    // Either a rule page we build, or a deep link into the replay at the frame
-    // where the thing happens. Nothing else is a lesson.
-    assert.match(d.href, /^\/(offside|penalties)\.html$|^\/game\.html\?game=\d+&at=/,
+    /* ⛔⛔⛔ THIS ASSERTION USED TO BE AN `OR` -- *a rule page OR a replay deep
+       link* -- and an `or` over the two possible answers is satisfied by ALWAYS
+       GIVING THE SAME ONE. Every door on this page was a replay link for eleven
+       days while this test passed under the title "a door into the lesson behind
+       it". The shape, for the file that keeps them: A CHECK THAT ACCEPTS EITHER
+       ANSWER MEASURES NOTHING. Which answer each row must give is pinned per row
+       below; this one only asks that the href is a destination at all. */
+    assert.match(d.href, /^\/[a-z-]+\.html$|^\/game\.html\?game=\d+&at=/,
       `a door leads nowhere useful: ${d.href}`);
     assert.match(d.textContent, /→$/, 'a door is marked as one');
   }
+});
+
+test('⭐⭐⭐ a preview door and the learn page\'s own card for one lesson land in the SAME place', () => {
+  /* ⛔⛔⛔ THE DEFECT THIS EXISTS FOR, found by Kevin from the live page on
+     2026-10-04: *"on a preview page ... I thought the doors such as 'What a power
+     play is' went to the learning page for a power play, it doesn't do that
+     anymore."* NONE of the preview card's eight doors reached a rule page; all
+     eight dropped the reader into a replay frame.
+
+     ⭐ THE CAUSE WAS A NAME, NOT A RULE. `_card_href` decided "has a diagram ->
+     lead to the diagram" from a dict handed in by the caller, and TWO UNRELATED
+     THINGS in that builder are called `figures`: the diagram set keyed by card
+     id, and `learn-doors.json["figures"]`, which is measured figure VALUES with
+     one key, `unreached`. `_learn` passed the first and `_preview_doors` passed
+     the second, so the question was asked correctly on one surface and answered
+     `false` for everything on the other. The set is now internal to
+     `_card_href`, which is why no caller can get it wrong again -- and this is
+     the check that says the two surfaces agree regardless.
+
+     ⚠️ WHY THE LEARN PAGE IS A FAIR ORACLE. It is built down a different path and
+     was CORRECT for the whole eleven days the preview was wrong, so this cannot
+     be satisfied by both surfaces sharing one mistake about a single row. It
+     would not catch `_card_href` itself being wrong -- the per-row assertions
+     below carry that half.
+
+     MUTATION: hand `_preview_doors` any other dictionary and all four rows fire. */
+  const shared = Object.keys(DOORS).filter(k => cardHref(k));
+  assert.ok(shared.length >= 4,
+    `only ${shared.length} preview rows share a card id with the learn page, so this `
+    + 'test has lost its subject -- did a card id get renamed?');
+  for (const id of shared) {
+    assert.equal(DOORS[id], cardHref(id),
+      `the preview sends "${id}" to ${DOORS[id]} and the learn page sends the same `
+      + `lesson to ${cardHref(id)} -- one rule, two answers`);
+  }
+});
+
+test('⭐⭐ the power-play tile opens the lesson, because Kevin keeps the hockey word on the door', () => {
+  /* Kevin, 2026-10-04, asked whether the tile should adopt the page's plainer
+     wording, since `penalties.html` says "a skater short" six times and never
+     says "power play": *"I prefer to keep 'What a power play is' since that's
+     the terminology the hockey world uses. We can use the explanatory wording on
+     the learning page itself."*
+
+     ⭐ SO THE DOOR AND THE DESTINATION ARE DELIBERATELY IN DIFFERENT REGISTERS:
+     the door speaks the language a reader arrives with, the page teaches it in
+     the language the site explains things in. That makes it the one row whose
+     destination cannot be derived from its own key, so it is pinned here, by the
+     card it is meant to open rather than by a typed href. */
+  assert.ok(/power play/i.test(script),
+    'the preview no longer says "power play" anywhere, so this ruling has lost its subject');
+  assert.equal(DOORS.powerplay, cardHref('penalties'),
+    'the power-play tile does not open the penalties lesson');
+  assert.equal(DOORS.powerplay, '/penalties.html',
+    'the penalties lesson is no longer a page of its own');
+});
+
+test('⛔⛔ every lesson that owns a diagram is reached AS a diagram, and no other page is invented', () => {
+  /* The two halves the cross-surface check cannot make:
+
+     1. A row whose lesson owns a rule diagram must lead to that diagram. This is
+        the half that was false for all five such rows, and it is stated against
+        `data/learn-figures.json` -- the only document that says which lessons
+        have one -- rather than against the builder that reads it.
+     2. A door that names a page must name a page this repo actually builds. A
+        typo ships a dead link that looks completely normal, which is the failure
+        `_preview_doors` already refuses at BUILD time for card ids and could not
+        see for page names. */
+  const pages = new Set(Object.keys(FIGURES));
+  assert.ok(pages.size >= 5, 'the diagram set is suspiciously small');
+  let asPage = 0;
+  for (const [row, href] of Object.entries(DOORS)) {
+    const m = /^\/([a-z-]+)\.html$/.exec(href);
+    if (m) {
+      asPage++;
+      assert.ok(pages.has(m[1]),
+        `the "${row}" door opens /${m[1]}.html, which owns no rule diagram`);
+      assert.ok(html.length && readFileSync(new URL(`../src/${m[1]}.html`, import.meta.url)).length > 0,
+        `the "${row}" door opens a page this repo does not build`);
+    } else if (pages.has(row)) {
+      assert.fail(`"${row}" owns a rule diagram and the preview sends it to a replay `
+        + `frame (${href}) instead of /${row}.html`);
+    }
+  }
+  assert.ok(asPage >= 5,
+    `only ${asPage} of the preview's doors open a lesson page; five rows own a diagram `
+    + '(power play, penalties, offside, icing, slot), so this is the defect of 2026-10-04 back');
 });
 
 test('⛔ the CF% row leads to an attempt being counted, not to a page that explains it', async () => {
