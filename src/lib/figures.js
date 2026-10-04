@@ -114,10 +114,209 @@ export function figMascot(g,px,py,size,jersey,out,o){
  g.restore();
 }
 
+/**
+ * A GOALTENDER, IN THE SAME HAND AS THE SKATER.
+ *
+ * ⭐⭐⭐ WHY THIS EXISTS. Kevin, 2026-10-04: *"the stick figures on the penalties
+ * and empty net diagrams just don't work for me anymore. We need to update them
+ * to something more, I dunno, consistent with the replay figures?"* Photographing
+ * the two side by side found something bigger than the diagrams: **the REPLAY
+ * drew its own goaltenders with `rinkart.js::goalieGlyph`** — a circle, a capsule
+ * and a line — so the live rink showed a mascot shooting past two wireframes
+ * standing in the creases. One project, two drawings of a person, already side by
+ * side in front of readers. See `docs/reviews/figures-2026-10-04/`.
+ *
+ * ⭐ IT IS BUILT ON THE MASCOT'S OWN GRID, not beside it. Same `u = size/10`,
+ * same feet-at-`py` origin, same ink, same skin, same shadow, same
+ * detail-by-apparent-size rule. The two must read as PEERS — the identical
+ * objection `skaterGlyph` records about `goalieGlyph`, which is the reason that
+ * glyph family was internally consistent and externally alien.
+ *
+ * ⛔ WHAT MAKES HIM A GOALTENDER IS THE SILHOUETTE, NOT THE DETAIL. At the size a
+ * rink actually renders him he is: WIDE (leg pads), SQUARE (chest protector), and
+ * CARRYING A PADDLE THAT STOPS LOW. Those three survive to 9 units; a mask cage
+ * and a trapper's cuff do not, and are drawn only above the same `shownAt`
+ * threshold the mascot's face uses.
+ *
+ * ⚠️ HE CLAIMS WHAT THE SKATER CLAIMS AND NO MORE (Doctrine §5): that a
+ * goaltender defends this net, which the feed records. Not where he stood — the
+ * crease is where the rulebook puts him, not where we guess he was — and the pose
+ * encodes nothing about a save. `out` is accepted for signature parity with
+ * `figMascot` and deliberately ignored: a goaltender's drawing must not change
+ * with an outcome it did not take.
+ *
+ *   FIG.goalie(pen, px, py, size, jersey, out, { t, motion, light, px, dir })
+ *
+ * `dir` is +1 (facing right) or -1, because unlike the skater he is drawn at both
+ * ends of one rink and must face the ice rather than the boards.
+ */
+export function figGoalie(g,px,py,size,jersey,out,o){
+ o=o||{}; const t=o.t||0, motion=o.motion!==false, light=!!o.light;
+ const d=o.dir===-1?-1:1, shownAt=o.px==null?size:o.px;
+ /* ⛔⛔⛔ THE PADS WERE NEAR-WHITE AND VANISHED ON THE RINK. `#eaf1f7` on ice of
+    `#eef4f8` is four points of luminance: at the size of this comparison sheet
+    the dark outline carried them and they looked like equipment, and at the size
+    the REPLAY actually draws a goaltender — about 58px — the fill was the ice and
+    all that survived was a 1px wire. He had gone back to being a wireframe by a
+    different route. **A FIGURE CHECKED AT ONE SIZE IS NOT CHECKED**, which is the
+    same lesson as the background, one axis over.
+    ⭐ SO THE PADS WEAR THE CLUB'S COLOUR and the trim is white. It is what the
+    equipment really looks like, it makes him legible at every size, and it tells
+    a novice whose end this is — which the white version could not. */
+ const u=size/10, ink='#0d141b', skin='#f7dcb4', trim='#f4f8fb';
+ const X=v=>v*d;                       // the only asymmetric parts are his hands
+ g.save(); g.lineCap='round'; g.lineJoin='round';
+ /* WIDER THAN A SKATER'S, because the pads are. A shadow that matched the
+    skater's would make him read as a narrow man standing behind big equipment. */
+ g.fillStyle=light?'rgba(20,40,60,.20)':'rgba(0,0,0,.40)';
+ g.beginPath(); g.ellipse(px,py+u*0.35,u*3.4,u*0.8,0,0,7); g.fill();
+ /* ⚠️ HE BOBS LESS THAN A SKATER AND DOES NOT LEAN. A goaltender set in his
+    crease is the one figure on this rink that is deliberately still, and tilting
+    him would read as a save in progress -- a claim the feed does not make. */
+ const bob=motion?Math.sin(t*1.3+px*0.02)*u*0.16:0;
+ g.translate(px,py+bob);
+ /* ⛔ THE PADS ARE A WALL, NOT LEGS, AND THE WHOLE FIGURE IS ONE SHAPE.
+    Two renders got here. The first drew the pads narrow and tall and he read as a
+    thin man in white trousers -- the same failure `skaterGlyph` records when a
+    stick became a second leg. The second made them wide and he read as a white
+    slab with eleven loose objects around it: a floating box, a floating circle,
+    a separate paddle. **The mascot works because its SILHOUETTE IS ONE BLOB**,
+    and a peer of it has to be built the same way, so everything here is tucked
+    against the body and the part count is as low as the idea allows.
+    ⚠️ Neither was reachable by reading. Both were found by rendering the figure
+    and looking at it -- `docs/reviews/figures-2026-10-04/`. */
+ g.fillStyle=jersey; g.strokeStyle=ink; g.lineWidth=u*0.26;
+ _rr(g,-u*2.65,-u*3.95,u*2.5,u*3.95,u*0.62); g.fill(); g.stroke();
+ _rr(g,u*0.15,-u*3.95,u*2.5,u*3.95,u*0.62); g.fill(); g.stroke();
+ /* THE KNEE ROLL, one line per pad. Without it they are two blank slabs; with
+    it they are equipment, and it costs two strokes. */
+ g.strokeStyle=trim; g.lineWidth=u*0.42;
+ g.beginPath(); g.moveTo(-u*2.45,-u*2.5); g.lineTo(-u*0.35,-u*2.5);
+ g.moveTo(u*0.35,-u*2.5); g.lineTo(u*2.45,-u*2.5); g.stroke();
+ g.strokeStyle='#cfe0ee'; g.lineWidth=u*0.40;
+ g.beginPath(); g.moveTo(-u*2.5,0); g.lineTo(-u*0.8,0); g.moveTo(u*0.8,0); g.lineTo(u*2.5,0); g.stroke();
+ /* THE CHEST sits ON the pads with no gap, so the two read as one body. */
+ g.fillStyle=jersey; _rr(g,-u*3.0,-u*7.1,u*6.0,u*3.35,u*1.1); g.fill();
+ g.fillStyle=trim; _rr(g,-u*2.95,-u*4.6,u*5.9,u*0.5,u*0.22); g.fill();
+ /* ⚠️ THE HANDS ARE TUCKED AGAINST THE CHEST, not held out on arms. Held out,
+    they read as two objects beside a goaltender; tucked, they read as his. */
+ g.fillStyle=trim; g.strokeStyle=ink; g.lineWidth=u*0.24;
+ _rr(g,d>0?u*2.55:-u*4.2,-u*6.6,u*1.65,u*2.1,u*0.32); g.fill(); g.stroke();   // blocker
+ g.beginPath(); g.arc(X(-u*3.35),-u*5.5,u*1.2,0,7); g.fill(); g.stroke();     // trapper
+ g.fillStyle='rgba(13,20,27,.16)'; g.beginPath(); g.arc(X(-u*3.35),-u*5.5,u*0.58,0,7); g.fill();
+ /* THE STICK: a shaft out of the blocker and a blade ON the ice. A goaltender's
+    is the one stick on this rink that stays low, and that is the tell. */
+ g.strokeStyle='#8a5c33'; g.lineWidth=u*0.44;
+ g.beginPath(); g.moveTo(X(u*3.35),-u*5.4); g.lineTo(X(u*4.15),-u*0.55); g.stroke();
+ _blade(g,X(u*3.65),-u*0.12,X(u*5.75),-u*0.12,u,0.86);
+ // HEAD, THEN MASK. The skin circle is the skater's, so the two heads are one size.
+ g.fillStyle=skin; g.beginPath(); g.arc(0,-u*8.25,u*2.5,0,7); g.fill();
+ g.fillStyle=jersey;
+ g.beginPath(); g.arc(0,-u*8.35,u*2.70,Math.PI*0.86,Math.PI*2+0.14); g.fill();
+ if(shownAt>20){
+  /* THE CAGE, and it is the whole reason a mask reads as a mask. Three bars and
+     a chin bar; below this size they merge into a smear and are dropped. */
+  g.strokeStyle=ink; g.lineWidth=u*0.18;
+  g.beginPath();
+  g.moveTo(-u*1.55,-u*7.5); g.lineTo(u*1.55,-u*7.5);
+  g.moveTo(-u*1.35,-u*6.85); g.lineTo(u*1.35,-u*6.85);
+  g.moveTo(-u*0.55,-u*7.95); g.lineTo(-u*0.55,-u*6.5);
+  g.moveTo(u*0.55,-u*7.95); g.lineTo(u*0.55,-u*6.5); g.stroke();
+ }
+ g.restore();
+}
+
+/**
+ * AN OFFICIAL WITH HIS ARM UP — the third person, and the only one who is not
+ * playing.
+ *
+ * ⛔ HE IS FOR THE DELAYED PENALTY AND NOTHING ELSE. The raised arm is a SIGNAL
+ * with a meaning in the rulebook, so drawing him anywhere that signal is not
+ * being made would be a sentence the picture says and the page does not. The
+ * biconditional in `test/learn-figures.test.js` holds him to the figures whose
+ * words name him, exactly as it holds the goaltender.
+ *
+ * ⭐ THE STRIPES ARE THE IDENTITY, and they are the one part that cannot be
+ * dropped at small sizes — a neutral-sweatered man with his arm up is a player
+ * celebrating. So the bands are drawn at every size and the FACE is what goes.
+ *
+ * ⚠️ HE TAKES NO `jersey`. An official wears no club's colour, and accepting one
+ * would invite a caller to hand him a team's — which is the single most wrong
+ * thing this figure could say. The argument is kept in the signature for parity
+ * and ignored, like `out` on the goaltender.
+ */
+export function figOfficial(g,px,py,size,_jersey,out,o){
+ o=o||{}; const t=o.t||0, motion=o.motion!==false, light=!!o.light;
+ const d=o.dir===-1?-1:1, shownAt=o.px==null?size:o.px;
+ const u=size/10, ink='#0d141b', skin='#f7dcb4', pants='#1d2a36';
+ const stripe='#f2f6fa', dark='#141c24';
+ g.save(); g.lineCap='round'; g.lineJoin='round';
+ g.fillStyle=light?'rgba(20,40,60,.20)':'rgba(0,0,0,.40)';
+ g.beginPath(); g.ellipse(px,py+u*0.35,u*2.7,u*0.75,0,0,7); g.fill();
+ const bob=motion?Math.sin(t*1.7+px*0.02)*u*0.30:0;
+ g.translate(px,py+bob);
+ g.strokeStyle=pants; g.lineWidth=u*1.5;
+ g.beginPath(); g.moveTo(-u*1.15,-u*0.3); g.lineTo(-u*1.35,-u*2.8);
+ g.moveTo(u*1.15,-u*0.3); g.lineTo(u*1.5,-u*2.8); g.stroke();
+ g.strokeStyle='#cfe0ee'; g.lineWidth=u*0.40;
+ g.beginPath(); g.moveTo(-u*2.1,0); g.lineTo(-u*0.5,0); g.moveTo(u*0.5,0); g.lineTo(u*2.3,0); g.stroke();
+ /* THE SWEATER: the skater's torso, banded. ⛔ THREE BANDS CAME OUT A DARK BLOB.
+    The helmet's brim covers the top of the torso and both arms cover its sides,
+    so three dark bands left almost no white showing and he read as a man in
+    black with a stripe. TWO bands, thinner, placed where nothing overlaps them:
+    the white has to WIN, because a dark figure with his arm up is a player
+    celebrating and the stripes are the only thing that says otherwise. */
+ g.fillStyle=stripe; _rr(g,-u*2.15,-u*5.9,u*4.3,u*3.5,u*1.6); g.fill();
+ g.save(); _rr(g,-u*2.15,-u*5.9,u*4.3,u*3.5,u*1.6); g.clip();
+ g.fillStyle=dark;
+ for(let i=0;i<2;i++){ const y=-u*4.85+i*u*1.35; g.beginPath();
+  g.moveTo(-u*2.2,y); g.lineTo(u*2.2,y); g.lineTo(u*2.2,y+u*0.52); g.lineTo(-u*2.2,y+u*0.52);
+  g.closePath(); g.fill(); }
+ g.restore();
+ // the other arm stays down, so the raised one reads as deliberate
+ g.strokeStyle=dark; g.lineWidth=u*1.25;
+ g.beginPath(); g.moveTo(X0(d,-u*1.5),-u*5.0); g.lineTo(X0(d,-u*2.7),-u*3.4); g.stroke();
+ g.fillStyle=skin; g.strokeStyle=ink; g.lineWidth=u*0.26;
+ g.beginPath(); g.arc(X0(d,-u*2.85),-u*3.15,u*0.80,0,7); g.fill(); g.stroke();
+ g.fillStyle=skin; g.beginPath(); g.arc(0,-u*7.9,u*2.55,0,7); g.fill();
+ g.fillStyle=dark;
+ g.beginPath(); g.arc(0,-u*8.1,u*2.72,Math.PI*1.02,Math.PI*2-0.02); g.fill();
+ g.beginPath(); g.arc(-u*2.35,-u*7.75,u*0.72,0,7); g.fill();
+ g.beginPath(); g.arc(u*2.35,-u*7.75,u*0.72,0,7); g.fill();
+ if(shownAt>20){
+  g.fillStyle=ink;
+  g.beginPath(); g.arc(-u*0.95,-u*7.95,u*0.34,0,7); g.fill();
+  g.beginPath(); g.arc(u*0.95,-u*7.95,u*0.34,0,7); g.fill();
+  g.strokeStyle=ink; g.lineWidth=u*0.24;
+  g.beginPath(); g.arc(0,-u*7.25,u*0.85,0.28,Math.PI-0.28); g.stroke();
+ }
+ /* ⛔⛔⛔ THE SIGNAL ARM IS DRAWN LAST, AND OUTSIDE THE HEAD. Two renders were
+    wrong here and each was invisible for a different reason, which is why this
+    is the most commented limb on the rink.
+    FIRST it was the sweater's WHITE on near-white ice: perfect on the diagram's
+    dark preview ground, a floating hand and no arm on the replay. **A COLOUR
+    CHECKED ON ONE BACKGROUND IS NOT CHECKED.**
+    THEN, dark and legible, it was drawn BEFORE the head and ran straight through
+    it -- and the head is an opaque circle of radius 2.55, so it painted the arm
+    out. The hand cleared the top and nothing joined it to the body, which looks
+    exactly like the first bug and is not. **DRAW ORDER IS A VISIBILITY PROPERTY
+    AND NOTHING BUT LOOKING WILL TELL YOU.**
+    It now rises at x≈2.7-3.1, clear of the head, and is painted after it.
+    ⭐ ONE ARM, STRAIGHT UP. Two raised arms is the mascot's GOAL pose. */
+ g.strokeStyle=dark; g.lineWidth=u*1.3;
+ g.beginPath(); g.moveTo(X0(d,u*1.9),-u*5.5); g.lineTo(X0(d,u*3.0),-u*10.4); g.stroke();
+ g.strokeStyle=stripe; g.lineWidth=u*1.3;
+ g.beginPath(); g.moveTo(X0(d,u*2.45),-u*7.9); g.lineTo(X0(d,u*2.58),-u*8.5); g.stroke();
+ g.fillStyle=skin; g.strokeStyle=ink; g.lineWidth=u*0.26;
+ g.beginPath(); g.arc(X0(d,u*3.1),-u*10.9,u*0.88,0,7); g.fill(); g.stroke();
+ g.restore();
+}
+const X0=(d,v)=>v*d;
+
 /* ⏹ `figTabletop` — THE ROD-HOCKEY FIGURE — WAS DELETED 2026-09-17 with the
    goaltender's-eye view, the only page that could draw it: `figStyle` is the
    constant 'mascot' everywhere else, so it had shipped unreachable in both replay
    pages for weeks. ⏭ IF THE GOALIE VIEW COMES BACK, so does its figure:
    `git log -S figTabletop` finds both, and `git show <this commit>^:src/lib/figures.js`
    is the whole module with both styles in it. See docs/status.md. */
-export const FIG = { mascot: figMascot };
+export const FIG = { mascot: figMascot, goalie: figGoalie, official: figOfficial };

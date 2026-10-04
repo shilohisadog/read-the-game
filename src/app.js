@@ -63,7 +63,16 @@ import { leagueFigures } from './lib/derivation.js';
 import { sections } from './lib/sections.js';
 /* ⭐ THE ONE IMPORT THAT IS NOT SATISFIED ABOVE THE FUNCTION -- see the marker
    inside it, and the note beside it, for why the rink's paint lands elsewhere. */
-import { SX, SY, furniture, goalieGlyph, netGlyph } from './lib/rinkart.js';
+import { SX, SY, furniture, netGlyph } from './lib/rinkart.js';
+/* ⭐⭐⭐ THE GOALTENDERS ARE DRAWN BY THE SAME HAND AS THE SHOOTER, since
+   2026-10-04. They used to use `rinkart.js::goalieGlyph` -- a circle, a capsule
+   and a line -- while the shooter three feet away was `FIG.mascot`, a character
+   with a face. Kevin was looking at the LEARN DIAGRAMS when he said the stick
+   figures *"just don't work for me anymore"*; photographing them beside the
+   replay found that the two languages already met HERE, on the main surface, in
+   front of every reader. `docs/reviews/figures-2026-10-04/`. */
+import { SvgPen } from './lib/svgpen.js';
+import { FIG } from './lib/figures.js';
 
 export function boot(G,RATES){
 /* ⭐ AND THE RINK'S PAINT SITS INSIDE IT, for the opposite reason.
@@ -148,6 +157,26 @@ const AX=(x,per)=>SX(x*DIR(per)), AY=(y,per)=>SY(y*DIR(per));
 // is ~6 units. Goals get a little more presence.
 // Only one figure is on the ice at a time, so it can afford presence and detail.
 const FIG_SZ=9, FIG_BIG=11.5;
+/* ⛔⛔⛔ HE IS SIZED TO THE NET, NOT TO THE SKATER, AND THAT IS KEVIN'S RULING.
+   Replacing the glyph with a figure, I first drew him 8.2 units — a person beside
+   a 9-unit skater, which is what "consistent with the replay figures" sounds like
+   it means. `render-board` went red with a rule written from a screen capture
+   Kevin sent earlier: *"the goalie figures are bigger than the net."* The glyph
+   had been 8.1 units in front of a 6-foot mouth, 135% of the thing it defends,
+   and was shrunk to fit. I had reintroduced the exact defect, in new clothes.
+   ⭐ SO CONSISTENCY HERE IS OF HAND, NOT OF SCALE. He is the same drawing as the
+   shooter — same grid, same ink, same face — at the size the net allows: under
+   80% of the mouth, centred on it. ⏭ If the two should also match in SIZE, the
+   net-fit rule is what has to be reopened, and that is Kevin's call, not a thing
+   to settle by quietly growing the figure. */
+const GK_SZ=4.0, GK_PX=4.3, GK_STANDOFF=0.34;
+/* ⚠️ WHERE THE FIGURE'S MIDDLE IS, measured, per unit of `size`. It is NOT half
+   the head height: the figure stands on its feet, so its drawn extent runs from
+   the crown of the mask down past the SHADOW on the ice, and the shadow is what
+   made the first centring 0.25 units low — enough to fail the net-fit rule by
+   itself. `test/render-board.test.js` measures the drawn result independently of
+   this number, so the two cannot agree by sharing one mistake. */
+const GK_MID=0.48;
 // THE TEAMS' OWN COLOURS, and this is the whole defect being fixed. These were
 // literals -- Minnesota green and Buffalo gold, from the one game that used to be
 // compiled into this page -- used as "the away colour" and "the home colour" for
@@ -437,8 +466,22 @@ function drawNetmen(e){
  // ice invented from nothing.
  const out=[];
  const gper=(e&&e.per)||1;
- if(!sit||sit[3]!=='0')out.push(goalieGlyph(AX(-NET_X,gper),HOMECOL,HOMECOL));
- if(!sit||sit[0]!=='0')out.push(goalieGlyph(AX(NET_X,gper),AWAYCOL,'#fff'));
+ /* ⛔⛔ HE FACES THE ICE, NOT THE BOARDS — and the direction is DERIVED FROM THE
+    DRAWN POSITION, never from which club he is. `goalieGlyph` did exactly this
+    (`gx<100?1:-1`) and it was not decoration: THE ENDS SWITCH EVERY PERIOD, so a
+    club's goaltender stands at the left end for one period and the right for the
+    next. My first version of this passed a hard-coded +1 for the home side and
+    -1 for the away side, which is correct in period 1 and has both men facing the
+    boards in period 2. `AX` has already applied the switch, so the x it returns
+    is the only thing that knows the answer. */
+ const man=(x,col)=>{
+  const dir=x<100?1:-1;
+  const pen=new SvgPen(dir>0?'gkl':'gkr');
+  FIG.goalie(pen,x+dir*GK_SZ*GK_STANDOFF,42.5+GK_SZ*GK_MID,GK_SZ,col,'',
+             {t:T,motion:!REDUCED,glow:false,dir,px:GK_SZ*GK_PX});
+  return pen.toSvg('class="gk"');};
+ if(!sit||sit[3]!=='0')out.push(man(AX(-NET_X,gper),HOMECOL));
+ if(!sit||sit[0]!=='0')out.push(man(AX(NET_X,gper),AWAYCOL));
  // ONLY ON CHANGE -- see `put`, which is this memo generalised. Rewriting this
  // every frame would rebuild both figures on every event, restarting their
  // entrance animation each time -- a goaltender flickering three hundred times a

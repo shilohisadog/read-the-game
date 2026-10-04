@@ -922,7 +922,7 @@ test('the empty-net note is present exactly while a net is really empty', () => 
   const a = boot();
   const frames = a.every((d, at) => ({
     note: d.$('iceNote').textContent,
-    gks: (d.$('netmen').innerHTML.match(/class="gkbody"/g) || []).length,
+    gks: (d.$('netmen').innerHTML.match(/<g class="gk">/g) || []).length,
     type: at.ev.type, per: at.ev.per, clk: d.$('clk').textContent }));
 
   /* ⛔⛔⛔ THE HORN IS NOT A PLAY, AND IT USED TO BE IN HERE. Kevin, reading a

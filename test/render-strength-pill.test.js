@@ -228,7 +228,7 @@ test('⛔⛔⛔ the horn carries no strength state, on any of the three surfaces
     type: at.ev.type,
     pill: d.$('ppill').hidden ? '' : d.$('ppill').textContent,
     note: d.$('iceNote').textContent,
-    gks: (d.$('netmen').innerHTML.match(/class="gkbody"/g) || []).length }));
+    gks: (d.$('netmen').innerHTML.match(/<g class="gk">/g) || []).length }));
 
   const horn = read(last);
   assert.equal(horn.type, 'game-end',

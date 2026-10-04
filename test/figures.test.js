@@ -41,6 +41,16 @@ test('⭐ every figure the module offers is one a surface can actually select', 
   // comment in marks.js asserted the opposite ("figTabletop is NOT dead code").
   // A claim in a comment is not a check. The style went with the goaltender's-eye
   // view on 2026-09-17; what stays is the rule that made it findable.
+  //
+  // ⭐⭐ 2026-10-04: `FIG` STOPPED BEING A SET OF INTERCHANGEABLE STYLES AND
+  // BECAME A CAST. `mascot` is still chosen by `figStyle`, but `goalie` and
+  // `official` are not alternatives to it — they are different PEOPLE, called by
+  // name where that person belongs: the goaltender in `app.js::drawNetmen` and
+  // both of them in `builders/learn-figures.mjs`. A rule that only understood
+  // pickers would have had to exempt them, and an exemption is how this check
+  // would stop meaning anything. So the question it asks is the one it always
+  // meant: CAN A READER REACH THIS DRAWING? — by a picker, or by a caller that
+  // names it, in code that actually ships.
   const marks = readFileSync(new URL('../src/lib/marks.js', import.meta.url), 'utf8');
   const fixed = /const figStyle\s*=\s*'([a-z]+)'/.exec(marks);
   const selectable = new Set(fixed ? [fixed[1]] : []);
@@ -48,7 +58,18 @@ test('⭐ every figure the module offers is one a surface can actually select', 
     const html = readFileSync(new URL(`../src/${f}`, import.meta.url), 'utf8');
     for (const m of html.matchAll(/data-f="([a-z]+)"/g)) selectable.add(m[1]);   // a picker on a page
   }
-  assert.deepEqual(STYLES.sort(), [...selectable].sort(),
+  /* The callers that name a figure outright. Both are SHIPPED surfaces: `app.js`
+     is bundled into every replay page, and `learn-figures.mjs` draws the figures
+     committed into `data/learn-figures.json` and rendered on the rule pages. */
+  const callers = ['../src/app.js', '../builders/learn-figures.mjs']
+    .map(f => readFileSync(new URL(f, import.meta.url), 'utf8')).join('\n');
+  for (const m of callers.matchAll(/FIG\.([a-z]+)\s*\(/g)) selectable.add(m[1]);
+  /* ⚠️ AND A COMPUTED KEY COUNTS, because `FIG[kind]` is how the diagrams pick
+     between three people — but ONLY the names that are really passed to it, read
+     from the call sites rather than assumed. A bare `FIG[x]` proving every key
+     reachable is exactly the hole `figTabletop` lived in. */
+  for (const m of callers.matchAll(/person\('([a-z]+)'/g)) selectable.add(m[1]);
+  assert.deepEqual(STYLES.slice().sort(), [...selectable].sort(),
     'the module ships a figure no surface can choose, or a surface offers one the module does not have');
 });
 
@@ -77,13 +98,25 @@ for (const style of STYLES) {
   }
 }
 
-test('the outcome changes the pose, not just the colour', () => {
+test('the outcome changes the pose of the SHOOTER, and of nobody else', () => {
   // save = shooting, goal = arms up. If these ever render identically the
   // figure has stopped carrying the one real fact it encodes.
-  for (const style of STYLES) {
-    const save = new SvgPen(); FIG[style](save, 0, 0, 10, '#fff', 'save', { motion: false, glow: false });
-    const goal = new SvgPen(); FIG[style](goal, 0, 0, 10, '#fff', 'goal', { motion: false, glow: false });
-    assert.notEqual(save.toSvg(), goal.toSvg(), `${style}: poses must differ`);
+  const pose = (style, out) => {
+    const p = new SvgPen(); FIG[style](p, 0, 0, 10, '#fff', out, { motion: false, glow: false });
+    return p.toSvg(); };
+  assert.notEqual(pose('mascot', 'save'), pose('mascot', 'goal'), 'mascot: poses must differ');
+
+  /* ⛔⛔⛔ AND THE OTHER TWO MUST NOT MOVE AT ALL, which is the stronger half.
+     A goaltender's drawing changing with `out` would say he made the save or let
+     the goal in — a claim about HIM that the feed does not record and this
+     project may not invent (Doctrine §5). The same for an official, who is not
+     party to the outcome in any sense. Both accept `out` only for signature
+     parity with the shooter, and the temptation when adding a pose later is to
+     "just" branch on it here; this is what refuses that.
+     MUTATION: make `figGoalie` read `out` for anything at all and this fires. */
+  for (const who of ['goalie', 'official']) {
+    assert.equal(pose(who, 'save'), pose(who, 'goal'),
+      `${who}: the drawing changes with an outcome this figure does not take part in`);
   }
 });
 

@@ -66,41 +66,93 @@ const paint = svg => [
  */
 const ACTOR = /\b(dggk|dgsk|dgtok|dgpuck|dgghost)\b/;
 function actors(svg) {
+  /* ⭐⭐ 2026-10-04: THE WALKER CARRIES A MATRIX AND READS PATHS, because the
+     people on these diagrams became `FIG` figures. Two things broke at once and
+     both would have been easy to paper over:
+
+     1. A figure emits `translate(x,y) rotate(r)` — the skater leans. The old
+        walker REFUSED any transform it could not compose, which is exactly right
+        and is why this went red instead of silently measuring the wrong place.
+        Ignoring the rotate would have moved every token by a few tenths and the
+        geometry assertions would have gone on passing.
+     2. A figure is PATHS. The old walker matched `rect|circle|line`, so a mascot
+        contributed NOTHING to its own extent and every box came back empty —
+        which an `Infinity` guard now refuses outright rather than reporting as a
+        zero-sized token sitting at the origin.
+
+     ⚠️ AND AN ARC CARRIES ITS EXTREMES IN ITS RADII, not in its endpoints: a
+     circle is two `A` sweeps whose endpoints are its left and right edges, so a
+     head's crown is `y - ry`. Reading the endpoints alone understates a figure
+     by a head, which is the kind of quiet wrongness this file exists to stop. */
   const out = [];
-  const stack = [{ s: 1, e: 0, f: 0, cls: '', mv: null }];
+  const I = { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 };
+  const mul = (m, n) => ({                       // m then n, applied to a point as n∘m
+    a: m.a * n.a + m.b * n.c, b: m.a * n.b + m.b * n.d,
+    c: m.c * n.a + m.d * n.c, d: m.c * n.b + m.d * n.d,
+    e: m.e * n.a + m.f * n.c + n.e, f: m.e * n.b + m.f * n.d + n.f });
+  const stack = [{ m: I, cls: '', mv: null }];
   const top = () => stack[stack.length - 1];
   const frame = (gattr, parent) => {
     const tf = /transform="([^"]*)"/.exec(gattr);
-    let s = 1, e = 0, fy = 0;
+    let m = I;
     if (tf) {
-      assert.match(tf[1], /^(translate\([^)]*\)\s*)?(scale\([^)]*\))?$/,
+      assert.match(tf[1], /^\s*(translate\([^)]*\)|scale\([^)]*\)|rotate\([^)]*\))(\s*(translate\([^)]*\)|scale\([^)]*\)|rotate\([^)]*\)))*\s*$/,
         `a transform this walker cannot compose: ${tf[1]}`);
-      const tr = /translate\((-?[\d.]+),(-?[\d.]+)\)/.exec(tf[1]);
-      const sc = /scale\((-?[\d.]+)\)/.exec(tf[1]);
-      if (tr) { e = +tr[1]; fy = +tr[2]; }
-      if (sc) s = +sc[1];
+      /* ⛔⛔ A TRANSFORM LIST APPLIES RIGHT TO LEFT. `translate(x,y) rotate(r)`
+         rotates the POINT first and then moves it, so each transform read left to
+         right must be composed BEFORE everything already accumulated. Writing
+         `mul(m, t)` instead put the rotation about the wrong origin and moved
+         every figure by a couple of units — small enough to look like a placement
+         bug in the drawing and not in the ruler, which is how an hour goes. */
+      for (const t of tf[1].matchAll(/(translate|scale|rotate)\(([^)]*)\)/g)) {
+        const n = t[2].split(/[,\s]+/).map(Number);
+        let step;
+        if (t[1] === 'translate') step = { ...I, e: n[0] || 0, f: n[1] || 0 };
+        else if (t[1] === 'scale') step = { ...I, a: n[0], d: n.length > 1 ? n[1] : n[0] };
+        else { const r = (n[0] || 0) * Math.PI / 180, C = Math.cos(r), S = Math.sin(r);
+               step = { a: C, b: S, c: -S, d: C, e: 0, f: 0 }; }
+        m = mul(step, m);
+      }
     }
     const cls = (/class="([^"]*)"/.exec(gattr) || ['', ''])[1];
     const mvHere = (/\b(dgm-[a-z]+)\b/.exec(cls) || [])[1] || null;
-    return { s: parent.s * s, e: parent.s * e + parent.e, f: parent.s * fy + parent.f,
-             cls: `${parent.cls} ${cls}`, mv: mvHere || parent.mv };
+    return { m: mul(m, parent.m), cls: `${parent.cls} ${cls}`, mv: mvHere || parent.mv };
   };
+  /* The uniform scale a frame applies, for the callers that ask how big a token
+     was drawn. Figures scale uniformly, so this is exact for them. */
+  const scaleOf = fr => Math.hypot(fr.m.a, fr.m.b);
   const open = fr => out.push({
     x1: Infinity, x2: -Infinity, y1: Infinity, y2: -Infinity,
     cls: fr.cls.trim(), move: fr.mv, ghost: /\bdgghost\b/.test(fr.cls), depth: stack.length,
   });
-  const grow = (g, fr, x1, y1, x2, y2) => {
-    for (const [px, py] of [[x1, y1], [x2, y2]]) {
-      const X = fr.s * px + fr.e, Y = fr.s * py + fr.f;
-      g.x1 = Math.min(g.x1, X); g.x2 = Math.max(g.x2, X);
-      g.y1 = Math.min(g.y1, Y); g.y2 = Math.max(g.y2, Y);
-    }
+  const put = (g, fr, px, py) => {
+    const X = fr.m.a * px + fr.m.c * py + fr.m.e, Y = fr.m.b * px + fr.m.d * py + fr.m.f;
+    g.x1 = Math.min(g.x1, X); g.x2 = Math.max(g.x2, X);
+    g.y1 = Math.min(g.y1, Y); g.y2 = Math.max(g.y2, Y);
   };
-  for (const m of svg.matchAll(/<(\/?)g\b([^>]*)>|<(rect|circle|line)\b([^>]*)>/g)) {
+  const grow = (g, fr, x1, y1, x2, y2) => { put(g, fr, x1, y1); put(g, fr, x2, y2); };
+  const growPath = (g, fr, d) => {
+    for (const m of d.matchAll(/A([\d.]+),([\d.]+) \d \d \d (-?[\d.]+),(-?[\d.]+)/g))
+      grow(g, fr, +m[3] - +m[1], +m[4] - +m[2], +m[3] + +m[1], +m[4] + +m[2]);
+    for (const m of d.matchAll(/[MLQ]\s*(-?[\d.]+),(-?[\d.]+)/g)) put(g, fr, +m[1], +m[2]);
+  };
+  for (const m of svg.matchAll(/<(\/?)g\b([^>]*)>|<(rect|circle|line|path)\b([^>]*)>/g)) {
     const [, close, gattr, shape, sattr] = m;
     if (shape) {
       const a = k => { const v = new RegExp(`\\b${k}="(-?[\\d.]+)"`).exec(sattr); return v ? +v[1] : null; };
       let x1, x2, y1, y2;
+      if (shape === 'path') {
+        /* A path carries its box in its own `d`, so it is grown directly rather
+           than reduced to one rectangle — `growPath` reads the arcs properly. */
+        const dAttr = /\bd="([^"]*)"/.exec(sattr);
+        if (!dAttr) continue;
+        const live = out.filter(g => g.live);
+        if (live.length) { growPath(live[live.length - 1], top(), dAttr[1]); continue; }
+        const fr = frame(sattr, top());
+        if (!ACTOR.test(fr.cls)) continue;
+        open(fr); growPath(out[out.length - 1], top(), dAttr[1]);
+        continue;
+      }
       if (shape === 'rect') { x1 = a('x'); y1 = a('y'); x2 = x1 + a('width'); y2 = y1 + a('height'); }
       else if (shape === 'circle') { const r = a('r'); x1 = a('cx') - r; x2 = a('cx') + r; y1 = a('cy') - r; y2 = a('cy') + r; }
       else { x1 = Math.min(a('x1'), a('x2')); x2 = Math.max(a('x1'), a('x2')); y1 = Math.min(a('y1'), a('y2')); y2 = Math.max(a('y1'), a('y2')); }

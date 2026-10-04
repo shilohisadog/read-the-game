@@ -411,9 +411,16 @@ function walkTags(search) {
   return a.every((d, f) => {
     const tag = [...d.$('rink').innerHTML.matchAll(/<text class="netlab" x="([-\d.]+)"[^>]*>([^<]+)</g)]
       .find(m => m[2] === hAb);
-    const gk = [...d.$('netmen').innerHTML.matchAll(/<rect class="gkbody" x="([-\d.]+)"[^>]*fill="([^"]+)"/g)]
-      .find(m => m[2].toLowerCase() === hCol.toLowerCase());
-    return { per: f.ev.per, tag: tag ? +tag[1] : null, gk: gk ? +gk[1] : null };
+    /* ⭐ 2026-10-04: THE GOALTENDER IS A FIGURE, NOT A RECT. Each one is a
+       `<g class="gk">` holding a `translate` that places him and paths painted in
+       his club's colour, so the club is found by looking INSIDE the group rather
+       than on one named element — and his x comes from the placement, which is
+       the number this test was always about. */
+    const gk = [...d.$('netmen').innerHTML.matchAll(/<g class="gk">([\s\S]*?)(?=<g class="gk">|$)/g)]
+      .map(m => ({ x: (/<g transform="translate\(([-\d.]+),/.exec(m[1]) || [])[1],
+                   wears: m[1].toLowerCase().includes(`fill="${hCol.toLowerCase()}"`) }))
+      .find(m => m.wears && m.x != null);
+    return { per: f.ev.per, tag: tag ? +tag[1] : null, gk: gk ? +gk.x : null };
   });
 }
 

@@ -49,6 +49,8 @@ import { furniture, netGlyph, goalieGlyph, skaterGlyph, officialGlyph, GK_H,
    2026-09-07 both typed `33` beside an import of the constant that holds it. */
 import { BLUE_LINE_X, NEUTRAL_DOT_X, NET_X, HIGH_DANGER_FT } from '../src/lib/rink.js';
 import { NEUTRAL } from '../src/lib/teams.js';
+import { SvgPen } from '../src/lib/svgpen.js';
+import { FIG } from '../src/lib/figures.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -218,39 +220,69 @@ const GK_HOME = 42.5;
 const GK_FIT = (4 * 2) / GK_H;
 /** The weight every illustrated token carries — `.dgplay .dgtok` in FIGCSS. */
 const TOK_STROKE = 1.1;
-const gk = (gx, x, y, k = 1, cls = '', dash = false) => {
-  const s = GK_FIT * k;
-  // Scale about the figure's own home, then place: p -> (tx + s*px, ty + s*py).
-  const [tx, ty] = [x - s * gx, y - s * GK_HOME];
-  /* ⚠️ THE SCALE TAKES THE STROKE WITH IT, so the weight is divided out HERE and
-     not restated in a stylesheet. Drawn at app.css's 0.4 inside a 1.74x group the
-     goaltender rendered at 0.70 beside skater tokens stroked at 1.1 — a fainter
-     figure, which reads as further away. Inherited from the wrapper it renders at
-     TOK_STROKE whatever the scale is, and the one number that decides it lives
-     next to the one that sets the scale. A CSS rule would be a second copy that
-     silently stops matching the moment `GK_FIT` moves. */
-  return `<g transform="translate(${f(tx)},${f(ty)}) scale(${f(s)})"`
-       + ` stroke-width="${f(TOK_STROKE / s)}"${dashes(s, dash)}>`
-       + goalieGlyph(gx, NEUTRAL, 'var(--ice)', `dggk ${cls}`.trim()) + '</g>';
-};
+/* ⭐⭐⭐ THE THREE PEOPLE ON THESE DIAGRAMS ARE THE REPLAY'S OWN FIGURES, since
+   2026-10-04. Kevin: *"the stick figures on the penalties and empty net diagrams
+   just don't work for me anymore. We need to update them to something more, I
+   dunno, consistent with the replay figures?"*
 
+   They used to be `rinkart.js`'s outlined glyphs -- a head circle, a capsule and
+   a line for a stick -- and the replay three clicks away drew a character with a
+   face. ⛔ THE OBJECTION THAT KEPT THEM APART WAS PARAMETERISED ALL ALONG:
+   `skaterGlyph`'s own header argues the mascot cannot be borrowed because its
+   jersey means "recorded" and its pose encodes an outcome. Both are ARGUMENTS --
+   `jersey` is a fill and `out==='goal'` only changes the arms -- so a NEUTRAL
+   fill with a non-goal outcome is a person who claims nothing, which is exactly
+   what a diagram needs. The club colour is what these pages must not borrow, and
+   they still do not.
+
+   ⚠️ THE SIGNATURES ARE UNCHANGED so the two figures that draw people did not
+   have to be rewritten, and `gx`/`dash` are now ignored: `gx` existed because a
+   glyph was drawn about its own home and then moved, and a mascot is placed by
+   its FEET; `dash` is replaced by the opacity the ghost rule already applies. */
+let FIGN = 0;
+const person = (kind, x, y, k, cls, dir, size) => {
+  const pen = new SvgPen(`dgf${FIGN++}`);
+  /* ⚠️ CENTRED ON `y`, NOT STANDING ON IT. Every call site passes the CENTRE of a
+     token, because that is what the glyphs were: a body drawn about y=42.5 and
+     then moved. A mascot stands on its feet, so the whole figure is dropped by
+     `MID` of its height to put its middle where the glyph's middle was. Getting
+     this wrong does not look like an offset — it looks like a player standing in
+     the stands, which is how it was found: a skater's box came back spanning
+     y −1.39, above the boards. */
+  /* ⛔ A GOALTENDER STANDS IN HIS CREASE, NOT ON THE GOAL LINE. Placed at the
+     line exactly, his centre sits ON the crease's origin, and both the drawing
+     and `learn-figures`' crease rule call that "not in the crease" -- correctly,
+     because a figure centred on the line is half inside the net. He is nudged
+     into the ice by a third of his height, in the direction he is already
+     facing, which is the one number here that both surfaces must share. */
+  const intoIce = kind === 'goalie' ? dir * size * k * GK_STANDOFF : 0;
+  FIG[kind](pen, x + intoIce, y + size * k * MID, size * k, NEUTRAL, '',
+            { motion: false, glow: false, dir, px: size * k * SHOWN_PX });
+  return pen.toSvg(`class="${cls}"`);
+};
+/* How big the figure APPEARS once the page has scaled the diagram, which decides
+   whether its face is drawn at all. The rule pages render the 200-unit rink at
+   roughly this many pixels per unit; it is a presentation fact, stated once. */
+const SHOWN_PX = 4.3;
+/* Where a figure's middle sits above its feet, per unit of size — measured, and
+   it includes the SHADOW, which is why it is not half the head height. */
+const MID = 0.48;
+/* ⛔⛔ THE GOALTENDER IS SIZED TO THE NET AND THE SKATER IS NOT, which looks like
+   an inconsistency and is Kevin's ruling: *"the goalie figures are bigger than
+   the net."* A net mouth is six feet and a drawn goaltender has to sit inside the
+   thing he defends, so he is the one figure on this rink whose size is set by
+   equipment rather than by the person. `app.js` applies exactly the same numbers
+   on the replay; the two surfaces cannot drift because both state the rule the
+   same way and `render-board` measures the drawn result. */
+const GK_SZ = 4.0, SK_SZ = 6.7, GK_STANDOFF = 0.34;
+const gk = (gx, x, y, k = 1, cls = '', _dash = false) =>
+  person('goalie', x, y, k, `dggk ${cls}`.trim(), x < 100 ? 1 : -1, GK_SZ);
 /** An official, placed and weighted exactly as `gk` places a goaltender. */
-const of_ = (gx, x, y, k = 1, cls = '') => {
-  const s = GK_FIT * k;
-  const [tx, ty] = [x - s * gx, y - s * GK_HOME];
-  return `<g transform="translate(${f(tx)},${f(ty)}) scale(${f(s)})"`
-       + ` stroke-width="${f(TOK_STROKE / s)}">`
-       + officialGlyph(gx, NEUTRAL, 'var(--ice)', `dgof ${cls}`.trim()) + '</g>';
-};
-
+const of_ = (gx, x, y, k = 1, cls = '') =>
+  person('official', x, y, k, `dgof ${cls}`.trim(), x < 100 ? 1 : -1, SK_SZ);
 /** A skater, placed and weighted exactly as `gk` places and weights a goaltender. */
-const sk = (gx, x, y, k = 1, cls = '', dir, dash = false) => {
-  const s = GK_FIT * k;
-  const [tx, ty] = [x - s * gx, y - s * GK_HOME];
-  return `<g transform="translate(${f(tx)},${f(ty)}) scale(${f(s)})"`
-       + ` stroke-width="${f(TOK_STROKE / s)}"${dashes(s, dash)}>`
-       + skaterGlyph(gx, NEUTRAL, 'var(--ice)', `dgsk ${cls}`.trim(), dir) + '</g>';
-};
+const sk = (gx, x, y, k = 1, cls = '', dir, _dash = false) =>
+  person('mascot', x, y, k, `dgsk ${cls}`.trim(), dir === -1 ? -1 : 1, SK_SZ);
 
 /** ⛔ RETIRED — see the empty-net figure. A goaltender is drawn by `gk` now. */
 const keeper = (gx, k = 1) =>

@@ -211,6 +211,44 @@ test('the trails summary says which setting is on, in the button\'s own words', 
   assert.equal(played.$('zTrailsOn').textContent, on.textContent.toLowerCase());
 });
 
+/* ⭐⭐ THE DRAWN EXTENT OF A FIGURE, 2026-10-04. The goaltender stopped being
+   three named parts (`gkbody` + `gkhead` + `gkstick`) and became `FIG.goalie`,
+   drawn through a pen into anonymous paths. A rule that can only see named parts
+   would have had to be deleted at exactly the moment the drawing changed, which
+   is when it is most needed — so this reads the geometry instead, and asks a
+   STRONGER question than before: the old version could not see a blocker or a
+   shadow sticking out past the post, and this can.
+
+   ⚠️ ARCS CARRY THEIR OWN EXTREMES. SvgPen renders a circle as two `A` sweeps
+   whose endpoints are its left and right edges, so the crown of a head is never
+   an explicit coordinate — it is `y - ry` off the arc command. Reading only the
+   M/L/Q points understates a figure by a head radius, which would let a
+   goaltender poke through the crossbar and pass. */
+function drawnExtent(svg) {
+  let top = Infinity, bot = -Infinity;
+  const parts = svg.split(/<g transform="translate\(([-\d.]+),([-\d.]+)\)"[^>]*>/);
+  let ty = 0;
+  for (let i = 0; i < parts.length; i++) {
+    if (i > 0 && i % 3 === 1) continue;                       // the x of a translate
+    if (i > 0 && i % 3 === 2) { ty = +parts[i]; continue; }   // the y of a translate
+    const chunk = parts[i], off = i === 0 ? 0 : ty;
+    for (const m of chunk.matchAll(/A([\d.]+),([\d.]+) \d \d \d ([-\d.]+),([-\d.]+)/g)) {
+      top = Math.min(top, off + +m[4] - +m[2]); bot = Math.max(bot, off + +m[4] + +m[2]); }
+    for (const m of chunk.matchAll(/[MLQ]\s*[-\d.]+,([-\d.]+)/g)) {
+      top = Math.min(top, off + +m[1]); bot = Math.max(bot, off + +m[1]); }
+  }
+  return { top, bot };
+}
+/** Each goaltender's markup, left to right, read from `#netmen`. */
+function netmen(svg) {
+  const men = [...svg.matchAll(/<g class="gk">([\s\S]*?)(?=<g class="gk">|$)/g)].map(m => m[1]);
+  return men.map(one => {
+    const tx = /<g transform="translate\(([-\d.]+),/.exec(one);
+    const fills = [...one.matchAll(/fill="(#[0-9a-fA-F]{3,6})"/g)].map(m => m[1].toLowerCase());
+    return { x: tx ? +tx[1] : NaN, fills, ...drawnExtent(one) };
+  }).sort((p, q) => p.x - q.x);
+}
+
 test('a goaltender stands in each crease, and the sides agree with the scoreboard', () => {
   // THE FIGURE REPLACED THE TEXT. "WSH net" written up the post was clutter doing
   // a job a figure does better (Kevin): a goaltender in the crease says the net is
@@ -221,17 +259,27 @@ test('a goaltender stands in each crease, and the sides agree with the scoreboar
   // would have been reading the one frame in the game with an empty net.
   const a = boot();
   const opening = a.every(d => d.$('netmen').innerHTML)[0];
-  const gks = [...opening.matchAll(
-    /<rect class="gkbody" x="([-\d.]+)"[^>]*fill="([^"]+)" stroke="([^"]+)"/g)]
-    .map(m => ({ x: +m[1], fill: m[2], stroke: m[3] })).sort((p, q) => p.x - q.x);
+  const gks = netmen(opening);
   assert.equal(gks.length, 2, 'both nets are defended at the opening faceoff');
 
   // The host is on the RIGHT, and so is the host's badge on the scoreboard. The
   // agreement is the point: the same club on the same side of one screen.
   const [visitor, host] = gks;
-  assert.equal(host.fill, colourOf(a.$('hAb').textContent), "the host's own colour");
-  assert.equal(visitor.fill, '#fff', 'the visitor wears white, like the sweaters');
-  assert.equal(visitor.stroke, colourOf(a.$('aAb').textContent), 'trimmed in its club colour');
+  /* ⭐⭐ BOTH GOALTENDERS NOW WEAR THEIR OWN CLUB'S COLOUR, and that is a change.
+     The glyph gave the visitor a WHITE body with a club-coloured outline, after
+     the real sweater convention. The figure that replaced it on 2026-10-04 is the
+     same drawing the SHOOTER uses, and `marks.js` has always painted a shooter in
+     his club's colour whichever end he came from — so keeping the white visitor
+     would have been the one place on the ice where two people of the same kind
+     were coloured by different rules. The identity claim is unchanged and is what
+     this still checks: the man in each crease carries his own club's colour, and
+     he is on the side the scoreboard says he is. */
+  assert.ok(host.fills.includes(colourOf(a.$('hAb').textContent).toLowerCase()),
+    "the host's goaltender does not wear the host's own colour");
+  assert.ok(visitor.fills.includes(colourOf(a.$('aAb').textContent).toLowerCase()),
+    "the visitor's goaltender does not wear the visitor's colour");
+  assert.notDeepEqual(host.fills, visitor.fills,
+    'both goaltenders are painted identically, so the colour identifies nobody');
   assert.ok(host.x > 100 && visitor.x < 100, 'host right, visitor left');
 
   /* ⭐⭐ THE VERTICAL TAG IS BACK, AND THIS ASSERTION USED TO FORBID IT.
@@ -296,7 +344,7 @@ test('the goaltender LEAVES when the feed says the goalie was pulled', () => {
   // emptiest net in hockey stops being something a novice has to be told about.
   const a = boot();
   const walk = a.every((d, at) => ({ type: at.ev.type, html: d.$('netmen').innerHTML,
-    gks: (d.$('netmen').innerHTML.match(/class="gkbody"/g) || []).length }));
+    gks: (d.$('netmen').innerHTML.match(/<g class="gk">/g) || []).length }));
   /* ⛔⛔ THE HORN IS NOT A PLAY, SO IT IS NOT PART OF THIS CLAIM. Kevin, on a
      finished game, 2026-10-04: the pulled-goalie surfaces are "true with 1 second
      left… but after the game is over, that becomes moot." The rink now draws
@@ -312,7 +360,7 @@ test('the goaltender LEAVES when the feed says the goalie was pulled', () => {
 
   // The one that leaves is the VISITOR's, which is what 0651 means.
   const last = play[play.length - 1].html;
-  assert.equal((last.match(/class="gkbody"/g) || []).length, 1);
+  assert.equal((last.match(/<g class="gk">/g) || []).length, 1);
   assert.match(last, new RegExp(`fill="${colourOf(a.$('hAb').textContent)}"`),
     'the host keeps its goaltender');
 
@@ -370,7 +418,7 @@ test('the goaltenders are redrawn only when they change', () => {
   // And the state still tracks the game: two, then one after the pull.
   const a = boot();
   const seen = a.every((d, at) => ({ type: at.ev.type,
-    gks: (d.$('netmen').innerHTML.match(/class="gkbody"/g) || []).length }));
+    gks: (d.$('netmen').innerHTML.match(/<g class="gk">/g) || []).length }));
   const play = seen.filter(f => f.type !== 'game-end').map(f => f.gks);
   assert.deepEqual([...new Set(play)].sort(), [1, 2],
     'exactly two states across the game itself');
@@ -680,22 +728,14 @@ test('the goaltender FITS INSIDE the net it defends, and is centred on the mouth
     .map(m => ({ top: +m[1], bot: +m[2] }));
   assert.equal(posts.length, 2, 'two nets to be measured against');
 
-  const opening = a.every(d => d.$('netmen').innerHTML)[0];
-  const body = [...opening.matchAll(/class="gkbody"[^>]*y="([\d.]+)"[^>]*height="([\d.]+)"/g)]
-    .map(m => ({ top: +m[1], bot: +m[1] + +m[2] }));
-  const head = [...opening.matchAll(/class="gkhead"[^>]*cy="([\d.]+)" r="([\d.]+)"/g)]
-    .map(m => ({ top: +m[1] - +m[2], bot: +m[1] + +m[2] }));
-  const stick = [...opening.matchAll(/class="gkstick"[^>]*y1="([\d.]+)"[^>]*y2="([\d.]+)"/g)]
-    .map(m => ({ top: Math.min(+m[1], +m[2]), bot: Math.max(+m[1], +m[2]) }));
-  assert.equal(body.length, 2, 'both goaltenders present at the opening faceoff');
-  assert.equal(head.length, 2);
-  assert.equal(stick.length, 2);
+  const men = netmen(a.every(d => d.$('netmen').innerHTML)[0]);
+  assert.equal(men.length, 2, 'both goaltenders present at the opening faceoff');
+  assert.ok(men.every(m => Number.isFinite(m.top) && Number.isFinite(m.bot)),
+    'a goaltender drew nothing this could measure — the extent reader lost its subject');
 
   for (let i = 0; i < 2; i++) {
     const mouth = posts[i];
-    const parts = [body[i], head[i], stick[i]];
-    const top = Math.min(...parts.map(p => p.top));
-    const bot = Math.max(...parts.map(p => p.bot));
+    const { top, bot } = men[i];
     assert.ok(top >= mouth.top,
       `goaltender ${i} reaches ${top}, above the crossbar at ${mouth.top}`);
     assert.ok(bot <= mouth.bot,

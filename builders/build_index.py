@@ -3296,8 +3296,17 @@ FIGCSS = r"""<style>
    NOT HERE: these figures are scaled, and a pattern in rink units shatters the
    outline into blobs at 1.74x. `dashes` in learn-figures.mjs divides the scale
    out, next to where the scale is set. */
-.dgplay .dgghost .dggk *,.dgplay .dgghost .dgsk *,
-.dgplay .dgghost .dgof *{opacity:.75;fill:none}
+/* ⛔⛔ A GHOST OF A FILLED FIGURE IS NOT AN OUTLINE OF IT. This rule used to say
+   `fill:none` on every shape inside a ghost, which is exactly right for the
+   outlined glyphs it was written for -- strip the fill and the token becomes its
+   own wireframe. The mascot family that replaced them on 2026-10-04 is built
+   almost entirely from FILLED shapes with no stroke, so the same rule deleted
+   the figure and left a scatter of disconnected capsules: the reader saw debris
+   where a player had been. The same failure `GHOST_DASH` records one line up,
+   from the other direction. A ghost is now the figure at low opacity, which is
+   what "he was here a moment ago" actually looks like. */
+.dgplay .dgghost .dggk,.dgplay .dgghost .dgsk,
+.dgplay .dgghost .dgof{opacity:.34}
 .dgplay .dgarrow{stroke:var(--muted);stroke-width:.8;stroke-linecap:round;opacity:.85}
 .dgheadp{fill:var(--muted);opacity:.85}
 /* The line where the rule is decided, and the spot the draw comes back to. */
