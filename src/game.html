@@ -40,7 +40,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-olm36aAuB6U0Vh/a9AI30akTcpoWjCJUwfW+UdJT/O0=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-5l0/O/zMdjCPhRf7yeEVJiETC/JwEEiCW69c7LT4CdU='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-vnhqrfVE9gunkbwsZL8UQQiJZR2u18it177utx8YSZE=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-5l0/O/zMdjCPhRf7yeEVJiETC/JwEEiCW69c7LT4CdU='; connect-src 'self' https://data.readthegame.co; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -11359,6 +11359,34 @@ function counted(slice){return levelOnly?tiedControl.reduce(slice,CTX)
 function lens(k){return counted(upto(k));}
 const $=id=>document.getElementById(id);
 /**
+ * ⭐⭐ A SUBTREE WHOSE MARKUP DID NOT CHANGE IS NOT REWRITTEN, and the reason is
+ * not performance: REPLACING AN ELEMENT RESTARTS ITS ENTRANCE ANIMATION.
+ *
+ * `drawNetmen` has reasoned this out since it was written -- "rewriting this
+ * every frame would rebuild both figures on every event, restarting their
+ * entrance animation each time" -- and it was the only drawing function that
+ * did. This is that memo, generalised, so the rule has one spelling instead of
+ * one instance.
+ *
+ * ⭐ WHY IT IS A STORED STRING AND NOT A READ-BACK. A browser normalises
+ * `innerHTML`: attribute order, quoting and self-closing tags all come back
+ * differently from how they went in, so comparing against `el.innerHTML` would
+ * report "changed" on every frame and the guard would do nothing while looking
+ * like it worked. The key is the element, so two writers of one element share
+ * one memo and cannot disagree about what is on screen.
+ *
+ * ⛔ IT IS SAFE HERE BECAUSE NOTHING IN THE PAGE BINDS A LISTENER TO A MARK.
+ * Every click inside these subtrees is delegated to the container (`#events`,
+ * `#labels`, `#who`), so a subtree that is not rewritten has not lost anything.
+ * The day a listener is attached to a child, this guard starts preserving it
+ * rather than re-creating it, which is the better of the two anyway.
+ */
+const WROTE=new Map();
+function put(el,html){
+ if(!el)return false;
+ if(WROTE.get(el)===html)return false;
+ WROTE.set(el,html);el.innerHTML=html;return true;}
+/**
  * WHERE AN EVENT HAPPENED, in screen coordinates -- or null when the feed does
  * not record a position for it.
  *
@@ -11457,7 +11485,6 @@ function drawRink(per){if(per===rinkPer)return;rinkPer=per;
  * and the crease is where the rulebook puts them, not where we guess they were.
  * Same line the shooter figures already sit on the right side of (Doctrine §5).
  */
-let netmenAre=null;
 function drawNetmen(e){
  /* ⛔ THE HORN IS NOT A PLAY, SO NOBODY IS ON THE ICE AT IT. A pulled goaltender
     drew one figure and one undefended net on a game that was over — see
@@ -11465,7 +11492,7 @@ function drawNetmen(e){
     it opens at the horn because "THE ICE IS EMPTY — no puck, no shot, no player",
     and until now a goaltender was standing in it. */
  const sit=notAPlay(e)?null:e&&e.sit;
- if(notAPlay(e)){if(netmenAre==='')return;netmenAre='';$('netmen').innerHTML='';return;}
+ if(notAPlay(e)){put($('netmen'),'');return;}
  // Present unless the code says zero. A missing code is not evidence of an empty
  // net, and an empty net drawn on a guess would be the most dramatic thing on the
  // ice invented from nothing.
@@ -11473,14 +11500,13 @@ function drawNetmen(e){
  const gper=(e&&e.per)||1;
  if(!sit||sit[3]!=='0')out.push(goalieGlyph(AX(-NET_X,gper),HOMECOL,HOMECOL));
  if(!sit||sit[0]!=='0')out.push(goalieGlyph(AX(NET_X,gper),AWAYCOL,'#fff'));
- const now=out.join('');
- // ONLY ON CHANGE. Rewriting this every frame would rebuild both figures on every
- // event, restarting their entrance animation each time -- a goaltender flickering
- // three hundred times a game. Redrawing only when the situation code actually
- // changes also makes the animation mean something: it fires when a goalie
- // arrives or leaves, and at no other moment.
- if(now===netmenAre)return;
- netmenAre=now;$('netmen').innerHTML=now;}
+ // ONLY ON CHANGE -- see `put`, which is this memo generalised. Rewriting this
+ // every frame would rebuild both figures on every event, restarting their
+ // entrance animation each time -- a goaltender flickering three hundred times a
+ // game. Redrawing only when the situation code actually changes also makes the
+ // animation mean something: it fires when a goalie arrives or leaves, and at no
+ // other moment.
+ put($('netmen'),out.join(''));}
 /**
  * ⭐ THE STANDING CONDITION ON THE SCOREBOARD — a power play or a pulled goalie,
  * for as long as it is true. Kevin: "we announce the penalty, but we don't
@@ -11886,8 +11912,7 @@ let cueOn=true;
 function drawCue(i){
  const el=$('cue');if(!el)return;
  const pos=cueOn?place(EV[i+1]):null;
- if(!pos){el.innerHTML='';return;}
- el.innerHTML=`<circle class="cuef" cx="${pos.x.toFixed(1)}" cy="${pos.y.toFixed(1)}" r="${CUE_FT}"/>`;}
+ put(el,pos?`<circle class="cuef" cx="${pos.x.toFixed(1)}" cy="${pos.y.toFixed(1)}" r="${CUE_FT}"/>`:'');}
 function render(i,how){
  /* ⭐⭐ A MOMENT IS A PLAY OR A JUMP — AND THE COUNTER FLASH BELOW IS DELIBERATELY
     NOT. The two conditions differ by one word and the difference is a claim about
@@ -11918,15 +11943,15 @@ function render(i,how){
     its colour, which way the rink faces, the slot layer, the motion preference and
     the trails mode. All of it was invisible while the loop sat here reaching for
     whatever it liked. Grouped into four so the list is a shape. */
- $('events').innerHTML=eventMarks(
+ put($('events'),eventMarks(
   {evs,i,cur,moment},
   {hdOn,trails,asPlayed:ASPLAYED,reduced:REDUCED,t:T},
   {AID,HID,R,AWAYCOL,HOMECOL,FIG_SZ,FIG_BIG},
-  {place,tk,isHD});
+  {place,tk,isHD}));
  drawCue(i);
  if(zoneOn){const sl=upto(i);drawZoneStarts(zonestart.reduce(sl,CTX),sl);}
  // CLEARED WHEN OFF, or nine rings outlive the chip that drew them.
- else $('draws').innerHTML='';
+ else put($('draws'),'');
  if(whistleOn)drawWhistles(whistle.reduce(upto(i),CTX));
  /* ⭐ AND THE ICING'S OWN GEOMETRY EVEN WITH THE LAYER OFF. The two lines are
     the CAUSE half of Rule 81 — from behind the centre line, past the far goal
@@ -11937,8 +11962,8 @@ function render(i,how){
     speaks only with its layer on).
     ONLY AT THE RESTART FRAME, so it appears and goes with the caption that
     explains it rather than standing on the ice afterwards. */
- else{$('whistles').innerHTML=cur&&ICING.has(cur)?ruleLines(ICING.get(cur).lines,cur.per)
-   :cur&&OFFSIDE.has(cur)?ruleLines(OFFSIDE.get(cur).lines,cur.per):'';
+ else{put($('whistles'),cur&&ICING.has(cur)?ruleLines(ICING.get(cur).lines,cur.per)
+   :cur&&OFFSIDE.has(cur)?ruleLines(OFFSIDE.get(cur).lines,cur.per):'');
       $('whistlePanel').innerHTML='';}
  // The replay is AT the end, not merely near it. `i` is the frame index and
  // EV.length-1 is the last playable event; a game paused one shot short has
@@ -12032,8 +12057,8 @@ function render(i,how){
  if(blockOn){const sl=upto(i);drawBlocked(blocked.reduce(sl,CTX),L,sl);}
  else $('blockPanel').innerHTML='';
  const cp=place(cur);
- $('lines').innerHTML=shotLine(cur,cp,HID,AX);
- $('puck').innerHTML=puckMark(cp,moment);
+ put($('lines'),shotLine(cur,cp,HID,AX));
+ put($('puck'),puckMark(cp,moment));
  drawNoPlace(cur);
  drawLabel(cur);
  drawNetmen(cur);
@@ -13736,8 +13761,41 @@ $('fwd').addEventListener('click',()=>jump(1));
    value the slider crosses, so calling the moment there would fire a hundred
    captions on one drag. `onchange` fires once, when the viewer lets go -- which
    is the frame they actually chose, and it gets called like any other jump. */
-$('scrub').oninput=e=>{stop();set(+e.target.value,'');};
-$('scrub').onchange=e=>{set(+e.target.value,'jump');};
+/* ⭐⭐⭐ AND A GESTURE'S FIRST REPORT MIGHT BE ITS LAST, WHICH IS WHY A TAP USED
+   TO PLAY TWICE.
+   Kevin, 2026-10-04: *"when it plays continuously and event by event it plays
+   fine, but when I tap the scrubber to a different time, the replay appears to
+   go through two loops for each event."*
+   MEASURED, with a real mouse press on the real control rather than a synthetic
+   event (`tools/browser/one-tap.mjs`): a native range reports ONE TAP TWICE.
+       pointerdown=280   input=110   pointerup=110   change=110
+   The same value from `input` and from `change`, 108ms apart -- so the page drew
+   frame 110 as a scrub, then drew it again as a jump. The label's `plfade` ran
+   TWICE, 117ms apart, and the mark was drawn plain and then re-drawn popping.
+   That is the two loops, and the only reason continuous play looks right is that
+   playback renders each frame once.
+   SO THE FIRST VALUE A GESTURE REPORTS IS NOT DRAWN UNTIL A SECOND ONE PROVES IT
+   WAS A DRAG. A tap reports exactly one value and `onchange` draws it, once, as
+   a jump -- which is now literally the same code path as pressing `Fwd`, the
+   transport Kevin says reads fine. A drag reports many, and from the second
+   onward they are drawn as they always were.
+   ⚠️ IT IS A FACT ABOUT THE GESTURE, NOT A TIMER OR A THRESHOLD. `pointerdown`
+   fires BEFORE the value changes (measured above: it reports 280, the value the
+   thumb is leaving), and `keydown` does the same for the arrow keys, which fire
+   the identical `input`/`change` pair and so had the identical defect.
+   ⛔ AND A REPORT THAT ARRIVES OUTSIDE A GESTURE IS DRAWN. Every probe and test
+   in this repo drives the scrubber by dispatching `input` alone -- half of a
+   gesture no hand can make, which is exactly why none of them ever saw this --
+   and a synthetic report is not a gesture, so it still renders. The day one of
+   them sends the pair a real tap sends, it gets a real tap's behaviour. */
+let gesturing=false,reported=0;
+const gestureBegan=()=>{gesturing=true;reported=0;};
+$('scrub').onpointerdown=gestureBegan;
+$('scrub').onkeydown=gestureBegan;
+$('scrub').oninput=e=>{stop();
+ if(gesturing&&++reported===1)return;
+ set(+e.target.value,'');};
+$('scrub').onchange=e=>{gesturing=false;set(+e.target.value,'jump');};
 /* THE SPEED CONTROL NOW GOVERNS THE CAPTION TOO, and until this change it did
    not govern anything but the frame. Measured: the caption ran 2067ms visible at
    every speed, because it was a CSS constant and the pace was a setTimeout, so a
@@ -14428,7 +14486,7 @@ function sinceLine(ev){
   return `· P${ev.per} ${ESC(ev.rem)}${d}`;
 }
 
-function drawLabel(e){const g=$('labels');const p=place(e);if(!p){g.innerHTML='';return;}
+function drawLabel(e){const g=$('labels');const p=place(e);if(!p){put(g,'');return;}
  const lx=p.x,ly=p.y;
  /* ⭐ THE GOAL'S WORDS COME FROM `playSaid`, LIKE EVERY OTHER PLAY'S. This branch
     wrote its own sentence -- "🚨 GOAL — Stankoven" -- and it was the one label on
@@ -14449,7 +14507,7 @@ function drawLabel(e){const g=$('labels');const p=place(e);if(!p){g.innerHTML=''
  if(e.type==='goal'){const tid=e.own,col=tid===AID?AWAYCOL:HOMECOL;
    const as=[R[e.a1],R[e.a2]].filter(Boolean).map(x=>x.nm).join(', ');
    let tx=lx>100?lx-5:lx+5,anc=lx>100?'end':'start',ty=Math.max(15,ly-6);
-   g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${ty.toFixed(1)}" stroke="${col}" stroke-width=".4" opacity=".55"/><text class="glab" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}" fill="${col}">🚨 ${ESC(playSaid(e))}</text><text class="plabsub" x="${tx.toFixed(1)}" y="${(ty+4).toFixed(1)}" text-anchor="${anc}">${as?'assists: '+as:'unassisted'}</text></g>`;return;}
+   put(g,`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${ty.toFixed(1)}" stroke="${col}" stroke-width=".4" opacity=".55"/><text class="glab" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}" fill="${col}">🚨 ${ESC(playSaid(e))}</text><text class="plabsub" x="${tx.toFixed(1)}" y="${(ty+4).toFixed(1)}" text-anchor="${anc}">${as?'assists: '+as:'unassisted'}</text></g>`);return;}
  let tx=lx+4,anc='start';if(lx>150){tx=lx-4;anc='end';}let ty=ly-4.5;if(ty<11)ty=ly+8;
  // THE TEAM, IN WORDS. The figure on the ice is one colour and two clubs can
  // wear the same one, so the label says whose play it was rather than leaving
@@ -14523,12 +14581,12 @@ function drawLabel(e){const g=$('labels');const p=place(e);if(!p){g.innerHTML=''
      // carried over from a sentence that used to name the shooter first, and it
      // lost its referent when the wording inverted to name the blocker.
      //
-   g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${ESC(head)}</text></g>`;
+   put(g,`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${ESC(head)}</text></g>`);
    return;}
  // AND THE TABLE NO LONGER CARRIES A BLOCKED ROW. It would never be reached, and
  // a dead row inside a table reads as coverage -- the fourth time this file has
  // paid for that shape.
- if(!LAB[e.type]){g.innerHTML='';return;}
+ if(!LAB[e.type]){put(g,'');return;}
  // C8: a missed shot says WHICH way it missed. `missSay` is in attribution.js
  // beside SHOT_TYPES, because what a shot event IS belongs with the vocabulary
  // of shot events and not in a table of page labels.
@@ -14543,7 +14601,7 @@ function drawLabel(e){const g=$('labels');const p=place(e);if(!p){g.innerHTML=''
     retired a subline under EVERY event, and K1's fires on 18.4% of transitions,
     47 a game. A line on fewer than one frame in five is not the thing he was
     looking at. Until he says so, the ice keeps one label. */
- g.innerHTML=`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${ESC(playSaid(e))}${hd}</text></g>`;}
+ put(g,`<g class="plabgrp"><line x1="${lx.toFixed(1)}" y1="${ly.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(ty-1).toFixed(1)}" stroke="var(--ink)" stroke-width=".3" opacity=".35"/><text class="plabel" x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="${anc}">${ESC(playSaid(e))}${hd}</text></g>`);}
 
 /* ⭐ WHAT THIS PLAY IS, IN WORDS — the one place the words are chosen.
    Extracted when the share control needed to name the moment it had just
@@ -14655,7 +14713,7 @@ function drawZoneStarts(Z,slice){
      someone who was never told. */
   out.push(`<text class="zsn" x="${d.cx.toFixed(1)}" y="${d.cy.toFixed(1)}">${d.n}</text>`);
  }
- $('draws').innerHTML=out.join('');
+ put($('draws'),out.join(''));
 }
 function drawWhistles(W){
  const g=[];
@@ -14683,7 +14741,7 @@ function drawWhistles(W){
  // recorded restart coordinate.
  const cur=latest(W);
  if(cur&&cur.lines&&cur.lines.length)g.push(ruleLines(cur.lines,cur.per));
- $('whistles').innerHTML=g.join('');
+ put($('whistles'),g.join(''));
  const w=latest(W);
  if(!w){$('whistlePanel').innerHTML='<p class="whsay">No whistle yet — play has not stopped in what you have watched so far.</p>';return;}
  // An unfamiliar reason is carried verbatim and named as unexplained. The draft

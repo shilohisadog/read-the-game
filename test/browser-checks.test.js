@@ -791,3 +791,77 @@ test('⛔ the reader answers null when the page said nothing', () => {
   assert.equal(readDeep('<html><body><p>nothing here</p></body></html>'), null);
   assert.deepEqual(readDeep('<p id="deepout">DEEP {"hash":"m-x"}</p>'), { hash: 'm-x' });
 });
+
+/* ────────────────────────────────────────────────────────────────────────────
+   `one-tap` — the judgement, with no browser anywhere near it.
+
+   ⭐⭐⭐ WHAT THE PROBE PROMISES. Kevin, 2026-10-04: *"when it plays continuously
+   and event by event it plays fine, but when I tap the scrubber to a different
+   time, the replay appears to go through two loops for each event."* A native
+   range reports one tap TWICE — `input` at the press and `change` at the
+   release, the same value, 108ms apart — and the page drew the frame once for
+   each. The promise is that one tap arrives in ONE BEAT.
+
+   ⚠️ THE RULE IS NOT "NO ANIMATION RAN TWICE", and the probe's first version was.
+   Its canary caught that by PASSING: with the memo in place a frame drawn twice
+   rewrites only the subtrees whose markup differs, so the label fades once and
+   the mark simply appears and then pops a hold later. No name repeats and the
+   reader still sees two beats. The SPREAD is the property the complaint is
+   about, and these tests are what let that be said without a browser.
+   ──────────────────────────────────────────────────────────────────────────── */
+import { judgeTap, HOLD } from '../tools/browser/one-tap.mjs';
+
+/** A landing as the probe reads it: the control's reports, and what animated when. */
+const landing = (ats, ev = ['pointerdown=-1', 'input=110', 'change=110']) =>
+  ({ ev, anim: ats.map(([name, at]) => ({ name, at })) });
+
+/* The real reading from the fixed page, measured: eleven starts, one timestamp. */
+const ONE_BEAT = landing([['cap', 300], ['pkn', 300], ['pkn', 300], ['pkn', 300],
+  ['pop', 300], ['pj', 300], ['plfade', 300], ['gkin', 300]]);
+
+test('⭐⭐⭐ one tap in one beat passes; the same tap in two does not', () => {
+  assert.deepEqual(judgeTap(ONE_BEAT), []);
+  /* ⛔ THE DEFECT, AS THE CANARY REPRODUCES IT AND AS THE PAGE SHIPPED: the
+     counters, the label and the goaltenders at the press, then the caption, the
+     mark's pop and the puck's jump a hold later. */
+  const two = judgeTap(landing([['pkn', 300], ['plfade', 300], ['gkin', 300],
+    ['cap', 388], ['pop', 388], ['pj', 388]]));
+  assert.ok(two.length, 'a landing drawn twice was judged clean');
+  assert.match(two[0], /arrived in 2 beats, 88ms apart/);
+});
+
+test('⭐ six counters ticking together are six elements, not six repeats', () => {
+  /* ⚠️ THE RULE IS COUNTED IN TIME, NOT IN NAMES. Every lens counter moves on a
+     jump across the game, so `pkn` legitimately starts six times at one instant
+     — and a rule that forbade a repeated NAME would fail the correct page. */
+  assert.deepEqual(judgeTap(ONE_BEAT), []);
+  const restart = judgeTap(landing([['plfade', 300], ['plfade', 417]]));
+  assert.ok(restart.some(m => /"plfade" ran 2 times/.test(m)),
+    'an entrance animation restarting 117ms later is what a reader calls two loops');
+});
+
+test('⛔ the bound comes from the gesture the probe itself performs', () => {
+  /* A press held for `hold` ms IS the gap between the two reports, so half of it
+     is a bound no single draw can reach and no double draw can duck. Passing a
+     different hold moves the bound with it rather than leaving a constant behind
+     that no longer describes the experiment. */
+  const spread = landing([['pop', 300], ['cap', 300 + HOLD / 2 + 10]]);
+  assert.ok(judgeTap(spread).length, 'a spread past half the hold was allowed');
+  assert.deepEqual(judgeTap(spread, (HOLD / 2 + 10) * 4), [],
+    'a longer hold did not widen the bound, so the number is not derived at all');
+});
+
+test('⛔ and a page that drew nothing is reported, not passed', () => {
+  /* THE SUBJECT MUST BE PRESENT: "no animation ran twice" is perfectly true of a
+     blank rink, which is the shape `lib.mjs` warns about in its own header. */
+  const blank = judgeTap({ ev: ['pointerdown=-1', 'input=110', 'change=110'], anim: [] });
+  assert.ok(blank.length);
+  assert.match(blank[0], /drew nothing/);
+  const dead = judgeTap({ ev: [], anim: [] });
+  assert.match(dead[0], /did not reach the control/);
+  /* AND THE PAIR MUST HAVE ARRIVED. A probe that only ever delivered `input` is
+     the blind spot this whole check exists to close, so it cannot be the thing
+     that quietly makes it pass. */
+  const half = judgeTap(landing([['pop', 300]], ['pointerdown=-1', 'input=110']));
+  assert.ok(half.some(m => /only one of them arrived/.test(m)));
+});

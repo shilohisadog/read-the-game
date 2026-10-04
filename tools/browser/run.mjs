@@ -26,6 +26,7 @@ export const CHECKS = {
   'door-row': () => import('./door-row.mjs'),
   'preview-marks': () => import('./preview-marks.mjs'),
   'summary-marks': () => import('./summary-marks.mjs'),
+  'one-tap': () => import('./one-tap.mjs'),
   'methods-deeplink': () => import('./methods-deeplink.mjs'),
 };
 

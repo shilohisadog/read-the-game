@@ -358,7 +358,14 @@ test('the goaltenders are redrawn only when they change', () => {
   // a goaltender flickering three hundred times a game. It also makes the
   // animation mean something: it fires when a goalie arrives or leaves, and at
   // no other moment.
-  assert.match(app, /if\(now===netmenAre\)return;/, 'unchanged frames touch no DOM');
+  /* ⭐ THE RULE IS NOW SHARED, so this reads the shared spelling. `drawNetmen`
+     held the only memo in the file until 2026-10-04, when a tap on the scrubber
+     showed the same entrance animation restarting on the label and the shot line
+     — the subtrees that had no memo. `put` is that memo generalised, and
+     `test/render-redraw.test.js` holds the rule itself; this asserts only that
+     the goaltenders go through it. */
+  assert.match(app, /put\(\$\('netmen'\),out\.join\(''\)\)/, 'the goaltenders go through `put`');
+  assert.match(app, /if\(WROTE\.get\(el\)===html\)return false;/, 'unchanged markup touches no DOM');
 
   // And the state still tracks the game: two, then one after the pull.
   const a = boot();

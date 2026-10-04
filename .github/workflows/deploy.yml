@@ -187,6 +187,21 @@ jobs:
       - name: every club on the summary card has a mark a reader can see
         run: node tools/browser/run.mjs summary-marks
 
+      # ⭐⭐⭐ ONE TAP PLAYS THE PLAY ONCE, and this is the first check in this repo
+      # that presses a control with a TRUSTED event. Kevin, 2026-10-04: *"when it
+      # plays continuously and event by event it plays fine, but when I tap the
+      # scrubber to a different time, the replay appears to go through two loops
+      # for each event."* A native range reports one tap TWICE — `input` at the
+      # press and `change` at the release, the same value, 108ms apart — and the
+      # page drew the frame once for each. ⛔⛔ NO OTHER CHECK HERE COULD SEE IT,
+      # for two reasons both worth keeping: every other probe drives the scrubber
+      # by dispatching `input` alone, which is HALF OF A GESTURE NO HAND CAN MAKE,
+      # and the damage is an ANIMATION RESTARTING — the document after two draws is
+      # byte-identical to the document after one, so no DOM assertion can reach it.
+      # This counts `animationstart` through the DevTools protocol.
+      - name: one tap on the scrubber plays the play once
+        run: node tools/browser/run.mjs one-tap
+
       # `tools/browser/methods-deeplink.mjs` — every work door on this site is
       # `/how-we-measure.html#m-<key>`, and on 2026-10-03 every one of them landed
       # on the page header. Nothing was wrong with either end: the hrefs are
