@@ -796,7 +796,7 @@ test('⭐⭐⭐ every row draws a mark per club, on the class that club belongs 
 
     /* THE CLUBS AND THEIR COUNTS, READ OFF THE ROW. A team row prints a chip per
        club; the stoppages row prints a total and says it is the whole game. */
-    const pairs = [...text.matchAll(/<span class="sc s([ah])">([A-Z]{2,3}) ([\d,]+)<\/span>/g)]
+    const pairs = [...text.matchAll(/<span class="stm s([ah])">([A-Z]{2,3}) ([\d,]+)<\/span>/g)]
       .map(m => ({ cls: 's' + m[1], ab: m[2], count: +m[3].replace(/,/g, '') }));
     const label = (/^<b>([^<0-9]+?)\s*[\d,]*<\/b>/.exec(text) || [])[1];
     assert.ok(label, `could not read the lens out of the row: ${text}`);
@@ -878,6 +878,92 @@ test('⭐⭐⭐ every row draws a mark per club, on the class that club belongs 
   assert.equal(gameRows, 1, `${gameRows} rows were placed against GAMES, not 1`);
 });
 
+test('⛔⛔⛔ every class the summary rows wear is styled by the summary rows ALONE', () => {
+  /* ⛔⛔⛔ KEVIN, FROM THE LIVE SITE, 2026-10-04: *"something is amiss with the font
+     size."* Every "WSH 61 · TBL 63" on the card rendered at scoreboard scale,
+     because the team chip was given `class="sc"` and `#rg .sc` is THE SCOREBOARD'S
+     SCORE — `font-size:1.8rem; font-weight:800`, the big 1 and 3 beside the club
+     abbreviations. The new rule set no size of its own, so it inherited one from a
+     surface it has nothing to do with.
+
+     ⭐⭐ A TWO-LETTER CLASS NAME IN A SHARED STYLESHEET IS A COLLISION WAITING TO
+     HAPPEN, and the tell was already on screen: `css-orphans.test.js` reported
+     `.sa` and `.snone` as unproduced and said NOTHING about `.sc` — which meant
+     `.sc` was already known to the page. I read that asymmetry as noise. A check
+     that answers about four of five names is telling you something about the
+     fifth.
+
+     ⭐ THE RULE IS POSITIVE AND IT IS ABOUT OWNERSHIP, not about a list of banned
+     names: a class worn inside `.srows` must be reachable only through `.srows`.
+     That is checkable, it generalises to any surface, and it is exactly what was
+     violated — the chip's appearance was decided by a rule that never mentions
+     the card it was drawn on. */
+  const a = page();
+  const s = a.$('scrub'); s.value = String(s.max);
+  s.oninput({ target: { value: s.value } });
+  const rows = (a.$('sumBody')._kids || []).find(n => n.className === 'srows');
+  assert.ok(rows, 'no rows drew at all');
+
+  /* THE CLASSES THE PAGE REALLY PUT ON, read off the rendered rows rather than
+     listed here — a list would go stale the day a row gains an element.
+     ⛔⛔ AND `innerHTML` IS HARVESTED TOO, which the first version of this check did
+     not do — so it ran green against the very collision it was written for. The
+     team chips are built as an HTML STRING, and the fake document does not parse
+     one into child nodes: walking `className` saw the rail, the band, the marks
+     and the ends, and never the one element that was wrong. A check that cannot
+     see the defect it was written for is the shape this repo pays for most. */
+  const worn = new Set();
+  const walk = n => {
+    for (const c of String(n.className || '').split(/\s+/)) if (c) worn.add(c);
+    for (const m of String(n.innerHTML || '').matchAll(/class="([^"]+)"/g))
+      for (const c of m[1].split(/\s+/)) if (c) worn.add(c);
+    for (const k of (n._kids || [])) walk(k);
+  };
+  for (const li of rows._kids) walk(li);
+  worn.delete('srows');
+  assert.ok(worn.size >= 6, `only ${worn.size} classes found on the rows: ${[...worn]}`);
+  /* ⛔ AND THE CHIP MUST BE AMONG THEM, or the harvest above has quietly stopped
+     reaching the element this whole test is about. */
+  assert.ok(worn.has('stm') || worn.has('sc'),
+    `the team chip's class is not among ${[...worn]} — the harvest missed it`);
+
+  /* ⛔ COMMENTS STRIPPED. The stylesheet records this defect and quotes `#rg .sc`
+     to do it, so a scan of raw text would find the collision inside the
+     explanation of its own removal — the monitor-armed-against-itself shape, now
+     six times in this repo. */
+  const css = PAGE_CSS.replace(/\/\*[\s\S]*?\*\//g, ' ');
+  const rules = [...css.matchAll(/([^{}]+)\{[^}]*\}/g)].map(m => m[1].trim());
+  assert.ok(rules.length > 200, `only ${rules.length} CSS rules parsed`);
+
+  const stolen = [];
+  for (const c of worn) {
+    for (const sel of rules) {
+      if (!new RegExp(`\\.${c}(?![\\w-])`).test(sel)) continue;
+      if (/\.srows\b/.test(sel)) continue;
+      /* A rule that only ever reaches this class THROUGH one of the row's own
+         classes is the row's rule by another name, so the containers count. */
+      if (/\.(strack|sband|spt|stm|sends)\b/.test(sel)) continue;
+      stolen.push(`.${c} is styled by "${sel}"`);
+    }
+  }
+  assert.deepEqual(stolen, [],
+    'a class the summary rows wear is dressed by a rule belonging to another '
+    + 'surface, so its appearance is decided somewhere that never names this card:'
+    + `\n  ${stolen.join('\n  ')}`);
+
+  /* ⭐ AND THE CHIP SETS ITS OWN SIZE. The ownership rule above is the invariant;
+     this is the belt its stylesheet comment promises — an element carrying a
+     figure a reader reads should not leave its scale to be decided by whatever
+     rule happens to reach it. */
+  const chip = rules.find(sel => /\.srows\s+\.stm\b/.test(sel) && !/::/.test(sel));
+  assert.ok(chip, 'the team chip has no rule of its own at all');
+  const body = new RegExp(`${chip.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\{([^}]*)\\}`)
+    .exec(css);
+  assert.match(body[1], /font-size:/,
+    'the team chip declares no font-size, so its scale is inherited from whatever '
+    + 'rule reaches it — which is how it rendered at scoreboard size');
+});
+
 test('⛔⛔⛔ a document with no per-team class draws GAME rows, never a club on a game scale', () => {
   /* ⛔⛔⛔ THIS SHIPPED, AND IT WAS LIVE FOR TWENTY MINUTES ON 2026-10-04. The first
      version read `by && perTeam ? perTeam[id] : own[id]` — so when the published
@@ -919,7 +1005,7 @@ test('⛔⛔⛔ a document with no per-team class draws GAME rows, never a club 
     const text = (kids[0] && kids[0].innerHTML) || '';
     /* ① NOT ONE ROW SPLITS. A club chip anywhere means a club count is on screen
        with no class of its own to be placed against. */
-    assert.ok(!/class="sc s[ah]"/.test(text),
+    assert.ok(!/class="stm s[ah]"/.test(text),
       `a row still names the clubs with no per-team class published: ${text}`);
     const track = kids.find(n => n.className === 'strack');
     if (!track) continue;
@@ -977,7 +1063,7 @@ test('⛔ the clubs\u2019 counts are the lens\u2019s own, and only ONE lens may 
   let checked = 0, residuals = [];
   for (const li of rows._kids) {
     const text = ((li._kids || [])[0] || {}).innerHTML || '';
-    const pairs = [...text.matchAll(/<span class="sc s[ah]">([A-Z]{2,3}) ([\d,]+)<\/span>/g)]
+    const pairs = [...text.matchAll(/<span class="stm s[ah]">([A-Z]{2,3}) ([\d,]+)<\/span>/g)]
       .map(m => ({ ab: m[1], count: +m[2].replace(/,/g, '') }));
     if (!pairs.length) continue;
     const label = (/^<b>([^<0-9]+?)\s*[\d,]*<\/b>/.exec(text) || [])[1];

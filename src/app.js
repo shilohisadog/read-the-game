@@ -1808,7 +1808,7 @@ function renderSum(){
      and mean different things is the oldest defect in this file. */
   if(split){
    say.innerHTML='<b>'+ESC(chipLabel(id))+'</b> — '
-    +sides.map(([mk,tid,ab])=>'<span class="sc '+mk+'">'+ESC(ab)+' '+N(by[tid])+'</span>')
+    +sides.map(([mk,tid,ab])=>'<span class="stm '+mk+'">'+ESC(ab)+' '+N(by[tid])+'</span>')
       .join(' · ');
   }else{
    /* ⚠️ TWO REASONS A ROW IS NOT SPLIT, AND THEY ARE DIFFERENT CLAIMS. The whistle

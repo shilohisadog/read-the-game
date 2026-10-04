@@ -1808,12 +1808,25 @@
 #rg .spt.sa{background:var(--away);top:30%}
 #rg .spt.sh{background:var(--home);top:70%}
 #rg .spt.snone{background:#2b3b46}
-#rg .srows .sc{font-variant-numeric:tabular-nums;font-weight:700;color:var(--ink);
- white-space:nowrap}
-#rg .srows .sc.sa::before,#rg .srows .sc.sh::before{content:'';display:inline-block;
+/* ⛔⛔⛔ `.stm`, AND IT WAS `.sc` FOR ONE DEPLOY. `#rg .sc` is THE SCOREBOARD'S
+   SCORE — `font-size:1.8rem;font-weight:800`, the big 1 and 3 beside the club
+   abbreviations — and this rule set no size of its own, so every "WSH 61 · TBL
+   63" on the summary card rendered at scoreboard scale. Kevin, from the live
+   site: *"something is amiss with the font size."*
+   ⭐ A TWO-LETTER CLASS NAME IN A SHARED STYLESHEET IS A COLLISION WAITING TO
+   HAPPEN, and the tell was already on screen: `css-orphans.test.js` reported
+   `.sa` and `.snone` as unproduced and said nothing about `.sh` or `.sc` — which
+   meant those two were already known to the page. I read that as noise.
+   ⚠️ AND IT DECLARES ITS OWN SIZE, so the next collision cannot be silent: a rule
+   that inherits is a rule whose appearance is decided somewhere it does not
+   name. `test/overlay-archive-door.test.js` holds `.srows` classes to rules that
+   mention `.srows`. */
+#rg .srows .stm{font-size:.84rem;font-weight:700;color:var(--ink);
+ font-variant-numeric:tabular-nums;white-space:nowrap}
+#rg .srows .stm.sa::before,#rg .srows .stm.sh::before{content:'';display:inline-block;
  width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:baseline}
-#rg .srows .sc.sa::before{background:var(--away)}
-#rg .srows .sc.sh::before{background:var(--home)}
+#rg .srows .stm.sa::before{background:var(--away)}
+#rg .srows .stm.sh::before{background:var(--home)}
 /* THE ENDS, UNDER THE RAIL AND NO WIDER THAN IT — the same shape and the same
    reason as the preview card's `.pvends`: a position on a scale whose ends
    nobody states is a picture a reader can only guess at. */
