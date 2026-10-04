@@ -28,6 +28,12 @@ import { printed } from '../src/lib/printed.js';
 import { sitsIn } from '../src/lib/distribution.js';
 import { leagueFigures } from '../src/lib/derivation.js';
 import { boot, rich, app, PAGE_CSS } from './helpers/page.js';
+import { corsi } from '../src/lib/layers/corsi.js';
+import { danger } from '../src/lib/layers/danger.js';
+import { blocked } from '../src/lib/layers/blocked.js';
+import { goaltending } from '../src/lib/layers/goaltending.js';
+import { whistle } from '../src/lib/layers/whistle.js';
+import { zonestart } from '../src/lib/layers/zonestart.js';
 
 const RULES = JSON.parse(readFileSync(new URL('../data/layer-rules.json', import.meta.url), 'utf8'));
 /**
@@ -740,89 +746,186 @@ test('the summary door is reachable from the first frame, and tells nobody anyth
  * outside and to the left. A picture free to disagree with the sentence beside it
  * is the defect that stopped a deploy on 0c8dc6f, one surface over.
  */
-test('every judged row draws a scale that agrees with its own sentence', () => {
+test('⭐⭐⭐ every row draws a mark per club, on the class that club belongs to', () => {
+  /* ⛔⛔⛔ KEVIN, 2026-10-04: *"now we collapse the metrics into totals for the
+     game and that doesn't really help understand 'what this game was'… maybe
+     compare each team's metrics."*
+
+     ⭐ AND THE REFERENCE CLASS HAD TO MOVE WITH THE MARK. `perGame` is a
+     distribution of GAME totals — "by both teams in one game" in its own words —
+     so a club's own 63 attempts placed on it would be two quantities wearing one
+     label, this file's oldest and most expensive defect. `perTeamGame` is the
+     same six lenses counted per TEAM-GAME: twice the n, half the magnitude.
+
+     ⛔ THE STOPPAGES ROW IS THE EXCEPTION AND IT IS A FACT, NOT A GAP. A stoppage
+     names a rule and never a team, so it has no per-team form, no entry in
+     `perTeamGame`, and stays a GAME row on the game class. Two scales that look
+     alike and mean different populations is exactly what this panel must not do,
+     so the two are asserted apart below. */
   const a = page();
   const s = a.$('scrub'); s.value = String(s.max);
   s.oninput({ target: { value: s.value } });
   const rows = (a.$('sumBody')._kids || []).find(n => n.className === 'srows');
   assert.ok(rows && (rows._kids || []).length, 'no rows drew at all');
 
-  /* THE LABEL->LENS MAP IS READ OFF THE PAGE'S OWN CHIPS, not written here: the
-     row is titled with `chipLabel`, so the chips are what that title means. A
-     second table of the same six names is the duplication `LENS` was created to
-     end. */
   const chips = a.$$('#rg .pk').filter(c => c.dataset && c.dataset.l);
-  /* MATCHED ON THE CHIP'S OWN TEXT, which is what `chipLabel` returns and what
-     the row is therefore titled with. Read through `textContent` rather than a
-     `.pkl` lookup because the fake document does not resolve a descendant
-     selector, and a test that silently found nothing would map every row to
-     undefined and then assert about an empty set. */
+  assert.ok(chips.length >= 2, 'no lens chips were found, so the mapping is empty');
   const lensFor = label => {
     const c = chips.find(x => (x.textContent || '').trim().startsWith(label));
     return c && c.dataset.l;
   };
-  assert.ok(chips.length >= 2, 'no lens chips were found, so the mapping is empty');
-  const season = MEASURES.perGame[String(rich.game.id).slice(0, 4)]
-    || MEASURES.perGame[Object.keys(MEASURES.perGame).sort().pop()];
-  /* The quantile the page uses, restated from the published histogram so the
-     expectation does not come from the page's own copy of it. */
+  const yr = String(rich.game.id).slice(0, 4);
+  const byGame = MEASURES.perGame[yr] || MEASURES.perGame[Object.keys(MEASURES.perGame).sort().pop()];
+  const byTeam = MEASURES.perTeamGame[yr]
+    || MEASURES.perTeamGame[Object.keys(MEASURES.perTeamGame).sort().pop()];
+  assert.ok(byTeam, 'measures.json publishes no per-team-game class at all');
   const quart = (dd, q) => { const need = dd.n * q; let seen = 0;
     for (let k = 0; k < dd.counts.length; k++) { seen += dd.counts[k];
       if (seen >= need) return dd.start + k; }
     return dd.max; };
 
-  let drew = 0;
+  let teamRows = 0, gameRows = 0;
   for (const li of rows._kids) {
     const kids = li._kids || [];
     const track = kids.find(n => n.className === 'strack');
     const text = (kids[0] && kids[0].innerHTML) || '';
-    if (!track) continue;            // a season with no range has no scale to draw
-    drew++;
+    if (!track) continue;
     const band = (track._kids || []).find(n => n.className === 'sband');
-    const dot = (track._kids || []).find(n => (n.className || '').startsWith('spt'));
-    assert.ok(band && dot, 'a scale drew without both a middle half and a position');
+    const marks = (track._kids || []).filter(n => (n.className || '').startsWith('spt'));
+    assert.ok(band && marks.length, 'a scale drew without both a middle half and a position');
 
-    /* ⛔ POSITIONS THROUGH THE CSSOM. Read back off `style`, because this page's
-       CSP refuses an inline `style` attribute outright — the verdict dot sat at
-       0% on every game in the archive the one time this was got wrong. */
-    const pc = v => parseFloat(v);
-    assert.ok(!Number.isNaN(pc(dot.style.left)), `the dot was never positioned: ${dot.style.left}`);
-    assert.ok(!Number.isNaN(pc(band.style.left)) && !Number.isNaN(pc(band.style.width)),
-      'the middle half was never positioned');
-
-    const d = pc(dot.style.left), lo = pc(band.style.left), hi = lo + pc(band.style.width);
-    const saysInside = /inside the middle half/.test(text);
-    const out = (dot.className || '').includes('out');
-    assert.equal(saysInside, !out,
-      `the row says "${text.replace(/<[^>]+>/g, '')}" and the dot is coloured the other way`);
-
-    /* ⛔⛔ THE POSITION IS COMPUTED INDEPENDENTLY, FROM THE PUBLISHED DOCUMENT.
-       This first asserted only that the dot sat on the correct SIDE of its own
-       band — and a mutant pinning every dot to the band's left edge passed it,
-       because the edge satisfies "inside" and "not to the right of" at once. A
-       check that compares a drawing against its neighbour in the same drawing has
-       no path to the expected value; see name-the-path-to-the-expectation. The
-       expectation here is the archive's own min/max and the count printed in the
-       row, which the page did not supply to this test. */
-    const m = /^(.+?)\s+([\d,]+)<\/b>/.exec(text.replace(/^<b>/, '<b>').replace('<b>', ''));
-    assert.ok(m, `could not read the count out of the row: ${text}`);
-    const label = m[1].trim(), count = +m[2].replace(/,/g, '');
-    const lens = lensFor(label);
+    /* THE CLUBS AND THEIR COUNTS, READ OFF THE ROW. A team row prints a chip per
+       club; the stoppages row prints a total and says it is the whole game. */
+    const pairs = [...text.matchAll(/<span class="sc s([ah])">([A-Z]{2,3}) ([\d,]+)<\/span>/g)]
+      .map(m => ({ cls: 's' + m[1], ab: m[2], count: +m[3].replace(/,/g, '') }));
+    const label = (/^<b>([^<0-9]+?)\s*[\d,]*<\/b>/.exec(text) || [])[1];
+    assert.ok(label, `could not read the lens out of the row: ${text}`);
+    const lens = lensFor(label.trim());
     assert.ok(lens, `the row is labelled "${label}", which is no chip on this page`);
-    const dist = season[lens];
-    assert.ok(dist && dist.max > dist.min, `no published range for ${lens}`);
-    const want = Math.max(0, Math.min(100, ((count - dist.min) / (dist.max - dist.min)) * 100));
-    assert.ok(Math.abs(d - want) < 0.15,
-      `${label} ${count} should sit at ${want.toFixed(1)}% of ${dist.min}–${dist.max} `
-      + `and was drawn at ${d}%`);
 
-    /* AND THE BAND IS THE MIDDLE HALF, on the same independently computed scale. */
+    const perTeam = pairs.length > 0;
+    const dist = perTeam ? byTeam[lens] : byGame[lens];
+    assert.ok(dist && dist.max > dist.min, `no published range for ${lens}`);
+
+    if (perTeam) {
+      teamRows++;
+      /* ⛔ A MARK PER CLUB, AND ONE EACH. Two clubs, two marks — a row that drew
+         one would be placing a club on a scale and leaving its opponent off the
+         picture the row exists to make. */
+      assert.equal(marks.length, pairs.length,
+        `${lens} prints ${pairs.length} club counts and draws ${marks.length} marks`);
+      assert.equal(pairs.length, 2, `${lens} names ${pairs.length} clubs`);
+      assert.ok(byTeam[lens], `${lens} has clubs on the row and no per-team-game class`);
+      /* ⭐ COLOUR NAMES WHOSE, so each mark carries its own club's class and the
+         two differ. It used to encode inside-versus-outside, which with two marks
+         on one rail leaves a reader unable to tell them apart. */
+      assert.deepEqual(marks.map(m => m.className.split(/\s+/).pop()).sort(),
+        pairs.map(p => p.cls).sort(),
+        `${lens}'s marks are not one per club`);
+    } else {
+      gameRows++;
+      assert.equal(marks.length, 1, 'the game-level row drew more than one mark');
+      assert.match(marks[0].className, /snone/,
+        'the row that belongs to no club wears a club colour');
+      assert.match(text.replace(/<[^>]+>/g, ''), /never a team/,
+        'the row placed against GAMES does not say it is the whole game, so its '
+        + 'rail reads as the same population as the five above it');
+      assert.ok(!byTeam[lens], `${lens} says it has no per-team form and ${lens} is in perTeamGame`);
+    }
+
+    /* ⛔⛔ EVERY POSITION COMPUTED INDEPENDENTLY, FROM THE PUBLISHED DOCUMENT.
+       Comparing a drawing against its neighbour in the same drawing has no path
+       to the expected value — a mutant pinning every mark to the band's left edge
+       once passed that. The expectation is the archive's own min/max and the
+       count printed in the row. */
+    const pc = v => parseFloat(v);
+    const want = c => Math.max(0, Math.min(100, ((c - dist.min) / (dist.max - dist.min)) * 100));
+    const counts = perTeam ? pairs.map(p => p.count)
+      : [+((/<b>[^<]*?([\d,]+)<\/b>/.exec(text) || [])[1] || '').replace(/,/g, '')];
+    for (let k = 0; k < marks.length; k++) {
+      const at = pc(marks[k].style.left);
+      assert.ok(!Number.isNaN(at), `a mark was never positioned: ${marks[k].style.left}`);
+      const near = counts.map(want).some(w => Math.abs(at - w) < 0.15);
+      assert.ok(near, `${lens}: a mark sits at ${at}% and the row's counts `
+        + `(${counts.join(', ')}) belong at ${counts.map(c => want(c).toFixed(1)).join('%, ')}% `
+        + `on a ${dist.unit} scale of ${dist.min}–${dist.max}`);
+      assert.ok(at >= 0 && at <= 100, `the scale left its own rail (${at}%)`);
+    }
+
+    /* AND THE BAND IS THE MIDDLE HALF OF THE SAME CLASS. */
+    const lo = pc(band.style.left);
     const wantLo = ((quart(dist, 0.25) - dist.min) / (dist.max - dist.min)) * 100;
     assert.ok(Math.abs(lo - wantLo) < 0.15,
-      `the middle half starts at ${lo}% and p25 is at ${wantLo.toFixed(1)}%`);
-    assert.ok(d >= 0 && d <= 100 && hi <= 100.1, `the scale left its own rail (${d}%, ${hi}%)`);
+      `${lens}: the middle half starts at ${lo}% and p25 of its ${dist.unit} class `
+      + `is at ${wantLo.toFixed(1)}%`);
+
+    /* ⭐⭐ AND THE ENDS ARE NAMED, which is the repair the preview card's axis
+       already carries: the row no longer ends on a sentence saying where the mark
+       sat, so a scale whose ends nobody states is a picture a reader can only
+       guess at. They come from the SAME class the mark was placed on — printing
+       the game class's ends under a team row would be the population swap this
+       whole test exists to forbid, drawn in small grey type. */
+    const ends = kids.find(n => n.className === 'sends');
+    assert.ok(ends, `${lens} drew a scale with no ends`);
+    assert.deepEqual((ends._kids || []).map(n => n.textContent),
+      [dist.min.toLocaleString(), dist.max.toLocaleString()],
+      `${lens}'s axis does not name the ends of the class its marks were placed on`);
   }
-  assert.ok(drew >= 1, 'not one row drew a scale, so this test asserted nothing');
+  /* ⛔ BOTH KINDS MUST HAVE DRAWN. All-team rows would mean the stoppages row had
+     silently acquired a per-club split it cannot have; all-game rows would mean
+     the whole change did nothing. */
+  assert.ok(teamRows >= 4, `${teamRows} rows drew a mark per club`);
+  assert.equal(gameRows, 1, `${gameRows} rows were placed against GAMES, not 1`);
+});
+
+test('⛔ the clubs\u2019 counts are the lens\u2019s own, and only ONE lens may fail to add up', () => {
+  /* ⭐⭐ THE SECOND PATH. Above, the row is checked against the published
+     distribution; here it is checked against the REDUCERS, which is where the
+     numbers came from — so "the card prints what the layers counted" is asserted
+     without either side being derived from the other.
+
+     ⭐⭐⭐ AND THE SUM IS MEASURED, NOT ASSUMED. I told Kevin that two of the five
+     would fail to add up to their game total — blocks credited to neither club,
+     and draws the feed placed nowhere. Over all 4,226 games in `measures.json`
+     the second never happens: Control, the slot, Goaltending and Zone starts each
+     sum EXACTLY, in every season, and only Blocked carries a residual (7.3% of
+     2026-27, 7.5/8.8/8.8% of the three before it) — the teammate blocks the layer
+     credits to nobody and says so. So the rule is exact for four and bounded for
+     one, which is a far stronger check than "they need not add up". */
+  const a = page();
+  const s = a.$('scrub'); s.value = String(s.max);
+  s.oninput({ target: { value: s.value } });
+  const rows = (a.$('sumBody')._kids || []).find(n => n.className === 'srows');
+  const CTX = { roster: rich.roster, homeId: rich.teams.home.id, awayId: rich.teams.away.id,
+                homeAb: rich.teams.home.ab, awayAb: rich.teams.away.ab, evenOnly: false };
+  const LENS = { corsi, slot: danger, blocked, goaltending, whistle, zonestart };
+  const chips = a.$$('#rg .pk').filter(c => c.dataset && c.dataset.l);
+  const lensFor = label => {
+    const c = chips.find(x => (x.textContent || '').trim().startsWith(label));
+    return c && c.dataset.l;
+  };
+  let checked = 0, residuals = [];
+  for (const li of rows._kids) {
+    const text = ((li._kids || [])[0] || {}).innerHTML || '';
+    const pairs = [...text.matchAll(/<span class="sc s[ah]">([A-Z]{2,3}) ([\d,]+)<\/span>/g)]
+      .map(m => ({ ab: m[1], count: +m[2].replace(/,/g, '') }));
+    if (!pairs.length) continue;
+    const label = (/^<b>([^<0-9]+?)\s*[\d,]*<\/b>/.exec(text) || [])[1];
+    const id = lensFor((label || '').trim());
+    const total = LENS[id].reduce(rich.events, CTX).counted.length;
+    const sum = pairs.reduce((n, p) => n + p.count, 0);
+    assert.ok(sum > 0, `${id} printed two zeroes`);
+    assert.ok(sum <= total, `${id}: the clubs total ${sum} out of a lens count of ${total}`);
+    if (sum !== total) residuals.push(id);
+    checked++;
+  }
+  assert.ok(checked >= 4, `only ${checked} club rows were reconciled`);
+  /* ⛔ AND THE RESIDUAL BELONGS TO EXACTLY ONE LENS. A new one appearing means a
+     layer started dropping events on the floor; this one disappearing means
+     teammate blocks are being credited to a club, which is the attribution every
+     broadcast gets right and this project once got wrong. */
+  assert.deepEqual(residuals, ['blocked'],
+    `the lenses whose clubs do not sum to their own count are ${residuals.join(', ')}`);
 });
 
 /**

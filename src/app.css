@@ -1782,14 +1782,43 @@
 /* ⭐ THE PER-ROW SCALE. Same vocabulary as the verdict dot above it on purpose:
    a rail, a band, a dot. The BAND is the middle half the sentence names, so the
    drawing and the prose are one claim; the rail runs quietest to busiest. */
-#rg .strack{display:block;position:relative;height:7px;border-radius:4px;
- background:#eef3f7;margin:5px 0 0;max-width:34ch}
+#rg .strack{display:block;position:relative;height:11px;border-radius:5px;
+ background:#eef3f7;margin:6px 0 0;max-width:34ch}
 #rg .sband{position:absolute;top:0;bottom:0;border-radius:4px;background:#ccdbe7}
 #rg .spt{position:absolute;top:50%;width:9px;height:9px;border-radius:50%;
  transform:translate(-50%,-50%);background:#1f7a4d;border:2px solid #fff}
-/* OUTSIDE THE MIDDLE HALF IS THE ONLY THING COLOUR IS SPENT ON, and it is the
-   same red the verdict dot spends it on, for the same meaning. */
-#rg .spt.out{background:#b3341f}
+/* ⭐⭐⭐ COLOUR NAMES WHOSE MARK IT IS, SINCE 2026-10-04. It used to say whether the
+   count fell outside the middle half — green inside, red outside — and that was
+   right while there was ONE mark on the rail. With a mark per club, a reader who
+   cannot tell which is which has no row at all, and the band already draws
+   inside-versus-outside at full width: the position IS the answer, so spending
+   colour on it twice bought nothing.
+   ⭐ AND `sc` IS THE SAME TWO COLOURS THE ICE AND THE SCOREBOARD ALREADY USE, so
+   nothing new has to be learned. `.snone` is the neutral ink the preview card's
+   league tick wears — it marks the one row that belongs to NOBODY, which is the
+   stoppages row, and "no colour" saying "no club" is the lens's own lesson. */
+/* ⛔⛔ THE TWO CLUB MARKS SIT ON DIFFERENT LINES, AND THAT IS NOT DECORATION.
+   Two clubs tie on a lens often — the same number of blocks, the same number of
+   draws — and two dots at one position are ONE dot: the row would show a reader
+   a single mark and let them believe the clubs differed. The horizontal position
+   is the datum and it is untouched; only the line they sit on moves, so nothing
+   about the measurement is traded for the legibility.
+   ⭐ THE SINGLE MARK STAYS CENTRED, because the row that belongs to nobody has
+   nothing to be distinguished from. */
+#rg .spt.sa{background:var(--away);top:30%}
+#rg .spt.sh{background:var(--home);top:70%}
+#rg .spt.snone{background:#2b3b46}
+#rg .srows .sc{font-variant-numeric:tabular-nums;font-weight:700;color:var(--ink);
+ white-space:nowrap}
+#rg .srows .sc.sa::before,#rg .srows .sc.sh::before{content:'';display:inline-block;
+ width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:baseline}
+#rg .srows .sc.sa::before{background:var(--away)}
+#rg .srows .sc.sh::before{background:var(--home)}
+/* THE ENDS, UNDER THE RAIL AND NO WIDER THAN IT — the same shape and the same
+   reason as the preview card's `.pvends`: a position on a scale whose ends
+   nobody states is a picture a reader can only guess at. */
+#rg .sends{display:flex;justify-content:space-between;max-width:34ch;
+ font-size:.7rem;color:var(--muted);font-variant-numeric:tabular-nums;margin:2px 0 0}
 #rg .srecap{display:block;margin:16px 0 0;min-height:44px;padding:0 16px;
  border:1px solid var(--edge);border-radius:999px;background:#fff;
  font:inherit;font-size:.9rem;color:var(--ink);cursor:pointer}

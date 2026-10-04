@@ -217,6 +217,33 @@ export function measureGame(g) {
   }
   goalies.sort((x, y) => x.pid - y.pid);
 
+  /* ⭐⭐ THE TWO LENSES THAT HAD NO PER-TEAM COUNT, added 2026-10-04 for the
+     per-team-game reference class. Kevin, on the summary card: *"now we collapse
+     the metrics into totals for the game and that doesn't really help understand
+     'what this game was'."*
+
+     THREE OF THE SIX WERE ALREADY HERE under their own names — `attempts` is the
+     Control lens per team, `slot` is the Danger lens per team, `blocks` is the
+     Blocked lens per team — and they are NOT restated under a lens key. One
+     quantity, one field: `archive.js::perTeamGame` holds the lens-id → field map
+     in the one place that needs it, because a `lensBy` block here would publish
+     every one of those numbers twice under two names, which is the second
+     vocabulary this file already warns about twice.
+
+     ⛔ THE SIXTH IS THE WHISTLE LENS AND IT HAS NO PER-TEAM FORM. A stoppage names
+     a rule and never a team — the layer's own caption says so — so there is no
+     field for it here and no entry for it there. A zero would be a count; an
+     absence is the fact.
+
+     ⚠️ `faced` IS THE GOALTENDER'S OWN SIDE, not the side that shot. A shot the
+     home goaltender faced was taken by the visitors, and the Goaltending lens is
+     about tending: "how many this team's goaltender had to handle". Summed off
+     `goalies`, whose sides are already resolved against the roster, so it cannot
+     disagree with the per-goalie rows beside it. */
+  const faced = { h: 0, a: 0 };
+  for (const k of goalies) faced[k.side] += k.faced;
+  const faceoffs = { h: draws.t[ctx.homeId], a: draws.t[ctx.awayId] };
+
   return {
     id: g.game.id,
     date: g.game.date || null,
@@ -226,7 +253,7 @@ export function measureGame(g) {
     // Blocks CREDITED to each side — the team that did the blocking, which is
     // the defending team and therefore NOT the event's owner.
     blocks: { h: blk.t[ctx.homeId], a: blk.t[ctx.awayId] },
-    slot, located, goals, goalies, reach,
+    slot, located, goals, goalies, reach, faced, faceoffs,
     /* ⭐ THE FIVE LENS COUNTS, AS THE CHIPS COUNT THEM. The selector under the
        rink puts a live count on each lens, and it is `LEDGER[id](sl)
        .counted.length` for every one of them — so a reference class built on

@@ -174,6 +174,19 @@ jobs:
       - name: a preview mark sits at its number
         run: node tools/browser/run.mjs preview-marks
 
+      # ⭐ THE SAME PICTURE, ON THE OTHER SURFACE THAT DRAWS IT. Kevin, 2026-10-04:
+      # the summary card "collapse[d] the metrics into totals for the game and that
+      # doesn't really help understand 'what this game was'", so each row now draws
+      # a mark per club on one rail. ⛔ AND THE DEFECT THAT MARKUP CANNOT SHOW IS AN
+      # OVERLAP: two clubs tie on a lens constantly, and two dots at one position
+      # are ONE dot — every structural fact about that row would be true while the
+      # reader saw a single mark and concluded the clubs differed. The stylesheet
+      # puts the two on different LINES, which is a pixel claim and is checked as
+      # one. `test/overlay-archive-door.test.js` owns the arithmetic; this owns
+      # whether anybody can see it.
+      - name: every club on the summary card has a mark a reader can see
+        run: node tools/browser/run.mjs summary-marks
+
       # `tools/browser/methods-deeplink.mjs` — every work door on this site is
       # `/how-we-measure.html#m-<key>`, and on 2026-10-03 every one of them landed
       # on the page header. Nothing was wrong with either end: the hrefs are

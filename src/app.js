@@ -1689,6 +1689,17 @@ function renderSum(){
  const seas=String((G.game&&G.game.id)||'').slice(0,4);
  const all=(RATES&&RATES.perGame)||{};
  const own=all[seas]||null;
+ /* ⭐⭐⭐ THE PER-TEAM REFERENCE CLASS — Kevin, 2026-10-04: *"now we collapse the
+    metrics into totals for the game and that doesn't really help understand
+    'what this game was'… maybe compare each team's metrics."* He is right, and
+    the card could not do it until today: every row placed a GAME total against
+    `perGame`, which is explicitly "by both teams in one game". A team's own 63
+    attempts judged against two-team totals would be two quantities wearing one
+    label. `perTeamGame` is the class built from the same records over the same
+    seasons, counting TEAM-GAMES — twice the n, half the magnitude.
+    ⛔ IT HAS NO `whistle` ENTRY AND THAT IS THE FACT. A stoppage names a rule and
+    never a team, so that row stays a game-level row and says so. */
+ const perTeam=((RATES&&RATES.perTeamGame)||{})[seas]||null;
  const N=v=>v.toLocaleString();
  /* ⭐⭐ THE POPULATION IS NAMED ONCE, IN THE SUBHEAD, AND NEVER AGAIN. Drawn
     first, every row ended "… of the 1,398 games that season" and six rows said it
@@ -1728,56 +1739,100 @@ function renderSum(){
     linger in the summary — the rule `LENSCOUNTS` was rewritten to follow before
     it was deleted, and this is now the only reader of `LENS` that draws rows. */
  let placed=0;
+ /* ⭐⭐ THIS LENS, PER CLUB, AND IT IS THE QUANTITY `perTeamGame` IS BUILT FROM.
+    The mapping is `measure.mjs`'s, restated nowhere: Control and Blocked and Zone
+    starts each carry a `t` keyed by club; the slot is split by SHOOTER, the way
+    the ledger beside the rink already splits it; Goaltending is a club's own
+    goaltenders' shots FACED, summed off the per-goalie rows so it cannot
+    disagree with them. A mark placed on a scale built from a different quantity
+    is the defect this whole panel exists to avoid.
+    ⛔ AND `whistle` ANSWERS NULL RATHER THAN ZERO. A stoppage names a rule and
+    never a club — the layer says so to the reader in those words — so there is
+    nothing to split and the row below draws the game instead. */
+ const byClub=(id,L)=>{
+  if(id==='whistle')return null;
+  if(id==='slot')return byShooter(L.counted,G.events);
+  if(id==='goaltending'){const t={[AID]:0,[HID]:0};
+   for(const gid of Object.keys(L.g||{})){const p=R[gid];
+    if(p&&t[p.tid]!=null)t[p.tid]+=L.g[gid].f;}
+   return t;}
+  return L.t||null;};
  Object.keys(LENS).forEach(id=>{
-  const n=LENS[id].reduce(G.events,{...CTX,evenOnly:false}).counted.length;
-  const st=own?sitsIn(own[id],n):null;
-  if(st)placed++;
+  const L=LENS[id].reduce(G.events,{...CTX,evenOnly:false});
+  const n=L.counted.length;
+  const by=byClub(id,L);
+  /* THE CLASS FOLLOWS THE SPLIT. A club's count is placed against team-games; a
+     count that belongs to no club is placed against games. Two populations, two
+     documents, and the row says which one it is reading. */
+  const d=by&&perTeam?perTeam[id]:(own?own[id]:null);
+  /* ⭐ THE CLASS NAMES ARE WHOLE LITERALS, NOT `'s'+cls`. `test/css-orphans.test.js`
+     counts every word inside every shipped string to decide whether a CSS rule
+     still dresses anything, and a name spliced from a prefix and a letter is
+     invisible to it — `.sa` and `.snone` were reported as dead rules the moment
+     they were written. Its header offers a ledger for exactly that case; a whole
+     literal is better than a ledger entry, because a name the scanner can see is
+     also a name the next person can grep. */
+  const sides=by?[['sa',AID,AAB],['sh',HID,HAB]]:[['snone',null,null]];
+  const marks=sides.map(([cls,tid,ab])=>({cls,ab,
+   at:sitsIn(d,by?by[tid]:n)})).filter(m=>m.at);
+  if(marks.length)placed++;
   const li=document.createElement('li');
-  /* THE COUNT IS ALWAYS SAID AND THE PLACEMENT ONLY WHEN IT CAN BE. "What this
-     game was" is answerable from the game alone; "was that a lot" is not. */
   const say=document.createElement('span');
-  say.innerHTML='<b>'+ESC(chipLabel(id))+' '+N(n)+'</b>'+(st
-   ?' — '+(st.inside
-     ?'inside the middle half.'
-     :st.beat===st.of
-       ?(st.high?'higher':'lower')+' than all of them.'
-       :(st.high?'more than ':'fewer than ')+N(st.beat)+' of them.')
-   :'');
+  /* ⭐⭐⭐ EACH CLUB'S OWN COUNT, NAMED, BESIDE THE OTHER'S. That is the whole of
+     Kevin's ask: "Attempts 124" is a fact about the evening and tells a reader
+     nothing about what the two teams did to each other. The placement is the
+     PICTURE now rather than a clause — six rows each ending "inside the middle
+     half" was one fact printed six times, and two clubs would have printed it
+     twelve. The counts are here and the position is below them.
+     ⚠️ THE STOPPAGES ROW KEEPS ITS TOTAL AND SAYS WHY, because its rail is a
+     different population from the five above it and two scales that look alike
+     and mean different things is the oldest defect in this file. */
+  if(by){
+   say.innerHTML='<b>'+ESC(chipLabel(id))+'</b> — '
+    +sides.map(([cls,tid,ab])=>'<span class="sc '+cls+'">'+ESC(ab)+' '+N(by[tid])+'</span>')
+      .join(' · ');
+  }else{
+   say.innerHTML='<b>'+ESC(chipLabel(id))+' '+N(n)+'</b> \u2014 the whole game: a '
+    +'stoppage names a rule and never a team.';
+  }
   li.appendChild(say);
-  /* ⭐⭐⭐ AND EACH ROW DRAWS ITS OWN SCALE. Kevin, 2026-10-01: *"the what this
-     game was card needs said line graphs beside their specific metric, add some
-     visual appeal to the card, cause right now it's just a blob of text that says
-     the same thing."* He is right about the blob: six rows reading "inside the
-     middle half" is one fact printed six times, and the thing a reader actually
-     wants — HOW FAR inside, and where the other five sit relative to each other
-     — is exactly what prose at this density cannot carry and a position can.
-
-     ⭐ IT IS THE SAME PICTURE THE LEAD SENTENCE DESCRIBES, so nothing new is
-     claimed: the band IS the middle half (p25–p75, a DEFINITION, not a threshold
-     anyone chose) and the rail runs from the quietest night that season to the
-     busiest. A reader who has read the lead can check the drawing against it.
-
-     ⛔ POSITIONS THROUGH THE CSSOM, NEVER AS A `style` ATTRIBUTE — the rule the
-     verdict dot learned the hard way, and the reason that dot sat at 0% on every
-     game in the archive for a while: this page's own CSP refuses inline style, so
-     the attribute silently does nothing. The elements are built first and
-     positioned after, which is also why this row is assembled with the DOM API
-     rather than one `innerHTML` string.
-
-     ⚠️ AND ONLY WHEN THERE IS A RANGE TO DRAW. A season whose quietest and
-     busiest night hold the same count has no scale, and a rail with one position
-     on it would be a picture of nothing. */
-  if(st&&st.max>st.min){
+  /* ⭐⭐ ONE RAIL, EVERY MARK ON IT — the picture Kevin settled on the preview
+     card over four readings, reused here on purpose so a reader learns one chart
+     for both surfaces. The band IS the middle half (p25–p75, a DEFINITION rather
+     than a threshold anyone chose) and the rail runs from the quietest to the
+     busiest in the reference class.
+     ⭐ AND THE BAND IS SOUND HERE WHERE IT WAS NOT THERE. It came off the preview
+     card because a club's SEASON figure was being drawn against a band of FULL
+     seasons — the mark was not in that population, so nearly every club sat
+     outside it in October. Here the mark is one team-game and the band is made of
+     team-games: same population, so "outside the middle half" means what it says.
+     ⛔ POSITIONS THROUGH THE CSSOM, NEVER AS A `style` ATTRIBUTE — this page's own
+     CSP refuses inline style, and that is why the verdict dot once sat at 0% on
+     every game in the archive. */
+  const ref0=marks[0]&&marks[0].at;
+  if(ref0&&ref0.max>ref0.min){
    const tr=document.createElement('span');tr.className='strack';
    const band=document.createElement('span');band.className='sband';
-   const pt=document.createElement('span');pt.className='spt'+(st.inside?'':' out');
-   tr.appendChild(band);tr.appendChild(pt);li.appendChild(tr);
-   const span=st.max-st.min;
-   const pc=v=>Math.max(0,Math.min(100,((v-st.min)/span)*100));
-   const lo=pc(st.lo),hi=pc(st.hi);
-   band.style.left=lo.toFixed(1)+'%';
-   band.style.width=Math.max(0,hi-lo).toFixed(1)+'%';
-   pt.style.left=pc(st.count).toFixed(1)+'%';}
+   tr.appendChild(band);
+   const span=ref0.max-ref0.min;
+   const pc=v=>Math.max(0,Math.min(100,((v-ref0.min)/span)*100));
+   band.style.left=pc(ref0.lo).toFixed(1)+'%';
+   band.style.width=Math.max(0,pc(ref0.hi)-pc(ref0.lo)).toFixed(1)+'%';
+   for(const m of marks){
+    const pt=document.createElement('span');
+    pt.className='spt '+m.cls;
+    pt.style.left=pc(m.at.count).toFixed(1)+'%';
+    tr.appendChild(pt);}
+   li.appendChild(tr);
+   /* THE ENDS, NAMED — the repair the preview card's axis already carries. A
+      position on a scale whose ends nobody states is a picture a reader can only
+      guess at, and the row no longer carries a sentence saying where the mark
+      sat. */
+   const ends=document.createElement('span');ends.className='sends';
+   const lo=document.createElement('span');lo.textContent=N(ref0.min);
+   const hi=document.createElement('span');hi.textContent=N(ref0.max);
+   ends.appendChild(lo);ends.appendChild(hi);
+   li.appendChild(ends);}
   ul.appendChild(li);});
  host.appendChild(ul);
  /* ⭐⭐⭐ AND THE WAY TO THE LEAGUE'S VIDEO IS IN HERE, because at the horn this

@@ -275,6 +275,86 @@ export function perGame(records) {
 }
 
 /**
+ * ⭐⭐⭐ THE SAME SIX LENSES, PER TEAM-GAME — the reference class a mark for ONE
+ * team can be placed against.
+ *
+ * Kevin, 2026-10-04, reading the summary card on a finished game: *"now we
+ * collapse the metrics into totals for the game and that doesn't really help
+ * understand 'what this game was'… maybe compare each team's metrics."* He is
+ * right, and the card could not do it: every row was a GAME total placed against
+ * `perGame`, which is explicitly *"by both teams in one game (n counts GAMES,
+ * not events)"*. A team's own 63 attempts judged against a distribution of
+ * two-team totals would be two quantities wearing one label — this file's
+ * oldest and most expensive defect.
+ *
+ * ⛔ THE WHISTLE LENS IS NOT HERE, AND THAT IS THE FACT RATHER THAN A GAP. A
+ * stoppage names a rule and never a team; `layers/whistle.js` says so to the
+ * reader in those words. There is no per-team field for it on the record and no
+ * entry for it here, so a surface asking for one gets `undefined` and draws
+ * nothing — which is what a measurement nobody can make should look like. A zero
+ * would be a count.
+ *
+ * ⭐⭐ THE LENS→FIELD MAP LIVES HERE AND NOWHERE ELSE. Three of the five were
+ * already on the record under their own names — `attempts` IS the Control lens
+ * per team, `slot` IS the Danger lens, `blocks` IS the Blocked lens — so adding a
+ * `lensBy` block to `measure.mjs` would have published each of those numbers
+ * twice under two names. One quantity, one field; this is the index into them,
+ * stated once, in the only place that needs it.
+ *
+ * ⚠️ THE TWO SIDES NEED NOT SUM TO THE GAME TOTAL, AND EXACTLY ONE LENS DOES NOT
+ * — measured over all 4,226 games rather than reasoned about, which corrected me.
+ * I told Kevin two of the five would carry a residual: teammate blocks credited to
+ * nobody, and draws whose winner the feed did not record. Only the first ever
+ * happens. Control, the slot, Goaltending and Zone starts each sum EXACTLY, in
+ * every season; Blocked runs 7.3% short in 2026-27 and 7.5 / 8.8 / 8.8% in the
+ * three before it. The `unplaced` path in `zonestart` is real code that has never
+ * fired in this archive, which is a different statement from "it cannot".
+ * `test/overlay-archive-door.test.js` holds the rule in that exact shape: exact
+ * for four, bounded for one, and a new residual anywhere is a layer that started
+ * dropping events on the floor. Placing a team's mark never needs the sum — which
+ * is why a mark on a scale is the honest picture here and two columns that look
+ * like they should add up are not.
+ *
+ * ⚠️ AND THE UNIT IS `team-games`, OVERRIDDEN after `distribution()`, the same way
+ * `attemptMix` and `goalieNight` already override theirs. `n` here is twice the
+ * number of games, and a reader told "34" when the figure was built from 68
+ * would be reading the wrong population's weakness.
+ */
+const PER_TEAM = {
+  corsi: [g => g.attempts, 'shot attempts by one team in one game, at all strengths',
+          'shot attempts'],
+  slot: [g => g.slot, 'shot attempts from inside the slot by one team in one game',
+         'shots from the slot'],
+  blocked: [g => g.blocks, 'attempts one team\u2019s bodies stopped in one game',
+            'blocked shots'],
+  goaltending: [g => g.faced, 'shots one team\u2019s goaltenders faced in one game',
+                'shots the goaltenders faced'],
+  zonestart: [g => g.faceoffs, 'face-offs one team won in one game, at all strengths',
+              'face-offs'],
+};
+
+export function perTeamGame(records) {
+  const bySeason = {};
+  for (const g of records) (bySeason[season(g.id)] ||= []).push(g);
+  const out = {};
+  for (const y of Object.keys(bySeason).sort()) {
+    const pop = `${POPULATION}, ${seasonLabel(y)}`;
+    out[y] = {};
+    for (const [k, [read, what, noun]] of Object.entries(PER_TEAM)) {
+      /* A record written before these fields existed contributes nothing rather
+         than a zero — `distribution` filters on Number.isInteger, so a missing
+         side drops out of its own population and says so in `n`. */
+      const vals = [];
+      for (const g of bySeason[y]) { const v = read(g) || {}; vals.push(v.h, v.a); }
+      out[y][k] = { ...distribution(vals, `${what} (n counts TEAM-GAMES, not events)`, pop),
+                    unit: 'team-games', noun };
+    }
+    out[y].dataThrough = dataThrough(bySeason[y]);
+  }
+  return out;
+}
+
+/**
  * WHAT AN ATTEMPT TURNED INTO, over every attempt in the archive.
  *
  * A DIFFERENT KIND OF NUMBER FROM `rateOf`, and the difference is the whole
@@ -617,6 +697,9 @@ export function summarise(records) {
     // ⭐ AND WHAT A NORMAL NIGHT LOOKS LIKE — a distribution rather than a rate,
     // which is the one thing no figure above can be asked. See `perGame`.
     perGame: perGame(games),
+    // ⭐ THE SAME LENSES, PER TEAM-GAME. See `perTeamGame` — the class a mark for
+    // ONE team is placed against, which `perGame` structurally cannot be.
+    perTeamGame: perTeamGame(games),
     baseRates: {
       moreShotsOnGoalLost:
         rateOf(games, g => [g.sog.h, g.sog.a], 'the team with more shots on goal lost'),
