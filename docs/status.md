@@ -52,13 +52,13 @@ approached that way.
 **⭐⭐⭐ THE SENTENCE IN THAT POST FOUND A REAL DEFECT BEFORE IT WENT OUT, and that
 is the most reusable thing that happened today — see §0.00c.**
 
-**Thirteen commits.** `a714734` quoted-figures writer · `d8c727c` the horn carries
+**Fourteen commits.** `a714734` quoted-figures writer · `d8c727c` the horn carries
 no strength state · `baa6fff` the summary door opens from the first frame ·
 `2ab4e6a` per-team marks · `07ea3d1` the degraded fallback · `485d3b7`
 build-before-health · `049d107` the `.sc` collision · `37bf0db` the door moves to
 the sidebar + `summary=1` · `dfa29e5` a status write-up · `70db8f4` **one tap
 plays the play once** · `9751b28` **five from a line-by-line read** · `47696b0`
-**the sharing card** · `4466880` **doors on every summary row**.
+**the sharing card** · `4466880` **doors on every summary row** · `07de373` **the preview card's lesson doors reach a lesson**.
 
 Everything is done, live and green: **1,654 JS + 237 Python**, gates green, ten
 browser probes green with their canaries, and every change verified on
@@ -210,6 +210,75 @@ is worse than none, because it passes often enough to be believed.** The fourth
 used `queueMicrotask` and taught the thing actually worth knowing: **microtasks
 drain BETWEEN listeners, not after the dispatch.** The version that ships
 assumes no ordering at all.
+
+---
+
+## ⭐⭐⭐ SEVEN: THE PREVIEW CARD'S LESSON DOORS NEVER REACHED A LESSON — `07de373`
+
+Kevin, from the live page, hours after the site went public:
+
+> *"on a preview page, what is normal section, I thought the doors such as 'What
+> a power play is' went to the learning page for a power play, it doesn't do that
+> anymore."*
+
+**It doesn't, and it never did.** All eight doors on the preview card opened a
+replay frame; **no version of `src/preview.html` in this repo's history contains a
+link to a rule page.** It shipped that way in `d9e32a6` on 23 September — the same
+day Kevin asked that the cards serve as front doors to the learning cards.
+
+⭐⭐⭐ **THE CAUSE WAS A NAME.** `_card_href` implemented *owns a diagram → lead to
+the diagram* from a dict the caller handed it, and **two unrelated things in
+`build_index.py` are called `figures`:**
+
+| the name | what it holds |
+|---|---|
+| `_fig_json()` / `_figures()` | the rule DIAGRAMS, keyed by CARD ID — 6 keys |
+| `learn-doors.json["figures"]` | measured figure VALUES — one key, `unreached` |
+
+`_learn()` passed the first; `_preview_doors()` passed the second. One function,
+one question, **opposite answers on two surfaces, positionally, so nothing could
+complain.**
+
+✅ **THE FIX IS THE SIGNATURE, NOT THE CALL.** `_card_href(cid, doors)` reads the
+document that defines the set, so there is no argument left to get wrong.
+**Five doors moved** — power play and penalties → `/penalties.html`, offside,
+icing and slot → their own pages. The three Control rows correctly stayed on the
+replay frame: there is no Corsi diagram, and the layer counting an attempt is the
+lesson. The learn page and front door changed by zero bytes; they were right.
+
+⛔⛔ **AND THE TEST ANNOUNCED MORE THAN IT CHECKED.** Titled *"every tile and every
+measure row is a door into the lesson behind it"*, it asserted:
+
+```js
+assert.match(d.href, /^\/(offside|penalties)\.html$|^\/game\.html\?game=\d+&at=/);
+```
+
+**An `or` over both possible answers is satisfied by always giving the same one.**
+Three checks replace it, all three red against the committed defect rebuilt:
+cross-surface agreement with the learn page (**a fair oracle — it was right for
+all eleven days**), per-row "a lesson that owns a diagram is reached as one"
+stated against `data/learn-figures.json`, and the power-play row pinned to
+Kevin's ruling. ⚠️ Planting the mutation INSIDE `_card_href` makes both surfaces
+agree and the cross-surface check pass — so each check's half of the claim is
+written down, and both mutations were planted.
+
+⭐ **KEVIN'S WORDING RULING.** `penalties.html` says *"a skater short"* six times
+and never *"power play"*. Asked whether the tile should adopt the page's register:
+*"I prefer to keep 'What a power play is' since that's the terminology the hockey
+world uses. We can use the explanatory wording on the learning page itself."*
+**The door speaks the language a reader arrives with; the page teaches it in
+ours.**
+
+### ⏭ OPEN — CAN THE CONTROL ROWS BE DIAGRAMMED?
+
+Kevin, immediately after: *"let's brainstorm if we can figure out how to diagram
+the control rows … I'd like everything to be consistent, if at all possible."*
+CF%, defencemen and missed attempts are now the only preview doors that open a
+frame rather than a page. ⚠️ **The reason they share one door is recorded and is
+not laziness** — both are shot attempts, and two doors would imply the site
+counts them two ways. So the question is not *add a diagram* but **what would a
+Corsi diagram draw**, under `docs/rule-diagrams.md`'s rule that a diagram is not
+a measurement. Not started; it is a brainstorm Kevin called for.
 
 ---
 
