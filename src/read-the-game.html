@@ -39,7 +39,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-fL/A7+TolzjsP5OkhgwMkvEke3gd41yoCkhFqCxdacI=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-CO1KyxUplQ0C6jWK9rYIP5uf3Hq5dNHaBRT6/3darw0='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-uVmMmC5DzhhRdqXMBmEtQgNGS4IkZbZoAY2gv+UgWbI=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-CO1KyxUplQ0C6jWK9rYIP5uf3Hq5dNHaBRT6/3darw0='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -3807,6 +3807,34 @@ const STILL_A_FRAME = { 'game-end': 'the final horn' };
 
 /** Does this event get a frame of its own on the timeline? */
 const framed = e => !(e.type in NOT_A_PLAY) || (e.type in STILL_A_FRAME);
+
+/**
+ * ⛔⛔⛔ A FRAME THAT IS NOT A PLAY HAS NO STRENGTH STATE, and until 2026-10-04
+ * three surfaces said otherwise. Kevin, on a finished game: *"the 'WSH empty
+ * net' at the top and the text just below the card both indicate that WSH has
+ * pulled the goalie, and with 1 second left in the game, that's true, but after
+ * the game is over, that becomes moot, no?"*
+ *
+ * The horn carries the final instant's situation code, because the feed writes
+ * one on every event. So the scoreboard chip read `NET EMPTY`, the sentence under
+ * the ice read `WSH has pulled the goaltender for an extra attacker`, and the
+ * rink drew one goaltender and one undefended net — all three present tense,
+ * about a game with `Final` on it. ⭐ IT IS THE LOGGED SHAPE AGAIN: a CONDITION
+ * that outlived the thing it was a condition of. A whistle outranks a clock; a
+ * horn outranks a situation code.
+ *
+ * ⚠️ AND THE KEY IS THE EVENT'S TYPE, NEVER "the last frame". This file already
+ * says why, twenty lines up: *"the `ended` class asks is the playhead at the last
+ * frame and the caption asks is this event the horn. If the feed ever ordered one
+ * differently the page degrades into saying two true things on two frames, rather
+ * than one wrong thing on one."* `i >= EV.length - 1` is the lazier reading and
+ * would put a badge-free frame on a real play in a feed with no horn.
+ *
+ * ⚠️ A NULL EVENT IS NOT A NOT-A-PLAY. Before the first event there is no frame
+ * at all, and the resting rink draws both goaltenders — which is right, and is
+ * why this is false rather than true for nothing.
+ */
+const notAPlay = e => !!e && (e.type in NOT_A_PLAY);
 
 const playable = events => events.filter(framed);
 
@@ -11339,7 +11367,13 @@ function drawRink(per){if(per===rinkPer)return;rinkPer=per;
  */
 let netmenAre=null;
 function drawNetmen(e){
- const sit=e&&e.sit;
+ /* ⛔ THE HORN IS NOT A PLAY, SO NOBODY IS ON THE ICE AT IT. A pulled goaltender
+    drew one figure and one undefended net on a game that was over — see
+    `layer.js::notAPlay`. It also makes the summary overlay's own comment true:
+    it opens at the horn because "THE ICE IS EMPTY — no puck, no shot, no player",
+    and until now a goaltender was standing in it. */
+ const sit=notAPlay(e)?null:e&&e.sit;
+ if(notAPlay(e)){if(netmenAre==='')return;netmenAre='';$('netmen').innerHTML='';return;}
  // Present unless the code says zero. A missing code is not evidence of an empty
  // net, and an empty net drawn on a guess would be the most dramatic thing on the
  // ice invented from nothing.
@@ -11385,7 +11419,7 @@ function drawPill(e){
  // coded events) is refused by `situation` rather than guessed. Both arrive here
  // as null, and a badge that stays lit on a state we cannot read is worse than
  // no badge, because it is wrong for minutes rather than for a frame.
- const b=standing(sitAt(e),CTX);
+ const b=notAPlay(e)?null:standing(sitAt(e),CTX);
  const now=b?`${b.id}|${b.said}|${b.count}`:'';
  if(now===pillIs)return;
  pillIs=now;
@@ -11896,7 +11930,7 @@ function render(i,how){
     ONE SENTENCE PER PULLED TEAM, mapped rather than branched. Both nets empty at
     once is legal and rare, and a `has`/`have` ternary for it would be a branch no
     game in the archive can reach, which is a branch no test can honestly kill. */
- $('iceNote').textContent=iceNote(sitAt(cur),AAB,HAB);
+ $('iceNote').textContent=iceNote(notAPlay(cur)?null:sitAt(cur),AAB,HAB);
  /* THE ENDS KEY, at the first moment the claim can be doubted. Every team
     attacks the same net all game here and switches every period in the arena,
     and the reader who NOTICES is the one who already knows hockey -- so the key

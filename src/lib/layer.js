@@ -168,6 +168,34 @@ export const STILL_A_FRAME = { 'game-end': 'the final horn' };
 /** Does this event get a frame of its own on the timeline? */
 export const framed = e => !(e.type in NOT_A_PLAY) || (e.type in STILL_A_FRAME);
 
+/**
+ * ⛔⛔⛔ A FRAME THAT IS NOT A PLAY HAS NO STRENGTH STATE, and until 2026-10-04
+ * three surfaces said otherwise. Kevin, on a finished game: *"the 'WSH empty
+ * net' at the top and the text just below the card both indicate that WSH has
+ * pulled the goalie, and with 1 second left in the game, that's true, but after
+ * the game is over, that becomes moot, no?"*
+ *
+ * The horn carries the final instant's situation code, because the feed writes
+ * one on every event. So the scoreboard chip read `NET EMPTY`, the sentence under
+ * the ice read `WSH has pulled the goaltender for an extra attacker`, and the
+ * rink drew one goaltender and one undefended net — all three present tense,
+ * about a game with `Final` on it. ⭐ IT IS THE LOGGED SHAPE AGAIN: a CONDITION
+ * that outlived the thing it was a condition of. A whistle outranks a clock; a
+ * horn outranks a situation code.
+ *
+ * ⚠️ AND THE KEY IS THE EVENT'S TYPE, NEVER "the last frame". This file already
+ * says why, twenty lines up: *"the `ended` class asks is the playhead at the last
+ * frame and the caption asks is this event the horn. If the feed ever ordered one
+ * differently the page degrades into saying two true things on two frames, rather
+ * than one wrong thing on one."* `i >= EV.length - 1` is the lazier reading and
+ * would put a badge-free frame on a real play in a feed with no horn.
+ *
+ * ⚠️ A NULL EVENT IS NOT A NOT-A-PLAY. Before the first event there is no frame
+ * at all, and the resting rink draws both goaltenders — which is right, and is
+ * why this is false rather than true for nothing.
+ */
+export const notAPlay = e => !!e && (e.type in NOT_A_PLAY);
+
 export const playable = events => events.filter(framed);
 
 export const NOT_A_PLAY = {

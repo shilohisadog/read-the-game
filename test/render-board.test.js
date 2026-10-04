@@ -295,17 +295,33 @@ test('the goaltender LEAVES when the feed says the goalie was pulled', () => {
   // 01:40 of the third, the code reading 0651 for the last twenty events. The
   // emptiest net in hockey stops being something a novice has to be told about.
   const a = boot();
-  const counts = new Set(a.every(d =>
-    (d.$('netmen').innerHTML.match(/class="gkbody"/g) || []).length));
+  const walk = a.every((d, at) => ({ type: at.ev.type, html: d.$('netmen').innerHTML,
+    gks: (d.$('netmen').innerHTML.match(/class="gkbody"/g) || []).length }));
+  /* ⛔⛔ THE HORN IS NOT A PLAY, SO IT IS NOT PART OF THIS CLAIM. Kevin, on a
+     finished game, 2026-10-04: the pulled-goalie surfaces are "true with 1 second
+     left… but after the game is over, that becomes moot." The rink now draws
+     nobody at the horn, so a walk that pooled it with the game would read "both
+     nets empty" — a code no feed emits — into a frame where nobody is claiming
+     anything. See `layer.js::notAPlay`. */
+  const play = walk.filter(f => f.type !== 'game-end');
+  assert.ok(play.length > 200, `only ${play.length} play frames walked`);
+  const counts = new Set(play.map(f => f.gks));
   assert.ok(counts.has(2), 'both goalies are in net for most of the game');
   assert.ok(counts.has(1), 'and one net is empty at the end — the pull is in the data');
   assert.ok(!counts.has(0), 'never both, which no situation code in this game says');
 
   // The one that leaves is the VISITOR's, which is what 0651 means.
-  const last = a.every(d => d.$('netmen').innerHTML).pop();
+  const last = play[play.length - 1].html;
   assert.equal((last.match(/class="gkbody"/g) || []).length, 1);
   assert.match(last, new RegExp(`fill="${colourOf(a.$('hAb').textContent)}"`),
     'the host keeps its goaltender');
+
+  /* AND THE HORN ITSELF, which is the paired half: without it this test passes on
+     a page that simply stopped drawing goaltenders at all. */
+  const horn = walk.filter(f => f.type === 'game-end');
+  assert.equal(horn.length, 1, `${horn.length} horn frames — the walk is not reaching it`);
+  assert.equal(horn[0].gks, 0,
+    'the game is over and the rink still says which net is defended');
 });
 
 test('a missing situation code never empties a net', () => {
@@ -346,11 +362,15 @@ test('the goaltenders are redrawn only when they change', () => {
 
   // And the state still tracks the game: two, then one after the pull.
   const a = boot();
-  const seen = a.every(d => (d.$('netmen').innerHTML.match(/class="gkbody"/g) || []).length);
-  assert.deepEqual([...new Set(seen)].sort(), [1, 2],
-    'exactly two states across the whole game');
-  assert.equal(seen[0], 2);
-  assert.equal(seen[seen.length - 1], 1);
+  const seen = a.every((d, at) => ({ type: at.ev.type,
+    gks: (d.$('netmen').innerHTML.match(/class="gkbody"/g) || []).length }));
+  const play = seen.filter(f => f.type !== 'game-end').map(f => f.gks);
+  assert.deepEqual([...new Set(play)].sort(), [1, 2],
+    'exactly two states across the game itself');
+  assert.equal(play[0], 2);
+  assert.equal(play[play.length - 1], 1);
+  // THREE STATES ACROSS THE TIMELINE, and the third is the horn: nobody at all.
+  assert.equal(seen[seen.length - 1].gks, 0, 'the horn still has a goaltender in it');
 });
 
 /**

@@ -24,7 +24,7 @@ import {
 import {
   ATTRIBUTION, corsiTeam, missSay, shootingTeam
 } from './lib/attribution.js';
-import { framed, inShootout, sitAt } from './lib/layer.js';
+import { framed, inShootout, notAPlay, sitAt } from './lib/layer.js';
 import { powerPlayOver, standing } from './lib/strength.js';
 import { occupants, stints } from './lib/box.js';
 import { penName } from './lib/penalties.js';
@@ -398,7 +398,13 @@ function drawRink(per){if(per===rinkPer)return;rinkPer=per;
  */
 let netmenAre=null;
 function drawNetmen(e){
- const sit=e&&e.sit;
+ /* ⛔ THE HORN IS NOT A PLAY, SO NOBODY IS ON THE ICE AT IT. A pulled goaltender
+    drew one figure and one undefended net on a game that was over — see
+    `layer.js::notAPlay`. It also makes the summary overlay's own comment true:
+    it opens at the horn because "THE ICE IS EMPTY — no puck, no shot, no player",
+    and until now a goaltender was standing in it. */
+ const sit=notAPlay(e)?null:e&&e.sit;
+ if(notAPlay(e)){if(netmenAre==='')return;netmenAre='';$('netmen').innerHTML='';return;}
  // Present unless the code says zero. A missing code is not evidence of an empty
  // net, and an empty net drawn on a guess would be the most dramatic thing on the
  // ice invented from nothing.
@@ -444,7 +450,7 @@ function drawPill(e){
  // coded events) is refused by `situation` rather than guessed. Both arrive here
  // as null, and a badge that stays lit on a state we cannot read is worse than
  // no badge, because it is wrong for minutes rather than for a frame.
- const b=standing(sitAt(e),CTX);
+ const b=notAPlay(e)?null:standing(sitAt(e),CTX);
  const now=b?`${b.id}|${b.said}|${b.count}`:'';
  if(now===pillIs)return;
  pillIs=now;
@@ -955,7 +961,7 @@ function render(i,how){
     ONE SENTENCE PER PULLED TEAM, mapped rather than branched. Both nets empty at
     once is legal and rare, and a `has`/`have` ternary for it would be a branch no
     game in the archive can reach, which is a branch no test can honestly kill. */
- $('iceNote').textContent=iceNote(sitAt(cur),AAB,HAB);
+ $('iceNote').textContent=iceNote(notAPlay(cur)?null:sitAt(cur),AAB,HAB);
  /* THE ENDS KEY, at the first moment the claim can be doubted. Every team
     attacks the same net all game here and switches every period in the arena,
     and the reader who NOTICES is the one who already knows hockey -- so the key

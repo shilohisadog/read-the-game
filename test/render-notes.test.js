@@ -923,14 +923,34 @@ test('the empty-net note is present exactly while a net is really empty', () => 
   const frames = a.every((d, at) => ({
     note: d.$('iceNote').textContent,
     gks: (d.$('netmen').innerHTML.match(/class="gkbody"/g) || []).length,
-    per: at.ev.per, clk: d.$('clk').textContent }));
+    type: at.ev.type, per: at.ev.per, clk: d.$('clk').textContent }));
 
-  const withNote = frames.filter(f => f.note);
+  /* ⛔⛔⛔ THE HORN IS NOT A PLAY, AND IT USED TO BE IN HERE. Kevin, reading a
+     finished game on 2026-10-04: the scoreboard chip and this sentence "both
+     indicate that WSH has pulled the goalie, and with 1 second left in the game,
+     that's true, but after the game is over, that becomes moot, no?" He is right,
+     and the rink was saying it a third time. All three now stand down at a frame
+     that is not a play (`layer.js::notAPlay`).
+
+     ⚠️ SO THE PAIRING IS A CLAIM ABOUT PLAY. At the horn neither surface is
+     making a claim — no note AND no goaltenders — and `note ⇔ gks < 2` would read
+     that as a disagreement. The horn gets its own assertion below instead, which
+     is the stronger shape anyway: this one would otherwise pass on a page that
+     had simply stopped drawing both. */
+  const play = frames.filter(f => f.type !== 'game-end');
+  assert.ok(play.length > 200, `only ${play.length} play frames walked`);
+  const withNote = play.filter(f => f.note);
   assert.ok(withNote.length > 5, `only ${withNote.length} frames carry the note — it never fires`);
-  assert.ok(frames.length - withNote.length > 200, 'the note is up for most of the game');
-  for (const f of frames)
+  assert.ok(play.length - withNote.length > 200, 'the note is up for most of the game');
+  for (const f of play)
     assert.equal(!!f.note, f.gks < 2,
       `${f.per} ${f.clk}: ${f.gks} goaltenders drawn and the note says "${f.note}"`);
+
+  const horn = frames.filter(f => f.type === 'game-end');
+  assert.equal(horn.length, 1, `${horn.length} horn frames — the walk is not reaching it`);
+  assert.equal(horn[0].note, '',
+    'the game is over and the page still says a goaltender has been pulled');
+  assert.equal(horn[0].gks, 0, 'and the rink still says which net is defended');
 
   // WHERE THE WINDOW IS, derived from the raw file rather than from the page.
   // clock.test.js pins the same window independently: Minnesota pulls at 01:40
@@ -972,19 +992,29 @@ test('the note follows the situation code, whichever net the code empties', () =
     for (const e of g.events) if (e.sit) e.sit = code;
     return g;
   };
-  const noteAtTheHorn = code => {
+  /* ⚠️ THE LAST FRAME OF PLAY, NOT THE HORN, and it was the horn until 2026-10-04.
+     The recode writes the code onto every event including `game-end`, and the horn
+     now makes no claim at all — so reading it would find an empty note on a page
+     that had named the wrong team all game. The frame before it is the last one
+     where the sentence is about anything. */
+  const noteAtTheEnd = code => {
     const a = boot(recoded(code));
-    const scrub = a.$('scrub');
-    scrub.value = scrub.max; scrub.oninput({ target: { value: scrub.max } });
-    return { note: a.$('iceNote').textContent,
-             away: a.$('aAb').textContent, home: a.$('hAb').textContent };
+    const r = a.at(+a.$('scrub').max - 1,
+      (d, at) => ({ type: at.ev.type, note: d.$('iceNote').textContent }));
+    /* ⛔ AND THE FRAME READ MUST BE A PLAY. If the horn ever moved off the end of
+       the timeline this would silently read a frame that makes no claim, and the
+       LAST case below — the control, which expects silence — would pass for the
+       wrong reason while the three real ones failed. */
+    assert.notEqual(r.type, 'game-end',
+      'the frame being read is the horn, which no longer claims a strength state');
+    return { note: r.note, away: a.$('aAb').textContent, home: a.$('hAb').textContent };
   };
 
-  const v = noteAtTheHorn('0651');                       // the visitor pulls
+  const v = noteAtTheEnd('0651');                       // the visitor pulls
   assert.match(v.note, new RegExp(`^${v.away} has pulled`));
   assert.doesNotMatch(v.note, new RegExp(`\\b${v.home}\\b`));
 
-  const h = noteAtTheHorn('1560');                       // the HOST pulls
+  const h = noteAtTheEnd('1560');                       // the HOST pulls
   assert.match(h.note, new RegExp(`^${h.home} has pulled`),
     'a host that pulled its goaltender is not named');
   assert.doesNotMatch(h.note, new RegExp(`\\b${h.away}\\b`), 'and the visitor is named instead');
@@ -993,14 +1023,14 @@ test('the note follows the situation code, whichever net the code empties', () =
   // over the pulled teams rather than branched on a count: a `has`/`have`
   // ternary here would be a second unreachable arm, which is the defect this
   // whole test exists to close rather than to repeat.
-  const b = noteAtTheHorn('0660');
+  const b = noteAtTheEnd('0660');
   assert.match(b.note, new RegExp(`\\b${b.away}\\b`), 'both goalies are out and one is unmentioned');
   assert.match(b.note, new RegExp(`\\b${b.home}\\b`));
   assert.equal((b.note.match(/has pulled the goaltender/g) || []).length, 2,
     'two empty nets, and the page states it once');
 
   // The control: a code with both goaltenders in says nothing at all.
-  assert.equal(noteAtTheHorn('1551').note, '',
+  assert.equal(noteAtTheEnd('1551').note, '',
     'the note fires on a game where nobody pulled anybody');
 });
 

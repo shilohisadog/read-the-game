@@ -196,6 +196,73 @@ test('an empty net is badged as an empty net, and names the club that pulled', (
   assert.ok(p.className.split(/\s+/).includes('a'));
 });
 
+test('⛔⛔⛔ the horn carries no strength state, on any of the three surfaces', () => {
+  /* ⛔⛔⛔ KEVIN, READING A FINISHED GAME, 2026-10-04: *"the 'WSH empty net' at the
+     top and the text just below the card, both indicate that WSH has pulled the
+     goalie, and with 1 second left in the game, that's true, but after the game
+     is over, that becomes moot, no?"*
+
+     He is right, and the rink was saying it a THIRD time he did not mention: one
+     goaltender drawn and one net left undefended, over a game with `Final` on it.
+     The feed writes a situation code on every event including `game-end`, so all
+     three surfaces read the final instant's code and kept asserting it.
+
+     ⭐ THE SHAPE IS A CONDITION THAT OUTLIVED THE THING IT WAS A CONDITION OF —
+     the same one as a power play that never ended and a note expressed in game
+     time meeting a stretch of game with none. A whistle outranks a clock; a horn
+     outranks a situation code.
+
+     ⚠️ AND THE KEY IS THE EVENT'S TYPE, NOT "the last frame". `layer.js` already
+     argued that out: the `ended` class asks *is the playhead at the last frame*
+     and the caption asks *is this event the horn*, kept apart so that a feed
+     ordering them differently degrades into two true things on two frames rather
+     than one wrong thing on one. This asserts the TYPE for the same reason.
+
+     ⛔ ALL THREE IN ONE TEST, DELIBERATELY. They are one rule with three outputs,
+     and three separate tests is how two of them get fixed. The paired half is
+     the frame before: without it this passes on a page that stopped drawing any
+     of them at all. */
+  const a = boot();
+  const last = +a.$('scrub').max;
+  const read = k => a.at(k, (d, at) => ({
+    type: at.ev.type,
+    pill: d.$('ppill').hidden ? '' : d.$('ppill').textContent,
+    note: d.$('iceNote').textContent,
+    gks: (d.$('netmen').innerHTML.match(/class="gkbody"/g) || []).length }));
+
+  const horn = read(last);
+  assert.equal(horn.type, 'game-end',
+    `the last frame is a ${horn.type}, so this test is not reading the horn`);
+  const play = read(last - 1);
+  assert.notEqual(play.type, 'game-end', 'two horn frames');
+
+  /* THE PAIRED HALF: the game's last play really is 6-on-5 with a net empty, so
+     each assertion below is about something that was being said. */
+  assert.equal(play.pill, 'net empty', 'the frame before the horn is not a pulled-goalie frame at all');
+  assert.match(play.note, /has pulled the goaltender/);
+  assert.equal(play.gks, 1, 'and only one goaltender is on the ice for it');
+
+  assert.equal(horn.pill, '', `the scoreboard still badges "${horn.pill}" after the horn`);
+  assert.equal(horn.note, '', `the page still says "${horn.note}" after the horn`);
+  assert.equal(horn.gks, 0, 'the rink still says which net is defended after the horn');
+});
+
+test('⭐ and a power play running at the horn stands down the same way', () => {
+  /* ⛔ THE RULE IS ABOUT A FRAME THAT IS NOT A PLAY, NOT ABOUT EMPTY NETS — and a
+     test written only on the pulled-goalie case would let somebody "fix" it with
+     a check for `sit[0]==='0'`, leaving a `power play` chip lit over a finished
+     game. The reference game ends 6-on-5, so the code is rewritten: 1451 is a
+     real four-on-five the league emits, and nothing else about the game moves. */
+  const g = JSON.parse(JSON.stringify(rich));
+  for (const e of g.events) if (e.sit) e.sit = '1451';
+  const a = boot(g);
+  const last = +a.$('scrub').max;
+  const play = a.at(last - 1, d => d.$('ppill').hidden ? '' : d.$('ppill').textContent);
+  assert.equal(play, 'power play', 'the recode did not produce a power play to stand down');
+  assert.equal(a.at(last, d => d.$('ppill').hidden ? '' : d.$('ppill').textContent), '',
+    'a power play is still badged after the final horn');
+});
+
 /* ═══ THE PENALTY KILL — the moment the feed does not record ═══
  *
  * Kevin, watching a replay event by event: *"I was wondering why don't we say
