@@ -22,3 +22,24 @@ src/why-the-whistle.html
 
 # fetch_nhl.py output — raw feeds belong in R2, never in the repo
 ingest/
+
+# ⛔⛔ SCREEN CAPTURES AND ANY OTHER VIDEO. Kevin recorded the clip that went with
+# the first public post to `data/` on 2026-10-04: 50.5MB, 2920x1926, ~23 Mbps —
+# FORTY-SIX TIMES the largest file this repo tracks, and one `git add -A` from
+# being in history forever, where nothing can take it out again.
+#
+# ⚠️ THE PRECEDENT IS EIGHT LINES UP. `builders/build_rules.py` "was swept onto
+# the remote by a `git add -A` in 3061347 and removed in the commit that
+# follows", and that entry exists so it could not happen a third time. This is
+# the same hazard with a much bigger file, and `git add -A` is how every commit
+# in this repo is made.
+#
+# ⭐ THE SITE SHIPS NO VIDEO AND IS NOT ABLE TO. The league's highlight is reached
+# through an iframe built on open and torn down on close (see `drawClip`) — a
+# BUTTON, never an embed, which is the whole bargain that feature was allowed on.
+# So no video file can ever be a build input, and `src/card.png` is unaffected:
+# this names video extensions only, and the sharing card is a PNG.
+*.mp4
+*.mov
+*.m4v
+*.webm
