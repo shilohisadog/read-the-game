@@ -54,6 +54,7 @@ import { printed } from '../src/lib/printed.js';
 import { sitsIn } from '../src/lib/distribution.js';
 import { leagueFigures } from '../src/lib/derivation.js';
 import { boot, rich, app, PAGE_CSS } from './helpers/page.js';
+import { methods } from '../src/lib/methods.js';
 import { corsi } from '../src/lib/layers/corsi.js';
 import { danger } from '../src/lib/layers/danger.js';
 import { blocked } from '../src/lib/layers/blocked.js';
@@ -1278,4 +1279,153 @@ test('⭐ a finished season still names its population, in the same words', () =
   assert.match(said, /1,394 games we have measured/,
     'a finished season lost its population line, so the wording fix turned into a silence');
   assert.doesNotMatch(said, /we hold/i, 'the archive claim came back on the finished-season path');
+});
+
+/**
+ * ⭐⭐⭐ EVERY COUNT IN THIS PANEL OPENS TO HOW IT WAS COUNTED
+ *
+ * THE HOUSE RULE IS THE OLDEST ONE HERE — show the work or do not print it, and
+ * the door is keyed by the TOKEN rather than by the card. It was closed on every
+ * surface on 2026-09-24. This panel re-opened it: the summary card moved into an
+ * overlay on 2026-10-01 and gained a mark per club on 2026-10-04, and neither
+ * change brought a door with it.
+ *
+ * ⛔⛔⛔ AND IT WAS FOUND BY A SENTENCE SOMEBODY WAS ABOUT TO PUBLISH. Kevin drafted
+ * the first public post about this site: *"every number on screen opens to how it
+ * was worked out."* Measured on the live page, the panel that link opens held
+ * TWELVE numbers and ZERO links, and the two doors under the rink were
+ * `visibility: hidden` because they sit in the layer row and the default layer is
+ * `Just events`. A reader could have falsified the claim in ten seconds, on a
+ * site whose entire pitch is CHECK OUR WORK. He held the post.
+ *
+ * ⭐ THE EXPECTATION COMES FROM `data/layer-rules.json`, which node wrote by
+ * asking the real reducers and which `builders/build_main.py` turns into
+ * `LAYERWORK` — so this test and the page read ONE answer by two routes, and
+ * neither restates the other. `name-the-path-to-the-expectation.md`: if there is
+ * only one path from code to expected value, the test is a mirror.
+ */
+test('⭐⭐⭐ every row opens to how its count was counted', () => {
+  const a = page();
+  const s = a.$('scrub'); s.value = String(s.max);
+  s.oninput({ target: { value: s.value } });
+  const rows = (a.$('sumBody')._kids || []).find(n => n.className === 'srows');
+  assert.ok(rows && (rows._kids || []).length, 'no rows drew at all');
+
+  const rules = JSON.parse(readFileSync(new URL('../data/layer-rules.json', import.meta.url), 'utf8'));
+  const want = new Map(rules.layers.map(l => [l.id, l.work.map(w => `/how-we-measure.html#${w.anchor}`)]));
+  assert.ok(want.size >= 6, `only ${want.size} layers declare their work`);
+
+  /* The row's lens is read off the chip whose label it prints, the same route
+     the per-club test above takes — the panel does not carry the id itself. */
+  const chips = a.$$('#rg .pk').filter(c => c.dataset && c.dataset.l);
+  const lensFor = label => {
+    const c = chips.find(x => (x.textContent || '').trim().startsWith(label));
+    return c && c.dataset.l;
+  };
+
+  let checked = 0;
+  for (const li of rows._kids) {
+    const kids = li._kids || [];
+    const label = ((kids[0] && kids[0].innerHTML) || '').replace(/<[^>]*>/g, '').split('—')[0].trim()
+      .replace(/\s+\d[\d,]*$/, '');
+    const id = lensFor(label);
+    assert.ok(id, `no lens chip matches the row labelled "${label}"`);
+    const door = under(li, 'sdoor');
+    assert.ok(door, `the "${label}" row prints counts and offers no way to how they were counted`);
+    const hrefs = [...(door.innerHTML || '').matchAll(/href="([^"]+)"/g)].map(m => m[1]);
+    assert.deepEqual(hrefs, want.get(id),
+      `the "${label}" row's doors are not the ones its layer declares`);
+    checked++;
+  }
+  assert.equal(checked, rows._kids.length, 'some row was skipped rather than judged');
+  assert.ok(checked >= 6, `only ${checked} rows were checked`);
+});
+
+test('⛔⛔ a layer naming three measurements opens three, and they are not the same door', () => {
+  /* Stoppages names the rule that stopped play, and penalties, offsides and
+     icings are three archive figures with three denominators. One door would
+     have to pick, and picking silently answers a question the reader did not ask
+     — the case `work-overlay.test.js` already holds the work panel to.
+     MUTATION: render only `doors[0]` and this fires. */
+  const a = page();
+  const s = a.$('scrub'); s.value = String(s.max);
+  s.oninput({ target: { value: s.value } });
+  const rows = (a.$('sumBody')._kids || []).find(n => n.className === 'srows');
+  const stop = rows._kids.find(li => /Stoppages/.test((li._kids[0] || {}).innerHTML || ''));
+  assert.ok(stop, 'the stoppages row is not in the panel');
+  const hrefs = [...(under(stop, 'sdoor').innerHTML || '').matchAll(/href="([^"]+)"/g)].map(m => m[1]);
+  assert.equal(hrefs.length, 3, `the stoppages row opens ${hrefs.length} doors`);
+  assert.equal(new Set(hrefs).size, 3, 'two of its doors lead to the same section');
+});
+
+test('⭐⭐⭐ and every door lands on a section that exists — read from the other page', () => {
+  /* ⛔ THE ONLY HALF OF THIS THAT IS NOT CIRCULAR. Everything above compares the
+     panel against the document the panel is built from, which cannot tell you the
+     target is real: a door to `#m-nothing` is well-formed, consistent with the
+     layer's own rule, and dead. So the anchors are checked against the BUILT
+     methods page, which is written by a different builder from a different source
+     and knows nothing of this panel.
+     ⚠️ `methods-deeplink` asks the next question down — whether the browser
+     actually SCROLLS there — and cannot be asked here; the node document has no
+     layout. Two tiers, two claims. */
+  const a = page();
+  const s = a.$('scrub'); s.value = String(s.max);
+  s.oninput({ target: { value: s.value } });
+  /* ⚠️ NOT THE BUILT PAGE'S MARKUP, WHICH THE FIRST VERSION OF THIS READ AND GOT
+     ZERO FROM. `how-we-measure.html` is a SHELL — it draws its sections after
+     `measures.json` arrives — so there is no `id="m-…"` in the file at all, and a
+     regex over it reports a page with no sections rather than a page whose
+     sections have not been built yet. `methods()` is what MAKES them, from the
+     published document, and is the independent answer this needs. */
+  const sections = methods(MEASURES);
+  const ids = new Set(Object.values(sections).flat()
+    .map(r => r && r.anchor).filter(Boolean));
+  assert.ok(ids.size >= 5, `the methods page would draw only ${ids.size} measurement sections`);
+
+  /* ⚠️ WALKED, NOT READ OFF `sumBody.innerHTML`. The panel is built with
+     `appendChild`, and the fake document keeps the TREE; its concatenated
+     `innerHTML` does not carry the markup of grandchildren. A regex over it
+     returns zero and reads as "the panel offers no doors" — a check reporting a
+     correct page as a broken one, which is the direction that wastes a day. */
+  const rows = (a.$('sumBody')._kids || []).find(n => n.className === 'srows');
+  const fragments = (rows._kids || []).flatMap(li => {
+    const d = under(li, 'sdoor');
+    return d ? [...(d.innerHTML || '').matchAll(/href="\/how-we-measure\.html#([^"]+)"/g)].map(m => m[1]) : [];
+  });
+  assert.ok(fragments.length >= 6, `the panel offers only ${fragments.length} doors`);
+  const dead = [...new Set(fragments)].filter(f => !ids.has(f));
+  assert.deepEqual(dead, [], `doors pointing at sections the methods page does not have: ${dead.join(', ')}`);
+});
+
+test('⛔⛔ a row with no scale to draw still opens to how it was counted', () => {
+  /* ⛔⛔⛔ THE CHECK ABOVE WAS WRITTEN AGAINST THE EASY STATE, and a mutation
+     proved it: gating the door on `marks.length` — so a row with no reference
+     class loses its door — SURVIVED every assertion in this file, because the
+     fixture gives all six rows a scale. "A check written against the easy state
+     approves what it forbids" is logged in this repo three times now.
+     ⭐ THE TWO ARE INDEPENDENT CLAIMS. A scale says whether this count was
+     ordinary; a door says how the count was made. The second is answerable for
+     every lens on every night, including the ones the published measurement has
+     not caught up with — and a count with nowhere to go is precisely what the
+     house rule forbids. `work-overlay.test.js` holds the work panel's two rows
+     apart for the same reason. */
+  const y = String(rich.game.id).slice(0, 4);
+  const a = boot(rich, { ...MEASURES, perGame: { [y]: {} }, perTeamGame: { [y]: {} } });
+  const s = a.$('scrub'); s.value = String(s.max);
+  s.oninput({ target: { value: s.value } });
+  const rows = (a.$('sumBody')._kids || []).find(n => n.className === 'srows');
+  assert.ok(rows && (rows._kids || []).length, 'no rows drew at all');
+
+  let scales = 0, doors = 0;
+  for (const li of rows._kids) {
+    if (railIn(li)) scales++;
+    const d = under(li, 'sdoor');
+    if (d && /href=/.test(d.innerHTML || '')) doors++;
+  }
+  assert.equal(scales, 0,
+    'this document has no reference class at all, so no row can draw a scale — '
+    + 'the fixture is not exercising the state this test is about');
+  assert.equal(doors, rows._kids.length,
+    `${rows._kids.length - doors} row(s) printed a count with no way to how it was counted, `
+    + 'on a night the measurement had not caught up');
 });

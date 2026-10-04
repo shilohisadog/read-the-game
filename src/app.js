@@ -1894,6 +1894,28 @@ function renderSum(){
    const hi=document.createElement('span');hi.textContent=N(ref0.max);
    ends.appendChild(lo);ends.appendChild(hi);
    sc.appendChild(ends);li.appendChild(sc);}
+  /* ⭐⭐⭐ AND EVERY COUNT HERE OPENS TO HOW IT WAS COUNTED — 2026-10-04, and this
+     panel was the one surface where the house rule was not closed.
+     Kevin, reading a draft of the first public post about this site, which said
+     *"every number on screen opens to how it was worked out"*: measured on the
+     live page, the panel held TWELVE numbers and ZERO links, and the two doors
+     under the rink (`How we counted`, `Is that a lot?`) were `visibility:hidden`
+     because they live in the layer row and the default layer is `Just events`.
+     The claim would have been falsifiable in ten seconds on a site whose whole
+     pitch is CHECK OUR WORK. He held the post.
+     ⭐ `LAYERWORK` IS THE SAME MAPPING THE WORK PANEL USES, not a second one.
+     It is built by `builders/build_main.py` from `data/layer-rules.json`, which
+     node wrote by asking the real reducers — so a lens whose derivation moves
+     takes both surfaces with it, and neither can drift from the other.
+     ⛔ IT IS NOT GATED ON THE SCALE. A row with no reference class still prints a
+     count, and a count with nowhere to go is exactly what this closes — the same
+     independence `work-overlay.test.js` asserts for the work panel's two rows. */
+  const doors=LAYERWORK[id]||[];
+  if(doors.length){
+   const d=document.createElement('span');
+   d.className='sdoor';
+   d.innerHTML=doors.map(w=>`<a href="/how-we-measure.html#${ESC(w.anchor)}">${ESC(w.label)}</a>`).join('');
+   li.appendChild(d);}
   ul.appendChild(li);});
  host.appendChild(ul);
  /* ⭐⭐⭐ AND THE WAY TO THE LEAGUE'S VIDEO IS IN HERE, because at the horn this

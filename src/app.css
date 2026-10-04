@@ -1860,6 +1860,23 @@
  width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:baseline}
 #rg .srows .stm.sa::before{background:var(--away)}
 #rg .srows .stm.sh::before{background:var(--home)}
+/* ⭐⭐⭐ THE DOOR OUT OF EVERY ROW. The house rule is that a number carries a way
+   to its derivation, keyed by the TOKEN rather than by the card, and this panel
+   was the surface where it was still open — twelve counts and no links, measured
+   on the live page the day before the first public post about this site.
+   ⚠️ SCOPED UNDER `.srows`, which `test/overlay-archive-door.test.js` requires of
+   every class these rows wear: a two-letter collision in a shared stylesheet put
+   the scoreboard's 1.8rem on a team chip for one deploy, and the rule that came
+   out of it is that a row's appearance is decided where the row is named.
+   ⭐ AND IT SETS ITS OWN SIZE for the same reason. */
+#rg .srows .sdoor{display:block;margin:5px 0 0;font-size:.78rem;line-height:1.45}
+#rg .srows .sdoor a{color:var(--blue);text-decoration:none;
+ border-bottom:1px solid color-mix(in srgb,var(--blue) 35%,transparent)}
+#rg .srows .sdoor a:hover{border-bottom-color:var(--blue)}
+/* ⚠️ THREE DOORS ON ONE ROW IS A REAL CASE, NOT A DEFENSIVE ONE. Stoppages names
+   penalties, offsides and icings — three archive figures with three
+   denominators — so they are separated rather than run together. */
+#rg .srows .sdoor a+a{margin-left:14px}
 /* THE ENDS, UNDER THE RAIL AND NO WIDER THAN IT — the same shape and the same
    reason as the preview card's `.pvends`: a position on a scale whose ends
    nobody states is a picture a reader can only guess at. */

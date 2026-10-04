@@ -45,7 +45,7 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
 .sitefoot a{color:#2a5d86}
 @media (max-width:420px){.sitehdr{padding:10px 12px}.sitefoot{padding:14px 12px 22px}}
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-O3HAj9VPAAmQJi2jaK7DxIGJgWBHF6WsdeEEYUeLcFc=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-hv/OQdsYkwrbL6rxKtdz2sWlRDmt5DOTyMmpfXegy4I='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-qCC81tFtL2dWkIvqHyvBMQdCo6pj4wcBvsqppn+dIeo=' https://static.cloudflareinsights.com; style-src 'sha256-//kupz1TINJWNzd5e8fGrl7lE+3Key9sQ4JLBfaLi2U=' 'sha256-jQUTDO4bqWuv0b4ZyArtwtKbqqRG/ZWrY6NPsn2h0Ak='; connect-src 'self'; frame-src 'self' https://players.brightcove.net; base-uri 'none'; form-action 'none'">
 </head>
 <body>
 <header class="sitehdr"><a class="mark" href="/">Read the Game</a><nav><a href="/#teams">Teams</a><a href="/calendar.html">By date</a><a href="/what-you-can-see.html">What you can see here</a></nav></header>
@@ -1912,6 +1912,23 @@ body.previewing .sitehdr,body.previewing .sitefoot{display:none}
  width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:baseline}
 #rg .srows .stm.sa::before{background:var(--away)}
 #rg .srows .stm.sh::before{background:var(--home)}
+/* ⭐⭐⭐ THE DOOR OUT OF EVERY ROW. The house rule is that a number carries a way
+   to its derivation, keyed by the TOKEN rather than by the card, and this panel
+   was the surface where it was still open — twelve counts and no links, measured
+   on the live page the day before the first public post about this site.
+   ⚠️ SCOPED UNDER `.srows`, which `test/overlay-archive-door.test.js` requires of
+   every class these rows wear: a two-letter collision in a shared stylesheet put
+   the scoreboard's 1.8rem on a team chip for one deploy, and the rule that came
+   out of it is that a row's appearance is decided where the row is named.
+   ⭐ AND IT SETS ITS OWN SIZE for the same reason. */
+#rg .srows .sdoor{display:block;margin:5px 0 0;font-size:.78rem;line-height:1.45}
+#rg .srows .sdoor a{color:var(--blue);text-decoration:none;
+ border-bottom:1px solid color-mix(in srgb,var(--blue) 35%,transparent)}
+#rg .srows .sdoor a:hover{border-bottom-color:var(--blue)}
+/* ⚠️ THREE DOORS ON ONE ROW IS A REAL CASE, NOT A DEFENSIVE ONE. Stoppages names
+   penalties, offsides and icings — three archive figures with three
+   denominators — so they are separated rather than run together. */
+#rg .srows .sdoor a+a{margin-left:14px}
 /* THE ENDS, UNDER THE RAIL AND NO WIDER THAN IT — the same shape and the same
    reason as the preview card's `.pvends`: a position on a scale whose ends
    nobody states is a picture a reader can only guess at. */
@@ -12997,6 +13014,28 @@ function renderSum(){
    const hi=document.createElement('span');hi.textContent=N(ref0.max);
    ends.appendChild(lo);ends.appendChild(hi);
    sc.appendChild(ends);li.appendChild(sc);}
+  /* ⭐⭐⭐ AND EVERY COUNT HERE OPENS TO HOW IT WAS COUNTED — 2026-10-04, and this
+     panel was the one surface where the house rule was not closed.
+     Kevin, reading a draft of the first public post about this site, which said
+     *"every number on screen opens to how it was worked out"*: measured on the
+     live page, the panel held TWELVE numbers and ZERO links, and the two doors
+     under the rink (`How we counted`, `Is that a lot?`) were `visibility:hidden`
+     because they live in the layer row and the default layer is `Just events`.
+     The claim would have been falsifiable in ten seconds on a site whose whole
+     pitch is CHECK OUR WORK. He held the post.
+     ⭐ `LAYERWORK` IS THE SAME MAPPING THE WORK PANEL USES, not a second one.
+     It is built by `builders/build_main.py` from `data/layer-rules.json`, which
+     node wrote by asking the real reducers — so a lens whose derivation moves
+     takes both surfaces with it, and neither can drift from the other.
+     ⛔ IT IS NOT GATED ON THE SCALE. A row with no reference class still prints a
+     count, and a count with nowhere to go is exactly what this closes — the same
+     independence `work-overlay.test.js` asserts for the work panel's two rows. */
+  const doors=LAYERWORK[id]||[];
+  if(doors.length){
+   const d=document.createElement('span');
+   d.className='sdoor';
+   d.innerHTML=doors.map(w=>`<a href="/how-we-measure.html#${ESC(w.anchor)}">${ESC(w.label)}</a>`).join('');
+   li.appendChild(d);}
   ul.appendChild(li);});
  host.appendChild(ul);
  /* ⭐⭐⭐ AND THE WAY TO THE LEAGUE'S VIDEO IS IN HERE, because at the horn this
