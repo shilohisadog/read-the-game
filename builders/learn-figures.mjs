@@ -825,7 +825,11 @@ function emptyNet() {
     steps: [
       'Losing late, a team sends its <b>goaltender to the bench</b>.',
       'Their own net is now <b>empty</b>.',
-      'In his place comes an <b>extra attacker</b>: six skaters against five. '
+      /* ⛔ THE SAME DEFECT AS THE PENALTIES STEP, found by the gate written
+         for that one: "his" pointed at the goaltender TWO STEPS BACK, with
+         nothing in this step to attach to. A step annotates a badge and is
+         read on its own, so it carries its own referent. */
+      'In the goaltender&rsquo;s place comes an <b>extra attacker</b>: six skaters against five. '
       + 'Nothing is toggled on this site to show it &mdash; the goalie is simply '
       + 'no longer drawn.',
     ],
@@ -935,8 +939,25 @@ function penalties() {
          power-play goal ends the penalty is why the team that concedes stops
          killing it. Both endings are named, and "the time runs out" also retires
          an "it" whose referent was the box as easily as the penalty. */
-      'At the whistle he goes to the penalty box and his team plays a skater short '
-      + 'until the penalty is served &mdash; and a goal by the other team ends a '
+      /* ⛔⛔ IT OPENED "At the whistle" AND NEVER SAID WHY A WHISTLE WOULD GO.
+         Kevin, reading the live page line by line, 2026-10-04: *"on the second
+         point below the diagram, it says 'At the whistle....' but it doesn't say
+         why the whistle would be blown."* The cause was on screen -- step ① ends
+         "until the offending team touches the puck" -- but **the touch and the
+         whistle were never joined**, so a reader had to supply the one rule the
+         card exists to teach. ⭐ A STEP IS AN ANNOTATION ON A BADGE AND IS READ
+         AS ONE: step ② must carry its own trigger, not inherit it from ①.
+         ⛔ AND "he" HAD NO ANTECEDENT IN THE STEPS AT ALL. The nearest males were
+         "an official" and the other side's "goaltender"; the penalised player is
+         named only in the lede, two elements away. Both are fixed by naming him
+         -- "the offender" is the lede's own noun for him, so this introduces no
+         new word to a reader who has read one sentence.
+         ⚠️ "plays a skater short" IS KEPT DELIBERATELY: see the note below for
+         the one-in-five exception the NOTE carries and a step describing this
+         drawing cannot. */
+      'When the offending team touches the puck the whistle goes. The offender '
+      + 'goes to the penalty box and his team plays a skater short until the '
+      + 'penalty is served &mdash; and a goal by the other team ends a '
       + '<b>minor</b> early.',
     ],
     /* ⭐ THE CROSS-LINK, AND IT RUNS BOTH WAYS ON PURPOSE. Kevin: *"then the

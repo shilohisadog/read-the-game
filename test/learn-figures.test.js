@@ -994,6 +994,74 @@ test('⭐ both men who leave the ice reach it, and they leave on OPPOSITE sides'
     + 'opposite sides of a rink, and drawing them together loses the difference');
 });
 
+test('⛔⛔ no step leans on a pronoun it never introduces', () => {
+  /* ⭐⭐⭐ KEVIN, READING THE LIVE PENALTIES PAGE LINE BY LINE, 2026-10-04:
+     *"on the second point below the diagram, it says 'At the whistle....' but it
+     doesn't say why the whistle would be blown."* That step read:
+
+       "At the whistle he goes to the penalty box and his team plays a skater
+        short until the penalty is served..."
+
+     Two faults in one sentence, and the same cause. **A STEP IS AN ANNOTATION ON
+     A NUMBERED BADGE, so a reader meets it beside ② on the drawing, not as the
+     next clause of a paragraph.** It must therefore carry its own trigger and its
+     own referent:
+       - the WHISTLE arrived with no cause. The cause was on screen -- step ① ends
+         "until the offending team touches the puck" -- but the touch and the
+         whistle were never joined, so the one rule the card exists to teach was
+         left for the reader to supply.
+       - "he" had NO ANTECEDENT IN THE STEP AT ALL. The nearest males were "an
+         official" and the other side's "goaltender"; the penalised player is
+         named only in the lede, two elements away. A reader resolving the pronoun
+         by proximity gets the official sent to the penalty box.
+
+     ⭐ AND WRITING THIS CHECK FOUND A SECOND ONE, on another page, immediately:
+     the empty-net figure's step 3 opened "In his place comes an extra attacker"
+     with the goaltender named TWO STEPS BACK. Both are fixed; neither was
+     exempted, because a gate written around its own exception is the check that
+     approves what it forbids. */
+  const PERSON = /\b(offender|official|player|goaltender|goalie|skater|defender|shooter|passer|teammate)\b/i;
+  const PRONOUN = /\b(he|his|him)\b/i;
+  let checked = 0;
+  for (const [id, fig] of Object.entries(figures)) {
+    fig.steps.forEach((step, i) => {
+      const t = step.replace(/<[^>]+>/g, '');
+      const pro = PRONOUN.exec(t);
+      if (!pro) return;
+      checked++;
+      const who = PERSON.exec(t);
+      assert.ok(who && who.index < pro.index,
+        `${id} step ${i + 1} says "${pro[0]}" with no person named before it in the same step `
+        + `-- a reader beside badge ${i + 1} has nobody to attach it to: "${t.slice(0, 90)}..."`);
+    });
+  }
+  assert.ok(checked >= 2,
+    `only ${checked} steps use a pronoun at all, so this check has lost its subject`);
+});
+
+test('⛔ the delayed-penalty step says WHY the whistle goes, not just that it does', () => {
+  /* The half the pronoun rule above cannot see. Pinned to the FACT and to its
+     ORDER rather than to a wording -- the touch is what stops the play, so a step
+     that mentions a whistle must have mentioned the touch first. A future rewrite
+     is free to say it any way it likes and is not free to drop the cause.
+     MUTATION: restore "At the whistle he goes to the penalty box" and both this
+     and the pronoun check fire. */
+  const two = figures.penalties.steps[1].replace(/<[^>]+>/g, '');
+  const touch = two.search(/touch/i);
+  const whistle = two.search(/whistle|play stops|stops the play/i);
+  assert.ok(touch >= 0,
+    'the step that follows the delayed penalty no longer names the touch that ends it');
+  assert.ok(whistle >= 0, 'the step no longer says the play is stopped');
+  assert.ok(touch < whistle,
+    'the step announces the stoppage before the touch that causes it, which is the '
+    + 'reading Kevin flagged: a whistle arriving from nowhere');
+  /* ⚠️ AND STEP ① STILL SETS IT UP. The two steps are allowed to repeat the touch
+     -- each one is read beside its own badge -- but ① losing it would mean the
+     delayed penalty is never explained as a delay at all. */
+  assert.match(figures.penalties.steps[0].replace(/<[^>]+>/g, ''), /carries on|continues/i,
+    'step 1 no longer says play carries on, so there is no delay to explain');
+});
+
 test('⛔ a step does not claim an outcome is universal when it is not', () => {
   /* ⚠️ TWICE NOW, IN TWO FIGURES, AND THE SAME MISTAKE BOTH TIMES.
 
