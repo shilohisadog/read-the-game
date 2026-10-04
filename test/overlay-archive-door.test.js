@@ -23,6 +23,32 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+
+/* ⭐ THE RAIL, WHEREVER IT SITS UNDER THE ROW. It was a direct child of the `li`
+   until 2026-10-04, when a `.sscale` wrapper took over stating the width — the
+   rail and its ends row each carried `max-width:34ch` and `ch` resolves against
+   the element's OWN font-size, so the smaller ends row came out 78% as wide and
+   its right-hand number stopped short of the rail it labels (Kevin, from the live
+   site). A test that hard-codes the nesting depth asserts the MARKUP where it
+   means to assert the PICTURE, and would have to be edited again the next time
+   anything wraps anything. */
+function under(node, cls) {
+  for (const k of node._kids || []) {
+    if (k.className === cls) return k;
+    const deeper = under(k, cls);
+    if (deeper) return deeper;
+  }
+  return null;
+}
+/* ⭐ THE DOOR'S LABEL IS READ OFF THE SHIPPED MARKUP, NOT RETYPED HERE. It is
+   `SUM_DOOR` in `app.js` and the button's pre-script text in
+   `builders/build_main.py` — two copies of one string, which is two chances to
+   drift — so this asserts the RENDER agrees with what the page ships rather than
+   adding a third copy to disagree with both. Same arrangement as `PLAY_REST`. */
+const SUM_DOOR = (/<button class="share sumdoor" id="sum"[^>]*>([^<]+)</.exec(app) || [])[1];
+
+const railIn = li => under(li, 'strack');
+const endsIn = li => under(li, 'sends');
 import { readFileSync } from 'node:fs';
 import { printed } from '../src/lib/printed.js';
 import { sitsIn } from '../src/lib/distribution.js';
@@ -720,7 +746,7 @@ test('the summary door sits where no layer can hide it, and tells nobody anythin
   const a = page();
   /* ③ ITS LABEL REVEALS NOTHING — the one thing the old anti-spoiler rule really
      protected. */
-  assert.equal(a.$('sum').textContent, 'What this game was');
+  assert.equal(a.$('sum').textContent, SUM_DOOR);
   const goals = rich.events.filter(e => e.type === 'goal' && e.pt !== 'SO');
   const hs = goals.filter(e => e.own === rich.teams.home.id).length;
   const as = goals.length - hs;
@@ -743,7 +769,7 @@ test('the summary door sits where no layer can hide it, and tells nobody anythin
   s.oninput({ target: { value: '51' } });
   assert.equal(a.$('sumPanel').hidden, true,
     'the summary stayed open over a replay that moved on without it');
-  assert.equal(a.$('sum').textContent, 'What this game was');
+  assert.equal(a.$('sum').textContent, SUM_DOOR);
 });
 
 /**
@@ -799,7 +825,7 @@ test('⭐⭐⭐ every row draws a mark per club, on the class that club belongs 
   let teamRows = 0, gameRows = 0;
   for (const li of rows._kids) {
     const kids = li._kids || [];
-    const track = kids.find(n => n.className === 'strack');
+    const track = railIn(li);
     const text = (kids[0] && kids[0].innerHTML) || '';
     if (!track) continue;
     const band = (track._kids || []).find(n => n.className === 'sband');
@@ -877,7 +903,7 @@ test('⭐⭐⭐ every row draws a mark per club, on the class that club belongs 
        guess at. They come from the SAME class the mark was placed on — printing
        the game class's ends under a team row would be the population swap this
        whole test exists to forbid, drawn in small grey type. */
-    const ends = kids.find(n => n.className === 'sends');
+    const ends = endsIn(li);
     assert.ok(ends, `${lens} drew a scale with no ends`);
     assert.deepEqual((ends._kids || []).map(n => n.textContent),
       [dist.min.toLocaleString(), dist.max.toLocaleString()],
@@ -1019,7 +1045,7 @@ test('⛔⛔⛔ a document with no per-team class draws GAME rows, never a club 
        with no class of its own to be placed against. */
     assert.ok(!/class="stm s[ah]"/.test(text),
       `a row still names the clubs with no per-team class published: ${text}`);
-    const track = kids.find(n => n.className === 'strack');
+    const track = railIn(li);
     if (!track) continue;
     drew++;
     const marks = (track._kids || []).filter(n => (n.className || '').startsWith('spt'));
@@ -1038,7 +1064,7 @@ test('⛔⛔⛔ a document with no per-team class draws GAME rows, never a club 
     assert.ok(Math.abs(parseFloat(marks[0].style.left) - want) < 0.15,
       `${lens} ${count} belongs at ${want.toFixed(1)}% of its GAME class `
       + `${dist.min}–${dist.max} and was drawn at ${marks[0].style.left}`);
-    const ends = kids.find(n => n.className === 'sends');
+    const ends = endsIn(li);
     assert.deepEqual((ends._kids || []).map(n => n.textContent),
       [dist.min.toLocaleString(), dist.max.toLocaleString()],
       `${lens}'s axis names the ends of a class its mark was not placed on`);
@@ -1215,7 +1241,7 @@ test('⛔⛔⛔ neither panel claims the ARCHIVE holds what the MEASUREMENT coun
     ['8', 'this season\u2019s reference class, from perGame'],
     [MEASURES.measured.toLocaleString(), 'the archive-wide census figure, from measures.json'],
   ];
-  for (const [where, said] of [['Is that a lot?', alot], ['What this game was', sum]]) {
+  for (const [where, said] of [['Is that a lot?', alot], [SUM_DOOR, sum]]) {
     assert.ok(/\b8\b/.test(said), `${where}: the panel never stated its population, so this test saw nothing`);
     for (const [fig, what] of POPULATIONS) {
       /* Only judge a figure the panel actually prints — the summary carries the

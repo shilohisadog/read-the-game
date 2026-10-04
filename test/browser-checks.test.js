@@ -486,17 +486,24 @@ test('⛔ the page opens the newest viewable game even when the window will not 
    measurement the probe could really return, and the first one is the geometry
    that was live on 2026-10-02.
    ──────────────────────────────────────────────────────────────────────────── */
-import { CANARY, judgeDoors, readDoors, TOLERANCE } from '../tools/browser/door-row.mjs';
+import { CANARY, judgeDoors, openingLabel, readDoors, TOLERANCE } from '../tools/browser/door-row.mjs';
 
 const DOOR = (over = {}) => ({ id: 'work', text: 'How we counted', visible: true,
   display: 'flex', align: 'center', justify: 'center', dx: 0, dy: 0, box: '290x44', ...over });
 /* ⭐ THE SUMMARY'S DOOR IS SAMPLED SEPARATELY AND IS SOUND BY DEFAULT HERE, so the
    geometry cases below fail for geometry. It left this row on 2026-10-04 — see
    `the summary's door is judged where a reader LANDS` further down. */
+/* ⭐ THE OPENING LABEL IS INVENTED HERE, LIKE EVERY OTHER NUMBER IN THIS FILE.
+   The probe reads the real one off the built page — it held a third copy of the
+   wording until 2026-10-04, so renaming the door correctly in both shipped
+   places still failed the release gate. What the judge asserts is that the
+   RENDERED door matches the label the page SHIPS, which these readings exercise
+   without either of them being the real string. */
+const OPENING = 'An invented door label';
 const SIDEBAR = (over = {}) => ({ vis: 'visible', display: 'block', w: 230, h: 44,
-  inRow: false, text: 'What this game was', ...over });
+  inRow: false, text: OPENING, ...over });
 const ROW = (...doors) => ({ booted: true, ended: true, doors, summary: SIDEBAR() });
-const doorRefusals = r => judgeDoors(r).filter(v => !v.ok).map(v => v.why);
+const doorRefusals = r => judgeDoors(r, { opening: OPENING }).filter(v => !v.ok).map(v => v.why);
 
 test('⛔ THE DEFECT ITSELF: a door laid out differently from the one beside it', () => {
   /* The real measurement of 2026-10-02, when this row held three: all boxes
@@ -551,6 +558,16 @@ test('a page that did not boot, or never reached the horn, is NOT a tidy pass', 
   assert.ok(doorRefusals({ ...ROW(DOOR(), DOOR()), ended: false }).some(w => /never reached the horn/.test(w)));
   assert.ok(judgeDoors(null).every(v => !v.ok), 'a silent probe is a failure, not a pass');
   assert.ok(judgeDoors({ err: 'boom' }).every(v => !v.ok), 'a probe that threw is a failure');
+  /* ⛔ AND A JUDGE GIVEN NO LABEL TO HOLD THE DOOR TO SAYS SO, rather than
+     quietly accepting whatever the button happens to read. */
+  assert.ok(doorRefusals.length >= 0);
+  assert.ok(judgeDoors({ ...ROW(), summary: SIDEBAR() }).filter(v => !v.ok)
+    .some(w => /no label on #sum/.test(w.why)),
+    'a judge with no shipped label to compare against passed the door anyway');
+  /* ⭐ AND THE READER FINDS THE LABEL IN THE BUILT MARKUP. */
+  assert.equal(openingLabel('<button class="share sumdoor" id="sum" type="button">Game metrics</button>'),
+    'Game metrics');
+  assert.equal(openingLabel('<p>no door here</p>'), null);
   /* ⛔ AND IT STOPS THERE. Reporting "the doors do not line up" about a page that
      never ran is a false statement about a working site. */
   assert.ok(!doorRefusals({ ...ROW(DOOR()), booted: false }).some(w => /centre/.test(w)),

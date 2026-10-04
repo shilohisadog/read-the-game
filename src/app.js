@@ -1753,10 +1753,17 @@ function renderSum(){
  /* ⭐ THE SEASON'S OWN SPAN, read off the entry the figure came out of rather
     than the document's — a finished season's stopped moving years ago and the
     one being played moved last night, and a reader placed against 2026-27 must
-    be told which. That is the whole reason `perGame` stamps each entry. */
+    be told which. That is the whole reason `perGame` stamps each entry.
+    ⚠️ AND THE SPAN IS NOW THE ONLY THING SAYING WHICH SEASON. Kevin, 2026-10-04:
+    *"just remove 'for that season'."* He is right that the phrase was doing no
+    work — `that` had no antecedent anywhere on the card, since the heading names
+    no season — and the date it is followed by is the season's own. ⛔ WHAT IT
+    COSTS, stated so the next reader of this line can weigh it: "the 34 games we
+    have measured" no longer says 34 of WHAT, and the archive holds 4,585. The
+    span is what keeps it from reading as the whole of our work. */
  sub.textContent='— all situations, power plays included'
   +(ref?', against the '+N(ref.of)+' game'+(ref.of===1?'':'s')
-       +' we have measured for that season'+SPAN(own&&own.dataThrough):'');
+       +' we have measured'+SPAN(own&&own.dataThrough):'');
  const ul=document.createElement('ul');
  ul.className='srows';
  /* ⭐ DRIVEN BY `LENS`, which is the one place a lens id is typed — so a seventh
@@ -1860,6 +1867,11 @@ function renderSum(){
      every game in the archive. */
   const ref0=marks[0]&&marks[0].at;
   if(ref0&&ref0.max>ref0.min){
+   /* ⭐ ONE BOX STATES THE WIDTH AND THE RAIL AND ITS ENDS BOTH FILL IT — see
+      `.sscale`. They each carried `max-width:34ch` and `ch` is relative to the
+      element's own font-size, so the smaller ends row came out 78% as wide and
+      its right-hand number stopped short of the rail. */
+   const sc=document.createElement('span');sc.className='sscale';
    const tr=document.createElement('span');tr.className='strack';
    const band=document.createElement('span');band.className='sband';
    tr.appendChild(band);
@@ -1872,7 +1884,7 @@ function renderSum(){
     pt.className='spt '+m.cls;
     pt.style.left=pc(m.at.count).toFixed(1)+'%';
     tr.appendChild(pt);}
-   li.appendChild(tr);
+   sc.appendChild(tr);
    /* THE ENDS, NAMED — the repair the preview card's axis already carries. A
       position on a scale whose ends nobody states is a picture a reader can only
       guess at, and the row no longer carries a sentence saying where the mark
@@ -1881,7 +1893,7 @@ function renderSum(){
    const lo=document.createElement('span');lo.textContent=N(ref0.min);
    const hi=document.createElement('span');hi.textContent=N(ref0.max);
    ends.appendChild(lo);ends.appendChild(hi);
-   li.appendChild(ends);}
+   sc.appendChild(ends);li.appendChild(sc);}
   ul.appendChild(li);});
  host.appendChild(ul);
  /* ⭐⭐⭐ AND THE WAY TO THE LEAGUE'S VIDEO IS IN HERE, because at the horn this
@@ -2313,11 +2325,17 @@ function drawGoalTicks(){
     pill and the PK caption.
     ⚠️ AND IT IS SILENT IN A GAME WITH NO GOALS, because "the coloured lines are
     goals" beside an empty bar describes something that is not there. The caption
-    is driven by the ticks rather than printed beside them. */
+    is driven by the ticks rather than printed beside them.
+    ⚠️ `BELOW THE BAR`, NOT `ON` IT, since 2026-10-04. Kevin: *"since they aren't
+    'on' the bar."* They never were — `#gticks` is its own row under `#scrub` —
+    and the comment directly above has quoted him saying "the tic marks BELOW the
+    scrubber" since the day they were named. A caption that says where a thing is
+    has to be checkable by looking at it, which is the only kind of instruction
+    this site is allowed to print. */
  const ticks=goalTicks(EV), cap=$('gtickcap');
  if(cap){
   cap.hidden=!ticks.length;
-  cap.textContent='The coloured lines on the bar are goals \u2014 click one to jump there.';}
+  cap.textContent='The coloured lines below the bar are goals \u2014 click one to jump there.';}
  for(const {k,f} of ticks){
   const e=EV[k], say=clipNames(e);
   const b=document.createElement('button');
@@ -2783,6 +2801,19 @@ setGear(gear);
    WHICH panel is open — `null`, `'work'` or `'alot'` — so "both open" and "the
    ice hidden with nothing over it" are not states this page can reach.
    `setWork` stays as the name every other call site already uses. */
+/* ⭐⭐ `Game metrics`, AND IT IS A CONSTANT BECAUSE THE LABEL IS SHIPPED TWICE.
+   Kevin, 2026-10-04: *"can we change the name of the summary button to 'Game
+   metrics' or something similar?"* The door read `What this game was`, which
+   `builders/build_main.py` also ships as the button's pre-script text so the
+   sidebar is not blank before this file runs — two copies of one string, which
+   is two chances to drift. `PLAY_REST` is the same arrangement for the same
+   reason and `test/render-notes.test.js` checks the markup copy against it;
+   this one is checked the same way.
+   ⚠️ THE PREVIEW CARD STILL SAYS `WHAT THIS GAME WAS`. That is a different
+   surface and a different claim — a VERDICT about the game, not these counts —
+   and renaming it was not asked for. Said here because the two used to be one
+   phrase and a future reader will wonder whether the split was an accident. */
+const SUM_DOOR='Game metrics';
 function setOverlay(which){
  workOpen=which==='work';
  archOpen=which==='alot';
@@ -2805,7 +2836,7 @@ function setOverlay(which){
     it closes is on screen beside it. */
  $('work').textContent=workOpen?'Hide':'How we counted';
  $('alot').textContent=archOpen?'Hide':'Is that a lot?';
- $('sum').textContent=sumOpen?'Hide':'What this game was';
+ $('sum').textContent=sumOpen?'Hide':SUM_DOOR;
  if(which&&playing)stop();
  if(archOpen)renderAlot();
  if(sumOpen)renderSum();}

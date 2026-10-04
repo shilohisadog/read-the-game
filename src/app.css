@@ -1537,7 +1537,33 @@
 #rg.endskey .lk-ends,#rg.unrec .lk-unrec{display:block}
 #rg .disclose{font-size:.76rem;line-height:1.5;color:var(--muted);margin:12px 2px 0;padding-left:11px;border-left:2px solid var(--edge)}
 #rg .k-a{background:#fff;box-shadow:0 0 0 1.5px var(--away)}#rg .k-h{background:var(--home)}
-#rg .k-blk{background:var(--home);box-shadow:0 0 0 1.5px var(--flag)}#rg .k-blkv{background:#fff;box-shadow:0 0 0 1.5px var(--flag);margin-left:-3px}#rg .k-p{background:#0e1216}#rg .k-g{background:radial-gradient(circle,#fff 0 2.5px,var(--home) 2.5px)}#rg .k-gv{background:radial-gradient(circle,var(--away) 0 2.5px,#fff 2.5px);box-shadow:0 0 0 1.5px var(--away);margin-left:-3px}
+/* ⛔⛔⛔ THE KEY HAD NOT HAD THE FIX THE ICE GOT. `marks.js` has said since
+   2026-09 that *"a blocked shot is an attempt, ANNOTATED, and the annotation is a
+   separate ring rather than the mark's own stroke"* — because drawn the old way
+   *"a visitor's blocked shot is a white dot with an orange ring and no team
+   colour anywhere on it, which on the ice reads as a third club"*, which Kevin
+   found in a real game. The ICE was repaired: `.att.a` keeps `stroke:var(--away)`
+   and `.ring.blk` is a separate circle outside it. **`.k-blkv` was left exactly
+   as the defect describes it** — white, orange ring, no club anywhere — so the
+   key taught the reader the mark the rink had stopped drawing. Kevin, 2026-10-04,
+   from the live sidebar: *"is the colour combination for 'blocked' in the sidebar
+   correct?"* It was not.
+   ⭐ SO THE CLUB GOES BACK ON, AND THE ORANGE RING STAYS OUTSIDE IT — the ice's
+   own composition. The HOME glyph was already right: `.att.h` is a solid fill
+   with no stroke, so a solid disc with the flag around it is exact.
+   ⭐⭐ THE VISITOR'S CLUB COLOUR IS A RIM INSIDE THE DISC, NOT A SECOND RING, AND
+   MEASURING IS WHAT DECIDED THAT. Drawn the obvious way — `0 0 0 1.5px
+   var(--away), 0 0 0 3px var(--flag)` — the swatch grows 3px in every direction,
+   and the row is built for 10px discs: measured in a browser, the two blocked
+   glyphs overlapped by 6px and the second one ran 3px into its own label, while
+   the goal pair beside it sits at 1.5px. A gradient puts the club at the disc's
+   EDGE, where `.att.a` draws its stroke, and the flag keeps the 1.5px ring every
+   other glyph in this row has. Same three colours, same box.
+   ⚠️ THE STOP IS AT 3px OF A 4.5px RADIUS, measured: the first attempt stopped at
+   3.5 and left a ONE-pixel rim, thinner than any other club ring in the key. 1.5
+   is what `.k-a` wears.
+   `test/key-matches-the-ice.test.js` holds every swatch to its mark's colours. */
+#rg .k-blk{background:var(--home);box-shadow:0 0 0 1.5px var(--flag)}#rg .k-blkv{background:radial-gradient(circle,#fff 0 3px,var(--away) 3px);box-shadow:0 0 0 1.5px var(--flag);margin-left:-3px}#rg .k-p{background:#0e1216}#rg .k-g{background:radial-gradient(circle,#fff 0 2.5px,var(--home) 2.5px)}#rg .k-gv{background:radial-gradient(circle,var(--away) 0 2.5px,#fff 2.5px);box-shadow:0 0 0 1.5px var(--away);margin-left:-3px}
 #rg .work{background:#fff;border:1px solid var(--edge);border-radius:13px;padding:18px;margin-top:14px;box-shadow:0 5px 18px rgba(16,32,45,.06)}
 /* ⭐ THE WORK PANEL IS AN OVERLAY ON THE ICE — 2026-08-31.
    Kevin: "the information shows up well below the ice, which gives the vibe
@@ -1778,8 +1804,19 @@
 /* ⭐ THE PER-ROW SCALE. Same vocabulary as the verdict dot above it on purpose:
    a rail, a band, a dot. The BAND is the middle half the sentence names, so the
    drawing and the prose are one claim; the rail runs quietest to busiest. */
+/* ⛔⛔⛔ THE WIDTH IS STATED ONCE, ON THE WRAPPER, AND `ch` IS WHY. Kevin,
+   2026-10-04: *"the scale number on the right isn't aligned to the right, it's
+   like 3/4 of the way."* It was at 78% of the way, and 78% is .7rem/.9rem: the
+   rail and the ends row each carried `max-width:34ch`, and **`ch` resolves
+   against the element's OWN font-size**, so one constant written twice produced
+   two different widths and the right-hand label stopped short of the rail it
+   labels. The preview card never had this because `.pvends` is a GRID CELL — it
+   takes the track's width by construction rather than restating it.
+   ⭐ SO THERE IS ONE DECLARATION AND TWO `width:100%` CHILDREN. A number repeated
+   in two unit contexts is not one number. */
+#rg .srows .sscale{display:block;max-width:34ch}
 #rg .strack{display:block;position:relative;height:11px;border-radius:5px;
- background:#eef3f7;margin:6px 0 0;max-width:34ch}
+ background:#eef3f7;margin:6px 0 0;width:100%}
 #rg .sband{position:absolute;top:0;bottom:0;border-radius:4px;background:#ccdbe7}
 #rg .spt{position:absolute;top:50%;width:9px;height:9px;border-radius:50%;
  transform:translate(-50%,-50%);background:#1f7a4d;border:2px solid #fff}
@@ -1826,7 +1863,7 @@
 /* THE ENDS, UNDER THE RAIL AND NO WIDER THAN IT — the same shape and the same
    reason as the preview card's `.pvends`: a position on a scale whose ends
    nobody states is a picture a reader can only guess at. */
-#rg .sends{display:flex;justify-content:space-between;max-width:34ch;
+#rg .sends{display:flex;justify-content:space-between;width:100%;
  font-size:.7rem;color:var(--muted);font-variant-numeric:tabular-nums;margin:2px 0 0}
 /* ⭐ THE SUMMARY'S DOOR IN THE SIDEBAR. It wears `.share`, the same control
    `Copy a link to this moment` is, because it IS the same kind of thing: a

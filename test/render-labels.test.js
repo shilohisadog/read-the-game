@@ -292,10 +292,25 @@ test('the blocked key carries both sweaters, because the ice draws both', () => 
   assert.ok(entry, 'the blocked key is not in the legend');
   assert.equal((entry[1].match(/<i /g) || []).length, 2,
     'the blocked key shows ONE sweater for a mark that appears in both');
-  assert.match(PAGE_CSS, /#rg \.k-blk\{[^}]*background:var\(--home\)/,
+  /* ⚠️ THE COLOUR IS ASSERTED, NOT ITS SPELLING. These read `background:#fff`
+     and `background:var(--home)` literally until 2026-10-04, when the visitor
+     swatch became a gradient — white centre, club rim — and the claim went red
+     on a page that had just been made MORE correct. Where a glyph puts a colour
+     is a drawing decision; which colours it has is the claim.
+     ⭐ AND THE FULL RULE LIVES IN `test/key-matches-the-ice.test.js` since that
+     day: every swatch in this key must be made of the colours the rink paints
+     its mark with, both directions. This pair keeps its own check because it is
+     the one with the history — see the header above, and the 2026-10-04 entry:
+     the visitor swatch had NO club colour at all, which is the white dot with an
+     orange ring that `marks.js` says reads as a third club. */
+  const ruleFor = c => (new RegExp(`#rg \\.${c}\\{([^}]*)\\}`).exec(PAGE_CSS) || [])[1] || '';
+  assert.match(ruleFor('k-blk'), /var\(--home\)/,
     'the host swatch stopped being the host colour');
-  assert.match(PAGE_CSS, /#rg \.k-blkv\{[^}]*background:#fff/,
+  assert.match(ruleFor('k-blkv'), /#fff|#ffffff|white/,
     'the visitor swatch is not white, so the pair does not read as two sweaters');
+  assert.match(ruleFor('k-blkv'), /var\(--away\)/,
+    'the visitor swatch carries no club colour — a white dot with an orange ring '
+    + 'and nothing of the club, which is what the ice stopped drawing in September');
 
   const owners = new Set(rich.events.filter(e => e.type === 'blocked-shot').map(e => e.own));
   assert.equal(owners.size, 2,

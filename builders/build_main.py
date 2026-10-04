@@ -422,7 +422,7 @@ __CSS__</style>
      is the duplicate funnel `_NAV` already names. The door row keeps the two that
      are ABOUT the ledger beside them; this one is about the whole game and was
      never about the layer. -->
-<div class="sumrow"><button class="share sumdoor" id="sum" type="button" aria-expanded="false" aria-controls="sumPanel">What this game was</button></div>
+<div class="sumrow"><button class="share sumdoor" id="sum" type="button" aria-expanded="false" aria-controls="sumPanel">Game metrics</button></div>
 </div>
 <!-- ⏭ THE VERDICT CARD USED TO SIT HERE, after the transport and before the
      video, and the note it carried argued it out of `.rinkbox` because a card

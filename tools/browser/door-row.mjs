@@ -146,7 +146,17 @@ export function readDoors(html) {
  * doors do not line up" over a page that never booted is a false report about a
  * working site, which is how `preview-fits` learned to state `booted` first.
  */
-export function judgeDoors(r, { tolerance = TOLERANCE } = {}) {
+/* ⭐ THE DOOR'S OPENING LABEL IS READ OFF THE PAGE, NOT RETYPED HERE. It was
+   `What this game was` and is `Game metrics` since 2026-10-04 (Kevin: *"can we
+   change the name of the summary button"*), and this probe held a THIRD copy of
+   it beside the two the page already ships — so a rename that was correct
+   everywhere failed the release gate. The claim this makes is "the door shows
+   what it opens, not `Hide`", which does not depend on the wording; `check()`
+   passes the wording in from the built markup. */
+export const openingLabel = html =>
+  (/<button[^>]*id="sum"[^>]*>([^<]+)</.exec(html) || [])[1] || null;
+
+export function judgeDoors(r, { tolerance = TOLERANCE, opening = null } = {}) {
   const out = [];
   const ok = (ok_, why) => out.push({ ok: ok_, why });
   if (!r) return [{ ok: false, why: 'door-row: the probe wrote nothing — the page did not run' }];
@@ -168,8 +178,14 @@ export function judgeDoors(r, { tolerance = TOLERANCE } = {}) {
       + 'hides until a layer is chosen — the exact place it was unreachable from');
     ok(r.summary.w > 40 && r.summary.h > 20,
       `door-row: the summary's door rendered ${r.summary.w}x${r.summary.h}px`);
-    ok(r.summary.text === 'What this game was',
-      `door-row: the summary's door reads "${r.summary.text}" before anyone pressed it`);
+    /* ⛔ AND THE EXPECTED WORDING MUST HAVE BEEN FOUND. A `null` here would turn
+       this into a check that passes on any label at all, which is the shape this
+       repo keeps paying for; so its absence is itself a failure. */
+    ok(!!opening, 'door-row: the built page carries no label on #sum, so there is '
+      + 'nothing to hold the rendered door to');
+    ok(!opening || r.summary.text === opening,
+      `door-row: the summary's door reads "${r.summary.text}" before anyone pressed `
+      + `it — the page ships "${opening}"`);
   } else {
     ok(false, 'door-row: there is no #sum on the page at all');
   }
@@ -233,6 +249,7 @@ async function measure(dir, chrome, extraCss) {
 
 export async function check({ chrome = findChrome(), repo = process.cwd() } = {}) {
   const src = join(repo, 'src/read-the-game.html');
+  const opening = openingLabel(readFileSync(src, 'utf8'));
   const dir = mkdtempSync('/tmp/rtg-doors-');
   try {
     cpSync(src, join(dir, 'read-the-game.html'));
@@ -241,14 +258,14 @@ export async function check({ chrome = findChrome(), repo = process.cwd() } = {}
       say(`${(d.text || d.id).padEnd(20)} ${d.box} ${d.display}/${d.align}/${d.justify}`
         + `  label off centre by ${d.dx}x${d.dy}px`);
     let ok = true;
-    for (const v of judgeDoors(r)) if (!v.ok) { fail(v.why); ok = false; }
+    for (const v of judgeDoors(r, { opening })) if (!v.ok) { fail(v.why); ok = false; }
     /* ⛔ AND THE CANARY MUST FAIL. A check that passes on the defect it was
        written for is a check that is not running. */
     const can = mkdtempSync('/tmp/rtg-doors-canary-');
     try {
       cpSync(src, join(can, 'read-the-game.html'));
       const c = await measure(can, chrome, CANARY);
-      const rejected = judgeDoors(c).some(v => !v.ok);
+      const rejected = judgeDoors(c, { opening }).some(v => !v.ok);
       say(`canary (the defect restored): ${rejected ? 'rejected, as it must be' : 'ACCEPTED'}`);
       if (!rejected) { fail('door-row: the canary passed — this check cannot see the defect it exists for'); ok = false; }
     } finally { rmSync(can, { recursive: true, force: true }); }
