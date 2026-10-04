@@ -49,9 +49,29 @@ const SHUT = '<!-- /health -->';
  */
 export function suiteCounts() {
   const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).scripts;
-  const run = cmd => execFileSync('sh', ['-c', `${cmd} 2>&1`], {
-    cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'],
-    maxBuffer: 1 << 26 });
+  /* ⛔⛔⛔ A FAILING SUITE IS A COUNT, NOT A CRASH — AND THIS COST A NIGHT.
+     `execFileSync` throws on a non-zero exit, so the first test failure killed
+     this file with a Node error carrying 300KB of truncated TAP. On 2026-10-04
+     both nightly ingests failed and the log said only *"Error: Command failed:
+     sh -c node --test test/*.test.js"*; the step's own `::error::` guard, which
+     names the likely cause and the fix, sits BEHIND this call in `npm run gates`
+     and never ran. A diagnostic downstream of the thing that dies is not a
+     diagnostic.
+     ⭐ AND THE INTENT WAS ALREADY HERE: `jsFail` reads `# fail N` and line 217
+     prints a warning for it, which is unreachable code unless the output
+     survives the exit code. The output is on the thrown error; it is used. */
+  const run = cmd => {
+    try {
+      return execFileSync('sh', ['-c', `${cmd} 2>&1`], {
+        cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'],
+        maxBuffer: 1 << 26 });
+    } catch (e) {
+      /* A suite that ran and failed still reports its counts. One that could not
+         run at all reports nothing, and `num()` then yields null — which the
+         caller already treats as "unknown" rather than as zero. */
+      return typeof e.stdout === 'string' ? e.stdout : '';
+    }
+  };
   const js = run(pkg.test);
   const py = run(pkg['test:py']);
   const num = (out, re) => { const m = out.match(re); return m ? Number(m[1]) : null; };

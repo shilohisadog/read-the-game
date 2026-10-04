@@ -3,7 +3,7 @@
  * other side of it.
  *
  * WHY THIS LAYER EXISTS, AND IT IS ONE SENTENCE. Over the whole archive —
- * 503,078 attempts in 4,213 games — **51.8% of shot attempts never reach the
+ * 504,598 attempts in 4,226 games — **51.8% of shot attempts never reach the
  * goalie at all, and 27.7% are blocked by a body.** A novice reading "58
  * attempts" on the scoreboard hears 58 chances; about thirty of them never got
  * there. This layer is that correction, made visible on the ice.

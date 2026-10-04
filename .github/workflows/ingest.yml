@@ -874,15 +874,34 @@ jobs:
       # of docs/status.md, and the learn pages and the front door are rebuilt from
       # it. All of those are generated, so the nightly regenerates them.
       #
-      # ⚠️ ONE THING IS NOT GENERATED AND CANNOT BE. `test/quoted-figures.test.js`
-      # requires that the arguments in `src/lib/sentence.js` and
-      # `src/lib/layers/blocked.js` quote the PUBLISHED figures — those are
-      # hand-written sentences explaining why a module exists, and the test was
-      # written because six of them had gone stale and nothing noticed. Counts
-      # like "1,567 of 3,946 games" move with every night of hockey, so sooner or
-      # later this step produces a tree that does not pass.
+      # ⛔⛔⛔ "ONE THING IS NOT GENERATED AND CANNOT BE" STOOD HERE, AND THE WORD
+      # "CANNOT" COST BOTH OF THE FIRST NIGHT'S INGESTS. It said
+      # `test/quoted-figures.test.js` holds the hand-written arguments in
+      # `src/lib/sentence.js` and `src/lib/layers/blocked.js` to the published
+      # figures, that counts like "1,567 of 3,946 games" move with every night of
+      # hockey, and so "sooner or later this step produces a tree that does not
+      # pass. THAT IS A PROMPT FOR A HUMAN."
       #
-      # THAT IS A PROMPT FOR A HUMAN AND IT MUST NOT BE A PUSH. `deploy.yml` runs
+      # Sooner. On 2026-10-04, the first night this job ran unattended, three of
+      # those counts moved and both runs failed — leaving the learn pages stale,
+      # which is the exact harm this job exists to prevent, caused by a freshness
+      # check on three sentences in COMMENTS that no reader ever sees.
+      #
+      # ⭐⭐ THE PREDICTION WAS RIGHT AND ITS PREMISE WAS FALSE. Every one of those
+      # figures is a field of the published document or an arithmetic step from
+      # one. `tools/quoted-figures.mjs` writes them, below, beside the other
+      # regenerators; the test is now the CHECK ON THAT WRITER and reads its claim
+      # list rather than restating it. A treadmill is not a guard — this repo says
+      # so in `test/prose-measurements.test.js` — and a treadmill with nobody on it
+      # is just a stopped job.
+      #
+      # ⚠️ IT RUNS BEFORE `npm run build`, NOT AFTER. Those comments are inlined
+      # into the built pages, whose bytes are what the CSP hashes are computed
+      # from, so writing them after the build would ship a page whose hash does not
+      # match its own script.
+      #
+      # ANY OTHER RED GATE IS STILL A PROMPT FOR A HUMAN AND MUST NOT BE A PUSH.
+      # `deploy.yml` runs
       # `npm run gates` before deploying, so a red commit pushed from here would
       # fail the deploy it dispatches AND leave `main` red for the next person to
       # commit. So gates run HERE, before the push, and a failure fails this job
@@ -897,6 +916,9 @@ jobs:
             exit 0
           fi
           python3 tools/measures_fresh.py
+          # THE FIGURES src/lib ARGUES FROM, WRITTEN FROM THE DOCUMENT. First,
+          # because the build inlines these files and the CSP hashes the result.
+          node tools/quoted-figures.mjs
           # EVERYTHING DERIVED FROM IT, REGENERATED. Each of these is a generated
           # block or a built page; none is a judgement.
           node tools/snapshots.mjs
@@ -915,11 +937,11 @@ jobs:
                  "NOT committed. The archive and the published measurement are current and "\
                  "correct — what is stale is the committed copy. The failing gate names "\
                  "itself in the log directly above this line; read that rather than "\
-                 "guessing. One candidate worth knowing about: test/quoted-figures.test.js "\
-                 "holds the hand-written arguments in src/lib/sentence.js and "\
-                 "src/lib/layers/blocked.js to the published figures, and those counts move "\
-                 "with every night of hockey. If that is the one, update the sentence and "\
-                 "the next run commits."
+                 "guessing. The figures src/lib argues from are no longer a candidate: "\
+                 "tools/quoted-figures.mjs rewrote them from the published document a few "\
+                 "steps above, and test/quoted-figures.test.js is the check on that writer. "\
+                 "If THAT is what went red, a sentence has been reworded out of reach of its "\
+                 "own pattern, and the writer has been maintaining nothing."
             exit 1
           fi
           git config user.name  'readthegame-ingest'

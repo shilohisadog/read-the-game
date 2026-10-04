@@ -13,12 +13,25 @@
  * says 54.3%". A drift recorded in prose and alarmed on by nobody is the exact
  * gap `_vocabulary_seen` in derive.py was written to close, one tier over.
  *
- * ⭐ WHY THIS IS NOT A CONSTANT THAT DRIFTS. Every expected value below is READ
- * FROM `measures.json` at test time and formatted the way the comment states it.
- * Nothing here is typed. When the archive is re-derived and a rate moves, this
- * goes red naming the file and both figures, and somebody updates the sentence
- * — which is the entire point. A test holding last month's percentage would be
- * the defect it is checking for.
+ * ⭐ WHY THIS IS NOT A CONSTANT THAT DRIFTS. Every expected value is READ FROM
+ * `measures.json` at test time and formatted the way the comment states it.
+ * Nothing here is typed. A test holding last month's percentage would be the
+ * defect it is checking for.
+ *
+ * ⛔⛔⛔ AND THE SENTENCE THAT USED TO FOLLOW WAS A TREADMILL. It read: *"when the
+ * archive is re-derived and a rate moves, this goes red naming the file and both
+ * figures, and somebody updates the sentence — which is the entire point."* That
+ * was true while `measures.json` moved WEEKLY and a person regenerated it. On
+ * 2026-10-03 a NIGHTLY `measure` job began regenerating and committing it, and on
+ * the first night it ran for real BOTH ingests failed here — an unattended machine
+ * standing in a loop that had been designed for a human, three comment figures
+ * blocking the commit of the data the job exists to keep fresh.
+ *
+ * ⭐⭐ SO THE FIGURES ARE NOW WRITTEN, NOT RETYPED. `tools/quoted-figures.mjs`
+ * rewrites them from the published file, in the same job step that regenerates
+ * the snapshot banners, and THIS FILE IS THE CHECK ON THAT WRITER. The claim list
+ * is imported from it rather than restated: two enumerations of the same seven
+ * sentences would agree right up until one of them was fixed.
  *
  * ⛔ ITS LIMIT, STATED. The claim SITES are enumerated by hand: these are the
  * places the analysis tier argues from an archive-wide figure, found by reading.
@@ -32,70 +45,52 @@
  * moment unless it says otherwise. Rewriting a historical measurement to
  * today's value would destroy the record rather than maintain it.
  */
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { claims, survey, measures } from '../tools/quoted-figures.mjs';
 
-const M = JSON.parse(readFileSync(new URL('../data/measures.json', import.meta.url), 'utf8'));
-const src = f => readFileSync(new URL(`../src/lib/${f}`, import.meta.url), 'utf8');
+const M = measures();
 
-const n = v => v.toLocaleString('en-US');
-const pc = r => `${(r * 100).toFixed(1)}%`;
-
-test('⭐ the base rates the analysis tier argues from match the published file', () => {
-  const att = M.baseRates.moreAttemptsLost;
-  const lvl = M.baseRates.moreLevelControlLost;
-
-  const claims = [
-    { file: 'sentence.js',
-      want: `**${n(lvl.count)} of ${n(lvl.n)} games**`,
-      what: 'the finding the per-game sentence is built on' },
-    { file: 'sentence.js',
-      want: `${pc(att.rate)} of games are lost by the team with more attempts, against ${pc(lvl.rate)}`,
-      what: 'the two-rate comparison CHENG required in one clause' },
-    { file: 'archive.js',
-      want: `leader loses ${pc(att.rate)}`,
-      what: 'why a blocks-leader win rate is unpublishable' },
-    { file: 'layers/blocked.js',
-      want: `attempts leader loses ${pc(att.rate)}`,
-      what: 'the same reasoning, restated where the layer needs it' },
-  ];
-
-  for (const c of claims) {
-    assert.ok(src(c.file).includes(c.want),
-      `${c.file} no longer quotes the published figure for ${c.what}.\n`
-      + `  measures.json now says: ${c.want}\n`
-      + '  Update the comment — the archive moved and the prose did not.');
-  }
+test('⭐ every archive figure src/lib argues from matches the published file', () => {
+  /* MUTATION: retype any of the seven by hand and this names the file, what it
+     reads, and what the published document says. */
+  const rows = survey(M);
+  /* ⛔ THE LIST MUST NOT HAVE EMPTIED. A refactor that renamed a field, or a
+     `claims()` that returned [], passes every assertion below while checking
+     nothing — the shape this repo pays for most. */
+  assert.ok(rows.length >= 7, `only ${rows.length} quoted figures enumerated`);
+  const stale = rows.filter(r => !r.ok).map(r =>
+    `src/lib/${r.file} argues from "${r.now}" where measures.json says "${r.want}"`
+    + ` — ${r.what}`);
+  assert.deepEqual(stale, [], 'the archive moved and the reasoning did not. '
+    + '`node tools/quoted-figures.mjs` writes these:\n  ' + stale.join('\n  '));
 });
 
-test('⭐ the no-edge count is the population minus the games that had one', () => {
-  /* ⭐ DERIVED, NOT LOOKED UP. `measures.json` publishes how many games had a
-     level-control edge, never how many did not, so the comment's figure is a
-     subtraction — and stating it that way here is what makes this a check on
-     the ARITHMETIC rather than a second copy of the answer. */
-  const noEdge = M.measured - M.baseRates.moreLevelControlLost.n;
-  assert.ok(noEdge > 0, 'every measured game had a control edge — the derivation is wrong');
-  assert.ok(src('sentence.js').includes(`${n(noEdge)} of ${n(M.measured)} games`),
-    `sentence.js quotes the wrong no-edge count: measures.json gives `
-    + `${n(noEdge)} of ${n(M.measured)} (${n(M.measured)} measured − `
-    + `${n(M.baseRates.moreLevelControlLost.n)} with an edge).`);
+test('⛔ a claim whose pattern finds nothing is a FAILURE, never a pass', () => {
+  /* ⭐⭐ THE WRITER'S OWN HAZARD, and it is this repo's most expensive shape: an
+     extraction step that quietly matched nothing. A `sed` the shell refused still
+     exits 0, so a guard that read nothing approved everything. Here it would be
+     worse than silent — the writer would report "every figure already matches"
+     while the sentence it was meant to maintain had been reworded out of reach.
+     MUTATION: reword any of the seven sentences so its pattern no longer matches
+     and this fires, even though the FIGURE in it may still be correct. */
+  for (const r of survey(M))
+    assert.equal(r.hits, 1,
+      `the pattern for ${r.what} matches src/lib/${r.file} ${r.hits} times. `
+      + 'At zero the writer silently maintains nothing; above one it would rewrite '
+      + 'a sentence nobody listed.');
 });
 
-test('⭐ the blocked layer\'s opening sentence matches the attempt mix', () => {
-  const mix = M.attemptMix;
-  const t = mix.byType;
-  /* "Never reach the goalie" is blocked PLUS missed — the two ways an attempt
-     ends without the goaltender ever facing it. Computed from the type counts
-     rather than read from a field, because no field says this. */
-  const unreached = (t['blocked-shot'] + t['missed-shot']) / mix.blocked.n;
-  const want = `${n(mix.blocked.n)} attempts in ${n(M.measured)} games — `
-             + `**${pc(unreached)} of shot attempts never reach the`;
-  assert.ok(src('layers/blocked.js').includes(want),
-    `layers/blocked.js opens with a figure that no longer matches measures.json.\n`
-    + `  expected: ${want}…\n`
-    + '  This sentence is the layer\'s entire reason to exist, so it is the worst '
-    + 'one to leave stale.');
-  assert.ok(src('layers/blocked.js').includes(`and ${pc(mix.blocked.rate)} are blocked by a body`),
-    `layers/blocked.js quotes the wrong blocked share; measures.json says ${pc(mix.blocked.rate)}.`);
+test('⛔ the writer refuses rather than writing nonsense', () => {
+  /* The one claim that is a SUBTRACTION rather than a published field: an archive
+     in which every game had a control edge would make it zero, and "0 of 4,226
+     games — one in sixteen" is a sentence that reads as fact and is not one. */
+  const impossible = JSON.parse(JSON.stringify(M));
+  impossible.baseRates.moreLevelControlLost.n = impossible.measured;
+  const guarded = claims(impossible).filter(c => c.guard);
+  assert.ok(guarded.length >= 1, 'no claim guards its own derivation any more');
+  for (const c of guarded)
+    assert.equal(typeof c.guard(), 'string',
+      `${c.what} accepted a measures.json that makes its sentence false`);
 });
