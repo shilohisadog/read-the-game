@@ -2917,11 +2917,29 @@ LEARN_CARDS = [
     # "matching" now lives only in `note`, which is the right split: the blurb
     # explains the concept in plain words, the note gives it its name and says
     # outright that the two infractions need not be the same.
+    # ⛔⛔⛔ AND IT NAMED ONLY ONE SIDE OF THE SAME TWO MINUTES. Kevin, 2026-10-04,
+    # after the preview card's "What a power play is" door was pointed here:
+    # *"if that's intentional (which is fine), we need to explain the relationship
+    # between a penalty and a power play, I would suggest in the text at the top
+    # of the page."* This page said "a skater short" SIX TIMES and the words
+    # "power play" ZERO -- so a reader arriving through a door that promises the
+    # term met a page that never uses it, and had no way to know it had landed in
+    # the right place. The house rule it broke is the one `penalties-lede-open`
+    # already states: A TERM THE REPLAY SHOWS MUST BE NAMED ON THE CARD THAT
+    # TEACHES IT -- and the replay shows a power-play pill.
+    # ⭐ THE RELATIONSHIP IS THE LESSON, NOT THE WORD. A novice does not need a
+    # definition so much as the fact that the two phrases are one event counted
+    # from opposite benches, which is why the sentence says that and stops.
+    # ⚠️ IT INHERITS THE "unless" IT FOLLOWS: matching penalties leave nobody a
+    # skater up, so they leave nobody on a power play either, and attaching this
+    # after that clause is what keeps it from becoming an unqualified always --
+    # the overstatement this page has already had to correct twice.
     ("rules", "penalties", "Penalties",
      "A penalty is time off the ice: the offender sits, and his team plays a "
      "skater short &mdash; unless the other team commits a penalty of the same "
      "duration at the same time, and then both teams skate with the same number "
-     "of players."),
+     "of players. The side with the extra skater is on a <b>power play</b>: the "
+     "same penalty, named from the other bench."),
     # ⛔⛔ THE HOLE KEVIN FOUND BY ASKING WHAT WAS LEFT, 2026-09-10: this page said
     # the word "overtime" ZERO times, and 23 of 87 sampled games reach it. A
     # novice watching one sees three skaters a side and no explanation.

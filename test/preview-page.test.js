@@ -699,6 +699,56 @@ test('⛔⛔ every lesson that owns a diagram is reached AS a diagram, and no ot
     + '(power play, penalties, offside, icing, slot), so this is the defect of 2026-10-04 back');
 });
 
+test('⭐⭐⭐ a door that promises a term lands on a page that USES that term', () => {
+  /* ⛔⛔⛔ KEVIN, 2026-10-04, the moment the power-play door started working:
+     *"I also just noticed the Power Play door opens the Penalties card, if that's
+     intentional (which is fine), we need to explain the relationship between a
+     penalty and a power play, I would suggest in the text at the top of the
+     page."*
+
+     He is right, and the gap was total: `penalties.html` said **"a skater short"
+     six times and "power play" zero**. So a reader who clicked a door reading
+     "What a power play is" arrived at a page that never used the phrase and had
+     no way to tell whether it had landed in the right place. ⭐ FIXING THE DOOR
+     IN THE MORNING CREATED THIS IN THE AFTERNOON: while every door opened a
+     replay frame the promise was never tested against a destination, because
+     there was no destination to test it against.
+
+     ⭐⭐ THE RULE, which `penalties-lede-open` already stated in another form:
+     **a term a door offers to explain must appear on the page the door opens.**
+     The label is a promise made in the reader\'s vocabulary; the page may teach it
+     in plainer words -- Kevin\'s own ruling, *"we can use the explanatory wording
+     on the learning page itself"* -- but it must at least NAME the thing, or the
+     two surfaces are about different subjects.
+
+     ⚠️ DERIVED FROM THE LABEL, NEVER FROM A LIST. A table of terms here would be
+     a third spelling to keep in step; the label on the page is the promise, so
+     the promise is parsed out of it. Doors that open a replay frame are skipped:
+     `game.html` is a shell and its words arrive from the archive at runtime. */
+  const labels = [...script.matchAll(/learnLink\('([a-z0-9]+)',\s*'([^']+)'/g)]
+    .map(m => ({ key: m[1], label: m[2] }));
+  assert.ok(labels.length >= 4, `only ${labels.length} labelled doors found on the card`);
+  let checked = 0;
+  for (const { key, label } of labels) {
+    const term = /^What (?:an? )?(.+?) (?:is|means|costs)$/.exec(label);
+    if (!term) continue;                       // "See an attempt being counted"
+    const href = DOORS[key];
+    assert.ok(href, `the "${label}" door has no destination at all`);
+    if (!/^\/([a-z-]+)\.html$/.test(href)) continue;   // a replay frame explains itself
+    checked++;
+    const dest = readFileSync(
+      new URL(`../src/${href.slice(1)}`, import.meta.url), 'utf8')
+      .replace(/<script[\s\S]*?<\/script>/g, ' ')
+      .replace(/<!--[\s\S]*?-->/g, ' ')
+      .replace(/<[^>]+>/g, ' ');
+    assert.match(dest, new RegExp(term[1].replace(/\s+/g, '\\s+'), 'i'),
+      `the door says "${label}" and opens ${href}, a page that never uses the words `
+      + `"${term[1]}" -- a reader cannot tell they arrived in the right place`);
+  }
+  assert.ok(checked >= 3,
+    `only ${checked} promises were checkable; the doors stopped opening lesson pages`);
+});
+
 test('⛔ the CF% row leads to an attempt being counted, not to a page that explains it', async () => {
   /* There is no Corsi rule page and there does not need to be: `control` is a
      door onto the exact frame where the Control layer counts an attempt. A
