@@ -32,21 +32,114 @@ blocking · **DECIDE** waiting on Kevin · **HOLD** waiting on the novice test �
 
 This section is the orientation. Everything below §0 is the detail, organised by
 state.
-## ⏭ 0.00 PICK UP HERE — 2026-10-03 (evening)
+## ⏭ 0.00 PICK UP HERE — 2026-10-04 (evening)
 
-# ✅ 2026-10-04 — WHAT SHIPPED, AND THE FIVE THINGS KEVIN FOUND FIRST
+# 🚀 THE SITE IS PUBLIC. KEVIN POSTED THE FIRST LINK TO X ON 2026-10-04.
 
-Everything below is done, live and green. **Nothing is open.** The next session
-starts from whatever Kevin is reading on screen, which is how every commit in
-this file's recent history began. 2026-10-03's two builds are kept below this
-block; the day before that, below them.
+**That is the single biggest change in this project's standing, and everything in
+this section should be read in its light.** Until this evening every reader was
+Kevin. From now on a stranger can arrive, on a phone, cold, from a social
+timeline — and the first thing they meet is not a page any of us has ever
+approached that way.
 
-**Commits, oldest first:** `a714734` quoted-figures writer · `d8c727c` the horn
-carries no strength state · `baa6fff` the summary door opens from the first frame
-· `2ab4e6a` per-team marks on the summary card · `07ea3d1` the degraded fallback
-· `485d3b7` build-before-health · `049d107` the `.sc` collision · `37bf0db` the
-door moves to the sidebar + `summary=1` · `dfa29e5` this status write-up · **plus
-the tap, below.**
+**What he posted:** a 14-second screen capture of the replay running, with
+
+> A real NHL game (Capitals at Lightning, 3 October 2026), replayed one event at a
+> time. Every number on screen opens to how it was worked out.
+> Nothing modelled, nothing invented.
+> `https://readthegame.co/game?game=2026020024&summary=1`
+
+**⭐⭐⭐ THE SENTENCE IN THAT POST FOUND A REAL DEFECT BEFORE IT WENT OUT, and that
+is the most reusable thing that happened today — see §0.00c.**
+
+**Thirteen commits.** `a714734` quoted-figures writer · `d8c727c` the horn carries
+no strength state · `baa6fff` the summary door opens from the first frame ·
+`2ab4e6a` per-team marks · `07ea3d1` the degraded fallback · `485d3b7`
+build-before-health · `049d107` the `.sc` collision · `37bf0db` the door moves to
+the sidebar + `summary=1` · `dfa29e5` a status write-up · `70db8f4` **one tap
+plays the play once** · `9751b28` **five from a line-by-line read** · `47696b0`
+**the sharing card** · `4466880` **doors on every summary row**.
+
+Everything is done, live and green: **1,654 JS + 237 Python**, gates green, ten
+browser probes green with their canaries, and every change verified on
+readthegame.co itself rather than inferred from a green deploy.
+
+---
+
+## ⏭ 0.00a WHAT A STRANGER NOW MEETS, MEASURED — nobody had looked
+
+Checking Kevin's post meant measuring the landing state for the first time, which
+nobody had, because nobody on this team arrives cold. **None of these is a
+defect. All of them are now facts rather than assumptions.**
+
+| | |
+|---|---|
+| the unfurl | game-specific, built at build time, so a crawler gets it with no JS |
+| it spoils nothing | the board reads `PRE-GAME · 0–0`; "No result here." stays true |
+| `&summary=1` | opens the panel **over hidden ice** — the link lands on numbers, not the replay |
+| phone portrait | the rotate prompt, with **`Show it anyway` 236px down**; after one tap the first metric row lands at y=410, above the fold |
+| `og:url` | declares the canonical **without** `&summary=1` |
+
+⭐ **THE ONE OPEN QUESTION FOR THE NEXT SESSION:** whether `&summary=1` is the
+right landing for a cold visitor at all. The post's words and the video both
+promise the replay; the link opens a card of numbers with the rink hidden behind
+it. Dropping the parameter lands them on the ice with `▶ Press Play`. Kevin chose
+the parameter deliberately when it was built ("a discrete link to social media at
+that state of the site") — so this is his call, not a bug.
+
+---
+
+## ⏭ 0.00b THE SHARING CARD — `47696b0`
+
+The page carried **no image at all**: `twitter:card` was `summary`, a text-only
+box. A site whose whole argument is a picture, arriving in public as a paragraph.
+
+⛔ **AND THE REASON IT HAD NONE HAD EXPIRED.** `builders/page.py` said *"no
+og:image yet: we have no artwork we are allowed to ship, since club marks are off
+the table by design."* True when written; false by the time anyone checked. The
+card is drawn by **`furniture()` — the same function that paints the ice on every
+replay** — and carries no club mark, no logo, no sweater colour.
+
+⛔⛔ **IT DELIBERATELY DRAWS NO SHOTS.** One image serves every link on the site
+and sits beside a title naming ONE game, so any scatter of marks is read as that
+game's chart. Inventing the positions would break the promise the card prints.
+
+⭐ **`tools/card.mjs`** renders it through the DevTools client, and stamps the
+artwork's sha into a **PNG `tEXt` chunk**, so `--check` asks "was this made from
+the artwork in the repo now" **from the PNG alone**. It is NOT part of
+`npm run build` — a rasteriser is not byte-identical across machines — and
+`npm run card -- --check` is in `npm run gates`. CRC32 is hand-rolled; this Node
+has no `zlib.crc32`.
+
+⚠️ **TWO DEFECTS IN IT WERE FOUND BY LOOKING AT THE PNG, NEITHER REACHABLE BY
+READING:** the rink ran behind the footer type, and the ice carried blue-line
+bands the product does **not** draw (`#rg .zoneband{display:none}` unless the
+Zone starts layer is on). The second is the second-surface defect gated that same
+morning, committed in my own new artwork four hours later.
+
+---
+
+## ⏭ 0.00c ⭐⭐⭐ THE DRAFT POST WAS A TEST OF THE PRODUCT, AND IT FAILED — `4466880`
+
+Kevin's sentence: *"every number on screen opens to how it was worked out."*
+
+Measured on the live page the link opens: **twelve numbers, zero links.** Both
+work doors under the rink were `visibility: hidden` — they live in the layer row
+and the default layer is `Just events`. A reader could have falsified the claim
+in ten seconds, on a site whose entire pitch is CHECK OUR WORK. **He held the
+post.**
+
+⭐⭐⭐ **THE HOUSE RULE WAS DECLARED "CLOSED ON EVERY SURFACE" ON 2026-09-24.** The
+summary card then moved into an overlay on 10-01 and gained a mark per club on
+10-04, and **neither change brought a door with it, and nothing went red.** A
+rule is closed as of a DATE, not forever; every new surface re-opens it.
+
+Fixed by reading `LAYERWORK` — the same mapping the work panel already uses,
+built from `data/layer-rules.json`, which node wrote by asking the real reducers.
+Stoppages opens its three. **The fourth mutation is the one to remember:** gating
+the door on the row having a scale SURVIVED every assertion, because the fixture
+gives all six rows one. *A check written against the easy state approves what it
+forbids* — three times in this repo now.
 
 ---
 
